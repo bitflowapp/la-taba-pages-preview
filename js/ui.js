@@ -71,8 +71,68 @@ export function renderAdminVisibility() {
 }
 
 export function renderCatalog() {
+  renderOffers();
   renderCategories();
   renderProducts();
+}
+
+export function discountPercent(product) {
+  if (!product || !product.oldPrice || product.oldPrice <= product.price) return 0;
+  return Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
+}
+
+function offerBadges(product) {
+  const badges = [];
+  const off = discountPercent(product);
+  if (off > 0) badges.push(`<span class="offer-badge discount">-${off}%</span>`);
+  else if (product.featured) badges.push('<span class="offer-badge promo">Destacado</span>');
+  if (product.categoryId === 'promos') badges.push('<span class="offer-badge day">Promo del día</span>');
+  return badges.length ? `<div class="product-badges">${badges.join('')}</div>` : '';
+}
+
+function priceBlock(product) {
+  const old = product.oldPrice && product.oldPrice > product.price
+    ? `<s>${money(product.oldPrice)}</s>` : '';
+  return `
+    <div class="price">
+      ${old}
+      <strong>${money(product.price)}</strong>
+      <small>${escapeHtml(product.unit)} · ${product.prepMinutes} min</small>
+    </div>`;
+}
+
+function renderOffers() {
+  const container = $('[data-offers-rail]');
+  if (!container) return;
+  const offers = getState().products
+    .filter((product) => product.available && product.stock > 0 && (discountPercent(product) > 0 || product.featured))
+    .sort((a, b) => discountPercent(b) - discountPercent(a))
+    .slice(0, 8);
+
+  if (!offers.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = offers.map((product) => {
+    const off = discountPercent(product);
+    return `
+      <article class="offer-card">
+        <button class="offer-card-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+          <span class="offer-emoji">${product.icon}</span>
+          ${off > 0 ? `<span class="offer-badge discount">-${off}%</span>` : '<span class="offer-badge promo">Destacado</span>'}
+        </button>
+        <div class="offer-card-body">
+          <strong>${escapeHtml(product.name)}</strong>
+          <div class="offer-price">
+            ${off > 0 ? `<s>${money(product.oldPrice)}</s>` : ''}
+            <span>${money(product.price)}</span>
+          </div>
+        </div>
+        <button class="primary-button compact offer-add" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido">Agregar</button>
+      </article>
+    `;
+  }).join('');
 }
 
 function renderCategories() {
@@ -106,20 +166,23 @@ function renderProducts() {
 
   container.innerHTML = filteredProducts.map((product) => {
     const outOfStock = product.stock <= 0 || !product.available;
+    const offer = discountPercent(product) > 0;
     return `
-      <article class="product-card ${outOfStock ? 'out-of-stock' : ''}">
-        <div class="product-top">
-          <button class="product-icon" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">${product.icon}</button>
-          ${stockPill(product)}
+      <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''}">
+        <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+          <span class="product-emoji">${product.icon}</span>
+          ${offerBadges(product)}
+          <span class="product-stock-tag">${stockPill(product)}</span>
+        </button>
+        <div class="product-body">
+          <h3>${escapeHtml(product.name)}</h3>
+          <p>${escapeHtml(product.description)}</p>
         </div>
-        <h3>${escapeHtml(product.name)}</h3>
-        <p>${escapeHtml(product.description)}</p>
         <div class="product-bottom">
-          <div class="price">
-            <strong>${money(product.price)}</strong>
-            <small>${escapeHtml(product.unit)} · ${product.prepMinutes} min</small>
-          </div>
-          <button class="icon-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>+</button>
+          ${priceBlock(product)}
+          <button class="add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>
+            <span class="add-plus">+</span><span class="add-text">${outOfStock ? 'Agotado' : 'Agregar'}</span>
+          </button>
         </div>
       </article>
     `;
@@ -282,13 +345,14 @@ export function showProductModal(productId) {
   const content = $('[data-modal-content]');
   if (!product || !modal || !content) return;
 
+  const off = discountPercent(product);
   content.innerHTML = `
     <div class="modal-card">
-      <div class="modal-product-icon">${product.icon}</div>
+      <div class="modal-product-icon">${product.icon}${off > 0 ? `<span class="offer-badge discount">-${off}%</span>` : ''}</div>
       <h2>${escapeHtml(product.name)}</h2>
       <p>${escapeHtml(product.description)}</p>
       <div class="summary-box">
-        <div class="summary-row"><span>Precio</span><strong>${money(product.price)}</strong></div>
+        <div class="summary-row"><span>Precio</span><strong>${off > 0 ? `<s>${money(product.oldPrice)}</s> ` : ''}${money(product.price)}</strong></div>
         <div class="summary-row"><span>Unidad</span><strong>${escapeHtml(product.unit)}</strong></div>
         <div class="summary-row"><span>Preparación</span><strong>${product.prepMinutes} min</strong></div>
         <div class="summary-row"><span>Stock</span><strong>${product.stock}</strong></div>

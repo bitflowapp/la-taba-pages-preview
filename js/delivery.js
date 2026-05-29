@@ -14,30 +14,46 @@ export function renderDeliveryPanel() {
 
   const canLeave = order.status === 'ready';
   const canDeliver = order.status === 'on_the_way';
+  const eta = order.delivery.estimatedMinutes ? `${order.delivery.estimatedMinutes} min` : 'En destino';
+  const distance = estimateDistance(order);
+  const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
 
   container.innerHTML = `
     <div class="delivery-layout">
-      <div class="card">
+      <div class="card rider-card">
         <div class="order-card-head">
           <div>
             <h3>${order.id} · ${escapeHtml(order.customerName)}</h3>
             <p>${deliveryModeLabel(order.deliveryMode)} · ${escapeHtml(order.address)}</p>
-            <p>Teléfono: ${escapeHtml(order.customerPhone)}</p>
           </div>
           <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
         </div>
 
-        ${order.items.map((item) => `
-          <div class="order-line">
-            <span>${item.icon} ${item.quantity} x ${escapeHtml(item.name)}</span>
-            <strong>${money(item.quantity * item.unitPrice)}</strong>
-          </div>
-        `).join('')}
+        <div class="rider-chips">
+          <span class="rider-chip"><small>Distancia</small><strong>${distance}</strong></span>
+          <span class="rider-chip"><small>Tiempo estimado</small><strong>${eta}</strong></span>
+          <span class="rider-chip"><small>A cobrar</small><strong>${money(order.total)}</strong></span>
+        </div>
 
-        <div class="summary-box" style="margin-top:14px">
-          <div class="summary-row"><span>Repartidor</span><strong>${escapeHtml(order.delivery.driverName)}</strong></div>
-          <div class="summary-row"><span>Ubicación</span><strong>${escapeHtml(order.delivery.currentLocationLabel)}</strong></div>
-          <div class="summary-row total"><span>Total a entregar</span><strong>${money(order.total)}</strong></div>
+        <a class="rider-contact" href="tel:${encodeURIComponent(order.customerPhone)}">
+          <span class="rider-avatar">${escapeHtml(initials(order.customerName))}</span>
+          <span class="rider-contact-text"><strong>${escapeHtml(order.customerName)}</strong><small>${escapeHtml(order.customerPhone)} · tocar para llamar</small></span>
+          <span class="rider-call">📞</span>
+        </a>
+
+        <div class="rider-block">
+          <p class="rider-label">Pedido</p>
+          ${order.items.map((item) => `
+            <div class="order-line">
+              <span>${item.icon} ${item.quantity} x ${escapeHtml(item.name)}</span>
+              <strong>${money(item.quantity * item.unitPrice)}</strong>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="rider-instructions">
+          <p class="rider-label">Indicaciones del cliente</p>
+          <p>${escapeHtml(instructions)}</p>
         </div>
 
         <div class="button-row" style="margin-top:14px">
@@ -47,12 +63,66 @@ export function renderDeliveryPanel() {
       </div>
 
       <div class="delivery-map">
-        <div>
-          <div class="map-pin">📍</div>
-          <h3>Ubicación en vista de demo</h3>
-          <p>En una etapa futura se puede sumar mapa con GPS real. Por ahora esta demo valida el flujo simple: salir del local y marcar entregado.</p>
-        </div>
+        ${renderDemoMap(order, distance, eta)}
       </div>
+    </div>
+  `;
+}
+
+function estimateDistance(order) {
+  const minutes = order.delivery.estimatedMinutes || 0;
+  if (order.status === 'delivered') return '0,0 km';
+  // Aproximación de demo: ~280 m por minuto estimado, acotado a un rango urbano realista.
+  const km = Math.min(7.5, Math.max(0.6, minutes * 0.28));
+  return `${km.toFixed(1).replace('.', ',')} km`;
+}
+
+function initials(name) {
+  return String(name || '?')
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || '?';
+}
+
+function renderDemoMap(order, distance, eta) {
+  // Progreso del rider sobre la ruta según el estado del pedido.
+  const progress = order.status === 'delivered' ? 1
+    : order.status === 'on_the_way' ? 0.62
+    : 0.04;
+  // Ruta fija (demo) sobre el "mapa". Coordenadas en el viewBox 0..320 x 0..220.
+  const path = 'M 44 176 C 96 150, 96 96, 150 92 S 240 70, 276 44';
+  const stateLabel = order.status === 'delivered' ? 'Entregado'
+    : order.status === 'on_the_way' ? 'En camino al cliente'
+    : 'Esperando salida del local';
+
+  return `
+    <div class="demo-map" role="img" aria-label="Mapa de demostración del reparto">
+      <div class="demo-map-overlay">
+        <span class="map-eta">🛵 ${eta} · ${distance}</span>
+        <span class="map-state">${stateLabel}</span>
+      </div>
+      <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="riderRoute" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#e0a066"/>
+            <stop offset="1" stop-color="#b84f40"/>
+          </linearGradient>
+        </defs>
+        <g class="map-streets" stroke="rgba(255,255,255,0.06)" stroke-width="2">
+          <line x1="0" y1="48" x2="320" y2="40"/>
+          <line x1="0" y1="104" x2="320" y2="112"/>
+          <line x1="0" y1="166" x2="320" y2="158"/>
+          <line x1="60" y1="0" x2="48" y2="220"/>
+          <line x1="150" y1="0" x2="158" y2="220"/>
+          <line x1="244" y1="0" x2="236" y2="220"/>
+        </g>
+        <path d="${path}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
+        <path class="map-route" d="${path}" fill="none" stroke="url(#riderRoute)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
+      </svg>
+      <span class="map-marker store" style="left:14%;top:80%"><span>🏪</span><small>La Taba</small></span>
+      <span class="map-marker client" style="left:86%;top:20%"><span>📍</span><small>Cliente</small></span>
+      <span class="map-marker rider rider-${order.status}" style="--p:${progress}"><span>🛵</span></span>
     </div>
   `;
 }

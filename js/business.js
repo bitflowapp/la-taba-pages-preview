@@ -83,7 +83,7 @@ function orderCard(order) {
   const canAdvance = !['delivered', 'cancelled'].includes(order.status);
 
   return `
-    <article class="order-card">
+    <article class="order-card accent-${statusClass(order.status)}">
       <div class="order-card-head">
         <div>
           <h3>${order.id} · ${escapeHtml(order.customerName)}</h3>

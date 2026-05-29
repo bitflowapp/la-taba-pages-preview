@@ -11,11 +11,8 @@ import {
   statusLabel,
 } from './state.js';
 import {
-  getCartCount,
   getCartItems,
-  getCartSubtotal,
-  getCartTotal,
-  getDeliveryFee,
+  getCartSummary,
   validateCartForCheckout,
 } from './cart.js';
 import { buildDraftMessageFromCart, getLastOrder } from './orders.js';
@@ -203,11 +200,10 @@ export function renderCart() {
 }
 
 export function renderCartTotals() {
-  const count = getCartCount();
-  const total = getCartTotal(currentDeliveryMode());
-  setText('[data-cart-count]', String(count));
-  setText('[data-cart-count-mobile]', String(count));
-  setText('[data-cart-total-small]', money(total));
+  const summary = getCartSummary(currentDeliveryMode());
+  setText('[data-cart-count]', String(summary.count));
+  setText('[data-cart-count-mobile]', String(summary.count));
+  setText('[data-cart-total-small]', money(summary.total));
 }
 
 function renderCartList() {
@@ -246,9 +242,7 @@ export function renderOrderSummary() {
   if (!container) return;
 
   const deliveryMode = currentDeliveryMode();
-  const subtotal = getCartSubtotal();
-  const deliveryFee = getDeliveryFee(deliveryMode);
-  const total = getCartTotal(deliveryMode);
+  const { items, subtotal, deliveryFee, total } = getCartSummary(deliveryMode);
   const validation = validateCartForCheckout(deliveryMode);
 
   container.innerHTML = `
@@ -260,7 +254,7 @@ export function renderOrderSummary() {
 
   const warning = $('[data-checkout-warning]');
   if (warning) {
-    const cartIsEmpty = getCartItems().length === 0;
+    const cartIsEmpty = items.length === 0;
     const hide = validation.ok || cartIsEmpty;
     warning.classList.toggle('hidden', hide);
     warning.textContent = validation.message;
@@ -304,7 +298,8 @@ export function renderTracking() {
   }
 
   const isCancelled = order.status === 'cancelled';
-  const currentIndex = trackingSteps.findIndex((step) => step.status === order.status);
+  const trackingStatus = order.status === 'arriving' ? 'on_the_way' : order.status;
+  const currentIndex = trackingSteps.findIndex((step) => step.status === trackingStatus);
   const progress = trackingSteps.map((step, index) => {
     let stateClass = 'pending';
     let stateLabel = 'Pendiente';
@@ -395,9 +390,12 @@ export function escapeHtml(value) {
 }
 
 export function setCategory(categoryId) {
+  if (getState().activeCategory === categoryId) return;
   setState({ activeCategory: categoryId });
 }
 
 export function setSearchQuery(query) {
-  setState({ searchQuery: query });
+  const nextQuery = String(query || '');
+  if (getState().searchQuery === nextQuery) return;
+  setState({ searchQuery: nextQuery });
 }

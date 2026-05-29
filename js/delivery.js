@@ -1,4 +1,11 @@
 import { getActiveDeliveryOrder, updateOrderStatus } from './orders.js';
+import {
+  formatDemoDistance,
+  formatDemoEta,
+  getRiderActionState,
+  getRiderStateLabel,
+  getRouteProgress,
+} from './core/rider.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { escapeHtml } from './ui.js';
 
@@ -12,10 +19,9 @@ export function renderDeliveryPanel() {
     return;
   }
 
-  const canLeave = order.status === 'ready';
-  const canDeliver = order.status === 'on_the_way';
-  const eta = order.delivery.estimatedMinutes ? `${order.delivery.estimatedMinutes} min` : 'En destino';
-  const distance = estimateDistance(order);
+  const { canLeave, canDeliver } = getRiderActionState(order);
+  const eta = formatDemoEta(order);
+  const distance = formatDemoDistance(order);
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
 
   container.innerHTML = `
@@ -69,14 +75,6 @@ export function renderDeliveryPanel() {
   `;
 }
 
-function estimateDistance(order) {
-  const minutes = order.delivery.estimatedMinutes || 0;
-  if (order.status === 'delivered') return '0,0 km';
-  // Aproximación de demo: ~280 m por minuto estimado, acotado a un rango urbano realista.
-  const km = Math.min(7.5, Math.max(0.6, minutes * 0.28));
-  return `${km.toFixed(1).replace('.', ',')} km`;
-}
-
 function initials(name) {
   return String(name || '?')
     .split(/\s+/)
@@ -87,14 +85,10 @@ function initials(name) {
 
 function renderDemoMap(order, distance, eta) {
   // Progreso del rider sobre la ruta según el estado del pedido.
-  const progress = order.status === 'delivered' ? 1
-    : order.status === 'on_the_way' ? 0.62
-    : 0.04;
+  const progress = getRouteProgress(order);
   // Ruta fija (demo) sobre el "mapa". Coordenadas en el viewBox 0..320 x 0..220.
   const path = 'M 44 176 C 96 150, 96 96, 150 92 S 240 70, 276 44';
-  const stateLabel = order.status === 'delivered' ? 'Entregado'
-    : order.status === 'on_the_way' ? 'En camino al cliente'
-    : 'Esperando salida del local';
+  const stateLabel = getRiderStateLabel(order);
 
   return `
     <div class="demo-map" role="img" aria-label="Mapa de demostración del reparto">
@@ -130,14 +124,22 @@ function renderDemoMap(order, distance, eta) {
 export function handleDeliveryAction(target) {
   const leaveId = target.closest('[data-delivery-leave]')?.dataset.deliveryLeave;
   if (leaveId) {
-    updateOrderStatus(leaveId, 'on_the_way');
-    return { handled: true, message: 'Pedido marcado como en camino.' };
+    const result = updateOrderStatus(leaveId, 'on_the_way');
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? 'Pedido marcado como en camino.' : result.message,
+    };
   }
 
   const doneId = target.closest('[data-delivery-done]')?.dataset.deliveryDone;
   if (doneId) {
-    updateOrderStatus(doneId, 'delivered');
-    return { handled: true, message: 'Pedido marcado como entregado.' };
+    const result = updateOrderStatus(doneId, 'delivered');
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? 'Pedido marcado como entregado.' : result.message,
+    };
   }
 
   return { handled: false };

@@ -50,6 +50,23 @@ test('cart rejects exhausted products and never exceeds stock', () => {
   assert.equal(state().cart[0].quantity, 4);
 });
 
+test('cart rejects invalid quantities and prunes disabled products from state', () => {
+  assert.equal(addToCart('p-coca', 0).ok, false);
+  assert.equal(addToCart('p-coca', -2).ok, false);
+  assert.deepEqual(state().cart, []);
+
+  addToCart('p-coca', 2);
+  resetState({
+    products: state().products.map((product) => (
+      product.id === 'p-coca' ? { ...product, available: false } : product
+    )),
+    cart: [{ productId: 'p-coca', quantity: 2 }],
+  });
+
+  assert.deepEqual(state().cart, []);
+  assert.deepEqual(getCartItems(), []);
+});
+
 test('cart calculates subtotal, delivery fee, and totals correctly', () => {
   addToCart('p-matambre', 2);
   addToCart('p-coca', 1);

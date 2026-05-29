@@ -33,10 +33,10 @@ export function renderBusinessDashboard() {
     const created = new Date(order.createdAt);
     return !Number.isNaN(created.getTime()) && created >= startOfToday;
   };
-  const activeOrders = orders.filter((order) => !['delivered', 'cancelled'].includes(order.status));
+  const activeOrders = getActiveOrders(orders);
   const todayOrders = orders.filter((order) => order.status !== 'cancelled' && isToday(order));
   const todayTotal = todayOrders.reduce((sum, order) => sum + order.total, 0);
-  const lowStock = state.products.filter((product) => product.available && product.stock > 0 && product.stock <= 4);
+  const lowStock = getLowStockProducts(state.products);
   const pending = orders.filter((order) => order.status === 'received').length;
   const preparing = orders.filter((order) => order.status === 'preparing').length;
   const ready = orders.filter((order) => order.status === 'ready').length;
@@ -62,6 +62,14 @@ export function renderBusinessDashboard() {
       </div>
     </div>
   `;
+}
+
+export function getActiveOrders(orders = getState().orders) {
+  return orders.filter((order) => !['delivered', 'cancelled'].includes(order.status));
+}
+
+export function getLowStockProducts(products = getState().products) {
+  return products.filter((product) => product.available && product.stock > 0 && product.stock <= 4);
 }
 
 function orderCard(order) {

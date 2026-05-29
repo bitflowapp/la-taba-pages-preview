@@ -1,0 +1,10 @@
+{
+  "name": "la-taba-pages-preview",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check-syntax.mjs && node scripts/check-static-assets.mjs",
+    "test": "node --test --test-concurrency=1",
+    "verify": "npm run check && npm test"
+  }
+}

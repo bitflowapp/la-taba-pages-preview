@@ -1,0 +1,35 @@
+import { products, seedOrders } from '../js/data.js';
+import { getState, setState } from '../js/state.js';
+
+export function clone(value) {
+  return typeof structuredClone === 'function'
+    ? structuredClone(value)
+    : JSON.parse(JSON.stringify(value));
+}
+
+export function resetState(overrides = {}) {
+  setState({
+    activeCategory: 'all',
+    searchQuery: '',
+    cart: [],
+    orders: clone(seedOrders),
+    products: clone(products),
+    lastOrderId: seedOrders[0]?.id || null,
+    adminUnlocked: false,
+    lastCheckoutDraft: null,
+    ...overrides,
+  });
+}
+
+export function state() {
+  return getState();
+}
+
+export function makeTarget(selectorToDataset) {
+  return {
+    closest(selector) {
+      const dataset = selectorToDataset[selector];
+      return dataset ? { dataset } : null;
+    },
+  };
+}

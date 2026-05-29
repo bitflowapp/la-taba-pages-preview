@@ -1,10 +1,12 @@
 export const BUSINESS_CONFIG = Object.freeze({
   businessName: 'La Taba',
+  name: 'La Taba',
   subtitle: 'Carnicería & delivery propio',
   whatsappNumber: '5492996209136',
   address: 'Neuquén capital',
   deliveryZone: 'Zona centro, barrios cercanos y pedidos coordinados',
   openingHoursLabel: 'Lunes a sábado · 9:00 a 21:00',
+  openingHours: 'Lunes a sábado · 9:00 a 21:00',
   openHour: 9,
   closeHour: 21,
   deliveryFee: 1200,

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
+import { formatDemoDistance, getRiderActionState } from '../js/core/rider.js';
 import { handleDeliveryAction } from '../js/delivery.js';
 import { getActiveDeliveryOrder } from '../js/orders.js';
 import { getState, setState } from '../js/state.js';
@@ -7,7 +8,7 @@ import { resetState, makeTarget } from './helpers.mjs';
 
 beforeEach(() => resetState());
 
-test('delivery selector only returns delivery orders, never pickup ones', () => {
+test('delivery selector only returns assignable delivery orders, never pickup ones', () => {
   const orders = [
     {
       id: 'LT-3001',
@@ -26,6 +27,14 @@ test('delivery selector only returns delivery orders, never pickup ones', () => 
       delivery: { driverName: 'Juli', driverPhone: '2991112233', estimatedMinutes: 20, currentLocationLabel: 'Pedido recibido por el local' },
     },
     {
+      id: 'LT-3004',
+      status: 'ready',
+      deliveryMode: 'delivery',
+      items: [],
+      createdAt: new Date().toISOString(),
+      delivery: { driverName: 'Juli', driverPhone: '2991112233', estimatedMinutes: 20, currentLocationLabel: 'Pedido listo en el local' },
+    },
+    {
       id: 'LT-3003',
       status: 'cancelled',
       deliveryMode: 'delivery',
@@ -39,7 +48,7 @@ test('delivery selector only returns delivery orders, never pickup ones', () => 
 
   const active = getActiveDeliveryOrder();
   assert.ok(active);
-  assert.equal(active.id, 'LT-3002');
+  assert.equal(active.id, 'LT-3004');
   assert.equal(active.deliveryMode, 'delivery');
 });
 
@@ -70,6 +79,14 @@ test('delivery actions move an assigned order from ready to on the way and then 
   setState({ ...getState(), orders: [order], lastOrderId: order.id });
 
   let result = handleDeliveryAction(makeTarget({
+    '[data-delivery-done]': { deliveryDone: order.id },
+  }));
+  assert.equal(result.handled, true);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /no permitida/);
+  assert.equal(getState().orders[0].status, 'ready');
+
+  result = handleDeliveryAction(makeTarget({
     '[data-delivery-leave]': { deliveryLeave: order.id },
   }));
   assert.equal(result.handled, true);
@@ -116,4 +133,32 @@ test('delivery selector ignores delivered, cancelled, and pickup-only queues', (
 
   setState({ ...getState(), orders });
   assert.equal(getActiveDeliveryOrder(), null);
+});
+
+test('rider helpers expose coherent actions and demo distance', () => {
+  const readyOrder = {
+    status: 'ready',
+    deliveryMode: 'delivery',
+    delivery: { estimatedMinutes: 20 },
+  };
+  const movingOrder = {
+    status: 'on_the_way',
+    deliveryMode: 'delivery',
+    delivery: { estimatedMinutes: 14 },
+  };
+  const pickupOrder = {
+    status: 'ready',
+    deliveryMode: 'pickup',
+    delivery: { estimatedMinutes: 0 },
+  };
+
+  assert.deepEqual(getRiderActionState(readyOrder), {
+    canLeave: true,
+    canArrive: false,
+    canDeliver: false,
+  });
+  assert.equal(getRiderActionState(movingOrder).canDeliver, true);
+  assert.equal(getRiderActionState(pickupOrder).canLeave, false);
+  assert.equal(formatDemoDistance(readyOrder), '0,6 km');
+  assert.equal(formatDemoDistance({ status: 'delivered', deliveryMode: 'delivery', delivery: { estimatedMinutes: 0 } }), '0,0 km');
 });

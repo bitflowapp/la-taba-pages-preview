@@ -1,5 +1,11 @@
 import { BUSINESS_CONFIG } from './config.js';
 import {
+  getActiveOrders as selectActiveOrders,
+  getBusinessMetrics,
+  getLowStockProducts as selectLowStockProducts,
+} from './core/business-metrics.js';
+import { isTerminalOrderStatus } from './core/order-status.js';
+import {
   dateTime,
   getState,
   money,
@@ -26,28 +32,25 @@ export function renderBusinessDashboard() {
   if (!container) return;
 
   const state = getState();
-  const orders = state.orders;
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const isToday = (order) => {
-    const created = new Date(order.createdAt);
-    return !Number.isNaN(created.getTime()) && created >= startOfToday;
-  };
-  const activeOrders = getActiveOrders(orders);
-  const todayOrders = orders.filter((order) => order.status !== 'cancelled' && isToday(order));
-  const todayTotal = todayOrders.reduce((sum, order) => sum + order.total, 0);
-  const lowStock = getLowStockProducts(state.products);
-  const pending = orders.filter((order) => order.status === 'received').length;
-  const preparing = orders.filter((order) => order.status === 'preparing').length;
-  const ready = orders.filter((order) => order.status === 'ready').length;
-  const onTheWay = orders.filter((order) => order.status === 'on_the_way').length;
+  const metrics = getBusinessMetrics(state.orders, state.products);
+  const activeOrders = metrics.activeOrders;
+  const lowStock = metrics.lowStock;
+  const deliveredToday = metrics.ordersByStatus.delivered;
 
   container.innerHTML = `
     <div class="metrics-grid">
-      <div class="metric-card"><strong>${money(todayTotal)}</strong><span>Ventas de hoy</span></div>
-      <div class="metric-card"><strong>${todayOrders.length}</strong><span>Pedidos de hoy</span></div>
-      <div class="metric-card"><strong>${pending + preparing + ready + onTheWay}</strong><span>Pedidos para atender</span></div>
-      <div class="metric-card"><strong>${lowStock.length}</strong><span>Productos con bajo stock</span></div>
+      <div class="metric-card accent"><strong>${money(metrics.todayTotal)}</strong><span>Ventas de hoy</span></div>
+      <div class="metric-card"><strong>${metrics.todayOrderCount}</strong><span>Pedidos de hoy</span></div>
+      <div class="metric-card"><strong>${metrics.ordersToHandle}</strong><span>Para atender</span></div>
+      <div class="metric-card"><strong>${lowStock.length}</strong><span>Bajo stock</span></div>
+    </div>
+
+    <div class="status-board">
+      <span class="board-chip received">Nuevos <strong>${metrics.ordersByStatus.received}</strong></span>
+      <span class="board-chip preparing">Preparando <strong>${metrics.ordersByStatus.preparing}</strong></span>
+      <span class="board-chip ready">Listos <strong>${metrics.ordersByStatus.ready}</strong></span>
+      <span class="board-chip way">En camino <strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></span>
+      <span class="board-chip done">Entregados <strong>${deliveredToday}</strong></span>
     </div>
 
     <div class="admin-grid">
@@ -65,11 +68,11 @@ export function renderBusinessDashboard() {
 }
 
 export function getActiveOrders(orders = getState().orders) {
-  return orders.filter((order) => !['delivered', 'cancelled'].includes(order.status));
+  return selectActiveOrders(orders);
 }
 
 export function getLowStockProducts(products = getState().products) {
-  return products.filter((product) => product.available && product.stock > 0 && product.stock <= 4);
+  return selectLowStockProducts(products);
 }
 
 function orderCard(order) {
@@ -80,16 +83,20 @@ function orderCard(order) {
     </div>
   `).join('');
 
-  const canAdvance = !['delivered', 'cancelled'].includes(order.status);
+  const canAdvance = !isTerminalOrderStatus(order.status);
 
   return `
     <article class="order-card accent-${statusClass(order.status)}">
       <div class="order-card-head">
         <div>
           <h3>${order.id} · ${escapeHtml(order.customerName)}</h3>
-          <p>${escapeHtml(order.deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio')} · ${escapeHtml(order.address)}</p>
-          <p>Teléfono: ${escapeHtml(order.customerPhone)}</p>
-          <p>${dateTime(order.createdAt)} · ${escapeHtml(order.paymentMethod)}</p>
+          <div class="order-meta-pills">
+            <span>${escapeHtml(order.deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio')}</span>
+            <span>${money(order.total)}</span>
+            <span>${escapeHtml(order.paymentMethod)}</span>
+          </div>
+          <p>${escapeHtml(order.address)}</p>
+          <p>Teléfono: ${escapeHtml(order.customerPhone)} · ${dateTime(order.createdAt)}</p>
         </div>
         <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
       </div>
@@ -108,7 +115,7 @@ function stockRow(product) {
   return `
     <div class="stock-row">
       <div>
-        <div class="cart-title"><span>${product.icon}</span>${escapeHtml(product.name)}</div>
+        <div class="cart-title"><span class="stock-thumb">${product.icon}</span>${escapeHtml(product.name)}</div>
         <div class="cart-meta">${money(product.price)} · ${stockPill(product)}</div>
       </div>
       <div class="stock-actions">
@@ -124,49 +131,65 @@ function stockRow(product) {
 export function handleBusinessAction(target) {
   const advanceId = target.closest('[data-order-advance]')?.dataset.orderAdvance;
   if (advanceId) {
-    advanceOrderStatus(advanceId);
-    return { handled: true, message: 'Estado del pedido actualizado.' };
+    const result = advanceOrderStatus(advanceId);
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? 'Estado del pedido actualizado.' : result.message,
+    };
   }
 
   const cancelId = target.closest('[data-order-cancel]')?.dataset.orderCancel;
   if (cancelId) {
-    cancelOrder(cancelId);
-    return { handled: true, message: 'Pedido cancelado.' };
+    const result = cancelOrder(cancelId);
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? 'Pedido cancelado.' : result.message,
+    };
   }
 
   const stockInc = target.closest('[data-stock-inc]')?.dataset.stockInc;
   if (stockInc) {
-    changeProductStock(stockInc, 1);
-    return { handled: true, message: 'Stock aumentado.' };
+    const ok = changeProductStock(stockInc, 1);
+    return { handled: true, ok, message: ok ? 'Stock aumentado.' : 'Producto no encontrado.' };
   }
 
   const stockDec = target.closest('[data-stock-dec]')?.dataset.stockDec;
   if (stockDec) {
-    changeProductStock(stockDec, -1);
-    return { handled: true, message: 'Stock reducido.' };
+    const ok = changeProductStock(stockDec, -1);
+    return { handled: true, ok, message: ok ? 'Stock reducido.' : 'Producto no encontrado.' };
   }
 
   const toggleId = target.closest('[data-product-toggle]')?.dataset.productToggle;
   if (toggleId) {
-    toggleProductAvailability(toggleId);
-    return { handled: true, message: 'Disponibilidad actualizada.' };
+    const ok = toggleProductAvailability(toggleId);
+    return { handled: true, ok, message: ok ? 'Disponibilidad actualizada.' : 'Producto no encontrado.' };
   }
 
   return { handled: false };
 }
 
 function changeProductStock(productId, delta) {
+  if (!getState().products.some((product) => product.id === productId)) return false;
+  let changed = false;
   updateState((draft) => {
     const product = draft.products.find((candidate) => candidate.id === productId);
     if (!product) return;
     product.stock = Math.max(0, product.stock + delta);
+    changed = true;
   });
+  return changed;
 }
 
 function toggleProductAvailability(productId) {
+  if (!getState().products.some((product) => product.id === productId)) return false;
+  let changed = false;
   updateState((draft) => {
     const product = draft.products.find((candidate) => candidate.id === productId);
     if (!product) return;
     product.available = !product.available;
+    changed = true;
   });
+  return changed;
 }

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
 import { BUSINESS_CONFIG } from '../js/config.js';
+import { getBusinessMetrics } from '../js/core/business-metrics.js';
 import { setState, getState } from '../js/state.js';
 import { unlockAdmin, lockAdmin, handleBusinessAction, getActiveOrders, getLowStockProducts } from '../js/business.js';
 import { resetState, makeTarget } from './helpers.mjs';
@@ -100,4 +101,25 @@ test('low-stock detection includes scarce products and excludes out-of-stock one
   assert.ok(lowStock.some((product) => product.id === 'p-matambre'));
   assert.ok(lowStock.some((product) => product.id === 'p-chorizo-parrillero'));
   assert.ok(!lowStock.some((product) => product.id === 'p-agua'));
+});
+
+test('business metrics tolerate invalid dates and count active statuses consistently', () => {
+  const now = new Date('2026-05-29T15:00:00.000Z');
+  const metrics = getBusinessMetrics([
+    { id: 'LT-1', status: 'received', total: 1000, createdAt: '2026-05-29T10:00:00.000Z' },
+    { id: 'LT-2', status: 'arriving', total: 2000, createdAt: '2026-05-29T11:00:00.000Z' },
+    { id: 'LT-3', status: 'cancelled', total: 3000, createdAt: '2026-05-29T12:00:00.000Z' },
+    { id: 'LT-4', status: 'delivered', total: Number.NaN, createdAt: 'bad-date' },
+  ], [
+    { id: 'p-1', available: true, stock: 1 },
+    { id: 'p-2', available: true, stock: 0 },
+    { id: 'p-3', available: false, stock: 1 },
+  ], now);
+
+  assert.equal(metrics.todayOrderCount, 2);
+  assert.equal(metrics.todayTotal, 3000);
+  assert.equal(metrics.ordersToHandle, 2);
+  assert.equal(metrics.ordersByStatus.arriving, 1);
+  assert.equal(metrics.activeOrders.length, 2);
+  assert.deepEqual(metrics.lowStock.map((product) => product.id), ['p-1']);
 });

@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
 import { BUSINESS_CONFIG } from '../js/config.js';
 import { addToCart } from '../js/cart.js';
-import { createOrderFromCheckout, buildWhatsAppMessage } from '../js/orders.js';
-import { dateTime } from '../js/state.js';
-import { resetState } from './helpers.mjs';
+import { createOrderFromCheckout, buildWhatsAppMessage, updateOrderStatus } from '../js/orders.js';
+import { dateTime, getState } from '../js/state.js';
+import { resetState, state } from './helpers.mjs';
 
 beforeEach(() => resetState());
 
@@ -90,4 +90,59 @@ test('delivery orders require a delivery address and a minimum subtotal', () => 
 
   assert.equal(belowMinimum.ok, false);
   assert.match(belowMinimum.message, /pedido mínimo de delivery/);
+});
+
+test('checkout sanitizes text and normalizes invalid payment methods', () => {
+  addToCart('p-vacio', 1);
+
+  const result = createOrderFromCheckout({
+    customerName: '  Ana\u0000 QA  ',
+    customerPhone: ' 2995550000 ',
+    customerAddress: '  Roca 321 ',
+    deliveryMode: 'bad-mode',
+    paymentMethod: 'unknown',
+    customerNotes: '  Sin\u0007 grasa  ',
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.order.deliveryMode, 'delivery');
+  assert.equal(result.order.customerName, 'Ana QA');
+  assert.equal(result.order.customerPhone, '2995550000');
+  assert.equal(result.order.address, 'Roca 321');
+  assert.equal(result.order.paymentMethod, 'Efectivo');
+  assert.equal(result.order.notes, 'Sin grasa');
+  assert.deepEqual(state().cart, []);
+});
+
+test('order status transitions reject invalid jumps and preserve history', () => {
+  addToCart('p-vacio', 1);
+  const created = createOrderFromCheckout({
+    customerName: 'Rider QA',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: '',
+  });
+
+  const orderId = created.order.id;
+  const invalid = updateOrderStatus(orderId, 'delivered');
+  assert.equal(invalid.ok, false);
+  assert.equal(getState().orders[0].status, 'received');
+
+  assert.equal(updateOrderStatus(orderId, 'preparing').ok, true);
+  assert.equal(updateOrderStatus(orderId, 'ready').ok, true);
+  assert.equal(updateOrderStatus(orderId, 'on_the_way').ok, true);
+  assert.equal(updateOrderStatus(orderId, 'delivered').ok, true);
+
+  const order = getState().orders[0];
+  assert.equal(order.status, 'delivered');
+  assert.deepEqual(order.statusHistory.map((entry) => entry.status), [
+    'received',
+    'preparing',
+    'ready',
+    'on_the_way',
+    'delivered',
+  ]);
+  assert.equal(order.delivery.estimatedMinutes, 0);
 });

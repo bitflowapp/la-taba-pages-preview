@@ -10,7 +10,7 @@ test('carga inicial y catálogo', async ({ page }) => {
 
   await page.goto('/');
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
-  expect(await page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
+  await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
   await expect(page.locator('[data-cart-count]')).toHaveText('0');
   await expect(page.locator('[data-cart-total-small]')).toContainText('$');
   await expect(page.locator('[data-cart-list]')).toContainText('El carrito está vacío');
@@ -36,7 +36,7 @@ test('flujo cliente con delivery', async ({ page }) => {
   await page.getByRole('link', { name: /Mi pedido/i }).click();
   await page.getByLabel('Envío a domicilio').check();
 
-  await page.getByRole('button', { name: /Confirmar y abrir WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
   await waitForToast(page, 'Ingresá el nombre del cliente.');
 
   await fillCheckout(page, {
@@ -47,7 +47,7 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Confirmar y abrir WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
   await waitForToast(page, 'Ingresá el nombre del cliente.');
 
   await fillCheckout(page, {
@@ -58,7 +58,7 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Confirmar y abrir WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
   await waitForToast(page, 'Ingresá un teléfono de contacto.');
 
   await fillCheckout(page, {
@@ -69,7 +69,7 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Confirmar y abrir WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
   await waitForToast(page, 'Ingresá la dirección para el envío.');
 
   await fillCheckout(page, {
@@ -80,7 +80,7 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Confirmar y abrir WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
   await waitForToast(page, /LT-\d{4} creado\. Abriendo WhatsApp\.\.\./);
 
   const openedUrl = await page.evaluate(() => window.__openedUrls.at(-1));
@@ -121,7 +121,7 @@ test('flujo retiro en local', async ({ page }) => {
     payment: 'cash',
     deliveryMode: 'pickup',
   });
-  await page.getByRole('button', { name: /Confirmar y abrir WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
   await waitForToast(page, /LT-\d{4} creado\. Abriendo WhatsApp\.\.\./);
 
   const openedUrl = await page.evaluate(() => window.__openedUrls.at(-1));
@@ -149,14 +149,14 @@ test('modo negocio y delivery', async ({ page }) => {
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('#negocio')).toBeVisible();
   await expect(page.locator('[data-business-dashboard]')).toContainText('Ventas de hoy');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Stock rápido');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Pedidos entrantes');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Stock del catálogo');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Pedidos para preparar');
 
   const advanceButton = page.locator('[data-order-advance]').first();
   await expect(advanceButton).toBeVisible();
   await advanceButton.click();
   await waitForToast(page, 'Estado del pedido actualizado.');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Listo para enviar');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Enviar con repartidor');
 
   const stockInc = page.locator('[data-stock-inc]').first();
   const stockDec = page.locator('[data-stock-dec]').first();
@@ -189,7 +189,7 @@ test('modo negocio y delivery', async ({ page }) => {
     await expect(page.locator('[data-delivery-panel]')).toContainText('En camino');
     await page.locator('[data-delivery-done]').first().click();
     await waitForToast(page, 'Pedido marcado como entregado.');
-    await expect(page.locator('[data-delivery-panel]')).toContainText('No hay pedidos asignados al repartidor.');
+    await expect(page.locator('[data-delivery-panel]')).toContainText('Los pedidos de retiro en local no aparecen en esta vista.');
   }
 
   await guards.assertClean();
@@ -216,7 +216,7 @@ test('modo negocio y delivery', async ({ page }) => {
       await expect(page.locator('.mobile-nav')).toBeHidden();
     }
     await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
-    expect(await page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
+    await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
 
     await page.locator('[data-product-grid] [data-add-product]').first().click();
     await page.getByRole('link', { name: /Mi pedido/i }).click();

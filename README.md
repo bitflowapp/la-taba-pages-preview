@@ -2,7 +2,7 @@
 
 **La Taba** es el sistema propio de pedidos online de una carnicería/local de comida con delivery.
 
-El cliente arma el pedido desde el celular y el negocio lo recibe **ordenado por WhatsApp**: con nombre, dirección, productos, total, forma de pago y notas. Sin audios, sin anotar a mano y **sin pagar comisiones** de las apps de delivery.
+El cliente entra a un link, arma el pedido desde el celular y el negocio lo recibe **ordenado por WhatsApp**: con nombre, dirección, productos, total, forma de pago y notas. Es una base para que La Taba tenga un canal propio de pedidos, sin depender por completo de plataformas externas.
 
 > 🔗 **Demo publicada:** https://bitflowapp.github.io/la-taba-pages-preview/
 
@@ -14,14 +14,18 @@ Es una web/PWA estática, sin backend todavía. Corre en GitHub Pages, Vercel, N
 | --- | --- |
 | Audios y mensajes desordenados | Pedido escrito y completo, siempre igual |
 | Errores al anotar a mano | Productos, cantidades y total automáticos |
-| Comisiones de apps de delivery | Sin comisiones: es tu propio canal |
+| Todo queda mezclado en el chat | Pedido ordenado con formato consistente |
 | Dependés de una plataforma | Tu marca, tu link, tu reparto |
 
 - **¿Qué es?** Tu propio sistema de pedidos online.
 - **¿Cómo recibe pedidos el negocio?** Por WhatsApp, ya ordenados.
 - **¿Qué ve el cliente?** Catálogo, carrito y finalizar pedido.
 - **¿Qué controla el dueño?** Pedidos, estados, ventas del día, stock y reparto.
-- **¿Cómo se prueba?** Botón "Probá la demo" o PIN `1234` para el modo negocio.
+- **¿Cómo se prueba?** Botón "Comprar como cliente" o PIN `1234` para administrar pedidos.
+
+## Diferencia honesta frente a una app de delivery
+
+Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de clientes. Sirve para otra cosa: darle a La Taba un link propio para clientes frecuentes, Instagram, WhatsApp y QR del local. El pedido llega claro, con total calculado y listo para responder.
 
 ## Cómo probar la demo
 
@@ -29,14 +33,14 @@ Es una web/PWA estática, sin backend todavía. Corre en GitHub Pages, Vercel, N
 1. Abrí la demo o `index.html`.
 2. Tocá **Probar como cliente** (o entrá al catálogo).
 3. Agregá productos, abrí **Mi pedido**, elegí **Envío a domicilio** o **Retiro en local**.
-4. Completá nombre, teléfono y dirección y tocá **Confirmar y abrir WhatsApp**.
+4. Completá nombre, teléfono y dirección y tocá **Enviar pedido por WhatsApp**.
 5. Se abre WhatsApp con el pedido escrito, listo para enviar.
 
 ### Como negocio (administrar pedidos)
 1. Tocá **Administrar pedidos** (arriba a la derecha o en la sección *Probá la demo*).
 2. Ingresá el **PIN demo `1234`**.
 3. Vas a ver: pedidos entrantes, ventas del día, pedidos activos y stock bajo.
-4. Acciones por pedido: **Aceptar pedido → Listo para enviar → Enviar con repartidor → Marcar entregado**, o **Cancelar**.
+4. Acciones por pedido: **Aceptar pedido → Marcar listo para enviar → Enviar con repartidor → Marcar entregado**, o **Cancelar**.
 
 ### Como repartidor
 1. Con el modo negocio activo, tocá **Ver repartidor** (sección *Probá la demo*) o el menú #delivery.

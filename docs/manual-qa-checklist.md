@@ -20,7 +20,7 @@ Usar esta lista cuando no se ejecute un navegador automatizado.
 - Intentar superar el stock
 - Quitar producto
 - Vaciar carrito
-- Ir a checkout
+- Ir a finalizar pedido
 - Elegir envío a domicilio
 - Probar validación sin nombre
 - Probar validación sin teléfono
@@ -80,7 +80,7 @@ Revisar:
 - Botones tocables
 - Textos no cortados
 - Carrito cómodo
-- Checkout claro
+- Finalizar pedido claro
 - Modal de producto usable
 - Panel negocio usable
 - Panel delivery usable
@@ -100,4 +100,3 @@ Revisar:
 - Sin imports fallidos
 - Sin 404 de assets
 - Sin errores del service worker
-

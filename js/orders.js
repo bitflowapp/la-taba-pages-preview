@@ -143,7 +143,7 @@ export function actionLabelForOrder(order) {
   if (!next) return 'Sin acción';
   const labels = {
     preparing: 'Aceptar pedido',
-    ready: 'Listo para enviar',
+    ready: 'Marcar listo para enviar',
     on_the_way: 'Enviar con repartidor',
     delivered: 'Marcar entregado',
   };
@@ -162,7 +162,7 @@ export function buildWhatsAppMessage(order) {
     `Nombre: ${order.customerName}`,
     `Teléfono: ${order.customerPhone}`,
     `Entrega: ${deliveryModeLabel(order.deliveryMode)}`,
-    `Dirección: ${order.address}`,
+    `${order.deliveryMode === 'pickup' ? 'Retiro en' : 'Dirección'}: ${order.address}`,
     '',
     'Productos:',
     ...order.items.map((item) => `• ${item.quantity} x ${item.name} — ${money(item.unitPrice * item.quantity)}`),
@@ -198,7 +198,7 @@ export function buildDraftMessageFromCart(formValues = {}) {
     `Nombre: ${formValues.customerName || 'Sin cargar'}`,
     `Teléfono: ${formValues.customerPhone || 'Sin cargar'}`,
     `Entrega: ${deliveryModeLabel(deliveryMode)}`,
-    `Dirección: ${deliveryMode === 'pickup' ? BUSINESS_CONFIG.address : formValues.customerAddress || 'Sin cargar'}`,
+    `${deliveryMode === 'pickup' ? 'Retiro en' : 'Dirección'}: ${deliveryMode === 'pickup' ? BUSINESS_CONFIG.address : formValues.customerAddress || 'Sin cargar'}`,
     '',
     'Productos:',
     ...(items.length ? items.map((item) => `• ${item.quantity} x ${item.product.name} — ${money(item.quantity * item.product.price)}`) : ['• Sin productos cargados']),

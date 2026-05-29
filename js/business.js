@@ -46,18 +46,18 @@ export function renderBusinessDashboard() {
     <div class="metrics-grid">
       <div class="metric-card"><strong>${money(todayTotal)}</strong><span>Ventas de hoy</span></div>
       <div class="metric-card"><strong>${todayOrders.length}</strong><span>Pedidos de hoy</span></div>
-      <div class="metric-card"><strong>${pending + preparing + ready + onTheWay}</strong><span>Pedidos activos</span></div>
+      <div class="metric-card"><strong>${pending + preparing + ready + onTheWay}</strong><span>Pedidos para atender</span></div>
       <div class="metric-card"><strong>${lowStock.length}</strong><span>Productos con bajo stock</span></div>
     </div>
 
     <div class="admin-grid">
       <div class="card">
-        <h3>Pedidos entrantes</h3>
-        ${activeOrders.length ? activeOrders.map(orderCard).join('') : '<div class="empty-state">No hay pedidos activos. Buen momento para limpiar la tabla y respirar.</div>'}
+        <h3>Pedidos para preparar</h3>
+        ${activeOrders.length ? activeOrders.map(orderCard).join('') : '<div class="empty-state">No hay pedidos activos por ahora. Cuando entre uno nuevo, aparece acá con productos, total y datos del cliente.</div>'}
       </div>
 
       <div class="card">
-        <h3>Stock rápido</h3>
+        <h3>Stock del catálogo</h3>
         ${state.products.map(stockRow).join('')}
       </div>
     </div>
@@ -87,7 +87,8 @@ function orderCard(order) {
       <div class="order-card-head">
         <div>
           <h3>${order.id} · ${escapeHtml(order.customerName)}</h3>
-          <p>${escapeHtml(order.address)}</p>
+          <p>${escapeHtml(order.deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio')} · ${escapeHtml(order.address)}</p>
+          <p>Teléfono: ${escapeHtml(order.customerPhone)}</p>
           <p>${dateTime(order.createdAt)} · ${escapeHtml(order.paymentMethod)}</p>
         </div>
         <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>

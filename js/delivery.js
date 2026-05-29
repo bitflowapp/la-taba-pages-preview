@@ -8,7 +8,7 @@ export function renderDeliveryPanel() {
   const order = getActiveDeliveryOrder();
 
   if (!order) {
-    container.innerHTML = '<div class="empty-state">No hay pedidos asignados al repartidor.</div>';
+    container.innerHTML = '<div class="empty-state">No hay pedidos asignados al repartidor. Los pedidos de retiro en local no aparecen en esta vista.</div>';
     return;
   }
 
@@ -49,8 +49,8 @@ export function renderDeliveryPanel() {
       <div class="delivery-map">
         <div>
           <div class="map-pin">📍</div>
-          <h3>Mapa en vista de demo</h3>
-          <p>Acá después se conecta el mapa con GPS real para seguir al repartidor. Por ahora la demo mantiene el flujo de reparto sin backend.</p>
+          <h3>Ubicación en vista de demo</h3>
+          <p>En una etapa futura se puede sumar mapa con GPS real. Por ahora esta demo valida el flujo simple: salir del local y marcar entregado.</p>
         </div>
       </div>
     </div>

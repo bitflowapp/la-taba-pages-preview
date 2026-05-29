@@ -72,6 +72,7 @@ export function renderAdminVisibility() {
 
 export function renderCatalog() {
   renderOffers();
+  renderCombos();
   renderCategories();
   renderProducts();
 }
@@ -85,9 +86,44 @@ function offerBadges(product) {
   const badges = [];
   const off = discountPercent(product);
   if (off > 0) badges.push(`<span class="offer-badge discount">-${off}%</span>`);
+  else if (product.popular) badges.push('<span class="offer-badge hot">Más pedido</span>');
   else if (product.featured) badges.push('<span class="offer-badge promo">Destacado</span>');
-  if (product.categoryId === 'promos') badges.push('<span class="offer-badge day">Promo del día</span>');
+  if (product.categoryId === 'combos') badges.push('<span class="offer-badge combo">Combo</span>');
+  else if (product.categoryId === 'promos') badges.push('<span class="offer-badge day">Promo del día</span>');
   return badges.length ? `<div class="product-badges">${badges.join('')}</div>` : '';
+}
+
+function offerCardHtml(product) {
+  const off = discountPercent(product);
+  const tag = off > 0 ? `<span class="offer-badge discount">-${off}%</span>`
+    : product.popular ? '<span class="offer-badge hot">Más pedido</span>'
+    : product.categoryId === 'combos' ? '<span class="offer-badge combo">Combo</span>'
+    : '<span class="offer-badge promo">Destacado</span>';
+  return `
+    <article class="offer-card">
+      <button class="offer-card-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+        <span class="offer-emoji">${product.icon}</span>
+        ${tag}
+      </button>
+      <div class="offer-card-body">
+        <strong>${escapeHtml(product.name)}</strong>
+        <div class="offer-price">
+          ${off > 0 ? `<s>${money(product.oldPrice)}</s>` : ''}
+          <span>${money(product.price)}</span>
+        </div>
+      </div>
+      <button class="primary-button compact offer-add" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido">Agregar</button>
+    </article>
+  `;
+}
+
+function renderCombos() {
+  const container = $('[data-combos-rail]');
+  if (!container) return;
+  const combos = getState().products
+    .filter((product) => product.available && product.stock > 0 && product.categoryId === 'combos')
+    .slice(0, 8);
+  container.innerHTML = combos.map(offerCardHtml).join('');
 }
 
 function priceBlock(product) {
@@ -114,25 +150,7 @@ function renderOffers() {
     return;
   }
 
-  container.innerHTML = offers.map((product) => {
-    const off = discountPercent(product);
-    return `
-      <article class="offer-card">
-        <button class="offer-card-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
-          <span class="offer-emoji">${product.icon}</span>
-          ${off > 0 ? `<span class="offer-badge discount">-${off}%</span>` : '<span class="offer-badge promo">Destacado</span>'}
-        </button>
-        <div class="offer-card-body">
-          <strong>${escapeHtml(product.name)}</strong>
-          <div class="offer-price">
-            ${off > 0 ? `<s>${money(product.oldPrice)}</s>` : ''}
-            <span>${money(product.price)}</span>
-          </div>
-        </div>
-        <button class="primary-button compact offer-add" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido">Agregar</button>
-      </article>
-    `;
-  }).join('');
+  container.innerHTML = offers.map(offerCardHtml).join('');
 }
 
 function renderCategories() {

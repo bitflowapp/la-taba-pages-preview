@@ -210,6 +210,60 @@ main {
   padding: 44px 0 30px;
 }
 
+/* ===== Home estilo app de delivery ===== */
+.app-hero {
+  position: relative;
+  margin-top: 18px;
+  padding: clamp(22px, 4vw, 34px);
+  border-radius: 28px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(201,122,67,0.32), transparent 46%),
+    radial-gradient(circle at 95% 10%, rgba(184,79,64,0.24), transparent 44%),
+    linear-gradient(165deg, #2a1f1a 0%, #211a17 55%, #181312 100%);
+  box-shadow: var(--shadow);
+}
+.app-hero-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.hero-open {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-weight: 800; font-size: 13px; color: #b8ecc0;
+  background: rgba(107,181,122,0.14); border: 1px solid rgba(107,181,122,0.35);
+  padding: 7px 13px; border-radius: 999px; text-transform: none; letter-spacing: 0;
+}
+.open-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 0 rgba(107,181,122,0.6); animation: openPulse 2s infinite; }
+@keyframes openPulse { 0% { box-shadow: 0 0 0 0 rgba(107,181,122,0.5);} 70% { box-shadow: 0 0 0 8px rgba(107,181,122,0);} 100% { box-shadow: 0 0 0 0 rgba(107,181,122,0);} }
+.hero-eta { font-weight: 800; font-size: 13px; color: var(--text); background: rgba(255,255,255,0.08); border: 1px solid var(--line); padding: 7px 13px; border-radius: 999px; }
+
+.app-hero h1 { font-size: clamp(30px, 6vw, 52px); line-height: 1.02; letter-spacing: -0.05em; margin: 18px 0 10px; max-width: 620px; }
+.app-hero > p { color: var(--muted); font-size: 15px; line-height: 1.5; margin: 0 0 18px; max-width: 560px; }
+
+.hero-info-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.hero-info-chips span {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 700; color: var(--text);
+  background: rgba(255,255,255,0.06); border: 1px solid var(--line);
+  padding: 7px 12px; border-radius: 999px;
+}
+.hero-info-chips strong { color: #ffd8b0; }
+
+.hero-search {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; max-width: 520px;
+  padding: 13px 16px; margin-bottom: 18px;
+  border-radius: 16px; border: 1px solid var(--line);
+  background: rgba(0,0,0,0.25); color: var(--soft); font-size: 15px;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+.hero-search:hover { border-color: rgba(224,160,102,0.6); background: rgba(0,0,0,0.32); }
+.hero-search-icon { font-size: 19px; color: var(--copper-2); }
+
+@media (max-width: 760px) {
+  .app-hero { margin-top: 10px; border-radius: 22px; padding: 20px; }
+  .app-hero h1 { font-size: 30px; }
+  .app-hero > p { font-size: 14px; }
+}
+
 .hero-copy,
 .hero-card,
 .card,
@@ -425,6 +479,8 @@ main {
 .offer-badge.discount { background: linear-gradient(135deg, #c9523f, #e0703f); }
 .offer-badge.promo { background: rgba(255,255,255,0.14); border: 1px solid var(--line); color: #ffd8b0; }
 .offer-badge.day { background: linear-gradient(135deg, var(--copper), #af513f); }
+.offer-badge.hot { background: linear-gradient(135deg, #b84f40, #e4b35a); }
+.offer-badge.combo { background: rgba(109,152,199,0.9); }
 
 .product-stock-tag { position: absolute; bottom: 10px; right: 10px; }
 .product-stock-tag .stock-pill { box-shadow: 0 6px 16px rgba(0,0,0,0.28); }
@@ -827,6 +883,22 @@ textarea { resize: vertical; min-height: 90px; }
 .rider-block { margin-bottom: 12px; }
 .rider-instructions { border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.04); padding: 12px; margin-bottom: 4px; }
 .rider-instructions p:last-child { margin: 0; color: var(--text); line-height: 1.45; }
+
+.rider-meta { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-bottom: 14px; }
+.rider-meta span { border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,0.04); padding: 9px 11px; font-weight: 800; font-size: 13px; }
+.rider-meta small { display: block; color: var(--soft); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; margin-bottom: 2px; }
+
+.rider-icon-btn {
+  flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px;
+  display: grid; place-items: center; font-size: 18px;
+  border: 1px solid var(--line); background: rgba(255,255,255,0.07); color: var(--text);
+  transition: transform 0.14s ease, background 0.14s ease;
+}
+.rider-icon-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.12); }
+.rider-icon-btn.wa { background: rgba(107,181,122,0.16); border-color: rgba(107,181,122,0.4); }
+
+.rider-steps { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.rider-steps button { width: 100%; }
 
 .product-modal,
 .pin-modal {

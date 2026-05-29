@@ -1,6 +1,13 @@
 import { getActiveDeliveryOrder, updateOrderStatus } from './orders.js';
-import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
+import { deliveryModeLabel, money, statusClass, statusLabel, updateState } from './state.js';
 import { escapeHtml } from './ui.js';
+
+function riderWhatsAppUrl(order) {
+  const digits = String(order.customerPhone || '').replace(/\D/g, '');
+  const intl = digits.startsWith('54') ? digits : `549${digits}`;
+  const text = `Hola ${order.customerName}, soy el repartidor de La Taba con tu pedido ${order.id}. Voy en camino.`;
+  return `https://wa.me/${intl}?text=${encodeURIComponent(text)}`;
+}
 
 export function renderDeliveryPanel() {
   const container = document.querySelector('[data-delivery-panel]');
@@ -14,6 +21,7 @@ export function renderDeliveryPanel() {
 
   const canLeave = order.status === 'ready';
   const canDeliver = order.status === 'on_the_way';
+  const arrived = Boolean(order.delivery.arrived);
   const eta = order.delivery.estimatedMinutes ? `${order.delivery.estimatedMinutes} min` : 'En destino';
   const distance = estimateDistance(order);
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
@@ -35,11 +43,17 @@ export function renderDeliveryPanel() {
           <span class="rider-chip"><small>A cobrar</small><strong>${money(order.total)}</strong></span>
         </div>
 
-        <a class="rider-contact" href="tel:${encodeURIComponent(order.customerPhone)}">
+        <div class="rider-meta">
+          <span><small>Entrega</small>${deliveryModeLabel(order.deliveryMode)}</span>
+          <span><small>Pago</small>${escapeHtml(order.paymentMethod)}</span>
+        </div>
+
+        <div class="rider-contact">
           <span class="rider-avatar">${escapeHtml(initials(order.customerName))}</span>
-          <span class="rider-contact-text"><strong>${escapeHtml(order.customerName)}</strong><small>${escapeHtml(order.customerPhone)} · tocar para llamar</small></span>
-          <span class="rider-call">📞</span>
-        </a>
+          <span class="rider-contact-text"><strong>${escapeHtml(order.customerName)}</strong><small>${escapeHtml(order.customerPhone)}</small></span>
+          <a class="rider-icon-btn" href="tel:${encodeURIComponent(order.customerPhone)}" aria-label="Llamar al cliente">📞</a>
+          <a class="rider-icon-btn wa" href="${riderWhatsAppUrl(order)}" target="_blank" rel="noopener noreferrer" aria-label="Escribir por WhatsApp">💬</a>
+        </div>
 
         <div class="rider-block">
           <p class="rider-label">Pedido</p>
@@ -56,14 +70,15 @@ export function renderDeliveryPanel() {
           <p>${escapeHtml(instructions)}</p>
         </div>
 
-        <div class="button-row" style="margin-top:14px">
+        <div class="rider-steps" style="margin-top:14px">
           <button class="primary-button" type="button" data-delivery-leave="${order.id}" ${canLeave ? '' : 'disabled'}>Salí del local</button>
+          <button class="secondary-button" type="button" data-delivery-arrive="${order.id}" ${canDeliver && !arrived ? '' : 'disabled'}>Llegué al domicilio</button>
           <button class="secondary-button" type="button" data-delivery-done="${order.id}" ${canDeliver ? '' : 'disabled'}>Pedido entregado</button>
         </div>
       </div>
 
       <div class="delivery-map">
-        ${renderDemoMap(order, distance, eta)}
+        ${renderDemoMap(order, distance, eta, arrived)}
       </div>
     </div>
   `;
@@ -85,15 +100,16 @@ function initials(name) {
     .join('') || '?';
 }
 
-function renderDemoMap(order, distance, eta) {
+function renderDemoMap(order, distance, eta, arrived = false) {
   // Progreso del rider sobre la ruta según el estado del pedido.
   const progress = order.status === 'delivered' ? 1
-    : order.status === 'on_the_way' ? 0.62
+    : order.status === 'on_the_way' ? (arrived ? 0.9 : 0.62)
     : 0.04;
   // Ruta fija (demo) sobre el "mapa". Coordenadas en el viewBox 0..320 x 0..220.
   const path = 'M 44 176 C 96 150, 96 96, 150 92 S 240 70, 276 44';
   const stateLabel = order.status === 'delivered' ? 'Entregado'
-    : order.status === 'on_the_way' ? 'En camino al cliente'
+    : order.status === 'on_the_way' ? (arrived ? 'Llegando al domicilio' : 'En camino al cliente')
+    : order.status === 'ready' ? 'Esperando retiro del local'
     : 'Esperando salida del local';
 
   return `
@@ -132,6 +148,19 @@ export function handleDeliveryAction(target) {
   if (leaveId) {
     updateOrderStatus(leaveId, 'on_the_way');
     return { handled: true, message: 'Pedido marcado como en camino.' };
+  }
+
+  const arriveId = target.closest('[data-delivery-arrive]')?.dataset.deliveryArrive;
+  if (arriveId) {
+    // Estado visual del reparto (no cambia el flujo de estados del pedido).
+    updateState((draft) => {
+      const order = draft.orders.find((candidate) => candidate.id === arriveId);
+      if (!order || order.status !== 'on_the_way') return;
+      order.delivery.arrived = true;
+      order.delivery.currentLocationLabel = 'Llegando al domicilio del cliente';
+      order.delivery.estimatedMinutes = Math.min(order.delivery.estimatedMinutes || 3, 3);
+    });
+    return { handled: true, message: 'Llegada al domicilio registrada.' };
   }
 
   const doneId = target.closest('[data-delivery-done]')?.dataset.deliveryDone;

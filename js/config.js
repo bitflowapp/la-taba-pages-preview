@@ -9,7 +9,7 @@ export const BUSINESS_CONFIG = Object.freeze({
   openingHours: 'Lunes a sábado · 9:00 a 21:00',
   openHour: 9,
   closeHour: 21,
-  deliveryFee: 1200,
+  deliveryFee: 1990,
   minDeliveryOrder: 5000,
   adminPin: '1234',
   currency: 'ARS',

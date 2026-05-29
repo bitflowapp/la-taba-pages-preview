@@ -1,7 +1,6 @@
 import { BUSINESS_CONFIG } from './config.js';
 import { categories } from './data.js';
 import {
-  dateTime,
   deliveryModeLabel,
   getProductById,
   getState,
@@ -20,14 +19,6 @@ import { buildDraftMessageFromCart, getLastOrder } from './orders.js';
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
-const trackingSteps = [
-  { status: 'received', label: 'Recibido' },
-  { status: 'preparing', label: 'Preparando' },
-  { status: 'ready', label: 'Listo' },
-  { status: 'on_the_way', label: 'En camino' },
-  { status: 'delivered', label: 'Entregado' },
-];
-
 export function applyBusinessConfig() {
   setText('[data-business-name]', BUSINESS_CONFIG.businessName);
   setText('[data-business-subtitle]', BUSINESS_CONFIG.subtitle);
@@ -42,9 +33,8 @@ export function applyBusinessConfig() {
   if (status) {
     const hour = new Date().getHours();
     const isOpen = hour >= BUSINESS_CONFIG.openHour && hour < BUSINESS_CONFIG.closeHour;
-    status.textContent = isOpen
-      ? `Abierto ahora · cierra a las ${BUSINESS_CONFIG.closeHour}:00`
-      : `Cerrado ahora · pedidos programables`;
+    status.textContent = isOpen ? 'Abierto ahora' : 'Cerrado · pedidos programables';
+    status.classList.toggle('is-closed', !isOpen);
   }
 }
 
@@ -79,53 +69,33 @@ export function discountPercent(product) {
   return Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
 }
 
+function unitText(product) {
+  return product.unitLabel || product.unit || '';
+}
+
+// Thumbnail premium: gradiente tonal por categoría + ícono sobrio (sin emoji gigante).
+export function productThumb(product, variant = 'grid') {
+  const tone = product.tone || 'beef';
+  return `<span class="thumb tone-${tone} thumb-${variant}" aria-hidden="true"><span class="thumb-ico">${product.icon || ''}</span></span>`;
+}
+
+function topBadge(product) {
+  const off = discountPercent(product);
+  if (product.combo && off > 0) return `<span class="offer-badge combo">Combo · ${off}% OFF</span>`;
+  if (off > 0) return `<span class="offer-badge discount">${off}% OFF</span>`;
+  if (product.badge) return `<span class="offer-badge promo">${escapeHtml(product.badge)}</span>`;
+  if (product.featured) return '<span class="offer-badge promo">Destacado</span>';
+  return '';
+}
+
 function offerBadges(product) {
   const badges = [];
   const off = discountPercent(product);
-  if (off > 0) badges.push(`<span class="offer-badge discount">-${off}%</span>`);
-  else if (product.popular) badges.push('<span class="offer-badge hot">Más pedido</span>');
-  else if (product.featured) badges.push('<span class="offer-badge promo">Destacado</span>');
-  if (product.categoryId === 'combos') badges.push('<span class="offer-badge combo">Combo</span>');
-  else if (product.categoryId === 'promos') badges.push('<span class="offer-badge day">Promo del día</span>');
+  if (off > 0) badges.push(`<span class="offer-badge discount">${off}% OFF</span>`);
+  if (product.combo) badges.push('<span class="offer-badge combo">Combo</span>');
+  else if (product.popular) badges.push('<span class="offer-badge promo">Más pedido</span>');
+  else if (off === 0 && product.featured) badges.push('<span class="offer-badge promo">Destacado</span>');
   return badges.length ? `<div class="product-badges">${badges.join('')}</div>` : '';
-}
-
-function offerCardHtml(product) {
-  const off = discountPercent(product);
-  const tag = off > 0 ? `<span class="offer-badge discount">-${off}%</span>`
-    : product.popular ? '<span class="offer-badge hot">Más pedido</span>'
-    : product.categoryId === 'combos' ? '<span class="offer-badge combo">Combo</span>'
-    : '<span class="offer-badge promo">Destacado</span>';
-  return `
-    <article class="offer-card">
-      <button class="offer-card-media ${visualToneClass(product)}" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
-        <span class="offer-emoji">${product.icon}</span>
-        <span class="visual-sheen" aria-hidden="true"></span>
-        ${tag}
-      </button>
-      <div class="offer-card-body">
-        <strong>${escapeHtml(product.name)}</strong>
-        <div class="offer-price">
-          ${off > 0 ? `<s>${money(product.oldPrice)}</s>` : ''}
-          <span>${money(product.price)}</span>
-        </div>
-      </div>
-      <button class="primary-button compact offer-add" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido">Agregar</button>
-    </article>
-  `;
-}
-
-function visualToneClass(product) {
-  return `tone-${escapeHtml(product.categoryId || 'default')}`;
-}
-
-function renderCombos() {
-  const container = $('[data-combos-rail]');
-  if (!container) return;
-  const combos = getState().products
-    .filter((product) => product.available && product.stock > 0 && product.categoryId === 'combos')
-    .slice(0, 8);
-  container.innerHTML = combos.map(offerCardHtml).join('');
 }
 
 function priceBlock(product) {
@@ -133,9 +103,8 @@ function priceBlock(product) {
     ? `<s>${money(product.oldPrice)}</s>` : '';
   return `
     <div class="price">
-      ${old}
-      <strong>${money(product.price)}</strong>
-      <small>${escapeHtml(product.unit)} · ${product.prepMinutes} min</small>
+      <div class="price-amounts"><strong>${money(product.price)}</strong>${old}</div>
+      <small>${escapeHtml(unitText(product))}</small>
     </div>`;
 }
 
@@ -147,12 +116,41 @@ function renderOffers() {
     .sort((a, b) => discountPercent(b) - discountPercent(a))
     .slice(0, 8);
 
-  if (!offers.length) {
-    container.innerHTML = '';
-    return;
-  }
+  container.innerHTML = offers.map(railCard).join('');
+}
 
-  container.innerHTML = offers.map(offerCardHtml).join('');
+function renderCombos() {
+  const container = $('[data-combos-rail]');
+  if (!container) return;
+  const combos = getState().products
+    .filter((product) => product.available && product.stock > 0 && (product.combo || product.categoryId === 'combos'))
+    .slice(0, 8);
+
+  container.innerHTML = combos.length
+    ? combos.map(railCard).join('')
+    : '<div class="empty-state">Pronto sumamos más combos.</div>';
+}
+
+function railCard(product) {
+  const off = discountPercent(product);
+  const old = off > 0 ? `<s>${money(product.oldPrice)}</s>` : '';
+  return `
+    <article class="offer-card ${product.stock <= 0 || !product.available ? 'out-of-stock' : ''}">
+      <button class="offer-card-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+        ${productThumb(product, 'rail')}
+        <span class="offer-badge-wrap">${topBadge(product)}</span>
+      </button>
+      <div class="offer-card-body">
+        <strong>${escapeHtml(product.name)}</strong>
+        <small>${escapeHtml(unitText(product))}</small>
+        <div class="offer-price">
+          <span>${money(product.price)}</span>
+          ${old}
+        </div>
+      </div>
+      <button class="add-round" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>+</button>
+    </article>
+  `;
 }
 
 function renderCategories() {
@@ -162,7 +160,7 @@ function renderCategories() {
 
   container.innerHTML = categories.map((category) => `
     <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}">
-      ${category.icon} ${escapeHtml(category.name)}
+      <span class="cat-ico" aria-hidden="true">${category.icon}</span> ${escapeHtml(category.name)}
     </button>
   `).join('');
 }
@@ -189,9 +187,8 @@ function renderProducts() {
     const offer = discountPercent(product) > 0;
     return `
       <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''}">
-        <button class="product-media ${visualToneClass(product)}" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
-          <span class="product-emoji">${product.icon}</span>
-          <span class="visual-sheen" aria-hidden="true"></span>
+        <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+          ${productThumb(product, 'grid')}
           ${offerBadges(product)}
           <span class="product-stock-tag">${stockPill(product)}</span>
         </button>
@@ -212,9 +209,10 @@ function renderProducts() {
 
 export function stockPill(product) {
   if (!product.available || product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
-  if (product.stock <= 4) return `<span class="stock-pill low">Últimas ${product.stock}</span>`;
+  if (product.stock <= 4) return `<span class="stock-pill low">Quedan ${product.stock}</span>`;
+  if (product.badge === 'Retiro') return '<span class="stock-pill featured">Retiro</span>';
   if (product.featured) return '<span class="stock-pill featured">Destacado</span>';
-  return `<span class="stock-pill">Stock ${product.stock}</span>`;
+  return `<span class="stock-pill">Disponible</span>`;
 }
 
 export function renderCart() {
@@ -228,6 +226,9 @@ export function renderCartTotals() {
   setText('[data-cart-count]', String(summary.count));
   setText('[data-cart-count-mobile]', String(summary.count));
   setText('[data-cart-total-small]', money(summary.total));
+  $$('[data-cart-count], [data-cart-count-mobile]').forEach((node) => {
+    node.classList.toggle('is-empty', summary.count === 0);
+  });
 }
 
 function renderCartList() {
@@ -247,18 +248,19 @@ function renderCartList() {
 
   container.innerHTML = items.map((item) => `
     <div class="cart-item">
-      <div class="cart-item-main">
-        <span class="cart-thumb ${visualToneClass(item.product)}">${item.product.icon}</span>
-        <div class="cart-copy">
-          <div class="cart-title">${escapeHtml(item.product.name)}</div>
-          <div class="cart-meta">${money(item.product.price)} · ${escapeHtml(item.product.unit)} · línea ${money(item.product.price * item.quantity)}</div>
-        </div>
+      ${productThumb(item.product, 'cart')}
+      <div class="cart-item-info">
+        <div class="cart-title">${escapeHtml(item.product.name)}</div>
+        <div class="cart-meta">${escapeHtml(unitText(item.product))} · ${money(item.product.price)}</div>
       </div>
-      <div class="quantity-control cart-controls">
-        <button class="icon-button compact" type="button" data-cart-dec="${item.productId}" aria-label="Restar uno de ${escapeHtml(item.product.name)}">−</button>
-        <strong>${item.quantity}</strong>
-        <button class="icon-button compact" type="button" data-cart-inc="${item.productId}" aria-label="Sumar uno de ${escapeHtml(item.product.name)}">+</button>
-        <button class="ghost-button compact" type="button" data-cart-remove="${item.productId}">Quitar</button>
+      <div class="cart-item-side">
+        <div class="quantity-control">
+          <button class="icon-button compact" type="button" data-cart-dec="${item.productId}" aria-label="Restar uno de ${escapeHtml(item.product.name)}">−</button>
+          <strong>${item.quantity}</strong>
+          <button class="icon-button compact" type="button" data-cart-inc="${item.productId}" aria-label="Sumar uno de ${escapeHtml(item.product.name)}">+</button>
+        </div>
+        <div class="cart-line">${money(item.product.price * item.quantity)}</div>
+        <button class="cart-remove" type="button" data-cart-remove="${item.productId}" aria-label="Quitar ${escapeHtml(item.product.name)}">🗑</button>
       </div>
     </div>
   `).join('');
@@ -274,9 +276,9 @@ export function renderOrderSummary() {
 
   container.innerHTML = `
     <div class="summary-row"><span>Subtotal</span><strong>${money(subtotal)}</strong></div>
-    <div class="summary-row"><span>${deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío'}</span><strong>${money(deliveryFee)}</strong></div>
+    <div class="summary-row"><span>${deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio'}</span><strong>${money(deliveryFee)}</strong></div>
+    ${deliveryMode === 'delivery' ? `<div class="summary-row muted"><span>Pedido mínimo delivery</span><strong>${money(BUSINESS_CONFIG.minDeliveryOrder)}</strong></div>` : ''}
     <div class="summary-row total"><span>Total</span><strong>${money(total)}</strong></div>
-    ${deliveryMode === 'delivery' ? `<div class="summary-row"><span>Pedido mínimo delivery</span><strong>${money(BUSINESS_CONFIG.minDeliveryOrder)}</strong></div>` : ''}
   `;
 
   const warning = $('[data-checkout-warning]');
@@ -314,6 +316,94 @@ export function updateAddressFieldVisibility() {
   field.classList.toggle('hidden', isPickup);
 }
 
+// ===== Seguimiento del pedido (vista cliente) =====
+const customerSteps = [
+  { key: 'prep', label: 'Preparando' },
+  { key: 'way', label: 'En camino' },
+  { key: 'done', label: 'Llegando' },
+];
+
+function customerStepIndex(status) {
+  if (['received', 'preparing', 'ready'].includes(status)) return 0;
+  if (status === 'on_the_way') return 1;
+  if (status === 'arriving' || status === 'delivered') return 2;
+  return 0;
+}
+
+function trackingHeadline(order) {
+  const eta = order.delivery.estimatedMinutes;
+  if (order.status === 'delivered') {
+    return { kicker: 'Pedido entregado', title: '¡Disfrutalo!', sub: 'Gracias por comprar en La Taba.' };
+  }
+  if (order.status === 'cancelled') {
+    return { kicker: 'Pedido cancelado', title: 'Pedido cancelado', sub: 'Escribinos por WhatsApp y lo resolvemos.' };
+  }
+  if (order.deliveryMode === 'pickup') {
+    return { kicker: 'Retiro en local', title: order.status === 'ready' ? 'Listo para retirar' : 'Preparando tu pedido', sub: `Te esperamos en ${escapeHtml(BUSINESS_CONFIG.address)}.` };
+  }
+  if (order.status === 'arriving') {
+    return { kicker: 'Repartidor llegando', title: 'Llegando al domicilio', sub: `${distanceLabel(order)} restantes` };
+  }
+  if (order.status === 'on_the_way') {
+    return { kicker: 'Repartidor en camino', title: eta ? `Llegando en ${eta} min` : 'En camino', sub: `${distanceLabel(order)} restantes` };
+  }
+  return { kicker: 'Pedido en preparación', title: eta ? `Listo en ~${eta} min` : 'En preparación', sub: 'Te avisamos cuando salga el repartidor.' };
+}
+
+function distanceLabel(order) {
+  const km = order.delivery.distanceKm
+    || Math.min(7.5, Math.max(0.6, (order.delivery.estimatedMinutes || 6) * 0.28));
+  return `${km.toFixed(1).replace('.', ',')} km`;
+}
+
+function trackingMapSvg(order) {
+  const progress = order.status === 'delivered' ? 1
+    : order.status === 'arriving' ? 0.9
+    : order.status === 'on_the_way' ? 0.6
+    : 0.05;
+  const path = 'M 44 176 C 96 150, 96 96, 150 92 S 240 70, 276 44';
+  return `
+    <div class="demo-map track-map" role="img" aria-label="Mapa de demostración del pedido">
+      <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="trackRoute" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#e0a066"/><stop offset="1" stop-color="#b84f40"/>
+          </linearGradient>
+        </defs>
+        <g class="map-streets" stroke="rgba(255,255,255,0.06)" stroke-width="2">
+          <line x1="0" y1="48" x2="320" y2="40"/><line x1="0" y1="104" x2="320" y2="112"/>
+          <line x1="0" y1="166" x2="320" y2="158"/><line x1="60" y1="0" x2="48" y2="220"/>
+          <line x1="150" y1="0" x2="158" y2="220"/><line x1="244" y1="0" x2="236" y2="220"/>
+        </g>
+        <path d="${path}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
+        <path class="map-route" d="${path}" fill="none" stroke="url(#trackRoute)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
+      </svg>
+      <span class="map-marker store" style="left:14%;top:80%"><span>🏪</span><small>La Taba</small></span>
+      <span class="map-marker client" style="left:86%;top:20%"><span>🏠</span><small>Vos</small></span>
+      <span class="map-marker rider rider-${order.status}" style="--p:${progress}"><span>🛵</span></span>
+    </div>
+  `;
+}
+
+function riderProfileCard(order) {
+  const d = order.delivery;
+  const rating = d.driverRating ? `★ ${d.driverRating}` : '★ 4.9';
+  const trips = d.driverTrips ? `${d.driverTrips} pedidos` : 'Repartidor de La Taba';
+  const phone = d.driverPhone || BUSINESS_CONFIG.whatsappNumber;
+  const wa = `https://wa.me/${onlyDigits(phone)}`;
+  return `
+    <div class="rider-profile">
+      <span class="rider-avatar">${escapeHtml(initials(d.driverName))}</span>
+      <div class="rider-profile-text">
+        <strong>${escapeHtml(d.driverName || 'Repartidor')}</strong>
+        <small>Repartidor · ${rating} · ${trips}</small>
+      </div>
+      <a class="round-action call" href="tel:${encodeURIComponent(phone)}" aria-label="Llamar al repartidor">📞</a>
+      <a class="round-action whatsapp" href="${wa}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del repartidor">🟢</a>
+    </div>
+  `;
+}
+
 export function renderTracking() {
   const container = $('[data-tracking-panel]');
   if (!container) return;
@@ -325,68 +415,67 @@ export function renderTracking() {
   }
 
   const isCancelled = order.status === 'cancelled';
-  const trackingStatus = order.status === 'arriving' ? 'on_the_way' : order.status;
-  const currentIndex = trackingSteps.findIndex((step) => step.status === trackingStatus);
-  const progress = trackingSteps.map((step, index) => {
-    let stateClass = 'pending';
-    let stateLabel = 'Pendiente';
-    if (!isCancelled && index < currentIndex) { stateClass = 'done'; stateLabel = 'Listo'; }
-    if (!isCancelled && index === currentIndex) { stateClass = 'current'; stateLabel = 'En curso'; }
-    return `
-    <div class="progress-step ${stateClass}">
-      <strong>${step.label}</strong><br />
-      <span>${stateLabel}</span>
-    </div>
-  `;
+  const isDelivery = order.deliveryMode !== 'pickup';
+  const head = trackingHeadline(order);
+  const stepIndex = customerStepIndex(order.status);
+
+  const steps = customerSteps.map((step, index) => {
+    let cls = 'pending';
+    if (!isCancelled && index < stepIndex) cls = 'done';
+    if (!isCancelled && index === stepIndex) cls = 'current';
+    return `<div class="track-step ${cls}"><span class="track-dot"></span><small>${step.label}</small></div>`;
   }).join('');
-  const liveMap = order.deliveryMode === 'delivery' ? trackingMapHtml(order) : '';
+
+  const itemsHtml = order.items.map((item) => `
+    <div class="order-line">
+      <span>${item.quantity} × ${escapeHtml(item.name)}</span>
+      <strong>${money(item.quantity * item.unitPrice)}</strong>
+    </div>
+  `).join('');
 
   container.innerHTML = `
-    <div class="card">
-      <div class="order-card-head">
-        <div>
-          <h3>${order.id} · ${escapeHtml(order.customerName)}</h3>
-          <p>${deliveryModeLabel(order.deliveryMode)} · ${escapeHtml(order.address)}</p>
+    <div class="track-layout">
+      <div class="card track-header ${statusClass(order.status)}">
+        <span class="track-head-ico">${isDelivery ? '🛵' : '🏪'}</span>
+        <div class="track-head-text">
+          <small>${head.kicker}</small>
+          <strong>${head.title}</strong>
+          <span>${head.sub}</span>
         </div>
         <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
       </div>
-      ${liveMap}
-      <div class="progress-track">${progress}</div>
-      ${isCancelled ? '<div class="warning-box">Este pedido fue cancelado. Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>' : ''}
-      <div class="summary-box">
-        <div class="summary-row"><span>Repartidor</span><strong>${escapeHtml(order.delivery.driverName)}</strong></div>
-        <div class="summary-row"><span>Ubicación</span><strong>${escapeHtml(order.delivery.currentLocationLabel)}</strong></div>
-        <div class="summary-row"><span>Tiempo estimado</span><strong>${order.delivery.estimatedMinutes ? `${order.delivery.estimatedMinutes} min` : 'Sin demora'}</strong></div>
-        <div class="summary-row total"><span>Total</span><strong>${money(order.total)}</strong></div>
+
+      ${isDelivery && !isCancelled ? `<div class="card track-map-card">${trackingMapSvg(order)}</div>` : ''}
+
+      <div class="card track-progress-card">
+        <div class="track-steps">${steps}</div>
+        ${isCancelled ? '<div class="warning-box">Este pedido fue cancelado. Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>' : ''}
+        ${isDelivery && !isCancelled ? riderProfileCard(order) : ''}
+        <details class="order-detail">
+          <summary>Ver detalle del pedido · ${order.id}</summary>
+          <div class="order-detail-body">
+            <div class="order-line head"><span>${deliveryModeLabel(order.deliveryMode)}</span><strong>${escapeHtml(order.address)}</strong></div>
+            ${itemsHtml}
+            <div class="summary-row"><span>Subtotal</span><strong>${money(order.subtotal)}</strong></div>
+            <div class="summary-row"><span>Envío</span><strong>${money(order.deliveryFee)}</strong></div>
+            <div class="summary-row total"><span>Total</span><strong>${money(order.total)}</strong></div>
+          </div>
+        </details>
       </div>
     </div>
   `;
 }
 
-function trackingMapHtml(order) {
-  const minutes = order.delivery.estimatedMinutes || 0;
-  const eta = minutes ? `${minutes} min` : 'Sin demora';
-  const km = Math.min(7.5, Math.max(0.6, minutes * 0.28)).toFixed(1).replace('.', ',');
-  const progress = order.status === 'delivered' ? 1
-    : order.status === 'arriving' ? 0.9
-    : order.status === 'on_the_way' ? 0.72
-    : order.status === 'ready' ? 0.38
-    : 0.12;
-  return `
-    <div class="tracking-live-card">
-      <div>
-        <small>Repartidor en camino</small>
-        <strong>${eta}</strong>
-        <span>${km} km restantes · ${escapeHtml(order.delivery.driverName)}</span>
-      </div>
-      <div class="tracking-mini-map" aria-hidden="true">
-        <span class="tracking-pin store">LT</span>
-        <span class="tracking-route"></span>
-        <span class="tracking-rider" style="--p:${progress}">🛵</span>
-        <span class="tracking-pin home">⌂</span>
-      </div>
-    </div>
-  `;
+function initials(name) {
+  return String(name || '?')
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || '?';
+}
+
+function onlyDigits(value) {
+  return String(value || '').replace(/\D/g, '');
 }
 
 export function showProductModal(productId) {
@@ -398,15 +487,16 @@ export function showProductModal(productId) {
   const off = discountPercent(product);
   content.innerHTML = `
     <div class="modal-card">
-      <div class="modal-product-icon">${product.icon}${off > 0 ? `<span class="offer-badge discount">-${off}%</span>` : ''}</div>
+      <div class="modal-media">${productThumb(product, 'modal')}<span class="offer-badge-wrap">${topBadge(product)}</span></div>
       <h2>${escapeHtml(product.name)}</h2>
       <p>${escapeHtml(product.description)}</p>
       <div class="summary-box">
         <div class="summary-row"><span>Precio</span><strong>${off > 0 ? `<s>${money(product.oldPrice)}</s> ` : ''}${money(product.price)}</strong></div>
-        <div class="summary-row"><span>Unidad</span><strong>${escapeHtml(product.unit)}</strong></div>
+        <div class="summary-row"><span>Presentación</span><strong>${escapeHtml(unitText(product))}</strong></div>
         <div class="summary-row"><span>Preparación</span><strong>${product.prepMinutes} min</strong></div>
-        <div class="summary-row"><span>Stock</span><strong>${product.stock}</strong></div>
+        <div class="summary-row"><span>Disponibilidad</span><strong>${stockPill(product)}</strong></div>
       </div>
+      ${product.marketNote ? `<p class="market-note">ℹ️ ${escapeHtml(product.marketNote)}</p>` : ''}
       <div class="button-row" style="margin-top:16px">
         <button class="primary-button" type="button" data-add-product="${product.id}" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>Agregar al pedido</button>
         <button class="secondary-button" type="button" data-close-modal>Cerrar</button>

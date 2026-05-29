@@ -225,6 +225,15 @@ function normalizeDelivery(delivery, deliveryMode, status) {
       fallback: defaultLocationLabel(status, deliveryMode),
       maxLength: 120,
     }),
+    ...(Number.isFinite(Number(source.distanceKm)) && Number(source.distanceKm) >= 0
+      ? { distanceKm: Number(source.distanceKm) }
+      : {}),
+    ...(Number.isFinite(Number(source.driverRating)) && Number(source.driverRating) > 0
+      ? { driverRating: Number(source.driverRating) }
+      : {}),
+    ...(Number.isFinite(Number(source.driverTrips)) && Number(source.driverTrips) >= 0
+      ? { driverTrips: Math.floor(Number(source.driverTrips)) }
+      : {}),
     ...(source.leftStoreAt ? { leftStoreAt: normalizeIsoDate(source.leftStoreAt) } : {}),
     ...(source.deliveredAt ? { deliveredAt: normalizeIsoDate(source.deliveredAt) } : {}),
   };

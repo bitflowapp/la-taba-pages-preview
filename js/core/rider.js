@@ -46,6 +46,10 @@ export function getRiderActionState(order) {
 
 export function estimateDemoDistanceKm(order) {
   if (!order || order.status === 'delivered') return 0;
+  const explicitDistance = Number(order.delivery?.distanceKm);
+  if (Number.isFinite(explicitDistance) && explicitDistance >= 0) {
+    return Math.min(7.5, explicitDistance);
+  }
   const minutes = Number(order.delivery?.estimatedMinutes || 0);
   if (order.status === 'ready') return 0.6;
   if (order.status === 'arriving') return 0.4;

@@ -35,13 +35,22 @@ export function renderBusinessDashboard() {
   const metrics = getBusinessMetrics(state.orders, state.products);
   const activeOrders = metrics.activeOrders;
   const lowStock = metrics.lowStock;
+  const deliveredToday = metrics.ordersByStatus.delivered;
 
   container.innerHTML = `
     <div class="metrics-grid">
-      <div class="metric-card"><strong>${money(metrics.todayTotal)}</strong><span>Ventas de hoy</span></div>
+      <div class="metric-card accent"><strong>${money(metrics.todayTotal)}</strong><span>Ventas de hoy</span></div>
       <div class="metric-card"><strong>${metrics.todayOrderCount}</strong><span>Pedidos de hoy</span></div>
-      <div class="metric-card"><strong>${metrics.ordersToHandle}</strong><span>Pedidos para atender</span></div>
-      <div class="metric-card"><strong>${lowStock.length}</strong><span>Productos con bajo stock</span></div>
+      <div class="metric-card"><strong>${metrics.ordersToHandle}</strong><span>Para atender</span></div>
+      <div class="metric-card"><strong>${lowStock.length}</strong><span>Bajo stock</span></div>
+    </div>
+
+    <div class="status-board">
+      <span class="board-chip received">Nuevos <strong>${metrics.ordersByStatus.received}</strong></span>
+      <span class="board-chip preparing">Preparando <strong>${metrics.ordersByStatus.preparing}</strong></span>
+      <span class="board-chip ready">Listos <strong>${metrics.ordersByStatus.ready}</strong></span>
+      <span class="board-chip way">En camino <strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></span>
+      <span class="board-chip done">Entregados <strong>${deliveredToday}</strong></span>
     </div>
 
     <div class="admin-grid">

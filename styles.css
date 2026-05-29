@@ -440,7 +440,7 @@ main {
 .order-line,
 .stock-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   padding: 14px 0;
   border-bottom: 1px solid var(--line);
@@ -769,7 +769,7 @@ textarea { resize: vertical; min-height: 90px; }
     justify-content: center;
     flex-wrap: wrap;
   }
-  .hero, .checkout-layout, .admin-grid, .delivery-layout { grid-template-columns: 1fr; }
+  .hero, .checkout-layout, .admin-grid, .delivery-layout { grid-template-columns: minmax(0, 1fr); }
   .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .steps-grid, .steps-3, .metrics-grid, .demo-grid, .benefit-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -796,6 +796,7 @@ textarea { resize: vertical; min-height: 90px; }
   .field-grid, .delivery-mode, .profile-grid { grid-template-columns: 1fr; }
   .steps-grid, .steps-3, .metrics-grid, .demo-grid, .benefit-strip { grid-template-columns: 1fr; }
   .progress-track { grid-template-columns: 1fr; }
+  .stock-actions { flex-wrap: wrap; justify-content: flex-end; }
   .mobile-nav { display: flex; }
   .toast { bottom: 92px; }
   .button-row > * { flex-basis: 100%; }

@@ -13,38 +13,45 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <a class="brand" href="#catalogo" aria-label="Ir al inicio de La Taba">
+        <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio de La Taba">
           <span class="brand-mark">LT</span>
           <span class="brand-text">
             <strong class="brand-word" data-business-name>La Taba</strong>
             <small data-business-subtitle>Carnicería & delivery propio</small>
           </span>
-        </a>
+        </button>
 
         <nav class="desktop-nav" aria-label="Navegación principal">
-          <a href="#catalogo" data-nav-link="catalogo">Inicio</a>
-          <a href="#carrito" data-nav-link="carrito">Mi pedido <span class="mini-badge" data-cart-count>0</span></a>
-          <a href="#seguimiento" data-nav-link="seguimiento">Seguimiento</a>
-          <a href="#perfil" data-nav-link="perfil">El comercio</a>
+          <button type="button" data-nav-view="home">Inicio</button>
+          <button type="button" data-nav-view="cart">Pedido <span class="mini-badge" data-cart-count>0</span></button>
+          <button type="button" data-nav-view="tracking">Seguir</button>
+          <button type="button" data-nav-view="profile">Local</button>
         </nav>
 
         <div class="topbar-actions">
           <button class="ghost-button compact" type="button" data-admin-toggle>Administrar pedidos</button>
           <button class="primary-button compact cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
-            <span class="cart-glyph" aria-hidden="true">🛒</span>
             <span data-cart-total-small>$0</span>
           </button>
         </div>
       </header>
 
-      <main>
-        <section class="section app-home" id="catalogo" data-route="catalogo">
+      <main data-app-main>
+        <section class="section app-view app-home is-active" data-view="home" aria-hidden="false">
+          <div class="home-title">
+            <div>
+              <p class="eyebrow">Pedido online</p>
+              <h1>Elegí cortes, combos y extras</h1>
+            </div>
+            <button class="secondary-button compact" type="button" data-nav-view="profile">Ver local</button>
+          </div>
+
           <div class="status-bar" role="status">
             <span class="status-dot" data-open-status>Abierto ahora</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item"><span class="status-ico" aria-hidden="true">🕐</span> 15 – 35 min</span>
+            <span class="status-item">15 – 35 min</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item"><span class="status-ico" aria-hidden="true">🛵</span> Envío o retiro</span>
+            <span class="status-item">Envío o retiro</span>
           </div>
 
           <div class="search-box">
@@ -54,14 +61,14 @@
 
           <div class="category-strip" data-category-strip></div>
 
-          <a class="promo-banner" href="#carrito" data-promo-banner>
+          <button class="promo-banner" type="button" data-category-id="combos" data-promo-banner>
             <div class="promo-banner-copy">
-              <span class="promo-kicker">Canal propio de La Taba</span>
-              <strong>Armá tu pedido y lo recibimos ordenado por WhatsApp</strong>
-              <span class="promo-sub">Carne fresca, combos y envío propio. Sin instalar apps.</span>
+              <span class="promo-kicker">Listo para parrilla</span>
+              <strong>Combos armados para hoy</strong>
+              <span class="promo-sub">Asado, chorizos y bebidas en un pedido rápido.</span>
             </div>
-            <span class="promo-cta">Empezar pedido</span>
-          </a>
+            <span class="promo-cta">Ver combos</span>
+          </button>
 
           <div class="rail-block">
             <div class="rail-head">
@@ -87,7 +94,7 @@
           </div>
         </section>
 
-        <section class="section soft" id="carrito" data-route="carrito">
+        <section class="section app-view soft" data-view="cart" hidden aria-hidden="true">
           <div class="section-head">
             <div>
               <p class="eyebrow">Mi pedido</p>
@@ -107,11 +114,11 @@
               <div class="delivery-mode">
                 <label>
                   <input type="radio" name="deliveryMode" value="delivery" checked />
-                  <span><span class="dm-ico" aria-hidden="true">🛵</span> Envío a domicilio</span>
+                  <span>Envío a domicilio</span>
                 </label>
                 <label>
                   <input type="radio" name="deliveryMode" value="pickup" />
-                  <span><span class="dm-ico" aria-hidden="true">🏪</span> Retiro en local</span>
+                  <span>Retiro en local</span>
                 </label>
               </div>
 
@@ -149,13 +156,12 @@
               <div class="warning-box hidden" data-checkout-warning></div>
 
               <div class="trust-row" aria-hidden="false">
-                <span class="trust-ico">🛡️</span>
                 <span class="trust-text"><strong>Compra 100% segura</strong><small>Tus datos viajan directo a La Taba por WhatsApp.</small></span>
               </div>
 
               <div class="button-row">
                 <button class="primary-button whatsapp-button" type="submit">
-                  <span class="wa-glyph" aria-hidden="true">🟢</span> Enviar pedido por WhatsApp
+                  Enviar pedido por WhatsApp
                 </button>
               </div>
               <button class="ghost-button copy-button" type="button" data-copy-order>Copiar pedido</button>
@@ -164,7 +170,7 @@
           </div>
         </section>
 
-        <section class="section" id="seguimiento" data-route="seguimiento">
+        <section class="section app-view" data-view="tracking" hidden aria-hidden="true">
           <div class="section-head">
             <div>
               <p class="eyebrow">Seguimiento</p>
@@ -174,11 +180,11 @@
           <div data-tracking-panel></div>
         </section>
 
-        <section class="section soft" id="perfil" data-route="perfil">
+        <section class="section app-view soft" data-view="profile" hidden aria-hidden="true">
           <div class="section-head">
             <div>
               <p class="eyebrow">El comercio</p>
-              <h2>Canal propio para pedidos</h2>
+              <h2>La Taba</h2>
             </div>
           </div>
           <div class="profile-grid">
@@ -194,46 +200,84 @@
               </ul>
             </div>
             <div class="card">
-              <h3>Una base para vender directo</h3>
-              <p>La Taba comparte el link por WhatsApp, Instagram o un QR. Es una demo para validar el canal propio antes de sumar pagos online, stock real o login.</p>
+              <h3>Operación del local</h3>
+              <p>Pedidos por WhatsApp con productos, cantidades, entrega, pago y notas ordenadas para preparar sin recargar el mostrador.</p>
               <ol class="how-strip">
                 <li><strong>1</strong> El cliente arma el pedido</li>
                 <li><strong>2</strong> Llega ordenado por WhatsApp</li>
                 <li><strong>3</strong> La Taba prepara y entrega</li>
               </ol>
-              <button class="secondary-button" type="button" data-admin-toggle-secondary>Administrar pedidos</button>
-              <p class="form-hint">🔑 PIN demo: <strong>1234</strong></p>
+              <div class="button-row">
+                <button class="secondary-button" type="button" data-open-admin-view="business">Panel negocio</button>
+                <button class="ghost-button" type="button" data-open-admin-view="rider">Repartidor</button>
+              </div>
+              <p class="form-hint">PIN: <strong>1234</strong></p>
             </div>
           </div>
         </section>
 
-        <section class="section admin-section hidden" id="negocio" data-admin-area>
-          <div class="section-head">
+        <section class="section app-view admin-section" data-view="business" hidden aria-hidden="true">
+          <div class="card admin-lock-card" data-admin-locked>
             <div>
-              <p class="eyebrow">Administrar pedidos</p>
-              <h2>Pedidos y ventas de hoy</h2>
+              <p class="eyebrow">Negocio</p>
+              <h2>Ingresá para administrar pedidos</h2>
+              <p>Panel de ventas, stock y estados del día. PIN: <strong>1234</strong>.</p>
             </div>
-            <button class="ghost-button" type="button" data-lock-admin>Salir del modo negocio</button>
+            <div class="button-row">
+              <button class="primary-button" type="button" data-open-pin data-admin-target="business">Ingresar PIN</button>
+              <button class="secondary-button" type="button" data-nav-view="profile">Volver al local</button>
+            </div>
           </div>
-          <div data-business-dashboard></div>
+
+          <div data-admin-unlocked hidden>
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Administrar pedidos</p>
+                <h2>Pedidos y ventas de hoy</h2>
+              </div>
+              <div class="view-actions">
+                <button class="secondary-button compact" type="button" data-open-admin-view="rider">Vista rider</button>
+                <button class="ghost-button compact" type="button" data-lock-admin>Salir</button>
+              </div>
+            </div>
+            <div data-business-dashboard></div>
+          </div>
         </section>
 
-        <section class="section admin-section hidden" id="delivery" data-admin-area>
-          <div class="section-head">
+        <section class="section app-view admin-section" data-view="rider" hidden aria-hidden="true">
+          <div class="card admin-lock-card" data-admin-locked>
             <div>
               <p class="eyebrow">Repartidor</p>
-              <h2>Reparto propio de La Taba</h2>
+              <h2>Ingresá para ver entregas</h2>
+              <p>Vista operativa para salida del local, llegada al domicilio y entrega final. PIN: <strong>1234</strong>.</p>
+            </div>
+            <div class="button-row">
+              <button class="primary-button" type="button" data-open-pin data-admin-target="rider">Ingresar PIN</button>
+              <button class="secondary-button" type="button" data-nav-view="profile">Volver al local</button>
             </div>
           </div>
-          <div data-delivery-panel></div>
+
+          <div data-admin-unlocked hidden>
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Repartidor</p>
+                <h2>Reparto propio de La Taba</h2>
+              </div>
+              <div class="view-actions">
+                <button class="secondary-button compact" type="button" data-open-admin-view="business">Panel negocio</button>
+                <button class="ghost-button compact" type="button" data-lock-admin>Salir</button>
+              </div>
+            </div>
+            <div data-delivery-panel></div>
+          </div>
         </section>
       </main>
 
       <nav class="mobile-nav" aria-label="Navegación móvil">
-        <a href="#catalogo" data-nav-link="catalogo"><span class="mn-ico" aria-hidden="true">🏠</span><span class="mn-label">Inicio</span></a>
-        <a href="#carrito" data-nav-link="carrito"><span class="mn-ico" aria-hidden="true">🧾</span><span class="mn-label">Mi pedido</span><span class="mn-badge" data-cart-count-mobile>0</span></a>
-        <a href="#seguimiento" data-nav-link="seguimiento"><span class="mn-ico" aria-hidden="true">📍</span><span class="mn-label">Seguir</span></a>
-        <a href="#perfil" data-nav-link="perfil"><span class="mn-ico" aria-hidden="true">🏪</span><span class="mn-label">Local</span></a>
+        <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>
+        <button type="button" data-nav-view="cart"><span class="mn-ico icon-order" aria-hidden="true"></span><span class="mn-label">Pedido</span><span class="mn-badge" data-cart-count-mobile>0</span></button>
+        <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguir</span></button>
+        <button type="button" data-nav-view="profile"><span class="mn-ico icon-store" aria-hidden="true"></span><span class="mn-label">Local</span></button>
       </nav>
     </div>
 
@@ -244,9 +288,9 @@
     <dialog class="pin-modal" data-pin-modal>
       <form method="dialog" class="pin-card" data-pin-form>
         <h2>Acceso del negocio</h2>
-        <p>Ingresá el PIN para ver la administración de pedidos y el reparto. <strong>PIN demo: 1234</strong></p>
+        <p>Ingresá el PIN para ver la administración de pedidos y el reparto. <strong>PIN: 1234</strong></p>
         <input name="pin" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN del modo negocio" />
-        <div class="warning-box hidden" data-pin-error>PIN incorrecto. Para la demo usá 1234.</div>
+        <div class="warning-box hidden" data-pin-error>PIN incorrecto. Usá 1234.</div>
         <div class="button-row">
           <button class="primary-button" type="submit">Entrar</button>
           <button class="secondary-button" value="cancel" type="button" data-close-pin>Cancelar</button>

@@ -15,7 +15,7 @@ import {
   updateState,
 } from './state.js';
 import { actionLabelForOrder, advanceOrderStatus, cancelOrder } from './orders.js';
-import { escapeHtml, stockPill } from './ui.js';
+import { escapeHtml, productCode, stockPill } from './ui.js';
 
 export function unlockAdmin(pin) {
   if (pin !== BUSINESS_CONFIG.adminPin) return false;
@@ -78,7 +78,7 @@ export function getLowStockProducts(products = getState().products) {
 function orderCard(order) {
   const items = order.items.map((item) => `
     <div class="order-line">
-      <span>${item.icon} ${item.quantity} x ${escapeHtml(item.name)}</span>
+      <span>${item.quantity} x ${escapeHtml(item.name)}</span>
       <strong>${money(item.quantity * item.unitPrice)}</strong>
     </div>
   `).join('');
@@ -115,7 +115,7 @@ function stockRow(product) {
   return `
     <div class="stock-row">
       <div>
-        <div class="cart-title"><span class="stock-thumb">${product.icon}</span>${escapeHtml(product.name)}</div>
+        <div class="cart-title"><span class="stock-thumb">${productCode(product)}</span>${escapeHtml(product.name)}</div>
         <div class="cart-meta">${money(product.price)} · ${stockPill(product)}</div>
       </div>
       <div class="stock-actions">

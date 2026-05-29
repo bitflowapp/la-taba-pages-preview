@@ -77,3 +77,9 @@ test('cart calculates subtotal, delivery fee, and totals correctly', () => {
   assert.equal(getCartTotal('delivery'), subtotal + BUSINESS_CONFIG.deliveryFee);
   assert.equal(getCartTotal('pickup'), subtotal);
 });
+
+test('empty cart does not charge delivery in totals', () => {
+  assert.equal(getCartSubtotal(), 0);
+  assert.equal(getCartTotal('delivery'), 0);
+  assert.equal(getCartTotal('pickup'), 0);
+});

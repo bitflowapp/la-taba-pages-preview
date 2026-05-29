@@ -42,18 +42,30 @@ function setText(selector, value) {
   $$(selector).forEach((node) => { node.textContent = value; });
 }
 
-export function renderNavigation() {
-  const hash = window.location.hash.replace('#', '') || 'catalogo';
-  $$('[data-nav-link]').forEach((link) => {
-    link.classList.toggle('active', link.dataset.navLink === hash);
+export function renderNavigation(activeView = 'home') {
+  $$('[data-nav-view]').forEach((control) => {
+    const isActive = control.dataset.navView === activeView;
+    control.classList.toggle('active', isActive);
+    if (isActive) {
+      control.setAttribute('aria-current', 'page');
+    } else {
+      control.removeAttribute('aria-current');
+    }
   });
 }
 
 export function renderAdminVisibility() {
   const { adminUnlocked } = getState();
-  $$('[data-admin-area]').forEach((node) => node.classList.toggle('hidden', !adminUnlocked));
-  $$('[data-admin-toggle], [data-admin-toggle-secondary]').forEach((button) => {
-    button.textContent = adminUnlocked ? 'Volver a vista cliente' : 'Administrar pedidos';
+  $$('[data-admin-locked]').forEach((node) => {
+    node.hidden = adminUnlocked;
+    node.setAttribute('aria-hidden', String(adminUnlocked));
+  });
+  $$('[data-admin-unlocked]').forEach((node) => {
+    node.hidden = !adminUnlocked;
+    node.setAttribute('aria-hidden', String(!adminUnlocked));
+  });
+  $$('[data-admin-toggle]').forEach((button) => {
+    button.textContent = adminUnlocked ? 'Panel negocio' : 'Administrar pedidos';
   });
 }
 
@@ -73,10 +85,27 @@ function unitText(product) {
   return product.unitLabel || product.unit || '';
 }
 
-// Thumbnail premium: gradiente tonal por categoría + ícono sobrio (sin emoji gigante).
+// Thumbnail tonal de producto sin usar emojis como imagen principal.
 export function productThumb(product, variant = 'grid') {
   const tone = product.tone || 'beef';
-  return `<span class="thumb tone-${tone} thumb-${variant}" aria-hidden="true"><span class="thumb-ico">${product.icon || ''}</span></span>`;
+  return `
+    <span class="thumb tone-${tone} thumb-${variant}" aria-hidden="true">
+      <span class="thumb-code">${productCode(product)}</span>
+      <span class="thumb-cut">${escapeHtml(product.categoryId || '')}</span>
+    </span>`;
+}
+
+export function productCode(product) {
+  const words = String(product?.name || 'LT')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .split(/\s+/)
+    .filter(Boolean);
+  const first = words[0]?.charAt(0) || 'L';
+  const second = words.find((word) => word.length > 2 && word !== words[0])?.charAt(0)
+    || words[0]?.charAt(1)
+    || 'T';
+  return `${first}${second}`.toUpperCase();
 }
 
 function topBadge(product) {
@@ -160,7 +189,7 @@ function renderCategories() {
 
   container.innerHTML = categories.map((category) => `
     <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}">
-      <span class="cat-ico" aria-hidden="true">${category.icon}</span> ${escapeHtml(category.name)}
+      ${escapeHtml(category.name)}
     </button>
   `).join('');
 }
@@ -241,6 +270,9 @@ function renderCartList() {
       <div class="empty-state">
         <strong>El carrito está vacío.</strong><br />
         Agregá productos del catálogo para armar el pedido.
+        <div class="empty-actions">
+          <button class="secondary-button compact" type="button" data-nav-view="home">Ver productos</button>
+        </div>
       </div>
     `;
     return;
@@ -260,7 +292,7 @@ function renderCartList() {
           <button class="icon-button compact" type="button" data-cart-inc="${item.productId}" aria-label="Sumar uno de ${escapeHtml(item.product.name)}">+</button>
         </div>
         <div class="cart-line">${money(item.product.price * item.quantity)}</div>
-        <button class="cart-remove" type="button" data-cart-remove="${item.productId}" aria-label="Quitar ${escapeHtml(item.product.name)}">🗑</button>
+        <button class="cart-remove" type="button" data-cart-remove="${item.productId}" aria-label="Quitar ${escapeHtml(item.product.name)}">Quitar</button>
       </div>
     </div>
   `).join('');
@@ -378,9 +410,9 @@ function trackingMapSvg(order) {
         <path d="${path}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
         <path class="map-route" d="${path}" fill="none" stroke="url(#trackRoute)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
       </svg>
-      <span class="map-marker store" style="left:14%;top:80%"><span>🏪</span><small>La Taba</small></span>
-      <span class="map-marker client" style="left:86%;top:20%"><span>🏠</span><small>Vos</small></span>
-      <span class="map-marker rider rider-${order.status}" style="--p:${progress}"><span>🛵</span></span>
+      <span class="map-marker store" style="left:14%;top:80%"><span>LT</span><small>La Taba</small></span>
+      <span class="map-marker client" style="left:86%;top:20%"><span>VO</span><small>Vos</small></span>
+      <span class="map-marker rider rider-${order.status}" style="--p:${progress}"><span>R</span></span>
     </div>
   `;
 }
@@ -398,8 +430,8 @@ function riderProfileCard(order) {
         <strong>${escapeHtml(d.driverName || 'Repartidor')}</strong>
         <small>Repartidor · ${rating} · ${trips}</small>
       </div>
-      <a class="round-action call" href="tel:${encodeURIComponent(phone)}" aria-label="Llamar al repartidor">📞</a>
-      <a class="round-action whatsapp" href="${wa}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del repartidor">🟢</a>
+      <a class="round-action call" href="tel:${encodeURIComponent(phone)}" aria-label="Llamar al repartidor">Tel</a>
+      <a class="round-action whatsapp" href="${wa}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del repartidor">WA</a>
     </div>
   `;
 }
@@ -410,7 +442,14 @@ export function renderTracking() {
   const order = getLastOrder();
 
   if (!order) {
-    container.innerHTML = '<div class="empty-state">Todavía no hay pedidos. Armá uno desde el catálogo.</div>';
+    container.innerHTML = `
+      <div class="empty-state">
+        <strong>No hay un pedido activo.</strong><br />
+        Cuando confirmes una compra, el estado aparece acá con preparación, reparto y detalle.
+        <div class="empty-actions">
+          <button class="secondary-button compact" type="button" data-nav-view="home">Ver productos</button>
+        </div>
+      </div>`;
     return;
   }
 
@@ -436,7 +475,7 @@ export function renderTracking() {
   container.innerHTML = `
     <div class="track-layout">
       <div class="card track-header ${statusClass(order.status)}">
-        <span class="track-head-ico">${isDelivery ? '🛵' : '🏪'}</span>
+        <span class="track-head-ico">${isDelivery ? 'REP' : 'RET'}</span>
         <div class="track-head-text">
           <small>${head.kicker}</small>
           <strong>${head.title}</strong>

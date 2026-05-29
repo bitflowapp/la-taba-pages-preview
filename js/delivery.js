@@ -51,7 +51,7 @@ export function renderDeliveryPanel() {
     <div class="delivery-layout">
       <div class="rider-col">
         <div class="card rider-head ${statusClass(order.status)}">
-          <span class="track-head-ico">🛵</span>
+          <span class="track-head-ico">REP</span>
           <div class="track-head-text">
             <small>${order.id} · ${escapeHtml(deliveryModeLabel(order.deliveryMode))}</small>
             <strong>${headline}</strong>
@@ -75,8 +75,8 @@ export function renderDeliveryPanel() {
               <strong>${escapeHtml(order.customerName)}</strong>
               <small>${escapeHtml(order.customerPhone)} · ${escapeHtml(order.paymentMethod)}</small>
             </span>
-            <a class="round-action call" href="tel:${encodeURIComponent(order.customerPhone)}" aria-label="Llamar al cliente">📞</a>
-            <a class="round-action whatsapp" href="${waClient}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del cliente">🟢</a>
+            <a class="round-action call" href="tel:${encodeURIComponent(order.customerPhone)}" aria-label="Llamar al cliente">Tel</a>
+            <a class="round-action whatsapp" href="${waClient}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del cliente">WA</a>
           </div>
 
           <div class="rider-address">
@@ -144,7 +144,7 @@ function renderDemoMap(order, distance, eta) {
   return `
     <div class="demo-map" role="img" aria-label="Mapa de demostración del reparto">
       <div class="demo-map-overlay">
-        <span class="map-eta">🛵 ${eta} · ${distance}</span>
+        <span class="map-eta">${eta} · ${distance}</span>
         <span class="map-state">${stateLabel}</span>
       </div>
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -165,9 +165,9 @@ function renderDemoMap(order, distance, eta) {
         <path d="${path}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
         <path class="map-route" d="${path}" fill="none" stroke="url(#riderRoute)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
       </svg>
-      <span class="map-marker store" style="left:14%;top:80%"><span>🏪</span><small>La Taba</small></span>
-      <span class="map-marker client" style="left:86%;top:20%"><span>🏠</span><small>Cliente</small></span>
-      <span class="map-marker rider rider-${order.status}" style="--p:${progress}"><span>🛵</span></span>
+      <span class="map-marker store" style="left:14%;top:80%"><span>LT</span><small>La Taba</small></span>
+      <span class="map-marker client" style="left:86%;top:20%"><span>CL</span><small>Cliente</small></span>
+      <span class="map-marker rider rider-${order.status}" style="--p:${progress}"><span>R</span></span>
     </div>
   `;
 }

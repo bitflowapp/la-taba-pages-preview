@@ -66,7 +66,7 @@ export function renderAdminVisibility() {
   const { adminUnlocked } = getState();
   $$('[data-admin-area]').forEach((node) => node.classList.toggle('hidden', !adminUnlocked));
   $$('[data-admin-toggle], [data-admin-toggle-secondary]').forEach((button) => {
-    button.textContent = adminUnlocked ? 'Modo cliente' : 'Modo negocio';
+    button.textContent = adminUnlocked ? 'Volver a vista cliente' : 'Administrar pedidos';
   });
 }
 

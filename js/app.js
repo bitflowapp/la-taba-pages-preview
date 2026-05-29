@@ -116,6 +116,12 @@ function bindEvents() {
       return;
     }
 
+    const demoTarget = target.closest('[data-demo-open]')?.dataset.demoOpen;
+    if (demoTarget) {
+      openAdminArea(demoTarget);
+      return;
+    }
+
     if (target.closest('[data-admin-toggle], [data-admin-toggle-secondary]')) {
       toggleAdminMode();
       return;
@@ -123,7 +129,7 @@ function bindEvents() {
 
     if (target.closest('[data-lock-admin]')) {
       lockAdmin();
-      showToast('Modo negocio cerrado.');
+      showToast('Acceso del negocio cerrado.');
       window.location.hash = 'catalogo';
       return;
     }
@@ -199,8 +205,10 @@ function bindEvents() {
     error?.classList.add('hidden');
     form.reset();
     closePinModal();
-    showToast('Modo negocio activado.');
-    setTimeout(() => { window.location.hash = 'negocio'; }, 80);
+    showToast('Acceso del negocio activado.');
+    const target = pendingAdminTarget || 'negocio';
+    pendingAdminTarget = null;
+    setTimeout(() => { window.location.hash = target; }, 80);
   });
 
   $('[data-product-modal]')?.addEventListener('click', (event) => {
@@ -212,13 +220,26 @@ function bindEvents() {
   });
 }
 
+let pendingAdminTarget = null;
+
 function toggleAdminMode() {
   if (getState().adminUnlocked) {
     lockAdmin();
-    showToast('Modo negocio cerrado.');
+    showToast('Acceso del negocio cerrado.');
     window.location.hash = 'catalogo';
     return;
   }
+  openPinModal();
+}
+
+// Abre una sección del negocio (negocio/delivery) desde la sección Demo.
+// Si ya está desbloqueado navega directo; si no, pide el PIN y recuerda el destino.
+function openAdminArea(targetArea) {
+  if (getState().adminUnlocked) {
+    window.location.hash = targetArea;
+    return;
+  }
+  pendingAdminTarget = targetArea;
   openPinModal();
 }
 

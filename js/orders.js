@@ -143,8 +143,8 @@ export function actionLabelForOrder(order) {
   if (!next) return 'Sin acción';
   const labels = {
     preparing: 'Aceptar pedido',
-    ready: 'Marcar listo',
-    on_the_way: 'Enviar pedido',
+    ready: 'Listo para enviar',
+    on_the_way: 'Enviar con repartidor',
     delivered: 'Marcar entregado',
   };
   return labels[next] || `Pasar a ${statusLabel(next)}`;

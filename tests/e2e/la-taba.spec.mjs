@@ -33,7 +33,7 @@ test('flujo cliente con delivery', async ({ page }) => {
 
   await page.goto('/');
   await page.locator('[data-product-grid] [data-add-product]').first().click();
-  await page.getByRole('link', { name: /Carrito/i }).click();
+  await page.getByRole('link', { name: /Mi pedido/i }).click();
   await page.getByLabel('Envío a domicilio').check();
 
   await page.getByRole('button', { name: /Confirmar y abrir WhatsApp/i }).click();
@@ -105,7 +105,7 @@ test('flujo retiro en local', async ({ page }) => {
 
   await page.goto('/');
   await page.locator('[data-product-grid] [data-add-product]').first().click();
-  await page.getByRole('link', { name: /Carrito/i }).click();
+  await page.getByRole('link', { name: /Mi pedido/i }).click();
   await page.getByLabel('Retiro en local').check();
 
   await expect(page.locator('[data-address-field]')).toBeHidden();
@@ -219,7 +219,7 @@ test('modo negocio y delivery', async ({ page }) => {
     expect(await page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
 
     await page.locator('[data-product-grid] [data-add-product]').first().click();
-    await page.getByRole('link', { name: /Carrito/i }).click();
+    await page.getByRole('link', { name: /Mi pedido/i }).click();
     await expect(page.locator('[data-checkout-form]')).toBeVisible();
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);

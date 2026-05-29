@@ -49,8 +49,8 @@ export function renderDeliveryPanel() {
       <div class="delivery-map">
         <div>
           <div class="map-pin">📍</div>
-          <h3>Mapa mock preparado</h3>
-          <p>Acá después se conecta Google Maps o Mapbox con GPS real. Por ahora mantiene flujo de reparto sin backend.</p>
+          <h3>Mapa en vista de demo</h3>
+          <p>Acá después se conecta el mapa con GPS real para seguir al repartidor. Por ahora la demo mantiene el flujo de reparto sin backend.</p>
         </div>
       </div>
     </div>

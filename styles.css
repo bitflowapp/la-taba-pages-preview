@@ -558,6 +558,64 @@ textarea { resize: vertical; min-height: 90px; }
 .step-card h3 { margin: 15px 0 9px; letter-spacing: -0.035em; }
 .step-card p { margin: 0; color: var(--muted); line-height: 1.48; }
 
+.steps-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.hero-chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 22px 0 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.benefit-strip {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 0;
+}
+
+.benefit-strip li {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 14px 16px;
+}
+
+.benefit-strip strong { display: block; color: var(--text); letter-spacing: -0.02em; }
+.benefit-strip span { display: block; color: var(--muted); font-size: 13px; line-height: 1.45; margin-top: 5px; }
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.demo-card { display: flex; flex-direction: column; gap: 10px; }
+.demo-card h3 { margin: 0; }
+.demo-card p { margin: 0 0 6px; flex: 1; }
+.demo-card .primary-button,
+.demo-card .secondary-button { width: 100%; }
+.demo-icon { font-size: 34px; line-height: 1; }
+
+.demo-note {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border: 1px dashed rgba(201, 122, 67, 0.4);
+  border-radius: var(--radius-sm);
+  background: rgba(201, 122, 67, 0.08);
+  color: var(--muted);
+}
+.demo-note strong { color: #ffc28e; letter-spacing: 0.04em; }
+
+.form-hint { margin: 4px 0 0; color: var(--soft); font-size: 13px; line-height: 1.45; }
+
 .status-chip { text-transform: none; letter-spacing: 0; padding: 6px 10px; font-size: 12px; }
 .status-chip.received { color: #c9ddff; background: rgba(109,152,199,0.12); border-color: rgba(109,152,199,0.35); }
 .status-chip.preparing { color: #ffd18e; background: rgba(228,179,90,0.12); border-color: rgba(228,179,90,0.35); }
@@ -713,7 +771,7 @@ textarea { resize: vertical; min-height: 90px; }
   }
   .hero, .checkout-layout, .admin-grid, .delivery-layout { grid-template-columns: 1fr; }
   .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .steps-grid, .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .steps-grid, .steps-3, .metrics-grid, .demo-grid, .benefit-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
@@ -736,7 +794,7 @@ textarea { resize: vertical; min-height: 90px; }
   .search-box { min-width: 0; }
   .product-grid { grid-template-columns: 1fr; }
   .field-grid, .delivery-mode, .profile-grid { grid-template-columns: 1fr; }
-  .steps-grid, .metrics-grid { grid-template-columns: 1fr; }
+  .steps-grid, .steps-3, .metrics-grid, .demo-grid, .benefit-strip { grid-template-columns: 1fr; }
   .progress-track { grid-template-columns: 1fr; }
   .mobile-nav { display: flex; }
   .toast { bottom: 92px; }

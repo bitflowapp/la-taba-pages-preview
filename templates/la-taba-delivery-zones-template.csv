@@ -1,0 +1,5 @@
+zoneName,description,deliveryFee,minOrder,estimatedMinutes,active,notes
+Centro,Zona central y alrededores inmediatos,1200,5000,25,TRUE,Primera zona a cubrir
+Barrio cercano,Barrios proximos al local,1500,6000,30,TRUE,Revisar volumen por horario
+Zona media,Sector mas alejado con recorrido medio,1800,8000,40,TRUE,Confirmar antes de salir
+Zona consultar,Area a validar caso por caso,0,0,0,TRUE,Usar solo si Walter confirma

@@ -34,87 +34,33 @@
             Ver mi pedido <span data-cart-total-small>$0</span>
           </button>
         </div>
+        <button class="mobile-cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
+          <span aria-hidden="true">🛒</span>
+          <strong data-cart-count-mobile>0</strong>
+        </button>
       </header>
 
       <main>
-        <section class="hero" id="inicio">
-          <div class="hero-copy">
-            <div class="status-pill" data-open-status>Abierto hoy · pedidos online</div>
-            <h1>Tu propio canal de pedidos online para La Taba.</h1>
-            <p>
-              El cliente entra al link, arma el pedido y La Taba lo recibe ordenado por WhatsApp.
-              Un canal propio para vender directo, sin depender por completo de plataformas externas.
-            </p>
-            <div class="hero-actions">
-              <a class="primary-button" href="#catalogo">Comprar como cliente</a>
-              <a class="secondary-button" href="#demo">Probar la administración</a>
-            </div>
-            <ul class="hero-chips" aria-label="Beneficios">
-              <li>Sin instalar apps</li>
-              <li>Pedido listo para WhatsApp</li>
-              <li>Link para WhatsApp, Instagram o QR</li>
-            </ul>
+        <section class="app-hero" id="inicio">
+          <div class="app-hero-bar">
+            <span class="hero-open"><span class="open-dot"></span><span data-open-status>Abierto ahora</span></span>
+            <span class="hero-eta">⏱️ 15–35 min</span>
           </div>
-          <aside class="hero-card" aria-label="Resumen comercial">
-            <span class="hero-card-icon">🥩</span>
-            <h2>Pedidos claros para preparar más rápido.</h2>
-            <p>Nombre, teléfono, entrega, productos, pago, notas y total llegan en un solo mensaje. Walter no tiene que reconstruir el pedido desde un chat.</p>
-            <div class="hero-metrics">
-              <span><strong data-min-order>$0</strong><small>mínimo delivery</small></span>
-              <span><strong data-delivery-fee>$0</strong><small>envío base</small></span>
-              <span><strong>15–35 min</strong><small>preparación</small></span>
-            </div>
-          </aside>
-        </section>
-
-        <section class="section soft" id="como-funciona">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Cómo funciona</p>
-              <h2>Del celular del cliente al WhatsApp del negocio</h2>
-            </div>
+          <h1>Pedí La Taba como en una app, directo al WhatsApp del local.</h1>
+          <p>Elegí cortes, combos y bebidas. Revisá el total, definí envío o retiro y mandá el pedido listo para preparar.</p>
+          <div class="hero-info-chips" aria-label="Información de entrega">
+            <span>🛵 Envío <strong data-delivery-fee>$0</strong></span>
+            <span>🏪 Retiro sin cargo</span>
+            <span>💳 Efectivo o transferencia</span>
           </div>
-          <div class="steps-grid steps-3">
-            <article class="step-card"><strong>1</strong><h3>El cliente arma el pedido</h3><p>Elige productos, cantidades, envío o retiro y forma de pago. Todo desde el celular, sin instalar nada.</p></article>
-            <article class="step-card"><strong>2</strong><h3>Lo envía por WhatsApp</h3><p>Llega un mensaje ordenado con nombre, dirección, productos, total, pago y notas. Sin audios ni malentendidos.</p></article>
-            <article class="step-card"><strong>3</strong><h3>La Taba prepara o entrega</h3><p>El local confirma, prepara y coordina envío o retiro. Walter puede ver pedidos, stock y reparto desde la vista de administración.</p></article>
+          <a class="hero-search" href="#catalogo" aria-label="Buscar en el catálogo">
+            <span class="hero-search-icon">⌕</span>
+            <span>Buscar asado, milanesas, combos…</span>
+          </a>
+          <div class="hero-actions">
+            <a class="primary-button" href="#catalogo">Ver ofertas y combos</a>
+            <a class="secondary-button" href="#demo">Probar la administración</a>
           </div>
-          <ul class="benefit-strip" aria-label="Ventajas">
-            <li><strong>Canal propio</strong><span>El cliente compra desde un link de La Taba, sin pasar siempre por una app externa.</span></li>
-            <li><strong>Tu marca, tu link</strong><span>Se comparte por WhatsApp, Instagram o un QR en el local.</span></li>
-            <li><strong>Pedidos ordenados</strong><span>Se terminan los audios y los pedidos perdidos por chat.</span></li>
-            <li><strong>Listo para crecer</strong><span>Después se le suma pagos online, stock real y panel completo.</span></li>
-          </ul>
-        </section>
-
-        <section class="section" id="demo">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Probá la demo</p>
-              <h2>Mirá la app desde los tres lados</h2>
-            </div>
-          </div>
-          <div class="demo-grid">
-            <article class="card demo-card">
-              <span class="demo-icon">🛒</span>
-              <h3>Comprar como cliente</h3>
-              <p>Armá un pedido de prueba, elegí envío o retiro y mirá cómo queda el mensaje de WhatsApp.</p>
-              <a class="primary-button" href="#catalogo">Comprar como cliente</a>
-            </article>
-            <article class="card demo-card">
-              <span class="demo-icon">🧾</span>
-              <h3>Administrar pedidos</h3>
-              <p>Entrá al panel del negocio: pedidos nuevos, estados, ventas del día y control de stock.</p>
-              <button class="secondary-button" type="button" data-demo-open="negocio">Ver administración</button>
-            </article>
-            <article class="card demo-card">
-              <span class="demo-icon">🛵</span>
-              <h3>Ver repartidor</h3>
-              <p>Mirá la vista del delivery propio: pedido asignado, salida del local y entrega.</p>
-              <button class="secondary-button" type="button" data-demo-open="delivery">Ver repartidor</button>
-            </article>
-          </div>
-          <p class="demo-note">🔑 PIN demo: <strong>1234</strong> · Acceso de demostración para esta presentación.</p>
         </section>
 
         <section class="section" id="catalogo" data-route="catalogo">
@@ -124,6 +70,14 @@
               <span class="offers-hint">Deslizá para ver más</span>
             </div>
             <div class="offers-rail" data-offers-rail></div>
+          </div>
+
+          <div class="offers-block">
+            <div class="offers-head">
+              <p class="eyebrow">🍢 Combos para compartir</p>
+              <span class="offers-hint">Ideales para la previa</span>
+            </div>
+            <div class="offers-rail" data-combos-rail></div>
           </div>
 
           <div class="section-head">
@@ -200,6 +154,13 @@
               </label>
 
               <div class="summary-box" data-order-summary></div>
+              <div class="checkout-trust" aria-label="Confirmación segura">
+                <span>🛡️</span>
+                <div>
+                  <strong>Pedido ordenado y sin compromiso</strong>
+                  <small>Se abre WhatsApp con el detalle. El cliente confirma enviando el mensaje.</small>
+                </div>
+              </div>
               <div class="warning-box hidden" data-checkout-warning></div>
 
               <div class="button-row">
@@ -219,6 +180,56 @@
             </div>
           </div>
           <div data-tracking-panel></div>
+        </section>
+
+        <section class="section soft" id="como-funciona">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Cómo funciona</p>
+              <h2>Del celular del cliente al WhatsApp del negocio</h2>
+            </div>
+          </div>
+          <div class="steps-grid steps-3">
+            <article class="step-card"><strong>1</strong><h3>El cliente arma el pedido</h3><p>Elige productos, cantidades, envío o retiro y forma de pago. Todo desde el celular, sin instalar nada.</p></article>
+            <article class="step-card"><strong>2</strong><h3>Lo envía por WhatsApp</h3><p>Llega un mensaje ordenado con nombre, dirección, productos, total, pago y notas. Sin audios ni malentendidos.</p></article>
+            <article class="step-card"><strong>3</strong><h3>La Taba prepara o entrega</h3><p>El local confirma, prepara y coordina envío o retiro. Walter puede ver pedidos, stock y reparto desde la vista de administración.</p></article>
+          </div>
+          <ul class="benefit-strip" aria-label="Ventajas">
+            <li><strong>Canal propio</strong><span>El cliente compra desde un link de La Taba, sin pasar siempre por una app externa.</span></li>
+            <li><strong>Tu marca, tu link</strong><span>Se comparte por WhatsApp, Instagram o un QR en el local.</span></li>
+            <li><strong>Pedidos ordenados</strong><span>Se terminan los audios y los pedidos perdidos por chat.</span></li>
+            <li><strong>Listo para crecer</strong><span>Después se le suma pagos online, stock real y panel completo.</span></li>
+          </ul>
+        </section>
+
+        <section class="section" id="demo">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Probá la demo</p>
+              <h2>Mirá la app desde los tres lados</h2>
+            </div>
+          </div>
+          <div class="demo-grid">
+            <article class="card demo-card">
+              <span class="demo-icon">🛒</span>
+              <h3>Comprar como cliente</h3>
+              <p>Armá un pedido de prueba, elegí envío o retiro y mirá cómo queda el mensaje de WhatsApp.</p>
+              <a class="primary-button" href="#catalogo">Comprar como cliente</a>
+            </article>
+            <article class="card demo-card">
+              <span class="demo-icon">🧾</span>
+              <h3>Administrar pedidos</h3>
+              <p>Entrá al panel del negocio: pedidos nuevos, estados, ventas del día y control de stock.</p>
+              <button class="secondary-button" type="button" data-demo-open="negocio">Ver administración</button>
+            </article>
+            <article class="card demo-card">
+              <span class="demo-icon">🛵</span>
+              <h3>Ver repartidor</h3>
+              <p>Mirá la vista del delivery propio: pedido asignado, salida del local y entrega.</p>
+              <button class="secondary-button" type="button" data-demo-open="delivery">Ver repartidor</button>
+            </article>
+          </div>
+          <p class="demo-note">🔑 PIN demo: <strong>1234</strong> · Acceso de demostración para esta presentación.</p>
         </section>
 
         <section class="section soft" id="perfil" data-route="perfil">

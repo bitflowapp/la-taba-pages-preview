@@ -81,9 +81,13 @@ function orderCard(order) {
       <div class="order-card-head">
         <div>
           <h3>${order.id} · ${escapeHtml(order.customerName)}</h3>
-          <p>${escapeHtml(order.deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio')} · ${escapeHtml(order.address)}</p>
-          <p>Teléfono: ${escapeHtml(order.customerPhone)}</p>
-          <p>${dateTime(order.createdAt)} · ${escapeHtml(order.paymentMethod)}</p>
+          <div class="order-meta-pills">
+            <span>${escapeHtml(order.deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio')}</span>
+            <span>${money(order.total)}</span>
+            <span>${escapeHtml(order.paymentMethod)}</span>
+          </div>
+          <p>${escapeHtml(order.address)}</p>
+          <p>Teléfono: ${escapeHtml(order.customerPhone)} · ${dateTime(order.createdAt)}</p>
         </div>
         <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
       </div>
@@ -102,7 +106,7 @@ function stockRow(product) {
   return `
     <div class="stock-row">
       <div>
-        <div class="cart-title"><span>${product.icon}</span>${escapeHtml(product.name)}</div>
+        <div class="cart-title"><span class="stock-thumb">${product.icon}</span>${escapeHtml(product.name)}</div>
         <div class="cart-meta">${money(product.price)} · ${stockPill(product)}</div>
       </div>
       <div class="stock-actions">

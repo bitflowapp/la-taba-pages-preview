@@ -9,6 +9,13 @@ import {
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { escapeHtml } from './ui.js';
 
+function riderWhatsAppUrl(order) {
+  const digits = String(order.customerPhone || '').replace(/\D/g, '');
+  const intl = digits.startsWith('54') ? digits : `549${digits}`;
+  const text = `Hola ${order.customerName}, soy el repartidor de La Taba con tu pedido ${order.id}. Voy en camino.`;
+  return `https://wa.me/${intl}?text=${encodeURIComponent(text)}`;
+}
+
 export function renderDeliveryPanel() {
   const container = document.querySelector('[data-delivery-panel]');
   if (!container) return;
@@ -19,12 +26,30 @@ export function renderDeliveryPanel() {
     return;
   }
 
-  const { canLeave, canDeliver } = getRiderActionState(order);
+  const { canLeave, canArrive, canDeliver } = getRiderActionState(order);
+  const arrived = order.status === 'arriving';
   const eta = formatDemoEta(order);
   const distance = formatDemoDistance(order);
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
+  const statusHeadline = order.status === 'on_the_way'
+    ? `Llegando en ${eta}`
+    : arrived
+      ? 'Llegando al domicilio'
+      : order.status === 'ready'
+        ? 'Listo para salir del local'
+        : statusLabel(order.status);
 
   container.innerHTML = `
+    <div class="delivery-status-hero">
+      <span class="delivery-rider-icon">🛵</span>
+      <div>
+        <small>Repartidor asignado</small>
+        <strong>${statusHeadline}</strong>
+        <span>${distance} restantes · ${escapeHtml(order.delivery.driverName)}</span>
+      </div>
+      <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
+    </div>
+
     <div class="delivery-layout">
       <div class="card rider-card">
         <div class="order-card-head">
@@ -41,11 +66,17 @@ export function renderDeliveryPanel() {
           <span class="rider-chip"><small>A cobrar</small><strong>${money(order.total)}</strong></span>
         </div>
 
-        <a class="rider-contact" href="tel:${encodeURIComponent(order.customerPhone)}">
+        <div class="rider-meta">
+          <span><small>Entrega</small>${deliveryModeLabel(order.deliveryMode)}</span>
+          <span><small>Pago</small>${escapeHtml(order.paymentMethod)}</span>
+        </div>
+
+        <div class="rider-contact">
           <span class="rider-avatar">${escapeHtml(initials(order.customerName))}</span>
-          <span class="rider-contact-text"><strong>${escapeHtml(order.customerName)}</strong><small>${escapeHtml(order.customerPhone)} · tocar para llamar</small></span>
-          <span class="rider-call">📞</span>
-        </a>
+          <span class="rider-contact-text"><strong>${escapeHtml(order.customerName)}</strong><small>${escapeHtml(order.customerPhone)}</small></span>
+          <a class="rider-icon-btn" href="tel:${encodeURIComponent(order.customerPhone)}" aria-label="Llamar al cliente">📞</a>
+          <a class="rider-icon-btn wa" href="${riderWhatsAppUrl(order)}" target="_blank" rel="noopener noreferrer" aria-label="Escribir por WhatsApp">💬</a>
+        </div>
 
         <div class="rider-block">
           <p class="rider-label">Pedido</p>
@@ -62,8 +93,9 @@ export function renderDeliveryPanel() {
           <p>${escapeHtml(instructions)}</p>
         </div>
 
-        <div class="button-row" style="margin-top:14px">
+        <div class="rider-steps" style="margin-top:14px">
           <button class="primary-button" type="button" data-delivery-leave="${order.id}" ${canLeave ? '' : 'disabled'}>Salí del local</button>
+          <button class="secondary-button" type="button" data-delivery-arrive="${order.id}" ${canArrive ? '' : 'disabled'}>Llegué al domicilio</button>
           <button class="secondary-button" type="button" data-delivery-done="${order.id}" ${canDeliver ? '' : 'disabled'}>Pedido entregado</button>
         </div>
       </div>
@@ -102,6 +134,13 @@ function renderDemoMap(order, distance, eta) {
             <stop offset="0" stop-color="#e0a066"/>
             <stop offset="1" stop-color="#b84f40"/>
           </linearGradient>
+          <filter id="routeGlow">
+            <feGaussianBlur stdDeviation="2.6" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
         </defs>
         <g class="map-streets" stroke="rgba(255,255,255,0.06)" stroke-width="2">
           <line x1="0" y1="48" x2="320" y2="40"/>
@@ -110,9 +149,11 @@ function renderDemoMap(order, distance, eta) {
           <line x1="60" y1="0" x2="48" y2="220"/>
           <line x1="150" y1="0" x2="158" y2="220"/>
           <line x1="244" y1="0" x2="236" y2="220"/>
+          <line x1="20" y1="16" x2="300" y2="196"/>
+          <line x1="28" y1="204" x2="292" y2="28"/>
         </g>
         <path d="${path}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
-        <path class="map-route" d="${path}" fill="none" stroke="url(#riderRoute)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
+        <path class="map-route" d="${path}" fill="none" stroke="url(#riderRoute)" stroke-width="5" stroke-linecap="round" stroke-dasharray="6 7" filter="url(#routeGlow)"/>
       </svg>
       <span class="map-marker store" style="left:14%;top:80%"><span>🏪</span><small>La Taba</small></span>
       <span class="map-marker client" style="left:86%;top:20%"><span>📍</span><small>Cliente</small></span>
@@ -129,6 +170,16 @@ export function handleDeliveryAction(target) {
       handled: true,
       ok: result.ok,
       message: result.ok ? 'Pedido marcado como en camino.' : result.message,
+    };
+  }
+
+  const arriveId = target.closest('[data-delivery-arrive]')?.dataset.deliveryArrive;
+  if (arriveId) {
+    const result = updateOrderStatus(arriveId, 'arriving');
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? 'Llegada al domicilio registrada.' : result.message,
     };
   }
 

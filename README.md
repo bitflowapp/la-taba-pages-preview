@@ -31,8 +31,8 @@ Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de c
 
 ### Como cliente
 1. Abrí la demo o `index.html`.
-2. Entrá en **Inicio**.
-3. Agregá productos, abrí **Mi pedido**, elegí **Envío a domicilio** o **Retiro en local**.
+2. En **Inicio** elegí una categoría o tocá **Ver catálogo**.
+3. En **Catálogo** filtrá por categoría, agregá productos, abrí **Pedido** y elegí **Envío a domicilio** o **Retiro en local**.
 4. Completá nombre, teléfono y dirección y tocá **Enviar pedido por WhatsApp**.
 5. Se abre WhatsApp con el pedido escrito, listo para enviar.
 
@@ -42,11 +42,29 @@ Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de c
 3. Vas a ver: pedidos entrantes, ventas del día, pedidos activos y stock bajo.
 4. Acciones por pedido: **Aceptar pedido → Marcar listo para enviar → Enviar con repartidor → Marcar entregado**, o **Cancelar**.
 
-### Como repartidor
-1. Con el modo negocio activo, tocá **Vista rider** desde el panel o **Repartidor** desde **Local**.
-2. Vas a ver el pedido asignado, con **Salí del local** y **Pedido entregado**.
+### Como repartidor (con simulación en tiempo real demo)
+1. Con el modo negocio activo, marcá un pedido de delivery como **listo** en el panel.
+2. Tocá **Vista rider** desde el panel o **Repartidor** desde **Local**.
+3. Vas a ver el pedido asignado con **Salí del local**, **Llegué al domicilio** y **Pedido entregado**.
+4. En **Simulación de reparto en tiempo real (demo)** podés:
+   - **Iniciar simulación**: el rider sale del local y se mueve solo por el mapa demo, con el progreso y el ETA actualizándose.
+   - **Pausar** y **Reiniciar** la simulación.
+   - **Usar mi ubicación para demo** (GPS opcional): pide permiso solo al tocarlo; si falla, lo avisa y sigue funcionando con la simulación local.
+5. Mientras la simulación avanza, la pantalla de **Seguir** del cliente se actualiza sola (rider en camino → llegando → entregado), sin recargar.
 
 > **PIN demo: 1234** — acceso de demostración para la presentación.
+
+### ⚠️ Importante: la simulación es local
+
+El movimiento del rider, el progreso y el ETA se calculan **en este dispositivo**
+(simulación local con `setInterval`, persistida en `localStorage` para que un
+reload no rompa el estado). El GPS opcional usa `navigator.geolocation` y la
+ubicación **no se envía a ningún servidor** porque todavía no hay backend.
+
+Para **tiempo real real entre el celular del cliente y el del repartidor** (en
+equipos distintos) hace falta un backend realtime: **Supabase Realtime, Firebase
+Realtime Database/Firestore o un WebSocket** propio. Esa es la siguiente fase y
+está documentada abajo; no se implementa en esta rama a propósito.
 
 ## Cambiar el WhatsApp del negocio
 
@@ -56,29 +74,56 @@ Editar `js/config.js` y cambiar `whatsappNumber` (formato internacional, sin `+`
 whatsappNumber: '5492996209136', // 549 + característica + número
 ```
 
+## Catálogo por categorías
+
+El catálogo está organizado como una app de delivery real: el cliente entra al
+**Inicio** (estado del local, buscador, categorías, promos y combos) y, al elegir
+una categoría o tocar **Ver catálogo**, pasa a la pantalla **Catálogo**, donde ve
+los productos filtrados, las ofertas de esa categoría, puede ordenar
+(recomendados / menor precio / más pedidos) y buscar.
+
+Categorías incluidas (editables en `js/data.js`): Promos, Combos, Carnes, Pollos,
+Achuras, Embutidos, Gaseosas, Bebidas, Lácteos (demo), Almacén y Retiro en local.
+
+> **Nota sobre categorías demo y alcohol.** "Bebidas" y "Gaseosas" son categorías
+> seguras. Las categorías marcadas con `demo: true` (por ejemplo **Lácteos**) son
+> configurables: el comercio puede ocultarlas o editarlas desde `js/data.js` y
+> `BUSINESS_CONFIG.demoCategories`. **No se incluyen bebidas alcohólicas.** Una
+> eventual categoría "Alcohol" debería quedar como demo configurable y editable
+> por el comercio, nunca con ventas falsas ni promesas que no se puedan cumplir.
+
 ## Editar productos
 
-Editar `js/data.js`. Cada producto tiene nombre, descripción, categoría, ícono, precio, stock, unidad y si está destacado:
+Editar `js/data.js`. Cada producto tiene id, nombre, descripción, categoría,
+precio (con `oldPrice` opcional para ofertas), stock, unidad y metadatos sobrios
+para el thumbnail (`tone`). No se usan fotos falsas ni emojis gigantes como
+imagen: el placeholder muestra las iniciales del producto sobre un bloque tonal.
 
 ```js
 {
   id: 'p-asado-especial',
   name: 'Asado especial',
-  description: 'Corte seleccionado para parrilla.',
+  description: 'Tira de asado seleccionada para parrilla lenta.',
   categoryId: 'carnes',
-  icon: '🥩',
+  tone: 'beef',          // bloque tonal del thumbnail (ver styles.css)
   price: 9800,
+  oldPrice: 11200,       // opcional: muestra % OFF
   stock: 12,
   available: true,
   featured: true,
+  popular: true,         // opcional: aparece como "Más pedido"
+  badge: 'Más pedido',   // opcional
   unit: 'kg',
+  unitLabel: '1 kg aprox.',
+  marketNote: 'Precio estimado de mercado, editable desde el panel.',
   prepMinutes: 20,
 },
 ```
 
 ## Qué incluye
 
-- Catálogo responsive con categorías y buscador.
+- Home tipo app de delivery: estado del local, buscador, categorías, promos y combos (sin lista infinita).
+- Pantalla de catálogo por categorías reales, con ofertas de categoría, orden (recomendados / menor precio / más pedidos) y búsqueda.
 - Carrito con cantidades, control de stock y totales.
 - Finalizar pedido con envío a domicilio o retiro en local.
 - Pedido mínimo para delivery.
@@ -87,7 +132,7 @@ Editar `js/data.js`. Cada producto tiene nombre, descripción, categoría, ícon
 - Seguimiento del último pedido (vista de demo).
 - Modo negocio protegido con PIN demo `1234`.
 - Administración de pedidos: estados, ventas del día, pedidos activos y stock rápido.
-- Vista de repartidor con pedido asignado y acciones de salida/entrega.
+- Vista de repartidor con pedido asignado, acciones de salida/entrega y **simulación de reparto en tiempo real (demo local)** con progreso, ETA y GPS opcional.
 - PWA instalable con manifest y service worker (se usa como una app).
 - Código modular en `/js`, fácil de escalar sin romper lo existente.
 
@@ -191,8 +236,17 @@ js/
   orders.js
   business.js
   delivery.js
+  simulation.js        # controlador de la simulación de reparto (timers + GPS)
   ui.js
   app.js
+  core/
+    simulation.js      # motor puro de la simulación (testeable, sin timers ni DOM)
+    rider.js
+    order-status.js
+    pricing.js
+    business-metrics.js
+    storage.js
+    validators.js
 ```
 
 ## Cómo se vería como sistema real (próxima fase)
@@ -201,10 +255,11 @@ La base ya está pensada para crecer sin reescribir todo:
 
 1. Fotos reales de los productos del local.
 2. Capa `repositories/` para reemplazar `localStorage` por una base de datos (ej. Supabase).
-3. Login real de negocio y repartidor.
-4. Pagos online reales (Mercado Pago).
-5. Mapa con GPS real para seguir al repartidor.
-6. Notificaciones de pedidos nuevos.
+3. **Reparto en tiempo real real** entre cliente y rider en celulares distintos, con un backend realtime (Supabase Realtime, Firebase o WebSocket). La simulación actual y el GPS opcional ya dejan preparada la forma del dato (`demoRouteProgress`, `simulatedEtaMinutes`, lat/lng).
+4. Login real de negocio y repartidor.
+5. Pagos online reales (Mercado Pago).
+6. Mapa con tiles reales (Google Maps / Leaflet) para seguir al repartidor.
+7. Notificaciones de pedidos nuevos.
 
 ## Qué no tiene todavía (a propósito)
 

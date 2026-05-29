@@ -19,6 +19,7 @@ import {
   renderTracking,
   setCategory,
   setSearchQuery,
+  setSortBy,
   showProductModal,
   showToast,
   updateAddressFieldVisibility,
@@ -28,10 +29,12 @@ import { buildWhatsAppUrl, createOrderFromCheckout } from './orders.js';
 import { getState, subscribe } from './state.js';
 import { handleBusinessAction, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
 import { handleDeliveryAction, renderDeliveryPanel } from './delivery.js';
+import { handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
 
-const VIEWS = ['home', 'cart', 'tracking', 'business', 'rider', 'profile'];
+const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const VIEW_ALIASES = {
-  catalogo: 'home',
+  catalogo: 'catalog',
+  catalog: 'catalog',
   inicio: 'home',
   home: 'home',
   carrito: 'cart',
@@ -59,6 +62,7 @@ function bootstrap() {
     bindEvents();
     subscribe(renderAll);
     renderAll();
+    resumeSimulationIfNeeded();
   } catch (error) {
     // Evita pantalla en blanco si algo falla en el primer render.
     showToast('Hubo un problema al iniciar. Recargá la página.');
@@ -96,7 +100,7 @@ function bindEvents() {
     const categoryId = target.closest('[data-category-id]')?.dataset.categoryId;
     if (categoryId) {
       setCategory(categoryId);
-      if (activeView !== 'home') setActiveView('home');
+      if (activeView !== 'catalog') setActiveView('catalog');
       return;
     }
 
@@ -198,8 +202,17 @@ function bindEvents() {
     }
   });
 
-  $('[data-search-input]')?.addEventListener('input', (event) => {
-    setSearchQuery(event.target.value || '');
+  // Búsqueda: hay un buscador en Home y otro en Catálogo (ambos data-search-input).
+  document.addEventListener('input', (event) => {
+    const input = event.target.closest?.('[data-search-input]');
+    if (!input) return;
+    setSearchQuery(input.value || '');
+    // El buscador del Home lleva al Catálogo para mostrar resultados.
+    if (input.hasAttribute('data-search-jump') && activeView !== 'catalog') {
+      setActiveView('catalog', { scroll: false });
+      // Mantener el foco en el buscador del catálogo tras cambiar de vista.
+      setTimeout(() => $('[data-view="catalog"] [data-search-input]')?.focus(), 0);
+    }
   });
 
   document.addEventListener('change', (event) => {
@@ -209,6 +222,9 @@ function bindEvents() {
       updateAddressFieldVisibility();
       renderOrderSummary();
       renderCartTotals();
+    }
+    if (target.matches('[data-sort-select]')) {
+      setSortBy(target.value || 'recommended');
     }
   });
 
@@ -309,6 +325,7 @@ function setActiveView(view, options = {}) {
     writeViewHash(nextView, options.replace === true);
   }
 
+  handleViewChangeForSimulation(nextView);
   renderAll();
 
   if (changed && options.scroll !== false) {
@@ -320,6 +337,7 @@ function syncViewFromLocation() {
   const nextView = viewFromHash();
   if (nextView === activeView) return;
   activeView = nextView;
+  handleViewChangeForSimulation(nextView);
   renderAll();
   window.scrollTo(0, 0);
 }

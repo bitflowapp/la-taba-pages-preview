@@ -25,8 +25,23 @@ export function renderDeliveryPanel() {
   const eta = order.delivery.estimatedMinutes ? `${order.delivery.estimatedMinutes} min` : 'En destino';
   const distance = estimateDistance(order);
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
+  const statusHeadline = order.status === 'on_the_way'
+    ? (arrived ? 'Llegando al domicilio' : `Llegando en ${eta}`)
+    : order.status === 'ready'
+      ? 'Listo para salir del local'
+      : statusLabel(order.status);
 
   container.innerHTML = `
+    <div class="delivery-status-hero">
+      <span class="delivery-rider-icon">🛵</span>
+      <div>
+        <small>Repartidor asignado</small>
+        <strong>${statusHeadline}</strong>
+        <span>${distance} restantes · ${escapeHtml(order.delivery.driverName)}</span>
+      </div>
+      <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
+    </div>
+
     <div class="delivery-layout">
       <div class="card rider-card">
         <div class="order-card-head">
@@ -124,6 +139,13 @@ function renderDemoMap(order, distance, eta, arrived = false) {
             <stop offset="0" stop-color="#e0a066"/>
             <stop offset="1" stop-color="#b84f40"/>
           </linearGradient>
+          <filter id="routeGlow">
+            <feGaussianBlur stdDeviation="2.6" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
         </defs>
         <g class="map-streets" stroke="rgba(255,255,255,0.06)" stroke-width="2">
           <line x1="0" y1="48" x2="320" y2="40"/>
@@ -132,9 +154,11 @@ function renderDemoMap(order, distance, eta, arrived = false) {
           <line x1="60" y1="0" x2="48" y2="220"/>
           <line x1="150" y1="0" x2="158" y2="220"/>
           <line x1="244" y1="0" x2="236" y2="220"/>
+          <line x1="20" y1="16" x2="300" y2="196"/>
+          <line x1="28" y1="204" x2="292" y2="28"/>
         </g>
         <path d="${path}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
-        <path class="map-route" d="${path}" fill="none" stroke="url(#riderRoute)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
+        <path class="map-route" d="${path}" fill="none" stroke="url(#riderRoute)" stroke-width="5" stroke-linecap="round" stroke-dasharray="6 7" filter="url(#routeGlow)"/>
       </svg>
       <span class="map-marker store" style="left:14%;top:80%"><span>🏪</span><small>La Taba</small></span>
       <span class="map-marker client" style="left:86%;top:20%"><span>📍</span><small>Cliente</small></span>

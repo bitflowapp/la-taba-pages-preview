@@ -34,6 +34,10 @@
             Ver mi pedido <span data-cart-total-small>$0</span>
           </button>
         </div>
+        <button class="mobile-cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
+          <span aria-hidden="true">🛒</span>
+          <strong data-cart-count-mobile>0</strong>
+        </button>
       </header>
 
       <main>
@@ -42,8 +46,8 @@
             <span class="hero-open"><span class="open-dot"></span><span data-open-status>Abierto ahora</span></span>
             <span class="hero-eta">⏱️ 15–35 min</span>
           </div>
-          <h1>La parrilla de La Taba, a un toque.</h1>
-          <p>Elegí tus cortes, combos y bebidas. El pedido llega ordenado por WhatsApp, sin audios ni demoras.</p>
+          <h1>Pedí La Taba como en una app, directo al WhatsApp del local.</h1>
+          <p>Elegí cortes, combos y bebidas. Revisá el total, definí envío o retiro y mandá el pedido listo para preparar.</p>
           <div class="hero-info-chips" aria-label="Información de entrega">
             <span>🛵 Envío <strong data-delivery-fee>$0</strong></span>
             <span>🏪 Retiro sin cargo</span>
@@ -54,7 +58,7 @@
             <span>Buscar asado, milanesas, combos…</span>
           </a>
           <div class="hero-actions">
-            <a class="primary-button" href="#catalogo">Ver el menú</a>
+            <a class="primary-button" href="#catalogo">Ver ofertas y combos</a>
             <a class="secondary-button" href="#demo">Probar la administración</a>
           </div>
         </section>
@@ -150,6 +154,13 @@
               </label>
 
               <div class="summary-box" data-order-summary></div>
+              <div class="checkout-trust" aria-label="Confirmación segura">
+                <span>🛡️</span>
+                <div>
+                  <strong>Pedido ordenado y sin compromiso</strong>
+                  <small>Se abre WhatsApp con el detalle. El cliente confirma enviando el mensaje.</small>
+                </div>
+              </div>
               <div class="warning-box hidden" data-checkout-warning></div>
 
               <div class="button-row">

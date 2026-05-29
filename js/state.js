@@ -20,8 +20,11 @@ import {
   safeStorageSet,
 } from './core/storage.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
+import { clampProgress } from './core/simulation.js';
 
 export const STATE_SCHEMA_VERSION = 1;
+
+export const SORT_OPTIONS = Object.freeze(['recommended', 'price_asc', 'popular']);
 
 const listeners = new Set();
 
@@ -33,12 +36,14 @@ const defaultState = () => {
     schemaVersion: STATE_SCHEMA_VERSION,
     activeCategory: 'all',
     searchQuery: '',
+    sortBy: 'recommended',
     cart: [],
     orders: baseOrders,
     products: baseProducts,
     lastOrderId: baseOrders[0]?.id || null,
     adminUnlocked: readAdminFlag(),
     lastCheckoutDraft: null,
+    simulation: null,
   };
 };
 
@@ -75,12 +80,46 @@ export function sanitizeState(nextState, baseState = defaultState()) {
     schemaVersion: STATE_SCHEMA_VERSION,
     activeCategory: normalizeCategoryId(source.activeCategory, baseState.activeCategory || 'all'),
     searchQuery: sanitizeText(source.searchQuery, { fallback: '', maxLength: 80 }),
+    sortBy: normalizeSortBy(source.sortBy),
     cart: sanitizeCart(source.cart, productMap),
     orders,
     products: mergedProducts,
     lastOrderId,
     adminUnlocked: Boolean(source.adminUnlocked),
     lastCheckoutDraft: sanitizeCheckoutDraft(source.lastCheckoutDraft),
+    simulation: sanitizeSimulation(source.simulation, orders),
+  };
+}
+
+function normalizeSortBy(value) {
+  const candidate = sanitizeText(value, { fallback: 'recommended', maxLength: 24 });
+  return SORT_OPTIONS.includes(candidate) ? candidate : 'recommended';
+}
+
+// La simulación solo se conserva si apunta a un pedido de delivery todavía activo.
+function sanitizeSimulation(raw, orders) {
+  if (!isPlainObject(raw)) return null;
+  const orderId = sanitizeText(raw.orderId, { maxLength: 40 });
+  if (!orderId) return null;
+  const order = Array.isArray(orders) ? orders.find((candidate) => candidate.id === orderId) : null;
+  if (!order || order.deliveryMode !== 'delivery') return null;
+  if (order.status === 'delivered' || order.status === 'cancelled') return null;
+
+  const baseEta = Math.max(0, Math.floor(Number(raw.baseEta) || 0));
+  const progress = clampProgress(raw.progress);
+
+  return {
+    orderId,
+    running: Boolean(raw.running),
+    mode: raw.mode === 'gps' ? 'gps' : 'demo',
+    progress,
+    baseEta,
+    etaMinutes: Math.max(0, Math.floor(Number(raw.etaMinutes) || 0)),
+    startedAt: normalizeIsoDate(raw.startedAt),
+    ...(raw.owner ? { owner: sanitizeText(raw.owner, { maxLength: 80 }) } : {}),
+    ...(Number.isFinite(Number(raw.lat)) ? { lat: Number(raw.lat) } : {}),
+    ...(Number.isFinite(Number(raw.lng)) ? { lng: Number(raw.lng) } : {}),
+    ...(raw.gpsError ? { gpsError: sanitizeText(raw.gpsError, { maxLength: 140 }) } : {}),
   };
 }
 

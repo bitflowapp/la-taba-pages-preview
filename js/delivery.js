@@ -1,11 +1,24 @@
-import { getActiveDeliveryOrder, updateOrderStatus } from './orders.js';
+import { advanceOrderToReady, getRiderQueueOrder, updateOrderStatus } from './orders.js';
 import {
   formatDemoDistance,
   formatDemoEta,
   getRiderActionState,
   getRiderStateLabel,
   getRouteProgress,
+  isAwaitingPreparation,
 } from './core/rider.js';
+import { simulationProgressPercent } from './core/simulation.js';
+import {
+  disableGpsTracking,
+  enableGpsTracking,
+  getSimulation,
+  isGpsActive,
+  pauseSimulation,
+  resetSimulation,
+  startSimulation,
+  syncSimulationOnStatus,
+} from './simulation.js';
+import { getRealtimeStatus } from './realtime.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { escapeHtml } from './ui.js';
 
@@ -19,18 +32,29 @@ const riderSteps = [
 export function renderDeliveryPanel() {
   const container = document.querySelector('[data-delivery-panel]');
   if (!container) return;
-  const order = getActiveDeliveryOrder();
+  const order = getRiderQueueOrder();
 
   if (!order) {
-    container.innerHTML = '<div class="empty-state">No hay pedidos asignados al repartidor. Los pedidos de retiro en local no aparecen en esta vista.</div>';
+    container.innerHTML = `
+      <div class="empty-state">
+        <strong>No hay pedidos para repartir.</strong><br />
+        Cuando un cliente confirme un pedido con envío, aparece acá con la dirección, el total a cobrar y los botones de reparto.
+        <div class="empty-actions">
+          <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
+        </div>
+      </div>`;
     return;
   }
 
+  const awaiting = isAwaitingPreparation(order);
   const { canLeave, canArrive, canDeliver } = getRiderActionState(order);
-  const eta = formatDemoEta(order);
+  const sim = orderSimulation(order);
+  const eta = sim ? `${sim.etaMinutes} min` : formatDemoEta(order);
   const distance = formatDemoDistance(order);
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
-  const headline = order.status === 'arriving'
+  const headline = awaiting
+    ? 'Esperando preparación'
+    : order.status === 'arriving'
     ? 'Llegando al domicilio'
     : order.status === 'on_the_way'
       ? (order.delivery.estimatedMinutes ? `Llegando en ${order.delivery.estimatedMinutes} min` : 'En camino al cliente')
@@ -55,7 +79,7 @@ export function renderDeliveryPanel() {
           <div class="track-head-text">
             <small>${order.id} · ${escapeHtml(deliveryModeLabel(order.deliveryMode))}</small>
             <strong>${headline}</strong>
-            <span>${distance} · ${eta} estimado</span>
+            <span>${awaiting ? 'El negocio está preparando el pedido.' : `${distance} · ${eta} estimado`}</span>
           </div>
           <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
         </div>
@@ -100,11 +124,20 @@ export function renderDeliveryPanel() {
             <p>${escapeHtml(instructions)}</p>
           </div>
 
+          ${awaiting ? `
+          <div class="rider-waiting">
+            <p>El pedido todavía está en preparación en el local.</p>
+            <button class="primary-button" type="button" data-rider-ready="${order.id}">Marcar listo para reparto (demo)</button>
+          </div>` : ''}
+
           <div class="button-row rider-actions">
             <button class="primary-button" type="button" data-delivery-leave="${order.id}" ${canLeave ? '' : 'disabled'}>Salí del local</button>
             <button class="secondary-button" type="button" data-delivery-arrive="${order.id}" ${canArrive ? '' : 'disabled'}>Llegué al domicilio</button>
             <button class="secondary-button" type="button" data-delivery-done="${order.id}" ${canDeliver ? '' : 'disabled'}>Pedido entregado</button>
           </div>
+
+          ${renderSimControls(order, sim)}
+          ${renderAdvancedDemo()}
         </div>
       </div>
 
@@ -119,7 +152,28 @@ function riderStepIndex(status) {
   if (status === 'delivered') return 3;
   if (status === 'arriving') return 2;
   if (status === 'on_the_way') return 1;
-  return 0;
+  if (status === 'ready') return 0;
+  return -1; // received / preparing: todavía no arrancó el reparto
+}
+
+// Bloque "Demo avanzado": esconde lo técnico (relay/sala/equipo) para que la
+// vista del rider se vea operativa y no asuste a un usuario normal.
+function renderAdvancedDemo() {
+  const status = getRealtimeStatus();
+  const connection = status.relayEnabled
+    ? (status.relayConnected ? `En vivo entre equipos · sala ${escapeHtml(status.room)}` : `Relay configurado (reconectando) · sala ${escapeHtml(status.room)}`)
+    : 'Solo este equipo (sin relay)';
+  return `
+    <details class="demo-advanced">
+      <summary>Demo avanzado (técnico)</summary>
+      <div class="demo-advanced-body">
+        <div class="summary-row"><span>Conexión</span><strong>${connection}</strong></div>
+        <div class="summary-row"><span>Sala realtime</span><strong>${escapeHtml(status.room)}</strong></div>
+        <div class="summary-row"><span>ID de equipo</span><strong>${escapeHtml(String(status.deviceId).slice(0, 8))}</strong></div>
+        <p class="form-hint">Demo local por LAN: nada se envía a internet. El tiempo real entre celulares usa el relay propio (ver README).</p>
+      </div>
+    </details>
+  `;
 }
 
 function initials(name) {
@@ -136,8 +190,52 @@ function onlyDigits(value) {
   return digits.startsWith('54') ? digits : `549${digits}`;
 }
 
+function orderSimulation(order) {
+  const sim = getSimulation();
+  return sim && sim.orderId === order.id ? sim : null;
+}
+
+function renderSimControls(order, sim) {
+  const percent = sim ? simulationProgressPercent(sim) : 0;
+  const running = Boolean(sim?.running);
+  const canStart = !running && (order.status === 'ready' || order.status === 'on_the_way');
+  const canPause = running;
+  const canReset = Boolean(sim) && order.status !== 'delivered';
+  const gpsOn = isGpsActive();
+  const gpsCoords = sim && sim.mode === 'gps' && Number.isFinite(sim.lat)
+    ? `${sim.lat.toFixed(4)}, ${sim.lng.toFixed(4)}`
+    : '';
+
+  return `
+    <div class="sim-panel">
+      <div class="sim-head">
+        <span class="rider-label">Simulación de reparto en tiempo real (demo)</span>
+        <span class="sim-state ${running ? 'live' : ''}">${running ? 'En movimiento' : 'En pausa'}</span>
+      </div>
+      <div class="sim-progress">
+        <div class="sim-bar"><span style="width:${percent}%"></span></div>
+        <strong data-sim-progress>${percent}%</strong>
+      </div>
+      <div class="button-row sim-actions">
+        <button class="primary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar simulación</button>
+        <button class="secondary-button compact" type="button" data-sim-pause ${canPause ? '' : 'disabled'}>Pausar</button>
+        <button class="ghost-button compact" type="button" data-sim-reset ${canReset ? '' : 'disabled'}>Reiniciar</button>
+      </div>
+      <div class="sim-gps">
+        ${gpsOn
+          ? '<button class="ghost-button compact" type="button" data-sim-gps-off>Dejar de usar mi ubicación</button>'
+          : '<button class="ghost-button compact" type="button" data-sim-gps>Usar mi ubicación para demo</button>'}
+        ${gpsCoords ? `<span class="sim-gps-coords">Ubicación: ${escapeHtml(gpsCoords)} · solo en este dispositivo</span>` : ''}
+        ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
+      </div>
+      <p class="form-hint sim-note">Simulación local en este dispositivo. El tiempo real entre cliente y rider en celulares distintos necesita backend realtime (ver README).</p>
+    </div>
+  `;
+}
+
 function renderDemoMap(order, distance, eta) {
-  const progress = getRouteProgress(order);
+  const sim = orderSimulation(order);
+  const progress = sim ? sim.progress : getRouteProgress(order);
   const path = 'M 44 176 C 96 150, 96 96, 150 92 S 240 70, 276 44';
   const stateLabel = getRiderStateLabel(order);
 
@@ -150,8 +248,8 @@ function renderDemoMap(order, distance, eta) {
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="riderRoute" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#e0a066"/>
-            <stop offset="1" stop-color="#b84f40"/>
+            <stop offset="0" stop-color="#d6b08a"/>
+            <stop offset="1" stop-color="#c59a6c"/>
           </linearGradient>
         </defs>
         <g class="map-streets" stroke="rgba(255,255,255,0.06)" stroke-width="2">
@@ -173,9 +271,20 @@ function renderDemoMap(order, distance, eta) {
 }
 
 export function handleDeliveryAction(target) {
+  const readyId = target.closest('[data-rider-ready]')?.dataset.riderReady;
+  if (readyId) {
+    const result = advanceOrderToReady(readyId);
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? 'Pedido listo para reparto.' : result.message,
+    };
+  }
+
   const leaveId = target.closest('[data-delivery-leave]')?.dataset.deliveryLeave;
   if (leaveId) {
     const result = updateOrderStatus(leaveId, 'on_the_way');
+    if (result.ok) syncSimulationOnStatus(leaveId, 'on_the_way');
     return {
       handled: true,
       ok: result.ok,
@@ -186,6 +295,7 @@ export function handleDeliveryAction(target) {
   const arriveId = target.closest('[data-delivery-arrive]')?.dataset.deliveryArrive;
   if (arriveId) {
     const result = updateOrderStatus(arriveId, 'arriving');
+    if (result.ok) syncSimulationOnStatus(arriveId, 'arriving');
     return {
       handled: true,
       ok: result.ok,
@@ -196,11 +306,37 @@ export function handleDeliveryAction(target) {
   const doneId = target.closest('[data-delivery-done]')?.dataset.deliveryDone;
   if (doneId) {
     const result = updateOrderStatus(doneId, 'delivered');
+    if (result.ok) syncSimulationOnStatus(doneId, 'delivered');
     return {
       handled: true,
       ok: result.ok,
       message: result.ok ? 'Pedido marcado como entregado.' : result.message,
     };
+  }
+
+  if (target.closest('[data-sim-start]')) {
+    const result = startSimulation();
+    return { handled: true, ok: result.ok, message: result.message };
+  }
+
+  if (target.closest('[data-sim-pause]')) {
+    const result = pauseSimulation();
+    return { handled: true, ok: result.ok, message: result.message };
+  }
+
+  if (target.closest('[data-sim-reset]')) {
+    const result = resetSimulation();
+    return { handled: true, ok: result.ok, message: result.message };
+  }
+
+  if (target.closest('[data-sim-gps]')) {
+    const result = enableGpsTracking();
+    return { handled: true, ok: result.ok, message: result.message };
+  }
+
+  if (target.closest('[data-sim-gps-off]')) {
+    const result = disableGpsTracking();
+    return { handled: true, ok: result.ok, message: result.message };
   }
 
   return { handled: false };

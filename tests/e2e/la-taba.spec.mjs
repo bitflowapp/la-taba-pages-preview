@@ -5,19 +5,38 @@ test.beforeEach(async ({ page }) => {
   await installBrowserStubs(page);
 });
 
-test('carga inicial y catálogo', async ({ page }) => {
+test('carga inicial, home sin lista infinita y catálogo por categorías', async ({ page }) => {
   const guards = installPageGuards(page);
 
   await page.goto('/');
-  await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
-  await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
   await expect(page.locator('[data-cart-count]')).toHaveText('0');
   await expect(page.locator('[data-cart-total-small]')).toContainText('$');
   await expect(page.locator('[data-view="home"]')).toBeVisible();
   await expect(page.locator('[data-view="cart"]')).toBeHidden();
-  await expect(page.locator('[data-view]')).toHaveCount(6);
+  await expect(page.locator('[data-view]')).toHaveCount(7);
 
-  await page.locator('[data-category-id="carnes"]').click();
+  // El home no muestra el grid de productos completo (sin lista infinita).
+  await expect(page.locator('[data-view="home"] [data-product-grid]')).toHaveCount(0);
+  await expect(page.locator('[data-view="home"] .category-strip')).toBeVisible();
+
+  // Entrar al catálogo desde el CTA del home.
+  await page.locator('[data-view="home"] [data-nav-view="catalog"]').first().click();
+  await expect(page.locator('[data-view="catalog"]')).toBeVisible();
+  await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
+  await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
+
+  // Seleccionar categoría Carnes.
+  await page.locator('[data-view="catalog"] [data-category-id="carnes"]').click();
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Carnes');
+  await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
+
+  // Seleccionar categoría Bebidas.
+  await page.locator('[data-view="catalog"] [data-category-id="bebidas"]').click();
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Bebidas');
+  await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
+
+  // Ordenar por menor precio.
+  await page.locator('[data-sort-select]').selectOption('price_asc');
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
 
   await openFirstProductModal(page);
@@ -29,16 +48,32 @@ test('carga inicial y catálogo', async ({ page }) => {
   await guards.assertClean();
 });
 
+test('agregar producto desde una categoría del catálogo', async ({ page }) => {
+  const guards = installPageGuards(page);
+
+  await page.goto('/');
+  await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-view="catalog"] [data-category-id="carnes"]').click();
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Carnes');
+
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await waitForToast(page, /agregado al pedido/);
+  await expect(page.locator('[data-cart-count]')).not.toHaveText('0');
+
+  await guards.assertClean();
+});
+
 test('flujo cliente con delivery', async ({ page }) => {
   const guards = installPageGuards(page);
 
   await page.goto('/');
-  await page.locator('[data-product-grid] [data-add-product]').first().click();
+  await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await page.getByLabel('Envío a domicilio').check();
 
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Ingresá el nombre del cliente.');
 
   await fillCheckout(page, {
@@ -49,7 +84,7 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Ingresá el nombre del cliente.');
 
   await fillCheckout(page, {
@@ -60,7 +95,7 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Ingresá un teléfono de contacto.');
 
   await fillCheckout(page, {
@@ -71,7 +106,7 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Ingresá la dirección para el envío.');
 
   await fillCheckout(page, {
@@ -89,17 +124,22 @@ test('flujo cliente con delivery', async ({ page }) => {
   expect(clipboardText).toContain('Envío a domicilio');
   expect(clipboardText).toContain('Total:');
 
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
-  await waitForToast(page, /LT-\d{4} creado\. Abriendo WhatsApp\.\.\./);
+  // CTA principal: confirma el pedido interno y NO abre WhatsApp automáticamente.
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
+  await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
+  const autoOpened = await page.evaluate(() => window.__openedUrls.length);
+  expect(autoOpened).toBe(0);
 
+  // WhatsApp queda como acción secundaria: copia del pedido ya creado.
+  await page.getByRole('button', { name: /Enviar copia por WhatsApp/i }).click();
+  await waitForToast(page, 'Abriendo WhatsApp con la copia del pedido.');
   const openedUrl = await page.evaluate(() => window.__openedUrls.at(-1));
   expect(openedUrl).toContain('wa.me/');
   expect(openedUrl).toContain(encodeURIComponent('Walter QA'));
   expect(openedUrl).toContain(encodeURIComponent('Roca 123'));
   expect(openedUrl).toContain(encodeURIComponent('Subtotal'));
-
-  await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   await guards.assertClean();
 });
@@ -108,7 +148,8 @@ test('flujo retiro en local', async ({ page }) => {
   const guards = installPageGuards(page);
 
   await page.goto('/');
-  await page.locator('[data-product-grid] [data-add-product]').first().click();
+  await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await page.getByLabel('Retiro en local').check();
@@ -126,15 +167,19 @@ test('flujo retiro en local', async ({ page }) => {
     payment: 'cash',
     deliveryMode: 'pickup',
   });
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
-  await waitForToast(page, /LT-\d{4} creado\. Abriendo WhatsApp\.\.\./);
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
+  await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
+  const autoOpened = await page.evaluate(() => window.__openedUrls.length);
+  expect(autoOpened).toBe(0);
 
+  // Copia opcional por WhatsApp del pedido de retiro.
+  await page.getByRole('button', { name: /Enviar copia por WhatsApp/i }).click();
   const openedUrl = await page.evaluate(() => window.__openedUrls.at(-1));
   expect(openedUrl).toContain(encodeURIComponent('Retiro en local'));
   expect(openedUrl).not.toContain(encodeURIComponent('Roca 123'));
   expect(openedUrl).toContain(encodeURIComponent('Total:'));
-  await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   await guards.assertClean();
 });
@@ -201,7 +246,7 @@ test('modo negocio y delivery', async ({ page }) => {
     await expect(page.locator('[data-delivery-panel]')).toContainText('Llegando');
     await page.locator('[data-delivery-done]').first().click();
     await waitForToast(page, 'Pedido marcado como entregado.');
-    await expect(page.locator('[data-delivery-panel]')).toContainText('Los pedidos de retiro en local no aparecen en esta vista.');
+    await expect(page.locator('[data-delivery-panel]')).toContainText('No hay pedidos para repartir.');
   }
 
   await guards.assertClean();
@@ -259,10 +304,13 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
       await expect(page.locator('.desktop-nav')).toBeVisible();
       await expect(page.locator('.mobile-nav')).toBeHidden();
     }
+    const catalogNav = viewport.width <= 760 ? '.mobile-nav [data-nav-view="catalog"]' : '.desktop-nav [data-nav-view="catalog"]';
+    await page.locator(catalogNav).click();
+    await expect(page.locator('[data-view="catalog"]')).toBeVisible();
     await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
     await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
 
-    await page.locator('[data-product-grid] [data-add-product]').first().click();
+    await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
     if (viewport.width <= 760) {
       await page.locator('.mobile-nav [data-nav-view="cart"]').click();
     } else {
@@ -273,11 +321,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
     expect(overflow).toBeTruthy();
 
-    if (viewport.width <= 760) {
-      await page.locator('.mobile-nav [data-nav-view="home"]').click();
-    } else {
-      await page.locator('.desktop-nav [data-nav-view="home"]').click();
-    }
+    await page.locator(catalogNav).click();
     await page.locator('[data-product-grid] [data-product-detail]').first().click();
     await expect(page.locator('[data-product-modal]')).toBeVisible();
     await page.locator('[data-close-modal]').click();

@@ -14,6 +14,10 @@ export const BUSINESS_CONFIG = Object.freeze({
   adminPin: '1234',
   currency: 'ARS',
   orderPrefix: 'LT',
+  // Categorías demo que el comercio puede activar/desactivar y editar.
+  // "alcohol" queda como ejemplo configurable y NO se vende por defecto
+  // (sin ventas reales): para habilitarla habría que cargar productos propios.
+  demoCategories: ['lacteos'],
 });
 
 export const STORAGE_KEYS = Object.freeze({

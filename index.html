@@ -23,6 +23,7 @@
 
         <nav class="desktop-nav" aria-label="Navegación principal">
           <button type="button" data-nav-view="home">Inicio</button>
+          <button type="button" data-nav-view="catalog">Catálogo</button>
           <button type="button" data-nav-view="cart">Pedido <span class="mini-badge" data-cart-count>0</span></button>
           <button type="button" data-nav-view="tracking">Seguir</button>
           <button type="button" data-nav-view="profile">Local</button>
@@ -41,7 +42,7 @@
           <div class="home-title">
             <div>
               <p class="eyebrow">Pedido online</p>
-              <h1>Elegí cortes, combos y extras</h1>
+              <h1>Pedí carne y parrilla en La Taba</h1>
             </div>
             <button class="secondary-button compact" type="button" data-nav-view="profile">Ver local</button>
           </div>
@@ -56,18 +57,24 @@
 
           <div class="search-box">
             <span aria-hidden="true">⌕</span>
-            <input data-search-input type="search" placeholder="Buscar productos, combos…" aria-label="Buscar productos" />
+            <input data-search-input data-search-jump type="search" placeholder="Buscar en el catálogo…" aria-label="Buscar productos" />
           </div>
 
-          <div class="category-strip" data-category-strip></div>
+          <div class="rail-block">
+            <div class="rail-head">
+              <h2>Categorías</h2>
+              <button class="rail-link" type="button" data-nav-view="catalog">Ver catálogo ›</button>
+            </div>
+            <div class="category-strip" data-category-strip></div>
+          </div>
 
-          <button class="promo-banner" type="button" data-category-id="combos" data-promo-banner>
+          <button class="promo-banner" type="button" data-category-id="promos" data-promo-banner>
             <div class="promo-banner-copy">
               <span class="promo-kicker">Listo para parrilla</span>
-              <strong>Combos armados para hoy</strong>
-              <span class="promo-sub">Asado, chorizos y bebidas en un pedido rápido.</span>
+              <strong>Promos y combos del día</strong>
+              <span class="promo-sub">Cortes, achuras y bebidas armados para pedir rápido.</span>
             </div>
-            <span class="promo-cta">Ver combos</span>
+            <span class="promo-cta">Ver promos</span>
           </button>
 
           <div class="rail-block">
@@ -86,10 +93,51 @@
             <div class="combos-rail" data-combos-rail></div>
           </div>
 
-          <div class="grid-block">
-            <div class="rail-head">
-              <h2>Nuestros productos</h2>
+          <button class="catalog-cta" type="button" data-nav-view="catalog">
+            <span>
+              <strong>Ver catálogo completo</strong>
+              <small>Elegí por categoría: carnes, pollos, achuras, embutidos y más.</small>
+            </span>
+            <span class="catalog-cta-go" aria-hidden="true">›</span>
+          </button>
+        </section>
+
+        <section class="section app-view" data-view="catalog" hidden aria-hidden="true">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Catálogo</p>
+              <h2 data-catalog-title>Todos</h2>
             </div>
+            <button class="secondary-button compact" type="button" data-nav-view="home">Inicio</button>
+          </div>
+
+          <div class="search-box">
+            <span aria-hidden="true">⌕</span>
+            <input data-search-input type="search" placeholder="Buscar en el catálogo…" aria-label="Buscar en el catálogo" />
+          </div>
+
+          <div class="category-strip" data-category-strip></div>
+
+          <div class="catalog-toolbar">
+            <span class="catalog-count" data-catalog-count>0 productos</span>
+            <label class="sort-field">
+              <span>Ordenar</span>
+              <select data-sort-select aria-label="Ordenar productos">
+                <option value="recommended">Recomendados</option>
+                <option value="price_asc">Menor precio</option>
+                <option value="popular">Más pedidos</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="rail-block" data-catalog-offers-block hidden>
+            <div class="rail-head">
+              <h2>Ofertas de la categoría</h2>
+            </div>
+            <div class="offers-rail" data-catalog-offers></div>
+          </div>
+
+          <div class="grid-block">
             <div class="product-grid" data-product-grid></div>
           </div>
         </section>
@@ -156,16 +204,19 @@
               <div class="warning-box hidden" data-checkout-warning></div>
 
               <div class="trust-row" aria-hidden="false">
-                <span class="trust-text"><strong>Compra 100% segura</strong><small>Tus datos viajan directo a La Taba por WhatsApp.</small></span>
+                <span class="trust-text"><strong>Pedido propio de La Taba</strong><small>Lo confirmás acá y lo seguís en vivo desde la app.</small></span>
               </div>
 
               <div class="button-row">
-                <button class="primary-button whatsapp-button" type="submit">
-                  Enviar pedido por WhatsApp
+                <button class="primary-button confirm-button" type="submit">
+                  Confirmar pedido
                 </button>
               </div>
-              <button class="ghost-button copy-button" type="button" data-copy-order>Copiar pedido</button>
-              <p class="form-hint">Al confirmar se abre WhatsApp con el pedido escrito. Solo tenés que enviarlo al negocio.</p>
+              <div class="button-row secondary-actions">
+                <button class="ghost-button" type="button" data-whatsapp-copy>Enviar copia por WhatsApp</button>
+                <button class="ghost-button" type="button" data-copy-order>Copiar pedido</button>
+              </div>
+              <p class="form-hint">Al confirmar se crea el pedido y lo seguís en tiempo real. Enviar la copia por WhatsApp es opcional.</p>
             </form>
           </div>
         </section>
@@ -200,18 +251,18 @@
               </ul>
             </div>
             <div class="card">
-              <h3>Operación del local</h3>
-              <p>Pedidos por WhatsApp con productos, cantidades, entrega, pago y notas ordenadas para preparar sin recargar el mostrador.</p>
+              <h3>Cómo trabajamos</h3>
+              <p>Hacé tu pedido desde acá. Lo recibimos al instante, lo preparamos y te lo llevamos o lo retirás por el local. Podés seguir el reparto en vivo desde la app.</p>
               <ol class="how-strip">
-                <li><strong>1</strong> El cliente arma el pedido</li>
-                <li><strong>2</strong> Llega ordenado por WhatsApp</li>
-                <li><strong>3</strong> La Taba prepara y entrega</li>
+                <li><strong>1</strong> Armás y confirmás el pedido</li>
+                <li><strong>2</strong> Lo preparamos en el local</li>
+                <li><strong>3</strong> Lo seguís en vivo hasta tu puerta</li>
               </ol>
               <div class="button-row">
                 <button class="secondary-button" type="button" data-open-admin-view="business">Panel negocio</button>
                 <button class="ghost-button" type="button" data-open-admin-view="rider">Repartidor</button>
               </div>
-              <p class="form-hint">PIN: <strong>1234</strong></p>
+              <p class="form-hint">Acceso del comercio · PIN demo <strong>1234</strong></p>
             </div>
           </div>
         </section>
@@ -275,6 +326,7 @@
 
       <nav class="mobile-nav" aria-label="Navegación móvil">
         <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>
+        <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
         <button type="button" data-nav-view="cart"><span class="mn-ico icon-order" aria-hidden="true"></span><span class="mn-label">Pedido</span><span class="mn-badge" data-cart-count-mobile>0</span></button>
         <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguir</span></button>
         <button type="button" data-nav-view="profile"><span class="mn-ico icon-store" aria-hidden="true"></span><span class="mn-label">Local</span></button>

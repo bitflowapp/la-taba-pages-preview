@@ -19,19 +19,23 @@ import {
   renderTracking,
   setCategory,
   setSearchQuery,
+  setSortBy,
   showProductModal,
   showToast,
   updateAddressFieldVisibility,
   $,
 } from './ui.js';
-import { buildWhatsAppUrl, createOrderFromCheckout } from './orders.js';
+import { buildWhatsAppUrl, buildWhatsAppUrlFromDraft, createOrderFromCheckout, getLastOrder } from './orders.js';
 import { getState, subscribe } from './state.js';
 import { handleBusinessAction, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
 import { handleDeliveryAction, renderDeliveryPanel } from './delivery.js';
+import { handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
+import { initRealtime } from './realtime.js';
 
-const VIEWS = ['home', 'cart', 'tracking', 'business', 'rider', 'profile'];
+const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const VIEW_ALIASES = {
-  catalogo: 'home',
+  catalogo: 'catalog',
+  catalog: 'catalog',
   inicio: 'home',
   home: 'home',
   carrito: 'cart',
@@ -58,7 +62,9 @@ function bootstrap() {
     applyBusinessConfig();
     bindEvents();
     subscribe(renderAll);
+    initRealtime();
     renderAll();
+    resumeSimulationIfNeeded();
   } catch (error) {
     // Evita pantalla en blanco si algo falla en el primer render.
     showToast('Hubo un problema al iniciar. Recargá la página.');
@@ -96,7 +102,7 @@ function bindEvents() {
     const categoryId = target.closest('[data-category-id]')?.dataset.categoryId;
     if (categoryId) {
       setCategory(categoryId);
-      if (activeView !== 'home') setActiveView('home');
+      if (activeView !== 'catalog') setActiveView('catalog');
       return;
     }
 
@@ -198,8 +204,17 @@ function bindEvents() {
     }
   });
 
-  $('[data-search-input]')?.addEventListener('input', (event) => {
-    setSearchQuery(event.target.value || '');
+  // Búsqueda: hay un buscador en Home y otro en Catálogo (ambos data-search-input).
+  document.addEventListener('input', (event) => {
+    const input = event.target.closest?.('[data-search-input]');
+    if (!input) return;
+    setSearchQuery(input.value || '');
+    // El buscador del Home lleva al Catálogo para mostrar resultados.
+    if (input.hasAttribute('data-search-jump') && activeView !== 'catalog') {
+      setActiveView('catalog', { scroll: false });
+      // Mantener el foco en el buscador del catálogo tras cambiar de vista.
+      setTimeout(() => $('[data-view="catalog"] [data-search-input]')?.focus(), 0);
+    }
   });
 
   document.addEventListener('change', (event) => {
@@ -210,21 +225,50 @@ function bindEvents() {
       renderOrderSummary();
       renderCartTotals();
     }
+    if (target.matches('[data-sort-select]')) {
+      setSortBy(target.value || 'recommended');
+    }
   });
 
+  // CTA principal: confirma el pedido interno y lleva a Tracking. NO abre WhatsApp.
+  let confirming = false;
   $('[data-checkout-form]')?.addEventListener('submit', (event) => {
     event.preventDefault();
-    const values = getCheckoutFormValues();
-    const result = createOrderFromCheckout(values);
+    if (confirming) return; // evita doble confirmación / doble pedido
+    confirming = true;
+    try {
+      const values = getCheckoutFormValues();
+      const result = createOrderFromCheckout(values);
 
-    if (!result.ok) {
-      showToast(result.message);
+      if (!result.ok) {
+        showToast(result.message);
+        return;
+      }
+
+      showToast('Pedido creado. Ya podés seguirlo en tiempo real.');
+      setActiveView('tracking');
+    } finally {
+      confirming = false;
+    }
+  });
+
+  // Acción secundaria: enviar una copia por WhatsApp (no crea otro pedido).
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest('[data-whatsapp-copy]')) {
+      const values = getCheckoutFormValues();
+      window.open(buildWhatsAppUrlFromDraft(values), '_blank', 'noopener,noreferrer');
+      showToast('Abriendo WhatsApp con la copia del pedido.');
       return;
     }
-
-    showToast(`${result.order.id} creado. Abriendo WhatsApp...`);
-    setActiveView('tracking');
-    window.open(buildWhatsAppUrl(result.order), '_blank', 'noopener,noreferrer');
+    if (target.closest('[data-whatsapp-order]')) {
+      const order = getLastOrder();
+      if (order) {
+        window.open(buildWhatsAppUrl(order), '_blank', 'noopener,noreferrer');
+        showToast('Abriendo WhatsApp con la copia del pedido.');
+      }
+    }
   });
 
   $('[data-copy-order]')?.addEventListener('click', async () => {
@@ -309,6 +353,7 @@ function setActiveView(view, options = {}) {
     writeViewHash(nextView, options.replace === true);
   }
 
+  handleViewChangeForSimulation(nextView);
   renderAll();
 
   if (changed && options.scroll !== false) {
@@ -320,6 +365,7 @@ function syncViewFromLocation() {
   const nextView = viewFromHash();
   if (nextView === activeView) return;
   activeView = nextView;
+  handleViewChangeForSimulation(nextView);
   renderAll();
   window.scrollTo(0, 0);
 }

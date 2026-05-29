@@ -15,6 +15,7 @@ import {
   validateCartForCheckout,
 } from './cart.js';
 import { buildDraftMessageFromCart, getLastOrder } from './orders.js';
+import { getRealtimeStatus } from './realtime.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -73,6 +74,8 @@ export function renderCatalog() {
   renderOffers();
   renderCombos();
   renderCategories();
+  renderCatalogOffers();
+  renderCatalogMeta();
   renderProducts();
 }
 
@@ -183,15 +186,88 @@ function railCard(product) {
 }
 
 function renderCategories() {
-  const container = $('[data-category-strip]');
-  if (!container) return;
+  const strips = $$('[data-category-strip]');
+  if (!strips.length) return;
   const { activeCategory } = getState();
 
-  container.innerHTML = categories.map((category) => `
+  const markup = categories.map((category) => `
     <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}">
-      ${escapeHtml(category.name)}
+      ${escapeHtml(category.name)}${category.demo ? '<span class="cat-demo">demo</span>' : ''}
     </button>
   `).join('');
+
+  strips.forEach((strip) => { strip.innerHTML = markup; });
+}
+
+// Productos filtrados por categoría + búsqueda, ya ordenados.
+function getFilteredProducts(state) {
+  const query = state.searchQuery.trim().toLowerCase();
+  const filtered = state.products.filter((product) => {
+    const matchesCategory = state.activeCategory === 'all' || product.categoryId === state.activeCategory;
+    const matchesQuery = !query || [product.name, product.description, product.categoryId].join(' ').toLowerCase().includes(query);
+    return matchesCategory && matchesQuery;
+  });
+  return sortProducts(filtered, state.sortBy);
+}
+
+function recommendedScore(product) {
+  let score = 0;
+  if (product.available && product.stock > 0) score += 4;
+  if (product.featured) score += 2;
+  if (product.popular) score += 1;
+  if (discountPercent(product) > 0) score += 1;
+  return score;
+}
+
+function popularScore(product) {
+  let score = 0;
+  if (product.popular) score += 3;
+  if (product.available && product.stock > 0) score += 2;
+  if (product.featured) score += 1;
+  return score;
+}
+
+function sortProducts(list, sortBy) {
+  const arr = [...list];
+  if (sortBy === 'price_asc') return arr.sort((a, b) => a.price - b.price);
+  if (sortBy === 'popular') return arr.sort((a, b) => popularScore(b) - popularScore(a));
+  return arr.sort((a, b) => recommendedScore(b) - recommendedScore(a));
+}
+
+function activeCategoryName() {
+  const { activeCategory } = getState();
+  return categories.find((category) => category.id === activeCategory)?.name || 'Todos';
+}
+
+// Rail de ofertas de la categoría activa, arriba del grid del catálogo.
+function renderCatalogOffers() {
+  const container = $('[data-catalog-offers]');
+  if (!container) return;
+  const state = getState();
+  const offers = state.products
+    .filter((product) => {
+      const inCategory = state.activeCategory === 'all' || product.categoryId === state.activeCategory;
+      return inCategory && product.available && product.stock > 0 && (discountPercent(product) > 0 || product.featured);
+    })
+    .sort((a, b) => discountPercent(b) - discountPercent(a))
+    .slice(0, 8);
+
+  const block = container.closest('[data-catalog-offers-block]') || container;
+  if (!offers.length) {
+    block.hidden = true;
+    container.innerHTML = '';
+    return;
+  }
+  block.hidden = false;
+  container.innerHTML = offers.map(railCard).join('');
+}
+
+function renderCatalogMeta() {
+  setText('[data-catalog-title]', activeCategoryName());
+  const count = getFilteredProducts(getState()).length;
+  setText('[data-catalog-count]', count === 1 ? '1 producto' : `${count} productos`);
+  const select = $('[data-sort-select]');
+  if (select && select.value !== getState().sortBy) select.value = getState().sortBy;
 }
 
 function renderProducts() {
@@ -199,15 +275,17 @@ function renderProducts() {
   if (!container) return;
 
   const state = getState();
-  const query = state.searchQuery.trim().toLowerCase();
-  const filteredProducts = state.products.filter((product) => {
-    const matchesCategory = state.activeCategory === 'all' || product.categoryId === state.activeCategory;
-    const matchesQuery = !query || [product.name, product.description, product.categoryId].join(' ').toLowerCase().includes(query);
-    return matchesCategory && matchesQuery;
-  });
+  const filteredProducts = getFilteredProducts(state);
 
   if (!filteredProducts.length) {
-    container.innerHTML = '<div class="empty-state">No encontré productos con ese filtro. Probá con otra categoría.</div>';
+    container.innerHTML = `
+      <div class="empty-state">
+        <strong>No hay productos en esta búsqueda.</strong><br />
+        Probá con otra categoría o limpiá el buscador.
+        <div class="empty-actions">
+          <button class="secondary-button compact" type="button" data-category-id="all">Ver todo el catálogo</button>
+        </div>
+      </div>`;
     return;
   }
 
@@ -362,8 +440,14 @@ function customerStepIndex(status) {
   return 0;
 }
 
+function getOrderSimulation(order) {
+  const sim = getState().simulation;
+  return sim && sim.orderId === order.id ? sim : null;
+}
+
 function trackingHeadline(order) {
-  const eta = order.delivery.estimatedMinutes;
+  const sim = getOrderSimulation(order);
+  const eta = sim && sim.etaMinutes != null ? sim.etaMinutes : order.delivery.estimatedMinutes;
   if (order.status === 'delivered') {
     return { kicker: 'Pedido entregado', title: '¡Disfrutalo!', sub: 'Gracias por comprar en La Taba.' };
   }
@@ -389,7 +473,9 @@ function distanceLabel(order) {
 }
 
 function trackingMapSvg(order) {
-  const progress = order.status === 'delivered' ? 1
+  const sim = getOrderSimulation(order);
+  const progress = sim ? sim.progress
+    : order.status === 'delivered' ? 1
     : order.status === 'arriving' ? 0.9
     : order.status === 'on_the_way' ? 0.6
     : 0.05;
@@ -399,7 +485,7 @@ function trackingMapSvg(order) {
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="trackRoute" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#e0a066"/><stop offset="1" stop-color="#b84f40"/>
+            <stop offset="0" stop-color="#d6b08a"/><stop offset="1" stop-color="#c59a6c"/>
           </linearGradient>
         </defs>
         <g class="map-streets" stroke="rgba(255,255,255,0.06)" stroke-width="2">
@@ -445,9 +531,9 @@ export function renderTracking() {
     container.innerHTML = `
       <div class="empty-state">
         <strong>No hay un pedido activo.</strong><br />
-        Cuando confirmes una compra, el estado aparece acá con preparación, reparto y detalle.
+        Cuando confirmes una compra, el estado aparece acá en vivo: preparación, reparto y detalle.
         <div class="empty-actions">
-          <button class="secondary-button compact" type="button" data-nav-view="home">Ver productos</button>
+          <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
         </div>
       </div>`;
     return;
@@ -474,6 +560,8 @@ export function renderTracking() {
 
   container.innerHTML = `
     <div class="track-layout">
+      <div class="track-rt">${realtimeChip()}</div>
+
       <div class="card track-header ${statusClass(order.status)}">
         <span class="track-head-ico">${isDelivery ? 'REP' : 'RET'}</span>
         <div class="track-head-text">
@@ -500,9 +588,24 @@ export function renderTracking() {
             <div class="summary-row total"><span>Total</span><strong>${money(order.total)}</strong></div>
           </div>
         </details>
+        ${isCancelled ? '' : `
+        <div class="button-row track-actions">
+          <button class="ghost-button compact" type="button" data-whatsapp-order>Enviar copia por WhatsApp</button>
+        </div>`}
       </div>
     </div>
   `;
+}
+
+// Indicador de conexión realtime (en vivo entre equipos / en este equipo).
+function realtimeChip() {
+  const status = getRealtimeStatus();
+  if (status.relayEnabled) {
+    return status.relayConnected
+      ? `<span class="rt-chip live">● En vivo entre equipos · sala ${escapeHtml(status.room)}</span>`
+      : `<span class="rt-chip">○ Conectando al relay · sala ${escapeHtml(status.room)}</span>`;
+  }
+  return '<span class="rt-chip local">● En vivo en este equipo</span>';
 }
 
 function initials(name) {
@@ -582,4 +685,9 @@ export function setSearchQuery(query) {
   const nextQuery = String(query || '');
   if (getState().searchQuery === nextQuery) return;
   setState({ searchQuery: nextQuery });
+}
+
+export function setSortBy(sortBy) {
+  if (getState().sortBy === sortBy) return;
+  setState({ sortBy });
 }

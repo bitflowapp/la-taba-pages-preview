@@ -31,6 +31,38 @@ export function getAssignableDeliveryOrder(orders = []) {
     })[0] || null;
 }
 
+// Cola del rider: incluye pedidos de delivery que todavía no salieron
+// (received/preparing) para que el repartidor los vea "esperando preparación".
+const RIDER_QUEUE_STATUSES = Object.freeze(['received', 'preparing', 'ready', 'on_the_way', 'arriving']);
+const RIDER_IN_PROGRESS = Object.freeze(['on_the_way', 'arriving']);
+
+export function isRiderQueueOrder(order) {
+  return Boolean(
+    order
+      && normalizeDeliveryMode(order.deliveryMode) === 'delivery'
+      && !isTerminalOrderStatus(order.status)
+      && RIDER_QUEUE_STATUSES.includes(order.status),
+  );
+}
+
+// Si hay un reparto en curso, ese manda; si no, el pedido más reciente en cola.
+export function getRiderQueueOrder(orders = []) {
+  if (!Array.isArray(orders)) return null;
+  const queue = orders.filter(isRiderQueueOrder);
+  if (!queue.length) return null;
+
+  const inProgress = queue
+    .filter((order) => RIDER_IN_PROGRESS.includes(order.status))
+    .sort((a, b) => toSortableTime(b.createdAt) - toSortableTime(a.createdAt));
+  if (inProgress.length) return inProgress[0];
+
+  return [...queue].sort((a, b) => toSortableTime(b.createdAt) - toSortableTime(a.createdAt))[0];
+}
+
+export function isAwaitingPreparation(order) {
+  return Boolean(order) && (order.status === 'received' || order.status === 'preparing');
+}
+
 function toSortableTime(value) {
   const time = new Date(value).getTime();
   return Number.isNaN(time) ? 0 : time;

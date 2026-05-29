@@ -25,11 +25,12 @@ import {
   updateAddressFieldVisibility,
   $,
 } from './ui.js';
-import { buildWhatsAppUrl, createOrderFromCheckout } from './orders.js';
+import { buildWhatsAppUrl, buildWhatsAppUrlFromDraft, createOrderFromCheckout, getLastOrder } from './orders.js';
 import { getState, subscribe } from './state.js';
 import { handleBusinessAction, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
 import { handleDeliveryAction, renderDeliveryPanel } from './delivery.js';
 import { handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
+import { initRealtime } from './realtime.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const VIEW_ALIASES = {
@@ -61,6 +62,7 @@ function bootstrap() {
     applyBusinessConfig();
     bindEvents();
     subscribe(renderAll);
+    initRealtime();
     renderAll();
     resumeSimulationIfNeeded();
   } catch (error) {
@@ -228,19 +230,45 @@ function bindEvents() {
     }
   });
 
+  // CTA principal: confirma el pedido interno y lleva a Tracking. NO abre WhatsApp.
+  let confirming = false;
   $('[data-checkout-form]')?.addEventListener('submit', (event) => {
     event.preventDefault();
-    const values = getCheckoutFormValues();
-    const result = createOrderFromCheckout(values);
+    if (confirming) return; // evita doble confirmación / doble pedido
+    confirming = true;
+    try {
+      const values = getCheckoutFormValues();
+      const result = createOrderFromCheckout(values);
 
-    if (!result.ok) {
-      showToast(result.message);
+      if (!result.ok) {
+        showToast(result.message);
+        return;
+      }
+
+      showToast('Pedido creado. Ya podés seguirlo en tiempo real.');
+      setActiveView('tracking');
+    } finally {
+      confirming = false;
+    }
+  });
+
+  // Acción secundaria: enviar una copia por WhatsApp (no crea otro pedido).
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest('[data-whatsapp-copy]')) {
+      const values = getCheckoutFormValues();
+      window.open(buildWhatsAppUrlFromDraft(values), '_blank', 'noopener,noreferrer');
+      showToast('Abriendo WhatsApp con la copia del pedido.');
       return;
     }
-
-    showToast(`${result.order.id} creado. Abriendo WhatsApp...`);
-    setActiveView('tracking');
-    window.open(buildWhatsAppUrl(result.order), '_blank', 'noopener,noreferrer');
+    if (target.closest('[data-whatsapp-order]')) {
+      const order = getLastOrder();
+      if (order) {
+        window.open(buildWhatsAppUrl(order), '_blank', 'noopener,noreferrer');
+        showToast('Abriendo WhatsApp con la copia del pedido.');
+      }
+    }
   });
 
   $('[data-copy-order]')?.addEventListener('click', async () => {

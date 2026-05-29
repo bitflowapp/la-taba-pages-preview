@@ -39,8 +39,8 @@ async function createDeliveryOrder(page) {
     payment: 'cash',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
-  await waitForToast(page, /LT-\d{4} creado/);
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
+  await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
 }
 
 test('rider demo: iniciar simulación, avanzar, llegar y entregar', async ({ page }) => {
@@ -78,10 +78,10 @@ test('rider demo: iniciar simulación, avanzar, llegar y entregar', async ({ pag
   await waitForToast(page, 'Llegada al domicilio registrada.');
   await expect(page.locator('[data-delivery-panel]')).toContainText('Llegando');
 
-  // Pedido entregado.
+  // Pedido entregado. El rider deja de mostrar LT-0002 y pasa al siguiente en cola.
   await page.locator('[data-delivery-done="LT-0002"]').click();
   await waitForToast(page, 'Pedido marcado como entregado.');
-  await expect(page.locator('[data-delivery-panel]')).toContainText('No hay pedidos asignados');
+  await expect(page.locator('[data-delivery-panel]')).not.toContainText('LT-0002');
 
   await guards.assertClean();
 });

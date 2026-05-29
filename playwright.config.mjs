@@ -16,10 +16,19 @@ export default defineConfig({
     serviceWorkers: 'block',
     trace: 'on-first-retry',
   },
-  webServer: {
-    command: 'python -m http.server 8080',
-    url: 'http://127.0.0.1:8080/',
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: 'python -m http.server 8080',
+      url: 'http://127.0.0.1:8080/',
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+    {
+      // Relay realtime para el test cliente/rider entre dos contextos (dos "celulares").
+      command: 'node scripts/realtime-relay.mjs 8787',
+      url: 'http://127.0.0.1:8787/health',
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+  ],
 });

@@ -116,6 +116,7 @@ function sanitizeSimulation(raw, orders) {
     baseEta,
     etaMinutes: Math.max(0, Math.floor(Number(raw.etaMinutes) || 0)),
     startedAt: normalizeIsoDate(raw.startedAt),
+    ...(raw.owner ? { owner: sanitizeText(raw.owner, { maxLength: 80 }) } : {}),
     ...(Number.isFinite(Number(raw.lat)) ? { lat: Number(raw.lat) } : {}),
     ...(Number.isFinite(Number(raw.lng)) ? { lng: Number(raw.lng) } : {}),
     ...(raw.gpsError ? { gpsError: sanitizeText(raw.gpsError, { maxLength: 140 }) } : {}),

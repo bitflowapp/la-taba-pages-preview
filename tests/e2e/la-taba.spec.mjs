@@ -73,7 +73,7 @@ test('flujo cliente con delivery', async ({ page }) => {
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await page.getByLabel('Envío a domicilio').check();
 
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Ingresá el nombre del cliente.');
 
   await fillCheckout(page, {
@@ -84,7 +84,7 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Ingresá el nombre del cliente.');
 
   await fillCheckout(page, {
@@ -95,7 +95,7 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Ingresá un teléfono de contacto.');
 
   await fillCheckout(page, {
@@ -106,7 +106,7 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Ingresá la dirección para el envío.');
 
   await fillCheckout(page, {
@@ -124,17 +124,22 @@ test('flujo cliente con delivery', async ({ page }) => {
   expect(clipboardText).toContain('Envío a domicilio');
   expect(clipboardText).toContain('Total:');
 
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
-  await waitForToast(page, /LT-\d{4} creado\. Abriendo WhatsApp\.\.\./);
+  // CTA principal: confirma el pedido interno y NO abre WhatsApp automáticamente.
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
+  await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
+  const autoOpened = await page.evaluate(() => window.__openedUrls.length);
+  expect(autoOpened).toBe(0);
 
+  // WhatsApp queda como acción secundaria: copia del pedido ya creado.
+  await page.getByRole('button', { name: /Enviar copia por WhatsApp/i }).click();
+  await waitForToast(page, 'Abriendo WhatsApp con la copia del pedido.');
   const openedUrl = await page.evaluate(() => window.__openedUrls.at(-1));
   expect(openedUrl).toContain('wa.me/');
   expect(openedUrl).toContain(encodeURIComponent('Walter QA'));
   expect(openedUrl).toContain(encodeURIComponent('Roca 123'));
   expect(openedUrl).toContain(encodeURIComponent('Subtotal'));
-
-  await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   await guards.assertClean();
 });
@@ -162,15 +167,19 @@ test('flujo retiro en local', async ({ page }) => {
     payment: 'cash',
     deliveryMode: 'pickup',
   });
-  await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
-  await waitForToast(page, /LT-\d{4} creado\. Abriendo WhatsApp\.\.\./);
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
+  await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
+  const autoOpened = await page.evaluate(() => window.__openedUrls.length);
+  expect(autoOpened).toBe(0);
 
+  // Copia opcional por WhatsApp del pedido de retiro.
+  await page.getByRole('button', { name: /Enviar copia por WhatsApp/i }).click();
   const openedUrl = await page.evaluate(() => window.__openedUrls.at(-1));
   expect(openedUrl).toContain(encodeURIComponent('Retiro en local'));
   expect(openedUrl).not.toContain(encodeURIComponent('Roca 123'));
   expect(openedUrl).toContain(encodeURIComponent('Total:'));
-  await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   await guards.assertClean();
 });
@@ -237,7 +246,7 @@ test('modo negocio y delivery', async ({ page }) => {
     await expect(page.locator('[data-delivery-panel]')).toContainText('Llegando');
     await page.locator('[data-delivery-done]').first().click();
     await waitForToast(page, 'Pedido marcado como entregado.');
-    await expect(page.locator('[data-delivery-panel]')).toContainText('Los pedidos de retiro en local no aparecen en esta vista.');
+    await expect(page.locator('[data-delivery-panel]')).toContainText('No hay pedidos para repartir.');
   }
 
   await guards.assertClean();

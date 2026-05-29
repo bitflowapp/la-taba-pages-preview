@@ -5,7 +5,7 @@ import {
   isValidOrderStatus,
 } from './core/order-status.js';
 import { calculateTotals, normalizeDeliveryMode } from './core/pricing.js';
-import { getAssignableDeliveryOrder } from './core/rider.js';
+import { getAssignableDeliveryOrder, getRiderQueueOrder as selectRiderQueueOrder } from './core/rider.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
 import {
   createOrderId,
@@ -104,6 +104,26 @@ export function getLastOrder() {
 
 export function getActiveDeliveryOrder() {
   return getAssignableDeliveryOrder(getState().orders);
+}
+
+// Incluye pedidos received/preparing para que el rider los vea en cola.
+export function getRiderQueueOrder() {
+  return selectRiderQueueOrder(getState().orders);
+}
+
+// Botón demo del rider: lleva un pedido hasta "listo para reparto"
+// respetando el flujo de estados (received -> preparing -> ready).
+export function advanceOrderToReady(orderId) {
+  for (let step = 0; step < 4; step += 1) {
+    const order = getState().orders.find((candidate) => candidate.id === orderId);
+    if (!order) return { ok: false, message: 'Pedido no encontrado.' };
+    if (['ready', 'on_the_way', 'arriving', 'delivered'].includes(order.status)) {
+      return { ok: true, message: 'Pedido listo para reparto.' };
+    }
+    const result = advanceOrderStatus(orderId);
+    if (!result.ok) return result;
+  }
+  return { ok: true, message: 'Pedido listo para reparto.' };
 }
 
 export function advanceOrderStatus(orderId) {
@@ -239,6 +259,11 @@ function normalizeOrderForMessage(order) {
 
 export function buildWhatsAppUrl(order) {
   return `https://wa.me/${BUSINESS_CONFIG.whatsappNumber}?text=${encodeURIComponent(buildWhatsAppMessage(order))}`;
+}
+
+// Copia opcional por WhatsApp del borrador del carrito (no crea pedido interno).
+export function buildWhatsAppUrlFromDraft(formValues = {}) {
+  return `https://wa.me/${BUSINESS_CONFIG.whatsappNumber}?text=${encodeURIComponent(buildDraftMessageFromCart(formValues))}`;
 }
 
 export function buildDraftMessageFromCart(formValues = {}) {

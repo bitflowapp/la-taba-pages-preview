@@ -691,6 +691,39 @@ textarea { resize: vertical; min-height: 84px; }
 .icon-catalog::before { content: ""; position: absolute; inset: 4px; border: 2px solid currentColor; border-radius: 3px; }
 .icon-catalog::after { content: ""; position: absolute; left: 7px; right: 6px; top: 7px; height: 2px; background: currentColor; box-shadow: 0 4px 0 currentColor; }
 
+/* ===== Pedido interno + WhatsApp secundario ===== */
+.secondary-actions { margin-top: 4px; }
+.secondary-actions .ghost-button { flex: 1; }
+.confirm-button { width: 100%; }
+
+/* ===== Tracking: chip realtime + acciones ===== */
+.track-rt { display: flex; justify-content: center; }
+.rt-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+  padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04); color: var(--muted);
+}
+.rt-chip.live { color: var(--green-2); border-color: rgba(79,174,106,0.4); background: rgba(79,174,106,0.1); }
+.rt-chip.local { color: var(--accent-soft); border-color: rgba(214,176,138,0.35); background: rgba(214,176,138,0.08); }
+.track-actions { margin-top: 12px; }
+
+/* ===== Rider: esperando preparación + demo avanzado ===== */
+.rider-waiting {
+  border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.035);
+  padding: 13px; margin-bottom: 12px; display: grid; gap: 10px;
+}
+.rider-waiting p { margin: 0; color: var(--muted); font-size: 13px; }
+.demo-advanced { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 8px; }
+.demo-advanced summary {
+  cursor: pointer; color: var(--soft); font-weight: 700; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.05em; list-style: none; padding: 6px 0;
+}
+.demo-advanced summary::-webkit-details-marker { display: none; }
+.demo-advanced summary::after { content: " ▾"; color: var(--soft); }
+.demo-advanced[open] summary::after { content: " ▴"; }
+.demo-advanced-body { padding-top: 6px; }
+.demo-advanced-body .summary-row { font-size: 13px; }
+
 /* ===== Responsive ===== */
 @media (max-width: 1020px) {
   .topbar { flex-wrap: wrap; }

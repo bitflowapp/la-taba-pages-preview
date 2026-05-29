@@ -2,7 +2,7 @@
 
 **La Taba** es el sistema propio de pedidos online de una carnicería/local de comida con delivery.
 
-El cliente entra a un link, arma el pedido desde el celular y el negocio lo recibe **ordenado por WhatsApp**: con nombre, dirección, productos, total, forma de pago y notas. Es una base para que La Taba tenga un canal propio de pedidos, sin depender por completo de plataformas externas.
+El cliente entra a un link, arma el pedido desde el celular y **confirma un pedido propio dentro de la app**. El comercio lo recibe en su panel y el reparto se sigue en vivo. Enviar una **copia por WhatsApp** queda como acción secundaria opcional. Es la base para que La Taba tenga un canal propio de pedidos, sin depender por completo de plataformas externas.
 
 > 🔗 **Demo publicada:** https://bitflowapp.github.io/la-taba-pages-preview/
 
@@ -18,10 +18,10 @@ Es una web/PWA estática, sin backend todavía. Corre en GitHub Pages, Vercel, N
 | Dependés de una plataforma | Tu marca, tu link, tu reparto |
 
 - **¿Qué es?** Tu propio sistema de pedidos online.
-- **¿Cómo recibe pedidos el negocio?** Por WhatsApp, ya ordenados.
-- **¿Qué ve el cliente?** Catálogo, carrito y finalizar pedido.
+- **¿Cómo recibe pedidos el negocio?** Pedido interno en la app (panel del negocio y vista rider). WhatsApp es una copia opcional.
+- **¿Qué ve el cliente?** Catálogo por categorías, carrito, confirmar pedido y seguimiento en vivo.
 - **¿Qué controla el dueño?** Pedidos, estados, ventas del día, stock y reparto.
-- **¿Cómo se prueba?** Botón "Comprar como cliente" o PIN `1234` para administrar pedidos.
+- **¿Cómo se prueba?** Confirmás un pedido como cliente; con PIN `1234` entrás al panel del negocio y a la vista rider.
 
 ## Diferencia honesta frente a una app de delivery
 
@@ -33,8 +33,8 @@ Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de c
 1. Abrí la demo o `index.html`.
 2. En **Inicio** elegí una categoría o tocá **Ver catálogo**.
 3. En **Catálogo** filtrá por categoría, agregá productos, abrí **Pedido** y elegí **Envío a domicilio** o **Retiro en local**.
-4. Completá nombre, teléfono y dirección y tocá **Enviar pedido por WhatsApp**.
-5. Se abre WhatsApp con el pedido escrito, listo para enviar.
+4. Completá nombre, teléfono y dirección y tocá **Confirmar pedido** (CTA principal).
+5. El pedido queda creado y pasás a **Seguir**, con el estado en vivo. Si querés, **Enviar copia por WhatsApp** es una acción secundaria opcional.
 
 ### Como negocio (administrar pedidos)
 1. Tocá **Administrar pedidos** arriba a la derecha o **Panel negocio** desde **Local**.
@@ -54,17 +54,62 @@ Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de c
 
 > **PIN demo: 1234** — acceso de demostración para la presentación.
 
-### ⚠️ Importante: la simulación es local
+## Probar con DOS celulares (relay realtime demo)
 
-El movimiento del rider, el progreso y el ETA se calculan **en este dispositivo**
-(simulación local con `setInterval`, persistida en `localStorage` para que un
-reload no rompa el estado). El GPS opcional usa `navigator.geolocation` y la
-ubicación **no se envía a ningún servidor** porque todavía no hay backend.
+Para ver cliente y rider en **dos teléfonos distintos** en la misma Wi‑Fi, hay un
+relay realtime propio, **sin dependencias externas** (Node nativo + SSE):
 
-Para **tiempo real real entre el celular del cliente y el del repartidor** (en
-equipos distintos) hace falta un backend realtime: **Supabase Realtime, Firebase
-Realtime Database/Firestore o un WebSocket** propio. Esa es la siguiente fase y
-está documentada abajo; no se implementa en esta rama a propósito.
+```bash
+npm run realtime:demo
+```
+
+Al arrancar imprime las URLs con la IP de tu PC. Abrí en cada celular (misma red):
+
+```text
+Cliente: http://IP_PC:8787/?relay=http://IP_PC:8787&room=demo-review
+Rider:   http://IP_PC:8787/?relay=http://IP_PC:8787&room=demo-review#rider
+```
+
+Flujo:
+1. El **cliente** arma el pedido y toca **Confirmar pedido**.
+2. El **rider** ve el pedido aparecer solo (estado *Esperando preparación*).
+3. El rider toca **Marcar listo para reparto (demo)** → **Salí del local** → **Iniciar simulación**.
+4. El **cliente** ve el rider moverse, el ETA y el estado cambiar **sin recargar**.
+5. El rider toca **Llegué al domicilio** y **Pedido entregado**; el cliente lo ve en vivo.
+
+La pantalla **Seguir** muestra un chip *En vivo entre equipos · sala …* cuando el
+relay está conectado, o *En vivo en este equipo* en modo local.
+
+> Sin `?relay=...` la app funciona igual en **modo local** (un solo equipo). En una
+> misma compu también podés abrir dos pestañas (se sincronizan por `BroadcastChannel`).
+
+### ⚠️ Importante: el realtime de esta rama es una demo local
+
+El relay corre en **tu PC** dentro de la LAN: los mensajes **no salen a internet**
+ni se guardan en disco. El movimiento del rider, el progreso y el ETA se calculan
+en el dispositivo del rider (simulación con `setInterval`) y se replican al cliente.
+El estado se persiste en `localStorage` para que un reload no rompa la demo.
+
+El **GPS opcional** usa `navigator.geolocation` solo cuando tocás el botón y la
+ubicación **no se envía a ningún servidor**. En **iPhone/Safari** la geolocalización
+suele requerir **HTTPS**: por HTTP en la LAN puede fallar o pedir permiso y no
+entregar posición. La demo está pensada para funcionar igual con la **simulación**
+aunque el GPS falle; si falla, se muestra el aviso y se mantiene el último estado.
+
+Para **tiempo real productivo entre clientes remotos** (fuera de la LAN, sin tener
+la PC prendida) hace falta un backend gestionado: **Supabase Realtime, Firebase o
+un WebSocket** propio con persistencia. Es la siguiente fase (ver roadmap).
+
+## Ver siempre la última versión (cache / PWA)
+
+La app es PWA con service worker. Si el iPhone muestra una versión vieja:
+
+- Abrí con un parámetro de versión para saltar el cache del navegador: `…/?v=51`.
+- Usá una **sala limpia** para no arrastrar pedidos viejos: `&room=demo-2`.
+- O abrí en **Safari en modo privado**.
+
+El service worker es *network-first* (la versión nueva publicada gana) y al
+cambiar `CACHE_NAME` en `sw.js` se descarta el cache anterior automáticamente.
 
 ## Cambiar el WhatsApp del negocio
 
@@ -125,14 +170,14 @@ imagen: el placeholder muestra las iniciales del producto sobre un bloque tonal.
 - Home tipo app de delivery: estado del local, buscador, categorías, promos y combos (sin lista infinita).
 - Pantalla de catálogo por categorías reales, con ofertas de categoría, orden (recomendados / menor precio / más pedidos) y búsqueda.
 - Carrito con cantidades, control de stock y totales.
-- Finalizar pedido con envío a domicilio o retiro en local.
-- Pedido mínimo para delivery.
-- Mensaje de WhatsApp completo y profesional (cliente, productos, totales, pago, notas y fecha).
-- Botón para copiar el pedido.
-- Seguimiento del último pedido (vista de demo).
+- **Confirmar pedido** como CTA principal: crea un pedido interno y lleva a Seguir. WhatsApp queda como **copia opcional** ("Enviar copia por WhatsApp").
+- Pedido con envío a domicilio o retiro en local, con pedido mínimo para delivery.
+- Seguimiento del pedido en vivo, con chip de conexión (en vivo entre equipos / en este equipo).
+- **Relay realtime demo (Node + SSE, sin dependencias)** para probar cliente y rider en dos celulares de la misma Wi‑Fi (`npm run realtime:demo`).
+- Botón para copiar el pedido y mensaje de WhatsApp completo (cliente, productos, totales, pago, notas y fecha).
 - Modo negocio protegido con PIN demo `1234`.
 - Administración de pedidos: estados, ventas del día, pedidos activos y stock rápido.
-- Vista de repartidor con pedido asignado, acciones de salida/entrega y **simulación de reparto en tiempo real (demo local)** con progreso, ETA y GPS opcional.
+- Vista de repartidor con cola de pedidos (incluye *Esperando preparación*), botón demo *Marcar listo para reparto*, acciones de salida/entrega y **simulación de reparto en tiempo real** con progreso, ETA y GPS opcional. Lo técnico (relay/sala) queda en un bloque *Demo avanzado*.
 - PWA instalable con manifest y service worker (se usa como una app).
 - Código modular en `/js`, fácil de escalar sin romper lo existente.
 
@@ -213,10 +258,11 @@ Para ver la administración de pedidos y el reparto:
 ## Cómo correr los tests
 
 ```powershell
-npm run check     # sintaxis JS + assets estáticos
-npm test          # tests unitarios (node:test)
-npm run test:e2e  # smoke tests de Playwright
-npm run verify    # corre las tres anteriores
+npm run check         # sintaxis JS + assets estáticos
+npm test              # tests unitarios (node:test)
+npm run test:e2e      # e2e de Playwright (incluye cliente/rider en dos contextos vía relay)
+npm run verify        # corre las tres anteriores
+npm run realtime:demo # relay realtime demo para probar con dos celulares
 ```
 
 ## Estructura técnica
@@ -228,6 +274,8 @@ sw.js
 manifest.webmanifest
 assets/
   icon.svg
+scripts/
+  realtime-relay.mjs   # relay realtime demo (Node nativo + SSE, sin dependencias)
 js/
   config.js
   data.js
@@ -237,10 +285,12 @@ js/
   business.js
   delivery.js
   simulation.js        # controlador de la simulación de reparto (timers + GPS)
+  realtime.js          # puente realtime (BroadcastChannel + relay SSE opcional)
   ui.js
   app.js
   core/
     simulation.js      # motor puro de la simulación (testeable, sin timers ni DOM)
+    realtime-sync.js   # reconciliación pura de pedidos (last-write-wins, testeable)
     rider.js
     order-status.js
     pricing.js

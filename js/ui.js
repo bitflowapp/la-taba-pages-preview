@@ -15,6 +15,7 @@ import {
   validateCartForCheckout,
 } from './cart.js';
 import { buildDraftMessageFromCart, getLastOrder } from './orders.js';
+import { getRealtimeStatus } from './realtime.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -530,9 +531,9 @@ export function renderTracking() {
     container.innerHTML = `
       <div class="empty-state">
         <strong>No hay un pedido activo.</strong><br />
-        Cuando confirmes una compra, el estado aparece acá con preparación, reparto y detalle.
+        Cuando confirmes una compra, el estado aparece acá en vivo: preparación, reparto y detalle.
         <div class="empty-actions">
-          <button class="secondary-button compact" type="button" data-nav-view="home">Ver productos</button>
+          <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
         </div>
       </div>`;
     return;
@@ -559,6 +560,8 @@ export function renderTracking() {
 
   container.innerHTML = `
     <div class="track-layout">
+      <div class="track-rt">${realtimeChip()}</div>
+
       <div class="card track-header ${statusClass(order.status)}">
         <span class="track-head-ico">${isDelivery ? 'REP' : 'RET'}</span>
         <div class="track-head-text">
@@ -585,9 +588,24 @@ export function renderTracking() {
             <div class="summary-row total"><span>Total</span><strong>${money(order.total)}</strong></div>
           </div>
         </details>
+        ${isCancelled ? '' : `
+        <div class="button-row track-actions">
+          <button class="ghost-button compact" type="button" data-whatsapp-order>Enviar copia por WhatsApp</button>
+        </div>`}
       </div>
     </div>
   `;
+}
+
+// Indicador de conexión realtime (en vivo entre equipos / en este equipo).
+function realtimeChip() {
+  const status = getRealtimeStatus();
+  if (status.relayEnabled) {
+    return status.relayConnected
+      ? `<span class="rt-chip live">● En vivo entre equipos · sala ${escapeHtml(status.room)}</span>`
+      : `<span class="rt-chip">○ Conectando al relay · sala ${escapeHtml(status.room)}</span>`;
+  }
+  return '<span class="rt-chip local">● En vivo en este equipo</span>';
 }
 
 function initials(name) {

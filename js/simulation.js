@@ -8,6 +8,7 @@
 // (Supabase Realtime, Firebase o WebSocket). Ver README.
 import { getState, setState } from './state.js';
 import { getActiveDeliveryOrder, updateOrderStatus } from './orders.js';
+import { getDeviceId } from './realtime.js';
 import {
   DEMO_STORE_POINT,
   SIMULATION_TICK_MS,
@@ -17,6 +18,12 @@ import {
 
 let timerId = null;
 let gpsWatchId = null;
+
+// Solo el dispositivo que arrancó la simulación (owner) mueve el rider.
+// Los demás (p. ej. el cliente) solo muestran el progreso que reciben por realtime.
+function ownsSimulation(sim) {
+  return Boolean(sim) && (!sim.owner || sim.owner === getDeviceId());
+}
 
 function startTimer() {
   // Garantiza un único intervalo activo: nunca se duplican.
@@ -40,7 +47,7 @@ export function isSimulationRunning() {
 
 function tick() {
   const sim = getState().simulation;
-  if (!sim || !sim.running) {
+  if (!sim || !sim.running || !ownsSimulation(sim)) {
     stopTimer();
     return;
   }
@@ -76,9 +83,11 @@ export function startSimulation() {
   }
 
   const current = getState().simulation;
-  const simulation = current && current.orderId === order.id
+  const base = current && current.orderId === order.id
     ? { ...current, running: true }
     : createSimulationState(order, { running: true });
+  // Este dispositivo pasa a ser el "dueño" que mueve el rider.
+  const simulation = { ...base, owner: getDeviceId() };
 
   setState({ simulation });
   startTimer();
@@ -151,10 +160,11 @@ export function syncSimulationOnStatus(orderId, status) {
   }
 }
 
-// Reanuda el intervalo tras un reload si quedó una simulación en marcha.
+// Reanuda el intervalo tras un reload si quedó una simulación en marcha,
+// pero solo en el dispositivo dueño (el cliente nunca mueve el rider).
 export function resumeSimulationIfNeeded() {
   const sim = getState().simulation;
-  if (sim && sim.running) startTimer();
+  if (sim && sim.running && ownsSimulation(sim)) startTimer();
 }
 
 // ===== GPS opcional (solo a pedido del usuario, nunca se envía a un servidor) =====

@@ -13,8 +13,9 @@ test('carga inicial y catálogo', async ({ page }) => {
   await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
   await expect(page.locator('[data-cart-count]')).toHaveText('0');
   await expect(page.locator('[data-cart-total-small]')).toContainText('$');
-  await expect(page.locator('[data-cart-list]')).toContainText('El carrito está vacío');
-  await expect(page.locator('[data-admin-area]')).toHaveCount(2);
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
+  await expect(page.locator('[data-view="cart"]')).toBeHidden();
+  await expect(page.locator('[data-view]')).toHaveCount(6);
 
   await page.locator('[data-category-id="carnes"]').click();
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
@@ -33,7 +34,8 @@ test('flujo cliente con delivery', async ({ page }) => {
 
   await page.goto('/');
   await page.locator('[data-product-grid] [data-add-product]').first().click();
-  await page.getByRole('link', { name: /Mi pedido/i }).click();
+  await page.locator('.desktop-nav [data-nav-view="cart"]').click();
+  await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await page.getByLabel('Envío a domicilio').check();
 
   await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
@@ -80,6 +82,13 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
+  await page.getByRole('button', { name: /Copiar pedido/i }).click();
+  await waitForToast(page, 'Pedido copiado al portapapeles.');
+  const clipboardText = await page.evaluate(() => window.__clipboardText);
+  expect(clipboardText).toContain('Walter QA');
+  expect(clipboardText).toContain('Envío a domicilio');
+  expect(clipboardText).toContain('Total:');
+
   await page.getByRole('button', { name: /Enviar pedido por WhatsApp/i }).click();
   await waitForToast(page, /LT-\d{4} creado\. Abriendo WhatsApp\.\.\./);
 
@@ -89,13 +98,8 @@ test('flujo cliente con delivery', async ({ page }) => {
   expect(openedUrl).toContain(encodeURIComponent('Roca 123'));
   expect(openedUrl).toContain(encodeURIComponent('Subtotal'));
 
-  await page.getByRole('button', { name: /Copiar pedido/i }).click();
-  await waitForToast(page, 'Pedido copiado al portapapeles.');
-  const clipboardText = await page.evaluate(() => window.__clipboardText);
-  expect(clipboardText).toContain('Walter QA');
-  expect(clipboardText).toContain('Envío a domicilio');
-  expect(clipboardText).toContain('Total:');
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   await guards.assertClean();
 });
@@ -105,7 +109,8 @@ test('flujo retiro en local', async ({ page }) => {
 
   await page.goto('/');
   await page.locator('[data-product-grid] [data-add-product]').first().click();
-  await page.getByRole('link', { name: /Mi pedido/i }).click();
+  await page.locator('.desktop-nav [data-nav-view="cart"]').click();
+  await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await page.getByLabel('Retiro en local').check();
 
   await expect(page.locator('[data-address-field]')).toBeHidden();
@@ -129,6 +134,7 @@ test('flujo retiro en local', async ({ page }) => {
   expect(openedUrl).not.toContain(encodeURIComponent('Roca 123'));
   expect(openedUrl).toContain(encodeURIComponent('Total:'));
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   await guards.assertClean();
 });
@@ -137,17 +143,17 @@ test('modo negocio y delivery', async ({ page }) => {
   const guards = installPageGuards(page);
 
   await page.goto('/');
-  await expect(page.locator('#negocio')).toBeHidden();
-  await expect(page.locator('#delivery')).toBeHidden();
+  await expect(page.locator('[data-view="business"]')).toBeHidden();
+  await expect(page.locator('[data-view="rider"]')).toBeHidden();
 
-  await page.locator('[data-admin-toggle-secondary]').click();
+  await page.locator('[data-admin-toggle]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('0000');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-pin-error]')).toBeVisible();
 
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
-  await expect(page.locator('#negocio')).toBeVisible();
+  await expect(page.locator('[data-view="business"]')).toBeVisible();
   await expect(page.locator('[data-business-dashboard]')).toContainText('Ventas de hoy');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Stock del catálogo');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Pedidos para preparar');
@@ -172,13 +178,16 @@ test('modo negocio y delivery', async ({ page }) => {
   await waitForToast(page, 'Disponibilidad actualizada.');
   await expect(page.locator('[data-business-dashboard]')).toContainText(/Pausar|Activar/);
 
-  await page.getByRole('button', { name: /Salir del modo negocio/i }).click();
-  await expect(page.locator('#negocio')).toBeHidden();
+  await page.getByRole('button', { name: /^Salir$/i }).click();
+  await expect(page.locator('[data-view="business"]')).toBeHidden();
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
 
-  await page.locator('[data-admin-toggle-secondary]').click();
+  await page.locator('[data-admin-toggle]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
-  await expect(page.locator('#delivery')).toBeVisible();
+  await expect(page.locator('[data-view="business"]')).toBeVisible();
+  await page.getByRole('button', { name: /Vista rider/i }).click();
+  await expect(page.locator('[data-view="rider"]')).toBeVisible();
   await expect(page.locator('[data-delivery-panel]')).toContainText('Pedido');
 
   const deliveryLeave = page.locator('[data-delivery-leave]').first();
@@ -187,12 +196,47 @@ test('modo negocio y delivery', async ({ page }) => {
     await deliveryLeave.click();
     await waitForToast(page, 'Pedido marcado como en camino.');
     await expect(page.locator('[data-delivery-panel]')).toContainText('En camino');
+    await page.locator('[data-delivery-arrive]').first().click();
+    await waitForToast(page, 'Llegada al domicilio registrada.');
+    await expect(page.locator('[data-delivery-panel]')).toContainText('Llegando');
     await page.locator('[data-delivery-done]').first().click();
     await waitForToast(page, 'Pedido marcado como entregado.');
     await expect(page.locator('[data-delivery-panel]')).toContainText('Los pedidos de retiro en local no aparecen en esta vista.');
   }
 
   await guards.assertClean();
+});
+
+test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const guards = installPageGuards(page);
+
+  await installBrowserStubs(page);
+  await page.goto('/');
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
+
+  await page.evaluate(() => window.scrollTo(0, 520));
+  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await expect(page.locator('[data-view="cart"]')).toBeVisible();
+  await expect(page.locator('[data-view="home"]')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  expect(new URL(page.url()).hash).toBe('#cart');
+
+  await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+
+  await page.locator('.mobile-nav [data-nav-view="profile"]').click();
+  await expect(page.locator('[data-view="profile"]')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+
+  await page.locator('.mobile-nav [data-nav-view="home"]').click();
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+
+  await guards.assertClean();
+  await context.close();
 });
 
   for (const [name, viewport] of [
@@ -219,17 +263,31 @@ test('modo negocio y delivery', async ({ page }) => {
     await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
 
     await page.locator('[data-product-grid] [data-add-product]').first().click();
-    await page.getByRole('link', { name: /Mi pedido/i }).click();
+    if (viewport.width <= 760) {
+      await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+    } else {
+      await page.locator('.desktop-nav [data-nav-view="cart"]').click();
+    }
     await expect(page.locator('[data-checkout-form]')).toBeVisible();
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
     expect(overflow).toBeTruthy();
 
+    if (viewport.width <= 760) {
+      await page.locator('.mobile-nav [data-nav-view="home"]').click();
+    } else {
+      await page.locator('.desktop-nav [data-nav-view="home"]').click();
+    }
     await page.locator('[data-product-grid] [data-product-detail]').first().click();
     await expect(page.locator('[data-product-modal]')).toBeVisible();
     await page.locator('[data-close-modal]').click();
 
-    await page.locator('[data-admin-toggle-secondary]').click();
+    if (viewport.width <= 760) {
+      await page.locator('.mobile-nav [data-nav-view="profile"]').click();
+      await page.locator('[data-view="profile"] [data-open-admin-view="business"]').click();
+    } else {
+      await page.locator('[data-admin-toggle]').click();
+    }
     await expect(page.locator('[data-pin-modal]')).toBeVisible();
 
     await guards.assertClean();

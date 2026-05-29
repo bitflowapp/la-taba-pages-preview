@@ -31,19 +31,19 @@ Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de c
 
 ### Como cliente
 1. Abrí la demo o `index.html`.
-2. Tocá **Probar como cliente** (o entrá al catálogo).
+2. Entrá en **Inicio**.
 3. Agregá productos, abrí **Mi pedido**, elegí **Envío a domicilio** o **Retiro en local**.
 4. Completá nombre, teléfono y dirección y tocá **Enviar pedido por WhatsApp**.
 5. Se abre WhatsApp con el pedido escrito, listo para enviar.
 
 ### Como negocio (administrar pedidos)
-1. Tocá **Administrar pedidos** (arriba a la derecha o en la sección *Probá la demo*).
+1. Tocá **Administrar pedidos** arriba a la derecha o **Panel negocio** desde **Local**.
 2. Ingresá el **PIN demo `1234`**.
 3. Vas a ver: pedidos entrantes, ventas del día, pedidos activos y stock bajo.
 4. Acciones por pedido: **Aceptar pedido → Marcar listo para enviar → Enviar con repartidor → Marcar entregado**, o **Cancelar**.
 
 ### Como repartidor
-1. Con el modo negocio activo, tocá **Ver repartidor** (sección *Probá la demo*) o el menú #delivery.
+1. Con el modo negocio activo, tocá **Vista rider** desde el panel o **Repartidor** desde **Local**.
 2. Vas a ver el pedido asignado, con **Salí del local** y **Pedido entregado**.
 
 > **PIN demo: 1234** — acceso de demostración para la presentación.

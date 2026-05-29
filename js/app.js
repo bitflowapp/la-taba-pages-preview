@@ -29,6 +29,30 @@ import { getState, subscribe } from './state.js';
 import { handleBusinessAction, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
 import { handleDeliveryAction, renderDeliveryPanel } from './delivery.js';
 
+const VIEWS = ['home', 'cart', 'tracking', 'business', 'rider', 'profile'];
+const VIEW_ALIASES = {
+  catalogo: 'home',
+  inicio: 'home',
+  home: 'home',
+  carrito: 'cart',
+  pedido: 'cart',
+  cart: 'cart',
+  seguimiento: 'tracking',
+  seguir: 'tracking',
+  tracking: 'tracking',
+  negocio: 'business',
+  admin: 'business',
+  business: 'business',
+  delivery: 'rider',
+  repartidor: 'rider',
+  rider: 'rider',
+  perfil: 'profile',
+  local: 'profile',
+  profile: 'profile',
+};
+
+let activeView = viewFromHash();
+
 function bootstrap() {
   try {
     applyBusinessConfig();
@@ -43,7 +67,8 @@ function bootstrap() {
 }
 
 function renderAll() {
-  renderNavigation();
+  renderActiveView();
+  renderNavigation(activeView);
   renderAdminVisibility();
   renderCatalog();
   renderCart();
@@ -54,15 +79,24 @@ function renderAll() {
 }
 
 function bindEvents() {
-  window.addEventListener('hashchange', renderNavigation);
+  window.addEventListener('popstate', syncViewFromLocation);
+  window.addEventListener('hashchange', syncViewFromLocation);
 
   document.addEventListener('click', (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
+    const navView = target.closest('[data-nav-view]')?.dataset.navView;
+    if (navView) {
+      event.preventDefault();
+      setActiveView(navView);
+      return;
+    }
+
     const categoryId = target.closest('[data-category-id]')?.dataset.categoryId;
     if (categoryId) {
       setCategory(categoryId);
+      if (activeView !== 'home') setActiveView('home');
       return;
     }
 
@@ -107,7 +141,7 @@ function bindEvents() {
     }
 
     if (target.closest('[data-open-cart]')) {
-      window.location.hash = 'carrito';
+      setActiveView('cart');
       return;
     }
 
@@ -118,11 +152,24 @@ function bindEvents() {
 
     const demoTarget = target.closest('[data-demo-open]')?.dataset.demoOpen;
     if (demoTarget) {
-      openAdminArea(demoTarget);
+      openAdminArea(normalizeView(demoTarget));
       return;
     }
 
-    if (target.closest('[data-admin-toggle], [data-admin-toggle-secondary]')) {
+    const adminView = target.closest('[data-open-admin-view]')?.dataset.openAdminView;
+    if (adminView) {
+      openAdminArea(adminView);
+      return;
+    }
+
+    const pinTarget = target.closest('[data-open-pin]')?.dataset.adminTarget;
+    if (pinTarget) {
+      pendingAdminTarget = normalizeView(pinTarget);
+      openPinModal();
+      return;
+    }
+
+    if (target.closest('[data-admin-toggle]')) {
       toggleAdminMode();
       return;
     }
@@ -130,7 +177,7 @@ function bindEvents() {
     if (target.closest('[data-lock-admin]')) {
       lockAdmin();
       showToast('Acceso del negocio cerrado.');
-      window.location.hash = 'catalogo';
+      setActiveView('home');
       return;
     }
 
@@ -176,7 +223,7 @@ function bindEvents() {
     }
 
     showToast(`${result.order.id} creado. Abriendo WhatsApp...`);
-    window.location.hash = 'seguimiento';
+    setActiveView('tracking');
     window.open(buildWhatsAppUrl(result.order), '_blank', 'noopener,noreferrer');
   });
 
@@ -206,9 +253,9 @@ function bindEvents() {
     form.reset();
     closePinModal();
     showToast('Acceso del negocio activado.');
-    const target = pendingAdminTarget || 'negocio';
+    const target = pendingAdminTarget || 'business';
     pendingAdminTarget = null;
-    setTimeout(() => { window.location.hash = target; }, 80);
+    setActiveView(target);
   });
 
   $('[data-product-modal]')?.addEventListener('click', (event) => {
@@ -224,23 +271,74 @@ let pendingAdminTarget = null;
 
 function toggleAdminMode() {
   if (getState().adminUnlocked) {
-    lockAdmin();
-    showToast('Acceso del negocio cerrado.');
-    window.location.hash = 'catalogo';
+    setActiveView('business');
     return;
   }
+  setActiveView('business');
+  pendingAdminTarget = 'business';
   openPinModal();
 }
 
-// Abre una sección del negocio (negocio/delivery) desde la sección Demo.
-// Si ya está desbloqueado navega directo; si no, pide el PIN y recuerda el destino.
+// Abre una vista del negocio. Si no está desbloqueada, muestra PIN y recuerda destino.
 function openAdminArea(targetArea) {
+  const view = normalizeView(targetArea);
+  setActiveView(view);
   if (getState().adminUnlocked) {
-    window.location.hash = targetArea;
     return;
   }
-  pendingAdminTarget = targetArea;
+  pendingAdminTarget = view;
   openPinModal();
+}
+
+function normalizeView(view) {
+  const key = String(view || '').replace(/^#/, '').trim().toLowerCase();
+  const normalized = VIEW_ALIASES[key] || key;
+  return VIEWS.includes(normalized) ? normalized : 'home';
+}
+
+function viewFromHash() {
+  return normalizeView(window.location.hash.slice(1));
+}
+
+function setActiveView(view, options = {}) {
+  const nextView = normalizeView(view);
+  const changed = nextView !== activeView;
+  activeView = nextView;
+
+  if (options.writeHash !== false) {
+    writeViewHash(nextView, options.replace === true);
+  }
+
+  renderAll();
+
+  if (changed && options.scroll !== false) {
+    window.scrollTo(0, 0);
+  }
+}
+
+function syncViewFromLocation() {
+  const nextView = viewFromHash();
+  if (nextView === activeView) return;
+  activeView = nextView;
+  renderAll();
+  window.scrollTo(0, 0);
+}
+
+function writeViewHash(view, replace = false) {
+  const nextHash = `#${view}`;
+  if (window.location.hash === nextHash) return;
+  const url = `${window.location.pathname}${window.location.search}${nextHash}`;
+  const method = replace ? 'replaceState' : 'pushState';
+  window.history[method]({ view }, '', url);
+}
+
+function renderActiveView() {
+  document.querySelectorAll('[data-view]').forEach((section) => {
+    const isActive = section.dataset.view === activeView;
+    section.hidden = !isActive;
+    section.classList.toggle('is-active', isActive);
+    section.setAttribute('aria-hidden', String(!isActive));
+  });
 }
 
 function openPinModal() {

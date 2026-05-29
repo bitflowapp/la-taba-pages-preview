@@ -34,7 +34,9 @@ export function getCartSummary(deliveryMode = 'delivery') {
     quantity: item.quantity,
     unitPrice: item.product.price,
   }));
-  const totals = calculateTotals(pricingItems, deliveryMode);
+  const totals = items.length
+    ? calculateTotals(pricingItems, deliveryMode)
+    : { subtotal: 0, deliveryFee: 0, total: 0 };
   return {
     items,
     count: items.reduce((sum, item) => sum + item.quantity, 0),

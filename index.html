@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#181716" />
+    <meta name="description" content="La Taba: sistema propio de pedidos online para carnicería con delivery." />
+    <title>La Taba · Pedidos online</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#catalogo" aria-label="Ir al catálogo de La Taba">
+          <span class="brand-mark">LT</span>
+          <span>
+            <strong data-business-name>La Taba</strong>
+            <small data-business-subtitle>Carnicería & delivery propio</small>
+          </span>
+        </a>
+
+        <nav class="desktop-nav" aria-label="Navegación principal">
+          <a href="#catalogo" data-nav-link="catalogo">Catálogo</a>
+          <a href="#carrito" data-nav-link="carrito">Carrito <span class="mini-badge" data-cart-count>0</span></a>
+          <a href="#seguimiento" data-nav-link="seguimiento">Seguimiento</a>
+          <a href="#perfil" data-nav-link="perfil">Perfil</a>
+        </nav>
+
+        <div class="topbar-actions">
+          <button class="ghost-button compact" type="button" data-admin-toggle>Modo negocio</button>
+          <button class="primary-button compact" type="button" data-open-cart>
+            Ver pedido <span data-cart-total-small>$0</span>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" id="inicio">
+          <div class="hero-copy">
+            <div class="status-pill" data-open-status>Abierto hoy · pedidos online</div>
+            <h1>Tu pedido de carnicería, armado fácil y enviado directo a La Taba.</h1>
+            <p>
+              Catálogo, carrito, envío o retiro en local y pedido ordenado por WhatsApp.
+              Una base lista para convertirse en sistema completo con panel, stock y delivery propio.
+            </p>
+            <div class="hero-actions">
+              <a class="primary-button" href="#catalogo">Armar pedido</a>
+              <a class="secondary-button" href="#como-funciona">Ver cómo funciona</a>
+            </div>
+          </div>
+          <aside class="hero-card" aria-label="Resumen comercial">
+            <span class="hero-card-icon">🥩</span>
+            <h2>Pedido claro, sin audios eternos.</h2>
+            <p>El cliente elige productos, carga dirección y La Taba recibe todo ordenado.</p>
+            <div class="hero-metrics">
+              <span><strong data-min-order>$0</strong><small>mínimo delivery</small></span>
+              <span><strong data-delivery-fee>$0</strong><small>envío base</small></span>
+              <span><strong>15–35 min</strong><small>preparación</small></span>
+            </div>
+          </aside>
+        </section>
+
+        <section class="section" id="catalogo" data-route="catalogo">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Catálogo</p>
+              <h2>Productos destacados</h2>
+            </div>
+            <div class="search-box">
+              <span>⌕</span>
+              <input data-search-input type="search" placeholder="Buscar asado, milanesas, combo..." />
+            </div>
+          </div>
+
+          <div class="category-strip" data-category-strip></div>
+          <div class="product-grid" data-product-grid></div>
+        </section>
+
+        <section class="section soft" id="carrito" data-route="carrito">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Pedido</p>
+              <h2>Carrito y checkout</h2>
+            </div>
+            <button class="ghost-button" type="button" data-clear-cart>Vaciar carrito</button>
+          </div>
+
+          <div class="checkout-layout">
+            <div class="card">
+              <h3>Tu selección</h3>
+              <div data-cart-list></div>
+            </div>
+
+            <form class="card checkout-form" data-checkout-form>
+              <h3>Datos de entrega</h3>
+              <div class="delivery-mode">
+                <label>
+                  <input type="radio" name="deliveryMode" value="delivery" checked />
+                  <span>Envío a domicilio</span>
+                </label>
+                <label>
+                  <input type="radio" name="deliveryMode" value="pickup" />
+                  <span>Retiro en local</span>
+                </label>
+              </div>
+
+              <div class="field-grid">
+                <label>
+                  Nombre
+                  <input name="customerName" autocomplete="name" required placeholder="Ej: Marco" />
+                </label>
+                <label>
+                  Teléfono
+                  <input name="customerPhone" autocomplete="tel" required placeholder="Ej: 2990000000" />
+                </label>
+              </div>
+
+              <label data-address-field>
+                Dirección
+                <input name="customerAddress" autocomplete="street-address" placeholder="Calle, número, barrio" />
+              </label>
+
+              <label>
+                Forma de pago
+                <select name="paymentMethod">
+                  <option value="cash">Efectivo</option>
+                  <option value="transfer">Transferencia</option>
+                  <option value="mercado_pago_future">Mercado Pago futuro</option>
+                </select>
+              </label>
+
+              <label>
+                Notas
+                <textarea name="customerNotes" rows="3" placeholder="Ej: tocar timbre rojo, sin hueso, cortar fino..."></textarea>
+              </label>
+
+              <div class="summary-box" data-order-summary></div>
+              <div class="warning-box hidden" data-checkout-warning></div>
+
+              <div class="button-row">
+                <button class="primary-button" type="submit">Confirmar y abrir WhatsApp</button>
+                <button class="secondary-button" type="button" data-copy-order>Copiar pedido</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="section" id="seguimiento" data-route="seguimiento">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Seguimiento</p>
+              <h2>Último pedido</h2>
+            </div>
+          </div>
+          <div data-tracking-panel></div>
+        </section>
+
+        <section class="section soft" id="como-funciona">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Demo comercial</p>
+              <h2>Cómo funciona para el negocio</h2>
+            </div>
+          </div>
+          <div class="steps-grid">
+            <article class="step-card"><strong>1</strong><h3>El cliente arma el pedido</h3><p>Elige productos, cantidades, envío/retiro y forma de pago desde el celular.</p></article>
+            <article class="step-card"><strong>2</strong><h3>La Taba recibe todo claro</h3><p>WhatsApp llega con nombre, dirección, productos, total y notas. Sin audios misteriosos.</p></article>
+            <article class="step-card"><strong>3</strong><h3>El negocio administra</h3><p>Panel mock para pedidos, estados, stock bajo, ventas del día y preparación.</p></article>
+            <article class="step-card"><strong>4</strong><h3>Delivery propio</h3><p>El repartidor ve el pedido asignado y marca salida/entrega. Listo para GPS real después.</p></article>
+          </div>
+        </section>
+
+        <section class="section" id="perfil" data-route="perfil">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Cliente</p>
+              <h2>Perfil rápido</h2>
+            </div>
+          </div>
+          <div class="profile-grid">
+            <div class="card">
+              <h3>Datos del comercio</h3>
+              <p><strong data-business-profile-name>La Taba</strong></p>
+              <p data-business-address>Neuquén capital</p>
+              <p data-business-hours>Lunes a sábado</p>
+              <p data-business-zone>Zona de entrega configurada</p>
+            </div>
+            <div class="card">
+              <h3>Instalación rápida</h3>
+              <p>Desde el navegador se puede agregar a la pantalla de inicio como una app. Ideal para vender primero sin Play Store ni App Store.</p>
+              <button class="secondary-button" type="button" data-admin-toggle-secondary>Entrar como negocio</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="section admin-section hidden" id="negocio" data-admin-area>
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Modo negocio</p>
+              <h2>Panel de La Taba</h2>
+            </div>
+            <button class="ghost-button" type="button" data-lock-admin>Salir del modo negocio</button>
+          </div>
+          <div data-business-dashboard></div>
+        </section>
+
+        <section class="section admin-section hidden" id="delivery" data-admin-area>
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Repartidor</p>
+              <h2>Delivery propio</h2>
+            </div>
+          </div>
+          <div data-delivery-panel></div>
+        </section>
+      </main>
+
+      <nav class="mobile-nav" aria-label="Navegación móvil">
+        <a href="#catalogo" data-nav-link="catalogo">Catálogo</a>
+        <a href="#carrito" data-nav-link="carrito">Carrito <span data-cart-count-mobile>0</span></a>
+        <a href="#seguimiento" data-nav-link="seguimiento">Pedido</a>
+        <a href="#perfil" data-nav-link="perfil">Perfil</a>
+      </nav>
+    </div>
+
+    <dialog class="product-modal" data-product-modal>
+      <div data-modal-content></div>
+    </dialog>
+
+    <dialog class="pin-modal" data-pin-modal>
+      <form method="dialog" class="pin-card" data-pin-form>
+        <h2>Modo negocio</h2>
+        <p>Ingresá el PIN demo para ver panel negocio y delivery.</p>
+        <input name="pin" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN del modo negocio" />
+        <div class="warning-box hidden" data-pin-error>PIN incorrecto. Para la demo usá 1234.</div>
+        <div class="button-row">
+          <button class="primary-button" type="submit">Entrar</button>
+          <button class="secondary-button" value="cancel" type="button" data-close-pin>Cancelar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast hidden" data-toast></div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

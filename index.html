@@ -2,10 +2,10 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#181716" />
-    <meta name="description" content="La Taba: sistema propio de pedidos online para carnicería con delivery." />
-    <title>La Taba · Pedidos online</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#121110" />
+    <meta name="description" content="La Taba: canal propio de pedidos online para carnicería con delivery." />
+    <title>La Taba · Carnes premium · Pedidos online</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
@@ -13,16 +13,16 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <a class="brand" href="#catalogo" aria-label="Ir al catálogo de La Taba">
+        <a class="brand" href="#catalogo" aria-label="Ir al inicio de La Taba">
           <span class="brand-mark">LT</span>
-          <span>
-            <strong data-business-name>La Taba</strong>
+          <span class="brand-text">
+            <strong class="brand-word" data-business-name>La Taba</strong>
             <small data-business-subtitle>Carnicería & delivery propio</small>
           </span>
         </a>
 
         <nav class="desktop-nav" aria-label="Navegación principal">
-          <a href="#catalogo" data-nav-link="catalogo">Catálogo</a>
+          <a href="#catalogo" data-nav-link="catalogo">Inicio</a>
           <a href="#carrito" data-nav-link="carrito">Mi pedido <span class="mini-badge" data-cart-count>0</span></a>
           <a href="#seguimiento" data-nav-link="seguimiento">Seguimiento</a>
           <a href="#perfil" data-nav-link="perfil">El comercio</a>
@@ -30,115 +30,61 @@
 
         <div class="topbar-actions">
           <button class="ghost-button compact" type="button" data-admin-toggle>Administrar pedidos</button>
-          <button class="primary-button compact" type="button" data-open-cart>
-            Ver mi pedido <span data-cart-total-small>$0</span>
+          <button class="primary-button compact cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
+            <span class="cart-glyph" aria-hidden="true">🛒</span>
+            <span data-cart-total-small>$0</span>
           </button>
         </div>
       </header>
 
       <main>
-        <section class="hero" id="inicio">
-          <div class="hero-copy">
-            <div class="status-pill" data-open-status>Abierto hoy · pedidos online</div>
-            <h1>Tu propio canal de pedidos online para La Taba.</h1>
-            <p>
-              El cliente entra al link, arma el pedido y La Taba lo recibe ordenado por WhatsApp.
-              Un canal propio para vender directo, sin depender por completo de plataformas externas.
-            </p>
-            <div class="hero-actions">
-              <a class="primary-button" href="#catalogo">Comprar como cliente</a>
-              <a class="secondary-button" href="#demo">Probar la administración</a>
-            </div>
-            <ul class="hero-chips" aria-label="Beneficios">
-              <li>Sin instalar apps</li>
-              <li>Pedido listo para WhatsApp</li>
-              <li>Link para WhatsApp, Instagram o QR</li>
-            </ul>
+        <section class="section app-home" id="catalogo" data-route="catalogo">
+          <div class="status-bar" role="status">
+            <span class="status-dot" data-open-status>Abierto ahora</span>
+            <span class="status-sep" aria-hidden="true"></span>
+            <span class="status-item"><span class="status-ico" aria-hidden="true">🕐</span> 15 – 35 min</span>
+            <span class="status-sep" aria-hidden="true"></span>
+            <span class="status-item"><span class="status-ico" aria-hidden="true">🛵</span> Envío o retiro</span>
           </div>
-          <aside class="hero-card" aria-label="Resumen comercial">
-            <span class="hero-card-icon">🥩</span>
-            <h2>Pedidos claros para preparar más rápido.</h2>
-            <p>Nombre, teléfono, entrega, productos, pago, notas y total llegan en un solo mensaje. Walter no tiene que reconstruir el pedido desde un chat.</p>
-            <div class="hero-metrics">
-              <span><strong data-min-order>$0</strong><small>mínimo delivery</small></span>
-              <span><strong data-delivery-fee>$0</strong><small>envío base</small></span>
-              <span><strong>15–35 min</strong><small>preparación</small></span>
-            </div>
-          </aside>
-        </section>
 
-        <section class="section soft" id="como-funciona">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Cómo funciona</p>
-              <h2>Del celular del cliente al WhatsApp del negocio</h2>
-            </div>
+          <div class="search-box">
+            <span aria-hidden="true">⌕</span>
+            <input data-search-input type="search" placeholder="Buscar productos, combos…" aria-label="Buscar productos" />
           </div>
-          <div class="steps-grid steps-3">
-            <article class="step-card"><strong>1</strong><h3>El cliente arma el pedido</h3><p>Elige productos, cantidades, envío o retiro y forma de pago. Todo desde el celular, sin instalar nada.</p></article>
-            <article class="step-card"><strong>2</strong><h3>Lo envía por WhatsApp</h3><p>Llega un mensaje ordenado con nombre, dirección, productos, total, pago y notas. Sin audios ni malentendidos.</p></article>
-            <article class="step-card"><strong>3</strong><h3>La Taba prepara o entrega</h3><p>El local confirma, prepara y coordina envío o retiro. Walter puede ver pedidos, stock y reparto desde la vista de administración.</p></article>
-          </div>
-          <ul class="benefit-strip" aria-label="Ventajas">
-            <li><strong>Canal propio</strong><span>El cliente compra desde un link de La Taba, sin pasar siempre por una app externa.</span></li>
-            <li><strong>Tu marca, tu link</strong><span>Se comparte por WhatsApp, Instagram o un QR en el local.</span></li>
-            <li><strong>Pedidos ordenados</strong><span>Se terminan los audios y los pedidos perdidos por chat.</span></li>
-            <li><strong>Listo para crecer</strong><span>Después se le suma pagos online, stock real y panel completo.</span></li>
-          </ul>
-        </section>
 
-        <section class="section" id="demo">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Probá la demo</p>
-              <h2>Mirá la app desde los tres lados</h2>
-            </div>
-          </div>
-          <div class="demo-grid">
-            <article class="card demo-card">
-              <span class="demo-icon">🛒</span>
-              <h3>Comprar como cliente</h3>
-              <p>Armá un pedido de prueba, elegí envío o retiro y mirá cómo queda el mensaje de WhatsApp.</p>
-              <a class="primary-button" href="#catalogo">Comprar como cliente</a>
-            </article>
-            <article class="card demo-card">
-              <span class="demo-icon">🧾</span>
-              <h3>Administrar pedidos</h3>
-              <p>Entrá al panel del negocio: pedidos nuevos, estados, ventas del día y control de stock.</p>
-              <button class="secondary-button" type="button" data-demo-open="negocio">Ver administración</button>
-            </article>
-            <article class="card demo-card">
-              <span class="demo-icon">🛵</span>
-              <h3>Ver repartidor</h3>
-              <p>Mirá la vista del delivery propio: pedido asignado, salida del local y entrega.</p>
-              <button class="secondary-button" type="button" data-demo-open="delivery">Ver repartidor</button>
-            </article>
-          </div>
-          <p class="demo-note">🔑 PIN demo: <strong>1234</strong> · Acceso de demostración para esta presentación.</p>
-        </section>
+          <div class="category-strip" data-category-strip></div>
 
-        <section class="section" id="catalogo" data-route="catalogo">
-          <div class="offers-block">
-            <div class="offers-head">
-              <p class="eyebrow">🔥 Ofertas de hoy</p>
-              <span class="offers-hint">Deslizá para ver más</span>
+          <a class="promo-banner" href="#carrito" data-promo-banner>
+            <div class="promo-banner-copy">
+              <span class="promo-kicker">Canal propio de La Taba</span>
+              <strong>Armá tu pedido y lo recibimos ordenado por WhatsApp</strong>
+              <span class="promo-sub">Carne fresca, combos y envío propio. Sin instalar apps.</span>
+            </div>
+            <span class="promo-cta">Empezar pedido</span>
+          </a>
+
+          <div class="rail-block">
+            <div class="rail-head">
+              <h2>Ofertas de hoy</h2>
+              <button class="rail-link" type="button" data-category-id="promos">Ver todas ›</button>
             </div>
             <div class="offers-rail" data-offers-rail></div>
           </div>
 
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Catálogo</p>
-              <h2>Elegí y armá tu pedido</h2>
+          <div class="rail-block">
+            <div class="rail-head">
+              <h2>Combos destacados</h2>
+              <button class="rail-link" type="button" data-category-id="combos">Ver todos ›</button>
             </div>
-            <div class="search-box">
-              <span>⌕</span>
-              <input data-search-input type="search" placeholder="Buscar asado, milanesas, combo..." />
-            </div>
+            <div class="combos-rail" data-combos-rail></div>
           </div>
 
-          <div class="category-strip" data-category-strip></div>
-          <div class="product-grid" data-product-grid></div>
+          <div class="grid-block">
+            <div class="rail-head">
+              <h2>Nuestros productos</h2>
+            </div>
+            <div class="product-grid" data-product-grid></div>
+          </div>
         </section>
 
         <section class="section soft" id="carrito" data-route="carrito">
@@ -151,7 +97,7 @@
           </div>
 
           <div class="checkout-layout">
-            <div class="card">
+            <div class="card cart-card">
               <h3>Tu selección</h3>
               <div data-cart-list></div>
             </div>
@@ -161,22 +107,22 @@
               <div class="delivery-mode">
                 <label>
                   <input type="radio" name="deliveryMode" value="delivery" checked />
-                  <span>Envío a domicilio</span>
+                  <span><span class="dm-ico" aria-hidden="true">🛵</span> Envío a domicilio</span>
                 </label>
                 <label>
                   <input type="radio" name="deliveryMode" value="pickup" />
-                  <span>Retiro en local</span>
+                  <span><span class="dm-ico" aria-hidden="true">🏪</span> Retiro en local</span>
                 </label>
               </div>
 
               <div class="field-grid">
                 <label>
                   Nombre
-                  <input name="customerName" autocomplete="name" required placeholder="Ej: Marco" />
+                  <input name="customerName" autocomplete="name" required placeholder="Ej: Juan Pérez" />
                 </label>
                 <label>
                   Teléfono
-                  <input name="customerPhone" autocomplete="tel" required placeholder="Ej: 2990000000" />
+                  <input name="customerPhone" autocomplete="tel" required placeholder="Ej: 11 1234 5678" />
                 </label>
               </div>
 
@@ -196,16 +142,23 @@
 
               <label>
                 Notas
-                <textarea name="customerNotes" rows="3" placeholder="Ej: tocar timbre rojo, sin hueso, cortar fino..."></textarea>
+                <textarea name="customerNotes" rows="3" placeholder="Ej: tocar timbre, sin hueso, cortar fino…"></textarea>
               </label>
 
               <div class="summary-box" data-order-summary></div>
               <div class="warning-box hidden" data-checkout-warning></div>
 
-              <div class="button-row">
-                <button class="primary-button" type="submit">Enviar pedido por WhatsApp</button>
-                <button class="secondary-button" type="button" data-copy-order>Copiar pedido</button>
+              <div class="trust-row" aria-hidden="false">
+                <span class="trust-ico">🛡️</span>
+                <span class="trust-text"><strong>Compra 100% segura</strong><small>Tus datos viajan directo a La Taba por WhatsApp.</small></span>
               </div>
+
+              <div class="button-row">
+                <button class="primary-button whatsapp-button" type="submit">
+                  <span class="wa-glyph" aria-hidden="true">🟢</span> Enviar pedido por WhatsApp
+                </button>
+              </div>
+              <button class="ghost-button copy-button" type="button" data-copy-order>Copiar pedido</button>
               <p class="form-hint">Al confirmar se abre WhatsApp con el pedido escrito. Solo tenés que enviarlo al negocio.</p>
             </form>
           </div>
@@ -231,15 +184,25 @@
           <div class="profile-grid">
             <div class="card">
               <h3>Información del local</h3>
-              <p><strong data-business-profile-name>La Taba</strong></p>
-              <p data-business-address>Neuquén capital</p>
-              <p data-business-hours>Lunes a sábado</p>
-              <p data-business-zone>Zona de entrega configurada</p>
+              <ul class="info-list">
+                <li><span>Local</span><strong data-business-profile-name>La Taba</strong></li>
+                <li><span>Dirección</span><strong data-business-address>Neuquén capital</strong></li>
+                <li><span>Horarios</span><strong data-business-hours>Lunes a sábado</strong></li>
+                <li><span>Zona de envío</span><strong data-business-zone>Zona configurada</strong></li>
+                <li><span>Pedido mínimo delivery</span><strong data-min-order>$0</strong></li>
+                <li><span>Envío base</span><strong data-delivery-fee>$0</strong></li>
+              </ul>
             </div>
             <div class="card">
               <h3>Una base para vender directo</h3>
-              <p>La Taba puede compartir el link por WhatsApp, Instagram o un QR. Es una demo estática para validar el canal propio antes de sumar pagos, stock real o login.</p>
+              <p>La Taba comparte el link por WhatsApp, Instagram o un QR. Es una demo para validar el canal propio antes de sumar pagos online, stock real o login.</p>
+              <ol class="how-strip">
+                <li><strong>1</strong> El cliente arma el pedido</li>
+                <li><strong>2</strong> Llega ordenado por WhatsApp</li>
+                <li><strong>3</strong> La Taba prepara y entrega</li>
+              </ol>
               <button class="secondary-button" type="button" data-admin-toggle-secondary>Administrar pedidos</button>
+              <p class="form-hint">🔑 PIN demo: <strong>1234</strong></p>
             </div>
           </div>
         </section>
@@ -267,10 +230,10 @@
       </main>
 
       <nav class="mobile-nav" aria-label="Navegación móvil">
-        <a href="#catalogo" data-nav-link="catalogo">Catálogo</a>
-        <a href="#carrito" data-nav-link="carrito">Mi pedido <span data-cart-count-mobile>0</span></a>
-        <a href="#seguimiento" data-nav-link="seguimiento">Seguir</a>
-        <a href="#perfil" data-nav-link="perfil">Comercio</a>
+        <a href="#catalogo" data-nav-link="catalogo"><span class="mn-ico" aria-hidden="true">🏠</span><span class="mn-label">Inicio</span></a>
+        <a href="#carrito" data-nav-link="carrito"><span class="mn-ico" aria-hidden="true">🧾</span><span class="mn-label">Mi pedido</span><span class="mn-badge" data-cart-count-mobile>0</span></a>
+        <a href="#seguimiento" data-nav-link="seguimiento"><span class="mn-ico" aria-hidden="true">📍</span><span class="mn-label">Seguir</span></a>
+        <a href="#perfil" data-nav-link="perfil"><span class="mn-ico" aria-hidden="true">🏪</span><span class="mn-label">Local</span></a>
       </nav>
     </div>
 

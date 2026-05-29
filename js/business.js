@@ -41,13 +41,22 @@ export function renderBusinessDashboard() {
   const preparing = orders.filter((order) => order.status === 'preparing').length;
   const ready = orders.filter((order) => order.status === 'ready').length;
   const onTheWay = orders.filter((order) => order.status === 'on_the_way').length;
+  const deliveredToday = todayOrders.filter((order) => order.status === 'delivered').length;
 
   container.innerHTML = `
     <div class="metrics-grid">
-      <div class="metric-card"><strong>${money(todayTotal)}</strong><span>Ventas de hoy</span></div>
+      <div class="metric-card accent"><strong>${money(todayTotal)}</strong><span>Ventas de hoy</span></div>
       <div class="metric-card"><strong>${todayOrders.length}</strong><span>Pedidos de hoy</span></div>
-      <div class="metric-card"><strong>${pending + preparing + ready + onTheWay}</strong><span>Pedidos para atender</span></div>
-      <div class="metric-card"><strong>${lowStock.length}</strong><span>Productos con bajo stock</span></div>
+      <div class="metric-card"><strong>${pending + preparing + ready + onTheWay}</strong><span>Para atender</span></div>
+      <div class="metric-card"><strong>${lowStock.length}</strong><span>Bajo stock</span></div>
+    </div>
+
+    <div class="status-board">
+      <span class="board-chip received">Nuevos <strong>${pending}</strong></span>
+      <span class="board-chip preparing">Preparando <strong>${preparing}</strong></span>
+      <span class="board-chip ready">Listos <strong>${ready}</strong></span>
+      <span class="board-chip way">En camino <strong>${onTheWay}</strong></span>
+      <span class="board-chip done">Entregados hoy <strong>${deliveredToday}</strong></span>
     </div>
 
     <div class="admin-grid">

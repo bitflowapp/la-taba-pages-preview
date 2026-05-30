@@ -163,6 +163,12 @@ function renderAdvancedDemo() {
   const connection = status.relayEnabled
     ? (status.relayConnected ? `En vivo entre equipos · sala ${escapeHtml(status.room)}` : `Relay configurado (reconectando) · sala ${escapeHtml(status.room)}`)
     : 'Solo este equipo (sin relay)';
+  const linkButtons = status.relayEnabled
+    ? `<div class="button-row demo-links">
+        <button class="ghost-button compact" type="button" data-copy-client-link>Copiar link cliente</button>
+        <button class="ghost-button compact" type="button" data-copy-rider-link>Copiar link rider</button>
+      </div>`
+    : '<p class="form-hint">Sin relay activo: abrí la app con <code>?relay=…&room=…</code> para probar en dos celulares.</p>';
   return `
     <details class="demo-advanced">
       <summary>Demo avanzado (técnico)</summary>
@@ -170,6 +176,7 @@ function renderAdvancedDemo() {
         <div class="summary-row"><span>Conexión</span><strong>${connection}</strong></div>
         <div class="summary-row"><span>Sala realtime</span><strong>${escapeHtml(status.room)}</strong></div>
         <div class="summary-row"><span>ID de equipo</span><strong>${escapeHtml(String(status.deviceId).slice(0, 8))}</strong></div>
+        ${linkButtons}
         <p class="form-hint">Demo local por LAN: nada se envía a internet. El tiempo real entre celulares usa el relay propio (ver README).</p>
       </div>
     </details>

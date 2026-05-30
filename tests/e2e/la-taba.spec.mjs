@@ -60,6 +60,44 @@ test('agregar producto desde una categoría del catálogo', async ({ page }) => 
   await waitForToast(page, /agregado al pedido/);
   await expect(page.locator('[data-cart-count]')).not.toHaveText('0');
 
+  // La tarjeta del producto agregado muestra el stepper de cantidad.
+  const card = page.locator('[data-product-grid] .product-card.in-cart').first();
+  await expect(card).toBeVisible();
+  await expect(card.locator('.qty-stepper strong')).toHaveText('1');
+  await card.locator('[data-cart-inc]').click();
+  await expect(card.locator('.qty-stepper strong')).toHaveText('2');
+  await expect(page.locator('[data-cart-count]')).toHaveText('2');
+  await card.locator('[data-cart-dec]').click();
+  await expect(card.locator('.qty-stepper strong')).toHaveText('1');
+
+  await guards.assertClean();
+});
+
+test('home muestra acceso al pedido en curso tras confirmar', async ({ page }) => {
+  const guards = installPageGuards(page);
+
+  await page.goto('/');
+  await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await page.locator('.desktop-nav [data-nav-view="cart"]').click();
+  await fillCheckout(page, {
+    name: 'Walter QA',
+    phone: '2995550000',
+    address: 'Roca 123',
+    notes: 'Tocar timbre',
+    payment: 'cash',
+    deliveryMode: 'delivery',
+  });
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+
+  await page.locator('.desktop-nav [data-nav-view="home"]').click();
+  const banner = page.locator('[data-home-active-order] .active-order-banner');
+  await expect(banner).toBeVisible();
+  await expect(banner).toContainText('LT-0002');
+  await banner.click();
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+
   await guards.assertClean();
 });
 

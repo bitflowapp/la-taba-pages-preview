@@ -289,15 +289,28 @@ function renderProducts() {
     return;
   }
 
+  const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
+
   container.innerHTML = filteredProducts.map((product) => {
     const outOfStock = product.stock <= 0 || !product.available;
     const offer = discountPercent(product) > 0;
+    const inCart = cartQuantities.get(product.id) || 0;
+    const control = inCart > 0
+      ? `<div class="qty-stepper" aria-label="Cantidad de ${escapeHtml(product.name)} en el pedido">
+          <button class="icon-button compact" type="button" data-cart-dec="${product.id}" aria-label="Restar uno de ${escapeHtml(product.name)}">−</button>
+          <strong>${inCart}</strong>
+          <button class="icon-button compact" type="button" data-cart-inc="${product.id}" aria-label="Sumar uno de ${escapeHtml(product.name)}" ${inCart >= product.stock ? 'disabled' : ''}>+</button>
+        </div>`
+      : `<button class="add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>
+          <span class="add-plus">+</span><span class="add-text">${outOfStock ? 'Agotado' : 'Agregar'}</span>
+        </button>`;
     return `
-      <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''}">
+      <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
         <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
           ${productThumb(product, 'grid')}
           ${offerBadges(product)}
           <span class="product-stock-tag">${stockPill(product)}</span>
+          ${inCart > 0 ? `<span class="product-incart-tag">${inCart} en pedido</span>` : ''}
         </button>
         <div class="product-body">
           <h3>${escapeHtml(product.name)}</h3>
@@ -305,9 +318,7 @@ function renderProducts() {
         </div>
         <div class="product-bottom">
           ${priceBlock(product)}
-          <button class="add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>
-            <span class="add-plus">+</span><span class="add-text">${outOfStock ? 'Agotado' : 'Agregar'}</span>
-          </button>
+          ${control}
         </div>
       </article>
     `;
@@ -320,6 +331,29 @@ export function stockPill(product) {
   if (product.badge === 'Retiro') return '<span class="stock-pill featured">Retiro</span>';
   if (product.featured) return '<span class="stock-pill featured">Destacado</span>';
   return `<span class="stock-pill">Disponible</span>`;
+}
+
+// Acceso directo a Tracking desde Home cuando hay un pedido en curso.
+export function renderHomeActiveOrder() {
+  const container = $('[data-home-active-order]');
+  if (!container) return;
+  const order = getLastOrder();
+  const isActive = order && order.status !== 'delivered' && order.status !== 'cancelled';
+  if (!isActive) {
+    container.hidden = true;
+    container.innerHTML = '';
+    return;
+  }
+  container.hidden = false;
+  container.innerHTML = `
+    <button class="active-order-banner" type="button" data-nav-view="tracking">
+      <span class="active-order-pulse" aria-hidden="true"></span>
+      <span class="active-order-text">
+        <strong>Tenés un pedido en curso</strong>
+        <small>${escapeHtml(order.id)} · ${escapeHtml(statusLabel(order.status))} · tocá para seguirlo</small>
+      </span>
+      <span class="active-order-go" aria-hidden="true">›</span>
+    </button>`;
 }
 
 export function renderCart() {
@@ -603,7 +637,7 @@ function realtimeChip() {
   if (status.relayEnabled) {
     return status.relayConnected
       ? `<span class="rt-chip live">● En vivo entre equipos · sala ${escapeHtml(status.room)}</span>`
-      : `<span class="rt-chip">○ Conectando al relay · sala ${escapeHtml(status.room)}</span>`;
+      : `<span class="rt-chip warn">○ Modo local (reconectando al relay) · sala ${escapeHtml(status.room)}</span>`;
   }
   return '<span class="rt-chip local">● En vivo en este equipo</span>';
 }

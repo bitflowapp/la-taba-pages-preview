@@ -33,17 +33,37 @@ export function getBusinessMetrics(orders = [], products = [], now = new Date())
   const lowStock = getLowStockProducts(products);
   let todayOrderCount = 0;
   let todayTotal = 0;
+  let todayDeliveryCount = 0;
+  let todayPickupCount = 0;
+  const productTally = new Map();
 
   if (Array.isArray(orders)) {
     for (const order of orders) {
       const created = new Date(order?.createdAt);
       const isToday = !Number.isNaN(created.getTime()) && created >= startOfToday;
-      if (isToday && order.status !== 'cancelled') {
-        todayOrderCount += 1;
-        todayTotal += normalizeMoneyValue(order.total, 0);
+      if (!isToday || order.status === 'cancelled') continue;
+
+      todayOrderCount += 1;
+      todayTotal += normalizeMoneyValue(order.total, 0);
+      if (order.deliveryMode === 'pickup') todayPickupCount += 1;
+      else todayDeliveryCount += 1;
+
+      if (Array.isArray(order.items)) {
+        for (const item of order.items) {
+          if (!item || typeof item.productId !== 'string') continue;
+          const quantity = Math.max(0, Math.floor(Number(item.quantity) || 0));
+          if (quantity <= 0) continue;
+          const current = productTally.get(item.productId) || { productId: item.productId, name: item.name || item.productId, quantity: 0 };
+          current.quantity += quantity;
+          productTally.set(item.productId, current);
+        }
       }
     }
   }
+
+  const topProducts = [...productTally.values()]
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, 3);
 
   return {
     activeOrders,
@@ -51,6 +71,10 @@ export function getBusinessMetrics(orders = [], products = [], now = new Date())
     ordersByStatus,
     todayOrderCount,
     todayTotal,
+    avgTicket: todayOrderCount > 0 ? Math.round(todayTotal / todayOrderCount) : 0,
+    todayDeliveryCount,
+    todayPickupCount,
+    topProducts,
     ordersToHandle: ordersByStatus.received + ordersByStatus.preparing + ordersByStatus.ready + ordersByStatus.on_the_way + ordersByStatus.arriving,
   };
 }

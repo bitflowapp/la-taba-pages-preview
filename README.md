@@ -169,15 +169,16 @@ imagen: el placeholder muestra las iniciales del producto sobre un bloque tonal.
 
 - Home tipo app de delivery: estado del local, buscador, categorías, promos y combos (sin lista infinita).
 - Pantalla de catálogo por categorías reales, con ofertas de categoría, orden (recomendados / menor precio / más pedidos) y búsqueda.
-- Carrito con cantidades, control de stock y totales.
-- **Confirmar pedido** como CTA principal: crea un pedido interno y lleva a Seguir. WhatsApp queda como **copia opcional** ("Enviar copia por WhatsApp").
+- Carrito con cantidades, control de stock y totales. En el catálogo, los productos ya agregados muestran un **stepper de cantidad** (− 1 +) en la tarjeta.
+- **Confirmar pedido** como CTA principal: crea un pedido interno, muestra estado de carga, evita doble envío y lleva a Seguir. WhatsApp queda como **copia opcional** ("Enviar copia por WhatsApp").
 - Pedido con envío a domicilio o retiro en local, con pedido mínimo para delivery.
-- Seguimiento del pedido en vivo, con chip de conexión (en vivo entre equipos / en este equipo).
+- Home con **acceso directo al pedido en curso** (banner a Seguir si hay un pedido activo).
+- Seguimiento del pedido en vivo, con chip de conexión (en vivo entre equipos / modo local si el relay se reconecta).
 - **Relay realtime demo (Node + SSE, sin dependencias)** para probar cliente y rider en dos celulares de la misma Wi‑Fi (`npm run realtime:demo`).
 - Botón para copiar el pedido y mensaje de WhatsApp completo (cliente, productos, totales, pago, notas y fecha).
 - Modo negocio protegido con PIN demo `1234`.
-- Administración de pedidos: estados, ventas del día, pedidos activos y stock rápido.
-- Vista de repartidor con cola de pedidos (incluye *Esperando preparación*), botón demo *Marcar listo para reparto*, acciones de salida/entrega y **simulación de reparto en tiempo real** con progreso, ETA y GPS opcional. Lo técnico (relay/sala) queda en un bloque *Demo avanzado*.
+- Administración de pedidos con estados, acciones, stock y **métricas comerciales**: ventas del día, ticket promedio, delivery vs retiro y productos más pedidos.
+- Vista de repartidor con cola de pedidos (incluye *Esperando preparación*), botón demo *Marcar listo para reparto*, acciones de salida/entrega y **simulación de reparto en tiempo real** con progreso, ETA y GPS opcional. Lo técnico (relay/sala/IDs y *copiar link cliente/rider*) queda en un bloque *Demo avanzado*.
 - PWA instalable con manifest y service worker (se usa como una app).
 - Código modular en `/js`, fácil de escalar sin romper lo existente.
 

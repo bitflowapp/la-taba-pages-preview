@@ -37,12 +37,16 @@ export function renderBusinessDashboard() {
   const lowStock = metrics.lowStock;
   const deliveredToday = metrics.ordersByStatus.delivered;
 
+  const topProducts = metrics.topProducts.length
+    ? metrics.topProducts.map((item) => `<li><span>${escapeHtml(item.name)}</span><strong>${item.quantity}</strong></li>`).join('')
+    : '<li class="muted"><span>Sin ventas todavía hoy</span><strong>—</strong></li>';
+
   container.innerHTML = `
     <div class="metrics-grid">
       <div class="metric-card accent"><strong>${money(metrics.todayTotal)}</strong><span>Ventas de hoy</span></div>
       <div class="metric-card"><strong>${metrics.todayOrderCount}</strong><span>Pedidos de hoy</span></div>
+      <div class="metric-card"><strong>${money(metrics.avgTicket)}</strong><span>Ticket promedio</span></div>
       <div class="metric-card"><strong>${metrics.ordersToHandle}</strong><span>Para atender</span></div>
-      <div class="metric-card"><strong>${lowStock.length}</strong><span>Bajo stock</span></div>
     </div>
 
     <div class="status-board">
@@ -51,6 +55,24 @@ export function renderBusinessDashboard() {
       <span class="board-chip ready">Listos <strong>${metrics.ordersByStatus.ready}</strong></span>
       <span class="board-chip way">En camino <strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></span>
       <span class="board-chip done">Entregados <strong>${deliveredToday}</strong></span>
+    </div>
+
+    <div class="insight-grid">
+      <div class="insight-card">
+        <span class="insight-label">Entregas de hoy</span>
+        <div class="insight-split">
+          <span>Delivery <strong>${metrics.todayDeliveryCount}</strong></span>
+          <span>Retiro <strong>${metrics.todayPickupCount}</strong></span>
+        </div>
+      </div>
+      <div class="insight-card">
+        <span class="insight-label">Más pedidos hoy</span>
+        <ul class="insight-list">${topProducts}</ul>
+      </div>
+      <div class="insight-card">
+        <span class="insight-label">Bajo stock</span>
+        <div class="insight-split"><span>Productos <strong>${lowStock.length}</strong></span></div>
+      </div>
     </div>
 
     <div class="admin-grid">

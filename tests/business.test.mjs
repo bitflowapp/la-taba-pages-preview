@@ -123,3 +123,41 @@ test('business metrics tolerate invalid dates and count active statuses consiste
   assert.equal(metrics.activeOrders.length, 2);
   assert.deepEqual(metrics.lowStock.map((product) => product.id), ['p-1']);
 });
+
+test('business metrics compute ticket promedio, delivery vs retiro y productos más pedidos', () => {
+  const now = new Date('2026-05-29T15:00:00.000Z');
+  const today = '2026-05-29T10:00:00.000Z';
+  const metrics = getBusinessMetrics([
+    {
+      id: 'LT-10', status: 'preparing', total: 10000, deliveryMode: 'delivery', createdAt: today,
+      items: [
+        { productId: 'p-asado', name: 'Asado', quantity: 2 },
+        { productId: 'p-coca', name: 'Coca', quantity: 1 },
+      ],
+    },
+    {
+      id: 'LT-11', status: 'delivered', total: 6000, deliveryMode: 'pickup', createdAt: today,
+      items: [{ productId: 'p-asado', name: 'Asado', quantity: 1 }],
+    },
+    {
+      id: 'LT-12', status: 'cancelled', total: 99999, deliveryMode: 'delivery', createdAt: today,
+      items: [{ productId: 'p-asado', name: 'Asado', quantity: 50 }],
+    },
+  ], [], now);
+
+  assert.equal(metrics.todayOrderCount, 2);
+  assert.equal(metrics.todayTotal, 16000);
+  assert.equal(metrics.avgTicket, 8000);
+  assert.equal(metrics.todayDeliveryCount, 1);
+  assert.equal(metrics.todayPickupCount, 1);
+  // El cancelado no cuenta ni en ventas ni en top de productos.
+  assert.equal(metrics.topProducts[0].productId, 'p-asado');
+  assert.equal(metrics.topProducts[0].quantity, 3);
+  assert.equal(metrics.topProducts.length, 2);
+});
+
+test('business metrics avoid division by zero with no orders today', () => {
+  const metrics = getBusinessMetrics([], [], new Date('2026-05-29T15:00:00.000Z'));
+  assert.equal(metrics.avgTicket, 0);
+  assert.deepEqual(metrics.topProducts, []);
+});

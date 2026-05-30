@@ -10,7 +10,7 @@ test('carga inicial, home sin lista infinita y catálogo por categorías', async
 
   await page.goto('/');
   await expect(page.locator('[data-cart-count]')).toHaveText('0');
-  await expect(page.locator('[data-cart-total-small]')).toContainText('$');
+  await expect(page.locator('[data-cart-total-small]')).toHaveText('Pedido');
   await expect(page.locator('[data-view="home"]')).toBeVisible();
   await expect(page.locator('[data-view="cart"]')).toBeHidden();
   await expect(page.locator('[data-view]')).toHaveCount(7);
@@ -59,6 +59,11 @@ test('agregar producto desde una categoría del catálogo', async ({ page }) => 
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await waitForToast(page, /agregado al pedido/);
   await expect(page.locator('[data-cart-count]')).not.toHaveText('0');
+  await expect(page.locator('[data-floating-cart]')).toBeVisible();
+  await expect(page.locator('[data-floating-cart]')).toContainText(/1 ítem/);
+  await page.locator('[data-floating-cart]').click();
+  await expect(page.locator('[data-view="cart"]')).toBeVisible();
+  await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
 
   // La tarjeta del producto agregado muestra el stepper de cantidad.
   const card = page.locator('[data-product-grid] .product-card.in-cart').first();
@@ -109,7 +114,7 @@ test('flujo cliente con delivery', async ({ page }) => {
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
-  await page.getByLabel('Envío a domicilio').check();
+  await page.getByLabel('Delivery').check();
 
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Ingresá el nombre del cliente.');
@@ -237,7 +242,7 @@ test('modo negocio y delivery', async ({ page }) => {
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Ventas de hoy');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Ventas del día');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Stock del catálogo');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Pedidos para preparar');
 
@@ -309,8 +314,9 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await expect(page.locator('.mobile-nav')).toBeHidden();
 
-  await page.locator('.mobile-nav [data-nav-view="profile"]').click();
+  await page.goto('/#profile');
   await expect(page.locator('[data-view="profile"]')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 
@@ -343,7 +349,11 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
       await expect(page.locator('.mobile-nav')).toBeHidden();
     }
     const catalogNav = viewport.width <= 760 ? '.mobile-nav [data-nav-view="catalog"]' : '.desktop-nav [data-nav-view="catalog"]';
-    await page.locator(catalogNav).click();
+    if (viewport.width <= 760) {
+      await page.goto('/#catalog');
+    } else {
+      await page.locator(catalogNav).click();
+    }
     await expect(page.locator('[data-view="catalog"]')).toBeVisible();
     await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
     await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
@@ -359,7 +369,11 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
     expect(overflow).toBeTruthy();
 
-    await page.locator(catalogNav).click();
+    if (viewport.width <= 760) {
+      await page.goto('/#catalog');
+    } else {
+      await page.locator(catalogNav).click();
+    }
     await page.locator('[data-product-grid] [data-product-detail]').first().click();
     await expect(page.locator('[data-product-modal]')).toBeVisible();
     await page.locator('[data-close-modal]').click();

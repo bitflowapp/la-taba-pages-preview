@@ -83,7 +83,7 @@ export async function fillCheckout(page, { name, phone, address, notes, payment 
   await page.getByLabel('Notas').fill(notes);
   if (deliveryMode === 'delivery') {
     await page.getByLabel('Dirección').fill(address);
-    await page.getByLabel('Envío a domicilio').check();
+    await page.getByLabel('Delivery').check();
   } else {
     await page.getByLabel('Retiro en local').check();
   }

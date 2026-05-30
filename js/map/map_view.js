@@ -44,7 +44,8 @@ function renderMapView(container) {
   const riderLocation = order ? getRiderLocation(order, sim, route.id) : null;
   const destination = route.destination;
   const points = route.points.map((point) => [point.lat, point.lng]);
-  const tileLayer = getTileLayerForTheme();
+  const preferredTheme = container.dataset.mapRole?.startsWith('rider') ? 'dark' : 'light';
+  const tileLayer = getTileLayerForTheme(preferredTheme);
   const theme = getMapTheme(tileLayer.theme);
   container.dataset.mapTheme = theme;
   container.classList.toggle('map-theme-dark', theme === 'dark');
@@ -145,7 +146,7 @@ function renderMapMeta(container, order, location, destination) {
   const meta = container.querySelector('[data-map-meta]');
   if (!meta) return;
   if (!order || !location) {
-    meta.textContent = 'Mapa demo Neuquén Capital y Cipolletti';
+    meta.textContent = 'Neuquén Capital y Cipolletti';
     return;
   }
   const km = distanceKm(location, destination);

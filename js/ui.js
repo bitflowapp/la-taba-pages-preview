@@ -34,8 +34,8 @@ export function applyBusinessConfig() {
   if (status) {
     const hour = new Date().getHours();
     const isOpen = hour >= BUSINESS_CONFIG.openHour && hour < BUSINESS_CONFIG.closeHour;
-    status.textContent = isOpen ? 'Abierto ahora' : 'Cerrado · pedidos programables';
-    status.classList.toggle('is-closed', !isOpen);
+    status.textContent = isOpen ? 'Abierto ahora' : 'Tomamos pedidos';
+    status.classList.toggle('is-closed', false);
   }
 }
 
@@ -91,10 +91,13 @@ function unitText(product) {
 // Thumbnail tonal de producto sin usar emojis como imagen principal.
 export function productThumb(product, variant = 'grid') {
   const tone = product.tone || 'beef';
+  const name = product?.name || 'La Taba';
+  const label = variant === 'cart' ? productCode(product) : name;
   return `
     <span class="thumb tone-${tone} thumb-${variant}" aria-hidden="true">
-      <span class="thumb-code">${productCode(product)}</span>
-      <span class="thumb-cut">${escapeHtml(product.categoryId || '')}</span>
+      <span class="thumb-steak"></span>
+      <span class="thumb-name">${escapeHtml(label)}</span>
+      <span class="thumb-cut">${escapeHtml(unitText(product) || product.categoryId || '')}</span>
     </span>`;
 }
 
@@ -160,7 +163,7 @@ function renderCombos() {
 
   container.innerHTML = combos.length
     ? combos.map(railCard).join('')
-    : '<div class="empty-state">Pronto sumamos más combos.</div>';
+    : '<div class="empty-state">Consultá por combos armados en el local.</div>';
 }
 
 function railCard(product) {
@@ -192,7 +195,7 @@ function renderCategories() {
 
   const markup = categories.map((category) => `
     <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}">
-      ${escapeHtml(category.name)}${category.demo ? '<span class="cat-demo">demo</span>' : ''}
+      ${escapeHtml(category.name)}
     </button>
   `).join('');
 
@@ -364,11 +367,18 @@ export function renderCart() {
 
 export function renderCartTotals() {
   const summary = getCartSummary(currentDeliveryMode());
+  const subtotalSummary = getCartSummary('pickup');
+  const floatingText = `${summary.count} ${summary.count === 1 ? 'ítem' : 'ítems'} · ${money(subtotalSummary.subtotal)}`;
   setText('[data-cart-count]', String(summary.count));
   setText('[data-cart-count-mobile]', String(summary.count));
-  setText('[data-cart-total-small]', money(summary.total));
+  setText('[data-cart-total-small]', summary.count > 0 ? money(subtotalSummary.subtotal) : 'Pedido');
+  setText('[data-floating-cart-summary]', floatingText);
   $$('[data-cart-count], [data-cart-count-mobile]').forEach((node) => {
     node.classList.toggle('is-empty', summary.count === 0);
+  });
+  $$('[data-floating-cart]').forEach((node) => {
+    node.classList.toggle('hidden', summary.count === 0);
+    node.setAttribute('aria-label', summary.count > 0 ? `${floatingText}. Ver pedido.` : 'Carrito vacío');
   });
 }
 
@@ -515,9 +525,9 @@ function trackingMapSvg(order) {
     : 0.05;
   const path = 'M 44 176 C 96 150, 96 96, 150 92 S 240 70, 276 44';
   return `
-    <div class="demo-map track-map" role="img" aria-label="Mapa de demostración del pedido">
+      <div class="demo-map track-map" role="img" aria-label="Mapa de seguimiento del pedido">
       <div class="demo-map-overlay">
-        <span class="map-eta">Vista demo</span>
+        <span class="map-eta">Vista de ruta</span>
         <span class="map-state">${escapeHtml(order.status === 'on_the_way' ? 'Rider en camino' : statusLabel(order.status))}</span>
       </div>
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -544,10 +554,10 @@ function trackingMapSvg(order) {
 
 function defaultMapFallback() {
   return `
-    <div class="demo-map track-map" role="img" aria-label="Mapa demo Neuquén Capital y Cipolletti">
+    <div class="demo-map track-map" role="img" aria-label="Mapa Neuquén Capital y Cipolletti">
       <div class="demo-map-overlay">
         <span class="map-eta">Neuquén · Cipolletti</span>
-        <span class="map-state">Mapa demo</span>
+        <span class="map-state">Vista de ruta</span>
       </div>
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <rect width="320" height="220" rx="18" fill="#f1efe9"/>
@@ -569,10 +579,10 @@ function realMapShell({ order = null, role = 'tracking', fallback }) {
     <div class="real-map-shell" data-real-map data-map-role="${escapeHtml(role)}"${orderAttr}>
       <div class="real-map-canvas" data-map-canvas aria-label="Mapa real de seguimiento"></div>
       <div class="real-map-fallback" data-map-fallback>
-        <p class="map-fallback-note">Mapa real no disponible, usando vista demo.</p>
+        <p class="map-fallback-note">Mapa no disponible, usando vista simplificada.</p>
         ${fallback}
       </div>
-      <div class="real-map-meta" data-map-meta>Mapa demo Neuquén Capital y Cipolletti</div>
+      <div class="real-map-meta" data-map-meta>Neuquén Capital y Cipolletti</div>
     </div>`;
 }
 
@@ -707,10 +717,10 @@ function realtimeChip() {
   const status = getRealtimeStatus();
   if (status.relayEnabled) {
     return status.relayConnected
-      ? `<span class="rt-chip live">● En vivo entre equipos · sala ${escapeHtml(status.room)}</span>`
-      : `<span class="rt-chip warn">○ Modo local (reconectando al relay) · sala ${escapeHtml(status.room)}</span>`;
+      ? '<span class="rt-chip live">● En vivo</span>'
+      : '<span class="rt-chip warn">○ Reconectando</span>';
   }
-  return '<span class="rt-chip local">● En vivo en este equipo</span>';
+  return '<span class="rt-chip local">● En vivo</span>';
 }
 
 function initials(name) {
@@ -743,7 +753,7 @@ export function showProductModal(productId) {
         <div class="summary-row"><span>Preparación</span><strong>${product.prepMinutes} min</strong></div>
         <div class="summary-row"><span>Disponibilidad</span><strong>${stockPill(product)}</strong></div>
       </div>
-      ${product.marketNote ? `<p class="market-note">ℹ️ ${escapeHtml(product.marketNote)}</p>` : ''}
+      ${product.marketNote ? `<p class="market-note">${escapeHtml(product.marketNote)}</p>` : ''}
       <div class="button-row" style="margin-top:16px">
         <button class="primary-button" type="button" data-add-product="${product.id}" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>Agregar al pedido</button>
         <button class="secondary-button" type="button" data-close-modal>Cerrar</button>

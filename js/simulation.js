@@ -209,7 +209,7 @@ export function enableGpsTracking() {
     return { ok: false, message: 'No se pudo iniciar la ubicación.' };
   }
 
-  return { ok: true, message: 'Usando tu ubicación para la demo del rider.' };
+  return { ok: true, message: 'Usando tu ubicación como rider.' };
 }
 
 export function disableGpsTracking({ silent = false } = {}) {

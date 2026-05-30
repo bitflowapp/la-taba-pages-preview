@@ -38,6 +38,7 @@ test('cliente y rider en dos equipos: pedido interno, realtime, simulación y en
   await rider.locator('[data-pin-form]').press('Enter');
   await expect(rider.locator('[data-view="rider"] [data-delivery-panel]')).toBeVisible();
   await expect(rider.locator('[data-map-shell="rider"]')).toBeVisible();
+  await expect(rider.locator('[data-real-map][data-map-role^="rider"]').first()).toHaveClass(/map-theme-dark/);
 
   // El cliente arma y CONFIRMA el pedido (sin abrir WhatsApp).
   await client.locator('.mobile-nav [data-nav-view="catalog"]').click();
@@ -74,7 +75,7 @@ test('cliente y rider en dos equipos: pedido interno, realtime, simulación y en
   const beforeStart = await riderProgress(client);
   await rider.locator('[data-sim-start]').click();
   await expect.poll(async () => riderProgress(client), { timeout: 15_000 }).toBeGreaterThan(beforeStart);
-  await expect(client.locator('[data-map-meta]').first()).toContainText(/Ubicación demo|Ubicación rider/i);
+  await expect(client.locator('[data-map-meta]').first()).toContainText(/Ubicación estimada|Ubicación rider/i);
 
   // Otra sala no mezcla el pedido ni la ubicación del rider.
   const otherCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });

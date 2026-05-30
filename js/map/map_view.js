@@ -37,7 +37,8 @@ function renderMapView(container) {
   container.classList.remove('map-unavailable');
   fallback?.setAttribute('hidden', '');
 
-  const order = container.dataset.mapRole === 'tracking-empty' ? null : findOrder(container.dataset.orderId);
+  const emptyMap = container.dataset.mapRole === 'tracking-empty' || container.dataset.mapRole === 'rider-empty';
+  const order = emptyMap ? null : findOrder(container.dataset.orderId);
   const route = order ? selectRouteForOrder(order) : getRoute('cipolletti');
   const sim = order ? getOrderSimulation(order.id) : null;
   const riderLocation = order ? getRiderLocation(order, sim, route.id) : null;
@@ -107,13 +108,13 @@ function labelIcon(L, label, kind) {
 
 function routeLineStyle(theme) {
   return theme === 'light'
-    ? { color: '#8a725c', weight: 4, opacity: 0.78, lineCap: 'round', lineJoin: 'round' }
+    ? { color: '#5e5045', weight: 4, opacity: 0.72, lineCap: 'round', lineJoin: 'round' }
     : { color: '#d6b08a', weight: 4, opacity: 0.86, lineCap: 'round', lineJoin: 'round' };
 }
 
 function progressLineStyle(theme) {
   return theme === 'light'
-    ? { color: '#3b7a55', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }
+    ? { color: '#2f8052', weight: 5, opacity: 0.88, lineCap: 'round', lineJoin: 'round' }
     : { color: '#82d49a', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' };
 }
 

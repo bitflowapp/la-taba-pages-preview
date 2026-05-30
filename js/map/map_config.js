@@ -13,7 +13,8 @@ export const RIDER_LOCATION_SOURCES = Object.freeze({
 
 export function getMapTheme(theme = MAP_PROVIDER.defaultTheme) {
   const candidate = String(theme || '').toLowerCase();
-  return candidate === 'light' || candidate === 'dark' ? candidate : 'dark';
+  const fallback = MAP_PROVIDER.defaultTheme === 'dark' ? 'dark' : 'light';
+  return candidate === 'light' || candidate === 'dark' ? candidate : fallback;
 }
 
 export function getTileLayerForTheme(theme = MAP_PROVIDER.defaultTheme) {

@@ -37,6 +37,7 @@ test('cliente y rider en dos equipos: pedido interno, realtime, simulación y en
   await rider.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await rider.locator('[data-pin-form]').press('Enter');
   await expect(rider.locator('[data-view="rider"] [data-delivery-panel]')).toBeVisible();
+  await expect(rider.locator('[data-map-shell="rider"]')).toBeVisible();
 
   // El cliente arma y CONFIRMA el pedido (sin abrir WhatsApp).
   await client.locator('.mobile-nav [data-nav-view="catalog"]').click();
@@ -54,7 +55,9 @@ test('cliente y rider en dos equipos: pedido interno, realtime, simulación y en
   await expect(client.locator('[data-view="tracking"]')).toBeVisible();
   await expect(client.locator('[data-toast]')).toContainText('Ya podés seguirlo en tiempo real');
   await expect(client.locator('[data-real-map][data-map-role="tracking"]')).toBeVisible();
-  await expect(client.locator('[data-real-map][data-map-role="tracking"]')).toHaveClass(/map-theme-dark/);
+  await expect(client.locator('[data-real-map][data-map-role="tracking"]')).toHaveClass(/map-theme-light/);
+  await expect(client.locator('[data-map-shell="tracking"]')).toBeVisible();
+  await expect(client.locator('[data-tracking-panel] [data-bottom-sheet]')).toBeVisible();
 
   // El rider ve el pedido del cliente SIN recargar (vía relay).
   await expect(rider.locator('[data-delivery-panel]')).toContainText('LT-0002', { timeout: 10_000 });

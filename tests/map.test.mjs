@@ -57,7 +57,7 @@ test('map config selects clean light and dark tile themes', () => {
   const dark = getTileLayerForTheme('dark');
   const light = getTileLayerForTheme('light');
 
-  assert.equal(getMapTheme('bad-theme'), 'dark');
+  assert.equal(getMapTheme('bad-theme'), 'light');
   assert.equal(dark.theme, 'dark');
   assert.equal(light.theme, 'light');
   assert.match(dark.tilesUrl, /cartocdn\.com\/dark_all/);

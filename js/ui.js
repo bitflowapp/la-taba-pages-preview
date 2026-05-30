@@ -523,16 +523,16 @@ function trackingMapSvg(order) {
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="trackRoute" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#bca082"/><stop offset="1" stop-color="#7f725f"/>
+            <stop offset="0" stop-color="#6a5a4d"/><stop offset="1" stop-color="#c9aa84"/>
           </linearGradient>
         </defs>
-        <rect width="320" height="220" rx="18" fill="#171717"/>
-        <g class="map-streets" stroke="rgba(255,255,255,0.055)" stroke-width="2">
+        <rect width="320" height="220" rx="18" fill="#f1efe9"/>
+        <g class="map-streets" stroke="rgba(38,34,30,0.10)" stroke-width="2">
           <line x1="0" y1="48" x2="320" y2="40"/><line x1="0" y1="104" x2="320" y2="112"/>
           <line x1="0" y1="166" x2="320" y2="158"/><line x1="60" y1="0" x2="48" y2="220"/>
           <line x1="150" y1="0" x2="158" y2="220"/><line x1="244" y1="0" x2="236" y2="220"/>
         </g>
-        <path d="${path}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
+        <path d="${path}" fill="none" stroke="rgba(55,47,40,0.10)" stroke-width="8" stroke-linecap="round"/>
         <path class="map-route" d="${path}" fill="none" stroke="url(#trackRoute)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
       </svg>
       <span class="map-marker store" style="left:14%;top:80%"><span>LT</span><small>La Taba</small></span>
@@ -550,13 +550,13 @@ function defaultMapFallback() {
         <span class="map-state">Mapa demo</span>
       </div>
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <rect width="320" height="220" rx="18" fill="#171717"/>
-        <g class="map-streets" stroke="rgba(255,255,255,0.055)" stroke-width="2">
+        <rect width="320" height="220" rx="18" fill="#f1efe9"/>
+        <g class="map-streets" stroke="rgba(38,34,30,0.10)" stroke-width="2">
           <line x1="0" y1="58" x2="320" y2="44"/><line x1="0" y1="128" x2="320" y2="116"/>
           <line x1="70" y1="0" x2="54" y2="220"/><line x1="184" y1="0" x2="170" y2="220"/>
         </g>
-        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
-        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="#bca082" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 8"/>
+        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="rgba(55,47,40,0.10)" stroke-width="8" stroke-linecap="round"/>
+        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="#6a5a4d" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 8"/>
       </svg>
       <span class="map-marker store" style="left:18%;top:68%"><span>LT</span><small>Neuquén</small></span>
       <span class="map-marker client" style="left:84%;top:24%"><span>CI</span><small>Cipolletti</small></span>
@@ -573,6 +573,28 @@ function realMapShell({ order = null, role = 'tracking', fallback }) {
         ${fallback}
       </div>
       <div class="real-map-meta" data-map-meta>Mapa demo Neuquén Capital y Cipolletti</div>
+    </div>`;
+}
+
+function trackingMapStage({ order = null, head = null, isEmpty = false }) {
+  const overlay = order
+    ? `
+      <div class="map-floating-top">
+        <span class="map-status-pill ${statusClass(order.status)}"><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
+        <span class="map-connection-pill">${realtimeChip()}</span>
+      </div>
+      <div class="map-floating-bottom">
+        <span class="map-stat-pill"><small>ETA</small><strong>${escapeHtml(head?.title || 'Seguimiento')}</strong></span>
+        <span class="map-stat-pill"><small>Distancia</small><strong>${escapeHtml(distanceLabel(order))}</strong></span>
+      </div>`
+    : `
+      <div class="map-floating-top">
+        <span class="map-status-pill idle"><small>Estado</small><strong>Sin pedido activo</strong></span>
+      </div>`;
+  return `
+    <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
+      ${realMapShell({ order, fallback: order ? trackingMapSvg(order) : defaultMapFallback(), role: isEmpty ? 'tracking-empty' : 'tracking' })}
+      ${overlay}
     </div>`;
 }
 
@@ -602,15 +624,18 @@ export function renderTracking() {
 
   if (!order) {
     container.innerHTML = `
-      <div class="track-layout">
-        <div class="card track-map-card">${realMapShell({ fallback: defaultMapFallback(), role: 'tracking-empty' })}</div>
-        <div class="empty-state">
+      <div class="track-layout tracking-map-experience is-empty">
+        ${trackingMapStage({ isEmpty: true })}
+        <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
+          <span class="sheet-handle" aria-hidden="true"></span>
+          <div class="empty-state sheet-empty">
           <strong>No hay un pedido activo.</strong><br />
           Cuando confirmes una compra, el estado aparece acá en vivo: preparación, reparto y detalle.
           <div class="empty-actions">
             <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
           </div>
-        </div>
+          </div>
+        </section>
       </div>`;
     return;
   }
@@ -635,22 +660,25 @@ export function renderTracking() {
   `).join('');
 
   container.innerHTML = `
-    <div class="track-layout">
-      <div class="track-rt">${realtimeChip()}</div>
+    <div class="track-layout tracking-map-experience ${isDelivery && !isCancelled ? '' : 'no-map'}">
+      ${isDelivery && !isCancelled ? trackingMapStage({ order, head }) : ''}
 
-      <div class="card track-header ${statusClass(order.status)}">
-        <span class="track-head-ico">${isDelivery ? 'REP' : 'RET'}</span>
-        <div class="track-head-text">
-          <small>${head.kicker}</small>
-          <strong>${head.title}</strong>
-          <span>${head.sub}</span>
+      <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
+        <span class="sheet-handle" aria-hidden="true"></span>
+        <div class="sheet-head">
+          <span class="track-head-ico">${isDelivery ? 'REP' : 'RET'}</span>
+          <div class="track-head-text">
+            <small>${escapeHtml(order.id)} · ${escapeHtml(head.kicker)}</small>
+            <strong>${escapeHtml(head.title)}</strong>
+            <span>${escapeHtml(head.sub)}</span>
+          </div>
+          <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
         </div>
-        <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
-      </div>
-
-      ${isDelivery && !isCancelled ? `<div class="card track-map-card">${realMapShell({ order, fallback: trackingMapSvg(order), role: 'tracking' })}</div>` : ''}
-
-      <div class="card track-progress-card">
+        <div class="sheet-metrics">
+          <span><small>Distancia</small><strong>${isDelivery ? distanceLabel(order) : 'Retiro'}</strong></span>
+          <span><small>Entrega</small><strong>${escapeHtml(deliveryModeLabel(order.deliveryMode))}</strong></span>
+          <span><small>Total</small><strong>${money(order.total)}</strong></span>
+        </div>
         <div class="track-steps">${steps}</div>
         ${isCancelled ? '<div class="warning-box">Este pedido fue cancelado. Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>' : ''}
         ${isDelivery && !isCancelled ? riderProfileCard(order) : ''}
@@ -666,9 +694,10 @@ export function renderTracking() {
         </details>
         ${isCancelled ? '' : `
         <div class="button-row track-actions">
-          <button class="ghost-button compact" type="button" data-whatsapp-order>Enviar copia por WhatsApp</button>
+          <button class="secondary-button compact" type="button" data-whatsapp-order>Enviar copia por WhatsApp</button>
+          <button class="ghost-button compact" type="button" data-copy-last-order>Copiar pedido</button>
         </div>`}
-      </div>
+      </section>
     </div>
   `;
 }

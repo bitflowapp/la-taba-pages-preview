@@ -33,7 +33,7 @@ export const BUSINESS_CONFIG = Object.freeze({
   },
   mapProvider: {
     name: 'CARTO + OpenStreetMap',
-    defaultTheme: 'dark',
+    defaultTheme: 'light',
     tileLayers: {
       light: {
         name: 'CARTO Positron',

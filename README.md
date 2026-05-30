@@ -91,9 +91,10 @@ ciudades**. No requiere API key y funciona en una app estática publicada en
 GitHub Pages. Si Leaflet, el CDN o los tiles no cargan, la app muestra una vista
 demo controlada y el mensaje: *Mapa real no disponible, usando vista demo*.
 
-El estilo visual por defecto es **gris oscuro premium** usando CARTO Dark Matter,
-para evitar el mapa OSM estándar lleno de colores, textos e íconos. También queda
-configurado un modo claro blanco/gris con CARTO Positron. Ambos son tiles públicos
+El estilo visual por defecto es **claro blanco/gris** usando CARTO Positron,
+para que Tracking y Rider se sientan como una app comercial de delivery y no como
+un mapa técnico. También queda configurado un modo gris oscuro premium con CARTO
+Dark Matter. Ambos son tiles públicos
 para demo, sin API key; para producción conviene revisar límites de uso o contratar
 un proveedor dedicado.
 

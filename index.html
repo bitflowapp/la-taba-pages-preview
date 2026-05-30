@@ -109,12 +109,15 @@
         </section>
 
         <section class="section app-view" data-view="catalog" hidden aria-hidden="true">
-          <div class="section-head">
+          <div class="section-head catalog-head">
             <div>
-              <p class="eyebrow">Catálogo</p>
+              <nav class="crumbs" aria-label="Ruta de navegación">
+                <button class="crumb-link" type="button" data-nav-view="home">Inicio</button>
+                <span class="crumb-sep" aria-hidden="true">›</span>
+                <span class="crumb-current">Catálogo</span>
+              </nav>
               <h2 data-catalog-title>Todos</h2>
             </div>
-            <button class="secondary-button compact" type="button" data-nav-view="home">Inicio</button>
           </div>
 
           <div class="search-box">

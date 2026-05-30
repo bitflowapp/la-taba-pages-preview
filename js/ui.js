@@ -91,13 +91,12 @@ function unitText(product) {
 // Thumbnail tonal de producto sin usar emojis como imagen principal.
 export function productThumb(product, variant = 'grid') {
   const tone = product.tone || 'beef';
-  const name = product?.name || 'La Taba';
-  const label = variant === 'cart' ? productCode(product) : name;
+  // El tile muestra solo arte visual + un monograma corto (no el nombre completo,
+  // que ya aparece debajo). Así se evita el texto superpuesto en cards angostas.
   return `
     <span class="thumb tone-${tone} thumb-${variant}" aria-hidden="true">
       <span class="thumb-steak"></span>
-      <span class="thumb-name">${escapeHtml(label)}</span>
-      <span class="thumb-cut">${escapeHtml(unitText(product) || product.categoryId || '')}</span>
+      <span class="thumb-code">${escapeHtml(productCode(product))}</span>
     </span>`;
 }
 
@@ -586,6 +585,12 @@ function realMapShell({ order = null, role = 'tracking', fallback }) {
     </div>`;
 }
 
+function trackingEtaLabel(order, head) {
+  if (order.status === 'delivered') return 'Entregado';
+  if (order.status === 'arriving') return 'Llegando';
+  return head?.title || 'Seguimiento';
+}
+
 function trackingMapStage({ order = null, head = null, isEmpty = false }) {
   const overlay = order
     ? `
@@ -594,8 +599,8 @@ function trackingMapStage({ order = null, head = null, isEmpty = false }) {
         <span class="map-connection-pill">${realtimeChip()}</span>
       </div>
       <div class="map-floating-bottom">
-        <span class="map-stat-pill"><small>ETA</small><strong>${escapeHtml(head?.title || 'Seguimiento')}</strong></span>
-        <span class="map-stat-pill"><small>Distancia</small><strong>${escapeHtml(distanceLabel(order))}</strong></span>
+        <span class="map-stat-pill"><small>${order.status === 'delivered' ? 'Pedido' : 'ETA'}</small><strong>${escapeHtml(trackingEtaLabel(order, head))}</strong></span>
+        <span class="map-stat-pill"><small>Distancia</small><strong>${escapeHtml(order.status === 'delivered' ? 'Finalizado' : distanceLabel(order))}</strong></span>
       </div>`
     : `
       <div class="map-floating-top">

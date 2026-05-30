@@ -78,6 +78,27 @@ test('agregar producto desde una categoría del catálogo', async ({ page }) => 
   await guards.assertClean();
 });
 
+test('catálogo: tiles limpios (nombre debajo) y breadcrumb compacto', async ({ page }) => {
+  const guards = installPageGuards(page);
+
+  await page.goto('/');
+  await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-view="catalog"] [data-category-id="combos"]').click();
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Combos');
+
+  const card = page.locator('[data-product-grid] .product-card').first();
+  await expect(card).toBeVisible();
+  // El nombre del producto vive en el cuerpo (h3), no superpuesto sobre el tile.
+  await expect(card.locator('.product-body h3')).toBeVisible();
+  await expect(card.locator('.thumb .thumb-name')).toHaveCount(0);
+
+  // Breadcrumb compacto en vez del botón grande "Inicio".
+  await expect(page.locator('[data-view="catalog"] .crumbs .crumb-link')).toBeVisible();
+  await expect(page.locator('[data-view="catalog"] .section-head .secondary-button')).toHaveCount(0);
+
+  await guards.assertClean();
+});
+
 test('home muestra acceso al pedido en curso tras confirmar', async ({ page }) => {
   const guards = installPageGuards(page);
 

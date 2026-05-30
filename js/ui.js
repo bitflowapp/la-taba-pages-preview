@@ -516,13 +516,18 @@ function trackingMapSvg(order) {
   const path = 'M 44 176 C 96 150, 96 96, 150 92 S 240 70, 276 44';
   return `
     <div class="demo-map track-map" role="img" aria-label="Mapa de demostración del pedido">
+      <div class="demo-map-overlay">
+        <span class="map-eta">Vista demo</span>
+        <span class="map-state">${escapeHtml(order.status === 'on_the_way' ? 'Rider en camino' : statusLabel(order.status))}</span>
+      </div>
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="trackRoute" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#d6b08a"/><stop offset="1" stop-color="#c59a6c"/>
+            <stop offset="0" stop-color="#bca082"/><stop offset="1" stop-color="#7f725f"/>
           </linearGradient>
         </defs>
-        <g class="map-streets" stroke="rgba(255,255,255,0.06)" stroke-width="2">
+        <rect width="320" height="220" rx="18" fill="#171717"/>
+        <g class="map-streets" stroke="rgba(255,255,255,0.055)" stroke-width="2">
           <line x1="0" y1="48" x2="320" y2="40"/><line x1="0" y1="104" x2="320" y2="112"/>
           <line x1="0" y1="166" x2="320" y2="158"/><line x1="60" y1="0" x2="48" y2="220"/>
           <line x1="150" y1="0" x2="158" y2="220"/><line x1="244" y1="0" x2="236" y2="220"/>
@@ -545,11 +550,13 @@ function defaultMapFallback() {
         <span class="map-state">Mapa demo</span>
       </div>
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <g class="map-streets" stroke="rgba(255,255,255,0.08)" stroke-width="2">
+        <rect width="320" height="220" rx="18" fill="#171717"/>
+        <g class="map-streets" stroke="rgba(255,255,255,0.055)" stroke-width="2">
           <line x1="0" y1="58" x2="320" y2="44"/><line x1="0" y1="128" x2="320" y2="116"/>
           <line x1="70" y1="0" x2="54" y2="220"/><line x1="184" y1="0" x2="170" y2="220"/>
         </g>
-        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="#d6b08a" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
+        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
+        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="#bca082" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 8"/>
       </svg>
       <span class="map-marker store" style="left:18%;top:68%"><span>LT</span><small>Neuquén</small></span>
       <span class="map-marker client" style="left:84%;top:24%"><span>CI</span><small>Cipolletti</small></span>

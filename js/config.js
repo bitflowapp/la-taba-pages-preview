@@ -32,9 +32,25 @@ export const BUSINESS_CONFIG = Object.freeze({
     cipolletti: { name: 'Destino demo · Cipolletti', lat: -38.9339, lng: -67.9903 },
   },
   mapProvider: {
-    name: 'OpenStreetMap',
-    tilesUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap contributors',
+    name: 'CARTO + OpenStreetMap',
+    defaultTheme: 'dark',
+    tileLayers: {
+      light: {
+        name: 'CARTO Positron',
+        tilesUrl: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      },
+      dark: {
+        name: 'CARTO Dark Matter',
+        tilesUrl: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      },
+      fallback: {
+        name: 'OpenStreetMap',
+        tilesUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; OpenStreetMap contributors',
+      },
+    },
   },
   // Categorías demo que el comercio puede activar/desactivar y editar.
   // "alcohol" queda como ejemplo configurable y NO se vende por defecto

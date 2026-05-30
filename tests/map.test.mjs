@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { canUseLeaflet } from '../js/map/map_view.js';
+import { getMapTheme, getTileLayerForTheme } from '../js/map/map_config.js';
 import { riderMarkerClass } from '../js/map/rider_marker.js';
 import {
   distanceKm,
@@ -52,9 +53,20 @@ test('map fallback is explicit when Leaflet is unavailable', () => {
   assert.equal(canUseLeaflet({ L: { map() {}, tileLayer() {} } }), true);
 });
 
+test('map config selects clean light and dark tile themes', () => {
+  const dark = getTileLayerForTheme('dark');
+  const light = getTileLayerForTheme('light');
+
+  assert.equal(getMapTheme('bad-theme'), 'dark');
+  assert.equal(dark.theme, 'dark');
+  assert.equal(light.theme, 'light');
+  assert.match(dark.tilesUrl, /cartocdn\.com\/dark_all/);
+  assert.match(light.tilesUrl, /cartocdn\.com\/light_all/);
+  assert.match(dark.attribution, /OpenStreetMap/);
+});
+
 test('rider marker class reflects status and source', () => {
   assert.match(riderMarkerClass('on_the_way', 'gps'), /on-the-way/);
   assert.match(riderMarkerClass('on_the_way', 'gps'), /source-gps/);
   assert.match(riderMarkerClass('preparing', 'simulation'), /preparing/);
 });
-

@@ -274,11 +274,12 @@ function renderDemoMap(order, distance, eta) {
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="riderRoute" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#d6b08a"/>
-            <stop offset="1" stop-color="#c59a6c"/>
+            <stop offset="0" stop-color="#bca082"/>
+            <stop offset="1" stop-color="#7f725f"/>
           </linearGradient>
         </defs>
-        <g class="map-streets" stroke="rgba(255,255,255,0.06)" stroke-width="2">
+        <rect width="320" height="220" rx="18" fill="#171717"/>
+        <g class="map-streets" stroke="rgba(255,255,255,0.055)" stroke-width="2">
           <line x1="0" y1="48" x2="320" y2="40"/>
           <line x1="0" y1="104" x2="320" y2="112"/>
           <line x1="0" y1="166" x2="320" y2="158"/>

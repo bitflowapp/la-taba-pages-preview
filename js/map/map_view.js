@@ -1,6 +1,6 @@
 import { getState } from '../state.js';
 import { getLastOrder } from '../orders.js';
-import { DEFAULT_MAP_BOUNDS, MAP_PROVIDER, RIDER_LOCATION_SOURCES, STORE_LOCATION } from './map_config.js';
+import { DEFAULT_MAP_BOUNDS, RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getTileLayerForTheme } from './map_config.js';
 import { distanceKm, getRoute, normalizeRiderLocation, pointOnRoute, selectRouteForOrder } from './route_geometry.js';
 import { createRiderIcon, updateRiderMarker } from './rider_marker.js';
 
@@ -43,6 +43,11 @@ function renderMapView(container) {
   const riderLocation = order ? getRiderLocation(order, sim, route.id) : null;
   const destination = route.destination;
   const points = route.points.map((point) => [point.lat, point.lng]);
+  const tileLayer = getTileLayerForTheme();
+  const theme = getMapTheme(tileLayer.theme);
+  container.dataset.mapTheme = theme;
+  container.classList.toggle('map-theme-dark', theme === 'dark');
+  container.classList.toggle('map-theme-light', theme === 'light');
 
   const map = L.map(canvas, {
     zoomControl: false,
@@ -54,16 +59,18 @@ function renderMapView(container) {
   });
   mounted.set(container, { map });
 
-  L.tileLayer(MAP_PROVIDER.tilesUrl, {
+  L.tileLayer(tileLayer.tilesUrl, {
     maxZoom: 18,
-    attribution: MAP_PROVIDER.attribution,
+    attribution: tileLayer.attribution,
   }).addTo(map);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-  L.polyline(points, { color: '#d6b08a', weight: 5, opacity: 0.88 }).addTo(map);
+  const routeStyle = routeLineStyle(theme);
+  const progressStyle = progressLineStyle(theme);
+  L.polyline(points, routeStyle).addTo(map);
   if (riderLocation) {
     const progressPoint = [riderLocation.lat, riderLocation.lng];
-    L.polyline([points[0], progressPoint], { color: '#4fae6a', weight: 5, opacity: 0.95 }).addTo(map);
+    L.polyline([points[0], progressPoint], progressStyle).addTo(map);
   }
 
   L.marker([STORE_LOCATION.lat, STORE_LOCATION.lng], { icon: labelIcon(L, 'LT', 'store') }).addTo(map);
@@ -96,6 +103,18 @@ function labelIcon(L, label, kind) {
     iconSize: [36, 36],
     iconAnchor: [18, 18],
   });
+}
+
+function routeLineStyle(theme) {
+  return theme === 'light'
+    ? { color: '#8a725c', weight: 4, opacity: 0.78, lineCap: 'round', lineJoin: 'round' }
+    : { color: '#d6b08a', weight: 4, opacity: 0.86, lineCap: 'round', lineJoin: 'round' };
+}
+
+function progressLineStyle(theme) {
+  return theme === 'light'
+    ? { color: '#3b7a55', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }
+    : { color: '#82d49a', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' };
 }
 
 function findOrder(orderId) {

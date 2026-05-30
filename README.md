@@ -85,18 +85,25 @@ relay está conectado, o *En vivo en este equipo* en modo local.
 
 ### Mapa real y GPS
 
-La pantalla **Seguir** y la vista **Rider** usan **Leaflet + OpenStreetMap** para
+La pantalla **Seguir** y la vista **Rider** usan **Leaflet + OpenStreetMap/CARTO** para
 mostrar un mapa real de **Neuquén Capital, Cipolletti y la zona entre ambas
 ciudades**. No requiere API key y funciona en una app estática publicada en
 GitHub Pages. Si Leaflet, el CDN o los tiles no cargan, la app muestra una vista
 demo controlada y el mensaje: *Mapa real no disponible, usando vista demo*.
+
+El estilo visual por defecto es **gris oscuro premium** usando CARTO Dark Matter,
+para evitar el mapa OSM estándar lleno de colores, textos e íconos. También queda
+configurado un modo claro blanco/gris con CARTO Positron. Ambos son tiles públicos
+para demo, sin API key; para producción conviene revisar límites de uso o contratar
+un proveedor dedicado.
 
 La ubicación demo está centralizada en `js/config.js`:
 
 - `businessLocation`: local demo de La Taba en Neuquén Capital.
 - `demoDestinations`: destino demo en Neuquén Capital y destino demo en Cipolletti.
 - `defaultMapBounds`: encuadre inicial Neuquén/Cipolletti.
-- `mapProvider`: proveedor OpenStreetMap.
+- `mapProvider.defaultTheme`: `dark` o `light`.
+- `mapProvider.tileLayers`: CARTO dark/light y OSM estándar como fallback.
 
 La simulación usa polylines aproximadas, no ruteo real todavía:
 

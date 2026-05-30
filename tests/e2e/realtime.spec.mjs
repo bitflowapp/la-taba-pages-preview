@@ -54,6 +54,7 @@ test('cliente y rider en dos equipos: pedido interno, realtime, simulación y en
   await expect(client.locator('[data-view="tracking"]')).toBeVisible();
   await expect(client.locator('[data-toast]')).toContainText('Ya podés seguirlo en tiempo real');
   await expect(client.locator('[data-real-map][data-map-role="tracking"]')).toBeVisible();
+  await expect(client.locator('[data-real-map][data-map-role="tracking"]')).toHaveClass(/map-theme-dark/);
 
   // El rider ve el pedido del cliente SIN recargar (vía relay).
   await expect(rider.locator('[data-delivery-panel]')).toContainText('LT-0002', { timeout: 10_000 });

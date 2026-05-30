@@ -11,3 +11,18 @@ export const RIDER_LOCATION_SOURCES = Object.freeze({
   fallback: 'Ubicación demo',
 });
 
+export function getMapTheme(theme = MAP_PROVIDER.defaultTheme) {
+  const candidate = String(theme || '').toLowerCase();
+  return candidate === 'light' || candidate === 'dark' ? candidate : 'dark';
+}
+
+export function getTileLayerForTheme(theme = MAP_PROVIDER.defaultTheme) {
+  const normalized = getMapTheme(theme);
+  const layer = MAP_PROVIDER.tileLayers?.[normalized] || MAP_PROVIDER.tileLayers?.fallback || MAP_PROVIDER;
+  return {
+    theme: normalized,
+    name: layer.name || MAP_PROVIDER.name || 'OpenStreetMap',
+    tilesUrl: layer.tilesUrl || MAP_PROVIDER.tilesUrl,
+    attribution: layer.attribution || MAP_PROVIDER.attribution || '&copy; OpenStreetMap contributors',
+  };
+}

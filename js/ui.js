@@ -677,6 +677,17 @@ export function renderTracking() {
   const isDelivery = order.deliveryMode !== 'pickup';
   const head = trackingHeadline(order);
   const stepIndex = customerStepIndex(order.status);
+  const metricsHtml = order.status === 'delivered'
+    ? `
+          <span><small>Pedido</small><strong>Finalizado</strong></span>
+          <span><small>${isDelivery ? 'Destino' : 'Entrega'}</small><strong>${escapeHtml(isDelivery ? destinationLabel(order) : deliveryModeLabel(order.deliveryMode))}</strong></span>
+          <span><small>Total</small><strong>${money(order.total)}</strong></span>
+        `
+    : `
+          <span><small>Distancia</small><strong>${isDelivery ? distanceLabel(order) : 'Retiro'}</strong></span>
+          <span><small>${isDelivery ? 'Destino' : 'Entrega'}</small><strong>${escapeHtml(isDelivery ? destinationLabel(order) : deliveryModeLabel(order.deliveryMode))}</strong></span>
+          <span><small>Total</small><strong>${money(order.total)}</strong></span>
+        `;
 
   const steps = customerSteps.map((step, index) => {
     let cls = 'pending';
@@ -708,9 +719,7 @@ export function renderTracking() {
           <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
         </div>
         <div class="sheet-metrics">
-          <span><small>Distancia</small><strong>${isDelivery ? distanceLabel(order) : 'Retiro'}</strong></span>
-          <span><small>${isDelivery ? 'Destino' : 'Entrega'}</small><strong>${escapeHtml(isDelivery ? destinationLabel(order) : deliveryModeLabel(order.deliveryMode))}</strong></span>
-          <span><small>Total</small><strong>${money(order.total)}</strong></span>
+          ${metricsHtml}
         </div>
         <div class="track-steps">${steps}</div>
         ${isCancelled ? '<div class="warning-box">Este pedido fue cancelado. Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>' : ''}

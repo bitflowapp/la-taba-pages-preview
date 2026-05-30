@@ -1066,6 +1066,12 @@ body:has(.app-view[data-view="business"].is-active) .toast {
 .sim-gps-status { color: var(--text); font-size: 12px; font-weight: 700; }
 .sim-gps-coords { color: var(--muted); font-size: 12px; }
 .sim-gps-error { color: #f0a99e; font-size: 12px; }
+.gps-diagnostics { border-top: 1px solid var(--line); padding-top: 8px; }
+.gps-diagnostics summary { color: var(--soft); cursor: pointer; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+.gps-diagnostics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+.gps-diagnostics-grid span { border: 1px solid var(--line); border-radius: 8px; padding: 7px; min-width: 0; }
+.gps-diagnostics-grid small { display: block; color: var(--soft); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+.gps-diagnostics-grid strong { display: block; margin-top: 3px; color: var(--text); font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; }
 .sim-note { text-align: left; margin-top: 8px; }
 
 .icon-catalog::before { content: ""; position: absolute; inset: 4px; border: 2px solid currentColor; border-radius: 3px; }

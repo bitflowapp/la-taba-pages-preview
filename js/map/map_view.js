@@ -195,6 +195,7 @@ function renderMapMeta(container, order, location, destination) {
   const updated = location.lastFixAt
     ? new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(location.lastFixAt))
     : 'sin hora';
-  const accuracy = Number.isFinite(location.accuracy) ? ` · precisión ${Math.round(location.accuracy)} m` : '';
+  const showAccuracy = container.dataset.mapRole?.startsWith('rider');
+  const accuracy = showAccuracy && Number.isFinite(location.accuracy) ? ` · precisión ${Math.round(location.accuracy)} m` : '';
   meta.textContent = `${source} · ${km.toFixed(1).replace('.', ',')} km aprox. · actualizado ${updated}${accuracy}`;
 }

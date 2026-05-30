@@ -36,6 +36,7 @@ const MIME = {
 
 // rooms: Map<roomName, Set<ServerResponse>>
 const rooms = new Map();
+const lastRoomMessages = new Map();
 
 function roomClients(room) {
   if (!rooms.has(room)) rooms.set(room, new Set());
@@ -65,6 +66,10 @@ function handleEvents(req, res, room) {
 
   const clients = roomClients(room);
   clients.add(res);
+  const lastMessage = lastRoomMessages.get(room);
+  if (lastMessage) {
+    try { res.write(`event: message\ndata: ${lastMessage.replace(/\n/g, ' ')}\n\n`); } catch (_) { /* ignore */ }
+  }
 
   const heartbeat = setInterval(() => {
     try { res.write(`:ping\n\n`); } catch (_) { /* ignore */ }
@@ -95,10 +100,12 @@ function handlePublish(req, res, room) {
   req.on('end', () => {
     const raw = Buffer.concat(chunks).toString('utf8');
     // Validamos que sea JSON; si no, 400 (no rompemos el relay).
-    try { JSON.parse(raw); } catch (_) {
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (_) {
       res.writeHead(400, { 'Content-Type': 'application/json' }).end('{"ok":false}');
       return;
     }
+    if (parsed && parsed.kind === 'state') lastRoomMessages.set(room, raw);
     const clients = rooms.get(room);
     let delivered = 0;
     if (clients) {

@@ -92,6 +92,8 @@ test('rider demo: iniciar simulación, avanzar, llegar y entregar', async ({ pag
   await expect(trackingPanel.locator('.track-steps')).toContainText('Entregado');
   const statTexts = await trackingPanel.locator('.map-stat-pill').allTextContents();
   expect(statTexts.some((text) => /Distancia\s*Finalizado/i.test(text))).toBe(false);
+  const metricTexts = await trackingPanel.locator('.sheet-metrics').allTextContents();
+  expect(metricTexts.some((text) => /Distancia/i.test(text))).toBe(false);
 
   await guards.assertClean();
 });
@@ -129,6 +131,6 @@ test('GPS en contexto inseguro muestra fallback y la simulación sigue disponibl
 
   await page.locator('[data-sim-gps]').click();
   await expect(page.locator('[data-delivery-panel]')).toContainText(/HTTPS o localhost/);
-  await expect(page.locator('[data-delivery-panel]')).toContainText('GPS: Requiere HTTPS/localhost');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('GPS: Requiere HTTPS');
   await expect(page.locator('[data-sim-start]')).toBeEnabled();
 });

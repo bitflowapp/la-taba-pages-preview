@@ -27,6 +27,7 @@ let applyingRemote = false;
 let lastSnapshotHash = '';
 let lastRemoteSimTs = 0;
 let started = false;
+const RECENT_GPS_MS = 5 * 60 * 1000;
 
 export function getDeviceId() {
   if (deviceId) return deviceId;
@@ -156,10 +157,14 @@ function applyRemote(message) {
 
   let nextSimulation = local.simulation;
   let simChanged = false;
-  if (Object.prototype.hasOwnProperty.call(message, 'simulation') && isNewerTimestamp(message.ts, lastRemoteSimTs)) {
-    lastRemoteSimTs = message.ts;
-    nextSimulation = message.simulation || null;
-    simChanged = JSON.stringify(nextSimulation) !== JSON.stringify(local.simulation);
+  if (Object.prototype.hasOwnProperty.call(message, 'simulation')) {
+    const incomingSimulation = message.simulation || null;
+    const shouldApplySimulation = shouldApplyRemoteSimulation(local.simulation, incomingSimulation, message.ts);
+    if (isNewerTimestamp(message.ts, lastRemoteSimTs)) lastRemoteSimTs = message.ts;
+    if (shouldApplySimulation) {
+      nextSimulation = incomingSimulation;
+      simChanged = JSON.stringify(nextSimulation) !== JSON.stringify(local.simulation);
+    }
   }
 
   if (!changed && !simChanged) return;
@@ -171,6 +176,39 @@ function applyRemote(message) {
   });
   applyingRemote = false;
   lastSnapshotHash = hashSnapshot(snapshot());
+}
+
+function shouldApplyRemoteSimulation(localSimulation, incomingSimulation, messageTs) {
+  if (!incomingSimulation) return isNewerTimestamp(messageTs, lastRemoteSimTs);
+  const incomingIsGps = incomingSimulation.source === 'gps';
+  const localIsGps = localSimulation?.source === 'gps';
+
+  if (incomingIsGps && !localIsGps) return true;
+  if (localIsGps && !incomingIsGps && isRecentOrActiveGps(localSimulation)) return false;
+
+  if (incomingIsGps && localIsGps) {
+    const incomingFix = simulationTime(incomingSimulation);
+    const localFix = simulationTime(localSimulation);
+    if (incomingFix !== localFix) return incomingFix > localFix;
+  }
+
+  return isNewerTimestamp(messageTs, lastRemoteSimTs);
+}
+
+function isRecentOrActiveGps(simulation) {
+  if (!simulation || simulation.source !== 'gps') return false;
+  if (simulation.gpsStatus === 'active' || simulation.gpsStatus === 'requesting') return true;
+  if (['inactive', 'denied', 'unavailable', 'requires_secure_context'].includes(simulation.gpsStatus)) return false;
+  const fixTime = simulationTime(simulation);
+  return fixTime > 0 && Date.now() - fixTime <= RECENT_GPS_MS;
+}
+
+function simulationTime(simulation) {
+  if (!simulation) return 0;
+  const numeric = Number(simulation.timestamp);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  const fix = Date.parse(simulation.lastGpsFixAt || simulation.lastFixAt || simulation.lastPublishedAt || '');
+  return Number.isNaN(fix) ? 0 : fix;
 }
 
 let statusListener = null;

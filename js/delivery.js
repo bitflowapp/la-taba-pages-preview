@@ -217,20 +217,27 @@ function orderSimulation(order) {
 function renderSimControls(order, sim) {
   const percent = sim ? simulationProgressPercent(sim) : 0;
   const running = Boolean(sim?.running);
-  const canStart = !running && (order.status === 'ready' || order.status === 'on_the_way');
-  const canReset = Boolean(sim) && order.status !== 'delivered';
   const gpsOn = isGpsActive();
+  const canStart = !gpsOn && !running && (order.status === 'ready' || order.status === 'on_the_way');
+  const canReset = Boolean(sim) && order.status !== 'delivered';
   const destination = selectedStreetDestination(order, sim);
   const distanceToDestination = currentDistanceToDestination(sim, destination);
   const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'simulación';
-  const gpsCoords = sim && sim.mode === 'gps' && Number.isFinite(sim.lat)
+  const gpsCoords = sim && sim.source === 'gps' && Number.isFinite(sim.lat)
     ? `${sim.lat.toFixed(4)}, ${sim.lng.toFixed(4)}`
     : '';
   const gpsStatus = gpsStatusLabel(sim, gpsOn);
-  const lastFix = sim?.lastFixAt
-    ? new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(sim.lastFixAt))
+  const lastGpsFixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
+  const lastFix = lastGpsFixAt
+    ? new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(lastGpsFixAt))
     : '';
-  const accuracy = Number.isFinite(sim?.accuracy) ? `${Math.round(sim.accuracy)} m` : 'Sin precisión';
+  const accuracy = sim?.source === 'gps' && Number.isFinite(sim?.accuracy) ? `${Math.round(sim.accuracy)} m` : 'Sin precisión';
+  const gpsButtonLabel = sim?.gpsStatus === 'requesting'
+    ? 'Solicitando ubicación...'
+    : sim?.gpsStatus === 'active' && gpsOn
+      ? 'GPS real activo'
+      : 'Usar mi ubicación real';
+  const gpsButtonDisabled = sim?.gpsStatus === 'requesting' || (sim?.gpsStatus === 'active' && gpsOn);
   const destinationOptions = getStreetTestDestinations().map((item) => `
     <option value="${escapeHtml(item.id)}" ${item.id === destination.id ? 'selected' : ''}>${escapeHtml(item.label)}</option>
   `).join('');
@@ -261,7 +268,7 @@ function renderSimControls(order, sim) {
         <strong data-sim-progress>${percent}%</strong>
       </div>
       <div class="button-row street-primary-actions">
-        <button class="primary-button" type="button" data-sim-gps>Usar mi ubicación real</button>
+        <button class="primary-button" type="button" data-sim-gps ${gpsButtonDisabled ? 'disabled' : ''}>${escapeHtml(gpsButtonLabel)}</button>
         <button class="secondary-button" type="button" data-sim-gps-off ${gpsOn ? '' : 'disabled'}>Detener GPS</button>
       </div>
       <div class="button-row sim-actions">
@@ -279,6 +286,7 @@ function renderSimControls(order, sim) {
         ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
         ${secureHint}
       </div>
+      ${renderGpsDiagnostics(sim, gpsOn)}
       <p class="form-hint sim-note">Tu ubicación se comparte sólo en esta demo y mientras el GPS esté activo.</p>
     </div>
   `;
@@ -308,16 +316,77 @@ function canDeliverForStreet(order) {
 }
 
 function gpsStatusLabel(sim, active) {
-  if (active) return 'Activo';
   const labels = {
-    inactive: 'Inactivo',
-    requesting: 'Pidiendo permiso',
-    active: 'Activo',
-    denied: 'Permiso denegado',
-    unavailable: 'No disponible',
-    requires_secure_context: 'Requiere HTTPS/localhost',
+    inactive: 'GPS detenido',
+    requesting: 'Esperando permiso',
+    active: active ? 'GPS real activo' : 'Último GPS real',
+    denied: 'GPS bloqueado',
+    unavailable: 'GPS bloqueado',
+    requires_secure_context: 'Requiere HTTPS',
   };
-  return labels[sim?.gpsStatus || 'inactive'] || 'Inactivo';
+  return labels[sim?.gpsStatus || 'inactive'] || 'GPS detenido';
+}
+
+function renderGpsDiagnostics(sim, gpsOn) {
+  const status = getRealtimeStatus();
+  const relay = status.relayEnabled ? (status.relayConnected ? 'conectado' : 'error') : 'local';
+  const source = sim?.source === 'gps' ? 'GPS real' : 'Simulación';
+  const fixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
+  const publishedAt = sim?.lastPublishedAt || sim?.lastGpsPublishedAt || sim?.timestamp || null;
+  const coords = sim?.source === 'gps' && Number.isFinite(sim?.lat) && Number.isFinite(sim?.lng)
+    ? `${sim.lat.toFixed(6)}, ${sim.lng.toFixed(6)}`
+    : 'Sin fix real';
+  const precision = sim?.source === 'gps' && Number.isFinite(sim?.accuracy)
+    ? `±${Math.round(sim.accuracy)} m`
+    : 'Sin precisión';
+  return `
+    <details class="gps-diagnostics">
+      <summary>Diagnóstico GPS</summary>
+      <div class="gps-diagnostics-grid">
+        <span><small>Contexto seguro</small><strong>${secureContextLabel()}</strong></span>
+        <span><small>Geolocation disponible</small><strong>${geolocationLabel()}</strong></span>
+        <span><small>Estado GPS</small><strong>${escapeHtml(diagnosticGpsState(sim))}</strong></span>
+        <span><small>Watch ID activo</small><strong>${gpsOn ? 'Sí' : 'No'}</strong></span>
+        <span><small>Último fix</small><strong>${escapeHtml(relativeAgeLabel(fixAt))}</strong></span>
+        <span><small>Lat/lng último fix</small><strong>${escapeHtml(coords)}</strong></span>
+        <span><small>Precisión</small><strong>${escapeHtml(precision)}</strong></span>
+        <span><small>Fuente enviada</small><strong>${escapeHtml(source)}</strong></span>
+        <span><small>Relay</small><strong>${escapeHtml(relay)}</strong></span>
+        <span><small>Room actual</small><strong>${escapeHtml(status.room)}</strong></span>
+        <span><small>Último evento publicado</small><strong>${escapeHtml(relativeAgeLabel(publishedAt))}</strong></span>
+      </div>
+    </details>`;
+}
+
+function secureContextLabel() {
+  if (globalThis.isSecureContext === true) return 'Sí';
+  if (globalThis.isSecureContext === false) return 'No';
+  const protocol = globalThis.location?.protocol;
+  const hostname = globalThis.location?.hostname;
+  return protocol === 'https:' || hostname === 'localhost' || hostname === '127.0.0.1' ? 'Sí' : 'No';
+}
+
+function geolocationLabel() {
+  return typeof navigator !== 'undefined' && 'geolocation' in navigator ? 'Sí' : 'No';
+}
+
+function diagnosticGpsState(sim) {
+  if (sim?.gpsStatus === 'requesting') return 'Pidiendo permiso';
+  if (sim?.gpsStatus === 'active') return 'Activo';
+  if (sim?.gpsStatus === 'denied' || sim?.gpsStatus === 'unavailable' || sim?.gpsStatus === 'requires_secure_context') return 'Error';
+  return 'Inactivo';
+}
+
+function relativeAgeLabel(value) {
+  if (!value) return 'Sin datos';
+  const date = new Date(value);
+  const time = date.getTime();
+  if (Number.isNaN(time)) return 'Sin datos';
+  const seconds = Math.max(0, Math.round((Date.now() - time) / 1000));
+  if (seconds < 2) return 'ahora';
+  if (seconds < 60) return `hace ${seconds} s`;
+  const minutes = Math.round(seconds / 60);
+  return `hace ${minutes} min`;
 }
 
 function renderDemoMap(order, distance, eta) {

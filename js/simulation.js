@@ -158,6 +158,10 @@ function tick() {
 }
 
 export function startSimulation() {
+  if (isGpsActive()) {
+    return { ok: false, message: 'Detené el GPS real antes de iniciar la simulación.' };
+  }
+
   let order = getActiveDeliveryOrder();
   if (!order) {
     return { ok: false, message: 'No hay un pedido de delivery asignado para simular. Marcá el pedido como listo en el panel del negocio.' };
@@ -171,11 +175,18 @@ export function startSimulation() {
   }
 
   const current = getState().simulation;
-  const base = current && current.orderId === order.id
+  const base = current && current.orderId === order.id && current.source !== 'gps'
     ? { ...current, running: true }
-    : createSimulationState(order, { running: true });
+    : createSimulationState(order, { running: true, destinationId: routePreferenceForOrder(order) });
   // Este dispositivo pasa a ser el "dueño" que mueve el rider.
-  const simulation = { ...base, owner: getDeviceId() };
+  const simulation = {
+    ...base,
+    mode: 'demo',
+    source: 'simulation',
+    gpsStatus: 'inactive',
+    lastSentSource: 'simulation',
+    owner: getDeviceId(),
+  };
 
   setState({ simulation });
   startTimer();
@@ -261,28 +272,57 @@ export function resumeSimulationIfNeeded() {
   if (sim && sim.running && ownsSimulation(sim)) startTimer();
 }
 
-// ===== GPS opcional (solo a pedido del usuario, nunca se envía a un servidor) =====
+// ===== GPS opcional (solo a pedido del usuario, compartido por el relay demo configurado) =====
+function hasSecureGpsContext() {
+  if (globalThis.isSecureContext === true) return true;
+  if (globalThis.isSecureContext === false) return false;
+  const protocol = globalThis.location?.protocol;
+  const hostname = globalThis.location?.hostname;
+  return protocol === 'https:' || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+}
+
+function gpsUnavailableResult(order, gpsStatus, gpsError) {
+  const current = getState().simulation;
+  const preferredDestinationId = routePreferenceForOrder(order);
+  const base = current && current.orderId === order.id
+    ? current
+    : createSimulationState(order, { running: false, destinationId: preferredDestinationId });
+  setState({
+    simulation: {
+      ...base,
+      mode: 'demo',
+      source: 'simulation',
+      running: false,
+      gpsStatus,
+      gpsError,
+      streetMode: Boolean(preferredDestinationId || base?.streetMode),
+      lastSentSource: 'simulation',
+    },
+  });
+  return { ok: false, message: gpsError };
+}
+
 export function enableGpsTracking() {
-  const order = getActiveDeliveryOrder();
+  const order = getStreetTestOrder();
   if (!order) {
     return { ok: false, message: 'No hay un pedido asignado para usar tu ubicación.' };
   }
 
-  if (globalThis.isSecureContext === false) {
-    const current = getState().simulation;
-    const preferredDestinationId = routePreferenceForOrder(order);
-    const base = current && current.orderId === order.id
-      ? current
-      : createSimulationState(order, { running: false, destinationId: preferredDestinationId });
+  if (!hasSecureGpsContext()) {
     const gpsError = 'El GPS real suele requerir HTTPS o localhost. Podés seguir usando la simulación.';
-    setState({ simulation: { ...base, mode: 'demo', source: 'simulation', gpsStatus: 'requires_secure_context', gpsError, streetMode: Boolean(preferredDestinationId || base?.streetMode) } });
-    return { ok: false, message: gpsError };
+    return gpsUnavailableResult(order, 'requires_secure_context', gpsError);
   }
 
   if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
-    const sim = getState().simulation;
-    if (sim) setState({ simulation: { ...sim, gpsStatus: 'unavailable', gpsError: 'Este navegador no tiene geolocalización.' } });
-    return { ok: false, message: 'Geolocalización no disponible en este navegador.' };
+    return gpsUnavailableResult(order, 'unavailable', 'Geolocalización no disponible en este navegador.');
+  }
+
+  const currentSim = getState().simulation;
+  if (gpsWatchId !== null && currentSim?.orderId === order.id) {
+    return {
+      ok: true,
+      message: currentSim.gpsStatus === 'active' ? 'GPS real activo.' : 'Solicitando ubicación GPS.',
+    };
   }
 
   const current = getState().simulation;
@@ -290,8 +330,23 @@ export function enableGpsTracking() {
   const base = current && current.orderId === order.id
     ? current
     : createSimulationState(order, { running: false, destinationId: preferredDestinationId });
+  const requestedAt = new Date().toISOString();
   stopTimer();
-  setState({ simulation: { ...base, mode: 'gps', source: 'gps', running: false, gpsStatus: 'requesting', gpsError: undefined, owner: getDeviceId(), streetMode: Boolean(preferredDestinationId || base?.streetMode) } });
+  setState({
+    simulation: {
+      ...base,
+      mode: 'gps',
+      // Hasta recibir un fix real, no publicamos source="gps" con una posición demo.
+      source: base?.source === 'gps' ? 'gps' : 'simulation',
+      running: false,
+      gpsStatus: 'requesting',
+      gpsRequestedAt: requestedAt,
+      gpsError: undefined,
+      owner: getDeviceId(),
+      streetMode: Boolean(preferredDestinationId || base?.streetMode),
+      lastSentSource: base?.source === 'gps' ? 'gps' : 'simulation',
+    },
+  });
 
   try {
     if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
@@ -302,11 +357,11 @@ export function enableGpsTracking() {
     });
   } catch (_) {
     const sim = getState().simulation;
-    if (sim) setState({ simulation: { ...sim, mode: 'demo', source: 'simulation', gpsStatus: 'unavailable', gpsError: 'No se pudo iniciar la ubicación.' } });
+    if (sim) setState({ simulation: { ...sim, mode: 'demo', source: sim.source === 'gps' ? 'gps' : 'simulation', gpsStatus: 'unavailable', gpsError: 'No se pudo iniciar la ubicación.' } });
     return { ok: false, message: 'No se pudo iniciar la ubicación.' };
   }
 
-  return { ok: true, message: 'Usando tu ubicación como rider.' };
+  return { ok: true, message: 'Solicitando ubicación GPS.' };
 }
 
 export function disableGpsTracking({ silent = false } = {}) {
@@ -316,7 +371,15 @@ export function disableGpsTracking({ silent = false } = {}) {
   gpsWatchId = null;
   const sim = getState().simulation;
   if (sim && sim.mode === 'gps') {
-    setState({ simulation: { ...sim, mode: 'demo', source: 'simulation', gpsStatus: 'inactive' } });
+    setState({
+      simulation: {
+        ...sim,
+        mode: 'demo',
+        source: sim.source === 'gps' ? 'gps' : 'simulation',
+        running: false,
+        gpsStatus: 'inactive',
+      },
+    });
   }
   return { ok: true, message: silent ? '' : 'Ubicación en vivo desactivada.' };
 }
@@ -340,7 +403,8 @@ function onGpsPosition(position) {
     source: 'gps',
   });
   if (!location) return;
-  // La ubicación solo se publica por el estado de la app y el relay LAN configurado.
+  const publishedAt = new Date().toISOString();
+  // La ubicación se publica por el estado de la app y el relay demo configurado.
   setState({
     simulation: {
       ...sim,
@@ -350,6 +414,10 @@ function onGpsPosition(position) {
       gpsStatus: 'active',
       running: false,
       gpsError: undefined,
+      lastGpsFixAt: location.lastFixAt,
+      lastGpsPublishedAt: publishedAt,
+      lastPublishedAt: publishedAt,
+      lastSentSource: 'gps',
       owner: getDeviceId(),
     },
   });
@@ -361,7 +429,18 @@ function onGpsError(error) {
     ? 'Permiso de ubicación denegado.'
     : 'No se pudo obtener tu ubicación.';
   disableGpsTracking({ silent: true });
-  if (sim) setState({ simulation: { ...sim, mode: 'demo', source: 'simulation', gpsStatus: error && error.code === 1 ? 'denied' : 'unavailable', gpsError: message } });
+  if (sim) {
+    setState({
+      simulation: {
+        ...sim,
+        mode: 'demo',
+        source: sim.source === 'gps' ? 'gps' : 'simulation',
+        running: false,
+        gpsStatus: error && error.code === 1 ? 'denied' : 'unavailable',
+        gpsError: message,
+      },
+    });
+  }
 }
 
 // Limpia el GPS al salir de la vista del rider (la simulación demo sigue).

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#121110" />
-    <meta name="description" content="La Taba: canal propio de pedidos online para carnicería con delivery." />
+    <meta name="description" content="La Taba: carnes premium, parrilla y delivery propio en Neuquén." />
     <title>La Taba · Carnes premium · Pedidos online</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
@@ -33,7 +33,7 @@
         <div class="topbar-actions">
           <button class="ghost-button compact" type="button" data-admin-toggle>Administrar pedidos</button>
           <button class="primary-button compact cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
-            <span data-cart-total-small>$0</span>
+            <span data-cart-total-small>Pedido</span>
           </button>
         </div>
       </header>
@@ -42,8 +42,9 @@
         <section class="section app-view app-home is-active" data-view="home" aria-hidden="false">
           <div class="home-title">
             <div>
-              <p class="eyebrow">Pedido online</p>
-              <h1>Pedí carne y parrilla en La Taba</h1>
+              <p class="eyebrow">Carnicería premium</p>
+              <h1>La Taba</h1>
+              <p class="home-lead">Cortes frescos, parrilla y combos para pedir online en Neuquén.</p>
             </div>
             <button class="secondary-button compact" type="button" data-nav-view="profile">Ver local</button>
           </div>
@@ -51,16 +52,18 @@
           <div class="status-bar" role="status">
             <span class="status-dot" data-open-status>Abierto ahora</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">15 – 35 min</span>
+            <span class="status-item">25-35 min</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Envío o retiro</span>
+            <span class="status-item">Delivery o retiro</span>
+            <span class="status-sep" aria-hidden="true"></span>
+            <span class="status-item">Neuquén · Cipolletti</span>
           </div>
 
           <div data-home-active-order hidden></div>
 
           <div class="search-box">
             <span aria-hidden="true">⌕</span>
-            <input data-search-input data-search-jump type="search" placeholder="Buscar en el catálogo…" aria-label="Buscar productos" />
+            <input data-search-input data-search-jump type="search" placeholder="Buscar cortes, combos, bebidas..." aria-label="Buscar productos" />
           </div>
 
           <div class="rail-block">
@@ -74,10 +77,10 @@
           <button class="promo-banner" type="button" data-category-id="promos" data-promo-banner>
             <div class="promo-banner-copy">
               <span class="promo-kicker">Listo para parrilla</span>
-              <strong>Promos y combos del día</strong>
-              <span class="promo-sub">Cortes, achuras y bebidas armados para pedir rápido.</span>
+              <strong>Promo parrillera del día</strong>
+              <span class="promo-sub">Cortes, achuras y bebidas para resolver la comida de hoy.</span>
             </div>
-            <span class="promo-cta">Ver promos</span>
+            <span class="promo-cta">Pedir ahora</span>
           </button>
 
           <div class="rail-block">
@@ -116,7 +119,7 @@
 
           <div class="search-box">
             <span aria-hidden="true">⌕</span>
-            <input data-search-input type="search" placeholder="Buscar en el catálogo…" aria-label="Buscar en el catálogo" />
+            <input data-search-input type="search" placeholder="Buscar cortes, combos, bebidas..." aria-label="Buscar en el catálogo" />
           </div>
 
           <div class="category-strip" data-category-strip></div>
@@ -149,9 +152,12 @@
           <div class="section-head">
             <div>
               <p class="eyebrow">Mi pedido</p>
-              <h2>Revisá productos, entrega y total</h2>
+              <h2>Tu pedido</h2>
             </div>
-            <button class="ghost-button" type="button" data-clear-cart>Vaciar carrito</button>
+            <div class="view-actions">
+              <button class="secondary-button compact" type="button" data-nav-view="catalog">Seguir comprando</button>
+              <button class="ghost-button compact" type="button" data-clear-cart>Vaciar carrito</button>
+            </div>
           </div>
 
           <div class="checkout-layout">
@@ -161,11 +167,11 @@
             </div>
 
             <form class="card checkout-form" data-checkout-form novalidate>
-              <h3>Datos para finalizar pedido</h3>
+              <h3>Datos para finalizar</h3>
               <div class="delivery-mode">
                 <label>
                   <input type="radio" name="deliveryMode" value="delivery" checked />
-                  <span>Envío a domicilio</span>
+                  <span>Delivery</span>
                 </label>
                 <label>
                   <input type="radio" name="deliveryMode" value="pickup" />
@@ -194,20 +200,20 @@
                 <select name="paymentMethod">
                   <option value="cash">Efectivo</option>
                   <option value="transfer">Transferencia</option>
-                  <option value="mercado_pago_future">Mercado Pago (a futuro)</option>
+                  <option value="mercado_pago_future">Mercado Pago</option>
                 </select>
               </label>
 
               <label>
                 Notas
-                <textarea name="customerNotes" rows="3" placeholder="Ej: tocar timbre, sin hueso, cortar fino…"></textarea>
+                <textarea name="customerNotes" rows="3" placeholder="Ej: tocar timbre, sin hueso, cortar fino..."></textarea>
               </label>
 
               <div class="summary-box" data-order-summary></div>
               <div class="warning-box hidden" data-checkout-warning></div>
 
               <div class="trust-row" aria-hidden="false">
-                <span class="trust-text"><strong>Pedido propio de La Taba</strong><small>Lo confirmás acá y lo seguís en vivo desde la app.</small></span>
+                <span class="trust-text"><strong>El local confirma disponibilidad antes de preparar tu pedido.</strong><small>WhatsApp queda como copia opcional.</small></span>
               </div>
 
               <div class="button-row">
@@ -219,7 +225,7 @@
                 <button class="ghost-button" type="button" data-whatsapp-copy>Enviar copia por WhatsApp</button>
                 <button class="ghost-button" type="button" data-copy-order>Copiar pedido</button>
               </div>
-              <p class="form-hint">Al confirmar se crea el pedido y lo seguís en tiempo real. Enviar la copia por WhatsApp es opcional.</p>
+              <p class="form-hint">Confirmás acá y seguís el estado en vivo desde la app.</p>
             </form>
           </div>
         </section>
@@ -237,7 +243,7 @@
         <section class="section app-view soft" data-view="profile" hidden aria-hidden="true">
           <div class="section-head">
             <div>
-              <p class="eyebrow">El comercio</p>
+              <p class="eyebrow">Local</p>
               <h2>La Taba</h2>
             </div>
           </div>
@@ -248,16 +254,17 @@
                 <li><span>Local</span><strong data-business-profile-name>La Taba</strong></li>
                 <li><span>Dirección</span><strong data-business-address>Neuquén capital</strong></li>
                 <li><span>Horarios</span><strong data-business-hours>Lunes a sábado</strong></li>
-                <li><span>Zona de envío</span><strong data-business-zone>Zona configurada</strong></li>
+                <li><span>Zona de entrega</span><strong data-business-zone>Zona configurada</strong></li>
                 <li><span>Pedido mínimo delivery</span><strong data-min-order>$0</strong></li>
-                <li><span>Envío base</span><strong data-delivery-fee>$0</strong></li>
-                <li><span>Medios de pago</span><strong>Efectivo, transferencia y Mercado Pago (próximamente)</strong></li>
+                <li><span>Costo de envío</span><strong data-delivery-fee>$0</strong></li>
+                <li><span>WhatsApp</span><strong>+54 9 299 620-9136</strong></li>
+                <li><span>Medios de pago</span><strong>Efectivo, transferencia y Mercado Pago</strong></li>
                 <li><span>Retiro en local</span><strong>Disponible, sin costo de envío</strong></li>
               </ul>
             </div>
             <div class="card">
               <h3>Cómo trabajamos</h3>
-              <p>Hacé tu pedido desde acá. Lo recibimos al instante, lo preparamos y te lo llevamos o lo retirás por el local. Podés seguir el reparto en vivo desde la app.</p>
+              <p>Pedí online y retirás en el local o recibís por delivery propio.</p>
               <ol class="how-strip">
                 <li><strong>1</strong> Armás y confirmás el pedido</li>
                 <li><strong>2</strong> Lo preparamos en el local</li>
@@ -267,7 +274,7 @@
                 <button class="secondary-button" type="button" data-open-admin-view="business">Panel negocio</button>
                 <button class="ghost-button" type="button" data-open-admin-view="rider">Repartidor</button>
               </div>
-              <p class="form-hint">Acceso del comercio · PIN demo <strong>1234</strong></p>
+              <p class="form-hint">Acceso del comercio con PIN.</p>
             </div>
           </div>
         </section>
@@ -289,7 +296,7 @@
             <div class="section-head">
               <div>
                 <p class="eyebrow">Administrar pedidos</p>
-                <h2>Pedidos y ventas de hoy</h2>
+                <h2>Resumen del negocio</h2>
               </div>
               <div class="view-actions">
                 <button class="secondary-button compact" type="button" data-open-admin-view="rider">Vista rider</button>
@@ -328,6 +335,11 @@
           </div>
         </section>
       </main>
+
+      <button class="floating-cart hidden" type="button" data-floating-cart data-open-cart aria-live="polite">
+        <span data-floating-cart-summary>0 ítems · $0</span>
+        <strong>Ver pedido</strong>
+      </button>
 
       <nav class="mobile-nav" aria-label="Navegación móvil">
         <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>

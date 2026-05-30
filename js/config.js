@@ -3,8 +3,8 @@ export const BUSINESS_CONFIG = Object.freeze({
   name: 'La Taba',
   subtitle: 'Carnicería & delivery propio',
   whatsappNumber: '5492996209136',
-  address: 'Neuquén capital',
-  deliveryZone: 'Zona centro, barrios cercanos y pedidos coordinados',
+  address: 'Neuquén centro',
+  deliveryZone: 'Neuquén centro, barrios cercanos y Cipolletti coordinado',
   openingHoursLabel: 'Lunes a sábado · 9:00 a 21:00',
   openingHours: 'Lunes a sábado · 9:00 a 21:00',
   openHour: 9,
@@ -15,7 +15,7 @@ export const BUSINESS_CONFIG = Object.freeze({
   currency: 'ARS',
   orderPrefix: 'LT',
   businessLocation: {
-    name: 'La Taba demo · Neuquén Capital',
+    name: 'La Taba · Neuquén Capital',
     lat: -38.9516,
     lng: -68.0591,
   },
@@ -28,8 +28,8 @@ export const BUSINESS_CONFIG = Object.freeze({
     { id: 'cipolletti', name: 'Cipolletti', center: { lat: -38.9339, lng: -67.9903 } },
   ],
   demoDestinations: {
-    neuquen: { name: 'Destino demo · Neuquén Capital', lat: -38.9402, lng: -68.0735 },
-    cipolletti: { name: 'Destino demo · Cipolletti', lat: -38.9339, lng: -67.9903 },
+    neuquen: { name: 'Destino · Neuquén Capital', lat: -38.9402, lng: -68.0735 },
+    cipolletti: { name: 'Destino · Cipolletti', lat: -38.9339, lng: -67.9903 },
   },
   mapProvider: {
     name: 'CARTO + OpenStreetMap',

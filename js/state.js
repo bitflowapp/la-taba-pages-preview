@@ -413,7 +413,7 @@ export function paymentLabel(value) {
   const labels = {
     cash: 'Efectivo',
     transfer: 'Transferencia',
-    mercado_pago_future: 'Mercado Pago a futuro',
+    mercado_pago_future: 'Mercado Pago',
   };
   return labels[value] || value;
 }

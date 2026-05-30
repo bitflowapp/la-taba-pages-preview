@@ -263,9 +263,10 @@ test('modo negocio y delivery', async ({ page }) => {
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Ventas del día');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Stock del catálogo');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Pedidos para preparar');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Consola de pedidos');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Ventas de hoy');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Productos y stock');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('En preparación');
 
   const advanceButton = page.locator('[data-order-advance]').first();
   await expect(advanceButton).toBeVisible();

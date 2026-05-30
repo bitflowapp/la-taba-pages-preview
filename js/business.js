@@ -23,10 +23,6 @@ import {
 } from './orders.js';
 import { escapeHtml, productCode, stockPill } from './ui.js';
 
-// Motivos rápidos de cancelación (modo prueba en mostrador).
-const CANCEL_REASONS = ['Sin stock', 'Cliente canceló', 'Local cerrado', 'Dirección errónea', 'Otro'];
-
-let pendingCancelId = null;
 let seenOrderIds = null; // se inicializa en el primer render para detectar pedidos nuevos
 let soundEnabled = readSoundPref();
 let audioCtx = null;
@@ -416,14 +412,47 @@ export function handleBusinessAction(target) {
     };
   }
 
+  const ticketId = target.closest('[data-order-ticket]')?.dataset.orderTicket;
+  if (ticketId) {
+    const order = getState().orders.find((candidate) => candidate.id === ticketId);
+    if (!order) return { handled: true, ok: false, message: 'Pedido no encontrado.' };
+    copyTicketText(buildKitchenTicket(order));
+    return { handled: true, ok: true, message: 'Ticket copiado para la cocina.' };
+  }
+
+  const printId = target.closest('[data-order-print]')?.dataset.orderPrint;
+  if (printId) {
+    const order = getState().orders.find((candidate) => candidate.id === printId);
+    if (!order) return { handled: true, ok: false, message: 'Pedido no encontrado.' };
+    printTicket(order);
+    return { handled: true, ok: true, message: 'Preparando impresión del ticket.' };
+  }
+
+  const trackId = target.closest('[data-order-track]')?.dataset.orderTrack;
+  if (trackId) {
+    setState({ lastOrderId: trackId });
+    return { handled: true, ok: true, message: '', navigate: 'tracking' };
+  }
+
+  if (target.closest('[data-sound-toggle]')) {
+    soundEnabled = !soundEnabled;
+    writeSoundPref(soundEnabled);
+    if (soundEnabled) playNewOrderChime();
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: soundEnabled ? 'Sonido de pedidos activado.' : 'Sonido de pedidos apagado.' };
+  }
+
+  if (target.closest('[data-scroll-orders]')) {
+    if (typeof document !== 'undefined') {
+      document.querySelector('[data-ops-board]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    return { handled: true, ok: true, message: '' };
+  }
+
   const cancelId = target.closest('[data-order-cancel]')?.dataset.orderCancel;
   if (cancelId) {
     const result = cancelOrder(cancelId);
-    return {
-      handled: true,
-      ok: result.ok,
-      message: result.ok ? 'Pedido cancelado.' : result.message,
-    };
+    return { handled: true, ok: result.ok, message: result.ok ? 'Pedido cancelado.' : result.message };
   }
 
   const stockInc = target.closest('[data-stock-inc]')?.dataset.stockInc;
@@ -469,4 +498,22 @@ function toggleProductAvailability(productId) {
     changed = true;
   });
   return changed;
+}
+
+function copyTicketText(text) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+    }
+  } catch (_) { /* clipboard no disponible: no romper */ }
+}
+
+function printTicket(order) {
+  if (typeof document !== 'undefined') {
+    const slot = document.querySelector('[data-print-ticket]');
+    if (slot) slot.textContent = buildKitchenTicket(order);
+  }
+  try {
+    if (typeof window !== 'undefined' && typeof window.print === 'function') window.print();
+  } catch (_) { /* impresión no disponible: no romper */ }
 }

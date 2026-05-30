@@ -206,7 +206,8 @@ function bindEvents() {
 
     const businessResult = handleBusinessAction(target);
     if (businessResult.handled) {
-      showToast(businessResult.message);
+      if (businessResult.message) showToast(businessResult.message);
+      if (businessResult.navigate) setActiveView(businessResult.navigate);
       return;
     }
 

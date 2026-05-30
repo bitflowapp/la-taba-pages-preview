@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
 import { BUSINESS_CONFIG } from '../js/config.js';
 import { addToCart } from '../js/cart.js';
-import { createOrderFromCheckout, buildWhatsAppMessage, updateOrderStatus } from '../js/orders.js';
+import { createOrderFromCheckout, buildWhatsAppMessage, buildWhatsAppUrl, updateOrderStatus } from '../js/orders.js';
 import { dateTime, getState } from '../js/state.js';
 import { resetState, state } from './helpers.mjs';
 
@@ -112,6 +112,55 @@ test('checkout sanitizes text and normalizes invalid payment methods', () => {
   assert.equal(result.order.paymentMethod, 'Efectivo');
   assert.equal(result.order.notes, 'Sin grasa');
   assert.deepEqual(state().cart, []);
+});
+
+test('double checkout confirmation cannot create a duplicate order', () => {
+  addToCart('p-vacio', 1);
+  const initialOrderCount = getState().orders.length;
+
+  const first = createOrderFromCheckout({
+    customerName: 'Cliente QA',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: '',
+  });
+  const second = createOrderFromCheckout({
+    customerName: 'Cliente QA',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: '',
+  });
+
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, false);
+  assert.equal(getState().orders.length, initialOrderCount + 1);
+  assert.equal(getState().orders[0].id, first.order.id);
+  assert.deepEqual(getState().cart, []);
+});
+
+test('secondary WhatsApp copy uses an existing order without creating another one', () => {
+  addToCart('p-vacio', 1);
+  const created = createOrderFromCheckout({
+    customerName: 'Cliente WhatsApp',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: 'Copia secundaria',
+  });
+  const orderCount = getState().orders.length;
+
+  const url = buildWhatsAppUrl(created.order);
+
+  assert.equal(created.ok, true);
+  assert.equal(getState().orders.length, orderCount);
+  assert.match(decodeURIComponent(url), /Pedido: LT-0002/);
+  assert.match(decodeURIComponent(url), /Cliente WhatsApp/);
+  assert.match(decodeURIComponent(url), /Copia secundaria/);
 });
 
 test('order status transitions reject invalid jumps and preserve history', () => {

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { fillCheckout } from './helpers.mjs';
 
 // Relay realtime servido por scripts/realtime-relay.mjs (ver playwright.config.mjs).
-const RELAY = 'http://127.0.0.1:8787';
+const RELAY = 'http://127.0.0.1:18787';
 
 async function stub(page) {
   await page.addInitScript(() => {

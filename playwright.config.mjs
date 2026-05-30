@@ -25,9 +25,10 @@ export default defineConfig({
     },
     {
       // Relay realtime para el test cliente/rider entre dos contextos (dos "celulares").
-      command: 'node scripts/realtime-relay.mjs 8787',
-      url: 'http://127.0.0.1:8787/health',
-      reuseExistingServer: true,
+      // Usa un puerto distinto al de la demo manual para no reutilizar servidores viejos.
+      command: 'node scripts/realtime-relay.mjs 18787',
+      url: 'http://127.0.0.1:18787/health',
+      reuseExistingServer: false,
       timeout: 120_000,
     },
   ],

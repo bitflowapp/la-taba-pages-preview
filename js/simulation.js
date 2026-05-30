@@ -7,7 +7,12 @@
 // cliente y el del repartidor hace falta un backend realtime
 // (Supabase Realtime, Firebase o WebSocket). Ver README.
 import { getState, setState } from './state.js';
-import { getActiveDeliveryOrder, updateOrderStatus } from './orders.js';
+import {
+  getActiveDeliveryOrder,
+  getRiderQueueOrder,
+  updateOrderDemoDestination,
+  updateOrderStatus,
+} from './orders.js';
 import { getDeviceId } from './realtime.js';
 import {
   DEMO_STORE_POINT,
@@ -15,7 +20,12 @@ import {
   advanceSimulation,
   createSimulationState,
 } from './core/simulation.js';
-import { normalizeRiderLocation } from './map/route_geometry.js';
+import {
+  distanceKm,
+  getStreetTestDestination,
+  normalizeRiderLocation,
+} from './map/route_geometry.js';
+import { STORE_LOCATION } from './map/map_config.js';
 
 let timerId = null;
 let gpsWatchId = null;
@@ -44,6 +54,83 @@ export function getSimulation() {
 
 export function isSimulationRunning() {
   return Boolean(getState().simulation?.running);
+}
+
+function getStreetTestOrder() {
+  return getRiderQueueOrder() || getActiveDeliveryOrder();
+}
+
+function routePreferenceForOrder(order) {
+  const sim = getState().simulation;
+  if (sim && sim.orderId === order?.id) return sim.destinationId || sim.routeId;
+  return order?.delivery?.demoDestinationId || null;
+}
+
+function orderWithDestination(order, destination) {
+  return {
+    ...order,
+    delivery: {
+      ...(order.delivery || {}),
+      demoDestinationId: destination.id,
+      demoDestinationLabel: destination.label || destination.name,
+      demoDestinationAddressLabel: destination.addressLabel || destination.name || destination.label,
+      demoDestinationCity: destination.city || '',
+      distanceKm: Number(distanceKm(STORE_LOCATION, destination).toFixed(1)),
+    },
+  };
+}
+
+export function activateStreetTestMode(destinationId = null) {
+  const order = getStreetTestOrder();
+  if (!order) {
+    return { ok: false, message: 'Creá o usá un pedido de delivery para activar el modo calle.' };
+  }
+  return applyStreetTestDestination(order, destinationId || routePreferenceForOrder(order), {
+    message: 'Modo prueba en calle activado.',
+  });
+}
+
+export function selectStreetTestDestination(destinationId) {
+  const order = getStreetTestOrder();
+  if (!order) {
+    return { ok: false, message: 'Creá o usá un pedido de delivery para elegir destino.' };
+  }
+  return applyStreetTestDestination(order, destinationId, {
+    message: 'Destino de prueba actualizado.',
+  });
+}
+
+function applyStreetTestDestination(order, destinationId, { message }) {
+  const destination = getStreetTestDestination(destinationId);
+  const destinationResult = updateOrderDemoDestination(order.id, destination.id);
+  if (!destinationResult.ok) return destinationResult;
+
+  const current = getState().simulation;
+  const gpsActive = current?.orderId === order.id && current.mode === 'gps' && gpsWatchId !== null;
+  const nextOrder = orderWithDestination(order, destination);
+  const base = current && current.orderId === order.id
+    ? current
+    : createSimulationState(nextOrder, { running: false, destinationId: destination.id });
+  const freshRoute = createSimulationState(nextOrder, { running: false, destinationId: destination.id });
+
+  if (!gpsActive) stopTimer();
+
+  const timestamp = Date.now();
+  setState({
+    simulation: {
+      ...(gpsActive ? base : freshRoute),
+      routeId: destination.id,
+      destinationId: destination.id,
+      streetMode: true,
+      owner: getDeviceId(),
+      timestamp,
+      lastFixAt: gpsActive ? base.lastFixAt : new Date(timestamp).toISOString(),
+      gpsStatus: base?.gpsStatus || 'inactive',
+      ...(base?.gpsError ? { gpsError: base.gpsError } : {}),
+    },
+  });
+
+  return { ok: true, message: `${message} ${destination.label || destination.name}.`, destination };
 }
 
 function tick() {
@@ -112,7 +199,8 @@ export function resetSimulation() {
     setState({ simulation: null });
     return { ok: true, message: 'Simulación reiniciada.' };
   }
-  const base = createSimulationState(order, { running: false });
+  const preferredDestinationId = routePreferenceForOrder(order);
+  const base = createSimulationState(order, { running: false, destinationId: preferredDestinationId });
   setState({
     simulation: {
       ...base,
@@ -123,6 +211,7 @@ export function resetSimulation() {
       lng: DEMO_STORE_POINT.lng,
       source: 'simulation',
       gpsStatus: 'inactive',
+      streetMode: Boolean(preferredDestinationId),
     },
   });
   return { ok: true, message: 'Simulación reiniciada al inicio del recorrido.' };
@@ -155,7 +244,9 @@ export function syncSimulationOnStatus(orderId, status) {
   }
 
   if (status === 'arriving') {
-    const base = sim && sim.orderId === orderId ? sim : createSimulationState(order, { running: false });
+    const base = sim && sim.orderId === orderId
+      ? sim
+      : createSimulationState(order, { running: false, destinationId: order.delivery?.demoDestinationId });
     stopTimer();
     setState({
       simulation: { ...base, progress: Math.max(base.progress, 0.92), etaMinutes: 1, running: false },
@@ -179,9 +270,12 @@ export function enableGpsTracking() {
 
   if (globalThis.isSecureContext === false) {
     const current = getState().simulation;
-    const base = current && current.orderId === order.id ? current : createSimulationState(order, { running: false });
+    const preferredDestinationId = routePreferenceForOrder(order);
+    const base = current && current.orderId === order.id
+      ? current
+      : createSimulationState(order, { running: false, destinationId: preferredDestinationId });
     const gpsError = 'El GPS real suele requerir HTTPS o localhost. Podés seguir usando la simulación.';
-    setState({ simulation: { ...base, mode: 'demo', source: 'simulation', gpsStatus: 'requires_secure_context', gpsError } });
+    setState({ simulation: { ...base, mode: 'demo', source: 'simulation', gpsStatus: 'requires_secure_context', gpsError, streetMode: Boolean(preferredDestinationId || base?.streetMode) } });
     return { ok: false, message: gpsError };
   }
 
@@ -192,9 +286,12 @@ export function enableGpsTracking() {
   }
 
   const current = getState().simulation;
-  const base = current && current.orderId === order.id ? current : createSimulationState(order, { running: false });
+  const preferredDestinationId = routePreferenceForOrder(order);
+  const base = current && current.orderId === order.id
+    ? current
+    : createSimulationState(order, { running: false, destinationId: preferredDestinationId });
   stopTimer();
-  setState({ simulation: { ...base, mode: 'gps', source: 'gps', running: false, gpsStatus: 'requesting', gpsError: undefined, owner: getDeviceId() } });
+  setState({ simulation: { ...base, mode: 'gps', source: 'gps', running: false, gpsStatus: 'requesting', gpsError: undefined, owner: getDeviceId(), streetMode: Boolean(preferredDestinationId || base?.streetMode) } });
 
   try {
     if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);

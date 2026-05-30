@@ -27,6 +27,9 @@ export const STATE_SCHEMA_VERSION = 1;
 export const SORT_OPTIONS = Object.freeze(['recommended', 'price_asc', 'popular']);
 
 const listeners = new Set();
+const STREET_DESTINATION_IDS = new Set(
+  (BUSINESS_CONFIG.demoStreetTestDestinations || []).map((destination) => destination.id),
+);
 
 const defaultState = () => {
   const baseProducts = buildBaseProducts();
@@ -96,6 +99,11 @@ function normalizeSortBy(value) {
   return SORT_OPTIONS.includes(candidate) ? candidate : 'recommended';
 }
 
+function normalizeStreetDestinationId(value) {
+  const candidate = sanitizeText(value, { maxLength: 60 });
+  return STREET_DESTINATION_IDS.has(candidate) ? candidate : null;
+}
+
 // La simulación solo se conserva si apunta a un pedido de delivery todavía activo.
 function sanitizeSimulation(raw, orders) {
   if (!isPlainObject(raw)) return null;
@@ -107,13 +115,15 @@ function sanitizeSimulation(raw, orders) {
 
   const baseEta = Math.max(0, Math.floor(Number(raw.baseEta) || 0));
   const progress = clampProgress(raw.progress);
+  const destinationId = normalizeStreetDestinationId(raw.destinationId || raw.demoDestinationId || raw.routeId);
 
   return {
     orderId,
     running: Boolean(raw.running),
     mode: raw.mode === 'gps' ? 'gps' : 'demo',
     source: raw.source === 'gps' ? 'gps' : 'simulation',
-    routeId: sanitizeText(raw.routeId, { fallback: 'neuquen', maxLength: 40 }),
+    routeId: sanitizeText(raw.routeId, { fallback: destinationId || 'neuquen', maxLength: 60 }),
+    ...(destinationId ? { destinationId } : {}),
     progress,
     baseEta,
     etaMinutes: Math.max(0, Math.floor(Number(raw.etaMinutes) || 0)),
@@ -121,6 +131,7 @@ function sanitizeSimulation(raw, orders) {
     timestamp: Math.max(0, Number(raw.timestamp) || 0),
     lastFixAt: normalizeIsoDate(raw.lastFixAt || raw.timestamp || raw.startedAt),
     gpsStatus: sanitizeText(raw.gpsStatus, { fallback: 'inactive', maxLength: 40 }),
+    ...(raw.streetMode ? { streetMode: true } : {}),
     ...(raw.owner ? { owner: sanitizeText(raw.owner, { maxLength: 80 }) } : {}),
     ...(Number.isFinite(Number(raw.lat)) ? { lat: Number(raw.lat) } : {}),
     ...(Number.isFinite(Number(raw.lng)) ? { lng: Number(raw.lng) } : {}),
@@ -263,6 +274,7 @@ function normalizeDelivery(delivery, deliveryMode, status) {
   const source = isPlainObject(delivery) ? delivery : {};
   const delivered = status === 'delivered' || status === 'cancelled' || deliveryMode === 'pickup';
   const estimatedMinutes = delivered ? 0 : Math.max(0, Math.floor(Number(source.estimatedMinutes) || 0));
+  const demoDestination = normalizeStreetDestinationId(source.demoDestinationId || source.destinationId);
 
   return {
     driverName: sanitizeText(source.driverName, { fallback: deliveryMode === 'pickup' ? 'Sin asignar' : 'Juli', maxLength: 80 }),
@@ -275,6 +287,11 @@ function normalizeDelivery(delivery, deliveryMode, status) {
     ...(Number.isFinite(Number(source.distanceKm)) && Number(source.distanceKm) >= 0
       ? { distanceKm: Number(source.distanceKm) }
       : {}),
+    ...(demoDestination ? { demoDestinationId: demoDestination } : {}),
+    ...(source.demoDestinationLabel ? { demoDestinationLabel: sanitizeText(source.demoDestinationLabel, { maxLength: 80 }) } : {}),
+    ...(source.demoDestinationAddressLabel ? { demoDestinationAddressLabel: sanitizeText(source.demoDestinationAddressLabel, { maxLength: 120 }) } : {}),
+    ...(source.demoDestinationCity ? { demoDestinationCity: sanitizeText(source.demoDestinationCity, { maxLength: 80 }) } : {}),
+    ...(source.destinationUpdatedAt ? { destinationUpdatedAt: normalizeIsoDate(source.destinationUpdatedAt) } : {}),
     ...(Number.isFinite(Number(source.driverRating)) && Number(source.driverRating) > 0
       ? { driverRating: Number(source.driverRating) }
       : {}),

@@ -1047,6 +1047,21 @@ body:has(.app-view[data-view="business"].is-active) .toast {
 .sim-bar span { display: block; height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.6s ease; }
 .sim-progress strong { min-width: 42px; text-align: right; color: var(--accent-soft); font-size: 14px; }
 .sim-actions { margin-bottom: 10px; }
+.street-test-panel { display: grid; gap: 10px; }
+.street-destination-field { display: grid; gap: 6px; color: var(--soft); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+.street-destination-field select { min-height: 44px; border-radius: 12px; }
+.street-summary-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+}
+.street-summary-grid span {
+  min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px;
+  background: rgba(255,255,255,0.035);
+}
+.street-summary-grid small { display: block; color: var(--soft); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+.street-summary-grid strong { display: block; margin-top: 3px; color: var(--text); font-size: 13px; line-height: 1.22; overflow-wrap: anywhere; }
+.street-primary-actions { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 8px; }
+.street-primary-actions button { min-height: 48px; }
+.street-delivery-actions { margin-top: -2px; }
 .sim-gps { display: flex; flex-direction: column; gap: 6px; }
 .sim-gps-status { color: var(--text); font-size: 12px; font-weight: 700; }
 .sim-gps-coords { color: var(--muted); font-size: 12px; }
@@ -1071,6 +1086,7 @@ body:has(.app-view[data-view="business"].is-active) .toast {
 .rt-chip.live { color: var(--green-2); border-color: rgba(79,174,106,0.4); background: rgba(79,174,106,0.1); }
 .rt-chip.local { color: var(--accent-soft); border-color: rgba(214,176,138,0.35); background: rgba(214,176,138,0.08); }
 .rt-chip.warn { color: var(--yellow); border-color: rgba(205,168,106,0.4); background: rgba(205,168,106,0.1); }
+.rt-chip.done { color: var(--muted); border-color: rgba(130,120,110,0.35); background: rgba(130,120,110,0.10); }
 .track-actions { margin-top: 12px; }
 
 /* ===== Home: acceso a pedido en curso ===== */
@@ -1882,7 +1898,8 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-contact,
 body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-address,
 body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-instructions,
 body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-waiting,
-body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sim-panel {
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sim-panel,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .street-summary-grid span {
   background: #201d1a;
   border-color: rgba(255,255,255,0.08);
 }
@@ -1897,6 +1914,11 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .round-action {
   color: #f8f1e8;
   background: #292520;
   border-color: rgba(255,255,255,0.1);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .street-summary-grid strong,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sim-gps-status {
+  color: #f8f1e8;
 }
 
 body:has(.app-view[data-view="rider"].is-active) .rider-sheet .primary-button {
@@ -2018,6 +2040,10 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-status-pi
     grid-template-columns: 44px minmax(0, 1fr) auto;
     gap: 10px;
     padding: 9px 0;
+  }
+
+  .street-primary-actions {
+    grid-template-columns: 1fr;
   }
 
   .thumb-cart {

@@ -6,6 +6,8 @@ import { riderMarkerClass } from '../js/map/rider_marker.js';
 import {
   distanceKm,
   getRoute,
+  getStreetTestDestination,
+  getStreetTestDestinations,
   normalizeRiderLocation,
   pointOnRoute,
   routeDistanceKm,
@@ -15,6 +17,16 @@ import {
 test('route selection covers Neuquén and Cipolletti demo routes', () => {
   assert.equal(selectRouteForOrder({ address: 'Roca 123, Neuquén' }).id, 'neuquen');
   assert.equal(selectRouteForOrder({ address: 'Cipolletti centro' }).id, 'cipolletti');
+  assert.equal(selectRouteForOrder({ delivery: { demoDestinationId: 'alto-comahue' } }).id, 'alto-comahue');
+});
+
+test('street test destinations expose demo labels and route points', () => {
+  const destinations = getStreetTestDestinations();
+  assert.equal(destinations.length, 5);
+  assert.equal(getStreetTestDestination('parque-norte-bardas').label, 'Parque Norte / Bardas');
+  const route = getRoute('alto-comahue');
+  assert.equal(route.destination.addressLabel, 'Destino demo · Alto Comahue');
+  assert.ok(routeDistanceKm(route.points) > 1);
 });
 
 test('route progress interpolates through real coordinates', () => {

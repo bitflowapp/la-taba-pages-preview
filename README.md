@@ -83,6 +83,44 @@ relay está conectado, o *En vivo en este equipo* en modo local.
 > Sin `?relay=...` la app funciona igual en **modo local** (un solo equipo). En una
 > misma compu también podés abrir dos pestañas (se sincronizan por `BroadcastChannel`).
 
+### Probar GPS real en iPhone con HTTPS
+
+La Geolocation API en iPhone/Safari suele requerir **HTTPS o localhost**. Por eso
+la URL LAN `http://192.168.x.x:8787` puede servir para simulación, pero fallar al
+pedir GPS real. Para salir a la calle con el iPhone como rider:
+
+1. Levantá el relay demo local:
+
+```bash
+npm run realtime:demo
+```
+
+2. Exponé ese puerto por HTTPS con Cloudflare Quick Tunnel:
+
+```bash
+cloudflared tunnel --url http://localhost:8787
+```
+
+El comando devuelve una URL tipo `https://xxxx.trycloudflare.com`. Abrí:
+
+```text
+Cliente: https://xxxx.trycloudflare.com/?relay=https://xxxx.trycloudflare.com&room=street-demo
+Rider:   https://xxxx.trycloudflare.com/?relay=https://xxxx.trycloudflare.com&room=street-demo#rider
+```
+
+Esto permite GPS real porque la página corre sobre HTTPS. El relay sigue siendo
+una demo en memoria: no lo uses para producción, no compartas datos sensibles y
+cambiá `room` para cada prueba.
+
+Alternativa con ngrok:
+
+```bash
+ngrok http 8787
+```
+
+Usá la URL HTTPS que entregue ngrok con el mismo formato de `Cliente` y `Rider`.
+`cloudflared` y `ngrok` no son dependencias npm obligatorias del proyecto.
+
 ### Mapa real y GPS
 
 La pantalla **Seguir** y la vista **Rider** usan **Leaflet + OpenStreetMap/CARTO** para
@@ -106,6 +144,9 @@ La ubicación demo está centralizada en `js/config.js`:
 - `businessLocation`: local demo de La Taba en Neuquén Capital.
 - `demoDestinations`: destino demo en Neuquén Capital y destino demo en Cipolletti.
 - `defaultMapBounds`: encuadre inicial Neuquén/Cipolletti.
+- `demoStreetTestDestinations`: presets ficticios para **Modo prueba en calle**
+  (Neuquén Centro, Alto Comahue, Cipolletti Centro, Parque Norte / Bardas y
+  Local La Taba demo).
 - `mapProvider.defaultTheme`: `dark` o `light`.
 - `mapProvider.tileLayers`: CARTO dark/light y OSM estándar como fallback.
 

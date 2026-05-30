@@ -1,6 +1,11 @@
-import { DEMO_DESTINATIONS, STORE_LOCATION } from './map_config.js';
+import {
+  DEFAULT_STREET_TEST_DESTINATION_ID,
+  DEMO_DESTINATIONS,
+  DEMO_STREET_TEST_DESTINATIONS,
+  STORE_LOCATION,
+} from './map_config.js';
 
-const ROUTES = Object.freeze({
+const BASE_ROUTES = Object.freeze({
   neuquen: {
     id: 'neuquen',
     name: 'Ruta demo · Neuquén Capital',
@@ -27,11 +32,38 @@ const ROUTES = Object.freeze({
   },
 });
 
+const STREET_ROUTES = Object.freeze(Object.fromEntries(
+  DEMO_STREET_TEST_DESTINATIONS.map((destination, index) => [
+    destination.id,
+    buildStreetRoute(destination, index),
+  ]),
+));
+
+const ROUTES = Object.freeze({
+  ...BASE_ROUTES,
+  ...STREET_ROUTES,
+});
+
 export function getDemoRoutes() {
   return ROUTES;
 }
 
-export function selectRouteForOrder(order = {}) {
+export function getStreetTestDestinations() {
+  return DEMO_STREET_TEST_DESTINATIONS;
+}
+
+export function getStreetTestDestination(destinationId = DEFAULT_STREET_TEST_DESTINATION_ID) {
+  const candidate = DEMO_STREET_TEST_DESTINATIONS.find((destination) => destination.id === destinationId);
+  return candidate || DEMO_STREET_TEST_DESTINATIONS[0] || DEMO_DESTINATIONS.neuquen;
+}
+
+export function isStreetTestDestinationId(destinationId) {
+  return DEMO_STREET_TEST_DESTINATIONS.some((destination) => destination.id === destinationId);
+}
+
+export function selectRouteForOrder(order = {}, preferredRouteId = null) {
+  const explicitRoute = preferredRouteId || order?.delivery?.demoDestinationId;
+  if (explicitRoute && ROUTES[explicitRoute]) return ROUTES[explicitRoute];
   const address = String(order.address || '').toLowerCase();
   if (address.includes('cipolletti') || address.includes('cipo')) return ROUTES.cipolletti;
   return ROUTES.neuquen;
@@ -39,6 +71,44 @@ export function selectRouteForOrder(order = {}) {
 
 export function getRoute(routeId = 'neuquen') {
   return ROUTES[routeId] || ROUTES.neuquen;
+}
+
+function buildStreetRoute(destination, index) {
+  const offset = index % 2 === 0 ? 0.0028 : -0.0028;
+  const closeToStore = distanceKm(STORE_LOCATION, destination) < 0.12;
+  const points = closeToStore
+    ? [
+        { lat: STORE_LOCATION.lat, lng: STORE_LOCATION.lng },
+        { lat: STORE_LOCATION.lat + 0.0018, lng: STORE_LOCATION.lng - 0.0014 },
+        { lat: destination.lat, lng: destination.lng },
+      ]
+    : [
+        { lat: STORE_LOCATION.lat, lng: STORE_LOCATION.lng },
+        {
+          lat: STORE_LOCATION.lat + (destination.lat - STORE_LOCATION.lat) * 0.35 + offset,
+          lng: STORE_LOCATION.lng + (destination.lng - STORE_LOCATION.lng) * 0.35 - offset,
+        },
+        {
+          lat: STORE_LOCATION.lat + (destination.lat - STORE_LOCATION.lat) * 0.7 - offset,
+          lng: STORE_LOCATION.lng + (destination.lng - STORE_LOCATION.lng) * 0.7 + offset,
+        },
+        { lat: destination.lat, lng: destination.lng },
+      ];
+
+  return {
+    id: destination.id,
+    name: `Ruta calle demo · ${destination.label}`,
+    destination: {
+      id: destination.id,
+      name: destination.addressLabel || destination.label,
+      label: destination.label,
+      addressLabel: destination.addressLabel,
+      city: destination.city,
+      lat: destination.lat,
+      lng: destination.lng,
+    },
+    points,
+  };
 }
 
 export function clampProgress(value) {
@@ -138,4 +208,3 @@ function toRad(value) {
 function toDeg(value) {
   return (Number(value) * 180) / Math.PI;
 }
-

@@ -14,4 +14,9 @@ test('BUSINESS_CONFIG exposes the expected business settings', () => {
   assert.ok(BUSINESS_CONFIG.openingHoursLabel.length > 0);
   assert.ok(BUSINESS_CONFIG.openingHours.length > 0);
   assert.ok(BUSINESS_CONFIG.deliveryZone.length > 0);
+  assert.equal(BUSINESS_CONFIG.demoStreetTestDestinations.length, 5);
+  assert.deepEqual(
+    BUSINESS_CONFIG.demoStreetTestDestinations.map((destination) => destination.id),
+    ['neuquen-centro', 'alto-comahue', 'cipolletti-centro', 'parque-norte-bardas', 'la-taba-demo'],
+  );
 });

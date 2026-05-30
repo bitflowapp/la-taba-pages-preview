@@ -4,6 +4,8 @@ export const MAP_PROVIDER = Object.freeze(BUSINESS_CONFIG.mapProvider);
 export const STORE_LOCATION = Object.freeze(BUSINESS_CONFIG.businessLocation);
 export const DEFAULT_MAP_BOUNDS = Object.freeze(BUSINESS_CONFIG.defaultMapBounds);
 export const DEMO_DESTINATIONS = Object.freeze(BUSINESS_CONFIG.demoDestinations);
+export const DEMO_STREET_TEST_DESTINATIONS = Object.freeze(BUSINESS_CONFIG.demoStreetTestDestinations || []);
+export const DEFAULT_STREET_TEST_DESTINATION_ID = DEMO_STREET_TEST_DESTINATIONS[0]?.id || 'neuquen-centro';
 
 export const RIDER_LOCATION_SOURCES = Object.freeze({
   gps: 'Ubicación rider',

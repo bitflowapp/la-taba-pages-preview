@@ -108,7 +108,7 @@ function snapshot() {
 function hashSnapshot(snap) {
   const orders = (snap.orders || []).map((order) => `${order.id}:${order.status}:${orderTimestamp(order)}`).join('|');
   const sim = snap.simulation
-    ? `${snap.simulation.orderId}:${snap.simulation.progress}:${snap.simulation.running}:${snap.simulation.etaMinutes}:${snap.simulation.lat}:${snap.simulation.lng}:${snap.simulation.source}:${snap.simulation.timestamp || snap.simulation.lastFixAt || ''}`
+    ? `${snap.simulation.orderId}:${snap.simulation.routeId || ''}:${snap.simulation.destinationId || ''}:${snap.simulation.progress}:${snap.simulation.running}:${snap.simulation.etaMinutes}:${snap.simulation.lat}:${snap.simulation.lng}:${snap.simulation.source}:${snap.simulation.timestamp || snap.simulation.lastFixAt || ''}`
     : 'none';
   return `${orders}#${sim}`;
 }

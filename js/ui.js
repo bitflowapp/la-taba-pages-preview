@@ -474,12 +474,14 @@ const customerSteps = [
   { key: 'prep', label: 'Preparando' },
   { key: 'way', label: 'En camino' },
   { key: 'done', label: 'Llegando' },
+  { key: 'delivered', label: 'Entregado' },
 ];
 
 function customerStepIndex(status) {
   if (['received', 'preparing', 'ready'].includes(status)) return 0;
   if (status === 'on_the_way') return 1;
-  if (status === 'arriving' || status === 'delivered') return 2;
+  if (status === 'arriving') return 2;
+  if (status === 'delivered') return 3;
   return 0;
 }
 
@@ -513,6 +515,14 @@ function distanceLabel(order) {
   const km = order.delivery.distanceKm
     || Math.min(7.5, Math.max(0.6, (order.delivery.estimatedMinutes || 6) * 0.28));
   return `${km.toFixed(1).replace('.', ',')} km`;
+}
+
+function destinationLabel(order) {
+  return order?.delivery?.demoDestinationLabel || deliveryModeLabel(order.deliveryMode);
+}
+
+function destinationAddressLabel(order) {
+  return order?.delivery?.demoDestinationAddressLabel || order.address;
 }
 
 function trackingMapSvg(order) {
@@ -592,15 +602,23 @@ function trackingEtaLabel(order, head) {
 }
 
 function trackingMapStage({ order = null, head = null, isEmpty = false }) {
+  const bottomStats = order?.status === 'delivered'
+    ? `
+        <span class="map-stat-pill"><small>Pedido</small><strong>Entregado</strong></span>
+        <span class="map-stat-pill"><small>Estado</small><strong>Finalizado</strong></span>
+      `
+    : order ? `
+        <span class="map-stat-pill"><small>ETA</small><strong>${escapeHtml(trackingEtaLabel(order, head))}</strong></span>
+        <span class="map-stat-pill"><small>Distancia</small><strong>${escapeHtml(distanceLabel(order))}</strong></span>
+      ` : '';
   const overlay = order
     ? `
       <div class="map-floating-top">
         <span class="map-status-pill ${statusClass(order.status)}"><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
-        <span class="map-connection-pill">${realtimeChip()}</span>
+        <span class="map-connection-pill">${realtimeChip(order)}</span>
       </div>
       <div class="map-floating-bottom">
-        <span class="map-stat-pill"><small>${order.status === 'delivered' ? 'Pedido' : 'ETA'}</small><strong>${escapeHtml(trackingEtaLabel(order, head))}</strong></span>
-        <span class="map-stat-pill"><small>Distancia</small><strong>${escapeHtml(order.status === 'delivered' ? 'Finalizado' : distanceLabel(order))}</strong></span>
+        ${bottomStats}
       </div>`
     : `
       <div class="map-floating-top">
@@ -691,7 +709,7 @@ export function renderTracking() {
         </div>
         <div class="sheet-metrics">
           <span><small>Distancia</small><strong>${isDelivery ? distanceLabel(order) : 'Retiro'}</strong></span>
-          <span><small>Entrega</small><strong>${escapeHtml(deliveryModeLabel(order.deliveryMode))}</strong></span>
+          <span><small>${isDelivery ? 'Destino' : 'Entrega'}</small><strong>${escapeHtml(isDelivery ? destinationLabel(order) : deliveryModeLabel(order.deliveryMode))}</strong></span>
           <span><small>Total</small><strong>${money(order.total)}</strong></span>
         </div>
         <div class="track-steps">${steps}</div>
@@ -700,7 +718,7 @@ export function renderTracking() {
         <details class="order-detail">
           <summary>Ver detalle del pedido · ${order.id}</summary>
           <div class="order-detail-body">
-            <div class="order-line head"><span>${deliveryModeLabel(order.deliveryMode)}</span><strong>${escapeHtml(order.address)}</strong></div>
+            <div class="order-line head"><span>${deliveryModeLabel(order.deliveryMode)}</span><strong>${escapeHtml(destinationAddressLabel(order))}</strong></div>
             ${itemsHtml}
             <div class="summary-row"><span>Subtotal</span><strong>${money(order.subtotal)}</strong></div>
             <div class="summary-row"><span>Envío</span><strong>${money(order.deliveryFee)}</strong></div>
@@ -718,7 +736,10 @@ export function renderTracking() {
 }
 
 // Indicador de conexión realtime (en vivo entre equipos / en este equipo).
-function realtimeChip() {
+function realtimeChip(order = null) {
+  if (order?.status === 'delivered') {
+    return '<span class="rt-chip done">Finalizado</span>';
+  }
   const status = getRealtimeStatus();
   if (status.relayEnabled) {
     return status.relayConnected

@@ -29,8 +29,8 @@ import {
 import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, createOrderFromCheckout, getLastOrder } from './orders.js';
 import { getState, subscribe } from './state.js';
 import { handleBusinessAction, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
-import { handleDeliveryAction, renderDeliveryPanel } from './delivery.js';
-import { handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
+import { handleDeliveryAction, handleDeliveryChange, renderDeliveryPanel } from './delivery.js';
+import { disableGpsTracking, handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
 import { getRealtimeStatus, initRealtime } from './realtime.js';
 import { renderMapViews } from './map/map_view.js';
 
@@ -99,6 +99,7 @@ function renderAll() {
 function bindEvents() {
   window.addEventListener('popstate', syncViewFromLocation);
   window.addEventListener('hashchange', syncViewFromLocation);
+  window.addEventListener('pagehide', () => disableGpsTracking({ silent: true }));
 
   document.addEventListener('click', (event) => {
     const target = event.target;
@@ -240,6 +241,10 @@ function bindEvents() {
     }
     if (target.matches('[data-sort-select]')) {
       setSortBy(target.value || 'recommended');
+    }
+    const deliveryChange = handleDeliveryChange(target);
+    if (deliveryChange.handled) {
+      showToast(deliveryChange.message);
     }
   });
 

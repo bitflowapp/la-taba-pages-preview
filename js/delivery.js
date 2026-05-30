@@ -9,18 +9,26 @@ import {
 } from './core/rider.js';
 import { simulationProgressPercent } from './core/simulation.js';
 import {
+  activateStreetTestMode,
   disableGpsTracking,
   enableGpsTracking,
   getSimulation,
   isGpsActive,
   pauseSimulation,
   resetSimulation,
+  selectStreetTestDestination,
   startSimulation,
   syncSimulationOnStatus,
 } from './simulation.js';
 import { getRealtimeStatus } from './realtime.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { escapeHtml } from './ui.js';
+import {
+  distanceKm,
+  getStreetTestDestination,
+  getStreetTestDestinations,
+} from './map/route_geometry.js';
+import { STORE_LOCATION } from './map/map_config.js';
 
 const riderSteps = [
   { key: 'ready', label: 'Listo' },
@@ -59,6 +67,7 @@ export function renderDeliveryPanel() {
   const eta = sim ? `${sim.etaMinutes} min` : formatDemoEta(order);
   const distance = formatDemoDistance(order);
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
+  const destinationLabel = order.delivery?.demoDestinationAddressLabel || order.address;
   const headline = awaiting
     ? 'Esperando preparación'
     : order.status === 'arriving'
@@ -114,7 +123,7 @@ export function renderDeliveryPanel() {
 
           <div class="rider-address">
             <span class="rider-label">Dirección de entrega</span>
-            <p>${escapeHtml(order.address)}</p>
+            <p>${escapeHtml(destinationLabel)}</p>
           </div>
 
           <div class="rider-block">
@@ -209,9 +218,11 @@ function renderSimControls(order, sim) {
   const percent = sim ? simulationProgressPercent(sim) : 0;
   const running = Boolean(sim?.running);
   const canStart = !running && (order.status === 'ready' || order.status === 'on_the_way');
-  const canPause = running;
   const canReset = Boolean(sim) && order.status !== 'delivered';
   const gpsOn = isGpsActive();
+  const destination = selectedStreetDestination(order, sim);
+  const distanceToDestination = currentDistanceToDestination(sim, destination);
+  const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'simulación';
   const gpsCoords = sim && sim.mode === 'gps' && Number.isFinite(sim.lat)
     ? `${sim.lat.toFixed(4)}, ${sim.lng.toFixed(4)}`
     : '';
@@ -219,34 +230,81 @@ function renderSimControls(order, sim) {
   const lastFix = sim?.lastFixAt
     ? new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(sim.lastFixAt))
     : '';
-  const accuracy = Number.isFinite(sim?.accuracy) ? ` · precisión ${Math.round(sim.accuracy)} m` : '';
+  const accuracy = Number.isFinite(sim?.accuracy) ? `${Math.round(sim.accuracy)} m` : 'Sin precisión';
+  const destinationOptions = getStreetTestDestinations().map((item) => `
+    <option value="${escapeHtml(item.id)}" ${item.id === destination.id ? 'selected' : ''}>${escapeHtml(item.label)}</option>
+  `).join('');
+  const secureHint = globalThis.isSecureContext === false
+    ? '<span class="sim-gps-error">El GPS real suele requerir HTTPS o localhost. Podés seguir usando simulación.</span>'
+    : '';
 
   return `
-    <div class="sim-panel">
+    <div class="sim-panel street-test-panel" data-street-test>
       <div class="sim-head">
-        <span class="rider-label">Movimiento de prueba en tiempo real</span>
-        <span class="sim-state ${running ? 'live' : ''}">${running ? 'En movimiento' : 'En pausa'}</span>
+        <span class="rider-label">Modo prueba en calle</span>
+        <span class="sim-state ${gpsOn ? 'live' : ''}">GPS: ${escapeHtml(gpsStatus)}</span>
+      </div>
+      <label class="street-destination-field">
+        <span>Destino ficticio</span>
+        <select data-street-destination aria-label="Destino ficticio de prueba">
+          ${destinationOptions}
+        </select>
+      </label>
+      <div class="street-summary-grid">
+        <span><small>Destino</small><strong>${escapeHtml(destination.addressLabel || destination.label)}</strong></span>
+        <span><small>Distancia</small><strong>${escapeHtml(distanceToDestination)}</strong></span>
+        <span><small>Fuente</small><strong>${escapeHtml(sourceLabel)}</strong></span>
+        <span><small>Precisión</small><strong>${escapeHtml(accuracy)}</strong></span>
       </div>
       <div class="sim-progress">
         <div class="sim-bar"><span style="width:${percent}%"></span></div>
         <strong data-sim-progress>${percent}%</strong>
       </div>
+      <div class="button-row street-primary-actions">
+        <button class="primary-button" type="button" data-sim-gps>Usar mi ubicación real</button>
+        <button class="secondary-button" type="button" data-sim-gps-off ${gpsOn ? '' : 'disabled'}>Detener GPS</button>
+      </div>
       <div class="button-row sim-actions">
-        <button class="primary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar simulación</button>
-        <button class="secondary-button compact" type="button" data-sim-pause ${canPause ? '' : 'disabled'}>Pausar</button>
-        <button class="ghost-button compact" type="button" data-sim-reset ${canReset ? '' : 'disabled'}>Reiniciar</button>
+        <button class="ghost-button compact" type="button" data-street-activate="${escapeHtml(destination.id)}">Activar modo calle</button>
+        <button class="secondary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar simulación</button>
+        <button class="ghost-button compact" type="button" data-sim-reset ${canReset ? '' : 'disabled'}>Reiniciar prueba</button>
+      </div>
+      <div class="button-row street-delivery-actions">
+        <button class="secondary-button compact" type="button" data-street-arrive="${order.id}" ${canArriveForStreet(order) ? '' : 'disabled'}>Llegué al destino</button>
+        <button class="secondary-button compact" type="button" data-street-done="${order.id}" ${canDeliverForStreet(order) ? '' : 'disabled'}>Pedido entregado</button>
       </div>
       <div class="sim-gps">
-        ${gpsOn
-          ? '<button class="ghost-button compact" type="button" data-sim-gps-off>Detener GPS</button>'
-          : '<button class="ghost-button compact" type="button" data-sim-gps>Usar mi ubicación</button>'}
-        <span class="sim-gps-status">GPS: ${escapeHtml(gpsStatus)}${lastFix ? ` · última ubicación ${escapeHtml(lastFix)}${accuracy}` : ''}</span>
-        ${gpsCoords ? `<span class="sim-gps-coords">Ubicación: ${escapeHtml(gpsCoords)} · ${sim?.source === 'gps' ? 'rider real' : 'estimada'}</span>` : ''}
+        <span class="sim-gps-status">GPS: ${escapeHtml(gpsStatus)}${lastFix ? ` · última actualización ${escapeHtml(lastFix)}` : ''}</span>
+        ${gpsCoords ? `<span class="sim-gps-coords">Ubicación rider: ${escapeHtml(gpsCoords)} · ${escapeHtml(sourceLabel)}</span>` : ''}
         ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
+        ${secureHint}
       </div>
-      <p class="form-hint sim-note">El cliente ve el movimiento mientras esta vista está abierta.</p>
+      <p class="form-hint sim-note">Tu ubicación se comparte sólo en esta demo y mientras el GPS esté activo.</p>
     </div>
   `;
+}
+
+function selectedStreetDestination(order, sim) {
+  return getStreetTestDestination(
+    sim?.destinationId
+      || sim?.routeId
+      || order?.delivery?.demoDestinationId,
+  );
+}
+
+function currentDistanceToDestination(sim, destination) {
+  const current = sim && Number.isFinite(sim.lat) && Number.isFinite(sim.lng)
+    ? { lat: sim.lat, lng: sim.lng }
+    : STORE_LOCATION;
+  return `${distanceKm(current, destination).toFixed(1).replace('.', ',')} km`;
+}
+
+function canArriveForStreet(order) {
+  return order?.status === 'on_the_way';
+}
+
+function canDeliverForStreet(order) {
+  return order?.status === 'on_the_way' || order?.status === 'arriving';
 }
 
 function gpsStatusLabel(sim, active) {
@@ -386,6 +444,17 @@ export function handleDeliveryAction(target) {
     };
   }
 
+  const streetArriveId = target.closest('[data-street-arrive]')?.dataset.streetArrive;
+  if (streetArriveId) {
+    const result = updateOrderStatus(streetArriveId, 'arriving');
+    if (result.ok) syncSimulationOnStatus(streetArriveId, 'arriving');
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? 'Llegada al destino registrada.' : result.message,
+    };
+  }
+
   const doneId = target.closest('[data-delivery-done]')?.dataset.deliveryDone;
   if (doneId) {
     const result = updateOrderStatus(doneId, 'delivered');
@@ -397,8 +466,25 @@ export function handleDeliveryAction(target) {
     };
   }
 
+  const streetDoneId = target.closest('[data-street-done]')?.dataset.streetDone;
+  if (streetDoneId) {
+    const result = updateOrderStatus(streetDoneId, 'delivered');
+    if (result.ok) syncSimulationOnStatus(streetDoneId, 'delivered');
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? 'Pedido marcado como entregado.' : result.message,
+    };
+  }
+
   if (target.closest('[data-sim-start]')) {
     const result = startSimulation();
+    return { handled: true, ok: result.ok, message: result.message };
+  }
+
+  const streetActivate = target.closest('[data-street-activate]');
+  if (streetActivate) {
+    const result = activateStreetTestMode(streetActivate.dataset.streetActivate);
     return { handled: true, ok: result.ok, message: result.message };
   }
 
@@ -422,5 +508,14 @@ export function handleDeliveryAction(target) {
     return { handled: true, ok: result.ok, message: result.message };
   }
 
+  return { handled: false };
+}
+
+export function handleDeliveryChange(target) {
+  const destinationSelect = target.closest?.('[data-street-destination]');
+  if (destinationSelect) {
+    const result = selectStreetTestDestination(destinationSelect.value);
+    return { handled: true, ok: result.ok, message: result.message };
+  }
   return { handled: false };
 }

@@ -14,6 +14,7 @@ import {
   renderCart,
   renderCartTotals,
   renderCatalog,
+  renderHomeActiveOrder,
   renderNavigation,
   renderOrderSummary,
   renderTracking,
@@ -30,7 +31,7 @@ import { getState, subscribe } from './state.js';
 import { handleBusinessAction, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
 import { handleDeliveryAction, renderDeliveryPanel } from './delivery.js';
 import { handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
-import { initRealtime } from './realtime.js';
+import { getRealtimeStatus, initRealtime } from './realtime.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const VIEW_ALIASES = {
@@ -72,11 +73,20 @@ function bootstrap() {
   registerServiceWorker();
 }
 
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  throw new Error('clipboard unavailable');
+}
+
 function renderAll() {
   renderActiveView();
   renderNavigation(activeView);
   renderAdminVisibility();
   renderCatalog();
+  renderHomeActiveOrder();
   renderCart();
   renderTracking();
   renderBusinessDashboard();
@@ -236,6 +246,12 @@ function bindEvents() {
     event.preventDefault();
     if (confirming) return; // evita doble confirmación / doble pedido
     confirming = true;
+    const button = event.currentTarget.querySelector('[type="submit"]');
+    const originalLabel = button?.textContent;
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Creando pedido…';
+    }
     try {
       const values = getCheckoutFormValues();
       const result = createOrderFromCheckout(values);
@@ -249,6 +265,10 @@ function bindEvents() {
       setActiveView('tracking');
     } finally {
       confirming = false;
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalLabel || 'Confirmar pedido';
+      }
     }
   });
 
@@ -268,6 +288,21 @@ function bindEvents() {
         window.open(buildWhatsAppUrl(order), '_blank', 'noopener,noreferrer');
         showToast('Abriendo WhatsApp con la copia del pedido.');
       }
+      return;
+    }
+    const clientLink = target.closest('[data-copy-client-link]');
+    const riderLink = target.closest('[data-copy-rider-link]');
+    if (clientLink || riderLink) {
+      const status = getRealtimeStatus();
+      if (!status.relayEnabled || !status.relayBase) {
+        showToast('Abrí la app con ?relay=…&room=… para compartir links.');
+        return;
+      }
+      const base = `${status.relayBase}/?relay=${encodeURIComponent(status.relayBase)}&room=${encodeURIComponent(status.room)}`;
+      const link = riderLink ? `${base}#rider` : base;
+      copyTextToClipboard(link)
+        .then(() => showToast(riderLink ? 'Link del rider copiado.' : 'Link del cliente copiado.'))
+        .catch(() => showToast('No se pudo copiar el link.'));
     }
   });
 

@@ -169,15 +169,23 @@ export function resumeSimulationIfNeeded() {
 
 // ===== GPS opcional (solo a pedido del usuario, nunca se envía a un servidor) =====
 export function enableGpsTracking() {
+  const order = getActiveDeliveryOrder();
+  if (!order) {
+    return { ok: false, message: 'No hay un pedido asignado para usar tu ubicación.' };
+  }
+
+  if (globalThis.isSecureContext === false) {
+    const current = getState().simulation;
+    const base = current && current.orderId === order.id ? current : createSimulationState(order, { running: false });
+    const gpsError = 'La ubicación necesita HTTPS o localhost. La simulación demo sigue funcionando.';
+    setState({ simulation: { ...base, mode: 'demo', gpsError } });
+    return { ok: false, message: gpsError };
+  }
+
   if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
     const sim = getState().simulation;
     if (sim) setState({ simulation: { ...sim, gpsError: 'Este navegador no tiene geolocalización.' } });
     return { ok: false, message: 'Geolocalización no disponible en este navegador.' };
-  }
-
-  const order = getActiveDeliveryOrder();
-  if (!order) {
-    return { ok: false, message: 'No hay un pedido asignado para usar tu ubicación.' };
   }
 
   const current = getState().simulation;

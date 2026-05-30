@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
+import { addToCart } from '../js/cart.js';
 import {
   advanceSimulation,
   clampProgress,
@@ -8,7 +9,12 @@ import {
   progressToEta,
   simulationProgressPercent,
 } from '../js/core/simulation.js';
-import { hydrateState } from '../js/state.js';
+import { createOrderFromCheckout, updateOrderStatus } from '../js/orders.js';
+import { enableGpsTracking } from '../js/simulation.js';
+import { getState, hydrateState } from '../js/state.js';
+import { resetState } from './helpers.mjs';
+
+beforeEach(() => resetState());
 
 test('clampProgress keeps values within 0..1', () => {
   assert.equal(clampProgress(-1), 0);
@@ -88,4 +94,39 @@ test('hydrateState keeps a simulation only for an active delivery order', () => 
     simulation: { orderId: 'LT-9100', running: true, progress: 0.9 },
   });
   assert.equal(droppedDelivered.simulation, null);
+});
+
+test('GPS explains insecure LAN contexts and keeps demo simulation available', () => {
+  addToCart('p-vacio', 1);
+  const created = createOrderFromCheckout({
+    customerName: 'GPS QA',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: '',
+  });
+  updateOrderStatus(created.order.id, 'preparing');
+  updateOrderStatus(created.order.id, 'ready');
+
+  const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
+  Object.defineProperty(globalThis, 'isSecureContext', {
+    configurable: true,
+    value: false,
+  });
+
+  try {
+    const result = enableGpsTracking();
+    assert.equal(result.ok, false);
+    assert.match(result.message, /HTTPS o localhost/);
+    assert.equal(getState().simulation.orderId, created.order.id);
+    assert.equal(getState().simulation.mode, 'demo');
+    assert.match(getState().simulation.gpsError, /simulación demo sigue funcionando/);
+  } finally {
+    if (originalSecureContext) {
+      Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
+    } else {
+      delete globalThis.isSecureContext;
+    }
+  }
 });

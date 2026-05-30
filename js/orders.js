@@ -131,8 +131,41 @@ export function advanceOrderStatus(orderId) {
   return updateOrderStatus(orderId, getNextOrderStatus(order));
 }
 
-export function cancelOrder(orderId) {
-  return updateOrderStatus(orderId, 'cancelled');
+export function cancelOrder(orderId, reason = '') {
+  const result = updateOrderStatus(orderId, 'cancelled');
+  if (result.ok) {
+    const clean = sanitizeText(reason, { maxLength: 120 });
+    if (clean) {
+      updateState((draft) => {
+        const order = draft.orders.find((candidate) => candidate.id === orderId);
+        if (order) order.cancelReason = clean;
+      });
+    }
+  }
+  return result;
+}
+
+// Ticket de texto plano para cocina / mostrador (sin dependencias).
+export function buildKitchenTicket(order) {
+  if (!order) return '';
+  const isPickup = normalizeDeliveryMode(order.deliveryMode) === 'pickup';
+  const lines = [
+    'LA TABA — TICKET',
+    `Pedido: ${order.id}`,
+    `Hora: ${dateTime(order.createdAt)}`,
+    `Entrega: ${deliveryModeLabel(order.deliveryMode)}`,
+    isPickup ? 'Retiro en el local' : `Direccion: ${order.address}`,
+    `Cliente: ${order.customerName}`,
+    `Telefono: ${order.customerPhone}`,
+    '--------------------------------',
+    ...order.items.map((item) => `${item.quantity} x ${item.name}`),
+    '--------------------------------',
+    `Pago: ${order.paymentMethod}`,
+    `TOTAL: ${money(order.total)}`,
+    `Notas: ${order.notes || 'Sin notas'}`,
+    `Estado: ${statusLabel(order.status)}`,
+  ];
+  return lines.join('\n');
 }
 
 export function updateOrderStatus(orderId, status) {

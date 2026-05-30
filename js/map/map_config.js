@@ -7,8 +7,8 @@ export const DEMO_DESTINATIONS = Object.freeze(BUSINESS_CONFIG.demoDestinations)
 
 export const RIDER_LOCATION_SOURCES = Object.freeze({
   gps: 'Ubicación rider',
-  simulation: 'Ubicación demo',
-  fallback: 'Ubicación demo',
+  simulation: 'Ubicación estimada',
+  fallback: 'Ubicación estimada',
 });
 
 export function getMapTheme(theme = MAP_PROVIDER.defaultTheme) {

@@ -136,7 +136,7 @@ export function renderDeliveryPanel() {
           ${awaiting ? `
           <div class="rider-waiting">
             <p>El pedido todavía está en preparación en el local.</p>
-            <button class="primary-button" type="button" data-rider-ready="${order.id}">Marcar listo para reparto (demo)</button>
+            <button class="primary-button" type="button" data-rider-ready="${order.id}">Marcar listo</button>
           </div>` : ''}
 
           <div class="button-row rider-actions">
@@ -160,8 +160,7 @@ function riderStepIndex(status) {
   return -1; // received / preparing: todavía no arrancó el reparto
 }
 
-// Bloque "Demo avanzado": esconde lo técnico (relay/sala/equipo) para que la
-// vista del rider se vea operativa y no asuste a un usuario normal.
+// Bloque avanzado: esconde relay/sala/equipo para que la vista principal sea operativa.
 function renderAdvancedDemo() {
   const status = getRealtimeStatus();
   const connection = status.relayEnabled
@@ -175,13 +174,13 @@ function renderAdvancedDemo() {
     : '<p class="form-hint">Sin relay activo: abrí la app con <code>?relay=…&room=…</code> para probar en dos celulares.</p>';
   return `
     <details class="demo-advanced">
-      <summary>Demo avanzado (técnico)</summary>
+      <summary>Opciones avanzadas</summary>
       <div class="demo-advanced-body">
         <div class="summary-row"><span>Conexión</span><strong>${connection}</strong></div>
         <div class="summary-row"><span>Sala realtime</span><strong>${escapeHtml(status.room)}</strong></div>
         <div class="summary-row"><span>ID de equipo</span><strong>${escapeHtml(String(status.deviceId).slice(0, 8))}</strong></div>
         ${linkButtons}
-        <p class="form-hint">Demo local por LAN: nada se envía a internet. El tiempo real entre celulares usa el relay propio (ver README).</p>
+        <p class="form-hint">Prueba local por LAN: nada se guarda en servidores externos. El tiempo real entre celulares usa el relay propio.</p>
       </div>
     </details>
   `;
@@ -225,7 +224,7 @@ function renderSimControls(order, sim) {
   return `
     <div class="sim-panel">
       <div class="sim-head">
-        <span class="rider-label">Simulación de reparto en tiempo real (demo)</span>
+        <span class="rider-label">Movimiento de prueba en tiempo real</span>
         <span class="sim-state ${running ? 'live' : ''}">${running ? 'En movimiento' : 'En pausa'}</span>
       </div>
       <div class="sim-progress">
@@ -240,12 +239,12 @@ function renderSimControls(order, sim) {
       <div class="sim-gps">
         ${gpsOn
           ? '<button class="ghost-button compact" type="button" data-sim-gps-off>Detener GPS</button>'
-          : '<button class="ghost-button compact" type="button" data-sim-gps>Usar mi ubicación como rider demo</button>'}
+          : '<button class="ghost-button compact" type="button" data-sim-gps>Usar mi ubicación</button>'}
         <span class="sim-gps-status">GPS: ${escapeHtml(gpsStatus)}${lastFix ? ` · última ubicación ${escapeHtml(lastFix)}${accuracy}` : ''}</span>
-        ${gpsCoords ? `<span class="sim-gps-coords">Ubicación: ${escapeHtml(gpsCoords)} · ${sim?.source === 'gps' ? 'rider real' : 'demo'}</span>` : ''}
+        ${gpsCoords ? `<span class="sim-gps-coords">Ubicación: ${escapeHtml(gpsCoords)} · ${sim?.source === 'gps' ? 'rider real' : 'estimada'}</span>` : ''}
         ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
       </div>
-      <p class="form-hint sim-note">Simulación local en este dispositivo. El tiempo real entre cliente y rider en celulares distintos necesita backend realtime (ver README).</p>
+      <p class="form-hint sim-note">El cliente ve el movimiento mientras esta vista está abierta.</p>
     </div>
   `;
 }
@@ -270,7 +269,7 @@ function renderDemoMap(order, distance, eta) {
   const stateLabel = getRiderStateLabel(order);
 
   return `
-    <div class="demo-map" role="img" aria-label="Mapa de demostración del reparto">
+    <div class="demo-map rider-demo-map" role="img" aria-label="Mapa operativo del reparto">
       <div class="demo-map-overlay">
         <span class="map-eta">${eta} · ${distance}</span>
         <span class="map-state">${stateLabel}</span>
@@ -282,8 +281,8 @@ function renderDemoMap(order, distance, eta) {
             <stop offset="1" stop-color="#c9aa84"/>
           </linearGradient>
         </defs>
-        <rect width="320" height="220" rx="18" fill="#f1efe9"/>
-        <g class="map-streets" stroke="rgba(38,34,30,0.10)" stroke-width="2">
+        <rect width="320" height="220" rx="18" fill="#161616"/>
+        <g class="map-streets" stroke="rgba(255,255,255,0.10)" stroke-width="2">
           <line x1="0" y1="48" x2="320" y2="40"/>
           <line x1="0" y1="104" x2="320" y2="112"/>
           <line x1="0" y1="166" x2="320" y2="158"/>
@@ -291,7 +290,7 @@ function renderDemoMap(order, distance, eta) {
           <line x1="150" y1="0" x2="158" y2="220"/>
           <line x1="244" y1="0" x2="236" y2="220"/>
         </g>
-        <path d="${path}" fill="none" stroke="rgba(55,47,40,0.10)" stroke-width="8" stroke-linecap="round"/>
+        <path d="${path}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
         <path class="map-route" d="${path}" fill="none" stroke="url(#riderRoute)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
       </svg>
       <span class="map-marker store" style="left:14%;top:80%"><span>LT</span><small>La Taba</small></span>
@@ -303,18 +302,18 @@ function renderDemoMap(order, distance, eta) {
 
 function renderIdleMap() {
   return `
-    <div class="demo-map" role="img" aria-label="Mapa demo sin reparto activo">
+    <div class="demo-map rider-demo-map" role="img" aria-label="Mapa operativo sin reparto activo">
       <div class="demo-map-overlay">
         <span class="map-eta">Neuquén · Cipolletti</span>
         <span class="map-state">Sin reparto</span>
       </div>
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <rect width="320" height="220" rx="18" fill="#f1efe9"/>
-        <g class="map-streets" stroke="rgba(38,34,30,0.10)" stroke-width="2">
+        <rect width="320" height="220" rx="18" fill="#161616"/>
+        <g class="map-streets" stroke="rgba(255,255,255,0.10)" stroke-width="2">
           <line x1="0" y1="58" x2="320" y2="44"/><line x1="0" y1="128" x2="320" y2="116"/>
           <line x1="70" y1="0" x2="54" y2="220"/><line x1="184" y1="0" x2="170" y2="220"/>
         </g>
-        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="rgba(55,47,40,0.10)" stroke-width="8" stroke-linecap="round"/>
+        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
         <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="#6a5a4d" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 8"/>
       </svg>
       <span class="map-marker store" style="left:18%;top:68%"><span>LT</span><small>Neuquén</small></span>
@@ -347,10 +346,10 @@ function renderRealMapShell(order, fallback, role = 'rider') {
     <div class="real-map-shell rider-map-shell" data-real-map data-map-role="${escapeHtml(role)}"${orderAttr}>
       <div class="real-map-canvas" data-map-canvas aria-label="Mapa real del reparto"></div>
       <div class="real-map-fallback" data-map-fallback>
-        <p class="map-fallback-note">Mapa real no disponible, usando vista demo.</p>
+        <p class="map-fallback-note">Mapa no disponible, usando vista simplificada.</p>
         ${fallback}
       </div>
-      <div class="real-map-meta" data-map-meta>Ubicación demo</div>
+      <div class="real-map-meta" data-map-meta>Ubicación estimada</div>
     </div>`;
 }
 

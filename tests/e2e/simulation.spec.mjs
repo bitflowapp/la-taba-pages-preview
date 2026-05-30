@@ -100,3 +100,25 @@ test('persistencia del pedido tras recargar la página', async ({ page }) => {
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
 });
+
+test('GPS en contexto inseguro muestra fallback y la simulación sigue disponible', async ({ page }) => {
+  await installPersistentStubs(page);
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'isSecureContext', { configurable: true, value: false });
+  });
+
+  await page.goto('/');
+  await createDeliveryOrder(page);
+
+  await page.locator('[data-admin-toggle]').click();
+  await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
+  await page.locator('[data-pin-form]').press('Enter');
+  await page.locator('[data-order-advance="LT-0002"]').click();
+  await page.locator('[data-order-advance="LT-0002"]').click();
+  await page.getByRole('button', { name: /Vista rider/i }).click();
+
+  await page.locator('[data-sim-gps]').click();
+  await expect(page.locator('[data-delivery-panel]')).toContainText(/HTTPS o localhost/);
+  await expect(page.locator('[data-delivery-panel]')).toContainText('GPS: Requiere HTTPS/localhost');
+  await expect(page.locator('[data-sim-start]')).toBeEnabled();
+});

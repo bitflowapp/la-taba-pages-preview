@@ -32,6 +32,7 @@ import { handleBusinessAction, lockAdmin, renderBusinessDashboard, unlockAdmin }
 import { handleDeliveryAction, renderDeliveryPanel } from './delivery.js';
 import { handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
 import { getRealtimeStatus, initRealtime } from './realtime.js';
+import { renderMapViews } from './map/map_view.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const VIEW_ALIASES = {
@@ -92,6 +93,7 @@ function renderAll() {
   renderBusinessDashboard();
   renderDeliveryPanel();
   updateAddressFieldVisibility();
+  renderMapViews();
 }
 
 function bindEvents() {

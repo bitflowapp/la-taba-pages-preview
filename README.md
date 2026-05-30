@@ -42,14 +42,14 @@ Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de c
 3. Vas a ver: pedidos entrantes, ventas del día, pedidos activos y stock bajo.
 4. Acciones por pedido: **Aceptar pedido → Marcar listo para enviar → Enviar con repartidor → Marcar entregado**, o **Cancelar**.
 
-### Como repartidor (con simulación en tiempo real demo)
+### Como repartidor (con mapa real, GPS opcional y simulación)
 1. Con el modo negocio activo, marcá un pedido de delivery como **listo** en el panel.
 2. Tocá **Vista rider** desde el panel o **Repartidor** desde **Local**.
 3. Vas a ver el pedido asignado con **Salí del local**, **Llegué al domicilio** y **Pedido entregado**.
 4. En **Simulación de reparto en tiempo real (demo)** podés:
-   - **Iniciar simulación**: el rider sale del local y se mueve solo por el mapa demo, con el progreso y el ETA actualizándose.
+   - **Iniciar simulación**: el rider sale del local y se mueve solo por una ruta demo sobre mapa real, con progreso y ETA actualizándose.
    - **Pausar** y **Reiniciar** la simulación.
-   - **Usar mi ubicación para demo** (GPS opcional): pide permiso solo al tocarlo; si falla, lo avisa y sigue funcionando con la simulación local.
+   - **Usar mi ubicación como rider demo** (GPS opcional): pide permiso solo al tocarlo; si falla, lo avisa y sigue funcionando con la simulación local.
 5. Mientras la simulación avanza, la pantalla de **Seguir** del cliente se actualiza sola (rider en camino → llegando → entregado), sin recargar.
 
 > **PIN demo: 1234** — acceso de demostración para la presentación.
@@ -66,15 +66,15 @@ npm run realtime:demo
 Al arrancar imprime las URLs con la IP de tu PC. Abrí en cada celular (misma red):
 
 ```text
-Cliente: http://IP_PC:8787/?relay=http://IP_PC:8787&room=demo-review
-Rider:   http://IP_PC:8787/?relay=http://IP_PC:8787&room=demo-review#rider
+Cliente: http://IP_PC:8787/?relay=http://IP_PC:8787&room=gps-demo
+Rider:   http://IP_PC:8787/?relay=http://IP_PC:8787&room=gps-demo#rider
 ```
 
 Flujo:
 1. El **cliente** arma el pedido y toca **Confirmar pedido**.
 2. El **rider** ve el pedido aparecer solo (estado *Esperando preparación*).
-3. El rider toca **Marcar listo para reparto (demo)** → **Salí del local** → **Iniciar simulación**.
-4. El **cliente** ve el rider moverse, el ETA y el estado cambiar **sin recargar**.
+3. El rider toca **Marcar listo para reparto (demo)** → **Salí del local** → **Iniciar simulación** o **Usar mi ubicación como rider demo**.
+4. El **cliente** ve el rider moverse en el mapa real, el ETA y el estado cambiar **sin recargar**.
 5. El rider toca **Llegué al domicilio** y **Pedido entregado**; el cliente lo ve en vivo.
 
 La pantalla **Seguir** muestra un chip *En vivo entre equipos · sala …* cuando el
@@ -83,11 +83,39 @@ relay está conectado, o *En vivo en este equipo* en modo local.
 > Sin `?relay=...` la app funciona igual en **modo local** (un solo equipo). En una
 > misma compu también podés abrir dos pestañas (se sincronizan por `BroadcastChannel`).
 
+### Mapa real y GPS
+
+La pantalla **Seguir** y la vista **Rider** usan **Leaflet + OpenStreetMap** para
+mostrar un mapa real de **Neuquén Capital, Cipolletti y la zona entre ambas
+ciudades**. No requiere API key y funciona en una app estática publicada en
+GitHub Pages. Si Leaflet, el CDN o los tiles no cargan, la app muestra una vista
+demo controlada y el mensaje: *Mapa real no disponible, usando vista demo*.
+
+La ubicación demo está centralizada en `js/config.js`:
+
+- `businessLocation`: local demo de La Taba en Neuquén Capital.
+- `demoDestinations`: destino demo en Neuquén Capital y destino demo en Cipolletti.
+- `defaultMapBounds`: encuadre inicial Neuquén/Cipolletti.
+- `mapProvider`: proveedor OpenStreetMap.
+
+La simulación usa polylines aproximadas, no ruteo real todavía:
+
+- Ruta A: reparto interno en Neuquén Capital.
+- Ruta B: Neuquén Capital → Cipolletti.
+
+El **GPS real** usa `navigator.geolocation.watchPosition` solamente cuando el
+rider toca **Usar mi ubicación como rider demo**. Muestra estado, precisión y
+última actualización cuando el navegador entrega datos. En LAN HTTP, especialmente
+en iPhone/Safari, puede fallar porque el GPS suele requerir **HTTPS o localhost**.
+Si falla, el pedido no se traba: queda disponible la simulación y se conserva el
+último fix válido si existía.
+
 ### ⚠️ Importante: el realtime de esta rama es una demo local
 
 El relay corre en **tu PC** dentro de la LAN: los mensajes **no salen a internet**
-ni se guardan en disco. El movimiento del rider, el progreso y el ETA se calculan
-en el dispositivo del rider (simulación con `setInterval`) y se replican al cliente.
+ni se guardan en disco. El movimiento del rider, el progreso, el ETA y la ubicación
+GPS opcional se calculan en el dispositivo del rider y se replican al cliente por
+el relay local de la sala configurada.
 El estado se persiste en `localStorage` para que un reload no rompa la demo.
 
 El **GPS opcional** usa `navigator.geolocation` solo cuando tocás el botón y la
@@ -96,9 +124,23 @@ suele requerir **HTTPS**: por HTTP en la LAN puede fallar o pedir permiso y no
 entregar posición. La demo está pensada para funcionar igual con la **simulación**
 aunque el GPS falle; si falla, se muestra el aviso y se mantiene el último estado.
 
-Para **tiempo real productivo entre clientes remotos** (fuera de la LAN, sin tener
-la PC prendida) hace falta un backend gestionado: **Supabase Realtime, Firebase o
-un WebSocket** propio con persistencia. Es la siguiente fase (ver roadmap).
+Limitaciones actuales:
+
+- relay en memoria, sin backend productivo;
+- sin auth real de rider/admin;
+- sin pagos;
+- sin ruteo real por calles ni tráfico;
+- ubicación persistente solo en el estado local/demo;
+- tracking fuera de la LAN requiere backend real.
+
+Próxima fase recomendada:
+
+- Supabase/Firebase o WebSocket propio;
+- mapas con ruteo real;
+- auth para rider/admin;
+- ubicación persistente y políticas de privacidad;
+- tracking usable fuera de la LAN;
+- límites claros de proveedor de mapas para producción.
 
 ## Ver siempre la última versión (cache / PWA)
 

@@ -537,6 +537,38 @@ function trackingMapSvg(order) {
   `;
 }
 
+function defaultMapFallback() {
+  return `
+    <div class="demo-map track-map" role="img" aria-label="Mapa demo Neuquén Capital y Cipolletti">
+      <div class="demo-map-overlay">
+        <span class="map-eta">Neuquén · Cipolletti</span>
+        <span class="map-state">Mapa demo</span>
+      </div>
+      <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <g class="map-streets" stroke="rgba(255,255,255,0.08)" stroke-width="2">
+          <line x1="0" y1="58" x2="320" y2="44"/><line x1="0" y1="128" x2="320" y2="116"/>
+          <line x1="70" y1="0" x2="54" y2="220"/><line x1="184" y1="0" x2="170" y2="220"/>
+        </g>
+        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="#d6b08a" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
+      </svg>
+      <span class="map-marker store" style="left:18%;top:68%"><span>LT</span><small>Neuquén</small></span>
+      <span class="map-marker client" style="left:84%;top:24%"><span>CI</span><small>Cipolletti</small></span>
+    </div>`;
+}
+
+function realMapShell({ order = null, role = 'tracking', fallback }) {
+  const orderAttr = order?.id ? ` data-order-id="${escapeHtml(order.id)}"` : '';
+  return `
+    <div class="real-map-shell" data-real-map data-map-role="${escapeHtml(role)}"${orderAttr}>
+      <div class="real-map-canvas" data-map-canvas aria-label="Mapa real de seguimiento"></div>
+      <div class="real-map-fallback" data-map-fallback>
+        <p class="map-fallback-note">Mapa real no disponible, usando vista demo.</p>
+        ${fallback}
+      </div>
+      <div class="real-map-meta" data-map-meta>Mapa demo Neuquén Capital y Cipolletti</div>
+    </div>`;
+}
+
 function riderProfileCard(order) {
   const d = order.delivery;
   const rating = d.driverRating ? `★ ${d.driverRating}` : '★ 4.9';
@@ -563,11 +595,14 @@ export function renderTracking() {
 
   if (!order) {
     container.innerHTML = `
-      <div class="empty-state">
-        <strong>No hay un pedido activo.</strong><br />
-        Cuando confirmes una compra, el estado aparece acá en vivo: preparación, reparto y detalle.
-        <div class="empty-actions">
-          <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
+      <div class="track-layout">
+        <div class="card track-map-card">${realMapShell({ fallback: defaultMapFallback(), role: 'tracking-empty' })}</div>
+        <div class="empty-state">
+          <strong>No hay un pedido activo.</strong><br />
+          Cuando confirmes una compra, el estado aparece acá en vivo: preparación, reparto y detalle.
+          <div class="empty-actions">
+            <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
+          </div>
         </div>
       </div>`;
     return;
@@ -606,7 +641,7 @@ export function renderTracking() {
         <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
       </div>
 
-      ${isDelivery && !isCancelled ? `<div class="card track-map-card">${trackingMapSvg(order)}</div>` : ''}
+      ${isDelivery && !isCancelled ? `<div class="card track-map-card">${realMapShell({ order, fallback: trackingMapSvg(order), role: 'tracking' })}</div>` : ''}
 
       <div class="card track-progress-card">
         <div class="track-steps">${steps}</div>

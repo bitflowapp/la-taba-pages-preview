@@ -142,7 +142,7 @@ export function renderDeliveryPanel() {
       </div>
 
       <div class="delivery-map">
-        ${renderDemoMap(order, distance, eta)}
+        ${renderRealMapShell(order, renderDemoMap(order, distance, eta))}
       </div>
     </div>
   `;
@@ -212,6 +212,11 @@ function renderSimControls(order, sim) {
   const gpsCoords = sim && sim.mode === 'gps' && Number.isFinite(sim.lat)
     ? `${sim.lat.toFixed(4)}, ${sim.lng.toFixed(4)}`
     : '';
+  const gpsStatus = gpsStatusLabel(sim, gpsOn);
+  const lastFix = sim?.lastFixAt
+    ? new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(sim.lastFixAt))
+    : '';
+  const accuracy = Number.isFinite(sim?.accuracy) ? ` · precisión ${Math.round(sim.accuracy)} m` : '';
 
   return `
     <div class="sim-panel">
@@ -230,14 +235,28 @@ function renderSimControls(order, sim) {
       </div>
       <div class="sim-gps">
         ${gpsOn
-          ? '<button class="ghost-button compact" type="button" data-sim-gps-off>Dejar de usar mi ubicación</button>'
-          : '<button class="ghost-button compact" type="button" data-sim-gps>Usar mi ubicación para demo</button>'}
-        ${gpsCoords ? `<span class="sim-gps-coords">Ubicación: ${escapeHtml(gpsCoords)} · solo en este dispositivo</span>` : ''}
+          ? '<button class="ghost-button compact" type="button" data-sim-gps-off>Detener GPS</button>'
+          : '<button class="ghost-button compact" type="button" data-sim-gps>Usar mi ubicación como rider demo</button>'}
+        <span class="sim-gps-status">GPS: ${escapeHtml(gpsStatus)}${lastFix ? ` · última ubicación ${escapeHtml(lastFix)}${accuracy}` : ''}</span>
+        ${gpsCoords ? `<span class="sim-gps-coords">Ubicación: ${escapeHtml(gpsCoords)} · ${sim?.source === 'gps' ? 'rider real' : 'demo'}</span>` : ''}
         ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
       </div>
       <p class="form-hint sim-note">Simulación local en este dispositivo. El tiempo real entre cliente y rider en celulares distintos necesita backend realtime (ver README).</p>
     </div>
   `;
+}
+
+function gpsStatusLabel(sim, active) {
+  if (active) return 'Activo';
+  const labels = {
+    inactive: 'Inactivo',
+    requesting: 'Pidiendo permiso',
+    active: 'Activo',
+    denied: 'Permiso denegado',
+    unavailable: 'No disponible',
+    requires_secure_context: 'Requiere HTTPS/localhost',
+  };
+  return labels[sim?.gpsStatus || 'inactive'] || 'Inactivo';
 }
 
 function renderDemoMap(order, distance, eta) {
@@ -275,6 +294,18 @@ function renderDemoMap(order, distance, eta) {
       <span class="map-marker rider rider-${order.status}" style="--p:${progress}"><span>R</span></span>
     </div>
   `;
+}
+
+function renderRealMapShell(order, fallback) {
+  return `
+    <div class="real-map-shell rider-map-shell" data-real-map data-map-role="rider" data-order-id="${escapeHtml(order.id)}">
+      <div class="real-map-canvas" data-map-canvas aria-label="Mapa real del reparto"></div>
+      <div class="real-map-fallback" data-map-fallback>
+        <p class="map-fallback-note">Mapa real no disponible, usando vista demo.</p>
+        ${fallback}
+      </div>
+      <div class="real-map-meta" data-map-meta>Ubicación demo</div>
+    </div>`;
 }
 
 export function handleDeliveryAction(target) {

@@ -15,6 +15,7 @@ import {
   advanceSimulation,
   createSimulationState,
 } from './core/simulation.js';
+import { normalizeRiderLocation } from './map/route_geometry.js';
 
 let timerId = null;
 let gpsWatchId = null;
@@ -120,6 +121,8 @@ export function resetSimulation() {
       running: false,
       lat: DEMO_STORE_POINT.lat,
       lng: DEMO_STORE_POINT.lng,
+      source: 'simulation',
+      gpsStatus: 'inactive',
     },
   });
   return { ok: true, message: 'Simulación reiniciada al inicio del recorrido.' };
@@ -177,20 +180,21 @@ export function enableGpsTracking() {
   if (globalThis.isSecureContext === false) {
     const current = getState().simulation;
     const base = current && current.orderId === order.id ? current : createSimulationState(order, { running: false });
-    const gpsError = 'La ubicación necesita HTTPS o localhost. La simulación demo sigue funcionando.';
-    setState({ simulation: { ...base, mode: 'demo', gpsError } });
+    const gpsError = 'El GPS real suele requerir HTTPS o localhost. Podés seguir usando la simulación.';
+    setState({ simulation: { ...base, mode: 'demo', source: 'simulation', gpsStatus: 'requires_secure_context', gpsError } });
     return { ok: false, message: gpsError };
   }
 
   if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
     const sim = getState().simulation;
-    if (sim) setState({ simulation: { ...sim, gpsError: 'Este navegador no tiene geolocalización.' } });
+    if (sim) setState({ simulation: { ...sim, gpsStatus: 'unavailable', gpsError: 'Este navegador no tiene geolocalización.' } });
     return { ok: false, message: 'Geolocalización no disponible en este navegador.' };
   }
 
   const current = getState().simulation;
   const base = current && current.orderId === order.id ? current : createSimulationState(order, { running: false });
-  setState({ simulation: { ...base, mode: 'gps', gpsError: undefined } });
+  stopTimer();
+  setState({ simulation: { ...base, mode: 'gps', source: 'gps', running: false, gpsStatus: 'requesting', gpsError: undefined, owner: getDeviceId() } });
 
   try {
     if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
@@ -200,6 +204,8 @@ export function enableGpsTracking() {
       timeout: 12_000,
     });
   } catch (_) {
+    const sim = getState().simulation;
+    if (sim) setState({ simulation: { ...sim, mode: 'demo', source: 'simulation', gpsStatus: 'unavailable', gpsError: 'No se pudo iniciar la ubicación.' } });
     return { ok: false, message: 'No se pudo iniciar la ubicación.' };
   }
 
@@ -213,7 +219,7 @@ export function disableGpsTracking({ silent = false } = {}) {
   gpsWatchId = null;
   const sim = getState().simulation;
   if (sim && sim.mode === 'gps') {
-    setState({ simulation: { ...sim, mode: 'demo' } });
+    setState({ simulation: { ...sim, mode: 'demo', source: 'simulation', gpsStatus: 'inactive' } });
   }
   return { ok: true, message: silent ? '' : 'Ubicación en vivo desactivada.' };
 }
@@ -225,10 +231,31 @@ export function isGpsActive() {
 function onGpsPosition(position) {
   const sim = getState().simulation;
   if (!sim) return;
-  const { latitude, longitude } = position.coords || {};
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
-  // La ubicación queda solo en este dispositivo: no se envía a ningún servidor.
-  setState({ simulation: { ...sim, lat: latitude, lng: longitude, mode: 'gps', gpsError: undefined } });
+  const coords = position.coords || {};
+  const timestamp = Number(position.timestamp) || Date.now();
+  const location = normalizeRiderLocation({
+    lat: coords.latitude,
+    lng: coords.longitude,
+    accuracy: coords.accuracy,
+    heading: coords.heading,
+    speed: coords.speed,
+    timestamp,
+    source: 'gps',
+  });
+  if (!location) return;
+  // La ubicación solo se publica por el estado de la app y el relay LAN configurado.
+  setState({
+    simulation: {
+      ...sim,
+      ...location,
+      mode: 'gps',
+      source: 'gps',
+      gpsStatus: 'active',
+      running: false,
+      gpsError: undefined,
+      owner: getDeviceId(),
+    },
+  });
 }
 
 function onGpsError(error) {
@@ -237,7 +264,7 @@ function onGpsError(error) {
     ? 'Permiso de ubicación denegado.'
     : 'No se pudo obtener tu ubicación.';
   disableGpsTracking({ silent: true });
-  if (sim) setState({ simulation: { ...sim, mode: 'demo', gpsError: message } });
+  if (sim) setState({ simulation: { ...sim, mode: 'demo', source: 'simulation', gpsStatus: error && error.code === 1 ? 'denied' : 'unavailable', gpsError: message } });
 }
 
 // Limpia el GPS al salir de la vista del rider (la simulación demo sigue).

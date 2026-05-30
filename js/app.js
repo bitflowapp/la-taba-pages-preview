@@ -26,12 +26,13 @@ import {
   updateAddressFieldVisibility,
   $,
 } from './ui.js';
-import { buildWhatsAppUrl, buildWhatsAppUrlFromDraft, createOrderFromCheckout, getLastOrder } from './orders.js';
+import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, createOrderFromCheckout, getLastOrder } from './orders.js';
 import { getState, subscribe } from './state.js';
 import { handleBusinessAction, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
 import { handleDeliveryAction, renderDeliveryPanel } from './delivery.js';
 import { handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
 import { getRealtimeStatus, initRealtime } from './realtime.js';
+import { renderMapViews } from './map/map_view.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const VIEW_ALIASES = {
@@ -92,6 +93,7 @@ function renderAll() {
   renderBusinessDashboard();
   renderDeliveryPanel();
   updateAddressFieldVisibility();
+  renderMapViews();
 }
 
 function bindEvents() {
@@ -288,6 +290,14 @@ function bindEvents() {
         window.open(buildWhatsAppUrl(order), '_blank', 'noopener,noreferrer');
         showToast('Abriendo WhatsApp con la copia del pedido.');
       }
+      return;
+    }
+    if (target.closest('[data-copy-last-order]')) {
+      const order = getLastOrder();
+      if (!order) return;
+      copyTextToClipboard(buildWhatsAppMessage(order))
+        .then(() => showToast('Pedido copiado al portapapeles.'))
+        .catch(() => showToast('No se pudo copiar automáticamente. Probá desde un navegador actualizado.'));
       return;
     }
     const clientLink = target.closest('[data-copy-client-link]');

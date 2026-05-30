@@ -6,13 +6,19 @@
 // del cliente y el del repartidor hace falta un backend realtime
 // (Supabase Realtime, Firebase, WebSocket). Ver README.
 
+import { STORE_LOCATION } from '../map/map_config.js';
+import {
+  pointOnRoute,
+  selectRouteForOrder,
+} from '../map/route_geometry.js';
+
 // Duración total de un recorrido simulado, en milisegundos.
 export const SIMULATION_TOTAL_MS = 24_000;
 // Cadencia del intervalo del controlador.
 export const SIMULATION_TICK_MS = 1_200;
 
 // Coordenadas demo (Neuquén capital aprox.) para mover el marcador del rider.
-export const DEMO_STORE_POINT = Object.freeze({ lat: -38.9516, lng: -68.0591 });
+export const DEMO_STORE_POINT = Object.freeze({ lat: STORE_LOCATION.lat, lng: STORE_LOCATION.lng });
 export const DEMO_CLIENT_POINT = Object.freeze({ lat: -38.9402, lng: -68.0735 });
 
 export function clampProgress(value) {
@@ -49,21 +55,28 @@ export function interpolatePoint(progress, from = DEMO_STORE_POINT, to = DEMO_CL
 // Estado inicial de la simulación para un pedido dado.
 export function createSimulationState(order, { running = true, now = Date.now() } = {}) {
   if (!order || typeof order.id !== 'string') return null;
+  const route = selectRouteForOrder(order);
   const baseEta = Math.max(1, Math.floor(Number(order?.delivery?.estimatedMinutes) || 12));
   const startProgress = order.status === 'arriving' ? 0.85
     : order.status === 'on_the_way' ? 0.08
     : 0;
-  const point = interpolatePoint(startProgress);
+  const point = pointOnRoute(route.id, startProgress);
+  const timestamp = Number(now) || Date.now();
   return {
     orderId: order.id,
     running: Boolean(running),
     mode: 'demo',
+    source: 'simulation',
+    routeId: route.id,
     progress: startProgress,
     baseEta,
     etaMinutes: progressToEta(startProgress, baseEta),
-    startedAt: new Date(now).toISOString(),
+    startedAt: new Date(timestamp).toISOString(),
+    timestamp,
+    lastFixAt: new Date(timestamp).toISOString(),
     lat: point.lat,
     lng: point.lng,
+    heading: point.heading,
   };
 }
 
@@ -74,16 +87,21 @@ export function advanceSimulation(simulation, deltaMs = SIMULATION_TICK_MS) {
   const progress = nextProgress(simulation.progress, deltaMs, SIMULATION_TOTAL_MS);
   const reachedEnd = progress >= 1;
   const point = simulation.mode === 'gps' && Number.isFinite(simulation.lat)
-    ? { lat: simulation.lat, lng: simulation.lng }
-    : interpolatePoint(progress);
+    ? { lat: simulation.lat, lng: simulation.lng, heading: simulation.heading }
+    : pointOnRoute(simulation.routeId, progress);
+  const timestamp = Date.now();
   return {
     simulation: {
       ...simulation,
       progress,
+      source: simulation.mode === 'gps' ? 'gps' : 'simulation',
       etaMinutes: progressToEta(progress, simulation.baseEta),
       running: reachedEnd ? false : simulation.running,
+      timestamp,
+      lastFixAt: new Date(timestamp).toISOString(),
       lat: point.lat,
       lng: point.lng,
+      ...(Number.isFinite(Number(point.heading)) ? { heading: point.heading } : {}),
     },
     reachedEnd,
   };

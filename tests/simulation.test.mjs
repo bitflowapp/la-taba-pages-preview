@@ -10,7 +10,7 @@ import {
   simulationProgressPercent,
 } from '../js/core/simulation.js';
 import { createOrderFromCheckout, updateOrderStatus } from '../js/orders.js';
-import { enableGpsTracking } from '../js/simulation.js';
+import { disableGpsTracking, enableGpsTracking } from '../js/simulation.js';
 import { getState, hydrateState } from '../js/state.js';
 import { resetState } from './helpers.mjs';
 
@@ -121,12 +121,55 @@ test('GPS explains insecure LAN contexts and keeps demo simulation available', (
     assert.match(result.message, /HTTPS o localhost/);
     assert.equal(getState().simulation.orderId, created.order.id);
     assert.equal(getState().simulation.mode, 'demo');
-    assert.match(getState().simulation.gpsError, /simulación demo sigue funcionando/);
+    assert.equal(getState().simulation.gpsStatus, 'requires_secure_context');
+    assert.match(getState().simulation.gpsError, /simulación/);
   } finally {
     if (originalSecureContext) {
       Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
     } else {
       delete globalThis.isSecureContext;
     }
+  }
+});
+
+test('GPS watchPosition is not duplicated when rider taps GPS twice', () => {
+  addToCart('p-vacio', 1);
+  const created = createOrderFromCheckout({
+    customerName: 'GPS QA',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: '',
+  });
+  updateOrderStatus(created.order.id, 'preparing');
+  updateOrderStatus(created.order.id, 'ready');
+
+  const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  let watchCount = 0;
+  let clearCount = 0;
+  Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: true });
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      geolocation: {
+        watchPosition: () => { watchCount += 1; return watchCount; },
+        clearWatch: () => { clearCount += 1; },
+      },
+    },
+  });
+
+  try {
+    assert.equal(enableGpsTracking().ok, true);
+    assert.equal(enableGpsTracking().ok, true);
+    assert.equal(watchCount, 2);
+    assert.equal(clearCount, 1);
+  } finally {
+    disableGpsTracking({ silent: true });
+    if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
+    else delete globalThis.isSecureContext;
+    if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+    else delete globalThis.navigator;
   }
 });

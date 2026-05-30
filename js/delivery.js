@@ -36,12 +36,19 @@ export function renderDeliveryPanel() {
 
   if (!order) {
     container.innerHTML = `
-      <div class="empty-state">
-        <strong>No hay pedidos para repartir.</strong><br />
-        Cuando un cliente confirme un pedido con envío, aparece acá con la dirección, el total a cobrar y los botones de reparto.
-        <div class="empty-actions">
-          <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
-        </div>
+      <div class="delivery-layout rider-map-experience is-empty">
+        ${renderRiderMapStage(null, 'Sin ruta activa', 'Sin ETA', 'No repartiendo')}
+        <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet>
+          <span class="sheet-handle" aria-hidden="true"></span>
+          <div class="empty-state sheet-empty">
+            <strong>No hay pedidos para repartir.</strong><br />
+            Cuando un cliente confirme un pedido con envío, aparece acá con la dirección, el total a cobrar y los botones de reparto.
+            <div class="empty-actions">
+              <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
+            </div>
+          </div>
+          ${renderAdvancedDemo()}
+        </section>
       </div>`;
     return;
   }
@@ -72,9 +79,12 @@ export function renderDeliveryPanel() {
   const waClient = `https://wa.me/${onlyDigits(order.customerPhone)}`;
 
   container.innerHTML = `
-    <div class="delivery-layout">
-      <div class="rider-col">
-        <div class="card rider-head ${statusClass(order.status)}">
+    <div class="delivery-layout rider-map-experience">
+      ${renderRiderMapStage(order, distance, eta, headline)}
+
+      <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet>
+        <span class="sheet-handle" aria-hidden="true"></span>
+        <div class="sheet-head rider-head ${statusClass(order.status)}">
           <span class="track-head-ico">REP</span>
           <div class="track-head-text">
             <small>${order.id} · ${escapeHtml(deliveryModeLabel(order.deliveryMode))}</small>
@@ -84,14 +94,13 @@ export function renderDeliveryPanel() {
           <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
         </div>
 
-        <div class="card rider-card">
-          <div class="track-steps tight">${steps}</div>
+        <div class="sheet-metrics rider-metrics">
+          <span><small>Distancia</small><strong>${distance}</strong></span>
+          <span><small>Tiempo</small><strong>${eta}</strong></span>
+          <span><small>A cobrar</small><strong>${money(order.total)}</strong></span>
+        </div>
 
-          <div class="rider-chips">
-            <span class="rider-chip"><small>Distancia</small><strong>${distance}</strong></span>
-            <span class="rider-chip"><small>Tiempo estimado</small><strong>${eta}</strong></span>
-            <span class="rider-chip"><small>A cobrar</small><strong>${money(order.total)}</strong></span>
-          </div>
+        <div class="track-steps tight">${steps}</div>
 
           <div class="rider-contact">
             <span class="rider-avatar">${escapeHtml(initials(order.customerName))}</span>
@@ -138,12 +147,7 @@ export function renderDeliveryPanel() {
 
           ${renderSimControls(order, sim)}
           ${renderAdvancedDemo()}
-        </div>
-      </div>
-
-      <div class="delivery-map">
-        ${renderDemoMap(order, distance, eta)}
-      </div>
+      </section>
     </div>
   `;
 }
@@ -212,6 +216,11 @@ function renderSimControls(order, sim) {
   const gpsCoords = sim && sim.mode === 'gps' && Number.isFinite(sim.lat)
     ? `${sim.lat.toFixed(4)}, ${sim.lng.toFixed(4)}`
     : '';
+  const gpsStatus = gpsStatusLabel(sim, gpsOn);
+  const lastFix = sim?.lastFixAt
+    ? new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(sim.lastFixAt))
+    : '';
+  const accuracy = Number.isFinite(sim?.accuracy) ? ` · precisión ${Math.round(sim.accuracy)} m` : '';
 
   return `
     <div class="sim-panel">
@@ -230,14 +239,28 @@ function renderSimControls(order, sim) {
       </div>
       <div class="sim-gps">
         ${gpsOn
-          ? '<button class="ghost-button compact" type="button" data-sim-gps-off>Dejar de usar mi ubicación</button>'
-          : '<button class="ghost-button compact" type="button" data-sim-gps>Usar mi ubicación para demo</button>'}
-        ${gpsCoords ? `<span class="sim-gps-coords">Ubicación: ${escapeHtml(gpsCoords)} · solo en este dispositivo</span>` : ''}
+          ? '<button class="ghost-button compact" type="button" data-sim-gps-off>Detener GPS</button>'
+          : '<button class="ghost-button compact" type="button" data-sim-gps>Usar mi ubicación como rider demo</button>'}
+        <span class="sim-gps-status">GPS: ${escapeHtml(gpsStatus)}${lastFix ? ` · última ubicación ${escapeHtml(lastFix)}${accuracy}` : ''}</span>
+        ${gpsCoords ? `<span class="sim-gps-coords">Ubicación: ${escapeHtml(gpsCoords)} · ${sim?.source === 'gps' ? 'rider real' : 'demo'}</span>` : ''}
         ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
       </div>
       <p class="form-hint sim-note">Simulación local en este dispositivo. El tiempo real entre cliente y rider en celulares distintos necesita backend realtime (ver README).</p>
     </div>
   `;
+}
+
+function gpsStatusLabel(sim, active) {
+  if (active) return 'Activo';
+  const labels = {
+    inactive: 'Inactivo',
+    requesting: 'Pidiendo permiso',
+    active: 'Activo',
+    denied: 'Permiso denegado',
+    unavailable: 'No disponible',
+    requires_secure_context: 'Requiere HTTPS/localhost',
+  };
+  return labels[sim?.gpsStatus || 'inactive'] || 'Inactivo';
 }
 
 function renderDemoMap(order, distance, eta) {
@@ -255,11 +278,12 @@ function renderDemoMap(order, distance, eta) {
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="riderRoute" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#d6b08a"/>
-            <stop offset="1" stop-color="#c59a6c"/>
+            <stop offset="0" stop-color="#6a5a4d"/>
+            <stop offset="1" stop-color="#c9aa84"/>
           </linearGradient>
         </defs>
-        <g class="map-streets" stroke="rgba(255,255,255,0.06)" stroke-width="2">
+        <rect width="320" height="220" rx="18" fill="#f1efe9"/>
+        <g class="map-streets" stroke="rgba(38,34,30,0.10)" stroke-width="2">
           <line x1="0" y1="48" x2="320" y2="40"/>
           <line x1="0" y1="104" x2="320" y2="112"/>
           <line x1="0" y1="166" x2="320" y2="158"/>
@@ -267,7 +291,7 @@ function renderDemoMap(order, distance, eta) {
           <line x1="150" y1="0" x2="158" y2="220"/>
           <line x1="244" y1="0" x2="236" y2="220"/>
         </g>
-        <path d="${path}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
+        <path d="${path}" fill="none" stroke="rgba(55,47,40,0.10)" stroke-width="8" stroke-linecap="round"/>
         <path class="map-route" d="${path}" fill="none" stroke="url(#riderRoute)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
       </svg>
       <span class="map-marker store" style="left:14%;top:80%"><span>LT</span><small>La Taba</small></span>
@@ -275,6 +299,59 @@ function renderDemoMap(order, distance, eta) {
       <span class="map-marker rider rider-${order.status}" style="--p:${progress}"><span>R</span></span>
     </div>
   `;
+}
+
+function renderIdleMap() {
+  return `
+    <div class="demo-map" role="img" aria-label="Mapa demo sin reparto activo">
+      <div class="demo-map-overlay">
+        <span class="map-eta">Neuquén · Cipolletti</span>
+        <span class="map-state">Sin reparto</span>
+      </div>
+      <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect width="320" height="220" rx="18" fill="#f1efe9"/>
+        <g class="map-streets" stroke="rgba(38,34,30,0.10)" stroke-width="2">
+          <line x1="0" y1="58" x2="320" y2="44"/><line x1="0" y1="128" x2="320" y2="116"/>
+          <line x1="70" y1="0" x2="54" y2="220"/><line x1="184" y1="0" x2="170" y2="220"/>
+        </g>
+        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="rgba(55,47,40,0.10)" stroke-width="8" stroke-linecap="round"/>
+        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="#6a5a4d" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 8"/>
+      </svg>
+      <span class="map-marker store" style="left:18%;top:68%"><span>LT</span><small>Neuquén</small></span>
+      <span class="map-marker client" style="left:84%;top:24%"><span>CI</span><small>Cipolletti</small></span>
+    </div>`;
+}
+
+function renderRiderMapStage(order, distance, eta, headline) {
+  const status = getRealtimeStatus();
+  const connection = status.relayEnabled
+    ? (status.relayConnected ? 'Realtime activo' : 'Reconectando relay')
+    : 'Modo local';
+  return `
+    <div class="delivery-map-stage rider-map-stage" data-map-shell="rider">
+      ${renderRealMapShell(order, order ? renderDemoMap(order, distance, eta) : renderIdleMap(), order ? 'rider' : 'rider-empty')}
+      <div class="map-floating-top">
+        <span class="map-status-pill ${order ? statusClass(order.status) : 'idle'}"><small>Estado</small><strong>${escapeHtml(headline)}</strong></span>
+        <span class="map-connection-pill">${escapeHtml(connection)}</span>
+      </div>
+      <div class="map-floating-bottom">
+        <span class="map-stat-pill"><small>Distancia</small><strong>${escapeHtml(distance)}</strong></span>
+        <span class="map-stat-pill"><small>Tiempo</small><strong>${escapeHtml(eta)}</strong></span>
+      </div>
+    </div>`;
+}
+
+function renderRealMapShell(order, fallback, role = 'rider') {
+  const orderAttr = order?.id ? ` data-order-id="${escapeHtml(order.id)}"` : '';
+  return `
+    <div class="real-map-shell rider-map-shell" data-real-map data-map-role="${escapeHtml(role)}"${orderAttr}>
+      <div class="real-map-canvas" data-map-canvas aria-label="Mapa real del reparto"></div>
+      <div class="real-map-fallback" data-map-fallback>
+        <p class="map-fallback-note">Mapa real no disponible, usando vista demo.</p>
+        ${fallback}
+      </div>
+      <div class="real-map-meta" data-map-meta>Ubicación demo</div>
+    </div>`;
 }
 
 export function handleDeliveryAction(target) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'la-taba-v5-1-cache';
+const CACHE_NAME = 'la-taba-v5-2-cache';
 const ASSETS = [
   './',
   './index.html',
@@ -15,6 +15,10 @@ const ASSETS = [
   './js/core/simulation.js',
   './js/core/storage.js',
   './js/core/validators.js',
+  './js/map/map_config.js',
+  './js/map/map_view.js',
+  './js/map/rider_marker.js',
+  './js/map/route_geometry.js',
   './js/data.js',
   './js/state.js',
   './js/cart.js',

@@ -88,8 +88,11 @@ relay está conectado, o *En vivo en este equipo* en modo local.
 La pantalla **Seguir** y la vista **Rider** usan **Leaflet + OpenStreetMap/CARTO** para
 mostrar un mapa real de **Neuquén Capital, Cipolletti y la zona entre ambas
 ciudades**. No requiere API key y funciona en una app estática publicada en
-GitHub Pages. Si Leaflet, el CDN o los tiles no cargan, la app muestra una vista
-demo controlada y el mensaje: *Mapa real no disponible, usando vista demo*.
+GitHub Pages. Si Leaflet, el CDN o los tiles no cargan (red móvil floja, CDN
+bloqueado), la app degrada con elegancia: muestra una vista simplificada y, lo
+importante, **sigue actualizando el texto de seguimiento** (fuente de la
+ubicación —*Ubicación rider* / *Ubicación estimada*—, distancia y última
+actualización). Así el reparto se entiende aunque el mapa con tiles no aparezca.
 
 El estilo visual por defecto es **claro blanco/gris** usando CARTO Positron,
 para que Tracking y Rider se sientan como una app comercial de delivery y no como

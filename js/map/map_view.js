@@ -4,39 +4,51 @@ import { DEFAULT_MAP_BOUNDS, RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme
 import { distanceKm, getRoute, normalizeRiderLocation, pointOnRoute, selectRouteForOrder } from './route_geometry.js';
 import { createRiderIcon, updateRiderMarker } from './rider_marker.js';
 
-const mounted = new WeakMap();
+const mountedMaps = new Set();
 
 export function canUseLeaflet(root = globalThis) {
   return Boolean(root?.L?.map && root?.L?.tileLayer);
 }
 
+// Limpia mapas Leaflet cuyo contenedor ya no está en el DOM (evita fugas y
+// listeners colgados cuando el panel se vuelve a renderizar en cada tick).
+function disposeDetachedMaps() {
+  for (const entry of [...mountedMaps]) {
+    if (!entry.container?.isConnected) {
+      try { entry.map?.remove?.(); } catch (_) { /* no-op */ }
+      mountedMaps.delete(entry);
+    }
+  }
+}
+
+function mapEntryFor(container) {
+  for (const entry of mountedMaps) {
+    if (entry.container === container) return entry;
+  }
+  return null;
+}
+
 export function disposeMapViews(root = document) {
   root.querySelectorAll?.('[data-real-map]').forEach((node) => {
-    const current = mounted.get(node);
-    if (current?.map?.remove) current.map.remove();
-    mounted.delete(node);
+    const entry = mapEntryFor(node);
+    if (entry) {
+      try { entry.map?.remove?.(); } catch (_) { /* no-op */ }
+      mountedMaps.delete(entry);
+    }
   });
 }
 
 export function renderMapViews(root = document) {
+  disposeDetachedMaps();
   root.querySelectorAll?.('[data-real-map]').forEach((node) => renderMapView(node));
 }
 
 function renderMapView(container) {
-  const L = globalThis.L;
   const fallback = container.querySelector('[data-map-fallback]');
   const canvas = container.querySelector('[data-map-canvas]');
   if (!canvas) return;
 
-  if (!canUseLeaflet(globalThis)) {
-    container.classList.add('map-unavailable');
-    fallback?.removeAttribute('hidden');
-    return;
-  }
-
-  container.classList.remove('map-unavailable');
-  fallback?.setAttribute('hidden', '');
-
+  // Datos del pedido/rider: se calculan SIEMPRE, haya o no Leaflet/tiles.
   const emptyMap = container.dataset.mapRole === 'tracking-empty' || container.dataset.mapRole === 'rider-empty';
   const order = emptyMap ? null : findOrder(container.dataset.orderId);
   const route = order ? selectRouteForOrder(order) : getRoute('cipolletti');
@@ -51,6 +63,23 @@ function renderMapView(container) {
   container.classList.toggle('map-theme-dark', theme === 'dark');
   container.classList.toggle('map-theme-light', theme === 'light');
 
+  // La info textual (fuente, distancia, hora, precisión) se actualiza siempre,
+  // así el seguimiento sigue siendo útil aunque el mapa con tiles no cargue.
+  renderMapMeta(container, order, riderLocation, destination);
+
+  if (!canUseLeaflet(globalThis)) {
+    container.classList.add('map-unavailable');
+    fallback?.removeAttribute('hidden');
+    return;
+  }
+
+  container.classList.remove('map-unavailable');
+  fallback?.setAttribute('hidden', '');
+
+  // Si este nodo ya tiene un mapa vivo, no lo reconstruimos.
+  if (mapEntryFor(container)) return;
+
+  const L = globalThis.L;
   const map = L.map(canvas, {
     zoomControl: false,
     attributionControl: true,
@@ -59,7 +88,7 @@ function renderMapView(container) {
     doubleClickZoom: false,
     tap: true,
   });
-  mounted.set(container, { map });
+  mountedMaps.add({ container, map });
 
   L.tileLayer(tileLayer.tilesUrl, {
     maxZoom: 18,
@@ -94,8 +123,6 @@ function renderMapView(container) {
     : points;
   map.fitBounds(bounds, { padding: [22, 22], maxZoom: 14 });
   setTimeout(() => map.invalidateSize(), 0);
-
-  renderMapMeta(container, order, riderLocation, destination);
 }
 
 function labelIcon(L, label, kind) {

@@ -15,6 +15,7 @@ import {
   disableGpsTracking,
   enableGpsTracking,
   selectStreetTestDestination,
+  shouldPublishLocation,
   startSimulation,
 } from '../js/simulation.js';
 import { getState, hydrateState } from '../js/state.js';
@@ -384,4 +385,21 @@ test('simulation can restart after GPS is stopped', () => {
     if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
     else delete globalThis.navigator;
   }
+});
+
+test('shouldPublishLocation aplica throttling por tiempo y distancia', () => {
+  const t0 = 1_000_000;
+  const prev = { lat: -38.9516, lng: -68.0591, at: t0 };
+  const nearSoon = { lat: -38.95161, lng: -68.05911 }; // ~1-2 m
+  // Mismo punto, < 3s: no publica.
+  assert.equal(shouldPublishLocation(prev, nearSoon, t0 + 1_000), false);
+  // Pasaron >= 3s: publica aunque no se haya movido.
+  assert.equal(shouldPublishLocation(prev, nearSoon, t0 + 3_000), true);
+  // Se movió mucho (~150 m) antes de los 3s: publica igual.
+  const farSoon = { lat: -38.9530, lng: -68.0591 };
+  assert.equal(shouldPublishLocation(prev, farSoon, t0 + 500), true);
+  // Sin fix previo: siempre publica el primero.
+  assert.equal(shouldPublishLocation(null, nearSoon, t0), true);
+  // Sin ubicación nueva: no publica.
+  assert.equal(shouldPublishLocation(prev, null, t0 + 10_000), false);
 });

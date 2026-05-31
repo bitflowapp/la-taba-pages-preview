@@ -146,6 +146,15 @@ test('Supabase repository persists status and rider GPS updates', async () => {
   assert.equal(mock.db.locations[0].source, 'gps');
   assert.equal(getState().simulation.source, 'gps');
   assert.equal(getState().simulation.gpsStatus, 'active');
+
+  // El pedido espejado expone la última ubicación real para que el mapa del
+  // cliente (otro dispositivo, vía polling) la pueda leer y mostrar.
+  const mirrored = getState().orders[0];
+  assert.ok(mirrored.tracking?.lastLocation, 'el pedido debe exponer tracking.lastLocation');
+  assert.equal(mirrored.tracking.lastLocation.source, 'gps');
+  const { chooseRiderLocation } = await import('../js/map/route_geometry.js');
+  const chosen = chooseRiderLocation(null, mirrored.tracking.lastLocation);
+  assert.equal(chosen.source, 'gps');
 });
 
 test('Supabase repository keeps terminal orders out of the active order slot', async () => {

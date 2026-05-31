@@ -197,6 +197,34 @@ export function normalizeRiderLocation(raw = {}, fallback = {}) {
   };
 }
 
+// Elige la ubicación del rider a mostrar, dadas la simulación local y la
+// ubicación persistida del pedido (que en modo Supabase llega por polling
+// desde el dispositivo del rider real). Reglas:
+//  - el GPS real (source==='gps') tiene prioridad sobre la simulación;
+//  - a igual jerarquía de fuente, gana el fix más reciente;
+//  - coordenadas inválidas se descartan (normalizeRiderLocation devuelve null).
+// Devuelve un TrackingLocation normalizado o null.
+export function chooseRiderLocation(simRaw, trackedRaw) {
+  const sim = simRaw ? normalizeRiderLocation(simRaw) : null;
+  const tracked = trackedRaw ? normalizeRiderLocation(trackedRaw) : null;
+  if (sim && tracked) {
+    const simGps = sim.source === 'gps';
+    const trackedGps = tracked.source === 'gps';
+    if (trackedGps && !simGps) return tracked;
+    if (simGps && !trackedGps) return sim;
+    return tracked.timestamp > sim.timestamp ? tracked : sim;
+  }
+  return sim || tracked || null;
+}
+
+// Indica si un fix quedó "viejo" según un umbral (default 30s).
+export function isLocationStale(location, maxAgeMs = 30_000, now = Date.now()) {
+  if (!location) return true;
+  const ts = Number(location.timestamp) || Date.parse(location.lastFixAt) || 0;
+  if (!ts) return true;
+  return now - ts > maxAgeMs;
+}
+
 function isLatLng(value) {
   return value && Number.isFinite(Number(value.lat)) && Number.isFinite(Number(value.lng));
 }

@@ -1,7 +1,7 @@
 import { getState } from '../state.js';
 import { getLastOrder } from '../orders.js';
 import { DEFAULT_MAP_BOUNDS, RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getTileLayerForTheme } from './map_config.js';
-import { distanceKm, getRoute, normalizeRiderLocation, pointOnRoute, selectRouteForOrder } from './route_geometry.js';
+import { chooseRiderLocation, distanceKm, getRoute, normalizeRiderLocation, pointOnRoute, selectRouteForOrder } from './route_geometry.js';
 import { createRiderIcon, updateRiderMarker } from './rider_marker.js';
 
 const mountedMaps = new Set();
@@ -169,11 +169,19 @@ function getOrderSimulation(orderId) {
   return sim && sim.orderId === orderId ? sim : null;
 }
 
+// Prioridad de ubicación del rider para el mapa:
+//  1) GPS real propio en curso (sim.source === 'gps' en este dispositivo);
+//  2) ubicación persistida del pedido (order.tracking.lastLocation), que en
+//     modo Supabase llega por polling desde otro dispositivo (el rider real);
+//  3) simulación local;
+//  4) punto sintético sobre la ruta.
+// Una ubicación GPS persistida le gana a la simulación, salvo que este mismo
+// equipo tenga un fix GPS más nuevo.
 function getRiderLocation(order, sim, routeId) {
-  if (sim) {
-    const normalized = normalizeRiderLocation(sim);
-    if (normalized) return normalized;
-  }
+  // GPS real (propio o persistido por el rider en Supabase) gana a la simulación.
+  const chosen = chooseRiderLocation(sim, order?.tracking?.lastLocation);
+  if (chosen) return chosen;
+
   const fallbackProgress = order.status === 'delivered' ? 1
     : order.status === 'arriving' ? 0.92
     : order.status === 'on_the_way' ? 0.45

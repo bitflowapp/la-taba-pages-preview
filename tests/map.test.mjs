@@ -4,10 +4,12 @@ import { canUseLeaflet } from '../js/map/map_view.js';
 import { getMapTheme, getTileLayerForTheme } from '../js/map/map_config.js';
 import { riderMarkerClass } from '../js/map/rider_marker.js';
 import {
+  chooseRiderLocation,
   distanceKm,
   getRoute,
   getStreetTestDestination,
   getStreetTestDestinations,
+  isLocationStale,
   normalizeRiderLocation,
   pointOnRoute,
   routeDistanceKm,
@@ -81,4 +83,37 @@ test('rider marker class reflects status and source', () => {
   assert.match(riderMarkerClass('on_the_way', 'gps'), /on-the-way/);
   assert.match(riderMarkerClass('on_the_way', 'gps'), /source-gps/);
   assert.match(riderMarkerClass('preparing', 'simulation'), /preparing/);
+});
+
+test('chooseRiderLocation prioriza GPS real sobre simulación', () => {
+  const sim = { lat: -38.95, lng: -68.05, source: 'simulation', timestamp: 2000 };
+  const trackedGps = { lat: -38.94, lng: -68.04, source: 'gps', timestamp: 1000 };
+  // Aunque el fix GPS sea más viejo, gana por ser ubicación real.
+  const chosen = chooseRiderLocation(sim, trackedGps);
+  assert.equal(chosen.source, 'gps');
+  assert.equal(chosen.lat, -38.94);
+});
+
+test('chooseRiderLocation usa el fix más nuevo si la fuente es la misma', () => {
+  const older = { lat: -38.95, lng: -68.05, source: 'gps', timestamp: 1000 };
+  const newer = { lat: -38.94, lng: -68.04, source: 'gps', timestamp: 5000 };
+  assert.equal(chooseRiderLocation(older, newer).timestamp, 5000);
+  assert.equal(chooseRiderLocation(newer, older).timestamp, 5000);
+});
+
+test('chooseRiderLocation ignora coordenadas inválidas y soporta nulls', () => {
+  const valid = { lat: -38.95, lng: -68.05, source: 'gps', timestamp: 1000 };
+  const invalid = { lat: 999, lng: 999, source: 'gps', timestamp: 9999 };
+  assert.equal(chooseRiderLocation(null, valid).source, 'gps');
+  assert.equal(chooseRiderLocation(invalid, valid).lat, -38.95);
+  assert.equal(chooseRiderLocation(invalid, null), null);
+  assert.equal(chooseRiderLocation(null, null), null);
+});
+
+test('isLocationStale marca como vieja una ubicación pasada el umbral', () => {
+  const now = 1_000_000;
+  assert.equal(isLocationStale({ timestamp: now - 5_000 }, 30_000, now), false);
+  assert.equal(isLocationStale({ timestamp: now - 60_000 }, 30_000, now), true);
+  assert.equal(isLocationStale(null, 30_000, now), true);
+  assert.equal(isLocationStale({}, 30_000, now), true);
 });

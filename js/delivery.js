@@ -22,7 +22,7 @@ import {
 } from './simulation.js';
 import { getRealtimeStatus } from './realtime.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
-import { getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
+import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
 import { escapeHtml } from './ui.js';
 import {
   distanceKm,
@@ -331,6 +331,10 @@ function gpsStatusLabel(sim, active) {
 function renderGpsDiagnostics(sim, gpsOn) {
   const status = getRealtimeStatus();
   const relay = status.relayEnabled ? (status.relayConnected ? 'conectado' : 'error') : 'local';
+  const backendMode = getRepositoryDataMode();
+  const backendSend = sim?.backendError
+    ? `Error: ${sim.backendError}`
+    : (sim?.lastBackendPublishAt ? relativeAgeLabel(sim.lastBackendPublishAt) : 'Sin envíos');
   const source = sim?.source === 'gps' ? 'GPS real' : 'Simulación';
   const fixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
   const publishedAt = sim?.lastPublishedAt || sim?.lastGpsPublishedAt || sim?.timestamp || null;
@@ -355,8 +359,19 @@ function renderGpsDiagnostics(sim, gpsOn) {
         <span><small>Relay</small><strong>${escapeHtml(relay)}</strong></span>
         <span><small>Room actual</small><strong>${escapeHtml(status.room)}</strong></span>
         <span><small>Último evento publicado</small><strong>${escapeHtml(relativeAgeLabel(publishedAt))}</strong></span>
+        <span><small>Backend datos</small><strong>${escapeHtml(backendMode)}</strong></span>
+        <span><small>Último envío backend</small><strong>${escapeHtml(backendSend)}</strong></span>
       </div>
     </details>`;
+}
+
+function getRepositoryDataMode() {
+  try {
+    const mode = getDataMode();
+    return mode === 'supabase' ? 'Supabase' : mode === 'http' ? 'API propia' : mode === 'demo-realtime' ? 'Demo + relay' : 'Demo';
+  } catch (_) {
+    return 'Demo';
+  }
 }
 
 function secureContextLabel() {

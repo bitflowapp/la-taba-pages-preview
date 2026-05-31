@@ -2127,6 +2127,9 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-status-pi
 .ops-card-meta strong { margin-left: auto; color: var(--text); font-size: 14px; }
 .ops-items { margin: 0; color: var(--soft); font-size: 12px; line-height: 1.35; }
 .ops-cancel-reason { margin: 0; color: #f0a99e; font-size: 12px; }
+.ops-rider-loc { margin: 0; font-size: 12px; color: var(--soft); }
+.ops-rider-loc.is-gps { color: #2f8052; font-weight: 600; }
+.ops-rider-loc.muted { opacity: 0.8; }
 .ops-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .ops-actions .compact { min-height: 34px; padding: 0 10px; font-size: 12px; }
 .danger-ghost { color: #f0a99e; border-color: rgba(176,86,74,0.4); }

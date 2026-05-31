@@ -259,6 +259,14 @@ function opsOrderCard(order) {
     ? `<p class="ops-cancel-reason">Motivo: ${escapeHtml(order.cancelReason)}</p>`
     : '';
 
+  // Ubicación del rider (si el pedido la tiene): "Rider actualizado hace Xs".
+  const riderLoc = order.tracking?.lastLocation;
+  const riderLine = (!isPickup && ['on_the_way', 'arriving'].includes(order.status))
+    ? (riderLoc
+      ? `<p class="ops-rider-loc ${riderLoc.source === 'gps' ? 'is-gps' : ''}">📍 ${riderLoc.source === 'gps' ? 'Rider en vivo' : 'Ubicación estimada'} · actualizado ${escapeHtml(timeAgo(riderLoc.lastFixAt || riderLoc.timestamp))}</p>`
+      : '<p class="ops-rider-loc muted">📍 Sin ubicación reciente del rider</p>')
+    : '';
+
   return `
     <article class="ops-card accent-${statusClass(order.status)}">
       <div class="ops-card-top">
@@ -276,6 +284,7 @@ function opsOrderCard(order) {
         <strong>${money(order.total)}</strong>
       </div>
       <p class="ops-items">${itemsSummary}</p>
+      ${riderLine}
       ${reason}
       <div class="ops-actions">
         ${primaryAction}

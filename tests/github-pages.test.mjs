@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-v5-2-cache');
+  assert.equal(cacheNameMatch[1], 'la-taba-v5-3-cache');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -26,8 +26,12 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./js/app.js'));
   assert.ok(assets.includes('./js/core/storage.js'));
   assert.ok(assets.includes('./js/core/order-status.js'));
+  assert.ok(assets.includes('./js/core/order-workflow.js'));
+  assert.ok(assets.includes('./js/core/domain.js'));
   assert.ok(assets.includes('./js/map/map_view.js'));
   assert.ok(assets.includes('./js/map/route_geometry.js'));
+  assert.ok(assets.includes('./js/repositories/repository_factory.js'));
+  assert.ok(assets.includes('./js/repositories/demo_order_repository.js'));
 
   for (const asset of assets) {
     if (asset === './') continue;

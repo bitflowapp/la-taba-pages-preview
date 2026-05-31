@@ -33,7 +33,7 @@ import { handleDeliveryAction, handleDeliveryChange, renderDeliveryPanel } from 
 import { disableGpsTracking, handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
 import { getRealtimeStatus, initRealtime } from './realtime.js';
 import { renderMapViews } from './map/map_view.js';
-import { getOrderRepository } from './repositories/repository_factory.js';
+import { getOrderRepository, getRepositoryDiagnostic, startOrderRepositorySync } from './repositories/repository_factory.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const VIEW_ALIASES = {
@@ -66,8 +66,15 @@ function bootstrap() {
     bindEvents();
     subscribe(renderAll);
     initRealtime();
+    startOrderRepositorySync();
     renderAll();
     resumeSimulationIfNeeded();
+    // Aviso técnico discreto si se pidió un backend y se cayó a demo.
+    const diagnostic = getRepositoryDiagnostic();
+    if (diagnostic) {
+      console.warn(`[La Taba] ${diagnostic.message}`);
+      setTimeout(() => showToast(diagnostic.message), 600);
+    }
   } catch (error) {
     // Evita pantalla en blanco si algo falla en el primer render.
     showToast('Hubo un problema al iniciar. Recargá la página.');
@@ -102,7 +109,7 @@ function bindEvents() {
   window.addEventListener('hashchange', syncViewFromLocation);
   window.addEventListener('pagehide', () => disableGpsTracking({ silent: true }));
 
-  document.addEventListener('click', (event) => {
+  document.addEventListener('click', async (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
@@ -206,14 +213,14 @@ function bindEvents() {
       return;
     }
 
-    const businessResult = handleBusinessAction(target);
+    const businessResult = await Promise.resolve(handleBusinessAction(target));
     if (businessResult.handled) {
       if (businessResult.message) showToast(businessResult.message);
       if (businessResult.navigate) setActiveView(businessResult.navigate);
       return;
     }
 
-    const deliveryResult = handleDeliveryAction(target);
+    const deliveryResult = await Promise.resolve(handleDeliveryAction(target));
     if (deliveryResult.handled) {
       showToast(deliveryResult.message);
     }

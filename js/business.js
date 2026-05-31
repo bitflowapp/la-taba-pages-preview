@@ -4,7 +4,9 @@ import {
   getBusinessMetrics,
   getLowStockProducts as selectLowStockProducts,
 } from './core/business-metrics.js';
+import { toDomainOrder } from './core/domain.js';
 import { isTerminalOrderStatus } from './core/order-status.js';
+import { getNextWorkflowStatus } from './core/order-workflow.js';
 import {
   dateTime,
   deliveryModeLabel,
@@ -21,6 +23,7 @@ import {
   buildKitchenTicket,
   cancelOrder,
 } from './orders.js';
+import { getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
 import { escapeHtml, productCode, stockPill } from './ui.js';
 
 let seenOrderIds = null; // se inicializa en el primer render para detectar pedidos nuevos
@@ -404,12 +407,7 @@ function stockRow(product) {
 export function handleBusinessAction(target) {
   const advanceId = target.closest('[data-order-advance]')?.dataset.orderAdvance;
   if (advanceId) {
-    const result = advanceOrderStatus(advanceId);
-    return {
-      handled: true,
-      ok: result.ok,
-      message: result.ok ? 'Estado del pedido actualizado.' : result.message,
-    };
+    return actionResponse(advanceOrder(advanceId), 'Estado del pedido actualizado.');
   }
 
   const ticketId = target.closest('[data-order-ticket]')?.dataset.orderTicket;
@@ -451,8 +449,7 @@ export function handleBusinessAction(target) {
 
   const cancelId = target.closest('[data-order-cancel]')?.dataset.orderCancel;
   if (cancelId) {
-    const result = cancelOrder(cancelId);
-    return { handled: true, ok: result.ok, message: result.ok ? 'Pedido cancelado.' : result.message };
+    return actionResponse(cancelBusinessOrder(cancelId), 'Pedido cancelado.');
   }
 
   const stockInc = target.closest('[data-stock-inc]')?.dataset.stockInc;
@@ -474,6 +471,33 @@ export function handleBusinessAction(target) {
   }
 
   return { handled: false };
+}
+
+function advanceOrder(orderId) {
+  const repository = getOrderRepository();
+  if (!isPersistentOrderRepository(repository)) return advanceOrderStatus(orderId);
+  const order = getState().orders.find((candidate) => candidate.id === orderId);
+  const domainOrder = toDomainOrder(order);
+  const nextStatus = domainOrder ? getNextWorkflowStatus(domainOrder.status, domainOrder.fulfillmentType) : null;
+  if (!nextStatus) return { ok: false, message: 'Sin próxima acción para este pedido.' };
+  return repository.updateOrderStatus(orderId, nextStatus);
+}
+
+function cancelBusinessOrder(orderId) {
+  const repository = getOrderRepository();
+  if (!isPersistentOrderRepository(repository)) return cancelOrder(orderId);
+  return repository.updateOrderStatus(orderId, 'canceled');
+}
+
+function actionResponse(result, successMessage) {
+  if (typeof result?.then === 'function') {
+    return result.then((resolved) => actionResponse(resolved, successMessage));
+  }
+  return {
+    handled: true,
+    ok: result.ok,
+    message: result.ok ? successMessage : result.message,
+  };
 }
 
 function changeProductStock(productId, delta) {

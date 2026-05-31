@@ -141,6 +141,11 @@ test('GPS del rider se propaga al tracking del cliente por relay', async ({ brow
   await rider.locator('[data-sim-gps]').click();
 
   await expect(rider.locator('[data-delivery-panel]')).toContainText('Ubicación: GPS real activo', { timeout: 10_000 });
+  const riderMap = rider.locator('[data-real-map][data-map-role="rider"]').first();
+  await expect(riderMap.locator('.lt-rider-marker.source-gps')).toBeVisible({ timeout: 10_000 });
+  await expect(riderMap.locator('.lt-rider-label')).toContainText('Tu ubicación real');
+  await expect(riderMap.locator('[data-map-meta]')).toContainText('Tu ubicación real');
+  await expect(riderMap.locator('[data-map-meta]')).not.toContainText(/Recorrido de prueba|Ruta estimada/i);
   await expect(rider.locator('[data-delivery-panel]')).toContainText('Detalles de ubicación');
   await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación rider', { timeout: 10_000 });
   await expect(client.locator('[data-map-meta]').first()).not.toContainText(/precisión|±/i);

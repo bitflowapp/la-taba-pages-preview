@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
 import { formatDemoDistance, getRiderActionState } from '../js/core/rider.js';
-import { handleDeliveryAction } from '../js/delivery.js';
+import { getRiderGpsState, handleDeliveryAction } from '../js/delivery.js';
 import { getActiveDeliveryOrder } from '../js/orders.js';
 import { getState, setState } from '../js/state.js';
 import { resetState, makeTarget } from './helpers.mjs';
@@ -161,4 +161,40 @@ test('rider helpers expose coherent actions and demo distance', () => {
   assert.equal(getRiderActionState(pickupOrder).canLeave, false);
   assert.equal(formatDemoDistance(readyOrder), '0,6 km');
   assert.equal(formatDemoDistance({ status: 'delivered', deliveryMode: 'delivery', delivery: { estimatedMinutes: 0 } }), '0,0 km');
+});
+
+test('rider GPS state only reports active after a valid real fix', () => {
+  const requesting = getRiderGpsState({
+    mode: 'gps',
+    source: 'simulation',
+    gpsStatus: 'requesting',
+    lat: -38.95,
+    lng: -68.05,
+  }, 1_000_000);
+
+  assert.equal(requesting.enabled, false);
+  assert.equal(requesting.permissionStatus, 'requesting');
+  assert.equal(requesting.lat, null);
+  assert.equal(requesting.source, null);
+
+  const active = getRiderGpsState({
+    mode: 'gps',
+    source: 'gps',
+    gpsStatus: 'active',
+    lat: -38.9462,
+    lng: -68.0418,
+    accuracy: 14,
+    heading: null,
+    speed: null,
+    timestamp: 1_000_000,
+    lastBackendPublishAt: '2026-05-31T12:00:00.000Z',
+  }, 1_010_000);
+
+  assert.equal(active.enabled, true);
+  assert.equal(active.source, 'gps');
+  assert.equal(active.lat, -38.9462);
+  assert.equal(active.lng, -68.0418);
+  assert.equal(active.accuracy, 14);
+  assert.equal(active.isStale, false);
+  assert.equal(active.lastBackendPublishAt, '2026-05-31T12:00:00.000Z');
 });

@@ -17,6 +17,7 @@ import {
   selectStreetTestDestination,
   shouldPublishLocation,
   startSimulation,
+  syncSimulationOnStatus,
 } from '../js/simulation.js';
 import { getState, hydrateState } from '../js/state.js';
 import { resetState } from './helpers.mjs';
@@ -217,6 +218,38 @@ test('GPS success stores real rider metadata and stopping clears watchPosition',
     assert.equal(clearWatchId, 42);
     assert.equal(getState().simulation.gpsStatus, 'inactive');
     assert.equal(getState().simulation.source, 'gps');
+  } finally {
+    disableGpsTracking({ silent: true });
+    if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
+    else delete globalThis.isSecureContext;
+    if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+    else delete globalThis.navigator;
+  }
+});
+
+test('terminal delivery statuses stop the real GPS watch', () => {
+  const order = createReadyDeliveryOrder();
+  const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  let clearWatchId = null;
+
+  Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: true });
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      geolocation: {
+        watchPosition: () => 91,
+        clearWatch: (id) => { clearWatchId = id; },
+      },
+    },
+  });
+
+  try {
+    assert.equal(enableGpsTracking().ok, true);
+    assert.equal(getState().simulation.gpsStatus, 'requesting');
+    syncSimulationOnStatus(order.id, 'cancelled');
+    assert.equal(clearWatchId, 91);
+    assert.equal(getState().simulation, null);
   } finally {
     disableGpsTracking({ silent: true });
     if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);

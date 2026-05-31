@@ -14,9 +14,10 @@ fallback.
 
 1. El **cliente** crea un pedido de delivery (persistido en Supabase vía RPC).
 2. El **rider** abre la vista Rider, marca el pedido listo / salió del local.
-3. El rider toca **Usar mi ubicación real** y acepta el permiso del navegador.
-4. La app usa `navigator.geolocation.watchPosition` y publica cada fix real en
-   `rider_locations` con `source = "gps"` (con throttling, ver abajo).
+3. El rider toca **Activar GPS real** y acepta el permiso del navegador.
+4. La app usa `navigator.geolocation.watchPosition`, muestra el marcador
+   **"Tu ubicación real"** en el mapa Rider al primer fix y publica cada lectura
+   real en `rider_locations` con `source = "gps"` (con throttling, ver abajo).
 5. El **cliente** —en otro dispositivo— recibe la última ubicación por el polling
    de Supabase (cada ~5 s) y el mapa muestra **"Ubicación rider"** moviéndose.
 6. Al entregar/cancelar, o al tocar **Detener GPS**, se llama `clearWatch` y se
@@ -48,9 +49,12 @@ usan sólo localmente.
    Rider:   https://TU-HOST/?data=supabase&supabaseUrl=https://TU-PROYECTO.supabase.co&supabaseAnonKey=TU_ANON_KEY#rider
    ```
 
-4. En **Rider**: marcá listo → salí del local → **Usar mi ubicación real** →
+4. En **Rider**: marcá listo → salí del local → **Activar GPS real** →
    aceptá el permiso → movete.
-5. En **Cliente** (pantalla Seguir): el marcador del rider se mueve y el texto
+5. En **Rider**: el mapa centra el primer fix, muestra **"Tu ubicación real"**,
+   precisión y última actualización. Antes del primer fix debe decir
+   **"Buscando señal GPS..."**, no **"GPS real activo"**.
+6. En **Cliente** (pantalla Seguir): el marcador del rider se mueve y el texto
    dice **"Ubicación rider"** con la última actualización.
 
 > El parámetro `businessId` es opcional si usás el negocio seed de la migración.
@@ -58,13 +62,20 @@ usan sólo localmente.
 ## Modo demo y fallback
 
 - **Sin parámetros** (GitHub Pages): modo demo puro. Nada se envía a Supabase.
+- **GitHub Pages sin `data=supabase`**: abre demo por defecto. El GPS real puede
+  usarse para la presentación del rider si el navegador está en HTTPS y el usuario
+  acepta el permiso, pero no se persiste en Supabase.
 - **`?relay=...&room=...`**: relay LAN para dos celulares (sin backend).
 - **`?data=supabase` sin `supabaseUrl`/`supabaseAnonKey`**: cae a demo con un
   aviso técnico discreto (no rompe la UI).
-- **Simulación**: si el GPS real falla (permiso denegado, sin contexto seguro,
-  sin señal), el rider puede usar **Iniciar simulación** y el cliente ve
-  *"Ubicación estimada"*. El GPS real, cuando existe, **tiene prioridad** sobre la
-  simulación; a igual fuente gana el fix más reciente.
+- **GPS real**: requiere HTTPS/localhost, permiso del navegador y el botón
+  **Activar GPS real** en Rider. La UI sólo muestra **"GPS real activo"** cuando
+  llegó un fix válido.
+- **Recorrido guiado**: si el GPS real falla (permiso denegado, sin contexto
+  seguro, sin señal), el rider puede usar **Iniciar ruta estimada**. El cliente ve
+  *"Ubicación estimada"* y la vista Rider lo etiqueta como recorrido de prueba.
+  El GPS real, cuando existe, **tiene prioridad** sobre la simulación; a igual
+  fuente gana el fix más reciente.
 
 ## Throttling y limpieza
 

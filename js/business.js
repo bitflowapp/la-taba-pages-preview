@@ -23,6 +23,7 @@ import {
   buildKitchenTicket,
   cancelOrder,
 } from './orders.js';
+import { syncSimulationOnStatus } from './simulation.js';
 import { getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
 import { escapeHtml, productCode, stockPill } from './ui.js';
 
@@ -415,7 +416,9 @@ function stockRow(product) {
 export function handleBusinessAction(target) {
   const advanceId = target.closest('[data-order-advance]')?.dataset.orderAdvance;
   if (advanceId) {
-    return actionResponse(advanceOrder(advanceId), 'Estado del pedido actualizado.');
+    return actionResponse(advanceOrder(advanceId), 'Estado del pedido actualizado.', (resolved) => {
+      syncBusinessSimulation(advanceId, resolved);
+    });
   }
 
   const ticketId = target.closest('[data-order-ticket]')?.dataset.orderTicket;
@@ -457,7 +460,9 @@ export function handleBusinessAction(target) {
 
   const cancelId = target.closest('[data-order-cancel]')?.dataset.orderCancel;
   if (cancelId) {
-    return actionResponse(cancelBusinessOrder(cancelId), 'Pedido cancelado.');
+    return actionResponse(cancelBusinessOrder(cancelId), 'Pedido cancelado.', () => {
+      syncSimulationOnStatus(cancelId, 'cancelled');
+    });
   }
 
   const stockInc = target.closest('[data-stock-inc]')?.dataset.stockInc;
@@ -497,15 +502,21 @@ function cancelBusinessOrder(orderId) {
   return repository.updateOrderStatus(orderId, 'canceled');
 }
 
-function actionResponse(result, successMessage) {
+function actionResponse(result, successMessage, onSuccess = null) {
   if (typeof result?.then === 'function') {
-    return result.then((resolved) => actionResponse(resolved, successMessage));
+    return result.then((resolved) => actionResponse(resolved, successMessage, onSuccess));
   }
+  if (result.ok && typeof onSuccess === 'function') onSuccess(result);
   return {
     handled: true,
     ok: result.ok,
     message: result.ok ? successMessage : result.message,
   };
+}
+
+function syncBusinessSimulation(orderId, result = null) {
+  const status = result?.order?.status || getState().orders.find((candidate) => candidate.id === orderId)?.status;
+  if (status === 'delivered' || status === 'cancelled') syncSimulationOnStatus(orderId, status);
 }
 
 function changeProductStock(productId, delta) {

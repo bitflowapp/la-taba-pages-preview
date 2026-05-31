@@ -3,7 +3,6 @@ import {
   formatDemoDistance,
   formatDemoEta,
   getRiderActionState,
-  getRiderStateLabel,
   getRouteProgress,
   isAwaitingPreparation,
 } from './core/rider.js';
@@ -37,6 +36,32 @@ const riderSteps = [
   { key: 'arriving', label: 'Llegando' },
   { key: 'delivered', label: 'Entregado' },
 ];
+
+const RIDER_GPS_STALE_MS = 45_000;
+
+export function getRiderGpsState(sim, now = Date.now()) {
+  const hasFix = sim?.source === 'gps'
+    && Number.isFinite(Number(sim.lat))
+    && Number.isFinite(Number(sim.lng));
+  const timestamp = hasFix
+    ? Number(sim.timestamp) || Number(new Date(sim.lastGpsFixAt || sim.lastFixAt).getTime()) || null
+    : null;
+  const permissionStatus = sim?.gpsStatus || 'inactive';
+  return {
+    enabled: permissionStatus === 'active' && hasFix,
+    permissionStatus,
+    lat: hasFix ? Number(sim.lat) : null,
+    lng: hasFix ? Number(sim.lng) : null,
+    accuracy: hasFix && Number.isFinite(Number(sim.accuracy)) ? Number(sim.accuracy) : null,
+    heading: hasFix && Number.isFinite(Number(sim.heading)) ? Number(sim.heading) : null,
+    speed: hasFix && Number.isFinite(Number(sim.speed)) ? Number(sim.speed) : null,
+    timestamp,
+    source: hasFix ? 'gps' : null,
+    lastBackendPublishAt: sim?.lastBackendPublishAt || null,
+    backendError: sim?.backendError || null,
+    isStale: hasFix && timestamp ? now - timestamp > RIDER_GPS_STALE_MS : false,
+  };
+}
 
 export function renderDeliveryPanel() {
   const container = document.querySelector('[data-delivery-panel]');
@@ -219,26 +244,31 @@ function renderSimControls(order, sim) {
   const percent = sim ? simulationProgressPercent(sim) : 0;
   const running = Boolean(sim?.running);
   const gpsOn = isGpsActive();
+  const gpsState = getRiderGpsState(sim);
+  const gpsSearching = sim?.mode === 'gps' && sim?.gpsStatus === 'requesting' && !gpsState.enabled;
+  const gpsLive = gpsOn && gpsState.enabled;
   const canStart = !gpsOn && !running && (order.status === 'ready' || order.status === 'on_the_way');
   const canReset = Boolean(sim) && order.status !== 'delivered';
   const destination = selectedStreetDestination(order, sim);
   const distanceToDestination = currentDistanceToDestination(sim, destination);
-  const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'Ruta estimada';
-  const gpsCoords = sim && sim.source === 'gps' && Number.isFinite(sim.lat)
-    ? `${sim.lat.toFixed(4)}, ${sim.lng.toFixed(4)}`
+  const sourceLabel = gpsState.source === 'gps'
+    ? 'GPS real'
+    : gpsSearching ? 'Buscando GPS' : 'Recorrido de prueba';
+  const gpsCoords = gpsState.source === 'gps'
+    ? `${gpsState.lat.toFixed(4)}, ${gpsState.lng.toFixed(4)}`
     : '';
-  const gpsStatus = gpsStatusLabel(sim, gpsOn);
-  const lastGpsFixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
-  const lastFix = lastGpsFixAt
-    ? new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(lastGpsFixAt))
+  const gpsStatus = gpsStatusLabel(sim, gpsOn, gpsState);
+  const lastFix = gpsState.timestamp
+    ? new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(gpsState.timestamp))
     : '';
-  const accuracy = sim?.source === 'gps' && Number.isFinite(sim?.accuracy) ? `${Math.round(sim.accuracy)} m` : 'Sin precisión';
-  const gpsButtonLabel = sim?.gpsStatus === 'requesting'
-    ? 'Solicitando ubicación...'
-    : sim?.gpsStatus === 'active' && gpsOn
-      ? 'GPS real activo'
-      : 'Usar mi ubicación real';
-  const gpsButtonDisabled = sim?.gpsStatus === 'requesting' || (sim?.gpsStatus === 'active' && gpsOn);
+  const accuracyLabel = gpsState.source === 'gps' && Number.isFinite(gpsState.accuracy)
+    ? `${Math.round(gpsState.accuracy)} m`
+    : gpsSearching ? 'Esperando fix' : 'Ruta guiada';
+  const gpsButtonText = gpsSearching
+    ? 'Buscando señal GPS...'
+    : gpsLive ? 'GPS real activo' : 'Activar GPS real';
+  const gpsButtonLocked = gpsSearching || gpsLive;
+  const gpsLiveClass = gpsLive ? 'live' : '';
   const destinationOptions = getStreetTestDestinations().map((item) => `
     <option value="${escapeHtml(item.id)}" ${item.id === destination.id ? 'selected' : ''}>${escapeHtml(item.label)}</option>
   `).join('');
@@ -250,7 +280,7 @@ function renderSimControls(order, sim) {
     <div class="sim-panel street-test-panel" data-street-test>
       <div class="sim-head">
         <span class="rider-label">Ruta del reparto</span>
-        <span class="sim-state ${gpsOn ? 'live' : ''}">Ubicación: ${escapeHtml(gpsStatus)}</span>
+        <span class="sim-state ${gpsLiveClass}">Ubicación: ${escapeHtml(gpsStatus)}</span>
       </div>
       <label class="street-destination-field">
         <span>Destino del recorrido</span>
@@ -262,14 +292,14 @@ function renderSimControls(order, sim) {
         <span><small>Destino</small><strong>${escapeHtml(displayDestinationLabel(destination.addressLabel || destination.label))}</strong></span>
         <span><small>Distancia</small><strong>${escapeHtml(distanceToDestination)}</strong></span>
         <span><small>Ubicación</small><strong>${escapeHtml(sourceLabel)}</strong></span>
-        <span><small>Precisión</small><strong>${escapeHtml(accuracy)}</strong></span>
+        <span><small>Precisión</small><strong>${escapeHtml(accuracyLabel)}</strong></span>
       </div>
       <div class="sim-progress">
         <div class="sim-bar"><span style="width:${percent}%"></span></div>
         <strong data-sim-progress>${percent}%</strong>
       </div>
       <div class="button-row street-primary-actions">
-        <button class="primary-button" type="button" data-sim-gps ${gpsButtonDisabled ? 'disabled' : ''}>${escapeHtml(gpsButtonLabel)}</button>
+        <button class="primary-button" type="button" data-sim-gps ${gpsButtonLocked ? 'disabled' : ''}>${escapeHtml(gpsButtonText)}</button>
         <button class="secondary-button" type="button" data-sim-gps-off ${gpsOn ? '' : 'disabled'}>Detener GPS</button>
       </div>
       <div class="button-row sim-actions">
@@ -322,11 +352,12 @@ function canDeliverForStreet(order) {
   return order?.status === 'on_the_way' || order?.status === 'arriving';
 }
 
-function gpsStatusLabel(sim, active) {
+function gpsStatusLabel(sim, active, gpsState = getRiderGpsState(sim)) {
+  if (sim?.gpsStatus === 'requesting' && !gpsState.enabled) return 'Buscando señal GPS...';
   const labels = {
     inactive: 'Detenida',
-    requesting: 'Esperando permiso',
-    active: active ? 'GPS real activo' : 'Último GPS real',
+    requesting: 'Buscando señal GPS...',
+    active: active && gpsState.enabled ? 'GPS real activo' : 'Último GPS real',
     denied: 'Bloqueada',
     unavailable: 'No disponible',
     requires_secure_context: 'Requiere HTTPS',
@@ -415,7 +446,7 @@ function renderDemoMap(order, distance, eta) {
   const sim = orderSimulation(order);
   const progress = sim ? sim.progress : getRouteProgress(order);
   const path = 'M 44 176 C 96 150, 96 96, 150 92 S 240 70, 276 44';
-  const stateLabel = getRiderStateLabel(order);
+  const stateLabel = 'Recorrido de prueba';
 
   return `
     <div class="demo-map rider-demo-map" role="img" aria-label="Mapa operativo del reparto">
@@ -470,6 +501,61 @@ function renderIdleMap() {
     </div>`;
 }
 
+function renderRiderFallbackMap(order, distance, eta) {
+  const sim = orderSimulation(order);
+  const gpsState = getRiderGpsState(sim);
+  if (sim?.mode === 'gps' && sim?.gpsStatus === 'requesting' && !gpsState.enabled) {
+    return renderGpsSearchingMap(distance, eta);
+  }
+  if (gpsState.source === 'gps') {
+    return renderGpsRealFallbackMap(gpsState, distance, eta, gpsState.enabled);
+  }
+  return renderDemoMap(order, distance, eta);
+}
+
+function renderGpsSearchingMap(distance, eta) {
+  return `
+    <div class="demo-map rider-demo-map rider-gps-fallback is-searching" role="img" aria-label="Buscando ubicación real del rider">
+      <div class="demo-map-overlay">
+        <span class="map-eta">${eta} · ${distance}</span>
+        <span class="map-state">Buscando señal GPS...</span>
+      </div>
+      <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect width="320" height="220" rx="18" fill="#161616"/>
+        <g class="map-streets" stroke="rgba(255,255,255,0.10)" stroke-width="2">
+          <line x1="0" y1="58" x2="320" y2="44"/><line x1="0" y1="128" x2="320" y2="116"/>
+          <line x1="70" y1="0" x2="54" y2="220"/><line x1="184" y1="0" x2="170" y2="220"/>
+        </g>
+      </svg>
+      <span class="gps-fallback-copy">Esperando el primer fix real del navegador.</span>
+    </div>`;
+}
+
+function renderGpsRealFallbackMap(gpsState, distance, eta, isLive) {
+  const precision = Number.isFinite(gpsState.accuracy) ? `Precisión ${Math.round(gpsState.accuracy)} m` : 'Precisión sin datos';
+  const state = isLive ? 'GPS real activo' : 'Última ubicación real';
+  return `
+    <div class="demo-map rider-demo-map rider-gps-fallback is-real" role="img" aria-label="Ubicación real del rider">
+      <div class="demo-map-overlay">
+        <span class="map-eta">${eta} · ${distance}</span>
+        <span class="map-state">${state}</span>
+      </div>
+      <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect width="320" height="220" rx="18" fill="#161616"/>
+        <g class="map-streets" stroke="rgba(255,255,255,0.10)" stroke-width="2">
+          <line x1="0" y1="48" x2="320" y2="40"/>
+          <line x1="0" y1="104" x2="320" y2="112"/>
+          <line x1="0" y1="166" x2="320" y2="158"/>
+          <line x1="60" y1="0" x2="48" y2="220"/>
+          <line x1="150" y1="0" x2="158" y2="220"/>
+          <line x1="244" y1="0" x2="236" y2="220"/>
+        </g>
+      </svg>
+      <span class="map-marker rider real-gps" style="left:50%;top:50%"><span>R</span><small>Tu ubicación real</small></span>
+      <span class="gps-fallback-copy">${escapeHtml(precision)} · actualizado ${escapeHtml(relativeAgeLabel(gpsState.timestamp))}</span>
+    </div>`;
+}
+
 function renderRiderMapStage(order, distance, eta, headline) {
   const status = getRealtimeStatus();
   const connection = status.relayEnabled
@@ -477,7 +563,7 @@ function renderRiderMapStage(order, distance, eta, headline) {
     : 'Este equipo';
   return `
     <div class="delivery-map-stage rider-map-stage" data-map-shell="rider">
-      ${renderRealMapShell(order, order ? renderDemoMap(order, distance, eta) : renderIdleMap(), order ? 'rider' : 'rider-empty')}
+      ${renderRealMapShell(order, order ? renderRiderFallbackMap(order, distance, eta) : renderIdleMap(), order ? 'rider' : 'rider-empty')}
       <div class="map-floating-top">
         <span class="map-status-pill ${order ? statusClass(order.status) : 'idle'}"><small>Estado</small><strong>${escapeHtml(headline)}</strong></span>
         <span class="map-connection-pill">${escapeHtml(connection)}</span>

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { canUseLeaflet } from '../js/map/map_view.js';
 import { getMapTheme, getTileLayerForTheme } from '../js/map/map_config.js';
-import { riderMarkerClass } from '../js/map/rider_marker.js';
+import { createRiderIcon, riderMarkerClass, updateRiderMarker } from '../js/map/rider_marker.js';
 import {
   chooseRiderLocation,
   distanceKm,
@@ -83,6 +83,35 @@ test('rider marker class reflects status and source', () => {
   assert.match(riderMarkerClass('on_the_way', 'gps'), /on-the-way/);
   assert.match(riderMarkerClass('on_the_way', 'gps'), /source-gps/);
   assert.match(riderMarkerClass('preparing', 'simulation'), /preparing/);
+});
+
+test('rider GPS marker is visibly labeled as the real location', () => {
+  const icon = createRiderIcon({
+    divIcon(options) {
+      return options;
+    },
+  }, { status: 'on_the_way', source: 'gps', heading: 90 });
+
+  assert.match(icon.className, /source-gps/);
+  assert.match(icon.html, /Tu ubicación real/);
+});
+
+test('rider marker update rejects invalid coordinates', () => {
+  let movedTo = null;
+  let iconSet = false;
+  const marker = {
+    getLatLng: () => ({ lat: -38.95, lng: -68.05 }),
+    setLatLng: (next) => { movedTo = next; },
+    setIcon: () => { iconSet = true; },
+  };
+  const L = {
+    latLng: (lat, lng) => ({ lat, lng }),
+    divIcon: (options) => options,
+  };
+
+  assert.equal(updateRiderMarker(marker, L, { lat: 999, lng: -68.05, source: 'gps' }), null);
+  assert.equal(movedTo, null);
+  assert.equal(iconSet, false);
 });
 
 test('chooseRiderLocation prioriza GPS real sobre simulación', () => {

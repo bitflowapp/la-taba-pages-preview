@@ -1,10 +1,16 @@
-const CACHE_NAME = 'la-taba-v5-4-cache';
+const CACHE_NAME = 'la-taba-v5-5-cache';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './manifest.webmanifest',
   './assets/icon.svg',
+  './assets/hero/parrilla-real.webp',
+  './assets/products/chorizos-parrilla.webp',
+  './assets/products/cortes-crudos.webp',
+  './assets/products/hamburguesa.webp',
+  './assets/products/milanesas.webp',
+  './assets/products/pollo-fresco.webp',
   './js/app.js',
   './js/config.js',
   './js/core/business-metrics.js',

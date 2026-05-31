@@ -88,9 +88,44 @@ function unitText(product) {
   return product.unitLabel || product.unit || '';
 }
 
-// Thumbnail tonal de producto sin usar emojis como imagen principal.
+const PRODUCT_IMAGE_BY_ID = Object.freeze({
+  'p-viernes-parrilla': 'assets/hero/parrilla-real.webp',
+  'p-combo-familiar': 'assets/hero/parrilla-real.webp',
+  'p-combo-parrillero': 'assets/products/chorizos-parrilla.webp',
+  'p-promo-milanesas': 'assets/products/milanesas.webp',
+  'p-combo-milanesas': 'assets/products/milanesas.webp',
+  'p-milanesa-carne': 'assets/products/milanesas.webp',
+  'p-carne-picada-especial': 'assets/products/hamburguesa.webp',
+  'p-chorizo-parrillero': 'assets/products/chorizos-parrilla.webp',
+  'p-chorizo-colorado': 'assets/products/chorizos-parrilla.webp',
+  'p-salchicha-parrillera': 'assets/products/chorizos-parrilla.webp',
+});
+
+const PRODUCT_IMAGE_BY_TONE = Object.freeze({
+  promo: 'assets/hero/parrilla-real.webp',
+  combo: 'assets/hero/parrilla-real.webp',
+  beef: 'assets/products/cortes-crudos.webp',
+  mila: 'assets/products/milanesas.webp',
+  chicken: 'assets/products/pollo-fresco.webp',
+  sausage: 'assets/products/chorizos-parrilla.webp',
+  achura: 'assets/hero/parrilla-real.webp',
+});
+
+function productImage(product) {
+  return product?.image || PRODUCT_IMAGE_BY_ID[product?.id] || PRODUCT_IMAGE_BY_TONE[product?.tone] || '';
+}
+
+// Thumbnail de producto con foto real licenciada y fallback tonal para rubros sin foto.
 export function productThumb(product, variant = 'grid') {
   const tone = product.tone || 'beef';
+  const image = productImage(product);
+  if (image) {
+    const loading = variant === 'modal' ? 'eager' : 'lazy';
+    return `
+    <span class="thumb has-photo tone-${tone} thumb-${variant}" aria-hidden="true">
+      <img class="thumb-img" src="${escapeHtml(image)}" alt="" loading="${loading}" decoding="async" />
+    </span>`;
+  }
   // El tile muestra solo arte visual + un monograma corto (no el nombre completo,
   // que ya aparece debajo). Así se evita el texto superpuesto en cards angostas.
   return `

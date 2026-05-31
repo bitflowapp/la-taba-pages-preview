@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-v5-4-cache');
+  assert.equal(cacheNameMatch[1], 'la-taba-v5-5-cache');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -23,6 +23,8 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./index.html'));
   assert.ok(assets.includes('./manifest.webmanifest'));
   assert.ok(assets.includes('./assets/icon.svg'));
+  assert.ok(assets.includes('./assets/hero/parrilla-real.webp'));
+  assert.ok(assets.includes('./assets/products/cortes-crudos.webp'));
   assert.ok(assets.includes('./js/app.js'));
   assert.ok(assets.includes('./js/core/storage.js'));
   assert.ok(assets.includes('./js/core/order-status.js'));

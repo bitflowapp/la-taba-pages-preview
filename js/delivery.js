@@ -181,7 +181,7 @@ function renderAdvancedDemo() {
         <button class="ghost-button compact" type="button" data-copy-client-link>Copiar link cliente</button>
         <button class="ghost-button compact" type="button" data-copy-rider-link>Copiar link rider</button>
       </div>`
-    : '<p class="form-hint">Para probar dos celulares, abrí la app con el enlace compartido del comercio.</p>';
+    : '<p class="form-hint">Para usar dos celulares, abrí la app con el enlace compartido del comercio.</p>';
   return `
     <details class="demo-advanced">
       <summary>Opciones avanzadas</summary>
@@ -190,7 +190,7 @@ function renderAdvancedDemo() {
         <div class="summary-row"><span>Sala de reparto</span><strong>${escapeHtml(status.room)}</strong></div>
         <div class="summary-row"><span>ID de equipo</span><strong>${escapeHtml(String(status.deviceId).slice(0, 8))}</strong></div>
         ${linkButtons}
-        <p class="form-hint">Prueba local por LAN: los pedidos quedan en esta sala y no se publican como venta real.</p>
+        <p class="form-hint">Los pedidos de esta sala se usan sólo para esta presentación comercial.</p>
       </div>
     </details>
   `;
@@ -223,7 +223,7 @@ function renderSimControls(order, sim) {
   const canReset = Boolean(sim) && order.status !== 'delivered';
   const destination = selectedStreetDestination(order, sim);
   const distanceToDestination = currentDistanceToDestination(sim, destination);
-  const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'recorrido guiado';
+  const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'Ruta estimada';
   const gpsCoords = sim && sim.source === 'gps' && Number.isFinite(sim.lat)
     ? `${sim.lat.toFixed(4)}, ${sim.lng.toFixed(4)}`
     : '';
@@ -243,14 +243,14 @@ function renderSimControls(order, sim) {
     <option value="${escapeHtml(item.id)}" ${item.id === destination.id ? 'selected' : ''}>${escapeHtml(item.label)}</option>
   `).join('');
   const secureHint = globalThis.isSecureContext === false
-    ? '<span class="sim-gps-error">El GPS real requiere una conexión segura. Podés seguir con el recorrido guiado.</span>'
+    ? '<span class="sim-gps-error">El GPS real requiere una conexión segura. Podés seguir con la ruta estimada.</span>'
     : '';
 
   return `
     <div class="sim-panel street-test-panel" data-street-test>
       <div class="sim-head">
         <span class="rider-label">Ruta del reparto</span>
-        <span class="sim-state ${gpsOn ? 'live' : ''}">GPS: ${escapeHtml(gpsStatus)}</span>
+        <span class="sim-state ${gpsOn ? 'live' : ''}">Ubicación: ${escapeHtml(gpsStatus)}</span>
       </div>
       <label class="street-destination-field">
         <span>Destino del recorrido</span>
@@ -261,7 +261,7 @@ function renderSimControls(order, sim) {
       <div class="street-summary-grid">
         <span><small>Destino</small><strong>${escapeHtml(displayDestinationLabel(destination.addressLabel || destination.label))}</strong></span>
         <span><small>Distancia</small><strong>${escapeHtml(distanceToDestination)}</strong></span>
-        <span><small>Fuente</small><strong>${escapeHtml(sourceLabel)}</strong></span>
+        <span><small>Ubicación</small><strong>${escapeHtml(sourceLabel)}</strong></span>
         <span><small>Precisión</small><strong>${escapeHtml(accuracy)}</strong></span>
       </div>
       <div class="sim-progress">
@@ -274,15 +274,15 @@ function renderSimControls(order, sim) {
       </div>
       <div class="button-row sim-actions">
         <button class="ghost-button compact" type="button" data-street-activate="${escapeHtml(destination.id)}">Usar este destino</button>
-        <button class="secondary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar recorrido guiado</button>
-        <button class="ghost-button compact" type="button" data-sim-reset ${canReset ? '' : 'disabled'}>Reiniciar recorrido</button>
+        <button class="secondary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar ruta estimada</button>
+        <button class="ghost-button compact" type="button" data-sim-reset ${canReset ? '' : 'disabled'}>Reiniciar ruta</button>
       </div>
       <div class="button-row street-delivery-actions">
         <button class="secondary-button compact" type="button" data-street-arrive="${order.id}" ${canArriveForStreet(order) ? '' : 'disabled'}>Llegué al destino</button>
         <button class="secondary-button compact" type="button" data-street-done="${order.id}" ${canDeliverForStreet(order) ? '' : 'disabled'}>Pedido entregado</button>
       </div>
       <div class="sim-gps">
-        <span class="sim-gps-status">GPS: ${escapeHtml(gpsStatus)}${lastFix ? ` · última actualización ${escapeHtml(lastFix)}` : ''}</span>
+        <span class="sim-gps-status">Ubicación: ${escapeHtml(gpsStatus)}${lastFix ? ` · última actualización ${escapeHtml(lastFix)}` : ''}</span>
         ${gpsCoords ? `<span class="sim-gps-coords">Ubicación rider: ${escapeHtml(gpsCoords)} · ${escapeHtml(sourceLabel)}</span>` : ''}
         ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
         ${secureHint}
@@ -324,14 +324,14 @@ function canDeliverForStreet(order) {
 
 function gpsStatusLabel(sim, active) {
   const labels = {
-    inactive: 'GPS detenido',
+    inactive: 'Detenida',
     requesting: 'Esperando permiso',
     active: active ? 'GPS real activo' : 'Último GPS real',
-    denied: 'GPS bloqueado',
-    unavailable: 'GPS bloqueado',
+    denied: 'Bloqueada',
+    unavailable: 'No disponible',
     requires_secure_context: 'Requiere HTTPS',
   };
-  return labels[sim?.gpsStatus || 'inactive'] || 'GPS detenido';
+  return labels[sim?.gpsStatus || 'inactive'] || 'Detenida';
 }
 
 function renderGpsDiagnostics(sim, gpsOn) {
@@ -374,7 +374,7 @@ function renderGpsDiagnostics(sim, gpsOn) {
 function getRepositoryDataMode() {
   try {
     const mode = getDataMode();
-    return mode === 'supabase' ? 'Supabase' : mode === 'http' ? 'API propia' : mode === 'demo-realtime' ? 'Prueba en vivo' : 'Este equipo';
+    return mode === 'supabase' ? 'Supabase' : mode === 'http' ? 'API propia' : mode === 'demo-realtime' ? 'Presentación en vivo' : 'Este equipo';
   } catch (_) {
     return 'Este equipo';
   }

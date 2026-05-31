@@ -178,12 +178,12 @@ function tick() {
 
 export function startSimulation() {
   if (isGpsActive()) {
-    return { ok: false, message: 'Detené el GPS real antes de iniciar el recorrido guiado.' };
+    return { ok: false, message: 'Detené el GPS real antes de iniciar la ruta estimada.' };
   }
 
   let order = getActiveDeliveryOrder();
   if (!order) {
-    return { ok: false, message: 'No hay un pedido de delivery asignado para simular. Marcá el pedido como listo en el panel del negocio.' };
+    return { ok: false, message: 'No hay un pedido de delivery asignado. Marcá el pedido como listo en el panel del negocio.' };
   }
 
   // Si todavía está en el local, lo hacemos salir para empezar a moverse.
@@ -328,7 +328,7 @@ export function enableGpsTracking() {
   }
 
   if (!hasSecureGpsContext()) {
-    const gpsError = 'El GPS real requiere una conexión segura. Podés seguir con el recorrido guiado.';
+    const gpsError = 'El GPS real requiere una conexión segura. Podés seguir con la ruta estimada.';
     return gpsUnavailableResult(order, 'requires_secure_context', gpsError);
   }
 

@@ -75,6 +75,9 @@
           </div>
 
           <button class="promo-banner" type="button" data-category-id="promos" data-promo-banner>
+            <span class="promo-photo" aria-hidden="true">
+              <img src="assets/hero/parrilla-real.webp" alt="" width="700" height="525" loading="eager" decoding="async" fetchpriority="high" />
+            </span>
             <div class="promo-banner-copy">
               <span class="promo-kicker">Listo para parrilla</span>
               <strong>Promo parrillera del día</strong>
@@ -277,7 +280,7 @@
                 <button class="secondary-button" type="button" data-open-admin-view="business">Panel negocio</button>
                 <button class="ghost-button" type="button" data-open-admin-view="rider">Repartidor</button>
               </div>
-              <p class="form-hint">Acceso del comercio con PIN.</p>
+              <p class="form-hint">Acceso exclusivo del comercio.</p>
             </div>
           </div>
         </section>
@@ -290,7 +293,7 @@
               <p>Panel de ventas, stock y estados del día para el equipo del comercio.</p>
             </div>
             <div class="button-row">
-              <button class="primary-button" type="button" data-open-pin data-admin-target="business">Ingresar PIN</button>
+              <button class="primary-button" type="button" data-open-pin data-admin-target="business">Ingresar código</button>
               <button class="secondary-button" type="button" data-nav-view="profile">Volver al local</button>
             </div>
           </div>
@@ -318,7 +321,7 @@
               <p>Vista operativa para salida del local, llegada al domicilio y entrega final.</p>
             </div>
             <div class="button-row">
-              <button class="primary-button" type="button" data-open-pin data-admin-target="rider">Ingresar PIN</button>
+              <button class="primary-button" type="button" data-open-pin data-admin-target="rider">Ingresar código</button>
               <button class="secondary-button" type="button" data-nav-view="profile">Volver al local</button>
             </div>
           </div>
@@ -360,9 +363,9 @@
     <dialog class="pin-modal" data-pin-modal>
       <form method="dialog" class="pin-card" data-pin-form>
         <h2>Acceso del negocio</h2>
-        <p>Ingresá el PIN del comercio para ver la administración de pedidos y el reparto.</p>
-        <input name="pin" inputmode="numeric" maxlength="6" placeholder="PIN" autocomplete="off" aria-label="PIN del modo negocio" />
-        <div class="warning-box hidden" data-pin-error>PIN incorrecto. Revisá el acceso del comercio.</div>
+        <p>Ingresá el código del comercio para ver la administración de pedidos y el reparto.</p>
+        <input name="pin" inputmode="numeric" maxlength="6" placeholder="Código" autocomplete="off" aria-label="Código del modo negocio" />
+        <div class="warning-box hidden" data-pin-error>Código incorrecto. Revisá el acceso del comercio.</div>
         <div class="button-row">
           <button class="primary-button" type="submit">Entrar</button>
           <button class="secondary-button" value="cancel" type="button" data-close-pin>Cancelar</button>

@@ -125,8 +125,8 @@ export function renderBusinessDashboard() {
       <div class="business-main">
         <div class="business-topbar">
           <div class="business-topbar-text">
-            <h2>Consola de pedidos</h2>
-            <span>Operá los pedidos del día en tiempo real.</span>
+            <h2>Pedidos del día</h2>
+            <span>Revisá, prepará y cerrá cada pedido desde un solo lugar.</span>
           </div>
           <button class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}" type="button" data-sound-toggle aria-pressed="${soundEnabled}">
             ${soundEnabled ? '🔔 Sonido activado' : '🔕 Sonido apagado'}
@@ -306,14 +306,13 @@ function onlyDigits(value) {
 function renderDemoGuide() {
   return `
     <details class="demo-guide">
-      <summary>Guía rápida para probar el flujo</summary>
+      <summary>Flujo operativo sugerido</summary>
       <ol class="demo-guide-steps">
-        <li>Creá un pedido desde la vista <strong>Cliente</strong>.</li>
-        <li>Acá, en <strong>Negocio</strong>, aparece el pedido nuevo (con aviso).</li>
-        <li>Tocá <strong>Aceptar pedido</strong> y luego <strong>Marcar listo</strong>.</li>
-        <li>El <strong>rider</strong> toma el pedido y sale a repartir.</li>
-        <li>El cliente sigue el reparto en <strong>Tracking</strong>.</li>
-        <li>Marcás <strong>Entregado</strong> y las métricas se actualizan.</li>
+        <li>El pedido entra como <strong>Nuevo</strong> y queda pendiente de aceptación.</li>
+        <li>El equipo lo acepta, prepara y marca <strong>Listo</strong> cuando sale del local.</li>
+        <li>El <strong>rider</strong> registra salida, llegada y entrega.</li>
+        <li>El cliente sigue el estado desde <strong>Seguimiento</strong>.</li>
+        <li>Al marcar <strong>Entregado</strong>, las métricas se actualizan.</li>
       </ol>
       <p class="form-hint">Tip: usá “Copiar ticket” para pasarle el pedido a la cocina.</p>
     </details>`;

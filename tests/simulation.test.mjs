@@ -144,7 +144,7 @@ test('GPS explains insecure LAN contexts and keeps guided route available', () =
     assert.equal(getState().simulation.orderId, created.order.id);
     assert.equal(getState().simulation.mode, 'demo');
     assert.equal(getState().simulation.gpsStatus, 'requires_secure_context');
-    assert.match(getState().simulation.gpsError, /recorrido guiado/);
+    assert.match(getState().simulation.gpsError, /ruta estimada/);
   } finally {
     if (originalSecureContext) {
       Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);

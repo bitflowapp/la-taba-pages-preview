@@ -105,3 +105,29 @@ O pegar el SQL de **ambas** migraciones (en orden) en el SQL editor de Supabase:
 7. Activar simulacion o GPS real.
 8. Verificar `rider_locations`.
 9. Confirmar que la misma pagina sin parametros sigue en modo demo.
+
+## Smoke test contra Supabase real
+
+Antes de correr el smoke, aplicar primero la migracion base y despues la migracion hardening. Si la RPC no existe, falta la migracion hardening. Si el business demo no aparece, falta el seed o hay que pasar `BUSINESS_ID`. Si falla por RLS, revisar policies.
+
+```powershell
+$env:SUPABASE_URL="https://xxxx.supabase.co"
+$env:SUPABASE_ANON_KEY="..."
+npm run smoke:supabase
+```
+
+Con `BUSINESS_ID` opcional:
+
+```powershell
+$env:SUPABASE_URL="https://xxxx.supabase.co"
+$env:SUPABASE_ANON_KEY="..."
+$env:BUSINESS_ID="00000000-0000-4000-8000-000000000001"
+npm run smoke:supabase
+```
+
+Reglas de uso:
+
+- no usar datos sensibles;
+- no commitear keys;
+- no pegar keys completas en screenshots;
+- si el smoke falla, revisar primero el mensaje resumido del endpoint, el metodo HTTP y el status.

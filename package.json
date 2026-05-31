@@ -8,6 +8,7 @@
     "test:e2e": "playwright test",
     "verify": "npm run check && npm test && npm run test:e2e",
     "release:folder": "node scripts/create-release-folder.mjs",
+    "smoke:supabase": "node scripts/smoke-supabase-phase1.mjs",
     "realtime:demo": "node scripts/realtime-relay.mjs"
   },
   "devDependencies": {

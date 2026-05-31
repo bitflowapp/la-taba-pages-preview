@@ -53,9 +53,9 @@ export function interpolatePoint(progress, from = DEMO_STORE_POINT, to = DEMO_CL
 }
 
 // Estado inicial de la simulación para un pedido dado.
-export function createSimulationState(order, { running = true, now = Date.now() } = {}) {
+export function createSimulationState(order, { running = true, now = Date.now(), destinationId = null, routeId = null } = {}) {
   if (!order || typeof order.id !== 'string') return null;
-  const route = selectRouteForOrder(order);
+  const route = selectRouteForOrder(order, routeId || destinationId);
   const baseEta = Math.max(1, Math.floor(Number(order?.delivery?.estimatedMinutes) || 12));
   const startProgress = order.status === 'arriving' ? 0.85
     : order.status === 'on_the_way' ? 0.08
@@ -68,6 +68,7 @@ export function createSimulationState(order, { running = true, now = Date.now() 
     mode: 'demo',
     source: 'simulation',
     routeId: route.id,
+    destinationId: route.destination?.id || route.id,
     progress: startProgress,
     baseEta,
     etaMinutes: progressToEta(startProgress, baseEta),

@@ -7,6 +7,7 @@ import {
 import { calculateTotals, normalizeDeliveryMode } from './core/pricing.js';
 import { getAssignableDeliveryOrder, getRiderQueueOrder as selectRiderQueueOrder } from './core/rider.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
+import { distanceKm, getStreetTestDestination } from './map/route_geometry.js';
 import {
   createOrderId,
   dateTime,
@@ -214,6 +215,32 @@ export function updateOrderStatus(orderId, status) {
   });
 
   return { ok: true, message: `Pedido ${orderId} actualizado a ${statusLabel(status)}.` };
+}
+
+export function updateOrderDemoDestination(orderId, destinationId) {
+  if (!orderId) return { ok: false, message: 'Pedido no encontrado.' };
+  const current = getState().orders.find((candidate) => candidate.id === orderId);
+  if (!current || current.deliveryMode !== 'delivery') {
+    return { ok: false, message: 'No hay un pedido de delivery para asignar destino.' };
+  }
+
+  const destination = getStreetTestDestination(destinationId);
+  const now = new Date().toISOString();
+  const estimatedDistance = Number(distanceKm(BUSINESS_CONFIG.businessLocation, destination).toFixed(1));
+
+  updateState((draft) => {
+    const order = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!order) return;
+    order.delivery = order.delivery || {};
+    order.delivery.demoDestinationId = destination.id;
+    order.delivery.demoDestinationLabel = destination.label || destination.name;
+    order.delivery.demoDestinationAddressLabel = destination.addressLabel || destination.name || destination.label;
+    order.delivery.demoDestinationCity = destination.city || '';
+    order.delivery.destinationUpdatedAt = now;
+    order.delivery.distanceKm = estimatedDistance;
+  });
+
+  return { ok: true, message: `Destino demo actualizado: ${destination.label || destination.name}.`, destination };
 }
 
 export function getNextStatus(orderId) {

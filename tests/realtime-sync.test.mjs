@@ -21,6 +21,7 @@ test('orderTimestamp takes the most recent of createdAt and statusHistory', () =
     orderTimestamp(order('LT-1', t0, [{ status: 'received', at: t0 }, { status: 'preparing', at: t2 }])),
     Date.parse(t2),
   );
+  assert.equal(orderTimestamp({ ...order('LT-1', t0), delivery: { destinationUpdatedAt: t1 } }), Date.parse(t1));
   assert.equal(orderTimestamp(null), 0);
 });
 

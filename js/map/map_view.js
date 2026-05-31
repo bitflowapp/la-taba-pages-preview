@@ -15,10 +15,19 @@ export function canUseLeaflet(root = globalThis) {
 function disposeDetachedMaps() {
   for (const entry of [...mountedMaps]) {
     if (!entry.container?.isConnected) {
-      try { entry.map?.remove?.(); } catch (_) { /* no-op */ }
-      mountedMaps.delete(entry);
+      disposeMapEntry(entry);
     }
   }
+}
+
+function disposeMapEntry(entry) {
+  if (!entry) return;
+  if (entry.resizeTimer) {
+    clearTimeout(entry.resizeTimer);
+    entry.resizeTimer = null;
+  }
+  try { entry.map?.remove?.(); } catch (_) { /* no-op */ }
+  mountedMaps.delete(entry);
 }
 
 function mapEntryFor(container) {
@@ -32,8 +41,7 @@ export function disposeMapViews(root = document) {
   root.querySelectorAll?.('[data-real-map]').forEach((node) => {
     const entry = mapEntryFor(node);
     if (entry) {
-      try { entry.map?.remove?.(); } catch (_) { /* no-op */ }
-      mountedMaps.delete(entry);
+      disposeMapEntry(entry);
     }
   });
 }
@@ -51,8 +59,8 @@ function renderMapView(container) {
   // Datos del pedido/rider: se calculan SIEMPRE, haya o no Leaflet/tiles.
   const emptyMap = container.dataset.mapRole === 'tracking-empty' || container.dataset.mapRole === 'rider-empty';
   const order = emptyMap ? null : findOrder(container.dataset.orderId);
-  const route = order ? selectRouteForOrder(order) : getRoute('cipolletti');
   const sim = order ? getOrderSimulation(order.id) : null;
+  const route = order ? selectRouteForOrder(order, sim?.routeId || sim?.destinationId) : getRoute('cipolletti');
   const riderLocation = order ? getRiderLocation(order, sim, route.id) : null;
   const destination = route.destination;
   const points = route.points.map((point) => [point.lat, point.lng]);
@@ -88,7 +96,8 @@ function renderMapView(container) {
     doubleClickZoom: false,
     tap: true,
   });
-  mountedMaps.add({ container, map });
+  const entry = { container, map, resizeTimer: null };
+  mountedMaps.add(entry);
 
   L.tileLayer(tileLayer.tilesUrl, {
     maxZoom: 18,
@@ -122,7 +131,11 @@ function renderMapView(container) {
     ? [...points, [riderLocation.lat, riderLocation.lng]]
     : points;
   map.fitBounds(bounds, { padding: [22, 22], maxZoom: 14 });
-  setTimeout(() => map.invalidateSize(), 0);
+  entry.resizeTimer = setTimeout(() => {
+    entry.resizeTimer = null;
+    if (!container.isConnected || !mountedMaps.has(entry)) return;
+    try { map.invalidateSize(); } catch (_) { /* Leaflet may race detached DOM */ }
+  }, 0);
 }
 
 function labelIcon(L, label, kind) {
@@ -161,7 +174,8 @@ function getRiderLocation(order, sim, routeId) {
     const normalized = normalizeRiderLocation(sim);
     if (normalized) return normalized;
   }
-  const fallbackProgress = order.status === 'arriving' ? 0.92
+  const fallbackProgress = order.status === 'delivered' ? 1
+    : order.status === 'arriving' ? 0.92
     : order.status === 'on_the_way' ? 0.45
     : order.status === 'ready' ? 0.04
     : 0;
@@ -181,6 +195,7 @@ function renderMapMeta(container, order, location, destination) {
   const updated = location.lastFixAt
     ? new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(location.lastFixAt))
     : 'sin hora';
-  const accuracy = Number.isFinite(location.accuracy) ? ` · precisión ${Math.round(location.accuracy)} m` : '';
+  const showAccuracy = container.dataset.mapRole?.startsWith('rider');
+  const accuracy = showAccuracy && Number.isFinite(location.accuracy) ? ` · precisión ${Math.round(location.accuracy)} m` : '';
   meta.textContent = `${source} · ${km.toFixed(1).replace('.', ',')} km aprox. · actualizado ${updated}${accuracy}`;
 }

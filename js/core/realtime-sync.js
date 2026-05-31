@@ -8,6 +8,7 @@
 export function orderTimestamp(order) {
   if (!order || typeof order !== 'object') return 0;
   const candidates = [order.createdAt];
+  if (order.delivery?.destinationUpdatedAt) candidates.push(order.delivery.destinationUpdatedAt);
   if (Array.isArray(order.statusHistory)) {
     for (const entry of order.statusHistory) {
       if (entry && entry.at) candidates.push(entry.at);

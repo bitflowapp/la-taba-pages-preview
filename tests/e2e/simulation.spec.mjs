@@ -64,6 +64,9 @@ test('rider demo: iniciar simulación, avanzar, llegar y entregar', async ({ pag
   await page.getByRole('button', { name: /Vista rider/i }).click();
   await expect(page.locator('[data-view="rider"]')).toBeVisible();
   await expect(page.locator('[data-delivery-panel]')).toContainText('LT-0002');
+  await expect(page.locator('[data-street-test]')).toContainText('Modo prueba en calle');
+  await page.locator('[data-street-destination]').selectOption('alto-comahue');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Destino demo · Alto Comahue');
 
   // Iniciar simulación y verificar que el progreso avanza.
   const progress = page.locator('[data-sim-progress]');
@@ -82,6 +85,15 @@ test('rider demo: iniciar simulación, avanzar, llegar y entregar', async ({ pag
   await page.locator('[data-delivery-done="LT-0002"]').click();
   await waitForToast(page, 'Pedido marcado como entregado.');
   await expect(page.locator('[data-delivery-panel]')).not.toContainText('LT-0002');
+  await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
+  const trackingPanel = page.locator('[data-tracking-panel]');
+  await expect(trackingPanel).toContainText('Finalizado');
+  await expect(trackingPanel.locator('.map-connection-pill')).not.toContainText('En vivo');
+  await expect(trackingPanel.locator('.track-steps')).toContainText('Entregado');
+  const statTexts = await trackingPanel.locator('.map-stat-pill').allTextContents();
+  expect(statTexts.some((text) => /Distancia\s*Finalizado/i.test(text))).toBe(false);
+  const metricTexts = await trackingPanel.locator('.sheet-metrics').allTextContents();
+  expect(metricTexts.some((text) => /Distancia/i.test(text))).toBe(false);
 
   await guards.assertClean();
 });
@@ -119,6 +131,6 @@ test('GPS en contexto inseguro muestra fallback y la simulación sigue disponibl
 
   await page.locator('[data-sim-gps]').click();
   await expect(page.locator('[data-delivery-panel]')).toContainText(/HTTPS o localhost/);
-  await expect(page.locator('[data-delivery-panel]')).toContainText('GPS: Requiere HTTPS/localhost');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('GPS: Requiere HTTPS');
   await expect(page.locator('[data-sim-start]')).toBeEnabled();
 });

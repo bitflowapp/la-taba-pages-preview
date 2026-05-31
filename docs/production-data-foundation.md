@@ -46,7 +46,7 @@ Adaptadores agregados:
 - `demo_order_repository.js`: usa el estado/localStorage/relay actual y mantiene la demo.
 - `realtime_order_repository.js`: expone el transporte demo cuando hay `?relay=`.
 - `http_order_repository.js`: contrato REST liviano para conectar backend propio, Supabase Edge Functions, Firebase Functions o similar.
-- `supabase_order_repository.js`: adapter fase 1 contra Supabase PostgREST, opt-in y sin secrets hardcodeados.
+- `supabase_order_repository.js`: adapter fase 1 contra Supabase PostgREST, opt-in y sin secrets hardcodeados. La creacion de pedidos usa la RPC transaccional `create_order_with_items(payload jsonb)`.
 - `repository_factory.js`: selecciona demo por defecto, demo realtime con `?relay=`, o HTTP si se abre con `?data=production&api=https://...`.
 - `storage_repository.js`: wrapper seguro para storage namespaced.
 
@@ -77,6 +77,8 @@ Supabase fase 1:
 ```
 
 Si faltan credenciales de backend, la app cae a demo para no romper GitHub Pages.
+
+Supabase fase 1 queda apto para piloto controlado: la creacion de pedidos pasa por RPC validada y no deja pedidos parciales, pero lectura y updates de estado siguen con policies anonimas de demo. Produccion real requiere auth, roles, scoping por `business_id` y validaciones server-side completas.
 
 ## Contrato HTTP esperado
 

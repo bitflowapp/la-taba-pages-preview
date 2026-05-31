@@ -58,8 +58,8 @@ async function main() {
   const businessId = await resolveBusinessId(restBase);
   console.log(`Business ID: ${businessId}`);
 
-  const { orderPayload, itemsPayload, expectedTotals, code } = buildOrderPayload(businessId);
-  const rpcResult = await callCreateOrderWithItems(restBase, orderPayload, itemsPayload);
+  const { orderPayload, expectedTotals, code } = buildOrderPayload(businessId);
+  const rpcResult = await callCreateOrderWithItems(restBase, orderPayload);
   const rpcRows = asRows(rpcResult.payload);
   const createdOrder = extractOrder(rpcResult.payload);
 
@@ -233,65 +233,13 @@ function buildOrderPayload(businessId) {
   };
 }
 
-async function callCreateOrderWithItems(restBase, orderPayload, itemsPayload) {
-  const candidates = [
-    { business_id: orderPayload.business_id, order: orderPayload, items: itemsPayload },
-    { p_business_id: orderPayload.business_id, p_order: orderPayload, p_items: itemsPayload },
-    { business_id: orderPayload.business_id, order_data: orderPayload, order_items: itemsPayload },
-  ];
-
-  let lastError = null;
-  for (const body of candidates) {
-    try {
-      return await restRequest(restBase, '/rpc/create_order_with_items', {
-        method: 'POST',
-        body,
-      });
-    } catch (error) {
-      lastError = error;
-      if (!(error instanceof SmokeFailure)) throw error;
-      if (!looksLikeMissingRpc(error)) {
-        if (shouldTryNextRpcCandidate(error)) {
-          continue;
-        }
-        throw error;
-      }
-      throw error;
-    }
-  }
-
-  throw lastError || new SmokeFailure({
-    endpoint: 'POST /rest/v1/rpc/create_order_with_items',
+async function callCreateOrderWithItems(restBase, orderPayload) {
+  return restRequest(restBase, '/rpc/create_order_with_items', {
     method: 'POST',
-    status: 0,
-    body: 'No se pudo invocar el RPC.',
-    recommendation: 'Revisar la firma del RPC create_order_with_items.',
+    body: {
+      payload: orderPayload,
+    },
   });
-}
-
-function looksLikeMissingRpc(error) {
-  const body = `${error.body || ''}`.toLowerCase();
-  return error.status === 404
-    || body.includes('pgrst202')
-    || body.includes('could not find function')
-    || body.includes('function public.create_order_with_items does not exist');
-}
-
-function isRetryableRpcArgMismatch(error) {
-  const body = `${error.body || ''}`.toLowerCase();
-  return (error.status === 400 || error.status === 422)
-    && (
-      body.includes('missing argument')
-      || body.includes('invalid input syntax')
-      || body.includes('cannot cast')
-      || body.includes('unexpected')
-      || body.includes('too few arguments')
-      || body.includes('unprocessable')
-    );
-}
-
-function shouldTryNextRpcCandidate(error) {
-  return isRetryableRpcArgMismatch(error) || error.status === 400 || error.status === 422;
 }
 
 async function fetchOrderByIdOrCode(restBase, orderId, code) {

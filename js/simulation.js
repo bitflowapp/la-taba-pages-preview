@@ -31,6 +31,24 @@ import { getOrderRepository, isPersistentOrderRepository } from './repositories/
 let timerId = null;
 let gpsWatchId = null;
 
+// Throttling de publicación de GPS al backend persistente: evita spam de writes.
+// Publica si pasaron >= 3s desde el último envío O si se movió >= 15 metros.
+const GPS_PUBLISH_MIN_MS = 3_000;
+const GPS_PUBLISH_MIN_METERS = 15;
+let lastPublished = null; // { lat, lng, at }
+
+// Pura y testeable: decide si publicar el fix dado el último publicado.
+export function shouldPublishLocation(prev, next, now = Date.now()) {
+  if (!next) return false;
+  if (!prev) return true;
+  if (now - prev.at >= GPS_PUBLISH_MIN_MS) return true;
+  return distanceKm(prev, next) * 1000 >= GPS_PUBLISH_MIN_METERS;
+}
+
+function shouldPublishGpsFix(location, now = Date.now()) {
+  return shouldPublishLocation(lastPublished, location, now);
+}
+
 // Solo el dispositivo que arrancó la simulación (owner) mueve el rider.
 // Los demás (p. ej. el cliente) solo muestran el progreso que reciben por realtime.
 function ownsSimulation(sim) {
@@ -370,6 +388,7 @@ export function disableGpsTracking({ silent = false } = {}) {
     try { navigator.geolocation.clearWatch(gpsWatchId); } catch (_) { /* no-op */ }
   }
   gpsWatchId = null;
+  resetGpsPublishThrottle();
   const sim = getState().simulation;
   if (sim && sim.mode === 'gps') {
     setState({
@@ -456,8 +475,27 @@ function persistRiderLocation(orderId, location) {
   try {
     const repository = getOrderRepository();
     if (!isPersistentOrderRepository(repository)) return;
-    Promise.resolve(repository.updateRiderLocation(orderId, location)).catch(() => {});
+    if (!shouldPublishGpsFix(location)) return; // throttle: no spamear writes
+    lastPublished = { lat: location.lat, lng: location.lng, at: Date.now() };
+    Promise.resolve(repository.updateRiderLocation(orderId, location))
+      .then((result) => {
+        const sim = getState().simulation;
+        if (sim && sim.orderId === orderId) {
+          setState({ simulation: { ...sim, lastBackendPublishAt: new Date().toISOString(), backendError: result && result.ok === false ? result.message : undefined } });
+        }
+      })
+      .catch(() => {
+        const sim = getState().simulation;
+        if (sim && sim.orderId === orderId) {
+          setState({ simulation: { ...sim, backendError: 'No se pudo enviar la ubicación al backend.' } });
+        }
+      });
   } catch (_) {
     // La app conserva el fix local aunque el backend opcional no responda.
   }
+}
+
+// Reset del throttle al detener GPS, para que el próximo arranque publique ya.
+function resetGpsPublishThrottle() {
+  lastPublished = null;
 }

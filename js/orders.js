@@ -100,7 +100,8 @@ function normalizeCheckoutValues(formValues) {
 
 export function getLastOrder() {
   const state = getState();
-  return state.orders.find((order) => order.id === state.lastOrderId) || state.orders[0] || null;
+  if (!state.lastOrderId) return null;
+  return state.orders.find((order) => order.id === state.lastOrderId) || null;
 }
 
 export function getActiveDeliveryOrder() {
@@ -112,7 +113,7 @@ export function getRiderQueueOrder() {
   return selectRiderQueueOrder(getState().orders);
 }
 
-// Botón demo del rider: lleva un pedido hasta "listo para reparto"
+// Atajo del rider: lleva un pedido hasta "listo para reparto"
 // respetando el flujo de estados (received -> preparing -> ready).
 export function advanceOrderToReady(orderId) {
   for (let step = 0; step < 4; step += 1) {
@@ -240,7 +241,7 @@ export function updateOrderDemoDestination(orderId, destinationId) {
     order.delivery.distanceKm = estimatedDistance;
   });
 
-  return { ok: true, message: `Destino demo actualizado: ${destination.label || destination.name}.`, destination };
+  return { ok: true, message: `Destino actualizado: ${destination.label || destination.name}.`, destination };
 }
 
 export function getNextStatus(orderId) {

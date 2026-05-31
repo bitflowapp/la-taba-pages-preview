@@ -306,7 +306,7 @@ function onlyDigits(value) {
 function renderDemoGuide() {
   return `
     <details class="demo-guide">
-      <summary>Guía rápida para mostrar la demo</summary>
+      <summary>Guía rápida para probar el flujo</summary>
       <ol class="demo-guide-steps">
         <li>Creá un pedido desde la vista <strong>Cliente</strong>.</li>
         <li>Acá, en <strong>Negocio</strong>, aparece el pedido nuevo (con aviso).</li>

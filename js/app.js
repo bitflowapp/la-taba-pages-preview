@@ -69,11 +69,11 @@ function bootstrap() {
     startOrderRepositorySync();
     renderAll();
     resumeSimulationIfNeeded();
-    // Aviso técnico discreto si se pidió un backend y se cayó a demo.
+    // Aviso discreto si se pidió un backend y la app tuvo que seguir local.
     const diagnostic = getRepositoryDiagnostic();
     if (diagnostic) {
       console.warn(`[La Taba] ${diagnostic.message}`);
-      setTimeout(() => showToast(diagnostic.message), 600);
+      setTimeout(() => showToast('No se pudo conectar al servidor de pedidos. La app sigue funcionando en este equipo.'), 600);
     }
   } catch (error) {
     // Evita pantalla en blanco si algo falla en el primer render.

@@ -18,6 +18,7 @@ test('carga inicial, home sin lista infinita y catálogo por categorías', async
   // El home no muestra el grid de productos completo (sin lista infinita).
   await expect(page.locator('[data-view="home"] [data-product-grid]')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .category-strip')).toBeVisible();
+  await expect(page.locator('[data-home-active-order]')).toBeHidden();
 
   // Entrar al catálogo desde el CTA del home.
   await page.locator('[data-view="home"] [data-nav-view="catalog"]').first().click();

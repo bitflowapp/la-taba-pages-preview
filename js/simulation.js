@@ -105,7 +105,7 @@ export function activateStreetTestMode(destinationId = null) {
     return { ok: false, message: 'Creá o usá un pedido de delivery para activar el modo calle.' };
   }
   return applyStreetTestDestination(order, destinationId || routePreferenceForOrder(order), {
-    message: 'Modo prueba en calle activado.',
+    message: 'Destino del recorrido actualizado.',
   });
 }
 
@@ -178,7 +178,7 @@ function tick() {
 
 export function startSimulation() {
   if (isGpsActive()) {
-    return { ok: false, message: 'Detené el GPS real antes de iniciar la simulación.' };
+    return { ok: false, message: 'Detené el GPS real antes de iniciar el recorrido guiado.' };
   }
 
   let order = getActiveDeliveryOrder();
@@ -209,16 +209,16 @@ export function startSimulation() {
 
   setState({ simulation });
   startTimer();
-  return { ok: true, message: 'Simulación iniciada. El rider está en camino.' };
+  return { ok: true, message: 'Recorrido guiado iniciado. El rider está en camino.' };
 }
 
 export function pauseSimulation() {
   const sim = getState().simulation;
   stopTimer();
   disableGpsTracking({ silent: true });
-  if (!sim) return { ok: false, message: 'No hay simulación activa.' };
+  if (!sim) return { ok: false, message: 'No hay recorrido activo.' };
   setState({ simulation: { ...sim, running: false } });
-  return { ok: true, message: 'Simulación en pausa.' };
+  return { ok: true, message: 'Recorrido en pausa.' };
 }
 
 export function resetSimulation() {
@@ -227,7 +227,7 @@ export function resetSimulation() {
   const order = getActiveDeliveryOrder();
   if (!order) {
     setState({ simulation: null });
-    return { ok: true, message: 'Simulación reiniciada.' };
+    return { ok: true, message: 'Recorrido reiniciado.' };
   }
   const preferredDestinationId = routePreferenceForOrder(order);
   const base = createSimulationState(order, { running: false, destinationId: preferredDestinationId });
@@ -244,7 +244,7 @@ export function resetSimulation() {
       streetMode: Boolean(preferredDestinationId),
     },
   });
-  return { ok: true, message: 'Simulación reiniciada al inicio del recorrido.' };
+  return { ok: true, message: 'Recorrido reiniciado al inicio.' };
 }
 
 function clearSimulation() {
@@ -328,7 +328,7 @@ export function enableGpsTracking() {
   }
 
   if (!hasSecureGpsContext()) {
-    const gpsError = 'El GPS real suele requerir HTTPS o localhost. Podés seguir usando la simulación.';
+    const gpsError = 'El GPS real requiere una conexión segura. Podés seguir con el recorrido guiado.';
     return gpsUnavailableResult(order, 'requires_secure_context', gpsError);
   }
 

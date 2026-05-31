@@ -68,7 +68,7 @@ export function renderDeliveryPanel() {
   const eta = sim ? `${sim.etaMinutes} min` : formatDemoEta(order);
   const distance = formatDemoDistance(order);
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
-  const destinationLabel = order.delivery?.demoDestinationAddressLabel || order.address;
+  const destinationLabel = displayDestinationLabel(order.delivery?.demoDestinationAddressLabel || order.address);
   const headline = awaiting
     ? 'Esperando preparación'
     : order.status === 'arriving'
@@ -174,23 +174,23 @@ function riderStepIndex(status) {
 function renderAdvancedDemo() {
   const status = getRealtimeStatus();
   const connection = status.relayEnabled
-    ? (status.relayConnected ? `En vivo entre equipos · sala ${escapeHtml(status.room)}` : `Relay configurado (reconectando) · sala ${escapeHtml(status.room)}`)
-    : 'Solo este equipo (sin relay)';
+    ? (status.relayConnected ? `En vivo entre equipos · sala ${escapeHtml(status.room)}` : `Conexión entre equipos en reconexión · sala ${escapeHtml(status.room)}`)
+    : 'Sólo este equipo';
   const linkButtons = status.relayEnabled
     ? `<div class="button-row demo-links">
         <button class="ghost-button compact" type="button" data-copy-client-link>Copiar link cliente</button>
         <button class="ghost-button compact" type="button" data-copy-rider-link>Copiar link rider</button>
       </div>`
-    : '<p class="form-hint">Sin relay activo: abrí la app con <code>?relay=…&room=…</code> para probar en dos celulares.</p>';
+    : '<p class="form-hint">Para probar dos celulares, abrí la app con el enlace compartido del comercio.</p>';
   return `
     <details class="demo-advanced">
       <summary>Opciones avanzadas</summary>
       <div class="demo-advanced-body">
         <div class="summary-row"><span>Conexión</span><strong>${connection}</strong></div>
-        <div class="summary-row"><span>Sala realtime</span><strong>${escapeHtml(status.room)}</strong></div>
+        <div class="summary-row"><span>Sala de reparto</span><strong>${escapeHtml(status.room)}</strong></div>
         <div class="summary-row"><span>ID de equipo</span><strong>${escapeHtml(String(status.deviceId).slice(0, 8))}</strong></div>
         ${linkButtons}
-        <p class="form-hint">Prueba local por LAN: nada se guarda en servidores externos. El tiempo real entre celulares usa el relay propio.</p>
+        <p class="form-hint">Prueba local por LAN: los pedidos quedan en esta sala y no se publican como venta real.</p>
       </div>
     </details>
   `;
@@ -223,7 +223,7 @@ function renderSimControls(order, sim) {
   const canReset = Boolean(sim) && order.status !== 'delivered';
   const destination = selectedStreetDestination(order, sim);
   const distanceToDestination = currentDistanceToDestination(sim, destination);
-  const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'simulación';
+  const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'recorrido guiado';
   const gpsCoords = sim && sim.source === 'gps' && Number.isFinite(sim.lat)
     ? `${sim.lat.toFixed(4)}, ${sim.lng.toFixed(4)}`
     : '';
@@ -243,23 +243,23 @@ function renderSimControls(order, sim) {
     <option value="${escapeHtml(item.id)}" ${item.id === destination.id ? 'selected' : ''}>${escapeHtml(item.label)}</option>
   `).join('');
   const secureHint = globalThis.isSecureContext === false
-    ? '<span class="sim-gps-error">El GPS real suele requerir HTTPS o localhost. Podés seguir usando simulación.</span>'
+    ? '<span class="sim-gps-error">El GPS real requiere una conexión segura. Podés seguir con el recorrido guiado.</span>'
     : '';
 
   return `
     <div class="sim-panel street-test-panel" data-street-test>
       <div class="sim-head">
-        <span class="rider-label">Modo prueba en calle</span>
+        <span class="rider-label">Ruta del reparto</span>
         <span class="sim-state ${gpsOn ? 'live' : ''}">GPS: ${escapeHtml(gpsStatus)}</span>
       </div>
       <label class="street-destination-field">
-        <span>Destino ficticio</span>
-        <select data-street-destination aria-label="Destino ficticio de prueba">
+        <span>Destino del recorrido</span>
+        <select data-street-destination aria-label="Destino del recorrido">
           ${destinationOptions}
         </select>
       </label>
       <div class="street-summary-grid">
-        <span><small>Destino</small><strong>${escapeHtml(destination.addressLabel || destination.label)}</strong></span>
+        <span><small>Destino</small><strong>${escapeHtml(displayDestinationLabel(destination.addressLabel || destination.label))}</strong></span>
         <span><small>Distancia</small><strong>${escapeHtml(distanceToDestination)}</strong></span>
         <span><small>Fuente</small><strong>${escapeHtml(sourceLabel)}</strong></span>
         <span><small>Precisión</small><strong>${escapeHtml(accuracy)}</strong></span>
@@ -273,9 +273,9 @@ function renderSimControls(order, sim) {
         <button class="secondary-button" type="button" data-sim-gps-off ${gpsOn ? '' : 'disabled'}>Detener GPS</button>
       </div>
       <div class="button-row sim-actions">
-        <button class="ghost-button compact" type="button" data-street-activate="${escapeHtml(destination.id)}">Activar modo calle</button>
-        <button class="secondary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar simulación</button>
-        <button class="ghost-button compact" type="button" data-sim-reset ${canReset ? '' : 'disabled'}>Reiniciar prueba</button>
+        <button class="ghost-button compact" type="button" data-street-activate="${escapeHtml(destination.id)}">Usar este destino</button>
+        <button class="secondary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar recorrido guiado</button>
+        <button class="ghost-button compact" type="button" data-sim-reset ${canReset ? '' : 'disabled'}>Reiniciar recorrido</button>
       </div>
       <div class="button-row street-delivery-actions">
         <button class="secondary-button compact" type="button" data-street-arrive="${order.id}" ${canArriveForStreet(order) ? '' : 'disabled'}>Llegué al destino</button>
@@ -288,7 +288,7 @@ function renderSimControls(order, sim) {
         ${secureHint}
       </div>
       ${renderGpsDiagnostics(sim, gpsOn)}
-      <p class="form-hint sim-note">Tu ubicación se comparte sólo en esta demo y mientras el GPS esté activo.</p>
+      <p class="form-hint sim-note">Tu ubicación se comparte sólo mientras este reparto esté activo.</p>
     </div>
   `;
 }
@@ -299,6 +299,12 @@ function selectedStreetDestination(order, sim) {
       || sim?.routeId
       || order?.delivery?.demoDestinationId,
   );
+}
+
+function displayDestinationLabel(value) {
+  return String(value || '')
+    .replace(/^Destino demo\s*·\s*/i, 'Destino · ')
+    .replace(/^Local demo\s*·\s*/i, 'Local · ');
 }
 
 function currentDistanceToDestination(sim, destination) {
@@ -330,12 +336,12 @@ function gpsStatusLabel(sim, active) {
 
 function renderGpsDiagnostics(sim, gpsOn) {
   const status = getRealtimeStatus();
-  const relay = status.relayEnabled ? (status.relayConnected ? 'conectado' : 'error') : 'local';
+  const relay = status.relayEnabled ? (status.relayConnected ? 'activa' : 'reconectando') : 'este equipo';
   const backendMode = getRepositoryDataMode();
   const backendSend = sim?.backendError
     ? `Error: ${sim.backendError}`
     : (sim?.lastBackendPublishAt ? relativeAgeLabel(sim.lastBackendPublishAt) : 'Sin envíos');
-  const source = sim?.source === 'gps' ? 'GPS real' : 'Simulación';
+  const source = sim?.source === 'gps' ? 'GPS real' : 'Recorrido guiado';
   const fixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
   const publishedAt = sim?.lastPublishedAt || sim?.lastGpsPublishedAt || sim?.timestamp || null;
   const coords = sim?.source === 'gps' && Number.isFinite(sim?.lat) && Number.isFinite(sim?.lng)
@@ -346,21 +352,21 @@ function renderGpsDiagnostics(sim, gpsOn) {
     : 'Sin precisión';
   return `
     <details class="gps-diagnostics">
-      <summary>Diagnóstico GPS</summary>
+      <summary>Detalles de ubicación</summary>
       <div class="gps-diagnostics-grid">
         <span><small>Contexto seguro</small><strong>${secureContextLabel()}</strong></span>
-        <span><small>Geolocation disponible</small><strong>${geolocationLabel()}</strong></span>
+        <span><small>Permiso del navegador</small><strong>${geolocationLabel()}</strong></span>
         <span><small>Estado GPS</small><strong>${escapeHtml(diagnosticGpsState(sim))}</strong></span>
-        <span><small>Watch ID activo</small><strong>${gpsOn ? 'Sí' : 'No'}</strong></span>
-        <span><small>Último fix</small><strong>${escapeHtml(relativeAgeLabel(fixAt))}</strong></span>
-        <span><small>Lat/lng último fix</small><strong>${escapeHtml(coords)}</strong></span>
+        <span><small>Seguimiento activo</small><strong>${gpsOn ? 'Sí' : 'No'}</strong></span>
+        <span><small>Última lectura</small><strong>${escapeHtml(relativeAgeLabel(fixAt))}</strong></span>
+        <span><small>Coordenadas</small><strong>${escapeHtml(coords)}</strong></span>
         <span><small>Precisión</small><strong>${escapeHtml(precision)}</strong></span>
-        <span><small>Fuente enviada</small><strong>${escapeHtml(source)}</strong></span>
-        <span><small>Relay</small><strong>${escapeHtml(relay)}</strong></span>
-        <span><small>Room actual</small><strong>${escapeHtml(status.room)}</strong></span>
-        <span><small>Último evento publicado</small><strong>${escapeHtml(relativeAgeLabel(publishedAt))}</strong></span>
-        <span><small>Backend datos</small><strong>${escapeHtml(backendMode)}</strong></span>
-        <span><small>Último envío backend</small><strong>${escapeHtml(backendSend)}</strong></span>
+        <span><small>Fuente de ubicación</small><strong>${escapeHtml(source)}</strong></span>
+        <span><small>Conexión entre equipos</small><strong>${escapeHtml(relay)}</strong></span>
+        <span><small>Sala de reparto</small><strong>${escapeHtml(status.room)}</strong></span>
+        <span><small>Última actualización compartida</small><strong>${escapeHtml(relativeAgeLabel(publishedAt))}</strong></span>
+        <span><small>Origen de datos</small><strong>${escapeHtml(backendMode)}</strong></span>
+        <span><small>Última actualización servidor</small><strong>${escapeHtml(backendSend)}</strong></span>
       </div>
     </details>`;
 }
@@ -368,9 +374,9 @@ function renderGpsDiagnostics(sim, gpsOn) {
 function getRepositoryDataMode() {
   try {
     const mode = getDataMode();
-    return mode === 'supabase' ? 'Supabase' : mode === 'http' ? 'API propia' : mode === 'demo-realtime' ? 'Demo + relay' : 'Demo';
+    return mode === 'supabase' ? 'Supabase' : mode === 'http' ? 'API propia' : mode === 'demo-realtime' ? 'Prueba en vivo' : 'Este equipo';
   } catch (_) {
-    return 'Demo';
+    return 'Este equipo';
   }
 }
 
@@ -467,8 +473,8 @@ function renderIdleMap() {
 function renderRiderMapStage(order, distance, eta, headline) {
   const status = getRealtimeStatus();
   const connection = status.relayEnabled
-    ? (status.relayConnected ? 'Realtime activo' : 'Reconectando relay')
-    : 'Modo local';
+    ? (status.relayConnected ? 'En vivo' : 'Reconectando')
+    : 'Este equipo';
   return `
     <div class="delivery-map-stage rider-map-stage" data-map-shell="rider">
       ${renderRealMapShell(order, order ? renderDemoMap(order, distance, eta) : renderIdleMap(), order ? 'rider' : 'rider-empty')}

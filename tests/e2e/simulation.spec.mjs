@@ -64,15 +64,15 @@ test('rider demo: iniciar simulación, avanzar, llegar y entregar', async ({ pag
   await page.getByRole('button', { name: /Vista rider/i }).click();
   await expect(page.locator('[data-view="rider"]')).toBeVisible();
   await expect(page.locator('[data-delivery-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-street-test]')).toContainText('Modo prueba en calle');
+  await expect(page.locator('[data-street-test]')).toContainText('Ruta del reparto');
   await page.locator('[data-street-destination]').selectOption('alto-comahue');
-  await expect(page.locator('[data-delivery-panel]')).toContainText('Destino demo · Alto Comahue');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Destino · Alto Comahue');
 
   // Iniciar simulación y verificar que el progreso avanza.
   const progress = page.locator('[data-sim-progress]');
   const initial = await readPercent(progress);
   await page.locator('[data-sim-start]').click();
-  await waitForToast(page, /Simulación iniciada/);
+  await waitForToast(page, /Recorrido guiado iniciado/);
   await expect.poll(async () => readPercent(progress), { timeout: 15_000 }).toBeGreaterThan(initial);
   await expect(page.locator('[data-delivery-panel]')).toContainText(/En camino|Llegando/);
 
@@ -130,7 +130,7 @@ test('GPS en contexto inseguro muestra fallback y la simulación sigue disponibl
   await page.getByRole('button', { name: /Vista rider/i }).click();
 
   await page.locator('[data-sim-gps]').click();
-  await expect(page.locator('[data-delivery-panel]')).toContainText(/HTTPS o localhost/);
+  await expect(page.locator('[data-delivery-panel]')).toContainText(/conexión segura/);
   await expect(page.locator('[data-delivery-panel]')).toContainText('GPS: Requiere HTTPS');
   await expect(page.locator('[data-sim-start]')).toBeEnabled();
 });

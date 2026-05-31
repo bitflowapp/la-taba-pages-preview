@@ -118,7 +118,7 @@ test('hydrateState keeps a simulation only for an active delivery order', () => 
   assert.equal(droppedDelivered.simulation, null);
 });
 
-test('GPS explains insecure LAN contexts and keeps demo simulation available', () => {
+test('GPS explains insecure LAN contexts and keeps guided route available', () => {
   addToCart('p-vacio', 1);
   const created = createOrderFromCheckout({
     customerName: 'GPS QA',
@@ -140,11 +140,11 @@ test('GPS explains insecure LAN contexts and keeps demo simulation available', (
   try {
     const result = enableGpsTracking();
     assert.equal(result.ok, false);
-    assert.match(result.message, /HTTPS o localhost/);
+    assert.match(result.message, /conexión segura/);
     assert.equal(getState().simulation.orderId, created.order.id);
     assert.equal(getState().simulation.mode, 'demo');
     assert.equal(getState().simulation.gpsStatus, 'requires_secure_context');
-    assert.match(getState().simulation.gpsError, /simulación/);
+    assert.match(getState().simulation.gpsError, /recorrido guiado/);
   } finally {
     if (originalSecureContext) {
       Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);

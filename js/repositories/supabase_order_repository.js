@@ -276,6 +276,7 @@ function orderSelect() {
 function mirrorOrders(rows, { replace = false } = {}) {
   const orders = rows.map(rowToDemoOrder).filter(Boolean);
   updateState((draft) => {
+    const currentLastOrderId = draft.lastOrderId;
     if (replace) {
       draft.orders = orders;
     } else {
@@ -285,7 +286,10 @@ function mirrorOrders(rows, { replace = false } = {}) {
         ...draft.orders.filter((order) => !keys.has(order.id) && !keys.has(order.backendId)),
       ];
     }
-    draft.lastOrderId = draft.orders[0]?.id || null;
+    const currentOrder = draft.orders.find((order) => order.id === currentLastOrderId || order.backendId === currentLastOrderId);
+    draft.lastOrderId = currentOrder
+      ? currentOrder.id
+      : null;
   });
   return orders.map(toDomainOrder).filter(Boolean);
 }
@@ -313,7 +317,6 @@ function mirrorOrder(row) {
     const index = draft.orders.findIndex((candidate) => candidate.id === order.id || candidate.backendId === order.backendId);
     if (index >= 0) draft.orders[index] = order;
     else draft.orders.unshift(order);
-    draft.lastOrderId = draft.lastOrderId || order.id;
   });
   return order;
 }

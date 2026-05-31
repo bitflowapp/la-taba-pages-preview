@@ -43,7 +43,7 @@ const defaultState = () => {
     cart: [],
     orders: baseOrders,
     products: baseProducts,
-    lastOrderId: baseOrders[0]?.id || null,
+    lastOrderId: null,
     adminUnlocked: readAdminFlag(),
     lastCheckoutDraft: null,
     simulation: null,
@@ -181,7 +181,7 @@ function normalizeLastOrderId(candidate, orders) {
   if (typeof candidate === 'string' && orders.some((order) => order.id === candidate)) {
     return candidate;
   }
-  return orders[0]?.id || null;
+  return null;
 }
 
 function sanitizeCheckoutDraft(draft) {

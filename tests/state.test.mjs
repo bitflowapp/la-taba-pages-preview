@@ -62,6 +62,6 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
   assert.equal(hydrated.orders[0].deliveryFee, BUSINESS_CONFIG.deliveryFee);
   assert.equal(hydrated.orders[0].total, 5600 + BUSINESS_CONFIG.deliveryFee);
   assert.equal(hydrated.orders[0].statusHistory.at(-1).status, 'received');
-  assert.equal(hydrated.lastOrderId, 'LT-9000');
+  assert.equal(hydrated.lastOrderId, null);
   assert.equal(hydrated.activeCategory, 'all');
 });

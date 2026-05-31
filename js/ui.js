@@ -518,11 +518,17 @@ function distanceLabel(order) {
 }
 
 function destinationLabel(order) {
-  return order?.delivery?.demoDestinationLabel || deliveryModeLabel(order.deliveryMode);
+  return displayDestinationLabel(order?.delivery?.demoDestinationLabel || deliveryModeLabel(order.deliveryMode));
 }
 
 function destinationAddressLabel(order) {
-  return order?.delivery?.demoDestinationAddressLabel || order.address;
+  return displayDestinationLabel(order?.delivery?.demoDestinationAddressLabel || order.address);
+}
+
+function displayDestinationLabel(value) {
+  return String(value || '')
+    .replace(/^Destino demo\s*·\s*/i, 'Destino · ')
+    .replace(/^Local demo\s*·\s*/i, 'Local · ');
 }
 
 function trackingMapSvg(order) {

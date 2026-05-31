@@ -141,7 +141,7 @@ test('GPS del rider se propaga al tracking del cliente por relay', async ({ brow
   await rider.locator('[data-sim-gps]').click();
 
   await expect(rider.locator('[data-delivery-panel]')).toContainText('GPS: GPS real activo', { timeout: 10_000 });
-  await expect(rider.locator('[data-delivery-panel]')).toContainText('Diagnóstico GPS');
+  await expect(rider.locator('[data-delivery-panel]')).toContainText('Detalles de ubicación');
   await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación rider', { timeout: 10_000 });
   await expect(client.locator('[data-map-meta]').first()).not.toContainText(/precisión|±/i);
   await expect(client.locator('[data-tracking-panel]')).toContainText('Alto Comahue', { timeout: 10_000 });

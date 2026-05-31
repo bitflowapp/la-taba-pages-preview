@@ -14,7 +14,7 @@ export function resetState(overrides = {}) {
     cart: [],
     orders: clone(seedOrders),
     products: clone(products),
-    lastOrderId: seedOrders[0]?.id || null,
+    lastOrderId: null,
     adminUnlocked: false,
     lastCheckoutDraft: null,
     ...overrides,

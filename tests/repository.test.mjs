@@ -6,6 +6,7 @@ import { createDemoOrderRepository } from '../js/repositories/demo_order_reposit
 import {
   getDataMode,
   getOrderRepository,
+  getRepositoryDiagnostic,
   resetRepositoryFactoryForTests,
 } from '../js/repositories/repository_factory.js';
 import { getState } from '../js/state.js';
@@ -31,6 +32,25 @@ test('repository factory exposes demo realtime mode when relay is configured', (
   assert.equal(getDataMode(), 'demo-realtime');
   assert.equal(repository.mode, 'demo-realtime');
   assert.equal(typeof repository.getTransportStatus, 'function');
+});
+
+test('data=supabase sin config cae a demo con diagnóstico técnico', () => {
+  setLocationSearch('?data=supabase');
+  resetRepositoryFactoryForTests();
+
+  const repository = getOrderRepository();
+  assert.equal(getDataMode(), 'supabase');
+  assert.equal(repository.mode, 'demo');
+  const diagnostic = getRepositoryDiagnostic();
+  assert.ok(diagnostic, 'debe exponer un diagnóstico');
+  assert.equal(diagnostic.requestedMode, 'supabase');
+  assert.match(diagnostic.message, /supabaseUrl|anonKey|demo/i);
+});
+
+test('demo default no deja diagnóstico de fallback', () => {
+  const repository = getOrderRepository();
+  assert.equal(repository.mode, 'demo');
+  assert.equal(getRepositoryDiagnostic(), null);
 });
 
 test('demo order repository creates orders through the current checkout flow', () => {

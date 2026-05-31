@@ -53,6 +53,63 @@ test('Supabase repository creates a persistent order and mirrors it locally', as
   assert.deepEqual(getState().cart, []);
   assert.equal(mock.calls[0].headers.apikey, 'anon-public-key');
   assert.equal(mock.db.orderItems.length, 1);
+  // La creación es transaccional: pasa por la RPC, no por inserts sueltos.
+  const createCall = mock.calls.find((call) => call.url.includes('/rpc/create_order_with_items'));
+  assert.ok(createCall, 'debe usar la RPC create_order_with_items');
+  assert.ok(Array.isArray(createCall.body.payload.items) && createCall.body.payload.items.length === 1);
+  assert.equal(mock.calls.some((call) => call.url.endsWith('/order_items') && call.method === 'POST'), false);
+});
+
+test('Supabase repository no reporta éxito si la RPC transaccional falla', async () => {
+  addToCart('p-vacio', 1);
+  const ordersBefore = getState().orders.length;
+  const repository = createSupabaseOrderRepository({
+    supabaseUrl: 'https://la-taba.supabase.co',
+    anonKey: 'anon-public-key',
+    fetchImpl: async (url) => {
+      if (String(url).includes('/rpc/create_order_with_items')) {
+        return notOk(400, { message: 'el pedido necesita al menos un ítem', code: '22023' });
+      }
+      return notOk(500, { message: 'unexpected' });
+    },
+  });
+
+  const result = await repository.createOrder({
+    customerName: 'Cliente',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+  });
+
+  assert.equal(result.ok, false);
+  // No se creó nada local: sin pedido parcial ni carrito vaciado de mentira.
+  assert.equal(getState().orders.length, ordersBefore);
+});
+
+test('Supabase repository explica cuando falta la migración (RPC ausente)', async () => {
+  addToCart('p-vacio', 1);
+  const repository = createSupabaseOrderRepository({
+    supabaseUrl: 'https://la-taba.supabase.co',
+    anonKey: 'anon-public-key',
+    fetchImpl: async (url) => {
+      if (String(url).includes('/rpc/create_order_with_items')) {
+        return notOk(404, { message: 'Could not find function public.create_order_with_items', code: 'PGRST202' });
+      }
+      return notOk(500, { message: 'unexpected' });
+    },
+  });
+
+  const result = await repository.createOrder({
+    customerName: 'Cliente',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /migración|create_order_with_items/i);
 });
 
 test('Supabase repository persists status and rider GPS updates', async () => {
@@ -162,6 +219,22 @@ function createSupabaseMock() {
     const body = options.body ? JSON.parse(options.body) : null;
     calls.push({ url, method: options.method || 'GET', headers: options.headers || {}, body });
 
+    if (parsed.pathname.endsWith('/rpc/create_order_with_items') && options.method === 'POST') {
+      const payload = body?.payload || {};
+      const orderId = payload.id || `order-${db.orders.length + 1}`;
+      const orderRow = { ...payload, id: orderId };
+      delete orderRow.items;
+      db.orders.unshift(orderRow);
+      const itemRows = (payload.items || []).map((item, index) => ({
+        id: `item-${db.orderItems.length + index + 1}`,
+        order_id: orderId,
+        ...item,
+      }));
+      db.orderItems.push(...itemRows);
+      db.events.push({ order_id: orderId, type: 'order.submitted' });
+      return ok({ ...orderRow, order_items: itemRows, rider_locations: [] });
+    }
+
     if (parsed.pathname.endsWith('/orders') && options.method === 'POST') {
       db.orders.unshift({ ...body });
       return ok([{ ...body }]);
@@ -229,6 +302,16 @@ function ok(payload) {
   return {
     ok: true,
     status: 200,
+    async json() {
+      return payload;
+    },
+  };
+}
+
+function notOk(status, payload) {
+  return {
+    ok: false,
+    status,
     async json() {
       return payload;
     },

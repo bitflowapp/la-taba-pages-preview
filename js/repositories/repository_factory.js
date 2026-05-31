@@ -5,6 +5,7 @@ import { createRealtimeOrderRepository } from './realtime_order_repository.js';
 import { createSupabaseOrderRepository, DEFAULT_SUPABASE_BUSINESS_ID } from './supabase_order_repository.js';
 
 let orderRepository = null;
+let repositoryDiagnostic = null;
 
 export function getDataMode() {
   const params = readParams();
@@ -20,11 +21,28 @@ export function getOrderRepository() {
   if (orderRepository) return orderRepository;
 
   const mode = getDataMode();
+  repositoryDiagnostic = null;
   if (mode === 'supabase') {
     const options = readSupabaseOptions(readParams());
     if (options.supabaseUrl && options.anonKey) {
-      orderRepository = assertOrderRepository(createSupabaseOrderRepository(options));
-      return orderRepository;
+      try {
+        orderRepository = assertOrderRepository(createSupabaseOrderRepository(options));
+        return orderRepository;
+      } catch (error) {
+        // Config presente pero inválida: no dejamos la UI rota, caemos a demo
+        // y dejamos un diagnóstico técnico (no se muestra al cliente normal).
+        repositoryDiagnostic = {
+          level: 'error',
+          requestedMode: 'supabase',
+          message: `Supabase no se pudo inicializar: ${error?.message || 'configuración inválida'}. Usando demo local.`,
+        };
+      }
+    } else {
+      repositoryDiagnostic = {
+        level: 'warn',
+        requestedMode: 'supabase',
+        message: 'Pediste data=supabase pero falta supabaseUrl/anonKey. Usando demo local.',
+      };
     }
   }
 
@@ -34,6 +52,11 @@ export function getOrderRepository() {
       orderRepository = assertOrderRepository(createHttpOrderRepository({ baseUrl: apiBase }));
       return orderRepository;
     }
+    repositoryDiagnostic = {
+      level: 'warn',
+      requestedMode: 'http',
+      message: 'Pediste backend http pero falta el parámetro api. Usando demo local.',
+    };
   }
 
   const demoRepository = createDemoOrderRepository();
@@ -41,6 +64,12 @@ export function getOrderRepository() {
     ? createRealtimeOrderRepository(demoRepository)
     : demoRepository);
   return orderRepository;
+}
+
+// Diagnóstico técnico del fallback (null si todo ok). Pensado para un aviso
+// discreto, nunca para el cliente final.
+export function getRepositoryDiagnostic() {
+  return repositoryDiagnostic;
 }
 
 export function startOrderRepositorySync() {
@@ -55,6 +84,7 @@ export function isPersistentOrderRepository(repository = getOrderRepository()) {
 
 export function resetRepositoryFactoryForTests() {
   orderRepository = null;
+  repositoryDiagnostic = null;
 }
 
 function readParams() {

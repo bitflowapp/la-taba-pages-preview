@@ -28,3 +28,34 @@ test('Supabase migration does not hardcode API secrets', () => {
   assert.doesNotMatch(sql, /service_role/i);
   assert.doesNotMatch(sql, /supabaseAnonKey/i);
 });
+
+const hardeningPath = path.join(root, 'supabase/migrations/20260531040000_la_taba_phase1_hardening.sql');
+
+test('hardening migration adds a transactional create_order_with_items RPC', () => {
+  const sql = fs.readFileSync(hardeningPath, 'utf8');
+  assert.match(sql, /create or replace function public\.create_order_with_items\(payload jsonb\)/);
+  assert.match(sql, /security definer/i);
+  // Inserta order, items y evento en una sola función (transacción).
+  assert.match(sql, /insert into public\.orders/);
+  assert.match(sql, /insert into public\.order_items/);
+  assert.match(sql, /insert into public\.order_events/);
+  // Validaciones mínimas.
+  assert.match(sql, /business_id requerido/);
+  assert.match(sql, /al menos un ítem/);
+  assert.match(sql, /grant execute on function public\.create_order_with_items/);
+});
+
+test('hardening migration removes broad anon insert policies', () => {
+  const sql = fs.readFileSync(hardeningPath, 'utf8');
+  assert.match(sql, /drop policy if exists "phase1 public create orders" on public\.orders/);
+  assert.match(sql, /drop policy if exists "phase1 public create order items" on public\.order_items/);
+  // Documenta explícitamente que el resto sigue siendo demo/piloto.
+  assert.match(sql, /DEMO\/PILOTO/);
+});
+
+test('hardening migration does not hardcode API secrets', () => {
+  const sql = fs.readFileSync(hardeningPath, 'utf8');
+  assert.doesNotMatch(sql, /eyJ[a-zA-Z0-9_-]{20,}/);
+  assert.doesNotMatch(sql, /service_role/i);
+  assert.doesNotMatch(sql, /supabaseAnonKey/i);
+});

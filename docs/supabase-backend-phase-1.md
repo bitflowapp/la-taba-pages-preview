@@ -38,15 +38,48 @@ https://bitflowapp.github.io/la-taba-pages-preview/?data=supabase&supabaseUrl=ht
 
 ## Seguridad fase 1
 
-El anon key de Supabase no es secreto, pero no se hardcodea en el repo. Las policies permiten lectura/escritura controlada para demo publica. Esto sirve para piloto controlado, no para operacion comercial abierta.
+El anon key de Supabase no es secreto, pero no se hardcodea en el repo.
 
-Antes de produccion real:
+## Creacion transaccional de pedidos (hardening)
 
-- agregar auth por comercio/equipo;
-- restringir policies por `business_id`;
-- validar transiciones en RPC o backend propio;
-- mover creacion de pedidos a una funcion transaccional;
-- separar roles cliente, negocio y rider.
+La migracion `20260531040000_la_taba_phase1_hardening.sql` agrega la funcion
+`create_order_with_items(payload jsonb)`:
+
+- inserta `order`, `order_items` y el evento inicial en **una sola transaccion**
+  (si algo falla, no queda pedido parcial);
+- corre como `security definer` con validaciones minimas server-side
+  (`business_id` valido, items no vacios, `total >= 0`, status y `fulfillment_type`
+  permitidos);
+- devuelve el pedido completo con sus items.
+
+El adapter (`supabase_order_repository.js`) crea pedidos llamando a
+`POST /rest/v1/rpc/create_order_with_items`. Si la funcion no existe (migracion
+sin aplicar), el adapter devuelve un diagnostico claro y **no simula un exito
+falso**. La UI no queda rota.
+
+## Seguridad fase 1 (DEMO / PILOTO, no produccion)
+
+Con el hardening:
+
+- la **creacion** de pedidos/items ya **no** es un INSERT anonimo directo: se
+  quitaron las policies `phase1 public create orders` y
+  `phase1 public create order items`, y la unica via es la RPC validada;
+- las policies de **lectura** y de **update de estado** **siguen abiertas a
+  `anon` a proposito**, porque la Fase 1 todavia no tiene auth. Estan comentadas
+  en el SQL como `DEMO/PILOTO`.
+
+Esto sirve para **piloto controlado**, NO para operacion comercial abierta. No
+usar con datos personales sensibles ni con varios comercios en el mismo proyecto
+sin endurecer antes.
+
+### Que falta para produccion real (Fase 2)
+
+- **auth** real por comercio/equipo (Supabase Auth);
+- **roles** separados: cliente, negocio, rider;
+- **policies por `business_id`** (cada negocio ve solo lo suyo) en lectura y escritura;
+- **validacion server-side completa** de transiciones de estado (en RPC/backend,
+  no confiando en el cliente);
+- backend/RPC cerrado para mutaciones sensibles; no exponer `anon` para esas operaciones.
 
 ## Aplicar migracion
 
@@ -56,7 +89,10 @@ Con Supabase CLI configurado:
 supabase db push
 ```
 
-O pegar el SQL de la migracion en el SQL editor del proyecto Supabase.
+O pegar el SQL de **ambas** migraciones (en orden) en el SQL editor de Supabase:
+
+1. `20260531030000_la_taba_phase1_orders.sql` (tablas, indices, RLS base, seed).
+2. `20260531040000_la_taba_phase1_hardening.sql` (RPC transaccional + endurecimiento RLS).
 
 ## QA rapido
 

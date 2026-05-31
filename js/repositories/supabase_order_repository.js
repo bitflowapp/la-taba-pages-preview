@@ -47,9 +47,9 @@ export function createSupabaseOrderRepository({
     });
     const payload = response.status === 204 ? null : await response.json().catch(() => null);
     if (!response.ok) {
-      return repositoryResult(false, { message: errorMessage(payload, response.status), data: payload });
+      return repositoryResult(false, { message: errorMessage(payload, response.status), data: payload, status: response.status });
     }
-    return repositoryResult(true, { data: payload });
+    return repositoryResult(true, { data: payload, status: response.status });
   }
 
   async function fetchOrderByPublicId(publicId) {
@@ -120,38 +120,35 @@ export function createSupabaseOrderRepository({
         delivery_fee: totals.deliveryFee,
         total: totals.total,
         created_at: now,
+        items: items.map((item) => ({
+          product_id: item.productId,
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: item.unitPrice,
+          subtotal: item.subtotal,
+        })),
       };
 
-      const orderResult = await request('/orders?select=*', {
+      // Creación transaccional: order + items + evento en una sola RPC.
+      // Evita pedidos parciales si algo falla en el medio.
+      const rpcResult = await request('/rpc/create_order_with_items', {
         method: 'POST',
-        body: orderPayload,
-        prefer: 'return=representation',
+        body: { payload: orderPayload },
       });
-      if (!orderResult.ok) return orderResult;
+      if (!rpcResult.ok) {
+        return repositoryResult(false, {
+          message: rpcMissing(rpcResult)
+            ? 'Falta aplicar la migración del backend (create_order_with_items). Revisá Supabase.'
+            : rpcResult.message,
+          data: rpcResult.data,
+        });
+      }
 
-      const itemPayloads = items.map((item) => ({
-        order_id: orderId,
-        product_id: item.productId,
-        name: item.name,
-        quantity: item.quantity,
-        unit: item.unit,
-        unit_price: item.unitPrice,
-        subtotal: item.subtotal,
-      }));
-      const itemsResult = await request('/order_items?select=*', {
-        method: 'POST',
-        body: itemPayloads,
-        prefer: 'return=representation',
-      });
-      if (!itemsResult.ok) return itemsResult;
-
-      await insertEvent(orderId, 'order.submitted', { code, source: 'web_checkout' });
-
-      const row = await fetchOrderByPublicId(orderId) || {
-        ...single(orderResult.data),
-        order_items: Array.isArray(itemsResult.data) ? itemsResult.data : itemPayloads,
-        rider_locations: [],
-      };
+      const row = single(rpcResult.data) || await fetchOrderByPublicId(orderId);
+      if (!row || !row.id) {
+        return repositoryResult(false, { message: 'El backend no devolvió el pedido creado.' });
+      }
       const order = mirrorCreatedOrder(row, items);
       return repositoryResult(true, {
         order,
@@ -515,6 +512,18 @@ function isUuid(value) {
 function normalizeIso(value, fallback = new Date().toISOString()) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? fallback : date.toISOString();
+}
+
+// Detecta el caso "la función RPC no existe" (migración no aplicada) para dar
+// un diagnóstico claro en vez de un error genérico de PostgREST.
+function rpcMissing(result) {
+  if (!result || result.ok) return false;
+  if (result.status === 404) return true;
+  const text = `${result.data?.message || ''} ${result.data?.code || ''} ${result.message || ''}`.toLowerCase();
+  return text.includes('create_order_with_items')
+    || text.includes('does not exist')
+    || text.includes('pgrst202')
+    || text.includes('could not find');
 }
 
 function errorMessage(payload, status) {

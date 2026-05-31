@@ -33,7 +33,7 @@ import { handleDeliveryAction, handleDeliveryChange, renderDeliveryPanel } from 
 import { disableGpsTracking, handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
 import { getRealtimeStatus, initRealtime } from './realtime.js';
 import { renderMapViews } from './map/map_view.js';
-import { getOrderRepository, startOrderRepositorySync } from './repositories/repository_factory.js';
+import { getOrderRepository, getRepositoryDiagnostic, startOrderRepositorySync } from './repositories/repository_factory.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const VIEW_ALIASES = {
@@ -69,6 +69,12 @@ function bootstrap() {
     startOrderRepositorySync();
     renderAll();
     resumeSimulationIfNeeded();
+    // Aviso técnico discreto si se pidió un backend y se cayó a demo.
+    const diagnostic = getRepositoryDiagnostic();
+    if (diagnostic) {
+      console.warn(`[La Taba] ${diagnostic.message}`);
+      setTimeout(() => showToast(diagnostic.message), 600);
+    }
   } catch (error) {
     // Evita pantalla en blanco si algo falla en el primer render.
     showToast('Hubo un problema al iniciar. Recargá la página.');

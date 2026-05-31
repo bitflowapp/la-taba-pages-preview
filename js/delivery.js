@@ -22,6 +22,7 @@ import {
 } from './simulation.js';
 import { getRealtimeStatus } from './realtime.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
+import { getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
 import { escapeHtml } from './ui.js';
 import {
   distanceKm,
@@ -483,67 +484,42 @@ function renderRealMapShell(order, fallback, role = 'rider') {
 export function handleDeliveryAction(target) {
   const readyId = target.closest('[data-rider-ready]')?.dataset.riderReady;
   if (readyId) {
-    const result = advanceOrderToReady(readyId);
-    return {
-      handled: true,
-      ok: result.ok,
-      message: result.ok ? 'Pedido listo para reparto.' : result.message,
-    };
+    return deliveryActionResponse(readyOrderForDelivery(readyId), 'Pedido listo para reparto.');
   }
 
   const leaveId = target.closest('[data-delivery-leave]')?.dataset.deliveryLeave;
   if (leaveId) {
-    const result = updateOrderStatus(leaveId, 'on_the_way');
-    if (result.ok) syncSimulationOnStatus(leaveId, 'on_the_way');
-    return {
-      handled: true,
-      ok: result.ok,
-      message: result.ok ? 'Pedido marcado como en camino.' : result.message,
-    };
+    return deliveryActionResponse(updateDeliveryOrderStatus(leaveId, 'on_the_way'), 'Pedido marcado como en camino.', () => {
+      syncSimulationOnStatus(leaveId, 'on_the_way');
+    });
   }
 
   const arriveId = target.closest('[data-delivery-arrive]')?.dataset.deliveryArrive;
   if (arriveId) {
-    const result = updateOrderStatus(arriveId, 'arriving');
-    if (result.ok) syncSimulationOnStatus(arriveId, 'arriving');
-    return {
-      handled: true,
-      ok: result.ok,
-      message: result.ok ? 'Llegada al domicilio registrada.' : result.message,
-    };
+    return deliveryActionResponse(updateDeliveryOrderStatus(arriveId, 'arriving'), 'Llegada al domicilio registrada.', () => {
+      syncSimulationOnStatus(arriveId, 'arriving');
+    });
   }
 
   const streetArriveId = target.closest('[data-street-arrive]')?.dataset.streetArrive;
   if (streetArriveId) {
-    const result = updateOrderStatus(streetArriveId, 'arriving');
-    if (result.ok) syncSimulationOnStatus(streetArriveId, 'arriving');
-    return {
-      handled: true,
-      ok: result.ok,
-      message: result.ok ? 'Llegada al destino registrada.' : result.message,
-    };
+    return deliveryActionResponse(updateDeliveryOrderStatus(streetArriveId, 'arriving'), 'Llegada al destino registrada.', () => {
+      syncSimulationOnStatus(streetArriveId, 'arriving');
+    });
   }
 
   const doneId = target.closest('[data-delivery-done]')?.dataset.deliveryDone;
   if (doneId) {
-    const result = updateOrderStatus(doneId, 'delivered');
-    if (result.ok) syncSimulationOnStatus(doneId, 'delivered');
-    return {
-      handled: true,
-      ok: result.ok,
-      message: result.ok ? 'Pedido marcado como entregado.' : result.message,
-    };
+    return deliveryActionResponse(updateDeliveryOrderStatus(doneId, 'delivered'), 'Pedido marcado como entregado.', () => {
+      syncSimulationOnStatus(doneId, 'delivered');
+    });
   }
 
   const streetDoneId = target.closest('[data-street-done]')?.dataset.streetDone;
   if (streetDoneId) {
-    const result = updateOrderStatus(streetDoneId, 'delivered');
-    if (result.ok) syncSimulationOnStatus(streetDoneId, 'delivered');
-    return {
-      handled: true,
-      ok: result.ok,
-      message: result.ok ? 'Pedido marcado como entregado.' : result.message,
-    };
+    return deliveryActionResponse(updateDeliveryOrderStatus(streetDoneId, 'delivered'), 'Pedido marcado como entregado.', () => {
+      syncSimulationOnStatus(streetDoneId, 'delivered');
+    });
   }
 
   if (target.closest('[data-sim-start]')) {
@@ -578,6 +554,31 @@ export function handleDeliveryAction(target) {
   }
 
   return { handled: false };
+}
+
+function readyOrderForDelivery(orderId) {
+  const repository = getOrderRepository();
+  if (!isPersistentOrderRepository(repository)) return advanceOrderToReady(orderId);
+  return repository.updateOrderStatus(orderId, 'preparing')
+    .then((preparing) => (preparing.ok ? repository.updateOrderStatus(orderId, 'ready') : preparing));
+}
+
+function updateDeliveryOrderStatus(orderId, status) {
+  const repository = getOrderRepository();
+  if (!isPersistentOrderRepository(repository)) return updateOrderStatus(orderId, status);
+  return repository.updateOrderStatus(orderId, status);
+}
+
+function deliveryActionResponse(result, successMessage, onSuccess = null) {
+  if (typeof result?.then === 'function') {
+    return result.then((resolved) => deliveryActionResponse(resolved, successMessage, onSuccess));
+  }
+  if (result.ok && typeof onSuccess === 'function') onSuccess();
+  return {
+    handled: true,
+    ok: result.ok,
+    message: result.ok ? successMessage : result.message,
+  };
 }
 
 export function handleDeliveryChange(target) {

@@ -26,6 +26,7 @@ import {
   normalizeRiderLocation,
 } from './map/route_geometry.js';
 import { STORE_LOCATION } from './map/map_config.js';
+import { getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
 
 let timerId = null;
 let gpsWatchId = null;
@@ -421,6 +422,7 @@ function onGpsPosition(position) {
       owner: getDeviceId(),
     },
   });
+  persistRiderLocation(sim.orderId, location);
 }
 
 function onGpsError(error) {
@@ -447,5 +449,15 @@ function onGpsError(error) {
 export function handleViewChangeForSimulation(view) {
   if (view !== 'rider' && isGpsActive()) {
     disableGpsTracking({ silent: true });
+  }
+}
+
+function persistRiderLocation(orderId, location) {
+  try {
+    const repository = getOrderRepository();
+    if (!isPersistentOrderRepository(repository)) return;
+    Promise.resolve(repository.updateRiderLocation(orderId, location)).catch(() => {});
+  } catch (_) {
+    // La app conserva el fix local aunque el backend opcional no responda.
   }
 }

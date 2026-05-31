@@ -2,12 +2,15 @@ import { assertOrderRepository } from './order_repository.js';
 import { createDemoOrderRepository } from './demo_order_repository.js';
 import { createHttpOrderRepository } from './http_order_repository.js';
 import { createRealtimeOrderRepository } from './realtime_order_repository.js';
+import { createSupabaseOrderRepository, DEFAULT_SUPABASE_BUSINESS_ID } from './supabase_order_repository.js';
 
 let orderRepository = null;
 
 export function getDataMode() {
   const params = readParams();
   const requested = params.get('data') || params.get('mode') || '';
+  if (requested === 'supabase') return 'supabase';
+  if ((requested === 'production' || requested === 'backend') && hasSupabaseConfig(params)) return 'supabase';
   if (requested === 'production' || requested === 'backend' || requested === 'http') return 'http';
   if (params.get('relay')) return 'demo-realtime';
   return 'demo';
@@ -17,6 +20,14 @@ export function getOrderRepository() {
   if (orderRepository) return orderRepository;
 
   const mode = getDataMode();
+  if (mode === 'supabase') {
+    const options = readSupabaseOptions(readParams());
+    if (options.supabaseUrl && options.anonKey) {
+      orderRepository = assertOrderRepository(createSupabaseOrderRepository(options));
+      return orderRepository;
+    }
+  }
+
   if (mode === 'http') {
     const apiBase = readParams().get('api');
     if (apiBase) {
@@ -32,6 +43,16 @@ export function getOrderRepository() {
   return orderRepository;
 }
 
+export function startOrderRepositorySync() {
+  const repository = getOrderRepository();
+  if (typeof repository.startSync === 'function') return repository.startSync();
+  return () => {};
+}
+
+export function isPersistentOrderRepository(repository = getOrderRepository()) {
+  return repository?.mode === 'supabase' || repository?.mode === 'http';
+}
+
 export function resetRepositoryFactoryForTests() {
   orderRepository = null;
 }
@@ -42,4 +63,17 @@ function readParams() {
   } catch (_) {
     return new URLSearchParams('');
   }
+}
+
+function hasSupabaseConfig(params) {
+  return Boolean(params.get('supabaseUrl') && (params.get('supabaseAnonKey') || params.get('supabaseKey')));
+}
+
+function readSupabaseOptions(params) {
+  return {
+    supabaseUrl: params.get('supabaseUrl') || '',
+    anonKey: params.get('supabaseAnonKey') || params.get('supabaseKey') || '',
+    businessId: params.get('businessId') || DEFAULT_SUPABASE_BUSINESS_ID,
+    pollMs: Number(params.get('pollMs')) || 5000,
+  };
 }

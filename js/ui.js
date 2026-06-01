@@ -426,6 +426,17 @@ export function renderCart() {
   renderCartTotals();
   renderCartList();
   renderOrderSummary();
+  renderCheckoutVisibility();
+}
+
+// Con el carrito vacío no tiene sentido mostrar el formulario "Datos para finalizar"
+// (campos y totales en $0) ni el botón de vaciar: dejamos solo el estado vacío con
+// el acceso a productos, para que la vista del pedido se sienta limpia.
+function renderCheckoutVisibility() {
+  const isEmpty = getCartItems().length === 0;
+  const form = $('[data-checkout-form]');
+  if (form) form.hidden = isEmpty;
+  $$('[data-clear-cart]').forEach((button) => { button.hidden = isEmpty; });
 }
 
 export function renderCartTotals() {

@@ -4,6 +4,8 @@ import { BUSINESS_CONFIG } from '../js/config.js';
 import { getBusinessMetrics } from '../js/core/business-metrics.js';
 import { setState, getState } from '../js/state.js';
 import { unlockAdmin, lockAdmin, handleBusinessAction, getActiveOrders, getLowStockProducts } from '../js/business.js';
+import { createOrderFromCheckout } from '../js/orders.js';
+import { addToCart } from '../js/cart.js';
 import { resetState, makeTarget } from './helpers.mjs';
 
 beforeEach(() => resetState());
@@ -160,4 +162,41 @@ test('business metrics avoid division by zero with no orders today', () => {
   const metrics = getBusinessMetrics([], [], new Date('2026-05-29T15:00:00.000Z'));
   assert.equal(metrics.avgTicket, 0);
   assert.deepEqual(metrics.topProducts, []);
+});
+
+test('un pedido confirmado entra como activo en el negocio, conserva sus datos y avanza de estado', () => {
+  addToCart('p-vacio', 2);
+  const created = createOrderFromCheckout({
+    customerName: 'Walter Cliente',
+    customerPhone: '2995551234',
+    customerStreetAddress: 'Mendoza 851',
+    customerNeighborhood: 'Centro',
+    customerReference: 'Portón gris',
+    customerNotes: 'Sin sal',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+  });
+  assert.equal(created.ok, true);
+
+  // Aparece como pedido activo del negocio, "recibido" y como pedido activo (lastOrderId).
+  const active = getActiveOrders();
+  assert.ok(active.some((order) => order.id === created.order.id));
+  assert.equal(getState().lastOrderId, created.order.id);
+
+  // Conserva los datos del cliente / dirección / productos / total.
+  const stored = getState().orders.find((order) => order.id === created.order.id);
+  assert.equal(stored.status, 'received');
+  assert.equal(stored.customerName, 'Walter Cliente');
+  assert.equal(stored.customerPhone, '2995551234');
+  assert.match(stored.address, /Mendoza 851/);
+  assert.match(stored.address, /Centro/);
+  assert.equal(stored.addressDetails.reference, 'Portón gris');
+  assert.equal(stored.items.reduce((sum, item) => sum + item.quantity, 0), 2);
+  assert.ok(stored.total > 0);
+
+  // El negocio cambia el estado y el pedido sigue siendo el activo.
+  const advanced = handleBusinessAction(makeTarget({ '[data-order-advance]': { orderAdvance: created.order.id } }));
+  assert.equal(advanced.ok, true);
+  assert.equal(getState().orders.find((order) => order.id === created.order.id).status, 'preparing');
+  assert.equal(getState().lastOrderId, created.order.id);
 });

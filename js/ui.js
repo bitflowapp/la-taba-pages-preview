@@ -967,7 +967,7 @@ export function showToast(message) {
   toast.textContent = message;
   toast.classList.remove('hidden');
   clearTimeout(showToast.timeoutId);
-  showToast.timeoutId = setTimeout(() => toast.classList.add('hidden'), 2900);
+  showToast.timeoutId = setTimeout(() => toast.classList.add('hidden'), 2400);
 }
 
 export function escapeHtml(value) {

@@ -210,7 +210,8 @@ main { max-width: var(--max); margin: 0 auto; padding: 0 18px 96px; }
 
 /* ===== Categorías (chips) ===== */
 .category-strip {
-  display: flex; gap: 9px; overflow-x: auto; padding: 2px 0 16px;
+  display: flex; gap: 9px; width: 100%; max-width: 100%; min-width: 0;
+  overflow-x: auto; padding: 2px 0 16px;
   scrollbar-width: none; -ms-overflow-style: none;
 }
 .category-strip::-webkit-scrollbar { display: none; }
@@ -274,13 +275,14 @@ main { max-width: var(--max); margin: 0 auto; padding: 0 18px 96px; }
 }
 
 /* ===== Rails ===== */
-.rail-block, .grid-block { margin-bottom: 24px; }
+.rail-block, .grid-block { width: 100%; min-width: 0; margin-bottom: 24px; }
 .rail-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
 .rail-head h2 { margin: 0; font-size: 19px; letter-spacing: -0.03em; }
 .rail-link { background: none; border: 0; color: var(--copper-soft); font-weight: 700; font-size: 13px; padding: 4px 0; }
 
 .offers-rail, .combos-rail {
   display: grid; grid-auto-flow: column; grid-auto-columns: minmax(172px, 1fr);
+  width: 100%; max-width: 100%; min-width: 0;
   gap: 12px; overflow-x: auto; padding: 4px 2px 12px;
   scroll-snap-type: x mandatory; scrollbar-width: thin;
 }
@@ -1257,6 +1259,11 @@ body:has(.app-view[data-view="business"].is-active) .toast {
   .brand-word { font-size: 17px; letter-spacing: 0.18em; }
   .topbar-actions .ghost-button { display: none; }
   main { padding-inline: 14px; }
+  body:has(.app-view[data-view="cart"].is-active) main,
+  body:has(.app-view[data-view="profile"].is-active) main,
+  body:has(.app-view[data-view="business"].is-active) main {
+    padding-bottom: calc(154px + env(safe-area-inset-bottom));
+  }
   .section { padding: 16px 0; }
   .section-head { align-items: stretch; flex-direction: column; gap: 10px; }
   .promo-banner { flex-direction: column; align-items: flex-start; gap: 12px; }
@@ -1350,10 +1357,18 @@ body:has(.app-view[data-view="business"].is-active) .toast {
   body:has(.app-view[data-view="tracking"].is-active .map-status-pill.way) .toast,
   body:has(.app-view[data-view="tracking"].is-active .map-status-pill.done) .toast,
   body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-experience) .toast {
+    top: auto;
     bottom: calc(18px + env(safe-area-inset-bottom));
   }
   .mobile-nav { display: flex; }
-  .toast { bottom: calc(var(--mobile-nav-h) + 18px); }
+  .toast {
+    left: 50%;
+    right: auto;
+    top: calc(76px + env(safe-area-inset-top));
+    bottom: auto;
+    transform: translateX(-50%);
+    width: min(92vw, 420px);
+  }
   .button-row > * { flex-basis: 100%; }
 }
 
@@ -2193,16 +2208,70 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-status-pi
     padding-bottom: calc(18px + env(safe-area-inset-bottom));
   }
 
+  .business-dashboard-shell {
+    border-radius: 18px;
+    box-shadow: 0 14px 34px rgba(65, 43, 28, 0.11);
+  }
+
   .business-main {
-    padding: 12px;
+    padding: 14px 12px 16px;
+    background: linear-gradient(180deg, #f4eee5, #efe8dd);
   }
 
   .business-sidebar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .business-topbar {
+    gap: 10px;
+  }
+
+  .business-topbar-text h2 {
+    font-size: 18px;
+  }
+
+  .business-topbar-text span {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .sound-toggle {
+    width: 100%;
+  }
+
+  .new-order-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .new-order-banner .primary-button.compact {
+    width: 100%;
+  }
+
   .business-main .metrics-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .business-main .metric-card,
+  .business-main .insight-card,
+  .business-main .dashboard-panel,
+  .business-main .card {
+    background: #fffdf9;
+    border-color: rgba(45, 36, 29, 0.11);
+    box-shadow: 0 12px 26px rgba(65, 43, 28, 0.08);
+  }
+
+  .dashboard-panel,
+  .business-main .card,
+  .business-main .insight-card {
+    padding: 14px;
+  }
+
+  .panel-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .sales-chart {

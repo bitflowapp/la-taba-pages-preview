@@ -17,6 +17,7 @@ import {
 import { buildDraftMessageFromCart, getLastOrder } from './orders.js';
 import { getRealtimeStatus } from './realtime.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
+import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -723,23 +724,69 @@ function trackingMapStage({ order = null, head = null, isEmpty = false }) {
     </div>`;
 }
 
-function riderProfileCard(order) {
-  const d = order.delivery;
-  const rating = d.driverRating ? `★ ${d.driverRating}` : '★ 4.9';
-  const trips = d.driverTrips ? `${d.driverTrips} pedidos` : 'Repartidor de La Taba';
-  const phone = d.driverPhone || BUSINESS_CONFIG.whatsappNumber;
-  const wa = `https://wa.me/${onlyDigits(phone)}`;
-  return `
-    <div class="rider-profile">
-      <span class="rider-avatar">${escapeHtml(initials(d.driverName))}</span>
-      <div class="rider-profile-text">
-        <strong>${escapeHtml(d.driverName || 'Repartidor')}</strong>
-        <small>Repartidor · ${rating} · ${trips}</small>
+// Tarjeta del repartidor en el tracking del cliente. Es honesta:
+// - Sólo muestra un rider "en vivo" cuando hay ubicación GPS REAL y reciente.
+// - Si no, muestra un estado "Rider pendiente" claro según el estado del pedido.
+// Nunca inventa nombre, teléfono ni reputación de un repartidor inexistente.
+function riderTrackingCard(order, riderLocation) {
+  if (order.status === 'delivered') return '';
+
+  if (hasLiveRiderLocation(riderLocation)) {
+    const d = order.delivery || {};
+    const hasRealName = d.driverName && d.driverName !== 'Sin asignar';
+    const name = hasRealName ? d.driverName : 'Repartidor de La Taba';
+    const age = relativeAgeLabel(riderLocation.lastFixAt || riderLocation.timestamp);
+    const phone = d.driverPhone ? onlyDigits(d.driverPhone) : '';
+    const contact = phone
+      ? `<a class="round-action call" href="tel:${encodeURIComponent(d.driverPhone)}" aria-label="Llamar al repartidor">Tel</a>
+         <a class="round-action whatsapp" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del repartidor">WA</a>`
+      : '';
+    return `
+      <div class="rider-profile is-live">
+        <span class="rider-avatar">${escapeHtml(initials(name))}</span>
+        <div class="rider-profile-text">
+          <strong>${escapeHtml(name)}</strong>
+          <small>Compartiendo ubicación en vivo · ${escapeHtml(age)}</small>
+        </div>
+        ${contact}
       </div>
-      <a class="round-action call" href="tel:${encodeURIComponent(phone)}" aria-label="Llamar al repartidor">Tel</a>
-      <a class="round-action whatsapp" href="${wa}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del repartidor">WA</a>
+    `;
+  }
+
+  const { title, sub } = riderPendingCopy(order.status);
+  return `
+    <div class="rider-profile rider-pending" role="status">
+      <span class="rider-avatar pending" aria-hidden="true">··</span>
+      <div class="rider-profile-text">
+        <strong>${escapeHtml(title)}</strong>
+        <small>${escapeHtml(sub)}</small>
+      </div>
     </div>
   `;
+}
+
+function riderPendingCopy(status) {
+  if (status === 'on_the_way' || status === 'arriving') {
+    return { title: 'Repartidor en camino', sub: 'Todavía no comparte su ubicación en vivo.' };
+  }
+  if (status === 'ready') {
+    return { title: 'Rider pendiente', sub: 'Tu pedido está listo. En breve sale el repartidor.' };
+  }
+  if (status === 'preparing') {
+    return { title: 'Rider pendiente', sub: 'El negocio está preparando tu pedido.' };
+  }
+  return { title: 'Rider pendiente', sub: 'El negocio está revisando tu pedido.' };
+}
+
+function relativeAgeLabel(value) {
+  if (!value) return 'recién';
+  const time = typeof value === 'number' ? value : new Date(value).getTime();
+  if (Number.isNaN(time)) return 'recién';
+  const seconds = Math.max(0, Math.round((Date.now() - time) / 1000));
+  if (seconds < 5) return 'ahora';
+  if (seconds < 60) return `hace ${seconds} s`;
+  const minutes = Math.round(seconds / 60);
+  return `hace ${minutes} min`;
 }
 
 function trackingAddressCard(order) {
@@ -780,6 +827,7 @@ export function renderTracking() {
   const isCancelled = order.status === 'cancelled';
   const isDelivery = order.deliveryMode !== 'pickup';
   const head = trackingHeadline(order);
+  const riderLocation = chooseRiderLocation(getOrderSimulation(order), order.tracking?.lastLocation);
   const stepIndex = customerStepIndex(order.status);
   const metricsHtml = order.status === 'delivered'
     ? `
@@ -828,7 +876,7 @@ export function renderTracking() {
         <div class="track-steps">${steps}</div>
         ${isCancelled ? '<div class="warning-box">Este pedido fue cancelado. Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>' : ''}
         ${isDelivery ? trackingAddressCard(order) : ''}
-        ${isDelivery && !isCancelled ? riderProfileCard(order) : ''}
+        ${isDelivery && !isCancelled ? riderTrackingCard(order, riderLocation) : ''}
         <details class="order-detail">
           <summary>Ver detalle del pedido · ${order.id}</summary>
           <div class="order-detail-body">

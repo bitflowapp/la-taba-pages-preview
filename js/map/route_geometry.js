@@ -328,6 +328,15 @@ export function chooseRiderLocation(simRaw, trackedRaw, { now = Date.now(), stal
   return sim || tracked || null;
 }
 
+// ¿Hay un repartidor "en vivo" para este pedido? Sólo cuenta una ubicación GPS
+// REAL y reciente. La simulación / recorrido de apoyo NO es un rider real, así
+// que el tracking del cliente no debe presentarla como tal.
+export function hasLiveRiderLocation(location, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {
+  const normalized = location ? normalizeRiderLocation(location) : null;
+  if (!normalized || normalized.source !== 'gps') return false;
+  return !isLocationStale(normalized, staleMs, now);
+}
+
 // Indica si un fix quedó "viejo" según un umbral (default 30s).
 export function isLocationStale(location, maxAgeMs = 30_000, now = Date.now()) {
   if (!location) return true;

@@ -636,6 +636,8 @@ textarea { resize: vertical; min-height: 84px; }
 @keyframes dotPulse { 0%,100% { box-shadow: 0 0 0 4px rgba(201,122,67,0.18); } 50% { box-shadow: 0 0 0 8px rgba(201,122,67,0.05); } }
 
 .rider-profile { display: flex; align-items: center; gap: 12px; padding: 12px; margin-top: 12px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,0.04); }
+.rider-profile.rider-pending { background: rgba(255,255,255,0.02); border-style: dashed; }
+.rider-profile.rider-pending .rider-avatar.pending { color: var(--muted); background: var(--surface-2, var(--surface-3)); letter-spacing: 1px; }
 .rider-profile-text { flex: 1; min-width: 0; }
 .rider-profile-text strong { display: block; font-size: 15px; }
 .rider-profile-text small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }

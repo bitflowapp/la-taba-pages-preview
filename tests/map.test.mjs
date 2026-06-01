@@ -17,7 +17,10 @@ import {
   pointOnRoute,
   routeDistanceKm,
   selectRouteForOrder,
+  shouldAcceptGpsFix,
   shouldAcceptLocationUpdate,
+  shouldPublishGpsFix,
+  shouldRenderGpsFix,
   shouldRenderLocationUpdate,
 } from '../js/map/route_geometry.js';
 import { setState } from '../js/state.js';
@@ -82,6 +85,31 @@ test('GPS quality filters reject invalid, stale, inaccurate and impossible fixes
   assert.equal(isUsableGpsFix({ ...next, accuracy: 400 }, { now }), false);
   assert.equal(shouldAcceptLocationUpdate(previous, next, { now }), true);
   assert.equal(shouldAcceptLocationUpdate(previous, absurdJump, { now }), false);
+});
+
+test('GPS policy reduces writes but still publishes max-age and status changes', () => {
+  const now = 1_000_000;
+  const previous = { lat: -38.951, lng: -68.061, source: 'gps', accuracy: 12, timestamp: now - 10_000, at: now - 2_000, orderStatus: 'on_the_way' };
+  const tiny = { lat: -38.951001, lng: -68.061001, source: 'gps', accuracy: 14, timestamp: now };
+  const moved = { lat: -38.95116, lng: -68.06116, source: 'gps', accuracy: 14, timestamp: now + 4_000 };
+
+  assert.equal(shouldPublishGpsFix(null, tiny, { now, orderStatus: 'on_the_way' }), true);
+  assert.equal(shouldPublishGpsFix(previous, tiny, { now, orderStatus: 'on_the_way' }), false);
+  assert.equal(shouldPublishGpsFix({ ...previous, at: now - 12_000 }, tiny, { now, orderStatus: 'on_the_way' }), true);
+  assert.equal(shouldPublishGpsFix({ ...previous, at: now - 4_500 }, moved, { now: now + 4_500, orderStatus: 'on_the_way' }), true);
+  assert.equal(shouldPublishGpsFix(previous, tiny, { now, orderStatus: 'arriving', previousOrderStatus: 'on_the_way' }), true);
+  assert.equal(shouldPublishGpsFix(previous, tiny, { now, orderStatus: 'delivered' }), false);
+});
+
+test('GPS policy accepts good fixes and rejects weak replacements or jumps', () => {
+  const now = 1_000_000;
+  const good = { lat: -38.951, lng: -68.061, source: 'gps', accuracy: 12, timestamp: now - 1_000 };
+  const weak = { lat: -38.95101, lng: -68.06101, source: 'gps', accuracy: 180, timestamp: now };
+  const jump = { lat: -38.75, lng: -68.30, source: 'gps', accuracy: 120, timestamp: now };
+
+  assert.equal(shouldAcceptGpsFix(null, good, { now }), true);
+  assert.equal(shouldAcceptGpsFix(good, weak, { now }), false);
+  assert.equal(shouldAcceptGpsFix(good, jump, { now }), false);
 });
 
 test('map fallback is explicit when Leaflet is unavailable', () => {
@@ -176,6 +204,18 @@ test('shouldRenderLocationUpdate throttles tiny visual updates', () => {
   assert.equal(shouldRenderLocationUpdate(previous, tiny, { now }), false);
   assert.equal(shouldRenderLocationUpdate({ ...previous, renderedAt: now - 1_000 }, tiny, { now }), true);
   assert.equal(shouldRenderLocationUpdate(previous, far, { now }), true);
+});
+
+test('shouldRenderGpsFix throttles noisy marker updates', () => {
+  const now = 1_000_000;
+  const previous = { lat: -38.951, lng: -68.061, source: 'gps', accuracy: 14, timestamp: now - 100, renderedAt: now - 100 };
+  const tiny = { lat: -38.951001, lng: -68.061001, source: 'gps', accuracy: 14, timestamp: now };
+  const oldEnough = { ...tiny, timestamp: now + 1_300 };
+  const far = { lat: -38.9512, lng: -68.0612, source: 'gps', accuracy: 14, timestamp: now };
+
+  assert.equal(shouldRenderGpsFix(previous, tiny, { now }), false);
+  assert.equal(shouldRenderGpsFix({ ...previous, renderedAt: now - 1_300 }, oldEnough, { now: now + 1_300 }), true);
+  assert.equal(shouldRenderGpsFix(previous, far, { now }), true);
 });
 
 test('real map and rider marker are reused on a second GPS location', async () => {

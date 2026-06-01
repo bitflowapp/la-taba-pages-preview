@@ -136,6 +136,7 @@ function sanitizeSimulation(raw, orders) {
     ...(raw.lastGpsFixAt ? { lastGpsFixAt: normalizeIsoDate(raw.lastGpsFixAt) } : {}),
     ...(raw.lastGpsPublishedAt ? { lastGpsPublishedAt: normalizeIsoDate(raw.lastGpsPublishedAt) } : {}),
     ...(raw.lastPublishedAt ? { lastPublishedAt: normalizeIsoDate(raw.lastPublishedAt) } : {}),
+    ...(raw.lastBackendPublishAt ? { lastBackendPublishAt: normalizeIsoDate(raw.lastBackendPublishAt) } : {}),
     ...(raw.lastSentSource ? { lastSentSource: raw.lastSentSource === 'gps' ? 'gps' : 'simulation' } : {}),
     ...(raw.streetMode ? { streetMode: true } : {}),
     ...(raw.owner ? { owner: sanitizeText(raw.owner, { maxLength: 80 }) } : {}),
@@ -145,6 +146,7 @@ function sanitizeSimulation(raw, orders) {
     ...(Number.isFinite(Number(raw.heading)) ? { heading: ((Number(raw.heading) % 360) + 360) % 360 } : {}),
     ...(Number.isFinite(Number(raw.speed)) ? { speed: Math.max(0, Number(raw.speed)) } : {}),
     ...(raw.gpsError ? { gpsError: sanitizeText(raw.gpsError, { maxLength: 140 }) } : {}),
+    ...(raw.backendError ? { backendError: sanitizeText(raw.backendError, { maxLength: 160 }) } : {}),
   };
 }
 

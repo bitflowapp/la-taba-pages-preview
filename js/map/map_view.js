@@ -9,7 +9,7 @@ import {
   normalizeRiderLocation,
   pointOnRoute,
   selectRouteForOrder,
-  shouldRenderLocationUpdate,
+  shouldRenderGpsFix,
 } from './route_geometry.js';
 import { createRiderIcon, updateRiderMarker } from './rider_marker.js';
 
@@ -231,7 +231,7 @@ export function updateRiderMarkerPosition(entry, location, options = {}) {
   if (!entry?.riderMarker || !location) return null;
   const now = Date.now();
   const statusChanged = entry.lastStatus !== (options.status || null) || entry.lastSource !== location.source;
-  if (!statusChanged && !shouldRenderLocationUpdate(entry.lastRenderedLocation, location, { now })) {
+  if (!statusChanged && !shouldRenderGpsFix(entry.lastRenderedLocation, location, { now })) {
     return entry.riderMarker.getLatLng?.() || null;
   }
 
@@ -363,12 +363,14 @@ function renderMapMeta(container, order, location, destination) {
   const source = RIDER_LOCATION_SOURCES[location.source] || RIDER_LOCATION_SOURCES.simulation;
   const age = relativeAgeLabel(location.lastFixAt || location.timestamp);
   const gpsStale = location.source === 'gps' && isLocationStale(location, TRACKING_STALE_MS);
-  const prefix = gpsStale ? 'Última ubicación rider' : source;
+  const prefix = gpsStale ? 'Última ubicación' : source;
   const showAccuracy = container.dataset.mapRole?.startsWith('rider');
   const accuracy = showAccuracy && Number.isFinite(location.accuracy)
     ? ` · precisión ${Math.round(location.accuracy)} m`
     : '';
-  meta.textContent = `${prefix} · actualizado ${age} · ${km.toFixed(1).replace('.', ',')} km aprox.${accuracy}`;
+  meta.textContent = gpsStale
+    ? `${prefix} ${age} · ${km.toFixed(1).replace('.', ',')} km aprox.${accuracy}`
+    : `${prefix} · actualizado ${age} · ${km.toFixed(1).replace('.', ',')} km aprox.${accuracy}`;
 }
 
 function relativeAgeLabel(value) {

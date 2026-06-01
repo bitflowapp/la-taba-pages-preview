@@ -185,11 +185,11 @@ test('pedido real no muestra rider falso: rider pendiente hasta que hay GPS real
   await page.getByRole('button', { name: /Vista rider/i }).click();
   await expect(page.locator('[data-view="rider"]')).toBeVisible();
   await page.locator('[data-sim-gps]').click();
-  await expect(page.locator('[data-delivery-panel]')).toContainText('Ubicación compartida');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('GPS compartiendo ubicación');
 
   await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
   await expect(tracking.locator('.rider-profile.is-live')).toBeVisible({ timeout: 10_000 });
-  await expect(tracking).toContainText('Compartiendo ubicación en vivo');
+  await expect(tracking).toContainText('Ubicación rider');
 
   await guards.assertClean();
 });

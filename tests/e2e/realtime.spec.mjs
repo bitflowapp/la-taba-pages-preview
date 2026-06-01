@@ -61,6 +61,7 @@ test('cliente y rider en dos equipos: pedido interno, realtime, simulación y en
   await expect(client.locator('[data-real-map][data-map-role="tracking"]')).toHaveClass(/map-theme-light/);
   await expect(client.locator('[data-map-shell="tracking"]')).toBeVisible();
   await expect(client.locator('[data-tracking-panel] [data-bottom-sheet]')).toBeVisible();
+  await expect(client.locator('[data-tracking-panel]')).toContainText('Roca 123, Neuquen centro');
 
   // El rider ve el pedido del cliente SIN recargar (vía relay).
   await expect(rider.locator('[data-delivery-panel]')).toContainText('LT-0002', { timeout: 10_000 });
@@ -148,7 +149,7 @@ test('GPS del rider se propaga al tracking del cliente por relay', async ({ brow
   await expect(rider.locator('[data-delivery-panel]')).toContainText('Detalles de ubicación');
   await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación rider', { timeout: 10_000 });
   await expect(client.locator('[data-map-meta]').first()).not.toContainText(/precisión|±/i);
-  await expect(client.locator('[data-tracking-panel]')).toContainText('Alto Comahue', { timeout: 10_000 });
+  await expect(client.locator('[data-tracking-panel]')).toContainText('Roca 123, Neuquen centro', { timeout: 10_000 });
 
   await riderCtx.setGeolocation({ latitude: -38.9468, longitude: -68.0424, accuracy: 16 });
   await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación rider', { timeout: 10_000 });

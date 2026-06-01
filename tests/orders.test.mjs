@@ -60,6 +60,35 @@ test('pickup orders do not require a delivery address and do not charge shipping
   assert.equal(result.order.total, result.order.subtotal);
 });
 
+test('delivery orders store structured customer address and rider reference', () => {
+  addToCart('p-vacio', 1);
+
+  const result = createOrderFromCheckout({
+    customerName: 'Direccion QA',
+    customerPhone: '2995551234',
+    customerStreetAddress: 'Mitre 456',
+    customerNeighborhood: 'Area centro',
+    customerReference: 'Casa verde',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: 'Sin grasa',
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.order.address, 'Mitre 456, Area centro');
+  assert.deepEqual(result.order.addressDetails, {
+    streetLine: 'Mitre 456',
+    neighborhood: 'Area centro',
+    reference: 'Casa verde',
+    label: 'Mitre 456, Area centro',
+    usesStructured: true,
+  });
+
+  const message = buildWhatsAppMessage(result.order);
+  assert.match(message, /Dirección: Mitre 456, Area centro/);
+  assert.match(message, /Referencia: Casa verde/);
+});
+
 test('delivery orders require a delivery address and a minimum subtotal', () => {
   resetState();
   addToCart('p-vacio', 1);
@@ -74,7 +103,20 @@ test('delivery orders require a delivery address and a minimum subtotal', () => 
   });
 
   assert.equal(missingAddress.ok, false);
-  assert.match(missingAddress.message, /dirección/);
+  assert.match(missingAddress.message, /calle|número/i);
+
+  const missingNeighborhood = createOrderFromCheckout({
+    customerName: 'Ana',
+    customerPhone: '2993334444',
+    customerStreetAddress: 'Roca 321',
+    customerNeighborhood: '',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: '',
+  });
+
+  assert.equal(missingNeighborhood.ok, false);
+  assert.match(missingNeighborhood.message, /barrio|zona/i);
 
   resetState();
   addToCart('p-coca', 1);

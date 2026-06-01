@@ -21,6 +21,7 @@ import {
 } from './core/storage.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
 import { clampProgress } from './core/simulation.js';
+import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 
 export const STATE_SCHEMA_VERSION = 1;
 
@@ -187,10 +188,15 @@ function normalizeLastOrderId(candidate, orders) {
 function sanitizeCheckoutDraft(draft) {
   if (!isPlainObject(draft)) return null;
   const deliveryMode = normalizeDeliveryMode(draft.deliveryMode);
+  const addressDetails = normalizeAddressDetails(draft);
   return {
     customerName: sanitizeText(draft.customerName, { maxLength: 80 }),
     customerPhone: sanitizeText(draft.customerPhone, { maxLength: 40 }),
-    customerAddress: sanitizeText(draft.customerAddress, { maxLength: 180 }),
+    customerStreetAddress: addressDetails.streetLine,
+    customerNeighborhood: addressDetails.neighborhood,
+    customerReference: addressDetails.reference,
+    customerAddress: addressDetails.label,
+    addressDetails,
     deliveryMode,
     paymentMethod: normalizePaymentMethod(draft.paymentMethod),
     customerNotes: sanitizeNotes(draft.customerNotes, ''),
@@ -214,6 +220,9 @@ function normalizeOrder(order) {
   const createdAt = normalizeIsoDate(order.createdAt);
   const totals = calculateTotals(items, deliveryMode);
   const delivery = normalizeDelivery(order.delivery, deliveryMode, status);
+  const addressDetails = deliveryMode === 'pickup'
+    ? null
+    : normalizeOrderAddressDetails(order);
 
   return {
     ...order,
@@ -222,7 +231,8 @@ function normalizeOrder(order) {
     customerPhone: sanitizeText(order.customerPhone, { maxLength: 40 }),
     address: deliveryMode === 'pickup'
       ? BUSINESS_CONFIG.address
-      : sanitizeText(order.address, { fallback: 'Sin dirección', maxLength: 180 }),
+      : addressDetails.label || sanitizeText(order.address, { fallback: 'Sin dirección', maxLength: 180 }),
+    addressDetails,
     deliveryMode,
     paymentMethod: sanitizeText(order.paymentMethod, { fallback: paymentLabel(normalizePaymentMethod(order.paymentMethod)), maxLength: 80 }),
     notes: sanitizeNotes(order.notes),

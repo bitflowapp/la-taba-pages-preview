@@ -21,6 +21,7 @@ import {
   syncSimulationOnStatus,
 } from './simulation.js';
 import { getRealtimeStatus } from './realtime.js';
+import { normalizeOrderAddressDetails } from './core/address.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
 import { escapeHtml, renderWithStableRealMap } from './ui.js';
@@ -68,7 +69,9 @@ export function renderDeliveryPanel() {
   const eta = sim ? `${sim.etaMinutes} min` : formatDemoEta(order);
   const distance = formatDemoDistance(order);
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
-  const destinationLabel = displayDestinationLabel(order.delivery?.demoDestinationAddressLabel || order.address);
+  const address = normalizeOrderAddressDetails(order);
+  const destinationLabel = displayDestinationLabel(address.label || order.address);
+  const addressText = [destinationLabel, address.reference ? `Referencia: ${address.reference}` : ''].filter(Boolean).join('\n');
   const headline = awaiting
     ? 'Esperando preparación'
     : order.status === 'arriving'
@@ -123,8 +126,13 @@ export function renderDeliveryPanel() {
           </div>
 
           <div class="rider-address">
-            <span class="rider-label">Dirección de entrega</span>
+            <span class="rider-label">Entrega en</span>
             <p>${escapeHtml(destinationLabel)}</p>
+            ${address.reference ? `<p class="rider-reference">Referencia: ${escapeHtml(address.reference)}</p>` : ''}
+            <p class="form-hint">Direccion cargada por el cliente. El mapa es una referencia de recorrido.</p>
+            <div class="rider-copy-row">
+              <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar direccion</button>
+            </div>
           </div>
 
           <div class="rider-block">
@@ -224,7 +232,7 @@ function renderSimControls(order, sim) {
   const canReset = Boolean(sim) && order.status !== 'delivered';
   const destination = selectedStreetDestination(order, sim);
   const distanceToDestination = currentDistanceToDestination(sim, destination);
-  const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'Ruta estimada';
+  const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'Recorrido de apoyo';
   const gpsStatus = gpsProductStatusLabel(sim, gpsOn);
   const lastGpsFixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
   const lastFix = lastGpsFixAt ? relativeAgeLabel(lastGpsFixAt) : '';
@@ -251,13 +259,13 @@ function renderSimControls(order, sim) {
         <span class="sim-state ${gpsOn ? 'live' : ''}">GPS: ${escapeHtml(gpsStatus)}</span>
       </div>
       <label class="street-destination-field">
-        <span>Destino del recorrido</span>
-        <select data-street-destination aria-label="Destino del recorrido">
+        <span>Referencia visual del recorrido</span>
+        <select data-street-destination aria-label="Referencia visual del recorrido">
           ${destinationOptions}
         </select>
       </label>
       <div class="street-summary-grid">
-        <span><small>Destino</small><strong>${escapeHtml(displayDestinationLabel(destination.addressLabel || destination.label))}</strong></span>
+        <span><small>Referencia visual</small><strong>${escapeHtml(displayDestinationLabel(destination.addressLabel || destination.label))}</strong></span>
         <span><small>Distancia</small><strong>${escapeHtml(distanceToDestination)}</strong></span>
         <span><small>Ubicación</small><strong>${escapeHtml(sourceLabel)}</strong></span>
         <span><small>Precisión</small><strong>${escapeHtml(accuracy)}</strong></span>
@@ -271,8 +279,8 @@ function renderSimControls(order, sim) {
         <button class="secondary-button" type="button" data-sim-gps-off ${gpsSession ? '' : 'disabled'}>Detener GPS</button>
       </div>
       <div class="button-row sim-actions">
-        <button class="ghost-button compact" type="button" data-street-activate="${escapeHtml(destination.id)}">Usar este destino</button>
-        <button class="secondary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar ruta estimada</button>
+        <button class="ghost-button compact" type="button" data-street-activate="${escapeHtml(destination.id)}">Usar referencia visual</button>
+        <button class="secondary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar recorrido de apoyo</button>
         <button class="ghost-button compact" type="button" data-sim-reset ${canReset ? '' : 'disabled'}>Reiniciar ruta</button>
       </div>
       <div class="button-row street-delivery-actions">

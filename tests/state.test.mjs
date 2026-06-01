@@ -31,6 +31,11 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
         customerName: ' Cliente demo ',
         customerPhone: '2990000000',
         address: 'Roca 123',
+        addressDetails: {
+          streetLine: 'Roca 123',
+          neighborhood: 'Centro',
+          reference: 'Casa verde',
+        },
         deliveryMode: 'delivery',
         paymentMethod: 'Efectivo',
         notes: '',
@@ -62,6 +67,8 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
   assert.equal(hydrated.orders[0].deliveryFee, BUSINESS_CONFIG.deliveryFee);
   assert.equal(hydrated.orders[0].total, 5600 + BUSINESS_CONFIG.deliveryFee);
   assert.equal(hydrated.orders[0].statusHistory.at(-1).status, 'received');
+  assert.equal(hydrated.orders[0].address, 'Roca 123, Centro');
+  assert.equal(hydrated.orders[0].addressDetails.reference, 'Casa verde');
   assert.equal(hydrated.lastOrderId, null);
   assert.equal(hydrated.activeCategory, 'all');
 });

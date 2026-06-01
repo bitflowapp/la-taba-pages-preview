@@ -109,17 +109,17 @@ export function activateStreetTestMode(destinationId = null) {
     return { ok: false, message: 'Creá o usá un pedido de delivery para activar el modo calle.' };
   }
   return applyStreetTestDestination(order, destinationId || routePreferenceForOrder(order), {
-    message: 'Destino del recorrido actualizado.',
+    message: 'Referencia visual del recorrido actualizada.',
   });
 }
 
 export function selectStreetTestDestination(destinationId) {
   const order = getStreetTestOrder();
   if (!order) {
-    return { ok: false, message: 'Creá o usá un pedido de delivery para elegir destino.' };
+    return { ok: false, message: 'Creá o usá un pedido de delivery para elegir referencia visual.' };
   }
   return applyStreetTestDestination(order, destinationId, {
-    message: 'Destino de prueba actualizado.',
+    message: 'Referencia visual actualizada.',
   });
 }
 

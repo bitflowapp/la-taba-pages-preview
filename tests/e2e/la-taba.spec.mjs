@@ -110,7 +110,9 @@ test('home muestra acceso al pedido en curso tras confirmar', async ({ page }) =
   await fillCheckout(page, {
     name: 'Walter QA',
     phone: '2995550000',
-    address: 'Roca 123',
+    street: 'Roca 123',
+    neighborhood: 'Neuquen centro',
+    reference: 'Porton negro',
     notes: 'Tocar timbre',
     payment: 'cash',
     deliveryMode: 'delivery',
@@ -144,7 +146,8 @@ test('flujo cliente con delivery', async ({ page }) => {
   await fillCheckout(page, {
     name: '',
     phone: '2995550000',
-    address: 'Roca 123',
+    street: 'Roca 123',
+    neighborhood: 'Neuquen centro',
     notes: 'Sin hueso',
     payment: 'transfer',
     deliveryMode: 'delivery',
@@ -155,7 +158,8 @@ test('flujo cliente con delivery', async ({ page }) => {
   await fillCheckout(page, {
     name: 'Walter QA',
     phone: '',
-    address: 'Roca 123',
+    street: 'Roca 123',
+    neighborhood: 'Neuquen centro',
     notes: 'Sin hueso',
     payment: 'transfer',
     deliveryMode: 'delivery',
@@ -172,12 +176,14 @@ test('flujo cliente con delivery', async ({ page }) => {
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Ingresá la dirección para el envío.');
+  await waitForToast(page, 'Ingresá calle y número para el envío.');
 
   await fillCheckout(page, {
     name: 'Walter QA',
     phone: '2995550000',
-    address: 'Roca 123',
+    street: 'Roca 123',
+    neighborhood: 'Neuquen centro',
+    reference: 'Porton negro',
     notes: 'Sin hueso',
     payment: 'transfer',
     deliveryMode: 'delivery',
@@ -187,6 +193,8 @@ test('flujo cliente con delivery', async ({ page }) => {
   const clipboardText = await page.evaluate(() => window.__clipboardText);
   expect(clipboardText).toContain('Walter QA');
   expect(clipboardText).toContain('Envío a domicilio');
+  expect(clipboardText).toContain('Roca 123, Neuquen centro');
+  expect(clipboardText).toContain('Porton negro');
   expect(clipboardText).toContain('Total:');
 
   // CTA principal: confirma el pedido interno y NO abre WhatsApp automáticamente.
@@ -194,6 +202,9 @@ test('flujo cliente con delivery', async ({ page }) => {
   await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Entrega en');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Roca 123, Neuquen centro');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Porton negro');
   const autoOpened = await page.evaluate(() => window.__openedUrls.length);
   expect(autoOpened).toBe(0);
 
@@ -203,7 +214,8 @@ test('flujo cliente con delivery', async ({ page }) => {
   const openedUrl = await page.evaluate(() => window.__openedUrls.at(-1));
   expect(openedUrl).toContain('wa.me/');
   expect(openedUrl).toContain(encodeURIComponent('Walter QA'));
-  expect(openedUrl).toContain(encodeURIComponent('Roca 123'));
+  expect(openedUrl).toContain(encodeURIComponent('Roca 123, Neuquen centro'));
+  expect(openedUrl).toContain(encodeURIComponent('Porton negro'));
   expect(openedUrl).toContain(encodeURIComponent('Subtotal'));
 
   await guards.assertClean();
@@ -253,6 +265,21 @@ test('modo negocio y delivery', async ({ page }) => {
   const guards = installPageGuards(page);
 
   await page.goto('/');
+  await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await page.locator('.desktop-nav [data-nav-view="cart"]').click();
+  await fillCheckout(page, {
+    name: 'Cliente Calle',
+    phone: '2995552222',
+    street: 'Mitre 456',
+    neighborhood: 'Area centro',
+    reference: 'Casa verde',
+    notes: 'Dejar en recepcion',
+    payment: 'cash',
+    deliveryMode: 'delivery',
+  });
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
+  await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
   await expect(page.locator('[data-view="business"]')).toBeHidden();
   await expect(page.locator('[data-view="rider"]')).toBeHidden();
 
@@ -267,11 +294,15 @@ test('modo negocio y delivery', async ({ page }) => {
   await expect(page.locator('[data-business-dashboard]')).toContainText('Pedidos del día');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Ventas de hoy');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Productos y stock');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('En preparación');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Mitre 456, Area centro');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Casa verde');
 
   const advanceButton = page.locator('[data-order-advance]').first();
   await expect(advanceButton).toBeVisible();
   await advanceButton.click();
+  await waitForToast(page, 'Estado del pedido actualizado.');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Marcar listo para enviar');
+  await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Enviar con repartidor');
 
@@ -300,6 +331,8 @@ test('modo negocio y delivery', async ({ page }) => {
   await page.getByRole('button', { name: /Vista rider/i }).click();
   await expect(page.locator('[data-view="rider"]')).toBeVisible();
   await expect(page.locator('[data-delivery-panel]')).toContainText('Pedido');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Mitre 456, Area centro');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Casa verde');
 
   const deliveryLeave = page.locator('[data-delivery-leave]').first();
   if (await deliveryLeave.count()) {

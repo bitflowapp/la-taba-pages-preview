@@ -16,6 +16,7 @@ import {
 } from './cart.js';
 import { buildDraftMessageFromCart, getLastOrder } from './orders.js';
 import { getRealtimeStatus } from './realtime.js';
+import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -515,10 +516,21 @@ export function getCheckoutFormValues() {
   const form = $('[data-checkout-form]');
   if (!form) return {};
   const formData = new FormData(form);
+  const addressDetails = normalizeAddressDetails({
+    customerStreetAddress: formData.get('customerStreetAddress'),
+    customerNeighborhood: formData.get('customerNeighborhood'),
+    customerReference: formData.get('customerReference'),
+  });
+  const hiddenAddress = form.querySelector('[name="customerAddress"]');
+  if (hiddenAddress) hiddenAddress.value = addressDetails.label;
   return {
     customerName: String(formData.get('customerName') || ''),
     customerPhone: String(formData.get('customerPhone') || ''),
-    customerAddress: String(formData.get('customerAddress') || ''),
+    customerStreetAddress: addressDetails.streetLine,
+    customerNeighborhood: addressDetails.neighborhood,
+    customerReference: addressDetails.reference,
+    customerAddress: addressDetails.label,
+    addressDetails,
     deliveryMode: String(formData.get('deliveryMode') || 'delivery'),
     paymentMethod: String(formData.get('paymentMethod') || 'cash'),
     customerNotes: String(formData.get('customerNotes') || ''),
@@ -581,11 +593,11 @@ function distanceLabel(order) {
 }
 
 function destinationLabel(order) {
-  return displayDestinationLabel(order?.delivery?.demoDestinationLabel || deliveryModeLabel(order.deliveryMode));
+  return displayDestinationLabel(order?.address || order?.delivery?.demoDestinationLabel || deliveryModeLabel(order.deliveryMode));
 }
 
 function destinationAddressLabel(order) {
-  return displayDestinationLabel(order?.delivery?.demoDestinationAddressLabel || order.address);
+  return displayDestinationLabel(order?.address || order?.delivery?.demoDestinationAddressLabel);
 }
 
 function displayDestinationLabel(value) {
@@ -719,6 +731,18 @@ function riderProfileCard(order) {
   `;
 }
 
+function trackingAddressCard(order) {
+  const address = normalizeOrderAddressDetails(order);
+  if (order.deliveryMode === 'pickup' || !address.label) return '';
+  return `
+    <div class="tracking-address-card" data-tracking-address>
+      <small>Entrega en</small>
+      <strong>${escapeHtml(address.label)}</strong>
+      ${address.reference ? `<p>Referencia: ${escapeHtml(address.reference)}</p>` : ''}
+      <p class="tracking-address-note">Direccion cargada por el cliente. El rider usa la direccion del pedido.</p>
+    </div>`;
+}
+
 export function renderTracking() {
   const container = $('[data-tracking-panel]');
   if (!container) return;
@@ -792,6 +816,7 @@ export function renderTracking() {
         </div>
         <div class="track-steps">${steps}</div>
         ${isCancelled ? '<div class="warning-box">Este pedido fue cancelado. Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>' : ''}
+        ${isDelivery ? trackingAddressCard(order) : ''}
         ${isDelivery && !isCancelled ? riderProfileCard(order) : ''}
         <details class="order-detail">
           <summary>Ver detalle del pedido · ${order.id}</summary>

@@ -13,6 +13,8 @@ fallback.
 ## Resumen del flujo
 
 1. El **cliente** crea un pedido de delivery (persistido en Supabase vía RPC).
+   Para delivery se cargan calle y número, barrio/zona, referencia para el rider
+   y notas del pedido.
 2. El **rider** abre la vista Rider, marca el pedido listo / salió del local.
 3. El rider toca **Usar mi ubicación real** y acepta el permiso del navegador.
 4. La app usa `navigator.geolocation.watchPosition` y publica cada fix real en
@@ -37,6 +39,22 @@ El tracking esta optimizado para sentirse como una app de delivery:
 Las vistas de cliente y rider pueden re-renderizar textos o botones, pero el
 nodo del mapa real se preserva mientras sea el mismo pedido. Cada nueva
 ubicacion actualiza solo marker, linea de progreso y texto de estado.
+
+## Direccion real sin geocoding pago
+
+En esta fase la direccion del cliente es textual y se muestra completa en
+checkout, tracking, panel negocio, rider, ticket y WhatsApp:
+
+- **Tracking cliente:** "Entrega en: Calle 123, Barrio" y la referencia si existe.
+- **Negocio:** la tarjeta del pedido muestra direccion, referencia, cliente y
+  telefono para preparar y despachar.
+- **Rider:** la direccion queda destacada, con botones de llamada, WhatsApp y
+  copiar direccion.
+
+No se geocodifica ni se inventan coordenadas del cliente. El mapa sigue usando
+el local, el rider real y una referencia visual de recorrido para el piloto. Si
+no hay coordenadas exactas del destino, la UI lo trata como referencia visual:
+el rider opera con la direccion escrita por el cliente.
 
 ## Cómo probar GPS real con Supabase
 
@@ -78,7 +96,7 @@ usan sólo localmente.
 - **`?data=supabase` sin `supabaseUrl`/`supabaseAnonKey`**: cae a demo con un
   aviso técnico discreto (no rompe la UI).
 - **Simulación**: si el GPS real falla (permiso denegado, sin contexto seguro,
-  sin señal), el rider puede usar **Iniciar simulación** y el cliente ve
+  sin señal), el rider puede usar el **recorrido de apoyo** y el cliente ve
   *"Ubicación estimada"*. El GPS real, cuando existe, **tiene prioridad** sobre la
   simulación; a igual fuente gana el fix más reciente.
 
@@ -132,14 +150,15 @@ Antes de aceptar o renderizar un fix se aplican reglas de calidad:
 Para validar una prueba fisica de producto:
 
 1. Abrir cliente y rider por HTTPS, misma room/pedido.
-2. Crear un pedido de delivery.
-3. En Rider, elegir destino, tocar **Compartir mi ubicacion** y aceptar permiso.
-4. Caminar o moverse unos metros con Safari visible.
-5. Confirmar en cliente: texto **"Ubicacion rider"**, edad de actualizacion,
+2. Crear un pedido de delivery con calle, numero, barrio y referencia real.
+3. Confirmar que tracking, negocio y rider muestran la direccion real.
+4. En Rider, elegir referencia visual si hace falta, tocar **Compartir mi ubicacion** y aceptar permiso.
+5. Caminar o moverse unos metros con Safari visible.
+6. Confirmar en cliente: texto **"Ubicacion rider"**, edad de actualizacion,
    marker moviendose sin flashes fuertes, sin reset de zoom/centro.
-6. Mover manualmente el mapa y confirmar que no se recentra violentamente.
-7. Tocar **Detener GPS** y confirmar que el rider queda en **GPS detenido**.
-8. Entregar/cancelar y confirmar que deja de publicarse ubicacion.
+7. Mover manualmente el mapa y confirmar que no se recentra violentamente.
+8. Tocar **Detener GPS** y confirmar que el rider queda en **GPS detenido**.
+9. Entregar/cancelar y confirmar que deja de publicarse ubicacion.
 
 ## Privacidad
 

@@ -76,14 +76,26 @@ export async function waitForToast(page, text) {
   await expect(page.locator('[data-toast]')).toContainText(text);
 }
 
-export async function fillCheckout(page, { name, phone, address, notes, payment = 'cash', deliveryMode = 'delivery' }) {
+export async function fillCheckout(page, {
+  name,
+  phone,
+  address,
+  street,
+  neighborhood,
+  reference,
+  notes,
+  payment = 'cash',
+  deliveryMode = 'delivery',
+}) {
   await page.getByLabel('Nombre').fill(name);
   await page.getByLabel('Teléfono').fill(phone);
   await page.getByLabel('Forma de pago').selectOption(payment);
   await page.getByLabel('Notas').fill(notes);
   if (deliveryMode === 'delivery') {
-    await page.getByLabel('Dirección').fill(address);
     await page.getByLabel('Delivery').check();
+    await page.getByLabel('Calle y numero').fill(street ?? address ?? '');
+    await page.getByLabel('Barrio o zona').fill(neighborhood ?? (address ? 'Neuquen centro' : ''));
+    await page.getByLabel('Referencia para el rider').fill(reference ?? '');
   } else {
     await page.getByLabel('Retiro en local').check();
   }

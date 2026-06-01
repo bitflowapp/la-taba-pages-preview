@@ -6,6 +6,7 @@ import {
   toDomainOrder,
 } from '../core/domain.js';
 import { calculateTotals, normalizeMoneyValue } from '../core/pricing.js';
+import { appendReferenceToNotes, normalizeAddressDetails } from '../core/address.js';
 import {
   getNextWorkflowStatus,
   normalizeWorkflowStatus,
@@ -87,7 +88,10 @@ export function createSupabaseOrderRepository({
       if (!values.customerName) return repositoryResult(false, { message: 'Ingresá el nombre del cliente.' });
       if (!values.customerPhone) return repositoryResult(false, { message: 'Ingresá un teléfono de contacto.' });
       if (values.deliveryMode === 'delivery' && !values.customerAddress) {
-        return repositoryResult(false, { message: 'Ingresá la dirección para el envío.' });
+        return repositoryResult(false, { message: 'Ingresá calle y número para el envío.' });
+      }
+      if (values.deliveryMode === 'delivery' && values.addressDetails.usesStructured && !values.addressDetails.neighborhood) {
+        return repositoryResult(false, { message: 'Ingresá el barrio o zona para el envío.' });
       }
 
       const cartItems = getCartItems();
@@ -114,7 +118,7 @@ export function createSupabaseOrderRepository({
         customer_phone: values.customerPhone,
         customer_whatsapp: values.customerPhone,
         address_label: values.deliveryMode === 'pickup' ? BUSINESS_CONFIG.address : values.customerAddress,
-        notes: values.customerNotes || 'Sin notas',
+        notes: appendReferenceToNotes(values.customerNotes, values.addressDetails.reference),
         payment_method: values.paymentMethod,
         subtotal: totals.subtotal,
         delivery_fee: totals.deliveryFee,
@@ -355,6 +359,11 @@ function rowToDemoOrder(row = {}) {
   const items = Array.isArray(row.order_items) ? row.order_items.map(rowToDemoItem).filter(Boolean) : [];
   const latestLocation = latestRiderLocation(row.rider_locations);
   const createdAt = normalizeIso(row.created_at);
+  const storedNotes = splitStoredNotes(row.notes);
+  const addressDetails = deliveryMode === 'pickup' ? null : normalizeAddressDetails({
+    address: row.address_label,
+    reference: storedNotes.reference,
+  });
   return {
     id: sanitizeText(row.code || row.id, { maxLength: 80 }),
     backendId: row.id,
@@ -363,10 +372,11 @@ function rowToDemoOrder(row = {}) {
     customerPhone: sanitizeText(row.customer_phone, { maxLength: 40 }),
     address: deliveryMode === 'pickup'
       ? BUSINESS_CONFIG.address
-      : sanitizeText(row.address_label, { fallback: 'Sin dirección', maxLength: 180 }),
+      : addressDetails.label || sanitizeText(row.address_label, { fallback: 'Sin dirección', maxLength: 180 }),
+    addressDetails,
     deliveryMode,
     paymentMethod: paymentLabel(row.payment_method || 'cash'),
-    notes: sanitizeNotes(row.notes),
+    notes: sanitizeNotes(storedNotes.notes),
     createdAt,
     updatedAt: normalizeIso(row.updated_at || row.created_at),
     status,
@@ -402,6 +412,24 @@ function rowToDemoItem(item = {}) {
     quantity: Math.max(1, Math.floor(Number(item.quantity) || 1)),
     unitPrice: normalizeMoneyValue(item.unit_price, 0),
     unit: sanitizeText(item.unit, { fallback: 'unidad', maxLength: 40 }),
+  };
+}
+
+function splitStoredNotes(raw = '') {
+  const lines = String(raw || '').split(/\r?\n/);
+  let reference = '';
+  const noteLines = [];
+  for (const line of lines) {
+    const match = line.match(/^Referencia:\s*(.+)$/i);
+    if (match && !reference) {
+      reference = sanitizeText(match[1], { maxLength: 180 });
+      continue;
+    }
+    noteLines.push(line);
+  }
+  return {
+    notes: sanitizeNotes(noteLines.join('\n'), 'Sin notas'),
+    reference,
   };
 }
 

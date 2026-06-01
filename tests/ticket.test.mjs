@@ -11,7 +11,9 @@ test('buildKitchenTicket incluye los datos clave del pedido para la cocina', () 
   const { order } = createOrderFromCheckout({
     customerName: 'Cocina QA',
     customerPhone: '2995550000',
-    customerAddress: 'Roca 321',
+    customerStreetAddress: 'Roca 321',
+    customerNeighborhood: 'Centro',
+    customerReference: 'Porton negro',
     deliveryMode: 'delivery',
     paymentMethod: 'cash',
     customerNotes: 'Sin sal',
@@ -22,7 +24,8 @@ test('buildKitchenTicket incluye los datos clave del pedido para la cocina', () 
   assert.ok(ticket.includes(order.id));
   assert.match(ticket, /Cocina QA/);
   assert.match(ticket, /2995550000/);
-  assert.match(ticket, /Roca 321/);
+  assert.match(ticket, /Roca 321, Centro/);
+  assert.match(ticket, /Porton negro/);
   assert.match(ticket, /2 x Vacío/);
   assert.match(ticket, /TOTAL:/);
   assert.match(ticket, /Sin sal/);

@@ -38,7 +38,9 @@ test('Supabase repository creates a persistent order and mirrors it locally', as
   const result = await repository.createOrder({
     customerName: 'Cliente Supabase',
     customerPhone: '2995550000',
-    customerAddress: 'Roca 321',
+    customerStreetAddress: 'Roca 321',
+    customerNeighborhood: 'Centro',
+    customerReference: 'Porton negro',
     deliveryMode: 'delivery',
     paymentMethod: 'cash',
     customerNotes: 'Persistente',
@@ -49,6 +51,8 @@ test('Supabase repository creates a persistent order and mirrors it locally', as
   assert.equal(result.domainOrder.status, 'submitted');
   assert.equal(getState().orders.length, 1);
   assert.equal(getState().orders[0].backendId, mock.db.orders[0].id);
+  assert.equal(getState().orders[0].address, 'Roca 321, Centro');
+  assert.equal(getState().orders[0].addressDetails.reference, 'Porton negro');
   assert.equal(getState().orders[0].paymentMethod, 'Efectivo');
   assert.deepEqual(getState().cart, []);
   assert.equal(mock.calls[0].headers.apikey, 'anon-public-key');
@@ -57,6 +61,8 @@ test('Supabase repository creates a persistent order and mirrors it locally', as
   const createCall = mock.calls.find((call) => call.url.includes('/rpc/create_order_with_items'));
   assert.ok(createCall, 'debe usar la RPC create_order_with_items');
   assert.ok(Array.isArray(createCall.body.payload.items) && createCall.body.payload.items.length === 1);
+  assert.equal(createCall.body.payload.address_label, 'Roca 321, Centro');
+  assert.match(createCall.body.payload.notes, /Referencia: Porton negro/);
   assert.equal(mock.calls.some((call) => call.url.endsWith('/order_items') && call.method === 'POST'), false);
 });
 

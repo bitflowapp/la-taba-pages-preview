@@ -28,6 +28,7 @@ import {
 } from './ui.js';
 import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, getLastOrder } from './orders.js';
 import { getState, subscribe } from './state.js';
+import { STORAGE_KEYS } from './config.js';
 import { handleBusinessAction, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
 import { handleDeliveryAction, handleDeliveryChange, renderDeliveryPanel } from './delivery.js';
 import { disableGpsTracking, handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
@@ -60,7 +61,33 @@ const VIEW_ALIASES = {
 
 let activeView = viewFromHash();
 
+// Limpieza segura de la sesión demo: abrir la app con ?reset=1 (o ?demo-reset=1)
+// borra pedidos, carrito y acceso del negocio guardados en este equipo y recarga
+// limpio. Pensado para empezar una presentación sin pedidos de prueba viejos.
+// No corre en el uso normal (sin el parámetro) ni afecta a otros equipos.
+function maybeResetDemoSession() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('reset') && !params.has('demo-reset')) return false;
+    [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked].forEach((key) => {
+      try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
+      try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
+    });
+    params.delete('reset');
+    params.delete('demo-reset');
+    const query = params.toString();
+    const cleanUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+    // Recarga sin el parámetro para arrancar con el estado por defecto.
+    window.location.replace(cleanUrl);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 function bootstrap() {
+  // Si se pidió limpiar la demo, recargamos limpio y no seguimos inicializando.
+  if (maybeResetDemoSession()) return;
   try {
     applyBusinessConfig();
     bindEvents();

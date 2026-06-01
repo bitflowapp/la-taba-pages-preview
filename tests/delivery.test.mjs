@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
-import { formatDemoDistance, getRiderActionState } from '../js/core/rider.js';
+import { getRiderActionState } from '../js/core/rider.js';
 import { handleDeliveryAction } from '../js/delivery.js';
 import { getActiveDeliveryOrder } from '../js/orders.js';
 import { getState, setState } from '../js/state.js';
@@ -135,7 +135,7 @@ test('delivery selector ignores delivered, cancelled, and pickup-only queues', (
   assert.equal(getActiveDeliveryOrder(), null);
 });
 
-test('rider helpers expose coherent actions and demo distance', () => {
+test('rider helpers expose coherent actions', () => {
   const readyOrder = {
     status: 'ready',
     deliveryMode: 'delivery',
@@ -159,6 +159,4 @@ test('rider helpers expose coherent actions and demo distance', () => {
   });
   assert.equal(getRiderActionState(movingOrder).canDeliver, true);
   assert.equal(getRiderActionState(pickupOrder).canLeave, false);
-  assert.equal(formatDemoDistance(readyOrder), '0,6 km');
-  assert.equal(formatDemoDistance({ status: 'delivered', deliveryMode: 'delivery', delivery: { estimatedMinutes: 0 } }), '0,0 km');
 });

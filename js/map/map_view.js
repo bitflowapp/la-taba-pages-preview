@@ -3,7 +3,6 @@ import { getLastOrder } from '../orders.js';
 import { RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getTileLayerForTheme } from './map_config.js';
 import {
   chooseRiderLocation,
-  distanceKm,
   getRoute,
   isLocationStale,
   normalizeRiderLocation,
@@ -337,10 +336,15 @@ function getRiderLocation(order, sim, routeId, role = 'tracking') {
   const chosen = chooseRiderLocation(sim, order?.tracking?.lastLocation);
   if (chosen) return chosen;
 
-  // En el mapa del cliente no inventamos un rider antes de que el pedido salga:
-  // sin GPS real ni reparto en curso (on_the_way/arriving), no mostramos marker.
+  // Mapa del cliente: NO inventamos la posición del rider. Sin GPS real ni
+  // ubicación compartida no se muestra ningún marker; el estado del pedido y la
+  // dirección cargada por el cliente son la única información verdadera.
+  if (role === 'tracking') return null;
+
+  // Vista operativa del rider (demo): puede mostrar una referencia de recorrido
+  // mientras el reparto está en curso. Es una guía visual, no GPS real.
   const dispatched = ['on_the_way', 'arriving', 'delivered'].includes(order.status);
-  if (role === 'tracking' && !dispatched) return null;
+  if (!dispatched) return null;
 
   const fallbackProgress = order.status === 'delivered' ? 1
     : order.status === 'arriving' ? 0.92
@@ -359,7 +363,6 @@ function renderMapMeta(container, order, location, destination) {
     return;
   }
 
-  const km = distanceKm(location, destination);
   const source = RIDER_LOCATION_SOURCES[location.source] || RIDER_LOCATION_SOURCES.simulation;
   const age = relativeAgeLabel(location.lastFixAt || location.timestamp);
   const gpsStale = location.source === 'gps' && isLocationStale(location, TRACKING_STALE_MS);
@@ -368,9 +371,10 @@ function renderMapMeta(container, order, location, destination) {
   const accuracy = showAccuracy && Number.isFinite(location.accuracy)
     ? ` · precisión ${Math.round(location.accuracy)} m`
     : '';
+  // Sin coordenadas reales del cliente no calculamos distancia: no se inventan km.
   meta.textContent = gpsStale
-    ? `${prefix} ${age} · ${km.toFixed(1).replace('.', ',')} km aprox.${accuracy}`
-    : `${prefix} · actualizado ${age} · ${km.toFixed(1).replace('.', ',')} km aprox.${accuracy}`;
+    ? `${prefix} ${age}${accuracy}`
+    : `${prefix} · actualizado ${age}${accuracy}`;
 }
 
 function relativeAgeLabel(value) {

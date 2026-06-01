@@ -1,7 +1,5 @@
 import { advanceOrderToReady, getRiderQueueOrder, updateOrderStatus } from './orders.js';
 import {
-  formatDemoDistance,
-  formatDemoEta,
   getRiderActionState,
   getRiderStateLabel,
   getRouteProgress,
@@ -27,11 +25,9 @@ import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './
 import { escapeHtml, renderWithStableRealMap } from './ui.js';
 import {
   GPS_GOOD_ACCURACY_METERS,
-  distanceKm,
   getStreetTestDestination,
   getStreetTestDestinations,
 } from './map/route_geometry.js';
-import { STORE_LOCATION } from './map/map_config.js';
 
 const riderSteps = [
   { key: 'ready', label: 'Listo' },
@@ -48,7 +44,7 @@ export function renderDeliveryPanel() {
   if (!order) {
     renderWithStableRealMap(container, `
       <div class="delivery-layout rider-map-experience is-empty">
-        ${renderRiderMapStage(null, 'Sin ruta activa', 'Sin ETA', 'No repartiendo')}
+        ${renderRiderMapStage(null, 'No repartiendo')}
         <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet>
           <span class="sheet-handle" aria-hidden="true"></span>
           <div class="empty-state sheet-empty">
@@ -67,8 +63,7 @@ export function renderDeliveryPanel() {
   const awaiting = isAwaitingPreparation(order);
   const { canLeave, canArrive, canDeliver } = getRiderActionState(order);
   const sim = orderSimulation(order);
-  const eta = sim ? `${sim.etaMinutes} min` : formatDemoEta(order);
-  const distance = formatDemoDistance(order);
+  const gpsLive = sim?.source === 'gps' && sim?.gpsStatus === 'active';
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
   const address = normalizeOrderAddressDetails(order);
   const destinationLabel = displayDestinationLabel(address.label || order.address);
@@ -77,8 +72,7 @@ export function renderDeliveryPanel() {
     ? 'Esperando preparación'
     : order.status === 'arriving'
     ? 'Llegando al domicilio'
-    : order.status === 'on_the_way'
-      ? (order.delivery.estimatedMinutes ? `Llegando en ${order.delivery.estimatedMinutes} min` : 'En camino al cliente')
+    : order.status === 'on_the_way' ? 'En camino al cliente'
       : order.status === 'delivered' ? 'Pedido entregado'
       : 'Pedido listo para salir';
 
@@ -94,7 +88,7 @@ export function renderDeliveryPanel() {
 
   renderWithStableRealMap(container, `
     <div class="delivery-layout rider-map-experience">
-      ${renderRiderMapStage(order, distance, eta, headline)}
+      ${renderRiderMapStage(order, headline, gpsLive)}
 
       <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
@@ -103,14 +97,14 @@ export function renderDeliveryPanel() {
           <div class="track-head-text">
             <small>${order.id} · ${escapeHtml(deliveryModeLabel(order.deliveryMode))}</small>
             <strong>${headline}</strong>
-            <span>${awaiting ? 'El negocio está preparando el pedido.' : `${distance} · ${eta} estimado`}</span>
+            <span>${awaiting ? 'El negocio está preparando el pedido.' : 'Seguí el reparto con la dirección cargada por el cliente.'}</span>
           </div>
           <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
         </div>
 
         <div class="sheet-metrics rider-metrics">
-          <span><small>Distancia</small><strong>${distance}</strong></span>
-          <span><small>Tiempo</small><strong>${eta}</strong></span>
+          <span><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
+          <span><small>Pago</small><strong>${escapeHtml(order.paymentMethod)}</strong></span>
           <span><small>A cobrar</small><strong>${money(order.total)}</strong></span>
         </div>
 
@@ -130,7 +124,7 @@ export function renderDeliveryPanel() {
             <span class="rider-label">Entrega en</span>
             <p>${escapeHtml(destinationLabel)}</p>
             ${address.reference ? `<p class="rider-reference">Referencia: ${escapeHtml(address.reference)}</p>` : ''}
-            <p class="form-hint">Direccion cargada por el cliente. El mapa es una referencia de recorrido.</p>
+            <p class="form-hint">Dirección cargada por el cliente. El mapa es una referencia de recorrido, no GPS en vivo.</p>
             <div class="rider-copy-row">
               <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar direccion</button>
             </div>
@@ -232,7 +226,6 @@ function renderSimControls(order, sim) {
   const canStart = !gpsSession && !running && (order.status === 'ready' || order.status === 'on_the_way');
   const canReset = Boolean(sim) && order.status !== 'delivered';
   const destination = selectedStreetDestination(order, sim);
-  const distanceToDestination = currentDistanceToDestination(sim, destination);
   const sourceLabel = sim?.source === 'gps' ? 'Ubicación en vivo' : 'Referencia visual';
   const gpsStatus = gpsProductStatusLabel(sim, gpsOn);
   const signalStatus = gpsSignalStatusLabel(sim);
@@ -268,7 +261,6 @@ function renderSimControls(order, sim) {
       </label>
       <div class="street-summary-grid">
         <span><small>Referencia visual</small><strong>${escapeHtml(displayDestinationLabel(destination.addressLabel || destination.label))}</strong></span>
-        <span><small>Distancia</small><strong>${escapeHtml(distanceToDestination)}</strong></span>
         <span><small>Ubicación</small><strong>${escapeHtml(sourceLabel)}</strong></span>
         <span><small>Señal</small><strong>${escapeHtml(signalStatus)}</strong></span>
       </div>
@@ -313,13 +305,6 @@ function displayDestinationLabel(value) {
   return String(value || '')
     .replace(/^Destino demo\s*·\s*/i, 'Destino · ')
     .replace(/^Local demo\s*·\s*/i, 'Local · ');
-}
-
-function currentDistanceToDestination(sim, destination) {
-  const current = sim && Number.isFinite(sim.lat) && Number.isFinite(sim.lng)
-    ? { lat: sim.lat, lng: sim.lng }
-    : STORE_LOCATION;
-  return `${distanceKm(current, destination).toFixed(1).replace('.', ',')} km`;
 }
 
 function canArriveForStreet(order) {
@@ -449,7 +434,7 @@ function relativeAgeLabel(value) {
   return `hace ${minutes} min`;
 }
 
-function renderDemoMap(order, distance, eta) {
+function renderDemoMap(order) {
   const sim = orderSimulation(order);
   const progress = sim ? sim.progress : getRouteProgress(order);
   const path = 'M 44 176 C 96 150, 96 96, 150 92 S 240 70, 276 44';
@@ -458,7 +443,7 @@ function renderDemoMap(order, distance, eta) {
   return `
     <div class="demo-map rider-demo-map" role="img" aria-label="Mapa operativo del reparto">
       <div class="demo-map-overlay">
-        <span class="map-eta">${eta} · ${distance}</span>
+        <span class="map-eta">Recorrido de referencia</span>
         <span class="map-state">${stateLabel}</span>
       </div>
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -508,21 +493,26 @@ function renderIdleMap() {
     </div>`;
 }
 
-function renderRiderMapStage(order, distance, eta, headline) {
+function renderRiderMapStage(order, headline, gpsLive = false) {
   const status = getRealtimeStatus();
   const connection = status.relayEnabled
     ? (status.relayConnected ? 'En vivo' : 'Reconectando')
     : 'Este equipo';
+  const bottom = order
+    ? `
+        <span class="map-stat-pill"><small>A cobrar</small><strong>${money(order.total)}</strong></span>
+        <span class="map-stat-pill"><small>GPS</small><strong>${gpsLive ? 'Compartiendo' : 'Sin compartir'}</strong></span>
+      `
+    : '';
   return `
     <div class="delivery-map-stage rider-map-stage" data-map-shell="rider">
-      ${renderRealMapShell(order, order ? renderDemoMap(order, distance, eta) : renderIdleMap(), order ? 'rider' : 'rider-empty')}
+      ${renderRealMapShell(order, order ? renderDemoMap(order) : renderIdleMap(), order ? 'rider' : 'rider-empty')}
       <div class="map-floating-top">
         <span class="map-status-pill ${order ? statusClass(order.status) : 'idle'}"><small>Estado</small><strong>${escapeHtml(headline)}</strong></span>
         <span class="map-connection-pill">${escapeHtml(connection)}</span>
       </div>
       <div class="map-floating-bottom">
-        <span class="map-stat-pill"><small>Distancia</small><strong>${escapeHtml(distance)}</strong></span>
-        <span class="map-stat-pill"><small>Tiempo</small><strong>${escapeHtml(eta)}</strong></span>
+        ${bottom}
       </div>
     </div>`;
 }

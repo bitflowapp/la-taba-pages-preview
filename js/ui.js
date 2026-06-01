@@ -578,8 +578,6 @@ function getOrderSimulation(order) {
 }
 
 function trackingHeadline(order) {
-  const sim = getOrderSimulation(order);
-  const eta = sim && sim.etaMinutes != null ? sim.etaMinutes : order.delivery.estimatedMinutes;
   if (order.status === 'delivered') {
     return { kicker: 'Pedido entregado', title: '¡Disfrutalo!', sub: 'Gracias por comprar en La Taba.' };
   }
@@ -590,18 +588,12 @@ function trackingHeadline(order) {
     return { kicker: 'Retiro en local', title: order.status === 'ready' ? 'Listo para retirar' : 'Preparando tu pedido', sub: `Te esperamos en ${escapeHtml(BUSINESS_CONFIG.address)}.` };
   }
   if (order.status === 'arriving') {
-    return { kicker: 'Repartidor llegando', title: 'Llegando al domicilio', sub: `${distanceLabel(order)} restantes` };
+    return { kicker: 'Repartidor llegando', title: 'Llegando al domicilio', sub: 'El repartidor va hacia tu dirección.' };
   }
   if (order.status === 'on_the_way') {
-    return { kicker: 'Repartidor en camino', title: eta ? `Llegando en ${eta} min` : 'En camino', sub: `${distanceLabel(order)} restantes` };
+    return { kicker: 'Repartidor en camino', title: 'En camino', sub: 'El repartidor salió hacia tu dirección.' };
   }
-  return { kicker: 'Pedido en preparación', title: eta ? `Listo en ~${eta} min` : 'En preparación', sub: 'Te avisamos cuando salga el repartidor.' };
-}
-
-function distanceLabel(order) {
-  const km = order.delivery.distanceKm
-    || Math.min(7.5, Math.max(0.6, (order.delivery.estimatedMinutes || 6) * 0.28));
-  return `${km.toFixed(1).replace('.', ',')} km`;
+  return { kicker: 'Pedido en preparación', title: 'En preparación', sub: 'Te avisamos cuando salga el repartidor.' };
 }
 
 function destinationLabel(order) {
@@ -629,8 +621,8 @@ function trackingMapSvg(order) {
   return `
       <div class="demo-map track-map" role="img" aria-label="Mapa de seguimiento del pedido">
       <div class="demo-map-overlay">
-        <span class="map-eta">Vista de ruta</span>
-        <span class="map-state">${escapeHtml(order.status === 'on_the_way' ? 'Rider en camino' : statusLabel(order.status))}</span>
+        <span class="map-eta">Vista de referencia</span>
+        <span class="map-state">${escapeHtml(statusLabel(order.status))}</span>
       </div>
       <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
@@ -688,21 +680,15 @@ function realMapShell({ order = null, role = 'tracking', fallback }) {
     </div>`;
 }
 
-function trackingEtaLabel(order, head) {
-  if (order.status === 'delivered') return 'Entregado';
-  if (order.status === 'arriving') return 'Llegando';
-  return head?.title || 'Seguimiento';
-}
-
-function trackingMapStage({ order = null, head = null, isEmpty = false }) {
+function trackingMapStage({ order = null, isEmpty = false, live = false }) {
   const bottomStats = order?.status === 'delivered'
     ? `
         <span class="map-stat-pill"><small>Pedido</small><strong>Entregado</strong></span>
         <span class="map-stat-pill"><small>Estado</small><strong>Finalizado</strong></span>
       `
     : order ? `
-        <span class="map-stat-pill"><small>ETA</small><strong>${escapeHtml(trackingEtaLabel(order, head))}</strong></span>
-        <span class="map-stat-pill"><small>Distancia</small><strong>${escapeHtml(distanceLabel(order))}</strong></span>
+        <span class="map-stat-pill"><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
+        <span class="map-stat-pill"><small>GPS</small><strong>${live ? 'En vivo' : 'Sin GPS en vivo'}</strong></span>
       ` : '';
   const overlay = order
     ? `
@@ -828,6 +814,7 @@ export function renderTracking() {
   const isDelivery = order.deliveryMode !== 'pickup';
   const head = trackingHeadline(order);
   const riderLocation = chooseRiderLocation(getOrderSimulation(order), order.tracking?.lastLocation);
+  const liveRider = hasLiveRiderLocation(riderLocation);
   const stepIndex = customerStepIndex(order.status);
   const metricsHtml = order.status === 'delivered'
     ? `
@@ -836,7 +823,7 @@ export function renderTracking() {
           <span><small>Total</small><strong>${money(order.total)}</strong></span>
         `
     : `
-          <span><small>Distancia</small><strong>${isDelivery ? distanceLabel(order) : 'Retiro'}</strong></span>
+          <span><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
           <span><small>${isDelivery ? 'Destino' : 'Entrega'}</small><strong>${escapeHtml(isDelivery ? destinationLabel(order) : deliveryModeLabel(order.deliveryMode))}</strong></span>
           <span><small>Total</small><strong>${money(order.total)}</strong></span>
         `;
@@ -857,7 +844,7 @@ export function renderTracking() {
 
   renderWithStableRealMap(container, `
     <div class="track-layout tracking-map-experience ${isDelivery && !isCancelled ? '' : 'no-map'}">
-      ${isDelivery && !isCancelled ? trackingMapStage({ order, head }) : ''}
+      ${isDelivery && !isCancelled ? trackingMapStage({ order, live: liveRider }) : ''}
 
       <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>

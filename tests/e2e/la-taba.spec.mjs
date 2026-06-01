@@ -385,7 +385,7 @@ test('modo negocio y delivery', async ({ page }) => {
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Pedidos del día');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Central de pedidos');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Ventas de hoy');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Productos y stock');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Mitre 456, Area centro');
@@ -395,10 +395,10 @@ test('modo negocio y delivery', async ({ page }) => {
   await expect(advanceButton).toBeVisible();
   await advanceButton.click();
   await waitForToast(page, 'Estado del pedido actualizado.');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Marcar listo para enviar');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Listo para entregar');
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Enviar con repartidor');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Enviar a reparto');
 
   const stockInc = page.locator('[data-stock-inc]').first();
   const stockDec = page.locator('[data-stock-dec]').first();

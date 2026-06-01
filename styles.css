@@ -2405,3 +2405,51 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-status-pi
   .business-dashboard-shell { grid-template-columns: 1fr; }
   .business-sidebar { display: none; }
 }
+
+/* ===== Central de pedidos (business order inbox v1) ===== */
+.business-inbox-main { display: flex; flex-direction: column; gap: 16px; }
+.order-inbox { display: flex; flex-direction: column; gap: 16px; }
+.inbox-group { display: flex; flex-direction: column; gap: 10px; }
+.inbox-group-head { display: flex; align-items: baseline; gap: 8px; }
+.inbox-group-head strong { font-size: 15px; letter-spacing: -0.01em; }
+.inbox-group-head .inbox-count { background: #1c1a17; color: #fff; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 700; }
+.inbox-group-head small { color: rgba(38, 34, 30, 0.5); }
+.inbox-group-body { display: flex; flex-direction: column; gap: 12px; }
+.inbox-order { background: #fff; border: 1px solid rgba(38, 34, 30, 0.08); border-left: 4px solid rgba(38, 34, 30, 0.18); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 8px 20px rgba(38, 34, 30, 0.06); }
+.inbox-order.accent-received { border-left-color: #c8961e; }
+.inbox-order.accent-preparing { border-left-color: #b5701b; }
+.inbox-order.accent-ready { border-left-color: #2f8052; }
+.inbox-order.accent-way { border-left-color: #2f6ea5; }
+.inbox-order.accent-done { border-left-color: #6a625a; }
+.inbox-order.accent-cancelled { border-left-color: #b23b3b; }
+.inbox-order-top { display: flex; align-items: center; gap: 8px; }
+.inbox-id { font-size: 15px; letter-spacing: 0.02em; }
+.inbox-time { margin-left: auto; font-size: 12px; color: rgba(38, 34, 30, 0.5); }
+.inbox-order-customer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.inbox-order-customer strong { font-size: 15px; }
+.inbox-type { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 999px; background: rgba(47, 110, 165, 0.12); color: #2f6ea5; }
+.inbox-type.pickup { background: rgba(47, 128, 82, 0.14); color: #2f8052; }
+.inbox-contact, .inbox-address, .inbox-ref, .inbox-notes, .inbox-rider-loc { margin: 0; font-size: 13px; color: rgba(38, 34, 30, 0.7); }
+.inbox-address { font-weight: 600; color: rgba(38, 34, 30, 0.9); }
+.inbox-ref, .inbox-notes { color: rgba(38, 34, 30, 0.62); }
+.inbox-rider-loc.is-gps { color: #2f8052; font-weight: 600; }
+.inbox-items { list-style: none; margin: 4px 0 0; padding: 8px 0 0; border-top: 1px dashed rgba(38, 34, 30, 0.12); display: flex; flex-direction: column; gap: 4px; }
+.inbox-items li { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.inbox-order-total { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid rgba(38, 34, 30, 0.08); padding-top: 8px; }
+.inbox-order-total strong { font-size: 18px; }
+.inbox-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.inbox-actions .primary-button { flex: 1 1 100%; }
+.inbox-empty { background: #fff; border: 1px dashed rgba(38, 34, 30, 0.2); border-radius: 16px; padding: 24px 16px; text-align: center; }
+.inbox-empty strong { display: block; font-size: 15px; margin-bottom: 6px; }
+.inbox-empty p { margin: 0; color: rgba(38, 34, 30, 0.6); font-size: 13px; }
+.inbox-closed { background: #fff; border: 1px solid rgba(38, 34, 30, 0.08); border-radius: 14px; padding: 10px 14px; }
+.inbox-closed > summary { cursor: pointer; font-weight: 600; font-size: 13px; }
+.inbox-closed-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.inbox-closed-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.inbox-closed-row span { flex: 1; color: rgba(38, 34, 30, 0.72); }
+.inbox-closed-row em { font-style: normal; }
+.business-extra { background: #fff; border: 1px solid rgba(38, 34, 30, 0.08); border-radius: 14px; padding: 10px 14px; }
+.business-extra > summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+@media (min-width: 760px) {
+  .inbox-group-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}

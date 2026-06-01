@@ -111,46 +111,41 @@ export function renderBusinessDashboard() {
   if (freshOrders.length > 0) playNewOrderChime();
 
   container.innerHTML = `
-    <div class="business-dashboard-shell">
-      <aside class="business-sidebar" aria-label="Secciones del negocio">
-        <strong>La Taba</strong>
-        <span class="sidebar-item active">Resumen</span>
-        <span class="sidebar-item">Pedidos</span>
-        <span class="sidebar-item">Productos</span>
-        <span class="sidebar-item">Stock</span>
-        <span class="sidebar-item">Clientes</span>
-        <span class="sidebar-item">Reportes</span>
-        <span class="sidebar-item">Configuración</span>
-      </aside>
-
-      <div class="business-main">
-        <div class="business-topbar">
-          <div class="business-topbar-text">
-            <h2>Pedidos del día</h2>
-            <span>Revisá, prepará y cerrá cada pedido desde un solo lugar.</span>
-          </div>
-          <button class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}" type="button" data-sound-toggle aria-pressed="${soundEnabled}">
-            ${soundEnabled ? '🔔 Sonido activado' : '🔕 Sonido apagado'}
-          </button>
+    <div class="business-main business-inbox-main">
+      <div class="business-topbar">
+        <div class="business-topbar-text">
+          <h2>Central de pedidos</h2>
+          <span>Acá caen los pedidos que confirman tus clientes. Aceptás, preparás y mandás a reparto desde un solo lugar.</span>
         </div>
+        <button class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}" type="button" data-sound-toggle aria-pressed="${soundEnabled}">
+          ${soundEnabled ? '🔔 Sonido activado' : '🔕 Sonido apagado'}
+        </button>
+      </div>
 
-        ${receivedOrders.length
-          ? `<div class="new-order-banner ${freshOrders.length ? 'is-fresh' : ''}" role="status">
-              <span class="new-order-dot" aria-hidden="true"></span>
-              <span class="new-order-text"><strong>${receivedOrders.length} ${receivedOrders.length === 1 ? 'pedido nuevo' : 'pedidos nuevos'} sin aceptar</strong><small>Revisalos y aceptá para empezar a preparar.</small></span>
-              <button class="primary-button compact" type="button" data-scroll-orders>Ver pedidos</button>
-            </div>`
-          : ''}
+      ${receivedOrders.length
+        ? `<div class="new-order-banner ${freshOrders.length ? 'is-fresh' : ''}" role="status">
+            <span class="new-order-dot" aria-hidden="true"></span>
+            <span class="new-order-text"><strong>${receivedOrders.length} ${receivedOrders.length === 1 ? 'pedido nuevo' : 'pedidos nuevos'} sin aceptar</strong><small>Revisalos y aceptá para empezar a preparar.</small></span>
+            <button class="primary-button compact" type="button" data-scroll-orders>Ver pedidos</button>
+          </div>`
+        : ''}
 
-        <div class="metrics-grid">
-          <div class="metric-card accent"><span>Ventas de hoy</span><strong>${money(metrics.todayTotal)}</strong><small>Pedidos válidos del día</small></div>
-          <div class="metric-card"><span>Pedidos de hoy</span><strong>${metrics.todayOrderCount}</strong><small>${metrics.ordersToHandle} pendientes</small></div>
-          <div class="metric-card"><span>Ticket promedio</span><strong>${money(metrics.avgTicket)}</strong><small>Por pedido</small></div>
-          <div class="metric-card"><span>Delivery / Retiro</span><strong>${metrics.todayDeliveryCount} / ${metrics.todayPickupCount}</strong><small>${newCustomers} clientes</small></div>
-        </div>
+      ${renderOrderInbox(state)}
 
-        ${renderOpsBoard(state)}
+      <div class="metrics-grid compact-metrics">
+        <div class="metric-card accent"><span>Ventas de hoy</span><strong>${money(metrics.todayTotal)}</strong><small>Pedidos válidos del día</small></div>
+        <div class="metric-card"><span>Pedidos de hoy</span><strong>${metrics.todayOrderCount}</strong><small>${metrics.ordersToHandle} pendientes</small></div>
+        <div class="metric-card"><span>Ticket promedio</span><strong>${money(metrics.avgTicket)}</strong><small>Por pedido</small></div>
+        <div class="metric-card"><span>Delivery / Retiro</span><strong>${metrics.todayDeliveryCount} / ${metrics.todayPickupCount}</strong><small>${newCustomers} clientes</small></div>
+      </div>
 
+      <section class="card stock-catalog-card">
+        <h3>Productos y stock</h3>
+        ${state.products.map(stockRow).join('')}
+      </section>
+
+      <details class="business-extra">
+        <summary>Más métricas del día</summary>
         <div class="dashboard-grid">
           <section class="dashboard-panel sales-panel">
             <div class="panel-head"><h3>Ventas</h3><span>Últimos 7 días</span></div>
@@ -167,7 +162,6 @@ export function renderBusinessDashboard() {
             </div>
           </section>
         </div>
-
         <div class="insight-grid">
           <section class="insight-card">
             <span class="insight-label">Productos más vendidos</span>
@@ -182,43 +176,57 @@ export function renderBusinessDashboard() {
             <ul class="insight-list latest-orders">${latestOrdersList}</ul>
           </section>
         </div>
+      </details>
 
-        <section class="card stock-catalog-card">
-          <h3>Productos y stock</h3>
-          ${state.products.map(stockRow).join('')}
-        </section>
-
-        ${renderDemoGuide()}
-      </div>
+      ${renderDemoGuide()}
     </div>
   `;
 }
 
-const OPS_COLUMNS = [
-  { id: 'received', title: 'Nuevos', hint: 'Recién llegados', match: (order) => order.status === 'received' },
-  { id: 'preparing', title: 'En preparación', hint: 'Aceptados, cocinándose', match: (order) => order.status === 'preparing' },
-  { id: 'reparto', title: 'Listos / En reparto', hint: 'Para entregar o en camino', match: (order) => ['ready', 'on_the_way', 'arriving'].includes(order.status) },
-  { id: 'finalizados', title: 'Finalizados', hint: 'Entregados o cancelados', match: (order) => ['delivered', 'cancelled'].includes(order.status) },
+const INBOX_GROUPS = [
+  { id: 'nuevos', title: 'Pedidos nuevos', hint: 'Sin aceptar', match: (order) => order.status === 'received' },
+  { id: 'preparando', title: 'En preparación', hint: 'Aceptados', match: (order) => order.status === 'preparing' },
+  { id: 'reparto', title: 'Listos / En reparto', hint: 'Para entregar', match: (order) => ['ready', 'on_the_way', 'arriving'].includes(order.status) },
 ];
 
-function renderOpsBoard(state) {
-  const columns = OPS_COLUMNS.map((column) => {
-    let orders = state.orders.filter(column.match);
-    if (column.id === 'finalizados') orders = orders.slice(0, 8);
-    const cards = orders.length
-      ? orders.map(opsOrderCard).join('')
-      : '<div class="ops-empty">Sin pedidos acá.</div>';
-    return `
-      <section class="ops-column ops-${column.id}" data-ops-column="${column.id}">
-        <header class="ops-column-head">
-          <strong>${column.title}</strong>
-          <span class="ops-count">${orders.length}</span>
-          <small>${column.hint}</small>
-        </header>
-        <div class="ops-column-body">${cards}</div>
-      </section>`;
-  }).join('');
-  return `<div class="ops-board" data-ops-board>${columns}</div>`;
+// Central de pedidos: lista vertical mobile-first con los pedidos REALES de la
+// demo, agrupados por fase. No hay tarjetas decorativas: cada card es un pedido
+// confirmado por un cliente. Las acciones publican el cambio de estado por
+// realtime para que cliente y rider vean lo mismo.
+function renderOrderInbox(state) {
+  const orders = Array.isArray(state.orders) ? state.orders : [];
+  const active = orders.filter((order) => !isTerminalOrderStatus(order.status));
+  const closed = orders.filter((order) => ['delivered', 'cancelled'].includes(order.status)).slice(0, 6);
+
+  const body = active.length
+    ? INBOX_GROUPS.map((group) => {
+        const list = active.filter(group.match);
+        if (!list.length) return '';
+        return `
+          <section class="inbox-group" data-inbox-group="${group.id}">
+            <header class="inbox-group-head">
+              <strong>${group.title}</strong>
+              <span class="inbox-count">${list.length}</span>
+              <small>${group.hint}</small>
+            </header>
+            <div class="inbox-group-body">${list.map(inboxOrderCard).join('')}</div>
+          </section>`;
+      }).join('')
+    : `
+      <div class="inbox-empty" data-inbox-empty>
+        <strong>Todavía no entraron pedidos.</strong>
+        <p>Cuando un cliente confirme una compra, va a aparecer acá para aceptarla y prepararla.</p>
+      </div>`;
+
+  const closedBlock = closed.length
+    ? `
+      <details class="inbox-closed">
+        <summary>Entregados / cerrados de hoy (${closed.length})</summary>
+        <div class="inbox-closed-list">${closed.map(inboxClosedRow).join('')}</div>
+      </details>`
+    : '';
+
+  return `<div class="order-inbox" data-order-inbox>${body}${closedBlock}</div>`;
 }
 
 function timeAgo(value) {
@@ -231,74 +239,57 @@ function timeAgo(value) {
   return `hace ${hours} h`;
 }
 
-function opsOrderCard(order) {
-  const terminal = isTerminalOrderStatus(order.status);
+function inboxOrderCard(order) {
   const isPickup = order.deliveryMode === 'pickup';
-  const itemsCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
-  const itemsSummary = order.items.slice(0, 3).map((item) => `${item.quantity}× ${escapeHtml(item.name)}`).join(', ')
-    + (order.items.length > 3 ? '…' : '');
-  const phone = onlyDigits(order.customerPhone);
-  const showRiderLink = order.deliveryMode === 'delivery' && ['ready', 'on_the_way', 'arriving'].includes(order.status);
-
-  const primaryAction = terminal
-    ? ''
-    : `<button class="primary-button compact" type="button" data-order-advance="${order.id}">${escapeHtml(actionLabelForOrder(order))}</button>`;
-
-  const cancelAction = terminal
-    ? ''
-    : `<button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${order.id}">Cancelar</button>`;
-
-  const trackLink = showRiderLink
-    ? `<button class="ghost-button compact" type="button" data-order-track="${order.id}">Ver tracking</button>`
-    : '';
-
-  const waLink = phone
-    ? `<a class="ghost-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`
-    : '';
-
-  const reason = order.status === 'cancelled' && order.cancelReason
-    ? `<p class="ops-cancel-reason">Motivo: ${escapeHtml(order.cancelReason)}</p>`
-    : '';
   const address = normalizeOrderAddressDetails(order);
   const reference = formatAddressReference(order);
-
-  // Ubicación del rider (si el pedido la tiene): "Rider actualizado hace Xs".
+  const phone = onlyDigits(order.customerPhone);
+  const nextLabel = actionLabelForOrder(order);
+  const itemsList = order.items.map((item) => `
+        <li><span>${item.quantity}× ${escapeHtml(item.name)}</span><strong>${money(item.quantity * item.unitPrice)}</strong></li>`).join('');
   const riderLoc = order.tracking?.lastLocation;
-  const riderLine = (!isPickup && ['on_the_way', 'arriving'].includes(order.status))
-    ? (riderLoc
-      ? `<p class="ops-rider-loc ${riderLoc.source === 'gps' ? 'is-gps' : ''}">📍 ${riderLoc.source === 'gps' ? 'Rider en vivo' : 'Ubicación estimada'} · actualizado ${escapeHtml(timeAgo(riderLoc.lastFixAt || riderLoc.timestamp))}</p>`
-      : '<p class="ops-rider-loc muted">📍 Sin ubicación reciente del rider</p>')
+  const riderLine = (!isPickup && ['on_the_way', 'arriving'].includes(order.status) && riderLoc)
+    ? `<p class="inbox-rider-loc ${riderLoc.source === 'gps' ? 'is-gps' : ''}">📍 ${riderLoc.source === 'gps' ? 'Repartidor en vivo' : 'Ubicación estimada'} · ${escapeHtml(timeAgo(riderLoc.lastFixAt || riderLoc.timestamp))}</p>`
     : '';
+  const showTrack = order.deliveryMode === 'delivery' && ['ready', 'on_the_way', 'arriving'].includes(order.status);
 
   return `
-    <article class="ops-card accent-${statusClass(order.status)}">
-      <div class="ops-card-top">
-        <strong>${escapeHtml(order.id)}</strong>
-        <span class="ops-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro' : 'Delivery'}</span>
-        <span class="ops-time">${escapeHtml(timeAgo(order.createdAt))}</span>
+    <article class="inbox-order accent-${statusClass(order.status)}" data-inbox-order="${escapeHtml(order.id)}">
+      <div class="inbox-order-top">
+        <strong class="inbox-id">${escapeHtml(order.id)}</strong>
+        <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
+        <span class="inbox-time">${escapeHtml(timeAgo(order.createdAt))}</span>
       </div>
-      <div class="ops-card-customer">
+      <div class="inbox-order-customer">
         <strong>${escapeHtml(order.customerName)}</strong>
-        <small>${escapeHtml(isPickup ? 'Retira en el local' : address.label || order.address)}</small>
-        ${!isPickup && reference ? `<small class="ops-address-reference">Referencia: ${escapeHtml(reference)}</small>` : ''}
+        <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
       </div>
-      <div class="ops-card-meta">
-        <span>${itemsCount} ${itemsCount === 1 ? 'ítem' : 'ítems'}</span>
-        <span>${escapeHtml(order.paymentMethod)}</span>
-        <strong>${money(order.total)}</strong>
-      </div>
-      <p class="ops-items">${itemsSummary}</p>
+      <p class="inbox-contact">${escapeHtml(order.customerPhone)} · ${escapeHtml(order.paymentMethod)}</p>
+      ${isPickup
+        ? '<p class="inbox-address">Retira en el local</p>'
+        : `<p class="inbox-address">${escapeHtml(address.label || order.address)}</p>${reference ? `<p class="inbox-ref">Referencia: ${escapeHtml(reference)}</p>` : ''}`}
+      <ul class="inbox-items">${itemsList}</ul>
+      ${order.notes && order.notes !== 'Sin notas' ? `<p class="inbox-notes">Nota del cliente: ${escapeHtml(order.notes)}</p>` : ''}
       ${riderLine}
-      ${reason}
-      <div class="ops-actions">
-        ${primaryAction}
-        ${trackLink}
+      <div class="inbox-order-total"><span>Total a cobrar</span><strong>${money(order.total)}</strong></div>
+      <div class="inbox-actions">
+        ${nextLabel !== 'Sin acción' ? `<button class="primary-button compact" type="button" data-order-advance="${order.id}">${escapeHtml(nextLabel)}</button>` : ''}
+        ${order.customerPhone ? `<a class="ghost-button compact" href="tel:${encodeURIComponent(order.customerPhone)}">Llamar</a>` : ''}
+        ${phone ? `<a class="ghost-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
+        ${showTrack ? `<button class="ghost-button compact" type="button" data-order-track="${order.id}">Ver tracking</button>` : ''}
         <button class="ghost-button compact" type="button" data-order-ticket="${order.id}">Copiar ticket</button>
-        <button class="ghost-button compact" type="button" data-order-print="${order.id}">Imprimir</button>
-        ${waLink}
-        ${cancelAction}
+        <button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${order.id}">Rechazar</button>
       </div>
     </article>`;
+}
+
+function inboxClosedRow(order) {
+  return `
+    <div class="inbox-closed-row">
+      <span>${escapeHtml(order.id)} · ${escapeHtml(order.customerName)}</span>
+      <strong>${money(order.total)}</strong>
+      <em class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</em>
+    </div>`;
 }
 
 function onlyDigits(value) {

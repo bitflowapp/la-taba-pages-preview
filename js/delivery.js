@@ -1,11 +1,8 @@
 import { advanceOrderToReady, getRiderQueueOrder, updateOrderStatus } from './orders.js';
 import {
   getRiderActionState,
-  getRiderStateLabel,
-  getRouteProgress,
   isAwaitingPreparation,
 } from './core/rider.js';
-import { simulationProgressPercent } from './core/simulation.js';
 import {
   activateStreetTestMode,
   disableGpsTracking,
@@ -43,8 +40,7 @@ export function renderDeliveryPanel() {
 
   if (!order) {
     renderWithStableRealMap(container, `
-      <div class="delivery-layout rider-map-experience is-empty">
-        ${renderRiderMapStage(null, 'No repartiendo')}
+      <div class="delivery-layout rider-map-experience is-empty no-map">
         <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet>
           <span class="sheet-handle" aria-hidden="true"></span>
           <div class="empty-state sheet-empty">
@@ -87,8 +83,8 @@ export function renderDeliveryPanel() {
   const waClient = `https://wa.me/${onlyDigits(order.customerPhone)}`;
 
   renderWithStableRealMap(container, `
-    <div class="delivery-layout rider-map-experience">
-      ${renderRiderMapStage(order, headline, gpsLive)}
+    <div class="delivery-layout rider-map-experience ${gpsLive ? '' : 'no-map'}">
+      ${gpsLive ? renderRiderMapStage(order, headline, true) : ''}
 
       <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
@@ -218,77 +214,54 @@ function orderSimulation(order) {
   return sim && sim.orderId === order.id ? sim : null;
 }
 
+// Panel de GPS real del rider. No hay ruta simulada ni recorrido de apoyo:
+// el rider comparte su ubicación real (watchPosition) o no comparte nada.
 function renderSimControls(order, sim) {
-  const percent = sim ? simulationProgressPercent(sim) : 0;
-  const running = Boolean(sim?.running);
   const gpsOn = isGpsActive();
   const gpsSession = gpsOn || sim?.mode === 'gps' || sim?.gpsStatus === 'requesting' || sim?.gpsStatus === 'active';
-  const canStart = !gpsSession && !running && (order.status === 'ready' || order.status === 'on_the_way');
-  const canReset = Boolean(sim) && order.status !== 'delivered';
-  const destination = selectedStreetDestination(order, sim);
-  const sourceLabel = sim?.source === 'gps' ? 'Ubicación en vivo' : 'Referencia visual';
   const gpsStatus = gpsProductStatusLabel(sim, gpsOn);
   const signalStatus = gpsSignalStatusLabel(sim);
   const lastGpsFixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
   const lastFix = lastGpsFixAt ? relativeAgeLabel(lastGpsFixAt) : '';
+  const coords = sim?.source === 'gps' && Number.isFinite(sim?.lat) && Number.isFinite(sim?.lng)
+    ? `${sim.lat.toFixed(6)}, ${sim.lng.toFixed(6)}`
+    : 'Sin fix real';
   const accuracy = sim?.source === 'gps' && Number.isFinite(sim?.accuracy) ? `${Math.round(sim.accuracy)} m` : 'Sin precisión';
   const gpsButtonLabel = sim?.gpsStatus === 'requesting'
-    ? 'Esperando permiso...'
+    ? 'Esperando permiso…'
     : gpsSession && sim?.gpsStatus === 'unavailable'
-      ? 'Buscando señal...'
+      ? 'Buscando señal…'
       : sim?.gpsStatus === 'active' && gpsSession
       ? 'GPS compartiendo ubicación'
-      : 'Compartir mi ubicación';
+      : 'Compartir mi ubicación real';
   const gpsButtonDisabled = sim?.gpsStatus === 'requesting' || gpsSession;
-  const destinationOptions = getStreetTestDestinations().map((item) => `
-    <option value="${escapeHtml(item.id)}" ${item.id === destination.id ? 'selected' : ''}>${escapeHtml(item.label)}</option>
-  `).join('');
   const secureHint = globalThis.isSecureContext === false
-    ? '<span class="sim-gps-error">El GPS real requiere una conexión segura. Podés seguir con la ruta estimada.</span>'
+    ? '<span class="sim-gps-error">El GPS real requiere HTTPS o localhost seguro. Sin eso no se puede compartir ubicación en vivo.</span>'
     : '';
 
   return `
     <div class="sim-panel street-test-panel" data-street-test>
       <div class="sim-head">
-        <span class="rider-label">Ruta del reparto</span>
+        <span class="rider-label">Ubicación en vivo</span>
         <span class="sim-state ${gpsOn ? 'live' : ''}">GPS: ${escapeHtml(gpsStatus)}</span>
       </div>
-      <label class="street-destination-field">
-        <span>Referencia visual del recorrido</span>
-        <select data-street-destination aria-label="Referencia visual del recorrido">
-          ${destinationOptions}
-        </select>
-      </label>
+      <p class="form-hint">Compartí tu ubicación real sólo durante este reparto. El cliente la ve "en vivo" únicamente cuando llegan coordenadas reales; si no, ve "Sin GPS en vivo".</p>
       <div class="street-summary-grid">
-        <span><small>Referencia visual</small><strong>${escapeHtml(displayDestinationLabel(destination.addressLabel || destination.label))}</strong></span>
-        <span><small>Ubicación</small><strong>${escapeHtml(sourceLabel)}</strong></span>
         <span><small>Señal</small><strong>${escapeHtml(signalStatus)}</strong></span>
-      </div>
-      <div class="sim-progress">
-        <div class="sim-bar"><span style="width:${percent}%"></span></div>
-        <strong data-sim-progress>${percent}%</strong>
+        <span><small>Coordenadas</small><strong>${escapeHtml(coords)}</strong></span>
+        <span><small>Precisión</small><strong>${escapeHtml(accuracy)}</strong></span>
+        <span><small>Última lectura</small><strong>${escapeHtml(lastFix || 'Sin datos')}</strong></span>
       </div>
       <div class="button-row street-primary-actions">
         <button class="primary-button" type="button" data-sim-gps ${gpsButtonDisabled ? 'disabled' : ''}>${escapeHtml(gpsButtonLabel)}</button>
         <button class="secondary-button" type="button" data-sim-gps-off ${gpsSession ? '' : 'disabled'}>Detener GPS</button>
       </div>
-      <div class="button-row sim-actions">
-        <button class="ghost-button compact" type="button" data-street-activate="${escapeHtml(destination.id)}">Usar referencia visual</button>
-        <button class="secondary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar recorrido de apoyo</button>
-        <button class="ghost-button compact" type="button" data-sim-reset ${canReset ? '' : 'disabled'}>Reiniciar ruta</button>
-      </div>
-      <div class="button-row street-delivery-actions">
-        <button class="secondary-button compact" type="button" data-street-arrive="${order.id}" ${canArriveForStreet(order) ? '' : 'disabled'}>Llegué al destino</button>
-        <button class="secondary-button compact" type="button" data-street-done="${order.id}" ${canDeliverForStreet(order) ? '' : 'disabled'}>Pedido entregado</button>
-      </div>
       <div class="sim-gps">
         <span class="sim-gps-status">Estado: ${escapeHtml(signalStatus)}${lastFix ? ` · actualizado ${escapeHtml(lastFix)}` : ''}</span>
-        ${sim?.source === 'gps' && Number.isFinite(sim?.accuracy) ? `<span class="sim-gps-coords">Precisión aproximada: ${escapeHtml(accuracy)}</span>` : ''}
         ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
         ${secureHint}
       </div>
       ${renderGpsDiagnostics(sim, gpsOn)}
-      <p class="form-hint sim-note">Tu ubicación se comparte sólo mientras este reparto esté activo.</p>
     </div>
   `;
 }
@@ -434,85 +407,21 @@ function relativeAgeLabel(value) {
   return `hace ${minutes} min`;
 }
 
-function renderDemoMap(order) {
-  const sim = orderSimulation(order);
-  const progress = sim ? sim.progress : getRouteProgress(order);
-  const path = 'M 44 176 C 96 150, 96 96, 150 92 S 240 70, 276 44';
-  const stateLabel = getRiderStateLabel(order);
-
-  return `
-    <div class="demo-map rider-demo-map" role="img" aria-label="Mapa operativo del reparto">
-      <div class="demo-map-overlay">
-        <span class="map-eta">Recorrido de referencia</span>
-        <span class="map-state">${stateLabel}</span>
-      </div>
-      <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <defs>
-          <linearGradient id="riderRoute" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#6a5a4d"/>
-            <stop offset="1" stop-color="#c9aa84"/>
-          </linearGradient>
-        </defs>
-        <rect width="320" height="220" rx="18" fill="#161616"/>
-        <g class="map-streets" stroke="rgba(255,255,255,0.10)" stroke-width="2">
-          <line x1="0" y1="48" x2="320" y2="40"/>
-          <line x1="0" y1="104" x2="320" y2="112"/>
-          <line x1="0" y1="166" x2="320" y2="158"/>
-          <line x1="60" y1="0" x2="48" y2="220"/>
-          <line x1="150" y1="0" x2="158" y2="220"/>
-          <line x1="244" y1="0" x2="236" y2="220"/>
-        </g>
-        <path d="${path}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
-        <path class="map-route" d="${path}" fill="none" stroke="url(#riderRoute)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
-      </svg>
-      <span class="map-marker store" style="left:14%;top:80%"><span>LT</span><small>La Taba</small></span>
-      <span class="map-marker client" style="left:86%;top:20%"><span>CL</span><small>Cliente</small></span>
-      <span class="map-marker rider rider-${order.status}" style="--p:${progress}"><span>R</span></span>
-    </div>
-  `;
-}
-
-function renderIdleMap() {
-  return `
-    <div class="demo-map rider-demo-map" role="img" aria-label="Mapa operativo sin reparto activo">
-      <div class="demo-map-overlay">
-        <span class="map-eta">Neuquén · Cipolletti</span>
-        <span class="map-state">Sin reparto</span>
-      </div>
-      <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <rect width="320" height="220" rx="18" fill="#161616"/>
-        <g class="map-streets" stroke="rgba(255,255,255,0.10)" stroke-width="2">
-          <line x1="0" y1="58" x2="320" y2="44"/><line x1="0" y1="128" x2="320" y2="116"/>
-          <line x1="70" y1="0" x2="54" y2="220"/><line x1="184" y1="0" x2="170" y2="220"/>
-        </g>
-        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="8" stroke-linecap="round"/>
-        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="#6a5a4d" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 8"/>
-      </svg>
-      <span class="map-marker store" style="left:18%;top:68%"><span>LT</span><small>Neuquén</small></span>
-      <span class="map-marker client" style="left:84%;top:24%"><span>CI</span><small>Cipolletti</small></span>
-    </div>`;
-}
-
 function renderRiderMapStage(order, headline, gpsLive = false) {
   const status = getRealtimeStatus();
   const connection = status.relayEnabled
     ? (status.relayConnected ? 'En vivo' : 'Reconectando')
     : 'Este equipo';
-  const bottom = order
-    ? `
-        <span class="map-stat-pill"><small>A cobrar</small><strong>${money(order.total)}</strong></span>
-        <span class="map-stat-pill"><small>GPS</small><strong>${gpsLive ? 'Compartiendo' : 'Sin compartir'}</strong></span>
-      `
-    : '';
   return `
     <div class="delivery-map-stage rider-map-stage" data-map-shell="rider">
-      ${renderRealMapShell(order, order ? renderDemoMap(order) : renderIdleMap(), order ? 'rider' : 'rider-empty')}
+      ${renderRealMapShell(order, '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', 'rider')}
       <div class="map-floating-top">
         <span class="map-status-pill ${order ? statusClass(order.status) : 'idle'}"><small>Estado</small><strong>${escapeHtml(headline)}</strong></span>
         <span class="map-connection-pill">${escapeHtml(connection)}</span>
       </div>
       <div class="map-floating-bottom">
-        ${bottom}
+        <span class="map-stat-pill"><small>A cobrar</small><strong>${order ? money(order.total) : ''}</strong></span>
+        <span class="map-stat-pill"><small>GPS</small><strong>${gpsLive ? 'Compartiendo ubicación' : 'Sin compartir'}</strong></span>
       </div>
     </div>`;
 }

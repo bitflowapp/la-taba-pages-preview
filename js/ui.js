@@ -610,63 +610,6 @@ function displayDestinationLabel(value) {
     .replace(/^Local demo\s*·\s*/i, 'Local · ');
 }
 
-function trackingMapSvg(order) {
-  const sim = getOrderSimulation(order);
-  const progress = sim ? sim.progress
-    : order.status === 'delivered' ? 1
-    : order.status === 'arriving' ? 0.9
-    : order.status === 'on_the_way' ? 0.6
-    : 0.05;
-  const path = 'M 44 176 C 96 150, 96 96, 150 92 S 240 70, 276 44';
-  return `
-      <div class="demo-map track-map" role="img" aria-label="Mapa de seguimiento del pedido">
-      <div class="demo-map-overlay">
-        <span class="map-eta">Vista de referencia</span>
-        <span class="map-state">${escapeHtml(statusLabel(order.status))}</span>
-      </div>
-      <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <defs>
-          <linearGradient id="trackRoute" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#6a5a4d"/><stop offset="1" stop-color="#c9aa84"/>
-          </linearGradient>
-        </defs>
-        <rect width="320" height="220" rx="18" fill="#f1efe9"/>
-        <g class="map-streets" stroke="rgba(38,34,30,0.10)" stroke-width="2">
-          <line x1="0" y1="48" x2="320" y2="40"/><line x1="0" y1="104" x2="320" y2="112"/>
-          <line x1="0" y1="166" x2="320" y2="158"/><line x1="60" y1="0" x2="48" y2="220"/>
-          <line x1="150" y1="0" x2="158" y2="220"/><line x1="244" y1="0" x2="236" y2="220"/>
-        </g>
-        <path d="${path}" fill="none" stroke="rgba(55,47,40,0.10)" stroke-width="8" stroke-linecap="round"/>
-        <path class="map-route" d="${path}" fill="none" stroke="url(#trackRoute)" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 7"/>
-      </svg>
-      <span class="map-marker store" style="left:14%;top:80%"><span>LT</span><small>La Taba</small></span>
-      <span class="map-marker client" style="left:86%;top:20%"><span>VO</span><small>Vos</small></span>
-      <span class="map-marker rider rider-${order.status}" style="--p:${progress}"><span>R</span></span>
-    </div>
-  `;
-}
-
-function defaultMapFallback() {
-  return `
-    <div class="demo-map track-map" role="img" aria-label="Mapa Neuquén Capital y Cipolletti">
-      <div class="demo-map-overlay">
-        <span class="map-eta">Neuquén · Cipolletti</span>
-        <span class="map-state">Vista de ruta</span>
-      </div>
-      <svg class="demo-map-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <rect width="320" height="220" rx="18" fill="#f1efe9"/>
-        <g class="map-streets" stroke="rgba(38,34,30,0.10)" stroke-width="2">
-          <line x1="0" y1="58" x2="320" y2="44"/><line x1="0" y1="128" x2="320" y2="116"/>
-          <line x1="70" y1="0" x2="54" y2="220"/><line x1="184" y1="0" x2="170" y2="220"/>
-        </g>
-        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="rgba(55,47,40,0.10)" stroke-width="8" stroke-linecap="round"/>
-        <path d="M 44 150 C 94 112, 134 98, 184 82 S 248 64, 284 48" fill="none" stroke="#6a5a4d" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 8"/>
-      </svg>
-      <span class="map-marker store" style="left:18%;top:68%"><span>LT</span><small>Neuquén</small></span>
-      <span class="map-marker client" style="left:84%;top:24%"><span>CI</span><small>Cipolletti</small></span>
-    </div>`;
-}
-
 function realMapShell({ order = null, role = 'tracking', fallback }) {
   const orderAttr = order?.id ? ` data-order-id="${escapeHtml(order.id)}"` : '';
   return `
@@ -680,33 +623,20 @@ function realMapShell({ order = null, role = 'tracking', fallback }) {
     </div>`;
 }
 
-function trackingMapStage({ order = null, isEmpty = false, live = false }) {
-  const bottomStats = order?.status === 'delivered'
-    ? `
-        <span class="map-stat-pill"><small>Pedido</small><strong>Entregado</strong></span>
-        <span class="map-stat-pill"><small>Estado</small><strong>Finalizado</strong></span>
-      `
-    : order ? `
-        <span class="map-stat-pill"><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
-        <span class="map-stat-pill"><small>GPS</small><strong>${live ? 'En vivo' : 'Sin GPS en vivo'}</strong></span>
-      ` : '';
-  const overlay = order
-    ? `
+// El mapa del cliente sólo se renderiza cuando hay GPS real (live=true). Muestra
+// únicamente la ubicación real del rider, sin ruta ni marcadores LT/CL falsos.
+function trackingMapStage({ order = null, live = false }) {
+  return `
+    <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
+      ${realMapShell({ order, fallback: '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', role: 'tracking' })}
       <div class="map-floating-top">
         <span class="map-status-pill ${statusClass(order.status)}"><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
         <span class="map-connection-pill">${realtimeChip(order)}</span>
       </div>
       <div class="map-floating-bottom">
-        ${bottomStats}
-      </div>`
-    : `
-      <div class="map-floating-top">
-        <span class="map-status-pill idle"><small>Estado</small><strong>Sin pedido activo</strong></span>
-      </div>`;
-  return `
-    <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
-      ${realMapShell({ order, fallback: order ? trackingMapSvg(order) : defaultMapFallback(), role: isEmpty ? 'tracking-empty' : 'tracking' })}
-      ${overlay}
+        <span class="map-stat-pill"><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
+        <span class="map-stat-pill"><small>GPS</small><strong>${live ? 'En vivo' : 'Sin GPS en vivo'}</strong></span>
+      </div>
     </div>`;
 }
 
@@ -794,13 +724,12 @@ export function renderTracking() {
 
   if (!order) {
     renderWithStableRealMap(container, `
-      <div class="track-layout tracking-map-experience is-empty">
-        ${trackingMapStage({ isEmpty: true })}
+      <div class="track-layout tracking-map-experience is-empty no-map">
         <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
           <span class="sheet-handle" aria-hidden="true"></span>
           <div class="empty-state sheet-empty">
           <strong>No hay un pedido activo.</strong><br />
-          Cuando confirmes una compra, el estado aparece acá en vivo: preparación, reparto y detalle.
+          Cuando confirmes una compra, vas a seguir acá el estado del pedido y la dirección de entrega.
           <div class="empty-actions">
             <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
           </div>
@@ -842,9 +771,10 @@ export function renderTracking() {
     </div>
   `).join('');
 
+  const showMap = isDelivery && !isCancelled && liveRider;
   renderWithStableRealMap(container, `
-    <div class="track-layout tracking-map-experience ${isDelivery && !isCancelled ? '' : 'no-map'}">
-      ${isDelivery && !isCancelled ? trackingMapStage({ order, live: liveRider }) : ''}
+    <div class="track-layout tracking-map-experience ${showMap ? '' : 'no-map'}">
+      ${showMap ? trackingMapStage({ order, live: true }) : ''}
 
       <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
@@ -864,6 +794,9 @@ export function renderTracking() {
         ${isCancelled ? '<div class="warning-box">Este pedido fue cancelado. Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>' : ''}
         ${isDelivery ? trackingAddressCard(order) : ''}
         ${isDelivery && !isCancelled ? riderTrackingCard(order, riderLocation) : ''}
+        ${isDelivery && !isCancelled && order.status !== 'delivered'
+          ? `<p class="form-hint tracking-gps-note">📍 ${liveRider ? 'GPS en vivo: el repartidor está compartiendo su ubicación.' : 'Sin GPS en vivo: seguís el pedido por estado y dirección.'}</p>`
+          : ''}
         <details class="order-detail">
           <summary>Ver detalle del pedido · ${order.id}</summary>
           <div class="order-detail-body">
@@ -881,7 +814,7 @@ export function renderTracking() {
         </div>`}
       </section>
     </div>
-  `, { rolePrefix: 'tracking', orderId: isDelivery && !isCancelled ? order.id : '' });
+  `, { rolePrefix: 'tracking', orderId: showMap ? order.id : '' });
 }
 
 // Indicador de conexión realtime (en vivo entre equipos / en este equipo).

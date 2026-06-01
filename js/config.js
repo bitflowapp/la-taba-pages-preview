@@ -3,7 +3,12 @@ export const BUSINESS_CONFIG = Object.freeze({
   name: 'La Taba',
   subtitle: 'Carnicería & delivery propio',
   whatsappNumber: '5492996209136',
-  address: 'Neuquén centro',
+  address: 'Mendoza 845/851, Neuquén Capital',
+  // Dirección textual del local. NO hay una coordenada lat/lng verificada para
+  // esta dirección, así que el mapa del cliente NO plotea un marcador del local
+  // (no inventamos su ubicación). `businessLocation` queda sólo como referencia
+  // interna y no se muestra como ubicación real del comercio.
+  businessLocationVerified: false,
   deliveryZone: 'Neuquén centro, barrios cercanos y Cipolletti coordinado',
   openingHoursLabel: 'Lunes a sábado · 9:00 a 21:00',
   openingHours: 'Lunes a sábado · 9:00 a 21:00',

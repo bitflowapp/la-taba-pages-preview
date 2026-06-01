@@ -218,7 +218,8 @@ test('shouldRenderGpsFix throttles noisy marker updates', () => {
   assert.equal(shouldRenderGpsFix(previous, far, { now }), true);
 });
 
-test('real map and rider marker are reused on a second GPS location', async () => {
+test('map renders only the real rider marker (no route/store/client) and reuses it', async () => {
+  const now = Date.now();
   resetState({
     orders: [deliveryOrderWithTracking('LT-MAP-1')],
     lastOrderId: 'LT-MAP-1',
@@ -229,8 +230,8 @@ test('real map and rider marker are reused on a second GPS location', async () =
       gpsStatus: 'active',
       lat: -38.951,
       lng: -68.061,
-      timestamp: 1_000_000,
-      lastFixAt: new Date(1_000_000).toISOString(),
+      timestamp: now,
+      lastFixAt: new Date(now).toISOString(),
     },
   });
   const { shell } = createMapShell('LT-MAP-1');
@@ -240,7 +241,9 @@ test('real map and rider marker are reused on a second GPS location', async () =
     renderMapViews({ querySelectorAll: () => [shell] });
     await waitForMapFrame();
     assert.equal(calls.map, 1);
-    assert.equal(calls.marker, 3);
+    // Mapa honesto: SÓLO el marcador del rider real. Sin marcador de local (LT),
+    // sin marcador de cliente (CL) y sin polyline de ruta.
+    assert.equal(calls.marker, 1);
 
     setState({
       simulation: {
@@ -250,16 +253,45 @@ test('real map and rider marker are reused on a second GPS location', async () =
         gpsStatus: 'active',
         lat: -38.9513,
         lng: -68.0613,
-        timestamp: 1_002_000,
-        lastFixAt: new Date(1_002_000).toISOString(),
+        timestamp: now + 2_000,
+        lastFixAt: new Date(now + 2_000).toISOString(),
       },
     });
     renderMapViews({ querySelectorAll: () => [shell] });
     await waitForMapFrame();
 
     assert.equal(calls.map, 1);
-    assert.equal(calls.marker, 3);
+    assert.equal(calls.marker, 1);
     assert.ok(calls.setLatLng >= 1);
+  } finally {
+    disposeMapViews({ querySelectorAll: () => [shell] });
+    restore();
+  }
+});
+
+test('without a real GPS fix the map renders no rider marker', async () => {
+  const now = Date.now();
+  resetState({
+    orders: [deliveryOrderWithTracking('LT-MAP-2')],
+    lastOrderId: 'LT-MAP-2',
+    // Simulación (source !== gps) NO debe pintar marcador en el cliente.
+    simulation: {
+      orderId: 'LT-MAP-2',
+      mode: 'demo',
+      source: 'simulation',
+      lat: -38.951,
+      lng: -68.061,
+      timestamp: now,
+      lastFixAt: new Date(now).toISOString(),
+    },
+  });
+  const { shell } = createMapShell('LT-MAP-2');
+  const { calls, restore } = installLeafletStub();
+
+  try {
+    renderMapViews({ querySelectorAll: () => [shell] });
+    await waitForMapFrame();
+    assert.equal(calls.marker, 0);
   } finally {
     disposeMapViews({ querySelectorAll: () => [shell] });
     restore();

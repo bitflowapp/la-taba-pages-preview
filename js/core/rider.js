@@ -76,26 +76,9 @@ export function getRiderActionState(order) {
   };
 }
 
-export function estimateDemoDistanceKm(order) {
-  if (!order || order.status === 'delivered') return 0;
-  const explicitDistance = Number(order.delivery?.distanceKm);
-  if (Number.isFinite(explicitDistance) && explicitDistance >= 0) {
-    return Math.min(7.5, explicitDistance);
-  }
-  const minutes = Number(order.delivery?.estimatedMinutes || 0);
-  if (order.status === 'ready') return 0.6;
-  if (order.status === 'arriving') return 0.4;
-  return Math.min(7.5, Math.max(0.6, minutes * 0.28));
-}
-
-export function formatDemoDistance(order) {
-  return `${estimateDemoDistanceKm(order).toFixed(1).replace('.', ',')} km`;
-}
-
-export function formatDemoEta(order) {
-  const minutes = Number(order?.delivery?.estimatedMinutes || 0);
-  return minutes > 0 ? `${minutes} min` : 'En destino';
-}
+// Distancia/ETA estimadas a partir de minutos fueron eliminadas: sin coordenadas
+// reales del cliente no se puede calcular una distancia ni un tiempo de llegada
+// honestos, así que no se muestran números inventados (ver tracking y rider).
 
 export function getRouteProgress(order) {
   if (!order) return 0;

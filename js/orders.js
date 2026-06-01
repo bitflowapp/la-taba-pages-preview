@@ -5,7 +5,11 @@ import {
   isValidOrderStatus,
 } from './core/order-status.js';
 import { calculateTotals, normalizeDeliveryMode } from './core/pricing.js';
-import { getAssignableDeliveryOrder, getRiderQueueOrder as selectRiderQueueOrder } from './core/rider.js';
+import {
+  getAssignableDeliveryOrder,
+  getRiderQueueOrder as selectRiderQueueOrder,
+  isRiderQueueOrder,
+} from './core/rider.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
 import {
   formatAddressReference,
@@ -126,7 +130,12 @@ export function getActiveDeliveryOrder() {
 
 // Incluye pedidos received/preparing para que el rider los vea en cola.
 export function getRiderQueueOrder() {
-  return selectRiderQueueOrder(getState().orders);
+  const state = getState();
+  const activeOrder = state.lastOrderId
+    ? state.orders.find((order) => order.id === state.lastOrderId)
+    : null;
+  if (isRiderQueueOrder(activeOrder)) return activeOrder;
+  return selectRiderQueueOrder(state.orders);
 }
 
 // Atajo del rider: lleva un pedido hasta "listo para reparto"

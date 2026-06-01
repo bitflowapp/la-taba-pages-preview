@@ -121,7 +121,7 @@ test('carrito vacío oculta el formulario de checkout y lo muestra al cargar pro
   await guards.assertClean();
 });
 
-test('pedido real no muestra rider falso: rider pendiente hasta que hay GPS real', async ({ page }) => {
+test('pedido real no muestra rider falso y corta GPS al salir de rider', async ({ page }) => {
   const guards = installPageGuards(page);
 
   // Mock de geolocalización: al activar el GPS el rider entrega un fix real.
@@ -188,8 +188,8 @@ test('pedido real no muestra rider falso: rider pendiente hasta que hay GPS real
   await expect(page.locator('[data-delivery-panel]')).toContainText('GPS compartiendo ubicación');
 
   await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
-  await expect(tracking.locator('.rider-profile.is-live')).toBeVisible({ timeout: 10_000 });
-  await expect(tracking).toContainText('Ubicación rider');
+  await expect(tracking.locator('.rider-profile.is-live')).toHaveCount(0);
+  await expect(tracking).toContainText('Sin GPS en vivo');
 
   await guards.assertClean();
 });

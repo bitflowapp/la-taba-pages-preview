@@ -95,6 +95,7 @@ function bootstrap() {
     initRealtime();
     startOrderRepositorySync();
     renderAll();
+    playViewEnter(activeView);
     resumeSimulationIfNeeded();
     // Aviso discreto si se pidió un backend y la app tuvo que seguir local.
     const diagnostic = getRepositoryDiagnostic();
@@ -164,13 +165,17 @@ function bindEvents() {
     if (addId) {
       const result = addToCart(addId);
       showToast(result.message);
-      if (result.ok) closeProductModal();
+      if (result.ok) {
+        closeProductModal();
+        pulseCartFeedback();
+      }
       return;
     }
 
     const incId = target.closest('[data-cart-inc]')?.dataset.cartInc;
     if (incId) {
       const result = incrementCartItem(incId);
+      if (result.ok) pulseCartFeedback();
       showToast(result.message);
       return;
     }
@@ -451,6 +456,7 @@ function setActiveView(view, options = {}) {
 
   handleViewChangeForSimulation(nextView);
   renderAll();
+  if (changed) playViewEnter(nextView);
 
   if (changed && options.scroll !== false) {
     window.scrollTo(0, 0);
@@ -463,7 +469,39 @@ function syncViewFromLocation() {
   activeView = nextView;
   handleViewChangeForSimulation(nextView);
   renderAll();
+  playViewEnter(nextView);
   window.scrollTo(0, 0);
+}
+
+// Motion premium: marca la sección recién activada para que sus cards entren
+// con stagger (clase one-shot). Se quita sola; si falla, el contenido queda
+// visible igual (las animaciones son aditivas, no condicionan la visibilidad).
+let viewEnterTimer = null;
+function playViewEnter(view) {
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll('[data-view].view-enter').forEach((node) => node.classList.remove('view-enter'));
+  const section = document.querySelector(`[data-view="${view}"]`);
+  if (!section) return;
+  // reflow para reiniciar el stagger aunque se reentre rápido a la misma vista
+  void section.offsetWidth;
+  section.classList.add('view-enter');
+  clearTimeout(viewEnterTimer);
+  viewEnterTimer = setTimeout(() => section.classList.remove('view-enter'), 620);
+}
+
+// Feedback al agregar al carrito: pop del botón flotante y de los badges.
+function pulseCartFeedback() {
+  if (typeof document === 'undefined') return;
+  const bump = (node, cls, ms) => {
+    if (!node) return;
+    node.classList.remove(cls);
+    void node.offsetWidth;
+    node.classList.add(cls);
+    setTimeout(() => node.classList.remove(cls), ms);
+  };
+  bump(document.querySelector('[data-floating-cart]'), 'cart-bump', 480);
+  document.querySelectorAll('[data-cart-count], [data-cart-count-mobile]')
+    .forEach((badge) => bump(badge, 'badge-pop', 490));
 }
 
 function writeViewHash(view, replace = false) {

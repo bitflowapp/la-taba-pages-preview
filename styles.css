@@ -28,6 +28,9 @@
   --radius-sm: 12px;
   --max: 1120px;
   --mobile-nav-h: 70px;
+  /* Easings tipo iOS para microinteracciones premium. */
+  --ease-ios: cubic-bezier(0.22, 1, 0.36, 1);        /* salida suave, elegante */
+  --ease-ios-spring: cubic-bezier(0.34, 1.46, 0.5, 1); /* leve overshoot elástico */
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -1354,12 +1357,80 @@ body:has(.app-view[data-view="business"].is-active) .toast {
   .button-row > * { flex-basis: 100%; }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .product-card, .offer-card { animation: cardIn 0.3s ease both; }
-}
+/* ============================================================
+   Sistema de motion premium tipo iOS (sales-visual-polish).
+   Sin librerías: sólo CSS + clases utilitarias. Todo el movimiento
+   vive bajo prefers-reduced-motion: no-preference para respetar
+   accesibilidad; en modo "reduce" se neutraliza más abajo.
+   ============================================================ */
 @keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* 1) Entrada por vista: la pantalla aparece y se asienta con easing iOS.
+     Sólo corre cuando la vista pasa a activa (no en cada re-render).
+     Tracking y rider se excluyen para no transformar el mapa Leaflet. */
+  .app-view.is-active:not([data-view="tracking"]):not([data-view="rider"]) {
+    animation: viewEnter 0.42s var(--ease-ios) both;
+  }
+  @keyframes viewEnter {
+    from { opacity: 0; transform: translateY(10px) scale(0.992); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* 2) Stagger de cards SOLO al entrar a la vista (clase one-shot .view-enter
+     sobre la sección). Evita re-animar la grilla en cada cambio de estado. */
+  .app-view.view-enter .product-card,
+  .app-view.view-enter .offers-rail > *,
+  .app-view.view-enter .combos-rail > *,
+  .app-view.view-enter .metric-card,
+  .app-view.view-enter .ops-card,
+  .app-view.view-enter .insight-card {
+    animation: cardRise 0.44s var(--ease-ios) both;
+  }
+  @keyframes cardRise {
+    from { opacity: 0; transform: translateY(16px) scale(0.985); }
+    to   { opacity: 1; transform: none; }
+  }
+  .app-view.view-enter .product-card:nth-child(1),
+  .app-view.view-enter .metric-card:nth-child(1) { animation-delay: 0.02s; }
+  .app-view.view-enter .product-card:nth-child(2),
+  .app-view.view-enter .metric-card:nth-child(2) { animation-delay: 0.06s; }
+  .app-view.view-enter .product-card:nth-child(3),
+  .app-view.view-enter .metric-card:nth-child(3) { animation-delay: 0.10s; }
+  .app-view.view-enter .product-card:nth-child(4),
+  .app-view.view-enter .metric-card:nth-child(4) { animation-delay: 0.14s; }
+  .app-view.view-enter .product-card:nth-child(5) { animation-delay: 0.18s; }
+  .app-view.view-enter .product-card:nth-child(6) { animation-delay: 0.22s; }
+  .app-view.view-enter .product-card:nth-child(7) { animation-delay: 0.26s; }
+  .app-view.view-enter .product-card:nth-child(n+8) { animation-delay: 0.30s; }
+
+  /* 3) Feedback al agregar al carrito: pop del botón flotante y del badge. */
+  .floating-cart.cart-bump { animation: cartBump 0.42s var(--ease-ios-spring); }
+  @keyframes cartBump { 0% { transform: scale(1); } 38% { transform: scale(1.06); } 100% { transform: scale(1); } }
+  .mini-badge.badge-pop, .mn-badge.badge-pop { animation: badgePop 0.44s var(--ease-ios-spring); }
+  @keyframes badgePop { 0% { transform: scale(0.5); } 55% { transform: scale(1.28); } 100% { transform: scale(1); } }
+
+  /* 4) Bottom nav: el ícono activo hace un leve "spring" y el color entra suave. */
+  .mobile-nav button { transition: color 0.26s var(--ease-ios); }
+  .mobile-nav .mn-ico { transition: transform 0.34s var(--ease-ios-spring), opacity 0.26s ease; }
+  .mobile-nav button.active .mn-ico { transform: translateY(-1px) scale(1.12); }
+  .mobile-nav .mn-label { transition: transform 0.3s var(--ease-ios-spring); }
+  .mobile-nav button.active .mn-label { transform: translateY(-1px); }
+
+  /* 5) Pills/chips de estado entran con suavidad (tracking, conexión). */
+  .status-chip, .rt-chip, .map-status-pill, .new-order-banner { animation: chipIn 0.4s var(--ease-ios) both; }
+  @keyframes chipIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* 6) Tacto premium: leve hundido al presionar cards/CTA interactivas. */
+  .product-card:active, .offer-card:active { transform: scale(0.985); transition: transform 0.12s var(--ease-ios); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .map-route, .map-marker.rider, .track-step.current .track-dot { animation: none !important; }
+  .app-view.is-active, .app-view.view-enter .product-card, .app-view.view-enter .metric-card,
+  .app-view.view-enter .ops-card, .app-view.view-enter .offers-rail > *, .app-view.view-enter .combos-rail > *,
+  .app-view.view-enter .insight-card, .floating-cart.cart-bump, .mini-badge.badge-pop, .mn-badge.badge-pop,
+  .status-chip, .rt-chip, .map-status-pill, .new-order-banner { animation: none !important; }
   * { scroll-behavior: auto !important; }
 }
 

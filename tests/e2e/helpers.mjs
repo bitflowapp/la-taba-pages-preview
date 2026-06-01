@@ -93,9 +93,9 @@ export async function fillCheckout(page, {
   await page.getByLabel('Notas').fill(notes);
   if (deliveryMode === 'delivery') {
     await page.getByLabel('Delivery').check();
-    await page.getByLabel('Calle y numero').fill(street ?? address ?? '');
+    await page.getByLabel('Calle y número').fill(street ?? address ?? '');
     await page.getByLabel('Barrio o zona').fill(neighborhood ?? (address ? 'Neuquen centro' : ''));
-    await page.getByLabel('Referencia para el rider').fill(reference ?? '');
+    await page.getByLabel('Referencia para el repartidor').fill(reference ?? '');
   } else {
     await page.getByLabel('Retiro en local').check();
   }

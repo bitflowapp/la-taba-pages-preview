@@ -1,61 +1,124 @@
 # Demo Walter · checklist y guion
 
-Guia operativa para la reunion de demo con Walter. Es complementaria a
-`presentacion-walter.md` (el "por que") y a `checklist-demo-walter.md`
-(prueba funcional larga). Este archivo es el **libreto corto del dia**.
+Libreto corto del día para mostrarle **La Taba** a Walter. Es el archivo
+principal de la reunión. Complementa a `presentacion-walter.md` (el "por qué")
+y a `checklist-demo-walter.md` (prueba funcional larga).
+
+> Nota: este checklist refleja la app actual. El botón principal del pedido es
+> **Confirmar pedido** (WhatsApp quedó como copia opcional, ya no es el botón
+> principal). Si algún doc viejo dice "Enviar pedido por WhatsApp", mandá por lo
+> que dice acá.
 
 ---
 
-## 1. Objetivo de la reunion
+## 0. Link para abrir en el iPhone
 
-- **Mostrar** la demo funcionando, no vender todavia.
-- **Escuchar** que ajustaria, que sacaria y que agregaria.
-- **Validar** si le sirve y si conviene adaptarlo a pizzeria, mercadito o ambos.
-- Salir con una decision: seguir adaptando o no.
+Abrir **siempre con `?reset=1`** para arrancar limpio (sin pedidos de prueba
+viejos):
 
-No es objetivo cerrar precio ni prometer fechas de produccion.
+```
+https://bitflowapp.github.io/la-taba-pages-preview/?reset=1&v=walter-demo-final
+```
 
----
+Si el celu muestra una versión vieja en caché, usar el mismo link cambiando el
+final:
 
-## 2. Antes de empezar (2 minutos)
+```
+https://bitflowapp.github.io/la-taba-pages-preview/?reset=1&v=walter-demo-final-2
+```
 
-- Abrir la app y, si quedaron pedidos de prueba viejos, limpiar la sesion:
-  agregar `?reset=1` al final de la URL (por ejemplo
-  `http://localhost:8787/?reset=1`) y abrir. Arranca limpio.
-- Confirmar que se ve el tema claro premium (fondo claro, no pantalla negra).
-- Confirmar que el catalogo carga con fotos.
-- Tener el celular cargado y, si vas a mostrar GPS entre dos equipos, abrir el
-  link del cliente en uno y el del rider en otro (ver seccion 4).
-- Cerrar pestañas y notificaciones que distraigan.
+Tip: subir el brillo del celular y cerrar notificaciones antes de mostrarlo.
 
 ---
 
-## 3. Guion de 5 minutos (un solo equipo)
+## 1. Objetivo de la reunión
 
-1. **Abrir Home.** "Este es el local de La Taba online, su propio canal de pedidos."
-2. **Agregar un producto.** Tocar un corte o combo y `Agregar`.
-3. **Ir a Mi pedido.** Mostrar subtotal, envio y total claros.
-4. **Completar la direccion.** Nombre, telefono, calle y numero, barrio,
-   referencia. Resaltar que pide la direccion real del cliente.
-5. **Confirmar pedido.** Tocar `Confirmar pedido`. Mostrar el aviso de que el
-   pedido quedo creado y se sigue en vivo.
-6. **Mostrar Seguimiento.** Estado del pedido, mapa de referencia y detalle.
-7. **Abrir Negocio.** Codigo `1234`. Mostrar el pedido nuevo entrando, ventas
-   del dia, pedidos por estado y stock.
-8. **Abrir Rider.** Desde el panel, `Vista rider`. Mostrar el pedido asignado
-   con cliente, telefono, direccion y total a cobrar.
-9. **Mostrar GPS / contacto / direccion.** Boton para compartir ubicacion,
-   botones de llamar y WhatsApp, direccion copiable.
-10. **Marcar entregado.** `Salí del local` → `Llegué al domicilio` →
-    `Pedido entregado`. Mostrar como cae el estado en seguimiento.
+- **Mostrar** la demo funcionando.
+- **Escuchar** qué le sirve, qué ajustaría, qué sacaría y qué agregaría.
+- **Validar** si conviene adaptarla a su pizzería, su mercadito o ambos.
 
-Si algo se traba, recargar la pagina: el pedido sigue guardado.
+No es objetivo de hoy: **no vender todavía**, no cerrar precio, no prometer
+fechas de producción.
 
 ---
 
-## 4. Variante con dos equipos (GPS en vivo, opcional)
+## 2. Frase inicial sugerida (decila vos, Marco)
 
-Solo si hay buena conexion y tiempo. Levantar el relay local:
+> "Walter, no te vengo a vender nada todavía. Te traje una demo funcionando para
+> ver si tiene sentido adaptarla a tu forma real de trabajar. La idea es que me
+> digas qué sirve, qué sacarías y qué habría que cambiar."
+
+---
+
+## 3. Antes de empezar (1 minuto)
+
+- Abrir el link con `?reset=1` (sección 0). Arranca limpio.
+- Confirmar que se ve el **tema claro premium** (fondo claro, no pantalla negra).
+- Confirmar que el **catálogo carga con fotos**.
+- Recordá que el **Panel negocio muestra datos de ejemplo** (una venta del día
+  ya cargada) para que no se vea vacío. Avisalo si Walter pregunta por los
+  números.
+
+---
+
+## 4. Guion de 5 minutos (un solo equipo)
+
+1. **Home.** "Este es La Taba online: su propio canal de pedidos, con su marca."
+2. **Catálogo.** Entrar y tocar una categoría (Carnes, Combos).
+3. **Agregar un producto.** Tocar un corte o combo y `Agregar`.
+4. **Mi pedido.** Mostrar subtotal, envío y total claros, y el pedido mínimo.
+5. **Cargar la dirección real.** Nombre, teléfono, calle y número, barrio y
+   referencia. Resaltar que pide la **dirección real del cliente**, no una
+   genérica.
+6. **Confirmar pedido.** Tocar `Confirmar pedido`. Mostrar el aviso de que el
+   pedido **quedó creado y se sigue en vivo**. (No abre WhatsApp solo; "Enviar
+   copia por WhatsApp" es opcional.)
+7. **Seguimiento.** Estado del pedido, mapa de referencia, dirección real y el
+   estado **"Repartidor sin asignar"** hasta que el negocio lo despacha (es
+   honesto: no inventa un repartidor que no existe).
+8. **Panel negocio.** Código `1234`. Mostrar el pedido nuevo entrando, ventas
+   del día, pedidos por estado y stock rápido.
+9. **Vista rider.** Desde el panel, `Vista rider`. Mostrar el pedido asignado
+   con cliente, teléfono, dirección y total a cobrar, más los botones de
+   compartir ubicación, llamar y WhatsApp.
+10. **Marcar entregado.** `Salí del local` → `Llegué al domicilio` → `Pedido
+    entregado`. Volver a Seguimiento y mostrar cómo cae el estado.
+
+Cerrar con las preguntas de la sección 6.
+
+Si algo se traba: **recargar la página**, el pedido queda guardado. Para empezar
+de cero, volver a abrir con `?reset=1`.
+
+---
+
+## 5. Cómo explicar GPS / dirección / contacto (en simple)
+
+- La dirección que se ve es la **que carga el cliente**, no una inventada.
+- En un solo celular, el mapa es una **referencia de recorrido**.
+- Con **dos celulares** (uno cliente, uno repartidor) el GPS es **real y en
+  vivo**. Eso se muestra solo si hay tiempo y buena conexión (sección 7).
+
+---
+
+## 6. Preguntas para Walter
+
+Anotar las respuestas **literales**: son la base del próximo paso.
+
+- ¿Lo ves más para **pizzería, mercadito o ambos**?
+- ¿Qué **productos o categorías** cargarías primero?
+- ¿Cómo **reciben los pedidos hoy**?
+- ¿Quién **mira el WhatsApp**?
+- ¿Tienen **delivery propio** o tercerizan?
+- ¿Qué parte de esto te **ordenaría más el trabajo**?
+- ¿Qué **sacarías** de esta demo?
+- ¿Qué **agregarías** para que funcione en tu negocio?
+- ¿Qué **tendría que pasar para que esto te sirva de verdad**?
+
+---
+
+## 7. Variante con dos equipos (GPS en vivo, opcional)
+
+Solo si hay buena conexión y tiempo. Levantar el relay local:
 
 ```
 npm run realtime:demo
@@ -65,48 +128,35 @@ npm run realtime:demo
 - Rider: `http://localhost:8787/?relay=http://localhost:8787&room=demo-walter#rider`
 
 Desde el rider, `Opciones avanzadas` permite copiar los links del cliente y del
-rider para compartirlos. La ubicacion se comparte solo mientras el reparto
-este activo.
+rider para compartirlos. La ubicación se comparte solo mientras el reparto está
+activo.
 
 ---
 
-## 5. Preguntas para Walter
-
-- ¿Esto te serviria mas para pizzeria, mercadito o ambos?
-- ¿Que productos o categorias pondrias primero?
-- ¿Como reciben los pedidos hoy?
-- ¿Quien atiende el WhatsApp?
-- ¿Tienen delivery propio o tercerizan?
-- ¿Que es lo que mas te molesta de las apps actuales?
-- ¿Que sacarias de esta demo?
-- ¿Que le agregarias para que funcione en tu negocio?
-
-Anotar las respuestas literales: son la base del siguiente paso.
-
----
-
-## 6. Cosas que NO decir todavia
+## 8. Qué NO decir todavía
 
 - Precio final del sistema.
-- Promesas de "producto completo en produccion".
-- Que reemplaza Pedido Ya de un dia para otro.
-- Tecnicismos: Supabase, commits, backend, relay, repos, base de datos.
+- Tecnicismos: Supabase, backend, base de datos, commits, repos, relay.
+- Que tiene **IA** o que "lo hace una IA".
+- Que **reemplaza Pedido Ya** de un día para el otro.
+- "Producción completa", "listo para miles de usuarios", "sistema definitivo".
 
-Si pregunta por algo tecnico, responder en simple: "es la base, despues se
-suma lo que el negocio necesite".
-
----
-
-## 7. Como posicionarlo
-
-- "Es un **sistema propio de pedidos** para tu local."
-- "Es una **demo para adaptar a tu forma de trabajar**."
-- "Primero **validamos si te sirve**, despues vemos como seguirlo."
+Si pregunta por algo técnico, responder simple: "es la base; después se le suma
+lo que el negocio necesite".
 
 ---
 
-## 8. Despues de la reunion
+## 9. Qué SÍ decir
+
+- "Es un **canal propio de pedidos** para tu local."
+- "Es una **demo funcional**, no una maqueta."
+- "Es **adaptable a tu comercio** (pizzería o mercadito)."
+- "**Primero vemos si encaja con tu operación**; después vemos cómo seguir."
+
+---
+
+## 10. Después de la reunión
 
 - Volcar las respuestas en `phase-2/walter-discovery-questions.md`.
-- Marcar que ajustes pidio y cuales son chicos vs grandes.
-- Decidir si conviene una version adaptada (pizzeria / mercadito).
+- Marcar qué ajustes pidió y cuáles son **chicos vs. grandes**.
+- Decidir si conviene una **versión adaptada** (pizzería / mercadito).

@@ -4,9 +4,8 @@ import { RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getTileLayerForThe
 import {
   chooseRiderLocation,
   getRoute,
+  hasLiveRiderLocation,
   isLocationStale,
-  normalizeRiderLocation,
-  pointOnRoute,
   selectRouteForOrder,
   shouldRenderGpsFix,
 } from './route_geometry.js';
@@ -155,12 +154,10 @@ export function ensureTrackingMap(container, view) {
   map.on?.('dragstart', () => { entry.userInteracted = true; });
   map.on?.('zoomstart', () => { entry.userInteracted = true; });
 
-  entry.routeLayer = L.polyline(view.points, routeLineStyle(view.theme)).addTo(map);
-  entry.progressLayer = L.polyline([], progressLineStyle(view.theme)).addTo(map);
-  L.marker([STORE_LOCATION.lat, STORE_LOCATION.lng], { icon: labelIcon(L, 'LT', 'store') }).addTo(map);
-  entry.destinationMarker = L.marker([view.destination.lat, view.destination.lng], { icon: labelIcon(L, 'CL', 'client') }).addTo(map);
-  entry.routeId = view.route.id;
-
+  // Mapa honesto: sólo se monta cuando hay GPS real y muestra únicamente al
+  // rider. NO se dibuja ruta, ni marcador del local (no hay coordenada
+  // verificada para Mendoza 845/851), ni marcador del cliente (no hay
+  // coordenada del cliente, sólo su dirección textual).
   fitMapToView(entry, view);
   entry.resizeTimer = setTimeout(() => {
     entry.resizeTimer = null;
@@ -187,7 +184,6 @@ export function scheduleTrackingVisualUpdate(entry, view) {
 function applyTrackingVisualUpdate(entry, view) {
   if (!view) return;
   updateTrackingStatusText(entry.container, view);
-  updateRouteLayers(entry, view);
 
   if (!view.riderLocation) {
     removeRiderMarker(entry);
@@ -195,7 +191,6 @@ function applyTrackingVisualUpdate(entry, view) {
   }
 
   ensureRiderMarker(entry, view);
-  updateProgressLine(entry, view.riderLocation);
   updateRiderMarkerPosition(entry, view.riderLocation, {
     status: view.order?.status,
     source: view.riderLocation.source,
@@ -285,10 +280,10 @@ function maybeFollowRider(entry, latLng) {
 }
 
 function fitMapToView(entry, view) {
-  const bounds = view.riderLocation
-    ? [...view.points, [view.riderLocation.lat, view.riderLocation.lng]]
-    : view.points;
-  try { entry.map.fitBounds(bounds, { padding: [22, 22], maxZoom: 14 }); } catch (_) { /* no-op */ }
+  if (!view.riderLocation) return;
+  try {
+    entry.map.fitBounds([[view.riderLocation.lat, view.riderLocation.lng]], { padding: [40, 40], maxZoom: 16 });
+  } catch (_) { /* no-op */ }
 }
 
 function requestFrame(callback) {
@@ -332,27 +327,12 @@ function getOrderSimulation(orderId) {
   return sim && sim.orderId === orderId ? sim : null;
 }
 
-function getRiderLocation(order, sim, routeId, role = 'tracking') {
+function getRiderLocation(order, sim) {
+  // Sólo se muestra al rider en el mapa si hay un fix GPS REAL y reciente.
+  // Sin eso no hay marcador (ni en cliente ni en rider): no se inventan
+  // posiciones, ni se presenta la simulación como si fuera ubicación real.
   const chosen = chooseRiderLocation(sim, order?.tracking?.lastLocation);
-  if (chosen) return chosen;
-
-  // Mapa del cliente: NO inventamos la posición del rider. Sin GPS real ni
-  // ubicación compartida no se muestra ningún marker; el estado del pedido y la
-  // dirección cargada por el cliente son la única información verdadera.
-  if (role === 'tracking') return null;
-
-  // Vista operativa del rider (demo): puede mostrar una referencia de recorrido
-  // mientras el reparto está en curso. Es una guía visual, no GPS real.
-  const dispatched = ['on_the_way', 'arriving', 'delivered'].includes(order.status);
-  if (!dispatched) return null;
-
-  const fallbackProgress = order.status === 'delivered' ? 1
-    : order.status === 'arriving' ? 0.92
-    : order.status === 'on_the_way' ? 0.45
-    : order.status === 'ready' ? 0.04
-    : 0;
-  const point = pointOnRoute(routeId, fallbackProgress);
-  return normalizeRiderLocation({ ...point, source: 'simulation', timestamp: Date.now() });
+  return hasLiveRiderLocation(chosen) ? chosen : null;
 }
 
 function renderMapMeta(container, order, location, destination) {

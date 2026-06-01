@@ -403,7 +403,7 @@ export function enableGpsTracking() {
   }
 
   if (!hasSecureGpsContext()) {
-    const gpsError = 'El GPS real requiere una conexión segura. Podés seguir con la ruta estimada.';
+    const gpsError = 'El GPS real requiere una conexión segura (HTTPS o localhost). No se puede compartir ubicación en vivo sin eso.';
     return gpsUnavailableResult(order, 'requires_secure_context', gpsError);
   }
 

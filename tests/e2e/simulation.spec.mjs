@@ -22,11 +22,6 @@ async function installPersistentStubs(page) {
   });
 }
 
-async function readPercent(locator) {
-  const text = (await locator.textContent()) || '0';
-  return Number.parseInt(text.replace('%', '').trim(), 10) || 0;
-}
-
 async function createDeliveryOrder(page) {
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
@@ -43,61 +38,6 @@ async function createDeliveryOrder(page) {
   await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
 }
 
-test('rider demo: iniciar simulación, avanzar, llegar y entregar', async ({ page }) => {
-  await installPersistentStubs(page);
-  const guards = installPageGuards(page);
-
-  await page.goto('/');
-  await createDeliveryOrder(page);
-
-  // El negocio marca el pedido como listo para que aparezca en la vista rider.
-  await page.locator('[data-admin-toggle]').click();
-  await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
-  await page.locator('[data-pin-form]').press('Enter');
-  await expect(page.locator('[data-view="business"]')).toBeVisible();
-  await page.locator('[data-order-advance="LT-0002"]').click();
-  await waitForToast(page, 'Estado del pedido actualizado.');
-  await page.locator('[data-order-advance="LT-0002"]').click();
-  await waitForToast(page, 'Estado del pedido actualizado.');
-
-  // Abrir la vista del repartidor.
-  await page.getByRole('button', { name: /Vista rider/i }).click();
-  await expect(page.locator('[data-view="rider"]')).toBeVisible();
-  await expect(page.locator('[data-delivery-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-street-test]')).toContainText('Ruta del reparto');
-  await page.locator('[data-street-destination]').selectOption('alto-comahue');
-  await expect(page.locator('[data-delivery-panel]')).toContainText('Destino · Alto Comahue');
-
-  // Iniciar simulación y verificar que el progreso avanza.
-  const progress = page.locator('[data-sim-progress]');
-  const initial = await readPercent(progress);
-  await page.locator('[data-sim-start]').click();
-  await waitForToast(page, /Recorrido guiado iniciado/);
-  await expect.poll(async () => readPercent(progress), { timeout: 15_000 }).toBeGreaterThan(initial);
-  await expect(page.locator('[data-delivery-panel]')).toContainText(/En camino|Llegando/);
-
-  // Llegué al domicilio.
-  await page.locator('[data-delivery-arrive="LT-0002"]').click();
-  await waitForToast(page, 'Llegada al domicilio registrada.');
-  await expect(page.locator('[data-delivery-panel]')).toContainText('Llegando');
-
-  // Pedido entregado. El rider deja de mostrar LT-0002 y pasa al siguiente en cola.
-  await page.locator('[data-delivery-done="LT-0002"]').click();
-  await waitForToast(page, 'Pedido marcado como entregado.');
-  await expect(page.locator('[data-delivery-panel]')).not.toContainText('LT-0002');
-  await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
-  const trackingPanel = page.locator('[data-tracking-panel]');
-  await expect(trackingPanel).toContainText('Finalizado');
-  await expect(trackingPanel.locator('.map-connection-pill')).not.toContainText('En vivo');
-  await expect(trackingPanel.locator('.track-steps')).toContainText('Entregado');
-  const statTexts = await trackingPanel.locator('.map-stat-pill').allTextContents();
-  expect(statTexts.some((text) => /Distancia\s*Finalizado/i.test(text))).toBe(false);
-  const metricTexts = await trackingPanel.locator('.sheet-metrics').allTextContents();
-  expect(metricTexts.some((text) => /Distancia/i.test(text))).toBe(false);
-
-  await guards.assertClean();
-});
-
 test('persistencia del pedido tras recargar la página', async ({ page }) => {
   await installPersistentStubs(page);
 
@@ -113,7 +53,7 @@ test('persistencia del pedido tras recargar la página', async ({ page }) => {
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
 });
 
-test('GPS en contexto inseguro muestra fallback y la simulación sigue disponible', async ({ page }) => {
+test('GPS en contexto inseguro muestra fallback honesto (sin simular movimiento)', async ({ page }) => {
   await installPersistentStubs(page);
   await page.addInitScript(() => {
     Object.defineProperty(window, 'isSecureContext', { configurable: true, value: false });
@@ -129,8 +69,12 @@ test('GPS en contexto inseguro muestra fallback y la simulación sigue disponibl
   await page.locator('[data-order-advance="LT-0002"]').click();
   await page.getByRole('button', { name: /Vista rider/i }).click();
 
+  // Sin compartir GPS el rider no ve mapa (no hay ubicación real).
+  await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
+
   await page.locator('[data-sim-gps]').click();
   await expect(page.locator('[data-delivery-panel]')).toContainText(/conexión segura/);
   await expect(page.locator('[data-delivery-panel]')).toContainText('GPS: Requiere HTTPS');
-  await expect(page.locator('[data-sim-start]')).toBeEnabled();
+  // No se monta ningún mapa: sin GPS real no hay ubicación que mostrar.
+  await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
 });

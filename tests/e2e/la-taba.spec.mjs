@@ -100,6 +100,27 @@ test('catálogo: tiles limpios (nombre debajo) y breadcrumb compacto', async ({ 
   await guards.assertClean();
 });
 
+test('carrito vacío oculta el formulario de checkout y lo muestra al cargar productos', async ({ page }) => {
+  const guards = installPageGuards(page);
+
+  await page.goto('/#cart');
+  await expect(page.locator('[data-view="cart"]')).toBeVisible();
+  // Con el carrito vacío no debe verse el formulario "Datos para finalizar" ni vaciar.
+  await expect(page.locator('[data-cart-list]')).toContainText('El carrito está vacío');
+  await expect(page.locator('[data-checkout-form]')).toBeHidden();
+  await expect(page.locator('[data-clear-cart]')).toBeHidden();
+  await expect(page.locator('[data-cart-list] [data-nav-view="home"]')).toBeVisible();
+
+  // Al agregar un producto, el formulario aparece para completar el pedido.
+  await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await page.locator('.desktop-nav [data-nav-view="cart"]').click();
+  await expect(page.locator('[data-checkout-form]')).toBeVisible();
+  await expect(page.locator('[data-clear-cart]')).toBeVisible();
+
+  await guards.assertClean();
+});
+
 test('home muestra acceso al pedido en curso tras confirmar', async ({ page }) => {
   const guards = installPageGuards(page);
 

@@ -22,6 +22,22 @@ fallback.
 6. Al entregar/cancelar, o al tocar **Detener GPS**, se llama `clearWatch` y se
    deja de publicar.
 
+## Estabilidad visual del tracking
+
+El tracking esta optimizado para sentirse como una app de delivery:
+
+- el mapa Leaflet se crea una sola vez por vista/pedido;
+- el tile layer, la ruta y los marcadores fijos no se recrean en cada fix;
+- el marcador del rider se conserva y se mueve con `setLatLng(...)`;
+- el icono del rider solo cambia cuando cambia estado/fuente/rumbo, evitando
+  parpadeos por `removeLayer` / `addLayer`;
+- el mapa no vuelve a hacer `fitBounds` por cada ubicacion;
+- si el usuario mueve o hace zoom manualmente, la app no recentra agresivamente.
+
+Las vistas de cliente y rider pueden re-renderizar textos o botones, pero el
+nodo del mapa real se preserva mientras sea el mismo pedido. Cada nueva
+ubicacion actualiza solo marker, linea de progreso y texto de estado.
+
 ## Cómo probar GPS real con Supabase
 
 No se hardcodean credenciales: se pasan por la URL (anon key, no secreta) o se
@@ -82,6 +98,18 @@ Además:
 - si Supabase falla, el fix local se conserva y se muestra el error en el bloque
   *Diagnóstico GPS* (sin romper la UI).
 
+## Filtros de calidad de ubicacion
+
+Antes de aceptar o renderizar un fix se aplican reglas de calidad:
+
+- lat/lng deben ser numericos y estar dentro de rangos validos;
+- fixes GPS viejos se marcan como stale y dejan de verse como "en vivo";
+- si el GPS sigue fresco, la simulacion no lo pisa;
+- si el GPS queda stale, la simulacion puede volver como fallback;
+- fixes con precision muy mala se descartan cuando hay uno reciente mejor;
+- saltos imposibles por distancia/tiempo se ignoran;
+- cambios visuales minimos y muy frecuentes no fuerzan movimiento del marker.
+
 ## Limitaciones de web móvil (importante)
 
 - **Contexto seguro:** la geolocalización del navegador requiere **HTTPS o
@@ -91,10 +119,27 @@ Además:
   la pestaña en segundo plano. iOS/Android suspenden el `watchPosition` de la web.
   Para tracking serio en background hace falta una **PWA avanzada con permisos
   específicos o una app nativa** con location en segundo plano.
+- **Piloto en iPhone:** mantener Safari abierto y la pantalla activa durante la
+  prueba fisica. Si iOS pausa la pestaña, el cliente ve la ultima ubicacion con
+  antiguedad en vez de un falso estado "en vivo".
 - **Precisión y batería:** `enableHighAccuracy: true` consume más batería y la
   precisión depende del dispositivo y el entorno.
 - **Polling del cliente:** el cliente lee la última ubicación por polling (~5 s),
   no por websockets todavía. La latencia esperable es de pocos segundos.
+
+## Checklist QA manual
+
+Para validar una prueba fisica de producto:
+
+1. Abrir cliente y rider por HTTPS, misma room/pedido.
+2. Crear un pedido de delivery.
+3. En Rider, elegir destino, tocar **Compartir mi ubicacion** y aceptar permiso.
+4. Caminar o moverse unos metros con Safari visible.
+5. Confirmar en cliente: texto **"Ubicacion rider"**, edad de actualizacion,
+   marker moviendose sin flashes fuertes, sin reset de zoom/centro.
+6. Mover manualmente el mapa y confirmar que no se recentra violentamente.
+7. Tocar **Detener GPS** y confirmar que el rider queda en **GPS detenido**.
+8. Entregar/cancelar y confirmar que deja de publicarse ubicacion.
 
 ## Privacidad
 

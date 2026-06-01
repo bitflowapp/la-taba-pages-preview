@@ -44,6 +44,15 @@ const ROUTES = Object.freeze({
   ...STREET_ROUTES,
 });
 
+export const GPS_FIX_STALE_MS = 30_000;
+export const GPS_MAX_ACCURACY_METERS = 250;
+export const GPS_BAD_ACCURACY_METERS = 150;
+export const GPS_GOOD_ACCURACY_METERS = 80;
+export const GPS_MAX_REASONABLE_SPEED_MPS = 45;
+export const GPS_HARD_MAX_SPEED_MPS = 80;
+export const TRACKING_RENDER_MIN_MS = 800;
+export const TRACKING_RENDER_MIN_METERS = 5;
+
 export function getDemoRoutes() {
   return ROUTES;
 }
@@ -183,7 +192,14 @@ export function normalizeRiderLocation(raw = {}, fallback = {}) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
     return null;
   }
-  const timestamp = Number(raw.timestamp) || Number(raw.lastFixAt) || Date.now();
+  const rawTimestamp = Number(raw.timestamp);
+  const rawFixTimestamp = Number(raw.lastFixAt);
+  const parsedTimestamp = Date.parse(raw.timestamp || raw.lastFixAt || '');
+  const timestamp = Number.isFinite(rawTimestamp) && rawTimestamp > 0
+    ? rawTimestamp
+    : Number.isFinite(rawFixTimestamp) && rawFixTimestamp > 0
+      ? rawFixTimestamp
+      : Number.isNaN(parsedTimestamp) ? Date.now() : parsedTimestamp;
   const source = raw.source === 'gps' ? 'gps' : raw.source === 'simulation' ? 'simulation' : (fallback.source || 'simulation');
   return {
     lat,
@@ -204,14 +220,109 @@ export function normalizeRiderLocation(raw = {}, fallback = {}) {
 //  - a igual jerarquía de fuente, gana el fix más reciente;
 //  - coordenadas inválidas se descartan (normalizeRiderLocation devuelve null).
 // Devuelve un TrackingLocation normalizado o null.
-export function chooseRiderLocation(simRaw, trackedRaw) {
+export function isValidLocation(location) {
+  const lat = Number(location?.lat);
+  const lng = Number(location?.lng);
+  return Number.isFinite(lat)
+    && Number.isFinite(lng)
+    && lat >= -90
+    && lat <= 90
+    && lng >= -180
+    && lng <= 180;
+}
+
+export function locationTimestamp(location) {
+  if (!location) return 0;
+  const numeric = Number(location.timestamp);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  const parsed = Date.parse(location.lastFixAt || location.createdAt || '');
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+export function isUsableGpsFix(location, {
+  now = Date.now(),
+  maxAgeMs = GPS_FIX_STALE_MS,
+  maxAccuracyMeters = GPS_MAX_ACCURACY_METERS,
+} = {}) {
+  const normalized = normalizeRiderLocation(location, { source: 'gps' });
+  if (!normalized || normalized.source !== 'gps') return false;
+  const timestamp = locationTimestamp(normalized);
+  if (!timestamp || timestamp > now + 10_000) return false;
+  if (now - timestamp > maxAgeMs) return false;
+  if (Number.isFinite(normalized.accuracy) && normalized.accuracy > maxAccuracyMeters) return false;
+  return true;
+}
+
+export function shouldAcceptLocationUpdate(previousRaw, nextRaw, {
+  now = Date.now(),
+  staleMs = GPS_FIX_STALE_MS,
+} = {}) {
+  const next = normalizeRiderLocation(nextRaw);
+  if (!next) return false;
+
+  const previous = previousRaw ? normalizeRiderLocation(previousRaw) : null;
+  if (!previous) {
+    return next.source !== 'gps' || isUsableGpsFix(next, { now, maxAgeMs: staleMs });
+  }
+
+  const nextGps = next.source === 'gps';
+  const previousGps = previous.source === 'gps';
+  if (nextGps && !isUsableGpsFix(next, { now, maxAgeMs: staleMs })) return false;
+  if (previousGps && !nextGps && !isLocationStale(previous, staleMs, now)) return false;
+  if (nextGps && !previousGps) return !isImpossibleJump(previous, next);
+  if (!nextGps && previousGps && isLocationStale(previous, staleMs, now)) return true;
+
+  const previousTime = locationTimestamp(previous);
+  const nextTime = locationTimestamp(next);
+  if (previousTime && nextTime && nextTime < previousTime) return false;
+  if (isImpossibleJump(previous, next)) return false;
+
+  const previousFresh = !isLocationStale(previous, staleMs, now);
+  const previousAccuracy = Number(previous.accuracy);
+  const nextAccuracy = Number(next.accuracy);
+  if (
+    previousFresh
+    && Number.isFinite(previousAccuracy)
+    && Number.isFinite(nextAccuracy)
+    && previousAccuracy <= GPS_GOOD_ACCURACY_METERS
+    && nextAccuracy >= GPS_BAD_ACCURACY_METERS
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+export function shouldRenderLocationUpdate(previousRenderedRaw, nextRaw, {
+  now = Date.now(),
+  minMs = TRACKING_RENDER_MIN_MS,
+  minMeters = TRACKING_RENDER_MIN_METERS,
+} = {}) {
+  const next = normalizeRiderLocation(nextRaw);
+  if (!next) return false;
+  const previous = previousRenderedRaw ? normalizeRiderLocation(previousRenderedRaw) : null;
+  if (!previous) return true;
+  if (previous.source !== next.source) return true;
+
+  const meters = distanceKm(previous, next) * 1000;
+  if (meters >= minMeters) return true;
+
+  const previousRenderAt = Number(previousRenderedRaw.renderedAt || previousRenderedRaw.renderedAtMs || 0);
+  if (previousRenderAt && now - previousRenderAt >= minMs) return true;
+
+  const previousTime = locationTimestamp(previous);
+  const nextTime = locationTimestamp(next);
+  return Boolean(previousTime && nextTime && nextTime - previousTime >= minMs);
+}
+
+export function chooseRiderLocation(simRaw, trackedRaw, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {
   const sim = simRaw ? normalizeRiderLocation(simRaw) : null;
   const tracked = trackedRaw ? normalizeRiderLocation(trackedRaw) : null;
   if (sim && tracked) {
     const simGps = sim.source === 'gps';
     const trackedGps = tracked.source === 'gps';
-    if (trackedGps && !simGps) return tracked;
-    if (simGps && !trackedGps) return sim;
+    if (trackedGps && !simGps) return isLocationStale(tracked, staleMs, now) ? sim : tracked;
+    if (simGps && !trackedGps) return isLocationStale(sim, staleMs, now) ? tracked : sim;
     return tracked.timestamp > sim.timestamp ? tracked : sim;
   }
   return sim || tracked || null;
@@ -220,9 +331,27 @@ export function chooseRiderLocation(simRaw, trackedRaw) {
 // Indica si un fix quedó "viejo" según un umbral (default 30s).
 export function isLocationStale(location, maxAgeMs = 30_000, now = Date.now()) {
   if (!location) return true;
-  const ts = Number(location.timestamp) || Date.parse(location.lastFixAt) || 0;
+  const ts = locationTimestamp(location);
   if (!ts) return true;
   return now - ts > maxAgeMs;
+}
+
+function isImpossibleJump(previous, next) {
+  if (!previous || !next) return false;
+  const previousTime = locationTimestamp(previous);
+  const nextTime = locationTimestamp(next);
+  if (!previousTime || !nextTime || nextTime <= previousTime) return false;
+  const seconds = (nextTime - previousTime) / 1000;
+  if (seconds <= 0) return false;
+
+  const meters = distanceKm(previous, next) * 1000;
+  const inferredSpeed = meters / seconds;
+  if (inferredSpeed >= GPS_HARD_MAX_SPEED_MPS) return true;
+
+  const nextAccuracy = Number(next.accuracy);
+  return inferredSpeed >= GPS_MAX_REASONABLE_SPEED_MPS
+    && Number.isFinite(nextAccuracy)
+    && nextAccuracy >= GPS_GOOD_ACCURACY_METERS;
 }
 
 function isLatLng(value) {

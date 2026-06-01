@@ -131,6 +131,6 @@ test('GPS en contexto inseguro muestra fallback y la simulación sigue disponibl
 
   await page.locator('[data-sim-gps]').click();
   await expect(page.locator('[data-delivery-panel]')).toContainText(/conexión segura/);
-  await expect(page.locator('[data-delivery-panel]')).toContainText('Ubicación: Requiere HTTPS');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('GPS: Requiere HTTPS');
   await expect(page.locator('[data-sim-start]')).toBeEnabled();
 });

@@ -21,7 +21,7 @@ export function normalizeTrackingSource(source) {
 export function normalizeTrackingLocation(location = {}) {
   const lat = Number(location.lat);
   const lng = Number(location.lng);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
   const timestamp = normalizeTimestamp(location.timestamp || location.lastFixAt || Date.now(), new Date().toISOString());
   const source = normalizeTrackingSource(location.source);
   return {

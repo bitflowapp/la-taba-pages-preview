@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout } from './helpers.mjs';
+import { fillCheckout, installPageGuards } from './helpers.mjs';
 
 // Relay realtime servido por scripts/realtime-relay.mjs (ver playwright.config.mjs).
 const RELAY = 'http://127.0.0.1:18787';
@@ -28,6 +28,8 @@ test('cliente y rider en dos equipos: pedido interno, realtime, simulación y en
   const rider = await riderCtx.newPage();
   await stub(client);
   await stub(rider);
+  const clientGuards = installPageGuards(client);
+  const riderGuards = installPageGuards(rider);
 
   await client.goto(url());
   await rider.goto(url('#rider'));
@@ -115,6 +117,8 @@ test('GPS del rider se propaga al tracking del cliente por relay', async ({ brow
   const rider = await riderCtx.newPage();
   await stub(client);
   await stub(rider);
+  const clientGuards = installPageGuards(client);
+  const riderGuards = installPageGuards(rider);
 
   await client.goto(url());
   await rider.goto(url('#rider'));
@@ -140,14 +144,20 @@ test('GPS del rider se propaga al tracking del cliente por relay', async ({ brow
   await rider.locator('[data-street-destination]').selectOption('alto-comahue');
   await rider.locator('[data-sim-gps]').click();
 
-  await expect(rider.locator('[data-delivery-panel]')).toContainText('Ubicación: GPS real activo', { timeout: 10_000 });
+  await expect(rider.locator('[data-delivery-panel]')).toContainText('Ubicación compartida', { timeout: 10_000 });
   await expect(rider.locator('[data-delivery-panel]')).toContainText('Detalles de ubicación');
   await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación rider', { timeout: 10_000 });
   await expect(client.locator('[data-map-meta]').first()).not.toContainText(/precisión|±/i);
   await expect(client.locator('[data-tracking-panel]')).toContainText('Alto Comahue', { timeout: 10_000 });
 
+  await riderCtx.setGeolocation({ latitude: -38.9468, longitude: -68.0424, accuracy: 16 });
+  await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación rider', { timeout: 10_000 });
+
   await rider.locator('[data-sim-gps-off]').click();
-  await expect(rider.locator('[data-delivery-panel]')).toContainText('Ubicación: Detenida', { timeout: 10_000 });
+  await expect(rider.locator('[data-delivery-panel]')).toContainText('GPS detenido', { timeout: 10_000 });
+
+  await clientGuards.assertClean();
+  await riderGuards.assertClean();
 
   await clientCtx.close();
   await riderCtx.close();

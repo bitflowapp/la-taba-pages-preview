@@ -1,17 +1,25 @@
 import { getState } from '../state.js';
 import { getLastOrder } from '../orders.js';
-import { DEFAULT_MAP_BOUNDS, RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getTileLayerForTheme } from './map_config.js';
-import { chooseRiderLocation, distanceKm, getRoute, normalizeRiderLocation, pointOnRoute, selectRouteForOrder } from './route_geometry.js';
+import { RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getTileLayerForTheme } from './map_config.js';
+import {
+  chooseRiderLocation,
+  distanceKm,
+  getRoute,
+  isLocationStale,
+  normalizeRiderLocation,
+  pointOnRoute,
+  selectRouteForOrder,
+  shouldRenderLocationUpdate,
+} from './route_geometry.js';
 import { createRiderIcon, updateRiderMarker } from './rider_marker.js';
 
 const mountedMaps = new Set();
+const TRACKING_STALE_MS = 30_000;
 
 export function canUseLeaflet(root = globalThis) {
   return Boolean(root?.L?.map && root?.L?.tileLayer);
 }
 
-// Limpia mapas Leaflet cuyo contenedor ya no está en el DOM (evita fugas y
-// listeners colgados cuando el panel se vuelve a renderizar en cada tick).
 function disposeDetachedMaps() {
   for (const entry of [...mountedMaps]) {
     if (!entry.container?.isConnected) {
@@ -25,6 +33,10 @@ function disposeMapEntry(entry) {
   if (entry.resizeTimer) {
     clearTimeout(entry.resizeTimer);
     entry.resizeTimer = null;
+  }
+  if (entry.pendingFrame) {
+    cancelFrame(entry.pendingFrame);
+    entry.pendingFrame = null;
   }
   try { entry.map?.remove?.(); } catch (_) { /* no-op */ }
   mountedMaps.delete(entry);
@@ -40,9 +52,7 @@ function mapEntryFor(container) {
 export function disposeMapViews(root = document) {
   root.querySelectorAll?.('[data-real-map]').forEach((node) => {
     const entry = mapEntryFor(node);
-    if (entry) {
-      disposeMapEntry(entry);
-    }
+    if (entry) disposeMapEntry(entry);
   });
 }
 
@@ -52,11 +62,30 @@ export function renderMapViews(root = document) {
 }
 
 function renderMapView(container) {
+  const view = readMapViewState(container);
+  if (!view.canvas) return;
+
+  container.dataset.mapTheme = view.theme;
+  container.classList.toggle('map-theme-dark', view.theme === 'dark');
+  container.classList.toggle('map-theme-light', view.theme === 'light');
+  updateTrackingStatusText(container, view);
+  updateFallbackMap(container, view);
+
+  if (!canUseLeaflet(globalThis)) {
+    container.classList.add('map-unavailable');
+    view.fallback?.removeAttribute('hidden');
+    return;
+  }
+
+  container.classList.remove('map-unavailable');
+  view.fallback?.setAttribute('hidden', '');
+  const entry = ensureTrackingMap(container, view);
+  scheduleTrackingVisualUpdate(entry, view);
+}
+
+function readMapViewState(container) {
   const fallback = container.querySelector('[data-map-fallback]');
   const canvas = container.querySelector('[data-map-canvas]');
-  if (!canvas) return;
-
-  // Datos del pedido/rider: se calculan SIEMPRE, haya o no Leaflet/tiles.
   const emptyMap = container.dataset.mapRole === 'tracking-empty' || container.dataset.mapRole === 'rider-empty';
   const order = emptyMap ? null : findOrder(container.dataset.orderId);
   const sim = order ? getOrderSimulation(order.id) : null;
@@ -67,28 +96,30 @@ function renderMapView(container) {
   const preferredTheme = container.dataset.mapRole?.startsWith('rider') ? 'dark' : 'light';
   const tileLayer = getTileLayerForTheme(preferredTheme);
   const theme = getMapTheme(tileLayer.theme);
-  container.dataset.mapTheme = theme;
-  container.classList.toggle('map-theme-dark', theme === 'dark');
-  container.classList.toggle('map-theme-light', theme === 'light');
 
-  // La info textual (fuente, distancia, hora, precisión) se actualiza siempre,
-  // así el seguimiento sigue siendo útil aunque el mapa con tiles no cargue.
-  renderMapMeta(container, order, riderLocation, destination);
+  return {
+    container,
+    fallback,
+    canvas,
+    emptyMap,
+    order,
+    sim,
+    route,
+    riderLocation,
+    destination,
+    points,
+    preferredTheme,
+    tileLayer,
+    theme,
+  };
+}
 
-  if (!canUseLeaflet(globalThis)) {
-    container.classList.add('map-unavailable');
-    fallback?.removeAttribute('hidden');
-    return;
-  }
-
-  container.classList.remove('map-unavailable');
-  fallback?.setAttribute('hidden', '');
-
-  // Si este nodo ya tiene un mapa vivo, no lo reconstruimos.
-  if (mapEntryFor(container)) return;
+export function ensureTrackingMap(container, view) {
+  const existing = mapEntryFor(container);
+  if (existing) return existing;
 
   const L = globalThis.L;
-  const map = L.map(canvas, {
+  const map = L.map(view.canvas, {
     zoomControl: false,
     attributionControl: true,
     dragging: true,
@@ -96,46 +127,178 @@ function renderMapView(container) {
     doubleClickZoom: false,
     tap: true,
   });
-  const entry = { container, map, resizeTimer: null };
+
+  const entry = {
+    container,
+    map,
+    L,
+    resizeTimer: null,
+    pendingFrame: null,
+    pendingView: null,
+    routeId: null,
+    routeLayer: null,
+    progressLayer: null,
+    destinationMarker: null,
+    riderMarker: null,
+    lastRenderedLocation: null,
+    lastStatus: null,
+    lastSource: null,
+    userInteracted: false,
+  };
   mountedMaps.add(entry);
 
-  L.tileLayer(tileLayer.tilesUrl, {
+  L.tileLayer(view.tileLayer.tilesUrl, {
     maxZoom: 18,
-    attribution: tileLayer.attribution,
+    attribution: view.tileLayer.attribution,
   }).addTo(map);
-  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  L.control?.zoom?.({ position: 'bottomright' })?.addTo?.(map);
+  map.on?.('dragstart', () => { entry.userInteracted = true; });
+  map.on?.('zoomstart', () => { entry.userInteracted = true; });
 
-  const routeStyle = routeLineStyle(theme);
-  const progressStyle = progressLineStyle(theme);
-  L.polyline(points, routeStyle).addTo(map);
-  if (riderLocation) {
-    const progressPoint = [riderLocation.lat, riderLocation.lng];
-    L.polyline([points[0], progressPoint], progressStyle).addTo(map);
-  }
-
+  entry.routeLayer = L.polyline(view.points, routeLineStyle(view.theme)).addTo(map);
+  entry.progressLayer = L.polyline([], progressLineStyle(view.theme)).addTo(map);
   L.marker([STORE_LOCATION.lat, STORE_LOCATION.lng], { icon: labelIcon(L, 'LT', 'store') }).addTo(map);
-  L.marker([destination.lat, destination.lng], { icon: labelIcon(L, 'CL', 'client') }).addTo(map);
+  entry.destinationMarker = L.marker([view.destination.lat, view.destination.lng], { icon: labelIcon(L, 'CL', 'client') }).addTo(map);
+  entry.routeId = view.route.id;
 
-  if (riderLocation) {
-    const marker = L.marker([riderLocation.lat, riderLocation.lng], {
-      icon: createRiderIcon(L, {
-        status: order.status,
-        source: riderLocation.source,
-        heading: riderLocation.heading,
-      }),
-    }).addTo(map);
-    updateRiderMarker(marker, L, riderLocation, { status: order.status, source: riderLocation.source });
-  }
-
-  const bounds = riderLocation
-    ? [...points, [riderLocation.lat, riderLocation.lng]]
-    : points;
-  map.fitBounds(bounds, { padding: [22, 22], maxZoom: 14 });
+  fitMapToView(entry, view);
   entry.resizeTimer = setTimeout(() => {
     entry.resizeTimer = null;
     if (!container.isConnected || !mountedMaps.has(entry)) return;
     try { map.invalidateSize(); } catch (_) { /* Leaflet may race detached DOM */ }
   }, 0);
+
+  return entry;
+}
+
+export function scheduleTrackingVisualUpdate(entry, view) {
+  if (!entry) return;
+  entry.pendingView = view;
+  if (entry.pendingFrame) return;
+  entry.pendingFrame = requestFrame(() => {
+    entry.pendingFrame = null;
+    const nextView = entry.pendingView;
+    entry.pendingView = null;
+    if (!entry.container?.isConnected || !mountedMaps.has(entry)) return;
+    applyTrackingVisualUpdate(entry, nextView);
+  });
+}
+
+function applyTrackingVisualUpdate(entry, view) {
+  if (!view) return;
+  updateTrackingStatusText(entry.container, view);
+  updateRouteLayers(entry, view);
+
+  if (!view.riderLocation) {
+    removeRiderMarker(entry);
+    return;
+  }
+
+  ensureRiderMarker(entry, view);
+  updateProgressLine(entry, view.riderLocation);
+  updateRiderMarkerPosition(entry, view.riderLocation, {
+    status: view.order?.status,
+    source: view.riderLocation.source,
+  });
+}
+
+function updateRouteLayers(entry, view) {
+  if (entry.routeId === view.route.id) return;
+  entry.routeId = view.route.id;
+  entry.routeLayer?.setLatLngs?.(view.points);
+  entry.destinationMarker?.setLatLng?.([view.destination.lat, view.destination.lng]);
+  if (!entry.userInteracted) fitMapToView(entry, view);
+}
+
+export function ensureRiderMarker(entry, view) {
+  if (!view.riderLocation) return null;
+  if (entry.riderMarker) return entry.riderMarker;
+  entry.riderMarker = entry.L.marker([view.riderLocation.lat, view.riderLocation.lng], {
+    icon: createRiderIcon(entry.L, {
+      status: view.order?.status,
+      source: view.riderLocation.source,
+      heading: view.riderLocation.heading,
+    }),
+  }).addTo(entry.map);
+  entry.lastRenderedLocation = { ...view.riderLocation, renderedAt: Date.now() };
+  entry.lastStatus = view.order?.status || null;
+  entry.lastSource = view.riderLocation.source;
+  return entry.riderMarker;
+}
+
+export function updateRiderMarkerPosition(entry, location, options = {}) {
+  if (!entry?.riderMarker || !location) return null;
+  const now = Date.now();
+  const statusChanged = entry.lastStatus !== (options.status || null) || entry.lastSource !== location.source;
+  if (!statusChanged && !shouldRenderLocationUpdate(entry.lastRenderedLocation, location, { now })) {
+    return entry.riderMarker.getLatLng?.() || null;
+  }
+
+  const next = updateRiderMarker(entry.riderMarker, entry.L, location, options);
+  entry.lastRenderedLocation = { ...location, renderedAt: now };
+  entry.lastStatus = options.status || null;
+  entry.lastSource = location.source;
+  maybeFollowRider(entry, next);
+  return next;
+}
+
+export function updateTrackingStatusText(container, view) {
+  renderMapMeta(container, view.order, view.riderLocation, view.destination);
+}
+
+function updateProgressLine(entry, location) {
+  if (!entry.progressLayer || !location) return;
+  entry.progressLayer.setLatLngs?.([
+    [STORE_LOCATION.lat, STORE_LOCATION.lng],
+    [location.lat, location.lng],
+  ]);
+}
+
+function updateFallbackMap(container, view) {
+  const marker = container.querySelector?.('.map-marker.rider');
+  if (!marker?.style || !view.order) return;
+  const progress = Number.isFinite(Number(view.sim?.progress))
+    ? view.sim.progress
+    : view.order.status === 'delivered' ? 1
+      : view.order.status === 'arriving' ? 0.92
+        : view.order.status === 'on_the_way' ? 0.45
+          : view.order.status === 'ready' ? 0.04
+            : 0;
+  marker.style.setProperty('--p', String(progress));
+}
+
+function removeRiderMarker(entry) {
+  if (!entry.riderMarker) return;
+  try { entry.map.removeLayer?.(entry.riderMarker); } catch (_) { /* no-op */ }
+  entry.riderMarker = null;
+  entry.lastRenderedLocation = null;
+  if (entry.progressLayer) entry.progressLayer.setLatLngs?.([]);
+}
+
+function maybeFollowRider(entry, latLng) {
+  if (!latLng || entry.userInteracted) return;
+  const bounds = entry.map.getBounds?.();
+  const innerBounds = bounds?.pad ? bounds.pad(-0.2) : bounds;
+  if (innerBounds?.contains?.(latLng) === false) {
+    try { entry.map.panTo?.(latLng, { animate: true, duration: 0.4 }); } catch (_) { /* no-op */ }
+  }
+}
+
+function fitMapToView(entry, view) {
+  const bounds = view.riderLocation
+    ? [...view.points, [view.riderLocation.lat, view.riderLocation.lng]]
+    : view.points;
+  try { entry.map.fitBounds(bounds, { padding: [22, 22], maxZoom: 14 }); } catch (_) { /* no-op */ }
+}
+
+function requestFrame(callback) {
+  if (typeof requestAnimationFrame === 'function') return requestAnimationFrame(callback);
+  return setTimeout(callback, 0);
+}
+
+function cancelFrame(id) {
+  if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(id);
+  else clearTimeout(id);
 }
 
 function labelIcon(L, label, kind) {
@@ -169,16 +332,7 @@ function getOrderSimulation(orderId) {
   return sim && sim.orderId === orderId ? sim : null;
 }
 
-// Prioridad de ubicación del rider para el mapa:
-//  1) GPS real propio en curso (sim.source === 'gps' en este dispositivo);
-//  2) ubicación persistida del pedido (order.tracking.lastLocation), que en
-//     modo Supabase llega por polling desde otro dispositivo (el rider real);
-//  3) simulación local;
-//  4) punto sintético sobre la ruta.
-// Una ubicación GPS persistida le gana a la simulación, salvo que este mismo
-// equipo tenga un fix GPS más nuevo.
 function getRiderLocation(order, sim, routeId) {
-  // GPS real (propio o persistido por el rider en Supabase) gana a la simulación.
   const chosen = chooseRiderLocation(sim, order?.tracking?.lastLocation);
   if (chosen) return chosen;
 
@@ -198,12 +352,26 @@ function renderMapMeta(container, order, location, destination) {
     meta.textContent = 'Neuquén Capital y Cipolletti';
     return;
   }
+
   const km = distanceKm(location, destination);
   const source = RIDER_LOCATION_SOURCES[location.source] || RIDER_LOCATION_SOURCES.simulation;
-  const updated = location.lastFixAt
-    ? new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(location.lastFixAt))
-    : 'sin hora';
+  const age = relativeAgeLabel(location.lastFixAt || location.timestamp);
+  const gpsStale = location.source === 'gps' && isLocationStale(location, TRACKING_STALE_MS);
+  const prefix = gpsStale ? 'Última ubicación rider' : source;
   const showAccuracy = container.dataset.mapRole?.startsWith('rider');
-  const accuracy = showAccuracy && Number.isFinite(location.accuracy) ? ` · precisión ${Math.round(location.accuracy)} m` : '';
-  meta.textContent = `${source} · ${km.toFixed(1).replace('.', ',')} km aprox. · actualizado ${updated}${accuracy}`;
+  const accuracy = showAccuracy && Number.isFinite(location.accuracy)
+    ? ` · precisión ${Math.round(location.accuracy)} m`
+    : '';
+  meta.textContent = `${prefix} · actualizado ${age} · ${km.toFixed(1).replace('.', ',')} km aprox.${accuracy}`;
+}
+
+function relativeAgeLabel(value) {
+  if (!value) return 'sin datos';
+  const time = typeof value === 'number' ? value : new Date(value).getTime();
+  if (Number.isNaN(time)) return 'sin datos';
+  const seconds = Math.max(0, Math.round((Date.now() - time) / 1000));
+  if (seconds < 2) return 'ahora';
+  if (seconds < 60) return `hace ${seconds} s`;
+  const minutes = Math.round(seconds / 60);
+  return `hace ${minutes} min`;
 }

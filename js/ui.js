@@ -20,6 +20,34 @@ import { getRealtimeStatus } from './realtime.js';
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
+export function renderWithStableRealMap(container, html, { rolePrefix = '', orderId = '' } = {}) {
+  const stableMap = captureStableRealMap(container, rolePrefix, orderId);
+  container.innerHTML = html;
+  restoreStableRealMap(container, stableMap);
+}
+
+function captureStableRealMap(container, rolePrefix, orderId) {
+  if (!container || !rolePrefix) return null;
+  const shell = container.querySelector('[data-real-map]');
+  if (!shell) return null;
+  const role = shell.dataset.mapRole || '';
+  const shellOrderId = shell.dataset.orderId || '';
+  if (!role.startsWith(rolePrefix) || shellOrderId !== String(orderId || '')) return null;
+  return shell;
+}
+
+function restoreStableRealMap(container, shell) {
+  if (!container || !shell) return;
+  const role = shell.dataset.mapRole || '';
+  const orderId = shell.dataset.orderId || '';
+  const replacement = [...container.querySelectorAll('[data-real-map]')]
+    .find((candidate) => (
+      (candidate.dataset.mapRole || '') === role
+      && (candidate.dataset.orderId || '') === orderId
+    ));
+  if (replacement && replacement !== shell) replacement.replaceWith(shell);
+}
+
 export function applyBusinessConfig() {
   setText('[data-business-name]', BUSINESS_CONFIG.businessName);
   setText('[data-business-subtitle]', BUSINESS_CONFIG.subtitle);
@@ -697,7 +725,7 @@ export function renderTracking() {
   const order = getLastOrder();
 
   if (!order) {
-    container.innerHTML = `
+    renderWithStableRealMap(container, `
       <div class="track-layout tracking-map-experience is-empty">
         ${trackingMapStage({ isEmpty: true })}
         <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
@@ -710,7 +738,7 @@ export function renderTracking() {
           </div>
           </div>
         </section>
-      </div>`;
+      </div>`, { rolePrefix: 'tracking' });
     return;
   }
 
@@ -744,7 +772,7 @@ export function renderTracking() {
     </div>
   `).join('');
 
-  container.innerHTML = `
+  renderWithStableRealMap(container, `
     <div class="track-layout tracking-map-experience ${isDelivery && !isCancelled ? '' : 'no-map'}">
       ${isDelivery && !isCancelled ? trackingMapStage({ order, head }) : ''}
 
@@ -782,7 +810,7 @@ export function renderTracking() {
         </div>`}
       </section>
     </div>
-  `;
+  `, { rolePrefix: 'tracking', orderId: isDelivery && !isCancelled ? order.id : '' });
 }
 
 // Indicador de conexión realtime (en vivo entre equipos / en este equipo).

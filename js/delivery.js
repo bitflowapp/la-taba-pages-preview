@@ -26,6 +26,7 @@ import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
 import { escapeHtml, renderWithStableRealMap } from './ui.js';
 import {
+  GPS_GOOD_ACCURACY_METERS,
   distanceKm,
   getStreetTestDestination,
   getStreetTestDestinations,
@@ -232,17 +233,18 @@ function renderSimControls(order, sim) {
   const canReset = Boolean(sim) && order.status !== 'delivered';
   const destination = selectedStreetDestination(order, sim);
   const distanceToDestination = currentDistanceToDestination(sim, destination);
-  const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'Recorrido de apoyo';
+  const sourceLabel = sim?.source === 'gps' ? 'Ubicación en vivo' : 'Referencia visual';
   const gpsStatus = gpsProductStatusLabel(sim, gpsOn);
+  const signalStatus = gpsSignalStatusLabel(sim);
   const lastGpsFixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
   const lastFix = lastGpsFixAt ? relativeAgeLabel(lastGpsFixAt) : '';
   const accuracy = sim?.source === 'gps' && Number.isFinite(sim?.accuracy) ? `${Math.round(sim.accuracy)} m` : 'Sin precisión';
   const gpsButtonLabel = sim?.gpsStatus === 'requesting'
     ? 'Esperando permiso...'
     : gpsSession && sim?.gpsStatus === 'unavailable'
-      ? 'Buscando senal...'
+      ? 'Buscando señal...'
       : sim?.gpsStatus === 'active' && gpsSession
-      ? 'Compartiendo ubicación'
+      ? 'GPS compartiendo ubicación'
       : 'Compartir mi ubicación';
   const gpsButtonDisabled = sim?.gpsStatus === 'requesting' || gpsSession;
   const destinationOptions = getStreetTestDestinations().map((item) => `
@@ -268,7 +270,7 @@ function renderSimControls(order, sim) {
         <span><small>Referencia visual</small><strong>${escapeHtml(displayDestinationLabel(destination.addressLabel || destination.label))}</strong></span>
         <span><small>Distancia</small><strong>${escapeHtml(distanceToDestination)}</strong></span>
         <span><small>Ubicación</small><strong>${escapeHtml(sourceLabel)}</strong></span>
-        <span><small>Precisión</small><strong>${escapeHtml(accuracy)}</strong></span>
+        <span><small>Señal</small><strong>${escapeHtml(signalStatus)}</strong></span>
       </div>
       <div class="sim-progress">
         <div class="sim-bar"><span style="width:${percent}%"></span></div>
@@ -288,7 +290,7 @@ function renderSimControls(order, sim) {
         <button class="secondary-button compact" type="button" data-street-done="${order.id}" ${canDeliverForStreet(order) ? '' : 'disabled'}>Pedido entregado</button>
       </div>
       <div class="sim-gps">
-        <span class="sim-gps-status">Estado: ${escapeHtml(gpsStatus)}${lastFix ? ` · actualizado ${escapeHtml(lastFix)}` : ''}</span>
+        <span class="sim-gps-status">Estado: ${escapeHtml(signalStatus)}${lastFix ? ` · actualizado ${escapeHtml(lastFix)}` : ''}</span>
         ${sim?.source === 'gps' && Number.isFinite(sim?.accuracy) ? `<span class="sim-gps-coords">Precisión aproximada: ${escapeHtml(accuracy)}</span>` : ''}
         ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
         ${secureHint}
@@ -332,12 +334,30 @@ function gpsProductStatusLabel(sim, active) {
   const labels = {
     inactive: 'GPS detenido',
     requesting: 'Permiso requerido',
-    active: active ? 'Ubicación compartida' : 'Última ubicación',
+    active: active ? 'GPS compartiendo ubicación' : 'Última ubicación',
     denied: 'Permiso requerido',
-    unavailable: 'Sin señal',
+    unavailable: sim?.source === 'gps' ? 'Señal baja, usando última ubicación' : 'Señal baja',
     requires_secure_context: 'Requiere HTTPS',
   };
   return labels[sim?.gpsStatus || 'inactive'] || 'GPS detenido';
+}
+
+function gpsSignalStatusLabel(sim) {
+  if (!sim || sim.gpsStatus === 'inactive') return 'GPS detenido';
+  if (sim.gpsStatus === 'requesting') return 'Permiso requerido';
+  if (sim.gpsStatus === 'denied') return 'Permiso requerido';
+  if (sim.gpsStatus === 'requires_secure_context') return 'Permiso requerido';
+  if (sim.gpsStatus === 'unavailable') {
+    return sim.source === 'gps' ? 'Señal baja, usando última ubicación' : 'Señal baja';
+  }
+  if (sim.gpsStatus === 'active') {
+    const accuracy = Number(sim.accuracy);
+    if (Number.isFinite(accuracy) && accuracy > GPS_GOOD_ACCURACY_METERS) {
+      return 'Señal baja, usando última ubicación';
+    }
+    return 'Buena señal';
+  }
+  return 'GPS detenido';
 }
 
 function gpsStatusLabel(sim, active) {

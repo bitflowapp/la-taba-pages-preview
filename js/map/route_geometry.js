@@ -52,6 +52,15 @@ export const GPS_MAX_REASONABLE_SPEED_MPS = 45;
 export const GPS_HARD_MAX_SPEED_MPS = 80;
 export const TRACKING_RENDER_MIN_MS = 800;
 export const TRACKING_RENDER_MIN_METERS = 5;
+export const GPS_PUBLISH_MIN_MS = 4_000;
+export const GPS_PUBLISH_MIN_METERS = 12;
+export const GPS_PUBLISH_MAX_MS = 12_000;
+export const GPS_NEAR_CUSTOMER_PUBLISH_MIN_MS = 2_500;
+export const GPS_NEAR_CUSTOMER_PUBLISH_MIN_METERS = 6;
+export const GPS_NEAR_CUSTOMER_PUBLISH_MAX_MS = 8_000;
+export const GPS_RENDER_MIN_MS = 1_200;
+export const GPS_RENDER_MIN_METERS = 6;
+export const GPS_HEADING_CHANGE_DEGREES = 45;
 
 export function getDemoRoutes() {
   return ROUTES;
@@ -293,11 +302,55 @@ export function shouldAcceptLocationUpdate(previousRaw, nextRaw, {
   return true;
 }
 
+export function shouldAcceptGpsFix(previousRaw, nextRaw, options = {}) {
+  return shouldAcceptLocationUpdate(previousRaw, nextRaw, options);
+}
+
+export function shouldPublishGpsFix(previousPublishedRaw, nextRaw, {
+  now = Date.now(),
+  orderStatus = '',
+  previousOrderStatus = '',
+  nearCustomer = false,
+  force = false,
+  minMs = nearCustomer ? GPS_NEAR_CUSTOMER_PUBLISH_MIN_MS : GPS_PUBLISH_MIN_MS,
+  minMeters = nearCustomer ? GPS_NEAR_CUSTOMER_PUBLISH_MIN_METERS : GPS_PUBLISH_MIN_METERS,
+  maxMs = nearCustomer ? GPS_NEAR_CUSTOMER_PUBLISH_MAX_MS : GPS_PUBLISH_MAX_MS,
+} = {}) {
+  const status = String(orderStatus || '').toLowerCase();
+  if (status === 'delivered' || status === 'cancelled') return false;
+  if (!nextRaw) return false;
+
+  const next = normalizeRiderLocation(nextRaw, { source: 'gps' });
+  if (!next || next.source !== 'gps') return false;
+  if (!isUsableGpsFix(next, { now })) return false;
+
+  const previous = previousPublishedRaw
+    ? normalizeRiderLocation(previousPublishedRaw, { source: 'gps' })
+    : null;
+  if (!previous) return true;
+  if (force) return true;
+  if (previousOrderStatus && orderStatus && previousOrderStatus !== orderStatus) return true;
+
+  const previousPublishedAt = Number(previousPublishedRaw.at || previousPublishedRaw.publishedAt || 0)
+    || locationTimestamp(previous);
+  const elapsedMs = previousPublishedAt ? now - previousPublishedAt : 0;
+  if (elapsedMs < 0) return false;
+
+  const meters = distanceKm(previous, next) * 1000;
+  if (elapsedMs >= minMs && meters >= minMeters) return true;
+  if (elapsedMs >= maxMs) return true;
+
+  return elapsedMs >= minMs
+    && meters >= Math.min(3, minMeters)
+    && hasSignificantHeadingChange(previous.heading, next.heading);
+}
+
 export function shouldRenderLocationUpdate(previousRenderedRaw, nextRaw, {
   now = Date.now(),
   minMs = TRACKING_RENDER_MIN_MS,
   minMeters = TRACKING_RENDER_MIN_METERS,
 } = {}) {
+  if (!nextRaw) return false;
   const next = normalizeRiderLocation(nextRaw);
   if (!next) return false;
   const previous = previousRenderedRaw ? normalizeRiderLocation(previousRenderedRaw) : null;
@@ -313,6 +366,17 @@ export function shouldRenderLocationUpdate(previousRenderedRaw, nextRaw, {
   const previousTime = locationTimestamp(previous);
   const nextTime = locationTimestamp(next);
   return Boolean(previousTime && nextTime && nextTime - previousTime >= minMs);
+}
+
+export function shouldRenderGpsFix(previousRenderedRaw, nextRaw, {
+  now = Date.now(),
+  minMs = GPS_RENDER_MIN_MS,
+  minMeters = GPS_RENDER_MIN_METERS,
+} = {}) {
+  if (!nextRaw) return false;
+  const next = normalizeRiderLocation(nextRaw);
+  if (!next) return false;
+  return shouldRenderLocationUpdate(previousRenderedRaw, next, { now, minMs, minMeters });
 }
 
 export function chooseRiderLocation(simRaw, trackedRaw, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {
@@ -361,6 +425,14 @@ function isImpossibleJump(previous, next) {
   return inferredSpeed >= GPS_MAX_REASONABLE_SPEED_MPS
     && Number.isFinite(nextAccuracy)
     && nextAccuracy >= GPS_GOOD_ACCURACY_METERS;
+}
+
+function hasSignificantHeadingChange(previousHeading, nextHeading) {
+  const previous = Number(previousHeading);
+  const next = Number(nextHeading);
+  if (!Number.isFinite(previous) || !Number.isFinite(next)) return false;
+  const diff = Math.abs(((next - previous + 540) % 360) - 180);
+  return diff >= GPS_HEADING_CHANGE_DEGREES;
 }
 
 function isLatLng(value) {

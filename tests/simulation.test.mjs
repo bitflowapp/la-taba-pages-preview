@@ -10,10 +10,14 @@ import {
   simulationProgressPercent,
 } from '../js/core/simulation.js';
 import { createOrderFromCheckout, updateOrderStatus } from '../js/orders.js';
+import { resetRepositoryFactoryForTests } from '../js/repositories/repository_factory.js';
 import {
   activateStreetTestMode,
   disableGpsTracking,
   enableGpsTracking,
+  gpsDeliveryPhaseForOrder,
+  gpsWatchOptionsForOrder,
+  isGpsActive,
   selectStreetTestDestination,
   shouldPublishLocation,
   startSimulation,
@@ -280,6 +284,47 @@ test('GPS keeps a recent fix visible after transient unavailable errors', () => 
   }
 });
 
+test('GPS keeps watcher alive on transient errors before first fix', () => {
+  createReadyDeliveryOrder();
+  const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  let errorHandler = null;
+  let clearWatchId = null;
+
+  Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: true });
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      geolocation: {
+        watchPosition: (_success, error) => {
+          errorHandler = error;
+          return 44;
+        },
+        clearWatch: (id) => { clearWatchId = id; },
+      },
+    },
+  });
+
+  try {
+    assert.equal(enableGpsTracking().ok, true);
+    errorHandler({ code: 2 });
+
+    assert.equal(clearWatchId, null);
+    assert.equal(getState().simulation.mode, 'gps');
+    assert.equal(getState().simulation.gpsStatus, 'unavailable');
+    assert.equal(getState().simulation.source, 'simulation');
+
+    disableGpsTracking();
+    assert.equal(clearWatchId, 44);
+  } finally {
+    disableGpsTracking({ silent: true });
+    if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
+    else delete globalThis.isSecureContext;
+    if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+    else delete globalThis.navigator;
+  }
+});
+
 test('GPS can start from street test mode before the order leaves the store', () => {
   addToCart('p-vacio', 1);
   const created = createOrderFromCheckout({
@@ -323,6 +368,22 @@ test('GPS can start from street test mode before the order leaves the store', ()
   }
 });
 
+test('GPS geolocation options adapt to delivery phase', () => {
+  const idleOrder = { deliveryMode: 'delivery', status: 'preparing' };
+  const activeOrder = { deliveryMode: 'delivery', status: 'on_the_way' };
+  const nearOrder = { deliveryMode: 'delivery', status: 'arriving' };
+  const stoppedOrder = { deliveryMode: 'delivery', status: 'delivered' };
+
+  assert.equal(gpsDeliveryPhaseForOrder(idleOrder), 'IDLE');
+  assert.equal(gpsDeliveryPhaseForOrder(activeOrder), 'ACTIVE_DELIVERY');
+  assert.equal(gpsDeliveryPhaseForOrder(nearOrder), 'NEAR_CUSTOMER');
+  assert.equal(gpsDeliveryPhaseForOrder(stoppedOrder), 'STOPPED');
+
+  assert.equal(gpsWatchOptionsForOrder(idleOrder).enableHighAccuracy, false);
+  assert.equal(gpsWatchOptionsForOrder(activeOrder).enableHighAccuracy, true);
+  assert.ok(gpsWatchOptionsForOrder(nearOrder).maximumAge < gpsWatchOptionsForOrder(activeOrder).maximumAge);
+});
+
 test('GPS watchPosition is not duplicated when rider taps GPS twice', () => {
   addToCart('p-vacio', 1);
   const created = createOrderFromCheckout({
@@ -362,6 +423,105 @@ test('GPS watchPosition is not duplicated when rider taps GPS twice', () => {
     else delete globalThis.isSecureContext;
     if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
     else delete globalThis.navigator;
+  }
+});
+
+test('GPS minimal movement does not publish a fresh state immediately', () => {
+  createReadyDeliveryOrder();
+  const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  let successHandler = null;
+
+  Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: true });
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      geolocation: {
+        watchPosition: (success) => { successHandler = success; return 93; },
+        clearWatch: () => {},
+      },
+    },
+  });
+
+  try {
+    assert.equal(enableGpsTracking().ok, true);
+    const timestamp = Date.now();
+    successHandler({
+      coords: { latitude: -38.9462, longitude: -68.0418, accuracy: 12 },
+      timestamp,
+    });
+    const firstTimestamp = getState().simulation.timestamp;
+
+    successHandler({
+      coords: { latitude: -38.946201, longitude: -68.041801, accuracy: 13 },
+      timestamp: timestamp + 1_000,
+    });
+
+    assert.equal(getState().simulation.timestamp, firstTimestamp);
+  } finally {
+    disableGpsTracking({ silent: true });
+    if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
+    else delete globalThis.isSecureContext;
+    if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+    else delete globalThis.navigator;
+  }
+});
+
+test('relay/backend publish errors do not stop active GPS', async () => {
+  createReadyDeliveryOrder();
+  const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  const originalLocation = Object.getOwnPropertyDescriptor(globalThis, 'location');
+  const originalFetch = Object.getOwnPropertyDescriptor(globalThis, 'fetch');
+  let successHandler = null;
+  let clearWatchId = null;
+
+  Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: true });
+  Object.defineProperty(globalThis, 'location', {
+    configurable: true,
+    value: new URL('https://example.test/?mode=http&api=https://api.example.test'),
+  });
+  Object.defineProperty(globalThis, 'fetch', {
+    configurable: true,
+    value: () => Promise.reject(new Error('offline')),
+  });
+  resetRepositoryFactoryForTests();
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      geolocation: {
+        watchPosition: (success) => {
+          successHandler = success;
+          return 94;
+        },
+        clearWatch: (id) => { clearWatchId = id; },
+      },
+    },
+  });
+
+  try {
+    assert.equal(enableGpsTracking().ok, true);
+    successHandler({
+      coords: { latitude: -38.9462, longitude: -68.0418, accuracy: 12 },
+      timestamp: Date.now(),
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(isGpsActive(), true);
+    assert.equal(clearWatchId, null);
+    assert.equal(getState().simulation.gpsStatus, 'active');
+    assert.match(getState().simulation.backendError, /backend/i);
+  } finally {
+    disableGpsTracking({ silent: true });
+    resetRepositoryFactoryForTests();
+    if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
+    else delete globalThis.isSecureContext;
+    if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+    else delete globalThis.navigator;
+    if (originalLocation) Object.defineProperty(globalThis, 'location', originalLocation);
+    else delete globalThis.location;
+    if (originalFetch) Object.defineProperty(globalThis, 'fetch', originalFetch);
+    else delete globalThis.fetch;
   }
 });
 
@@ -521,15 +681,17 @@ test('simulation can restart after GPS is stopped', () => {
 
 test('shouldPublishLocation aplica throttling por tiempo y distancia', () => {
   const t0 = 1_000_000;
-  const prev = { lat: -38.9516, lng: -68.0591, at: t0 };
-  const nearSoon = { lat: -38.95161, lng: -68.05911 }; // ~1-2 m
-  // Mismo punto, < 3s: no publica.
+  const prev = { lat: -38.9516, lng: -68.0591, source: 'gps', timestamp: t0, at: t0 };
+  const nearSoon = { lat: -38.95161, lng: -68.05911, source: 'gps', timestamp: t0 + 1_000 }; // ~1-2 m
+  // Mismo punto, muy pronto: no publica.
   assert.equal(shouldPublishLocation(prev, nearSoon, t0 + 1_000), false);
-  // Pasaron >= 3s: publica aunque no se haya movido.
-  assert.equal(shouldPublishLocation(prev, nearSoon, t0 + 3_000), true);
-  // Se movió mucho (~150 m) antes de los 3s: publica igual.
-  const farSoon = { lat: -38.9530, lng: -68.0591 };
-  assert.equal(shouldPublishLocation(prev, farSoon, t0 + 500), true);
+  // Pasó el máximo: publica aunque se haya movido poco.
+  assert.equal(shouldPublishLocation(prev, { ...nearSoon, timestamp: t0 + 12_000 }, t0 + 12_000), true);
+  // Se movió suficiente y pasó la ventana mínima: publica.
+  const farSoon = { lat: -38.9530, lng: -68.0591, source: 'gps', timestamp: t0 + 4_500 };
+  assert.equal(shouldPublishLocation(prev, farSoon, t0 + 4_500), true);
+  // Si se movió mucho demasiado pronto, espera para reducir ruido.
+  assert.equal(shouldPublishLocation(prev, { ...farSoon, timestamp: t0 + 500 }, t0 + 500), false);
   // Sin fix previo: siempre publica el primero.
   assert.equal(shouldPublishLocation(null, nearSoon, t0), true);
   // Sin ubicación nueva: no publica.

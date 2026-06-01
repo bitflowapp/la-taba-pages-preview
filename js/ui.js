@@ -746,7 +746,7 @@ function riderTrackingCard(order, riderLocation) {
         <span class="rider-avatar">${escapeHtml(initials(name))}</span>
         <div class="rider-profile-text">
           <strong>${escapeHtml(name)}</strong>
-          <small>Compartiendo ubicación en vivo · ${escapeHtml(age)}</small>
+          <small>Ubicación rider · actualizado ${escapeHtml(age)}</small>
         </div>
         ${contact}
       </div>

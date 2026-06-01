@@ -72,8 +72,10 @@ export function createOrderFromCheckout(formValues = {}) {
     total: totals.total,
     statusHistory: [{ status: 'received', at: now }],
     delivery: {
-      driverName: values.deliveryMode === 'pickup' ? 'Sin asignar' : 'Juli',
-      driverPhone: values.deliveryMode === 'pickup' ? '' : '2991112233',
+      // Pedido real recién creado: todavía NO hay repartidor asignado.
+      // No inventamos nombre/teléfono de rider (eso confunde al cliente).
+      driverName: 'Sin asignar',
+      driverPhone: '',
       estimatedMinutes: values.deliveryMode === 'pickup' ? 0 : 25,
       currentLocationLabel: values.deliveryMode === 'pickup' ? 'Pedido para retirar en local' : 'Pedido recibido por el local',
     },

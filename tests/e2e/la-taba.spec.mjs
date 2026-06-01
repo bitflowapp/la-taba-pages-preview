@@ -121,6 +121,79 @@ test('carrito vacío oculta el formulario de checkout y lo muestra al cargar pro
   await guards.assertClean();
 });
 
+test('pedido real no muestra rider falso: rider pendiente hasta que hay GPS real', async ({ page }) => {
+  const guards = installPageGuards(page);
+
+  // Mock de geolocalización: al activar el GPS el rider entrega un fix real.
+  await page.addInitScript(() => {
+    const coords = { latitude: -38.9512, longitude: -68.0598, accuracy: 12, heading: 90, speed: 4 };
+    const geo = {
+      watchPosition: (success) => { setTimeout(() => success({ coords, timestamp: Date.now() }), 40); return 1; },
+      clearWatch: () => {},
+      getCurrentPosition: (success) => success({ coords, timestamp: Date.now() }),
+    };
+    try {
+      Object.defineProperty(navigator, 'geolocation', { configurable: true, value: geo });
+    } catch (_) { navigator.geolocation = geo; }
+  });
+
+  // 1. Abrir con ?reset=1 (sesión demo limpia).
+  await page.goto('/?reset=1');
+  // 2. Agregar producto.
+  await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await page.locator('.desktop-nav [data-nav-view="cart"]').click();
+  // 3. Completar datos reales del cliente.
+  await fillCheckout(page, {
+    name: 'Cliente Real',
+    phone: '2995557777',
+    street: 'Roca 123',
+    neighborhood: 'Neuquen centro',
+    reference: 'Casa azul',
+    notes: 'Tocar timbre',
+    payment: 'cash',
+    deliveryMode: 'delivery',
+  });
+  // 4. Confirmar pedido.
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
+  await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+
+  const tracking = page.locator('[data-tracking-panel]');
+  // 5. Tracking muestra la dirección real.
+  await expect(tracking).toContainText('Roca 123, Neuquen centro');
+  // 6. Tracking NO muestra datos falsos de repartidor.
+  await expect(tracking).not.toContainText('Juli');
+  await expect(tracking).not.toContainText('2991112233');
+  await expect(tracking).not.toContainText('★');
+  await expect(tracking).not.toContainText('pedidos');
+  await expect(tracking.locator('a.round-action')).toHaveCount(0);
+  // 7. Tracking muestra rider pendiente / ubicación pendiente.
+  await expect(tracking.locator('.rider-pending')).toBeVisible();
+  await expect(tracking).toContainText('Rider pendiente');
+  await expect(tracking).toContainText('El negocio está revisando tu pedido');
+
+  // 8. El negocio despacha y el rider comparte GPS real → recién ahí aparece el rider.
+  await page.locator('[data-admin-toggle]').click();
+  await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
+  await page.locator('[data-pin-form]').press('Enter');
+  await expect(page.locator('[data-view="business"]')).toBeVisible();
+  await page.locator('[data-order-advance="LT-0002"]').click();
+  await waitForToast(page, 'Estado del pedido actualizado.');
+  await page.locator('[data-order-advance="LT-0002"]').click();
+  await waitForToast(page, 'Estado del pedido actualizado.');
+  await page.getByRole('button', { name: /Vista rider/i }).click();
+  await expect(page.locator('[data-view="rider"]')).toBeVisible();
+  await page.locator('[data-sim-gps]').click();
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Ubicación compartida');
+
+  await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
+  await expect(tracking.locator('.rider-profile.is-live')).toBeVisible({ timeout: 10_000 });
+  await expect(tracking).toContainText('Compartiendo ubicación en vivo');
+
+  await guards.assertClean();
+});
+
 test('home muestra acceso al pedido en curso tras confirmar', async ({ page }) => {
   const guards = installPageGuards(page);
 

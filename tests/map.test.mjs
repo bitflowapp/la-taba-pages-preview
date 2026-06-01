@@ -9,6 +9,7 @@ import {
   getRoute,
   getStreetTestDestination,
   getStreetTestDestinations,
+  hasLiveRiderLocation,
   isLocationStale,
   isUsableGpsFix,
   isValidLocation,
@@ -140,6 +141,22 @@ test('chooseRiderLocation ignora coordenadas inválidas y soporta nulls', () => 
   assert.equal(chooseRiderLocation(invalid, valid).lat, -38.95);
   assert.equal(chooseRiderLocation(invalid, null), null);
   assert.equal(chooseRiderLocation(null, null), null);
+});
+
+test('hasLiveRiderLocation solo es true con GPS real y reciente', () => {
+  const now = 1_000_000;
+  const freshGps = { lat: -38.95, lng: -68.05, source: 'gps', timestamp: now - 5_000 };
+  const staleGps = { lat: -38.95, lng: -68.05, source: 'gps', timestamp: now - 60_000 };
+  const sim = { lat: -38.95, lng: -68.05, source: 'simulation', timestamp: now };
+
+  assert.equal(hasLiveRiderLocation(freshGps, { now }), true);
+  // Simulación / recorrido de apoyo NO cuenta como rider real.
+  assert.equal(hasLiveRiderLocation(sim, { now }), false);
+  // GPS viejo tampoco: ya no está "en vivo".
+  assert.equal(hasLiveRiderLocation(staleGps, { now }), false);
+  // Sin ubicación: no hay rider en vivo (pedido recién creado).
+  assert.equal(hasLiveRiderLocation(null, { now }), false);
+  assert.equal(hasLiveRiderLocation(undefined, { now }), false);
 });
 
 test('isLocationStale marca como vieja una ubicación pasada el umbral', () => {

@@ -90,7 +90,8 @@ function readMapViewState(container) {
   const order = emptyMap ? null : findOrder(container.dataset.orderId);
   const sim = order ? getOrderSimulation(order.id) : null;
   const route = order ? selectRouteForOrder(order, sim?.routeId || sim?.destinationId) : getRoute('cipolletti');
-  const riderLocation = order ? getRiderLocation(order, sim, route.id) : null;
+  const role = container.dataset.mapRole?.startsWith('rider') ? 'rider' : 'tracking';
+  const riderLocation = order ? getRiderLocation(order, sim, route.id, role) : null;
   const destination = route.destination;
   const points = route.points.map((point) => [point.lat, point.lng]);
   const preferredTheme = container.dataset.mapRole?.startsWith('rider') ? 'dark' : 'light';
@@ -332,9 +333,14 @@ function getOrderSimulation(orderId) {
   return sim && sim.orderId === orderId ? sim : null;
 }
 
-function getRiderLocation(order, sim, routeId) {
+function getRiderLocation(order, sim, routeId, role = 'tracking') {
   const chosen = chooseRiderLocation(sim, order?.tracking?.lastLocation);
   if (chosen) return chosen;
+
+  // En el mapa del cliente no inventamos un rider antes de que el pedido salga:
+  // sin GPS real ni reparto en curso (on_the_way/arriving), no mostramos marker.
+  const dispatched = ['on_the_way', 'arriving', 'delivered'].includes(order.status);
+  if (role === 'tracking' && !dispatched) return null;
 
   const fallbackProgress = order.status === 'delivered' ? 1
     : order.status === 'arriving' ? 0.92

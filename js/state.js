@@ -292,8 +292,9 @@ function normalizeDelivery(delivery, deliveryMode, status) {
   const demoDestination = normalizeStreetDestinationId(source.demoDestinationId || source.destinationId);
 
   return {
-    driverName: sanitizeText(source.driverName, { fallback: deliveryMode === 'pickup' ? 'Sin asignar' : 'Juli', maxLength: 80 }),
-    driverPhone: sanitizeText(source.driverPhone, { fallback: deliveryMode === 'pickup' ? '' : '2991112233', maxLength: 40 }),
+    // Sin rider real: "Sin asignar" y teléfono vacío. Nunca un nombre/teléfono falso.
+    driverName: sanitizeText(source.driverName, { fallback: 'Sin asignar', maxLength: 80 }),
+    driverPhone: sanitizeText(source.driverPhone, { fallback: '', maxLength: 40 }),
     estimatedMinutes,
     currentLocationLabel: sanitizeText(source.currentLocationLabel, {
       fallback: defaultLocationLabel(status, deliveryMode),

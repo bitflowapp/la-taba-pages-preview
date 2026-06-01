@@ -170,7 +170,7 @@ test('pedido real no muestra rider falso: rider pendiente hasta que hay GPS real
   await expect(tracking.locator('a.round-action')).toHaveCount(0);
   // 7. Tracking muestra rider pendiente / ubicación pendiente.
   await expect(tracking.locator('.rider-pending')).toBeVisible();
-  await expect(tracking).toContainText('Rider pendiente');
+  await expect(tracking).toContainText('Repartidor sin asignar');
   await expect(tracking).toContainText('El negocio está revisando tu pedido');
 
   // 8. El negocio despacha y el rider comparte GPS real → recién ahí aparece el rider.

@@ -726,7 +726,7 @@ function trackingMapStage({ order = null, head = null, isEmpty = false }) {
 
 // Tarjeta del repartidor en el tracking del cliente. Es honesta:
 // - Sólo muestra un rider "en vivo" cuando hay ubicación GPS REAL y reciente.
-// - Si no, muestra un estado "Rider pendiente" claro según el estado del pedido.
+// - Si no, muestra un estado "Repartidor sin asignar" claro según el estado del pedido.
 // Nunca inventa nombre, teléfono ni reputación de un repartidor inexistente.
 function riderTrackingCard(order, riderLocation) {
   if (order.status === 'delivered') return '';
@@ -770,12 +770,12 @@ function riderPendingCopy(status) {
     return { title: 'Repartidor en camino', sub: 'Todavía no comparte su ubicación en vivo.' };
   }
   if (status === 'ready') {
-    return { title: 'Rider pendiente', sub: 'Tu pedido está listo. En breve sale el repartidor.' };
+    return { title: 'Repartidor sin asignar', sub: 'Tu pedido está listo. En breve sale el repartidor.' };
   }
   if (status === 'preparing') {
-    return { title: 'Rider pendiente', sub: 'El negocio está preparando tu pedido.' };
+    return { title: 'Repartidor sin asignar', sub: 'El negocio está preparando tu pedido.' };
   }
-  return { title: 'Rider pendiente', sub: 'El negocio está revisando tu pedido.' };
+  return { title: 'Repartidor sin asignar', sub: 'El negocio está revisando tu pedido.' };
 }
 
 function relativeAgeLabel(value) {
@@ -797,7 +797,7 @@ function trackingAddressCard(order) {
       <small>Entrega en</small>
       <strong>${escapeHtml(address.label)}</strong>
       ${address.reference ? `<p>Referencia: ${escapeHtml(address.reference)}</p>` : ''}
-      <p class="tracking-address-note">Direccion cargada por el cliente. El rider usa la direccion del pedido.</p>
+      <p class="tracking-address-note">Dirección cargada por el cliente. El repartidor usa la dirección del pedido.</p>
     </div>`;
 }
 

@@ -1,31 +1,29 @@
 :root {
-  color-scheme: dark;
-  /* Paleta sobria premium: gris carbón, negro suave y blanco cálido.
-     Acento beige carne usado con mucha moderación. */
-  --bg: #101010;
-  --bg-2: #141414;
-  --surface: #1a1a1a;
-  --surface-2: #202020;
-  --surface-3: #262626;
-  --text: #f4f1ea;
-  --muted: #a7a29a;
-  --soft: #767169;
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.14);
-  /* Acento beige/carne (antes "copper"). Aliases para no romper referencias. */
-  --accent: #c59a6c;
-  --accent-2: #d6b08a;
-  --accent-soft: #d8bd97;
-  --copper: #c59a6c;
-  --copper-2: #d6b08a;
-  --copper-soft: #d8bd97;
-  --red: #b0564a;
+  color-scheme: light;
+  /* Tema comercial premium por defecto. El modo oscuro queda acotado a rider. */
+  --bg: #faf7f2;
+  --bg-2: #f3eee7;
+  --surface: #fffdf9;
+  --surface-2: #f6f1ea;
+  --surface-3: #ebe1d4;
+  --text: #1b1714;
+  --muted: #625a52;
+  --soft: #887c70;
+  --line: rgba(45, 36, 29, 0.12);
+  --line-strong: rgba(45, 36, 29, 0.2);
+  --accent: #b64c34;
+  --accent-2: #c87947;
+  --accent-soft: #a84832;
+  --copper: #b64c34;
+  --copper-2: #c87947;
+  --copper-soft: #a84832;
+  --red: #a83b2e;
   --green: #4fae6a;
   --green-2: #7bbf8c;
   --yellow: #cda86a;
   --blue: #7d9cc0;
-  --shadow: 0 14px 30px rgba(0, 0, 0, 0.36);
-  --shadow-sm: 0 6px 14px rgba(0, 0, 0, 0.22);
+  --shadow: 0 18px 42px rgba(65, 43, 28, 0.12);
+  --shadow-sm: 0 10px 24px rgba(65, 43, 28, 0.09);
   --radius: 16px;
   --radius-sm: 12px;
   --max: 1120px;
@@ -38,7 +36,9 @@ html { scroll-behavior: auto; }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 92% 4%, rgba(180, 76, 52, 0.08), transparent 24%),
+    linear-gradient(180deg, #fffdf9 0%, #faf7f2 42%, #f4eee7 100%);
   color: var(--text);
   min-height: 100vh;
   overflow-x: hidden;
@@ -449,6 +449,7 @@ main { max-width: var(--max); margin: 0 auto; padding: 0 18px 96px; }
 
 .checkout-form { display: grid; gap: 13px; }
 .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.address-fields { display: grid; gap: 11px; }
 label { display: grid; gap: 6px; color: var(--muted); font-weight: 700; font-size: 13px; }
 input, textarea, select {
   width: 100%; color: var(--text); background: rgba(255,255,255,0.06);
@@ -597,6 +598,10 @@ textarea { resize: vertical; min-height: 84px; }
 .lt-map-marker.store span { background: #c8a781; color: #15120f; }
 .lt-map-marker.client span { background: #f0eee9; color: #17150f; border-color: rgba(214,176,138,0.75); }
 .lt-rider-marker { display: grid; place-items: center; }
+.leaflet-marker-icon.lt-rider-marker {
+  transition: transform 650ms cubic-bezier(0.22, 0.7, 0.28, 1);
+  will-change: transform;
+}
 .lt-rider-arrow {
   width: 38px; height: 38px; border-radius: 50%; display: block; position: relative;
   background: #8f918b; border: 2px solid rgba(255,255,255,0.86); box-shadow: 0 10px 24px rgba(0,0,0,0.34);
@@ -647,6 +652,19 @@ textarea { resize: vertical; min-height: 84px; }
 .order-detail[open] summary::after { content: "▴"; }
 .order-detail summary::-webkit-details-marker { display: none; }
 .order-detail-body { padding-top: 6px; }
+.tracking-address-card {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(40,34,28,0.10);
+  border-radius: 15px;
+  background: #f6f3ee;
+}
+.tracking-address-card small,
+.tracking-address-note { color: #6b625a; font-size: 12px; line-height: 1.35; }
+.tracking-address-card strong { color: #1f1b17; font-size: 15px; }
+.tracking-address-card p { margin: 0; color: #3d342c; line-height: 1.4; }
 .order-line { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 14px; }
 .order-line:last-child { border-bottom: 0; }
 .order-line.head { color: var(--text); }
@@ -714,6 +732,9 @@ textarea { resize: vertical; min-height: 84px; }
 .rider-label { margin: 0 0 6px; color: var(--soft); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800; }
 .rider-address { border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,0.035); padding: 11px; margin-bottom: 12px; }
 .rider-address p { margin: 0; color: var(--text); }
+.rider-address .rider-reference { margin-top: 7px; color: var(--muted); line-height: 1.4; }
+.rider-address .rider-copy-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.rider-address .rider-copy-row > * { flex: 1; min-width: 130px; }
 .rider-block { margin-bottom: 12px; }
 .rider-instructions { border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,0.035); padding: 11px; margin-bottom: 12px; }
 .rider-instructions p:last-child { margin: 0; color: var(--text); line-height: 1.45; }
@@ -1913,6 +1934,26 @@ body:has(.app-view[data-view="business"].is-active) .mobile-nav button.active {
 
 /* Rider keeps the dark operational mode. */
 body:has(.app-view[data-view="rider"].is-active) {
+  color-scheme: dark;
+  --bg: #101010;
+  --bg-2: #141414;
+  --surface: #1a1a1a;
+  --surface-2: #202020;
+  --surface-3: #262626;
+  --text: #f4f1ea;
+  --muted: #a7a29a;
+  --soft: #767169;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --accent: #c59a6c;
+  --accent-2: #d6b08a;
+  --accent-soft: #d8bd97;
+  --copper: #c59a6c;
+  --copper-2: #d6b08a;
+  --copper-soft: #d8bd97;
+  --red: #b0564a;
+  --shadow: 0 14px 30px rgba(0, 0, 0, 0.36);
+  --shadow-sm: 0 6px 14px rgba(0, 0, 0, 0.22);
   background: #101010;
 }
 
@@ -2183,7 +2224,8 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-status-pi
 .ops-type.pickup { color: var(--green-2); border-color: rgba(79,174,106,0.4); }
 .ops-time { margin-left: auto; color: var(--soft); font-size: 11px; }
 .ops-card-customer strong { display: block; font-size: 14px; }
-.ops-card-customer small { color: var(--muted); font-size: 12px; }
+.ops-card-customer small { display: block; color: var(--muted); font-size: 12px; }
+.ops-address-reference { margin-top: 2px; color: var(--soft); }
 .ops-card-meta { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
 .ops-card-meta strong { margin-left: auto; color: var(--text); font-size: 14px; }
 .ops-items { margin: 0; color: var(--soft); font-size: 12px; line-height: 1.35; }

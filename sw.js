@@ -1,4 +1,4 @@
-const CACHE_NAME = 'la-taba-v5-5-cache';
+const CACHE_NAME = 'la-taba-v5-6-cache';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const ASSETS = [
   './assets/products/pollo-fresco.webp',
   './js/app.js',
   './js/config.js',
+  './js/core/address.js',
   './js/core/business-metrics.js',
   './js/core/domain.js',
   './js/core/order-status.js',

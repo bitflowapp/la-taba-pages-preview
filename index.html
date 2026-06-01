@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#121110" />
+    <meta name="theme-color" content="#fffdf9" />
     <meta name="description" content="La Taba: carnes premium, parrilla y delivery propio en Neuquén." />
     <title>La Taba · Carnes premium · Pedidos online</title>
     <link rel="manifest" href="manifest.webmanifest" />
@@ -196,10 +196,23 @@
                 </label>
               </div>
 
-              <label data-address-field>
-                Dirección
-                <input name="customerAddress" autocomplete="street-address" placeholder="Calle, número, barrio" />
-              </label>
+              <div class="address-fields" data-address-field>
+                <div class="field-grid">
+                  <label>
+                    Calle y numero
+                    <input name="customerStreetAddress" autocomplete="address-line1" placeholder="Ej: Roca 123" />
+                  </label>
+                  <label>
+                    Barrio o zona
+                    <input name="customerNeighborhood" autocomplete="address-level2" placeholder="Ej: Neuquen centro" />
+                  </label>
+                </div>
+                <label>
+                  Referencia para el rider
+                  <input name="customerReference" autocomplete="off" placeholder="Ej: casa verde, porton negro, piso 2" />
+                </label>
+                <input type="hidden" name="customerAddress" />
+              </div>
 
               <label>
                 Forma de pago

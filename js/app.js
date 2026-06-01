@@ -316,6 +316,14 @@ function bindEvents() {
         .catch(() => showToast('No se pudo copiar automáticamente. Probá desde un navegador actualizado.'));
       return;
     }
+    const addressButton = target.closest('[data-copy-address]');
+    if (addressButton) {
+      const text = addressButton.dataset.copyAddress || '';
+      copyTextToClipboard(text)
+        .then(() => showToast('Direccion copiada para el rider.'))
+        .catch(() => showToast('No se pudo copiar la direccion.'));
+      return;
+    }
     const clientLink = target.closest('[data-copy-client-link]');
     const riderLink = target.closest('[data-copy-rider-link]');
     if (clientLink || riderLink) {

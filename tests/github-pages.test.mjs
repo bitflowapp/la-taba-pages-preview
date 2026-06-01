@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-v5-5-cache');
+  assert.equal(cacheNameMatch[1], 'la-taba-v5-6-cache');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -26,6 +26,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./assets/hero/parrilla-real.webp'));
   assert.ok(assets.includes('./assets/products/cortes-crudos.webp'));
   assert.ok(assets.includes('./js/app.js'));
+  assert.ok(assets.includes('./js/core/address.js'));
   assert.ok(assets.includes('./js/core/storage.js'));
   assert.ok(assets.includes('./js/core/order-status.js'));
   assert.ok(assets.includes('./js/core/order-workflow.js'));
@@ -40,6 +41,15 @@ test('service worker caches only existing GitHub Pages assets', () => {
     if (asset === './') continue;
     assert.equal(fs.existsSync(path.join(root, asset)), true, `missing asset referenced by sw.js: ${asset}`);
   }
+});
+
+test('commercial app defaults to light premium theme, not dark fallback', () => {
+  const source = read('styles.css');
+  const rootBlock = source.match(/:root\s*\{([\s\S]*?)\n\}/);
+  assert.ok(rootBlock);
+  assert.match(rootBlock[1], /color-scheme:\s*light/);
+  assert.doesNotMatch(rootBlock[1], /color-scheme:\s*dark/);
+  assert.match(source, /body:has\(\.app-view\[data-view="rider"\]\.is-active\)\s*\{[\s\S]*color-scheme:\s*dark/);
 });
 
 test('service worker fallback is guarded to navigation requests only', () => {

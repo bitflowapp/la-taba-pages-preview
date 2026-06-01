@@ -7,6 +7,11 @@ import {
 import { calculateTotals, normalizeDeliveryMode } from './core/pricing.js';
 import { getAssignableDeliveryOrder, getRiderQueueOrder as selectRiderQueueOrder } from './core/rider.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
+import {
+  formatAddressReference,
+  normalizeAddressDetails,
+  normalizeOrderAddressDetails,
+} from './core/address.js';
 import { distanceKm, getStreetTestDestination } from './map/route_geometry.js';
 import {
   createOrderId,
@@ -32,7 +37,10 @@ export function createOrderFromCheckout(formValues = {}) {
   if (!values.customerName) return { ok: false, message: 'Ingresá el nombre del cliente.' };
   if (!values.customerPhone) return { ok: false, message: 'Ingresá un teléfono de contacto.' };
   if (values.deliveryMode === 'delivery' && !values.customerAddress) {
-    return { ok: false, message: 'Ingresá la dirección para el envío.' };
+    return { ok: false, message: 'Ingresá calle y número para el envío.' };
+  }
+  if (values.deliveryMode === 'delivery' && values.addressDetails.usesStructured && !values.addressDetails.neighborhood) {
+    return { ok: false, message: 'Ingresá el barrio o zona para el envío.' };
   }
 
   const now = new Date().toISOString();
@@ -52,6 +60,7 @@ export function createOrderFromCheckout(formValues = {}) {
     customerName: values.customerName,
     customerPhone: values.customerPhone,
     address: values.deliveryMode === 'pickup' ? BUSINESS_CONFIG.address : values.customerAddress,
+    addressDetails: values.deliveryMode === 'pickup' ? null : values.addressDetails,
     deliveryMode: values.deliveryMode,
     paymentMethod: paymentLabel(values.paymentMethod),
     notes: values.customerNotes || 'Sin notas',
@@ -88,10 +97,15 @@ export function createOrderFromCheckout(formValues = {}) {
 
 function normalizeCheckoutValues(formValues) {
   const deliveryMode = normalizeDeliveryMode(formValues.deliveryMode);
+  const addressDetails = normalizeAddressDetails(formValues);
   return {
     customerName: sanitizeText(formValues.customerName, { maxLength: 80 }),
     customerPhone: sanitizeText(formValues.customerPhone, { maxLength: 40 }),
-    customerAddress: sanitizeText(formValues.customerAddress, { maxLength: 180 }),
+    customerStreetAddress: addressDetails.streetLine,
+    customerNeighborhood: addressDetails.neighborhood,
+    customerReference: addressDetails.reference,
+    customerAddress: addressDetails.label,
+    addressDetails,
     deliveryMode,
     paymentMethod: normalizePaymentMethod(formValues.paymentMethod),
     customerNotes: sanitizeNotes(formValues.customerNotes, ''),
@@ -151,12 +165,15 @@ export function cancelOrder(orderId, reason = '') {
 export function buildKitchenTicket(order) {
   if (!order) return '';
   const isPickup = normalizeDeliveryMode(order.deliveryMode) === 'pickup';
+  const address = normalizeOrderAddressDetails(order);
+  const reference = formatAddressReference(order);
   const lines = [
     'LA TABA — TICKET',
     `Pedido: ${order.id}`,
     `Hora: ${dateTime(order.createdAt)}`,
     `Entrega: ${deliveryModeLabel(order.deliveryMode)}`,
-    isPickup ? 'Retiro en el local' : `Direccion: ${order.address}`,
+    isPickup ? 'Retiro en el local' : `Direccion: ${address.label || order.address}`,
+    ...(!isPickup && reference ? [`Referencia: ${reference}`] : []),
     `Cliente: ${order.customerName}`,
     `Telefono: ${order.customerPhone}`,
     '--------------------------------',
@@ -241,7 +258,7 @@ export function updateOrderDemoDestination(orderId, destinationId) {
     order.delivery.distanceKm = estimatedDistance;
   });
 
-  return { ok: true, message: `Destino actualizado: ${destination.label || destination.name}.`, destination };
+  return { ok: true, message: `Referencia visual actualizada: ${destination.label || destination.name}.`, destination };
 }
 
 export function getNextStatus(orderId) {
@@ -275,6 +292,9 @@ export function buildWhatsAppMessage(order) {
     `Teléfono: ${safeOrder.customerPhone}`,
     `Entrega: ${deliveryModeLabel(safeOrder.deliveryMode)}`,
     `${safeOrder.deliveryMode === 'pickup' ? 'Retiro en' : 'Dirección'}: ${safeOrder.address}`,
+    ...(safeOrder.deliveryMode === 'delivery' && safeOrder.addressDetails.reference
+      ? [`Referencia: ${safeOrder.addressDetails.reference}`]
+      : []),
     '',
     'Productos:',
     ...safeOrder.items.map((item) => `• ${item.quantity} x ${item.name} — ${money(item.unitPrice * item.quantity)}`),
@@ -308,7 +328,8 @@ function normalizeOrderForMessage(order) {
     deliveryMode,
     address: deliveryMode === 'pickup'
       ? BUSINESS_CONFIG.address
-      : sanitizeText(order.address, { fallback: 'Sin cargar', maxLength: 180 }),
+      : normalizeOrderAddressDetails(order).label || sanitizeText(order.address, { fallback: 'Sin cargar', maxLength: 180 }),
+    addressDetails: deliveryMode === 'pickup' ? normalizeAddressDetails() : normalizeOrderAddressDetails(order),
     items: safeItems,
     subtotal: totals.subtotal,
     deliveryFee: totals.deliveryFee,
@@ -341,6 +362,7 @@ export function buildDraftMessageFromCart(formValues = {}) {
     `Teléfono: ${values.customerPhone || 'Sin cargar'}`,
     `Entrega: ${deliveryModeLabel(values.deliveryMode)}`,
     `${values.deliveryMode === 'pickup' ? 'Retiro en' : 'Dirección'}: ${values.deliveryMode === 'pickup' ? BUSINESS_CONFIG.address : values.customerAddress || 'Sin cargar'}`,
+    ...(values.deliveryMode === 'delivery' && values.addressDetails.reference ? [`Referencia: ${values.addressDetails.reference}`] : []),
     '',
     'Productos:',
     ...(items.length ? items.map((item) => `• ${item.quantity} x ${item.product.name} — ${money(item.quantity * item.product.price)}`) : ['• Sin productos cargados']),

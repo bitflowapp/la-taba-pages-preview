@@ -21,9 +21,13 @@ import {
   createSimulationState,
 } from './core/simulation.js';
 import {
+  GPS_FIX_STALE_MS,
   distanceKm,
   getStreetTestDestination,
+  isUsableGpsFix,
+  locationTimestamp,
   normalizeRiderLocation,
+  shouldAcceptLocationUpdate,
 } from './map/route_geometry.js';
 import { STORE_LOCATION } from './map/map_config.js';
 import { getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
@@ -105,17 +109,17 @@ export function activateStreetTestMode(destinationId = null) {
     return { ok: false, message: 'Creá o usá un pedido de delivery para activar el modo calle.' };
   }
   return applyStreetTestDestination(order, destinationId || routePreferenceForOrder(order), {
-    message: 'Destino del recorrido actualizado.',
+    message: 'Referencia visual del recorrido actualizada.',
   });
 }
 
 export function selectStreetTestDestination(destinationId) {
   const order = getStreetTestOrder();
   if (!order) {
-    return { ok: false, message: 'Creá o usá un pedido de delivery para elegir destino.' };
+    return { ok: false, message: 'Creá o usá un pedido de delivery para elegir referencia visual.' };
   }
   return applyStreetTestDestination(order, destinationId, {
-    message: 'Destino de prueba actualizado.',
+    message: 'Referencia visual actualizada.',
   });
 }
 
@@ -215,7 +219,6 @@ export function startSimulation() {
 export function pauseSimulation() {
   const sim = getState().simulation;
   stopTimer();
-  disableGpsTracking({ silent: true });
   if (!sim) return { ok: false, message: 'No hay recorrido activo.' };
   setState({ simulation: { ...sim, running: false } });
   return { ok: true, message: 'Recorrido en pausa.' };
@@ -423,6 +426,11 @@ function onGpsPosition(position) {
     source: 'gps',
   });
   if (!location) return;
+  const now = Date.now();
+  const previousLocation = sim.source === 'gps' ? sim : null;
+  if (!isUsableGpsFix(location, { now }) || !shouldAcceptLocationUpdate(previousLocation, location, { now })) {
+    return;
+  }
   const publishedAt = new Date().toISOString();
   // La ubicación se publica por el estado de la app y el relay demo configurado.
   setState({
@@ -446,9 +454,24 @@ function onGpsPosition(position) {
 
 function onGpsError(error) {
   const sim = getState().simulation;
+  const denied = Number(error?.code) === 1;
+  const recentFix = sim?.source === 'gps' && Date.now() - locationTimestamp(sim) <= GPS_FIX_STALE_MS;
   const message = error && error.code === 1
     ? 'Permiso de ubicación denegado.'
     : 'No se pudo obtener tu ubicación.';
+  if (!denied && recentFix) {
+    setState({
+      simulation: {
+        ...sim,
+        mode: 'gps',
+        source: 'gps',
+        running: false,
+        gpsStatus: 'unavailable',
+        gpsError: Number(error?.code) === 3 ? 'Sin senal GPS por ahora.' : message,
+      },
+    });
+    return;
+  }
   disableGpsTracking({ silent: true });
   if (sim) {
     setState({
@@ -457,7 +480,7 @@ function onGpsError(error) {
         mode: 'demo',
         source: sim.source === 'gps' ? 'gps' : 'simulation',
         running: false,
-        gpsStatus: error && error.code === 1 ? 'denied' : 'unavailable',
+        gpsStatus: denied ? 'denied' : 'unavailable',
         gpsError: message,
       },
     });

@@ -16,9 +16,38 @@ import {
 } from './cart.js';
 import { buildDraftMessageFromCart, getLastOrder } from './orders.js';
 import { getRealtimeStatus } from './realtime.js';
+import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+export function renderWithStableRealMap(container, html, { rolePrefix = '', orderId = '' } = {}) {
+  const stableMap = captureStableRealMap(container, rolePrefix, orderId);
+  container.innerHTML = html;
+  restoreStableRealMap(container, stableMap);
+}
+
+function captureStableRealMap(container, rolePrefix, orderId) {
+  if (!container || !rolePrefix) return null;
+  const shell = container.querySelector('[data-real-map]');
+  if (!shell) return null;
+  const role = shell.dataset.mapRole || '';
+  const shellOrderId = shell.dataset.orderId || '';
+  if (!role.startsWith(rolePrefix) || shellOrderId !== String(orderId || '')) return null;
+  return shell;
+}
+
+function restoreStableRealMap(container, shell) {
+  if (!container || !shell) return;
+  const role = shell.dataset.mapRole || '';
+  const orderId = shell.dataset.orderId || '';
+  const replacement = [...container.querySelectorAll('[data-real-map]')]
+    .find((candidate) => (
+      (candidate.dataset.mapRole || '') === role
+      && (candidate.dataset.orderId || '') === orderId
+    ));
+  if (replacement && replacement !== shell) replacement.replaceWith(shell);
+}
 
 export function applyBusinessConfig() {
   setText('[data-business-name]', BUSINESS_CONFIG.businessName);
@@ -487,10 +516,21 @@ export function getCheckoutFormValues() {
   const form = $('[data-checkout-form]');
   if (!form) return {};
   const formData = new FormData(form);
+  const addressDetails = normalizeAddressDetails({
+    customerStreetAddress: formData.get('customerStreetAddress'),
+    customerNeighborhood: formData.get('customerNeighborhood'),
+    customerReference: formData.get('customerReference'),
+  });
+  const hiddenAddress = form.querySelector('[name="customerAddress"]');
+  if (hiddenAddress) hiddenAddress.value = addressDetails.label;
   return {
     customerName: String(formData.get('customerName') || ''),
     customerPhone: String(formData.get('customerPhone') || ''),
-    customerAddress: String(formData.get('customerAddress') || ''),
+    customerStreetAddress: addressDetails.streetLine,
+    customerNeighborhood: addressDetails.neighborhood,
+    customerReference: addressDetails.reference,
+    customerAddress: addressDetails.label,
+    addressDetails,
     deliveryMode: String(formData.get('deliveryMode') || 'delivery'),
     paymentMethod: String(formData.get('paymentMethod') || 'cash'),
     customerNotes: String(formData.get('customerNotes') || ''),
@@ -553,11 +593,11 @@ function distanceLabel(order) {
 }
 
 function destinationLabel(order) {
-  return displayDestinationLabel(order?.delivery?.demoDestinationLabel || deliveryModeLabel(order.deliveryMode));
+  return displayDestinationLabel(order?.address || order?.delivery?.demoDestinationLabel || deliveryModeLabel(order.deliveryMode));
 }
 
 function destinationAddressLabel(order) {
-  return displayDestinationLabel(order?.delivery?.demoDestinationAddressLabel || order.address);
+  return displayDestinationLabel(order?.address || order?.delivery?.demoDestinationAddressLabel);
 }
 
 function displayDestinationLabel(value) {
@@ -691,13 +731,25 @@ function riderProfileCard(order) {
   `;
 }
 
+function trackingAddressCard(order) {
+  const address = normalizeOrderAddressDetails(order);
+  if (order.deliveryMode === 'pickup' || !address.label) return '';
+  return `
+    <div class="tracking-address-card" data-tracking-address>
+      <small>Entrega en</small>
+      <strong>${escapeHtml(address.label)}</strong>
+      ${address.reference ? `<p>Referencia: ${escapeHtml(address.reference)}</p>` : ''}
+      <p class="tracking-address-note">Direccion cargada por el cliente. El rider usa la direccion del pedido.</p>
+    </div>`;
+}
+
 export function renderTracking() {
   const container = $('[data-tracking-panel]');
   if (!container) return;
   const order = getLastOrder();
 
   if (!order) {
-    container.innerHTML = `
+    renderWithStableRealMap(container, `
       <div class="track-layout tracking-map-experience is-empty">
         ${trackingMapStage({ isEmpty: true })}
         <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
@@ -710,7 +762,7 @@ export function renderTracking() {
           </div>
           </div>
         </section>
-      </div>`;
+      </div>`, { rolePrefix: 'tracking' });
     return;
   }
 
@@ -744,7 +796,7 @@ export function renderTracking() {
     </div>
   `).join('');
 
-  container.innerHTML = `
+  renderWithStableRealMap(container, `
     <div class="track-layout tracking-map-experience ${isDelivery && !isCancelled ? '' : 'no-map'}">
       ${isDelivery && !isCancelled ? trackingMapStage({ order, head }) : ''}
 
@@ -764,6 +816,7 @@ export function renderTracking() {
         </div>
         <div class="track-steps">${steps}</div>
         ${isCancelled ? '<div class="warning-box">Este pedido fue cancelado. Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>' : ''}
+        ${isDelivery ? trackingAddressCard(order) : ''}
         ${isDelivery && !isCancelled ? riderProfileCard(order) : ''}
         <details class="order-detail">
           <summary>Ver detalle del pedido · ${order.id}</summary>
@@ -782,7 +835,7 @@ export function renderTracking() {
         </div>`}
       </section>
     </div>
-  `;
+  `, { rolePrefix: 'tracking', orderId: isDelivery && !isCancelled ? order.id : '' });
 }
 
 // Indicador de conexión realtime (en vivo entre equipos / en este equipo).

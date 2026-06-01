@@ -1,4 +1,5 @@
 import { BUSINESS_CONFIG } from './config.js';
+import { formatAddressReference, normalizeOrderAddressDetails } from './core/address.js';
 import {
   getActiveOrders as selectActiveOrders,
   getBusinessMetrics,
@@ -258,6 +259,8 @@ function opsOrderCard(order) {
   const reason = order.status === 'cancelled' && order.cancelReason
     ? `<p class="ops-cancel-reason">Motivo: ${escapeHtml(order.cancelReason)}</p>`
     : '';
+  const address = normalizeOrderAddressDetails(order);
+  const reference = formatAddressReference(order);
 
   // Ubicación del rider (si el pedido la tiene): "Rider actualizado hace Xs".
   const riderLoc = order.tracking?.lastLocation;
@@ -276,7 +279,8 @@ function opsOrderCard(order) {
       </div>
       <div class="ops-card-customer">
         <strong>${escapeHtml(order.customerName)}</strong>
-        <small>${escapeHtml(isPickup ? 'Retira en el local' : order.address)}</small>
+        <small>${escapeHtml(isPickup ? 'Retira en el local' : address.label || order.address)}</small>
+        ${!isPickup && reference ? `<small class="ops-address-reference">Referencia: ${escapeHtml(reference)}</small>` : ''}
       </div>
       <div class="ops-card-meta">
         <span>${itemsCount} ${itemsCount === 1 ? 'ítem' : 'ítems'}</span>
@@ -368,6 +372,8 @@ function orderCard(order) {
   `).join('');
 
   const canAdvance = !isTerminalOrderStatus(order.status);
+  const address = normalizeOrderAddressDetails(order);
+  const reference = formatAddressReference(order);
 
   return `
     <article class="order-card accent-${statusClass(order.status)}">
@@ -379,7 +385,8 @@ function orderCard(order) {
             <span>${money(order.total)}</span>
             <span>${escapeHtml(order.paymentMethod)}</span>
           </div>
-          <p>${escapeHtml(order.address)}</p>
+          <p>${escapeHtml(order.deliveryMode === 'pickup' ? order.address : address.label || order.address)}</p>
+          ${order.deliveryMode !== 'pickup' && reference ? `<p>Referencia: ${escapeHtml(reference)}</p>` : ''}
           <p>Teléfono: ${escapeHtml(order.customerPhone)} · ${dateTime(order.createdAt)}</p>
         </div>
         <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>

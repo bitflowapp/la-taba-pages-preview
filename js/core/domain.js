@@ -1,6 +1,7 @@
 import { BUSINESS_CONFIG } from '../config.js';
 import { calculateTotals, normalizeDeliveryMode, normalizeMoneyValue } from './pricing.js';
 import { sanitizeNotes, sanitizeText } from './validators.js';
+import { normalizeAddressDetails, normalizeOrderAddressDetails } from './address.js';
 import {
   normalizeWorkflowStatus,
   toDemoOrderStatus,
@@ -21,7 +22,7 @@ export function normalizeTrackingSource(source) {
 export function normalizeTrackingLocation(location = {}) {
   const lat = Number(location.lat);
   const lng = Number(location.lng);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
   const timestamp = normalizeTimestamp(location.timestamp || location.lastFixAt || Date.now(), new Date().toISOString());
   const source = normalizeTrackingSource(location.source);
   return {
@@ -58,6 +59,7 @@ export function toDomainOrder(order = {}) {
   const status = normalizeWorkflowStatus(order.workflowStatus || order.status);
   const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
   const tracking = normalizeOrderTracking(order.tracking, order.delivery);
+  const addressDetails = fulfillmentType === 'pickup' ? null : normalizeOrderAddressDetails(order);
 
   return {
     modelVersion: DOMAIN_MODEL_VERSION,
@@ -73,7 +75,8 @@ export function toDomainOrder(order = {}) {
     },
     address: fulfillmentType === 'pickup'
       ? BUSINESS_CONFIG.address
-      : sanitizeText(order.address, { fallback: 'Sin direccion', maxLength: 180 }),
+      : addressDetails.label || sanitizeText(order.address, { fallback: 'Sin direccion', maxLength: 180 }),
+    addressDetails,
     items,
     totals,
     paymentMethod: sanitizeText(order.paymentMethod, { fallback: 'Efectivo', maxLength: 80 }),
@@ -92,10 +95,15 @@ export function toDomainOrder(order = {}) {
 
 export function normalizeOrderDraft(draft = {}) {
   const fulfillmentType = normalizeFulfillmentType(draft.fulfillmentType || draft.deliveryMode);
+  const addressDetails = normalizeAddressDetails(draft);
   return {
     customerName: sanitizeText(draft.customerName || draft.customer?.name, { maxLength: 80 }),
     customerPhone: sanitizeText(draft.customerPhone || draft.customer?.phone, { maxLength: 40 }),
-    customerAddress: sanitizeText(draft.customerAddress || draft.address, { maxLength: 180 }),
+    customerStreetAddress: addressDetails.streetLine,
+    customerNeighborhood: addressDetails.neighborhood,
+    customerReference: addressDetails.reference,
+    customerAddress: addressDetails.label,
+    addressDetails,
     deliveryMode: fulfillmentType,
     paymentMethod: sanitizeText(draft.paymentMethod, { fallback: 'cash', maxLength: 40 }),
     customerNotes: sanitizeNotes(draft.customerNotes || draft.notes, ''),

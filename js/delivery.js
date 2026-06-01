@@ -21,9 +21,10 @@ import {
   syncSimulationOnStatus,
 } from './simulation.js';
 import { getRealtimeStatus } from './realtime.js';
+import { normalizeOrderAddressDetails } from './core/address.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
-import { escapeHtml } from './ui.js';
+import { escapeHtml, renderWithStableRealMap } from './ui.js';
 import {
   distanceKm,
   getStreetTestDestination,
@@ -44,7 +45,7 @@ export function renderDeliveryPanel() {
   const order = getRiderQueueOrder();
 
   if (!order) {
-    container.innerHTML = `
+    renderWithStableRealMap(container, `
       <div class="delivery-layout rider-map-experience is-empty">
         ${renderRiderMapStage(null, 'Sin ruta activa', 'Sin ETA', 'No repartiendo')}
         <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet>
@@ -58,7 +59,7 @@ export function renderDeliveryPanel() {
           </div>
           ${renderAdvancedDemo()}
         </section>
-      </div>`;
+      </div>`, { rolePrefix: 'rider' });
     return;
   }
 
@@ -68,7 +69,9 @@ export function renderDeliveryPanel() {
   const eta = sim ? `${sim.etaMinutes} min` : formatDemoEta(order);
   const distance = formatDemoDistance(order);
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
-  const destinationLabel = displayDestinationLabel(order.delivery?.demoDestinationAddressLabel || order.address);
+  const address = normalizeOrderAddressDetails(order);
+  const destinationLabel = displayDestinationLabel(address.label || order.address);
+  const addressText = [destinationLabel, address.reference ? `Referencia: ${address.reference}` : ''].filter(Boolean).join('\n');
   const headline = awaiting
     ? 'Esperando preparación'
     : order.status === 'arriving'
@@ -88,7 +91,7 @@ export function renderDeliveryPanel() {
 
   const waClient = `https://wa.me/${onlyDigits(order.customerPhone)}`;
 
-  container.innerHTML = `
+  renderWithStableRealMap(container, `
     <div class="delivery-layout rider-map-experience">
       ${renderRiderMapStage(order, distance, eta, headline)}
 
@@ -123,8 +126,13 @@ export function renderDeliveryPanel() {
           </div>
 
           <div class="rider-address">
-            <span class="rider-label">Dirección de entrega</span>
+            <span class="rider-label">Entrega en</span>
             <p>${escapeHtml(destinationLabel)}</p>
+            ${address.reference ? `<p class="rider-reference">Referencia: ${escapeHtml(address.reference)}</p>` : ''}
+            <p class="form-hint">Direccion cargada por el cliente. El mapa es una referencia de recorrido.</p>
+            <div class="rider-copy-row">
+              <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar direccion</button>
+            </div>
           </div>
 
           <div class="rider-block">
@@ -159,7 +167,7 @@ export function renderDeliveryPanel() {
           ${renderAdvancedDemo()}
       </section>
     </div>
-  `;
+  `, { rolePrefix: 'rider', orderId: order.id });
 }
 
 function riderStepIndex(status) {
@@ -219,26 +227,24 @@ function renderSimControls(order, sim) {
   const percent = sim ? simulationProgressPercent(sim) : 0;
   const running = Boolean(sim?.running);
   const gpsOn = isGpsActive();
-  const canStart = !gpsOn && !running && (order.status === 'ready' || order.status === 'on_the_way');
+  const gpsSession = gpsOn || sim?.mode === 'gps' || sim?.gpsStatus === 'requesting' || sim?.gpsStatus === 'active';
+  const canStart = !gpsSession && !running && (order.status === 'ready' || order.status === 'on_the_way');
   const canReset = Boolean(sim) && order.status !== 'delivered';
   const destination = selectedStreetDestination(order, sim);
   const distanceToDestination = currentDistanceToDestination(sim, destination);
-  const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'Ruta estimada';
-  const gpsCoords = sim && sim.source === 'gps' && Number.isFinite(sim.lat)
-    ? `${sim.lat.toFixed(4)}, ${sim.lng.toFixed(4)}`
-    : '';
-  const gpsStatus = gpsStatusLabel(sim, gpsOn);
+  const sourceLabel = sim?.source === 'gps' ? 'GPS real' : 'Recorrido de apoyo';
+  const gpsStatus = gpsProductStatusLabel(sim, gpsOn);
   const lastGpsFixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
-  const lastFix = lastGpsFixAt
-    ? new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(lastGpsFixAt))
-    : '';
+  const lastFix = lastGpsFixAt ? relativeAgeLabel(lastGpsFixAt) : '';
   const accuracy = sim?.source === 'gps' && Number.isFinite(sim?.accuracy) ? `${Math.round(sim.accuracy)} m` : 'Sin precisión';
   const gpsButtonLabel = sim?.gpsStatus === 'requesting'
-    ? 'Solicitando ubicación...'
-    : sim?.gpsStatus === 'active' && gpsOn
-      ? 'GPS real activo'
-      : 'Usar mi ubicación real';
-  const gpsButtonDisabled = sim?.gpsStatus === 'requesting' || (sim?.gpsStatus === 'active' && gpsOn);
+    ? 'Esperando permiso...'
+    : gpsSession && sim?.gpsStatus === 'unavailable'
+      ? 'Buscando senal...'
+      : sim?.gpsStatus === 'active' && gpsSession
+      ? 'Compartiendo ubicación'
+      : 'Compartir mi ubicación';
+  const gpsButtonDisabled = sim?.gpsStatus === 'requesting' || gpsSession;
   const destinationOptions = getStreetTestDestinations().map((item) => `
     <option value="${escapeHtml(item.id)}" ${item.id === destination.id ? 'selected' : ''}>${escapeHtml(item.label)}</option>
   `).join('');
@@ -250,16 +256,16 @@ function renderSimControls(order, sim) {
     <div class="sim-panel street-test-panel" data-street-test>
       <div class="sim-head">
         <span class="rider-label">Ruta del reparto</span>
-        <span class="sim-state ${gpsOn ? 'live' : ''}">Ubicación: ${escapeHtml(gpsStatus)}</span>
+        <span class="sim-state ${gpsOn ? 'live' : ''}">GPS: ${escapeHtml(gpsStatus)}</span>
       </div>
       <label class="street-destination-field">
-        <span>Destino del recorrido</span>
-        <select data-street-destination aria-label="Destino del recorrido">
+        <span>Referencia visual del recorrido</span>
+        <select data-street-destination aria-label="Referencia visual del recorrido">
           ${destinationOptions}
         </select>
       </label>
       <div class="street-summary-grid">
-        <span><small>Destino</small><strong>${escapeHtml(displayDestinationLabel(destination.addressLabel || destination.label))}</strong></span>
+        <span><small>Referencia visual</small><strong>${escapeHtml(displayDestinationLabel(destination.addressLabel || destination.label))}</strong></span>
         <span><small>Distancia</small><strong>${escapeHtml(distanceToDestination)}</strong></span>
         <span><small>Ubicación</small><strong>${escapeHtml(sourceLabel)}</strong></span>
         <span><small>Precisión</small><strong>${escapeHtml(accuracy)}</strong></span>
@@ -270,11 +276,11 @@ function renderSimControls(order, sim) {
       </div>
       <div class="button-row street-primary-actions">
         <button class="primary-button" type="button" data-sim-gps ${gpsButtonDisabled ? 'disabled' : ''}>${escapeHtml(gpsButtonLabel)}</button>
-        <button class="secondary-button" type="button" data-sim-gps-off ${gpsOn ? '' : 'disabled'}>Detener GPS</button>
+        <button class="secondary-button" type="button" data-sim-gps-off ${gpsSession ? '' : 'disabled'}>Detener GPS</button>
       </div>
       <div class="button-row sim-actions">
-        <button class="ghost-button compact" type="button" data-street-activate="${escapeHtml(destination.id)}">Usar este destino</button>
-        <button class="secondary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar ruta estimada</button>
+        <button class="ghost-button compact" type="button" data-street-activate="${escapeHtml(destination.id)}">Usar referencia visual</button>
+        <button class="secondary-button compact" type="button" data-sim-start ${canStart ? '' : 'disabled'}>Iniciar recorrido de apoyo</button>
         <button class="ghost-button compact" type="button" data-sim-reset ${canReset ? '' : 'disabled'}>Reiniciar ruta</button>
       </div>
       <div class="button-row street-delivery-actions">
@@ -282,8 +288,8 @@ function renderSimControls(order, sim) {
         <button class="secondary-button compact" type="button" data-street-done="${order.id}" ${canDeliverForStreet(order) ? '' : 'disabled'}>Pedido entregado</button>
       </div>
       <div class="sim-gps">
-        <span class="sim-gps-status">Ubicación: ${escapeHtml(gpsStatus)}${lastFix ? ` · última actualización ${escapeHtml(lastFix)}` : ''}</span>
-        ${gpsCoords ? `<span class="sim-gps-coords">Ubicación rider: ${escapeHtml(gpsCoords)} · ${escapeHtml(sourceLabel)}</span>` : ''}
+        <span class="sim-gps-status">Estado: ${escapeHtml(gpsStatus)}${lastFix ? ` · actualizado ${escapeHtml(lastFix)}` : ''}</span>
+        ${sim?.source === 'gps' && Number.isFinite(sim?.accuracy) ? `<span class="sim-gps-coords">Precisión aproximada: ${escapeHtml(accuracy)}</span>` : ''}
         ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
         ${secureHint}
       </div>
@@ -320,6 +326,18 @@ function canArriveForStreet(order) {
 
 function canDeliverForStreet(order) {
   return order?.status === 'on_the_way' || order?.status === 'arriving';
+}
+
+function gpsProductStatusLabel(sim, active) {
+  const labels = {
+    inactive: 'GPS detenido',
+    requesting: 'Permiso requerido',
+    active: active ? 'Ubicación compartida' : 'Última ubicación',
+    denied: 'Permiso requerido',
+    unavailable: 'Sin señal',
+    requires_secure_context: 'Requiere HTTPS',
+  };
+  return labels[sim?.gpsStatus || 'inactive'] || 'GPS detenido';
 }
 
 function gpsStatusLabel(sim, active) {

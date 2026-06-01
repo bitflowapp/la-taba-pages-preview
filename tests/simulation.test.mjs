@@ -17,6 +17,7 @@ import {
   selectStreetTestDestination,
   shouldPublishLocation,
   startSimulation,
+  syncSimulationOnStatus,
 } from '../js/simulation.js';
 import { getState, hydrateState } from '../js/state.js';
 import { resetState } from './helpers.mjs';
@@ -203,7 +204,7 @@ test('GPS success stores real rider metadata and stopping clears watchPosition',
         heading: 92,
         speed: 3.2,
       },
-      timestamp: 1780110000000,
+      timestamp: Date.now(),
     });
     assert.equal(getState().simulation.source, 'gps');
     assert.equal(getState().simulation.gpsStatus, 'active');
@@ -217,6 +218,59 @@ test('GPS success stores real rider metadata and stopping clears watchPosition',
     assert.equal(clearWatchId, 42);
     assert.equal(getState().simulation.gpsStatus, 'inactive');
     assert.equal(getState().simulation.source, 'gps');
+  } finally {
+    disableGpsTracking({ silent: true });
+    if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
+    else delete globalThis.isSecureContext;
+    if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+    else delete globalThis.navigator;
+  }
+});
+
+test('GPS keeps a recent fix visible after transient unavailable errors', () => {
+  createReadyDeliveryOrder();
+  const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  let successHandler = null;
+  let errorHandler = null;
+  let clearWatchId = null;
+
+  Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: true });
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      geolocation: {
+        watchPosition: (success, error) => {
+          successHandler = success;
+          errorHandler = error;
+          return 43;
+        },
+        clearWatch: (id) => { clearWatchId = id; },
+      },
+    },
+  });
+
+  try {
+    assert.equal(enableGpsTracking().ok, true);
+    successHandler({
+      coords: {
+        latitude: -38.9462,
+        longitude: -68.0418,
+        accuracy: 14,
+      },
+      timestamp: Date.now(),
+    });
+    errorHandler({ code: 2 });
+
+    assert.equal(clearWatchId, null);
+    assert.equal(getState().simulation.mode, 'gps');
+    assert.equal(getState().simulation.source, 'gps');
+    assert.equal(getState().simulation.gpsStatus, 'unavailable');
+    assert.equal(getState().simulation.accuracy, 14);
+
+    disableGpsTracking();
+    assert.equal(clearWatchId, 43);
+    assert.equal(getState().simulation.gpsStatus, 'inactive');
   } finally {
     disableGpsTracking({ silent: true });
     if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
@@ -311,6 +365,84 @@ test('GPS watchPosition is not duplicated when rider taps GPS twice', () => {
   }
 });
 
+test('terminal delivery statuses stop the real GPS watch', () => {
+  const order = createReadyDeliveryOrder();
+  const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  let clearWatchId = null;
+
+  Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: true });
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      geolocation: {
+        watchPosition: () => 91,
+        clearWatch: (id) => { clearWatchId = id; },
+      },
+    },
+  });
+
+  try {
+    assert.equal(enableGpsTracking().ok, true);
+    syncSimulationOnStatus(order.id, 'delivered');
+    assert.equal(clearWatchId, 91);
+    assert.equal(getState().simulation, null);
+  } finally {
+    disableGpsTracking({ silent: true });
+    if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
+    else delete globalThis.isSecureContext;
+    if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+    else delete globalThis.navigator;
+  }
+});
+
+test('GPS ignores invalid coordinates and absurd jumps', () => {
+  createReadyDeliveryOrder();
+  const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  let successHandler = null;
+
+  Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: true });
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      geolocation: {
+        watchPosition: (success) => { successHandler = success; return 92; },
+        clearWatch: () => {},
+      },
+    },
+  });
+
+  try {
+    assert.equal(enableGpsTracking().ok, true);
+    const timestamp = Date.now();
+    successHandler({
+      coords: { latitude: -38.9462, longitude: -68.0418, accuracy: 12, heading: 80, speed: 2.4 },
+      timestamp,
+    });
+    assert.equal(getState().simulation.source, 'gps');
+    const acceptedLat = getState().simulation.lat;
+
+    successHandler({
+      coords: { latitude: 999, longitude: -68.0418, accuracy: 12 },
+      timestamp: timestamp + 1_000,
+    });
+    assert.equal(getState().simulation.lat, acceptedLat);
+
+    successHandler({
+      coords: { latitude: -37.9, longitude: -67.2, accuracy: 120 },
+      timestamp: timestamp + 2_000,
+    });
+    assert.equal(getState().simulation.lat, acceptedLat);
+  } finally {
+    disableGpsTracking({ silent: true });
+    if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
+    else delete globalThis.isSecureContext;
+    if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+    else delete globalThis.navigator;
+  }
+});
+
 test('simulation does not start over an active GPS watch', () => {
   createReadyDeliveryOrder();
   const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
@@ -368,7 +500,7 @@ test('simulation can restart after GPS is stopped', () => {
         heading: 80,
         speed: 2.4,
       },
-      timestamp: 1780110000000,
+      timestamp: Date.now(),
     });
     assert.equal(getState().simulation.source, 'gps');
     assert.equal(disableGpsTracking().ok, true);

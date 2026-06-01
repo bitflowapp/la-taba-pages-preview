@@ -21,12 +21,36 @@ export function updateRiderMarker(marker, L, nextLocation, options = {}) {
   if (!marker || !L || !nextLocation) return null;
   const current = marker.getLatLng?.();
   const next = L.latLng(nextLocation.lat, nextLocation.lng);
-  if (!current) {
-    marker.setLatLng(next);
-    return next;
-  }
-  marker.setLatLng(next);
-  if (marker.setIcon) marker.setIcon(createRiderIcon(L, { ...options, heading: nextLocation.heading }));
+  if (!current || current.lat !== next.lat || current.lng !== next.lng) marker.setLatLng(next);
+  updateRiderMarkerVisual(marker, L, nextLocation, options);
   return next;
 }
 
+function updateRiderMarkerVisual(marker, L, nextLocation, options) {
+  const source = options.source || nextLocation.source || 'simulation';
+  const nextClass = riderMarkerClass(options.status, source);
+  const heading = Number(nextLocation.heading) || 0;
+  const element = marker.getElement?.();
+
+  if (marker.__ltMarkerClass !== nextClass) {
+    marker.__ltMarkerClass = nextClass;
+    if (element) element.className = mergeMarkerClassName(element.className, nextClass);
+    else if (marker.setIcon) marker.setIcon(createRiderIcon(L, { ...options, source, heading }));
+  }
+
+  if (marker.__ltMarkerHeading !== heading) {
+    marker.__ltMarkerHeading = heading;
+    const arrow = element?.querySelector?.('.lt-rider-arrow');
+    if (arrow?.style) arrow.style.setProperty('--heading', `${heading}deg`);
+    else if (!element && marker.setIcon) marker.setIcon(createRiderIcon(L, { ...options, source, heading }));
+  }
+}
+
+function mergeMarkerClassName(current, nextClass) {
+  const markerTokens = new Set(['lt-rider-marker', 'preparing', 'ready', 'on-the-way', 'arriving', 'delivered']);
+  const kept = String(current || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((token) => !markerTokens.has(token) && !token.startsWith('source-'));
+  return [...kept, ...nextClass.split(/\s+/)].join(' ');
+}

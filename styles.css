@@ -1360,14 +1360,18 @@ body:has(.app-view[data-view="business"].is-active) .toast {
     top: auto;
     bottom: calc(18px + env(safe-area-inset-bottom));
   }
+  body:has(.app-view[data-view="business"].is-active) .toast {
+    top: calc(224px + env(safe-area-inset-top));
+  }
   .mobile-nav { display: flex; }
   .toast {
     left: 50%;
     right: auto;
-    top: calc(76px + env(safe-area-inset-top));
+    top: calc(94px + env(safe-area-inset-top));
     bottom: auto;
     transform: translateX(-50%);
-    width: min(92vw, 420px);
+    width: min(88vw, 360px);
+    padding: 12px 14px;
   }
   .button-row > * { flex-basis: 100%; }
 }

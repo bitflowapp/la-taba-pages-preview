@@ -174,10 +174,12 @@ test('chooseRiderLocation ignora coordenadas inválidas y soporta nulls', () => 
 test('hasLiveRiderLocation solo es true con GPS real y reciente', () => {
   const now = 1_000_000;
   const freshGps = { lat: -38.95, lng: -68.05, source: 'gps', timestamp: now - 5_000 };
+  const stoppedGps = { ...freshGps, gpsStatus: 'inactive' };
   const staleGps = { lat: -38.95, lng: -68.05, source: 'gps', timestamp: now - 60_000 };
   const sim = { lat: -38.95, lng: -68.05, source: 'simulation', timestamp: now };
 
   assert.equal(hasLiveRiderLocation(freshGps, { now }), true);
+  assert.equal(hasLiveRiderLocation(stoppedGps, { now }), false);
   // Simulación / recorrido de apoyo NO cuenta como rider real.
   assert.equal(hasLiveRiderLocation(sim, { now }), false);
   // GPS viejo tampoco: ya no está "en vivo".

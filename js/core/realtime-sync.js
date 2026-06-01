@@ -55,6 +55,23 @@ export function mergeOrders(localOrders, incomingOrders) {
   return { orders: local, changed };
 }
 
+// El pedido activo de tracking/rider viaja aparte de la lista de pedidos. Lo
+// aceptamos solo si apunta a un pedido entrante mas nuevo que el activo local.
+export function chooseActiveOrderId(localOrders, localLastOrderId, incomingOrders, incomingLastOrderId) {
+  if (typeof incomingLastOrderId !== 'string' || !incomingLastOrderId) return localLastOrderId || null;
+  const incoming = Array.isArray(incomingOrders) ? incomingOrders : [];
+  const candidate = incoming.find((order) => order?.id === incomingLastOrderId);
+  if (!candidate) return localLastOrderId || null;
+
+  const local = Array.isArray(localOrders) ? localOrders : [];
+  const current = typeof localLastOrderId === 'string'
+    ? local.find((order) => order?.id === localLastOrderId)
+    : null;
+  if (!current) return incomingLastOrderId;
+  if (incomingLastOrderId === localLastOrderId) return localLastOrderId;
+  return orderTimestamp(candidate) > orderTimestamp(current) ? incomingLastOrderId : localLastOrderId;
+}
+
 // Para la simulación usamos un sello de tiempo monótono del emisor.
 export function isNewerTimestamp(incomingTs, lastTs) {
   const a = Number(incomingTs);

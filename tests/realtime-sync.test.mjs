@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  chooseActiveOrderId,
   isNewerTimestamp,
   mergeOrders,
   orderTimestamp,
@@ -57,6 +58,18 @@ test('mergeOrders ignores malformed incoming entries', () => {
   const { orders, changed } = mergeOrders(local, [null, { noId: true }, 42]);
   assert.equal(changed, false);
   assert.deepEqual(orders.map((o) => o.id), ['LT-1']);
+});
+
+test('chooseActiveOrderId accepts a newer active order from the room', () => {
+  const local = [order('LT-OLD', t1, [{ status: 'on_the_way', at: t1 }])];
+  const incoming = [order('LT-NEW', t2, [{ status: 'received', at: t2 }])];
+  assert.equal(chooseActiveOrderId(local, 'LT-OLD', incoming, 'LT-NEW'), 'LT-NEW');
+});
+
+test('chooseActiveOrderId keeps the local active order when remote is stale', () => {
+  const local = [order('LT-NEW', t2, [{ status: 'received', at: t2 }])];
+  const incoming = [order('LT-OLD', t0, [{ status: 'on_the_way', at: t0 }])];
+  assert.equal(chooseActiveOrderId(local, 'LT-NEW', incoming, 'LT-OLD'), 'LT-NEW');
 });
 
 test('isNewerTimestamp compares monotonic stamps with sane fallbacks', () => {

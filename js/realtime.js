@@ -12,7 +12,12 @@
 // IMPORTANTE: esto es una demo. El tiempo real "de verdad" entre clientes
 // remotos necesita backend gestionado (Supabase Realtime, Firebase, WebSocket).
 import { getState, setState, subscribe } from './state.js';
-import { isNewerTimestamp, mergeOrders, orderTimestamp } from './core/realtime-sync.js';
+import {
+  chooseActiveOrderId,
+  isNewerTimestamp,
+  mergeOrders,
+  orderTimestamp,
+} from './core/realtime-sync.js';
 
 const DEVICE_KEY = 'la_taba_device_id';
 const ROOM_KEY = 'la_taba_rt_room';
@@ -103,15 +108,15 @@ function setupRelay() {
 
 function snapshot() {
   const state = getState();
-  return { orders: state.orders, simulation: state.simulation };
+  return { orders: state.orders, lastOrderId: state.lastOrderId, simulation: state.simulation };
 }
 
 function hashSnapshot(snap) {
   const orders = (snap.orders || []).map((order) => `${order.id}:${order.status}:${orderTimestamp(order)}`).join('|');
   const sim = snap.simulation
-    ? `${snap.simulation.orderId}:${snap.simulation.routeId || ''}:${snap.simulation.destinationId || ''}:${snap.simulation.progress}:${snap.simulation.running}:${snap.simulation.etaMinutes}:${snap.simulation.lat}:${snap.simulation.lng}:${snap.simulation.source}:${snap.simulation.timestamp || snap.simulation.lastFixAt || ''}`
+    ? `${snap.simulation.orderId}:${snap.simulation.routeId || ''}:${snap.simulation.destinationId || ''}:${snap.simulation.progress}:${snap.simulation.running}:${snap.simulation.etaMinutes}:${snap.simulation.lat}:${snap.simulation.lng}:${snap.simulation.mode || ''}:${snap.simulation.source}:${snap.simulation.gpsStatus || ''}:${snap.simulation.timestamp || snap.simulation.lastFixAt || ''}`
     : 'none';
-  return `${orders}#${sim}`;
+  return `${orders}#${snap.lastOrderId || ''}#${sim}`;
 }
 
 function handleLocalChange() {
@@ -120,7 +125,7 @@ function handleLocalChange() {
   const hash = hashSnapshot(snap);
   if (hash === lastSnapshotHash) return;
   lastSnapshotHash = hash;
-  publish({ kind: 'state', orders: snap.orders, simulation: snap.simulation });
+  publish({ kind: 'state', orders: snap.orders, lastOrderId: snap.lastOrderId, simulation: snap.simulation });
 }
 
 function publish(message) {
@@ -147,13 +152,16 @@ function applyRemote(message) {
 
   if (message.kind === 'hello') {
     // Un par pide el estado actual: se lo mandamos.
-    publish({ kind: 'state', orders: getState().orders, simulation: getState().simulation });
+    const snap = snapshot();
+    publish({ kind: 'state', orders: snap.orders, lastOrderId: snap.lastOrderId, simulation: snap.simulation });
     return;
   }
   if (message.kind !== 'state') return;
 
   const local = getState();
   const { orders, changed } = mergeOrders(local.orders, message.orders || []);
+  const nextLastOrderId = chooseActiveOrderId(local.orders, local.lastOrderId, message.orders || [], message.lastOrderId);
+  const lastOrderChanged = nextLastOrderId !== (local.lastOrderId || null);
 
   let nextSimulation = local.simulation;
   let simChanged = false;
@@ -167,11 +175,12 @@ function applyRemote(message) {
     }
   }
 
-  if (!changed && !simChanged) return;
+  if (!changed && !lastOrderChanged && !simChanged) return;
 
   applyingRemote = true;
   setState({
     orders: changed ? orders : local.orders,
+    ...(lastOrderChanged ? { lastOrderId: nextLastOrderId } : {}),
     ...(simChanged ? { simulation: nextSimulation } : {}),
   });
   applyingRemote = false;

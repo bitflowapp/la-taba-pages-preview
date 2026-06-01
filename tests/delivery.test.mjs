@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
 import { getRiderActionState } from '../js/core/rider.js';
 import { handleDeliveryAction } from '../js/delivery.js';
-import { getActiveDeliveryOrder } from '../js/orders.js';
+import { getActiveDeliveryOrder, getRiderQueueOrder } from '../js/orders.js';
 import { getState, setState } from '../js/state.js';
 import { resetState, makeTarget } from './helpers.mjs';
 
@@ -133,6 +133,34 @@ test('delivery selector ignores delivered, cancelled, and pickup-only queues', (
 
   setState({ ...getState(), orders });
   assert.equal(getActiveDeliveryOrder(), null);
+});
+
+test('rider queue prefers the active room order over a stale local in-progress order', () => {
+  const stale = {
+    id: 'LT-9001',
+    status: 'on_the_way',
+    deliveryMode: 'delivery',
+    items: [],
+    createdAt: '2026-05-29T10:00:00.000Z',
+    statusHistory: [
+      { status: 'received', at: '2026-05-29T10:00:00.000Z' },
+      { status: 'on_the_way', at: '2026-05-29T10:05:00.000Z' },
+    ],
+    delivery: { driverName: 'Sin asignar', driverPhone: '', estimatedMinutes: 12, currentLocationLabel: 'En camino' },
+  };
+  const roomOrder = {
+    id: 'LT-9002',
+    status: 'received',
+    deliveryMode: 'delivery',
+    items: [],
+    createdAt: '2026-05-29T10:10:00.000Z',
+    statusHistory: [{ status: 'received', at: '2026-05-29T10:10:00.000Z' }],
+    delivery: { driverName: 'Sin asignar', driverPhone: '', estimatedMinutes: 25, currentLocationLabel: 'Pedido recibido por el local' },
+  };
+
+  setState({ ...getState(), orders: [stale, roomOrder], lastOrderId: roomOrder.id });
+
+  assert.equal(getRiderQueueOrder()?.id, roomOrder.id);
 });
 
 test('rider helpers expose coherent actions', () => {

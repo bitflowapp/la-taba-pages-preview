@@ -11,6 +11,42 @@ async function stub(page) {
   });
 }
 
+async function stubWithRiderState(page, state) {
+  await page.addInitScript((savedState) => {
+    window.open = () => null;
+    try {
+      sessionStorage.clear();
+      localStorage.setItem('la_taba_mvp_v4_state', JSON.stringify(savedState));
+    } catch (_) { /* ignore */ }
+  }, state);
+}
+
+function staleRiderState() {
+  const createdAt = new Date(Date.now() - 60_000).toISOString();
+  return {
+    orders: [{
+      id: 'LT-9999',
+      customerName: 'Pedido Viejo',
+      customerPhone: '2990000000',
+      address: 'Vieja 999',
+      deliveryMode: 'delivery',
+      paymentMethod: 'Efectivo',
+      notes: 'stale',
+      createdAt,
+      status: 'on_the_way',
+      items: [{ productId: 'p-vacio', name: 'Vacío especial', icon: '', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+      subtotal: 1000,
+      deliveryFee: 0,
+      total: 1000,
+      statusHistory: [{ status: 'received', at: createdAt }, { status: 'on_the_way', at: createdAt }],
+      delivery: { driverName: 'Sin asignar', driverPhone: '', estimatedMinutes: 10, currentLocationLabel: 'El repartidor salió del local' },
+    }],
+    lastOrderId: 'LT-9999',
+    cart: [],
+    simulation: null,
+  };
+}
+
 test('cliente y rider en dos equipos: pedido interno, realtime y entrega (sin GPS falso)', async ({ browser }) => {
   const room = `e2e-${Date.now()}`;
   const url = (suffix = '') => `${RELAY}/?relay=${encodeURIComponent(RELAY)}&room=${room}${suffix}`;
@@ -87,6 +123,66 @@ test('cliente y rider en dos equipos: pedido interno, realtime y entrega (sin GP
   await rider.locator('[data-delivery-done="LT-0002"]').click();
   await expect(client.locator('[data-tracking-panel]')).toContainText(/entregado|Disfrutalo/i, { timeout: 10_000 });
 
+  await clientCtx.close();
+  await riderCtx.close();
+});
+
+test('el rider usa el pedido activo de la sala aunque tenga localStorage viejo', async ({ browser }) => {
+  const room = `stale-gps-e2e-${Date.now()}`;
+  const url = (suffix = '', reset = false) => `${RELAY}/?${reset ? 'reset=1&' : ''}relay=${encodeURIComponent(RELAY)}&room=${room}${suffix}`;
+
+  const clientCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const riderCtx = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    serviceWorkers: 'block',
+    permissions: ['geolocation'],
+    geolocation: { latitude: -38.9462, longitude: -68.0418, accuracy: 12 },
+  });
+  const client = await clientCtx.newPage();
+  const rider = await riderCtx.newPage();
+  await stub(client);
+  await stubWithRiderState(rider, staleRiderState());
+  const clientGuards = installPageGuards(client);
+  const riderGuards = installPageGuards(rider);
+
+  await client.goto(url('', true));
+  await rider.goto(url('#rider'));
+  await rider.locator('[data-view="rider"] [data-open-pin]').click();
+  await rider.locator('[data-pin-form] input[name="pin"]').fill('1234');
+  await rider.locator('[data-pin-form]').press('Enter');
+
+  await client.locator('.mobile-nav [data-nav-view="catalog"]').click();
+  await client.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await client.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await fillCheckout(client, {
+    name: 'Cliente GPS',
+    phone: '2995550000',
+    street: 'Mendoza 851',
+    neighborhood: 'Centro',
+    notes: 'GPS realtime',
+    payment: 'cash',
+    deliveryMode: 'delivery',
+  });
+  await client.getByRole('button', { name: /Confirmar pedido/i }).click();
+
+  await expect(rider.locator('[data-delivery-panel]')).toContainText('LT-0002', { timeout: 10_000 });
+  await expect(rider.locator('[data-delivery-panel]')).not.toContainText('LT-9999');
+
+  await rider.locator('[data-sim-gps]').click();
+  await expect(rider.locator('[data-delivery-panel]')).toContainText(/GPS compartiendo ubicaci/i, { timeout: 10_000 });
+  await expect(client.locator('[data-tracking-panel]')).toContainText('GPS en vivo', { timeout: 10_000 });
+  await expect(client.locator('[data-tracking-panel]')).not.toContainText('Sin GPS en vivo');
+  await expect(client.locator('[data-tracking-panel]')).not.toContainText('CL falso');
+  await expect(client.locator('[data-tracking-panel]')).not.toContainText('LT falso');
+  await expect(client.locator('[data-tracking-panel]')).not.toContainText('ruta falsa');
+  await expect(client.locator('[data-tracking-panel]')).not.toContainText(/\bETA\b/i);
+  await expect(client.locator('[data-tracking-panel]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
+
+  await rider.locator('[data-sim-gps-off]').click();
+  await expect(client.locator('[data-tracking-panel]')).toContainText('Sin GPS en vivo', { timeout: 10_000 });
+
+  await clientGuards.assertClean();
+  await riderGuards.assertClean();
   await clientCtx.close();
   await riderCtx.close();
 });

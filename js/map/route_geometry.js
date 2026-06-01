@@ -219,6 +219,7 @@ export function normalizeRiderLocation(raw = {}, fallback = {}) {
     ...(Number.isFinite(Number(raw.accuracy)) ? { accuracy: Math.max(0, Number(raw.accuracy)) } : {}),
     ...(Number.isFinite(Number(raw.heading)) ? { heading: ((Number(raw.heading) % 360) + 360) % 360 } : {}),
     ...(Number.isFinite(Number(raw.speed)) ? { speed: Math.max(0, Number(raw.speed)) } : {}),
+    ...(typeof raw.gpsStatus === 'string' ? { gpsStatus: raw.gpsStatus } : {}),
   };
 }
 
@@ -398,6 +399,7 @@ export function chooseRiderLocation(simRaw, trackedRaw, { now = Date.now(), stal
 export function hasLiveRiderLocation(location, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {
   const normalized = location ? normalizeRiderLocation(location) : null;
   if (!normalized || normalized.source !== 'gps') return false;
+  if (['inactive', 'denied', 'unavailable', 'requires_secure_context'].includes(normalized.gpsStatus)) return false;
   return !isLocationStale(normalized, staleMs, now);
 }
 

@@ -4207,7 +4207,7 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-experience {
 }
 
 body:has(.app-view[data-view="rider"].is-active) .rider-map-stage {
-  min-height: 420px;
+  min-height: 392px;
   box-shadow: 0 18px 52px rgba(28,24,20,0.13);
 }
 
@@ -4258,7 +4258,7 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-contr
 }
 
 body:has(.app-view[data-view="rider"].is-active) .rider-sheet.is-live {
-  margin-top: -24px;
+  margin-top: -18px;
 }
 
 body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-contact {
@@ -4296,12 +4296,25 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-order-detai
 }
 
 @media (max-width: 720px) {
+  body:has(.app-view[data-view="rider"].is-active) .topbar {
+    position: relative;
+    z-index: 24;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .topbar::before {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    border-radius: 0;
+    box-shadow: 0 10px 24px rgba(15,23,42,0.07);
+  }
+
   body:has(.app-view[data-view="rider"].is-active) .rider-map-stage {
-    min-height: min(36svh, 340px);
+    min-height: min(34svh, 316px);
   }
 
   body:has(.app-view[data-view="rider"].is-active) .rider-sheet.is-live {
-    margin-top: -20px;
+    margin-top: -12px;
   }
 
   body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-control-zoom {
@@ -4313,6 +4326,22 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-order-detai
 
   body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-control-attribution {
     opacity: 0.28;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .toast {
+    top: auto !important;
+    right: 14px !important;
+    bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+    left: auto !important;
+    width: min(62vw, 252px);
+    padding: 9px 12px;
+    border-radius: 14px;
+    transform: none !important;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-stage [data-real-map]) .toast {
+    top: calc(78px + env(safe-area-inset-top)) !important;
+    bottom: auto !important;
   }
 
   body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-metrics {

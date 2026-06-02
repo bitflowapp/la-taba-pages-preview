@@ -28,9 +28,9 @@ function disposeDetachedMaps() {
 
 function disposeMapEntry(entry) {
   if (!entry) return;
-  if (entry.resizeTimer) {
-    clearTimeout(entry.resizeTimer);
-    entry.resizeTimer = null;
+  if (entry.resizeTimers?.length) {
+    entry.resizeTimers.forEach((timer) => clearTimeout(timer));
+    entry.resizeTimers = [];
   }
   if (entry.pendingFrame) {
     cancelFrame(entry.pendingFrame);
@@ -78,6 +78,7 @@ function renderMapView(container) {
   container.classList.remove('map-unavailable');
   view.fallback?.setAttribute('hidden', '');
   const entry = ensureTrackingMap(container, view);
+  scheduleMapSizeInvalidations(entry, view);
   scheduleTrackingVisualUpdate(entry, view);
 }
 
@@ -131,7 +132,8 @@ export function ensureTrackingMap(container, view) {
     container,
     map,
     L,
-    resizeTimer: null,
+    resizeTimers: [],
+    lastSizeKey: null,
     pendingFrame: null,
     pendingView: null,
     routeId: null,
@@ -143,6 +145,7 @@ export function ensureTrackingMap(container, view) {
     lastStatus: null,
     lastSource: null,
     userInteracted: false,
+    programmaticMove: false,
   };
   mountedMaps.add(entry);
 
@@ -151,21 +154,38 @@ export function ensureTrackingMap(container, view) {
     attribution: view.tileLayer.attribution,
   }).addTo(map);
   L.control?.zoom?.({ position: 'bottomright' })?.addTo?.(map);
-  map.on?.('dragstart', () => { entry.userInteracted = true; });
-  map.on?.('zoomstart', () => { entry.userInteracted = true; });
+  map.on?.('dragstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
+  map.on?.('zoomstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
 
   // Mapa honesto: sólo se monta cuando hay GPS real y muestra únicamente al
   // rider. NO se dibuja ruta, ni marcador del local (no hay coordenada
   // verificada para Mendoza 845/851), ni marcador del cliente (no hay
   // coordenada del cliente, sólo su dirección textual).
   fitMapToView(entry, view);
-  entry.resizeTimer = setTimeout(() => {
-    entry.resizeTimer = null;
-    if (!container.isConnected || !mountedMaps.has(entry)) return;
-    try { map.invalidateSize(); } catch (_) { /* Leaflet may race detached DOM */ }
-  }, 0);
-
   return entry;
+}
+
+function scheduleMapSizeInvalidations(entry, view) {
+  if (!entry) return;
+  const rect = entry.container?.getBoundingClientRect?.();
+  const sizeKey = rect ? `${Math.round(rect.width)}x${Math.round(rect.height)}` : '';
+  if (entry.lastSizeKey === sizeKey) return;
+  if (entry.resizeTimers?.length) {
+    entry.resizeTimers.forEach((timer) => clearTimeout(timer));
+    entry.resizeTimers = [];
+  }
+  entry.lastSizeKey = sizeKey;
+  [0, 120, 360].forEach((delay) => {
+    const timer = setTimeout(() => {
+      entry.resizeTimers = entry.resizeTimers?.filter((candidate) => candidate !== timer) || [];
+      if (!entry.container?.isConnected || !mountedMaps.has(entry)) return;
+      try {
+        entry.map.invalidateSize({ pan: false });
+        if (!entry.userInteracted && view?.riderLocation) fitMapToView(entry, view);
+      } catch (_) { /* Leaflet may race detached DOM */ }
+    }, delay);
+    entry.resizeTimers.push(timer);
+  });
 }
 
 export function scheduleTrackingVisualUpdate(entry, view) {
@@ -190,6 +210,7 @@ function applyTrackingVisualUpdate(entry, view) {
     return;
   }
 
+  if (!entry.userInteracted) fitMapToView(entry, view);
   ensureRiderMarker(entry, view);
   updateRiderMarkerPosition(entry, view.riderLocation, {
     status: view.order?.status,
@@ -281,9 +302,17 @@ function maybeFollowRider(entry, latLng) {
 
 function fitMapToView(entry, view) {
   if (!view.riderLocation) return;
+  const currentZoom = Number(entry.map.getZoom?.());
+  const zoom = Number.isFinite(currentZoom) && currentZoom > 0
+    ? Math.min(Math.max(currentZoom, 14), 16)
+    : 16;
+  entry.programmaticMove = true;
   try {
-    entry.map.fitBounds([[view.riderLocation.lat, view.riderLocation.lng]], { padding: [40, 40], maxZoom: 16 });
+    entry.map.setView([view.riderLocation.lat, view.riderLocation.lng], zoom, { animate: false });
   } catch (_) { /* no-op */ }
+  finally {
+    setTimeout(() => { entry.programmaticMove = false; }, 0);
+  }
 }
 
 function requestFrame(callback) {

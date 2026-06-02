@@ -19,7 +19,7 @@ import { getRealtimeStatus } from './realtime.js';
 import { normalizeOrderAddressDetails } from './core/address.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
-import { escapeHtml, renderWithStableRealMap } from './ui.js';
+import { bagGlyph, escapeHtml, renderWithStableRealMap } from './ui.js';
 import {
   GPS_GOOD_ACCURACY_METERS,
   getStreetTestDestination,
@@ -74,8 +74,8 @@ export function renderDeliveryPanel() {
   const headSub = awaiting
     ? 'Esperando al local.'
     : gpsLive
-      ? 'El cliente puede seguir el reparto.'
-      : 'Dirección y estado del pedido.';
+      ? 'El cliente puede seguir tu ubicación mientras el pedido esté en reparto.'
+      : 'Compartí ubicación real cuando salgas a reparto.';
 
   const stepIndex = riderStepIndex(order.status);
   const steps = riderSteps.map((step, index) => {
@@ -94,9 +94,9 @@ export function renderDeliveryPanel() {
       <section class="delivery-bottom-sheet rider-sheet rider-card ${gpsLive ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
         <div class="sheet-head rider-head ${statusClass(order.status)}">
-          <span class="track-head-ico">REP</span>
+          <span class="track-head-ico">${bagGlyph()}</span>
           <div class="track-head-text">
-            <small>${order.id} · ${escapeHtml(deliveryModeLabel(order.deliveryMode))}</small>
+            <small>${order.id} · Entrega activa</small>
             <strong>${headline}</strong>
             <span>${escapeHtml(headSub)}</span>
           </div>
@@ -114,22 +114,31 @@ export function renderDeliveryPanel() {
           <div class="rider-contact">
             <span class="rider-avatar">${escapeHtml(initials(order.customerName))}</span>
             <span class="rider-contact-text">
+              <small>Cliente</small>
               <strong>${escapeHtml(order.customerName)}</strong>
-              <small>${escapeHtml(order.customerPhone)} · ${escapeHtml(order.paymentMethod)}</small>
+              <em>${escapeHtml(order.customerPhone)}</em>
             </span>
             <a class="round-action call" href="tel:${encodeURIComponent(order.customerPhone)}" aria-label="Llamar al cliente">Tel</a>
             <a class="round-action whatsapp" href="${waClient}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del cliente">WA</a>
           </div>
 
           <div class="rider-address">
-            <span class="rider-label">Entrega en</span>
+            <span class="rider-label">Dirección</span>
             <p>${escapeHtml(destinationLabel)}</p>
             ${address.reference ? `<p class="rider-reference">Referencia: ${escapeHtml(address.reference)}</p>` : ''}
-            <p class="form-hint">${gpsLive ? 'Tu ubicación está activa.' : 'Sin ubicación compartida.'}</p>
             <div class="rider-copy-row">
-              <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar direccion</button>
+              <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar dirección</button>
             </div>
           </div>
+
+          ${awaiting ? `
+          <div class="rider-waiting">
+            <p>El pedido todavía está en preparación en el local.</p>
+            <button class="primary-button" type="button" data-rider-ready="${order.id}">Marcar listo</button>
+          </div>` : ''}
+
+          ${renderRiderActions(order, { canLeave, canArrive, canDeliver })}
+          ${renderSimControls(order, sim)}
 
           <div class="rider-block">
             <p class="rider-label">Pedido</p>
@@ -147,19 +156,6 @@ export function renderDeliveryPanel() {
             <p>${escapeHtml(instructions)}</p>
           </div>
 
-          ${awaiting ? `
-          <div class="rider-waiting">
-            <p>El pedido todavía está en preparación en el local.</p>
-            <button class="primary-button" type="button" data-rider-ready="${order.id}">Marcar listo</button>
-          </div>` : ''}
-
-          <div class="button-row rider-actions">
-            <button class="primary-button" type="button" data-delivery-leave="${order.id}" ${canLeave ? '' : 'disabled'}>Salí del local</button>
-            <button class="secondary-button" type="button" data-delivery-arrive="${order.id}" ${canArrive ? '' : 'disabled'}>Llegué al domicilio</button>
-            <button class="secondary-button" type="button" data-delivery-done="${order.id}" ${canDeliver ? '' : 'disabled'}>Pedido entregado</button>
-          </div>
-
-          ${renderSimControls(order, sim)}
           ${renderAdvancedDemo()}
       </section>
     </div>
@@ -172,6 +168,22 @@ function riderStepIndex(status) {
   if (status === 'on_the_way') return 1;
   if (status === 'ready') return 0;
   return -1; // received / preparing: todavía no arrancó el reparto
+}
+
+function renderRiderActions(order, { canLeave, canArrive, canDeliver }) {
+  const actions = [];
+  if (canLeave) {
+    actions.push(`<button class="primary-button" type="button" data-delivery-leave="${order.id}">Salí del local</button>`);
+  }
+  if (canArrive) {
+    actions.push(`<button class="primary-button" type="button" data-delivery-arrive="${order.id}">Llegué al domicilio</button>`);
+  }
+  if (canDeliver) {
+    const cls = canArrive ? 'secondary-button' : 'primary-button';
+    actions.push(`<button class="${cls}" type="button" data-delivery-done="${order.id}">Pedido entregado</button>`);
+  }
+  if (!actions.length) return '';
+  return `<div class="button-row rider-actions">${actions.join('')}</div>`;
 }
 
 // Bloque avanzado: esconde relay/sala/equipo para que la vista principal sea operativa.
@@ -228,10 +240,6 @@ function renderSimControls(order, sim) {
   const signalStatus = gpsSignalStatusLabel(sim);
   const lastGpsFixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
   const lastFix = lastGpsFixAt ? relativeAgeLabel(lastGpsFixAt) : '';
-  const status = getRealtimeStatus();
-  const connection = status.relayEnabled
-    ? (status.relayConnected ? 'En vivo entre equipos' : 'Reconectando')
-    : 'Este equipo';
   const gpsButtonLabel = sim?.gpsStatus === 'requesting'
     ? 'Esperando permiso…'
     : gpsSession && sim?.gpsStatus === 'unavailable'
@@ -245,24 +253,23 @@ function renderSimControls(order, sim) {
     : '';
 
   return `
-    <div class="sim-panel street-test-panel" data-street-test>
+    <div class="sim-panel street-test-panel ${gpsOn ? 'is-live' : 'is-offline'}" data-street-test>
       <div class="sim-head">
-        <span class="rider-label">Ubicación en vivo</span>
-        <span class="sim-state ${gpsOn ? 'live' : ''}">Ubicación: ${escapeHtml(gpsStatus)}</span>
+        <span class="rider-label">Ubicación del rider</span>
+        <span class="sim-state ${gpsOn ? 'live' : ''}">${escapeHtml(gpsStatus)}</span>
       </div>
-      <p class="form-hint">${gpsOn ? 'El cliente puede seguir el reparto.' : 'Compartila solo durante este reparto.'}</p>
+      <p class="form-hint">${gpsOn ? 'El cliente puede seguir tu ubicación mientras el pedido esté en reparto.' : 'Compartir ubicación real habilita el mapa en vivo para cliente y negocio.'}</p>
       <div class="street-summary-grid">
         <span><small>Estado</small><strong>${escapeHtml(gpsStatus)}</strong></span>
         <span><small>Señal</small><strong>${escapeHtml(signalStatus)}</strong></span>
         <span><small>Última lectura</small><strong>${escapeHtml(lastFix || 'Sin datos')}</strong></span>
-        <span><small>Conexión</small><strong>${escapeHtml(connection)}</strong></span>
       </div>
       <div class="button-row street-primary-actions">
         <button class="primary-button" type="button" data-sim-gps ${gpsButtonDisabled ? 'disabled' : ''}>${escapeHtml(gpsButtonLabel)}</button>
         <button class="secondary-button" type="button" data-sim-gps-off ${gpsSession ? '' : 'disabled'}>Detener ubicación</button>
       </div>
       <div class="sim-gps">
-        <span class="sim-gps-status">Estado: ${escapeHtml(signalStatus)}${lastFix ? ` · actualizado ${escapeHtml(lastFix)}` : ''}</span>
+        <span class="sim-gps-status">${escapeHtml(signalStatus)}${lastFix ? ` · actualizado ${escapeHtml(lastFix)}` : ''}</span>
         ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
         ${secureHint}
       </div>

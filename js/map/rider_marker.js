@@ -16,13 +16,12 @@ export function createRiderIcon(L, { status = 'received', source = 'simulation',
       <span class="lt-rider-marker-halo" aria-hidden="true"></span>
       <span class="lt-rider-moto-core" style="--heading:${safeHeading}deg" aria-hidden="true">
         <svg class="lt-rider-moto-icon" viewBox="0 0 64 64" focusable="false" aria-hidden="true">
-          <path class="lt-rider-box" d="M16 20h16l6 10h-9l-3-5H16z"></path>
-          <path class="lt-rider-seat" d="M33 28h9l6 10h-9l-3-5h-9z"></path>
-          <path class="lt-rider-frame" d="M13 41h16l8-13 9 13h5"></path>
-          <path class="lt-rider-handle" d="M45 31l7-7h5"></path>
-          <circle class="lt-rider-wheel" cx="17" cy="44" r="7"></circle>
-          <circle class="lt-rider-wheel" cx="49" cy="44" r="7"></circle>
-          <circle class="lt-rider-light" cx="56" cy="24" r="3"></circle>
+          <rect class="lt-rider-box" x="13" y="14" width="15" height="13" rx="3.2"></rect>
+          <path class="lt-rider-frame" d="M19 44 L30 44 L41 28 L29 28"></path>
+          <path class="lt-rider-frame" d="M41 28 L46 21 L53 21"></path>
+          <circle class="lt-rider-wheel" cx="19" cy="44" r="8"></circle>
+          <circle class="lt-rider-wheel" cx="46" cy="44" r="8"></circle>
+          <circle class="lt-rider-light" cx="54" cy="21" r="2.6"></circle>
         </svg>
       </span>`,
     iconSize: [52, 52],

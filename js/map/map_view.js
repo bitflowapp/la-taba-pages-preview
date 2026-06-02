@@ -343,7 +343,9 @@ function renderMapMeta(container, order, location, destination) {
     return;
   }
 
-  const source = RIDER_LOCATION_SOURCES[location.source] || RIDER_LOCATION_SOURCES.simulation;
+  const source = location.source === 'gps'
+    ? 'Ubicación del repartidor en vivo'
+    : (RIDER_LOCATION_SOURCES[location.source] || RIDER_LOCATION_SOURCES.simulation);
   const age = relativeAgeLabel(location.lastFixAt || location.timestamp);
   const gpsStale = location.source === 'gps' && isLocationStale(location, TRACKING_STALE_MS);
   const prefix = gpsStale ? 'Última ubicación' : source;

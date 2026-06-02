@@ -169,7 +169,7 @@ test('el rider usa el pedido activo de la sala aunque tenga localStorage viejo',
   await expect(rider.locator('[data-delivery-panel]')).not.toContainText('LT-9999');
 
   await rider.locator('[data-sim-gps]').click();
-  await expect(rider.locator('[data-delivery-panel]')).toContainText(/GPS compartiendo ubicaci/i, { timeout: 10_000 });
+  await expect(rider.locator('[data-delivery-panel]')).toContainText(/Compartiendo ubicaci/i, { timeout: 10_000 });
   await expect(client.locator('[data-tracking-panel]')).toContainText('GPS en vivo', { timeout: 10_000 });
   await expect(client.locator('[data-tracking-panel]')).not.toContainText('Sin GPS en vivo');
   await expect(client.locator('[data-tracking-panel]')).not.toContainText('CL falso');
@@ -230,24 +230,25 @@ test('GPS real del rider se propaga al tracking del cliente por relay', async ({
   // El rider comparte su ubicación REAL.
   await rider.locator('[data-sim-gps]').click();
 
-  await expect(rider.locator('[data-delivery-panel]')).toContainText('GPS compartiendo ubicación', { timeout: 10_000 });
+  await expect(rider.locator('[data-delivery-panel]')).toContainText('Compartiendo ubicación', { timeout: 10_000 });
   await expect(rider.locator('[data-delivery-panel]')).toContainText('Detalles de ubicación');
   await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toBeVisible({ timeout: 10_000 });
   await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toHaveAttribute('data-map-theme', 'light');
 
-  // Recién con GPS real el cliente ve el mapa y "Ubicación rider".
+  // Recién con GPS real el cliente ve el mapa y la ubicación live del repartidor.
   await expect(client.locator('[data-tracking-panel] [data-real-map]').first()).toBeVisible({ timeout: 10_000 });
   await expect(client.locator('[data-tracking-panel] [data-real-map]').first()).toHaveAttribute('data-map-theme', 'light');
-  await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación rider', { timeout: 10_000 });
+  await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación del repartidor en vivo', { timeout: 10_000 });
   await expect(client.locator('[data-map-meta]').first()).not.toContainText(/precisión|±/i);
   await expect(client.locator('[data-map-meta]').first()).not.toContainText(/km/i);
+  await expect(client.locator('[data-tracking-panel]')).toContainText('Última actualización', { timeout: 10_000 });
   await expect(client.locator('[data-tracking-panel]')).toContainText('Roca 123, Neuquen centro', { timeout: 10_000 });
 
   await riderCtx.setGeolocation({ latitude: -38.9468, longitude: -68.0424, accuracy: 16 });
-  await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación rider', { timeout: 10_000 });
+  await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación del repartidor en vivo', { timeout: 10_000 });
 
   await rider.locator('[data-sim-gps-off]').click();
-  await expect(rider.locator('[data-delivery-panel]')).toContainText('GPS detenido', { timeout: 10_000 });
+  await expect(rider.locator('[data-delivery-panel]')).toContainText('Ubicación detenida', { timeout: 10_000 });
 
   await clientGuards.assertClean();
   await riderGuards.assertClean();

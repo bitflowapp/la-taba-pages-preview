@@ -25,8 +25,8 @@ export function createRiderIcon(L, { status = 'received', source = 'simulation',
           <circle class="lt-rider-light" cx="56" cy="24" r="3"></circle>
         </svg>
       </span>`,
-    iconSize: [54, 54],
-    iconAnchor: [27, 35],
+    iconSize: [52, 52],
+    iconAnchor: [26, 34],
   });
 }
 

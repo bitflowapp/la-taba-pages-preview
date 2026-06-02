@@ -139,7 +139,8 @@ test('rider marker class reflects status and source', () => {
   assert.match(icon.html, /lt-rider-marker-halo/);
   assert.match(icon.html, /lt-rider-moto-icon/);
   assert.match(icon.html, /--heading:95deg/);
-  assert.deepEqual(icon.iconSize, [54, 54]);
+  assert.deepEqual(icon.iconSize, [52, 52]);
+  assert.deepEqual(icon.iconAnchor, [26, 34]);
 });
 
 test('chooseRiderLocation prioriza GPS real sobre simulación', () => {

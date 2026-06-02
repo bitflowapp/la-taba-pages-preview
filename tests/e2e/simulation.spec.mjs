@@ -74,7 +74,7 @@ test('GPS en contexto inseguro muestra fallback honesto (sin simular movimiento)
 
   await page.locator('[data-sim-gps]').click();
   await expect(page.locator('[data-delivery-panel]')).toContainText(/conexión segura/);
-  await expect(page.locator('[data-delivery-panel]')).toContainText('GPS: Requiere HTTPS');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Ubicación: Requiere HTTPS');
   // No se monta ningún mapa: sin GPS real no hay ubicación que mostrar.
   await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
 });

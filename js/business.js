@@ -26,6 +26,7 @@ import {
 } from './orders.js';
 import { getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
 import { escapeHtml, productCode, stockPill } from './ui.js';
+import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
 
 let seenOrderIds = null; // se inicializa en el primer render para detectar pedidos nuevos
 let soundEnabled = readSoundPref();
@@ -301,10 +302,6 @@ function inboxOrderCard(order, options = {}) {
   const nextLabel = actionLabelForOrder(order);
   const itemsList = order.items.map((item) => `
         <li><span>${item.quantity}× ${escapeHtml(item.name)}</span><strong>${money(item.quantity * item.unitPrice)}</strong></li>`).join('');
-  const riderLoc = order.tracking?.lastLocation;
-  const riderLine = (!isPickup && ['on_the_way', 'arriving'].includes(order.status) && riderLoc)
-    ? `<p class="inbox-rider-loc ${riderLoc.source === 'gps' ? 'is-gps' : ''}">${riderLoc.source === 'gps' ? 'GPS en vivo' : 'Ubicación registrada'} · ${escapeHtml(timeAgo(riderLoc.lastFixAt || riderLoc.timestamp))}</p>`
-    : '';
   const showTrack = order.deliveryMode === 'delivery' && ['ready', 'on_the_way', 'arriving'].includes(order.status);
   const priorityClass = options.priority ? 'is-priority' : 'is-secondary';
   const freshClass = options.fresh ? 'is-fresh' : '';
@@ -325,6 +322,7 @@ function inboxOrderCard(order, options = {}) {
             <strong>${escapeHtml(order.customerName)}</strong>
             <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
           </div>
+          ${renderInboxTrackingPanel(order)}
         </div>
 
         <div class="inbox-commerce-panel">
@@ -354,10 +352,64 @@ function inboxOrderCard(order, options = {}) {
             <ul class="inbox-items">${itemsList}</ul>
           </div>
           ${order.notes && order.notes !== 'Sin notas' ? `<p class="inbox-notes">Nota del cliente: ${escapeHtml(order.notes)}</p>` : ''}
-          ${riderLine}
         </div>
       </div>
     </article>`;
+}
+
+function renderInboxTrackingPanel(order) {
+  if (order.deliveryMode !== 'delivery' || !['ready', 'on_the_way', 'arriving'].includes(order.status)) return '';
+
+  const address = normalizeOrderAddressDetails(order);
+  const riderLocation = chooseRiderLocation(orderSimulation(order), order.tracking?.lastLocation);
+  const liveGps = hasLiveRiderLocation(riderLocation);
+  const title = ['on_the_way', 'arriving'].includes(order.status) ? 'Pedido en reparto' : 'Pedido listo para reparto';
+  const riderName = order.delivery?.driverName && order.delivery.driverName !== 'Sin asignar'
+    ? order.delivery.driverName
+    : '';
+  const gpsText = liveGps ? 'GPS del rider en vivo' : 'Sin ubicación en vivo';
+  const liveAge = liveGps ? (timeAgo(riderLocation.lastFixAt || riderLocation.timestamp) || 'recién') : '';
+  const gpsDetail = liveGps
+    ? `Última actualización ${liveAge}`
+    : 'El negocio sigue el pedido por estado y dirección.';
+  const actionLabel = liveGps ? 'Seguir reparto' : 'Ver tracking';
+
+  return `
+    <section class="inbox-tracking-panel ${liveGps ? 'is-live' : 'is-offline'}" data-business-tracking="${escapeHtml(order.id)}">
+      <div class="inbox-tracking-head">
+        <div>
+          <strong>${escapeHtml(title)}</strong>
+          <span>${escapeHtml(gpsText)}</span>
+        </div>
+        <em>${escapeHtml(gpsDetail)}</em>
+      </div>
+      <div class="inbox-tracking-grid">
+        <span><small>Pedido</small><strong>${escapeHtml(order.id)}</strong></span>
+        <span><small>Cliente</small><strong>${escapeHtml(order.customerName)}</strong></span>
+        <span><small>Dirección</small><strong>${escapeHtml(address.label || order.address)}</strong></span>
+        ${riderName ? `<span><small>Rider</small><strong>${escapeHtml(riderName)}</strong></span>` : ''}
+      </div>
+      ${liveGps ? renderBusinessTrackingMap(order) : ''}
+      <button class="ghost-button compact inbox-tracking-action" type="button" data-order-track="${escapeHtml(order.id)}">${escapeHtml(actionLabel)}</button>
+    </section>`;
+}
+
+function orderSimulation(order) {
+  const sim = getState().simulation;
+  return sim && sim.orderId === order.id ? sim : null;
+}
+
+function renderBusinessTrackingMap(order) {
+  return `
+    <div class="business-tracking-map">
+      <div class="real-map-shell business-map-shell" data-real-map data-map-role="business-tracking" data-order-id="${escapeHtml(order.id)}">
+        <div class="real-map-canvas" data-map-canvas aria-label="Mapa del rider en vivo"></div>
+        <div class="real-map-fallback" data-map-fallback>
+          <p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>
+        </div>
+        <div class="real-map-meta" data-map-meta>Ubicación del repartidor en vivo</div>
+      </div>
+    </div>`;
 }
 
 function inboxClosedRow(order) {

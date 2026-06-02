@@ -79,9 +79,7 @@ export function renderBusinessDashboard() {
 
   const state = getState();
   const metrics = getBusinessMetrics(state.orders, state.products);
-  const activeOrders = metrics.activeOrders;
   const lowStock = metrics.lowStock;
-  const deliveredToday = metrics.ordersByStatus.delivered;
   const newCustomers = uniqueCustomerCount(state.orders);
   const latestOrders = state.orders.slice(0, 5);
 
@@ -109,37 +107,33 @@ export function renderBusinessDashboard() {
   const freshOrders = isFirstRender ? [] : receivedIds.filter((id) => !seenOrderIds.has(id));
   seenOrderIds = new Set(receivedIds);
   if (freshOrders.length > 0) playNewOrderChime();
+  const freshOrderIds = new Set(freshOrders);
 
   container.innerHTML = `
     <div class="business-main business-inbox-main">
-      <div class="business-topbar">
+      <header class="business-inbox-hero">
+        <button class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}" type="button" data-sound-toggle aria-pressed="${soundEnabled}">
+          <span>Alertas</span>
+          ${receivedOrders.length ? `<strong>${receivedOrders.length}</strong>` : ''}
+        </button>
         <div class="business-topbar-text">
           <h2>Central de pedidos</h2>
-          <span>Acá caen los pedidos que confirman tus clientes. Aceptás, preparás y mandás a reparto desde un solo lugar.</span>
+          <span>Los pedidos confirmados aparecen acá. Aceptás, preparás y mandás a reparto sin perder el foco.</span>
         </div>
-        <button class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}" type="button" data-sound-toggle aria-pressed="${soundEnabled}">
-          ${soundEnabled ? '🔔 Sonido activado' : '🔕 Sonido apagado'}
-        </button>
-      </div>
+      </header>
 
-      ${receivedOrders.length
-        ? `<div class="new-order-banner ${freshOrders.length ? 'is-fresh' : ''}" role="status">
-            <span class="new-order-dot" aria-hidden="true"></span>
-            <span class="new-order-text"><strong>${receivedOrders.length} ${receivedOrders.length === 1 ? 'pedido nuevo' : 'pedidos nuevos'} sin aceptar</strong><small>Revisalos y aceptá para empezar a preparar.</small></span>
-            <button class="primary-button compact" type="button" data-scroll-orders>Ver pedidos</button>
-          </div>`
-        : ''}
+      ${renderOrderInbox(state, metrics, freshOrderIds)}
 
-      ${renderOrderInbox(state)}
+      ${renderDeliveredTodaySummary(state.orders)}
 
-      <div class="metrics-grid compact-metrics">
-        <div class="metric-card accent"><span>Ventas de hoy</span><strong>${money(metrics.todayTotal)}</strong><small>Pedidos válidos del día</small></div>
-        <div class="metric-card"><span>Pedidos de hoy</span><strong>${metrics.todayOrderCount}</strong><small>${metrics.ordersToHandle} pendientes</small></div>
-        <div class="metric-card"><span>Ticket promedio</span><strong>${money(metrics.avgTicket)}</strong><small>Por pedido</small></div>
-        <div class="metric-card"><span>Delivery / Retiro</span><strong>${metrics.todayDeliveryCount} / ${metrics.todayPickupCount}</strong><small>${newCustomers} clientes</small></div>
-      </div>
+      <section class="business-day-strip" aria-label="Resumen operativo del día">
+        <div class="day-metric accent"><span>Ventas de hoy</span><strong>${money(metrics.todayTotal)}</strong></div>
+        <div class="day-metric"><span>Pedidos activos</span><strong>${metrics.ordersToHandle}</strong></div>
+        <div class="day-metric"><span>Ticket promedio</span><strong>${money(metrics.avgTicket)}</strong></div>
+        <div class="day-metric"><span>Delivery / Retiro</span><strong>${metrics.todayDeliveryCount} / ${metrics.todayPickupCount}</strong><small>${newCustomers} clientes</small></div>
+      </section>
 
-      <section class="card stock-catalog-card">
+      <section class="card stock-catalog-card business-stock-card">
         <h3>Productos y stock</h3>
         ${state.products.map(stockRow).join('')}
       </section>
@@ -158,7 +152,7 @@ export function renderBusinessDashboard() {
               <span class="board-chip preparing">Preparando <strong>${metrics.ordersByStatus.preparing}</strong></span>
               <span class="board-chip ready">Listos <strong>${metrics.ordersByStatus.ready}</strong></span>
               <span class="board-chip way">En camino <strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></span>
-              <span class="board-chip done">Entregados <strong>${deliveredToday}</strong></span>
+              <span class="board-chip done">Entregados <strong>${metrics.ordersByStatus.delivered}</strong></span>
             </div>
           </section>
         </div>
@@ -184,34 +178,55 @@ export function renderBusinessDashboard() {
 }
 
 const INBOX_GROUPS = [
-  { id: 'nuevos', title: 'Pedidos nuevos', hint: 'Sin aceptar', match: (order) => order.status === 'received' },
-  { id: 'preparando', title: 'En preparación', hint: 'Aceptados', match: (order) => order.status === 'preparing' },
-  { id: 'reparto', title: 'Listos / En reparto', hint: 'Para entregar', match: (order) => ['ready', 'on_the_way', 'arriving'].includes(order.status) },
+  { id: 'nuevos', title: 'Pedidos nuevos', hint: 'Atención inmediata', match: (order) => order.status === 'received' },
+  { id: 'preparando', title: 'Preparando', hint: 'En cocina', match: (order) => order.status === 'preparing' },
+  { id: 'reparto', title: 'Reparto', hint: 'Listos o en calle', match: (order) => ['ready', 'on_the_way', 'arriving'].includes(order.status) },
 ];
 
 // Central de pedidos: lista vertical mobile-first con los pedidos REALES de la
 // demo, agrupados por fase. No hay tarjetas decorativas: cada card es un pedido
 // confirmado por un cliente. Las acciones publican el cambio de estado por
 // realtime para que cliente y rider vean lo mismo.
-function renderOrderInbox(state) {
+function renderOrderInbox(state, metrics, freshOrderIds = new Set()) {
   const orders = Array.isArray(state.orders) ? state.orders : [];
   const active = orders.filter((order) => !isTerminalOrderStatus(order.status));
   const closed = orders.filter((order) => ['delivered', 'cancelled'].includes(order.status)).slice(0, 6);
+  const received = active.filter((order) => order.status === 'received');
+  const priorityOrder = received[0] || null;
+  const sections = [];
+
+  if (priorityOrder) {
+    sections.push(`
+      <section class="inbox-priority" data-inbox-group="nuevos">
+        <header class="inbox-section-head">
+          <span>Pedidos nuevos</span>
+          <strong>Pedido nuevo</strong>
+          <small>Revisá datos, total y notas antes de aceptar.</small>
+        </header>
+        ${inboxOrderCard(priorityOrder, { priority: true, fresh: freshOrderIds.has(priorityOrder.id) })}
+      </section>`);
+  }
+
+  for (const group of INBOX_GROUPS) {
+    const list = active
+      .filter(group.match)
+      .filter((order) => order.id !== priorityOrder?.id);
+    if (!list.length) continue;
+    sections.push(`
+      <section class="inbox-group" data-inbox-group="${group.id}">
+        <header class="inbox-group-head">
+          <strong>${group.title}</strong>
+          <span class="inbox-count">${list.length}</span>
+          <small>${group.hint}</small>
+        </header>
+        <div class="inbox-group-body">
+          ${list.map((order) => inboxOrderCard(order, { fresh: freshOrderIds.has(order.id) })).join('')}
+        </div>
+      </section>`);
+  }
 
   const body = active.length
-    ? INBOX_GROUPS.map((group) => {
-        const list = active.filter(group.match);
-        if (!list.length) return '';
-        return `
-          <section class="inbox-group" data-inbox-group="${group.id}">
-            <header class="inbox-group-head">
-              <strong>${group.title}</strong>
-              <span class="inbox-count">${list.length}</span>
-              <small>${group.hint}</small>
-            </header>
-            <div class="inbox-group-body">${list.map(inboxOrderCard).join('')}</div>
-          </section>`;
-      }).join('')
+    ? `<div class="inbox-feed">${sections.join('')}</div>`
     : `
       <div class="inbox-empty" data-inbox-empty>
         <strong>Todavía no entraron pedidos.</strong>
@@ -226,7 +241,46 @@ function renderOrderInbox(state) {
       </details>`
     : '';
 
-  return `<div class="order-inbox" data-order-inbox>${body}${closedBlock}</div>`;
+  return `<div class="order-inbox" data-order-inbox data-ops-board>${renderInboxTabs(metrics)}${body}${closedBlock}</div>`;
+}
+
+function renderInboxTabs(metrics) {
+  const counts = metrics.ordersByStatus;
+  const reparto = counts.ready + counts.on_the_way + counts.arriving;
+  const tabs = [
+    { label: 'Nuevos', count: counts.received, tone: 'received' },
+    { label: 'Preparando', count: counts.preparing, tone: 'preparing' },
+    { label: 'Reparto', count: reparto, tone: 'way' },
+    { label: 'Entregados', count: counts.delivered, tone: 'done' },
+  ];
+  return `
+    <div class="inbox-tabs" aria-label="Estados de pedidos">
+      ${tabs.map((tab) => `
+        <span class="inbox-tab ${tab.tone} ${tab.count > 0 ? 'has-count' : ''}">
+          <span>${tab.label}</span>
+          <strong>${tab.count}</strong>
+        </span>`).join('')}
+    </div>`;
+}
+
+function renderDeliveredTodaySummary(orders) {
+  const today = new Date().toDateString();
+  const delivered = orders.filter((order) => {
+    const created = new Date(order.createdAt);
+    return order.status === 'delivered'
+      && !Number.isNaN(created.getTime())
+      && created.toDateString() === today;
+  });
+  const total = delivered.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
+  return `
+    <section class="delivered-today-card" aria-label="Entregados de hoy">
+      <span class="delivered-icon" aria-hidden="true">✓</span>
+      <div>
+        <strong>Entregados de hoy</strong>
+        <p>${delivered.length} ${delivered.length === 1 ? 'pedido' : 'pedidos'} · ${money(total)}</p>
+      </div>
+      <span class="delivered-chevron" aria-hidden="true">›</span>
+    </section>`;
 }
 
 function timeAgo(value) {
@@ -239,7 +293,7 @@ function timeAgo(value) {
   return `hace ${hours} h`;
 }
 
-function inboxOrderCard(order) {
+function inboxOrderCard(order, options = {}) {
   const isPickup = order.deliveryMode === 'pickup';
   const address = normalizeOrderAddressDetails(order);
   const reference = formatAddressReference(order);
@@ -249,36 +303,59 @@ function inboxOrderCard(order) {
         <li><span>${item.quantity}× ${escapeHtml(item.name)}</span><strong>${money(item.quantity * item.unitPrice)}</strong></li>`).join('');
   const riderLoc = order.tracking?.lastLocation;
   const riderLine = (!isPickup && ['on_the_way', 'arriving'].includes(order.status) && riderLoc)
-    ? `<p class="inbox-rider-loc ${riderLoc.source === 'gps' ? 'is-gps' : ''}">📍 ${riderLoc.source === 'gps' ? 'Repartidor en vivo' : 'Ubicación estimada'} · ${escapeHtml(timeAgo(riderLoc.lastFixAt || riderLoc.timestamp))}</p>`
+    ? `<p class="inbox-rider-loc ${riderLoc.source === 'gps' ? 'is-gps' : ''}">${riderLoc.source === 'gps' ? 'GPS en vivo' : 'Ubicación registrada'} · ${escapeHtml(timeAgo(riderLoc.lastFixAt || riderLoc.timestamp))}</p>`
     : '';
   const showTrack = order.deliveryMode === 'delivery' && ['ready', 'on_the_way', 'arriving'].includes(order.status);
+  const priorityClass = options.priority ? 'is-priority' : 'is-secondary';
+  const freshClass = options.fresh ? 'is-fresh' : '';
 
   return `
-    <article class="inbox-order accent-${statusClass(order.status)}" data-inbox-order="${escapeHtml(order.id)}">
+    <article class="inbox-order ${priorityClass} ${freshClass} accent-${statusClass(order.status)}" data-inbox-order="${escapeHtml(order.id)}">
       <div class="inbox-order-top">
-        <strong class="inbox-id">${escapeHtml(order.id)}</strong>
-        <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
+        <span class="inbox-state-dot" aria-hidden="true"></span>
+        <span class="status-chip ${statusClass(order.status)}">${options.priority ? 'Pedido nuevo' : statusLabel(order.status)}</span>
+        <span class="inbox-status-label">${statusLabel(order.status)}</span>
         <span class="inbox-time">${escapeHtml(timeAgo(order.createdAt))}</span>
       </div>
-      <div class="inbox-order-customer">
-        <strong>${escapeHtml(order.customerName)}</strong>
-        <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
-      </div>
-      <p class="inbox-contact">${escapeHtml(order.customerPhone)} · ${escapeHtml(order.paymentMethod)}</p>
-      ${isPickup
-        ? '<p class="inbox-address">Retira en el local</p>'
-        : `<p class="inbox-address">${escapeHtml(address.label || order.address)}</p>${reference ? `<p class="inbox-ref">Referencia: ${escapeHtml(reference)}</p>` : ''}`}
-      <ul class="inbox-items">${itemsList}</ul>
-      ${order.notes && order.notes !== 'Sin notas' ? `<p class="inbox-notes">Nota del cliente: ${escapeHtml(order.notes)}</p>` : ''}
-      ${riderLine}
-      <div class="inbox-order-total"><span>Total a cobrar</span><strong>${money(order.total)}</strong></div>
-      <div class="inbox-actions">
-        ${nextLabel !== 'Sin acción' ? `<button class="primary-button compact" type="button" data-order-advance="${order.id}">${escapeHtml(nextLabel)}</button>` : ''}
-        ${order.customerPhone ? `<a class="ghost-button compact" href="tel:${encodeURIComponent(order.customerPhone)}">Llamar</a>` : ''}
-        ${phone ? `<a class="ghost-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
-        ${showTrack ? `<button class="ghost-button compact" type="button" data-order-track="${order.id}">Ver tracking</button>` : ''}
-        <button class="ghost-button compact" type="button" data-order-ticket="${order.id}">Copiar ticket</button>
-        <button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${order.id}">Rechazar</button>
+
+      <div class="inbox-card-layout">
+        <div class="inbox-card-main">
+          <strong class="inbox-id">${escapeHtml(order.id)}</strong>
+          <div class="inbox-order-customer">
+            <strong>${escapeHtml(order.customerName)}</strong>
+            <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
+          </div>
+        </div>
+
+        <div class="inbox-commerce-panel">
+          <aside class="inbox-payment-panel">
+            <span>Total a cobrar</span>
+            <strong>${money(order.total)}</strong>
+          </aside>
+          <div class="inbox-actions">
+            ${nextLabel !== 'Sin acción' ? `<button class="primary-button compact" type="button" data-order-advance="${order.id}">${escapeHtml(nextLabel)}</button>` : ''}
+            ${phone ? `<a class="ghost-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
+            ${order.customerPhone ? `<a class="ghost-button compact" href="tel:${encodeURIComponent(order.customerPhone)}">Llamar</a>` : ''}
+            ${showTrack ? `<button class="ghost-button compact" type="button" data-order-track="${order.id}">Ver tracking</button>` : ''}
+            <button class="ghost-button compact" type="button" data-order-ticket="${order.id}">Copiar ticket</button>
+            <button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${order.id}">Rechazar</button>
+          </div>
+        </div>
+
+        <div class="inbox-card-details">
+          <div class="inbox-detail-list">
+            <p><span>Teléfono</span><strong>${escapeHtml(order.customerPhone)}</strong></p>
+            <p><span>${isPickup ? 'Retiro' : 'Dirección'}</span><strong>${isPickup ? 'Retira en el local' : escapeHtml(address.label || order.address)}</strong></p>
+            ${!isPickup && reference ? `<p><span>Referencia</span><strong>${escapeHtml(reference)}</strong></p>` : ''}
+            <p><span>Pago</span><strong>${escapeHtml(order.paymentMethod)}</strong></p>
+          </div>
+          <div class="inbox-products-block">
+            <span>Productos</span>
+            <ul class="inbox-items">${itemsList}</ul>
+          </div>
+          ${order.notes && order.notes !== 'Sin notas' ? `<p class="inbox-notes">Nota del cliente: ${escapeHtml(order.notes)}</p>` : ''}
+          ${riderLine}
+        </div>
       </div>
     </article>`;
 }

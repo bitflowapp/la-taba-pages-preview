@@ -16,11 +16,11 @@ con la **Central de pedidos** del negocio (PR #29). Complementa a
 Abrir **siempre con `?reset=1`** para arrancar limpio:
 
 ```
-https://bitflowapp.github.io/la-taba-pages-preview/?reset=1&v=walter-business-inbox-v1
+https://bitflowapp.github.io/la-taba-pages-preview/?reset=1&v=walter-rider-map-cleanup
 ```
 
 Si el celu muestra una versión vieja en caché, cambiá el final del link
-(`&v=walter-business-inbox-v1-2`). Subí el brillo y cerrá notificaciones.
+(`&v=walter-rider-map-cleanup-2`). Subí el brillo y cerrá notificaciones.
 
 ---
 
@@ -102,7 +102,23 @@ Anotar las respuestas **literales**: son la base del próximo paso.
 - "Es una **demo funcional**, no una maqueta."
 - "Tiene una **Central de pedidos** para ordenar la operación."
 - "Es **adaptable a tu comercio** (pizzería o mercadito)."
+- "Es **tu canal propio**: el pedido entra directo a tu local, sin comisión por pedido de una app de terceros."
 - "**Primero validamos si encaja con tu forma real de trabajar**, después vemos cómo seguir."
+
+### 6.1 Cómo explicar el ahorro por comisiones (sin prometer números)
+
+Idea para transmitir, **sin tirar porcentajes exactos como promesa**:
+
+> "Hoy, cuando un pedido entra por una app de delivery de terceros, una parte de
+> cada venta se va en **comisión**. Esto es **tu canal propio**: el pedido entra
+> directo a tu local, con tu marca, **sin esa comisión por pedido**. Vos seguís
+> usando tu **delivery propio** o el que ya tenés."
+
+- Enmarcalo como **complemento** de lo que ya usa, no como reemplazo inmediato.
+- Si pregunta cuánto ahorra: "**depende de tu volumen y de lo que pagás hoy**;
+  por eso primero queremos entender tus números reales". No inventes una cifra.
+- El gancho honesto: **más margen por pedido propio + datos del cliente que
+  quedan en tu negocio**, no en una plataforma de terceros.
 
 ---
 
@@ -132,7 +148,7 @@ mientras el reparto está activo**; al cortar, vuelve a **"Sin GPS en vivo"**.
 
 **Demo pública (recomendado para mostrar):**
 ```
-https://bitflowapp.github.io/la-taba-pages-preview/?reset=1&v=walter-business-inbox-v1
+https://bitflowapp.github.io/la-taba-pages-preview/?reset=1&v=walter-rider-map-cleanup
 ```
 
 **GPS en vivo con ngrok (solo si el túnel sigue abierto):**
@@ -158,3 +174,31 @@ https://wieldiest-etha-unrippable.ngrok-free.dev/?relay=https%3A%2F%2Fwieldiest-
 - Volcar las respuestas en `phase-2/walter-discovery-questions.md`.
 - Marcar qué ajustes pidió y cuáles son **chicos vs. grandes**.
 - Decidir si conviene una **versión adaptada** (pizzería / mercadito).
+
+---
+
+## 11. Estado técnico actual (para Marco, no para mostrar)
+
+- **Base:** `main` (rama de hardening operativo v1 sobre la última visual).
+- **Marker del rider:** disco limpio con letra **"R"**, centrado en el mapa. El
+  casco/moto/rojo viejos quedaron **descartados** (hay tests que impiden
+  reintroducirlos).
+- **Tracking honesto (núcleo, no se toca):**
+  - **Sin GPS real:** no se monta mapa, no hay marker, ni ruta, ni km, ni ETA.
+  - **Con GPS real válido:** recién ahí aparece mapa + marker real.
+  - Si el GPS **se corta** o el fix queda viejo (>30 s), el cliente vuelve a
+    **"Sin GPS en vivo"**; no se muestra una ubicación vieja como si fuera actual.
+- **Persistencia (demo, este equipo):** estado en `localStorage`, blindado contra
+  datos corruptos: JSON inválido → arranca por defecto; pedidos con **ID
+  duplicado** se descartan; `lastOrderId`/simulación inválidos se limpian;
+  terminales (entregado/cancelado) **no** quedan como pedido activo.
+- **Reset:** abrir con `?reset=1` borra pedidos/carrito/acceso de este equipo y
+  arranca limpio (no afecta a otros equipos).
+- **Datos:** el panel muestra **una venta de ejemplo** para no verse vacío; no hay
+  backend productivo conectado en la demo pública.
+- **QA:** `npm run check`, `npm test`, `npm run test:e2e`, `npm run release:folder`
+  y `git diff --check` en verde. Cobertura incluye flujo cliente/negocio/rider,
+  refresh a mitad del pedido, reset, GPS perdido, pedido entregado, sin overflow
+  mobile y sin reintroducir el marker viejo.
+- **Pendiente (no prometer en la reunión):** backend real/persistencia entre
+  equipos, pagos online, multi-comercio.

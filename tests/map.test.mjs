@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { canUseLeaflet, disposeMapViews, renderMapViews } from '../js/map/map_view.js';
 import { getMapTheme, getTileLayerForTheme } from '../js/map/map_config.js';
-import { riderMarkerClass } from '../js/map/rider_marker.js';
+import { createRiderIcon, riderMarkerClass } from '../js/map/rider_marker.js';
 import {
   chooseRiderLocation,
   distanceKm,
@@ -133,6 +133,13 @@ test('rider marker class reflects status and source', () => {
   assert.match(riderMarkerClass('on_the_way', 'gps'), /on-the-way/);
   assert.match(riderMarkerClass('on_the_way', 'gps'), /source-gps/);
   assert.match(riderMarkerClass('preparing', 'simulation'), /preparing/);
+
+  const icon = createRiderIcon({ divIcon: (options) => options }, { status: 'on_the_way', source: 'gps', heading: 95 });
+  assert.match(icon.html, /lt-rider-moto-core/);
+  assert.match(icon.html, /lt-rider-marker-halo/);
+  assert.match(icon.html, /lt-rider-moto-icon/);
+  assert.match(icon.html, /--heading:95deg/);
+  assert.deepEqual(icon.iconSize, [54, 54]);
 });
 
 test('chooseRiderLocation prioriza GPS real sobre simulación', () => {
@@ -271,6 +278,37 @@ test('map renders only the real rider marker (no route/store/client) and reuses 
   }
 });
 
+test('rider map uses the light commercial tile theme', async () => {
+  const now = Date.now();
+  resetState({
+    orders: [deliveryOrderWithTracking('LT-MAP-RIDER-LIGHT')],
+    lastOrderId: 'LT-MAP-RIDER-LIGHT',
+    simulation: {
+      orderId: 'LT-MAP-RIDER-LIGHT',
+      mode: 'gps',
+      source: 'gps',
+      gpsStatus: 'active',
+      lat: -38.951,
+      lng: -68.061,
+      timestamp: now,
+      lastFixAt: new Date(now).toISOString(),
+    },
+  });
+  const { shell } = createMapShell('LT-MAP-RIDER-LIGHT', { role: 'rider' });
+  const { calls, restore } = installLeafletStub();
+
+  try {
+    renderMapViews({ querySelectorAll: () => [shell] });
+    await waitForMapFrame();
+    assert.equal(shell.dataset.mapTheme, 'light');
+    assert.match(calls.tileUrls[0], /cartocdn\.com\/light_all/);
+    assert.equal(calls.marker, 1);
+  } finally {
+    disposeMapViews({ querySelectorAll: () => [shell] });
+    restore();
+  }
+});
+
 test('without a real GPS fix the map renders no rider marker', async () => {
   const now = Date.now();
   resetState({
@@ -317,7 +355,7 @@ function deliveryOrderWithTracking(id) {
   };
 }
 
-function createMapShell(orderId) {
+function createMapShell(orderId, { role = 'tracking' } = {}) {
   const meta = { textContent: '' };
   const fallback = {
     setAttribute() {},
@@ -325,7 +363,7 @@ function createMapShell(orderId) {
   };
   const canvas = {};
   const shell = {
-    dataset: { mapRole: 'tracking', orderId },
+    dataset: { mapRole: role, orderId },
     isConnected: true,
     classList: createClassList(),
     querySelector(selector) {
@@ -353,7 +391,7 @@ function createClassList() {
 
 function installLeafletStub() {
   const originalL = globalThis.L;
-  const calls = { map: 0, marker: 0, setLatLng: 0 };
+  const calls = { map: 0, marker: 0, setLatLng: 0, tileUrls: [] };
   class FakeMarker {
     constructor(latLng, options = {}) {
       calls.marker += 1;
@@ -391,7 +429,10 @@ function installLeafletStub() {
         panTo() {},
       };
     },
-    tileLayer: () => ({ addTo() { return this; } }),
+    tileLayer: (url) => {
+      calls.tileUrls.push(url);
+      return { addTo() { return this; } };
+    },
     control: { zoom: () => ({ addTo() { return this; } }) },
     polyline: (points) => new FakeLine(points),
     marker: (latLng, options) => new FakeMarker(latLng, options),

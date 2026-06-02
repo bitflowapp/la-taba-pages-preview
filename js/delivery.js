@@ -84,7 +84,7 @@ export function renderDeliveryPanel() {
 
   renderWithStableRealMap(container, `
     <div class="delivery-layout rider-map-experience ${gpsLive ? '' : 'no-map'}">
-      ${gpsLive ? renderRiderMapStage(order, headline, true) : ''}
+      ${gpsLive ? renderRiderMapStage(order, headline, true, destinationLabel) : ''}
 
       <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
@@ -120,7 +120,7 @@ export function renderDeliveryPanel() {
             <span class="rider-label">Entrega en</span>
             <p>${escapeHtml(destinationLabel)}</p>
             ${address.reference ? `<p class="rider-reference">Referencia: ${escapeHtml(address.reference)}</p>` : ''}
-            <p class="form-hint">Dirección cargada por el cliente. El mapa es una referencia de recorrido, no GPS en vivo.</p>
+            <p class="form-hint">${gpsLive ? 'Mapa con tu ubicación GPS real. La dirección del cliente queda textual para no inventar puntos.' : 'Dirección cargada por el cliente. Sin GPS compartido no se muestra ubicación en vivo.'}</p>
             <div class="rider-copy-row">
               <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar direccion</button>
             </div>
@@ -407,7 +407,7 @@ function relativeAgeLabel(value) {
   return `hace ${minutes} min`;
 }
 
-function renderRiderMapStage(order, headline, gpsLive = false) {
+function renderRiderMapStage(order, headline, gpsLive = false, destination = '') {
   const status = getRealtimeStatus();
   const connection = status.relayEnabled
     ? (status.relayConnected ? 'En vivo' : 'Reconectando')
@@ -420,7 +420,7 @@ function renderRiderMapStage(order, headline, gpsLive = false) {
         <span class="map-connection-pill">${escapeHtml(connection)}</span>
       </div>
       <div class="map-floating-bottom">
-        <span class="map-stat-pill"><small>A cobrar</small><strong>${order ? money(order.total) : ''}</strong></span>
+        <span class="map-stat-pill map-destination-pill"><small>Destino</small><strong>${escapeHtml(destination || 'Dirección del pedido')}</strong></span>
         <span class="map-stat-pill"><small>GPS</small><strong>${gpsLive ? 'Compartiendo ubicación' : 'Sin compartir'}</strong></span>
       </div>
     </div>`;
@@ -435,7 +435,7 @@ function renderRealMapShell(order, fallback, role = 'rider') {
         <p class="map-fallback-note">Mapa no disponible, usando vista simplificada.</p>
         ${fallback}
       </div>
-      <div class="real-map-meta" data-map-meta>Ubicación estimada</div>
+      <div class="real-map-meta" data-map-meta>Mapa de reparto</div>
     </div>`;
 }
 

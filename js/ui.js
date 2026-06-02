@@ -619,7 +619,7 @@ function realMapShell({ order = null, role = 'tracking', fallback }) {
         <p class="map-fallback-note">Mapa no disponible, usando vista simplificada.</p>
         ${fallback}
       </div>
-      <div class="real-map-meta" data-map-meta>Neuquén Capital y Cipolletti</div>
+      <div class="real-map-meta" data-map-meta>Mapa de seguimiento</div>
     </div>`;
 }
 
@@ -634,7 +634,7 @@ function trackingMapStage({ order = null, live = false }) {
         <span class="map-connection-pill">${realtimeChip(order)}</span>
       </div>
       <div class="map-floating-bottom">
-        <span class="map-stat-pill"><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
+        <span class="map-stat-pill map-destination-pill"><small>Destino</small><strong>${escapeHtml(destinationLabel(order))}</strong></span>
         <span class="map-stat-pill"><small>GPS</small><strong>${live ? 'En vivo' : 'Sin GPS en vivo'}</strong></span>
       </div>
     </div>`;
@@ -795,7 +795,7 @@ export function renderTracking() {
         ${isDelivery ? trackingAddressCard(order) : ''}
         ${isDelivery && !isCancelled ? riderTrackingCard(order, riderLocation) : ''}
         ${isDelivery && !isCancelled && order.status !== 'delivered'
-          ? `<p class="form-hint tracking-gps-note">📍 ${liveRider ? 'GPS en vivo: el repartidor está compartiendo su ubicación.' : 'Sin GPS en vivo: seguís el pedido por estado y dirección.'}</p>`
+          ? `<p class="form-hint tracking-gps-note">${liveRider ? 'GPS en vivo: el repartidor comparte ubicación real.' : 'Sin GPS en vivo: seguís el pedido por estado y dirección.'}</p>`
           : ''}
         <details class="order-detail">
           <summary>Ver detalle del pedido · ${order.id}</summary>

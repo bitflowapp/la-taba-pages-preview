@@ -232,9 +232,12 @@ test('GPS real del rider se propaga al tracking del cliente por relay', async ({
 
   await expect(rider.locator('[data-delivery-panel]')).toContainText('GPS compartiendo ubicación', { timeout: 10_000 });
   await expect(rider.locator('[data-delivery-panel]')).toContainText('Detalles de ubicación');
+  await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toBeVisible({ timeout: 10_000 });
+  await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toHaveAttribute('data-map-theme', 'light');
 
   // Recién con GPS real el cliente ve el mapa y "Ubicación rider".
   await expect(client.locator('[data-tracking-panel] [data-real-map]').first()).toBeVisible({ timeout: 10_000 });
+  await expect(client.locator('[data-tracking-panel] [data-real-map]').first()).toHaveAttribute('data-map-theme', 'light');
   await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación rider', { timeout: 10_000 });
   await expect(client.locator('[data-map-meta]').first()).not.toContainText(/precisión|±/i);
   await expect(client.locator('[data-map-meta]').first()).not.toContainText(/km/i);

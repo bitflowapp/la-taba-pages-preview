@@ -9,11 +9,24 @@ export function riderMarkerClass(status, source = 'simulation') {
 }
 
 export function createRiderIcon(L, { status = 'received', source = 'simulation', heading = 0 } = {}) {
+  const safeHeading = Number.isFinite(Number(heading)) ? Number(heading) : 0;
   return L.divIcon({
     className: riderMarkerClass(status, source),
-    html: `<span class="lt-rider-arrow" style="--heading:${Number(heading) || 0}deg"></span>`,
-    iconSize: [42, 42],
-    iconAnchor: [21, 21],
+    html: `
+      <span class="lt-rider-marker-halo" aria-hidden="true"></span>
+      <span class="lt-rider-moto-core" style="--heading:${safeHeading}deg" aria-hidden="true">
+        <svg class="lt-rider-moto-icon" viewBox="0 0 64 64" focusable="false" aria-hidden="true">
+          <path class="lt-rider-box" d="M16 20h16l6 10h-9l-3-5H16z"></path>
+          <path class="lt-rider-seat" d="M33 28h9l6 10h-9l-3-5h-9z"></path>
+          <path class="lt-rider-frame" d="M13 41h16l8-13 9 13h5"></path>
+          <path class="lt-rider-handle" d="M45 31l7-7h5"></path>
+          <circle class="lt-rider-wheel" cx="17" cy="44" r="7"></circle>
+          <circle class="lt-rider-wheel" cx="49" cy="44" r="7"></circle>
+          <circle class="lt-rider-light" cx="56" cy="24" r="3"></circle>
+        </svg>
+      </span>`,
+    iconSize: [54, 54],
+    iconAnchor: [27, 35],
   });
 }
 
@@ -40,8 +53,8 @@ function updateRiderMarkerVisual(marker, L, nextLocation, options) {
 
   if (marker.__ltMarkerHeading !== heading) {
     marker.__ltMarkerHeading = heading;
-    const arrow = element?.querySelector?.('.lt-rider-arrow');
-    if (arrow?.style) arrow.style.setProperty('--heading', `${heading}deg`);
+    const moto = element?.querySelector?.('.lt-rider-moto-core');
+    if (moto?.style) moto.style.setProperty('--heading', `${heading}deg`);
     else if (!element && marker.setIcon) marker.setIcon(createRiderIcon(L, { ...options, source, heading }));
   }
 }

@@ -24,10 +24,10 @@ export function orderTimestamp(order) {
 
 const ACTIVE_ORDER_PRIORITY = Object.freeze({
   on_the_way: 0,
-  arriving: 1,
-  ready: 2,
-  preparing: 3,
-  received: 4,
+  arriving: 0,
+  ready: 1,
+  preparing: 2,
+  received: 3,
 });
 
 export function chooseActiveLiveOrderId(orders = []) {

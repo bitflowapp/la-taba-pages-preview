@@ -82,6 +82,14 @@ test('chooseActiveLiveOrderId keeps an in-progress delivery visible by priority'
   assert.equal(chooseActiveLiveOrderId(orders), 'LT-WAY');
 });
 
+test('chooseActiveLiveOrderId lets a newer arriving order beat an older on the way order', () => {
+  const orders = [
+    order('LT-OLD-WAY', t0, [{ status: 'on_the_way', at: t0 }]),
+    order('LT-NEW-ARRIVING', t2, [{ status: 'arriving', at: t2 }]),
+  ];
+  assert.equal(chooseActiveLiveOrderId(orders), 'LT-NEW-ARRIVING');
+});
+
 test('chooseActiveOrderId falls back to a room live order without lastOrderId', () => {
   const local = [order('LT-LOCAL', t0, [{ status: 'received', at: t0 }])];
   const incoming = [order('LT-ROOM', t1, [{ status: 'on_the_way', at: t1 }])];

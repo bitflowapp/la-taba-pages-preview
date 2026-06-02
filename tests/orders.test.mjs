@@ -250,6 +250,43 @@ test('active order falls back to the live delivery order when lastOrderId is mis
   assert.equal(getActiveOrder()?.id, 'LT-WAY');
 });
 
+test('valid lastOrderId stays authoritative over another live order', () => {
+  const oldAt = new Date(Date.now() - 60_000).toISOString();
+  const freshAt = new Date().toISOString();
+  resetState({
+    orders: [
+      {
+        id: 'LT-READY',
+        status: 'ready',
+        createdAt: oldAt,
+        statusHistory: [{ status: 'ready', at: oldAt }],
+        items: [{ productId: 'p-vacio', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+        deliveryMode: 'delivery',
+        customerName: 'Pedido fijado',
+        customerPhone: '2995551111',
+        address: 'Roca 321',
+        paymentMethod: 'Efectivo',
+      },
+      {
+        id: 'LT-ARRIVING',
+        status: 'arriving',
+        createdAt: freshAt,
+        statusHistory: [{ status: 'arriving', at: freshAt }],
+        items: [{ productId: 'p-vacio', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+        deliveryMode: 'delivery',
+        customerName: 'Pedido nuevo',
+        customerPhone: '2995552222',
+        address: 'Mendoza 851, Centro',
+        paymentMethod: 'Efectivo',
+      },
+    ],
+    lastOrderId: 'LT-READY',
+  });
+
+  assert.equal(getActiveOrderId(), 'LT-READY');
+  assert.equal(getActiveOrder()?.id, 'LT-READY');
+});
+
 test('status transitions persist the active order id', () => {
   addToCart('p-vacio', 1);
   const created = createOrderFromCheckout({

@@ -74,29 +74,50 @@ export function mergeOrders(localOrders, incomingOrders) {
   return { orders: local, changed };
 }
 
-// El pedido activo de tracking/rider viaja aparte de la lista de pedidos. Lo
-// aceptamos solo si apunta a un pedido entrante mas nuevo que el activo local.
+const TERMINAL_SYNC_STATUSES = Object.freeze(['delivered', 'cancelled', 'canceled']);
+function isTerminalSyncStatus(status) {
+  return TERMINAL_SYNC_STATUSES.includes(status);
+}
+
+// El pedido activo de tracking/rider viaja aparte de la lista de pedidos.
+// Regla: un activo local VÁLIDO (presente y no terminal) manda. Un fallback
+// "live" entrante NO puede desplazarlo solo por timestamp; únicamente un
+// incomingLastOrderId EXPLÍCITO y más nuevo puede reemplazarlo. Si el activo
+// local no existe / es terminal / no había lastOrderId, recién ahí elegimos el
+// pedido activo por estado + timestamp entre lo local y lo entrante.
 export function chooseActiveOrderId(localOrders, localLastOrderId, incomingOrders, incomingLastOrderId) {
   const incoming = Array.isArray(incomingOrders) ? incomingOrders : [];
   const local = Array.isArray(localOrders) ? localOrders : [];
-  const hasLocalLastOrder = typeof localLastOrderId === 'string'
-    && local.some((order) => order?.id === localLastOrderId);
-  const hasIncomingLastOrder = typeof incomingLastOrderId === 'string'
-    && incoming.some((order) => order?.id === incomingLastOrderId);
-  const currentId = hasLocalLastOrder
-    ? localLastOrderId
-    : chooseActiveLiveOrderId(local);
-  const candidateId = hasIncomingLastOrder
-    ? incomingLastOrderId
-    : chooseActiveLiveOrderId(incoming);
+
+  const localActive = typeof localLastOrderId === 'string'
+    ? local.find((order) => order?.id === localLastOrderId)
+    : null;
+  const localHolds = Boolean(localActive) && !isTerminalSyncStatus(localActive.status);
+
+  const incomingExplicit = typeof incomingLastOrderId === 'string' && incomingLastOrderId
+    ? incoming.find((order) => order?.id === incomingLastOrderId)
+    : null;
+
+  // Caso 1: hay un activo local válido. Solo un handoff explícito y más nuevo lo reemplaza.
+  if (localHolds) {
+    if (incomingExplicit
+      && incomingExplicit.id !== localLastOrderId
+      && orderTimestamp(incomingExplicit) > orderTimestamp(localActive)) {
+      return incomingExplicit.id;
+    }
+    return localLastOrderId;
+  }
+
+  // Caso 2: sin activo local válido (no existe, terminal o no había lastOrderId).
+  // Handoff explícito, o pedido live por estado + timestamp entre local y entrante.
+  const currentId = chooseActiveLiveOrderId(local);
+  const candidateId = incomingExplicit ? incomingExplicit.id : chooseActiveLiveOrderId(incoming);
   if (!candidateId) return currentId || null;
 
   const candidate = incoming.find((order) => order?.id === candidateId);
   if (!candidate) return currentId || null;
 
-  const current = typeof currentId === 'string'
-    ? local.find((order) => order?.id === currentId)
-    : null;
+  const current = currentId ? local.find((order) => order?.id === currentId) : null;
   if (!current) return candidateId;
   if (candidateId === currentId) return currentId;
   return orderTimestamp(candidate) > orderTimestamp(current) ? candidateId : currentId;

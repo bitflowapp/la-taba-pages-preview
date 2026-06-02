@@ -101,6 +101,38 @@ test('chooseActiveOrderId ignores a stale missing local lastOrderId', () => {
   assert.equal(chooseActiveOrderId(local, 'LT-MISSING', [], null), 'LT-LIVE');
 });
 
+// Finding del PR #36: un fallback "live" entrante NO debe reemplazar un
+// lastOrderId local válido si no vino un incomingLastOrderId explícito.
+test('chooseActiveOrderId NO reemplaza un activo local válido por un fallback live entrante', () => {
+  const local = [order('LT-VALID', t1, [{ status: 'on_the_way', at: t1 }])];
+  const incoming = [order('LT-NEW-ARRIVING', t2, [{ status: 'arriving', at: t2 }])];
+  assert.equal(chooseActiveOrderId(local, 'LT-VALID', incoming, null), 'LT-VALID');
+});
+
+test('chooseActiveOrderId acepta un incomingLastOrderId explícito más nuevo sobre un activo local válido', () => {
+  const local = [order('LT-VALID', t0, [{ status: 'on_the_way', at: t0 }])];
+  const incoming = [order('LT-HANDOFF', t2, [{ status: 'received', at: t2 }])];
+  assert.equal(chooseActiveOrderId(local, 'LT-VALID', incoming, 'LT-HANDOFF'), 'LT-HANDOFF');
+});
+
+test('chooseActiveOrderId mantiene el activo local si el incomingLastOrderId explícito es más viejo', () => {
+  const local = [order('LT-VALID', t2, [{ status: 'received', at: t2 }])];
+  const incoming = [order('LT-OLDER', t0, [{ status: 'on_the_way', at: t0 }])];
+  assert.equal(chooseActiveOrderId(local, 'LT-VALID', incoming, 'LT-OLDER'), 'LT-VALID');
+});
+
+test('chooseActiveOrderId con lastOrderId local terminal permite el fallback live entrante más nuevo', () => {
+  const local = [order('LT-DONE', t0, [{ status: 'delivered', at: t0 }])];
+  const incoming = [order('LT-LIVE-NEW', t2, [{ status: 'on_the_way', at: t2 }])];
+  assert.equal(chooseActiveOrderId(local, 'LT-DONE', incoming, null), 'LT-LIVE-NEW');
+});
+
+test('chooseActiveOrderId sin lastOrderId válido deja ganar arriving nuevo sobre on_the_way viejo', () => {
+  const local = [order('LT-OLD-WAY', t0, [{ status: 'on_the_way', at: t0 }])];
+  const incoming = [order('LT-NEW-ARRIVING', t2, [{ status: 'arriving', at: t2 }])];
+  assert.equal(chooseActiveOrderId(local, null, incoming, null), 'LT-NEW-ARRIVING');
+});
+
 test('isNewerTimestamp compares monotonic stamps with sane fallbacks', () => {
   assert.equal(isNewerTimestamp(2, 1), true);
   assert.equal(isNewerTimestamp(1, 2), false);

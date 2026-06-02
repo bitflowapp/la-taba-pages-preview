@@ -16,11 +16,12 @@ export function createRiderIcon(L, { status = 'received', source = 'simulation',
       <span class="lt-rider-marker-halo" aria-hidden="true"></span>
       <span class="lt-rider-helmet-core" style="--heading:${safeHeading}deg" aria-hidden="true">
         <svg class="lt-rider-helmet-icon" viewBox="0 0 64 64" focusable="false" aria-hidden="true">
-          <path class="lt-rider-pin" d="M32 5.5c11.8 0 21.4 9.3 21.4 20.8 0 14.4-21.4 29.2-21.4 29.2S10.6 40.7 10.6 26.3C10.6 14.8 20.2 5.5 32 5.5Z"></path>
-          <path class="lt-rider-helmet-shell" d="M18.6 34.4c.2-11.2 8.5-19 19.3-17.1 8.1 1.4 13.4 8.5 12.8 17.2-.2 2.8-2.5 5-5.3 5H25.7c-3.6 0-6.1-2.1-7.1-5.1Z"></path>
-          <path class="lt-rider-helmet-visor" d="M31.4 25.3h14.7c1.2 0 2.2 1 2.2 2.2v3.1c0 1.4-1.1 2.5-2.5 2.5H31.4c-1.1 0-2-.9-2-2v-5.1c0-.6.4-1 1-1Z"></path>
-          <path class="lt-rider-helmet-rim" d="M21.3 36.8h27.1"></path>
-          <circle class="lt-rider-helmet-dot" cx="24.1" cy="30.6" r="2.4"></circle>
+          <path class="lt-rider-pin" d="M32 5C19 5 8.5 14.8 8.5 27.4c0 10.6 9.5 19.1 19.7 31.5 1.9 2.3 5.7 2.3 7.6 0C46 46.5 55.5 38 55.5 27.4 55.5 14.8 45 5 32 5Z"></path>
+          <path class="lt-rider-helmet-shell" d="M16 27.6C16 16.5 23.2 10 32 10s16 6.5 16 17.6V32c0 6-5.4 10.5-12.5 10.5h-7C21.4 42.5 16 38 16 32Z"></path>
+          <path class="lt-rider-helmet-base" d="M19.4 35.4h25.2C43.4 39.7 38.2 42.5 32 42.5s-11.4-2.8-12.6-7.1Z"></path>
+          <path class="lt-rider-helmet-visor" d="M20.5 23.6c0-2.9 1.8-4.4 4.6-4.4h13.8c2.8 0 4.6 1.5 4.6 4.4v2.6c0 3.1-2.2 5-5.4 5H25.9c-3.2 0-5.4-1.9-5.4-5Z"></path>
+          <path class="lt-rider-helmet-glint" d="M24.4 22.1h11.2c1.4 0 2.3.6 2.3 1.6s-.9 1.4-2.3 1.4H24.4c-1.4 0-2.3-.5-2.3-1.4s.9-1.6 2.3-1.6Z"></path>
+          <path class="lt-rider-helmet-highlight" d="M21.5 19.6C24 15.4 27.6 13.2 32 13.2c-3.7.6-6.8 2.9-9 6.9-.6 1-1.8.6-1.5-.5Z"></path>
         </svg>
       </span>`,
     iconSize: [52, 52],

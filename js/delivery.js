@@ -19,7 +19,7 @@ import { getRealtimeStatus } from './realtime.js';
 import { normalizeOrderAddressDetails } from './core/address.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
-import { escapeHtml, renderWithStableRealMap } from './ui.js';
+import { bagGlyph, escapeHtml, renderWithStableRealMap } from './ui.js';
 import {
   GPS_GOOD_ACCURACY_METERS,
   getStreetTestDestination,
@@ -94,7 +94,7 @@ export function renderDeliveryPanel() {
       <section class="delivery-bottom-sheet rider-sheet rider-card ${gpsLive ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
         <div class="sheet-head rider-head ${statusClass(order.status)}">
-          <span class="track-head-ico">REP</span>
+          <span class="track-head-ico">${bagGlyph()}</span>
           <div class="track-head-text">
             <small>${order.id} · Entrega activa</small>
             <strong>${headline}</strong>

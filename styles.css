@@ -631,48 +631,51 @@ textarea { resize: vertical; min-height: 84px; }
   transition: transform 650ms cubic-bezier(0.22, 0.7, 0.28, 1);
   will-change: transform;
 }
+/* Halo verde suave alrededor del casco. El marcador SÓLO se monta con un fix GPS
+   real y reciente (hasLiveRiderLocation), así que su presencia ya implica GPS en
+   vivo: el halo verde es honesto por construcción. */
 .lt-rider-marker-halo {
-  position: absolute; inset: 2px; border-radius: 999px; background: rgba(38,166,91,0.18);
-  border: 1px solid rgba(38,166,91,0.20); opacity: 0; transform: scale(0.78);
+  position: absolute; left: 50%; top: 22px; width: 40px; height: 40px;
+  transform: translate(-50%, -50%); border-radius: 999px; background: transparent;
+  border: 2.5px solid rgba(46,179,99,0.55);
+  box-shadow: 0 0 0 4px rgba(46,179,99,0.12), 0 0 16px 3px rgba(46,179,99,0.34);
+  opacity: 0;
 }
+.lt-rider-marker.source-gps .lt-rider-marker-halo { opacity: 1; }
 .lt-rider-helmet-core {
-  position: relative; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 999px;
-  background: radial-gradient(circle at 34% 25%, #fff6e8 0 13%, #d7b58b 14% 35%, #8d6645 36% 100%);
-  border: 2px solid rgba(255,255,255,0.98);
-  box-shadow: 0 16px 30px rgba(31,27,23,0.22), 0 0 0 1px rgba(89,67,46,0.16);
-  transform: translateY(0) rotate(var(--heading, 0deg));
-  transition: transform 0.65s ease, box-shadow 0.3s ease, background 0.3s ease;
+  position: relative; width: 46px; height: 46px; display: grid; place-items: center;
+  background: none; border: 0; box-shadow: none;
+  transform: translateY(0);
+  transition: transform 0.65s ease;
 }
 .lt-rider-helmet-icon {
-  width: 34px; height: 34px; display: block; overflow: visible;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.14));
+  width: 40px; height: 40px; display: block; overflow: visible;
+  filter: drop-shadow(0 7px 11px rgba(31,27,23,0.30)) drop-shadow(0 2px 3px rgba(31,27,23,0.18));
 }
-.lt-rider-pin {
-  fill: rgba(255,255,255,0.18);
-  stroke: rgba(255,255,255,0.76);
-  stroke-width: 2.8;
+/* Pin en blanco cálido + casco en blanco puro: el contraste sutil separa el casco
+   del pin sin necesidad de gradientes con IDs (varios markers a la vez). */
+.lt-rider-pin { fill: #f1efe9; stroke: rgba(31,27,23,0.06); stroke-width: 1; }
+.lt-rider-helmet-shell { fill: #ffffff; stroke: rgba(31,27,23,0.05); stroke-width: 0.8; }
+.lt-rider-helmet-base { fill: #e8e4dd; }
+.lt-rider-helmet-visor { fill: #24262b; }
+.lt-rider-helmet-glint { fill: rgba(255,255,255,0.16); }
+.lt-rider-helmet-highlight { fill: rgba(255,255,255,0.9); }
+.lt-rider-marker.delivered .lt-rider-helmet-shell { fill: #eceae6; }
+.lt-rider-marker.delivered .lt-rider-marker-halo {
+  border-color: rgba(150,144,135,0.5);
+  box-shadow: 0 0 0 4px rgba(150,144,135,0.12);
 }
-.lt-rider-helmet-shell { fill: #211c18; stroke: rgba(255,255,255,0.92); stroke-width: 2.2; }
-.lt-rider-helmet-visor { fill: #f8efe2; stroke: #3b332c; stroke-width: 1.8; }
-.lt-rider-helmet-rim {
-  fill: none; stroke: #d9b481; stroke-width: 3.2; stroke-linecap: round;
-}
-.lt-rider-helmet-dot { fill: #d9b481; }
-.lt-rider-marker.ready .lt-rider-helmet-core { background: radial-gradient(circle at 34% 25%, #fff6e8 0 13%, #d5b289 14% 35%, #8d6645 36% 100%); }
-.lt-rider-marker.on-the-way .lt-rider-helmet-core { background: radial-gradient(circle at 34% 25%, #fff6e8 0 13%, #d7b58b 14% 35%, #7a5a3e 36% 100%); }
-.lt-rider-marker.arriving .lt-rider-helmet-core { background: radial-gradient(circle at 34% 25%, #fff6e8 0 13%, #d8bd95 14% 35%, #7f6248 36% 100%); }
-.lt-rider-marker.delivered .lt-rider-helmet-core { background: linear-gradient(145deg, #d4d0c9 0%, #7a746e 100%); opacity: 0.82; }
 .lt-rider-marker.on-the-way.source-gps .lt-rider-marker-halo,
-.lt-rider-marker.arriving.source-gps .lt-rider-marker-halo { animation: riderMapHalo 2.2s ease-in-out infinite; }
+.lt-rider-marker.arriving.source-gps .lt-rider-marker-halo { animation: riderMapHalo 2.4s ease-in-out infinite; }
 .lt-rider-marker.on-the-way.source-gps .lt-rider-helmet-core,
-.lt-rider-marker.arriving.source-gps .lt-rider-helmet-core { animation: riderHelmetBob 2.2s ease-in-out infinite; }
+.lt-rider-marker.arriving.source-gps .lt-rider-helmet-core { animation: riderHelmetBob 2.4s ease-in-out infinite; }
 @keyframes riderMapHalo {
-  0%,100% { opacity: 0.32; transform: scale(0.84); }
-  50% { opacity: 0.08; transform: scale(1.22); }
+  0%,100% { opacity: 0.95; box-shadow: 0 0 0 4px rgba(46,179,99,0.14), 0 0 16px 3px rgba(46,179,99,0.34); }
+  50% { opacity: 0.5; box-shadow: 0 0 0 7px rgba(46,179,99,0.04), 0 0 24px 7px rgba(46,179,99,0.16); }
 }
 @keyframes riderHelmetBob {
-  0%,100% { transform: translateY(0) rotate(var(--heading, 0deg)); }
-  50% { transform: translateY(-1.5px) rotate(var(--heading, 0deg)); }
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-1.6px); }
 }
 
 .track-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; position: relative; margin-bottom: 8px; }
@@ -3687,6 +3690,14 @@ body:has(.app-view[data-view="business"].is-active) {
   background: #fff;
   border-color: rgba(39,163,93,0.16);
 }
+
+/* Pendiente (sin GPS): casco gris, no verde, para no insinuar "en vivo". */
+.delivery-bottom-sheet .rider-avatar.pending {
+  color: #9a9088;
+  border-color: rgba(35,31,27,0.10);
+}
+
+.lt-glyph { display: block; }
 
 .tracking-gps-note {
   margin: 10px 2px 0;

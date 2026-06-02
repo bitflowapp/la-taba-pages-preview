@@ -14,7 +14,7 @@ import {
   getCartSummary,
   validateCartForCheckout,
 } from './cart.js';
-import { buildDraftMessageFromCart, getLastOrder } from './orders.js';
+import { buildDraftMessageFromCart, getActiveOrder } from './orders.js';
 import { getRealtimeStatus } from './realtime.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
@@ -404,7 +404,7 @@ export function stockPill(product) {
 export function renderHomeActiveOrder() {
   const container = $('[data-home-active-order]');
   if (!container) return;
-  const order = getLastOrder();
+  const order = getActiveOrder();
   const isActive = order && order.status !== 'delivered' && order.status !== 'cancelled';
   if (!isActive) {
     container.hidden = true;
@@ -463,10 +463,18 @@ function renderCartList() {
   const items = getCartItems();
 
   if (!items.length) {
+    const activeOrder = getActiveOrder();
+    const hasActiveOrder = activeOrder && !['delivered', 'cancelled'].includes(activeOrder.status);
     container.innerHTML = `
       <div class="empty-state">
         <strong>El carrito está vacío.</strong><br />
         Agregá productos del catálogo para armar el pedido.
+        ${hasActiveOrder ? `
+        <div class="cart-active-order">
+          <small>Pedido en curso</small>
+          <strong>${escapeHtml(activeOrder.id)} · ${escapeHtml(statusLabel(activeOrder.status))}</strong>
+          <button class="secondary-button compact" type="button" data-nav-view="tracking">Ver seguimiento</button>
+        </div>` : ''}
         <div class="empty-actions">
           <button class="secondary-button compact" type="button" data-nav-view="home">Ver productos</button>
         </div>
@@ -719,14 +727,14 @@ function trackingAddressCard(order) {
       <small>Entrega en</small>
       <strong>${escapeHtml(address.label)}</strong>
       ${address.reference ? `<p>Referencia: ${escapeHtml(address.reference)}</p>` : ''}
-      <p class="tracking-address-note">Dirección cargada por el cliente. El repartidor usa la dirección del pedido.</p>
+      <p class="tracking-address-note">Dirección del pedido.</p>
     </div>`;
 }
 
 export function renderTracking() {
   const container = $('[data-tracking-panel]');
   if (!container) return;
-  const order = getLastOrder();
+  const order = getActiveOrder();
 
   if (!order) {
     renderWithStableRealMap(container, `
@@ -751,6 +759,7 @@ export function renderTracking() {
   const riderLocation = chooseRiderLocation(getOrderSimulation(order), order.tracking?.lastLocation);
   const liveRider = hasLiveRiderLocation(riderLocation);
   const liveAge = liveRider ? relativeAgeLabel(riderLocation.lastFixAt || riderLocation.timestamp) : '';
+  const headSub = liveRider && order.status === 'on_the_way' ? 'Seguí el reparto en vivo.' : head.sub;
   const stepIndex = customerStepIndex(order.status);
   const metricsHtml = order.status === 'delivered'
     ? `
@@ -783,14 +792,14 @@ export function renderTracking() {
     <div class="track-layout tracking-map-experience ${showMap ? '' : 'no-map'}">
       ${showMap ? trackingMapStage({ order, live: true }) : ''}
 
-      <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
+      <section class="delivery-bottom-sheet tracking-sheet track-progress-card ${showMap ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
         <div class="sheet-head">
           <span class="track-head-ico">${isDelivery ? 'REP' : 'RET'}</span>
           <div class="track-head-text">
             <small>${escapeHtml(order.id)} · ${escapeHtml(head.kicker)}</small>
             <strong>${escapeHtml(head.title)}</strong>
-            <span>${escapeHtml(head.sub)}</span>
+            <span>${escapeHtml(headSub)}</span>
           </div>
           <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
         </div>
@@ -802,7 +811,7 @@ export function renderTracking() {
         ${isDelivery ? trackingAddressCard(order) : ''}
         ${isDelivery && !isCancelled ? riderTrackingCard(order, riderLocation) : ''}
         ${isDelivery && !isCancelled && order.status !== 'delivered'
-          ? `<p class="form-hint tracking-gps-note">${liveRider ? `Ubicación del repartidor en vivo. Última actualización ${escapeHtml(liveAge)}.` : 'Sin GPS en vivo. Seguís el pedido por estado y dirección.'}</p>`
+          ? `<p class="form-hint tracking-gps-note">${liveRider ? `GPS en vivo. Última actualización ${escapeHtml(liveAge)}.` : 'Sin GPS en vivo. Seguís el pedido por estado y dirección.'}</p>`
           : ''}
         <details class="order-detail">
           <summary>Ver detalle del pedido · ${order.id}</summary>

@@ -118,6 +118,21 @@ function handlePublish(req, res, room) {
   });
 }
 
+function handleRoomReset(res, room) {
+  setCors(res);
+  lastRoomMessages.delete(room);
+  const clients = rooms.get(room);
+  let delivered = 0;
+  if (clients) {
+    const raw = JSON.stringify({ kind: 'reset', sender: 'relay', room, ts: Date.now() });
+    const payload = `event: message\ndata: ${raw}\n\n`;
+    for (const client of clients) {
+      try { client.write(payload); delivered += 1; } catch (_) { /* ignore */ }
+    }
+  }
+  res.writeHead(200, { 'Content-Type': 'application/json' }).end(`{"ok":true,"room":"${room}","delivered":${delivered}}`);
+}
+
 function serveStatic(req, res, pathname) {
   // Normaliza y previene path traversal.
   const safePath = path.normalize(decodeURIComponent(pathname)).replace(/^(\.\.[/\\])+/, '');
@@ -163,6 +178,10 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/publish' && req.method === 'POST') {
     handlePublish(req, res, room);
+    return;
+  }
+  if (url.pathname === '/reset' && req.method === 'POST') {
+    handleRoomReset(res, room);
     return;
   }
   if (req.method === 'GET') {

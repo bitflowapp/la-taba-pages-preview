@@ -84,7 +84,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(managedCard).toContainText('Pedido en reparto');
   await expect(managedCard).toContainText('Sin ubicación en vivo');
-  await expect(managedCard).toContainText('Ver tracking');
+  await expect(managedCard).toContainText('Seguir reparto');
   await expect(managedCard.locator('[data-business-tracking="LT-0002"] [data-real-map]')).toHaveCount(0);
 
   // 5. Mobile 390x844 sin overflow horizontal.
@@ -120,7 +120,7 @@ test('Central de pedidos: pedido en reparto muestra GPS real sin inventar mapa',
   const card = page.locator('[data-inbox-order="LT-LIVE-1"]');
   await expect(card).toBeVisible();
   await expect(card).toContainText('Pedido en reparto');
-  await expect(card).toContainText('GPS del rider en vivo');
+  await expect(card).toContainText('GPS en vivo');
   await expect(card).toContainText('Juli Reparto');
   await expect(card.locator('[data-business-tracking="LT-LIVE-1"] [data-real-map]')).toBeVisible({ timeout: 10_000 });
   await expect(card.locator('[data-business-tracking="LT-LIVE-1"] [data-real-map]')).toHaveAttribute('data-map-theme', 'light');

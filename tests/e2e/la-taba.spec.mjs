@@ -121,7 +121,7 @@ test('carrito vacío oculta el formulario de checkout y lo muestra al cargar pro
   await guards.assertClean();
 });
 
-test('pedido real no muestra rider falso y corta GPS al salir de rider', async ({ page }) => {
+test('pedido real no muestra rider falso y mantiene GPS al navegar hasta corte explicito', async ({ page }) => {
   const guards = installPageGuards(page);
 
   // Mock de geolocalización: al activar el GPS el rider entrega un fix real.
@@ -187,6 +187,18 @@ test('pedido real no muestra rider falso y corta GPS al salir de rider', async (
   await page.locator('[data-sim-gps]').click();
   await expect(page.locator('[data-delivery-panel]')).toContainText('Compartiendo ubicación');
 
+  await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
+  await expect(tracking.locator('.rider-profile.is-live')).toBeVisible();
+  await expect(tracking.locator('[data-map-role="tracking"] .lt-rider-marker')).toHaveCount(1);
+  await expect(tracking).not.toContainText('Sin GPS en vivo');
+
+  await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
+  await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
+  await expect(tracking.locator('.rider-profile.is-live')).toBeVisible();
+
+  await page.locator('[data-admin-toggle]').click();
+  await page.getByRole('button', { name: /Vista rider/i }).click();
+  await page.locator('[data-sim-gps-off]').click();
   await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
   await expect(tracking.locator('.rider-profile.is-live')).toHaveCount(0);
   await expect(tracking).toContainText('Sin GPS en vivo');

@@ -156,6 +156,14 @@ function applyRemote(message) {
     publish({ kind: 'state', orders: snap.orders, lastOrderId: snap.lastOrderId, simulation: snap.simulation });
     return;
   }
+  if (message.kind === 'reset') {
+    applyingRemote = true;
+    setState({ orders: [], lastOrderId: null, simulation: null });
+    applyingRemote = false;
+    lastSnapshotHash = hashSnapshot(snapshot());
+    if (isNewerTimestamp(message.ts, lastRemoteSimTs)) lastRemoteSimTs = message.ts;
+    return;
+  }
   if (message.kind !== 'state') return;
 
   const local = getState();

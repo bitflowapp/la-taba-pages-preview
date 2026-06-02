@@ -47,6 +47,90 @@ function staleRiderState() {
   };
 }
 
+function staleRelayMessage(room) {
+  const now = Date.now();
+  const createdAt = new Date(now - 90_000).toISOString();
+  const lastFixAt = new Date(now - 10_000).toISOString();
+  return {
+    kind: 'state',
+    sender: 'seed-reset-test',
+    room,
+    ts: now - 10_000,
+    orders: [{
+      id: 'LT-ROOM-OLD',
+      customerName: 'Pedido Relay Viejo',
+      customerPhone: '2990000000',
+      address: 'Vieja 999',
+      deliveryMode: 'delivery',
+      paymentMethod: 'Efectivo',
+      notes: 'stale relay',
+      createdAt,
+      status: 'on_the_way',
+      items: [{ productId: 'p-vacio', name: 'Vacío especial', icon: '', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+      subtotal: 1000,
+      deliveryFee: 0,
+      total: 1000,
+      statusHistory: [{ status: 'received', at: createdAt }, { status: 'on_the_way', at: createdAt }],
+      delivery: { driverName: 'Sin asignar', driverPhone: '', estimatedMinutes: 0, currentLocationLabel: 'En camino' },
+      tracking: {
+        lastLocation: {
+          lat: -38.9512,
+          lng: -68.0598,
+          accuracy: 12,
+          heading: 90,
+          source: 'gps',
+          gpsStatus: 'active',
+          timestamp: now - 10_000,
+          lastFixAt,
+        },
+      },
+    }],
+    lastOrderId: 'LT-ROOM-OLD',
+    simulation: {
+      orderId: 'LT-ROOM-OLD',
+      lat: -38.9512,
+      lng: -68.0598,
+      accuracy: 12,
+      heading: 90,
+      source: 'gps',
+      mode: 'gps',
+      gpsStatus: 'active',
+      timestamp: now - 10_000,
+      lastFixAt,
+      lastGpsFixAt: lastFixAt,
+    },
+  };
+}
+
+async function seedRelayRoom(room, message) {
+  const response = await fetch(`${RELAY}/publish?room=${encodeURIComponent(room)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(message),
+  });
+  expect(response.ok).toBeTruthy();
+}
+
+test('reset=1 con relay limpia el snapshot viejo de la room antes de reconectar', async ({ browser }) => {
+  const room = `reset-relay-e2e-${Date.now()}`;
+  await seedRelayRoom(room, staleRelayMessage(room));
+
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const page = await context.newPage();
+  await stub(page);
+  const guards = installPageGuards(page);
+
+  await page.goto(`${RELAY}/?reset=1&relay=${encodeURIComponent(RELAY)}&room=${room}#tracking`);
+  const tracking = page.locator('[data-tracking-panel]');
+  await expect(tracking).toContainText('No hay un pedido activo', { timeout: 10_000 });
+  await page.waitForTimeout(500);
+  await expect(tracking).not.toContainText('LT-ROOM-OLD');
+  await expect(tracking.locator('[data-map-role="tracking"] .lt-rider-marker')).toHaveCount(0);
+
+  await guards.assertClean();
+  await context.close();
+});
+
 test('cliente y rider en dos equipos: pedido interno, realtime y entrega (sin GPS falso)', async ({ browser }) => {
   const room = `e2e-${Date.now()}`;
   const url = (suffix = '') => `${RELAY}/?relay=${encodeURIComponent(RELAY)}&room=${room}${suffix}`;

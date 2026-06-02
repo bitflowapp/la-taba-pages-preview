@@ -451,6 +451,27 @@ main { max-width: var(--max); margin: 0 auto; padding: 0 18px 96px; }
   color: var(--muted); background: rgba(255,255,255,0.025);
 }
 .empty-actions { display: flex; justify-content: center; margin-top: 14px; }
+.cart-active-order {
+  display: grid;
+  gap: 7px;
+  max-width: 320px;
+  margin: 16px auto 0;
+  padding: 12px;
+  border: 1px solid rgba(201,122,67,0.28);
+  border-radius: 14px;
+  background: rgba(201,122,67,0.10);
+  color: var(--text);
+}
+.cart-active-order small {
+  color: var(--soft);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.cart-active-order strong {
+  overflow-wrap: anywhere;
+}
 
 .checkout-form { display: grid; gap: 13px; }
 .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
@@ -610,14 +631,14 @@ textarea { resize: vertical; min-height: 84px; }
   will-change: transform;
 }
 .lt-rider-marker-halo {
-  position: absolute; inset: 6px; border-radius: 999px; background: rgba(47,128,82,0.13);
-  border: 1px solid rgba(47,128,82,0.14); opacity: 0; transform: scale(0.86);
+  position: absolute; inset: 4px; border-radius: 999px; background: rgba(201,122,67,0.18);
+  border: 1px solid rgba(201,122,67,0.18); opacity: 0; transform: scale(0.82);
 }
 .lt-rider-moto-core {
-  position: relative; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 15px;
-  background: linear-gradient(145deg, #fffdf8 0%, #efe6da 100%);
+  position: relative; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 999px;
+  background: linear-gradient(145deg, #c85f40 0%, #8d3f2d 100%);
   border: 2px solid rgba(255,255,255,0.96);
-  box-shadow: 0 12px 24px rgba(31,27,23,0.20), 0 0 0 1px rgba(35,31,27,0.09);
+  box-shadow: 0 14px 28px rgba(31,27,23,0.24), 0 0 0 1px rgba(86,39,27,0.18);
   transform: translateY(0) rotate(var(--heading, 0deg));
   transition: transform 0.65s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
@@ -625,22 +646,25 @@ textarea { resize: vertical; min-height: 84px; }
   width: 32px; height: 32px; display: block; overflow: visible;
   filter: drop-shadow(0 2px 2px rgba(0,0,0,0.12));
 }
-.lt-rider-box,
-.lt-rider-seat,
-.lt-rider-frame,
-.lt-rider-handle {
-  fill: none; stroke: #1f1b17; stroke-width: 4.4; stroke-linecap: round; stroke-linejoin: round;
+.lt-rider-pin {
+  fill: rgba(255,255,255,0.18);
+  stroke: rgba(255,255,255,0.76);
+  stroke-width: 2.8;
 }
-.lt-rider-box { fill: #d7b287; stroke-width: 3.6; }
-.lt-rider-seat { stroke: #1f1b17; }
+.lt-rider-scooter {
+  fill: none;
+  stroke: #fff8ef;
+  stroke-width: 4.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .lt-rider-wheel {
-  fill: #fffaf2; stroke: #1f1b17; stroke-width: 4;
+  fill: #fff8ef; stroke: #642b1f; stroke-width: 2.8;
 }
-.lt-rider-light { fill: #3d8f5b; stroke: #1f1b17; stroke-width: 2.8; }
-.lt-rider-marker.ready .lt-rider-moto-core { background: linear-gradient(145deg, #fffdf8 0%, #e3c7a5 100%); }
-.lt-rider-marker.on-the-way .lt-rider-moto-core { background: linear-gradient(145deg, #fffdf8 0%, #d8f0df 100%); }
-.lt-rider-marker.arriving .lt-rider-moto-core { background: linear-gradient(145deg, #fffdf8 0%, #f3dfbd 100%); }
-.lt-rider-marker.delivered .lt-rider-moto-core { background: linear-gradient(145deg, #f5f4ef 0%, #d7d9d4 100%); opacity: 0.82; }
+.lt-rider-marker.ready .lt-rider-moto-core { background: linear-gradient(145deg, #bd8d60 0%, #875c38 100%); }
+.lt-rider-marker.on-the-way .lt-rider-moto-core { background: linear-gradient(145deg, #c65f40 0%, #8d3f2d 100%); }
+.lt-rider-marker.arriving .lt-rider-moto-core { background: linear-gradient(145deg, #c99759 0%, #8b5b2e 100%); }
+.lt-rider-marker.delivered .lt-rider-moto-core { background: linear-gradient(145deg, #9a948d 0%, #5f5a54 100%); opacity: 0.82; }
 .lt-rider-marker.on-the-way.source-gps .lt-rider-marker-halo,
 .lt-rider-marker.arriving.source-gps .lt-rider-marker-halo { animation: riderMapHalo 2.2s ease-in-out infinite; }
 .lt-rider-marker.on-the-way.source-gps .lt-rider-moto-core,
@@ -1032,6 +1056,32 @@ textarea { resize: vertical; min-height: 84px; }
 .delivery-bottom-sheet .demo-advanced summary { color: #7b7168; }
 .delivery-bottom-sheet .sheet-empty { color: #5f574f; }
 .delivery-bottom-sheet .sheet-empty strong { color: #1f1b17; }
+.tracking-sheet.is-live {
+  max-width: 640px;
+  margin-top: -30px;
+}
+.tracking-sheet.is-live .sheet-metrics {
+  margin: 10px 0;
+}
+.tracking-sheet.is-live .track-steps {
+  margin-bottom: 4px;
+}
+.tracking-sheet.is-live .tracking-address-card,
+.tracking-sheet.is-live .rider-profile {
+  margin-top: 8px;
+  padding: 10px 12px;
+}
+.tracking-sheet.is-live .tracking-gps-note {
+  margin-top: 8px;
+  text-align: left;
+}
+.rider-sheet.is-live .sim-panel {
+  margin-top: 10px;
+}
+.rider-sheet.is-live .rider-address,
+.rider-sheet.is-live .rider-instructions {
+  padding: 10px;
+}
 
 /* ===== Mapa demo ===== */
 .delivery-map { min-height: 360px; padding: 0; overflow: hidden; border-radius: var(--radius); border: 1px solid var(--line); position: sticky; top: 86px; }
@@ -1333,6 +1383,13 @@ body:has(.app-view[data-view="business"].is-active) .toast {
     margin-top: -38px;
     padding: 16px;
     border-radius: 26px 26px 18px 18px;
+  }
+  .tracking-sheet.is-live,
+  .rider-sheet.is-live {
+    margin-top: -24px;
+  }
+  .tracking-sheet.is-live .sheet-head {
+    gap: 10px;
   }
   .map-floating-top {
     top: 14px;

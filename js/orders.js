@@ -10,6 +10,7 @@ import {
   getRiderQueueOrder as selectRiderQueueOrder,
   isRiderQueueOrder,
 } from './core/rider.js';
+import { chooseActiveLiveOrderId } from './core/realtime-sync.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
 import {
   formatAddressReference,
@@ -119,9 +120,40 @@ function normalizeCheckoutValues(formValues) {
 }
 
 export function getLastOrder() {
+  return getActiveOrder();
+}
+
+export function getActiveOrderId(sourceState = getState()) {
+  const orders = Array.isArray(sourceState.orders) ? sourceState.orders : [];
+  if (typeof sourceState.lastOrderId === 'string' && orders.some((order) => order.id === sourceState.lastOrderId)) {
+    return sourceState.lastOrderId;
+  }
+  return chooseActiveLiveOrderId(orders);
+}
+
+export function getActiveOrder() {
   const state = getState();
-  if (!state.lastOrderId) return null;
-  return state.orders.find((order) => order.id === state.lastOrderId) || null;
+  const activeOrderId = getActiveOrderId(state);
+  return activeOrderId ? state.orders.find((order) => order.id === activeOrderId) || null : null;
+}
+
+export function persistActiveOrderId(orderId) {
+  if (!orderId) return false;
+  let persisted = false;
+  updateState((draft) => {
+    if (draft.orders.some((order) => order.id === orderId)) {
+      draft.lastOrderId = orderId;
+      persisted = true;
+    }
+  });
+  return persisted;
+}
+
+export function clearActiveOrderStateOnReset() {
+  updateState((draft) => {
+    draft.lastOrderId = null;
+    draft.simulation = null;
+  });
 }
 
 export function getActiveDeliveryOrder() {
@@ -131,8 +163,9 @@ export function getActiveDeliveryOrder() {
 // Incluye pedidos received/preparing para que el rider los vea en cola.
 export function getRiderQueueOrder() {
   const state = getState();
-  const activeOrder = state.lastOrderId
-    ? state.orders.find((order) => order.id === state.lastOrderId)
+  const activeOrderId = getActiveOrderId(state);
+  const activeOrder = activeOrderId
+    ? state.orders.find((order) => order.id === activeOrderId)
     : null;
   if (isRiderQueueOrder(activeOrder)) return activeOrder;
   return selectRiderQueueOrder(state.orders);
@@ -218,6 +251,7 @@ export function updateOrderStatus(orderId, status) {
     order.status = status;
     order.statusHistory.push({ status, at: now });
     order.delivery = order.delivery || {};
+    draft.lastOrderId = orderId;
 
     if (status === 'ready') {
       order.delivery.currentLocationLabel = 'Pedido listo en el local';

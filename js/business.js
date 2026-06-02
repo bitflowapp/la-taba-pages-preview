@@ -367,12 +367,12 @@ function renderInboxTrackingPanel(order) {
   const riderName = order.delivery?.driverName && order.delivery.driverName !== 'Sin asignar'
     ? order.delivery.driverName
     : '';
-  const gpsText = liveGps ? 'GPS del rider en vivo' : 'Sin ubicación en vivo';
+  const gpsText = liveGps ? 'GPS en vivo' : 'Sin ubicación en vivo';
   const liveAge = liveGps ? (timeAgo(riderLocation.lastFixAt || riderLocation.timestamp) || 'recién') : '';
   const gpsDetail = liveGps
     ? `Última actualización ${liveAge}`
     : 'El negocio sigue el pedido por estado y dirección.';
-  const actionLabel = liveGps ? 'Seguir reparto' : 'Ver tracking';
+  const actionLabel = 'Seguir reparto';
 
   return `
     <section class="inbox-tracking-panel ${liveGps ? 'is-live' : 'is-offline'}" data-business-tracking="${escapeHtml(order.id)}">

@@ -37,6 +37,8 @@ import { renderMapViews } from './map/map_view.js';
 import { getOrderRepository, getRepositoryDiagnostic, startOrderRepositorySync } from './repositories/repository_factory.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
+const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
+const RESET_RELAY_TIMEOUT_MS = 1200;
 const VIEW_ALIASES = {
   catalogo: 'catalog',
   catalog: 'catalog',
@@ -65,10 +67,11 @@ let activeView = viewFromHash();
 // borra pedidos, carrito y acceso del negocio guardados en este equipo y recarga
 // limpio. Pensado para empezar una presentación sin pedidos de prueba viejos.
 // No corre en el uso normal (sin el parámetro) ni afecta a otros equipos.
-function maybeResetDemoSession() {
+async function maybeResetDemoSession() {
   try {
     const params = new URLSearchParams(window.location.search);
     if (!params.has('reset') && !params.has('demo-reset')) return false;
+    await clearRelayRoomOnReset(params);
     [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked].forEach((key) => {
       try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
       try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
@@ -85,9 +88,39 @@ function maybeResetDemoSession() {
   }
 }
 
-function bootstrap() {
+async function clearRelayRoomOnReset(params) {
+  const relay = params.get('relay');
+  if (!relay || typeof fetch !== 'function') return;
+  const room = sanitizeResetRoom(params.get('room') || safeStorageGet(RELAY_ROOM_STORAGE_KEY) || 'demo');
+  const base = relay.replace(/\/+$/, '');
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller
+    ? setTimeout(() => controller.abort(), RESET_RELAY_TIMEOUT_MS)
+    : null;
+  try {
+    await fetch(`${base}/reset?room=${encodeURIComponent(room)}`, {
+      method: 'POST',
+      keepalive: true,
+      ...(controller ? { signal: controller.signal } : {}),
+    });
+  } catch (_) {
+    // Si el relay no responde, el reset local igual debe continuar.
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function safeStorageGet(key) {
+  try { return window.localStorage?.getItem(key) || ''; } catch (_) { return ''; }
+}
+
+function sanitizeResetRoom(value) {
+  return String(value || 'demo').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60) || 'demo';
+}
+
+async function bootstrap() {
   // Si se pidió limpiar la demo, recargamos limpio y no seguimos inicializando.
-  if (maybeResetDemoSession()) return;
+  if (await maybeResetDemoSession()) return;
   try {
     applyBusinessConfig();
     bindEvents();

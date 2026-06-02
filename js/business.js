@@ -367,27 +367,28 @@ function renderInboxTrackingPanel(order) {
   const riderName = order.delivery?.driverName && order.delivery.driverName !== 'Sin asignar'
     ? order.delivery.driverName
     : '';
-  const gpsText = liveGps ? 'GPS en vivo' : 'Sin ubicación en vivo';
+  const gpsText = liveGps ? 'GPS del rider en vivo' : 'Sin ubicación en vivo';
   const liveAge = liveGps ? (timeAgo(riderLocation.lastFixAt || riderLocation.timestamp) || 'recién') : '';
   const gpsDetail = liveGps
-    ? `Última actualización ${liveAge}`
-    : 'El negocio sigue el pedido por estado y dirección.';
+    ? `Actualizado ${liveAge}`
+    : 'Seguís el pedido por estado y dirección.';
   const actionLabel = 'Seguir reparto';
 
   return `
     <section class="inbox-tracking-panel ${liveGps ? 'is-live' : 'is-offline'}" data-business-tracking="${escapeHtml(order.id)}">
       <div class="inbox-tracking-head">
         <div>
+          <span class="inbox-live-dot" aria-hidden="true"></span>
           <strong>${escapeHtml(title)}</strong>
           <span>${escapeHtml(gpsText)}</span>
         </div>
         <em>${escapeHtml(gpsDetail)}</em>
       </div>
       <div class="inbox-tracking-grid">
-        <span><small>Pedido</small><strong>${escapeHtml(order.id)}</strong></span>
         <span><small>Cliente</small><strong>${escapeHtml(order.customerName)}</strong></span>
         <span><small>Dirección</small><strong>${escapeHtml(address.label || order.address)}</strong></span>
         ${riderName ? `<span><small>Rider</small><strong>${escapeHtml(riderName)}</strong></span>` : ''}
+        <span><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
       </div>
       ${liveGps ? renderBusinessTrackingMap(order) : ''}
       <button class="ghost-button compact inbox-tracking-action" type="button" data-order-track="${escapeHtml(order.id)}">${escapeHtml(actionLabel)}</button>

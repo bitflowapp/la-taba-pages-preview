@@ -644,12 +644,12 @@ function trackingMapStage({ order = null, live = false }) {
     <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
       ${realMapShell({ order, fallback: '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', role: 'tracking' })}
       <div class="map-floating-top">
-        <span class="map-status-pill ${statusClass(order.status)}"><small>Estado</small><strong>${escapeHtml(trackingMapStatusTitle(order))}</strong></span>
+        <span class="map-status-pill ${statusClass(order.status)}"><small>Estado del pedido</small><strong>${escapeHtml(trackingMapStatusTitle(order))}</strong></span>
         <span class="map-connection-pill">${realtimeChip(order)}</span>
       </div>
       <div class="map-floating-bottom">
         <span class="map-stat-pill map-destination-pill"><small>Destino</small><strong>${escapeHtml(destinationLabel(order))}</strong></span>
-        <span class="map-stat-pill"><small>GPS</small><strong>${live ? 'GPS en vivo' : 'Sin GPS en vivo'}</strong></span>
+        <span class="map-stat-pill live-map-pill"><small>GPS</small><strong>${live ? 'En vivo' : 'Sin GPS'}</strong></span>
       </div>
     </div>`;
 }
@@ -673,10 +673,10 @@ function riderTrackingCard(order, riderLocation) {
       : '';
     return `
       <div class="rider-profile is-live">
-        <span class="rider-avatar">${escapeHtml(initials(name))}</span>
+        <span class="rider-avatar live-helmet" aria-hidden="true">GPS</span>
         <div class="rider-profile-text">
-          <strong>${escapeHtml(name)}</strong>
-          <small>Ubicación del repartidor en vivo · última actualización ${escapeHtml(age)}</small>
+          <strong>Ubicación del repartidor en vivo</strong>
+          <small>${escapeHtml(name)} · actualizado ${escapeHtml(age)}</small>
         </div>
         ${contact}
       </div>
@@ -686,7 +686,7 @@ function riderTrackingCard(order, riderLocation) {
   const { title, sub } = riderPendingCopy(order.status);
   return `
     <div class="rider-profile rider-pending" role="status">
-      <span class="rider-avatar pending" aria-hidden="true">··</span>
+      <span class="rider-avatar pending" aria-hidden="true">GPS</span>
       <div class="rider-profile-text">
         <strong>${escapeHtml(title)}</strong>
         <small>${escapeHtml(sub)}</small>
@@ -724,10 +724,10 @@ function trackingAddressCard(order) {
   if (order.deliveryMode === 'pickup' || !address.label) return '';
   return `
     <div class="tracking-address-card" data-tracking-address>
+      <span class="tracking-address-icon" aria-hidden="true">PIN</span>
       <small>Entrega en</small>
       <strong>${escapeHtml(address.label)}</strong>
       ${address.reference ? `<p>Referencia: ${escapeHtml(address.reference)}</p>` : ''}
-      <p class="tracking-address-note">Dirección del pedido.</p>
     </div>`;
 }
 
@@ -759,17 +759,17 @@ export function renderTracking() {
   const riderLocation = chooseRiderLocation(getOrderSimulation(order), order.tracking?.lastLocation);
   const liveRider = hasLiveRiderLocation(riderLocation);
   const liveAge = liveRider ? relativeAgeLabel(riderLocation.lastFixAt || riderLocation.timestamp) : '';
-  const headSub = liveRider && order.status === 'on_the_way' ? 'Seguí el reparto en vivo.' : head.sub;
+  const headSub = liveRider && order.status === 'on_the_way' ? 'Ubicación del repartidor en vivo.' : head.sub;
   const stepIndex = customerStepIndex(order.status);
   const metricsHtml = order.status === 'delivered'
     ? `
           <span><small>Pedido</small><strong>Finalizado</strong></span>
-          <span><small>${isDelivery ? 'Destino' : 'Entrega'}</small><strong>${escapeHtml(isDelivery ? destinationLabel(order) : deliveryModeLabel(order.deliveryMode))}</strong></span>
+          <span><small>Código</small><strong>${escapeHtml(order.id)}</strong></span>
           <span><small>Total</small><strong>${money(order.total)}</strong></span>
         `
     : `
           <span><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
-          <span><small>${isDelivery ? 'Destino' : 'Entrega'}</small><strong>${escapeHtml(isDelivery ? destinationLabel(order) : deliveryModeLabel(order.deliveryMode))}</strong></span>
+          <span><small>Código</small><strong>${escapeHtml(order.id)}</strong></span>
           <span><small>Total</small><strong>${money(order.total)}</strong></span>
         `;
 
@@ -795,9 +795,9 @@ export function renderTracking() {
       <section class="delivery-bottom-sheet tracking-sheet track-progress-card ${showMap ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
         <div class="sheet-head">
-          <span class="track-head-ico">${isDelivery ? 'REP' : 'RET'}</span>
+          <span class="track-head-ico">${isDelivery ? 'PED' : 'RET'}</span>
           <div class="track-head-text">
-            <small>${escapeHtml(order.id)} · ${escapeHtml(head.kicker)}</small>
+            <small>${escapeHtml(head.kicker)}</small>
             <strong>${escapeHtml(head.title)}</strong>
             <span>${escapeHtml(headSub)}</span>
           </div>
@@ -811,7 +811,7 @@ export function renderTracking() {
         ${isDelivery ? trackingAddressCard(order) : ''}
         ${isDelivery && !isCancelled ? riderTrackingCard(order, riderLocation) : ''}
         ${isDelivery && !isCancelled && order.status !== 'delivered'
-          ? `<p class="form-hint tracking-gps-note">${liveRider ? `GPS en vivo. Última actualización ${escapeHtml(liveAge)}.` : 'Sin GPS en vivo. Seguís el pedido por estado y dirección.'}</p>`
+          ? `<p class="form-hint tracking-gps-note">${liveRider ? `Actualizado ${escapeHtml(liveAge)}.` : 'Sin GPS en vivo. Seguís el pedido por estado y dirección.'}</p>`
           : ''}
         <details class="order-detail">
           <summary>Ver detalle del pedido · ${order.id}</summary>
@@ -841,10 +841,10 @@ function realtimeChip(order = null) {
   const status = getRealtimeStatus();
   if (status.relayEnabled) {
     return status.relayConnected
-      ? '<span class="rt-chip live">● En vivo</span>'
-      : '<span class="rt-chip warn">○ Reconectando</span>';
+      ? '<span class="rt-chip live">En vivo</span>'
+      : '<span class="rt-chip warn">Reconectando</span>';
   }
-  return '<span class="rt-chip local">● En vivo</span>';
+  return '<span class="rt-chip local">En vivo</span>';
 }
 
 function initials(name) {

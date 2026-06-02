@@ -120,7 +120,7 @@ test('Central de pedidos: pedido en reparto muestra GPS real sin inventar mapa',
   const card = page.locator('[data-inbox-order="LT-LIVE-1"]');
   await expect(card).toBeVisible();
   await expect(card).toContainText('Pedido en reparto');
-  await expect(card).toContainText('GPS en vivo');
+  await expect(card).toContainText('GPS del rider en vivo');
   await expect(card).toContainText('Juli Reparto');
   await expect(card.locator('[data-business-tracking="LT-LIVE-1"] [data-real-map]')).toBeVisible({ timeout: 10_000 });
   await expect(card.locator('[data-business-tracking="LT-LIVE-1"] [data-real-map]')).toHaveAttribute('data-map-theme', 'light');

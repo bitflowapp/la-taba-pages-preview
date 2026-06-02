@@ -625,55 +625,52 @@ textarea { resize: vertical; min-height: 84px; }
 }
 .lt-map-marker.store span { background: #c8a781; color: #15120f; }
 .lt-map-marker.client span { background: #f0eee9; color: #17150f; border-color: rgba(214,176,138,0.75); }
-.lt-rider-marker { position: relative; display: grid; place-items: center; width: 52px !important; height: 52px !important; }
+.lt-rider-marker { display: grid; place-items: center; width: 52px !important; height: 52px !important; }
 .leaflet-marker-icon.lt-rider-marker {
+  position: absolute;
   transition: transform 650ms cubic-bezier(0.22, 0.7, 0.28, 1);
   will-change: transform;
 }
 .lt-rider-marker-halo {
-  position: absolute; inset: 4px; border-radius: 999px; background: rgba(201,122,67,0.18);
-  border: 1px solid rgba(201,122,67,0.18); opacity: 0; transform: scale(0.82);
+  position: absolute; inset: 2px; border-radius: 999px; background: rgba(38,166,91,0.18);
+  border: 1px solid rgba(38,166,91,0.20); opacity: 0; transform: scale(0.78);
 }
-.lt-rider-moto-core {
-  position: relative; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 999px;
-  background: linear-gradient(145deg, #c85f40 0%, #8d3f2d 100%);
-  border: 2px solid rgba(255,255,255,0.96);
-  box-shadow: 0 14px 28px rgba(31,27,23,0.24), 0 0 0 1px rgba(86,39,27,0.18);
+.lt-rider-helmet-core {
+  position: relative; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 999px;
+  background: radial-gradient(circle at 34% 25%, #fff6e8 0 13%, #d7b58b 14% 35%, #8d6645 36% 100%);
+  border: 2px solid rgba(255,255,255,0.98);
+  box-shadow: 0 16px 30px rgba(31,27,23,0.22), 0 0 0 1px rgba(89,67,46,0.16);
   transform: translateY(0) rotate(var(--heading, 0deg));
   transition: transform 0.65s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
-.lt-rider-moto-icon {
-  width: 32px; height: 32px; display: block; overflow: visible;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.12));
+.lt-rider-helmet-icon {
+  width: 34px; height: 34px; display: block; overflow: visible;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.14));
 }
 .lt-rider-pin {
   fill: rgba(255,255,255,0.18);
   stroke: rgba(255,255,255,0.76);
   stroke-width: 2.8;
 }
-.lt-rider-scooter {
-  fill: none;
-  stroke: #fff8ef;
-  stroke-width: 4.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.lt-rider-helmet-shell { fill: #211c18; stroke: rgba(255,255,255,0.92); stroke-width: 2.2; }
+.lt-rider-helmet-visor { fill: #f8efe2; stroke: #3b332c; stroke-width: 1.8; }
+.lt-rider-helmet-rim {
+  fill: none; stroke: #d9b481; stroke-width: 3.2; stroke-linecap: round;
 }
-.lt-rider-wheel {
-  fill: #fff8ef; stroke: #642b1f; stroke-width: 2.8;
-}
-.lt-rider-marker.ready .lt-rider-moto-core { background: linear-gradient(145deg, #bd8d60 0%, #875c38 100%); }
-.lt-rider-marker.on-the-way .lt-rider-moto-core { background: linear-gradient(145deg, #c65f40 0%, #8d3f2d 100%); }
-.lt-rider-marker.arriving .lt-rider-moto-core { background: linear-gradient(145deg, #c99759 0%, #8b5b2e 100%); }
-.lt-rider-marker.delivered .lt-rider-moto-core { background: linear-gradient(145deg, #9a948d 0%, #5f5a54 100%); opacity: 0.82; }
+.lt-rider-helmet-dot { fill: #d9b481; }
+.lt-rider-marker.ready .lt-rider-helmet-core { background: radial-gradient(circle at 34% 25%, #fff6e8 0 13%, #d5b289 14% 35%, #8d6645 36% 100%); }
+.lt-rider-marker.on-the-way .lt-rider-helmet-core { background: radial-gradient(circle at 34% 25%, #fff6e8 0 13%, #d7b58b 14% 35%, #7a5a3e 36% 100%); }
+.lt-rider-marker.arriving .lt-rider-helmet-core { background: radial-gradient(circle at 34% 25%, #fff6e8 0 13%, #d8bd95 14% 35%, #7f6248 36% 100%); }
+.lt-rider-marker.delivered .lt-rider-helmet-core { background: linear-gradient(145deg, #d4d0c9 0%, #7a746e 100%); opacity: 0.82; }
 .lt-rider-marker.on-the-way.source-gps .lt-rider-marker-halo,
 .lt-rider-marker.arriving.source-gps .lt-rider-marker-halo { animation: riderMapHalo 2.2s ease-in-out infinite; }
-.lt-rider-marker.on-the-way.source-gps .lt-rider-moto-core,
-.lt-rider-marker.arriving.source-gps .lt-rider-moto-core { animation: riderMotoBob 2.2s ease-in-out infinite; }
+.lt-rider-marker.on-the-way.source-gps .lt-rider-helmet-core,
+.lt-rider-marker.arriving.source-gps .lt-rider-helmet-core { animation: riderHelmetBob 2.2s ease-in-out infinite; }
 @keyframes riderMapHalo {
-  0%,100% { opacity: 0.28; transform: scale(0.86); }
-  50% { opacity: 0.07; transform: scale(1.16); }
+  0%,100% { opacity: 0.32; transform: scale(0.84); }
+  50% { opacity: 0.08; transform: scale(1.22); }
 }
-@keyframes riderMotoBob {
+@keyframes riderHelmetBob {
   0%,100% { transform: translateY(0) rotate(var(--heading, 0deg)); }
   50% { transform: translateY(-1.5px) rotate(var(--heading, 0deg)); }
 }
@@ -1536,7 +1533,7 @@ body:has(.app-view[data-view="business"].is-active) .toast {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .map-route, .map-marker.rider, .lt-rider-marker-halo, .lt-rider-moto-core, .track-step.current .track-dot { animation: none !important; }
+  .map-route, .map-marker.rider, .lt-rider-marker-halo, .lt-rider-helmet-core, .track-step.current .track-dot { animation: none !important; }
   .app-view.is-active, .app-view.view-enter .product-card, .app-view.view-enter .metric-card,
   .app-view.view-enter .ops-card, .app-view.view-enter .offers-rail > *, .app-view.view-enter .combos-rail > *,
   .app-view.view-enter .insight-card, .floating-cart.cart-bump, .mini-badge.badge-pop, .mn-badge.badge-pop,
@@ -3490,5 +3487,703 @@ body:has(.app-view[data-view="business"].is-active) {
 
   .business-day-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ===== Apple-premium live tracking polish ===== */
+.app-view[data-view="tracking"],
+.app-view[data-view="rider"] {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(250,248,244,0.96) 64%, rgba(246,242,236,0.92) 100%);
+}
+
+.tracking-map-experience,
+.rider-map-experience {
+  max-width: 920px;
+}
+
+.tracking-map-stage,
+.rider-map-stage {
+  border-radius: 34px;
+  border-color: rgba(33,28,24,0.08);
+  box-shadow: 0 24px 70px rgba(28,24,20,0.16);
+}
+
+.tracking-map-stage { min-height: 560px; }
+.rider-map-stage { min-height: 500px; }
+
+.delivery-map-stage .real-map-meta {
+  top: auto;
+  bottom: 104px;
+  left: 18px;
+  padding: 9px 12px;
+  color: #2b2722;
+  background: rgba(255,255,255,0.88);
+  border-color: rgba(35,31,27,0.10);
+  box-shadow: 0 12px 34px rgba(31,27,23,0.10);
+}
+
+.map-status-pill,
+.map-connection-pill,
+.map-stat-pill {
+  background: rgba(255,255,255,0.86);
+  border-color: rgba(35,31,27,0.08);
+  box-shadow: 0 16px 42px rgba(31,27,23,0.12);
+}
+
+.map-status-pill {
+  min-width: min(318px, calc(100vw - 36px));
+  padding: 15px 20px;
+  border-radius: 24px;
+  text-align: left;
+}
+
+.map-status-pill strong {
+  font-size: 21px;
+  letter-spacing: 0;
+}
+
+.map-connection-pill {
+  color: #365844;
+  background: rgba(247,253,248,0.9);
+}
+
+.map-connection-pill .rt-chip.live::before,
+.map-connection-pill .rt-chip.local::before,
+.live-map-pill strong::before,
+.inbox-live-dot {
+  content: "";
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+  border-radius: 999px;
+  background: #27a35d;
+  box-shadow: 0 0 0 4px rgba(39,163,93,0.12);
+}
+
+.map-connection-pill .rt-chip.live,
+.map-connection-pill .rt-chip.local {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.live-map-pill strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #2b7a4c;
+}
+
+.delivery-bottom-sheet {
+  border-radius: 30px 30px 24px 24px;
+  background: rgba(255,255,255,0.96);
+  border-color: rgba(35,31,27,0.08);
+  box-shadow: 0 -18px 52px rgba(31,27,23,0.12);
+}
+
+.tracking-sheet,
+.rider-sheet {
+  backdrop-filter: blur(18px);
+}
+
+.tracking-sheet.is-live {
+  max-width: 620px;
+  margin-top: -52px;
+}
+
+.tracking-sheet.is-offline {
+  max-width: 620px;
+  margin-top: 0;
+}
+
+.delivery-bottom-sheet .track-head-ico {
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  color: #2c241d;
+  background: linear-gradient(145deg, #f5ecdf 0%, #dfc6a7 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
+}
+
+.delivery-bottom-sheet .track-head-text strong {
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.delivery-bottom-sheet .status-chip {
+  color: #5f574f;
+  background: #f8f6f2;
+  border-color: rgba(35,31,27,0.08);
+}
+
+.delivery-bottom-sheet .status-chip.way,
+.delivery-bottom-sheet .status-chip.done {
+  color: #2b7a4c;
+  background: rgba(39,163,93,0.08);
+  border-color: rgba(39,163,93,0.18);
+}
+
+.delivery-bottom-sheet .status-chip.ready {
+  color: #7d5d35;
+  background: rgba(198,154,104,0.12);
+  border-color: rgba(198,154,104,0.18);
+}
+
+.sheet-metrics span,
+.delivery-bottom-sheet .rider-profile,
+.delivery-bottom-sheet .rider-contact,
+.delivery-bottom-sheet .rider-address,
+.delivery-bottom-sheet .rider-instructions,
+.delivery-bottom-sheet .rider-waiting,
+.delivery-bottom-sheet .sim-panel,
+.tracking-address-card {
+  background: #f8f6f2;
+  border-color: rgba(35,31,27,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+.tracking-address-card {
+  position: relative;
+  grid-template-columns: 42px minmax(0, 1fr);
+  column-gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+}
+
+.tracking-address-card .tracking-address-icon {
+  grid-row: 1 / span 3;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #2c241d;
+  background: #fff;
+  border: 1px solid rgba(35,31,27,0.08);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.tracking-address-card strong {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.rider-profile.is-live {
+  border-color: rgba(39,163,93,0.16);
+  background: #f8fdf9;
+}
+
+.rider-profile.rider-pending {
+  background: #fbfaf7;
+  border-style: solid;
+}
+
+.delivery-bottom-sheet .rider-avatar.live-helmet,
+.delivery-bottom-sheet .rider-avatar.pending {
+  color: #2b7a4c;
+  background: #fff;
+  border-color: rgba(39,163,93,0.16);
+}
+
+.tracking-gps-note {
+  margin: 10px 2px 0;
+  color: #6b625a;
+}
+
+.rider-sheet {
+  max-width: 660px;
+}
+
+.rider-sheet .sheet-head {
+  align-items: flex-start;
+}
+
+.rider-sheet .sheet-metrics {
+  margin: 16px 0;
+}
+
+.rider-sheet .rider-contact,
+.rider-sheet .rider-address,
+.rider-sheet .rider-instructions {
+  border-radius: 20px;
+  padding: 14px;
+}
+
+.rider-sheet .rider-contact-text small {
+  color: #877d72;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rider-sheet .rider-contact-text em {
+  display: block;
+  margin-top: 3px;
+  color: #6b625a;
+  font-size: 13px;
+  font-style: normal;
+}
+
+.rider-sheet .rider-address p {
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.rider-sheet .rider-reference {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.rider-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin: 14px 0 2px;
+}
+
+.rider-actions .primary-button,
+.rider-actions .secondary-button {
+  min-height: 54px;
+  justify-content: center;
+  border-radius: 18px;
+  font-size: 15px;
+}
+
+.rider-actions .primary-button:not(:disabled) {
+  color: #fff;
+  background: linear-gradient(135deg, #c69a68 0%, #a97849 100%);
+  box-shadow: 0 16px 32px rgba(145,103,62,0.24);
+}
+
+.rider-actions .secondary-button:not(:disabled) {
+  color: #2c241d;
+  background: #f1ece5;
+}
+
+.sim-panel.street-test-panel {
+  border-radius: 22px;
+  padding: 16px;
+}
+
+.sim-panel.is-live {
+  background: #f7fdf8;
+  border-color: rgba(39,163,93,0.18);
+}
+
+.sim-head {
+  margin-bottom: 6px;
+}
+
+.sim-state {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+.street-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.street-summary-grid span {
+  border-radius: 16px;
+  background: #fff;
+}
+
+.street-primary-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr);
+}
+
+.street-primary-actions button {
+  border-radius: 17px;
+}
+
+.gps-diagnostics {
+  opacity: 0.78;
+}
+
+.gps-diagnostics summary {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.inbox-tracking-panel {
+  gap: 14px;
+  border-radius: 22px;
+  padding: 15px;
+  background: #fbfaf7;
+  border-color: rgba(35,31,27,0.08);
+  box-shadow: 0 12px 34px rgba(31,27,23,0.08);
+}
+
+.inbox-tracking-panel.is-live {
+  background: linear-gradient(180deg, #fbfffc 0%, #f3faf5 100%);
+  border-color: rgba(39,163,93,0.18);
+}
+
+.inbox-tracking-head div {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  column-gap: 9px;
+}
+
+.inbox-tracking-head strong,
+.inbox-tracking-head span {
+  grid-column: 2;
+}
+
+.inbox-tracking-head strong {
+  font-size: 17px;
+}
+
+.inbox-tracking-head span {
+  color: #2b7a4c;
+  font-size: 12px;
+}
+
+.inbox-tracking-head em {
+  color: #6b625a;
+}
+
+.inbox-tracking-panel.is-offline .inbox-live-dot {
+  background: #b4a89b;
+  box-shadow: 0 0 0 4px rgba(180,168,155,0.14);
+}
+
+.inbox-tracking-grid span {
+  border-radius: 16px;
+  background: rgba(255,255,255,0.78);
+}
+
+.business-tracking-map {
+  min-height: 210px;
+  border-radius: 20px;
+  background: #f6f5f1;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.business-map-shell {
+  min-height: 210px;
+}
+
+.inbox-tracking-action {
+  min-height: 46px;
+  border-radius: 16px;
+  color: #2c241d;
+  background: #fff;
+}
+
+@media (max-width: 720px) {
+  .tracking-map-stage {
+    min-height: min(62svh, 560px);
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .rider-map-stage {
+    min-height: min(46svh, 460px);
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .map-floating-top {
+    top: 14px;
+    left: 14px;
+    right: 14px;
+  }
+
+  .map-floating-bottom {
+    left: 14px;
+    right: 70px;
+    bottom: 18px;
+  }
+
+  .map-status-pill {
+    min-width: min(260px, calc(100vw - 96px));
+    padding: 13px 15px;
+  }
+
+  .map-status-pill strong {
+    font-size: 18px;
+  }
+
+  .delivery-map-stage .real-map-meta {
+    bottom: 92px;
+    max-width: calc(100% - 28px);
+  }
+
+  .tracking-sheet.is-live,
+  .tracking-sheet.is-offline,
+  .rider-sheet {
+    width: calc(100% - 22px);
+    border-radius: 28px 28px 22px 22px;
+  }
+
+  .tracking-sheet.is-live {
+    margin-top: -46px;
+  }
+
+  .delivery-bottom-sheet {
+    padding: 16px;
+  }
+
+  .sheet-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .sheet-metrics span {
+    padding: 10px 8px;
+  }
+
+  .sheet-metrics strong {
+    font-size: 13px;
+  }
+
+  .track-steps {
+    gap: 2px;
+  }
+
+  .tracking-address-card {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .tracking-address-card .tracking-address-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .street-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .street-primary-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .business-tracking-map,
+  .business-map-shell {
+    min-height: 190px;
+  }
+}
+
+/* Premium rider view overrides the older dark operational skin. */
+body:has(.app-view[data-view="rider"].is-active) {
+  color-scheme: light;
+  --bg: #faf7f2;
+  --bg-2: #f3eee7;
+  --surface: #fffdf9;
+  --surface-2: #f6f1ea;
+  --surface-3: #ebe1d4;
+  --text: #1b1714;
+  --muted: #625a52;
+  --soft: #887c70;
+  --line: rgba(45, 36, 29, 0.12);
+  --line-strong: rgba(45, 36, 29, 0.2);
+  --accent: #b64c34;
+  --accent-2: #c87947;
+  --accent-soft: #a84832;
+  --copper: #b64c34;
+  --copper-2: #c87947;
+  --copper-soft: #a84832;
+  --red: #a83b2e;
+  --shadow: 0 18px 42px rgba(65, 43, 28, 0.12);
+  --shadow-sm: 0 10px 24px rgba(65, 43, 28, 0.09);
+  background:
+    linear-gradient(180deg, #fffdf9 0%, #faf7f2 52%, #f4eee7 100%);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .topbar::before {
+  background: rgba(255, 253, 249, 0.9);
+  border-bottom-color: rgba(45, 36, 29, 0.1);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .brand-word {
+  color: #1c1713;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .brand-mark {
+  color: #fffaf2;
+  background: #231c17;
+  border-color: rgba(35, 28, 23, 0.12);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .desktop-nav {
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 10px 24px rgba(45, 36, 29, 0.08);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .desktop-nav button:hover,
+body:has(.app-view[data-view="rider"].is-active) .desktop-nav button.active {
+  color: #1b1714;
+  background: #f1e8dc;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .primary-button {
+  color: #fffaf2;
+  background: linear-gradient(135deg, #b64c34, #cf7d48);
+  box-shadow: 0 10px 22px rgba(182, 76, 52, 0.2);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .secondary-button {
+  color: #1b1714;
+  background: #fffaf4;
+  border-color: rgba(45, 36, 29, 0.13);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .ghost-button {
+  color: #625a52;
+  background: rgba(255, 250, 244, 0.72);
+  border-color: rgba(45, 36, 29, 0.13);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .mobile-nav {
+  color: #1b1714;
+  background: rgba(255, 253, 249, 0.96);
+  border-color: rgba(45, 36, 29, 0.12);
+  box-shadow: 0 18px 42px rgba(65, 43, 28, 0.18);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .mobile-nav button.active {
+  color: #b64c34;
+  background: #f3e6d9;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .toast {
+  color: #fffaf2;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-map-stage {
+  background: #f7f6f2;
+  border-color: rgba(34,29,25,0.08);
+  box-shadow: 0 24px 70px rgba(28,24,20,0.16);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet {
+  color: #1b1714;
+  background: rgba(255,255,255,0.96);
+  border-color: rgba(35,31,27,0.08);
+  box-shadow: 0 -18px 52px rgba(31,27,23,0.12);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sheet-handle {
+  background: rgba(36,32,28,0.18);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .track-head-ico,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-avatar {
+  color: #2c241d;
+  background: linear-gradient(145deg, #f5ecdf 0%, #dfc6a7 100%);
+  border-color: rgba(35,31,27,0.08);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .track-head-text strong,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-contact-text strong,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-address p,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-instructions p:last-child,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .summary-row.total,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .summary-row strong,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .order-line strong,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .order-line.head,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sheet-metrics strong,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .street-summary-grid strong,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sim-gps-status {
+  color: #1f1b17;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .track-head-text small,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .track-head-text span,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-label,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-contact-text small,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-contact-text em,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .form-hint,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .order-line,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sim-gps {
+  color: #6b625a;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sheet-metrics span,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-contact,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-address,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-instructions,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-waiting,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sim-panel,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .street-summary-grid span {
+  background: #f8f6f2;
+  border-color: rgba(35,31,27,0.08);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sim-panel.is-live {
+  background: #f7fdf8;
+  border-color: rgba(39,163,93,0.18);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sim-state.live {
+  color: #2b7a4c;
+  background: rgba(39,163,93,0.08);
+  border-color: rgba(39,163,93,0.18);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .secondary-button,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .ghost-button,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .round-action {
+  color: #2c241d;
+  background: #fff;
+  border-color: rgba(35,31,27,0.10);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .round-action.whatsapp {
+  color: #1f6c45;
+  background: rgba(39,163,93,0.08);
+  border-color: rgba(39,163,93,0.18);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .primary-button:not(:disabled) {
+  color: #fff;
+  background: linear-gradient(135deg, #c69a68 0%, #a97849 100%);
+  box-shadow: 0 16px 32px rgba(145,103,62,0.24);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .primary-button:disabled,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .secondary-button:disabled,
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .ghost-button:disabled {
+  color: #9a8f84;
+  background: #eee8df;
+  border-color: rgba(35,31,27,0.08);
+  opacity: 1;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sim-gps-error {
+  color: #a74431;
+}
+
+@media (max-width: 720px) {
+  .tracking-map-stage .map-floating-bottom {
+    display: none;
+  }
+
+  .tracking-sheet.is-live {
+    margin-top: -34px;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-sheet.is-live {
+    margin-top: -34px;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-floating-bottom {
+    left: 14px;
+    right: 14px;
+    bottom: 18px;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-stat-pill {
+    max-width: calc(100vw - 28px);
   }
 }

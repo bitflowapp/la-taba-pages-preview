@@ -14,14 +14,13 @@ export function createRiderIcon(L, { status = 'received', source = 'simulation',
     className: riderMarkerClass(status, source),
     html: `
       <span class="lt-rider-marker-halo" aria-hidden="true"></span>
-      <span class="lt-rider-moto-core" style="--heading:${safeHeading}deg" aria-hidden="true">
-        <svg class="lt-rider-moto-icon" viewBox="0 0 64 64" focusable="false" aria-hidden="true">
-          <path class="lt-rider-pin" d="M32 6c12.2 0 22 9.6 22 21.4C54 42.4 32 58 32 58S10 42.4 10 27.4C10 15.6 19.8 6 32 6Z"></path>
-          <path class="lt-rider-scooter" d="M20 35h11l7-10h7"></path>
-          <path class="lt-rider-scooter" d="M38 25l6 10h4"></path>
-          <path class="lt-rider-scooter" d="M31 35h9"></path>
-          <circle class="lt-rider-wheel" cx="23" cy="39" r="4.5"></circle>
-          <circle class="lt-rider-wheel" cx="47" cy="39" r="4.5"></circle>
+      <span class="lt-rider-helmet-core" style="--heading:${safeHeading}deg" aria-hidden="true">
+        <svg class="lt-rider-helmet-icon" viewBox="0 0 64 64" focusable="false" aria-hidden="true">
+          <path class="lt-rider-pin" d="M32 5.5c11.8 0 21.4 9.3 21.4 20.8 0 14.4-21.4 29.2-21.4 29.2S10.6 40.7 10.6 26.3C10.6 14.8 20.2 5.5 32 5.5Z"></path>
+          <path class="lt-rider-helmet-shell" d="M18.6 34.4c.2-11.2 8.5-19 19.3-17.1 8.1 1.4 13.4 8.5 12.8 17.2-.2 2.8-2.5 5-5.3 5H25.7c-3.6 0-6.1-2.1-7.1-5.1Z"></path>
+          <path class="lt-rider-helmet-visor" d="M31.4 25.3h14.7c1.2 0 2.2 1 2.2 2.2v3.1c0 1.4-1.1 2.5-2.5 2.5H31.4c-1.1 0-2-.9-2-2v-5.1c0-.6.4-1 1-1Z"></path>
+          <path class="lt-rider-helmet-rim" d="M21.3 36.8h27.1"></path>
+          <circle class="lt-rider-helmet-dot" cx="24.1" cy="30.6" r="2.4"></circle>
         </svg>
       </span>`,
     iconSize: [52, 52],
@@ -52,8 +51,8 @@ function updateRiderMarkerVisual(marker, L, nextLocation, options) {
 
   if (marker.__ltMarkerHeading !== heading) {
     marker.__ltMarkerHeading = heading;
-    const moto = element?.querySelector?.('.lt-rider-moto-core');
-    if (moto?.style) moto.style.setProperty('--heading', `${heading}deg`);
+    const helmet = element?.querySelector?.('.lt-rider-helmet-core');
+    if (helmet?.style) helmet.style.setProperty('--heading', `${heading}deg`);
     else if (!element && marker.setIcon) marker.setIcon(createRiderIcon(L, { ...options, source, heading }));
   }
 }

@@ -138,9 +138,12 @@ test('rider marker class reflects status and source', () => {
   assert.match(icon.html, /lt-rider-helmet-core/);
   assert.match(icon.html, /lt-rider-marker-halo/);
   assert.match(icon.html, /lt-rider-helmet-icon/);
+  assert.match(icon.html, /lt-rider-core-letter/);
+  assert.match(icon.html, />R</);
+  assert.doesNotMatch(icon.html, /lt-rider-helmet-visor/);
   assert.match(icon.html, /--heading:95deg/);
   assert.deepEqual(icon.iconSize, [52, 52]);
-  assert.deepEqual(icon.iconAnchor, [26, 34]);
+  assert.deepEqual(icon.iconAnchor, [26, 26]);
 });
 
 test('chooseRiderLocation prioriza GPS real sobre simulación', () => {

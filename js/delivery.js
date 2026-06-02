@@ -89,59 +89,59 @@ export function renderDeliveryPanel() {
 
   renderWithStableRealMap(container, `
     <div class="delivery-layout rider-map-experience ${gpsLive ? '' : 'no-map'}">
-      ${gpsLive ? renderRiderMapStage(order, headline, true, destinationLabel) : ''}
+      ${gpsLive ? renderRiderMapStage(order) : ''}
 
       <section class="delivery-bottom-sheet rider-sheet rider-card ${gpsLive ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
         <div class="sheet-head rider-head ${statusClass(order.status)}">
           <span class="track-head-ico">${bagGlyph()}</span>
           <div class="track-head-text">
-            <small>${order.id} · Entrega activa</small>
+            <small>${order.id} - Reparto</small>
             <strong>${headline}</strong>
             <span>${escapeHtml(headSub)}</span>
           </div>
           <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
         </div>
 
-        <div class="sheet-metrics rider-metrics">
-          <span><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
-          <span><small>Pago</small><strong>${escapeHtml(order.paymentMethod)}</strong></span>
-          <span><small>A cobrar</small><strong>${money(order.total)}</strong></span>
+        <div class="rider-contact">
+          <span class="rider-avatar">${escapeHtml(initials(order.customerName))}</span>
+          <span class="rider-contact-text">
+            <small>Cliente</small>
+            <strong>${escapeHtml(order.customerName)}</strong>
+            <em>${escapeHtml(order.customerPhone)}</em>
+          </span>
+          <a class="round-action call" href="tel:${encodeURIComponent(order.customerPhone)}" aria-label="Llamar al cliente">Tel</a>
+          <a class="round-action whatsapp" href="${waClient}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del cliente">WA</a>
         </div>
 
-        <div class="track-steps tight">${steps}</div>
-
-          <div class="rider-contact">
-            <span class="rider-avatar">${escapeHtml(initials(order.customerName))}</span>
-            <span class="rider-contact-text">
-              <small>Cliente</small>
-              <strong>${escapeHtml(order.customerName)}</strong>
-              <em>${escapeHtml(order.customerPhone)}</em>
-            </span>
-            <a class="round-action call" href="tel:${encodeURIComponent(order.customerPhone)}" aria-label="Llamar al cliente">Tel</a>
-            <a class="round-action whatsapp" href="${waClient}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del cliente">WA</a>
+        <div class="rider-address">
+          <span class="rider-label">Dirección</span>
+          <p>${escapeHtml(destinationLabel)}</p>
+          ${address.reference ? `<p class="rider-reference">Referencia: ${escapeHtml(address.reference)}</p>` : ''}
+          <div class="rider-copy-row">
+            <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar dirección</button>
           </div>
+        </div>
 
-          <div class="rider-address">
-            <span class="rider-label">Dirección</span>
-            <p>${escapeHtml(destinationLabel)}</p>
-            ${address.reference ? `<p class="rider-reference">Referencia: ${escapeHtml(address.reference)}</p>` : ''}
-            <div class="rider-copy-row">
-              <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar dirección</button>
-            </div>
-          </div>
+        <div class="sheet-metrics rider-metrics">
+          <span class="metric-priority"><small>A cobrar</small><strong>${money(order.total)}</strong></span>
+          <span><small>Pago</small><strong>${escapeHtml(order.paymentMethod)}</strong></span>
+          <span><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
+        </div>
 
-          ${awaiting ? `
-          <div class="rider-waiting">
-            <p>El pedido todavía está en preparación en el local.</p>
-            <button class="primary-button" type="button" data-rider-ready="${order.id}">Marcar listo</button>
-          </div>` : ''}
+        ${awaiting ? `
+        <div class="rider-waiting">
+          <p>El pedido todavía está en preparación en el local.</p>
+          <button class="primary-button" type="button" data-rider-ready="${order.id}">Marcar listo</button>
+        </div>` : ''}
 
-          ${renderRiderActions(order, { canLeave, canArrive, canDeliver })}
-          ${renderSimControls(order, sim)}
+        ${renderRiderActions(order, { canLeave, canArrive, canDeliver })}
+        <div class="track-steps tight rider-progress">${steps}</div>
+        ${renderSimControls(order, sim)}
 
-          <div class="rider-block">
-            <p class="rider-label">Pedido</p>
+        <details class="order-detail rider-order-detail">
+          <summary>Ver pedido · ${order.id}</summary>
+          <div class="order-detail-body">
             ${order.items.map((item) => `
               <div class="order-line">
                 <span>${item.quantity} × ${escapeHtml(item.name)}</span>
@@ -150,13 +150,14 @@ export function renderDeliveryPanel() {
             `).join('')}
             <div class="summary-row total"><span>Total a cobrar</span><strong>${money(order.total)}</strong></div>
           </div>
+        </details>
 
-          <div class="rider-instructions">
-            <p class="rider-label">Indicaciones del cliente</p>
-            <p>${escapeHtml(instructions)}</p>
-          </div>
+        <div class="rider-instructions">
+          <p class="rider-label">Indicaciones del cliente</p>
+          <p>${escapeHtml(instructions)}</p>
+        </div>
 
-          ${renderAdvancedDemo()}
+        ${renderAdvancedDemo()}
       </section>
     </div>
   `, { rolePrefix: 'rider', orderId: order.id });
@@ -419,22 +420,11 @@ function relativeAgeLabel(value) {
   return `hace ${minutes} min`;
 }
 
-function renderRiderMapStage(order, headline, gpsLive = false, destination = '') {
-  const status = getRealtimeStatus();
-  const connection = status.relayEnabled
-    ? (status.relayConnected ? 'En vivo' : 'Reconectando')
-    : 'Este equipo';
+function renderRiderMapStage(order) {
   return `
     <div class="delivery-map-stage rider-map-stage" data-map-shell="rider">
       ${renderRealMapShell(order, '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', 'rider')}
-      <div class="map-floating-top">
-        <span class="map-status-pill ${order ? statusClass(order.status) : 'idle'}"><small>Estado</small><strong>${escapeHtml(headline)}</strong></span>
-        <span class="map-connection-pill">${escapeHtml(connection)}</span>
-      </div>
-      <div class="map-floating-bottom">
-        <span class="map-stat-pill map-destination-pill"><small>Destino</small><strong>${escapeHtml(destination || 'Dirección del pedido')}</strong></span>
-        <span class="map-stat-pill"><small>GPS</small><strong>${gpsLive ? 'Compartiendo ubicación' : 'Sin compartir'}</strong></span>
-      </div>
+      <span class="rider-map-live-chip" aria-label="GPS real compartido"><span aria-hidden="true"></span>GPS</span>
     </div>`;
 }
 

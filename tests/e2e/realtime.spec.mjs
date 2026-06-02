@@ -179,6 +179,8 @@ test('cliente y rider en dos equipos: pedido interno, realtime y entrega (sin GP
 
   // El rider ve el pedido del cliente SIN recargar (vía relay).
   await expect(rider.locator('[data-delivery-panel]')).toContainText('LT-0002', { timeout: 10_000 });
+  await expect(rider.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
+  await expect(rider.locator('[data-delivery-panel] .lt-rider-marker')).toHaveCount(0);
   await expect(rider.locator('[data-delivery-panel]')).toContainText('Esperando preparación');
 
   // Rider: marcar listo y salir del local.
@@ -318,6 +320,25 @@ test('GPS real del rider se propaga al tracking del cliente por relay', async ({
   await expect(rider.locator('[data-delivery-panel]')).toContainText('Detalles de ubicación');
   await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toBeVisible({ timeout: 10_000 });
   await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toHaveAttribute('data-map-theme', 'light');
+  await expect(rider.locator('[data-delivery-panel] .rider-map-live-chip')).toHaveCount(1);
+  await expect(rider.locator('[data-delivery-panel] .map-status-pill')).toHaveCount(0);
+  await expect(rider.locator('[data-delivery-panel] .map-stat-pill')).toHaveCount(0);
+  await expect(rider.locator('[data-delivery-panel] .map-connection-pill')).toHaveCount(0);
+  await expect(rider.locator('[data-delivery-panel] [data-map-role="rider"] .lt-rider-marker')).toHaveCount(1);
+  const riderMarkerOffset = await rider.evaluate(() => {
+    const map = document.querySelector('[data-delivery-panel] [data-map-role="rider"]');
+    const marker = document.querySelector('[data-delivery-panel] [data-map-role="rider"] .lt-rider-marker');
+    if (!map || !marker) return null;
+    const mapRect = map.getBoundingClientRect();
+    const markerRect = marker.getBoundingClientRect();
+    return {
+      dx: Math.abs((markerRect.left + markerRect.width / 2) - (mapRect.left + mapRect.width / 2)),
+      dy: Math.abs((markerRect.top + markerRect.height / 2) - (mapRect.top + mapRect.height / 2)),
+    };
+  });
+  expect(riderMarkerOffset).toBeTruthy();
+  expect(riderMarkerOffset.dx).toBeLessThan(80);
+  expect(riderMarkerOffset.dy).toBeLessThan(90);
 
   // Recién con GPS real el cliente ve el mapa y la ubicación live del repartidor.
   await expect(client.locator('[data-tracking-panel] [data-real-map]').first()).toBeVisible({ timeout: 10_000 });
@@ -330,6 +351,15 @@ test('GPS real del rider se propaga al tracking del cliente por relay', async ({
 
   await riderCtx.setGeolocation({ latitude: -38.9468, longitude: -68.0424, accuracy: 16 });
   await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación del repartidor en vivo', { timeout: 10_000 });
+
+  const mobileOverflow = await Promise.all([client, rider].map((page) => page.evaluate(() => ({
+    documentOverflow: Math.max(0, document.documentElement.scrollWidth - window.innerWidth),
+    bodyOverflow: Math.max(0, document.body.scrollWidth - window.innerWidth),
+  }))));
+  expect(mobileOverflow).toEqual([
+    { documentOverflow: 0, bodyOverflow: 0 },
+    { documentOverflow: 0, bodyOverflow: 0 },
+  ]);
 
   await rider.locator('[data-sim-gps-off]').click();
   await expect(rider.locator('[data-delivery-panel]')).toContainText('Ubicación detenida', { timeout: 10_000 });

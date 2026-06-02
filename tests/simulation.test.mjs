@@ -17,6 +17,7 @@ import {
   enableGpsTracking,
   gpsDeliveryPhaseForOrder,
   gpsWatchOptionsForOrder,
+  handleViewChangeForSimulation,
   isGpsActive,
   selectStreetTestDestination,
   shouldPublishLocation,
@@ -222,6 +223,54 @@ test('GPS success stores real rider metadata and stopping clears watchPosition',
     assert.equal(clearWatchId, 42);
     assert.equal(getState().simulation.gpsStatus, 'inactive');
     assert.equal(getState().simulation.source, 'gps');
+  } finally {
+    disableGpsTracking({ silent: true });
+    if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);
+    else delete globalThis.isSecureContext;
+    if (originalNavigator) Object.defineProperty(globalThis, 'navigator', originalNavigator);
+    else delete globalThis.navigator;
+  }
+});
+
+test('view changes keep GPS live until the rider stops sharing', () => {
+  createReadyDeliveryOrder();
+  const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
+  const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  let successHandler = null;
+  let clearWatchId = null;
+
+  Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: true });
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {
+      geolocation: {
+        watchPosition: (success) => {
+          successHandler = success;
+          return 45;
+        },
+        clearWatch: (id) => { clearWatchId = id; },
+      },
+    },
+  });
+
+  try {
+    assert.equal(enableGpsTracking().ok, true);
+    successHandler({
+      coords: {
+        latitude: -38.9462,
+        longitude: -68.0418,
+        accuracy: 12,
+      },
+      timestamp: Date.now(),
+    });
+
+    handleViewChangeForSimulation('tracking');
+    assert.equal(isGpsActive(), true);
+    assert.equal(clearWatchId, null);
+
+    disableGpsTracking();
+    assert.equal(clearWatchId, 45);
+    assert.equal(getState().simulation.gpsStatus, 'inactive');
   } finally {
     disableGpsTracking({ silent: true });
     if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);

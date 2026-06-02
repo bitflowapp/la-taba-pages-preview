@@ -573,11 +573,9 @@ function onGpsError(error) {
   }
 }
 
-// Limpia el GPS al salir de la vista del rider (la simulación demo sigue).
+// Mantiene el GPS activo entre vistas. El corte sigue siendo explícito o por pagehide.
 export function handleViewChangeForSimulation(view) {
-  if (view !== 'rider' && isGpsActive()) {
-    disableGpsTracking({ silent: true });
-  }
+  void view;
 }
 
 function persistRiderLocation(orderId, location) {

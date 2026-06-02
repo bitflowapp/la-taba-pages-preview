@@ -63,6 +63,7 @@ export function createDemoOrderRepository() {
       updateState((draft) => {
         const target = draft.orders.find((candidate) => candidate.id === orderId);
         if (target) {
+          draft.lastOrderId = orderId;
           target.tracking = {
             ...(target.tracking || {}),
             lastLocation: normalized,

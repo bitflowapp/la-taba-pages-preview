@@ -22,6 +22,25 @@ export function orderTimestamp(order) {
   return max;
 }
 
+const ACTIVE_ORDER_PRIORITY = Object.freeze({
+  on_the_way: 0,
+  arriving: 1,
+  ready: 2,
+  preparing: 3,
+  received: 4,
+});
+
+export function chooseActiveLiveOrderId(orders = []) {
+  if (!Array.isArray(orders)) return null;
+  return orders
+    .filter((order) => order?.id && Object.prototype.hasOwnProperty.call(ACTIVE_ORDER_PRIORITY, order.status))
+    .sort((a, b) => {
+      const priorityDiff = ACTIVE_ORDER_PRIORITY[a.status] - ACTIVE_ORDER_PRIORITY[b.status];
+      if (priorityDiff !== 0) return priorityDiff;
+      return orderTimestamp(b) - orderTimestamp(a);
+    })[0]?.id || null;
+}
+
 // Devuelve true si `incoming` debe reemplazar a `local` (es más nuevo o el local no existe).
 export function shouldReplaceOrder(localOrder, incomingOrder) {
   if (!incomingOrder || typeof incomingOrder.id !== 'string') return false;
@@ -58,18 +77,29 @@ export function mergeOrders(localOrders, incomingOrders) {
 // El pedido activo de tracking/rider viaja aparte de la lista de pedidos. Lo
 // aceptamos solo si apunta a un pedido entrante mas nuevo que el activo local.
 export function chooseActiveOrderId(localOrders, localLastOrderId, incomingOrders, incomingLastOrderId) {
-  if (typeof incomingLastOrderId !== 'string' || !incomingLastOrderId) return localLastOrderId || null;
   const incoming = Array.isArray(incomingOrders) ? incomingOrders : [];
-  const candidate = incoming.find((order) => order?.id === incomingLastOrderId);
-  if (!candidate) return localLastOrderId || null;
-
   const local = Array.isArray(localOrders) ? localOrders : [];
-  const current = typeof localLastOrderId === 'string'
-    ? local.find((order) => order?.id === localLastOrderId)
+  const hasLocalLastOrder = typeof localLastOrderId === 'string'
+    && local.some((order) => order?.id === localLastOrderId);
+  const hasIncomingLastOrder = typeof incomingLastOrderId === 'string'
+    && incoming.some((order) => order?.id === incomingLastOrderId);
+  const currentId = hasLocalLastOrder
+    ? localLastOrderId
+    : chooseActiveLiveOrderId(local);
+  const candidateId = hasIncomingLastOrder
+    ? incomingLastOrderId
+    : chooseActiveLiveOrderId(incoming);
+  if (!candidateId) return currentId || null;
+
+  const candidate = incoming.find((order) => order?.id === candidateId);
+  if (!candidate) return currentId || null;
+
+  const current = typeof currentId === 'string'
+    ? local.find((order) => order?.id === currentId)
     : null;
-  if (!current) return incomingLastOrderId;
-  if (incomingLastOrderId === localLastOrderId) return localLastOrderId;
-  return orderTimestamp(candidate) > orderTimestamp(current) ? incomingLastOrderId : localLastOrderId;
+  if (!current) return candidateId;
+  if (candidateId === currentId) return currentId;
+  return orderTimestamp(candidate) > orderTimestamp(current) ? candidateId : currentId;
 }
 
 // Para la simulación usamos un sello de tiempo monótono del emisor.

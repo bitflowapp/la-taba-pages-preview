@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   chooseActiveOrderId,
+  chooseActiveLiveOrderId,
   isNewerTimestamp,
   mergeOrders,
   orderTimestamp,
@@ -12,8 +13,8 @@ const t0 = '2026-05-29T10:00:00.000Z';
 const t1 = '2026-05-29T10:05:00.000Z';
 const t2 = '2026-05-29T10:10:00.000Z';
 
-function order(id, createdAt, history = []) {
-  return { id, createdAt, statusHistory: history };
+function order(id, createdAt, history = [], status = history.at(-1)?.status || 'received') {
+  return { id, createdAt, status, statusHistory: history };
 }
 
 test('orderTimestamp takes the most recent of createdAt and statusHistory', () => {
@@ -70,6 +71,26 @@ test('chooseActiveOrderId keeps the local active order when remote is stale', ()
   const local = [order('LT-NEW', t2, [{ status: 'received', at: t2 }])];
   const incoming = [order('LT-OLD', t0, [{ status: 'on_the_way', at: t0 }])];
   assert.equal(chooseActiveOrderId(local, 'LT-NEW', incoming, 'LT-OLD'), 'LT-NEW');
+});
+
+test('chooseActiveLiveOrderId keeps an in-progress delivery visible by priority', () => {
+  const orders = [
+    order('LT-RECEIVED', t2, [{ status: 'received', at: t2 }]),
+    order('LT-READY', t2, [{ status: 'ready', at: t2 }]),
+    order('LT-WAY', t0, [{ status: 'on_the_way', at: t0 }]),
+  ];
+  assert.equal(chooseActiveLiveOrderId(orders), 'LT-WAY');
+});
+
+test('chooseActiveOrderId falls back to a room live order without lastOrderId', () => {
+  const local = [order('LT-LOCAL', t0, [{ status: 'received', at: t0 }])];
+  const incoming = [order('LT-ROOM', t1, [{ status: 'on_the_way', at: t1 }])];
+  assert.equal(chooseActiveOrderId(local, null, incoming, null), 'LT-ROOM');
+});
+
+test('chooseActiveOrderId ignores a stale missing local lastOrderId', () => {
+  const local = [order('LT-LIVE', t1, [{ status: 'ready', at: t1 }])];
+  assert.equal(chooseActiveOrderId(local, 'LT-MISSING', [], null), 'LT-LIVE');
 });
 
 test('isNewerTimestamp compares monotonic stamps with sane fallbacks', () => {

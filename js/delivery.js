@@ -71,6 +71,11 @@ export function renderDeliveryPanel() {
     : order.status === 'on_the_way' ? 'En camino al cliente'
       : order.status === 'delivered' ? 'Pedido entregado'
       : 'Pedido listo para salir';
+  const headSub = awaiting
+    ? 'Esperando al local.'
+    : gpsLive
+      ? 'El cliente puede seguir el reparto.'
+      : 'Dirección y estado del pedido.';
 
   const stepIndex = riderStepIndex(order.status);
   const steps = riderSteps.map((step, index) => {
@@ -86,14 +91,14 @@ export function renderDeliveryPanel() {
     <div class="delivery-layout rider-map-experience ${gpsLive ? '' : 'no-map'}">
       ${gpsLive ? renderRiderMapStage(order, headline, true, destinationLabel) : ''}
 
-      <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet>
+      <section class="delivery-bottom-sheet rider-sheet rider-card ${gpsLive ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
         <div class="sheet-head rider-head ${statusClass(order.status)}">
           <span class="track-head-ico">REP</span>
           <div class="track-head-text">
             <small>${order.id} · ${escapeHtml(deliveryModeLabel(order.deliveryMode))}</small>
             <strong>${headline}</strong>
-            <span>${awaiting ? 'El negocio está preparando el pedido.' : 'Seguí el reparto con la dirección cargada por el cliente.'}</span>
+            <span>${escapeHtml(headSub)}</span>
           </div>
           <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
         </div>
@@ -120,7 +125,7 @@ export function renderDeliveryPanel() {
             <span class="rider-label">Entrega en</span>
             <p>${escapeHtml(destinationLabel)}</p>
             ${address.reference ? `<p class="rider-reference">Referencia: ${escapeHtml(address.reference)}</p>` : ''}
-            <p class="form-hint">${gpsLive ? 'Mapa con tu ubicación GPS real. La dirección del cliente queda textual para no inventar puntos.' : 'Dirección cargada por el cliente. Sin GPS compartido no se muestra ubicación en vivo.'}</p>
+            <p class="form-hint">${gpsLive ? 'Tu ubicación está activa.' : 'Sin ubicación compartida.'}</p>
             <div class="rider-copy-row">
               <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar direccion</button>
             </div>
@@ -245,7 +250,7 @@ function renderSimControls(order, sim) {
         <span class="rider-label">Ubicación en vivo</span>
         <span class="sim-state ${gpsOn ? 'live' : ''}">Ubicación: ${escapeHtml(gpsStatus)}</span>
       </div>
-      <p class="form-hint">El cliente verá tu ubicación mientras el pedido esté en reparto. Si la ubicación está apagada, sólo verá el estado y la dirección.</p>
+      <p class="form-hint">${gpsOn ? 'El cliente puede seguir el reparto.' : 'Compartila solo durante este reparto.'}</p>
       <div class="street-summary-grid">
         <span><small>Estado</small><strong>${escapeHtml(gpsStatus)}</strong></span>
         <span><small>Señal</small><strong>${escapeHtml(signalStatus)}</strong></span>

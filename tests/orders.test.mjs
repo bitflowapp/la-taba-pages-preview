@@ -2,8 +2,15 @@ import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
 import { BUSINESS_CONFIG } from '../js/config.js';
 import { addToCart } from '../js/cart.js';
-import { createOrderFromCheckout, buildWhatsAppMessage, buildWhatsAppUrl, updateOrderStatus } from '../js/orders.js';
-import { dateTime, getState } from '../js/state.js';
+import {
+  createOrderFromCheckout,
+  buildWhatsAppMessage,
+  buildWhatsAppUrl,
+  getActiveOrder,
+  getActiveOrderId,
+  updateOrderStatus,
+} from '../js/orders.js';
+import { dateTime, getState, setState } from '../js/state.js';
 import { resetState, state } from './helpers.mjs';
 
 beforeEach(() => resetState());
@@ -203,6 +210,60 @@ test('secondary WhatsApp copy uses an existing order without creating another on
   assert.match(decodeURIComponent(url), /Pedido: LT-0002/);
   assert.match(decodeURIComponent(url), /Cliente WhatsApp/);
   assert.match(decodeURIComponent(url), /Copia secundaria/);
+});
+
+test('active order falls back to the live delivery order when lastOrderId is missing', () => {
+  const now = Date.now();
+  const receivedAt = new Date(now - 10_000).toISOString();
+  const onTheWayAt = new Date(now - 60_000).toISOString();
+  resetState({
+    orders: [
+      {
+        id: 'LT-RECEIVED',
+        status: 'received',
+        createdAt: receivedAt,
+        statusHistory: [{ status: 'received', at: receivedAt }],
+        items: [{ productId: 'p-vacio', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+        deliveryMode: 'delivery',
+        customerName: 'Cliente nuevo',
+        customerPhone: '2995551111',
+        address: 'Roca 321',
+        paymentMethod: 'Efectivo',
+      },
+      {
+        id: 'LT-WAY',
+        status: 'on_the_way',
+        createdAt: onTheWayAt,
+        statusHistory: [{ status: 'on_the_way', at: onTheWayAt }],
+        items: [{ productId: 'p-vacio', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+        deliveryMode: 'delivery',
+        customerName: 'Cliente en reparto',
+        customerPhone: '2995552222',
+        address: 'Mendoza 851, Centro',
+        paymentMethod: 'Efectivo',
+      },
+    ],
+    lastOrderId: null,
+  });
+
+  assert.equal(getActiveOrderId(), 'LT-WAY');
+  assert.equal(getActiveOrder()?.id, 'LT-WAY');
+});
+
+test('status transitions persist the active order id', () => {
+  addToCart('p-vacio', 1);
+  const created = createOrderFromCheckout({
+    customerName: 'Activo QA',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: '',
+  });
+  setState({ lastOrderId: null });
+
+  assert.equal(updateOrderStatus(created.order.id, 'preparing').ok, true);
+  assert.equal(getState().lastOrderId, created.order.id);
 });
 
 test('order status transitions reject invalid jumps and preserve history', () => {

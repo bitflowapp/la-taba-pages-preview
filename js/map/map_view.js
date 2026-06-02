@@ -1,5 +1,5 @@
 import { getState } from '../state.js';
-import { getLastOrder } from '../orders.js';
+import { getActiveOrder } from '../orders.js';
 import { RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getTileLayerForTheme } from './map_config.js';
 import {
   chooseRiderLocation,
@@ -318,8 +318,8 @@ function progressLineStyle(theme) {
 }
 
 function findOrder(orderId) {
-  if (!orderId) return getLastOrder();
-  return getState().orders.find((order) => order.id === orderId) || getLastOrder();
+  if (!orderId) return getActiveOrder();
+  return getState().orders.find((order) => order.id === orderId) || getActiveOrder();
 }
 
 function getOrderSimulation(orderId) {

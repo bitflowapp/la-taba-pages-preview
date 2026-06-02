@@ -18,6 +18,11 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
   await expect(page.locator('[data-business-dashboard]')).toContainText('Central de pedidos');
+  await expect(page.locator('.topbar .brand')).toContainText(/La Taba/i);
+  await expect(page.locator('.inbox-tabs')).toContainText('Nuevos');
+  await expect(page.locator('.inbox-tabs')).toContainText('Preparando');
+  await expect(page.locator('.inbox-tabs')).toContainText('Reparto');
+  await expect(page.locator('.inbox-tabs')).toContainText('Entregados');
   await expect(page.locator('[data-order-inbox]')).toContainText('Todavía no entraron pedidos');
 
   // 2. El cliente confirma un pedido con dirección real.
@@ -45,10 +50,12 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await page.locator('[data-view="profile"] [data-open-admin-view="business"]').click();
   await expect(page.locator('[data-view="business"]')).toBeVisible();
   await expect(page.locator('[data-order-inbox]')).toContainText('Pedidos nuevos');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Entregados de hoy');
 
-  const card = page.locator('[data-inbox-order="LT-0002"]');
+  const card = page.locator('.inbox-order.is-priority[data-inbox-order="LT-0002"]');
   await expect(card).toBeVisible();
   await expect(card).toContainText('LT-0002');
+  await expect(card).toContainText('Pedido nuevo');
   await expect(card).toContainText('Recibido');
   await expect(card).toContainText('Walter Cliente');
   await expect(card).toContainText('2995551234');
@@ -64,6 +71,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Preparando');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Listo para entregar');
+  await expect(page.locator('[data-inbox-group="preparando"]')).toBeVisible();
 
   // 5. Mobile 390x844 sin overflow horizontal.
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);

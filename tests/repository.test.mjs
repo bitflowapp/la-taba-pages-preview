@@ -53,6 +53,28 @@ test('demo default no deja diagnóstico de fallback', () => {
   assert.equal(getRepositoryDiagnostic(), null);
 });
 
+// Supabase es estrictamente opt-in: tener config en la URL NO debe activarlo
+// si no se pidió explícitamente con data=supabase (o production/backend).
+test('supabaseUrl en la URL sin data=supabase no activa Supabase (demo sigue default)', () => {
+  setLocationSearch('?supabaseUrl=https://la-taba.supabase.co&supabaseAnonKey=anon-public-key');
+  resetRepositoryFactoryForTests();
+
+  const repository = getOrderRepository();
+  assert.equal(getDataMode(), 'demo');
+  assert.equal(repository.mode, 'demo');
+  assert.equal(getRepositoryDiagnostic(), null);
+});
+
+test('data=demo explícito se mantiene en demo sin diagnóstico', () => {
+  setLocationSearch('?data=demo');
+  resetRepositoryFactoryForTests();
+
+  const repository = getOrderRepository();
+  assert.equal(getDataMode(), 'demo');
+  assert.equal(repository.mode, 'demo');
+  assert.equal(getRepositoryDiagnostic(), null);
+});
+
 test('demo order repository creates orders through the current checkout flow', () => {
   addToCart('p-vacio', 1);
   const repository = createDemoOrderRepository();

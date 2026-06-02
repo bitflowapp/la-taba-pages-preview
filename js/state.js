@@ -152,7 +152,18 @@ function sanitizeSimulation(raw, orders) {
 
 function sanitizeOrders(rawOrders) {
   if (!Array.isArray(rawOrders)) return [];
-  return rawOrders.map((order) => normalizeOrder(order)).filter(Boolean);
+  // Endurecimiento: descarta IDs de pedido duplicados (estado local corrupto o
+  // importado) conservando la primera aparición. Como los pedidos nuevos se
+  // insertan al frente (unshift), la primera aparición es la versión más reciente.
+  const seen = new Set();
+  const result = [];
+  for (const raw of rawOrders) {
+    const order = normalizeOrder(raw);
+    if (!order || seen.has(order.id)) continue;
+    seen.add(order.id);
+    result.push(order);
+  }
+  return result;
 }
 
 function sanitizeCart(rawCart, productMap) {

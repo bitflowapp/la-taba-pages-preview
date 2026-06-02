@@ -631,14 +631,14 @@ textarea { resize: vertical; min-height: 84px; }
   transition: transform 650ms cubic-bezier(0.22, 0.7, 0.28, 1);
   will-change: transform;
 }
-/* Halo verde suave alrededor del casco. El marcador SÓLO se monta con un fix GPS
+/* Halo verde suave alrededor del punto del rider. El marcador SÓLO se monta con un fix GPS
    real y reciente (hasLiveRiderLocation), así que su presencia ya implica GPS en
    vivo: el halo verde es honesto por construcción. */
 .lt-rider-marker-halo {
-  position: absolute; left: 50%; top: 22px; width: 40px; height: 40px;
+  position: absolute; left: 50%; top: 50%; width: 38px; height: 38px;
   transform: translate(-50%, -50%); border-radius: 999px; background: transparent;
-  border: 2.5px solid rgba(46,179,99,0.55);
-  box-shadow: 0 0 0 4px rgba(46,179,99,0.12), 0 0 16px 3px rgba(46,179,99,0.34);
+  border: 2px solid rgba(39,163,93,0.44);
+  box-shadow: 0 0 0 4px rgba(39,163,93,0.10), 0 0 14px rgba(39,163,93,0.22);
   opacity: 0;
 }
 .lt-rider-marker.source-gps .lt-rider-marker-halo { opacity: 1; }
@@ -649,18 +649,20 @@ textarea { resize: vertical; min-height: 84px; }
   transition: transform 0.65s ease;
 }
 .lt-rider-helmet-icon {
-  width: 40px; height: 40px; display: block; overflow: visible;
-  filter: drop-shadow(0 7px 11px rgba(31,27,23,0.30)) drop-shadow(0 2px 3px rgba(31,27,23,0.18));
+  width: 42px; height: 42px; display: block; overflow: visible;
+  filter: drop-shadow(0 7px 12px rgba(31,27,23,0.20));
 }
-/* Pin en blanco cálido + casco en blanco puro: el contraste sutil separa el casco
-   del pin sin necesidad de gradientes con IDs (varios markers a la vez). */
-.lt-rider-pin { fill: #f1efe9; stroke: rgba(31,27,23,0.06); stroke-width: 1; }
-.lt-rider-helmet-shell { fill: #ffffff; stroke: rgba(31,27,23,0.05); stroke-width: 0.8; }
-.lt-rider-helmet-base { fill: #e8e4dd; }
-.lt-rider-helmet-visor { fill: #24262b; }
-.lt-rider-helmet-glint { fill: rgba(255,255,255,0.16); }
-.lt-rider-helmet-highlight { fill: rgba(255,255,255,0.9); }
-.lt-rider-marker.delivered .lt-rider-helmet-shell { fill: #eceae6; }
+/* Punto funcional en blanco calido: sin visor frontal ni detalles de moto. */
+.lt-rider-pin { fill: #f5f1e9; stroke: rgba(31,27,23,0.10); stroke-width: 1.2; }
+.lt-rider-core-disc { fill: #fffdf8; stroke: rgba(31,27,23,0.12); stroke-width: 1; }
+.lt-rider-core-letter {
+  fill: #2a241f;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+.lt-rider-marker.delivered .lt-rider-core-disc { fill: #eceae6; }
 .lt-rider-marker.delivered .lt-rider-marker-halo {
   border-color: rgba(150,144,135,0.5);
   box-shadow: 0 0 0 4px rgba(150,144,135,0.12);
@@ -670,8 +672,8 @@ textarea { resize: vertical; min-height: 84px; }
 .lt-rider-marker.on-the-way.source-gps .lt-rider-helmet-core,
 .lt-rider-marker.arriving.source-gps .lt-rider-helmet-core { animation: riderHelmetBob 2.4s ease-in-out infinite; }
 @keyframes riderMapHalo {
-  0%,100% { opacity: 0.95; box-shadow: 0 0 0 4px rgba(46,179,99,0.14), 0 0 16px 3px rgba(46,179,99,0.34); }
-  50% { opacity: 0.5; box-shadow: 0 0 0 7px rgba(46,179,99,0.04), 0 0 24px 7px rgba(46,179,99,0.16); }
+  0%,100% { opacity: 0.84; box-shadow: 0 0 0 4px rgba(39,163,93,0.12), 0 0 14px rgba(39,163,93,0.22); }
+  50% { opacity: 0.48; box-shadow: 0 0 0 7px rgba(39,163,93,0.035), 0 0 20px rgba(39,163,93,0.12); }
 }
 @keyframes riderHelmetBob {
   0%,100% { transform: translateY(0); }
@@ -4196,5 +4198,153 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .sim-gps-error {
 
   body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-stat-pill {
     max-width: calc(100vw - 28px);
+  }
+}
+
+/* Rider map cleanup: the map keeps only GPS context; operation data lives below. */
+body:has(.app-view[data-view="rider"].is-active) .rider-map-experience {
+  max-width: 760px;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-map-stage {
+  min-height: 392px;
+  box-shadow: 0 18px 52px rgba(28,24,20,0.13);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-floating-top,
+body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-floating-bottom,
+body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .real-map-meta {
+  display: none;
+}
+
+.rider-map-live-chip {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 420;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid rgba(39,163,93,0.18);
+  border-radius: 999px;
+  color: #1f6c45;
+  background: rgba(255,255,255,0.82);
+  box-shadow: 0 10px 24px rgba(31,27,23,0.08);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
+.rider-map-live-chip span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #27a35d;
+  box-shadow: 0 0 0 4px rgba(39,163,93,0.10);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-control-zoom {
+  opacity: 0.58;
+  transform: scale(0.86);
+  transform-origin: right bottom;
+  box-shadow: 0 8px 18px rgba(31,27,23,0.10) !important;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-control-attribution {
+  opacity: 0.42;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet.is-live {
+  margin-top: -18px;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-contact {
+  margin-top: 14px;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-metrics {
+  margin: 10px 0 12px;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .metric-priority {
+  background: #fffaf3;
+  border-color: rgba(166,113,63,0.18);
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .metric-priority strong {
+  font-size: 16px;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-actions {
+  margin: 0 0 12px;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-actions button {
+  min-height: 52px;
+  border-radius: 16px;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-progress {
+  margin: 12px 0 10px;
+}
+
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-order-detail {
+  margin-top: 10px;
+}
+
+@media (max-width: 720px) {
+  body:has(.app-view[data-view="rider"].is-active) .topbar {
+    position: relative;
+    z-index: 24;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .topbar::before {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    border-radius: 0;
+    box-shadow: 0 10px 24px rgba(15,23,42,0.07);
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-map-stage {
+    min-height: min(34svh, 316px);
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-sheet.is-live {
+    margin-top: -12px;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-control-zoom {
+    opacity: 0.42;
+    transform: scale(0.76);
+    margin-right: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-control-attribution {
+    opacity: 0.28;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .toast {
+    top: auto !important;
+    right: 14px !important;
+    bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+    left: auto !important;
+    width: min(62vw, 252px);
+    padding: 9px 12px;
+    border-radius: 14px;
+    transform: none !important;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-stage [data-real-map]) .toast {
+    top: calc(78px + env(safe-area-inset-top)) !important;
+    bottom: auto !important;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-metrics {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.9fr) minmax(0, 0.92fr);
   }
 }

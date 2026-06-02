@@ -185,7 +185,7 @@ test('pedido real no muestra rider falso y corta GPS al salir de rider', async (
   await page.getByRole('button', { name: /Vista rider/i }).click();
   await expect(page.locator('[data-view="rider"]')).toBeVisible();
   await page.locator('[data-sim-gps]').click();
-  await expect(page.locator('[data-delivery-panel]')).toContainText('GPS compartiendo ubicación');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Compartiendo ubicación');
 
   await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
   await expect(tracking.locator('.rider-profile.is-live')).toHaveCount(0);

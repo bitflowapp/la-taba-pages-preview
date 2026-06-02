@@ -92,7 +92,7 @@ function readMapViewState(container) {
   const riderLocation = order ? getRiderLocation(order, sim, route.id, role) : null;
   const destination = route.destination;
   const points = route.points.map((point) => [point.lat, point.lng]);
-  const preferredTheme = container.dataset.mapRole?.startsWith('rider') ? 'dark' : 'light';
+  const preferredTheme = 'light';
   const tileLayer = getTileLayerForTheme(preferredTheme);
   const theme = getMapTheme(tileLayer.theme);
 
@@ -339,11 +339,13 @@ function renderMapMeta(container, order, location, destination) {
   const meta = container.querySelector('[data-map-meta]');
   if (!meta) return;
   if (!order || !location) {
-    meta.textContent = 'Neuquén Capital y Cipolletti';
+    meta.textContent = 'Mapa de seguimiento';
     return;
   }
 
-  const source = RIDER_LOCATION_SOURCES[location.source] || RIDER_LOCATION_SOURCES.simulation;
+  const source = location.source === 'gps'
+    ? 'Ubicación del repartidor en vivo'
+    : (RIDER_LOCATION_SOURCES[location.source] || RIDER_LOCATION_SOURCES.simulation);
   const age = relativeAgeLabel(location.lastFixAt || location.timestamp);
   const gpsStale = location.source === 'gps' && isLocationStale(location, TRACKING_STALE_MS);
   const prefix = gpsStale ? 'Última ubicación' : source;

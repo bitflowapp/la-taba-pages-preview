@@ -66,12 +66,26 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(card).toContainText('Total a cobrar');
   await expect(card).toContainText('Aceptar pedido');
 
-  // 4. El negocio gestiona el estado: Aceptar -> queda "Listo para entregar".
+  // 4. El negocio gestiona el estado: Aceptar -> listo -> reparto, siempre honesto sin GPS.
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Preparando');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Listo para entregar');
   await expect(page.locator('[data-inbox-group="preparando"]')).toBeVisible();
+
+  const managedCard = page.locator('[data-inbox-order="LT-0002"]');
+  await page.locator('[data-order-advance="LT-0002"]').click();
+  await waitForToast(page, 'Estado del pedido actualizado.');
+  await expect(managedCard).toContainText('Pedido listo para reparto');
+  await expect(managedCard).toContainText('Sin ubicación en vivo');
+  await expect(managedCard.locator('[data-business-tracking="LT-0002"] [data-real-map]')).toHaveCount(0);
+
+  await page.locator('[data-order-advance="LT-0002"]').click();
+  await waitForToast(page, 'Estado del pedido actualizado.');
+  await expect(managedCard).toContainText('Pedido en reparto');
+  await expect(managedCard).toContainText('Sin ubicación en vivo');
+  await expect(managedCard).toContainText('Ver tracking');
+  await expect(managedCard.locator('[data-business-tracking="LT-0002"] [data-real-map]')).toHaveCount(0);
 
   // 5. Mobile 390x844 sin overflow horizontal.
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
@@ -80,3 +94,106 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await guards.assertClean();
   await context.close();
 });
+
+test('Central de pedidos: pedido en reparto muestra GPS real sin inventar mapa', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const page = await context.newPage();
+  const guards = installPageGuards(page);
+  const now = Date.now();
+  await page.addInitScript((savedState) => {
+    window.__openedUrls = [];
+    window.open = (...args) => {
+      window.__openedUrls.push(String(args[0] || ''));
+      return null;
+    };
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('la_taba_mvp_v4_state', JSON.stringify(savedState));
+      sessionStorage.setItem('la_taba_mvp_v4_admin_unlocked', 'true');
+    } catch (_) { /* ignore */ }
+  }, liveBusinessState(now));
+
+  await page.goto('/#business');
+  await expect(page.locator('[data-view="business"]')).toBeVisible();
+
+  const card = page.locator('[data-inbox-order="LT-LIVE-1"]');
+  await expect(card).toBeVisible();
+  await expect(card).toContainText('Pedido en reparto');
+  await expect(card).toContainText('GPS del rider en vivo');
+  await expect(card).toContainText('Juli Reparto');
+  await expect(card.locator('[data-business-tracking="LT-LIVE-1"] [data-real-map]')).toBeVisible({ timeout: 10_000 });
+  await expect(card.locator('[data-business-tracking="LT-LIVE-1"] [data-real-map]')).toHaveAttribute('data-map-theme', 'light');
+  await expect(card.locator('[data-business-tracking="LT-LIVE-1"] .lt-rider-marker')).toHaveCount(1);
+  await expect(card.locator('[data-business-tracking="LT-LIVE-1"] .lt-map-marker')).toHaveCount(0);
+  await expect(card.locator('[data-business-tracking="LT-LIVE-1"]')).not.toContainText(/\bETA\b/i);
+  await expect(card.locator('[data-business-tracking="LT-LIVE-1"]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
+
+  const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+  expect(noOverflow).toBeTruthy();
+
+  await guards.assertClean();
+  await context.close();
+});
+
+function liveBusinessState(now) {
+  const createdAt = new Date(now - 90_000).toISOString();
+  const fixAt = new Date(now - 3_000).toISOString();
+  const location = {
+    lat: -38.9462,
+    lng: -68.0418,
+    accuracy: 14,
+    heading: 95,
+    timestamp: now - 3_000,
+    lastFixAt: fixAt,
+    source: 'gps',
+    gpsStatus: 'active',
+  };
+  return {
+    orders: [{
+      id: 'LT-LIVE-1',
+      customerName: 'Walter Cliente',
+      customerPhone: '2995551234',
+      address: 'Mendoza 851, Centro',
+      addressDetails: { streetLine: 'Mendoza 851', neighborhood: 'Centro', reference: 'Portón gris', label: 'Mendoza 851, Centro' },
+      deliveryMode: 'delivery',
+      paymentMethod: 'Efectivo',
+      notes: 'Sin sal',
+      createdAt,
+      status: 'on_the_way',
+      items: [{ productId: 'p-vacio', name: 'Vacío especial', icon: '', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+      subtotal: 1000,
+      deliveryFee: 0,
+      total: 1000,
+      statusHistory: [
+        { status: 'received', at: createdAt },
+        { status: 'preparing', at: createdAt },
+        { status: 'ready', at: createdAt },
+        { status: 'on_the_way', at: createdAt },
+      ],
+      delivery: { driverName: 'Juli Reparto', driverPhone: '2991112233', currentLocationLabel: 'El repartidor salió del local' },
+      tracking: { lastLocation: location, updatedAt: fixAt },
+    }],
+    lastOrderId: 'LT-LIVE-1',
+    cart: [],
+    simulation: {
+      orderId: 'LT-LIVE-1',
+      running: false,
+      mode: 'gps',
+      source: 'gps',
+      routeId: 'neuquen-centro',
+      progress: 0,
+      baseEta: 0,
+      etaMinutes: 0,
+      timestamp: now - 3_000,
+      lastFixAt: fixAt,
+      lastGpsFixAt: fixAt,
+      lastPublishedAt: fixAt,
+      gpsStatus: 'active',
+      lat: location.lat,
+      lng: location.lng,
+      accuracy: location.accuracy,
+      heading: location.heading,
+    },
+  };
+}

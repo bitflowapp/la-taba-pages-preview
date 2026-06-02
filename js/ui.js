@@ -591,7 +591,7 @@ function trackingHeadline(order) {
     return { kicker: 'Repartidor llegando', title: 'Llegando al domicilio', sub: 'El repartidor va hacia tu dirección.' };
   }
   if (order.status === 'on_the_way') {
-    return { kicker: 'Repartidor en camino', title: 'En camino', sub: 'El repartidor salió hacia tu dirección.' };
+    return { kicker: 'Pedido en camino', title: 'Pedido en camino', sub: 'El repartidor salió hacia tu dirección.' };
   }
   return { kicker: 'Pedido en preparación', title: 'En preparación', sub: 'Te avisamos cuando salga el repartidor.' };
 }
@@ -610,6 +610,12 @@ function displayDestinationLabel(value) {
     .replace(/^Local demo\s*·\s*/i, 'Local · ');
 }
 
+function trackingMapStatusTitle(order) {
+  if (order?.status === 'on_the_way') return 'Pedido en camino';
+  if (order?.status === 'arriving') return 'Llegando al domicilio';
+  return statusLabel(order?.status);
+}
+
 function realMapShell({ order = null, role = 'tracking', fallback }) {
   const orderAttr = order?.id ? ` data-order-id="${escapeHtml(order.id)}"` : '';
   return `
@@ -619,7 +625,7 @@ function realMapShell({ order = null, role = 'tracking', fallback }) {
         <p class="map-fallback-note">Mapa no disponible, usando vista simplificada.</p>
         ${fallback}
       </div>
-      <div class="real-map-meta" data-map-meta>Neuquén Capital y Cipolletti</div>
+      <div class="real-map-meta" data-map-meta>Mapa de seguimiento</div>
     </div>`;
 }
 
@@ -630,12 +636,12 @@ function trackingMapStage({ order = null, live = false }) {
     <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
       ${realMapShell({ order, fallback: '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', role: 'tracking' })}
       <div class="map-floating-top">
-        <span class="map-status-pill ${statusClass(order.status)}"><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
+        <span class="map-status-pill ${statusClass(order.status)}"><small>Estado</small><strong>${escapeHtml(trackingMapStatusTitle(order))}</strong></span>
         <span class="map-connection-pill">${realtimeChip(order)}</span>
       </div>
       <div class="map-floating-bottom">
-        <span class="map-stat-pill"><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
-        <span class="map-stat-pill"><small>GPS</small><strong>${live ? 'En vivo' : 'Sin GPS en vivo'}</strong></span>
+        <span class="map-stat-pill map-destination-pill"><small>Destino</small><strong>${escapeHtml(destinationLabel(order))}</strong></span>
+        <span class="map-stat-pill"><small>GPS</small><strong>${live ? 'GPS en vivo' : 'Sin GPS en vivo'}</strong></span>
       </div>
     </div>`;
 }
@@ -662,7 +668,7 @@ function riderTrackingCard(order, riderLocation) {
         <span class="rider-avatar">${escapeHtml(initials(name))}</span>
         <div class="rider-profile-text">
           <strong>${escapeHtml(name)}</strong>
-          <small>Ubicación rider · actualizado ${escapeHtml(age)}</small>
+          <small>Ubicación del repartidor en vivo · última actualización ${escapeHtml(age)}</small>
         </div>
         ${contact}
       </div>
@@ -683,7 +689,7 @@ function riderTrackingCard(order, riderLocation) {
 
 function riderPendingCopy(status) {
   if (status === 'on_the_way' || status === 'arriving') {
-    return { title: 'Repartidor en camino', sub: 'Todavía no comparte su ubicación en vivo.' };
+    return { title: 'Sin GPS en vivo', sub: 'Seguís el pedido por estado y dirección.' };
   }
   if (status === 'ready') {
     return { title: 'Repartidor sin asignar', sub: 'Tu pedido está listo. En breve sale el repartidor.' };
@@ -744,6 +750,7 @@ export function renderTracking() {
   const head = trackingHeadline(order);
   const riderLocation = chooseRiderLocation(getOrderSimulation(order), order.tracking?.lastLocation);
   const liveRider = hasLiveRiderLocation(riderLocation);
+  const liveAge = liveRider ? relativeAgeLabel(riderLocation.lastFixAt || riderLocation.timestamp) : '';
   const stepIndex = customerStepIndex(order.status);
   const metricsHtml = order.status === 'delivered'
     ? `
@@ -795,7 +802,7 @@ export function renderTracking() {
         ${isDelivery ? trackingAddressCard(order) : ''}
         ${isDelivery && !isCancelled ? riderTrackingCard(order, riderLocation) : ''}
         ${isDelivery && !isCancelled && order.status !== 'delivered'
-          ? `<p class="form-hint tracking-gps-note">📍 ${liveRider ? 'GPS en vivo: el repartidor está compartiendo su ubicación.' : 'Sin GPS en vivo: seguís el pedido por estado y dirección.'}</p>`
+          ? `<p class="form-hint tracking-gps-note">${liveRider ? `Ubicación del repartidor en vivo. Última actualización ${escapeHtml(liveAge)}.` : 'Sin GPS en vivo. Seguís el pedido por estado y dirección.'}</p>`
           : ''}
         <details class="order-detail">
           <summary>Ver detalle del pedido · ${order.id}</summary>

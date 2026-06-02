@@ -84,7 +84,7 @@ export function renderDeliveryPanel() {
 
   renderWithStableRealMap(container, `
     <div class="delivery-layout rider-map-experience ${gpsLive ? '' : 'no-map'}">
-      ${gpsLive ? renderRiderMapStage(order, headline, true) : ''}
+      ${gpsLive ? renderRiderMapStage(order, headline, true, destinationLabel) : ''}
 
       <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
@@ -120,7 +120,7 @@ export function renderDeliveryPanel() {
             <span class="rider-label">Entrega en</span>
             <p>${escapeHtml(destinationLabel)}</p>
             ${address.reference ? `<p class="rider-reference">Referencia: ${escapeHtml(address.reference)}</p>` : ''}
-            <p class="form-hint">Dirección cargada por el cliente. El mapa es una referencia de recorrido, no GPS en vivo.</p>
+            <p class="form-hint">${gpsLive ? 'Mapa con tu ubicación GPS real. La dirección del cliente queda textual para no inventar puntos.' : 'Dirección cargada por el cliente. Sin GPS compartido no se muestra ubicación en vivo.'}</p>
             <div class="rider-copy-row">
               <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar direccion</button>
             </div>
@@ -223,17 +223,17 @@ function renderSimControls(order, sim) {
   const signalStatus = gpsSignalStatusLabel(sim);
   const lastGpsFixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
   const lastFix = lastGpsFixAt ? relativeAgeLabel(lastGpsFixAt) : '';
-  const coords = sim?.source === 'gps' && Number.isFinite(sim?.lat) && Number.isFinite(sim?.lng)
-    ? `${sim.lat.toFixed(6)}, ${sim.lng.toFixed(6)}`
-    : 'Sin fix real';
-  const accuracy = sim?.source === 'gps' && Number.isFinite(sim?.accuracy) ? `${Math.round(sim.accuracy)} m` : 'Sin precisión';
+  const status = getRealtimeStatus();
+  const connection = status.relayEnabled
+    ? (status.relayConnected ? 'En vivo entre equipos' : 'Reconectando')
+    : 'Este equipo';
   const gpsButtonLabel = sim?.gpsStatus === 'requesting'
     ? 'Esperando permiso…'
     : gpsSession && sim?.gpsStatus === 'unavailable'
       ? 'Buscando señal…'
       : sim?.gpsStatus === 'active' && gpsSession
-      ? 'GPS compartiendo ubicación'
-      : 'Compartir mi ubicación real';
+      ? 'Compartiendo ubicación'
+      : 'Compartir ubicación real';
   const gpsButtonDisabled = sim?.gpsStatus === 'requesting' || gpsSession;
   const secureHint = globalThis.isSecureContext === false
     ? '<span class="sim-gps-error">El GPS real requiere HTTPS o localhost seguro. Sin eso no se puede compartir ubicación en vivo.</span>'
@@ -243,18 +243,18 @@ function renderSimControls(order, sim) {
     <div class="sim-panel street-test-panel" data-street-test>
       <div class="sim-head">
         <span class="rider-label">Ubicación en vivo</span>
-        <span class="sim-state ${gpsOn ? 'live' : ''}">GPS: ${escapeHtml(gpsStatus)}</span>
+        <span class="sim-state ${gpsOn ? 'live' : ''}">Ubicación: ${escapeHtml(gpsStatus)}</span>
       </div>
-      <p class="form-hint">Compartí tu ubicación real sólo durante este reparto. El cliente la ve "en vivo" únicamente cuando llegan coordenadas reales; si no, ve "Sin GPS en vivo".</p>
+      <p class="form-hint">El cliente verá tu ubicación mientras el pedido esté en reparto. Si la ubicación está apagada, sólo verá el estado y la dirección.</p>
       <div class="street-summary-grid">
+        <span><small>Estado</small><strong>${escapeHtml(gpsStatus)}</strong></span>
         <span><small>Señal</small><strong>${escapeHtml(signalStatus)}</strong></span>
-        <span><small>Coordenadas</small><strong>${escapeHtml(coords)}</strong></span>
-        <span><small>Precisión</small><strong>${escapeHtml(accuracy)}</strong></span>
         <span><small>Última lectura</small><strong>${escapeHtml(lastFix || 'Sin datos')}</strong></span>
+        <span><small>Conexión</small><strong>${escapeHtml(connection)}</strong></span>
       </div>
       <div class="button-row street-primary-actions">
         <button class="primary-button" type="button" data-sim-gps ${gpsButtonDisabled ? 'disabled' : ''}>${escapeHtml(gpsButtonLabel)}</button>
-        <button class="secondary-button" type="button" data-sim-gps-off ${gpsSession ? '' : 'disabled'}>Detener GPS</button>
+        <button class="secondary-button" type="button" data-sim-gps-off ${gpsSession ? '' : 'disabled'}>Detener ubicación</button>
       </div>
       <div class="sim-gps">
         <span class="sim-gps-status">Estado: ${escapeHtml(signalStatus)}${lastFix ? ` · actualizado ${escapeHtml(lastFix)}` : ''}</span>
@@ -290,18 +290,18 @@ function canDeliverForStreet(order) {
 
 function gpsProductStatusLabel(sim, active) {
   const labels = {
-    inactive: 'GPS detenido',
+    inactive: 'Ubicación detenida',
     requesting: 'Permiso requerido',
-    active: active ? 'GPS compartiendo ubicación' : 'Última ubicación',
+    active: active ? 'Compartiendo ubicación' : 'Última ubicación',
     denied: 'Permiso requerido',
     unavailable: sim?.source === 'gps' ? 'Señal baja, usando última ubicación' : 'Señal baja',
     requires_secure_context: 'Requiere HTTPS',
   };
-  return labels[sim?.gpsStatus || 'inactive'] || 'GPS detenido';
+  return labels[sim?.gpsStatus || 'inactive'] || 'Ubicación detenida';
 }
 
 function gpsSignalStatusLabel(sim) {
-  if (!sim || sim.gpsStatus === 'inactive') return 'GPS detenido';
+  if (!sim || sim.gpsStatus === 'inactive') return 'Ubicación detenida';
   if (sim.gpsStatus === 'requesting') return 'Permiso requerido';
   if (sim.gpsStatus === 'denied') return 'Permiso requerido';
   if (sim.gpsStatus === 'requires_secure_context') return 'Permiso requerido';
@@ -315,7 +315,7 @@ function gpsSignalStatusLabel(sim) {
     }
     return 'Buena señal';
   }
-  return 'GPS detenido';
+  return 'Ubicación detenida';
 }
 
 function gpsStatusLabel(sim, active) {
@@ -407,7 +407,7 @@ function relativeAgeLabel(value) {
   return `hace ${minutes} min`;
 }
 
-function renderRiderMapStage(order, headline, gpsLive = false) {
+function renderRiderMapStage(order, headline, gpsLive = false, destination = '') {
   const status = getRealtimeStatus();
   const connection = status.relayEnabled
     ? (status.relayConnected ? 'En vivo' : 'Reconectando')
@@ -420,7 +420,7 @@ function renderRiderMapStage(order, headline, gpsLive = false) {
         <span class="map-connection-pill">${escapeHtml(connection)}</span>
       </div>
       <div class="map-floating-bottom">
-        <span class="map-stat-pill"><small>A cobrar</small><strong>${order ? money(order.total) : ''}</strong></span>
+        <span class="map-stat-pill map-destination-pill"><small>Destino</small><strong>${escapeHtml(destination || 'Dirección del pedido')}</strong></span>
         <span class="map-stat-pill"><small>GPS</small><strong>${gpsLive ? 'Compartiendo ubicación' : 'Sin compartir'}</strong></span>
       </div>
     </div>`;
@@ -435,7 +435,7 @@ function renderRealMapShell(order, fallback, role = 'rider') {
         <p class="map-fallback-note">Mapa no disponible, usando vista simplificada.</p>
         ${fallback}
       </div>
-      <div class="real-map-meta" data-map-meta>Ubicación estimada</div>
+      <div class="real-map-meta" data-map-meta>Mapa de reparto</div>
     </div>`;
 }
 

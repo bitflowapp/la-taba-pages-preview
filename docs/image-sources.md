@@ -12,6 +12,13 @@ License reference: https://www.pexels.com/license/
 | `assets/products/chorizos-parrilla.webp` | https://www.pexels.com/photo/a-person-flipping-sausages-on-the-grill-17947491/ | Alina Matveycheva | Sausages/embutidos |
 | `assets/products/milanesas.webp` | https://www.pexels.com/photo/breaded-chicken-on-white-plate-4078178/ | Anna Guerrero | Milanesas/breaded products |
 | `assets/products/hamburguesa.webp` | https://www.pexels.com/photo/close-up-photo-of-a-burger-19247582/ | Jonathan Borba | Carne picada / burger-oriented product imagery |
+| `assets/products/paleta.webp` | https://images.pexels.com/photos/9670690/pexels-photo-9670690.jpeg | tubarones | Fiambres y quesos · Paleta cocida |
+| `assets/products/jamon-cocido.webp` | https://images.pexels.com/photos/5491290/pexels-photo-5491290.jpeg | Adonyi Foto | Fiambres y quesos · Jamón cocido |
+| `assets/products/mortadela.webp` | https://images.pexels.com/photos/19585058/pexels-photo-19585058.jpeg | Anthony Rahayel | Fiambres y quesos · Mortadela |
+| `assets/products/queso-barra.webp` | https://images.pexels.com/photos/793129/pexels-photo-793129.jpeg | Francesco Paggiaro | Fiambres y quesos · Queso barra |
+| `assets/products/salame.webp` | https://images.pexels.com/photos/4639694/pexels-photo-4639694.jpeg | Milan | Fiambres y quesos · Salame |
+| `assets/products/jamon-crudo.webp` | https://images.pexels.com/photos/19688911/pexels-photo-19688911.jpeg | Anthony Rahayel | Fiambres y quesos · Jamón crudo |
+| `assets/products/queso-tybo.webp` | https://images.pexels.com/photos/6004142/pexels-photo-6004142.jpeg | RDNE Stock project | Fiambres y quesos · Queso tybo |
 
 Notes:
 

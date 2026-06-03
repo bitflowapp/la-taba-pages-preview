@@ -14,6 +14,7 @@
 import { getState, setState, subscribe } from './state.js';
 import {
   chooseActiveOrderId,
+  computeRelayBackoffMs,
   isNewerTimestamp,
   mergeOrders,
   orderTimestamp,
@@ -28,11 +29,22 @@ let relayBase = null;
 let channel = null;
 let eventSource = null;
 let relayConnected = false;
+// Estado de conexión con el relay: 'idle' (sin relay) | 'connecting' |
+// 'connected' | 'reconnecting' | 'offline'. Permite mostrar en la UI un estado
+// honesto y decidir cuándo reabrir el stream nosotros mismos.
+let relayState = 'idle';
+let relayErrorCount = 0;
+let relayReconnectTimer = null;
+let relayManualClose = false;
 let applyingRemote = false;
 let lastSnapshotHash = '';
 let lastRemoteSimTs = 0;
 let started = false;
 const RECENT_GPS_MS = 5 * 60 * 1000;
+// Tras este número de errores seguidos mostramos "Sin conexión" (y el botón de
+// reintento), aunque por detrás sigamos reabriendo el stream con backoff.
+const RELAY_OFFLINE_AFTER_ATTEMPTS = 3;
+const EVENT_SOURCE_CLOSED = 2;
 
 export function getDeviceId() {
   if (deviceId) return deviceId;
@@ -92,18 +104,88 @@ function setupBroadcastChannel() {
 }
 
 function setupRelay() {
-  if (typeof EventSource === 'undefined') return;
+  if (typeof EventSource === 'undefined' || !relayBase) return;
+  relayManualClose = false;
+  relayState = 'connecting';
   try {
     eventSource = new EventSource(`${relayBase}/events?room=${encodeURIComponent(room)}`);
-    eventSource.addEventListener('ready', () => { relayConnected = true; rerenderStatus(); });
+    eventSource.addEventListener('ready', onRelayOpen);
     eventSource.addEventListener('message', (event) => {
       try { applyRemote(JSON.parse(event.data)); } catch (_) { /* ignore malformed */ }
     });
-    eventSource.onopen = () => { relayConnected = true; rerenderStatus(); };
-    eventSource.onerror = () => { relayConnected = false; rerenderStatus(); };
+    eventSource.onopen = onRelayOpen;
+    eventSource.onerror = onRelayError;
   } catch (_) {
     eventSource = null;
+    relayState = 'offline';
   }
+  rerenderStatus();
+}
+
+function onRelayOpen() {
+  relayConnected = true;
+  relayErrorCount = 0;
+  relayState = 'connected';
+  clearRelayReconnectTimer();
+  rerenderStatus();
+}
+
+// Una sola caída cuenta como "reconectando"; varias seguidas pasan a "sin
+// conexión" (para mostrar el botón de reintento). Si el navegador cerró el
+// stream (CLOSED) lo reabrimos nosotros con backoff acotado; si quedó
+// reintentando solo (CONNECTING), lo dejamos hacer y no abrimos un segundo.
+function onRelayError() {
+  if (relayManualClose) return;
+  relayConnected = false;
+  relayErrorCount += 1;
+  relayState = relayErrorCount >= RELAY_OFFLINE_AFTER_ATTEMPTS ? 'offline' : 'reconnecting';
+  if (eventSource && eventSource.readyState === EVENT_SOURCE_CLOSED) {
+    scheduleRelayReconnect();
+  }
+  rerenderStatus();
+}
+
+function scheduleRelayReconnect() {
+  if (relayReconnectTimer !== null || typeof setTimeout !== 'function') return;
+  const delay = computeRelayBackoffMs(relayErrorCount);
+  relayReconnectTimer = setTimeout(() => {
+    relayReconnectTimer = null;
+    if (relayManualClose) return;
+    reopenRelay();
+  }, delay);
+}
+
+function clearRelayReconnectTimer() {
+  if (relayReconnectTimer !== null) {
+    clearTimeout(relayReconnectTimer);
+    relayReconnectTimer = null;
+  }
+}
+
+function closeRelayStream({ manual }) {
+  relayManualClose = manual;
+  if (eventSource) {
+    try { eventSource.close(); } catch (_) { /* ignore */ }
+    eventSource = null;
+  }
+}
+
+function reopenRelay() {
+  closeRelayStream({ manual: false });
+  setupRelay();
+}
+
+// Reintento manual a pedido del usuario ("Reintentar conexión"). Reinicia el
+// backoff, reabre el stream y pide el estado actual a los pares.
+export function retryRelayConnection() {
+  if (!relayBase) {
+    return { ok: false, message: 'No hay servidor de sala configurado en este equipo.' };
+  }
+  clearRelayReconnectTimer();
+  relayErrorCount = 0;
+  reopenRelay();
+  publish({ kind: 'hello' });
+  return { ok: true, message: 'Reintentando conexión con la sala…' };
 }
 
 function snapshot() {
@@ -245,6 +327,7 @@ export function getRealtimeStatus() {
     relayEnabled: Boolean(relayBase),
     relayBase,
     relayConnected,
+    relayState: relayBase ? relayState : 'idle',
     channelEnabled: Boolean(channel),
   };
 }

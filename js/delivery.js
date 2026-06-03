@@ -16,6 +16,7 @@ import {
   syncSimulationOnStatus,
 } from './simulation.js';
 import { getRealtimeStatus } from './realtime.js';
+import { relayStatusLabel } from './core/realtime-sync.js';
 import { normalizeOrderAddressDetails } from './core/address.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
@@ -190,13 +191,15 @@ function renderRiderActions(order, { canLeave, canArrive, canDeliver }) {
 // Bloque avanzado: esconde relay/sala/equipo para que la vista principal sea operativa.
 function renderAdvancedDemo() {
   const status = getRealtimeStatus();
-  const connection = status.relayEnabled
-    ? (status.relayConnected ? `En vivo entre equipos · sala ${escapeHtml(status.room)}` : `Conexión entre equipos en reconexión · sala ${escapeHtml(status.room)}`)
-    : 'Sólo este equipo';
+  const connection = `${relayStatusLabel(status)}${status.relayEnabled ? ` · sala ${escapeHtml(status.room)}` : ''}`;
+  const retryButton = status.relayEnabled && !status.relayConnected
+    ? '<button class="ghost-button compact" type="button" data-retry-relay>Reintentar conexión</button>'
+    : '';
   const linkButtons = status.relayEnabled
     ? `<div class="button-row demo-links">
         <button class="ghost-button compact" type="button" data-copy-client-link>Copiar link cliente</button>
         <button class="ghost-button compact" type="button" data-copy-rider-link>Copiar link rider</button>
+        ${retryButton}
       </div>`
     : '<p class="form-hint">Para usar dos celulares, abrí la app con el enlace compartido del comercio.</p>';
   return `
@@ -345,7 +348,9 @@ function gpsStatusLabel(sim, active) {
 
 function renderGpsDiagnostics(sim, gpsOn) {
   const status = getRealtimeStatus();
-  const relay = status.relayEnabled ? (status.relayConnected ? 'activa' : 'reconectando') : 'este equipo';
+  const relay = status.relayEnabled
+    ? (status.relayConnected ? 'activa' : status.relayState === 'offline' ? 'sin conexión' : 'reconectando')
+    : 'este equipo';
   const backendMode = getRepositoryDataMode();
   const backendSend = sim?.backendError
     ? `Error: ${sim.backendError}`

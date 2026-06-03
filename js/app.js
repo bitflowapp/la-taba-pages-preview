@@ -26,19 +26,23 @@ import {
   updateAddressFieldVisibility,
   $,
 } from './ui.js';
-import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, getLastOrder } from './orders.js';
+import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, getActiveOrder, getLastOrder } from './orders.js';
 import { getState, subscribe } from './state.js';
 import { STORAGE_KEYS } from './config.js';
 import { handleBusinessAction, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
 import { handleDeliveryAction, handleDeliveryChange, renderDeliveryPanel } from './delivery.js';
 import { disableGpsTracking, handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
-import { getRealtimeStatus, initRealtime } from './realtime.js';
+import { getRealtimeStatus, initRealtime, onRealtimeStatusChange, retryRelayConnection } from './realtime.js';
 import { renderMapViews } from './map/map_view.js';
+import { activeTrackingLiveness } from './map/route_geometry.js';
 import { getOrderRepository, getRepositoryDiagnostic, startOrderRepositorySync } from './repositories/repository_factory.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
 const RESET_RELAY_TIMEOUT_MS = 1200;
+// Cada cuánto revisamos si el GPS real del pedido activo se enfrió. Es bien por
+// debajo del umbral de "stale" (30 s) para volver a un fallback honesto a tiempo.
+const FRESHNESS_TICK_MS = 5000;
 const VIEW_ALIASES = {
   catalogo: 'catalog',
   catalog: 'catalog',
@@ -62,6 +66,8 @@ const VIEW_ALIASES = {
 };
 
 let activeView = viewFromHash();
+let lastLivenessSignature = '';
+let freshnessTimer = null;
 
 // Limpieza segura de la sesión demo: abrir la app con ?reset=1 (o ?demo-reset=1)
 // borra pedidos, carrito y acceso del negocio guardados en este equipo y recarga
@@ -126,10 +132,15 @@ async function bootstrap() {
     bindEvents();
     subscribe(renderAll);
     initRealtime();
+    // La conexión con la sala (relay) cambia fuera del flujo de estado: cuando
+    // conecta/cae, refrescamos las superficies de seguimiento para que el chip
+    // de conexión sea honesto sin esperar otro cambio de pedido.
+    onRealtimeStatusChange(renderLiveSurfaces);
     startOrderRepositorySync();
     renderAll();
     playViewEnter(activeView);
     resumeSimulationIfNeeded();
+    startFreshnessTick();
     // Aviso discreto si se pidió un backend y la app tuvo que seguir local.
     const diagnostic = getRepositoryDiagnostic();
     if (diagnostic) {
@@ -163,6 +174,42 @@ function renderAll() {
   renderDeliveryPanel();
   updateAddressFieldVisibility();
   renderMapViews();
+  // Un render completo ya refleja la vivacidad actual; mantener la firma en
+  // sincronía hace que el tick sólo actúe cuando cambia por el paso del tiempo.
+  lastLivenessSignature = trackingLivenessSignature();
+}
+
+// Superficies sensibles a la "vivacidad" del GPS y al estado de la conexión. Se
+// re-renderan cuando el rider deja de compartir / pierde señal o cuando cae el
+// relay, para volver a un fallback honesto (sin mapa ni marker fantasma) y con
+// el chip de conexión correcto, sin re-renderizar catálogo/carrito.
+function renderLiveSurfaces() {
+  renderHomeActiveOrder();
+  renderTracking();
+  renderBusinessDashboard();
+  renderDeliveryPanel();
+  renderMapViews();
+  lastLivenessSignature = trackingLivenessSignature();
+}
+
+// Firma de vivacidad del pedido activo: id + estado live/idle del GPS real. Si
+// cambia entre ticks (p. ej. el último fix cruzó el umbral de stale sin que
+// llegara un nuevo evento), refrescamos para mostrar "Sin GPS en vivo".
+function trackingLivenessSignature() {
+  const order = getActiveOrder();
+  if (!order) return 'none';
+  return `${order.id}:${activeTrackingLiveness(order, getState().simulation)}`;
+}
+
+// Intervalo liviano: sólo re-renderiza cuando la vivacidad cambió por el tiempo.
+// En reposo (sin pedido o sin GPS) la firma es estable y no hace trabajo de DOM.
+function startFreshnessTick() {
+  if (freshnessTimer !== null || typeof setInterval !== 'function') return;
+  lastLivenessSignature = trackingLivenessSignature();
+  freshnessTimer = setInterval(() => {
+    if (trackingLivenessSignature() === lastLivenessSignature) return;
+    renderLiveSurfaces();
+  }, FRESHNESS_TICK_MS);
 }
 
 function bindEvents() {
@@ -359,6 +406,12 @@ function bindEvents() {
   document.addEventListener('click', (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    if (target.closest('[data-retry-relay]')) {
+      const result = retryRelayConnection();
+      showToast(result.message);
+      renderLiveSurfaces();
+      return;
+    }
     if (target.closest('[data-whatsapp-copy]')) {
       const values = getCheckoutFormValues();
       window.open(buildWhatsAppUrlFromDraft(values), '_blank', 'noopener,noreferrer');

@@ -131,3 +131,33 @@ export function isNewerTimestamp(incomingTs, lastTs) {
   if (!Number.isFinite(b)) return true;
   return a > b;
 }
+
+// ===== Conexión con el relay (puro y testeable, sin EventSource ni DOM) =====
+
+// Backoff exponencial acotado para reabrir el stream SSE cuando el relay cae.
+// attempt empieza en 1: 1s, 2s, 4s, 8s, … hasta `maxMs`. Mantiene los reintentos
+// frecuentes al principio y espaciados después, sin martillar el servidor.
+export function computeRelayBackoffMs(attempt, { baseMs = 1000, maxMs = 15_000 } = {}) {
+  const safeAttempt = Math.max(1, Math.floor(Number(attempt) || 1));
+  const safeBase = Math.max(1, Number(baseMs) || 1000);
+  const safeMax = Math.max(safeBase, Number(maxMs) || 15_000);
+  const raw = safeBase * (2 ** (safeAttempt - 1));
+  return Math.min(safeMax, raw);
+}
+
+// Etiqueta honesta del estado de conexión con la sala, para que la UI muestre
+// "conectado / reconectando / sin conexión / sólo este equipo" sin inventar.
+export function relayStatusLabel(status = {}) {
+  if (!status.relayEnabled) return 'Sólo este equipo';
+  switch (status.relayState) {
+    case 'connected':
+      return 'En vivo entre equipos';
+    case 'connecting':
+      return 'Conectando con la sala…';
+    case 'offline':
+      return 'Sin conexión con la sala';
+    case 'reconnecting':
+    default:
+      return status.relayConnected ? 'En vivo entre equipos' : 'Reconectando con la sala…';
+  }
+}

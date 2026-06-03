@@ -36,6 +36,52 @@ function liveTrackingState(now) {
   };
 }
 
+// Igual que liveTrackingState pero con el último fix cerca del umbral de stale
+// (24s): arranca "en vivo" y debe enfriarse durante el test.
+function staleningTrackingState(now) {
+  const state = liveTrackingState(now);
+  const fixAge = 24_000;
+  const fixAt = new Date(now - fixAge).toISOString();
+  state.orders[0].tracking.lastLocation.timestamp = now - fixAge;
+  state.orders[0].tracking.lastLocation.lastFixAt = fixAt;
+  state.orders[0].tracking.updatedAt = fixAt;
+  state.simulation.timestamp = now - fixAge;
+  state.simulation.lastFixAt = fixAt;
+  state.simulation.lastGpsFixAt = fixAt;
+  state.simulation.lastPublishedAt = fixAt;
+  return state;
+}
+
+test('el tracking del cliente vuelve a "Sin GPS en vivo" cuando el GPS real se enfría (tick de frescura)', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const guards = installPageGuards(page);
+  await page.addInitScript((state) => {
+    localStorage.clear(); sessionStorage.clear();
+    localStorage.setItem('la_taba_mvp_v4_state', JSON.stringify(state));
+  }, staleningTrackingState(Date.now()));
+
+  await page.goto('/#tracking');
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+  const tracking = page.locator('[data-tracking-panel]');
+
+  // Al cargar, el fix sigue fresco: hay mapa en vivo y NO la leyenda de fallback.
+  await expect(tracking.locator('[data-real-map]')).toHaveCount(1);
+  await expect(tracking).not.toContainText('Sin GPS en vivo');
+
+  // El fix se enfría sin que llegue ningún evento nuevo: el tick de frescura
+  // debe degradar a fallback honesto, quitando mapa y marker fantasma.
+  await expect(tracking).toContainText('Sin GPS en vivo', { timeout: 20_000 });
+  await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
+  await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
+
+  // Sigue sin overflow horizontal ni errores JS.
+  const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+  expect(noOverflow).toBeTruthy();
+  await guards.assertClean();
+  await context.close();
+});
+
 test('con GPS real válido el marker es el disco "R" limpio (sin casco/moto/rojo)', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();

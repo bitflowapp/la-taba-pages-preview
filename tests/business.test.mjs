@@ -3,7 +3,7 @@ import test, { beforeEach } from 'node:test';
 import { BUSINESS_CONFIG } from '../js/config.js';
 import { getBusinessMetrics } from '../js/core/business-metrics.js';
 import { setState, getState } from '../js/state.js';
-import { unlockAdmin, lockAdmin, handleBusinessAction, getActiveOrders, getLowStockProducts } from '../js/business.js';
+import { unlockAdmin, lockAdmin, handleBusinessAction, getActiveOrders, getLowStockProducts, confirmOrderCancellation } from '../js/business.js';
 import { createOrderFromCheckout } from '../js/orders.js';
 import { addToCart } from '../js/cart.js';
 import { resetState, makeTarget } from './helpers.mjs';
@@ -69,11 +69,23 @@ test('business actions advance status, cancel orders, edit stock, and toggle pro
   assert.match(result.message, /Estado del pedido actualizado/);
   assert.equal(getState().orders[0].status, 'preparing');
 
+  // Confirmación segura: el primer tap en "Rechazar" NO cancela (abre el modal).
   result = handleBusinessAction(makeTarget({
     '[data-order-cancel]': { orderCancel: order.id },
   }));
   assert.equal(result.handled, true);
+  assert.equal(getState().orders[0].status, 'preparing', 'el primer tap no cancela');
+
+  // "Volver" tampoco cambia el estado.
+  result = handleBusinessAction(makeTarget({ '[data-cancel-dismiss]': {} }));
+  assert.equal(result.handled, true);
+  assert.equal(getState().orders[0].status, 'preparing', 'volver no cancela');
+
+  // Confirmar con motivo: recién ahí pasa a cancelled y registra el motivo.
+  result = confirmOrderCancellation(order.id, 'Sin stock');
+  assert.equal(result.ok, true);
   assert.equal(getState().orders[0].status, 'cancelled');
+  assert.equal(getState().orders[0].cancelReason, 'Sin stock', 'el motivo queda registrado');
 
   const productBefore = getState().products.find((product) => product.id === 'p-agua');
   assert.equal(productBefore.stock, 0);
@@ -96,6 +108,45 @@ test('business actions advance status, cancel orders, edit stock, and toggle pro
   }));
   assert.equal(result.handled, true);
   assert.equal(getState().products.find((product) => product.id === 'p-agua').available, !availabilityBefore);
+});
+
+function cancelTestOrder(id, status, deliveryMode = 'delivery') {
+  const at = new Date().toISOString();
+  return {
+    id, customerName: 'QA Cancel', customerPhone: '2990000000', address: 'Roca 123',
+    deliveryMode, paymentMethod: 'Efectivo', notes: '', createdAt: at, status,
+    items: [{ productId: 'p-vacio', name: 'Vacío', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+    subtotal: 1000, deliveryFee: 0, total: 1000,
+    statusHistory: [{ status: 'received', at }],
+  };
+}
+
+test('cancelación segura: un pedido entregado no se puede cancelar', () => {
+  setState({ ...getState(), orders: [cancelTestOrder('LT-DONE', 'delivered')], lastOrderId: 'LT-DONE' });
+  // Primer tap (request): rechazado con mensaje claro, sin abrir confirmación.
+  const requested = handleBusinessAction(makeTarget({ '[data-order-cancel]': { orderCancel: 'LT-DONE' } }));
+  assert.equal(requested.handled, true);
+  assert.equal(requested.ok, false);
+  assert.match(requested.message, /entregado/i);
+  // Confirmación directa también bloqueada.
+  const confirmed = confirmOrderCancellation('LT-DONE', 'lo que sea');
+  assert.equal(confirmed.ok, false);
+  assert.equal(getState().orders[0].status, 'delivered');
+});
+
+test('cancelación segura: un pedido terminal (cancelado) no se re-cancela', () => {
+  setState({ ...getState(), orders: [cancelTestOrder('LT-CXL', 'cancelled')], lastOrderId: 'LT-CXL' });
+  const result = confirmOrderCancellation('LT-CXL', 'motivo nuevo');
+  assert.equal(result.ok, false);
+  assert.equal(getState().orders[0].status, 'cancelled');
+});
+
+test('cancelación segura: confirmar sin motivo no cambia el estado', () => {
+  setState({ ...getState(), orders: [cancelTestOrder('LT-NR', 'preparing')], lastOrderId: 'LT-NR' });
+  const result = confirmOrderCancellation('LT-NR', '   ');
+  assert.equal(result.ok, false);
+  assert.match(result.message, /motivo/i);
+  assert.equal(getState().orders[0].status, 'preparing');
 });
 
 test('low-stock detection includes scarce products and excludes out-of-stock ones', () => {

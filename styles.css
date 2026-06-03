@@ -478,6 +478,10 @@ main { max-width: var(--max); margin: 0 auto; padding: 0 18px 96px; }
 .address-fields { display: grid; gap: 11px; }
 label { display: grid; gap: 6px; color: var(--muted); font-weight: 700; font-size: 13px; }
 input, textarea, select {
+  /* 16px mínimo: evita el zoom automático de iOS/Safari al enfocar campos
+     (los inputs heredarían 13px del <label> vía `font: inherit`). No se bloquea
+     el zoom manual del usuario ni se toca el viewport. */
+  font-size: 16px; line-height: 1.4;
   width: 100%; color: var(--text); background: rgba(255,255,255,0.06);
   border: 1px solid var(--line); border-radius: 13px; outline: 0; padding: 13px 14px;
   transition: border-color 0.16s ease, background 0.16s ease;

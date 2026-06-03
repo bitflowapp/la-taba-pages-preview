@@ -403,6 +403,22 @@ export function hasLiveRiderLocation(location, { now = Date.now(), staleMs = GPS
   return !isLocationStale(normalized, staleMs, now);
 }
 
+// Estado de "vivacidad" del seguimiento de un pedido. Sirve para que la UI
+// vuelva a un fallback honesto cuando el GPS real se enfría, SIN depender de que
+// llegue un nuevo evento de estado (p. ej. el rider pierde señal o cierra la
+// pestaña y deja de publicar). Es puro (sin DOM ni timers) para poder testearlo.
+//   - 'none'     : no hay pedido.
+//   - 'terminal' : pedido entregado/cancelado (no se sigue).
+//   - 'live'     : hay un fix GPS real y fresco del rider.
+//   - 'idle'     : hay pedido activo pero sin GPS real fresco (fallback honesto).
+export function activeTrackingLiveness(order, sim = null, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {
+  if (!order || !order.id) return 'none';
+  if (order.status === 'delivered' || order.status === 'cancelled') return 'terminal';
+  const simForOrder = sim && sim.orderId === order.id ? sim : null;
+  const location = chooseRiderLocation(simForOrder, order?.tracking?.lastLocation, { now, staleMs });
+  return hasLiveRiderLocation(location, { now, staleMs }) ? 'live' : 'idle';
+}
+
 // Indica si un fix quedó "viejo" según un umbral (default 30s).
 export function isLocationStale(location, maxAgeMs = 30_000, now = Date.now()) {
   if (!location) return true;

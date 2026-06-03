@@ -3,9 +3,11 @@ import test from 'node:test';
 import {
   chooseActiveOrderId,
   chooseActiveLiveOrderId,
+  computeRelayBackoffMs,
   isNewerTimestamp,
   mergeOrders,
   orderTimestamp,
+  relayStatusLabel,
   shouldReplaceOrder,
 } from '../js/core/realtime-sync.js';
 
@@ -138,4 +140,32 @@ test('isNewerTimestamp compares monotonic stamps with sane fallbacks', () => {
   assert.equal(isNewerTimestamp(1, 2), false);
   assert.equal(isNewerTimestamp(5, undefined), true);
   assert.equal(isNewerTimestamp('nope', 1), false);
+});
+
+// ===== Reconexión del relay =====
+test('computeRelayBackoffMs crece exponencial y queda acotado', () => {
+  assert.equal(computeRelayBackoffMs(1), 1000);
+  assert.equal(computeRelayBackoffMs(2), 2000);
+  assert.equal(computeRelayBackoffMs(3), 4000);
+  assert.equal(computeRelayBackoffMs(4), 8000);
+  // 16000 superaría el tope: se queda en 15000.
+  assert.equal(computeRelayBackoffMs(5), 15000);
+  assert.equal(computeRelayBackoffMs(10), 15000);
+  // Entradas inválidas se tratan como el primer intento.
+  assert.equal(computeRelayBackoffMs(0), 1000);
+  assert.equal(computeRelayBackoffMs(-3), 1000);
+  assert.equal(computeRelayBackoffMs('nope'), 1000);
+  // Base/tope configurables.
+  assert.equal(computeRelayBackoffMs(1, { baseMs: 500, maxMs: 4000 }), 500);
+  assert.equal(computeRelayBackoffMs(4, { baseMs: 500, maxMs: 4000 }), 4000);
+});
+
+test('relayStatusLabel describe la conexión con la sala sin inventar', () => {
+  assert.equal(relayStatusLabel({ relayEnabled: false }), 'Sólo este equipo');
+  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'connected' }), 'En vivo entre equipos');
+  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'connecting' }), 'Conectando con la sala…');
+  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'offline' }), 'Sin conexión con la sala');
+  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'reconnecting' }), 'Reconectando con la sala…');
+  // Defensa: reconnecting pero ya reconectado => no muestra "reconectando".
+  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'reconnecting', relayConnected: true }), 'En vivo entre equipos');
 });

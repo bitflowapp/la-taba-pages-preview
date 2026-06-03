@@ -111,6 +111,30 @@ async function seedRelayRoom(room, message) {
   expect(response.ok).toBeTruthy();
 }
 
+test('el panel del rider refleja la conexión en vivo con la sala (status cableado) y sin reintento', async ({ browser }) => {
+  const room = `rt-status-e2e-${Date.now()}`;
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const page = await context.newPage();
+  await stub(page);
+  const guards = installPageGuards(page);
+
+  await page.goto(`${RELAY}/?relay=${encodeURIComponent(RELAY)}&room=${room}#rider`);
+  await page.locator('[data-view="rider"] [data-open-pin]').click();
+  await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
+  await page.locator('[data-pin-form]').press('Enter');
+  await expect(page.locator('[data-view="rider"] [data-delivery-panel]')).toBeVisible();
+
+  const panel = page.locator('[data-delivery-panel]');
+  // onRealtimeStatusChange está cableado: cuando el relay conecta, el panel pasa
+  // a mostrar el estado real sin esperar otro cambio de pedido.
+  await expect(panel).toContainText('En vivo entre equipos', { timeout: 10_000 });
+  // Conectado => no se ofrece el botón de reintento.
+  await expect(panel.locator('[data-retry-relay]')).toHaveCount(0);
+
+  await guards.assertClean();
+  await context.close();
+});
+
 test('reset=1 con relay limpia el snapshot viejo de la room antes de reconectar', async ({ browser }) => {
   const room = `reset-relay-e2e-${Date.now()}`;
   await seedRelayRoom(room, staleRelayMessage(room));

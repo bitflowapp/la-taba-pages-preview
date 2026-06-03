@@ -840,9 +840,9 @@ function realtimeChip(order = null) {
   }
   const status = getRealtimeStatus();
   if (status.relayEnabled) {
-    return status.relayConnected
-      ? '<span class="rt-chip live">En vivo</span>'
-      : '<span class="rt-chip warn">Reconectando</span>';
+    if (status.relayConnected) return '<span class="rt-chip live">En vivo</span>';
+    if (status.relayState === 'offline') return '<span class="rt-chip warn">Sin conexión</span>';
+    return '<span class="rt-chip warn">Reconectando</span>';
   }
   return '<span class="rt-chip local">En vivo</span>';
 }

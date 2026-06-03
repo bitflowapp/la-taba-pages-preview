@@ -24,6 +24,7 @@ import {
   buildKitchenTicket,
   cancelOrder,
 } from './orders.js';
+import { sanitizeText } from './core/validators.js';
 import { getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
 import { escapeHtml, productCode, stockPill } from './ui.js';
 import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
@@ -31,6 +32,10 @@ import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.
 let seenOrderIds = null; // se inicializa en el primer render para detectar pedidos nuevos
 let soundEnabled = readSoundPref();
 let audioCtx = null;
+// Pedido en espera de confirmación de cancelación (el primer tap NO cancela:
+// abre el modal de confirmación con motivo obligatorio).
+let pendingCancelOrderId = null;
+const CANCEL_REASON_PRESETS = Object.freeze(['Sin stock', 'Cliente canceló', 'Fuera de zona de envío', 'Datos incorrectos']);
 
 function readSoundPref() {
   try { return globalThis.localStorage?.getItem('la_taba_business_sound') !== 'off'; } catch (_) { return true; }
@@ -414,9 +419,12 @@ function renderBusinessTrackingMap(order) {
 }
 
 function inboxClosedRow(order) {
+  const reason = order.status === 'cancelled' && order.cancelReason
+    ? `<small class="inbox-closed-reason">Motivo: ${escapeHtml(order.cancelReason)}</small>`
+    : '';
   return `
     <div class="inbox-closed-row">
-      <span>${escapeHtml(order.id)} · ${escapeHtml(order.customerName)}</span>
+      <span>${escapeHtml(order.id)} · ${escapeHtml(order.customerName)}${reason}</span>
       <strong>${money(order.total)}</strong>
       <em class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</em>
     </div>`;
@@ -583,9 +591,27 @@ export function handleBusinessAction(target) {
     return { handled: true, ok: true, message: '' };
   }
 
+  // Primer tap "Rechazar/Cancelar": NO cancela. Abre el modal de confirmación
+  // con el motivo obligatorio, para evitar que un toque accidental pierda un
+  // pedido real.
   const cancelId = target.closest('[data-order-cancel]')?.dataset.orderCancel;
   if (cancelId) {
-    return actionResponse(cancelBusinessOrder(cancelId), 'Pedido cancelado.');
+    return requestOrderCancellation(cancelId);
+  }
+
+  if (target.closest('[data-cancel-dismiss]')) {
+    closeCancelModal();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  const presetButton = target.closest('[data-cancel-preset]');
+  if (presetButton) {
+    applyCancelReasonPreset(presetButton.dataset.cancelPreset);
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-cancel-confirm]')) {
+    return submitOrderCancellation();
   }
 
   const stockInc = target.closest('[data-stock-inc]')?.dataset.stockInc;
@@ -619,10 +645,126 @@ function advanceOrder(orderId) {
   return repository.updateOrderStatus(orderId, nextStatus);
 }
 
-function cancelBusinessOrder(orderId) {
+function cancelBusinessOrder(orderId, reason = '') {
   const repository = getOrderRepository();
-  if (!isPersistentOrderRepository(repository)) return cancelOrder(orderId);
-  return repository.updateOrderStatus(orderId, 'canceled');
+  if (!isPersistentOrderRepository(repository)) return cancelOrder(orderId, reason);
+  // Modo persistente (opt-in): el backend cambia el estado; el motivo se
+  // conserva localmente para que quede registrado/auditable en la demo.
+  return Promise.resolve(repository.updateOrderStatus(orderId, 'canceled')).then((result) => {
+    if (result?.ok && reason) {
+      updateState((draft) => {
+        const order = draft.orders.find((candidate) => candidate.id === orderId);
+        if (order) order.cancelReason = reason;
+      });
+    }
+    return result;
+  });
+}
+
+// ===== Confirmación segura de cancelación/rechazo (sin window.confirm) =====
+
+function requestOrderCancellation(orderId) {
+  const order = getState().orders.find((candidate) => candidate.id === orderId);
+  if (!order) return { handled: true, ok: false, message: 'Pedido no encontrado.' };
+  if (isTerminalOrderStatus(order.status)) {
+    return {
+      handled: true,
+      ok: false,
+      message: order.status === 'delivered'
+        ? 'Un pedido entregado no se puede cancelar.'
+        : 'Este pedido ya está cerrado; no se puede cancelar de nuevo.',
+    };
+  }
+  pendingCancelOrderId = orderId;
+  openCancelModal(order);
+  return { handled: true, ok: true, message: '' };
+}
+
+// Validación + cancelación efectiva. Exportada para poder testear la regla sin
+// DOM (el primer tap solo abre el modal; esto es el "confirmar" real).
+export function confirmOrderCancellation(orderId, reason) {
+  const order = getState().orders.find((candidate) => candidate.id === orderId);
+  if (!order) return { handled: true, ok: false, message: 'Pedido no encontrado.' };
+  if (isTerminalOrderStatus(order.status)) {
+    return { handled: true, ok: false, message: 'Este pedido ya está cerrado; no se puede cancelar.' };
+  }
+  const clean = sanitizeText(reason, { maxLength: 160 });
+  if (!clean) return { handled: true, ok: false, message: 'Ingresá un motivo para cancelar el pedido.' };
+  return actionResponse(cancelBusinessOrder(orderId, clean), `Pedido ${orderId} cancelado. Motivo: ${clean}.`);
+}
+
+// Lee el motivo del modal y confirma. Si falta motivo, no cancela y muestra la
+// ayuda inline (no usa window.confirm ni cancela por un toque accidental).
+function submitOrderCancellation() {
+  const orderId = pendingCancelOrderId;
+  if (!orderId) return { handled: true, ok: false, message: 'No hay un pedido para cancelar.' };
+  const reasonField = typeof document !== 'undefined' ? document.querySelector('[data-cancel-reason]') : null;
+  const reason = sanitizeText(reasonField?.value, { maxLength: 160 });
+  if (!reason) {
+    if (typeof document !== 'undefined') document.querySelector('[data-cancel-hint]')?.classList.remove('hidden');
+    return { handled: true, ok: false, message: 'Ingresá un motivo para cancelar el pedido.' };
+  }
+  return finalizeCancellation(confirmOrderCancellation(orderId, reason));
+}
+
+function finalizeCancellation(result) {
+  if (typeof result?.then === 'function') {
+    return result.then((resolved) => {
+      if (resolved.ok) closeCancelModal();
+      return resolved;
+    });
+  }
+  if (result.ok) closeCancelModal();
+  return result;
+}
+
+function applyCancelReasonPreset(preset) {
+  if (typeof document === 'undefined') return;
+  const reasonField = document.querySelector('[data-cancel-reason]');
+  if (!reasonField) return;
+  reasonField.value = sanitizeText(preset, { maxLength: 160 });
+  document.querySelector('[data-cancel-hint]')?.classList.add('hidden');
+  reasonField.focus();
+}
+
+function openCancelModal(order) {
+  if (typeof document === 'undefined') return;
+  const modal = document.querySelector('[data-cancel-modal]');
+  const content = modal?.querySelector('[data-cancel-content]');
+  if (!modal || !content) return;
+  content.innerHTML = renderCancelDialog(order);
+  if (typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+}
+
+function closeCancelModal() {
+  pendingCancelOrderId = null;
+  if (typeof document === 'undefined') return;
+  const modal = document.querySelector('[data-cancel-modal]');
+  if (modal?.open) modal.close();
+}
+
+function renderCancelDialog(order) {
+  const onTheWay = order.status === 'on_the_way' || order.status === 'arriving';
+  const presets = CANCEL_REASON_PRESETS
+    .map((reason) => `<button class="ghost-button compact" type="button" data-cancel-preset="${escapeHtml(reason)}">${escapeHtml(reason)}</button>`)
+    .join('');
+  return `
+    <div class="pin-card cancel-card ${onTheWay ? 'is-onway' : ''}" data-cancel-card>
+      <h2>${onTheWay ? 'Cancelar un pedido en reparto' : 'Rechazar este pedido'}</h2>
+      <p>Vas a cancelar el pedido <strong>${escapeHtml(order.id)}</strong> · ${escapeHtml(order.customerName)} · ${money(order.total)}.</p>
+      ${onTheWay ? `
+      <div class="warning-box cancel-onway-warning">
+        <strong>Este pedido ya está en reparto.</strong> El rider está en camino y el cliente lo sigue en vivo: cancelar ahora corta la entrega.
+      </div>` : ''}
+      <span class="cancel-reason-label">Motivo de la cancelación</span>
+      <div class="cancel-reasons">${presets}</div>
+      <textarea class="cancel-reason-input" data-cancel-reason rows="2" maxlength="160" placeholder="Escribí el motivo (obligatorio)…" aria-label="Motivo de la cancelación"></textarea>
+      <p class="form-hint cancel-hint hidden" data-cancel-hint>Ingresá un motivo para confirmar la cancelación.</p>
+      <div class="button-row cancel-actions">
+        <button class="secondary-button" type="button" data-cancel-dismiss>Volver</button>
+        <button class="danger-button ${onTheWay ? 'is-strong' : ''}" type="button" data-cancel-confirm>${onTheWay ? 'Sí, cancelar el reparto' : 'Confirmar cancelación'}</button>
+      </div>
+    </div>`;
 }
 
 function actionResponse(result, successMessage) {

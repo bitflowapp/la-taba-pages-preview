@@ -1114,8 +1114,8 @@ textarea { resize: vertical; min-height: 84px; }
 @keyframes riderPulse { 0%,100% { box-shadow: 0 0 0 5px rgba(214,176,138,0.14), 0 8px 18px rgba(0,0,0,0.45); } 50% { box-shadow: 0 0 0 10px rgba(214,176,138,0.04), 0 8px 18px rgba(0,0,0,0.45); } }
 
 /* ===== Modales ===== */
-.product-modal, .pin-modal { border: 0; padding: 0; background: transparent; color: var(--text); width: min(560px, calc(100vw - 28px)); }
-.product-modal::backdrop, .pin-modal::backdrop { background: rgba(0,0,0,0.74); backdrop-filter: blur(7px); }
+.product-modal, .pin-modal, .cancel-modal { border: 0; padding: 0; background: transparent; color: var(--text); width: min(560px, calc(100vw - 28px)); }
+.product-modal::backdrop, .pin-modal::backdrop, .cancel-modal::backdrop { background: rgba(0,0,0,0.74); backdrop-filter: blur(7px); }
 .modal-card, .pin-card {
   --text: #f4f1ea;
   --muted: #a7a29a;
@@ -2486,8 +2486,21 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-status-pi
 .ops-actions .compact { min-height: 34px; padding: 0 10px; font-size: 12px; }
 .danger-ghost { color: #f0a99e; border-color: rgba(176,86,74,0.4); }
 
-.cancel-reasons { display: grid; gap: 8px; margin: 12px 0; }
-.cancel-modal .pin-card { display: grid; }
+.cancel-modal .cancel-card { display: grid; gap: 4px; }
+.cancel-card .cancel-reason-label { display: block; margin: 14px 0 6px; font-weight: 700; font-size: 14px; }
+.cancel-reasons { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.cancel-reasons .ghost-button { flex: 0 0 auto; }
+.cancel-reason-input {
+  width: 100%; box-sizing: border-box; resize: vertical; min-height: 52px;
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+  color: var(--text); background: rgba(255,255,255,0.04); font: inherit; font-size: 16px;
+}
+.cancel-reason-input:focus { outline: 2px solid rgba(201,122,67,0.55); outline-offset: 1px; }
+.cancel-hint { color: #f0a99e; margin: 6px 0 0; }
+.cancel-onway-warning { margin: 10px 0 2px; }
+.cancel-actions { margin-top: 16px; }
+.danger-button.is-strong { box-shadow: 0 0 0 2px rgba(176,86,74,0.45); }
+.inbox-closed-reason { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
 
 .print-ticket { display: none; }
 @media print {

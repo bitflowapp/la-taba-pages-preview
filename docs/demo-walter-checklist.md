@@ -16,11 +16,11 @@ con la **Central de pedidos** del negocio (PR #29). Complementa a
 Abrir **siempre con `?reset=1`** para arrancar limpio:
 
 ```
-https://bitflowapp.github.io/la-taba-pages-preview/?reset=1&v=walter-rider-map-cleanup
+https://bitflowapp.github.io/la-taba-pages-preview/?reset=1&v=operational-hardening-v1
 ```
 
 Si el celu muestra una versión vieja en caché, cambiá el final del link
-(`&v=walter-rider-map-cleanup-2`). Subí el brillo y cerrá notificaciones.
+(`&v=operational-hardening-v1-2`). Subí el brillo y cerrá notificaciones.
 
 ---
 
@@ -148,7 +148,7 @@ mientras el reparto está activo**; al cortar, vuelve a **"Sin GPS en vivo"**.
 
 **Demo pública (recomendado para mostrar):**
 ```
-https://bitflowapp.github.io/la-taba-pages-preview/?reset=1&v=walter-rider-map-cleanup
+https://bitflowapp.github.io/la-taba-pages-preview/?reset=1&v=operational-hardening-v1
 ```
 
 **GPS en vivo con ngrok (solo si el túnel sigue abierto):**

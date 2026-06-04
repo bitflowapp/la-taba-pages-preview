@@ -27,6 +27,12 @@ import {
   normalizeBusinessOrderFilter,
   normalizePreparationMinutes,
 } from './core/business-ops.js';
+import {
+  buildBusinessReport,
+  formatBusinessReportSummary,
+  periodLabel,
+} from './core/business-reports.js';
+import { readCashboxClosures, saveCashboxClosure } from './core/cashbox-store.js';
 import { toDomainOrder } from './core/domain.js';
 import { isTerminalOrderStatus } from './core/order-status.js';
 import { getNextWorkflowStatus, toDemoOrderStatus } from './core/order-workflow.js';
@@ -56,6 +62,8 @@ let soundEnabled = readSoundPref();
 let audioCtx = null;
 let businessOrderFilter = 'all';
 let businessOrderQuery = '';
+let businessReportPeriod = 'today';
+let businessReportCopyFallback = '';
 // Pedido en espera de confirmación de cancelación (el primer tap NO cancela:
 // abre el modal de confirmación con motivo obligatorio).
 let pendingCancelOrderId = null;
@@ -113,8 +121,9 @@ export function renderBusinessDashboard() {
 
   const state = getState();
   const metrics = getBusinessMetrics(state.orders, state.products);
+  const report = buildBusinessReport(state.orders, { period: businessReportPeriod });
+  const cashboxClosures = readCashboxClosures();
   const lowStock = metrics.lowStock;
-  const newCustomers = uniqueCustomerCount(state.orders);
   const latestOrders = state.orders.slice(0, 5);
 
   const topProducts = metrics.topProducts.length
@@ -156,6 +165,7 @@ export function renderBusinessDashboard() {
         </div>
         <nav class="business-jump-nav" aria-label="Secciones del negocio">
           <button class="secondary-button compact" type="button" data-scroll-orders>Pedidos</button>
+          <button class="secondary-button compact" type="button" data-scroll-reports>Reportes</button>
           <button class="secondary-button compact" type="button" data-scroll-catalog>Catalogo</button>
         </nav>
       </header>
@@ -165,11 +175,9 @@ export function renderBusinessDashboard() {
       ${renderDeliveredTodaySummary(state.orders)}
 
       <section class="business-day-strip" aria-label="Resumen operativo del día">
-        <div class="day-metric accent"><span>Ventas de hoy</span><strong>${money(metrics.todayTotal)}</strong></div>
-        <div class="day-metric"><span>Pedidos activos</span><strong>${metrics.ordersToHandle}</strong></div>
-        <div class="day-metric"><span>Ticket promedio</span><strong>${money(metrics.avgTicket)}</strong></div>
-        <div class="day-metric"><span>Delivery / Retiro</span><strong>${metrics.todayDeliveryCount} / ${metrics.todayPickupCount}</strong><small>${newCustomers} clientes</small></div>
       </section>
+
+      ${renderBusinessReportsPanel(report, cashboxClosures)}
 
       ${renderCatalogManager(state)}
 
@@ -538,6 +546,107 @@ function onlyDigits(value) {
   return digits.startsWith('54') ? digits : `549${digits}`;
 }
 
+function renderBusinessReportsPanel(report, closures = []) {
+  const status = report.ordersByStatus || {};
+  const wayCount = Number(status.on_the_way || 0) + Number(status.arriving || 0);
+  const topProduct = report.topProduct
+    ? `${report.topProduct.name} (${report.topProduct.quantity})`
+    : 'Sin ventas';
+  const cancelReason = report.topCancellationReason
+    ? `${report.topCancellationReason.reason} (${report.topCancellationReason.count})`
+    : 'Sin cancelaciones';
+  const summaryFallback = businessReportCopyFallback
+    ? `<pre class="business-copy-fallback" data-business-copy-fallback>${escapeHtml(businessReportCopyFallback)}</pre>`
+    : '';
+
+  return `
+    <section class="business-report-card" data-business-report aria-labelledby="business-report-title">
+      <header class="business-report-head">
+        <div>
+          <span class="catalog-admin-kicker">Caja y reportes operativos</span>
+          <h3 id="business-report-title">Caja del dia</h3>
+          <p>Metricas calculadas desde pedidos existentes y snapshots historicos.</p>
+        </div>
+        <div class="report-period-tabs" aria-label="Filtro temporal de reportes">
+          ${reportPeriodButton('today', report.period)}
+          ${reportPeriodButton('last7', report.period)}
+          ${reportPeriodButton('all', report.period)}
+        </div>
+      </header>
+
+      <div class="business-day-strip report-strip" aria-label="Caja del dia">
+        <div class="day-metric accent"><span>${report.period === 'today' ? 'Ventas de hoy' : 'Ventas netas'}</span><strong>${money(report.netSales)}</strong></div>
+        <div class="day-metric"><span>Efectivo</span><strong>${money(report.salesByPaymentMethod.cash)}</strong></div>
+        <div class="day-metric"><span>Transferencia</span><strong>${money(report.salesByPaymentMethod.transfer)}</strong></div>
+        <div class="day-metric"><span>Mercado Pago/link</span><strong>${money(report.salesByPaymentMethod.mercadoPago)}</strong></div>
+        <div class="day-metric"><span>Descuentos</span><strong>${money(report.totalDiscounts)}</strong></div>
+        <div class="day-metric"><span>Entregados</span><strong>${report.deliveredOrders}</strong></div>
+        <div class="day-metric"><span>Cancelados</span><strong>${report.cancelledOrders}</strong></div>
+        <div class="day-metric"><span>Ticket promedio</span><strong>${money(report.ticketAverage)}</strong></div>
+      </div>
+
+      <div class="business-report-grid">
+        <section class="report-panel" aria-label="Resumen operativo">
+          <div class="panel-head compact"><h3>Resumen operativo</h3><span>${escapeHtml(periodLabel(report.period))}</span></div>
+          <div class="status-board report-status-board">
+            <span class="board-chip received">Nuevos <strong>${status.received || 0}</strong></span>
+            <span class="board-chip preparing">Preparando <strong>${status.preparing || 0}</strong></span>
+            <span class="board-chip ready">Listos <strong>${status.ready || 0}</strong></span>
+            <span class="board-chip way">En reparto <strong>${wayCount}</strong></span>
+            <span class="board-chip done">Entregados <strong>${report.deliveredOrders}</strong></span>
+            <span class="board-chip cancelled">Cancelados <strong>${report.cancelledOrders}</strong></span>
+          </div>
+          <div class="report-highlight-list">
+            <p><span>Producto mas vendido</span><strong>${escapeHtml(topProduct)}</strong></p>
+            <p><span>Motivo frecuente de cancelacion</span><strong>${escapeHtml(cancelReason)}</strong></p>
+            <p><span>Clientes unicos</span><strong>${report.uniqueCustomers}</strong></p>
+            <p><span>Ultimo pedido</span><strong>${escapeHtml(report.latestOrder?.id || 'Sin pedidos')}${report.latestOrderTime ? ` - ${escapeHtml(report.latestOrderTime)}` : ''}</strong></p>
+          </div>
+        </section>
+
+        <section class="report-panel" aria-label="Cierre de caja demo">
+          <div class="panel-head compact"><h3>Cierre de caja</h3><span>Demo local</span></div>
+          <div class="cashbox-actions">
+            <button class="primary-button compact" type="button" data-cashbox-close>Cerrar caja demo</button>
+            <button class="secondary-button compact" type="button" data-copy-business-summary>Copiar resumen</button>
+          </div>
+          ${summaryFallback}
+          ${renderCashboxHistory(closures)}
+        </section>
+      </div>
+    </section>`;
+}
+
+function reportPeriodButton(period, activePeriod) {
+  const active = period === activePeriod;
+  return `
+    <button class="report-period-tab ${active ? 'active' : ''}" type="button" data-report-period="${period}" aria-pressed="${active}">
+      ${escapeHtml(periodLabel(period))}
+    </button>`;
+}
+
+function renderCashboxHistory(closures = []) {
+  if (!closures.length) {
+    return '<p class="cashbox-empty">Sin cierres guardados todavia.</p>';
+  }
+  const rows = closures.slice(0, 5).map((closure) => {
+    const metrics = closure.metrics || {};
+    const payment = metrics.salesByPaymentMethod || {};
+    return `
+      <div class="cashbox-history-row">
+        <span>${escapeHtml(dateTime(closure.closedAt))}</span>
+        <strong>${money(metrics.netSales)}</strong>
+        <small>Efectivo ${money(payment.cash)} - Transferencia ${money(payment.transfer)} - MP/link ${money(payment.mercadoPago)}</small>
+        <em>${metrics.deliveredOrders || 0} entregados - ${metrics.cancelledOrders || 0} cancelados</em>
+      </div>`;
+  }).join('');
+  return `
+    <details class="cashbox-history" open>
+      <summary>Historial de cierres (${closures.length})</summary>
+      <div class="cashbox-history-list">${rows}</div>
+    </details>`;
+}
+
 function renderDemoGuide() {
   return `
     <details class="demo-guide">
@@ -843,6 +952,30 @@ export function handleBusinessAction(target) {
     return { handled: true, ok: true, message: '' };
   }
 
+  const reportPeriodButton = target.closest('[data-report-period]');
+  if (reportPeriodButton) {
+    businessReportPeriod = reportPeriodButton.dataset.reportPeriod || 'today';
+    businessReportCopyFallback = '';
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-copy-business-summary]')) {
+    return copyBusinessReportSummary();
+  }
+
+  if (target.closest('[data-cashbox-close]')) {
+    const report = buildBusinessReport(getState().orders, { period: businessReportPeriod });
+    const result = saveCashboxClosure(report);
+    businessReportCopyFallback = '';
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? 'Cierre de caja demo guardado.' : 'No se pudo guardar el cierre demo.',
+    };
+  }
+
   const advanceButton = target.closest('[data-order-advance]');
   const advanceId = advanceButton?.dataset.orderAdvance;
   if (advanceId) {
@@ -884,6 +1017,13 @@ export function handleBusinessAction(target) {
   if (target.closest('[data-scroll-orders]')) {
     if (typeof document !== 'undefined') {
       document.querySelector('[data-ops-board]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-scroll-reports]')) {
+    if (typeof document !== 'undefined') {
+      document.querySelector('[data-business-report]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     return { handled: true, ok: true, message: '' };
   }
@@ -1308,6 +1448,24 @@ function copyTicketText(text) {
       navigator.clipboard.writeText(text);
     }
   } catch (_) { /* clipboard no disponible: no romper */ }
+}
+
+async function copyBusinessReportSummary() {
+  const report = buildBusinessReport(getState().orders, { period: businessReportPeriod });
+  const text = formatBusinessReportSummary(report, { businessName: BUSINESS_CONFIG.businessName });
+  try {
+    if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+      throw new Error('clipboard unavailable');
+    }
+    await navigator.clipboard.writeText(text);
+    businessReportCopyFallback = '';
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: 'Resumen copiado al portapapeles.' };
+  } catch (_) {
+    businessReportCopyFallback = text;
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: 'Resumen listo para copiar en pantalla.' };
+  }
 }
 
 function printTicket(order) {

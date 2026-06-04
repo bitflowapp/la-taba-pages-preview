@@ -3489,6 +3489,7 @@ body:has(.app-view[data-view="business"].is-active) {
 .delivered-today-card,
 .business-day-strip,
 .business-stock-card,
+.business-report-card,
 .business-catalog-card {
   border: 1px solid rgba(83, 61, 44, 0.12);
   background: rgba(255, 253, 249, 0.82);
@@ -3541,6 +3542,10 @@ body:has(.app-view[data-view="business"].is-active) {
   padding: 10px;
 }
 
+.business-day-strip:empty {
+  display: none;
+}
+
 .day-metric {
   min-width: 0;
   border-radius: 16px;
@@ -3571,6 +3576,186 @@ body:has(.app-view[data-view="business"].is-active) {
   font-size: 19px;
   line-height: 1;
   letter-spacing: -0.04em;
+}
+
+.business-report-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  border-radius: 22px;
+  padding: 16px;
+}
+
+.business-report-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.business-report-head h3 {
+  margin: 3px 0 4px;
+  color: var(--biz-text);
+  font-size: 20px;
+}
+
+.business-report-head p {
+  margin: 0;
+  max-width: 620px;
+  color: var(--biz-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.report-period-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+
+.report-period-tab {
+  min-height: 36px;
+  padding: 8px 11px;
+  border: 1px solid rgba(83, 61, 44, 0.14);
+  border-radius: 999px;
+  color: var(--biz-muted);
+  background: #fffdf9;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.report-period-tab.active {
+  color: #fffaf4;
+  border-color: transparent;
+  background: var(--biz-copper);
+}
+
+.report-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.business-report-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 14px;
+  min-width: 0;
+}
+
+.report-panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.panel-head.compact {
+  margin-bottom: 0;
+}
+
+.report-status-board {
+  margin-bottom: 0;
+}
+
+.report-highlight-list {
+  display: grid;
+  gap: 8px;
+}
+
+.report-highlight-list p {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.7fr) minmax(0, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 9px 0;
+  border-top: 1px solid rgba(83, 61, 44, 0.1);
+}
+
+.report-highlight-list span,
+.cashbox-history-row small,
+.cashbox-history-row em,
+.cashbox-empty {
+  color: var(--biz-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.report-highlight-list strong {
+  min-width: 0;
+  color: var(--biz-text);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.cashbox-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cashbox-actions > * {
+  flex: 1 1 150px;
+}
+
+.business-copy-fallback {
+  margin: 0;
+  max-height: 180px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 12px;
+  border: 1px solid rgba(83, 61, 44, 0.12);
+  border-radius: 14px;
+  color: var(--biz-text);
+  background: #fffaf4;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.cashbox-empty {
+  margin: 0;
+}
+
+.cashbox-history {
+  min-width: 0;
+}
+
+.cashbox-history summary {
+  cursor: pointer;
+  color: var(--biz-text);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.cashbox-history-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cashbox-history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 14px;
+  background: #fbf5ee;
+}
+
+.cashbox-history-row span,
+.cashbox-history-row strong {
+  color: var(--biz-text);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.cashbox-history-row small,
+.cashbox-history-row em {
+  grid-column: 1 / -1;
+  font-style: normal;
+  overflow-wrap: anywhere;
 }
 
 .business-stock-card {
@@ -4078,6 +4263,32 @@ body:has(.app-view[data-view="business"].is-active) {
 
   .business-day-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .business-report-head,
+  .business-report-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .business-report-head {
+    display: grid;
+  }
+
+  .report-period-tabs {
+    justify-content: stretch;
+  }
+
+  .report-period-tab {
+    flex: 1 1 92px;
+  }
+
+  .report-highlight-list p {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .cashbox-history-row {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

@@ -110,4 +110,5 @@ export const STORAGE_KEYS = Object.freeze({
   adminUnlocked: 'la_taba_mvp_v4_admin_unlocked',
   customerFavorites: 'la_taba_customer_favorites_v1',
   customerHistory: 'la_taba_customer_history_v1',
+  cashboxClosures: 'la_taba_cashbox_closures_v1',
 });

@@ -815,10 +815,19 @@ export function handleBusinessAction(target) {
     return saveCatalogProductFromForm();
   }
 
+  // Restaurar catálogo demo es destructivo (borra productos cargados por el
+  // comercio). El primer tap NO restaura: abre el modal de confirmación.
   if (target.closest('[data-catalog-reset-demo]')) {
-    editingCatalogProductId = null;
-    setState({ products: restoreDemoCatalog(), activeCategory: 'all' });
-    return { handled: true, ok: true, message: 'Catalogo demo restaurado.' };
+    return requestCatalogReset();
+  }
+
+  if (target.closest('[data-catalog-reset-dismiss]')) {
+    closeCatalogResetModal();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-catalog-reset-confirm]')) {
+    return confirmCatalogReset();
   }
 
   // Primer tap "Rechazar/Cancelar": NO cancela. Abre el modal de confirmación
@@ -1059,6 +1068,50 @@ function renderCancelDialog(order) {
       <div class="button-row cancel-actions">
         <button class="secondary-button" type="button" data-cancel-dismiss>Volver</button>
         <button class="danger-button ${onTheWay ? 'is-strong' : ''}" type="button" data-cancel-confirm>${onTheWay ? 'Sí, cancelar el reparto' : 'Confirmar cancelación'}</button>
+      </div>
+    </div>`;
+}
+
+// ===== Confirmación segura de restauración del catálogo demo =====
+// Igual que la cancelación de pedidos: el primer tap solo abre el modal; la
+// restauración destructiva recién ocurre al confirmar.
+
+function requestCatalogReset() {
+  openCatalogResetModal();
+  return { handled: true, ok: true, message: '' };
+}
+
+// Exportada para poder testear la regla sin DOM: restaurar recién acá.
+export function confirmCatalogReset() {
+  editingCatalogProductId = null;
+  setState({ products: restoreDemoCatalog(), activeCategory: 'all' });
+  closeCatalogResetModal();
+  return { handled: true, ok: true, message: 'Catalogo demo restaurado.' };
+}
+
+function openCatalogResetModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.querySelector('[data-catalog-reset-modal]');
+  const content = modal?.querySelector('[data-catalog-reset-content]');
+  if (!modal || !content) return;
+  content.innerHTML = renderCatalogResetDialog();
+  if (typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+}
+
+function closeCatalogResetModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.querySelector('[data-catalog-reset-modal]');
+  if (modal?.open) modal.close();
+}
+
+function renderCatalogResetDialog() {
+  return `
+    <div class="pin-card cancel-card" data-catalog-reset-card>
+      <h2>Restaurar catalogo demo</h2>
+      <p>Esto reemplazará el catálogo actual por el catálogo demo. Los productos cargados se perderán en esta demo.</p>
+      <div class="button-row cancel-actions">
+        <button class="secondary-button" type="button" data-catalog-reset-dismiss>Cancelar</button>
+        <button class="danger-button" type="button" data-catalog-reset-confirm>Restaurar demo</button>
       </div>
     </div>`;
 }

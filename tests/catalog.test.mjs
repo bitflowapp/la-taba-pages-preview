@@ -17,7 +17,8 @@ import {
   resetRepositoryFactoryForTests,
 } from '../js/repositories/repository_factory.js';
 import { setState } from '../js/state.js';
-import { resetState, state } from './helpers.mjs';
+import { confirmCatalogReset, handleBusinessAction } from '../js/business.js';
+import { makeTarget, resetState, state } from './helpers.mjs';
 
 beforeEach(() => {
   installStorage();
@@ -178,6 +179,63 @@ test('tracking without real GPS remains idle for the honest no-map fallback', ()
   };
 
   assert.equal(activeTrackingLiveness(order, null, { now }), 'idle');
+});
+
+test('restoring demo catalog requires explicit confirmation', () => {
+  const created = upsertCatalogProduct(state().products, {
+    name: 'Producto del comercio',
+    description: 'Cargado por el negocio',
+    price: '9999',
+    categoryId: 'carnes',
+    available: true,
+  }, { now: 1 });
+  assert.equal(created.ok, true);
+  setState({ products: created.products });
+  const customId = created.product.id;
+
+  // Primer tap en "Restaurar catalogo demo": NO restaura (solo abriría el modal).
+  const requested = handleBusinessAction(makeTarget({ '[data-catalog-reset-demo]': {} }));
+  assert.equal(requested.handled, true);
+  assert.ok(
+    state().products.some((product) => product.id === customId),
+    'el primer tap no debe borrar los productos cargados',
+  );
+
+  // Cancelar conserva el catálogo actual.
+  const dismissed = handleBusinessAction(makeTarget({ '[data-catalog-reset-dismiss]': {} }));
+  assert.equal(dismissed.handled, true);
+  assert.ok(
+    state().products.some((product) => product.id === customId),
+    'cancelar la confirmación conserva los productos cargados',
+  );
+});
+
+test('confirming demo restore replaces the catalog', () => {
+  const created = upsertCatalogProduct(state().products, {
+    name: 'Producto del comercio',
+    description: 'Cargado por el negocio',
+    price: '9999',
+    categoryId: 'carnes',
+    available: true,
+  }, { now: 1 });
+  assert.equal(created.ok, true);
+  setState({ products: created.products });
+  const customId = created.product.id;
+
+  // Recién al confirmar se reemplaza el catálogo por el demo.
+  const confirmed = confirmCatalogReset();
+  assert.equal(confirmed.ok, true);
+  assert.equal(
+    state().products.some((product) => product.id === customId),
+    false,
+    'confirmar restauración elimina los productos cargados',
+  );
+
+  const demoIds = new Set(restoreDemoCatalog().map((product) => product.id));
+  assert.ok(
+    state().products.every((product) => demoIds.has(product.id)),
+    'el catálogo restaurado solo contiene productos demo',
+  );
 });
 
 function installStorage() {

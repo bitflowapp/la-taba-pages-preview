@@ -4,6 +4,7 @@ import {
   decrementCartItem,
   incrementCartItem,
   removeCartItem,
+  repeatCustomerOrder,
 } from './cart.js';
 import {
   applyBusinessConfig,
@@ -14,6 +15,7 @@ import {
   renderCart,
   renderCartTotals,
   renderCatalog,
+  renderCustomerHome,
   renderHomeActiveOrder,
   renderNavigation,
   renderOrderSummary,
@@ -36,6 +38,7 @@ import { getRealtimeStatus, initRealtime, onRealtimeStatusChange, retryRelayConn
 import { renderMapViews } from './map/map_view.js';
 import { activeTrackingLiveness } from './map/route_geometry.js';
 import { getOrderRepository, getRepositoryDiagnostic, startOrderRepositorySync } from './repositories/repository_factory.js';
+import { toggleFavoriteProduct } from './core/customer-preferences.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
@@ -68,6 +71,20 @@ const VIEW_ALIASES = {
 let activeView = viewFromHash();
 let lastLivenessSignature = '';
 let freshnessTimer = null;
+// Pedido pendiente de confirmación al repetir con carrito no vacío.
+let pendingRepeatOrderId = null;
+
+function openRepeatModal(orderId) {
+  pendingRepeatOrderId = orderId || null;
+  const modal = document.querySelector('[data-repeat-modal]');
+  if (modal && typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+}
+
+function closeRepeatModal() {
+  pendingRepeatOrderId = null;
+  const modal = document.querySelector('[data-repeat-modal]');
+  if (modal?.open) modal.close();
+}
 
 // Limpieza segura de la sesión demo: abrir la app con ?reset=1 (o ?demo-reset=1)
 // borra pedidos, carrito y acceso del negocio guardados en este equipo y recarga
@@ -78,7 +95,7 @@ async function maybeResetDemoSession() {
     const params = new URLSearchParams(window.location.search);
     if (!params.has('reset') && !params.has('demo-reset')) return false;
     await clearRelayRoomOnReset(params);
-    [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked].forEach((key) => {
+    [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked, STORAGE_KEYS.customerFavorites, STORAGE_KEYS.customerHistory].forEach((key) => {
       try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
       try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
     });
@@ -168,6 +185,7 @@ function renderAll() {
   renderAdminVisibility();
   renderCatalog();
   renderHomeActiveOrder();
+  renderCustomerHome();
   renderCart();
   renderTracking();
   renderBusinessDashboard();
@@ -238,6 +256,51 @@ function bindEvents() {
     const detailId = target.closest('[data-product-detail]')?.dataset.productDetail;
     if (detailId) {
       showProductModal(detailId);
+      return;
+    }
+
+    const favoriteId = target.closest('[data-favorite-toggle]')?.dataset.favoriteToggle;
+    if (favoriteId) {
+      const result = toggleFavoriteProduct(favoriteId);
+      showToast(result.message);
+      renderAll();
+      const modal = $('[data-product-modal]');
+      if (modal?.open) showProductModal(favoriteId);
+      return;
+    }
+
+    const repeatId = target.closest('[data-repeat-order]')?.dataset.repeatOrder;
+    if (repeatId) {
+      const result = repeatCustomerOrder(repeatId);
+      // Carrito no vacío: abrimos confirmación en vez de reemplazar en silencio.
+      if (result.needsConfirmation) {
+        openRepeatModal(result.orderId);
+        return;
+      }
+      showToast(result.message);
+      if (result.ok) setActiveView('cart');
+      else renderAll();
+      return;
+    }
+
+    if (target.closest('[data-repeat-confirm]')) {
+      const confirmId = pendingRepeatOrderId;
+      closeRepeatModal();
+      if (!confirmId) return;
+      const result = repeatCustomerOrder(confirmId, { force: true });
+      showToast(result.message);
+      if (result.ok) setActiveView('cart');
+      else renderAll();
+      return;
+    }
+
+    if (target.closest('[data-repeat-dismiss]')) {
+      closeRepeatModal();
+      return;
+    }
+
+    if (target.closest('[data-apply-coupon]')) {
+      renderOrderSummary();
       return;
     }
 
@@ -343,6 +406,11 @@ function bindEvents() {
     const businessInput = handleBusinessInput(event.target);
     if (businessInput.handled) return;
 
+    if (event.target?.matches?.('[name="couponCode"]')) {
+      renderOrderSummary();
+      return;
+    }
+
     const input = event.target.closest?.('[data-search-input]');
     if (!input) return;
     setSearchQuery(input.value || '');
@@ -361,6 +429,9 @@ function bindEvents() {
       updateAddressFieldVisibility();
       renderOrderSummary();
       renderCartTotals();
+    }
+    if (target.name === 'paymentMethod') {
+      renderOrderSummary();
     }
     if (target.matches('[data-sort-select]')) {
       setSortBy(target.value || 'recommended');

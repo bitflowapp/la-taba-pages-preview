@@ -14,6 +14,7 @@ import {
   normalizeDeliveryMode,
   normalizeMoneyValue,
 } from './core/pricing.js';
+import { normalizeOrderCoupon } from './core/promotions.js';
 import {
   getStorageArea,
   safeJsonParse,
@@ -32,6 +33,7 @@ const listeners = new Set();
 const STREET_DESTINATION_IDS = new Set(
   (BUSINESS_CONFIG.demoStreetTestDestinations || []).map((destination) => destination.id),
 );
+const CUSTOMER_CATEGORY_IDS = new Set(['favorites']);
 
 const defaultState = () => {
   const baseProducts = buildBaseProducts();
@@ -214,11 +216,14 @@ function sanitizeCheckoutDraft(draft) {
     deliveryMode,
     paymentMethod: normalizePaymentMethod(draft.paymentMethod),
     customerNotes: sanitizeNotes(draft.customerNotes, ''),
+    cashChange: sanitizeText(draft.cashChange, { maxLength: 80 }),
+    couponCode: sanitizeText(draft.couponCode, { maxLength: 24 }).toUpperCase(),
   };
 }
 
 function normalizeCategoryId(value, fallback = 'all') {
   const categoryId = sanitizeText(value, { fallback, maxLength: 40 });
+  if (CUSTOMER_CATEGORY_IDS.has(categoryId)) return categoryId;
   return categories.some((category) => category.id === categoryId) ? categoryId : 'all';
 }
 
@@ -232,7 +237,10 @@ function normalizeOrder(order) {
   const items = order.items.map(normalizeOrderItem).filter(Boolean);
   const status = normalizeOrderStatus(order.status);
   const createdAt = normalizeIsoDate(order.createdAt);
-  const totals = calculateTotals(items, deliveryMode);
+  const baseTotals = calculateTotals(items, deliveryMode);
+  const coupon = normalizeOrderCoupon(order.coupon, baseTotals.subtotal, order.discountTotal);
+  const totals = calculateTotals(items, deliveryMode, { discountAmount: coupon?.discountAmount || order.discountTotal || 0 });
+  const paymentMethodCode = normalizeOrderPaymentMethodCode(order.paymentMethodCode || order.paymentMethod);
   const delivery = normalizeDelivery(order.delivery, deliveryMode, status);
   const addressDetails = deliveryMode === 'pickup'
     ? null
@@ -248,13 +256,19 @@ function normalizeOrder(order) {
       : addressDetails.label || sanitizeText(order.address, { fallback: 'Sin dirección', maxLength: 180 }),
     addressDetails,
     deliveryMode,
+    paymentMethodCode,
     paymentMethod: sanitizeText(order.paymentMethod, { fallback: paymentLabel(normalizePaymentMethod(order.paymentMethod)), maxLength: 80 }),
     notes: sanitizeNotes(order.notes),
+    // Defensivo: el cambio en efectivo solo tiene sentido si el método es efectivo.
+    // Evita que un estado viejo/corrupto muestre "cambio" con transferencia/MP.
+    cashChange: paymentMethodCode === 'cash' ? sanitizeText(order.cashChange, { maxLength: 80 }) : '',
+    coupon,
     cancelReason: sanitizeText(order.cancelReason, { maxLength: 160 }),
     createdAt,
     status,
     items,
     subtotal: totals.subtotal,
+    discountTotal: totals.discountTotal,
     deliveryFee: totals.deliveryFee,
     total: totals.total,
     statusHistory: normalizeStatusHistory(order.statusHistory, status, createdAt),
@@ -280,6 +294,15 @@ function normalizeOrderItem(item) {
     unitPrice,
     unit: sanitizeText(item.unit, { fallback: 'unidad', maxLength: 40 }),
   };
+}
+
+function normalizeOrderPaymentMethodCode(value) {
+  const direct = normalizePaymentMethod(value, '');
+  if (direct) return direct;
+  const label = sanitizeText(value, { fallback: '', maxLength: 80 }).toLowerCase();
+  if (label.includes('transfer')) return 'transfer';
+  if (label.includes('mercado')) return 'mercado_pago_future';
+  return 'cash';
 }
 
 function normalizeStatusHistory(history, currentStatus, createdAt) {

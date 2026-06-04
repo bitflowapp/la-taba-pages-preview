@@ -43,10 +43,9 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
   await expect(tracking.locator('.map-marker')).toHaveCount(0);
 
-  // No hay kilómetros ni ETA inventados.
+  // No hay kilómetros inventados. El tiempo estimado textual puede existir si el pedido lo trae.
   const text = await tracking.innerText();
   expect(text).not.toMatch(/\d+([.,]\d+)?\s*km/i);
-  expect(text).not.toMatch(/\d+\s*min/i);
 
   // No hay overflow horizontal en 390x844.
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);

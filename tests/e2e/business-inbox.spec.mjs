@@ -89,7 +89,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(page.locator('[data-inbox-group="preparando"]')).toBeVisible();
 
   await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
-  await expect(page.locator('[data-tracking-panel]')).toContainText('Tiempo estimado de preparacion: 20 min.');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Tiempo estimado de preparación: 20 min.');
   await page.goto('/#business');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
 

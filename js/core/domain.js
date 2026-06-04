@@ -107,6 +107,8 @@ export function normalizeOrderDraft(draft = {}) {
     deliveryMode: fulfillmentType,
     paymentMethod: sanitizeText(draft.paymentMethod, { fallback: 'cash', maxLength: 40 }),
     customerNotes: sanitizeNotes(draft.customerNotes || draft.notes, ''),
+    cashChange: sanitizeText(draft.cashChange, { fallback: '', maxLength: 80 }),
+    couponCode: sanitizeText(draft.couponCode, { fallback: '', maxLength: 24 }).toUpperCase(),
   };
 }
 

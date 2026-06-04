@@ -12,6 +12,7 @@ import {
   normalizeWorkflowStatus,
   toDemoOrderStatus,
 } from '../core/order-workflow.js';
+import { normalizePreparationMinutes } from '../core/business-ops.js';
 import { sanitizeNotes, sanitizeText } from '../core/validators.js';
 import { getState, paymentLabel, statusLabel, updateState } from '../state.js';
 import { repositoryResult } from './order_repository.js';
@@ -169,7 +170,7 @@ export function createSupabaseOrderRepository({
       const result = await fetchOrders();
       return result.ok ? result.orders : [];
     },
-    async updateOrderStatus(orderId, status) {
+    async updateOrderStatus(orderId, status, options = {}) {
       const row = await fetchOrderByPublicId(orderId);
       if (!row) return repositoryResult(false, { message: 'Pedido no encontrado.' });
       const nextStatus = normalizeWorkflowStatus(status);
@@ -185,7 +186,16 @@ export function createSupabaseOrderRepository({
         prefer: 'return=representation',
       });
       if (!result.ok) return result;
-      await insertEvent(row.id, `order.${nextStatus}`, { previousStatus: row.status, nextStatus });
+      // El tiempo estimado de preparación se elige al aceptar. La tabla orders
+      // todavía no tiene columna propia, así que lo guardamos en el metadata del
+      // evento (auditable, sin migración nueva). La vista del cliente lo toma del
+      // espejo local que setea la capa de negocio tras esta llamada.
+      const prepMinutes = normalizePreparationMinutes(options?.estimatedPreparationMinutes, 0);
+      const eventMeta = { previousStatus: row.status, nextStatus };
+      if (prepMinutes > 0 && toDemoOrderStatus(nextStatus) === 'preparing') {
+        eventMeta.estimatedPreparationMinutes = prepMinutes;
+      }
+      await insertEvent(row.id, `order.${nextStatus}`, eventMeta);
       const fullRow = await fetchOrderByPublicId(row.id) || { ...row, ...patch };
       const order = mirrorOrder(fullRow);
       return repositoryResult(true, {

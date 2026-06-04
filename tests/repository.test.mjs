@@ -157,6 +157,67 @@ test('demo repository subscriptions publish business and order snapshots', () =>
   assert.deepEqual(orderSnapshots, ['submitted', 'preparing']);
 });
 
+test('demo repository propagates the preparation estimate so the customer can see it', () => {
+  addToCart('p-vacio', 1);
+  const repository = createDemoOrderRepository();
+  const created = repository.createOrder({
+    customerName: 'Prep Repo',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: '',
+  });
+  const orderId = created.order.id;
+
+  const accepted = repository.updateOrderStatus(orderId, 'accepted', { estimatedPreparationMinutes: 30 });
+  assert.equal(accepted.ok, true);
+  assert.equal(getState().orders[0].status, 'preparing');
+  assert.equal(
+    getState().orders[0].delivery.estimatedPreparationMinutes,
+    30,
+    'el tiempo estimado debe quedar disponible para la vista del cliente',
+  );
+});
+
+test('demo repository keeps the legacy two-argument updateOrderStatus working', () => {
+  addToCart('p-vacio', 1);
+  const repository = createDemoOrderRepository();
+  const created = repository.createOrder({
+    customerName: 'Legacy Repo',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: '',
+  });
+
+  // Llamada vieja sin options: sigue avanzando el estado sin romper.
+  const accepted = repository.updateOrderStatus(created.order.id, 'accepted');
+  assert.equal(accepted.ok, true);
+  assert.equal(getState().orders[0].status, 'preparing');
+});
+
+test('http repository forwards the preparation estimate as an optional field', async () => {
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({ url, options });
+    return { ok: true, status: 200, async json() { return { order: null }; } };
+  };
+  const repository = createHttpOrderRepository({ baseUrl: 'https://api.example.test', fetchImpl });
+
+  await repository.updateOrderStatus('LT-1', 'preparing', { estimatedPreparationMinutes: 25 });
+  const withPrep = JSON.parse(calls.at(-1).options.body);
+  assert.equal(withPrep.status, 'preparing');
+  assert.equal(withPrep.estimatedPreparationMinutes, 25);
+
+  // La llamada vieja de dos argumentos no agrega el campo opcional.
+  await repository.updateOrderStatus('LT-1', 'ready');
+  const withoutPrep = JSON.parse(calls.at(-1).options.body);
+  assert.equal(withoutPrep.status, 'ready');
+  assert.equal('estimatedPreparationMinutes' in withoutPrep, false);
+});
+
 test('http repository speaks the future backend contract with normalized payloads', async () => {
   const calls = [];
   const fetchImpl = async (url, options = {}) => {

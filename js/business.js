@@ -14,9 +14,22 @@ import {
   getBusinessMetrics,
   getLowStockProducts as selectLowStockProducts,
 } from './core/business-metrics.js';
+import {
+  BUSINESS_CANCEL_REASONS,
+  BUSINESS_ORDER_FILTERS,
+  DEFAULT_PREP_MINUTES,
+  PREP_TIME_OPTIONS,
+  canBusinessCancelOrder,
+  filterBusinessOrders,
+  getBusinessOrderFilterCounts,
+  getBusinessOrderPrimaryAction,
+  getBusinessStatusMeta,
+  normalizeBusinessOrderFilter,
+  normalizePreparationMinutes,
+} from './core/business-ops.js';
 import { toDomainOrder } from './core/domain.js';
 import { isTerminalOrderStatus } from './core/order-status.js';
-import { getNextWorkflowStatus } from './core/order-workflow.js';
+import { getNextWorkflowStatus, toDemoOrderStatus } from './core/order-workflow.js';
 import {
   dateTime,
   deliveryModeLabel,
@@ -41,14 +54,16 @@ import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.
 let seenOrderIds = null; // se inicializa en el primer render para detectar pedidos nuevos
 let soundEnabled = readSoundPref();
 let audioCtx = null;
+let businessOrderFilter = 'all';
+let businessOrderQuery = '';
 // Pedido en espera de confirmación de cancelación (el primer tap NO cancela:
 // abre el modal de confirmación con motivo obligatorio).
 let pendingCancelOrderId = null;
 let editingCatalogProductId = null;
-const CANCEL_REASON_PRESETS = Object.freeze(['Sin stock', 'Cliente canceló', 'Fuera de zona de envío', 'Datos incorrectos']);
+const CANCEL_REASON_PRESETS = BUSINESS_CANCEL_REASONS;
 
 function readSoundPref() {
-  try { return globalThis.localStorage?.getItem('la_taba_business_sound') !== 'off'; } catch (_) { return true; }
+  try { return globalThis.localStorage?.getItem('la_taba_business_sound') === 'on'; } catch (_) { return false; }
 }
 function writeSoundPref(value) {
   try { globalThis.localStorage?.setItem('la_taba_business_sound', value ? 'on' : 'off'); } catch (_) { /* ignore */ }
@@ -60,7 +75,10 @@ function playNewOrderChime() {
     const Ctx = globalThis.AudioContext || globalThis.webkitAudioContext;
     if (!Ctx) return;
     audioCtx = audioCtx || new Ctx();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioCtx.state === 'suspended') {
+      const resume = audioCtx.resume();
+      if (resume?.catch) resume.catch(() => {});
+    }
     const now = audioCtx.currentTime;
     [880, 1175].forEach((freq, index) => {
       const osc = audioCtx.createOscillator();
@@ -129,7 +147,7 @@ export function renderBusinessDashboard() {
     <div class="business-main business-inbox-main">
       <header class="business-inbox-hero">
         <button class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}" type="button" data-sound-toggle aria-pressed="${soundEnabled}">
-          <span>Alertas</span>
+          <span>${soundEnabled ? 'Sonido activo' : 'Activar sonido'}</span>
           ${receivedOrders.length ? `<strong>${receivedOrders.length}</strong>` : ''}
         </button>
         <div class="business-topbar-text">
@@ -195,9 +213,10 @@ export function renderBusinessDashboard() {
 }
 
 const INBOX_GROUPS = [
-  { id: 'nuevos', title: 'Pedidos nuevos', hint: 'Atención inmediata', match: (order) => order.status === 'received' },
-  { id: 'preparando', title: 'Preparando', hint: 'En cocina', match: (order) => order.status === 'preparing' },
-  { id: 'reparto', title: 'Reparto', hint: 'Listos o en calle', match: (order) => ['ready', 'on_the_way', 'arriving'].includes(order.status) },
+  { id: 'nuevos', title: 'Pedidos nuevos', hint: 'Atencion inmediata', match: (order) => order.status === 'received' },
+  { id: 'preparando', title: 'En preparacion', hint: 'En cocina o mostrador', match: (order) => order.status === 'preparing' },
+  { id: 'listos', title: 'Listos', hint: 'Para retiro o reparto', match: (order) => order.status === 'ready' },
+  { id: 'reparto', title: 'En reparto', hint: 'Pedidos en calle', match: (order) => ['on_the_way', 'arriving'].includes(order.status) },
 ];
 
 // Central de pedidos: lista vertical mobile-first con los pedidos REALES de la
@@ -206,8 +225,11 @@ const INBOX_GROUPS = [
 // realtime para que cliente y rider vean lo mismo.
 function renderOrderInbox(state, metrics, freshOrderIds = new Set()) {
   const orders = Array.isArray(state.orders) ? state.orders : [];
-  const active = orders.filter((order) => !isTerminalOrderStatus(order.status));
-  const closed = orders.filter((order) => ['delivered', 'cancelled'].includes(order.status)).slice(0, 6);
+  const activeFilter = normalizeBusinessOrderFilter(businessOrderFilter);
+  const query = businessOrderQuery;
+  const filtered = filterBusinessOrders(orders, { filter: activeFilter, query });
+  const active = filtered.filter((order) => !isTerminalOrderStatus(order.status));
+  const closed = filtered.filter((order) => ['delivered', 'cancelled'].includes(order.status));
   const received = active.filter((order) => order.status === 'received');
   const priorityOrder = received[0] || null;
   const sections = [];
@@ -242,42 +264,81 @@ function renderOrderInbox(state, metrics, freshOrderIds = new Set()) {
       </section>`);
   }
 
+  const historyBody = (activeFilter === 'done' || activeFilter === 'cancelled')
+    ? renderHistoryList(closed)
+    : '';
+
   const body = active.length
     ? `<div class="inbox-feed">${sections.join('')}</div>`
+    : historyBody
+      ? ''
     : `
       <div class="inbox-empty" data-inbox-empty>
-        <strong>Todavía no entraron pedidos.</strong>
-        <p>Cuando un cliente confirme una compra, va a aparecer acá para aceptarla y prepararla.</p>
+        <strong>${query ? 'No hay pedidos que coincidan.' : 'Todavia no hay pedidos para este filtro.'}</strong>
+        <p>${query ? 'Proba buscar por codigo, cliente o direccion.' : 'Cuando un cliente confirme una compra, va a aparecer aca para aceptarla y prepararla.'}</p>
       </div>`;
 
-  const closedBlock = closed.length
+  const closedBlock = activeFilter === 'all' && closed.length
     ? `
       <details class="inbox-closed">
-        <summary>Entregados / cerrados de hoy (${closed.length})</summary>
-        <div class="inbox-closed-list">${closed.map(inboxClosedRow).join('')}</div>
+        <summary>Historial reciente (${closed.length})</summary>
+        <div class="inbox-closed-list">${closed.slice(0, 10).map(inboxClosedRow).join('')}</div>
       </details>`
     : '';
 
-  return `<div class="order-inbox" data-order-inbox data-ops-board>${renderInboxTabs(metrics)}${body}${closedBlock}</div>`;
+  return `<div class="order-inbox" data-order-inbox data-ops-board>${renderInboxControls(orders, metrics)}${body}${historyBody}${closedBlock}</div>`;
 }
 
-function renderInboxTabs(metrics) {
-  const counts = metrics.ordersByStatus;
-  const reparto = counts.ready + counts.on_the_way + counts.arriving;
-  const tabs = [
-    { label: 'Nuevos', count: counts.received, tone: 'received' },
-    { label: 'Preparando', count: counts.preparing, tone: 'preparing' },
-    { label: 'Reparto', count: reparto, tone: 'way' },
-    { label: 'Entregados', count: counts.delivered, tone: 'done' },
-  ];
+function renderInboxControls(orders, metrics) {
+  const counts = getBusinessOrderFilterCounts(orders);
+  const pendingCount = metrics.ordersByStatus.received;
   return `
-    <div class="inbox-tabs" aria-label="Estados de pedidos">
-      ${tabs.map((tab) => `
-        <span class="inbox-tab ${tab.tone} ${tab.count > 0 ? 'has-count' : ''}">
-          <span>${tab.label}</span>
-          <strong>${tab.count}</strong>
-        </span>`).join('')}
+    <div class="inbox-ops-head">
+      <div class="pending-counter ${pendingCount ? 'has-pending' : ''}" role="status">
+        <span>Nuevos pendientes</span>
+        <strong>${pendingCount}</strong>
+      </div>
+      <label class="business-search-field">
+        <span>Buscar pedido</span>
+        <input data-business-order-search type="search" value="${escapeHtml(businessOrderQuery)}" placeholder="ID, cliente o direccion" autocomplete="off" />
+      </label>
+    </div>
+    <div class="inbox-tabs" aria-label="Filtros de pedidos">
+      ${BUSINESS_ORDER_FILTERS.map((filter) => {
+        const active = normalizeBusinessOrderFilter(businessOrderFilter) === filter.id;
+        return `
+          <button class="inbox-tab ${filterTone(filter.id)} ${active ? 'active' : ''} ${counts[filter.id] > 0 ? 'has-count' : ''}" type="button" data-order-filter="${filter.id}" aria-pressed="${active}">
+            <span>${escapeHtml(filter.label)}</span>
+            <strong>${counts[filter.id] || 0}</strong>
+          </button>`;
+      }).join('')}
     </div>`;
+}
+
+function renderHistoryList(orders) {
+  if (!orders.length) return '';
+  return `
+    <section class="inbox-history" aria-label="Historial de pedidos">
+      <header class="inbox-group-head">
+        <strong>Historial</strong>
+        <span class="inbox-count">${orders.length}</span>
+        <small>Entregados y cancelados quedan accesibles.</small>
+      </header>
+      <div class="inbox-closed-list">${orders.map(inboxClosedRow).join('')}</div>
+    </section>`;
+}
+
+function filterTone(filterId) {
+  const tones = {
+    all: 'all',
+    new: 'received',
+    preparing: 'preparing',
+    ready: 'ready',
+    delivery: 'way',
+    done: 'done',
+    cancelled: 'cancelled',
+  };
+  return tones[filterId] || 'all';
 }
 
 function renderDeliveredTodaySummary(orders) {
@@ -315,19 +376,21 @@ function inboxOrderCard(order, options = {}) {
   const address = normalizeOrderAddressDetails(order);
   const reference = formatAddressReference(order);
   const phone = onlyDigits(order.customerPhone);
-  const nextLabel = actionLabelForOrder(order);
+  const statusMeta = getBusinessStatusMeta(order.status);
+  const primaryAction = getBusinessOrderPrimaryAction(order);
   const itemsList = order.items.map((item) => `
         <li><span>${item.quantity}× ${escapeHtml(item.name)}</span><strong>${money(item.quantity * item.unitPrice)}</strong></li>`).join('');
   const showTrack = order.deliveryMode === 'delivery' && ['ready', 'on_the_way', 'arriving'].includes(order.status);
   const priorityClass = options.priority ? 'is-priority' : 'is-secondary';
   const freshClass = options.fresh ? 'is-fresh' : '';
+  const prepMinutes = normalizePreparationMinutes(order.delivery?.estimatedPreparationMinutes, 0);
 
   return `
     <article class="inbox-order ${priorityClass} ${freshClass} accent-${statusClass(order.status)}" data-inbox-order="${escapeHtml(order.id)}">
       <div class="inbox-order-top">
         <span class="inbox-state-dot" aria-hidden="true"></span>
-        <span class="status-chip ${statusClass(order.status)}">${options.priority ? 'Pedido nuevo' : statusLabel(order.status)}</span>
-        <span class="inbox-status-label">${statusLabel(order.status)}</span>
+        <span class="status-chip ${statusClass(order.status)}">${options.priority ? 'Pedido nuevo' : escapeHtml(statusMeta.shortLabel)}</span>
+        <span class="inbox-status-label">${escapeHtml(statusMeta.label)}</span>
         <span class="inbox-time">${escapeHtml(timeAgo(order.createdAt))}</span>
       </div>
 
@@ -338,6 +401,8 @@ function inboxOrderCard(order, options = {}) {
             <strong>${escapeHtml(order.customerName)}</strong>
             <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
           </div>
+          <p class="inbox-status-copy">${escapeHtml(statusMeta.copy)}</p>
+          ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparacion estimada: <strong>${prepMinutes} min</strong></p>` : ''}
           ${renderInboxTrackingPanel(order)}
         </div>
 
@@ -347,12 +412,12 @@ function inboxOrderCard(order, options = {}) {
             <strong>${money(order.total)}</strong>
           </aside>
           <div class="inbox-actions">
-            ${nextLabel !== 'Sin acción' ? `<button class="primary-button compact" type="button" data-order-advance="${order.id}">${escapeHtml(nextLabel)}</button>` : ''}
+            ${renderPrimaryOrderAction(order, primaryAction)}
             ${phone ? `<a class="ghost-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
             ${order.customerPhone ? `<a class="ghost-button compact" href="tel:${encodeURIComponent(order.customerPhone)}">Llamar</a>` : ''}
             ${showTrack ? `<button class="ghost-button compact" type="button" data-order-track="${order.id}">Ver tracking</button>` : ''}
             <button class="ghost-button compact" type="button" data-order-ticket="${order.id}">Copiar ticket</button>
-            <button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${order.id}">Rechazar</button>
+            ${canBusinessCancelOrder(order) ? `<button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${order.id}">Cancelar pedido</button>` : ''}
           </div>
         </div>
 
@@ -371,6 +436,28 @@ function inboxOrderCard(order, options = {}) {
         </div>
       </div>
     </article>`;
+}
+
+function renderPrimaryOrderAction(order, action) {
+  if (!action) return '';
+  const prepControl = action.requiresPrepTime
+    ? `
+      <label class="prep-time-field">
+        <span>Tiempo de preparacion</span>
+        <select data-prep-minutes aria-label="Tiempo estimado de preparacion">
+          ${PREP_TIME_OPTIONS.map((minutes) => `
+            <option value="${minutes}" ${minutes === DEFAULT_PREP_MINUTES ? 'selected' : ''}>${minutes} min</option>`).join('')}
+        </select>
+      </label>`
+    : '';
+  return `
+    <div class="primary-action-block">
+      ${prepControl}
+      <button class="primary-button compact main-order-action" type="button" data-order-advance="${escapeHtml(order.id)}">
+        ${escapeHtml(action.label)}
+      </button>
+      <small>${escapeHtml(action.copy)}</small>
+    </div>`;
 }
 
 function renderInboxTrackingPanel(order) {
@@ -743,9 +830,19 @@ function stockRow(product) {
 }
 
 export function handleBusinessAction(target) {
-  const advanceId = target.closest('[data-order-advance]')?.dataset.orderAdvance;
+  const filterButton = target.closest('[data-order-filter]');
+  if (filterButton) {
+    businessOrderFilter = normalizeBusinessOrderFilter(filterButton.dataset.orderFilter);
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  const advanceButton = target.closest('[data-order-advance]');
+  const advanceId = advanceButton?.dataset.orderAdvance;
   if (advanceId) {
-    return actionResponse(advanceOrder(advanceId), 'Estado del pedido actualizado.');
+    return actionResponse(advanceOrder(advanceId, {
+      estimatedPreparationMinutes: readPrepMinutesForOrderAction(advanceButton),
+    }), 'Estado del pedido actualizado.');
   }
 
   const ticketId = target.closest('[data-order-ticket]')?.dataset.orderTicket;
@@ -886,6 +983,22 @@ export function handleBusinessAction(target) {
   return { handled: false };
 }
 
+export function handleBusinessInput(target) {
+  const searchInput = target.closest?.('[data-business-order-search]');
+  if (!searchInput) return { handled: false };
+  businessOrderQuery = sanitizeText(searchInput.value, { maxLength: 100 });
+  if (typeof document !== 'undefined') {
+    renderBusinessDashboard();
+    const restored = document.querySelector('[data-business-order-search]');
+    if (restored) {
+      restored.focus();
+      const end = restored.value.length;
+      try { restored.setSelectionRange(end, end); } catch (_) { /* ignore */ }
+    }
+  }
+  return { handled: true, ok: true, message: '' };
+}
+
 function saveCatalogProductFromForm() {
   const form = typeof document !== 'undefined' ? document.querySelector('[data-catalog-form]') : null;
   if (!form) return { handled: true, ok: false, message: 'Formulario no disponible.' };
@@ -940,14 +1053,52 @@ function restoreProduct(productId) {
   return result;
 }
 
-function advanceOrder(orderId) {
+function readPrepMinutesForOrderAction(button) {
+  try {
+    const field = button?.closest?.('[data-inbox-order]')?.querySelector?.('[data-prep-minutes]');
+    return normalizePreparationMinutes(field?.value, DEFAULT_PREP_MINUTES);
+  } catch (_) {
+    return DEFAULT_PREP_MINUTES;
+  }
+}
+
+function advanceOrder(orderId, options = {}) {
   const repository = getOrderRepository();
-  if (!isPersistentOrderRepository(repository)) return advanceOrderStatus(orderId);
+  if (!isPersistentOrderRepository(repository)) return advanceOrderStatus(orderId, options);
   const order = getState().orders.find((candidate) => candidate.id === orderId);
   const domainOrder = toDomainOrder(order);
   const nextStatus = domainOrder ? getNextWorkflowStatus(domainOrder.status, domainOrder.fulfillmentType) : null;
   if (!nextStatus) return { ok: false, message: 'Sin próxima acción para este pedido.' };
-  return repository.updateOrderStatus(orderId, nextStatus);
+
+  // El tiempo estimado de preparación se elige al aceptar el pedido (paso que
+  // mapea a "preparing"). Lo propagamos al repositorio —queda en el metadata del
+  // evento persistente— y, como la tabla de pedidos todavía no tiene columna
+  // propia, lo reflejamos en el espejo local para que el cliente vea
+  // "Tiempo estimado de preparación: X min", igual que con el motivo de
+  // cancelación en modo persistente.
+  const isAcceptStep = toDemoOrderStatus(nextStatus) === 'preparing';
+  const prepMinutes = isAcceptStep
+    ? normalizePreparationMinutes(options.estimatedPreparationMinutes, DEFAULT_PREP_MINUTES)
+    : null;
+  const repoOptions = prepMinutes != null ? { estimatedPreparationMinutes: prepMinutes } : {};
+
+  return Promise.resolve(repository.updateOrderStatus(orderId, nextStatus, repoOptions)).then((result) => {
+    if (result?.ok && prepMinutes != null) {
+      const now = new Date().toISOString();
+      updateState((draft) => {
+        const target = draft.orders.find((candidate) => candidate.id === orderId);
+        if (!target) return;
+        target.delivery = target.delivery || {};
+        target.delivery.estimatedPreparationMinutes = prepMinutes;
+        target.delivery.acceptedAt = target.delivery.acceptedAt || now;
+        target.delivery.currentLocationLabel = `Pedido aceptado por el negocio. Preparacion estimada: ${prepMinutes} min`;
+        if (target.deliveryMode === 'delivery') {
+          target.delivery.estimatedMinutes = Math.max(prepMinutes, Number(target.delivery.estimatedMinutes || 0));
+        }
+      });
+    }
+    return result;
+  });
 }
 
 function cancelBusinessOrder(orderId, reason = '') {
@@ -1055,7 +1206,7 @@ function renderCancelDialog(order) {
     .join('');
   return `
     <div class="pin-card cancel-card ${onTheWay ? 'is-onway' : ''}" data-cancel-card>
-      <h2>${onTheWay ? 'Cancelar un pedido en reparto' : 'Rechazar este pedido'}</h2>
+      <h2>${onTheWay ? 'Cancelar un pedido en reparto' : 'Cancelar este pedido'}</h2>
       <p>Vas a cancelar el pedido <strong>${escapeHtml(order.id)}</strong> · ${escapeHtml(order.customerName)} · ${money(order.total)}.</p>
       ${onTheWay ? `
       <div class="warning-box cancel-onway-warning">
@@ -1063,7 +1214,7 @@ function renderCancelDialog(order) {
       </div>` : ''}
       <span class="cancel-reason-label">Motivo de la cancelación</span>
       <div class="cancel-reasons">${presets}</div>
-      <textarea class="cancel-reason-input" data-cancel-reason rows="2" maxlength="160" placeholder="Escribí el motivo (obligatorio)…" aria-label="Motivo de la cancelación"></textarea>
+      <textarea class="cancel-reason-input" data-cancel-reason rows="2" maxlength="160" placeholder="Elegí un motivo o escribí uno propio (obligatorio)…" aria-label="Motivo de la cancelación"></textarea>
       <p class="form-hint cancel-hint hidden" data-cancel-hint>Ingresá un motivo para confirmar la cancelación.</p>
       <div class="button-row cancel-actions">
         <button class="secondary-button" type="button" data-cancel-dismiss>Volver</button>

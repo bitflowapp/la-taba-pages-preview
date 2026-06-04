@@ -68,6 +68,8 @@ test('business actions advance status, cancel orders, edit stock, and toggle pro
   assert.equal(result.handled, true);
   assert.match(result.message, /Estado del pedido actualizado/);
   assert.equal(getState().orders[0].status, 'preparing');
+  assert.equal(getState().orders[0].delivery.estimatedPreparationMinutes, 20);
+  assert.match(getState().orders[0].delivery.currentLocationLabel, /20 min/);
 
   // Confirmación segura: el primer tap en "Rechazar" NO cancela (abre el modal).
   result = handleBusinessAction(makeTarget({

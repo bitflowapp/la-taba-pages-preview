@@ -31,8 +31,8 @@ export function createDemoOrderRepository() {
     listOrders() {
       return getState().orders.map(toDomainOrder).filter(Boolean);
     },
-    updateOrderStatus(orderId, status) {
-      const result = updateDemoOrderStatus(orderId, toDemoOrderStatus(status));
+    updateOrderStatus(orderId, status, options = {}) {
+      const result = updateDemoOrderStatus(orderId, toDemoOrderStatus(status), options);
       if (!result.ok) return result;
       return {
         ...result,

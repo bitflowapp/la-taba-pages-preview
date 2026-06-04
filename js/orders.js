@@ -4,6 +4,7 @@ import {
   getNextOrderStatus,
   isValidOrderStatus,
 } from './core/order-status.js';
+import { normalizePreparationMinutes } from './core/business-ops.js';
 import { calculateTotals, normalizeDeliveryMode } from './core/pricing.js';
 import {
   getAssignableDeliveryOrder,
@@ -82,6 +83,7 @@ export function createOrderFromCheckout(formValues = {}) {
       driverName: 'Sin asignar',
       driverPhone: '',
       estimatedMinutes: values.deliveryMode === 'pickup' ? 0 : 25,
+      estimatedPreparationMinutes: 0,
       currentLocationLabel: values.deliveryMode === 'pickup' ? 'Pedido para retirar en local' : 'Pedido recibido por el local',
     },
   };
@@ -186,9 +188,9 @@ export function advanceOrderToReady(orderId) {
   return { ok: true, message: 'Pedido listo para reparto.' };
 }
 
-export function advanceOrderStatus(orderId) {
+export function advanceOrderStatus(orderId, options = {}) {
   const order = getState().orders.find((candidate) => candidate.id === orderId);
-  return updateOrderStatus(orderId, getNextOrderStatus(order));
+  return updateOrderStatus(orderId, getNextOrderStatus(order), options);
 }
 
 export function cancelOrder(orderId, reason = '') {
@@ -231,7 +233,7 @@ export function buildKitchenTicket(order) {
   return lines.join('\n');
 }
 
-export function updateOrderStatus(orderId, status) {
+export function updateOrderStatus(orderId, status, options = {}) {
   if (!orderId || !isValidOrderStatus(status)) {
     return { ok: false, message: 'Estado de pedido inválido.' };
   }
@@ -253,6 +255,18 @@ export function updateOrderStatus(orderId, status) {
     order.delivery = order.delivery || {};
     draft.lastOrderId = orderId;
 
+    if (status === 'preparing') {
+      const estimatedPreparationMinutes = normalizePreparationMinutes(
+        options.estimatedPreparationMinutes,
+        order.delivery.estimatedPreparationMinutes || 20,
+      );
+      order.delivery.acceptedAt = order.delivery.acceptedAt || now;
+      order.delivery.estimatedPreparationMinutes = estimatedPreparationMinutes;
+      order.delivery.currentLocationLabel = `Pedido aceptado por el negocio. Preparacion estimada: ${estimatedPreparationMinutes} min`;
+      if (order.deliveryMode === 'delivery') {
+        order.delivery.estimatedMinutes = Math.max(estimatedPreparationMinutes, Number(order.delivery.estimatedMinutes || 0));
+      }
+    }
     if (status === 'ready') {
       order.delivery.currentLocationLabel = 'Pedido listo en el local';
       if (order.deliveryMode === 'delivery') order.delivery.estimatedMinutes = Math.max(18, order.delivery.estimatedMinutes || 25);

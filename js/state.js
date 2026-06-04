@@ -7,6 +7,7 @@ import {
   isValidOrderStatus,
   normalizeOrderStatus,
 } from './core/order-status.js';
+import { normalizePreparationMinutes } from './core/business-ops.js';
 import {
   calculateTotals,
   getDeliveryFeeForMode,
@@ -249,6 +250,7 @@ function normalizeOrder(order) {
     deliveryMode,
     paymentMethod: sanitizeText(order.paymentMethod, { fallback: paymentLabel(normalizePaymentMethod(order.paymentMethod)), maxLength: 80 }),
     notes: sanitizeNotes(order.notes),
+    cancelReason: sanitizeText(order.cancelReason, { maxLength: 160 }),
     createdAt,
     status,
     items,
@@ -309,10 +311,12 @@ function normalizeDelivery(delivery, deliveryMode, status) {
     driverName: sanitizeText(source.driverName, { fallback: 'Sin asignar', maxLength: 80 }),
     driverPhone: sanitizeText(source.driverPhone, { fallback: '', maxLength: 40 }),
     estimatedMinutes,
+    estimatedPreparationMinutes: normalizePreparationMinutes(source.estimatedPreparationMinutes, 0),
     currentLocationLabel: sanitizeText(source.currentLocationLabel, {
       fallback: defaultLocationLabel(status, deliveryMode),
       maxLength: 120,
     }),
+    ...(source.acceptedAt ? { acceptedAt: normalizeIsoDate(source.acceptedAt) } : {}),
     ...(Number.isFinite(Number(source.distanceKm)) && Number(source.distanceKm) >= 0
       ? { distanceKm: Number(source.distanceKm) }
       : {}),

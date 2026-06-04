@@ -1,5 +1,6 @@
 import { BUSINESS_CONFIG } from './config.js';
 import { categories } from './data.js';
+import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
 import {
   deliveryModeLabel,
   getProductById,
@@ -210,7 +211,7 @@ function priceBlock(product) {
 function renderOffers() {
   const container = $('[data-offers-rail]');
   if (!container) return;
-  const offers = getState().products
+  const offers = getCustomerCatalogProducts(getState().products)
     .filter((product) => product.available && product.stock > 0 && (discountPercent(product) > 0 || product.featured))
     .sort((a, b) => discountPercent(b) - discountPercent(a))
     .slice(0, 8);
@@ -221,7 +222,7 @@ function renderOffers() {
 function renderCombos() {
   const container = $('[data-combos-rail]');
   if (!container) return;
-  const combos = getState().products
+  const combos = getCustomerCatalogProducts(getState().products)
     .filter((product) => product.available && product.stock > 0 && (product.combo || product.categoryId === 'combos'))
     .slice(0, 8);
 
@@ -269,7 +270,7 @@ function renderCategories() {
 // Productos filtrados por categoría + búsqueda, ya ordenados.
 function getFilteredProducts(state) {
   const query = state.searchQuery.trim().toLowerCase();
-  const filtered = state.products.filter((product) => {
+  const filtered = getCustomerCatalogProducts(state.products).filter((product) => {
     const matchesCategory = state.activeCategory === 'all' || product.categoryId === state.activeCategory;
     const matchesQuery = !query || [product.name, product.description, product.categoryId].join(' ').toLowerCase().includes(query);
     return matchesCategory && matchesQuery;
@@ -311,7 +312,7 @@ function renderCatalogOffers() {
   const container = $('[data-catalog-offers]');
   if (!container) return;
   const state = getState();
-  const offers = state.products
+  const offers = getCustomerCatalogProducts(state.products)
     .filter((product) => {
       const inCategory = state.activeCategory === 'all' || product.categoryId === state.activeCategory;
       return inCategory && product.available && product.stock > 0 && (discountPercent(product) > 0 || product.featured);
@@ -360,6 +361,7 @@ function renderProducts() {
 
   container.innerHTML = filteredProducts.map((product) => {
     const outOfStock = product.stock <= 0 || !product.available;
+    const unavailableLabel = !product.available ? 'No disponible' : 'Agotado';
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
     const control = inCart > 0
@@ -369,7 +371,7 @@ function renderProducts() {
           <button class="icon-button compact" type="button" data-cart-inc="${product.id}" aria-label="Sumar uno de ${escapeHtml(product.name)}" ${inCart >= product.stock ? 'disabled' : ''}>+</button>
         </div>`
       : `<button class="add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>
-          <span class="add-plus">+</span><span class="add-text">${outOfStock ? 'Agotado' : 'Agregar'}</span>
+          <span class="add-plus">+</span><span class="add-text">${outOfStock ? unavailableLabel : 'Agregar'}</span>
         </button>`;
     return `
       <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
@@ -393,7 +395,9 @@ function renderProducts() {
 }
 
 export function stockPill(product) {
-  if (!product.available || product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
+  if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
+  if (!product.available) return '<span class="stock-pill empty">No disponible</span>';
+  if (product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
   if (product.stock <= 4) return `<span class="stock-pill low">Quedan ${product.stock}</span>`;
   if (product.badge === 'Retiro') return '<span class="stock-pill featured">Retiro</span>';
   if (product.featured) return '<span class="stock-pill featured">Destacado</span>';
@@ -863,7 +867,7 @@ export function showProductModal(productId) {
   const product = getProductById(productId);
   const modal = $('[data-product-modal]');
   const content = $('[data-modal-content]');
-  if (!product || !modal || !content) return;
+  if (!product || !isProductVisibleToCustomer(product) || !modal || !content) return;
 
   const off = discountPercent(product);
   content.innerHTML = `

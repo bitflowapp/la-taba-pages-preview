@@ -1,5 +1,6 @@
 import { BUSINESS_CONFIG, STORAGE_KEYS } from './config.js';
-import { categories, products, seedOrders } from './data.js';
+import { categories, seedOrders } from './data.js';
+import { buildDemoCatalog, mergeCatalogProducts } from './core/catalog-store.js';
 import {
   ORDER_STATUS_CLASSES,
   ORDER_STATUS_LABELS,
@@ -11,7 +12,6 @@ import {
   getDeliveryFeeForMode,
   normalizeDeliveryMode,
   normalizeMoneyValue,
-  normalizeStock,
 } from './core/pricing.js';
 import {
   getStorageArea,
@@ -173,7 +173,7 @@ function sanitizeCart(rawCart, productMap) {
   for (const item of rawCart) {
     if (!item || typeof item.productId !== 'string') continue;
     const product = productMap.get(item.productId);
-    if (!product || !product.available || product.stock <= 0) continue;
+    if (!product || product.archived || !product.available || product.stock <= 0) continue;
 
     const quantity = normalizeCartQuantity(item.quantity);
     if (quantity <= 0) continue;
@@ -348,36 +348,11 @@ function normalizeIsoDate(value, fallback = new Date().toISOString()) {
 }
 
 function buildBaseProducts() {
-  return products.map(normalizeBaseProduct);
-}
-
-function normalizeBaseProduct(product) {
-  return {
-    ...product,
-    price: normalizeMoneyValue(product.price, 0),
-    oldPrice: product.oldPrice == null ? undefined : normalizeMoneyValue(product.oldPrice, 0),
-    stock: normalizeStock(product.stock),
-    available: product.available !== false,
-    featured: Boolean(product.featured),
-  };
+  return buildDemoCatalog();
 }
 
 function mergeProducts(baseProducts, savedProducts) {
-  const savedById = new Map(
-    (Array.isArray(savedProducts) ? savedProducts : [])
-      .filter((item) => item && typeof item.id === 'string')
-      .map((item) => [item.id, item]),
-  );
-
-  return baseProducts.map((baseProduct) => {
-    const saved = savedById.get(baseProduct.id);
-    if (!saved) return { ...baseProduct };
-    return {
-      ...baseProduct,
-      stock: normalizeStock(saved.stock ?? baseProduct.stock),
-      available: typeof saved.available === 'boolean' ? saved.available : baseProduct.available,
-    };
-  });
+  return mergeCatalogProducts(baseProducts, savedProducts);
 }
 
 function persist() {

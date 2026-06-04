@@ -60,6 +60,8 @@
           </div>
 
           <div data-home-active-order hidden></div>
+          <div data-customer-actions></div>
+          <div data-customer-history></div>
 
           <div class="search-box">
             <span aria-hidden="true">⌕</span>
@@ -208,8 +210,8 @@
                   </label>
                 </div>
                 <label>
-                  Referencia para el repartidor
-                  <input name="customerReference" autocomplete="off" placeholder="Ej: casa verde, portón negro, piso 2" />
+                  Referencia de entrega
+                  <input name="customerReference" autocomplete="off" placeholder="Ej: casa con porton negro, tocar timbre" />
                 </label>
                 <input type="hidden" name="customerAddress" />
               </div>
@@ -219,14 +221,29 @@
                 <select name="paymentMethod">
                   <option value="cash">Efectivo</option>
                   <option value="transfer">Transferencia</option>
-                  <option value="mercado_pago_future">Mercado Pago</option>
+                  <option value="mercado_pago_future">Mercado Pago / link externo</option>
                 </select>
+              </label>
+              <p class="form-hint payment-note hidden" data-payment-note></p>
+
+              <label data-cash-change-field>
+                Cambio con efectivo
+                <input name="cashChange" inputmode="numeric" autocomplete="off" placeholder="Ej: necesito cambio de 20000" />
               </label>
 
               <label>
-                Notas
-                <textarea name="customerNotes" rows="3" placeholder="Ej: tocar timbre, sin hueso, cortar fino..."></textarea>
+                Observaciones del pedido
+                <textarea name="customerNotes" rows="3" placeholder="Ej: sin cebolla, cortar en porciones, sin hueso"></textarea>
               </label>
+
+              <div class="coupon-row">
+                <label>
+                  Cupon o promo
+                  <input name="couponCode" autocomplete="off" placeholder="Ej: TABA10" />
+                </label>
+                <button class="secondary-button compact" type="button" data-apply-coupon>Aplicar</button>
+              </div>
+              <p class="form-hint coupon-message hidden" data-coupon-message></p>
 
               <div class="summary-box" data-order-summary></div>
               <div class="warning-box hidden" data-checkout-warning></div>

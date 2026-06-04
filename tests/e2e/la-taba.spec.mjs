@@ -327,6 +327,59 @@ test('flujo cliente con delivery', async ({ page }) => {
   await guards.assertClean();
 });
 
+test('mobile cliente aplica cupon, elige pago y crea pedido', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const guards = installPageGuards(page);
+
+  await installBrowserStubs(page);
+  await page.goto('/?reset=1');
+  await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+
+  await fillCheckout(page, {
+    name: 'Cliente Mobile',
+    phone: '2995551010',
+    street: 'Roca 123',
+    neighborhood: 'Neuquen centro',
+    reference: 'Porton negro',
+    notes: 'Sin cebolla',
+    payment: 'transfer',
+    deliveryMode: 'delivery',
+  });
+  await expect(page.locator('[data-payment-note]')).toContainText('Esta demo no procesa pagos reales');
+  await page.getByLabel('Cupon o promo').fill('taba10');
+  await page.locator('[data-apply-coupon]').click();
+  await expect(page.locator('[data-coupon-message]')).toContainText('TABA10');
+  await expect(page.locator('[data-order-summary]')).toContainText('Cupon TABA10');
+
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
+  await waitForToast(page, /Pedido creado/);
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+
+  const tracking = page.locator('[data-tracking-panel]');
+  await expect(tracking).toContainText('Pedido enviado');
+  await tracking.locator('details.order-detail summary').click();
+  await expect(tracking).toContainText('Transferencia');
+  await expect(tracking).toContainText('Cupon TABA10');
+  await expect(tracking).toContainText('Sin cebolla');
+
+  await page.goto('/#business');
+  await page.locator('[data-open-pin][data-admin-target="business"]').click();
+  await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
+  await page.locator('[data-pin-form]').press('Enter');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Transferencia');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('TABA10');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Sin cebolla');
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+  expect(overflow).toBeTruthy();
+
+  await guards.assertClean();
+  await context.close();
+});
+
 test('flujo retiro en local', async ({ page }) => {
   const guards = installPageGuards(page);
 

@@ -383,6 +383,27 @@ main { max-width: var(--max); margin: 0 auto; padding: 0 18px 96px; }
 .product-card:hover { transform: translateY(-1px); border-color: rgba(201, 122, 67, 0.4); box-shadow: var(--shadow-sm); }
 .product-card.out-of-stock { opacity: 0.6; }
 .product-card.is-offer { border-color: rgba(201, 122, 67, 0.3); }
+.favorite-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 999px;
+  color: #fff8ef;
+  background: rgba(20,16,14,0.62);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.22);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+.favorite-button.active {
+  color: #17150f;
+  background: var(--accent);
+  border-color: rgba(201,122,67,0.7);
+}
 .product-media { position: relative; width: 100%; border: 0; padding: 0; height: 120px; overflow: hidden; background: none; }
 .product-badges { position: absolute; top: 9px; left: 9px; display: flex; flex-wrap: wrap; gap: 5px; z-index: 2; }
 .product-stock-tag { position: absolute; bottom: 9px; right: 9px; z-index: 2; }
@@ -476,6 +497,12 @@ main { max-width: var(--max); margin: 0 auto; padding: 0 18px 96px; }
 .checkout-form { display: grid; gap: 13px; }
 .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
 .address-fields { display: grid; gap: 11px; }
+.coupon-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
 label { display: grid; gap: 6px; color: var(--muted); font-weight: 700; font-size: 13px; }
 input, textarea, select {
   /* 16px mínimo: evita el zoom automático de iOS/Safari al enfocar campos
@@ -501,10 +528,17 @@ textarea { resize: vertical; min-height: 84px; }
 
 .summary-box, .warning-box { border-radius: 15px; padding: 14px; border: 1px solid var(--line); background: rgba(255,255,255,0.045); }
 .summary-row { display: flex; justify-content: space-between; gap: 12px; margin: 7px 0; color: var(--muted); }
+.summary-row.discount { color: #2f7a4f; }
 .summary-row.muted { color: var(--soft); font-size: 13px; }
 .summary-row.total { color: var(--text); font-size: 19px; font-weight: 900; border-top: 1px solid var(--line); padding-top: 11px; margin-top: 11px; }
 .summary-row.total strong { color: var(--copper-soft); }
 .warning-box { color: #ffd28f; background: rgba(228, 179, 90, 0.1); border-color: rgba(228, 179, 90, 0.32); line-height: 1.45; }
+.payment-note,
+.coupon-message {
+  margin: -3px 0 0;
+}
+.coupon-message.is-error { color: var(--red); }
+.coupon-message.is-success { color: #2f7a4f; }
 
 .trust-row { display: flex; align-items: center; gap: 11px; padding: 12px 14px; border: 1px solid rgba(201,122,67,0.28); border-radius: 13px; background: rgba(201,122,67,0.08); }
 .trust-ico { display: none; }
@@ -684,7 +718,7 @@ textarea { resize: vertical; min-height: 84px; }
   50% { transform: translateY(-1.6px); }
 }
 
-.track-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; position: relative; margin-bottom: 8px; }
+.track-steps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; position: relative; margin-bottom: 8px; }
 .track-steps.tight { grid-template-columns: repeat(4, 1fr); }
 .track-step { display: flex; flex-direction: column; align-items: center; gap: 7px; position: relative; padding-top: 4px; }
 .track-step small { font-size: 11px; color: var(--soft); font-weight: 700; }
@@ -1287,6 +1321,61 @@ body:has(.app-view[data-view="business"].is-active) .toast {
 .active-order-text small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
 .active-order-go { flex: 0 0 auto; font-size: 22px; font-weight: 900; color: var(--green-2); }
 
+.customer-action-panel,
+.customer-history-panel {
+  margin-bottom: 16px;
+}
+.customer-action-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid rgba(201,122,67,0.28);
+  border-radius: 14px;
+  background: rgba(201,122,67,0.08);
+}
+.customer-action-panel div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.customer-action-panel strong,
+.customer-history-row strong {
+  color: var(--text);
+}
+.customer-action-panel span,
+.customer-history-row span,
+.customer-history-row small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.customer-history-list {
+  display: grid;
+  gap: 9px;
+}
+.customer-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+}
+.customer-history-row > div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.customer-history-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
 /* ===== Catálogo: stepper de cantidad en tarjeta ===== */
 .qty-stepper { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .qty-stepper strong { min-width: 20px; text-align: center; font-size: 15px; }
@@ -1364,7 +1453,17 @@ body:has(.app-view[data-view="business"].is-active) .toast {
   .product-bottom { padding: 11px 12px 12px; flex-direction: column; align-items: stretch; gap: 9px; }
   .add-button { width: 100%; justify-content: center; }
   .product-bottom .qty-stepper { width: 100%; justify-content: center; }
-  .field-grid, .delivery-mode { grid-template-columns: 1fr; }
+  .field-grid, .delivery-mode, .coupon-row { grid-template-columns: 1fr; }
+  .customer-action-panel,
+  .customer-history-row,
+  .customer-history-side {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .customer-action-panel .primary-button,
+  .customer-history-side .secondary-button {
+    width: 100%;
+  }
   .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .insight-grid { grid-template-columns: 1fr; }
   .track-steps.tight { grid-template-columns: repeat(4, 1fr); }
@@ -3273,6 +3372,7 @@ body:has(.app-view[data-view="business"].is-active) {
 
 .inbox-payment-panel {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
@@ -3292,6 +3392,17 @@ body:has(.app-view[data-view="business"].is-active) {
   line-height: 1;
   letter-spacing: -0.055em;
   white-space: nowrap;
+}
+.inbox-payment-panel small,
+.inbox-payment-panel em {
+  flex: 1 1 100%;
+  color: var(--biz-muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+.inbox-payment-panel em {
+  color: #2f7a4f;
 }
 
 .inbox-actions {

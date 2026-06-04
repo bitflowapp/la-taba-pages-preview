@@ -6,6 +6,12 @@ import {
   normalizeQuantity,
 } from './core/pricing.js';
 import { isProductOrderable } from './core/catalog-store.js';
+import {
+  findCustomerOrder,
+  getLatestCustomerOrder,
+  resolveRepeatOrderItems,
+} from './core/customer-history.js';
+import { previewCouponDiscount } from './core/promotions.js';
 import { getProductById, getState, money, setState, updateState } from './state.js';
 
 function productIsOrderable(product) {
@@ -29,18 +35,21 @@ export function getCartItems() {
     .filter(Boolean);
 }
 
-export function getCartSummary(deliveryMode = 'delivery') {
+export function getCartSummary(deliveryMode = 'delivery', options = {}) {
   const items = getCartItems();
   const pricingItems = items.map((item) => ({
     quantity: item.quantity,
     unitPrice: item.product.price,
   }));
+  const subtotal = items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
+  const coupon = previewCouponDiscount(options.couponCode, subtotal);
   const totals = items.length
-    ? calculateTotals(pricingItems, deliveryMode)
-    : { subtotal: 0, deliveryFee: 0, total: 0 };
+    ? calculateTotals(pricingItems, deliveryMode, { discountAmount: coupon.discountAmount })
+    : { subtotal: 0, discountTotal: 0, deliveryFee: 0, total: 0 };
   return {
     items,
     count: items.reduce((sum, item) => sum + item.quantity, 0),
+    coupon,
     ...totals,
   };
 }
@@ -137,6 +146,33 @@ export function clearCart() {
   return { ok: true, message: 'Carrito vaciado.' };
 }
 
+export function repeatCustomerOrder(orderId = '') {
+  const order = orderId ? findCustomerOrder(orderId) : getLatestCustomerOrder();
+  if (!order) {
+    return { ok: false, message: 'No hay pedidos anteriores para repetir.', skipped: [] };
+  }
+
+  const { cartItems, skipped } = resolveRepeatOrderItems(order, getState().products);
+  if (!cartItems.length) {
+    return {
+      ok: false,
+      skipped,
+      message: repeatSkippedMessage(skipped) || 'No se pudo repetir el pedido: los productos ya no estan disponibles.',
+    };
+  }
+
+  setState({ cart: cartItems });
+  const skippedMessage = repeatSkippedMessage(skipped);
+  return {
+    ok: true,
+    order,
+    skipped,
+    message: skippedMessage
+      ? `Carrito armado con precios actuales. ${skippedMessage}`
+      : 'Carrito armado con precios actuales.',
+  };
+}
+
 export function validateCartForCheckout(deliveryMode = 'delivery') {
   const normalizedDeliveryMode = normalizeDeliveryMode(deliveryMode);
   const { items, subtotal } = getCartSummary(normalizedDeliveryMode);
@@ -167,4 +203,12 @@ export function validateCartForCheckout(deliveryMode = 'delivery') {
   }
 
   return { ok: true, message: 'Pedido listo para confirmar.' };
+}
+
+function repeatSkippedMessage(skipped = []) {
+  if (!Array.isArray(skipped) || !skipped.length) return '';
+  const list = skipped
+    .map((item) => `${item.name} (${item.reason})`)
+    .join(', ');
+  return `No se agregaron: ${list}.`;
 }

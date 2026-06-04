@@ -36,14 +36,22 @@ export function calculateItemsSubtotal(items = []) {
   }, 0);
 }
 
-export function calculateTotals(itemsOrSubtotal = [], deliveryMode = 'delivery') {
+export function normalizeDiscountAmount(value, subtotal = 0) {
+  const safeSubtotal = normalizeMoneyValue(subtotal, 0);
+  const discount = normalizeMoneyValue(value, 0);
+  return Math.min(safeSubtotal, discount);
+}
+
+export function calculateTotals(itemsOrSubtotal = [], deliveryMode = 'delivery', options = {}) {
   const subtotal = Array.isArray(itemsOrSubtotal)
     ? calculateItemsSubtotal(itemsOrSubtotal)
     : normalizeMoneyValue(itemsOrSubtotal, 0);
   const deliveryFee = getDeliveryFeeForMode(deliveryMode);
+  const discountTotal = normalizeDiscountAmount(options.discountAmount ?? options.discountTotal, subtotal);
   return {
     subtotal,
+    discountTotal,
     deliveryFee,
-    total: subtotal + deliveryFee,
+    total: Math.max(0, subtotal - discountTotal) + deliveryFee,
   };
 }

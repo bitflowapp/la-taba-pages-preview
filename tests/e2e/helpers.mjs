@@ -90,12 +90,12 @@ export async function fillCheckout(page, {
   await page.getByLabel('Nombre').fill(name);
   await page.getByLabel('Teléfono').fill(phone);
   await page.getByLabel('Forma de pago').selectOption(payment);
-  await page.getByLabel('Notas').fill(notes);
+  await page.getByLabel(/Observaciones del pedido|Notas/).fill(notes);
   if (deliveryMode === 'delivery') {
     await page.getByLabel('Delivery').check();
     await page.getByLabel('Calle y número').fill(street ?? address ?? '');
     await page.getByLabel('Barrio o zona').fill(neighborhood ?? (address ? 'Neuquen centro' : ''));
-    await page.getByLabel('Referencia para el repartidor').fill(reference ?? '');
+    await page.getByLabel(/Referencia de entrega|Referencia para el repartidor/).fill(reference ?? '');
   } else {
     await page.getByLabel('Retiro en local').check();
   }

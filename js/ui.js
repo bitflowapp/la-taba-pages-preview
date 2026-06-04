@@ -1,8 +1,11 @@
 import { BUSINESS_CONFIG } from './config.js';
 import { categories } from './data.js';
 import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
+import { getCustomerOrderHistory, getLatestCustomerOrder } from './core/customer-history.js';
+import { getFavoriteProductIds, isFavoriteProduct } from './core/customer-preferences.js';
 import {
   deliveryModeLabel,
+  dateTime,
   getProductById,
   getState,
   money,
@@ -257,8 +260,13 @@ function renderCategories() {
   const strips = $$('[data-category-strip]');
   if (!strips.length) return;
   const { activeCategory } = getState();
+  const categoryList = [
+    categories[0],
+    { id: 'favorites', name: 'Favoritos' },
+    ...categories.slice(1),
+  ];
 
-  const markup = categories.map((category) => `
+  const markup = categoryList.map((category) => `
     <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}">
       ${escapeHtml(category.name)}
     </button>
@@ -270,8 +278,11 @@ function renderCategories() {
 // Productos filtrados por categoría + búsqueda, ya ordenados.
 function getFilteredProducts(state) {
   const query = state.searchQuery.trim().toLowerCase();
+  const favoriteIds = new Set(getFavoriteProductIds());
   const filtered = getCustomerCatalogProducts(state.products).filter((product) => {
-    const matchesCategory = state.activeCategory === 'all' || product.categoryId === state.activeCategory;
+    const matchesCategory = state.activeCategory === 'favorites'
+      ? favoriteIds.has(product.id)
+      : state.activeCategory === 'all' || product.categoryId === state.activeCategory;
     const matchesQuery = !query || [product.name, product.description, product.categoryId].join(' ').toLowerCase().includes(query);
     return matchesCategory && matchesQuery;
   });
@@ -304,6 +315,7 @@ function sortProducts(list, sortBy) {
 
 function activeCategoryName() {
   const { activeCategory } = getState();
+  if (activeCategory === 'favorites') return 'Favoritos';
   return categories.find((category) => category.id === activeCategory)?.name || 'Todos';
 }
 
@@ -346,10 +358,11 @@ function renderProducts() {
   const filteredProducts = getFilteredProducts(state);
 
   if (!filteredProducts.length) {
+    const isFavorites = state.activeCategory === 'favorites';
     container.innerHTML = `
       <div class="empty-state">
-        <strong>No hay productos en esta búsqueda.</strong><br />
-        Probá con otra categoría o limpiá el buscador.
+        <strong>${isFavorites ? 'Todavia no marcaste favoritos.' : 'No hay productos en esta busqueda.'}</strong><br />
+        ${isFavorites ? 'Toca la estrella de un producto para guardarlo aca.' : 'Proba con otra categoria o limpia el buscador.'}
         <div class="empty-actions">
           <button class="secondary-button compact" type="button" data-category-id="all">Ver todo el catálogo</button>
         </div>
@@ -364,6 +377,7 @@ function renderProducts() {
     const unavailableLabel = !product.available ? 'No disponible' : 'Agotado';
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
+    const favorite = isFavoriteProduct(product.id);
     const control = inCart > 0
       ? `<div class="qty-stepper" aria-label="Cantidad de ${escapeHtml(product.name)} en el pedido">
           <button class="icon-button compact" type="button" data-cart-dec="${product.id}" aria-label="Restar uno de ${escapeHtml(product.name)}">−</button>
@@ -375,6 +389,7 @@ function renderProducts() {
         </button>`;
     return `
       <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
+        <button class="favorite-button ${favorite ? 'active' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos">${favorite ? '★' : '☆'}</button>
         <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
           ${productThumb(product, 'grid')}
           ${offerBadges(product)}
@@ -427,6 +442,74 @@ export function renderHomeActiveOrder() {
     </button>`;
 }
 
+export function renderCustomerHome() {
+  renderCustomerActions();
+  renderCustomerHistory();
+}
+
+function renderCustomerActions() {
+  const container = $('[data-customer-actions]');
+  if (!container) return;
+  const latest = getLatestCustomerOrder();
+  if (!latest) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = `
+    <section class="customer-action-panel" aria-label="Acciones del cliente">
+      <div>
+        <strong>Tu pedido de siempre</strong>
+        <span>${escapeHtml(latest.id)} · ${latest.items.length} ${latest.items.length === 1 ? 'producto' : 'productos'} · ${money(latest.total)}</span>
+      </div>
+      <button class="primary-button compact" type="button" data-repeat-order="${escapeHtml(latest.id)}">Repetir ultimo pedido</button>
+    </section>`;
+}
+
+function renderCustomerHistory() {
+  const container = $('[data-customer-history]');
+  if (!container) return;
+  const history = customerHistoryWithLiveState();
+  if (!history.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = `
+    <section class="customer-history-panel" aria-label="Mis ultimos pedidos">
+      <div class="rail-head">
+        <h2>Mis ultimos pedidos</h2>
+      </div>
+      <div class="customer-history-list">
+        ${history.slice(0, 4).map(customerHistoryRow).join('')}
+      </div>
+    </section>`;
+}
+
+function customerHistoryWithLiveState() {
+  const liveById = new Map(getState().orders.map((order) => [order.id, order]));
+  return getCustomerOrderHistory().map((entry) => {
+    const live = liveById.get(entry.id);
+    return live ? { ...entry, ...live } : entry;
+  });
+}
+
+function customerHistoryRow(order) {
+  const coupon = Number(order.discountTotal || 0) > 0 ? ` · ${escapeHtml(order.coupon?.code || 'Promo')}` : '';
+  return `
+    <article class="customer-history-row">
+      <div>
+        <strong>${escapeHtml(order.id)}</strong>
+        <span>${escapeHtml(dateTime(order.createdAt))} · ${escapeHtml(statusLabel(order.status))}${coupon}</span>
+        <small>${escapeHtml(order.paymentMethod || 'Efectivo')}</small>
+      </div>
+      <div class="customer-history-side">
+        <strong>${money(order.total)}</strong>
+        <button class="secondary-button compact" type="button" data-repeat-order="${escapeHtml(order.id)}">Repetir</button>
+      </div>
+    </article>`;
+}
+
 export function renderCart() {
   renderCartTotals();
   renderCartList();
@@ -469,6 +552,7 @@ function renderCartList() {
   if (!items.length) {
     const activeOrder = getActiveOrder();
     const hasActiveOrder = activeOrder && !['delivered', 'cancelled'].includes(activeOrder.status);
+    const latestOrder = getLatestCustomerOrder();
     container.innerHTML = `
       <div class="empty-state">
         <strong>El carrito está vacío.</strong><br />
@@ -478,6 +562,12 @@ function renderCartList() {
           <small>Pedido en curso</small>
           <strong>${escapeHtml(activeOrder.id)} · ${escapeHtml(statusLabel(activeOrder.status))}</strong>
           <button class="secondary-button compact" type="button" data-nav-view="tracking">Ver seguimiento</button>
+        </div>` : ''}
+        ${latestOrder ? `
+        <div class="cart-active-order">
+          <small>Pedido anterior</small>
+          <strong>${escapeHtml(latestOrder.id)} · ${money(latestOrder.total)}</strong>
+          <button class="secondary-button compact" type="button" data-repeat-order="${escapeHtml(latestOrder.id)}">Repetir ultimo pedido</button>
         </div>` : ''}
         <div class="empty-actions">
           <button class="secondary-button compact" type="button" data-nav-view="home">Ver productos</button>
@@ -512,11 +602,15 @@ export function renderOrderSummary() {
   if (!container) return;
 
   const deliveryMode = currentDeliveryMode();
-  const { items, subtotal, deliveryFee, total } = getCartSummary(deliveryMode);
+  const couponCode = currentCouponCode();
+  const { items, subtotal, discountTotal, deliveryFee, total, coupon } = getCartSummary(deliveryMode, { couponCode });
   const validation = validateCartForCheckout(deliveryMode);
+  renderCheckoutPaymentFields();
+  renderCouponMessage(coupon);
 
   container.innerHTML = `
     <div class="summary-row"><span>Subtotal</span><strong>${money(subtotal)}</strong></div>
+    ${discountTotal > 0 ? `<div class="summary-row discount"><span>Cupon ${escapeHtml(coupon.code)}</span><strong>-${money(discountTotal)}</strong></div>` : ''}
     <div class="summary-row"><span>${deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio'}</span><strong>${money(deliveryFee)}</strong></div>
     ${deliveryMode === 'delivery' ? `<div class="summary-row muted"><span>Pedido mínimo delivery</span><strong>${money(BUSINESS_CONFIG.minDeliveryOrder)}</strong></div>` : ''}
     <div class="summary-row total"><span>Total</span><strong>${money(total)}</strong></div>
@@ -534,6 +628,53 @@ export function renderOrderSummary() {
 export function currentDeliveryMode() {
   const checked = $('[name="deliveryMode"]:checked');
   return checked?.value || 'delivery';
+}
+
+function currentPaymentMethod() {
+  const field = $('[name="paymentMethod"]');
+  return field?.value || 'cash';
+}
+
+function currentCouponCode() {
+  const field = $('[name="couponCode"]');
+  return field?.value || '';
+}
+
+function renderCheckoutPaymentFields() {
+  const paymentMethod = currentPaymentMethod();
+  const isCash = paymentMethod === 'cash';
+  const cashField = $('[data-cash-change-field]');
+  if (cashField) {
+    cashField.classList.toggle('hidden', !isCash);
+    if (!isCash) {
+      const input = cashField.querySelector('[name="cashChange"]');
+      if (input) input.value = '';
+    }
+  }
+
+  const note = $('[data-payment-note]');
+  if (!note) return;
+  const showCoordinationCopy = paymentMethod === 'transfer' || paymentMethod === 'mercado_pago_future';
+  note.classList.toggle('hidden', !showCoordinationCopy);
+  note.textContent = showCoordinationCopy
+    ? 'El pago se coordina con el comercio. Esta demo no procesa pagos reales.'
+    : '';
+}
+
+function renderCouponMessage(coupon) {
+  const node = $('[data-coupon-message]');
+  if (!node) return;
+  const code = currentCouponCode().trim();
+  if (!code) {
+    node.textContent = '';
+    node.classList.add('hidden');
+    node.classList.remove('is-error', 'is-success');
+    return;
+  }
+  node.textContent = coupon.message;
+  node.classList.toggle('hidden', !coupon.message);
+  node.classList.toggle('is-error', !coupon.ok);
+  node.classList.toggle('is-success', coupon.ok);
 }
 
 export function getCheckoutFormValues() {
@@ -558,6 +699,8 @@ export function getCheckoutFormValues() {
     deliveryMode: String(formData.get('deliveryMode') || 'delivery'),
     paymentMethod: String(formData.get('paymentMethod') || 'cash'),
     customerNotes: String(formData.get('customerNotes') || ''),
+    cashChange: String(formData.get('cashChange') || ''),
+    couponCode: String(formData.get('couponCode') || ''),
   };
 }
 
@@ -570,17 +713,19 @@ export function updateAddressFieldVisibility() {
 
 // ===== Seguimiento del pedido (vista cliente) =====
 const customerSteps = [
+  { key: 'sent', label: 'Enviado' },
+  { key: 'accepted', label: 'Aceptado' },
   { key: 'prep', label: 'Preparando' },
-  { key: 'way', label: 'En camino' },
-  { key: 'done', label: 'Llegando' },
+  { key: 'ready', label: 'Listo' },
+  { key: 'way', label: 'En reparto' },
   { key: 'delivered', label: 'Entregado' },
 ];
 
 function customerStepIndex(status) {
-  if (['received', 'preparing', 'ready'].includes(status)) return 0;
-  if (status === 'on_the_way') return 1;
-  if (status === 'arriving') return 2;
-  if (status === 'delivered') return 3;
+  if (status === 'preparing') return 2;
+  if (status === 'ready') return 3;
+  if (status === 'on_the_way' || status === 'arriving') return 4;
+  if (status === 'delivered') return 5;
   return 0;
 }
 
@@ -594,28 +739,41 @@ function trackingHeadline(order) {
     return { kicker: 'Pedido entregado', title: '¡Disfrutalo!', sub: 'Gracias por comprar en La Taba.' };
   }
   if (order.status === 'cancelled') {
-    return { kicker: 'Pedido cancelado', title: 'Pedido cancelado', sub: 'Escribinos por WhatsApp y lo resolvemos.' };
+    return {
+      kicker: 'Pedido cancelado',
+      title: 'Pedido cancelado',
+      sub: order.cancelReason ? `Motivo: ${order.cancelReason}.` : 'Escribinos por WhatsApp y lo resolvemos.',
+    };
   }
   if (order.status === 'preparing') {
     const prepMinutes = Number(order.delivery?.estimatedPreparationMinutes || 0);
     return {
       kicker: 'Pedido aceptado',
-      title: 'Pedido aceptado',
+      title: 'Aceptado y en preparacion',
       sub: prepMinutes > 0
         ? `Tu pedido fue aceptado. Tiempo estimado de preparacion: ${prepMinutes} min.`
         : 'El negocio esta preparando tu pedido.',
+    };
+  }
+  if (order.status === 'ready') {
+    return {
+      kicker: 'Pedido listo',
+      title: order.deliveryMode === 'pickup' ? 'Listo para retirar' : 'Listo para reparto',
+      sub: order.deliveryMode === 'pickup'
+        ? `Te esperamos en ${BUSINESS_CONFIG.address}.`
+        : 'El pedido esta listo en el local. Falta asignar o iniciar el reparto.',
     };
   }
   if (order.deliveryMode === 'pickup') {
     return { kicker: 'Retiro en local', title: order.status === 'ready' ? 'Listo para retirar' : 'Preparando tu pedido', sub: `Te esperamos en ${escapeHtml(BUSINESS_CONFIG.address)}.` };
   }
   if (order.status === 'arriving') {
-    return { kicker: 'Repartidor llegando', title: 'Llegando al domicilio', sub: 'El repartidor va hacia tu dirección.' };
+    return { kicker: 'En reparto', title: 'Llegando al domicilio', sub: 'El repartidor va hacia tu direccion.' };
   }
   if (order.status === 'on_the_way') {
-    return { kicker: 'Pedido en camino', title: 'Pedido en camino', sub: 'El repartidor salió hacia tu dirección.' };
+    return { kicker: 'En reparto', title: 'Pedido en reparto', sub: 'El pedido salio del local. Si no hay GPS real, no mostramos mapa.' };
   }
-  return { kicker: 'Pedido en preparación', title: 'En preparación', sub: 'Te avisamos cuando salga el repartidor.' };
+  return { kicker: 'Pedido enviado', title: 'Pedido enviado', sub: 'El comercio esta revisando disponibilidad para aceptar y preparar tu pedido.' };
 }
 
 function destinationLabel(order) {
@@ -636,6 +794,17 @@ function trackingMapStatusTitle(order) {
   if (order?.status === 'on_the_way') return 'Pedido en camino';
   if (order?.status === 'arriving') return 'Llegando al domicilio';
   return statusLabel(order?.status);
+}
+
+function trackingEtaLabel(order) {
+  if (!order || order.status === 'cancelled') return 'Sin estimar';
+  if (order.status === 'delivered') return 'Finalizado';
+  if (order.deliveryMode === 'pickup' && order.status === 'ready') return 'Listo';
+  const prepMinutes = Number(order.delivery?.estimatedPreparationMinutes || 0);
+  if (order.status === 'preparing' && prepMinutes > 0) return `${Math.floor(prepMinutes)} min`;
+  const estimatedMinutes = Number(order.delivery?.estimatedMinutes || 0);
+  if (estimatedMinutes > 0) return `${Math.floor(estimatedMinutes)} min`;
+  return 'A coordinar';
 }
 
 function realMapShell({ order = null, role = 'tracking', fallback }) {
@@ -784,7 +953,7 @@ export function renderTracking() {
     : `
           <span><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
           <span><small>Código</small><strong>${escapeHtml(order.id)}</strong></span>
-          <span><small>Total</small><strong>${money(order.total)}</strong></span>
+          <span><small>Tiempo estimado</small><strong>${escapeHtml(trackingEtaLabel(order))}</strong></span>
         `;
 
   const steps = customerSteps.map((step, index) => {
@@ -821,7 +990,7 @@ export function renderTracking() {
           ${metricsHtml}
         </div>
         <div class="track-steps">${steps}</div>
-        ${isCancelled ? '<div class="warning-box">Este pedido fue cancelado. Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>' : ''}
+        ${isCancelled ? `<div class="warning-box">Este pedido fue cancelado.${order.cancelReason ? ` Motivo: ${escapeHtml(order.cancelReason)}.` : ''} Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>` : ''}
         ${isDelivery ? trackingAddressCard(order) : ''}
         ${isDelivery && !isCancelled ? riderTrackingCard(order, riderLocation) : ''}
         ${isDelivery && !isCancelled && order.status !== 'delivered'
@@ -833,8 +1002,12 @@ export function renderTracking() {
             <div class="order-line head"><span>${deliveryModeLabel(order.deliveryMode)}</span><strong>${escapeHtml(destinationAddressLabel(order))}</strong></div>
             ${itemsHtml}
             <div class="summary-row"><span>Subtotal</span><strong>${money(order.subtotal)}</strong></div>
+            ${Number(order.discountTotal || 0) > 0 ? `<div class="summary-row discount"><span>Cupon ${escapeHtml(order.coupon?.code || 'Promo')}</span><strong>-${money(order.discountTotal)}</strong></div>` : ''}
             <div class="summary-row"><span>Envío</span><strong>${money(order.deliveryFee)}</strong></div>
+            <div class="summary-row"><span>Pago</span><strong>${escapeHtml(order.paymentMethod || 'Efectivo')}</strong></div>
+            ${order.cashChange ? `<div class="summary-row"><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></div>` : ''}
             <div class="summary-row total"><span>Total</span><strong>${money(order.total)}</strong></div>
+            ${order.notes && order.notes !== 'Sin notas' ? `<p><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>` : ''}
           </div>
         </details>
         ${isCancelled ? '' : `
@@ -880,6 +1053,7 @@ export function showProductModal(productId) {
   if (!product || !isProductVisibleToCustomer(product) || !modal || !content) return;
 
   const off = discountPercent(product);
+  const favorite = isFavoriteProduct(product.id);
   content.innerHTML = `
     <div class="modal-card">
       <div class="modal-media">${productThumb(product, 'modal')}<span class="offer-badge-wrap">${topBadge(product)}</span></div>
@@ -894,6 +1068,7 @@ export function showProductModal(productId) {
       ${product.marketNote ? `<p class="market-note">${escapeHtml(product.marketNote)}</p>` : ''}
       <div class="button-row" style="margin-top:16px">
         <button class="primary-button" type="button" data-add-product="${product.id}" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>Agregar al pedido</button>
+        <button class="secondary-button" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}">${favorite ? 'Quitar favorito' : 'Guardar favorito'}</button>
         <button class="secondary-button" type="button" data-close-modal>Cerrar</button>
       </div>
     </div>

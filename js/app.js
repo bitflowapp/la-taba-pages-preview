@@ -4,6 +4,7 @@ import {
   decrementCartItem,
   incrementCartItem,
   removeCartItem,
+  repeatCustomerOrder,
 } from './cart.js';
 import {
   applyBusinessConfig,
@@ -14,6 +15,7 @@ import {
   renderCart,
   renderCartTotals,
   renderCatalog,
+  renderCustomerHome,
   renderHomeActiveOrder,
   renderNavigation,
   renderOrderSummary,
@@ -36,6 +38,7 @@ import { getRealtimeStatus, initRealtime, onRealtimeStatusChange, retryRelayConn
 import { renderMapViews } from './map/map_view.js';
 import { activeTrackingLiveness } from './map/route_geometry.js';
 import { getOrderRepository, getRepositoryDiagnostic, startOrderRepositorySync } from './repositories/repository_factory.js';
+import { toggleFavoriteProduct } from './core/customer-preferences.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
@@ -78,7 +81,7 @@ async function maybeResetDemoSession() {
     const params = new URLSearchParams(window.location.search);
     if (!params.has('reset') && !params.has('demo-reset')) return false;
     await clearRelayRoomOnReset(params);
-    [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked].forEach((key) => {
+    [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked, STORAGE_KEYS.customerFavorites, STORAGE_KEYS.customerHistory].forEach((key) => {
       try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
       try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
     });
@@ -168,6 +171,7 @@ function renderAll() {
   renderAdminVisibility();
   renderCatalog();
   renderHomeActiveOrder();
+  renderCustomerHome();
   renderCart();
   renderTracking();
   renderBusinessDashboard();
@@ -238,6 +242,30 @@ function bindEvents() {
     const detailId = target.closest('[data-product-detail]')?.dataset.productDetail;
     if (detailId) {
       showProductModal(detailId);
+      return;
+    }
+
+    const favoriteId = target.closest('[data-favorite-toggle]')?.dataset.favoriteToggle;
+    if (favoriteId) {
+      const result = toggleFavoriteProduct(favoriteId);
+      showToast(result.message);
+      renderAll();
+      const modal = $('[data-product-modal]');
+      if (modal?.open) showProductModal(favoriteId);
+      return;
+    }
+
+    const repeatId = target.closest('[data-repeat-order]')?.dataset.repeatOrder;
+    if (repeatId) {
+      const result = repeatCustomerOrder(repeatId);
+      showToast(result.message);
+      if (result.ok) setActiveView('cart');
+      else renderAll();
+      return;
+    }
+
+    if (target.closest('[data-apply-coupon]')) {
+      renderOrderSummary();
       return;
     }
 
@@ -343,6 +371,11 @@ function bindEvents() {
     const businessInput = handleBusinessInput(event.target);
     if (businessInput.handled) return;
 
+    if (event.target?.matches?.('[name="couponCode"]')) {
+      renderOrderSummary();
+      return;
+    }
+
     const input = event.target.closest?.('[data-search-input]');
     if (!input) return;
     setSearchQuery(input.value || '');
@@ -361,6 +394,9 @@ function bindEvents() {
       updateAddressFieldVisibility();
       renderOrderSummary();
       renderCartTotals();
+    }
+    if (target.name === 'paymentMethod') {
+      renderOrderSummary();
     }
     if (target.matches('[data-sort-select]')) {
       setSortBy(target.value || 'recommended');

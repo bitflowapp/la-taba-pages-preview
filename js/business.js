@@ -410,6 +410,8 @@ function inboxOrderCard(order, options = {}) {
           <aside class="inbox-payment-panel">
             <span>Total a cobrar</span>
             <strong>${money(order.total)}</strong>
+            <small>${escapeHtml(order.paymentMethod || 'Efectivo')}</small>
+            ${Number(order.discountTotal || 0) > 0 ? `<em>${escapeHtml(order.coupon?.code || 'Promo')} -${money(order.discountTotal)}</em>` : ''}
           </aside>
           <div class="inbox-actions">
             ${renderPrimaryOrderAction(order, primaryAction)}
@@ -427,12 +429,14 @@ function inboxOrderCard(order, options = {}) {
             <p><span>${isPickup ? 'Retiro' : 'Dirección'}</span><strong>${isPickup ? 'Retira en el local' : escapeHtml(address.label || order.address)}</strong></p>
             ${!isPickup && reference ? `<p><span>Referencia</span><strong>${escapeHtml(reference)}</strong></p>` : ''}
             <p><span>Pago</span><strong>${escapeHtml(order.paymentMethod)}</strong></p>
+            ${order.cashChange ? `<p><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></p>` : ''}
+            ${Number(order.discountTotal || 0) > 0 ? `<p><span>Cupon</span><strong>${escapeHtml(order.coupon?.code || 'Promo')} · -${money(order.discountTotal)}</strong></p>` : ''}
           </div>
           <div class="inbox-products-block">
             <span>Productos</span>
             <ul class="inbox-items">${itemsList}</ul>
           </div>
-          ${order.notes && order.notes !== 'Sin notas' ? `<p class="inbox-notes">Nota del cliente: ${escapeHtml(order.notes)}</p>` : ''}
+          ${order.notes && order.notes !== 'Sin notas' ? `<p class="inbox-notes">Observaciones del pedido: ${escapeHtml(order.notes)}</p>` : ''}
         </div>
       </div>
     </article>`;
@@ -522,7 +526,7 @@ function inboxClosedRow(order) {
     : '';
   return `
     <div class="inbox-closed-row">
-      <span>${escapeHtml(order.id)} · ${escapeHtml(order.customerName)}${reason}</span>
+      <span>${escapeHtml(order.id)} · ${escapeHtml(order.customerName)} · ${escapeHtml(order.paymentMethod || 'Efectivo')}${Number(order.discountTotal || 0) > 0 ? ` · ${escapeHtml(order.coupon?.code || 'Promo')} -${money(order.discountTotal)}` : ''}${reason}</span>
       <strong>${money(order.total)}</strong>
       <em class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</em>
     </div>`;
@@ -619,8 +623,10 @@ function orderCard(order) {
         <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
       </div>
       ${items}
+      ${Number(order.discountTotal || 0) > 0 ? `<div class="summary-row discount"><span>Cupon ${escapeHtml(order.coupon?.code || 'Promo')}</span><strong>-${money(order.discountTotal)}</strong></div>` : ''}
       <div class="summary-row total"><span>Total</span><strong>${money(order.total)}</strong></div>
-      <p><strong>Notas:</strong> ${escapeHtml(order.notes)}</p>
+      ${order.cashChange ? `<p><strong>Cambio efectivo:</strong> ${escapeHtml(order.cashChange)}</p>` : ''}
+      <p><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>
       <div class="order-actions">
         <button class="primary-button compact" type="button" data-order-advance="${order.id}" ${canAdvance ? '' : 'disabled'}>${actionLabelForOrder(order)}</button>
         <button class="danger-button compact" type="button" data-order-cancel="${order.id}" ${canAdvance ? '' : 'disabled'}>Cancelar</button>

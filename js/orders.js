@@ -13,6 +13,8 @@ import {
 } from './core/rider.js';
 import { chooseActiveLiveOrderId } from './core/realtime-sync.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
+import { recordCustomerOrder, updateCustomerOrderSnapshot } from './core/customer-history.js';
+import { buildAppliedCoupon, normalizeCouponCode } from './core/promotions.js';
 import {
   formatAddressReference,
   normalizeAddressDetails,
@@ -59,7 +61,11 @@ export function createOrderFromCheckout(formValues = {}) {
     unitPrice: item.product.price,
     unit: item.product.unit,
   }));
-  const totals = calculateTotals(items, values.deliveryMode);
+  const baseTotals = calculateTotals(items, values.deliveryMode);
+  const coupon = buildAppliedCoupon(values.couponCode, baseTotals.subtotal);
+  const totals = calculateTotals(items, values.deliveryMode, {
+    discountAmount: coupon?.discountAmount || 0,
+  });
 
   const order = {
     id: createOrderId(),
@@ -69,11 +75,15 @@ export function createOrderFromCheckout(formValues = {}) {
     addressDetails: values.deliveryMode === 'pickup' ? null : values.addressDetails,
     deliveryMode: values.deliveryMode,
     paymentMethod: paymentLabel(values.paymentMethod),
+    paymentMethodCode: values.paymentMethod,
     notes: values.customerNotes || 'Sin notas',
+    cashChange: values.paymentMethod === 'cash' ? values.cashChange : '',
+    coupon,
     createdAt: now,
     status: 'received',
     items,
     subtotal: totals.subtotal,
+    discountTotal: totals.discountTotal,
     deliveryFee: totals.deliveryFee,
     total: totals.total,
     statusHistory: [{ status: 'received', at: now }],
@@ -100,6 +110,7 @@ export function createOrderFromCheckout(formValues = {}) {
 
     draft.cart = [];
   });
+  recordCustomerOrder(order);
 
   return { ok: true, order, message: `Pedido ${order.id} creado.` };
 }
@@ -118,6 +129,8 @@ function normalizeCheckoutValues(formValues) {
     deliveryMode,
     paymentMethod: normalizePaymentMethod(formValues.paymentMethod),
     customerNotes: sanitizeNotes(formValues.customerNotes, ''),
+    cashChange: sanitizeText(formValues.cashChange, { maxLength: 80 }),
+    couponCode: normalizeCouponCode(formValues.couponCode),
   };
 }
 
@@ -202,6 +215,7 @@ export function cancelOrder(orderId, reason = '') {
         const order = draft.orders.find((candidate) => candidate.id === orderId);
         if (order) order.cancelReason = clean;
       });
+      updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
     }
   }
   return result;
@@ -225,7 +239,9 @@ export function buildKitchenTicket(order) {
     '--------------------------------',
     ...order.items.map((item) => `${item.quantity} x ${item.name}`),
     '--------------------------------',
+    ...(Number(order.discountTotal || 0) > 0 ? [`Cupon ${order.coupon?.code || ''}: -${money(order.discountTotal)}`] : []),
     `Pago: ${order.paymentMethod}`,
+    ...(order.cashChange ? [`Cambio efectivo: ${order.cashChange}`] : []),
     `TOTAL: ${money(order.total)}`,
     `Notas: ${order.notes || 'Sin notas'}`,
     `Estado: ${statusLabel(order.status)}`,
@@ -290,6 +306,8 @@ export function updateOrderStatus(orderId, status, options = {}) {
       order.delivery.estimatedMinutes = 0;
     }
   });
+
+  updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
 
   return { ok: true, message: `Pedido ${orderId} actualizado a ${statusLabel(status)}.` };
 }
@@ -359,10 +377,12 @@ export function buildWhatsAppMessage(order) {
     ...safeOrder.items.map((item) => `• ${item.quantity} x ${item.name} — ${money(item.unitPrice * item.quantity)}`),
     '',
     `Subtotal: ${money(safeOrder.subtotal)}`,
+    ...(safeOrder.discountTotal > 0 ? [`Cupon ${safeOrder.coupon?.code || ''}: -${money(safeOrder.discountTotal)}`] : []),
     `Envío: ${money(safeOrder.deliveryFee)}`,
     `Total: ${money(safeOrder.total)}`,
     '',
     `Pago: ${safeOrder.paymentMethod}`,
+    ...(safeOrder.cashChange ? [`Cambio con efectivo: ${safeOrder.cashChange}`] : []),
     `Notas: ${safeOrder.notes}`,
   ];
 
@@ -377,7 +397,15 @@ function normalizeOrderForMessage(order) {
     quantity: Math.max(1, Math.floor(Number(item.quantity) || 1)),
     unitPrice: Math.max(0, Number(item.unitPrice) || 0),
   }));
-  const totals = calculateTotals(safeItems, deliveryMode);
+  const discountTotal = Math.max(0, Number(order.discountTotal || order.coupon?.discountAmount || 0));
+  const totals = calculateTotals(safeItems, deliveryMode, { discountAmount: discountTotal });
+  const coupon = order.coupon && totals.discountTotal > 0
+    ? {
+      code: sanitizeText(order.coupon.code, { fallback: 'TABA10', maxLength: 24 }),
+      discountPercent: Math.max(0, Math.floor(Number(order.coupon.discountPercent) || 0)),
+      discountAmount: totals.discountTotal,
+    }
+    : null;
 
   return {
     id: sanitizeText(order.id, { fallback: 'Sin ID', maxLength: 40 }),
@@ -391,9 +419,12 @@ function normalizeOrderForMessage(order) {
     addressDetails: deliveryMode === 'pickup' ? normalizeAddressDetails() : normalizeOrderAddressDetails(order),
     items: safeItems,
     subtotal: totals.subtotal,
+    discountTotal: totals.discountTotal,
     deliveryFee: totals.deliveryFee,
     total: totals.total,
+    coupon,
     paymentMethod: sanitizeText(order.paymentMethod, { fallback: 'Efectivo', maxLength: 80 }),
+    cashChange: sanitizeText(order.cashChange, { fallback: '', maxLength: 80 }),
     notes: sanitizeNotes(order.notes),
   };
 }
@@ -409,7 +440,9 @@ export function buildWhatsAppUrlFromDraft(formValues = {}) {
 
 export function buildDraftMessageFromCart(formValues = {}) {
   const values = normalizeCheckoutValues(formValues);
-  const { items, subtotal, deliveryFee, total } = getCartSummary(values.deliveryMode);
+  const { items, subtotal, discountTotal, deliveryFee, total, coupon } = getCartSummary(values.deliveryMode, {
+    couponCode: values.couponCode,
+  });
 
   const lines = [
     `Hola ${BUSINESS_CONFIG.businessName}, quiero consultar este pedido:`,
@@ -427,10 +460,12 @@ export function buildDraftMessageFromCart(formValues = {}) {
     ...(items.length ? items.map((item) => `• ${item.quantity} x ${item.product.name} — ${money(item.quantity * item.product.price)}`) : ['• Sin productos cargados']),
     '',
     `Subtotal: ${money(subtotal)}`,
+    ...(discountTotal > 0 ? [`Cupon ${coupon.code}: -${money(discountTotal)}`] : []),
     `Envío: ${money(deliveryFee)}`,
     `Total: ${money(total)}`,
     '',
     `Pago: ${paymentLabel(values.paymentMethod)}`,
+    ...(values.paymentMethod === 'cash' && values.cashChange ? [`Cambio con efectivo: ${values.cashChange}`] : []),
     `Notas: ${values.customerNotes || 'Sin notas'}`,
   ];
 

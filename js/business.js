@@ -1,6 +1,15 @@
 import { BUSINESS_CONFIG } from './config.js';
 import { formatAddressReference, normalizeOrderAddressDetails } from './core/address.js';
 import {
+  CATALOG_BADGE_OPTIONS,
+  archiveCatalogProduct,
+  getEditableCategories,
+  restoreArchivedCatalogProduct,
+  restoreDemoCatalog,
+  toggleCatalogProductAvailability,
+  upsertCatalogProduct,
+} from './core/catalog-store.js';
+import {
   getActiveOrders as selectActiveOrders,
   getBusinessMetrics,
   getLowStockProducts as selectLowStockProducts,
@@ -35,6 +44,7 @@ let audioCtx = null;
 // Pedido en espera de confirmación de cancelación (el primer tap NO cancela:
 // abre el modal de confirmación con motivo obligatorio).
 let pendingCancelOrderId = null;
+let editingCatalogProductId = null;
 const CANCEL_REASON_PRESETS = Object.freeze(['Sin stock', 'Cliente canceló', 'Fuera de zona de envío', 'Datos incorrectos']);
 
 function readSoundPref() {
@@ -126,6 +136,10 @@ export function renderBusinessDashboard() {
           <h2>Central de pedidos</h2>
           <span>Los pedidos confirmados aparecen acá. Aceptás, preparás y mandás a reparto sin perder el foco.</span>
         </div>
+        <nav class="business-jump-nav" aria-label="Secciones del negocio">
+          <button class="secondary-button compact" type="button" data-scroll-orders>Pedidos</button>
+          <button class="secondary-button compact" type="button" data-scroll-catalog>Catalogo</button>
+        </nav>
       </header>
 
       ${renderOrderInbox(state, metrics, freshOrderIds)}
@@ -139,10 +153,7 @@ export function renderBusinessDashboard() {
         <div class="day-metric"><span>Delivery / Retiro</span><strong>${metrics.todayDeliveryCount} / ${metrics.todayPickupCount}</strong><small>${newCustomers} clientes</small></div>
       </section>
 
-      <section class="card stock-catalog-card business-stock-card">
-        <h3>Productos y stock</h3>
-        ${state.products.map(stockRow).join('')}
-      </section>
+      ${renderCatalogManager(state)}
 
       <details class="business-extra">
         <summary>Más métricas del día</summary>
@@ -531,6 +542,189 @@ function orderCard(order) {
   `;
 }
 
+function renderCatalogManager(state) {
+  const allProducts = Array.isArray(state.products) ? state.products : [];
+  const activeProducts = allProducts.filter((product) => !product.archived);
+  const archivedProducts = allProducts.filter((product) => product.archived);
+  let editingProduct = editingCatalogProductId
+    ? allProducts.find((product) => product.id === editingCatalogProductId && !product.archived)
+    : null;
+  if (editingCatalogProductId && !editingProduct) {
+    editingCatalogProductId = null;
+    editingProduct = null;
+  }
+
+  return `
+    <section class="business-catalog-card" data-business-catalog aria-labelledby="business-catalog-title">
+      <header class="business-catalog-head">
+        <div>
+          <span class="catalog-admin-kicker">Catalogo editable · Productos y stock</span>
+          <h3 id="business-catalog-title">Productos que ve el cliente</h3>
+          <p>Creas, editas, pausas o archivas productos sin tocar pedidos ya confirmados.</p>
+        </div>
+        <div class="catalog-admin-top-actions">
+          <button class="secondary-button compact" type="button" data-catalog-new>Nuevo producto</button>
+          <button class="ghost-button compact" type="button" data-catalog-reset-demo>Restaurar catalogo demo</button>
+        </div>
+      </header>
+
+      ${renderCatalogForm(editingProduct)}
+      ${renderCatalogRows(activeProducts)}
+      ${renderArchivedCatalogRows(archivedProducts)}
+    </section>`;
+}
+
+function renderCatalogForm(product = null) {
+  const isEditing = Boolean(product);
+  const categoryId = product?.categoryId || 'carnes';
+  const badge = product?.badge || '';
+  const available = !product || product.available;
+
+  return `
+    <form class="catalog-admin-form" data-catalog-form novalidate>
+      <input type="hidden" name="productId" value="${isEditing ? escapeHtml(product.id) : ''}" />
+      <div class="catalog-form-title">
+        <strong>${isEditing ? 'Editar producto' : 'Crear producto'}</strong>
+        <span>${isEditing ? escapeHtml(product.name) : 'Alta rapida para la vidriera del cliente'}</span>
+      </div>
+
+      <div class="catalog-form-grid">
+        <label>
+          <span>Producto a vender</span>
+          <input name="name" type="text" maxlength="100" required value="${escapeHtml(product?.name || '')}" />
+        </label>
+        <label>
+          <span>Precio</span>
+          <input name="price" type="number" min="1" step="1" inputmode="decimal" required value="${product ? String(product.price) : ''}" />
+        </label>
+        <label>
+          <span>Categoria</span>
+          <select name="categoryId" required>
+            ${categoryOptions(categoryId)}
+          </select>
+        </label>
+        <label>
+          <span>Etiqueta opcional</span>
+          <select name="badge">
+            ${badgeOptions(badge)}
+          </select>
+        </label>
+        <label class="catalog-description-field">
+          <span>Descripcion breve</span>
+          <textarea name="description" rows="2" maxlength="180">${escapeHtml(product?.description || '')}</textarea>
+        </label>
+        <label class="catalog-availability-field">
+          <input name="available" type="checkbox" ${available ? 'checked' : ''} />
+          <span>Disponible para clientes</span>
+        </label>
+      </div>
+
+      <p class="form-hint catalog-form-error hidden" data-catalog-form-error></p>
+      <div class="catalog-form-actions">
+        <button class="primary-button compact" type="button" data-catalog-save>${isEditing ? 'Guardar cambios' : 'Crear producto'}</button>
+        ${isEditing ? '<button class="ghost-button compact" type="button" data-catalog-new>Cancelar edicion</button>' : ''}
+      </div>
+    </form>`;
+}
+
+function renderCatalogRows(products) {
+  if (!products.length) {
+    return `
+      <div class="catalog-admin-empty">
+        <strong>No hay productos visibles.</strong>
+        <p>Agrega un producto para que aparezca en el catalogo del cliente.</p>
+        <button class="secondary-button compact" type="button" data-catalog-new>Crear producto</button>
+      </div>`;
+  }
+
+  return `
+    <div class="catalog-admin-list" aria-label="Productos del catalogo">
+      ${products.map(catalogProductRow).join('')}
+    </div>`;
+}
+
+function renderArchivedCatalogRows(products) {
+  if (!products.length) return '';
+  return `
+    <details class="catalog-archived">
+      <summary>Archivados (${products.length})</summary>
+      <div class="catalog-admin-list archived-list">
+        ${products.map(archivedProductRow).join('')}
+      </div>
+    </details>`;
+}
+
+function catalogProductRow(product) {
+  return `
+    <article class="catalog-admin-row ${product.available ? '' : 'is-disabled'}" data-catalog-admin-row="${escapeHtml(product.id)}">
+      <div class="catalog-admin-main">
+        <span class="stock-thumb">${productCode(product)}</span>
+        <div>
+          <strong>${escapeHtml(product.name)}</strong>
+          <p>${escapeHtml(product.description || 'Sin descripcion')}</p>
+          <div class="catalog-admin-tags">
+            <span>${escapeHtml(categoryName(product.categoryId))}</span>
+            ${product.badge ? `<span>${escapeHtml(product.badge)}</span>` : ''}
+            ${stockPill(product)}
+          </div>
+        </div>
+      </div>
+      <div class="catalog-admin-price">
+        <strong>${money(product.price)}</strong>
+        <small>${product.available ? 'Visible para cliente' : 'No disponible'}</small>
+      </div>
+      <div class="catalog-admin-actions">
+        <div class="catalog-stock-actions" aria-label="Stock demo de ${escapeHtml(product.name)}">
+          <button class="icon-button compact" type="button" data-stock-dec="${escapeHtml(product.id)}" aria-label="Restar stock de ${escapeHtml(product.name)}">−</button>
+          <strong>${product.stock}</strong>
+          <button class="icon-button compact" type="button" data-stock-inc="${escapeHtml(product.id)}" aria-label="Sumar stock de ${escapeHtml(product.name)}">+</button>
+        </div>
+        <button class="ghost-button compact" type="button" data-product-edit="${escapeHtml(product.id)}">Editar</button>
+        <button class="ghost-button compact" type="button" data-product-toggle="${escapeHtml(product.id)}">${product.available ? 'Pausar' : 'Activar'}</button>
+        <button class="ghost-button compact danger-ghost" type="button" data-product-archive="${escapeHtml(product.id)}">Archivar</button>
+      </div>
+    </article>`;
+}
+
+function archivedProductRow(product) {
+  return `
+    <article class="catalog-admin-row is-archived" data-catalog-admin-row="${escapeHtml(product.id)}">
+      <div class="catalog-admin-main">
+        <span class="stock-thumb">${productCode(product)}</span>
+        <div>
+          <strong>${escapeHtml(product.name)}</strong>
+          <p>${escapeHtml(categoryName(product.categoryId))} · ${money(product.price)}</p>
+        </div>
+      </div>
+      <div class="catalog-admin-actions">
+        <button class="ghost-button compact" type="button" data-product-restore="${escapeHtml(product.id)}">Restaurar</button>
+      </div>
+    </article>`;
+}
+
+function categoryOptions(selectedId) {
+  return getEditableCategories().map((category) => `
+    <option value="${escapeHtml(category.id)}" ${category.id === selectedId ? 'selected' : ''}>${escapeHtml(categoryLabel(category))}</option>
+  `).join('');
+}
+
+function badgeOptions(selectedBadge) {
+  const options = CATALOG_BADGE_OPTIONS.includes(selectedBadge)
+    ? CATALOG_BADGE_OPTIONS
+    : [...CATALOG_BADGE_OPTIONS, selectedBadge];
+  return options.map((badge) => `
+    <option value="${escapeHtml(badge)}" ${badge === selectedBadge ? 'selected' : ''}>${badge ? escapeHtml(badge) : 'Sin etiqueta'}</option>
+  `).join('');
+}
+
+function categoryName(categoryId) {
+  return getEditableCategories().find((category) => category.id === categoryId)?.name || 'General';
+}
+
+function categoryLabel(category) {
+  return category.id === 'retiro' ? 'Retiro local' : category.name;
+}
+
 function stockRow(product) {
   return `
     <div class="stock-row">
@@ -591,6 +785,42 @@ export function handleBusinessAction(target) {
     return { handled: true, ok: true, message: '' };
   }
 
+  if (target.closest('[data-scroll-catalog]')) {
+    scrollCatalogManager();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-catalog-new]')) {
+    editingCatalogProductId = null;
+    if (typeof document !== 'undefined') {
+      renderBusinessDashboard();
+      scrollCatalogManager();
+      setTimeout(() => document.querySelector('[data-catalog-form] [name="name"]')?.focus(), 0);
+    }
+    return { handled: true, ok: true, message: '' };
+  }
+
+  const editId = target.closest('[data-product-edit]')?.dataset.productEdit;
+  if (editId) {
+    editingCatalogProductId = editId;
+    if (typeof document !== 'undefined') {
+      renderBusinessDashboard();
+      scrollCatalogManager();
+      setTimeout(() => document.querySelector('[data-catalog-form] [name="name"]')?.focus(), 0);
+    }
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-catalog-save]')) {
+    return saveCatalogProductFromForm();
+  }
+
+  if (target.closest('[data-catalog-reset-demo]')) {
+    editingCatalogProductId = null;
+    setState({ products: restoreDemoCatalog(), activeCategory: 'all' });
+    return { handled: true, ok: true, message: 'Catalogo demo restaurado.' };
+  }
+
   // Primer tap "Rechazar/Cancelar": NO cancela. Abre el modal de confirmación
   // con el motivo obligatorio, para evitar que un toque accidental pierda un
   // pedido real.
@@ -632,7 +862,73 @@ export function handleBusinessAction(target) {
     return { handled: true, ok, message: ok ? 'Disponibilidad actualizada.' : 'Producto no encontrado.' };
   }
 
+  const archiveId = target.closest('[data-product-archive]')?.dataset.productArchive;
+  if (archiveId) {
+    const result = archiveProduct(archiveId);
+    return { handled: true, ok: result.ok, message: result.message };
+  }
+
+  const restoreId = target.closest('[data-product-restore]')?.dataset.productRestore;
+  if (restoreId) {
+    const result = restoreProduct(restoreId);
+    return { handled: true, ok: result.ok, message: result.message };
+  }
+
   return { handled: false };
+}
+
+function saveCatalogProductFromForm() {
+  const form = typeof document !== 'undefined' ? document.querySelector('[data-catalog-form]') : null;
+  if (!form) return { handled: true, ok: false, message: 'Formulario no disponible.' };
+  const values = readCatalogForm(form);
+  const result = upsertCatalogProduct(getState().products, values, { productId: values.productId });
+  if (!result.ok) {
+    setCatalogFormError(result.message);
+    return { handled: true, ok: false, message: result.message };
+  }
+
+  editingCatalogProductId = null;
+  setState({ products: result.products });
+  return { handled: true, ok: true, message: result.message };
+}
+
+function readCatalogForm(form) {
+  const formData = new FormData(form);
+  return {
+    productId: sanitizeText(formData.get('productId'), { maxLength: 80 }),
+    name: formData.get('name'),
+    description: formData.get('description'),
+    price: formData.get('price'),
+    categoryId: formData.get('categoryId'),
+    badge: formData.get('badge'),
+    available: formData.get('available') === 'on',
+  };
+}
+
+function setCatalogFormError(message) {
+  if (typeof document === 'undefined') return;
+  const error = document.querySelector('[data-catalog-form-error]');
+  if (!error) return;
+  error.textContent = message;
+  error.classList.remove('hidden');
+}
+
+function scrollCatalogManager() {
+  if (typeof document === 'undefined') return;
+  document.querySelector('[data-business-catalog]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function archiveProduct(productId) {
+  if (editingCatalogProductId === productId) editingCatalogProductId = null;
+  const result = archiveCatalogProduct(getState().products, productId);
+  if (result.ok) setState({ products: result.products });
+  return result;
+}
+
+function restoreProduct(productId) {
+  const result = restoreArchivedCatalogProduct(getState().products, productId);
+  if (result.ok) setState({ products: result.products });
+  return result;
 }
 
 function advanceOrder(orderId) {
@@ -791,15 +1087,9 @@ function changeProductStock(productId, delta) {
 }
 
 function toggleProductAvailability(productId) {
-  if (!getState().products.some((product) => product.id === productId)) return false;
-  let changed = false;
-  updateState((draft) => {
-    const product = draft.products.find((candidate) => candidate.id === productId);
-    if (!product) return;
-    product.available = !product.available;
-    changed = true;
-  });
-  return changed;
+  const result = toggleCatalogProductAvailability(getState().products, productId);
+  if (result.ok) setState({ products: result.products });
+  return result.ok;
 }
 
 function copyTicketText(text) {

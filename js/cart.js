@@ -5,10 +5,11 @@ import {
   normalizeDeliveryMode,
   normalizeQuantity,
 } from './core/pricing.js';
+import { isProductOrderable } from './core/catalog-store.js';
 import { getProductById, getState, money, setState, updateState } from './state.js';
 
 function productIsOrderable(product) {
-  return Boolean(product && product.available && Number(product.stock) > 0);
+  return isProductOrderable(product);
 }
 
 function normalizeRequestedQuantity(quantity) {

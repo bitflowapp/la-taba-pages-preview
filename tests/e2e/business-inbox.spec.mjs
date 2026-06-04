@@ -20,10 +20,13 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(page.locator('[data-business-dashboard]')).toContainText('Central de pedidos');
   await expect(page.locator('.topbar .brand')).toContainText(/La Taba/i);
   await expect(page.locator('.inbox-tabs')).toContainText('Nuevos');
-  await expect(page.locator('.inbox-tabs')).toContainText('Preparando');
-  await expect(page.locator('.inbox-tabs')).toContainText('Reparto');
-  await expect(page.locator('.inbox-tabs')).toContainText('Entregados');
-  await expect(page.locator('[data-order-inbox]')).toContainText('Todavía no entraron pedidos');
+  await expect(page.locator('.inbox-tabs')).toContainText('En preparacion');
+  await expect(page.locator('.inbox-tabs')).toContainText('Listos');
+  await expect(page.locator('.inbox-tabs')).toContainText('En reparto');
+  await expect(page.locator('.inbox-tabs')).toContainText('Finalizados');
+  await page.getByRole('button', { name: /Activar sonido/i }).click();
+  await waitForToast(page, 'Sonido de pedidos activado.');
+  await expect(page.locator('[data-order-inbox]')).toContainText('Todavia no hay pedidos para este filtro.');
 
   // 2. El cliente confirma un pedido con dirección real.
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
@@ -56,7 +59,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(card).toBeVisible();
   await expect(card).toContainText('LT-0002');
   await expect(card).toContainText('Pedido nuevo');
-  await expect(card).toContainText('Recibido');
+  await expect(card).toContainText('Nuevo / pendiente');
   await expect(card).toContainText('Walter Cliente');
   await expect(card).toContainText('2995551234');
   await expect(card).toContainText('Delivery');
@@ -65,13 +68,30 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(card).toContainText('Sin sal');
   await expect(card).toContainText('Total a cobrar');
   await expect(card).toContainText('Aceptar pedido');
+  await expect(card.getByLabel('Tiempo estimado de preparacion')).toBeVisible();
+
+  await page.getByLabel('Buscar pedido').fill('Walter');
+  await expect(page.locator('[data-inbox-order="LT-0002"]')).toBeVisible();
+  await page.locator('[data-order-filter="new"]').click();
+  await expect(page.locator('[data-inbox-order="LT-0002"]')).toBeVisible();
+  await page.getByLabel('Buscar pedido').fill('No existe');
+  await expect(page.locator('[data-order-inbox]')).toContainText('No hay pedidos que coincidan');
+  await page.getByLabel('Buscar pedido').fill('');
+  await page.locator('[data-order-filter="all"]').click();
 
   // 4. El negocio gestiona el estado: Aceptar -> listo -> reparto, siempre honesto sin GPS.
+  await page.locator('[data-inbox-order="LT-0002"] [data-prep-minutes]').selectOption('20');
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Preparando');
+  await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Preparacion estimada:');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Listo para entregar');
   await expect(page.locator('[data-inbox-group="preparando"]')).toBeVisible();
+
+  await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Tiempo estimado de preparacion: 20 min.');
+  await page.goto('/#business');
+  await expect(page.locator('[data-view="business"]')).toBeVisible();
 
   const managedCard = page.locator('[data-inbox-order="LT-0002"]');
   await page.locator('[data-order-advance="LT-0002"]').click();
@@ -86,6 +106,15 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(managedCard).toContainText('Sin ubicación en vivo');
   await expect(managedCard).toContainText('Seguir reparto');
   await expect(managedCard.locator('[data-business-tracking="LT-0002"] [data-real-map]')).toHaveCount(0);
+
+  await managedCard.getByRole('button', { name: /Cancelar pedido/i }).click();
+  await expect(page.locator('[data-cancel-modal]')).toBeVisible();
+  await page.getByRole('button', { name: 'Cliente no responde' }).click();
+  await page.locator('[data-cancel-confirm]').click();
+  await waitForToast(page, 'Pedido LT-0002 cancelado. Motivo: Cliente no responde.');
+  await page.locator('[data-order-filter="cancelled"]').click();
+  await expect(page.locator('[data-order-inbox]')).toContainText('Cliente no responde');
+  await expect(page.locator('[data-order-inbox]')).toContainText('Cancelado');
 
   // 5. Mobile 390x844 sin overflow horizontal.
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);

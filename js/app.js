@@ -29,7 +29,7 @@ import {
 import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, getActiveOrder, getLastOrder } from './orders.js';
 import { getState, subscribe } from './state.js';
 import { STORAGE_KEYS } from './config.js';
-import { handleBusinessAction, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
+import { handleBusinessAction, handleBusinessInput, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
 import { handleDeliveryAction, handleDeliveryChange, renderDeliveryPanel } from './delivery.js';
 import { disableGpsTracking, handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
 import { getRealtimeStatus, initRealtime, onRealtimeStatusChange, retryRelayConnection } from './realtime.js';
@@ -340,6 +340,9 @@ function bindEvents() {
 
   // Búsqueda: hay un buscador en Home y otro en Catálogo (ambos data-search-input).
   document.addEventListener('input', (event) => {
+    const businessInput = handleBusinessInput(event.target);
+    if (businessInput.handled) return;
+
     const input = event.target.closest?.('[data-search-input]');
     if (!input) return;
     setSearchQuery(input.value || '');

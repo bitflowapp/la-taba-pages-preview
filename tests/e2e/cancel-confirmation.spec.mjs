@@ -55,11 +55,11 @@ test('rechazar pedido: el primer tap no cancela, "Volver" no cancela y confirmar
 
   const modal = page.locator('[data-cancel-modal]');
 
-  // 1) Primer tap en "Rechazar": abre el modal, NO cancela.
+  // 1) Primer tap en "Cancelar": abre el modal, NO cancela.
   await orderCard.locator('[data-order-cancel]').click();
   await expect(modal).toBeVisible();
   await expect(modal).toContainText('LT-0002');
-  await expect(modal).toContainText('Rechazar este pedido');
+  await expect(modal).toContainText('Cancelar este pedido');
   await expect(orderCard).toBeVisible(); // sigue activo
   await expect(orderCard).not.toContainText('Cancelado');
 

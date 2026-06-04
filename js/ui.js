@@ -596,6 +596,16 @@ function trackingHeadline(order) {
   if (order.status === 'cancelled') {
     return { kicker: 'Pedido cancelado', title: 'Pedido cancelado', sub: 'Escribinos por WhatsApp y lo resolvemos.' };
   }
+  if (order.status === 'preparing') {
+    const prepMinutes = Number(order.delivery?.estimatedPreparationMinutes || 0);
+    return {
+      kicker: 'Pedido aceptado',
+      title: 'Pedido aceptado',
+      sub: prepMinutes > 0
+        ? `Tu pedido fue aceptado. Tiempo estimado de preparacion: ${prepMinutes} min.`
+        : 'El negocio esta preparando tu pedido.',
+    };
+  }
   if (order.deliveryMode === 'pickup') {
     return { kicker: 'Retiro en local', title: order.status === 'ready' ? 'Listo para retirar' : 'Preparando tu pedido', sub: `Te esperamos en ${escapeHtml(BUSINESS_CONFIG.address)}.` };
   }

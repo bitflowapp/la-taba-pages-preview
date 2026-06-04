@@ -39,10 +39,17 @@ export function createHttpOrderRepository({
       if (!result.ok) return [];
       return normalizeOrderList(result.orders || result.data || []);
     },
-    async updateOrderStatus(orderId, status) {
+    async updateOrderStatus(orderId, status, options = {}) {
+      // El tiempo estimado de preparación viaja como campo opcional; un backend
+      // que no lo conozca simplemente lo ignora (contrato compatible hacia atrás).
+      const body = { status };
+      const prepMinutes = Number(options?.estimatedPreparationMinutes);
+      if (Number.isFinite(prepMinutes) && prepMinutes > 0) {
+        body.estimatedPreparationMinutes = Math.round(prepMinutes);
+      }
       return normalizeOrderPayload(await request(`/orders/${encodeURIComponent(orderId)}/status`, {
         method: 'PATCH',
-        body: { status },
+        body,
       }));
     },
     async assignRider(orderId, riderId) {

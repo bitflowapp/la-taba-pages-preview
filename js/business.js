@@ -29,7 +29,7 @@ import {
 } from './core/business-ops.js';
 import { toDomainOrder } from './core/domain.js';
 import { isTerminalOrderStatus } from './core/order-status.js';
-import { getNextWorkflowStatus } from './core/order-workflow.js';
+import { getNextWorkflowStatus, toDemoOrderStatus } from './core/order-workflow.js';
 import {
   dateTime,
   deliveryModeLabel,
@@ -1069,7 +1069,36 @@ function advanceOrder(orderId, options = {}) {
   const domainOrder = toDomainOrder(order);
   const nextStatus = domainOrder ? getNextWorkflowStatus(domainOrder.status, domainOrder.fulfillmentType) : null;
   if (!nextStatus) return { ok: false, message: 'Sin próxima acción para este pedido.' };
-  return repository.updateOrderStatus(orderId, nextStatus);
+
+  // El tiempo estimado de preparación se elige al aceptar el pedido (paso que
+  // mapea a "preparing"). Lo propagamos al repositorio —queda en el metadata del
+  // evento persistente— y, como la tabla de pedidos todavía no tiene columna
+  // propia, lo reflejamos en el espejo local para que el cliente vea
+  // "Tiempo estimado de preparación: X min", igual que con el motivo de
+  // cancelación en modo persistente.
+  const isAcceptStep = toDemoOrderStatus(nextStatus) === 'preparing';
+  const prepMinutes = isAcceptStep
+    ? normalizePreparationMinutes(options.estimatedPreparationMinutes, DEFAULT_PREP_MINUTES)
+    : null;
+  const repoOptions = prepMinutes != null ? { estimatedPreparationMinutes: prepMinutes } : {};
+
+  return Promise.resolve(repository.updateOrderStatus(orderId, nextStatus, repoOptions)).then((result) => {
+    if (result?.ok && prepMinutes != null) {
+      const now = new Date().toISOString();
+      updateState((draft) => {
+        const target = draft.orders.find((candidate) => candidate.id === orderId);
+        if (!target) return;
+        target.delivery = target.delivery || {};
+        target.delivery.estimatedPreparationMinutes = prepMinutes;
+        target.delivery.acceptedAt = target.delivery.acceptedAt || now;
+        target.delivery.currentLocationLabel = `Pedido aceptado por el negocio. Preparacion estimada: ${prepMinutes} min`;
+        if (target.deliveryMode === 'delivery') {
+          target.delivery.estimatedMinutes = Math.max(prepMinutes, Number(target.delivery.estimatedMinutes || 0));
+        }
+      });
+    }
+    return result;
+  });
 }
 
 function cancelBusinessOrder(orderId, reason = '') {

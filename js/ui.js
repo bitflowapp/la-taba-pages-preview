@@ -361,8 +361,8 @@ function renderProducts() {
     const isFavorites = state.activeCategory === 'favorites';
     container.innerHTML = `
       <div class="empty-state">
-        <strong>${isFavorites ? 'Todavia no marcaste favoritos.' : 'No hay productos en esta busqueda.'}</strong><br />
-        ${isFavorites ? 'Toca la estrella de un producto para guardarlo aca.' : 'Proba con otra categoria o limpia el buscador.'}
+        <strong>${isFavorites ? 'Todavía no marcaste favoritos.' : 'No hay productos en esta búsqueda.'}</strong><br />
+        ${isFavorites ? 'Tocá la estrella de un producto para guardarlo acá.' : 'Probá con otra categoría o limpiá el buscador.'}
         <div class="empty-actions">
           <button class="secondary-button compact" type="button" data-category-id="all">Ver todo el catálogo</button>
         </div>
@@ -462,7 +462,7 @@ function renderCustomerActions() {
         <strong>Tu pedido de siempre</strong>
         <span>${escapeHtml(latest.id)} · ${latest.items.length} ${latest.items.length === 1 ? 'producto' : 'productos'} · ${money(latest.total)}</span>
       </div>
-      <button class="primary-button compact" type="button" data-repeat-order="${escapeHtml(latest.id)}">Repetir ultimo pedido</button>
+      <button class="primary-button compact" type="button" data-repeat-order="${escapeHtml(latest.id)}">Repetir último pedido</button>
     </section>`;
 }
 
@@ -476,9 +476,9 @@ function renderCustomerHistory() {
   }
 
   container.innerHTML = `
-    <section class="customer-history-panel" aria-label="Mis ultimos pedidos">
+    <section class="customer-history-panel" aria-label="Mis últimos pedidos">
       <div class="rail-head">
-        <h2>Mis ultimos pedidos</h2>
+        <h2>Mis últimos pedidos</h2>
       </div>
       <div class="customer-history-list">
         ${history.slice(0, 4).map(customerHistoryRow).join('')}
@@ -567,7 +567,7 @@ function renderCartList() {
         <div class="cart-active-order">
           <small>Pedido anterior</small>
           <strong>${escapeHtml(latestOrder.id)} · ${money(latestOrder.total)}</strong>
-          <button class="secondary-button compact" type="button" data-repeat-order="${escapeHtml(latestOrder.id)}">Repetir ultimo pedido</button>
+          <button class="secondary-button compact" type="button" data-repeat-order="${escapeHtml(latestOrder.id)}">Repetir último pedido</button>
         </div>` : ''}
         <div class="empty-actions">
           <button class="secondary-button compact" type="button" data-nav-view="home">Ver productos</button>
@@ -610,7 +610,7 @@ export function renderOrderSummary() {
 
   container.innerHTML = `
     <div class="summary-row"><span>Subtotal</span><strong>${money(subtotal)}</strong></div>
-    ${discountTotal > 0 ? `<div class="summary-row discount"><span>Cupon ${escapeHtml(coupon.code)}</span><strong>-${money(discountTotal)}</strong></div>` : ''}
+    ${discountTotal > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(coupon.code)}</span><strong>-${money(discountTotal)}</strong></div>` : ''}
     <div class="summary-row"><span>${deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio'}</span><strong>${money(deliveryFee)}</strong></div>
     ${deliveryMode === 'delivery' ? `<div class="summary-row muted"><span>Pedido mínimo delivery</span><strong>${money(BUSINESS_CONFIG.minDeliveryOrder)}</strong></div>` : ''}
     <div class="summary-row total"><span>Total</span><strong>${money(total)}</strong></div>
@@ -749,10 +749,10 @@ function trackingHeadline(order) {
     const prepMinutes = Number(order.delivery?.estimatedPreparationMinutes || 0);
     return {
       kicker: 'Pedido aceptado',
-      title: 'Aceptado y en preparacion',
+      title: 'Aceptado y en preparación',
       sub: prepMinutes > 0
-        ? `Tu pedido fue aceptado. Tiempo estimado de preparacion: ${prepMinutes} min.`
-        : 'El negocio esta preparando tu pedido.',
+        ? `Tu pedido fue aceptado. Tiempo estimado de preparación: ${prepMinutes} min.`
+        : 'El negocio está preparando tu pedido.',
     };
   }
   if (order.status === 'ready') {
@@ -761,19 +761,19 @@ function trackingHeadline(order) {
       title: order.deliveryMode === 'pickup' ? 'Listo para retirar' : 'Listo para reparto',
       sub: order.deliveryMode === 'pickup'
         ? `Te esperamos en ${BUSINESS_CONFIG.address}.`
-        : 'El pedido esta listo en el local. Falta asignar o iniciar el reparto.',
+        : 'El pedido está listo en el local. Falta asignar o iniciar el reparto.',
     };
   }
   if (order.deliveryMode === 'pickup') {
     return { kicker: 'Retiro en local', title: order.status === 'ready' ? 'Listo para retirar' : 'Preparando tu pedido', sub: `Te esperamos en ${escapeHtml(BUSINESS_CONFIG.address)}.` };
   }
   if (order.status === 'arriving') {
-    return { kicker: 'En reparto', title: 'Llegando al domicilio', sub: 'El repartidor va hacia tu direccion.' };
+    return { kicker: 'En reparto', title: 'Llegando al domicilio', sub: 'El repartidor va hacia tu dirección.' };
   }
   if (order.status === 'on_the_way') {
-    return { kicker: 'En reparto', title: 'Pedido en reparto', sub: 'El pedido salio del local. Si no hay GPS real, no mostramos mapa.' };
+    return { kicker: 'En reparto', title: 'Pedido en reparto', sub: 'El pedido salió del local. Si no hay GPS real, no mostramos mapa.' };
   }
-  return { kicker: 'Pedido enviado', title: 'Pedido enviado', sub: 'El comercio esta revisando disponibilidad para aceptar y preparar tu pedido.' };
+  return { kicker: 'Pedido enviado', title: 'Pedido enviado', sub: 'El comercio está revisando disponibilidad para aceptar y preparar tu pedido.' };
 }
 
 function destinationLabel(order) {
@@ -1002,7 +1002,7 @@ export function renderTracking() {
             <div class="order-line head"><span>${deliveryModeLabel(order.deliveryMode)}</span><strong>${escapeHtml(destinationAddressLabel(order))}</strong></div>
             ${itemsHtml}
             <div class="summary-row"><span>Subtotal</span><strong>${money(order.subtotal)}</strong></div>
-            ${Number(order.discountTotal || 0) > 0 ? `<div class="summary-row discount"><span>Cupon ${escapeHtml(order.coupon?.code || 'Promo')}</span><strong>-${money(order.discountTotal)}</strong></div>` : ''}
+            ${Number(order.discountTotal || 0) > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(order.coupon?.code || 'Promo')}</span><strong>-${money(order.discountTotal)}</strong></div>` : ''}
             <div class="summary-row"><span>Envío</span><strong>${money(order.deliveryFee)}</strong></div>
             <div class="summary-row"><span>Pago</span><strong>${escapeHtml(order.paymentMethod || 'Efectivo')}</strong></div>
             ${order.cashChange ? `<div class="summary-row"><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></div>` : ''}

@@ -349,10 +349,10 @@ test('mobile cliente aplica cupon, elige pago y crea pedido', async ({ browser }
     deliveryMode: 'delivery',
   });
   await expect(page.locator('[data-payment-note]')).toContainText('Esta demo no procesa pagos reales');
-  await page.getByLabel('Cupon o promo').fill('taba10');
+  await page.getByLabel('Cupón o promo').fill('taba10');
   await page.locator('[data-apply-coupon]').click();
   await expect(page.locator('[data-coupon-message]')).toContainText('TABA10');
-  await expect(page.locator('[data-order-summary]')).toContainText('Cupon TABA10');
+  await expect(page.locator('[data-order-summary]')).toContainText('Cupón TABA10');
 
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, /Pedido creado/);
@@ -362,7 +362,7 @@ test('mobile cliente aplica cupon, elige pago y crea pedido', async ({ browser }
   await expect(tracking).toContainText('Pedido enviado');
   await tracking.locator('details.order-detail summary').click();
   await expect(tracking).toContainText('Transferencia');
-  await expect(tracking).toContainText('Cupon TABA10');
+  await expect(tracking).toContainText('Cupón TABA10');
   await expect(tracking).toContainText('Sin cebolla');
 
   await page.goto('/#business');

@@ -430,7 +430,7 @@ function inboxOrderCard(order, options = {}) {
             ${!isPickup && reference ? `<p><span>Referencia</span><strong>${escapeHtml(reference)}</strong></p>` : ''}
             <p><span>Pago</span><strong>${escapeHtml(order.paymentMethod)}</strong></p>
             ${order.cashChange ? `<p><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></p>` : ''}
-            ${Number(order.discountTotal || 0) > 0 ? `<p><span>Cupon</span><strong>${escapeHtml(order.coupon?.code || 'Promo')} · -${money(order.discountTotal)}</strong></p>` : ''}
+            ${Number(order.discountTotal || 0) > 0 ? `<p><span>Cupón</span><strong>${escapeHtml(order.coupon?.code || 'Promo')} · -${money(order.discountTotal)}</strong></p>` : ''}
           </div>
           <div class="inbox-products-block">
             <span>Productos</span>
@@ -623,7 +623,7 @@ function orderCard(order) {
         <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
       </div>
       ${items}
-      ${Number(order.discountTotal || 0) > 0 ? `<div class="summary-row discount"><span>Cupon ${escapeHtml(order.coupon?.code || 'Promo')}</span><strong>-${money(order.discountTotal)}</strong></div>` : ''}
+      ${Number(order.discountTotal || 0) > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(order.coupon?.code || 'Promo')}</span><strong>-${money(order.discountTotal)}</strong></div>` : ''}
       <div class="summary-row total"><span>Total</span><strong>${money(order.total)}</strong></div>
       ${order.cashChange ? `<p><strong>Cambio efectivo:</strong> ${escapeHtml(order.cashChange)}</p>` : ''}
       <p><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>

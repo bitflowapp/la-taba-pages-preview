@@ -16,7 +16,7 @@ let memoryHistory = [];
 export function recordCustomerOrder(order) {
   const snapshot = normalizeCustomerOrder(order);
   if (!snapshot) {
-    return { ok: false, history: getCustomerOrderHistory(), message: 'Pedido invalido.' };
+    return { ok: false, history: getCustomerOrderHistory(), message: 'Pedido inválido.' };
   }
   const current = getCustomerOrderHistory().filter((entry) => entry.id !== snapshot.id);
   const history = [snapshot, ...current].slice(0, CUSTOMER_HISTORY_LIMIT);

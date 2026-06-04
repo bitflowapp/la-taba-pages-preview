@@ -146,10 +146,23 @@ export function clearCart() {
   return { ok: true, message: 'Carrito vaciado.' };
 }
 
-export function repeatCustomerOrder(orderId = '') {
+export function repeatCustomerOrder(orderId = '', { force = false } = {}) {
   const order = orderId ? findCustomerOrder(orderId) : getLatestCustomerOrder();
   if (!order) {
     return { ok: false, message: 'No hay pedidos anteriores para repetir.', skipped: [] };
+  }
+
+  // Si el carrito tiene productos, no lo reemplazamos en silencio: pedimos
+  // confirmación explícita (force) para no perder lo que el cliente ya cargó.
+  if (!force && getState().cart.length > 0) {
+    return {
+      ok: false,
+      needsConfirmation: true,
+      orderId: order.id,
+      order,
+      skipped: [],
+      message: 'Repetir este pedido reemplazará los productos que ya tenés en el carrito.',
+    };
   }
 
   const { cartItems, skipped } = resolveRepeatOrderItems(order, getState().products);
@@ -157,7 +170,7 @@ export function repeatCustomerOrder(orderId = '') {
     return {
       ok: false,
       skipped,
-      message: repeatSkippedMessage(skipped) || 'No se pudo repetir el pedido: los productos ya no estan disponibles.',
+      message: repeatSkippedMessage(skipped) || 'No se pudo repetir el pedido: los productos ya no están disponibles.',
     };
   }
 

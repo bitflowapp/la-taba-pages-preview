@@ -211,7 +211,7 @@
                 </div>
                 <label>
                   Referencia de entrega
-                  <input name="customerReference" autocomplete="off" placeholder="Ej: casa con porton negro, tocar timbre" />
+                  <input name="customerReference" autocomplete="off" placeholder="Ej: casa con portón negro, tocar timbre" />
                 </label>
                 <input type="hidden" name="customerAddress" />
               </div>
@@ -238,7 +238,7 @@
 
               <div class="coupon-row">
                 <label>
-                  Cupon o promo
+                  Cupón o promo
                   <input name="couponCode" autocomplete="off" placeholder="Ej: TABA10" />
                 </label>
                 <button class="secondary-button compact" type="button" data-apply-coupon>Aplicar</button>
@@ -410,6 +410,17 @@
 
     <dialog class="cancel-modal" data-catalog-reset-modal>
       <div data-catalog-reset-content></div>
+    </dialog>
+
+    <dialog class="cancel-modal" data-repeat-modal>
+      <div class="pin-card">
+        <h2>Repetir pedido</h2>
+        <p>Repetir este pedido reemplazará los productos que ya tenés en el carrito.</p>
+        <div class="button-row">
+          <button class="secondary-button" type="button" data-repeat-dismiss>Cancelar</button>
+          <button class="primary-button" type="button" data-repeat-confirm>Reemplazar carrito</button>
+        </div>
+      </div>
     </dialog>
 
     <pre class="print-ticket" data-print-ticket aria-hidden="true"></pre>

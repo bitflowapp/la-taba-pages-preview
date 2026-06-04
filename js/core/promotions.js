@@ -20,14 +20,14 @@ export function validateCouponCode(value) {
       ok: true,
       code: DEMO_COUPON_CODE,
       discountPercent: DEMO_COUPON_PERCENT,
-      message: 'Cupon TABA10 aplicado.',
+      message: 'Cupón TABA10 aplicado.',
     };
   }
   return {
     ok: false,
     code,
     discountPercent: 0,
-    message: 'Cupon invalido. En esta demo podes usar TABA10.',
+    message: 'Cupón inválido. En esta demo podés usar TABA10.',
   };
 }
 

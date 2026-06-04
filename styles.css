@@ -1467,6 +1467,11 @@ body:has(.app-view[data-view="business"].is-active) .toast {
   .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .insight-grid { grid-template-columns: 1fr; }
   .track-steps.tight { grid-template-columns: repeat(4, 1fr); }
+  /* Cliente: 6 pasos en 390px se comprimen. En mobile pasan a 3x2 para que los
+     labels ("Preparando", "En reparto") queden legibles, sin overflow. El rider
+     usa .tight y no se ve afectado. */
+  .track-steps:not(.tight) { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 16px; }
+  .track-steps:not(.tight) .track-step:nth-child(4)::before { display: none; }
   .app-view[data-view="tracking"],
   .app-view[data-view="rider"] {
     padding-top: 0;

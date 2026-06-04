@@ -240,6 +240,7 @@ function normalizeOrder(order) {
   const baseTotals = calculateTotals(items, deliveryMode);
   const coupon = normalizeOrderCoupon(order.coupon, baseTotals.subtotal, order.discountTotal);
   const totals = calculateTotals(items, deliveryMode, { discountAmount: coupon?.discountAmount || order.discountTotal || 0 });
+  const paymentMethodCode = normalizeOrderPaymentMethodCode(order.paymentMethodCode || order.paymentMethod);
   const delivery = normalizeDelivery(order.delivery, deliveryMode, status);
   const addressDetails = deliveryMode === 'pickup'
     ? null
@@ -255,10 +256,12 @@ function normalizeOrder(order) {
       : addressDetails.label || sanitizeText(order.address, { fallback: 'Sin dirección', maxLength: 180 }),
     addressDetails,
     deliveryMode,
-    paymentMethodCode: normalizeOrderPaymentMethodCode(order.paymentMethodCode || order.paymentMethod),
+    paymentMethodCode,
     paymentMethod: sanitizeText(order.paymentMethod, { fallback: paymentLabel(normalizePaymentMethod(order.paymentMethod)), maxLength: 80 }),
     notes: sanitizeNotes(order.notes),
-    cashChange: sanitizeText(order.cashChange, { maxLength: 80 }),
+    // Defensivo: el cambio en efectivo solo tiene sentido si el método es efectivo.
+    // Evita que un estado viejo/corrupto muestre "cambio" con transferencia/MP.
+    cashChange: paymentMethodCode === 'cash' ? sanitizeText(order.cashChange, { maxLength: 80 }) : '',
     coupon,
     cancelReason: sanitizeText(order.cancelReason, { maxLength: 160 }),
     createdAt,

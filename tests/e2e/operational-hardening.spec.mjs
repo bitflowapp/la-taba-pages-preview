@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
 // Hardening operativo v1: invariantes que NO deben romperse en producción.
+const TRACKING_GPS_NOTE = 'Seguimiento por estado. El mapa en vivo se activa cuando el repartidor comparte ubicación real.';
 
 function liveTrackingState(now) {
   const createdAt = new Date(now - 90_000).toISOString();
@@ -52,7 +53,7 @@ function staleningTrackingState(now) {
   return state;
 }
 
-test('el tracking del cliente vuelve a "Sin GPS en vivo" cuando el GPS real se enfría (tick de frescura)', async ({ browser }) => {
+test('el tracking del cliente vuelve a seguimiento por estado cuando el GPS real se enfría (tick de frescura)', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const guards = installPageGuards(page);
@@ -67,11 +68,11 @@ test('el tracking del cliente vuelve a "Sin GPS en vivo" cuando el GPS real se e
 
   // Al cargar, el fix sigue fresco: hay mapa en vivo y NO la leyenda de fallback.
   await expect(tracking.locator('[data-real-map]')).toHaveCount(1);
-  await expect(tracking).not.toContainText('Sin GPS en vivo');
+  await expect(tracking).not.toContainText(TRACKING_GPS_NOTE);
 
   // El fix se enfría sin que llegue ningún evento nuevo: el tick de frescura
   // debe degradar a fallback honesto, quitando mapa y marker fantasma.
-  await expect(tracking).toContainText('Sin GPS en vivo', { timeout: 20_000 });
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE, { timeout: 20_000 });
   await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
   await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
 

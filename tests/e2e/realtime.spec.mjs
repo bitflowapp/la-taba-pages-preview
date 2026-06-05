@@ -3,6 +3,7 @@ import { fillCheckout, installPageGuards } from './helpers.mjs';
 
 // Relay realtime servido por scripts/realtime-relay.mjs (ver playwright.config.mjs).
 const RELAY = 'http://127.0.0.1:18787';
+const TRACKING_GPS_NOTE = 'Seguimiento por estado. El mapa en vivo se activa cuando el repartidor comparte ubicación real.';
 
 async function stub(page) {
   await page.addInitScript(() => {
@@ -198,7 +199,7 @@ test('cliente y rider en dos equipos: pedido interno, realtime y entrega (sin GP
   // SIN GPS real: el cliente NO ve mapa, ni marcadores, ni "En vivo".
   await expect(client.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(0);
   await expect(client.locator('[data-tracking-panel] .map-marker')).toHaveCount(0);
-  await expect(client.locator('[data-tracking-panel]')).toContainText('Sin GPS en vivo');
+  await expect(client.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE);
   await expect(client.locator('[data-tracking-panel]')).not.toContainText('En vivo');
 
   // El rider ve el pedido del cliente SIN recargar (vía relay).
@@ -211,8 +212,8 @@ test('cliente y rider en dos equipos: pedido interno, realtime y entrega (sin GP
   await rider.locator('[data-rider-ready="LT-0002"]').click();
   await rider.locator('[data-delivery-leave="LT-0002"]').click();
 
-  // El cliente ve "en camino" sin recargar (estado propagado por relay, sin GPS).
-  await expect(client.locator('[data-tracking-panel]')).toContainText(/en camino|Llegando/i, { timeout: 10_000 });
+  // El cliente ve "en reparto" sin recargar (estado propagado por relay, sin GPS).
+  await expect(client.locator('[data-tracking-panel]')).toContainText(/En reparto|camino a tu dirección/i, { timeout: 10_000 });
 
   // Otra sala no mezcla el pedido del rider.
   const otherCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -281,7 +282,7 @@ test('el rider usa el pedido activo de la sala aunque tenga localStorage viejo',
   await rider.locator('[data-sim-gps]').click();
   await expect(rider.locator('[data-delivery-panel]')).toContainText(/Compartiendo ubicaci/i, { timeout: 10_000 });
   await expect(client.locator('[data-tracking-panel]')).toContainText('Ubicación del repartidor en vivo', { timeout: 10_000 });
-  await expect(client.locator('[data-tracking-panel]')).not.toContainText('Sin GPS en vivo');
+  await expect(client.locator('[data-tracking-panel]')).not.toContainText(TRACKING_GPS_NOTE);
   await expect(client.locator('[data-tracking-panel]')).not.toContainText('CL falso');
   await expect(client.locator('[data-tracking-panel]')).not.toContainText('LT falso');
   await expect(client.locator('[data-tracking-panel]')).not.toContainText('ruta falsa');
@@ -289,7 +290,7 @@ test('el rider usa el pedido activo de la sala aunque tenga localStorage viejo',
   await expect(client.locator('[data-tracking-panel]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
 
   await rider.locator('[data-sim-gps-off]').click();
-  await expect(client.locator('[data-tracking-panel]')).toContainText('Sin GPS en vivo', { timeout: 10_000 });
+  await expect(client.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE, { timeout: 10_000 });
 
   await clientGuards.assertClean();
   await riderGuards.assertClean();

@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, openFirstProductModal, waitForToast } from './helpers.mjs';
 
+const TRACKING_GPS_NOTE = 'Seguimiento por estado. El mapa en vivo se activa cuando el repartidor comparte ubicación real.';
+
 test.beforeEach(async ({ page }) => {
   await installBrowserStubs(page);
 });
@@ -190,7 +192,7 @@ test('pedido real no muestra rider falso y mantiene GPS al navegar hasta corte e
   await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
   await expect(tracking.locator('.rider-profile.is-live')).toBeVisible();
   await expect(tracking.locator('[data-map-role="tracking"] .lt-rider-marker')).toHaveCount(1);
-  await expect(tracking).not.toContainText('Sin GPS en vivo');
+  await expect(tracking).not.toContainText(TRACKING_GPS_NOTE);
 
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
   await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
@@ -201,7 +203,7 @@ test('pedido real no muestra rider falso y mantiene GPS al navegar hasta corte e
   await page.locator('[data-sim-gps-off]').click();
   await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
   await expect(tracking.locator('.rider-profile.is-live')).toHaveCount(0);
-  await expect(tracking).toContainText('Sin GPS en vivo');
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE);
 
   await guards.assertClean();
 });
@@ -359,7 +361,8 @@ test('mobile cliente aplica cupon, elige pago y crea pedido', async ({ browser }
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Pedido enviado');
+  await expect(tracking).toContainText('Estamos revisando tu pedido');
+  await expect(tracking).toContainText('Enviado');
   await tracking.locator('details.order-detail summary').click();
   await expect(tracking).toContainText('Transferencia');
   await expect(tracking).toContainText('Cupón TABA10');

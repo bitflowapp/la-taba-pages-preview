@@ -1,4 +1,4 @@
-import { BUSINESS_CONFIG } from './config.js';
+import { getBusinessConfig } from './core/business-config-store.js';
 import {
   calculateTotals,
   getDeliveryFeeForMode,
@@ -207,8 +207,8 @@ export function validateCartForCheckout(deliveryMode = 'delivery') {
     };
   }
 
-  if (normalizedDeliveryMode === 'delivery' && subtotal < BUSINESS_CONFIG.minDeliveryOrder) {
-    const missing = BUSINESS_CONFIG.minDeliveryOrder - subtotal;
+  if (normalizedDeliveryMode === 'delivery' && subtotal < getBusinessConfig().minDeliveryOrder) {
+    const missing = getBusinessConfig().minDeliveryOrder - subtotal;
     return {
       ok: false,
       message: `Te faltan ${money(missing)} para llegar al pedido mínimo de delivery. También podés elegir retiro en local.`,

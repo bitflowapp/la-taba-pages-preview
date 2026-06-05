@@ -1,4 +1,4 @@
-import { BUSINESS_CONFIG } from '../config.js';
+import { getBusinessConfig } from '../core/business-config-store.js';
 import { getCartItems, validateCartForCheckout } from '../cart.js';
 import {
   normalizeOrderDraft,
@@ -118,7 +118,7 @@ export function createSupabaseOrderRepository({
         customer_name: values.customerName,
         customer_phone: values.customerPhone,
         customer_whatsapp: values.customerPhone,
-        address_label: values.deliveryMode === 'pickup' ? BUSINESS_CONFIG.address : values.customerAddress,
+        address_label: values.deliveryMode === 'pickup' ? getBusinessConfig().address : values.customerAddress,
         notes: appendReferenceToNotes(values.customerNotes, values.addressDetails.reference),
         payment_method: values.paymentMethod,
         subtotal: totals.subtotal,
@@ -381,7 +381,7 @@ function rowToDemoOrder(row = {}) {
     customerName: sanitizeText(row.customer_name, { fallback: 'Cliente', maxLength: 80 }),
     customerPhone: sanitizeText(row.customer_phone, { maxLength: 40 }),
     address: deliveryMode === 'pickup'
-      ? BUSINESS_CONFIG.address
+      ? getBusinessConfig().address
       : addressDetails.label || sanitizeText(row.address_label, { fallback: 'Sin dirección', maxLength: 180 }),
     addressDetails,
     deliveryMode,

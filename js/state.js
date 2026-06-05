@@ -2,6 +2,13 @@ import { BUSINESS_CONFIG, STORAGE_KEYS } from './config.js';
 import { categories, seedOrders } from './data.js';
 import { buildDemoCatalog, mergeCatalogProducts } from './core/catalog-store.js';
 import {
+  buildDefaultBusinessConfig,
+  getBusinessConfig,
+  mergeBusinessConfig,
+  normalizeBusinessConfig,
+  setRuntimeBusinessConfig,
+} from './core/business-config-store.js';
+import {
   ORDER_STATUS_CLASSES,
   ORDER_STATUS_LABELS,
   isValidOrderStatus,
@@ -25,7 +32,8 @@ import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/vali
 import { clampProgress } from './core/simulation.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 
-export const STATE_SCHEMA_VERSION = 1;
+// v2: incorpora state.businessConfig (identidad/operación del comercio en runtime).
+export const STATE_SCHEMA_VERSION = 2;
 
 export const SORT_OPTIONS = Object.freeze(['recommended', 'price_asc', 'popular']);
 
@@ -51,10 +59,12 @@ const defaultState = () => {
     adminUnlocked: readAdminFlag(),
     lastCheckoutDraft: null,
     simulation: null,
+    businessConfig: buildDefaultBusinessConfig(),
   };
 };
 
 let state = loadState();
+setRuntimeBusinessConfig(state.businessConfig);
 
 function readAdminFlag() {
   return safeStorageGet(getStorageArea('sessionStorage'), STORAGE_KEYS.adminUnlocked) === 'true';
@@ -95,6 +105,7 @@ export function sanitizeState(nextState, baseState = defaultState()) {
     adminUnlocked: Boolean(source.adminUnlocked),
     lastCheckoutDraft: sanitizeCheckoutDraft(source.lastCheckoutDraft),
     simulation: sanitizeSimulation(source.simulation, orders),
+    businessConfig: normalizeBusinessConfig(source.businessConfig, baseState.businessConfig || buildDefaultBusinessConfig()),
   };
 }
 
@@ -252,7 +263,7 @@ function normalizeOrder(order) {
     customerName: sanitizeText(order.customerName, { fallback: 'Cliente', maxLength: 80 }),
     customerPhone: sanitizeText(order.customerPhone, { maxLength: 40 }),
     address: deliveryMode === 'pickup'
-      ? BUSINESS_CONFIG.address
+      ? getBusinessConfig().address
       : addressDetails.label || sanitizeText(order.address, { fallback: 'Sin dirección', maxLength: 180 }),
     addressDetails,
     deliveryMode,
@@ -416,6 +427,8 @@ function notify() {
 
 function commitState(nextState) {
   state = sanitizeState(nextState, defaultState());
+  // El holder del config-store refleja siempre la config ya saneada del estado.
+  setRuntimeBusinessConfig(state.businessConfig);
   persist();
   notify();
 }
@@ -441,6 +454,16 @@ export function setState(patch) {
   commitState({ ...state, ...patch });
 }
 
+export { getBusinessConfig };
+
+// Mergea un patch parcial en la config del comercio, lo persiste y notifica.
+// No muta productos ni pedidos.
+export function updateBusinessConfig(patch) {
+  const next = mergeBusinessConfig(state.businessConfig, isPlainObject(patch) ? patch : {});
+  commitState({ ...state, businessConfig: next });
+  return getBusinessConfig();
+}
+
 export function updateState(mutator) {
   const draft = structuredCloneSafe(state);
   mutator(draft);
@@ -455,7 +478,7 @@ export function subscribe(listener) {
 export function money(value) {
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
-    currency: BUSINESS_CONFIG.currency,
+    currency: getBusinessConfig().currency,
     maximumFractionDigits: 0,
   }).format(Number(value || 0));
 }
@@ -494,7 +517,7 @@ export function deliveryModeLabel(value) {
 }
 
 export function createOrderId() {
-  const prefix = BUSINESS_CONFIG.orderPrefix;
+  const prefix = getBusinessConfig().orderPrefix;
   const highest = getState().orders.reduce((max, order) => {
     const match = typeof order.id === 'string' && order.id.startsWith(`${prefix}-`)
       ? Number.parseInt(order.id.slice(prefix.length + 1), 10)

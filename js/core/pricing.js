@@ -1,4 +1,4 @@
-import { BUSINESS_CONFIG } from '../config.js';
+import { getBusinessConfig } from './business-config-store.js';
 
 export function normalizeDeliveryMode(value) {
   return value === 'pickup' ? 'pickup' : 'delivery';
@@ -23,7 +23,7 @@ export function normalizeMoneyValue(value, fallback = 0) {
 }
 
 export function getDeliveryFeeForMode(deliveryMode = 'delivery') {
-  return normalizeDeliveryMode(deliveryMode) === 'pickup' ? 0 : normalizeMoneyValue(BUSINESS_CONFIG.deliveryFee);
+  return normalizeDeliveryMode(deliveryMode) === 'pickup' ? 0 : normalizeMoneyValue(getBusinessConfig().deliveryFee);
 }
 
 export function calculateItemsSubtotal(items = []) {

@@ -1,4 +1,4 @@
-import { BUSINESS_CONFIG } from './config.js';
+import { getBusinessConfig } from './core/business-config-store.js';
 import { categories } from './data.js';
 import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
 import { getCustomerOrderHistory, getLatestCustomerOrder } from './core/customer-history.js';
@@ -55,19 +55,19 @@ function restoreStableRealMap(container, shell) {
 }
 
 export function applyBusinessConfig() {
-  setText('[data-business-name]', BUSINESS_CONFIG.businessName);
-  setText('[data-business-subtitle]', BUSINESS_CONFIG.subtitle);
-  setText('[data-min-order]', money(BUSINESS_CONFIG.minDeliveryOrder));
-  setText('[data-delivery-fee]', money(BUSINESS_CONFIG.deliveryFee));
-  setText('[data-business-profile-name]', BUSINESS_CONFIG.businessName);
-  setText('[data-business-address]', BUSINESS_CONFIG.address);
-  setText('[data-business-hours]', BUSINESS_CONFIG.openingHoursLabel);
-  setText('[data-business-zone]', BUSINESS_CONFIG.deliveryZone);
+  setText('[data-business-name]', getBusinessConfig().businessName);
+  setText('[data-business-subtitle]', getBusinessConfig().subtitle);
+  setText('[data-min-order]', money(getBusinessConfig().minDeliveryOrder));
+  setText('[data-delivery-fee]', money(getBusinessConfig().deliveryFee));
+  setText('[data-business-profile-name]', getBusinessConfig().businessName);
+  setText('[data-business-address]', getBusinessConfig().address);
+  setText('[data-business-hours]', getBusinessConfig().openingHoursLabel);
+  setText('[data-business-zone]', getBusinessConfig().deliveryZone);
 
   const status = $('[data-open-status]');
   if (status) {
     const hour = new Date().getHours();
-    const isOpen = hour >= BUSINESS_CONFIG.openHour && hour < BUSINESS_CONFIG.closeHour;
+    const isOpen = hour >= getBusinessConfig().openHour && hour < getBusinessConfig().closeHour;
     status.textContent = isOpen ? 'Abierto ahora' : 'Tomamos pedidos';
     status.classList.toggle('is-closed', false);
   }
@@ -612,7 +612,7 @@ export function renderOrderSummary() {
     <div class="summary-row"><span>Subtotal</span><strong>${money(subtotal)}</strong></div>
     ${discountTotal > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(coupon.code)}</span><strong>-${money(discountTotal)}</strong></div>` : ''}
     <div class="summary-row"><span>${deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio'}</span><strong>${money(deliveryFee)}</strong></div>
-    ${deliveryMode === 'delivery' ? `<div class="summary-row muted"><span>Pedido mínimo delivery</span><strong>${money(BUSINESS_CONFIG.minDeliveryOrder)}</strong></div>` : ''}
+    ${deliveryMode === 'delivery' ? `<div class="summary-row muted"><span>Pedido mínimo delivery</span><strong>${money(getBusinessConfig().minDeliveryOrder)}</strong></div>` : ''}
     <div class="summary-row total"><span>Total</span><strong>${money(total)}</strong></div>
   `;
 
@@ -777,12 +777,12 @@ function trackingHeadline(order) {
       kicker: 'Pedido listo',
       title: order.deliveryMode === 'pickup' ? 'Listo para retirar' : 'Listo para reparto',
       sub: order.deliveryMode === 'pickup'
-        ? `Te esperamos en ${BUSINESS_CONFIG.address}.`
+        ? `Te esperamos en ${getBusinessConfig().address}.`
         : 'El pedido está listo en el local. Falta asignar o iniciar el reparto.',
     };
   }
   if (order.deliveryMode === 'pickup') {
-    return { kicker: 'Retiro en local', title: order.status === 'ready' ? 'Listo para retirar' : 'Preparando tu pedido', sub: `Te esperamos en ${escapeHtml(BUSINESS_CONFIG.address)}.` };
+    return { kicker: 'Retiro en local', title: order.status === 'ready' ? 'Listo para retirar' : 'Preparando tu pedido', sub: `Te esperamos en ${escapeHtml(getBusinessConfig().address)}.` };
   }
   if (order.status === 'arriving') {
     return { kicker: 'En reparto', title: 'Llegando al domicilio', sub: 'El repartidor va hacia tu dirección.' };

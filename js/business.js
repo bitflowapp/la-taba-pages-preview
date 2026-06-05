@@ -1,4 +1,4 @@
-import { BUSINESS_CONFIG } from './config.js';
+import { getBusinessConfig } from './core/business-config-store.js';
 import { formatAddressReference, normalizeOrderAddressDetails } from './core/address.js';
 import {
   CATALOG_BADGE_OPTIONS,
@@ -106,7 +106,7 @@ function playNewOrderChime() {
 }
 
 export function unlockAdmin(pin) {
-  if (pin !== BUSINESS_CONFIG.adminPin) return false;
+  if (pin !== getBusinessConfig().adminPin) return false;
   setState({ adminUnlocked: true });
   return true;
 }
@@ -1451,7 +1451,7 @@ function copyTicketText(text) {
 
 async function copyBusinessReportSummary() {
   const report = buildBusinessReport(getState().orders, { period: businessReportPeriod });
-  const text = formatBusinessReportSummary(report, { businessName: BUSINESS_CONFIG.businessName });
+  const text = formatBusinessReportSummary(report, { businessName: getBusinessConfig().businessName });
   try {
     if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
       throw new Error('clipboard unavailable');

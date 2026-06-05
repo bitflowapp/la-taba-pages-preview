@@ -1,4 +1,4 @@
-import { BUSINESS_CONFIG } from './config.js';
+import { getBusinessConfig } from './core/business-config-store.js';
 import {
   canTransitionOrderStatus,
   getNextOrderStatus,
@@ -71,7 +71,7 @@ export function createOrderFromCheckout(formValues = {}) {
     id: createOrderId(),
     customerName: values.customerName,
     customerPhone: values.customerPhone,
-    address: values.deliveryMode === 'pickup' ? BUSINESS_CONFIG.address : values.customerAddress,
+    address: values.deliveryMode === 'pickup' ? getBusinessConfig().address : values.customerAddress,
     addressDetails: values.deliveryMode === 'pickup' ? null : values.addressDetails,
     deliveryMode: values.deliveryMode,
     paymentMethod: paymentLabel(values.paymentMethod),
@@ -321,7 +321,7 @@ export function updateOrderDemoDestination(orderId, destinationId) {
 
   const destination = getStreetTestDestination(destinationId);
   const now = new Date().toISOString();
-  const estimatedDistance = Number(distanceKm(BUSINESS_CONFIG.businessLocation, destination).toFixed(1));
+  const estimatedDistance = Number(distanceKm(getBusinessConfig().businessLocation, destination).toFixed(1));
 
   updateState((draft) => {
     const order = draft.orders.find((candidate) => candidate.id === orderId);
@@ -359,7 +359,7 @@ export function buildWhatsAppMessage(order) {
   if (!order) return '';
   const safeOrder = normalizeOrderForMessage(order);
   const lines = [
-    `Hola ${BUSINESS_CONFIG.businessName}, quiero hacer este pedido:`,
+    `Hola ${getBusinessConfig().businessName}, quiero hacer este pedido:`,
     '',
     `Pedido: ${safeOrder.id}`,
     `Fecha: ${dateTime(safeOrder.createdAt)}`,
@@ -414,7 +414,7 @@ function normalizeOrderForMessage(order) {
     customerPhone: sanitizeText(order.customerPhone, { fallback: 'Sin cargar', maxLength: 40 }),
     deliveryMode,
     address: deliveryMode === 'pickup'
-      ? BUSINESS_CONFIG.address
+      ? getBusinessConfig().address
       : normalizeOrderAddressDetails(order).label || sanitizeText(order.address, { fallback: 'Sin cargar', maxLength: 180 }),
     addressDetails: deliveryMode === 'pickup' ? normalizeAddressDetails() : normalizeOrderAddressDetails(order),
     items: safeItems,
@@ -430,12 +430,12 @@ function normalizeOrderForMessage(order) {
 }
 
 export function buildWhatsAppUrl(order) {
-  return `https://wa.me/${BUSINESS_CONFIG.whatsappNumber}?text=${encodeURIComponent(buildWhatsAppMessage(order))}`;
+  return `https://wa.me/${getBusinessConfig().whatsappNumber}?text=${encodeURIComponent(buildWhatsAppMessage(order))}`;
 }
 
 // Copia opcional por WhatsApp del borrador del carrito (no crea pedido interno).
 export function buildWhatsAppUrlFromDraft(formValues = {}) {
-  return `https://wa.me/${BUSINESS_CONFIG.whatsappNumber}?text=${encodeURIComponent(buildDraftMessageFromCart(formValues))}`;
+  return `https://wa.me/${getBusinessConfig().whatsappNumber}?text=${encodeURIComponent(buildDraftMessageFromCart(formValues))}`;
 }
 
 export function buildDraftMessageFromCart(formValues = {}) {
@@ -445,7 +445,7 @@ export function buildDraftMessageFromCart(formValues = {}) {
   });
 
   const lines = [
-    `Hola ${BUSINESS_CONFIG.businessName}, quiero consultar este pedido:`,
+    `Hola ${getBusinessConfig().businessName}, quiero consultar este pedido:`,
     '',
     `Fecha: ${dateTime(new Date().toISOString())}`,
     '',
@@ -453,7 +453,7 @@ export function buildDraftMessageFromCart(formValues = {}) {
     `Nombre: ${values.customerName || 'Sin cargar'}`,
     `Teléfono: ${values.customerPhone || 'Sin cargar'}`,
     `Entrega: ${deliveryModeLabel(values.deliveryMode)}`,
-    `${values.deliveryMode === 'pickup' ? 'Retiro en' : 'Dirección'}: ${values.deliveryMode === 'pickup' ? BUSINESS_CONFIG.address : values.customerAddress || 'Sin cargar'}`,
+    `${values.deliveryMode === 'pickup' ? 'Retiro en' : 'Dirección'}: ${values.deliveryMode === 'pickup' ? getBusinessConfig().address : values.customerAddress || 'Sin cargar'}`,
     ...(values.deliveryMode === 'delivery' && values.addressDetails.reference ? [`Referencia: ${values.addressDetails.reference}`] : []),
     '',
     'Productos:',

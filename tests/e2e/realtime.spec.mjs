@@ -22,6 +22,36 @@ async function stubWithRiderState(page, state) {
   }, state);
 }
 
+async function stubWithBusinessConfig(page, patch) {
+  await stubWithRiderState(page, { businessConfig: patch });
+}
+
+async function riderMarkerOffset(page) {
+  return page.evaluate(() => {
+    const map = document.querySelector('[data-delivery-panel] [data-map-role="rider"]');
+    const marker = document.querySelector('[data-delivery-panel] [data-map-role="rider"] .lt-rider-marker');
+    if (!map || !marker) return null;
+    const mapRect = map.getBoundingClientRect();
+    const markerRect = marker.getBoundingClientRect();
+    return {
+      dx: Math.abs((markerRect.left + markerRect.width / 2) - (mapRect.left + mapRect.width / 2)),
+      dy: Math.abs((markerRect.top + markerRect.height / 2) - (mapRect.top + mapRect.height / 2)),
+    };
+  });
+}
+
+async function dragRiderMap(page, dx = 140, dy = 72) {
+  const map = page.locator('[data-delivery-panel] [data-map-role="rider"] .leaflet-container').first();
+  const box = await map.boundingBox();
+  if (!box) throw new Error('No se pudo medir el mapa del rider.');
+  const startX = box.x + box.width * 0.55;
+  const startY = box.y + box.height * 0.5;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + dx, startY + dy, { steps: 12 });
+  await page.mouse.up();
+}
+
 function staleRiderState() {
   const createdAt = new Date(Date.now() - 60_000).toISOString();
   return {
@@ -237,6 +267,89 @@ test('cliente y rider en dos equipos: pedido interno, realtime y entrega (sin GP
   await rider.locator('[data-delivery-done="LT-0002"]').click();
   await expect(client.locator('[data-tracking-panel]')).toContainText(/entregado|Disfrutalo/i, { timeout: 10_000 });
 
+await clientCtx.close();
+await riderCtx.close();
+});
+
+test('Desktop rider panel: zoom claro y FABs honestos sin romper GPS real', async ({ browser }) => {
+  const room = `desktop-rider-e2e-${Date.now()}`;
+  const url = (suffix = '') => `${RELAY}/?relay=${encodeURIComponent(RELAY)}&room=${room}${suffix}`;
+  const clientCtx = await browser.newContext({ viewport: { width: 1365, height: 960 }, serviceWorkers: 'block' });
+  const riderCtx = await browser.newContext({
+    viewport: { width: 1365, height: 960 },
+    serviceWorkers: 'block',
+    permissions: ['geolocation'],
+    geolocation: { latitude: -38.9462, longitude: -68.0418, accuracy: 14 },
+  });
+  const client = await clientCtx.newPage();
+  const rider = await riderCtx.newPage();
+  const clientGuards = installPageGuards(client);
+  const riderGuards = installPageGuards(rider);
+
+  const businessConfig = { whatsappNumber: '5492995551234' };
+  await stubWithBusinessConfig(client, businessConfig);
+  await stubWithBusinessConfig(rider, businessConfig);
+
+  await client.goto(url());
+  await rider.goto(url('#rider'));
+
+  await rider.locator('[data-view="rider"] [data-open-pin]').click();
+  await rider.locator('[data-pin-form] input[name="pin"]').fill('1234');
+  await rider.locator('[data-pin-form]').press('Enter');
+  await expect(rider.locator('[data-view="rider"] [data-delivery-panel]')).toBeVisible();
+
+  await client.locator('.desktop-nav [data-nav-view="catalog"]').click();
+  await client.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await client.locator('.desktop-nav [data-nav-view="cart"]').click();
+  await fillCheckout(client, {
+    name: 'Cliente Demo',
+    phone: '2995550000',
+    address: 'Roca 123',
+    notes: 'GPS realtime',
+    payment: 'cash',
+    deliveryMode: 'delivery',
+  });
+  await client.getByRole('button', { name: /Confirmar pedido/i }).click();
+
+  await expect(rider.locator('[data-delivery-panel]')).toContainText('LT-0002', { timeout: 10_000 });
+  await rider.locator('[data-sim-gps]').click();
+  await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toBeVisible({ timeout: 10_000 });
+  await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toHaveAttribute('data-map-theme', 'light');
+
+  const zoom = rider.locator('[data-delivery-panel] [data-map-role="rider"] .leaflet-control-zoom');
+  await expect(zoom).toBeVisible();
+  await expect(zoom.locator('a')).toHaveCount(2);
+  await expect(rider.locator('[data-delivery-panel] [data-map-recenter]')).toBeVisible();
+
+  const support = rider.locator('[data-delivery-panel] .rider-map-overlay-top .rider-fab[aria-label="Soporte por WhatsApp"]');
+  await expect(support).toHaveAttribute('href', /wa\.me\/5492995551234/);
+  await expect(support).toHaveAttribute('target', '_blank');
+  await expect(support).toHaveAttribute('rel', /noopener/);
+
+  const navigate = rider.locator('[data-delivery-panel] .rider-map-actions .rider-fab.accent');
+  await expect(navigate).toHaveAttribute('href', /google\.com\/maps\/dir\/\?api=1&destination=/);
+  await expect(navigate).toHaveAttribute('href', /Roca%20123/i);
+  await expect(navigate).toHaveAttribute('target', '_blank');
+
+  const beforeDrag = await riderMarkerOffset(rider);
+  expect(beforeDrag).toBeTruthy();
+
+  await dragRiderMap(rider);
+  await rider.waitForTimeout(250);
+  const afterDrag = await riderMarkerOffset(rider);
+  expect(afterDrag).toBeTruthy();
+  expect(afterDrag.dx + afterDrag.dy).toBeGreaterThan(beforeDrag.dx + beforeDrag.dy);
+
+  await rider.locator('[data-delivery-panel] [data-map-recenter]').click();
+  await rider.waitForTimeout(250);
+  const afterRecenter = await riderMarkerOffset(rider);
+  expect(afterRecenter).toBeTruthy();
+  expect(afterRecenter.dx + afterRecenter.dy).toBeLessThan(afterDrag.dx + afterDrag.dy);
+  await expect(rider.locator('[data-delivery-panel] [data-real-map]')).toBeVisible();
+
+  await clientGuards.assertClean();
+  await riderGuards.assertClean();
+
   await clientCtx.close();
   await riderCtx.close();
 });
@@ -348,6 +461,7 @@ test('GPS real del rider se propaga al tracking del cliente por relay', async ({
   await expect(rider.locator('[data-delivery-panel]')).toContainText('Detalles de ubicación');
   await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toBeVisible({ timeout: 10_000 });
   await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toHaveAttribute('data-map-theme', 'light');
+  await expect(rider.locator('[data-delivery-panel] [data-map-role="rider"] .leaflet-control-zoom')).toHaveCount(0);
   // Rediseño app-first: el pill de estado flotante + botones de centrar/navegar
   // sólo existen porque hay GPS real en vivo (honestos por construcción). La capa
   // del rider sigue SIN los pills de tracking del cliente.

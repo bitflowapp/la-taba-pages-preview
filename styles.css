@@ -5157,39 +5157,11 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .real-map-meta
   display: none;
 }
 
-.rider-map-live-chip {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  z-index: 420;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 10px;
-  border: 1px solid rgba(39,163,93,0.18);
-  border-radius: 999px;
-  color: #1f6c45;
-  background: rgba(255,255,255,0.82);
-  box-shadow: 0 10px 24px rgba(31,27,23,0.08);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0;
-  backdrop-filter: blur(10px);
-  pointer-events: none;
-}
-
-.rider-map-live-chip span {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #27a35d;
-  box-shadow: 0 0 0 4px rgba(39,163,93,0.10);
-}
-
 body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-control-zoom {
   opacity: 0.58;
   transform: scale(0.86);
-  transform-origin: right bottom;
+  transform-origin: left bottom;
+  margin: 0 0 14px 14px;
   box-shadow: 0 8px 18px rgba(31,27,23,0.10) !important;
 }
 
@@ -5298,12 +5270,6 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-order-detai
 /* Mapa más protagonista cuando hay GPS en vivo. */
 body:has(.app-view[data-view="rider"].is-active) .rider-map-stage {
   min-height: 468px;
-}
-
-/* Mapa limpio estilo app: sin controles +/- de Leaflet sobre el mapa inmersivo
-   del rider (mobile-first: pinch-zoom y arrastre siguen disponibles). */
-body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-control-zoom {
-  display: none !important;
 }
 
 /* --- Overlay superior: volver · pill de estado centrado · soporte --- */

@@ -135,12 +135,13 @@ export function ensureTrackingMap(container, view) {
   if (existing) return existing;
 
   const L = globalThis.L;
+  const showDesktopControls = shouldShowDesktopRiderControls();
   const map = L.map(view.canvas, {
     zoomControl: false,
     attributionControl: true,
     dragging: true,
-    scrollWheelZoom: false,
-    doubleClickZoom: false,
+    scrollWheelZoom: showDesktopControls,
+    doubleClickZoom: showDesktopControls,
     tap: true,
   });
 
@@ -169,7 +170,9 @@ export function ensureTrackingMap(container, view) {
     maxZoom: 18,
     attribution: view.tileLayer.attribution,
   }).addTo(map);
-  L.control?.zoom?.({ position: 'bottomright' })?.addTo?.(map);
+  if (showDesktopControls) {
+    L.control?.zoom?.({ position: 'bottomleft' })?.addTo?.(map);
+  }
   map.on?.('dragstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
   map.on?.('zoomstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
 
@@ -179,6 +182,11 @@ export function ensureTrackingMap(container, view) {
   // coordenada del cliente, sólo su dirección textual).
   fitMapToView(entry, view);
   return entry;
+}
+
+function shouldShowDesktopRiderControls() {
+  const width = Number(globalThis.innerWidth || 0);
+  return width >= 768;
 }
 
 function scheduleMapSizeInvalidations(entry, view) {

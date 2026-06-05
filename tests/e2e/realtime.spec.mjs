@@ -212,8 +212,11 @@ test('cliente y rider en dos equipos: pedido interno, realtime y entrega (sin GP
   await rider.locator('[data-rider-ready="LT-0002"]').click();
   await rider.locator('[data-delivery-leave="LT-0002"]').click();
 
-  // El cliente ve "en reparto" sin recargar (estado propagado por relay, sin GPS).
-  await expect(client.locator('[data-tracking-panel]')).toContainText(/En reparto|camino a tu dirección/i, { timeout: 10_000 });
+  // El cliente ve el hero de reparto sin recargar (estado propagado por relay, sin GPS).
+  await expect(client.locator('[data-tracking-panel] .sheet-head')).toContainText(
+    'Tu pedido salió del local y va camino a tu dirección.',
+    { timeout: 10_000 },
+  );
 
   // Otra sala no mezcla el pedido del rider.
   const otherCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });

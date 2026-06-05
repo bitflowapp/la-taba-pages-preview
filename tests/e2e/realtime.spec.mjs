@@ -389,8 +389,12 @@ test('GPS real del rider se propaga al tracking del cliente por relay', async ({
     { documentOverflow: 0, bodyOverflow: 0 },
   ]);
 
-  await rider.locator('[data-sim-gps-off]').click();
-  await expect(rider.locator('[data-delivery-panel]')).toContainText('Ubicación detenida', { timeout: 10_000 });
+  await rider.locator('[data-rider-ready="LT-0002"]').click();
+  await rider.locator('[data-delivery-leave="LT-0002"]').click();
+  await rider.locator('[data-delivery-done="LT-0002"]').click();
+  await expect(client.locator('[data-tracking-panel]')).toContainText(/entregado|Disfrutalo/i, { timeout: 10_000 });
+  await expect(client.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(0);
+  await expect(client.locator('[data-tracking-panel] .lt-rider-marker')).toHaveCount(0);
 
   await clientGuards.assertClean();
   await riderGuards.assertClean();

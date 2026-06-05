@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
 import { getRiderActionState } from '../js/core/rider.js';
-import { handleDeliveryAction } from '../js/delivery.js';
+import { handleDeliveryAction, riderGpsShareState } from '../js/delivery.js';
 import { getActiveDeliveryOrder, getRiderQueueOrder } from '../js/orders.js';
 import { getState, setState } from '../js/state.js';
 import { resetState, makeTarget } from './helpers.mjs';
@@ -187,4 +187,26 @@ test('rider helpers expose coherent actions', () => {
   });
   assert.equal(getRiderActionState(movingOrder).canDeliver, true);
   assert.equal(getRiderActionState(pickupOrder).canLeave, false);
+});
+
+test('rider GPS state goes stale honest instead of staying live', () => {
+  const now = 2_000_000;
+  const fresh = {
+    orderId: 'LT-9001',
+    status: 'on_the_way',
+    deliveryMode: 'delivery',
+    source: 'gps',
+    gpsStatus: 'active',
+    lat: -38.95,
+    lng: -68.05,
+    timestamp: now - 5_000,
+    lastFixAt: new Date(now - 5_000).toISOString(),
+    accuracy: 12,
+  };
+  const stale = { ...fresh, timestamp: now - 60_000, lastFixAt: new Date(now - 60_000).toISOString() };
+
+  assert.equal(riderGpsShareState(fresh, { now }).live, true);
+  assert.equal(riderGpsShareState(fresh, { now }).headSub, 'El cliente puede seguir tu ubicación mientras el pedido esté en reparto.');
+  assert.equal(riderGpsShareState(stale, { now }).live, false);
+  assert.match(riderGpsShareState(stale, { now }).headSub, /Sin GPS en vivo/);
 });

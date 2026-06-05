@@ -95,8 +95,8 @@ test('GPS policy reduces writes but still publishes max-age and status changes',
 
   assert.equal(shouldPublishGpsFix(null, tiny, { now, orderStatus: 'on_the_way' }), true);
   assert.equal(shouldPublishGpsFix(previous, tiny, { now, orderStatus: 'on_the_way' }), false);
-  assert.equal(shouldPublishGpsFix({ ...previous, at: now - 12_000 }, tiny, { now, orderStatus: 'on_the_way' }), true);
-  assert.equal(shouldPublishGpsFix({ ...previous, at: now - 4_500 }, moved, { now: now + 4_500, orderStatus: 'on_the_way' }), true);
+  assert.equal(shouldPublishGpsFix({ ...previous, at: now - 15_000 }, tiny, { now, orderStatus: 'on_the_way' }), true);
+  assert.equal(shouldPublishGpsFix({ ...previous, at: now - 8_000 }, moved, { now: now + 8_000, orderStatus: 'on_the_way' }), true);
   assert.equal(shouldPublishGpsFix(previous, tiny, { now, orderStatus: 'arriving', previousOrderStatus: 'on_the_way' }), true);
   assert.equal(shouldPublishGpsFix(previous, tiny, { now, orderStatus: 'delivered' }), false);
 });

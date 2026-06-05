@@ -49,6 +49,13 @@ let lastPublishedFix = null;
 let backendRetryAfter = 0;
 let backendFailureCount = 0;
 
+const GPS_WATCH_POLICIES = Object.freeze({
+  idle: Object.freeze({ mode: 'idle-economic', enableHighAccuracy: false, maximumAge: 15_000, timeout: 20_000 }),
+  active: Object.freeze({ mode: 'active-economic', enableHighAccuracy: false, maximumAge: 8_000, timeout: 15_000 }),
+  nearCustomer: Object.freeze({ mode: 'near-customer-live', enableHighAccuracy: true, maximumAge: 3_000, timeout: 10_000 }),
+  background: Object.freeze({ mode: 'background-economic', enableHighAccuracy: false, maximumAge: 30_000, timeout: 25_000 }),
+});
+
 // Pura y testeable: decide si publicar el fix dado el último publicado.
 export function shouldPublishLocation(prev, next, now = Date.now()) {
   return shouldPublishGpsFixPolicy(prev, next, { now });
@@ -306,6 +313,10 @@ function hasSecureGpsContext() {
   return protocol === 'https:' || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
 }
 
+function isDocumentHidden() {
+  return Boolean(globalThis.document?.hidden);
+}
+
 function gpsUnavailableResult(order, gpsStatus, gpsError) {
   const current = getState().simulation;
   const preferredDestinationId = routePreferenceForOrder(order);
@@ -337,37 +348,47 @@ export function gpsDeliveryPhaseForOrder(order = {}, location = null) {
   return 'IDLE';
 }
 
-export function gpsWatchOptionsForOrder(order = {}, location = null) {
+export function gpsWatchPolicyForOrder(order = {}, location = null, { hidden = isDocumentHidden() } = {}) {
   const phase = gpsDeliveryPhaseForOrder(order, location);
-  if (phase === 'NEAR_CUSTOMER') {
-    return { enableHighAccuracy: true, maximumAge: 2_000, timeout: 8_000 };
+  if (phase === 'STOPPED') {
+    return { phase, mode: 'stopped', options: GPS_WATCH_POLICIES.background };
   }
-  if (phase === 'ACTIVE_DELIVERY') {
-    return { enableHighAccuracy: true, maximumAge: 3_000, timeout: 10_000 };
-  }
-  return { enableHighAccuracy: false, maximumAge: 10_000, timeout: 15_000 };
+  if (hidden) return { phase, ...GPS_WATCH_POLICIES.background, options: GPS_WATCH_POLICIES.background };
+  if (phase === 'NEAR_CUSTOMER') return { phase, ...GPS_WATCH_POLICIES.nearCustomer, options: GPS_WATCH_POLICIES.nearCustomer };
+  if (phase === 'ACTIVE_DELIVERY') return { phase, ...GPS_WATCH_POLICIES.active, options: GPS_WATCH_POLICIES.active };
+  return { phase, ...GPS_WATCH_POLICIES.idle, options: GPS_WATCH_POLICIES.idle };
 }
 
-function gpsWatchPolicyKeyForOrder(order, location = null) {
-  return gpsDeliveryPhaseForOrder(order, location);
+export function gpsWatchOptionsForOrder(order = {}, location = null, options = {}) {
+  const policy = gpsWatchPolicyForOrder(order, location, options);
+  const { enableHighAccuracy, maximumAge, timeout } = policy.options;
+  return { enableHighAccuracy, maximumAge, timeout };
 }
 
 function startGpsWatchForOrder(order, location = null) {
+  const policy = gpsWatchPolicyForOrder(order, location);
+  if (policy.phase === 'STOPPED') return;
   const options = gpsWatchOptionsForOrder(order, location);
-  gpsWatchPolicyKey = gpsWatchPolicyKeyForOrder(order, location);
+  gpsWatchPolicyKey = `${policy.phase}:${policy.mode}`;
   gpsWatchId = navigator.geolocation.watchPosition(onGpsPosition, onGpsError, options);
 }
 
 function syncGpsWatchPolicyForOrder(order, location = null) {
-  if (gpsWatchId === null || typeof navigator === 'undefined' || !navigator.geolocation) return;
-  const nextKey = gpsWatchPolicyKeyForOrder(order, location);
-  if (nextKey === 'STOPPED') {
-    disableGpsTracking({ silent: true });
-    return;
+  if (gpsWatchId === null || typeof navigator === 'undefined' || !navigator.geolocation) {
+    return { changed: false, active: gpsWatchId !== null };
   }
-  if (nextKey === gpsWatchPolicyKey) return;
+  const policy = gpsWatchPolicyForOrder(order, location);
+  const nextKey = `${policy.phase}:${policy.mode}`;
+  if (policy.phase === 'STOPPED') {
+    disableGpsTracking({ silent: true });
+    return { changed: true, active: false, reason: 'stopped' };
+  }
+  if (nextKey === gpsWatchPolicyKey) return { changed: false, active: true, policyKey: gpsWatchPolicyKey };
   try { navigator.geolocation.clearWatch(gpsWatchId); } catch (_) { /* no-op */ }
+  gpsWatchId = null;
+  gpsWatchPolicyKey = null;
   startGpsWatchForOrder(order, location);
+  return { changed: true, active: true, policyKey: gpsWatchPolicyKey };
 }
 
 function gpsPublishContext(order, location, now = Date.now()) {
@@ -574,8 +595,26 @@ function onGpsError(error) {
 }
 
 // Mantiene el GPS activo entre vistas. El corte sigue siendo explícito o por pagehide.
+function currentGpsOrderAndLocation() {
+  const sim = getState().simulation;
+  if (!sim?.orderId) return { sim: null, order: null, location: null };
+  const order = getState().orders.find((candidate) => candidate.id === sim.orderId) || null;
+  return { sim, order, location: sim.source === 'gps' ? sim : null };
+}
+
+export function handleGpsVisibilityChange() {
+  const { sim, order, location } = currentGpsOrderAndLocation();
+  if (gpsWatchId === null) return { changed: false, active: false };
+  if (!sim || !order || order.deliveryMode !== 'delivery' || TERMINAL_DELIVERY_STATUSES.has(order.status)) {
+    disableGpsTracking({ silent: true });
+    return { changed: true, active: false, reason: 'stopped' };
+  }
+  return syncGpsWatchPolicyForOrder(order, location || sim);
+}
+
 export function handleViewChangeForSimulation(view) {
   void view;
+  return handleGpsVisibilityChange();
 }
 
 function persistRiderLocation(orderId, location) {

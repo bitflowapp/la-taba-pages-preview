@@ -33,7 +33,12 @@ import { getState, subscribe } from './state.js';
 import { STORAGE_KEYS } from './config.js';
 import { handleBusinessAction, handleBusinessInput, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
 import { handleDeliveryAction, handleDeliveryChange, renderDeliveryPanel } from './delivery.js';
-import { disableGpsTracking, handleViewChangeForSimulation, resumeSimulationIfNeeded } from './simulation.js';
+import {
+  disableGpsTracking,
+  handleGpsVisibilityChange,
+  handleViewChangeForSimulation,
+  resumeSimulationIfNeeded,
+} from './simulation.js';
 import { getRealtimeStatus, initRealtime, onRealtimeStatusChange, retryRelayConnection } from './realtime.js';
 import { renderMapViews } from './map/map_view.js';
 import { activeTrackingLiveness } from './map/route_geometry.js';
@@ -234,6 +239,10 @@ function bindEvents() {
   window.addEventListener('popstate', syncViewFromLocation);
   window.addEventListener('hashchange', syncViewFromLocation);
   window.addEventListener('pagehide', () => disableGpsTracking({ silent: true }));
+  document.addEventListener('visibilitychange', () => {
+    const result = handleGpsVisibilityChange();
+    if (result?.changed && !document.hidden) renderLiveSurfaces();
+  });
 
   document.addEventListener('click', async (event) => {
     const target = event.target;

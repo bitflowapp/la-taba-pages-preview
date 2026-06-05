@@ -26,8 +26,9 @@ export function filterOrdersByReportPeriod(orders = [], { period = 'today', now 
   const normalizedPeriod = normalizeReportPeriod(period);
   if (normalizedPeriod === 'all') return orders.filter(Boolean);
 
-  const end = validDate(now) || new Date();
-  const start = startOfLocalDay(end);
+  const anchor = validDate(now) || new Date();
+  const start = startOfLocalDay(anchor);
+  const end = endOfLocalDay(anchor);
   if (normalizedPeriod === 'last7') start.setDate(start.getDate() - 6);
 
   return orders.filter((order) => {
@@ -159,11 +160,12 @@ export function formatBusinessReportSummary(report, options = {}) {
     `Efectivo: ${formatMoney(safeReport.salesByPaymentMethod?.cash)}`,
     `Transferencia: ${formatMoney(safeReport.salesByPaymentMethod?.transfer)}`,
     `Mercado Pago/link: ${formatMoney(safeReport.salesByPaymentMethod?.mercadoPago)}`,
+    `Sin especificar: ${formatMoney(safeReport.salesByPaymentMethod?.unknown)}`,
     `Descuentos: ${formatMoney(safeReport.totalDiscounts)}`,
     `Pedidos entregados: ${safeReport.deliveredOrders || 0}`,
     `Cancelados: ${safeReport.cancelledOrders || 0}`,
-    `Ticket promedio: ${formatMoney(safeReport.ticketAverage)}`,
-    `Producto mas vendido: ${topProductName}`,
+    `Ticket promedio con delivery: ${formatMoney(safeReport.ticketAverage)}`,
+    `Producto más vendido: ${topProductName}`,
   ].join('\n');
 }
 
@@ -177,7 +179,7 @@ export function formatMoney(value) {
 
 export function periodLabel(period) {
   const normalized = normalizeReportPeriod(period);
-  if (normalized === 'last7') return 'Ultimos 7 dias';
+  if (normalized === 'last7') return 'Últimos 7 días';
   if (normalized === 'all') return 'Todo';
   return 'Hoy';
 }
@@ -192,19 +194,28 @@ function normalizeReportOrder(order) {
 }
 
 function orderAmounts(order) {
-  const itemSubtotal = order.items.reduce((sum, item) => {
+  const itemSnapshot = order.items.reduce((result, item) => {
     const quantity = normalizeQuantity(item?.quantity);
-    const unitPrice = moneyValue(item?.unitPrice ?? item?.product?.price, 0);
-    return sum + quantity * unitPrice;
-  }, 0);
-  const subtotal = moneyValue(order.subtotal ?? order.totals?.subtotal, itemSubtotal);
+    const unitPrice = optionalMoneyValue(item?.unitPrice ?? item?.price ?? item?.product?.price);
+    if (quantity <= 0 || unitPrice === null) return result;
+    result.subtotal += quantity * unitPrice;
+    result.hasSnapshotItems = true;
+    return result;
+  }, { subtotal: 0, hasSnapshotItems: false });
+
+  const explicitSubtotal = optionalMoneyValue(order.subtotal ?? order.totals?.subtotal);
+  const fallbackTotal = optionalMoneyValue(order.total ?? order.totals?.total);
+  const subtotal = itemSnapshot.hasSnapshotItems
+    ? itemSnapshot.subtotal
+    : explicitSubtotal ?? Math.max(0, (fallbackTotal || 0) - moneyValue(order.deliveryFee ?? order.totals?.deliveryFee, 0));
+  const canComputeTotal = itemSnapshot.hasSnapshotItems || explicitSubtotal !== null;
   const discountTotal = Math.min(subtotal, moneyValue(
     order.discountTotal ?? order.totals?.discountTotal ?? order.coupon?.discountAmount,
     0,
   ));
   const deliveryFee = moneyValue(order.deliveryFee ?? order.totals?.deliveryFee, 0);
   const computedTotal = Math.max(0, subtotal - discountTotal) + deliveryFee;
-  const total = moneyValue(order.total ?? order.totals?.total, computedTotal);
+  const total = canComputeTotal ? computedTotal : fallbackTotal ?? computedTotal;
   return { subtotal, discountTotal, deliveryFee, total };
 }
 
@@ -272,6 +283,12 @@ function moneyValue(value, fallback = 0) {
   return Math.max(0, Math.round(numeric));
 }
 
+function optionalMoneyValue(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return Math.max(0, Math.round(numeric));
+}
+
 function orderDate(order) {
   return validDate(order?.createdAt) || validDate(order?.updatedAt) || latestHistoryDate(order?.statusHistory);
 }
@@ -285,6 +302,7 @@ function latestHistoryDate(history) {
 }
 
 function validDate(value) {
+  if (value == null || value === '') return null;
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
@@ -292,6 +310,12 @@ function validDate(value) {
 function startOfLocalDay(value) {
   const date = new Date(value);
   date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function endOfLocalDay(value) {
+  const date = new Date(value);
+  date.setHours(23, 59, 59, 999);
   return date;
 }
 

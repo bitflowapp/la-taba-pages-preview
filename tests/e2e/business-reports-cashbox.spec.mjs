@@ -42,7 +42,7 @@ test('negocio ve reportes/caja desde pedidos reales, cupon, pago y cancelaciones
   }
 
   const report = page.locator('[data-business-report]');
-  await expect(report).toContainText('Caja del dia');
+  await expect(report).toContainText('Caja del día');
   await expect(report).toContainText('Ventas de hoy');
   await expect(report.locator('.day-metric', { hasText: 'Transferencia' })).toContainText(/\$\s*[1-9]/);
   await expect(report.locator('.day-metric', { hasText: 'Descuentos' })).toContainText(/\$\s*[1-9]/);

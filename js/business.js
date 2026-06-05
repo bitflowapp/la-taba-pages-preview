@@ -174,9 +174,6 @@ export function renderBusinessDashboard() {
 
       ${renderDeliveredTodaySummary(state.orders)}
 
-      <section class="business-day-strip" aria-label="Resumen operativo del día">
-      </section>
-
       ${renderBusinessReportsPanel(report, cashboxClosures)}
 
       ${renderCatalogManager(state)}
@@ -564,8 +561,8 @@ function renderBusinessReportsPanel(report, closures = []) {
       <header class="business-report-head">
         <div>
           <span class="catalog-admin-kicker">Caja y reportes operativos</span>
-          <h3 id="business-report-title">Caja del dia</h3>
-          <p>Metricas calculadas desde pedidos existentes y snapshots historicos.</p>
+          <h3 id="business-report-title">Caja del día</h3>
+          <p>Métricas calculadas desde pedidos existentes y snapshots históricos.</p>
         </div>
         <div class="report-period-tabs" aria-label="Filtro temporal de reportes">
           ${reportPeriodButton('today', report.period)}
@@ -574,15 +571,16 @@ function renderBusinessReportsPanel(report, closures = []) {
         </div>
       </header>
 
-      <div class="business-day-strip report-strip" aria-label="Caja del dia">
+      <div class="business-day-strip report-strip" aria-label="Caja del día">
         <div class="day-metric accent"><span>${report.period === 'today' ? 'Ventas de hoy' : 'Ventas netas'}</span><strong>${money(report.netSales)}</strong></div>
         <div class="day-metric"><span>Efectivo</span><strong>${money(report.salesByPaymentMethod.cash)}</strong></div>
         <div class="day-metric"><span>Transferencia</span><strong>${money(report.salesByPaymentMethod.transfer)}</strong></div>
         <div class="day-metric"><span>Mercado Pago/link</span><strong>${money(report.salesByPaymentMethod.mercadoPago)}</strong></div>
+        <div class="day-metric"><span>Sin especificar</span><strong>${money(report.salesByPaymentMethod.unknown)}</strong></div>
         <div class="day-metric"><span>Descuentos</span><strong>${money(report.totalDiscounts)}</strong></div>
         <div class="day-metric"><span>Entregados</span><strong>${report.deliveredOrders}</strong></div>
         <div class="day-metric"><span>Cancelados</span><strong>${report.cancelledOrders}</strong></div>
-        <div class="day-metric"><span>Ticket promedio</span><strong>${money(report.ticketAverage)}</strong></div>
+        <div class="day-metric"><span>Ticket promedio con delivery</span><strong>${money(report.ticketAverage)}</strong></div>
       </div>
 
       <div class="business-report-grid">
@@ -597,10 +595,10 @@ function renderBusinessReportsPanel(report, closures = []) {
             <span class="board-chip cancelled">Cancelados <strong>${report.cancelledOrders}</strong></span>
           </div>
           <div class="report-highlight-list">
-            <p><span>Producto mas vendido</span><strong>${escapeHtml(topProduct)}</strong></p>
-            <p><span>Motivo frecuente de cancelacion</span><strong>${escapeHtml(cancelReason)}</strong></p>
-            <p><span>Clientes unicos</span><strong>${report.uniqueCustomers}</strong></p>
-            <p><span>Ultimo pedido</span><strong>${escapeHtml(report.latestOrder?.id || 'Sin pedidos')}${report.latestOrderTime ? ` - ${escapeHtml(report.latestOrderTime)}` : ''}</strong></p>
+            <p><span>Producto más vendido</span><strong>${escapeHtml(topProduct)}</strong></p>
+            <p><span>Motivo frecuente de cancelación</span><strong>${escapeHtml(cancelReason)}</strong></p>
+            <p><span>Clientes únicos</span><strong>${report.uniqueCustomers}</strong></p>
+            <p><span>Último pedido</span><strong>${escapeHtml(report.latestOrder?.id || 'Sin pedidos')}${report.latestOrderTime ? ` - ${escapeHtml(report.latestOrderTime)}` : ''}</strong></p>
           </div>
         </section>
 
@@ -610,6 +608,7 @@ function renderBusinessReportsPanel(report, closures = []) {
             <button class="primary-button compact" type="button" data-cashbox-close>Cerrar caja demo</button>
             <button class="secondary-button compact" type="button" data-copy-business-summary>Copiar resumen</button>
           </div>
+          <p class="cashbox-note">Cierre demo: guarda una foto del período seleccionado. No bloquea pedidos, no evita cierres repetidos y no es un cierre contable incremental.</p>
           ${summaryFallback}
           ${renderCashboxHistory(closures)}
         </section>
@@ -627,7 +626,7 @@ function reportPeriodButton(period, activePeriod) {
 
 function renderCashboxHistory(closures = []) {
   if (!closures.length) {
-    return '<p class="cashbox-empty">Sin cierres guardados todavia.</p>';
+    return '<p class="cashbox-empty">Sin cierres guardados todavía.</p>';
   }
   const rows = closures.slice(0, 5).map((closure) => {
     const metrics = closure.metrics || {};
@@ -636,7 +635,7 @@ function renderCashboxHistory(closures = []) {
       <div class="cashbox-history-row">
         <span>${escapeHtml(dateTime(closure.closedAt))}</span>
         <strong>${money(metrics.netSales)}</strong>
-        <small>Efectivo ${money(payment.cash)} - Transferencia ${money(payment.transfer)} - MP/link ${money(payment.mercadoPago)}</small>
+        <small>Efectivo ${money(payment.cash)} - Transferencia ${money(payment.transfer)} - MP/link ${money(payment.mercadoPago)} - Sin especificar ${money(payment.unknown)}</small>
         <em>${metrics.deliveredOrders || 0} entregados - ${metrics.cancelledOrders || 0} cancelados</em>
       </div>`;
   }).join('');

@@ -3676,6 +3676,7 @@ body:has(.app-view[data-view="business"].is-active) {
 .report-highlight-list span,
 .cashbox-history-row small,
 .cashbox-history-row em,
+.cashbox-note,
 .cashbox-empty {
   color: var(--biz-muted);
   font-size: 12px;
@@ -3697,6 +3698,11 @@ body:has(.app-view[data-view="business"].is-active) {
 
 .cashbox-actions > * {
   flex: 1 1 150px;
+}
+
+.cashbox-note {
+  margin: 0;
+  line-height: 1.45;
 }
 
 .business-copy-fallback {

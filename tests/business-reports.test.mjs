@@ -5,14 +5,16 @@ import {
   filterOrdersByReportPeriod,
   formatBusinessReportSummary,
 } from '../js/core/business-reports.js';
+import { hydrateState } from '../js/state.js';
 
 const NOW = new Date('2026-06-04T15:00:00.000Z');
 
 function order(overrides = {}) {
+  const snapshotSubtotal = overrides.subtotal ?? overrides.total ?? 1000;
   return {
     id: overrides.id || 'LT-1',
     status: overrides.status || 'delivered',
-    createdAt: overrides.createdAt || '2026-06-04T12:00:00.000Z',
+    createdAt: Object.hasOwn(overrides, 'createdAt') ? overrides.createdAt : '2026-06-04T12:00:00.000Z',
     updatedAt: overrides.updatedAt,
     customerName: overrides.customerName || 'Cliente QA',
     customerPhone: overrides.customerPhone || '2995550000',
@@ -21,7 +23,7 @@ function order(overrides = {}) {
     paymentMethodCode: overrides.paymentMethodCode,
     cancelReason: overrides.cancelReason,
     coupon: overrides.coupon,
-    items: overrides.items || [{ productId: 'p-vacio', name: 'Vacio snapshot', quantity: 1, unitPrice: 1000 }],
+    items: overrides.items || [{ productId: 'p-vacio', name: 'Vacio snapshot', quantity: 1, unitPrice: snapshotSubtotal }],
     subtotal: overrides.subtotal ?? 1000,
     discountTotal: overrides.discountTotal,
     deliveryFee: overrides.deliveryFee ?? 0,
@@ -81,6 +83,23 @@ test('business report: descuento y cupon se descuentan una sola vez', () => {
   assert.equal(report.netSales, 1800);
 });
 
+test('business report: total inconsistente se recalcula desde snapshots del pedido', () => {
+  const report = buildBusinessReport([
+    order({
+      items: [{ productId: 'p-vacio', name: 'Vacio snapshot', quantity: 2, unitPrice: 1000 }],
+      subtotal: 2000,
+      discountTotal: 200,
+      deliveryFee: 300,
+      total: 9999,
+    }),
+  ], { now: NOW });
+
+  assert.equal(report.grossSales, 2000);
+  assert.equal(report.totalDiscounts, 200);
+  assert.equal(report.deliveryFees, 300);
+  assert.equal(report.netSales, 2100);
+});
+
 test('business report: ranking usa snapshots del pedido', () => {
   const report = buildBusinessReport([
     order({
@@ -129,6 +148,73 @@ test('business report: ventas por metodo de pago', () => {
   });
 });
 
+test('business report: metodo de pago legacy desconocido no infla efectivo', () => {
+  const hydrated = hydrateState({
+    orders: [{
+      id: 'LT-LEGACY',
+      status: 'delivered',
+      createdAt: '2026-06-04T12:00:00.000Z',
+      customerName: 'Cliente legacy',
+      customerPhone: '2995551111',
+      address: 'Roca 123',
+      deliveryMode: 'pickup',
+      items: [{ productId: 'p-old', name: 'Snapshot viejo', quantity: 1, unitPrice: 1500 }],
+      subtotal: 1500,
+      total: 1500,
+    }],
+  });
+  const report = buildBusinessReport(hydrated.orders, { now: NOW });
+
+  assert.equal(hydrated.orders[0].paymentMethodCode, 'unknown');
+  assert.equal(hydrated.orders[0].paymentMethod, 'Sin especificar');
+  assert.equal(report.salesByPaymentMethod.cash, 0);
+  assert.equal(report.salesByPaymentMethod.unknown, 1500);
+});
+
+test('business report: metodo de pago legacy con label valido conserva su bucket', () => {
+  const hydrated = hydrateState({
+    orders: [
+      {
+        id: 'LT-CASH-OLD',
+        status: 'delivered',
+        createdAt: '2026-06-04T12:00:00.000Z',
+        paymentMethodCode: 'unknown',
+        paymentMethod: 'Efectivo',
+        deliveryMode: 'pickup',
+        items: [{ productId: 'p-a', name: 'A', quantity: 1, unitPrice: 1000 }],
+        subtotal: 1000,
+        total: 1000,
+      },
+      {
+        id: 'LT-TR-OLD',
+        status: 'delivered',
+        createdAt: '2026-06-04T12:00:00.000Z',
+        paymentMethod: 'Transferencia',
+        deliveryMode: 'pickup',
+        items: [{ productId: 'p-b', name: 'B', quantity: 1, unitPrice: 2000 }],
+        subtotal: 2000,
+        total: 2000,
+      },
+      {
+        id: 'LT-MP-OLD',
+        status: 'delivered',
+        createdAt: '2026-06-04T12:00:00.000Z',
+        paymentMethod: 'Link externo',
+        deliveryMode: 'pickup',
+        items: [{ productId: 'p-c', name: 'C', quantity: 1, unitPrice: 3000 }],
+        subtotal: 3000,
+        total: 3000,
+      },
+    ],
+  });
+  const report = buildBusinessReport(hydrated.orders, { now: NOW });
+
+  assert.equal(report.salesByPaymentMethod.cash, 1000);
+  assert.equal(report.salesByPaymentMethod.transfer, 2000);
+  assert.equal(report.salesByPaymentMethod.mercadoPago, 3000);
+  assert.equal(report.salesByPaymentMethod.unknown, 0);
+});
+
 test('business report: cancelaciones por motivo', () => {
   const report = buildBusinessReport([
     order({ id: 'LT-C1', status: 'cancelled', cancelReason: 'Sin stock' }),
@@ -145,18 +231,21 @@ test('business report: cancelaciones por motivo', () => {
 
 test('business report: filtro temporal hoy, ultimos 7 dias y todo', () => {
   const today = order({ id: 'LT-TODAY', createdAt: '2026-06-04T10:00:00.000Z' });
+  const futureSameDay = order({ id: 'LT-FUTURE', createdAt: '2026-06-04T20:00:00.000Z' });
+  const yesterday = order({ id: 'LT-YESTERDAY', createdAt: '2026-06-03T10:00:00.000Z' });
   const sevenDays = order({ id: 'LT-WEEK', createdAt: '2026-05-30T10:00:00.000Z' });
   const old = order({ id: 'LT-OLD', createdAt: '2026-05-20T10:00:00.000Z' });
+  const noDate = order({ id: 'LT-NODATE', createdAt: null, updatedAt: null, statusHistory: [] });
   const updatedFallback = order({
     id: 'LT-UPD',
     createdAt: 'fecha rota',
     updatedAt: '2026-06-04T13:00:00.000Z',
   });
-  const orders = [today, sevenDays, old, updatedFallback];
+  const orders = [today, futureSameDay, yesterday, sevenDays, old, noDate, updatedFallback];
 
-  assert.deepEqual(filterOrdersByReportPeriod(orders, { period: 'today', now: NOW }).map((item) => item.id), ['LT-TODAY', 'LT-UPD']);
-  assert.deepEqual(filterOrdersByReportPeriod(orders, { period: 'last7', now: NOW }).map((item) => item.id), ['LT-TODAY', 'LT-WEEK', 'LT-UPD']);
-  assert.deepEqual(filterOrdersByReportPeriod(orders, { period: 'all', now: NOW }).map((item) => item.id), ['LT-TODAY', 'LT-WEEK', 'LT-OLD', 'LT-UPD']);
+  assert.deepEqual(filterOrdersByReportPeriod(orders, { period: 'today', now: NOW }).map((item) => item.id), ['LT-TODAY', 'LT-FUTURE', 'LT-UPD']);
+  assert.deepEqual(filterOrdersByReportPeriod(orders, { period: 'last7', now: NOW }).map((item) => item.id), ['LT-TODAY', 'LT-FUTURE', 'LT-YESTERDAY', 'LT-WEEK', 'LT-UPD']);
+  assert.deepEqual(filterOrdersByReportPeriod(orders, { period: 'all', now: NOW }).map((item) => item.id), ['LT-TODAY', 'LT-FUTURE', 'LT-YESTERDAY', 'LT-WEEK', 'LT-OLD', 'LT-NODATE', 'LT-UPD']);
 });
 
 test('business report: pedido viejo sin campos nuevos no rompe', () => {
@@ -191,5 +280,7 @@ test('business report: resumen copiable es legible para WhatsApp', () => {
   assert.match(text, /Efectivo: /);
   assert.match(text, /Descuentos: /);
   assert.match(text, /Pedidos entregados: 1/);
-  assert.match(text, /Producto mas vendido: Vacio snapshot/);
+  assert.match(text, /Sin especificar: /);
+  assert.match(text, /Ticket promedio con delivery: /);
+  assert.match(text, /Producto más vendido: Vacio snapshot/);
 });

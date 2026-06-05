@@ -348,7 +348,13 @@ test('GPS real del rider se propaga al tracking del cliente por relay', async ({
   await expect(rider.locator('[data-delivery-panel]')).toContainText('Detalles de ubicación');
   await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toBeVisible({ timeout: 10_000 });
   await expect(rider.locator('[data-delivery-panel] [data-real-map]').first()).toHaveAttribute('data-map-theme', 'light');
-  await expect(rider.locator('[data-delivery-panel] .rider-map-live-chip')).toHaveCount(1);
+  // Rediseño app-first: el pill de estado flotante + botones de centrar/navegar
+  // sólo existen porque hay GPS real en vivo (honestos por construcción). La capa
+  // del rider sigue SIN los pills de tracking del cliente.
+  await expect(rider.locator('[data-delivery-panel] .rider-status-pill')).toHaveCount(1);
+  await expect(rider.locator('[data-delivery-panel] .rider-status-pill')).toContainText('Estado');
+  await expect(rider.locator('[data-delivery-panel] [data-map-recenter]')).toHaveCount(1);
+  await expect(rider.locator('[data-delivery-panel] .rider-fab.accent')).toHaveCount(1);
   await expect(rider.locator('[data-delivery-panel] .map-status-pill')).toHaveCount(0);
   await expect(rider.locator('[data-delivery-panel] .map-stat-pill')).toHaveCount(0);
   await expect(rider.locator('[data-delivery-panel] .map-connection-pill')).toHaveCount(0);

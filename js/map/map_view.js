@@ -59,6 +59,22 @@ export function renderMapViews(root = document) {
   root.querySelectorAll?.('[data-real-map]').forEach((node) => renderMapView(node));
 }
 
+// Vuelve a centrar el mapa en la ubicación REAL del rider y reanuda el
+// auto-seguimiento. Si no hay fix real montado, no hace nada (no inventa centro).
+export function recenterMapViews(root = document) {
+  let recentered = false;
+  root.querySelectorAll?.('[data-real-map]').forEach((node) => {
+    const entry = mapEntryFor(node);
+    if (!entry) return;
+    const view = readMapViewState(node);
+    if (!view.riderLocation) return;
+    entry.userInteracted = false;
+    fitMapToView(entry, view);
+    recentered = true;
+  });
+  return recentered;
+}
+
 function renderMapView(container) {
   const view = readMapViewState(container);
   if (!view.canvas) return;

@@ -17,6 +17,7 @@ import {
 } from './simulation.js';
 import { getRealtimeStatus } from './realtime.js';
 import { relayStatusLabel } from './core/realtime-sync.js';
+import { getBusinessConfig } from './core/business-config-store.js';
 import { normalizeOrderAddressDetails } from './core/address.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
@@ -458,12 +459,91 @@ function relativeAgeLabel(value) {
   return `hace ${minutes} min`;
 }
 
+// Escenario de mapa del rider. SÓLO se monta con GPS real en vivo (lo decide
+// renderDeliveryPanel), así que los overlays flotantes —pill de estado con punto
+// vivo, botón de centrar y de navegar— son honestos por construcción: no existen
+// sin ubicación real. "Navegar" abre el mapa nativo con la dirección textual del
+// cliente (búsqueda real, sin ruta inventada dentro de la app).
 function renderRiderMapStage(order) {
+  const address = normalizeOrderAddressDetails(order);
+  const destination = displayDestinationLabel(address.label || order.address);
+  const navQuery = encodeURIComponent([destination, address.reference].filter(Boolean).join(' '));
+  const navUrl = navQuery ? `https://www.google.com/maps/dir/?api=1&destination=${navQuery}` : '';
+  const supportDigits = onlyDigits(getBusinessConfig().whatsappNumber);
+  const supportUrl = supportDigits ? `https://wa.me/${supportDigits}` : '';
+
   return `
     <div class="delivery-map-stage rider-map-stage" data-map-shell="rider">
       ${renderRealMapShell(order, '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', 'rider')}
-      <span class="rider-map-live-chip" aria-label="GPS real compartido"><span aria-hidden="true"></span>GPS</span>
+      <div class="rider-map-overlay-top">
+        <button class="rider-fab" type="button" data-nav-view="home" aria-label="Volver al inicio">${chevronBackGlyph()}</button>
+        ${renderRiderStatusPill(order)}
+        ${supportUrl
+          ? `<a class="rider-fab" href="${supportUrl}" target="_blank" rel="noopener noreferrer" aria-label="Soporte por WhatsApp">${headsetGlyph()}</a>`
+          : `<span class="rider-fab is-ghost" aria-hidden="true">${headsetGlyph()}</span>`}
+      </div>
+      <div class="rider-map-actions">
+        <button class="rider-fab" type="button" data-map-recenter aria-label="Centrar en mi ubicación">${locateGlyph()}</button>
+        ${navUrl
+          ? `<a class="rider-fab accent" href="${navUrl}" target="_blank" rel="noopener noreferrer" aria-label="Navegar al domicilio del cliente">${navigateGlyph()}</a>`
+          : ''}
+      </div>
     </div>`;
+}
+
+// Pill de estado flotante (referencia visual: "Estado / Repartiendo"). El punto
+// vivo es honesto: este pill sólo se renderiza dentro del mapa con GPS real.
+function renderRiderStatusPill(order) {
+  const label = riderPillStatusLabel(order);
+  return `
+    <span class="rider-status-pill ${statusClass(order.status)}">
+      <span class="rider-pill-text">
+        <small>Estado</small>
+        <strong>${escapeHtml(label)}</strong>
+      </span>
+      <span class="rider-pill-dot" aria-hidden="true"></span>
+    </span>`;
+}
+
+function riderPillStatusLabel(order) {
+  if (isAwaitingPreparation(order)) return 'Esperando';
+  switch (order.status) {
+    case 'ready': return 'Listo';
+    case 'on_the_way': return 'En camino';
+    case 'arriving': return 'Llegando';
+    case 'delivered': return 'Entregado';
+    default: return 'En reparto';
+  }
+}
+
+// Glyphs de los botones flotantes (heredan currentColor, igual que los de ui.js).
+function chevronBackGlyph() {
+  return `<svg class="rider-fab-ico" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true" focusable="false">
+    <path d="M14.5 6.5 9 12l5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function headsetGlyph() {
+  return `<svg class="rider-fab-ico" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true" focusable="false">
+    <path d="M5 13.5v-1.2a7 7 0 0 1 14 0v1.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    <rect x="3.4" y="13" width="3.6" height="5.6" rx="1.8" fill="currentColor"/>
+    <rect x="17" y="13" width="3.6" height="5.6" rx="1.8" fill="currentColor"/>
+    <path d="M19 18.4v.5a2.6 2.6 0 0 1-2.6 2.6H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function locateGlyph() {
+  return `<svg class="rider-fab-ico" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true" focusable="false">
+    <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
+    <circle cx="12" cy="12" r="1.6" fill="currentColor"/>
+    <path d="M12 2.6v3M12 18.4v3M2.6 12h3M18.4 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function navigateGlyph() {
+  return `<svg class="rider-fab-ico" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true" focusable="false">
+    <path d="M20.5 4.2 4 11l6.4 2.6L13 20l7.5-15.8Z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+  </svg>`;
 }
 
 function renderRealMapShell(order, fallback, role = 'rider') {

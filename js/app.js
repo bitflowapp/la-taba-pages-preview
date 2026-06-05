@@ -40,7 +40,7 @@ import {
   resumeSimulationIfNeeded,
 } from './simulation.js';
 import { getRealtimeStatus, initRealtime, onRealtimeStatusChange, retryRelayConnection } from './realtime.js';
-import { renderMapViews } from './map/map_view.js';
+import { recenterMapViews, renderMapViews } from './map/map_view.js';
 import { activeTrackingLiveness } from './map/route_geometry.js';
 import { getOrderRepository, getRepositoryDiagnostic, startOrderRepositorySync } from './repositories/repository_factory.js';
 import { toggleFavoriteProduct } from './core/customer-preferences.js';
@@ -505,6 +505,10 @@ function bindEvents() {
       const result = retryRelayConnection();
       showToast(result.message);
       renderLiveSurfaces();
+      return;
+    }
+    if (target.closest('[data-map-recenter]')) {
+      recenterMapViews();
       return;
     }
     if (target.closest('[data-whatsapp-copy]')) {

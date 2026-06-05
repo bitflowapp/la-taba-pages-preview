@@ -51,24 +51,24 @@ export function validateBusinessSetup(values = {}) {
   const adminPin = String(values.adminPin || '').trim();
 
   if (!businessName) errors.push('El nombre del comercio es obligatorio.');
-  if (!address) errors.push('La direccion es obligatoria.');
+  if (!address) errors.push('La dirección es obligatoria.');
 
   if (!whatsappNumber) {
     errors.push('El WhatsApp es obligatorio.');
   } else if (!/^[+\d\s().-]+$/.test(whatsappNumber) || whatsappDigits(whatsappNumber).length < 8 || whatsappDigits(whatsappNumber).length > 20) {
-    errors.push('El WhatsApp debe ser numerico y tener entre 8 y 20 digitos.');
+    errors.push('El WhatsApp debe ser numérico y tener entre 8 y 20 dígitos.');
   }
 
-  if (!/^[A-Z0-9]{2,5}$/.test(orderPrefix)) {
-    errors.push('El prefijo de pedido debe ser alfanumerico y tener 2 a 5 caracteres.');
+  if (!/^[A-Z0-9]{2,6}$/.test(orderPrefix)) {
+    errors.push('El prefijo de pedido debe ser alfanumérico y tener 2 a 6 caracteres.');
   }
 
   if (!/^\d{4,6}$/.test(adminPin)) {
-    errors.push('El PIN negocio debe tener 4 a 6 digitos.');
+    errors.push('El PIN del negocio debe tener 4 a 6 dígitos.');
   }
 
-  validateMoney('El costo de envio', values.deliveryFee, errors);
-  validateMoney('El pedido minimo delivery', values.minDeliveryOrder, errors);
+  validateMoney('El costo de envío', values.deliveryFee, errors);
+  validateMoney('El pedido mínimo delivery', values.minDeliveryOrder, errors);
   validateHour('La hora de apertura', values.openHour, errors);
   validateHour('La hora de cierre', values.closeHour, errors);
 
@@ -108,7 +108,7 @@ export function saveBusinessSetup(values = {}, updateConfig = updateBusinessConf
   }
 
   const config = updateConfig(buildBusinessSetupPatch(values));
-  return { handled: true, ok: true, message: 'Configuracion guardada.', config };
+  return { handled: true, ok: true, message: 'Configuración guardada.', config };
 }
 
 export function restoreBusinessSetupDemo({ confirmed = false, updateConfig = updateBusinessConfig } = {}) {
@@ -117,10 +117,10 @@ export function restoreBusinessSetupDemo({ confirmed = false, updateConfig = upd
       handled: true,
       ok: false,
       needsConfirmation: true,
-      message: 'Esto restaurara los datos demo del comercio. No borra pedidos ni productos.',
+      message: 'Esto restaurara los datos demo del comercio. No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.',
     };
   }
 
   const config = updateConfig(buildDefaultBusinessConfig());
-  return { handled: true, ok: true, message: 'Configuracion demo restaurada.', config };
+  return { handled: true, ok: true, message: 'Configuración demo restaurada.', config };
 }

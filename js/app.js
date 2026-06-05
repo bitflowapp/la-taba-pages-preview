@@ -31,7 +31,7 @@ import {
 import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, getActiveOrder, getLastOrder } from './orders.js';
 import { getState, subscribe } from './state.js';
 import { STORAGE_KEYS } from './config.js';
-import { handleBusinessAction, handleBusinessInput, lockAdmin, renderBusinessDashboard, unlockAdmin } from './business.js';
+import { handleBusinessAction, handleBusinessInput, lockAdmin, renderBusinessDashboard, submitBusinessSetupForm, unlockAdmin } from './business.js';
 import { handleDeliveryAction, handleDeliveryChange, renderDeliveryPanel } from './delivery.js';
 import {
   disableGpsTracking,
@@ -449,6 +449,17 @@ function bindEvents() {
     const deliveryChange = handleDeliveryChange(target);
     if (deliveryChange.handled) {
       showToast(deliveryChange.message);
+    }
+  });
+
+  document.addEventListener('submit', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLFormElement)) return;
+    if (!target.matches('[data-business-setup-form]')) return;
+    event.preventDefault();
+    const result = submitBusinessSetupForm();
+    if (result?.ok) {
+      showToast(result.message);
     }
   });
 

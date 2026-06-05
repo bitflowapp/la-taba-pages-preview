@@ -174,7 +174,7 @@ export function renderBusinessDashboard() {
           <button class="secondary-button compact" type="button" data-scroll-orders>Pedidos</button>
           <button class="secondary-button compact" type="button" data-scroll-reports>Reportes</button>
           <button class="secondary-button compact" type="button" data-scroll-catalog>Catalogo</button>
-          <button class="secondary-button compact" type="button" data-scroll-business-setup>Configuracion</button>
+          <button class="secondary-button compact" type="button" data-scroll-business-setup>Configuración</button>
         </nav>
       </header>
 
@@ -797,10 +797,10 @@ function renderBusinessSetupPanel() {
       <header class="business-catalog-head business-setup-head">
         <div>
           <span class="catalog-admin-kicker">Autoservicio demo</span>
-          <h3 id="business-setup-title">Configuracion del negocio</h3>
-          <p>Cambia identidad, contacto, horarios y reglas basicas sin tocar codigo. Se guarda localmente en esta demo.</p>
+          <h3 id="business-setup-title">Configuración del negocio</h3>
+          <p>Cambiá identidad, contacto, horarios y reglas básicas sin tocar código. Se guarda localmente en esta demo.</p>
         </div>
-        <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuracion demo</button>
+        <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuración demo</button>
       </header>
 
       <div class="business-setup-layout">
@@ -813,12 +813,12 @@ function renderBusinessSetupPanel() {
                 <input name="businessName" type="text" maxlength="80" required value="${escapeHtml(config.businessName)}" />
               </label>
               <label>
-                <span>Subtitulo del local</span>
+                <span>Subtítulo del local</span>
                 <input name="subtitle" type="text" maxlength="80" value="${escapeHtml(config.subtitle)}" />
               </label>
               <label>
                 <span>Prefijo de pedido</span>
-                <input name="orderPrefix" type="text" maxlength="5" required value="${escapeHtml(config.orderPrefix)}" />
+                <input name="orderPrefix" type="text" maxlength="6" required value="${escapeHtml(config.orderPrefix)}" />
               </label>
             </div>
           </fieldset>
@@ -827,7 +827,7 @@ function renderBusinessSetupPanel() {
             <legend>Contacto</legend>
             <div class="catalog-form-grid">
               <label>
-                <span>Direccion</span>
+                <span>Dirección</span>
                 <input name="address" type="text" maxlength="180" required value="${escapeHtml(config.address)}" />
               </label>
               <label>
@@ -849,11 +849,11 @@ function renderBusinessSetupPanel() {
                 <input name="openingHoursLabel" type="text" maxlength="120" value="${escapeHtml(config.openingHoursLabel)}" />
               </label>
               <label>
-                <span>Hora apertura</span>
+                <span>Hora de apertura</span>
                 <input name="openHour" type="number" min="0" max="24" step="1" inputmode="numeric" required value="${escapeHtml(String(config.openHour))}" />
               </label>
               <label>
-                <span>Hora cierre</span>
+                <span>Hora de cierre</span>
                 <input name="closeHour" type="number" min="0" max="24" step="1" inputmode="numeric" required value="${escapeHtml(String(config.closeHour))}" />
               </label>
             </div>
@@ -863,15 +863,15 @@ function renderBusinessSetupPanel() {
             <legend>Delivery y acceso demo</legend>
             <div class="catalog-form-grid">
               <label>
-                <span>Costo de envio</span>
+                <span>Costo de envío</span>
                 <input name="deliveryFee" type="number" min="0" step="1" inputmode="numeric" required value="${escapeHtml(String(config.deliveryFee))}" />
               </label>
               <label>
-                <span>Pedido minimo para envio</span>
+                <span>Pedido mínimo para envío</span>
                 <input name="minDeliveryOrder" type="number" min="0" step="1" inputmode="numeric" required value="${escapeHtml(String(config.minDeliveryOrder))}" />
               </label>
               <label>
-                <span>PIN negocio</span>
+                <span>PIN del negocio</span>
                 <input name="adminPin" type="text" inputmode="numeric" minlength="4" maxlength="6" required value="${escapeHtml(config.adminPin)}" />
               </label>
             </div>
@@ -880,8 +880,8 @@ function renderBusinessSetupPanel() {
           <p class="form-hint catalog-form-error hidden" data-business-setup-error></p>
           ${feedback}
           <div class="catalog-form-actions">
-            <button class="primary-button compact" type="button" data-business-setup-save>Guardar configuracion</button>
-            <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuracion demo</button>
+            <button class="primary-button compact" type="submit" data-business-setup-save>Guardar configuración</button>
+            <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuración demo</button>
           </div>
         </form>
 
@@ -892,16 +892,16 @@ function renderBusinessSetupPanel() {
 
 function renderBusinessSetupPreview(config) {
   return `
-    <aside class="business-setup-preview" data-business-setup-preview aria-label="Vista previa de configuracion">
+    <aside class="business-setup-preview" data-business-setup-preview aria-label="Vista previa de configuración">
       <span class="catalog-admin-kicker">Vista previa</span>
       <strong data-setup-preview="businessName">${escapeHtml(config.businessName)}</strong>
       <p data-setup-preview="subtitle">${escapeHtml(config.subtitle)}</p>
       <dl>
-        <div><dt>Direccion</dt><dd data-setup-preview="address">${escapeHtml(config.address)}</dd></div>
+        <div><dt>Dirección</dt><dd data-setup-preview="address">${escapeHtml(config.address)}</dd></div>
         <div><dt>WhatsApp</dt><dd data-setup-preview="whatsappNumber">${escapeHtml(config.whatsappNumber)}</dd></div>
         <div><dt>Horarios</dt><dd data-setup-preview="openingHoursLabel">${escapeHtml(config.openingHoursLabel)}</dd></div>
         <div><dt>Costo delivery</dt><dd data-setup-preview="deliveryFee">${money(config.deliveryFee)}</dd></div>
-        <div><dt>Pedido minimo</dt><dd data-setup-preview="minDeliveryOrder">${money(config.minDeliveryOrder)}</dd></div>
+        <div><dt>Pedido mínimo</dt><dd data-setup-preview="minDeliveryOrder">${money(config.minDeliveryOrder)}</dd></div>
         <div><dt>Prefijo</dt><dd data-setup-preview="orderPrefix">${escapeHtml(config.orderPrefix)}</dd></div>
       </dl>
     </aside>`;
@@ -1169,10 +1169,6 @@ export function handleBusinessAction(target) {
     return { handled: true, ok: true, message: '' };
   }
 
-  if (target.closest('[data-business-setup-save]')) {
-    return saveBusinessSetupFromForm();
-  }
-
   if (target.closest('[data-business-setup-reset-demo]')) {
     return requestBusinessSetupReset();
   }
@@ -1306,6 +1302,10 @@ export function handleBusinessInput(target) {
   return { handled: true, ok: true, message: '' };
 }
 
+export function submitBusinessSetupForm() {
+  return saveBusinessSetupFromForm();
+}
+
 function saveCatalogProductFromForm() {
   const form = typeof document !== 'undefined' ? document.querySelector('[data-catalog-form]') : null;
   if (!form) return { handled: true, ok: false, message: 'Formulario no disponible.' };
@@ -1363,7 +1363,7 @@ function saveBusinessSetupFromForm() {
     return result;
   }
 
-  businessSetupFeedback = 'Configuracion guardada.';
+  businessSetupFeedback = 'Configuración guardada.';
   if (typeof document !== 'undefined') {
     renderBusinessDashboard();
     scrollBusinessSetup();
@@ -1619,7 +1619,7 @@ function requestBusinessSetupReset() {
 }
 
 export function confirmBusinessSetupReset() {
-  businessSetupFeedback = 'Configuracion demo restaurada.';
+  businessSetupFeedback = 'Configuración demo restaurada.';
   const result = restoreBusinessSetupDemo({ confirmed: true, updateConfig: updateBusinessConfig });
   closeBusinessSetupResetModal();
   if (typeof document !== 'undefined') {
@@ -1647,11 +1647,11 @@ function closeBusinessSetupResetModal() {
 function renderBusinessSetupResetDialog() {
   return `
     <div class="pin-card cancel-card" data-business-setup-reset-card>
-      <h2>Restaurar configuracion demo</h2>
-      <p>Esto restaurara los datos demo del comercio. No borra pedidos ni productos.</p>
+      <h2>Restaurar configuración demo</h2>
+      <p>Esto restaurará los datos demo del comercio. No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.</p>
       <div class="button-row cancel-actions">
         <button class="secondary-button" type="button" data-business-setup-reset-dismiss>Cancelar</button>
-        <button class="danger-button" type="button" data-business-setup-reset-confirm>Restaurar configuracion demo</button>
+        <button class="danger-button" type="button" data-business-setup-reset-confirm>Restaurar configuración demo</button>
       </div>
     </div>`;
 }

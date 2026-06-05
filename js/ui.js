@@ -60,9 +60,11 @@ export function applyBusinessConfig() {
   setText('[data-min-order]', money(getBusinessConfig().minDeliveryOrder));
   setText('[data-delivery-fee]', money(getBusinessConfig().deliveryFee));
   setText('[data-business-profile-name]', getBusinessConfig().businessName);
+  setText('[data-business-whatsapp]', formatWhatsappDisplay(getBusinessConfig().whatsappNumber));
   setText('[data-business-address]', getBusinessConfig().address);
   setText('[data-business-hours]', getBusinessConfig().openingHoursLabel);
   setText('[data-business-zone]', getBusinessConfig().deliveryZone);
+  setText('[data-rider-business-name]', getBusinessConfig().businessName);
 
   const status = $('[data-open-status]');
   if (status) {
@@ -75,6 +77,11 @@ export function applyBusinessConfig() {
 
 function setText(selector, value) {
   $$(selector).forEach((node) => { node.textContent = value; });
+}
+
+function formatWhatsappDisplay(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits ? `+${digits}` : '';
 }
 
 export function renderNavigation(activeView = 'home') {

@@ -10,6 +10,7 @@ import {
   saveBusinessSetup,
   validateBusinessSetup,
 } from '../js/core/business-setup.js';
+import { lockAdmin, unlockAdmin } from '../js/business.js';
 import {
   createOrderId,
   getProductById,
@@ -61,12 +62,13 @@ test('business setup valida formulario antes de guardar', () => {
     ['nombre vacio falla', { businessName: ' ' }, /nombre/i],
     ['WhatsApp vacio falla', { whatsappNumber: '' }, /WhatsApp/i],
     ['WhatsApp claramente invalido falla', { whatsappNumber: 'abc' }, /WhatsApp/i],
-    ['fee negativo falla', { deliveryFee: '-1' }, /envio/i],
-    ['minimo negativo falla', { minDeliveryOrder: '-1' }, /minimo/i],
+    ['fee negativo falla', { deliveryFee: '-1' }, /env[ií]o/i],
+    ['minimo negativo falla', { minDeliveryOrder: '-1' }, /pedido.*delivery/i],
     ['PIN no numerico falla', { adminPin: '12ab' }, /PIN/i],
     ['PIN corto falla', { adminPin: '123' }, /PIN/i],
     ['PIN largo falla', { adminPin: '1234567' }, /PIN/i],
     ['orderPrefix invalido falla', { orderPrefix: 'Q-' }, /prefijo/i],
+    ['orderPrefix de siete caracteres falla', { orderPrefix: 'ABCDEFG' }, /prefijo/i],
     ['openHour fuera de rango falla', { openHour: '25' }, /apertura/i],
     ['closeHour fuera de rango falla', { closeHour: '-1' }, /cierre/i],
   ];
@@ -110,6 +112,41 @@ test('business setup guarda datos validos con updateBusinessConfig y persiste al
   assert.equal(persisted.businessConfig.openingHours, 'Lunes a viernes 10 a 20');
 });
 
+test('business setup acepta prefijos de seis caracteres y mantiene los codigos viejos', () => {
+  resetState({ orders: [], cart: [] });
+  saveBusinessSetup({ ...validValues, orderPrefix: 'ABCDEF', minDeliveryOrder: 0, deliveryFee: 0 });
+
+  const productId = getState().products.find((product) => getProductById(product.id) && product.available && product.stock > 0)?.id;
+  assert.ok(productId, 'hay al menos un producto demo vendible');
+
+  addToCart(productId, 1);
+  const firstOrder = createOrderFromCheckout({
+    customerName: 'Cliente Uno',
+    customerPhone: '2995551000',
+    customerStreetAddress: 'Roca 123',
+    customerNeighborhood: 'Centro',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+  });
+  assert.equal(firstOrder.ok, true);
+  assert.equal(firstOrder.order.id, 'ABCDEF-0001');
+
+  updateBusinessConfig({ orderPrefix: 'GHIJKL' });
+  addToCart(productId, 1);
+  const secondOrder = createOrderFromCheckout({
+    customerName: 'Cliente Dos',
+    customerPhone: '2995552000',
+    customerStreetAddress: 'Roca 456',
+    customerNeighborhood: 'Centro',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+  });
+  assert.equal(secondOrder.ok, true);
+  assert.equal(secondOrder.order.id, 'GHIJKL-0001');
+  assert.equal(getState().orders.find((order) => order.id === firstOrder.order.id).id, 'ABCDEF-0001');
+  assert.equal(createOrderId(), 'GHIJKL-0002');
+});
+
 test('business setup restore demo requiere confirmacion y no borra estado operativo', () => {
   resetState({
     orders: [{
@@ -120,13 +157,26 @@ test('business setup restore demo requiere confirmacion y no borra estado operat
     }],
     cart: [{ productId: 'p-matambre', quantity: 1 }],
   });
-  updateBusinessConfig({ businessName: 'QA Store', orderPrefix: 'QA', deliveryFee: 777 });
+  saveBusinessSetup({ ...validValues, minDeliveryOrder: 0, deliveryFee: 777 });
+  const productId = getState().products.find((product) => getProductById(product.id) && product.available && product.stock > 0)?.id;
+  assert.ok(productId, 'hay al menos un producto demo vendible');
+  addToCart(productId, 1);
+  const created = createOrderFromCheckout({
+    customerName: 'Cliente QA',
+    customerPhone: '2995550000',
+    customerStreetAddress: 'Roca 123',
+    customerNeighborhood: 'Centro',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+  });
+  assert.equal(created.ok, true);
   globalThis.localStorage.setItem(STORAGE_KEYS.cashboxClosures, JSON.stringify([{ id: 'close-1', total: 100 }]));
 
   const ordersBefore = getState().orders.map((order) => order.id);
   const productsBefore = getState().products.map((product) => ({ id: product.id, stock: product.stock }));
   const cartBefore = getState().cart.map((item) => ({ ...item }));
   const cashboxBefore = globalThis.localStorage.getItem(STORAGE_KEYS.cashboxClosures);
+  const historyBefore = globalThis.localStorage.getItem(STORAGE_KEYS.customerHistory);
   let called = false;
 
   const request = restoreBusinessSetupDemo({
@@ -147,6 +197,7 @@ test('business setup restore demo requiere confirmacion y no borra estado operat
   assert.deepEqual(getState().products.map((product) => ({ id: product.id, stock: product.stock })), productsBefore);
   assert.deepEqual(getState().cart.map((item) => ({ ...item })), cartBefore);
   assert.equal(globalThis.localStorage.getItem(STORAGE_KEYS.cashboxClosures), cashboxBefore);
+  assert.equal(globalThis.localStorage.getItem(STORAGE_KEYS.customerHistory), historyBefore);
 });
 
 test('business setup integra prefijo, delivery fee, minimo y render de UI', () => {
@@ -178,7 +229,17 @@ test('business setup integra prefijo, delivery fee, minimo y render de UI', () =
   const businessNameNode = { textContent: '' };
   globalThis.document = {
     querySelectorAll(selector) {
-      if (selector === '[data-business-name]') return [businessNameNode];
+      const nodes = {
+        '[data-business-name]': [businessNameNode],
+        '[data-business-subtitle]': [{ textContent: '' }],
+        '[data-business-profile-name]': [{ textContent: '' }],
+        '[data-business-address]': [{ textContent: '' }],
+        '[data-business-hours]': [{ textContent: '' }],
+        '[data-business-zone]': [{ textContent: '' }],
+        '[data-business-whatsapp]': [{ textContent: '' }],
+        '[data-rider-business-name]': [{ textContent: '' }],
+      };
+      if (nodes[selector]) return nodes[selector];
       return [];
     },
     querySelector() { return null; },
@@ -186,4 +247,20 @@ test('business setup integra prefijo, delivery fee, minimo y render de UI', () =
   applyBusinessConfig();
   assert.equal(businessNameNode.textContent, 'QA Store');
   delete globalThis.document;
+});
+
+test('business setup actualiza el PIN y invalida el anterior despues del cambio', () => {
+  lockAdmin();
+  assert.equal(unlockAdmin('1234'), true);
+  lockAdmin();
+
+  saveBusinessSetup({ ...validValues, adminPin: '654321' });
+  lockAdmin();
+
+  assert.equal(unlockAdmin('1234'), false);
+  assert.equal(getState().adminUnlocked, false);
+  assert.equal(unlockAdmin('654321'), true);
+  assert.equal(getState().adminUnlocked, true);
+  lockAdmin();
+  assert.equal(unlockAdmin('654321'), true);
 });

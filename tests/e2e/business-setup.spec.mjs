@@ -29,7 +29,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   });
 
   await page.goto('/?reset=1#business');
-  await page.getByRole('button', { name: /Ingresar codigo|Ingresar c.digo/i }).click();
+  await page.getByRole('button', { name: /Ingresar c[óo]digo/i }).click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
@@ -39,29 +39,30 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await expect(setup).toBeVisible();
 
   await page.getByLabel('Comercio visible').fill('QA Store');
-  await page.getByLabel('Subtitulo del local').fill('Demo autoservicio QA');
+  await page.getByLabel('Subtítulo del local').fill('Demo autoservicio QA');
   await page.getByLabel('Prefijo de pedido').fill('QA');
-  await page.getByLabel('Direccion').fill('Roca 123, Neuquen');
+  await page.getByLabel('Dirección').fill('Roca 123, Neuquén');
   await page.getByLabel('WhatsApp').fill('5492995551234');
   await page.getByLabel('Zona de entrega').fill('Centro QA y alrededores');
   await page.getByLabel('Texto visible de horarios').fill('Lunes a viernes 10 a 20');
-  await page.getByLabel('Hora apertura').fill('10');
-  await page.getByLabel('Hora cierre').fill('20');
-  await page.getByLabel('Costo de envio').fill('777');
-  await page.getByLabel('Pedido minimo para envio').fill('1000');
-  await page.getByLabel('PIN negocio').fill('4567');
+  await page.getByLabel('Hora de apertura').fill('10');
+  await page.getByLabel('Hora de cierre').fill('20');
+  await page.getByLabel('Costo de envío').fill('777');
+  await page.getByLabel('Pedido mínimo para envío').fill('1000');
+  await page.getByLabel('PIN del negocio').fill('4567');
 
   await expect(page.locator('[data-business-setup-preview]')).toContainText('QA Store');
-  await setup.getByRole('button', { name: 'Guardar configuracion' }).click();
-  await waitForToast(page, 'Configuracion guardada.');
-  await expect(page.locator('[data-business-setup-feedback]')).toContainText('Configuracion guardada.');
+  await page.getByLabel('PIN del negocio').press('Enter');
+  await waitForToast(page, 'Configuración guardada.');
+  await expect(page.locator('[data-business-setup-feedback]')).toContainText('Configuración guardada.');
 
   await page.locator('.mobile-nav [data-nav-view="profile"]').click();
   await expect(page.locator('.topbar .brand')).toContainText('QA Store');
   await expect(page.locator('[data-view="profile"]')).toContainText('QA Store');
-  await expect(page.locator('[data-view="profile"]')).toContainText('Roca 123, Neuquen');
+  await expect(page.locator('[data-view="profile"]')).toContainText('Roca 123, Neuquén');
   await expect(page.locator('[data-view="profile"]')).toContainText('Lunes a viernes 10 a 20');
   await expect(page.locator('[data-view="profile"]')).toContainText('Centro QA y alrededores');
+  await expect(page.locator('[data-business-whatsapp]')).toContainText('+5492995551234');
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   const productCountBeforeRestore = await page.locator('[data-product-grid] .product-card').count();
@@ -87,21 +88,23 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await page.reload();
   await expect(page.locator('.topbar .brand')).toContainText('QA Store');
   await page.evaluate(() => { window.location.hash = '#profile'; });
-  await expect(page.locator('[data-view="profile"]')).toContainText('Roca 123, Neuquen');
+  await expect(page.locator('[data-view="profile"]')).toContainText('Roca 123, Neuquén');
+  await expect(page.locator('[data-business-whatsapp]')).toContainText('+5492995551234');
 
-  await page.evaluate(() => { window.location.hash = '#business'; });
+  await page.locator('[data-view="profile"] [data-open-admin-view="business"]').click();
   await expect(page.locator('[data-view="business"]')).toBeVisible();
+
   await page.locator('[data-scroll-business-setup]').click();
-  await setup.getByRole('button', { name: 'Restaurar configuracion demo' }).first().click();
+  await setup.getByRole('button', { name: 'Restaurar configuración demo' }).first().click();
   const resetModal = page.locator('[data-business-setup-reset-modal]');
   await expect(resetModal).toBeVisible();
-  await expect(resetModal).toContainText('Esto restaurara los datos demo del comercio. No borra pedidos ni productos.');
+  await expect(resetModal).toContainText('No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.');
   await resetModal.getByRole('button', { name: 'Cancelar' }).click();
   await expect(page.locator('.topbar .brand')).toContainText('QA Store');
 
-  await setup.getByRole('button', { name: 'Restaurar configuracion demo' }).first().click();
-  await resetModal.getByRole('button', { name: 'Restaurar configuracion demo' }).click();
-  await waitForToast(page, 'Configuracion demo restaurada.');
+  await setup.getByRole('button', { name: 'Restaurar configuración demo' }).first().click();
+  await resetModal.getByRole('button', { name: 'Restaurar configuración demo' }).click();
+  await waitForToast(page, 'Configuración demo restaurada.');
   await expect(page.locator('.topbar .brand')).toContainText('La Taba');
   await expect(page.locator('[data-business-dashboard]')).toContainText('QA-0001');
 

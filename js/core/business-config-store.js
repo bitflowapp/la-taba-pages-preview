@@ -27,6 +27,15 @@ function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function deepFreeze(value) {
+  if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
+  Object.freeze(value);
+  for (const key of Object.keys(value)) {
+    deepFreeze(value[key]);
+  }
+  return value;
+}
+
 function isPlainObject(value) {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
@@ -91,15 +100,26 @@ function sanitizeLocation(value, fallback) {
 
 // Campos editables (identidad/operación). El resto se preserva desde el fallback.
 function sanitizeEditableFields(source, base) {
+  const businessName = sanitizeString(
+    source.businessName,
+    sanitizeString(source.name, base.businessName, 80),
+    80,
+  );
+  const openingHoursLabel = sanitizeString(
+    source.openingHoursLabel,
+    sanitizeString(source.openingHours, base.openingHoursLabel, 120),
+    120,
+  );
+
   return {
-    businessName: sanitizeString(source.businessName, base.businessName, 80),
-    name: sanitizeString(source.name, base.name ?? base.businessName, 80),
+    businessName,
+    name: businessName,
     subtitle: sanitizeString(source.subtitle, base.subtitle, 80),
     address: sanitizeString(source.address, base.address, 180),
     whatsappNumber: sanitizeWhatsapp(source.whatsappNumber, base.whatsappNumber),
     deliveryZone: sanitizeString(source.deliveryZone, base.deliveryZone, 160),
-    openingHoursLabel: sanitizeString(source.openingHoursLabel, base.openingHoursLabel, 120),
-    openingHours: sanitizeString(source.openingHours, base.openingHours ?? base.openingHoursLabel, 120),
+    openingHoursLabel,
+    openingHours: openingHoursLabel,
     openHour: sanitizeHour(source.openHour, base.openHour),
     closeHour: sanitizeHour(source.closeHour, base.closeHour),
     deliveryFee: sanitizeMoney(source.deliveryFee, base.deliveryFee),
@@ -130,20 +150,36 @@ export function buildDefaultBusinessConfig() {
 // Mergea un patch parcial sobre una base, saneando el resultado.
 export function mergeBusinessConfig(base, saved) {
   const safeBase = isPlainObject(base) ? base : deepClone(SEED);
-  const merged = { ...safeBase, ...(isPlainObject(saved) ? saved : {}) };
+  const patch = isPlainObject(saved) ? { ...saved } : {};
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'businessName') || Object.prototype.hasOwnProperty.call(patch, 'name')) {
+    const canonicalBusinessName = sanitizeString(patch.businessName, sanitizeString(patch.name, '', 80), 80);
+    patch.businessName = canonicalBusinessName;
+    patch.name = canonicalBusinessName;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'openingHoursLabel') || Object.prototype.hasOwnProperty.call(patch, 'openingHours')) {
+    const canonicalOpeningHours = sanitizeString(patch.openingHoursLabel, sanitizeString(patch.openingHours, '', 120), 120);
+    patch.openingHoursLabel = canonicalOpeningHours;
+    patch.openingHours = canonicalOpeningHours;
+  }
+
+  const merged = { ...safeBase, ...patch };
   return normalizeBusinessConfig(merged, safeBase);
 }
 
 // ----- holder runtime (fuente de verdad en memoria) -----
 let runtimeConfig = buildDefaultBusinessConfig();
+let runtimeSnapshot = deepFreeze(deepClone(runtimeConfig));
 
 export function getBusinessConfig() {
-  return runtimeConfig;
+  return runtimeSnapshot;
 }
 
 // Sincroniza el holder con la config ya saneada del estado. Idempotente.
 // state.js la llama en cada commit para mantener el holder al día.
 export function setRuntimeBusinessConfig(config) {
   runtimeConfig = normalizeBusinessConfig(config, runtimeConfig);
-  return runtimeConfig;
+  runtimeSnapshot = deepFreeze(deepClone(runtimeConfig));
+  return runtimeSnapshot;
 }

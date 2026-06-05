@@ -8,12 +8,14 @@ import {
   normalizeBusinessConfig,
   getBusinessConfig,
 } from '../js/core/business-config-store.js';
+import { toDomainBusiness } from '../js/core/domain.js';
 import {
   STATE_SCHEMA_VERSION,
   createOrderId,
   getState,
   hydrateState,
   normalizeOrderForStorage,
+  subscribe,
   updateBusinessConfig,
 } from '../js/state.js';
 import { getDeliveryFeeForMode } from '../js/core/pricing.js';
@@ -61,20 +63,32 @@ test('2 · normalizeBusinessConfig sanea tipos inválidos y rellena faltantes co
   const def = buildDefaultBusinessConfig();
   const dirty = normalizeBusinessConfig({
     businessName: '   ',
+    name: 'Rotisería Norte',
     deliveryFee: -50,
     minDeliveryOrder: 'abc',
     openHour: 'x',
     adminPin: '12',
     currency: 'pesos',
     orderPrefix: 'lt-99$',
+    openingHours: 'Lun a sáb · 10:00 a 20:00',
   }, def);
-  assert.equal(dirty.businessName, def.businessName, 'vacío → fallback');
+  assert.equal(dirty.businessName, 'Rotisería Norte', 'name alimenta businessName cuando falta');
+  assert.equal(dirty.name, 'Rotisería Norte', 'name queda sincronizado');
   assert.equal(dirty.deliveryFee, def.deliveryFee, 'negativo → fallback');
   assert.equal(dirty.minDeliveryOrder, def.minDeliveryOrder, 'no numérico → fallback');
   assert.equal(dirty.openHour, def.openHour, 'no entero → fallback');
   assert.equal(dirty.adminPin, def.adminPin, 'PIN corto → fallback');
   assert.equal(dirty.currency, def.currency, 'moneda inválida → fallback');
   assert.equal(dirty.orderPrefix, 'LT99', 'prefijo saneado a alfanumérico en mayúsculas');
+  assert.equal(dirty.openingHoursLabel, 'Lun a sáb · 10:00 a 20:00', 'openingHours alimenta openingHoursLabel cuando falta');
+  assert.equal(dirty.openingHours, 'Lun a sáb · 10:00 a 20:00', 'openingHours queda sincronizado');
+
+  const conflict = normalizeBusinessConfig({
+    businessName: 'Rotisería Sur',
+    name: 'Rotisería Norte',
+  }, def);
+  assert.equal(conflict.businessName, 'Rotisería Sur', 'gana businessName si ambos difieren');
+  assert.equal(conflict.name, 'Rotisería Sur', 'name queda como alias de businessName');
 
   const ok = mergeBusinessConfig(def, { businessName: 'Rotisería Pepe', deliveryFee: 2500 });
   assert.equal(ok.businessName, 'Rotisería Pepe');
@@ -106,17 +120,42 @@ test('4 · la migración conserva orders/products/cart', () => {
   assert.deepEqual(hydrated.businessConfig, buildDefaultBusinessConfig());
 });
 
-test('5 · updateBusinessConfig persiste y getBusinessConfig refleja el cambio', () => {
+test('5 · getBusinessConfig devuelve un snapshot seguro y updateBusinessConfig persiste y notifica', () => {
+  const notifications = [];
+  const unsubscribe = subscribe((nextState) => {
+    notifications.push(nextState.businessConfig.businessName);
+  });
+
+  const snapshot = getBusinessConfig();
+  const originalName = snapshot.businessName;
+  const originalLat = snapshot.businessLocation.lat;
+
+  try {
+    snapshot.businessName = 'Mutado';
+  } catch {}
+  try {
+    snapshot.businessLocation.lat = 123;
+  } catch {}
+
+  assert.equal(getBusinessConfig().businessName, originalName, 'la mutación del snapshot no altera el store');
+  assert.equal(getBusinessConfig().businessLocation.lat, originalLat, 'la mutación anidada no altera el store');
+
   updateBusinessConfig({ businessName: 'Rotisería Pepe', deliveryFee: 2500 });
+  unsubscribe();
+
   assert.equal(getBusinessConfig().businessName, 'Rotisería Pepe');
+  assert.equal(getBusinessConfig().name, 'Rotisería Pepe');
   assert.equal(getBusinessConfig().deliveryFee, 2500);
+  assert.equal(toDomainBusiness(getBusinessConfig()).name, 'Rotisería Pepe');
 
   const persisted = JSON.parse(globalThis.localStorage.getItem(STORAGE_KEYS.state));
   assert.equal(persisted.businessConfig.businessName, 'Rotisería Pepe');
+  assert.equal(persisted.businessConfig.name, 'Rotisería Pepe');
   assert.equal(persisted.businessConfig.deliveryFee, 2500);
+  assert.deepEqual(notifications, ['Rotisería Pepe']);
 });
 
-test('6 · cambiar businessConfig.name no altera pedidos ni catálogo', () => {
+test('6 · cambiar name sincroniza businessName y no altera pedidos ni catálogo', () => {
   const orderIdsBefore = getState().orders.map((order) => order.id);
   const productSnapshotBefore = getState().products.map((product) => ({
     id: product.id,
@@ -124,9 +163,11 @@ test('6 · cambiar businessConfig.name no altera pedidos ni catálogo', () => {
     stock: product.stock,
   }));
 
-  updateBusinessConfig({ businessName: 'Market X' });
+  updateBusinessConfig({ name: 'Market X' });
 
   assert.equal(getBusinessConfig().businessName, 'Market X');
+  assert.equal(getBusinessConfig().name, 'Market X');
+  assert.equal(toDomainBusiness(getBusinessConfig()).name, 'Market X');
   assert.deepEqual(getState().orders.map((order) => order.id), orderIdsBefore);
   assert.deepEqual(
     getState().products.map((product) => ({ id: product.id, price: product.price, stock: product.stock })),

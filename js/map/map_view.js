@@ -59,6 +59,22 @@ export function renderMapViews(root = document) {
   root.querySelectorAll?.('[data-real-map]').forEach((node) => renderMapView(node));
 }
 
+// Vuelve a centrar el mapa en la ubicación REAL del rider y reanuda el
+// auto-seguimiento. Si no hay fix real montado, no hace nada (no inventa centro).
+export function recenterMapViews(root = document) {
+  let recentered = false;
+  root.querySelectorAll?.('[data-real-map]').forEach((node) => {
+    const entry = mapEntryFor(node);
+    if (!entry) return;
+    const view = readMapViewState(node);
+    if (!view.riderLocation) return;
+    entry.userInteracted = false;
+    fitMapToView(entry, view);
+    recentered = true;
+  });
+  return recentered;
+}
+
 function renderMapView(container) {
   const view = readMapViewState(container);
   if (!view.canvas) return;
@@ -119,12 +135,13 @@ export function ensureTrackingMap(container, view) {
   if (existing) return existing;
 
   const L = globalThis.L;
+  const showDesktopControls = shouldShowDesktopRiderControls();
   const map = L.map(view.canvas, {
     zoomControl: false,
     attributionControl: true,
     dragging: true,
-    scrollWheelZoom: false,
-    doubleClickZoom: false,
+    scrollWheelZoom: showDesktopControls,
+    doubleClickZoom: showDesktopControls,
     tap: true,
   });
 
@@ -153,7 +170,9 @@ export function ensureTrackingMap(container, view) {
     maxZoom: 18,
     attribution: view.tileLayer.attribution,
   }).addTo(map);
-  L.control?.zoom?.({ position: 'bottomright' })?.addTo?.(map);
+  if (showDesktopControls) {
+    L.control?.zoom?.({ position: 'bottomleft' })?.addTo?.(map);
+  }
   map.on?.('dragstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
   map.on?.('zoomstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
 
@@ -163,6 +182,11 @@ export function ensureTrackingMap(container, view) {
   // coordenada del cliente, sólo su dirección textual).
   fitMapToView(entry, view);
   return entry;
+}
+
+function shouldShowDesktopRiderControls() {
+  const width = Number(globalThis.innerWidth || 0);
+  return width >= 768;
 }
 
 function scheduleMapSizeInvalidations(entry, view) {

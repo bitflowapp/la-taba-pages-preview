@@ -5157,39 +5157,11 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .real-map-meta
   display: none;
 }
 
-.rider-map-live-chip {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  z-index: 420;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 10px;
-  border: 1px solid rgba(39,163,93,0.18);
-  border-radius: 999px;
-  color: #1f6c45;
-  background: rgba(255,255,255,0.82);
-  box-shadow: 0 10px 24px rgba(31,27,23,0.08);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0;
-  backdrop-filter: blur(10px);
-  pointer-events: none;
-}
-
-.rider-map-live-chip span {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #27a35d;
-  box-shadow: 0 0 0 4px rgba(39,163,93,0.10);
-}
-
 body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-control-zoom {
   opacity: 0.58;
   transform: scale(0.86);
-  transform-origin: right bottom;
+  transform-origin: left bottom;
+  margin: 0 0 14px 14px;
   box-shadow: 0 8px 18px rgba(31,27,23,0.10) !important;
 }
 
@@ -5287,4 +5259,164 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-order-detai
   body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-metrics {
     grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.9fr) minmax(0, 0.92fr);
   }
+}
+
+/* ===== Rider panel · mapa app-first con overlays flotantes (rider-panel-visual-v1) =====
+   El escenario del mapa rider SÓLO se monta con GPS real en vivo
+   (renderRiderMapStage), por eso estos overlays —pill de estado con punto vivo,
+   botón de centrar y botón de navegar— son honestos por construcción: no existen
+   sin ubicación real. Identidad La Taba: acento terracota/cobre, sin rosa. */
+
+/* Mapa más protagonista cuando hay GPS en vivo. */
+body:has(.app-view[data-view="rider"].is-active) .rider-map-stage {
+  min-height: 468px;
+}
+
+/* --- Overlay superior: volver · pill de estado centrado · soporte --- */
+.rider-map-overlay-top {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 430;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.rider-status-pill {
+  justify-self: center;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 9px 16px;
+  border-radius: 999px;
+  color: #1f1b17;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(31, 28, 24, 0.08);
+  box-shadow: 0 14px 34px rgba(31, 27, 23, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.rider-pill-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  text-align: center;
+}
+.rider-pill-text small {
+  color: #8a8077;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.rider-pill-text strong {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rider-pill-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #29a35d;
+  box-shadow: 0 0 0 4px rgba(41, 163, 93, 0.16);
+  animation: riderPillPulse 2.2s ease-in-out infinite;
+}
+@keyframes riderPillPulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(41, 163, 93, 0.16); }
+  50% { box-shadow: 0 0 0 7px rgba(41, 163, 93, 0.04); }
+}
+.rider-status-pill.way strong,
+.rider-status-pill.done strong { color: #1f7a4d; }
+.rider-status-pill.cancelled strong { color: #a23a2d; }
+.rider-status-pill.cancelled .rider-pill-dot {
+  background: #a23a2d;
+  box-shadow: 0 0 0 4px rgba(162, 58, 45, 0.16);
+  animation: none;
+}
+
+/* --- Botones flotantes redondos (volver, soporte, centrar, navegar) --- */
+.rider-fab {
+  pointer-events: auto;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 999px;
+  color: #2a241d;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(31, 28, 24, 0.08);
+  box-shadow: 0 12px 28px rgba(31, 27, 23, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: transform 0.18s var(--ease-ios), box-shadow 0.18s var(--ease-ios);
+}
+.rider-fab:hover { transform: translateY(-1px); box-shadow: 0 16px 32px rgba(31, 27, 23, 0.22); }
+.rider-fab:active { transform: scale(0.94); }
+.rider-fab.is-ghost { opacity: 0.5; box-shadow: none; pointer-events: none; }
+.rider-fab.accent {
+  color: #fff;
+  background: linear-gradient(135deg, #c87947 0%, #b64c34 100%);
+  border-color: rgba(182, 76, 52, 0.5);
+  box-shadow: 0 16px 34px rgba(166, 72, 50, 0.34);
+}
+.rider-fab.accent:hover { box-shadow: 0 20px 38px rgba(166, 72, 50, 0.42); }
+
+/* --- Acciones flotantes inferiores (centrar arriba, navegar abajo) --- */
+.rider-map-actions {
+  position: absolute;
+  right: 16px;
+  bottom: 28px;
+  z-index: 430;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+/* --- Refuerzo del bottom sheet: jerarquía simple tipo referencia --- */
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .track-head-text strong {
+  font-size: 21px;
+  letter-spacing: -0.03em;
+}
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-address {
+  border-left: 3px solid var(--copper-2);
+}
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-address p {
+  font-size: 15.5px;
+  line-height: 1.4;
+}
+body:has(.app-view[data-view="rider"].is-active) .rider-sheet .metric-priority strong {
+  font-size: 18px;
+}
+
+@media (max-width: 720px) {
+  /* Mapa dominante con GPS en vivo (referencia: mapa protagonista). */
+  body:has(.app-view[data-view="rider"].is-active) .rider-map-stage {
+    min-height: min(50svh, 460px);
+  }
+  .rider-map-overlay-top {
+    top: 14px;
+    left: 14px;
+    right: 14px;
+  }
+  .rider-map-actions {
+    right: 14px;
+    bottom: 24px;
+  }
+  .rider-fab { width: 44px; height: 44px; }
+  .rider-pill-text strong { font-size: 17px; }
 }

@@ -185,6 +185,7 @@ async function copyTextToClipboard(text) {
 }
 
 function renderAll() {
+  applyBusinessConfig();
   renderActiveView();
   renderNavigation(activeView);
   renderAdminVisibility();

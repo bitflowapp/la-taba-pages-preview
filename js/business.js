@@ -32,6 +32,11 @@ import {
   formatBusinessReportSummary,
   periodLabel,
 } from './core/business-reports.js';
+import {
+  buildBusinessSetupPatch,
+  restoreBusinessSetupDemo,
+  saveBusinessSetup,
+} from './core/business-setup.js';
 import { readCashboxClosures, saveCashboxClosure } from './core/cashbox-store.js';
 import { toDomainOrder } from './core/domain.js';
 import { isTerminalOrderStatus } from './core/order-status.js';
@@ -44,6 +49,7 @@ import {
   setState,
   statusClass,
   statusLabel,
+  updateBusinessConfig,
   updateState,
 } from './state.js';
 import {
@@ -64,6 +70,7 @@ let businessOrderFilter = 'all';
 let businessOrderQuery = '';
 let businessReportPeriod = 'today';
 let businessReportCopyFallback = '';
+let businessSetupFeedback = '';
 // Pedido en espera de confirmación de cancelación (el primer tap NO cancela:
 // abre el modal de confirmación con motivo obligatorio).
 let pendingCancelOrderId = null;
@@ -167,6 +174,7 @@ export function renderBusinessDashboard() {
           <button class="secondary-button compact" type="button" data-scroll-orders>Pedidos</button>
           <button class="secondary-button compact" type="button" data-scroll-reports>Reportes</button>
           <button class="secondary-button compact" type="button" data-scroll-catalog>Catalogo</button>
+          <button class="secondary-button compact" type="button" data-scroll-business-setup>Configuracion</button>
         </nav>
       </header>
 
@@ -177,6 +185,8 @@ export function renderBusinessDashboard() {
       ${renderBusinessReportsPanel(report, cashboxClosures)}
 
       ${renderCatalogManager(state)}
+
+      ${renderBusinessSetupPanel()}
 
       <details class="business-extra">
         <summary>Más métricas del día</summary>
@@ -775,6 +785,128 @@ function renderCatalogManager(state) {
     </section>`;
 }
 
+function renderBusinessSetupPanel() {
+  const config = getBusinessConfig();
+  const preview = renderBusinessSetupPreview(config);
+  const feedback = businessSetupFeedback
+    ? `<p class="business-setup-feedback" role="status" data-business-setup-feedback>${escapeHtml(businessSetupFeedback)}</p>`
+    : '';
+
+  return `
+    <section class="business-setup-card" data-business-setup aria-labelledby="business-setup-title">
+      <header class="business-catalog-head business-setup-head">
+        <div>
+          <span class="catalog-admin-kicker">Autoservicio demo</span>
+          <h3 id="business-setup-title">Configuracion del negocio</h3>
+          <p>Cambia identidad, contacto, horarios y reglas basicas sin tocar codigo. Se guarda localmente en esta demo.</p>
+        </div>
+        <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuracion demo</button>
+      </header>
+
+      <div class="business-setup-layout">
+        <form class="business-setup-form" data-business-setup-form novalidate>
+          <fieldset>
+            <legend>Identidad</legend>
+            <div class="catalog-form-grid">
+              <label>
+                <span>Comercio visible</span>
+                <input name="businessName" type="text" maxlength="80" required value="${escapeHtml(config.businessName)}" />
+              </label>
+              <label>
+                <span>Subtitulo del local</span>
+                <input name="subtitle" type="text" maxlength="80" value="${escapeHtml(config.subtitle)}" />
+              </label>
+              <label>
+                <span>Prefijo de pedido</span>
+                <input name="orderPrefix" type="text" maxlength="5" required value="${escapeHtml(config.orderPrefix)}" />
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Contacto</legend>
+            <div class="catalog-form-grid">
+              <label>
+                <span>Direccion</span>
+                <input name="address" type="text" maxlength="180" required value="${escapeHtml(config.address)}" />
+              </label>
+              <label>
+                <span>WhatsApp</span>
+                <input name="whatsappNumber" type="tel" inputmode="tel" required value="${escapeHtml(config.whatsappNumber)}" />
+              </label>
+              <label class="catalog-description-field">
+                <span>Zona de entrega</span>
+                <input name="deliveryZone" type="text" maxlength="160" value="${escapeHtml(config.deliveryZone)}" />
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Horarios</legend>
+            <div class="catalog-form-grid">
+              <label class="catalog-description-field">
+                <span>Texto visible de horarios</span>
+                <input name="openingHoursLabel" type="text" maxlength="120" value="${escapeHtml(config.openingHoursLabel)}" />
+              </label>
+              <label>
+                <span>Hora apertura</span>
+                <input name="openHour" type="number" min="0" max="24" step="1" inputmode="numeric" required value="${escapeHtml(String(config.openHour))}" />
+              </label>
+              <label>
+                <span>Hora cierre</span>
+                <input name="closeHour" type="number" min="0" max="24" step="1" inputmode="numeric" required value="${escapeHtml(String(config.closeHour))}" />
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Delivery y acceso demo</legend>
+            <div class="catalog-form-grid">
+              <label>
+                <span>Costo de envio</span>
+                <input name="deliveryFee" type="number" min="0" step="1" inputmode="numeric" required value="${escapeHtml(String(config.deliveryFee))}" />
+              </label>
+              <label>
+                <span>Pedido minimo para envio</span>
+                <input name="minDeliveryOrder" type="number" min="0" step="1" inputmode="numeric" required value="${escapeHtml(String(config.minDeliveryOrder))}" />
+              </label>
+              <label>
+                <span>PIN negocio</span>
+                <input name="adminPin" type="text" inputmode="numeric" minlength="4" maxlength="6" required value="${escapeHtml(config.adminPin)}" />
+              </label>
+            </div>
+          </fieldset>
+
+          <p class="form-hint catalog-form-error hidden" data-business-setup-error></p>
+          ${feedback}
+          <div class="catalog-form-actions">
+            <button class="primary-button compact" type="button" data-business-setup-save>Guardar configuracion</button>
+            <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuracion demo</button>
+          </div>
+        </form>
+
+        ${preview}
+      </div>
+    </section>`;
+}
+
+function renderBusinessSetupPreview(config) {
+  return `
+    <aside class="business-setup-preview" data-business-setup-preview aria-label="Vista previa de configuracion">
+      <span class="catalog-admin-kicker">Vista previa</span>
+      <strong data-setup-preview="businessName">${escapeHtml(config.businessName)}</strong>
+      <p data-setup-preview="subtitle">${escapeHtml(config.subtitle)}</p>
+      <dl>
+        <div><dt>Direccion</dt><dd data-setup-preview="address">${escapeHtml(config.address)}</dd></div>
+        <div><dt>WhatsApp</dt><dd data-setup-preview="whatsappNumber">${escapeHtml(config.whatsappNumber)}</dd></div>
+        <div><dt>Horarios</dt><dd data-setup-preview="openingHoursLabel">${escapeHtml(config.openingHoursLabel)}</dd></div>
+        <div><dt>Costo delivery</dt><dd data-setup-preview="deliveryFee">${money(config.deliveryFee)}</dd></div>
+        <div><dt>Pedido minimo</dt><dd data-setup-preview="minDeliveryOrder">${money(config.minDeliveryOrder)}</dd></div>
+        <div><dt>Prefijo</dt><dd data-setup-preview="orderPrefix">${escapeHtml(config.orderPrefix)}</dd></div>
+      </dl>
+    </aside>`;
+}
+
 function renderCatalogForm(product = null) {
   const isEditing = Boolean(product);
   const categoryId = product?.categoryId || 'carnes';
@@ -1032,6 +1164,28 @@ export function handleBusinessAction(target) {
     return { handled: true, ok: true, message: '' };
   }
 
+  if (target.closest('[data-scroll-business-setup]')) {
+    scrollBusinessSetup();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-business-setup-save]')) {
+    return saveBusinessSetupFromForm();
+  }
+
+  if (target.closest('[data-business-setup-reset-demo]')) {
+    return requestBusinessSetupReset();
+  }
+
+  if (target.closest('[data-business-setup-reset-dismiss]')) {
+    closeBusinessSetupResetModal();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-business-setup-reset-confirm]')) {
+    return confirmBusinessSetupReset();
+  }
+
   if (target.closest('[data-catalog-new]')) {
     editingCatalogProductId = null;
     if (typeof document !== 'undefined') {
@@ -1129,6 +1283,14 @@ export function handleBusinessAction(target) {
 }
 
 export function handleBusinessInput(target) {
+  const setupInput = target.closest?.('[data-business-setup-form] input, [data-business-setup-form] textarea');
+  if (setupInput) {
+    businessSetupFeedback = '';
+    updateBusinessSetupPreview(setupInput.closest('[data-business-setup-form]'));
+    clearBusinessSetupError();
+    return { handled: true, ok: true, message: '' };
+  }
+
   const searchInput = target.closest?.('[data-business-order-search]');
   if (!searchInput) return { handled: false };
   businessOrderQuery = sanitizeText(searchInput.value, { maxLength: 100 });
@@ -1172,6 +1334,79 @@ function readCatalogForm(form) {
   };
 }
 
+function readBusinessSetupForm(form) {
+  const formData = new FormData(form);
+  return {
+    businessName: formData.get('businessName'),
+    subtitle: formData.get('subtitle'),
+    orderPrefix: formData.get('orderPrefix'),
+    address: formData.get('address'),
+    whatsappNumber: formData.get('whatsappNumber'),
+    deliveryZone: formData.get('deliveryZone'),
+    openingHoursLabel: formData.get('openingHoursLabel'),
+    openHour: formData.get('openHour'),
+    closeHour: formData.get('closeHour'),
+    deliveryFee: formData.get('deliveryFee'),
+    minDeliveryOrder: formData.get('minDeliveryOrder'),
+    adminPin: formData.get('adminPin'),
+  };
+}
+
+function saveBusinessSetupFromForm() {
+  const form = typeof document !== 'undefined' ? document.querySelector('[data-business-setup-form]') : null;
+  if (!form) return { handled: true, ok: false, message: 'Formulario no disponible.' };
+
+  const result = saveBusinessSetup(readBusinessSetupForm(form), updateBusinessConfig);
+  if (!result.ok) {
+    setBusinessSetupError(result.errors?.join(' ') || result.message);
+    businessSetupFeedback = '';
+    return result;
+  }
+
+  businessSetupFeedback = 'Configuracion guardada.';
+  if (typeof document !== 'undefined') {
+    renderBusinessDashboard();
+    scrollBusinessSetup();
+  }
+  return result;
+}
+
+function setBusinessSetupError(message) {
+  if (typeof document === 'undefined') return;
+  const error = document.querySelector('[data-business-setup-error]');
+  if (!error) return;
+  error.textContent = message;
+  error.classList.remove('hidden');
+}
+
+function clearBusinessSetupError() {
+  if (typeof document === 'undefined') return;
+  const error = document.querySelector('[data-business-setup-error]');
+  if (!error) return;
+  error.textContent = '';
+  error.classList.add('hidden');
+}
+
+function updateBusinessSetupPreview(form) {
+  if (typeof document === 'undefined' || !form) return;
+  const values = readBusinessSetupForm(form);
+  const patch = buildBusinessSetupPatch(values);
+  const preview = document.querySelector('[data-business-setup-preview]');
+  if (!preview) return;
+  const setPreview = (key, value) => {
+    const node = preview.querySelector(`[data-setup-preview="${key}"]`);
+    if (node) node.textContent = value;
+  };
+  setPreview('businessName', patch.businessName);
+  setPreview('subtitle', patch.subtitle);
+  setPreview('address', patch.address);
+  setPreview('whatsappNumber', patch.whatsappNumber);
+  setPreview('openingHoursLabel', patch.openingHoursLabel);
+  setPreview('deliveryFee', money(patch.deliveryFee));
+  setPreview('minDeliveryOrder', money(patch.minDeliveryOrder));
+  setPreview('orderPrefix', patch.orderPrefix);
+}
+
 function setCatalogFormError(message) {
   if (typeof document === 'undefined') return;
   const error = document.querySelector('[data-catalog-form-error]');
@@ -1183,6 +1418,11 @@ function setCatalogFormError(message) {
 function scrollCatalogManager() {
   if (typeof document === 'undefined') return;
   document.querySelector('[data-business-catalog]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function scrollBusinessSetup() {
+  if (typeof document === 'undefined') return;
+  document.querySelector('[data-business-setup]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function archiveProduct(productId) {
@@ -1371,6 +1611,50 @@ function renderCancelDialog(order) {
 // ===== Confirmación segura de restauración del catálogo demo =====
 // Igual que la cancelación de pedidos: el primer tap solo abre el modal; la
 // restauración destructiva recién ocurre al confirmar.
+
+function requestBusinessSetupReset() {
+  restoreBusinessSetupDemo({ confirmed: false, updateConfig: updateBusinessConfig });
+  openBusinessSetupResetModal();
+  return { handled: true, ok: true, message: '' };
+}
+
+export function confirmBusinessSetupReset() {
+  businessSetupFeedback = 'Configuracion demo restaurada.';
+  const result = restoreBusinessSetupDemo({ confirmed: true, updateConfig: updateBusinessConfig });
+  closeBusinessSetupResetModal();
+  if (typeof document !== 'undefined') {
+    renderBusinessDashboard();
+    scrollBusinessSetup();
+  }
+  return result;
+}
+
+function openBusinessSetupResetModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.querySelector('[data-business-setup-reset-modal]');
+  const content = modal?.querySelector('[data-business-setup-reset-content]');
+  if (!modal || !content) return;
+  content.innerHTML = renderBusinessSetupResetDialog();
+  if (typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+}
+
+function closeBusinessSetupResetModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.querySelector('[data-business-setup-reset-modal]');
+  if (modal?.open) modal.close();
+}
+
+function renderBusinessSetupResetDialog() {
+  return `
+    <div class="pin-card cancel-card" data-business-setup-reset-card>
+      <h2>Restaurar configuracion demo</h2>
+      <p>Esto restaurara los datos demo del comercio. No borra pedidos ni productos.</p>
+      <div class="button-row cancel-actions">
+        <button class="secondary-button" type="button" data-business-setup-reset-dismiss>Cancelar</button>
+        <button class="danger-button" type="button" data-business-setup-reset-confirm>Restaurar configuracion demo</button>
+      </div>
+    </div>`;
+}
 
 function requestCatalogReset() {
   openCatalogResetModal();

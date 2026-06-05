@@ -240,7 +240,7 @@ function normalizeOrder(order) {
   const baseTotals = calculateTotals(items, deliveryMode);
   const coupon = normalizeOrderCoupon(order.coupon, baseTotals.subtotal, order.discountTotal);
   const totals = calculateTotals(items, deliveryMode, { discountAmount: coupon?.discountAmount || order.discountTotal || 0 });
-  const paymentMethodCode = normalizeOrderPaymentMethodCode(order.paymentMethodCode || order.paymentMethod);
+  const paymentMethodCode = normalizeOrderPaymentMethodCode(order.paymentMethodCode, order.paymentMethod);
   const delivery = normalizeDelivery(order.delivery, deliveryMode, status);
   const addressDetails = deliveryMode === 'pickup'
     ? null
@@ -257,7 +257,7 @@ function normalizeOrder(order) {
     addressDetails,
     deliveryMode,
     paymentMethodCode,
-    paymentMethod: sanitizeText(order.paymentMethod, { fallback: paymentLabel(normalizePaymentMethod(order.paymentMethod)), maxLength: 80 }),
+    paymentMethod: normalizeOrderPaymentLabel(order.paymentMethod, paymentMethodCode),
     notes: sanitizeNotes(order.notes),
     // Defensivo: el cambio en efectivo solo tiene sentido si el método es efectivo.
     // Evita que un estado viejo/corrupto muestre "cambio" con transferencia/MP.
@@ -296,13 +296,35 @@ function normalizeOrderItem(item) {
   };
 }
 
-function normalizeOrderPaymentMethodCode(value) {
-  const direct = normalizePaymentMethod(value, '');
-  if (direct) return direct;
+function normalizeOrderPaymentMethodCode(...values) {
+  for (const value of values) {
+    const direct = normalizePaymentMethod(value, '');
+    if (direct) return direct;
+  }
+  for (const value of values) {
+    const inferred = inferPaymentMethodCode(value);
+    if (inferred) return inferred;
+  }
+  return 'unknown';
+}
+
+function inferPaymentMethodCode(value) {
   const label = sanitizeText(value, { fallback: '', maxLength: 80 }).toLowerCase();
+  if (!label || label === 'unknown' || label === 'sin especificar') return '';
   if (label.includes('transfer')) return 'transfer';
   if (label.includes('mercado')) return 'mercado_pago_future';
-  return 'cash';
+  if (label.includes('cash') || label.includes('efectivo')) return 'cash';
+  if (label.includes('link')) return 'mercado_pago_future';
+  return '';
+}
+
+function normalizeOrderPaymentLabel(value, paymentMethodCode) {
+  const label = sanitizeText(value, { fallback: '', maxLength: 80 });
+  const direct = normalizePaymentMethod(label, '');
+  if (!label || label.toLowerCase() === 'unknown' || label.toLowerCase() === 'sin especificar') {
+    return paymentLabel(paymentMethodCode);
+  }
+  return direct && label === direct ? paymentLabel(direct) : label;
 }
 
 function normalizeStatusHistory(history, currentStatus, createdAt) {
@@ -462,6 +484,7 @@ export function paymentLabel(value) {
     cash: 'Efectivo',
     transfer: 'Transferencia',
     mercado_pago_future: 'Mercado Pago',
+    unknown: 'Sin especificar',
   };
   return labels[value] || value;
 }

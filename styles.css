@@ -992,6 +992,10 @@ textarea { resize: vertical; min-height: 84px; }
   border-radius: 999px;
   background: rgba(36,32,28,0.24);
 }
+.tracking-map-experience.no-map .tracking-sheet > .sheet-handle,
+.tracking-map-experience.is-empty .tracking-sheet > .sheet-handle {
+  display: none;
+}
 .sheet-head {
   display: flex;
   align-items: center;
@@ -4506,7 +4510,12 @@ body:has(.app-view[data-view="business"].is-active) {
 
 .tracking-gps-note {
   margin: 10px 2px 0;
-  color: #6b625a;
+  padding: 10px 12px;
+  color: #5f574f;
+  background: #fbfaf7;
+  border: 1px solid rgba(35,31,27,0.08);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
 }
 
 .rider-sheet {

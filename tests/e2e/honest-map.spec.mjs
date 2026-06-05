@@ -1,8 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
+const TRACKING_GPS_NOTE = 'Seguimiento por estado. El mapa en vivo se activa cuando el repartidor comparte ubicación real.';
+
 // Garantiza que sin GPS real el mapa no muestra geografía inventada
-// (ni ruta, ni marcadores LT/CL, ni "En vivo", ni km/ETA falsos) y que el
+// (ni ruta, ni marcadores LT/CL, ni "En vivo", ni Map/km/ETA falsos) y que el
 // negocio expone su dirección textual real.
 
 test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', async ({ browser }) => {
@@ -35,17 +37,54 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await expect(tracking).toContainText('Mendoza 851, Centro');
   await expect(tracking).toContainText('Casa azul');
 
-  // Honesto: sin GPS en vivo y sin "En vivo".
-  await expect(tracking).toContainText('Sin GPS en vivo');
+  // Honesto: una sola nota de confianza y sin "En vivo".
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveCount(1);
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE);
   await expect(tracking).not.toContainText('En vivo');
 
-  // No hay mapa montado ni marcadores falsos (LT/CL) ni ruta sin GPS real.
+  // No hay mapa montado, fallback en inglés, manija, marcadores falsos (LT/CL) ni ruta sin GPS real.
   await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
   await expect(tracking.locator('.map-marker')).toHaveCount(0);
+  await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
+  await expect(tracking.locator('.map-route')).toHaveCount(0);
+  await expect(tracking.locator('.sheet-handle')).toHaveCount(0);
+  await expect(tracking).not.toContainText(/\bMap\b/);
 
-  // No hay kilómetros inventados. El tiempo estimado textual puede existir si el pedido lo trae.
+  // Estado visible amable: no mezcla "Recibido" con "Enviado" para el estado inicial.
+  await expect(tracking).toContainText('Enviado');
+  await expect(tracking).not.toContainText('Recibido');
+  await expect(tracking.locator('.sheet-head .status-chip')).toHaveCount(0);
+
+  // No hay kilómetros ni ETA inventados. El tiempo estimado textual puede existir si el pedido lo trae.
   const text = await tracking.innerText();
   expect(text).not.toMatch(/\d+([.,]\d+)?\s*km/i);
+  expect(text).not.toMatch(/\bETA\b/i);
+
+  // En reparto sin GPS: hero humano, política GPS sólo en la nota única.
+  await page.evaluate(async () => {
+    const { updateState } = await import('/js/state.js');
+    updateState((draft) => {
+      const order = draft.orders?.find((candidate) => candidate.id === draft.lastOrderId) || draft.orders?.[0];
+      if (!order) return;
+      const now = new Date().toISOString();
+      order.status = 'on_the_way';
+      order.statusHistory = [...(order.statusHistory || []), { status: 'on_the_way', at: now }];
+      order.delivery = {
+        ...(order.delivery || {}),
+        currentLocationLabel: 'El pedido salió del local',
+        estimatedMinutes: 18,
+      };
+      delete order.tracking;
+      draft.simulation = null;
+    });
+  });
+
+  await expect(tracking.locator('.sheet-head')).toContainText('Tu pedido salió del local y va camino a tu dirección.');
+  await expect(tracking.locator('.sheet-head')).not.toContainText(/GPS|mapa|no mostramos/i);
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveCount(1);
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE);
+  await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
+  await expect(tracking.locator('.sheet-handle')).toHaveCount(0);
 
   // No hay overflow horizontal en 390x844.
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);

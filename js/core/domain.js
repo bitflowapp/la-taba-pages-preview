@@ -1,4 +1,4 @@
-import { BUSINESS_CONFIG } from '../config.js';
+import { getBusinessConfig } from './business-config-store.js';
 import { calculateTotals, normalizeDeliveryMode, normalizeMoneyValue } from './pricing.js';
 import { sanitizeNotes, sanitizeText } from './validators.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './address.js';
@@ -74,7 +74,7 @@ export function toDomainOrder(order = {}) {
       whatsapp: sanitizeText(order.customer?.whatsapp || order.customerPhone, { maxLength: 40 }),
     },
     address: fulfillmentType === 'pickup'
-      ? BUSINESS_CONFIG.address
+      ? getBusinessConfig().address
       : addressDetails.label || sanitizeText(order.address, { fallback: 'Sin direccion', maxLength: 180 }),
     addressDetails,
     items,
@@ -123,7 +123,7 @@ export function toDomainRider(rider = {}) {
   };
 }
 
-export function toDomainBusiness(config = BUSINESS_CONFIG) {
+export function toDomainBusiness(config = getBusinessConfig()) {
   return {
     id: sanitizeText(config.id || 'la-taba', { maxLength: 80 }),
     name: sanitizeText(config.name || config.businessName, { fallback: 'La Taba', maxLength: 100 }),

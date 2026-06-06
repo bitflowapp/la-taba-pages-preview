@@ -60,7 +60,7 @@ export function createHttpOrderRepository({
     },
     async updateRiderLocation(orderId, location) {
       const normalized = normalizeTrackingLocation(location);
-      if (!normalized) return repositoryResult(false, { message: 'Ubicacion invalida.' });
+      if (!normalized) return repositoryResult(false, { message: 'Ubicación inválida.' });
       return normalizeOrderPayload(await request(`/orders/${encodeURIComponent(orderId)}/location`, {
         method: 'POST',
         body: normalized,

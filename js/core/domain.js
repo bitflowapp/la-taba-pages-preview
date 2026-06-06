@@ -75,7 +75,7 @@ export function toDomainOrder(order = {}) {
     },
     address: fulfillmentType === 'pickup'
       ? getBusinessConfig().address
-      : addressDetails.label || sanitizeText(order.address, { fallback: 'Sin direccion', maxLength: 180 }),
+      : addressDetails.label || sanitizeText(order.address, { fallback: 'Sin dirección', maxLength: 180 }),
     addressDetails,
     items,
     totals,

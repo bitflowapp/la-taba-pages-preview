@@ -3,7 +3,7 @@ import { normalizeMoneyValue, normalizeStock } from './pricing.js';
 import { sanitizeText } from './validators.js';
 
 export const DEFAULT_NEW_PRODUCT_STOCK = 99;
-export const CATALOG_BADGE_OPTIONS = Object.freeze(['', 'Promo', 'Nuevo', 'Mas vendido']);
+export const CATALOG_BADGE_OPTIONS = Object.freeze(['', 'Promo', 'Nuevo', 'Más vendido']);
 
 const CATEGORY_IDS = new Set(categories.map((category) => category.id).filter((id) => id !== 'all'));
 const DEMO_PRODUCT_IDS = new Set(demoProducts.map((product) => product.id));

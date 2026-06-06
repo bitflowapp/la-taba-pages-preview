@@ -28,7 +28,7 @@ test('business ops exposes only possible primary actions by status and fulfillme
   assert.deepEqual(getBusinessOrderPrimaryAction(order('LT-1', 'received')), {
     nextStatus: 'preparing',
     label: 'Aceptar pedido',
-    copy: 'Confirma el pedido y avisa el tiempo de preparacion.',
+    copy: 'Confirmá el pedido y avisá el tiempo de preparación.',
     requiresPrepTime: true,
   });
   assert.equal(getBusinessOrderPrimaryAction(order('LT-2', 'preparing')).label, 'Marcar como listo');

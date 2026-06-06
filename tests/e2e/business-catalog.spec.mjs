@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
-test('Negocio: crea, edita, pausa y restaura el catalogo editable', async ({ browser }) => {
+test('Negocio: crea, edita, pausa y restaura el catálogo editable', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const guards = installPageGuards(page);
@@ -16,8 +16,8 @@ test('Negocio: crea, edita, pausa y restaura el catalogo editable', async ({ bro
 
   await page.getByLabel('Producto a vender').fill('Producto Catalogo QA');
   await page.getByLabel('Precio').fill('12345');
-  await page.getByLabel('Categoria').selectOption('carnes');
-  await page.getByLabel('Descripcion breve').fill('Producto creado desde negocio');
+  await page.getByLabel('Categoría').selectOption('carnes');
+  await page.getByLabel('Descripción breve').fill('Producto creado desde negocio');
   await page.getByLabel('Etiqueta opcional').selectOption('Nuevo');
   await page.getByRole('button', { name: 'Crear producto' }).click();
   await waitForToast(page, 'Producto creado.');
@@ -47,16 +47,16 @@ test('Negocio: crea, edita, pausa y restaura el catalogo editable', async ({ bro
 
   await page.evaluate(() => { window.location.hash = '#business'; });
   // Restaurar es destructivo: el primer tap abre el modal y no borra nada.
-  await page.getByRole('button', { name: 'Restaurar catalogo demo' }).click();
+  await page.getByRole('button', { name: 'Restaurar catálogo demo' }).click();
   const resetModal = page.locator('[data-catalog-reset-modal]');
   await expect(resetModal).toBeVisible();
   await resetModal.getByRole('button', { name: 'Cancelar' }).click();
   await expect(adminRow).toContainText('Producto Catalogo QA');
 
   // Recién al confirmar se reemplaza el catálogo por el demo.
-  await page.getByRole('button', { name: 'Restaurar catalogo demo' }).click();
+  await page.getByRole('button', { name: 'Restaurar catálogo demo' }).click();
   await resetModal.getByRole('button', { name: 'Restaurar demo' }).click();
-  await waitForToast(page, 'Catalogo demo restaurado.');
+  await waitForToast(page, 'Catálogo demo restaurado.');
 
   await page.evaluate(() => { window.location.hash = '#catalog'; });
   await expect(page.locator('[data-product-grid]')).not.toContainText('Producto Catalogo QA');

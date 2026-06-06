@@ -20,13 +20,13 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(page.locator('[data-business-dashboard]')).toContainText('Central de pedidos');
   await expect(page.locator('.topbar .brand')).toContainText(/La Taba/i);
   await expect(page.locator('.inbox-tabs')).toContainText('Nuevos');
-  await expect(page.locator('.inbox-tabs')).toContainText('En preparacion');
+  await expect(page.locator('.inbox-tabs')).toContainText('En preparación');
   await expect(page.locator('.inbox-tabs')).toContainText('Listos');
   await expect(page.locator('.inbox-tabs')).toContainText('En reparto');
   await expect(page.locator('.inbox-tabs')).toContainText('Finalizados');
   await page.getByRole('button', { name: /Activar sonido/i }).click();
   await waitForToast(page, 'Sonido de pedidos activado.');
-  await expect(page.locator('[data-order-inbox]')).toContainText('Todavia no hay pedidos para este filtro.');
+  await expect(page.locator('[data-order-inbox]')).toContainText('Todavía no hay pedidos para este filtro.');
 
   // 2. El cliente confirma un pedido con dirección real.
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
@@ -68,7 +68,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(card).toContainText('Sin sal');
   await expect(card).toContainText('Total a cobrar');
   await expect(card).toContainText('Aceptar pedido');
-  await expect(card.getByLabel('Tiempo estimado de preparacion')).toBeVisible();
+  await expect(card.getByLabel('Tiempo estimado de preparación')).toBeVisible();
 
   await page.getByLabel('Buscar pedido').fill('Walter');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toBeVisible();
@@ -84,7 +84,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Preparando');
-  await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Preparacion estimada:');
+  await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Preparación estimada:');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Listo para entregar');
   await expect(page.locator('[data-inbox-group="preparando"]')).toBeVisible();
 
@@ -149,7 +149,7 @@ test('Central de pedidos: pedido en reparto muestra GPS real sin inventar mapa',
   const card = page.locator('[data-inbox-order="LT-LIVE-1"]');
   await expect(card).toBeVisible();
   await expect(card).toContainText('Pedido en reparto');
-  await expect(card).toContainText('GPS del rider en vivo');
+  await expect(card).toContainText('Ubicación real activa');
   await expect(card).toContainText('Juli Reparto');
   await expect(card.locator('[data-business-tracking="LT-LIVE-1"] [data-real-map]')).toBeVisible({ timeout: 10_000 });
   await expect(card.locator('[data-business-tracking="LT-LIVE-1"] [data-real-map]')).toHaveAttribute('data-map-theme', 'light');

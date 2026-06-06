@@ -537,8 +537,8 @@ function bindEvents() {
     if (addressButton) {
       const text = addressButton.dataset.copyAddress || '';
       copyTextToClipboard(text)
-        .then(() => showToast('Direccion copiada para el rider.'))
-        .catch(() => showToast('No se pudo copiar la direccion.'));
+        .then(() => showToast('Dirección copiada para el rider.'))
+        .catch(() => showToast('No se pudo copiar la dirección.'));
       return;
     }
     const clientLink = target.closest('[data-copy-client-link]');

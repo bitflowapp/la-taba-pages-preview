@@ -173,7 +173,7 @@ export function renderBusinessDashboard() {
         <nav class="business-jump-nav" aria-label="Secciones del negocio">
           <button class="secondary-button compact" type="button" data-scroll-orders>Pedidos</button>
           <button class="secondary-button compact" type="button" data-scroll-reports>Reportes</button>
-          <button class="secondary-button compact" type="button" data-scroll-catalog>Catalogo</button>
+          <button class="secondary-button compact" type="button" data-scroll-catalog>Catálogo</button>
           <button class="secondary-button compact" type="button" data-scroll-business-setup>Configuración</button>
         </nav>
       </header>
@@ -228,8 +228,8 @@ export function renderBusinessDashboard() {
 }
 
 const INBOX_GROUPS = [
-  { id: 'nuevos', title: 'Pedidos nuevos', hint: 'Atencion inmediata', match: (order) => order.status === 'received' },
-  { id: 'preparando', title: 'En preparacion', hint: 'En cocina o mostrador', match: (order) => order.status === 'preparing' },
+  { id: 'nuevos', title: 'Pedidos nuevos', hint: 'Atención inmediata', match: (order) => order.status === 'received' },
+  { id: 'preparando', title: 'En preparación', hint: 'En cocina o mostrador', match: (order) => order.status === 'preparing' },
   { id: 'listos', title: 'Listos', hint: 'Para retiro o reparto', match: (order) => order.status === 'ready' },
   { id: 'reparto', title: 'En reparto', hint: 'Pedidos en calle', match: (order) => ['on_the_way', 'arriving'].includes(order.status) },
 ];
@@ -289,8 +289,8 @@ function renderOrderInbox(state, metrics, freshOrderIds = new Set()) {
       ? ''
     : `
       <div class="inbox-empty" data-inbox-empty>
-        <strong>${query ? 'No hay pedidos que coincidan.' : 'Todavia no hay pedidos para este filtro.'}</strong>
-        <p>${query ? 'Proba buscar por codigo, cliente o direccion.' : 'Cuando un cliente confirme una compra, va a aparecer aca para aceptarla y prepararla.'}</p>
+        <strong>${query ? 'No hay pedidos que coincidan.' : 'Todavía no hay pedidos para este filtro.'}</strong>
+        <p>${query ? 'Probá buscar por código, cliente o dirección.' : 'Cuando un cliente confirme una compra, va a aparecer acá para aceptarla y prepararla.'}</p>
       </div>`;
 
   const closedBlock = activeFilter === 'all' && closed.length
@@ -315,7 +315,7 @@ function renderInboxControls(orders, metrics) {
       </div>
       <label class="business-search-field">
         <span>Buscar pedido</span>
-        <input data-business-order-search type="search" value="${escapeHtml(businessOrderQuery)}" placeholder="ID, cliente o direccion" autocomplete="off" />
+        <input data-business-order-search type="search" value="${escapeHtml(businessOrderQuery)}" placeholder="ID, cliente o dirección" autocomplete="off" />
       </label>
     </div>
     <div class="inbox-tabs" aria-label="Filtros de pedidos">
@@ -417,7 +417,7 @@ function inboxOrderCard(order, options = {}) {
             <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
           </div>
           <p class="inbox-status-copy">${escapeHtml(statusMeta.copy)}</p>
-          ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparacion estimada: <strong>${prepMinutes} min</strong></p>` : ''}
+          ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparación estimada: <strong>${prepMinutes} min</strong></p>` : ''}
           ${renderInboxTrackingPanel(order)}
         </div>
 
@@ -462,8 +462,8 @@ function renderPrimaryOrderAction(order, action) {
   const prepControl = action.requiresPrepTime
     ? `
       <label class="prep-time-field">
-        <span>Tiempo de preparacion</span>
-        <select data-prep-minutes aria-label="Tiempo estimado de preparacion">
+        <span>Tiempo de preparación</span>
+        <select data-prep-minutes aria-label="Tiempo estimado de preparación">
           ${PREP_TIME_OPTIONS.map((minutes) => `
             <option value="${minutes}" ${minutes === DEFAULT_PREP_MINUTES ? 'selected' : ''}>${minutes} min</option>`).join('')}
         </select>
@@ -489,10 +489,10 @@ function renderInboxTrackingPanel(order) {
   const riderName = order.delivery?.driverName && order.delivery.driverName !== 'Sin asignar'
     ? order.delivery.driverName
     : '';
-  const gpsText = liveGps ? 'GPS del rider en vivo' : 'Sin ubicación en vivo';
+  const gpsText = liveGps ? 'Ubicación real activa' : 'Sin ubicación en vivo';
   const liveAge = liveGps ? (timeAgo(riderLocation.lastFixAt || riderLocation.timestamp) || 'recién') : '';
   const gpsDetail = liveGps
-    ? `Actualizado ${liveAge}`
+    ? `Última actualización: ${liveAge}`
     : 'Seguís el pedido por estado y dirección.';
   const actionLabel = 'Seguir reparto';
 
@@ -530,7 +530,7 @@ function renderBusinessTrackingMap(order) {
         <div class="real-map-fallback" data-map-fallback>
           <p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>
         </div>
-        <div class="real-map-meta" data-map-meta>Ubicación del repartidor en vivo</div>
+        <div class="real-map-meta" data-map-meta>Ubicación real del repartidor</div>
       </div>
     </div>`;
 }
@@ -769,13 +769,13 @@ function renderCatalogManager(state) {
     <section class="business-catalog-card" data-business-catalog aria-labelledby="business-catalog-title">
       <header class="business-catalog-head">
         <div>
-          <span class="catalog-admin-kicker">Catalogo editable · Productos y stock</span>
+          <span class="catalog-admin-kicker">Catálogo editable · Productos y stock</span>
           <h3 id="business-catalog-title">Productos que ve el cliente</h3>
           <p>Creas, editas, pausas o archivas productos sin tocar pedidos ya confirmados.</p>
         </div>
         <div class="catalog-admin-top-actions">
           <button class="secondary-button compact" type="button" data-catalog-new>Nuevo producto</button>
-          <button class="ghost-button compact" type="button" data-catalog-reset-demo>Restaurar catalogo demo</button>
+          <button class="ghost-button compact" type="button" data-catalog-reset-demo>Restaurar catálogo demo</button>
         </div>
       </header>
 
@@ -918,7 +918,7 @@ function renderCatalogForm(product = null) {
       <input type="hidden" name="productId" value="${isEditing ? escapeHtml(product.id) : ''}" />
       <div class="catalog-form-title">
         <strong>${isEditing ? 'Editar producto' : 'Crear producto'}</strong>
-        <span>${isEditing ? escapeHtml(product.name) : 'Alta rapida para la vidriera del cliente'}</span>
+        <span>${isEditing ? escapeHtml(product.name) : 'Alta rápida para la vidriera del cliente'}</span>
       </div>
 
       <div class="catalog-form-grid">
@@ -931,7 +931,7 @@ function renderCatalogForm(product = null) {
           <input name="price" type="number" min="1" step="1" inputmode="decimal" required value="${product ? String(product.price) : ''}" />
         </label>
         <label>
-          <span>Categoria</span>
+          <span>Categoría</span>
           <select name="categoryId" required>
             ${categoryOptions(categoryId)}
           </select>
@@ -943,7 +943,7 @@ function renderCatalogForm(product = null) {
           </select>
         </label>
         <label class="catalog-description-field">
-          <span>Descripcion breve</span>
+          <span>Descripción breve</span>
           <textarea name="description" rows="2" maxlength="180">${escapeHtml(product?.description || '')}</textarea>
         </label>
         <label class="catalog-availability-field">
@@ -955,7 +955,7 @@ function renderCatalogForm(product = null) {
       <p class="form-hint catalog-form-error hidden" data-catalog-form-error></p>
       <div class="catalog-form-actions">
         <button class="primary-button compact" type="button" data-catalog-save>${isEditing ? 'Guardar cambios' : 'Crear producto'}</button>
-        ${isEditing ? '<button class="ghost-button compact" type="button" data-catalog-new>Cancelar edicion</button>' : ''}
+        ${isEditing ? '<button class="ghost-button compact" type="button" data-catalog-new>Cancelar edición</button>' : ''}
       </div>
     </form>`;
 }
@@ -965,13 +965,13 @@ function renderCatalogRows(products) {
     return `
       <div class="catalog-admin-empty">
         <strong>No hay productos visibles.</strong>
-        <p>Agrega un producto para que aparezca en el catalogo del cliente.</p>
+        <p>Agregá un producto para que aparezca en el catálogo del cliente.</p>
         <button class="secondary-button compact" type="button" data-catalog-new>Crear producto</button>
       </div>`;
   }
 
   return `
-    <div class="catalog-admin-list" aria-label="Productos del catalogo">
+    <div class="catalog-admin-list" aria-label="Productos del catálogo">
       ${products.map(catalogProductRow).join('')}
     </div>`;
 }
@@ -994,7 +994,7 @@ function catalogProductRow(product) {
         <span class="stock-thumb">${productCode(product)}</span>
         <div>
           <strong>${escapeHtml(product.name)}</strong>
-          <p>${escapeHtml(product.description || 'Sin descripcion')}</p>
+          <p>${escapeHtml(product.description || 'Sin descripción')}</p>
           <div class="catalog-admin-tags">
             <span>${escapeHtml(categoryName(product.categoryId))}</span>
             ${product.badge ? `<span>${escapeHtml(product.badge)}</span>` : ''}
@@ -1476,7 +1476,7 @@ function advanceOrder(orderId, options = {}) {
         target.delivery = target.delivery || {};
         target.delivery.estimatedPreparationMinutes = prepMinutes;
         target.delivery.acceptedAt = target.delivery.acceptedAt || now;
-        target.delivery.currentLocationLabel = `Pedido aceptado por el negocio. Preparacion estimada: ${prepMinutes} min`;
+        target.delivery.currentLocationLabel = `Pedido aceptado por el negocio. Preparación estimada: ${prepMinutes} min`;
         if (target.deliveryMode === 'delivery') {
           target.delivery.estimatedMinutes = Math.max(prepMinutes, Number(target.delivery.estimatedMinutes || 0));
         }
@@ -1666,7 +1666,7 @@ export function confirmCatalogReset() {
   editingCatalogProductId = null;
   setState({ products: restoreDemoCatalog(), activeCategory: 'all' });
   closeCatalogResetModal();
-  return { handled: true, ok: true, message: 'Catalogo demo restaurado.' };
+  return { handled: true, ok: true, message: 'Catálogo demo restaurado.' };
 }
 
 function openCatalogResetModal() {
@@ -1687,7 +1687,7 @@ function closeCatalogResetModal() {
 function renderCatalogResetDialog() {
   return `
     <div class="pin-card cancel-card" data-catalog-reset-card>
-      <h2>Restaurar catalogo demo</h2>
+      <h2>Restaurar catálogo demo</h2>
       <p>Esto reemplazará el catálogo actual por el catálogo demo. Los productos cargados se perderán en esta demo.</p>
       <div class="button-row cancel-actions">
         <button class="secondary-button" type="button" data-catalog-reset-dismiss>Cancelar</button>

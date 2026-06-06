@@ -1,6 +1,7 @@
 import { BUSINESS_CONFIG, STORAGE_KEYS } from './config.js';
 import { categories, seedOrders } from './data.js';
 import { buildDemoCatalog, mergeCatalogProducts } from './core/catalog-store.js';
+import { normalizeDeliveryProof } from './core/delivery-proof.js';
 import {
   buildDefaultBusinessConfig,
   getBusinessConfig,
@@ -253,11 +254,12 @@ function normalizeOrder(order) {
   const totals = calculateTotals(items, deliveryMode, { discountAmount: coupon?.discountAmount || order.discountTotal || 0 });
   const paymentMethodCode = normalizeOrderPaymentMethodCode(order.paymentMethodCode, order.paymentMethod);
   const delivery = normalizeDelivery(order.delivery, deliveryMode, status);
+  const deliveryProof = normalizeDeliveryProof(order.deliveryProof);
   const addressDetails = deliveryMode === 'pickup'
     ? null
     : normalizeOrderAddressDetails(order);
 
-  return {
+  const normalized = {
     ...order,
     id,
     customerName: sanitizeText(order.customerName, { fallback: 'Cliente', maxLength: 80 }),
@@ -285,6 +287,9 @@ function normalizeOrder(order) {
     statusHistory: normalizeStatusHistory(order.statusHistory, status, createdAt),
     delivery,
   };
+  if (deliveryProof) normalized.deliveryProof = deliveryProof;
+  else delete normalized.deliveryProof;
+  return normalized;
 }
 
 function normalizeOrderItem(item) {
@@ -417,8 +422,9 @@ function mergeProducts(baseProducts, savedProducts) {
 
 function persist() {
   const serializable = { ...state, adminUnlocked: undefined };
-  safeStorageSet(getStorageArea('localStorage'), STORAGE_KEYS.state, JSON.stringify(serializable));
+  const persisted = safeStorageSet(getStorageArea('localStorage'), STORAGE_KEYS.state, JSON.stringify(serializable));
   safeStorageSet(getStorageArea('sessionStorage'), STORAGE_KEYS.adminUnlocked, state.adminUnlocked ? 'true' : 'false');
+  return persisted;
 }
 
 function notify() {
@@ -429,8 +435,9 @@ function commitState(nextState) {
   state = sanitizeState(nextState, defaultState());
   // El holder del config-store refleja siempre la config ya saneada del estado.
   setRuntimeBusinessConfig(state.businessConfig);
-  persist();
+  const persisted = persist();
   notify();
+  return persisted;
 }
 
 function structuredCloneSafe(value) {
@@ -451,7 +458,7 @@ export function getState() {
 }
 
 export function setState(patch) {
-  commitState({ ...state, ...patch });
+  return commitState({ ...state, ...patch });
 }
 
 export { getBusinessConfig };
@@ -467,7 +474,7 @@ export function updateBusinessConfig(patch) {
 export function updateState(mutator) {
   const draft = structuredCloneSafe(state);
   mutator(draft);
-  commitState(draft);
+  return commitState(draft);
 }
 
 export function subscribe(listener) {

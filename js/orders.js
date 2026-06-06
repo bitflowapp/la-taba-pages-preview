@@ -15,6 +15,7 @@ import { chooseActiveLiveOrderId } from './core/realtime-sync.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
 import { recordCustomerOrder, updateCustomerOrderSnapshot } from './core/customer-history.js';
 import { buildAppliedCoupon, normalizeCouponCode } from './core/promotions.js';
+import { normalizeDeliveryProof } from './core/delivery-proof.js';
 import {
   formatAddressReference,
   normalizeAddressDetails,
@@ -29,6 +30,7 @@ import {
   money,
   paymentLabel,
   statusLabel,
+  setState,
   updateState,
 } from './state.js';
 import {
@@ -221,6 +223,51 @@ export function cancelOrder(orderId, reason = '') {
   return result;
 }
 
+export function attachDeliveryProof(orderId, proof) {
+  const normalized = normalizeDeliveryProof(proof);
+  if (!orderId || !normalized) {
+    return { ok: false, message: 'No se pudo guardar la foto de entrega.' };
+  }
+
+  const previousState = cloneState(getState());
+  let updated = false;
+  const persisted = updateState((draft) => {
+    const order = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!order) return;
+    order.deliveryProof = normalized;
+    updated = true;
+  });
+
+  if (!updated) return { ok: false, message: 'Pedido no encontrado.' };
+  if (!persisted) {
+    setState(previousState);
+    return { ok: false, message: 'No se pudo guardar la foto de entrega. Probá de nuevo o liberá espacio en el navegador.' };
+  }
+  updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  return { ok: true, message: 'Foto de entrega adjunta.' };
+}
+
+export function removeDeliveryProof(orderId) {
+  if (!orderId) return { ok: false, message: 'Pedido no encontrado.' };
+
+  const previousState = cloneState(getState());
+  let updated = false;
+  const persisted = updateState((draft) => {
+    const order = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!order) return;
+    delete order.deliveryProof;
+    updated = true;
+  });
+
+  if (!updated) return { ok: false, message: 'Pedido no encontrado.' };
+  if (!persisted) {
+    setState(previousState);
+    return { ok: false, message: 'No se pudo quitar la foto de entrega. Probá de nuevo.' };
+  }
+  updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  return { ok: true, message: 'Foto de entrega quitada.' };
+}
+
 // Ticket de texto plano para cocina / mostrador (sin dependencias).
 export function buildKitchenTicket(order) {
   if (!order) return '';
@@ -310,6 +357,11 @@ export function updateOrderStatus(orderId, status, options = {}) {
   updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
 
   return { ok: true, message: `Pedido ${orderId} actualizado a ${statusLabel(status)}.` };
+}
+
+function cloneState(value) {
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
 }
 
 export function updateOrderDemoDestination(orderId, destinationId) {

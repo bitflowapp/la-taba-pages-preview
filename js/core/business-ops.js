@@ -8,7 +8,7 @@ export const PREP_TIME_OPTIONS = Object.freeze([10, 15, 20, 30, 45]);
 export const BUSINESS_ORDER_FILTERS = Object.freeze([
   { id: 'all', label: 'Todos' },
   { id: 'new', label: 'Nuevos' },
-  { id: 'preparing', label: 'En preparacion' },
+  { id: 'preparing', label: 'En preparación' },
   { id: 'ready', label: 'Listos' },
   { id: 'delivery', label: 'En reparto' },
   { id: 'done', label: 'Finalizados' },
@@ -21,7 +21,7 @@ export const BUSINESS_CANCEL_REASONS = Object.freeze([
   'Sin stock',
   'Local cerrado',
   'Cliente no responde',
-  'Direccion fuera de zona',
+  'Dirección fuera de zona',
   'Error en el pedido',
   'Otro',
 ]);
@@ -45,7 +45,7 @@ export const BUSINESS_STATUS_META = Object.freeze({
   on_the_way: Object.freeze({
     label: 'En reparto',
     shortLabel: 'En reparto',
-    copy: 'El pedido salio del local. Sin GPS real no se muestra mapa.',
+    copy: 'El pedido salió del local. Sin GPS real no se muestra mapa.',
   }),
   arriving: Object.freeze({
     label: 'Llegando',
@@ -67,7 +67,7 @@ export const BUSINESS_STATUS_META = Object.freeze({
 const ACTION_BY_NEXT_STATUS = Object.freeze({
   preparing: Object.freeze({
     label: 'Aceptar pedido',
-    copy: 'Confirma el pedido y avisa el tiempo de preparacion.',
+    copy: 'Confirmá el pedido y avisá el tiempo de preparación.',
     requiresPrepTime: true,
   }),
   ready: Object.freeze({

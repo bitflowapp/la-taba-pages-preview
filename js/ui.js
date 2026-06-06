@@ -854,7 +854,7 @@ function trackingMapStage({ order = null, live = false }) {
       </div>
       <div class="map-floating-bottom">
         <span class="map-stat-pill map-destination-pill"><small>Destino</small><strong>${escapeHtml(destinationLabel(order))}</strong></span>
-        <span class="map-stat-pill live-map-pill"><small>GPS</small><strong>${live ? 'En vivo' : 'Sin GPS'}</strong></span>
+        <span class="map-stat-pill live-map-pill"><small>GPS</small><strong>${live ? 'Activo' : 'Sin GPS'}</strong></span>
       </div>
     </div>`;
 }
@@ -880,8 +880,8 @@ function riderTrackingCard(order, riderLocation) {
       <div class="rider-profile is-live">
         <span class="rider-avatar live-helmet" aria-hidden="true">${helmetGlyph()}</span>
         <div class="rider-profile-text">
-          <strong>Ubicación del repartidor en vivo</strong>
-          <small>${escapeHtml(name)} · Actualizado ${escapeHtml(age)}</small>
+          <strong>Repartidor con ubicación real</strong>
+          <small>${escapeHtml(name)} · última actualización: ${escapeHtml(age)}</small>
         </div>
         ${contact}
       </div>

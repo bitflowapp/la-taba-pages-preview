@@ -232,14 +232,14 @@ export function buildKitchenTicket(order) {
     `Pedido: ${order.id}`,
     `Hora: ${dateTime(order.createdAt)}`,
     `Entrega: ${deliveryModeLabel(order.deliveryMode)}`,
-    isPickup ? 'Retiro en el local' : `Direccion: ${address.label || order.address}`,
+    isPickup ? 'Retiro en el local' : `Dirección: ${address.label || order.address}`,
     ...(!isPickup && reference ? [`Referencia: ${reference}`] : []),
     `Cliente: ${order.customerName}`,
-    `Telefono: ${order.customerPhone}`,
+    `Teléfono: ${order.customerPhone}`,
     '--------------------------------',
     ...order.items.map((item) => `${item.quantity} x ${item.name}`),
     '--------------------------------',
-    ...(Number(order.discountTotal || 0) > 0 ? [`Cupon ${order.coupon?.code || ''}: -${money(order.discountTotal)}`] : []),
+    ...(Number(order.discountTotal || 0) > 0 ? [`Cupón ${order.coupon?.code || ''}: -${money(order.discountTotal)}`] : []),
     `Pago: ${order.paymentMethod}`,
     ...(order.cashChange ? [`Cambio efectivo: ${order.cashChange}`] : []),
     `TOTAL: ${money(order.total)}`,
@@ -278,7 +278,7 @@ export function updateOrderStatus(orderId, status, options = {}) {
       );
       order.delivery.acceptedAt = order.delivery.acceptedAt || now;
       order.delivery.estimatedPreparationMinutes = estimatedPreparationMinutes;
-      order.delivery.currentLocationLabel = `Pedido aceptado por el negocio. Preparacion estimada: ${estimatedPreparationMinutes} min`;
+      order.delivery.currentLocationLabel = `Pedido aceptado por el negocio. Preparación estimada: ${estimatedPreparationMinutes} min`;
       if (order.deliveryMode === 'delivery') {
         order.delivery.estimatedMinutes = Math.max(estimatedPreparationMinutes, Number(order.delivery.estimatedMinutes || 0));
       }
@@ -377,7 +377,7 @@ export function buildWhatsAppMessage(order) {
     ...safeOrder.items.map((item) => `• ${item.quantity} x ${item.name} — ${money(item.unitPrice * item.quantity)}`),
     '',
     `Subtotal: ${money(safeOrder.subtotal)}`,
-    ...(safeOrder.discountTotal > 0 ? [`Cupon ${safeOrder.coupon?.code || ''}: -${money(safeOrder.discountTotal)}`] : []),
+    ...(safeOrder.discountTotal > 0 ? [`Cupón ${safeOrder.coupon?.code || ''}: -${money(safeOrder.discountTotal)}`] : []),
     `Envío: ${money(safeOrder.deliveryFee)}`,
     `Total: ${money(safeOrder.total)}`,
     '',
@@ -460,7 +460,7 @@ export function buildDraftMessageFromCart(formValues = {}) {
     ...(items.length ? items.map((item) => `• ${item.quantity} x ${item.product.name} — ${money(item.quantity * item.product.price)}`) : ['• Sin productos cargados']),
     '',
     `Subtotal: ${money(subtotal)}`,
-    ...(discountTotal > 0 ? [`Cupon ${coupon.code}: -${money(discountTotal)}`] : []),
+    ...(discountTotal > 0 ? [`Cupón ${coupon.code}: -${money(discountTotal)}`] : []),
     `Envío: ${money(deliveryFee)}`,
     `Total: ${money(total)}`,
     '',

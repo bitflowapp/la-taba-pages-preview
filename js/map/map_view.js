@@ -397,7 +397,7 @@ function renderMapMeta(container, order, location, destination) {
   }
 
   const source = location.source === 'gps'
-    ? 'Ubicación del repartidor en vivo'
+    ? 'Ubicación real del repartidor'
     : (RIDER_LOCATION_SOURCES[location.source] || RIDER_LOCATION_SOURCES.simulation);
   const age = relativeAgeLabel(location.lastFixAt || location.timestamp);
   const gpsStale = location.source === 'gps' && isLocationStale(location, TRACKING_STALE_MS);
@@ -409,7 +409,7 @@ function renderMapMeta(container, order, location, destination) {
   // Sin coordenadas reales del cliente no calculamos distancia: no se inventan km.
   meta.textContent = gpsStale
     ? `${prefix} ${age}${accuracy}`
-    : `${prefix} · actualizado ${age}${accuracy}`;
+    : `${prefix} · última actualización: ${age}${accuracy}`;
 }
 
 function relativeAgeLabel(value) {

@@ -58,7 +58,7 @@ export function createDemoOrderRepository() {
       const normalized = normalizeTrackingLocation(location);
       const order = findOrder(orderId);
       if (!order) return repositoryResult(false, { message: 'Pedido no encontrado.' });
-      if (!normalized) return repositoryResult(false, { message: 'Ubicacion invalida.' });
+      if (!normalized) return repositoryResult(false, { message: 'Ubicación inválida.' });
       const now = new Date().toISOString();
       updateState((draft) => {
         const target = draft.orders.find((candidate) => candidate.id === orderId);
@@ -96,7 +96,7 @@ export function createDemoOrderRepository() {
         }
       });
       return repositoryResult(true, {
-        message: 'Ubicacion del rider actualizada.',
+        message: 'Ubicación del rider actualizada.',
         location: normalized,
         order: toDomainOrder(findOrder(orderId)),
       });

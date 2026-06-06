@@ -397,7 +397,7 @@ test('el rider usa el pedido activo de la sala aunque tenga localStorage viejo',
 
   await rider.locator('[data-sim-gps]').click();
   await expect(rider.locator('[data-delivery-panel]')).toContainText(/Compartiendo ubicaci/i, { timeout: 10_000 });
-  await expect(client.locator('[data-tracking-panel]')).toContainText('Ubicación del repartidor en vivo', { timeout: 10_000 });
+  await expect(client.locator('[data-tracking-panel]')).toContainText('Ubicación real del repartidor', { timeout: 10_000 });
   await expect(client.locator('[data-tracking-panel]')).not.toContainText(TRACKING_GPS_NOTE);
   await expect(client.locator('[data-tracking-panel]')).not.toContainText('CL falso');
   await expect(client.locator('[data-tracking-panel]')).not.toContainText('LT falso');
@@ -491,14 +491,14 @@ test('GPS real del rider se propaga al tracking del cliente por relay', async ({
   // Recién con GPS real el cliente ve el mapa y la ubicación live del repartidor.
   await expect(client.locator('[data-tracking-panel] [data-real-map]').first()).toBeVisible({ timeout: 10_000 });
   await expect(client.locator('[data-tracking-panel] [data-real-map]').first()).toHaveAttribute('data-map-theme', 'light');
-  await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación del repartidor en vivo', { timeout: 10_000 });
+  await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación real del repartidor', { timeout: 10_000 });
   await expect(client.locator('[data-map-meta]').first()).not.toContainText(/precisión|±/i);
   await expect(client.locator('[data-map-meta]').first()).not.toContainText(/km/i);
-  await expect(client.locator('[data-tracking-panel]')).toContainText('Actualizado', { timeout: 10_000 });
+  await expect(client.locator('[data-tracking-panel]')).toContainText(/última actualización/i, { timeout: 10_000 });
   await expect(client.locator('[data-tracking-panel]')).toContainText('Roca 123, Neuquen centro', { timeout: 10_000 });
 
   await riderCtx.setGeolocation({ latitude: -38.9468, longitude: -68.0424, accuracy: 16 });
-  await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación del repartidor en vivo', { timeout: 10_000 });
+  await expect(client.locator('[data-map-meta]').first()).toContainText('Ubicación real del repartidor', { timeout: 10_000 });
 
   const mobileOverflow = await Promise.all([client, rider].map((page) => page.evaluate(() => ({
     documentOverflow: Math.max(0, document.documentElement.scrollWidth - window.innerWidth),

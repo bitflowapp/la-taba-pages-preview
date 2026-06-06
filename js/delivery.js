@@ -729,7 +729,7 @@ async function attachProofFromInput(input) {
 
   const proof = buildDeliveryProof(compressed.dataUrl, {
     capturedAt: new Date().toISOString(),
-    source: input.getAttribute('capture') ? 'camera' : 'file',
+    source: 'file',
   });
   const result = attachDeliveryProof(orderId, proof);
   return { handled: true, ok: result.ok, message: result.message };

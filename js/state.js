@@ -422,8 +422,9 @@ function mergeProducts(baseProducts, savedProducts) {
 
 function persist() {
   const serializable = { ...state, adminUnlocked: undefined };
-  safeStorageSet(getStorageArea('localStorage'), STORAGE_KEYS.state, JSON.stringify(serializable));
+  const persisted = safeStorageSet(getStorageArea('localStorage'), STORAGE_KEYS.state, JSON.stringify(serializable));
   safeStorageSet(getStorageArea('sessionStorage'), STORAGE_KEYS.adminUnlocked, state.adminUnlocked ? 'true' : 'false');
+  return persisted;
 }
 
 function notify() {
@@ -434,8 +435,9 @@ function commitState(nextState) {
   state = sanitizeState(nextState, defaultState());
   // El holder del config-store refleja siempre la config ya saneada del estado.
   setRuntimeBusinessConfig(state.businessConfig);
-  persist();
+  const persisted = persist();
   notify();
+  return persisted;
 }
 
 function structuredCloneSafe(value) {
@@ -456,7 +458,7 @@ export function getState() {
 }
 
 export function setState(patch) {
-  commitState({ ...state, ...patch });
+  return commitState({ ...state, ...patch });
 }
 
 export { getBusinessConfig };
@@ -472,7 +474,7 @@ export function updateBusinessConfig(patch) {
 export function updateState(mutator) {
   const draft = structuredCloneSafe(state);
   mutator(draft);
-  commitState(draft);
+  return commitState(draft);
 }
 
 export function subscribe(listener) {

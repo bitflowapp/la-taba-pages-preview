@@ -30,6 +30,7 @@ import {
   money,
   paymentLabel,
   statusLabel,
+  setState,
   updateState,
 } from './state.js';
 import {
@@ -228,8 +229,9 @@ export function attachDeliveryProof(orderId, proof) {
     return { ok: false, message: 'No se pudo guardar la foto de entrega.' };
   }
 
+  const previousState = cloneState(getState());
   let updated = false;
-  updateState((draft) => {
+  const persisted = updateState((draft) => {
     const order = draft.orders.find((candidate) => candidate.id === orderId);
     if (!order) return;
     order.deliveryProof = normalized;
@@ -237,6 +239,10 @@ export function attachDeliveryProof(orderId, proof) {
   });
 
   if (!updated) return { ok: false, message: 'Pedido no encontrado.' };
+  if (!persisted) {
+    setState(previousState);
+    return { ok: false, message: 'No se pudo guardar la foto de entrega. Probá de nuevo o liberá espacio en el navegador.' };
+  }
   updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
   return { ok: true, message: 'Foto de entrega adjunta.' };
 }
@@ -244,8 +250,9 @@ export function attachDeliveryProof(orderId, proof) {
 export function removeDeliveryProof(orderId) {
   if (!orderId) return { ok: false, message: 'Pedido no encontrado.' };
 
+  const previousState = cloneState(getState());
   let updated = false;
-  updateState((draft) => {
+  const persisted = updateState((draft) => {
     const order = draft.orders.find((candidate) => candidate.id === orderId);
     if (!order) return;
     delete order.deliveryProof;
@@ -253,6 +260,10 @@ export function removeDeliveryProof(orderId) {
   });
 
   if (!updated) return { ok: false, message: 'Pedido no encontrado.' };
+  if (!persisted) {
+    setState(previousState);
+    return { ok: false, message: 'No se pudo quitar la foto de entrega. Probá de nuevo.' };
+  }
   updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
   return { ok: true, message: 'Foto de entrega quitada.' };
 }
@@ -346,6 +357,11 @@ export function updateOrderStatus(orderId, status, options = {}) {
   updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
 
   return { ok: true, message: `Pedido ${orderId} actualizado a ${statusLabel(status)}.` };
+}
+
+function cloneState(value) {
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
 }
 
 export function updateOrderDemoDestination(orderId, destinationId) {

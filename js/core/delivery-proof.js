@@ -1,5 +1,7 @@
 const DEFAULT_MAX_DIMENSION = 1024;
 const DEFAULT_JPEG_QUALITY = 0.7;
+// Límite conservador para guardar el proof completo en localStorage sin inflar el estado.
+export const MAX_DELIVERY_PROOF_DATA_URL_BYTES = 768 * 1024;
 const DEFAULT_MAX_SOURCE_BYTES = 12 * 1024 * 1024;
 const VALID_SOURCES = new Set(['camera', 'file']);
 const DATA_URL_PATTERN = /^data:image\/(?:jpeg|jpg|png|webp);base64,[a-z0-9+/=\s]+$/i;
@@ -31,32 +33,36 @@ export function targetProofDimensions(width, height, maxDimension = DEFAULT_MAX_
 export async function compressDeliveryProofImage(file, {
   maxDimension = DEFAULT_MAX_DIMENSION,
   quality = DEFAULT_JPEG_QUALITY,
+  maxDataUrlBytes = MAX_DELIVERY_PROOF_DATA_URL_BYTES,
 } = {}) {
   const validation = validateProofFile(file);
   if (!validation.ok) return validation;
 
   try {
     const image = await decodeImage(file);
-    const size = targetProofDimensions(image.width, image.height, maxDimension);
-    const canvas = document.createElement('canvas');
-    canvas.width = size.width;
-    canvas.height = size.height;
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('canvas unavailable');
-    context.drawImage(image, 0, 0, size.width, size.height);
-    if (typeof image.close === 'function') image.close();
-    const dataUrl = canvas.toDataURL('image/jpeg', quality);
-    if (!isValidProofDataUrl(dataUrl) || !dataUrl.startsWith('data:image/jpeg')) {
-      throw new Error('invalid jpeg output');
+    const stages = buildCompressionStages(maxDimension, quality);
+    let lastOversize = null;
+    try {
+      for (const stage of stages) {
+        const candidate = compressDeliveryProofImageAtStage(image, stage);
+        if (!candidate.ok) return candidate;
+        if (candidate.byteSize <= maxDataUrlBytes) {
+          return candidate;
+        }
+        lastOversize = candidate;
+      }
+    } finally {
+      if (typeof image.close === 'function') image.close();
     }
-    return {
-      ok: true,
-      dataUrl,
-      width: size.width,
-      height: size.height,
-      byteSize: estimateDataUrlBytes(dataUrl),
-      message: 'Foto de entrega adjunta.',
-    };
+
+    if (lastOversize) {
+      return {
+        ok: false,
+        message: `La foto sigue siendo demasiado grande para guardarla en este dispositivo. Probá con una imagen más chica.`,
+      };
+    }
+
+    return { ok: false, message: 'No se pudo procesar la foto. Probá con otra imagen.' };
   } catch (_) {
     return { ok: false, message: 'No se pudo procesar la foto. Probá con otra imagen.' };
   }
@@ -115,6 +121,46 @@ function normalizeIsoDate(value) {
 function estimateDataUrlBytes(dataUrl) {
   const encoded = String(dataUrl || '').split(',')[1] || '';
   return Math.floor((encoded.replace(/\s/g, '').length * 3) / 4);
+}
+
+function buildCompressionStages(maxDimension, quality) {
+  const stages = [
+    { maxDimension, quality },
+    { maxDimension: Math.min(maxDimension, 900), quality: Math.min(quality, 0.6) },
+    { maxDimension: Math.min(maxDimension, 768), quality: Math.min(quality, 0.55) },
+    { maxDimension: Math.min(maxDimension, 640), quality: Math.min(quality, 0.5) },
+  ];
+  const seen = new Set();
+  return stages.filter((stage) => {
+    const key = `${stage.maxDimension}:${stage.quality}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function compressDeliveryProofImageAtStage(image, { maxDimension, quality }) {
+  const size = targetProofDimensions(image.width, image.height, maxDimension);
+  const canvas = document.createElement('canvas');
+  canvas.width = size.width;
+  canvas.height = size.height;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return { ok: false, message: 'No se pudo procesar la foto. Probá con otra imagen.' };
+  }
+  context.drawImage(image, 0, 0, size.width, size.height);
+  const dataUrl = canvas.toDataURL('image/jpeg', quality);
+  if (!isValidProofDataUrl(dataUrl) || !dataUrl.startsWith('data:image/jpeg')) {
+    return { ok: false, message: 'No se pudo procesar la foto. Probá con otra imagen.' };
+  }
+  return {
+    ok: true,
+    dataUrl,
+    width: size.width,
+    height: size.height,
+    byteSize: estimateDataUrlBytes(dataUrl),
+    message: 'Foto de entrega adjunta.',
+  };
 }
 
 async function decodeImage(file) {

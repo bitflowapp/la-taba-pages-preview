@@ -4,7 +4,7 @@
 | --- | --- | --- | --- | --- | --- |
 | Auth/PIN | `js/business.js`, `js/core/business-setup.js`, `js/core/business-config-store.js` | PIN configurable pero local y en texto plano. No hay roles ni sesión real. | Cualquier persona con acceso al dispositivo puede operar el panel. | Alta | Delivery PIN v1 + Auth Readiness v1 |
 | Backend/persistencia | `js/repositories/*`, `js/state.js`, `supabase/migrations/*` | Demo local por defecto; Supabase/API opt-in sin backend obligatorio. | Pérdida de pedidos/eventos si se borra storage o cambia dispositivo. | Alta | Backend Readiness v1 |
-| Storage de fotos | N/A | No existe almacenamiento de prueba visual de entrega. | Reclamos de entrega sin evidencia. | Alta | Delivery Proof Photo v1 |
+| Storage de fotos | `js/core/delivery-proof.js`, `js/orders.js`, `js/state.js` | Prueba visual de entrega en `dataURL` + `localStorage` local/demo, con metadata liviana. No hay storage duradero ni cross-device. | Un navegador con poca cuota o storage limpiado puede perder comprobantes. | Alta | Delivery Proof Photo v1 -> Storage duradero v2 |
 | Realtime/relay | `js/realtime.js`, `js/repositories/realtime_order_repository.js` | Relay/demo útil para QA, no infraestructura productiva garantizada. | Negocio/rider pueden quedar desincronizados. | Alta | Backend Realtime v1 |
 | Offline | `js/state.js`, `js/orders.js`, `js/repositories/*` | No hay cola de eventos ni reconciliación. | Cambios de estado o entregas se pierden con mala señal. | Alta | Offline Event Queue v1 |
 | Notificaciones | `js/business.js`, `js/ui.js` | Sin push ni cola de avisos; depende de pantalla abierta. | Pedidos nuevos no atendidos si el comercio no mira la pantalla. | Media | Notifications v1 |

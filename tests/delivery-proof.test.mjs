@@ -3,6 +3,7 @@ import test, { afterEach, beforeEach } from 'node:test';
 import {
   buildDeliveryProof,
   compressDeliveryProofImage,
+  MAX_DELIVERY_PROOF_DATA_URL_BYTES,
   normalizeDeliveryProof,
 } from '../js/core/delivery-proof.js';
 import { buildBusinessReport } from '../js/core/business-reports.js';
@@ -10,6 +11,7 @@ import { restoreBusinessSetupDemo } from '../js/core/business-setup.js';
 import { confirmCatalogReset } from '../js/business.js';
 import {
   attachDeliveryProof,
+  removeDeliveryProof,
   updateOrderStatus,
 } from '../js/orders.js';
 import {
@@ -75,6 +77,7 @@ test('delivery proof: compresion devuelve dataUrl JPEG', async () => {
   assert.equal(result.dataUrl.startsWith('data:image/jpeg;base64,'), true);
   assert.equal(result.width, 640);
   assert.equal(result.height, 480);
+  assert.equal(result.byteSize <= MAX_DELIVERY_PROOF_DATA_URL_BYTES, true);
 });
 
 test('delivery proof: foto enorme se escala a 1024px maximo', async () => {
@@ -91,6 +94,36 @@ test('delivery proof: foto enorme se escala a 1024px maximo', async () => {
   assert.equal(canvas.quality, 0.7);
 });
 
+test('delivery proof: foto grande se recomprime hasta quedar debajo del limite', async () => {
+  const canvas = installCanvasStub({
+    sourceWidth: 4000,
+    sourceHeight: 2400,
+    toDataURL: ({ call }) => (call === 1 ? makeDataUrl(MAX_DELIVERY_PROOF_DATA_URL_BYTES + 50_000) : VALID_PHOTO),
+  });
+
+  const result = await compressDeliveryProofImage(makeImageFile({ size: 8_000_000 }));
+
+  assert.equal(result.ok, true);
+  assert.equal(canvas.calls, 2);
+  assert.equal(result.width, 900);
+  assert.equal(result.height, 540);
+  assert.equal(result.byteSize <= MAX_DELIVERY_PROOF_DATA_URL_BYTES, true);
+});
+
+test('delivery proof: payload que sigue excediendo el limite se rechaza', async () => {
+  const canvas = installCanvasStub({
+    sourceWidth: 4000,
+    sourceHeight: 2400,
+    toDataURL: () => makeDataUrl(MAX_DELIVERY_PROOF_DATA_URL_BYTES + 100_000),
+  });
+
+  const result = await compressDeliveryProofImage(makeImageFile({ size: 8_000_000 }));
+
+  assert.equal(result.ok, false);
+  assert.equal(canvas.calls, 4);
+  assert.match(result.message, /demasiado grande/i);
+});
+
 test('delivery proof: marcar entregado conserva el comprobante', () => {
   const proof = buildDeliveryProof(VALID_PHOTO, { capturedAt: CAPTURED_AT, source: 'camera' });
   setState({ orders: [makeOrder({ id: 'LT-DONE', status: 'arriving', deliveryProof: proof })] });
@@ -101,6 +134,17 @@ test('delivery proof: marcar entregado conserva el comprobante', () => {
   const order = getState().orders.find((candidate) => candidate.id === 'LT-DONE');
   assert.equal(order.status, 'delivered');
   assert.deepEqual(order.deliveryProof, proof);
+});
+
+test('delivery proof: marcar entregado sin proof no rompe y no inventa comprobante', () => {
+  setState({ orders: [makeOrder({ id: 'LT-DONE-NO-PROOF', status: 'arriving' })] });
+
+  const delivered = updateOrderStatus('LT-DONE-NO-PROOF', 'delivered');
+
+  assert.equal(delivered.ok, true);
+  const order = getState().orders.find((candidate) => candidate.id === 'LT-DONE-NO-PROOF');
+  assert.equal(order.status, 'delivered');
+  assert.equal('deliveryProof' in order, false);
 });
 
 test('delivery proof: caja y reportes ignoran deliveryProof', () => {
@@ -147,20 +191,61 @@ test('delivery proof: restaurar catalogo demo no borra snapshots ni proofs de pe
   assert.deepEqual(order.deliveryProof, proof);
 });
 
-test('delivery proof: attachDeliveryProof normaliza y persiste el comprobante', () => {
+test('delivery proof: attachDeliveryProof normaliza, reemplaza y persiste el comprobante', () => {
   setState({ orders: [makeOrder({ id: 'LT-ATTACH', status: 'arriving' })] });
-  const result = attachDeliveryProof('LT-ATTACH', {
+  const proofA = normalizeDeliveryProof({
     photoDataUrl: VALID_PHOTO,
     capturedAt: CAPTURED_AT,
     source: 'unknown',
   });
+  const proofB = buildDeliveryProof(`data:image/jpeg;base64,${'B'.repeat(16)}`, {
+    capturedAt: '2026-06-06T12:05:00.000Z',
+    source: 'file',
+  });
+
+  const first = attachDeliveryProof('LT-ATTACH', proofA);
+  const second = attachDeliveryProof('LT-ATTACH', proofB);
+
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, true);
+  assert.deepEqual(getState().orders[0].deliveryProof, proofB);
+});
+
+test('delivery proof: removeDeliveryProof quita el comprobante sin romper el pedido', () => {
+  const proof = buildDeliveryProof(VALID_PHOTO, { capturedAt: CAPTURED_AT, source: 'file' });
+  setState({ orders: [makeOrder({ id: 'LT-REMOVE', status: 'arriving', deliveryProof: proof })] });
+
+  const result = removeDeliveryProof('LT-REMOVE');
 
   assert.equal(result.ok, true);
-  assert.deepEqual(getState().orders[0].deliveryProof, normalizeDeliveryProof({
+  assert.equal('deliveryProof' in getState().orders[0], false);
+});
+
+test('delivery proof: source nuevo es honesto y fallback invalido normaliza a file', () => {
+  const proof = buildDeliveryProof(VALID_PHOTO, { capturedAt: CAPTURED_AT });
+
+  assert.equal(proof.source, 'file');
+  assert.deepEqual(normalizeDeliveryProof({
+    photoDataUrl: VALID_PHOTO,
+    capturedAt: CAPTURED_AT,
+    source: 'camera-or-file',
+  }), {
     photoDataUrl: VALID_PHOTO,
     capturedAt: CAPTURED_AT,
     source: 'file',
-  }));
+  });
+});
+
+test('delivery proof: persistencia fallida revierte el proof y avisa error', () => {
+  setState({ orders: [makeOrder({ id: 'LT-QUOTA', status: 'arriving' })] });
+  globalThis.localStorage = throwingStorage();
+
+  const proof = buildDeliveryProof(VALID_PHOTO, { capturedAt: CAPTURED_AT, source: 'file' });
+  const result = attachDeliveryProof('LT-QUOTA', proof);
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /liberá espacio|guardar la foto/i);
+  assert.equal('deliveryProof' in getState().orders[0], false);
 });
 
 function makeOrder(overrides = {}) {
@@ -205,8 +290,8 @@ function makeImageFile({ type = 'image/png', size = 1000 } = {}) {
   return { type, size };
 }
 
-function installCanvasStub({ sourceWidth, sourceHeight }) {
-  const canvasState = { width: 0, height: 0, type: '', quality: 0 };
+function installCanvasStub({ sourceWidth, sourceHeight, toDataURL } = {}) {
+  const canvasState = { width: 0, height: 0, type: '', quality: 0, calls: 0 };
   Object.defineProperty(globalThis, 'createImageBitmap', {
     configurable: true,
     value: async () => ({
@@ -232,13 +317,19 @@ function installCanvasStub({ sourceWidth, sourceHeight }) {
           toDataURL(type, quality) {
             canvasState.type = type;
             canvasState.quality = quality;
-            return VALID_PHOTO;
+            canvasState.calls += 1;
+            return toDataURL ? toDataURL({ call: canvasState.calls, type, quality, width: canvasState.width, height: canvasState.height }) : VALID_PHOTO;
           },
         };
       },
     },
   });
   return canvasState;
+}
+
+function makeDataUrl(targetBytes) {
+  const encodedLength = Math.max(4, Math.ceil((targetBytes * 4) / 3));
+  return `data:image/jpeg;base64,${'A'.repeat(encodedLength)}`;
 }
 
 function restoreGlobal(name, descriptor) {
@@ -253,5 +344,14 @@ function memoryStorage() {
     setItem(key, value) { values.set(key, String(value)); },
     removeItem(key) { values.delete(key); },
     clear() { values.clear(); },
+  };
+}
+
+function throwingStorage() {
+  return {
+    getItem() { return null; },
+    setItem() { throw new Error('quota exceeded'); },
+    removeItem() {},
+    clear() {},
   };
 }

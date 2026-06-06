@@ -33,6 +33,10 @@ import {
   periodLabel,
 } from './core/business-reports.js';
 import {
+  formatDeliveryProofTime,
+  hasDeliveryProof,
+} from './core/delivery-proof.js';
+import {
   buildBusinessSetupPatch,
   restoreBusinessSetupDemo,
   saveBusinessSetup,
@@ -418,6 +422,7 @@ function inboxOrderCard(order, options = {}) {
           </div>
           <p class="inbox-status-copy">${escapeHtml(statusMeta.copy)}</p>
           ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparación estimada: <strong>${prepMinutes} min</strong></p>` : ''}
+          ${renderDeliveryProofSummary(order)}
           ${renderInboxTrackingPanel(order)}
         </div>
 
@@ -455,6 +460,22 @@ function inboxOrderCard(order, options = {}) {
         </div>
       </div>
     </article>`;
+}
+
+function renderDeliveryProofSummary(order, { compact = false } = {}) {
+  if (!hasDeliveryProof(order)) return '';
+  const proof = order.deliveryProof;
+  const proofTime = formatDeliveryProofTime(proof);
+  return `
+    <section class="inbox-delivery-proof ${compact ? 'is-compact' : ''}" data-delivery-proof-summary="${escapeHtml(order.id)}">
+      <span class="proof-badge">Foto de entrega</span>
+      <img class="proof-thumb" src="${escapeHtml(proof.photoDataUrl)}" alt="Foto de entrega del pedido ${escapeHtml(order.id)}" data-delivery-proof-thumb />
+      <div class="proof-copy">
+        <strong>Comprobante tomado${proofTime ? `: ${escapeHtml(proofTime)}` : ''}</strong>
+        <small>Evidencia local/demo. Evitá personas, DNI o datos privados.</small>
+      </div>
+      <button class="ghost-button compact" type="button" data-order-proof="${escapeHtml(order.id)}">Ver foto</button>
+    </section>`;
 }
 
 function renderPrimaryOrderAction(order, action) {
@@ -544,6 +565,7 @@ function inboxClosedRow(order) {
       <span>${escapeHtml(order.id)} · ${escapeHtml(order.customerName)} · ${escapeHtml(order.paymentMethod || 'Efectivo')}${Number(order.discountTotal || 0) > 0 ? ` · ${escapeHtml(order.coupon?.code || 'Promo')} -${money(order.discountTotal)}` : ''}${reason}</span>
       <strong>${money(order.total)}</strong>
       <em class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</em>
+      ${renderDeliveryProofSummary(order, { compact: true })}
     </div>`;
 }
 
@@ -1135,6 +1157,14 @@ export function handleBusinessAction(target) {
   if (trackId) {
     setState({ lastOrderId: trackId });
     return { handled: true, ok: true, message: '', navigate: 'tracking' };
+  }
+
+  const proofId = target.closest('[data-order-proof]')?.dataset.orderProof;
+  if (proofId) {
+    const order = getState().orders.find((candidate) => candidate.id === proofId);
+    if (!order || !hasDeliveryProof(order)) return { handled: true, ok: false, message: 'Foto de entrega no disponible.' };
+    openDeliveryProofModal(order);
+    return { handled: true, ok: true, message: '' };
   }
 
   if (target.closest('[data-sound-toggle]')) {
@@ -1759,4 +1789,25 @@ function printTicket(order) {
   try {
     if (typeof window !== 'undefined' && typeof window.print === 'function') window.print();
   } catch (_) { /* impresión no disponible: no romper */ }
+}
+
+function openDeliveryProofModal(order) {
+  if (typeof document === 'undefined' || !hasDeliveryProof(order)) return;
+  const modal = document.querySelector('[data-product-modal]');
+  const content = document.querySelector('[data-modal-content]');
+  if (!modal || !content) return;
+  const proof = order.deliveryProof;
+  const proofTime = formatDeliveryProofTime(proof);
+  content.innerHTML = `
+    <div class="modal-card delivery-proof-modal" data-delivery-proof-modal>
+      <span class="proof-badge">Foto de entrega</span>
+      <h2>Comprobante ${escapeHtml(order.id)}</h2>
+      <p>Comprobante tomado${proofTime ? `: ${escapeHtml(proofTime)}` : ''}. Evidencia local/demo guardada en este pedido.</p>
+      <img class="proof-modal-image" src="${escapeHtml(proof.photoDataUrl)}" alt="Foto de entrega del pedido ${escapeHtml(order.id)}" data-delivery-proof-modal-image />
+      <p class="form-hint">Evitá fotografiar personas, DNI o datos privados. Esta foto no se sube a un backend en v1.</p>
+      <div class="button-row" style="margin-top:16px">
+        <button class="secondary-button" type="button" data-close-modal>Cerrar</button>
+      </div>
+    </div>`;
+  if (typeof modal.showModal === 'function' && !modal.open) modal.showModal();
 }

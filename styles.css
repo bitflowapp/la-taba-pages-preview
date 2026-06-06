@@ -1184,6 +1184,16 @@ textarea { resize: vertical; min-height: 84px; }
 .modal-card h2, .pin-card h2 { font-size: 27px; letter-spacing: -0.04em; margin: 16px 0 8px; }
 .modal-card .modal-media + h2 { margin-top: 0; }
 .modal-card p, .pin-card p { color: var(--muted); line-height: 1.55; }
+.delivery-proof-modal .proof-badge { width: max-content; }
+.proof-modal-image {
+  display: block;
+  width: 100%;
+  max-height: min(62vh, 560px);
+  object-fit: contain;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  background: #0f0d0b;
+}
 
 /* ===== Toast ===== */
 .toast { position: fixed; right: 16px; bottom: 16px; z-index: 40; max-width: min(440px, calc(100vw - 32px)); border: 1px solid rgba(201,122,67,0.36); border-radius: 15px; padding: 14px 16px; color: var(--text); background: rgba(27, 23, 20, 0.97); box-shadow: var(--shadow); }
@@ -4225,6 +4235,7 @@ body:has(.app-view[data-view="business"].is-active) {
 .inbox-closed-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
   font-size: 13px;
@@ -4238,6 +4249,54 @@ body:has(.app-view[data-view="business"].is-active) {
 }
 
 .inbox-closed-row em { font-style: normal; }
+.inbox-delivery-proof {
+  display: grid;
+  grid-template-columns: auto 54px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(85, 122, 69, 0.22);
+  border-radius: 16px;
+  background: rgba(247, 253, 248, 0.76);
+}
+.inbox-delivery-proof.is-compact {
+  flex: 1 0 100%;
+  margin-top: 2px;
+}
+.proof-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  color: #315f2b;
+  background: #e8f1e3;
+  font-size: 11px;
+  font-weight: 850;
+}
+.proof-thumb {
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(49, 95, 43, 0.18);
+  border-radius: 12px;
+  object-fit: cover;
+  background: #f2eee8;
+}
+.proof-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.proof-copy strong {
+  color: var(--biz-text);
+  font-size: 13px;
+}
+.proof-copy small {
+  color: var(--biz-muted);
+  font-size: 12px;
+}
 
 @media (min-width: 820px) {
   .inbox-order.is-priority .inbox-card-layout {
@@ -4259,6 +4318,26 @@ body:has(.app-view[data-view="business"].is-active) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+  }
+}
+
+@media (max-width: 560px) {
+  .inbox-delivery-proof {
+    grid-template-columns: 46px minmax(0, 1fr);
+  }
+  .inbox-delivery-proof .proof-badge {
+    grid-column: 1 / -1;
+  }
+  .inbox-delivery-proof .proof-thumb {
+    width: 46px;
+    height: 46px;
+  }
+  .inbox-delivery-proof .ghost-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .delivery-proof-actions {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -4736,6 +4815,62 @@ body:has(.app-view[data-view="business"].is-active) {
 .rider-actions .secondary-button:not(:disabled) {
   color: #2c241d;
   background: #f1ece5;
+}
+
+.delivery-proof-panel {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid rgba(166,113,63,0.18);
+  border-radius: 20px;
+  background: #fffaf3;
+}
+.delivery-proof-panel.has-proof {
+  border-color: rgba(49, 95, 43, 0.22);
+  background: #f7fdf8;
+}
+.delivery-proof-copy {
+  display: grid;
+  gap: 4px;
+}
+.delivery-proof-copy strong {
+  color: #2c241d;
+  font-size: 15px;
+}
+.delivery-proof-copy p,
+.delivery-proof-copy small {
+  margin: 0;
+  color: #6b625a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.delivery-proof-preview {
+  overflow: hidden;
+  border: 1px solid rgba(49, 95, 43, 0.18);
+  border-radius: 16px;
+  background: #f2eee8;
+}
+.delivery-proof-preview img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+}
+.delivery-proof-actions {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.delivery-proof-upload {
+  position: relative;
+  cursor: pointer;
+}
+.delivery-proof-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sim-panel.street-test-panel {

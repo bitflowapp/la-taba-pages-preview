@@ -15,6 +15,7 @@ import { chooseActiveLiveOrderId } from './core/realtime-sync.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
 import { recordCustomerOrder, updateCustomerOrderSnapshot } from './core/customer-history.js';
 import { buildAppliedCoupon, normalizeCouponCode } from './core/promotions.js';
+import { normalizeDeliveryProof } from './core/delivery-proof.js';
 import {
   formatAddressReference,
   normalizeAddressDetails,
@@ -219,6 +220,41 @@ export function cancelOrder(orderId, reason = '') {
     }
   }
   return result;
+}
+
+export function attachDeliveryProof(orderId, proof) {
+  const normalized = normalizeDeliveryProof(proof);
+  if (!orderId || !normalized) {
+    return { ok: false, message: 'No se pudo guardar la foto de entrega.' };
+  }
+
+  let updated = false;
+  updateState((draft) => {
+    const order = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!order) return;
+    order.deliveryProof = normalized;
+    updated = true;
+  });
+
+  if (!updated) return { ok: false, message: 'Pedido no encontrado.' };
+  updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  return { ok: true, message: 'Foto de entrega adjunta.' };
+}
+
+export function removeDeliveryProof(orderId) {
+  if (!orderId) return { ok: false, message: 'Pedido no encontrado.' };
+
+  let updated = false;
+  updateState((draft) => {
+    const order = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!order) return;
+    delete order.deliveryProof;
+    updated = true;
+  });
+
+  if (!updated) return { ok: false, message: 'Pedido no encontrado.' };
+  updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  return { ok: true, message: 'Foto de entrega quitada.' };
 }
 
 // Ticket de texto plano para cocina / mostrador (sin dependencias).

@@ -1,4 +1,10 @@
-import { advanceOrderToReady, getRiderQueueOrder, updateOrderStatus } from './orders.js';
+import {
+  advanceOrderToReady,
+  attachDeliveryProof,
+  getRiderQueueOrder,
+  removeDeliveryProof,
+  updateOrderStatus,
+} from './orders.js';
 import {
   getRiderActionState,
   isAwaitingPreparation,
@@ -18,6 +24,11 @@ import {
 import { getRealtimeStatus } from './realtime.js';
 import { relayStatusLabel } from './core/realtime-sync.js';
 import { getBusinessConfig } from './core/business-config-store.js';
+import {
+  buildDeliveryProof,
+  compressDeliveryProofImage,
+  formatDeliveryProofTime,
+} from './core/delivery-proof.js';
 import { normalizeOrderAddressDetails } from './core/address.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
@@ -137,6 +148,7 @@ export function renderDeliveryPanel() {
           <button class="primary-button" type="button" data-rider-ready="${order.id}">Marcar listo</button>
         </div>` : ''}
 
+        ${renderDeliveryProofPanel(order)}
         ${renderRiderActions(order, { canLeave, canArrive, canDeliver })}
         <div class="track-steps tight rider-progress">${steps}</div>
         ${renderSimControls(order, sim)}
@@ -187,6 +199,34 @@ function renderRiderActions(order, { canLeave, canArrive, canDeliver }) {
   }
   if (!actions.length) return '';
   return `<div class="button-row rider-actions">${actions.join('')}</div>`;
+}
+
+function renderDeliveryProofPanel(order) {
+  if (!['ready', 'on_the_way', 'arriving'].includes(order.status)) return '';
+  const proof = order.deliveryProof || null;
+  const proofTime = proof ? formatDeliveryProofTime(proof) : '';
+  const input = `
+    <input class="delivery-proof-input" data-delivery-proof-input="${escapeHtml(order.id)}" type="file" accept="image/*" capture="environment" aria-label="Adjuntar foto de entrega" />`;
+
+  return `
+    <section class="delivery-proof-panel ${proof ? 'has-proof' : ''}" data-delivery-proof-panel>
+      <div class="delivery-proof-copy">
+        <strong>Foto de entrega</strong>
+        <p>Sacá una foto del pedido entregado. Evitá fotografiar personas, DNI o datos privados.</p>
+        ${proof ? `<small>Comprobante tomado: ${escapeHtml(proofTime || 'sin hora')}</small>` : '<small>Podés adjuntar una foto como comprobante antes de entregar.</small>'}
+      </div>
+      ${proof ? `
+        <div class="delivery-proof-preview">
+          <img src="${escapeHtml(proof.photoDataUrl)}" alt="Foto de entrega adjunta" data-delivery-proof-preview />
+        </div>` : ''}
+      <div class="button-row delivery-proof-actions">
+        <label class="secondary-button compact delivery-proof-upload">
+          ${proof ? 'Reemplazar foto' : 'Adjuntar foto'}
+          ${input}
+        </label>
+        ${proof ? `<button class="ghost-button compact" type="button" data-delivery-proof-remove="${escapeHtml(order.id)}">Quitar foto</button>` : ''}
+      </div>
+    </section>`;
 }
 
 // Bloque avanzado: esconde relay/sala/equipo para que la vista principal sea operativa.
@@ -560,6 +600,11 @@ function renderRealMapShell(order, fallback, role = 'rider') {
 }
 
 export function handleDeliveryAction(target) {
+  const removeProofId = target.closest('[data-delivery-proof-remove]')?.dataset.deliveryProofRemove;
+  if (removeProofId) {
+    return { handled: true, ...removeDeliveryProof(removeProofId) };
+  }
+
   const readyId = target.closest('[data-rider-ready]')?.dataset.riderReady;
   if (readyId) {
     return deliveryActionResponse(readyOrderForDelivery(readyId), 'Pedido listo para reparto.');
@@ -660,10 +705,32 @@ function deliveryActionResponse(result, successMessage, onSuccess = null) {
 }
 
 export function handleDeliveryChange(target) {
+  const proofInput = target.closest?.('[data-delivery-proof-input]');
+  if (proofInput) {
+    return attachProofFromInput(proofInput);
+  }
+
   const destinationSelect = target.closest?.('[data-street-destination]');
   if (destinationSelect) {
     const result = selectStreetTestDestination(destinationSelect.value);
     return { handled: true, ok: result.ok, message: result.message };
   }
   return { handled: false };
+}
+
+async function attachProofFromInput(input) {
+  const orderId = input.dataset.deliveryProofInput;
+  const file = input.files?.[0];
+  if (!file) return { handled: true, ok: false, message: 'Seleccioná una foto del pedido entregado.' };
+
+  const compressed = await compressDeliveryProofImage(file);
+  input.value = '';
+  if (!compressed.ok) return { handled: true, ok: false, message: compressed.message };
+
+  const proof = buildDeliveryProof(compressed.dataUrl, {
+    capturedAt: new Date().toISOString(),
+    source: input.getAttribute('capture') ? 'camera' : 'file',
+  });
+  const result = attachDeliveryProof(orderId, proof);
+  return { handled: true, ok: result.ok, message: result.message };
 }

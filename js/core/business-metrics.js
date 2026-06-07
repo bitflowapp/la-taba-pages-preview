@@ -1,4 +1,5 @@
 import { ORDER_STATUSES, isTerminalOrderStatus } from './order-status.js';
+import { buildCustomerSignals } from './customer-profile.js';
 import { normalizeMoneyValue, normalizeStock } from './pricing.js';
 
 export function getActiveOrders(orders = []) {
@@ -35,13 +36,34 @@ export function getBusinessMetrics(orders = [], products = [], now = new Date())
   let todayTotal = 0;
   let todayDeliveryCount = 0;
   let todayPickupCount = 0;
+  let todayCreatedOrders = 0;
+  let todayDeliveredOrders = 0;
+  let todayInProgressOrders = 0;
+  let todayRecurringCustomers = 0;
+  let todayRepeatedOrders = 0;
+  let todayDeliveryCodesValidated = 0;
+  let todayOrdersWithoutLiveGps = 0;
   const productTally = new Map();
 
   if (Array.isArray(orders)) {
     for (const order of orders) {
       const created = new Date(order?.createdAt);
       const isToday = !Number.isNaN(created.getTime()) && created >= startOfToday;
-      if (!isToday || order.status === 'cancelled') continue;
+      if (!isToday) continue;
+
+      todayCreatedOrders += 1;
+      if (order.status === 'delivered') todayDeliveredOrders += 1;
+      if (!isTerminalOrderStatus(order.status)) todayInProgressOrders += 1;
+      if (order.reorder?.sourceOrderId) todayRepeatedOrders += 1;
+      if (order.deliveryCode?.confirmedAt) todayDeliveryCodesValidated += 1;
+      if (order.deliveryMode === 'delivery' && ['on_the_way', 'arriving'].includes(order.status) && !hasLiveGps(order, now)) {
+        todayOrdersWithoutLiveGps += 1;
+      }
+
+      const signals = buildCustomerSignals(orders, order, now);
+      if (signals.isRecurringCustomer) todayRecurringCustomers += 1;
+
+      if (order.status === 'cancelled') continue;
 
       todayOrderCount += 1;
       todayTotal += normalizeMoneyValue(order.total, 0);
@@ -76,5 +98,27 @@ export function getBusinessMetrics(orders = [], products = [], now = new Date())
     todayPickupCount,
     topProducts,
     ordersToHandle: ordersByStatus.received + ordersByStatus.preparing + ordersByStatus.ready + ordersByStatus.on_the_way + ordersByStatus.arriving,
+    directOrdering: {
+      createdOrders: todayCreatedOrders,
+      deliveredOrders: todayDeliveredOrders,
+      inProgressOrders: todayInProgressOrders,
+      averageTicket: todayOrderCount > 0 ? Math.round(todayTotal / todayOrderCount) : 0,
+      recurringCustomers: todayRecurringCustomers,
+      repeatedOrders: todayRepeatedOrders,
+      deliveryCodesValidated: todayDeliveryCodesValidated,
+      ordersWithoutLiveGps: todayOrdersWithoutLiveGps,
+    },
   };
+}
+
+function hasLiveGps(order, now = new Date()) {
+  const location = order?.tracking?.lastLocation;
+  if (!location || location.source !== 'gps') return false;
+  const lat = Number(location.lat);
+  const lng = Number(location.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+  const stamp = new Date(location.lastFixAt || location.timestamp || location.updatedAt).getTime();
+  const current = new Date(now).getTime();
+  if (!Number.isFinite(stamp) || !Number.isFinite(current)) return false;
+  return current - stamp <= 30000;
 }

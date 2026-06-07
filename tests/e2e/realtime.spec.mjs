@@ -3,7 +3,7 @@ import { fillCheckout, installPageGuards } from './helpers.mjs';
 
 // Relay realtime servido por scripts/realtime-relay.mjs (ver playwright.config.mjs).
 const RELAY = 'http://127.0.0.1:18787';
-const TRACKING_GPS_NOTE = 'Seguimiento por estado. El mapa en vivo se activa cuando el repartidor comparte ubicación real.';
+const TRACKING_GPS_NOTE = 'Sin GPS en vivo. Seguimiento por estado hasta que el repartidor comparta ubicación real.';
 
 async function stub(page) {
   await page.addInitScript(() => {

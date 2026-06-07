@@ -254,6 +254,7 @@ function createTestOrder(overrides = {}) {
     customerNotes: '',
     couponCode: '',
     cashChange: '',
+    rememberCustomer: true,
     ...overrides,
   });
 }

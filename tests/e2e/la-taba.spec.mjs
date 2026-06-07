@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, openFirstProductModal, waitForToast } from './helpers.mjs';
 
-const TRACKING_GPS_NOTE = 'Seguimiento por estado. El mapa en vivo se activa cuando el repartidor comparte ubicación real.';
+const TRACKING_GPS_NOTE = 'Sin GPS en vivo. Seguimiento por estado hasta que el repartidor comparta ubicación real.';
 
 test.beforeEach(async ({ page }) => {
   await installBrowserStubs(page);
@@ -350,7 +350,7 @@ test('mobile cliente aplica cupon, elige pago y crea pedido', async ({ browser }
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await expect(page.locator('[data-payment-note]')).toContainText('Esta demo no procesa pagos reales');
+  await expect(page.locator('[data-payment-note]')).toContainText('La app no procesa pagos reales');
   await page.getByLabel('Cupón o promo').fill('taba10');
   await page.locator('[data-apply-coupon]').click();
   await expect(page.locator('[data-coupon-message]')).toContainText('TABA10');

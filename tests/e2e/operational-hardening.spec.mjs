@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
 // Hardening operativo v1: invariantes que NO deben romperse en producción.
-const TRACKING_GPS_NOTE = 'Seguimiento por estado. El mapa en vivo se activa cuando el repartidor comparte ubicación real.';
+const TRACKING_GPS_NOTE = 'Sin GPS en vivo. Seguimiento por estado hasta que el repartidor comparta ubicación real.';
 
 function liveTrackingState(now) {
   const createdAt = new Date(now - 90_000).toISOString();

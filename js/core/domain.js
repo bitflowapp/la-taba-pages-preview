@@ -109,6 +109,7 @@ export function normalizeOrderDraft(draft = {}) {
     customerNotes: sanitizeNotes(draft.customerNotes || draft.notes, ''),
     cashChange: sanitizeText(draft.cashChange, { fallback: '', maxLength: 80 }),
     couponCode: sanitizeText(draft.couponCode, { fallback: '', maxLength: 24 }).toUpperCase(),
+    rememberCustomer: Boolean(draft.rememberCustomer),
   };
 }
 

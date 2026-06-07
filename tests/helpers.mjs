@@ -17,6 +17,7 @@ export function resetState(overrides = {}) {
     lastOrderId: null,
     adminUnlocked: false,
     lastCheckoutDraft: null,
+    pendingReorder: null,
     ...overrides,
   });
 }

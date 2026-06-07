@@ -508,7 +508,7 @@ function renderCustomerSignals(signals) {
     ? `<span>Ultimo pedido ${escapeHtml(signals.lastPreviousOrderLabel)}</span>`
     : '';
   const benefit = signals.benefitAvailable
-    ? '<strong class="signal-benefit">Beneficio disponible</strong>'
+    ? '<strong class="signal-benefit">Cliente frecuente: revisar beneficio</strong>'
     : '';
   const repeated = signals.isRepeatedOrder
     ? `<span>Pedido repetido${signals.repeatedFromOrderId ? ` desde ${escapeHtml(signals.repeatedFromOrderId)}` : ''}</span>`

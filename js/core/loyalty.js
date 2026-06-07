@@ -3,7 +3,7 @@ import { sanitizeText } from './validators.js';
 export const DEFAULT_LOYALTY_CONFIG = Object.freeze({
   enabled: true,
   milestoneOrders: 5,
-  benefitLabel: 'Beneficio disponible',
+  benefitLabel: 'Cliente frecuente para revisar',
 });
 
 export function normalizeLoyaltyConfig(config = {}) {
@@ -42,7 +42,7 @@ export function loyaltyProgressCopy(progress) {
   const normalized = progress || calculateLoyaltyProgress(0);
   if (!normalized.enabled) return '';
   if (normalized.benefitAvailable) {
-    return `${normalized.benefitLabel}. El comercio lo confirma al tomar el pedido.`;
+    return `${normalized.benefitLabel}: llegaste a ${normalized.orderCount} pedidos locales. El comercio revisa si corresponde un beneficio.`;
   }
-  return `Llevas ${normalized.completed} de ${normalized.milestoneOrders} pedidos para tu proximo beneficio.`;
+  return `Llevas ${normalized.completed} de ${normalized.milestoneOrders} pedidos locales para que el comercio pueda reconocerte como cliente frecuente.`;
 }

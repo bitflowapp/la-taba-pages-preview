@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, openFirstProductModal, waitForToast } from './helpers.mjs';
 
-const TRACKING_GPS_NOTE = 'Seguimiento por estado. El mapa en vivo se activa cuando el repartidor comparte ubicación real.';
+const TRACKING_GPS_NOTE = 'Sin GPS en vivo. Seguimiento por estado hasta que el repartidor comparta ubicación real.';
 
 test.beforeEach(async ({ page }) => {
   await installBrowserStubs(page);

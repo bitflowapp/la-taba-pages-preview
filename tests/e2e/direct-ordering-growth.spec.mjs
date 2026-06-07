@@ -74,7 +74,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   }
 
   await openBusiness(page);
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Beneficio disponible');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Cliente frecuente: revisar beneficio');
   await expect(page.locator('[data-business-dashboard]')).toContainText('5 pedidos locales');
 
   await enableRealGpsForLatestOrder(page);

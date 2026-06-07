@@ -21,7 +21,7 @@ test('loyalty: detecta beneficio disponible al llegar al hito', () => {
   assert.equal(progress.completed, 5);
   assert.equal(progress.remaining, 0);
   assert.equal(progress.benefitAvailable, true);
-  assert.match(loyaltyProgressCopy(progress), /Beneficio disponible/);
+  assert.match(loyaltyProgressCopy(progress), /comercio revisa/);
 });
 
 test('loyalty: permite configuracion local minima sin romper tipos invalidos', () => {
@@ -31,5 +31,5 @@ test('loyalty: permite configuracion local minima sin romper tipos invalidos', (
   assert.equal(config.milestoneOrders, 3);
   assert.equal(config.benefitLabel, 'Beneficio del local');
   assert.equal(invalid.milestoneOrders, 5);
-  assert.equal(invalid.benefitLabel, 'Beneficio disponible');
+  assert.equal(invalid.benefitLabel, 'Cliente frecuente para revisar');
 });

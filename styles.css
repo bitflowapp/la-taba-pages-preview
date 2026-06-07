@@ -6026,6 +6026,10 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .metric-priority s
     flex: 1 1 auto;
     width: 100%;
   }
+  .reorder-card-side .primary-button,
+  .reorder-card-side .secondary-button {
+    scroll-margin-bottom: calc(var(--mobile-nav-h) + 28px + env(safe-area-inset-bottom));
+  }
 }
 
 @media (max-width: 380px) {

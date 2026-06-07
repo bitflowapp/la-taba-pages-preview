@@ -90,7 +90,7 @@ test('customer signals: detecta beneficio disponible con el quinto pedido real',
 
   assert.equal(signals.orderCount, 5);
   assert.equal(signals.benefitAvailable, true);
-  assert.match(signals.loyaltyCopy, /Beneficio disponible/);
+  assert.match(signals.loyaltyCopy, /comercio revisa/);
 });
 
 test('customer profile: normaliza pedidos viejos sin campos nuevos', () => {

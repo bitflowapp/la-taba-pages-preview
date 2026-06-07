@@ -822,7 +822,7 @@ const customerSteps = [
   { key: 'delivered', label: 'Entregado' },
 ];
 
-const TRACKING_GPS_NOTE = 'Seguimiento por estado. El mapa en vivo se activa cuando el repartidor comparte ubicación real.';
+const TRACKING_GPS_NOTE = 'Sin GPS en vivo. Seguimiento por estado hasta que el repartidor comparta ubicación real.';
 
 const TRACKING_STATUS_LABELS = Object.freeze({
   received: 'Enviado',

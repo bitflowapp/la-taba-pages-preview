@@ -17,6 +17,12 @@ import { recordCustomerOrder, updateCustomerOrderSnapshot } from './core/custome
 import { buildAppliedCoupon, normalizeCouponCode } from './core/promotions.js';
 import { normalizeDeliveryProof } from './core/delivery-proof.js';
 import {
+  buildDeliveryCode,
+  createDeliveryCode,
+  normalizeDeliveryCode,
+  verifyDeliveryCodeValue,
+} from './core/delivery-code.js';
+import {
   formatAddressReference,
   normalizeAddressDetails,
   normalizeOrderAddressDetails,
@@ -69,8 +75,12 @@ export function createOrderFromCheckout(formValues = {}) {
     discountAmount: coupon?.discountAmount || 0,
   });
 
+  const orderId = createOrderId();
+  const deliveryCode = values.deliveryMode === 'delivery'
+    ? buildDeliveryCode(createDeliveryCode(orderId))
+    : null;
   const order = {
-    id: createOrderId(),
+    id: orderId,
     customerName: values.customerName,
     customerPhone: values.customerPhone,
     address: values.deliveryMode === 'pickup' ? getBusinessConfig().address : values.customerAddress,
@@ -98,6 +108,7 @@ export function createOrderFromCheckout(formValues = {}) {
       estimatedPreparationMinutes: 0,
       currentLocationLabel: values.deliveryMode === 'pickup' ? 'Pedido para retirar en local' : 'Pedido recibido por el local',
     },
+    ...(deliveryCode ? { deliveryCode } : {}),
   };
 
   updateState((draft) => {
@@ -268,6 +279,40 @@ export function removeDeliveryProof(orderId) {
   return { ok: true, message: 'Foto de entrega quitada.' };
 }
 
+export function confirmDeliveryCode(orderId, code, {
+  confirmedAt = new Date().toISOString(),
+  confirmedBy = 'rider',
+} = {}) {
+  const order = getState().orders.find((candidate) => candidate.id === orderId);
+  if (!order) return { ok: false, message: 'Pedido no encontrado.' };
+  if (normalizeDeliveryMode(order.deliveryMode) !== 'delivery') {
+    return { ok: false, message: 'Codigo de entrega disponible solo para delivery.' };
+  }
+  if (order.status === 'delivered' || order.status === 'cancelled') {
+    return { ok: false, message: 'El pedido ya no admite validacion de codigo.' };
+  }
+
+  const current = normalizeDeliveryCode(order.deliveryCode, { seed: order.id });
+  if (current?.confirmedAt) {
+    return { ok: false, message: 'El codigo ya fue validado.' };
+  }
+  const verification = verifyDeliveryCodeValue(current, code);
+  if (!verification.ok) return verification;
+
+  updateState((draft) => {
+    const target = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!target) return;
+    const confirmedDate = new Date(confirmedAt);
+    target.deliveryCode = {
+      ...current,
+      confirmedAt: Number.isNaN(confirmedDate.getTime()) ? new Date().toISOString() : confirmedDate.toISOString(),
+      confirmedBy,
+    };
+  });
+  updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  return { ok: true, message: verification.message };
+}
+
 // Ticket de texto plano para cocina / mostrador (sin dependencias).
 export function buildKitchenTicket(order) {
   if (!order) return '';
@@ -277,6 +322,7 @@ export function buildKitchenTicket(order) {
   const lines = [
     'LA TABA — TICKET',
     `Pedido: ${order.id}`,
+    ...(order.deliveryCode?.code ? [`Codigo entrega: ${order.deliveryCode.code}`] : []),
     `Hora: ${dateTime(order.createdAt)}`,
     `Entrega: ${deliveryModeLabel(order.deliveryMode)}`,
     isPickup ? 'Retiro en el local' : `Dirección: ${address.label || order.address}`,

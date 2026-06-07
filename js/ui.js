@@ -21,6 +21,12 @@ import {
 import { buildDraftMessageFromCart, getActiveOrder } from './orders.js';
 import { getRealtimeStatus } from './realtime.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
+import {
+  formatDeliveryCode,
+  formatDeliveryCodeTime,
+  isDeliveryCodeConfirmed,
+  normalizeDeliveryCode,
+} from './core/delivery-code.js';
 import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
@@ -936,6 +942,27 @@ function trackingAddressCard(order) {
     </div>`;
 }
 
+function trackingDeliveryCodeCard(order) {
+  if (!order || order.status === 'cancelled') return '';
+  if (order.deliveryMode !== 'delivery') return '';
+  const deliveryCode = normalizeDeliveryCode(order.deliveryCode, { seed: order.id });
+  if (!deliveryCode) return '';
+  const confirmed = isDeliveryCodeConfirmed(deliveryCode);
+  const confirmedTime = formatDeliveryCodeTime(deliveryCode);
+  if (order.status === 'delivered' && !confirmed) return '';
+  const copy = order.deliveryMode === 'pickup'
+    ? 'Mostralo en mostrador para retirar tu pedido.'
+    : 'Daselo al rider cuando recibas el pedido.';
+  return `
+    <section class="delivery-code-card ${confirmed ? 'is-confirmed' : ''}" data-delivery-code-card>
+      <div class="delivery-code-copy">
+        <span>${confirmed ? 'Codigo confirmado' : 'Codigo de entrega'}</span>
+        <strong data-delivery-code="${escapeHtml(deliveryCode.code)}">${escapeHtml(formatDeliveryCode(deliveryCode.code))}</strong>
+        <small>${confirmed ? `Confirmado${confirmedTime ? ` a las ${escapeHtml(confirmedTime)}` : ''}.` : escapeHtml(copy)}</small>
+      </div>
+    </section>`;
+}
+
 export function renderTracking() {
   const container = $('[data-tracking-panel]');
   if (!container) return;
@@ -967,12 +994,12 @@ export function renderTracking() {
   const metricsHtml = order.status === 'delivered'
     ? `
           <span><small>Estado</small><strong>${escapeHtml(trackingStatusLabel(order.status))}</strong></span>
-          <span><small>Código</small><strong>${escapeHtml(order.id)}</strong></span>
+          <span><small>Pedido</small><strong>${escapeHtml(order.id)}</strong></span>
           <span><small>Total</small><strong>${money(order.total)}</strong></span>
         `
     : `
           <span><small>Estado</small><strong>${escapeHtml(trackingStatusLabel(order.status))}</strong></span>
-          <span><small>Código</small><strong>${escapeHtml(order.id)}</strong></span>
+          <span><small>Pedido</small><strong>${escapeHtml(order.id)}</strong></span>
           <span><small>Tiempo estimado</small><strong>${escapeHtml(trackingEtaLabel(order))}</strong></span>
         `;
 
@@ -1008,6 +1035,7 @@ export function renderTracking() {
         <div class="sheet-metrics">
           ${metricsHtml}
         </div>
+        ${trackingDeliveryCodeCard(order)}
         <div class="track-steps">${steps}</div>
         ${isCancelled ? `<div class="warning-box">Este pedido fue cancelado.${order.cancelReason ? ` Motivo: ${escapeHtml(order.cancelReason)}.` : ''} Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>` : ''}
         ${isDelivery ? trackingAddressCard(order) : ''}

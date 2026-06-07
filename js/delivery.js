@@ -1,6 +1,7 @@
 import {
   advanceOrderToReady,
   attachDeliveryProof,
+  confirmDeliveryCode,
   getRiderQueueOrder,
   removeDeliveryProof,
   updateOrderStatus,
@@ -29,6 +30,11 @@ import {
   compressDeliveryProofImage,
   formatDeliveryProofTime,
 } from './core/delivery-proof.js';
+import {
+  formatDeliveryCodeTime,
+  isDeliveryCodeConfirmed,
+  normalizeDeliveryCode,
+} from './core/delivery-code.js';
 import { normalizeOrderAddressDetails } from './core/address.js';
 import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
 import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
@@ -149,6 +155,7 @@ export function renderDeliveryPanel() {
         </div>` : ''}
 
         ${renderDeliveryProofPanel(order)}
+        ${renderDeliveryCodePanel(order)}
         ${renderRiderActions(order, { canLeave, canArrive, canDeliver })}
         <div class="track-steps tight rider-progress">${steps}</div>
         ${renderSimControls(order, sim)}
@@ -226,6 +233,27 @@ function renderDeliveryProofPanel(order) {
         </label>
         ${proof ? `<button class="ghost-button compact" type="button" data-delivery-proof-remove="${escapeHtml(order.id)}">Quitar foto</button>` : ''}
       </div>
+    </section>`;
+}
+
+function renderDeliveryCodePanel(order) {
+  if (!['on_the_way', 'arriving'].includes(order.status)) return '';
+  const deliveryCode = normalizeDeliveryCode(order.deliveryCode, { seed: order.id });
+  if (!deliveryCode) return '';
+  const confirmed = isDeliveryCodeConfirmed(deliveryCode);
+  const confirmedTime = formatDeliveryCodeTime(deliveryCode);
+  return `
+    <section class="delivery-code-panel ${confirmed ? 'is-confirmed' : ''}" data-delivery-code-panel>
+      <div class="delivery-code-panel-copy">
+        <strong>${confirmed ? 'Codigo de entrega confirmado' : 'Confirmar recepcion'}</strong>
+        <p>${confirmed ? `Confirmado${confirmedTime ? ` a las ${escapeHtml(confirmedTime)}` : ''}.` : 'Pedile al cliente el codigo de 4 digitos que ve en Seguimiento.'}</p>
+      </div>
+      ${confirmed ? '' : `
+        <div class="delivery-code-controls">
+          <input data-delivery-code-input="${escapeHtml(order.id)}" type="text" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="one-time-code" placeholder="0000" aria-label="Codigo de entrega del cliente" />
+          <button class="secondary-button compact" type="button" data-delivery-code-confirm="${escapeHtml(order.id)}">Confirmar codigo</button>
+        </div>
+        <small>Si el cliente no lo encuentra, podes entregar igual y dejar foto como respaldo.</small>`}
     </section>`;
 }
 
@@ -600,6 +628,16 @@ function renderRealMapShell(order, fallback, role = 'rider') {
 }
 
 export function handleDeliveryAction(target) {
+  const codeButton = target.closest('[data-delivery-code-confirm]');
+  const codeOrderId = codeButton?.dataset.deliveryCodeConfirm;
+  if (codeOrderId) {
+    const panel = codeButton.closest('[data-delivery-code-panel]');
+    const input = panel?.querySelector?.('[data-delivery-code-input]');
+    const result = confirmDeliveryCode(codeOrderId, input?.value || '');
+    if (result.ok && input) input.value = '';
+    return { handled: true, ok: result.ok, message: result.message };
+  }
+
   const removeProofId = target.closest('[data-delivery-proof-remove]')?.dataset.deliveryProofRemove;
   if (removeProofId) {
     return { handled: true, ...removeDeliveryProof(removeProofId) };

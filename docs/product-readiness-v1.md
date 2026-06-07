@@ -2,7 +2,7 @@
 
 ## 1. Estado actual del producto
 
-La Taba ya funciona como una demo comercial avanzada con flujo completo cliente-negocio-rider: catálogo editable, checkout, pedidos, consola operativa, reparto visual, tracking honesto, caja/reportes y configuración del comercio. La app está preparada para GitHub Pages y conserva el modo demo como default.
+La Taba ya funciona como una demo comercial avanzada con flujo completo cliente-negocio-rider: catálogo editable, checkout, pedidos, consola operativa, reparto visual, tracking honesto, foto de entrega, código de entrega delivery local-first, caja/reportes y configuración del comercio. La app está preparada para GitHub Pages y conserva el modo demo como default.
 
 El estado actual no debe presentarse como plataforma productiva completa. Todavía depende de almacenamiento local, no tiene autenticación real, no tiene backend obligatorio, no tiene cola offline, no tiene storage de fotos y no tiene notificaciones push.
 
@@ -11,6 +11,7 @@ El estado actual no debe presentarse como plataforma productiva completa. Todav�
 - Catálogo editable: permite cargar, editar, pausar, archivar y restaurar productos demo.
 - Pedidos: el checkout crea pedidos con snapshots de ítems, totales y datos de cliente.
 - Reparto: el panel rider puede ver pedidos, avanzar estados y usar GPS real si el navegador lo permite.
+- Código de entrega delivery local-first: el cliente ve un código de 4 dígitos en Seguimiento, el rider puede confirmarlo y el negocio ve si quedó validado.
 - Tracking honesto: sin GPS real no muestra mapa, marcador, ruta, km, ETA ni rider inventado.
 - Caja/reportes: muestra ventas, tickets, cancelaciones, métodos de pago y ranking basado en snapshots.
 - Configuración del comercio: permite editar identidad, WhatsApp, dirección, horarios, zona, delivery, pedido mínimo, prefijo y PIN.
@@ -22,6 +23,7 @@ El estado actual no debe presentarse como plataforma productiva completa. Todav�
 - Sin auth real: no hay roles, sesiones, usuarios, revocación ni auditoría por persona.
 - Backend opcional: Supabase y HTTP son opt-in; GitHub Pages sigue demo por defecto.
 - Sin storage real de fotos: no hay prueba visual de entrega persistida en backend.
+- Código de entrega delivery local/demo: ayuda a confirmar recepción, pero no es auditoría legal ni persiste fuera del storage actual.
 - Sin push notifications: el comercio y el rider dependen de la pantalla abierta o del relay/demo.
 - Sin offline queue: eventos de reparto y negocio pueden perderse si el navegador queda offline.
 - Sin multi-comercio real: existe configuración del comercio, pero no tenant seguro, slug, dominios ni separación de datos.
@@ -33,22 +35,27 @@ El estado actual no debe presentarse como plataforma productiva completa. Todav�
 - Pérdida de pedidos: si se limpia el storage, cambia el navegador o falla la hidratación local.
 - Pérdida de eventos: cambios de estado o ubicación pueden no persistir fuera del cliente.
 - Mala señal: el rider puede perder GPS o conexión; el cliente debe ver fallback honesto.
-- Reclamos de entrega: sin foto, PIN o incidente firmado, hay poca evidencia ante "no llegó".
+- Reclamos de entrega: foto y código ayudan en demo, pero sin backend, incidente firmado o auditoría server-side todavía hay evidencia limitada ante "no llegó".
 - Datos corruptos: storage viejo o edits parciales pueden dejar reportes o catálogo inconsistentes.
 - Comercio mal configurado: WhatsApp, horarios, prefijo o delivery pueden quedar incorrectos.
 - Pantalla bloqueada: sin notificaciones, el negocio puede no enterarse de pedidos nuevos.
 - Rider sin GPS: tracking no puede prometer ubicación en vivo si el navegador no comparte GPS.
-- Cliente dice "no llegó": hoy no hay prueba de recepción ni confirmación del cliente.
+- Cliente dice "no llegó": hoy hay confirmación local por código, pero falta persistencia productiva, incidencia estructurada y auditoría de backend.
 
 ## 5. Ranking de próximos PRs recomendados
 
-1. Delivery Proof Photo v1: foto comprimida local, visible para negocio, sin storage backend todavía.
-2. Delivery PIN v1: código de entrega simple para confirmar recepción.
-3. Delivery Incidents v1: motivos y notas estructuradas para problemas de reparto.
-4. Notifications v1: avisos visibles/sonoros en negocio y rider, sin push externo inicialmente.
-5. Offline Event Queue v1: cola local de eventos con reintentos y estados de sincronización.
-6. Backend Readiness v1: contrato final para Supabase/API, seeds, migraciones y smoke real.
-7. Multi-business Slug/QR v1: URL por comercio, QR y separación mínima de configuración.
+Completados local-first:
+
+- Delivery Proof Photo v1: foto comprimida local, visible para negocio, sin storage backend todavía.
+- Delivery PIN v1: código de entrega simple para confirmar recepción en el flujo rider de delivery.
+
+Siguientes PRs recomendados:
+
+1. Delivery Incidents v1: motivos y notas estructuradas para problemas de reparto.
+2. Notifications v1: avisos visibles/sonoros en negocio y rider, sin push externo inicialmente.
+3. Offline Event Queue v1: cola local de eventos con reintentos y estados de sincronización.
+4. Backend Readiness v1: contrato final para Supabase/API, seeds, migraciones y smoke real.
+5. Multi-business Slug/QR v1: URL por comercio, QR y separación mínima de configuración.
 
 ## 6. Qué NO prometer todavía
 
@@ -69,6 +76,7 @@ El estado actual no debe presentarse como plataforma productiva completa. Todav�
 - Catálogo editable para simular operación real.
 - Caja/reportes básicos basados en pedidos entregados.
 - Configuración editable de identidad y operación del comercio.
+- Código de entrega delivery local-first para validar recepción en demo.
 - Tracking honesto: no inventa ubicación, ruta, km ni ETA.
 - Camino preparado para backend opt-in sin romper demo.
 
@@ -81,6 +89,7 @@ El estado actual no debe presentarse como plataforma productiva completa. Todav�
 - Tracking abre y explica si no hay GPS real.
 - Panel negocio ve pedidos.
 - Rider ve pedidos y puede avanzar estados.
+- Cliente ve código de entrega en delivery y rider puede confirmarlo.
 - Simulación fallback sigue funcionando como demo explícita.
 - Caja/reportes muestran ventas entregadas y cancelaciones.
 - Configuración guarda identidad/WhatsApp/horarios/delivery/PIN.

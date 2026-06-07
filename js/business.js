@@ -37,6 +37,11 @@ import {
   hasDeliveryProof,
 } from './core/delivery-proof.js';
 import {
+  formatDeliveryCodeTime,
+  isDeliveryCodeConfirmed,
+  normalizeDeliveryCode,
+} from './core/delivery-code.js';
+import {
   buildBusinessSetupPatch,
   restoreBusinessSetupDemo,
   saveBusinessSetup,
@@ -422,6 +427,7 @@ function inboxOrderCard(order, options = {}) {
           </div>
           <p class="inbox-status-copy">${escapeHtml(statusMeta.copy)}</p>
           ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparación estimada: <strong>${prepMinutes} min</strong></p>` : ''}
+          ${renderDeliveryCodeSummary(order)}
           ${renderDeliveryProofSummary(order)}
           ${renderInboxTrackingPanel(order)}
         </div>
@@ -475,6 +481,30 @@ function renderDeliveryProofSummary(order, { compact = false } = {}) {
         <small>Evidencia local/demo. Evitá personas, DNI o datos privados.</small>
       </div>
       <button class="ghost-button compact" type="button" data-order-proof="${escapeHtml(order.id)}">Ver foto</button>
+    </section>`;
+}
+
+function renderDeliveryCodeSummary(order, { compact = false } = {}) {
+  if (order.deliveryMode !== 'delivery') return '';
+  const deliveryCode = normalizeDeliveryCode(order.deliveryCode, { seed: order.id });
+  if (!deliveryCode) return '';
+  const confirmed = isDeliveryCodeConfirmed(deliveryCode);
+  const confirmedTime = formatDeliveryCodeTime(deliveryCode);
+  const isTerminal = order.status === 'delivered' || order.status === 'cancelled';
+  const stateLabel = confirmed ? 'Codigo validado' : isTerminal ? 'Codigo no validado' : 'Codigo pendiente';
+  const titleLabel = confirmed ? 'Recepcion validada' : isTerminal ? 'Recepcion sin validar' : 'Esperando validacion del rider';
+  const copyLabel = confirmed
+    ? `Confirmado${confirmedTime ? `: ${escapeHtml(confirmedTime)}` : ''}`
+    : isTerminal
+      ? 'El pedido ya termino sin validar el codigo.'
+      : 'El cliente ve el codigo en Seguimiento.';
+  return `
+    <section class="inbox-delivery-code ${confirmed ? 'is-confirmed' : ''} ${compact ? 'is-compact' : ''}" data-delivery-code-summary="${escapeHtml(order.id)}">
+      <span class="proof-badge">${stateLabel}</span>
+      <div class="proof-copy">
+        <strong>${titleLabel}</strong>
+        <small>${escapeHtml(copyLabel)}</small>
+      </div>
     </section>`;
 }
 
@@ -565,6 +595,7 @@ function inboxClosedRow(order) {
       <span>${escapeHtml(order.id)} · ${escapeHtml(order.customerName)} · ${escapeHtml(order.paymentMethod || 'Efectivo')}${Number(order.discountTotal || 0) > 0 ? ` · ${escapeHtml(order.coupon?.code || 'Promo')} -${money(order.discountTotal)}` : ''}${reason}</span>
       <strong>${money(order.total)}</strong>
       <em class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</em>
+      ${renderDeliveryCodeSummary(order, { compact: true })}
       ${renderDeliveryProofSummary(order, { compact: true })}
     </div>`;
 }

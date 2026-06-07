@@ -4873,6 +4873,132 @@ body:has(.app-view[data-view="business"].is-active) {
   pointer-events: none;
 }
 
+.delivery-code-card {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 14px;
+  border: 1px solid rgba(94, 117, 180, 0.22);
+  border-radius: 16px;
+  background: #f3f6ff;
+}
+.delivery-code-card.is-confirmed {
+  border-color: rgba(49, 95, 43, 0.24);
+  background: #f7fdf8;
+}
+.delivery-code-copy {
+  display: grid;
+  gap: 4px;
+}
+.delivery-code-copy span {
+  color: #59647b;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+.delivery-code-copy strong {
+  color: #1f1b17;
+  font-size: 34px;
+  letter-spacing: 0;
+  line-height: 1;
+}
+.delivery-code-copy small {
+  color: #5f687d;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.delivery-code-card.is-confirmed .delivery-code-copy span,
+.delivery-code-card.is-confirmed .delivery-code-copy small {
+  color: #315f2b;
+}
+
+.delivery-code-panel {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid rgba(94, 117, 180, 0.22);
+  border-radius: 20px;
+  background: #f3f6ff;
+}
+.delivery-code-panel.is-confirmed {
+  border-color: rgba(49, 95, 43, 0.24);
+  background: #f7fdf8;
+}
+.delivery-code-panel-copy {
+  display: grid;
+  gap: 4px;
+}
+.delivery-code-panel-copy strong {
+  color: #2c241d;
+  font-size: 15px;
+}
+.delivery-code-panel-copy p,
+.delivery-code-panel small {
+  margin: 0;
+  color: #606a80;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.delivery-code-controls {
+  display: grid;
+  grid-template-columns: minmax(86px, 120px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+.delivery-code-controls input {
+  min-height: 42px;
+  width: 100%;
+  border: 1px solid rgba(94, 117, 180, 0.28);
+  border-radius: 13px;
+  padding: 0 12px;
+  color: #1f1b17;
+  background: #fff;
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.inbox-delivery-code {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(94, 117, 180, 0.18);
+  border-radius: 16px;
+  background: #f3f6ff;
+}
+.inbox-delivery-code.is-confirmed {
+  border-color: rgba(49, 95, 43, 0.22);
+  background: #f7fdf8;
+}
+.inbox-delivery-code.is-compact {
+  flex: 1 0 100%;
+  margin-top: 2px;
+}
+.inbox-delivery-code:not(.is-confirmed) .proof-badge {
+  color: #42527a;
+  background: #dfe7ff;
+}
+
+@media (max-width: 560px) {
+  .delivery-code-controls {
+    grid-template-columns: 1fr;
+  }
+  .delivery-code-controls .secondary-button {
+    width: 100%;
+  }
+  .delivery-code-copy strong {
+    font-size: 30px;
+  }
+  .inbox-delivery-code {
+    grid-template-columns: 1fr;
+  }
+}
+
 .sim-panel.street-test-panel {
   border-radius: 22px;
   padding: 16px;

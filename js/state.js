@@ -2,6 +2,7 @@ import { BUSINESS_CONFIG, STORAGE_KEYS } from './config.js';
 import { categories, seedOrders } from './data.js';
 import { buildDemoCatalog, mergeCatalogProducts } from './core/catalog-store.js';
 import { normalizeDeliveryProof } from './core/delivery-proof.js';
+import { normalizeDeliveryCode } from './core/delivery-code.js';
 import {
   buildDefaultBusinessConfig,
   getBusinessConfig,
@@ -255,6 +256,15 @@ function normalizeOrder(order) {
   const paymentMethodCode = normalizeOrderPaymentMethodCode(order.paymentMethodCode, order.paymentMethod);
   const delivery = normalizeDelivery(order.delivery, deliveryMode, status);
   const deliveryProof = normalizeDeliveryProof(order.deliveryProof);
+  const hasStoredDeliveryCode = order.deliveryCode !== undefined
+    && order.deliveryCode !== null
+    && order.deliveryCode !== '';
+  const canSeedDeliveryCode = deliveryMode === 'delivery'
+    && status !== 'delivered'
+    && status !== 'cancelled';
+  const deliveryCode = deliveryMode === 'delivery' && (hasStoredDeliveryCode || canSeedDeliveryCode)
+    ? normalizeDeliveryCode(order.deliveryCode, { seed: canSeedDeliveryCode ? id : '' })
+    : null;
   const addressDetails = deliveryMode === 'pickup'
     ? null
     : normalizeOrderAddressDetails(order);
@@ -289,6 +299,8 @@ function normalizeOrder(order) {
   };
   if (deliveryProof) normalized.deliveryProof = deliveryProof;
   else delete normalized.deliveryProof;
+  if (deliveryCode) normalized.deliveryCode = deliveryCode;
+  else delete normalized.deliveryCode;
   return normalized;
 }
 

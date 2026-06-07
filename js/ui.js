@@ -664,7 +664,7 @@ function renderCheckoutPaymentFields() {
   const showCoordinationCopy = paymentMethod === 'transfer' || paymentMethod === 'mercado_pago_future';
   note.classList.toggle('hidden', !showCoordinationCopy);
   note.textContent = showCoordinationCopy
-    ? 'El pago se coordina con el comercio. Esta demo no procesa pagos reales.'
+    ? 'El pago se coordina con el comercio. El comercio confirma el método de pago al aceptar el pedido.'
     : '';
 }
 

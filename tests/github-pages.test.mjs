@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-v5-7-cache');
+  assert.equal(cacheNameMatch[1], 'la-taba-v5-8-cache');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -41,6 +41,30 @@ test('service worker caches only existing GitHub Pages assets', () => {
     if (asset === './') continue;
     assert.equal(fs.existsSync(path.join(root, asset)), true, `missing asset referenced by sw.js: ${asset}`);
   }
+});
+
+test('service worker precaches every shipped JS module (no offline drift)', () => {
+  const source = read('sw.js');
+  const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
+  assert.ok(assetBlock);
+  const assets = new Set([...assetBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1]));
+
+  const jsRoot = path.join(root, 'js');
+  const jsFiles = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile() && entry.name.endsWith('.js')) {
+        jsFiles.push(`./${path.relative(root, full).split(path.sep).join('/')}`);
+      }
+    }
+  };
+  walk(jsRoot);
+
+  const missing = jsFiles.filter((file) => !assets.has(file));
+  assert.deepEqual(missing, [], `sw.js precache is missing JS modules: ${missing.join(', ')}`);
 });
 
 test('commercial app defaults to light premium theme, not dark fallback', () => {

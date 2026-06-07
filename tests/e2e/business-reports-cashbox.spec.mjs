@@ -77,7 +77,7 @@ test('negocio ve reportes/caja desde pedidos reales, cupon, pago y cancelaciones
   await expect(report).toContainText('Sin stock');
 
   await report.locator('[data-cashbox-close]').click();
-  await waitForToast(page, 'Cierre de caja demo guardado.');
+  await waitForToast(page, 'Cierre de caja guardado.');
   await expect(report).toContainText('Historial de cierres');
   await expect(report.locator('.cashbox-history-row').first()).toContainText(/[1-9]\d* entregados/);
   await expect(report.locator('.cashbox-history-row').first()).toContainText('1 cancelados');

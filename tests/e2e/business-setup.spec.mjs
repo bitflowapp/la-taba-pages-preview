@@ -95,16 +95,16 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await expect(page.locator('[data-view="business"]')).toBeVisible();
 
   await page.locator('[data-scroll-business-setup]').click();
-  await setup.getByRole('button', { name: 'Restaurar configuración demo' }).first().click();
+  await setup.getByRole('button', { name: 'Restaurar configuración inicial' }).first().click();
   const resetModal = page.locator('[data-business-setup-reset-modal]');
   await expect(resetModal).toBeVisible();
   await expect(resetModal).toContainText('No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.');
   await resetModal.getByRole('button', { name: 'Cancelar' }).click();
   await expect(page.locator('.topbar .brand')).toContainText('QA Store');
 
-  await setup.getByRole('button', { name: 'Restaurar configuración demo' }).first().click();
-  await resetModal.getByRole('button', { name: 'Restaurar configuración demo' }).click();
-  await waitForToast(page, 'Configuración demo restaurada.');
+  await setup.getByRole('button', { name: 'Restaurar configuración inicial' }).first().click();
+  await resetModal.getByRole('button', { name: 'Restaurar configuración inicial' }).click();
+  await waitForToast(page, 'Configuración inicial restaurada.');
   await expect(page.locator('.topbar .brand')).toContainText('La Taba');
   await expect(page.locator('[data-business-dashboard]')).toContainText('QA-0001');
 

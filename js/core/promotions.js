@@ -27,7 +27,7 @@ export function validateCouponCode(value) {
     ok: false,
     code,
     discountPercent: 0,
-    message: 'Cupón inválido. En esta demo podés usar TABA10.',
+    message: 'Cupón no válido.',
   };
 }
 

@@ -472,7 +472,7 @@ function renderDeliveryProofSummary(order, { compact = false } = {}) {
       <img class="proof-thumb" src="${escapeHtml(proof.photoDataUrl)}" alt="Foto de entrega del pedido ${escapeHtml(order.id)}" data-delivery-proof-thumb />
       <div class="proof-copy">
         <strong>Comprobante tomado${proofTime ? `: ${escapeHtml(proofTime)}` : ''}</strong>
-        <small>Evidencia local/demo. Evitá personas, DNI o datos privados.</small>
+        <small>Evidencia guardada en este equipo. Evitá personas, DNI o datos privados.</small>
       </div>
       <button class="ghost-button compact" type="button" data-order-proof="${escapeHtml(order.id)}">Ver foto</button>
     </section>`;
@@ -634,13 +634,13 @@ function renderBusinessReportsPanel(report, closures = []) {
           </div>
         </section>
 
-        <section class="report-panel" aria-label="Cierre de caja demo">
-          <div class="panel-head compact"><h3>Cierre de caja</h3><span>Demo local</span></div>
+        <section class="report-panel" aria-label="Cierre de caja">
+          <div class="panel-head compact"><h3>Cierre de caja</h3><span>En este equipo</span></div>
           <div class="cashbox-actions">
-            <button class="primary-button compact" type="button" data-cashbox-close>Cerrar caja demo</button>
+            <button class="primary-button compact" type="button" data-cashbox-close>Cerrar caja</button>
             <button class="secondary-button compact" type="button" data-copy-business-summary>Copiar resumen</button>
           </div>
-          <p class="cashbox-note">Cierre demo: guarda una foto del período seleccionado. No bloquea pedidos, no evita cierres repetidos y no es un cierre contable incremental.</p>
+          <p class="cashbox-note">Cierre de caja: guarda una foto del período seleccionado. No bloquea pedidos, no evita cierres repetidos y no es un cierre contable incremental.</p>
           ${summaryFallback}
           ${renderCashboxHistory(closures)}
         </section>
@@ -797,7 +797,7 @@ function renderCatalogManager(state) {
         </div>
         <div class="catalog-admin-top-actions">
           <button class="secondary-button compact" type="button" data-catalog-new>Nuevo producto</button>
-          <button class="ghost-button compact" type="button" data-catalog-reset-demo>Restaurar catálogo demo</button>
+          <button class="ghost-button compact" type="button" data-catalog-reset-demo>Restaurar catálogo inicial</button>
         </div>
       </header>
 
@@ -818,11 +818,11 @@ function renderBusinessSetupPanel() {
     <section class="business-setup-card" data-business-setup aria-labelledby="business-setup-title">
       <header class="business-catalog-head business-setup-head">
         <div>
-          <span class="catalog-admin-kicker">Autoservicio demo</span>
+          <span class="catalog-admin-kicker">Autoservicio</span>
           <h3 id="business-setup-title">Configuración del negocio</h3>
-          <p>Cambiá identidad, contacto, horarios y reglas básicas sin tocar código. Se guarda localmente en esta demo.</p>
+          <p>Cambiá identidad, contacto, horarios y reglas básicas sin tocar código. Se guarda localmente en este equipo.</p>
         </div>
-        <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuración demo</button>
+        <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuración inicial</button>
       </header>
 
       <div class="business-setup-layout">
@@ -882,7 +882,7 @@ function renderBusinessSetupPanel() {
           </fieldset>
 
           <fieldset>
-            <legend>Delivery y acceso demo</legend>
+            <legend>Delivery y acceso al panel</legend>
             <div class="catalog-form-grid">
               <label>
                 <span>Costo de envío</span>
@@ -903,7 +903,7 @@ function renderBusinessSetupPanel() {
           ${feedback}
           <div class="catalog-form-actions">
             <button class="primary-button compact" type="submit" data-business-setup-save>Guardar configuración</button>
-            <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuración demo</button>
+            <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuración inicial</button>
           </div>
         </form>
 
@@ -1029,7 +1029,7 @@ function catalogProductRow(product) {
         <small>${product.available ? 'Visible para cliente' : 'No disponible'}</small>
       </div>
       <div class="catalog-admin-actions">
-        <div class="catalog-stock-actions" aria-label="Stock demo de ${escapeHtml(product.name)}">
+        <div class="catalog-stock-actions" aria-label="Stock de ${escapeHtml(product.name)}">
           <button class="icon-button compact" type="button" data-stock-dec="${escapeHtml(product.id)}" aria-label="Restar stock de ${escapeHtml(product.name)}">−</button>
           <strong>${product.stock}</strong>
           <button class="icon-button compact" type="button" data-stock-inc="${escapeHtml(product.id)}" aria-label="Sumar stock de ${escapeHtml(product.name)}">+</button>
@@ -1125,7 +1125,7 @@ export function handleBusinessAction(target) {
     return {
       handled: true,
       ok: result.ok,
-      message: result.ok ? 'Cierre de caja demo guardado.' : 'No se pudo guardar el cierre demo.',
+      message: result.ok ? 'Cierre de caja guardado.' : 'No se pudo guardar el cierre.',
     };
   }
 
@@ -1649,7 +1649,7 @@ function requestBusinessSetupReset() {
 }
 
 export function confirmBusinessSetupReset() {
-  businessSetupFeedback = 'Configuración demo restaurada.';
+  businessSetupFeedback = 'Configuración inicial restaurada.';
   const result = restoreBusinessSetupDemo({ confirmed: true, updateConfig: updateBusinessConfig });
   closeBusinessSetupResetModal();
   if (typeof document !== 'undefined') {
@@ -1677,11 +1677,11 @@ function closeBusinessSetupResetModal() {
 function renderBusinessSetupResetDialog() {
   return `
     <div class="pin-card cancel-card" data-business-setup-reset-card>
-      <h2>Restaurar configuración demo</h2>
-      <p>Esto restaurará los datos demo del comercio. No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.</p>
+      <h2>Restaurar configuración inicial</h2>
+      <p>Esto restaurará los datos iniciales del comercio. No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.</p>
       <div class="button-row cancel-actions">
         <button class="secondary-button" type="button" data-business-setup-reset-dismiss>Cancelar</button>
-        <button class="danger-button" type="button" data-business-setup-reset-confirm>Restaurar configuración demo</button>
+        <button class="danger-button" type="button" data-business-setup-reset-confirm>Restaurar configuración inicial</button>
       </div>
     </div>`;
 }
@@ -1696,7 +1696,7 @@ export function confirmCatalogReset() {
   editingCatalogProductId = null;
   setState({ products: restoreDemoCatalog(), activeCategory: 'all' });
   closeCatalogResetModal();
-  return { handled: true, ok: true, message: 'Catálogo demo restaurado.' };
+  return { handled: true, ok: true, message: 'Catálogo inicial restaurado.' };
 }
 
 function openCatalogResetModal() {
@@ -1717,11 +1717,11 @@ function closeCatalogResetModal() {
 function renderCatalogResetDialog() {
   return `
     <div class="pin-card cancel-card" data-catalog-reset-card>
-      <h2>Restaurar catálogo demo</h2>
-      <p>Esto reemplazará el catálogo actual por el catálogo demo. Los productos cargados se perderán en esta demo.</p>
+      <h2>Restaurar catálogo inicial</h2>
+      <p>Esto reemplazará el catálogo actual por el catálogo inicial. Los productos cargados se perderán.</p>
       <div class="button-row cancel-actions">
         <button class="secondary-button" type="button" data-catalog-reset-dismiss>Cancelar</button>
-        <button class="danger-button" type="button" data-catalog-reset-confirm>Restaurar demo</button>
+        <button class="danger-button" type="button" data-catalog-reset-confirm>Restaurar</button>
       </div>
     </div>`;
 }
@@ -1802,7 +1802,7 @@ function openDeliveryProofModal(order) {
     <div class="modal-card delivery-proof-modal" data-delivery-proof-modal>
       <span class="proof-badge">Foto de entrega</span>
       <h2>Comprobante ${escapeHtml(order.id)}</h2>
-      <p>Comprobante tomado${proofTime ? `: ${escapeHtml(proofTime)}` : ''}. Evidencia local/demo guardada en este pedido.</p>
+      <p>Comprobante tomado${proofTime ? `: ${escapeHtml(proofTime)}` : ''}. Evidencia guardada en este equipo, junto al pedido.</p>
       <img class="proof-modal-image" src="${escapeHtml(proof.photoDataUrl)}" alt="Foto de entrega del pedido ${escapeHtml(order.id)}" data-delivery-proof-modal-image />
       <p class="form-hint">Evitá fotografiar personas, DNI o datos privados. Esta foto no se sube a un backend en v1.</p>
       <div class="button-row" style="margin-top:16px">

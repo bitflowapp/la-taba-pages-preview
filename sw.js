@@ -1,4 +1,4 @@
-const CACHE_NAME = 'la-taba-v5-7-cache';
+const CACHE_NAME = 'la-taba-v5-8-cache';
 const ASSETS = [
   './',
   './index.html',
@@ -14,12 +14,21 @@ const ASSETS = [
   './js/app.js',
   './js/config.js',
   './js/core/address.js',
+  './js/core/business-config-store.js',
   './js/core/business-metrics.js',
+  './js/core/business-ops.js',
+  './js/core/business-reports.js',
+  './js/core/business-setup.js',
+  './js/core/cashbox-store.js',
+  './js/core/catalog-store.js',
+  './js/core/customer-history.js',
+  './js/core/customer-preferences.js',
   './js/core/delivery-proof.js',
   './js/core/domain.js',
   './js/core/order-status.js',
   './js/core/order-workflow.js',
   './js/core/pricing.js',
+  './js/core/promotions.js',
   './js/core/realtime-sync.js',
   './js/core/rider.js',
   './js/core/simulation.js',

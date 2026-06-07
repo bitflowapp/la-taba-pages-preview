@@ -89,7 +89,7 @@ test('cupon invalido informa error y no descuenta', () => {
   const preview = previewCouponDiscount('NOPE', 10000);
   assert.equal(preview.ok, false);
   assert.equal(preview.discountAmount, 0);
-  assert.match(preview.message, /Cupón inválido/i);
+  assert.match(preview.message, /Cupón no válido/i);
 
   addToCart('p-vacio', 1);
   const created = createTestOrder({ couponCode: 'NOPE' });

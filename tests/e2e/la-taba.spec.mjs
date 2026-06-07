@@ -350,7 +350,7 @@ test('mobile cliente aplica cupon, elige pago y crea pedido', async ({ browser }
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await expect(page.locator('[data-payment-note]')).toContainText('Esta demo no procesa pagos reales');
+  await expect(page.locator('[data-payment-note]')).toContainText('El comercio confirma el método de pago al aceptar el pedido');
   await page.getByLabel('Cupón o promo').fill('taba10');
   await page.locator('[data-apply-coupon]').click();
   await expect(page.locator('[data-coupon-message]')).toContainText('TABA10');

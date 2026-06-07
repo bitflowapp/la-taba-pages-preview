@@ -1,4 +1,4 @@
-# La Taba · Sistema de pedidos online (demo)
+# La Taba · Sistema de pedidos online
 
 **La Taba** es el sistema propio de pedidos online de una carnicería/local de comida con delivery.
 
@@ -21,11 +21,11 @@ Es una web/PWA estática, sin backend todavía. Corre en GitHub Pages, Vercel, N
 - **¿Cómo recibe pedidos el negocio?** Pedido interno en la app (panel del negocio y vista rider). WhatsApp es una copia opcional.
 - **¿Qué ve el cliente?** Catálogo por categorías, carrito, confirmar pedido y seguimiento en vivo.
 - **¿Qué controla el dueño?** Pedidos, estados, ventas del día, stock y reparto.
-- **¿Cómo se prueba?** Confirmás un pedido como cliente; con PIN `1234` entrás al panel del negocio y a la vista rider.
+- **¿Cómo se prueba?** Confirmás un pedido como cliente; con el PIN del comercio (configurable en `js/config.js`, campo `adminPin`) entrás al panel del negocio y a la vista rider.
 
 ## Diferencia honesta frente a una app de delivery
 
-Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de clientes. Sirve para otra cosa: darle a La Taba un link propio para clientes frecuentes, Instagram, WhatsApp y QR del local. El pedido llega claro, con total calculado y listo para responder.
+La Taba no busca reemplazar de golpe a PedidoYa ni traer una red propia de clientes. Sirve para otra cosa: darle a La Taba un link propio para clientes frecuentes, Instagram, WhatsApp y QR del local. El pedido llega claro, con total calculado y listo para responder.
 
 ## Cómo probar la demo
 
@@ -38,7 +38,7 @@ Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de c
 
 ### Como negocio (administrar pedidos)
 1. Tocá **Administrar pedidos** arriba a la derecha o **Panel negocio** desde **Local**.
-2. Ingresá el **PIN demo `1234`**.
+2. Ingresá el **PIN del comercio** (configurable en `js/config.js`, campo `adminPin`).
 3. Vas a ver: pedidos entrantes, ventas del día, pedidos activos y stock bajo.
 4. Acciones por pedido: **Aceptar pedido → Marcar listo para enviar → Enviar con repartidor → Marcar entregado**, o **Cancelar**.
 
@@ -52,7 +52,7 @@ Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de c
    - **Usar mi ubicación como rider demo** (GPS opcional): pide permiso solo al tocarlo; si falla, lo avisa y sigue funcionando con la simulación local.
 5. Mientras la simulación avanza, la pantalla de **Seguir** del cliente se actualiza sola (rider en camino → llegando → entregado), sin recargar.
 
-> **PIN demo: 1234** — acceso de demostración para la presentación.
+> **Acceso del comercio:** ingresá el PIN definido en `js/config.js` (campo `adminPin`). Cambialo antes de mostrarlo a un comercio o salir a producción.
 
 ## Probar con DOS celulares (relay realtime demo)
 
@@ -270,7 +270,7 @@ imagen: el placeholder muestra las iniciales del producto sobre un bloque tonal.
 - Seguimiento del pedido en vivo, con chip de conexión (en vivo entre equipos / modo local si el relay se reconecta).
 - **Relay realtime demo (Node + SSE, sin dependencias)** para probar cliente y rider en dos celulares de la misma Wi‑Fi (`npm run realtime:demo`).
 - Botón para copiar el pedido y mensaje de WhatsApp completo (cliente, productos, totales, pago, notas y fecha).
-- Modo negocio protegido con PIN demo `1234`.
+- Modo negocio protegido con PIN configurable (`adminPin` en `js/config.js`).
 - Administración de pedidos con estados, acciones, stock y **métricas comerciales**: ventas del día, ticket promedio, delivery vs retiro y productos más pedidos.
 - Vista de repartidor con cola de pedidos (incluye *Esperando preparación*), botón demo *Marcar listo para reparto*, acciones de salida/entrega y **simulación de reparto en tiempo real** con progreso, ETA y GPS opcional. Lo técnico (relay/sala/IDs y *copiar link cliente/rider*) queda en un bloque *Demo avanzado*.
 - PWA instalable con manifest y service worker (se usa como una app).
@@ -336,7 +336,7 @@ export const BUSINESS_CONFIG = Object.freeze({
   whatsappNumber: '5492996209136',
   deliveryFee: 1200,
   minDeliveryOrder: 5000,
-  adminPin: '1234',
+  adminPin: 'tu-pin-numerico', // 4 a 6 dígitos definidos por el comercio
 });
 ```
 
@@ -347,7 +347,7 @@ El cliente ve catálogo, mi pedido, seguimiento y datos del comercio.
 Para ver la administración de pedidos y el reparto:
 
 1. Tocar **Administrar pedidos**.
-2. Ingresar PIN `1234`.
+2. Ingresar el PIN del comercio (campo `adminPin` en `js/config.js`).
 3. Se habilitan las secciones de negocio y repartidor.
 
 ## Cómo correr los tests

@@ -666,21 +666,26 @@ export const products = [
   },
 ];
 
+// Pedido inicial de ejemplo (interno). Sirve para que el panel del negocio no
+// arranque vacío en la primera apertura y para mantener estable la numeración de
+// IDs (el primer pedido real del comercio queda como LT-0002). NO representa un
+// cliente real ni inventa métricas (rating, viajes, kilómetros): es claramente
+// un registro de ejemplo. El comercio puede empezar limpio abriendo con ?reset=1.
 export const seedOrders = [
   {
     id: 'LT-0001',
-    customerName: 'Juan Pérez',
-    customerPhone: '2990000000',
-    address: 'Av. San Martín 1234, Neuquén',
+    customerName: 'Pedido de ejemplo',
+    customerPhone: '',
+    address: 'Registro de ejemplo del panel',
     addressDetails: {
-      streetLine: 'Av. San Martín 1234',
-      neighborhood: 'Neuquén centro',
-      reference: 'Tocar timbre',
-      label: 'Av. San Martín 1234, Neuquén centro',
+      streetLine: 'Registro de ejemplo del panel',
+      neighborhood: 'Ejemplo',
+      reference: '',
+      label: 'Registro de ejemplo del panel',
     },
     deliveryMode: 'delivery',
     paymentMethod: 'Efectivo',
-    notes: 'Tocar timbre. Cambio con $30000.',
+    notes: 'Sin notas',
     createdAt: new Date(Date.now() - 1000 * 60 * 22).toISOString(),
     status: 'delivered',
     items: [
@@ -699,12 +704,9 @@ export const seedOrders = [
       { status: 'delivered', at: new Date(Date.now() - 1000 * 60 * 2).toISOString() },
     ],
     delivery: {
-      driverName: 'Martín',
-      driverPhone: '2991112233',
-      driverRating: 4.9,
-      driverTrips: 128,
+      driverName: 'Sin asignar',
+      driverPhone: '',
       estimatedMinutes: 0,
-      distanceKm: 1.2,
       currentLocationLabel: 'Pedido entregado',
       deliveredAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
     },

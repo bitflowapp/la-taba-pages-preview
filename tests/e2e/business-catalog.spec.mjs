@@ -47,16 +47,16 @@ test('Negocio: crea, edita, pausa y restaura el catálogo editable', async ({ br
 
   await page.evaluate(() => { window.location.hash = '#business'; });
   // Restaurar es destructivo: el primer tap abre el modal y no borra nada.
-  await page.getByRole('button', { name: 'Restaurar catálogo demo' }).click();
+  await page.getByRole('button', { name: 'Restaurar catálogo inicial' }).click();
   const resetModal = page.locator('[data-catalog-reset-modal]');
   await expect(resetModal).toBeVisible();
   await resetModal.getByRole('button', { name: 'Cancelar' }).click();
   await expect(adminRow).toContainText('Producto Catalogo QA');
 
-  // Recién al confirmar se reemplaza el catálogo por el demo.
-  await page.getByRole('button', { name: 'Restaurar catálogo demo' }).click();
-  await resetModal.getByRole('button', { name: 'Restaurar demo' }).click();
-  await waitForToast(page, 'Catálogo demo restaurado.');
+  // Recién al confirmar se reemplaza el catálogo por el inicial.
+  await page.getByRole('button', { name: 'Restaurar catálogo inicial' }).click();
+  await resetModal.getByRole('button', { name: 'Restaurar', exact: true }).click();
+  await waitForToast(page, 'Catálogo inicial restaurado.');
 
   await page.evaluate(() => { window.location.hash = '#catalog'; });
   await expect(page.locator('[data-product-grid]')).not.toContainText('Producto Catalogo QA');

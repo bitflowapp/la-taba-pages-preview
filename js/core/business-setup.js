@@ -117,10 +117,10 @@ export function restoreBusinessSetupDemo({ confirmed = false, updateConfig = upd
       handled: true,
       ok: false,
       needsConfirmation: true,
-      message: 'Esto restaurara los datos demo del comercio. No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.',
+      message: 'Esto restaurara los datos iniciales del comercio. No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.',
     };
   }
 
   const config = updateConfig(buildDefaultBusinessConfig());
-  return { handled: true, ok: true, message: 'Configuración demo restaurada.', config };
+  return { handled: true, ok: true, message: 'Configuración inicial restaurada.', config };
 }

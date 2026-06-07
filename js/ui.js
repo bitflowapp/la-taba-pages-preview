@@ -2,7 +2,12 @@ import { getBusinessConfig } from './core/business-config-store.js';
 import { categories } from './data.js';
 import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
 import { getCustomerOrderHistory, getLatestCustomerOrder } from './core/customer-history.js';
+import {
+  getCustomerProfile,
+  getRememberedCheckoutValues,
+} from './core/customer-profile.js';
 import { getFavoriteProductIds, isFavoriteProduct } from './core/customer-preferences.js';
+import { buildReorderPreview } from './core/reorder.js';
 import {
   deliveryModeLabel,
   dateTime,
@@ -63,6 +68,8 @@ function restoreStableRealMap(container, shell) {
 export function applyBusinessConfig() {
   setText('[data-business-name]', getBusinessConfig().businessName);
   setText('[data-business-subtitle]', getBusinessConfig().subtitle);
+  setText('.app-home .eyebrow', 'Pedido directo al comercio');
+  setText('.app-home .home-lead', 'Pedi directo, repetis mas rapido y seguis el reparto real cuando el rider comparte GPS.');
   setText('[data-min-order]', money(getBusinessConfig().minDeliveryOrder));
   setText('[data-delivery-fee]', money(getBusinessConfig().deliveryFee));
   setText('[data-business-profile-name]', getBusinessConfig().businessName);
@@ -79,6 +86,10 @@ export function applyBusinessConfig() {
     status.textContent = isOpen ? 'Abierto ahora' : 'Tomamos pedidos';
     status.classList.toggle('is-closed', false);
   }
+  const statusItems = $$('.app-home .status-item');
+  ['Seguimiento real', 'Delivery propio o retiro', 'Entrega validada con codigo'].forEach((label, index) => {
+    if (statusItems[index]) statusItems[index].textContent = label;
+  });
 }
 
 function setText(selector, value) {
@@ -456,7 +467,7 @@ export function renderHomeActiveOrder() {
 }
 
 export function renderCustomerHome() {
-  renderCustomerActions();
+  renderDirectOrderingCustomerActions();
   renderCustomerHistory();
 }
 
@@ -476,6 +487,61 @@ function renderCustomerActions() {
         <span>${escapeHtml(latest.id)} · ${latest.items.length} ${latest.items.length === 1 ? 'producto' : 'productos'} · ${money(latest.total)}</span>
       </div>
       <button class="primary-button compact" type="button" data-repeat-order="${escapeHtml(latest.id)}">Repetir último pedido</button>
+    </section>`;
+}
+
+function renderDirectOrderingCustomerActions() {
+  const container = $('[data-customer-actions]');
+  if (!container) return;
+  const latest = getLatestCustomerOrder();
+  const profile = getCustomerProfile();
+  if (!latest) {
+    container.innerHTML = profile?.loyaltyCopy ? `
+      <section class="customer-loyalty-panel" aria-label="Fidelizacion local">
+        <span>Cliente frecuente</span>
+        <strong>${escapeHtml(profile.loyaltyCopy)}</strong>
+      </section>` : '';
+    return;
+  }
+
+  const preview = buildReorderPreview(latest, getState().products);
+  const items = preview.items.length
+    ? preview.items.slice(0, 4).map((item) => `<li><span>${escapeHtml(item.quantity)}x ${escapeHtml(item.name)}</span><strong>${money(item.lineTotal)}</strong></li>`).join('')
+    : '<li><span>Productos no disponibles</span><strong>0</strong></li>';
+  const skipped = preview.skipped.length
+    ? `<p class="reorder-warning">No se agregaran: ${escapeHtml(preview.skipped.map((item) => `${item.name} (${item.reason})`).join(', '))}.</p>`
+    : '';
+  const priceNotice = preview.priceChanged
+    ? '<p class="reorder-warning">Algunos precios pueden haber cambiado. Recalculamos el total con precios actuales.</p>'
+    : '';
+  const loyalty = profile?.loyaltyCopy
+    ? `<div class="loyalty-progress"><span>Fidelizacion local</span><strong>${escapeHtml(profile.loyaltyCopy)}</strong></div>`
+    : '';
+  const address = preview.deliveryMode === 'pickup'
+    ? 'Retiro en el local'
+    : preview.addressDetails?.label || preview.address || 'Direccion del pedido anterior';
+
+  container.innerHTML = `
+    <section class="customer-action-panel reorder-card" aria-label="Pedir de nuevo">
+      <div class="reorder-card-copy">
+        <span class="reorder-kicker">Pedido directo al comercio</span>
+        <strong>Pedir de nuevo</strong>
+        <small>Repeti tu ultimo pedido y revisalo antes de confirmar.</small>
+        <ul class="reorder-items">${items}</ul>
+        ${priceNotice}
+        ${skipped}
+        <div class="reorder-meta">
+          <span>Direccion usada</span>
+          <strong>${escapeHtml(address)}</strong>
+        </div>
+        ${loyalty}
+      </div>
+      <div class="reorder-card-side">
+        <span>Total estimado</span>
+        <strong>${money(preview.totals.total)}</strong>
+        <button class="primary-button compact" type="button" data-repeat-order="${escapeHtml(latest.id)}" ${preview.canRepeat ? '' : 'disabled'}>Repetir pedido</button>
+        <button class="secondary-button compact" type="button" data-repeat-order="${escapeHtml(latest.id)}" ${preview.canRepeat ? '' : 'disabled'}>Editar antes de confirmar</button>
+      </div>
     </section>`;
 }
 
@@ -526,6 +592,7 @@ function customerHistoryRow(order) {
 export function renderCart() {
   renderCartTotals();
   renderCartList();
+  hydrateCheckoutFromProfile();
   renderOrderSummary();
   renderCheckoutVisibility();
 }
@@ -670,7 +737,7 @@ function renderCheckoutPaymentFields() {
   const showCoordinationCopy = paymentMethod === 'transfer' || paymentMethod === 'mercado_pago_future';
   note.classList.toggle('hidden', !showCoordinationCopy);
   note.textContent = showCoordinationCopy
-    ? 'El pago se coordina con el comercio. Esta demo no procesa pagos reales.'
+    ? 'El comercio confirma el metodo de pago. La app no procesa pagos reales.'
     : '';
 }
 
@@ -688,6 +755,26 @@ function renderCouponMessage(coupon) {
   node.classList.toggle('hidden', !coupon.message);
   node.classList.toggle('is-error', !coupon.ok);
   node.classList.toggle('is-success', coupon.ok);
+}
+
+function hydrateCheckoutFromProfile() {
+  const form = $('[data-checkout-form]');
+  if (!form || form.dataset.profileHydrated === 'true') return;
+  const remembered = getRememberedCheckoutValues();
+  if (!remembered) return;
+  const setIfEmpty = (name, value) => {
+    const field = form.elements?.[name];
+    if (!field || field.value) return;
+    field.value = value || '';
+  };
+  setIfEmpty('customerName', remembered.customerName);
+  setIfEmpty('customerPhone', remembered.customerPhone);
+  setIfEmpty('customerStreetAddress', remembered.customerStreetAddress);
+  setIfEmpty('customerNeighborhood', remembered.customerNeighborhood);
+  setIfEmpty('customerReference', remembered.customerReference);
+  const remember = form.elements?.rememberCustomer;
+  if (remember) remember.checked = true;
+  form.dataset.profileHydrated = 'true';
 }
 
 export function getCheckoutFormValues() {
@@ -714,6 +801,7 @@ export function getCheckoutFormValues() {
     customerNotes: String(formData.get('customerNotes') || ''),
     cashChange: String(formData.get('cashChange') || ''),
     couponCode: String(formData.get('couponCode') || ''),
+    rememberCustomer: formData.get('rememberCustomer') === 'on',
   };
 }
 

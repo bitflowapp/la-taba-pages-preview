@@ -14,7 +14,12 @@ import {
 import { chooseActiveLiveOrderId } from './core/realtime-sync.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
 import { recordCustomerOrder, updateCustomerOrderSnapshot } from './core/customer-history.js';
+import {
+  rememberCustomerProfileFromOrder,
+  updateCustomerProfileOrderSnapshot,
+} from './core/customer-profile.js';
 import { buildAppliedCoupon, normalizeCouponCode } from './core/promotions.js';
+import { buildOrderReorderMetadata } from './core/reorder.js';
 import { normalizeDeliveryProof } from './core/delivery-proof.js';
 import {
   buildDeliveryCode,
@@ -74,6 +79,8 @@ export function createOrderFromCheckout(formValues = {}) {
   const totals = calculateTotals(items, values.deliveryMode, {
     discountAmount: coupon?.discountAmount || 0,
   });
+  const pendingReorder = getState().pendingReorder;
+  const reorder = buildOrderReorderMetadata(pendingReorder, getState().cart, now);
 
   const orderId = createOrderId();
   const deliveryCode = values.deliveryMode === 'delivery'
@@ -109,12 +116,14 @@ export function createOrderFromCheckout(formValues = {}) {
       currentLocationLabel: values.deliveryMode === 'pickup' ? 'Pedido para retirar en local' : 'Pedido recibido por el local',
     },
     ...(deliveryCode ? { deliveryCode } : {}),
+    ...(reorder ? { reorder } : {}),
   };
 
   updateState((draft) => {
     draft.orders.unshift(order);
     draft.lastOrderId = order.id;
     draft.lastCheckoutDraft = values;
+    draft.pendingReorder = null;
 
     for (const item of items) {
       const product = draft.products.find((candidate) => candidate.id === item.productId);
@@ -123,7 +132,13 @@ export function createOrderFromCheckout(formValues = {}) {
 
     draft.cart = [];
   });
-  recordCustomerOrder(order);
+  if (values.rememberCustomer) {
+    recordCustomerOrder(order);
+    rememberCustomerProfileFromOrder(order, {
+      rememberCustomer: true,
+      consentAcceptedAt: now,
+    });
+  }
 
   return { ok: true, order, message: `Pedido ${order.id} creado.` };
 }
@@ -144,6 +159,7 @@ function normalizeCheckoutValues(formValues) {
     customerNotes: sanitizeNotes(formValues.customerNotes, ''),
     cashChange: sanitizeText(formValues.cashChange, { maxLength: 80 }),
     couponCode: normalizeCouponCode(formValues.couponCode),
+    rememberCustomer: Boolean(formValues.rememberCustomer),
   };
 }
 
@@ -229,6 +245,7 @@ export function cancelOrder(orderId, reason = '') {
         if (order) order.cancelReason = clean;
       });
       updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+      updateCustomerProfileOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
     }
   }
   return result;
@@ -255,6 +272,7 @@ export function attachDeliveryProof(orderId, proof) {
     return { ok: false, message: 'No se pudo guardar la foto de entrega. Probá de nuevo o liberá espacio en el navegador.' };
   }
   updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  updateCustomerProfileOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
   return { ok: true, message: 'Foto de entrega adjunta.' };
 }
 
@@ -276,6 +294,7 @@ export function removeDeliveryProof(orderId) {
     return { ok: false, message: 'No se pudo quitar la foto de entrega. Probá de nuevo.' };
   }
   updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  updateCustomerProfileOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
   return { ok: true, message: 'Foto de entrega quitada.' };
 }
 
@@ -310,6 +329,7 @@ export function confirmDeliveryCode(orderId, code, {
     };
   });
   updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  updateCustomerProfileOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
   return { ok: true, message: verification.message };
 }
 
@@ -401,6 +421,7 @@ export function updateOrderStatus(orderId, status, options = {}) {
   });
 
   updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  updateCustomerProfileOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
 
   return { ok: true, message: `Pedido ${orderId} actualizado a ${statusLabel(status)}.` };
 }

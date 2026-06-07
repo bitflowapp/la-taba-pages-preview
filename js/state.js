@@ -33,6 +33,7 @@ import {
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
 import { clampProgress } from './core/simulation.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
+import { normalizePendingReorder } from './core/reorder.js';
 
 // v2: incorpora state.businessConfig (identidad/operación del comercio en runtime).
 export const STATE_SCHEMA_VERSION = 2;
@@ -60,6 +61,7 @@ const defaultState = () => {
     lastOrderId: null,
     adminUnlocked: readAdminFlag(),
     lastCheckoutDraft: null,
+    pendingReorder: null,
     simulation: null,
     businessConfig: buildDefaultBusinessConfig(),
   };
@@ -106,6 +108,7 @@ export function sanitizeState(nextState, baseState = defaultState()) {
     lastOrderId,
     adminUnlocked: Boolean(source.adminUnlocked),
     lastCheckoutDraft: sanitizeCheckoutDraft(source.lastCheckoutDraft),
+    pendingReorder: normalizePendingReorder(source.pendingReorder),
     simulation: sanitizeSimulation(source.simulation, orders),
     businessConfig: normalizeBusinessConfig(source.businessConfig, baseState.businessConfig || buildDefaultBusinessConfig()),
   };
@@ -231,6 +234,7 @@ function sanitizeCheckoutDraft(draft) {
     customerNotes: sanitizeNotes(draft.customerNotes, ''),
     cashChange: sanitizeText(draft.cashChange, { maxLength: 80 }),
     couponCode: sanitizeText(draft.couponCode, { maxLength: 24 }).toUpperCase(),
+    rememberCustomer: Boolean(draft.rememberCustomer),
   };
 }
 
@@ -255,6 +259,7 @@ function normalizeOrder(order) {
   const totals = calculateTotals(items, deliveryMode, { discountAmount: coupon?.discountAmount || order.discountTotal || 0 });
   const paymentMethodCode = normalizeOrderPaymentMethodCode(order.paymentMethodCode, order.paymentMethod);
   const delivery = normalizeDelivery(order.delivery, deliveryMode, status);
+  const reorder = normalizeOrderReorder(order.reorder);
   const deliveryProof = normalizeDeliveryProof(order.deliveryProof);
   const hasStoredDeliveryCode = order.deliveryCode !== undefined
     && order.deliveryCode !== null
@@ -297,6 +302,8 @@ function normalizeOrder(order) {
     statusHistory: normalizeStatusHistory(order.statusHistory, status, createdAt),
     delivery,
   };
+  if (reorder) normalized.reorder = reorder;
+  else delete normalized.reorder;
   if (deliveryProof) normalized.deliveryProof = deliveryProof;
   else delete normalized.deliveryProof;
   if (deliveryCode) normalized.deliveryCode = deliveryCode;
@@ -321,6 +328,20 @@ function normalizeOrderItem(item) {
     quantity,
     unitPrice,
     unit: sanitizeText(item.unit, { fallback: 'unidad', maxLength: 40 }),
+  };
+}
+
+function normalizeOrderReorder(reorder) {
+  if (!isPlainObject(reorder)) return null;
+  const sourceOrderId = sanitizeText(reorder.sourceOrderId, { fallback: '', maxLength: 80 });
+  if (!sourceOrderId) return null;
+  return {
+    sourceOrderId,
+    sourceCreatedAt: reorder.sourceCreatedAt ? normalizeIsoDate(reorder.sourceCreatedAt) : '',
+    repeatedAt: normalizeIsoDate(reorder.repeatedAt),
+    priceChanged: Boolean(reorder.priceChanged),
+    skippedCount: Math.max(0, Math.floor(Number(reorder.skippedCount) || 0)),
+    editedBeforeConfirm: Boolean(reorder.editedBeforeConfirm),
   };
 }
 

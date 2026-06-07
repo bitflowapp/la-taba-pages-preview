@@ -14,6 +14,7 @@ import {
   getBusinessMetrics,
   getLowStockProducts as selectLowStockProducts,
 } from './core/business-metrics.js';
+import { buildCustomerSignals } from './core/customer-profile.js';
 import {
   BUSINESS_CANCEL_REASONS,
   BUSINESS_ORDER_FILTERS,
@@ -310,7 +311,33 @@ function renderOrderInbox(state, metrics, freshOrderIds = new Set()) {
       </details>`
     : '';
 
-  return `<div class="order-inbox" data-order-inbox data-ops-board>${renderInboxControls(orders, metrics)}${body}${historyBody}${closedBlock}</div>`;
+  return `<div class="order-inbox" data-order-inbox data-ops-board>${renderInboxControls(orders, metrics)}${renderDirectOrderingMetrics(metrics)}${body}${historyBody}${closedBlock}</div>`;
+}
+
+function renderDirectOrderingMetrics(metrics) {
+  const data = metrics.directOrdering || {};
+  const hasAnyOrder = Number(data.createdOrders || 0) > 0;
+  if (!hasAnyOrder) {
+    return `
+      <section class="business-growth-strip is-empty" data-direct-ordering-metrics>
+        <div>
+          <span>Hoy / Local</span>
+          <strong>Sin pedidos locales todavia</strong>
+          <small>Cuando entren pedidos directos, aca vas a ver recompra, clientes recurrentes, codigos validados y GPS vivo.</small>
+        </div>
+      </section>`;
+  }
+  return `
+    <section class="business-growth-strip" data-direct-ordering-metrics aria-label="Metricas locales de pedidos directos">
+      <div class="growth-metric accent"><span>Pedidos creados</span><strong>${data.createdOrders || 0}</strong></div>
+      <div class="growth-metric"><span>Entregados</span><strong>${data.deliveredOrders || 0}</strong></div>
+      <div class="growth-metric"><span>En curso</span><strong>${data.inProgressOrders || 0}</strong></div>
+      <div class="growth-metric"><span>Ticket promedio</span><strong>${money(data.averageTicket || 0)}</strong></div>
+      <div class="growth-metric"><span>Clientes recurrentes</span><strong>${data.recurringCustomers || 0}</strong></div>
+      <div class="growth-metric"><span>Pedidos repetidos</span><strong>${data.repeatedOrders || 0}</strong></div>
+      <div class="growth-metric"><span>Entregas validadas</span><strong>${data.deliveryCodesValidated || 0}</strong></div>
+      <div class="growth-metric"><span>Sin GPS vivo</span><strong>${data.ordersWithoutLiveGps || 0}</strong></div>
+    </section>`;
 }
 
 function renderInboxControls(orders, metrics) {
@@ -408,6 +435,7 @@ function inboxOrderCard(order, options = {}) {
   const priorityClass = options.priority ? 'is-priority' : 'is-secondary';
   const freshClass = options.fresh ? 'is-fresh' : '';
   const prepMinutes = normalizePreparationMinutes(order.delivery?.estimatedPreparationMinutes, 0);
+  const customerSignals = buildCustomerSignals(getState().orders, order);
 
   return `
     <article class="inbox-order ${priorityClass} ${freshClass} accent-${statusClass(order.status)}" data-inbox-order="${escapeHtml(order.id)}">
@@ -426,6 +454,7 @@ function inboxOrderCard(order, options = {}) {
             <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
           </div>
           <p class="inbox-status-copy">${escapeHtml(statusMeta.copy)}</p>
+          ${renderCustomerSignals(customerSignals)}
           ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparación estimada: <strong>${prepMinutes} min</strong></p>` : ''}
           ${renderDeliveryCodeSummary(order)}
           ${renderDeliveryProofSummary(order)}
@@ -466,6 +495,33 @@ function inboxOrderCard(order, options = {}) {
         </div>
       </div>
     </article>`;
+}
+
+function renderCustomerSignals(signals) {
+  if (!signals) return '';
+  const tone = signals.isRecurringCustomer ? 'is-recurring' : 'is-new';
+  const status = signals.isRecurringCustomer ? 'Cliente recurrente' : 'Cliente nuevo';
+  const previousCopy = signals.previousOrderCount === 1
+    ? '1 pedido previo'
+    : `${signals.previousOrderCount || 0} pedidos previos`;
+  const lastCopy = signals.lastPreviousOrderLabel
+    ? `<span>Ultimo pedido ${escapeHtml(signals.lastPreviousOrderLabel)}</span>`
+    : '';
+  const benefit = signals.benefitAvailable
+    ? '<strong class="signal-benefit">Beneficio disponible</strong>'
+    : '';
+  const repeated = signals.isRepeatedOrder
+    ? `<span>Pedido repetido${signals.repeatedFromOrderId ? ` desde ${escapeHtml(signals.repeatedFromOrderId)}` : ''}</span>`
+    : '';
+  return `
+    <section class="customer-signal-panel ${tone}" aria-label="Senales de cliente">
+      <span class="signal-chip">${status}</span>
+      <span>${previousCopy}</span>
+      <span>${signals.orderCount || 0} pedidos locales</span>
+      ${lastCopy}
+      ${benefit}
+      ${repeated}
+    </section>`;
 }
 
 function renderDeliveryProofSummary(order, { compact = false } = {}) {
@@ -665,10 +721,10 @@ function renderBusinessReportsPanel(report, closures = []) {
           </div>
         </section>
 
-        <section class="report-panel" aria-label="Cierre de caja demo">
-          <div class="panel-head compact"><h3>Cierre de caja</h3><span>Demo local</span></div>
+        <section class="report-panel" aria-label="Cierre de caja local">
+          <div class="panel-head compact"><h3>Cierre de caja</h3><span>Local-first</span></div>
           <div class="cashbox-actions">
-            <button class="primary-button compact" type="button" data-cashbox-close>Cerrar caja demo</button>
+            <button class="primary-button compact" type="button" data-cashbox-close>Guardar cierre local</button>
             <button class="secondary-button compact" type="button" data-copy-business-summary>Copiar resumen</button>
           </div>
           <p class="cashbox-note">Cierre demo: guarda una foto del período seleccionado. No bloquea pedidos, no evita cierres repetidos y no es un cierre contable incremental.</p>

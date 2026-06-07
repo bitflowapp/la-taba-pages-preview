@@ -9,9 +9,9 @@ import { isProductOrderable } from './core/catalog-store.js';
 import {
   findCustomerOrder,
   getLatestCustomerOrder,
-  resolveRepeatOrderItems,
 } from './core/customer-history.js';
 import { previewCouponDiscount } from './core/promotions.js';
+import { buildPendingReorder, buildReorderPreview } from './core/reorder.js';
 import { getProductById, getState, money, setState, updateState } from './state.js';
 
 function productIsOrderable(product) {
@@ -142,7 +142,7 @@ export function removeCartItem(productId) {
 
 export function clearCart() {
   if (getState().cart.length === 0) return { ok: true, message: 'El carrito ya estaba vacío.' };
-  setState({ cart: [] });
+  setState({ cart: [], pendingReorder: null });
   return { ok: true, message: 'Carrito vaciado.' };
 }
 
@@ -165,7 +165,9 @@ export function repeatCustomerOrder(orderId = '', { force = false } = {}) {
     };
   }
 
-  const { cartItems, skipped } = resolveRepeatOrderItems(order, getState().products);
+  const preview = buildReorderPreview(order, getState().products);
+  const cartItems = preview.items.map((item) => ({ productId: item.productId, quantity: item.quantity }));
+  const skipped = preview.skipped;
   if (!cartItems.length) {
     return {
       ok: false,
@@ -174,15 +176,20 @@ export function repeatCustomerOrder(orderId = '', { force = false } = {}) {
     };
   }
 
-  setState({ cart: cartItems });
+  setState({
+    cart: cartItems,
+    pendingReorder: buildPendingReorder(order, preview),
+  });
   const skippedMessage = repeatSkippedMessage(skipped);
+  const priceMessage = preview.priceChanged ? ' Algunos precios pueden haber cambiado.' : '';
   return {
     ok: true,
     order,
+    preview,
     skipped,
     message: skippedMessage
-      ? `Carrito armado con precios actuales. ${skippedMessage}`
-      : 'Carrito armado con precios actuales.',
+      ? `Carrito armado con precios actuales.${priceMessage} ${skippedMessage}`
+      : `Carrito armado con precios actuales.${priceMessage}`,
   };
 }
 

@@ -100,7 +100,7 @@ async function maybeResetDemoSession() {
     const params = new URLSearchParams(window.location.search);
     if (!params.has('reset') && !params.has('demo-reset')) return false;
     await clearRelayRoomOnReset(params);
-    [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked, STORAGE_KEYS.customerFavorites, STORAGE_KEYS.customerHistory].forEach((key) => {
+    [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked, STORAGE_KEYS.customerFavorites, STORAGE_KEYS.customerHistory, STORAGE_KEYS.customerProfile].forEach((key) => {
       try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
       try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
     });

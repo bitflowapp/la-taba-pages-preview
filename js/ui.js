@@ -68,8 +68,8 @@ function restoreStableRealMap(container, shell) {
 export function applyBusinessConfig() {
   setText('[data-business-name]', getBusinessConfig().businessName);
   setText('[data-business-subtitle]', getBusinessConfig().subtitle);
-  setText('.app-home .eyebrow', 'Pedido directo al comercio');
-  setText('.app-home .home-lead', 'Pedi directo, repetis mas rapido y seguis el reparto real cuando el rider comparte GPS.');
+  setText('.app-home .eyebrow', getBusinessConfig().subtitle || 'Carnicería & delivery propio');
+  setText('.app-home .home-lead', 'Cortes frescos, parrilla y combos para pedir desde el celular, con entrega propia o retiro en el local.');
   setText('[data-min-order]', money(getBusinessConfig().minDeliveryOrder));
   setText('[data-delivery-fee]', money(getBusinessConfig().deliveryFee));
   setText('[data-business-profile-name]', getBusinessConfig().businessName);
@@ -79,17 +79,34 @@ export function applyBusinessConfig() {
   setText('[data-business-zone]', getBusinessConfig().deliveryZone);
   setText('[data-rider-business-name]', getBusinessConfig().businessName);
 
+  // Estado honesto del local: abierto/cerrado según el horario configurado.
   const status = $('[data-open-status]');
+  const openHour = Number(getBusinessConfig().openHour);
+  const closeHour = Number(getBusinessConfig().closeHour);
+  const hour = new Date().getHours();
+  const isOpen = hour >= openHour && hour < closeHour;
   if (status) {
-    const hour = new Date().getHours();
-    const isOpen = hour >= getBusinessConfig().openHour && hour < getBusinessConfig().closeHour;
-    status.textContent = isOpen ? 'Abierto ahora' : 'Tomamos pedidos';
-    status.classList.toggle('is-closed', false);
+    status.textContent = isOpen ? `Abierto · hasta las ${closeHour}:00` : `Cerrado · abre a las ${openHour}:00`;
+    status.classList.toggle('is-closed', !isOpen);
   }
   const statusItems = $$('.app-home .status-item');
-  ['Seguimiento real', 'Delivery propio o retiro', 'Entrega validada con codigo'].forEach((label, index) => {
+  const zone = shortZoneLabel(getBusinessConfig().deliveryZone);
+  const chips = [
+    isOpen ? 'Recibimos pedidos ahora' : 'Podés dejar tu pedido para hoy',
+    'Delivery propio o retiro en el local',
+    zone,
+  ];
+  chips.forEach((label, index) => {
     if (statusItems[index]) statusItems[index].textContent = label;
   });
+}
+
+// Versión corta de la zona para el chip del home ("Neuquén centro, barrios..." es muy largo).
+function shortZoneLabel(zone) {
+  const text = String(zone || '').trim();
+  if (!text) return 'Zona de entrega configurada';
+  const firstPart = text.split(/[,·]/)[0].trim();
+  return firstPart.length > 34 ? `${firstPart.slice(0, 31)}…` : firstPart || text;
 }
 
 function setText(selector, value) {
@@ -206,23 +223,21 @@ export function productCode(product) {
   return `${first}${second}`.toUpperCase();
 }
 
+// Un solo badge por foto: descuento (con combo fusionado), etiqueta propia,
+// "Más pedido" o "Destacado". Evita apilar 3-4 cintas sobre la imagen.
 function topBadge(product) {
   const off = discountPercent(product);
   if (product.combo && off > 0) return `<span class="offer-badge combo">Combo · ${off}% OFF</span>`;
   if (off > 0) return `<span class="offer-badge discount">${off}% OFF</span>`;
   if (product.badge) return `<span class="offer-badge promo">${escapeHtml(product.badge)}</span>`;
+  if (product.popular) return '<span class="offer-badge promo">Más pedido</span>';
   if (product.featured) return '<span class="offer-badge promo">Destacado</span>';
   return '';
 }
 
 function offerBadges(product) {
-  const badges = [];
-  const off = discountPercent(product);
-  if (off > 0) badges.push(`<span class="offer-badge discount">${off}% OFF</span>`);
-  if (product.combo) badges.push('<span class="offer-badge combo">Combo</span>');
-  else if (product.popular) badges.push('<span class="offer-badge promo">Más pedido</span>');
-  else if (off === 0 && product.featured) badges.push('<span class="offer-badge promo">Destacado</span>');
-  return badges.length ? `<div class="product-badges">${badges.join('')}</div>` : '';
+  const badge = topBadge(product);
+  return badge ? `<div class="product-badges">${badge}</div>` : '';
 }
 
 function priceBlock(product) {
@@ -235,27 +250,35 @@ function priceBlock(product) {
     </div>`;
 }
 
-function renderOffers() {
-  const container = $('[data-offers-rail]');
-  if (!container) return;
-  const offers = getCustomerCatalogProducts(getState().products)
+// Ofertas del home. Se exporta la lista para que "Combos destacados" no repita
+// los mismos productos en la pantalla inicial.
+function homeOfferProducts() {
+  return getCustomerCatalogProducts(getState().products)
     .filter((product) => product.available && product.stock > 0 && (discountPercent(product) > 0 || product.featured))
     .sort((a, b) => discountPercent(b) - discountPercent(a))
     .slice(0, 8);
+}
 
-  container.innerHTML = offers.map(railCard).join('');
+function renderOffers() {
+  const container = $('[data-offers-rail]');
+  if (!container) return;
+  container.innerHTML = homeOfferProducts().map(railCard).join('');
 }
 
 function renderCombos() {
   const container = $('[data-combos-rail]');
   if (!container) return;
+  const offerIds = new Set(homeOfferProducts().map((product) => product.id));
   const combos = getCustomerCatalogProducts(getState().products)
     .filter((product) => product.available && product.stock > 0 && (product.combo || product.categoryId === 'combos'))
+    .filter((product) => !offerIds.has(product.id))
     .slice(0, 8);
 
+  const block = container.closest('.rail-block');
+  if (block) block.hidden = !combos.length;
   container.innerHTML = combos.length
     ? combos.map(railCard).join('')
-    : '<div class="empty-state">Consultá por combos armados en el local.</div>';
+    : '';
 }
 
 function railCard(product) {
@@ -344,11 +367,14 @@ function activeCategoryName() {
 }
 
 // Rail de ofertas de la categoría activa, arriba del grid del catálogo.
+// Con una búsqueda activa se oculta: si el grid dice "0 productos", no puede
+// quedar un rail mostrando ofertas que no coinciden con lo buscado.
 function renderCatalogOffers() {
   const container = $('[data-catalog-offers]');
   if (!container) return;
   const state = getState();
-  const offers = getCustomerCatalogProducts(state.products)
+  const searching = Boolean(state.searchQuery.trim());
+  const offers = searching ? [] : getCustomerCatalogProducts(state.products)
     .filter((product) => {
       const inCategory = state.activeCategory === 'all' || product.categoryId === state.activeCategory;
       return inCategory && product.available && product.stock > 0 && (discountPercent(product) > 0 || product.featured);
@@ -433,14 +459,22 @@ function renderProducts() {
   }).join('');
 }
 
+// Pill de disponibilidad: sólo aparece cuando hay algo que avisar (agotado,
+// pausado, últimas unidades). Lo normal —estar disponible— no se etiqueta.
 export function stockPill(product) {
   if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
   if (!product.available) return '<span class="stock-pill empty">No disponible</span>';
   if (product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
   if (product.stock <= 4) return `<span class="stock-pill low">Quedan ${product.stock}</span>`;
-  if (product.badge === 'Retiro') return '<span class="stock-pill featured">Retiro</span>';
-  if (product.featured) return '<span class="stock-pill featured">Destacado</span>';
-  return `<span class="stock-pill">Disponible</span>`;
+  return '';
+}
+
+// Texto plano de disponibilidad para el detalle del producto.
+export function availabilityLabel(product) {
+  if (product.archived || !product.available) return 'No disponible por ahora';
+  if (product.stock <= 0) return 'Agotado';
+  if (product.stock <= 4) return `Quedan ${product.stock}`;
+  return 'Disponible hoy';
 }
 
 // Acceso directo a Tracking desde Home cuando hay un pedido en curso.
@@ -497,7 +531,7 @@ function renderDirectOrderingCustomerActions() {
   const profile = getCustomerProfile();
   if (!latest) {
     container.innerHTML = profile?.loyaltyCopy ? `
-      <section class="customer-loyalty-panel" aria-label="Fidelizacion local">
+      <section class="customer-loyalty-panel" aria-label="Fidelización local">
         <span>Cliente frecuente</span>
         <strong>${escapeHtml(profile.loyaltyCopy)}</strong>
       </section>` : '';
@@ -509,29 +543,29 @@ function renderDirectOrderingCustomerActions() {
     ? preview.items.slice(0, 4).map((item) => `<li><span>${escapeHtml(item.quantity)}x ${escapeHtml(item.name)}</span><strong>${money(item.lineTotal)}</strong></li>`).join('')
     : '<li><span>Productos no disponibles</span><strong>0</strong></li>';
   const skipped = preview.skipped.length
-    ? `<p class="reorder-warning">No se agregaran: ${escapeHtml(preview.skipped.map((item) => `${item.name} (${item.reason})`).join(', '))}.</p>`
+    ? `<p class="reorder-warning">No se van a agregar: ${escapeHtml(preview.skipped.map((item) => `${item.name} (${item.reason})`).join(', '))}.</p>`
     : '';
   const priceNotice = preview.priceChanged
     ? '<p class="reorder-warning">Algunos precios pueden haber cambiado. Recalculamos el total con precios actuales.</p>'
     : '';
   const loyalty = profile?.loyaltyCopy
-    ? `<div class="loyalty-progress"><span>Fidelizacion local</span><strong>${escapeHtml(profile.loyaltyCopy)}</strong></div>`
+    ? `<div class="loyalty-progress"><span>Cliente frecuente</span><strong>${escapeHtml(profile.loyaltyCopy)}</strong></div>`
     : '';
   const address = preview.deliveryMode === 'pickup'
     ? 'Retiro en el local'
-    : preview.addressDetails?.label || preview.address || 'Direccion del pedido anterior';
+    : preview.addressDetails?.label || preview.address || 'Dirección del pedido anterior';
 
   container.innerHTML = `
     <section class="customer-action-panel reorder-card" aria-label="Pedir de nuevo">
       <div class="reorder-card-copy">
-        <span class="reorder-kicker">Pedido directo al comercio</span>
+        <span class="reorder-kicker">Tu pedido de siempre</span>
         <strong>Pedir de nuevo</strong>
-        <small>Repeti tu ultimo pedido y revisalo antes de confirmar.</small>
+        <small>Repetí tu último pedido y revisalo antes de confirmar.</small>
         <ul class="reorder-items">${items}</ul>
         ${priceNotice}
         ${skipped}
         <div class="reorder-meta">
-          <span>Direccion usada</span>
+          <span>Dirección usada</span>
           <strong>${escapeHtml(address)}</strong>
         </div>
         ${loyalty}
@@ -737,7 +771,7 @@ function renderCheckoutPaymentFields() {
   const showCoordinationCopy = paymentMethod === 'transfer' || paymentMethod === 'mercado_pago_future';
   note.classList.toggle('hidden', !showCoordinationCopy);
   note.textContent = showCoordinationCopy
-    ? 'El comercio confirma el metodo de pago. La app no procesa pagos reales.'
+    ? 'El pago se coordina directo con el local. La app no procesa pagos reales.'
     : '';
 }
 
@@ -912,14 +946,19 @@ function trackingMapStatusTitle(order) {
   return trackingStatusLabel(order?.status);
 }
 
+// Tiempo honesto: sólo se muestra un número cuando hay una base real (el
+// tiempo de preparación que cargó el negocio al aceptar). Antes de aceptar no
+// inventamos minutos, y en reparto informamos la etapa en lugar de un ETA falso.
 function trackingEtaLabel(order) {
   if (!order || order.status === 'cancelled') return 'Sin estimar';
   if (order.status === 'delivered') return 'Finalizado';
   if (order.deliveryMode === 'pickup' && order.status === 'ready') return 'Listo';
   const prepMinutes = Number(order.delivery?.estimatedPreparationMinutes || 0);
   if (order.status === 'preparing' && prepMinutes > 0) return `${Math.floor(prepMinutes)} min`;
-  const estimatedMinutes = Number(order.delivery?.estimatedMinutes || 0);
-  if (estimatedMinutes > 0) return `${Math.floor(estimatedMinutes)} min`;
+  if (order.status === 'received' || order.status === 'accepted') return 'Lo confirma el local';
+  if (order.status === 'ready') return 'Por salir';
+  if (order.status === 'arriving') return 'Llegando';
+  if (order.status === 'on_the_way') return 'En camino';
   return 'A coordinar';
 }
 
@@ -1040,11 +1079,11 @@ function trackingDeliveryCodeCard(order) {
   if (order.status === 'delivered' && !confirmed) return '';
   const copy = order.deliveryMode === 'pickup'
     ? 'Mostralo en mostrador para retirar tu pedido.'
-    : 'Daselo al rider cuando recibas el pedido.';
+    : 'Dáselo al repartidor cuando recibas el pedido.';
   return `
     <section class="delivery-code-card ${confirmed ? 'is-confirmed' : ''}" data-delivery-code-card>
       <div class="delivery-code-copy">
-        <span>${confirmed ? 'Codigo confirmado' : 'Codigo de entrega'}</span>
+        <span>${confirmed ? 'Código confirmado' : 'Código de entrega'}</span>
         <strong data-delivery-code="${escapeHtml(deliveryCode.code)}">${escapeHtml(formatDeliveryCode(deliveryCode.code))}</strong>
         <small>${confirmed ? `Confirmado${confirmedTime ? ` a las ${escapeHtml(confirmedTime)}` : ''}.` : escapeHtml(copy)}</small>
       </div>
@@ -1119,6 +1158,7 @@ export function renderTracking() {
             <strong>${escapeHtml(head.title)}</strong>
             <span>${escapeHtml(headSub)}</span>
           </div>
+          ${trackingConnectionPill(order)}
         </div>
         <div class="sheet-metrics">
           ${metricsHtml}
@@ -1153,6 +1193,22 @@ export function renderTracking() {
       </section>
     </div>
   `, { rolePrefix: 'tracking', orderId: showMap ? order.id : '' });
+}
+
+// Estado de la conexión con la sala, en el seguimiento sin mapa (sólo con
+// relay y pedido en curso). Habla de la CONEXIÓN entre equipos, no del GPS:
+// por eso dice "Conectado" y nunca "En vivo" (eso queda para GPS real).
+// Sin esto, si la sala se cae el cliente ve un estado viejo sin enterarse.
+function trackingConnectionPill(order) {
+  const status = getRealtimeStatus();
+  if (!status.relayEnabled) return '';
+  if (!order || order.status === 'delivered' || order.status === 'cancelled') return '';
+  const chip = status.relayConnected
+    ? '<span class="rt-chip live">Conectado</span>'
+    : status.relayState === 'offline'
+      ? '<span class="rt-chip warn">Sin conexión</span>'
+      : '<span class="rt-chip warn">Reconectando</span>';
+  return `<span class="sheet-connection-pill">${chip}</span>`;
 }
 
 // Indicador de conexión realtime (en vivo entre equipos / en este equipo).
@@ -1198,7 +1254,7 @@ export function showProductModal(productId) {
         <div class="summary-row"><span>Precio</span><strong>${off > 0 ? `<s>${money(product.oldPrice)}</s> ` : ''}${money(product.price)}</strong></div>
         <div class="summary-row"><span>Presentación</span><strong>${escapeHtml(unitText(product))}</strong></div>
         <div class="summary-row"><span>Preparación</span><strong>${product.prepMinutes} min</strong></div>
-        <div class="summary-row"><span>Disponibilidad</span><strong>${stockPill(product)}</strong></div>
+        <div class="summary-row"><span>Disponibilidad</span><strong>${escapeHtml(availabilityLabel(product))}</strong></div>
       </div>
       ${product.marketNote ? `<p class="market-note">${escapeHtml(product.marketNote)}</p>` : ''}
       <div class="button-row" style="margin-top:16px">
@@ -1227,7 +1283,7 @@ export function showToast(message) {
   toast.textContent = message;
   toast.classList.remove('hidden');
   clearTimeout(showToast.timeoutId);
-  showToast.timeoutId = setTimeout(() => toast.classList.add('hidden'), 2000);
+  showToast.timeoutId = setTimeout(() => toast.classList.add('hidden'), 2600);
 }
 
 export function escapeHtml(value) {

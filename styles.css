@@ -1712,18 +1712,19 @@ body:has(.app-view[data-view="business"].is-active) .toast {
     top: auto;
     bottom: calc(18px + env(safe-area-inset-bottom));
   }
-  body:has(.app-view[data-view="business"].is-active) .toast {
-    top: calc(224px + env(safe-area-inset-top));
-  }
   .mobile-nav { display: flex; }
+  /* El toast vive abajo, por encima de la nav: no tapa el título ni el campo
+     que se está completando. En las vistas de mapa (nav oculta) se acerca al
+     borde con las reglas específicas de arriba. */
   .toast {
     left: 50%;
     right: auto;
-    top: calc(94px + env(safe-area-inset-top));
-    bottom: auto;
+    top: auto;
+    bottom: calc(var(--mobile-nav-h) + 22px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
     width: min(88vw, 360px);
     padding: 12px 14px;
+    text-align: center;
   }
   .button-row > * { flex-basis: 100%; }
 }
@@ -2934,18 +2935,18 @@ body:has(.app-view[data-view="business"].is-active) {
   margin: 0;
   color: var(--biz-text);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(42px, 8vw, 64px);
-  line-height: 0.98;
-  letter-spacing: -0.065em;
+  font-size: clamp(28px, 6vw, 42px);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
 }
 
 .business-topbar-text span {
   display: block;
   max-width: 660px;
-  margin-top: 10px;
+  margin-top: 8px;
   color: var(--biz-muted);
-  font-size: clamp(16px, 2.6vw, 22px);
-  line-height: 1.35;
+  font-size: clamp(14px, 2.2vw, 16px);
+  line-height: 1.4;
 }
 
 .new-order-banner {
@@ -3043,25 +3044,33 @@ body:has(.app-view[data-view="business"].is-active) {
   font-weight: 750;
 }
 
+/* Filtros como chips horizontales con scroll: las etiquetas nunca se truncan
+   y la fila ocupa una sola línea en el teléfono. */
 .inbox-tabs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-  gap: 10px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+
+.inbox-tabs::-webkit-scrollbar { display: none; }
 
 .inbox-tab {
   cursor: pointer;
   font: inherit;
   text-align: left;
+  flex: 0 0 auto;
   min-width: 0;
-  min-height: 64px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   border: 1px solid var(--biz-line);
-  border-radius: 16px;
-  padding: 12px;
+  border-radius: 999px;
+  padding: 8px 10px 8px 14px;
   color: var(--biz-text);
   background: rgba(255, 253, 249, 0.78);
   box-shadow: 0 10px 24px rgba(74, 49, 30, 0.06);
@@ -3074,17 +3083,15 @@ body:has(.app-view[data-view="business"].is-active) {
 }
 
 .inbox-tab span {
-  overflow: hidden;
   color: #2b211a;
   font-size: 14px;
   font-weight: 850;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .inbox-tab strong {
-  min-width: 32px;
-  height: 32px;
+  min-width: 28px;
+  height: 28px;
   display: inline-grid;
   place-items: center;
   border-radius: 999px;
@@ -3287,7 +3294,7 @@ body:has(.app-view[data-view="business"].is-active) {
 }
 
 .inbox-order.is-priority .inbox-id {
-  font-size: clamp(38px, 10vw, 54px);
+  font-size: clamp(30px, 7vw, 40px);
 }
 
 .inbox-order-customer {
@@ -3538,7 +3545,7 @@ body:has(.app-view[data-view="business"].is-active) {
 
 .business-growth-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
   margin: 12px 0 16px;
 }
@@ -3641,9 +3648,9 @@ body:has(.app-view[data-view="business"].is-active) {
 
 .inbox-payment-panel strong {
   color: var(--biz-copper);
-  font-size: clamp(25px, 7vw, 44px);
+  font-size: clamp(24px, 5.4vw, 34px);
   line-height: 1;
-  letter-spacing: -0.055em;
+  letter-spacing: -0.045em;
   white-space: nowrap;
 }
 .inbox-payment-panel small,
@@ -4337,7 +4344,21 @@ body:has(.app-view[data-view="business"].is-active) {
   font-size: 13px;
   line-height: 1.3;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
+
+/* Pills de stock dentro del panel claro del negocio: versión de alto contraste
+   sobre fondo crema (la base está pensada para fotos oscuras del catálogo). */
+.catalog-admin-tags .stock-pill {
+  background: #fdf1e7;
+  border-color: rgba(166, 90, 50, 0.30);
+  color: #8a4a2c;
+}
+.catalog-admin-tags .stock-pill.low { background: #fbf0dc; border-color: rgba(170, 120, 40, 0.36); color: #8a5a14; }
+.catalog-admin-tags .stock-pill.empty { background: #fbe6e0; border-color: rgba(160, 60, 45, 0.34); color: #97352a; }
 
 .catalog-admin-tags {
   display: flex;
@@ -4577,16 +4598,19 @@ body:has(.app-view[data-view="business"].is-active) {
     padding: 18px 14px 20px;
   }
 
+  /* Héroe apilado en móvil: título a una línea, botón de sonido debajo del
+     texto (sin flotar sobre el título). */
   .business-inbox-hero {
     display: block;
     gap: 14px 10px;
   }
 
   .business-inbox-hero .sound-toggle {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: auto;
+    position: static;
+    width: 100%;
+    margin: 12px 0 10px;
+    min-height: 42px;
+    padding-inline: 12px;
   }
 
   .business-mark {
@@ -4599,18 +4623,13 @@ body:has(.app-view[data-view="business"].is-active) {
     font-size: 32px;
   }
 
-  .business-inbox-hero .sound-toggle {
-    min-height: 42px;
-    padding-inline: 12px;
-  }
-
   .business-topbar-text h2 {
-    font-size: 43px;
-    max-width: 260px;
+    font-size: 27px;
+    max-width: none;
   }
 
   .business-topbar-text span {
-    font-size: 16px;
+    font-size: 14.5px;
   }
 
   .business-jump-nav,
@@ -4713,10 +4732,6 @@ body:has(.app-view[data-view="business"].is-active) {
 
   .inbox-payment-panel {
     align-items: center;
-  }
-
-  .inbox-commerce-panel .inbox-actions {
-    order: -1;
   }
 
   .primary-action-block {
@@ -5107,9 +5122,9 @@ body:has(.app-view[data-view="business"].is-active) {
   gap: 8px;
   margin: 12px 0 0;
   padding: 14px;
-  border: 1px solid rgba(94, 117, 180, 0.22);
+  border: 1px solid rgba(182, 76, 52, 0.24);
   border-radius: 16px;
-  background: #f3f6ff;
+  background: linear-gradient(180deg, #fff8f1, #fcefe4);
 }
 .delivery-code-card.is-confirmed {
   border-color: rgba(49, 95, 43, 0.24);
@@ -5120,19 +5135,20 @@ body:has(.app-view[data-view="business"].is-active) {
   gap: 4px;
 }
 .delivery-code-copy span {
-  color: #59647b;
+  color: #97543c;
   font-size: 12px;
   font-weight: 850;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .delivery-code-copy strong {
   color: #1f1b17;
   font-size: 34px;
-  letter-spacing: 0;
+  letter-spacing: 0.06em;
   line-height: 1;
 }
 .delivery-code-copy small {
-  color: #5f687d;
+  color: #6f5f53;
   font-size: 13px;
   line-height: 1.4;
 }
@@ -6007,14 +6023,20 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .metric-priority s
   }
 
   .catalog-stock-actions {
-    flex: 1 1 100%;
+    flex: 1 1 132px;
     justify-content: space-between;
   }
 
   .catalog-admin-price {
-    padding: 10px 0;
-    border-top: 1px solid rgba(83, 61, 44, 0.08);
-    border-bottom: 1px solid rgba(83, 61, 44, 0.08);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 2px 0;
+  }
+
+  .catalog-admin-row {
+    gap: 10px;
+    padding: 12px;
   }
 }
 
@@ -6036,4 +6058,121 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .metric-priority s
   .business-growth-strip {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* ============================================================
+   Commercial polish v1: obligatorios, presentación comercial y
+   herramientas del presentador.
+   ============================================================ */
+
+/* Asterisco de campo obligatorio (refuerza el atributo required). */
+.req {
+  color: var(--copper);
+  font-weight: 900;
+}
+
+/* El vacío de búsqueda ocupa todo el ancho del grid (no una sola columna). */
+.product-grid .empty-state {
+  grid-column: 1 / -1;
+}
+
+/* Estado de conexión de la sala en el seguimiento del cliente (sólo con relay).
+   Sin esto, si la sala se cae el cliente no se entera y el estado queda viejo
+   en silencio. */
+.tracking-sheet .sheet-connection-pill {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.required-hint {
+  margin: 2px 0 0;
+}
+
+/* Modal de presentación comercial (se abre con ?pitch=1 o desde Local). */
+.pitch-modal {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  width: min(560px, calc(100vw - 28px));
+}
+
+.pitch-modal::backdrop {
+  background: rgba(15, 12, 10, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.pitch-card {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 26px 22px;
+  background: linear-gradient(180deg, #fffdf9, #f8f1e8);
+  box-shadow: var(--shadow);
+  max-height: min(86vh, 720px);
+  overflow-y: auto;
+}
+
+.pitch-card h2 {
+  margin: 6px 0 8px;
+  font-size: clamp(24px, 5.4vw, 30px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.pitch-lead {
+  margin: 0 0 14px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.pitch-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.pitch-list li {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 11px 13px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.pitch-list li strong {
+  font-size: 14.5px;
+}
+
+.pitch-list li span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.pitch-actions {
+  margin-bottom: 6px;
+}
+
+.pitch-note {
+  text-align: center;
+  margin: 8px 0 0;
+}
+
+.pitch-trigger {
+  margin-top: 10px;
+}
+
+/* Botón de reinicio de la demo dentro de la guía del presentador. */
+.demo-reset-row {
+  margin: 10px 0 12px;
+}
+
+.demo-guide code {
+  background: rgba(45, 36, 29, 0.08);
+  border-radius: 6px;
+  padding: 1px 5px;
+  font-size: 12px;
 }

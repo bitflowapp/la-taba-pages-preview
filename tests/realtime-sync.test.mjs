@@ -29,6 +29,20 @@ test('orderTimestamp takes the most recent of createdAt and statusHistory', () =
   assert.equal(orderTimestamp(null), 0);
 });
 
+// Confirmar el código de entrega (o adjuntar la foto) no agrega statusHistory,
+// pero debe subir la versión del pedido: si no, esos cambios nunca se publican
+// ni se aceptan en los otros dispositivos de la sala realtime.
+test('orderTimestamp cuenta el código confirmado y la foto de entrega como versión nueva', () => {
+  const base = order('LT-1', t0, [{ status: 'arriving', at: t1 }]);
+  const withCode = { ...base, deliveryCode: { code: '1234', confirmedAt: t2 } };
+  assert.equal(orderTimestamp(withCode), Date.parse(t2));
+  assert.equal(shouldReplaceOrder(base, withCode), true);
+
+  const withProof = { ...base, deliveryProof: { photoDataUrl: 'data:image/png;base64,x', capturedAt: t2 } };
+  assert.equal(orderTimestamp(withProof), Date.parse(t2));
+  assert.equal(shouldReplaceOrder(base, withProof), true);
+});
+
 test('shouldReplaceOrder is true for missing local or newer incoming', () => {
   assert.equal(shouldReplaceOrder(null, order('LT-1', t0)), true);
   assert.equal(shouldReplaceOrder(order('LT-1', t0), order('LT-1', t2)), true);

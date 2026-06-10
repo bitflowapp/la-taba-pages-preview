@@ -57,6 +57,10 @@ export function renderDeliveryPanel() {
   const container = document.querySelector('[data-delivery-panel]');
   if (!container) return;
   const order = getRiderQueueOrder();
+  // En una sala realtime, un sync entrante re-renderiza este panel mientras el
+  // rider tipea el código de entrega. Conservamos el valor y el foco del input
+  // entre renders (mismo criterio que el mapa estable de renderWithStableRealMap).
+  const codeDraft = captureDeliveryCodeDraft(container);
 
   if (!order) {
     renderWithStableRealMap(container, `
@@ -182,6 +186,28 @@ export function renderDeliveryPanel() {
       </section>
     </div>
   `, { rolePrefix: 'rider', orderId: order.id });
+  restoreDeliveryCodeDraft(container, codeDraft);
+}
+
+function captureDeliveryCodeDraft(container) {
+  const input = container.querySelector('[data-delivery-code-input]');
+  if (!input || !input.value) return null;
+  return {
+    orderId: input.dataset.deliveryCodeInput || '',
+    value: input.value,
+    focused: document.activeElement === input,
+  };
+}
+
+function restoreDeliveryCodeDraft(container, draft) {
+  if (!draft) return;
+  const input = container.querySelector(`[data-delivery-code-input="${draft.orderId}"]`);
+  if (!input || input.value) return;
+  input.value = draft.value;
+  if (draft.focused) {
+    input.focus();
+    try { input.setSelectionRange(input.value.length, input.value.length); } catch (_) { /* inputs sin selección */ }
+  }
 }
 
 function riderStepIndex(status) {
@@ -245,15 +271,15 @@ function renderDeliveryCodePanel(order) {
   return `
     <section class="delivery-code-panel ${confirmed ? 'is-confirmed' : ''}" data-delivery-code-panel>
       <div class="delivery-code-panel-copy">
-        <strong>${confirmed ? 'Codigo de entrega confirmado' : 'Confirmar recepcion'}</strong>
-        <p>${confirmed ? `Confirmado${confirmedTime ? ` a las ${escapeHtml(confirmedTime)}` : ''}.` : 'Pedile al cliente el codigo de 4 digitos que ve en Seguimiento.'}</p>
+        <strong>${confirmed ? 'Código de entrega confirmado' : 'Confirmar recepción'}</strong>
+        <p>${confirmed ? `Confirmado${confirmedTime ? ` a las ${escapeHtml(confirmedTime)}` : ''}.` : 'Pedile al cliente el código de 4 dígitos que ve en Seguimiento.'}</p>
       </div>
       ${confirmed ? '' : `
         <div class="delivery-code-controls">
-          <input data-delivery-code-input="${escapeHtml(order.id)}" type="text" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="one-time-code" placeholder="0000" aria-label="Codigo de entrega del cliente" />
-          <button class="secondary-button compact" type="button" data-delivery-code-confirm="${escapeHtml(order.id)}">Confirmar codigo</button>
+          <input data-delivery-code-input="${escapeHtml(order.id)}" type="text" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="one-time-code" placeholder="0000" aria-label="Código de entrega del cliente" />
+          <button class="secondary-button compact" type="button" data-delivery-code-confirm="${escapeHtml(order.id)}">Confirmar código</button>
         </div>
-        <small>Si el cliente no lo encuentra, podes entregar igual y dejar foto como respaldo.</small>`}
+        <small>Si el cliente no lo encuentra, podés entregar igual y dejar foto como respaldo.</small>`}
     </section>`;
 }
 
@@ -335,20 +361,16 @@ function renderSimControls(order, sim) {
         <span class="sim-state ${gpsState.live ? 'live' : ''}">${escapeHtml(gpsStatus)}</span>
       </div>
       <p class="form-hint">${escapeHtml(gpsState.headSub)}</p>
-      <div class="street-summary-grid">
-        <span><small>Estado</small><strong>${escapeHtml(gpsStatus)}</strong></span>
-        <span><small>Señal</small><strong>${escapeHtml(signalStatus)}</strong></span>
-        <span><small>Última lectura</small><strong>${escapeHtml(lastFix || 'Sin datos')}</strong></span>
-      </div>
       <div class="button-row street-primary-actions">
         <button class="primary-button" type="button" data-sim-gps ${gpsButtonDisabled ? 'disabled' : ''}>${escapeHtml(gpsButtonLabel)}</button>
-        <button class="secondary-button" type="button" data-sim-gps-off ${gpsSession ? '' : 'disabled'}>Detener ubicación</button>
+        <button class="secondary-button" type="button" data-sim-gps-off ${gpsSession ? '' : 'hidden'}>Detener ubicación</button>
       </div>
+      ${gpsSession || sim?.gpsError || secureHint ? `
       <div class="sim-gps">
         <span class="sim-gps-status">${escapeHtml(signalStatus)}${lastFix ? ` · actualizado ${escapeHtml(lastFix)}` : ''}</span>
         ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
         ${secureHint}
-      </div>
+      </div>` : ''}
       ${renderGpsDiagnostics(sim, gpsWatching)}
     </div>
   `;

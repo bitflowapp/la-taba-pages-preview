@@ -22,7 +22,7 @@ test('delivery code: normaliza, formatea y valida 4 digitos', () => {
   assert.equal(formatDeliveryCode(code.code), '12 34');
   assert.deepEqual(verifyDeliveryCodeValue(code, '1234'), {
     ok: true,
-    message: 'Codigo de entrega confirmado.',
+    message: 'Código de entrega confirmado.',
   });
   assert.equal(verifyDeliveryCodeValue(code, '9999').ok, false);
   assert.equal(verifyDeliveryCodeValue(code, '12345').ok, false);
@@ -73,7 +73,7 @@ test('delivery code: retiro en local no crea codigo de rider', () => {
   assert.equal(getState().orders[0].deliveryCode, undefined);
   assert.deepEqual(confirmDeliveryCode(created.order.id, '1234'), {
     ok: false,
-    message: 'Codigo de entrega disponible solo para delivery.',
+    message: 'Código de entrega disponible solo para delivery.',
   });
 });
 
@@ -106,7 +106,7 @@ test('delivery code: un pedido entregado no admite revalidacion por codigo', () 
 
   assert.deepEqual(confirmDeliveryCode('LT-DONE', '1234'), {
     ok: false,
-    message: 'El pedido ya no admite validacion de codigo.',
+    message: 'El pedido ya no admite validación de código.',
   });
 });
 

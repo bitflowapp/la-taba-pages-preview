@@ -14,6 +14,11 @@ test('Negocio: crea, edita, pausa y restaura el catálogo editable', async ({ br
   await expect(page.locator('[data-view="business"]')).toBeVisible();
   await page.locator('[data-scroll-catalog]').click();
 
+  // El formulario de alta arranca cerrado: se abre con "Nuevo producto".
+  await expect(page.locator('[data-catalog-form]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Nuevo producto' }).click();
+  await expect(page.locator('[data-catalog-form]')).toBeVisible();
+
   await page.getByLabel('Producto a vender').fill('Producto Catalogo QA');
   await page.getByLabel('Precio').fill('12345');
   await page.getByLabel('Categoría').selectOption('carnes');

@@ -44,5 +44,5 @@ export function loyaltyProgressCopy(progress) {
   if (normalized.benefitAvailable) {
     return `${normalized.benefitLabel}: llegaste a ${normalized.orderCount} pedidos locales. El comercio revisa si corresponde un beneficio.`;
   }
-  return `Llevas ${normalized.completed} de ${normalized.milestoneOrders} pedidos locales para que el comercio pueda reconocerte como cliente frecuente.`;
+  return `Llevás ${normalized.completed} de ${normalized.milestoneOrders} pedidos locales para que el comercio pueda reconocerte como cliente frecuente.`;
 }

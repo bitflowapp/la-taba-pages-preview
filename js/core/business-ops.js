@@ -35,7 +35,7 @@ export const BUSINESS_STATUS_META = Object.freeze({
   preparing: Object.freeze({
     label: 'Preparando',
     shortLabel: 'Preparando',
-    copy: 'Pedido aceptado. Cocina o mostrador lo esta preparando.',
+    copy: 'Pedido aceptado. Cocina o mostrador lo está preparando.',
   }),
   ready: Object.freeze({
     label: 'Listo',
@@ -50,7 +50,7 @@ export const BUSINESS_STATUS_META = Object.freeze({
   arriving: Object.freeze({
     label: 'Llegando',
     shortLabel: 'Llegando',
-    copy: 'El rider esta llegando al domicilio.',
+    copy: 'El repartidor está llegando al domicilio.',
   }),
   delivered: Object.freeze({
     label: 'Entregado',
@@ -60,7 +60,7 @@ export const BUSINESS_STATUS_META = Object.freeze({
   cancelled: Object.freeze({
     label: 'Cancelado',
     shortLabel: 'Cancelado',
-    copy: 'Pedido cerrado con motivo visible para auditoria.',
+    copy: 'Pedido cerrado con motivo visible para auditoría.',
   }),
 });
 
@@ -77,7 +77,7 @@ const ACTION_BY_NEXT_STATUS = Object.freeze({
   }),
   on_the_way: Object.freeze({
     label: 'Enviar a reparto',
-    copy: 'Sale del local. El tracking sigue siendo honesto.',
+    copy: 'Sale del local. El cliente sigue el estado desde Seguimiento.',
     requiresPrepTime: false,
   }),
   delivered: Object.freeze({

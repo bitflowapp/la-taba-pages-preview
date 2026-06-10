@@ -47,15 +47,15 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await expect(riderPanel.locator('[data-delivery-code-panel]')).toBeVisible();
   await riderPanel.locator('[data-delivery-code-input="LT-0002"]').fill('0000');
   await riderPanel.locator('[data-delivery-code-confirm="LT-0002"]').click();
-  await waitForToast(page, 'Codigo incorrecto. Revisalo con el cliente.');
+  await waitForToast(page, 'Código incorrecto. Revisalo con el cliente.');
 
   await riderPanel.locator('[data-delivery-code-input="LT-0002"]').fill(code);
   await riderPanel.locator('[data-delivery-code-confirm="LT-0002"]').click();
-  await waitForToast(page, 'Codigo de entrega confirmado.');
-  await expect(riderPanel.locator('[data-delivery-code-panel]')).toContainText('Codigo de entrega confirmado');
+  await waitForToast(page, 'Código de entrega confirmado.');
+  await expect(riderPanel.locator('[data-delivery-code-panel]')).toContainText('Código de entrega confirmado');
 
   await page.goto('/#business');
-  await expect(page.locator('[data-delivery-code-summary="LT-0002"]')).toContainText('Codigo validado');
+  await expect(page.locator('[data-delivery-code-summary="LT-0002"]')).toContainText('Código validado');
 
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   expect(noOverflow).toBeTruthy();

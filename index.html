@@ -52,11 +52,11 @@
           <div class="status-bar" role="status">
             <span class="status-dot" data-open-status>Abierto ahora</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">25-35 min</span>
+            <span class="status-item">Recibimos pedidos</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Delivery o retiro</span>
+            <span class="status-item">Delivery propio o retiro en el local</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Neuquén · Cipolletti</span>
+            <span class="status-item">Neuquén</span>
           </div>
 
           <div data-home-active-order hidden></div>
@@ -176,6 +176,7 @@
 
             <form class="card checkout-form" data-checkout-form novalidate>
               <h3>Datos para finalizar</h3>
+              <p class="form-hint required-hint">Los campos marcados con <span class="req" aria-hidden="true">*</span> son obligatorios.</p>
               <div class="delivery-mode">
                 <label>
                   <input type="radio" name="deliveryMode" value="delivery" checked />
@@ -189,11 +190,11 @@
 
               <div class="field-grid">
                 <label>
-                  Nombre
+                  Nombre <span class="req" aria-hidden="true">*</span>
                   <input name="customerName" autocomplete="name" required placeholder="Ej: Juan Pérez" />
                 </label>
                 <label>
-                  Teléfono
+                  Teléfono <span class="req" aria-hidden="true">*</span>
                   <input name="customerPhone" autocomplete="tel" required placeholder="Ej: 299 555 1234" />
                 </label>
               </div>
@@ -201,7 +202,7 @@
               <div class="address-fields" data-address-field>
                 <div class="field-grid">
                   <label>
-                    Calle y número
+                    Calle y número <span class="req" aria-hidden="true">*</span>
                     <input name="customerStreetAddress" autocomplete="address-line1" placeholder="Ej: Roca 123" />
                   </label>
                   <label>
@@ -219,8 +220,8 @@
               <label class="remember-customer-row">
                 <input type="checkbox" name="rememberCustomer" />
                 <span>
-                  <strong>Recordar mis datos para proximos pedidos</strong>
-                  <small>Se guarda solo en este dispositivo: datos de contacto, direccion e historial local para pedir mas rapido.</small>
+                  <strong>Recordar mis datos para próximos pedidos</strong>
+                  <small>Se guarda solo en este dispositivo, para pedir más rápido la próxima vez.</small>
                 </span>
               </label>
 
@@ -315,12 +316,12 @@
                 <li><strong>2</strong> Lo preparamos en el local</li>
                 <li><strong>3</strong> Lo seguís en vivo hasta tu puerta</li>
               </ol>
-              <p class="form-hint">Acceso demo con PIN para mostrar operación y reparto.</p>
+              <p class="form-hint">Acceso con PIN para el equipo del comercio.</p>
               <div class="button-row">
-                <button class="secondary-button" type="button" data-open-admin-view="business">Negocio con PIN</button>
-                <button class="ghost-button" type="button" data-open-admin-view="rider">Rider con PIN</button>
+                <button class="secondary-button" type="button" data-open-admin-view="business">Panel del negocio</button>
+                <button class="ghost-button" type="button" data-open-admin-view="rider">Vista del repartidor</button>
               </div>
-              <p class="form-hint">Acceso exclusivo del comercio.</p>
+              <button class="ghost-button compact pitch-trigger" type="button" data-open-pitch>¿Qué es La Taba? · Presentación</button>
             </div>
           </div>
         </section>
@@ -436,9 +437,28 @@
       </div>
     </dialog>
 
+    <dialog class="pitch-modal" data-pitch-modal aria-labelledby="pitch-title">
+      <div class="pitch-card">
+        <p class="eyebrow">La Taba · Pedidos online</p>
+        <h2 id="pitch-title">Tu propio canal de pedidos</h2>
+        <p class="pitch-lead">Un link con tu marca para que tus clientes pidan solos, sin audios sueltos ni comisiones de plataformas.</p>
+        <ul class="pitch-list">
+          <li><strong>Pedidos ordenados</strong><span>Cada pedido llega escrito y completo: productos, total, pago y dirección.</span></li>
+          <li><strong>Seguimiento en vivo</strong><span>El cliente ve el estado real de su pedido, sin datos inventados.</span></li>
+          <li><strong>Panel del negocio</strong><span>Aceptás, preparás y despachás desde el celular, con ventas del día.</span></li>
+          <li><strong>Vista del repartidor</strong><span>Dirección, cobro y entrega validada con código.</span></li>
+          <li><strong>Clientes que vuelven</strong><span>Recompra en un toque y señales de clientes frecuentes.</span></li>
+        </ul>
+        <div class="button-row pitch-actions">
+          <button class="primary-button" type="button" data-close-pitch>Probar la demo</button>
+        </div>
+        <p class="form-hint pitch-note">Demo con catálogo de muestra. Los pedidos que crees quedan solo en este dispositivo.</p>
+      </div>
+    </dialog>
+
     <pre class="print-ticket" data-print-ticket aria-hidden="true"></pre>
 
-    <div class="toast hidden" data-toast></div>
+    <div class="toast hidden" data-toast role="status" aria-live="polite"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <script type="module" src="js/app.js"></script>

@@ -41,11 +41,11 @@ export function normalizeDeliveryCodeValue(value) {
 
 export function verifyDeliveryCodeValue(deliveryCode, candidate) {
   const normalized = normalizeDeliveryCode(deliveryCode);
-  if (!normalized) return { ok: false, message: 'Codigo de entrega no disponible.' };
+  if (!normalized) return { ok: false, message: 'Código de entrega no disponible.' };
   const attempt = normalizeDeliveryCodeValue(candidate);
-  if (!attempt) return { ok: false, message: 'Ingresa el codigo de 4 digitos del cliente.' };
-  if (attempt !== normalized.code) return { ok: false, message: 'Codigo incorrecto. Revisalo con el cliente.' };
-  return { ok: true, message: 'Codigo de entrega confirmado.' };
+  if (!attempt) return { ok: false, message: 'Ingresá el código de 4 dígitos del cliente.' };
+  if (attempt !== normalized.code) return { ok: false, message: 'Código incorrecto. Revisalo con el cliente.' };
+  return { ok: true, message: 'Código de entrega confirmado.' };
 }
 
 export function isDeliveryCodeConfirmed(orderOrCode) {
@@ -64,9 +64,12 @@ export function formatDeliveryCodeTime(deliveryCode, locale = 'es-AR') {
   if (!normalized?.confirmedAt) return '';
   const date = new Date(normalized.confirmedAt);
   if (Number.isNaN(date.getTime())) return '';
+  // Hora en formato 24h ("14:05"): el sufijo "p. m." termina en punto y
+  // duplicaba el punto final en frases como "Confirmado a las 12:21 p. m..".
   return new Intl.DateTimeFormat(locale, {
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: 'h23',
   }).format(date);
 }
 

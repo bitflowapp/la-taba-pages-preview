@@ -9,6 +9,11 @@ export function orderTimestamp(order) {
   if (!order || typeof order !== 'object') return 0;
   const candidates = [order.createdAt];
   if (order.delivery?.destinationUpdatedAt) candidates.push(order.delivery.destinationUpdatedAt);
+  // Confirmar el código o adjuntar la foto de entrega no cambia el status, pero
+  // sí la versión del pedido: sin esto, esos cambios nunca se publican ni se
+  // aceptan en los otros dispositivos de la sala.
+  if (order.deliveryCode?.confirmedAt) candidates.push(order.deliveryCode.confirmedAt);
+  if (order.deliveryProof?.capturedAt) candidates.push(order.deliveryProof.capturedAt);
   if (Array.isArray(order.statusHistory)) {
     for (const entry of order.statusHistory) {
       if (entry && entry.at) candidates.push(entry.at);

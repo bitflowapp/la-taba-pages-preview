@@ -154,6 +154,7 @@ async function bootstrap() {
     bindEvents();
     subscribe(renderAll);
     initRealtime();
+    maybeOpenPitchFromUrl();
     // La conexión con la sala (relay) cambia fuera del flujo de estado: cuando
     // conecta/cae, refrescamos las superficies de seguimiento para que el chip
     // de conexión sea honesto sin esperar otro cambio de pedido.
@@ -398,6 +399,16 @@ function bindEvents() {
       return;
     }
 
+    if (target.closest('[data-open-pitch]')) {
+      openPitchModal();
+      return;
+    }
+
+    if (target.closest('[data-close-pitch]')) {
+      closePitchModal();
+      return;
+    }
+
     const businessResult = await Promise.resolve(handleBusinessAction(target));
     if (businessResult.handled) {
       if (businessResult.message) showToast(businessResult.message);
@@ -595,6 +606,10 @@ function bindEvents() {
   $('[data-pin-modal]')?.addEventListener('click', (event) => {
     if (event.target === event.currentTarget) closePinModal();
   });
+
+  $('[data-pitch-modal]')?.addEventListener('click', (event) => {
+    if (event.target === event.currentTarget) closePitchModal();
+  });
 }
 
 let pendingAdminTarget = null;
@@ -704,6 +719,26 @@ function renderActiveView() {
     section.classList.toggle('is-active', isActive);
     section.setAttribute('aria-hidden', String(!isActive));
   });
+}
+
+// Presentación comercial breve. Sólo se abre a pedido: con ?pitch=1 en la URL
+// (pantalla inicial opcional para mostrar el producto) o desde "¿Qué es La Taba?"
+// en Local. Nunca aparece sola, así no molesta a clientes recurrentes.
+function maybeOpenPitchFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('pitch') === '1' || params.has('presentacion')) openPitchModal();
+  } catch (_) { /* sin URL API: seguimos sin presentación */ }
+}
+
+function openPitchModal() {
+  const modal = $('[data-pitch-modal]');
+  if (modal && typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+}
+
+function closePitchModal() {
+  const modal = $('[data-pitch-modal]');
+  if (modal?.open) modal.close();
 }
 
 function openPinModal() {

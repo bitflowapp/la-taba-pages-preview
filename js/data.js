@@ -698,13 +698,12 @@ export const seedOrders = [
       { status: 'on_the_way', at: new Date(Date.now() - 1000 * 60 * 8).toISOString() },
       { status: 'delivered', at: new Date(Date.now() - 1000 * 60 * 2).toISOString() },
     ],
+    // Pedido de ejemplo: sin reputación inventada del repartidor (rating/viajes),
+    // sólo los datos operativos que la demo realmente registra.
     delivery: {
       driverName: 'Martín',
       driverPhone: '2991112233',
-      driverRating: 4.9,
-      driverTrips: 128,
       estimatedMinutes: 0,
-      distanceKm: 1.2,
       currentLocationLabel: 'Pedido entregado',
       deliveredAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
     },

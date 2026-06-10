@@ -305,15 +305,15 @@ export function confirmDeliveryCode(orderId, code, {
   const order = getState().orders.find((candidate) => candidate.id === orderId);
   if (!order) return { ok: false, message: 'Pedido no encontrado.' };
   if (normalizeDeliveryMode(order.deliveryMode) !== 'delivery') {
-    return { ok: false, message: 'Codigo de entrega disponible solo para delivery.' };
+    return { ok: false, message: 'Código de entrega disponible solo para delivery.' };
   }
   if (order.status === 'delivered' || order.status === 'cancelled') {
-    return { ok: false, message: 'El pedido ya no admite validacion de codigo.' };
+    return { ok: false, message: 'El pedido ya no admite validación de código.' };
   }
 
   const current = normalizeDeliveryCode(order.deliveryCode, { seed: order.id });
   if (current?.confirmedAt) {
-    return { ok: false, message: 'El codigo ya fue validado.' };
+    return { ok: false, message: 'El código ya fue validado.' };
   }
   const verification = verifyDeliveryCodeValue(current, code);
   if (!verification.ok) return verification;

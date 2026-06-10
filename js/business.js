@@ -85,6 +85,16 @@ let businessSetupFeedback = '';
 // abre el modal de confirmación con motivo obligatorio).
 let pendingCancelOrderId = null;
 let editingCatalogProductId = null;
+// El formulario de alta/edición de productos arranca cerrado: se abre con
+// "Nuevo producto" o "Editar" para que el panel no sea un formulario eterno.
+let catalogFormVisible = false;
+// La lista de productos muestra los primeros y se expande a pedido: con 38
+// productos, la versión expandida convertía el panel en un scroll interminable.
+let catalogListExpanded = false;
+const CATALOG_LIST_PREVIEW_COUNT = 8;
+// Último producto creado/editado: se muestra primero en la lista para que el
+// comercio vea de inmediato lo que acaba de tocar (aunque la lista esté plegada).
+let lastTouchedCatalogProductId = null;
 const CANCEL_REASON_PRESETS = BUSINESS_CANCEL_REASONS;
 
 function readSoundPref() {
@@ -172,14 +182,14 @@ export function renderBusinessDashboard() {
   container.innerHTML = `
     <div class="business-main business-inbox-main">
       <header class="business-inbox-hero">
+        <div class="business-topbar-text">
+          <h2>Central de pedidos</h2>
+          <span>Los pedidos confirmados aparecen acá: aceptás, preparás y mandás a reparto.</span>
+        </div>
         <button class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}" type="button" data-sound-toggle aria-pressed="${soundEnabled}">
           <span>${soundEnabled ? 'Sonido activo' : 'Activar sonido'}</span>
           ${receivedOrders.length ? `<strong>${receivedOrders.length}</strong>` : ''}
         </button>
-        <div class="business-topbar-text">
-          <h2>Central de pedidos</h2>
-          <span>Los pedidos confirmados aparecen acá. Aceptás, preparás y mandás a reparto sin perder el foco.</span>
-        </div>
         <nav class="business-jump-nav" aria-label="Secciones del negocio">
           <button class="secondary-button compact" type="button" data-scroll-orders>Pedidos</button>
           <button class="secondary-button compact" type="button" data-scroll-reports>Reportes</button>
@@ -311,9 +321,11 @@ function renderOrderInbox(state, metrics, freshOrderIds = new Set()) {
       </details>`
     : '';
 
-  return `<div class="order-inbox" data-order-inbox data-ops-board>${renderInboxControls(orders, metrics)}${renderDirectOrderingMetrics(metrics)}${body}${historyBody}${closedBlock}</div>`;
+  return `<div class="order-inbox" data-order-inbox data-ops-board>${renderInboxControls(orders, metrics)}${body}${historyBody}${closedBlock}${renderDirectOrderingMetrics(metrics)}</div>`;
 }
 
+// Señales comerciales del canal propio (recompra, recurrencia, entregas
+// validadas). Van DESPUÉS de los pedidos: primero lo operativo, después el dato.
 function renderDirectOrderingMetrics(metrics) {
   const data = metrics.directOrdering || {};
   const hasAnyOrder = Number(data.createdOrders || 0) > 0;
@@ -321,22 +333,19 @@ function renderDirectOrderingMetrics(metrics) {
     return `
       <section class="business-growth-strip is-empty" data-direct-ordering-metrics>
         <div>
-          <span>Hoy / Local</span>
-          <strong>Sin pedidos locales todavia</strong>
-          <small>Cuando entren pedidos directos, aca vas a ver recompra, clientes recurrentes, codigos validados y GPS vivo.</small>
+          <span>Tu canal propio</span>
+          <strong>Sin pedidos directos todavía</strong>
+          <small>Cuando entren pedidos, acá vas a ver recompra, clientes recurrentes y entregas validadas.</small>
         </div>
       </section>`;
   }
   return `
-    <section class="business-growth-strip" data-direct-ordering-metrics aria-label="Metricas locales de pedidos directos">
+    <section class="business-growth-strip" data-direct-ordering-metrics aria-label="Señales del canal propio">
       <div class="growth-metric accent"><span>Pedidos creados</span><strong>${data.createdOrders || 0}</strong></div>
-      <div class="growth-metric"><span>Entregados</span><strong>${data.deliveredOrders || 0}</strong></div>
-      <div class="growth-metric"><span>En curso</span><strong>${data.inProgressOrders || 0}</strong></div>
       <div class="growth-metric"><span>Ticket promedio</span><strong>${money(data.averageTicket || 0)}</strong></div>
       <div class="growth-metric"><span>Clientes recurrentes</span><strong>${data.recurringCustomers || 0}</strong></div>
       <div class="growth-metric"><span>Pedidos repetidos</span><strong>${data.repeatedOrders || 0}</strong></div>
       <div class="growth-metric"><span>Entregas validadas</span><strong>${data.deliveryCodesValidated || 0}</strong></div>
-      <div class="growth-metric"><span>Sin GPS vivo</span><strong>${data.ordersWithoutLiveGps || 0}</strong></div>
     </section>`;
 }
 
@@ -442,7 +451,7 @@ function inboxOrderCard(order, options = {}) {
       <div class="inbox-order-top">
         <span class="inbox-state-dot" aria-hidden="true"></span>
         <span class="status-chip ${statusClass(order.status)}">${options.priority ? 'Pedido nuevo' : escapeHtml(statusMeta.shortLabel)}</span>
-        <span class="inbox-status-label">${escapeHtml(statusMeta.label)}</span>
+        ${statusMeta.label === (options.priority ? 'Pedido nuevo' : statusMeta.shortLabel) ? '' : `<span class="inbox-status-label">${escapeHtml(statusMeta.label)}</span>`}
         <span class="inbox-time">${escapeHtml(timeAgo(order.createdAt))}</span>
       </div>
 
@@ -505,7 +514,7 @@ function renderCustomerSignals(signals) {
     ? '1 pedido previo'
     : `${signals.previousOrderCount || 0} pedidos previos`;
   const lastCopy = signals.lastPreviousOrderLabel
-    ? `<span>Ultimo pedido ${escapeHtml(signals.lastPreviousOrderLabel)}</span>`
+    ? `<span>Último pedido ${escapeHtml(signals.lastPreviousOrderLabel)}</span>`
     : '';
   const benefit = signals.benefitAvailable
     ? '<strong class="signal-benefit">Cliente frecuente: revisar beneficio</strong>'
@@ -514,7 +523,7 @@ function renderCustomerSignals(signals) {
     ? `<span>Pedido repetido${signals.repeatedFromOrderId ? ` desde ${escapeHtml(signals.repeatedFromOrderId)}` : ''}</span>`
     : '';
   return `
-    <section class="customer-signal-panel ${tone}" aria-label="Senales de cliente">
+    <section class="customer-signal-panel ${tone}" aria-label="Señales de cliente">
       <span class="signal-chip">${status}</span>
       <span>${previousCopy}</span>
       <span>${signals.orderCount || 0} pedidos locales</span>
@@ -545,15 +554,19 @@ function renderDeliveryCodeSummary(order, { compact = false } = {}) {
   const deliveryCode = normalizeDeliveryCode(order.deliveryCode, { seed: order.id });
   if (!deliveryCode) return '';
   const confirmed = isDeliveryCodeConfirmed(deliveryCode);
+  // En pedidos nuevos o en preparación el código todavía no juega: mostrarlo
+  // ahí es ruido arriba del botón de aceptar. Aparece desde "listo" en adelante.
+  const codeIsRelevant = confirmed || ['ready', 'on_the_way', 'arriving', 'delivered'].includes(order.status);
+  if (!codeIsRelevant) return '';
   const confirmedTime = formatDeliveryCodeTime(deliveryCode);
   const isTerminal = order.status === 'delivered' || order.status === 'cancelled';
-  const stateLabel = confirmed ? 'Codigo validado' : isTerminal ? 'Codigo no validado' : 'Codigo pendiente';
-  const titleLabel = confirmed ? 'Recepcion validada' : isTerminal ? 'Recepcion sin validar' : 'Esperando validacion del rider';
+  const stateLabel = confirmed ? 'Código validado' : isTerminal ? 'Código no validado' : 'Código pendiente';
+  const titleLabel = confirmed ? 'Recepción validada' : isTerminal ? 'Recepción sin validar' : 'Esperando validación del repartidor';
   const copyLabel = confirmed
     ? `Confirmado${confirmedTime ? `: ${escapeHtml(confirmedTime)}` : ''}`
     : isTerminal
-      ? 'El pedido ya termino sin validar el codigo.'
-      : 'El cliente ve el codigo en Seguimiento.';
+      ? 'El pedido terminó sin validar el código.'
+      : 'El cliente ve el código en Seguimiento.';
   return `
     <section class="inbox-delivery-code ${confirmed ? 'is-confirmed' : ''} ${compact ? 'is-compact' : ''}" data-delivery-code-summary="${escapeHtml(order.id)}">
       <span class="proof-badge">${stateLabel}</span>
@@ -675,13 +688,26 @@ function renderBusinessReportsPanel(report, closures = []) {
     ? `<pre class="business-copy-fallback" data-business-copy-fallback>${escapeHtml(businessReportCopyFallback)}</pre>`
     : '';
 
+  // Caja legible para un comerciante: lo principal siempre, los medios de pago
+  // sin movimiento no se muestran (un "$ 0 Sin especificar" no ayuda a nadie).
+  const paymentTiles = [
+    { label: 'Efectivo', value: report.salesByPaymentMethod.cash, always: true },
+    { label: 'Transferencia', value: report.salesByPaymentMethod.transfer },
+    { label: 'Mercado Pago/link', value: report.salesByPaymentMethod.mercadoPago },
+    { label: 'Sin especificar', value: report.salesByPaymentMethod.unknown },
+    { label: 'Descuentos', value: report.totalDiscounts },
+  ]
+    .filter((tile) => tile.always || Number(tile.value) > 0)
+    .map((tile) => `<div class="day-metric"><span>${escapeHtml(tile.label)}</span><strong>${money(tile.value)}</strong></div>`)
+    .join('');
+
   return `
     <section class="business-report-card" data-business-report aria-labelledby="business-report-title">
       <header class="business-report-head">
         <div>
-          <span class="catalog-admin-kicker">Caja y reportes operativos</span>
+          <span class="catalog-admin-kicker">Caja y reportes</span>
           <h3 id="business-report-title">Caja del día</h3>
-          <p>Métricas calculadas desde pedidos existentes y snapshots históricos.</p>
+          <p>Resumen calculado con los pedidos del período elegido.</p>
         </div>
         <div class="report-period-tabs" aria-label="Filtro temporal de reportes">
           ${reportPeriodButton('today', report.period)}
@@ -692,14 +718,10 @@ function renderBusinessReportsPanel(report, closures = []) {
 
       <div class="business-day-strip report-strip" aria-label="Caja del día">
         <div class="day-metric accent"><span>${report.period === 'today' ? 'Ventas de hoy' : 'Ventas netas'}</span><strong>${money(report.netSales)}</strong></div>
-        <div class="day-metric"><span>Efectivo</span><strong>${money(report.salesByPaymentMethod.cash)}</strong></div>
-        <div class="day-metric"><span>Transferencia</span><strong>${money(report.salesByPaymentMethod.transfer)}</strong></div>
-        <div class="day-metric"><span>Mercado Pago/link</span><strong>${money(report.salesByPaymentMethod.mercadoPago)}</strong></div>
-        <div class="day-metric"><span>Sin especificar</span><strong>${money(report.salesByPaymentMethod.unknown)}</strong></div>
-        <div class="day-metric"><span>Descuentos</span><strong>${money(report.totalDiscounts)}</strong></div>
+        ${paymentTiles}
         <div class="day-metric"><span>Entregados</span><strong>${report.deliveredOrders}</strong></div>
         <div class="day-metric"><span>Cancelados</span><strong>${report.cancelledOrders}</strong></div>
-        <div class="day-metric"><span>Ticket promedio con delivery</span><strong>${money(report.ticketAverage)}</strong></div>
+        <div class="day-metric"><span>Ticket promedio</span><strong>${money(report.ticketAverage)}</strong></div>
       </div>
 
       <div class="business-report-grid">
@@ -722,12 +744,12 @@ function renderBusinessReportsPanel(report, closures = []) {
         </section>
 
         <section class="report-panel" aria-label="Cierre de caja local">
-          <div class="panel-head compact"><h3>Cierre de caja</h3><span>Local-first</span></div>
+          <div class="panel-head compact"><h3>Cierre de caja</h3><span>Se guarda en este equipo</span></div>
           <div class="cashbox-actions">
-            <button class="primary-button compact" type="button" data-cashbox-close>Guardar cierre local</button>
+            <button class="primary-button compact" type="button" data-cashbox-close>Guardar cierre del día</button>
             <button class="secondary-button compact" type="button" data-copy-business-summary>Copiar resumen</button>
           </div>
-          <p class="cashbox-note">Cierre demo: guarda una foto del período seleccionado. No bloquea pedidos, no evita cierres repetidos y no es un cierre contable incremental.</p>
+          <p class="cashbox-note">Guarda una foto de la caja del período elegido, como control rápido. No bloquea pedidos ni reemplaza tu contabilidad.</p>
           ${summaryFallback}
           ${renderCashboxHistory(closures)}
         </section>
@@ -768,15 +790,19 @@ function renderCashboxHistory(closures = []) {
 function renderDemoGuide() {
   return `
     <details class="demo-guide">
-      <summary>Flujo operativo sugerido</summary>
+      <summary>Guía para presentar la demo</summary>
       <ol class="demo-guide-steps">
         <li>El pedido entra como <strong>Nuevo</strong> y queda pendiente de aceptación.</li>
         <li>El equipo lo acepta, prepara y marca <strong>Listo</strong> cuando sale del local.</li>
-        <li>El <strong>rider</strong> registra salida, llegada y entrega.</li>
+        <li>El <strong>repartidor</strong> registra salida, llegada y entrega con código.</li>
         <li>El cliente sigue el estado desde <strong>Seguimiento</strong>.</li>
-        <li>Al marcar <strong>Entregado</strong>, las métricas se actualizan.</li>
+        <li>Al marcar <strong>Entregado</strong>, la caja y las métricas se actualizan.</li>
       </ol>
       <p class="form-hint">Tip: usá “Copiar ticket” para pasarle el pedido a la cocina.</p>
+      <p class="form-hint">Esta demo incluye un pedido de ejemplo ya entregado (LT-0001) para que la caja no arranque vacía. Abrí la presentación comercial desde <strong>Local → ¿Qué es La Taba?</strong> o agregando <code>?pitch=1</code> al link.</p>
+      <div class="button-row demo-reset-row">
+        <button class="ghost-button compact" type="button" data-demo-reset>Reiniciar demo (borra pedidos de prueba)</button>
+      </div>
     </details>`;
 }
 
@@ -873,6 +899,7 @@ function renderCatalogManager(state) {
     editingCatalogProductId = null;
     editingProduct = null;
   }
+  const showForm = catalogFormVisible || Boolean(editingProduct);
 
   return `
     <section class="business-catalog-card" data-business-catalog aria-labelledby="business-catalog-title">
@@ -880,7 +907,7 @@ function renderCatalogManager(state) {
         <div>
           <span class="catalog-admin-kicker">Catálogo editable · Productos y stock</span>
           <h3 id="business-catalog-title">Productos que ve el cliente</h3>
-          <p>Creas, editas, pausas o archivas productos sin tocar pedidos ya confirmados.</p>
+          <p>Creás, editás, pausás o archivás productos sin tocar pedidos ya confirmados.</p>
         </div>
         <div class="catalog-admin-top-actions">
           <button class="secondary-button compact" type="button" data-catalog-new>Nuevo producto</button>
@@ -888,7 +915,7 @@ function renderCatalogManager(state) {
         </div>
       </header>
 
-      ${renderCatalogForm(editingProduct)}
+      ${showForm ? renderCatalogForm(editingProduct) : ''}
       ${renderCatalogRows(activeProducts)}
       ${renderArchivedCatalogRows(archivedProducts)}
     </section>`;
@@ -1064,7 +1091,7 @@ function renderCatalogForm(product = null) {
       <p class="form-hint catalog-form-error hidden" data-catalog-form-error></p>
       <div class="catalog-form-actions">
         <button class="primary-button compact" type="button" data-catalog-save>${isEditing ? 'Guardar cambios' : 'Crear producto'}</button>
-        ${isEditing ? '<button class="ghost-button compact" type="button" data-catalog-new>Cancelar edición</button>' : ''}
+        <button class="ghost-button compact" type="button" data-catalog-form-close>${isEditing ? 'Cancelar edición' : 'Cancelar'}</button>
       </div>
     </form>`;
 }
@@ -1079,9 +1106,24 @@ function renderCatalogRows(products) {
       </div>`;
   }
 
+  const touchedIndex = lastTouchedCatalogProductId
+    ? products.findIndex((product) => product.id === lastTouchedCatalogProductId)
+    : -1;
+  const ordered = touchedIndex > 0
+    ? [products[touchedIndex], ...products.slice(0, touchedIndex), ...products.slice(touchedIndex + 1)]
+    : products;
+  const visible = catalogListExpanded ? ordered : ordered.slice(0, CATALOG_LIST_PREVIEW_COUNT);
+  const hiddenCount = ordered.length - visible.length;
+  const expander = hiddenCount > 0
+    ? `<button class="secondary-button compact catalog-expand" type="button" data-catalog-expand>Ver los ${products.length} productos</button>`
+    : catalogListExpanded && products.length > CATALOG_LIST_PREVIEW_COUNT
+      ? '<button class="ghost-button compact catalog-expand" type="button" data-catalog-collapse>Mostrar menos</button>'
+      : '';
+
   return `
     <div class="catalog-admin-list" aria-label="Productos del catálogo">
-      ${products.map(catalogProductRow).join('')}
+      ${visible.map(catalogProductRow).join('')}
+      ${expander}
     </div>`;
 }
 
@@ -1106,14 +1148,14 @@ function catalogProductRow(product) {
           <p>${escapeHtml(product.description || 'Sin descripción')}</p>
           <div class="catalog-admin-tags">
             <span>${escapeHtml(categoryName(product.categoryId))}</span>
-            ${product.badge ? `<span>${escapeHtml(product.badge)}</span>` : ''}
-            ${stockPill(product)}
+            ${badgeChipForRow(product)}
+            ${product.available ? stockPill(product) : ''}
           </div>
         </div>
       </div>
       <div class="catalog-admin-price">
         <strong>${money(product.price)}</strong>
-        <small>${product.available ? 'Visible para cliente' : 'No disponible'}</small>
+        <small>${product.available ? 'Visible para cliente' : 'Pausado para clientes'}</small>
       </div>
       <div class="catalog-admin-actions">
         <div class="catalog-stock-actions" aria-label="Stock demo de ${escapeHtml(product.name)}">
@@ -1126,6 +1168,16 @@ function catalogProductRow(product) {
         <button class="ghost-button compact danger-ghost" type="button" data-product-archive="${escapeHtml(product.id)}">Archivar</button>
       </div>
     </article>`;
+}
+
+// Chip de etiqueta de la fila: se omite cuando repite la categoría
+// (ej. etiqueta "Combo" dentro de la categoría "Combos" no aporta nada).
+function badgeChipForRow(product) {
+  const badge = String(product.badge || '').trim();
+  if (!badge) return '';
+  const category = categoryName(product.categoryId).toLowerCase();
+  if (category.includes(badge.toLowerCase())) return '';
+  return `<span>${escapeHtml(badge)}</span>`;
 }
 
 function archivedProductRow(product) {
@@ -1262,6 +1314,17 @@ export function handleBusinessAction(target) {
     return { handled: true, ok: true, message: soundEnabled ? 'Sonido de pedidos activado.' : 'Sonido de pedidos apagado.' };
   }
 
+  // Reinicio de demo para el presentador: recarga con ?reset=1 conservando
+  // relay/room para no romper una sala realtime en curso. Vive detrás del PIN.
+  if (target.closest('[data-demo-reset]')) {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('reset', '1');
+      window.location.href = `${window.location.pathname}?${params.toString()}`;
+    }
+    return { handled: true, ok: true, message: 'Reiniciando demo…' };
+  }
+
   if (target.closest('[data-scroll-orders]')) {
     if (typeof document !== 'undefined') {
       document.querySelector('[data-ops-board]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1301,6 +1364,7 @@ export function handleBusinessAction(target) {
 
   if (target.closest('[data-catalog-new]')) {
     editingCatalogProductId = null;
+    catalogFormVisible = true;
     if (typeof document !== 'undefined') {
       renderBusinessDashboard();
       scrollCatalogManager();
@@ -1309,9 +1373,32 @@ export function handleBusinessAction(target) {
     return { handled: true, ok: true, message: '' };
   }
 
+  if (target.closest('[data-catalog-form-close]')) {
+    editingCatalogProductId = null;
+    catalogFormVisible = false;
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-catalog-expand]')) {
+    catalogListExpanded = true;
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-catalog-collapse]')) {
+    catalogListExpanded = false;
+    if (typeof document !== 'undefined') {
+      renderBusinessDashboard();
+      scrollCatalogManager();
+    }
+    return { handled: true, ok: true, message: '' };
+  }
+
   const editId = target.closest('[data-product-edit]')?.dataset.productEdit;
   if (editId) {
     editingCatalogProductId = editId;
+    catalogFormVisible = true;
     if (typeof document !== 'undefined') {
       renderBusinessDashboard();
       scrollCatalogManager();
@@ -1434,6 +1521,8 @@ function saveCatalogProductFromForm() {
   }
 
   editingCatalogProductId = null;
+  catalogFormVisible = false;
+  lastTouchedCatalogProductId = result.product?.id || null;
   setState({ products: result.products });
   return { handled: true, ok: true, message: result.message };
 }
@@ -1781,6 +1870,8 @@ function requestCatalogReset() {
 // Exportada para poder testear la regla sin DOM: restaurar recién acá.
 export function confirmCatalogReset() {
   editingCatalogProductId = null;
+  catalogFormVisible = false;
+  lastTouchedCatalogProductId = null;
   setState({ products: restoreDemoCatalog(), activeCategory: 'all' });
   closeCatalogResetModal();
   return { handled: true, ok: true, message: 'Catálogo demo restaurado.' };

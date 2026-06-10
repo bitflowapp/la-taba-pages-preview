@@ -33,7 +33,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await waitForToast(page, /Pedido creado/);
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-tracking-panel]')).toContainText('Codigo');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Código');
   await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveCount(1);
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(0);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\bETA\b/i);
@@ -45,7 +45,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(reorderCard).toBeVisible();
   await expect(reorderCard).toContainText('Pedir de nuevo');
   await expect(reorderCard).toContainText('Total estimado');
-  await expect(reorderCard).toContainText('Direccion usada');
+  await expect(reorderCard).toContainText('Dirección usada');
 
   await reorderCard.getByRole('button', { name: /Editar antes de confirmar/i }).click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();

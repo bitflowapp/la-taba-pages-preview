@@ -1,7 +1,7 @@
 {
-  "name": "La Taba Pedidos",
+  "name": "La Taba · Pedidos, negocio y reparto",
   "short_name": "La Taba",
-  "description": "Sistema propio de pedidos online para carnicería con delivery.",
+  "description": "Pedí online, gestioná el negocio y seguí el reparto de La Taba desde una sola app.",
   "lang": "es-AR",
   "dir": "ltr",
   "start_url": "./index.html",

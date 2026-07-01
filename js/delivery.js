@@ -45,13 +45,7 @@ import {
   getStreetTestDestinations,
   hasLiveRiderLocation,
 } from './map/route_geometry.js';
-
-const riderSteps = [
-  { key: 'ready', label: 'Listo' },
-  { key: 'on_the_way', label: 'En camino' },
-  { key: 'arriving', label: 'Llegando' },
-  { key: 'delivered', label: 'Entregado' },
-];
+import { renderOrderTimeline } from './core/order-timeline.js';
 
 export function renderDeliveryPanel() {
   const container = document.querySelector('[data-delivery-panel]');
@@ -99,14 +93,6 @@ export function renderDeliveryPanel() {
   const headSub = awaiting
     ? 'Esperando al local.'
     : gpsState.headSub;
-
-  const stepIndex = riderStepIndex(order.status);
-  const steps = riderSteps.map((step, index) => {
-    let cls = 'pending';
-    if (index < stepIndex) cls = 'done';
-    if (index === stepIndex) cls = 'current';
-    return `<div class="track-step ${cls}"><span class="track-dot"></span><small>${step.label}</small></div>`;
-  }).join('');
 
   const waClient = `https://wa.me/${onlyDigits(order.customerPhone)}`;
 
@@ -161,7 +147,7 @@ export function renderDeliveryPanel() {
         ${renderDeliveryProofPanel(order)}
         ${renderDeliveryCodePanel(order)}
         ${renderRiderActions(order, { canLeave, canArrive, canDeliver })}
-        <div class="track-steps tight rider-progress">${steps}</div>
+        ${renderOrderTimeline(order.status, { className: 'tight rider-progress' })}
         ${renderSimControls(order, sim)}
 
         <details class="order-detail rider-order-detail">
@@ -208,14 +194,6 @@ function restoreDeliveryCodeDraft(container, draft) {
     input.focus();
     try { input.setSelectionRange(input.value.length, input.value.length); } catch (_) { /* inputs sin selección */ }
   }
-}
-
-function riderStepIndex(status) {
-  if (status === 'delivered') return 3;
-  if (status === 'arriving') return 2;
-  if (status === 'on_the_way') return 1;
-  if (status === 'ready') return 0;
-  return -1; // received / preparing: todavía no arrancó el reparto
 }
 
 function renderRiderActions(order, { canLeave, canArrive, canDeliver }) {

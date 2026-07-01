@@ -48,7 +48,7 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
 
   await page.goto('/#tracking');
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText(/Seguimiento por estado|Sin GPS en vivo/i);
+  await expect(tracking).toContainText(/El seguimiento en vivo comienza/i);
   await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
   await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
 

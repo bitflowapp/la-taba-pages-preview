@@ -4,21 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#fffdf9" />
-    <meta name="description" content="La Taba: carnes premium, parrilla y delivery propio en Neuquén." />
-    <title>La Taba · Carnes premium · Pedidos online</title>
+    <meta name="description" content="La Taba: pedí online, seguí la entrega y gestioná el negocio y el reparto desde una sola app." />
+    <title>La Taba · Pedidos, negocio y reparto</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="assets/icon.svg" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="La Taba" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio de La Taba">
+        <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio del comercio">
           <span class="brand-mark">LT</span>
           <span class="brand-text">
             <strong class="brand-word" data-business-name>La Taba</strong>
-            <small data-business-subtitle>Carnicería & delivery propio</small>
+            <small data-business-subtitle>Carnicería y parrilla · delivery propio</small>
           </span>
         </button>
 
@@ -38,11 +42,85 @@
         </div>
       </header>
 
+      <div class="pwa-banner pwa-banner-install" data-pwa-install-banner hidden>
+        <span class="pwa-banner-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+            <path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+        <span class="pwa-banner-copy">
+          <strong>Instalar La Taba</strong>
+          <small>Acceso directo desde tu pantalla de inicio.</small>
+        </span>
+        <button class="primary-button compact" type="button" data-pwa-install-action>Instalar</button>
+        <button class="pwa-banner-dismiss" type="button" data-pwa-install-dismiss aria-label="Cerrar aviso de instalación">✕</button>
+      </div>
+
+      <div class="pwa-banner pwa-banner-ios" data-pwa-ios-banner hidden>
+        <span class="pwa-banner-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+            <path d="M12 3v11" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="m8.5 6.5 3.5-3.5 3.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+        <span class="pwa-banner-copy">
+          <strong>Para instalar La Taba:</strong>
+          <ol class="pwa-ios-steps">
+            <li>Tocá <strong>Compartir</strong></li>
+            <li>Elegí <strong>“Agregar a pantalla de inicio”</strong></li>
+            <li>Confirmá <strong>Agregar</strong></li>
+          </ol>
+        </span>
+        <button class="pwa-banner-dismiss" type="button" data-pwa-ios-dismiss aria-label="Cerrar guía de instalación">✕</button>
+      </div>
+
+      <div class="pwa-banner pwa-banner-offline" data-pwa-offline-banner hidden role="status">
+        <strong>Sin conexión</strong>
+        <small>Revisá internet e intentá nuevamente.</small>
+      </div>
+
       <main data-app-main>
         <section class="section app-view app-home is-active" data-view="home" aria-hidden="false">
+          <section class="role-intro" aria-label="Cómo funciona el sistema">
+            <article class="role-card role-card-client">
+              <h2>Cliente</h2>
+              <p>Elegí productos, hacé tu pedido y seguí la entrega.</p>
+              <button class="primary-button compact" type="button" data-nav-view="catalog">Empezar a pedir</button>
+            </article>
+            <article class="role-card role-card-business">
+              <h2>Negocio</h2>
+              <p>Recibí pedidos, preparalos y controlá el reparto.</p>
+              <span class="role-card-pin">Clave demo: <strong data-admin-pin>1234</strong></span>
+              <button class="secondary-button compact" type="button" data-home-open-pin="business">Entrar como negocio</button>
+            </article>
+            <article class="role-card role-card-rider">
+              <h2>Rider</h2>
+              <p>Tomá entregas, compartí ubicación y confirmá la entrega.</p>
+              <span class="role-card-pin">Clave demo: <strong data-admin-pin>1234</strong></span>
+              <button class="secondary-button compact" type="button" data-home-open-pin="rider">Entrar como rider</button>
+            </article>
+          </section>
+
+          <aside class="product-intro" aria-label="Acerca de PedidoPropio">
+            <div class="product-intro-copy">
+              <span class="product-intro-badge">
+                <span class="product-intro-dot" aria-hidden="true"></span>
+                <strong data-product-name>PedidoPropio</strong>
+              </span>
+              <p class="product-intro-claim" data-product-tagline>Tu sistema de pedidos directo, sin depender de apps con comisión.</p>
+              <p class="product-intro-note">Demo: el comercio <strong data-business-name>La Taba</strong> funcionando con <strong data-product-name>PedidoPropio</strong>.</p>
+            </div>
+            <div class="product-intro-actions">
+              <button class="primary-button compact" type="button" data-open-pitch>Ver cómo funciona</button>
+              <button class="ghost-button compact" type="button" data-pitch-go="catalog">Probar pedido</button>
+            </div>
+          </aside>
+
           <div class="home-title">
             <div>
-              <p class="eyebrow">Carnicería premium</p>
+              <p class="eyebrow">Carnicería y parrilla</p>
               <h1 data-business-name>La Taba</h1>
               <p class="home-lead">Cortes frescos, parrilla y combos para pedir online en Neuquén.</p>
             </div>
@@ -221,7 +299,7 @@
                 <input type="checkbox" name="rememberCustomer" />
                 <span>
                   <strong>Recordar mis datos para próximos pedidos</strong>
-                  <small>Se guarda solo en este dispositivo, para pedir más rápido la próxima vez.</small>
+                  <small>Tus datos quedan guardados en este dispositivo para la próxima compra.</small>
                 </span>
               </label>
 
@@ -321,7 +399,7 @@
                 <button class="secondary-button" type="button" data-open-admin-view="business">Panel del negocio</button>
                 <button class="ghost-button" type="button" data-open-admin-view="rider">Vista del repartidor</button>
               </div>
-              <button class="ghost-button compact pitch-trigger" type="button" data-open-pitch>¿Qué es La Taba? · Presentación</button>
+              <button class="ghost-button compact pitch-trigger" type="button" data-open-pitch>¿Qué es PedidoPropio? · Presentación comercial</button>
             </div>
           </div>
         </section>
@@ -439,18 +517,84 @@
 
     <dialog class="pitch-modal" data-pitch-modal aria-labelledby="pitch-title">
       <div class="pitch-card">
-        <p class="eyebrow">La Taba · Pedidos online</p>
+        <p class="eyebrow"><span data-product-name>PedidoPropio</span> · para tu comercio</p>
         <h2 id="pitch-title">Tu propio canal de pedidos</h2>
-        <p class="pitch-lead">Un link con tu marca para que tus clientes pidan solos, sin audios sueltos ni comisiones de plataformas.</p>
+        <p class="pitch-lead" data-product-tagline>Tu sistema de pedidos directo, sin depender de apps con comisión.</p>
+
         <ul class="pitch-list">
           <li><strong>Pedidos ordenados</strong><span>Cada pedido llega escrito y completo: productos, total, pago y dirección.</span></li>
-          <li><strong>Seguimiento en vivo</strong><span>El cliente ve el estado real de su pedido, sin datos inventados.</span></li>
-          <li><strong>Panel del negocio</strong><span>Aceptás, preparás y despachás desde el celular, con ventas del día.</span></li>
+          <li><strong>Catálogo propio</strong><span>Tu menú con fotos y precios, sin tener que pasar listas por chat.</span></li>
+          <li><strong>Seguimiento del pedido</strong><span>El cliente ve el estado real de su pedido, sin datos inventados.</span></li>
           <li><strong>Vista del repartidor</strong><span>Dirección, cobro y entrega validada con código.</span></li>
           <li><strong>Clientes que vuelven</strong><span>Recompra en un toque y señales de clientes frecuentes.</span></li>
         </ul>
-        <div class="button-row pitch-actions">
+
+        <section class="pitch-section">
+          <h3 class="pitch-section-title">Qué problema resuelve</h3>
+          <ul class="pitch-points">
+            <li>Tus clientes preguntan precios todo el tiempo.</li>
+            <li>Los pedidos por WhatsApp se mezclan y se pierden.</li>
+            <li>Las apps grandes cobran comisión por cada venta.</li>
+            <li>Tu catálogo no se ve profesional.</li>
+            <li>No tenés un canal de ventas propio.</li>
+            <li>No sabés quién vuelve a comprar.</li>
+          </ul>
+        </section>
+
+        <section class="pitch-section">
+          <h3 class="pitch-section-title">Qué recibe tu negocio</h3>
+          <ul class="pitch-list pitch-list-compact">
+            <li><strong>Link propio para vender</strong><span>Una dirección con tu marca para mandar por chat, bio o estados.</span></li>
+            <li><strong>Menú y catálogo ordenado</strong><span>Categorías, fotos y precios siempre al día.</span></li>
+            <li><strong>Carrito simple</strong><span>El cliente arma el pedido solo, sin ida y vuelta.</span></li>
+            <li><strong>Pedido armado por WhatsApp</strong><span>Llega listo para confirmar, sin transcribir audios.</span></li>
+            <li><strong>Panel para gestionar pedidos</strong><span>Aceptás, preparás y despachás desde el celular.</span></li>
+            <li><strong>QR listo para imprimir</strong><span>Pegalo en el mostrador y que pidan desde la mesa o la vereda.</span></li>
+            <li><strong>Demo adaptable a tu marca</strong><span>Nombre, colores y catálogo a la medida de tu comercio.</span></li>
+          </ul>
+        </section>
+
+        <section class="pitch-section">
+          <h3 class="pitch-section-title">Pensado para vender más directo</h3>
+          <ul class="pitch-chips">
+            <li>Instalación rápida</li>
+            <li>Adaptado a tu comercio</li>
+            <li>Sin app para descargar</li>
+            <li>Piden desde un link o QR</li>
+            <li>Tus pedidos más ordenados</li>
+            <li>Ideal para vender más directo</li>
+          </ul>
+        </section>
+
+        <section class="pitch-section">
+          <h3 class="pitch-section-title">Planes</h3>
+          <div class="pitch-plans">
+            <article class="plan-card">
+              <span class="plan-name">Básico</span>
+              <p class="plan-desc">Catálogo + pedidos por WhatsApp ordenados.</p>
+              <span class="plan-price">Consultar implementación</span>
+            </article>
+            <article class="plan-card is-featured">
+              <span class="plan-badge">Más elegido</span>
+              <span class="plan-name">Pro</span>
+              <p class="plan-desc">Catálogo + carrito + QR + panel del negocio.</p>
+              <span class="plan-price">Consultar implementación</span>
+            </article>
+            <article class="plan-card">
+              <span class="plan-name">Premium</span>
+              <p class="plan-desc">Sistema completo con seguimiento y fidelización.</p>
+              <span class="plan-price">Consultar implementación</span>
+            </article>
+          </div>
+          <p class="form-hint pitch-plans-note">Sin pagos integrados: la implementación se coordina directo con vos.</p>
+        </section>
+
+        <div class="pitch-cta-grid">
           <button class="primary-button" type="button" data-close-pitch>Probar la demo</button>
+          <button class="secondary-button" type="button" data-pitch-go="catalog">Ver demo cliente</button>
+          <button class="secondary-button" type="button" data-pitch-go="business">Ver panel negocio</button>
+          <button class="secondary-button" type="button" data-pitch-go="rider">Ver vista repartidor</button>
+          <button class="ghost-button pitch-cta-whatsapp" type="button" data-pitch-go="whatsapp">Hablar por WhatsApp</button>
         </div>
         <p class="form-hint pitch-note">Demo con catálogo de muestra. Los pedidos que crees quedan solo en este dispositivo.</p>
       </div>

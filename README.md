@@ -1,8 +1,8 @@
-# La Taba · Sistema de pedidos online (demo)
+# PedidoPropio · Sistema de pedidos directos para tu comercio (demo)
 
-**La Taba** es el sistema propio de pedidos online de una carnicería/local de comida con delivery.
+**PedidoPropio** es un sistema propio de pedidos online para comercios de barrio (carnicerías, rotiserías, pizzerías, markets). Claim: *Tu sistema de pedidos directo, sin depender de apps con comisión.* Esta demo lo muestra funcionando con un comercio ficticio reusable: **La Taba**.
 
-El cliente entra a un link, arma el pedido desde el celular y **confirma un pedido propio dentro de la app**. El comercio lo recibe en su panel y el reparto se sigue en vivo. Enviar una **copia por WhatsApp** queda como acción secundaria opcional. Es la base para que La Taba tenga un canal propio de pedidos, sin depender por completo de plataformas externas.
+El cliente entra a un link, arma el pedido desde el celular y **confirma un pedido propio dentro de la app**. El comercio lo recibe en su panel y sigue el reparto. Enviar una **copia por WhatsApp** queda como acción secundaria opcional. Es la base para que tu comercio tenga un canal propio de pedidos, sin depender por completo de plataformas externas.
 
 > 🔗 **Demo publicada:** https://bitflowapp.github.io/la-taba-pages-preview/
 
@@ -10,7 +10,7 @@ Es una web/PWA estática, sin backend todavía. Corre en GitHub Pages, Vercel, N
 
 ## En 30 segundos: ¿qué resuelve?
 
-| Antes (WhatsApp suelto) | Con La Taba |
+| Antes (WhatsApp suelto) | Con PedidoPropio |
 | --- | --- |
 | Audios y mensajes desordenados | Pedido escrito y completo, siempre igual |
 | Errores al anotar a mano | Productos, cantidades y total automáticos |
@@ -25,7 +25,7 @@ Es una web/PWA estática, sin backend todavía. Corre en GitHub Pages, Vercel, N
 
 ## Diferencia honesta frente a una app de delivery
 
-Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de clientes. Sirve para otra cosa: darle a La Taba un link propio para clientes frecuentes, Instagram, WhatsApp y QR del local. El pedido llega claro, con total calculado y listo para responder.
+Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de clientes. Sirve para otra cosa: darle a tu comercio un link propio para clientes frecuentes, Instagram, WhatsApp y QR del local. El pedido llega claro, con total calculado y listo para responder.
 
 ## Cómo probar la demo
 
@@ -141,7 +141,7 @@ un proveedor dedicado.
 
 La ubicación demo está centralizada en `js/config.js`:
 
-- `businessLocation`: local demo de La Taba en Neuquén Capital.
+- `businessLocation`: local del comercio demo (La Taba) en Neuquén Capital.
 - `demoDestinations`: destino demo en Neuquén Capital y destino demo en Cipolletti.
 - `defaultMapBounds`: encuadre inicial Neuquén/Cipolletti.
 - `demoStreetTestDestinations`: presets ficticios para **Modo prueba en calle**
@@ -332,7 +332,7 @@ Ejemplo:
 
 ```js
 export const BUSINESS_CONFIG = Object.freeze({
-  businessName: 'La Taba',
+  businessName: 'La Taba', // o BRAND.demoBusinessName
   whatsappNumber: '5492996209136',
   deliveryFee: 1200,
   minDeliveryOrder: 5000,

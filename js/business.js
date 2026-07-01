@@ -15,6 +15,7 @@ import {
   getLowStockProducts as selectLowStockProducts,
 } from './core/business-metrics.js';
 import { buildCustomerSignals } from './core/customer-profile.js';
+import { renderOrderTimeline } from './core/order-timeline.js';
 import {
   BUSINESS_CANCEL_REASONS,
   BUSINESS_ORDER_FILTERS,
@@ -186,6 +187,13 @@ export function renderBusinessDashboard() {
           <h2>Central de pedidos</h2>
           <span>Los pedidos confirmados aparecen acá: aceptás, preparás y mandás a reparto.</span>
         </div>
+        <div class="status-board business-summary-board" aria-label="Resumen del día">
+          <span class="board-chip received">Pedidos nuevos <strong>${metrics.ordersByStatus.received}</strong></span>
+          <span class="board-chip preparing">En preparación <strong>${metrics.ordersByStatus.preparing}</strong></span>
+          <span class="board-chip way">En reparto <strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></span>
+          <span class="board-chip done">Entregados hoy <strong>${metrics.directOrdering.deliveredOrders}</strong></span>
+          <span class="board-chip total">Total vendido hoy <strong>${money(metrics.todayTotal)}</strong></span>
+        </div>
         <button class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}" type="button" data-sound-toggle aria-pressed="${soundEnabled}">
           <span>${soundEnabled ? 'Sonido activo' : 'Activar sonido'}</span>
           ${receivedOrders.length ? `<strong>${receivedOrders.length}</strong>` : ''}
@@ -215,16 +223,6 @@ export function renderBusinessDashboard() {
             <div class="panel-head"><h3>Ventas</h3><span>Últimos 7 días</span></div>
             ${salesChart(state.orders)}
           </section>
-          <section class="dashboard-panel">
-            <div class="panel-head"><h3>Pedidos por estado</h3><span>${metrics.todayOrderCount} hoy</span></div>
-            <div class="status-board">
-              <span class="board-chip received">Nuevos <strong>${metrics.ordersByStatus.received}</strong></span>
-              <span class="board-chip preparing">Preparando <strong>${metrics.ordersByStatus.preparing}</strong></span>
-              <span class="board-chip ready">Listos <strong>${metrics.ordersByStatus.ready}</strong></span>
-              <span class="board-chip way">En camino <strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></span>
-              <span class="board-chip done">Entregados <strong>${metrics.ordersByStatus.delivered}</strong></span>
-            </div>
-          </section>
         </div>
         <div class="insight-grid">
           <section class="insight-card">
@@ -251,7 +249,7 @@ const INBOX_GROUPS = [
   { id: 'nuevos', title: 'Pedidos nuevos', hint: 'Atención inmediata', match: (order) => order.status === 'received' },
   { id: 'preparando', title: 'En preparación', hint: 'En cocina o mostrador', match: (order) => order.status === 'preparing' },
   { id: 'listos', title: 'Listos', hint: 'Para retiro o reparto', match: (order) => order.status === 'ready' },
-  { id: 'reparto', title: 'En reparto', hint: 'Pedidos en calle', match: (order) => ['on_the_way', 'arriving'].includes(order.status) },
+  { id: 'reparto', title: 'En reparto', hint: 'Seguimiento del reparto', match: (order) => ['on_the_way', 'arriving'].includes(order.status) },
 ];
 
 // Central de pedidos: lista vertical mobile-first con los pedidos REALES de la
@@ -463,6 +461,7 @@ function inboxOrderCard(order, options = {}) {
             <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
           </div>
           <p class="inbox-status-copy">${escapeHtml(statusMeta.copy)}</p>
+          ${renderOrderTimeline(order.status, { className: 'tight inbox-order-timeline' })}
           ${renderCustomerSignals(customerSignals)}
           ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparación estimada: <strong>${prepMinutes} min</strong></p>` : ''}
           ${renderDeliveryCodeSummary(order)}
@@ -799,7 +798,7 @@ function renderDemoGuide() {
         <li>Al marcar <strong>Entregado</strong>, la caja y las métricas se actualizan.</li>
       </ol>
       <p class="form-hint">Tip: usá “Copiar ticket” para pasarle el pedido a la cocina.</p>
-      <p class="form-hint">Esta demo incluye un pedido de ejemplo ya entregado (LT-0001) para que la caja no arranque vacía. Abrí la presentación comercial desde <strong>Local → ¿Qué es La Taba?</strong> o agregando <code>?pitch=1</code> al link.</p>
+      <p class="form-hint">Esta demo incluye un pedido de ejemplo ya entregado (LT-0001) para que la caja no arranque vacía. Abrí la presentación comercial de PedidoPropio desde <strong>Local → ¿Qué es PedidoPropio?</strong> o agregando <code>?pitch=1</code> al link.</p>
       <div class="button-row demo-reset-row">
         <button class="ghost-button compact" type="button" data-demo-reset>Reiniciar demo (borra pedidos de prueba)</button>
       </div>

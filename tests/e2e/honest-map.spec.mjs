@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
-const TRACKING_GPS_NOTE = 'Sin GPS en vivo. Seguimiento por estado hasta que el repartidor comparta ubicación real.';
+const TRACKING_GPS_NOTE = 'El seguimiento en vivo comienza cuando el repartidor comparte su ubicación.';
 
 // Garantiza que sin GPS real el mapa no muestra geografía inventada
 // (ni ruta, ni marcadores LT/CL, ni "En vivo", ni Map/km/ETA falsos) y que el
@@ -50,9 +50,8 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await expect(tracking.locator('.sheet-handle')).toHaveCount(0);
   await expect(tracking).not.toContainText(/\bMap\b/);
 
-  // Estado visible amable: no mezcla "Recibido" con "Enviado" para el estado inicial.
-  await expect(tracking).toContainText('Enviado');
-  await expect(tracking).not.toContainText('Recibido');
+  // Estado visible amable y consistente con Negocio/Rider: "Recibido" para el estado inicial.
+  await expect(tracking).toContainText('Recibido');
   await expect(tracking.locator('.sheet-head .status-chip')).toHaveCount(0);
 
   // No hay kilómetros ni ETA inventados. El tiempo estimado textual puede existir si el pedido lo trae.

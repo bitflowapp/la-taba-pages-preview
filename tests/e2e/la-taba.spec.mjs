@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, openFirstProductModal, waitForToast } from './helpers.mjs';
 
-const TRACKING_GPS_NOTE = 'Sin GPS en vivo. Seguimiento por estado hasta que el repartidor comparta ubicación real.';
+const TRACKING_GPS_NOTE = 'El seguimiento en vivo comienza cuando el repartidor comparte su ubicación.';
 
 test.beforeEach(async ({ page }) => {
   await installBrowserStubs(page);
@@ -362,7 +362,7 @@ test('mobile cliente aplica cupon, elige pago y crea pedido', async ({ browser }
 
   const tracking = page.locator('[data-tracking-panel]');
   await expect(tracking).toContainText('Estamos revisando tu pedido');
-  await expect(tracking).toContainText('Enviado');
+  await expect(tracking).toContainText('Recibido');
   await tracking.locator('details.order-detail summary').click();
   await expect(tracking).toContainText('Transferencia');
   await expect(tracking).toContainText('Cupón TABA10');

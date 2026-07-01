@@ -28,9 +28,9 @@ test('carga inicial, home sin lista infinita y catálogo por categorías', async
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
   await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
 
-  // Seleccionar categoría Carnes.
-  await page.locator('[data-view="catalog"] [data-category-id="carnes"]').click();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Carnes');
+  // Seleccionar categoría Pizzas.
+  await page.locator('[data-view="catalog"] [data-category-id="pizzas"]').click();
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Pizzas');
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
 
   // Seleccionar categoría Bebidas.
@@ -56,8 +56,8 @@ test('agregar producto desde una categoría del catálogo', async ({ page }) => 
 
   await page.goto('/');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-view="catalog"] [data-category-id="carnes"]').click();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Carnes');
+  await page.locator('[data-view="catalog"] [data-category-id="pizzas"]').click();
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Pizzas');
 
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await waitForToast(page, /agregado al pedido/);

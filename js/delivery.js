@@ -36,7 +36,7 @@ import {
   normalizeDeliveryCode,
 } from './core/delivery-code.js';
 import { normalizeOrderAddressDetails } from './core/address.js';
-import { deliveryModeLabel, money, statusClass, statusLabel } from './state.js';
+import { dateTime, getState, money, statusClass, statusLabel } from './state.js';
 import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
 import { bagGlyph, escapeHtml, renderWithStableRealMap } from './ui.js';
 import {
@@ -61,6 +61,7 @@ export function renderDeliveryPanel() {
       <div class="delivery-layout rider-map-experience is-empty no-map">
         <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet>
           <span class="sheet-handle" aria-hidden="true"></span>
+          ${renderRiderSheetTopbar()}
           <div class="empty-state sheet-empty">
             <strong>No hay pedidos para repartir.</strong><br />
             Cuando un cliente confirme un pedido con envío, aparece acá con la dirección, el total a cobrar y los botones de reparto.
@@ -68,6 +69,7 @@ export function renderDeliveryPanel() {
               <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
             </div>
           </div>
+          ${renderRiderHistory()}
           ${renderAdvancedDemo()}
         </section>
       </div>`, { rolePrefix: 'rider' });
@@ -102,10 +104,11 @@ export function renderDeliveryPanel() {
 
       <section class="delivery-bottom-sheet rider-sheet rider-card ${gpsLive ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
+        ${renderRiderSheetTopbar()}
         <div class="sheet-head rider-head ${statusClass(order.status)}">
           <span class="track-head-ico">${bagGlyph()}</span>
           <div class="track-head-text">
-            <small>${order.id} - Reparto</small>
+            <small>Entrega actual · ${order.id}</small>
             <strong>${headline}</strong>
             <span>${escapeHtml(headSub)}</span>
           </div>
@@ -131,6 +134,8 @@ export function renderDeliveryPanel() {
             <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar dirección</button>
           </div>
         </div>
+
+        ${renderRiderQuickActions(order, destinationLabel, address)}
 
         <div class="sheet-metrics rider-metrics">
           <span class="metric-priority"><small>A cobrar</small><strong>${money(order.total)}</strong></span>
@@ -168,11 +173,75 @@ export function renderDeliveryPanel() {
           <p>${escapeHtml(instructions)}</p>
         </div>
 
+        ${renderRiderHistory(order)}
+
         ${renderAdvancedDemo()}
       </section>
     </div>
   `, { rolePrefix: 'rider', orderId: order.id });
   restoreDeliveryCodeDraft(container, codeDraft);
+}
+
+// Cabecera del sheet del rider (maqueta): "Mis entregas" + estado en línea +
+// accesos al panel del negocio y salida del modo operativo.
+function renderRiderSheetTopbar() {
+  return `
+    <div class="rider-sheet-topbar">
+      <div class="rider-sheet-title">
+        <strong>Mis entregas</strong>
+        <span class="rider-online-chip"><i aria-hidden="true"></i>En línea</span>
+      </div>
+      <div class="rider-sheet-actions">
+        <button class="ghost-button compact" type="button" data-open-admin-view="business">Panel negocio</button>
+        <button class="ghost-button compact" type="button" data-lock-admin>Salir</button>
+      </div>
+    </div>`;
+}
+
+// Accesos rápidos del rider (referencia visual de la maqueta): abrir la ruta en
+// el mapa nativo (búsqueda real por la dirección textual, sin ruta inventada
+// dentro de la app) y llamar al cliente.
+function renderRiderQuickActions(order, destinationLabel, address) {
+  const navQuery = encodeURIComponent([destinationLabel, address?.reference].filter(Boolean).join(' '));
+  const navUrl = navQuery ? `https://www.google.com/maps/dir/?api=1&destination=${navQuery}` : '';
+  const phone = String(order.customerPhone || '').trim();
+  if (!navUrl && !phone) return '';
+  return `
+    <div class="rider-quick-actions">
+      ${navUrl ? `
+      <a class="secondary-button rider-quick-button" href="${navUrl}" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true"><path d="M20.5 4.2 4 11l6.4 2.6L13 20l7.5-15.8Z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        Abrir ruta
+      </a>` : ''}
+      ${phone ? `
+      <a class="secondary-button rider-quick-button" href="tel:${encodeURIComponent(phone)}">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true"><path d="M6.8 3.8 9 3.2c.6-.1 1.2.2 1.4.8l1 2.6c.2.5 0 1.1-.4 1.4l-1.3 1a12.9 12.9 0 0 0 5.3 5.3l1-1.3c.3-.4.9-.6 1.4-.4l2.6 1c.6.2.9.8.8 1.4l-.6 2.2a1.6 1.6 0 0 1-1.6 1.2C10.9 18.2 5.8 13.1 5.6 5.4c0-.7.5-1.4 1.2-1.6Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        Llamar al cliente
+      </a>` : ''}
+    </div>`;
+}
+
+// Historial corto de entregas del rider: pedidos de delivery ya entregados.
+// Datos reales de la demo, sin viajes inventados.
+function renderRiderHistory(currentOrder = null) {
+  const delivered = (getState().orders || [])
+    .filter((order) => order.status === 'delivered' && order.deliveryMode === 'delivery')
+    .filter((order) => order.id !== currentOrder?.id)
+    .slice(0, 3);
+  if (!delivered.length) return '';
+  return `
+    <section class="rider-history" aria-label="Entregas recientes">
+      <p class="rider-label">Entregas recientes</p>
+      ${delivered.map((order) => `
+        <div class="rider-history-row">
+          <span class="rider-history-check" aria-hidden="true">✓</span>
+          <div class="rider-history-text">
+            <strong>${escapeHtml(order.id)} · ${escapeHtml(order.customerName)}</strong>
+            <small>${escapeHtml(dateTime(order.delivery?.deliveredAt || order.createdAt))}</small>
+          </div>
+          <strong class="rider-history-total">${money(order.total)}</strong>
+        </div>`).join('')}
+    </section>`;
 }
 
 function captureDeliveryCodeDraft(container) {

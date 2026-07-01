@@ -7,7 +7,7 @@ import { resetState } from './helpers.mjs';
 beforeEach(() => resetState());
 
 test('buildKitchenTicket incluye los datos clave del pedido para la cocina', () => {
-  addToCart('p-vacio', 2);
+  addToCart('p-muzzarella', 2);
   const { order } = createOrderFromCheckout({
     customerName: 'Cocina QA',
     customerPhone: '2995550000',
@@ -26,7 +26,7 @@ test('buildKitchenTicket incluye los datos clave del pedido para la cocina', () 
   assert.match(ticket, /2995550000/);
   assert.match(ticket, /Roca 321, Centro/);
   assert.match(ticket, /Porton negro/);
-  assert.match(ticket, /2 x Vacío/);
+  assert.match(ticket, /2 x Muzzarella/);
   assert.match(ticket, /TOTAL:/);
   assert.match(ticket, /Sin sal/);
 });

@@ -190,7 +190,7 @@ function liveBusinessState(now) {
       notes: 'Sin sal',
       createdAt,
       status: 'on_the_way',
-      items: [{ productId: 'p-vacio', name: 'Vacío especial', icon: '', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+      items: [{ productId: 'p-muzzarella', name: 'Vacío especial', icon: '', quantity: 1, unitPrice: 1000, unit: 'kg' }],
       subtotal: 1000,
       deliveryFee: 0,
       total: 1000,

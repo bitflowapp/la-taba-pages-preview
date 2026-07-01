@@ -70,8 +70,8 @@ function restoreStableRealMap(container, shell) {
 export function applyBusinessConfig() {
   setText('[data-business-name]', getBusinessConfig().businessName);
   setText('[data-business-subtitle]', getBusinessConfig().subtitle);
-  setText('.app-home .eyebrow', getBusinessConfig().subtitle || 'Carnicería & delivery propio');
-  setText('.app-home .home-lead', 'Cortes frescos, parrilla y combos para pedir desde el celular, con entrega propia o retiro en el local.');
+  setText('.app-home .eyebrow', getBusinessConfig().subtitle || 'Pizzería · delivery propio');
+  setText('.app-home .home-lead', `${BRAND.demoBusinessClaim || 'Tu pizza favorita, ahora a un toque.'} ${BRAND.demoBusinessClaimSecondary || 'Pedí. Seguí. Disfrutá.'}`);
   setText('[data-min-order]', money(getBusinessConfig().minDeliveryOrder));
   setText('[data-delivery-fee]', money(getBusinessConfig().deliveryFee));
   setText('[data-business-profile-name]', getBusinessConfig().businessName);
@@ -192,26 +192,22 @@ function unitText(product) {
 }
 
 const PRODUCT_IMAGE_BY_ID = Object.freeze({
-  'p-viernes-parrilla': 'assets/hero/parrilla-real.webp',
-  'p-combo-familiar': 'assets/hero/parrilla-real.webp',
-  'p-combo-parrillero': 'assets/products/chorizos-parrilla.webp',
-  'p-promo-milanesas': 'assets/products/milanesas.webp',
-  'p-combo-milanesas': 'assets/products/milanesas.webp',
-  'p-milanesa-carne': 'assets/products/milanesas.webp',
-  'p-carne-picada-especial': 'assets/products/hamburguesa.webp',
-  'p-chorizo-parrillero': 'assets/products/chorizos-parrilla.webp',
-  'p-chorizo-colorado': 'assets/products/chorizos-parrilla.webp',
-  'p-salchicha-parrillera': 'assets/products/chorizos-parrilla.webp',
+  'p-muzzarella': 'assets/products/pizza-muzzarella.webp',
+  'p-especial': 'assets/products/pizza-especial.webp',
+  'p-fugazzeta': 'assets/products/pizza-fugazzeta.webp',
+  'p-napolitana': 'assets/products/pizza-napolitana.webp',
+  'p-pepperoni': 'assets/products/pizza-pepperoni.webp',
+  'p-calabresa': 'assets/products/pizza-calabresa.webp',
+  'p-jamon-muzzarella': 'assets/products/pizza-jamon.webp',
+  'p-combo-familiar': 'assets/products/combo-familiar.webp',
+  'p-promo-dia': 'assets/products/promo-dia.webp',
+  'p-coca': 'assets/products/bebida-cola.webp',
 });
 
 const PRODUCT_IMAGE_BY_TONE = Object.freeze({
-  promo: 'assets/hero/parrilla-real.webp',
-  combo: 'assets/hero/parrilla-real.webp',
-  beef: 'assets/products/cortes-crudos.webp',
-  mila: 'assets/products/milanesas.webp',
-  chicken: 'assets/products/pollo-fresco.webp',
-  sausage: 'assets/products/chorizos-parrilla.webp',
-  achura: 'assets/hero/parrilla-real.webp',
+  pizza: 'assets/products/pizza-muzzarella.webp',
+  promo: 'assets/products/promo-dia.webp',
+  combo: 'assets/products/combo-familiar.webp',
 });
 
 function productImage(product) {
@@ -278,13 +274,14 @@ function priceBlock(product) {
     </div>`;
 }
 
-// Ofertas del home. Se exporta la lista para que "Combos destacados" no repita
-// los mismos productos en la pantalla inicial.
+// "Las más pedidas" del home (referencia visual de la maqueta): pizzas populares
+// primero. Se exporta la lista para que "Combos y promos" no repita productos.
 function homeOfferProducts() {
   return getCustomerCatalogProducts(getState().products)
-    .filter((product) => product.available && product.stock > 0 && (discountPercent(product) > 0 || product.featured))
-    .sort((a, b) => discountPercent(b) - discountPercent(a))
-    .slice(0, 8);
+    .filter((product) => product.available && product.stock > 0 && (product.popular || product.featured))
+    .filter((product) => !product.combo)
+    .sort((a, b) => popularScore(b) - popularScore(a))
+    .slice(0, 6);
 }
 
 function renderOffers() {
@@ -331,23 +328,61 @@ function railCard(product) {
   `;
 }
 
+const CATEGORY_GLYPHS = Object.freeze({
+  pizzas: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M12 21 3.6 6.6A16.4 16.4 0 0 1 12 4.4a16.4 16.4 0 0 1 8.4 2.2L12 21Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <circle cx="10" cy="9" r="1.2" fill="currentColor"/><circle cx="14.2" cy="10.6" r="1.2" fill="currentColor"/><circle cx="11.4" cy="13.6" r="1.1" fill="currentColor"/>
+  </svg>`,
+  combos: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <rect x="3.4" y="8" width="17.2" height="12" rx="2.4" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6"/>
+    <path d="M3.4 12h17.2M12 8v12" stroke="currentColor" stroke-width="1.6"/>
+    <path d="M7 8V6.2A2.2 2.2 0 0 1 9.2 4h5.6A2.2 2.2 0 0 1 17 6.2V8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`,
+  promos: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M12.6 3.6 20 11a2.2 2.2 0 0 1 0 3.1l-5.9 5.9a2.2 2.2 0 0 1-3.1 0L3.6 12.6A2 2 0 0 1 3 11.2V5a2 2 0 0 1 2-2h6.2c.5 0 1 .2 1.4.6Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <circle cx="8.2" cy="8.2" r="1.5" fill="currentColor"/>
+  </svg>`,
+  bebidas: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M9.4 3h5.2v3l1.4 2.2a3 3 0 0 1 .5 1.6V19a2 2 0 0 1-2 2H9.5a2 2 0 0 1-2-2V9.8a3 3 0 0 1 .5-1.6L9.4 6V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M7.5 12.4h9" stroke="currentColor" stroke-width="1.6"/>
+  </svg>`,
+  favorites: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4 7.2 18.9l.9-5.4-3.9-3.8 5.4-.8L12 4Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+  </svg>`,
+  all: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <rect x="4" y="4" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.6"/>
+    <rect x="13" y="4" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.6"/>
+    <rect x="4" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.6"/>
+    <rect x="13" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.6"/>
+  </svg>`,
+});
+
+function categoryGlyph(categoryId) {
+  return CATEGORY_GLYPHS[categoryId] || CATEGORY_GLYPHS.all;
+}
+
 function renderCategories() {
   const strips = $$('[data-category-strip]');
   if (!strips.length) return;
   const { activeCategory } = getState();
-  const categoryList = [
+  const fullList = [
     categories[0],
     { id: 'favorites', name: 'Favoritos' },
     ...categories.slice(1),
   ];
+  // El home replica la maqueta: sólo las categorías reales, como tarjetas con ícono.
+  const homeList = categories.slice(1);
 
-  const markup = categoryList.map((category) => `
+  const markupFor = (list) => list.map((category) => `
     <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}">
-      ${escapeHtml(category.name)}
+      <span class="category-ico" aria-hidden="true">${categoryGlyph(category.id)}</span>
+      <span class="category-label">${escapeHtml(category.name)}</span>
     </button>
   `).join('');
 
-  strips.forEach((strip) => { strip.innerHTML = markup; });
+  strips.forEach((strip) => {
+    strip.innerHTML = markupFor(strip.dataset.categoryStrip === 'home' ? homeList : fullList);
+  });
 }
 
 // Productos filtrados por categoría + búsqueda, ya ordenados.
@@ -529,8 +564,41 @@ export function renderHomeActiveOrder() {
 }
 
 export function renderCustomerHome() {
+  renderHomeAddressChip();
+  renderPromoBanner();
   renderDirectOrderingCustomerActions();
   renderCustomerHistory();
+}
+
+// Chip "Enviar a" del home (referencia visual de la maqueta). Es honesto:
+// muestra la dirección recordada del cliente si existe; si no, invita a
+// cargarla al confirmar. Nunca inventa una dirección.
+function renderHomeAddressChip() {
+  const label = $('[data-home-address-label]');
+  if (!label) return;
+  const remembered = getRememberedCheckoutValues();
+  const street = remembered?.customerStreetAddress?.trim();
+  if (street) {
+    const neighborhood = remembered?.customerNeighborhood?.trim();
+    label.textContent = neighborhood ? `${street} · ${neighborhood}` : street;
+  } else {
+    label.textContent = 'Elegí tu dirección al confirmar el pedido';
+  }
+}
+
+// Banner de promo del día: lee el producto real del catálogo para que precio y
+// disponibilidad nunca queden desactualizados respecto del panel del negocio.
+function renderPromoBanner() {
+  const banner = $('[data-promo-banner]');
+  if (!banner) return;
+  const promo = getCustomerCatalogProducts(getState().products)
+    .find((product) => product.categoryId === 'promos' && product.available && product.stock > 0);
+  banner.hidden = !promo;
+  if (!promo) return;
+  const price = $('[data-promo-banner-price]', banner);
+  if (price) price.textContent = money(promo.price);
+  const title = $('[data-promo-banner-title]', banner);
+  if (title && promo.id !== 'p-promo-dia') title.textContent = promo.name;
 }
 
 function renderCustomerActions() {

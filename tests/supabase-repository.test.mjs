@@ -28,7 +28,7 @@ afterEach(() => {
 
 test('Supabase repository creates a persistent order and mirrors it locally', async () => {
   const mock = createSupabaseMock();
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const repository = createSupabaseOrderRepository({
     supabaseUrl: 'https://la-taba.supabase.co',
     anonKey: 'anon-public-key',
@@ -67,7 +67,7 @@ test('Supabase repository creates a persistent order and mirrors it locally', as
 });
 
 test('Supabase repository no reporta éxito si la RPC transaccional falla', async () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const ordersBefore = getState().orders.length;
   const repository = createSupabaseOrderRepository({
     supabaseUrl: 'https://la-taba.supabase.co',
@@ -94,7 +94,7 @@ test('Supabase repository no reporta éxito si la RPC transaccional falla', asyn
 });
 
 test('Supabase repository explica cuando falta la migración (RPC ausente)', async () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const repository = createSupabaseOrderRepository({
     supabaseUrl: 'https://la-taba.supabase.co',
     anonKey: 'anon-public-key',
@@ -120,7 +120,7 @@ test('Supabase repository explica cuando falta la migración (RPC ausente)', asy
 
 test('Supabase repository persists status and rider GPS updates', async () => {
   const mock = createSupabaseMock();
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const repository = createSupabaseOrderRepository({
     supabaseUrl: 'https://la-taba.supabase.co',
     anonKey: 'anon-public-key',
@@ -171,7 +171,7 @@ test('Supabase repository keeps terminal orders out of the active order slot', a
     fetchImpl: mock.fetch,
   });
 
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const active = await repository.createOrder({
     customerName: 'Activo Supabase',
     customerPhone: '2995550000',
@@ -180,7 +180,7 @@ test('Supabase repository keeps terminal orders out of the active order slot', a
     paymentMethod: 'cash',
   });
 
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const terminal = await repository.createOrder({
     customerName: 'Cancelado Supabase',
     customerPhone: '2995550000',
@@ -207,7 +207,7 @@ test('repository factory can opt into Supabase without changing demo default', a
   const repository = getOrderRepository();
   assert.equal(repository.mode, 'supabase');
 
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const created = await repository.createOrder({
     customerName: 'Factory Supabase',
     customerPhone: '2995550000',

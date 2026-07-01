@@ -3,15 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#fffdf9" />
-    <meta name="description" content="La Taba: pedí online, seguí la entrega y gestioná el negocio y el reparto desde una sola app." />
-    <title>La Taba · Pedidos, negocio y reparto</title>
+    <meta name="theme-color" content="#fff8f1" />
+    <meta name="description" content="La Taba Pizzería: pedí tu pizza online, seguí la entrega y gestioná el negocio y el reparto desde una sola app." />
+    <title>La Taba Pizzería · Pedidos, negocio y reparto</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="assets/icon.svg" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="La Taba" />
+    <meta name="apple-mobile-web-app-title" content="La Taba Pizzería" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -19,10 +19,17 @@
     <div class="app-shell">
       <header class="topbar">
         <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio del comercio">
-          <span class="brand-mark">LT</span>
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+              <path d="M12 21 3.6 6.6A16.4 16.4 0 0 1 12 4.4a16.4 16.4 0 0 1 8.4 2.2L12 21Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <circle cx="10" cy="9" r="1.3" fill="currentColor"/>
+              <circle cx="14.2" cy="10.6" r="1.3" fill="currentColor"/>
+              <circle cx="11.4" cy="13.8" r="1.3" fill="currentColor"/>
+            </svg>
+          </span>
           <span class="brand-text">
-            <strong class="brand-word" data-business-name>La Taba</strong>
-            <small data-business-subtitle>Carnicería y parrilla · delivery propio</small>
+            <strong class="brand-word" data-business-name>La Taba Pizzería</strong>
+            <small data-business-subtitle>Horno a leña · delivery propio</small>
           </span>
         </button>
 
@@ -50,7 +57,7 @@
           </svg>
         </span>
         <span class="pwa-banner-copy">
-          <strong>Instalar La Taba</strong>
+          <strong>Instalar La Taba Pizzería</strong>
           <small>Acceso directo desde tu pantalla de inicio.</small>
         </span>
         <button class="primary-button compact" type="button" data-pwa-install-action>Instalar</button>
@@ -66,7 +73,7 @@
           </svg>
         </span>
         <span class="pwa-banner-copy">
-          <strong>Para instalar La Taba:</strong>
+          <strong>Para instalar La Taba Pizzería:</strong>
           <ol class="pwa-ios-steps">
             <li>Tocá <strong>Compartir</strong></li>
             <li>Elegí <strong>“Agregar a pantalla de inicio”</strong></li>
@@ -83,10 +90,100 @@
 
       <main data-app-main>
         <section class="section app-view app-home is-active" data-view="home" aria-hidden="false">
+          <div class="home-title">
+            <div>
+              <p class="eyebrow">Horno a leña · delivery propio</p>
+              <h1 data-business-name>La Taba Pizzería</h1>
+              <p class="home-lead">Tu pizza favorita, ahora a un toque. Pedí. Seguí. Disfrutá.</p>
+            </div>
+            <button class="secondary-button compact" type="button" data-nav-view="profile">Ver local</button>
+          </div>
+
+          <div class="status-bar" role="status">
+            <span class="status-dot" data-open-status>Abierto ahora</span>
+            <span class="status-sep" aria-hidden="true"></span>
+            <span class="status-item">Recibimos pedidos</span>
+            <span class="status-sep" aria-hidden="true"></span>
+            <span class="status-item">Delivery propio o retiro en el local</span>
+            <span class="status-sep" aria-hidden="true"></span>
+            <span class="status-item">Neuquén</span>
+          </div>
+
+          <button class="home-address-chip" type="button" data-nav-view="cart" data-home-address>
+            <span class="address-chip-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                <path d="M12 21.3s-6.6-6.3-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 4.8-6.6 11.1-6.6 11.1Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <circle cx="12" cy="9.9" r="2.3" fill="currentColor"/>
+              </svg>
+            </span>
+            <span class="address-chip-text">
+              <small>Enviar a</small>
+              <strong data-home-address-label>Elegí tu dirección al confirmar el pedido</strong>
+            </span>
+            <span class="address-chip-go" aria-hidden="true">›</span>
+          </button>
+
+          <div data-home-active-order hidden></div>
+          <div data-customer-actions></div>
+
+          <button class="promo-banner" type="button" data-category-id="promos" data-promo-banner>
+            <span class="promo-photo" aria-hidden="true">
+              <img src="assets/products/promo-dia.webp" alt="" width="760" height="608" loading="eager" decoding="async" fetchpriority="high" />
+            </span>
+            <div class="promo-banner-copy">
+              <span class="promo-kicker">Promo del día</span>
+              <strong data-promo-banner-title>2 pizzas grandes<br />+ gaseosa 1.5 L</strong>
+              <span class="promo-price" data-promo-banner-price>$19.990</span>
+            </div>
+            <span class="promo-cta">Pedir ahora</span>
+          </button>
+
+          <div class="rail-block">
+            <div class="rail-head">
+              <h2>Categorías</h2>
+              <button class="rail-link" type="button" data-nav-view="catalog">Ver catálogo ›</button>
+            </div>
+            <div class="category-strip category-tiles" data-category-strip="home"></div>
+          </div>
+
+          <div class="rail-block">
+            <div class="rail-head">
+              <h2>Las más pedidas</h2>
+              <button class="rail-link" type="button" data-category-id="pizzas">Ver todas ›</button>
+            </div>
+            <div class="offers-rail" data-offers-rail></div>
+          </div>
+
+          <div class="rail-block">
+            <div class="rail-head">
+              <h2>Combos y promos</h2>
+              <button class="rail-link" type="button" data-category-id="combos">Ver todos ›</button>
+            </div>
+            <div class="combos-rail" data-combos-rail></div>
+          </div>
+
+          <div class="search-box">
+            <span aria-hidden="true">⌕</span>
+            <input data-search-input data-search-jump type="search" placeholder="Buscar pizzas, combos, bebidas..." aria-label="Buscar productos" />
+          </div>
+
+          <button class="order-now-cta" type="button" data-nav-view="catalog">
+            <span class="order-now-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+                <path d="M12 21 3.6 6.6A16.4 16.4 0 0 1 12 4.4a16.4 16.4 0 0 1 8.4 2.2L12 21Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                <circle cx="10" cy="9" r="1.2" fill="currentColor"/>
+                <circle cx="14.2" cy="10.6" r="1.2" fill="currentColor"/>
+              </svg>
+            </span>
+            <span>Pedir ahora</span>
+          </button>
+
+          <div data-customer-history></div>
+
           <section class="role-intro" aria-label="Cómo funciona el sistema">
             <article class="role-card role-card-client">
               <h2>Cliente</h2>
-              <p>Elegí productos, hacé tu pedido y seguí la entrega.</p>
+              <p>Elegí tu pizza, hacé el pedido y seguí la entrega.</p>
               <button class="primary-button compact" type="button" data-nav-view="catalog">Empezar a pedir</button>
             </article>
             <article class="role-card role-card-business">
@@ -110,85 +207,13 @@
                 <strong data-product-name>PedidoPropio</strong>
               </span>
               <p class="product-intro-claim" data-product-tagline>Tu sistema de pedidos directo, sin depender de apps con comisión.</p>
-              <p class="product-intro-note">Demo: el comercio <strong data-business-name>La Taba</strong> funcionando con <strong data-product-name>PedidoPropio</strong>.</p>
+              <p class="product-intro-note">Demo: el comercio <strong data-business-name>La Taba Pizzería</strong> funcionando con <strong data-product-name>PedidoPropio</strong>.</p>
             </div>
             <div class="product-intro-actions">
               <button class="primary-button compact" type="button" data-open-pitch>Ver cómo funciona</button>
               <button class="ghost-button compact" type="button" data-pitch-go="catalog">Probar pedido</button>
             </div>
           </aside>
-
-          <div class="home-title">
-            <div>
-              <p class="eyebrow">Carnicería y parrilla</p>
-              <h1 data-business-name>La Taba</h1>
-              <p class="home-lead">Cortes frescos, parrilla y combos para pedir online en Neuquén.</p>
-            </div>
-            <button class="secondary-button compact" type="button" data-nav-view="profile">Ver local</button>
-          </div>
-
-          <div class="status-bar" role="status">
-            <span class="status-dot" data-open-status>Abierto ahora</span>
-            <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Recibimos pedidos</span>
-            <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Delivery propio o retiro en el local</span>
-            <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Neuquén</span>
-          </div>
-
-          <div data-home-active-order hidden></div>
-          <div data-customer-actions></div>
-          <div data-customer-history></div>
-
-          <div class="search-box">
-            <span aria-hidden="true">⌕</span>
-            <input data-search-input data-search-jump type="search" placeholder="Buscar cortes, combos, bebidas..." aria-label="Buscar productos" />
-          </div>
-
-          <div class="rail-block">
-            <div class="rail-head">
-              <h2>Categorías</h2>
-              <button class="rail-link" type="button" data-nav-view="catalog">Ver catálogo ›</button>
-            </div>
-            <div class="category-strip" data-category-strip></div>
-          </div>
-
-          <button class="promo-banner" type="button" data-category-id="promos" data-promo-banner>
-            <span class="promo-photo" aria-hidden="true">
-              <img src="assets/hero/parrilla-real.webp" alt="" width="700" height="525" loading="eager" decoding="async" fetchpriority="high" />
-            </span>
-            <div class="promo-banner-copy">
-              <span class="promo-kicker">Listo para parrilla</span>
-              <strong>Promo parrillera del día</strong>
-              <span class="promo-sub">Cortes, achuras y bebidas para resolver la comida de hoy.</span>
-            </div>
-            <span class="promo-cta">Pedir ahora</span>
-          </button>
-
-          <div class="rail-block">
-            <div class="rail-head">
-              <h2>Ofertas de hoy</h2>
-              <button class="rail-link" type="button" data-category-id="promos">Ver todas ›</button>
-            </div>
-            <div class="offers-rail" data-offers-rail></div>
-          </div>
-
-          <div class="rail-block">
-            <div class="rail-head">
-              <h2>Combos destacados</h2>
-              <button class="rail-link" type="button" data-category-id="combos">Ver todos ›</button>
-            </div>
-            <div class="combos-rail" data-combos-rail></div>
-          </div>
-
-          <button class="catalog-cta" type="button" data-nav-view="catalog">
-            <span>
-              <strong>Ver catálogo completo</strong>
-              <small>Elegí por categoría: carnes, pollos, achuras, embutidos y más.</small>
-            </span>
-            <span class="catalog-cta-go" aria-hidden="true">›</span>
-          </button>
         </section>
 
         <section class="section app-view" data-view="catalog" hidden aria-hidden="true">
@@ -205,7 +230,7 @@
 
           <div class="search-box">
             <span aria-hidden="true">⌕</span>
-            <input data-search-input type="search" placeholder="Buscar cortes, combos, bebidas..." aria-label="Buscar en el catálogo" />
+            <input data-search-input type="search" placeholder="Buscar pizzas, combos, bebidas..." aria-label="Buscar en el catálogo" />
           </div>
 
           <div class="category-strip" data-category-strip></div>
@@ -320,7 +345,7 @@
 
               <label>
                 Observaciones del pedido
-                <textarea name="customerNotes" rows="3" placeholder="Ej: sin cebolla, cortar en porciones, sin hueso"></textarea>
+                <textarea name="customerNotes" rows="3" placeholder="Ej: sin aceitunas, bien cocida, cortar en 8 porciones"></textarea>
               </label>
 
               <div class="coupon-row">
@@ -446,14 +471,10 @@
           </div>
 
           <div data-admin-unlocked hidden>
-            <div class="section-head">
+            <div class="section-head rider-section-head">
               <div>
-                <p class="eyebrow">Repartidor</p>
-                <h2>Reparto propio de <span data-rider-business-name>La Taba</span></h2>
-              </div>
-              <div class="view-actions">
-                <button class="secondary-button compact" type="button" data-open-admin-view="business">Panel negocio</button>
-                <button class="ghost-button compact" type="button" data-lock-admin>Salir</button>
+                <p class="eyebrow">Repartidor de <span data-rider-business-name>La Taba Pizzería</span></p>
+                <h2 class="rider-title">Mis entregas</h2>
               </div>
             </div>
             <div data-delivery-panel></div>
@@ -470,7 +491,7 @@
         <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>
         <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
         <button type="button" data-nav-view="cart"><span class="mn-ico icon-order" aria-hidden="true"></span><span class="mn-label">Pedido</span><span class="mn-badge" data-cart-count-mobile>0</span></button>
-        <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguir</span></button>
+        <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguimiento</span></button>
         <button type="button" data-nav-view="profile"><span class="mn-ico icon-store" aria-hidden="true"></span><span class="mn-label">Local</span></button>
       </nav>
     </div>

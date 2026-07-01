@@ -29,7 +29,7 @@ test('delivery code: normaliza, formatea y valida 4 digitos', () => {
 });
 
 test('delivery code: pedidos nuevos nacen con codigo visible y confirmable', () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
 
   const created = createOrderFromCheckout({
     customerName: 'Cliente Codigo',
@@ -58,7 +58,7 @@ test('delivery code: pedidos nuevos nacen con codigo visible y confirmable', () 
 });
 
 test('delivery code: retiro en local no crea codigo de rider', () => {
-  addToCart('p-combo-retiro', 1);
+  addToCart('p-muzzarella', 1);
 
   const created = createOrderFromCheckout({
     customerName: 'Cliente Retiro',
@@ -92,7 +92,7 @@ test('delivery code: un pedido entregado no admite revalidacion por codigo', () 
       status: 'delivered',
       createdAt: '2026-06-07T10:00:00.000Z',
       statusHistory: [{ status: 'delivered', at: '2026-06-07T10:15:00.000Z' }],
-      items: [{ productId: 'p-vacio', name: 'Vacio especial', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+      items: [{ productId: 'p-muzzarella', name: 'Vacio especial', quantity: 1, unitPrice: 11200, unit: 'kg' }],
       deliveryMode: 'delivery',
       customerName: 'Cliente entregado',
       customerPhone: '2995553333',
@@ -116,7 +116,7 @@ test('delivery code: pedidos viejos sin codigo hidratan con fallback estable', (
     status: 'on_the_way',
     createdAt: '2026-06-07T10:00:00.000Z',
     statusHistory: [{ status: 'on_the_way', at: '2026-06-07T10:00:00.000Z' }],
-    items: [{ productId: 'p-vacio', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+    items: [{ productId: 'p-muzzarella', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
     deliveryMode: 'delivery',
     customerName: 'Cliente viejo',
     customerPhone: '2995551111',

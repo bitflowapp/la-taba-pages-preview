@@ -19,19 +19,19 @@ beforeEach(() => resetState());
 test('cart supports add, increment, decrement, remove, and clear', () => {
   assert.deepEqual(getCartItems(), []);
 
-  assert.equal(addToCart('p-matambre').ok, true);
+  assert.equal(addToCart('p-napolitana').ok, true);
   assert.equal(state().cart[0].quantity, 1);
 
-  assert.equal(incrementCartItem('p-matambre').ok, true);
+  assert.equal(incrementCartItem('p-napolitana').ok, true);
   assert.equal(state().cart[0].quantity, 2);
 
-  decrementCartItem('p-matambre');
+  decrementCartItem('p-napolitana');
   assert.equal(state().cart[0].quantity, 1);
 
-  removeCartItem('p-matambre');
+  removeCartItem('p-napolitana');
   assert.deepEqual(state().cart, []);
 
-  addToCart('p-matambre');
+  addToCart('p-napolitana');
   clearCart();
   assert.deepEqual(state().cart, []);
 });
@@ -41,10 +41,10 @@ test('cart rejects exhausted products and never exceeds stock', () => {
   assert.deepEqual(state().cart, []);
 
   for (let index = 0; index < 4; index += 1) {
-    assert.equal(addToCart('p-matambre').ok, true);
+    assert.equal(addToCart('p-napolitana').ok, true);
   }
 
-  const rejected = addToCart('p-matambre');
+  const rejected = addToCart('p-napolitana');
   assert.equal(rejected.ok, false);
   assert.match(rejected.message, /Stock disponible: 4/);
   assert.equal(state().cart[0].quantity, 4);
@@ -68,10 +68,10 @@ test('cart rejects invalid quantities and prunes disabled products from state', 
 });
 
 test('cart calculates subtotal, delivery fee, and totals correctly', () => {
-  addToCart('p-matambre', 2);
+  addToCart('p-napolitana', 2);
   addToCart('p-coca', 1);
 
-  const subtotal = 2 * 8900 + 2800;
+  const subtotal = 2 * 9990 + 2900;
   assert.equal(getCartSubtotal(), subtotal);
   assert.equal(getDeliveryFee('delivery'), BUSINESS_CONFIG.deliveryFee);
   assert.equal(getCartTotal('delivery'), subtotal + BUSINESS_CONFIG.deliveryFee);

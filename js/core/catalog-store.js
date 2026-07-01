@@ -7,35 +7,21 @@ export const CATALOG_BADGE_OPTIONS = Object.freeze(['', 'Promo', 'Nuevo', 'Más 
 
 const CATEGORY_IDS = new Set(categories.map((category) => category.id).filter((id) => id !== 'all'));
 const DEMO_PRODUCT_IDS = new Set(demoProducts.map((product) => product.id));
-const DEFAULT_CATEGORY_ID = 'carnes';
+const DEFAULT_CATEGORY_ID = 'pizzas';
 const DEFAULT_MARKET_NOTE = 'El local confirma disponibilidad antes de preparar tu pedido.';
 
 const TONE_BY_CATEGORY = Object.freeze({
+  pizzas: 'pizza',
   promos: 'promo',
   combos: 'combo',
-  carnes: 'beef',
-  pollos: 'chicken',
-  achuras: 'achura',
-  embutidos: 'sausage',
-  gaseosas: 'drink',
   bebidas: 'drink',
-  lacteos: 'dairy',
-  almacen: 'pantry',
-  retiro: 'combo',
 });
 
 const UNIT_BY_CATEGORY = Object.freeze({
+  pizzas: { unit: 'unidad', unitLabel: 'Grande · 8 porciones' },
   promos: { unit: 'promo', unitLabel: 'Promo' },
   combos: { unit: 'combo', unitLabel: 'Combo' },
-  carnes: { unit: 'kg', unitLabel: '1 kg aprox.' },
-  pollos: { unit: 'kg', unitLabel: '1 kg aprox.' },
-  achuras: { unit: 'kg', unitLabel: '1 kg aprox.' },
-  embutidos: { unit: 'kg', unitLabel: '1 kg aprox.' },
-  gaseosas: { unit: 'unidad', unitLabel: 'Unidad' },
   bebidas: { unit: 'unidad', unitLabel: 'Unidad' },
-  lacteos: { unit: 'unidad', unitLabel: 'Unidad' },
-  almacen: { unit: 'unidad', unitLabel: 'Unidad' },
-  retiro: { unit: 'pack', unitLabel: 'Retiro en local' },
 });
 
 export function getEditableCategories() {

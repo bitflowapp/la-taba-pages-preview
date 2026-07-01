@@ -30,7 +30,8 @@ import {
 } from './ui.js';
 import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, getActiveOrder, getLastOrder } from './orders.js';
 import { getState, subscribe } from './state.js';
-import { STORAGE_KEYS } from './config.js';
+import { BRAND, STORAGE_KEYS } from './config.js';
+import { getBusinessConfig } from './core/business-config-store.js';
 import { handleBusinessAction, handleBusinessInput, lockAdmin, renderBusinessDashboard, submitBusinessSetupForm, unlockAdmin } from './business.js';
 import { handleDeliveryAction, handleDeliveryChange, renderDeliveryPanel } from './delivery.js';
 import {
@@ -44,6 +45,15 @@ import { recenterMapViews, renderMapViews } from './map/map_view.js';
 import { activeTrackingLiveness } from './map/route_geometry.js';
 import { getOrderRepository, getRepositoryDiagnostic, startOrderRepositorySync } from './repositories/repository_factory.js';
 import { toggleFavoriteProduct } from './core/customer-preferences.js';
+import {
+  dismissIOSGuide,
+  dismissInstallBanner,
+  isInstallBannerDismissed,
+  isIOSGuideDismissed,
+  isStandaloneDisplay,
+  shouldShowAndroidInstallCta,
+  shouldShowIOSInstallGuide,
+} from './core/pwa-install.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
@@ -167,13 +177,14 @@ async function bootstrap() {
     // Aviso discreto si se pidió un backend y la app tuvo que seguir local.
     const diagnostic = getRepositoryDiagnostic();
     if (diagnostic) {
-      console.warn(`[La Taba] ${diagnostic.message}`);
+      console.warn(`[PedidoPropio] ${diagnostic.message}`);
       setTimeout(() => showToast('No se pudo conectar al servidor de pedidos. La app sigue funcionando en este equipo.'), 600);
     }
   } catch (error) {
     // Evita pantalla en blanco si algo falla en el primer render.
     showToast('Hubo un problema al iniciar. Recargá la página.');
   }
+  initPwaInstall();
   registerServiceWorker();
 }
 
@@ -382,6 +393,16 @@ function bindEvents() {
       return;
     }
 
+    // Accesos directos del home (tarjetas Cliente/Negocio/Rider): atributo propio
+    // para no duplicar el selector [data-open-pin][data-admin-target] que ya usan
+    // los tests sobre la tarjeta de bloqueo dentro de cada vista de admin.
+    const homePinTarget = target.closest('[data-home-open-pin]')?.dataset.homeOpenPin;
+    if (homePinTarget) {
+      pendingAdminTarget = normalizeView(homePinTarget);
+      openPinModal();
+      return;
+    }
+
     if (target.closest('[data-admin-toggle]')) {
       toggleAdminMode();
       return;
@@ -406,6 +427,28 @@ function bindEvents() {
 
     if (target.closest('[data-close-pitch]')) {
       closePitchModal();
+      return;
+    }
+
+    // CTAs de la presentación comercial: cierran el pitch y llevan a la vista
+    // pedida (o abren WhatsApp para coordinar la implementación de PedidoPropio).
+    const pitchGo = target.closest('[data-pitch-go]')?.dataset.pitchGo;
+    if (pitchGo) {
+      closePitchModal();
+      if (pitchGo === 'whatsapp') {
+        const digits = String(getBusinessConfig().whatsappNumber || '').replace(/\D/g, '');
+        if (digits) {
+          window.open(`https://wa.me/${digits}?text=${encodeURIComponent(BRAND.contactWhatsappMessage)}`, '_blank', 'noopener,noreferrer');
+        } else {
+          showToast('Configurá el WhatsApp del comercio para habilitar este contacto.');
+        }
+        return;
+      }
+      if (pitchGo === 'business' || pitchGo === 'rider') {
+        openAdminArea(pitchGo);
+        return;
+      }
+      setActiveView(normalizeView(pitchGo));
       return;
     }
 
@@ -721,9 +764,10 @@ function renderActiveView() {
   });
 }
 
-// Presentación comercial breve. Sólo se abre a pedido: con ?pitch=1 en la URL
-// (pantalla inicial opcional para mostrar el producto) o desde "¿Qué es La Taba?"
-// en Local. Nunca aparece sola, así no molesta a clientes recurrentes.
+// Presentación comercial de PedidoPropio. Sólo se abre a pedido: con ?pitch=1 en
+// la URL (link para mandar a un comercio), desde la franja "Ver cómo funciona" del
+// home, o desde "¿Qué es PedidoPropio?" en Local. Nunca aparece sola, así no
+// molesta a clientes recurrentes que sólo quieren pedir.
 function maybeOpenPitchFromUrl() {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -752,6 +796,75 @@ function openPinModal() {
 function closePinModal() {
   const modal = $('[data-pin-modal]');
   if (modal?.open) modal.close();
+}
+
+// Onboarding de instalación PWA. No dispara ningún prompt automático: sólo
+// reacciona a beforeinstallprompt (que ya decide el navegador si ofrecer) y
+// muestra guías propias. Nunca se muestra si la app ya corre en standalone.
+function initPwaInstall() {
+  let deferredPrompt = null;
+  const installBanner = $('[data-pwa-install-banner]');
+  const iosBanner = $('[data-pwa-ios-banner]');
+  const offlineBanner = $('[data-pwa-offline-banner]');
+
+  const showInstallBanner = () => {
+    if (!installBanner || isInstallBannerDismissed()) return;
+    if (!shouldShowAndroidInstallCta({ hasDeferredPrompt: deferredPrompt })) return;
+    installBanner.hidden = false;
+  };
+  const hideInstallBanner = () => { if (installBanner) installBanner.hidden = true; };
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+    showInstallBanner();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    hideInstallBanner();
+  });
+
+  $('[data-pwa-install-action]')?.addEventListener('click', async () => {
+    if (!deferredPrompt) { hideInstallBanner(); return; }
+    hideInstallBanner();
+    try {
+      await deferredPrompt.prompt();
+    } catch (_) {
+      // El usuario cerró el prompt nativo o el navegador lo bloqueó: no pasa nada.
+    }
+    deferredPrompt = null;
+  });
+
+  $('[data-pwa-install-dismiss]')?.addEventListener('click', () => {
+    dismissInstallBanner();
+    hideInstallBanner();
+  });
+
+  // iPhone/iPad Safari: no hay beforeinstallprompt, así que mostramos una
+  // guía propia sólo cuando corresponde (Safari en iOS, no instalada ya).
+  if (iosBanner && !isIOSGuideDismissed() && shouldShowIOSInstallGuide()) {
+    iosBanner.hidden = false;
+  }
+  $('[data-pwa-ios-dismiss]')?.addEventListener('click', () => {
+    dismissIOSGuide();
+    if (iosBanner) iosBanner.hidden = true;
+  });
+
+  // Aviso honesto de conexión: no promete que pedidos/tracking/GPS sigan
+  // funcionando sin internet, sólo informa el estado real de la red.
+  if (offlineBanner) {
+    const updateOfflineBanner = () => { offlineBanner.hidden = navigator.onLine; };
+    updateOfflineBanner();
+    window.addEventListener('online', updateOfflineBanner);
+    window.addEventListener('offline', updateOfflineBanner);
+  }
+
+  // Si ya está instalada (standalone), no mostramos ningún banner de instalación.
+  if (isStandaloneDisplay()) {
+    hideInstallBanner();
+    if (iosBanner) iosBanner.hidden = true;
+  }
 }
 
 function registerServiceWorker() {

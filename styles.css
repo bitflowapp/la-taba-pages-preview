@@ -138,6 +138,85 @@ summary:focus-visible,
 .cart-button { gap: 8px; }
 .cart-glyph { font-size: 15px; }
 
+/* ===== Banners PWA (instalar / guía iOS / sin conexión) ===== */
+.pwa-banner {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  max-width: var(--max);
+  margin: 10px auto 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--copper);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+.pwa-banner-icon {
+  flex-shrink: 0;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--copper);
+}
+.pwa-banner-copy {
+  flex: 1 1 200px;
+  min-width: 0;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pwa-banner-copy strong { font-size: 14.5px; letter-spacing: -0.01em; }
+.pwa-banner-copy small { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.pwa-banner [data-pwa-install-action] { order: 2; flex: 0 0 auto; align-self: center; }
+.pwa-banner-dismiss {
+  order: 1;
+  margin-left: auto;
+  flex-shrink: 0;
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pwa-banner-dismiss:hover { background: var(--surface-2); color: var(--text); }
+.pwa-banner-dismiss:focus-visible,
+.pwa-banner [data-pwa-install-action]:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+.pwa-banner-ios { border-left-color: #6d98c7; }
+.pwa-banner-ios .pwa-banner-icon { color: #6d98c7; }
+.pwa-ios-steps { margin: 4px 0 0; padding-left: 18px; color: var(--muted); font-size: 12.5px; line-height: 1.65; }
+.pwa-ios-steps strong { color: var(--text); }
+
+.pwa-banner-offline {
+  border-left-color: #b8503f;
+  justify-content: center;
+  text-align: center;
+  gap: 2px 10px;
+}
+.pwa-banner-offline strong { font-size: 14px; }
+.pwa-banner-offline small { color: var(--muted); font-size: 12.5px; }
+
+@media (max-width: 760px) {
+  .pwa-banner { margin: 8px auto 0; padding: 11px 12px; }
+  .pwa-banner [data-pwa-install-action] { flex: 1 1 100%; }
+}
+
 /* ===== Buttons ===== */
 .primary-button, .secondary-button, .ghost-button, .icon-button, .danger-button {
   border: 0; border-radius: 14px; min-height: 46px; padding: 0 18px;
@@ -441,6 +520,35 @@ main { max-width: var(--max); margin: 0 auto; padding: 0 18px 96px; }
 .stock-pill.empty { border-color: rgba(184,79,64,0.45); background: rgba(184,79,64,0.16); color: #f49d91; }
 .stock-pill.featured { border-color: rgba(201,122,67,0.48); background: rgba(201,122,67,0.18); color: var(--copper-soft); }
 
+/* ===== Accesos Cliente/Negocio/Rider (home) ===== */
+.role-intro {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.role-card {
+  --role-accent: var(--copper);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--role-accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.role-card h2 { margin: 0; font-size: 18px; letter-spacing: -0.02em; }
+.role-card p { margin: 0; flex: 1; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+.role-card-pin { align-self: flex-start; padding: 5px 11px; border-radius: 999px; background: var(--surface-2); font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.role-card-pin strong { color: var(--copper); }
+.role-card-business { --role-accent: #d9a441; }
+.role-card-rider { --role-accent: #3aa860; }
+
+@media (max-width: 760px) {
+  .role-intro { grid-template-columns: 1fr; }
+}
+
 /* ===== Cards base ===== */
 .card {
   border: 1px solid var(--line); border-radius: var(--radius); padding: 18px;
@@ -723,8 +831,9 @@ textarea { resize: vertical; min-height: 84px; }
   50% { transform: translateY(-1.6px); }
 }
 
-.track-steps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; position: relative; margin-bottom: 8px; }
-.track-steps.tight { grid-template-columns: repeat(4, 1fr); }
+.track-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; position: relative; margin-bottom: 8px; }
+.track-steps.tight { grid-template-columns: repeat(5, 1fr); }
+.inbox-order-timeline { margin: 10px 0 4px; }
 .track-step { display: flex; flex-direction: column; align-items: center; gap: 7px; position: relative; padding-top: 4px; }
 .track-step small { font-size: 11px; color: var(--soft); font-weight: 700; }
 .track-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--surface-3); border: 2px solid var(--line-strong); position: relative; z-index: 2; }
@@ -793,6 +902,7 @@ textarea { resize: vertical; min-height: 84px; }
 .board-chip.ready { border-color: rgba(201,122,67,0.35); }
 .board-chip.way { border-color: rgba(67,196,99,0.35); }
 .board-chip.done { border-color: rgba(67,196,99,0.3); }
+.board-chip.total { border-color: rgba(201,122,67,0.5); background: rgba(201,122,67,0.08); }
 
 .admin-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 0.6fr); gap: 16px; align-items: start; }
 .order-card {
@@ -1617,10 +1727,10 @@ body:has(.app-view[data-view="business"].is-active) .toast {
   }
   .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .insight-grid { grid-template-columns: 1fr; }
-  .track-steps.tight { grid-template-columns: repeat(4, 1fr); }
-  /* Cliente: 6 pasos en 390px se comprimen. En mobile pasan a 3x2 para que los
-     labels ("Preparando", "En reparto") queden legibles, sin overflow. El rider
-     usa .tight y no se ve afectado. */
+  .track-steps.tight { grid-template-columns: repeat(5, 1fr); }
+  /* Cliente: 5 pasos en 390px se comprimen. En mobile pasan a 3x2 para que los
+     labels ("En preparación", "En reparto") queden legibles, sin overflow. El
+     rider/negocio usan .tight y no se ven afectados. */
   .track-steps:not(.tight) { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 16px; }
   .track-steps:not(.tight) .track-step:nth-child(4)::before { display: none; }
   .app-view[data-view="tracking"],
@@ -2239,7 +2349,7 @@ body:has(.app-view[data-view="business"].is-active) .mobile-nav button.active {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -2324,6 +2434,16 @@ body:has(.app-view[data-view="business"].is-active) .mobile-nav button.active {
   justify-content: space-between;
   color: #5f554c;
   background: #faf6ef;
+}
+
+/* Resumen del día en el encabezado: fila compacta de pastillas (no apiladas),
+   bien visible apenas se entra al panel de Negocio. */
+.business-summary-board.status-board {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .business-main .insight-list li {
@@ -5791,7 +5911,7 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-order-detai
    El escenario del mapa rider SÓLO se monta con GPS real en vivo
    (renderRiderMapStage), por eso estos overlays —pill de estado con punto vivo,
    botón de centrar y botón de navegar— son honestos por construcción: no existen
-   sin ubicación real. Identidad La Taba: acento terracota/cobre, sin rosa. */
+   sin ubicación real. Identidad de marca: acento terracota/cobre, sin rosa. */
 
 /* Mapa más protagonista cuando hay GPS en vivo. */
 body:has(.app-view[data-view="rider"].is-active) .rider-map-stage {
@@ -6175,4 +6295,229 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .metric-priority s
   border-radius: 6px;
   padding: 1px 5px;
   font-size: 12px;
+}
+
+/* ===== Landing comercial PedidoPropio =====
+   Acento cobre/terracota del sistema; mobile-first; sin assets nuevos. */
+
+/* Franja de producto en el tope del home: presenta PedidoPropio sin tapar la tienda. */
+.product-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin: 0 0 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(120% 150% at 0% 0%, rgba(182, 76, 52, 0.12), transparent 58%),
+    linear-gradient(180deg, #fffdf9, #f7efe6);
+  box-shadow: var(--shadow-sm);
+}
+
+.product-intro-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.product-intro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-soft);
+}
+
+.product-intro-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(182, 76, 52, 0.16);
+}
+
+.product-intro-claim {
+  margin: 0;
+  font-size: clamp(15px, 3.4vw, 17px);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.product-intro-note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.product-intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 480px) {
+  .product-intro-actions {
+    width: 100%;
+  }
+  .product-intro-actions .primary-button,
+  .product-intro-actions .ghost-button {
+    flex: 1 1 auto;
+  }
+}
+
+/* Pitch ampliado a landing completa: más ancho en desktop para los planes. */
+.pitch-modal {
+  width: min(680px, calc(100vw - 28px));
+}
+
+.pitch-list-compact li {
+  padding: 9px 12px;
+}
+
+.pitch-section {
+  margin: 18px 0 0;
+}
+
+.pitch-section-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--accent-soft);
+}
+
+.pitch-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.pitch-points li {
+  position: relative;
+  padding: 8px 12px 8px 30px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.pitch-points li::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.pitch-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pitch-chips li {
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent-soft);
+  background: rgba(182, 76, 52, 0.06);
+}
+
+.pitch-plans {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+}
+
+.plan-card {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 15px 14px 16px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.plan-card.is-featured {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: linear-gradient(180deg, rgba(182, 76, 52, 0.08), rgba(255, 255, 255, 0.6));
+}
+
+.plan-badge {
+  position: absolute;
+  top: -9px;
+  left: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.plan-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.plan-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.plan-price {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent-soft);
+}
+
+.pitch-plans-note {
+  margin: 8px 0 0;
+}
+
+.pitch-cta-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin-top: 18px;
+}
+
+.pitch-cta-grid .primary-button,
+.pitch-cta-grid .secondary-button,
+.pitch-cta-grid .ghost-button {
+  width: 100%;
+}
+
+.pitch-cta-whatsapp {
+  grid-column: 1 / -1;
 }

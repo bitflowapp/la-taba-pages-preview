@@ -1,6 +1,6 @@
 # PedidoPropio · Sistema de pedidos directos para tu comercio (demo)
 
-**PedidoPropio** es un sistema propio de pedidos online para comercios de barrio (carnicerías, rotiserías, pizzerías, markets). Claim: *Tu sistema de pedidos directo, sin depender de apps con comisión.* Esta demo lo muestra funcionando con un comercio ficticio reusable: **La Taba**.
+**PedidoPropio** es un sistema propio de pedidos online para comercios de barrio (carnicerías, rotiserías, pizzerías, markets). Claim: *Tu sistema de pedidos directo, sin depender de apps con comisión.* Esta demo lo muestra funcionando con un comercio ficticio reusable: **La Taba Pizzería** (pizzas al horno a leña, combos, promos y bebidas).
 
 El cliente entra a un link, arma el pedido desde el celular y **confirma un pedido propio dentro de la app**. El comercio lo recibe en su panel y sigue el reparto. Enviar una **copia por WhatsApp** queda como acción secundaria opcional. Es la base para que tu comercio tenga un canal propio de pedidos, sin depender por completo de plataformas externas.
 
@@ -141,7 +141,7 @@ un proveedor dedicado.
 
 La ubicación demo está centralizada en `js/config.js`:
 
-- `businessLocation`: local del comercio demo (La Taba) en Neuquén Capital.
+- `businessLocation`: local del comercio demo (La Taba Pizzería) en Neuquén Capital.
 - `demoDestinations`: destino demo en Neuquén Capital y destino demo en Cipolletti.
 - `defaultMapBounds`: encuadre inicial Neuquén/Cipolletti.
 - `demoStreetTestDestinations`: presets ficticios para **Modo prueba en calle**
@@ -221,8 +221,7 @@ una categoría o tocar **Ver catálogo**, pasa a la pantalla **Catálogo**, dond
 los productos filtrados, las ofertas de esa categoría, puede ordenar
 (recomendados / menor precio / más pedidos) y buscar.
 
-Categorías incluidas (editables en `js/data.js`): Promos, Combos, Carnes, Pollos,
-Achuras, Embutidos, Gaseosas, Bebidas, Lácteos (demo), Almacén y Retiro en local.
+Categorías incluidas (editables en `js/data.js`): Pizzas, Combos, Promos y Bebidas.
 
 > **Nota sobre categorías demo y alcohol.** "Bebidas" y "Gaseosas" son categorías
 > seguras. Las categorías marcadas con `demo: true` (por ejemplo **Lácteos**) son
@@ -240,22 +239,22 @@ imagen: el placeholder muestra las iniciales del producto sobre un bloque tonal.
 
 ```js
 {
-  id: 'p-asado-especial',
-  name: 'Asado especial',
-  description: 'Tira de asado seleccionada para parrilla lenta.',
-  categoryId: 'carnes',
-  tone: 'beef',          // bloque tonal del thumbnail (ver styles.css)
-  price: 9800,
-  oldPrice: 11200,       // opcional: muestra % OFF
-  stock: 12,
+  id: 'p-muzzarella',
+  name: 'Muzzarella',
+  description: 'La clásica de la casa: muzzarella fundida, salsa y orégano.',
+  categoryId: 'pizzas',
+  tone: 'pizza',         // bloque tonal de respaldo (ver styles.css)
+  image: 'assets/products/pizza-muzzarella.webp', // foto real local (ver docs/image-sources.md)
+  price: 8990,
+  stock: 14,
   available: true,
   featured: true,
-  popular: true,         // opcional: aparece como "Más pedido"
-  badge: 'Más pedido',   // opcional
-  unit: 'kg',
-  unitLabel: '1 kg aprox.',
-  marketNote: 'Precio estimado de mercado, editable desde el panel.',
-  prepMinutes: 20,
+  popular: true,         // opcional: aparece como "Más pedida"
+  badge: 'Más pedida',   // opcional
+  unit: 'unidad',
+  unitLabel: 'Grande · 8 porciones',
+  marketNote: 'El local confirma disponibilidad antes de preparar tu pedido.',
+  prepMinutes: 18,
 },
 ```
 
@@ -332,7 +331,7 @@ Ejemplo:
 
 ```js
 export const BUSINESS_CONFIG = Object.freeze({
-  businessName: 'La Taba', // o BRAND.demoBusinessName
+  businessName: 'La Taba Pizzería', // o BRAND.demoBusinessName
   whatsappNumber: '5492996209136',
   deliveryFee: 1200,
   minDeliveryOrder: 5000,

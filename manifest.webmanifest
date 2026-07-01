@@ -1,15 +1,15 @@
 {
-  "name": "La Taba · Pedidos, negocio y reparto",
+  "name": "La Taba Pizzería · Pedidos, negocio y reparto",
   "short_name": "La Taba",
-  "description": "Pedí online, gestioná el negocio y seguí el reparto de La Taba desde una sola app.",
+  "description": "Pedí tu pizza online, gestioná el negocio y seguí el reparto de La Taba Pizzería desde una sola app.",
   "lang": "es-AR",
   "dir": "ltr",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#181716",
-  "theme_color": "#181716",
+  "background_color": "#fff8f1",
+  "theme_color": "#d71920",
   "icons": [
     {
       "src": "assets/icon.svg",

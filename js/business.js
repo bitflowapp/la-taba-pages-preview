@@ -180,24 +180,34 @@ export function renderBusinessDashboard() {
   if (freshOrders.length > 0) playNewOrderChime();
   const freshOrderIds = new Set(freshOrders);
 
+  const todayLabel = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long' }).format(new Date());
+  const todayOrdersCount = countTodayOrders(state.orders);
+
   container.innerHTML = `
     <div class="business-main business-inbox-main">
       <header class="business-inbox-hero">
-        <div class="business-topbar-text">
-          <h2>Central de pedidos</h2>
-          <span>Los pedidos confirmados aparecen acá: aceptás, preparás y mandás a reparto.</span>
+        <div class="business-brand-row">
+          <span class="business-brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+              <path d="M12 21 3.6 6.6A16.4 16.4 0 0 1 12 4.4a16.4 16.4 0 0 1 8.4 2.2L12 21Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <circle cx="10" cy="9" r="1.2" fill="currentColor"/><circle cx="14.2" cy="10.6" r="1.2" fill="currentColor"/>
+            </svg>
+          </span>
+          <div class="business-topbar-text">
+            <h2>Central de pedidos</h2>
+            <span>Resumen · Hoy, ${escapeHtml(todayLabel)}</span>
+          </div>
+          <button class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}" type="button" data-sound-toggle aria-pressed="${soundEnabled}">
+            <span>${soundEnabled ? 'Sonido activo' : 'Activar sonido'}</span>
+            ${receivedOrders.length ? `<strong>${receivedOrders.length}</strong>` : ''}
+          </button>
         </div>
-        <div class="status-board business-summary-board" aria-label="Resumen del día">
-          <span class="board-chip received">Pedidos nuevos <strong>${metrics.ordersByStatus.received}</strong></span>
-          <span class="board-chip preparing">En preparación <strong>${metrics.ordersByStatus.preparing}</strong></span>
-          <span class="board-chip way">En reparto <strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></span>
-          <span class="board-chip done">Entregados hoy <strong>${metrics.directOrdering.deliveredOrders}</strong></span>
-          <span class="board-chip total">Total vendido hoy <strong>${money(metrics.todayTotal)}</strong></span>
+        <div class="business-stat-grid" aria-label="Resumen del día">
+          <article class="stat-tile"><span>Pedidos hoy</span><strong>${todayOrdersCount}</strong></article>
+          <article class="stat-tile tone-amber"><span>En preparación</span><strong>${metrics.ordersByStatus.preparing}</strong></article>
+          <article class="stat-tile tone-green"><span>En camino</span><strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></article>
+          <article class="stat-tile tone-green"><span>Entregados</span><strong>${metrics.directOrdering.deliveredOrders}</strong></article>
         </div>
-        <button class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}" type="button" data-sound-toggle aria-pressed="${soundEnabled}">
-          <span>${soundEnabled ? 'Sonido activo' : 'Activar sonido'}</span>
-          ${receivedOrders.length ? `<strong>${receivedOrders.length}</strong>` : ''}
-        </button>
         <nav class="business-jump-nav" aria-label="Secciones del negocio">
           <button class="secondary-button compact" type="button" data-scroll-orders>Pedidos</button>
           <button class="secondary-button compact" type="button" data-scroll-reports>Reportes</button>
@@ -207,6 +217,8 @@ export function renderBusinessDashboard() {
       </header>
 
       ${renderOrderInbox(state, metrics, freshOrderIds)}
+
+      ${renderBusinessOverview(state, metrics)}
 
       ${renderDeliveredTodaySummary(state.orders)}
 
@@ -397,6 +409,44 @@ function filterTone(filterId) {
     cancelled: 'cancelled',
   };
   return tones[filterId] || 'all';
+}
+
+function countTodayOrders(orders = []) {
+  const today = new Date().toDateString();
+  return orders.filter((order) => {
+    const created = new Date(order.createdAt);
+    return !Number.isNaN(created.getTime()) && created.toDateString() === today;
+  }).length;
+}
+
+// Bloque "Ventas del día" + "Productos más vendidos" (referencia visual de la
+// maqueta comercial). Sólo usa datos reales de los pedidos de la demo.
+function renderBusinessOverview(state, metrics) {
+  const topProducts = metrics.topProducts.slice(0, 4);
+  const maxQuantity = Math.max(1, ...topProducts.map((item) => item.quantity));
+  const topList = topProducts.length
+    ? topProducts.map((item, index) => `
+      <li>
+        <span class="top-product-rank">${index + 1}.</span>
+        <span class="top-product-name">${escapeHtml(item.name)}</span>
+        <span class="top-product-bar" aria-hidden="true"><i style="--w:${Math.max(12, Math.round((item.quantity / maxQuantity) * 100))}%"></i></span>
+        <strong class="top-product-qty">${item.quantity}</strong>
+      </li>`).join('')
+    : '<li class="muted"><span class="top-product-name">Sin ventas todavía hoy</span></li>';
+
+  return `
+    <section class="business-overview-grid" aria-label="Ventas y productos">
+      <article class="business-overview-card sales-today-card">
+        <span class="overview-kicker">Ventas del día</span>
+        <strong class="sales-today-amount">${money(metrics.todayTotal)}</strong>
+        <small>${metrics.directOrdering.deliveredOrders} ${metrics.directOrdering.deliveredOrders === 1 ? 'pedido entregado' : 'pedidos entregados'} hoy</small>
+        ${salesChart(state.orders)}
+      </article>
+      <article class="business-overview-card top-products-card">
+        <span class="overview-kicker">Productos más vendidos</span>
+        <ul class="top-products-list">${topList}</ul>
+      </article>
+    </section>`;
 }
 
 function renderDeliveredTodaySummary(orders) {
@@ -1044,7 +1094,7 @@ function renderBusinessSetupPreview(config) {
 
 function renderCatalogForm(product = null) {
   const isEditing = Boolean(product);
-  const categoryId = product?.categoryId || 'carnes';
+  const categoryId = product?.categoryId || 'pizzas';
   const badge = product?.badge || '';
   const available = !product || product.available;
 

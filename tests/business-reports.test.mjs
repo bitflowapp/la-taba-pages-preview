@@ -23,7 +23,7 @@ function order(overrides = {}) {
     paymentMethodCode: overrides.paymentMethodCode,
     cancelReason: overrides.cancelReason,
     coupon: overrides.coupon,
-    items: overrides.items || [{ productId: 'p-vacio', name: 'Vacio snapshot', quantity: 1, unitPrice: snapshotSubtotal }],
+    items: overrides.items || [{ productId: 'p-muzzarella', name: 'Vacio snapshot', quantity: 1, unitPrice: snapshotSubtotal }],
     subtotal: overrides.subtotal ?? 1000,
     discountTotal: overrides.discountTotal,
     deliveryFee: overrides.deliveryFee ?? 0,
@@ -86,7 +86,7 @@ test('business report: descuento y cupon se descuentan una sola vez', () => {
 test('business report: total inconsistente se recalcula desde snapshots del pedido', () => {
   const report = buildBusinessReport([
     order({
-      items: [{ productId: 'p-vacio', name: 'Vacio snapshot', quantity: 2, unitPrice: 1000 }],
+      items: [{ productId: 'p-muzzarella', name: 'Vacio snapshot', quantity: 2, unitPrice: 1000 }],
       subtotal: 2000,
       discountTotal: 200,
       deliveryFee: 300,

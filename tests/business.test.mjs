@@ -117,7 +117,7 @@ function cancelTestOrder(id, status, deliveryMode = 'delivery') {
   return {
     id, customerName: 'QA Cancel', customerPhone: '2990000000', address: 'Roca 123',
     deliveryMode, paymentMethod: 'Efectivo', notes: '', createdAt: at, status,
-    items: [{ productId: 'p-vacio', name: 'Vacío', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+    items: [{ productId: 'p-muzzarella', name: 'Vacío', quantity: 1, unitPrice: 1000, unit: 'kg' }],
     subtotal: 1000, deliveryFee: 0, total: 1000,
     statusHistory: [{ status: 'received', at }],
   };
@@ -153,8 +153,8 @@ test('cancelación segura: confirmar sin motivo no cambia el estado', () => {
 
 test('low-stock detection includes scarce products and excludes out-of-stock ones', () => {
   const lowStock = getLowStockProducts();
-  assert.ok(lowStock.some((product) => product.id === 'p-matambre'));
-  assert.ok(lowStock.some((product) => product.id === 'p-chorizo-parrillero'));
+  assert.ok(lowStock.some((product) => product.id === 'p-napolitana'));
+  assert.ok(lowStock.some((product) => product.id === 'p-calabresa'));
   assert.ok(!lowStock.some((product) => product.id === 'p-agua'));
 });
 
@@ -218,7 +218,7 @@ test('business metrics avoid division by zero with no orders today', () => {
 });
 
 test('un pedido confirmado entra como activo en el negocio, conserva sus datos y avanza de estado', () => {
-  addToCart('p-vacio', 2);
+  addToCart('p-muzzarella', 2);
   const created = createOrderFromCheckout({
     customerName: 'Walter Cliente',
     customerPhone: '2995551234',

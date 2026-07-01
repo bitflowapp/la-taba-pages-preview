@@ -35,25 +35,30 @@ test('catalog data is internally consistent', () => {
   assert.deepEqual(orphanCategories, []);
 });
 
-test('catalog includes premium butcher products with real prices', () => {
+test('catalog includes pizzeria products with real prices', () => {
   const names = new Set(products.map((product) => product.name));
   for (const expected of [
-    'Bife ancho',
-    'Ojo de bife',
-    'Asado especial',
-    'Vacío especial',
-    'Matambre',
-    'Carne picada especial',
-    'Milanesa de carne',
-    'Pollo entero',
-    'Chorizo parrillero',
-    'Morcilla',
-    'Provoleta',
-    'Combo parrillero',
-    'Coca-Cola 2.25L',
-    'Carbón 3 kg',
+    'Muzzarella',
+    'Especial',
+    'Fugazzeta',
+    'Napolitana',
+    'Pepperoni',
+    'Calabresa',
+    'Jamón y muzzarella',
+    'Combo familiar',
+    'Promo del día: 2 pizzas grandes + gaseosa',
+    'Coca-Cola 1.5L',
+    'Agua mineral',
   ]) {
     assert.ok(names.has(expected), `missing product: ${expected}`);
   }
   assert.ok(products.every((product) => product.price > 0), 'products should not show zero prices');
+
+  // Cada producto del catálogo demo lleva foto real local (ver docs/image-sources.md)
+  // o cae al bloque tonal; las fotos referenciadas deben ser rutas locales.
+  for (const product of products) {
+    if (product.image) {
+      assert.match(product.image, /^assets\/(products|hero)\/[a-z0-9-]+\.webp$/, `unexpected image path: ${product.image}`);
+    }
+  }
 });

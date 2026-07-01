@@ -16,7 +16,7 @@ test('domain order projects legacy demo orders into a backend-ready shape', () =
     customerName: 'Cliente QA',
     customerPhone: '2995550000',
     address: 'Roca 321',
-    items: [{ productId: 'p-vacio', name: 'Vacio', quantity: 2, unit: 'kg', unitPrice: 1000 }],
+    items: [{ productId: 'p-muzzarella', name: 'Vacio', quantity: 2, unit: 'kg', unitPrice: 1000 }],
     subtotal: 2000,
     deliveryFee: 500,
     total: 2500,

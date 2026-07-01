@@ -14,14 +14,14 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
   const hydrated = hydrateState({
     products: [
       { id: 'p-coca', stock: 2, available: true, price: -999 },
-      { id: 'p-vacio', stock: 3, available: false },
-      { id: 'p-matambre', stock: -5, available: true },
+      { id: 'p-muzzarella', stock: 3, available: false },
+      { id: 'p-napolitana', stock: -5, available: true },
     ],
     cart: [
       { productId: 'missing-product', quantity: 4 },
       { productId: 'p-coca', quantity: 99 },
-      { productId: 'p-vacio', quantity: 1 },
-      { productId: 'p-matambre', quantity: 1 },
+      { productId: 'p-muzzarella', quantity: 1 },
+      { productId: 'p-napolitana', quantity: 1 },
       { productId: 'p-coca', quantity: -2 },
     ],
     orders: [
@@ -43,7 +43,7 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
         status: 'bad-status',
         items: [
           { productId: 'p-coca', name: 'Coca-Cola 2.25L', icon: '', quantity: 2, unitPrice: 2800, unit: 'unidad' },
-          { productId: 'p-vacio', name: 'Vacio', icon: '', quantity: -1, unitPrice: 1, unit: 'kg' },
+          { productId: 'p-muzzarella', name: 'Vacio', icon: '', quantity: -1, unitPrice: 1, unit: 'kg' },
         ],
         subtotal: 1,
         deliveryFee: 1,
@@ -58,7 +58,7 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
 
   const coca = hydrated.products.find((product) => product.id === 'p-coca');
   assert.equal(coca.stock, 2);
-  assert.equal(coca.price, 2800);
+  assert.equal(coca.price, 2900);
   assert.deepEqual(hydrated.cart, [{ productId: 'p-coca', quantity: 2 }]);
 
   assert.equal(hydrated.orders.length, 1);

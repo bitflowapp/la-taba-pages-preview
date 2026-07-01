@@ -27,43 +27,43 @@ beforeEach(() => {
 });
 
 test('favoritos se guardan localmente y se pueden alternar', () => {
-  const saved = toggleFavoriteProduct('p-vacio');
+  const saved = toggleFavoriteProduct('p-muzzarella');
 
   assert.equal(saved.ok, true);
-  assert.deepEqual(getFavoriteProductIds(), ['p-vacio']);
-  assert.match(globalThis.localStorage.getItem(STORAGE_KEYS.customerFavorites), /p-vacio/);
+  assert.deepEqual(getFavoriteProductIds(), ['p-muzzarella']);
+  assert.match(globalThis.localStorage.getItem(STORAGE_KEYS.customerFavorites), /p-muzzarella/);
 
-  const removed = toggleFavoriteProduct('p-vacio');
+  const removed = toggleFavoriteProduct('p-muzzarella');
   assert.equal(removed.ok, true);
   assert.deepEqual(getFavoriteProductIds(), []);
 });
 
 test('repetir pedido usa precio actual del catalogo', () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const created = createTestOrder();
   assert.equal(created.ok, true);
 
   setState({
     products: state().products.map((product) => (
-      product.id === 'p-vacio' ? { ...product, price: 13000, stock: 5 } : product
+      product.id === 'p-muzzarella' ? { ...product, price: 13000, stock: 5 } : product
     )),
   });
 
   const repeated = repeatCustomerOrder(created.order.id);
 
   assert.equal(repeated.ok, true);
-  assert.deepEqual(state().cart, [{ productId: 'p-vacio', quantity: 1 }]);
+  assert.deepEqual(state().cart, [{ productId: 'p-muzzarella', quantity: 1 }]);
   assert.equal(getCartSummary('pickup').subtotal, 13000);
 });
 
 test('repetir pedido no agrega productos no disponibles', () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const created = createTestOrder();
   assert.equal(created.ok, true);
 
   setState({
     products: state().products.map((product) => (
-      product.id === 'p-vacio' ? { ...product, available: false, stock: 5 } : product
+      product.id === 'p-muzzarella' ? { ...product, available: false, stock: 5 } : product
     )),
   });
 
@@ -75,14 +75,14 @@ test('repetir pedido no agrega productos no disponibles', () => {
 });
 
 test('cupon TABA10 aplica 10% sobre productos y queda en el pedido', () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
 
   const created = createTestOrder({ couponCode: 'taba10' });
 
   assert.equal(created.ok, true);
   assert.equal(created.order.coupon.code, 'TABA10');
-  assert.equal(created.order.discountTotal, 1120);
-  assert.equal(created.order.total, 11200 - 1120 + BUSINESS_CONFIG.deliveryFee);
+  assert.equal(created.order.discountTotal, 899);
+  assert.equal(created.order.total, 8990 - 899 + BUSINESS_CONFIG.deliveryFee);
 });
 
 test('cupon invalido informa error y no descuenta', () => {
@@ -91,7 +91,7 @@ test('cupon invalido informa error y no descuenta', () => {
   assert.equal(preview.discountAmount, 0);
   assert.match(preview.message, /Cupón inválido/i);
 
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const created = createTestOrder({ couponCode: 'NOPE' });
   assert.equal(created.ok, true);
   assert.equal(created.order.discountTotal, 0);
@@ -99,7 +99,7 @@ test('cupon invalido informa error y no descuenta', () => {
 });
 
 test('metodo de pago queda guardado en el pedido', () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
 
   const created = createTestOrder({ paymentMethod: 'transfer' });
 
@@ -109,7 +109,7 @@ test('metodo de pago queda guardado en el pedido', () => {
 });
 
 test('observaciones, referencia y cambio efectivo quedan guardados', () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
 
   const created = createTestOrder({
     customerNotes: 'Sin cebolla',
@@ -125,7 +125,7 @@ test('observaciones, referencia y cambio efectivo quedan guardados', () => {
 });
 
 test('negocio ve metodo de pago y descuento', () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const created = createTestOrder({ paymentMethod: 'transfer', couponCode: 'TABA10' });
   assert.equal(created.ok, true);
 
@@ -144,13 +144,13 @@ test('negocio ve metodo de pago y descuento', () => {
 
   assert.match(container.innerHTML, /Transferencia/);
   assert.match(container.innerHTML, /TABA10/);
-  assert.match(container.innerHTML, /1\.120|1120/);
+  assert.match(container.innerHTML, /899/);
 });
 
 test('historial del cliente guarda pedidos recientes', () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const first = createTestOrder({ customerName: 'Historial Uno' });
-  addToCart('p-matambre', 1);
+  addToCart('p-napolitana', 1);
   const second = createTestOrder({ customerName: 'Historial Dos' });
 
   const history = getCustomerOrderHistory();
@@ -162,7 +162,7 @@ test('historial del cliente guarda pedidos recientes', () => {
 });
 
 test('repetir con carrito vacio arma el carrito sin pedir confirmacion', () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const created = createTestOrder(); // crear pedido vacia el carrito
   assert.equal(created.ok, true);
   assert.deepEqual(state().cart, []);
@@ -170,16 +170,16 @@ test('repetir con carrito vacio arma el carrito sin pedir confirmacion', () => {
   const repeated = repeatCustomerOrder(created.order.id);
   assert.equal(repeated.ok, true);
   assert.equal(repeated.needsConfirmation, undefined);
-  assert.deepEqual(state().cart, [{ productId: 'p-vacio', quantity: 1 }]);
+  assert.deepEqual(state().cart, [{ productId: 'p-muzzarella', quantity: 1 }]);
 });
 
 test('repetir con carrito no vacio no reemplaza sin confirmacion', () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const created = createTestOrder();
   assert.equal(created.ok, true);
 
   // El cliente vuelve a cargar algo distinto en el carrito.
-  addToCart('p-matambre', 2);
+  addToCart('p-napolitana', 2);
   const before = state().cart.map((item) => ({ ...item }));
 
   const repeated = repeatCustomerOrder(created.order.id);
@@ -192,25 +192,25 @@ test('repetir con carrito no vacio no reemplaza sin confirmacion', () => {
 });
 
 test('repetir con force reemplaza el carrito usando precios actuales', () => {
-  addToCart('p-vacio', 1);
+  addToCart('p-muzzarella', 1);
   const created = createTestOrder();
   assert.equal(created.ok, true);
 
   setState({
     products: state().products.map((product) => (
-      product.id === 'p-vacio' ? { ...product, price: 13000, stock: 5 } : product
+      product.id === 'p-muzzarella' ? { ...product, price: 13000, stock: 5 } : product
     )),
   });
-  addToCart('p-matambre', 2);
+  addToCart('p-napolitana', 2);
 
   const repeated = repeatCustomerOrder(created.order.id, { force: true });
   assert.equal(repeated.ok, true);
-  assert.deepEqual(state().cart, [{ productId: 'p-vacio', quantity: 1 }]);
+  assert.deepEqual(state().cart, [{ productId: 'p-muzzarella', quantity: 1 }]);
   assert.equal(getCartSummary('pickup').subtotal, 13000);
 });
 
 test('cashChange defensivo: un pedido viejo con transferencia se normaliza sin cambio', () => {
-  const items = [{ productId: 'p-vacio', name: 'Vacio', quantity: 1, unitPrice: 1000, unit: 'kg' }];
+  const items = [{ productId: 'p-muzzarella', name: 'Vacio', quantity: 1, unitPrice: 1000, unit: 'kg' }];
   const transfer = normalizeOrderForStorage({
     id: 'LT-OLD-1',
     items,

@@ -353,7 +353,7 @@ function deliveryOrderWithTracking(id) {
     notes: '',
     createdAt: new Date().toISOString(),
     status: 'on_the_way',
-    items: [{ productId: 'p-vacio', name: 'Vacio', icon: '', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+    items: [{ productId: 'p-muzzarella', name: 'Vacio', icon: '', quantity: 1, unitPrice: 11200, unit: 'kg' }],
     statusHistory: [{ status: 'received', at: new Date().toISOString() }],
     delivery: { driverName: 'Juli', driverPhone: '2991112233', estimatedMinutes: 14, currentLocationLabel: 'En camino' },
   };

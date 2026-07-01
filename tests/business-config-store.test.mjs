@@ -105,18 +105,18 @@ test('3 · estado viejo sin businessConfig hidrata con el default', () => {
 
 test('4 · la migración conserva orders/products/cart', () => {
   const hydrated = hydrateState({
-    products: [{ id: 'p-matambre', stock: 5, available: true, price: 9000 }],
-    cart: [{ productId: 'p-matambre', quantity: 2 }],
+    products: [{ id: 'p-napolitana', stock: 5, available: true, price: 9000 }],
+    cart: [{ productId: 'p-napolitana', quantity: 2 }],
     orders: [{
       id: 'LT-0001',
       deliveryMode: 'delivery',
       status: 'received',
-      items: [{ productId: 'p-matambre', name: 'Matambre', quantity: 1, unitPrice: 9000, unit: 'kg' }],
+      items: [{ productId: 'p-napolitana', name: 'Matambre', quantity: 1, unitPrice: 9000, unit: 'kg' }],
     }],
   });
   assert.ok(hydrated.orders.some((order) => order.id === 'LT-0001'), 'conserva el pedido');
-  assert.ok(hydrated.products.some((product) => product.id === 'p-matambre'), 'conserva productos');
-  assert.ok(hydrated.cart.some((line) => line.productId === 'p-matambre'), 'conserva el carrito');
+  assert.ok(hydrated.products.some((product) => product.id === 'p-napolitana'), 'conserva productos');
+  assert.ok(hydrated.cart.some((line) => line.productId === 'p-napolitana'), 'conserva el carrito');
   assert.deepEqual(hydrated.businessConfig, buildDefaultBusinessConfig());
 });
 
@@ -210,7 +210,7 @@ test('10 · el config store no inventa rider/GPS: el tracking honesto sigue inta
     id: 'LT-7777',
     deliveryMode: 'delivery',
     status: 'on_the_way',
-    items: [{ productId: 'p-matambre', name: 'Matambre', quantity: 1, unitPrice: 9000, unit: 'kg' }],
+    items: [{ productId: 'p-napolitana', name: 'Matambre', quantity: 1, unitPrice: 9000, unit: 'kg' }],
   });
   assert.equal(stored.delivery.driverName, 'Sin asignar');
   assert.equal(stored.delivery.driverPhone, '');

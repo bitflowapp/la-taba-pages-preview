@@ -27,7 +27,7 @@ test('presentación comercial: se abre con ?pitch=1, se cierra y no vuelve sola'
 
   // Desde Local se puede reabrir a demanda.
   await page.goto('/#profile');
-  await page.locator('[data-open-pitch]').click();
+  await page.locator('[data-view="profile"] [data-open-pitch]').click();
   await expect(pitch).toBeVisible();
   await pitch.getByRole('button', { name: 'Probar la demo' }).click();
 

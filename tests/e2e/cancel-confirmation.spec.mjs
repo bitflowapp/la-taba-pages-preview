@@ -19,7 +19,7 @@ function seededState(status) {
       notes: 'Sin sal',
       createdAt: at,
       status,
-      items: [{ productId: 'p-vacio', name: 'Vacío premium', icon: '', quantity: 1, unitPrice: 31890, unit: 'kg' }],
+      items: [{ productId: 'p-muzzarella', name: 'Vacío premium', icon: '', quantity: 1, unitPrice: 31890, unit: 'kg' }],
       subtotal: 31890, deliveryFee: 1990, total: 33880,
       statusHistory: [{ status: 'received', at }],
       delivery: { driverName: 'Sin asignar', driverPhone: '', currentLocationLabel: 'En el local' },

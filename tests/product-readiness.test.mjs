@@ -193,7 +193,7 @@ test('product readiness: editing catalog products does not rewrite old order sna
     name: 'Snapshot Original QA',
     description: 'Producto para snapshot',
     price: 4100,
-    categoryId: 'carnes',
+    categoryId: 'pizzas',
     available: true,
     stock: 10,
   }, { now: NOW });
@@ -220,7 +220,7 @@ test('product readiness: editing catalog products does not rewrite old order sna
     name: 'Snapshot Editado QA',
     description: 'Producto editado',
     price: 9900,
-    categoryId: 'carnes',
+    categoryId: 'pizzas',
     available: true,
     stock: 4,
   }, { productId: created.product.id, now: NOW + 1 });

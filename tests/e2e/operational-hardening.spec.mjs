@@ -18,7 +18,7 @@ function liveTrackingState(now) {
       addressDetails: { streetLine: 'Mendoza 851', neighborhood: 'Centro', reference: 'Casa azul', label: 'Mendoza 851, Centro' },
       deliveryMode: 'delivery', paymentMethod: 'Efectivo', notes: 'Tocar timbre',
       createdAt, status: 'on_the_way',
-      items: [{ productId: 'p-vacio', name: 'Vacío premium', icon: '', quantity: 1, unitPrice: 31890, unit: 'kg' }],
+      items: [{ productId: 'p-muzzarella', name: 'Vacío premium', icon: '', quantity: 1, unitPrice: 31890, unit: 'kg' }],
       subtotal: 31890, deliveryFee: 0, total: 31890,
       statusHistory: [
         { status: 'received', at: createdAt }, { status: 'preparing', at: createdAt },

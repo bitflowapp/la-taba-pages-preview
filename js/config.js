@@ -1,7 +1,25 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Marca del PRODUCTO (la plataforma que se vende a comercios). Es la única fuente
+// de verdad del nombre comercial, el claim y los textos de marca: evita repetir
+// strings sueltos por la app. OJO: es distinta del COMERCIO demo que se ve dentro
+// de la app (PedidoPropio = producto; "La Taba" = comercio de ejemplo).
+// El comercio demo se siembra desde BRAND.demoBusinessName más abajo.
+export const BRAND = Object.freeze({
+  productName: 'PedidoPropio',
+  tagline: 'Tu sistema de pedidos directo, sin depender de apps con comisión.',
+  shortTagline: 'Pedidos directos para tu comercio',
+  // Comercio ficticio reusable que protagoniza la demo (encaja con el catálogo
+  // de parrilla/carnicería actual). Cambialo acá para adaptar la demo a otro rubro.
+  demoBusinessName: 'La Taba',
+  demoBusinessSubtitle: 'Carnicería y parrilla · delivery propio',
+  // Mensaje que se precarga al tocar "Hablar por WhatsApp" desde la presentación.
+  contactWhatsappMessage: 'Hola, vi la demo de PedidoPropio y quiero info para mi comercio.',
+});
+
 export const BUSINESS_CONFIG = Object.freeze({
-  businessName: 'La Taba',
-  name: 'La Taba',
-  subtitle: 'Carnicería & delivery propio',
+  businessName: BRAND.demoBusinessName,
+  name: BRAND.demoBusinessName,
+  subtitle: BRAND.demoBusinessSubtitle,
   whatsappNumber: '5492996209136',
   address: 'Mendoza 845/851, Neuquén Capital',
   // Dirección textual del local. NO hay una coordenada lat/lng verificada para
@@ -20,7 +38,7 @@ export const BUSINESS_CONFIG = Object.freeze({
   currency: 'ARS',
   orderPrefix: 'LT',
   businessLocation: {
-    name: 'La Taba · Neuquén Capital',
+    name: `${BRAND.demoBusinessName} · Neuquén Capital`,
     lat: -38.9516,
     lng: -68.0591,
   },

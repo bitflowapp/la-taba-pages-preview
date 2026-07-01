@@ -1,4 +1,4 @@
-// Catálogo de demostración de La Taba.
+// Catálogo de demostración del comercio demo (La Taba) para PedidoPropio.
 // Precios en ARS, estimados de mercado argentino y editables desde el panel.
 // Los `tone` controlan el bloque tonal sobrio del thumbnail (ver styles.css).
 //

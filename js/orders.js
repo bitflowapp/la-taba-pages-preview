@@ -340,7 +340,7 @@ export function buildKitchenTicket(order) {
   const address = normalizeOrderAddressDetails(order);
   const reference = formatAddressReference(order);
   const lines = [
-    'LA TABA — TICKET',
+    `${String(getBusinessConfig().businessName || 'Comercio').toUpperCase()} — TICKET`,
     `Pedido: ${order.id}`,
     ...(order.deliveryCode?.code ? [`Codigo entrega: ${order.deliveryCode.code}`] : []),
     `Hora: ${dateTime(order.createdAt)}`,

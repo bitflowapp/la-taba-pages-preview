@@ -1,4 +1,5 @@
 import { getBusinessConfig } from './core/business-config-store.js';
+import { BRAND } from './config.js';
 import { categories } from './data.js';
 import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
 import { getCustomerOrderHistory, getLatestCustomerOrder } from './core/customer-history.js';
@@ -33,6 +34,7 @@ import {
   normalizeDeliveryCode,
 } from './core/delivery-code.js';
 import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
+import { renderOrderTimeline } from './core/order-timeline.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -78,13 +80,25 @@ export function applyBusinessConfig() {
   setText('[data-business-hours]', getBusinessConfig().openingHoursLabel);
   setText('[data-business-zone]', getBusinessConfig().deliveryZone);
   setText('[data-rider-business-name]', getBusinessConfig().businessName);
+  setText('[data-admin-pin]', getBusinessConfig().adminPin);
+
+  // Marca del PRODUCTO (PedidoPropio): superficie comercial e intro del home.
+  // Fuente única en BRAND (config.js); el HTML sólo lleva un fallback de primer pintado.
+  setText('[data-product-name]', BRAND.productName);
+  setText('[data-product-tagline]', BRAND.tagline);
+  setText('[data-product-short-tagline]', BRAND.shortTagline);
 
   // Estado honesto del local: abierto/cerrado según el horario configurado.
   const status = $('[data-open-status]');
   const openHour = Number(getBusinessConfig().openHour);
   const closeHour = Number(getBusinessConfig().closeHour);
   const hour = new Date().getHours();
-  const isOpen = hour >= openHour && hour < closeHour;
+  // Horario REAL del comercio (no se toca): el local abre según openHour/closeHour.
+  // Override SOLO de demostración: si la URL trae la flag de presentación
+  // (?pitch=1 / ?demo=1 / ?reset=1, p. ej. http://127.0.0.1:8080/?reset=1&pitch=1)
+  // el local se muestra "Abierto" aunque la demo sea fuera de hora. Es un horario
+  // ampliado solo para la demo; NO altera la config ni la lógica comercial real.
+  const isOpen = isDemoPresentationMode() || (hour >= openHour && hour < closeHour);
   if (status) {
     status.textContent = isOpen ? `Abierto · hasta las ${closeHour}:00` : `Cerrado · abre a las ${openHour}:00`;
     status.classList.toggle('is-closed', !isOpen);
@@ -99,6 +113,20 @@ export function applyBusinessConfig() {
   chips.forEach((label, index) => {
     if (statusItems[index]) statusItems[index].textContent = label;
   });
+}
+
+// Modo presentación/demo: detecta por la URL (?pitch=1 / ?demo=1 / ?reset=1) para
+// forzar el local "Abierto" durante la demo comercial (horario ampliado de
+// demostración). NO modifica el horario real del negocio: openHour/closeHour de
+// config.js siguen vigentes para el uso normal sin esas flags.
+function isDemoPresentationMode() {
+  if (typeof window === 'undefined' || !window.location) return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('pitch') === '1' || params.get('demo') === '1' || params.get('reset') === '1';
+  } catch (_) {
+    return false;
+  }
 }
 
 // Versión corta de la zona para el chip del home ("Neuquén centro, barrios..." es muy largo).
@@ -847,21 +875,14 @@ export function updateAddressFieldVisibility() {
 }
 
 // ===== Seguimiento del pedido (vista cliente) =====
-const customerSteps = [
-  { key: 'sent', label: 'Enviado' },
-  { key: 'accepted', label: 'Aceptado' },
-  { key: 'prep', label: 'Preparando' },
-  { key: 'ready', label: 'Listo' },
-  { key: 'way', label: 'En reparto' },
-  { key: 'delivered', label: 'Entregado' },
-];
-
-const TRACKING_GPS_NOTE = 'Sin GPS en vivo. Seguimiento por estado hasta que el repartidor comparta ubicación real.';
+// La línea de pasos (Recibido/En preparación/Listo/En reparto/Entregado) vive
+// en core/order-timeline.js: es la MISMA que ven Negocio y Rider.
+const TRACKING_GPS_NOTE = 'El seguimiento en vivo comienza cuando el repartidor comparte su ubicación.';
 
 const TRACKING_STATUS_LABELS = Object.freeze({
-  received: 'Enviado',
+  received: 'Recibido',
   accepted: 'Aceptado',
-  preparing: 'Preparando',
+  preparing: 'En preparación',
   ready: 'Listo',
   on_the_way: 'En reparto',
   arriving: 'En reparto',
@@ -873,14 +894,6 @@ function trackingStatusLabel(status) {
   return TRACKING_STATUS_LABELS[status] || statusLabel(status);
 }
 
-function customerStepIndex(status) {
-  if (status === 'preparing') return 2;
-  if (status === 'ready') return 3;
-  if (status === 'on_the_way' || status === 'arriving') return 4;
-  if (status === 'delivered') return 5;
-  return 0;
-}
-
 function getOrderSimulation(order) {
   const sim = getState().simulation;
   return sim && sim.orderId === order.id ? sim : null;
@@ -888,7 +901,7 @@ function getOrderSimulation(order) {
 
 function trackingHeadline(order) {
   if (order.status === 'delivered') {
-    return { kicker: 'Pedido entregado', title: '¡Disfrutalo!', sub: 'Gracias por comprar en La Taba.' };
+    return { kicker: 'Pedido entregado', title: '¡Disfrutalo!', sub: `Gracias por comprar en ${getBusinessConfig().businessName}.` };
   }
   if (order.status === 'cancelled') {
     return {
@@ -942,10 +955,6 @@ function displayDestinationLabel(value) {
     .replace(/^Local demo\s*·\s*/i, 'Local · ');
 }
 
-function trackingMapStatusTitle(order) {
-  return trackingStatusLabel(order?.status);
-}
-
 // Tiempo honesto: sólo se muestra un número cuando hay una base real (el
 // tiempo de preparación que cargó el negocio al aceptar). Antes de aceptar no
 // inventamos minutos, y en reparto informamos la etapa en lugar de un ETA falso.
@@ -982,7 +991,7 @@ function trackingMapStage({ order = null, live = false }) {
     <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
       ${realMapShell({ order, fallback: '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', role: 'tracking' })}
       <div class="map-floating-top">
-        <span class="map-status-pill ${statusClass(order.status)}"><small>Estado del pedido</small><strong>${escapeHtml(trackingMapStatusTitle(order))}</strong></span>
+        <span class="map-status-pill ${statusClass(order.status)}"><small>Rider en reparto</small><strong>Ubicación en vivo del repartidor</strong></span>
         <span class="map-connection-pill">${realtimeChip(order)}</span>
       </div>
       <div class="map-floating-bottom">
@@ -1002,7 +1011,7 @@ function riderTrackingCard(order, riderLocation) {
   if (hasLiveRiderLocation(riderLocation)) {
     const d = order.delivery || {};
     const hasRealName = d.driverName && d.driverName !== 'Sin asignar';
-    const name = hasRealName ? d.driverName : 'Repartidor de La Taba';
+    const name = hasRealName ? d.driverName : `Repartidor de ${getBusinessConfig().businessName}`;
     const age = relativeAgeLabel(riderLocation.lastFixAt || riderLocation.timestamp);
     const phone = d.driverPhone ? onlyDigits(d.driverPhone) : '';
     const contact = phone
@@ -1117,7 +1126,6 @@ export function renderTracking() {
   const riderLocation = chooseRiderLocation(getOrderSimulation(order), order.tracking?.lastLocation);
   const liveRider = hasLiveRiderLocation(riderLocation);
   const headSub = head.sub;
-  const stepIndex = customerStepIndex(order.status);
   const metricsHtml = order.status === 'delivered'
     ? `
           <span><small>Estado</small><strong>${escapeHtml(trackingStatusLabel(order.status))}</strong></span>
@@ -1129,13 +1137,6 @@ export function renderTracking() {
           <span><small>Pedido</small><strong>${escapeHtml(order.id)}</strong></span>
           <span><small>Tiempo estimado</small><strong>${escapeHtml(trackingEtaLabel(order))}</strong></span>
         `;
-
-  const steps = customerSteps.map((step, index) => {
-    let cls = 'pending';
-    if (!isCancelled && index < stepIndex) cls = 'done';
-    if (!isCancelled && index === stepIndex) cls = 'current';
-    return `<div class="track-step ${cls}"><span class="track-dot"></span><small>${step.label}</small></div>`;
-  }).join('');
 
   const itemsHtml = order.items.map((item) => `
     <div class="order-line">
@@ -1164,7 +1165,7 @@ export function renderTracking() {
           ${metricsHtml}
         </div>
         ${trackingDeliveryCodeCard(order)}
-        <div class="track-steps">${steps}</div>
+        ${renderOrderTimeline(order.status)}
         ${isCancelled ? `<div class="warning-box">Este pedido fue cancelado.${order.cancelReason ? ` Motivo: ${escapeHtml(order.cancelReason)}.` : ''} Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>` : ''}
         ${isDelivery ? trackingAddressCard(order) : ''}
         ${isDelivery && !isCancelled ? riderTrackingCard(order, riderLocation) : ''}

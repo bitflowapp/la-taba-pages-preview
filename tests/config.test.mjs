@@ -5,7 +5,7 @@ import { BUSINESS_CONFIG } from '../js/config.js';
 test('BUSINESS_CONFIG exposes the expected business settings', () => {
   assert.equal(BUSINESS_CONFIG.businessName, 'La Taba');
   assert.equal(BUSINESS_CONFIG.name, 'La Taba');
-  assert.equal(BUSINESS_CONFIG.subtitle, 'Carnicería & delivery propio');
+  assert.equal(BUSINESS_CONFIG.subtitle, 'Carnicería y parrilla · delivery propio');
   assert.match(BUSINESS_CONFIG.whatsappNumber, /^\d+$/);
   assert.ok(BUSINESS_CONFIG.whatsappNumber.length > 0);
   assert.equal(BUSINESS_CONFIG.deliveryFee >= 0, true);

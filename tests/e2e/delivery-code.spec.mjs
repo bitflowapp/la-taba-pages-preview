@@ -22,7 +22,7 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado.');
+  await waitForToast(page, 'Pedido confirmado.');
 
   const tracking = page.locator('[data-tracking-panel]');
   await expect(tracking.locator('[data-delivery-code-card]')).toBeVisible();

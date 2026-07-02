@@ -25,13 +25,15 @@ test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ brows
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, /Pedido creado/);
+  await waitForToast(page, /Pedido confirmado/);
 
   await page.goto('/?demo=1#business');
   await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
+  // Caja y reportes arranca plegado: el acceso rápido lo abre.
+  await page.locator('[data-scroll-reports]').click();
 
   for (let step = 0; step < 4; step += 1) {
     await page.locator('[data-order-advance="LT-0002"]').click();
@@ -59,9 +61,10 @@ test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ brows
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, /Pedido creado/);
+  await waitForToast(page, /Pedido confirmado/);
 
   await page.goto('/?demo=1#business');
+  await page.locator('[data-scroll-reports]').click();
   await expect(page.locator('[data-inbox-order="LT-0003"]')).toBeVisible();
   await page.locator('[data-inbox-order="LT-0003"] [data-order-cancel]').click();
   await expect(page.locator('[data-cancel-modal]')).toBeVisible();
@@ -73,7 +76,7 @@ test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ brows
   await expect(report).toContainText('Sin stock');
 
   await report.locator('[data-cashbox-close]').click();
-  await waitForToast(page, 'Cierre simulado guardado.');
+  await waitForToast(page, 'Cierre del turno guardado en este dispositivo.');
   await expect(report).toContainText('Historial de cierres');
   await expect(report.locator('.cashbox-history-row').first()).toContainText(/[1-9]\d* entregados/);
   await expect(report.locator('.cashbox-history-row').first()).toContainText('1 cancelados');

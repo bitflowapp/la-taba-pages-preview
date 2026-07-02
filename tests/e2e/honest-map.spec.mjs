@@ -28,7 +28,7 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
+  await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   const tracking = page.locator('[data-tracking-panel]');

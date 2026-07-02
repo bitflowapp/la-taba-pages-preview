@@ -10,7 +10,7 @@ async function createDemoOrder(page) {
     reference: 'Casa azul', notes: 'Tocar timbre', deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
+  await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
 }
 
 test('un GPS heredado nunca reactiva mapa, marker ni ETA en la presentación', async ({ page }) => {
@@ -47,7 +47,7 @@ test('?reset=1 limpia el pedido previo y deja el tracking vacío', async ({ brow
   await page.goto('/?reset=1&demo=1');
   await page.goto('/?demo=1#tracking');
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('No hay un pedido activo');
+  await expect(tracking).toContainText('Todavía no hay un pedido en curso');
   await expect(tracking).not.toContainText('LT-0002');
   await expect(tracking.locator('[data-real-map], .lt-rider-marker')).toHaveCount(0);
   await guards.assertClean();

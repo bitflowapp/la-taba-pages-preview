@@ -81,7 +81,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Simulación');
+  await waitForToast(page, 'Pedido confirmado');
   await expect(page.locator('[data-tracking-panel]')).toContainText('QA-0001');
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(0);
 

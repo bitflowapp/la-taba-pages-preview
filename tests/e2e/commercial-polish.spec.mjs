@@ -17,7 +17,7 @@ test('presentación comercial: se abre con ?pitch=1, se cierra y no vuelve sola'
   await expect(pitch).toContainText('Pedidos ordenados');
   await expect(pitch).toContainText('Vista del repartidor');
 
-  await pitch.getByRole('button', { name: 'Probar el recorrido' }).click();
+  await pitch.getByRole('button', { name: 'Probar la experiencia' }).click();
   await expect(pitch).toBeHidden();
   await expect(page.locator('[data-view="home"]')).toBeVisible();
 
@@ -29,7 +29,7 @@ test('presentación comercial: se abre con ?pitch=1, se cierra y no vuelve sola'
   await page.goto('/?demo=1#profile');
   await page.locator('[data-view="profile"] [data-open-pitch]').click();
   await expect(pitch).toBeVisible();
-  await pitch.getByRole('button', { name: 'Probar el recorrido' }).click();
+  await pitch.getByRole('button', { name: 'Probar la experiencia' }).click();
 
   await guards.assertClean();
   await context.close();
@@ -71,7 +71,7 @@ test('home: estado honesto del local y rails sin productos duplicados', async ({
 
   await page.goto('/?demo=1');
   // El chip de estado dice abierto o cerrado de verdad (según horario configurado).
-  await expect(page.locator('[data-open-status]')).toContainText(/Presentación activa|Disponibilidad a confirmar/);
+  await expect(page.locator('[data-open-status]')).toContainText(/Presentación activa|Pedidos online/);
 
   // Ofertas y combos destacados no repiten el mismo producto en el home.
   const offerNames = await page.locator('[data-offers-rail] .offer-card-body strong').allInnerTexts();
@@ -94,6 +94,8 @@ test('negocio: catálogo editable arranca compacto y el presentador tiene reinic
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
+  // Menú y promos arranca plegado: el acceso rápido lo abre.
+  await page.locator('[data-scroll-catalog]').click();
 
   // Lista de productos paginada: muestra un anticipo y se expande a pedido.
   const rows = page.locator('[data-catalog-admin-row]');

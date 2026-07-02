@@ -27,10 +27,10 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   });
   await page.locator('[name="rememberCustomer"]').check();
   await expect(page.locator('.remember-customer-row')).toContainText('Recordar mis datos');
-  await expect(page.locator('[data-payment-note]')).toContainText('Esta presentación no procesa pagos');
+  await expect(page.locator('.payment-static-row')).toContainText('Se coordina con el local');
 
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, /Pedido creado/);
+  await waitForToast(page, /Pedido confirmado/);
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
   await expect(page.locator('[data-tracking-panel]')).toContainText('Código');
@@ -55,7 +55,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(page.locator('[name="rememberCustomer"]')).toBeChecked();
 
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, /Pedido creado/);
+  await waitForToast(page, /Pedido confirmado/);
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   await openBusiness(page);
@@ -113,7 +113,7 @@ async function createRepeatOrderFromHome(page) {
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await expect(page.locator('[data-order-summary]')).toContainText('Total');
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, /Pedido creado/);
+  await waitForToast(page, /Pedido confirmado/);
 }
 
 async function openBusiness(page) {

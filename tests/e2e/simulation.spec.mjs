@@ -35,7 +35,7 @@ async function createDeliveryOrder(page) {
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
+  await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
 }
 
 test('persistencia del pedido tras recargar la página', async ({ page }) => {
@@ -72,7 +72,7 @@ test('el modo demo no ofrece GPS ni simula movimiento', async ({ page }) => {
   // Sin compartir GPS el rider no ve mapa (no hay ubicación real).
   await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
 
-  await expect(page.locator('[data-delivery-panel]')).toContainText('No se usa GPS, ETA ni ubicación en vivo.');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Avanzá la entrega con los botones de estado.');
   await expect(page.locator('[data-delivery-panel] [data-sim-gps], [data-delivery-panel] [data-sim-gps-off]')).toHaveCount(0);
   await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
 });

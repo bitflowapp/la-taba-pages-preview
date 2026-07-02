@@ -89,9 +89,13 @@ export async function fillCheckout(page, {
 }) {
   await page.getByLabel('Nombre').fill(name);
   await page.getByLabel('Teléfono').fill(phone);
+  // El pago es una fila informativa con input oculto (se coordina con el local):
+  // si algún modo vuelve a exponer un select, se respeta la opción pedida.
   const paymentField = page.getByLabel('Forma de pago');
-  const requestedPaymentExists = await paymentField.locator(`option[value="${payment}"]`).count();
-  await paymentField.selectOption(requestedPaymentExists ? payment : 'coordinate');
+  if (await paymentField.count()) {
+    const requestedPaymentExists = await paymentField.locator(`option[value="${payment}"]`).count();
+    await paymentField.selectOption(requestedPaymentExists ? payment : 'coordinate');
+  }
   await page.getByLabel(/Observaciones del pedido|Notas/).fill(notes);
   if (deliveryMode === 'delivery') {
     await page.getByLabel('Delivery').check();

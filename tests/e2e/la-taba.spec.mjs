@@ -108,10 +108,10 @@ test('carrito vacío oculta el formulario de checkout y lo muestra al cargar pro
   await page.goto('/?demo=1#cart');
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   // Con el carrito vacío no debe verse el formulario "Datos para finalizar" ni vaciar.
-  await expect(page.locator('[data-cart-list]')).toContainText('El carrito está vacío');
+  await expect(page.locator('[data-cart-list]')).toContainText('Tu pedido está vacío');
   await expect(page.locator('[data-checkout-form]')).toBeHidden();
   await expect(page.locator('[data-clear-cart]')).toBeHidden();
-  await expect(page.locator('[data-cart-list] [data-nav-view="home"]')).toBeVisible();
+  await expect(page.locator('[data-cart-list] [data-nav-view="catalog"]')).toBeVisible();
 
   // Al agregar un producto, el formulario aparece para completar el pedido.
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
@@ -139,7 +139,7 @@ test('pedido demo no muestra rider falso, GPS, mapa ni ETA', async ({ page }) =>
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
+  await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
 
   const tracking = page.locator('[data-tracking-panel]');
   await expect(tracking).toContainText('Roca 123, Neuquén Capital');
@@ -157,8 +157,8 @@ test('pedido demo no muestra rider falso, GPS, mapa ni ETA', async ({ page }) =>
   await page.locator('[data-order-advance="LT-0002"]').click();
   await page.getByRole('button', { name: /Vista rider/i }).click();
   const rider = page.locator('[data-delivery-panel]');
-  await expect(rider).toContainText('Modo demo local');
-  await expect(rider).toContainText('No se usa GPS, ETA ni ubicación en vivo.');
+  await expect(rider).toContainText('Vista de reparto');
+  await expect(rider).toContainText('Avanzá la entrega con los botones de estado.');
   await expect(rider.locator('[data-real-map], [data-sim-gps], [data-sim-gps-off]')).toHaveCount(0);
 
   await guards.assertClean();
@@ -263,7 +263,7 @@ test('flujo cliente con delivery', async ({ page }) => {
 
   // CTA principal: confirma el pedido interno y NO abre WhatsApp automáticamente.
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
+  await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
   await expect(page.locator('[data-tracking-panel]')).toContainText('Entrega en');
@@ -298,11 +298,12 @@ test('mobile cliente usa pago coordinado y crea pedido simulado', async ({ brows
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await expect(page.locator('[data-payment-note]')).toContainText('no procesa pagos');
+  await expect(page.locator('.payment-static-row')).toContainText('Se coordina con el local');
+  await expect(page.locator('[data-checkout-mode-note]')).toContainText('Seguí el avance');
   await expect(page.locator('[name="couponCode"]')).toHaveCount(0);
 
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, /Pedido creado/);
+  await waitForToast(page, /Pedido confirmado/);
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   const tracking = page.locator('[data-tracking-panel]');
@@ -352,7 +353,7 @@ test('flujo retiro en local', async ({ page }) => {
     deliveryMode: 'pickup',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
+  await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
   const autoOpened = await page.evaluate(() => window.__openedUrls.length);
@@ -381,7 +382,7 @@ test('modo negocio y delivery', async ({ page }) => {
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
+  await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
   await expect(page.locator('[data-view="business"]')).toBeHidden();
   await expect(page.locator('[data-view="rider"]')).toBeHidden();
 
@@ -408,6 +409,8 @@ test('modo negocio y delivery', async ({ page }) => {
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Enviar a reparto');
 
+  // Menú y promos arranca plegado: el acceso rápido lo abre.
+  await page.locator('[data-scroll-catalog]').click();
   const stockInc = page.locator('[data-stock-inc]').first();
   const stockDec = page.locator('[data-stock-dec]').first();
   const stockBefore = Number(await stockInc.evaluate((button) => button.parentElement.querySelector('strong').textContent));
@@ -447,7 +450,7 @@ test('modo negocio y delivery', async ({ page }) => {
     await expect(page.locator('[data-delivery-panel]')).toContainText('Llegando');
     await page.locator('[data-delivery-done]').first().click();
     await waitForToast(page, 'Pedido marcado como entregado.');
-    await expect(page.locator('[data-delivery-panel]')).toContainText('No hay pedidos para repartir.');
+    await expect(page.locator('[data-delivery-panel]')).toContainText('Sin entregas asignadas');
   }
 
   await guards.assertClean();

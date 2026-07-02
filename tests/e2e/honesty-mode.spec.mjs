@@ -27,8 +27,8 @@ test('modo demo muestra la franja persistente y rotula los datos de ejemplo', as
 
   const banner = page.locator('[data-demo-mode-banner]');
   await expect(banner).toBeVisible();
-  await expect(banner).toContainText('Modo demostración');
-  await expect(banner).toContainText('se simulan en este dispositivo');
+  await expect(banner).toContainText('Presentación comercial');
+  await expect(banner).toContainText('escenario de ejemplo');
   await expect(page.locator('.role-intro')).toBeVisible();
   await expect(page.locator('.role-card-pin').first()).toContainText('Código de presentación');
 
@@ -36,7 +36,7 @@ test('modo demo muestra la franja persistente y rotula los datos de ejemplo', as
   await page.getByLabel('Código del modo negocio').fill('1234');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page.locator('[data-business-dashboard]')).toContainText('Datos de ejemplo');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Simulación');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Vista de operación');
 });
 
 test('checkout público valida datos y termina en una confirmación que dice que no fue enviada', async ({ page }) => {
@@ -59,11 +59,11 @@ test('checkout público valida datos y termina en una confirmación que dice que
 
   await page.getByLabel('Calle y número').fill('Roca 123');
   await page.locator('[data-checkout-submit]').click();
-  await waitForToast(page, 'No fue enviado al comercio');
+  await waitForToast(page, 'No se envió al local');
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Pedido de demostración');
-  await expect(tracking).toContainText('No fue enviado al comercio ni generó una compra real.');
+  await expect(tracking).toContainText('Pedido de muestra');
+  await expect(tracking).toContainText('no se envió al local ni se cobró nada');
   await expect(tracking).not.toContainText('El comercio está revisando');
   await expect(tracking.locator('[data-delivery-code]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Solicitar por WhatsApp' })).toBeHidden();
@@ -106,8 +106,8 @@ test('cambiar de demo a público invalida pedidos de ejemplo y deja medios hones
   const publicState = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), STATE_KEY);
   expect(publicState.appMode).toBe('public');
   expect(publicState.orders).toHaveLength(0);
-  await expect(page.locator('select[name="paymentMethod"] option')).toHaveCount(1);
-  await expect(page.locator('select[name="paymentMethod"]')).toHaveValue('coordinate');
+  await expect(page.locator('select[name="paymentMethod"]')).toHaveCount(0);
+  await expect(page.locator('input[name="paymentMethod"]')).toHaveValue('coordinate');
   await expect(page.locator('[data-coupon-code]')).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText('TABA10');
 });

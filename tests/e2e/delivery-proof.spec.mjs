@@ -28,7 +28,7 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
+  await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
 
   await page.goto('/?demo=1#business');
   await expect(page.locator('[data-view="business"]')).toBeVisible();

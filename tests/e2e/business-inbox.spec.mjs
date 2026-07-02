@@ -26,7 +26,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(page.locator('.inbox-tabs')).toContainText('Finalizados');
   await page.getByRole('button', { name: /Activar sonido/i }).click();
   await waitForToast(page, 'Sonido de pedidos activado.');
-  await expect(page.locator('[data-order-inbox]')).toContainText('Todavía no hay pedidos para este filtro.');
+  await expect(page.locator('[data-order-inbox]')).toContainText('Sin pedidos en la cola');
 
   // 2. El cliente confirma un pedido con dirección real.
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
@@ -43,7 +43,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
+  await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
 
   // 3. El negocio ve el pedido en la Central de pedidos, completo.
   // (La nav inferior se oculta en Seguimiento: volvemos al inicio por el logo.)
@@ -53,7 +53,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await page.locator('[data-view="profile"] [data-open-admin-view="business"]').click();
   await expect(page.locator('[data-view="business"]')).toBeVisible();
   await expect(page.locator('[data-order-inbox]')).toContainText('Pedidos nuevos');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Entregados de hoy');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Entregados hoy');
 
   const card = page.locator('.inbox-order.is-priority[data-inbox-order="LT-0002"]');
   await expect(card).toBeVisible();

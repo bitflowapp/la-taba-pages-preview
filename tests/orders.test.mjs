@@ -158,7 +158,7 @@ test('checkout sanitizes text and normalizes invalid payment methods', () => {
   assert.equal(result.order.customerName, 'Ana QA');
   assert.equal(result.order.customerPhone, '2995550000');
   assert.equal(result.order.address, 'Roca 321');
-  assert.equal(result.order.paymentMethod, 'Efectivo');
+  assert.equal(result.order.paymentMethod, 'Pago a coordinar con el local');
   assert.equal(result.order.notes, 'Sin grasa');
   assert.deepEqual(state().cart, []);
 });

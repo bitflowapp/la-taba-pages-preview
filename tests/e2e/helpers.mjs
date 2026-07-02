@@ -89,12 +89,21 @@ export async function fillCheckout(page, {
 }) {
   await page.getByLabel('Nombre').fill(name);
   await page.getByLabel('Teléfono').fill(phone);
-  await page.getByLabel('Forma de pago').selectOption(payment);
+  const paymentField = page.getByLabel('Forma de pago');
+  const requestedPaymentExists = await paymentField.locator(`option[value="${payment}"]`).count();
+  await paymentField.selectOption(requestedPaymentExists ? payment : 'coordinate');
   await page.getByLabel(/Observaciones del pedido|Notas/).fill(notes);
   if (deliveryMode === 'delivery') {
     await page.getByLabel('Delivery').check();
     await page.getByLabel('Calle y número').fill(street ?? address ?? '');
-    await page.getByLabel('Barrio o zona').fill(neighborhood ?? (address ? 'Neuquen centro' : ''));
+    const zone = page.getByLabel('Localidad o zona');
+    const requestedZone = neighborhood ?? (address ? 'Neuquén Capital' : '');
+    const zoneValue = /cipolletti/i.test(requestedZone)
+      ? 'Cipolletti'
+      : /neuqu[eé]n/i.test(requestedZone)
+        ? 'Neuquén Capital'
+        : 'Otra localidad';
+    await zone.selectOption(zoneValue);
     await page.getByLabel(/Referencia de entrega|Referencia para el repartidor/).fill(reference ?? '');
   } else {
     await page.getByLabel('Retiro en local').check();

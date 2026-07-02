@@ -12,7 +12,7 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1');
+  await page.goto('/?reset=1&demo=1');
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
@@ -28,9 +28,9 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
+  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
 
-  await page.goto('/#business');
+  await page.goto('/?demo=1#business');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
   await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
@@ -46,13 +46,13 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
 
-  await page.goto('/#tracking');
+  await page.goto('/?demo=1#tracking');
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText(/El seguimiento en vivo comienza/i);
+  await expect(tracking).toContainText('Seguimiento por estados, sin GPS ni ubicación en vivo.');
   await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
   await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
 
-  await page.goto('/#rider');
+  await page.goto('/?demo=1#rider');
   const riderPanel = page.locator('[data-delivery-panel]');
   await expect(riderPanel).toContainText('LT-0002');
   await riderPanel.locator('[data-delivery-arrive="LT-0002"]').click();
@@ -73,7 +73,7 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
   await expect(riderPanel.locator('[data-delivery-proof-preview]')).toHaveCount(0);
 
   const businessNoProofPage = await context.newPage();
-  await businessNoProofPage.goto('/#business');
+  await businessNoProofPage.goto('/?demo=1#business');
   await expect(businessNoProofPage.locator('[data-view="business"]')).toBeVisible();
   await businessNoProofPage.locator('[data-open-pin][data-admin-target="business"]').click();
   await businessNoProofPage.locator('[data-pin-form] input[name="pin"]').fill('1234');
@@ -82,7 +82,7 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
   await expect(businessNoProofPage.locator('[data-inbox-order="LT-0002"] [data-delivery-proof-summary]')).toHaveCount(0);
   await businessNoProofPage.close();
 
-  await page.goto('/#rider');
+  await page.goto('/?demo=1#rider');
   await expect(page.locator('[data-delivery-panel]')).toContainText('LT-0002');
   await page.locator('[data-delivery-proof-input="LT-0002"]').setInputFiles({
     name: 'proof-2.png',
@@ -96,7 +96,7 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
   await waitForToast(page, 'Pedido marcado como entregado.');
 
   const businessWithProofPage = await context.newPage();
-  await businessWithProofPage.goto('/#business');
+  await businessWithProofPage.goto('/?demo=1#business');
   await expect(businessWithProofPage.locator('[data-view="business"]')).toBeVisible();
   await businessWithProofPage.locator('[data-open-pin][data-admin-target="business"]').click();
   await businessWithProofPage.locator('[data-pin-form] input[name="pin"]').fill('1234');

@@ -28,7 +28,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
     }
   });
 
-  await page.goto('/?reset=1#business');
+  await page.goto('/?reset=1&demo=1#business');
   await page.getByRole('button', { name: /Ingresar c[óo]digo/i }).click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
@@ -81,7 +81,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Ya pod');
+  await waitForToast(page, 'Pedido creado. Simulación');
   await expect(page.locator('[data-tracking-panel]')).toContainText('QA-0001');
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(0);
 
@@ -95,15 +95,15 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await expect(page.locator('[data-view="business"]')).toBeVisible();
 
   await page.locator('[data-scroll-business-setup]').click();
-  await setup.getByRole('button', { name: 'Restaurar configuración demo' }).first().click();
+  await setup.getByRole('button', { name: 'Restaurar configuración base' }).first().click();
   const resetModal = page.locator('[data-business-setup-reset-modal]');
   await expect(resetModal).toBeVisible();
   await expect(resetModal).toContainText('No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.');
   await resetModal.getByRole('button', { name: 'Cancelar' }).click();
   await expect(page.locator('.topbar .brand')).toContainText('QA Store');
 
-  await setup.getByRole('button', { name: 'Restaurar configuración demo' }).first().click();
-  await resetModal.getByRole('button', { name: 'Restaurar configuración demo' }).click();
+  await setup.getByRole('button', { name: 'Restaurar configuración base' }).first().click();
+  await resetModal.getByRole('button', { name: 'Restaurar configuración base' }).click();
   await waitForToast(page, 'Configuración demo restaurada.');
   await expect(page.locator('.topbar .brand')).toContainText('La Taba');
   await expect(page.locator('[data-business-dashboard]')).toContainText('QA-0001');

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#fff8f1" />
-    <meta name="description" content="La Taba Pizzería: pedí tu pizza online, seguí la entrega y gestioná el negocio y el reparto desde una sola app." />
+    <meta name="description" content="La Taba Pizzería: catálogo y recorrido comercial de pedidos directos." />
     <title>La Taba Pizzería · Pedidos, negocio y reparto</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
@@ -29,7 +29,7 @@
           </span>
           <span class="brand-text">
             <strong class="brand-word" data-business-name>La Taba Pizzería</strong>
-            <small data-business-subtitle>Horno a leña · delivery propio</small>
+            <small data-business-subtitle>Catálogo de pizzería · recorrido comercial</small>
           </span>
         </button>
 
@@ -42,12 +42,17 @@
         </nav>
 
         <div class="topbar-actions">
-          <button class="ghost-button compact" type="button" data-admin-toggle>Administrar pedidos</button>
+          <button class="ghost-button compact" type="button" data-admin-toggle data-demo-only hidden>Administrar pedidos</button>
           <button class="primary-button compact cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
             <span data-cart-total-small>Pedido</span>
           </button>
         </div>
       </header>
+
+      <div class="demo-mode-banner" data-demo-mode-banner hidden role="status">
+        <strong>Modo demostración ·</strong>
+        <span>Los pedidos y estados se simulan en este dispositivo.</span>
+      </div>
 
       <div class="pwa-banner pwa-banner-install" data-pwa-install-banner hidden>
         <span class="pwa-banner-icon" aria-hidden="true">
@@ -92,21 +97,21 @@
         <section class="section app-view app-home is-active" data-view="home" aria-hidden="false">
           <div class="home-title">
             <div>
-              <p class="eyebrow">Horno a leña · delivery propio</p>
+              <p class="eyebrow">Catálogo de pizzería · recorrido comercial</p>
               <h1 data-business-name>La Taba Pizzería</h1>
-              <p class="home-lead">Tu pizza favorita, ahora a un toque. Pedí. Seguí. Disfrutá.</p>
+              <p class="home-lead">Explorá el catálogo y recorré cómo funcionaría un pedido directo.</p>
             </div>
             <button class="secondary-button compact" type="button" data-nav-view="profile">Ver local</button>
           </div>
 
           <div class="status-bar" role="status">
-            <span class="status-dot" data-open-status>Abierto ahora</span>
+            <span class="status-dot" data-open-status>Información comercial a confirmar</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Recibimos pedidos</span>
+            <span class="status-item">Recorrido sin envío real</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Delivery propio o retiro en el local</span>
+            <span class="status-item">Entrega o retiro a coordinar con el local</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Neuquén</span>
+            <span class="status-item">Zona a confirmar</span>
           </div>
 
           <button class="home-address-chip" type="button" data-nav-view="cart" data-home-address>
@@ -135,7 +140,7 @@
               <strong data-promo-banner-title>2 pizzas grandes<br />+ gaseosa 1.5 L</strong>
               <span class="promo-price" data-promo-banner-price>$19.990</span>
             </div>
-            <span class="promo-cta">Pedir ahora</span>
+            <span class="promo-cta">Ver promo</span>
           </button>
 
           <div class="rail-block">
@@ -175,12 +180,12 @@
                 <circle cx="14.2" cy="10.6" r="1.2" fill="currentColor"/>
               </svg>
             </span>
-            <span>Pedir ahora</span>
+            <span>Armar pedido</span>
           </button>
 
           <div data-customer-history></div>
 
-          <section class="role-intro" aria-label="Cómo funciona el sistema">
+          <section class="role-intro" aria-label="Cómo funciona el sistema" data-demo-only hidden>
             <article class="role-card role-card-client">
               <h2>Cliente</h2>
               <p>Elegí tu pizza, hacé el pedido y seguí la entrega.</p>
@@ -189,13 +194,13 @@
             <article class="role-card role-card-business">
               <h2>Negocio</h2>
               <p>Recibí pedidos, preparalos y controlá el reparto.</p>
-              <span class="role-card-pin">Clave demo: <strong data-admin-pin>1234</strong></span>
+              <span class="role-card-pin">Código de presentación: <strong data-admin-pin>1234</strong></span>
               <button class="secondary-button compact" type="button" data-home-open-pin="business">Entrar como negocio</button>
             </article>
             <article class="role-card role-card-rider">
               <h2>Rider</h2>
-              <p>Tomá entregas, compartí ubicación y confirmá la entrega.</p>
-              <span class="role-card-pin">Clave demo: <strong data-admin-pin>1234</strong></span>
+              <p>Tomá entregas y confirmá cada avance del recorrido.</p>
+              <span class="role-card-pin">Código de presentación: <strong data-admin-pin>1234</strong></span>
               <button class="secondary-button compact" type="button" data-home-open-pin="rider">Entrar como rider</button>
             </article>
           </section>
@@ -207,7 +212,7 @@
                 <strong data-product-name>PedidoPropio</strong>
               </span>
               <p class="product-intro-claim" data-product-tagline>Tu sistema de pedidos directo, sin depender de apps con comisión.</p>
-              <p class="product-intro-note">Demo: el comercio <strong data-business-name>La Taba Pizzería</strong> funcionando con <strong data-product-name>PedidoPropio</strong>.</p>
+              <p class="product-intro-note">Recorrido comercial de <strong data-business-name>La Taba Pizzería</strong> con <strong data-product-name>PedidoPropio</strong>.</p>
             </div>
             <div class="product-intro-actions">
               <button class="primary-button compact" type="button" data-open-pitch>Ver cómo funciona</button>
@@ -309,8 +314,13 @@
                     <input name="customerStreetAddress" autocomplete="address-line1" placeholder="Ej: Roca 123" />
                   </label>
                   <label>
-                    Barrio o zona
-                    <input name="customerNeighborhood" autocomplete="address-level2" placeholder="Ej: Neuquén centro" />
+                    Localidad o zona <span class="req" aria-hidden="true">*</span>
+                    <select name="customerNeighborhood" autocomplete="address-level2">
+                      <option value="">Seleccioná una opción</option>
+                      <option value="Neuquén Capital">Neuquén Capital · a coordinar</option>
+                      <option value="Cipolletti">Cipolletti · a coordinar</option>
+                      <option value="Otra localidad">Otra localidad · a coordinar</option>
+                    </select>
                   </label>
                 </div>
                 <label>
@@ -331,49 +341,33 @@
               <label>
                 Forma de pago
                 <select name="paymentMethod">
-                  <option value="cash">Efectivo</option>
-                  <option value="transfer">Transferencia</option>
-                  <option value="mercado_pago_future">Mercado Pago / link externo</option>
+                  <option value="coordinate">Pago a coordinar con el local</option>
                 </select>
               </label>
-              <p class="form-hint payment-note hidden" data-payment-note></p>
-
-              <label data-cash-change-field>
-                Cambio con efectivo
-                <input name="cashChange" inputmode="numeric" autocomplete="off" placeholder="Ej: necesito cambio de 20000" />
-              </label>
+              <p class="form-hint payment-note" data-payment-note>No se procesa ningún pago desde esta presentación.</p>
 
               <label>
                 Observaciones del pedido
                 <textarea name="customerNotes" rows="3" placeholder="Ej: sin aceitunas, bien cocida, cortar en 8 porciones"></textarea>
               </label>
 
-              <div class="coupon-row">
-                <label>
-                  Cupón o promo
-                  <input name="couponCode" autocomplete="off" placeholder="Ej: TABA10" />
-                </label>
-                <button class="secondary-button compact" type="button" data-apply-coupon>Aplicar</button>
-              </div>
-              <p class="form-hint coupon-message hidden" data-coupon-message></p>
-
               <div class="summary-box" data-order-summary></div>
               <div class="warning-box hidden" data-checkout-warning></div>
 
               <div class="trust-row" aria-hidden="false">
-                <span class="trust-text"><strong>El local confirma disponibilidad antes de preparar tu pedido.</strong><small>WhatsApp queda como copia opcional.</small></span>
+                <span class="trust-text"><strong data-checkout-trust-title>Recorrido de pedido sin cobro.</strong><small data-checkout-trust-copy>No se enviará al comercio desde el modo público.</small></span>
               </div>
 
               <div class="button-row">
-                <button class="primary-button confirm-button" type="submit">
-                  Confirmar pedido
+                <button class="primary-button confirm-button" type="submit" data-checkout-submit>
+                  Pedido de demostración
                 </button>
               </div>
               <div class="button-row secondary-actions">
-                <button class="ghost-button" type="button" data-whatsapp-copy>Enviar copia por WhatsApp</button>
+                <button class="ghost-button" type="button" data-whatsapp-copy data-whatsapp-available hidden>Solicitar por WhatsApp</button>
                 <button class="ghost-button" type="button" data-copy-order>Copiar pedido</button>
               </div>
-              <p class="form-hint">Confirmás acá y seguís el estado en vivo desde la app.</p>
+              <p class="form-hint" data-checkout-mode-note>Este recorrido no envía una compra real.</p>
             </form>
           </div>
         </section>
@@ -401,23 +395,23 @@
               <h3>Información del local</h3>
               <ul class="info-list">
                 <li><span>Local</span><strong data-business-profile-name>La Taba</strong></li>
-                <li><span>Dirección</span><strong data-business-address>Neuquén capital</strong></li>
-                <li><span>Horarios</span><strong data-business-hours>Lunes a sábado</strong></li>
-                <li><span>Zona de entrega</span><strong data-business-zone>Zona configurada</strong></li>
+                <li><span>Dirección</span><strong data-business-address>A confirmar con el local</strong></li>
+                <li><span>Horarios</span><strong data-business-hours>A confirmar con el local</strong></li>
+                <li><span>Zona de entrega</span><strong data-business-zone>A confirmar con el local</strong></li>
                 <li><span>Pedido mínimo delivery</span><strong data-min-order>$0</strong></li>
                 <li><span>Costo de envío</span><strong data-delivery-fee>$0</strong></li>
-                <li><span>WhatsApp</span><strong data-business-whatsapp>+54 9 299 620-9136</strong></li>
-                <li><span>Medios de pago</span><strong>Efectivo, transferencia y Mercado Pago</strong></li>
-                <li><span>Retiro en local</span><strong>Disponible, sin costo de envío</strong></li>
+                <li><span>WhatsApp</span><strong data-business-whatsapp>A confirmar</strong></li>
+                <li><span>Medios de pago</span><strong>Pago a coordinar con el local</strong></li>
+                <li><span>Retiro en local</span><strong>A coordinar con el local</strong></li>
               </ul>
             </div>
-            <div class="card">
+            <div class="card" data-demo-only hidden>
               <h3>Cómo trabajamos</h3>
               <p>Pedí online y retirás en el local o recibís por delivery propio.</p>
               <ol class="how-strip">
                 <li><strong>1</strong> Armás y confirmás el pedido</li>
                 <li><strong>2</strong> Lo preparamos en el local</li>
-                <li><strong>3</strong> Lo seguís en vivo hasta tu puerta</li>
+                <li><strong>3</strong> Seguís los estados del recorrido</li>
               </ol>
               <p class="form-hint">Acceso con PIN para el equipo del comercio.</p>
               <div class="button-row">
@@ -429,7 +423,7 @@
           </div>
         </section>
 
-        <section class="section app-view admin-section" data-view="business" hidden aria-hidden="true">
+        <section class="section app-view admin-section" data-view="business" data-demo-only hidden aria-hidden="true">
           <div class="card admin-lock-card" data-admin-locked>
             <div>
               <p class="eyebrow">Negocio</p>
@@ -457,7 +451,7 @@
           </div>
         </section>
 
-        <section class="section app-view admin-section" data-view="rider" hidden aria-hidden="true">
+        <section class="section app-view admin-section" data-view="rider" data-demo-only hidden aria-hidden="true">
           <div class="card admin-lock-card" data-admin-locked>
             <div>
               <p class="eyebrow">Repartidor</p>
@@ -500,7 +494,7 @@
       <div data-modal-content></div>
     </dialog>
 
-    <dialog class="pin-modal" data-pin-modal>
+    <dialog class="pin-modal" data-pin-modal data-demo-only>
       <form method="dialog" class="pin-card" data-pin-form>
         <h2>Acceso del negocio</h2>
         <p>Ingresá el código del comercio para ver la administración de pedidos y el reparto.</p>
@@ -545,7 +539,7 @@
         <ul class="pitch-list">
           <li><strong>Pedidos ordenados</strong><span>Cada pedido llega escrito y completo: productos, total, pago y dirección.</span></li>
           <li><strong>Catálogo propio</strong><span>Tu menú con fotos y precios, sin tener que pasar listas por chat.</span></li>
-          <li><strong>Seguimiento del pedido</strong><span>El cliente ve el estado real de su pedido, sin datos inventados.</span></li>
+          <li><strong>Seguimiento del pedido</strong><span>El cliente ve el avance que confirma el comercio.</span></li>
           <li><strong>Vista del repartidor</strong><span>Dirección, cobro y entrega validada con código.</span></li>
           <li><strong>Clientes que vuelven</strong><span>Recompra en un toque y señales de clientes frecuentes.</span></li>
         </ul>
@@ -571,7 +565,7 @@
             <li><strong>Pedido armado por WhatsApp</strong><span>Llega listo para confirmar, sin transcribir audios.</span></li>
             <li><strong>Panel para gestionar pedidos</strong><span>Aceptás, preparás y despachás desde el celular.</span></li>
             <li><strong>QR listo para imprimir</strong><span>Pegalo en el mostrador y que pidan desde la mesa o la vereda.</span></li>
-            <li><strong>Demo adaptable a tu marca</strong><span>Nombre, colores y catálogo a la medida de tu comercio.</span></li>
+            <li><strong>Presentación adaptable a tu marca</strong><span>Nombre, colores y catálogo a la medida de tu comercio.</span></li>
           </ul>
         </section>
 
@@ -611,13 +605,13 @@
         </section>
 
         <div class="pitch-cta-grid">
-          <button class="primary-button" type="button" data-close-pitch>Probar la demo</button>
-          <button class="secondary-button" type="button" data-pitch-go="catalog">Ver demo cliente</button>
-          <button class="secondary-button" type="button" data-pitch-go="business">Ver panel negocio</button>
-          <button class="secondary-button" type="button" data-pitch-go="rider">Ver vista repartidor</button>
-          <button class="ghost-button pitch-cta-whatsapp" type="button" data-pitch-go="whatsapp">Hablar por WhatsApp</button>
+          <button class="primary-button" type="button" data-close-pitch>Probar el recorrido</button>
+          <button class="secondary-button" type="button" data-pitch-go="catalog">Ver experiencia cliente</button>
+          <button class="secondary-button" type="button" data-pitch-go="business" data-demo-only>Ver panel negocio</button>
+          <button class="secondary-button" type="button" data-pitch-go="rider" data-demo-only>Ver vista repartidor</button>
+          <button class="ghost-button pitch-cta-whatsapp" type="button" data-pitch-go="whatsapp" data-whatsapp-available hidden>Hablar por WhatsApp</button>
         </div>
-        <p class="form-hint pitch-note">Demo con catálogo de muestra. Los pedidos que crees quedan solo en este dispositivo.</p>
+        <p class="form-hint pitch-note">Catálogo de muestra. Los pedidos del recorrido quedan solo en este dispositivo.</p>
       </div>
     </dialog>
 

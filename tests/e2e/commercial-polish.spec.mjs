@@ -10,26 +10,26 @@ test('presentación comercial: se abre con ?pitch=1, se cierra y no vuelve sola'
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?pitch=1');
+  await page.goto('/?pitch=1&demo=1');
   const pitch = page.locator('[data-pitch-modal]');
   await expect(pitch).toBeVisible();
   await expect(pitch).toContainText('Tu propio canal de pedidos');
   await expect(pitch).toContainText('Pedidos ordenados');
   await expect(pitch).toContainText('Vista del repartidor');
 
-  await pitch.getByRole('button', { name: 'Probar la demo' }).click();
+  await pitch.getByRole('button', { name: 'Probar el recorrido' }).click();
   await expect(pitch).toBeHidden();
   await expect(page.locator('[data-view="home"]')).toBeVisible();
 
   // Sin el parámetro, la presentación no aparece sola (no molesta a recurrentes).
-  await page.goto('/');
+  await page.goto('/?demo=1');
   await expect(pitch).toBeHidden();
 
   // Desde Local se puede reabrir a demanda.
-  await page.goto('/#profile');
+  await page.goto('/?demo=1#profile');
   await page.locator('[data-view="profile"] [data-open-pitch]').click();
   await expect(pitch).toBeVisible();
-  await pitch.getByRole('button', { name: 'Probar la demo' }).click();
+  await pitch.getByRole('button', { name: 'Probar el recorrido' }).click();
 
   await guards.assertClean();
   await context.close();
@@ -41,7 +41,7 @@ test('catálogo: búsqueda sin resultados no deja ofertas colgadas y las tarjeta
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/#catalog');
+  await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
 
   // Las tarjetas disponibles no llevan cinta "Disponible" (el estado normal no se etiqueta).
@@ -69,9 +69,9 @@ test('home: estado honesto del local y rails sin productos duplicados', async ({
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/');
+  await page.goto('/?demo=1');
   // El chip de estado dice abierto o cerrado de verdad (según horario configurado).
-  await expect(page.locator('[data-open-status]')).toContainText(/Abierto|Cerrado/);
+  await expect(page.locator('[data-open-status]')).toContainText(/Presentación activa|Disponibilidad a confirmar/);
 
   // Ofertas y combos destacados no repiten el mismo producto en el home.
   const offerNames = await page.locator('[data-offers-rail] .offer-card-body strong').allInnerTexts();
@@ -89,7 +89,7 @@ test('negocio: catálogo editable arranca compacto y el presentador tiene reinic
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1#business');
+  await page.goto('/?reset=1&demo=1#business');
   await page.getByRole('button', { name: /Ingresar c[óo]digo/i }).click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');

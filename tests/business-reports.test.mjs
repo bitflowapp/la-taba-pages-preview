@@ -277,10 +277,9 @@ test('business report: resumen copiable es legible para WhatsApp', () => {
 
   assert.match(text, /Cierre La Taba - 04\/06\/2026/);
   assert.match(text, /Ventas netas: /);
-  assert.match(text, /Efectivo: /);
+  assert.match(text, /Pago a coordinar: /);
   assert.match(text, /Descuentos: /);
   assert.match(text, /Pedidos entregados: 1/);
-  assert.match(text, /Sin especificar: /);
   assert.match(text, /Ticket promedio con delivery: /);
   assert.match(text, /Producto más vendido: Vacio snapshot/);
 });

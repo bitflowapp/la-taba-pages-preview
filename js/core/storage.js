@@ -23,6 +23,15 @@ export function safeStorageSet(storage, key, value) {
   }
 }
 
+export function safeStorageRemove(storage, key) {
+  try {
+    storage?.removeItem(key);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 export function safeJsonParse(raw, fallback = null) {
   if (typeof raw !== 'string' || raw.trim() === '') return fallback;
   try {

@@ -7,7 +7,7 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1');
+  await page.goto('/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.mobile-nav [data-nav-view="cart"]').click();
@@ -29,7 +29,7 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   const code = await tracking.locator('[data-delivery-code]').getAttribute('data-delivery-code');
   expect(code).toMatch(/^\d{4}$/);
 
-  await page.goto('/#business');
+  await page.goto('/?demo=1#business');
   await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
@@ -42,7 +42,7 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
 
-  await page.goto('/#rider');
+  await page.goto('/?demo=1#rider');
   const riderPanel = page.locator('[data-delivery-panel]');
   await expect(riderPanel.locator('[data-delivery-code-panel]')).toBeVisible();
   await riderPanel.locator('[data-delivery-code-input="LT-0002"]').fill('0000');
@@ -54,7 +54,7 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await waitForToast(page, 'Código de entrega confirmado.');
   await expect(riderPanel.locator('[data-delivery-code-panel]')).toContainText('Código de entrega confirmado');
 
-  await page.goto('/#business');
+  await page.goto('/?demo=1#business');
   await expect(page.locator('[data-delivery-code-summary="LT-0002"]')).toContainText('Código validado');
 
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);

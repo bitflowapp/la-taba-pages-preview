@@ -80,7 +80,7 @@ export function renderDeliveryPanel() {
   const { canLeave, canArrive, canDeliver } = getRiderActionState(order);
   const sim = orderSimulation(order);
   const gpsState = riderGpsShareState(sim);
-  const gpsLive = gpsState.live;
+  const gpsLive = false;
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
   const address = normalizeOrderAddressDetails(order);
   const destinationLabel = displayDestinationLabel(address.label || order.address);
@@ -93,8 +93,8 @@ export function renderDeliveryPanel() {
       : order.status === 'delivered' ? 'Pedido entregado'
       : 'Pedido listo para salir';
   const headSub = awaiting
-    ? 'Esperando al local.'
-    : gpsState.headSub;
+    ? 'Esperando el siguiente estado de la presentación.'
+    : 'Recorrido local por estados, sin GPS ni ubicación en vivo.';
 
   const waClient = `https://wa.me/${onlyDigits(order.customerPhone)}`;
 
@@ -182,14 +182,12 @@ export function renderDeliveryPanel() {
   restoreDeliveryCodeDraft(container, codeDraft);
 }
 
-// Cabecera del sheet del rider (maqueta): "Mis entregas" + estado en línea +
-// accesos al panel del negocio y salida del modo operativo.
 function renderRiderSheetTopbar() {
   return `
     <div class="rider-sheet-topbar">
       <div class="rider-sheet-title">
         <strong>Mis entregas</strong>
-        <span class="rider-online-chip"><i aria-hidden="true"></i>En línea</span>
+        <span class="rider-online-chip is-local"><i aria-hidden="true"></i>Modo demo local</span>
       </div>
       <div class="rider-sheet-actions">
         <button class="ghost-button compact" type="button" data-open-admin-view="business">Panel negocio</button>
@@ -230,8 +228,8 @@ function renderRiderHistory(currentOrder = null) {
     .slice(0, 3);
   if (!delivered.length) return '';
   return `
-    <section class="rider-history" aria-label="Entregas recientes">
-      <p class="rider-label">Entregas recientes</p>
+    <section class="rider-history" aria-label="Entregas de ejemplo">
+      <p class="rider-label">Entregas de ejemplo · Simulación</p>
       ${delivered.map((order) => `
         <div class="rider-history-row">
           <span class="rider-history-check" aria-hidden="true">✓</span>
@@ -332,30 +330,7 @@ function renderDeliveryCodePanel(order) {
 
 // Bloque avanzado: esconde relay/sala/equipo para que la vista principal sea operativa.
 function renderAdvancedDemo() {
-  const status = getRealtimeStatus();
-  const connection = `${relayStatusLabel(status)}${status.relayEnabled ? ` · sala ${escapeHtml(status.room)}` : ''}`;
-  const retryButton = status.relayEnabled && !status.relayConnected
-    ? '<button class="ghost-button compact" type="button" data-retry-relay>Reintentar conexión</button>'
-    : '';
-  const linkButtons = status.relayEnabled
-    ? `<div class="button-row demo-links">
-        <button class="ghost-button compact" type="button" data-copy-client-link>Copiar link cliente</button>
-        <button class="ghost-button compact" type="button" data-copy-rider-link>Copiar link rider</button>
-        ${retryButton}
-      </div>`
-    : '<p class="form-hint">Para usar dos celulares, abrí la app con el enlace compartido del comercio.</p>';
-  return `
-    <details class="demo-advanced">
-      <summary>Opciones avanzadas</summary>
-      <div class="demo-advanced-body">
-        <div class="summary-row"><span>Conexión</span><strong>${connection}</strong></div>
-        <div class="summary-row"><span>Sala de reparto</span><strong>${escapeHtml(status.room)}</strong></div>
-        <div class="summary-row"><span>ID de equipo</span><strong>${escapeHtml(String(status.deviceId).slice(0, 8))}</strong></div>
-        ${linkButtons}
-        <p class="form-hint">Los pedidos de esta sala se usan sólo para esta presentación comercial.</p>
-      </div>
-    </details>
-  `;
+  return '';
 }
 
 function initials(name) {
@@ -380,45 +355,13 @@ function orderSimulation(order) {
 // Panel de GPS real del rider. No hay ruta simulada ni recorrido de apoyo:
 // el rider comparte su ubicación real (watchPosition) o no comparte nada.
 function renderSimControls(order, sim) {
-  const gpsWatching = isGpsActive();
-  const gpsSession = gpsWatching || sim?.mode === 'gps' || sim?.gpsStatus === 'requesting' || sim?.gpsStatus === 'active';
-  const gpsState = riderGpsShareState(sim);
-  const gpsStatus = gpsProductStatusLabel(sim, gpsState.live);
-  const signalStatus = gpsSignalStatusLabel(sim, gpsState.live);
-  const lastGpsFixAt = sim?.lastGpsFixAt || (sim?.source === 'gps' ? sim?.lastFixAt : null);
-  const lastFix = lastGpsFixAt ? relativeAgeLabel(lastGpsFixAt) : '';
-  const gpsButtonLabel = sim?.gpsStatus === 'requesting'
-    ? 'Esperando permiso…'
-    : gpsSession && !gpsState.live && sim?.gpsStatus === 'active'
-      ? 'Sin GPS en vivo'
-      : gpsSession && sim?.gpsStatus === 'unavailable'
-      ? 'Buscando señal…'
-      : sim?.gpsStatus === 'active' && gpsSession && gpsState.live
-      ? 'Compartiendo ubicación'
-      : 'Compartir ubicación real';
-  const gpsButtonDisabled = sim?.gpsStatus === 'requesting' || gpsSession;
-  const secureHint = globalThis.isSecureContext === false
-    ? '<span class="sim-gps-error">El GPS real requiere HTTPS o localhost seguro. Sin eso no se puede compartir ubicación en vivo.</span>'
-    : '';
-
   return `
-    <div class="sim-panel street-test-panel ${gpsState.live ? 'is-live' : 'is-offline'}" data-street-test>
+    <div class="sim-panel street-test-panel is-offline" data-street-test>
       <div class="sim-head">
-        <span class="rider-label">Ubicación del rider</span>
-        <span class="sim-state ${gpsState.live ? 'live' : ''}">${escapeHtml(gpsStatus)}</span>
+        <span class="rider-label">Seguimiento de la presentación</span>
+        <span class="sim-state">Local</span>
       </div>
-      <p class="form-hint">${escapeHtml(gpsState.headSub)}</p>
-      <div class="button-row street-primary-actions">
-        <button class="primary-button" type="button" data-sim-gps ${gpsButtonDisabled ? 'disabled' : ''}>${escapeHtml(gpsButtonLabel)}</button>
-        <button class="secondary-button" type="button" data-sim-gps-off ${gpsSession ? '' : 'hidden'}>Detener ubicación</button>
-      </div>
-      ${gpsSession || sim?.gpsError || secureHint ? `
-      <div class="sim-gps">
-        <span class="sim-gps-status">${escapeHtml(signalStatus)}${lastFix ? ` · actualizado ${escapeHtml(lastFix)}` : ''}</span>
-        ${sim?.gpsError ? `<span class="sim-gps-error">${escapeHtml(sim.gpsError)}</span>` : ''}
-        ${secureHint}
-      </div>` : ''}
-      ${renderGpsDiagnostics(sim, gpsWatching)}
+      <p class="form-hint">Los avances se confirman con los botones de estado. No se usa GPS, ETA ni ubicación en vivo.</p>
     </div>
   `;
 }

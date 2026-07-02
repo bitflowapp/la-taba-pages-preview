@@ -11,7 +11,7 @@ export const BRAND = Object.freeze({
   // Comercio ficticio reusable que protagoniza la demo (encaja con el catálogo
   // de pizzería actual). Cambialo acá para adaptar la demo a otro rubro.
   demoBusinessName: 'La Taba Pizzería',
-  demoBusinessSubtitle: 'Horno a leña · delivery propio',
+  demoBusinessSubtitle: 'Catálogo de pizzería · recorrido comercial',
   // Claim del COMERCIO demo (no confundir con el tagline del producto).
   demoBusinessClaim: 'Tu pizza favorita, ahora a un toque.',
   demoBusinessClaimSecondary: 'Pedí. Seguí. Disfrutá.',
@@ -23,20 +23,24 @@ export const BUSINESS_CONFIG = Object.freeze({
   businessName: BRAND.demoBusinessName,
   name: BRAND.demoBusinessName,
   subtitle: BRAND.demoBusinessSubtitle,
-  whatsappNumber: '5492996209136',
-  address: 'Mendoza 845/851, Neuquén Capital',
+  // Estos datos deben completarse y verificarse con el comercio antes de
+  // habilitar pedidos reales. La presentación usa valores operativos de ejemplo.
+  whatsappNumber: '',
+  whatsappVerified: false,
+  address: 'Dirección a confirmar con el local',
   // Dirección textual del local. NO hay una coordenada lat/lng verificada para
   // esta dirección, así que el mapa del cliente NO plotea un marcador del local
   // (no inventamos su ubicación). `businessLocation` queda sólo como referencia
   // interna y no se muestra como ubicación real del comercio.
   businessLocationVerified: false,
-  deliveryZone: 'Neuquén centro, barrios cercanos y Cipolletti coordinado',
-  openingHoursLabel: 'Lunes a sábado · 9:00 a 21:00',
-  openingHours: 'Lunes a sábado · 9:00 a 21:00',
+  deliveryZone: 'Cobertura a confirmar con el local',
+  openingHoursLabel: 'Horarios a confirmar con el local',
+  openingHours: 'Horarios a confirmar con el local',
   openHour: 9,
   closeHour: 21,
   deliveryFee: 1990,
   minDeliveryOrder: 5000,
+  orderingDetailsVerified: false,
   adminPin: '1234',
   currency: 'ARS',
   orderPrefix: 'LT',

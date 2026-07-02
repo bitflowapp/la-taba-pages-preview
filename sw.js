@@ -1,4 +1,4 @@
-const CACHE_NAME = 'la-taba-pizzeria-v6-0-cache';
+const CACHE_NAME = 'la-taba-pizzeria-v7-honesty-cache';
 const ASSETS = [
   './',
   './index.html',
@@ -19,6 +19,7 @@ const ASSETS = [
   './js/app.js',
   './js/config.js',
   './js/core/address.js',
+  './js/core/app-mode.js',
   './js/core/business-config-store.js',
   './js/core/business-metrics.js',
   './js/core/business-ops.js',

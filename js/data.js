@@ -4,7 +4,7 @@
 // los `tone` quedan como respaldo tonal para productos creados desde el panel.
 //
 // Categorías:
-//  - Pizzas, Combos, Promos y Bebidas replican la vidriera de la maqueta comercial.
+//  - Pizzas, Combos, Promos y Bebidas forman la vidriera comercial.
 // Nota legal: no se incluyen bebidas alcohólicas. "Bebidas" es una categoría segura.
 export const categories = [
   { id: 'all', name: 'Todos' },
@@ -14,7 +14,7 @@ export const categories = [
   { id: 'bebidas', name: 'Bebidas' },
 ];
 
-const MARKET_NOTE = 'El local confirma disponibilidad antes de preparar tu pedido.';
+const MARKET_NOTE = 'Disponibilidad y preparación a coordinar con el local.';
 
 export const products = [
   // ===== Pizzas =====
@@ -143,12 +143,12 @@ export const products = [
   {
     id: 'p-combo-familiar',
     name: 'Combo familiar',
-    description: '3 pizzas grandes a elección y 2 gaseosas 1.5 L para toda la mesa.',
+    description: '1 Muzzarella + 1 Especial + 1 Fugazzeta + 2 Coca-Cola 1.5 L.',
     categoryId: 'combos',
     tone: 'combo',
     image: 'assets/products/combo-familiar.webp',
     price: 27990,
-    oldPrice: 32460,
+    oldPrice: 34770,
     stock: 6,
     available: true,
     featured: true,
@@ -156,14 +156,14 @@ export const products = [
     combo: true,
     badge: 'Combo',
     unit: 'combo',
-    unitLabel: '3 grandes + 2 gaseosas',
+    unitLabel: '3 pizzas fijas + 2 Coca-Cola',
     marketNote: MARKET_NOTE,
     prepMinutes: 30,
   },
   {
     id: 'p-combo-pizza-bebida',
     name: 'Combo pizza + bebida',
-    description: 'Muzzarella grande con gaseosa 1.5 L bien fría. Resuelve la cena.',
+    description: '1 Muzzarella grande + 1 Coca-Cola 1.5 L bien fría.',
     categoryId: 'combos',
     tone: 'combo',
     image: 'assets/products/pizza-muzzarella.webp',
@@ -184,12 +184,12 @@ export const products = [
   {
     id: 'p-promo-dia',
     name: 'Promo del día: 2 pizzas grandes + gaseosa',
-    description: '2 pizzas grandes a elección y gaseosa 1.5 L. La promo de la maqueta, lista para vender.',
+    description: '1 Muzzarella + 1 Especial + 1 Coca-Cola 1.5 L.',
     categoryId: 'promos',
     tone: 'promo',
     image: 'assets/products/promo-dia.webp',
     price: 19990,
-    oldPrice: 23980,
+    oldPrice: 22380,
     stock: 8,
     available: true,
     featured: true,
@@ -197,7 +197,7 @@ export const products = [
     combo: true,
     badge: 'Promo del día',
     unit: 'promo',
-    unitLabel: '2 grandes + gaseosa 1.5 L',
+    unitLabel: 'Muzzarella + Especial + Coca-Cola',
     marketNote: MARKET_NOTE,
     prepMinutes: 28,
   },
@@ -284,8 +284,9 @@ export const seedOrders = [
       label: 'Av. San Martín 1234, Neuquén centro',
     },
     deliveryMode: 'delivery',
-    paymentMethod: 'Efectivo',
-    notes: 'Tocar timbre. Cambio con $30000.',
+    paymentMethod: 'Pago a coordinar con el local',
+    paymentMethodCode: 'coordinate',
+    notes: 'Tocar timbre.',
     createdAt: new Date(Date.now() - 1000 * 60 * 22).toISOString(),
     status: 'delivered',
     items: [

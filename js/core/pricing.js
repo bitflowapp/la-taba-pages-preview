@@ -1,4 +1,5 @@
 import { getBusinessConfig } from './business-config-store.js';
+import { isDemoMode } from './app-mode.js';
 
 export function normalizeDeliveryMode(value) {
   return value === 'pickup' ? 'pickup' : 'delivery';
@@ -23,7 +24,10 @@ export function normalizeMoneyValue(value, fallback = 0) {
 }
 
 export function getDeliveryFeeForMode(deliveryMode = 'delivery') {
-  return normalizeDeliveryMode(deliveryMode) === 'pickup' ? 0 : normalizeMoneyValue(getBusinessConfig().deliveryFee);
+  if (normalizeDeliveryMode(deliveryMode) === 'pickup') return 0;
+  const config = getBusinessConfig();
+  if (!isDemoMode() && !config.orderingDetailsVerified) return 0;
+  return normalizeMoneyValue(config.deliveryFee);
 }
 
 export function calculateItemsSubtotal(items = []) {

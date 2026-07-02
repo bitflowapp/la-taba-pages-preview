@@ -1,0 +1,59 @@
+{
+  "device": {
+    "serial": "ZY32LHS6PS",
+    "model": "moto g15",
+    "product": "lamu_g",
+    "android": "15",
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36"
+  },
+  "public": {
+    "metrics": {
+      "innerWidth": 432,
+      "innerHeight": 815,
+      "devicePixelRatio": 2.5,
+      "scrollWidth": 432,
+      "overflowX": 0,
+      "url": "http://127.0.0.1:8080/?moto=public&v=honesty"
+    },
+    "orders": 0,
+    "bannerVisible": false,
+    "rolesVisible": false,
+    "pinVisible": false
+  },
+  "demo": {
+    "homeMetrics": {
+      "innerWidth": 432,
+      "innerHeight": 815,
+      "devicePixelRatio": 2.5,
+      "scrollWidth": 432,
+      "overflowX": 0,
+      "url": "http://127.0.0.1:8080/?demo=1"
+    },
+    "bannerVisible": true,
+    "trackingMetrics": {
+      "innerWidth": 432,
+      "innerHeight": 815,
+      "devicePixelRatio": 2.5,
+      "scrollWidth": 432,
+      "overflowX": 0,
+      "url": "http://127.0.0.1:8080/?demo=1#tracking"
+    },
+    "businessMetrics": {
+      "innerWidth": 432,
+      "innerHeight": 815,
+      "devicePixelRatio": 2.5,
+      "scrollWidth": 432,
+      "overflowX": 0,
+      "url": "http://127.0.0.1:8080/?demo=1#business"
+    },
+    "riderMetrics": {
+      "innerWidth": 432,
+      "innerHeight": 815,
+      "devicePixelRatio": 2.5,
+      "scrollWidth": 432,
+      "overflowX": 0,
+      "url": "http://127.0.0.1:8080/?demo=1#rider"
+    },
+    "finalStatus": "delivered"
+  }
+}

@@ -185,6 +185,9 @@ export function renderBusinessDashboard() {
 
   container.innerHTML = `
     <div class="business-main business-inbox-main">
+      <div class="example-data-banner" data-example-data-label>
+        <strong>Simulación</strong><span>Datos de ejemplo para la presentación.</span>
+      </div>
       <header class="business-inbox-hero">
         <div class="business-brand-row">
           <span class="business-brand-mark" aria-hidden="true">
@@ -203,7 +206,7 @@ export function renderBusinessDashboard() {
           </button>
         </div>
         <div class="business-stat-grid" aria-label="Resumen del día">
-          <article class="stat-tile"><span>Pedidos hoy</span><strong>${todayOrdersCount}</strong></article>
+          <article class="stat-tile"><span>Pedidos de ejemplo</span><strong>${todayOrdersCount}</strong></article>
           <article class="stat-tile tone-amber"><span>En preparación</span><strong>${metrics.ordersByStatus.preparing}</strong></article>
           <article class="stat-tile tone-green"><span>En camino</span><strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></article>
           <article class="stat-tile tone-green"><span>Entregados</span><strong>${metrics.directOrdering.deliveredOrders}</strong></article>
@@ -437,13 +440,13 @@ function renderBusinessOverview(state, metrics) {
   return `
     <section class="business-overview-grid" aria-label="Ventas y productos">
       <article class="business-overview-card sales-today-card">
-        <span class="overview-kicker">Ventas del día</span>
+        <span class="overview-kicker">Ventas simuladas</span>
         <strong class="sales-today-amount">${money(metrics.todayTotal)}</strong>
         <small>${metrics.directOrdering.deliveredOrders} ${metrics.directOrdering.deliveredOrders === 1 ? 'pedido entregado' : 'pedidos entregados'} hoy</small>
         ${salesChart(state.orders)}
       </article>
       <article class="business-overview-card top-products-card">
-        <span class="overview-kicker">Productos más vendidos</span>
+        <span class="overview-kicker">Productos de ejemplo</span>
         <ul class="top-products-list">${topList}</ul>
       </article>
     </section>`;
@@ -652,17 +655,13 @@ function renderInboxTrackingPanel(order) {
   if (order.deliveryMode !== 'delivery' || !['ready', 'on_the_way', 'arriving'].includes(order.status)) return '';
 
   const address = normalizeOrderAddressDetails(order);
-  const riderLocation = chooseRiderLocation(orderSimulation(order), order.tracking?.lastLocation);
-  const liveGps = hasLiveRiderLocation(riderLocation);
+  const liveGps = false;
   const title = ['on_the_way', 'arriving'].includes(order.status) ? 'Pedido en reparto' : 'Pedido listo para reparto';
   const riderName = order.delivery?.driverName && order.delivery.driverName !== 'Sin asignar'
     ? order.delivery.driverName
     : '';
-  const gpsText = liveGps ? 'Ubicación real activa' : 'Sin ubicación en vivo';
-  const liveAge = liveGps ? (timeAgo(riderLocation.lastFixAt || riderLocation.timestamp) || 'recién') : '';
-  const gpsDetail = liveGps
-    ? `Última actualización: ${liveAge}`
-    : 'Seguís el pedido por estado y dirección.';
+  const gpsText = 'Seguimiento por estados';
+  const gpsDetail = 'No se usa GPS, ETA ni ubicación en vivo.';
   const actionLabel = 'Seguir reparto';
 
   return `
@@ -681,7 +680,6 @@ function renderInboxTrackingPanel(order) {
         ${riderName ? `<span><small>Rider</small><strong>${escapeHtml(riderName)}</strong></span>` : ''}
         <span><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
       </div>
-      ${liveGps ? renderBusinessTrackingMap(order) : ''}
       <button class="ghost-button compact inbox-tracking-action" type="button" data-order-track="${escapeHtml(order.id)}">${escapeHtml(actionLabel)}</button>
     </section>`;
 }
@@ -740,10 +738,7 @@ function renderBusinessReportsPanel(report, closures = []) {
   // Caja legible para un comerciante: lo principal siempre, los medios de pago
   // sin movimiento no se muestran (un "$ 0 Sin especificar" no ayuda a nadie).
   const paymentTiles = [
-    { label: 'Efectivo', value: report.salesByPaymentMethod.cash, always: true },
-    { label: 'Transferencia', value: report.salesByPaymentMethod.transfer },
-    { label: 'Mercado Pago/link', value: report.salesByPaymentMethod.mercadoPago },
-    { label: 'Sin especificar', value: report.salesByPaymentMethod.unknown },
+    { label: 'Pago a coordinar', value: report.salesByPaymentMethod.unknown, always: true },
     { label: 'Descuentos', value: report.totalDiscounts },
   ]
     .filter((tile) => tile.always || Number(tile.value) > 0)
@@ -825,7 +820,7 @@ function renderCashboxHistory(closures = []) {
       <div class="cashbox-history-row">
         <span>${escapeHtml(dateTime(closure.closedAt))}</span>
         <strong>${money(metrics.netSales)}</strong>
-        <small>Efectivo ${money(payment.cash)} - Transferencia ${money(payment.transfer)} - MP/link ${money(payment.mercadoPago)} - Sin especificar ${money(payment.unknown)}</small>
+        <small>Pago a coordinar ${money(payment.unknown)}</small>
         <em>${metrics.deliveredOrders || 0} entregados - ${metrics.cancelledOrders || 0} cancelados</em>
       </div>`;
   }).join('');
@@ -839,7 +834,7 @@ function renderCashboxHistory(closures = []) {
 function renderDemoGuide() {
   return `
     <details class="demo-guide">
-      <summary>Guía para presentar la demo</summary>
+      <summary>Guía de presentación</summary>
       <ol class="demo-guide-steps">
         <li>El pedido entra como <strong>Nuevo</strong> y queda pendiente de aceptación.</li>
         <li>El equipo lo acepta, prepara y marca <strong>Listo</strong> cuando sale del local.</li>
@@ -848,9 +843,9 @@ function renderDemoGuide() {
         <li>Al marcar <strong>Entregado</strong>, la caja y las métricas se actualizan.</li>
       </ol>
       <p class="form-hint">Tip: usá “Copiar ticket” para pasarle el pedido a la cocina.</p>
-      <p class="form-hint">Esta demo incluye un pedido de ejemplo ya entregado (LT-0001) para que la caja no arranque vacía. Abrí la presentación comercial de PedidoPropio desde <strong>Local → ¿Qué es PedidoPropio?</strong> o agregando <code>?pitch=1</code> al link.</p>
+      <p class="form-hint">La presentación incluye un pedido de ejemplo ya entregado (LT-0001), identificado como simulación.</p>
       <div class="button-row demo-reset-row">
-        <button class="ghost-button compact" type="button" data-demo-reset>Reiniciar demo (borra pedidos de prueba)</button>
+        <button class="ghost-button compact" type="button" data-demo-reset>Reiniciar presentación</button>
       </div>
     </details>`;
 }
@@ -960,7 +955,7 @@ function renderCatalogManager(state) {
         </div>
         <div class="catalog-admin-top-actions">
           <button class="secondary-button compact" type="button" data-catalog-new>Nuevo producto</button>
-          <button class="ghost-button compact" type="button" data-catalog-reset-demo>Restaurar catálogo demo</button>
+          <button class="ghost-button compact" type="button" data-catalog-reset-demo>Restaurar catálogo base</button>
         </div>
       </header>
 
@@ -981,11 +976,11 @@ function renderBusinessSetupPanel() {
     <section class="business-setup-card" data-business-setup aria-labelledby="business-setup-title">
       <header class="business-catalog-head business-setup-head">
         <div>
-          <span class="catalog-admin-kicker">Autoservicio demo</span>
+          <span class="catalog-admin-kicker">Configuración local de muestra</span>
           <h3 id="business-setup-title">Configuración del negocio</h3>
-          <p>Cambiá identidad, contacto, horarios y reglas básicas sin tocar código. Se guarda localmente en esta demo.</p>
+          <p>Cambiá identidad, contacto, horarios y reglas básicas. Se guarda sólo en este dispositivo.</p>
         </div>
-        <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuración demo</button>
+        <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuración base</button>
       </header>
 
       <div class="business-setup-layout">
@@ -1045,7 +1040,7 @@ function renderBusinessSetupPanel() {
           </fieldset>
 
           <fieldset>
-            <legend>Delivery y acceso demo</legend>
+            <legend>Delivery y acceso de presentación</legend>
             <div class="catalog-form-grid">
               <label>
                 <span>Costo de envío</span>
@@ -1066,7 +1061,7 @@ function renderBusinessSetupPanel() {
           ${feedback}
           <div class="catalog-form-actions">
             <button class="primary-button compact" type="submit" data-business-setup-save>Guardar configuración</button>
-            <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuración demo</button>
+            <button class="ghost-button compact" type="button" data-business-setup-reset-demo>Restaurar configuración base</button>
           </div>
         </form>
 
@@ -1313,7 +1308,7 @@ export function handleBusinessAction(target) {
     return {
       handled: true,
       ok: result.ok,
-      message: result.ok ? 'Cierre de caja demo guardado.' : 'No se pudo guardar el cierre demo.',
+      message: result.ok ? 'Cierre simulado guardado.' : 'No se pudo guardar el cierre simulado.',
     };
   }
 
@@ -1371,7 +1366,7 @@ export function handleBusinessAction(target) {
       params.set('reset', '1');
       window.location.href = `${window.location.pathname}?${params.toString()}`;
     }
-    return { handled: true, ok: true, message: 'Reiniciando demo…' };
+    return { handled: true, ok: true, message: 'Reiniciando presentación…' };
   }
 
   if (target.closest('[data-scroll-orders]')) {
@@ -1850,7 +1845,7 @@ function renderCancelDialog(order) {
       <p>Vas a cancelar el pedido <strong>${escapeHtml(order.id)}</strong> · ${escapeHtml(order.customerName)} · ${money(order.total)}.</p>
       ${onTheWay ? `
       <div class="warning-box cancel-onway-warning">
-        <strong>Este pedido ya está en reparto.</strong> El rider está en camino y el cliente lo sigue en vivo: cancelar ahora corta la entrega.
+        <strong>Este pedido ya está en reparto.</strong> El recorrido está en curso: cancelar ahora corta la simulación.
       </div>` : ''}
       <span class="cancel-reason-label">Motivo de la cancelación</span>
       <div class="cancel-reasons">${presets}</div>
@@ -1874,7 +1869,7 @@ function requestBusinessSetupReset() {
 }
 
 export function confirmBusinessSetupReset() {
-  businessSetupFeedback = 'Configuración demo restaurada.';
+  businessSetupFeedback = 'Configuración base restaurada.';
   const result = restoreBusinessSetupDemo({ confirmed: true, updateConfig: updateBusinessConfig });
   closeBusinessSetupResetModal();
   if (typeof document !== 'undefined') {
@@ -1902,11 +1897,11 @@ function closeBusinessSetupResetModal() {
 function renderBusinessSetupResetDialog() {
   return `
     <div class="pin-card cancel-card" data-business-setup-reset-card>
-      <h2>Restaurar configuración demo</h2>
-      <p>Esto restaurará los datos demo del comercio. No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.</p>
+      <h2>Restaurar configuración base</h2>
+      <p>Esto restaurará los datos de muestra del comercio. No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.</p>
       <div class="button-row cancel-actions">
         <button class="secondary-button" type="button" data-business-setup-reset-dismiss>Cancelar</button>
-        <button class="danger-button" type="button" data-business-setup-reset-confirm>Restaurar configuración demo</button>
+        <button class="danger-button" type="button" data-business-setup-reset-confirm>Restaurar configuración base</button>
       </div>
     </div>`;
 }
@@ -1923,7 +1918,7 @@ export function confirmCatalogReset() {
   lastTouchedCatalogProductId = null;
   setState({ products: restoreDemoCatalog(), activeCategory: 'all' });
   closeCatalogResetModal();
-  return { handled: true, ok: true, message: 'Catálogo demo restaurado.' };
+  return { handled: true, ok: true, message: 'Catálogo base restaurado.' };
 }
 
 function openCatalogResetModal() {
@@ -1944,11 +1939,11 @@ function closeCatalogResetModal() {
 function renderCatalogResetDialog() {
   return `
     <div class="pin-card cancel-card" data-catalog-reset-card>
-      <h2>Restaurar catálogo demo</h2>
-      <p>Esto reemplazará el catálogo actual por el catálogo demo. Los productos cargados se perderán en esta demo.</p>
+      <h2>Restaurar catálogo base</h2>
+      <p>Esto reemplazará el catálogo actual por los productos de muestra. Los productos cargados localmente se perderán.</p>
       <div class="button-row cancel-actions">
         <button class="secondary-button" type="button" data-catalog-reset-dismiss>Cancelar</button>
-        <button class="danger-button" type="button" data-catalog-reset-confirm>Restaurar demo</button>
+        <button class="danger-button" type="button" data-catalog-reset-confirm>Restaurar catálogo base</button>
       </div>
     </div>`;
 }
@@ -2029,7 +2024,7 @@ function openDeliveryProofModal(order) {
     <div class="modal-card delivery-proof-modal" data-delivery-proof-modal>
       <span class="proof-badge">Foto de entrega</span>
       <h2>Comprobante ${escapeHtml(order.id)}</h2>
-      <p>Comprobante tomado${proofTime ? `: ${escapeHtml(proofTime)}` : ''}. Evidencia local/demo guardada en este pedido.</p>
+      <p>Comprobante tomado${proofTime ? `: ${escapeHtml(proofTime)}` : ''}. Evidencia local de muestra guardada en este pedido.</p>
       <img class="proof-modal-image" src="${escapeHtml(proof.photoDataUrl)}" alt="Foto de entrega del pedido ${escapeHtml(order.id)}" data-delivery-proof-modal-image />
       <p class="form-hint">Evitá fotografiar personas, DNI o datos privados. Esta foto no se sube a un backend en v1.</p>
       <div class="button-row" style="margin-top:16px">

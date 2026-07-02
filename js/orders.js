@@ -12,7 +12,14 @@ import {
   isRiderQueueOrder,
 } from './core/rider.js';
 import { chooseActiveLiveOrderId } from './core/realtime-sync.js';
-import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
+import {
+  isPlausibleStreetAddress,
+  isValidArgentinePhone,
+  isValidDeliveryZone,
+  normalizePaymentMethod,
+  sanitizeNotes,
+  sanitizeText,
+} from './core/validators.js';
 import { recordCustomerOrder, updateCustomerOrderSnapshot } from './core/customer-history.js';
 import {
   rememberCustomerProfileFromOrder,
@@ -57,11 +64,14 @@ export function createOrderFromCheckout(formValues = {}) {
 
   if (!values.customerName) return { ok: false, message: 'Ingresá el nombre del cliente.' };
   if (!values.customerPhone) return { ok: false, message: 'Ingresá un teléfono de contacto.' };
-  if (values.deliveryMode === 'delivery' && !values.customerAddress) {
-    return { ok: false, message: 'Ingresá calle y número para el envío.' };
+  if (!isValidArgentinePhone(values.customerPhone)) {
+    return { ok: false, message: 'Ingresá un teléfono argentino válido, con código de área.' };
   }
-  if (values.deliveryMode === 'delivery' && values.addressDetails.usesStructured && !values.addressDetails.neighborhood) {
-    return { ok: false, message: 'Ingresá el barrio o zona para el envío.' };
+  if (values.deliveryMode === 'delivery' && !isPlausibleStreetAddress(values.addressDetails.streetLine || values.customerAddress)) {
+    return { ok: false, message: 'Ingresá una calle y número válidos para el envío.' };
+  }
+  if (values.deliveryMode === 'delivery' && values.addressDetails.usesStructured && !isValidDeliveryZone(values.addressDetails.neighborhood)) {
+    return { ok: false, message: 'Seleccioná la localidad o zona para coordinar el envío.' };
   }
 
   const now = new Date().toISOString();
@@ -83,7 +93,7 @@ export function createOrderFromCheckout(formValues = {}) {
   const reorder = buildOrderReorderMetadata(pendingReorder, getState().cart, now);
 
   const orderId = createOrderId();
-  const deliveryCode = values.deliveryMode === 'delivery'
+  const deliveryCode = values.deliveryMode === 'delivery' && !values.previewOnly
     ? buildDeliveryCode(createDeliveryCode(orderId))
     : null;
   const order = {
@@ -100,6 +110,7 @@ export function createOrderFromCheckout(formValues = {}) {
     coupon,
     createdAt: now,
     status: 'received',
+    previewOnly: values.previewOnly,
     items,
     subtotal: totals.subtotal,
     discountTotal: totals.discountTotal,
@@ -125,14 +136,16 @@ export function createOrderFromCheckout(formValues = {}) {
     draft.lastCheckoutDraft = values;
     draft.pendingReorder = null;
 
-    for (const item of items) {
-      const product = draft.products.find((candidate) => candidate.id === item.productId);
-      if (product) product.stock = Math.max(0, product.stock - item.quantity);
+    if (!values.previewOnly) {
+      for (const item of items) {
+        const product = draft.products.find((candidate) => candidate.id === item.productId);
+        if (product) product.stock = Math.max(0, product.stock - item.quantity);
+      }
     }
 
     draft.cart = [];
   });
-  if (values.rememberCustomer) {
+  if (values.rememberCustomer && !values.previewOnly) {
     recordCustomerOrder(order);
     rememberCustomerProfileFromOrder(order, {
       rememberCustomer: true,
@@ -140,7 +153,11 @@ export function createOrderFromCheckout(formValues = {}) {
     });
   }
 
-  return { ok: true, order, message: `Pedido ${order.id} creado.` };
+  return {
+    ok: true,
+    order,
+    message: values.previewOnly ? 'Pedido de demostración preparado.' : `Pedido ${order.id} creado.`,
+  };
 }
 
 function normalizeCheckoutValues(formValues) {
@@ -160,6 +177,7 @@ function normalizeCheckoutValues(formValues) {
     cashChange: sanitizeText(formValues.cashChange, { maxLength: 80 }),
     couponCode: normalizeCouponCode(formValues.couponCode),
     rememberCustomer: Boolean(formValues.rememberCustomer),
+    previewOnly: Boolean(formValues.previewOnly),
   };
 }
 
@@ -542,7 +560,7 @@ function normalizeOrderForMessage(order) {
     deliveryFee: totals.deliveryFee,
     total: totals.total,
     coupon,
-    paymentMethod: sanitizeText(order.paymentMethod, { fallback: 'Efectivo', maxLength: 80 }),
+    paymentMethod: sanitizeText(order.paymentMethod, { fallback: 'Pago a coordinar con el local', maxLength: 80 }),
     cashChange: sanitizeText(order.cashChange, { fallback: '', maxLength: 80 }),
     notes: sanitizeNotes(order.notes),
   };

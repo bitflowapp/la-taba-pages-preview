@@ -44,6 +44,7 @@ import { getRealtimeStatus, initRealtime, onRealtimeStatusChange, retryRelayConn
 import { recenterMapViews, renderMapViews } from './map/map_view.js';
 import { activeTrackingLiveness } from './map/route_geometry.js';
 import { getOrderRepository, getRepositoryDiagnostic, startOrderRepositorySync } from './repositories/repository_factory.js';
+import { isDemoMode, isOperationalView } from './core/app-mode.js';
 import { toggleFavoriteProduct } from './core/customer-preferences.js';
 import {
   dismissIOSGuide,
@@ -198,6 +199,7 @@ async function copyTextToClipboard(text) {
 
 function renderAll() {
   applyBusinessConfig();
+  applyAppMode();
   renderActiveView();
   renderNavigation(activeView);
   renderAdminVisibility();
@@ -208,11 +210,58 @@ function renderAll() {
   renderTracking();
   renderBusinessDashboard();
   renderDeliveryPanel();
+  // Tracking/negocio/rider generan nodos dinámicos después del primer pase.
+  applyWhatsappAvailability();
   updateAddressFieldVisibility();
   renderMapViews();
   // Un render completo ya refleja la vivacidad actual; mantener la firma en
   // sincronía hace que el tick sólo actúe cuando cambia por el paso del tiempo.
   lastLivenessSignature = trackingLivenessSignature();
+}
+
+function applyAppMode() {
+  const demo = isDemoMode();
+  document.body.classList.toggle('is-demo-mode', demo);
+  document.body.classList.toggle('is-public-mode', !demo);
+  document.querySelectorAll('[data-demo-only]').forEach((node) => {
+    node.hidden = !demo;
+    node.setAttribute('aria-hidden', String(!demo));
+  });
+  const banner = document.querySelector('[data-demo-mode-banner]');
+  if (banner) banner.hidden = !demo;
+
+  document.querySelectorAll('[data-admin-pin]').forEach((node) => {
+    node.textContent = demo ? getBusinessConfig().adminPin : '';
+  });
+  const homeLead = document.querySelector('.app-home .home-lead');
+  if (homeLead && !demo) {
+    homeLead.textContent = 'Explorá el catálogo y recorré cómo funcionaría un pedido directo.';
+  }
+
+  const submit = document.querySelector('[data-checkout-submit]');
+  if (submit) submit.textContent = demo ? 'Confirmar pedido simulado' : 'Pedido de demostración';
+  const trustTitle = document.querySelector('[data-checkout-trust-title]');
+  if (trustTitle) trustTitle.textContent = demo
+    ? 'Pedido simulado en este dispositivo.'
+    : 'Recorrido de pedido sin cobro.';
+  const trustCopy = document.querySelector('[data-checkout-trust-copy]');
+  if (trustCopy) trustCopy.textContent = demo
+    ? 'Los estados se actualizan localmente para la presentación.'
+    : 'No se enviará al comercio desde el modo público.';
+  const modeNote = document.querySelector('[data-checkout-mode-note]');
+  if (modeNote) modeNote.textContent = demo
+    ? 'Podés continuar el recorrido desde Cliente, Negocio y Rider.'
+    : 'Este recorrido no envía una compra real.';
+
+  applyWhatsappAvailability();
+}
+
+function applyWhatsappAvailability() {
+  const config = getBusinessConfig();
+  const whatsappReady = Boolean(config.whatsappVerified && String(config.whatsappNumber || '').replace(/\D/g, '').length >= 8);
+  document.querySelectorAll('[data-whatsapp-available]').forEach((node) => {
+    node.hidden = !whatsappReady;
+  });
 }
 
 // Superficies sensibles a la "vivacidad" del GPS y al estado de la conexión. Se
@@ -530,7 +579,10 @@ function bindEvents() {
       button.textContent = 'Creando pedido…';
     }
     try {
-      const values = getCheckoutFormValues();
+      const values = {
+        ...getCheckoutFormValues(),
+        previewOnly: !isDemoMode(),
+      };
       const result = await Promise.resolve(getOrderRepository().createOrder(values));
 
       if (!result.ok) {
@@ -538,7 +590,9 @@ function bindEvents() {
         return;
       }
 
-      showToast('Pedido creado. Ya podés seguirlo en tiempo real.');
+      showToast(isDemoMode()
+        ? 'Pedido creado. Simulación en este dispositivo.'
+        : 'Pedido de demostración preparado. No fue enviado al comercio.');
       setActiveView('tracking');
     } catch (_) {
       showToast('No se pudo crear el pedido. Reintentá.');
@@ -546,7 +600,7 @@ function bindEvents() {
       confirming = false;
       if (button) {
         button.disabled = false;
-        button.textContent = originalLabel || 'Confirmar pedido';
+        button.textContent = originalLabel || (isDemoMode() ? 'Confirmar pedido simulado' : 'Pedido de demostración');
       }
     }
   });
@@ -681,7 +735,8 @@ function openAdminArea(targetArea) {
 function normalizeView(view) {
   const key = String(view || '').replace(/^#/, '').trim().toLowerCase();
   const normalized = VIEW_ALIASES[key] || key;
-  return VIEWS.includes(normalized) ? normalized : 'home';
+  const safe = VIEWS.includes(normalized) ? normalized : 'home';
+  return isOperationalView(safe) ? 'home' : safe;
 }
 
 function viewFromHash() {

@@ -74,22 +74,22 @@ test('repetir pedido no agrega productos no disponibles', () => {
   assert.match(repeated.message, /No se agregaron|no estan disponibles/i);
 });
 
-test('cupon TABA10 aplica 10% sobre productos y queda en el pedido', () => {
+test('cupon publico desactivado no aplica descuentos', () => {
   addToCart('p-muzzarella', 1);
 
   const created = createTestOrder({ couponCode: 'taba10' });
 
   assert.equal(created.ok, true);
-  assert.equal(created.order.coupon.code, 'TABA10');
-  assert.equal(created.order.discountTotal, 899);
-  assert.equal(created.order.total, 8990 - 899 + BUSINESS_CONFIG.deliveryFee);
+  assert.equal(created.order.coupon, null);
+  assert.equal(created.order.discountTotal, 0);
+  assert.equal(created.order.total, 8990 + BUSINESS_CONFIG.deliveryFee);
 });
 
 test('cupon invalido informa error y no descuenta', () => {
   const preview = previewCouponDiscount('NOPE', 10000);
   assert.equal(preview.ok, false);
   assert.equal(preview.discountAmount, 0);
-  assert.match(preview.message, /Cupón inválido/i);
+  assert.match(preview.message, /No hay cupones activos/i);
 
   addToCart('p-muzzarella', 1);
   const created = createTestOrder({ couponCode: 'NOPE' });
@@ -124,7 +124,7 @@ test('observaciones, referencia y cambio efectivo quedan guardados', () => {
   assert.equal(created.order.cashChange, 'Cambio de 20000');
 });
 
-test('negocio ve metodo de pago y descuento', () => {
+test('negocio ve metodo de pago sin inventar descuento', () => {
   addToCart('p-muzzarella', 1);
   const created = createTestOrder({ paymentMethod: 'transfer', couponCode: 'TABA10' });
   assert.equal(created.ok, true);
@@ -143,8 +143,7 @@ test('negocio ve metodo de pago y descuento', () => {
   }
 
   assert.match(container.innerHTML, /Transferencia/);
-  assert.match(container.innerHTML, /TABA10/);
-  assert.match(container.innerHTML, /899/);
+  assert.doesNotMatch(container.innerHTML, /TABA10/);
 });
 
 test('historial del cliente guarda pedidos recientes', () => {

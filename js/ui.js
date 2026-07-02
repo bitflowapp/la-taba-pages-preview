@@ -35,6 +35,7 @@ import {
 } from './core/delivery-code.js';
 import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
 import { renderOrderTimeline } from './core/order-timeline.js';
+import { isDemoMode } from './core/app-mode.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -68,14 +69,16 @@ function restoreStableRealMap(container, shell) {
 }
 
 export function applyBusinessConfig() {
+  const demo = isDemoMode();
+  const detailsVerified = Boolean(getBusinessConfig().orderingDetailsVerified);
   setText('[data-business-name]', getBusinessConfig().businessName);
   setText('[data-business-subtitle]', getBusinessConfig().subtitle);
   setText('.app-home .eyebrow', getBusinessConfig().subtitle || 'Pizzería · delivery propio');
   setText('.app-home .home-lead', `${BRAND.demoBusinessClaim || 'Tu pizza favorita, ahora a un toque.'} ${BRAND.demoBusinessClaimSecondary || 'Pedí. Seguí. Disfrutá.'}`);
-  setText('[data-min-order]', money(getBusinessConfig().minDeliveryOrder));
-  setText('[data-delivery-fee]', money(getBusinessConfig().deliveryFee));
+  setText('[data-min-order]', demo || detailsVerified ? money(getBusinessConfig().minDeliveryOrder) : 'A confirmar');
+  setText('[data-delivery-fee]', demo || detailsVerified ? money(getBusinessConfig().deliveryFee) : 'A confirmar');
   setText('[data-business-profile-name]', getBusinessConfig().businessName);
-  setText('[data-business-whatsapp]', formatWhatsappDisplay(getBusinessConfig().whatsappNumber));
+  setText('[data-business-whatsapp]', formatWhatsappDisplay(getBusinessConfig().whatsappNumber) || 'A confirmar con el local');
   setText('[data-business-address]', getBusinessConfig().address);
   setText('[data-business-hours]', getBusinessConfig().openingHoursLabel);
   setText('[data-business-zone]', getBusinessConfig().deliveryZone);
@@ -98,35 +101,25 @@ export function applyBusinessConfig() {
   // (?pitch=1 / ?demo=1 / ?reset=1, p. ej. http://127.0.0.1:8080/?reset=1&pitch=1)
   // el local se muestra "Abierto" aunque la demo sea fuera de hora. Es un horario
   // ampliado solo para la demo; NO altera la config ni la lógica comercial real.
-  const isOpen = isDemoPresentationMode() || (hour >= openHour && hour < closeHour);
+  const isOpen = demo || (detailsVerified && hour >= openHour && hour < closeHour);
   if (status) {
-    status.textContent = isOpen ? `Abierto · hasta las ${closeHour}:00` : `Cerrado · abre a las ${openHour}:00`;
+    status.textContent = demo
+      ? 'Presentación activa'
+      : detailsVerified
+        ? (isOpen ? `Abierto · hasta las ${closeHour}:00` : `Cerrado · abre a las ${openHour}:00`)
+        : 'Disponibilidad a confirmar';
     status.classList.toggle('is-closed', !isOpen);
   }
   const statusItems = $$('.app-home .status-item');
   const zone = shortZoneLabel(getBusinessConfig().deliveryZone);
-  const chips = [
-    isOpen ? 'Recibimos pedidos ahora' : 'Podés dejar tu pedido para hoy',
-    'Delivery propio o retiro en el local',
-    zone,
-  ];
+  const chips = demo
+    ? ['Pedidos simulados en este equipo', 'Cliente, Negocio y Rider', 'Datos de ejemplo']
+    : detailsVerified
+      ? [isOpen ? 'Recibimos pedidos ahora' : 'Podés dejar tu pedido para hoy', 'Delivery propio o retiro en el local', zone]
+      : ['Recorrido público de muestra', 'Envío o retiro a coordinar', 'Cobertura no confirmada'];
   chips.forEach((label, index) => {
     if (statusItems[index]) statusItems[index].textContent = label;
   });
-}
-
-// Modo presentación/demo: detecta por la URL (?pitch=1 / ?demo=1 / ?reset=1) para
-// forzar el local "Abierto" durante la demo comercial (horario ampliado de
-// demostración). NO modifica el horario real del negocio: openHour/closeHour de
-// config.js siguen vigentes para el uso normal sin esas flags.
-function isDemoPresentationMode() {
-  if (typeof window === 'undefined' || !window.location) return false;
-  try {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('pitch') === '1' || params.get('demo') === '1' || params.get('reset') === '1';
-  } catch (_) {
-    return false;
-  }
 }
 
 // Versión corta de la zona para el chip del home ("Neuquén centro, barrios..." es muy largo).
@@ -545,6 +538,11 @@ export function renderHomeActiveOrder() {
   const container = $('[data-home-active-order]');
   if (!container) return;
   const order = getActiveOrder();
+  if (!isDemoMode()) {
+    container.hidden = true;
+    container.innerHTML = '';
+    return;
+  }
   const isActive = order && order.status !== 'delivered' && order.status !== 'cancelled';
   if (!isActive) {
     container.hidden = true;
@@ -818,12 +816,15 @@ export function renderOrderSummary() {
   renderCheckoutPaymentFields();
   renderCouponMessage(coupon);
 
+  const coordinatedDelivery = deliveryMode === 'delivery'
+    && !isDemoMode()
+    && !getBusinessConfig().orderingDetailsVerified;
   container.innerHTML = `
     <div class="summary-row"><span>Subtotal</span><strong>${money(subtotal)}</strong></div>
     ${discountTotal > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(coupon.code)}</span><strong>-${money(discountTotal)}</strong></div>` : ''}
-    <div class="summary-row"><span>${deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio'}</span><strong>${money(deliveryFee)}</strong></div>
-    ${deliveryMode === 'delivery' ? `<div class="summary-row muted"><span>Pedido mínimo delivery</span><strong>${money(getBusinessConfig().minDeliveryOrder)}</strong></div>` : ''}
-    <div class="summary-row total"><span>Total</span><strong>${money(total)}</strong></div>
+    <div class="summary-row"><span>${deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio'}</span><strong>${coordinatedDelivery ? 'A coordinar' : money(deliveryFee)}</strong></div>
+    ${deliveryMode === 'delivery' && !coordinatedDelivery ? `<div class="summary-row muted"><span>Pedido mínimo delivery</span><strong>${money(getBusinessConfig().minDeliveryOrder)}</strong></div>` : ''}
+    <div class="summary-row total"><span>${coordinatedDelivery ? 'Total estimado de productos' : 'Total'}</span><strong>${money(total)}</strong></div>
   `;
 
   const warning = $('[data-checkout-warning]');
@@ -842,7 +843,7 @@ export function currentDeliveryMode() {
 
 function currentPaymentMethod() {
   const field = $('[name="paymentMethod"]');
-  return field?.value || 'cash';
+  return field?.value || 'coordinate';
 }
 
 function currentCouponCode() {
@@ -864,11 +865,8 @@ function renderCheckoutPaymentFields() {
 
   const note = $('[data-payment-note]');
   if (!note) return;
-  const showCoordinationCopy = paymentMethod === 'transfer' || paymentMethod === 'mercado_pago_future';
-  note.classList.toggle('hidden', !showCoordinationCopy);
-  note.textContent = showCoordinationCopy
-    ? 'El pago se coordina directo con el local. La app no procesa pagos reales.'
-    : '';
+  note.classList.remove('hidden');
+  note.textContent = 'El pago se coordina con el local. Esta presentación no procesa pagos.';
 }
 
 function renderCouponMessage(coupon) {
@@ -945,7 +943,7 @@ export function updateAddressFieldVisibility() {
 // ===== Seguimiento del pedido (vista cliente) =====
 // La línea de pasos (Recibido/En preparación/Listo/En reparto/Entregado) vive
 // en core/order-timeline.js: es la MISMA que ven Negocio y Rider.
-const TRACKING_GPS_NOTE = 'El seguimiento en vivo comienza cuando el repartidor comparte su ubicación.';
+const TRACKING_GPS_NOTE = 'Seguimiento por estados, sin GPS ni ubicación en vivo.';
 
 const TRACKING_STATUS_LABELS = Object.freeze({
   received: 'Recibido',
@@ -975,7 +973,7 @@ function trackingHeadline(order) {
     return {
       kicker: 'Pedido cancelado',
       title: 'Pedido cancelado',
-      sub: order.cancelReason ? `Motivo: ${order.cancelReason}.` : 'Escribinos por WhatsApp y lo resolvemos.',
+      sub: order.cancelReason ? `Motivo: ${order.cancelReason}.` : 'Contactá al local por un canal verificado.',
     };
   }
   if (order.status === 'preparing') {
@@ -1188,11 +1186,16 @@ export function renderTracking() {
     return;
   }
 
+  if (!isDemoMode() || order.previewOnly) {
+    renderPublicPreviewTracking(container, order);
+    return;
+  }
+
   const isCancelled = order.status === 'cancelled';
   const isDelivery = order.deliveryMode !== 'pickup';
   const head = trackingHeadline(order);
   const riderLocation = chooseRiderLocation(getOrderSimulation(order), order.tracking?.lastLocation);
-  const liveRider = hasLiveRiderLocation(riderLocation);
+  const liveRider = false;
   const headSub = head.sub;
   const metricsHtml = order.status === 'delivered'
     ? `
@@ -1203,7 +1206,7 @@ export function renderTracking() {
     : `
           <span><small>Estado</small><strong>${escapeHtml(trackingStatusLabel(order.status))}</strong></span>
           <span><small>Pedido</small><strong>${escapeHtml(order.id)}</strong></span>
-          <span><small>Tiempo estimado</small><strong>${escapeHtml(trackingEtaLabel(order))}</strong></span>
+          <span><small>Etapa</small><strong>${escapeHtml(trackingEtaLabel(order))}</strong></span>
         `;
 
   const itemsHtml = order.items.map((item) => `
@@ -1234,7 +1237,7 @@ export function renderTracking() {
         </div>
         ${trackingDeliveryCodeCard(order)}
         ${renderOrderTimeline(order.status)}
-        ${isCancelled ? `<div class="warning-box">Este pedido fue cancelado.${order.cancelReason ? ` Motivo: ${escapeHtml(order.cancelReason)}.` : ''} Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>` : ''}
+        ${isCancelled ? `<div class="warning-box">Este pedido fue cancelado.${order.cancelReason ? ` Motivo: ${escapeHtml(order.cancelReason)}.` : ''} Si fue un error, contactá al local por un canal verificado.</div>` : ''}
         ${isDelivery ? trackingAddressCard(order) : ''}
         ${isDelivery && !isCancelled ? riderTrackingCard(order, riderLocation) : ''}
         ${isDelivery && !isCancelled && order.status !== 'delivered' && !liveRider
@@ -1248,7 +1251,7 @@ export function renderTracking() {
             <div class="summary-row"><span>Subtotal</span><strong>${money(order.subtotal)}</strong></div>
             ${Number(order.discountTotal || 0) > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(order.coupon?.code || 'Promo')}</span><strong>-${money(order.discountTotal)}</strong></div>` : ''}
             <div class="summary-row"><span>Envío</span><strong>${money(order.deliveryFee)}</strong></div>
-            <div class="summary-row"><span>Pago</span><strong>${escapeHtml(order.paymentMethod || 'Efectivo')}</strong></div>
+            <div class="summary-row"><span>Pago</span><strong>${escapeHtml(order.paymentMethod || 'Pago a coordinar con el local')}</strong></div>
             ${order.cashChange ? `<div class="summary-row"><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></div>` : ''}
             <div class="summary-row total"><span>Total</span><strong>${money(order.total)}</strong></div>
             ${order.notes && order.notes !== 'Sin notas' ? `<p><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>` : ''}
@@ -1256,7 +1259,7 @@ export function renderTracking() {
         </details>
         ${isCancelled ? '' : `
         <div class="button-row track-actions">
-          <button class="secondary-button compact" type="button" data-whatsapp-order>Enviar copia por WhatsApp</button>
+          <button class="secondary-button compact" type="button" data-whatsapp-order data-whatsapp-available hidden>Enviar copia por WhatsApp</button>
           <button class="ghost-button compact" type="button" data-copy-last-order>Copiar pedido</button>
         </div>`}
       </section>
@@ -1269,6 +1272,7 @@ export function renderTracking() {
 // por eso dice "Conectado" y nunca "En vivo" (eso queda para GPS real).
 // Sin esto, si la sala se cae el cliente ve un estado viejo sin enterarse.
 function trackingConnectionPill(order) {
+  if (isDemoMode()) return '';
   const status = getRealtimeStatus();
   if (!status.relayEnabled) return '';
   if (!order || order.status === 'delivered' || order.status === 'cancelled') return '';
@@ -1278,6 +1282,55 @@ function trackingConnectionPill(order) {
       ? '<span class="rt-chip warn">Sin conexión</span>'
       : '<span class="rt-chip warn">Reconectando</span>';
   return `<span class="sheet-connection-pill">${chip}</span>`;
+}
+
+function renderPublicPreviewTracking(container, order) {
+  const address = normalizeOrderAddressDetails(order);
+  const itemsHtml = order.items.map((item) => `
+    <div class="order-line">
+      <span>${item.quantity} × ${escapeHtml(item.name)}</span>
+      <strong>${money(item.quantity * item.unitPrice)}</strong>
+    </div>`).join('');
+  renderWithStableRealMap(container, `
+    <div class="track-layout tracking-map-experience no-map is-preview">
+      <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet data-public-preview>
+        <div class="sheet-head">
+          <span class="track-head-ico">${bagGlyph()}</span>
+          <div class="track-head-text">
+            <small>Recorrido público</small>
+            <strong>Pedido de demostración</strong>
+            <span>No fue enviado al comercio ni generó una compra real.</span>
+          </div>
+        </div>
+        <div class="sheet-metrics">
+          <span><small>Resultado</small><strong>No enviado</strong></span>
+          <span><small>Referencia</small><strong>${escapeHtml(order.id)}</strong></span>
+          <span><small>Total estimado</small><strong>${money(order.total)}</strong></span>
+        </div>
+        <div class="notice-box public-preview-notice">
+          Esta pantalla permite conocer la experiencia. Para recibir pedidos reales hace falta configurar el canal del comercio.
+        </div>
+        ${order.deliveryMode === 'delivery' && address.label ? `
+          <div class="tracking-address-card">
+            <span class="tracking-address-icon" aria-hidden="true">${pinGlyph()}</span>
+            <small>Dirección ingresada para la muestra</small>
+            <strong>${escapeHtml(address.label)}</strong>
+          </div>` : ''}
+        <details class="order-detail">
+          <summary>Ver detalle de la demostración</summary>
+          <div class="order-detail-body">
+            ${itemsHtml}
+            <div class="summary-row"><span>Productos</span><strong>${money(order.subtotal)}</strong></div>
+            <div class="summary-row"><span>Envío</span><strong>A coordinar</strong></div>
+            <div class="summary-row"><span>Pago</span><strong>Sin procesar</strong></div>
+          </div>
+        </details>
+        <div class="button-row track-actions">
+          <button class="primary-button compact" type="button" data-nav-view="catalog">Volver al catálogo</button>
+          <button class="ghost-button compact" type="button" data-copy-last-order>Copiar resumen</button>
+        </div>
+      </section>
+    </div>`, { rolePrefix: 'tracking' });
 }
 
 // Indicador de conexión realtime (en vivo entre equipos / en este equipo).

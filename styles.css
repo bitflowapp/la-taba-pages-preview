@@ -6978,6 +6978,106 @@ body:has(.app-view[data-view="catalog"].is-active) .price strong,
 
 body:has(.app-view[data-view="business"].is-active) .stat-tile span { color: #6f6258; }
 body:has(.app-view[data-view="business"].is-active) .stat-tile strong { color: #161616; }
+
+/* ===== Honestidad comercial: modos público / presentación ===== */
+.demo-mode-banner {
+  position: sticky;
+  top: 70px;
+  z-index: 19;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 18px;
+  color: #5c3b18;
+  background: rgba(255, 239, 205, 0.97);
+  border-top: 1px solid rgba(139, 92, 36, 0.15);
+  border-bottom: 1px solid rgba(139, 92, 36, 0.22);
+  backdrop-filter: blur(12px);
+  font-size: 13px;
+}
+.demo-mode-banner strong { font-weight: 900; }
+.demo-mode-banner span { color: #725333; }
+
+.example-data-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 13px;
+  border: 1px solid rgba(215, 25, 32, 0.22);
+  border-radius: 13px;
+  background: rgba(215, 25, 32, 0.06);
+  color: #6f4d42;
+  font-size: 12.5px;
+}
+.example-data-banner strong { color: #b31217; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.public-preview-notice {
+  margin: 12px 0;
+  padding: 13px 14px;
+  border-radius: 13px;
+  border: 1px solid rgba(215, 25, 32, 0.2);
+  background: rgba(215, 25, 32, 0.055);
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.rider-online-chip.is-local {
+  color: #7a541f;
+  background: rgba(205, 168, 106, 0.17);
+  border-color: rgba(205, 168, 106, 0.42);
+}
+.rider-online-chip.is-local i {
+  background: #c18a35;
+  box-shadow: 0 0 0 4px rgba(205, 168, 106, 0.18);
+}
+
+/* Objetivos táctiles: mínimo cómodo de 44 × 44 px sin cambiar la estética. */
+.compact,
+.icon-button,
+.category-button,
+.rail-link,
+.favorite-button,
+.cart-remove,
+.crumb-link,
+.round-action,
+.pwa-banner-dismiss {
+  min-width: 44px;
+  min-height: 44px;
+}
+.rail-link,
+.cart-remove,
+.crumb-link { display: inline-flex; align-items: center; justify-content: center; }
+.add-round,
+[data-offers-rail] .add-round {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px;
+  min-height: 44px;
+}
+.order-detail > summary,
+.demo-guide > summary,
+.business-extra > summary,
+.cashbox-history > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 760px) {
+  .demo-mode-banner {
+    top: 66px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1px;
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+  [data-offers-rail] .add-round { right: 7px; top: 76px; }
+}
 body:has(.app-view[data-view="business"].is-active) .stat-tile.tone-amber strong { color: #d87925; }
 body:has(.app-view[data-view="business"].is-active) .stat-tile.tone-green strong { color: #2b7a4c; }
 

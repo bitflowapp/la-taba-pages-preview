@@ -157,10 +157,7 @@ export function formatBusinessReportSummary(report, options = {}) {
   return [
     `Cierre ${businessName} - ${formatLocalDate(date)}`,
     `Ventas netas: ${formatMoney(safeReport.netSales)}`,
-    `Efectivo: ${formatMoney(safeReport.salesByPaymentMethod?.cash)}`,
-    `Transferencia: ${formatMoney(safeReport.salesByPaymentMethod?.transfer)}`,
-    `Mercado Pago/link: ${formatMoney(safeReport.salesByPaymentMethod?.mercadoPago)}`,
-    `Sin especificar: ${formatMoney(safeReport.salesByPaymentMethod?.unknown)}`,
+    `Pago a coordinar: ${formatMoney(safeReport.salesByPaymentMethod?.unknown)}`,
     `Descuentos: ${formatMoney(safeReport.totalDiscounts)}`,
     `Pedidos entregados: ${safeReport.deliveredOrders || 0}`,
     `Cancelados: ${safeReport.cancelledOrders || 0}`,

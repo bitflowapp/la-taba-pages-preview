@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
-test('negocio ve reportes/caja desde pedidos reales, cupon, pago y cancelaciones', async ({ browser }) => {
+test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1');
+  await page.goto('/?reset=1&demo=1');
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   const productCard = page.locator('[data-product-grid] .product-card').first();
@@ -20,17 +20,14 @@ test('negocio ve reportes/caja desde pedidos reales, cupon, pago y cancelaciones
     street: 'Roca 123',
     neighborhood: 'Neuquen centro',
     reference: 'Casa gris',
-    notes: 'Reporte con cupon',
+    notes: 'Reporte de muestra',
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.locator('[name="couponCode"]').fill('TABA10');
-  await page.locator('[data-apply-coupon]').click();
-  await expect(page.locator('[data-order-summary]')).toContainText('TABA10');
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, /Pedido creado/);
 
-  await page.goto('/#business');
+  await page.goto('/?demo=1#business');
   await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
@@ -44,12 +41,11 @@ test('negocio ve reportes/caja desde pedidos reales, cupon, pago y cancelaciones
   const report = page.locator('[data-business-report]');
   await expect(report).toContainText('Caja del día');
   await expect(report).toContainText('Ventas de hoy');
-  await expect(report.locator('.day-metric', { hasText: 'Transferencia' })).toContainText(/\$\s*[1-9]/);
-  await expect(report.locator('.day-metric', { hasText: 'Descuentos' })).toContainText(/\$\s*[1-9]/);
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Datos de ejemplo');
   await expect(report.locator('.board-chip.done')).toContainText(/Entregados\s+[1-9]/);
   await expect(report).toContainText(productName);
 
-  await page.goto('/#catalog');
+  await page.goto('/?demo=1#catalog');
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.mobile-nav [data-nav-view="cart"]').click();
   await fillCheckout(page, {
@@ -65,7 +61,7 @@ test('negocio ve reportes/caja desde pedidos reales, cupon, pago y cancelaciones
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, /Pedido creado/);
 
-  await page.goto('/#business');
+  await page.goto('/?demo=1#business');
   await expect(page.locator('[data-inbox-order="LT-0003"]')).toBeVisible();
   await page.locator('[data-inbox-order="LT-0003"] [data-order-cancel]').click();
   await expect(page.locator('[data-cancel-modal]')).toBeVisible();
@@ -77,7 +73,7 @@ test('negocio ve reportes/caja desde pedidos reales, cupon, pago y cancelaciones
   await expect(report).toContainText('Sin stock');
 
   await report.locator('[data-cashbox-close]').click();
-  await waitForToast(page, 'Cierre de caja demo guardado.');
+  await waitForToast(page, 'Cierre simulado guardado.');
   await expect(report).toContainText('Historial de cierres');
   await expect(report.locator('.cashbox-history-row').first()).toContainText(/[1-9]\d* entregados/);
   await expect(report.locator('.cashbox-history-row').first()).toContainText('1 cancelados');

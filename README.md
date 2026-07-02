@@ -1,416 +1,95 @@
-# PedidoPropio · Sistema de pedidos directos para tu comercio (demo)
+# La Taba Pizzería · presentación comercial honesta
 
-**PedidoPropio** es un sistema propio de pedidos online para comercios de barrio (carnicerías, rotiserías, pizzerías, markets). Claim: *Tu sistema de pedidos directo, sin depender de apps con comisión.* Esta demo lo muestra funcionando con un comercio ficticio reusable: **La Taba Pizzería** (pizzas al horno a leña, combos, promos y bebidas).
+Esta PWA estática muestra el catálogo y el recorrido comercial de PedidoPropio para La Taba Pizzería. No tiene backend ni integraciones productivas: no recibe pedidos reales, no procesa pagos, no conecta repartidores y no usa GPS o ubicación en vivo.
 
-El cliente entra a un link, arma el pedido desde el celular y **confirma un pedido propio dentro de la app**. El comercio lo recibe en su panel y sigue el reparto. Enviar una **copia por WhatsApp** queda como acción secundaria opcional. Es la base para que tu comercio tenga un canal propio de pedidos, sin depender por completo de plataformas externas.
+## Los dos modos
 
-> 🔗 **Demo publicada:** https://bitflowapp.github.io/la-taba-pages-preview/
+### Modo público
 
-Es una web/PWA estática, sin backend todavía. Corre en GitHub Pages, Vercel, Netlify o un servidor local.
-
-## En 30 segundos: ¿qué resuelve?
-
-| Antes (WhatsApp suelto) | Con PedidoPropio |
-| --- | --- |
-| Audios y mensajes desordenados | Pedido escrito y completo, siempre igual |
-| Errores al anotar a mano | Productos, cantidades y total automáticos |
-| Todo queda mezclado en el chat | Pedido ordenado con formato consistente |
-| Dependés de una plataforma | Tu marca, tu link, tu reparto |
-
-- **¿Qué es?** Tu propio sistema de pedidos online.
-- **¿Cómo recibe pedidos el negocio?** Pedido interno en la app (panel del negocio y vista rider). WhatsApp es una copia opcional.
-- **¿Qué ve el cliente?** Catálogo por categorías, carrito, confirmar pedido y seguimiento en vivo.
-- **¿Qué controla el dueño?** Pedidos, estados, ventas del día, stock y reparto.
-- **¿Cómo se prueba?** Confirmás un pedido como cliente; con PIN `1234` entrás al panel del negocio y a la vista rider.
-
-## Diferencia honesta frente a una app de delivery
-
-Esta demo no promete reemplazar de golpe a PedidoYa ni traer una red propia de clientes. Sirve para otra cosa: darle a tu comercio un link propio para clientes frecuentes, Instagram, WhatsApp y QR del local. El pedido llega claro, con total calculado y listo para responder.
-
-## Cómo probar la demo
-
-### Como cliente
-1. Abrí la demo o `index.html`.
-2. En **Inicio** elegí una categoría o tocá **Ver catálogo**.
-3. En **Catálogo** filtrá por categoría, agregá productos, abrí **Pedido** y elegí **Envío a domicilio** o **Retiro en local**.
-4. Completá nombre, teléfono y dirección y tocá **Confirmar pedido** (CTA principal).
-5. El pedido queda creado y pasás a **Seguir**, con el estado en vivo. Si querés, **Enviar copia por WhatsApp** es una acción secundaria opcional.
-
-### Como negocio (administrar pedidos)
-1. Tocá **Administrar pedidos** arriba a la derecha o **Panel negocio** desde **Local**.
-2. Ingresá el **PIN demo `1234`**.
-3. Vas a ver: pedidos entrantes, ventas del día, pedidos activos y stock bajo.
-4. Acciones por pedido: **Aceptar pedido → Marcar listo para enviar → Enviar con repartidor → Marcar entregado**, o **Cancelar**.
-
-### Como repartidor (con mapa real, GPS opcional y simulación)
-1. Con el modo negocio activo, marcá un pedido de delivery como **listo** en el panel.
-2. Tocá **Vista rider** desde el panel o **Repartidor** desde **Local**.
-3. Vas a ver el pedido asignado con **Salí del local**, **Llegué al domicilio** y **Pedido entregado**.
-4. En **Simulación de reparto en tiempo real (demo)** podés:
-   - **Iniciar simulación**: el rider sale del local y se mueve solo por una ruta demo sobre mapa real, con progreso y ETA actualizándose.
-   - **Pausar** y **Reiniciar** la simulación.
-   - **Usar mi ubicación como rider demo** (GPS opcional): pide permiso solo al tocarlo; si falla, lo avisa y sigue funcionando con la simulación local.
-5. Mientras la simulación avanza, la pantalla de **Seguir** del cliente se actualiza sola (rider en camino → llegando → entregado), sin recargar.
-
-> **PIN demo: 1234** — acceso de demostración para la presentación.
-
-## Probar con DOS celulares (relay realtime demo)
-
-Para ver cliente y rider en **dos teléfonos distintos** en la misma Wi‑Fi, hay un
-relay realtime propio, **sin dependencias externas** (Node nativo + SSE):
-
-```bash
-npm run realtime:demo
-```
-
-Al arrancar imprime las URLs con la IP de tu PC. Abrí en cada celular (misma red):
+Abrí la URL normal:
 
 ```text
-Cliente: http://IP_PC:8787/?relay=http://IP_PC:8787&room=gps-demo
-Rider:   http://IP_PC:8787/?relay=http://IP_PC:8787&room=gps-demo#rider
+https://bitflowapp.github.io/la-taba-pages-preview/
 ```
 
-Flujo:
-1. El **cliente** arma el pedido y toca **Confirmar pedido**.
-2. El **rider** ve el pedido aparecer solo (estado *Esperando preparación*).
-3. El rider toca **Marcar listo para reparto (demo)** → **Salí del local** → **Iniciar simulación** o **Usar mi ubicación como rider demo**.
-4. El **cliente** ve el rider moverse en el mapa real, el ETA y el estado cambiar **sin recargar**.
-5. El rider toca **Llegué al domicilio** y **Pedido entregado**; el cliente lo ve en vivo.
+El cliente puede explorar el catálogo, armar un pedido y completar el checkout. La acción final prepara un **Pedido de demostración** y aclara que no fue enviado al comercio ni generó una compra real.
 
-La pantalla **Seguir** muestra un chip *En vivo entre equipos · sala …* cuando el
-relay está conectado, o *En vivo en este equipo* en modo local.
+En este modo:
 
-> Sin `?relay=...` la app funciona igual en **modo local** (un solo equipo). En una
-> misma compu también podés abrir dos pestañas (se sincronizan por `BroadcastChannel`).
+- no aparecen Negocio, Rider ni el PIN;
+- no hay pedidos, ventas, métricas ni personas ficticias;
+- no se ofrece WhatsApp porque todavía no hay un número verificado;
+- el pago queda como **Pago a coordinar con el local**;
+- dirección, horarios, cobertura y condiciones no verificadas se muestran como pendientes de confirmación.
 
-### Probar GPS real en iPhone con HTTPS
+### Modo Walter / presentación
 
-La Geolocation API en iPhone/Safari suele requerir **HTTPS o localhost**. Por eso
-la URL LAN `http://192.168.x.x:8787` puede servir para simulación, pero fallar al
-pedir GPS real. Para salir a la calle con el iPhone como rider:
-
-1. Levantá el relay demo local:
-
-```bash
-npm run realtime:demo
-```
-
-2. Exponé ese puerto por HTTPS con Cloudflare Quick Tunnel:
-
-```bash
-cloudflared tunnel --url http://localhost:8787
-```
-
-El comando devuelve una URL tipo `https://xxxx.trycloudflare.com`. Abrí:
+Agregá `?demo=1` a la misma URL:
 
 ```text
-Cliente: https://xxxx.trycloudflare.com/?relay=https://xxxx.trycloudflare.com&room=street-demo
-Rider:   https://xxxx.trycloudflare.com/?relay=https://xxxx.trycloudflare.com&room=street-demo#rider
+https://bitflowapp.github.io/la-taba-pages-preview/?demo=1
 ```
 
-Esto permite GPS real porque la página corre sobre HTTPS. El relay sigue siendo
-una demo en memoria: no lo uses para producción, no compartas datos sensibles y
-cambiá `room` para cada prueba.
+Una franja persistente indica que los pedidos y estados se simulan en el dispositivo. Este modo habilita Cliente, Negocio y Rider para recorrer el flujo completo en un solo teléfono.
 
-Alternativa con ngrok:
+Código de presentación: `1234`.
 
-```bash
-ngrok http 8787
-```
+Recorrido sugerido:
 
-Usá la URL HTTPS que entregue ngrok con el mismo formato de `Cliente` y `Rider`.
-`cloudflared` y `ngrok` no son dependencias npm obligatorias del proyecto.
+1. Como Cliente, agregá un producto, completá datos válidos y confirmá el pedido simulado.
+2. Entrá a Negocio con el código de presentación y avanzá el pedido hasta **Listo**.
+3. Abrí la Vista rider y confirmá salida, llegada, código de entrega y entrega final.
+4. Volvé a Cliente para mostrar el estado entregado.
 
-### Mapa real y GPS
+No se simulan GPS, ETA, mapas ni conexión entre dispositivos. Todos los datos comerciales y las métricas del panel se rotulan como **Simulación** o **Datos de ejemplo**.
 
-La pantalla **Seguir** y la vista **Rider** usan **Leaflet + OpenStreetMap/CARTO** para
-mostrar un mapa real de **Neuquén Capital, Cipolletti y la zona entre ambas
-ciudades**. No requiere API key y funciona en una app estática publicada en
-GitHub Pages. Si Leaflet, el CDN o los tiles no cargan (red móvil floja, CDN
-bloqueado), la app degrada con elegancia: muestra una vista simplificada y, lo
-importante, **sigue actualizando el texto de seguimiento** (fuente de la
-ubicación —*Ubicación rider* / *Ubicación estimada*—, distancia y última
-actualización). Así el reparto se entiende aunque el mapa con tiles no aparezca.
-
-El estilo visual por defecto es **claro blanco/gris** usando CARTO Positron,
-para que Tracking y Rider se sientan como una app comercial de delivery y no como
-un mapa técnico. También queda configurado un modo gris oscuro premium con CARTO
-Dark Matter. Ambos son tiles públicos
-para demo, sin API key; para producción conviene revisar límites de uso o contratar
-un proveedor dedicado.
-
-La ubicación demo está centralizada en `js/config.js`:
-
-- `businessLocation`: local del comercio demo (La Taba Pizzería) en Neuquén Capital.
-- `demoDestinations`: destino demo en Neuquén Capital y destino demo en Cipolletti.
-- `defaultMapBounds`: encuadre inicial Neuquén/Cipolletti.
-- `demoStreetTestDestinations`: presets ficticios para **Modo prueba en calle**
-  (Neuquén Centro, Alto Comahue, Cipolletti Centro, Parque Norte / Bardas y
-  Local La Taba demo).
-- `mapProvider.defaultTheme`: `dark` o `light`.
-- `mapProvider.tileLayers`: CARTO dark/light y OSM estándar como fallback.
-
-La simulación usa polylines aproximadas, no ruteo real todavía:
-
-- Ruta A: reparto interno en Neuquén Capital.
-- Ruta B: Neuquén Capital → Cipolletti.
-
-El **GPS real** usa `navigator.geolocation.watchPosition` solamente cuando el
-rider toca **Usar mi ubicación como rider demo**. Muestra estado, precisión y
-última actualización cuando el navegador entrega datos. En LAN HTTP, especialmente
-en iPhone/Safari, puede fallar porque el GPS suele requerir **HTTPS o localhost**.
-Si falla, el pedido no se traba: queda disponible la simulación y se conserva el
-último fix válido si existía.
-
-### ⚠️ Importante: el realtime de esta rama es una demo local
-
-El relay corre en **tu PC** dentro de la LAN: los mensajes **no salen a internet**
-ni se guardan en disco. El movimiento del rider, el progreso, el ETA y la ubicación
-GPS opcional se calculan en el dispositivo del rider y se replican al cliente por
-el relay local de la sala configurada.
-El estado se persiste en `localStorage` para que un reload no rompa la demo.
-
-El **GPS opcional** usa `navigator.geolocation` solo cuando tocás el botón y la
-ubicación **no se envía a ningún servidor**. En **iPhone/Safari** la geolocalización
-suele requerir **HTTPS**: por HTTP en la LAN puede fallar o pedir permiso y no
-entregar posición. La demo está pensada para funcionar igual con la **simulación**
-aunque el GPS falle; si falla, se muestra el aviso y se mantiene el último estado.
-
-Limitaciones actuales:
-
-- relay en memoria, sin backend productivo;
-- sin auth real de rider/admin;
-- sin pagos;
-- sin ruteo real por calles ni tráfico;
-- ubicación persistente solo en el estado local/demo;
-- tracking fuera de la LAN requiere backend real.
-
-Próxima fase recomendada:
-
-- Supabase/Firebase o WebSocket propio;
-- mapas con ruteo real;
-- auth para rider/admin;
-- ubicación persistente y políticas de privacidad;
-- tracking usable fuera de la LAN;
-- límites claros de proveedor de mapas para producción.
-
-## Ver siempre la última versión (cache / PWA)
-
-La app es PWA con service worker. Si el iPhone muestra una versión vieja:
-
-- Abrí con un parámetro de versión para saltar el cache del navegador: `…/?v=51`.
-- Usá una **sala limpia** para no arrastrar pedidos viejos: `&room=demo-2`.
-- O abrí en **Safari en modo privado**.
-
-El service worker es *network-first* (la versión nueva publicada gana) y al
-cambiar `CACHE_NAME` en `sw.js` se descarta el cache anterior automáticamente.
-
-## Cambiar el WhatsApp del negocio
-
-Editar `js/config.js` y cambiar `whatsappNumber` (formato internacional, sin `+` ni espacios):
-
-```js
-whatsappNumber: '5492996209136', // 549 + característica + número
-```
-
-## Catálogo por categorías
-
-El catálogo está organizado como una app de delivery real: el cliente entra al
-**Inicio** (estado del local, buscador, categorías, promos y combos) y, al elegir
-una categoría o tocar **Ver catálogo**, pasa a la pantalla **Catálogo**, donde ve
-los productos filtrados, las ofertas de esa categoría, puede ordenar
-(recomendados / menor precio / más pedidos) y buscar.
-
-Categorías incluidas (editables en `js/data.js`): Pizzas, Combos, Promos y Bebidas.
-
-> **Nota sobre categorías demo y alcohol.** "Bebidas" y "Gaseosas" son categorías
-> seguras. Las categorías marcadas con `demo: true` (por ejemplo **Lácteos**) son
-> configurables: el comercio puede ocultarlas o editarlas desde `js/data.js` y
-> `BUSINESS_CONFIG.demoCategories`. **No se incluyen bebidas alcohólicas.** Una
-> eventual categoría "Alcohol" debería quedar como demo configurable y editable
-> por el comercio, nunca con ventas falsas ni promesas que no se puedan cumplir.
-
-## Editar productos
-
-Editar `js/data.js`. Cada producto tiene id, nombre, descripción, categoría,
-precio (con `oldPrice` opcional para ofertas), stock, unidad y metadatos sobrios
-para el thumbnail (`tone`). No se usan fotos falsas ni emojis gigantes como
-imagen: el placeholder muestra las iniciales del producto sobre un bloque tonal.
-
-```js
-{
-  id: 'p-muzzarella',
-  name: 'Muzzarella',
-  description: 'La clásica de la casa: muzzarella fundida, salsa y orégano.',
-  categoryId: 'pizzas',
-  tone: 'pizza',         // bloque tonal de respaldo (ver styles.css)
-  image: 'assets/products/pizza-muzzarella.webp', // foto real local (ver docs/image-sources.md)
-  price: 8990,
-  stock: 14,
-  available: true,
-  featured: true,
-  popular: true,         // opcional: aparece como "Más pedida"
-  badge: 'Más pedida',   // opcional
-  unit: 'unidad',
-  unitLabel: 'Grande · 8 porciones',
-  marketNote: 'El local confirma disponibilidad antes de preparar tu pedido.',
-  prepMinutes: 18,
-},
-```
-
-## Qué incluye
-
-- Home tipo app de delivery: estado del local, buscador, categorías, promos y combos (sin lista infinita).
-- Pantalla de catálogo por categorías reales, con ofertas de categoría, orden (recomendados / menor precio / más pedidos) y búsqueda.
-- Carrito con cantidades, control de stock y totales. En el catálogo, los productos ya agregados muestran un **stepper de cantidad** (− 1 +) en la tarjeta.
-- **Confirmar pedido** como CTA principal: crea un pedido interno, muestra estado de carga, evita doble envío y lleva a Seguir. WhatsApp queda como **copia opcional** ("Enviar copia por WhatsApp").
-- Pedido con envío a domicilio o retiro en local, con pedido mínimo para delivery.
-- Home con **acceso directo al pedido en curso** (banner a Seguir si hay un pedido activo).
-- Seguimiento del pedido en vivo, con chip de conexión (en vivo entre equipos / modo local si el relay se reconecta).
-- **Relay realtime demo (Node + SSE, sin dependencias)** para probar cliente y rider en dos celulares de la misma Wi‑Fi (`npm run realtime:demo`).
-- Botón para copiar el pedido y mensaje de WhatsApp completo (cliente, productos, totales, pago, notas y fecha).
-- Modo negocio protegido con PIN demo `1234`.
-- Administración de pedidos con estados, acciones, stock y **métricas comerciales**: ventas del día, ticket promedio, delivery vs retiro y productos más pedidos.
-- Vista de repartidor con cola de pedidos (incluye *Esperando preparación*), botón demo *Marcar listo para reparto*, acciones de salida/entrega y **simulación de reparto en tiempo real** con progreso, ETA y GPS opcional. Lo técnico (relay/sala/IDs y *copiar link cliente/rider*) queda en un bloque *Demo avanzado*.
-- PWA instalable con manifest y service worker (se usa como una app).
-- Código modular en `/js`, fácil de escalar sin romper lo existente.
-
-## Probar localmente
-
-Desde PowerShell:
-
-```powershell
-cd ruta\donde\descomprimiste\la-taba
-.\run-local.ps1
-```
-
-Abrir:
+Para iniciar una presentación limpia:
 
 ```text
-http://localhost:8080
+https://bitflowapp.github.io/la-taba-pages-preview/?reset=1&demo=1
 ```
 
-También podés usar:
+`reset=1` limpia la sesión local una vez y luego desaparece de la URL. La versión de persistencia también invalida automáticamente estados incompatibles de versiones anteriores, incluida la antigua experiencia de carnicería.
 
-```powershell
+## Desarrollo local
+
+Requisitos: Node.js y Python disponibles en el equipo.
+
+```bash
+npm install
 python -m http.server 8080
 ```
 
-## Subir a GitHub Pages
-
-1. Subir el proyecto a un repositorio de GitHub (`git push`).
-2. Asegurarse de que los archivos estén en la raíz del repo.
-3. Ir a `Settings > Pages`.
-4. En `Build and deployment`, elegir:
-   - Source: `Deploy from a branch`
-   - Branch: `main`
-   - Folder: `/root`
-5. Guardar.
-6. Esperar a que GitHub genere la URL pública.
-
-## Cambiar datos del negocio
-
-Editar:
+Abrí:
 
 ```text
-js/config.js
+Público: http://127.0.0.1:8080/
+Walter:  http://127.0.0.1:8080/?demo=1
 ```
 
-Ahí se cambia:
+## Verificación
 
-- nombre del negocio
-- WhatsApp
-- dirección
-- costo de envío
-- pedido mínimo
-- horarios
-- zona de entrega
-- PIN del modo negocio
-
-Ejemplo:
-
-```js
-export const BUSINESS_CONFIG = Object.freeze({
-  businessName: 'La Taba Pizzería', // o BRAND.demoBusinessName
-  whatsappNumber: '5492996209136',
-  deliveryFee: 1200,
-  minDeliveryOrder: 5000,
-  adminPin: '1234',
-});
+```bash
+npm run check
+npm test
+npm run test:e2e
 ```
 
-## Acceso del negocio
+La suite cubre, entre otros casos:
 
-El cliente ve catálogo, mi pedido, seguimiento y datos del comercio.
+- invalidación de persistencia vieja;
+- separación entre público y demo;
+- ocultamiento de roles y PIN;
+- confirmación pública que declara que no fue enviada;
+- validación de teléfono, dirección y zona;
+- cupón público desactivado;
+- pago coordinado sin integración;
+- datos iniciales limpios en público;
+- demo local sin GPS, ETA ni ubicación en vivo;
+- viewport Moto g15 de 432 × 815 sin overflow horizontal.
 
-Para ver la administración de pedidos y el reparto:
+## Configuración pendiente antes de producción
 
-1. Tocar **Administrar pedidos**.
-2. Ingresar PIN `1234`.
-3. Se habilitan las secciones de negocio y repartidor.
+Los datos reales deben confirmarse con el comercio en `js/config.js`. WhatsApp solo se habilita cuando hay un número real y `whatsappVerified` es `true`; las condiciones operativas solo deben habilitarse cuando fueron verificadas.
 
-## Cómo correr los tests
-
-```powershell
-npm run check         # sintaxis JS + assets estáticos
-npm test              # tests unitarios (node:test)
-npm run test:e2e      # e2e de Playwright (incluye cliente/rider en dos contextos vía relay)
-npm run verify        # corre las tres anteriores
-npm run realtime:demo # relay realtime demo para probar con dos celulares
-```
-
-## Estructura técnica
-
-```text
-index.html
-styles.css
-sw.js
-manifest.webmanifest
-assets/
-  icon.svg
-scripts/
-  realtime-relay.mjs   # relay realtime demo (Node nativo + SSE, sin dependencias)
-js/
-  config.js
-  data.js
-  state.js
-  cart.js
-  orders.js
-  business.js
-  delivery.js
-  simulation.js        # controlador de la simulación de reparto (timers + GPS)
-  realtime.js          # puente realtime (BroadcastChannel + relay SSE opcional)
-  ui.js
-  app.js
-  core/
-    simulation.js      # motor puro de la simulación (testeable, sin timers ni DOM)
-    realtime-sync.js   # reconciliación pura de pedidos (last-write-wins, testeable)
-    rider.js
-    order-status.js
-    pricing.js
-    business-metrics.js
-    storage.js
-    validators.js
-```
-
-## Cómo se vería como sistema real (próxima fase)
-
-La base ya está pensada para crecer sin reescribir todo:
-
-1. Fotos reales de los productos del local.
-2. Capa `repositories/` para reemplazar `localStorage` por una base de datos (ej. Supabase).
-3. **Reparto en tiempo real real** entre cliente y rider en celulares distintos, con un backend realtime (Supabase Realtime, Firebase o WebSocket). La simulación actual y el GPS opcional ya dejan preparada la forma del dato (`demoRouteProgress`, `simulatedEtaMinutes`, lat/lng).
-4. Login real de negocio y repartidor.
-5. Pagos online reales (Mercado Pago).
-6. Mapa con tiles reales (Google Maps / Leaflet) para seguir al repartidor.
-7. Notificaciones de pedidos nuevos.
-
-## Qué no tiene todavía (a propósito)
-
-- Base de datos / backend real.
-- Mercado Pago real.
-- Google Maps real.
-- Notificaciones push reales.
-- Login real.
-
-Esto es a propósito: la demo está pensada para **vender y validar primero**, sin pagar infraestructura antes de saber si el negocio avanza.
+Esta rama no agrega backend, Firebase, pagos, GPS ni servicios externos. Convertir el recorrido en operación real requiere una fase separada con alcance, seguridad, privacidad y datos comerciales aprobados.

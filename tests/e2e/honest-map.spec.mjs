@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
-const TRACKING_GPS_NOTE = 'El seguimiento en vivo comienza cuando el repartidor comparte su ubicación.';
+const TRACKING_GPS_NOTE = 'Seguimiento por estados, sin GPS ni ubicación en vivo.';
 
 // Garantiza que sin GPS real el mapa no muestra geografía inventada
 // (ni ruta, ni marcadores LT/CL, ni "En vivo", ni Map/km/ETA falsos) y que el
@@ -13,7 +13,7 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1');
+  await page.goto('/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.mobile-nav [data-nav-view="cart"]').click();
@@ -28,13 +28,13 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
+  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   const tracking = page.locator('[data-tracking-panel]');
 
   // Dirección textual real cargada por el cliente.
-  await expect(tracking).toContainText('Mendoza 851, Centro');
+  await expect(tracking).toContainText('Mendoza 851, Otra localidad');
   await expect(tracking).toContainText('Casa azul');
 
   // Honesto: una sola nota de confianza y sin "En vivo".
@@ -93,11 +93,11 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await context.close();
 });
 
-test('el local muestra la dirección real Mendoza 845/851', async ({ page }) => {
+test('el local no inventa una dirección todavía no verificada', async ({ page }) => {
   await installBrowserStubs(page);
   const guards = installPageGuards(page);
-  await page.goto('/#profile');
+  await page.goto('/?demo=1#profile');
   await expect(page.locator('[data-view="profile"]')).toBeVisible();
-  await expect(page.locator('[data-business-address]')).toContainText('Mendoza 845/851');
+  await expect(page.locator('[data-business-address]').first()).toContainText('Dirección a confirmar con el local');
   await guards.assertClean();
 });

@@ -1,8 +1,9 @@
 import { normalizeMoneyValue } from './pricing.js';
 import { sanitizeText } from './validators.js';
 
-export const DEMO_COUPON_CODE = 'TABA10';
-export const DEMO_COUPON_PERCENT = 10;
+export const DEMO_COUPON_CODE = '';
+export const DEMO_COUPON_PERCENT = 0;
+export const PUBLIC_COUPONS_ENABLED = false;
 
 export function normalizeCouponCode(value) {
   return sanitizeText(value, { fallback: '', maxLength: 24 })
@@ -15,19 +16,11 @@ export function validateCouponCode(value) {
   if (!code) {
     return { ok: false, code: '', discountPercent: 0, message: '' };
   }
-  if (code === DEMO_COUPON_CODE) {
-    return {
-      ok: true,
-      code: DEMO_COUPON_CODE,
-      discountPercent: DEMO_COUPON_PERCENT,
-      message: 'Cupón TABA10 aplicado.',
-    };
-  }
   return {
     ok: false,
     code,
     discountPercent: 0,
-    message: 'Cupón inválido. En esta demo podés usar TABA10.',
+    message: 'No hay cupones activos por el momento.',
   };
 }
 

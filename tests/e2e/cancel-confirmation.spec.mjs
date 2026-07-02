@@ -8,6 +8,9 @@ import { installPageGuards } from './helpers.mjs';
 function seededState(status) {
   const at = new Date().toISOString();
   return {
+    schemaVersion: 3,
+    dataVersion: 'la-taba-pizzeria-v1',
+    appMode: 'demo',
     orders: [{
       id: 'LT-0002',
       customerName: 'Walter Cliente',
@@ -15,11 +18,12 @@ function seededState(status) {
       address: 'Mendoza 851, Centro',
       addressDetails: { streetLine: 'Mendoza 851', neighborhood: 'Centro', reference: 'Portón gris', label: 'Mendoza 851, Centro' },
       deliveryMode: 'delivery',
-      paymentMethod: 'Efectivo',
+      paymentMethod: 'Pago a coordinar con el local',
+      paymentMethodCode: 'coordinate',
       notes: 'Sin sal',
       createdAt: at,
       status,
-      items: [{ productId: 'p-muzzarella', name: 'Vacío premium', icon: '', quantity: 1, unitPrice: 31890, unit: 'kg' }],
+      items: [{ productId: 'p-muzzarella', name: 'Muzzarella', icon: '', quantity: 1, unitPrice: 8990, unit: 'unidad' }],
       subtotal: 31890, deliveryFee: 1990, total: 33880,
       statusHistory: [{ status: 'received', at }],
       delivery: { driverName: 'Sin asignar', driverPhone: '', currentLocationLabel: 'En el local' },
@@ -36,7 +40,7 @@ async function seedAndOpenBusiness(page, state) {
     sessionStorage.clear();
     localStorage.setItem('la_taba_mvp_v4_state', JSON.stringify(saved));
   }, state);
-  await page.goto('/');
+  await page.goto('/?demo=1');
   await page.locator('.mobile-nav [data-nav-view="profile"]').click();
   await page.locator('[data-view="profile"] [data-open-admin-view="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');

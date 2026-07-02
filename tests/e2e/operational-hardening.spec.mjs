@@ -1,157 +1,55 @@
 import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
-// Hardening operativo v1: invariantes que NO deben romperse en producción.
-const TRACKING_GPS_NOTE = 'El seguimiento en vivo comienza cuando el repartidor comparte su ubicación.';
-
-function liveTrackingState(now) {
-  const createdAt = new Date(now - 90_000).toISOString();
-  const fixAt = new Date(now - 2_000).toISOString();
-  const location = {
-    lat: -38.9462, lng: -68.0418, accuracy: 8, heading: 95,
-    timestamp: now - 2_000, lastFixAt: fixAt, source: 'gps', gpsStatus: 'active',
-  };
-  return {
-    orders: [{
-      id: 'LT-LIVE-1', customerName: 'Marco Luna', customerPhone: '2996209136',
-      address: 'Mendoza 851, Centro',
-      addressDetails: { streetLine: 'Mendoza 851', neighborhood: 'Centro', reference: 'Casa azul', label: 'Mendoza 851, Centro' },
-      deliveryMode: 'delivery', paymentMethod: 'Efectivo', notes: 'Tocar timbre',
-      createdAt, status: 'on_the_way',
-      items: [{ productId: 'p-muzzarella', name: 'Vacío premium', icon: '', quantity: 1, unitPrice: 31890, unit: 'kg' }],
-      subtotal: 31890, deliveryFee: 0, total: 31890,
-      statusHistory: [
-        { status: 'received', at: createdAt }, { status: 'preparing', at: createdAt },
-        { status: 'ready', at: createdAt }, { status: 'on_the_way', at: createdAt },
-      ],
-      delivery: { driverName: 'Sin asignar', driverPhone: '', currentLocationLabel: 'En camino' },
-      tracking: { lastLocation: location, updatedAt: fixAt },
-    }],
-    lastOrderId: 'LT-LIVE-1', cart: [],
-    simulation: {
-      orderId: 'LT-LIVE-1', running: false, mode: 'gps', source: 'gps',
-      routeId: 'neuquen-centro', timestamp: now - 2_000, lastFixAt: fixAt,
-      lastGpsFixAt: fixAt, lastPublishedAt: fixAt, gpsStatus: 'active',
-      lat: location.lat, lng: location.lng, accuracy: location.accuracy, heading: location.heading,
-    },
-  };
+async function createDemoOrder(page) {
+  await page.locator('[data-nav-view="catalog"]:visible').first().click();
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await page.locator('[data-nav-view="cart"]:visible').first().click();
+  await fillCheckout(page, {
+    name: 'Hardening QA', phone: '2995550000', street: 'Mendoza 851', neighborhood: 'Centro',
+    reference: 'Casa azul', notes: 'Tocar timbre', deliveryMode: 'delivery',
+  });
+  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
+  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
 }
 
-// Igual que liveTrackingState pero con el último fix cerca del umbral de stale
-// (24s): arranca "en vivo" y debe enfriarse durante el test.
-function staleningTrackingState(now) {
-  const state = liveTrackingState(now);
-  const fixAge = 24_000;
-  const fixAt = new Date(now - fixAge).toISOString();
-  state.orders[0].tracking.lastLocation.timestamp = now - fixAge;
-  state.orders[0].tracking.lastLocation.lastFixAt = fixAt;
-  state.orders[0].tracking.updatedAt = fixAt;
-  state.simulation.timestamp = now - fixAge;
-  state.simulation.lastFixAt = fixAt;
-  state.simulation.lastGpsFixAt = fixAt;
-  state.simulation.lastPublishedAt = fixAt;
-  return state;
-}
-
-test('el tracking del cliente vuelve a seguimiento por estado cuando el GPS real se enfría (tick de frescura)', async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  const page = await context.newPage();
-  const guards = installPageGuards(page);
-  await page.addInitScript((state) => {
-    localStorage.clear(); sessionStorage.clear();
-    localStorage.setItem('la_taba_mvp_v4_state', JSON.stringify(state));
-  }, staleningTrackingState(Date.now()));
-
-  await page.goto('/#tracking');
-  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
-  const tracking = page.locator('[data-tracking-panel]');
-
-  // Al cargar, el fix sigue fresco: hay mapa en vivo y NO la leyenda de fallback.
-  await expect(tracking.locator('[data-real-map]')).toHaveCount(1);
-  await expect(tracking).not.toContainText(TRACKING_GPS_NOTE);
-
-  // El fix se enfría sin que llegue ningún evento nuevo: el tick de frescura
-  // debe degradar a fallback honesto, quitando mapa y marker fantasma.
-  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE, { timeout: 20_000 });
-  await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
-  await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
-
-  // Sigue sin overflow horizontal ni errores JS.
-  const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
-  expect(noOverflow).toBeTruthy();
-  await guards.assertClean();
-  await context.close();
-});
-
-test('con GPS real válido el marker es el disco "R" limpio (sin casco/moto/rojo)', async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  const page = await context.newPage();
-  const guards = installPageGuards(page);
-  await page.addInitScript((state) => {
-    localStorage.clear(); sessionStorage.clear();
-    localStorage.setItem('la_taba_mvp_v4_state', JSON.stringify(state));
-  }, liveTrackingState(Date.now()));
-
-  await page.goto('/#tracking');
-  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+test('un GPS heredado nunca reactiva mapa, marker ni ETA en la presentación', async ({ page }) => {
+  await installBrowserStubs(page);
+  await page.goto('/?demo=1');
+  await createDemoOrder(page);
+  await page.evaluate(async () => {
+    const { updateState } = await import('/js/state.js');
+    updateState((draft) => {
+      const order = draft.orders.find((candidate) => candidate.id === draft.lastOrderId);
+      const now = new Date().toISOString();
+      order.status = 'on_the_way';
+      order.tracking = { lastLocation: { source: 'gps', lat: -38.95, lng: -68.05, lastFixAt: now, timestamp: Date.now() } };
+      draft.simulation = { orderId: order.id, source: 'gps', mode: 'gps', gpsStatus: 'active', lat: -38.95, lng: -68.05, lastFixAt: now };
+    });
+  });
 
   const tracking = page.locator('[data-tracking-panel]');
-  // Mapa + marker premium presente y centrado dentro del mapa.
-  await expect(tracking.locator('[data-real-map]')).toHaveCount(1);
-  const marker = tracking.locator('.lt-rider-marker');
-  await expect(marker).toHaveCount(1, { timeout: 10_000 });
-  // Es el disco simple con la letra R.
-  await expect(marker.locator('.lt-rider-core-letter')).toHaveText('R');
-  // NO reintroduce el marker viejo: nada de moto/casco/ruedas.
-  await expect(tracking.locator('.lt-rider-moto-core, .lt-rider-box, .lt-rider-wheel, .lt-rider-frame')).toHaveCount(0);
-
-  // Marker centrado dentro del recuadro del mapa.
-  const mapBox = await tracking.locator('[data-real-map]').boundingBox();
-  const markerBox = await marker.boundingBox();
-  expect(markerBox.x).toBeGreaterThan(mapBox.x);
-  expect(markerBox.x + markerBox.width).toBeLessThan(mapBox.x + mapBox.width);
-  expect(markerBox.y).toBeGreaterThan(mapBox.y);
-  expect(markerBox.y + markerBox.height).toBeLessThan(mapBox.y + mapBox.height);
-
-  // Sin overflow horizontal ni errores JS fatales.
-  const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
-  expect(noOverflow).toBeTruthy();
-  await guards.assertClean();
-  await context.close();
+  await expect(tracking.locator('[data-real-map], .lt-rider-marker, .map-route')).toHaveCount(0);
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText('Seguimiento por estados, sin GPS ni ubicación en vivo.');
+  await expect(tracking).not.toContainText(/\bETA\b|\d+(?:[.,]\d+)?\s*km/i);
 });
 
-test('?reset=1 limpia el pedido previo y deja el tracking en estado vacío honesto', async ({ browser }) => {
+test('?reset=1 limpia el pedido previo y deja el tracking vacío', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  // 1. Crear un pedido real.
-  await page.goto('/?reset=1');
-  await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
-  await fillCheckout(page, {
-    name: 'Reset QA', phone: '2995550000', street: 'Mendoza 851', neighborhood: 'Centro',
-    reference: 'Casa azul', notes: 'Tocar timbre', payment: 'cash', deliveryMode: 'delivery',
-  });
-  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
+  await page.goto('/?reset=1&demo=1');
+  await createDemoOrder(page);
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
 
-  // 2. Abrir con ?reset=1 => arranca limpio (recarga a URL sin el parámetro).
-  await page.goto('/?reset=1');
-  await expect(page.locator('[data-view="home"]')).toBeVisible();
-  await expect(page).toHaveURL(/#?$|\/$|index/);
-
-  // 3. El pedido viejo ya no existe: tracking vacío honesto, sin mapa ni marker.
-  await page.goto('/#tracking');
+  await page.goto('/?reset=1&demo=1');
+  await page.goto('/?demo=1#tracking');
   const tracking = page.locator('[data-tracking-panel]');
   await expect(tracking).toContainText('No hay un pedido activo');
   await expect(tracking).not.toContainText('LT-0002');
-  await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
-  await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
-
+  await expect(tracking.locator('[data-real-map], .lt-rider-marker')).toHaveCount(0);
   await guards.assertClean();
   await context.close();
 });

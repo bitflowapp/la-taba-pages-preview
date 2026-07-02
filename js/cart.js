@@ -12,6 +12,7 @@ import {
 } from './core/customer-history.js';
 import { previewCouponDiscount } from './core/promotions.js';
 import { buildPendingReorder, buildReorderPreview } from './core/reorder.js';
+import { isDemoMode } from './core/app-mode.js';
 import { getProductById, getState, money, setState, updateState } from './state.js';
 
 function productIsOrderable(product) {
@@ -214,8 +215,10 @@ export function validateCartForCheckout(deliveryMode = 'delivery') {
     };
   }
 
-  if (normalizedDeliveryMode === 'delivery' && subtotal < getBusinessConfig().minDeliveryOrder) {
-    const missing = getBusinessConfig().minDeliveryOrder - subtotal;
+  const config = getBusinessConfig();
+  const enforceMinimum = isDemoMode() || config.orderingDetailsVerified;
+  if (normalizedDeliveryMode === 'delivery' && enforceMinimum && subtotal < config.minDeliveryOrder) {
+    const missing = config.minDeliveryOrder - subtotal;
     return {
       ok: false,
       message: `Te faltan ${money(missing)} para llegar al pedido mínimo de delivery. También podés elegir retiro en local.`,

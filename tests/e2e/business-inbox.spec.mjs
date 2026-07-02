@@ -9,7 +9,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1');
+  await page.goto('/?reset=1&demo=1');
 
   // 1. Negocio sin pedidos: empty state claro.
   await page.locator('.mobile-nav [data-nav-view="profile"]').click();
@@ -43,7 +43,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
+  await waitForToast(page, 'Pedido creado. Simulación en este dispositivo.');
 
   // 3. El negocio ve el pedido en la Central de pedidos, completo.
   // (La nav inferior se oculta en Seguimiento: volvemos al inicio por el logo.)
@@ -63,7 +63,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(card).toContainText('Walter Cliente');
   await expect(card).toContainText('2995551234');
   await expect(card).toContainText('Delivery');
-  await expect(card).toContainText('Mendoza 851, Centro');
+  await expect(card).toContainText('Mendoza 851, Otra localidad');
   await expect(card).toContainText('Portón gris');
   await expect(card).toContainText('Sin sal');
   await expect(card).toContainText('Total a cobrar');
@@ -90,20 +90,20 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
 
   await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
   await expect(page.locator('[data-tracking-panel]')).toContainText('Tiempo estimado de preparación: 20 min.');
-  await page.goto('/#business');
+  await page.goto('/?demo=1#business');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
 
   const managedCard = page.locator('[data-inbox-order="LT-0002"]');
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(managedCard).toContainText('Pedido listo para reparto');
-  await expect(managedCard).toContainText('Sin ubicación en vivo');
+  await expect(managedCard).toContainText('Seguimiento por estados');
   await expect(managedCard.locator('[data-business-tracking="LT-0002"] [data-real-map]')).toHaveCount(0);
 
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(managedCard).toContainText('Pedido en reparto');
-  await expect(managedCard).toContainText('Sin ubicación en vivo');
+  await expect(managedCard).toContainText('Seguimiento por estados');
   await expect(managedCard).toContainText('Seguir reparto');
   await expect(managedCard.locator('[data-business-tracking="LT-0002"] [data-real-map]')).toHaveCount(0);
 
@@ -124,7 +124,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await context.close();
 });
 
-test('Central de pedidos: pedido en reparto muestra GPS real sin inventar mapa', async ({ browser }) => {
+test('Central de pedidos: ignora GPS heredado y muestra sólo estados', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   const page = await context.newPage();
   const guards = installPageGuards(page);
@@ -143,19 +143,18 @@ test('Central de pedidos: pedido en reparto muestra GPS real sin inventar mapa',
     } catch (_) { /* ignore */ }
   }, liveBusinessState(now));
 
-  await page.goto('/#business');
+  await page.goto('/?demo=1#business');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
 
   const card = page.locator('[data-inbox-order="LT-LIVE-1"]');
   await expect(card).toBeVisible();
   await expect(card).toContainText('Pedido en reparto');
-  await expect(card).toContainText('Ubicación real activa');
+  await expect(card).toContainText('Seguimiento por estados');
+  await expect(card).toContainText('No se usa GPS, ETA ni ubicación en vivo.');
   await expect(card).toContainText('Juli Reparto');
-  await expect(card.locator('[data-business-tracking="LT-LIVE-1"] [data-real-map]')).toBeVisible({ timeout: 10_000 });
-  await expect(card.locator('[data-business-tracking="LT-LIVE-1"] [data-real-map]')).toHaveAttribute('data-map-theme', 'light');
-  await expect(card.locator('[data-business-tracking="LT-LIVE-1"] .lt-rider-marker')).toHaveCount(1);
+  await expect(card.locator('[data-business-tracking="LT-LIVE-1"] [data-real-map]')).toHaveCount(0);
+  await expect(card.locator('[data-business-tracking="LT-LIVE-1"] .lt-rider-marker')).toHaveCount(0);
   await expect(card.locator('[data-business-tracking="LT-LIVE-1"] .lt-map-marker')).toHaveCount(0);
-  await expect(card.locator('[data-business-tracking="LT-LIVE-1"]')).not.toContainText(/\bETA\b/i);
   await expect(card.locator('[data-business-tracking="LT-LIVE-1"]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
 
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
@@ -179,6 +178,9 @@ function liveBusinessState(now) {
     gpsStatus: 'active',
   };
   return {
+    schemaVersion: 3,
+    dataVersion: 'la-taba-pizzeria-v1',
+    appMode: 'demo',
     orders: [{
       id: 'LT-LIVE-1',
       customerName: 'Walter Cliente',
@@ -186,11 +188,12 @@ function liveBusinessState(now) {
       address: 'Mendoza 851, Centro',
       addressDetails: { streetLine: 'Mendoza 851', neighborhood: 'Centro', reference: 'Portón gris', label: 'Mendoza 851, Centro' },
       deliveryMode: 'delivery',
-      paymentMethod: 'Efectivo',
+      paymentMethod: 'Pago a coordinar con el local',
+      paymentMethodCode: 'coordinate',
       notes: 'Sin sal',
       createdAt,
       status: 'on_the_way',
-      items: [{ productId: 'p-muzzarella', name: 'Vacío especial', icon: '', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+      items: [{ productId: 'p-muzzarella', name: 'Muzzarella', icon: '', quantity: 1, unitPrice: 8990, unit: 'unidad' }],
       subtotal: 1000,
       deliveryFee: 0,
       total: 1000,

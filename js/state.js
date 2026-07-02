@@ -28,15 +28,17 @@ import {
   getStorageArea,
   safeJsonParse,
   safeStorageGet,
+  safeStorageRemove,
   safeStorageSet,
 } from './core/storage.js';
+import { APP_DATA_VERSION, getAppMode, isDemoMode } from './core/app-mode.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
 import { clampProgress } from './core/simulation.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 import { normalizePendingReorder } from './core/reorder.js';
 
-// v2: incorpora state.businessConfig (identidad/operación del comercio en runtime).
-export const STATE_SCHEMA_VERSION = 2;
+// v3: separa persistencia pública/presentación e invalida el catálogo anterior.
+export const STATE_SCHEMA_VERSION = 3;
 
 export const SORT_OPTIONS = Object.freeze(['recommended', 'price_asc', 'popular']);
 
@@ -48,10 +50,14 @@ const CUSTOMER_CATEGORY_IDS = new Set(['favorites']);
 
 const defaultState = () => {
   const baseProducts = buildBaseProducts();
-  const baseOrders = seedOrders.map((order) => normalizeOrder(order)).filter(Boolean);
+  const baseOrders = isDemoMode()
+    ? seedOrders.map((order) => normalizeOrder(order)).filter(Boolean)
+    : [];
 
   return {
     schemaVersion: STATE_SCHEMA_VERSION,
+    dataVersion: APP_DATA_VERSION,
+    appMode: getAppMode(),
     activeCategory: 'all',
     searchQuery: '',
     sortBy: 'recommended',
@@ -69,6 +75,9 @@ const defaultState = () => {
 
 let state = loadState();
 setRuntimeBusinessConfig(state.businessConfig);
+// Persistir también el arranque limpio: así una migración incompatible no deja
+// el storage vacío ni permite que otro modo reaparezca en la próxima visita.
+persist();
 
 function readAdminFlag() {
   return safeStorageGet(getStorageArea('sessionStorage'), STORAGE_KEYS.adminUnlocked) === 'true';
@@ -76,13 +85,37 @@ function readAdminFlag() {
 
 function loadState() {
   const base = defaultState();
-  const raw = safeStorageGet(getStorageArea('localStorage'), STORAGE_KEYS.state);
+  const localStorage = getStorageArea('localStorage');
+  const raw = safeStorageGet(localStorage, STORAGE_KEYS.state);
   const parsed = safeJsonParse(raw, null);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return { ...base, adminUnlocked: readAdminFlag() };
   }
 
+  if (!isPersistedStateCompatible(parsed, base)) {
+    resetIncompatiblePersistence(localStorage, getStorageArea('sessionStorage'));
+    return { ...base, adminUnlocked: false };
+  }
+
   return { ...hydrateState(parsed, base), adminUnlocked: readAdminFlag() };
+}
+
+export function isPersistedStateCompatible(savedState, baseState = defaultState()) {
+  if (!isPlainObject(savedState)) return false;
+  return savedState.schemaVersion === STATE_SCHEMA_VERSION
+    && savedState.dataVersion === APP_DATA_VERSION
+    && savedState.appMode === baseState.appMode;
+}
+
+function resetIncompatiblePersistence(localStorage, sessionStorage) {
+  [
+    STORAGE_KEYS.state,
+    STORAGE_KEYS.customerFavorites,
+    STORAGE_KEYS.customerHistory,
+    STORAGE_KEYS.customerProfile,
+    STORAGE_KEYS.cashboxClosures,
+  ].forEach((key) => safeStorageRemove(localStorage, key));
+  safeStorageRemove(sessionStorage, STORAGE_KEYS.adminUnlocked);
 }
 
 export function hydrateState(savedState, baseState = defaultState()) {
@@ -99,6 +132,8 @@ export function sanitizeState(nextState, baseState = defaultState()) {
 
   return {
     schemaVersion: STATE_SCHEMA_VERSION,
+    dataVersion: APP_DATA_VERSION,
+    appMode: baseState.appMode || getAppMode(),
     activeCategory: normalizeCategoryId(source.activeCategory, baseState.activeCategory || 'all'),
     searchQuery: sanitizeText(source.searchQuery, { fallback: '', maxLength: 80 }),
     sortBy: normalizeSortBy(source.sortBy),
@@ -235,6 +270,7 @@ function sanitizeCheckoutDraft(draft) {
     cashChange: sanitizeText(draft.cashChange, { maxLength: 80 }),
     couponCode: sanitizeText(draft.couponCode, { maxLength: 24 }).toUpperCase(),
     rememberCustomer: Boolean(draft.rememberCustomer),
+    previewOnly: Boolean(draft.previewOnly),
   };
 }
 
@@ -265,6 +301,7 @@ function normalizeOrder(order) {
     && order.deliveryCode !== null
     && order.deliveryCode !== '';
   const canSeedDeliveryCode = deliveryMode === 'delivery'
+    && !order.previewOnly
     && status !== 'delivered'
     && status !== 'cancelled';
   const deliveryCode = deliveryMode === 'delivery' && (hasStoredDeliveryCode || canSeedDeliveryCode)
@@ -294,6 +331,7 @@ function normalizeOrder(order) {
     cancelReason: sanitizeText(order.cancelReason, { maxLength: 160 }),
     createdAt,
     status,
+    previewOnly: Boolean(order.previewOnly),
     items,
     subtotal: totals.subtotal,
     discountTotal: totals.discountTotal,
@@ -544,6 +582,7 @@ export function statusClass(status) {
 
 export function paymentLabel(value) {
   const labels = {
+    coordinate: 'Pago a coordinar con el local',
     cash: 'Efectivo',
     transfer: 'Transferencia',
     mercado_pago_future: 'Mercado Pago',

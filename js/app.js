@@ -233,25 +233,21 @@ function applyAppMode() {
   document.querySelectorAll('[data-admin-pin]').forEach((node) => {
     node.textContent = demo ? getBusinessConfig().adminPin : '';
   });
-  const homeLead = document.querySelector('.app-home .home-lead');
-  if (homeLead && !demo) {
-    homeLead.textContent = 'Explorá el catálogo y recorré cómo funcionaría un pedido directo.';
-  }
 
   const submit = document.querySelector('[data-checkout-submit]');
-  if (submit) submit.textContent = demo ? 'Confirmar pedido simulado' : 'Pedido de demostración';
+  if (submit) submit.textContent = demo ? 'Confirmar pedido' : 'Crear pedido de muestra';
   const trustTitle = document.querySelector('[data-checkout-trust-title]');
   if (trustTitle) trustTitle.textContent = demo
-    ? 'Pedido simulado en este dispositivo.'
-    : 'Recorrido de pedido sin cobro.';
+    ? 'Pedido de la presentación.'
+    : 'Estás probando la experiencia de pedido.';
   const trustCopy = document.querySelector('[data-checkout-trust-copy]');
   if (trustCopy) trustCopy.textContent = demo
-    ? 'Los estados se actualizan localmente para la presentación.'
-    : 'No se enviará al comercio desde el modo público.';
+    ? 'El estado avanza desde el panel del negocio y la vista de reparto.'
+    : 'Cuando el local active los pedidos online, tu pedido va a llegar directo a la cocina.';
   const modeNote = document.querySelector('[data-checkout-mode-note]');
   if (modeNote) modeNote.textContent = demo
-    ? 'Podés continuar el recorrido desde Cliente, Negocio y Rider.'
-    : 'Este recorrido no envía una compra real.';
+    ? 'Seguí el avance en Seguimiento, Negocio y Rider.'
+    : 'Sin cobros: no se procesa ningún pago ni se envían datos.';
 
   applyWhatsappAvailability();
 }
@@ -591,8 +587,8 @@ function bindEvents() {
       }
 
       showToast(isDemoMode()
-        ? 'Pedido creado. Simulación en este dispositivo.'
-        : 'Pedido de demostración preparado. No fue enviado al comercio.');
+        ? 'Pedido confirmado. Seguilo en Seguimiento.'
+        : 'Listo: pedido de muestra creado. No se envió al local.');
       setActiveView('tracking');
     } catch (_) {
       showToast('No se pudo crear el pedido. Reintentá.');
@@ -600,7 +596,7 @@ function bindEvents() {
       confirming = false;
       if (button) {
         button.disabled = false;
-        button.textContent = originalLabel || (isDemoMode() ? 'Confirmar pedido simulado' : 'Pedido de demostración');
+        button.textContent = originalLabel || (isDemoMode() ? 'Confirmar pedido' : 'Crear pedido de muestra');
       }
     }
   });

@@ -63,10 +63,10 @@ export function renderDeliveryPanel() {
           <span class="sheet-handle" aria-hidden="true"></span>
           ${renderRiderSheetTopbar()}
           <div class="empty-state sheet-empty">
-            <strong>No hay pedidos para repartir.</strong><br />
-            Cuando un cliente confirme un pedido con envío, aparece acá con la dirección, el total a cobrar y los botones de reparto.
+            <strong>Sin entregas asignadas</strong>
+            <p class="empty-state-copy">Cuando el local despache un pedido con envío, aparece acá con dirección, total a cobrar y botones de avance.</p>
             <div class="empty-actions">
-              <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
+              <button class="secondary-button compact" type="button" data-open-admin-view="business">Ir al panel del negocio</button>
             </div>
           </div>
           ${renderRiderHistory()}
@@ -93,8 +93,8 @@ export function renderDeliveryPanel() {
       : order.status === 'delivered' ? 'Pedido entregado'
       : 'Pedido listo para salir';
   const headSub = awaiting
-    ? 'Esperando el siguiente estado de la presentación.'
-    : 'Recorrido local por estados, sin GPS ni ubicación en vivo.';
+    ? 'El local está preparando el pedido.'
+    : 'Avanzá la entrega con los botones de estado.';
 
   const waClient = `https://wa.me/${onlyDigits(order.customerPhone)}`;
 
@@ -153,7 +153,6 @@ export function renderDeliveryPanel() {
         ${renderDeliveryCodePanel(order)}
         ${renderRiderActions(order, { canLeave, canArrive, canDeliver })}
         ${renderOrderTimeline(order.status, { className: 'tight rider-progress' })}
-        ${renderSimControls(order, sim)}
 
         <details class="order-detail rider-order-detail">
           <summary>Ver pedido · ${order.id}</summary>
@@ -187,7 +186,7 @@ function renderRiderSheetTopbar() {
     <div class="rider-sheet-topbar">
       <div class="rider-sheet-title">
         <strong>Mis entregas</strong>
-        <span class="rider-online-chip is-local"><i aria-hidden="true"></i>Modo demo local</span>
+        <span class="rider-online-chip is-local"><i aria-hidden="true"></i>Vista de reparto</span>
       </div>
       <div class="rider-sheet-actions">
         <button class="ghost-button compact" type="button" data-open-admin-view="business">Panel negocio</button>
@@ -228,8 +227,8 @@ function renderRiderHistory(currentOrder = null) {
     .slice(0, 3);
   if (!delivered.length) return '';
   return `
-    <section class="rider-history" aria-label="Entregas de ejemplo">
-      <p class="rider-label">Entregas de ejemplo · Simulación</p>
+    <section class="rider-history" aria-label="Entregas recientes">
+      <p class="rider-label">Entregas recientes</p>
       ${delivered.map((order) => `
         <div class="rider-history-row">
           <span class="rider-history-check" aria-hidden="true">✓</span>

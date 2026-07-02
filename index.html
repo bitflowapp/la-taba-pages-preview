@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#fff8f1" />
-    <meta name="description" content="La Taba Pizzería: catálogo y recorrido comercial de pedidos directos." />
+    <meta name="description" content="La Taba Pizzería: pizzas al horno a leña. Mirá el menú y armá tu pedido." />
     <title>La Taba Pizzería · Pedidos, negocio y reparto</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
@@ -29,13 +29,13 @@
           </span>
           <span class="brand-text">
             <strong class="brand-word" data-business-name>La Taba Pizzería</strong>
-            <small data-business-subtitle>Catálogo de pizzería · recorrido comercial</small>
+            <small data-business-subtitle>Horno a leña · masa madre</small>
           </span>
         </button>
 
         <nav class="desktop-nav" aria-label="Navegación principal">
           <button type="button" data-nav-view="home">Inicio</button>
-          <button type="button" data-nav-view="catalog">Catálogo</button>
+          <button type="button" data-nav-view="catalog">Menú</button>
           <button type="button" data-nav-view="cart">Pedido <span class="mini-badge" data-cart-count>0</span></button>
           <button type="button" data-nav-view="tracking">Seguir</button>
           <button type="button" data-nav-view="profile">Local</button>
@@ -50,8 +50,7 @@
       </header>
 
       <div class="demo-mode-banner" data-demo-mode-banner hidden role="status">
-        <strong>Modo demostración ·</strong>
-        <span>Los pedidos y estados se simulan en este dispositivo.</span>
+        <span class="demo-mode-pill"><i aria-hidden="true"></i><strong>Presentación comercial</strong><span>· escenario de ejemplo en este dispositivo</span></span>
       </div>
 
       <div class="pwa-banner pwa-banner-install" data-pwa-install-banner hidden>
@@ -97,21 +96,19 @@
         <section class="section app-view app-home is-active" data-view="home" aria-hidden="false">
           <div class="home-title">
             <div>
-              <p class="eyebrow">Catálogo de pizzería · recorrido comercial</p>
+              <p class="eyebrow">Horno a leña · masa madre</p>
               <h1 data-business-name>La Taba Pizzería</h1>
-              <p class="home-lead">Explorá el catálogo y recorré cómo funcionaría un pedido directo.</p>
+              <p class="home-lead">Pizzas al horno a leña, promos de la casa y delivery propio.</p>
             </div>
             <button class="secondary-button compact" type="button" data-nav-view="profile">Ver local</button>
           </div>
 
           <div class="status-bar" role="status">
-            <span class="status-dot" data-open-status>Información comercial a confirmar</span>
+            <span class="status-dot" data-open-status>Pedidos online: muy pronto</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Recorrido sin envío real</span>
+            <span class="status-item">Delivery propio y retiro en el local</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Entrega o retiro a coordinar con el local</span>
-            <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Zona a confirmar</span>
+            <span class="status-item">Zona y horarios a confirmar</span>
           </div>
 
           <button class="home-address-chip" type="button" data-nav-view="cart" data-home-address>
@@ -138,15 +135,19 @@
             <div class="promo-banner-copy">
               <span class="promo-kicker">Promo del día</span>
               <strong data-promo-banner-title>2 pizzas grandes<br />+ gaseosa 1.5 L</strong>
-              <span class="promo-price" data-promo-banner-price>$19.990</span>
+              <span class="promo-includes" data-promo-banner-includes>Muzzarella + Especial + Coca-Cola 1.5 L</span>
+              <span class="promo-price-row">
+                <span class="promo-price" data-promo-banner-price>$19.990</span>
+                <span class="promo-save" data-promo-banner-save hidden></span>
+              </span>
             </div>
             <span class="promo-cta">Ver promo</span>
           </button>
 
           <div class="rail-block">
             <div class="rail-head">
-              <h2>Categorías</h2>
-              <button class="rail-link" type="button" data-nav-view="catalog">Ver catálogo ›</button>
+              <h2>Menú</h2>
+              <button class="rail-link" type="button" data-nav-view="catalog">Ver todo el menú ›</button>
             </div>
             <div class="category-strip category-tiles" data-category-strip="home"></div>
           </div>
@@ -169,7 +170,7 @@
 
           <div class="search-box">
             <span aria-hidden="true">⌕</span>
-            <input data-search-input data-search-jump type="search" placeholder="Buscar pizzas, combos, bebidas..." aria-label="Buscar productos" />
+            <input data-search-input data-search-jump type="search" placeholder="Buscar en el menú…" aria-label="Buscar en el menú" />
           </div>
 
           <button class="order-now-cta" type="button" data-nav-view="catalog">
@@ -199,20 +200,20 @@
             </article>
             <article class="role-card role-card-rider">
               <h2>Rider</h2>
-              <p>Tomá entregas y confirmá cada avance del recorrido.</p>
+              <p>Tomá entregas y confirmá cada avance hasta la puerta del cliente.</p>
               <span class="role-card-pin">Código de presentación: <strong data-admin-pin>1234</strong></span>
               <button class="secondary-button compact" type="button" data-home-open-pin="rider">Entrar como rider</button>
             </article>
           </section>
 
-          <aside class="product-intro" aria-label="Acerca de PedidoPropio">
+          <aside class="product-intro" aria-label="Acerca de PedidoPropio" data-demo-only hidden>
             <div class="product-intro-copy">
               <span class="product-intro-badge">
                 <span class="product-intro-dot" aria-hidden="true"></span>
                 <strong data-product-name>PedidoPropio</strong>
               </span>
               <p class="product-intro-claim" data-product-tagline>Tu sistema de pedidos directo, sin depender de apps con comisión.</p>
-              <p class="product-intro-note">Recorrido comercial de <strong data-business-name>La Taba Pizzería</strong> con <strong data-product-name>PedidoPropio</strong>.</p>
+              <p class="product-intro-note"><strong data-business-name>La Taba Pizzería</strong> funcionando sobre <strong data-product-name>PedidoPropio</strong>.</p>
             </div>
             <div class="product-intro-actions">
               <button class="primary-button compact" type="button" data-open-pitch>Ver cómo funciona</button>
@@ -227,7 +228,7 @@
               <nav class="crumbs" aria-label="Ruta de navegación">
                 <button class="crumb-link" type="button" data-nav-view="home">Inicio</button>
                 <span class="crumb-sep" aria-hidden="true">›</span>
-                <span class="crumb-current">Catálogo</span>
+                <span class="crumb-current">Menú</span>
               </nav>
               <h2 data-catalog-title>Todos</h2>
             </div>
@@ -235,7 +236,7 @@
 
           <div class="search-box">
             <span aria-hidden="true">⌕</span>
-            <input data-search-input type="search" placeholder="Buscar pizzas, combos, bebidas..." aria-label="Buscar en el catálogo" />
+            <input data-search-input type="search" placeholder="Buscar en el menú…" aria-label="Buscar en el menú completo" />
           </div>
 
           <div class="category-strip" data-category-strip></div>
@@ -254,7 +255,7 @@
 
           <div class="rail-block" data-catalog-offers-block hidden>
             <div class="rail-head">
-              <h2>Ofertas de la categoría</h2>
+              <h2>Promos de la categoría</h2>
             </div>
             <div class="offers-rail" data-catalog-offers></div>
           </div>
@@ -338,13 +339,11 @@
                 </span>
               </label>
 
-              <label>
-                Forma de pago
-                <select name="paymentMethod">
-                  <option value="coordinate">Pago a coordinar con el local</option>
-                </select>
-              </label>
-              <p class="form-hint payment-note" data-payment-note>No se procesa ningún pago desde esta presentación.</p>
+              <div class="payment-static-row">
+                <span>Pago</span>
+                <strong>Se coordina con el local al confirmar</strong>
+              </div>
+              <input type="hidden" name="paymentMethod" value="coordinate" />
 
               <label>
                 Observaciones del pedido
@@ -355,19 +354,19 @@
               <div class="warning-box hidden" data-checkout-warning></div>
 
               <div class="trust-row" aria-hidden="false">
-                <span class="trust-text"><strong data-checkout-trust-title>Recorrido de pedido sin cobro.</strong><small data-checkout-trust-copy>No se enviará al comercio desde el modo público.</small></span>
+                <span class="trust-text"><strong data-checkout-trust-title>Estás probando la experiencia de pedido.</strong><small data-checkout-trust-copy>Cuando el local active los pedidos online, tu pedido va a llegar directo a la cocina.</small></span>
               </div>
 
               <div class="button-row">
                 <button class="primary-button confirm-button" type="submit" data-checkout-submit>
-                  Pedido de demostración
+                  Crear pedido de muestra
                 </button>
               </div>
               <div class="button-row secondary-actions">
                 <button class="ghost-button" type="button" data-whatsapp-copy data-whatsapp-available hidden>Solicitar por WhatsApp</button>
                 <button class="ghost-button" type="button" data-copy-order>Copiar pedido</button>
               </div>
-              <p class="form-hint" data-checkout-mode-note>Este recorrido no envía una compra real.</p>
+              <p class="form-hint" data-checkout-mode-note>Sin cobros: no se procesa ningún pago ni se envían datos.</p>
             </form>
           </div>
         </section>
@@ -411,7 +410,7 @@
               <ol class="how-strip">
                 <li><strong>1</strong> Armás y confirmás el pedido</li>
                 <li><strong>2</strong> Lo preparamos en el local</li>
-                <li><strong>3</strong> Seguís los estados del recorrido</li>
+                <li><strong>3</strong> Seguís cada avance hasta la entrega</li>
               </ol>
               <p class="form-hint">Acceso con PIN para el equipo del comercio.</p>
               <div class="button-row">
@@ -483,7 +482,7 @@
 
       <nav class="mobile-nav" aria-label="Navegación móvil">
         <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>
-        <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
+        <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Menú</span></button>
         <button type="button" data-nav-view="cart"><span class="mn-ico icon-order" aria-hidden="true"></span><span class="mn-label">Pedido</span><span class="mn-badge" data-cart-count-mobile>0</span></button>
         <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguimiento</span></button>
         <button type="button" data-nav-view="profile"><span class="mn-ico icon-store" aria-hidden="true"></span><span class="mn-label">Local</span></button>
@@ -605,13 +604,13 @@
         </section>
 
         <div class="pitch-cta-grid">
-          <button class="primary-button" type="button" data-close-pitch>Probar el recorrido</button>
+          <button class="primary-button" type="button" data-close-pitch>Probar la experiencia</button>
           <button class="secondary-button" type="button" data-pitch-go="catalog">Ver experiencia cliente</button>
           <button class="secondary-button" type="button" data-pitch-go="business" data-demo-only>Ver panel negocio</button>
           <button class="secondary-button" type="button" data-pitch-go="rider" data-demo-only>Ver vista repartidor</button>
           <button class="ghost-button pitch-cta-whatsapp" type="button" data-pitch-go="whatsapp" data-whatsapp-available hidden>Hablar por WhatsApp</button>
         </div>
-        <p class="form-hint pitch-note">Catálogo de muestra. Los pedidos del recorrido quedan solo en este dispositivo.</p>
+        <p class="form-hint pitch-note">Presentación con menú de muestra: los pedidos quedan solo en este dispositivo.</p>
       </div>
     </dialog>
 

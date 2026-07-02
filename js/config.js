@@ -11,7 +11,7 @@ export const BRAND = Object.freeze({
   // Comercio ficticio reusable que protagoniza la demo (encaja con el catálogo
   // de pizzería actual). Cambialo acá para adaptar la demo a otro rubro.
   demoBusinessName: 'La Taba Pizzería',
-  demoBusinessSubtitle: 'Catálogo de pizzería · recorrido comercial',
+  demoBusinessSubtitle: 'Horno a leña · masa madre',
   // Claim del COMERCIO demo (no confundir con el tagline del producto).
   demoBusinessClaim: 'Tu pizza favorita, ahora a un toque.',
   demoBusinessClaimSecondary: 'Pedí. Seguí. Disfrutá.',

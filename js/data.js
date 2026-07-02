@@ -21,7 +21,7 @@ export const products = [
   {
     id: 'p-muzzarella',
     name: 'Muzzarella',
-    description: 'La clásica de la casa: muzzarella fundida, salsa de tomate y orégano.',
+    description: 'Salsa de tomate, muzzarella fundida, orégano y aceitunas verdes.',
     categoryId: 'pizzas',
     tone: 'pizza',
     image: 'assets/products/pizza-muzzarella.webp',
@@ -39,7 +39,7 @@ export const products = [
   {
     id: 'p-especial',
     name: 'Especial',
-    description: 'Muzzarella, jamón, aceitunas y un toque de rúcula fresca al salir del horno.',
+    description: 'Muzzarella, jamón cocido, morrones asados y aceitunas.',
     categoryId: 'pizzas',
     tone: 'pizza',
     image: 'assets/products/pizza-especial.webp',
@@ -56,7 +56,7 @@ export const products = [
   {
     id: 'p-fugazzeta',
     name: 'Fugazzeta',
-    description: 'Cebolla dulce, doble muzzarella y orégano sobre masa media masa.',
+    description: 'Cebolla dulce, doble muzzarella y orégano, sobre media masa.',
     categoryId: 'pizzas',
     tone: 'pizza',
     image: 'assets/products/pizza-fugazzeta.webp',
@@ -73,7 +73,7 @@ export const products = [
   {
     id: 'p-napolitana',
     name: 'Napolitana',
-    description: 'Rodajas de tomate fresco, ajo, muzzarella y albahaca del día.',
+    description: 'Muzzarella, rodajas de tomate fresco, ajo y albahaca.',
     categoryId: 'pizzas',
     tone: 'pizza',
     image: 'assets/products/pizza-napolitana.webp',
@@ -90,7 +90,7 @@ export const products = [
   {
     id: 'p-pepperoni',
     name: 'Pepperoni',
-    description: 'Pepperoni levemente picante sobre base de muzzarella bien fundida.',
+    description: 'Muzzarella bien fundida y pepperoni levemente picante.',
     categoryId: 'pizzas',
     tone: 'pizza',
     image: 'assets/products/pizza-pepperoni.webp',
@@ -107,7 +107,7 @@ export const products = [
   {
     id: 'p-calabresa',
     name: 'Calabresa',
-    description: 'Longaniza calabresa, muzzarella y aceitunas: sabor fuerte de pizzería.',
+    description: 'Muzzarella, longaniza calabresa y aceitunas negras.',
     categoryId: 'pizzas',
     tone: 'pizza',
     image: 'assets/products/pizza-calabresa.webp',
@@ -124,7 +124,7 @@ export const products = [
   {
     id: 'p-jamon-muzzarella',
     name: 'Jamón y muzzarella',
-    description: 'Jamón cocido natural y muzzarella cremosa, directo de la piedra.',
+    description: 'Muzzarella cremosa y jamón cocido natural, directo de la piedra.',
     categoryId: 'pizzas',
     tone: 'pizza',
     image: 'assets/products/pizza-jamon.webp',
@@ -204,7 +204,7 @@ export const products = [
   {
     id: 'p-promo-muzza-x2',
     name: 'Promo 2 muzzarellas',
-    description: 'Dos muzzarella grandes para compartir, pensadas para el finde.',
+    description: '2 pizzas Muzzarella grandes para compartir.',
     categoryId: 'promos',
     tone: 'promo',
     image: 'assets/products/pizza-muzzarella.webp',
@@ -225,7 +225,7 @@ export const products = [
   {
     id: 'p-coca',
     name: 'Coca-Cola 1.5L',
-    description: 'Gaseosa bien fría para acompañar la pizza.',
+    description: 'Bien fría, botella de 1.5 litros.',
     categoryId: 'bebidas',
     tone: 'drink',
     image: 'assets/products/bebida-cola.webp',
@@ -242,7 +242,7 @@ export const products = [
   {
     id: 'p-sprite',
     name: 'Sprite 1.5L',
-    description: 'Lima-limón bien fría, opción liviana para la mesa.',
+    description: 'Lima-limón bien fría, botella de 1.5 litros.',
     categoryId: 'bebidas',
     tone: 'drink',
     price: 2700,
@@ -257,7 +257,7 @@ export const products = [
   {
     id: 'p-agua',
     name: 'Agua mineral',
-    description: 'Agua mineral sin gas, opción liviana para acompañar.',
+    description: 'Sin gas, botella de 1.5 litros.',
     categoryId: 'bebidas',
     tone: 'drink',
     price: 1600,

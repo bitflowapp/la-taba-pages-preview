@@ -7085,3 +7085,202 @@ body:has(.app-view[data-view="business"].is-active) .stat-tile.tone-green strong
 .business-overview-card .sales-chart { min-height: 110px; padding-top: 8px; margin-top: auto; }
 .business-overview-card .sales-bar { min-height: 84px; }
 .business-overview-card .sales-bar i { display: none; }
+
+/* ============================================================
+   PRODUCT POLISH v1 · menos demo técnica, más pizzería real
+   ============================================================ */
+
+/* ----- Indicador de presentación: pill discreta, no banda ----- */
+.demo-mode-banner,
+body:has(.app-view[data-view="home"].is-active) .demo-mode-banner {
+  position: static;
+  min-height: 0;
+  padding: 8px 14px 0;
+  background: transparent;
+  border: 0;
+  backdrop-filter: none;
+  box-shadow: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+}
+.demo-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 92, 36, 0.28);
+  background: rgba(255, 243, 218, 0.92);
+  color: #6d4a1c;
+  font-size: 11.5px;
+  line-height: 1.2;
+  box-shadow: var(--shadow-sm);
+}
+.demo-mode-pill i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c18a35;
+  box-shadow: 0 0 0 3px rgba(205, 168, 106, 0.25);
+}
+.demo-mode-pill strong { font-weight: 800; white-space: nowrap; }
+.demo-mode-pill > span { color: #8a6a3c; white-space: nowrap; }
+@media (max-width: 480px) {
+  .demo-mode-pill > span { display: none; }
+}
+
+/* ----- Home: jerarquía de héroe más fuerte ----- */
+.app-home .home-title h1 { font-size: clamp(28px, 7.4vw, 38px); font-weight: 900; letter-spacing: -0.03em; }
+.app-home .home-lead { font-size: 15px; line-height: 1.45; color: var(--muted); max-width: 34ch; }
+.status-dot.is-soon { color: #a3670f; }
+.status-dot.is-soon::before { background: #e8930c; box-shadow: 0 0 0 4px rgba(232, 147, 12, 0.16); }
+
+/* ----- Promo del día: composición y ahorro claros ----- */
+.promo-includes {
+  color: rgba(255, 236, 226, 0.94);
+  font-size: 12.5px;
+  line-height: 1.35;
+  max-width: 30ch;
+}
+.promo-price-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.promo-save {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #161616;
+  color: #ffd9c4;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* ----- Checkout: fila de pago estática, sin select huérfano ----- */
+.payment-static-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid rgba(45, 36, 29, 0.12);
+  border-radius: 13px;
+  background: #fffaf4;
+}
+.payment-static-row span { color: var(--muted); font-size: 13px; font-weight: 700; }
+.payment-static-row strong { color: #161616; font-size: 13.5px; text-align: right; }
+
+/* ----- Empty states cuidados ----- */
+.empty-state .empty-state-ico {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 2px auto 10px;
+  border-radius: 18px;
+  color: #d71920;
+  background: rgba(215, 25, 32, 0.08);
+}
+.empty-state strong { font-size: 16.5px; letter-spacing: -0.01em; }
+.empty-state .empty-state-copy { margin: 6px 0 2px; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+
+/* ----- Confirmación del pedido de muestra (modo público) ----- */
+.preview-confirm-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  padding: 10px 6px 4px;
+}
+.preview-confirm-check {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, #e73a3c, #c9161d);
+  box-shadow: 0 14px 28px rgba(215, 25, 32, 0.3);
+}
+.preview-confirm-head small {
+  color: #b31217;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.preview-confirm-head strong { font-size: 22px; letter-spacing: -0.02em; }
+.preview-confirm-head > span { color: var(--muted); font-size: 13.5px; line-height: 1.45; max-width: 36ch; }
+.public-preview-notice {
+  border-color: rgba(43, 122, 76, 0.25);
+  background: rgba(79, 174, 106, 0.08);
+  color: #3c5c48;
+}
+
+/* ----- Panel negocio: banner de contexto sobrio + secciones plegadas ----- */
+.example-data-banner {
+  margin-bottom: 10px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  width: fit-content;
+  font-size: 11.5px;
+  gap: 7px;
+}
+.example-data-banner strong { font-size: 11px; }
+.business-collapsible {
+  border: 1px solid var(--biz-line, #f0dfd0);
+  border-radius: 18px;
+  background: var(--biz-card, #fffefc);
+  box-shadow: 0 10px 24px rgba(74, 49, 30, 0.07);
+  overflow: hidden;
+}
+.business-collapsible > summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 15px 44px 15px 18px;
+  cursor: pointer;
+  list-style: none;
+  position: relative;
+  min-height: 44px;
+}
+.business-collapsible > summary::-webkit-details-marker { display: none; }
+.business-collapsible > summary::after {
+  content: "›";
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg);
+  color: var(--biz-muted, #6f6258);
+  font-size: 20px;
+  transition: transform 0.18s ease;
+}
+.business-collapsible[open] > summary::after { transform: translateY(-50%) rotate(-90deg); }
+.business-collapsible > summary strong { font-size: 15.5px; color: #161616; letter-spacing: -0.01em; }
+.business-collapsible > summary span { font-size: 12px; color: var(--biz-muted, #6f6258); }
+.business-collapsible[open] > summary { border-bottom: 1px solid var(--biz-line, #f0dfd0); }
+.business-collapsible > *:not(summary) { margin: 12px; }
+.business-collapsible .business-report-card,
+.business-collapsible .business-catalog-card,
+.business-collapsible .business-setup-card {
+  border: 0;
+  box-shadow: none;
+  margin: 0;
+  border-radius: 0;
+}
+.inbox-empty { text-align: center; padding: 26px 18px; }
+.inbox-empty strong { font-size: 16px; }
+.inbox-empty p { color: var(--biz-muted, #6f6258); font-size: 13px; max-width: 40ch; margin: 6px auto 0; }
+
+/* ----- Rider: chip de contexto neutro ----- */
+.rider-online-chip.is-local {
+  color: #4c5560;
+  background: rgba(76, 85, 96, 0.08);
+  border-color: rgba(76, 85, 96, 0.24);
+}
+.rider-online-chip.is-local i {
+  background: #6b7683;
+  box-shadow: 0 0 0 3px rgba(107, 118, 131, 0.16);
+}

@@ -73,8 +73,10 @@ export function applyBusinessConfig() {
   const detailsVerified = Boolean(getBusinessConfig().orderingDetailsVerified);
   setText('[data-business-name]', getBusinessConfig().businessName);
   setText('[data-business-subtitle]', getBusinessConfig().subtitle);
-  setText('.app-home .eyebrow', getBusinessConfig().subtitle || 'Pizzería · delivery propio');
-  setText('.app-home .home-lead', `${BRAND.demoBusinessClaim || 'Tu pizza favorita, ahora a un toque.'} ${BRAND.demoBusinessClaimSecondary || 'Pedí. Seguí. Disfrutá.'}`);
+  setText('.app-home .eyebrow', getBusinessConfig().subtitle || 'Horno a leña · masa madre');
+  setText('.app-home .home-lead', demo
+    ? `${BRAND.demoBusinessClaim || 'Tu pizza favorita, ahora a un toque.'} ${BRAND.demoBusinessClaimSecondary || 'Pedí. Seguí. Disfrutá.'}`
+    : 'Pizzas al horno a leña, promos de la casa y delivery propio.');
   setText('[data-min-order]', demo || detailsVerified ? money(getBusinessConfig().minDeliveryOrder) : 'A confirmar');
   setText('[data-delivery-fee]', demo || detailsVerified ? money(getBusinessConfig().deliveryFee) : 'A confirmar');
   setText('[data-business-profile-name]', getBusinessConfig().businessName);
@@ -107,18 +109,23 @@ export function applyBusinessConfig() {
       ? 'Presentación activa'
       : detailsVerified
         ? (isOpen ? `Abierto · hasta las ${closeHour}:00` : `Cerrado · abre a las ${openHour}:00`)
-        : 'Disponibilidad a confirmar';
-    status.classList.toggle('is-closed', !isOpen);
+        : 'Pedidos online: muy pronto';
+    status.classList.toggle('is-closed', detailsVerified && !isOpen);
+    status.classList.toggle('is-soon', !demo && !detailsVerified);
   }
   const statusItems = $$('.app-home .status-item');
+  const seps = $$('.app-home .status-sep');
   const zone = shortZoneLabel(getBusinessConfig().deliveryZone);
   const chips = demo
-    ? ['Pedidos simulados en este equipo', 'Cliente, Negocio y Rider', 'Datos de ejemplo']
+    ? ['Escenario de ejemplo en este dispositivo', 'Cliente · Negocio · Rider']
     : detailsVerified
-      ? [isOpen ? 'Recibimos pedidos ahora' : 'Podés dejar tu pedido para hoy', 'Delivery propio o retiro en el local', zone]
-      : ['Recorrido público de muestra', 'Envío o retiro a coordinar', 'Cobertura no confirmada'];
-  chips.forEach((label, index) => {
-    if (statusItems[index]) statusItems[index].textContent = label;
+      ? ['Delivery propio o retiro en el local', zone]
+      : ['Delivery propio y retiro en el local', 'Zona y horarios a confirmar'];
+  statusItems.forEach((item, index) => {
+    const label = chips[index] || '';
+    item.textContent = label;
+    item.hidden = !label;
+    if (seps[index]) seps[index].hidden = !label;
   });
 }
 
@@ -584,8 +591,8 @@ function renderHomeAddressChip() {
   }
 }
 
-// Banner de promo del día: lee el producto real del catálogo para que precio y
-// disponibilidad nunca queden desactualizados respecto del panel del negocio.
+// Banner de promo del día: lee el producto real del catálogo para que precio,
+// composición y ahorro nunca queden desactualizados respecto del panel.
 function renderPromoBanner() {
   const banner = $('[data-promo-banner]');
   if (!banner) return;
@@ -597,6 +604,18 @@ function renderPromoBanner() {
   if (price) price.textContent = money(promo.price);
   const title = $('[data-promo-banner-title]', banner);
   if (title && promo.id !== 'p-promo-dia') title.textContent = promo.name;
+  const includes = $('[data-promo-banner-includes]', banner);
+  if (includes) {
+    const composition = String(promo.description || '').replace(/\.$/, '');
+    includes.textContent = composition ? `Incluye ${composition.charAt(0).toLowerCase()}${composition.slice(1)}` : '';
+    includes.hidden = !composition;
+  }
+  const save = $('[data-promo-banner-save]', banner);
+  if (save) {
+    const saving = Number(promo.oldPrice || 0) - Number(promo.price || 0);
+    save.hidden = !(saving > 0);
+    if (saving > 0) save.textContent = `Ahorrás ${money(saving)}`;
+  }
 }
 
 function renderCustomerActions() {
@@ -762,9 +781,15 @@ function renderCartList() {
     const hasActiveOrder = activeOrder && !['delivered', 'cancelled'].includes(activeOrder.status);
     const latestOrder = getLatestCustomerOrder();
     container.innerHTML = `
-      <div class="empty-state">
-        <strong>El carrito está vacío.</strong><br />
-        Agregá productos del catálogo para armar el pedido.
+      <div class="empty-state cart-empty-state">
+        <span class="empty-state-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none">
+            <path d="M12 21 3.6 6.6A16.4 16.4 0 0 1 12 4.4a16.4 16.4 0 0 1 8.4 2.2L12 21Z" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <circle cx="10" cy="9" r="1.2" fill="currentColor"/><circle cx="14.2" cy="10.6" r="1.2" fill="currentColor"/>
+          </svg>
+        </span>
+        <strong>Tu pedido está vacío</strong>
+        <p class="empty-state-copy">Sumá una pizza del menú y seguí desde acá.</p>
         ${hasActiveOrder ? `
         <div class="cart-active-order">
           <small>Pedido en curso</small>
@@ -778,7 +803,7 @@ function renderCartList() {
           <button class="secondary-button compact" type="button" data-repeat-order="${escapeHtml(latestOrder.id)}">Repetir último pedido</button>
         </div>` : ''}
         <div class="empty-actions">
-          <button class="secondary-button compact" type="button" data-nav-view="home">Ver productos</button>
+          <button class="primary-button compact" type="button" data-nav-view="catalog">Ver el menú</button>
         </div>
       </div>
     `;
@@ -1175,10 +1200,10 @@ export function renderTracking() {
       <div class="track-layout tracking-map-experience is-empty no-map">
         <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
           <div class="empty-state sheet-empty">
-          <strong>No hay un pedido activo.</strong><br />
-          Cuando confirmes una compra, vas a seguir acá el estado del pedido y la dirección de entrega.
+          <strong>Todavía no hay un pedido en curso</strong>
+          <p class="empty-state-copy">Cuando armes tu pedido, acá vas a ver cada avance hasta la entrega.</p>
           <div class="empty-actions">
-            <button class="secondary-button compact" type="button" data-nav-view="catalog">Ver catálogo</button>
+            <button class="primary-button compact" type="button" data-nav-view="catalog">Ver el menú</button>
           </div>
           </div>
         </section>
@@ -1294,30 +1319,32 @@ function renderPublicPreviewTracking(container, order) {
   renderWithStableRealMap(container, `
     <div class="track-layout tracking-map-experience no-map is-preview">
       <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet data-public-preview>
-        <div class="sheet-head">
-          <span class="track-head-ico">${bagGlyph()}</span>
-          <div class="track-head-text">
-            <small>Recorrido público</small>
-            <strong>Pedido de demostración</strong>
-            <span>No fue enviado al comercio ni generó una compra real.</span>
-          </div>
+        <div class="preview-confirm-head">
+          <span class="preview-confirm-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+              <path d="m5 12.5 4.4 4.4L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <small>Pedido de muestra</small>
+          <strong>¡Así de fácil se pide!</strong>
+          <span>Tu pedido quedó armado como muestra: no se envió al local ni se cobró nada.</span>
         </div>
         <div class="sheet-metrics">
-          <span><small>Resultado</small><strong>No enviado</strong></span>
           <span><small>Referencia</small><strong>${escapeHtml(order.id)}</strong></span>
           <span><small>Total estimado</small><strong>${money(order.total)}</strong></span>
+          <span><small>Pago</small><strong>Sin procesar</strong></span>
         </div>
         <div class="notice-box public-preview-notice">
-          Esta pantalla permite conocer la experiencia. Para recibir pedidos reales hace falta configurar el canal del comercio.
+          Cuando el local active los pedidos online, este mismo pedido va a llegar directo a la cocina.
         </div>
         ${order.deliveryMode === 'delivery' && address.label ? `
           <div class="tracking-address-card">
             <span class="tracking-address-icon" aria-hidden="true">${pinGlyph()}</span>
-            <small>Dirección ingresada para la muestra</small>
+            <small>Dirección ingresada</small>
             <strong>${escapeHtml(address.label)}</strong>
           </div>` : ''}
         <details class="order-detail">
-          <summary>Ver detalle de la demostración</summary>
+          <summary>Ver detalle del pedido de muestra</summary>
           <div class="order-detail-body">
             ${itemsHtml}
             <div class="summary-row"><span>Productos</span><strong>${money(order.subtotal)}</strong></div>
@@ -1326,7 +1353,7 @@ function renderPublicPreviewTracking(container, order) {
           </div>
         </details>
         <div class="button-row track-actions">
-          <button class="primary-button compact" type="button" data-nav-view="catalog">Volver al catálogo</button>
+          <button class="primary-button compact" type="button" data-nav-view="catalog">Volver al menú</button>
           <button class="ghost-button compact" type="button" data-copy-last-order>Copiar resumen</button>
         </div>
       </section>

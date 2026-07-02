@@ -82,6 +82,9 @@ let businessOrderQuery = '';
 let businessReportPeriod = 'today';
 let businessReportCopyFallback = '';
 let businessSetupFeedback = '';
+// Secciones secundarias del panel (caja, catálogo, configuración): arrancan
+// plegadas para que la operación de pedidos sea la protagonista.
+const businessSectionsOpen = { reports: false, catalog: false, setup: false };
 // Pedido en espera de confirmación de cancelación (el primer tap NO cancela:
 // abre el modal de confirmación con motivo obligatorio).
 let pendingCancelOrderId = null;
@@ -186,7 +189,7 @@ export function renderBusinessDashboard() {
   container.innerHTML = `
     <div class="business-main business-inbox-main">
       <div class="example-data-banner" data-example-data-label>
-        <strong>Simulación</strong><span>Datos de ejemplo para la presentación.</span>
+        <strong>Vista de operación</strong><span>Datos de ejemplo de la presentación.</span>
       </div>
       <header class="business-inbox-hero">
         <div class="business-brand-row">
@@ -206,7 +209,7 @@ export function renderBusinessDashboard() {
           </button>
         </div>
         <div class="business-stat-grid" aria-label="Resumen del día">
-          <article class="stat-tile"><span>Pedidos de ejemplo</span><strong>${todayOrdersCount}</strong></article>
+          <article class="stat-tile"><span>Pedidos hoy</span><strong>${todayOrdersCount}</strong></article>
           <article class="stat-tile tone-amber"><span>En preparación</span><strong>${metrics.ordersByStatus.preparing}</strong></article>
           <article class="stat-tile tone-green"><span>En camino</span><strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></article>
           <article class="stat-tile tone-green"><span>Entregados</span><strong>${metrics.directOrdering.deliveredOrders}</strong></article>
@@ -223,36 +226,19 @@ export function renderBusinessDashboard() {
 
       ${renderBusinessOverview(state, metrics)}
 
-      ${renderDeliveredTodaySummary(state.orders)}
+      <details class="business-collapsible" data-collapsible="reports" ${businessSectionsOpen.reports ? 'open' : ''}>
+        <summary><strong>Caja y reportes</strong><span>Cierre del turno y resumen por período</span></summary>
+        ${renderBusinessReportsPanel(report, cashboxClosures)}
+      </details>
 
-      ${renderBusinessReportsPanel(report, cashboxClosures)}
+      <details class="business-collapsible" data-collapsible="catalog" ${businessSectionsOpen.catalog ? 'open' : ''}>
+        <summary><strong>Menú y promos</strong><span>Productos, precios y disponibilidad</span></summary>
+        ${renderCatalogManager(state)}
+      </details>
 
-      ${renderCatalogManager(state)}
-
-      ${renderBusinessSetupPanel()}
-
-      <details class="business-extra">
-        <summary>Más métricas del día</summary>
-        <div class="dashboard-grid">
-          <section class="dashboard-panel sales-panel">
-            <div class="panel-head"><h3>Ventas</h3><span>Últimos 7 días</span></div>
-            ${salesChart(state.orders)}
-          </section>
-        </div>
-        <div class="insight-grid">
-          <section class="insight-card">
-            <span class="insight-label">Productos más vendidos</span>
-            <ul class="insight-list">${topProducts}</ul>
-          </section>
-          <section class="insight-card">
-            <span class="insight-label">Stock bajo</span>
-            <ul class="insight-list">${lowStockList}</ul>
-          </section>
-          <section class="insight-card">
-            <span class="insight-label">Últimos pedidos</span>
-            <ul class="insight-list latest-orders">${latestOrdersList}</ul>
-          </section>
-        </div>
+      <details class="business-collapsible" data-collapsible="setup" ${businessSectionsOpen.setup ? 'open' : ''}>
+        <summary><strong>Configuración del local</strong><span>Identidad, contacto, horarios y reglas</span></summary>
+        ${renderBusinessSetupPanel()}
       </details>
 
       ${renderDemoGuide()}
@@ -322,7 +308,7 @@ function renderOrderInbox(state, metrics, freshOrderIds = new Set()) {
       ? ''
     : `
       <div class="inbox-empty" data-inbox-empty>
-        <strong>${query ? 'No hay pedidos que coincidan.' : 'Todavía no hay pedidos para este filtro.'}</strong>
+        <strong>${query ? 'No hay pedidos que coincidan' : 'Sin pedidos en la cola'}</strong>
         <p>${query ? 'Probá buscar por código, cliente o dirección.' : 'Cuando un cliente confirme una compra, va a aparecer acá para aceptarla y prepararla.'}</p>
       </div>`;
 
@@ -438,15 +424,14 @@ function renderBusinessOverview(state, metrics) {
     : '<li class="muted"><span class="top-product-name">Sin ventas todavía hoy</span></li>';
 
   return `
-    <section class="business-overview-grid" aria-label="Ventas y productos">
+    <section class="business-overview-grid" aria-label="Resumen del turno">
       <article class="business-overview-card sales-today-card">
-        <span class="overview-kicker">Ventas simuladas</span>
+        <span class="overview-kicker">Ventas del turno</span>
         <strong class="sales-today-amount">${money(metrics.todayTotal)}</strong>
-        <small>${metrics.directOrdering.deliveredOrders} ${metrics.directOrdering.deliveredOrders === 1 ? 'pedido entregado' : 'pedidos entregados'} hoy</small>
-        ${salesChart(state.orders)}
+        <small>Entregados hoy: ${metrics.directOrdering.deliveredOrders} · Ticket promedio: ${money(metrics.directOrdering.averageTicket || 0)}</small>
       </article>
       <article class="business-overview-card top-products-card">
-        <span class="overview-kicker">Productos de ejemplo</span>
+        <span class="overview-kicker">Más vendidos del turno</span>
         <ul class="top-products-list">${topList}</ul>
       </article>
     </section>`;
@@ -843,7 +828,7 @@ function renderDemoGuide() {
         <li>Al marcar <strong>Entregado</strong>, la caja y las métricas se actualizan.</li>
       </ol>
       <p class="form-hint">Tip: usá “Copiar ticket” para pasarle el pedido a la cocina.</p>
-      <p class="form-hint">La presentación incluye un pedido de ejemplo ya entregado (LT-0001), identificado como simulación.</p>
+      <p class="form-hint">La presentación arranca con un pedido de ejemplo ya entregado (LT-0001) para que la caja no esté vacía.</p>
       <div class="button-row demo-reset-row">
         <button class="ghost-button compact" type="button" data-demo-reset>Reiniciar presentación</button>
       </div>
@@ -1308,7 +1293,7 @@ export function handleBusinessAction(target) {
     return {
       handled: true,
       ok: result.ok,
-      message: result.ok ? 'Cierre simulado guardado.' : 'No se pudo guardar el cierre simulado.',
+      message: result.ok ? 'Cierre del turno guardado en este dispositivo.' : 'No se pudo guardar el cierre.',
     };
   }
 
@@ -1377,8 +1362,22 @@ export function handleBusinessAction(target) {
   }
 
   if (target.closest('[data-scroll-reports]')) {
+    businessSectionsOpen.reports = true;
     if (typeof document !== 'undefined') {
-      document.querySelector('[data-business-report]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      renderBusinessDashboard();
+      document.querySelector('[data-collapsible="reports"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    return { handled: true, ok: true, message: '' };
+  }
+
+  // Toggle manual de una sección plegada: recordamos el estado para que los
+  // re-renders del panel no la cierren mientras el comercio trabaja adentro.
+  const collapsibleSummary = target.closest('.business-collapsible > summary');
+  if (collapsibleSummary) {
+    const details = collapsibleSummary.parentElement;
+    const key = details?.dataset.collapsible;
+    if (key && key in businessSectionsOpen) {
+      businessSectionsOpen[key] = !details.open;
     }
     return { handled: true, ok: true, message: '' };
   }
@@ -1666,12 +1665,18 @@ function setCatalogFormError(message) {
 }
 
 function scrollCatalogManager() {
+  businessSectionsOpen.catalog = true;
   if (typeof document === 'undefined') return;
+  const details = document.querySelector('[data-collapsible="catalog"]');
+  if (details) details.open = true;
   document.querySelector('[data-business-catalog]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function scrollBusinessSetup() {
+  businessSectionsOpen.setup = true;
   if (typeof document === 'undefined') return;
+  const details = document.querySelector('[data-collapsible="setup"]');
+  if (details) details.open = true;
   document.querySelector('[data-business-setup]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -1845,7 +1850,7 @@ function renderCancelDialog(order) {
       <p>Vas a cancelar el pedido <strong>${escapeHtml(order.id)}</strong> · ${escapeHtml(order.customerName)} · ${money(order.total)}.</p>
       ${onTheWay ? `
       <div class="warning-box cancel-onway-warning">
-        <strong>Este pedido ya está en reparto.</strong> El recorrido está en curso: cancelar ahora corta la simulación.
+        <strong>Este pedido ya está en reparto.</strong> Cancelar ahora corta la entrega en curso.
       </div>` : ''}
       <span class="cancel-reason-label">Motivo de la cancelación</span>
       <div class="cancel-reasons">${presets}</div>

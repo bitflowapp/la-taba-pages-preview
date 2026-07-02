@@ -156,7 +156,7 @@ export function createOrderFromCheckout(formValues = {}) {
   return {
     ok: true,
     order,
-    message: values.previewOnly ? 'Pedido de demostración preparado.' : `Pedido ${order.id} creado.`,
+    message: values.previewOnly ? 'Pedido de muestra creado.' : `Pedido ${order.id} creado.`,
   };
 }
 

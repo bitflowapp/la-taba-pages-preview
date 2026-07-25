@@ -9,7 +9,7 @@ function seededState(status) {
   const at = new Date().toISOString();
   return {
     schemaVersion: 3,
-    dataVersion: 'la-taba-pizzeria-v1',
+    dataVersion: 'la-taba-runtime-v2',
     appMode: 'demo',
     orders: [{
       id: 'LT-0002',

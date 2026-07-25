@@ -9,31 +9,53 @@ const entries = [
   'index.html',
   'styles.css',
   'manifest.webmanifest',
+  'runtime-config.js',
   'sw.js',
   '.nojekyll',
   'assets',
   'js',
-  'README.md',
-  'docs/presentacion-walter.md',
-  'docs/checklist-demo-walter.md',
-  'docs/proximas-fases.md',
 ];
 
-await fs.rm(releaseDir, { recursive: true, force: true });
-await fs.mkdir(releaseDir, { recursive: true });
-
-for (const entry of entries) {
+const sources = await Promise.all(entries.map(async (entry) => {
   const source = path.join(root, entry);
-  const target = path.join(releaseDir, entry);
-  const stat = await fs.stat(source);
+  return { entry, source, stat: await fs.stat(source) };
+}));
+const temporaryDir = await fs.mkdtemp(path.join(root, '.dist_release-'));
+const previousDir = `${releaseDir}.previous-${process.pid}-${Date.now()}`;
+let previousMoved = false;
 
-  await fs.mkdir(path.dirname(target), { recursive: true });
+try {
+  for (const { entry, source, stat } of sources) {
+    const target = path.join(temporaryDir, entry);
+    await fs.mkdir(path.dirname(target), { recursive: true });
 
-  if (stat.isDirectory()) {
-    await fs.cp(source, target, { recursive: true });
-  } else {
-    await fs.copyFile(source, target);
+    if (stat.isDirectory()) {
+      await fs.cp(source, target, { recursive: true });
+    } else {
+      await fs.copyFile(source, target);
+    }
   }
+
+  try {
+    await fs.rename(releaseDir, previousDir);
+    previousMoved = true;
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+
+  try {
+    await fs.rename(temporaryDir, releaseDir);
+  } catch (error) {
+    if (previousMoved) await fs.rename(previousDir, releaseDir);
+    throw error;
+  }
+
+  if (previousMoved) {
+    await fs.rm(previousDir, { recursive: true, force: true });
+  }
+} catch (error) {
+  await fs.rm(temporaryDir, { recursive: true, force: true }).catch(() => undefined);
+  throw error;
 }
 
 console.log(`Release folder created: ${releaseDir}`);

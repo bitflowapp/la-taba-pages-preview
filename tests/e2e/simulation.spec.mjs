@@ -76,3 +76,57 @@ test('el modo demo no ofrece GPS ni simula movimiento', async ({ page }) => {
   await expect(page.locator('[data-delivery-panel] [data-sim-gps], [data-delivery-panel] [data-sim-gps-off]')).toHaveCount(0);
   await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
 });
+
+test('abandono de rider y pagehide cortan el watchPosition local', async ({ page }) => {
+  await installPersistentStubs(page);
+  await page.addInitScript(() => {
+    window.__gpsLifecycle = { watches: [], cleared: [] };
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        watchPosition() {
+          const id = 700 + window.__gpsLifecycle.watches.length + 1;
+          window.__gpsLifecycle.watches.push(id);
+          return id;
+        },
+        clearWatch(id) {
+          window.__gpsLifecycle.cleared.push(id);
+        },
+      },
+    });
+  });
+
+  await page.goto('/?demo=1');
+  await createDeliveryOrder(page);
+  await page.evaluate(() => {
+    window.location.hash = '#rider';
+  });
+  await expect(page.locator('[data-view="rider"]')).toBeVisible();
+
+  const firstStart = await page.evaluate(async () => {
+    const { enableGpsTracking } = await import('/js/simulation.js');
+    return enableGpsTracking();
+  });
+  expect(firstStart.ok).toBe(true);
+
+  await page.evaluate(() => {
+    window.location.hash = '#tracking';
+  });
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__gpsLifecycle.cleared)).toEqual([701]);
+
+  await page.evaluate(() => {
+    window.location.hash = '#rider';
+  });
+  await expect(page.locator('[data-view="rider"]')).toBeVisible();
+  const secondStart = await page.evaluate(async () => {
+    const { enableGpsTracking } = await import('/js/simulation.js');
+    return enableGpsTracking();
+  });
+  expect(secondStart.ok).toBe(true);
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new PageTransitionEvent('pagehide'));
+  });
+  await expect.poll(() => page.evaluate(() => window.__gpsLifecycle.cleared)).toEqual([701, 702]);
+});

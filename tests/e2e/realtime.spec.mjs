@@ -26,7 +26,8 @@ test('cliente, negocio y rider completan el recorrido en el mismo dispositivo si
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
-  const code = await page.locator('[data-delivery-code]').getAttribute('data-delivery-code');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Pedido de muestra');
+  await expect(page.locator('[data-delivery-code]')).toHaveCount(0);
 
   await page.locator('.topbar .brand').click();
   await page.locator('[data-admin-toggle]').click();
@@ -34,6 +35,11 @@ test('cliente, negocio y rider completan el recorrido en el mismo dispositivo si
   await page.locator('[data-pin-form]').press('Enter');
   await page.locator('[data-order-advance="LT-0002"]').click();
   await page.locator('[data-order-advance="LT-0002"]').click();
+
+  await page.goto('/?demo=1#tracking');
+  const code = await page.locator('[data-delivery-code]').getAttribute('data-delivery-code');
+  expect(code).toMatch(/^\d{4}$/);
+  await page.goto('/?demo=1#business');
   await page.getByRole('button', { name: /Vista rider/i }).click();
   await expect(page.locator('[data-delivery-panel]')).toContainText('Vista de reparto');
   await expect(page.locator('[data-delivery-panel] [data-real-map], [data-delivery-panel] [data-sim-gps]')).toHaveCount(0);

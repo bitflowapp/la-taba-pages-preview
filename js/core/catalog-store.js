@@ -261,7 +261,9 @@ function defaultsForCategory(categoryId) {
 
 function normalizeCategoryId(value) {
   const categoryId = sanitizeText(value, { fallback: DEFAULT_CATEGORY_ID, maxLength: 40 });
-  return CATEGORY_IDS.has(categoryId) ? categoryId : DEFAULT_CATEGORY_ID;
+  // La edición de la demo sigue restringida por validateCatalogProductInput(),
+  // pero el catálogo productivo puede traer categorías verificadas del comercio.
+  return /^[a-z0-9][a-z0-9-]{0,39}$/.test(categoryId) ? categoryId : DEFAULT_CATEGORY_ID;
 }
 
 function parsePrice(value) {

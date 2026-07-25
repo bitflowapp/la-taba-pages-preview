@@ -1,73 +1,71 @@
+import {
+  APP_MODE_DEMO,
+  APP_MODE_PRODUCTION,
+  APP_MODE_UNAVAILABLE,
+  getAppMode,
+} from '../core/app-mode.js';
+import { resolveRuntimeConfig } from '../core/runtime-config.js';
+import {
+  createConfiguredSupabaseClient,
+  getSupabaseClient,
+} from '../services/supabase-client.js';
 import { assertOrderRepository } from './order_repository.js';
 import { createDemoOrderRepository } from './demo_order_repository.js';
-import { createHttpOrderRepository } from './http_order_repository.js';
 import { createRealtimeOrderRepository } from './realtime_order_repository.js';
-import { createSupabaseOrderRepository, DEFAULT_SUPABASE_BUSINESS_ID } from './supabase_order_repository.js';
+import { createSupabaseOrderRepository } from './supabase_order_repository.js';
+import { createUnavailableOrderRepository } from './unavailable_order_repository.js';
 
 let orderRepository = null;
 let repositoryDiagnostic = null;
 
 export function getDataMode() {
-  const params = readParams();
-  const requested = params.get('data') || params.get('mode') || '';
-  if (requested === 'supabase') return 'supabase';
-  if ((requested === 'production' || requested === 'backend') && hasSupabaseConfig(params)) return 'supabase';
-  if (requested === 'production' || requested === 'backend' || requested === 'http') return 'http';
-  if (params.get('relay')) return 'demo-realtime';
-  return 'demo';
+  const appMode = getAppMode();
+  if (appMode === APP_MODE_DEMO) {
+    return readDemoParams().has('relay') ? 'demo-realtime' : 'demo';
+  }
+  if (appMode === APP_MODE_PRODUCTION) {
+    return resolveRuntimeConfig().repository?.provider || 'unavailable';
+  }
+  if (appMode === APP_MODE_UNAVAILABLE) return 'unavailable';
+  return 'preview';
 }
 
 export function getOrderRepository() {
   if (orderRepository) return orderRepository;
 
-  const mode = getDataMode();
   repositoryDiagnostic = null;
+  const mode = getDataMode();
+
   if (mode === 'supabase') {
-    const options = readSupabaseOptions(readParams());
-    if (options.supabaseUrl && options.anonKey) {
-      try {
-        orderRepository = assertOrderRepository(createSupabaseOrderRepository(options));
-        return orderRepository;
-      } catch (error) {
-        // Config presente pero inválida: no dejamos la UI rota, caemos a demo
-        // y dejamos un diagnóstico técnico (no se muestra al cliente normal).
-        repositoryDiagnostic = {
-          level: 'error',
-          requestedMode: 'supabase',
-          message: `Supabase no se pudo inicializar: ${error?.message || 'configuración inválida'}. Usando demo local.`,
-        };
-      }
-    } else {
-      repositoryDiagnostic = {
-        level: 'warn',
-        requestedMode: 'supabase',
-        message: 'Pediste data=supabase pero falta supabaseUrl/anonKey. Usando demo local.',
-      };
-    }
+    return createProductionRepository(mode);
   }
 
-  if (mode === 'http') {
-    const apiBase = readParams().get('api');
-    if (apiBase) {
-      orderRepository = assertOrderRepository(createHttpOrderRepository({ baseUrl: apiBase }));
-      return orderRepository;
-    }
+  if (mode === 'unavailable') {
+    const runtime = resolveRuntimeConfig();
     repositoryDiagnostic = {
-      level: 'warn',
-      requestedMode: 'http',
-      message: 'Pediste backend http pero falta el parámetro api. Usando demo local.',
+      level: 'error',
+      blocking: true,
+      code: 'RUNTIME_CONFIG_INVALID',
+      requestedMode: 'production',
+      message: runtime.errors.join(' ') || 'La configuración productiva está incompleta.',
     };
+    orderRepository = assertOrderRepository(createUnavailableOrderRepository());
+    return orderRepository;
   }
 
   const demoRepository = createDemoOrderRepository();
-  orderRepository = assertOrderRepository(mode === 'demo-realtime'
-    ? createRealtimeOrderRepository(demoRepository)
-    : demoRepository);
+  if (mode === 'demo-realtime') {
+    orderRepository = assertOrderRepository(createRealtimeOrderRepository(demoRepository));
+  } else if (mode === 'demo') {
+    orderRepository = assertOrderRepository(demoRepository);
+  } else {
+    // Preview usa el motor local, pero conserva un modo explícito para que
+    // ninguna integración lo confunda con la presentación ?demo=1.
+    orderRepository = assertOrderRepository({ ...demoRepository, mode: 'preview' });
+  }
   return orderRepository;
 }
 
-// Diagnóstico técnico del fallback (null si todo ok). Pensado para un aviso
-// discreto, nunca para el cliente final.
 export function getRepositoryDiagnostic() {
   return repositoryDiagnostic;
 }
@@ -79,7 +77,7 @@ export function startOrderRepositorySync() {
 }
 
 export function isPersistentOrderRepository(repository = getOrderRepository()) {
-  return repository?.mode === 'supabase' || repository?.mode === 'http';
+  return repository?.mode === 'supabase';
 }
 
 export function resetRepositoryFactoryForTests() {
@@ -87,23 +85,43 @@ export function resetRepositoryFactoryForTests() {
   repositoryDiagnostic = null;
 }
 
-function readParams() {
+function createProductionRepository(mode) {
+  const runtime = resolveRuntimeConfig();
+  const repositoryConfig = runtime.repository;
+
+  try {
+    orderRepository = assertOrderRepository(createSupabaseOrderRepository({
+      client: getSupabaseClient(repositoryConfig),
+      createTrackingClient: (trackingToken) => createConfiguredSupabaseClient(repositoryConfig, {
+        storage: null,
+        persistSession: false,
+        headers: {
+          'x-order-token': trackingToken,
+        },
+      }),
+      businessId: repositoryConfig.businessId,
+      pollMs: repositoryConfig.pollMs,
+    }));
+    return orderRepository;
+  } catch (error) {
+    repositoryDiagnostic = {
+      level: 'error',
+      blocking: true,
+      code: 'PRODUCTION_REPOSITORY_INIT_FAILED',
+      requestedMode: mode,
+      message: `El repositorio productivo no se pudo inicializar: ${error?.message || 'configuración inválida'}.`,
+    };
+    orderRepository = assertOrderRepository(createUnavailableOrderRepository({
+      message: 'Los pedidos online no están disponibles. Reintentá más tarde.',
+    }));
+    return orderRepository;
+  }
+}
+
+function readDemoParams() {
   try {
     return new URLSearchParams(globalThis.location?.search || '');
   } catch (_) {
     return new URLSearchParams('');
   }
-}
-
-function hasSupabaseConfig(params) {
-  return Boolean(params.get('supabaseUrl') && (params.get('supabaseAnonKey') || params.get('supabaseKey')));
-}
-
-function readSupabaseOptions(params) {
-  return {
-    supabaseUrl: params.get('supabaseUrl') || '',
-    anonKey: params.get('supabaseAnonKey') || params.get('supabaseKey') || '',
-    businessId: params.get('businessId') || DEFAULT_SUPABASE_BUSINESS_ID,
-    pollMs: Number(params.get('pollMs')) || 5000,
-  };
 }

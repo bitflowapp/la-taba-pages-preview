@@ -14,7 +14,13 @@ import {
 import { BUSINESS_CONFIG } from '../js/config.js';
 import { resetState, state } from './helpers.mjs';
 
-beforeEach(() => resetState());
+beforeEach(() => {
+  Object.defineProperty(globalThis, 'location', {
+    value: { search: '?demo=1' },
+    configurable: true,
+  });
+  resetState();
+});
 
 test('cart supports add, increment, decrement, remove, and clear', () => {
   assert.deepEqual(getCartItems(), []);

@@ -126,6 +126,8 @@ function sanitizeEditableFields(source, base) {
     deliveryFee: sanitizeMoney(source.deliveryFee, base.deliveryFee),
     minDeliveryOrder: sanitizeMoney(source.minDeliveryOrder, base.minDeliveryOrder),
     orderingDetailsVerified: sanitizeBool(source.orderingDetailsVerified, base.orderingDetailsVerified),
+    deliveryEnabled: sanitizeBool(source.deliveryEnabled, base.deliveryEnabled),
+    pickupEnabled: sanitizeBool(source.pickupEnabled, base.pickupEnabled),
     currency: sanitizeCurrency(source.currency, base.currency),
     orderPrefix: sanitizeOrderPrefix(source.orderPrefix, base.orderPrefix),
     adminPin: sanitizePin(source.adminPin, base.adminPin),

@@ -31,7 +31,13 @@ import {
   safeStorageRemove,
   safeStorageSet,
 } from './core/storage.js';
-import { APP_DATA_VERSION, getAppMode, isDemoMode } from './core/app-mode.js';
+import {
+  APP_DATA_VERSION,
+  APP_MODE_PRODUCTION,
+  APP_MODE_UNAVAILABLE,
+  getAppMode,
+  isDemoMode,
+} from './core/app-mode.js';
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
 import { clampProgress } from './core/simulation.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
@@ -69,7 +75,7 @@ const defaultState = () => {
     lastCheckoutDraft: null,
     pendingReorder: null,
     simulation: null,
-    businessConfig: buildDefaultBusinessConfig(),
+    businessConfig: buildBaseBusinessConfig(),
   };
 };
 
@@ -86,6 +92,12 @@ function readAdminFlag() {
 function loadState() {
   const base = defaultState();
   const localStorage = getStorageArea('localStorage');
+  if ([APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(getAppMode())) {
+    // Pedidos, carrito y catálogo productivos sólo viven en memoria y se
+    // reconstruyen desde Supabase. Nunca renderizar PII operativa cacheada.
+    resetIncompatiblePersistence(localStorage, getStorageArea('sessionStorage'));
+    return { ...base, adminUnlocked: false };
+  }
   const raw = safeStorageGet(localStorage, STORAGE_KEYS.state);
   const parsed = safeJsonParse(raw, null);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -134,7 +146,7 @@ export function sanitizeState(nextState, baseState = defaultState()) {
     schemaVersion: STATE_SCHEMA_VERSION,
     dataVersion: APP_DATA_VERSION,
     appMode: baseState.appMode || getAppMode(),
-    activeCategory: normalizeCategoryId(source.activeCategory, baseState.activeCategory || 'all'),
+    activeCategory: normalizeCategoryId(source.activeCategory, baseState.activeCategory || 'all', mergedProducts),
     searchQuery: sanitizeText(source.searchQuery, { fallback: '', maxLength: 80 }),
     sortBy: normalizeSortBy(source.sortBy),
     cart: sanitizeCart(source.cart, productMap),
@@ -274,9 +286,10 @@ function sanitizeCheckoutDraft(draft) {
   };
 }
 
-function normalizeCategoryId(value, fallback = 'all') {
+function normalizeCategoryId(value, fallback = 'all', products = []) {
   const categoryId = sanitizeText(value, { fallback, maxLength: 40 });
   if (CUSTOMER_CATEGORY_IDS.has(categoryId)) return categoryId;
+  if (products.some((product) => product.categoryId === categoryId)) return categoryId;
   return categories.some((category) => category.id === categoryId) ? categoryId : 'all';
 }
 
@@ -484,14 +497,40 @@ function normalizeIsoDate(value, fallback = new Date().toISOString()) {
 }
 
 function buildBaseProducts() {
-  return buildDemoCatalog();
+  return isDemoMode() ? buildDemoCatalog() : [];
 }
 
 function mergeProducts(baseProducts, savedProducts) {
   return mergeCatalogProducts(baseProducts, savedProducts);
 }
 
+function buildBaseBusinessConfig() {
+  const base = buildDefaultBusinessConfig();
+  if (![APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(getAppMode())) return base;
+  return mergeBusinessConfig(base, {
+    businessName: 'TABA',
+    name: 'TABA',
+    subtitle: 'Tienda de bebidas',
+    address: 'Dirección no publicada',
+    deliveryZone: 'Cobertura no publicada',
+    openingHoursLabel: 'Horarios no publicados',
+    openingHours: 'Horarios no publicados',
+    whatsappNumber: '',
+    whatsappVerified: false,
+    deliveryFee: 0,
+    minDeliveryOrder: 0,
+    orderingDetailsVerified: false,
+    deliveryEnabled: false,
+    pickupEnabled: false,
+  });
+}
+
 function persist() {
+  if ([APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(getAppMode())) {
+    safeStorageRemove(getStorageArea('localStorage'), STORAGE_KEYS.state);
+    safeStorageRemove(getStorageArea('sessionStorage'), STORAGE_KEYS.adminUnlocked);
+    return true;
+  }
   const serializable = { ...state, adminUnlocked: undefined };
   const persisted = safeStorageSet(getStorageArea('localStorage'), STORAGE_KEYS.state, JSON.stringify(serializable));
   safeStorageSet(getStorageArea('sessionStorage'), STORAGE_KEYS.adminUnlocked, state.adminUnlocked ? 'true' : 'false');

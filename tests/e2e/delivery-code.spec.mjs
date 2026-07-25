@@ -22,12 +22,11 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Pedido confirmado.');
+  await waitForToast(page, 'Pedido confirmado');
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking.locator('[data-delivery-code-card]')).toBeVisible();
-  const code = await tracking.locator('[data-delivery-code]').getAttribute('data-delivery-code');
-  expect(code).toMatch(/^\d{4}$/);
+  await expect(tracking).toContainText('Pedido de muestra');
+  await expect(tracking.locator('[data-delivery-code-card]')).toHaveCount(0);
 
   await page.goto('/?demo=1#business');
   await page.locator('[data-open-pin][data-admin-target="business"]').click();
@@ -41,6 +40,11 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await waitForToast(page, 'Estado del pedido actualizado.');
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
+
+  await page.goto('/?demo=1#tracking');
+  await expect(tracking.locator('[data-delivery-code-card]')).toBeVisible();
+  const code = await tracking.locator('[data-delivery-code]').getAttribute('data-delivery-code');
+  expect(code).toMatch(/^\d{4}$/);
 
   await page.goto('/?demo=1#rider');
   const riderPanel = page.locator('[data-delivery-panel]');

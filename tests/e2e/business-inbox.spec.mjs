@@ -63,7 +63,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(card).toContainText('Walter Cliente');
   await expect(card).toContainText('2995551234');
   await expect(card).toContainText('Delivery');
-  await expect(card).toContainText('Mendoza 851, Otra localidad');
+  await expect(card).toContainText('Mendoza 851, Centro');
   await expect(card).toContainText('Portón gris');
   await expect(card).toContainText('Sin sal');
   await expect(card).toContainText('Total a cobrar');
@@ -179,7 +179,7 @@ function liveBusinessState(now) {
   };
   return {
     schemaVersion: 3,
-    dataVersion: 'la-taba-pizzeria-v1',
+    dataVersion: 'la-taba-runtime-v2',
     appMode: 'demo',
     orders: [{
       id: 'LT-LIVE-1',

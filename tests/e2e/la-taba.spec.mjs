@@ -142,13 +142,14 @@ test('pedido demo no muestra rider falso, GPS, mapa ni ETA', async ({ page }) =>
   await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Roca 123, Neuquén Capital');
+  await expect(tracking).toContainText('Pedido de muestra');
+  await expect(tracking).toContainText('no se envió al local ni se cobró nada');
+  await expect(tracking).toContainText('Roca 123, Neuquen centro');
   await expect(tracking).not.toContainText('Juli');
   await expect(tracking).not.toContainText('2991112233');
-  await expect(tracking.locator('.rider-pending')).toBeVisible();
-  await expect(tracking).toContainText('Repartidor sin asignar');
+  await expect(tracking.locator('[data-delivery-code], .rider-pending')).toHaveCount(0);
   await expect(tracking.locator('[data-real-map], .lt-rider-marker')).toHaveCount(0);
-  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE);
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveCount(0);
 
   await page.locator('[data-admin-toggle]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
@@ -257,7 +258,7 @@ test('flujo cliente con delivery', async ({ page }) => {
   const clipboardText = await page.evaluate(() => window.__clipboardText);
   expect(clipboardText).toContain('Walter QA');
   expect(clipboardText).toContain('Envío a domicilio');
-  expect(clipboardText).toContain('Roca 123, Neuquén Capital');
+  expect(clipboardText).toContain('Roca 123, Neuquen centro');
   expect(clipboardText).toContain('Porton negro');
   expect(clipboardText).toContain('Total:');
 
@@ -266,8 +267,8 @@ test('flujo cliente con delivery', async ({ page }) => {
   await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-tracking-panel]')).toContainText('Entrega en');
-  await expect(page.locator('[data-tracking-panel]')).toContainText('Roca 123, Neuquén Capital');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Dirección ingresada');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Roca 123, Neuquen centro');
   await expect(page.locator('[data-tracking-panel]')).toContainText('Porton negro');
   const autoOpened = await page.evaluate(() => window.__openedUrls.length);
   expect(autoOpened).toBe(0);
@@ -307,10 +308,10 @@ test('mobile cliente usa pago coordinado y crea pedido simulado', async ({ brows
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Estamos revisando tu pedido');
-  await expect(tracking).toContainText('Recibido');
+  await expect(tracking).toContainText('Pedido de muestra');
+  await expect(tracking).toContainText('no se envió al local ni se cobró nada');
   await tracking.locator('details.order-detail summary').click();
-  await expect(tracking).toContainText('Pago a coordinar con el local');
+  await expect(tracking).toContainText('PagoSin procesar');
   await expect(tracking).not.toContainText('Cupón');
   await expect(tracking).toContainText('Sin cebolla');
 
@@ -397,7 +398,7 @@ test('modo negocio y delivery', async ({ page }) => {
   await expect(page.locator('[data-business-dashboard]')).toContainText('Central de pedidos');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Ventas de hoy');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Productos y stock');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Mitre 456, Otra localidad');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Mitre 456, Area centro');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Casa verde');
 
   const advanceButton = page.locator('[data-order-advance]').first();
@@ -436,7 +437,7 @@ test('modo negocio y delivery', async ({ page }) => {
   await page.getByRole('button', { name: /Vista rider/i }).click();
   await expect(page.locator('[data-view="rider"]')).toBeVisible();
   await expect(page.locator('[data-delivery-panel]')).toContainText('Pedido');
-  await expect(page.locator('[data-delivery-panel]')).toContainText('Mitre 456, Otra localidad');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Mitre 456, Area centro');
   await expect(page.locator('[data-delivery-panel]')).toContainText('Casa verde');
 
   const deliveryLeave = page.locator('[data-delivery-leave]').first();

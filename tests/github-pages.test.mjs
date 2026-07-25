@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-pizzeria-v8-polish-cache');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v10-production-cache');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -31,12 +31,19 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./js/core/storage.js'));
   assert.ok(assets.includes('./js/core/order-status.js'));
   assert.ok(assets.includes('./js/core/order-workflow.js'));
+  assert.ok(assets.includes('./js/core/runtime-config.js'));
+  assert.ok(assets.includes('./runtime-config.js'));
   assert.ok(assets.includes('./js/core/domain.js'));
   assert.ok(assets.includes('./js/map/map_view.js'));
   assert.ok(assets.includes('./js/map/route_geometry.js'));
   assert.ok(assets.includes('./js/repositories/repository_factory.js'));
   assert.ok(assets.includes('./js/repositories/demo_order_repository.js'));
   assert.ok(assets.includes('./js/repositories/supabase_order_repository.js'));
+  assert.ok(assets.includes('./js/repositories/unavailable_order_repository.js'));
+  assert.ok(assets.includes('./js/services/supabase-auth.js'));
+  assert.ok(assets.includes('./js/services/supabase-client.js'));
+  assert.ok(assets.includes('./js/vendor/supabase.js'));
+  assert.ok(assets.includes('./js/production-operations.js'));
 
   for (const asset of assets) {
     if (asset === './') continue;
@@ -58,4 +65,26 @@ test('service worker fallback is guarded to navigation requests only', () => {
   assert.match(source, /request\.mode === 'navigate'/);
   assert.match(source, /return caches\.match\('\.\/index\.html'\);/);
   assert.match(source, /return Response\.error\(\);/);
+});
+
+test('service worker sólo elimina caches anteriores de TABA y exige precache completo', () => {
+  const source = read('sw.js');
+  assert.match(source, /const CACHE_PREFIX = 'la-taba-runtime-';/);
+  assert.match(source, /key\.startsWith\(CACHE_PREFIX\) && key !== CACHE_NAME/);
+  assert.doesNotMatch(
+    source,
+    /cache\.addAll\(ASSETS\)\)\.catch\(\(\) => undefined\)/,
+  );
+});
+
+test('Leaflet remoto está fijado con SRI y CORS anónimo', () => {
+  const source = read('index.html');
+  assert.match(
+    source,
+    /href="https:\/\/unpkg\.com\/leaflet@1\.9\.4\/dist\/leaflet\.css"[\s\S]*?integrity="sha256-p4NxAoJBhIIN\+hmNHrzRCf9tD\/miZyoHS5obTRR9BMY="[\s\S]*?crossorigin=""/,
+  );
+  assert.match(
+    source,
+    /src="https:\/\/unpkg\.com\/leaflet@1\.9\.4\/dist\/leaflet\.js"[\s\S]*?integrity="sha256-20nQCchB9co0qIjJZRGuk2\/Z9VM\+kNiyxNV1lvTlZBo="[\s\S]*?crossorigin=""/,
+  );
 });

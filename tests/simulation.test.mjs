@@ -586,20 +586,28 @@ test('GPS minimal movement does not publish a fresh state immediately', () => {
   }
 });
 
-test('relay/backend publish errors do not stop active GPS', async () => {
+test('runtime HTTP obsoleto no publica GPS ni detiene el watch local', async () => {
   createReadyDeliveryOrder();
   const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
   const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
   const originalLocation = Object.getOwnPropertyDescriptor(globalThis, 'location');
   const originalFetch = Object.getOwnPropertyDescriptor(globalThis, 'fetch');
+  const originalRuntimeConfig = globalThis.__LA_TABA_RUNTIME_CONFIG__;
   let successHandler = null;
   let clearWatchId = null;
 
   Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: true });
   Object.defineProperty(globalThis, 'location', {
     configurable: true,
-    value: new URL('https://example.test/?mode=http&api=https://api.example.test'),
+    value: new URL('https://example.test/?mode=supabase&api=https://attacker.example'),
   });
+  globalThis.__LA_TABA_RUNTIME_CONFIG__ = {
+    mode: 'production',
+    repository: {
+      provider: 'http',
+      baseUrl: 'https://api.example.test',
+    },
+  };
   Object.defineProperty(globalThis, 'fetch', {
     configurable: true,
     value: () => Promise.reject(new Error('offline')),
@@ -629,7 +637,7 @@ test('relay/backend publish errors do not stop active GPS', async () => {
     assert.equal(isGpsActive(), true);
     assert.equal(clearWatchId, null);
     assert.equal(getState().simulation.gpsStatus, 'active');
-    assert.match(getState().simulation.backendError, /backend/i);
+    assert.equal(getState().simulation.backendError, undefined);
   } finally {
     disableGpsTracking({ silent: true });
     resetRepositoryFactoryForTests();
@@ -641,6 +649,8 @@ test('relay/backend publish errors do not stop active GPS', async () => {
     else delete globalThis.location;
     if (originalFetch) Object.defineProperty(globalThis, 'fetch', originalFetch);
     else delete globalThis.fetch;
+    if (originalRuntimeConfig === undefined) delete globalThis.__LA_TABA_RUNTIME_CONFIG__;
+    else globalThis.__LA_TABA_RUNTIME_CONFIG__ = originalRuntimeConfig;
   }
 });
 

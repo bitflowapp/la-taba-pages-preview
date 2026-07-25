@@ -1,7 +1,7 @@
 {
-  "name": "La Taba Pizzería · Pedidos, negocio y reparto",
-  "short_name": "La Taba",
-  "description": "Pedí tu pizza online, gestioná el negocio y seguí el reparto de La Taba Pizzería desde una sola app.",
+  "name": "TABA · Bebidas, pedidos y delivery",
+  "short_name": "TABA",
+  "description": "Catálogo de bebidas, pedidos online, operación del negocio y seguimiento de delivery.",
   "lang": "es-AR",
   "dir": "ltr",
   "start_url": "./index.html",

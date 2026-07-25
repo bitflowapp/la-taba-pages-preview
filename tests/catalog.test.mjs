@@ -159,8 +159,8 @@ test('catalog mutations do not activate Supabase by accident', () => {
   setState({ products: created.products });
 
   const repository = getOrderRepository();
-  assert.equal(getDataMode(), 'demo');
-  assert.equal(repository.mode, 'demo');
+  assert.equal(getDataMode(), 'preview');
+  assert.equal(repository.mode, 'preview');
 });
 
 test('tracking without real GPS remains idle for the honest no-map fallback', () => {

@@ -70,22 +70,27 @@ function restoreStableRealMap(container, shell) {
 
 export function applyBusinessConfig() {
   const demo = isDemoMode();
-  const detailsVerified = Boolean(getBusinessConfig().orderingDetailsVerified);
-  setText('[data-business-name]', getBusinessConfig().businessName);
-  setText('[data-business-subtitle]', getBusinessConfig().subtitle);
-  setText('.app-home .eyebrow', getBusinessConfig().subtitle || 'Horno a leña · masa madre');
+  const config = getBusinessConfig();
+  const detailsVerified = Boolean(config.orderingDetailsVerified);
+  setText('[data-business-name]', config.businessName);
+  setText('[data-business-subtitle]', config.subtitle);
+  setText('.app-home .eyebrow', config.subtitle || 'Tienda de bebidas');
   setText('.app-home .home-lead', demo
     ? `${BRAND.demoBusinessClaim || 'Tu pizza favorita, ahora a un toque.'} ${BRAND.demoBusinessClaimSecondary || 'Pedí. Seguí. Disfrutá.'}`
-    : 'Pizzas al horno a leña, promos de la casa y delivery propio.');
-  setText('[data-min-order]', demo || detailsVerified ? money(getBusinessConfig().minDeliveryOrder) : 'A confirmar');
-  setText('[data-delivery-fee]', demo || detailsVerified ? money(getBusinessConfig().deliveryFee) : 'A confirmar');
-  setText('[data-business-profile-name]', getBusinessConfig().businessName);
-  setText('[data-business-whatsapp]', formatWhatsappDisplay(getBusinessConfig().whatsappNumber) || 'A confirmar con el local');
-  setText('[data-business-address]', getBusinessConfig().address);
-  setText('[data-business-hours]', getBusinessConfig().openingHoursLabel);
-  setText('[data-business-zone]', getBusinessConfig().deliveryZone);
-  setText('[data-rider-business-name]', getBusinessConfig().businessName);
-  setText('[data-admin-pin]', getBusinessConfig().adminPin);
+    : 'Bebidas con catálogo y disponibilidad publicados por el comercio.');
+  setText('[data-min-order]', demo || detailsVerified ? money(config.minDeliveryOrder) : 'A confirmar');
+  setText('[data-delivery-fee]', demo || detailsVerified ? money(config.deliveryFee) : 'A confirmar');
+  setText('[data-business-profile-name]', config.businessName);
+  setText('[data-business-whatsapp]', formatWhatsappDisplay(config.whatsappNumber) || 'A confirmar con el local');
+  setText('[data-business-address]', config.address);
+  setText('[data-business-hours]', config.openingHoursLabel);
+  setText('[data-business-zone]', config.deliveryZone);
+  setText('[data-rider-business-name]', config.businessName);
+  setText('[data-admin-pin]', config.adminPin);
+  applyFulfillmentAvailability({
+    delivery: demo || (detailsVerified && config.deliveryEnabled === true),
+    pickup: demo || (detailsVerified && config.pickupEnabled === true),
+  });
 
   // Marca del PRODUCTO (PedidoPropio): superficie comercial e intro del home.
   // Fuente única en BRAND (config.js); el HTML sólo lleva un fallback de primer pintado.
@@ -93,40 +98,53 @@ export function applyBusinessConfig() {
   setText('[data-product-tagline]', BRAND.tagline);
   setText('[data-product-short-tagline]', BRAND.shortTagline);
 
-  // Estado honesto del local: abierto/cerrado según el horario configurado.
+  // Producción usa el estado autoritativo de pedidos. No se muestran horarios
+  // heredados de la demo porque todavía no forman parte del contrato remoto.
   const status = $('[data-open-status]');
-  const openHour = Number(getBusinessConfig().openHour);
-  const closeHour = Number(getBusinessConfig().closeHour);
-  const hour = new Date().getHours();
-  // Horario REAL del comercio (no se toca): el local abre según openHour/closeHour.
-  // Override SOLO de demostración: si la URL trae la flag de presentación
-  // (?pitch=1 / ?demo=1 / ?reset=1, p. ej. http://127.0.0.1:8080/?reset=1&pitch=1)
-  // el local se muestra "Abierto" aunque la demo sea fuera de hora. Es un horario
-  // ampliado solo para la demo; NO altera la config ni la lógica comercial real.
-  const isOpen = demo || (detailsVerified && hour >= openHour && hour < closeHour);
   if (status) {
     status.textContent = demo
       ? 'Presentación activa'
       : detailsVerified
-        ? (isOpen ? `Abierto · hasta las ${closeHour}:00` : `Cerrado · abre a las ${openHour}:00`)
-        : 'Pedidos online: muy pronto';
-    status.classList.toggle('is-closed', detailsVerified && !isOpen);
+        ? 'Pedidos online habilitados'
+        : 'Pedidos online no habilitados';
+    status.classList.toggle('is-closed', !demo && !detailsVerified);
     status.classList.toggle('is-soon', !demo && !detailsVerified);
   }
   const statusItems = $$('.app-home .status-item');
   const seps = $$('.app-home .status-sep');
-  const zone = shortZoneLabel(getBusinessConfig().deliveryZone);
+  const enabledModes = [
+    config.deliveryEnabled ? 'delivery' : '',
+    config.pickupEnabled ? 'retiro' : '',
+  ].filter(Boolean).join(' y ');
   const chips = demo
     ? ['Escenario de ejemplo en este dispositivo', 'Cliente · Negocio · Rider']
     : detailsVerified
-      ? ['Delivery propio o retiro en el local', zone]
-      : ['Delivery propio y retiro en el local', 'Zona y horarios a confirmar'];
+      ? ['Configuración verificada por el comercio', enabledModes]
+      : ['Catálogo productivo bloqueado', 'Configuración pendiente'];
   statusItems.forEach((item, index) => {
     const label = chips[index] || '';
     item.textContent = label;
     item.hidden = !label;
     if (seps[index]) seps[index].hidden = !label;
   });
+}
+
+function applyFulfillmentAvailability(availability) {
+  const options = [...document.querySelectorAll('[data-fulfillment-option]')];
+  let firstEnabled = null;
+  for (const label of options) {
+    const mode = label.dataset.fulfillmentOption;
+    const input = label.querySelector(`input[name="deliveryMode"][value="${mode}"]`);
+    const enabled = availability[mode] === true;
+    label.hidden = !enabled;
+    label.setAttribute('aria-hidden', String(!enabled));
+    if (input) {
+      input.disabled = !enabled;
+      if (enabled && !firstEnabled) firstEnabled = input;
+    }
+  }
+  const selected = document.querySelector('input[name="deliveryMode"]:checked');
+  if ((!selected || selected.disabled) && firstEnabled) firstEnabled.checked = true;
 }
 
 // Versión corta de la zona para el chip del home ("Neuquén centro, barrios..." es muy largo).
@@ -295,7 +313,11 @@ function renderCombos() {
   if (!container) return;
   const offerIds = new Set(homeOfferProducts().map((product) => product.id));
   const combos = getCustomerCatalogProducts(getState().products)
-    .filter((product) => product.available && product.stock > 0 && (product.combo || product.categoryId === 'combos'))
+    .filter((product) => (
+      product.available
+      && product.stock > 0
+      && (product.combo || ['combos', 'promos'].includes(product.categoryId))
+    ))
     .filter((product) => !offerIds.has(product.id))
     .slice(0, 8);
 
@@ -365,13 +387,14 @@ function renderCategories() {
   const strips = $$('[data-category-strip]');
   if (!strips.length) return;
   const { activeCategory } = getState();
+  const catalogCategories = categoriesForCurrentCatalog();
   const fullList = [
-    categories[0],
+    catalogCategories[0],
     { id: 'favorites', name: 'Favoritos' },
-    ...categories.slice(1),
+    ...catalogCategories.slice(1),
   ];
   // El home replica la maqueta: sólo las categorías reales, como tarjetas con ícono.
-  const homeList = categories.slice(1);
+  const homeList = catalogCategories.slice(1);
 
   const markupFor = (list) => list.map((category) => `
     <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}">
@@ -426,7 +449,45 @@ function sortProducts(list, sortBy) {
 function activeCategoryName() {
   const { activeCategory } = getState();
   if (activeCategory === 'favorites') return 'Favoritos';
-  return categories.find((category) => category.id === activeCategory)?.name || 'Todos';
+  return categoriesForCurrentCatalog().find((category) => category.id === activeCategory)?.name || 'Todos';
+}
+
+function categoriesForCurrentCatalog() {
+  const remote = new Map();
+  for (const product of getState().products) {
+    const id = sanitizeCategoryId(product?.categoryId);
+    const name = String(product?.categoryName || '').trim();
+    if (id && name && !remote.has(id)) remote.set(id, name);
+  }
+  if (!remote.size) return categories;
+
+  const preferredOrder = [
+    'promos',
+    'gaseosas',
+    'aguas',
+    'jugos',
+    'energeticas',
+    'isotonicas',
+    'cervezas',
+    'vinos-y-espumantes',
+    'gins-y-vodkas',
+    'whisky-y-destilados',
+    'picadas-y-deli',
+    'hielo-y-extras',
+  ];
+  const rank = new Map(preferredOrder.map((id, index) => [id, index]));
+  const dynamic = [...remote.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => (
+      (rank.get(a.id) ?? preferredOrder.length) - (rank.get(b.id) ?? preferredOrder.length)
+      || a.name.localeCompare(b.name, 'es')
+    ));
+  return [{ id: 'all', name: 'Todos' }, ...dynamic];
+}
+
+function sanitizeCategoryId(value) {
+  const id = String(value || '').trim();
+  return /^[a-z0-9][a-z0-9-]{0,39}$/.test(id) ? id : '';
 }
 
 // Rail de ofertas de la categoría activa, arriba del grid del catálogo.
@@ -512,6 +573,7 @@ function renderProducts() {
         <div class="product-body">
           <h3>${escapeHtml(product.name)}</h3>
           <p>${escapeHtml(product.description)}</p>
+          ${product.alcoholic ? '<small class="product-alcohol-notice">Bebida con alcohol</small>' : ''}
         </div>
         <div class="product-bottom">
           ${priceBlock(product)}
@@ -789,7 +851,7 @@ function renderCartList() {
           </svg>
         </span>
         <strong>Tu pedido está vacío</strong>
-        <p class="empty-state-copy">Sumá una pizza del menú y seguí desde acá.</p>
+        <p class="empty-state-copy">Sumá un producto del catálogo y seguí desde acá.</p>
         ${hasActiveOrder ? `
         <div class="cart-active-order">
           <small>Pedido en curso</small>
@@ -803,7 +865,7 @@ function renderCartList() {
           <button class="secondary-button compact" type="button" data-repeat-order="${escapeHtml(latestOrder.id)}">Repetir último pedido</button>
         </div>` : ''}
         <div class="empty-actions">
-          <button class="primary-button compact" type="button" data-nav-view="catalog">Ver el menú</button>
+          <button class="primary-button compact" type="button" data-nav-view="catalog">Ver el catálogo</button>
         </div>
       </div>
     `;
@@ -1203,7 +1265,7 @@ export function renderTracking() {
           <strong>Todavía no hay un pedido en curso</strong>
           <p class="empty-state-copy">Cuando armes tu pedido, acá vas a ver cada avance hasta la entrega.</p>
           <div class="empty-actions">
-            <button class="primary-button compact" type="button" data-nav-view="catalog">Ver el menú</button>
+            <button class="primary-button compact" type="button" data-nav-view="catalog">Ver el catálogo</button>
           </div>
           </div>
         </section>
@@ -1211,7 +1273,9 @@ export function renderTracking() {
     return;
   }
 
-  if (!isDemoMode() || order.previewOnly) {
+  const isInitialDemoSample = isDemoMode()
+    && ['received', 'submitted'].includes(String(order.status || '').trim());
+  if (!isDemoMode() || order.previewOnly || isInitialDemoSample) {
     renderPublicPreviewTracking(container, order);
     return;
   }
@@ -1326,7 +1390,7 @@ function renderPublicPreviewTracking(container, order) {
             </svg>
           </span>
           <small>Pedido de muestra</small>
-          <strong>¡Así de fácil se pide!</strong>
+          <strong>Así se arma un pedido</strong>
           <span>Tu pedido quedó armado como muestra: no se envió al local ni se cobró nada.</span>
         </div>
         <div class="sheet-metrics">
@@ -1335,13 +1399,16 @@ function renderPublicPreviewTracking(container, order) {
           <span><small>Pago</small><strong>Sin procesar</strong></span>
         </div>
         <div class="notice-box public-preview-notice">
-          Cuando el local active los pedidos online, este mismo pedido va a llegar directo a la cocina.
+          ${isDemoMode()
+            ? 'Esta muestra vive sólo en este dispositivo. Podés avanzar el escenario desde Negocio.'
+            : 'Cuando el comercio active los pedidos online, la confirmación llegará al backend real.'}
         </div>
         ${order.deliveryMode === 'delivery' && address.label ? `
           <div class="tracking-address-card">
             <span class="tracking-address-icon" aria-hidden="true">${pinGlyph()}</span>
             <small>Dirección ingresada</small>
             <strong>${escapeHtml(address.label)}</strong>
+            ${address.reference ? `<p>Referencia: ${escapeHtml(address.reference)}</p>` : ''}
           </div>` : ''}
         <details class="order-detail">
           <summary>Ver detalle del pedido de muestra</summary>
@@ -1350,10 +1417,11 @@ function renderPublicPreviewTracking(container, order) {
             <div class="summary-row"><span>Productos</span><strong>${money(order.subtotal)}</strong></div>
             <div class="summary-row"><span>Envío</span><strong>A coordinar</strong></div>
             <div class="summary-row"><span>Pago</span><strong>Sin procesar</strong></div>
+            ${order.notes && order.notes !== 'Sin notas' ? `<p><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>` : ''}
           </div>
         </details>
         <div class="button-row track-actions">
-          <button class="primary-button compact" type="button" data-nav-view="catalog">Volver al menú</button>
+          <button class="primary-button compact" type="button" data-nav-view="catalog">Volver al catálogo</button>
           <button class="ghost-button compact" type="button" data-copy-last-order>Copiar resumen</button>
         </div>
       </section>
@@ -1402,6 +1470,7 @@ export function showProductModal(productId) {
       <div class="summary-box">
         <div class="summary-row"><span>Precio</span><strong>${off > 0 ? `<s>${money(product.oldPrice)}</s> ` : ''}${money(product.price)}</strong></div>
         <div class="summary-row"><span>Presentación</span><strong>${escapeHtml(unitText(product))}</strong></div>
+        ${product.alcoholic ? '<div class="summary-row"><span>Tipo</span><strong>Bebida con alcohol</strong></div>' : ''}
         <div class="summary-row"><span>Preparación</span><strong>${product.prepMinutes} min</strong></div>
         <div class="summary-row"><span>Disponibilidad</span><strong>${escapeHtml(availabilityLabel(product))}</strong></div>
       </div>

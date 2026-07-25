@@ -7,6 +7,7 @@ const requiredFiles = [
   'index.html',
   'styles.css',
   'manifest.webmanifest',
+  'runtime-config.js',
   'sw.js',
   '.nojekyll',
   'README.md',
@@ -18,8 +19,14 @@ const requiredFiles = [
   'js/orders.js',
   'js/business.js',
   'js/delivery.js',
+  'js/production-operations.js',
+  'js/core/runtime-config.js',
+  'js/repositories/unavailable_order_repository.js',
+  'js/services/supabase-auth.js',
+  'js/services/supabase-client.js',
   'js/ui.js',
   'js/app.js',
+  'js/vendor/supabase.js',
 ];
 
 const missing = requiredFiles.filter((relativePath) => !fs.existsSync(path.join(root, relativePath)));

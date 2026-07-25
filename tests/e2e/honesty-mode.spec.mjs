@@ -39,17 +39,89 @@ test('modo demo muestra la franja persistente y rotula los datos de ejemplo', as
   await expect(page.locator('[data-business-dashboard]')).toContainText('Vista de operación');
 });
 
-test('checkout público valida datos y termina en una confirmación que dice que no fue enviada', async ({ page }) => {
+test('runtime completo habilita modo producción sin catálogo demo ni PIN', async ({ page }) => {
+  await page.route('https://taba-test.supabase.co/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'content-range': '0-0/0' },
+      body: '[]',
+    });
+  });
+  await page.addInitScript(({ stateKey }) => {
+    globalThis.__LA_TABA_RUNTIME_CONFIG__ = {
+      mode: 'production',
+      repository: {
+        provider: 'supabase',
+        supabaseUrl: 'https://taba-test.supabase.co',
+        publishableKey: 'sb_publishable_test_key',
+        businessId: '00000000-0000-4000-8000-000000000001',
+      },
+    };
+    localStorage.setItem(stateKey, JSON.stringify({
+      schemaVersion: 3,
+      dataVersion: 'la-taba-runtime-v2',
+      appMode: 'production',
+      products: [],
+      cart: [],
+      orders: [{
+        id: 'PII-CACHED',
+        customerName: 'Cliente cacheado',
+        customerPhone: '2995559999',
+      }],
+    }));
+  }, { stateKey: STATE_KEY });
+  await page.goto('/#business');
+
+  await expect(page.locator('body')).toHaveAttribute('data-app-mode', 'production');
+  await expect(page.locator('[data-view="business"]')).toBeVisible();
+  await expect(page.locator('[data-production-auth-card="business"]')).toBeVisible();
+  await expect(page.locator('[data-production-workspace="business"]')).toBeHidden();
+  await expect(page.locator('[data-view="business"] [data-open-pin]')).toBeHidden();
+  await expect(page.locator('[data-view="business"] [data-admin-unlocked]')).toBeHidden();
+
+  await page.locator('[data-nav-view="home"]').first().click();
+  await expect(page.locator('[data-view="home"] [data-production-catalog-gate]')).toBeVisible();
+  await expect(page.locator('[data-view="home"] [data-catalog-dependent]')).toBeHidden();
+  await expect(page.locator('[data-view="home"]')).not.toContainText(/pedido de muestra|no se envió|1234/i);
+  await expect(page.locator('body')).not.toContainText('Cliente cacheado');
+  expect(await page.evaluate((key) => localStorage.getItem(key), STATE_KEY)).toBeNull();
+});
+
+test('runtime productivo incompleto falla cerrado y no cae a preview/demo', async ({ page }) => {
+  await page.addInitScript(() => {
+    globalThis.__LA_TABA_RUNTIME_CONFIG__ = {
+      mode: 'production',
+      repository: {
+        provider: 'supabase',
+        supabaseUrl: 'http://orders.example.test',
+        publishableKey: 'sb_publishable_test_key',
+        businessId: '00000000-0000-4000-8000-000000000001',
+      },
+    };
+  });
+  await page.goto('/#catalog');
+
+  await expect(page.locator('body')).toHaveAttribute('data-app-mode', 'unavailable');
+  await expect(page.locator('[data-view="catalog"]')).toHaveClass(/is-active/);
+  await expect(page.locator('[data-view="catalog"] [data-production-catalog-gate]')).toBeVisible();
+  await expect(page.locator('[data-view="catalog"] [data-production-catalog-message]')).toContainText('configuración productiva está incompleta');
+  await expect(page.locator('[data-view="catalog"] [data-catalog-dependent]')).toBeHidden();
+  await expect(page.locator('[data-admin-toggle]')).toBeHidden();
+  await expect(page.locator('.topbar [data-production-only]')).toBeHidden();
+});
+
+test('checkout demo valida datos y explicita que no envía el pedido', async ({ page }) => {
   await installPageGuards(page);
   await installBrowserStubs(page);
-  await page.goto('/#catalog');
+  await page.goto('/?demo=1#catalog');
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.getByRole('button', { name: 'Ver mi pedido' }).click();
 
   await page.getByLabel('Nombre').fill('Cliente prueba');
   await page.getByLabel('Teléfono').fill('1');
   await page.getByLabel('Calle y número').fill('x');
-  await page.getByLabel('Localidad o zona').selectOption('Neuquén Capital');
+  await page.getByLabel('Localidad o zona').fill('Neuquén Capital');
   await page.locator('[data-checkout-submit]').click();
   await waitForToast(page, 'Ingresá un teléfono argentino válido');
 
@@ -89,7 +161,7 @@ test('estado viejo de carnicería y perfil incompatible se limpian sin reset man
     history: localStorage.getItem('la_taba_customer_history_v1'),
   }), STATE_KEY);
 
-  expect(persisted.state.dataVersion).toBe('la-taba-pizzeria-v1');
+  expect(persisted.state.dataVersion).toBe('la-taba-runtime-v2');
   expect(persisted.state.orders).toHaveLength(0);
   expect(persisted.state.products.some((product) => /vacío|carne/i.test(product.name))).toBe(false);
   expect(persisted.profile).toBeNull();

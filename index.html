@@ -4,15 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#fff8f1" />
-    <meta name="description" content="La Taba Pizzería: pizzas al horno a leña. Mirá el menú y armá tu pedido." />
-    <title>La Taba Pizzería · Pedidos, negocio y reparto</title>
+    <meta name="description" content="TABA: catálogo de bebidas, pedidos online, operación del negocio y delivery." />
+    <title>TABA · Bebidas, pedidos y delivery</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="assets/icon.svg" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="La Taba Pizzería" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <meta name="apple-mobile-web-app-title" content="TABA" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -21,21 +26,19 @@
         <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio del comercio">
           <span class="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
-              <path d="M12 21 3.6 6.6A16.4 16.4 0 0 1 12 4.4a16.4 16.4 0 0 1 8.4 2.2L12 21Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-              <circle cx="10" cy="9" r="1.3" fill="currentColor"/>
-              <circle cx="14.2" cy="10.6" r="1.3" fill="currentColor"/>
-              <circle cx="11.4" cy="13.8" r="1.3" fill="currentColor"/>
+              <path d="M10 3h4v4l2 2.5V19a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V9.5L10 7V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M8.5 13h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
             </svg>
           </span>
           <span class="brand-text">
-            <strong class="brand-word" data-business-name>La Taba Pizzería</strong>
-            <small data-business-subtitle>Horno a leña · masa madre</small>
+            <strong class="brand-word" data-business-name>TABA</strong>
+            <small data-business-subtitle>Tienda de bebidas</small>
           </span>
         </button>
 
         <nav class="desktop-nav" aria-label="Navegación principal">
           <button type="button" data-nav-view="home">Inicio</button>
-          <button type="button" data-nav-view="catalog">Menú</button>
+          <button type="button" data-nav-view="catalog">Catálogo</button>
           <button type="button" data-nav-view="cart">Pedido <span class="mini-badge" data-cart-count>0</span></button>
           <button type="button" data-nav-view="tracking">Seguir</button>
           <button type="button" data-nav-view="profile">Local</button>
@@ -43,6 +46,7 @@
 
         <div class="topbar-actions">
           <button class="ghost-button compact" type="button" data-admin-toggle data-demo-only hidden>Administrar pedidos</button>
+          <button class="ghost-button compact" type="button" data-nav-view="business" data-production-only hidden>Operación</button>
           <button class="primary-button compact cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
             <span data-cart-total-small>Pedido</span>
           </button>
@@ -61,7 +65,7 @@
           </svg>
         </span>
         <span class="pwa-banner-copy">
-          <strong>Instalar La Taba Pizzería</strong>
+          <strong>Instalar TABA</strong>
           <small>Acceso directo desde tu pantalla de inicio.</small>
         </span>
         <button class="primary-button compact" type="button" data-pwa-install-action>Instalar</button>
@@ -77,7 +81,7 @@
           </svg>
         </span>
         <span class="pwa-banner-copy">
-          <strong>Para instalar La Taba Pizzería:</strong>
+          <strong>Para instalar TABA:</strong>
           <ol class="pwa-ios-steps">
             <li>Tocá <strong>Compartir</strong></li>
             <li>Elegí <strong>“Agregar a pantalla de inicio”</strong></li>
@@ -94,11 +98,16 @@
 
       <main data-app-main>
         <section class="section app-view app-home is-active" data-view="home" aria-hidden="false">
+          <div class="card empty-state" data-production-catalog-gate hidden role="status">
+            <strong>Pedidos online no disponibles</strong>
+            <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
+          </div>
+          <div data-catalog-dependent hidden>
           <div class="home-title">
             <div>
-              <p class="eyebrow">Horno a leña · masa madre</p>
-              <h1 data-business-name>La Taba Pizzería</h1>
-              <p class="home-lead">Pizzas al horno a leña, promos de la casa y delivery propio.</p>
+              <p class="eyebrow" data-business-subtitle>Tienda de bebidas</p>
+              <h1 data-business-name>TABA</h1>
+              <p class="home-lead">Bebidas, promos, hielo y extras con delivery propio.</p>
             </div>
             <button class="secondary-button compact" type="button" data-nav-view="profile">Ver local</button>
           </div>
@@ -134,8 +143,8 @@
             </span>
             <div class="promo-banner-copy">
               <span class="promo-kicker">Promo del día</span>
-              <strong data-promo-banner-title>2 pizzas grandes<br />+ gaseosa 1.5 L</strong>
-              <span class="promo-includes" data-promo-banner-includes>Muzzarella + Especial + Coca-Cola 1.5 L</span>
+              <strong data-promo-banner-title>Promociones verificadas<br />por el comercio</strong>
+              <span class="promo-includes" data-promo-banner-includes>Se publican sólo cuando tienen datos y disponibilidad confirmados.</span>
               <span class="promo-price-row">
                 <span class="promo-price" data-promo-banner-price>$19.990</span>
                 <span class="promo-save" data-promo-banner-save hidden></span>
@@ -146,8 +155,8 @@
 
           <div class="rail-block">
             <div class="rail-head">
-              <h2>Menú</h2>
-              <button class="rail-link" type="button" data-nav-view="catalog">Ver todo el menú ›</button>
+              <h2>Categorías</h2>
+              <button class="rail-link" type="button" data-nav-view="catalog">Ver todo el catálogo ›</button>
             </div>
             <div class="category-strip category-tiles" data-category-strip="home"></div>
           </div>
@@ -155,30 +164,29 @@
           <div class="rail-block">
             <div class="rail-head">
               <h2>Las más pedidas</h2>
-              <button class="rail-link" type="button" data-category-id="pizzas">Ver todas ›</button>
+              <button class="rail-link" type="button" data-nav-view="catalog">Ver todas ›</button>
             </div>
             <div class="offers-rail" data-offers-rail></div>
           </div>
 
           <div class="rail-block">
             <div class="rail-head">
-              <h2>Combos y promos</h2>
-              <button class="rail-link" type="button" data-category-id="combos">Ver todos ›</button>
+              <h2>Promos</h2>
+              <button class="rail-link" type="button" data-category-id="promos">Ver todas ›</button>
             </div>
             <div class="combos-rail" data-combos-rail></div>
           </div>
 
           <div class="search-box">
             <span aria-hidden="true">⌕</span>
-            <input data-search-input data-search-jump type="search" placeholder="Buscar en el menú…" aria-label="Buscar en el menú" />
+            <input data-search-input data-search-jump type="search" placeholder="Buscar en el catálogo…" aria-label="Buscar en el catálogo" />
           </div>
 
           <button class="order-now-cta" type="button" data-nav-view="catalog">
             <span class="order-now-ico" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                <path d="M12 21 3.6 6.6A16.4 16.4 0 0 1 12 4.4a16.4 16.4 0 0 1 8.4 2.2L12 21Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-                <circle cx="10" cy="9" r="1.2" fill="currentColor"/>
-                <circle cx="14.2" cy="10.6" r="1.2" fill="currentColor"/>
+                <path d="M5 8h14l-1.4 11H6.4L5 8Z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                <path d="M9 8V6a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
               </svg>
             </span>
             <span>Armar pedido</span>
@@ -220,9 +228,15 @@
               <button class="ghost-button compact" type="button" data-pitch-go="catalog">Probar pedido</button>
             </div>
           </aside>
+          </div>
         </section>
 
         <section class="section app-view" data-view="catalog" hidden aria-hidden="true">
+          <div class="card empty-state" data-production-catalog-gate hidden role="status">
+            <strong>Pedidos online no disponibles</strong>
+            <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
+          </div>
+          <div data-catalog-dependent hidden>
           <div class="section-head catalog-head">
             <div>
               <nav class="crumbs" aria-label="Ruta de navegación">
@@ -236,7 +250,7 @@
 
           <div class="search-box">
             <span aria-hidden="true">⌕</span>
-            <input data-search-input type="search" placeholder="Buscar en el menú…" aria-label="Buscar en el menú completo" />
+            <input data-search-input type="search" placeholder="Buscar en el catálogo…" aria-label="Buscar en el catálogo completo" />
           </div>
 
           <div class="category-strip" data-category-strip></div>
@@ -263,9 +277,15 @@
           <div class="grid-block">
             <div class="product-grid" data-product-grid></div>
           </div>
+          </div>
         </section>
 
         <section class="section app-view soft" data-view="cart" hidden aria-hidden="true">
+          <div class="card empty-state" data-production-catalog-gate hidden role="status">
+            <strong>Pedidos online no disponibles</strong>
+            <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
+          </div>
+          <div data-catalog-dependent hidden>
           <div class="section-head">
             <div>
               <p class="eyebrow">Mi pedido</p>
@@ -287,11 +307,11 @@
               <h3>Datos para finalizar</h3>
               <p class="form-hint required-hint">Los campos marcados con <span class="req" aria-hidden="true">*</span> son obligatorios.</p>
               <div class="delivery-mode">
-                <label>
+                <label data-fulfillment-option="delivery">
                   <input type="radio" name="deliveryMode" value="delivery" checked />
                   <span>Delivery</span>
                 </label>
-                <label>
+                <label data-fulfillment-option="pickup">
                   <input type="radio" name="deliveryMode" value="pickup" />
                   <span>Retiro en local</span>
                 </label>
@@ -316,12 +336,7 @@
                   </label>
                   <label>
                     Localidad o zona <span class="req" aria-hidden="true">*</span>
-                    <select name="customerNeighborhood" autocomplete="address-level2">
-                      <option value="">Seleccioná una opción</option>
-                      <option value="Neuquén Capital">Neuquén Capital · a coordinar</option>
-                      <option value="Cipolletti">Cipolletti · a coordinar</option>
-                      <option value="Otra localidad">Otra localidad · a coordinar</option>
-                    </select>
+                    <input name="customerNeighborhood" autocomplete="address-level2" placeholder="Ingresá la localidad o zona" />
                   </label>
                 </div>
                 <label>
@@ -331,7 +346,7 @@
                 <input type="hidden" name="customerAddress" />
               </div>
 
-              <label class="remember-customer-row">
+              <label class="remember-customer-row" data-demo-only hidden>
                 <input type="checkbox" name="rememberCustomer" />
                 <span>
                   <strong>Recordar mis datos para próximos pedidos</strong>
@@ -347,27 +362,28 @@
 
               <label>
                 Observaciones del pedido
-                <textarea name="customerNotes" rows="3" placeholder="Ej: sin aceitunas, bien cocida, cortar en 8 porciones"></textarea>
+                <textarea name="customerNotes" rows="3" placeholder="Ej: indicaciones para preparar o entregar el pedido"></textarea>
               </label>
 
               <div class="summary-box" data-order-summary></div>
               <div class="warning-box hidden" data-checkout-warning></div>
 
               <div class="trust-row" aria-hidden="false">
-                <span class="trust-text"><strong data-checkout-trust-title>Estás probando la experiencia de pedido.</strong><small data-checkout-trust-copy>Cuando el local active los pedidos online, tu pedido va a llegar directo a la cocina.</small></span>
+                <span class="trust-text"><strong data-checkout-trust-title>Revisá los datos del pedido.</strong><small data-checkout-trust-copy>La disponibilidad del envío se informa antes de confirmar.</small></span>
               </div>
 
               <div class="button-row">
                 <button class="primary-button confirm-button" type="submit" data-checkout-submit>
-                  Crear pedido de muestra
+                  Continuar
                 </button>
               </div>
               <div class="button-row secondary-actions">
                 <button class="ghost-button" type="button" data-whatsapp-copy data-whatsapp-available hidden>Solicitar por WhatsApp</button>
                 <button class="ghost-button" type="button" data-copy-order>Copiar pedido</button>
               </div>
-              <p class="form-hint" data-checkout-mode-note>Sin cobros: no se procesa ningún pago ni se envían datos.</p>
+              <p class="form-hint" data-checkout-mode-note>El medio de pago se coordina con el local.</p>
             </form>
+          </div>
           </div>
         </section>
 
@@ -422,8 +438,8 @@
           </div>
         </section>
 
-        <section class="section app-view admin-section" data-view="business" data-demo-only hidden aria-hidden="true">
-          <div class="card admin-lock-card" data-admin-locked>
+        <section class="section app-view admin-section" data-view="business" data-operational-only hidden aria-hidden="true">
+          <div class="card admin-lock-card" data-admin-locked data-demo-auth-only>
             <div>
               <p class="eyebrow">Negocio</p>
               <h2>Ingresá para administrar pedidos</h2>
@@ -434,6 +450,31 @@
               <button class="secondary-button" type="button" data-nav-view="profile">Volver al local</button>
             </div>
           </div>
+
+          <div class="card admin-lock-card production-auth-card" data-production-only data-production-auth-card="business" hidden>
+            <div>
+              <p class="eyebrow">Negocio</p>
+              <h2>Acceso seguro requerido</h2>
+              <p>Ingresá con una cuenta owner o empleado vinculada a este comercio.</p>
+            </div>
+            <form class="production-auth-form" data-production-auth-form="business">
+              <label>
+                Email
+                <input name="email" type="email" autocomplete="username" required />
+              </label>
+              <label>
+                Contraseña
+                <input name="password" type="password" autocomplete="current-password" required />
+              </label>
+              <p class="form-hint" data-production-auth-message role="status" hidden></p>
+              <div class="button-row">
+                <button class="primary-button" type="submit">Ingresar</button>
+                <button class="secondary-button" type="button" data-nav-view="profile">Volver al local</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="production-workspace" data-production-only data-production-workspace="business" hidden aria-hidden="true"></div>
 
           <div data-admin-unlocked hidden>
             <div class="section-head">
@@ -450,8 +491,8 @@
           </div>
         </section>
 
-        <section class="section app-view admin-section" data-view="rider" data-demo-only hidden aria-hidden="true">
-          <div class="card admin-lock-card" data-admin-locked>
+        <section class="section app-view admin-section" data-view="rider" data-operational-only hidden aria-hidden="true">
+          <div class="card admin-lock-card" data-admin-locked data-demo-auth-only>
             <div>
               <p class="eyebrow">Repartidor</p>
               <h2>Ingresá para ver entregas</h2>
@@ -463,10 +504,35 @@
             </div>
           </div>
 
+          <div class="card admin-lock-card production-auth-card" data-production-only data-production-auth-card="rider" hidden>
+            <div>
+              <p class="eyebrow">Repartidor</p>
+              <h2>Acceso seguro requerido</h2>
+              <p>Ingresá con una cuenta rider activa de este comercio.</p>
+            </div>
+            <form class="production-auth-form" data-production-auth-form="rider">
+              <label>
+                Email
+                <input name="email" type="email" autocomplete="username" required />
+              </label>
+              <label>
+                Contraseña
+                <input name="password" type="password" autocomplete="current-password" required />
+              </label>
+              <p class="form-hint" data-production-auth-message role="status" hidden></p>
+              <div class="button-row">
+                <button class="primary-button" type="submit">Ingresar</button>
+                <button class="secondary-button" type="button" data-nav-view="profile">Volver al local</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="production-workspace" data-production-only data-production-workspace="rider" hidden aria-hidden="true"></div>
+
           <div data-admin-unlocked hidden>
             <div class="section-head rider-section-head">
               <div>
-                <p class="eyebrow">Repartidor de <span data-rider-business-name>La Taba Pizzería</span></p>
+                <p class="eyebrow">Repartidor de <span data-rider-business-name>TABA</span></p>
                 <h2 class="rider-title">Mis entregas</h2>
               </div>
             </div>
@@ -482,7 +548,7 @@
 
       <nav class="mobile-nav" aria-label="Navegación móvil">
         <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>
-        <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Menú</span></button>
+        <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
         <button type="button" data-nav-view="cart"><span class="mn-ico icon-order" aria-hidden="true"></span><span class="mn-label">Pedido</span><span class="mn-badge" data-cart-count-mobile>0</span></button>
         <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguimiento</span></button>
         <button type="button" data-nav-view="profile"><span class="mn-ico icon-store" aria-hidden="true"></span><span class="mn-label">Local</span></button>
@@ -618,7 +684,13 @@
 
     <div class="toast hidden" data-toast role="status" aria-live="polite"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    <script src="runtime-config.js"></script>
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+      defer
+    ></script>
     <script type="module" src="js/app.js"></script>
   </body>
 </html>

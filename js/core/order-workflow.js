@@ -16,6 +16,7 @@ export const TERMINAL_WORKFLOW_STATUSES = Object.freeze(['delivered', 'canceled'
 
 export const DEMO_TO_WORKFLOW_STATUS = Object.freeze({
   received: 'submitted',
+  rejected: 'canceled',
   preparing: 'preparing',
   ready: 'ready',
   on_the_way: 'on_the_way',

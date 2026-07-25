@@ -102,12 +102,7 @@ export async function fillCheckout(page, {
     await page.getByLabel('Calle y número').fill(street ?? address ?? '');
     const zone = page.getByLabel('Localidad o zona');
     const requestedZone = neighborhood ?? (address ? 'Neuquén Capital' : '');
-    const zoneValue = /cipolletti/i.test(requestedZone)
-      ? 'Cipolletti'
-      : /neuqu[eé]n/i.test(requestedZone)
-        ? 'Neuquén Capital'
-        : 'Otra localidad';
-    await zone.selectOption(zoneValue);
+    await zone.fill(requestedZone);
     await page.getByLabel(/Referencia de entrega|Referencia para el repartidor/).fill(reference ?? '');
   } else {
     await page.getByLabel('Retiro en local').check();

@@ -72,6 +72,7 @@ const PRODUCT_READINESS_COVERAGE = Object.freeze([
 ]);
 
 beforeEach(() => {
+  delete globalThis.__LA_TABA_RUNTIME_CONFIG__;
   installStorage();
   setLocationSearch('');
   resetRepositoryFactoryForTests();
@@ -80,28 +81,36 @@ beforeEach(() => {
   disableGpsTracking({ silent: true });
 });
 
-test('product readiness: backend real remains opt-in and demo is default', () => {
+test('product readiness: backend real requiere runtime completo y preview queda local', () => {
   let repository = getOrderRepository();
-  assert.equal(getDataMode(), 'demo');
-  assert.equal(repository.mode, 'demo');
+  assert.equal(getDataMode(), 'preview');
+  assert.equal(repository.mode, 'preview');
   assert.equal(isPersistentOrderRepository(repository), false);
   assert.equal(getRepositoryDiagnostic(), null);
 
   setLocationSearch('?supabaseUrl=https://la-taba.supabase.co&supabaseAnonKey=anon-public-key');
   resetRepositoryFactoryForTests();
   repository = getOrderRepository();
-  assert.equal(getDataMode(), 'demo');
-  assert.equal(repository.mode, 'demo');
+  assert.equal(getDataMode(), 'preview');
+  assert.equal(repository.mode, 'preview');
   assert.equal(isPersistentOrderRepository(repository), false);
   assert.equal(getRepositoryDiagnostic(), null);
 
   setLocationSearch('?data=supabase');
   resetRepositoryFactoryForTests();
   repository = getOrderRepository();
-  assert.equal(getDataMode(), 'supabase');
-  assert.equal(repository.mode, 'demo');
+  assert.equal(getDataMode(), 'preview');
+  assert.equal(repository.mode, 'preview');
   assert.equal(isPersistentOrderRepository(repository), false);
-  assert.equal(getRepositoryDiagnostic()?.requestedMode, 'supabase');
+  assert.equal(getRepositoryDiagnostic(), null);
+
+  globalThis.__LA_TABA_RUNTIME_CONFIG__ = { mode: 'production', repository: { provider: 'supabase' } };
+  resetRepositoryFactoryForTests();
+  repository = getOrderRepository();
+  assert.equal(getDataMode(), 'unavailable');
+  assert.equal(repository.mode, 'unavailable');
+  assert.equal(isPersistentOrderRepository(repository), false);
+  assert.equal(getRepositoryDiagnostic()?.blocking, true);
 });
 
 test('product readiness: tracking without real GPS stays honest', () => {

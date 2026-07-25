@@ -13,19 +13,30 @@ import { getState } from '../js/state.js';
 import { resetState } from './helpers.mjs';
 
 beforeEach(() => {
+  delete globalThis.__LA_TABA_RUNTIME_CONFIG__;
   resetState();
   resetRepositoryFactoryForTests();
   setLocationSearch('');
 });
 
-test('repository factory keeps GitHub Pages in demo mode by default', () => {
+test('repository factory keeps GitHub Pages in local preview mode by default', () => {
   const repository = getOrderRepository();
-  assert.equal(getDataMode(), 'demo');
-  assert.equal(repository.mode, 'demo');
+  assert.equal(getDataMode(), 'preview');
+  assert.equal(repository.mode, 'preview');
 });
 
-test('repository factory exposes demo realtime mode when relay is configured', () => {
+test('relay query is ignored outside explicit demo mode', () => {
   setLocationSearch('?relay=http://localhost:8787&room=qa');
+  resetRepositoryFactoryForTests();
+
+  const repository = getOrderRepository();
+  assert.equal(getDataMode(), 'preview');
+  assert.equal(repository.mode, 'preview');
+  assert.equal('getTransportStatus' in repository, false);
+});
+
+test('repository factory exposes relay only with demo=1', () => {
+  setLocationSearch('?demo=1&relay=http://localhost:8787&room=qa');
   resetRepositoryFactoryForTests();
 
   const repository = getOrderRepository();
@@ -34,45 +45,94 @@ test('repository factory exposes demo realtime mode when relay is configured', (
   assert.equal(typeof repository.getTransportStatus, 'function');
 });
 
-test('data=supabase sin config cae a demo con diagnóstico técnico', () => {
-  setLocationSearch('?data=supabase');
+test('query strings no activan Supabase ni producen fallback técnico', () => {
+  setLocationSearch('?data=supabase&supabaseUrl=https://attacker.example&supabaseAnonKey=stolen-key');
   resetRepositoryFactoryForTests();
 
   const repository = getOrderRepository();
-  assert.equal(getDataMode(), 'supabase');
-  assert.equal(repository.mode, 'demo');
-  const diagnostic = getRepositoryDiagnostic();
-  assert.ok(diagnostic, 'debe exponer un diagnóstico');
-  assert.equal(diagnostic.requestedMode, 'supabase');
-  assert.match(diagnostic.message, /supabaseUrl|anonKey|demo/i);
-});
-
-test('demo default no deja diagnóstico de fallback', () => {
-  const repository = getOrderRepository();
-  assert.equal(repository.mode, 'demo');
+  assert.equal(getDataMode(), 'preview');
+  assert.equal(repository.mode, 'preview');
   assert.equal(getRepositoryDiagnostic(), null);
 });
 
-// Supabase es estrictamente opt-in: tener config en la URL NO debe activarlo
-// si no se pidió explícitamente con data=supabase (o production/backend).
-test('supabaseUrl en la URL sin data=supabase no activa Supabase (demo sigue default)', () => {
+test('preview default no deja diagnóstico de fallback', () => {
+  const repository = getOrderRepository();
+  assert.equal(repository.mode, 'preview');
+  assert.equal(getRepositoryDiagnostic(), null);
+});
+
+test('supabaseUrl en la URL sin data=supabase tampoco activa red', () => {
   setLocationSearch('?supabaseUrl=https://la-taba.supabase.co&supabaseAnonKey=anon-public-key');
   resetRepositoryFactoryForTests();
 
   const repository = getOrderRepository();
-  assert.equal(getDataMode(), 'demo');
-  assert.equal(repository.mode, 'demo');
+  assert.equal(getDataMode(), 'preview');
+  assert.equal(repository.mode, 'preview');
   assert.equal(getRepositoryDiagnostic(), null);
 });
 
-test('data=demo explícito se mantiene en demo sin diagnóstico', () => {
+test('data=demo no reemplaza la bandera explícita demo=1', () => {
   setLocationSearch('?data=demo');
   resetRepositoryFactoryForTests();
 
   const repository = getOrderRepository();
-  assert.equal(getDataMode(), 'demo');
-  assert.equal(repository.mode, 'demo');
+  assert.equal(getDataMode(), 'preview');
+  assert.equal(repository.mode, 'preview');
   assert.equal(getRepositoryDiagnostic(), null);
+});
+
+test('runtime productivo completo activa Supabase y usa publishableKey', () => {
+  globalThis.__LA_TABA_RUNTIME_CONFIG__ = {
+    mode: 'production',
+    repository: {
+      provider: 'supabase',
+      supabaseUrl: 'https://la-taba.supabase.co',
+      publishableKey: 'publishable-key',
+      businessId: '00000000-0000-4000-8000-000000000001',
+    },
+  };
+  setLocationSearch('?data=http&api=https://attacker.example');
+  resetRepositoryFactoryForTests();
+
+  const repository = getOrderRepository();
+  assert.equal(getDataMode(), 'supabase');
+  assert.equal(repository.mode, 'supabase');
+  assert.equal(getRepositoryDiagnostic(), null);
+});
+
+test('runtime productivo incompleto queda unavailable y nunca cae a demo/preview', () => {
+  globalThis.__LA_TABA_RUNTIME_CONFIG__ = {
+    mode: 'production',
+    repository: {
+      provider: 'supabase',
+      supabaseUrl: 'https://la-taba.supabase.co',
+    },
+  };
+  resetRepositoryFactoryForTests();
+
+  const repository = getOrderRepository();
+  assert.equal(getDataMode(), 'unavailable');
+  assert.equal(repository.mode, 'unavailable');
+  assert.equal(repository.createOrder({ customerName: 'No enviar' }).ok, false);
+  assert.equal(getRepositoryDiagnostic()?.blocking, true);
+  assert.equal(getRepositoryDiagnostic()?.requestedMode, 'production');
+});
+
+test('runtime HTTP histórico queda fail-closed y no activa un backend sin Auth', () => {
+  globalThis.__LA_TABA_RUNTIME_CONFIG__ = {
+    mode: 'production',
+    repository: {
+      provider: 'http',
+      baseUrl: 'https://orders.example.test/api',
+    },
+  };
+  setLocationSearch('?data=supabase&api=https://attacker.example&supabaseUrl=https://attacker.example');
+  resetRepositoryFactoryForTests();
+
+  const repository = getOrderRepository();
+  assert.equal(getDataMode(), 'unavailable');
+  assert.equal(repository.mode, 'unavailable');
+  assert.equal(getRepositoryDiagnostic()?.blocking, true);
 });
 
 test('demo order repository creates orders through the current checkout flow', () => {

@@ -44,7 +44,24 @@ import { getRealtimeStatus, initRealtime, onRealtimeStatusChange, retryRelayConn
 import { recenterMapViews, renderMapViews } from './map/map_view.js';
 import { activeTrackingLiveness } from './map/route_geometry.js';
 import { getOrderRepository, getRepositoryDiagnostic, startOrderRepositorySync } from './repositories/repository_factory.js';
-import { isDemoMode, isOperationalView } from './core/app-mode.js';
+import {
+  handleProductionOperationsPageHide,
+  handleProductionOperationsViewChange,
+  handleProductionAuthSubmit,
+  handleProductionOperationsAction,
+  initProductionOperations,
+  renderProductionOperations,
+} from './production-operations.js';
+import {
+  APP_MODE_DEMO,
+  APP_MODE_PRODUCTION,
+  APP_MODE_PUBLIC,
+  APP_MODE_UNAVAILABLE,
+  getAppMode,
+  isDemoMode,
+  isOperationalView,
+} from './core/app-mode.js';
+import { isProductionCatalogReady } from './core/runtime-config.js';
 import { toggleFavoriteProduct } from './core/customer-preferences.js';
 import {
   dismissIOSGuide,
@@ -107,6 +124,7 @@ function closeRepeatModal() {
 // limpio. Pensado para empezar una presentación sin pedidos de prueba viejos.
 // No corre en el uso normal (sin el parámetro) ni afecta a otros equipos.
 async function maybeResetDemoSession() {
+  if (!isDemoMode()) return false;
   try {
     const params = new URLSearchParams(window.location.search);
     if (!params.has('reset') && !params.has('demo-reset')) return false;
@@ -164,22 +182,27 @@ async function bootstrap() {
     applyBusinessConfig();
     bindEvents();
     subscribe(renderAll);
-    initRealtime();
+    initProductionOperations({ onChange: renderAll });
+    if (isDemoMode()) {
+      initRealtime();
+      // La conexión con el relay sólo existe en presentación. Producción usa
+      // exclusivamente el repositorio configurado por el despliegue.
+      onRealtimeStatusChange(renderLiveSurfaces);
+    }
     maybeOpenPitchFromUrl();
-    // La conexión con la sala (relay) cambia fuera del flujo de estado: cuando
-    // conecta/cae, refrescamos las superficies de seguimiento para que el chip
-    // de conexión sea honesto sin esperar otro cambio de pedido.
-    onRealtimeStatusChange(renderLiveSurfaces);
     startOrderRepositorySync();
     renderAll();
     playViewEnter(activeView);
     resumeSimulationIfNeeded();
     startFreshnessTick();
-    // Aviso discreto si se pidió un backend y la app tuvo que seguir local.
+    // Un runtime productivo inválido nunca cae silenciosamente a datos locales.
     const diagnostic = getRepositoryDiagnostic();
     if (diagnostic) {
       console.warn(`[PedidoPropio] ${diagnostic.message}`);
-      setTimeout(() => showToast('No se pudo conectar al servidor de pedidos. La app sigue funcionando en este equipo.'), 600);
+      const message = diagnostic.blocking
+        ? 'Los pedidos online no están disponibles por un problema de configuración.'
+        : 'No se pudo conectar al servidor de pedidos.';
+      setTimeout(() => showToast(message), 600);
     }
   } catch (error) {
     // Evita pantalla en blanco si algo falla en el primer render.
@@ -208,24 +231,45 @@ function renderAll() {
   renderCustomerHome();
   renderCart();
   renderTracking();
-  renderBusinessDashboard();
-  renderDeliveryPanel();
+  if (isDemoMode()) {
+    renderBusinessDashboard();
+    renderDeliveryPanel();
+  } else {
+    clearDemoOperationalSurfaces();
+  }
+  renderProductionOperations();
   // Tracking/negocio/rider generan nodos dinámicos después del primer pase.
   applyWhatsappAvailability();
   updateAddressFieldVisibility();
   renderMapViews();
+  applyRenderedModeState();
   // Un render completo ya refleja la vivacidad actual; mantener la firma en
   // sincronía hace que el tick sólo actúe cuando cambia por el paso del tiempo.
   lastLivenessSignature = trackingLivenessSignature();
 }
 
 function applyAppMode() {
-  const demo = isDemoMode();
+  const mode = getAppMode();
+  const demo = mode === APP_MODE_DEMO;
+  const production = mode === APP_MODE_PRODUCTION;
+  const operational = demo || production;
+
+  document.body.dataset.appMode = mode;
   document.body.classList.toggle('is-demo-mode', demo);
-  document.body.classList.toggle('is-public-mode', !demo);
+  document.body.classList.toggle('is-public-mode', mode === APP_MODE_PUBLIC);
+  document.body.classList.toggle('is-production-mode', production);
+  document.body.classList.toggle('is-unavailable-mode', mode === APP_MODE_UNAVAILABLE);
   document.querySelectorAll('[data-demo-only]').forEach((node) => {
     node.hidden = !demo;
     node.setAttribute('aria-hidden', String(!demo));
+  });
+  document.querySelectorAll('[data-production-only]').forEach((node) => {
+    node.hidden = !production;
+    node.setAttribute('aria-hidden', String(!production));
+  });
+  document.querySelectorAll('[data-operational-only]').forEach((node) => {
+    node.hidden = !operational;
+    node.setAttribute('aria-hidden', String(!operational));
   });
   const banner = document.querySelector('[data-demo-mode-banner]');
   if (banner) banner.hidden = !demo;
@@ -234,22 +278,134 @@ function applyAppMode() {
     node.textContent = demo ? getBusinessConfig().adminPin : '';
   });
 
+  const checkoutCopy = checkoutModeCopy(mode);
   const submit = document.querySelector('[data-checkout-submit]');
-  if (submit) submit.textContent = demo ? 'Confirmar pedido' : 'Crear pedido de muestra';
+  if (submit) submit.textContent = checkoutCopy.submit;
   const trustTitle = document.querySelector('[data-checkout-trust-title]');
-  if (trustTitle) trustTitle.textContent = demo
-    ? 'Pedido de la presentación.'
-    : 'Estás probando la experiencia de pedido.';
+  if (trustTitle) trustTitle.textContent = checkoutCopy.title;
   const trustCopy = document.querySelector('[data-checkout-trust-copy]');
-  if (trustCopy) trustCopy.textContent = demo
-    ? 'El estado avanza desde el panel del negocio y la vista de reparto.'
-    : 'Cuando el local active los pedidos online, tu pedido va a llegar directo a la cocina.';
+  if (trustCopy) trustCopy.textContent = checkoutCopy.copy;
   const modeNote = document.querySelector('[data-checkout-mode-note]');
-  if (modeNote) modeNote.textContent = demo
-    ? 'Seguí el avance en Seguimiento, Negocio y Rider.'
-    : 'Sin cobros: no se procesa ningún pago ni se envían datos.';
+  if (modeNote) modeNote.textContent = checkoutCopy.note;
 
+  applyProductionCatalogGate(mode);
   applyWhatsappAvailability();
+}
+
+function checkoutModeCopy(mode) {
+  if (mode === APP_MODE_DEMO) {
+    return {
+      submit: 'Confirmar pedido',
+      title: 'Pedido de la presentación.',
+      copy: 'El estado avanza desde el panel del negocio y la vista de reparto.',
+      note: 'Seguí el avance en Seguimiento, Negocio y Rider.',
+    };
+  }
+  if (mode === APP_MODE_PRODUCTION) {
+    return {
+      submit: 'Confirmar pedido',
+      title: 'Pedido online al local.',
+      copy: 'Al confirmar, el pedido se registra en el sistema del comercio.',
+      note: 'El pago se coordina directamente con el local.',
+    };
+  }
+  if (mode === APP_MODE_UNAVAILABLE) {
+    return {
+      submit: 'Pedidos no disponibles',
+      title: 'Pedidos online temporalmente no disponibles.',
+      copy: 'La configuración del servicio está incompleta.',
+      note: 'No ingreses datos personales hasta que el comercio habilite el servicio.',
+    };
+  }
+  return {
+    submit: 'Crear pedido de muestra',
+    title: 'Estás probando la experiencia de pedido.',
+    copy: 'Cuando el local active los pedidos online, tu pedido va a llegar directo a la cocina.',
+    note: 'Sin cobros: no se procesa ningún pago ni se envían datos.',
+  };
+}
+
+function applyProductionCatalogGate(mode = getAppMode()) {
+  const blocked = isProductionOrderingBlocked(mode);
+  document.querySelectorAll('[data-catalog-dependent]').forEach((node) => {
+    node.hidden = blocked;
+    node.setAttribute('aria-hidden', String(blocked));
+  });
+  document.querySelectorAll('[data-production-catalog-gate]').forEach((node) => {
+    node.hidden = !blocked;
+    node.setAttribute('aria-hidden', String(!blocked));
+    const message = node.querySelector('[data-production-catalog-message]');
+    if (message) {
+      message.textContent = mode === APP_MODE_UNAVAILABLE
+        ? 'La configuración productiva está incompleta. Los pedidos permanecen bloqueados.'
+        : mode === APP_MODE_PUBLIC
+          ? 'Este despliegue todavía no habilitó pedidos online.'
+          : 'El catálogo verificado todavía no está disponible. Los pedidos permanecen bloqueados.';
+    }
+  });
+
+  const submit = document.querySelector('[data-checkout-submit]');
+  if (submit) submit.disabled = blocked;
+}
+
+function isProductionOrderingBlocked(mode = getAppMode()) {
+  if (mode === APP_MODE_PUBLIC || mode === APP_MODE_UNAVAILABLE) return true;
+  return mode === APP_MODE_PRODUCTION && !isProductionCatalogReady();
+}
+
+function clearDemoOperationalSurfaces() {
+  document.querySelectorAll('[data-business-dashboard], [data-delivery-panel]').forEach((node) => {
+    node.replaceChildren();
+  });
+}
+
+function applyRenderedModeState() {
+  const mode = getAppMode();
+  if (mode !== APP_MODE_DEMO) {
+    document.querySelectorAll('[data-demo-auth-only], [data-admin-unlocked]').forEach((node) => {
+      node.hidden = true;
+      node.setAttribute('aria-hidden', 'true');
+    });
+  }
+  applyProductionCatalogGate(mode);
+  if (mode === APP_MODE_PRODUCTION) applyProductionTrackingCopy();
+}
+
+function applyProductionTrackingCopy() {
+  const panel = document.querySelector('[data-tracking-panel] [data-public-preview]');
+  if (!panel) return;
+
+  panel.removeAttribute('data-public-preview');
+  panel.setAttribute('data-production-order', '');
+  const head = panel.querySelector('.preview-confirm-head');
+  if (head) {
+    const small = head.querySelector('small');
+    const title = head.querySelector('strong');
+    const copy = head.querySelector('span:last-child');
+    if (small) small.textContent = 'Pedido confirmado';
+    if (title) title.textContent = 'Tu pedido fue registrado';
+    if (copy) copy.textContent = 'El local recibió los datos del pedido. Seguí su estado desde esta pantalla.';
+  }
+
+  const metrics = [...panel.querySelectorAll('.sheet-metrics > span')];
+  if (metrics[1]) {
+    const label = metrics[1].querySelector('small');
+    if (label) label.textContent = 'Total';
+  }
+  if (metrics[2]) {
+    const value = metrics[2].querySelector('strong');
+    if (value) value.textContent = 'A coordinar';
+  }
+
+  const notice = panel.querySelector('.public-preview-notice');
+  if (notice) notice.textContent = 'El estado se actualizará cuando el comercio procese el pedido.';
+  const summary = panel.querySelector('details > summary');
+  if (summary) summary.textContent = 'Ver detalle del pedido';
+  panel.querySelectorAll('.summary-row').forEach((row) => {
+    const label = row.querySelector('span');
+    const value = row.querySelector('strong');
+    if (label?.textContent.trim() === 'Pago' && value) value.textContent = 'A coordinar';
+  });
 }
 
 function applyWhatsappAvailability() {
@@ -267,9 +423,15 @@ function applyWhatsappAvailability() {
 function renderLiveSurfaces() {
   renderHomeActiveOrder();
   renderTracking();
-  renderBusinessDashboard();
-  renderDeliveryPanel();
+  if (isDemoMode()) {
+    renderBusinessDashboard();
+    renderDeliveryPanel();
+  } else {
+    clearDemoOperationalSurfaces();
+  }
+  renderProductionOperations();
   renderMapViews();
+  applyRenderedModeState();
   lastLivenessSignature = trackingLivenessSignature();
 }
 
@@ -296,7 +458,10 @@ function startFreshnessTick() {
 function bindEvents() {
   window.addEventListener('popstate', syncViewFromLocation);
   window.addEventListener('hashchange', syncViewFromLocation);
-  window.addEventListener('pagehide', () => disableGpsTracking({ silent: true }));
+  window.addEventListener('pagehide', () => {
+    disableGpsTracking({ silent: true });
+    handleProductionOperationsPageHide();
+  });
   document.addEventListener('visibilitychange', () => {
     const result = handleGpsVisibilityChange();
     if (result?.changed && !document.hidden) renderLiveSurfaces();
@@ -373,6 +538,10 @@ function bindEvents() {
 
     const addId = target.closest('[data-add-product]')?.dataset.addProduct;
     if (addId) {
+      if (isProductionOrderingBlocked()) {
+        showToast('El catálogo verificado todavía no está disponible.');
+        return;
+      }
       const result = addToCart(addId);
       showToast(result.message);
       if (result.ok) {
@@ -433,6 +602,7 @@ function bindEvents() {
 
     const pinTarget = target.closest('[data-open-pin]')?.dataset.adminTarget;
     if (pinTarget) {
+      if (!isDemoMode()) return;
       pendingAdminTarget = normalizeView(pinTarget);
       openPinModal();
       return;
@@ -443,6 +613,7 @@ function bindEvents() {
     // los tests sobre la tarjeta de bloqueo dentro de cada vista de admin.
     const homePinTarget = target.closest('[data-home-open-pin]')?.dataset.homeOpenPin;
     if (homePinTarget) {
+      if (!isDemoMode()) return;
       pendingAdminTarget = normalizeView(homePinTarget);
       openPinModal();
       return;
@@ -466,6 +637,7 @@ function bindEvents() {
     }
 
     if (target.closest('[data-open-pitch]')) {
+      if (getAppMode() === APP_MODE_PRODUCTION || getAppMode() === APP_MODE_UNAVAILABLE) return;
       openPitchModal();
       return;
     }
@@ -497,22 +669,30 @@ function bindEvents() {
       return;
     }
 
-    const businessResult = await Promise.resolve(handleBusinessAction(target));
-    if (businessResult.handled) {
-      if (businessResult.message) showToast(businessResult.message);
-      if (businessResult.navigate) setActiveView(businessResult.navigate);
+    const productionResult = await Promise.resolve(handleProductionOperationsAction(target));
+    if (productionResult.handled) {
+      if (productionResult.message) showToast(productionResult.message);
       return;
     }
 
-    const deliveryResult = await Promise.resolve(handleDeliveryAction(target));
-    if (deliveryResult.handled) {
-      showToast(deliveryResult.message);
+    if (isDemoMode()) {
+      const businessResult = await Promise.resolve(handleBusinessAction(target));
+      if (businessResult.handled) {
+        if (businessResult.message) showToast(businessResult.message);
+        if (businessResult.navigate) setActiveView(businessResult.navigate);
+        return;
+      }
+
+      const deliveryResult = await Promise.resolve(handleDeliveryAction(target));
+      if (deliveryResult.handled) {
+        showToast(deliveryResult.message);
+      }
     }
   });
 
   // Búsqueda: hay un buscador en Home y otro en Catálogo (ambos data-search-input).
   document.addEventListener('input', (event) => {
-    const businessInput = handleBusinessInput(event.target);
+    const businessInput = isDemoMode() ? handleBusinessInput(event.target) : { handled: false };
     if (businessInput.handled) return;
 
     if (event.target?.matches?.('[name="couponCode"]')) {
@@ -545,17 +725,26 @@ function bindEvents() {
     if (target.matches('[data-sort-select]')) {
       setSortBy(target.value || 'recommended');
     }
-    const deliveryChange = await Promise.resolve(handleDeliveryChange(target));
+    const deliveryChange = isDemoMode()
+      ? await Promise.resolve(handleDeliveryChange(target))
+      : { handled: false };
     if (deliveryChange.handled) {
       showToast(deliveryChange.message);
     }
   });
 
-  document.addEventListener('submit', (event) => {
+  document.addEventListener('submit', async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLFormElement)) return;
+    if (target.matches('[data-production-auth-form]')) {
+      event.preventDefault();
+      const result = await handleProductionAuthSubmit(target);
+      if (result.message) showToast(result.message);
+      return;
+    }
     if (!target.matches('[data-business-setup-form]')) return;
     event.preventDefault();
+    if (!isDemoMode()) return;
     const result = submitBusinessSetupForm();
     if (result?.ok) {
       showToast(result.message);
@@ -566,6 +755,10 @@ function bindEvents() {
   let confirming = false;
   $('[data-checkout-form]')?.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (isProductionOrderingBlocked()) {
+      showToast('Los pedidos online todavía no están disponibles.');
+      return;
+    }
     if (confirming) return; // evita doble confirmación / doble pedido
     confirming = true;
     const button = event.currentTarget.querySelector('[type="submit"]');
@@ -577,7 +770,7 @@ function bindEvents() {
     try {
       const values = {
         ...getCheckoutFormValues(),
-        previewOnly: !isDemoMode(),
+        previewOnly: getAppMode() === APP_MODE_PUBLIC,
       };
       const result = await Promise.resolve(getOrderRepository().createOrder(values));
 
@@ -586,17 +779,18 @@ function bindEvents() {
         return;
       }
 
-      showToast(isDemoMode()
+      const mode = getAppMode();
+      showToast(mode === APP_MODE_PRODUCTION
         ? 'Pedido confirmado. Seguilo en Seguimiento.'
-        : 'Listo: pedido de muestra creado. No se envió al local.');
+        : 'Pedido confirmado. Seguilo en Seguimiento. Muestra local: No se envió al local ni se cobró nada.');
       setActiveView('tracking');
     } catch (_) {
       showToast('No se pudo crear el pedido. Reintentá.');
     } finally {
       confirming = false;
       if (button) {
-        button.disabled = false;
-        button.textContent = originalLabel || (isDemoMode() ? 'Confirmar pedido' : 'Crear pedido de muestra');
+        button.disabled = isProductionOrderingBlocked();
+        button.textContent = originalLabel || checkoutModeCopy(getAppMode()).submit;
       }
     }
   });
@@ -606,6 +800,7 @@ function bindEvents() {
     const target = event.target;
     if (!(target instanceof Element)) return;
     if (target.closest('[data-retry-relay]')) {
+      if (!isDemoMode()) return;
       const result = retryRelayConnection();
       showToast(result.message);
       renderLiveSurfaces();
@@ -653,7 +848,7 @@ function bindEvents() {
         showToast('Abrí la app con ?relay=…&room=… para compartir links.');
         return;
       }
-      const base = `${status.relayBase}/?relay=${encodeURIComponent(status.relayBase)}&room=${encodeURIComponent(status.room)}`;
+      const base = `${status.relayBase}/?demo=1&relay=${encodeURIComponent(status.relayBase)}&room=${encodeURIComponent(status.room)}`;
       const link = riderLink ? `${base}#rider` : base;
       copyTextToClipboard(link)
         .then(() => showToast(riderLink ? 'Link del rider copiado.' : 'Link del cliente copiado.'))
@@ -672,6 +867,10 @@ function bindEvents() {
 
   $('[data-pin-form]')?.addEventListener('submit', (event) => {
     event.preventDefault();
+    if (!isDemoMode()) {
+      closePinModal();
+      return;
+    }
     const form = event.currentTarget;
     const formData = new FormData(form);
     const pin = String(formData.get('pin') || '').trim();
@@ -708,6 +907,10 @@ function bindEvents() {
 let pendingAdminTarget = null;
 
 function toggleAdminMode() {
+  if (!isDemoMode()) {
+    setActiveView(getAppMode() === APP_MODE_PRODUCTION ? 'business' : 'home');
+    return;
+  }
   if (getState().adminUnlocked) {
     setActiveView('business');
     return;
@@ -721,6 +924,7 @@ function toggleAdminMode() {
 function openAdminArea(targetArea) {
   const view = normalizeView(targetArea);
   setActiveView(view);
+  if (!isDemoMode()) return;
   if (getState().adminUnlocked) {
     return;
   }
@@ -748,7 +952,7 @@ function setActiveView(view, options = {}) {
     writeViewHash(nextView, options.replace === true);
   }
 
-  handleViewChangeForSimulation(nextView);
+  syncGpsSharingWithView(nextView);
   renderAll();
   if (changed) playViewEnter(nextView);
 
@@ -761,10 +965,21 @@ function syncViewFromLocation() {
   const nextView = viewFromHash();
   if (nextView === activeView) return;
   activeView = nextView;
-  handleViewChangeForSimulation(nextView);
+  syncGpsSharingWithView(nextView);
   renderAll();
   playViewEnter(nextView);
   window.scrollTo(0, 0);
+}
+
+function syncGpsSharingWithView(view) {
+  // La ubicación se comparte sólo mientras el rider conserva su vista activa.
+  // Los dos motores (demo y Supabase) mantienen watchers independientes.
+  if (view === 'rider') {
+    handleViewChangeForSimulation(view);
+  } else {
+    disableGpsTracking({ silent: true });
+  }
+  handleProductionOperationsViewChange(view);
 }
 
 // Motion premium: marca la sección recién activada para que sus cards entren
@@ -820,6 +1035,7 @@ function renderActiveView() {
 // home, o desde "¿Qué es PedidoPropio?" en Local. Nunca aparece sola, así no
 // molesta a clientes recurrentes que sólo quieren pedir.
 function maybeOpenPitchFromUrl() {
+  if ([APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(getAppMode())) return;
   try {
     const params = new URLSearchParams(window.location.search);
     if (params.get('pitch') === '1' || params.has('presentacion')) openPitchModal();
@@ -837,6 +1053,7 @@ function closePitchModal() {
 }
 
 function openPinModal() {
+  if (!isDemoMode()) return;
   const modal = $('[data-pin-modal]');
   if (!modal) return;
   $('[data-pin-error]')?.classList.add('hidden');

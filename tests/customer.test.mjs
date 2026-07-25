@@ -82,7 +82,7 @@ test('cupon publico desactivado no aplica descuentos', () => {
   assert.equal(created.ok, true);
   assert.equal(created.order.coupon, null);
   assert.equal(created.order.discountTotal, 0);
-  assert.equal(created.order.total, 8990 + BUSINESS_CONFIG.deliveryFee);
+  assert.equal(created.order.total, 8990);
 });
 
 test('cupon invalido informa error y no descuenta', () => {
@@ -231,11 +231,11 @@ test('cashChange defensivo: un pedido viejo con transferencia se normaliza sin c
   assert.equal(cash.cashChange, '20000');
 });
 
-test('Supabase sigue opt-in: el modo default es demo local', () => {
+test('Supabase sigue opt-in: el modo default es preview local', () => {
   const previousLocation = globalThis.location;
   globalThis.location = { search: '' };
   try {
-    assert.equal(getDataMode(), 'demo');
+    assert.equal(getDataMode(), 'preview');
   } finally {
     globalThis.location = previousLocation;
   }

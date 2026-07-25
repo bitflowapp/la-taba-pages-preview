@@ -3,7 +3,9 @@ import test from 'node:test';
 import {
   APP_DATA_VERSION,
   APP_MODE_DEMO,
+  APP_MODE_PRODUCTION,
   APP_MODE_PUBLIC,
+  APP_MODE_UNAVAILABLE,
   getAppMode,
   isDemoMode,
   isOperationalView,
@@ -16,15 +18,30 @@ import {
 } from '../js/core/validators.js';
 import { isPersistedStateCompatible, STATE_SCHEMA_VERSION } from '../js/state.js';
 
-test('el modo demo exige demo=1 y las vistas operativas quedan fuera del modo público', () => {
+const PRODUCTION_RUNTIME = {
+  mode: 'production',
+  repository: {
+    provider: 'supabase',
+    supabaseUrl: 'https://la-taba.supabase.co',
+    publishableKey: 'publishable-key',
+    businessId: '00000000-0000-4000-8000-000000000001',
+  },
+};
+
+test('demo exige demo=1, producción exige runtime completo y preview no abre vistas operativas', () => {
   assert.equal(isDemoMode(''), false);
   assert.equal(isDemoMode('?demo=0'), false);
   assert.equal(isDemoMode('?demo=1'), true);
   assert.equal(getAppMode(''), APP_MODE_PUBLIC);
   assert.equal(getAppMode('?demo=1'), APP_MODE_DEMO);
+  assert.equal(getAppMode('', PRODUCTION_RUNTIME), APP_MODE_PRODUCTION);
+  assert.equal(getAppMode('?demo=1', PRODUCTION_RUNTIME), APP_MODE_DEMO);
+  assert.equal(getAppMode('', { mode: 'production', repository: {} }), APP_MODE_UNAVAILABLE);
   assert.equal(isOperationalView('business', ''), true);
   assert.equal(isOperationalView('rider', ''), true);
   assert.equal(isOperationalView('business', '?demo=1'), false);
+  assert.equal(isOperationalView('business', '', PRODUCTION_RUNTIME), false);
+  assert.equal(isOperationalView('business', '', { mode: 'production', repository: {} }), true);
 });
 
 test('la persistencia anterior o de otro modo se invalida automáticamente', () => {

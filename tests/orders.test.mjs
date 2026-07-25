@@ -13,7 +13,13 @@ import {
 import { dateTime, getState, setState } from '../js/state.js';
 import { resetState, state } from './helpers.mjs';
 
-beforeEach(() => resetState());
+beforeEach(() => {
+  Object.defineProperty(globalThis, 'location', {
+    value: { search: '?demo=1' },
+    configurable: true,
+  });
+  resetState();
+});
 
 test('creates a valid delivery order and builds a complete WhatsApp message', () => {
   addToCart('p-muzzarella', 1);

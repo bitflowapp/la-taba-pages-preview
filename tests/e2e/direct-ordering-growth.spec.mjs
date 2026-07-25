@@ -33,8 +33,10 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await waitForToast(page, /Pedido confirmado/);
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-tracking-panel]')).toContainText('Código');
-  await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveCount(1);
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Pedido de muestra');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('no se envió al local ni se cobró nada');
+  await expect(page.locator('[data-tracking-panel] [data-delivery-code]')).toHaveCount(0);
+  await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveCount(0);
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(0);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\bETA\b/i);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);

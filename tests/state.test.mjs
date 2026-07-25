@@ -11,6 +11,10 @@ test('safeJsonParse returns fallback for corrupted storage payloads', () => {
 });
 
 test('hydrateState repairs corrupted persisted state without crashing', () => {
+  Object.defineProperty(globalThis, 'location', {
+    value: { search: '?demo=1' },
+    configurable: true,
+  });
   const hydrated = hydrateState({
     products: [
       { id: 'p-coca', stock: 2, available: true, price: -999 },

@@ -41,6 +41,8 @@ export const BUSINESS_CONFIG = Object.freeze({
   deliveryFee: 1990,
   minDeliveryOrder: 5000,
   orderingDetailsVerified: false,
+  deliveryEnabled: true,
+  pickupEnabled: true,
   adminPin: '1234',
   currency: 'ARS',
   orderPrefix: 'LT',

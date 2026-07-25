@@ -37,6 +37,10 @@ globalThis.localStorage = globalThis.localStorage || memoryStorage();
 globalThis.sessionStorage = globalThis.sessionStorage || memoryStorage();
 
 beforeEach(() => {
+  Object.defineProperty(globalThis, 'location', {
+    value: { search: '?demo=1' },
+    configurable: true,
+  });
   resetState();
   // resetState() no toca businessConfig: lo devolvemos al default entre tests.
   updateBusinessConfig(buildDefaultBusinessConfig());

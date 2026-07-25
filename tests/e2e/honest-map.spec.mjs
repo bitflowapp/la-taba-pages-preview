@@ -34,12 +34,12 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   const tracking = page.locator('[data-tracking-panel]');
 
   // Dirección textual real cargada por el cliente.
-  await expect(tracking).toContainText('Mendoza 851, Otra localidad');
+  await expect(tracking).toContainText('Mendoza 851, Centro');
   await expect(tracking).toContainText('Casa azul');
 
-  // Honesto: una sola nota de confianza y sin "En vivo".
-  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveCount(1);
-  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE);
+  // La confirmación inicial es una muestra local: todavía no presenta tracking.
+  await expect(tracking).toContainText('no se envió al local ni se cobró nada');
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveCount(0);
   await expect(tracking).not.toContainText('En vivo');
 
   // No hay mapa montado, fallback en inglés, manija, marcadores falsos (LT/CL) ni ruta sin GPS real.
@@ -50,8 +50,8 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await expect(tracking.locator('.sheet-handle')).toHaveCount(0);
   await expect(tracking).not.toContainText(/\bMap\b/);
 
-  // Estado visible amable y consistente con Negocio/Rider: "Recibido" para el estado inicial.
-  await expect(tracking).toContainText('Recibido');
+  // Una muestra recién creada no afirma que el local la recibió.
+  await expect(tracking).not.toContainText('Recibido');
   await expect(tracking.locator('.sheet-head .status-chip')).toHaveCount(0);
 
   // No hay kilómetros ni ETA inventados. El tiempo estimado textual puede existir si el pedido lo trae.

@@ -1,9 +1,11 @@
-const CACHE_NAME = 'la-taba-pizzeria-v8-polish-cache';
+const CACHE_PREFIX = 'la-taba-runtime-';
+const CACHE_NAME = 'la-taba-runtime-v10-production-cache';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './manifest.webmanifest',
+  './runtime-config.js',
   './assets/icon.svg',
   './assets/hero/horno-lena.webp',
   './assets/products/pizza-muzzarella.webp',
@@ -43,6 +45,7 @@ const ASSETS = [
   './js/core/realtime-sync.js',
   './js/core/reorder.js',
   './js/core/rider.js',
+  './js/core/runtime-config.js',
   './js/core/simulation.js',
   './js/core/storage.js',
   './js/core/validators.js',
@@ -61,8 +64,13 @@ const ASSETS = [
   './js/repositories/repository_factory.js',
   './js/repositories/storage_repository.js',
   './js/repositories/supabase_order_repository.js',
+  './js/repositories/unavailable_order_repository.js',
+  './js/services/supabase-auth.js',
+  './js/services/supabase-client.js',
+  './js/vendor/supabase.js',
   './js/business.js',
   './js/delivery.js',
+  './js/production-operations.js',
   './js/realtime.js',
   './js/simulation.js',
   './js/ui.js',
@@ -70,7 +78,7 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).catch(() => undefined),
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)),
   );
   self.skipWaiting();
 });
@@ -78,7 +86,11 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+          .map((key) => caches.delete(key)),
+      ))
       .then(() => self.clients.claim()),
   );
 });

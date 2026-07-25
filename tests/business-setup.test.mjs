@@ -51,6 +51,10 @@ const validValues = Object.freeze({
 });
 
 beforeEach(() => {
+  Object.defineProperty(globalThis, 'location', {
+    value: { search: '?demo=1' },
+    configurable: true,
+  });
   globalThis.localStorage.clear();
   globalThis.sessionStorage.clear();
   resetState();

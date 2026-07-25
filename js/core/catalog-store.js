@@ -7,21 +7,37 @@ export const CATALOG_BADGE_OPTIONS = Object.freeze(['', 'Promo', 'Nuevo', 'Más 
 
 const CATEGORY_IDS = new Set(categories.map((category) => category.id).filter((id) => id !== 'all'));
 const DEMO_PRODUCT_IDS = new Set(demoProducts.map((product) => product.id));
-const DEFAULT_CATEGORY_ID = 'pizzas';
+const DEFAULT_CATEGORY_ID = 'gaseosas';
 const DEFAULT_MARKET_NOTE = 'El local confirma disponibilidad antes de preparar tu pedido.';
 
 const TONE_BY_CATEGORY = Object.freeze({
-  pizzas: 'pizza',
+  gaseosas: 'drink',
+  aguas: 'drink',
+  jugos: 'drink',
+  energeticas: 'drink',
+  isotonicas: 'drink',
+  cervezas: 'alcoholic',
+  'vinos-espumantes': 'alcoholic',
+  'gins-vodkas': 'alcoholic',
+  'whisky-destilados': 'alcoholic',
+  'picadas-deli': 'food',
+  'hielo-extras': 'ice',
   promos: 'promo',
-  combos: 'combo',
-  bebidas: 'drink',
 });
 
 const UNIT_BY_CATEGORY = Object.freeze({
-  pizzas: { unit: 'unidad', unitLabel: 'Grande · 8 porciones' },
+  gaseosas: { unit: 'unidad', unitLabel: 'Unidad' },
+  aguas: { unit: 'unidad', unitLabel: 'Unidad' },
+  jugos: { unit: 'unidad', unitLabel: 'Unidad' },
+  energeticas: { unit: 'unidad', unitLabel: 'Unidad' },
+  isotonicas: { unit: 'unidad', unitLabel: 'Unidad' },
+  cervezas: { unit: 'unidad', unitLabel: 'Unidad' },
+  'vinos-espumantes': { unit: 'unidad', unitLabel: 'Unidad' },
+  'gins-vodkas': { unit: 'unidad', unitLabel: 'Unidad' },
+  'whisky-destilados': { unit: 'unidad', unitLabel: 'Unidad' },
+  'picadas-deli': { unit: 'unidad', unitLabel: 'Unidad' },
+  'hielo-extras': { unit: 'unidad', unitLabel: 'Unidad' },
   promos: { unit: 'promo', unitLabel: 'Promo' },
-  combos: { unit: 'combo', unitLabel: 'Combo' },
-  bebidas: { unit: 'unidad', unitLabel: 'Unidad' },
 });
 
 export function getEditableCategories() {

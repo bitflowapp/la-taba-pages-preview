@@ -28,13 +28,13 @@ test('carga inicial, home sin lista infinita y catálogo por categorías', async
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
   await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
 
-  // Seleccionar la categoría de gaseosas (conserva el id técnico histórico).
-  await page.locator('[data-view="catalog"] [data-category-id="pizzas"]').click();
+  // Seleccionar la categoría de gaseosas.
+  await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
   await expect(page.locator('[data-catalog-title]')).toHaveText('Gaseosas');
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
 
-  // Seleccionar la categoría de aguas (conserva el id técnico histórico).
-  await page.locator('[data-view="catalog"] [data-category-id="bebidas"]').click();
+  // Seleccionar la categoría de aguas.
+  await page.locator('[data-view="catalog"] [data-category-id="aguas"]').click();
   await expect(page.locator('[data-catalog-title]')).toHaveText('Aguas');
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
 
@@ -56,14 +56,14 @@ test('agregar producto desde una categoría del catálogo', async ({ page }) => 
 
   await page.goto('/?demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-view="catalog"] [data-category-id="pizzas"]').click();
+  await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
   await expect(page.locator('[data-catalog-title]')).toHaveText('Gaseosas');
 
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await waitForToast(page, /agregado al pedido/);
   await expect(page.locator('[data-cart-count]')).not.toHaveText('0');
   await expect(page.locator('[data-floating-cart]')).toBeVisible();
-  await expect(page.locator('[data-floating-cart]')).toContainText(/1 ítem/);
+  await expect(page.locator('[data-floating-cart]')).toContainText(/Ver pedido ·/);
   await page.locator('[data-floating-cart]').click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
@@ -86,7 +86,7 @@ test('catálogo: tiles limpios (nombre debajo) y breadcrumb compacto', async ({ 
 
   await page.goto('/?demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-view="catalog"] [data-category-id="combos"]').click();
+  await page.locator('[data-view="catalog"] [data-category-id="energeticas"]').click();
   await expect(page.locator('[data-catalog-title]')).toHaveText('Energéticas');
 
   const card = page.locator('[data-product-grid] .product-card').first();
@@ -491,7 +491,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
 });
 
   for (const [name, viewport] of [
-    ['narrow 320x720', { width: 320, height: 720 }],
+    ['narrow 320x700', { width: 320, height: 700 }],
     ['Android-small 360x800', { width: 360, height: 800 }],
     ['iPhone-like 390x844', { width: 390, height: 844 }],
     ['Android-like 412x915', { width: 412, height: 915 }],

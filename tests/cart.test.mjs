@@ -25,48 +25,48 @@ beforeEach(() => {
 test('cart supports add, increment, decrement, remove, and clear', () => {
   assert.deepEqual(getCartItems(), []);
 
-  assert.equal(addToCart('p-napolitana').ok, true);
+  assert.equal(addToCart('qa-jugo-naranja').ok, true);
   assert.equal(state().cart[0].quantity, 1);
 
-  assert.equal(incrementCartItem('p-napolitana').ok, true);
+  assert.equal(incrementCartItem('qa-jugo-naranja').ok, true);
   assert.equal(state().cart[0].quantity, 2);
 
-  decrementCartItem('p-napolitana');
+  decrementCartItem('qa-jugo-naranja');
   assert.equal(state().cart[0].quantity, 1);
 
-  removeCartItem('p-napolitana');
+  removeCartItem('qa-jugo-naranja');
   assert.deepEqual(state().cart, []);
 
-  addToCart('p-napolitana');
+  addToCart('qa-jugo-naranja');
   clearCart();
   assert.deepEqual(state().cart, []);
 });
 
 test('cart rejects exhausted products and never exceeds stock', () => {
-  assert.equal(addToCart('p-agua').ok, false);
+  assert.equal(addToCart('qa-hielo').ok, false);
   assert.deepEqual(state().cart, []);
 
   for (let index = 0; index < 4; index += 1) {
-    assert.equal(addToCart('p-napolitana').ok, true);
+    assert.equal(addToCart('qa-jugo-naranja').ok, true);
   }
 
-  const rejected = addToCart('p-napolitana');
+  const rejected = addToCart('qa-jugo-naranja');
   assert.equal(rejected.ok, false);
   assert.match(rejected.message, /Stock disponible: 4/);
   assert.equal(state().cart[0].quantity, 4);
 });
 
 test('cart rejects invalid quantities and prunes disabled products from state', () => {
-  assert.equal(addToCart('p-coca', 0).ok, false);
-  assert.equal(addToCart('p-coca', -2).ok, false);
+  assert.equal(addToCart('qa-agua-mineral', 0).ok, false);
+  assert.equal(addToCart('qa-agua-mineral', -2).ok, false);
   assert.deepEqual(state().cart, []);
 
-  addToCart('p-coca', 2);
+  addToCart('qa-agua-mineral', 2);
   resetState({
     products: state().products.map((product) => (
-      product.id === 'p-coca' ? { ...product, available: false } : product
+      product.id === 'qa-agua-mineral' ? { ...product, available: false } : product
     )),
-    cart: [{ productId: 'p-coca', quantity: 2 }],
+    cart: [{ productId: 'qa-agua-mineral', quantity: 2 }],
   });
 
   assert.deepEqual(state().cart, []);
@@ -74,8 +74,8 @@ test('cart rejects invalid quantities and prunes disabled products from state', 
 });
 
 test('cart calculates subtotal, delivery fee, and totals correctly', () => {
-  addToCart('p-napolitana', 2);
-  addToCart('p-coca', 1);
+  addToCart('qa-jugo-naranja', 2);
+  addToCart('qa-agua-mineral', 1);
 
   const subtotal = 2 * 9990 + 2900;
   assert.equal(getCartSubtotal(), subtotal);

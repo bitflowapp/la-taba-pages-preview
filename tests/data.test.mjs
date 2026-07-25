@@ -35,17 +35,31 @@ test('catalog data is internally consistent', () => {
   assert.deepEqual(orphanCategories, []);
 });
 
-test('preview catalog is beverages-only and explicitly marked as QA', () => {
+test('preview catalog is beverages-only and internally marked as QA', () => {
   const categoryNames = new Set(categories.map((category) => category.name));
   for (const expected of ['Promos', 'Gaseosas', 'Aguas', 'Jugos', 'Cervezas', 'Hielo y extras']) {
     assert.ok(categoryNames.has(expected), `missing category: ${expected}`);
   }
   assert.ok(products.every((product) => product.qaFixture === true));
-  assert.ok(products.every((product) => /QA/.test(product.name)));
   assert.ok(products.every((product) => /Sin valor comercial/.test(product.marketNote)));
+  assert.ok(products.every((product) => product.id.startsWith('qa-')));
   for (const product of products) {
     if (product.image) {
       assert.equal(product.image, 'assets/products/qa-beverage-placeholder.svg');
     }
+  }
+});
+
+test('active catalog has no inherited pizzeria identifiers or names', () => {
+  const forbidden = /\b(?:pizza|muzzarella|fugazzeta|calabresa|pepperoni|combo-pizza)\b/i;
+  for (const category of categories) {
+    assert.doesNotMatch(`${category.id} ${category.name}`, forbidden);
+  }
+  for (const product of products) {
+    assert.doesNotMatch(
+      `${product.id} ${product.name} ${product.categoryId}`,
+      forbidden,
+      `inherited pizzeria identifier in active product ${product.id}`,
+    );
   }
 });

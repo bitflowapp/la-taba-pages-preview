@@ -20,7 +20,7 @@ function order(id, status, overrides = {}) {
     deliveryMode: overrides.deliveryMode || 'delivery',
     createdAt: overrides.createdAt || new Date().toISOString(),
     statusHistory: overrides.statusHistory || [{ status, at: overrides.createdAt || new Date().toISOString() }],
-    items: [{ productId: 'p-muzzarella', name: 'Vacio', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: 1000, unit: 'kg' }],
   };
 }
 

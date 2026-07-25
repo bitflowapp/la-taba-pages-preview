@@ -54,7 +54,7 @@
       </header>
 
       <div class="demo-mode-banner" data-demo-mode-banner hidden role="status">
-        <span class="demo-mode-pill"><i aria-hidden="true"></i><strong>Presentación comercial</strong><span>· escenario de ejemplo en este dispositivo</span></span>
+        <span class="demo-mode-pill"><i aria-hidden="true"></i><strong>Demo</strong></span>
       </div>
 
       <div class="pwa-banner pwa-banner-install" data-pwa-install-banner hidden>
@@ -103,15 +103,6 @@
             <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
           </div>
           <div data-catalog-dependent hidden>
-          <div class="home-title">
-            <div>
-              <p class="eyebrow" data-business-subtitle>Tienda de bebidas</p>
-              <h1 data-business-name>TABA</h1>
-              <p class="home-lead">Bebidas, promos, hielo y extras con delivery propio.</p>
-            </div>
-            <button class="secondary-button compact" type="button" data-nav-view="profile">Ver local</button>
-          </div>
-
           <div class="status-bar" role="status">
             <span class="status-dot" data-open-status>Pedidos online: muy pronto</span>
             <span class="status-sep" aria-hidden="true"></span>
@@ -135,31 +126,28 @@
           </button>
 
           <div data-home-active-order hidden></div>
-          <div data-customer-actions></div>
 
-          <button class="promo-banner" type="button" data-category-id="promos" data-promo-banner>
-            <span class="promo-photo" aria-hidden="true">
-              <img src="assets/products/qa-beverage-placeholder.svg" alt="" width="760" height="608" loading="eager" decoding="async" fetchpriority="high" />
-            </span>
-            <div class="promo-banner-copy">
-              <span class="promo-kicker">Promo del día</span>
-              <strong data-promo-banner-title>Promociones verificadas<br />por el comercio</strong>
-              <span class="promo-includes" data-promo-banner-includes>Se publican sólo cuando tienen datos y disponibilidad confirmados.</span>
-              <span class="promo-price-row">
-                <span class="promo-price" data-promo-banner-price>$19.990</span>
-                <span class="promo-save" data-promo-banner-save hidden></span>
-              </span>
-            </div>
-            <span class="promo-cta">Ver promo</span>
-          </button>
+          <div class="search-box home-search">
+            <span aria-hidden="true">⌕</span>
+            <input data-search-input data-search-jump type="search" placeholder="Buscar bebidas…" aria-label="Buscar bebidas" />
+          </div>
 
           <div class="rail-block">
             <div class="rail-head">
               <h2>Categorías</h2>
-              <button class="rail-link" type="button" data-nav-view="catalog">Ver todo el catálogo ›</button>
+              <button class="rail-link" type="button" data-nav-view="catalog">Ver todas ›</button>
             </div>
             <div class="category-strip category-tiles" data-category-strip="home"></div>
           </div>
+
+          <button class="promo-banner promo-banner-neutral" type="button" data-category-id="promos">
+            <span class="promo-neutral-art" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="promo-banner-copy">
+              <strong>Promos de TABA</strong>
+              <span class="promo-includes">Combos y packs seleccionados</span>
+            </span>
+            <span class="promo-cta">Ver promociones</span>
+          </button>
 
           <div class="rail-block">
             <div class="rail-head">
@@ -169,19 +157,6 @@
             <div class="offers-rail" data-offers-rail></div>
           </div>
 
-          <div class="rail-block">
-            <div class="rail-head">
-              <h2>Promos</h2>
-              <button class="rail-link" type="button" data-category-id="promos">Ver todas ›</button>
-            </div>
-            <div class="combos-rail" data-combos-rail></div>
-          </div>
-
-          <div class="search-box">
-            <span aria-hidden="true">⌕</span>
-            <input data-search-input data-search-jump type="search" placeholder="Buscar en el catálogo…" aria-label="Buscar en el catálogo" />
-          </div>
-
           <button class="order-now-cta" type="button" data-nav-view="catalog">
             <span class="order-now-ico" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
@@ -189,45 +164,8 @@
                 <path d="M9 8V6a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
               </svg>
             </span>
-            <span>Armar pedido</span>
+            <span>Ver catálogo completo</span>
           </button>
-
-          <div data-customer-history></div>
-
-          <section class="role-intro" aria-label="Cómo funciona el sistema" data-demo-only hidden>
-            <article class="role-card role-card-client">
-              <h2>Cliente</h2>
-              <p>Elegí tus bebidas, confirmá el pedido y seguí la entrega.</p>
-              <button class="primary-button compact" type="button" data-nav-view="catalog">Empezar a pedir</button>
-            </article>
-            <article class="role-card role-card-business">
-              <h2>Negocio</h2>
-              <p>Recibí pedidos, preparalos y controlá el reparto.</p>
-              <span class="role-card-pin">Código de presentación: <strong data-admin-pin>1234</strong></span>
-              <button class="secondary-button compact" type="button" data-home-open-pin="business">Entrar como negocio</button>
-            </article>
-            <article class="role-card role-card-rider">
-              <h2>Rider</h2>
-              <p>Tomá entregas y confirmá cada avance hasta la puerta del cliente.</p>
-              <span class="role-card-pin">Código de presentación: <strong data-admin-pin>1234</strong></span>
-              <button class="secondary-button compact" type="button" data-home-open-pin="rider">Entrar como rider</button>
-            </article>
-          </section>
-
-          <aside class="product-intro" aria-label="Acerca de PedidoPropio" data-demo-only hidden>
-            <div class="product-intro-copy">
-              <span class="product-intro-badge">
-                <span class="product-intro-dot" aria-hidden="true"></span>
-                <strong data-product-name>PedidoPropio</strong>
-              </span>
-              <p class="product-intro-claim" data-product-tagline>Tu sistema de pedidos directo, sin depender de apps con comisión.</p>
-              <p class="product-intro-note"><strong data-business-name>TABA Bebidas</strong> funcionando sobre <strong data-product-name>PedidoPropio</strong>.</p>
-            </div>
-            <div class="product-intro-actions">
-              <button class="primary-button compact" type="button" data-open-pitch>Ver cómo funciona</button>
-              <button class="ghost-button compact" type="button" data-pitch-go="catalog">Probar pedido</button>
-            </div>
-          </aside>
           </div>
         </section>
 
@@ -339,14 +277,10 @@
                     <input name="customerNeighborhood" autocomplete="address-level2" placeholder="Ingresá la localidad o zona" />
                   </label>
                 </div>
-                <label>
-                  Referencia de entrega
-                  <input name="customerReference" autocomplete="off" placeholder="Ej: casa con portón negro, tocar timbre" />
-                </label>
                 <input type="hidden" name="customerAddress" />
               </div>
 
-              <label class="remember-customer-row" data-demo-only hidden>
+              <label class="remember-customer-row remember-customer-compact" data-demo-only hidden>
                 <input type="checkbox" name="rememberCustomer" />
                 <span>
                   <strong>Recordar mis datos para próximos pedidos</strong>
@@ -360,12 +294,21 @@
               </div>
               <input type="hidden" name="paymentMethod" value="coordinate" />
 
-              <label>
-                Observaciones del pedido
-                <textarea name="customerNotes" rows="3" placeholder="Ej: indicaciones para preparar o entregar el pedido"></textarea>
-              </label>
+              <details class="checkout-instructions">
+                <summary>Agregar indicaciones</summary>
+                <div class="checkout-instructions-fields">
+                  <label>
+                    Referencia de entrega
+                    <input name="customerReference" autocomplete="off" placeholder="Ej: casa con portón negro, tocar timbre" />
+                  </label>
+                  <label>
+                    Observaciones del pedido
+                    <textarea name="customerNotes" rows="3" placeholder="Ej: indicaciones para preparar o entregar el pedido"></textarea>
+                  </label>
+                </div>
+              </details>
 
-              <label class="remember-customer-row">
+              <label class="remember-customer-row age-confirmation" data-age-confirmation hidden>
                 <input type="checkbox" name="ageConfirmed" />
                 <span>
                   <strong>Confirmo que cumplo la edad mínima</strong>
@@ -409,7 +352,7 @@
           <div class="section-head">
             <div>
               <p class="eyebrow">Local</p>
-              <h2 data-business-profile-name>TABA Bebidas · QA</h2>
+              <h2 data-business-profile-name>TABA</h2>
               <p class="profile-lead" data-business-subtitle>Contacto, horarios y condiciones del local.</p>
             </div>
           </div>
@@ -417,7 +360,7 @@
             <div class="card">
               <h3>Información del local</h3>
               <ul class="info-list">
-                <li><span>Local</span><strong data-business-profile-name>TABA Bebidas · QA</strong></li>
+                <li><span>Local</span><strong data-business-profile-name>TABA</strong></li>
                 <li><span>Dirección</span><strong data-business-address>A confirmar con el local</strong></li>
                 <li><span>Horarios</span><strong data-business-hours>A confirmar con el local</strong></li>
                 <li><span>Zona de entrega</span><strong data-business-zone>A confirmar con el local</strong></li>
@@ -441,7 +384,7 @@
                 <button class="secondary-button" type="button" data-open-admin-view="business">Panel del negocio</button>
                 <button class="ghost-button" type="button" data-open-admin-view="rider">Vista del repartidor</button>
               </div>
-              <button class="ghost-button compact pitch-trigger" type="button" data-open-pitch>¿Qué es PedidoPropio? · Presentación comercial</button>
+              <button class="ghost-button compact pitch-trigger" type="button" data-open-pitch>Guía de demo</button>
             </div>
           </div>
         </section>
@@ -550,8 +493,7 @@
       </main>
 
       <button class="floating-cart hidden" type="button" data-floating-cart data-open-cart aria-live="polite">
-        <span data-floating-cart-summary>0 ítems · $0</span>
-        <strong>Ver pedido</strong>
+        <span data-floating-cart-summary>Ver pedido · $0</span>
       </button>
 
       <nav class="mobile-nav" aria-label="Navegación móvil">

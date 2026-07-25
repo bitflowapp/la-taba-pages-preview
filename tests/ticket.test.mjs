@@ -7,7 +7,7 @@ import { resetState } from './helpers.mjs';
 beforeEach(() => resetState());
 
 test('buildKitchenTicket incluye los datos clave del pedido para la cocina', () => {
-  addToCart('p-muzzarella', 2);
+  addToCart('qa-gaseosa-cola', 2);
   const { order } = createOrderFromCheckout({
     customerName: 'Cocina QA',
     customerPhone: '2995550000',
@@ -20,7 +20,7 @@ test('buildKitchenTicket incluye los datos clave del pedido para la cocina', () 
   });
 
   const ticket = buildKitchenTicket(order);
-  assert.match(ticket, /TABA BEBIDAS/);
+  assert.match(ticket, /TABA/);
   assert.ok(ticket.includes(order.id));
   assert.match(ticket, /Cocina QA/);
   assert.match(ticket, /2995550000/);
@@ -32,7 +32,7 @@ test('buildKitchenTicket incluye los datos clave del pedido para la cocina', () 
 });
 
 test('buildKitchenTicket marca retiro en local sin dirección de envío', () => {
-  addToCart('p-coca', 1);
+  addToCart('qa-agua-mineral', 1);
   const { order } = createOrderFromCheckout({
     customerName: 'Retiro QA',
     customerPhone: '2995551111',

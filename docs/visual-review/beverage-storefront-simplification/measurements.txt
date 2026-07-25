@@ -1,0 +1,2 @@
+320x700: home=900px; overflow=0px
+390x844: home=877px; overflow=0px

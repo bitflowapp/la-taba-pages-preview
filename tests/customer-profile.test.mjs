@@ -23,9 +23,9 @@ beforeEach(() => {
 });
 
 test('customer profile: crea y actualiza perfil local con consentimiento', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const first = createTestOrder({ rememberCustomer: true });
-  addToCart('p-napolitana', 2);
+  addToCart('qa-jugo-naranja', 2);
   const second = createTestOrder({ rememberCustomer: true, customerReference: 'Porton verde' });
 
   const profile = getCustomerProfile();
@@ -38,12 +38,12 @@ test('customer profile: crea y actualiza perfil local con consentimiento', () =>
   assert.equal(profile.lastOrder.id, second.order.id);
   assert.equal(profile.totalSpent, first.order.total + second.order.total);
   assert.equal(profile.addressDetails.reference, 'Porton verde');
-  assert.equal(profile.topProducts[0].productId, 'p-napolitana');
+  assert.equal(profile.topProducts[0].productId, 'qa-jugo-naranja');
   assert.match(globalThis.localStorage.getItem(STORAGE_KEYS.customerProfile), /2995550000/);
 });
 
 test('customer profile: sin consentimiento no guarda perfil ni historial de recompra', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createTestOrder({ rememberCustomer: false });
 
   assert.equal(created.ok, true);
@@ -52,7 +52,7 @@ test('customer profile: sin consentimiento no guarda perfil ni historial de reco
 });
 
 test('customer profile: expone datos recordados para autollenar checkout', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   createTestOrder({ rememberCustomer: true, customerStreetAddress: 'Roca 123', customerNeighborhood: 'Centro' });
 
   const remembered = getRememberedCheckoutValues();
@@ -65,9 +65,9 @@ test('customer profile: expone datos recordados para autollenar checkout', () =>
 });
 
 test('customer signals: cuenta pedidos previos y cliente recurrente desde pedidos reales', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   createTestOrder({ rememberCustomer: true });
-  addToCart('p-napolitana', 1);
+  addToCart('qa-jugo-naranja', 1);
   const second = createTestOrder({ rememberCustomer: true });
 
   const signals = buildCustomerSignals(getState().orders, second.order, new Date(second.order.createdAt));
@@ -82,7 +82,7 @@ test('customer signals: cuenta pedidos previos y cliente recurrente desde pedido
 test('customer signals: detecta beneficio disponible con el quinto pedido real', () => {
   let fifth = null;
   for (let index = 0; index < 5; index += 1) {
-    addToCart(index % 2 === 0 ? 'p-muzzarella' : 'p-napolitana', 1);
+    addToCart(index % 2 === 0 ? 'qa-gaseosa-cola' : 'qa-jugo-naranja', 1);
     fifth = createTestOrder({ rememberCustomer: true });
   }
 
@@ -99,7 +99,7 @@ test('customer profile: normaliza pedidos viejos sin campos nuevos', () => {
     customerName: 'Cliente Viejo',
     customerPhone: '2991112222',
     address: 'Roca 1',
-    items: [{ productId: 'p-muzzarella', name: 'Vacio', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: 1000, unit: 'kg' }],
     createdAt: '2026-06-01T12:00:00.000Z',
   });
 
@@ -107,7 +107,7 @@ test('customer profile: normaliza pedidos viejos sin campos nuevos', () => {
 
   assert.equal(signals.orderCount, 1);
   assert.equal(signals.isNewCustomer, true);
-  assert.equal(signals.topProducts[0].productId, 'p-muzzarella');
+  assert.equal(signals.topProducts[0].productId, 'qa-gaseosa-cola');
 });
 
 function createTestOrder(overrides = {}) {

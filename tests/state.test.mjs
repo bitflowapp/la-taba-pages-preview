@@ -17,16 +17,16 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
   });
   const hydrated = hydrateState({
     products: [
-      { id: 'p-coca', stock: 2, available: true, price: -999 },
-      { id: 'p-muzzarella', stock: 3, available: false },
-      { id: 'p-napolitana', stock: -5, available: true },
+      { id: 'qa-agua-mineral', stock: 2, available: true, price: -999 },
+      { id: 'qa-gaseosa-cola', stock: 3, available: false },
+      { id: 'qa-jugo-naranja', stock: -5, available: true },
     ],
     cart: [
       { productId: 'missing-product', quantity: 4 },
-      { productId: 'p-coca', quantity: 99 },
-      { productId: 'p-muzzarella', quantity: 1 },
-      { productId: 'p-napolitana', quantity: 1 },
-      { productId: 'p-coca', quantity: -2 },
+      { productId: 'qa-agua-mineral', quantity: 99 },
+      { productId: 'qa-gaseosa-cola', quantity: 1 },
+      { productId: 'qa-jugo-naranja', quantity: 1 },
+      { productId: 'qa-agua-mineral', quantity: -2 },
     ],
     orders: [
       { id: '', items: [] },
@@ -46,8 +46,8 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
         createdAt: 'bad-date',
         status: 'bad-status',
         items: [
-          { productId: 'p-coca', name: 'Coca-Cola 2.25L', icon: '', quantity: 2, unitPrice: 2800, unit: 'unidad' },
-          { productId: 'p-muzzarella', name: 'Vacio', icon: '', quantity: -1, unitPrice: 1, unit: 'kg' },
+          { productId: 'qa-agua-mineral', name: 'Coca-Cola 2.25L', icon: '', quantity: 2, unitPrice: 2800, unit: 'unidad' },
+          { productId: 'qa-gaseosa-cola', name: 'Vacio', icon: '', quantity: -1, unitPrice: 1, unit: 'kg' },
         ],
         subtotal: 1,
         deliveryFee: 1,
@@ -60,10 +60,10 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
     activeCategory: 'missing-category',
   });
 
-  const coca = hydrated.products.find((product) => product.id === 'p-coca');
+  const coca = hydrated.products.find((product) => product.id === 'qa-agua-mineral');
   assert.equal(coca.stock, 2);
   assert.equal(coca.price, 2900);
-  assert.deepEqual(hydrated.cart, [{ productId: 'p-coca', quantity: 2 }]);
+  assert.deepEqual(hydrated.cart, [{ productId: 'qa-agua-mineral', quantity: 2 }]);
 
   assert.equal(hydrated.orders.length, 1);
   assert.equal(hydrated.orders[0].status, 'received');

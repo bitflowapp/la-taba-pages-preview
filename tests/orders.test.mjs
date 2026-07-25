@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 test('creates a valid delivery order and builds a complete WhatsApp message', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
 
   const result = createOrderFromCheckout({
     customerName: 'María López',
@@ -56,7 +56,7 @@ test('creates a valid delivery order and builds a complete WhatsApp message', ()
 });
 
 test('pickup orders do not require a delivery address and do not charge shipping', () => {
-  addToCart('p-coca', 1);
+  addToCart('qa-agua-mineral', 1);
 
   const result = createOrderFromCheckout({
     customerName: 'Carlos Pérez',
@@ -74,7 +74,7 @@ test('pickup orders do not require a delivery address and do not charge shipping
 });
 
 test('delivery orders store structured customer address and rider reference', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
 
   const result = createOrderFromCheckout({
     customerName: 'Direccion QA',
@@ -104,7 +104,7 @@ test('delivery orders store structured customer address and rider reference', ()
 
 test('delivery orders require a delivery address and a minimum subtotal', () => {
   resetState();
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
 
   const missingAddress = createOrderFromCheckout({
     customerName: 'Ana',
@@ -132,7 +132,7 @@ test('delivery orders require a delivery address and a minimum subtotal', () => 
   assert.match(missingNeighborhood.message, /barrio|zona/i);
 
   resetState();
-  addToCart('p-coca', 1);
+  addToCart('qa-agua-mineral', 1);
 
   const belowMinimum = createOrderFromCheckout({
     customerName: 'Ana',
@@ -148,7 +148,7 @@ test('delivery orders require a delivery address and a minimum subtotal', () => 
 });
 
 test('checkout sanitizes text and normalizes invalid payment methods', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
 
   const result = createOrderFromCheckout({
     customerName: '  Ana\u0000 QA  ',
@@ -170,7 +170,7 @@ test('checkout sanitizes text and normalizes invalid payment methods', () => {
 });
 
 test('double checkout confirmation cannot create a duplicate order', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const initialOrderCount = getState().orders.length;
 
   const first = createOrderFromCheckout({
@@ -198,7 +198,7 @@ test('double checkout confirmation cannot create a duplicate order', () => {
 });
 
 test('secondary WhatsApp copy uses an existing order without creating another one', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
     customerName: 'Cliente WhatsApp',
     customerPhone: '2995550000',
@@ -229,7 +229,7 @@ test('active order falls back to the live delivery order when lastOrderId is mis
         status: 'received',
         createdAt: receivedAt,
         statusHistory: [{ status: 'received', at: receivedAt }],
-        items: [{ productId: 'p-muzzarella', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
         deliveryMode: 'delivery',
         customerName: 'Cliente nuevo',
         customerPhone: '2995551111',
@@ -241,7 +241,7 @@ test('active order falls back to the live delivery order when lastOrderId is mis
         status: 'on_the_way',
         createdAt: onTheWayAt,
         statusHistory: [{ status: 'on_the_way', at: onTheWayAt }],
-        items: [{ productId: 'p-muzzarella', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
         deliveryMode: 'delivery',
         customerName: 'Cliente en reparto',
         customerPhone: '2995552222',
@@ -266,7 +266,7 @@ test('valid lastOrderId stays authoritative over another live order', () => {
         status: 'ready',
         createdAt: oldAt,
         statusHistory: [{ status: 'ready', at: oldAt }],
-        items: [{ productId: 'p-muzzarella', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
         deliveryMode: 'delivery',
         customerName: 'Pedido fijado',
         customerPhone: '2995551111',
@@ -278,7 +278,7 @@ test('valid lastOrderId stays authoritative over another live order', () => {
         status: 'arriving',
         createdAt: freshAt,
         statusHistory: [{ status: 'arriving', at: freshAt }],
-        items: [{ productId: 'p-muzzarella', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
         deliveryMode: 'delivery',
         customerName: 'Pedido nuevo',
         customerPhone: '2995552222',
@@ -294,7 +294,7 @@ test('valid lastOrderId stays authoritative over another live order', () => {
 });
 
 test('status transitions persist the active order id', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
     customerName: 'Activo QA',
     customerPhone: '2995550000',
@@ -310,7 +310,7 @@ test('status transitions persist the active order id', () => {
 });
 
 test('order status transitions reject invalid jumps and preserve history', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
     customerName: 'Rider QA',
     customerPhone: '2995550000',

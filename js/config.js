@@ -10,8 +10,8 @@ export const BRAND = Object.freeze({
   shortTagline: 'Pedidos directos para tu comercio',
   // Comercio ficticio reusable que protagoniza la demo (encaja con el catálogo
   // de bebidas QA actual). Cambialo acá para adaptar la demo a otro rubro.
-  demoBusinessName: 'TABA Bebidas · QA',
-  demoBusinessSubtitle: 'Catálogo técnico no comercial',
+  demoBusinessName: 'TABA',
+  demoBusinessSubtitle: 'Tienda de bebidas',
   // Claim del COMERCIO demo (no confundir con el tagline del producto).
   demoBusinessClaim: 'Tus bebidas, ahora a un toque.',
   demoBusinessClaimSecondary: 'Pedí. Seguí. Disfrutá.',

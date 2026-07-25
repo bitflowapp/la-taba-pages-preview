@@ -89,27 +89,27 @@ test('business actions advance status, cancel orders, edit stock, and toggle pro
   assert.equal(getState().orders[0].status, 'cancelled');
   assert.equal(getState().orders[0].cancelReason, 'Sin stock', 'el motivo queda registrado');
 
-  const productBefore = getState().products.find((product) => product.id === 'p-agua');
+  const productBefore = getState().products.find((product) => product.id === 'qa-hielo');
   assert.equal(productBefore.stock, 0);
 
   result = handleBusinessAction(makeTarget({
-    '[data-stock-inc]': { stockInc: 'p-agua' },
+    '[data-stock-inc]': { stockInc: 'qa-hielo' },
   }));
   assert.equal(result.handled, true);
-  assert.equal(getState().products.find((product) => product.id === 'p-agua').stock, 1);
+  assert.equal(getState().products.find((product) => product.id === 'qa-hielo').stock, 1);
 
   result = handleBusinessAction(makeTarget({
-    '[data-stock-dec]': { stockDec: 'p-agua' },
+    '[data-stock-dec]': { stockDec: 'qa-hielo' },
   }));
   assert.equal(result.handled, true);
-  assert.equal(getState().products.find((product) => product.id === 'p-agua').stock, 0);
+  assert.equal(getState().products.find((product) => product.id === 'qa-hielo').stock, 0);
 
-  const availabilityBefore = getState().products.find((product) => product.id === 'p-agua').available;
+  const availabilityBefore = getState().products.find((product) => product.id === 'qa-hielo').available;
   result = handleBusinessAction(makeTarget({
-    '[data-product-toggle]': { productToggle: 'p-agua' },
+    '[data-product-toggle]': { productToggle: 'qa-hielo' },
   }));
   assert.equal(result.handled, true);
-  assert.equal(getState().products.find((product) => product.id === 'p-agua').available, !availabilityBefore);
+  assert.equal(getState().products.find((product) => product.id === 'qa-hielo').available, !availabilityBefore);
 });
 
 function cancelTestOrder(id, status, deliveryMode = 'delivery') {
@@ -117,7 +117,7 @@ function cancelTestOrder(id, status, deliveryMode = 'delivery') {
   return {
     id, customerName: 'QA Cancel', customerPhone: '2990000000', address: 'Roca 123',
     deliveryMode, paymentMethod: 'Efectivo', notes: '', createdAt: at, status,
-    items: [{ productId: 'p-muzzarella', name: 'Vacío', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacío', quantity: 1, unitPrice: 1000, unit: 'kg' }],
     subtotal: 1000, deliveryFee: 0, total: 1000,
     statusHistory: [{ status: 'received', at }],
   };
@@ -153,9 +153,9 @@ test('cancelación segura: confirmar sin motivo no cambia el estado', () => {
 
 test('low-stock detection includes scarce products and excludes out-of-stock ones', () => {
   const lowStock = getLowStockProducts();
-  assert.ok(lowStock.some((product) => product.id === 'p-napolitana'));
-  assert.ok(lowStock.some((product) => product.id === 'p-calabresa'));
-  assert.ok(!lowStock.some((product) => product.id === 'p-agua'));
+  assert.ok(lowStock.some((product) => product.id === 'qa-jugo-naranja'));
+  assert.ok(lowStock.some((product) => product.id === 'qa-cerveza'));
+  assert.ok(!lowStock.some((product) => product.id === 'qa-hielo'));
 });
 
 test('business metrics tolerate invalid dates and count active statuses consistently', () => {
@@ -187,7 +187,7 @@ test('business metrics compute ticket promedio, delivery vs retiro y productos m
       id: 'LT-10', status: 'preparing', total: 10000, deliveryMode: 'delivery', createdAt: today,
       items: [
         { productId: 'p-asado', name: 'Asado', quantity: 2 },
-        { productId: 'p-coca', name: 'Coca', quantity: 1 },
+        { productId: 'qa-agua-mineral', name: 'Coca', quantity: 1 },
       ],
     },
     {
@@ -218,7 +218,7 @@ test('business metrics avoid division by zero with no orders today', () => {
 });
 
 test('un pedido confirmado entra como activo en el negocio, conserva sus datos y avanza de estado', () => {
-  addToCart('p-muzzarella', 2);
+  addToCart('qa-gaseosa-cola', 2);
   const created = createOrderFromCheckout({
     customerName: 'Walter Cliente',
     customerPhone: '2995551234',

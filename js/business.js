@@ -1074,7 +1074,7 @@ function renderBusinessSetupPreview(config) {
 
 function renderCatalogForm(product = null) {
   const isEditing = Boolean(product);
-  const categoryId = product?.categoryId || 'pizzas';
+  const categoryId = product?.categoryId || 'gaseosas';
   const badge = product?.badge || '';
   const available = !product || product.available;
 

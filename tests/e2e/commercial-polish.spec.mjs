@@ -63,7 +63,7 @@ test('catálogo: búsqueda sin resultados no deja ofertas colgadas y las tarjeta
   await context.close();
 });
 
-test('home: estado honesto del local y rails sin productos duplicados', async ({ browser }) => {
+test('home: estado claro y recorrido comercial compacto', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const guards = installPageGuards(page);
@@ -71,13 +71,12 @@ test('home: estado honesto del local y rails sin productos duplicados', async ({
 
   await page.goto('/?demo=1');
   // El chip de estado dice abierto o cerrado de verdad (según horario configurado).
-  await expect(page.locator('[data-open-status]')).toContainText(/Presentación activa|Pedidos online/);
+  await expect(page.locator('[data-open-status]')).toContainText(/Pedidos disponibles|Pedidos online/);
 
   // Ofertas y combos destacados no repiten el mismo producto en el home.
-  const offerNames = await page.locator('[data-offers-rail] .offer-card-body strong').allInnerTexts();
-  const comboNames = await page.locator('[data-combos-rail] .offer-card-body strong').allInnerTexts();
-  const repeated = comboNames.filter((name) => offerNames.includes(name));
-  expect(repeated).toEqual([]);
+  await expect(page.locator('[data-view="home"] [data-combos-rail]')).toHaveCount(0);
+  await expect(page.locator('[data-view="home"] .home-search')).toBeVisible();
+  await expect(page.locator('[data-view="home"] .promo-banner-neutral')).toBeVisible();
 
   await guards.assertClean();
   await context.close();

@@ -21,18 +21,19 @@ test('modo público oculta roles, PIN y datos sembrados, incluso con hash operat
   await expect(page.locator('[data-view="business"]')).toBeHidden();
 });
 
-test('modo demo muestra la franja persistente y rotula los datos de ejemplo', async ({ page }) => {
+test('modo demo usa una sola insignia y mueve accesos operativos fuera de la home', async ({ page }) => {
   await installPageGuards(page);
   await page.goto('/?demo=1');
 
   const banner = page.locator('[data-demo-mode-banner]');
   await expect(banner).toBeVisible();
-  await expect(banner).toContainText('Presentación comercial');
-  await expect(banner).toContainText('escenario de ejemplo');
-  await expect(page.locator('.role-intro')).toBeVisible();
-  await expect(page.locator('.role-card-pin').first()).toContainText('Código de presentación');
+  await expect(banner).toHaveText('Demo');
+  await expect(page.locator('[data-view="home"] .role-intro')).toHaveCount(0);
+  await expect(page.locator('[data-view="home"]')).not.toContainText('1234');
 
-  await page.getByRole('button', { name: 'Entrar como negocio' }).click();
+  await page.locator('.desktop-nav [data-nav-view="profile"]').click();
+  await expect(page.getByRole('button', { name: 'Guía de demo' })).toBeVisible();
+  await page.getByRole('button', { name: 'Panel del negocio' }).click();
   await page.getByLabel('Código del modo negocio').fill('1234');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page.locator('[data-business-dashboard]')).toContainText('Datos de ejemplo');

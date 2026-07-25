@@ -32,7 +32,7 @@ test('catalog persists created products in local demo storage', () => {
     name: 'Hamburguesa QA',
     description: 'Medallon listo para plancha',
     price: '12345',
-    categoryId: 'pizzas',
+    categoryId: 'gaseosas',
     badge: 'Nuevo',
     available: true,
   }, { now: 1 });
@@ -48,10 +48,10 @@ test('catalog persists created products in local demo storage', () => {
 });
 
 test('catalog rejects invalid product input', () => {
-  assert.equal(validateCatalogProductInput({ name: '', price: 1000, categoryId: 'pizzas' }).ok, false);
-  assert.equal(validateCatalogProductInput({ name: 'Sin precio', price: '', categoryId: 'pizzas' }).ok, false);
-  assert.equal(validateCatalogProductInput({ name: 'Negativo', price: -10, categoryId: 'pizzas' }).ok, false);
-  assert.equal(validateCatalogProductInput({ name: 'Texto', price: 'abc', categoryId: 'pizzas' }).ok, false);
+  assert.equal(validateCatalogProductInput({ name: '', price: 1000, categoryId: 'gaseosas' }).ok, false);
+  assert.equal(validateCatalogProductInput({ name: 'Sin precio', price: '', categoryId: 'gaseosas' }).ok, false);
+  assert.equal(validateCatalogProductInput({ name: 'Negativo', price: -10, categoryId: 'gaseosas' }).ok, false);
+  assert.equal(validateCatalogProductInput({ name: 'Texto', price: 'abc', categoryId: 'gaseosas' }).ok, false);
   assert.equal(validateCatalogProductInput({ name: 'Categoria mala', price: 1000, categoryId: 'fantasma' }).ok, false);
 });
 
@@ -60,7 +60,7 @@ test('disabled products stay visible but are not orderable by the customer', () 
     name: 'Producto Pausado QA',
     description: 'Visible sin venta',
     price: 5000,
-    categoryId: 'pizzas',
+    categoryId: 'gaseosas',
     available: true,
   }, { now: 2 });
   setState({ products: created.products });
@@ -80,7 +80,7 @@ test('edited product price is reflected in the customer catalog', () => {
     name: 'Precio Editable QA',
     description: 'Cambia en cliente',
     price: 8000,
-    categoryId: 'pizzas',
+    categoryId: 'gaseosas',
     available: true,
   }, { now: 3 });
   setState({ products: created.products });
@@ -89,7 +89,7 @@ test('edited product price is reflected in the customer catalog', () => {
     name: 'Precio Editable QA',
     description: 'Cambia en cliente',
     price: '9500',
-    categoryId: 'pizzas',
+    categoryId: 'gaseosas',
     available: true,
   }, { productId: created.product.id });
   assert.equal(edited.ok, true);
@@ -104,7 +104,7 @@ test('archived products leave the customer catalog without touching existing ord
     name: 'Archivo QA',
     description: 'No se muestra',
     price: 4500,
-    categoryId: 'pizzas',
+    categoryId: 'gaseosas',
     available: true,
   }, { now: 4 });
   const order = {
@@ -134,7 +134,7 @@ test('demo catalog restoration removes local edits and keeps demo products', () 
     name: 'Temporal QA',
     description: 'Se restaura',
     price: 7000,
-    categoryId: 'pizzas',
+    categoryId: 'gaseosas',
     available: true,
   }, { now: 5 });
   setState({ products: created.products });
@@ -142,7 +142,7 @@ test('demo catalog restoration removes local edits and keeps demo products', () 
   setState({ products: restoreDemoCatalog(), activeCategory: 'all' });
 
   assert.equal(state().products.some((product) => product.id === created.product.id), false);
-  assert.ok(state().products.some((product) => product.id === 'p-muzzarella'));
+  assert.ok(state().products.some((product) => product.id === 'qa-gaseosa-cola'));
 });
 
 test('catalog mutations do not activate Supabase by accident', () => {
@@ -153,7 +153,7 @@ test('catalog mutations do not activate Supabase by accident', () => {
     name: 'Local First QA',
     description: 'No cambia repo',
     price: 6200,
-    categoryId: 'pizzas',
+    categoryId: 'gaseosas',
     available: true,
   }, { now: 6 });
   setState({ products: created.products });
@@ -186,7 +186,7 @@ test('restoring demo catalog requires explicit confirmation', () => {
     name: 'Producto del comercio',
     description: 'Cargado por el negocio',
     price: '9999',
-    categoryId: 'pizzas',
+    categoryId: 'gaseosas',
     available: true,
   }, { now: 1 });
   assert.equal(created.ok, true);
@@ -215,7 +215,7 @@ test('confirming demo restore replaces the catalog', () => {
     name: 'Producto del comercio',
     description: 'Cargado por el negocio',
     price: '9999',
-    categoryId: 'pizzas',
+    categoryId: 'gaseosas',
     available: true,
   }, { now: 1 });
   assert.equal(created.ok, true);

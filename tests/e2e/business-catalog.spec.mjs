@@ -21,7 +21,7 @@ test('Negocio: crea, edita, pausa y restaura el catálogo editable', async ({ br
 
   await page.getByLabel('Producto a vender').fill('Producto Catalogo QA');
   await page.getByLabel('Precio').fill('12345');
-  await page.getByLabel('Categoría').selectOption('pizzas');
+  await page.getByLabel('Categoría').selectOption('gaseosas');
   await page.getByLabel('Descripción breve').fill('Producto creado desde negocio');
   await page.getByLabel('Etiqueta opcional').selectOption('Nuevo');
   await page.getByRole('button', { name: 'Crear producto' }).click();

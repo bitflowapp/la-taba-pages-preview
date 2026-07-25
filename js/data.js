@@ -292,9 +292,9 @@ export const seedOrders = [
     createdAt: new Date(Date.now() - 1000 * 60 * 22).toISOString(),
     status: 'delivered',
     items: [
-      { productId: 'p-muzzarella', name: 'Gaseosa cola · QA', icon: '', quantity: 1, unitPrice: 8990, unit: 'unidad' },
-      { productId: 'p-pepperoni', name: 'Cerveza lager · QA', icon: '', quantity: 1, unitPrice: 11490, unit: 'unidad' },
-      { productId: 'p-coca', name: 'Agua sin gas · QA', icon: '', quantity: 1, unitPrice: 2900, unit: 'unidad' },
+      { productId: 'qa-gaseosa-cola', name: 'Gaseosa cola', icon: '', quantity: 1, unitPrice: 8990, unit: 'unidad' },
+      { productId: 'qa-isotonica', name: 'Bebida isotónica', icon: '', quantity: 1, unitPrice: 11490, unit: 'unidad' },
+      { productId: 'qa-agua-mineral', name: 'Agua mineral', icon: '', quantity: 1, unitPrice: 2900, unit: 'unidad' },
     ],
     subtotal: 23380,
     deliveryFee: 1990,

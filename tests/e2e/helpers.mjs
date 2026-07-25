@@ -96,6 +96,10 @@ export async function fillCheckout(page, {
     const requestedPaymentExists = await paymentField.locator(`option[value="${payment}"]`).count();
     await paymentField.selectOption(requestedPaymentExists ? payment : 'coordinate');
   }
+  const instructions = page.locator('.checkout-instructions');
+  if (await instructions.count() && !(await instructions.evaluate((node) => node.open))) {
+    await instructions.locator('summary').click();
+  }
   await page.getByLabel(/Observaciones del pedido|Notas/).fill(notes);
   if (deliveryMode === 'delivery') {
     await page.getByLabel('Delivery').check();

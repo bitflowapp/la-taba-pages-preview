@@ -136,7 +136,7 @@ test('runtime HTTP histórico queda fail-closed y no activa un backend sin Auth'
 });
 
 test('demo order repository creates orders through the current checkout flow', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const repository = createDemoOrderRepository();
   const before = getState().orders.length;
 
@@ -157,7 +157,7 @@ test('demo order repository creates orders through the current checkout flow', (
 });
 
 test('demo repository updates status, rider and GPS location without bypassing state', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const repository = createDemoOrderRepository();
   const created = repository.createOrder({
     customerName: 'Rider Repo',
@@ -198,7 +198,7 @@ test('demo repository subscriptions publish business and order snapshots', () =>
   const orderSnapshots = [];
 
   const stopBusiness = repository.subscribeToBusinessOrders((orders) => businessSnapshots.push(orders.length));
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = repository.createOrder({
     customerName: 'Sub Repo',
     customerPhone: '2995550000',
@@ -218,7 +218,7 @@ test('demo repository subscriptions publish business and order snapshots', () =>
 });
 
 test('demo repository propagates the preparation estimate so the customer can see it', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const repository = createDemoOrderRepository();
   const created = repository.createOrder({
     customerName: 'Prep Repo',
@@ -241,7 +241,7 @@ test('demo repository propagates the preparation estimate so the customer can se
 });
 
 test('demo repository keeps the legacy two-argument updateOrderStatus working', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const repository = createDemoOrderRepository();
   const created = repository.createOrder({
     customerName: 'Legacy Repo',
@@ -295,7 +295,7 @@ test('http repository speaks the future backend contract with normalized payload
               customerName: 'HTTP QA',
               customerPhone: '299',
               address: 'Roca 1',
-              items: [{ productId: 'p-muzzarella', name: 'Vacio', quantity: 1, unitPrice: 1000 }],
+              items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: 1000 }],
               subtotal: 1000,
               deliveryFee: 0,
               total: 1000,

@@ -18,11 +18,11 @@ beforeEach(() => {
 });
 
 test('reorder: recalcula precios actuales al repetir', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createTestOrder();
   setState({
     products: state().products.map((product) => (
-      product.id === 'p-muzzarella' ? { ...product, price: 13000, stock: 5 } : product
+      product.id === 'qa-gaseosa-cola' ? { ...product, price: 13000, stock: 5 } : product
     )),
   });
 
@@ -36,11 +36,11 @@ test('reorder: recalcula precios actuales al repetir', () => {
 });
 
 test('reorder: informa productos faltantes sin agregarlos al carrito', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createTestOrder();
   setState({
     products: state().products.map((product) => (
-      product.id === 'p-muzzarella' ? { ...product, available: false } : product
+      product.id === 'qa-gaseosa-cola' ? { ...product, available: false } : product
     )),
   });
 
@@ -48,13 +48,13 @@ test('reorder: informa productos faltantes sin agregarlos al carrito', () => {
   const repeated = repeatCustomerOrder(created.order.id);
 
   assert.equal(preview.canRepeat, false);
-  assert.equal(preview.skipped[0].productId, 'p-muzzarella');
+  assert.equal(preview.skipped[0].productId, 'qa-gaseosa-cola');
   assert.equal(repeated.ok, false);
   assert.deepEqual(state().cart, []);
 });
 
 test('reorder: evita duplicados por doble toque', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createTestOrder();
 
   const first = repeatCustomerOrder(created.order.id);
@@ -62,31 +62,31 @@ test('reorder: evita duplicados por doble toque', () => {
 
   assert.equal(first.ok, true);
   assert.equal(second.ok, true);
-  assert.deepEqual(state().cart, [{ productId: 'p-muzzarella', quantity: 1 }]);
+  assert.deepEqual(state().cart, [{ productId: 'qa-gaseosa-cola', quantity: 1 }]);
 });
 
 test('reorder: si el carrito tiene productos pide confirmacion antes de reemplazar', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createTestOrder();
-  addToCart('p-napolitana', 1);
+  addToCart('qa-jugo-naranja', 1);
 
   const repeated = repeatCustomerOrder(created.order.id);
 
   assert.equal(repeated.ok, false);
   assert.equal(repeated.needsConfirmation, true);
-  assert.deepEqual(state().cart, [{ productId: 'p-napolitana', quantity: 1 }]);
+  assert.deepEqual(state().cart, [{ productId: 'qa-jugo-naranja', quantity: 1 }]);
 });
 
 test('reorder: el nuevo pedido queda marcado como pedido repetido real', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const first = createTestOrder();
   setState({
     products: state().products.map((product) => (
-      product.id === 'p-muzzarella' ? { ...product, price: 13000, stock: 5 } : product
+      product.id === 'qa-gaseosa-cola' ? { ...product, price: 13000, stock: 5 } : product
     )),
   });
   repeatCustomerOrder(first.order.id);
-  addToCart('p-napolitana', 1);
+  addToCart('qa-jugo-naranja', 1);
   const second = createTestOrder();
 
   assert.equal(second.order.reorder.sourceOrderId, first.order.id);

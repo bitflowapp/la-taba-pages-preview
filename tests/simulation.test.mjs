@@ -32,7 +32,7 @@ import { resetState } from './helpers.mjs';
 beforeEach(() => resetState());
 
 function createReadyDeliveryOrder() {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
     customerName: 'GPS QA',
     customerPhone: '2995550000',
@@ -100,7 +100,7 @@ test('hydrateState keeps a simulation only for an active delivery order', () => 
     notes: '',
     createdAt: new Date().toISOString(),
     status: 'on_the_way',
-    items: [{ productId: 'p-muzzarella', name: 'Vacío', icon: '', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacío', icon: '', quantity: 1, unitPrice: 11200, unit: 'kg' }],
     statusHistory: [{ status: 'received', at: new Date().toISOString() }],
     delivery: { driverName: 'Juli', driverPhone: '2991112233', estimatedMinutes: 14, currentLocationLabel: 'En camino' },
   };
@@ -127,7 +127,7 @@ test('hydrateState keeps a simulation only for an active delivery order', () => 
 });
 
 test('GPS explains insecure contexts honestly (no live sharing without HTTPS)', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
     customerName: 'GPS QA',
     customerPhone: '2995550000',
@@ -377,7 +377,7 @@ test('GPS keeps watcher alive on transient errors before first fix', () => {
 });
 
 test('GPS can start from street test mode before the order leaves the store', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
     customerName: 'GPS QA',
     customerPhone: '2995550000',
@@ -440,7 +440,7 @@ test('GPS geolocation options adapt to delivery phase', () => {
 });
 
 test('GPS watchPosition is not duplicated when rider taps GPS twice', () => {
-  addToCart('p-muzzarella', 1);
+  addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
     customerName: 'GPS QA',
     customerPhone: '2995550000',

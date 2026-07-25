@@ -103,7 +103,7 @@ export function applyBusinessConfig() {
   const status = $('[data-open-status]');
   if (status) {
     status.textContent = demo
-      ? 'Presentación activa'
+      ? 'Pedidos disponibles'
       : detailsVerified
         ? 'Pedidos online habilitados'
         : 'Pedidos online no habilitados';
@@ -117,7 +117,7 @@ export function applyBusinessConfig() {
     config.pickupEnabled ? 'retiro' : '',
   ].filter(Boolean).join(' y ');
   const chips = demo
-    ? ['Escenario de ejemplo en este dispositivo', 'Cliente · Negocio · Rider']
+    ? ['Delivery y retiro', 'Zona y horarios a confirmar']
     : detailsVerified
       ? ['Configuración verificada por el comercio', enabledModes]
       : ['Catálogo productivo bloqueado', 'Configuración pendiente'];
@@ -209,27 +209,8 @@ function unitText(product) {
   return product.unitLabel || product.unit || '';
 }
 
-const PRODUCT_IMAGE_BY_ID = Object.freeze({
-  'p-muzzarella': 'assets/products/pizza-muzzarella.webp',
-  'p-especial': 'assets/products/pizza-especial.webp',
-  'p-fugazzeta': 'assets/products/pizza-fugazzeta.webp',
-  'p-napolitana': 'assets/products/pizza-napolitana.webp',
-  'p-pepperoni': 'assets/products/pizza-pepperoni.webp',
-  'p-calabresa': 'assets/products/pizza-calabresa.webp',
-  'p-jamon-muzzarella': 'assets/products/pizza-jamon.webp',
-  'p-combo-familiar': 'assets/products/combo-familiar.webp',
-  'p-promo-dia': 'assets/products/promo-dia.webp',
-  'p-coca': 'assets/products/bebida-cola.webp',
-});
-
-const PRODUCT_IMAGE_BY_TONE = Object.freeze({
-  pizza: 'assets/products/pizza-muzzarella.webp',
-  promo: 'assets/products/promo-dia.webp',
-  combo: 'assets/products/combo-familiar.webp',
-});
-
 function productImage(product) {
-  return product?.image || PRODUCT_IMAGE_BY_ID[product?.id] || PRODUCT_IMAGE_BY_TONE[product?.tone] || '';
+  return product?.image || '';
 }
 
 // Thumbnail de producto con foto real licenciada y fallback tonal para rubros sin foto.
@@ -288,7 +269,6 @@ function priceBlock(product) {
   return `
     <div class="price">
       <div class="price-amounts"><strong>${money(product.price)}</strong>${old}</div>
-      <small>${escapeHtml(unitText(product))}</small>
     </div>`;
 }
 
@@ -316,7 +296,7 @@ function renderCombos() {
     .filter((product) => (
       product.available
       && product.stock > 0
-      && (product.combo || ['combos', 'promos'].includes(product.categoryId))
+      && (product.combo || product.categoryId === 'promos')
     ))
     .filter((product) => !offerIds.has(product.id))
     .slice(0, 8);
@@ -351,20 +331,18 @@ function railCard(product) {
 }
 
 const CATEGORY_GLYPHS = Object.freeze({
-  pizzas: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
-    <path d="M12 21 3.6 6.6A16.4 16.4 0 0 1 12 4.4a16.4 16.4 0 0 1 8.4 2.2L12 21Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-    <circle cx="10" cy="9" r="1.2" fill="currentColor"/><circle cx="14.2" cy="10.6" r="1.2" fill="currentColor"/><circle cx="11.4" cy="13.6" r="1.1" fill="currentColor"/>
+  gaseosas: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M9.5 3h5v3l1.4 2.3v10.2a2.5 2.5 0 0 1-2.5 2.5h-2.8a2.5 2.5 0 0 1-2.5-2.5V8.3L9.5 6V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6"/>
+    <path d="M8.1 12h7.8" stroke="currentColor" stroke-width="1.6"/>
   </svg>`,
-  combos: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
-    <rect x="3.4" y="8" width="17.2" height="12" rx="2.4" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6"/>
-    <path d="M3.4 12h17.2M12 8v12" stroke="currentColor" stroke-width="1.6"/>
-    <path d="M7 8V6.2A2.2 2.2 0 0 1 9.2 4h5.6A2.2 2.2 0 0 1 17 6.2V8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  energeticas: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="m13.5 2.8-7 10.1h5l-1 8.3 7-10.4h-5l1-8Z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
   </svg>`,
   promos: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
     <path d="M12.6 3.6 20 11a2.2 2.2 0 0 1 0 3.1l-5.9 5.9a2.2 2.2 0 0 1-3.1 0L3.6 12.6A2 2 0 0 1 3 11.2V5a2 2 0 0 1 2-2h6.2c.5 0 1 .2 1.4.6Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
     <circle cx="8.2" cy="8.2" r="1.5" fill="currentColor"/>
   </svg>`,
-  bebidas: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+  aguas: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
     <path d="M9.4 3h5.2v3l1.4 2.2a3 3 0 0 1 .5 1.6V19a2 2 0 0 1-2 2H9.5a2 2 0 0 1-2-2V9.8a3 3 0 0 1 .5-1.6L9.4 6V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
     <path d="M7.5 12.4h9" stroke="currentColor" stroke-width="1.6"/>
   </svg>`,
@@ -393,8 +371,9 @@ function renderCategories() {
     { id: 'favorites', name: 'Favoritos' },
     ...catalogCategories.slice(1),
   ];
-  // El home replica la maqueta: sólo las categorías reales, como tarjetas con ícono.
-  const homeList = catalogCategories.slice(1);
+  const homePriority = ['promos', 'gaseosas', 'energeticas', 'cervezas', 'vinos-espumantes', 'gins-vodkas'];
+  const byId = new Map(catalogCategories.map((category) => [category.id, category]));
+  const homeList = homePriority.map((id) => byId.get(id)).filter(Boolean);
 
   const markupFor = (list) => list.map((category) => `
     <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}">
@@ -469,7 +448,7 @@ function categoriesForCurrentCatalog() {
     'energeticas',
     'isotonicas',
     'cervezas',
-    'vinos-y-espumantes',
+    'vinos-espumantes',
     'gins-y-vodkas',
     'whisky-y-destilados',
     'picadas-y-deli',
@@ -805,16 +784,28 @@ export function renderCart() {
 // (campos y totales en $0) ni el botón de vaciar: dejamos solo el estado vacío con
 // el acceso a productos, para que la vista del pedido se sienta limpia.
 function renderCheckoutVisibility() {
-  const isEmpty = getCartItems().length === 0;
+  const cartItems = getCartItems();
+  const isEmpty = cartItems.length === 0;
   const form = $('[data-checkout-form]');
   if (form) form.hidden = isEmpty;
   $$('[data-clear-cart]').forEach((button) => { button.hidden = isEmpty; });
+  const requiresAgeConfirmation = cartItems.some((item) => item.product.alcoholic);
+  const ageRow = $('[data-age-confirmation]');
+  const ageInput = $('[name="ageConfirmed"]');
+  if (ageRow) {
+    ageRow.hidden = !requiresAgeConfirmation;
+    ageRow.setAttribute('aria-hidden', String(!requiresAgeConfirmation));
+  }
+  if (ageInput) {
+    ageInput.required = requiresAgeConfirmation;
+    if (!requiresAgeConfirmation) ageInput.checked = false;
+  }
 }
 
 export function renderCartTotals() {
   const summary = getCartSummary(currentDeliveryMode());
   const subtotalSummary = getCartSummary('pickup');
-  const floatingText = `${summary.count} ${summary.count === 1 ? 'ítem' : 'ítems'} · ${money(subtotalSummary.subtotal)}`;
+  const floatingText = `Ver pedido · ${money(subtotalSummary.subtotal)}`;
   setText('[data-cart-count]', String(summary.count));
   setText('[data-cart-count-mobile]', String(summary.count));
   setText('[data-cart-total-small]', summary.count > 0 ? money(subtotalSummary.subtotal) : 'Pedido');
@@ -1470,7 +1461,7 @@ export function showProductModal(productId) {
         <div class="summary-row"><span>Preparación</span><strong>${product.prepMinutes} min</strong></div>
         <div class="summary-row"><span>Disponibilidad</span><strong>${escapeHtml(availabilityLabel(product))}</strong></div>
       </div>
-      ${product.marketNote ? `<p class="market-note">${escapeHtml(product.marketNote)}</p>` : ''}
+      ${product.marketNote && !product.qaFixture ? `<p class="market-note">${escapeHtml(product.marketNote)}</p>` : ''}
       <div class="button-row" style="margin-top:16px">
         <button class="primary-button" type="button" data-add-product="${product.id}" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>Agregar al pedido</button>
         <button class="secondary-button" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}">${favorite ? 'Quitar favorito' : 'Guardar favorito'}</button>

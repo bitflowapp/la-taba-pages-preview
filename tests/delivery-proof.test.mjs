@@ -250,7 +250,7 @@ test('delivery proof: persistencia fallida revierte el proof y avisa error', () 
 
 function makeOrder(overrides = {}) {
   const item = overrides.items?.[0] || {
-    productId: 'p-muzzarella',
+    productId: 'qa-gaseosa-cola',
     name: 'Vacio snapshot',
     quantity: 1,
     unitPrice: overrides.subtotal ?? overrides.total ?? 1000,

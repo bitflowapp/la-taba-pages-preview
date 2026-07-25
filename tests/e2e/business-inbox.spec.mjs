@@ -18,7 +18,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
   await expect(page.locator('[data-business-dashboard]')).toContainText('Central de pedidos');
-  await expect(page.locator('.topbar .brand')).toContainText(/TABA Bebidas/i);
+  await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
   await expect(page.locator('.inbox-tabs')).toContainText('Nuevos');
   await expect(page.locator('.inbox-tabs')).toContainText('En preparación');
   await expect(page.locator('.inbox-tabs')).toContainText('Listos');
@@ -193,7 +193,7 @@ function liveBusinessState(now) {
       notes: 'Sin sal',
       createdAt,
       status: 'on_the_way',
-      items: [{ productId: 'p-muzzarella', name: 'Muzzarella', icon: '', quantity: 1, unitPrice: 8990, unit: 'unidad' }],
+      items: [{ productId: 'qa-gaseosa-cola', name: 'Muzzarella', icon: '', quantity: 1, unitPrice: 8990, unit: 'unidad' }],
       subtotal: 1000,
       deliveryFee: 0,
       total: 1000,

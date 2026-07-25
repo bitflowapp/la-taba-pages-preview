@@ -43,13 +43,9 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
 
   await page.reload();
   await page.goto('/?demo=1#home');
-  const reorderCard = page.locator('.reorder-card');
-  await expect(reorderCard).toBeVisible();
-  await expect(reorderCard).toContainText('Pedir de nuevo');
-  await expect(reorderCard).toContainText('Total estimado');
-  await expect(reorderCard).toContainText('Dirección usada');
-
-  await reorderCard.getByRole('button', { name: /Editar antes de confirmar/i }).click();
+  await expect(page.locator('[data-view="home"] .reorder-card')).toHaveCount(0);
+  await page.goto('/?demo=1#cart');
+  await page.getByRole('button', { name: /Repetir último pedido/i }).click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await expect(page.locator('[data-order-summary]')).toContainText('Total');
   await expect(page.locator('[name="customerName"]')).toHaveValue('Cliente Growth');
@@ -96,7 +92,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   ]) {
     await page.setViewportSize(viewport);
     await page.goto('/?demo=1#home');
-    await expect(page.locator('.reorder-card')).toBeVisible();
+    await expect(page.locator('[data-view="home"] .reorder-card')).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
     await page.goto('/?demo=1#cart');
     await expectNoHorizontalOverflow(page);
@@ -109,9 +105,8 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
 });
 
 async function createRepeatOrderFromHome(page) {
-  await page.goto('/?demo=1#home');
-  await expect(page.locator('.reorder-card')).toBeVisible();
-  await page.locator('.reorder-card').getByRole('button', { name: /Repetir pedido/i }).click();
+  await page.goto('/?demo=1#cart');
+  await page.getByRole('button', { name: /Repetir último pedido/i }).click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await expect(page.locator('[data-order-summary]')).toContainText('Total');
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();

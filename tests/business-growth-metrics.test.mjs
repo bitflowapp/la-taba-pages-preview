@@ -73,7 +73,7 @@ function order(overrides = {}) {
     createdAt: overrides.createdAt || '2026-06-07T13:00:00.000Z',
     status: overrides.status || 'received',
     total: overrides.total || 1000,
-    items: [{ productId: 'p-muzzarella', name: 'Vacio', quantity: 1, unitPrice: overrides.total || 1000, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: overrides.total || 1000, unit: 'kg' }],
     ...overrides,
   };
 }

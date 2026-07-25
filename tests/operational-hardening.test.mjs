@@ -34,7 +34,7 @@ function makeOrder(id, status = 'received', deliveryMode = 'delivery') {
     notes: '',
     createdAt: at,
     status,
-    items: [{ productId: 'p-muzzarella', name: 'Vacío', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacío', quantity: 1, unitPrice: 1000, unit: 'kg' }],
     statusHistory: [{ status: 'received', at }],
   };
 }

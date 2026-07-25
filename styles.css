@@ -2690,13 +2690,11 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-status-pi
   }
 
   body:has(.app-view[data-view="tracking"].is-active .tracking-map-experience) .mobile-nav,
-  body:has(.app-view[data-view="cart"].is-active .cart-item) .mobile-nav,
   body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-experience) .mobile-nav {
     display: none;
   }
 
   body:has(.app-view[data-view="tracking"].is-active .tracking-map-experience),
-  body:has(.app-view[data-view="cart"].is-active .cart-item),
   body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-experience) {
     padding-bottom: calc(18px + env(safe-area-inset-bottom));
   }
@@ -7430,5 +7428,202 @@ body:has(.app-view[data-view="home"].is-active) .demo-mode-banner {
   }
   .production-order-card .button-row > * {
     width: 100%;
+  }
+}
+
+/* ============================================================
+   TABA BEBIDAS · simplificación comercial del storefront
+   ============================================================ */
+.app-home {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.app-home .status-bar,
+.app-home .home-address-chip,
+.app-home .search-box,
+.app-home .rail-block,
+.app-home .promo-banner,
+.app-home .order-now-cta {
+  margin: 0;
+}
+.home-search {
+  order: initial;
+}
+
+.promo-banner-neutral,
+body:has(.app-view[data-view="home"].is-active) .promo-banner-neutral {
+  position: relative;
+  min-height: 132px;
+  padding: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 16%, rgba(255, 255, 255, 0.22), transparent 24%),
+    linear-gradient(130deg, #b31217, #dc252b 66%, #ef5a4f);
+}
+.promo-banner-neutral::after {
+  display: none;
+}
+.promo-banner-neutral .promo-banner-copy {
+  max-width: min(62%, 420px);
+}
+.promo-banner-neutral .promo-banner-copy strong {
+  font-size: clamp(20px, 5vw, 28px);
+  line-height: 1.05;
+  text-transform: none;
+}
+.promo-neutral-art {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 42%;
+  pointer-events: none;
+}
+.promo-neutral-art i {
+  position: absolute;
+  bottom: 18px;
+  width: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.72);
+  border-radius: 10px 10px 13px 13px;
+  background: rgba(255, 255, 255, 0.13);
+  transform: rotate(8deg);
+}
+.promo-neutral-art i::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: -16px;
+  width: 10px;
+  height: 16px;
+  border-radius: 5px 5px 0 0;
+  background: rgba(255, 255, 255, 0.75);
+}
+.promo-neutral-art i:nth-child(1) { right: 70px; height: 76px; }
+.promo-neutral-art i:nth-child(2) { right: 35px; height: 94px; transform: rotate(-5deg); }
+.promo-neutral-art i:nth-child(3) { right: 7px; height: 66px; transform: rotate(13deg); }
+
+.product-card h3 {
+  display: -webkit-box;
+  min-height: 2.45em;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.22;
+}
+.product-card .add-button {
+  min-height: 44px;
+}
+.checkout-instructions {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+}
+.checkout-instructions summary {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 14px;
+  cursor: pointer;
+  font-weight: 800;
+}
+.checkout-instructions-fields {
+  display: grid;
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+.remember-customer-compact {
+  align-items: center;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+}
+.remember-customer-compact small {
+  display: none;
+}
+.floating-cart {
+  justify-content: center;
+  min-height: 54px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #d71920, #b31217);
+}
+.floating-cart span {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    flex-wrap: nowrap;
+    min-height: 66px;
+  }
+  .brand {
+    min-width: 0;
+  }
+  .brand small,
+  .topbar-actions .cart-button {
+    display: none;
+  }
+  .brand-word {
+    white-space: nowrap;
+  }
+  .topbar-actions {
+    margin-left: auto;
+  }
+  .category-tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .category-tiles .category-button,
+  body:has(.app-view[data-view="home"].is-active) .category-tiles .category-button {
+    min-height: 76px;
+    padding: 9px 5px;
+  }
+  .promo-banner-neutral {
+    min-height: 124px;
+    padding: 18px;
+  }
+  .promo-banner-neutral .promo-banner-copy {
+    max-width: 68%;
+  }
+  .promo-banner-neutral .promo-cta {
+    display: none;
+  }
+  .product-card {
+    min-height: 240px;
+  }
+  .product-body {
+    padding-inline: 11px;
+  }
+  .product-bottom {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 11px;
+  }
+  .product-card .add-button {
+    justify-content: center;
+    width: 100%;
+  }
+  body:has(.app-view[data-view="home"].is-active) .floating-cart:not(.hidden),
+  body:has(.app-view[data-view="catalog"].is-active) .floating-cart:not(.hidden) {
+    bottom: calc(var(--mobile-nav-h) + 18px + env(safe-area-inset-bottom));
+  }
+  body:has(.app-view[data-view="home"].is-active):has(.floating-cart:not(.hidden)) main,
+  body:has(.app-view[data-view="catalog"].is-active):has(.floating-cart:not(.hidden)) main {
+    padding-bottom: calc(var(--mobile-nav-h) + 112px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 340px) {
+  .topbar {
+    padding-inline: 10px;
+  }
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+  }
+  .category-tiles {
+    gap: 7px;
+  }
+  .category-tiles .category-label {
+    font-size: 11px;
   }
 }

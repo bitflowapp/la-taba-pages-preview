@@ -157,9 +157,9 @@ test('business setup restore demo requiere confirmacion y no borra estado operat
       id: 'QA-0001',
       deliveryMode: 'delivery',
       status: 'received',
-      items: [{ productId: 'p-napolitana', name: 'Matambre', quantity: 1, unitPrice: 9000, unit: 'kg' }],
+      items: [{ productId: 'qa-jugo-naranja', name: 'Matambre', quantity: 1, unitPrice: 9000, unit: 'kg' }],
     }],
-    cart: [{ productId: 'p-napolitana', quantity: 1 }],
+    cart: [{ productId: 'qa-jugo-naranja', quantity: 1 }],
   });
   saveBusinessSetup({ ...validValues, minDeliveryOrder: 0, deliveryFee: 777 });
   const productId = getState().products.find((product) => getProductById(product.id) && product.available && product.stock > 0)?.id;

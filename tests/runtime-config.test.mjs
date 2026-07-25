@@ -131,6 +131,21 @@ test('Supabase local admite HTTP sólo sobre loopback', () => {
   assert.match(remoteHttp.errors.join(' '), /HTTPS/);
 });
 
+test('deployment productivo nunca puede apuntar a localhost', () => {
+  const result = resolveRuntimeConfig({
+    mode: 'production',
+    repository: {
+      provider: 'supabase',
+      deploymentEnvironment: 'production',
+      supabaseUrl: 'http://localhost:54321',
+      publishableKey: 'sb_publishable_12345678',
+      businessId: '00000000-0000-4000-8000-000000000001',
+    },
+  });
+  assert.equal(result.isProductionReady, false);
+  assert.ok(result.errors.some((error) => /Producción no puede apuntar/.test(error)));
+});
+
 test('sólo acepta claves públicas aptas para navegador', () => {
   for (const publishableKey of [
     'sb_publishable_browser-safe-test-key',

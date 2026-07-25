@@ -76,6 +76,14 @@ export function createSupabaseOrderRepository({
     if (!clean) return null;
     const requestClient = getTrackingClient(trackingToken) || client;
 
+    if (trackingToken) {
+      const { data, error } = await requestClient.rpc('get_public_order_tracking', {
+        p_public_id: clean,
+      });
+      if (error || !data) return null;
+      return mirror ? mirrorOrder(data) : data;
+    }
+
     let query = requestClient
       .from('orders')
       .select(ORDER_SELECT)
@@ -258,6 +266,11 @@ export function createSupabaseOrderRepository({
     if (!cartItems.length) {
       return repositoryResult(false, { message: 'Agregá al menos un producto antes de confirmar.' });
     }
+    if (cartItems.some((item) => item.product.alcoholic) && !values.ageConfirmed) {
+      return repositoryResult(false, {
+        message: 'Confirmá que sos mayor de edad para pedir bebidas alcohólicas.',
+      });
+    }
     if (!values.customerName) return repositoryResult(false, { message: 'Ingresá el nombre del cliente.' });
     if (!values.customerPhone) return repositoryResult(false, { message: 'Ingresá un teléfono de contacto.' });
     if (values.deliveryMode === 'delivery' && !values.customerAddress) {
@@ -306,6 +319,7 @@ export function createSupabaseOrderRepository({
       customer_phone: values.customerPhone,
       delivery_mode: values.deliveryMode,
       payment_method: values.paymentMethod,
+      age_confirmed: values.ageConfirmed,
       ...(values.deliveryMode === 'delivery' ? {
         customer_street_address: values.addressDetails.streetLine || values.customerAddress,
         address_label: values.customerAddress,

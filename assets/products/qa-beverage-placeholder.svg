@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Producto de bebidas QA</title>
+  <desc id="desc">Marcador técnico neutro, no es una fotografía comercial.</desc>
+  <rect width="1000" height="1000" fill="#fff"/>
+  <rect x="390" y="190" width="220" height="620" rx="80" fill="#edf5f2" stroke="#1d6b57" stroke-width="18"/>
+  <rect x="440" y="110" width="120" height="130" rx="24" fill="#1d6b57"/>
+  <circle cx="500" cy="500" r="105" fill="#fff" stroke="#1d6b57" stroke-width="12"/>
+  <text x="500" y="525" text-anchor="middle" font-family="Arial,sans-serif" font-size="78" font-weight="700" fill="#1d6b57">QA</text>
+  <text x="500" y="900" text-anchor="middle" font-family="Arial,sans-serif" font-size="36" fill="#33413d">NO PUBLICAR</text>
+</svg>

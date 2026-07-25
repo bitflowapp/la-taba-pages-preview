@@ -9,11 +9,11 @@ export const BRAND = Object.freeze({
   tagline: 'Tu sistema de pedidos directo, sin depender de apps con comisión.',
   shortTagline: 'Pedidos directos para tu comercio',
   // Comercio ficticio reusable que protagoniza la demo (encaja con el catálogo
-  // de pizzería actual). Cambialo acá para adaptar la demo a otro rubro.
-  demoBusinessName: 'La Taba Pizzería',
-  demoBusinessSubtitle: 'Horno a leña · masa madre',
+  // de bebidas QA actual). Cambialo acá para adaptar la demo a otro rubro.
+  demoBusinessName: 'TABA Bebidas · QA',
+  demoBusinessSubtitle: 'Catálogo técnico no comercial',
   // Claim del COMERCIO demo (no confundir con el tagline del producto).
-  demoBusinessClaim: 'Tu pizza favorita, ahora a un toque.',
+  demoBusinessClaim: 'Tus bebidas, ahora a un toque.',
   demoBusinessClaimSecondary: 'Pedí. Seguí. Disfrutá.',
   // Mensaje que se precarga al tocar "Hablar por WhatsApp" desde la presentación.
   contactWhatsappMessage: 'Hola, vi la demo de PedidoPropio y quiero info para mi comercio.',
@@ -127,7 +127,7 @@ export const BUSINESS_CONFIG = Object.freeze({
     },
   },
   // Categorías demo que el comercio puede activar/desactivar y editar.
-  // El catálogo pizzería no trae categorías demo opcionales por defecto.
+  // El catálogo QA no trae categorías opcionales por defecto.
   demoCategories: [],
 });
 

@@ -18,7 +18,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
   await expect(page.locator('[data-business-dashboard]')).toContainText('Central de pedidos');
-  await expect(page.locator('.topbar .brand')).toContainText(/La Taba/i);
+  await expect(page.locator('.topbar .brand')).toContainText(/TABA Bebidas/i);
   await expect(page.locator('.inbox-tabs')).toContainText('Nuevos');
   await expect(page.locator('.inbox-tabs')).toContainText('En preparación');
   await expect(page.locator('.inbox-tabs')).toContainText('Listos');

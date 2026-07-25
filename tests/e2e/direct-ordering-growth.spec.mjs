@@ -26,7 +26,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
     deliveryMode: 'delivery',
   });
   await page.locator('[name="rememberCustomer"]').check();
-  await expect(page.locator('.remember-customer-row')).toContainText('Recordar mis datos');
+  await expect(page.locator('[name="rememberCustomer"]').locator('..')).toContainText('Recordar mis datos');
   await expect(page.locator('.payment-static-row')).toContainText('Se coordina con el local');
 
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();

@@ -28,14 +28,14 @@ test('carga inicial, home sin lista infinita y catálogo por categorías', async
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
   await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
 
-  // Seleccionar categoría Pizzas.
+  // Seleccionar la categoría de gaseosas (conserva el id técnico histórico).
   await page.locator('[data-view="catalog"] [data-category-id="pizzas"]').click();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Pizzas');
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Gaseosas');
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
 
-  // Seleccionar categoría Bebidas.
+  // Seleccionar la categoría de aguas (conserva el id técnico histórico).
   await page.locator('[data-view="catalog"] [data-category-id="bebidas"]').click();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Bebidas');
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Aguas');
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
 
   // Ordenar por menor precio.
@@ -57,7 +57,7 @@ test('agregar producto desde una categoría del catálogo', async ({ page }) => 
   await page.goto('/?demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-view="catalog"] [data-category-id="pizzas"]').click();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Pizzas');
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Gaseosas');
 
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await waitForToast(page, /agregado al pedido/);
@@ -87,7 +87,7 @@ test('catálogo: tiles limpios (nombre debajo) y breadcrumb compacto', async ({ 
   await page.goto('/?demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-view="catalog"] [data-category-id="combos"]').click();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Combos');
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Energéticas');
 
   const card = page.locator('[data-product-grid] .product-card').first();
   await expect(card).toBeVisible();
@@ -491,9 +491,12 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
 });
 
   for (const [name, viewport] of [
+    ['narrow 320x720', { width: 320, height: 720 }],
+    ['Android-small 360x800', { width: 360, height: 800 }],
     ['iPhone-like 390x844', { width: 390, height: 844 }],
-    ['Android-like 430x932', { width: 430, height: 932 }],
+    ['Android-like 412x915', { width: 412, height: 915 }],
     ['tablet 768x1024', { width: 768, height: 1024 }],
+    ['desktop 1280x900', { width: 1280, height: 900 }],
   ]) {
   test(`responsive smoke ${name}`, async ({ browser }) => {
     const context = await browser.newContext({ viewport });
@@ -527,6 +530,9 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
       await page.locator('.desktop-nav [data-nav-view="cart"]').click();
     }
     await expect(page.locator('[data-checkout-form]')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => (
+      document.documentElement.scrollWidth <= document.documentElement.clientWidth
+    ))).toBe(true);
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
     expect(overflow).toBeTruthy();

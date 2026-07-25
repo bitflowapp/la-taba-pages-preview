@@ -6,6 +6,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3
 const DEFAULT_POLL_MS = 5000;
 const MIN_POLL_MS = 1000;
 const MAX_POLL_MS = 60000;
+const DEPLOYMENT_ENVIRONMENTS = new Set(['local', 'staging', 'production']);
 let productionCatalogReady = false;
 
 /**
@@ -99,6 +100,9 @@ function normalizeSupabaseRepository(repository, errors) {
   const publishableKey = normalizeBrowserSupabaseKey(repository.publishableKey || repository.anonKey);
   const businessId = String(repository.businessId || '').trim();
   const pollMs = normalizePollMs(repository.pollMs);
+  const requestedEnvironment = normalizeToken(repository.deploymentEnvironment);
+  const deploymentEnvironment = requestedEnvironment
+    || (supabaseUrl && isLoopbackHost(new URL(supabaseUrl).hostname) ? 'local' : 'production');
 
   if (!supabaseUrl) {
     errors.push('Supabase requiere HTTPS; HTTP sólo se admite para localhost en pruebas locales.');
@@ -107,6 +111,16 @@ function normalizeSupabaseRepository(repository, errors) {
     errors.push('Supabase requiere una publishableKey pública y no privilegiada.');
   }
   if (!UUID_PATTERN.test(businessId)) errors.push('Supabase requiere un businessId UUID válido.');
+  if (!DEPLOYMENT_ENVIRONMENTS.has(deploymentEnvironment)) {
+    errors.push('deploymentEnvironment debe ser local, staging o production.');
+  }
+  if (
+    deploymentEnvironment === 'production'
+    && supabaseUrl
+    && isLoopbackHost(new URL(supabaseUrl).hostname)
+  ) {
+    errors.push('Producción no puede apuntar a un Supabase local.');
+  }
   if (repository.pollMs !== undefined && pollMs === null) {
     errors.push(`pollMs debe estar entre ${MIN_POLL_MS} y ${MAX_POLL_MS}.`);
   }
@@ -118,6 +132,7 @@ function normalizeSupabaseRepository(repository, errors) {
     publishableKey,
     businessId,
     pollMs: pollMs ?? DEFAULT_POLL_MS,
+    ...(requestedEnvironment ? { deploymentEnvironment } : {}),
   };
 }
 

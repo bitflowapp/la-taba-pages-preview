@@ -20,13 +20,13 @@ test('buildKitchenTicket incluye los datos clave del pedido para la cocina', () 
   });
 
   const ticket = buildKitchenTicket(order);
-  assert.match(ticket, /LA TABA/);
+  assert.match(ticket, /TABA BEBIDAS/);
   assert.ok(ticket.includes(order.id));
   assert.match(ticket, /Cocina QA/);
   assert.match(ticket, /2995550000/);
   assert.match(ticket, /Roca 321, Centro/);
   assert.match(ticket, /Porton negro/);
-  assert.match(ticket, /2 x Muzzarella/);
+  assert.match(ticket, /2 x Gaseosa cola/);
   assert.match(ticket, /TOTAL:/);
   assert.match(ticket, /Sin sal/);
 });

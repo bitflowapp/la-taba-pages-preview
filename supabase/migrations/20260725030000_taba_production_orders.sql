@@ -29,6 +29,7 @@ alter table public.products add column if not exists packaging_type text;
 alter table public.products add column if not exists stock integer;
 alter table public.products add column if not exists available boolean not null default false;
 alter table public.products add column if not exists is_alcoholic boolean;
+alter table public.products add column if not exists minimum_age integer;
 alter table public.products add column if not exists tags text[] not null default '{}'::text[];
 alter table public.products add column if not exists is_verified boolean not null default false;
 alter table public.products add column if not exists verified_at timestamptz;
@@ -88,6 +89,11 @@ alter table public.businesses add column if not exists delivery_enabled boolean 
 alter table public.businesses add column if not exists pickup_enabled boolean not null default false;
 alter table public.businesses add column if not exists delivery_fee numeric(12, 2);
 alter table public.businesses add column if not exists minimum_delivery_subtotal numeric(12, 2);
+alter table public.businesses add column if not exists alcohol_sales_enabled boolean not null default false;
+alter table public.businesses add column if not exists alcohol_minimum_age integer;
+alter table public.businesses add column if not exists alcohol_sales_start time;
+alter table public.businesses add column if not exists alcohol_sales_end time;
+alter table public.businesses add column if not exists alcohol_timezone text;
 
 update public.businesses
    set ordering_enabled = false,
@@ -139,6 +145,8 @@ alter table public.orders add column if not exists client_request_id text;
 alter table public.orders add column if not exists client_request_fingerprint text;
 alter table public.orders add column if not exists currency_code text;
 alter table public.orders add column if not exists inventory_released_at timestamptz;
+alter table public.orders add column if not exists age_confirmed_at timestamptz;
+alter table public.orders add column if not exists age_confirmation_policy integer;
 
 -- Orders that existed before this migration were not guaranteed to reserve
 -- master-product stock through the authoritative RPC. Mark them as ineligible
@@ -342,6 +350,8 @@ declare
   v_reference text;
   v_customer_notes text;
   v_payment_method text;
+  v_age_confirmed boolean := false;
+  v_contains_alcohol boolean := false;
   v_address_label text;
   v_order_id uuid := gen_random_uuid();
   v_public_code text;
@@ -384,6 +394,7 @@ begin
      'customer_notes',
      'notes',
      'payment_method'
+     ,'age_confirmed'
    )
    limit 1;
 
@@ -416,6 +427,7 @@ begin
     ''
   )), '');
   v_payment_method := nullif(btrim(coalesce(payload->>'payment_method', '')), '');
+  v_age_confirmed := coalesce((payload->>'age_confirmed')::boolean, false);
 
   if v_business_id is null then
     raise exception 'business_id requerido' using errcode = '22023';
@@ -512,6 +524,7 @@ begin
         'customer_reference', v_reference,
         'customer_notes', v_customer_notes,
         'payment_method', v_payment_method
+        ,'age_confirmed', v_age_confirmed
       )::text,
       'sha256'
     ),
@@ -642,6 +655,13 @@ begin
       raise exception 'stock insuficiente para producto: %', v_item.product_id
         using errcode = '23514';
     end if;
+    if v_product.is_alcoholic is true then
+      v_contains_alcohol := true;
+      if v_product.minimum_age is null then
+        raise exception 'producto alcoholico sin edad minima configurada'
+          using errcode = '55000';
+      end if;
+    end if;
 
     v_line_subtotal := v_product.price * v_item.quantity;
     v_subtotal := v_subtotal + v_line_subtotal;
@@ -656,6 +676,30 @@ begin
       )
     );
   end loop;
+
+  if v_contains_alcohol then
+    if not v_business.alcohol_sales_enabled
+      or v_business.alcohol_minimum_age is null
+      or v_business.alcohol_sales_start is null
+      or v_business.alcohol_sales_end is null
+      or v_business.alcohol_timezone is null then
+      raise exception 'politica de alcohol no configurada' using errcode = '55000';
+    end if;
+    if not v_age_confirmed then
+      raise exception 'confirmacion de mayoria de edad requerida' using errcode = '22023';
+    end if;
+    if v_business.alcohol_sales_start <= v_business.alcohol_sales_end then
+      if (clock_timestamp() at time zone v_business.alcohol_timezone)::time
+         not between v_business.alcohol_sales_start and v_business.alcohol_sales_end then
+        raise exception 'venta de alcohol fuera de horario' using errcode = '55000';
+      end if;
+    elsif (
+      (clock_timestamp() at time zone v_business.alcohol_timezone)::time
+      between v_business.alcohol_sales_end and v_business.alcohol_sales_start
+    ) then
+      raise exception 'venta de alcohol fuera de horario' using errcode = '55000';
+    end if;
+  end if;
 
   if v_delivery_mode = 'delivery' then
     v_delivery_fee := v_business.delivery_fee;
@@ -713,6 +757,8 @@ begin
     notes,
     customer_notes,
     payment_method,
+    age_confirmed_at,
+    age_confirmation_policy,
     subtotal,
     delivery_fee,
     total
@@ -738,6 +784,8 @@ begin
     v_customer_notes,
     v_customer_notes,
     v_payment_method,
+    case when v_contains_alcohol then clock_timestamp() else null end,
+    case when v_contains_alcohol then v_business.alcohol_minimum_age else null end,
     v_subtotal,
     v_delivery_fee,
     v_total

@@ -14,6 +14,7 @@ const requiredFiles = [
   'assets/icon.svg',
   'js/config.js',
   'js/data.js',
+  'js/beverage-qa-data.js',
   'js/state.js',
   'js/cart.js',
   'js/orders.js',

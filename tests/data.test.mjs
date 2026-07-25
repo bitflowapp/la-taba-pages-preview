@@ -35,30 +35,17 @@ test('catalog data is internally consistent', () => {
   assert.deepEqual(orphanCategories, []);
 });
 
-test('catalog includes pizzeria products with real prices', () => {
-  const names = new Set(products.map((product) => product.name));
-  for (const expected of [
-    'Muzzarella',
-    'Especial',
-    'Fugazzeta',
-    'Napolitana',
-    'Pepperoni',
-    'Calabresa',
-    'Jamón y muzzarella',
-    'Combo familiar',
-    'Promo del día: 2 pizzas grandes + gaseosa',
-    'Coca-Cola 1.5L',
-    'Agua mineral',
-  ]) {
-    assert.ok(names.has(expected), `missing product: ${expected}`);
+test('preview catalog is beverages-only and explicitly marked as QA', () => {
+  const categoryNames = new Set(categories.map((category) => category.name));
+  for (const expected of ['Promos', 'Gaseosas', 'Aguas', 'Jugos', 'Cervezas', 'Hielo y extras']) {
+    assert.ok(categoryNames.has(expected), `missing category: ${expected}`);
   }
-  assert.ok(products.every((product) => product.price > 0), 'products should not show zero prices');
-
-  // Cada producto del catálogo demo lleva foto real local (ver docs/image-sources.md)
-  // o cae al bloque tonal; las fotos referenciadas deben ser rutas locales.
+  assert.ok(products.every((product) => product.qaFixture === true));
+  assert.ok(products.every((product) => /QA/.test(product.name)));
+  assert.ok(products.every((product) => /Sin valor comercial/.test(product.marketNote)));
   for (const product of products) {
     if (product.image) {
-      assert.match(product.image, /^assets\/(products|hero)\/[a-z0-9-]+\.webp$/, `unexpected image path: ${product.image}`);
+      assert.equal(product.image, 'assets/products/qa-beverage-placeholder.svg');
     }
   }
 });

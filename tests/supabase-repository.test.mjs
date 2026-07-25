@@ -485,6 +485,12 @@ function createSupabaseClientMock({
         row.updated_at = new Date().toISOString();
         return { data: withRelations(row, db), error: null, status: 200 };
       }
+      if (name === 'get_public_order_tracking') {
+        const row = db.orders.find((candidate) => (
+          candidate.id === args.p_public_id || candidate.public_code === args.p_public_id
+        ));
+        return { data: row ? withRelations(row, db) : null, error: null, status: 200 };
+      }
       throw new Error(`Unexpected RPC: ${name}`);
     },
     channel(name) {

@@ -76,7 +76,7 @@ export function applyBusinessConfig() {
   setText('[data-business-subtitle]', config.subtitle);
   setText('.app-home .eyebrow', config.subtitle || 'Tienda de bebidas');
   setText('.app-home .home-lead', demo
-    ? `${BRAND.demoBusinessClaim || 'Tu pizza favorita, ahora a un toque.'} ${BRAND.demoBusinessClaimSecondary || 'Pedí. Seguí. Disfrutá.'}`
+    ? `${BRAND.demoBusinessClaim || 'Tus bebidas, ahora a un toque.'} ${BRAND.demoBusinessClaimSecondary || 'Pedí. Seguí. Disfrutá.'}`
     : 'Bebidas con catálogo y disponibilidad publicados por el comercio.');
   setText('[data-min-order]', demo || detailsVerified ? money(config.minDeliveryOrder) : 'A confirmar');
   setText('[data-delivery-fee]', demo || detailsVerified ? money(config.deliveryFee) : 'A confirmar');
@@ -292,7 +292,7 @@ function priceBlock(product) {
     </div>`;
 }
 
-// "Las más pedidas" del home (referencia visual de la maqueta): pizzas populares
+// "Las más pedidas" del home: productos populares del catálogo activo.
 // primero. Se exporta la lista para que "Combos y promos" no repita productos.
 function homeOfferProducts() {
   return getCustomerCatalogProducts(getState().products)
@@ -551,7 +551,6 @@ function renderProducts() {
     const unavailableLabel = !product.available ? 'No disponible' : 'Agotado';
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
-    const favorite = isFavoriteProduct(product.id);
     const control = inCart > 0
       ? `<div class="qty-stepper" aria-label="Cantidad de ${escapeHtml(product.name)} en el pedido">
           <button class="icon-button compact" type="button" data-cart-dec="${product.id}" aria-label="Restar uno de ${escapeHtml(product.name)}">−</button>
@@ -563,17 +562,13 @@ function renderProducts() {
         </button>`;
     return `
       <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
-        <button class="favorite-button ${favorite ? 'active' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos">${favorite ? '★' : '☆'}</button>
         <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
           ${productThumb(product, 'grid')}
-          ${offerBadges(product)}
           <span class="product-stock-tag">${stockPill(product)}</span>
-          ${inCart > 0 ? `<span class="product-incart-tag">${inCart} en pedido</span>` : ''}
         </button>
         <div class="product-body">
           <h3>${escapeHtml(product.name)}</h3>
-          <p>${escapeHtml(product.description)}</p>
-          ${product.alcoholic ? '<small class="product-alcohol-notice">Bebida con alcohol</small>' : ''}
+          <p>${escapeHtml(product.unitLabel || product.variant || product.packageType || '')}</p>
         </div>
         <div class="product-bottom">
           ${priceBlock(product)}
@@ -1017,6 +1012,7 @@ export function getCheckoutFormValues() {
     cashChange: String(formData.get('cashChange') || ''),
     couponCode: String(formData.get('couponCode') || ''),
     rememberCustomer: formData.get('rememberCustomer') === 'on',
+    ageConfirmed: formData.get('ageConfirmed') === 'on',
   };
 }
 

@@ -76,6 +76,9 @@ export function createOrderFromCheckout(formValues = {}) {
 
   const now = new Date().toISOString();
   const cartItems = getCartItems();
+  if (cartItems.some((item) => item.product.alcoholic) && !values.ageConfirmed) {
+    return { ok: false, message: 'Confirmá que sos mayor de edad para pedir bebidas alcohólicas.' };
+  }
   const items = cartItems.map((item) => ({
     productId: item.product.id,
     name: item.product.name,
@@ -177,6 +180,7 @@ function normalizeCheckoutValues(formValues) {
     cashChange: sanitizeText(formValues.cashChange, { maxLength: 80 }),
     couponCode: normalizeCouponCode(formValues.couponCode),
     rememberCustomer: Boolean(formValues.rememberCustomer),
+    ageConfirmed: Boolean(formValues.ageConfirmed),
     previewOnly: Boolean(formValues.previewOnly),
   };
 }

@@ -110,6 +110,7 @@ export function normalizeOrderDraft(draft = {}) {
     cashChange: sanitizeText(draft.cashChange, { fallback: '', maxLength: 80 }),
     couponCode: sanitizeText(draft.couponCode, { fallback: '', maxLength: 24 }).toUpperCase(),
     rememberCustomer: Boolean(draft.rememberCustomer),
+    ageConfirmed: Boolean(draft.ageConfirmed),
   };
 }
 

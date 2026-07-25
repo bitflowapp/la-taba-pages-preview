@@ -24,8 +24,8 @@ test('production migration is ordered after the operational v1 migration', () =>
     .sort();
 
   assert.equal(fs.existsSync(migrationPath), true);
-  assert.equal(migrationNames.at(-1), migrationName);
   assert.ok(migrationNames.indexOf(migrationName) > migrationNames.indexOf('20260601205707_operational_orders_v1.sql'));
+  assert.ok(migrationNames.indexOf('20260725050000_tracking_rider_privacy.sql') > migrationNames.indexOf(migrationName));
 });
 
 test('beverage master catalog contains every requested field and defaults fail closed', () => {

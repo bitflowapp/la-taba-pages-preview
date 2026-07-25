@@ -10,6 +10,10 @@
     "verify": "npm run check && npm test && npm run test:e2e",
     "release:folder": "npm run vendor:build && npm run verify && node scripts/create-release-folder.mjs",
     "smoke:supabase": "node scripts/smoke-supabase-production.mjs",
+    "config:check": "node scripts/check-runtime-config.mjs",
+    "migrations:validate": "node scripts/validate-supabase-migrations.mjs",
+    "catalog:validate": "node scripts/validate-product-catalog.mjs data/catalog-template.csv --template",
+    "staging:validate": "node scripts/validate-staging-readiness.mjs",
     "realtime:demo": "node scripts/realtime-relay.mjs"
   },
   "devDependencies": {

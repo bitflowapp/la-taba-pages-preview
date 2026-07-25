@@ -1,4 +1,6 @@
-// Catálogo de demostración del comercio demo (La Taba Pizzería) para PedidoPropio.
+export { categories, products } from './beverage-qa-data.js';
+
+// Catálogo histórico archivado de la antigua demo de pizzería.
 // Precios en ARS, estimados de mercado argentino y editables desde el panel.
 // Cada producto lleva `image` (foto real licenciada, ver docs/image-sources.md);
 // los `tone` quedan como respaldo tonal para productos creados desde el panel.
@@ -6,7 +8,7 @@
 // Categorías:
 //  - Pizzas, Combos, Promos y Bebidas forman la vidriera comercial.
 // Nota legal: no se incluyen bebidas alcohólicas. "Bebidas" es una categoría segura.
-export const categories = [
+const historicalPizzeriaCategories = [
   { id: 'all', name: 'Todos' },
   { id: 'pizzas', name: 'Pizzas' },
   { id: 'combos', name: 'Combos' },
@@ -16,7 +18,7 @@ export const categories = [
 
 const MARKET_NOTE = 'Disponibilidad y preparación a coordinar con el local.';
 
-export const products = [
+const historicalPizzeriaProducts = [
   // ===== Pizzas =====
   {
     id: 'p-muzzarella',
@@ -274,25 +276,25 @@ export const products = [
 export const seedOrders = [
   {
     id: 'LT-0001',
-    customerName: 'Juan Pérez',
+    customerName: 'Cliente QA',
     customerPhone: '2990000000',
-    address: 'Av. San Martín 1234, Neuquén',
+    address: 'Dirección ficticia QA',
     addressDetails: {
-      streetLine: 'Av. San Martín 1234',
-      neighborhood: 'Neuquén centro',
-      reference: 'Tocar timbre',
-      label: 'Av. San Martín 1234, Neuquén centro',
+      streetLine: 'Dirección ficticia QA',
+      neighborhood: 'Zona QA',
+      reference: 'Dato técnico no comercial',
+      label: 'Dirección ficticia QA',
     },
     deliveryMode: 'delivery',
     paymentMethod: 'Pago a coordinar con el local',
     paymentMethodCode: 'coordinate',
-    notes: 'Tocar timbre.',
+    notes: 'Pedido técnico de demostración.',
     createdAt: new Date(Date.now() - 1000 * 60 * 22).toISOString(),
     status: 'delivered',
     items: [
-      { productId: 'p-muzzarella', name: 'Muzzarella', icon: '', quantity: 1, unitPrice: 8990, unit: 'unidad' },
-      { productId: 'p-pepperoni', name: 'Pepperoni', icon: '', quantity: 1, unitPrice: 11490, unit: 'unidad' },
-      { productId: 'p-coca', name: 'Coca-Cola 1.5L', icon: '', quantity: 1, unitPrice: 2900, unit: 'unidad' },
+      { productId: 'p-muzzarella', name: 'Gaseosa cola · QA', icon: '', quantity: 1, unitPrice: 8990, unit: 'unidad' },
+      { productId: 'p-pepperoni', name: 'Cerveza lager · QA', icon: '', quantity: 1, unitPrice: 11490, unit: 'unidad' },
+      { productId: 'p-coca', name: 'Agua sin gas · QA', icon: '', quantity: 1, unitPrice: 2900, unit: 'unidad' },
     ],
     subtotal: 23380,
     deliveryFee: 1990,

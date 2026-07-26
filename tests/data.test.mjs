@@ -77,7 +77,10 @@ test('preview catalog is concrete beverages and internally marked as QA', () => 
       }
     }
   }
-  assert.equal(products.filter((product) => product.previewCatalogApproved).length, 8);
+  assert.equal(products.filter((product) => product.previewCatalogApproved).length, 12);
+  assert.equal(products.filter((product) => product.identityStatus === 'EXACTA').length, 12);
+  assert.equal(products.filter((product) => product.identityStatus === 'PARCIAL').length, 2);
+  assert.ok(products.every((product) => !/^(gaseosa|energética|cerveza|agua mineral)$/i.test(product.name)));
 });
 
 test('preview categories use the canonical beverage ids', () => {

@@ -23,7 +23,8 @@ import {
   normalizeDeliveryMode,
   normalizeMoneyValue,
 } from './core/pricing.js';
-import { normalizeOrderCoupon } from './core/promotions.js';
+import { normalizeOrderCoupon, normalizePromotionCollection } from './core/promotions.js';
+import { PREVIEW_PROMOTION_SEED } from './preview-promotions-data.js';
 import {
   getStorageArea,
   safeJsonParse,
@@ -43,8 +44,8 @@ import { clampProgress } from './core/simulation.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 import { normalizePendingReorder } from './core/reorder.js';
 
-// v3: separa persistencia pública/presentación e invalida el catálogo anterior.
-export const STATE_SCHEMA_VERSION = 3;
+// v4: agrega promociones aisladas y versionadas al sandbox persistente.
+export const STATE_SCHEMA_VERSION = 4;
 
 export const SORT_OPTIONS = Object.freeze(['recommended', 'price_asc', 'popular']);
 
@@ -76,6 +77,7 @@ const defaultState = () => {
     pendingReorder: null,
     simulation: null,
     businessConfig: buildBaseBusinessConfig(),
+    promotions: isDemoMode() ? normalizePromotionCollection(PREVIEW_PROMOTION_SEED) : [],
   };
 };
 
@@ -158,6 +160,9 @@ export function sanitizeState(nextState, baseState = defaultState()) {
     pendingReorder: normalizePendingReorder(source.pendingReorder),
     simulation: sanitizeSimulation(source.simulation, orders),
     businessConfig: normalizeBusinessConfig(source.businessConfig, baseState.businessConfig || buildDefaultBusinessConfig()),
+    promotions: baseState.appMode === 'demo'
+      ? normalizePromotionCollection(Array.isArray(source.promotions) ? source.promotions : baseState.promotions)
+      : [],
   };
 }
 
@@ -314,6 +319,7 @@ function normalizeOrder(order) {
   const totals = calculateTotals(items, deliveryMode, { discountAmount: coupon?.discountAmount || order.discountTotal || 0 });
   const paymentMethodCode = normalizeOrderPaymentMethodCode(order.paymentMethodCode, order.paymentMethod);
   const delivery = normalizeDelivery(order.delivery, deliveryMode, status);
+  const promotionApplications = normalizePromotionApplications(order.promotionApplications);
   const reorder = normalizeOrderReorder(order.reorder);
   const deliveryProof = normalizeDeliveryProof(order.deliveryProof);
   const hasStoredDeliveryCode = order.deliveryCode !== undefined
@@ -343,6 +349,7 @@ function normalizeOrder(order) {
     // Evita que un estado viejo/corrupto muestre "cambio" con transferencia/MP.
     cashChange: paymentMethodCode === 'cash' ? sanitizeText(order.cashChange, { maxLength: 80 }) : '',
     coupon,
+    promotionApplications,
     cancelReason: sanitizeText(order.cancelReason, { maxLength: 160 }),
     createdAt,
     status,
@@ -362,6 +369,25 @@ function normalizeOrder(order) {
   if (deliveryCode) normalized.deliveryCode = deliveryCode;
   else delete normalized.deliveryCode;
   return normalized;
+}
+
+function normalizePromotionApplications(rawApplications) {
+  if (!Array.isArray(rawApplications)) return [];
+  return rawApplications.slice(0, 12).map((application) => {
+    if (!isPlainObject(application)) return null;
+    const promoId = sanitizeText(application.promoId, { maxLength: 80 });
+    const title = sanitizeText(application.title, { maxLength: 80 });
+    const discountAmount = normalizeMoneyValue(application.discountAmount, 0);
+    if (!promoId || !title) return null;
+    return {
+      promoId,
+      title,
+      promotionType: sanitizeText(application.promotionType, { maxLength: 40 }),
+      discountAmount,
+      matchedQuantity: Math.max(0, Math.floor(Number(application.matchedQuantity) || 0)),
+      terms: sanitizeText(application.terms, { maxLength: 240 }),
+    };
+  }).filter(Boolean);
 }
 
 function normalizeOrderItem(item) {

@@ -110,17 +110,17 @@
 }
 
 .lt-rider-marker {
-  width: 64px;
+  width: 62px;
   height: 52px;
 }
 
-.lt-rider-helmet-core {
-  width: 58px;
+.lt-rider-moto-core {
+  width: 62px;
   height: 52px;
 }
 
-.lt-rider-helmet-icon {
-  width: 64px;
+.lt-rider-moto-icon {
+  width: 62px;
   height: 52px;
 }
 
@@ -528,32 +528,20 @@
   animation: taba-marker-pulse 1.8s ease-out infinite;
 }
 
-.lt-rider-helmet-core {
+.lt-rider-moto-core {
   position: relative;
   z-index: 1;
   display: grid;
-  width: 46px;
+  width: 62px;
   height: 46px;
   place-items: center;
   color: white;
 }
 
-.lt-rider-helmet-icon {
-  width: 46px;
+.lt-rider-moto-icon {
+  width: 62px;
   height: 46px;
   filter: drop-shadow(0 6px 10px rgb(20 20 22 / 18%));
-}
-
-.lt-rider-pin {
-  fill: var(--taba-red);
-}
-
-.lt-rider-core-disc {
-  fill: rgb(255 255 255 / 16%);
-}
-
-.lt-rider-delivery-icon {
-  color: white;
 }
 
 @keyframes taba-marker-pulse {

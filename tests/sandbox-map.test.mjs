@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   getSandboxMapScenario,
+  sandboxMarkerPointAtProgress,
   sandboxPointAtProgress,
 } from '../js/sandbox/sandbox_map_scenario.js';
 
@@ -14,6 +15,16 @@ test('sandbox map stays inside the fictitious Neuquén scenario', () => {
     assert.ok(point.lat > -39 && point.lat < -38);
     assert.ok(point.lng > -69 && point.lng < -67);
   }
+});
+
+test('sandbox marker stays visibly separated from store and destination pins at route endpoints', () => {
+  const scenario = getSandboxMapScenario();
+  const start = sandboxMarkerPointAtProgress(0);
+  const end = sandboxMarkerPointAtProgress(1);
+  assert.equal(start.visualOffset, true);
+  assert.equal(end.visualOffset, true);
+  assert.notDeepEqual([start.lat, start.lng], [scenario.store.lat, scenario.store.lng]);
+  assert.notDeepEqual([end.lat, end.lng], [scenario.destination.lat, scenario.destination.lng]);
 });
 
 test('sandbox route interpolation returns geographic rider positions', () => {

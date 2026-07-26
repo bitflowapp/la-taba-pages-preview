@@ -22,9 +22,9 @@ export const seedOrders = [
     createdAt: new Date(Date.now() - 1000 * 60 * 22).toISOString(),
     status: 'delivered',
     items: [
-      { productId: 'qa-gaseosa-cola', name: 'Gaseosa cola', icon: '', quantity: 1, unitPrice: 5000, unit: 'unidad' },
-      { productId: 'qa-isotonica', name: 'Bebida isotónica', icon: '', quantity: 1, unitPrice: 7500, unit: 'unidad' },
-      { productId: 'qa-agua-mineral', name: 'Agua mineral', icon: '', quantity: 1, unitPrice: 5000, unit: 'unidad' },
+      { productId: 'qa-gaseosa-cola', name: 'Sprite 1,5 L x6', icon: '', quantity: 1, unitPrice: 5000, unit: 'pack' },
+      { productId: 'qa-isotonica', name: 'Monster Energy Ultra White Zero 473 ml x6', icon: '', quantity: 1, unitPrice: 7500, unit: 'pack' },
+      { productId: 'qa-agua-mineral', name: 'Villavicencio Sin Gas 500 ml', icon: '', quantity: 1, unitPrice: 5000, unit: 'unidad' },
     ],
     subtotal: 17500,
     deliveryFee: 0,

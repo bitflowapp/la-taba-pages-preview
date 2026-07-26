@@ -2,20 +2,18 @@
 
 Fecha: 2026-07-26
 Rama: `feat/taba-production-beverages`
-Alcance: catálogo aislado de preview (`?demo=1`).
+Alcance: catalogo aislado de preview (`?demo=1`).
 
 ## Resultado
 
 - Productos concretos procesados: **14**.
-- Identidades `EXACTA`: **8**.
-- Identidades `PARCIAL`: **6**.
-- Masters WebP: **8**, 1000 x 1000.
-- Miniaturas WebP: **8**, 400 x 400.
-- Assets integrados en preview: **8**.
-- Productos con fallback neutro: **6**.
+- Identidades `EXACTA`: **12**.
+- Identidades `PARCIAL`: **2**.
+- Masters WebP: **12**, 1000 x 1000.
+- Miniaturas WebP: **12**, 400 x 400.
+- Assets integrados en preview: **12**.
+- Productos con fallback neutro: **2**.
 
-Los ocho assets aprobados corresponden a productos concretos en presentación pack x6, consistente con el distintivo x6 de las fuentes oficiales. No se publicaron precios ni stocks productivos.
+Los cuatro assets nuevos son Heineken Original 473 ml, Imperial Extra Lager 473 ml, Villavicencio Sin Gas 500 ml y Corona Extra 355 ml pack x12. Cada uno fue descargado desde la URL registrada, cotejado por SHA-256 y normalizado en fondo blanco sRGB, con proporcion preservada.
 
-Las fuentes son del distribuidor oficial Coca-Cola Andina y están registradas como `APROBADOS` para este preview privado. Esta aprobación no equivale a autorización para producción, deploy o campañas comerciales. Cada fuente conserva URL, SHA-256 y referencia en `image-manifest.json`.
-
-La revisión visual confirmó fondo blanco uniforme, producto centrado, proporción preservada y ausencia de reconstrucción IA. Capturas antes/después: `docs/catalog/visual-review/`.
+Las ocho fuentes originales permanecen `APROBADOS`. Las cuatro nuevas tienen identidad exacta pero `rights_status=PENDIENTE_DERECHOS`: la procedencia publica esta auditada, sin pretender una licencia comercial inexistente. Produccion sigue fail-closed y no consume este catalogo.

@@ -1,12 +1,8 @@
-## Productos sin imagen integrada (6)
+## Productos sin imagen integrada (2)
 
-| preview_id | imagen | estado | acción |
+| preview_id | imagen | estado | accion |
 | --- | --- | --- | --- |
-| qa-pepsi-original-15l | `assets/products/beverage-placeholder.svg` | REVISAR | Completar capacidad y fuente visual. |
-| qa-heineken-original-473ml | `assets/products/beverage-placeholder.svg` | REVISAR | Conseguir fuente oficial utilizable y cerrar derechos. |
-| qa-imperial-extra-lager-473ml | `assets/products/beverage-placeholder.svg` | REVISAR | Conseguir fuente oficial utilizable y cerrar derechos. |
-| qa-villavicencio-sin-gas-500ml | `assets/products/beverage-placeholder.svg` | REVISAR | Validar variante sin gas y fuente visual. |
-| qa-corona-extra-355ml | `assets/products/beverage-placeholder.svg` | REVISAR | Validar capacidad y fuente visual. |
-| qa-hendricks-gin-700ml | `assets/products/beverage-placeholder.svg` | REVISAR | Validar capacidad y derechos. |
+| qa-pepsi-original-15l | `assets/products/beverage-placeholder.svg` | REVISAR | Confirmar capacidad y conseguir packshot de esa misma presentacion. |
+| qa-hendricks-gin-700ml | `assets/products/beverage-placeholder.svg` | REVISAR | Confirmar capacidad y conseguir packshot de esa misma presentacion. |
 
-El fallback es neutro y no representa marca, variante, capacidad, envase ni pack.
+El fallback es neutro: no representa marca, variante, capacidad, envase ni pack.

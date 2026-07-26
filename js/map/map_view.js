@@ -1,7 +1,7 @@
 import { getState } from '../state.js';
 import { getActiveOrder } from '../orders.js';
 import { getOrderRepository, isSandboxOrderRepository } from '../repositories/repository_factory.js';
-import { getSandboxMapScenario, sandboxPointAtProgress } from '../sandbox/sandbox_map_scenario.js';
+import { getSandboxMapScenario, sandboxMarkerPointAtProgress } from '../sandbox/sandbox_map_scenario.js';
 import { MAP_PROVIDER, RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getTileLayerForTheme } from './map_config.js';
 import {
   chooseRiderLocation,
@@ -484,7 +484,8 @@ function getRiderLocation(order, sim, routeId, role, sandbox = false) {
     };
   }
   if (sim?.source === 'simulation' && (sim.userStarted || ['on_the_way', 'arriving'].includes(order?.status))) {
-    const point = sandboxPointAtProgress(sim.progress);
+    const progress = order?.status === 'arriving' ? 1 : sim.progress;
+    const point = sandboxMarkerPointAtProgress(progress);
     return {
       ...point,
       source: 'simulation',

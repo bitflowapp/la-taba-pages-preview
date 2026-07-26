@@ -10,7 +10,9 @@ import {
 import path from 'node:path';
 
 const BASE_URL = (process.env.QA_BASE_URL || 'http://127.0.0.1:8080').replace(/\/+$/, '');
-const RELEASE_DIR = path.resolve('docs/final-commercial-release');
+const RELEASE_DIR = path.resolve(process.env.QA_RELEASE_DIR || 'docs/final-commercial-release');
+const seedVisualPromotion = process.env.QA_SEED_PROMOTION === '1';
+const manifestName = process.env.QA_MANIFEST_NAME || 'manifest.json';
 const round = process.argv[2] || 'round-1';
 const validRounds = new Set(['round-1', 'round-2']);
 if (!validRounds.has(round)) {
@@ -49,6 +51,7 @@ const SCENES = [
   'tracking-no-gps',
   'tracking-with-gps',
   'rider-delivering',
+  'tracking-arriving',
   'tracking-delivered',
   'home-recurrent',
 ];
@@ -62,6 +65,7 @@ const CLIENT_SCENES = new Set([
   'checkout-alcohol',
   'tracking-no-gps',
   'tracking-with-gps',
+  'tracking-arriving',
   'tracking-delivered',
   'home-recurrent',
 ]);
@@ -95,6 +99,36 @@ async function waitForApp(page, view = 'home') {
 async function openFresh(page) {
   await page.goto(`${BASE_URL}/?reset=1&demo=1#home`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await waitForApp(page, 'home');
+  if (!seedVisualPromotion) return;
+  await page.evaluate(async () => {
+    const stateUrl = new URL('js/state.js', location.href).href;
+    const { updateState } = await import(stateUrl);
+    updateState((draft) => {
+      draft.promotions = [{
+        promoId: 'visual-review-coca-cola-x6',
+        title: 'Coca-Cola Original 1,5 L x6',
+        subtitle: 'Precio especial por pack x6',
+        includedSkus: ['qa-promo-bebidas'],
+        promotionType: 'precio_promocional',
+        regularPrice: 5000,
+        promotionalPrice: 4200,
+        discountPercentage: null,
+        requiredQuantity: 1,
+        maximumUnits: null,
+        validFrom: '2020-01-01',
+        validUntil: '2099-12-31',
+        active: true,
+        priority: 100,
+        imagePath: '',
+        terms: 'Precio especial por pack x6.',
+        previewOnly: true,
+        approvalStatus: 'APROBADA',
+        approvalReference: 'VISUAL-REVIEW-2026',
+        sourceEvidence: 'Escenario efímero de revisión visual.',
+      }];
+    });
+  });
+  await page.waitForTimeout(180);
 }
 
 async function goToView(page, view) {
@@ -387,7 +421,7 @@ async function startDeliveryWithGps(page, orderId) {
   }, orderId);
 }
 
-async function finishDelivery(page, orderId) {
+async function arriveDelivery(page, orderId) {
   await goToView(page, 'rider');
   await page.locator(`[data-delivery-arrive="${orderId}"]`).first().click();
   await page.waitForFunction(async (id) => {
@@ -399,6 +433,10 @@ async function finishDelivery(page, orderId) {
   await codeNode.waitFor({ state: 'visible' });
   const code = await codeNode.getAttribute('data-delivery-code');
   assert(/^\d{4}$/.test(code || ''), 'El código de entrega no está disponible al llegar.');
+  return code;
+}
+
+async function finishDelivery(page, orderId, code) {
   await goToView(page, 'rider');
   await page.locator(`[data-delivery-code-input="${orderId}"]`).fill(code);
   await page.locator(`[data-delivery-code-confirm="${orderId}"]`).click();
@@ -551,7 +589,9 @@ async function runViewport(browser, viewport) {
     assert(resumedGps?.ok, resumedGps?.message || 'No se pudo reanudar el GPS al volver a rider.');
     await page.locator('[data-delivery-panel] [data-real-map]').waitFor({ state: 'visible', timeout: 12_000 });
     await capture(page, viewport, 'rider-delivering', sceneIndex++);
-    await finishDelivery(page, order.id);
+    const deliveryCode = await arriveDelivery(page, order.id);
+    await capture(page, viewport, 'tracking-arriving', sceneIndex++);
+    await finishDelivery(page, order.id, deliveryCode);
 
     await goToView(page, 'tracking');
     assert(!(await page.locator('[data-real-map]').isVisible()), 'Mapa sigue visible tras entregar.');
@@ -587,7 +627,7 @@ try {
 } finally {
   await browser.close();
   report.finishedAt = new Date().toISOString();
-  writeFileSync(path.join(outDir, 'manifest.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  writeFileSync(path.join(outDir, manifestName), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 }
 
 if (failure) throw failure;

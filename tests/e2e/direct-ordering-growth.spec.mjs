@@ -14,7 +14,6 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expectHomeSections(page, [
     '[data-view="home"] .home-search',
     '[data-category-strip="home"]',
-    '[data-promo-banner]',
     '[data-offers-rail]',
   ]);
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
@@ -59,7 +58,6 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expectHomeSections(page, [
     '[data-customer-actions]',
     '[data-category-strip="home"]',
-    '[data-promo-banner]',
     '[data-offers-rail]',
   ]);
   await reorderCard.getByRole('button', { name: /Agregar de nuevo/i }).click();

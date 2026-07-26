@@ -118,7 +118,7 @@ test('sandbox completes client, business, rider, route, delivery and reorder', a
   await page.locator(`[data-delivery-leave="${orderId}"]`).click();
   await expect(page.locator('[data-sandbox-route]')).toBeVisible();
   await page.locator('[data-sim-start]').click();
-  await expect(page.locator('[data-sandbox-route]')).toContainText('En movimiento');
+  await expect(page.locator('[data-sandbox-route]')).toContainText('Seguimiento activo');
   await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-source="sandbox"]')).toHaveCount(1);
   await expect(page.locator('[data-delivery-panel] .leaflet-container')).toHaveCount(1);
   await expect(page.locator('[data-delivery-panel] .lt-place-marker.is-store')).toHaveCount(1);
@@ -138,11 +138,16 @@ test('sandbox completes client, business, rider, route, delivery and reorder', a
 
   await page.goto('/?demo=1#rider');
   await page.locator('[data-sim-pause]').click();
-  await expect(page.locator('[data-sandbox-route]')).toContainText('En pausa');
+  await expect(page.locator('[data-sandbox-route]')).toContainText('Seguimiento pausado');
   await page.locator('[data-sim-start]').click();
   await page.locator(`[data-delivery-arrive="${orderId}"]`).click();
 
   await page.goto('/?demo=1#tracking');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Llegó al domicilio');
+  await expect(page.locator('[data-tracking-panel]')).not.toContainText('0 min');
+  await expect(page.locator('[data-sandbox-eta]').first()).toContainText('Llegó');
+  await expect(page.locator('[data-tracking-panel] .track-steps.public .track-step.current')).toContainText('Llegó');
+  await expect(page.locator('[data-tracking-panel] .track-steps.public .track-step.current')).not.toContainText('En camino');
   const code = await page.locator('[data-delivery-code]').getAttribute('data-delivery-code');
   expect(code).toMatch(/^\d{4}$/);
   await page.goto('/?demo=1#rider');

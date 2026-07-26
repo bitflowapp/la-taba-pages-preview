@@ -8,7 +8,7 @@ import { installPageGuards } from './helpers.mjs';
 function seededState(status) {
   const at = new Date().toISOString();
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     dataVersion: 'la-taba-runtime-v2',
     appMode: 'demo',
     orders: [{

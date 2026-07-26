@@ -14,25 +14,32 @@ export function createRiderIcon(L, { status = 'received', source = 'simulation',
     className: riderMarkerClass(status, source),
     html: `
       <span class="lt-rider-marker-halo" aria-hidden="true"></span>
-      <span class="lt-rider-helmet-core" style="--heading:${safeHeading}deg" aria-hidden="true">
-        <svg class="lt-rider-helmet-icon" viewBox="0 0 80 64" role="img" aria-label="Moto de reparto">
-          <circle class="lt-rider-pin" cx="40" cy="32" r="28"></circle>
-          <g class="lt-rider-delivery-icon" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="25" cy="47" r="7" fill="#25282d"></circle>
-            <circle cx="59" cy="47" r="7" fill="#25282d"></circle>
-            <path d="M25 47h13l7-16h10l6 16"></path>
-            <path d="M38 47l-7-16h14l6 8H40"></path>
-            <path d="M50 31l5-7h7l-2 7"></path>
-            <path d="M34 30h-6l-4 8h11"></path>
-            <path d="M31 22c1-7 6-11 13-11 8 0 13 5 14 13H48l-5-5h-8"></path>
-            <path d="M50 24h8"></path>
+      <span class="lt-rider-moto-core" style="--heading:${safeHeading}deg" aria-hidden="true">
+        <svg class="lt-rider-moto-icon" viewBox="0 0 120 76" role="img" aria-label="Moto de reparto">
+          <ellipse cx="61" cy="66" rx="43" ry="5" fill="#17191d" opacity=".18"></ellipse>
+          <g stroke="#17191d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="35" cy="55" r="12" fill="#ffffff"></circle>
+            <circle cx="88" cy="55" r="12" fill="#ffffff"></circle>
+            <circle cx="35" cy="55" r="4" fill="#17191d" stroke="none"></circle>
+            <circle cx="88" cy="55" r="4" fill="#17191d" stroke="none"></circle>
+            <path d="M35 55h23l12-22h14l9 22" fill="none"></path>
+            <path d="M47 55 57 37h19l-14 18" fill="none"></path>
+            <path d="m75 33 8-12h15" fill="none"></path>
+            <path d="m88 21 7 3" fill="none"></path>
+            <path d="M59 37h16" fill="none"></path>
+            <path d="M50 42h21" fill="none"></path>
+            <path d="M71 33h13" fill="none"></path>
+            <path d="M33 43h14l5-11" fill="none"></path>
           </g>
-          <rect x="7" y="33" width="16" height="12" rx="2" fill="#fff" stroke="#25282d" stroke-width="2"></rect>
-          <path d="M11 37h8M11 41h6" stroke="#bd1e2d" stroke-width="2" stroke-linecap="round"></path>
+          <path d="M49 38h27l-7 12H44Z" fill="#e30613" stroke="#17191d" stroke-width="3" stroke-linejoin="round"></path>
+          <path d="M52 40h13l-4 6H49Z" fill="#ffffff" opacity=".94"></path>
+          <rect x="20" y="24" width="28" height="22" rx="4" fill="#ffffff" stroke="#17191d" stroke-width="3"></rect>
+          <path d="M27 31h14M27 37h9" stroke="#e30613" stroke-width="3" stroke-linecap="round"></path>
+          <path d="M96 42h11" stroke="#e30613" stroke-width="4" stroke-linecap="round"></path>
         </svg>
       </span>`,
-    iconSize: [52, 52],
-    iconAnchor: [26, 26],
+    iconSize: [62, 52],
+    iconAnchor: [31, 31],
   });
 }
 
@@ -86,8 +93,8 @@ function updateRiderMarkerVisual(marker, L, nextLocation, options) {
 
   if (marker.__ltMarkerHeading !== heading) {
     marker.__ltMarkerHeading = heading;
-    const helmet = element?.querySelector?.('.lt-rider-helmet-core');
-    if (helmet?.style) helmet.style.setProperty('--heading', `${heading}deg`);
+    const moto = element?.querySelector?.('.lt-rider-moto-core');
+    if (moto?.style) moto.style.setProperty('--heading', `${heading}deg`);
     else if (!element && marker.setIcon) marker.setIcon(createRiderIcon(L, { ...options, source, heading }));
   }
 }

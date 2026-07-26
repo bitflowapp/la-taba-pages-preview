@@ -37,6 +37,8 @@ import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.
 import { renderPublicOrderTimeline } from './core/order-timeline.js';
 import { isDemoMode } from './core/app-mode.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
+import { formatPromotionCondition, getActivePromotions, getProductPromotion } from './core/promotions.js';
+import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -236,8 +238,41 @@ export function renderCatalog() {
 }
 
 export function discountPercent(product) {
-  if (!product || !product.oldPrice || product.oldPrice <= product.price) return 0;
-  return Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
+  const pricing = productPricePresentation(product);
+  if (!pricing.regularPrice || pricing.regularPrice <= pricing.price) return 0;
+  return Math.round(((pricing.regularPrice - pricing.price) / pricing.regularPrice) * 100);
+}
+
+function activePromotionForProduct(product) {
+  if (!isDemoMode() || !product?.id) return null;
+  const promotion = getProductPromotion(product.id, getState().promotions);
+  if (!promotion || promotion.regularPrice !== Number(product.price)) return null;
+  return promotion;
+}
+
+export function productPricePresentation(product) {
+  const basePrice = Number(product?.price || 0);
+  const promotion = activePromotionForProduct(product);
+  if (!promotion) {
+    const oldPrice = Number(product?.oldPrice || 0);
+    return { price: basePrice, regularPrice: oldPrice > basePrice ? oldPrice : null, promotion: null, condition: '' };
+  }
+
+  let promotionalPrice = null;
+  if (promotion.promotionType === 'precio_promocional') promotionalPrice = promotion.promotionalPrice;
+  if (promotion.promotionType === 'descuento_porcentaje') {
+    promotionalPrice = Math.max(0, Math.round(basePrice * (1 - (promotion.discountPercentage || 0) / 100)));
+  }
+  if ((promotion.promotionType === 'pack' || promotion.promotionType === 'cantidad_fija')
+    && promotion.requiredQuantity === 1) {
+    promotionalPrice = promotion.promotionalPrice;
+  }
+  return {
+    price: Number.isFinite(promotionalPrice) ? promotionalPrice : basePrice,
+    regularPrice: Number.isFinite(promotionalPrice) ? basePrice : null,
+    promotion,
+    condition: formatPromotionCondition(promotion),
+  };
 }
 
 function unitText(product) {
@@ -297,6 +332,10 @@ export function productCode(product) {
 // "Más pedido" o "Destacado". Evita apilar 3-4 cintas sobre la imagen.
 function topBadge(product) {
   const off = discountPercent(product);
+  const pricing = productPricePresentation(product);
+  if (pricing.promotion && pricing.condition && off <= 0) {
+    return `<span class="offer-badge promo">${escapeHtml(pricing.condition)}</span>`;
+  }
   if (product.combo && off > 0) return `<span class="offer-badge combo">Combo · ${off}% OFF</span>`;
   if (off > 0) return `<span class="offer-badge discount">${off}% OFF</span>`;
   if (product.badge) return `<span class="offer-badge promo">${escapeHtml(product.badge)}</span>`;
@@ -311,11 +350,13 @@ function offerBadges(product) {
 }
 
 function priceBlock(product) {
-  const old = product.oldPrice && product.oldPrice > product.price
-    ? `<s>${money(product.oldPrice)}</s>` : '';
+  const pricing = productPricePresentation(product);
+  const old = pricing.regularPrice && pricing.regularPrice > pricing.price
+    ? `<s>${money(pricing.regularPrice)}</s>` : '';
   return `
     <div class="price">
-      <div class="price-amounts"><strong>${money(product.price)}</strong>${old}</div>
+      <div class="price-amounts"><strong>${money(pricing.price)}</strong>${old}</div>
+      ${pricing.promotion && pricing.condition ? `<small class="price-condition">${escapeHtml(pricing.condition)}</small>` : ''}
     </div>`;
 }
 
@@ -339,14 +380,17 @@ function renderCombos() {
   const container = $('[data-combos-rail]');
   if (!container) return;
   const offerIds = new Set(homeOfferProducts().map((product) => product.id));
+  const secondaryPromotionSkus = new Set(getActivePromotions(getState().promotions)
+    .slice(1, 3)
+    .flatMap((promotion) => promotion.includedSkus));
   const combos = getCustomerCatalogProducts(getState().products)
     .filter((product) => (
       product.available
       && product.stock > 0
-      && (product.combo || product.categoryId === 'promos')
+      && (product.combo || secondaryPromotionSkus.has(product.id))
     ))
     .filter((product) => !offerIds.has(product.id))
-    .slice(0, 8);
+    .slice(0, 2);
 
   const block = container.closest('.rail-block');
   if (block) block.hidden = !combos.length;
@@ -356,8 +400,9 @@ function renderCombos() {
 }
 
 function railCard(product) {
-  const off = discountPercent(product);
-  const old = off > 0 ? `<s>${money(product.oldPrice)}</s>` : '';
+  const pricing = productPricePresentation(product);
+  const old = pricing.regularPrice && pricing.regularPrice > pricing.price
+    ? `<s>${money(pricing.regularPrice)}</s>` : '';
   return `
     <article class="offer-card ${product.stock <= 0 || !product.available ? 'out-of-stock' : ''}">
       <button class="offer-card-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
@@ -369,7 +414,7 @@ function railCard(product) {
         <small>${escapeHtml(unitText(product))}</small>
         <small class="offer-availability">${product.stock > 0 && product.available ? 'Disponible' : 'Agotado'}</small>
         <div class="offer-price">
-          <span>${money(product.price)}</span>
+          <span>${money(pricing.price)}</span>
           ${old}
         </div>
       </div>
@@ -472,9 +517,12 @@ function getFilteredProducts(state) {
   const query = normalizeSearchText(state.searchQuery);
   const favoriteIds = new Set(getFavoriteProductIds());
   const filtered = getCustomerCatalogProducts(state.products).filter((product) => {
+    const promoProductIds = new Set(getActivePromotions(state.promotions).flatMap((promotion) => promotion.includedSkus));
     const matchesCategory = state.activeCategory === 'favorites'
       ? favoriteIds.has(product.id)
-      : state.activeCategory === 'all' || product.categoryId === state.activeCategory;
+      : state.activeCategory === 'promos'
+        ? promoProductIds.has(product.id)
+        : state.activeCategory === 'all' || product.categoryId === state.activeCategory;
     const searchable = [
       product.brand,
       product.name,
@@ -540,6 +588,10 @@ function categoriesForCurrentCatalog() {
   }
   if (!remote.size) return categories;
 
+  const activePromotionSkus = new Set(getActivePromotions(getState().promotions)
+    .flatMap((promotion) => promotion.includedSkus));
+  if (activePromotionSkus.size) remote.set('promos', 'Promos');
+
   const preferredOrder = [
     'promos',
     'gaseosas',
@@ -577,10 +629,16 @@ function renderCatalogOffers() {
   if (!container) return;
   const state = getState();
   const searching = Boolean(state.searchQuery.trim());
+  const promoProductIds = new Set(getActivePromotions(state.promotions)
+    .flatMap((promotion) => promotion.includedSkus));
   const offers = searching ? [] : getCustomerCatalogProducts(state.products)
     .filter((product) => {
-      const inCategory = state.activeCategory === 'all' || product.categoryId === state.activeCategory;
-      return inCategory && product.available && product.stock > 0 && (discountPercent(product) > 0 || product.featured);
+      const inCategory = state.activeCategory === 'all'
+        || (state.activeCategory === 'promos'
+          ? promoProductIds.has(product.id)
+          : product.categoryId === state.activeCategory);
+      return inCategory && product.available && product.stock > 0
+        && (discountPercent(product) > 0 || product.featured || promoProductIds.has(product.id));
     })
     .sort((a, b) => discountPercent(b) - discountPercent(a))
     .slice(0, 8);
@@ -748,28 +806,42 @@ function renderHomeAddressChip() {
   }
 }
 
-// Banner de promo del día: lee el producto real del catálogo para que precio,
-// composición y ahorro nunca queden desactualizados respecto del panel.
+// Banner de promo: sólo representa una entidad activa, vigente y aprobada por
+// la administración del sandbox. Los candidatos no se infiltran como oferta.
 function renderPromoBanner() {
   const banner = $('[data-promo-banner]');
   if (!banner) return;
-  const promo = getCustomerCatalogProducts(getState().products)
-    .find((product) => product.categoryId === 'promos' && product.available && product.stock > 0);
-  banner.hidden = !promo;
-  if (!promo) return;
+  const state = getState();
+  const promotion = getActivePromotions(state.promotions)[0] || null;
+  const promoProduct = promotion
+    ? getCustomerCatalogProducts(state.products).find((product) => (
+      promotion.includedSkus.includes(product.id) && product.available && product.stock > 0
+    ))
+    : null;
+  banner.hidden = !promotion || !promoProduct;
+  if (!promotion || !promoProduct) return;
+
+  const pricing = productPricePresentation(promoProduct);
+  const image = $('[data-promo-banner-image]', banner);
+  if (image) image.innerHTML = productThumb(promoProduct, 'promo');
   const price = $('[data-promo-banner-price]', banner);
-  if (price) price.textContent = money(promo.price);
+  if (price) {
+    const bundlePrice = ['pack', 'cantidad_fija'].includes(promotion.promotionType)
+      ? promotion.promotionalPrice
+      : pricing.price;
+    price.textContent = money(bundlePrice || promoProduct.price);
+  }
   const title = $('[data-promo-banner-title]', banner);
-  if (title) title.textContent = promo.name;
+  if (title) title.textContent = promotion.title;
   const includes = $('[data-promo-banner-includes]', banner);
   if (includes) {
-    const composition = String(promo.description || '').replace(/\.$/, '');
-    includes.textContent = composition ? `Incluye ${composition.charAt(0).toLowerCase()}${composition.slice(1)}` : '';
-    includes.hidden = !composition;
+    const copy = promotion.subtitle || `${promoProduct.name} · ${formatPromotionCondition(promotion)}`;
+    includes.textContent = copy;
+    includes.hidden = !copy;
   }
   const save = $('[data-promo-banner-save]', banner);
   if (save) {
-    const saving = Number(promo.oldPrice || 0) - Number(promo.price || 0);
+    const saving = Number(promotion.regularPrice || 0) - Number(promotion.promotionalPrice || 0);
     save.hidden = !(saving > 0);
     if (saving > 0) save.textContent = `Ahorrás ${money(saving)}`;
   }
@@ -1015,7 +1087,15 @@ export function renderOrderSummary() {
 
   const deliveryMode = currentDeliveryMode();
   const couponCode = currentCouponCode();
-  const { items, subtotal, discountTotal, deliveryFee, total, coupon } = getCartSummary(deliveryMode, { couponCode });
+  const {
+    items,
+    subtotal,
+    deliveryFee,
+    total,
+    coupon,
+    promotions,
+    promotion,
+  } = getCartSummary(deliveryMode, { couponCode });
   const validation = validateCartForCheckout(deliveryMode);
   renderCheckoutPaymentFields();
   renderCouponMessage(coupon);
@@ -1023,9 +1103,16 @@ export function renderOrderSummary() {
   const coordinatedDelivery = deliveryMode === 'delivery'
     && !isDemoMode()
     && !getBusinessConfig().orderingDetailsVerified;
+  const appliedPromoIds = new Set(promotions.map((entry) => entry.promoId));
+  const pendingPromotions = promotion.activePromotions
+    .filter((entry) => !appliedPromoIds.has(entry.promoId))
+    .slice(0, 2);
   container.innerHTML = `
     <div class="summary-row"><span>Subtotal</span><strong>${money(subtotal)}</strong></div>
-    ${discountTotal > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(coupon.code)}</span><strong>-${money(discountTotal)}</strong></div>` : ''}
+    ${promotions.map((entry) => `<div class="summary-row discount"><span>${escapeHtml(entry.title)}</span><strong>-${money(entry.discountAmount)}</strong></div>`).join('')}
+    ${coupon.discountAmount > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(coupon.code)}</span><strong>-${money(coupon.discountAmount)}</strong></div>` : ''}
+    ${promotion.freeDelivery ? '<div class="summary-row discount"><span>Promoción de envío</span><strong>Envío sin cargo</strong></div>' : ''}
+    ${pendingPromotions.map((entry) => `<div class="summary-row muted"><span>${escapeHtml(entry.title)}</span><strong>${escapeHtml(formatPromotionCondition(entry))}</strong></div>`).join('')}
     <div class="summary-row"><span>${deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio'}</span><strong>${coordinatedDelivery ? 'A coordinar' : money(deliveryFee)}</strong></div>
     ${deliveryMode === 'delivery' && !coordinatedDelivery ? `<div class="summary-row muted"><span>Pedido mínimo delivery</span><strong>${money(getBusinessConfig().minDeliveryOrder)}</strong></div>` : ''}
     <div class="summary-row total"><span>${coordinatedDelivery ? 'Total estimado de productos' : 'Total'}</span><strong>${money(total)}</strong></div>
@@ -1161,7 +1248,7 @@ const TRACKING_STATUS_LABELS = Object.freeze({
   picked_up: 'En camino',
   on_the_way: 'En camino',
   arrived: 'En camino',
-  arriving: 'En camino',
+  arriving: 'Llegó al domicilio',
   delivered: 'Entregado',
   cancelled: 'Cancelado',
 });
@@ -1209,7 +1296,7 @@ function trackingHeadline(order) {
     return { kicker: 'Retiro en local', title: order.status === 'ready' ? 'Listo para retirar' : 'Preparando tu pedido', sub: `Te esperamos en ${getBusinessConfig().address}.` };
   }
   if (order.status === 'arriving') {
-    return { kicker: 'En reparto', title: 'Llegando al domicilio', sub: 'El repartidor va hacia tu dirección.' };
+    return { kicker: 'En destino', title: 'Llegó al domicilio', sub: 'El repartidor ya está en el punto de entrega.' };
   }
   if (order.status === 'on_the_way') {
     return { kicker: 'En reparto', title: 'Pedido en reparto', sub: 'Tu pedido salió del local y va camino a tu dirección.' };
@@ -1234,15 +1321,13 @@ function displayDestinationLabel(value) {
 function trackingPrimaryMetric(order) {
   const sandboxSimulation = getOrderSimulation(order);
   if (isSandboxOrderRepository(getOrderRepository())
-    && sandboxSimulation?.origin === 'local_gps'
-    && ['on_the_way', 'arriving'].includes(order?.status)) {
-    return { label: 'Estado', value: 'Ubicación activa' };
-  }
-  if (isSandboxOrderRepository(getOrderRepository())
     && sandboxSimulation
-    && ['on_the_way', 'arriving'].includes(order.status)
-    && Number.isFinite(Number(sandboxSimulation.etaMinutes))) {
-    return { label: 'Llega en', value: `${Math.max(0, Math.round(Number(sandboxSimulation.etaMinutes)))} min` };
+    && ['on_the_way', 'arriving', 'delivered'].includes(order.status)) {
+    const presentation = sandboxTrackingPresentation(order, sandboxSimulation);
+    if (presentation.delivered || presentation.arrived) return { label: 'Estado', value: presentation.phaseLabel };
+    if (presentation.gps) return { label: 'Estado', value: presentation.activityLabel };
+    if (presentation.etaMinutes && presentation.etaMinutes > 0) return { label: 'Llega en', value: presentation.etaLabel };
+    return { label: 'Estado', value: presentation.activityLabel };
   }
   if (!order) return { label: 'Estado', value: 'Sin información' };
   if (order.status === 'delivered') return { label: 'Estado', value: 'Entregado' };
@@ -1287,9 +1372,7 @@ function realMapShell({ order = null, role = 'tracking', fallback, mapSource = '
 // En producción el mapa del cliente sólo se renderiza con GPS real. La vista
 // sandbox usa su escenario geográfico aislado y mantiene la misma shell Leaflet.
 function sandboxTrackingStage(order, simulation) {
-  const progress = Math.round(Math.max(0, Math.min(1, Number(simulation?.progress) || 0)) * 100);
-  const gps = simulation?.origin === 'local_gps';
-  const eta = Number.isFinite(Number(simulation?.etaMinutes)) ? Math.max(0, Math.round(Number(simulation.etaMinutes))) : null;
+  const presentation = sandboxTrackingPresentation(order, simulation);
   return `
     <div class="delivery-map-stage tracking-map-stage sandbox-tracking-stage" data-map-shell="tracking" data-sandbox-tracking>
       ${realMapShell({
@@ -1299,12 +1382,12 @@ function sandboxTrackingStage(order, simulation) {
         fallback: '<p class="map-fallback-note">El mapa no está disponible en este momento.</p>',
       })}
       <div class="map-floating-top">
-        <span class="map-status-pill ${statusClass(order.status)}"><small>Delivery TABA</small><strong>${escapeHtml(trackingStatusLabel(order.status))}</strong></span>
-        <span class="map-connection-pill">${simulation?.origin === 'local_gps' ? 'Ubicación actual' : 'Recorrido de muestra'}</span>
+        <span class="map-status-pill ${statusClass(order.status)}"><small>Delivery TABA</small><strong>${escapeHtml(presentation.phaseLabel)}</strong></span>
+        <span class="map-connection-pill">${presentation.gps ? 'Ubicación actual' : 'Recorrido de muestra'}</span>
       </div>
       <div class="sandbox-map-stats" aria-label="Estado del recorrido">
-        <span><small>Avance</small><strong data-sandbox-progress>${gps ? '—' : `${progress}%`}</strong></span>
-        ${gps ? '' : `<span><small>ETA</small><strong data-sandbox-eta>${eta == null ? 'Al iniciar' : `${eta} min`}</strong></span>`}
+        <span><small>Avance</small><strong data-sandbox-progress>${presentation.gps ? '—' : `${presentation.progress}%`}</strong></span>
+        ${presentation.showEta ? `<span><small>ETA</small><strong data-sandbox-eta>${escapeHtml(presentation.etaLabel)}</strong></span>` : ''}
       </div>
     </div>`;
 }
@@ -1505,6 +1588,7 @@ export function renderTracking() {
   const liveRider = ['on_the_way', 'arriving'].includes(order.status)
     && hasVerifiedLiveRiderLocation(riderLocation);
   const sandboxSimulation = getOrderSimulation(order);
+  const sandboxPresentation = sandboxTrackingPresentation(order, sandboxSimulation);
   const sandboxMapActive = isSandboxOrderRepository(getOrderRepository())
     && ['on_the_way', 'arriving'].includes(order.status)
     && ((sandboxSimulation?.source === 'simulation' && sandboxSimulation?.userStarted === true)
@@ -1547,9 +1631,9 @@ export function renderTracking() {
           ? (liveRider
             ? riderTrackingCard(order, riderLocation)
             : sandboxMapActive && sandboxSimulation?.origin === 'sandbox_route'
-              ? `<div class="delivery-status-card is-live sandbox-status-card"><span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span><div><small>Entrega TABA</small><strong>Seguimiento activo</strong><span>La ruta avanza y el ETA se actualiza en este dispositivo.</span></div></div>`
+              ? `<div class="delivery-status-card ${sandboxPresentation.isActive ? 'is-live' : ''} sandbox-status-card"><span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span><div><small>Entrega TABA</small><strong>${escapeHtml(sandboxPresentation.activityLabel)}</strong><span>${sandboxPresentation.arrived ? 'El pedido llegó al domicilio.' : sandboxPresentation.paused ? 'El recorrido está pausado.' : 'La ruta avanza y el ETA se actualiza en este dispositivo.'}</span></div></div>`
               : sandboxMapActive && sandboxSimulation?.origin === 'local_gps'
-                ? `<div class="delivery-status-card is-live sandbox-status-card"><span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span><div><small>Entrega TABA</small><strong>Ubicación actualizada</strong><span>La posición del rider se comparte desde este iPhone.</span></div></div>`
+                ? `<div class="delivery-status-card ${sandboxPresentation.isActive ? 'is-live' : ''} sandbox-status-card"><span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span><div><small>Entrega TABA</small><strong>${escapeHtml(sandboxPresentation.activityLabel)}</strong><span>${sandboxPresentation.arrived ? 'El pedido llegó al domicilio.' : 'La posición del rider se comparte desde este iPhone.'}</span></div></div>`
               : trackingWaitingStage(order))
           : ''}
         ${trackingOrderSummaryCard(order)}
@@ -1630,7 +1714,7 @@ export function showProductModal(productId) {
   const content = $('[data-modal-content]');
   if (!product || !isProductVisibleToCustomer(product) || !modal || !content) return;
 
-  const off = discountPercent(product);
+  const pricing = productPricePresentation(product);
   const favorite = isFavoriteProduct(product.id);
   const variants = Array.isArray(product.variants)
     ? product.variants.filter((variant) => (
@@ -1654,8 +1738,9 @@ export function showProductModal(productId) {
         ${product.description ? `<p>${escapeHtml(product.description)}</p>` : ''}
         <div class="modal-commerce-row">
           <div class="modal-price">
-            ${off > 0 ? `<s>${money(product.oldPrice)}</s>` : ''}
-            <strong>${money(product.price)}</strong>
+            ${pricing.regularPrice && pricing.regularPrice > pricing.price ? `<s>${money(pricing.regularPrice)}</s>` : ''}
+            <strong>${money(pricing.price)}</strong>
+            ${pricing.condition ? `<small>${escapeHtml(pricing.condition)}</small>` : ''}
           </div>
           <span class="modal-availability ${product.stock <= 0 || !product.available ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>
         </div>

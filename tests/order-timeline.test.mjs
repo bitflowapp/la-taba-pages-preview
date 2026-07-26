@@ -50,5 +50,8 @@ test('la timeline pública agrupa el flujo en cuatro pasos comerciales', () => {
   assert.match(html, /track-step current[^>]*aria-current="step"[\s\S]*En camino/);
   assert.doesNotMatch(html, />Listo</);
   assert.doesNotMatch(html, />En reparto</);
+  const arrivedHtml = renderPublicOrderTimeline('arriving', { className: 'customer-progress' });
+  assert.match(arrivedHtml, /track-step current[^>]*aria-current="step"[\s\S]*Llegó/);
+  assert.doesNotMatch(arrivedHtml, /track-step current[^>]*aria-current="step"[\s\S]*En camino/);
   assert.doesNotMatch(renderPublicOrderTimeline('canceled'), /track-step current/);
 });

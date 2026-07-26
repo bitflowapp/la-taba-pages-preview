@@ -40,6 +40,35 @@
     {
       "assets": {
         "master": {
+          "bindingSha256": "c4330e76a486822d49d84b9b41700f575b293da2ea22ecc4a07bd5705a4ca53e",
+          "height": 1000,
+          "path": "assets/catalog/products/qa-corona-extra-355ml-424d2a1a94ce2eff-21e867fd5def30fc.webp",
+          "sha256": "21e867fd5def30fc51f6084af48d3d12a7e7f46d27f166418f097042da5d9555",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "84743fddd987e52466a99e490bd39049bc9e896239bbd61595efc05a07f96fa4",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/qa-corona-extra-355ml-424d2a1a94ce2eff-thumb-e2fc282d7883d7cb.webp",
+          "sha256": "e2fc282d7883d7cb8f7d5c436c1213e7dc3ad046b5781acadf66c08eee25bed8",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-26",
+      "externalId": "qa-corona-extra-355ml",
+      "identitySha256": "424d2a1a94ce2eff91112e12cb258cd23848d74bd847050c7d02cfb19ce133c1",
+      "rawFile": "qa-corona-extra-355ml-424d2a1a94ce2eff.d2776af58ded150e38f63d31e2147f1bb9928e26a2d968ef4a8c9b5ae83fe212.source",
+      "rightsReference": "fuente-publica-pendiente-de-licencia-2026-07-26",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "qa-corona-extra-355ml",
+      "sku": "qa-corona-extra-355ml",
+      "sourceSha256": "d2776af58ded150e38f63d31e2147f1bb9928e26a2d968ef4a8c9b5ae83fe212",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/655335/Cerveza-Rubia-Corona-12-pack-355-Ml-Botella-Descartable-1-253153.jpg?v=637608786185130000"
+    },
+    {
+      "assets": {
+        "master": {
           "bindingSha256": "134650219c098c1a0eb84347021c4a08e8fce86e1e56e68650fac3c1d84fcd02",
           "height": 1000,
           "path": "assets/catalog/products/qa-fanta-naranja-15l-40851f95ab71b216-e41698f0e9b8788b.webp",
@@ -65,6 +94,64 @@
       "sourceSha256": "8a49eddb5f26bdbad98fb14085c221a37432f21a884ce4808358180987f29512",
       "sourceType": "distribuidor_oficial",
       "sourceUrl": "https://andinacocacolaar.vtexassets.com/arquivos/ids/156347/101113.jpg?v=638857652534800000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "aeca0def72f5fc977fa1c6b60de49ba235c20aa7d2ce1e3620ace9f63b1d74e3",
+          "height": 1000,
+          "path": "assets/catalog/products/qa-heineken-original-473ml-38f979ff8cce7700-d4917a90ed2277c9.webp",
+          "sha256": "d4917a90ed2277c9b5f51b5b02548cd1dca516da54f5d314e04fbb54565fcbad",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "ac760140a336de4a7e8aacdfa78e380ca55103867d93acef7b20692a4af31e64",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/qa-heineken-original-473ml-38f979ff8cce7700-thumb-cfc186427dd5d784.webp",
+          "sha256": "cfc186427dd5d784074bb3dba0af1a0eb40a2c753f07ca0b5a1300fe4be33b60",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-26",
+      "externalId": "qa-heineken-original-473ml",
+      "identitySha256": "38f979ff8cce7700e1a5a37d6df26bd5d6456e3066b778530c73b1634ca12eaa",
+      "rawFile": "qa-heineken-original-473ml-38f979ff8cce7700.dadce1edf17ac937931a799ee5f44fb116f1665d614ce72a8c42fa247e192252.source",
+      "rightsReference": "fuente-publica-pendiente-de-licencia-2026-07-26",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "qa-heineken-original-473ml",
+      "sku": "qa-heineken-original-473ml",
+      "sourceSha256": "dadce1edf17ac937931a799ee5f44fb116f1665d614ce72a8c42fa247e192252",
+      "sourceType": "distribuidor_oficial",
+      "sourceUrl": "https://www.heineken.com/media/jhongyp1/heineken-original-lata-473ml.png?height=1069&quality=85&rxy=0.48925623229613546%2C0.42139522339863117&v=1dc0f59e1369930&width=713"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "d8cf45e34a29b5f0e694e6342ee2a1ac1117f419f109a228e45429afddd8c5e0",
+          "height": 1000,
+          "path": "assets/catalog/products/qa-imperial-extra-lager-473ml-37ed9cb96bc29a8e-678fda4a3bf94c5e.webp",
+          "sha256": "678fda4a3bf94c5e32198b020ab201824c5881aea6d8bb6b85c7899efd474724",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "7da6c608bb9d75fb90d64b6b07521db685b04572171a92efa1f9d16a484567a1",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/qa-imperial-extra-lager-473ml-37ed9cb96bc29a8e-thumb-50bfab8a85306842.webp",
+          "sha256": "50bfab8a853068426be21d6fc1a703a57f8ec45e0ee97da923d7bbd4dfaee991",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-26",
+      "externalId": "qa-imperial-extra-lager-473ml",
+      "identitySha256": "37ed9cb96bc29a8eb26d162abe5c0dbd565442f77cb1f6b56a0cb42556871940",
+      "rawFile": "qa-imperial-extra-lager-473ml-37ed9cb96bc29a8e.7494b8ed2856712ae5fc2f6b842b1c60e0d6229703fa47d8e519ebb631f7b2f4.source",
+      "rightsReference": "fuente-publica-pendiente-de-licencia-2026-07-26",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "qa-imperial-extra-lager-473ml",
+      "sku": "qa-imperial-extra-lager-473ml",
+      "sourceSha256": "7494b8ed2856712ae5fc2f6b842b1c60e0d6229703fa47d8e519ebb631f7b2f4",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/891195/7793147000752.jpg?v=638996946764100000"
     },
     {
       "assets": {
@@ -239,6 +326,35 @@
       "sourceSha256": "7df7ddd6b1da800aa31102b3856e2372b73354d966e1164ab07be7d39170ffa4",
       "sourceType": "distribuidor_oficial",
       "sourceUrl": "https://andinacocacolaar.vtexassets.com/arquivos/ids/155756/7790895000447.jpg?v=638290010972070000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "797d07eb547137435452679ceb622a3c0ea5ed2bc44f29c9cfb2aa9eec3b0555",
+          "height": 1000,
+          "path": "assets/catalog/products/qa-villavicencio-sin-gas-500ml-6e55cfa3ea0e016d-5c3deb02388d6380.webp",
+          "sha256": "5c3deb02388d6380df1beb8c6ccbde21cad5a8f0b6705fb9238ad153ef0dcfbe",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "f53092d442983043da2a62f9831cd549aaee49c250d00b82014405343702ac9c",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/qa-villavicencio-sin-gas-500ml-6e55cfa3ea0e016d-thumb-3264ae2c9f24b6d4.webp",
+          "sha256": "3264ae2c9f24b6d471478f8c8d6e382622620f9c9f1ac3a1925d66f2056dd27c",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-26",
+      "externalId": "qa-villavicencio-sin-gas-500ml",
+      "identitySha256": "6e55cfa3ea0e016d4fb76ab0e6abfd08a52633c57d5771f86eb444c6b3c44362",
+      "rawFile": "qa-villavicencio-sin-gas-500ml-6e55cfa3ea0e016d.3546153b25e24b0f8585ae63fc788571ec10114feb44e60b9948cb49847a7d13.source",
+      "rightsReference": "fuente-publica-pendiente-de-licencia-2026-07-26",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "qa-villavicencio-sin-gas-500ml",
+      "sku": "qa-villavicencio-sin-gas-500ml",
+      "sourceSha256": "3546153b25e24b0f8585ae63fc788571ec10114feb44e60b9948cb49847a7d13",
+      "sourceType": "marca",
+      "sourceUrl": "https://www.villavicencio.com.ar/images/productos/producto_07.png"
     }
   ]
 }

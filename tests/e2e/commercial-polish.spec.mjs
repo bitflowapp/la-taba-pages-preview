@@ -70,7 +70,7 @@ test('home: estado claro y recorrido comercial compacto', async ({ browser }) =>
   await expect(page.locator('[data-view="home"] [data-combos-rail]')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .home-search')).toBeVisible();
   await expect(page.locator('[data-category-strip="home"]')).toBeVisible();
-  await expect(page.locator('[data-promo-banner]')).toBeVisible();
+  await expect(page.locator('[data-promo-banner]')).toBeHidden();
   await expect(page.locator('[data-offers-rail]')).toBeVisible();
 
   await page.locator('[data-view="home"] [data-search-input]').fill('agua');

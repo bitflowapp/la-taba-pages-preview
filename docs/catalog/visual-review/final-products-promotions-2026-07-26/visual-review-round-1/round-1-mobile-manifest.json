@@ -1,0 +1,628 @@
+{
+  "schemaVersion": 1,
+  "round": "round-1",
+  "generatedAt": "2026-07-26T23:24:59.589Z",
+  "baseUrl": "http://127.0.0.1:8080",
+  "viewports": [
+    {
+      "tag": "m320",
+      "width": 320,
+      "height": 700
+    },
+    {
+      "tag": "m390",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "requiredScenes": [
+    "home-new",
+    "catalog",
+    "no-results",
+    "product",
+    "cart",
+    "checkout-no-alcohol",
+    "checkout-alcohol",
+    "business",
+    "rider-before-accept",
+    "tracking-no-gps",
+    "tracking-with-gps",
+    "rider-delivering",
+    "tracking-delivered",
+    "home-recurrent"
+  ],
+  "captures": [
+    {
+      "file": "m320-01-home-new.png",
+      "sha256": "e8397a4a2b57fd817be0777d2e3b9a07987502d425a8056efb2fc200ed392e70",
+      "bytes": 60382,
+      "audit": {
+        "scene": "home-new",
+        "activeView": "home",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-02-catalog.png",
+      "sha256": "f3e3a1ed2613d9938697909398863b31a627a22cf90d6b32ca50f4bc3810eba0",
+      "bytes": 29909,
+      "audit": {
+        "scene": "catalog",
+        "activeView": "catalog",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-03-no-results.png",
+      "sha256": "076fd8f8d4fd63e05c7129aaa893243e2ce36560469fc67803bf3cc6b5a2c371",
+      "bytes": 24598,
+      "audit": {
+        "scene": "no-results",
+        "activeView": "catalog",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-04-product.png",
+      "sha256": "114c54d473d6cec29396174d326828bccac47cb4b16804b375a2f344ca9f40b8",
+      "bytes": 38922,
+      "audit": {
+        "scene": "product",
+        "activeView": "catalog",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-05-cart.png",
+      "sha256": "27dd4718a21fe6c2c0f35ec23ca58ae0b8032c9072cea94ab7d6de7071e6efe1",
+      "bytes": 23202,
+      "audit": {
+        "scene": "cart",
+        "activeView": "cart",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-06-checkout-no-alcohol.png",
+      "sha256": "a01761f56f317e3099e8e798c5637ea1213a384073071e3cd29ad957e61b24e2",
+      "bytes": 20638,
+      "audit": {
+        "scene": "checkout-no-alcohol",
+        "activeView": "cart",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-07-checkout-alcohol.png",
+      "sha256": "7e90eb366495ee8c6709d619ab819796a2724a113fcef8da9ceb6d393dad5d42",
+      "bytes": 26359,
+      "audit": {
+        "scene": "checkout-alcohol",
+        "activeView": "cart",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-08-business.png",
+      "sha256": "111e854301320b5684c46205f5aa05e0649cbbd322df6d69ac447b2f937a5e44",
+      "bytes": 22626,
+      "audit": {
+        "scene": "business",
+        "activeView": "business",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-09-rider-before-accept.png",
+      "sha256": "e9a104036dc5cc0a6c7d931c771d8d02bc899911f122dcfc75b44ed32f869a58",
+      "bytes": 24870,
+      "audit": {
+        "scene": "rider-before-accept",
+        "activeView": "rider",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-10-tracking-no-gps.png",
+      "sha256": "5c3e9cf11b5d9cdad744c7e36296022e4fb3ef3f7218cce2f6a611238c564e82",
+      "bytes": 26301,
+      "audit": {
+        "scene": "tracking-no-gps",
+        "activeView": "tracking",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-11-tracking-with-gps.png",
+      "sha256": "0e6fe3d326bff3583ced338e4a0005d4c059d404dc1a6b9b90039b22ea2d58ab",
+      "bytes": 90125,
+      "audit": {
+        "scene": "tracking-with-gps",
+        "activeView": "tracking",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-12-rider-delivering.png",
+      "sha256": "140c80dd5ecd0e62a72fca3124fcf1de3b8fa8da9d792e3193c7e81e651afa59",
+      "bytes": 94381,
+      "audit": {
+        "scene": "rider-delivering",
+        "activeView": "rider",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-13-tracking-delivered.png",
+      "sha256": "1c64f47dcb79a237cab3861ee1f580b4ab047db6a735bc3f1bffa47b34a4ae66",
+      "bytes": 24414,
+      "audit": {
+        "scene": "tracking-delivered",
+        "activeView": "tracking",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m320-14-home-recurrent.png",
+      "sha256": "9c6e7bb2e813e23388a35638b992adcb44c8fc799cfe2c91d6a15123f00271b9",
+      "bytes": 49753,
+      "audit": {
+        "scene": "home-recurrent",
+        "activeView": "home",
+        "viewportWidth": 320,
+        "viewportHeight": 700,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-01-home-new.png",
+      "sha256": "02ceb3910909fca1c04f0b0aaa6b30e5c6d0cef1ba109831ccf5c1e3b87d81b1",
+      "bytes": 72840,
+      "audit": {
+        "scene": "home-new",
+        "activeView": "home",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-02-catalog.png",
+      "sha256": "901e63a342c2c25bf6207ce439d96f2c00526cc457b6e30812ff0c5bfd56c484",
+      "bytes": 38757,
+      "audit": {
+        "scene": "catalog",
+        "activeView": "catalog",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-03-no-results.png",
+      "sha256": "f27e266de5332219f2e2399e2f7869d580fcf382f20cd046da546cc01545d33b",
+      "bytes": 26214,
+      "audit": {
+        "scene": "no-results",
+        "activeView": "catalog",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-04-product.png",
+      "sha256": "3e5ab5ebb46ad4f133ba79cde64770ab24c9b4f9a69513891cccbdd6cf707b15",
+      "bytes": 49979,
+      "audit": {
+        "scene": "product",
+        "activeView": "catalog",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-05-cart.png",
+      "sha256": "359b03a3a0281bbc4ed4c860dcb21f146bb76acffcfe254a871b5de920a04f3b",
+      "bytes": 27198,
+      "audit": {
+        "scene": "cart",
+        "activeView": "cart",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-06-checkout-no-alcohol.png",
+      "sha256": "cfcbdee828122708b9b7c137d538f4a92acb276b3bb60f564a480ba636085cbb",
+      "bytes": 26591,
+      "audit": {
+        "scene": "checkout-no-alcohol",
+        "activeView": "cart",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-07-checkout-alcohol.png",
+      "sha256": "d79edd5199c0f8279bd93f4b3f8242ac6c617703a471eacd36ef382e3e147118",
+      "bytes": 35753,
+      "audit": {
+        "scene": "checkout-alcohol",
+        "activeView": "cart",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-08-business.png",
+      "sha256": "75eca7856c6576f1012bfa017e948e06a629dd8c4db3515c6905313111f1a709",
+      "bytes": 30709,
+      "audit": {
+        "scene": "business",
+        "activeView": "business",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-09-rider-before-accept.png",
+      "sha256": "6a0db3030f59fc1494b38794e5ad84b395d7f065efa635934a926258cd20e694",
+      "bytes": 26988,
+      "audit": {
+        "scene": "rider-before-accept",
+        "activeView": "rider",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-10-tracking-no-gps.png",
+      "sha256": "e5d55767c676c6aa96cf59633eaf2806714066cd74e0726128e945c123e52166",
+      "bytes": 31895,
+      "audit": {
+        "scene": "tracking-no-gps",
+        "activeView": "tracking",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-11-tracking-with-gps.png",
+      "sha256": "47eb71317ae415f027e77822a6773482658c270a54afe7b3a0bdd31b69a336b8",
+      "bytes": 111894,
+      "audit": {
+        "scene": "tracking-with-gps",
+        "activeView": "tracking",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-12-rider-delivering.png",
+      "sha256": "303835ba4978fc909971b60e93e99dba0797f5f09843e429799799b47e3c9361",
+      "bytes": 119759,
+      "audit": {
+        "scene": "rider-delivering",
+        "activeView": "rider",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-13-tracking-delivered.png",
+      "sha256": "c020ce93b18d3a7f3a3fe60c48419ae8972a82118e854e5c6ace6cc8f7a82e5a",
+      "bytes": 29414,
+      "audit": {
+        "scene": "tracking-delivered",
+        "activeView": "tracking",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    },
+    {
+      "file": "m390-14-home-recurrent.png",
+      "sha256": "6123c3c1886743b0cf1f5e844f725ab9264be298c6b159f79a9a23504c7ee826",
+      "bytes": 75270,
+      "audit": {
+        "scene": "home-recurrent",
+        "activeView": "home",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "overflowPx": 0,
+        "unnamed": [],
+        "brokenImages": [],
+        "fixedOutside": [],
+        "fixedOverlaps": [],
+        "operationHasPublicNav": false,
+        "forbiddenCopy": "",
+        "h1Count": 1
+      },
+      "passed": true,
+      "failures": []
+    }
+  ],
+  "errors": [],
+  "failedResponses": [],
+  "result": "passed",
+  "finishedAt": "2026-07-26T23:25:59.234Z"
+}

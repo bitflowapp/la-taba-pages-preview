@@ -191,6 +191,15 @@ body[data-active-view="rider"] .floating-cart {
     height: 110px;
   }
 
+  .promo-product-art {
+    height: 110px;
+  }
+
+  .promo-product-art .thumb {
+    width: 104px;
+    height: 104px;
+  }
+
   .promo-cta {
     grid-column: 1 / -1;
     justify-self: start;
@@ -348,6 +357,15 @@ body[data-active-view="rider"] .floating-cart {
 
   .promo-neutral-art {
     height: 92px;
+  }
+
+  .promo-product-art {
+    height: 92px;
+  }
+
+  .promo-product-art .thumb {
+    width: 82px;
+    height: 82px;
   }
 
   .promo-neutral-art i {

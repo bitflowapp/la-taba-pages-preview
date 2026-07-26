@@ -42,6 +42,7 @@ import {
   hasLiveRiderLocation,
 } from './map/route_geometry.js';
 import { renderOrderTimeline } from './core/order-timeline.js';
+import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 
 // Revelado progresivo del preview privado. En producción esta superficie se
 // reemplaza por production-operations.js, que reclama el pedido mediante el
@@ -400,10 +401,9 @@ function renderSandboxSimControls(order, sim) {
 }
 
 function renderSandboxMapControls(order, sim) {
-  const progress = Math.round(Math.max(0, Math.min(1, Number(sim?.progress) || 0)) * 100);
-  const eta = Number.isFinite(Number(sim?.etaMinutes)) ? Math.max(0, Math.round(Number(sim.etaMinutes))) : null;
-  const running = Boolean(sim?.running);
-  const gpsMode = sim?.origin === 'local_gps' || sim?.mode === 'gps';
+  const presentation = sandboxTrackingPresentation(order, sim);
+  const running = presentation.running;
+  const gpsMode = presentation.gps;
   const gpsActive = isGpsActive();
   const gpsLabel = sim?.gpsStatus === 'denied'
     ? 'Permiso de ubicación denegado'
@@ -418,22 +418,22 @@ function renderSandboxMapControls(order, sim) {
     <div class="sim-panel street-test-panel sandbox-route-panel ${running ? 'is-running' : ''}" data-street-test data-sandbox-route>
       <div class="sim-head">
         <span class="rider-label">Seguimiento del pedido</span>
-        <span class="sim-state">${gpsMode && sim?.source === 'gps' ? 'Ubicación activa' : running ? 'En movimiento' : sim?.userStarted ? 'En pausa' : 'Sin iniciar'}</span>
+        <span class="sim-state">${escapeHtml(presentation.activityLabel)}</span>
       </div>
       <div class="sandbox-route-meta">
         <span><small>Modo</small><strong>${gpsMode && sim?.source === 'gps' ? 'GPS local' : 'Recorrido de muestra'}</strong></span>
-        <span><small>Avance</small><strong data-sandbox-progress>${gpsMode && sim?.source === 'gps' ? '—' : `${progress}%`}</strong></span>
-        ${gpsMode && sim?.source === 'gps' ? '' : `<span><small>ETA</small><strong data-sandbox-eta>${eta == null ? 'Al iniciar' : `${eta} min`}</strong></span>`}
+        <span><small>Avance</small><strong data-sandbox-progress>${gpsMode && sim?.source === 'gps' ? '—' : `${presentation.progress}%`}</strong></span>
+        ${presentation.showEta ? `<span><small>ETA</small><strong data-sandbox-eta>${escapeHtml(presentation.etaLabel)}</strong></span>` : ''}
       </div>
       <p class="sandbox-gps-status" data-sandbox-gps-status>${escapeHtml(gpsLabel)}${sim?.accuracy ? ` · precisión aprox. ${Math.round(sim.accuracy)} m` : ''}</p>
       <div class="button-row">
         ${gpsActive
           ? '<button class="secondary-button compact" type="button" data-sim-gps-off>Desactivar ubicación</button>'
           : '<button class="secondary-button compact" type="button" data-sim-gps>Activar ubicación</button>'}
-        ${gpsMode && sim?.source === 'gps' ? '' : running
+        ${gpsMode && sim?.source === 'gps' ? '' : presentation.canPause
           ? '<button class="secondary-button compact" type="button" data-sim-pause>Pausar recorrido</button>'
-          : '<button class="primary-button compact" type="button" data-sim-start>Iniciar recorrido</button>'}
-        ${sim ? '<button class="ghost-button compact" type="button" data-sim-reset>Reiniciar ruta</button>' : ''}
+          : presentation.canStart ? `<button class="primary-button compact" type="button" data-sim-start>${presentation.paused ? 'Reanudar recorrido' : 'Iniciar recorrido'}</button>` : ''}
+        ${presentation.canReset ? '<button class="ghost-button compact" type="button" data-sim-reset>Reiniciar ruta</button>' : ''}
       </div>
       <p class="form-hint">${gpsMode && sim?.source === 'gps' ? 'El mapa usa la última ubicación compartida desde este iPhone.' : 'El recorrido de muestra usa calles de Neuquén Capital.'}</p>
     </div>

@@ -40,8 +40,13 @@ export function renderOrderTimeline(status, { className = '' } = {}) {
 }
 
 export function renderPublicOrderTimeline(status, { className = '' } = {}) {
+  const steps = status === 'arriving'
+    ? PUBLIC_ORDER_TIMELINE_STEPS.map((step) => (
+      step.key === 'delivery' ? { ...step, label: 'Llegó' } : step
+    ))
+    : PUBLIC_ORDER_TIMELINE_STEPS;
   return renderTimeline(
-    PUBLIC_ORDER_TIMELINE_STEPS,
+    steps,
     publicOrderTimelineIndex(status),
     status,
     className,

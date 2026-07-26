@@ -78,6 +78,34 @@ export function sandboxRouteProgressPoint(progress = 0) {
   return sandboxPointAtProgress(progress);
 }
 
+// El rider se despega unos metros de origen/destino sólo en el render del
+// marcador. Así los tres hitos siguen siendo reales y no quedan superpuestos.
+export function sandboxMarkerPointAtProgress(progress = 0) {
+  const numeric = Number(progress);
+  const ratio = Number.isFinite(numeric) ? Math.max(0, Math.min(1, numeric)) : 0;
+  const point = sandboxPointAtProgress(ratio);
+  const edgeRatio = ratio <= 0.025
+    ? (0.025 - ratio) / 0.025
+    : ratio >= 0.975
+      ? (ratio - 0.975) / 0.025
+      : 0;
+  if (edgeRatio <= 0) return point;
+
+  const route = SANDBOX_MAP_SCENARIO.route;
+  const from = ratio < 0.5 ? route[0] : route.at(-2);
+  const to = ratio < 0.5 ? route[1] : route.at(-1);
+  const deltaLat = Number(to.lat) - Number(from.lat);
+  const deltaLng = Number(to.lng) - Number(from.lng);
+  const length = Math.hypot(deltaLat, deltaLng) || 1;
+  const offset = 0.00024 * edgeRatio;
+  return {
+    ...point,
+    lat: point.lat - (deltaLng / length) * offset,
+    lng: point.lng + (deltaLat / length) * offset,
+    visualOffset: true,
+  };
+}
+
 function planarDistance(a, b) {
   const latScale = 111_000;
   const lngScale = 111_000 * Math.cos((Number(a.lat) * Math.PI) / 180);

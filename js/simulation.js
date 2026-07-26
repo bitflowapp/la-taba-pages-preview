@@ -303,7 +303,7 @@ export function syncSimulationOnStatus(orderId, status) {
       : createSimulationState(order, { running: false, destinationId: order.delivery?.demoDestinationId });
     stopTimer();
     setState({
-      simulation: { ...base, progress: Math.max(base.progress, 0.92), etaMinutes: 1, running: false },
+      simulation: { ...base, progress: 1, etaMinutes: 0, running: false },
     });
     syncGpsWatchPolicyForOrder({ ...order, status }, base);
   }

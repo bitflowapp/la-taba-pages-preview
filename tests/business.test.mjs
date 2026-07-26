@@ -60,7 +60,14 @@ test('business actions advance status, cancel orders, edit stock, and toggle pro
     },
   };
 
-  setState({ ...getState(), orders: [order], lastOrderId: order.id });
+  setState({
+    ...getState(),
+    orders: [order],
+    lastOrderId: order.id,
+    products: getState().products.map((product) => (
+      product.id === 'qa-hielo' ? { ...product, stock: 0, available: false } : product
+    )),
+  });
 
   let result = handleBusinessAction(makeTarget({
     '[data-order-advance]': { orderAdvance: order.id },
@@ -187,11 +194,12 @@ test('cancelación segura: confirmar sin motivo no cambia el estado', () => {
   assert.equal(getState().orders[0].status, 'preparing');
 });
 
-test('low-stock detection includes scarce products and excludes out-of-stock ones', () => {
+test('low-stock detection includes scarce concrete products and excludes high inventory', () => {
   const lowStock = getLowStockProducts();
   assert.ok(lowStock.some((product) => product.id === 'qa-jugo-naranja'));
   assert.ok(lowStock.some((product) => product.id === 'qa-cerveza'));
-  assert.ok(!lowStock.some((product) => product.id === 'qa-hielo'));
+  assert.ok(lowStock.some((product) => product.id === 'qa-hielo'));
+  assert.ok(!lowStock.some((product) => product.id === 'qa-agua-mineral'));
 });
 
 test('business metrics tolerate invalid dates and count active statuses consistently', () => {

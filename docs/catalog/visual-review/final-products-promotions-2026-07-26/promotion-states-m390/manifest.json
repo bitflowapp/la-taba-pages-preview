@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-07-26T23:47:56.077Z",
+  "baseUrl": "http://127.0.0.1:8080",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "screenshots": [
+    "01-home-promotion.png",
+    "02-catalog-promotion.png",
+    "03-product-promoted.png",
+    "04-product-regular.png",
+    "05-cart-discount.png",
+    "06-cart-condition-unmet.png",
+    "07-promotion-expired.png",
+    "08-business-edit-promotion.png"
+  ],
+  "errors": [],
+  "failedResponses": [],
+  "result": "passed",
+  "finishedAt": "2026-07-26T23:48:03.604Z"
+}

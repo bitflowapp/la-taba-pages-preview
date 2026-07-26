@@ -43,6 +43,11 @@ test('cart supports add, increment, decrement, remove, and clear', () => {
 });
 
 test('cart rejects exhausted products and never exceeds stock', () => {
+  resetState({
+    products: state().products.map((product) => (
+      product.id === 'qa-hielo' ? { ...product, stock: 0, available: false } : product
+    )),
+  });
   assert.equal(addToCart('qa-hielo').ok, false);
   assert.deepEqual(state().cart, []);
 

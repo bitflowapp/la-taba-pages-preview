@@ -87,11 +87,14 @@ export function createOrderFromCheckout(formValues = {}) {
     unitPrice: item.product.price,
     unit: item.product.unit,
   }));
-  const baseTotals = calculateTotals(items, values.deliveryMode);
-  const coupon = buildAppliedCoupon(values.couponCode, baseTotals.subtotal);
-  const totals = calculateTotals(items, values.deliveryMode, {
-    discountAmount: coupon?.discountAmount || 0,
-  });
+  const cartSummary = getCartSummary(values.deliveryMode, { couponCode: values.couponCode });
+  const coupon = buildAppliedCoupon(values.couponCode, cartSummary.subtotal);
+  const totals = {
+    subtotal: cartSummary.subtotal,
+    discountTotal: cartSummary.discountTotal,
+    deliveryFee: cartSummary.deliveryFee,
+    total: cartSummary.total,
+  };
   const pendingReorder = getState().pendingReorder;
   const reorder = buildOrderReorderMetadata(pendingReorder, getState().cart, now);
 
@@ -111,6 +114,7 @@ export function createOrderFromCheckout(formValues = {}) {
     notes: values.customerNotes || 'Sin notas',
     cashChange: values.paymentMethod === 'cash' ? values.cashChange : '',
     coupon,
+    promotionApplications: cartSummary.promotions,
     createdAt: now,
     status: 'received',
     previewOnly: values.previewOnly,

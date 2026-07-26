@@ -73,6 +73,13 @@ import { sanitizeText } from './core/validators.js';
 import { getOrderRepository, isPersistentOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { escapeHtml, productCode, stockPill } from './ui.js';
 import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
+import {
+  findPromotionConflicts,
+  isPromotionActive,
+  normalizePromotion,
+  validatePromotionForActivation,
+} from './core/promotions.js';
+import { isDemoMode } from './core/app-mode.js';
 
 let seenOrderIds = null; // se inicializa en el primer render para detectar pedidos nuevos
 let soundEnabled = readSoundPref();
@@ -100,6 +107,9 @@ const CATALOG_LIST_PREVIEW_COUNT = 8;
 // Último producto creado/editado: se muestra primero en la lista para que el
 // comercio vea de inmediato lo que acaba de tocar (aunque la lista esté plegada).
 let lastTouchedCatalogProductId = null;
+let promotionFormVisible = false;
+let editingPromotionId = null;
+let promotionFeedback = '';
 const CANCEL_REASON_PRESETS = BUSINESS_CANCEL_REASONS;
 
 function readSoundPref() {
@@ -200,6 +210,7 @@ export function renderBusinessDashboard() {
           ${renderBusinessViewButton('reports', 'Reportes')}
           ${renderBusinessViewButton('cashbox', 'Caja')}
           ${renderBusinessViewButton('catalog', 'Catálogo')}
+          ${isDemoMode() ? renderBusinessViewButton('promotions', 'Promociones') : ''}
           ${renderBusinessViewButton('setup', 'Configuración')}
           ${renderBusinessViewButton('guide', 'Guía')}
         </nav>
@@ -241,6 +252,7 @@ function renderBusinessWorkspace({ view, state, metrics, report, cashboxClosures
   if (view === 'reports') return renderBusinessReportsPanel(report, cashboxClosures, { mode: 'reports' });
   if (view === 'cashbox') return renderBusinessReportsPanel(report, cashboxClosures, { mode: 'cashbox' });
   if (view === 'catalog') return renderCatalogManager(state);
+  if (view === 'promotions' && isDemoMode()) return renderPromotionManager(state);
   if (view === 'setup') return renderBusinessSetupPanel();
   if (view === 'guide') return renderDemoGuide();
   return renderOrderInbox(state, metrics, freshOrderIds);
@@ -959,6 +971,183 @@ function renderCatalogManager(state) {
     </section>`;
 }
 
+function renderPromotionManager(state) {
+  const promotions = Array.isArray(state.promotions) ? state.promotions : [];
+  let editingPromotion = editingPromotionId
+    ? promotions.find((promotion) => promotion.promoId === editingPromotionId)
+    : null;
+  if (editingPromotionId && !editingPromotion) {
+    editingPromotionId = null;
+    editingPromotion = null;
+  }
+  const showForm = promotionFormVisible || Boolean(editingPromotion);
+  const activeCount = promotions.filter((promotion) => isPromotionActive(promotion)).length;
+
+  return `
+    <section class="business-catalog-card promotion-manager" data-promotion-manager aria-labelledby="promotion-manager-title">
+      <header class="business-catalog-head">
+        <div>
+          <span class="catalog-admin-kicker">Promociones por SKU</span>
+          <h3 id="promotion-manager-title">Promociones comerciales</h3>
+          <p>Solo se publican cuando tienen precio, vigencia y aprobación humana registrados.</p>
+        </div>
+        <div class="catalog-admin-top-actions">
+          <span class="business-promo-count">${activeCount} activa${activeCount === 1 ? '' : 's'}</span>
+          <button class="secondary-button compact" type="button" data-promotion-new>Nueva promoción</button>
+        </div>
+      </header>
+      ${promotionFeedback ? `<p class="business-setup-feedback" role="status">${escapeHtml(promotionFeedback)}</p>` : ''}
+      ${showForm ? renderPromotionForm(editingPromotion, state.products) : ''}
+      <div class="catalog-admin-list promotion-list" aria-label="Promociones configuradas">
+        ${promotions.length ? promotions.map((promotion) => renderPromotionRow(promotion, promotions)).join('') : `
+          <div class="catalog-admin-empty"><strong>No hay promociones creadas.</strong><span>Las promociones confirmadas aparecerán aquí.</span></div>`}
+      </div>
+    </section>`;
+}
+
+function newPromotionDraft() {
+  return normalizePromotion({
+    promoId: `promo-${Date.now().toString(36)}`,
+    title: '',
+    promotionType: 'precio_promocional',
+    includedSkus: [],
+    requiredQuantity: 1,
+    maximumUnits: null,
+    active: false,
+    priority: 0,
+    previewOnly: true,
+    approvalStatus: 'PENDIENTE',
+  });
+}
+
+function renderPromotionForm(promotion, products = []) {
+  const draft = promotion || newPromotionDraft();
+  const validation = validatePromotionForActivation(draft);
+  const conflicts = draft.active ? findPromotionConflicts(draft, getState().promotions) : [];
+  const options = (products || [])
+    .filter((product) => product && !product.archived)
+    .map((product) => `<option value="${escapeHtml(product.id)}" ${draft.includedSkus.includes(product.id) ? 'selected' : ''}>${escapeHtml(product.name)}</option>`)
+    .join('');
+  const typeOptions = [
+    ['precio_promocional', 'Precio promocional'],
+    ['descuento_porcentaje', 'Descuento porcentual'],
+    ['pack', 'Pack'],
+    ['cantidad_fija', 'Cantidad fija'],
+    ['envio_gratis', 'Envío gratis'],
+  ].map(([value, label]) => `<option value="${value}" ${draft.promotionType === value ? 'selected' : ''}>${label}</option>`).join('');
+
+  return `
+    <form class="catalog-admin-form promotion-admin-form" data-promotion-form novalidate>
+      <div class="catalog-form-title">
+        <strong>${promotion ? 'Editar promoción' : 'Nueva promoción'}</strong>
+        <span>La activación exige evidencia y aprobación registradas.</span>
+      </div>
+      <div class="catalog-form-grid">
+        <label>ID
+          <input name="promoId" maxlength="80" required value="${escapeHtml(draft.promoId)}" />
+        </label>
+        <label>Título
+          <input name="title" maxlength="80" required value="${escapeHtml(draft.title)}" placeholder="Ej.: Precio especial" />
+        </label>
+        <label>Tipo
+          <select name="promotionType">${typeOptions}</select>
+        </label>
+        <label>Prioridad
+          <input name="priority" type="number" min="-999" max="999" value="${draft.priority}" />
+        </label>
+      </div>
+      <label class="catalog-description-field">Productos incluidos
+        <select name="includedSkus" multiple size="5" required aria-label="Productos incluidos">${options}</select>
+        <small>Usá Ctrl o ⌘ para seleccionar más de un SKU.</small>
+      </label>
+      <div class="catalog-form-grid">
+        <label>Precio regular confirmado
+          <input name="regularPrice" type="number" min="0" step="1" value="${draft.regularPrice ?? ''}" />
+        </label>
+        <label>Precio promocional
+          <input name="promotionalPrice" type="number" min="0" step="1" value="${draft.promotionalPrice ?? ''}" />
+        </label>
+        <label>Descuento %
+          <input name="discountPercentage" type="number" min="0" max="100" step="1" value="${draft.discountPercentage ?? ''}" />
+        </label>
+        <label>Cantidad requerida
+          <input name="requiredQuantity" type="number" min="1" max="999" value="${draft.requiredQuantity}" />
+        </label>
+        <label>Máximo de unidades
+          <input name="maximumUnits" type="number" min="1" max="999" value="${draft.maximumUnits ?? ''}" />
+        </label>
+      </div>
+      <div class="catalog-form-grid">
+        <label>Válida desde
+          <input name="validFrom" type="date" value="${escapeHtml(draft.validFrom.slice(0, 10))}" required />
+        </label>
+        <label>Válida hasta
+          <input name="validUntil" type="date" value="${escapeHtml(draft.validUntil.slice(0, 10))}" required />
+        </label>
+        <label>Aprobación
+          <select name="approvalStatus">
+            <option value="PENDIENTE" ${draft.approvalStatus === 'PENDIENTE' ? 'selected' : ''}>Pendiente</option>
+            <option value="APROBADA" ${draft.approvalStatus === 'APROBADA' ? 'selected' : ''}>Aprobada</option>
+          </select>
+        </label>
+        <label>Referencia de aprobación
+          <input name="approvalReference" maxlength="160" value="${escapeHtml(draft.approvalReference)}" />
+        </label>
+      </div>
+      <div class="catalog-form-grid">
+        <label>Subtítulo
+          <input name="subtitle" maxlength="140" value="${escapeHtml(draft.subtitle)}" />
+        </label>
+        <label>Imagen exacta
+          <input name="imagePath" maxlength="220" value="${escapeHtml(draft.imagePath)}" placeholder="Ruta del packshot integrado" />
+        </label>
+      </div>
+      <label class="catalog-description-field">Términos claros
+        <textarea name="terms" maxlength="240" rows="2">${escapeHtml(draft.terms)}</textarea>
+      </label>
+      <label class="catalog-description-field">Evidencia de la promoción
+        <textarea name="sourceEvidence" maxlength="240" rows="2">${escapeHtml(draft.sourceEvidence)}</textarea>
+      </label>
+      <label class="catalog-availability-field"><input name="active" type="checkbox" ${draft.active ? 'checked' : ''} /> Activar al guardar</label>
+      ${!validation.ok && draft.active ? `<p class="form-hint catalog-form-error">${escapeHtml(validation.errors.join(' '))}</p>` : ''}
+      ${conflicts.length ? `<p class="form-hint catalog-form-error">Incompatible con: ${escapeHtml(conflicts.map((item) => item.title).join(', '))}.</p>` : ''}
+      <p class="form-hint catalog-form-error hidden" data-promotion-form-error></p>
+      <div class="catalog-form-actions">
+        <button class="primary-button compact" type="button" data-promotion-save>Guardar promoción</button>
+        <button class="ghost-button compact" type="button" data-promotion-form-close>Cancelar</button>
+      </div>
+    </form>`;
+}
+
+function renderPromotionRow(promotion, promotions) {
+  const validation = validatePromotionForActivation(promotion);
+  const conflicts = promotion.active ? findPromotionConflicts(promotion, promotions) : [];
+  const validUntil = promotion.validUntil ? Date.parse(`${promotion.validUntil.slice(0, 10)}T23:59:59.999`) : NaN;
+  const validFrom = promotion.validFrom ? Date.parse(promotion.validFrom) : NaN;
+  const now = Date.now();
+  const stateLabel = Number.isFinite(validUntil) && validUntil < now
+    ? 'Vencida'
+    : promotion.active && validation.ok && !conflicts.length && Number.isFinite(validFrom) && validFrom > now
+      ? 'Programada'
+      : promotion.active && validation.ok && !conflicts.length
+        ? 'Activa'
+        : 'No publicada';
+  const products = promotion.includedSkus.length ? promotion.includedSkus.join(', ') : 'Sin productos';
+  return `
+    <article class="catalog-admin-row ${stateLabel === 'Activa' ? '' : 'is-disabled'}" data-promotion-row="${escapeHtml(promotion.promoId)}">
+      <div class="catalog-admin-main">
+        <strong>${escapeHtml(promotion.title || promotion.promoId)}</strong>
+        <span>${escapeHtml(products)} · ${escapeHtml(promotion.promotionType)}</span>
+        <div class="catalog-admin-tags"><span>${escapeHtml(stateLabel)}</span><span>${escapeHtml(promotion.validFrom || 'Sin inicio')} → ${escapeHtml(promotion.validUntil || 'Sin fin')}</span></div>
+      </div>
+      <div class="catalog-admin-price">${promotion.promotionalPrice != null ? money(promotion.promotionalPrice) : '—'}</div>
+      <div class="catalog-admin-actions">
+        <button class="ghost-button compact" type="button" data-promotion-edit="${escapeHtml(promotion.promoId)}">Editar</button>
+        <button class="${promotion.active ? 'secondary-button' : 'primary-button'} compact" type="button" data-promotion-toggle="${escapeHtml(promotion.promoId)}" ${!promotion.active && (!validation.ok || conflicts.length) ? 'disabled' : ''}>${promotion.active ? 'Desactivar' : 'Activar'}</button>
+      </div>
+    </article>`;
+}
+
 function renderBusinessSetupPanel() {
   const config = getBusinessConfig();
   const preview = renderBusinessSetupPreview(config);
@@ -1279,6 +1468,7 @@ export function handleBusinessAction(target) {
   if (viewButton) {
     const nextView = viewButton.dataset.businessView;
     const allowedViews = new Set(['orders', 'metrics', 'reports', 'cashbox', 'catalog', 'setup', 'guide']);
+    if (isDemoMode()) allowedViews.add('promotions');
     if (!allowedViews.has(nextView)) return { handled: true, ok: false, message: 'Vista no disponible.' };
     businessActiveView = nextView;
     if (typeof document !== 'undefined') renderBusinessDashboard();
@@ -1421,6 +1611,44 @@ export function handleBusinessAction(target) {
 
   if (target.closest('[data-business-setup-reset-confirm]')) {
     return confirmBusinessSetupReset();
+  }
+
+  if (target.closest('[data-promotion-new]')) {
+    editingPromotionId = null;
+    promotionFormVisible = true;
+    promotionFeedback = '';
+    if (typeof document !== 'undefined') {
+      businessActiveView = 'promotions';
+      renderBusinessDashboard();
+      setTimeout(() => document.querySelector('[data-promotion-form] [name="title"]')?.focus(), 0);
+    }
+    return { handled: true, ok: true, message: '' };
+  }
+
+  const promotionEditId = target.closest('[data-promotion-edit]')?.dataset.promotionEdit;
+  if (promotionEditId) {
+    editingPromotionId = promotionEditId;
+    promotionFormVisible = true;
+    promotionFeedback = '';
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-promotion-form-close]')) {
+    editingPromotionId = null;
+    promotionFormVisible = false;
+    promotionFeedback = '';
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-promotion-save]')) {
+    return savePromotionFromForm();
+  }
+
+  const promotionToggleId = target.closest('[data-promotion-toggle]')?.dataset.promotionToggle;
+  if (promotionToggleId) {
+    return togglePromotion(promotionToggleId);
   }
 
   if (target.closest('[data-catalog-new]')) {
@@ -1599,6 +1827,87 @@ function readCatalogForm(form) {
     badge: formData.get('badge'),
     available: formData.get('available') === 'on',
   };
+}
+
+function readPromotionForm(form) {
+  const formData = new FormData(form);
+  return {
+    promoId: formData.get('promoId'),
+    title: formData.get('title'),
+    subtitle: formData.get('subtitle'),
+    includedSkus: formData.getAll('includedSkus'),
+    promotionType: formData.get('promotionType'),
+    regularPrice: formData.get('regularPrice'),
+    promotionalPrice: formData.get('promotionalPrice'),
+    discountPercentage: formData.get('discountPercentage'),
+    requiredQuantity: formData.get('requiredQuantity'),
+    maximumUnits: formData.get('maximumUnits'),
+    validFrom: formData.get('validFrom'),
+    validUntil: formData.get('validUntil'),
+    active: formData.get('active') === 'on',
+    priority: formData.get('priority'),
+    imagePath: formData.get('imagePath'),
+    terms: formData.get('terms'),
+    previewOnly: true,
+    approvalStatus: formData.get('approvalStatus'),
+    approvalReference: formData.get('approvalReference'),
+    sourceEvidence: formData.get('sourceEvidence'),
+  };
+}
+
+function savePromotionFromForm() {
+  if (!isDemoMode()) return { handled: true, ok: false, message: 'Promociones disponibles solo en sandbox.' };
+  const form = typeof document !== 'undefined' ? document.querySelector('[data-promotion-form]') : null;
+  if (!form) return { handled: true, ok: false, message: 'Formulario no disponible.' };
+  const promotion = normalizePromotion(readPromotionForm(form));
+  const validation = validatePromotionForActivation(promotion);
+  const existing = getState().promotions || [];
+  const conflicts = promotion.active ? findPromotionConflicts(promotion, existing) : [];
+  if (promotion.active && (!validation.ok || conflicts.length)) {
+    const message = conflicts.length
+      ? `No se puede activar: se superpone con ${conflicts.map((item) => item.title).join(', ')}.`
+      : validation.errors.join(' ');
+    setPromotionFormError(message);
+    return { handled: true, ok: false, message };
+  }
+
+  const promotions = [
+    ...existing.filter((item) => item.promoId !== promotion.promoId),
+    promotion,
+  ];
+  editingPromotionId = null;
+  promotionFormVisible = false;
+  promotionFeedback = promotion.active ? 'Promoción activada.' : 'Promoción guardada sin publicar.';
+  setState({ promotions });
+  return { handled: true, ok: true, message: promotionFeedback };
+}
+
+function togglePromotion(promoId) {
+  if (!isDemoMode()) return { handled: true, ok: false, message: 'Promociones disponibles solo en sandbox.' };
+  const existing = getState().promotions || [];
+  const current = existing.find((item) => item.promoId === promoId);
+  if (!current) return { handled: true, ok: false, message: 'Promoción no encontrada.' };
+  const next = normalizePromotion({ ...current, active: !current.active });
+  const validation = validatePromotionForActivation(next);
+  const conflicts = next.active ? findPromotionConflicts(next, existing) : [];
+  if (next.active && (!validation.ok || conflicts.length)) {
+    promotionFeedback = conflicts.length
+      ? `No se activó: se superpone con ${conflicts.map((item) => item.title).join(', ')}.`
+      : validation.errors.join(' ');
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: false, message: promotionFeedback };
+  }
+  promotionFeedback = next.active ? 'Promoción activada.' : 'Promoción desactivada.';
+  setState({ promotions: existing.map((item) => (item.promoId === promoId ? next : item)) });
+  return { handled: true, ok: true, message: promotionFeedback };
+}
+
+function setPromotionFormError(message) {
+  if (typeof document === 'undefined') return;
+  const error = document.querySelector('[data-promotion-form-error]');
+  if (!error) return;
+  error.textContent = message;
+  error.classList.remove('hidden');
 }
 
 function readBusinessSetupForm(form) {

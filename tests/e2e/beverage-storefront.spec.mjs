@@ -10,7 +10,6 @@ test('la home presenta TABA sin etiquetas internas y un storefront comercial lim
   await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
   await expect(page.locator('[data-view="home"] .home-search')).toBeVisible();
   const realCategories = [
-    ['promos', 'Promos'],
     ['gaseosas', 'Gaseosas'],
     ['aguas', 'Aguas'],
     ['energeticas', 'Energéticas'],
@@ -23,20 +22,9 @@ test('la home presenta TABA sin etiquetas internas y un storefront comercial lim
     await expect(page.locator(`[data-view="home"] .category-tiles [data-category-id="${id}"]`)).toHaveText(label);
   }
 
-  // La promo del home usa el producto disponible del catálogo, no copy estática.
+  // Sin una aprobación comercial registrada, el home no inventa una promo.
   const promoBanner = page.locator('[data-view="home"] [data-promo-banner]');
-  await expect(promoBanner).toBeVisible();
-  const promoTitle = (await promoBanner.locator('[data-promo-banner-title]').innerText()).trim();
-  const promoPrice = (await promoBanner.locator('[data-promo-banner-price]').innerText()).trim();
-  expect(promoTitle).not.toBe('');
-  expect(promoPrice).toMatch(/\d/);
-  await expect(promoBanner.locator('[data-promo-banner-includes]')).not.toHaveText('');
-  await promoBanner.click();
-  await expect(page.locator('[data-view="catalog"]')).toBeVisible();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Promos');
-  const promotedProduct = page.locator('[data-product-grid] .product-card', { hasText: promoTitle }).first();
-  await expect(promotedProduct).toBeVisible();
-  await expect(promotedProduct).toContainText(promoPrice);
+  await expect(promoBanner).toBeHidden();
 
   await expect(page.locator('[data-view="home"] .role-intro')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .product-intro')).toHaveCount(0);

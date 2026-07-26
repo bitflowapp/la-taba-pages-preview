@@ -10,7 +10,7 @@ import {
   findCustomerOrder,
   getLatestCustomerOrder,
 } from './core/customer-history.js';
-import { previewCouponDiscount } from './core/promotions.js';
+import { evaluatePromotions, previewCouponDiscount } from './core/promotions.js';
 import { buildPendingReorder, buildReorderPreview } from './core/reorder.js';
 import { isDemoMode } from './core/app-mode.js';
 import { getProductById, getState, money, setState, updateState } from './state.js';
@@ -38,19 +38,33 @@ export function getCartItems() {
 
 export function getCartSummary(deliveryMode = 'delivery', options = {}) {
   const items = getCartItems();
+  const normalizedDeliveryMode = normalizeDeliveryMode(deliveryMode);
   const pricingItems = items.map((item) => ({
     quantity: item.quantity,
     unitPrice: item.product.price,
   }));
   const subtotal = items.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
+  const promotion = isDemoMode()
+    ? evaluatePromotions(items, getState().promotions)
+    : { discountTotal: 0, freeDelivery: false, applied: [], activePromotions: [] };
   const coupon = previewCouponDiscount(options.couponCode, subtotal);
-  const totals = items.length
-    ? calculateTotals(pricingItems, deliveryMode, { discountAmount: coupon.discountAmount })
+  const discountAmount = promotion.discountTotal + coupon.discountAmount;
+  const calculated = items.length
+    ? calculateTotals(pricingItems, normalizedDeliveryMode, { discountAmount })
     : { subtotal: 0, discountTotal: 0, deliveryFee: 0, total: 0 };
+  const totals = promotion.freeDelivery && normalizedDeliveryMode === 'delivery'
+    ? {
+      ...calculated,
+      deliveryFee: 0,
+      total: Math.max(0, calculated.total - calculated.deliveryFee),
+    }
+    : calculated;
   return {
     items,
     count: items.reduce((sum, item) => sum + item.quantity, 0),
     coupon,
+    promotion,
+    promotions: promotion.applied,
     ...totals,
   };
 }

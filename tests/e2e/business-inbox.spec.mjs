@@ -207,7 +207,7 @@ function liveBusinessState(now) {
     gpsStatus: 'active',
   };
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     dataVersion: 'la-taba-runtime-v2',
     appMode: 'demo',
     orders: [{

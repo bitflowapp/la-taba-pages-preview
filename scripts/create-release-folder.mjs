@@ -8,6 +8,7 @@ const releaseDir = path.join(root, 'dist_release');
 const entries = [
   'index.html',
   'styles.css',
+  'styles',
   'manifest.webmanifest',
   'runtime-config.js',
   'sw.js',

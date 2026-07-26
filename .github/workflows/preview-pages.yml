@@ -1,0 +1,51 @@
+name: Deploy preview to GitHub Pages
+
+on:
+  push:
+    branches:
+      - feat/taba-production-beverages
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Prepare safe preview artifact
+        run: npm run release:folder
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload pages artifact
+        id: upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist_release
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

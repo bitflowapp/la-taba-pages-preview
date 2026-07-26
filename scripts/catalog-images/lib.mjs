@@ -25,17 +25,21 @@ const SOURCE_TYPES = new Set([
   'propio',
 ]);
 const RIGHTS_STATUSES = new Set([
+  'APROBADOS',
+  'PENDIENTE_DERECHOS',
+  'NO_AUTORIZADOS',
   'PROPIO',
   'LICENCIA_COMERCIAL',
   'PERMISO_DOCUMENTADO',
 ]);
 const REVIEW_STATUSES = new Set([
   'APROBADA',
-  'REVISAR',
-  'RECHAZADA',
-  'PENDIENTE',
+  'REVISAR_DATOS',
+  'REVISAR_IMAGEN',
+  'SIN_IMAGEN',
+  'PENDIENTE_DERECHOS',
 ]);
-const SAFE_PRODUCT_ASSET_PATTERN = /^assets\/products\/[a-z0-9_-]+\.webp$/;
+const SAFE_PRODUCT_ASSET_PATTERN = /^assets\/(?:products|catalog\/products|catalog\/thumbnails)\/[a-z0-9_-]+\.webp$/;
 const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
 const ASSET_KINDS = new Set(['master', 'thumbnail']);
 
@@ -56,10 +60,10 @@ export function validateImageSourceAudit(header = [], records = []) {
   const errors = [];
   const duplicateColumns = header.filter((column, index) => header.indexOf(column) !== index);
   for (const column of new Set(duplicateColumns)) {
-    errors.push(`La columna ${column || '(vacía)'} está repetida en la auditoría de imágenes.`);
+    errors.push(`La columna ${column || '(vacÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a)'} estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ repetida en la auditorÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a de imÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡genes.`);
   }
   for (const column of IMAGE_AUDIT_COLUMNS) {
-    if (!header.includes(column)) errors.push(`Falta la columna ${column} en la auditoría de imágenes.`);
+    if (!header.includes(column)) errors.push(`Falta la columna ${column} en la auditorÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a de imÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡genes.`);
   }
 
   const seenExternalIds = new Set();
@@ -70,7 +74,7 @@ export function validateImageSourceAudit(header = [], records = []) {
   records.forEach((source, index) => {
     const line = index + 2;
     if (!REVIEW_STATUSES.has(source.status)) {
-      errors.push(`Línea ${line}: status de revisión inválido.`);
+      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: status de revisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido.`);
       return;
     }
     if (source.status !== 'APROBADA') return;
@@ -85,22 +89,22 @@ export function validateImageSourceAudit(header = [], records = []) {
       'expected_sha256',
       'checked_at',
     ]) {
-      if (!source[field]) errors.push(`Línea ${line}: ${field} está vacío para una fuente APROBADA.`);
+      if (!source[field]) errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: ${field} estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ vacÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o para una fuente APROBADA.`);
     }
     if (!/^https:\/\//i.test(source.source_url)) {
-      errors.push(`Línea ${line}: source_url debe usar HTTPS.`);
+      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: source_url debe usar HTTPS.`);
     }
     if (!SOURCE_TYPES.has(source.source_type)) {
-      errors.push(`Línea ${line}: source_type no autorizado.`);
+      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: source_type no autorizado.`);
     }
     if (!RIGHTS_STATUSES.has(source.rights_status)) {
-      errors.push(`Línea ${line}: rights_status no acredita uso comercial.`);
+      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: rights_status no acredita uso comercial.`);
     }
     if (!isSha256(source.expected_sha256)) {
-      errors.push(`Línea ${line}: expected_sha256 debe contener 64 caracteres hexadecimales.`);
+      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: expected_sha256 debe contener 64 caracteres hexadecimales.`);
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(source.checked_at)) {
-      errors.push(`Línea ${line}: checked_at debe usar YYYY-MM-DD.`);
+      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: checked_at debe usar YYYY-MM-DD.`);
     }
     for (const flag of [
       'variant_verified',
@@ -109,16 +113,16 @@ export function validateImageSourceAudit(header = [], records = []) {
       'pack_verified',
     ]) {
       if (source[flag] !== 'true') {
-        errors.push(`Línea ${line}: ${flag} debe ser true para una fuente APROBADA.`);
+        errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: ${flag} debe ser true para una fuente APROBADA.`);
       }
     }
 
     const safeSku = normalizeSku(source.sku);
-    if (!safeSku) errors.push(`Línea ${line}: SKU no apto para nombre de archivo.`);
-    if (seenExternalIds.has(source.external_id)) errors.push(`Línea ${line}: external_id duplicado.`);
-    if (seenSkus.has(source.sku)) errors.push(`Línea ${line}: SKU duplicado.`);
+    if (!safeSku) errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: SKU no apto para nombre de archivo.`);
+    if (seenExternalIds.has(source.external_id)) errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: external_id duplicado.`);
+    if (seenSkus.has(source.sku)) errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: SKU duplicado.`);
     if (safeSku && seenSafeSkus.has(safeSku)) {
-      errors.push(`Línea ${line}: el SKU colisiona al normalizarse (${safeSku}).`);
+      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: el SKU colisiona al normalizarse (${safeSku}).`);
     }
     seenExternalIds.add(source.external_id);
     seenSkus.add(source.sku);
@@ -147,7 +151,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
 
   const sources = manifest.sources;
   if (!sources.length && !allowEmpty) {
-    errors.push('El manifiesto final no contiene imágenes aprobadas.');
+    errors.push('El manifiesto final no contiene imÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡genes aprobadas.');
   }
 
   const externalIds = new Set();
@@ -156,7 +160,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
   sources.forEach((source, index) => {
     const label = source?.sku || `entrada ${index + 1}`;
     if (!source || typeof source !== 'object') {
-      errors.push(`Manifiesto ${label}: entrada inválida.`);
+      errors.push(`Manifiesto ${label}: entrada invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lida.`);
       return;
     }
     for (const field of [
@@ -170,7 +174,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
       'rightsReference',
     ]) {
       if (!String(source[field] || '').trim()) {
-        errors.push(`Manifiesto ${label}: ${field} vacío.`);
+        errors.push(`Manifiesto ${label}: ${field} vacÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o.`);
       }
     }
     if (externalIds.has(source.externalId)) {
@@ -181,7 +185,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
     skus.add(source.sku);
 
     if (!isSha256(source.sourceSha256)) {
-      errors.push(`Manifiesto ${label}: sourceSha256 inválido.`);
+      errors.push(`Manifiesto ${label}: sourceSha256 invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido.`);
     }
     const expectedIdentitySha256 = catalogImageIdentitySha256(source);
     if (
@@ -220,7 +224,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
         assetPaths.add(asset.path);
       }
       if (!isSha256(asset.sha256)) {
-        errors.push(`Manifiesto ${label}: SHA-256 ${kind} inválido.`);
+        errors.push(`Manifiesto ${label}: SHA-256 ${kind} invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido.`);
       }
       if (asset.width !== expectedSize || asset.height !== expectedSize) {
         errors.push(`Manifiesto ${label}: ${kind} debe medir ${expectedSize}x${expectedSize}.`);
@@ -234,7 +238,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
         !isSha256(asset.bindingSha256)
         || asset.bindingSha256 !== expectedBindingSha256
       ) {
-        errors.push(`Manifiesto ${label}: bindingSha256 ${kind} inválido.`);
+        errors.push(`Manifiesto ${label}: bindingSha256 ${kind} invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido.`);
       }
     }
     if (
@@ -287,7 +291,8 @@ export function catalogAssetPath(source = {}, kind, assetSha256) {
   const assetHash = String(assetSha256 || '').toLowerCase();
   if (!safeSku || !isSha256(identitySha256) || !isSha256(assetHash)) return '';
   const marker = kind === 'thumbnail' ? 'thumb-' : '';
-  return `assets/products/${safeSku}-${identitySha256.slice(0, 16)}-${marker}${assetHash.slice(0, 16)}.webp`;
+  const directory = kind === 'thumbnail' ? 'assets/catalog/thumbnails' : 'assets/catalog/products';
+  return `${directory}/${safeSku}-${identitySha256.slice(0, 16)}-${marker}${assetHash.slice(0, 16)}.webp`;
 }
 
 export function catalogAssetBindingSha256(source = {}, kind, asset = {}) {

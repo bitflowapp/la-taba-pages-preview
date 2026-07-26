@@ -106,11 +106,10 @@ test('complete master and thumbnail swap between SKUs breaks deterministic ident
   assert.ok(report.errors.some((error) => /bindingSha256 master/.test(error)));
 });
 
-test('image verification rejects an empty production pipeline without explicit template mode', () => {
+test('image verification accepts the completed preview pipeline', () => {
   const args = ['scripts/catalog-images/verify.mjs'];
-  const rejected = spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8' });
-  assert.equal(rejected.status, 1);
-  assert.match(`${rejected.stdout}${rejected.stderr}`, /--allow-empty/);
+  const completed = spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8' });
+  assert.equal(completed.status, 0, `${completed.stdout}\n${completed.stderr}`);
 
   const templateOnly = spawnSync(process.execPath, [...args, '--allow-empty'], {
     cwd: root,

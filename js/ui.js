@@ -262,7 +262,7 @@ export function productThumb(product, variant = 'grid') {
   const official = Boolean(
     image
     && thumbnail
-    && !product.qaFixture
+    && (!product.qaFixture || product.previewCatalogApproved === true)
     && hasAuthoritativeHashes,
   );
   const loading = variant === 'modal' ? 'eager' : 'lazy';

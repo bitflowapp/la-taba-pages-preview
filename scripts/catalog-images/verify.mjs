@@ -18,7 +18,10 @@ try {
 }
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
-const DIR = path.join(ROOT, 'assets/products');
+const DIRS = [
+  path.join(ROOT, 'assets/catalog/products'),
+  path.join(ROOT, 'assets/catalog/thumbnails'),
+];
 const MANIFEST = path.join(ROOT, 'docs/catalog/image-manifest.json');
 const AUDIT = path.join(ROOT, 'docs/catalog/image-source-audit.csv');
 const allowEmpty = process.argv.includes('--allow-empty');
@@ -102,10 +105,12 @@ for (const source of manifestSources) {
   }
 }
 
-const files = (await fs.readdir(DIR))
-  .filter((file) => file.endsWith('.webp'))
-  .map((file) => `assets/products/${file}`)
-  .sort();
+const files = (await Promise.all(DIRS.map(async (directory) => {
+  const relativeDirectory = path.relative(ROOT, directory).replaceAll('\\', '/');
+  return (await fs.readdir(directory).catch(() => []))
+    .filter((file) => file.endsWith('.webp'))
+    .map((file) => `${relativeDirectory}/${file}`);
+}))).flat().sort();
 for (const file of files) {
   if (!expectedFiles.has(file)) errors.push(`${file}: WebP sin entrada en el manifiesto.`);
 }

@@ -22,7 +22,10 @@ try {
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const RAW = path.join(ROOT, 'scripts/catalog-images/.raw');
-const OUTPUT = path.join(ROOT, 'assets/products');
+const OUTPUTS = {
+  master: path.join(ROOT, 'assets/catalog/products'),
+  thumbnail: path.join(ROOT, 'assets/catalog/thumbnails'),
+};
 const RAW_MANIFEST = path.join(RAW, 'manifest.json');
 const OUTPUT_MANIFEST = path.join(ROOT, 'docs/catalog/image-manifest.json');
 const allowEmpty = process.argv.includes('--allow-empty');
@@ -33,7 +36,7 @@ if (!Array.isArray(rawManifest.sources)) throw new Error('El manifiesto raw no c
 if (!rawManifest.sources.length && !allowEmpty) {
   throw new Error('El manifiesto raw está vacío. Usá --allow-empty sólo para el template.');
 }
-await fs.mkdir(OUTPUT, { recursive: true });
+await Promise.all(Object.values(OUTPUTS).map((directory) => fs.mkdir(directory, { recursive: true })));
 
 const manifestSources = [];
 for (const source of rawManifest.sources) {
@@ -75,7 +78,7 @@ for (const source of rawManifest.sources) {
       const outputSha256 = sha256(outputBytes);
       const assetPath = catalogAssetPath(source, kind, outputSha256);
       const file = path.basename(assetPath);
-      const outputPath = path.join(OUTPUT, file);
+      const outputPath = path.join(ROOT, assetPath);
       const existing = await fs.readFile(outputPath).catch(() => null);
       if (existing && sha256(existing) !== outputSha256) {
         throw new Error(`${file}: colisión de hash truncado.`);

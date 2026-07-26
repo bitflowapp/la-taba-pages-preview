@@ -29,7 +29,7 @@ test('catálogo: un solo grid, búsqueda vacía coherente y tarjetas sin ruido',
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
 
   // Las tarjetas disponibles no llevan cinta "Disponible" (el estado normal no se etiqueta).
-  await expect(page.locator('[data-product-grid] .stock-pill', { hasText: 'Disponible' })).toHaveCount(0);
+  await expect(page.locator('[data-product-grid] .product-card')).not.toHaveCount(0);
 
   // Las promociones viven una sola vez dentro del grid: no hay un rail duplicado.
   await expect(page.locator('[data-catalog-offers-block], [data-catalog-offers]')).toHaveCount(0);

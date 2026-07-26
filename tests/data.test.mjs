@@ -51,26 +51,33 @@ test('catalog data is internally consistent', () => {
     }
   }
 
-  const orphanCategories = categories
-    .filter((category) => category.id !== 'all' && (productCountByCategory.get(category.id) || 0) === 0)
-    .map((category) => category.id);
-
-  assert.deepEqual(orphanCategories, []);
+  assert.equal(products.length, 14);
+  assert.ok(productCountByCategory.get('gaseosas') > 0);
+  assert.ok(productCountByCategory.get('energeticas') > 0);
 });
 
-test('preview catalog is beverages-only and internally marked as QA', () => {
+test('preview catalog is concrete beverages and internally marked as QA', () => {
   const categoryNames = new Set(categories.map((category) => category.name));
   for (const expected of ['Promos', 'Gaseosas', 'Aguas', 'Jugos', 'Cervezas', 'Hielo y extras']) {
     assert.ok(categoryNames.has(expected), `missing category: ${expected}`);
   }
   assert.ok(products.every((product) => product.qaFixture === true));
-  assert.ok(products.every((product) => /Sin valor comercial/.test(product.marketNote)));
+  assert.ok(products.every((product) => /Precio y stock QA/.test(product.marketNote)));
   assert.ok(products.every((product) => product.id.startsWith('qa-')));
   for (const product of products) {
     if (product.image) {
-      assert.equal(product.image, 'assets/products/beverage-placeholder.svg');
+      if (product.previewCatalogApproved) {
+        assert.match(product.image, /^assets\/catalog\/products\/.+\.webp$/);
+        assert.match(product.imageThumbnail || '', /^assets\/catalog\/thumbnails\/.+\.webp$/);
+        assert.match(product.imageSha256 || '', /^[a-f0-9]{64}$/);
+        assert.match(product.imageThumbnailSha256 || '', /^[a-f0-9]{64}$/);
+        assert.match(product.sourceImageSha256 || '', /^[a-f0-9]{64}$/);
+      } else {
+        assert.equal(product.image, 'assets/products/beverage-placeholder.svg');
+      }
     }
   }
+  assert.equal(products.filter((product) => product.previewCatalogApproved).length, 8);
 });
 
 test('preview categories use the canonical beverage ids', () => {

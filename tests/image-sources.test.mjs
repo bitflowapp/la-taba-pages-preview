@@ -32,6 +32,8 @@ test('tracked storefront assets contain no legacy food WebP and match the manife
   const candidates = [
     path.join(root, 'assets/hero'),
     path.join(root, 'assets/products'),
+    path.join(root, 'assets/catalog/products'),
+    path.join(root, 'assets/catalog/thumbnails'),
   ];
   const webps = candidates.flatMap((directory) => (
     fs.existsSync(directory)
@@ -55,7 +57,7 @@ test('tracked storefront assets contain no legacy food WebP and match the manife
   assert.deepEqual(webps, manifested);
 });
 
-test('commercial image audit and manifest start explicit and empty', () => {
+test('commercial image audit and manifest are explicit and traceable', () => {
   const audit = fs.readFileSync(
     path.join(root, 'docs/catalog/image-source-audit.csv'),
     'utf8',
@@ -76,5 +78,5 @@ test('commercial image audit and manifest start explicit and empty', () => {
     'utf8',
   ));
   assert.equal(manifest.schemaVersion, 1);
-  assert.deepEqual(manifest.sources, []);
+  assert.equal(manifest.sources.length, 8);
 });

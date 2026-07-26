@@ -13,15 +13,9 @@ test('la home presenta TABA sin etiquetas internas y un storefront comercial lim
     ['promos', 'Promos'],
     ['gaseosas', 'Gaseosas'],
     ['aguas', 'Aguas'],
-    ['jugos', 'Jugos'],
     ['energeticas', 'Energéticas'],
-    ['isotonicas', 'Isotónicas'],
     ['cervezas', 'Cervezas'],
-    ['vinos-y-espumantes', 'Vinos y espumantes'],
     ['gins-y-vodkas', 'Gins y vodkas'],
-    ['whisky-y-destilados', 'Whisky y destilados'],
-    ['picadas-y-deli', 'Picadas y deli'],
-    ['hielo-y-extras', 'Hielo y extras'],
   ];
   const homeCategories = page.locator('[data-view="home"] .category-tiles .category-button');
   await expect(homeCategories).toHaveCount(realCategories.length);

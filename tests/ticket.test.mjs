@@ -26,7 +26,7 @@ test('buildKitchenTicket incluye los datos clave para preparar el pedido', () =>
   assert.match(ticket, /2995550000/);
   assert.match(ticket, /Roca 321, Centro/);
   assert.match(ticket, /Porton negro/);
-  assert.match(ticket, /2 x Gaseosa cola/);
+  assert.match(ticket, /2 x Sprite 1,5 L x6/);
   assert.match(ticket, /TOTAL:/);
   assert.match(ticket, /Sin sal/);
 });

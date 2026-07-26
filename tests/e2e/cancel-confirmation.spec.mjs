@@ -41,8 +41,8 @@ async function seedAndOpenBusiness(page, state) {
     localStorage.setItem('la_taba_mvp_v4_state', JSON.stringify(saved));
   }, state);
   await page.goto('/?demo=1');
-  await page.locator('.mobile-nav [data-nav-view="profile"]').click();
-  await page.locator('[data-view="profile"] [data-open-admin-view="business"]').click();
+  await page.evaluate(() => { window.location.hash = '#business'; });
+  await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
@@ -56,6 +56,8 @@ test('rechazar pedido: el primer tap no cancela, "Volver" no cancela y confirmar
 
   const orderCard = page.locator('.inbox-order[data-inbox-order="LT-0002"]');
   await expect(orderCard).toBeVisible();
+  await orderCard.locator('.inbox-card-details > summary').click();
+  await expect(orderCard.locator('.inbox-card-details')).toHaveAttribute('open', '');
 
   const modal = page.locator('[data-cancel-modal]');
 
@@ -108,6 +110,8 @@ test('rechazar un pedido en reparto muestra un aviso reforzado antes de cancelar
 
   const orderCard = page.locator('.inbox-order[data-inbox-order="LT-0002"]');
   await expect(orderCard).toBeVisible();
+  await orderCard.locator('.inbox-card-details > summary').click();
+  await expect(orderCard.locator('.inbox-card-details')).toHaveAttribute('open', '');
   await orderCard.locator('[data-order-cancel]').click();
 
   const modal = page.locator('[data-cancel-modal]');

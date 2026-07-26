@@ -28,7 +28,7 @@ Si el celu muestra una versión vieja en caché, cambiá el final del link
 
 - **Mostrar** la demo funcionando.
 - **Escuchar** qué le sirve, qué ajustaría, qué sacaría y qué agregaría.
-- **Validar** si conviene adaptarla a su pizzería, su mercadito o ambos.
+- **Validar** si el flujo encaja con su tienda de bebidas y su operación real.
 
 Hoy **no se vende**, no se cierra precio, no se prometen fechas.
 
@@ -88,7 +88,7 @@ Anotar las respuestas **literales**: son la base del próximo paso.
 
 - ¿Qué de esto te **sirve** y qué **sacarías**?
 - ¿Qué **cambiarías** para que funcione en tu negocio?
-- ¿Lo ves más para **pizzería, mercadito o ambos**?
+- ¿Qué categorías de bebidas tienen más rotación?
 - ¿Cómo **recibís los pedidos hoy**?
 - ¿Quién **mira el WhatsApp**?
 - ¿Tenés **delivery propio** o tercerizás?
@@ -101,7 +101,7 @@ Anotar las respuestas **literales**: son la base del próximo paso.
 - "Es un **canal propio de pedidos** para tu local."
 - "Es una **demo funcional**, no una maqueta."
 - "Tiene una **Central de pedidos** para ordenar la operación."
-- "Es **adaptable a tu comercio** (pizzería o mercadito)."
+- "Es **adaptable a tu tienda de bebidas** y a su operación."
 - "Es **tu canal propio**: el pedido entra directo a tu local, sin comisión por pedido de una app de terceros."
 - "**Primero validamos si encaja con tu forma real de trabajar**, después vemos cómo seguir."
 
@@ -173,7 +173,7 @@ https://wieldiest-etha-unrippable.ngrok-free.dev/?relay=https%3A%2F%2Fwieldiest-
 
 - Volcar las respuestas en `phase-2/walter-discovery-questions.md`.
 - Marcar qué ajustes pidió y cuáles son **chicos vs. grandes**.
-- Decidir si conviene una **versión adaptada** (pizzería / mercadito).
+- Decidir qué ajustes necesita la **versión comercial de bebidas**.
 
 ---
 

@@ -101,6 +101,20 @@ test('2 · normalizeBusinessConfig sanea tipos inválidos y rellena faltantes co
   assert.deepEqual(ok.mapProvider, def.mapProvider);
 });
 
+test('un contacto explícitamente vacío revoca el número anterior en memoria', () => {
+  const def = buildDefaultBusinessConfig();
+  const withContact = mergeBusinessConfig(def, {
+    whatsappNumber: '5492995551234',
+    whatsappVerified: true,
+  });
+  const revoked = mergeBusinessConfig(withContact, {
+    whatsappNumber: '',
+    whatsappVerified: false,
+  });
+  assert.equal(revoked.whatsappNumber, '');
+  assert.equal(revoked.whatsappVerified, false);
+});
+
 test('3 · estado viejo sin businessConfig hidrata con el default', () => {
   const hydrated = hydrateState({ activeCategory: 'all', cart: [] });
   assert.deepEqual(hydrated.businessConfig, buildDefaultBusinessConfig());
@@ -115,7 +129,7 @@ test('4 · la migración conserva orders/products/cart', () => {
       id: 'LT-0001',
       deliveryMode: 'delivery',
       status: 'received',
-      items: [{ productId: 'qa-jugo-naranja', name: 'Matambre', quantity: 1, unitPrice: 9000, unit: 'kg' }],
+      items: [{ productId: 'qa-jugo-naranja', name: 'Jugo QA', quantity: 1, unitPrice: 9000, unit: 'unidad' }],
     }],
   });
   assert.ok(hydrated.orders.some((order) => order.id === 'LT-0001'), 'conserva el pedido');
@@ -214,7 +228,7 @@ test('10 · el config store no inventa rider/GPS: el tracking honesto sigue inta
     id: 'LT-7777',
     deliveryMode: 'delivery',
     status: 'on_the_way',
-    items: [{ productId: 'qa-jugo-naranja', name: 'Matambre', quantity: 1, unitPrice: 9000, unit: 'kg' }],
+    items: [{ productId: 'qa-jugo-naranja', name: 'Jugo QA', quantity: 1, unitPrice: 9000, unit: 'unidad' }],
   });
   assert.equal(stored.delivery.driverName, 'Sin asignar');
   assert.equal(stored.delivery.driverPhone, '');

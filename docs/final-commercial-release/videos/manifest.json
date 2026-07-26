@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-07-26T04:27:14.055Z",
+  "artifacts": [
+    {
+      "file": "videos/customer-flow.webm",
+      "bytes": 473455,
+      "sha256": "be2727447387221d80498df397ed69ecd4aadea870e232ef303f7ed5e28d1506"
+    },
+    {
+      "file": "videos/tracking-flow.webm",
+      "bytes": 1269218,
+      "sha256": "1da9fc94122cbcfc12f309574755ff86a5ff2715ded657673fc6ff31456ff8c0"
+    },
+    {
+      "file": "videos/business-rider-delivery.webm",
+      "bytes": 1529532,
+      "sha256": "8a1a7834403317ae6c57875d5b11bb6869b64ff10c3959442b46a3fe52fc6719"
+    }
+  ]
+}

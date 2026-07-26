@@ -313,12 +313,8 @@ function normalizeOrder(order) {
   const hasStoredDeliveryCode = order.deliveryCode !== undefined
     && order.deliveryCode !== null
     && order.deliveryCode !== '';
-  const canSeedDeliveryCode = deliveryMode === 'delivery'
-    && !order.previewOnly
-    && status !== 'delivered'
-    && status !== 'cancelled';
-  const deliveryCode = deliveryMode === 'delivery' && (hasStoredDeliveryCode || canSeedDeliveryCode)
-    ? normalizeDeliveryCode(order.deliveryCode, { seed: canSeedDeliveryCode ? id : '' })
+  const deliveryCode = deliveryMode === 'delivery' && hasStoredDeliveryCode
+    ? normalizeDeliveryCode(order.deliveryCode)
     : null;
   const addressDetails = deliveryMode === 'pickup'
     ? null

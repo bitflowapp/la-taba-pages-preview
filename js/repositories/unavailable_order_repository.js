@@ -19,6 +19,15 @@ export function createUnavailableOrderRepository({ message = DEFAULT_MESSAGE } =
     },
     updateOrderStatus: unavailable,
     assignRider: unavailable,
+    listActiveRiders() {
+      return repositoryResult(false, { riders: [], message });
+    },
+    listAvailableRiderOrders() {
+      return repositoryResult(false, { orders: [], message });
+    },
+    claimRiderOrder: unavailable,
+    reassignRider: unavailable,
+    confirmDelivery: unavailable,
     updateRiderLocation: unavailable,
     subscribeToOrder(_orderId, callback) {
       if (typeof callback === 'function') callback(null);

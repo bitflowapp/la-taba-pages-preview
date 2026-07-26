@@ -62,7 +62,8 @@ test('el modo demo no ofrece GPS ni simula movimiento', async ({ page }) => {
   await page.goto('/?demo=1');
   await createDeliveryOrder(page);
 
-  await page.locator('[data-admin-toggle]').click();
+  await page.evaluate(() => { window.location.hash = '#business'; });
+  await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await page.locator('[data-order-advance="LT-0002"]').click();
@@ -72,7 +73,9 @@ test('el modo demo no ofrece GPS ni simula movimiento', async ({ page }) => {
   // Sin compartir GPS el rider no ve mapa (no hay ubicación real).
   await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
 
-  await expect(page.locator('[data-delivery-panel]')).toContainText('Avanzá la entrega con los botones de estado.');
+  await expect(page.locator('[data-rider-assignment-preview="LT-0002"]')).toBeVisible();
+  await page.locator('[data-rider-accept="LT-0002"]').click();
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Entrega aceptada.');
   await expect(page.locator('[data-delivery-panel] [data-sim-gps], [data-delivery-panel] [data-sim-gps-off]')).toHaveCount(0);
   await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
 });
@@ -98,9 +101,14 @@ test('abandono de rider y pagehide cortan el watchPosition local', async ({ page
 
   await page.goto('/?demo=1');
   await createDeliveryOrder(page);
-  await page.evaluate(() => {
-    window.location.hash = '#rider';
-  });
+  await page.goto('/?demo=1#business');
+  await page.locator('[data-open-pin][data-admin-target="business"]').click();
+  await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
+  await page.locator('[data-pin-form]').press('Enter');
+  await page.locator('[data-order-advance="LT-0002"]').click();
+  await page.locator('[data-order-advance="LT-0002"]').click();
+  await page.getByRole('button', { name: 'Abrir reparto' }).click();
+  await page.locator('[data-rider-accept="LT-0002"]').click();
   await expect(page.locator('[data-view="rider"]')).toBeVisible();
 
   const firstStart = await page.evaluate(async () => {

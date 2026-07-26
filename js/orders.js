@@ -125,7 +125,7 @@ export function createOrderFromCheckout(formValues = {}) {
       // No inventamos nombre/teléfono de rider (eso confunde al cliente).
       driverName: 'Sin asignar',
       driverPhone: '',
-      estimatedMinutes: values.deliveryMode === 'pickup' ? 0 : 25,
+      estimatedMinutes: 0,
       estimatedPreparationMinutes: 0,
       currentLocationLabel: values.deliveryMode === 'pickup' ? 'Pedido para retirar en local' : 'Pedido recibido por el local',
     },
@@ -159,7 +159,7 @@ export function createOrderFromCheckout(formValues = {}) {
   return {
     ok: true,
     order,
-    message: values.previewOnly ? 'Pedido de muestra creado.' : `Pedido ${order.id} creado.`,
+    message: `Pedido ${order.id} confirmado.`,
   };
 }
 
@@ -333,7 +333,7 @@ export function confirmDeliveryCode(orderId, code, {
     return { ok: false, message: 'El pedido ya no admite validación de código.' };
   }
 
-  const current = normalizeDeliveryCode(order.deliveryCode, { seed: order.id });
+  const current = normalizeDeliveryCode(order.deliveryCode);
   if (current?.confirmedAt) {
     return { ok: false, message: 'El código ya fue validado.' };
   }
@@ -414,22 +414,16 @@ export function updateOrderStatus(orderId, status, options = {}) {
       order.delivery.acceptedAt = order.delivery.acceptedAt || now;
       order.delivery.estimatedPreparationMinutes = estimatedPreparationMinutes;
       order.delivery.currentLocationLabel = `Pedido aceptado por el negocio. Preparación estimada: ${estimatedPreparationMinutes} min`;
-      if (order.deliveryMode === 'delivery') {
-        order.delivery.estimatedMinutes = Math.max(estimatedPreparationMinutes, Number(order.delivery.estimatedMinutes || 0));
-      }
     }
     if (status === 'ready') {
       order.delivery.currentLocationLabel = 'Pedido listo en el local';
-      if (order.deliveryMode === 'delivery') order.delivery.estimatedMinutes = Math.max(18, order.delivery.estimatedMinutes || 25);
     }
     if (status === 'on_the_way') {
       order.delivery.leftStoreAt = now;
       order.delivery.currentLocationLabel = 'El repartidor salió del local';
-      order.delivery.estimatedMinutes = Math.max(8, Number(order.delivery.estimatedMinutes || 20) - 6);
     }
     if (status === 'arriving') {
       order.delivery.currentLocationLabel = 'El repartidor está llegando';
-      order.delivery.estimatedMinutes = Math.min(5, Math.max(1, Number(order.delivery.estimatedMinutes || 5)));
     }
     if (status === 'delivered') {
       order.delivery.deliveredAt = now;

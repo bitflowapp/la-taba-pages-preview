@@ -17,6 +17,7 @@ const BUSINESS_ID = '11111111-1111-4111-8111-111111111111';
 const PRODUCT_ID = '22222222-2222-4222-8222-222222222222';
 const CUSTOMER_ID = '44444444-4444-4444-8444-444444444444';
 const RIDER_ID = '55555555-5555-4555-8555-555555555555';
+const SECOND_RIDER_ID = '88888888-8888-4888-8888-888888888888';
 
 const LOCAL_PRODUCT = {
   id: PRODUCT_ID,
@@ -78,6 +79,55 @@ test('aplica sólo modalidades verificadas por el comercio', async () => {
   assert.equal(getBusinessConfig().deliveryEnabled, false);
   assert.equal(getBusinessConfig().pickupEnabled, true);
   assert.equal(isProductionCatalogReady(), true);
+});
+
+test('habilita contacto productivo sólo con número válido y autoridad verificada', async () => {
+  const verifiedMock = createSupabaseClientMock({
+    businessOverrides: {
+      whatsapp_phone: '5492995551234',
+      whatsapp_verified: true,
+    },
+  });
+  const verified = makeRepository(verifiedMock);
+  await verified.loadBusinessConfiguration();
+  assert.equal(getBusinessConfig().whatsappNumber, '5492995551234');
+  assert.equal(getBusinessConfig().whatsappVerified, true);
+  assert.doesNotMatch(
+    verifiedMock.calls.from.find((call) => call.table === 'businesses')?.columns || '',
+    /whatsapp/i,
+  );
+  assert.ok(
+    verifiedMock.calls.rpc.some((call) => call.name === 'get_public_business_contact'),
+  );
+
+  const unverified = makeRepository(createSupabaseClientMock({
+    businessOverrides: {
+      whatsapp_phone: '5492995551234',
+      whatsapp_verified: false,
+    },
+  }));
+  await unverified.loadBusinessConfiguration();
+  assert.equal(getBusinessConfig().whatsappVerified, false);
+
+  const malformed = makeRepository(createSupabaseClientMock({
+    businessOverrides: {
+      whatsapp_phone: '123',
+      whatsapp_verified: true,
+    },
+  }));
+  await malformed.loadBusinessConfiguration();
+  assert.equal(getBusinessConfig().whatsappVerified, false);
+
+  const unavailable = makeRepository(createSupabaseClientMock({
+    publicContactRpcError: true,
+    businessOverrides: {
+      whatsapp_phone: '5492995551234',
+      whatsapp_verified: true,
+    },
+  }));
+  await unavailable.loadBusinessConfiguration();
+  assert.equal(getBusinessConfig().whatsappNumber, '');
+  assert.equal(getBusinessConfig().whatsappVerified, false);
 });
 
 test('crea con intención mínima y acepta sólo importes e IDs del servidor', async () => {
@@ -183,11 +233,11 @@ test('cambia estados sólo por RPC con compare-and-swap', async () => {
   assert.equal(mock.calls.from.some((call) => call.action === 'update'), false);
 });
 
-test('falla cerrado al asignar rider y publica sólo GPS del rider asignado', async () => {
+test('asigna rider con CAS y publica GPS sólo por las RPC autorizadas', async () => {
   const mock = createSupabaseClientMock({ userId: RIDER_ID });
   const row = mock.seedOrder({
-    status: 'on_the_way',
-    assigned_rider_user_id: RIDER_ID,
+    status: 'ready',
+    assigned_rider_user_id: null,
   });
   const repository = makeRepository(mock);
 
@@ -208,15 +258,138 @@ test('falla cerrado al asignar rider y publica sólo GPS del rider asignado', as
     timestamp: Date.now(),
   });
 
-  assert.equal(assignment.ok, false);
-  assert.match(assignment.message, /RPC autorizada/i);
+  assert.equal(assignment.ok, true);
+  const assignCall = mock.calls.rpc.find((call) => call.name === 'assign_order_rider');
+  assert.deepEqual(assignCall.args, {
+    p_order_id: row.id,
+    p_expected_status: 'ready',
+    p_expected_rider_user_id: null,
+    p_new_rider_user_id: RIDER_ID,
+  });
   assert.equal(simulation.ok, false);
   assert.match(simulation.message, /GPS real/i);
   assert.equal(gps.ok, true);
   assert.equal(mock.db.locations.length, 1);
   assert.equal(mock.db.locations[0].source, 'gps');
   assert.equal(mock.db.locations[0].rider_user_id, RIDER_ID);
-  assert.equal(Object.hasOwn(mock.db.locations[0], 'created_at'), false);
+  assert.equal(typeof mock.db.locations[0].created_at, 'string');
+  const gpsCall = mock.calls.rpc.find((call) => call.name === 'publish_rider_location');
+  assert.equal(gpsCall.args.p_order_id, row.id);
+  assert.equal(gpsCall.args.p_accuracy, 8);
+  assert.equal(mock.calls.from.some(
+    (call) => call.table === 'rider_locations' && call.action === 'insert',
+  ), false);
+});
+
+test('lista un directorio minimo de riders activos para asignacion de negocio', async () => {
+  const mock = createSupabaseClientMock();
+  const repository = makeRepository(mock);
+
+  const result = await repository.listActiveRiders();
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.riders, [
+    { id: RIDER_ID, displayName: 'Rider Norte' },
+    { id: SECOND_RIDER_ID, displayName: 'Rider Sur' },
+  ]);
+  assert.deepEqual(
+    mock.calls.rpc.find((call) => call.name === 'list_active_business_riders').args,
+    { p_business_id: BUSINESS_ID },
+  );
+  assert.equal(Object.hasOwn(result.riders[0], 'email'), false);
+  assert.equal(Object.hasOwn(result.riders[0], 'phone'), false);
+});
+
+test('lista una cola minimizada y el claim concurrente tiene un solo ganador', async () => {
+  const mock = createSupabaseClientMock({ userId: RIDER_ID });
+  const row = mock.seedOrder({
+    status: 'ready',
+    assigned_rider_user_id: null,
+  });
+  const repository = makeRepository(mock);
+
+  const queue = await repository.listAvailableRiderOrders();
+  const first = await repository.claimRiderOrder(row.public_code);
+  const second = await repository.claimRiderOrder(row.public_code);
+
+  assert.equal(queue.ok, true);
+  assert.deepEqual(queue.orders, [{
+    publicCode: row.public_code,
+    generalZone: 'Centro',
+    pickupBranch: 'Dirección verificada',
+    approximatePackages: 1,
+    paymentMethod: 'cash',
+    collectionAmount: row.total,
+    estimatedMinutes: null,
+    operationalRestrictions: '',
+    expectedStatus: 'ready',
+    expectedRiderId: null,
+  }]);
+  assert.equal(first.ok, true);
+  assert.equal(first.order.assignedRiderId, RIDER_ID);
+  assert.equal(second.ok, false);
+  assert.equal(second.errorCode, '40001');
+  assert.match(second.message, /otro dispositivo/i);
+  assert.equal(mock.calls.rpc.filter(
+    (call) => call.name === 'claim_available_rider_order',
+  ).length, 2);
+});
+
+test('reasigna rider comparando estado y rider actuales', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'assigned',
+    assigned_rider_user_id: RIDER_ID,
+  });
+  const repository = makeRepository(mock);
+
+  const result = await repository.reassignRider(row.public_code, SECOND_RIDER_ID);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.order.assignedRiderId, SECOND_RIDER_ID);
+  assert.deepEqual(
+    mock.calls.rpc.find((call) => call.name === 'assign_order_rider').args,
+    {
+      p_order_id: row.id,
+      p_expected_status: 'assigned',
+      p_expected_rider_user_id: RIDER_ID,
+      p_new_rider_user_id: SECOND_RIDER_ID,
+    },
+  );
+});
+
+test('confirma la entrega con código sin devolver datos sensibles al rider', async () => {
+  const mock = createSupabaseClientMock({ userId: RIDER_ID });
+  const row = mock.seedOrder({
+    status: 'arrived',
+    assigned_rider_user_id: RIDER_ID,
+  });
+  mock.db.handoffs.set(row.id, {
+    code: '4821',
+    failedAttempts: 0,
+    lockedUntil: null,
+    confirmedAt: null,
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  });
+  const repository = makeRepository(mock);
+  await repository.listOrders();
+
+  const mismatch = await repository.confirmDelivery(row.public_code, '1111');
+  const confirmed = await repository.confirmDelivery(row.public_code, '4821');
+  const retried = await repository.confirmDelivery(row.public_code, '4821');
+
+  assert.equal(mismatch.ok, false);
+  assert.equal(mismatch.code, 'MISMATCH');
+  assert.equal(confirmed.ok, true);
+  assert.equal(confirmed.order, null);
+  assert.equal(confirmed.publicCode, row.public_code);
+  assert.equal(confirmed.status, 'delivered');
+  assert.equal(retried.ok, true);
+  assert.equal(retried.status, 'delivered');
+  assert.equal(mock.db.orders[0].status, 'delivered');
+  assert.equal(mock.calls.rpc.filter(
+    (call) => call.name === 'confirm_order_delivery',
+  ).length, 3);
 });
 
 test('carga catálogo remoto verificado con campos maestros de bebidas', async () => {
@@ -231,31 +404,126 @@ test('carga catálogo remoto verificado con campos maestros de bebidas', async (
   assert.deepEqual(
     Object.fromEntries([
       'id',
+      'externalId',
+      'sku',
       'brand',
       'categoryId',
       'categoryName',
+      'variant',
       'presentation',
+      'capacityValue',
+      'capacityUnit',
       'capacity',
       'packagingType',
+      'unitsPerPack',
+      'chilled',
       'price',
       'stock',
       'alcoholic',
+      'minimumAge',
+      'imageThumbnail',
     ].map((key) => [key, result.products[0][key]])),
     {
       id: PRODUCT_ID,
+      externalId: 'agua-mineral-15',
+      sku: 'AGUA-MINERAL-15',
       brand: 'Marca verificada',
       categoryId: 'aguas',
       categoryName: 'Aguas',
+      variant: 'Botella',
       presentation: 'Botella',
-      capacity: '1,5 L',
+      capacityValue: 1.5,
+      capacityUnit: 'l',
+      capacity: '1.5 l',
       packagingType: 'PET',
+      unitsPerPack: 1,
+      chilled: true,
       price: 2300,
       stock: 8,
       alcoholic: false,
+      minimumAge: null,
+      imageThumbnail: 'assets/products/agua-mineral-thumb-cccccccccccc.webp',
     },
   );
   assert.equal(repository.getCatalogStatus().state, 'ready');
   assert.equal(isProductionCatalogReady(), true);
+});
+
+test('el sync productivo recupera el código de entrega con el token público', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'arrived',
+    assigned_rider_user_id: RIDER_ID,
+    arrived_at: minutesAgoIso(1),
+  });
+  mock.db.handoffs.set(row.id, {
+    code: '4821',
+    failedAttempts: 0,
+    lockedUntil: null,
+    confirmedAt: null,
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  });
+  const storage = createStorage();
+  storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'A'.repeat(43),
+  }));
+  const repository = makeRepository(mock, {
+    storage,
+    pollMs: 1000,
+    createTrackingClient: () => mock.client,
+  });
+
+  const stop = repository.startSync();
+  try {
+    await flushTasks();
+    const current = getState().orders.find((order) => order.id === row.public_code);
+    assert.equal(current.deliveryCode.code, '4821');
+    assert.equal(mock.calls.rpc.some(
+      (call) => call.name === 'get_public_order_tracking',
+    ), true);
+    const initialTrackingCalls = mock.calls.rpc.filter(
+      (call) => call.name === 'get_public_order_tracking',
+    ).length;
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    assert.ok(
+      mock.calls.rpc.filter((call) => call.name === 'get_public_order_tracking').length
+        > initialTrackingCalls,
+      'customer tracking must keep polling the minimized DTO after Realtime subscribes',
+    );
+  } finally {
+    stop();
+  }
+});
+
+test('una pestaña nueva rota credenciales y recupera el handoff del cliente autenticado', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'arrived',
+    assigned_rider_user_id: RIDER_ID,
+    arrived_at: minutesAgoIso(1),
+  });
+  const storage = createStorage();
+  const repository = makeRepository(mock, {
+    storage,
+    pollMs: 1000,
+    createTrackingClient: () => mock.client,
+  });
+
+  const stop = repository.startSync();
+  try {
+    await flushTasks();
+    const current = getState().orders.find((order) => order.id === row.public_code);
+    const access = JSON.parse(storage.getItem(`taba-order-access-v1:${BUSINESS_ID}:last`));
+    assert.equal(current.deliveryCode.code, '7392');
+    assert.match(access.trackingToken, /^[A-Za-z0-9_-]{32,256}$/);
+    assert.equal(mock.calls.rpc.some(
+      (call) => call.name === 'recover_order_tracking_access',
+    ), true);
+  } finally {
+    stop();
+  }
 });
 
 test('tracking con token público mantiene polling y no abre un canal WebSocket sin credenciales', async () => {
@@ -307,18 +575,20 @@ test('tracking público normaliza el DTO mínimo y preserva los detalles locales
   const before = getState().orders.find((order) => order.id === created.order.id);
   const row = mock.db.orders[0];
   row.status = 'on_the_way';
-  row.accepted_at = '2026-07-25T12:01:00.000Z';
-  row.preparing_at = '2026-07-25T12:05:00.000Z';
-  row.ready_at = '2026-07-25T12:12:00.000Z';
-  row.dispatched_at = '2026-07-25T12:15:00.000Z';
+  row.assigned_rider_user_id = RIDER_ID;
+  row.accepted_at = minutesAgoIso(12);
+  row.preparing_at = minutesAgoIso(9);
+  row.ready_at = minutesAgoIso(6);
+  row.dispatched_at = minutesAgoIso(2);
   mock.db.locations.push({
     id: 'location-public-1',
     order_id: row.id,
+    rider_user_id: RIDER_ID,
     lat: -38.951,
     lng: -68.061,
     accuracy: 100,
     source: 'gps',
-    created_at: '2026-07-25T12:16:00.000Z',
+    created_at: minutesAgoIso(1),
   });
   const snapshots = [];
 
@@ -363,19 +633,21 @@ test('tracking público crea un shell sin PII cuando no hay copia local', async 
   });
   const row = mock.seedOrder({
     status: 'on_the_way',
-    accepted_at: '2026-07-25T12:01:00.000Z',
-    preparing_at: '2026-07-25T12:05:00.000Z',
-    ready_at: '2026-07-25T12:12:00.000Z',
-    dispatched_at: '2026-07-25T12:15:00.000Z',
+    assigned_rider_user_id: RIDER_ID,
+    accepted_at: minutesAgoIso(12),
+    preparing_at: minutesAgoIso(9),
+    ready_at: minutesAgoIso(6),
+    dispatched_at: minutesAgoIso(2),
   });
   mock.db.locations.push({
     id: 'location-public-2',
     order_id: row.id,
+    rider_user_id: RIDER_ID,
     lat: -38.952,
     lng: -68.062,
     accuracy: 100,
     source: 'gps',
-    created_at: '2026-07-25T12:16:00.000Z',
+    created_at: minutesAgoIso(1),
   });
   const storage = createStorage();
   storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
@@ -404,10 +676,61 @@ test('tracking público crea un shell sin PII cuando no hay copia local', async 
     assert.deepEqual(shell.items, []);
     assert.equal(shell.customerName, 'Cliente');
     assert.equal(shell.customerPhone, '');
+    assert.equal(shell.delivery.estimatedMinutes, 0);
     assert.equal(snapshot.status, 'on_the_way');
     assert.equal(snapshot.customer.phone, '');
     assert.equal(snapshot.tracking.lastLocation.source, 'gps');
     assert.doesNotMatch(serialized, /No debe filtrarse|2995999999|Dirección privada|999999|Producto privado/);
+  } finally {
+    stop();
+  }
+});
+
+test('tracking público descarta GPS vencido y acepta ETA sólo con metadata confiable', async () => {
+  const now = Date.now();
+  const mock = createSupabaseClientMock({
+    publicTrackingOverrides: {
+      estimated_minutes: 999,
+      estimated_arrival_at: new Date(now + 20 * 60 * 1000).toISOString(),
+      estimated_arrival_source: 'routing',
+      estimated_arrival_updated_at: new Date(now).toISOString(),
+      rider_location: {
+        lat: -38.952,
+        lng: -68.062,
+        accuracy: 30,
+        source: 'gps',
+        created_at: new Date(now - 4 * 60 * 1000).toISOString(),
+      },
+    },
+  });
+  const row = mock.seedOrder({
+    status: 'on_the_way',
+    assigned_rider_user_id: RIDER_ID,
+  });
+  const storage = createStorage();
+  storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'B'.repeat(43),
+  }));
+  const repository = makeRepository(mock, {
+    storage,
+    createTrackingClient: () => mock.client,
+  });
+  const snapshots = [];
+
+  const stop = repository.subscribeToOrder(
+    row.public_code,
+    (order) => snapshots.push(order),
+  );
+  try {
+    await flushTasks();
+    const snapshot = snapshots.at(-1);
+    const shell = getState().orders.find((order) => order.id === row.public_code);
+
+    assert.equal(snapshot.tracking.lastLocation, null);
+    assert.ok(shell.delivery.estimatedMinutes >= 19);
+    assert.ok(shell.delivery.estimatedMinutes <= 20);
   } finally {
     stop();
   }
@@ -473,6 +796,7 @@ function createSupabaseClientMock({
   userId = CUSTOMER_ID,
   businessOverrides = {},
   publicTrackingOverrides = {},
+  publicContactRpcError = false,
 } = {}) {
   const db = {
     businesses: [{
@@ -480,6 +804,7 @@ function createSupabaseClientMock({
       name: 'TABA',
       address: 'Dirección verificada',
       whatsapp_phone: '',
+      whatsapp_verified: false,
       currency_code: 'ARS',
       ordering_enabled: true,
       ordering_verified: true,
@@ -494,19 +819,31 @@ function createSupabaseClientMock({
     products: [{
       id: PRODUCT_ID,
       business_id: BUSINESS_ID,
+      external_id: 'agua-mineral-15',
+      sku: 'AGUA-MINERAL-15',
       name: 'Agua mineral 1,5 L',
       brand: 'Marca verificada',
       description: 'Sin gas',
       category: 'Aguas',
       subcategory: 'Sin gas',
+      variant: 'Botella',
       presentation: 'Botella',
-      capacity: '1,5 L',
+      capacity_value: 1.5,
+      capacity_unit: 'l',
+      capacity: '1.5 l',
       packaging_type: 'PET',
+      units_per_pack: 1,
       price: 2300,
       stock: 8,
       available: true,
+      chilled: true,
       is_alcoholic: false,
-      image_url: '',
+      minimum_age: null,
+      image_url: 'assets/products/agua-mineral-bbbbbbbbbbbb.webp',
+      image_sha256: 'b'.repeat(64),
+      image_thumbnail_url: 'assets/products/agua-mineral-thumb-cccccccccccc.webp',
+      image_thumbnail_sha256: 'c'.repeat(64),
+      source_image_sha256: 'a'.repeat(64),
       tags: ['popular'],
       sort_order: 1,
       is_active: true,
@@ -524,6 +861,7 @@ function createSupabaseClientMock({
     }],
     orders: [],
     locations: [],
+    handoffs: new Map(),
   };
   const calls = { from: [], rpc: [], removeChannel: 0 };
   const channels = [];
@@ -556,6 +894,30 @@ function createSupabaseClientMock({
     },
     async rpc(name, args) {
       calls.rpc.push({ name, args });
+      if (name === 'get_public_business_contact') {
+        if (publicContactRpcError) {
+          return {
+            data: null,
+            error: { code: 'PGRST202', message: 'RPC unavailable' },
+            status: 404,
+          };
+        }
+        const business = db.businesses.find((row) => row.id === args.p_business_id);
+        const digits = String(business?.whatsapp_phone || '').replace(/\D/g, '');
+        const verified = Boolean(
+          business?.is_active
+          && business?.whatsapp_verified === true
+          && digits.length >= 8
+          && digits.length <= 15,
+        );
+        return {
+          data: verified
+            ? [{ whatsapp_phone: digits, whatsapp_verified: true }]
+            : [],
+          error: null,
+          status: 200,
+        };
+      }
       if (name === 'create_order_with_items') {
         createAttempts += 1;
         if (missingCreateRpc) {
@@ -578,13 +940,97 @@ function createSupabaseClientMock({
         const existing = db.orders.find(
           (row) => row.client_request_id === args.payload.client_request_id,
         );
-        if (existing) return { data: withRelations(existing, db), error: null, status: 200 };
+        if (existing) {
+          const handoff = db.handoffs.get(existing.id);
+          return {
+            data: {
+              ...withRelations(existing, db),
+              ...(handoff ? { delivery_code: handoff.code } : {}),
+            },
+            error: null,
+            status: 200,
+          };
+        }
         const row = buildOrderRow(args.payload, db.orders.length + 1, userId);
         db.orders.unshift(row);
+        let deliveryCode = '';
+        if (row.delivery_mode === 'delivery') {
+          const handoff = {
+            code: '4821',
+            failedAttempts: 0,
+            lockedUntil: null,
+            confirmedAt: null,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          };
+          db.handoffs.set(row.id, handoff);
+          deliveryCode = handoff.code;
+        }
         return {
           data: {
             ...withRelations(row, db),
             tracking_token: args.payload.tracking_token,
+            ...(deliveryCode ? { delivery_code: deliveryCode } : {}),
+          },
+          error: null,
+          status: 200,
+        };
+      }
+      if (name === 'recover_order_tracking_access') {
+        const row = db.orders.find((candidate) => candidate.id === args.p_order_id);
+        if (
+          !row
+          || row.customer_user_id !== userId
+          || row.delivery_mode !== 'delivery'
+          || ['delivered', 'canceled', 'cancelled', 'rejected'].includes(row.status)
+        ) {
+          return {
+            data: null,
+            error: { code: '42501', message: 'pedido no encontrado o acceso denegado' },
+            status: 403,
+          };
+        }
+        const handoff = {
+          code: '7392',
+          failedAttempts: 0,
+          lockedUntil: null,
+          confirmedAt: null,
+          expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        };
+        db.handoffs.set(row.id, handoff);
+        return {
+          data: {
+            ok: true,
+            public_code: row.public_code,
+            delivery_code: handoff.code,
+            token_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            code_expires_at: handoff.expiresAt,
+          },
+          error: null,
+          status: 200,
+        };
+      }
+      if (name === 'issue_order_delivery_code') {
+        const row = db.orders.find((candidate) => candidate.id === args.p_order_id);
+        if (!row || row.customer_user_id !== userId || !args.p_tracking_token) {
+          return {
+            data: null,
+            error: { code: '42501', message: 'token de seguimiento invalido' },
+            status: 403,
+          };
+        }
+        const existing = db.handoffs.get(row.id);
+        const handoff = existing || {
+          code: '4821',
+          failedAttempts: 0,
+          lockedUntil: null,
+          confirmedAt: null,
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        };
+        db.handoffs.set(row.id, handoff);
+        return {
+          data: {
+            delivery_code: handoff.code,
+            expires_at: handoff.expiresAt,
           },
           error: null,
           status: 200,
@@ -603,6 +1049,177 @@ function createSupabaseClientMock({
         row.status = args.p_new_status;
         row.updated_at = new Date().toISOString();
         return { data: withRelations(row, db), error: null, status: 200 };
+      }
+      if (name === 'list_available_rider_orders') {
+        return {
+          data: db.orders
+            .filter((row) => (
+              row.business_id === args.p_business_id
+              && row.delivery_mode === 'delivery'
+              && row.status === 'ready'
+              && !row.assigned_rider_user_id
+            ))
+            .map((row) => ({
+              public_code: row.public_code,
+              general_zone: row.customer_neighborhood || null,
+              pickup_branch: db.businesses.find(
+                (business) => business.id === row.business_id,
+              )?.address || null,
+              approximate_packages: Math.max(1, Math.ceil((row.items?.length || 1) / 3)),
+              payment_method: row.payment_method,
+              collection_amount: row.payment_method === 'cash' ? row.total : null,
+              estimated_minutes: null,
+              operational_restrictions: null,
+            })),
+          error: null,
+          status: 200,
+        };
+      }
+      if (name === 'list_active_business_riders') {
+        return {
+          data: [
+            { rider_user_id: RIDER_ID, display_name: 'Rider Norte' },
+            { rider_user_id: SECOND_RIDER_ID, display_name: 'Rider Sur' },
+          ],
+          error: null,
+          status: 200,
+        };
+      }
+      if (name === 'claim_available_rider_order') {
+        const row = db.orders.find((candidate) => (
+          candidate.business_id === args.p_business_id
+          && candidate.public_code === args.p_public_code
+        ));
+        if (
+          !row
+          || row.status !== args.p_expected_status
+          || (row.assigned_rider_user_id || null) !== (args.p_expected_rider_user_id || null)
+          || row.assigned_rider_user_id
+        ) {
+          return {
+            data: null,
+            error: { code: '40001', message: 'conflicto de asignacion' },
+            status: 409,
+          };
+        }
+        row.status = 'assigned';
+        row.assigned_rider_user_id = userId;
+        row.updated_at = new Date().toISOString();
+        return { data: withRelations(row, db), error: null, status: 200 };
+      }
+      if (name === 'assign_order_rider') {
+        const row = db.orders.find((candidate) => candidate.id === args.p_order_id);
+        if (
+          !row
+          || row.status !== args.p_expected_status
+          || (row.assigned_rider_user_id || null) !== (args.p_expected_rider_user_id || null)
+        ) {
+          return {
+            data: null,
+            error: { code: '40001', message: 'conflicto de asignacion' },
+            status: 409,
+          };
+        }
+        row.status = 'assigned';
+        row.assigned_rider_user_id = args.p_new_rider_user_id;
+        row.updated_at = new Date().toISOString();
+        return { data: withRelations(row, db), error: null, status: 200 };
+      }
+      if (name === 'confirm_order_delivery') {
+        const row = db.orders.find((candidate) => candidate.id === args.p_order_id);
+        const handoff = row ? db.handoffs.get(row.id) : null;
+        if (
+          row?.status === 'delivered'
+          && row.assigned_rider_user_id === userId
+          && handoff?.confirmedAt
+        ) {
+          return {
+            data: {
+              ok: true,
+              already_confirmed: true,
+              public_code: row.public_code,
+              status: row.status,
+              confirmed_at: handoff.confirmedAt,
+            },
+            error: null,
+            status: 200,
+          };
+        }
+        if (
+          !row
+          || row.assigned_rider_user_id !== userId
+          || row.status !== args.p_expected_status
+          || row.status !== 'arrived'
+        ) {
+          return {
+            data: null,
+            error: { code: '40001', message: 'estado concurrente o acceso denegado' },
+            status: 409,
+          };
+        }
+        if (!handoff) {
+          return {
+            data: { ok: false, code: 'CODE_UNAVAILABLE' },
+            error: null,
+            status: 200,
+          };
+        }
+        if (args.p_delivery_code !== handoff.code) {
+          handoff.failedAttempts += 1;
+          return {
+            data: {
+              ok: false,
+              code: handoff.failedAttempts >= 5 ? 'LOCKED' : 'MISMATCH',
+              remaining_attempts: Math.max(0, 5 - handoff.failedAttempts),
+            },
+            error: null,
+            status: 200,
+          };
+        }
+        const confirmedAt = new Date().toISOString();
+        handoff.confirmedAt = confirmedAt;
+        row.status = 'delivered';
+        row.delivered_at = confirmedAt;
+        row.updated_at = confirmedAt;
+        return {
+          data: {
+            ok: true,
+            public_code: row.public_code,
+            status: row.status,
+            confirmed_at: confirmedAt,
+          },
+          error: null,
+          status: 200,
+        };
+      }
+      if (name === 'publish_rider_location') {
+        const row = db.orders.find((candidate) => candidate.id === args.p_order_id);
+        if (
+          !row
+          || row.assigned_rider_user_id !== userId
+          || !['assigned', 'picked_up', 'on_the_way', 'arrived'].includes(row.status)
+        ) {
+          return {
+            data: null,
+            error: { code: '42501', message: 'pedido no asignado a este rider' },
+            status: 403,
+          };
+        }
+        const location = {
+          id: `location-${db.locations.length + 1}`,
+          order_id: row.id,
+          business_id: row.business_id,
+          rider_user_id: userId,
+          lat: args.p_lat,
+          lng: args.p_lng,
+          accuracy: args.p_accuracy,
+          heading: args.p_heading,
+          speed: args.p_speed,
+          source: 'gps',
+          created_at: new Date().toISOString(),
+        };
+        db.locations.push(location);
+        return { data: location, error: null, status: 200 };
       }
       if (name === 'get_public_order_tracking') {
         const row = db.orders.find((candidate) => (
@@ -684,7 +1301,8 @@ function createQuery({ table, db, calls }) {
   };
   calls.from.push(operation);
   const query = {
-    select() {
+    select(columns = '') {
+      operation.columns = columns;
       return this;
     },
     eq(field, value) {
@@ -814,23 +1432,43 @@ function withRelations(row, db) {
 
 function publicTrackingDto(row, db) {
   const latestLocation = db.locations
-    .filter((location) => location.order_id === row.id && location.source === 'gps')
+    .filter((location) => (
+      location.order_id === row.id
+      && location.rider_user_id === row.assigned_rider_user_id
+      && location.source === 'gps'
+      && Number(location.accuracy) <= 250
+      && Date.now() - Date.parse(location.created_at || '') <= 3 * 60 * 1000
+    ))
     .sort((a, b) => Date.parse(b.created_at || '') - Date.parse(a.created_at || ''))[0];
   const activeDelivery = ['picked_up', 'on_the_way', 'arrived'].includes(row.status);
+  const reliableEta = (
+    ['business', 'routing'].includes(row.estimated_arrival_source)
+    && Date.now() - Date.parse(row.estimated_arrival_updated_at || '') <= 15 * 60 * 1000
+    && Date.parse(row.estimated_arrival_at || '') > Date.now()
+  );
   return {
     public_code: row.public_code,
+    delivery_mode: row.delivery_mode,
     status: row.status,
     created_at: row.created_at,
+    updated_at: row.updated_at,
     accepted_at: row.accepted_at,
     preparing_at: row.preparing_at,
     ready_at: row.ready_at,
     dispatched_at: row.dispatched_at || row.picked_up_at,
     arrived_at: row.arrived_at,
     delivered_at: row.delivered_at,
+    cancelled_at: row.cancelled_at || row.canceled_at,
+    rejected_at: row.rejected_at,
     is_delivered: row.status === 'delivered',
-    estimated_minutes: ['delivered', 'canceled', 'cancelled', 'rejected'].includes(row.status)
-      ? 0
-      : 25,
+    ...(reliableEta ? {
+      estimated_arrival_at: row.estimated_arrival_at,
+      estimated_arrival_source: row.estimated_arrival_source,
+      estimated_arrival_updated_at: row.estimated_arrival_updated_at,
+      estimated_minutes: Math.ceil(
+        (Date.parse(row.estimated_arrival_at) - Date.now()) / 60000,
+      ),
+    } : {}),
     ...(activeDelivery && latestLocation ? {
       rider_location: {
         lat: latestLocation.lat,
@@ -839,6 +1477,12 @@ function publicTrackingDto(row, db) {
         source: 'gps',
         created_at: latestLocation.created_at,
       },
+    } : {}),
+    ...(row.status === 'arrived' && db.handoffs.get(row.id)?.confirmedAt == null ? {
+      delivery_code: db.handoffs.get(row.id)?.code,
+    } : {}),
+    ...(db.handoffs.get(row.id)?.confirmedAt ? {
+      delivery_code_confirmed_at: db.handoffs.get(row.id).confirmedAt,
     } : {}),
   };
 }
@@ -862,6 +1506,10 @@ function createStorage() {
       values.delete(key);
     },
   };
+}
+
+function minutesAgoIso(minutes) {
+  return new Date(Date.now() - (Number(minutes) || 0) * 60 * 1000).toISOString();
 }
 
 async function flushTasks() {

@@ -62,9 +62,10 @@ test('agregar producto desde una categoría del catálogo', async ({ page }) => 
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await waitForToast(page, /agregado al pedido/);
   await expect(page.locator('[data-cart-count]')).not.toHaveText('0');
-  await expect(page.locator('[data-floating-cart]')).toBeVisible();
-  await expect(page.locator('[data-floating-cart]')).toContainText(/Ver pedido ·/);
-  await page.locator('[data-floating-cart]').click();
+  const desktopCart = page.locator('.topbar [data-open-cart]');
+  await expect(desktopCart).toBeVisible();
+  await expect(page.locator('[data-cart-total-small]')).toContainText('$');
+  await desktopCart.click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
 
@@ -142,24 +143,28 @@ test('pedido demo no muestra rider falso, GPS, mapa ni ETA', async ({ page }) =>
   await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Pedido de muestra');
-  await expect(tracking).toContainText('no se envió al local ni se cobró nada');
+  await expect(tracking).toContainText('Pedido confirmado');
+  await expect(tracking).not.toContainText(/pedido de muestra|no se envió|presentación/i);
   await expect(tracking).toContainText('Roca 123, Neuquen centro');
   await expect(tracking).not.toContainText('Juli');
   await expect(tracking).not.toContainText('2991112233');
   await expect(tracking.locator('[data-delivery-code], .rider-pending')).toHaveCount(0);
   await expect(tracking.locator('[data-real-map], .lt-rider-marker')).toHaveCount(0);
-  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveCount(0);
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText('Seguimiento por estados, sin GPS ni ubicación en vivo.');
 
-  await page.locator('[data-admin-toggle]').click();
+  await page.evaluate(() => { window.location.hash = '#business'; });
+  await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await page.locator('[data-order-advance="LT-0002"]').click();
   await page.locator('[data-order-advance="LT-0002"]').click();
   await page.getByRole('button', { name: /Vista rider/i }).click();
   const rider = page.locator('[data-delivery-panel]');
-  await expect(rider).toContainText('Vista de reparto');
-  await expect(rider).toContainText('Avanzá la entrega con los botones de estado.');
+  await expect(rider).toContainText('Pedido listo para repartir');
+  await expect(rider.locator('[data-rider-assignment-preview="LT-0002"]')).toBeVisible();
+  await expect(rider).not.toContainText('Roca 123, Neuquen centro');
+  await rider.locator('[data-rider-accept="LT-0002"]').click();
+  await expect(rider).toContainText('Entrega aceptada.');
   await expect(rider.locator('[data-real-map], [data-sim-gps], [data-sim-gps-off]')).toHaveCount(0);
 
   await guards.assertClean();
@@ -266,7 +271,7 @@ test('flujo cliente con delivery', async ({ page }) => {
   await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-tracking-panel]')).toContainText('Dirección ingresada');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Envío a domicilio');
   await expect(page.locator('[data-tracking-panel]')).toContainText('Roca 123, Neuquen centro');
   await expect(page.locator('[data-tracking-panel]')).toContainText('Porton negro');
   const confirmedOrder = await page.evaluate(() => {
@@ -300,7 +305,7 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
   await page.goto('/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await page.locator('[data-floating-cart]').click();
 
   await fillCheckout(page, {
     name: 'Cliente Mobile',
@@ -308,7 +313,7 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
     street: 'Roca 123',
     neighborhood: 'Neuquen centro',
     reference: 'Porton negro',
-    notes: 'Sin cebolla',
+    notes: 'Entregar bien frio',
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
@@ -316,7 +321,7 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
   await expect(paymentMethod).toBeVisible();
   await expect(paymentMethod).toHaveValue('transfer');
   await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
-  await expect(page.locator('[data-checkout-mode-note]')).toContainText('Seguí el avance');
+  await expect(page.locator('[data-checkout-mode-note]')).toContainText('El medio de pago se coordina con el local.');
   await expect(page.locator('[name="couponCode"]')).toHaveCount(0);
 
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
@@ -324,12 +329,12 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Pedido de muestra');
-  await expect(tracking).toContainText('no se envió al local ni se cobró nada');
+  await expect(tracking).toContainText('Pedido confirmado');
+  await expect(tracking).not.toContainText(/pedido de muestra|no se envió|presentación/i);
   await tracking.locator('details.order-detail summary').click();
-  await expect(tracking).toContainText('PagoSin procesar');
+  await expect(tracking.locator('.summary-row').filter({ hasText: 'Pago' })).toContainText('Transferencia');
   await expect(tracking).not.toContainText('Cupón');
-  await expect(tracking).toContainText('Sin cebolla');
+  await expect(tracking).toContainText('Entregar bien frio');
 
   await page.goto('/?demo=1#business');
   await page.locator('[data-open-pin][data-admin-target="business"]').click();
@@ -337,7 +342,7 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Transferencia');
   await expect(page.locator('[data-business-dashboard]')).not.toContainText('TABA10');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Sin cebolla');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Entregar bien frio');
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   expect(overflow).toBeTruthy();
@@ -357,6 +362,7 @@ test('flujo retiro en local', async ({ page }) => {
   await page.getByLabel('Retiro en local').check();
 
   await expect(page.locator('[data-address-field]')).toBeHidden();
+  await expect(page.locator('[data-checkout-details-title]')).toHaveText('Datos para retirar');
   await expect(page.locator('[data-order-summary]')).not.toContainText('Pedido mínimo delivery');
   await expect(page.locator('[data-order-summary]')).toContainText('Retiro en local');
   await expect(page.locator('[data-order-summary]')).toContainText('Total');
@@ -403,7 +409,8 @@ test('modo negocio y delivery', async ({ page }) => {
   await expect(page.locator('[data-view="business"]')).toBeHidden();
   await expect(page.locator('[data-view="rider"]')).toBeHidden();
 
-  await page.locator('[data-admin-toggle]').click();
+  await page.evaluate(() => { window.location.hash = '#business'; });
+  await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('0000');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-pin-error]')).toBeVisible();
@@ -411,9 +418,11 @@ test('modo negocio y delivery', async ({ page }) => {
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Central de pedidos');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Ventas de hoy');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Productos y stock');
+  await expect(page.locator('[data-view="business"]')).toContainText('Central de pedidos');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Nuevos');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('En preparación');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Listos');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('En camino');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Mitre 456, Area centro');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Casa verde');
 
@@ -424,7 +433,7 @@ test('modo negocio y delivery', async ({ page }) => {
   await expect(page.locator('[data-business-dashboard]')).toContainText('Listo para entregar');
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Enviar a reparto');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Abrir reparto');
 
   // Catálogo y promos arranca plegado: el acceso rápido lo abre.
   await page.locator('[data-scroll-catalog]').click();
@@ -446,13 +455,17 @@ test('modo negocio y delivery', async ({ page }) => {
   await expect(page.locator('[data-view="business"]')).toBeHidden();
   await expect(page.locator('[data-view="home"]')).toBeVisible();
 
-  await page.locator('[data-admin-toggle]').click();
+  await page.evaluate(() => { window.location.hash = '#business'; });
+  await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
   await page.getByRole('button', { name: /Vista rider/i }).click();
   await expect(page.locator('[data-view="rider"]')).toBeVisible();
   await expect(page.locator('[data-delivery-panel]')).toContainText('Pedido');
+  await expect(page.locator('[data-delivery-panel]')).not.toContainText('Mitre 456, Area centro');
+  await page.locator('[data-rider-accept="LT-0002"]').click();
+  await waitForToast(page, 'Entrega aceptada. Ya podés ver los datos del pedido.');
   await expect(page.locator('[data-delivery-panel]')).toContainText('Mitre 456, Area centro');
   await expect(page.locator('[data-delivery-panel]')).toContainText('Casa verde');
 
@@ -465,9 +478,16 @@ test('modo negocio y delivery', async ({ page }) => {
     await page.locator('[data-delivery-arrive]').first().click();
     await waitForToast(page, 'Llegada al domicilio registrada.');
     await expect(page.locator('[data-delivery-panel]')).toContainText('Llegando');
+    await page.goto('/?demo=1#tracking');
+    const deliveryCode = await page.locator('[data-delivery-code]').getAttribute('data-delivery-code');
+    expect(deliveryCode).toMatch(/^\d{4}$/);
+    await page.goto('/?demo=1#rider');
+    await page.locator('[data-delivery-code-input]').fill(deliveryCode);
+    await page.locator('[data-delivery-code-confirm]').click();
+    await waitForToast(page, 'Código de entrega confirmado.');
     await page.locator('[data-delivery-done]').first().click();
     await waitForToast(page, 'Pedido marcado como entregado.');
-    await expect(page.locator('[data-delivery-panel]')).toContainText('Sin entregas asignadas');
+    await expect(page.locator('[data-delivery-panel]')).toContainText('Sin entregas disponibles');
   }
 
   await guards.assertClean();
@@ -482,8 +502,11 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await page.goto('/?demo=1');
   await expect(page.locator('[data-view="home"]')).toBeVisible();
 
+  await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await page.locator('.mobile-nav [data-nav-view="home"]').click();
   await page.evaluate(() => window.scrollTo(0, 520));
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await page.locator('[data-floating-cart]').click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await expect(page.locator('[data-view="home"]')).toBeHidden();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
@@ -492,7 +515,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-  await expect(page.locator('.mobile-nav')).toBeHidden();
+  await expect(page.locator('.mobile-nav')).toBeVisible();
 
   await page.goto('/?demo=1#profile');
   await expect(page.locator('[data-view="profile"]')).toBeVisible();
@@ -541,7 +564,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
 
     await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
     if (viewport.width <= 820) {
-      await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+      await page.locator('[data-floating-cart]').click();
     } else {
       await page.locator('.desktop-nav [data-nav-view="cart"]').click();
     }
@@ -562,12 +585,8 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
     await expect(page.locator('[data-product-modal]')).toBeVisible();
     await page.locator('[data-close-modal]').click();
 
-    if (viewport.width <= 820) {
-      await page.locator('.mobile-nav [data-nav-view="profile"]').click();
-      await page.locator('[data-view="profile"] [data-open-admin-view="business"]').click();
-    } else {
-      await page.locator('[data-admin-toggle]').click();
-    }
+    await page.evaluate(() => { window.location.hash = '#business'; });
+    await page.locator('[data-open-pin][data-admin-target="business"]').click();
     await expect(page.locator('[data-pin-modal]')).toBeVisible();
 
     await guards.assertClean();

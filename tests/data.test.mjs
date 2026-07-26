@@ -68,7 +68,7 @@ test('preview catalog is beverages-only and internally marked as QA', () => {
   assert.ok(products.every((product) => product.id.startsWith('qa-')));
   for (const product of products) {
     if (product.image) {
-      assert.equal(product.image, 'assets/products/qa-beverage-placeholder.svg');
+      assert.equal(product.image, 'assets/products/beverage-placeholder.svg');
     }
   }
 });

@@ -393,7 +393,7 @@ function makeProduct(overrides = {}) {
     description: overrides.description || 'Producto para invariantes',
     price: overrides.price ?? 1000,
     unit: overrides.unit || 'unidad',
-    categoryId: overrides.categoryId || 'carnes',
+    categoryId: overrides.categoryId || 'gaseosas',
     available: overrides.available ?? true,
     stock: overrides.stock ?? 10,
     image: '',

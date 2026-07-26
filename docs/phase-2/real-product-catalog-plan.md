@@ -1,84 +1,50 @@
-# Real product catalog plan
+# Plan del catálogo comercial de bebidas
 
-This document describes how to move from mock products to real La Taba products.
+Este documento resume cómo pasar del fixture QA al catálogo real sin inventar
+productos, precios, stock ni disponibilidad.
 
-## Goal
+## Fuente de verdad
 
-Replace demo catalog data with real catalog data that the business can maintain without rewriting the app later.
+- Plantilla: `data/catalog-template.csv`.
+- Validador: `scripts/validate-product-catalog.mjs`.
+- Auditoría de imágenes: `docs/catalog/image-source-audit.csv`.
+- Manifiesto final: `docs/catalog/image-manifest.json`.
+- Importador fail-closed: `scripts/import-product-catalog.mjs`.
 
-## What we need per product
+Cada fila real debe incluir identidad comercial estable (`external_id` y `sku`),
+marca, nombre, variante, categoría, valor y unidad de capacidad, envase,
+unidades por pack, precio, stock, condición de frío y reglas de alcohol.
+La base conserva variante, valor y unidad por separado; los textos de
+presentación/capacidad se derivan por compatibilidad.
 
-Each product should include:
+## Categorías admitidas
 
-- `name`: commercial name used by the client
-- `category`: main catalog category
-- `description`: short text that helps the client decide
-- `price`: final price shown in the app
-- `unit`: how it is sold, such as `kg`, `unit`, `pack`, or `combo`
-- `stock`: available quantity or stock indicator
-- `photo`: image that can be shown in catalog and product detail
-- `featured`: whether it should appear as highlighted
-- `offer`: whether it has a promo label
-- `available`: whether it can be ordered now
-- `prepMinutes`: estimated preparation time
-- `internalNotes`: staff-only notes for preparation or selling rules
+- Promos
+- Gaseosas
+- Aguas
+- Jugos
+- Energéticas
+- Isotónicas
+- Cervezas
+- Vinos y espumantes
+- Gins y vodkas
+- Whisky y destilados
+- Picadas y deli
+- Hielo y extras
 
-## Proposed data model for products
+No se agregan categorías libres ni aliases gastronómicos al catálogo productivo.
 
-The initial product record can stay simple and practical:
+## Secuencia segura
 
-```json
-{
-  "id": "p-asado-especial",
-  "name": "Asado especial",
-  "category": "carnes",
-  "description": "Corte seleccionado para parrilla.",
-  "price": 9800,
-  "unit": "kg",
-  "stock": 12,
-  "photo": "asado-especial.jpg",
-  "featured": true,
-  "offer": false,
-  "available": true,
-  "prepMinutes": 20,
-  "internalNotes": "Cortar en piezas medianas"
-}
-```
+1. Recibir del comercio el listado real, precios y stock vigentes.
+2. Normalizar identidad, presentaciones y categorías en la plantilla.
+3. Auditar cada imagen oficial, sus derechos y SHA-256.
+4. Generar master WebP 1000×1000 y thumbnail WebP 400×400.
+5. Validar que CSV y manifiesto coincidan por `external_id`, `sku` y ruta.
+6. Ejecutar el importador en `--dry-run`.
+7. Importar con una sesión owner/admin. Todas las filas quedan despublicadas.
+8. Revisar en staging.
+9. Publicar cada producto mediante la RPC de autoridad.
 
-## Suggested migration path
-
-1. Collect the real product list with Walter.
-2. Normalize names, categories and units.
-3. Assign one photo per product where it matters.
-4. Decide which products are featured and which are offers.
-5. Add stock rules that are simple enough to maintain.
-6. Export the first real catalog into CSV or spreadsheet format.
-7. Move the real catalog into the app without changing the flow.
-
-## Practical rules
-
-- Keep names short and familiar.
-- Avoid duplicate categories.
-- Use one unit style per product type.
-- Do not overcomplicate stock on day one.
-- Use internal notes only for the team.
-
-## What to avoid
-
-- Long descriptions that do not help sell.
-- Too many product variants in the first pass.
-- Photos with inconsistent quality.
-- Mixing public copy with internal-only notes.
-- Starting with complex inventory logic before the basics work.
-
-## Recommended first catalog size
-
-Start with a focused catalog:
-
-- 8 to 12 key meats and cuts
-- 3 to 5 milanesa or ready-to-cook items
-- 3 to 5 combos
-- 2 to 4 drinks or add-ons
-- 3 to 5 promotional items if they are really used
-
-That is enough for a first real version without making maintenance hard.
+El template vacío es válido únicamente como plantilla. Los gates de staging y
+release fallan si no reciben un catálogo real con assets aprobados.

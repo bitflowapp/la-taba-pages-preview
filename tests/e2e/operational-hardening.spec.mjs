@@ -4,7 +4,7 @@ import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } fr
 async function createDemoOrder(page) {
   await page.locator('[data-nav-view="catalog"]:visible').first().click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('[data-nav-view="cart"]:visible').first().click();
+  await page.locator('[data-floating-cart]:visible, .topbar [data-open-cart]:visible').first().click();
   await fillCheckout(page, {
     name: 'Hardening QA', phone: '2995550000', street: 'Mendoza 851', neighborhood: 'Centro',
     reference: 'Casa azul', notes: 'Tocar timbre', deliveryMode: 'delivery',

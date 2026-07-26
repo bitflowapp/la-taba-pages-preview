@@ -1,39 +1,32 @@
-# Image Sources
+# Fuentes y trazabilidad de imágenes
 
-All product and hero photos are real photographs downloaded from Pexels and converted locally to optimized WebP files. Pexels allows free commercial use, modification, and use in apps/websites; attribution is not required, but sources are documented for traceability.
+TABA no tiene fotografías comerciales de productos aprobadas en este
+repositorio. No se publican imágenes de bebidas parecidas, reconstruidas con IA
+ni descargadas sin comprobar producto y derechos.
 
-License reference: https://www.pexels.com/license/
+## Placeholder de preview
 
-## La Taba Pizzería (catálogo actual)
-
-| Local file | Source | Photographer | Usage |
+| Archivo | Rol | Fuente | Uso permitido |
 | --- | --- | --- | --- |
-| `assets/products/pizza-muzzarella.webp` | https://www.pexels.com/photo/16890470/ | Rene Strgar | Pizza Muzzarella (y combos que la incluyen) |
-| `assets/products/pizza-especial.webp` | https://www.pexels.com/photo/315755/ | Pixabay (CC0) | Pizza Especial |
-| `assets/products/pizza-fugazzeta.webp` | https://www.pexels.com/photo/17637105/ | SAULO LEITE | Pizza Fugazzeta |
-| `assets/products/pizza-napolitana.webp` | https://www.pexels.com/photo/6940996/ | Alena Shekhovtcova | Pizza Napolitana |
-| `assets/products/pizza-pepperoni.webp` | https://www.pexels.com/photo/4109111/ | Polina Tankilevitch | Pizza Pepperoni |
-| `assets/products/pizza-calabresa.webp` | https://www.pexels.com/photo/3915857/ | Horizon Content | Pizza Calabresa |
-| `assets/products/pizza-jamon.webp` | https://www.pexels.com/photo/1653877/ | Muffin Creatives | Pizza Jamón y muzzarella |
-| `assets/products/combo-familiar.webp` | https://www.pexels.com/photo/1566837/ | Narda Yescas | Combo familiar |
-| `assets/products/promo-dia.webp` | https://www.pexels.com/photo/2147491/ | Vincent Rivaud | Banner Promo del día / promos |
-| `assets/products/bebida-cola.webp` | https://www.pexels.com/photo/4113669/ | alleksana | Bebidas |
-| `assets/hero/horno-lena.webp` | https://www.pexels.com/photo/905847/ | Eneida Nieves | Hero horno a leña (presentación) |
+| `assets/products/beverage-placeholder.svg` | Ilustración neutra | Creada dentro del repositorio | Preview privado únicamente; no representa una marca, variante, capacidad, envase ni pack comercial |
 
-## Demo carnicería anterior (archivos conservados para reusar el shell)
+Su SHA-256 y estado están registrados en
+`docs/final-commercial-release/catalog-asset-audit.csv`.
 
-| Local file | Source | Photographer | Usage |
-| --- | --- | --- | --- |
-| `assets/hero/parrilla-real.webp` | https://www.pexels.com/photo/grilled-meat-on-charcoal-grill-3997609/ | Gonzalo Guzman | Demo carnicería (histórico) |
-| `assets/products/cortes-crudos.webp` | https://www.pexels.com/photo/raw-meat-on-brown-wooden-chopping-board-5313867/ | Javon Swaby | Demo carnicería (histórico) |
-| `assets/products/pollo-fresco.webp` | https://www.pexels.com/photo/food-wood-dinner-lunch-6107725/ | alleksana | Demo carnicería (histórico) |
-| `assets/products/chorizos-parrilla.webp` | https://www.pexels.com/photo/a-person-flipping-sausages-on-the-grill-17947491/ | Alina Matveycheva | Demo carnicería (histórico) |
-| `assets/products/milanesas.webp` | https://www.pexels.com/photo/breaded-chicken-on-white-plate-4078178/ | Anna Guerrero | Demo carnicería (histórico) |
-| `assets/products/hamburguesa.webp` | https://www.pexels.com/photo/close-up-photo-of-a-burger-19247582/ | Jonathan Borba | Demo carnicería (histórico) |
+## Cadena obligatoria para imágenes comerciales
 
-Notes:
+1. Registrar la fuente en `docs/catalog/image-source-audit.csv`.
+2. Confirmar fabricante/proveedor, derechos de uso, variante, capacidad, envase
+   y unidades por pack.
+3. Registrar el SHA-256 completo de la fuente y marcarla `APROBADA`.
+4. Descargar y comprobar el hash con `catalog:images:fetch`.
+5. Generar WebP master/thumbnail content-addressed con
+   `catalog:images:normalize`.
+6. Verificar archivos, dimensiones, hashes y correspondencia con la auditoría
+   mediante `catalog:images:verify`.
+7. Usar en el CSV sólo la ruta master de
+   `docs/catalog/image-manifest.json`.
 
-- No generated images were used.
-- No external hotlinks are used by the app; all images are stored in the repository.
-- Files were converted with `ffmpeg` to WebP at product/hero display sizes.
-- Photos with visible watermarks or recognizable restaurant branding were not used.
+El manifiesto vincula cada archivo final con su fuente, referencia de derechos
+y hashes. Los raw no se versionan ni se distribuyen. Una imagen sin esa cadena
+permanece fuera del catálogo productivo.

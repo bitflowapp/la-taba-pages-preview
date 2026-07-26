@@ -36,7 +36,7 @@ export function publicOrderTimelineIndex(status) {
 }
 
 export function renderOrderTimeline(status, { className = '' } = {}) {
-  return renderTimeline(ORDER_TIMELINE_STEPS, orderTimelineIndex(status), status, className);
+  return renderTimeline(ORDER_TIMELINE_STEPS, orderTimelineIndex(status), status, className, 'operational');
 }
 
 export function renderPublicOrderTimeline(status, { className = '' } = {}) {
@@ -45,16 +45,20 @@ export function renderPublicOrderTimeline(status, { className = '' } = {}) {
     publicOrderTimelineIndex(status),
     status,
     className,
+    'public',
   );
 }
 
-function renderTimeline(stepsConfig, stepIndex, status, className) {
+function renderTimeline(stepsConfig, stepIndex, status, className, surface) {
   const isCancelled = status === 'cancelled' || status === 'canceled';
   const steps = stepsConfig.map((step, index) => {
     let cls = 'pending';
     if (!isCancelled && index < stepIndex) cls = 'done';
     if (!isCancelled && index === stepIndex) cls = 'current';
-    return `<div class="track-step ${cls}"><span class="track-dot"></span><small>${step.label}</small></div>`;
+    const current = cls === 'current' ? ' aria-current="step"' : '';
+    return `<div class="track-step ${cls}" role="listitem"${current}><span class="track-dot" aria-hidden="true"></span><small>${step.label}</small></div>`;
   }).join('');
-  return `<div class="track-steps ${className}">${steps}</div>`;
+  const classes = ['track-steps', className, surface].filter(Boolean).join(' ');
+  const label = isCancelled ? 'Pedido cancelado' : 'Progreso del pedido';
+  return `<div class="${classes}" role="list" aria-label="${label}">${steps}</div>`;
 }

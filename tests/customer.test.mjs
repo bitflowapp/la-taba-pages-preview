@@ -210,7 +210,7 @@ test('repetir con force reemplaza el carrito usando precios actuales', () => {
 });
 
 test('cashChange defensivo: un pedido viejo con transferencia se normaliza sin cambio', () => {
-  const items = [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: 1000, unit: 'kg' }];
+  const items = [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 1000, unit: 'unidad' }];
   const transfer = normalizeOrderForStorage({
     id: 'LT-OLD-1',
     items,

@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { installBrowserStubs, installPageGuards } from './helpers.mjs';
 
-test('la home presenta una sola marca Demo y un storefront comercial limpio', async ({ page }) => {
+test('la home presenta TABA sin etiquetas internas y un storefront comercial limpio', async ({ page }) => {
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await page.goto('/?reset=1&demo=1');
 
-  await expect(page.locator('[data-demo-mode-banner]')).toHaveText('Demo');
+  await expect(page.locator('[data-demo-mode-banner]')).toHaveCount(0);
   await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
   await expect(page.locator('[data-view="home"] .home-search')).toBeVisible();
   const realCategories = [

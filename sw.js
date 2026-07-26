@@ -1,13 +1,22 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v11-beverages-cache';
+const CACHE_NAME = 'la-taba-runtime-v12-commercial-cache';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
+  './styles/tokens.css',
+  './styles/common.css',
+  './styles/storefront.css',
+  './styles/catalog.css',
+  './styles/checkout.css',
+  './styles/tracking.css',
+  './styles/business.css',
+  './styles/rider.css',
+  './styles/responsive.css',
   './manifest.webmanifest',
   './runtime-config.js',
   './assets/icon.svg',
-  './assets/products/qa-beverage-placeholder.svg',
+  './assets/products/beverage-placeholder.svg',
   './js/app.js',
   './js/config.js',
   './js/core/address.js',

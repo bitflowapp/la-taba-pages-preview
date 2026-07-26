@@ -1,35 +1,19 @@
 import { expect, test } from '@playwright/test';
 import { installBrowserStubs, installPageGuards } from './helpers.mjs';
 
-// Commercial polish v1: presentación comercial, catálogo sin ruido y
-// herramientas del presentador. Mobile-first 390x844.
+// Pulido comercial mobile-first 390x844.
 
-test('presentación comercial: se abre con ?pitch=1, se cierra y no vuelve sola', async ({ browser }) => {
+test('preview privado abre directo en la tienda y no expone accesos operativos', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?pitch=1&demo=1');
-  const pitch = page.locator('[data-pitch-modal]');
-  await expect(pitch).toBeVisible();
-  await expect(pitch).toContainText('Tu propio canal de pedidos');
-  await expect(pitch).toContainText('Pedidos ordenados');
-  await expect(pitch).toContainText('Vista del repartidor');
-
-  await pitch.getByRole('button', { name: 'Probar la experiencia' }).click();
-  await expect(pitch).toBeHidden();
-  await expect(page.locator('[data-view="home"]')).toBeVisible();
-
-  // Sin el parámetro, la presentación no aparece sola (no molesta a recurrentes).
   await page.goto('/?demo=1');
-  await expect(pitch).toBeHidden();
-
-  // Desde Local se puede reabrir a demanda.
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
+  await expect(page.locator('[data-view="home"] .home-search')).toBeVisible();
   await page.goto('/?demo=1#profile');
-  await page.locator('[data-view="profile"] [data-open-pitch]').click();
-  await expect(pitch).toBeVisible();
-  await pitch.getByRole('button', { name: 'Probar la experiencia' }).click();
+  await expect(page.locator('[data-view="profile"] [data-open-admin-view]')).toHaveCount(0);
 
   await guards.assertClean();
   await context.close();
@@ -55,13 +39,16 @@ test('catálogo: un solo grid, búsqueda vacía coherente y tarjetas sin ruido',
   expect(new Set(productIds).size).toBe(productIds.length);
 
   // Una búsqueda sin resultados conserva una única salida vacía y un contador consistente.
+  await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
   await page.locator('[data-view="catalog"] [data-search-input]').fill('zzzz-no-existe');
   await expect(page.locator('[data-catalog-count]')).toHaveText('0 productos');
   await expect(page.locator('[data-catalog-offers-block], [data-catalog-offers]')).toHaveCount(0);
   await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(0);
-  await expect(page.locator('[data-product-grid]')).toContainText('No hay productos en esta búsqueda.');
-
-  await page.locator('[data-view="catalog"] [data-search-input]').fill('');
+  const emptyState = page.locator('[data-product-grid] .empty-state');
+  await expect(emptyState).toContainText('No encontramos esa bebida.');
+  await emptyState.getByRole('button', { name: 'Ver todo el catálogo' }).click();
+  await expect(page.locator('[data-view="catalog"] [data-search-input]')).toHaveValue('');
+  await expect(page.locator('[data-view="catalog"] [data-category-id="all"]')).toHaveClass(/active/);
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
   await expect(page.locator('[data-catalog-offers-block], [data-catalog-offers]')).toHaveCount(0);
 
@@ -82,13 +69,19 @@ test('home: estado claro y recorrido comercial compacto', async ({ browser }) =>
   // Ofertas y combos destacados no repiten el mismo producto en el home.
   await expect(page.locator('[data-view="home"] [data-combos-rail]')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .home-search')).toBeVisible();
-  await expect(page.locator('[data-view="home"] .promo-banner-neutral')).toBeVisible();
+  await expect(page.locator('[data-category-strip="home"]')).toBeVisible();
+  await expect(page.locator('[data-promo-banner]')).toBeVisible();
+  await expect(page.locator('[data-offers-rail]')).toBeVisible();
+
+  await page.locator('[data-view="home"] [data-search-input]').fill('agua');
+  await expect(page.locator('[data-view="catalog"]')).toBeVisible();
+  await expect(page.locator('[data-view="catalog"] [data-search-input]')).toHaveValue('agua');
 
   await guards.assertClean();
   await context.close();
 });
 
-test('negocio: catálogo editable arranca compacto y el presentador tiene reinicio de demo', async ({ browser }) => {
+test('negocio: catálogo editable compacto y guía operativa separada', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const guards = installPageGuards(page);
@@ -113,9 +106,10 @@ test('negocio: catálogo editable arranca compacto y el presentador tiene reinic
   // El formulario de alta sigue cerrado hasta tocar "Nuevo producto".
   await expect(page.locator('[data-catalog-form]')).toHaveCount(0);
 
-  // Guía del presentador: existe el reinicio de demo (no se ejecuta acá).
-  await page.locator('.demo-guide summary').click();
-  await expect(page.locator('[data-demo-reset]')).toBeVisible();
+  await page.locator('[data-business-view="guide"]').click();
+  await expect(page.locator('.demo-guide')).toContainText('Guía operativa');
+  await expect(page.locator('[data-demo-reset]')).toHaveCount(0);
+  await expect(page.locator('[data-business-dashboard]')).not.toContainText(/muestra|presentación|datos de ejemplo/i);
 
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   expect(noOverflow).toBeTruthy();

@@ -20,7 +20,10 @@ test('conserva la timeline operativa de cinco pasos', () => {
   assert.equal(orderTimelineIndex('ready'), 2);
   assert.equal(orderTimelineIndex('on_the_way'), 3);
   assert.equal(orderTimelineIndex('delivered'), 4);
-  assert.equal((renderOrderTimeline('ready').match(/track-step /g) || []).length, 5);
+  const operationalHtml = renderOrderTimeline('ready');
+  assert.equal((operationalHtml.match(/track-step /g) || []).length, 5);
+  assert.match(operationalHtml, /track-steps operational/);
+  assert.match(operationalHtml, /track-step current[^>]*aria-current="step"[\s\S]*Listo/);
 });
 
 test('la timeline pública agrupa el flujo en cuatro pasos comerciales', () => {
@@ -43,7 +46,8 @@ test('la timeline pública agrupa el flujo en cuatro pasos comerciales', () => {
   const html = renderPublicOrderTimeline('on_the_way', { className: 'customer-progress' });
   assert.equal((html.match(/track-step /g) || []).length, 4);
   assert.match(html, /track-steps customer-progress/);
-  assert.match(html, /track-step current[\s\S]*En camino/);
+  assert.match(html, /track-steps customer-progress public/);
+  assert.match(html, /track-step current[^>]*aria-current="step"[\s\S]*En camino/);
   assert.doesNotMatch(html, />Listo</);
   assert.doesNotMatch(html, />En reparto</);
   assert.doesNotMatch(renderPublicOrderTimeline('canceled'), /track-step current/);

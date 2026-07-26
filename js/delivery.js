@@ -1,15 +1,11 @@
 import {
-  advanceOrderToReady,
   attachDeliveryProof,
   confirmDeliveryCode,
   getRiderQueueOrder,
   removeDeliveryProof,
   updateOrderStatus,
 } from './orders.js';
-import {
-  getRiderActionState,
-  isAwaitingPreparation,
-} from './core/rider.js';
+import { getRiderActionState } from './core/rider.js';
 import {
   activateStreetTestMode,
   disableGpsTracking,
@@ -47,6 +43,11 @@ import {
 } from './map/route_geometry.js';
 import { renderOrderTimeline } from './core/order-timeline.js';
 
+// Revelado progresivo del preview privado. En producción esta superficie se
+// reemplaza por production-operations.js, que reclama el pedido mediante el
+// repositorio autenticado y su compare-and-swap server-side.
+const acceptedDeliveryIds = new Set();
+
 export function renderDeliveryPanel() {
   const container = document.querySelector('[data-delivery-panel]');
   if (!container) return;
@@ -63,8 +64,8 @@ export function renderDeliveryPanel() {
           <span class="sheet-handle" aria-hidden="true"></span>
           ${renderRiderSheetTopbar()}
           <div class="empty-state sheet-empty">
-            <strong>Sin entregas asignadas</strong>
-            <p class="empty-state-copy">Cuando el local despache un pedido con envío, aparece acá con dirección, total a cobrar y botones de avance.</p>
+            <strong>Sin entregas disponibles</strong>
+            <p class="empty-state-copy">Cuando haya un pedido listo para repartir, aparecerá acá con sus acciones operativas.</p>
             <div class="empty-actions">
               <button class="secondary-button compact" type="button" data-open-admin-view="business">Ir al panel del negocio</button>
             </div>
@@ -76,7 +77,11 @@ export function renderDeliveryPanel() {
     return;
   }
 
-  const awaiting = isAwaitingPreparation(order);
+  if (order.status === 'ready' && !acceptedDeliveryIds.has(order.id)) {
+    renderRiderAssignmentPreview(container, order);
+    return;
+  }
+
   const { canLeave, canArrive, canDeliver } = getRiderActionState(order);
   const sim = orderSimulation(order);
   const gpsState = riderGpsShareState(sim);
@@ -85,16 +90,16 @@ export function renderDeliveryPanel() {
   const address = normalizeOrderAddressDetails(order);
   const destinationLabel = displayDestinationLabel(address.label || order.address);
   const addressText = [destinationLabel, address.reference ? `Referencia: ${address.reference}` : ''].filter(Boolean).join('\n');
-  const headline = awaiting
-    ? 'Esperando preparación'
-    : order.status === 'arriving'
+  const headline = order.status === 'arriving'
     ? 'Llegando al domicilio'
     : order.status === 'on_the_way' ? 'En camino al cliente'
       : order.status === 'delivered' ? 'Pedido entregado'
       : 'Pedido listo para salir';
-  const headSub = awaiting
-    ? 'El local está preparando el pedido.'
-    : 'Avanzá la entrega con los botones de estado.';
+  const headSub = order.status === 'ready'
+    ? 'Entrega aceptada. Confirmá cuando salgas del local.'
+    : order.status === 'on_the_way'
+      ? 'Usá “Llegué al domicilio” cuando estés en el punto de entrega.'
+      : 'Confirmá la recepción para completar la entrega.';
 
   const waClient = `https://wa.me/${onlyDigits(order.customerPhone)}`;
 
@@ -105,25 +110,21 @@ export function renderDeliveryPanel() {
       <section class="delivery-bottom-sheet rider-sheet rider-card ${gpsLive ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
         ${renderRiderSheetTopbar()}
-        <div class="sheet-head rider-head ${statusClass(order.status)}">
-          <span class="track-head-ico">${bagGlyph()}</span>
-          <div class="track-head-text">
-            <small>Entrega actual · ${order.id}</small>
-            <strong>${headline}</strong>
-            <span>${escapeHtml(headSub)}</span>
-          </div>
-          <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
+        <div class="rider-delivery-head ${statusClass(order.status)}">
+          <small>Entrega actual · ${order.id}</small>
+          <h2>${headline}</h2>
+          <p>${escapeHtml(headSub)}</p>
         </div>
 
         <div class="rider-contact">
-          <span class="rider-avatar">${escapeHtml(initials(order.customerName))}</span>
+          <span class="rider-contact-icon" aria-hidden="true">${bagGlyph()}</span>
           <span class="rider-contact-text">
             <small>Cliente</small>
             <strong>${escapeHtml(order.customerName)}</strong>
             <em>${escapeHtml(order.customerPhone)}</em>
           </span>
-          <a class="round-action call" href="tel:${encodeURIComponent(order.customerPhone)}" aria-label="Llamar al cliente">Tel</a>
-          <a class="round-action whatsapp" href="${waClient}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del cliente">WA</a>
+          <a class="round-action call" href="tel:${encodeURIComponent(order.customerPhone)}" aria-label="Llamar al cliente">${phoneGlyph()}</a>
+          <a class="round-action whatsapp" href="${waClient}" target="_blank" rel="noopener noreferrer" aria-label="Enviar WhatsApp al cliente">${messageGlyph()}</a>
         </div>
 
         <div class="rider-address">
@@ -142,12 +143,6 @@ export function renderDeliveryPanel() {
           <span><small>Pago</small><strong>${escapeHtml(order.paymentMethod)}</strong></span>
           <span><small>Estado</small><strong>${escapeHtml(statusLabel(order.status))}</strong></span>
         </div>
-
-        ${awaiting ? `
-        <div class="rider-waiting">
-          <p>El pedido todavía está en preparación en el local.</p>
-          <button class="primary-button" type="button" data-rider-ready="${order.id}">Marcar listo</button>
-        </div>` : ''}
 
         ${renderDeliveryProofPanel(order)}
         ${renderDeliveryCodePanel(order)}
@@ -181,15 +176,44 @@ export function renderDeliveryPanel() {
   restoreDeliveryCodeDraft(container, codeDraft);
 }
 
+function renderRiderAssignmentPreview(container, order) {
+  const itemCount = (order.items || []).reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0), 0);
+  const businessName = getBusinessConfig().businessName || 'TABA';
+  const generalZone = normalizeOrderAddressDetails(order).neighborhood;
+  renderWithStableRealMap(container, `
+    <div class="delivery-layout rider-map-experience is-empty no-map">
+      <section class="delivery-bottom-sheet rider-sheet rider-card" data-bottom-sheet data-rider-assignment-preview="${escapeHtml(order.id)}">
+        <span class="sheet-handle" aria-hidden="true"></span>
+        ${renderRiderSheetTopbar()}
+        <div class="rider-delivery-head ${statusClass(order.status)}">
+          <small>Entrega disponible · ${escapeHtml(order.id)}</small>
+          <h2>Pedido listo para repartir</h2>
+          <p>Revisá el resumen y aceptá la entrega para ver los datos del cliente.</p>
+        </div>
+        <div class="rider-assignment-context">
+          <span><small>Retirás en</small><strong>${escapeHtml(businessName)}</strong></span>
+          ${generalZone ? `<span><small>Zona</small><strong>${escapeHtml(generalZone)}</strong></span>` : ''}
+        </div>
+        <div class="sheet-metrics rider-metrics">
+          <span><small>Cobro</small><strong>${escapeHtml(order.paymentMethod || 'A coordinar')}</strong></span>
+          <span><small>Unidades</small><strong>${itemCount}</strong></span>
+          <span class="metric-priority"><small>A cobrar</small><strong>${money(order.total)}</strong></span>
+        </div>
+        <div class="button-row rider-actions">
+          <button class="primary-button" type="button" data-rider-accept="${escapeHtml(order.id)}">Aceptar entrega</button>
+        </div>
+        <p class="empty-state-copy">El nombre, teléfono, domicilio y detalle se habilitan después de aceptar.</p>
+        ${renderRiderHistory(order)}
+      </section>
+    </div>`, { rolePrefix: 'rider', orderId: order.id });
+}
+
 function renderRiderSheetTopbar() {
   return `
     <div class="rider-sheet-topbar">
-      <div class="rider-sheet-title">
-        <strong>Mis entregas</strong>
-        <span class="rider-online-chip is-local"><i aria-hidden="true"></i>Vista de reparto</span>
-      </div>
+      <span class="rider-online-chip is-local" aria-label="Operación activa"><i aria-hidden="true"></i>En servicio</span>
       <div class="rider-sheet-actions">
-        <button class="ghost-button compact" type="button" data-open-admin-view="business">Panel negocio</button>
+        <button class="ghost-button compact" type="button" data-open-admin-view="business" aria-label="Volver al panel del negocio">Negocio</button>
         <button class="ghost-button compact" type="button" data-lock-admin>Salir</button>
       </div>
     </div>`;
@@ -218,11 +242,11 @@ function renderRiderQuickActions(order, destinationLabel, address) {
     </div>`;
 }
 
-// Historial corto de entregas del rider: pedidos de delivery ya entregados.
-// Datos reales de la demo, sin viajes inventados.
+// Historial corto sin PII: una entrega cerrada ya no necesita conservar el
+// nombre ni ningún dato de contacto visible en la operación del rider.
 function renderRiderHistory(currentOrder = null) {
   const delivered = (getState().orders || [])
-    .filter((order) => order.status === 'delivered' && order.deliveryMode === 'delivery')
+    .filter((order) => !order.internalSeed && order.status === 'delivered' && order.deliveryMode === 'delivery')
     .filter((order) => order.id !== currentOrder?.id)
     .slice(0, 3);
   if (!delivered.length) return '';
@@ -233,7 +257,7 @@ function renderRiderHistory(currentOrder = null) {
         <div class="rider-history-row">
           <span class="rider-history-check" aria-hidden="true">✓</span>
           <div class="rider-history-text">
-            <strong>${escapeHtml(order.id)} · ${escapeHtml(order.customerName)}</strong>
+            <strong>${escapeHtml(order.id)} · Entrega completada</strong>
             <small>${escapeHtml(dateTime(order.delivery?.deliveredAt || order.createdAt))}</small>
           </div>
           <strong class="rider-history-total">${money(order.total)}</strong>
@@ -270,16 +294,15 @@ function renderRiderActions(order, { canLeave, canArrive, canDeliver }) {
   if (canArrive) {
     actions.push(`<button class="primary-button" type="button" data-delivery-arrive="${order.id}">Llegué al domicilio</button>`);
   }
-  if (canDeliver) {
-    const cls = canArrive ? 'secondary-button' : 'primary-button';
-    actions.push(`<button class="${cls}" type="button" data-delivery-done="${order.id}">Pedido entregado</button>`);
+  if (canDeliver && isDeliveryCodeConfirmed(order)) {
+    actions.push(`<button class="primary-button" type="button" data-delivery-done="${order.id}">Pedido entregado</button>`);
   }
   if (!actions.length) return '';
   return `<div class="button-row rider-actions">${actions.join('')}</div>`;
 }
 
 function renderDeliveryProofPanel(order) {
-  if (!['ready', 'on_the_way', 'arriving'].includes(order.status)) return '';
+  if (order.status !== 'arriving') return '';
   const proof = order.deliveryProof || null;
   const proofTime = proof ? formatDeliveryProofTime(proof) : '';
   const input = `
@@ -290,7 +313,7 @@ function renderDeliveryProofPanel(order) {
       <div class="delivery-proof-copy">
         <strong>Foto de entrega</strong>
         <p>Sacá una foto del pedido entregado. Evitá fotografiar personas, DNI o datos privados.</p>
-        ${proof ? `<small>Comprobante tomado: ${escapeHtml(proofTime || 'sin hora')}</small>` : '<small>Podés adjuntar una foto como comprobante antes de entregar.</small>'}
+        ${proof ? `<small>Comprobante tomado: ${escapeHtml(proofTime || 'sin hora')}</small>` : '<small>Podés adjuntar una foto como comprobante en el domicilio.</small>'}
       </div>
       ${proof ? `
         <div class="delivery-proof-preview">
@@ -307,8 +330,8 @@ function renderDeliveryProofPanel(order) {
 }
 
 function renderDeliveryCodePanel(order) {
-  if (!['on_the_way', 'arriving'].includes(order.status)) return '';
-  const deliveryCode = normalizeDeliveryCode(order.deliveryCode, { seed: order.id });
+  if (order.status !== 'arriving') return '';
+  const deliveryCode = normalizeDeliveryCode(order.deliveryCode);
   if (!deliveryCode) return '';
   const confirmed = isDeliveryCodeConfirmed(deliveryCode);
   const confirmedTime = formatDeliveryCodeTime(deliveryCode);
@@ -323,21 +346,13 @@ function renderDeliveryCodePanel(order) {
           <input data-delivery-code-input="${escapeHtml(order.id)}" type="text" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="one-time-code" placeholder="0000" aria-label="Código de entrega del cliente" />
           <button class="secondary-button compact" type="button" data-delivery-code-confirm="${escapeHtml(order.id)}">Confirmar código</button>
         </div>
-        <small>Si el cliente no lo encuentra, podés entregar igual y dejar foto como respaldo.</small>`}
+        <small>La entrega se habilita únicamente después de validar el código.</small>`}
     </section>`;
 }
 
 // Bloque avanzado: esconde relay/sala/equipo para que la vista principal sea operativa.
 function renderAdvancedDemo() {
   return '';
-}
-
-function initials(name) {
-  return String(name || '?')
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join('') || '?';
 }
 
 function onlyDigits(value) {
@@ -357,7 +372,7 @@ function renderSimControls(order, sim) {
   return `
     <div class="sim-panel street-test-panel is-offline" data-street-test>
       <div class="sim-head">
-        <span class="rider-label">Seguimiento de la presentación</span>
+        <span class="rider-label">Seguimiento operativo</span>
         <span class="sim-state">Local</span>
       </div>
       <p class="form-hint">Los avances se confirman con los botones de estado. No se usa GPS, ETA ni ubicación en vivo.</p>
@@ -472,7 +487,7 @@ function renderGpsDiagnostics(sim, gpsOn) {
 function getRepositoryDataMode() {
   try {
     const mode = getDataMode();
-    return mode === 'supabase' ? 'Supabase' : mode === 'http' ? 'API propia' : mode === 'demo-realtime' ? 'Presentación en vivo' : 'Este equipo';
+    return mode === 'supabase' ? 'Supabase' : mode === 'http' ? 'API propia' : mode === 'demo-realtime' ? 'Sesión compartida' : 'Este equipo';
   } catch (_) {
     return 'Este equipo';
   }
@@ -584,8 +599,8 @@ function renderRiderStatusPill(order) {
     </span>`;
 }
 
-function riderPillStatusLabel(order) {
-  if (isAwaitingPreparation(order)) return 'Esperando';
+export function riderPillStatusLabel(order) {
+  if (['received', 'preparing'].includes(order?.status)) return 'Esperando';
   switch (order.status) {
     case 'ready': return 'Listo';
     case 'on_the_way': return 'En camino';
@@ -625,6 +640,19 @@ function navigateGlyph() {
   </svg>`;
 }
 
+function phoneGlyph() {
+  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true" focusable="false">
+    <path d="M7.2 3.8 9.5 7 8.1 9.1c1.3 2.5 3.3 4.5 5.8 5.8l2.1-1.4 3.2 2.3-.6 3c-.2 1-1.1 1.7-2.1 1.6A14.6 14.6 0 0 1 3.6 7.5c-.1-1 .6-1.9 1.6-2.1l2-.4Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function messageGlyph() {
+  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true" focusable="false">
+    <path d="M20 11.5a8 8 0 0 1-11.7 7.1L4 20l1.4-4.1A8 8 0 1 1 20 11.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M8.2 8.4c.7 2.8 2.6 4.7 5.4 5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`;
+}
+
 function renderRealMapShell(order, fallback, role = 'rider') {
   const orderAttr = order?.id ? ` data-order-id="${escapeHtml(order.id)}"` : '';
   return `
@@ -639,9 +667,23 @@ function renderRealMapShell(order, fallback, role = 'rider') {
 }
 
 export function handleDeliveryAction(target) {
+  const acceptId = target.closest('[data-rider-accept]')?.dataset.riderAccept;
+  if (acceptId) {
+    const order = findDeliveryOrder(acceptId);
+    if (!order || order.status !== 'ready' || order.deliveryMode !== 'delivery') {
+      return { handled: true, ok: false, message: 'La entrega ya no está disponible para aceptar.' };
+    }
+    acceptedDeliveryIds.add(acceptId);
+    if (typeof document !== 'undefined') renderDeliveryPanel();
+    return { handled: true, ok: true, message: 'Entrega aceptada. Ya podés ver los datos del pedido.' };
+  }
+
   const codeButton = target.closest('[data-delivery-code-confirm]');
   const codeOrderId = codeButton?.dataset.deliveryCodeConfirm;
   if (codeOrderId) {
+    if (findDeliveryOrder(codeOrderId)?.status !== 'arriving') {
+      return { handled: true, ok: false, message: 'El código se confirma al llegar al domicilio.' };
+    }
     const panel = codeButton.closest('[data-delivery-code-panel]');
     const input = panel?.querySelector?.('[data-delivery-code-input]');
     const result = confirmDeliveryCode(codeOrderId, input?.value || '');
@@ -651,16 +693,21 @@ export function handleDeliveryAction(target) {
 
   const removeProofId = target.closest('[data-delivery-proof-remove]')?.dataset.deliveryProofRemove;
   if (removeProofId) {
+    if (findDeliveryOrder(removeProofId)?.status !== 'arriving') {
+      return { handled: true, ok: false, message: 'La foto de entrega se gestiona en el domicilio.' };
+    }
     return { handled: true, ...removeDeliveryProof(removeProofId) };
-  }
-
-  const readyId = target.closest('[data-rider-ready]')?.dataset.riderReady;
-  if (readyId) {
-    return deliveryActionResponse(readyOrderForDelivery(readyId), 'Pedido listo para reparto.');
   }
 
   const leaveId = target.closest('[data-delivery-leave]')?.dataset.deliveryLeave;
   if (leaveId) {
+    const order = findDeliveryOrder(leaveId);
+    if (order?.status !== 'ready') {
+      return invalidRiderTransition('La salida solo se registra desde un pedido listo.');
+    }
+    if (!acceptedDeliveryIds.has(leaveId)) {
+      return invalidRiderTransition('Aceptá la entrega antes de registrar la salida.');
+    }
     return deliveryActionResponse(updateDeliveryOrderStatus(leaveId, 'on_the_way'), 'Pedido marcado como en camino.', () => {
       syncSimulationOnStatus(leaveId, 'on_the_way');
     });
@@ -668,6 +715,9 @@ export function handleDeliveryAction(target) {
 
   const arriveId = target.closest('[data-delivery-arrive]')?.dataset.deliveryArrive;
   if (arriveId) {
+    if (findDeliveryOrder(arriveId)?.status !== 'on_the_way') {
+      return invalidRiderTransition('La llegada se registra después de iniciar el reparto.');
+    }
     return deliveryActionResponse(updateDeliveryOrderStatus(arriveId, 'arriving'), 'Llegada al domicilio registrada.', () => {
       syncSimulationOnStatus(arriveId, 'arriving');
     });
@@ -675,6 +725,9 @@ export function handleDeliveryAction(target) {
 
   const streetArriveId = target.closest('[data-street-arrive]')?.dataset.streetArrive;
   if (streetArriveId) {
+    if (findDeliveryOrder(streetArriveId)?.status !== 'on_the_way') {
+      return invalidRiderTransition('La llegada se registra después de iniciar el reparto.');
+    }
     return deliveryActionResponse(updateDeliveryOrderStatus(streetArriveId, 'arriving'), 'Llegada al destino registrada.', () => {
       syncSimulationOnStatus(streetArriveId, 'arriving');
     });
@@ -682,14 +735,30 @@ export function handleDeliveryAction(target) {
 
   const doneId = target.closest('[data-delivery-done]')?.dataset.deliveryDone;
   if (doneId) {
+    const order = findDeliveryOrder(doneId);
+    if (order?.status !== 'arriving') {
+      return invalidRiderTransition('Confirmá que llegaste al domicilio antes de entregar.');
+    }
+    if (!isDeliveryCodeConfirmed(order)) {
+      return invalidRiderTransition('Validá el código del cliente antes de confirmar la entrega.');
+    }
     return deliveryActionResponse(updateDeliveryOrderStatus(doneId, 'delivered'), 'Pedido marcado como entregado.', () => {
+      acceptedDeliveryIds.delete(doneId);
       syncSimulationOnStatus(doneId, 'delivered');
     });
   }
 
   const streetDoneId = target.closest('[data-street-done]')?.dataset.streetDone;
   if (streetDoneId) {
+    const order = findDeliveryOrder(streetDoneId);
+    if (order?.status !== 'arriving') {
+      return invalidRiderTransition('Confirmá que llegaste al domicilio antes de entregar.');
+    }
+    if (!isDeliveryCodeConfirmed(order)) {
+      return invalidRiderTransition('Validá el código del cliente antes de confirmar la entrega.');
+    }
     return deliveryActionResponse(updateDeliveryOrderStatus(streetDoneId, 'delivered'), 'Pedido marcado como entregado.', () => {
+      acceptedDeliveryIds.delete(streetDoneId);
       syncSimulationOnStatus(streetDoneId, 'delivered');
     });
   }
@@ -728,11 +797,12 @@ export function handleDeliveryAction(target) {
   return { handled: false };
 }
 
-function readyOrderForDelivery(orderId) {
-  const repository = getOrderRepository();
-  if (!isPersistentOrderRepository(repository)) return advanceOrderToReady(orderId);
-  return repository.updateOrderStatus(orderId, 'preparing')
-    .then((preparing) => (preparing.ok ? repository.updateOrderStatus(orderId, 'ready') : preparing));
+function findDeliveryOrder(orderId) {
+  return getState().orders.find((order) => order.id === orderId) || null;
+}
+
+function invalidRiderTransition(message) {
+  return { handled: true, ok: false, message };
 }
 
 function updateDeliveryOrderStatus(orderId, status) {
@@ -769,6 +839,10 @@ export function handleDeliveryChange(target) {
 
 async function attachProofFromInput(input) {
   const orderId = input.dataset.deliveryProofInput;
+  if (findDeliveryOrder(orderId)?.status !== 'arriving') {
+    input.value = '';
+    return { handled: true, ok: false, message: 'La foto de entrega se adjunta al llegar al domicilio.' };
+  }
   const file = input.files?.[0];
   if (!file) return { handled: true, ok: false, message: 'Seleccioná una foto del pedido entregado.' };
 

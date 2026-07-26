@@ -11,9 +11,15 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   const guards = installPageGuards(page);
 
   await page.goto('/?reset=1&demo=1');
+  await expectHomeSections(page, [
+    '[data-view="home"] .home-search',
+    '[data-category-strip="home"]',
+    '[data-promo-banner]',
+    '[data-offers-rail]',
+  ]);
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await page.locator('[data-floating-cart]').click();
 
   await fillCheckout(page, {
     name: 'Cliente Growth',
@@ -36,19 +42,26 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await waitForToast(page, /Pedido confirmado/);
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-tracking-panel]')).toContainText('Pedido de muestra');
-  await expect(page.locator('[data-tracking-panel]')).toContainText('no se envió al local ni se cobró nada');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Pedido confirmado');
+  await expect(page.locator('[data-tracking-panel]')).not.toContainText(/pedido de muestra|no se envió|presentación/i);
   await expect(page.locator('[data-tracking-panel] [data-delivery-code]')).toHaveCount(0);
-  await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveCount(0);
+  await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveText('Seguimiento por estados, sin GPS ni ubicación en vivo.');
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(0);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\bETA\b/i);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
 
+  await markLatestOrderDelivered(page);
   await page.reload();
   await page.goto('/?demo=1#home');
   const reorderCard = page.locator('[data-view="home"] .reorder-card');
   await expect(reorderCard).toBeVisible();
   await expect(reorderCard).toContainText('Volver a pedir');
+  await expectHomeSections(page, [
+    '[data-customer-actions]',
+    '[data-category-strip="home"]',
+    '[data-promo-banner]',
+    '[data-offers-rail]',
+  ]);
   await reorderCard.getByRole('button', { name: /Agregar de nuevo/i }).click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await expect(page.locator('[data-order-summary]')).toContainText('Total');
@@ -64,6 +77,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(page.locator('[data-business-dashboard]')).toContainText('Cliente recurrente');
   await expect(page.locator('[data-business-dashboard]')).toContainText('1 pedido previo');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Pedido repetido');
+  await page.locator('[data-business-view="metrics"]').click();
   const growthMetrics = page.locator('[data-direct-ordering-metrics]');
   await expect(growthMetrics).toContainText('Pedidos creados');
   await expect(growthMetrics).toContainText('Clientes recurrentes');
@@ -76,6 +90,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   }
 
   await openBusiness(page);
+  await page.locator('[data-business-view="orders"]').click();
   await expect(page.locator('[data-business-dashboard]')).toContainText('Cliente frecuente: revisar beneficio');
   await expect(page.locator('[data-business-dashboard]')).toContainText('5 pedidos locales');
 
@@ -132,7 +147,10 @@ async function openBusiness(page) {
     await page.locator('[data-pin-form]').press('Enter');
   }
   await expect(page.locator('[data-view="business"]')).toBeVisible();
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Central de pedidos');
+  const dashboard = page.locator('[data-business-dashboard]');
+  await expect(dashboard).toBeVisible();
+  await expect(dashboard.locator('[data-business-view="orders"]')).toBeVisible();
+  await expect(dashboard.locator('[data-business-workspace]')).toBeVisible();
 }
 
 async function enableRealGpsForLatestOrder(page) {
@@ -164,6 +182,26 @@ async function enableRealGpsForLatestOrder(page) {
   });
 }
 
+async function markLatestOrderDelivered(page) {
+  await page.evaluate(async () => {
+    const [{ getState, updateState }, { updateCustomerOrderSnapshot }] = await Promise.all([
+      import('/js/state.js'),
+      import('/js/core/customer-history.js'),
+    ]);
+    updateState((draft) => {
+      const order = draft.orders.find((candidate) => candidate.id === draft.lastOrderId) || draft.orders[0];
+      if (!order) return;
+      const at = new Date().toISOString();
+      order.status = 'delivered';
+      order.statusHistory = [...(order.statusHistory || []), { status: 'delivered', at }];
+      draft.lastOrderId = null;
+    });
+    const order = getState().orders.find((candidate) => candidate.id === getState().lastOrderId)
+      || getState().orders[0];
+    if (order) updateCustomerOrderSnapshot(order);
+  });
+}
+
 async function expectNoHorizontalOverflow(page) {
   const overflow = await page.evaluate(() => ({
     width: window.innerWidth,
@@ -171,4 +209,10 @@ async function expectNoHorizontalOverflow(page) {
     body: document.body.scrollWidth,
   }));
   expect(Math.max(overflow.doc, overflow.body)).toBeLessThanOrEqual(overflow.width + 1);
+}
+
+async function expectHomeSections(page, selectors) {
+  for (const selector of selectors) {
+    await expect(page.locator(selector)).toBeVisible();
+  }
 }

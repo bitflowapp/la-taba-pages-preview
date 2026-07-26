@@ -58,6 +58,30 @@ export function createHttpOrderRepository({
         body: { riderId },
       }));
     },
+    async listActiveRiders() {
+      return request('/business/riders/active');
+    },
+    async listAvailableRiderOrders() {
+      return request('/rider/orders/available');
+    },
+    async claimRiderOrder(publicCode, options = {}) {
+      return normalizeOrderPayload(await request(`/rider/orders/${encodeURIComponent(publicCode)}/claim`, {
+        method: 'POST',
+        body: options,
+      }));
+    },
+    async reassignRider(orderId, riderId, options = {}) {
+      return normalizeOrderPayload(await request(`/orders/${encodeURIComponent(orderId)}/rider`, {
+        method: 'PATCH',
+        body: { riderId, ...options },
+      }));
+    },
+    async confirmDelivery(orderId, code) {
+      return normalizeOrderPayload(await request(`/orders/${encodeURIComponent(orderId)}/delivery-confirmation`, {
+        method: 'POST',
+        body: { code },
+      }));
+    },
     async updateRiderLocation(orderId, location) {
       const normalized = normalizeTrackingLocation(location);
       if (!normalized) return repositoryResult(false, { message: 'Ubicación inválida.' });

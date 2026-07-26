@@ -24,7 +24,6 @@
     <div class="app-shell">
       <header class="topbar">
         <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio del comercio">
-          <span class="brand-mark" aria-hidden="true"><i></i></span>
           <span class="brand-text">
             <strong class="brand-word" data-business-name>TABA</strong>
             <small data-business-subtitle>Tienda de bebidas</small>
@@ -40,17 +39,11 @@
         </nav>
 
         <div class="topbar-actions">
-          <button class="ghost-button compact" type="button" data-admin-toggle data-demo-only hidden>Administrar pedidos</button>
-          <button class="ghost-button compact" type="button" data-nav-view="business" data-production-only hidden>Operación</button>
           <button class="primary-button compact cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
             <span data-cart-total-small>Pedido</span>
           </button>
         </div>
       </header>
-
-      <div class="demo-mode-banner" data-demo-mode-banner hidden role="status">
-        <span class="demo-mode-pill"><i aria-hidden="true"></i><strong>Demo</strong></span>
-      </div>
 
       <div class="pwa-banner pwa-banner-install" data-pwa-install-banner hidden>
         <span class="pwa-banner-icon" aria-hidden="true">
@@ -107,7 +100,7 @@
             <span class="status-item">Cobertura según tu zona</span>
           </div>
 
-          <button class="home-address-chip" type="button" data-nav-view="cart" data-home-address>
+          <div class="home-address-chip" role="note" data-home-address>
             <span class="address-chip-ico" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
                 <path d="M12 21.3s-6.6-6.3-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 4.8-6.6 11.1-6.6 11.1Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
@@ -118,22 +111,13 @@
               <small>Enviar a</small>
               <strong data-home-address-label>Elegí tu dirección al confirmar el pedido</strong>
             </span>
-            <span class="address-chip-go" aria-hidden="true">›</span>
-          </button>
+          </div>
 
           <div data-home-active-order hidden></div>
 
           <div class="search-box home-search">
             <span aria-hidden="true">⌕</span>
             <input data-search-input data-search-jump type="search" placeholder="Buscar bebidas…" aria-label="Buscar bebidas" />
-          </div>
-
-          <div class="rail-block">
-            <div class="rail-head">
-              <h2>Categorías</h2>
-              <button class="rail-link" type="button" data-nav-view="catalog">Ver todas ›</button>
-            </div>
-            <div class="category-strip category-tiles" data-category-strip="home"></div>
           </div>
 
           <button class="promo-banner promo-banner-neutral" type="button" data-category-id="promos" data-promo-banner hidden>
@@ -156,6 +140,14 @@
               <button class="rail-link" type="button" data-nav-view="catalog">Ver todas ›</button>
             </div>
             <div class="offers-rail" data-offers-rail></div>
+          </div>
+
+          <div class="rail-block home-categories-block">
+            <div class="rail-head">
+              <h2>Categorías</h2>
+              <button class="rail-link" type="button" data-nav-view="catalog">Ver todas ›</button>
+            </div>
+            <div class="category-strip category-tiles" data-category-strip="home"></div>
           </div>
 
           <div class="home-reorder-slot" data-customer-actions></div>
@@ -185,7 +177,7 @@
                 <span class="crumb-sep" aria-hidden="true">›</span>
                 <span class="crumb-current">Catálogo</span>
               </nav>
-              <h2 data-catalog-title>Todos</h2>
+              <h1 class="view-title" data-catalog-title>Todos</h1>
             </div>
           </div>
 
@@ -222,7 +214,7 @@
           <div data-catalog-dependent hidden>
           <div class="section-head">
             <div>
-              <h2>Tu pedido</h2>
+              <h1 class="view-title">Tu pedido</h1>
             </div>
             <div class="view-actions">
               <button class="secondary-button compact" type="button" data-nav-view="catalog">Seguir comprando</button>
@@ -239,7 +231,7 @@
             <form class="card checkout-form" data-checkout-form novalidate>
               <div class="checkout-heading">
                 <span>Finalizá en pocos pasos</span>
-                <h3>Datos de entrega</h3>
+                <h3 data-checkout-details-title>Datos de entrega</h3>
               </div>
               <div class="delivery-mode">
                 <label data-fulfillment-option="delivery">
@@ -254,11 +246,11 @@
 
               <div class="field-grid">
                 <label>
-                  Nombre <span class="req" aria-hidden="true">*</span>
+                  <span class="field-label">Nombre <span class="req" aria-hidden="true">*</span></span>
                   <input name="customerName" autocomplete="name" required placeholder="Tu nombre" />
                 </label>
                 <label>
-                  Teléfono <span class="req" aria-hidden="true">*</span>
+                  <span class="field-label">Teléfono <span class="req" aria-hidden="true">*</span></span>
                   <input name="customerPhone" autocomplete="tel" inputmode="tel" required placeholder="Ej. 299 555 1234" />
                 </label>
               </div>
@@ -266,11 +258,11 @@
               <div class="address-fields" data-address-field>
                 <div class="field-grid">
                   <label>
-                    Calle y número <span class="req" aria-hidden="true">*</span>
+                    <span class="field-label">Calle y número <span class="req" aria-hidden="true">*</span></span>
                     <input name="customerStreetAddress" autocomplete="address-line1" placeholder="Calle y número" />
                   </label>
                   <label>
-                    Localidad o zona <span class="req" aria-hidden="true">*</span>
+                    <span class="field-label">Localidad o zona <span class="req" aria-hidden="true">*</span></span>
                     <input name="customerNeighborhood" autocomplete="address-level2" placeholder="Localidad o zona" />
                   </label>
                 </div>
@@ -312,13 +304,20 @@
               <label class="remember-customer-row age-confirmation" data-age-confirmation hidden>
                 <input type="checkbox" name="ageConfirmed" />
                 <span>
-                  <strong>Confirmo que soy mayor de 18 años</strong>
+                  <strong data-age-confirmation-title>Confirmo que soy mayor de 18 años</strong>
                   <small>Presentaremos esta validación únicamente para productos con alcohol.</small>
                 </span>
               </label>
 
               <div class="summary-box" data-order-summary></div>
-              <div class="warning-box hidden" data-checkout-warning></div>
+              <div
+                class="warning-box hidden"
+                id="checkout-error"
+                data-checkout-warning
+                role="alert"
+                aria-live="assertive"
+                tabindex="-1"
+              ></div>
 
               <div class="trust-row" aria-hidden="false">
                 <span class="trust-text"><strong data-checkout-trust-title>Revisá tus datos.</strong><small data-checkout-trust-copy>Vas a ver el avance del pedido desde TABA.</small></span>
@@ -336,12 +335,6 @@
         </section>
 
         <section class="section app-view" data-view="tracking" hidden aria-hidden="true">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Seguimiento</p>
-              <h2>Seguimiento del pedido</h2>
-            </div>
-          </div>
           <div data-tracking-panel></div>
         </section>
 
@@ -349,7 +342,7 @@
           <div class="section-head">
             <div>
               <p class="eyebrow">Local</p>
-              <h2 data-business-profile-name>TABA</h2>
+              <h1 class="view-title" data-business-profile-name>TABA</h1>
               <p class="profile-lead" data-business-subtitle>Contacto, horarios y condiciones del local.</p>
             </div>
           </div>
@@ -368,21 +361,6 @@
                 <li><span>Retiro en local</span><strong>A coordinar con el local</strong></li>
               </ul>
             </div>
-            <div class="card" data-demo-only hidden>
-              <h3>Cómo trabajamos</h3>
-              <p>Pedí online y retirás en el local o recibís por delivery propio.</p>
-              <ol class="how-strip">
-                <li><strong>1</strong> Armás y confirmás el pedido</li>
-                <li><strong>2</strong> Lo preparamos en el local</li>
-                <li><strong>3</strong> Seguís cada avance hasta la entrega</li>
-              </ol>
-              <p class="form-hint">Acceso con PIN para el equipo del comercio.</p>
-              <div class="button-row">
-                <button class="secondary-button" type="button" data-open-admin-view="business">Panel del negocio</button>
-                <button class="ghost-button" type="button" data-open-admin-view="rider">Vista del repartidor</button>
-              </div>
-              <button class="ghost-button compact pitch-trigger" type="button" data-open-pitch>Guía de demo</button>
-            </div>
           </div>
         </section>
 
@@ -390,7 +368,7 @@
           <div class="card admin-lock-card" data-admin-locked data-demo-auth-only>
             <div>
               <p class="eyebrow">Negocio</p>
-              <h2>Ingresá para administrar pedidos</h2>
+              <h1>Ingresá para administrar pedidos</h1>
               <p>Panel de ventas, stock y estados del día para el equipo del comercio.</p>
             </div>
             <div class="button-row">
@@ -402,7 +380,7 @@
           <div class="card admin-lock-card production-auth-card" data-production-only data-production-auth-card="business" hidden>
             <div>
               <p class="eyebrow">Negocio</p>
-              <h2>Acceso seguro requerido</h2>
+              <h1>Acceso seguro requerido</h1>
               <p>Ingresá con una cuenta owner o empleado vinculada a este comercio.</p>
             </div>
             <form class="production-auth-form" data-production-auth-form="business">
@@ -427,8 +405,8 @@
           <div data-admin-unlocked hidden>
             <div class="section-head">
               <div>
-                <p class="eyebrow">Administrar pedidos</p>
-                <h2>Resumen del negocio</h2>
+                <p class="eyebrow">Operación del local</p>
+                <h1>Central de pedidos</h1>
               </div>
               <div class="view-actions">
                 <button class="secondary-button compact" type="button" data-open-admin-view="rider">Vista rider</button>
@@ -443,7 +421,7 @@
           <div class="card admin-lock-card" data-admin-locked data-demo-auth-only>
             <div>
               <p class="eyebrow">Repartidor</p>
-              <h2>Ingresá para ver entregas</h2>
+              <h1>Ingresá para ver entregas</h1>
               <p>Vista operativa para salida del local, llegada al domicilio y entrega final.</p>
             </div>
             <div class="button-row">
@@ -455,7 +433,7 @@
           <div class="card admin-lock-card production-auth-card" data-production-only data-production-auth-card="rider" hidden>
             <div>
               <p class="eyebrow">Repartidor</p>
-              <h2>Acceso seguro requerido</h2>
+              <h1>Acceso seguro requerido</h1>
               <p>Ingresá con una cuenta rider activa de este comercio.</p>
             </div>
             <form class="production-auth-form" data-production-auth-form="rider">
@@ -481,7 +459,7 @@
             <div class="section-head rider-section-head">
               <div>
                 <p class="eyebrow">Repartidor de <span data-rider-business-name>TABA</span></p>
-                <h2 class="rider-title">Mis entregas</h2>
+                <h1 class="rider-title">Mis entregas</h1>
               </div>
             </div>
             <div data-delivery-panel></div>
@@ -496,17 +474,16 @@
       <nav class="mobile-nav" aria-label="Navegación móvil">
         <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>
         <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
-        <button type="button" data-nav-view="cart"><span class="mn-ico icon-order" aria-hidden="true"></span><span class="mn-label">Pedido</span><span class="mn-badge" data-cart-count-mobile>0</span></button>
         <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguir</span></button>
         <button type="button" data-nav-view="profile"><span class="mn-ico icon-store" aria-hidden="true"></span><span class="mn-label">Local</span></button>
       </nav>
     </div>
 
-    <dialog class="product-modal" data-product-modal>
+    <dialog class="product-modal" data-product-modal aria-label="Detalle del producto">
       <div data-modal-content></div>
     </dialog>
 
-    <dialog class="pin-modal" data-pin-modal data-demo-only>
+    <dialog class="pin-modal" data-pin-modal data-demo-only aria-label="Acceso del equipo">
       <form method="dialog" class="pin-card" data-pin-form>
         <h2>Acceso del negocio</h2>
         <p>Ingresá el código del comercio para ver la administración de pedidos y el reparto.</p>
@@ -519,19 +496,19 @@
       </form>
     </dialog>
 
-    <dialog class="cancel-modal" data-cancel-modal>
+    <dialog class="cancel-modal" data-cancel-modal aria-label="Cancelar pedido">
       <div data-cancel-content></div>
     </dialog>
 
-    <dialog class="cancel-modal" data-catalog-reset-modal>
+    <dialog class="cancel-modal" data-catalog-reset-modal aria-label="Restaurar catálogo">
       <div data-catalog-reset-content></div>
     </dialog>
 
-    <dialog class="cancel-modal" data-business-setup-reset-modal>
+    <dialog class="cancel-modal" data-business-setup-reset-modal aria-label="Restaurar configuración">
       <div data-business-setup-reset-content></div>
     </dialog>
 
-    <dialog class="cancel-modal" data-repeat-modal>
+    <dialog class="cancel-modal" data-repeat-modal aria-label="Repetir pedido">
       <div class="pin-card">
         <h2>Repetir pedido</h2>
         <p>Repetir este pedido reemplazará los productos que ya tenés en el carrito.</p>
@@ -577,7 +554,7 @@
             <li><strong>Pedido armado por WhatsApp</strong><span>Llega listo para confirmar, sin transcribir audios.</span></li>
             <li><strong>Panel para gestionar pedidos</strong><span>Aceptás, preparás y despachás desde el celular.</span></li>
             <li><strong>QR listo para imprimir</strong><span>Pegalo en el mostrador y que pidan desde la mesa o la vereda.</span></li>
-            <li><strong>Presentación adaptable a tu marca</strong><span>Nombre, colores y catálogo a la medida de tu comercio.</span></li>
+            <li><strong>Experiencia adaptable a tu marca</strong><span>Nombre, colores y catálogo a la medida de tu comercio.</span></li>
           </ul>
         </section>
 
@@ -619,11 +596,8 @@
         <div class="pitch-cta-grid">
           <button class="primary-button" type="button" data-close-pitch>Probar la experiencia</button>
           <button class="secondary-button" type="button" data-pitch-go="catalog">Ver experiencia cliente</button>
-          <button class="secondary-button" type="button" data-pitch-go="business" data-demo-only>Ver panel negocio</button>
-          <button class="secondary-button" type="button" data-pitch-go="rider" data-demo-only>Ver vista repartidor</button>
           <button class="ghost-button pitch-cta-whatsapp" type="button" data-pitch-go="whatsapp" data-whatsapp-available hidden>Hablar por WhatsApp</button>
         </div>
-        <p class="form-hint pitch-note">Presentación con catálogo de muestra: los pedidos quedan solo en este dispositivo.</p>
       </div>
     </dialog>
 

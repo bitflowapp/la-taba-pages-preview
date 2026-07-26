@@ -1,0 +1,352 @@
+.delivery-layout,
+.rider-map-experience,
+.rider-history {
+  display: grid;
+  gap: 16px;
+}
+
+.rider-card,
+.rider-sheet {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: white;
+  box-shadow: var(--shadow-xs);
+}
+
+.rider-sheet-topbar,
+.rider-contact,
+.rider-history-row,
+.rider-copy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.rider-delivery-head {
+  display: grid;
+  gap: 5px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--taba-border);
+}
+
+.rider-delivery-head small {
+  color: var(--taba-muted);
+  font-size: 12px;
+}
+
+.rider-delivery-head h2,
+.rider-delivery-head p {
+  margin: 0;
+}
+
+.rider-delivery-head h2 {
+  font-size: 22px;
+  letter-spacing: -0.025em;
+}
+
+.rider-delivery-head p {
+  color: var(--taba-muted);
+  line-height: 1.45;
+}
+
+.rider-online-chip,
+.rider-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: #eaf8f0;
+  color: #116a3a;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.rider-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.rider-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rider-assignment-context {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--taba-muted);
+  font-size: 12px;
+}
+
+.rider-assignment-context span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.rider-assignment-context strong {
+  color: var(--taba-ink);
+}
+
+.rider-metrics > span,
+.sheet-metrics > span {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--taba-subtle);
+}
+
+.rider-metrics .metric-priority {
+  grid-column: 1 / -1;
+}
+
+.rider-metrics small,
+.sheet-metrics small {
+  color: var(--taba-muted);
+  font-size: 11px;
+}
+
+.rider-address,
+.rider-contact,
+.rider-reference,
+.rider-instructions,
+.delivery-code-panel,
+.delivery-proof-panel,
+.gps-diagnostics,
+.street-test-panel {
+  padding: 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: white;
+}
+
+.rider-address,
+.rider-reference,
+.rider-instructions,
+.delivery-code-panel-copy,
+.delivery-proof-copy,
+.rider-contact-text {
+  display: grid;
+  gap: 3px;
+}
+
+.rider-contact {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+  gap: 8px;
+}
+
+.rider-contact-icon,
+.round-action {
+  display: inline-grid;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.rider-contact-icon {
+  background: var(--taba-red-soft);
+  color: var(--taba-red);
+}
+
+.rider-contact-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.rider-contact-text {
+  min-width: 0;
+}
+
+.rider-contact-text strong,
+.rider-contact-text em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rider-contact-text em {
+  color: var(--taba-muted);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.round-action {
+  border: 1px solid var(--taba-border);
+  background: white;
+  color: var(--taba-ink);
+  box-shadow: var(--shadow-xs);
+}
+
+.round-action.whatsapp {
+  border-color: #b8dfc7;
+  background: #eaf8f0;
+  color: #116a3a;
+}
+
+.rider-actions,
+.rider-sheet-actions,
+.rider-quick-actions,
+.rider-map-actions,
+.delivery-code-controls,
+.delivery-proof-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rider-sheet-actions {
+  flex-wrap: nowrap;
+}
+
+.rider-sheet-actions .compact {
+  padding-inline: 8px;
+  font-size: 13px;
+}
+
+.production-delivery-code {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #ffc5ca;
+  border-radius: var(--radius-sm);
+  background: var(--taba-red-soft);
+}
+
+.production-delivery-code input {
+  letter-spacing: 0.28em;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.rider-actions .primary-button,
+.rider-sheet-actions .primary-button {
+  flex: 1 1 180px;
+}
+
+.rider-map-stage,
+.rider-map-shell {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--taba-subtle);
+}
+
+.rider-map-overlay-top {
+  position: absolute;
+  z-index: 500;
+  top: 12px;
+  right: 12px;
+  left: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rider-map-actions {
+  position: absolute;
+  z-index: 500;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.rider-fab {
+  display: inline-grid;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgb(23 23 26 / 10%);
+  border-radius: 50%;
+  background: white;
+  box-shadow: var(--shadow-sm);
+  color: var(--taba-ink);
+}
+
+.rider-fab.accent {
+  border-color: var(--taba-red);
+  background: var(--taba-red);
+  color: white;
+}
+
+.rider-fab.is-ghost {
+  opacity: 0.65;
+}
+
+.delivery-proof-upload {
+  position: relative;
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  padding: 18px;
+  border: 1px dashed #bdbdc3;
+  border-radius: var(--radius-sm);
+  background: var(--taba-subtle);
+  text-align: center;
+}
+
+.delivery-proof-upload input {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.delivery-proof-preview,
+.proof-modal-image {
+  max-height: 360px;
+  margin-inline: auto;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+}
+
+.rider-history-row {
+  padding: 13px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: white;
+}
+
+.rider-history-text {
+  display: grid;
+  flex: 1;
+}
+
+.rider-history-check {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: #eaf8f0;
+  color: var(--taba-success);
+}
+
+.gps-diagnostics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}

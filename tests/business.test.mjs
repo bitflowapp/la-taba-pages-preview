@@ -55,7 +55,7 @@ test('business actions advance status, cancel orders, edit stock, and toggle pro
     delivery: {
       driverName: 'Juli',
       driverPhone: '2991112233',
-      estimatedMinutes: 20,
+      estimatedMinutes: 7,
       currentLocationLabel: 'En el local',
     },
   };
@@ -69,6 +69,7 @@ test('business actions advance status, cancel orders, edit stock, and toggle pro
   assert.match(result.message, /Estado del pedido actualizado/);
   assert.equal(getState().orders[0].status, 'preparing');
   assert.equal(getState().orders[0].delivery.estimatedPreparationMinutes, 20);
+  assert.equal(getState().orders[0].delivery.estimatedMinutes, 7, 'preparación no se reutiliza como ETA de entrega');
   assert.match(getState().orders[0].delivery.currentLocationLabel, /20 min/);
 
   // Confirmación segura: el primer tap en "Rechazar" NO cancela (abre el modal).
@@ -112,12 +113,47 @@ test('business actions advance status, cancel orders, edit stock, and toggle pro
   assert.equal(getState().products.find((product) => product.id === 'qa-hielo').available, !availabilityBefore);
 });
 
+test('business prepares delivery orders but cannot start or finish the rider workflow', () => {
+  const at = new Date().toISOString();
+  const order = {
+    id: 'LT-ROLE-1',
+    customerName: 'Cliente',
+    customerPhone: '2990000000',
+    address: 'Dirección',
+    deliveryMode: 'delivery',
+    paymentMethod: 'Efectivo',
+    notes: '',
+    createdAt: at,
+    status: 'preparing',
+    items: [],
+    subtotal: 0,
+    deliveryFee: 0,
+    total: 0,
+    statusHistory: [{ status: 'received', at }, { status: 'preparing', at }],
+    delivery: { estimatedMinutes: 0, estimatedPreparationMinutes: 20 },
+  };
+  setState({ ...getState(), orders: [order], lastOrderId: order.id });
+
+  let result = handleBusinessAction(makeTarget({
+    '[data-order-advance]': { orderAdvance: order.id },
+  }));
+  assert.equal(result.ok, true);
+  assert.equal(getState().orders[0].status, 'ready');
+
+  result = handleBusinessAction(makeTarget({
+    '[data-order-advance]': { orderAdvance: order.id },
+  }));
+  assert.equal(result.ok, false);
+  assert.match(result.message, /repartidor/);
+  assert.equal(getState().orders[0].status, 'ready');
+});
+
 function cancelTestOrder(id, status, deliveryMode = 'delivery') {
   const at = new Date().toISOString();
   return {
     id, customerName: 'QA Cancel', customerPhone: '2990000000', address: 'Roca 123',
     deliveryMode, paymentMethod: 'Efectivo', notes: '', createdAt: at, status,
-    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacío', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 1000, unit: 'unidad' }],
     subtotal: 1000, deliveryFee: 0, total: 1000,
     statusHistory: [{ status: 'received', at }],
   };
@@ -186,17 +222,17 @@ test('business metrics compute ticket promedio, delivery vs retiro y productos m
     {
       id: 'LT-10', status: 'preparing', total: 10000, deliveryMode: 'delivery', createdAt: today,
       items: [
-        { productId: 'p-asado', name: 'Asado', quantity: 2 },
-        { productId: 'qa-agua-mineral', name: 'Coca', quantity: 1 },
+        { productId: 'qa-gaseosa-cola', name: 'Gaseosa QA', quantity: 2 },
+        { productId: 'qa-agua-mineral', name: 'Agua QA', quantity: 1 },
       ],
     },
     {
       id: 'LT-11', status: 'delivered', total: 6000, deliveryMode: 'pickup', createdAt: today,
-      items: [{ productId: 'p-asado', name: 'Asado', quantity: 1 }],
+      items: [{ productId: 'qa-gaseosa-cola', name: 'Gaseosa QA', quantity: 1 }],
     },
     {
       id: 'LT-12', status: 'cancelled', total: 99999, deliveryMode: 'delivery', createdAt: today,
-      items: [{ productId: 'p-asado', name: 'Asado', quantity: 50 }],
+      items: [{ productId: 'qa-gaseosa-cola', name: 'Gaseosa QA', quantity: 50 }],
     },
   ], [], now);
 
@@ -206,7 +242,7 @@ test('business metrics compute ticket promedio, delivery vs retiro y productos m
   assert.equal(metrics.todayDeliveryCount, 1);
   assert.equal(metrics.todayPickupCount, 1);
   // El cancelado no cuenta ni en ventas ni en top de productos.
-  assert.equal(metrics.topProducts[0].productId, 'p-asado');
+  assert.equal(metrics.topProducts[0].productId, 'qa-gaseosa-cola');
   assert.equal(metrics.topProducts[0].quantity, 3);
   assert.equal(metrics.topProducts.length, 2);
 });

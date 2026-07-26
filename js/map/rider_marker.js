@@ -15,10 +15,17 @@ export function createRiderIcon(L, { status = 'received', source = 'simulation',
     html: `
       <span class="lt-rider-marker-halo" aria-hidden="true"></span>
       <span class="lt-rider-helmet-core" style="--heading:${safeHeading}deg" aria-hidden="true">
-        <svg class="lt-rider-helmet-icon" viewBox="0 0 64 64" focusable="false" aria-hidden="true">
+        <svg class="lt-rider-helmet-icon" viewBox="0 0 64 64" role="img" aria-label="Delivery en moto">
           <circle class="lt-rider-pin" cx="32" cy="32" r="25"></circle>
           <circle class="lt-rider-core-disc" cx="32" cy="32" r="17"></circle>
-          <text class="lt-rider-core-letter" x="32" y="38" text-anchor="middle">R</text>
+          <g class="lt-rider-delivery-icon" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="23" cy="39" r="4.5"></circle>
+            <circle cx="42" cy="39" r="4.5"></circle>
+            <path d="M27.5 39h10l4-9h-7l-4-6h-8"></path>
+            <path d="M29 30h-7l-3 6h8"></path>
+            <path d="M39 27h6"></path>
+            <path d="M24 19h10v7H24z"></path>
+          </g>
         </svg>
       </span>`,
     iconSize: [52, 52],

@@ -259,6 +259,10 @@ export function ensureRiderMarker(entry, view) {
       source: view.riderLocation.source,
       heading: view.riderLocation.heading,
     }),
+    alt: 'Ubicación actual del delivery',
+    title: 'Ubicación actual del delivery',
+    keyboard: false,
+    interactive: false,
   }).addTo(entry.map);
   entry.lastRenderedLocation = { ...view.riderLocation, renderedAt: Date.now() };
   entry.lastStatus = view.order?.status || null;

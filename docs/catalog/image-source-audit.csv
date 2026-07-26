@@ -1,1 +1,1 @@
-external_id,sku,source_url,source_type,rights_status,variant_verified,capacity_verified,package_verified,pack_verified,status,checked_at,notes
+external_id,sku,source_url,source_type,rights_status,rights_reference,expected_sha256,variant_verified,capacity_verified,package_verified,pack_verified,status,checked_at,notes

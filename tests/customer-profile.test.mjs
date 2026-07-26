@@ -99,7 +99,7 @@ test('customer profile: normaliza pedidos viejos sin campos nuevos', () => {
     customerName: 'Cliente Viejo',
     customerPhone: '2991112222',
     address: 'Roca 1',
-    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 1000, unit: 'unidad' }],
     createdAt: '2026-06-01T12:00:00.000Z',
   });
 

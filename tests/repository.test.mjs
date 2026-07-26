@@ -295,7 +295,7 @@ test('http repository speaks the future backend contract with normalized payload
               customerName: 'HTTP QA',
               customerPhone: '299',
               address: 'Roca 1',
-              items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: 1000 }],
+              items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 1000 }],
               subtotal: 1000,
               deliveryFee: 0,
               total: 1000,

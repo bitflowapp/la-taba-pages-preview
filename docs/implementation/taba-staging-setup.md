@@ -65,12 +65,14 @@ públicos. Validar sin imprimir la clave:
 
 ```sh
 npm run config:check -- path/to/runtime-config.staging.js
-npm run staging:validate -- path/to/runtime-config.staging.js
+npm run staging:validate -- path/to/runtime-config.staging.js path/to/catalog-real.csv
 ```
 
 `deploymentEnvironment=production` con URL localhost es rechazado. Una
 configuración parcial, URL con credenciales, HTTP remoto o clave privilegiada
 también es rechazada. El archivo real de runtime no debe contener secretos.
+La validación de staging también falla si el catálogo es el template vacío o
+si falta cualquier imagen aprobada del manifiesto.
 
 ## Secuencia de habilitación
 
@@ -78,7 +80,10 @@ también es rechazada. El archivo real de runtime no debe contener secretos.
 2. Crear comercio y memberships con una sesión/admin segura fuera del browser.
 3. Importar catálogo validado, inicialmente `available=false`.
 4. Configurar límites, alcohol y operación.
-5. Probar Auth/RLS/DTO/rider con cuentas aisladas.
-6. Recién después marcar productos verificados y habilitar `ordering_enabled`.
+5. Con una sesión owner/admin, registrar el WhatsApp público mediante
+   `set_business_whatsapp_contact(business_id, telefono, true)`. No actualizar
+   `whatsapp_phone` ni los sellos de verificación directamente.
+6. Probar Auth/RLS/DTO/rider con cuentas aisladas.
+7. Recién después marcar productos verificados y habilitar `ordering_enabled`.
 
 No usar producción ni desplegarla como parte de este runbook.

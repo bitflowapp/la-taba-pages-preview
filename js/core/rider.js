@@ -31,9 +31,10 @@ export function getAssignableDeliveryOrder(orders = []) {
     })[0] || null;
 }
 
-// Cola del rider: incluye pedidos de delivery que todavía no salieron
-// (received/preparing) para que el repartidor los vea "esperando preparación".
-const RIDER_QUEUE_STATUSES = Object.freeze(['received', 'preparing', 'ready', 'on_the_way', 'arriving']);
+// El rider entra en escena cuando el negocio termina de preparar el pedido.
+// Recibidos y pedidos en preparación pertenecen exclusivamente a la cola del
+// local y nunca deben exponer datos del cliente en la vista de reparto.
+const RIDER_QUEUE_STATUSES = Object.freeze(['ready', 'on_the_way', 'arriving']);
 const RIDER_IN_PROGRESS = Object.freeze(['on_the_way', 'arriving']);
 
 export function isRiderQueueOrder(order) {
@@ -70,9 +71,9 @@ function toSortableTime(value) {
 
 export function getRiderActionState(order) {
   return {
-    canLeave: canTransitionOrderStatus(order, 'on_the_way'),
-    canArrive: canTransitionOrderStatus(order, 'arriving'),
-    canDeliver: canTransitionOrderStatus(order, 'delivered'),
+    canLeave: order?.status === 'ready' && canTransitionOrderStatus(order, 'on_the_way'),
+    canArrive: order?.status === 'on_the_way' && canTransitionOrderStatus(order, 'arriving'),
+    canDeliver: order?.status === 'arriving' && canTransitionOrderStatus(order, 'delivered'),
   };
 }
 

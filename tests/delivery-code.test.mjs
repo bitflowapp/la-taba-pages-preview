@@ -92,7 +92,7 @@ test('delivery code: un pedido entregado no admite revalidacion por codigo', () 
       status: 'delivered',
       createdAt: '2026-06-07T10:00:00.000Z',
       statusHistory: [{ status: 'delivered', at: '2026-06-07T10:15:00.000Z' }],
-      items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio especial', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+      items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA especial', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
       deliveryMode: 'delivery',
       customerName: 'Cliente entregado',
       customerPhone: '2995553333',
@@ -110,13 +110,13 @@ test('delivery code: un pedido entregado no admite revalidacion por codigo', () 
   });
 });
 
-test('delivery code: pedidos viejos sin codigo hidratan con fallback estable', () => {
+test('delivery code: pedidos viejos sin código no inventan un secreto', () => {
   const oldOrder = {
     id: 'LT-OLD',
     status: 'on_the_way',
     createdAt: '2026-06-07T10:00:00.000Z',
     statusHistory: [{ status: 'on_the_way', at: '2026-06-07T10:00:00.000Z' }],
-    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
     deliveryMode: 'delivery',
     customerName: 'Cliente viejo',
     customerPhone: '2995551111',
@@ -126,10 +126,8 @@ test('delivery code: pedidos viejos sin codigo hidratan con fallback estable', (
   };
 
   setState({ ...getState(), orders: [oldOrder], lastOrderId: 'LT-OLD' });
-  const firstCode = getState().orders[0].deliveryCode.code;
-
-  assert.match(firstCode, /^\d{4}$/);
+  assert.equal(getState().orders[0].deliveryCode, undefined);
 
   setState({ ...getState(), orders: [oldOrder], lastOrderId: 'LT-OLD' });
-  assert.equal(getState().orders[0].deliveryCode.code, firstCode);
+  assert.equal(getState().orders[0].deliveryCode, undefined);
 });

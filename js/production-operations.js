@@ -18,6 +18,8 @@ let auth = null;
 let authStop = null;
 let notify = () => {};
 let refreshSequence = 0;
+let availableRiderOrders = [];
+let activeBusinessRiders = [];
 let access = {
   status: 'signed_out',
   user: null,
@@ -157,6 +159,43 @@ export async function handleProductionOperationsAction(target) {
     );
   }
 
+  const businessAssign = target.closest('[data-production-business-assign]');
+  if (businessAssign) {
+    const guard = requireViewAccess('business');
+    if (!guard.ok) return { handled: true, ...guard };
+    const orderId = businessAssign.dataset.productionBusinessAssign;
+    const order = getState().orders.find((candidate) => (
+      candidate.id === orderId
+      || candidate.backendId === orderId
+      || candidate.code === orderId
+    ));
+    const current = workflowStatus(order);
+    if (!canAssignBusinessRider(order)) {
+      return {
+        handled: true,
+        ok: false,
+        message: 'Este pedido ya no admite asignación de rider.',
+      };
+    }
+    const card = businessAssign.closest('.production-order-card');
+    const riderId = card?.querySelector('[data-production-rider-select]')?.value || '';
+    const result = await repository.assignRider(
+      order.backendId || order.id,
+      riderId,
+      {
+        expectedStatus: current,
+        expectedRiderId: order.assignedRiderId || null,
+      },
+    );
+    if (result.ok) await repository.listOrders();
+    notify();
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.message,
+    };
+  }
+
   const businessCancel = target.closest('[data-production-business-cancel]');
   if (businessCancel) {
     const guard = requireViewAccess('business');
@@ -182,6 +221,48 @@ export async function handleProductionOperationsAction(target) {
     );
     if (result.ok && riderNext.dataset.nextStatus === 'delivered') stopGpsShare();
     return result;
+  }
+
+  const riderConfirm = target.closest('[data-production-rider-confirm]');
+  if (riderConfirm) {
+    const guard = requireViewAccess('rider');
+    if (!guard.ok) return { handled: true, ...guard };
+    const orderId = riderConfirm.dataset.productionRiderConfirm;
+    const container = riderConfirm.closest('.production-order-card');
+    const code = container?.querySelector('[data-production-delivery-code]')?.value || '';
+    const result = await repository.confirmDelivery(orderId, code, {
+      expectedStatus: 'arrived',
+    });
+    if (result.ok) {
+      stopGpsShare();
+      await refreshRiderOrders();
+    }
+    notify();
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.message,
+    };
+  }
+
+  const riderClaim = target.closest('[data-production-rider-claim]');
+  if (riderClaim) {
+    const guard = requireViewAccess('rider');
+    if (!guard.ok) return { handled: true, ...guard };
+    const result = await repository.claimRiderOrder(
+      riderClaim.dataset.productionRiderClaim,
+      {
+        expectedStatus: riderClaim.dataset.expectedStatus || 'ready',
+        expectedRiderId: null,
+      },
+    );
+    if (result.ok) await refreshRiderOrders();
+    notify();
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? 'Entrega asignada a tu cuenta.' : result.message,
+    };
   }
 
   const gpsStart = target.closest('[data-production-gps-start]');
@@ -225,6 +306,11 @@ export function nextRiderStatus(order = {}) {
   return null;
 }
 
+export function canAssignBusinessRider(order = {}) {
+  return order.deliveryMode === 'delivery'
+    && ['ready', 'assigned'].includes(workflowStatus(order));
+}
+
 // El permiso de geolocalización no implica compartir fuera de la superficie
 // operativa del rider. Este corte es idempotente y lo invoca app.js tanto al
 // abandonar #rider como cuando la página deja de existir.
@@ -246,6 +332,8 @@ export function resetProductionOperationsForTests() {
   auth = null;
   notify = () => {};
   refreshSequence = 0;
+  availableRiderOrders = [];
+  activeBusinessRiders = [];
   access = {
     status: 'signed_out',
     user: null,
@@ -286,6 +374,8 @@ async function refreshProductionAccess() {
 }
 
 function clearProductionOrders() {
+  availableRiderOrders = [];
+  activeBusinessRiders = [];
   updateState((draft) => {
     draft.orders = [];
     draft.lastOrderId = null;
@@ -297,7 +387,19 @@ async function activateAuthorizedAccess(result, expectedSequence = null) {
   const sequence = expectedSequence ?? ++refreshSequence;
   repository?.stopSync?.();
   repository?.startSync?.();
-  await repository.listOrders();
+  if (result.membership?.role === 'rider') {
+    activeBusinessRiders = [];
+    await refreshRiderOrders();
+  } else {
+    availableRiderOrders = [];
+    const [, ridersResult] = await Promise.all([
+      repository.listOrders(),
+      repository.listActiveRiders(),
+    ]);
+    activeBusinessRiders = ridersResult?.ok && Array.isArray(ridersResult.riders)
+      ? ridersResult.riders
+      : [];
+  }
   if (expectedSequence !== null && sequence !== refreshSequence) return;
   access = {
     status: 'authenticated',
@@ -350,7 +452,7 @@ function businessWorkspaceMarkup() {
     <div class="production-ops-head">
       <div>
         <p class="eyebrow">Operación segura</p>
-        <h2>Pedidos del negocio</h2>
+        <h1>Pedidos del negocio</h1>
         <p>${escapeHtml(roleLabel(access.membership?.role))} · sesión verificada</p>
       </div>
       <button class="ghost-button compact" type="button" data-production-sign-out>Cerrar sesión</button>
@@ -369,6 +471,13 @@ function businessOrderMarkup(order) {
       <strong>${escapeHtml(String(item.quantity || 0))} × ${escapeHtml(item.name || 'Producto')}</strong>
       ${item.unit ? `<span>${escapeHtml(item.unit)}</span>` : ''}
     </li>
+  `).join('');
+  const canAssignRider = canAssignBusinessRider(order);
+  const riderOptions = activeBusinessRiders.map((rider) => `
+    <option
+      value="${escapeAttribute(rider.id)}"
+      ${rider.id === order.assignedRiderId ? 'selected' : ''}
+    >${escapeHtml(rider.displayName)}</option>
   `).join('');
   return `
     <article class="production-order-card">
@@ -414,9 +523,23 @@ function businessOrderMarkup(order) {
           >Cancelar</button>
         ` : ''}
       </div>
-      ${current === 'ready' && order.deliveryMode === 'delivery'
-        ? '<p class="form-hint">Listo: esperando que un rider lo tome.</p>'
-        : ''}
+      ${canAssignRider ? `
+        <div class="production-rider-assignment">
+          ${riderOptions ? `
+            <label>
+              <span>${current === 'assigned' ? 'Reasignar rider' : 'Asignar rider'}</span>
+              <select data-production-rider-select>
+                ${riderOptions}
+              </select>
+            </label>
+            <button
+              class="secondary-button compact"
+              type="button"
+              data-production-business-assign="${escapeAttribute(order.id)}"
+            >${current === 'assigned' ? 'Reasignar' : 'Asignar'}</button>
+          ` : '<p class="form-hint">No hay riders activos habilitados para asignar.</p>'}
+        </div>
+      ` : ''}
     </article>
   `;
 }
@@ -426,37 +549,86 @@ function riderWorkspaceMarkup() {
     order.deliveryMode === 'delivery'
     && ['ready', 'assigned', 'picked_up', 'on_the_way', 'arrived'].includes(workflowStatus(order))
   ));
-  const rows = orders.length
-    ? orders.map(riderOrderMarkup).join('')
-    : emptyMarkup('No hay entregas disponibles o asignadas a esta cuenta.');
+  const rows = orders.map(riderOrderMarkup).join('');
+  const queue = availableRiderOrders.map(availableRiderOrderMarkup).join('');
   return `
     <div class="production-ops-head">
       <div>
         <p class="eyebrow">Rider autenticado</p>
-        <h2>Mis entregas</h2>
+        <h1>Mis entregas</h1>
         <p>La ubicación sólo se publica cuando activás GPS.</p>
       </div>
       <button class="ghost-button compact" type="button" data-production-sign-out>Cerrar sesión</button>
     </div>
-    <div class="production-order-list" aria-live="polite">${rows}</div>
+    ${rows ? `
+      <section class="production-rider-section" aria-labelledby="production-rider-active-title">
+        <div class="panel-head"><h3 id="production-rider-active-title">Entrega activa</h3></div>
+        <div class="production-order-list" aria-live="polite">${rows}</div>
+      </section>` : ''}
+    ${queue ? `
+      <section class="production-rider-section" aria-labelledby="production-rider-queue-title">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Para tomar</p>
+            <h3 id="production-rider-queue-title">Pedidos listos</h3>
+          </div>
+          <span class="mini-badge">${availableRiderOrders.length}</span>
+        </div>
+        <div class="production-order-list">${queue}</div>
+      </section>` : ''}
+    ${!rows && !queue ? emptyMarkup('No hay entregas disponibles o asignadas a esta cuenta.') : ''}
   `;
 }
 
+function availableRiderOrderMarkup(order) {
+  return `
+    <article class="production-order-card is-available">
+      <div class="production-order-head">
+        <div>
+          <span class="production-order-code">${escapeHtml(order.publicCode)}</span>
+          <strong>${escapeHtml(order.pickupBranch || 'Sucursal asignada')}</strong>
+        </div>
+        <span class="status-pill ready">Listo</span>
+      </div>
+      <dl class="production-order-meta">
+        <div><dt>Zona</dt><dd>${escapeHtml(order.generalZone || 'Zona general')}</dd></div>
+        <div><dt>Paquetes</dt><dd>${escapeHtml(order.approximatePackages)}</dd></div>
+        <div><dt>Cobro</dt><dd>${escapeHtml(order.paymentMethod || 'A coordinar')}</dd></div>
+        ${order.collectionAmount == null
+          ? ''
+          : `<div><dt>Importe</dt><dd>${escapeHtml(String(order.collectionAmount))}</dd></div>`}
+      </dl>
+      ${order.operationalRestrictions
+        ? `<p class="form-hint">${escapeHtml(order.operationalRestrictions)}</p>`
+        : ''}
+      <button
+        class="primary-button"
+        type="button"
+        data-production-rider-claim="${escapeAttribute(order.publicCode)}"
+        data-expected-status="${escapeAttribute(order.expectedStatus || 'ready')}"
+      >Aceptar entrega</button>
+    </article>`;
+}
+
 function riderOrderMarkup(order) {
-  const next = nextRiderStatus(order);
+  const current = workflowStatus(order);
+  const next = current === 'arrived' ? null : nextRiderStatus(order);
   const sharing = gpsShare.watchId !== null && gpsShare.orderId === order.id;
-  const canShare = ['on_the_way', 'arrived'].includes(workflowStatus(order));
+  const canShare = ['on_the_way', 'arrived'].includes(current);
+  const showPrivateDelivery = ['on_the_way', 'arrived'].includes(current);
   return `
     <article class="production-order-card">
       <div class="production-order-head">
         <div>
           <span class="production-order-code">${escapeHtml(order.id)}</span>
-          <strong>${escapeHtml(order.customerName)}</strong>
+          <strong>${showPrivateDelivery ? escapeHtml(order.customerName) : 'Retiro en sucursal'}</strong>
         </div>
         <span class="status-pill ${escapeHtml(order.status)}">${escapeHtml(statusLabel(order.status))}</span>
       </div>
-      <p class="production-order-address">${escapeHtml(order.address || 'Sin dirección publicada')}</p>
-      ${order.addressDetails?.reference
+      <p class="production-order-address">${showPrivateDelivery
+        ? escapeHtml(order.address || 'Sin dirección publicada')
+        : 'Retirá el pedido en la sucursal indicada.'}</p>
+      ${showPrivateDelivery && order.addressDetails?.reference
         ? `<p class="form-hint">Referencia: ${escapeHtml(order.addressDetails.reference)}</p>`
         : ''}
       <div class="button-row">
@@ -481,6 +653,26 @@ function riderOrderMarkup(order) {
           </button>
         ` : ''}
       </div>
+      ${current === 'arrived' ? `
+        <div class="production-delivery-code">
+          <label>
+            Código de entrega
+            <input
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="4"
+              pattern="[0-9]{4}"
+              data-production-delivery-code
+              aria-label="Código de entrega de 4 dígitos"
+            />
+          </label>
+          <button
+            class="primary-button"
+            type="button"
+            data-production-rider-confirm="${escapeAttribute(order.id)}"
+          >Confirmar entrega</button>
+        </div>` : ''}
       ${sharing || gpsShare.orderId === order.id
         ? `<p class="production-gps-status" role="status">${escapeHtml(gpsShare.message || 'Esperando ubicación GPS…')}</p>`
         : ''}
@@ -488,12 +680,26 @@ function riderOrderMarkup(order) {
   `;
 }
 
+async function refreshRiderOrders() {
+  const [assigned, available] = await Promise.all([
+    repository.listOrders(),
+    repository.listAvailableRiderOrders(),
+  ]);
+  availableRiderOrders = available?.ok && Array.isArray(available.orders)
+    ? available.orders
+    : [];
+  return assigned;
+}
+
 async function updateOrderFromAction(orderId, nextStatus) {
   if (!orderId || !nextStatus) {
     return { handled: true, ok: false, message: 'Acción de pedido inválida.' };
   }
   const result = await repository.updateOrderStatus(orderId, nextStatus);
-  if (result.ok) await repository.listOrders();
+  if (result.ok) {
+    if (access.membership?.role === 'rider') await refreshRiderOrders();
+    else await repository.listOrders();
+  }
   notify();
   return {
     handled: true,
@@ -547,17 +753,28 @@ async function publishGpsPosition(orderId, position) {
   const now = Date.now();
   if (now - gpsShare.lastPublishedAt < GPS_PUBLISH_INTERVAL_MS) return;
   gpsShare.publishing = true;
-  const result = await repository.updateRiderLocation(orderId, {
-    lat: position.coords.latitude,
-    lng: position.coords.longitude,
-    accuracy: position.coords.accuracy,
-    heading: position.coords.heading,
-    speed: position.coords.speed,
-    timestamp: position.timestamp || now,
-    source: 'gps',
-  });
+  let result;
+  try {
+    result = await repository.updateRiderLocation(orderId, {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+      accuracy: position.coords.accuracy,
+      heading: position.coords.heading,
+      speed: position.coords.speed,
+      timestamp: position.timestamp || now,
+      source: 'gps',
+    });
+  } catch (_) {
+    result = {
+      ok: false,
+      message: 'No pudimos publicar la ubicación. Verificá tu conexión.',
+    };
+  } finally {
+    if (gpsShare.orderId === orderId && gpsShare.watchId === activeWatchId) {
+      gpsShare.publishing = false;
+    }
+  }
   if (gpsShare.orderId !== orderId || gpsShare.watchId !== activeWatchId) return;
-  gpsShare.publishing = false;
   if (result.ok) {
     gpsShare.state = 'live';
     gpsShare.lastPublishedAt = now;

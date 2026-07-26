@@ -8,7 +8,7 @@ test('modo público oculta roles, PIN y datos sembrados, incluso con hash operat
   await page.goto('/');
 
   await expect(page.locator('[data-demo-mode-banner]')).toBeHidden();
-  await expect(page.locator('[data-admin-toggle]')).toBeHidden();
+  await expect(page.locator('[data-admin-toggle]')).toHaveCount(0);
   await expect(page.locator('.role-intro')).toBeHidden();
   await expect(page.locator('body')).not.toContainText('1234');
 
@@ -21,23 +21,29 @@ test('modo público oculta roles, PIN y datos sembrados, incluso con hash operat
   await expect(page.locator('[data-view="business"]')).toBeHidden();
 });
 
-test('modo demo usa una sola insignia y mueve accesos operativos fuera de la home', async ({ page }) => {
+test('preview privado mantiene la identidad interna fuera de la experiencia cliente', async ({ page }) => {
   await installPageGuards(page);
   await page.goto('/?demo=1');
 
-  const banner = page.locator('[data-demo-mode-banner]');
-  await expect(banner).toBeVisible();
-  await expect(banner).toHaveText('Demo');
+  await expect(page.locator('[data-demo-mode-banner]')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .role-intro')).toHaveCount(0);
   await expect(page.locator('[data-view="home"]')).not.toContainText('1234');
+  await expect(page.locator('[data-view="home"]')).not.toContainText(/\b(?:Demo|QA|fixture|técnico)\b/i);
+  await expect(page.locator('.topbar [data-admin-toggle]')).toHaveCount(0);
 
-  await page.locator('.desktop-nav [data-nav-view="profile"]').click();
-  await expect(page.getByRole('button', { name: 'Guía de demo' })).toBeVisible();
-  await page.getByRole('button', { name: 'Panel del negocio' }).click();
+  await page.goto('/?demo=1#profile');
+  await expect(page.locator('[data-view="profile"] [data-open-admin-view]')).toHaveCount(0);
+
+  // La operación sigue disponible sólo mediante una ruta privada explícita.
+  await page.goto('/?demo=1#business');
+  await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.getByLabel('Código del modo negocio').fill('1234');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Datos de ejemplo');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Vista de operación');
+  const dashboard = page.locator('[data-business-dashboard]');
+  await expect(dashboard).toBeVisible();
+  await expect(dashboard.locator('[data-business-view="orders"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(dashboard.locator('[data-business-workspace="orders"]')).toBeVisible();
+  await expect(dashboard).not.toContainText(/Datos de ejemplo|Vista de operación|LT-0001/);
 });
 
 test('runtime completo habilita modo producción sin catálogo demo ni PIN', async ({ page }) => {
@@ -108,11 +114,11 @@ test('runtime productivo incompleto falla cerrado y no cae a preview/demo', asyn
   await expect(page.locator('[data-view="catalog"] [data-production-catalog-gate]')).toBeVisible();
   await expect(page.locator('[data-view="catalog"] [data-production-catalog-message]')).toContainText('configuración productiva está incompleta');
   await expect(page.locator('[data-view="catalog"] [data-catalog-dependent]')).toBeHidden();
-  await expect(page.locator('[data-admin-toggle]')).toBeHidden();
+  await expect(page.locator('[data-admin-toggle]')).toHaveCount(0);
   await expect(page.locator('.topbar [data-production-only]')).toBeHidden();
 });
 
-test('checkout demo valida datos y explicita que no envía el pedido', async ({ page }) => {
+test('checkout del preview valida inline y mantiene copy comercial', async ({ page }) => {
   await installPageGuards(page);
   await installBrowserStubs(page);
   await page.goto('/?demo=1#catalog');
@@ -131,21 +137,44 @@ test('checkout demo valida datos y explicita que no envía el pedido', async ({ 
   await expect(paymentMethod).toHaveValue('transfer');
   await page.locator('[data-checkout-submit]').click();
   await waitForToast(page, 'Ingresá un teléfono argentino válido');
+  await expect(page.locator('[data-checkout-warning]')).toContainText('Ingresá un teléfono argentino válido');
+  await expect(page.getByLabel('Teléfono')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByLabel('Teléfono')).toBeFocused();
 
   await page.getByLabel('Teléfono').fill('2995551234');
   await page.locator('[data-checkout-submit]').click();
   await waitForToast(page, 'Ingresá una calle y número válidos');
+  await expect(page.getByLabel('Calle y número')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByLabel('Calle y número')).toBeFocused();
 
   await page.getByLabel('Calle y número').fill('Roca 123');
   await page.locator('[data-checkout-submit]').click();
-  await waitForToast(page, 'No se envió al local');
+  await waitForToast(page, 'Pedido confirmado');
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Pedido de muestra');
-  await expect(tracking).toContainText('no se envió al local ni se cobró nada');
-  await expect(tracking).not.toContainText('El comercio está revisando');
+  await expect(tracking).toContainText('Pedido confirmado');
+  await expect(tracking).not.toContainText(/pedido de muestra|no se envió|presentación/i);
   await expect(tracking.locator('[data-delivery-code]')).toHaveCount(0);
+  await expect(tracking.locator('.tracking-help-card')).toHaveCount(0);
+  await expect(tracking.getByRole('link', { name: 'Contactar al local' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Solicitar por WhatsApp' })).toBeHidden();
+
+  await page.evaluate(async () => {
+    const { updateBusinessConfig } = await import(new URL('js/state.js', location.href).href);
+    updateBusinessConfig({
+      whatsappNumber: '5492995551234',
+      whatsappVerified: true,
+    });
+  });
+  await expect(tracking.locator('.tracking-help-card')).toBeVisible();
+  await expect(tracking.getByRole('link', { name: 'Contactar al local' }))
+    .toHaveAttribute('href', 'https://wa.me/5492995551234');
+
+  await page.evaluate(async () => {
+    const { updateBusinessConfig } = await import(new URL('js/state.js', location.href).href);
+    updateBusinessConfig({ whatsappVerified: false });
+  });
+  await expect(tracking.locator('.tracking-help-card')).toHaveCount(0);
 });
 
 test('estado legacy incompatible y perfil desactualizado se limpian sin reset manual', async ({ page }) => {
@@ -154,11 +183,11 @@ test('estado legacy incompatible y perfil desactualizado se limpian sin reset ma
       schemaVersion: 1,
       dataVersion: 'legacy-retail-v1',
       appMode: 'public',
-      products: [{ id: 'carne-1', name: 'Vacío premium', price: 1000 }],
-      orders: [{ id: 'CARNE-1', customerName: 'Persona heredada' }],
+      products: [{ id: 'legacy-item-1', name: 'Producto heredado', price: 1000 }],
+      orders: [{ id: 'LEGACY-1', customerName: 'Persona heredada' }],
     }));
-    localStorage.setItem('la_taba_customer_profile_v1', JSON.stringify({ name: 'Cliente carnicería' }));
-    localStorage.setItem('la_taba_customer_history_v1', JSON.stringify([{ id: 'CARNE-1' }]));
+    localStorage.setItem('la_taba_customer_profile_v1', JSON.stringify({ name: 'Cliente legado' }));
+    localStorage.setItem('la_taba_customer_history_v1', JSON.stringify([{ id: 'LEGACY-1' }]));
   }, { stateKey: STATE_KEY });
 
   await page.goto('/');
@@ -170,10 +199,10 @@ test('estado legacy incompatible y perfil desactualizado se limpian sin reset ma
 
   expect(persisted.state.dataVersion).toBe('la-taba-runtime-v2');
   expect(persisted.state.orders).toHaveLength(0);
-  expect(persisted.state.products.some((product) => /vacío|carne/i.test(product.name))).toBe(false);
+  expect(persisted.state.products.some((product) => /producto heredado/i.test(product.name))).toBe(false);
   expect(persisted.profile).toBeNull();
   expect(persisted.history).toBeNull();
-  await expect(page.locator('body')).not.toContainText(/carnicería|Vacío premium|Persona heredada/i);
+  await expect(page.locator('body')).not.toContainText(/Cliente legado|Producto heredado|Persona heredada/i);
 });
 
 test('cambiar de demo a público invalida pedidos de ejemplo y deja medios honestos', async ({ page }) => {

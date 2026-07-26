@@ -16,7 +16,7 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await page.goto('/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await page.locator('[data-floating-cart]').click();
   await fillCheckout(page, {
     name: 'Cliente Honesto',
     phone: '2995550000',
@@ -37,9 +37,10 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await expect(tracking).toContainText('Mendoza 851, Centro');
   await expect(tracking).toContainText('Casa azul');
 
-  // La confirmación inicial es una muestra local: todavía no presenta tracking.
-  await expect(tracking).toContainText('no se envió al local ni se cobró nada');
-  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveCount(0);
+  // La confirmación inicial usa copy comercial sin afirmar una recepción remota.
+  await expect(tracking).toContainText('Pedido confirmado');
+  await expect(tracking).not.toContainText(/pedido de muestra|no se envió|presentación/i);
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE);
   await expect(tracking).not.toContainText('En vivo');
 
   // No hay mapa montado, fallback en inglés, manija, marcadores falsos (LT/CL) ni ruta sin GPS real.
@@ -79,7 +80,7 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   });
 
   await expect(tracking.locator('.tracking-brand-row')).toContainText('TABA');
-  await expect(tracking.locator('.tracking-brand-row')).toContainText('Seguimiento en vivo');
+  await expect(tracking.locator('.tracking-brand-row')).toContainText('Seguimiento del pedido');
   await expect(tracking.locator('.tracking-hero')).toContainText('Pedido en reparto');
   await expect(tracking.locator('.tracking-hero')).toContainText('Tu pedido salió del local y va camino a tu dirección.');
   await expect(tracking.locator('.tracking-hero')).not.toContainText(/GPS|mapa|no mostramos/i);

@@ -10,7 +10,7 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await page.goto('/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await page.locator('[data-floating-cart]').click();
   await fillCheckout(page, {
     name: 'Cliente Codigo',
     phone: '2995551212',
@@ -25,7 +25,7 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await waitForToast(page, 'Pedido confirmado');
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Pedido de muestra');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Pedido confirmado');
   await expect(tracking.locator('[data-delivery-code-card]')).toHaveCount(0);
 
   await page.goto('/?demo=1#business');
@@ -38,8 +38,14 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await waitForToast(page, 'Estado del pedido actualizado.');
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
-  await page.locator('[data-order-advance="LT-0002"]').click();
-  await waitForToast(page, 'Estado del pedido actualizado.');
+
+  await page.goto('/?demo=1#rider');
+  await page.locator('[data-rider-accept="LT-0002"]').click();
+  await waitForToast(page, 'Entrega aceptada. Ya podés ver los datos del pedido.');
+  await page.locator('[data-delivery-leave="LT-0002"]').click();
+  await waitForToast(page, 'Pedido marcado como en camino.');
+  await page.locator('[data-delivery-arrive="LT-0002"]').click();
+  await waitForToast(page, 'Llegada al domicilio registrada.');
 
   await page.goto('/?demo=1#tracking');
   await expect(tracking.locator('[data-delivery-code-card]')).toBeVisible();
@@ -60,6 +66,14 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
 
   await page.goto('/?demo=1#business');
   await expect(page.locator('[data-delivery-code-summary="LT-0002"]')).toContainText('Código validado');
+
+  await page.goto('/?demo=1#rider');
+  await page.locator('[data-delivery-done="LT-0002"]').click();
+  await waitForToast(page, 'Pedido marcado como entregado.');
+  await page.goto('/?demo=1#tracking');
+  await expect(tracking).toContainText('¡Disfrutalo!');
+  await expect(tracking.locator('[data-delivery-code]')).toHaveCount(0);
+  await expect(tracking.locator('[data-delivery-code-card]')).toContainText('Entrega validada');
 
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   expect(noOverflow).toBeTruthy();

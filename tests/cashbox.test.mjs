@@ -31,7 +31,7 @@ function deliveredOrder() {
     customerPhone: '2995550000',
     paymentMethodCode: 'cash',
     paymentMethod: 'Efectivo',
-    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio snapshot', quantity: 1, unitPrice: 1000 }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA snapshot', quantity: 1, unitPrice: 1000 }],
     subtotal: 1000,
     discountTotal: 100,
     deliveryFee: 200,

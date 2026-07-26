@@ -1,8 +1,16 @@
 import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
 import { getRiderActionState } from '../js/core/rider.js';
-import { handleDeliveryAction, riderGpsShareState } from '../js/delivery.js';
-import { getActiveDeliveryOrder, getRiderQueueOrder } from '../js/orders.js';
+import {
+  handleDeliveryAction,
+  riderGpsShareState,
+  riderPillStatusLabel,
+} from '../js/delivery.js';
+import {
+  confirmDeliveryCode,
+  getActiveDeliveryOrder,
+  getRiderQueueOrder,
+} from '../js/orders.js';
 import { getState, setState } from '../js/state.js';
 import { resetState, makeTarget } from './helpers.mjs';
 
@@ -52,7 +60,7 @@ test('delivery selector only returns assignable delivery orders, never pickup on
   assert.equal(active.deliveryMode, 'delivery');
 });
 
-test('delivery actions move an assigned order from ready to on the way and then delivered', () => {
+test('delivery actions require acceptance, arrival, and delivery in that order', () => {
   const order = {
     id: 'LT-4001',
     customerName: 'Cliente demo',
@@ -68,6 +76,7 @@ test('delivery actions move an assigned order from ready to on the way and then 
     deliveryFee: 0,
     total: 0,
     statusHistory: [{ status: 'received', at: new Date().toISOString() }],
+    deliveryCode: { code: '4821' },
     delivery: {
       driverName: 'Juli',
       driverPhone: '2991112233',
@@ -83,8 +92,15 @@ test('delivery actions move an assigned order from ready to on the way and then 
   }));
   assert.equal(result.handled, true);
   assert.equal(result.ok, false);
-  assert.match(result.message, /no permitida/);
+  assert.match(result.message, /domicilio/);
   assert.equal(getState().orders[0].status, 'ready');
+
+  result = handleDeliveryAction(makeTarget({
+    '[data-rider-accept]': { riderAccept: order.id },
+  }));
+  assert.equal(result.handled, true);
+  assert.equal(result.ok, true);
+  assert.match(result.message, /aceptada/);
 
   result = handleDeliveryAction(makeTarget({
     '[data-delivery-leave]': { deliveryLeave: order.id },
@@ -93,6 +109,32 @@ test('delivery actions move an assigned order from ready to on the way and then 
   assert.match(result.message, /en camino/);
   assert.equal(getState().orders[0].status, 'on_the_way');
   assert.match(getState().orders[0].delivery.currentLocationLabel, /salió/);
+
+  result = handleDeliveryAction(makeTarget({
+    '[data-delivery-done]': { deliveryDone: order.id },
+  }));
+  assert.equal(result.handled, true);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /llegaste/);
+  assert.equal(getState().orders[0].status, 'on_the_way');
+
+  result = handleDeliveryAction(makeTarget({
+    '[data-delivery-arrive]': { deliveryArrive: order.id },
+  }));
+  assert.equal(result.handled, true);
+  assert.equal(result.ok, true);
+  assert.equal(getState().orders[0].status, 'arriving');
+
+  result = handleDeliveryAction(makeTarget({
+    '[data-delivery-done]': { deliveryDone: order.id },
+  }));
+  assert.equal(result.handled, true);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /código/i);
+  assert.equal(getState().orders[0].status, 'arriving');
+
+  const confirmation = confirmDeliveryCode(order.id, '4821');
+  assert.equal(confirmation.ok, true);
 
   result = handleDeliveryAction(makeTarget({
     '[data-delivery-done]': { deliveryDone: order.id },
@@ -135,7 +177,7 @@ test('delivery selector ignores delivered, cancelled, and pickup-only queues', (
   assert.equal(getActiveDeliveryOrder(), null);
 });
 
-test('rider queue prefers the active room order over a stale local in-progress order', () => {
+test('rider queue excludes received orders and keeps the delivery already in progress', () => {
   const stale = {
     id: 'LT-9001',
     status: 'on_the_way',
@@ -160,7 +202,7 @@ test('rider queue prefers the active room order over a stale local in-progress o
 
   setState({ ...getState(), orders: [stale, roomOrder], lastOrderId: roomOrder.id });
 
-  assert.equal(getRiderQueueOrder()?.id, roomOrder.id);
+  assert.equal(getRiderQueueOrder()?.id, stale.id);
 });
 
 test('rider helpers expose coherent actions', () => {
@@ -174,6 +216,11 @@ test('rider helpers expose coherent actions', () => {
     deliveryMode: 'delivery',
     delivery: { estimatedMinutes: 14 },
   };
+  const arrivingOrder = {
+    status: 'arriving',
+    deliveryMode: 'delivery',
+    delivery: { estimatedMinutes: 4 },
+  };
   const pickupOrder = {
     status: 'ready',
     deliveryMode: 'pickup',
@@ -185,7 +232,8 @@ test('rider helpers expose coherent actions', () => {
     canArrive: false,
     canDeliver: false,
   });
-  assert.equal(getRiderActionState(movingOrder).canDeliver, true);
+  assert.equal(getRiderActionState(movingOrder).canDeliver, false);
+  assert.equal(getRiderActionState(arrivingOrder).canDeliver, true);
   assert.equal(getRiderActionState(pickupOrder).canLeave, false);
 });
 
@@ -213,4 +261,12 @@ test('rider GPS state goes stale honest instead of staying live', () => {
   assert.match(riderGpsShareState(stale, { now }).headSub, /Sin GPS en vivo/);
   assert.equal(riderGpsShareState(simulated, { now }).live, false);
   assert.equal(riderGpsShareState(inactive, { now }).live, false);
+});
+
+test('rider map status label resolves every operational state without runtime helpers', () => {
+  assert.equal(riderPillStatusLabel({ status: 'preparing' }), 'Esperando');
+  assert.equal(riderPillStatusLabel({ status: 'ready' }), 'Listo');
+  assert.equal(riderPillStatusLabel({ status: 'on_the_way' }), 'En camino');
+  assert.equal(riderPillStatusLabel({ status: 'arriving' }), 'Llegando');
+  assert.equal(riderPillStatusLabel({ status: 'delivered' }), 'Entregado');
 });

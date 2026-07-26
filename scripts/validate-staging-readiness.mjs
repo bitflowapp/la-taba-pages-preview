@@ -40,8 +40,22 @@ if (runtimePath) {
 } else {
   checks.push({
     label: 'runtime de staging real',
-    ok: true,
-    output: 'PREPARADO, NO EJECUTADO: pasar la ruta como primer argumento.',
+    ok: false,
+    output: 'NO EJECUTADO: pasar la ruta del runtime como primer argumento.',
+  });
+}
+
+const catalogPath = process.argv[3] || process.env.TABA_CATALOG_FILE || '';
+if (catalogPath) {
+  run('catálogo e imágenes comerciales reales', process.execPath, [
+    'scripts/validate-release-catalog.mjs',
+    catalogPath,
+  ]);
+} else {
+  checks.push({
+    label: 'catálogo e imágenes comerciales reales',
+    ok: false,
+    output: 'NO EJECUTADO: pasar la ruta del catálogo como segundo argumento o TABA_CATALOG_FILE.',
   });
 }
 

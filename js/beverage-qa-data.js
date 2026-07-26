@@ -44,7 +44,7 @@ const fixture = (id, name, categoryId, presentation, options = {}) => {
     description: presentation,
     categoryId,
     tone: alcoholic ? 'alcoholic' : TONE_BY_CATEGORY[categoryId] || 'drink',
-    image: 'assets/products/qa-beverage-placeholder.svg',
+    image: 'assets/products/beverage-placeholder.svg',
     price: options.price ?? QA_PRICES.unit,
     stock: options.stock ?? 10,
     available: options.available ?? true,

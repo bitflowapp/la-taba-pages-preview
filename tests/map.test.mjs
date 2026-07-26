@@ -138,8 +138,9 @@ test('rider marker class reflects status and source', () => {
   assert.match(icon.html, /lt-rider-helmet-core/);
   assert.match(icon.html, /lt-rider-marker-halo/);
   assert.match(icon.html, /lt-rider-helmet-icon/);
-  assert.match(icon.html, /lt-rider-core-letter/);
-  assert.match(icon.html, />R</);
+  assert.match(icon.html, /lt-rider-delivery-icon/);
+  assert.doesNotMatch(icon.html, />R</);
+  assert.doesNotMatch(icon.html, /<text/);
   assert.doesNotMatch(icon.html, /lt-rider-helmet-visor/);
   assert.match(icon.html, /--heading:95deg/);
   assert.deepEqual(icon.iconSize, [52, 52]);
@@ -353,7 +354,7 @@ function deliveryOrderWithTracking(id) {
     notes: '',
     createdAt: new Date().toISOString(),
     status: 'on_the_way',
-    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacio', icon: '', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', icon: '', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
     statusHistory: [{ status: 'received', at: new Date().toISOString() }],
     delivery: { driverName: 'Juli', driverPhone: '2991112233', estimatedMinutes: 14, currentLocationLabel: 'En camino' },
   };

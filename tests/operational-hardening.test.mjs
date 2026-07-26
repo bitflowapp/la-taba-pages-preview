@@ -34,7 +34,7 @@ function makeOrder(id, status = 'received', deliveryMode = 'delivery') {
     notes: '',
     createdAt: at,
     status,
-    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacío', quantity: 1, unitPrice: 1000, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 1000, unit: 'unidad' }],
     statusHistory: [{ status: 'received', at }],
   };
 }
@@ -164,27 +164,28 @@ test('hasLiveRiderLocation: solo GPS real y reciente cuenta como en vivo', () =>
 });
 
 // ===== 4. Guard anti regresión: marker simple "R", sin casco/moto/rojo =====
-test('el marker del rider es el disco simple "R", sin casco/moto/rojo', () => {
+test('el marker del rider usa un icono local de delivery y no una inicial o persona', () => {
   const icon = createRiderIcon({ divIcon: (options) => options }, { status: 'on_the_way', source: 'gps', heading: 95 });
   // Contrato esperado por el mapa.
   assert.match(icon.html, /lt-rider-marker-halo/);
-  assert.match(icon.html, /lt-rider-core-letter/);
-  assert.match(icon.html, />R<\/text>/);
+  assert.match(icon.html, /lt-rider-delivery-icon/);
+  assert.doesNotMatch(icon.html, />R</);
+  assert.doesNotMatch(icon.html, /<text/);
   assert.deepEqual(icon.iconSize, [52, 52]);
   // No reintroducir el marker viejo (moto / casco / rojo).
-  for (const banned of ['lt-rider-moto', 'lt-rider-box', 'lt-rider-wheel', 'lt-rider-frame', 'lt-rider-light', 'casco', '#b64c34']) {
+  for (const banned of ['lt-rider-box', 'lt-rider-wheel', 'lt-rider-frame', 'lt-rider-light', 'avatar', 'face', '#b64c34']) {
     assert.equal(icon.html.includes(banned), false, `marker no debe contener "${banned}"`);
   }
   assert.match(riderMarkerClass('on_the_way', 'gps'), /lt-rider-marker on-the-way source-gps/);
 });
 
-test('rider_marker.js y styles.css no reintroducen el marker viejo moto/casco', () => {
+test('rider_marker.js y styles.css no reintroducen un avatar humano', () => {
   const markerSrc = readFileSync(fileURLToPath(new URL('../js/map/rider_marker.js', import.meta.url)), 'utf8');
-  for (const banned of ['lt-rider-moto', 'lt-rider-box', 'lt-rider-wheel', 'lt-rider-frame', 'lt-rider-light', 'casco', '#b64c34']) {
+  for (const banned of ['lt-rider-box', 'lt-rider-wheel', 'lt-rider-frame', 'lt-rider-light', 'rider-avatar', 'rider-face', '#b64c34']) {
     assert.equal(markerSrc.includes(banned), false, `rider_marker.js no debe contener "${banned}"`);
   }
   const cssSrc = readFileSync(fileURLToPath(new URL('../styles.css', import.meta.url)), 'utf8');
-  for (const banned of ['.lt-rider-moto', '.lt-rider-box', '.lt-rider-wheel', '.lt-rider-frame', '.lt-rider-light']) {
-    assert.equal(cssSrc.includes(banned), false, `styles.css no debe contener la clase moto "${banned}"`);
+  for (const banned of ['.lt-rider-box', '.lt-rider-wheel', '.lt-rider-frame', '.lt-rider-light', '.rider-avatar', '.rider-face']) {
+    assert.equal(cssSrc.includes(banned), false, `styles.css no debe contener la clase "${banned}"`);
   }
 });

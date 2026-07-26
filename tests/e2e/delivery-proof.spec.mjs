@@ -16,7 +16,7 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await page.locator('[data-floating-cart]').click();
   await fillCheckout(page, {
     name: 'Cliente Foto',
     phone: '2995557777',
@@ -43,12 +43,20 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
   await waitForToast(page, 'Estado del pedido actualizado.');
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
-  await page.locator('[data-order-advance="LT-0002"]').click();
-  await waitForToast(page, 'Estado del pedido actualizado.');
+
+  await page.goto('/?demo=1#rider');
+  await page.locator('[data-rider-accept="LT-0002"]').click();
+  await waitForToast(page, 'Entrega aceptada. Ya podés ver los datos del pedido.');
+  await page.locator('[data-delivery-leave="LT-0002"]').click();
+  await waitForToast(page, 'Pedido marcado como en camino.');
 
   await page.goto('/?demo=1#tracking');
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Seguimiento por estados, sin GPS ni ubicación en vivo.');
+  await expect(tracking).toContainText('Pedido en reparto');
+  await expect(tracking.locator('[data-tracking-map-placeholder]')).toContainText('Ubicación no disponible');
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(
+    'Seguimiento por estados, sin GPS ni ubicación en vivo.',
+  );
   await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
   await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
 
@@ -92,6 +100,13 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
   await waitForToast(page, 'Foto de entrega adjunta.');
   await expect(page.locator('[data-delivery-panel] [data-delivery-proof-preview]')).toBeVisible();
 
+  await page.goto('/?demo=1#tracking');
+  const code = await page.locator('[data-delivery-code]').getAttribute('data-delivery-code');
+  expect(code).toMatch(/^\d{4}$/);
+  await page.goto('/?demo=1#rider');
+  await page.locator('[data-delivery-code-input="LT-0002"]').fill(code);
+  await page.locator('[data-delivery-code-confirm="LT-0002"]').click();
+  await waitForToast(page, 'Código de entrega confirmado.');
   await riderPanel.locator('[data-delivery-done="LT-0002"]').click();
   await waitForToast(page, 'Pedido marcado como entregado.');
 

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  canAssignBusinessRider,
   handleProductionOperationsAction,
   handleProductionOperationsPageHide,
   handleProductionOperationsViewChange,
@@ -36,6 +37,13 @@ test('negocio avanza sin saltos y deja delivery listo para el rider', () => {
   assert.equal(nextBusinessStatus({ workflowStatus: 'ready', deliveryMode: 'delivery' }), null);
   assert.equal(nextBusinessStatus({ workflowStatus: 'ready', deliveryMode: 'pickup' }), 'delivered');
   assert.equal(nextBusinessStatus({ workflowStatus: 'delivered', deliveryMode: 'delivery' }), null);
+});
+
+test('negocio asigna o reasigna rider solo antes del retiro', () => {
+  assert.equal(canAssignBusinessRider({ workflowStatus: 'ready', deliveryMode: 'delivery' }), true);
+  assert.equal(canAssignBusinessRider({ workflowStatus: 'assigned', deliveryMode: 'delivery' }), true);
+  assert.equal(canAssignBusinessRider({ workflowStatus: 'picked_up', deliveryMode: 'delivery' }), false);
+  assert.equal(canAssignBusinessRider({ workflowStatus: 'ready', deliveryMode: 'pickup' }), false);
 });
 
 test('rider reclama, avanza, llega y entrega sin simulaciones', () => {
@@ -93,6 +101,7 @@ test('GPS productivo se corta al salir de rider y en pagehide', async () => {
   const originalRuntime = globalThis.__LA_TABA_RUNTIME_CONFIG__;
   const cleared = [];
   let nextWatchId = 300;
+  let latestPositionCallback = null;
 
   Object.defineProperty(globalThis, 'location', {
     configurable: true,
@@ -102,7 +111,10 @@ test('GPS productivo se corta al salir de rider y en pagehide', async () => {
     configurable: true,
     value: {
       geolocation: {
-        watchPosition: () => ++nextWatchId,
+        watchPosition: (onPosition) => {
+          latestPositionCallback = onPosition;
+          return ++nextWatchId;
+        },
         clearWatch: (watchId) => cleared.push(watchId),
       },
     },
@@ -134,6 +146,26 @@ test('GPS productivo se corta al salir de rider y en pagehide', async () => {
       started = await handleProductionOperationsAction(gpsTarget);
     }
     assert.equal(started.ok, true);
+    let publishAttempts = 0;
+    getOrderRepository().updateRiderLocation = async () => {
+      publishAttempts += 1;
+      throw new Error('network down');
+    };
+    const position = {
+      coords: {
+        latitude: -38.95,
+        longitude: -68.06,
+        accuracy: 12,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    };
+    latestPositionCallback(position);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    latestPositionCallback(position);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(publishAttempts, 2);
     assert.equal(handleProductionOperationsViewChange('rider'), false);
     assert.deepEqual(cleared, []);
 

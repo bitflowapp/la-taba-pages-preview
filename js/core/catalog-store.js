@@ -192,16 +192,45 @@ export function normalizeCatalogProduct(raw, fallback = null) {
   const stock = normalizeStock(source.stock ?? fallback?.stock ?? DEFAULT_NEW_PRODUCT_STOCK);
   const oldPrice = source.oldPrice == null ? undefined : normalizeMoneyValue(source.oldPrice, 0);
   const badge = sanitizeText(source.badge, { maxLength: 32 });
-  const image = sanitizeText(source.image, { maxLength: 180 });
+  const image = sanitizeText(source.image || source.imageUrl || source.image_url, { maxLength: 2048 });
+  const imageThumbnail = sanitizeText(
+    source.imageThumbnail || source.thumbnail || source.thumbnail_url,
+    { maxLength: 2048 },
+  );
   const alcoholic = ALCOHOLIC_CATEGORY_IDS.has(categoryId) || isExplicitlyAlcoholic(source.alcoholic);
-  const minimumAge = alcoholic ? normalizeMinimumAge(source.minimumAge) : null;
+  const minimumAge = alcoholic
+    ? normalizeMinimumAge(source.minimumAge ?? source.minimum_age)
+    : null;
+  const capacityValue = normalizePositiveNumber(source.capacityValue ?? source.capacity_value);
+  const capacityUnit = sanitizeText(source.capacityUnit || source.capacity_unit, { maxLength: 20 });
+  const capacity = sanitizeText(
+    source.capacity || [capacityValue || '', capacityUnit].filter(Boolean).join(' '),
+    { maxLength: 40 },
+  );
+  const unitsPerPack = Math.max(1, Math.floor(Number(source.unitsPerPack ?? source.units_per_pack) || 1));
+  const sortOrder = Math.max(0, Math.floor(Number(source.sortOrder ?? source.sort_order) || 0));
+  const categoryName = categories.find((category) => category.id === categoryId)?.name || categoryId;
 
   return {
     ...source,
     id,
     name,
     description: sanitizeText(source.description, { fallback: fallback?.description || '', maxLength: 180 }),
+    externalId: sanitizeText(source.externalId || source.external_id, { maxLength: 100 }),
+    sku: sanitizeText(source.sku, { maxLength: 100 }),
+    brand: sanitizeText(source.brand, { maxLength: 100 }),
+    variant: sanitizeText(source.variant, { maxLength: 100 }),
     categoryId,
+    categoryName,
+    subcategory: sanitizeText(source.subcategory, { maxLength: 100 }),
+    capacity,
+    capacityValue,
+    capacityUnit,
+    packageType: sanitizeText(
+      source.packageType || source.packagingType || source.packaging_type || source.container,
+      { fallback: 'unidad', maxLength: 60 },
+    ),
+    unitsPerPack,
     tone: alcoholic
       ? 'alcoholic'
       : sanitizeText(source.tone, { fallback: defaults.tone, maxLength: 40 }),
@@ -211,6 +240,9 @@ export function normalizeCatalogProduct(raw, fallback = null) {
     available: source.available !== false && !archived,
     archived,
     featured: Boolean(source.featured),
+    chilled: Boolean(source.chilled ?? source.refrigerated),
+    refrigerated: Boolean(source.chilled ?? source.refrigerated),
+    sortOrder,
     popular: Boolean(source.popular),
     combo: Boolean(source.combo),
     ...(badge ? { badge } : {}),
@@ -220,8 +252,24 @@ export function normalizeCatalogProduct(raw, fallback = null) {
     prepMinutes: Math.max(1, Math.floor(Number(source.prepMinutes) || fallback?.prepMinutes || 10)),
     alcoholic,
     minimumAge,
+    tags: normalizeCatalogTags(source.tags),
     ...(image ? { image } : {}),
+    ...(imageThumbnail ? { imageThumbnail } : {}),
   };
+}
+
+function normalizePositiveNumber(value) {
+  if (value == null || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function normalizeCatalogTags(value) {
+  const values = Array.isArray(value) ? value : String(value || '').split(/[|,]/);
+  return [...new Set(values
+    .map((tag) => sanitizeText(tag, { maxLength: 40 }).toLowerCase())
+    .filter(Boolean))]
+    .slice(0, 20);
 }
 
 function buildEditableProduct(value, products, existing, { now }) {

@@ -9,29 +9,35 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1&demo=1');
+  await page.goto('/?reset=1&demo=1#business');
 
   // 1. Negocio sin pedidos: empty state claro.
-  await page.locator('.mobile-nav [data-nav-view="profile"]').click();
-  await page.locator('[data-view="profile"] [data-open-admin-view="business"]').click();
+  await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Central de pedidos');
+  await expect(page.locator('.mobile-nav')).toBeHidden();
+  await expect(page.locator('.desktop-nav')).toBeHidden();
+  await expect(
+    page.locator('[data-view="business"] [data-admin-unlocked] .section-head h1'),
+  ).toHaveText('Central de pedidos');
   await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
   await expect(page.locator('.inbox-tabs')).toContainText('Nuevos');
   await expect(page.locator('.inbox-tabs')).toContainText('En preparación');
   await expect(page.locator('.inbox-tabs')).toContainText('Listos');
   await expect(page.locator('.inbox-tabs')).toContainText('En reparto');
   await expect(page.locator('.inbox-tabs')).toContainText('Finalizados');
-  await page.getByRole('button', { name: /Activar sonido/i }).click();
+  const soundToggle = page.locator('[data-sound-toggle]');
+  await expect(soundToggle).toHaveAttribute('aria-pressed', 'false');
+  await soundToggle.click();
   await waitForToast(page, 'Sonido de pedidos activado.');
+  await expect(soundToggle).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('[data-order-inbox]')).toContainText('Sin pedidos en la cola');
 
   // 2. El cliente confirma un pedido con dirección real.
-  await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
+  await page.evaluate(() => { window.location.hash = '#catalog'; });
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await page.locator('[data-floating-cart]').click();
   await fillCheckout(page, {
     name: 'Walter Cliente',
     phone: '2995551234',
@@ -49,11 +55,10 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   // (La nav inferior se oculta en Seguimiento: volvemos al inicio por el logo.)
   await page.locator('.topbar .brand').click();
   await expect(page.locator('[data-view="home"]')).toBeVisible();
-  await page.locator('.mobile-nav [data-nav-view="profile"]').click();
-  await page.locator('[data-view="profile"] [data-open-admin-view="business"]').click();
+  await page.goto('/?demo=1#business');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
   await expect(page.locator('[data-order-inbox]')).toContainText('Pedidos nuevos');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Entregados hoy');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Listos');
 
   const card = page.locator('.inbox-order.is-priority[data-inbox-order="LT-0002"]');
   await expect(card).toBeVisible();
@@ -69,6 +74,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(card).toContainText('Total a cobrar');
   await expect(card).toContainText('Aceptar pedido');
   await expect(card.getByLabel('Tiempo estimado de preparación')).toBeVisible();
+  await expect(card.locator('details.inbox-card-details')).not.toHaveAttribute('open', '');
 
   await page.getByLabel('Buscar pedido').fill('Walter');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toBeVisible();
@@ -88,7 +94,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Listo para entregar');
   await expect(page.locator('[data-inbox-group="preparando"]')).toBeVisible();
 
-  await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
+  await page.evaluate(() => { window.location.hash = '#tracking'; });
   await expect(page.locator('[data-tracking-panel]')).toContainText('Tiempo estimado de preparación: 20 min.');
   await page.goto('/?demo=1#business');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
@@ -100,13 +106,36 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(managedCard).toContainText('Seguimiento por estados');
   await expect(managedCard.locator('[data-business-tracking="LT-0002"] [data-real-map]')).toHaveCount(0);
 
-  await page.locator('[data-order-advance="LT-0002"]').click();
-  await waitForToast(page, 'Estado del pedido actualizado.');
+  await managedCard.getByRole('button', { name: 'Abrir reparto' }).click();
+  await expect(page.locator('[data-view="rider"]')).toBeVisible();
+  await expect(page.locator('.mobile-nav')).toBeHidden();
+  await expect(page.locator('.desktop-nav')).toBeHidden();
+  const riderPanel = page.locator('[data-delivery-panel]');
+  await expect(riderPanel.locator('[data-rider-assignment-preview="LT-0002"]')).toBeVisible();
+  await expect(riderPanel).not.toContainText('Walter Cliente');
+  await expect(riderPanel).not.toContainText('Mendoza 851');
+  await riderPanel.locator('[data-rider-accept="LT-0002"]').click();
+  await waitForToast(page, 'Entrega aceptada. Ya podés ver los datos del pedido.');
+  await expect(riderPanel).toContainText('Walter Cliente');
+  await expect(riderPanel.locator('.rider-avatar')).toHaveCount(0);
+  await expect(riderPanel.locator('.round-action')).toHaveCount(2);
+  for (const action of await riderPanel.locator('.round-action').all()) {
+    const box = await action.boundingBox();
+    expect(box?.width || 0).toBeGreaterThanOrEqual(44);
+    expect(box?.height || 0).toBeGreaterThanOrEqual(44);
+  }
+  await expect(riderPanel.locator('.rider-progress .track-step')).toHaveCount(5);
+  await expect(riderPanel.locator('.rider-progress [aria-current="step"]')).toHaveCount(1);
+  await riderPanel.locator('[data-delivery-leave="LT-0002"]').click();
+  await waitForToast(page, 'Pedido marcado como en camino.');
+  await riderPanel.locator('[data-open-admin-view="business"]').click();
+  await expect(page.locator('[data-view="business"]')).toBeVisible();
   await expect(managedCard).toContainText('Pedido en reparto');
   await expect(managedCard).toContainText('Seguimiento por estados');
   await expect(managedCard).toContainText('Seguir reparto');
   await expect(managedCard.locator('[data-business-tracking="LT-0002"] [data-real-map]')).toHaveCount(0);
 
+  await managedCard.getByText('Ver datos y productos').click();
   await managedCard.getByRole('button', { name: /Cancelar pedido/i }).click();
   await expect(page.locator('[data-cancel-modal]')).toBeVisible();
   await page.getByRole('button', { name: 'Cliente no responde' }).click();

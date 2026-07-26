@@ -157,7 +157,7 @@ test('business setup restore demo requiere confirmacion y no borra estado operat
       id: 'QA-0001',
       deliveryMode: 'delivery',
       status: 'received',
-      items: [{ productId: 'qa-jugo-naranja', name: 'Matambre', quantity: 1, unitPrice: 9000, unit: 'kg' }],
+      items: [{ productId: 'qa-jugo-naranja', name: 'Jugo QA', quantity: 1, unitPrice: 9000, unit: 'unidad' }],
     }],
     cart: [{ productId: 'qa-jugo-naranja', quantity: 1 }],
   });

@@ -39,6 +39,38 @@ import { isDemoMode } from './core/app-mode.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+const PRODUCT_PLACEHOLDER_IMAGE = 'assets/products/beverage-placeholder.svg';
+
+export function handleProductImageError(event) {
+  const image = event?.target;
+  if (!image?.classList?.contains('thumb-img')) return false;
+
+  const shell = image.closest?.('.thumb');
+  if (image.dataset?.fallbackApplied === 'true') {
+    image.hidden = true;
+    shell?.classList?.add('image-unavailable');
+    return true;
+  }
+
+  image.dataset.fallbackApplied = 'true';
+  image.removeAttribute?.('srcset');
+  image.removeAttribute?.('sizes');
+  image.src = PRODUCT_PLACEHOLDER_IMAGE;
+  image.classList.add('is-placeholder');
+  shell?.classList?.remove('has-photo');
+  shell?.classList?.add('uses-placeholder');
+  if (shell) {
+    shell.setAttribute(
+      'aria-label',
+      `Producto sin imagen oficial: ${image.dataset.productName || 'bebida'}`,
+    );
+  }
+  return true;
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('error', handleProductImageError, true);
+}
 
 export function renderWithStableRealMap(container, html, { rolePrefix = '', orderId = '' } = {}) {
   const stableMap = captureStableRealMap(container, rolePrefix, orderId);
@@ -165,6 +197,7 @@ function formatWhatsappDisplay(value) {
 }
 
 export function renderNavigation(activeView = 'home') {
+  document.body.dataset.activeView = activeView;
   $$('[data-nav-view]').forEach((control) => {
     const isActive = control.dataset.navView === activeView;
     control.classList.toggle('active', isActive);
@@ -197,6 +230,7 @@ export function renderCatalog() {
   renderCategories();
   renderCatalogOffers();
   renderCatalogMeta();
+  renderSearchControls();
   renderProducts();
 }
 
@@ -213,45 +247,36 @@ function productImage(product) {
   return product?.image || '';
 }
 
-// Thumbnail de producto. Los fixtures y productos sin imagen oficial usan arte
-// vectorial neutro por categoría; producción muestra únicamente la imagen
-// verificada que llega en el catálogo.
+// Una fotografía sólo se considera oficial si llega con la cadena de hashes y
+// thumbnail del catálogo productivo. Todo lo demás usa el mismo placeholder.
 export function productThumb(product, variant = 'grid') {
   const tone = product.tone || (product.alcoholic ? 'alcoholic' : 'drink');
   const category = sanitizeCategoryId(product.categoryId) || 'bebidas';
   const image = productImage(product);
-  if (image && !product.qaFixture) {
-    const loading = variant === 'modal' ? 'eager' : 'lazy';
-    return `
-    <span class="thumb has-photo tone-${tone} category-${category} thumb-${variant}" aria-hidden="true">
-      <span class="thumb-placeholder">${productPlaceholderGlyph(product)}</span>
-      <img class="thumb-img" src="${escapeHtml(image)}" alt="" loading="${loading}" decoding="async" />
-    </span>`;
-  }
+  const thumbnail = product.imageThumbnail || product.thumbnail || '';
+  const hasAuthoritativeHashes = [
+    product.imageSha256,
+    product.imageThumbnailSha256,
+    product.sourceImageSha256,
+  ].every((hash) => /^[a-f0-9]{64}$/i.test(String(hash || '')));
+  const official = Boolean(
+    image
+    && thumbnail
+    && !product.qaFixture
+    && hasAuthoritativeHashes,
+  );
+  const loading = variant === 'modal' ? 'eager' : 'lazy';
+  const source = official ? thumbnail : PRODUCT_PLACEHOLDER_IMAGE;
+  const responsive = official
+    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${variant === 'modal' ? '(max-width: 700px) 92vw, 560px' : '(max-width: 700px) 45vw, 260px'}"`
+    : '';
+  const label = official
+    ? `Imagen oficial de ${product.name || 'producto'}`
+    : `Producto sin imagen oficial: ${product.name || 'bebida'}`;
   return `
-    <span class="thumb tone-${tone} category-${category} thumb-${variant}" aria-hidden="true">
-      <span class="thumb-placeholder">${productPlaceholderGlyph(product)}</span>
+    <span class="thumb ${official ? 'has-photo' : 'uses-placeholder'} tone-${tone} category-${category} thumb-${variant}" role="img" aria-label="${escapeHtml(label)}">
+      <img class="thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}"${responsive} alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" loading="${loading}" decoding="async" />
     </span>`;
-}
-
-function productPlaceholderGlyph(product) {
-  const category = sanitizeCategoryId(product?.categoryId);
-  if (category === 'promos') {
-    return `<svg viewBox="0 0 120 120" fill="none"><rect x="20" y="38" width="80" height="60" rx="14" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="4"/><path d="M42 38c0-11 8-19 18-19s18 8 18 19" stroke="currentColor" stroke-width="4"/><path d="M42 65h36M48 77h24" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>`;
-  }
-  if (category === 'picadas-y-deli') {
-    return `<svg viewBox="0 0 120 120" fill="none"><rect x="20" y="30" width="80" height="62" rx="14" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="4"/><path d="M33 50h54M33 62h37M33 74h45" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><circle cx="86" cy="72" r="7" fill="currentColor"/></svg>`;
-  }
-  if (category === 'hielo-y-extras') {
-    return `<svg viewBox="0 0 120 120" fill="none"><path d="m28 42 26-15 26 15v30L54 88 28 72V42Z" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="4"/><path d="m54 27 26 15 14-8M54 88V57m0 0L28 42m26 15 26-15" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`;
-  }
-  if (category === 'vinos-y-espumantes' || category === 'gins-y-vodkas' || category === 'whisky-y-destilados') {
-    return `<svg viewBox="0 0 120 120" fill="none"><path d="M52 16h16v22l8 11v46H44V49l8-11V16Z" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M44 62h32M52 27h16" stroke="currentColor" stroke-width="4"/><circle cx="60" cy="77" r="8" fill="currentColor" fill-opacity=".72"/></svg>`;
-  }
-  if (category === 'cervezas' || category === 'energeticas' || category === 'isotonicas') {
-    return `<svg viewBox="0 0 120 120" fill="none"><path d="M42 18h36l-4 84H46l-4-84Z" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M43 29h34M46 68h28" stroke="currentColor" stroke-width="4"/><path d="m63 39-11 17h9l-2 13 10-17h-8l2-13Z" fill="currentColor"/></svg>`;
-  }
-  return `<svg viewBox="0 0 120 120" fill="none"><path d="M50 15h20v19l8 13v48a9 9 0 0 1-9 9H51a9 9 0 0 1-9-9V47l8-13V15Z" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M42 61h36M50 27h20" stroke="currentColor" stroke-width="4"/><path d="M51 76c7-8 12-8 19 0" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>`;
 }
 
 export function productCode(product) {
@@ -341,6 +366,7 @@ function railCard(product) {
       <div class="offer-card-body">
         <strong>${escapeHtml(product.name)}</strong>
         <small>${escapeHtml(unitText(product))}</small>
+        <small class="offer-availability">${product.stock > 0 && product.available ? 'Disponible' : 'Agotado'}</small>
         <div class="offer-price">
           <span>${money(product.price)}</span>
           ${old}
@@ -442,16 +468,36 @@ function renderCategories() {
 
 // Productos filtrados por categoría + búsqueda, ya ordenados.
 function getFilteredProducts(state) {
-  const query = state.searchQuery.trim().toLowerCase();
+  const query = normalizeSearchText(state.searchQuery);
   const favoriteIds = new Set(getFavoriteProductIds());
   const filtered = getCustomerCatalogProducts(state.products).filter((product) => {
     const matchesCategory = state.activeCategory === 'favorites'
       ? favoriteIds.has(product.id)
       : state.activeCategory === 'all' || product.categoryId === state.activeCategory;
-    const matchesQuery = !query || [product.name, product.description, product.categoryId].join(' ').toLowerCase().includes(query);
+    const searchable = [
+      product.brand,
+      product.name,
+      product.variant,
+      product.presentation,
+      product.unitLabel,
+      product.capacity,
+      product.subcategory,
+      product.categoryName,
+      product.categoryId,
+      ...(Array.isArray(product.tags) ? product.tags : []),
+    ].filter(Boolean).join(' ');
+    const matchesQuery = !query || normalizeSearchText(searchable).includes(query);
     return matchesCategory && matchesQuery;
   });
   return sortProducts(filtered, state.sortBy);
+}
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
 }
 
 function recommendedScore(product) {
@@ -501,7 +547,7 @@ function categoriesForCurrentCatalog() {
     'energeticas',
     'isotonicas',
     'cervezas',
-    'vinos-espumantes',
+    'vinos-y-espumantes',
     'gins-y-vodkas',
     'whisky-y-destilados',
     'picadas-y-deli',
@@ -556,6 +602,13 @@ function renderCatalogMeta() {
   if (select && select.value !== getState().sortBy) select.value = getState().sortBy;
 }
 
+function renderSearchControls() {
+  const query = getState().searchQuery;
+  $$('[data-search-input]').forEach((input) => {
+    if (input.value !== query) input.value = query;
+  });
+}
+
 function renderProducts() {
   const container = $('[data-product-grid]');
   if (!container) return;
@@ -565,12 +618,23 @@ function renderProducts() {
 
   if (!filteredProducts.length) {
     const isFavorites = state.activeCategory === 'favorites';
+    const isSearch = Boolean(state.searchQuery.trim());
+    const emptyTitle = isFavorites
+      ? 'Todavía no guardaste favoritos.'
+      : isSearch
+        ? 'No encontramos esa bebida.'
+        : 'No hay productos disponibles en esta categoría.';
+    const emptyCopy = isFavorites
+      ? 'Tocá Guardar en un producto para encontrarlo acá.'
+      : isSearch
+        ? 'Probá con la marca, la presentación o limpiá el buscador.'
+        : 'Volvé a ver el catálogo completo o elegí otra categoría.';
     container.innerHTML = `
       <div class="empty-state">
-        <strong>${isFavorites ? 'Todavía no marcaste favoritos.' : 'No hay productos en esta búsqueda.'}</strong><br />
-        ${isFavorites ? 'Tocá la estrella de un producto para guardarlo acá.' : 'Probá con otra categoría o limpiá el buscador.'}
+        <strong>${emptyTitle}</strong>
+        <p class="empty-state-copy">${emptyCopy}</p>
         <div class="empty-actions">
-          <button class="secondary-button compact" type="button" data-category-id="all">Ver todo el catálogo</button>
+          <button class="secondary-button compact" type="button" data-clear-catalog-filters>Ver todo el catálogo</button>
         </div>
       </div>`;
     return;
@@ -732,12 +796,22 @@ function renderCustomerActions() {
 function renderDirectOrderingCustomerActions() {
   const container = $('[data-customer-actions]');
   if (!container) return;
-  const latest = getLatestCustomerOrder();
-  const profile = getCustomerProfile();
+  const activeOrder = getActiveOrder();
+  const activeNonTerminalId = activeOrder
+    && !['delivered', 'cancelled'].includes(activeOrder.status)
+    ? activeOrder.id
+    : '';
+  const latest = getCustomerOrderHistory().find((order) => (
+    order.status === 'delivered' && order.id !== activeNonTerminalId
+  )) || null;
   if (!latest) {
     container.innerHTML = '';
+    container.closest('.app-home')?.classList.remove('has-reorder');
     return;
   }
+  container.closest('.app-home')?.classList.add('has-reorder');
+  const promo = $('[data-promo-banner]');
+  if (promo && container.nextElementSibling !== promo) promo.before(container);
 
   const preview = buildReorderPreview(latest, getState().products);
   const itemNames = preview.items.slice(0, 2).map((item) => `${item.quantity}× ${item.name}`);
@@ -762,7 +836,6 @@ function renderDirectOrderingCustomerActions() {
         <span class="reorder-kicker">Volver a pedir</span>
         <strong>${escapeHtml(summary)}</strong>
         <small>${notice ? escapeHtml(notice) : 'Revisá el pedido antes de confirmar.'}</small>
-        ${profile?.loyaltyCopy ? `<em>${escapeHtml(profile.loyaltyCopy)}</em>` : ''}
       </div>
       <div class="reorder-card-side">
         <strong>${money(preview.totals.total)}</strong>
@@ -833,8 +906,15 @@ function renderCheckoutVisibility() {
   if (form) form.hidden = isEmpty;
   $$('[data-clear-cart]').forEach((button) => { button.hidden = isEmpty; });
   const requiresAgeConfirmation = cartItems.some((item) => item.product.alcoholic);
+  const requiredAge = Math.max(
+    18,
+    ...cartItems
+      .filter((item) => item.product.alcoholic)
+      .map((item) => Number(item.product.minimumAge || item.product.minimum_age || 18)),
+  );
   const ageRow = $('[data-age-confirmation]');
   const ageInput = $('[name="ageConfirmed"]');
+  const ageTitle = $('[data-age-confirmation-title]');
   if (ageRow) {
     ageRow.hidden = !requiresAgeConfirmation;
     ageRow.setAttribute('aria-hidden', String(!requiresAgeConfirmation));
@@ -843,11 +923,15 @@ function renderCheckoutVisibility() {
     ageInput.required = requiresAgeConfirmation;
     if (!requiresAgeConfirmation) ageInput.checked = false;
   }
+  if (ageTitle) ageTitle.textContent = `Confirmo que soy mayor de ${requiredAge} años`;
 }
 
 export function renderCartTotals() {
   const summary = getCartSummary(currentDeliveryMode());
   const subtotalSummary = getCartSummary('pickup');
+  const floatingAllowed = ['home', 'catalog'].includes(
+    document.body.dataset.activeView || 'home',
+  );
   const floatingText = `Ver pedido · ${money(subtotalSummary.subtotal)}`;
   setText('[data-cart-count]', String(summary.count));
   setText('[data-cart-count-mobile]', String(summary.count));
@@ -857,7 +941,7 @@ export function renderCartTotals() {
     node.classList.toggle('is-empty', summary.count === 0);
   });
   $$('[data-floating-cart]').forEach((node) => {
-    node.classList.toggle('hidden', summary.count === 0);
+    node.classList.toggle('hidden', summary.count === 0 || !floatingAllowed);
     node.setAttribute('aria-label', summary.count > 0 ? `${floatingText}. Ver pedido.` : 'Carrito vacío');
   });
 }
@@ -870,7 +954,10 @@ function renderCartList() {
   if (!items.length) {
     const activeOrder = getActiveOrder();
     const hasActiveOrder = activeOrder && !['delivered', 'cancelled'].includes(activeOrder.status);
-    const latestOrder = getLatestCustomerOrder();
+    const activeNonTerminalId = hasActiveOrder ? activeOrder.id : '';
+    const latestOrder = getCustomerOrderHistory().find((order) => (
+      order.status === 'delivered' && order.id !== activeNonTerminalId
+    )) || null;
     container.innerHTML = `
       <div class="empty-state cart-empty-state">
         <span class="empty-state-ico" aria-hidden="true">
@@ -982,7 +1069,7 @@ function renderCheckoutPaymentFields() {
   const note = $('[data-payment-note]');
   if (!note) return;
   note.classList.remove('hidden');
-  note.textContent = 'El pago se coordina con el local. Esta presentación no procesa pagos.';
+  note.textContent = 'El pago se coordina con el local antes de preparar el pedido.';
 }
 
 function renderCouponMessage(coupon) {
@@ -1055,20 +1142,25 @@ export function updateAddressFieldVisibility() {
   if (!field) return;
   const isPickup = currentDeliveryMode() === 'pickup';
   field.classList.toggle('hidden', isPickup);
+  const title = $('[data-checkout-details-title]');
+  if (title) title.textContent = isPickup ? 'Datos para retirar' : 'Datos de entrega';
 }
 
 // ===== Seguimiento del pedido (vista cliente) =====
-// La línea de pasos (Recibido/En preparación/Listo/En reparto/Entregado) vive
-// en core/order-timeline.js: es la MISMA que ven Negocio y Rider.
-const TRACKING_GPS_NOTE = 'Seguimiento por estados, sin GPS ni ubicación en vivo.';
-
+// El cliente ve cuatro etapas comerciales; los estados internos siguen
+// disponibles en Negocio/Rider, pero no se filtran a esta superficie.
 const TRACKING_STATUS_LABELS = Object.freeze({
-  received: 'Recibido',
-  accepted: 'Aceptado',
-  preparing: 'En preparación',
-  ready: 'Listo',
-  on_the_way: 'En reparto',
-  arriving: 'En reparto',
+  draft: 'Confirmado',
+  submitted: 'Confirmado',
+  received: 'Confirmado',
+  accepted: 'Preparando',
+  preparing: 'Preparando',
+  ready: 'Preparando',
+  assigned: 'Preparando',
+  picked_up: 'En camino',
+  on_the_way: 'En camino',
+  arrived: 'En camino',
+  arriving: 'En camino',
   delivered: 'Entregado',
   cancelled: 'Cancelado',
 });
@@ -1121,7 +1213,11 @@ function trackingHeadline(order) {
   if (order.status === 'on_the_way') {
     return { kicker: 'En reparto', title: 'Pedido en reparto', sub: 'Tu pedido salió del local y va camino a tu dirección.' };
   }
-  return { kicker: 'Seguimiento del pedido', title: 'Estamos revisando tu pedido', sub: 'El comercio está revisando disponibilidad para aceptar y preparar tu pedido.' };
+  return {
+    kicker: 'Pedido confirmado',
+    title: 'Pedido confirmado',
+    sub: 'Guardamos tu pedido. Acá vas a ver cada cambio de estado.',
+  };
 }
 
 function destinationAddressLabel(order) {
@@ -1134,20 +1230,30 @@ function displayDestinationLabel(value) {
     .replace(/^Local demo\s*·\s*/i, 'Local · ');
 }
 
-// Tiempo honesto: sólo se muestra un número cuando hay una base real (el
-// tiempo de preparación que cargó el negocio al aceptar). Antes de aceptar no
-// inventamos minutos, y en reparto informamos la etapa en lugar de un ETA falso.
-function trackingEtaLabel(order) {
-  if (!order || order.status === 'cancelled') return 'Sin estimar';
-  if (order.status === 'delivered') return 'Finalizado';
-  if (order.deliveryMode === 'pickup' && order.status === 'ready') return 'Listo';
-  const prepMinutes = Number(order.delivery?.estimatedPreparationMinutes || 0);
-  if (order.status === 'preparing' && prepMinutes > 0) return `${Math.floor(prepMinutes)} min`;
-  if (order.status === 'received' || order.status === 'accepted') return 'Lo confirma el local';
-  if (order.status === 'ready') return 'Por salir';
-  if (order.status === 'arriving') return 'Llegando';
-  if (order.status === 'on_the_way') return 'En camino';
-  return 'A coordinar';
+function trackingPrimaryMetric(order) {
+  if (!order) return { label: 'Estado', value: 'Sin información' };
+  if (order.status === 'delivered') return { label: 'Estado', value: 'Entregado' };
+  const etaMinutes = Number(order.delivery?.etaMinutes);
+  const calculatedAt = new Date(order.delivery?.etaCalculatedAt || '').getTime();
+  const expiresAt = new Date(order.delivery?.etaExpiresAt || '').getTime();
+  const reliableEta = Number.isFinite(etaMinutes)
+    && etaMinutes > 0
+    && etaMinutes <= 1440
+    && Number.isFinite(calculatedAt)
+    && Number.isFinite(expiresAt)
+    && expiresAt > calculatedAt
+    && expiresAt > Date.now()
+    && Boolean(String(order.delivery?.etaSource || '').trim());
+  if (reliableEta) {
+    return {
+      label: 'Llega en',
+      value: `${Math.round(etaMinutes)} min`,
+    };
+  }
+  return {
+    label: 'Estado',
+    value: trackingStatusLabel(order.status),
+  };
 }
 
 function realMapShell({ order = null, role = 'tracking', fallback }) {
@@ -1170,12 +1276,8 @@ function trackingMapStage({ order = null, live = false }) {
     <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
       ${realMapShell({ order, fallback: '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', role: 'tracking' })}
       <div class="map-floating-top">
-        <span class="map-status-pill ${statusClass(order.status)}"><small>Delivery TABA</small><strong>Ubicación actualizada en vivo</strong></span>
+        <span class="map-status-pill ${statusClass(order.status)}"><small>Delivery TABA</small><strong>${escapeHtml(trackingStatusLabel(order.status))}</strong></span>
         <span class="map-connection-pill">${realtimeChip(order)}</span>
-      </div>
-      <div class="map-floating-bottom">
-        <span class="map-stat-pill map-destination-pill"><small>Mapa seguro</small><strong>Sin dirección pública</strong></span>
-        <span class="map-stat-pill live-map-pill"><small>Ubicación</small><strong>${live ? 'Actualizada' : 'No disponible'}</strong></span>
       </div>
     </div>`;
 }
@@ -1189,7 +1291,7 @@ function riderTrackingCard(order, riderLocation) {
       <div class="delivery-status-card is-live">
         <span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span>
         <div>
-          <small>Delivery TABA</small>
+          <small>Entrega TABA</small>
           <strong>Ubicación actualizada ${escapeHtml(age)}</strong>
         </div>
       </div>
@@ -1200,7 +1302,7 @@ function riderTrackingCard(order, riderLocation) {
     return `
       <div class="delivery-status-card is-delivered">
         <span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span>
-        <div><small>Delivery TABA</small><strong>Pedido entregado</strong></div>
+        <div><small>Entrega TABA</small><strong>Pedido entregado</strong></div>
       </div>`;
   }
 
@@ -1209,7 +1311,7 @@ function riderTrackingCard(order, riderLocation) {
     <div class="delivery-status-card rider-pending" role="status">
       <span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span>
       <div>
-        <small>Delivery TABA</small>
+        <small>Entrega TABA</small>
         <strong>${escapeHtml(title)}</strong>
         <span>${escapeHtml(sub)}</span>
       </div>
@@ -1224,7 +1326,7 @@ function hasVerifiedLiveRiderLocation(location) {
 
 function riderPendingCopy(status) {
   if (status === 'on_the_way' || status === 'arriving') {
-    return { title: 'Pedido en camino', sub: 'Seguimos cada avance confirmado.' };
+    return { title: 'Seguimiento por iniciar', sub: 'El repartidor todavía no inició el seguimiento.' };
   }
   if (status === 'ready') {
     return { title: 'Listo para salir', sub: 'El delivery comenzará cuando el pedido salga del local.' };
@@ -1249,11 +1351,22 @@ function relativeAgeLabel(value) {
 function trackingDeliveryCodeCard(order) {
   if (!order || order.status === 'cancelled') return '';
   if (order.deliveryMode !== 'delivery') return '';
-  const deliveryCode = normalizeDeliveryCode(order.deliveryCode, { seed: order.id });
+  if (!['arriving', 'delivered'].includes(order.status)) return '';
+  const deliveryCode = normalizeDeliveryCode(order.deliveryCode);
   if (!deliveryCode) return '';
   const confirmed = isDeliveryCodeConfirmed(deliveryCode);
   const confirmedTime = formatDeliveryCodeTime(deliveryCode);
   if (order.status === 'delivered' && !confirmed) return '';
+  if (order.status === 'delivered') {
+    return `
+      <section class="delivery-code-card is-confirmed" data-delivery-code-card>
+        <div class="delivery-code-copy">
+          <span>Entrega validada</span>
+          <strong class="delivery-code-success">Código confirmado</strong>
+          <small>${confirmedTime ? `Confirmado a las ${escapeHtml(confirmedTime)}.` : 'Recepción confirmada.'}</small>
+        </div>
+      </section>`;
+  }
   const copy = order.deliveryMode === 'pickup'
     ? 'Mostralo en mostrador para retirar tu pedido.'
     : 'Dáselo al repartidor cuando recibas el pedido.';
@@ -1302,10 +1415,28 @@ function trackingWaitingStage(order) {
     <div class="tracking-map-waiting" data-tracking-map-placeholder>
       <span aria-hidden="true">${deliveryGlyph()}</span>
       <div>
-        <strong>Seguimiento por estado</strong>
-        <p data-tracking-gps-note>${escapeHtml(TRACKING_GPS_NOTE)}</p>
+        <strong>Ubicación no disponible</strong>
+        <p data-tracking-gps-note>Seguimiento por estados, sin GPS ni ubicación en vivo.</p>
       </div>
     </div>`;
+}
+
+function trackingContactButton() {
+  const config = getBusinessConfig();
+  const phone = String(config.whatsappNumber || '').replace(/\D/g, '');
+  if (config.whatsappVerified !== true || phone.length < 8 || phone.length > 15) return '';
+  return `<a class="secondary-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">Contactar al local</a>`;
+}
+
+function trackingHelpCard() {
+  const contact = trackingContactButton();
+  if (!contact) return '';
+  return `
+    <section class="tracking-help-card">
+      <span class="tracking-help-icon" aria-hidden="true">?</span>
+      <div><strong>¿Necesitás ayuda?</strong><small>Escribile al canal verificado del local.</small></div>
+      ${contact}
+    </section>`;
 }
 
 export function renderTracking() {
@@ -1318,7 +1449,7 @@ export function renderTracking() {
       <div class="track-layout tracking-map-experience is-empty no-map">
         <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
           <div class="empty-state sheet-empty">
-          <strong>Todavía no hay un pedido en curso</strong>
+          <h1 class="empty-title">Todavía no hay un pedido en curso</h1>
           <p class="empty-state-copy">Cuando armes tu pedido, acá vas a ver cada avance hasta la entrega.</p>
           <div class="empty-actions">
             <button class="primary-button compact" type="button" data-nav-view="catalog">Ver el catálogo</button>
@@ -1326,13 +1457,6 @@ export function renderTracking() {
           </div>
         </section>
       </div>`, { rolePrefix: 'tracking' });
-    return;
-  }
-
-  const isInitialDemoSample = isDemoMode()
-    && ['received', 'submitted'].includes(String(order.status || '').trim());
-  if (order.previewOnly || isInitialDemoSample) {
-    renderPublicPreviewTracking(container, order);
     return;
   }
 
@@ -1349,43 +1473,46 @@ export function renderTracking() {
       <strong>${money(item.quantity * item.unitPrice)}</strong>
     </div>
   `).join('');
+  const orderAddress = normalizeOrderAddressDetails(order);
 
   const showMap = isDelivery && !isCancelled && liveRider;
+  const primaryMetric = trackingPrimaryMetric(order);
   renderWithStableRealMap(container, `
     <div class="track-layout tracking-map-experience ${showMap ? '' : 'no-map'}">
-      ${showMap ? trackingMapStage({ order, live: true }) : trackingWaitingStage(order)}
+      ${showMap ? trackingMapStage({ order, live: true }) : ''}
 
       <section class="delivery-bottom-sheet tracking-sheet track-progress-card ${showMap ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <div class="tracking-brand-row">
           <strong>TABA</strong>
-          <span>Seguimiento en vivo</span>
+          <span>${showMap ? 'Seguimiento en vivo' : 'Seguimiento del pedido'}</span>
           ${trackingConnectionPill(order)}
         </div>
         <div class="tracking-hero">
           <div>
             <small>${escapeHtml(head.kicker)} · ${escapeHtml(order.id)}</small>
-            <h2>${escapeHtml(head.title)}</h2>
+            <h1>${escapeHtml(head.title)}</h1>
             <p>${escapeHtml(head.sub)}</p>
           </div>
           <div class="tracking-eta">
-            <span>${order.status === 'delivered' ? 'Estado' : 'Tiempo estimado'}</span>
-            <strong>${escapeHtml(order.status === 'delivered' ? trackingStatusLabel(order.status) : trackingEtaLabel(order))}</strong>
+            <span>${escapeHtml(primaryMetric.label)}</span>
+            <strong>${escapeHtml(primaryMetric.value)}</strong>
           </div>
         </div>
         ${renderPublicOrderTimeline(order.status, { className: 'customer-progress' })}
         ${isCancelled ? `<div class="warning-box">Este pedido fue cancelado.${order.cancelReason ? ` Motivo: ${escapeHtml(order.cancelReason)}.` : ''} Si fue un error, contactá al local por un canal verificado.</div>` : ''}
-        ${isDelivery && !isCancelled ? riderTrackingCard(order, liveRider ? riderLocation : null) : ''}
+        ${isDelivery && !isCancelled
+          ? (liveRider ? riderTrackingCard(order, riderLocation) : trackingWaitingStage(order))
+          : ''}
         ${trackingOrderSummaryCard(order)}
         ${trackingDeliveryCodeCard(order)}
-        <section class="tracking-help-card">
-          <span class="tracking-help-icon" aria-hidden="true">?</span>
-          <div><strong>¿Necesitás ayuda?</strong><small>Consultá los datos y canales verificados del local.</small></div>
-          <button class="secondary-button compact" type="button" data-nav-view="profile">Contactar al local</button>
-        </section>
+        ${trackingHelpCard()}
         <details class="order-detail tracking-order-detail">
           <summary>Ver detalle</summary>
           <div class="order-detail-body">
             <div class="order-line head"><span>${deliveryModeLabel(order.deliveryMode)}</span><strong>${escapeHtml(destinationAddressLabel(order))}</strong></div>
+            ${isDelivery && orderAddress.reference
+              ? `<p class="tracking-reference"><strong>Referencia:</strong> ${escapeHtml(orderAddress.reference)}</p>`
+              : ''}
             ${itemsHtml}
             <div class="summary-row"><span>Subtotal</span><strong>${money(order.subtotal)}</strong></div>
             ${Number(order.discountTotal || 0) > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(order.coupon?.code || 'Promo')}</span><strong>-${money(order.discountTotal)}</strong></div>` : ''}
@@ -1422,61 +1549,6 @@ function trackingConnectionPill(order) {
   return `<span class="sheet-connection-pill">${chip}</span>`;
 }
 
-function renderPublicPreviewTracking(container, order) {
-  const address = normalizeOrderAddressDetails(order);
-  const itemsHtml = order.items.map((item) => `
-    <div class="order-line">
-      <span>${item.quantity} × ${escapeHtml(item.name)}</span>
-      <strong>${money(item.quantity * item.unitPrice)}</strong>
-    </div>`).join('');
-  renderWithStableRealMap(container, `
-    <div class="track-layout tracking-map-experience no-map is-preview">
-      <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet data-public-preview>
-        <div class="preview-confirm-head">
-          <span class="preview-confirm-check" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
-              <path d="m5 12.5 4.4 4.4L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          <small>Pedido de muestra</small>
-          <strong>Así se arma un pedido</strong>
-          <span>Tu pedido quedó armado como muestra: no se envió al local ni se cobró nada.</span>
-        </div>
-        <div class="sheet-metrics">
-          <span><small>Referencia</small><strong>${escapeHtml(order.id)}</strong></span>
-          <span><small>Total estimado</small><strong>${money(order.total)}</strong></span>
-          <span><small>Pago</small><strong>Sin procesar</strong></span>
-        </div>
-        <div class="notice-box public-preview-notice">
-          ${isDemoMode()
-            ? 'Esta muestra vive sólo en este dispositivo. Podés avanzar el escenario desde Negocio.'
-            : 'Cuando el comercio active los pedidos online, la confirmación llegará al backend real.'}
-        </div>
-        ${order.deliveryMode === 'delivery' && address.label ? `
-          <div class="tracking-address-card">
-            <span class="tracking-address-icon" aria-hidden="true">${pinGlyph()}</span>
-            <small>Dirección ingresada</small>
-            <strong>${escapeHtml(address.label)}</strong>
-            ${address.reference ? `<p>Referencia: ${escapeHtml(address.reference)}</p>` : ''}
-          </div>` : ''}
-        <details class="order-detail">
-          <summary>Ver detalle del pedido de muestra</summary>
-          <div class="order-detail-body">
-            ${itemsHtml}
-            <div class="summary-row"><span>Productos</span><strong>${money(order.subtotal)}</strong></div>
-            <div class="summary-row"><span>Envío</span><strong>A coordinar</strong></div>
-            <div class="summary-row"><span>Pago</span><strong>Sin procesar</strong></div>
-            ${order.notes && order.notes !== 'Sin notas' ? `<p><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>` : ''}
-          </div>
-        </details>
-        <div class="button-row track-actions">
-          <button class="primary-button compact" type="button" data-nav-view="catalog">Volver al catálogo</button>
-          <button class="ghost-button compact" type="button" data-copy-last-order>Copiar resumen</button>
-        </div>
-      </section>
-    </div>`, { rolePrefix: 'tracking' });
-}
-
 // Indicador de conexión realtime (en vivo entre equipos / en este equipo).
 function realtimeChip(order = null) {
   if (order?.status === 'delivered') {
@@ -1511,8 +1583,17 @@ export function showProductModal(productId) {
 
   const off = discountPercent(product);
   const favorite = isFavoriteProduct(product.id);
+  const variants = Array.isArray(product.variants)
+    ? product.variants.filter((variant) => (
+      variant
+      && typeof variant.id === 'string'
+      && getProductById(variant.id)
+      && isProductVisibleToCustomer(getProductById(variant.id))
+    ))
+    : [];
+  const minimumAge = Math.max(18, Number(product.minimumAge || product.minimum_age || 18));
   content.innerHTML = `
-    <div class="modal-card">
+    <div class="modal-card" role="document">
       <button class="modal-close" type="button" data-close-modal aria-label="Cerrar detalle">×</button>
       <div class="modal-media">
         ${productThumb(product, 'modal')}
@@ -1529,10 +1610,31 @@ export function showProductModal(productId) {
           </div>
           <span class="modal-availability ${product.stock <= 0 || !product.available ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>
         </div>
-        ${product.alcoholic ? '<p class="product-alcohol-notice">Venta exclusiva a mayores de 18 años.</p>' : ''}
+        ${variants.length ? `
+          <label class="modal-variant-field">
+            Presentación
+            <select data-product-variant aria-label="Elegir presentación">
+              <option value="${escapeHtml(product.id)}">${escapeHtml(unitText(product) || product.name)}</option>
+              ${variants.map((variant) => {
+                const item = getProductById(variant.id);
+                return `<option value="${escapeHtml(item.id)}">${escapeHtml(unitText(item) || item.name)} · ${money(item.price)}</option>`;
+              }).join('')}
+            </select>
+          </label>` : ''}
+        <div class="modal-order-fields">
+          <label class="modal-quantity-field">
+            Cantidad
+            <input data-product-quantity type="number" inputmode="numeric" min="1" max="${Math.max(1, Number(product.stock) || 1)}" value="1" />
+          </label>
+          <label class="modal-note-field">
+            Observación <span>(opcional)</span>
+            <input data-product-note type="text" maxlength="120" placeholder="Ej.: bien fría" />
+          </label>
+        </div>
+        ${product.alcoholic ? `<p class="product-alcohol-notice">Venta exclusiva a mayores de ${minimumAge} años.</p>` : ''}
       </div>
       <div class="modal-actions">
-        <button class="primary-button" type="button" data-add-product="${product.id}" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>Agregar al pedido</button>
+        <button class="primary-button" type="button" data-add-product="${escapeHtml(product.id)}" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>Agregar al pedido</button>
         <button class="secondary-button" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}">${favorite ? 'Guardado' : 'Guardar para después'}</button>
       </div>
     </div>

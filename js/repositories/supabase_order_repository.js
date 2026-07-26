@@ -7,6 +7,7 @@ import {
 } from '../core/domain.js';
 import { normalizeMoneyValue } from '../core/pricing.js';
 import { normalizeAddressDetails } from '../core/address.js';
+import { buildDeliveryCode, normalizeDeliveryCodeValue } from '../core/delivery-code.js';
 import {
   getNextWorkflowStatus,
   normalizeWorkflowStatus,
@@ -30,6 +31,11 @@ export const DEFAULT_SUPABASE_BUSINESS_ID = '00000000-0000-4000-8000-00000000000
 
 const ORDER_ACCESS_STORAGE_VERSION = 'taba-order-access-v1';
 const ORDER_SELECT = '*,order_items(*),rider_locations(*)';
+const PUBLIC_TRACKING_GPS_MAX_AGE_MS = 3 * 60 * 1000;
+const PUBLIC_TRACKING_GPS_FUTURE_TOLERANCE_MS = 30 * 1000;
+const PUBLIC_TRACKING_GPS_MAX_ACCURACY_METERS = 250;
+const TRUSTED_ETA_MAX_AGE_MS = 15 * 60 * 1000;
+const TRUSTED_ETA_SOURCES = new Set(['business', 'routing']);
 let channelSequence = 0;
 
 export function createSupabaseOrderRepository({
@@ -52,6 +58,7 @@ export function createSupabaseOrderRepository({
   const pollingInterval = Math.max(1000, Number(pollMs) || 5000);
   const pendingStorageKey = `${ORDER_ACCESS_STORAGE_VERSION}:${businessId}:pending`;
   const lastAccessStorageKey = `${ORDER_ACCESS_STORAGE_VERSION}:${businessId}:last`;
+  let lastOrderAccess = readStoredAccess(storage, lastAccessStorageKey);
   let trackingClient = null;
   let trackingClientToken = '';
   let pendingRequest = null;
@@ -114,6 +121,60 @@ export function createSupabaseOrderRepository({
     return repositoryResult(true, { rows, orders });
   }
 
+  async function refreshStoredCustomerTracking() {
+    const access = lastOrderAccess || readStoredAccess(storage, lastAccessStorageKey);
+    if (!access?.trackingToken) return null;
+    return fetchOrderByPublicId(
+      access.orderId || access.publicCode,
+      {
+        trackingToken: access.trackingToken,
+        mirror: true,
+      },
+    );
+  }
+
+  async function recoverCustomerTrackingAccess(rows = []) {
+    if (lastOrderAccess?.trackingToken) return lastOrderAccess;
+    const { data: userData, error: userError } = await client.auth.getUser();
+    const userId = userError ? '' : sanitizeText(userData?.user?.id, { maxLength: 80 });
+    if (!isUuid(userId)) return null;
+    const row = rows.find((candidate) => (
+      candidate?.customer_user_id === userId
+      && candidate?.delivery_mode === 'delivery'
+      && !['delivered', 'canceled', 'cancelled', 'rejected'].includes(
+        normalizeWorkflowStatus(candidate?.status),
+      )
+    ));
+    if (!row?.id) return null;
+
+    let trackingToken = '';
+    try {
+      trackingToken = randomBase64Url(32, cryptoImpl);
+    } catch (_) {
+      return null;
+    }
+    const { data, error } = await client.rpc('recover_order_tracking_access', {
+      p_order_id: row.id,
+      p_new_tracking_token: trackingToken,
+    });
+    const deliveryCode = normalizeDeliveryCodeValue(data?.delivery_code);
+    if (error || !data?.ok || !deliveryCode) return null;
+
+    const access = {
+      orderId: row.id,
+      publicCode: sanitizeText(data.public_code || row.public_code, { maxLength: 80 }),
+      trackingToken,
+      recoveredAt: new Date().toISOString(),
+    };
+    lastOrderAccess = access;
+    persistOrderAccess({ storage, key: lastAccessStorageKey, access });
+    mirrorOrder({
+      ...row,
+      delivery_code: deliveryCode,
+    });
+    return access;
+  }
+
   async function loadBusinessConfiguration() {
     const { data, error, status } = await client
       .from('businesses')
@@ -121,7 +182,6 @@ export function createSupabaseOrderRepository({
         'id',
         'name',
         'address',
-        'whatsapp_phone',
         'currency_code',
         'ordering_enabled',
         'ordering_verified',
@@ -168,13 +228,29 @@ export function createSupabaseOrderRepository({
       pickupEnabled,
     };
     reconcileProductionReadiness();
+    const {
+      data: publicContactPayload,
+      error: publicContactError,
+    } = await client.rpc('get_public_business_contact', {
+      p_business_id: businessId,
+    });
+    const publicContact = Array.isArray(publicContactPayload)
+      ? publicContactPayload[0] || null
+      : publicContactPayload;
+    const whatsappNumber = publicContactError
+      ? ''
+      : sanitizeText(publicContact?.whatsapp_phone, { maxLength: 40 });
+    const whatsappDigits = whatsappNumber.replace(/\D/g, '');
     updateBusinessConfig({
       businessName: sanitizeText(data.name, { fallback: 'TABA', maxLength: 80 }),
       name: sanitizeText(data.name, { fallback: 'TABA', maxLength: 80 }),
       subtitle: 'Tienda de bebidas',
       address: sanitizeText(data.address, { fallback: 'Dirección no publicada', maxLength: 180 }),
-      whatsappNumber: sanitizeText(data.whatsapp_phone, { maxLength: 40 }),
-      whatsappVerified: false,
+      whatsappNumber,
+      whatsappVerified: !publicContactError
+        && publicContact?.whatsapp_verified === true
+        && whatsappDigits.length >= 8
+        && whatsappDigits.length <= 15,
       deliveryFee: normalizeMoneyValue(data.delivery_fee, 0),
       minDeliveryOrder: normalizeMoneyValue(data.minimum_delivery_subtotal, 0),
       orderingDetailsVerified: orderingReady,
@@ -198,19 +274,31 @@ export function createSupabaseOrderRepository({
       .select([
         'id',
         'business_id',
+        'external_id',
+        'sku',
         'name',
         'brand',
         'description',
         'category',
         'subcategory',
+        'variant',
         'presentation',
+        'capacity_value',
+        'capacity_unit',
         'capacity',
         'packaging_type',
+        'units_per_pack',
         'price',
         'stock',
         'available',
+        'chilled',
         'is_alcoholic',
+        'minimum_age',
         'image_url',
+        'image_sha256',
+        'image_thumbnail_url',
+        'image_thumbnail_sha256',
+        'source_image_sha256',
         'tags',
         'sort_order',
         'is_active',
@@ -340,15 +428,44 @@ export function createSupabaseOrderRepository({
       });
     }
 
+    if (values.deliveryMode === 'delivery') {
+      let deliveryCode = normalizeDeliveryCodeValue(row.delivery_code);
+      if (!deliveryCode) {
+        const {
+          data: handoffData,
+          error: handoffError,
+          status: handoffStatus,
+        } = await client.rpc('issue_order_delivery_code', {
+          p_order_id: row.id,
+          p_tracking_token: request.trackingToken,
+        });
+        if (handoffError) {
+          return failedQuery(
+            handoffError,
+            handoffStatus,
+            'El backend todavía no puede emitir el código de entrega de forma atómica.',
+          );
+        }
+        deliveryCode = normalizeDeliveryCodeValue(handoffData?.delivery_code);
+      }
+      if (!deliveryCode) {
+        return repositoryResult(false, {
+          message: 'El backend no devolvió un código de entrega válido. Reintentá.',
+        });
+      }
+      row.delivery_code = deliveryCode;
+    }
+
+    lastOrderAccess = {
+      orderId: row.id,
+      publicCode: row.public_code || row.code || '',
+      clientRequestId: request.clientRequestId,
+      trackingToken: request.trackingToken,
+    };
     persistOrderAccess({
       storage,
       key: lastAccessStorageKey,
-      access: {
-        orderId: row.id,
-        publicCode: row.public_code || row.code || '',
-        clientRequestId: request.clientRequestId,
-        trackingToken: request.trackingToken,
-      },
+      access: lastOrderAccess,
     });
     // Una respuesta exitosa completa este intento. Mantener la clave como
     // "pending" haría que un pedido nuevo e idéntico reutilice el pedido
@@ -385,15 +502,24 @@ export function createSupabaseOrderRepository({
       let stopped = false;
       const refresh = async () => {
         if (stopped) return;
-        await Promise.allSettled([loadBusinessConfiguration(), loadCatalog(), fetchOrders()]);
+        const results = await Promise.allSettled([
+          loadBusinessConfiguration(),
+          loadCatalog(),
+          fetchOrders(),
+        ]);
+        const orderResult = results[2]?.status === 'fulfilled' ? results[2].value : null;
+        if (!lastOrderAccess?.trackingToken && orderResult?.ok) {
+          await recoverCustomerTrackingAccess(orderResult.rows).catch(() => null);
+        }
+        if (!stopped) await refreshStoredCustomerTracking().catch(() => null);
       };
       const stopRealtime = createRealtimeWatch({
         client,
         pollMs: pollingInterval,
         name: `taba-sync-${businessId}`,
         changes: [
-          tableChange('orders', `business_id=eq.${businessId}`, () => fetchOrders()),
-          tableChange('rider_locations', `business_id=eq.${businessId}`, () => fetchOrders()),
+          tableChange('orders', `business_id=eq.${businessId}`, refresh),
+          tableChange('rider_locations', `business_id=eq.${businessId}`, refresh),
           tableChange('products', `business_id=eq.${businessId}`, () => loadCatalog()),
           tableChange('businesses', `id=eq.${businessId}`, async () => {
             await loadBusinessConfiguration();
@@ -402,10 +528,23 @@ export function createSupabaseOrderRepository({
         ],
         fallbackTask: refresh,
       });
+      // Auth customers deliberately lost SELECT on the exact rider_locations
+      // table. Their Realtime channel may still subscribe for order/catalog
+      // events, but it will not receive GPS rows. Poll only the token-scoped,
+      // rounded DTO so live tracking remains current without reopening base GPS.
+      const stopCustomerTrackingPoll = createRealtimeWatch({
+        client,
+        pollMs: pollingInterval,
+        name: `taba-customer-tracking-${businessId}`,
+        changes: [],
+        fallbackTask: refreshStoredCustomerTracking,
+        pollingOnly: true,
+      });
       refresh();
       syncStop = () => {
         stopped = true;
         stopRealtime();
+        stopCustomerTrackingPoll();
         syncStop = null;
       };
       return syncStop;
@@ -431,7 +570,7 @@ export function createSupabaseOrderRepository({
         : null;
       if (visible) return visible;
 
-      const access = readStoredAccess(storage, lastAccessStorageKey);
+      const access = lastOrderAccess || readStoredAccess(storage, lastAccessStorageKey);
       if (!access?.trackingToken) return null;
       const row = await fetchOrderByPublicId(
         access.orderId || access.publicCode,
@@ -466,15 +605,169 @@ export function createSupabaseOrderRepository({
         message: `Pedido ${order.id} actualizado a ${statusLabel(order.status)}.`,
       });
     },
-    async assignRider() {
-      return repositoryResult(false, {
-        message: 'La asignación de rider requiere la RPC autorizada de la próxima fase.',
+    async listAvailableRiderOrders() {
+      const { data, error, status } = await client.rpc('list_available_rider_orders', {
+        p_business_id: businessId,
+      });
+      if (error) {
+        return failedQuery(error, status, readableRiderAssignmentError(error));
+      }
+      const orders = Array.isArray(data)
+        ? data.map(normalizeAvailableRiderOrder).filter(Boolean)
+        : [];
+      return repositoryResult(true, { orders });
+    },
+    async listActiveRiders() {
+      const { data, error, status } = await client.rpc('list_active_business_riders', {
+        p_business_id: businessId,
+      });
+      if (error) {
+        return failedQuery(
+          error,
+          status,
+          'No pudimos cargar los riders activos del negocio.',
+        );
+      }
+      const riders = (Array.isArray(data) ? data : [])
+        .map(normalizeActiveRider)
+        .filter(Boolean);
+      return repositoryResult(true, { riders });
+    },
+    async claimRiderOrder(publicCode, {
+      expectedStatus = 'ready',
+      expectedRiderId = null,
+    } = {}) {
+      const cleanPublicCode = sanitizeText(publicCode, { maxLength: 80 });
+      if (!cleanPublicCode) {
+        return repositoryResult(false, { message: 'Ingresá un código de pedido válido.' });
+      }
+      const cleanExpectedRiderId = isUuid(expectedRiderId) ? expectedRiderId : null;
+      const { data, error, status } = await client.rpc('claim_available_rider_order', {
+        p_business_id: businessId,
+        p_public_code: cleanPublicCode,
+        p_expected_status: normalizeWorkflowStatus(expectedStatus),
+        p_expected_rider_user_id: cleanExpectedRiderId,
+      });
+      if (error) {
+        return failedQuery(error, status, readableRiderAssignmentError(error));
+      }
+
+      const updatedRow = unwrapOrderRow(data);
+      if (!updatedRow) {
+        return repositoryResult(false, {
+          message: 'El backend no devolvió el pedido asignado.',
+        });
+      }
+      const order = mirrorOrder(updatedRow);
+      return repositoryResult(true, {
+        order,
+        message: `Pedido ${order.id} asignado a tu cuenta.`,
+      });
+    },
+    async assignRider(orderId, riderId, {
+      expectedStatus = null,
+      expectedRiderId = undefined,
+    } = {}) {
+      if (!isUuid(riderId)) {
+        return repositoryResult(false, { message: 'Seleccioná un rider autenticado válido.' });
+      }
+      const row = await fetchOrderByPublicId(orderId);
+      if (!row) {
+        return repositoryResult(false, { message: 'Pedido no encontrado o acceso denegado.' });
+      }
+      const currentRiderId = isUuid(row.assigned_rider_user_id)
+        ? row.assigned_rider_user_id
+        : null;
+      const cleanExpectedRiderId = expectedRiderId === undefined
+        ? currentRiderId
+        : isUuid(expectedRiderId)
+          ? expectedRiderId
+          : null;
+      const { data, error, status } = await client.rpc('assign_order_rider', {
+        p_order_id: row.id,
+        p_expected_status: normalizeWorkflowStatus(expectedStatus || row.status),
+        p_expected_rider_user_id: cleanExpectedRiderId,
+        p_new_rider_user_id: riderId,
+      });
+      if (error) {
+        return failedQuery(error, status, readableRiderAssignmentError(error));
+      }
+
+      const updatedRow = unwrapOrderRow(data) || await fetchOrderByPublicId(row.id);
+      if (!updatedRow) {
+        return repositoryResult(false, {
+          message: 'El backend no devolvió el pedido actualizado.',
+        });
+      }
+      const order = mirrorOrder(updatedRow);
+      return repositoryResult(true, {
+        order,
+        message: currentRiderId && currentRiderId !== riderId
+          ? `Rider reasignado en el pedido ${order.id}.`
+          : `Rider asignado al pedido ${order.id}.`,
+      });
+    },
+    async reassignRider(orderId, riderId, options = {}) {
+      return repository.assignRider(orderId, riderId, options);
+    },
+    async confirmDelivery(orderId, code, { expectedStatus = 'arrived' } = {}) {
+      const deliveryCode = normalizeDeliveryCodeValue(code);
+      if (!deliveryCode) {
+        return repositoryResult(false, { message: 'Ingresá el código de 4 dígitos del cliente.' });
+      }
+      const knownOrder = getState().orders.find((candidate) => (
+        candidate.id === orderId
+        || candidate.backendId === orderId
+        || candidate.code === orderId
+      ));
+      const backendOrderId = isUuid(orderId)
+        ? orderId
+        : isUuid(knownOrder?.backendId)
+          ? knownOrder.backendId
+          : '';
+      if (!backendOrderId) {
+        return repositoryResult(false, { message: 'Pedido no encontrado o acceso denegado.' });
+      }
+      const { data, error, status } = await client.rpc('confirm_order_delivery', {
+        p_order_id: backendOrderId,
+        p_expected_status: normalizeWorkflowStatus(expectedStatus),
+        p_delivery_code: deliveryCode,
+      });
+      if (error) {
+        return failedQuery(error, status, readableRiderAssignmentError(error));
+      }
+      if (!data?.ok) {
+        const messages = {
+          INVALID_FORMAT: 'Ingresá el código de 4 dígitos del cliente.',
+          MISMATCH: `Código incorrecto. Te quedan ${Math.max(0, Number(data?.remaining_attempts) || 0)} intento(s).`,
+          LOCKED: 'Demasiados intentos. Esperá hasta que el código vuelva a habilitarse.',
+          CODE_UNAVAILABLE: 'El código de entrega no está disponible o venció.',
+        };
+        return repositoryResult(false, {
+          code: data?.code || 'HANDOFF_FAILED',
+          message: messages[data?.code] || 'No pudimos confirmar la entrega.',
+        });
+      }
+      return repositoryResult(true, {
+        order: null,
+        publicCode: sanitizeText(data?.public_code || knownOrder?.code || orderId, { maxLength: 80 }),
+        status: normalizeWorkflowStatus(data?.status || 'delivered'),
+        confirmedAt: sanitizeText(data?.confirmed_at, { maxLength: 64 }),
+        message: 'Código confirmado. Pedido entregado.',
       });
     },
     async updateRiderLocation(orderId, location) {
       const normalized = normalizeTrackingLocation(location);
       if (!normalized || normalized.source !== 'gps') {
         return repositoryResult(false, { message: 'Producción sólo acepta una ubicación GPS real.' });
+      }
+      if (
+        !Number.isFinite(Number(normalized.accuracy))
+        || Number(normalized.accuracy) > PUBLIC_TRACKING_GPS_MAX_ACCURACY_METERS
+      ) {
+        return repositoryResult(false, {
+          message: 'Esperá una señal GPS más precisa antes de compartir la ubicación.',
+        });
       }
 
       const { data: userData, error: userError } = await client.auth.getUser();
@@ -489,38 +782,36 @@ export function createSupabaseOrderRepository({
         return repositoryResult(false, { message: 'Este pedido no está asignado a tu cuenta de rider.' });
       }
 
-      const { data, error, status } = await client
-        .from('rider_locations')
-        .insert({
-          order_id: row.id,
-          business_id: businessId,
-          rider_user_id: user.id,
-          lat: normalized.lat,
-          lng: normalized.lng,
-          accuracy: normalized.accuracy ?? null,
-          heading: normalized.heading ?? null,
-          speed: normalized.speed ?? null,
-          source: 'gps',
-        })
-        .select('*')
-        .single();
+      const { data, error, status } = await client.rpc('publish_rider_location', {
+        p_order_id: row.id,
+        p_lat: normalized.lat,
+        p_lng: normalized.lng,
+        p_accuracy: normalized.accuracy,
+        p_heading: normalized.heading ?? null,
+        p_speed: normalized.speed ?? null,
+      });
       if (error) return failedQuery(error, status, 'No pudimos publicar la ubicación del rider.');
 
+      const serverLocation = normalizeTrackingLocation({
+        ...(data && typeof data === 'object' ? data : {}),
+        source: 'gps',
+        timestamp: data?.created_at || normalized.lastFixAt,
+      }) || normalized;
       const fullRow = await fetchOrderByPublicId(row.id) || {
         ...row,
-        rider_locations: [data, ...(row.rider_locations || [])],
+        rider_locations: [data, ...(row.rider_locations || [])].filter(Boolean),
       };
       const order = mirrorOrder(fullRow);
-      mirrorGpsLocation(order, normalized);
+      mirrorGpsLocation(order, serverLocation);
       return repositoryResult(true, {
-        location: normalized,
+        location: serverLocation,
         order,
         message: 'Ubicación GPS actualizada.',
       });
     },
     subscribeToOrder(orderId, callback) {
       if (typeof callback !== 'function') return () => {};
-      const access = readStoredAccess(storage, lastAccessStorageKey);
+      const access = lastOrderAccess || readStoredAccess(storage, lastAccessStorageKey);
       const trackingToken = matchesStoredOrderAccess(access, orderId)
         ? access.trackingToken
         : '';
@@ -716,35 +1007,67 @@ function rowToCatalogProduct(row = {}) {
   if (!isUuid(row.id) || !row.is_verified) return null;
   const name = sanitizeText(row.name, { maxLength: 100 });
   const price = normalizeMoneyValue(row.price, 0);
-  if (!name || price <= 0) return null;
+  const externalId = sanitizeText(row.external_id, { maxLength: 120 });
+  const sku = sanitizeText(row.sku, { maxLength: 120 });
+  const image = sanitizeText(row.image_url, { maxLength: 500 });
+  const imageThumbnail = sanitizeText(row.image_thumbnail_url, { maxLength: 500 });
+  if (!name || price <= 0 || !externalId || !sku || !image || !imageThumbnail) return null;
 
   const categoryName = sanitizeText(row.category, { fallback: 'Otros', maxLength: 80 });
-  const presentation = sanitizeText(row.presentation, { maxLength: 80 });
+  const variant = sanitizeText(row.variant, { maxLength: 100 });
+  const presentation = sanitizeText(row.presentation, { maxLength: 100 });
+  const capacityValue = Number(row.capacity_value);
+  const capacityUnit = sanitizeText(row.capacity_unit, { maxLength: 20 }).toLowerCase();
   const capacity = sanitizeText(row.capacity, { maxLength: 60 });
   const packagingType = sanitizeText(row.packaging_type, { maxLength: 60 });
+  if (
+    !variant
+    || !presentation
+    || presentation !== variant
+    || !Number.isFinite(capacityValue)
+    || capacityValue <= 0
+    || !['ml', 'l', 'g', 'kg', 'unidad'].includes(capacityUnit)
+    || capacity !== `${capacityValue} ${capacityUnit}`
+  ) return null;
   const tags = Array.isArray(row.tags)
     ? row.tags.map((tag) => sanitizeText(tag, { maxLength: 40 })).filter(Boolean)
     : [];
   const tagSet = new Set(tags.map((tag) => tag.toLowerCase()));
   const stock = Math.max(0, Math.floor(Number(row.stock) || 0));
+  const unitsPerPack = Math.max(1, Math.floor(Number(row.units_per_pack) || 1));
+  const minimumAge = row.is_alcoholic
+    ? Math.min(99, Math.max(18, Math.floor(Number(row.minimum_age) || 18)))
+    : null;
 
   return {
     id: row.id,
+    externalId,
+    sku,
     name,
     brand: sanitizeText(row.brand, { maxLength: 80 }),
     description: sanitizeText(row.description, { maxLength: 180 }),
     categoryId: slugifyCategory(categoryName),
     categoryName,
     subcategory: sanitizeText(row.subcategory, { maxLength: 80 }),
+    variant,
     presentation,
+    capacityValue,
+    capacityUnit,
     capacity,
     packagingType,
+    unitsPerPack,
+    chilled: Boolean(row.chilled),
     tone: row.is_alcoholic ? 'alcoholic' : 'drink',
-    image: sanitizeText(row.image_url, { maxLength: 500 }),
+    image,
+    imageThumbnail,
+    imageSha256: sanitizeText(row.image_sha256, { maxLength: 64 }),
+    imageThumbnailSha256: sanitizeText(row.image_thumbnail_sha256, { maxLength: 64 }),
+    sourceImageSha256: sanitizeText(row.source_image_sha256, { maxLength: 64 }),
     price,
     stock,
     available: Boolean(row.available) && stock > 0,
     alcoholic: Boolean(row.is_alcoholic),
+    minimumAge,
     tags,
     featured: tagSet.has('destacado') || tagSet.has('promo') || tagSet.has('promoción'),
     popular: tagSet.has('más vendido') || tagSet.has('mas vendido') || tagSet.has('popular'),
@@ -758,9 +1081,19 @@ function rowToCatalogProduct(row = {}) {
 }
 
 function mirrorOrders(rows, { replace = false } = {}) {
-  const orders = rows.map(rowToDemoOrder).filter(Boolean);
+  const normalizedOrders = rows.map(rowToDemoOrder).filter(Boolean);
+  let orders = normalizedOrders;
   updateState((draft) => {
     const currentLastOrderId = draft.lastOrderId;
+    orders = normalizedOrders.map((order) => {
+      const current = draft.orders.find((candidate) => (
+        candidate.id === order.id
+        || candidate.backendId === order.backendId
+      ));
+      return current?.deliveryCode && !order.deliveryCode
+        ? { ...order, deliveryCode: current.deliveryCode }
+        : order;
+    });
     if (replace) {
       draft.orders = orders;
     } else {
@@ -839,17 +1172,25 @@ function normalizePublicTrackingDto(dto = {}) {
   const publicCode = sanitizeText(dto.public_code, { maxLength: 40 });
   if (!publicCode) return null;
 
-  const workflowStatus = normalizeWorkflowStatus(dto.status);
+  const workflowStatus = normalizeWorkflowStatus(dto.status, '');
+  if (!workflowStatus) return null;
   const status = toDemoOrderStatus(workflowStatus);
-  const createdAt = normalizeOptionalIso(dto.created_at) || new Date().toISOString();
+  const deliveryMode = dto.delivery_mode === 'pickup' ? 'pickup' : 'delivery';
+  const createdAt = normalizeOptionalIso(dto.created_at);
+  if (!createdAt) return null;
   const acceptedAt = normalizeOptionalIso(dto.accepted_at);
   const preparingAt = normalizeOptionalIso(dto.preparing_at);
   const readyAt = normalizeOptionalIso(dto.ready_at);
   const dispatchedAt = normalizeOptionalIso(dto.dispatched_at);
   const arrivedAt = normalizeOptionalIso(dto.arrived_at);
   const deliveredAt = normalizeOptionalIso(dto.delivered_at);
+  const cancelledAt = normalizeOptionalIso(dto.cancelled_at);
+  const rejectedAt = normalizeOptionalIso(dto.rejected_at);
   const updatedAt = latestIsoTimestamp([
+    normalizeOptionalIso(dto.updated_at),
     deliveredAt,
+    cancelledAt,
+    rejectedAt,
     arrivedAt,
     dispatchedAt,
     readyAt,
@@ -857,9 +1198,7 @@ function normalizePublicTrackingDto(dto = {}) {
     acceptedAt,
     createdAt,
   ]) || createdAt;
-  const location = latestRiderLocation(
-    dto.rider_location ? [dto.rider_location] : [],
-  );
+  const location = latestPublicRiderLocation(dto.rider_location);
   const statusHistory = statusHistoryFromRow({
     accepted_at: acceptedAt,
     preparing_at: preparingAt,
@@ -867,15 +1206,17 @@ function normalizePublicTrackingDto(dto = {}) {
     dispatched_at: dispatchedAt,
     arrived_at: arrivedAt,
     delivered_at: deliveredAt,
+    cancelled_at: cancelledAt,
+    rejected_at: rejectedAt,
     updated_at: updatedAt,
   }, status, createdAt);
-  const rawEstimate = Number(dto.estimated_minutes);
-  const estimatedMinutes = Number.isFinite(rawEstimate)
-    ? Math.min(1440, Math.max(0, Math.floor(rawEstimate)))
-    : 0;
+  const trustedEta = trustedEstimatedArrival(dto);
+  const deliveryCode = normalizeDeliveryCodeValue(dto.delivery_code);
+  const deliveryCodeConfirmedAt = normalizeOptionalIso(dto.delivery_code_confirmed_at);
 
   return {
     publicCode,
+    deliveryMode,
     workflowStatus,
     status,
     createdAt,
@@ -886,8 +1227,18 @@ function normalizePublicTrackingDto(dto = {}) {
     dispatchedAt,
     arrivedAt,
     deliveredAt,
+    cancelledAt,
+    rejectedAt,
     statusHistory,
-    estimatedMinutes,
+    estimatedMinutes: trustedEta?.minutes || 0,
+    trustedEta,
+    deliveryCodeConfirmedAt,
+    deliveryCode: deliveryCode
+      ? buildDeliveryCode(deliveryCode, {
+        confirmedAt: deliveryCodeConfirmedAt,
+        confirmedBy: deliveryCodeConfirmedAt ? 'rider' : '',
+      })
+      : null,
     tracking: location ? {
       lastLocation: location,
       source: 'gps',
@@ -897,8 +1248,16 @@ function normalizePublicTrackingDto(dto = {}) {
 }
 
 function mergePublicTracking(order, tracking) {
+  const confirmedDeliveryCode = tracking.deliveryCode
+    || (tracking.deliveryCodeConfirmedAt && order.deliveryCode?.code
+      ? buildDeliveryCode(order.deliveryCode.code, {
+        confirmedAt: tracking.deliveryCodeConfirmedAt,
+        confirmedBy: 'rider',
+      })
+      : null);
   return {
     ...order,
+    deliveryMode: tracking.deliveryMode,
     workflowStatus: tracking.workflowStatus,
     status: tracking.status,
     createdAt: tracking.createdAt,
@@ -911,9 +1270,22 @@ function mergePublicTracking(order, tracking) {
     deliveredAt: tracking.deliveredAt,
     statusHistory: tracking.statusHistory,
     tracking: tracking.tracking,
+    ...(confirmedDeliveryCode ? { deliveryCode: confirmedDeliveryCode } : {}),
     delivery: {
       ...(order.delivery || {}),
-      currentLocationLabel: locationLabel(tracking.status, order.deliveryMode),
+      estimatedMinutes: tracking.estimatedMinutes,
+      ...(tracking.trustedEta ? {
+        etaMinutes: tracking.trustedEta.minutes,
+        etaSource: tracking.trustedEta.source,
+        etaCalculatedAt: tracking.trustedEta.updatedAt,
+        etaExpiresAt: tracking.trustedEta.arrivalAt,
+      } : {
+        etaMinutes: null,
+        etaSource: '',
+        etaCalculatedAt: '',
+        etaExpiresAt: '',
+      }),
+      currentLocationLabel: locationLabel(tracking.status, tracking.deliveryMode),
       ...(tracking.dispatchedAt ? { leftStoreAt: tracking.dispatchedAt } : {}),
       ...(tracking.deliveredAt ? { deliveredAt: tracking.deliveredAt } : {}),
     },
@@ -930,7 +1302,7 @@ function publicTrackingShell(tracking) {
     customerPhone: '',
     address: '',
     addressDetails: null,
-    deliveryMode: 'delivery',
+    deliveryMode: tracking.deliveryMode,
     paymentMethodCode: 'unknown',
     paymentMethod: 'Sin especificar',
     notes: '',
@@ -949,11 +1321,18 @@ function publicTrackingShell(tracking) {
     total: 0,
     currencyCode: '',
     assignedRiderId: '',
+    ...(tracking.deliveryCode ? { deliveryCode: tracking.deliveryCode } : {}),
     delivery: {
       driverName: 'Sin asignar',
       driverPhone: '',
       estimatedMinutes: tracking.estimatedMinutes,
-      currentLocationLabel: locationLabel(tracking.status, 'delivery'),
+      ...(tracking.trustedEta ? {
+        etaMinutes: tracking.trustedEta.minutes,
+        etaSource: tracking.trustedEta.source,
+        etaCalculatedAt: tracking.trustedEta.updatedAt,
+        etaExpiresAt: tracking.trustedEta.arrivalAt,
+      } : {}),
+      currentLocationLabel: locationLabel(tracking.status, tracking.deliveryMode),
       ...(tracking.dispatchedAt ? { leftStoreAt: tracking.dispatchedAt } : {}),
       ...(tracking.deliveredAt ? { deliveredAt: tracking.deliveredAt } : {}),
     },
@@ -999,6 +1378,8 @@ function rowToDemoOrder(row = {}) {
     : [];
   const latestLocation = latestRiderLocation(row.rider_locations);
   const createdAt = normalizeIso(row.created_at);
+  const trustedEta = trustedEstimatedArrival(row);
+  const deliveryCode = normalizeDeliveryCodeValue(row.delivery_code);
   const addressDetails = deliveryMode === 'pickup' ? null : normalizeAddressDetails({
     customerStreetAddress: row.customer_street_address || row.address_label,
     customerNeighborhood: row.customer_neighborhood,
@@ -1031,10 +1412,22 @@ function rowToDemoOrder(row = {}) {
     currencyCode: sanitizeText(row.currency_code, { maxLength: 3 }).toUpperCase(),
     assignedRiderId: sanitizeText(row.assigned_rider_user_id || row.assigned_rider_id, { maxLength: 80 }),
     statusHistory: statusHistoryFromRow(row, status, createdAt),
+    ...(deliveryCode ? {
+      deliveryCode: buildDeliveryCode(deliveryCode, {
+        confirmedAt: row.delivery_code_confirmed_at,
+        confirmedBy: row.delivery_code_confirmed_at ? 'rider' : '',
+      }),
+    } : {}),
     delivery: {
       driverName: deliveryMode === 'pickup' ? 'Sin asignar' : 'Rider asignado',
       driverPhone: '',
-      estimatedMinutes: status === 'delivered' || status === 'cancelled' || deliveryMode === 'pickup' ? 0 : 25,
+      estimatedMinutes: deliveryMode === 'pickup' ? 0 : (trustedEta?.minutes || 0),
+      ...(trustedEta ? {
+        etaMinutes: trustedEta.minutes,
+        etaSource: trustedEta.source,
+        etaCalculatedAt: trustedEta.updatedAt,
+        etaExpiresAt: trustedEta.arrivalAt,
+      } : {}),
       currentLocationLabel: locationLabel(status, deliveryMode),
       ...(row.dispatched_at || row.picked_up_at
         ? { leftStoreAt: normalizeIso(row.dispatched_at || row.picked_up_at) }
@@ -1059,6 +1452,85 @@ function rowToDemoItem(item = {}) {
     unitPrice: normalizeMoneyValue(item.unit_price, 0),
     unit: sanitizeText(item.presentation || item.unit, { fallback: 'unidad', maxLength: 80 }),
   };
+}
+
+function normalizeAvailableRiderOrder(row = {}) {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) return null;
+  const publicCode = sanitizeText(row.public_code, { maxLength: 80 });
+  if (!publicCode) return null;
+  const packageCount = Number(row.approximate_packages);
+  const hasEstimate = row.estimated_minutes !== null && row.estimated_minutes !== undefined;
+  const rawEstimate = Number(row.estimated_minutes);
+  return {
+    publicCode,
+    generalZone: sanitizeText(row.general_zone, { maxLength: 120 }),
+    pickupBranch: sanitizeText(row.pickup_branch, { maxLength: 180 }),
+    approximatePackages: Number.isFinite(packageCount)
+      ? Math.max(1, Math.min(100, Math.floor(packageCount)))
+      : 1,
+    paymentMethod: sanitizeText(row.payment_method, { maxLength: 40 }),
+    collectionAmount: row.collection_amount === null || row.collection_amount === undefined
+      ? null
+      : normalizeMoneyValue(row.collection_amount, 0),
+    estimatedMinutes: hasEstimate && Number.isFinite(rawEstimate)
+      ? Math.max(1, Math.min(1440, Math.ceil(rawEstimate)))
+      : null,
+    operationalRestrictions: sanitizeText(row.operational_restrictions, { maxLength: 180 }),
+    expectedStatus: 'ready',
+    expectedRiderId: null,
+  };
+}
+
+function normalizeActiveRider(row = {}) {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) return null;
+  const id = sanitizeText(row.rider_user_id || row.id, { maxLength: 80 });
+  if (!isUuid(id)) return null;
+  const fallback = `Rider ${id.slice(-8).toUpperCase()}`;
+  return {
+    id,
+    displayName: sanitizeText(row.display_name, { fallback, maxLength: 80 }),
+  };
+}
+
+function trustedEstimatedArrival(source = {}, now = Date.now()) {
+  const workflowStatus = normalizeWorkflowStatus(source.status, '');
+  if (['delivered', 'canceled'].includes(workflowStatus)) return null;
+  const etaSource = sanitizeText(source.estimated_arrival_source, { maxLength: 24 });
+  if (!TRUSTED_ETA_SOURCES.has(etaSource)) return null;
+  const arrivalAt = Date.parse(source.estimated_arrival_at || '');
+  const updatedAt = Date.parse(source.estimated_arrival_updated_at || '');
+  if (!Number.isFinite(arrivalAt) || !Number.isFinite(updatedAt)) return null;
+  if (
+    updatedAt > now + PUBLIC_TRACKING_GPS_FUTURE_TOLERANCE_MS
+    || now - updatedAt > TRUSTED_ETA_MAX_AGE_MS
+    || arrivalAt <= now
+  ) {
+    return null;
+  }
+  return {
+    minutes: Math.max(1, Math.min(1440, Math.ceil((arrivalAt - now) / 60000))),
+    source: etaSource,
+    arrivalAt: new Date(arrivalAt).toISOString(),
+    updatedAt: new Date(updatedAt).toISOString(),
+  };
+}
+
+function latestPublicRiderLocation(location, now = Date.now()) {
+  const normalized = latestRiderLocation(location ? [location] : []);
+  if (!normalized) return null;
+  const fixAt = Date.parse(normalized.lastFixAt || '');
+  const accuracy = Number(normalized.accuracy);
+  if (
+    !Number.isFinite(fixAt)
+    || !Number.isFinite(accuracy)
+    || accuracy < 0
+    || accuracy > PUBLIC_TRACKING_GPS_MAX_ACCURACY_METERS
+    || fixAt > now + PUBLIC_TRACKING_GPS_FUTURE_TOLERANCE_MS
+    || now - fixAt > PUBLIC_TRACKING_GPS_MAX_AGE_MS
+  ) {
+    return null;
+  }
+  return normalized;
 }
 
 function latestRiderLocation(locations) {
@@ -1096,8 +1568,17 @@ function statusHistoryFromRow(row, status, createdAt) {
   if (row.delivered_at || status === 'delivered') {
     history.push({ status: 'delivered', at: normalizeIso(row.delivered_at || row.updated_at || createdAt) });
   }
-  if (row.cancelled_at || row.canceled_at || status === 'cancelled') {
-    history.push({ status: 'cancelled', at: normalizeIso(row.cancelled_at || row.canceled_at || row.updated_at || createdAt) });
+  if (row.cancelled_at || row.canceled_at || row.rejected_at || status === 'cancelled') {
+    history.push({
+      status: 'cancelled',
+      at: normalizeIso(
+        row.cancelled_at
+        || row.canceled_at
+        || row.rejected_at
+        || row.updated_at
+        || createdAt,
+      ),
+    });
   }
   return dedupeHistory(history);
 }
@@ -1179,7 +1660,13 @@ function readableOrderCreationError(error) {
 
 function readableStatusError(error) {
   const text = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
-  if (text.includes('expected') || text.includes('stale') || text.includes('estado actual')) {
+  if (
+    error?.code === '40001'
+    || text.includes('expected')
+    || text.includes('stale')
+    || text.includes('estado actual')
+    || text.includes('conflicto de estado')
+  ) {
     return 'El pedido cambió en otro dispositivo. Actualizá la bandeja antes de continuar.';
   }
   if (text.includes('transition') || text.includes('transición')) {
@@ -1189,6 +1676,29 @@ function readableStatusError(error) {
     return 'Tu cuenta no tiene permiso para cambiar este pedido.';
   }
   return readableSupabaseError(error, 'No pudimos cambiar el estado del pedido.');
+}
+
+function readableRiderAssignmentError(error) {
+  const text = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
+  if (
+    error?.code === '40001'
+    || text.includes('conflicto de asignacion')
+    || text.includes('conflicto de asignación')
+  ) {
+    return 'Otro dispositivo actualizó la asignación. Refrescá la bandeja antes de continuar.';
+  }
+  if (
+    error?.code === '42501'
+    || text.includes('rol rider')
+    || text.includes('rol de negocio')
+    || text.includes('acceso')
+  ) {
+    return 'Tu cuenta no tiene permiso para asignar este pedido.';
+  }
+  if (text.includes('rider activo')) {
+    return 'Ese rider ya no está activo en el negocio.';
+  }
+  return readableSupabaseError(error, 'No pudimos actualizar la asignación del rider.');
 }
 
 function readableSupabaseError(error, fallback = 'No pudimos comunicarnos con el backend.') {

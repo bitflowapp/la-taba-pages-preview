@@ -74,6 +74,7 @@ function sanitizePin(value, fallback) {
 }
 
 function sanitizeWhatsapp(value, fallback) {
+  if (value !== undefined && String(value ?? '').trim() === '') return '';
   const digits = String(value ?? '').replace(/\D/g, '');
   return digits.length >= 8 && digits.length <= 20 ? digits : fallback;
 }

@@ -7,18 +7,26 @@
     "vendor:build": "node scripts/build-supabase-vendor.mjs",
     "test": "node --test --test-concurrency=1",
     "test:e2e": "playwright test",
-    "verify": "npm run check && npm test && npm run test:e2e",
+    "verify:technical": "npm run check && npm test && npm run test:e2e",
+    "verify": "npm run migrations:validate && npm run catalog:release:validate && npm run verify:technical",
     "release:folder": "npm run vendor:build && npm run verify && node scripts/create-release-folder.mjs",
     "smoke:supabase": "node scripts/smoke-supabase-production.mjs",
     "config:check": "node scripts/check-runtime-config.mjs",
     "migrations:validate": "node scripts/validate-supabase-migrations.mjs",
-    "catalog:validate": "node scripts/validate-product-catalog.mjs data/catalog-template.csv --template",
+    "catalog:validate": "node scripts/validate-product-catalog.mjs",
+    "catalog:template:validate": "node scripts/validate-product-catalog.mjs data/catalog-template.csv --template",
+    "catalog:import": "node scripts/import-product-catalog.mjs",
+    "catalog:images:fetch": "node scripts/catalog-images/fetch-approved.mjs",
+    "catalog:images:normalize": "node scripts/catalog-images/normalize.mjs",
+    "catalog:images:verify": "node scripts/catalog-images/verify.mjs",
+    "catalog:release:validate": "node scripts/validate-release-catalog.mjs",
     "staging:validate": "node scripts/validate-staging-readiness.mjs",
     "realtime:demo": "node scripts/realtime-relay.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "esbuild": "0.28.1"
+    "esbuild": "0.28.1",
+    "sharp": "0.35.3"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.110.8"

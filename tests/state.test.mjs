@@ -47,7 +47,7 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
         status: 'bad-status',
         items: [
           { productId: 'qa-agua-mineral', name: 'Coca-Cola 2.25L', icon: '', quantity: 2, unitPrice: 2800, unit: 'unidad' },
-          { productId: 'qa-gaseosa-cola', name: 'Vacio', icon: '', quantity: -1, unitPrice: 1, unit: 'kg' },
+          { productId: 'qa-gaseosa-cola', name: 'Bebida QA', icon: '', quantity: -1, unitPrice: 1, unit: 'unidad' },
         ],
         subtotal: 1,
         deliveryFee: 1,

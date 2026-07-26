@@ -1,75 +1,34 @@
-# Photo shot list
+# Lista de imágenes oficiales del catálogo
 
-Use this list to request real photos for Phase 2.
+TABA necesita una imagen verificable por producto real. No se usan fotografías
+parecidas, imágenes generadas ni archivos tomados de internet sin derechos.
 
-## Product photos
+## Por producto
 
-- One clean photo per main product.
-- One photo for each relevant combo.
-- Optional photo for drinks or add-ons if they are sold often.
+- Una fotografía master que identifique la variante exacta.
+- Marca, capacidad, envase y unidades por pack legibles.
+- Fondo limpio y color fiel.
+- Sin promociones o precios incrustados que puedan quedar desactualizados.
+- Fuente HTTPS de fabricante, distribuidor oficial, proveedor aprobado o toma
+  propia con permiso comercial documentado.
 
-## Store photos
+## Entregables técnicos
 
-- Front facade of the store.
-- Interior or counter.
-- Preparation area if it looks presentable.
-- Display fridge or butcher counter if it helps explain the business.
+- Fuente registrada en `docs/catalog/image-source-audit.csv`.
+- SHA-256 completo de la fuente.
+- Referencia de derechos.
+- Master WebP 1000×1000 content-addressed.
+- Thumbnail WebP 400×400 content-addressed.
+- Entrada correspondiente en `docs/catalog/image-manifest.json`.
 
-## Delivery photos
+Los nombres finales los genera el pipeline desde el SKU y el hash. No deben
+renombrarse manualmente.
 
-- Repartidor if there is one.
-- Vehicle if relevant and tidy.
-- Delivery handoff if it can be photographed naturally.
+## Tomas del comercio
 
-## Recommended format
+- Fachada y acceso.
+- Mostrador o exhibidor ordenado.
+- Heladeras si aportan contexto comercial.
+- Material de entrega neutro, sin mostrar datos personales.
 
-- Horizontal and vertical photos if possible.
-- High resolution.
-- Natural light.
-- Sharp focus.
-- One subject per photo when possible.
-
-## Light
-
-- Prefer daylight or bright neutral light.
-- Avoid dark corners.
-- Avoid mixed color temperatures.
-
-## Background
-
-- Use a clean background.
-- Keep the scene simple.
-- Remove distracting objects.
-- Keep packaging tidy.
-
-## What to avoid
-
-- Blurry images.
-- Strong shadows over the product.
-- Heavy filters.
-- Screenshots from WhatsApp.
-- Photos with cluttered counters.
-- Photos that do not show the product clearly.
-
-## Suggested file naming
-
-- `product-asado-especial.jpg`
-- `product-vacio.jpg`
-- `product-milanesa-carne.jpg`
-- `product-milanesa-pollo.jpg`
-- `product-combo-familiar.jpg`
-- `store-front.jpg`
-- `store-counter.jpg`
-- `delivery-rider.jpg`
-
-## Practical request to Walter
-
-Ask Walter for:
-
-- the real product list
-- the best current prices
-- product photos
-- combo photos
-- store photos
-- the delivery area
-- any photo that can help the first real catalog look trustworthy
+Estas imágenes institucionales no sustituyen la foto oficial de cada producto.

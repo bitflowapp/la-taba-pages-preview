@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v11-beverages-cache');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v12-commercial-cache');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -23,7 +23,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./index.html'));
   assert.ok(assets.includes('./manifest.webmanifest'));
   assert.ok(assets.includes('./assets/icon.svg'));
-  assert.ok(assets.includes('./assets/products/qa-beverage-placeholder.svg'));
+  assert.ok(assets.includes('./assets/products/beverage-placeholder.svg'));
   assert.equal(
     assets.some((asset) => /(?:horno|pizza|parrilla|carne|milanesa|chorizo|combo-familiar|promo-dia|bebida-cola)/i.test(asset)),
     false,
@@ -56,12 +56,21 @@ test('service worker caches only existing GitHub Pages assets', () => {
 });
 
 test('commercial app defaults to light premium theme, not dark fallback', () => {
-  const source = read('styles.css');
+  const source = [
+    'styles/tokens.css',
+    'styles/common.css',
+    'styles/storefront.css',
+    'styles/catalog.css',
+    'styles/checkout.css',
+    'styles/tracking.css',
+    'styles/business.css',
+    'styles/rider.css',
+    'styles/responsive.css',
+  ].map(read).join('\n');
   const rootBlock = source.match(/:root\s*\{([\s\S]*?)\n\}/);
   assert.ok(rootBlock);
   assert.match(rootBlock[1], /color-scheme:\s*light/);
-  assert.doesNotMatch(rootBlock[1], /color-scheme:\s*dark/);
-  assert.match(source, /body:has\(\.app-view\[data-view="rider"\]\.is-active\)\s*\{[\s\S]*color-scheme:\s*dark/);
+  assert.doesNotMatch(source, /color-scheme:\s*dark/);
 });
 
 test('service worker fallback is guarded to navigation requests only', () => {

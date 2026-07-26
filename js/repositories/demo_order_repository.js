@@ -1,4 +1,5 @@
 import {
+  confirmDeliveryCode,
   createOrderFromCheckout,
   getLastOrder,
   updateOrderStatus as updateDemoOrderStatus,
@@ -53,6 +54,50 @@ export function createDemoOrderRepository() {
         message: 'Rider asignado.',
         order: toDomainOrder(findOrder(orderId)),
       });
+    },
+    listActiveRiders() {
+      return repositoryResult(true, {
+        riders: [{ id: 'preview-rider', displayName: 'Rider de prueba' }],
+      });
+    },
+    listAvailableRiderOrders() {
+      const orders = getState().orders
+        .filter((order) => (
+          order.deliveryMode === 'delivery'
+          && order.status === 'ready'
+          && !order.assignedRiderId
+        ))
+        .map((order) => ({
+          publicCode: order.id,
+          generalZone: order.addressDetails?.neighborhood || 'Zona general',
+          pickupBranch: 'Sucursal TABA',
+          approximatePackages: Math.max(1, Math.ceil((order.items?.length || 1) / 3)),
+          paymentMethod: order.paymentMethod || 'A coordinar',
+          collectionAmount: order.paymentMethodCode === 'cash' ? order.total : null,
+          estimatedMinutes: null,
+          operationalRestrictions: '',
+          expectedStatus: 'ready',
+          expectedRiderId: null,
+        }));
+      return repositoryResult(true, { orders });
+    },
+    claimRiderOrder(publicCode) {
+      const order = findOrder(publicCode);
+      if (!order || order.deliveryMode !== 'delivery' || order.status !== 'ready' || order.assignedRiderId) {
+        return repositoryResult(false, {
+          code: 'CLAIM_CONFLICT',
+          message: 'Otro rider ya tomó este pedido.',
+        });
+      }
+      return this.assignRider(publicCode, 'preview-rider');
+    },
+    reassignRider(orderId, riderId) {
+      return this.assignRider(orderId, riderId);
+    },
+    confirmDelivery(orderId, code) {
+      const confirmation = confirmDeliveryCode(orderId, code);
+      if (!confirmation.ok) return confirmation;
+      return this.updateOrderStatus(orderId, 'delivered');
     },
     updateRiderLocation(orderId, location) {
       const normalized = normalizeTrackingLocation(location);

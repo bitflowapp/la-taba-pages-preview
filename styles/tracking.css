@@ -1,0 +1,486 @@
+[data-view="tracking"] > .section-head {
+  margin-bottom: 18px;
+}
+
+.track-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  align-items: stretch;
+  min-height: 580px;
+  overflow: hidden;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-lg);
+  background: var(--taba-subtle);
+}
+
+.track-layout.no-map {
+  display: block;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+}
+
+.tracking-map-stage {
+  position: relative;
+  top: auto;
+  height: 100%;
+  min-height: 620px;
+  overflow: hidden;
+  background: #ececef;
+}
+
+.real-map-shell,
+.real-map-canvas,
+.real-map-fallback {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+}
+
+.real-map-shell {
+  position: relative;
+}
+
+.real-map-fallback {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--taba-muted);
+  text-align: center;
+}
+
+.real-map-shell.is-ready .real-map-fallback {
+  display: none;
+}
+
+.real-map-meta {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  padding: 5px 8px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 88%);
+  color: var(--taba-muted);
+  font-size: 11px;
+}
+
+.map-floating-top {
+  position: absolute;
+  z-index: 500;
+  right: 14px;
+  left: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.map-floating-top {
+  top: 14px;
+}
+
+.map-status-pill,
+.map-connection-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 7px 12px;
+  border: 1px solid rgb(255 255 255 / 70%);
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 94%);
+  box-shadow: var(--shadow-sm);
+}
+
+.map-status-pill {
+  display: grid;
+  gap: 0;
+}
+
+.map-status-pill small {
+  color: var(--taba-muted);
+  font-size: 10px;
+}
+
+.tracking-sheet {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  padding: 28px;
+  border-radius: 0;
+  background: white;
+}
+
+.track-layout.no-map .tracking-sheet {
+  width: min(100%, 760px);
+  margin-inline: auto;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-lg);
+}
+
+.tracking-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--taba-border);
+}
+
+.tracking-brand-row > strong {
+  color: var(--taba-red);
+  font-size: 25px;
+  font-style: italic;
+  font-weight: 950;
+  letter-spacing: -0.05em;
+}
+
+.tracking-brand-row > span:nth-child(2) {
+  color: var(--taba-muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.sheet-connection-pill {
+  margin-left: auto;
+}
+
+.rt-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: var(--radius-pill);
+  background: var(--taba-subtle);
+  color: var(--taba-muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.rt-chip.live,
+.rt-chip.done {
+  background: #eaf8f0;
+  color: #116a3a;
+}
+
+.rt-chip.warn {
+  background: #fff5df;
+  color: #7b4900;
+}
+
+.tracking-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 20px;
+}
+
+.tracking-hero small {
+  color: var(--taba-red);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.tracking-hero h1 {
+  margin: 5px 0 7px;
+  font-size: clamp(27px, 4vw, 40px);
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+}
+
+.tracking-sheet .empty-title {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 34px);
+  letter-spacing: -0.035em;
+}
+
+.tracking-hero p {
+  max-width: 48ch;
+  margin: 0;
+  color: var(--taba-muted);
+}
+
+.tracking-eta {
+  display: grid;
+  min-width: 120px;
+  gap: 2px;
+  padding: 13px;
+  border-radius: var(--radius-sm);
+  background: var(--taba-red-soft);
+  text-align: right;
+}
+
+.tracking-eta span {
+  color: var(--taba-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.tracking-eta strong {
+  color: var(--taba-red);
+  font-size: 18px;
+}
+
+.track-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 6px 0;
+}
+
+.track-steps.operational {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.track-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: var(--taba-muted);
+  text-align: center;
+}
+
+.track-step::before {
+  position: absolute;
+  z-index: 0;
+  top: 10px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--taba-border);
+  content: "";
+}
+
+.track-step:first-child::before {
+  display: none;
+}
+
+.track-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 2px solid #d0d0d5;
+  border-radius: 50%;
+  background: white;
+}
+
+.track-step.done::before,
+.track-step.current::before {
+  background: var(--taba-red);
+}
+
+.track-step.done .track-dot,
+.track-step.current .track-dot {
+  border-color: var(--taba-red);
+  background: var(--taba-red);
+}
+
+.track-step.done .track-dot::after {
+  color: white;
+  content: "✓";
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.track-step.current .track-dot {
+  box-shadow: 0 0 0 5px var(--taba-red-soft);
+}
+
+.track-step.current small {
+  color: var(--taba-red);
+  font-weight: 850;
+}
+
+.track-step small {
+  min-height: 34px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.delivery-status-card,
+.tracking-map-waiting,
+.tracking-help-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: white;
+}
+
+.delivery-status-card > div,
+.tracking-map-waiting > div,
+.tracking-help-card > div {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.delivery-status-card span:not(.delivery-status-icon),
+.tracking-map-waiting p {
+  margin: 0;
+  color: var(--taba-muted);
+  font-size: 13px;
+}
+
+.delivery-status-icon,
+.tracking-map-waiting > span,
+.tracking-help-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--taba-red-soft);
+  color: var(--taba-red);
+}
+
+.tracking-map-waiting {
+  width: min(100%, 760px);
+  margin: 0 auto 16px;
+  background: var(--taba-subtle);
+}
+
+.tracking-order-summary {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--taba-subtle);
+}
+
+.tracking-summary-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tracking-summary-head > span {
+  display: grid;
+}
+
+.tracking-summary-total {
+  font-size: 18px;
+}
+
+.tracking-order-summary ul {
+  display: grid;
+  gap: 5px;
+  padding: 0;
+  margin: 0;
+  color: var(--taba-muted);
+  font-size: 13px;
+  list-style: none;
+}
+
+.delivery-code-card {
+  padding: 16px;
+  border: 1px solid #ffc0c6;
+  border-radius: var(--radius-sm);
+  background: var(--taba-red-soft);
+}
+
+.delivery-code-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.delivery-code-copy strong {
+  color: var(--taba-red);
+  font-size: 28px;
+  letter-spacing: 0.12em;
+}
+
+.delivery-code-copy .delivery-code-success {
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.tracking-help-card .secondary-button {
+  flex: 0 0 auto;
+}
+
+.tracking-order-detail {
+  padding: 0 14px;
+  border: 1px solid var(--taba-border);
+}
+
+.tracking-order-detail summary {
+  display: flex;
+  align-items: center;
+}
+
+.order-detail-body {
+  display: grid;
+  gap: 10px;
+  padding: 4px 0 16px;
+  color: var(--taba-muted);
+  font-size: 14px;
+}
+
+.order-line.head {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--taba-border);
+}
+
+.lt-rider-marker {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.lt-rider-marker-halo {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgb(227 6 19 / 18%);
+  animation: taba-marker-pulse 1.8s ease-out infinite;
+}
+
+.lt-rider-helmet-core {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  color: white;
+}
+
+.lt-rider-helmet-icon {
+  width: 46px;
+  height: 46px;
+  filter: drop-shadow(0 6px 10px rgb(20 20 22 / 18%));
+}
+
+.lt-rider-pin {
+  fill: var(--taba-red);
+}
+
+.lt-rider-core-disc {
+  fill: rgb(255 255 255 / 16%);
+}
+
+.lt-rider-delivery-icon {
+  color: white;
+}
+
+@keyframes taba-marker-pulse {
+  from { opacity: 0.7; transform: scale(0.7); }
+  to { opacity: 0; transform: scale(1.35); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lt-rider-marker-halo {
+    animation: none;
+  }
+}

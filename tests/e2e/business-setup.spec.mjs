@@ -56,6 +56,8 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await waitForToast(page, 'Configuración guardada.');
   await expect(page.locator('[data-business-setup-feedback]')).toContainText('Configuración guardada.');
 
+  await page.locator('.topbar .brand').click();
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
   await page.locator('.mobile-nav [data-nav-view="profile"]').click();
   await expect(page.locator('.topbar .brand')).toContainText('QA Store');
   await expect(page.locator('[data-view="profile"]')).toContainText('QA Store');
@@ -67,7 +69,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   const productCountBeforeRestore = await page.locator('[data-product-grid] .product-card').count();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await page.locator('[data-floating-cart]').click();
   await expect(page.locator('[data-order-summary]')).toContainText('$ 777');
   await expect(page.locator('[data-order-summary]')).toContainText('$ 1.000');
   await fillCheckout(page, {
@@ -91,7 +93,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await expect(page.locator('[data-view="profile"]')).toContainText('Roca 123, Neuquén');
   await expect(page.locator('[data-business-whatsapp]')).toContainText('+5492995551234');
 
-  await page.locator('[data-view="profile"] [data-open-admin-view="business"]').click();
+  await page.evaluate(() => { window.location.hash = '#business'; });
   await expect(page.locator('[data-view="business"]')).toBeVisible();
 
   await page.locator('[data-scroll-business-setup]').click();
@@ -104,10 +106,13 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
 
   await setup.getByRole('button', { name: 'Restaurar configuración base' }).first().click();
   await resetModal.getByRole('button', { name: 'Restaurar configuración base' }).click();
-  await waitForToast(page, 'Configuración demo restaurada.');
+  await waitForToast(page, 'Configuración base restaurada.');
   await expect(page.locator('.topbar .brand')).toContainText('TABA');
+  await page.locator('[data-business-view="orders"]').click();
   await expect(page.locator('[data-business-dashboard]')).toContainText('QA-0001');
 
+  await page.locator('.topbar .brand').click();
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(productCountBeforeRestore);
 

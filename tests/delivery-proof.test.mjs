@@ -180,7 +180,7 @@ test('delivery proof: restaurar catalogo demo no borra snapshots ni proofs de pe
       subtotal: 1500,
       total: 1500,
     })],
-    products: [{ id: 'p-custom', name: 'Producto custom', price: 1500, stock: 3, available: true, categoryId: 'carnes' }],
+    products: [{ id: 'p-custom', name: 'Bebida custom', price: 1500, stock: 3, available: true, categoryId: 'gaseosas' }],
   });
 
   const restored = confirmCatalogReset();
@@ -251,10 +251,10 @@ test('delivery proof: persistencia fallida revierte el proof y avisa error', () 
 function makeOrder(overrides = {}) {
   const item = overrides.items?.[0] || {
     productId: 'qa-gaseosa-cola',
-    name: 'Vacio snapshot',
+    name: 'Bebida QA snapshot',
     quantity: 1,
     unitPrice: overrides.subtotal ?? overrides.total ?? 1000,
-    unit: 'kg',
+    unit: 'unidad',
   };
   const subtotal = overrides.subtotal ?? item.quantity * item.unitPrice;
   const total = overrides.total ?? subtotal;

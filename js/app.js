@@ -271,9 +271,6 @@ function applyAppMode() {
     node.hidden = !operational;
     node.setAttribute('aria-hidden', String(!operational));
   });
-  const banner = document.querySelector('[data-demo-mode-banner]');
-  if (banner) banner.hidden = !demo;
-
   document.querySelectorAll('[data-admin-pin]').forEach((node) => {
     node.textContent = demo ? getBusinessConfig().adminPin : '';
   });
@@ -296,9 +293,9 @@ function checkoutModeCopy(mode) {
   if (mode === APP_MODE_DEMO) {
     return {
       submit: 'Confirmar pedido',
-      title: 'Pedido de la presentación.',
-      copy: 'El estado avanza desde el panel del negocio y la vista de reparto.',
-      note: 'Seguí el avance en Seguimiento, Negocio y Rider.',
+      title: 'Tu pedido está protegido.',
+      copy: 'Revisá tus datos y el resumen antes de confirmar.',
+      note: 'El medio de pago se coordina con el local.',
     };
   }
   if (mode === APP_MODE_PRODUCTION) {
@@ -318,10 +315,10 @@ function checkoutModeCopy(mode) {
     };
   }
   return {
-    submit: 'Crear pedido de muestra',
-    title: 'Estás probando la experiencia de pedido.',
-    copy: 'Cuando el local active los pedidos online, tu pedido va a llegar directo al equipo de preparación.',
-    note: 'Sin cobros: no se procesa ningún pago ni se envían datos.',
+    submit: 'Pedidos no disponibles',
+    title: 'Pedidos online temporalmente no disponibles.',
+    copy: 'El comercio todavía no habilitó la recepción de pedidos.',
+    note: 'No ingreses datos personales hasta que el servicio esté habilitado.',
   };
 }
 
@@ -455,6 +452,72 @@ function startFreshnessTick() {
   }, FRESHNESS_TICK_MS);
 }
 
+const CHECKOUT_ERROR_FIELD_RULES = Object.freeze([
+  { pattern: /nombre/i, name: 'customerName' },
+  { pattern: /tel[eé]fono/i, name: 'customerPhone' },
+  { pattern: /calle|n[uú]mero|direcci[oó]n/i, name: 'customerStreetAddress' },
+  { pattern: /localidad|zona/i, name: 'customerNeighborhood' },
+  { pattern: /mayor|edad|alcoh[oó]l/i, name: 'ageConfirmed' },
+  { pattern: /forma de pago|medio de pago/i, name: 'paymentMethod' },
+]);
+
+function checkoutErrorFieldName(message) {
+  return CHECKOUT_ERROR_FIELD_RULES.find(({ pattern }) => pattern.test(String(message || '')))?.name || '';
+}
+
+function clearCheckoutFieldError(field) {
+  if (!(field instanceof HTMLElement)) return;
+  field.removeAttribute('aria-invalid');
+  const describedBy = String(field.getAttribute('aria-describedby') || '')
+    .split(/\s+/)
+    .filter((token) => token && token !== 'checkout-error');
+  if (describedBy.length) field.setAttribute('aria-describedby', describedBy.join(' '));
+  else field.removeAttribute('aria-describedby');
+}
+
+function clearCheckoutInlineError(form) {
+  if (!(form instanceof HTMLFormElement)) return;
+  form.querySelectorAll('[aria-invalid="true"]').forEach(clearCheckoutFieldError);
+  const warning = form.querySelector('[data-checkout-warning]');
+  if (!warning) return;
+  warning.textContent = '';
+  warning.hidden = true;
+  warning.classList.add('hidden');
+}
+
+function showCheckoutInlineError(form, message) {
+  if (!(form instanceof HTMLFormElement)) return;
+  clearCheckoutInlineError(form);
+  const cleanMessage = String(message || 'Revisá los datos del pedido e intentá nuevamente.');
+  const warning = form.querySelector('[data-checkout-warning]');
+  if (warning) {
+    warning.textContent = cleanMessage;
+    warning.hidden = false;
+    warning.classList.remove('hidden');
+  }
+
+  const fieldName = checkoutErrorFieldName(cleanMessage);
+  const field = fieldName ? form.elements.namedItem(fieldName) : null;
+  const visibleField = field instanceof HTMLElement
+    && !field.hidden
+    && !field.closest('[hidden]')
+    && field.getClientRects().length > 0;
+
+  if (visibleField) {
+    field.setAttribute('aria-invalid', 'true');
+    field.setAttribute('aria-describedby', [
+      ...String(field.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean),
+      'checkout-error',
+    ].filter((token, index, values) => values.indexOf(token) === index).join(' '));
+    field.focus({ preventScroll: true });
+    field.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    return;
+  }
+
+  warning?.focus({ preventScroll: true });
+  warning?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
 function bindEvents() {
   window.addEventListener('popstate', syncViewFromLocation);
   window.addEventListener('hashchange', syncViewFromLocation);
@@ -470,6 +533,14 @@ function bindEvents() {
   document.addEventListener('click', async (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+
+    const clearCatalogFilters = target.closest('[data-clear-catalog-filters]');
+    if (clearCatalogFilters) {
+      setSearchQuery('');
+      setCategory('all');
+      if (activeView !== 'catalog') setActiveView('catalog');
+      return;
+    }
 
     const navView = target.closest('[data-nav-view]')?.dataset.navView;
     if (navView) {
@@ -536,15 +607,24 @@ function bindEvents() {
       return;
     }
 
-    const addId = target.closest('[data-add-product]')?.dataset.addProduct;
+    const addControl = target.closest('[data-add-product]');
+    const addId = addControl?.dataset.addProduct;
     if (addId) {
       if (isProductionOrderingBlocked()) {
         showToast('El catálogo verificado todavía no está disponible.');
         return;
       }
-      const result = addToCart(addId);
+      const modal = addControl.closest('[data-product-modal]');
+      const selectedVariant = modal?.querySelector('[data-product-variant]')?.value;
+      const selectedProductId = selectedVariant || addId;
+      const requestedQuantity = modal
+        ? Number(modal.querySelector('[data-product-quantity]')?.value || 1)
+        : 1;
+      const productNote = String(modal?.querySelector('[data-product-note]')?.value || '').trim();
+      const result = addToCart(selectedProductId, requestedQuantity);
       showToast(result.message);
       if (result.ok) {
+        if (productNote) appendProductObservation(selectedProductId, productNote);
         closeProductModal();
         pulseCartFeedback();
       }
@@ -692,6 +772,17 @@ function bindEvents() {
 
   // Búsqueda: hay un buscador en Home y otro en Catálogo (ambos data-search-input).
   document.addEventListener('input', (event) => {
+    const checkoutField = event.target?.closest?.('[data-checkout-form] [name]');
+    if (checkoutField) {
+      clearCheckoutFieldError(checkoutField);
+      const warning = checkoutField.closest('[data-checkout-form]')?.querySelector('[data-checkout-warning]');
+      if (warning) {
+        warning.textContent = '';
+        warning.hidden = true;
+        warning.classList.add('hidden');
+      }
+    }
+
     const businessInput = isDemoMode() ? handleBusinessInput(event.target) : { handled: false };
     if (businessInput.handled) return;
 
@@ -705,15 +796,29 @@ function bindEvents() {
     setSearchQuery(input.value || '');
     // El buscador del Home lleva al Catálogo para mostrar resultados.
     if (input.hasAttribute('data-search-jump') && activeView !== 'catalog') {
-      setActiveView('catalog', { scroll: false });
-      // Mantener el foco en el buscador del catálogo tras cambiar de vista.
-      setTimeout(() => $('[data-view="catalog"] [data-search-input]')?.focus(), 0);
+      setActiveView('catalog', { scroll: false, focus: false });
+      // El estado compartido hidrata el buscador del catálogo antes de enfocarlo.
+      setTimeout(() => {
+        const catalogSearch = $('[data-view="catalog"] [data-search-input]');
+        if (!catalogSearch) return;
+        catalogSearch.focus();
+        catalogSearch.setSelectionRange(catalogSearch.value.length, catalogSearch.value.length);
+      }, 0);
     }
   });
 
   document.addEventListener('change', async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) return;
+    if (target.closest('[data-checkout-form]')) {
+      clearCheckoutFieldError(target);
+      const warning = target.closest('[data-checkout-form]')?.querySelector('[data-checkout-warning]');
+      if (warning) {
+        warning.textContent = '';
+        warning.hidden = true;
+        warning.classList.add('hidden');
+      }
+    }
     if (target.name === 'deliveryMode') {
       updateAddressFieldVisibility();
       renderOrderSummary();
@@ -755,8 +860,12 @@ function bindEvents() {
   let confirming = false;
   $('[data-checkout-form]')?.addEventListener('submit', async (event) => {
     event.preventDefault();
+    const form = event.currentTarget;
+    clearCheckoutInlineError(form);
     if (isProductionOrderingBlocked()) {
-      showToast('Los pedidos online todavía no están disponibles.');
+      const message = 'Los pedidos online todavía no están disponibles.';
+      showCheckoutInlineError(form, message);
+      showToast(message);
       return;
     }
     if (confirming) return; // evita doble confirmación / doble pedido
@@ -775,17 +884,17 @@ function bindEvents() {
       const result = await Promise.resolve(getOrderRepository().createOrder(values));
 
       if (!result.ok) {
+        showCheckoutInlineError(form, result.message);
         showToast(result.message);
         return;
       }
 
-      const mode = getAppMode();
-      showToast(mode === APP_MODE_PRODUCTION
-        ? 'Pedido confirmado. Seguilo en Seguimiento.'
-        : 'Pedido confirmado. Seguilo en Seguimiento. Muestra local: No se envió al local ni se cobró nada.');
+      showToast('Pedido confirmado. Seguilo en Seguimiento.');
       setActiveView('tracking');
     } catch (_) {
-      showToast('No se pudo crear el pedido. Reintentá.');
+      const message = 'No se pudo crear el pedido. Reintentá.';
+      showCheckoutInlineError(form, message);
+      showToast(message);
     } finally {
       confirming = false;
       if (button) {
@@ -904,6 +1013,16 @@ function bindEvents() {
   });
 }
 
+function appendProductObservation(productId, note) {
+  const field = document.querySelector('[name="customerNotes"]');
+  if (!field) return;
+  const product = getState().products.find((item) => item.id === productId);
+  const line = `${product?.name || 'Producto'}: ${String(note).slice(0, 120)}`;
+  const current = String(field.value || '').trim();
+  field.value = [current, line].filter(Boolean).join('\n').slice(0, Number(field.maxLength || 500));
+  field.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 let pendingAdminTarget = null;
 
 function toggleAdminMode() {
@@ -959,6 +1078,7 @@ function setActiveView(view, options = {}) {
   if (changed && options.scroll !== false) {
     window.scrollTo(0, 0);
   }
+  if (changed && options.focus !== false) focusActiveViewHeading(nextView);
 }
 
 function syncViewFromLocation() {
@@ -969,6 +1089,19 @@ function syncViewFromLocation() {
   renderAll();
   playViewEnter(nextView);
   window.scrollTo(0, 0);
+  focusActiveViewHeading(nextView);
+}
+
+function focusActiveViewHeading(view) {
+  if (typeof document === 'undefined') return;
+  requestAnimationFrame(() => {
+    const section = document.querySelector(`[data-view="${view}"]`);
+    const heading = section?.querySelector('h1:not(.sr-only), h2:not(.sr-only)')
+      || section?.querySelector('h1');
+    if (!(heading instanceof HTMLElement) || section.hidden) return;
+    heading.setAttribute('tabindex', '-1');
+    heading.focus({ preventScroll: true });
+  });
 }
 
 function syncGpsSharingWithView(view) {

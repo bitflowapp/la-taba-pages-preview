@@ -82,9 +82,10 @@ let businessOrderQuery = '';
 let businessReportPeriod = 'today';
 let businessReportCopyFallback = '';
 let businessSetupFeedback = '';
-// Secciones secundarias del panel (caja, catálogo, configuración): arrancan
-// plegadas para que la operación de pedidos sea la protagonista.
-const businessSectionsOpen = { reports: false, catalog: false, setup: false };
+// Una sola superficie de trabajo por vez: la cola operativa es la entrada y
+// métricas, reportes, caja, catálogo, configuración y guía viven en vistas
+// separadas para evitar un dashboard interminable.
+let businessActiveView = 'orders';
 // Pedido en espera de confirmación de cancelación (el primer tap NO cancela:
 // abre el modal de confirmación con motivo obligatorio).
 let pendingCancelOrderId = null;
@@ -151,31 +152,14 @@ export function renderBusinessDashboard() {
   if (!container) return;
 
   const state = getState();
-  const metrics = getBusinessMetrics(state.orders, state.products);
-  const report = buildBusinessReport(state.orders, { period: businessReportPeriod });
+  const operationalOrders = state.orders.filter((order) => !order.internalSeed);
+  const operationalState = { ...state, orders: operationalOrders };
+  const metrics = getBusinessMetrics(operationalOrders, state.products);
+  const report = buildBusinessReport(operationalOrders, { period: businessReportPeriod });
   const cashboxClosures = readCashboxClosures();
-  const lowStock = metrics.lowStock;
-  const latestOrders = state.orders.slice(0, 5);
-
-  const topProducts = metrics.topProducts.length
-    ? metrics.topProducts.slice(0, 5).map((item) => `<li><span>${escapeHtml(item.name)}</span><strong>${item.quantity}</strong></li>`).join('')
-    : '<li class="muted"><span>Sin ventas todavía hoy</span><strong>0</strong></li>';
-
-  const lowStockList = lowStock.length
-    ? lowStock.slice(0, 5).map((product) => `<li><span>${escapeHtml(product.name)}</span><strong>${product.stock}</strong></li>`).join('')
-    : '<li class="muted"><span>Stock saludable</span><strong>OK</strong></li>';
-
-  const latestOrdersList = latestOrders.length
-    ? latestOrders.map((order) => `
-      <li>
-        <span>${escapeHtml(order.id)} · ${escapeHtml(order.customerName)}</span>
-        <strong>${money(order.total)}</strong>
-        <em class="${statusClass(order.status)}">${statusLabel(order.status)}</em>
-      </li>`).join('')
-    : '<li class="muted"><span>Sin pedidos cargados</span><strong>0</strong></li>';
 
   // Detección de pedidos nuevos (received) para el aviso visual + sonido.
-  const receivedOrders = state.orders.filter((order) => order.status === 'received');
+  const receivedOrders = operationalOrders.filter((order) => order.status === 'received');
   const receivedIds = receivedOrders.map((order) => order.id);
   const isFirstRender = seenOrderIds === null;
   const freshOrders = isFirstRender ? [] : receivedIds.filter((id) => !seenOrderIds.has(id));
@@ -184,66 +168,82 @@ export function renderBusinessDashboard() {
   const freshOrderIds = new Set(freshOrders);
 
   const todayLabel = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long' }).format(new Date());
-  const todayOrdersCount = countTodayOrders(state.orders);
 
   container.innerHTML = `
     <div class="business-main business-inbox-main">
-      <div class="example-data-banner" data-example-data-label>
-        <strong>Vista de operación</strong><span>Datos de ejemplo de la presentación.</span>
-      </div>
-      <header class="business-inbox-hero">
-        <div class="business-brand-row">
-          <span class="business-brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-              <path d="M9.5 3h5v3l1.4 2.3v10.2a2.5 2.5 0 0 1-2.5 2.5h-2.8a2.5 2.5 0 0 1-2.5-2.5V8.3L9.5 6V3Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-              <path d="M8.1 12h7.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-            </svg>
-          </span>
-          <div class="business-topbar-text">
-            <h2>Central de pedidos</h2>
-            <span>Resumen · Hoy, ${escapeHtml(todayLabel)}</span>
+      <header class="business-main business-inbox-hero-stack">
+        <div class="business-queue-toolbar">
+          <div>
+            <strong>Hoy, ${escapeHtml(todayLabel)}</strong>
+            <span>${receivedOrders.length ? `${receivedOrders.length} pedido${receivedOrders.length === 1 ? '' : 's'} nuevo${receivedOrders.length === 1 ? '' : 's'}` : 'Cola al día'}</span>
           </div>
-          <button class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}" type="button" data-sound-toggle aria-pressed="${soundEnabled}">
-            <span>${soundEnabled ? 'Sonido activo' : 'Activar sonido'}</span>
-            ${receivedOrders.length ? `<strong>${receivedOrders.length}</strong>` : ''}
+          <button
+            class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}"
+            type="button"
+            data-sound-toggle
+            aria-pressed="${soundEnabled}"
+            aria-label="${soundEnabled ? 'Desactivar' : 'Activar'} aviso sonoro${receivedOrders.length ? `; ${receivedOrders.length} pedido${receivedOrders.length === 1 ? '' : 's'} nuevo${receivedOrders.length === 1 ? '' : 's'}` : ''}"
+          >
+            <span>${soundEnabled ? 'Sonido activo' : 'Sonido'}</span>
+            ${receivedOrders.length ? `<strong class="sound-count" aria-hidden="true">${receivedOrders.length}</strong>` : ''}
           </button>
         </div>
-        <div class="business-stat-grid" aria-label="Resumen del día">
-          <article class="stat-tile"><span>Pedidos hoy</span><strong>${todayOrdersCount}</strong></article>
+        <div class="business-stat-grid" aria-label="Cola operativa">
+          <article class="stat-tile"><span>Nuevos</span><strong>${metrics.ordersByStatus.received}</strong></article>
           <article class="stat-tile tone-amber"><span>En preparación</span><strong>${metrics.ordersByStatus.preparing}</strong></article>
+          <article class="stat-tile"><span>Listos</span><strong>${metrics.ordersByStatus.ready}</strong></article>
           <article class="stat-tile tone-green"><span>En camino</span><strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></article>
-          <article class="stat-tile tone-green"><span>Entregados</span><strong>${metrics.directOrdering.deliveredOrders}</strong></article>
         </div>
         <nav class="business-jump-nav" aria-label="Secciones del negocio">
-          <button class="secondary-button compact" type="button" data-scroll-orders>Pedidos</button>
-          <button class="secondary-button compact" type="button" data-scroll-reports>Reportes</button>
-          <button class="secondary-button compact" type="button" data-scroll-catalog>Catálogo</button>
-          <button class="secondary-button compact" type="button" data-scroll-business-setup>Configuración</button>
+          ${renderBusinessViewButton('orders', 'Pedidos')}
+          ${renderBusinessViewButton('metrics', 'Métricas')}
+          ${renderBusinessViewButton('reports', 'Reportes')}
+          ${renderBusinessViewButton('cashbox', 'Caja')}
+          ${renderBusinessViewButton('catalog', 'Catálogo')}
+          ${renderBusinessViewButton('setup', 'Configuración')}
+          ${renderBusinessViewButton('guide', 'Guía')}
         </nav>
       </header>
 
-      ${renderOrderInbox(state, metrics, freshOrderIds)}
-
-      ${renderBusinessOverview(state, metrics)}
-
-      <details class="business-collapsible" data-collapsible="reports" ${businessSectionsOpen.reports ? 'open' : ''}>
-        <summary><strong>Caja y reportes</strong><span>Cierre del turno y resumen por período</span></summary>
-        ${renderBusinessReportsPanel(report, cashboxClosures)}
-      </details>
-
-      <details class="business-collapsible" data-collapsible="catalog" ${businessSectionsOpen.catalog ? 'open' : ''}>
-        <summary><strong>Catálogo y promos</strong><span>Productos, precios y disponibilidad</span></summary>
-        ${renderCatalogManager(state)}
-      </details>
-
-      <details class="business-collapsible" data-collapsible="setup" ${businessSectionsOpen.setup ? 'open' : ''}>
-        <summary><strong>Configuración del local</strong><span>Identidad, contacto, horarios y reglas</span></summary>
-        ${renderBusinessSetupPanel()}
-      </details>
-
-      ${renderDemoGuide()}
+      <div class="business-workspace" data-business-workspace="${escapeHtml(businessActiveView)}">
+        ${renderBusinessWorkspace({
+          view: businessActiveView,
+          state: operationalState,
+          metrics,
+          report,
+          cashboxClosures,
+          freshOrderIds,
+        })}
+      </div>
     </div>
   `;
+}
+
+function renderBusinessViewButton(view, label) {
+  const active = businessActiveView === view;
+  const legacyAttribute = {
+    orders: 'data-scroll-orders',
+    reports: 'data-scroll-reports',
+    catalog: 'data-scroll-catalog',
+    setup: 'data-scroll-business-setup',
+  }[view] || '';
+  return `
+    <button class="${active ? 'primary-button' : 'secondary-button'} compact" type="button"
+      data-business-view="${escapeHtml(view)}" ${legacyAttribute} aria-pressed="${active}">
+      ${escapeHtml(label)}
+    </button>`;
+}
+
+function renderBusinessWorkspace({ view, state, metrics, report, cashboxClosures, freshOrderIds }) {
+  if (view === 'metrics') {
+    return `${renderDirectOrderingMetrics(metrics)}${renderBusinessOverview(state, metrics)}`;
+  }
+  if (view === 'reports') return renderBusinessReportsPanel(report, cashboxClosures, { mode: 'reports' });
+  if (view === 'cashbox') return renderBusinessReportsPanel(report, cashboxClosures, { mode: 'cashbox' });
+  if (view === 'catalog') return renderCatalogManager(state);
+  if (view === 'setup') return renderBusinessSetupPanel();
+  if (view === 'guide') return renderDemoGuide();
+  return renderOrderInbox(state, metrics, freshOrderIds);
 }
 
 const INBOX_GROUPS = [
@@ -320,7 +320,7 @@ function renderOrderInbox(state, metrics, freshOrderIds = new Set()) {
       </details>`
     : '';
 
-  return `<div class="order-inbox" data-order-inbox data-ops-board>${renderInboxControls(orders, metrics)}${body}${historyBody}${closedBlock}${renderDirectOrderingMetrics(metrics)}</div>`;
+  return `<div class="order-inbox" data-order-inbox data-ops-board>${renderInboxControls(orders, metrics)}${body}${historyBody}${closedBlock}</div>`;
 }
 
 // Señales comerciales del canal propio (recompra, recurrencia, entregas
@@ -473,14 +473,20 @@ function inboxOrderCard(order, options = {}) {
   const reference = formatAddressReference(order);
   const phone = onlyDigits(order.customerPhone);
   const statusMeta = getBusinessStatusMeta(order.status);
-  const primaryAction = getBusinessOrderPrimaryAction(order);
+  const businessOwnsNextStep = ['received', 'preparing'].includes(order.status)
+    || (isPickup && order.status === 'ready');
+  const primaryAction = businessOwnsNextStep ? getBusinessOrderPrimaryAction(order) : null;
   const itemsList = order.items.map((item) => `
         <li><span>${item.quantity}× ${escapeHtml(item.name)}</span><strong>${money(item.quantity * item.unitPrice)}</strong></li>`).join('');
+  const itemCount = order.items.reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0), 0);
   const showTrack = order.deliveryMode === 'delivery' && ['ready', 'on_the_way', 'arriving'].includes(order.status);
   const priorityClass = options.priority ? 'is-priority' : 'is-secondary';
   const freshClass = options.fresh ? 'is-fresh' : '';
   const prepMinutes = normalizePreparationMinutes(order.delivery?.estimatedPreparationMinutes, 0);
-  const customerSignals = buildCustomerSignals(getState().orders, order);
+  const customerSignals = buildCustomerSignals(
+    getState().orders.filter((candidate) => !candidate.internalSeed),
+    order,
+  );
 
   return `
     <article class="inbox-order ${priorityClass} ${freshClass} accent-${statusClass(order.status)}" data-inbox-order="${escapeHtml(order.id)}">
@@ -498,13 +504,8 @@ function inboxOrderCard(order, options = {}) {
             <strong>${escapeHtml(order.customerName)}</strong>
             <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
           </div>
-          <p class="inbox-status-copy">${escapeHtml(statusMeta.copy)}</p>
-          ${renderOrderTimeline(order.status, { className: 'tight inbox-order-timeline' })}
-          ${renderCustomerSignals(customerSignals)}
+          <p class="inbox-status-copy">${itemCount} ${itemCount === 1 ? 'unidad' : 'unidades'} · ${money(order.total)}</p>
           ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparación estimada: <strong>${prepMinutes} min</strong></p>` : ''}
-          ${renderDeliveryCodeSummary(order)}
-          ${renderDeliveryProofSummary(order)}
-          ${renderInboxTrackingPanel(order)}
         </div>
 
         <div class="inbox-commerce-panel">
@@ -516,29 +517,42 @@ function inboxOrderCard(order, options = {}) {
           </aside>
           <div class="inbox-actions">
             ${renderPrimaryOrderAction(order, primaryAction)}
-            ${phone ? `<a class="ghost-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
-            ${order.customerPhone ? `<a class="ghost-button compact" href="tel:${encodeURIComponent(order.customerPhone)}">Llamar</a>` : ''}
-            ${showTrack ? `<button class="ghost-button compact" type="button" data-order-track="${order.id}">Ver tracking</button>` : ''}
-            <button class="ghost-button compact" type="button" data-order-ticket="${order.id}">Copiar ticket</button>
-            ${canBusinessCancelOrder(order) ? `<button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${order.id}">Cancelar pedido</button>` : ''}
+            ${!isPickup && order.status === 'ready' ? '<button class="primary-button compact main-order-action" type="button" data-open-admin-view="rider">Abrir reparto</button>' : ''}
+            ${!isPickup && ['on_the_way', 'arriving'].includes(order.status) ? `<button class="primary-button compact main-order-action" type="button" data-order-track="${escapeHtml(order.id)}">Ver seguimiento</button>` : ''}
           </div>
         </div>
 
-        <div class="inbox-card-details">
-          <div class="inbox-detail-list">
-            <p><span>Teléfono</span><strong>${escapeHtml(order.customerPhone)}</strong></p>
-            <p><span>${isPickup ? 'Retiro' : 'Dirección'}</span><strong>${isPickup ? 'Retira en el local' : escapeHtml(address.label || order.address)}</strong></p>
-            ${!isPickup && reference ? `<p><span>Referencia</span><strong>${escapeHtml(reference)}</strong></p>` : ''}
-            <p><span>Pago</span><strong>${escapeHtml(order.paymentMethod)}</strong></p>
-            ${order.cashChange ? `<p><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></p>` : ''}
-            ${Number(order.discountTotal || 0) > 0 ? `<p><span>Cupón</span><strong>${escapeHtml(order.coupon?.code || 'Promo')} · -${money(order.discountTotal)}</strong></p>` : ''}
+        <details class="order-detail inbox-card-details">
+          <summary>Ver datos y productos</summary>
+          <div class="order-detail-body">
+            <p class="inbox-status-copy">${escapeHtml(statusMeta.copy)}</p>
+            ${renderOrderTimeline(order.status, { className: 'tight inbox-order-timeline' })}
+            ${renderCustomerSignals(customerSignals)}
+            <div class="inbox-detail-list">
+              <p><span>Teléfono</span><strong>${escapeHtml(order.customerPhone)}</strong></p>
+              <p><span>${isPickup ? 'Retiro' : 'Dirección'}</span><strong>${isPickup ? 'Retira en el local' : escapeHtml(address.label || order.address)}</strong></p>
+              ${!isPickup && reference ? `<p><span>Referencia</span><strong>${escapeHtml(reference)}</strong></p>` : ''}
+              <p><span>Pago</span><strong>${escapeHtml(order.paymentMethod)}</strong></p>
+              ${order.cashChange ? `<p><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></p>` : ''}
+              ${Number(order.discountTotal || 0) > 0 ? `<p><span>Cupón</span><strong>${escapeHtml(order.coupon?.code || 'Promo')} · -${money(order.discountTotal)}</strong></p>` : ''}
+            </div>
+            <div class="inbox-products-block">
+              <span>Productos</span>
+              <ul class="inbox-items">${itemsList}</ul>
+            </div>
+            ${order.notes && order.notes !== 'Sin notas' ? `<p class="inbox-notes">Observaciones del pedido: ${escapeHtml(order.notes)}</p>` : ''}
+            ${renderDeliveryCodeSummary(order)}
+            ${renderDeliveryProofSummary(order)}
+            ${renderInboxTrackingPanel(order)}
+            <div class="inbox-actions">
+              ${phone ? `<a class="ghost-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
+              ${order.customerPhone ? `<a class="ghost-button compact" href="tel:${encodeURIComponent(order.customerPhone)}">Llamar</a>` : ''}
+              ${showTrack ? `<button class="ghost-button compact" type="button" data-order-track="${escapeHtml(order.id)}">Ver tracking</button>` : ''}
+              <button class="ghost-button compact" type="button" data-order-ticket="${escapeHtml(order.id)}">Copiar ticket</button>
+              ${canBusinessCancelOrder(order) ? `<button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${escapeHtml(order.id)}">Cancelar pedido</button>` : ''}
+            </div>
           </div>
-          <div class="inbox-products-block">
-            <span>Productos</span>
-            <ul class="inbox-items">${itemsList}</ul>
-          </div>
-          ${order.notes && order.notes !== 'Sin notas' ? `<p class="inbox-notes">Observaciones del pedido: ${escapeHtml(order.notes)}</p>` : ''}
-        </div>
+        </details>
       </div>
     </article>`;
 }
@@ -580,7 +594,7 @@ function renderDeliveryProofSummary(order, { compact = false } = {}) {
       <img class="proof-thumb" src="${escapeHtml(proof.photoDataUrl)}" alt="Foto de entrega del pedido ${escapeHtml(order.id)}" data-delivery-proof-thumb />
       <div class="proof-copy">
         <strong>Comprobante tomado${proofTime ? `: ${escapeHtml(proofTime)}` : ''}</strong>
-        <small>Evidencia local/demo. Evitá personas, DNI o datos privados.</small>
+        <small>Comprobante asociado al pedido. Evitá personas, DNI o datos privados.</small>
       </div>
       <button class="ghost-button compact" type="button" data-order-proof="${escapeHtml(order.id)}">Ver foto</button>
     </section>`;
@@ -588,7 +602,7 @@ function renderDeliveryProofSummary(order, { compact = false } = {}) {
 
 function renderDeliveryCodeSummary(order, { compact = false } = {}) {
   if (order.deliveryMode !== 'delivery') return '';
-  const deliveryCode = normalizeDeliveryCode(order.deliveryCode, { seed: order.id });
+  const deliveryCode = normalizeDeliveryCode(order.deliveryCode);
   if (!deliveryCode) return '';
   const confirmed = isDeliveryCodeConfirmed(deliveryCode);
   // En pedidos nuevos o en preparación el código todavía no juega: mostrarlo
@@ -707,7 +721,7 @@ function onlyDigits(value) {
   return digits.startsWith('54') ? digits : `549${digits}`;
 }
 
-function renderBusinessReportsPanel(report, closures = []) {
+function renderBusinessReportsPanel(report, closures = [], { mode = 'reports' } = {}) {
   const status = report.ordersByStatus || {};
   const wayCount = Number(status.on_the_way || 0) + Number(status.arriving || 0);
   const topProduct = report.topProduct
@@ -719,6 +733,7 @@ function renderBusinessReportsPanel(report, closures = []) {
   const summaryFallback = businessReportCopyFallback
     ? `<pre class="business-copy-fallback" data-business-copy-fallback>${escapeHtml(businessReportCopyFallback)}</pre>`
     : '';
+  const showReports = mode === 'reports';
 
   // Caja legible para un comerciante: lo principal siempre, los medios de pago
   // sin movimiento no se muestran (un "$ 0 Sin especificar" no ayuda a nadie).
@@ -734,9 +749,9 @@ function renderBusinessReportsPanel(report, closures = []) {
     <section class="business-report-card" data-business-report aria-labelledby="business-report-title">
       <header class="business-report-head">
         <div>
-          <span class="catalog-admin-kicker">Caja y reportes</span>
-          <h3 id="business-report-title">Caja del día</h3>
-          <p>Resumen calculado con los pedidos del período elegido.</p>
+          <span class="catalog-admin-kicker">${showReports ? 'Reportes' : 'Caja'}</span>
+          <h3 id="business-report-title">${showReports ? 'Resumen del período' : 'Caja del día'}</h3>
+          <p>${showReports ? 'Resultados y señales operativas del período elegido.' : 'Cierre y control local del turno.'}</p>
         </div>
         <div class="report-period-tabs" aria-label="Filtro temporal de reportes">
           ${reportPeriodButton('today', report.period)}
@@ -754,7 +769,7 @@ function renderBusinessReportsPanel(report, closures = []) {
       </div>
 
       <div class="business-report-grid">
-        <section class="report-panel" aria-label="Resumen operativo">
+        ${showReports ? `<section class="report-panel" aria-label="Resumen operativo">
           <div class="panel-head compact"><h3>Resumen operativo</h3><span>${escapeHtml(periodLabel(report.period))}</span></div>
           <div class="status-board report-status-board">
             <span class="board-chip received">Nuevos <strong>${status.received || 0}</strong></span>
@@ -770,9 +785,7 @@ function renderBusinessReportsPanel(report, closures = []) {
             <p><span>Clientes únicos</span><strong>${report.uniqueCustomers}</strong></p>
             <p><span>Último pedido</span><strong>${escapeHtml(report.latestOrder?.id || 'Sin pedidos')}${report.latestOrderTime ? ` - ${escapeHtml(report.latestOrderTime)}` : ''}</strong></p>
           </div>
-        </section>
-
-        <section class="report-panel" aria-label="Cierre de caja local">
+        </section>` : `<section class="report-panel" aria-label="Cierre de caja local">
           <div class="panel-head compact"><h3>Cierre de caja</h3><span>Se guarda en este equipo</span></div>
           <div class="cashbox-actions">
             <button class="primary-button compact" type="button" data-cashbox-close>Guardar cierre del día</button>
@@ -781,7 +794,7 @@ function renderBusinessReportsPanel(report, closures = []) {
           <p class="cashbox-note">Guarda una foto de la caja del período elegido, como control rápido. No bloquea pedidos ni reemplaza tu contabilidad.</p>
           ${summaryFallback}
           ${renderCashboxHistory(closures)}
-        </section>
+        </section>`}
       </div>
     </section>`;
 }
@@ -818,21 +831,17 @@ function renderCashboxHistory(closures = []) {
 
 function renderDemoGuide() {
   return `
-    <details class="demo-guide">
-      <summary>Guía de presentación</summary>
+    <section class="demo-guide" aria-labelledby="business-guide-title">
+      <h3 id="business-guide-title">Guía operativa</h3>
       <ol class="demo-guide-steps">
         <li>El pedido entra como <strong>Nuevo</strong> y queda pendiente de aceptación.</li>
-        <li>El equipo lo acepta, prepara y marca <strong>Listo</strong> cuando sale del local.</li>
-        <li>El <strong>repartidor</strong> registra salida, llegada y entrega con código.</li>
+        <li>El equipo lo acepta, prepara y marca <strong>Listo</strong>.</li>
+        <li>El <strong>repartidor</strong> acepta la entrega y registra salida, llegada y recepción.</li>
         <li>El cliente sigue el estado desde <strong>Seguimiento</strong>.</li>
         <li>Al marcar <strong>Entregado</strong>, la caja y las métricas se actualizan.</li>
       </ol>
       <p class="form-hint">Tip: usá “Copiar ticket” para compartir el detalle con el equipo de preparación.</p>
-      <p class="form-hint">La presentación arranca con un pedido de ejemplo ya entregado (LT-0001) para que la caja no esté vacía.</p>
-      <div class="button-row demo-reset-row">
-        <button class="ghost-button compact" type="button" data-demo-reset>Reiniciar presentación</button>
-      </div>
-    </details>`;
+    </section>`;
 }
 
 function uniqueCustomerCount(orders) {
@@ -961,7 +970,7 @@ function renderBusinessSetupPanel() {
     <section class="business-setup-card" data-business-setup aria-labelledby="business-setup-title">
       <header class="business-catalog-head business-setup-head">
         <div>
-          <span class="catalog-admin-kicker">Configuración local de muestra</span>
+          <span class="catalog-admin-kicker">Configuración del local</span>
           <h3 id="business-setup-title">Configuración del negocio</h3>
           <p>Cambiá identidad, contacto, horarios y reglas básicas. Se guarda sólo en este dispositivo.</p>
         </div>
@@ -1025,7 +1034,7 @@ function renderBusinessSetupPanel() {
           </fieldset>
 
           <fieldset>
-            <legend>Delivery y acceso de presentación</legend>
+            <legend>Delivery y acceso operativo</legend>
             <div class="catalog-form-grid">
               <label>
                 <span>Costo de envío</span>
@@ -1187,7 +1196,7 @@ function catalogProductRow(product) {
         <small>${product.available ? 'Visible para cliente' : 'Pausado para clientes'}</small>
       </div>
       <div class="catalog-admin-actions">
-        <div class="catalog-stock-actions" aria-label="Stock demo de ${escapeHtml(product.name)}">
+        <div class="catalog-stock-actions" aria-label="Stock de ${escapeHtml(product.name)}">
           <button class="icon-button compact" type="button" data-stock-dec="${escapeHtml(product.id)}" aria-label="Restar stock de ${escapeHtml(product.name)}">−</button>
           <strong>${product.stock}</strong>
           <button class="icon-button compact" type="button" data-stock-inc="${escapeHtml(product.id)}" aria-label="Sumar stock de ${escapeHtml(product.name)}">+</button>
@@ -1266,6 +1275,16 @@ function stockRow(product) {
 }
 
 export function handleBusinessAction(target) {
+  const viewButton = target.closest('[data-business-view]');
+  if (viewButton) {
+    const nextView = viewButton.dataset.businessView;
+    const allowedViews = new Set(['orders', 'metrics', 'reports', 'cashbox', 'catalog', 'setup', 'guide']);
+    if (!allowedViews.has(nextView)) return { handled: true, ok: false, message: 'Vista no disponible.' };
+    businessActiveView = nextView;
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: '' };
+  }
+
   const filterButton = target.closest('[data-order-filter]');
   if (filterButton) {
     businessOrderFilter = normalizeBusinessOrderFilter(filterButton.dataset.orderFilter);
@@ -1286,7 +1305,10 @@ export function handleBusinessAction(target) {
   }
 
   if (target.closest('[data-cashbox-close]')) {
-    const report = buildBusinessReport(getState().orders, { period: businessReportPeriod });
+    const report = buildBusinessReport(
+      getState().orders.filter((order) => !order.internalSeed),
+      { period: businessReportPeriod },
+    );
     const result = saveCashboxClosure(report);
     businessReportCopyFallback = '';
     if (typeof document !== 'undefined') renderBusinessDashboard();
@@ -1300,6 +1322,18 @@ export function handleBusinessAction(target) {
   const advanceButton = target.closest('[data-order-advance]');
   const advanceId = advanceButton?.dataset.orderAdvance;
   if (advanceId) {
+    const order = getState().orders.find((candidate) => candidate.id === advanceId);
+    const businessOwnsNextStep = ['received', 'preparing'].includes(order?.status)
+      || (order?.deliveryMode === 'pickup' && order?.status === 'ready');
+    if (!businessOwnsNextStep) {
+      return {
+        handled: true,
+        ok: false,
+        message: order?.deliveryMode === 'delivery'
+          ? 'El siguiente paso corresponde al repartidor.'
+          : 'Este pedido no tiene una acción operativa disponible.',
+      };
+    }
     return actionResponse(advanceOrder(advanceId, {
       estimatedPreparationMinutes: readPrepMinutesForOrderAction(advanceButton),
     }), 'Estado del pedido actualizado.');
@@ -1351,34 +1385,18 @@ export function handleBusinessAction(target) {
       params.set('reset', '1');
       window.location.href = `${window.location.pathname}?${params.toString()}`;
     }
-    return { handled: true, ok: true, message: 'Reiniciando presentación…' };
+    return { handled: true, ok: true, message: 'Reiniciando la sesión…' };
   }
 
   if (target.closest('[data-scroll-orders]')) {
-    if (typeof document !== 'undefined') {
-      document.querySelector('[data-ops-board]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    businessActiveView = 'orders';
+    if (typeof document !== 'undefined') renderBusinessDashboard();
     return { handled: true, ok: true, message: '' };
   }
 
   if (target.closest('[data-scroll-reports]')) {
-    businessSectionsOpen.reports = true;
-    if (typeof document !== 'undefined') {
-      renderBusinessDashboard();
-      document.querySelector('[data-collapsible="reports"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    return { handled: true, ok: true, message: '' };
-  }
-
-  // Toggle manual de una sección plegada: recordamos el estado para que los
-  // re-renders del panel no la cierren mientras el comercio trabaja adentro.
-  const collapsibleSummary = target.closest('.business-collapsible > summary');
-  if (collapsibleSummary) {
-    const details = collapsibleSummary.parentElement;
-    const key = details?.dataset.collapsible;
-    if (key && key in businessSectionsOpen) {
-      businessSectionsOpen[key] = !details.open;
-    }
+    businessActiveView = 'reports';
+    if (typeof document !== 'undefined') renderBusinessDashboard();
     return { handled: true, ok: true, message: '' };
   }
 
@@ -1665,18 +1683,16 @@ function setCatalogFormError(message) {
 }
 
 function scrollCatalogManager() {
-  businessSectionsOpen.catalog = true;
+  businessActiveView = 'catalog';
   if (typeof document === 'undefined') return;
-  const details = document.querySelector('[data-collapsible="catalog"]');
-  if (details) details.open = true;
+  if (!document.querySelector('[data-business-catalog]')) renderBusinessDashboard();
   document.querySelector('[data-business-catalog]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function scrollBusinessSetup() {
-  businessSectionsOpen.setup = true;
+  businessActiveView = 'setup';
   if (typeof document === 'undefined') return;
-  const details = document.querySelector('[data-collapsible="setup"]');
-  if (details) details.open = true;
+  if (!document.querySelector('[data-business-setup]')) renderBusinessDashboard();
   document.querySelector('[data-business-setup]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -1732,9 +1748,6 @@ function advanceOrder(orderId, options = {}) {
         target.delivery.estimatedPreparationMinutes = prepMinutes;
         target.delivery.acceptedAt = target.delivery.acceptedAt || now;
         target.delivery.currentLocationLabel = `Pedido aceptado por el negocio. Preparación estimada: ${prepMinutes} min`;
-        if (target.deliveryMode === 'delivery') {
-          target.delivery.estimatedMinutes = Math.max(prepMinutes, Number(target.delivery.estimatedMinutes || 0));
-        }
       });
     }
     return result;
@@ -1881,7 +1894,7 @@ export function confirmBusinessSetupReset() {
     renderBusinessDashboard();
     scrollBusinessSetup();
   }
-  return result;
+  return { ...result, message: result.ok ? 'Configuración base restaurada.' : result.message };
 }
 
 function openBusinessSetupResetModal() {
@@ -1903,7 +1916,7 @@ function renderBusinessSetupResetDialog() {
   return `
     <div class="pin-card cancel-card" data-business-setup-reset-card>
       <h2>Restaurar configuración base</h2>
-      <p>Esto restaurará los datos de muestra del comercio. No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.</p>
+      <p>Esto restaurará la configuración base del comercio. No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.</p>
       <div class="button-row cancel-actions">
         <button class="secondary-button" type="button" data-business-setup-reset-dismiss>Cancelar</button>
         <button class="danger-button" type="button" data-business-setup-reset-confirm>Restaurar configuración base</button>
@@ -1945,7 +1958,7 @@ function renderCatalogResetDialog() {
   return `
     <div class="pin-card cancel-card" data-catalog-reset-card>
       <h2>Restaurar catálogo base</h2>
-      <p>Esto reemplazará el catálogo actual por los productos de muestra. Los productos cargados localmente se perderán.</p>
+      <p>Esto reemplazará el catálogo actual por el catálogo base. Los productos cargados localmente se perderán.</p>
       <div class="button-row cancel-actions">
         <button class="secondary-button" type="button" data-catalog-reset-dismiss>Cancelar</button>
         <button class="danger-button" type="button" data-catalog-reset-confirm>Restaurar catálogo base</button>
@@ -1991,7 +2004,10 @@ function copyTicketText(text) {
 }
 
 async function copyBusinessReportSummary() {
-  const report = buildBusinessReport(getState().orders, { period: businessReportPeriod });
+  const report = buildBusinessReport(
+    getState().orders.filter((order) => !order.internalSeed),
+    { period: businessReportPeriod },
+  );
   const text = formatBusinessReportSummary(report, { businessName: getBusinessConfig().businessName });
   try {
     if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
@@ -2029,7 +2045,7 @@ function openDeliveryProofModal(order) {
     <div class="modal-card delivery-proof-modal" data-delivery-proof-modal>
       <span class="proof-badge">Foto de entrega</span>
       <h2>Comprobante ${escapeHtml(order.id)}</h2>
-      <p>Comprobante tomado${proofTime ? `: ${escapeHtml(proofTime)}` : ''}. Evidencia local de muestra guardada en este pedido.</p>
+      <p>Comprobante tomado${proofTime ? `: ${escapeHtml(proofTime)}` : ''}. Evidencia asociada a este pedido.</p>
       <img class="proof-modal-image" src="${escapeHtml(proof.photoDataUrl)}" alt="Foto de entrega del pedido ${escapeHtml(order.id)}" data-delivery-proof-modal-image />
       <p class="form-hint">Evitá fotografiar personas, DNI o datos privados. Esta foto no se sube a un backend en v1.</p>
       <div class="button-row" style="margin-top:16px">

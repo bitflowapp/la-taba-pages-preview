@@ -100,7 +100,7 @@ test('hydrateState keeps a simulation only for an active delivery order', () => 
     notes: '',
     createdAt: new Date().toISOString(),
     status: 'on_the_way',
-    items: [{ productId: 'qa-gaseosa-cola', name: 'Vacío', icon: '', quantity: 1, unitPrice: 11200, unit: 'kg' }],
+    items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', icon: '', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
     statusHistory: [{ status: 'received', at: new Date().toISOString() }],
     delivery: { driverName: 'Juli', driverPhone: '2991112233', estimatedMinutes: 14, currentLocationLabel: 'En camino' },
   };
@@ -376,7 +376,7 @@ test('GPS keeps watcher alive on transient errors before first fix', () => {
   }
 });
 
-test('GPS can start from street test mode before the order leaves the store', () => {
+test('GPS cannot start before the business marks the delivery ready', () => {
   addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
     customerName: 'GPS QA',
@@ -403,13 +403,12 @@ test('GPS can start from street test mode before the order leaves the store', ()
   });
 
   try {
-    assert.equal(selectStreetTestDestination('alto-comahue').ok, true);
+    assert.equal(selectStreetTestDestination('alto-comahue').ok, false);
     const result = enableGpsTracking();
-    assert.equal(result.ok, true);
-    assert.equal(watchCount, 1);
-    assert.equal(getState().simulation.orderId, created.order.id);
-    assert.equal(getState().simulation.destinationId, 'alto-comahue');
-    assert.equal(getState().simulation.gpsStatus, 'requesting');
+    assert.equal(result.ok, false);
+    assert.match(result.message, /pedido asignado/i);
+    assert.equal(watchCount, 0);
+    assert.equal(getState().simulation, null);
   } finally {
     disableGpsTracking({ silent: true });
     if (originalSecureContext) Object.defineProperty(globalThis, 'isSecureContext', originalSecureContext);

@@ -33,7 +33,7 @@ import {
 } from './core/delivery-code.js';
 import { normalizeOrderAddressDetails } from './core/address.js';
 import { dateTime, getState, money, statusClass, statusLabel } from './state.js';
-import { getDataMode, getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
+import { getDataMode, getOrderRepository, isPersistentOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { bagGlyph, escapeHtml, renderWithStableRealMap } from './ui.js';
 import {
   GPS_GOOD_ACCURACY_METERS,
@@ -51,7 +51,15 @@ const acceptedDeliveryIds = new Set();
 export function renderDeliveryPanel() {
   const container = document.querySelector('[data-delivery-panel]');
   if (!container) return;
-  const order = getRiderQueueOrder();
+  const repository = getOrderRepository();
+  const queueOrder = getRiderQueueOrder();
+  const currentRiderId = isSandboxOrderRepository(repository) && typeof repository.getRiderId === 'function'
+    ? repository.getRiderId()
+    : 'preview-rider';
+  const order = queueOrder?.assignedRiderId
+    && queueOrder.assignedRiderId !== currentRiderId
+    ? getState().orders.find((candidate) => candidate.status === 'ready' && !candidate.assignedRiderId) || null
+    : queueOrder;
   // En una sala realtime, un sync entrante re-renderiza este panel mientras el
   // rider tipea el código de entrega. Conservamos el valor y el foco del input
   // entre renders (mismo criterio que el mapa estable de renderWithStableRealMap).
@@ -77,7 +85,7 @@ export function renderDeliveryPanel() {
     return;
   }
 
-  if (order.status === 'ready' && !acceptedDeliveryIds.has(order.id)) {
+  if (order.status === 'ready' && !acceptedDeliveryIds.has(order.id) && order.assignedRiderId !== currentRiderId) {
     renderRiderAssignmentPreview(container, order);
     return;
   }
@@ -146,6 +154,7 @@ export function renderDeliveryPanel() {
 
         ${renderDeliveryProofPanel(order)}
         ${renderDeliveryCodePanel(order)}
+        ${renderSandboxSimControls(order, sim)}
         ${renderRiderActions(order, { canLeave, canArrive, canDeliver })}
         ${renderOrderTimeline(order.status, { className: 'tight rider-progress' })}
 
@@ -376,6 +385,42 @@ function renderSimControls(order, sim) {
         <span class="sim-state">Local</span>
       </div>
       <p class="form-hint">Los avances se confirman con los botones de estado. No se usa GPS, ETA ni ubicación en vivo.</p>
+    </div>
+  `;
+}
+
+function renderSandboxSimControls(order, sim) {
+  if (!isSandboxOrderRepository(getOrderRepository())) return '';
+  const destination = selectedStreetDestination(order, sim);
+  const progress = Math.round(Math.max(0, Math.min(1, Number(sim?.progress) || 0)) * 100);
+  const eta = Number.isFinite(Number(sim?.etaMinutes)) ? Math.max(0, Math.round(Number(sim.etaMinutes))) : null;
+  const running = Boolean(sim?.running);
+  return `
+    <div class="sim-panel street-test-panel sandbox-route-panel ${running ? 'is-running' : ''}" data-street-test data-sandbox-route>
+      <div class="sim-head">
+        <span class="rider-label">Seguimiento del pedido</span>
+        <span class="sim-state">${running ? 'En movimiento' : sim ? 'En pausa' : 'Sin iniciar'}</span>
+      </div>
+      <div class="sandbox-route-map" aria-label="Ruta de entrega">
+        <svg viewBox="0 0 320 96" role="img" aria-label="Ruta al domicilio">
+          <path d="M18 76 C80 76 78 20 142 25 S206 78 302 20" class="sandbox-route-line" />
+          <circle cx="18" cy="76" r="6" class="sandbox-route-store" />
+          <circle cx="302" cy="20" r="6" class="sandbox-route-destination" />
+          <circle cx="${Math.max(18, Math.min(302, 18 + (284 * progress / 100)))}" cy="${Math.max(20, 76 - (56 * progress / 100))}" r="7" class="sandbox-route-rider" data-sandbox-rider-marker />
+        </svg>
+      </div>
+      <div class="sandbox-route-meta">
+        <span><small>Ruta</small><strong>${escapeHtml(destination?.label || 'Zona de entrega')}</strong></span>
+        <span><small>Avance</small><strong data-sandbox-progress>${progress}%</strong></span>
+        <span><small>ETA</small><strong data-sandbox-eta>${eta == null ? 'Al iniciar' : `${eta} min`}</strong></span>
+      </div>
+      <div class="button-row">
+        ${running
+          ? '<button class="secondary-button compact" type="button" data-sim-pause>Pausar seguimiento</button>'
+          : '<button class="primary-button compact" type="button" data-sim-start>Iniciar seguimiento</button>'}
+        ${sim ? '<button class="ghost-button compact" type="button" data-sim-reset>Reiniciar ruta</button>' : ''}
+      </div>
+      <p class="form-hint">Ruta y ETA de prueba disponibles únicamente en este entorno.</p>
     </div>
   `;
 }
@@ -669,9 +714,26 @@ function renderRealMapShell(order, fallback, role = 'rider') {
 export function handleDeliveryAction(target) {
   const acceptId = target.closest('[data-rider-accept]')?.dataset.riderAccept;
   if (acceptId) {
+    const repository = getOrderRepository();
     const order = findDeliveryOrder(acceptId);
     if (!order || order.status !== 'ready' || order.deliveryMode !== 'delivery') {
       return { handled: true, ok: false, message: 'La entrega ya no está disponible para aceptar.' };
+    }
+    if (isSandboxOrderRepository(repository)) {
+      const claim = repository.claimRiderOrder(acceptId, { riderId: repository.getRiderId?.() });
+      if (claim?.then) {
+        return Promise.resolve(claim).then((result) => {
+          if (!result.ok) return { handled: true, ok: false, message: result.message };
+          acceptedDeliveryIds.add(acceptId);
+          if (typeof document !== 'undefined') renderDeliveryPanel();
+          return {
+            handled: true,
+            ok: true,
+            message: 'Entrega aceptada. Ya podés ver los datos del pedido.',
+          };
+        });
+      }
+      if (!claim.ok) return { handled: true, ok: false, message: claim.message };
     }
     acceptedDeliveryIds.add(acceptId);
     if (typeof document !== 'undefined') renderDeliveryPanel();
@@ -686,7 +748,10 @@ export function handleDeliveryAction(target) {
     }
     const panel = codeButton.closest('[data-delivery-code-panel]');
     const input = panel?.querySelector?.('[data-delivery-code-input]');
-    const result = confirmDeliveryCode(codeOrderId, input?.value || '');
+    const repository = getOrderRepository();
+    const result = isSandboxOrderRepository(repository) && typeof repository.verifyDeliveryCode === 'function'
+      ? repository.verifyDeliveryCode(codeOrderId, input?.value || '')
+      : confirmDeliveryCode(codeOrderId, input?.value || '');
     if (result.ok && input) input.value = '';
     return { handled: true, ok: result.ok, message: result.message };
   }
@@ -807,7 +872,7 @@ function invalidRiderTransition(message) {
 
 function updateDeliveryOrderStatus(orderId, status) {
   const repository = getOrderRepository();
-  if (!isPersistentOrderRepository(repository)) return updateOrderStatus(orderId, status);
+  if (!isPersistentOrderRepository(repository) && !isSandboxOrderRepository(repository)) return updateOrderStatus(orderId, status);
   return repository.updateOrderStatus(orderId, status);
 }
 

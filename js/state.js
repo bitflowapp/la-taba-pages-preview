@@ -187,6 +187,7 @@ function sanitizeSimulation(raw, orders) {
   return {
     orderId,
     running: Boolean(raw.running),
+    userStarted: Boolean(raw.userStarted),
     mode: raw.mode === 'gps' ? 'gps' : 'demo',
     source: raw.source === 'gps' ? 'gps' : 'simulation',
     routeId: sanitizeText(raw.routeId, { fallback: destinationId || 'neuquen', maxLength: 60 }),
@@ -194,6 +195,7 @@ function sanitizeSimulation(raw, orders) {
     progress,
     baseEta,
     etaMinutes: Math.max(0, Math.floor(Number(raw.etaMinutes) || 0)),
+    speed: Math.max(1, Math.min(8, Math.floor(Number(raw.speed) || 1))),
     startedAt: normalizeIsoDate(raw.startedAt),
     timestamp: Math.max(0, Number(raw.timestamp) || 0),
     lastFixAt: normalizeIsoDate(raw.lastFixAt || raw.timestamp || raw.startedAt),

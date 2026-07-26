@@ -36,6 +36,7 @@ import {
 import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
 import { renderPublicOrderTimeline } from './core/order-timeline.js';
 import { isDemoMode } from './core/app-mode.js';
+import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -1231,6 +1232,13 @@ function displayDestinationLabel(value) {
 }
 
 function trackingPrimaryMetric(order) {
+  const sandboxSimulation = getOrderSimulation(order);
+  if (isSandboxOrderRepository(getOrderRepository())
+    && sandboxSimulation
+    && ['on_the_way', 'arriving'].includes(order.status)
+    && Number.isFinite(Number(sandboxSimulation.etaMinutes))) {
+    return { label: 'Llega en', value: `${Math.max(0, Math.round(Number(sandboxSimulation.etaMinutes)))} min` };
+  }
   if (!order) return { label: 'Estado', value: 'Sin información' };
   if (order.status === 'delivered') return { label: 'Estado', value: 'Entregado' };
   const etaMinutes = Number(order.delivery?.etaMinutes);
@@ -1271,6 +1279,33 @@ function realMapShell({ order = null, role = 'tracking', fallback }) {
 
 // El mapa del cliente sólo se renderiza cuando hay GPS real (live=true). Muestra
 // únicamente la ubicación real del rider, sin ruta ni marcadores LT/CL falsos.
+function sandboxTrackingStage(order, simulation) {
+  const progress = Math.max(0, Math.min(1, Number(simulation?.progress) || 0));
+  const percent = Math.round(progress * 100);
+  const eta = Number.isFinite(Number(simulation?.etaMinutes))
+    ? Math.max(0, Math.round(Number(simulation.etaMinutes)))
+    : null;
+  const cx = Math.max(18, Math.min(302, 18 + (284 * progress)));
+  const cy = Math.max(20, 76 - (56 * progress));
+  return `
+    <div class="delivery-map-stage tracking-map-stage sandbox-tracking-stage" data-map-shell="tracking" data-sandbox-tracking>
+      <div class="sandbox-tracking-map" aria-label="Ruta de entrega">
+        <svg viewBox="0 0 320 96" role="img" aria-label="Ruta de entrega">
+          <path d="M18 76 C80 76 78 20 142 25 S206 78 302 20" class="sandbox-route-line" />
+          <circle cx="18" cy="76" r="6" class="sandbox-route-store" />
+          <circle cx="302" cy="20" r="6" class="sandbox-route-destination" />
+          <circle cx="${cx}" cy="${cy}" r="8" class="sandbox-route-rider" data-sandbox-rider-marker />
+        </svg>
+      </div>
+      <div class="sandbox-tracking-top">
+        <span><small>Seguimiento</small><strong>En camino</strong></span>
+        <span><small>Avance</small><strong data-sandbox-progress>${percent}%</strong></span>
+        <span><small>ETA</small><strong data-sandbox-eta>${eta == null ? 'Calculando' : String(eta) + ' min'}</strong></span>
+      </div>
+      <p class="sandbox-tracking-destination">Entrega en el domicilio indicado</p>
+    </div>`;
+}
+
 function trackingMapStage({ order = null, live = false }) {
   return `
     <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
@@ -1466,6 +1501,11 @@ export function renderTracking() {
   const riderLocation = chooseRiderLocation(getOrderSimulation(order), order.tracking?.lastLocation);
   const liveRider = ['on_the_way', 'arriving'].includes(order.status)
     && hasVerifiedLiveRiderLocation(riderLocation);
+  const sandboxSimulation = getOrderSimulation(order);
+  const sandboxRouteActive = isSandboxOrderRepository(getOrderRepository())
+    && ['on_the_way', 'arriving'].includes(order.status)
+    && sandboxSimulation?.source === 'simulation'
+    && sandboxSimulation?.userStarted === true;
 
   const itemsHtml = (Array.isArray(order.items) ? order.items : []).map((item) => `
     <div class="order-line">
@@ -1475,11 +1515,11 @@ export function renderTracking() {
   `).join('');
   const orderAddress = normalizeOrderAddressDetails(order);
 
-  const showMap = isDelivery && !isCancelled && liveRider;
+  const showMap = isDelivery && !isCancelled && (liveRider || sandboxRouteActive);
   const primaryMetric = trackingPrimaryMetric(order);
   renderWithStableRealMap(container, `
     <div class="track-layout tracking-map-experience ${showMap ? '' : 'no-map'}">
-      ${showMap ? trackingMapStage({ order, live: true }) : ''}
+      ${liveRider ? trackingMapStage({ order, live: true }) : sandboxRouteActive ? sandboxTrackingStage(order, sandboxSimulation) : ''}
 
       <section class="delivery-bottom-sheet tracking-sheet track-progress-card ${showMap ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <div class="tracking-brand-row">
@@ -1501,7 +1541,11 @@ export function renderTracking() {
         ${renderPublicOrderTimeline(order.status, { className: 'customer-progress' })}
         ${isCancelled ? `<div class="warning-box">Este pedido fue cancelado.${order.cancelReason ? ` Motivo: ${escapeHtml(order.cancelReason)}.` : ''} Si fue un error, contactá al local por un canal verificado.</div>` : ''}
         ${isDelivery && !isCancelled
-          ? (liveRider ? riderTrackingCard(order, riderLocation) : trackingWaitingStage(order))
+          ? (liveRider
+            ? riderTrackingCard(order, riderLocation)
+            : sandboxRouteActive
+              ? `<div class="delivery-status-card is-live sandbox-status-card"><span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span><div><small>Entrega TABA</small><strong>Seguimiento activo</strong><span>La ruta avanza y el ETA se actualiza en este dispositivo.</span></div></div>`
+              : trackingWaitingStage(order))
           : ''}
         ${trackingOrderSummaryCard(order)}
         ${trackingDeliveryCodeCard(order)}

@@ -12,6 +12,7 @@ import {
 import { assertOrderRepository } from './order_repository.js';
 import { createDemoOrderRepository } from './demo_order_repository.js';
 import { createRealtimeOrderRepository } from './realtime_order_repository.js';
+import { createSandboxOrderRepository, isSandboxOrderRepository } from './sandbox_order_repository.js';
 import { createSupabaseOrderRepository } from './supabase_order_repository.js';
 import { createUnavailableOrderRepository } from './unavailable_order_repository.js';
 
@@ -57,7 +58,7 @@ export function getOrderRepository() {
   if (mode === 'demo-realtime') {
     orderRepository = assertOrderRepository(createRealtimeOrderRepository(demoRepository));
   } else if (mode === 'demo') {
-    orderRepository = assertOrderRepository(demoRepository);
+    orderRepository = assertOrderRepository(createSandboxOrderRepository({ baseRepository: demoRepository }));
   } else {
     // Preview usa el motor local, pero conserva un modo explícito para que
     // ninguna integración lo confunda con la presentación ?demo=1.
@@ -70,7 +71,7 @@ export function getRepositoryDiagnostic() {
   return repositoryDiagnostic;
 }
 
-export function startOrderRepositorySync() {
+export async function startOrderRepositorySync() {
   const repository = getOrderRepository();
   if (typeof repository.startSync === 'function') return repository.startSync();
   return () => {};
@@ -79,6 +80,8 @@ export function startOrderRepositorySync() {
 export function isPersistentOrderRepository(repository = getOrderRepository()) {
   return repository?.mode === 'supabase';
 }
+
+export { isSandboxOrderRepository };
 
 export function resetRepositoryFactoryForTests() {
   orderRepository = null;

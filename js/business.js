@@ -70,7 +70,7 @@ import {
   cancelOrder,
 } from './orders.js';
 import { sanitizeText } from './core/validators.js';
-import { getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
+import { getOrderRepository, isPersistentOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { escapeHtml, productCode, stockPill } from './ui.js';
 import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
 
@@ -1720,7 +1720,7 @@ function readPrepMinutesForOrderAction(button) {
 
 function advanceOrder(orderId, options = {}) {
   const repository = getOrderRepository();
-  if (!isPersistentOrderRepository(repository)) return advanceOrderStatus(orderId, options);
+  if (!isPersistentOrderRepository(repository) && !isSandboxOrderRepository(repository)) return advanceOrderStatus(orderId, options);
   const order = getState().orders.find((candidate) => candidate.id === orderId);
   const domainOrder = toDomainOrder(order);
   const nextStatus = domainOrder ? getNextWorkflowStatus(domainOrder.status, domainOrder.fulfillmentType) : null;
@@ -1756,7 +1756,7 @@ function advanceOrder(orderId, options = {}) {
 
 function cancelBusinessOrder(orderId, reason = '') {
   const repository = getOrderRepository();
-  if (!isPersistentOrderRepository(repository)) return cancelOrder(orderId, reason);
+  if (!isPersistentOrderRepository(repository) && !isSandboxOrderRepository(repository)) return cancelOrder(orderId, reason);
   // Modo persistente (opt-in): el backend cambia el estado; el motivo se
   // conserva localmente para que quede registrado/auditable en la demo.
   return Promise.resolve(repository.updateOrderStatus(orderId, 'canceled')).then((result) => {

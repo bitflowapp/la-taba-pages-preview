@@ -7,3 +7,43 @@
 @import url("./styles/business.css");
 @import url("./styles/rider.css");
 @import url("./styles/responsive.css");
+
+/* Sandbox local: mapa y controles de prueba, aislados por data attributes. */
+[data-sandbox-route], [data-sandbox-tracking] {
+  border: 1px solid rgba(31, 35, 40, .12);
+  border-radius: 18px;
+  background: #fff;
+  padding: 14px;
+  margin-top: 14px;
+}
+
+.sandbox-route-map, .sandbox-tracking-map {
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f6f7f8, #eef2f4);
+  overflow: hidden;
+  padding: 8px;
+}
+
+.sandbox-route-map svg, .sandbox-tracking-map svg { display: block; width: 100%; height: auto; }
+.sandbox-route-line { fill: none; stroke: #bd1e2d; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 8 8; opacity: .72; }
+.sandbox-route-store { fill: #25282d; }
+.sandbox-route-destination { fill: #bd1e2d; }
+.sandbox-route-rider { fill: #fff; stroke: #bd1e2d; stroke-width: 4; filter: drop-shadow(0 2px 3px rgba(0,0,0,.18)); }
+.sandbox-route-meta, .sandbox-tracking-top { display: grid; grid-template-columns: 1.4fr .8fr .8fr; gap: 10px; margin-top: 12px; }
+.sandbox-route-meta span, .sandbox-tracking-top span { display: grid; gap: 3px; }
+.sandbox-route-meta small, .sandbox-tracking-top small { color: #6b7078; font-size: .72rem; }
+.sandbox-route-meta strong, .sandbox-tracking-top strong { font-size: .86rem; }
+.sandbox-tracking-destination { margin: 10px 0 0; color: #575d65; font-size: .82rem; }
+.sandbox-route-panel.is-running .sandbox-route-rider { animation: sandbox-rider-pulse 1.5s ease-in-out infinite; }
+@keyframes sandbox-rider-pulse { 50% { transform: scale(1.18); transform-origin: center; } }
+
+.sandbox-tools-panel { position: fixed; z-index: 40; right: 16px; bottom: 16px; width: min(420px, calc(100vw - 32px)); max-height: min(82vh, 620px); overflow: auto; padding: 16px; border: 1px solid rgba(31,35,40,.16); border-radius: 18px; background: rgba(255,255,255,.97); box-shadow: 0 18px 50px rgba(20,25,30,.22); }
+.sandbox-tools-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.sandbox-tools-head h2 { margin: 2px 0 0; font-size: 1.1rem; }
+.sandbox-tools-badge { border-radius:999px; padding:5px 9px; background:#fbe9eb; color:#a7192a; font-size:.72rem; font-weight:700; }
+.sandbox-tools-copy { margin: 10px 0; color:#5d626a; font-size:.82rem; }
+.sandbox-tools-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.sandbox-tools-links { display:flex; gap:12px; flex-wrap:wrap; margin-top:13px; border-top:1px solid #eceeef; padding-top:12px; }
+.sandbox-tools-links a { color:#a7192a; font-size:.8rem; font-weight:700; }
+.sandbox-tools-status { margin:12px 0 0; color:#5d626a; font-size:.78rem; }
+@media (max-width: 600px) { .sandbox-tools-panel { right: 8px; bottom: 8px; width: calc(100vw - 16px); } }

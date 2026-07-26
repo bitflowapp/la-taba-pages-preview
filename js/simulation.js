@@ -177,7 +177,8 @@ function tick() {
     return;
   }
 
-  const { simulation: next, reachedEnd } = advanceSimulation(sim, SIMULATION_TICK_MS);
+  const speed = Math.max(1, Math.min(8, Number(sim.speed) || 1));
+  const { simulation: next, reachedEnd } = advanceSimulation(sim, SIMULATION_TICK_MS * speed);
 
   if (reachedEnd && order.status === 'on_the_way') {
     // Al completar el recorrido el rider queda "llegando" al domicilio.
@@ -212,6 +213,7 @@ export function startSimulation() {
   // Este dispositivo pasa a ser el "dueño" que mueve el rider.
   const simulation = {
     ...base,
+    userStarted: true,
     mode: 'demo',
     source: 'simulation',
     gpsStatus: 'inactive',
@@ -251,6 +253,7 @@ export function resetSimulation() {
       lat: DEMO_STORE_POINT.lat,
       lng: DEMO_STORE_POINT.lng,
       source: 'simulation',
+      userStarted: false,
       gpsStatus: 'inactive',
       streetMode: Boolean(preferredDestinationId),
     },

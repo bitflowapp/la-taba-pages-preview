@@ -43,7 +43,12 @@ import {
 import { getRealtimeStatus, initRealtime, onRealtimeStatusChange, retryRelayConnection } from './realtime.js';
 import { recenterMapViews, renderMapViews } from './map/map_view.js';
 import { activeTrackingLiveness } from './map/route_geometry.js';
-import { getOrderRepository, getRepositoryDiagnostic, startOrderRepositorySync } from './repositories/repository_factory.js';
+import {
+  getOrderRepository,
+  getRepositoryDiagnostic,
+  isSandboxOrderRepository,
+  startOrderRepositorySync,
+} from './repositories/repository_factory.js';
 import {
   handleProductionOperationsPageHide,
   handleProductionOperationsViewChange,
@@ -62,6 +67,7 @@ import {
   isOperationalView,
 } from './core/app-mode.js';
 import { isProductionCatalogReady } from './core/runtime-config.js';
+import { handleSandboxToolsAction, handleSandboxToolsChange, renderSandboxTools } from './sandbox-tools.js';
 import { toggleFavoriteProduct } from './core/customer-preferences.js';
 import {
   dismissIOSGuide,
@@ -129,6 +135,8 @@ async function maybeResetDemoSession() {
     const params = new URLSearchParams(window.location.search);
     if (!params.has('reset') && !params.has('demo-reset')) return false;
     await clearRelayRoomOnReset(params);
+    const repository = getOrderRepository();
+    if (typeof repository.resetSandbox === 'function') await repository.resetSandbox();
     [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked, STORAGE_KEYS.customerFavorites, STORAGE_KEYS.customerHistory, STORAGE_KEYS.customerProfile].forEach((key) => {
       try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
       try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
@@ -184,13 +192,13 @@ async function bootstrap() {
     subscribe(renderAll);
     initProductionOperations({ onChange: renderAll });
     if (isDemoMode()) {
-      initRealtime();
+      if (!isSandboxOrderRepository(getOrderRepository())) initRealtime();
       // La conexión con el relay sólo existe en presentación. Producción usa
       // exclusivamente el repositorio configurado por el despliegue.
       onRealtimeStatusChange(renderLiveSurfaces);
     }
     maybeOpenPitchFromUrl();
-    startOrderRepositorySync();
+    await startOrderRepositorySync();
     renderAll();
     playViewEnter(activeView);
     resumeSimulationIfNeeded();
@@ -238,6 +246,7 @@ function renderAll() {
     clearDemoOperationalSurfaces();
   }
   renderProductionOperations();
+  renderSandboxTools();
   // Tracking/negocio/rider generan nodos dinámicos después del primer pase.
   applyWhatsappAvailability();
   updateAddressFieldVisibility();
@@ -534,6 +543,12 @@ function bindEvents() {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
+    const sandboxResult = await handleSandboxToolsAction(target);
+    if (sandboxResult.handled) {
+      if (sandboxResult.message) showToast(sandboxResult.message);
+      return;
+    }
+
     const clearCatalogFilters = target.closest('[data-clear-catalog-filters]');
     if (clearCatalogFilters) {
       setSearchQuery('');
@@ -810,6 +825,11 @@ function bindEvents() {
   document.addEventListener('change', async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) return;
+    const sandboxResult = await handleSandboxToolsChange(target);
+    if (sandboxResult.handled) {
+      if (sandboxResult.message) showToast(sandboxResult.message);
+      return;
+    }
     if (target.closest('[data-checkout-form]')) {
       clearCheckoutFieldError(target);
       const warning = target.closest('[data-checkout-form]')?.querySelector('[data-checkout-warning]');

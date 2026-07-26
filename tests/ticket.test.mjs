@@ -6,10 +6,10 @@ import { resetState } from './helpers.mjs';
 
 beforeEach(() => resetState());
 
-test('buildKitchenTicket incluye los datos clave del pedido para la cocina', () => {
+test('buildKitchenTicket incluye los datos clave para preparar el pedido', () => {
   addToCart('qa-gaseosa-cola', 2);
   const { order } = createOrderFromCheckout({
-    customerName: 'Cocina QA',
+    customerName: 'Cliente QA',
     customerPhone: '2995550000',
     customerStreetAddress: 'Roca 321',
     customerNeighborhood: 'Centro',
@@ -22,7 +22,7 @@ test('buildKitchenTicket incluye los datos clave del pedido para la cocina', () 
   const ticket = buildKitchenTicket(order);
   assert.match(ticket, /TABA/);
   assert.ok(ticket.includes(order.id));
-  assert.match(ticket, /Cocina QA/);
+  assert.match(ticket, /Cliente QA/);
   assert.match(ticket, /2995550000/);
   assert.match(ticket, /Roca 321, Centro/);
   assert.match(ticket, /Porton negro/);

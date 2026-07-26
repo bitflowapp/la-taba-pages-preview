@@ -76,13 +76,14 @@ test('repetir pedido no agrega productos no disponibles', () => {
 
 test('cupon publico desactivado no aplica descuentos', () => {
   addToCart('qa-gaseosa-cola', 1);
+  const currentPrice = state().products.find((product) => product.id === 'qa-gaseosa-cola').price;
 
   const created = createTestOrder({ couponCode: 'taba10' });
 
   assert.equal(created.ok, true);
   assert.equal(created.order.coupon, null);
   assert.equal(created.order.discountTotal, 0);
-  assert.equal(created.order.total, 8990);
+  assert.equal(created.order.total, currentPrice);
 });
 
 test('cupon invalido informa error y no descuenta', () => {

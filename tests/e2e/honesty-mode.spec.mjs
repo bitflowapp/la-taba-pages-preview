@@ -123,6 +123,12 @@ test('checkout demo valida datos y explicita que no envía el pedido', async ({ 
   await page.getByLabel('Teléfono').fill('1');
   await page.getByLabel('Calle y número').fill('x');
   await page.getByLabel('Localidad o zona').fill('Neuquén Capital');
+  const paymentMethod = page.getByLabel('Forma de pago');
+  await expect(paymentMethod).toBeVisible();
+  await expect(paymentMethod.locator('option')).toHaveCount(3);
+  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
+  await paymentMethod.selectOption('transfer');
+  await expect(paymentMethod).toHaveValue('transfer');
   await page.locator('[data-checkout-submit]').click();
   await waitForToast(page, 'Ingresá un teléfono argentino válido');
 
@@ -142,11 +148,11 @@ test('checkout demo valida datos y explicita que no envía el pedido', async ({ 
   await expect(page.getByRole('button', { name: 'Solicitar por WhatsApp' })).toBeHidden();
 });
 
-test('estado viejo de carnicería y perfil incompatible se limpian sin reset manual', async ({ page }) => {
+test('estado legacy incompatible y perfil desactualizado se limpian sin reset manual', async ({ page }) => {
   await page.addInitScript(({ stateKey }) => {
     localStorage.setItem(stateKey, JSON.stringify({
       schemaVersion: 1,
-      dataVersion: 'carniceria-v1',
+      dataVersion: 'legacy-retail-v1',
       appMode: 'public',
       products: [{ id: 'carne-1', name: 'Vacío premium', price: 1000 }],
       orders: [{ id: 'CARNE-1', customerName: 'Persona heredada' }],
@@ -179,8 +185,10 @@ test('cambiar de demo a público invalida pedidos de ejemplo y deja medios hones
   const publicState = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)), STATE_KEY);
   expect(publicState.appMode).toBe('public');
   expect(publicState.orders).toHaveLength(0);
-  await expect(page.locator('select[name="paymentMethod"]')).toHaveCount(0);
-  await expect(page.locator('input[name="paymentMethod"]')).toHaveValue('coordinate');
+  const paymentMethod = page.locator('select[name="paymentMethod"]');
+  await expect(paymentMethod).toHaveCount(1);
+  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveCount(1);
+  await expect(page.locator('input[name="paymentMethod"]')).toHaveCount(0);
   await expect(page.locator('[data-coupon-code]')).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText('TABA10');
 });
@@ -192,12 +200,21 @@ test('Moto g15: no hay overflow horizontal y los controles principales alcanzan 
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
+  await expect(page.locator('.mobile-nav')).toBeVisible();
+  await expect(page.locator('.desktop-nav')).toBeHidden();
 
-  for (const selector of ['[data-open-cart]', '.mobile-nav button', '.rail-link', '[data-favorite-product]', '[data-add-product]']) {
+  for (const [selector, minimumTarget] of [
+    ['[data-open-cart]', 43.5],
+    ['.mobile-nav button', 43.5],
+    ['.rail-link', 43.5],
+    ['[data-favorite-product]', 43.5],
+    // La acción de una card compacta mantiene un blanco táctil mínimo de 40 px.
+    ['[data-add-product]', 39.5],
+  ]) {
     const locator = page.locator(selector).filter({ visible: true }).first();
     if (await locator.count()) {
       const box = await locator.boundingBox();
-      expect(Math.min(box?.width || 0, box?.height || 0), selector).toBeGreaterThanOrEqual(43.5);
+      expect(Math.min(box?.width || 0, box?.height || 0), selector).toBeGreaterThanOrEqual(minimumTarget);
     }
   }
   await context.close();

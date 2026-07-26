@@ -23,6 +23,7 @@ beforeEach(() => {
 
 test('creates a valid delivery order and builds a complete WhatsApp message', () => {
   addToCart('qa-gaseosa-cola', 1);
+  const currentPrice = state().products.find((product) => product.id === 'qa-gaseosa-cola').price;
 
   const result = createOrderFromCheckout({
     customerName: 'María López',
@@ -36,9 +37,9 @@ test('creates a valid delivery order and builds a complete WhatsApp message', ()
   assert.equal(result.ok, true);
   assert.equal(result.order.id, 'LT-0002');
   assert.equal(result.order.items.length, 1);
-  assert.equal(result.order.subtotal, 8990);
+  assert.equal(result.order.subtotal, currentPrice);
   assert.equal(result.order.deliveryFee, BUSINESS_CONFIG.deliveryFee);
-  assert.equal(result.order.total, 8990 + BUSINESS_CONFIG.deliveryFee);
+  assert.equal(result.order.total, currentPrice + BUSINESS_CONFIG.deliveryFee);
 
   const message = buildWhatsAppMessage(result.order);
   assert.match(message, /Pedido: LT-0002/);
@@ -131,7 +132,12 @@ test('delivery orders require a delivery address and a minimum subtotal', () => 
   assert.equal(missingNeighborhood.ok, false);
   assert.match(missingNeighborhood.message, /barrio|zona/i);
 
-  resetState();
+  const productsWithBelowMinimumItem = state().products.map((product) => (
+    product.id === 'qa-agua-mineral' ? { ...product, price: 1000 } : product
+  ));
+  resetState({
+    products: productsWithBelowMinimumItem,
+  });
   addToCart('qa-agua-mineral', 1);
 
   const belowMinimum = createOrderFromCheckout({

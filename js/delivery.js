@@ -80,7 +80,7 @@ export function renderDeliveryPanel() {
   const { canLeave, canArrive, canDeliver } = getRiderActionState(order);
   const sim = orderSimulation(order);
   const gpsState = riderGpsShareState(sim);
-  const gpsLive = false;
+  const gpsLive = gpsState.live;
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
   const address = normalizeOrderAddressDetails(order);
   const destinationLabel = displayDestinationLabel(address.label || order.address);

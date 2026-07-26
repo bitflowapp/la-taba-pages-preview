@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#fff8f1" />
-    <meta name="description" content="TABA: catálogo de bebidas, pedidos online, operación del negocio y delivery." />
-    <title>TABA · Bebidas, pedidos y delivery</title>
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="description" content="TABA: bebidas, promos y delivery rápido en una experiencia simple y segura." />
+    <title>TABA · Bebidas en minutos</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="assets/icon.svg" />
@@ -24,12 +24,7 @@
     <div class="app-shell">
       <header class="topbar">
         <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio del comercio">
-          <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
-              <path d="M10 3h4v4l2 2.5V19a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V9.5L10 7V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-              <path d="M8.5 13h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-            </svg>
-          </span>
+          <span class="brand-mark" aria-hidden="true"><i></i></span>
           <span class="brand-text">
             <strong class="brand-word" data-business-name>TABA</strong>
             <small data-business-subtitle>Tienda de bebidas</small>
@@ -103,12 +98,13 @@
             <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
           </div>
           <div data-catalog-dependent hidden>
+          <h1 class="sr-only">TABA · Bebidas en minutos</h1>
           <div class="status-bar" role="status">
             <span class="status-dot" data-open-status>Pedidos online: muy pronto</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Delivery propio y retiro en el local</span>
+            <span class="status-item">Bebidas frías con delivery y retiro</span>
             <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Zona y horarios a confirmar</span>
+            <span class="status-item">Cobertura según tu zona</span>
           </div>
 
           <button class="home-address-chip" type="button" data-nav-view="cart" data-home-address>
@@ -140,22 +136,29 @@
             <div class="category-strip category-tiles" data-category-strip="home"></div>
           </div>
 
-          <button class="promo-banner promo-banner-neutral" type="button" data-category-id="promos">
+          <button class="promo-banner promo-banner-neutral" type="button" data-category-id="promos" data-promo-banner hidden>
             <span class="promo-neutral-art" aria-hidden="true"><i></i><i></i><i></i></span>
             <span class="promo-banner-copy">
-              <strong>Promos de TABA</strong>
-              <span class="promo-includes">Combos y packs seleccionados</span>
+              <small>Elegida para hoy</small>
+              <strong data-promo-banner-title>Promo TABA</strong>
+              <span class="promo-includes" data-promo-banner-includes></span>
+              <span class="promo-price-row">
+                <b data-promo-banner-price></b>
+                <em class="promo-save" data-promo-banner-save hidden></em>
+              </span>
             </span>
             <span class="promo-cta">Ver promociones</span>
           </button>
 
           <div class="rail-block">
             <div class="rail-head">
-              <h2>Las más pedidas</h2>
+              <h2>Más pedidos</h2>
               <button class="rail-link" type="button" data-nav-view="catalog">Ver todas ›</button>
             </div>
             <div class="offers-rail" data-offers-rail></div>
           </div>
+
+          <div class="home-reorder-slot" data-customer-actions></div>
 
           <button class="order-now-cta" type="button" data-nav-view="catalog">
             <span class="order-now-ico" aria-hidden="true">
@@ -180,7 +183,7 @@
               <nav class="crumbs" aria-label="Ruta de navegación">
                 <button class="crumb-link" type="button" data-nav-view="home">Inicio</button>
                 <span class="crumb-sep" aria-hidden="true">›</span>
-                <span class="crumb-current">Menú</span>
+                <span class="crumb-current">Catálogo</span>
               </nav>
               <h2 data-catalog-title>Todos</h2>
             </div>
@@ -205,13 +208,6 @@
             </label>
           </div>
 
-          <div class="rail-block" data-catalog-offers-block hidden>
-            <div class="rail-head">
-              <h2>Promos de la categoría</h2>
-            </div>
-            <div class="offers-rail" data-catalog-offers></div>
-          </div>
-
           <div class="grid-block">
             <div class="product-grid" data-product-grid></div>
           </div>
@@ -226,7 +222,6 @@
           <div data-catalog-dependent hidden>
           <div class="section-head">
             <div>
-              <p class="eyebrow">Mi pedido</p>
               <h2>Tu pedido</h2>
             </div>
             <div class="view-actions">
@@ -237,13 +232,15 @@
 
           <div class="checkout-layout">
             <div class="card cart-card">
-              <h3>Tu selección</h3>
+              <h3>Productos</h3>
               <div data-cart-list></div>
             </div>
 
             <form class="card checkout-form" data-checkout-form novalidate>
-              <h3>Datos para finalizar</h3>
-              <p class="form-hint required-hint">Los campos marcados con <span class="req" aria-hidden="true">*</span> son obligatorios.</p>
+              <div class="checkout-heading">
+                <span>Finalizá en pocos pasos</span>
+                <h3>Datos de entrega</h3>
+              </div>
               <div class="delivery-mode">
                 <label data-fulfillment-option="delivery">
                   <input type="radio" name="deliveryMode" value="delivery" checked />
@@ -258,11 +255,11 @@
               <div class="field-grid">
                 <label>
                   Nombre <span class="req" aria-hidden="true">*</span>
-                  <input name="customerName" autocomplete="name" required placeholder="Ej: Cliente QA" />
+                  <input name="customerName" autocomplete="name" required placeholder="Tu nombre" />
                 </label>
                 <label>
                   Teléfono <span class="req" aria-hidden="true">*</span>
-                  <input name="customerPhone" autocomplete="tel" required placeholder="Ej: 299 555 1234" />
+                  <input name="customerPhone" autocomplete="tel" inputmode="tel" required placeholder="Ej. 299 555 1234" />
                 </label>
               </div>
 
@@ -270,11 +267,11 @@
                 <div class="field-grid">
                   <label>
                     Calle y número <span class="req" aria-hidden="true">*</span>
-                    <input name="customerStreetAddress" autocomplete="address-line1" placeholder="Ej: Roca 123" />
+                    <input name="customerStreetAddress" autocomplete="address-line1" placeholder="Calle y número" />
                   </label>
                   <label>
                     Localidad o zona <span class="req" aria-hidden="true">*</span>
-                    <input name="customerNeighborhood" autocomplete="address-level2" placeholder="Ingresá la localidad o zona" />
+                    <input name="customerNeighborhood" autocomplete="address-level2" placeholder="Localidad o zona" />
                   </label>
                 </div>
                 <input type="hidden" name="customerAddress" />
@@ -288,11 +285,15 @@
                 </span>
               </label>
 
-              <div class="payment-static-row">
-                <span>Pago</span>
-                <strong>Se coordina con el local al confirmar</strong>
-              </div>
-              <input type="hidden" name="paymentMethod" value="coordinate" />
+              <label class="checkout-payment-field">
+                Forma de pago
+                <select name="paymentMethod" aria-label="Forma de pago">
+                  <option value="coordinate">A coordinar con el local</option>
+                  <option value="cash">Efectivo al recibir</option>
+                  <option value="transfer">Transferencia al confirmar</option>
+                </select>
+                <small>El local confirma el medio antes de preparar el pedido.</small>
+              </label>
 
               <details class="checkout-instructions">
                 <summary>Agregar indicaciones</summary>
@@ -311,8 +312,8 @@
               <label class="remember-customer-row age-confirmation" data-age-confirmation hidden>
                 <input type="checkbox" name="ageConfirmed" />
                 <span>
-                  <strong>Confirmo que cumplo la edad mínima</strong>
-                  <small>Sólo se exige si el carrito contiene alcohol. El rider verificará la edad al entregar.</small>
+                  <strong>Confirmo que soy mayor de 18 años</strong>
+                  <small>Presentaremos esta validación únicamente para productos con alcohol.</small>
                 </span>
               </label>
 
@@ -320,17 +321,13 @@
               <div class="warning-box hidden" data-checkout-warning></div>
 
               <div class="trust-row" aria-hidden="false">
-                <span class="trust-text"><strong data-checkout-trust-title>Revisá los datos del pedido.</strong><small data-checkout-trust-copy>La disponibilidad del envío se informa antes de confirmar.</small></span>
+                <span class="trust-text"><strong data-checkout-trust-title>Revisá tus datos.</strong><small data-checkout-trust-copy>Vas a ver el avance del pedido desde TABA.</small></span>
               </div>
 
               <div class="button-row">
                 <button class="primary-button confirm-button" type="submit" data-checkout-submit>
                   Continuar
                 </button>
-              </div>
-              <div class="button-row secondary-actions">
-                <button class="ghost-button" type="button" data-whatsapp-copy data-whatsapp-available hidden>Solicitar por WhatsApp</button>
-                <button class="ghost-button" type="button" data-copy-order>Copiar pedido</button>
               </div>
               <p class="form-hint" data-checkout-mode-note>El medio de pago se coordina con el local.</p>
             </form>
@@ -500,7 +497,7 @@
         <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>
         <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
         <button type="button" data-nav-view="cart"><span class="mn-ico icon-order" aria-hidden="true"></span><span class="mn-label">Pedido</span><span class="mn-badge" data-cart-count-mobile>0</span></button>
-        <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguimiento</span></button>
+        <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguir</span></button>
         <button type="button" data-nav-view="profile"><span class="mn-ico icon-store" aria-hidden="true"></span><span class="mn-label">Local</span></button>
       </nav>
     </div>
@@ -547,13 +544,13 @@
 
     <dialog class="pitch-modal" data-pitch-modal aria-labelledby="pitch-title">
       <div class="pitch-card">
-        <p class="eyebrow"><span data-product-name>PedidoPropio</span> · para tu comercio</p>
+        <p class="eyebrow"><span data-product-name>TABA</span> · canal directo</p>
         <h2 id="pitch-title">Tu propio canal de pedidos</h2>
         <p class="pitch-lead" data-product-tagline>Tu sistema de pedidos directo, sin depender de apps con comisión.</p>
 
         <ul class="pitch-list">
           <li><strong>Pedidos ordenados</strong><span>Cada pedido llega escrito y completo: productos, total, pago y dirección.</span></li>
-          <li><strong>Catálogo propio</strong><span>Tu menú con fotos y precios, sin tener que pasar listas por chat.</span></li>
+          <li><strong>Catálogo propio</strong><span>Tus productos con fotos y precios, sin tener que pasar listas por chat.</span></li>
           <li><strong>Seguimiento del pedido</strong><span>El cliente ve el avance que confirma el comercio.</span></li>
           <li><strong>Vista del repartidor</strong><span>Dirección, cobro y entrega validada con código.</span></li>
           <li><strong>Clientes que vuelven</strong><span>Recompra en un toque y señales de clientes frecuentes.</span></li>
@@ -575,7 +572,7 @@
           <h3 class="pitch-section-title">Qué recibe tu negocio</h3>
           <ul class="pitch-list pitch-list-compact">
             <li><strong>Link propio para vender</strong><span>Una dirección con tu marca para mandar por chat, bio o estados.</span></li>
-            <li><strong>Menú y catálogo ordenado</strong><span>Categorías, fotos y precios siempre al día.</span></li>
+            <li><strong>Catálogo ordenado</strong><span>Categorías, fotos y precios siempre al día.</span></li>
             <li><strong>Carrito simple</strong><span>El cliente arma el pedido solo, sin ida y vuelta.</span></li>
             <li><strong>Pedido armado por WhatsApp</strong><span>Llega listo para confirmar, sin transcribir audios.</span></li>
             <li><strong>Panel para gestionar pedidos</strong><span>Aceptás, preparás y despachás desde el celular.</span></li>
@@ -626,7 +623,7 @@
           <button class="secondary-button" type="button" data-pitch-go="rider" data-demo-only>Ver vista repartidor</button>
           <button class="ghost-button pitch-cta-whatsapp" type="button" data-pitch-go="whatsapp" data-whatsapp-available hidden>Hablar por WhatsApp</button>
         </div>
-        <p class="form-hint pitch-note">Presentación con menú de muestra: los pedidos quedan solo en este dispositivo.</p>
+        <p class="form-hint pitch-note">Presentación con catálogo de muestra: los pedidos quedan solo en este dispositivo.</p>
       </div>
     </dialog>
 

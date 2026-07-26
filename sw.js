@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v10-production-cache';
+const CACHE_NAME = 'la-taba-runtime-v11-beverages-cache';
 const ASSETS = [
   './',
   './index.html',
@@ -7,17 +7,6 @@ const ASSETS = [
   './manifest.webmanifest',
   './runtime-config.js',
   './assets/icon.svg',
-  './assets/hero/horno-lena.webp',
-  './assets/products/pizza-muzzarella.webp',
-  './assets/products/pizza-especial.webp',
-  './assets/products/pizza-fugazzeta.webp',
-  './assets/products/pizza-napolitana.webp',
-  './assets/products/pizza-pepperoni.webp',
-  './assets/products/pizza-calabresa.webp',
-  './assets/products/pizza-jamon.webp',
-  './assets/products/combo-familiar.webp',
-  './assets/products/promo-dia.webp',
-  './assets/products/bebida-cola.webp',
   './assets/products/qa-beverage-placeholder.svg',
   './js/app.js',
   './js/config.js',

@@ -15,6 +15,7 @@ import {
 import { sanitizeNotes, sanitizeText } from '../core/validators.js';
 import { setProductionCatalogReady } from '../core/runtime-config.js';
 import {
+  getState,
   paymentLabel,
   statusLabel,
   updateBusinessConfig,
@@ -81,7 +82,7 @@ export function createSupabaseOrderRepository({
         p_public_id: clean,
       });
       if (error || !data) return null;
-      return mirror ? mirrorOrder(data) : data;
+      return mirror ? mirrorPublicTracking(data) : data;
     }
 
     let query = requestClient
@@ -436,7 +437,7 @@ export function createSupabaseOrderRepository({
         access.orderId || access.publicCode,
         { trackingToken: access.trackingToken },
       );
-      return row ? toDomainOrder(mirrorOrder(row)) : null;
+      return row ? toDomainOrder(mirrorPublicTracking(row)) : null;
     },
     async listOrders() {
       const result = await fetchOrders();
@@ -525,7 +526,12 @@ export function createSupabaseOrderRepository({
         : '';
       const refresh = async () => {
         const row = await fetchOrderByPublicId(orderId, { trackingToken });
-        callback(row ? toDomainOrder(mirrorOrder(row)) : null);
+        const order = row
+          ? trackingToken
+            ? mirrorPublicTracking(row)
+            : mirrorOrder(row)
+          : null;
+        callback(order ? toDomainOrder(order) : null);
       };
       return createRealtimeWatch({
         client,
@@ -789,6 +795,7 @@ function mirrorCreatedOrder(row) {
 
 function mirrorOrder(row) {
   const order = rowToDemoOrder(row);
+  if (!order) return null;
   updateState((draft) => {
     const index = draft.orders.findIndex((candidate) => (
       candidate.id === order.id || candidate.backendId === order.backendId
@@ -797,6 +804,162 @@ function mirrorOrder(row) {
     else draft.orders.unshift(order);
   });
   return order;
+}
+
+// El RPC público devuelve deliberadamente un DTO distinto de la fila interna:
+// no tiene UUID, items, importes, dirección ni datos del cliente. Nunca debe
+// atravesar rowToDemoOrder(), porque eso completaría campos privados con
+// defaults y reemplazaría una copia local más rica por información incompleta.
+function mirrorPublicTracking(dto) {
+  const publicTracking = normalizePublicTrackingDto(dto);
+  if (!publicTracking) return null;
+
+  updateState((draft) => {
+    const index = draft.orders.findIndex((candidate) => (
+      candidate.id === publicTracking.publicCode
+      || candidate.code === publicTracking.publicCode
+    ));
+    const order = index >= 0
+      ? mergePublicTracking(draft.orders[index], publicTracking)
+      : publicTrackingShell(publicTracking);
+
+    if (index >= 0) draft.orders[index] = order;
+    else draft.orders.unshift(order);
+    if (!draft.lastOrderId) draft.lastOrderId = order.id;
+  });
+
+  return getState().orders.find((candidate) => (
+    candidate.id === publicTracking.publicCode
+    || candidate.code === publicTracking.publicCode
+  )) || null;
+}
+
+function normalizePublicTrackingDto(dto = {}) {
+  if (!dto || typeof dto !== 'object' || Array.isArray(dto)) return null;
+  const publicCode = sanitizeText(dto.public_code, { maxLength: 40 });
+  if (!publicCode) return null;
+
+  const workflowStatus = normalizeWorkflowStatus(dto.status);
+  const status = toDemoOrderStatus(workflowStatus);
+  const createdAt = normalizeOptionalIso(dto.created_at) || new Date().toISOString();
+  const acceptedAt = normalizeOptionalIso(dto.accepted_at);
+  const preparingAt = normalizeOptionalIso(dto.preparing_at);
+  const readyAt = normalizeOptionalIso(dto.ready_at);
+  const dispatchedAt = normalizeOptionalIso(dto.dispatched_at);
+  const arrivedAt = normalizeOptionalIso(dto.arrived_at);
+  const deliveredAt = normalizeOptionalIso(dto.delivered_at);
+  const updatedAt = latestIsoTimestamp([
+    deliveredAt,
+    arrivedAt,
+    dispatchedAt,
+    readyAt,
+    preparingAt,
+    acceptedAt,
+    createdAt,
+  ]) || createdAt;
+  const location = latestRiderLocation(
+    dto.rider_location ? [dto.rider_location] : [],
+  );
+  const statusHistory = statusHistoryFromRow({
+    accepted_at: acceptedAt,
+    preparing_at: preparingAt,
+    ready_at: readyAt,
+    dispatched_at: dispatchedAt,
+    arrived_at: arrivedAt,
+    delivered_at: deliveredAt,
+    updated_at: updatedAt,
+  }, status, createdAt);
+  const rawEstimate = Number(dto.estimated_minutes);
+  const estimatedMinutes = Number.isFinite(rawEstimate)
+    ? Math.min(1440, Math.max(0, Math.floor(rawEstimate)))
+    : 0;
+
+  return {
+    publicCode,
+    workflowStatus,
+    status,
+    createdAt,
+    updatedAt,
+    acceptedAt,
+    preparingAt,
+    readyAt,
+    dispatchedAt,
+    arrivedAt,
+    deliveredAt,
+    statusHistory,
+    estimatedMinutes,
+    tracking: location ? {
+      lastLocation: location,
+      source: 'gps',
+      updatedAt: location.lastFixAt,
+    } : undefined,
+  };
+}
+
+function mergePublicTracking(order, tracking) {
+  return {
+    ...order,
+    workflowStatus: tracking.workflowStatus,
+    status: tracking.status,
+    createdAt: tracking.createdAt,
+    updatedAt: tracking.updatedAt,
+    acceptedAt: tracking.acceptedAt,
+    preparingAt: tracking.preparingAt,
+    readyAt: tracking.readyAt,
+    pickedUpAt: tracking.dispatchedAt,
+    arrivedAt: tracking.arrivedAt,
+    deliveredAt: tracking.deliveredAt,
+    statusHistory: tracking.statusHistory,
+    tracking: tracking.tracking,
+    delivery: {
+      ...(order.delivery || {}),
+      currentLocationLabel: locationLabel(tracking.status, order.deliveryMode),
+      ...(tracking.dispatchedAt ? { leftStoreAt: tracking.dispatchedAt } : {}),
+      ...(tracking.deliveredAt ? { deliveredAt: tracking.deliveredAt } : {}),
+    },
+  };
+}
+
+function publicTrackingShell(tracking) {
+  return {
+    id: tracking.publicCode,
+    code: tracking.publicCode,
+    workflowStatus: tracking.workflowStatus,
+    status: tracking.status,
+    customerName: 'Cliente',
+    customerPhone: '',
+    address: '',
+    addressDetails: null,
+    deliveryMode: 'delivery',
+    paymentMethodCode: 'unknown',
+    paymentMethod: 'Sin especificar',
+    notes: '',
+    createdAt: tracking.createdAt,
+    updatedAt: tracking.updatedAt,
+    acceptedAt: tracking.acceptedAt,
+    preparingAt: tracking.preparingAt,
+    readyAt: tracking.readyAt,
+    pickedUpAt: tracking.dispatchedAt,
+    arrivedAt: tracking.arrivedAt,
+    deliveredAt: tracking.deliveredAt,
+    statusHistory: tracking.statusHistory,
+    items: [],
+    subtotal: 0,
+    deliveryFee: 0,
+    total: 0,
+    currencyCode: '',
+    assignedRiderId: '',
+    delivery: {
+      driverName: 'Sin asignar',
+      driverPhone: '',
+      estimatedMinutes: tracking.estimatedMinutes,
+      currentLocationLabel: locationLabel(tracking.status, 'delivery'),
+      ...(tracking.dispatchedAt ? { leftStoreAt: tracking.dispatchedAt } : {}),
+      ...(tracking.deliveredAt ? { deliveredAt: tracking.deliveredAt } : {}),
+    },
+    tracking: tracking.tracking,
+    publicTrackingOnly: true,
+  };
 }
 
 function mirrorGpsLocation(order, location) {
@@ -1129,6 +1292,20 @@ function isUuid(value) {
 function normalizeIso(value, fallback = new Date().toISOString()) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? fallback : date.toISOString();
+}
+
+function normalizeOptionalIso(value) {
+  if (value == null || value === '') return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function latestIsoTimestamp(values) {
+  const timestamps = values
+    .map((value) => normalizeOptionalIso(value))
+    .filter(Boolean)
+    .sort((a, b) => Date.parse(b) - Date.parse(a));
+  return timestamps[0] || null;
 }
 
 function safeSessionStorage() {

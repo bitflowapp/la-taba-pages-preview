@@ -195,8 +195,8 @@ export function renderBusinessDashboard() {
         <div class="business-brand-row">
           <span class="business-brand-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-              <path d="M12 21 3.6 6.6A16.4 16.4 0 0 1 12 4.4a16.4 16.4 0 0 1 8.4 2.2L12 21Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-              <circle cx="10" cy="9" r="1.2" fill="currentColor"/><circle cx="14.2" cy="10.6" r="1.2" fill="currentColor"/>
+              <path d="M9.5 3h5v3l1.4 2.3v10.2a2.5 2.5 0 0 1-2.5 2.5h-2.8a2.5 2.5 0 0 1-2.5-2.5V8.3L9.5 6V3Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M8.1 12h7.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
             </svg>
           </span>
           <div class="business-topbar-text">
@@ -232,7 +232,7 @@ export function renderBusinessDashboard() {
       </details>
 
       <details class="business-collapsible" data-collapsible="catalog" ${businessSectionsOpen.catalog ? 'open' : ''}>
-        <summary><strong>Menú y promos</strong><span>Productos, precios y disponibilidad</span></summary>
+        <summary><strong>Catálogo y promos</strong><span>Productos, precios y disponibilidad</span></summary>
         ${renderCatalogManager(state)}
       </details>
 
@@ -248,7 +248,7 @@ export function renderBusinessDashboard() {
 
 const INBOX_GROUPS = [
   { id: 'nuevos', title: 'Pedidos nuevos', hint: 'Atención inmediata', match: (order) => order.status === 'received' },
-  { id: 'preparando', title: 'En preparación', hint: 'En cocina o mostrador', match: (order) => order.status === 'preparing' },
+  { id: 'preparando', title: 'En preparación', hint: 'Preparación del pedido', match: (order) => order.status === 'preparing' },
   { id: 'listos', title: 'Listos', hint: 'Para retiro o reparto', match: (order) => order.status === 'ready' },
   { id: 'reparto', title: 'En reparto', hint: 'Seguimiento del reparto', match: (order) => ['on_the_way', 'arriving'].includes(order.status) },
 ];
@@ -827,7 +827,7 @@ function renderDemoGuide() {
         <li>El cliente sigue el estado desde <strong>Seguimiento</strong>.</li>
         <li>Al marcar <strong>Entregado</strong>, la caja y las métricas se actualizan.</li>
       </ol>
-      <p class="form-hint">Tip: usá “Copiar ticket” para pasarle el pedido a la cocina.</p>
+      <p class="form-hint">Tip: usá “Copiar ticket” para compartir el detalle con el equipo de preparación.</p>
       <p class="form-hint">La presentación arranca con un pedido de ejemplo ya entregado (LT-0001) para que la caja no esté vacía.</p>
       <div class="button-row demo-reset-row">
         <button class="ghost-button compact" type="button" data-demo-reset>Reiniciar presentación</button>
@@ -1310,7 +1310,7 @@ export function handleBusinessAction(target) {
     const order = getState().orders.find((candidate) => candidate.id === ticketId);
     if (!order) return { handled: true, ok: false, message: 'Pedido no encontrado.' };
     copyTicketText(buildKitchenTicket(order));
-    return { handled: true, ok: true, message: 'Ticket copiado para la cocina.' };
+    return { handled: true, ok: true, message: 'Ticket copiado para preparación.' };
   }
 
   const printId = target.closest('[data-order-print]')?.dataset.orderPrint;

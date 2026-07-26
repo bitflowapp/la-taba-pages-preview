@@ -52,7 +52,7 @@ test('la persistencia anterior o de otro modo se invalida automáticamente', () 
   };
   assert.equal(isPersistedStateCompatible({ ...publicBase }, publicBase), true);
   assert.equal(isPersistedStateCompatible({ ...publicBase, schemaVersion: 2 }, publicBase), false);
-  assert.equal(isPersistedStateCompatible({ ...publicBase, dataVersion: 'carniceria-v1' }, publicBase), false);
+  assert.equal(isPersistedStateCompatible({ ...publicBase, dataVersion: 'legacy-retail-v1' }, publicBase), false);
   assert.equal(isPersistedStateCompatible({ ...publicBase, appMode: APP_MODE_DEMO }, publicBase), false);
 });
 

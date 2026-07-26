@@ -23,7 +23,7 @@ function seededState(status) {
       notes: 'Sin sal',
       createdAt: at,
       status,
-      items: [{ productId: 'qa-gaseosa-cola', name: 'Muzzarella', icon: '', quantity: 1, unitPrice: 8990, unit: 'unidad' }],
+      items: [{ productId: 'qa-gaseosa-cola', name: 'Gaseosa cola 1,5 L', icon: '', quantity: 1, unitPrice: 8990, unit: 'unidad' }],
       subtotal: 31890, deliveryFee: 1990, total: 33880,
       statusHistory: [{ status: 'received', at }],
       delivery: { driverName: 'Sin asignar', driverPhone: '', currentLocationLabel: 'En el local' },

@@ -198,7 +198,7 @@ async function bootstrap() {
     // Un runtime productivo inválido nunca cae silenciosamente a datos locales.
     const diagnostic = getRepositoryDiagnostic();
     if (diagnostic) {
-      console.warn(`[PedidoPropio] ${diagnostic.message}`);
+      console.warn(`[TABA] ${diagnostic.message}`);
       const message = diagnostic.blocking
         ? 'Los pedidos online no están disponibles por un problema de configuración.'
         : 'No se pudo conectar al servidor de pedidos.';
@@ -320,7 +320,7 @@ function checkoutModeCopy(mode) {
   return {
     submit: 'Crear pedido de muestra',
     title: 'Estás probando la experiencia de pedido.',
-    copy: 'Cuando el local active los pedidos online, tu pedido va a llegar directo a la cocina.',
+    copy: 'Cuando el local active los pedidos online, tu pedido va a llegar directo al equipo de preparación.',
     note: 'Sin cobros: no se procesa ningún pago ni se envían datos.',
   };
 }

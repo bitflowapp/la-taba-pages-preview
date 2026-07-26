@@ -1,22 +1,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Marca del PRODUCTO (la plataforma que se vende a comercios). Es la única fuente
-// de verdad del nombre comercial, el claim y los textos de marca: evita repetir
-// strings sueltos por la app. OJO: es distinta del COMERCIO demo que se ve dentro
-// de la app (PedidoPropio = producto; "La Taba" = comercio de ejemplo).
-// El comercio demo se siembra desde BRAND.demoBusinessName más abajo.
+// Identidad única de TABA. La presentación comercial y el storefront comparten
+// marca para evitar que el cliente vea nombres de producto distintos.
 export const BRAND = Object.freeze({
-  productName: 'PedidoPropio',
-  tagline: 'Tu sistema de pedidos directo, sin depender de apps con comisión.',
-  shortTagline: 'Pedidos directos para tu comercio',
-  // Comercio ficticio reusable que protagoniza la demo (encaja con el catálogo
-  // de bebidas QA actual). Cambialo acá para adaptar la demo a otro rubro.
+  productName: 'TABA',
+  tagline: 'Bebidas, pedidos y delivery en una experiencia simple.',
+  shortTagline: 'Bebidas en minutos',
   demoBusinessName: 'TABA',
   demoBusinessSubtitle: 'Tienda de bebidas',
-  // Claim del COMERCIO demo (no confundir con el tagline del producto).
   demoBusinessClaim: 'Tus bebidas, ahora a un toque.',
   demoBusinessClaimSecondary: 'Pedí. Seguí. Disfrutá.',
-  // Mensaje que se precarga al tocar "Hablar por WhatsApp" desde la presentación.
-  contactWhatsappMessage: 'Hola, vi la demo de PedidoPropio y quiero info para mi comercio.',
+  contactWhatsappMessage: 'Hola, vi TABA y quiero más información.',
 });
 
 export const BUSINESS_CONFIG = Object.freeze({

@@ -1,9 +1,1 @@
-id,name,category,description,price,unit,stock,available,featured,offerLabel,prepMinutes,imageFile,notes
-p-asado-especial,Asado especial,carnes,Corte seleccionado para parrilla,9800,kg,12,TRUE,TRUE,,20,asado-especial.jpg,Cortar en tiras medianas
-p-vacio,Vacío,carnes,Vacío tierno para horno o parrilla,11200,kg,8,TRUE,TRUE,,25,vacio.jpg,Revisar grasa pareja
-p-matambre,Matambre,carnes,Ideal para pizza o relleno,8900,kg,4,TRUE,FALSE,,18,matambre.jpg,Consultar grosor al cliente
-p-milanesa-carne,Milanesa de carne,milanesas,Milanesas listas para cocinar,6400,kg,18,TRUE,TRUE,Combo familiar,15,milanesa-carne.jpg,Rebozado clasico
-p-milanesa-pollo,Milanesa de pollo,milanesas,Prácticas para comida rapida,5800,kg,15,TRUE,FALSE,,15,milanesa-pollo.jpg,Separar por peso parejo
-p-hamburguesa-casera,Hamburguesa casera,hamburguesas,Medallones artesanales por 4 unidades,5200,pack x4,9,TRUE,TRUE,,12,hamburguesa-casera.jpg,No apilar demasiado
-p-combo-familiar,Combo familiar,combos,Asado, chorizo, pollo y bebida,24500,combo,6,TRUE,TRUE,Promo fin de semana,30,combo-familiar.jpg,Ideal para viernes
-p-coca,Coca-Cola 2.25L,bebidas,Bebida fria para acompanar el pedido,2800,unidad,20,TRUE,FALSE,,3,coca-225.jpg,Agregar si hay stock frio
+external_id,sku,brand,name,variant,category,subcategory,capacity_value,capacity_unit,package_type,units_per_pack,price,stock,available,alcoholic,minimum_age,chilled,featured,sort_order,image_path,tags

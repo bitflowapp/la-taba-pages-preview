@@ -9,11 +9,41 @@ test('la home presenta una sola marca Demo y un storefront comercial limpio', as
   await expect(page.locator('[data-demo-mode-banner]')).toHaveText('Demo');
   await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
   await expect(page.locator('[data-view="home"] .home-search')).toBeVisible();
-  await expect(page.locator('[data-view="home"] .category-tiles .category-button')).toHaveCount(6);
-  await expect(page.locator('[data-view="home"] .category-tiles')).toContainText('Promos');
-  await expect(page.locator('[data-view="home"] .category-tiles')).toContainText('Gaseosas');
-  await expect(page.locator('[data-view="home"] .category-tiles')).toContainText('Energéticas');
-  await expect(page.locator('[data-view="home"] .promo-banner-neutral')).toContainText('Promos de TABA');
+  const realCategories = [
+    ['promos', 'Promos'],
+    ['gaseosas', 'Gaseosas'],
+    ['aguas', 'Aguas'],
+    ['jugos', 'Jugos'],
+    ['energeticas', 'Energéticas'],
+    ['isotonicas', 'Isotónicas'],
+    ['cervezas', 'Cervezas'],
+    ['vinos-y-espumantes', 'Vinos y espumantes'],
+    ['gins-y-vodkas', 'Gins y vodkas'],
+    ['whisky-y-destilados', 'Whisky y destilados'],
+    ['picadas-y-deli', 'Picadas y deli'],
+    ['hielo-y-extras', 'Hielo y extras'],
+  ];
+  const homeCategories = page.locator('[data-view="home"] .category-tiles .category-button');
+  await expect(homeCategories).toHaveCount(realCategories.length);
+  for (const [id, label] of realCategories) {
+    await expect(page.locator(`[data-view="home"] .category-tiles [data-category-id="${id}"]`)).toHaveText(label);
+  }
+
+  // La promo del home usa el producto disponible del catálogo, no copy estática.
+  const promoBanner = page.locator('[data-view="home"] [data-promo-banner]');
+  await expect(promoBanner).toBeVisible();
+  const promoTitle = (await promoBanner.locator('[data-promo-banner-title]').innerText()).trim();
+  const promoPrice = (await promoBanner.locator('[data-promo-banner-price]').innerText()).trim();
+  expect(promoTitle).not.toBe('');
+  expect(promoPrice).toMatch(/\d/);
+  await expect(promoBanner.locator('[data-promo-banner-includes]')).not.toHaveText('');
+  await promoBanner.click();
+  await expect(page.locator('[data-view="catalog"]')).toBeVisible();
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Promos');
+  const promotedProduct = page.locator('[data-product-grid] .product-card', { hasText: promoTitle }).first();
+  await expect(promotedProduct).toBeVisible();
+  await expect(promotedProduct).toContainText(promoPrice);
+
   await expect(page.locator('[data-view="home"] .role-intro')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .product-intro')).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText('La Taba Pizzería');
@@ -28,12 +58,12 @@ test('la home presenta una sola marca Demo y un storefront comercial limpio', as
     await expect(page.locator('[data-view="home"]')).not.toContainText(forbidden);
   }
   await page.goto('/?reset=1&demo=1#catalog');
-  for (const category of [
-    'Promos', 'Gaseosas', 'Aguas', 'Jugos', 'Energéticas', 'Isotónicas',
-    'Cervezas', 'Vinos y espumantes', 'Gins y vodkas',
-    'Whisky y destilados', 'Picadas y deli', 'Hielo y extras',
-  ]) {
-    await expect(page.locator('[data-view="catalog"] [data-category-strip]')).toContainText(category);
+  const catalogCategories = page.locator(
+    '[data-view="catalog"] [data-category-strip] .category-button:not([data-category-id="all"]):not([data-category-id="favorites"])',
+  );
+  await expect(catalogCategories).toHaveCount(realCategories.length);
+  for (const [id, label] of realCategories) {
+    await expect(page.locator(`[data-view="catalog"] [data-category-id="${id}"]`)).toHaveText(label);
   }
   await expect(page.locator('[data-product-grid] .product-card').first()).not.toContainText('QA');
   const activeCatalogText = await page.locator('[data-product-grid]').innerText();

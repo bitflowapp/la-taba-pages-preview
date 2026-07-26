@@ -34,7 +34,7 @@ import {
   normalizeDeliveryCode,
 } from './core/delivery-code.js';
 import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
-import { renderOrderTimeline } from './core/order-timeline.js';
+import { renderPublicOrderTimeline } from './core/order-timeline.js';
 import { isDemoMode } from './core/app-mode.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
@@ -213,24 +213,45 @@ function productImage(product) {
   return product?.image || '';
 }
 
-// Thumbnail de producto con foto real licenciada y fallback tonal para rubros sin foto.
+// Thumbnail de producto. Los fixtures y productos sin imagen oficial usan arte
+// vectorial neutro por categoría; producción muestra únicamente la imagen
+// verificada que llega en el catálogo.
 export function productThumb(product, variant = 'grid') {
-  const tone = product.tone || 'beef';
+  const tone = product.tone || (product.alcoholic ? 'alcoholic' : 'drink');
+  const category = sanitizeCategoryId(product.categoryId) || 'bebidas';
   const image = productImage(product);
-  if (image) {
+  if (image && !product.qaFixture) {
     const loading = variant === 'modal' ? 'eager' : 'lazy';
     return `
-    <span class="thumb has-photo tone-${tone} thumb-${variant}" aria-hidden="true">
+    <span class="thumb has-photo tone-${tone} category-${category} thumb-${variant}" aria-hidden="true">
+      <span class="thumb-placeholder">${productPlaceholderGlyph(product)}</span>
       <img class="thumb-img" src="${escapeHtml(image)}" alt="" loading="${loading}" decoding="async" />
     </span>`;
   }
-  // El tile muestra solo arte visual + un monograma corto (no el nombre completo,
-  // que ya aparece debajo). Así se evita el texto superpuesto en cards angostas.
   return `
-    <span class="thumb tone-${tone} thumb-${variant}" aria-hidden="true">
-      <span class="thumb-steak"></span>
-      <span class="thumb-code">${escapeHtml(productCode(product))}</span>
+    <span class="thumb tone-${tone} category-${category} thumb-${variant}" aria-hidden="true">
+      <span class="thumb-placeholder">${productPlaceholderGlyph(product)}</span>
     </span>`;
+}
+
+function productPlaceholderGlyph(product) {
+  const category = sanitizeCategoryId(product?.categoryId);
+  if (category === 'promos') {
+    return `<svg viewBox="0 0 120 120" fill="none"><rect x="20" y="38" width="80" height="60" rx="14" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="4"/><path d="M42 38c0-11 8-19 18-19s18 8 18 19" stroke="currentColor" stroke-width="4"/><path d="M42 65h36M48 77h24" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>`;
+  }
+  if (category === 'picadas-y-deli') {
+    return `<svg viewBox="0 0 120 120" fill="none"><rect x="20" y="30" width="80" height="62" rx="14" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="4"/><path d="M33 50h54M33 62h37M33 74h45" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><circle cx="86" cy="72" r="7" fill="currentColor"/></svg>`;
+  }
+  if (category === 'hielo-y-extras') {
+    return `<svg viewBox="0 0 120 120" fill="none"><path d="m28 42 26-15 26 15v30L54 88 28 72V42Z" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="4"/><path d="m54 27 26 15 14-8M54 88V57m0 0L28 42m26 15 26-15" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></svg>`;
+  }
+  if (category === 'vinos-y-espumantes' || category === 'gins-y-vodkas' || category === 'whisky-y-destilados') {
+    return `<svg viewBox="0 0 120 120" fill="none"><path d="M52 16h16v22l8 11v46H44V49l8-11V16Z" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M44 62h32M52 27h16" stroke="currentColor" stroke-width="4"/><circle cx="60" cy="77" r="8" fill="currentColor" fill-opacity=".72"/></svg>`;
+  }
+  if (category === 'cervezas' || category === 'energeticas' || category === 'isotonicas') {
+    return `<svg viewBox="0 0 120 120" fill="none"><path d="M42 18h36l-4 84H46l-4-84Z" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M43 29h34M46 68h28" stroke="currentColor" stroke-width="4"/><path d="m63 39-11 17h9l-2 13 10-17h-8l2-13Z" fill="currentColor"/></svg>`;
+  }
+  return `<svg viewBox="0 0 120 120" fill="none"><path d="M50 15h20v19l8 13v48a9 9 0 0 1-9 9H51a9 9 0 0 1-9-9V47l8-13V15Z" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M42 61h36M50 27h20" stroke="currentColor" stroke-width="4"/><path d="M51 76c7-8 12-8 19 0" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>`;
 }
 
 export function productCode(product) {
@@ -325,7 +346,9 @@ function railCard(product) {
           ${old}
         </div>
       </div>
-      <button class="add-round" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>+</button>
+      <button class="rail-add" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>
+        <span aria-hidden="true">+</span> Agregar
+      </button>
     </article>
   `;
 }
@@ -345,6 +368,38 @@ const CATEGORY_GLYPHS = Object.freeze({
   aguas: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
     <path d="M9.4 3h5.2v3l1.4 2.2a3 3 0 0 1 .5 1.6V19a2 2 0 0 1-2 2H9.5a2 2 0 0 1-2-2V9.8a3 3 0 0 1 .5-1.6L9.4 6V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
     <path d="M7.5 12.4h9" stroke="currentColor" stroke-width="1.6"/>
+  </svg>`,
+  jugos: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M6 7h12l-1 14H7L6 7Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="m9 7 2-4h5M9 12h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`,
+  isotonicas: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M9 3h6v3l1.5 2.2V20H7.5V8.2L9 6V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6"/>
+    <path d="m13 9-3 4h2l-1 3 3-4h-2l1-3Z" fill="currentColor"/>
+  </svg>`,
+  cervezas: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M7 5h9v15H7V5Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6"/>
+    <path d="M16 8h1.5a2.5 2.5 0 0 1 0 5H16M7 8h9" stroke="currentColor" stroke-width="1.6"/>
+  </svg>`,
+  'vinos-y-espumantes': `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M10 3h4v5l2 3v10H8V11l2-3V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M8 14h8" stroke="currentColor" stroke-width="1.6"/>
+  </svg>`,
+  'gins-y-vodkas': `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M9 3h6v4l2 3v11H7V10l2-3V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <circle cx="12" cy="14" r="2.5" stroke="currentColor" stroke-width="1.6"/>
+  </svg>`,
+  'whisky-y-destilados': `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M8 3h8l1 18H7L8 3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M7.5 14h9M9 7h6" stroke="currentColor" stroke-width="1.6"/>
+  </svg>`,
+  'picadas-y-deli': `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <rect x="3.5" y="6" width="17" height="13" rx="3" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6"/>
+    <path d="M7 10h10M7 14h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`,
+  'hielo-y-extras': `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="m5 8 7-4 7 4v8l-7 4-7-4V8Z" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="m5 8 7 4 7-4M12 12v8" stroke="currentColor" stroke-width="1.6"/>
   </svg>`,
   favorites: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
     <path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4 7.2 18.9l.9-5.4-3.9-3.8 5.4-.8L12 4Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
@@ -371,9 +426,7 @@ function renderCategories() {
     { id: 'favorites', name: 'Favoritos' },
     ...catalogCategories.slice(1),
   ];
-  const homePriority = ['promos', 'gaseosas', 'energeticas', 'cervezas', 'vinos-espumantes', 'gins-vodkas'];
-  const byId = new Map(catalogCategories.map((category) => [category.id, category]));
-  const homeList = homePriority.map((id) => byId.get(id)).filter(Boolean);
+  const homeList = catalogCategories.filter((category) => category.id !== 'all');
 
   const markupFor = (list) => list.map((category) => `
     <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}">
@@ -548,6 +601,7 @@ function renderProducts() {
         <div class="product-body">
           <h3>${escapeHtml(product.name)}</h3>
           <p>${escapeHtml(product.unitLabel || product.variant || product.packageType || '')}</p>
+          <small class="product-availability ${outOfStock ? 'is-unavailable' : ''}">${escapeHtml(cardAvailabilityLabel(product))}</small>
         </div>
         <div class="product-bottom">
           ${priceBlock(product)}
@@ -576,16 +630,18 @@ export function availabilityLabel(product) {
   return 'Disponible hoy';
 }
 
+function cardAvailabilityLabel(product) {
+  if (product.archived || !product.available) return 'No disponible';
+  if (product.stock <= 0) return 'Agotado';
+  if (product.stock <= 4) return `Últimas ${product.stock}`;
+  return 'Disponible';
+}
+
 // Acceso directo a Tracking desde Home cuando hay un pedido en curso.
 export function renderHomeActiveOrder() {
   const container = $('[data-home-active-order]');
   if (!container) return;
   const order = getActiveOrder();
-  if (!isDemoMode()) {
-    container.hidden = true;
-    container.innerHTML = '';
-    return;
-  }
   const isActive = order && order.status !== 'delivered' && order.status !== 'cancelled';
   if (!isActive) {
     container.hidden = true;
@@ -639,7 +695,7 @@ function renderPromoBanner() {
   const price = $('[data-promo-banner-price]', banner);
   if (price) price.textContent = money(promo.price);
   const title = $('[data-promo-banner-title]', banner);
-  if (title && promo.id !== 'p-promo-dia') title.textContent = promo.name;
+  if (title) title.textContent = promo.name;
   const includes = $('[data-promo-banner-includes]', banner);
   if (includes) {
     const composition = String(promo.description || '').replace(/\.$/, '');
@@ -679,51 +735,38 @@ function renderDirectOrderingCustomerActions() {
   const latest = getLatestCustomerOrder();
   const profile = getCustomerProfile();
   if (!latest) {
-    container.innerHTML = profile?.loyaltyCopy ? `
-      <section class="customer-loyalty-panel" aria-label="Fidelización local">
-        <span>Cliente frecuente</span>
-        <strong>${escapeHtml(profile.loyaltyCopy)}</strong>
-      </section>` : '';
+    container.innerHTML = '';
     return;
   }
 
   const preview = buildReorderPreview(latest, getState().products);
-  const items = preview.items.length
-    ? preview.items.slice(0, 4).map((item) => `<li><span>${escapeHtml(item.quantity)}x ${escapeHtml(item.name)}</span><strong>${money(item.lineTotal)}</strong></li>`).join('')
-    : '<li><span>Productos no disponibles</span><strong>0</strong></li>';
-  const skipped = preview.skipped.length
-    ? `<p class="reorder-warning">No se van a agregar: ${escapeHtml(preview.skipped.map((item) => `${item.name} (${item.reason})`).join(', '))}.</p>`
-    : '';
-  const priceNotice = preview.priceChanged
-    ? '<p class="reorder-warning">Algunos precios pueden haber cambiado. Recalculamos el total con precios actuales.</p>'
-    : '';
-  const loyalty = profile?.loyaltyCopy
-    ? `<div class="loyalty-progress"><span>Cliente frecuente</span><strong>${escapeHtml(profile.loyaltyCopy)}</strong></div>`
-    : '';
-  const address = preview.deliveryMode === 'pickup'
-    ? 'Retiro en el local'
-    : preview.addressDetails?.label || preview.address || 'Dirección del pedido anterior';
+  const itemNames = preview.items.slice(0, 2).map((item) => `${item.quantity}× ${item.name}`);
+  const extra = Math.max(0, preview.items.length - itemNames.length);
+  const summary = itemNames.length
+    ? `${itemNames.join(' · ')}${extra ? ` · +${extra}` : ''}`
+    : 'Los productos del pedido anterior ya no están disponibles';
+  const notice = [
+    preview.priceChanged ? 'Total actualizado con precios actuales.' : '',
+    preview.skipped.length ? `${preview.skipped.length} producto(s) no disponible(s).` : '',
+  ].filter(Boolean).join(' ');
 
   container.innerHTML = `
-    <section class="customer-action-panel reorder-card" aria-label="Pedir de nuevo">
+    <section class="customer-action-panel reorder-card" aria-label="Volver a pedir">
+      <span class="reorder-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+          <path d="M5 8a8 8 0 1 1-1 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M5 3v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
       <div class="reorder-card-copy">
-        <span class="reorder-kicker">Tu pedido de siempre</span>
-        <strong>Pedir de nuevo</strong>
-        <small>Repetí tu último pedido y revisalo antes de confirmar.</small>
-        <ul class="reorder-items">${items}</ul>
-        ${priceNotice}
-        ${skipped}
-        <div class="reorder-meta">
-          <span>Dirección usada</span>
-          <strong>${escapeHtml(address)}</strong>
-        </div>
-        ${loyalty}
+        <span class="reorder-kicker">Volver a pedir</span>
+        <strong>${escapeHtml(summary)}</strong>
+        <small>${notice ? escapeHtml(notice) : 'Revisá el pedido antes de confirmar.'}</small>
+        ${profile?.loyaltyCopy ? `<em>${escapeHtml(profile.loyaltyCopy)}</em>` : ''}
       </div>
       <div class="reorder-card-side">
-        <span>Total estimado</span>
         <strong>${money(preview.totals.total)}</strong>
-        <button class="primary-button compact" type="button" data-repeat-order="${escapeHtml(latest.id)}" ${preview.canRepeat ? '' : 'disabled'}>Repetir pedido</button>
-        <button class="secondary-button compact" type="button" data-repeat-order="${escapeHtml(latest.id)}" ${preview.canRepeat ? '' : 'disabled'}>Editar antes de confirmar</button>
+        <button class="primary-button compact" type="button" data-repeat-order="${escapeHtml(latest.id)}" ${preview.canRepeat ? '' : 'disabled'}>Agregar de nuevo</button>
       </div>
     </section>`;
 }
@@ -832,8 +875,8 @@ function renderCartList() {
       <div class="empty-state cart-empty-state">
         <span class="empty-state-ico" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="30" height="30" fill="none">
-            <path d="M12 21 3.6 6.6A16.4 16.4 0 0 1 12 4.4a16.4 16.4 0 0 1 8.4 2.2L12 21Z" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-            <circle cx="10" cy="9" r="1.2" fill="currentColor"/><circle cx="14.2" cy="10.6" r="1.2" fill="currentColor"/>
+            <path d="M5.5 8h13l-1.1 11.5H6.6L5.5 8Z" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M9 8V6.5a3 3 0 0 1 6 0V8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
           </svg>
         </span>
         <strong>Tu pedido está vacío</strong>
@@ -1070,7 +1113,7 @@ function trackingHeadline(order) {
     };
   }
   if (order.deliveryMode === 'pickup') {
-    return { kicker: 'Retiro en local', title: order.status === 'ready' ? 'Listo para retirar' : 'Preparando tu pedido', sub: `Te esperamos en ${escapeHtml(getBusinessConfig().address)}.` };
+    return { kicker: 'Retiro en local', title: order.status === 'ready' ? 'Listo para retirar' : 'Preparando tu pedido', sub: `Te esperamos en ${getBusinessConfig().address}.` };
   }
   if (order.status === 'arriving') {
     return { kicker: 'En reparto', title: 'Llegando al domicilio', sub: 'El repartidor va hacia tu dirección.' };
@@ -1079,10 +1122,6 @@ function trackingHeadline(order) {
     return { kicker: 'En reparto', title: 'Pedido en reparto', sub: 'Tu pedido salió del local y va camino a tu dirección.' };
   }
   return { kicker: 'Seguimiento del pedido', title: 'Estamos revisando tu pedido', sub: 'El comercio está revisando disponibilidad para aceptar y preparar tu pedido.' };
-}
-
-function destinationLabel(order) {
-  return displayDestinationLabel(order?.address || order?.delivery?.demoDestinationLabel || deliveryModeLabel(order.deliveryMode));
 }
 
 function destinationAddressLabel(order) {
@@ -1131,68 +1170,69 @@ function trackingMapStage({ order = null, live = false }) {
     <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
       ${realMapShell({ order, fallback: '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', role: 'tracking' })}
       <div class="map-floating-top">
-        <span class="map-status-pill ${statusClass(order.status)}"><small>Rider en reparto</small><strong>Ubicación en vivo del repartidor</strong></span>
+        <span class="map-status-pill ${statusClass(order.status)}"><small>Delivery TABA</small><strong>Ubicación actualizada en vivo</strong></span>
         <span class="map-connection-pill">${realtimeChip(order)}</span>
       </div>
       <div class="map-floating-bottom">
-        <span class="map-stat-pill map-destination-pill"><small>Destino</small><strong>${escapeHtml(destinationLabel(order))}</strong></span>
-        <span class="map-stat-pill live-map-pill"><small>GPS</small><strong>${live ? 'Activo' : 'Sin GPS'}</strong></span>
+        <span class="map-stat-pill map-destination-pill"><small>Mapa seguro</small><strong>Sin dirección pública</strong></span>
+        <span class="map-stat-pill live-map-pill"><small>Ubicación</small><strong>${live ? 'Actualizada' : 'No disponible'}</strong></span>
       </div>
     </div>`;
 }
 
-// Tarjeta del repartidor en el tracking del cliente. Es honesta:
-// - Sólo muestra un rider "en vivo" cuando hay ubicación GPS REAL y reciente.
-// - Si no, muestra un estado "Repartidor sin asignar" claro según el estado del pedido.
-// Nunca inventa nombre, teléfono ni reputación de un repartidor inexistente.
+// Estado del delivery en la vista cliente. Nunca expone una persona, reputación
+// o teléfono inventado: la identidad visual es el servicio de TABA.
 function riderTrackingCard(order, riderLocation) {
-  if (order.status === 'delivered') return '';
-
-  if (hasLiveRiderLocation(riderLocation)) {
-    const d = order.delivery || {};
-    const hasRealName = d.driverName && d.driverName !== 'Sin asignar';
-    const name = hasRealName ? d.driverName : `Repartidor de ${getBusinessConfig().businessName}`;
+  if (hasVerifiedLiveRiderLocation(riderLocation)) {
     const age = relativeAgeLabel(riderLocation.lastFixAt || riderLocation.timestamp);
-    const phone = d.driverPhone ? onlyDigits(d.driverPhone) : '';
-    const contact = phone
-      ? `<a class="round-action call" href="tel:${encodeURIComponent(d.driverPhone)}" aria-label="Llamar al repartidor">Tel</a>
-         <a class="round-action whatsapp" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp del repartidor">WA</a>`
-      : '';
     return `
-      <div class="rider-profile is-live">
-        <span class="rider-avatar live-helmet" aria-hidden="true">${helmetGlyph()}</span>
-        <div class="rider-profile-text">
-          <strong>Repartidor con ubicación real</strong>
-          <small>${escapeHtml(name)} · última actualización: ${escapeHtml(age)}</small>
+      <div class="delivery-status-card is-live">
+        <span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span>
+        <div>
+          <small>Delivery TABA</small>
+          <strong>Ubicación actualizada ${escapeHtml(age)}</strong>
         </div>
-        ${contact}
       </div>
     `;
   }
 
+  if (order.status === 'delivered') {
+    return `
+      <div class="delivery-status-card is-delivered">
+        <span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span>
+        <div><small>Delivery TABA</small><strong>Pedido entregado</strong></div>
+      </div>`;
+  }
+
   const { title, sub } = riderPendingCopy(order.status);
   return `
-    <div class="rider-profile rider-pending" role="status">
-      <span class="rider-avatar pending" aria-hidden="true">${helmetGlyph()}</span>
-      <div class="rider-profile-text">
+    <div class="delivery-status-card rider-pending" role="status">
+      <span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span>
+      <div>
+        <small>Delivery TABA</small>
         <strong>${escapeHtml(title)}</strong>
-        <small>${escapeHtml(sub)}</small>
+        <span>${escapeHtml(sub)}</span>
       </div>
     </div>
   `;
 }
 
+function hasVerifiedLiveRiderLocation(location) {
+  return hasLiveRiderLocation(location)
+    && Number.isFinite(Number(location?.accuracy));
+}
+
 function riderPendingCopy(status) {
   if (status === 'on_the_way' || status === 'arriving') {
-    return { title: 'Avance del reparto', sub: 'Te mostramos cada avance confirmado del pedido.' };
+    return { title: 'Pedido en camino', sub: 'Seguimos cada avance confirmado.' };
   }
   if (status === 'ready') {
-    return { title: 'Repartidor sin asignar', sub: 'Tu pedido está listo. En breve sale el repartidor.' };
+    return { title: 'Listo para salir', sub: 'El delivery comenzará cuando el pedido salga del local.' };
   }
   if (status === 'preparing') {
-    return { title: 'Repartidor sin asignar', sub: 'El negocio está preparando tu pedido.' };
+    return { title: 'Preparando el envío', sub: 'La ubicación aparecerá cuando comience el reparto.' };
   }
-  return { title: 'Repartidor sin asignar', sub: 'El negocio está revisando tu pedido.' };
+  return { title: 'Pedido confirmado', sub: 'La ubicación aparecerá cuando comience el reparto.' };
 }
 
 function relativeAgeLabel(value) {
@@ -1204,18 +1244,6 @@ function relativeAgeLabel(value) {
   if (seconds < 60) return `hace ${seconds} s`;
   const minutes = Math.round(seconds / 60);
   return `hace ${minutes} min`;
-}
-
-function trackingAddressCard(order) {
-  const address = normalizeOrderAddressDetails(order);
-  if (order.deliveryMode === 'pickup' || !address.label) return '';
-  return `
-    <div class="tracking-address-card" data-tracking-address>
-      <span class="tracking-address-icon" aria-hidden="true">${pinGlyph()}</span>
-      <small>Entrega en</small>
-      <strong>${escapeHtml(address.label)}</strong>
-      ${address.reference ? `<p>Referencia: ${escapeHtml(address.reference)}</p>` : ''}
-    </div>`;
 }
 
 function trackingDeliveryCodeCard(order) {
@@ -1237,6 +1265,47 @@ function trackingDeliveryCodeCard(order) {
         <small>${confirmed ? `Confirmado${confirmedTime ? ` a las ${escapeHtml(confirmedTime)}` : ''}.` : escapeHtml(copy)}</small>
       </div>
     </section>`;
+}
+
+function trackingOrderSummaryCard(order) {
+  const items = Array.isArray(order?.items) ? order.items : [];
+  if (!items.length) {
+    return `
+      <section class="tracking-order-summary is-minimized">
+        <div>
+          <small>Pedido ${escapeHtml(order?.id || '')}</small>
+          <strong>Resumen protegido</strong>
+        </div>
+        <p>El detalle se mantiene en el dispositivo donde confirmaste el pedido.</p>
+      </section>`;
+  }
+  const preview = items.slice(0, 3).map((item) => `
+    <li><span>${escapeHtml(item.quantity)}× ${escapeHtml(item.name)}</span></li>
+  `).join('');
+  const remaining = Math.max(0, items.length - 3);
+  return `
+    <section class="tracking-order-summary">
+      <div class="tracking-summary-head">
+        <span>
+          <small>Tu pedido</small>
+          <strong>${escapeHtml(order.id)}</strong>
+        </span>
+        <strong class="tracking-summary-total">${money(order.total)}</strong>
+      </div>
+      <ul>${preview}${remaining ? `<li class="tracking-summary-more">+ ${remaining} producto${remaining === 1 ? '' : 's'}</li>` : ''}</ul>
+    </section>`;
+}
+
+function trackingWaitingStage(order) {
+  if (order.deliveryMode === 'pickup' || ['cancelled', 'delivered'].includes(order.status)) return '';
+  return `
+    <div class="tracking-map-waiting" data-tracking-map-placeholder>
+      <span aria-hidden="true">${deliveryGlyph()}</span>
+      <div>
+        <strong>Seguimiento por estado</strong>
+        <p data-tracking-gps-note>${escapeHtml(TRACKING_GPS_NOTE)}</p>
+      </div>
+    </div>`;
 }
 
 export function renderTracking() {
@@ -1262,7 +1331,7 @@ export function renderTracking() {
 
   const isInitialDemoSample = isDemoMode()
     && ['received', 'submitted'].includes(String(order.status || '').trim());
-  if (!isDemoMode() || order.previewOnly || isInitialDemoSample) {
+  if (order.previewOnly || isInitialDemoSample) {
     renderPublicPreviewTracking(container, order);
     return;
   }
@@ -1271,21 +1340,10 @@ export function renderTracking() {
   const isDelivery = order.deliveryMode !== 'pickup';
   const head = trackingHeadline(order);
   const riderLocation = chooseRiderLocation(getOrderSimulation(order), order.tracking?.lastLocation);
-  const liveRider = false;
-  const headSub = head.sub;
-  const metricsHtml = order.status === 'delivered'
-    ? `
-          <span><small>Estado</small><strong>${escapeHtml(trackingStatusLabel(order.status))}</strong></span>
-          <span><small>Pedido</small><strong>${escapeHtml(order.id)}</strong></span>
-          <span><small>Total</small><strong>${money(order.total)}</strong></span>
-        `
-    : `
-          <span><small>Estado</small><strong>${escapeHtml(trackingStatusLabel(order.status))}</strong></span>
-          <span><small>Pedido</small><strong>${escapeHtml(order.id)}</strong></span>
-          <span><small>Etapa</small><strong>${escapeHtml(trackingEtaLabel(order))}</strong></span>
-        `;
+  const liveRider = ['on_the_way', 'arriving'].includes(order.status)
+    && hasVerifiedLiveRiderLocation(riderLocation);
 
-  const itemsHtml = order.items.map((item) => `
+  const itemsHtml = (Array.isArray(order.items) ? order.items : []).map((item) => `
     <div class="order-line">
       <span>${item.quantity} × ${escapeHtml(item.name)}</span>
       <strong>${money(item.quantity * item.unitPrice)}</strong>
@@ -1295,32 +1353,37 @@ export function renderTracking() {
   const showMap = isDelivery && !isCancelled && liveRider;
   renderWithStableRealMap(container, `
     <div class="track-layout tracking-map-experience ${showMap ? '' : 'no-map'}">
-      ${showMap ? trackingMapStage({ order, live: true }) : ''}
+      ${showMap ? trackingMapStage({ order, live: true }) : trackingWaitingStage(order)}
 
       <section class="delivery-bottom-sheet tracking-sheet track-progress-card ${showMap ? 'is-live' : 'is-offline'}" data-bottom-sheet>
-        ${showMap ? '<span class="sheet-handle" aria-hidden="true"></span>' : ''}
-        <div class="sheet-head">
-          <span class="track-head-ico">${bagGlyph()}</span>
-          <div class="track-head-text">
-            <small>${escapeHtml(head.kicker)}</small>
-            <strong>${escapeHtml(head.title)}</strong>
-            <span>${escapeHtml(headSub)}</span>
-          </div>
+        <div class="tracking-brand-row">
+          <strong>TABA</strong>
+          <span>Seguimiento en vivo</span>
           ${trackingConnectionPill(order)}
         </div>
-        <div class="sheet-metrics">
-          ${metricsHtml}
+        <div class="tracking-hero">
+          <div>
+            <small>${escapeHtml(head.kicker)} · ${escapeHtml(order.id)}</small>
+            <h2>${escapeHtml(head.title)}</h2>
+            <p>${escapeHtml(head.sub)}</p>
+          </div>
+          <div class="tracking-eta">
+            <span>${order.status === 'delivered' ? 'Estado' : 'Tiempo estimado'}</span>
+            <strong>${escapeHtml(order.status === 'delivered' ? trackingStatusLabel(order.status) : trackingEtaLabel(order))}</strong>
+          </div>
         </div>
-        ${trackingDeliveryCodeCard(order)}
-        ${renderOrderTimeline(order.status)}
+        ${renderPublicOrderTimeline(order.status, { className: 'customer-progress' })}
         ${isCancelled ? `<div class="warning-box">Este pedido fue cancelado.${order.cancelReason ? ` Motivo: ${escapeHtml(order.cancelReason)}.` : ''} Si fue un error, contactá al local por un canal verificado.</div>` : ''}
-        ${isDelivery ? trackingAddressCard(order) : ''}
-        ${isDelivery && !isCancelled ? riderTrackingCard(order, riderLocation) : ''}
-        ${isDelivery && !isCancelled && order.status !== 'delivered' && !liveRider
-          ? `<p class="form-hint tracking-gps-note" data-tracking-gps-note>${escapeHtml(TRACKING_GPS_NOTE)}</p>`
-          : ''}
-        <details class="order-detail">
-          <summary>Ver detalle del pedido · ${order.id}</summary>
+        ${isDelivery && !isCancelled ? riderTrackingCard(order, liveRider ? riderLocation : null) : ''}
+        ${trackingOrderSummaryCard(order)}
+        ${trackingDeliveryCodeCard(order)}
+        <section class="tracking-help-card">
+          <span class="tracking-help-icon" aria-hidden="true">?</span>
+          <div><strong>¿Necesitás ayuda?</strong><small>Consultá los datos y canales verificados del local.</small></div>
+          <button class="secondary-button compact" type="button" data-nav-view="profile">Contactar al local</button>
+        </section>
+        <details class="order-detail tracking-order-detail">
+          <summary>Ver detalle</summary>
           <div class="order-detail-body">
             <div class="order-line head"><span>${deliveryModeLabel(order.deliveryMode)}</span><strong>${escapeHtml(destinationAddressLabel(order))}</strong></div>
             ${itemsHtml}
@@ -1335,8 +1398,7 @@ export function renderTracking() {
         </details>
         ${isCancelled ? '' : `
         <div class="button-row track-actions">
-          <button class="secondary-button compact" type="button" data-whatsapp-order data-whatsapp-available hidden>Enviar copia por WhatsApp</button>
-          <button class="ghost-button compact" type="button" data-copy-last-order>Copiar pedido</button>
+          <button class="secondary-button compact" type="button" data-whatsapp-order data-whatsapp-available hidden>WhatsApp del local</button>
         </div>`}
       </section>
     </div>
@@ -1451,21 +1513,27 @@ export function showProductModal(productId) {
   const favorite = isFavoriteProduct(product.id);
   content.innerHTML = `
     <div class="modal-card">
-      <div class="modal-media">${productThumb(product, 'modal')}<span class="offer-badge-wrap">${topBadge(product)}</span></div>
-      <h2>${escapeHtml(product.name)}</h2>
-      <p>${escapeHtml(product.description)}</p>
-      <div class="summary-box">
-        <div class="summary-row"><span>Precio</span><strong>${off > 0 ? `<s>${money(product.oldPrice)}</s> ` : ''}${money(product.price)}</strong></div>
-        <div class="summary-row"><span>Presentación</span><strong>${escapeHtml(unitText(product))}</strong></div>
-        ${product.alcoholic ? '<div class="summary-row"><span>Tipo</span><strong>Bebida con alcohol</strong></div>' : ''}
-        <div class="summary-row"><span>Preparación</span><strong>${product.prepMinutes} min</strong></div>
-        <div class="summary-row"><span>Disponibilidad</span><strong>${escapeHtml(availabilityLabel(product))}</strong></div>
+      <button class="modal-close" type="button" data-close-modal aria-label="Cerrar detalle">×</button>
+      <div class="modal-media">
+        ${productThumb(product, 'modal')}
+        <span class="offer-badge-wrap">${topBadge(product)}</span>
       </div>
-      ${product.marketNote && !product.qaFixture ? `<p class="market-note">${escapeHtml(product.marketNote)}</p>` : ''}
-      <div class="button-row" style="margin-top:16px">
+      <div class="modal-product-copy">
+        <span class="modal-presentation">${escapeHtml(unitText(product))}</span>
+        <h2>${escapeHtml(product.name)}</h2>
+        ${product.description ? `<p>${escapeHtml(product.description)}</p>` : ''}
+        <div class="modal-commerce-row">
+          <div class="modal-price">
+            ${off > 0 ? `<s>${money(product.oldPrice)}</s>` : ''}
+            <strong>${money(product.price)}</strong>
+          </div>
+          <span class="modal-availability ${product.stock <= 0 || !product.available ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>
+        </div>
+        ${product.alcoholic ? '<p class="product-alcohol-notice">Venta exclusiva a mayores de 18 años.</p>' : ''}
+      </div>
+      <div class="modal-actions">
         <button class="primary-button" type="button" data-add-product="${product.id}" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>Agregar al pedido</button>
-        <button class="secondary-button" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}">${favorite ? 'Quitar favorito' : 'Guardar favorito'}</button>
-        <button class="secondary-button" type="button" data-close-modal>Cerrar</button>
+        <button class="secondary-button" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}">${favorite ? 'Guardado' : 'Guardar para después'}</button>
       </div>
     </div>
   `;
@@ -1506,6 +1574,16 @@ export function bagGlyph() {
   return `<svg class="lt-glyph" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true" focusable="false">
     <path d="M6.4 8.5h11.2l-.9 9.8a2.4 2.4 0 0 1-2.4 2.2H9.7a2.4 2.4 0 0 1-2.4-2.2L6.4 8.5Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
     <path d="M9.2 9V7.4a2.8 2.8 0 0 1 5.6 0V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`;
+}
+
+export function deliveryGlyph() {
+  return `<svg class="lt-glyph" viewBox="0 0 24 24" width="23" height="23" fill="none" aria-hidden="true" focusable="false">
+    <circle cx="7" cy="17.5" r="2.2" stroke="currentColor" stroke-width="1.6"/>
+    <circle cx="17.5" cy="17.5" r="2.2" stroke="currentColor" stroke-width="1.6"/>
+    <path d="M9.2 17.5h5.9l1.8-5.4h-5.2L9.8 8.5H6.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="4.2" y="6" width="6.6" height="5.3" rx="1.4" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M15.3 10h3.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
   </svg>`;
 }
 

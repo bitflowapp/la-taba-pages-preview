@@ -10,6 +10,16 @@ export const ORDER_TIMELINE_STEPS = Object.freeze([
   { key: 'delivered', label: 'Entregado' },
 ]);
 
+// La vista pública agrupa los estados internos que no ayudan al cliente a
+// decidir qué está pasando. "Listo", "Asignado" y "Retirado por rider" siguen
+// existiendo en la operación; acá se muestran dentro de Preparando o En camino.
+export const PUBLIC_ORDER_TIMELINE_STEPS = Object.freeze([
+  { key: 'confirmed', label: 'Confirmado' },
+  { key: 'preparing', label: 'Preparando' },
+  { key: 'delivery', label: 'En camino' },
+  { key: 'delivered', label: 'Entregado' },
+]);
+
 export function orderTimelineIndex(status) {
   if (status === 'preparing') return 1;
   if (status === 'ready') return 2;
@@ -18,10 +28,29 @@ export function orderTimelineIndex(status) {
   return 0; // received y cualquier estado previo a aceptar
 }
 
+export function publicOrderTimelineIndex(status) {
+  if (['accepted', 'preparing', 'ready', 'assigned'].includes(status)) return 1;
+  if (['picked_up', 'on_the_way', 'arrived', 'arriving'].includes(status)) return 2;
+  if (status === 'delivered') return 3;
+  return 0; // draft/submitted/received y estados desconocidos
+}
+
 export function renderOrderTimeline(status, { className = '' } = {}) {
-  const isCancelled = status === 'cancelled';
-  const stepIndex = orderTimelineIndex(status);
-  const steps = ORDER_TIMELINE_STEPS.map((step, index) => {
+  return renderTimeline(ORDER_TIMELINE_STEPS, orderTimelineIndex(status), status, className);
+}
+
+export function renderPublicOrderTimeline(status, { className = '' } = {}) {
+  return renderTimeline(
+    PUBLIC_ORDER_TIMELINE_STEPS,
+    publicOrderTimelineIndex(status),
+    status,
+    className,
+  );
+}
+
+function renderTimeline(stepsConfig, stepIndex, status, className) {
+  const isCancelled = status === 'cancelled' || status === 'canceled';
+  const steps = stepsConfig.map((step, index) => {
     let cls = 'pending';
     if (!isCancelled && index < stepIndex) cls = 'done';
     if (!isCancelled && index === stepIndex) cls = 'current';

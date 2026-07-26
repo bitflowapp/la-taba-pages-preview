@@ -35,7 +35,7 @@ test('presentación comercial: se abre con ?pitch=1, se cierra y no vuelve sola'
   await context.close();
 });
 
-test('catálogo: búsqueda sin resultados no deja ofertas colgadas y las tarjetas no gritan "Disponible"', async ({ browser }) => {
+test('catálogo: un solo grid, búsqueda vacía coherente y tarjetas sin ruido', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const guards = installPageGuards(page);
@@ -47,17 +47,23 @@ test('catálogo: búsqueda sin resultados no deja ofertas colgadas y las tarjeta
   // Las tarjetas disponibles no llevan cinta "Disponible" (el estado normal no se etiqueta).
   await expect(page.locator('[data-product-grid] .stock-pill', { hasText: 'Disponible' })).toHaveCount(0);
 
-  // El rail de ofertas de la categoría está visible sin búsqueda.
-  await expect(page.locator('[data-catalog-offers-block]')).toBeVisible();
+  // Las promociones viven una sola vez dentro del grid: no hay un rail duplicado.
+  await expect(page.locator('[data-catalog-offers-block], [data-catalog-offers]')).toHaveCount(0);
+  const productIds = await page.locator('[data-product-grid] [data-product-detail]').evaluateAll((nodes) => (
+    nodes.map((node) => node.getAttribute('data-product-detail'))
+  ));
+  expect(new Set(productIds).size).toBe(productIds.length);
 
-  // Con una búsqueda sin resultados, el rail se oculta y el vacío es coherente.
+  // Una búsqueda sin resultados conserva una única salida vacía y un contador consistente.
   await page.locator('[data-view="catalog"] [data-search-input]').fill('zzzz-no-existe');
   await expect(page.locator('[data-catalog-count]')).toHaveText('0 productos');
-  await expect(page.locator('[data-catalog-offers-block]')).toBeHidden();
+  await expect(page.locator('[data-catalog-offers-block], [data-catalog-offers]')).toHaveCount(0);
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(0);
   await expect(page.locator('[data-product-grid]')).toContainText('No hay productos en esta búsqueda.');
 
   await page.locator('[data-view="catalog"] [data-search-input]').fill('');
-  await expect(page.locator('[data-catalog-offers-block]')).toBeVisible();
+  await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
+  await expect(page.locator('[data-catalog-offers-block], [data-catalog-offers]')).toHaveCount(0);
 
   await guards.assertClean();
   await context.close();
@@ -93,7 +99,7 @@ test('negocio: catálogo editable arranca compacto y el presentador tiene reinic
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
-  // Menú y promos arranca plegado: el acceso rápido lo abre.
+  // Catálogo y promos arranca plegado: el acceso rápido lo abre.
   await page.locator('[data-scroll-catalog]').click();
 
   // Lista de productos paginada: muestra un anticipo y se expande a pedido.

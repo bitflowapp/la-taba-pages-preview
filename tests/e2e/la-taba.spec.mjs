@@ -253,14 +253,13 @@ test('flujo cliente con delivery', async ({ page }) => {
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.getByRole('button', { name: /Copiar pedido/i }).click();
-  await waitForToast(page, 'Pedido copiado al portapapeles.');
-  const clipboardText = await page.evaluate(() => window.__clipboardText);
-  expect(clipboardText).toContain('Walter QA');
-  expect(clipboardText).toContain('Envío a domicilio');
-  expect(clipboardText).toContain('Roca 123, Neuquen centro');
-  expect(clipboardText).toContain('Porton negro');
-  expect(clipboardText).toContain('Total:');
+  const paymentMethod = page.getByLabel('Forma de pago');
+  await expect(paymentMethod).toBeVisible();
+  await expect(paymentMethod).toHaveValue('transfer');
+  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
+  await expect(page.locator('[data-order-summary]')).toContainText('Envío a domicilio');
+  await expect(page.locator('[data-order-summary]')).toContainText('Total');
+  await expect(page.getByRole('button', { name: /Copiar pedido/i })).toHaveCount(0);
 
   // CTA principal: confirma el pedido interno y NO abre WhatsApp automáticamente.
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
@@ -270,6 +269,20 @@ test('flujo cliente con delivery', async ({ page }) => {
   await expect(page.locator('[data-tracking-panel]')).toContainText('Dirección ingresada');
   await expect(page.locator('[data-tracking-panel]')).toContainText('Roca 123, Neuquen centro');
   await expect(page.locator('[data-tracking-panel]')).toContainText('Porton negro');
+  const confirmedOrder = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('la_taba_mvp_v4_state'));
+    const order = state.orders.find((candidate) => candidate.id === state.lastOrderId);
+    return {
+      id: order?.id,
+      status: order?.status,
+      paymentMethodCode: order?.paymentMethodCode,
+    };
+  });
+  expect(confirmedOrder).toEqual({
+    id: 'LT-0002',
+    status: 'received',
+    paymentMethodCode: 'transfer',
+  });
   const autoOpened = await page.evaluate(() => window.__openedUrls.length);
   expect(autoOpened).toBe(0);
 
@@ -278,7 +291,7 @@ test('flujo cliente con delivery', async ({ page }) => {
   await guards.assertClean();
 });
 
-test('mobile cliente usa pago coordinado y crea pedido simulado', async ({ browser }) => {
+test('mobile cliente elige forma de pago y crea pedido simulado', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const guards = installPageGuards(page);
@@ -299,7 +312,10 @@ test('mobile cliente usa pago coordinado y crea pedido simulado', async ({ brows
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await expect(page.locator('.payment-static-row')).toContainText('Se coordina con el local');
+  const paymentMethod = page.getByLabel('Forma de pago');
+  await expect(paymentMethod).toBeVisible();
+  await expect(paymentMethod).toHaveValue('transfer');
+  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
   await expect(page.locator('[data-checkout-mode-note]')).toContainText('Seguí el avance');
   await expect(page.locator('[name="couponCode"]')).toHaveCount(0);
 
@@ -319,7 +335,7 @@ test('mobile cliente usa pago coordinado y crea pedido simulado', async ({ brows
   await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Pago a coordinar con el local');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Transferencia');
   await expect(page.locator('[data-business-dashboard]')).not.toContainText('TABA10');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Sin cebolla');
 
@@ -410,7 +426,7 @@ test('modo negocio y delivery', async ({ page }) => {
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Enviar a reparto');
 
-  // Menú y promos arranca plegado: el acceso rápido lo abre.
+  // Catálogo y promos arranca plegado: el acceso rápido lo abre.
   await page.locator('[data-scroll-catalog]').click();
   const stockInc = page.locator('[data-stock-inc]').first();
   const stockDec = page.locator('[data-stock-dec]').first();
@@ -506,15 +522,15 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
     await installBrowserStubs(page);
     await page.goto('/?demo=1');
 
-    if (viewport.width <= 760) {
+    if (viewport.width <= 820) {
       await expect(page.locator('.mobile-nav')).toBeVisible();
       await expect(page.locator('.desktop-nav')).toBeHidden();
     } else {
       await expect(page.locator('.desktop-nav')).toBeVisible();
       await expect(page.locator('.mobile-nav')).toBeHidden();
     }
-    const catalogNav = viewport.width <= 760 ? '.mobile-nav [data-nav-view="catalog"]' : '.desktop-nav [data-nav-view="catalog"]';
-    if (viewport.width <= 760) {
+    const catalogNav = viewport.width <= 820 ? '.mobile-nav [data-nav-view="catalog"]' : '.desktop-nav [data-nav-view="catalog"]';
+    if (viewport.width <= 820) {
       await page.goto('/?demo=1#catalog');
     } else {
       await page.locator(catalogNav).click();
@@ -524,7 +540,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
     await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
 
     await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-    if (viewport.width <= 760) {
+    if (viewport.width <= 820) {
       await page.locator('.mobile-nav [data-nav-view="cart"]').click();
     } else {
       await page.locator('.desktop-nav [data-nav-view="cart"]').click();
@@ -537,7 +553,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
     expect(overflow).toBeTruthy();
 
-    if (viewport.width <= 760) {
+    if (viewport.width <= 820) {
       await page.goto('/?demo=1#catalog');
     } else {
       await page.locator(catalogNav).click();
@@ -546,7 +562,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
     await expect(page.locator('[data-product-modal]')).toBeVisible();
     await page.locator('[data-close-modal]').click();
 
-    if (viewport.width <= 760) {
+    if (viewport.width <= 820) {
       await page.locator('.mobile-nav [data-nav-view="profile"]').click();
       await page.locator('[data-view="profile"] [data-open-admin-view="business"]').click();
     } else {

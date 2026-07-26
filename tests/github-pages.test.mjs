@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v10-production-cache');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v11-beverages-cache');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -23,8 +23,12 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./index.html'));
   assert.ok(assets.includes('./manifest.webmanifest'));
   assert.ok(assets.includes('./assets/icon.svg'));
-  assert.ok(assets.includes('./assets/hero/horno-lena.webp'));
-  assert.ok(assets.includes('./assets/products/pizza-muzzarella.webp'));
+  assert.ok(assets.includes('./assets/products/qa-beverage-placeholder.svg'));
+  assert.equal(
+    assets.some((asset) => /(?:horno|pizza|parrilla|carne|milanesa|chorizo|combo-familiar|promo-dia|bebida-cola)/i.test(asset)),
+    false,
+    'legacy food or unverified catalog imagery must not be precached',
+  );
   assert.ok(assets.includes('./js/app.js'));
   assert.ok(assets.includes('./js/core/address.js'));
   assert.ok(assets.includes('./js/core/app-mode.js'));

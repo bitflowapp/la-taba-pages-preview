@@ -355,7 +355,7 @@ export function confirmDeliveryCode(orderId, code, {
   return { ok: true, message: verification.message };
 }
 
-// Ticket de texto plano para cocina / mostrador (sin dependencias).
+// Ticket de texto plano para preparación / mostrador (sin dependencias).
 export function buildKitchenTicket(order) {
   if (!order) return '';
   const isPickup = normalizeDeliveryMode(order.deliveryMode) === 'pickup';

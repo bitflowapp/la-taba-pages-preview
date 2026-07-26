@@ -4,12 +4,16 @@ import fs from 'node:fs';
 import { REQUIRED_COLUMNS, validateCatalog } from '../scripts/validate-product-catalog.mjs';
 
 const template = fs.readFileSync(new URL('../data/catalog-template.csv', import.meta.url), 'utf8');
+const masterTemplate = fs.readFileSync(new URL('../templates/la-taba-products-template.csv', import.meta.url), 'utf8');
 
 test('catalog template has every required column and intentionally no commercial rows', () => {
-  const report = validateCatalog(template, { allowEmpty: true });
-  assert.deepEqual(report.errors, []);
-  assert.deepEqual(report.products, []);
-  for (const column of REQUIRED_COLUMNS) assert.match(template, new RegExp(`\\b${column}\\b`));
+  for (const candidate of [template, masterTemplate]) {
+    const report = validateCatalog(candidate, { allowEmpty: true });
+    assert.deepEqual(report.errors, []);
+    assert.deepEqual(report.products, []);
+    for (const column of REQUIRED_COLUMNS) assert.match(candidate, new RegExp(`\\b${column}\\b`));
+  }
+  assert.equal(masterTemplate.trim(), template.trim());
 });
 
 test('catalog validator rejects duplicates, alcohol without age and unsafe image path', () => {

@@ -5,6 +5,7 @@ import { STORAGE_KEYS } from '../js/config.js';
 import {
   archiveCatalogProduct,
   getCustomerCatalogProducts,
+  normalizeCatalogProduct,
   restoreDemoCatalog,
   toggleCatalogProductAvailability,
   upsertCatalogProduct,
@@ -29,8 +30,8 @@ beforeEach(() => {
 
 test('catalog persists created products in local demo storage', () => {
   const created = upsertCatalogProduct(state().products, {
-    name: 'Hamburguesa QA',
-    description: 'Medallon listo para plancha',
+    name: 'Bebida nueva QA',
+    description: 'Presentación de prueba',
     price: '12345',
     categoryId: 'gaseosas',
     badge: 'Nuevo',
@@ -42,7 +43,7 @@ test('catalog persists created products in local demo storage', () => {
 
   const saved = JSON.parse(globalThis.localStorage.getItem(STORAGE_KEYS.state));
   const savedProduct = saved.products.find((product) => product.id === created.product.id);
-  assert.equal(savedProduct.name, 'Hamburguesa QA');
+  assert.equal(savedProduct.name, 'Bebida nueva QA');
   assert.equal(savedProduct.price, 12345);
   assert.equal(savedProduct.badge, 'Nuevo');
 });
@@ -53,6 +54,65 @@ test('catalog rejects invalid product input', () => {
   assert.equal(validateCatalogProductInput({ name: 'Negativo', price: -10, categoryId: 'gaseosas' }).ok, false);
   assert.equal(validateCatalogProductInput({ name: 'Texto', price: 'abc', categoryId: 'gaseosas' }).ok, false);
   assert.equal(validateCatalogProductInput({ name: 'Categoria mala', price: 1000, categoryId: 'fantasma' }).ok, false);
+});
+
+test('catalog canonicalizes legacy category ids and enforces adult-only metadata', () => {
+  const migrated = normalizeCatalogProduct({
+    id: 'qa-legacy-gin',
+    name: 'Gin QA',
+    categoryId: 'gins-vodkas',
+    price: 1000,
+    stock: 1,
+    available: true,
+    alcoholic: false,
+    minimumAge: null,
+    tone: 'drink',
+  });
+
+  assert.equal(migrated.categoryId, 'gins-y-vodkas');
+  assert.equal(migrated.alcoholic, true);
+  assert.equal(migrated.minimumAge, 18);
+  assert.equal(migrated.tone, 'alcoholic');
+
+  const created = upsertCatalogProduct([], {
+    name: 'Cerveza QA',
+    description: 'Lata de prueba',
+    price: 1000,
+    categoryId: 'cervezas',
+    available: true,
+  }, { now: 7 });
+  assert.equal(created.ok, true);
+  assert.equal(created.product.alcoholic, true);
+  assert.equal(created.product.minimumAge, 18);
+});
+
+test('catalog preserves explicit alcohol warnings outside alcohol categories', () => {
+  const product = normalizeCatalogProduct({
+    id: 'qa-promo-adultos',
+    name: 'Promo QA',
+    categoryId: 'promos',
+    price: 1000,
+    stock: 1,
+    available: true,
+    alcoholic: true,
+    minimumAge: 21,
+  });
+
+  assert.equal(product.alcoholic, true);
+  assert.equal(product.minimumAge, 21);
+});
+
+test('catalog does not infer combo behavior from a legacy category id', () => {
+  const product = normalizeCatalogProduct({
+    id: 'qa-legacy-combo',
+    name: 'Pack QA',
+    categoryId: 'combos',
+    price: 1000,
+    stock: 1,
+    available: true,
+  });
+
+  assert.equal(product.combo, false);
 });
 
 test('disabled products stay visible but are not orderable by the customer', () => {

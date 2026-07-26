@@ -295,6 +295,124 @@ test('tracking con token público mantiene polling y no abre un canal WebSocket 
   }
 });
 
+test('tracking público normaliza el DTO mínimo y preserva los detalles locales del pedido', async () => {
+  const mock = createSupabaseClientMock();
+  const storage = createStorage();
+  const repository = makeRepository(mock, {
+    storage,
+    createTrackingClient: () => mock.client,
+  });
+  addToCart(PRODUCT_ID, 2);
+  const created = await repository.createOrder(checkoutDraft());
+  const before = getState().orders.find((order) => order.id === created.order.id);
+  const row = mock.db.orders[0];
+  row.status = 'on_the_way';
+  row.accepted_at = '2026-07-25T12:01:00.000Z';
+  row.preparing_at = '2026-07-25T12:05:00.000Z';
+  row.ready_at = '2026-07-25T12:12:00.000Z';
+  row.dispatched_at = '2026-07-25T12:15:00.000Z';
+  mock.db.locations.push({
+    id: 'location-public-1',
+    order_id: row.id,
+    lat: -38.951,
+    lng: -68.061,
+    accuracy: 100,
+    source: 'gps',
+    created_at: '2026-07-25T12:16:00.000Z',
+  });
+  const snapshots = [];
+
+  const stop = repository.subscribeToOrder(
+    created.order.id,
+    (order) => snapshots.push(order),
+  );
+  try {
+    await flushTasks();
+    const current = getState().orders.find((order) => order.id === created.order.id);
+    const snapshot = snapshots.at(-1);
+
+    assert.equal(snapshot.status, 'on_the_way');
+    assert.equal(snapshot.tracking.lastLocation.source, 'gps');
+    assert.equal(snapshot.tracking.lastLocation.lat, -38.951);
+    assert.equal(current.status, 'on_the_way');
+    assert.equal(current.customerName, before.customerName);
+    assert.equal(current.customerPhone, before.customerPhone);
+    assert.equal(current.address, before.address);
+    assert.deepEqual(current.items, before.items);
+    assert.equal(current.subtotal, before.subtotal);
+    assert.equal(current.deliveryFee, before.deliveryFee);
+    assert.equal(current.total, before.total);
+    assert.deepEqual(
+      current.statusHistory.map((entry) => entry.status),
+      ['received', 'preparing', 'ready', 'on_the_way'],
+    );
+  } finally {
+    stop();
+  }
+});
+
+test('tracking público crea un shell sin PII cuando no hay copia local', async () => {
+  const mock = createSupabaseClientMock({
+    publicTrackingOverrides: {
+      customer_name: 'No debe filtrarse',
+      customer_phone: '2995999999',
+      address_label: 'Dirección privada 123',
+      total: 999999,
+      order_items: [{ product_name: 'Producto privado' }],
+    },
+  });
+  const row = mock.seedOrder({
+    status: 'on_the_way',
+    accepted_at: '2026-07-25T12:01:00.000Z',
+    preparing_at: '2026-07-25T12:05:00.000Z',
+    ready_at: '2026-07-25T12:12:00.000Z',
+    dispatched_at: '2026-07-25T12:15:00.000Z',
+  });
+  mock.db.locations.push({
+    id: 'location-public-2',
+    order_id: row.id,
+    lat: -38.952,
+    lng: -68.062,
+    accuracy: 100,
+    source: 'gps',
+    created_at: '2026-07-25T12:16:00.000Z',
+  });
+  const storage = createStorage();
+  storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'A'.repeat(43),
+  }));
+  const repository = makeRepository(mock, {
+    storage,
+    createTrackingClient: () => mock.client,
+  });
+  const snapshots = [];
+
+  const stop = repository.subscribeToOrder(
+    row.public_code,
+    (order) => snapshots.push(order),
+  );
+  try {
+    await flushTasks();
+    const shell = getState().orders.find((order) => order.id === row.public_code);
+    const serialized = JSON.stringify(shell);
+    const snapshot = snapshots.at(-1);
+
+    assert.equal(shell.publicTrackingOnly, true);
+    assert.equal(shell.backendId, undefined);
+    assert.deepEqual(shell.items, []);
+    assert.equal(shell.customerName, 'Cliente');
+    assert.equal(shell.customerPhone, '');
+    assert.equal(snapshot.status, 'on_the_way');
+    assert.equal(snapshot.customer.phone, '');
+    assert.equal(snapshot.tracking.lastLocation.source, 'gps');
+    assert.doesNotMatch(serialized, /No debe filtrarse|2995999999|Dirección privada|999999|Producto privado/);
+  } finally {
+    stop();
+  }
+});
+
 test('tracking con sesión Auth conserva Realtime oficial y desmonta el canal', async () => {
   const mock = createSupabaseClientMock();
   const row = mock.seedOrder();
@@ -354,6 +472,7 @@ function createSupabaseClientMock({
   missingCreateRpc = false,
   userId = CUSTOMER_ID,
   businessOverrides = {},
+  publicTrackingOverrides = {},
 } = {}) {
   const db = {
     businesses: [{
@@ -489,7 +608,14 @@ function createSupabaseClientMock({
         const row = db.orders.find((candidate) => (
           candidate.id === args.p_public_id || candidate.public_code === args.p_public_id
         ));
-        return { data: row ? withRelations(row, db) : null, error: null, status: 200 };
+        return {
+          data: row ? {
+            ...publicTrackingDto(row, db),
+            ...publicTrackingOverrides,
+          } : null,
+          error: null,
+          status: 200,
+        };
       }
       throw new Error(`Unexpected RPC: ${name}`);
     },
@@ -683,6 +809,37 @@ function withRelations(row, db) {
       created_at: row.created_at,
     })),
     rider_locations: db.locations.filter((location) => location.order_id === row.id),
+  };
+}
+
+function publicTrackingDto(row, db) {
+  const latestLocation = db.locations
+    .filter((location) => location.order_id === row.id && location.source === 'gps')
+    .sort((a, b) => Date.parse(b.created_at || '') - Date.parse(a.created_at || ''))[0];
+  const activeDelivery = ['picked_up', 'on_the_way', 'arrived'].includes(row.status);
+  return {
+    public_code: row.public_code,
+    status: row.status,
+    created_at: row.created_at,
+    accepted_at: row.accepted_at,
+    preparing_at: row.preparing_at,
+    ready_at: row.ready_at,
+    dispatched_at: row.dispatched_at || row.picked_up_at,
+    arrived_at: row.arrived_at,
+    delivered_at: row.delivered_at,
+    is_delivered: row.status === 'delivered',
+    estimated_minutes: ['delivered', 'canceled', 'cancelled', 'rejected'].includes(row.status)
+      ? 0
+      : 25,
+    ...(activeDelivery && latestLocation ? {
+      rider_location: {
+        lat: latestLocation.lat,
+        lng: latestLocation.lng,
+        accuracy: Math.max(100, latestLocation.accuracy || 100),
+        source: 'gps',
+        created_at: latestLocation.created_at,
+      },
+    } : {}),
   };
 }
 

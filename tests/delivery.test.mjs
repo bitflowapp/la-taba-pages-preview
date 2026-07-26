@@ -204,9 +204,13 @@ test('rider GPS state goes stale honest instead of staying live', () => {
     accuracy: 12,
   };
   const stale = { ...fresh, timestamp: now - 60_000, lastFixAt: new Date(now - 60_000).toISOString() };
+  const simulated = { ...fresh, source: 'simulation' };
+  const inactive = { ...fresh, gpsStatus: 'inactive' };
 
   assert.equal(riderGpsShareState(fresh, { now }).live, true);
   assert.equal(riderGpsShareState(fresh, { now }).headSub, 'El cliente puede seguir tu ubicación mientras el pedido esté en reparto.');
   assert.equal(riderGpsShareState(stale, { now }).live, false);
   assert.match(riderGpsShareState(stale, { now }).headSub, /Sin GPS en vivo/);
+  assert.equal(riderGpsShareState(simulated, { now }).live, false);
+  assert.equal(riderGpsShareState(inactive, { now }).live, false);
 });

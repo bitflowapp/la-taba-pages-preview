@@ -9,6 +9,19 @@ const CATEGORY_IDS = new Set(categories.map((category) => category.id).filter((i
 const DEMO_PRODUCT_IDS = new Set(demoProducts.map((product) => product.id));
 const DEFAULT_CATEGORY_ID = 'gaseosas';
 const DEFAULT_MARKET_NOTE = 'El local confirma disponibilidad antes de preparar tu pedido.';
+const CATEGORY_ID_ALIASES = Object.freeze({
+  'vinos-espumantes': 'vinos-y-espumantes',
+  'gins-vodkas': 'gins-y-vodkas',
+  'whisky-destilados': 'whisky-y-destilados',
+  'picadas-deli': 'picadas-y-deli',
+  'hielo-extras': 'hielo-y-extras',
+});
+const ALCOHOLIC_CATEGORY_IDS = new Set([
+  'cervezas',
+  'vinos-y-espumantes',
+  'gins-y-vodkas',
+  'whisky-y-destilados',
+]);
 
 const TONE_BY_CATEGORY = Object.freeze({
   gaseosas: 'drink',
@@ -17,11 +30,11 @@ const TONE_BY_CATEGORY = Object.freeze({
   energeticas: 'drink',
   isotonicas: 'drink',
   cervezas: 'alcoholic',
-  'vinos-espumantes': 'alcoholic',
-  'gins-vodkas': 'alcoholic',
-  'whisky-destilados': 'alcoholic',
-  'picadas-deli': 'food',
-  'hielo-extras': 'ice',
+  'vinos-y-espumantes': 'alcoholic',
+  'gins-y-vodkas': 'alcoholic',
+  'whisky-y-destilados': 'alcoholic',
+  'picadas-y-deli': 'food',
+  'hielo-y-extras': 'ice',
   promos: 'promo',
 });
 
@@ -32,11 +45,11 @@ const UNIT_BY_CATEGORY = Object.freeze({
   energeticas: { unit: 'unidad', unitLabel: 'Unidad' },
   isotonicas: { unit: 'unidad', unitLabel: 'Unidad' },
   cervezas: { unit: 'unidad', unitLabel: 'Unidad' },
-  'vinos-espumantes': { unit: 'unidad', unitLabel: 'Unidad' },
-  'gins-vodkas': { unit: 'unidad', unitLabel: 'Unidad' },
-  'whisky-destilados': { unit: 'unidad', unitLabel: 'Unidad' },
-  'picadas-deli': { unit: 'unidad', unitLabel: 'Unidad' },
-  'hielo-extras': { unit: 'unidad', unitLabel: 'Unidad' },
+  'vinos-y-espumantes': { unit: 'unidad', unitLabel: 'Unidad' },
+  'gins-y-vodkas': { unit: 'unidad', unitLabel: 'Unidad' },
+  'whisky-y-destilados': { unit: 'unidad', unitLabel: 'Unidad' },
+  'picadas-y-deli': { unit: 'unidad', unitLabel: 'Unidad' },
+  'hielo-y-extras': { unit: 'unidad', unitLabel: 'Unidad' },
   promos: { unit: 'promo', unitLabel: 'Promo' },
 });
 
@@ -100,7 +113,8 @@ export function validateCatalogProductInput(input = {}) {
     return invalidProduct('Ingresá un precio válido mayor a cero.');
   }
 
-  const categoryId = sanitizeText(input.categoryId, { maxLength: 40 });
+  const submittedCategoryId = sanitizeText(input.categoryId, { maxLength: 40 });
+  const categoryId = canonicalCategoryId(submittedCategoryId);
   if (!CATEGORY_IDS.has(categoryId)) return invalidProduct('Elegí una categoría válida.');
 
   return {
@@ -179,6 +193,8 @@ export function normalizeCatalogProduct(raw, fallback = null) {
   const oldPrice = source.oldPrice == null ? undefined : normalizeMoneyValue(source.oldPrice, 0);
   const badge = sanitizeText(source.badge, { maxLength: 32 });
   const image = sanitizeText(source.image, { maxLength: 180 });
+  const alcoholic = ALCOHOLIC_CATEGORY_IDS.has(categoryId) || isExplicitlyAlcoholic(source.alcoholic);
+  const minimumAge = alcoholic ? normalizeMinimumAge(source.minimumAge) : null;
 
   return {
     ...source,
@@ -186,7 +202,9 @@ export function normalizeCatalogProduct(raw, fallback = null) {
     name,
     description: sanitizeText(source.description, { fallback: fallback?.description || '', maxLength: 180 }),
     categoryId,
-    tone: sanitizeText(source.tone, { fallback: defaults.tone, maxLength: 40 }),
+    tone: alcoholic
+      ? 'alcoholic'
+      : sanitizeText(source.tone, { fallback: defaults.tone, maxLength: 40 }),
     price,
     oldPrice: oldPrice > price ? oldPrice : undefined,
     stock,
@@ -194,12 +212,14 @@ export function normalizeCatalogProduct(raw, fallback = null) {
     archived,
     featured: Boolean(source.featured),
     popular: Boolean(source.popular),
-    combo: Boolean(source.combo || categoryId === 'combos'),
+    combo: Boolean(source.combo),
     ...(badge ? { badge } : {}),
     unit: sanitizeText(source.unit, { fallback: defaults.unit, maxLength: 40 }),
     unitLabel: sanitizeText(source.unitLabel, { fallback: defaults.unitLabel, maxLength: 80 }),
     marketNote: sanitizeText(source.marketNote, { fallback: DEFAULT_MARKET_NOTE, maxLength: 180 }),
     prepMinutes: Math.max(1, Math.floor(Number(source.prepMinutes) || fallback?.prepMinutes || 10)),
+    alcoholic,
+    minimumAge,
     ...(image ? { image } : {}),
   };
 }
@@ -220,7 +240,7 @@ function buildEditableProduct(value, products, existing, { now }) {
     archived: false,
     featured: Boolean(existing?.featured),
     popular: Boolean(existing?.popular),
-    combo: Boolean(existing?.combo || value.categoryId === 'combos'),
+    combo: Boolean(existing?.combo),
     badge: value.badge,
     unit: existing?.unit || categoryDefaults.unit,
     unitLabel: existing?.unitLabel || categoryDefaults.unitLabel,
@@ -250,6 +270,8 @@ function editableProductFields(product) {
     unitLabel: product.unitLabel,
     marketNote: product.marketNote,
     prepMinutes: product.prepMinutes,
+    alcoholic: product.alcoholic,
+    minimumAge: product.minimumAge,
     image: product.image,
   };
 }
@@ -276,10 +298,26 @@ function defaultsForCategory(categoryId) {
 }
 
 function normalizeCategoryId(value) {
-  const categoryId = sanitizeText(value, { fallback: DEFAULT_CATEGORY_ID, maxLength: 40 });
+  const submittedCategoryId = sanitizeText(value, { fallback: DEFAULT_CATEGORY_ID, maxLength: 40 });
+  const categoryId = canonicalCategoryId(submittedCategoryId);
   // La edición de la demo sigue restringida por validateCatalogProductInput(),
   // pero el catálogo productivo puede traer categorías verificadas del comercio.
   return /^[a-z0-9][a-z0-9-]{0,39}$/.test(categoryId) ? categoryId : DEFAULT_CATEGORY_ID;
+}
+
+function canonicalCategoryId(categoryId) {
+  return CATEGORY_ID_ALIASES[categoryId] || categoryId;
+}
+
+function isExplicitlyAlcoholic(value) {
+  return value === true
+    || value === 1
+    || (typeof value === 'string' && value.trim().toLowerCase() === 'true');
+}
+
+function normalizeMinimumAge(value) {
+  const age = Math.floor(Number(value));
+  return Number.isFinite(age) && age >= 18 ? age : 18;
 }
 
 function parsePrice(value) {

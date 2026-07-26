@@ -59,7 +59,7 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   expect(text).not.toMatch(/\d+([.,]\d+)?\s*km/i);
   expect(text).not.toMatch(/\bETA\b/i);
 
-  // En reparto sin GPS: hero humano, política GPS sólo en la nota única.
+  // En reparto sin GPS: marca y hero comerciales, política GPS sólo en la nota única.
   await page.evaluate(async () => {
     const { updateState } = await import('/js/state.js');
     updateState((draft) => {
@@ -78,8 +78,16 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
     });
   });
 
-  await expect(tracking.locator('.sheet-head')).toContainText('Tu pedido salió del local y va camino a tu dirección.');
-  await expect(tracking.locator('.sheet-head')).not.toContainText(/GPS|mapa|no mostramos/i);
+  await expect(tracking.locator('.tracking-brand-row')).toContainText('TABA');
+  await expect(tracking.locator('.tracking-brand-row')).toContainText('Seguimiento en vivo');
+  await expect(tracking.locator('.tracking-hero')).toContainText('Pedido en reparto');
+  await expect(tracking.locator('.tracking-hero')).toContainText('Tu pedido salió del local y va camino a tu dirección.');
+  await expect(tracking.locator('.tracking-hero')).not.toContainText(/GPS|mapa|no mostramos/i);
+  await expect(tracking.locator('.customer-progress .track-step')).toHaveCount(4);
+  await expect(tracking.locator('.customer-progress')).toContainText('Confirmado');
+  await expect(tracking.locator('.customer-progress')).toContainText('Preparando');
+  await expect(tracking.locator('.customer-progress')).toContainText('En camino');
+  await expect(tracking.locator('.customer-progress')).toContainText('Entregado');
   await expect(tracking.locator('[data-tracking-gps-note]')).toHaveCount(1);
   await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE);
   await expect(tracking.locator('[data-real-map]')).toHaveCount(0);

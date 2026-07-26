@@ -27,7 +27,10 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   });
   await page.locator('[name="rememberCustomer"]').check();
   await expect(page.locator('[name="rememberCustomer"]').locator('..')).toContainText('Recordar mis datos');
-  await expect(page.locator('.payment-static-row')).toContainText('Se coordina con el local');
+  const paymentMethod = page.getByLabel('Forma de pago');
+  await expect(paymentMethod).toBeVisible();
+  await expect(paymentMethod).toHaveValue('transfer');
+  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
 
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, /Pedido confirmado/);
@@ -43,9 +46,10 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
 
   await page.reload();
   await page.goto('/?demo=1#home');
-  await expect(page.locator('[data-view="home"] .reorder-card')).toHaveCount(0);
-  await page.goto('/?demo=1#cart');
-  await page.getByRole('button', { name: /Repetir último pedido/i }).click();
+  const reorderCard = page.locator('[data-view="home"] .reorder-card');
+  await expect(reorderCard).toBeVisible();
+  await expect(reorderCard).toContainText('Volver a pedir');
+  await reorderCard.getByRole('button', { name: /Agregar de nuevo/i }).click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await expect(page.locator('[data-order-summary]')).toContainText('Total');
   await expect(page.locator('[name="customerName"]')).toHaveValue('Cliente Growth');
@@ -79,9 +83,11 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await page.reload();
   await page.goto('/?demo=1#tracking');
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
-  await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(0);
-  await expect(page.locator('[data-tracking-panel] .lt-rider-marker')).toHaveCount(0);
-  await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveText('Seguimiento por estados, sin GPS ni ubicación en vivo.');
+  await expect(page.locator('[data-tracking-panel] [data-real-map]')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel] .lt-rider-marker.source-gps')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveCount(0);
+  await expect(page.locator('[data-tracking-panel] .tracking-brand-row')).toContainText('Seguimiento en vivo');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('Ubicación real del repartidor');
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\bETA\b/i);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
 
@@ -92,7 +98,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   ]) {
     await page.setViewportSize(viewport);
     await page.goto('/?demo=1#home');
-    await expect(page.locator('[data-view="home"] .reorder-card')).toHaveCount(0);
+    await expect(page.locator('[data-view="home"] .reorder-card')).toBeVisible();
     await expectNoHorizontalOverflow(page);
     await page.goto('/?demo=1#cart');
     await expectNoHorizontalOverflow(page);
@@ -105,8 +111,10 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
 });
 
 async function createRepeatOrderFromHome(page) {
-  await page.goto('/?demo=1#cart');
-  await page.getByRole('button', { name: /Repetir último pedido/i }).click();
+  await page.goto('/?demo=1#home');
+  const reorderCard = page.locator('[data-view="home"] .reorder-card');
+  await expect(reorderCard).toBeVisible();
+  await reorderCard.getByRole('button', { name: /Agregar de nuevo/i }).click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await expect(page.locator('[data-order-summary]')).toContainText('Total');
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();

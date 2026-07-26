@@ -1,6 +1,29 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import test from 'node:test';
 import { categories, products } from '../js/data.js';
+
+const EXPECTED_CATEGORY_IDS = [
+  'all',
+  'promos',
+  'gaseosas',
+  'aguas',
+  'jugos',
+  'energeticas',
+  'isotonicas',
+  'cervezas',
+  'vinos-y-espumantes',
+  'gins-y-vodkas',
+  'whisky-y-destilados',
+  'picadas-y-deli',
+  'hielo-y-extras',
+];
+const ALCOHOLIC_CATEGORY_IDS = new Set([
+  'cervezas',
+  'vinos-y-espumantes',
+  'gins-y-vodkas',
+  'whisky-y-destilados',
+]);
 
 test('catalog data is internally consistent', () => {
   assert.ok(Array.isArray(categories) && categories.length > 0);
@@ -50,7 +73,24 @@ test('preview catalog is beverages-only and internally marked as QA', () => {
   }
 });
 
-test('active catalog has no inherited pizzeria identifiers or names', () => {
+test('preview categories use the canonical beverage ids', () => {
+  assert.deepEqual(categories.map((category) => category.id), EXPECTED_CATEGORY_IDS);
+});
+
+test('preview alcohol metadata is inferred consistently from category', () => {
+  for (const product of products) {
+    const alcoholic = ALCOHOLIC_CATEGORY_IDS.has(product.categoryId);
+    assert.equal(product.alcoholic, alcoholic, `unexpected alcoholic flag for ${product.id}`);
+    assert.equal(product.minimumAge, alcoholic ? 18 : null, `unexpected minimum age for ${product.id}`);
+  }
+});
+
+test('preview prices are neutral QA tiers, not market estimates', () => {
+  const allowedPrices = new Set([5000, 7500, 10000, 15000]);
+  assert.ok(products.every((product) => allowedPrices.has(product.price)));
+});
+
+test('active catalog and data module have no inherited pizzeria identifiers or names', () => {
   const forbidden = /\b(?:pizza|muzzarella|fugazzeta|calabresa|pepperoni|combo-pizza)\b/i;
   for (const category of categories) {
     assert.doesNotMatch(`${category.id} ${category.name}`, forbidden);
@@ -62,4 +102,7 @@ test('active catalog has no inherited pizzeria identifiers or names', () => {
       `inherited pizzeria identifier in active product ${product.id}`,
     );
   }
+  const dataSource = fs.readFileSync(new URL('../js/data.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(dataSource, forbidden);
+  assert.doesNotMatch(dataSource, /historicalPizzeria/i);
 });

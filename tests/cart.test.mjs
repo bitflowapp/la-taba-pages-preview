@@ -77,7 +77,9 @@ test('cart calculates subtotal, delivery fee, and totals correctly', () => {
   addToCart('qa-jugo-naranja', 2);
   addToCart('qa-agua-mineral', 1);
 
-  const subtotal = 2 * 9990 + 2900;
+  const juicePrice = state().products.find((product) => product.id === 'qa-jugo-naranja').price;
+  const waterPrice = state().products.find((product) => product.id === 'qa-agua-mineral').price;
+  const subtotal = 2 * juicePrice + waterPrice;
   assert.equal(getCartSubtotal(), subtotal);
   assert.equal(getDeliveryFee('delivery'), BUSINESS_CONFIG.deliveryFee);
   assert.equal(getCartTotal('delivery'), subtotal + BUSINESS_CONFIG.deliveryFee);

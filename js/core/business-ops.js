@@ -35,7 +35,7 @@ export const BUSINESS_STATUS_META = Object.freeze({
   preparing: Object.freeze({
     label: 'Preparando',
     shortLabel: 'Preparando',
-    copy: 'Pedido aceptado. Cocina o mostrador lo está preparando.',
+    copy: 'Pedido aceptado. El equipo está preparando los productos.',
   }),
   ready: Object.freeze({
     label: 'Listo',

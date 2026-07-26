@@ -220,6 +220,7 @@ export function normalizeRiderLocation(raw = {}, fallback = {}) {
     ...(Number.isFinite(Number(raw.heading)) ? { heading: ((Number(raw.heading) % 360) + 360) % 360 } : {}),
     ...(Number.isFinite(Number(raw.speed)) ? { speed: Math.max(0, Number(raw.speed)) } : {}),
     ...(typeof raw.gpsStatus === 'string' ? { gpsStatus: raw.gpsStatus } : {}),
+    ...(raw.origin === 'local_gps' || raw.origin === 'sandbox_route' ? { origin: raw.origin } : {}),
   };
 }
 

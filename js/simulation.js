@@ -97,6 +97,14 @@ function routePreferenceForOrder(order) {
   return order?.delivery?.demoDestinationId || null;
 }
 
+function sandboxUrlEnabled() {
+  try {
+    return new URLSearchParams(globalThis.location?.search || '').get('demo') === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
 function orderWithDestination(order, destination) {
   return {
     ...order,
@@ -218,6 +226,7 @@ export function startSimulation() {
     source: 'simulation',
     gpsStatus: 'inactive',
     lastSentSource: 'simulation',
+    ...(sandboxUrlEnabled() ? { sandboxMode: true, origin: 'sandbox_route' } : {}),
     owner: getDeviceId(),
   };
 
@@ -464,6 +473,7 @@ export function enableGpsTracking() {
       owner: getDeviceId(),
       streetMode: Boolean(preferredDestinationId || base?.streetMode),
       lastSentSource: base?.source === 'gps' ? 'gps' : 'simulation',
+      ...(sandboxUrlEnabled() ? { sandboxMode: true, origin: 'local_gps' } : {}),
     },
   });
 
@@ -554,6 +564,7 @@ function onGpsPosition(position) {
       lastGpsPublishedAt: publishedAt,
       lastPublishedAt: publishedAt,
       lastSentSource: 'gps',
+      ...(sandboxUrlEnabled() ? { sandboxMode: true, origin: 'local_gps' } : {}),
       owner: getDeviceId(),
     },
   });

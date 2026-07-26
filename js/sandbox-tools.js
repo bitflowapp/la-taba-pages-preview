@@ -1,6 +1,6 @@
 import { addToCart } from './cart.js';
 import { getState, setState } from './state.js';
-import { pauseSimulation, startSimulation } from './simulation.js';
+import { enableGpsTracking, pauseSimulation, startSimulation } from './simulation.js';
 import { isDemoMode } from './core/app-mode.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 
@@ -36,6 +36,8 @@ export function renderSandboxTools() {
       <button type="button" class="secondary-button compact" data-sandbox-action="seed-order">Crear pedido</button>
       <button type="button" class="secondary-button compact" data-sandbox-action="advance">Avanzar estado</button>
       <button type="button" class="secondary-button compact" data-sandbox-action="tracking">Pausar / reanudar seguimiento</button>
+      <button type="button" class="secondary-button compact" data-sandbox-action="gps">Usar GPS local</button>
+      <button type="button" class="secondary-button compact" data-sandbox-action="route">Usar recorrido de muestra</button>
       <button type="button" class="ghost-button compact" data-sandbox-action="speed">Acelerar seguimiento</button>
       <button type="button" class="ghost-button compact" data-sandbox-action="reset">Reiniciar escenario</button>
       <button type="button" class="ghost-button compact" data-sandbox-action="export">Exportar JSON</button>
@@ -43,10 +45,10 @@ export function renderSandboxTools() {
       <input type="file" accept="application/json,.json" data-sandbox-import hidden />
     </div>
     <nav class="sandbox-tools-links" aria-label="Vistas sandbox">
-      <a href="?demo=1#home">Cliente</a>
-      <a href="?demo=1#business">Negocio</a>
-      <a href="?demo=1#rider">Rider</a>
-      <a href="?demo=1#tracking">Tracking</a>
+      <a href="?demo=1&tools=1#home">Cliente</a>
+      <a href="?demo=1&tools=1#business">Negocio</a>
+      <a href="?demo=1&tools=1#rider">Rider</a>
+      <a href="?demo=1&tools=1#tracking">Tracking</a>
     </nav>
     <p class="sandbox-tools-status" data-sandbox-tools-status role="status">${feedback || 'Estado persistente en este navegador.'}</p>
   `;
@@ -67,10 +69,10 @@ async function createSandboxTestOrder() {
   return repository.createOrder({
     customerName: 'Cliente Sandbox',
     customerPhone: '2995550101',
-    customerAddress: 'Mendoza 851',
-    customerStreetAddress: 'Mendoza 851',
-    customerNeighborhood: 'Centro',
-    customerReference: 'Portón gris',
+    customerAddress: 'Calle de muestra 123',
+    customerStreetAddress: 'Calle de muestra 123',
+    customerNeighborhood: 'Neuquén Capital',
+    customerReference: 'Punto de entrega de muestra',
     deliveryMode: 'delivery',
     paymentMethod: 'cash',
     customerNotes: 'Pedido de prueba',
@@ -138,6 +140,8 @@ export async function handleSandboxToolsAction(target) {
   if (action === 'seed-order') result = await createSandboxTestOrder();
   if (action === 'advance') result = await advanceSandboxOrder();
   if (action === 'tracking') result = toggleSandboxTracking();
+  if (action === 'gps') result = enableGpsTracking();
+  if (action === 'route') result = startSimulation();
   if (action === 'speed') result = accelerateSandboxTracking();
   if (action === 'reset') result = await repository.resetSandbox();
   if (action === 'export') result = downloadJson(await repository.exportSandboxState());

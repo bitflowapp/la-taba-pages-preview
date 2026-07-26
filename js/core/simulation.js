@@ -6,11 +6,14 @@
 // del cliente y el del repartidor hace falta un backend realtime
 // (Supabase Realtime, Firebase, WebSocket). Ver README.
 
-import { STORE_LOCATION } from '../map/map_config.js';
 import {
   pointOnRoute,
   selectRouteForOrder,
 } from '../map/route_geometry.js';
+import {
+  getSandboxMapScenario,
+  sandboxPointAtProgress,
+} from '../sandbox/sandbox_map_scenario.js';
 
 // Duración total de un recorrido simulado, en milisegundos.
 export const SIMULATION_TOTAL_MS = 24_000;
@@ -18,8 +21,36 @@ export const SIMULATION_TOTAL_MS = 24_000;
 export const SIMULATION_TICK_MS = 1_200;
 
 // Coordenadas demo (Neuquén capital aprox.) para mover el marcador del rider.
-export const DEMO_STORE_POINT = Object.freeze({ lat: STORE_LOCATION.lat, lng: STORE_LOCATION.lng });
-export const DEMO_CLIENT_POINT = Object.freeze({ lat: -38.9402, lng: -68.0735 });
+export const DEMO_STORE_POINT = Object.freeze({
+  lat: getSandboxMapScenario().store.lat,
+  lng: getSandboxMapScenario().store.lng,
+});
+export const DEMO_CLIENT_POINT = Object.freeze({
+  lat: getSandboxMapScenario().destination.lat,
+  lng: getSandboxMapScenario().destination.lng,
+});
+
+function sandboxSimulationContext() {
+  try {
+    return new URLSearchParams(globalThis.location?.search || '').get('demo') === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
+function routeForSimulation(order, preferredRouteId) {
+  if (sandboxSimulationContext()) {
+    const scenario = getSandboxMapScenario();
+    return {
+      id: 'taba-sandbox-route',
+      name: scenario.routeLabel,
+      destination: scenario.destination,
+      points: scenario.route,
+      sandbox: true,
+    };
+  }
+  return selectRouteForOrder(order, preferredRouteId);
+}
 
 export function clampProgress(value) {
   const numeric = Number(value);
@@ -55,12 +86,12 @@ export function interpolatePoint(progress, from = DEMO_STORE_POINT, to = DEMO_CL
 // Estado inicial de la simulación para un pedido dado.
 export function createSimulationState(order, { running = true, now = Date.now(), destinationId = null, routeId = null } = {}) {
   if (!order || typeof order.id !== 'string') return null;
-  const route = selectRouteForOrder(order, routeId || destinationId);
+  const route = routeForSimulation(order, routeId || destinationId);
   const baseEta = Math.max(1, Math.floor(Number(order?.delivery?.estimatedMinutes) || 12));
   const startProgress = order.status === 'arriving' ? 0.85
     : order.status === 'on_the_way' ? 0.08
     : 0;
-  const point = pointOnRoute(route.id, startProgress);
+  const point = route.sandbox ? sandboxPointAtProgress(startProgress) : pointOnRoute(route.id, startProgress);
   const timestamp = Number(now) || Date.now();
   return {
     orderId: order.id,
@@ -78,6 +109,7 @@ export function createSimulationState(order, { running = true, now = Date.now(),
     lat: point.lat,
     lng: point.lng,
     heading: point.heading,
+    ...(route.sandbox ? { sandboxMode: true } : {}),
   };
 }
 
@@ -89,13 +121,18 @@ export function advanceSimulation(simulation, deltaMs = SIMULATION_TICK_MS) {
   const reachedEnd = progress >= 1;
   const point = simulation.mode === 'gps' && Number.isFinite(simulation.lat)
     ? { lat: simulation.lat, lng: simulation.lng, heading: simulation.heading }
-    : pointOnRoute(simulation.routeId, progress);
+    : simulation.sandboxMode || simulation.routeId === 'taba-sandbox-route'
+      ? sandboxPointAtProgress(progress)
+      : pointOnRoute(simulation.routeId, progress);
   const timestamp = Date.now();
   return {
     simulation: {
       ...simulation,
       progress,
       source: simulation.mode === 'gps' ? 'gps' : 'simulation',
+      ...(simulation.sandboxMode || simulation.routeId === 'taba-sandbox-route'
+        ? { sandboxMode: true }
+        : {}),
       etaMinutes: progressToEta(progress, simulation.baseEta),
       running: reachedEnd ? false : simulation.running,
       timestamp,

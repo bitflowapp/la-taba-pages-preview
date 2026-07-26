@@ -53,7 +53,7 @@ test('persistencia del pedido tras recargar la página', async ({ page }) => {
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
 });
 
-test('el modo demo no ofrece GPS ni simula movimiento', async ({ page }) => {
+test('el modo demo ofrece GPS local y recorrido geográfico de respaldo', async ({ page }) => {
   await installPersistentStubs(page);
   await page.addInitScript(() => {
     Object.defineProperty(window, 'isSecureContext', { configurable: true, value: false });
@@ -76,8 +76,11 @@ test('el modo demo no ofrece GPS ni simula movimiento', async ({ page }) => {
   await expect(page.locator('[data-rider-assignment-preview="LT-0002"]')).toBeVisible();
   await page.locator('[data-rider-accept="LT-0002"]').click();
   await expect(page.locator('[data-delivery-panel]')).toContainText('Entrega aceptada.');
-  await expect(page.locator('[data-delivery-panel] [data-sim-gps], [data-delivery-panel] [data-sim-gps-off]')).toHaveCount(0);
+  await expect(page.locator('[data-delivery-panel] [data-sim-gps]')).toHaveCount(1);
   await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
+  await page.locator('[data-delivery-panel] [data-sim-start]').click();
+  await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-source="sandbox"]')).toHaveCount(1);
+  await expect(page.locator('[data-delivery-panel] .leaflet-container')).toHaveCount(1);
 });
 
 test('abandono de rider y pagehide cortan el watchPosition local', async ({ page }) => {

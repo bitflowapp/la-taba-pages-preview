@@ -13,7 +13,7 @@ async function createDemoOrder(page) {
   await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
 }
 
-test('un GPS heredado nunca reactiva mapa, marker ni ETA en la presentación', async ({ page }) => {
+test('un GPS local sandbox se presenta en mapa sin inventar ETA', async ({ page }) => {
   await installBrowserStubs(page);
   await page.goto('/?demo=1');
   await createDemoOrder(page);
@@ -29,9 +29,13 @@ test('un GPS heredado nunca reactiva mapa, marker ni ETA en la presentación', a
   });
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking.locator('[data-real-map], .lt-rider-marker, .map-route')).toHaveCount(0);
-  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText('Seguimiento por estados, sin GPS ni ubicación en vivo.');
-  await expect(tracking).not.toContainText(/\bETA\b|\d+(?:[.,]\d+)?\s*km/i);
+  await expect(tracking.locator('[data-real-map][data-map-source="sandbox"]')).toHaveCount(1);
+  await expect(tracking.locator('.lt-rider-marker')).toHaveCount(1);
+  await expect(tracking.locator('.lt-place-marker.is-store')).toHaveCount(1);
+  await expect(tracking.locator('.lt-place-marker.is-destination')).toHaveCount(1);
+  await expect(tracking.locator('.taba-sandbox-route')).toHaveCount(0);
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveCount(0);
+  await expect(tracking.locator('[data-sandbox-eta]')).toHaveCount(0);
 });
 
 test('?reset=1 limpia el pedido previo y deja el tracking vacío', async ({ browser }) => {

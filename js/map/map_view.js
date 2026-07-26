@@ -1,6 +1,8 @@
 import { getState } from '../state.js';
 import { getActiveOrder } from '../orders.js';
-import { RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getTileLayerForTheme } from './map_config.js';
+import { getOrderRepository, isSandboxOrderRepository } from '../repositories/repository_factory.js';
+import { getSandboxMapScenario, sandboxPointAtProgress } from '../sandbox/sandbox_map_scenario.js';
+import { MAP_PROVIDER, RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getTileLayerForTheme } from './map_config.js';
 import {
   chooseRiderLocation,
   getRoute,
@@ -9,7 +11,7 @@ import {
   selectRouteForOrder,
   shouldRenderGpsFix,
 } from './route_geometry.js';
-import { createRiderIcon, updateRiderMarker } from './rider_marker.js';
+import { createPlaceIcon, createRiderIcon, updateRiderMarker } from './rider_marker.js';
 
 const mountedMaps = new Set();
 const TRACKING_STALE_MS = 30_000;
@@ -92,6 +94,7 @@ function renderMapView(container) {
   }
 
   container.classList.remove('map-unavailable');
+  container.classList.add('is-ready');
   view.fallback?.setAttribute('hidden', '');
   const entry = ensureTrackingMap(container, view);
   scheduleMapSizeInvalidations(entry, view);
@@ -106,9 +109,12 @@ function readMapViewState(container) {
   const sim = order ? getOrderSimulation(order.id) : null;
   const route = order ? selectRouteForOrder(order, sim?.routeId || sim?.destinationId) : getRoute('cipolletti');
   const role = container.dataset.mapRole?.startsWith('rider') ? 'rider' : 'tracking';
-  const riderLocation = order ? getRiderLocation(order, sim, route.id, role) : null;
-  const destination = route.destination;
-  const points = route.points.map((point) => [point.lat, point.lng]);
+  const sandbox = isSandboxOrderRepository(getOrderRepository()) && container.dataset.mapSource === 'sandbox';
+  const sandboxScenario = sandbox ? getSandboxMapScenario() : null;
+  const riderLocation = order ? getRiderLocation(order, sim, route.id, role, sandbox) : null;
+  const destination = sandboxScenario?.destination || route.destination;
+  const store = sandboxScenario?.store || STORE_LOCATION;
+  const points = (sandboxScenario?.route || route.points).map((point) => [point.lat, point.lng]);
   const preferredTheme = 'light';
   const tileLayer = getTileLayerForTheme(preferredTheme);
   const theme = getMapTheme(tileLayer.theme);
@@ -127,6 +133,9 @@ function readMapViewState(container) {
     preferredTheme,
     tileLayer,
     theme,
+    sandbox,
+    store,
+    sandboxScenario,
   };
 }
 
@@ -156,6 +165,7 @@ export function ensureTrackingMap(container, view) {
     routeId: null,
     routeLayer: null,
     progressLayer: null,
+    storeMarker: null,
     destinationMarker: null,
     riderMarker: null,
     lastRenderedLocation: null,
@@ -166,20 +176,32 @@ export function ensureTrackingMap(container, view) {
   };
   mountedMaps.add(entry);
 
-  L.tileLayer(view.tileLayer.tilesUrl, {
+  const tiles = L.tileLayer(view.tileLayer.tilesUrl, {
     maxZoom: 18,
     attribution: view.tileLayer.attribution,
   }).addTo(map);
-  if (showDesktopControls) {
-    L.control?.zoom?.({ position: 'bottomleft' })?.addTo?.(map);
-  }
+  entry.tiles = tiles;
+  tiles.on?.('tileerror', () => {
+    container.dataset.mapTiles = 'error';
+    container.querySelector('[data-map-tile-error]')?.removeAttribute('hidden');
+    if (!entry.fallbackTiles && MAP_PROVIDER.tileLayers?.fallback?.tilesUrl) {
+      entry.fallbackTiles = L.tileLayer(MAP_PROVIDER.tileLayers.fallback.tilesUrl, {
+        maxZoom: 18,
+        attribution: MAP_PROVIDER.tileLayers.fallback.attribution,
+      }).addTo(map);
+      entry.fallbackTiles.on?.('tileload', () => {
+        container.dataset.mapTiles = 'fallback';
+        container.querySelector('[data-map-tile-error]')?.setAttribute('hidden', '');
+      });
+    }
+  });
+  L.control?.zoom?.({ position: 'bottomleft' })?.addTo?.(map);
   map.on?.('dragstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
   map.on?.('zoomstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
 
-  // Mapa honesto: sólo se monta cuando hay GPS real y muestra únicamente al
-  // rider. NO se dibuja ruta, ni marcador del local (no hay coordenada
-  // verificada para Mendoza 845/851), ni marcador del cliente (no hay
-  // coordenada del cliente, sólo su dirección textual).
+  // La vista productiva sólo monta el mapa con GPS real y no inventa origen,
+  // destino ni ruta. La sandbox sí usa sus coordenadas ficticias aisladas.
+  if (view.sandbox) ensureSandboxLayers(entry, view);
   fitMapToView(entry, view);
   return entry;
 }
@@ -205,7 +227,7 @@ function scheduleMapSizeInvalidations(entry, view) {
       if (!entry.container?.isConnected || !mountedMaps.has(entry)) return;
       try {
         entry.map.invalidateSize({ pan: false });
-        if (!entry.userInteracted && view?.riderLocation) fitMapToView(entry, view);
+        if (!entry.userInteracted && (view?.riderLocation || view?.sandbox)) fitMapToView(entry, view);
       } catch (_) { /* Leaflet may race detached DOM */ }
     }, delay);
     entry.resizeTimers.push(timer);
@@ -229,6 +251,8 @@ function applyTrackingVisualUpdate(entry, view) {
   if (!view) return;
   updateTrackingStatusText(entry.container, view);
 
+  if (view.sandbox) ensureSandboxLayers(entry, view);
+
   if (!view.riderLocation) {
     removeRiderMarker(entry);
     return;
@@ -240,6 +264,52 @@ function applyTrackingVisualUpdate(entry, view) {
     status: view.order?.status,
     source: view.riderLocation.source,
   });
+}
+
+function ensureSandboxLayers(entry, view) {
+  if (!entry?.map || !view?.sandbox || !view.sandboxScenario) return;
+  const L = entry.L;
+  const scenario = view.sandboxScenario;
+  const usesLocalGps = view.riderLocation?.origin === 'local_gps';
+  if (usesLocalGps) {
+    if (entry.routeLayer) {
+      try { entry.map.removeLayer?.(entry.routeLayer); } catch (_) { /* no-op */ }
+      entry.routeLayer = null;
+    }
+  } else if (!entry.routeLayer) {
+    entry.routeLayer = L.polyline(view.points, {
+      ...routeLineStyle(view.theme),
+      className: 'taba-sandbox-route',
+    }).addTo(entry.map);
+  } else {
+    entry.routeLayer.setLatLngs(view.points);
+  }
+  if (!entry.storeMarker) {
+    entry.storeMarker = L.marker([scenario.store.lat, scenario.store.lng], {
+      icon: createPlaceIcon(L, { kind: 'store', label: scenario.store.label }),
+      title: scenario.store.label,
+      alt: scenario.store.label,
+    }).addTo(entry.map).bindTooltip(scenario.store.label, { direction: 'top', offset: [0, -42] });
+  }
+  if (!entry.destinationMarker) {
+    entry.destinationMarker = L.marker([scenario.destination.lat, scenario.destination.lng], {
+      icon: createPlaceIcon(L, { kind: 'destination', label: scenario.destination.label }),
+      title: scenario.destination.label,
+      alt: scenario.destination.label,
+    }).addTo(entry.map).bindTooltip(scenario.destination.label, { direction: 'top', offset: [0, -42] });
+  }
+  if (!entry.progressLayer) {
+    entry.progressLayer = L.polyline([], {
+      ...progressLineStyle(view.theme),
+      className: 'taba-sandbox-progress',
+    }).addTo(entry.map);
+  }
+  if (usesLocalGps) {
+    entry.progressLayer.setLatLngs?.([]);
+  } else {
+    updateProgressLine(entry, view.riderLocation, view.store);
+  }
+  entry.routeId = scenario.id;
 }
 
 function updateRouteLayers(entry, view) {
@@ -290,10 +360,10 @@ export function updateTrackingStatusText(container, view) {
   renderMapMeta(container, view.order, view.riderLocation, view.destination);
 }
 
-function updateProgressLine(entry, location) {
+function updateProgressLine(entry, location, store = STORE_LOCATION) {
   if (!entry.progressLayer || !location) return;
   entry.progressLayer.setLatLngs?.([
-    [STORE_LOCATION.lat, STORE_LOCATION.lng],
+    [store.lat, store.lng],
     [location.lat, location.lng],
   ]);
 }
@@ -329,6 +399,21 @@ function maybeFollowRider(entry, latLng) {
 }
 
 function fitMapToView(entry, view) {
+  if (view.sandbox) {
+    const coords = view.riderLocation?.origin === 'local_gps'
+      ? [[view.store.lat, view.store.lng], [view.destination.lat, view.destination.lng]]
+      : [...(view.points || [])];
+    if (view.riderLocation) coords.push([view.riderLocation.lat, view.riderLocation.lng]);
+    if (coords.length < 2) return;
+    entry.programmaticMove = true;
+    try {
+      entry.map.fitBounds?.(coords, { padding: [28, 28], maxZoom: 16, animate: false });
+    } catch (_) { /* no-op */ }
+    finally {
+      setTimeout(() => { entry.programmaticMove = false; }, 0);
+    }
+    return;
+  }
   if (!view.riderLocation) return;
   const currentZoom = Number(entry.map.getZoom?.());
   const zoom = Number.isFinite(currentZoom) && currentZoom > 0
@@ -384,12 +469,31 @@ function getOrderSimulation(orderId) {
   return sim && sim.orderId === orderId ? sim : null;
 }
 
-function getRiderLocation(order, sim) {
+function getRiderLocation(order, sim, routeId, role, sandbox = false) {
   // Sólo se muestra al rider en el mapa si hay un fix GPS REAL y reciente.
   // Sin eso no hay marcador (ni en cliente ni en rider): no se inventan
   // posiciones, ni se presenta la simulación como si fuera ubicación real.
   const chosen = chooseRiderLocation(sim, order?.tracking?.lastLocation);
-  return hasLiveRiderLocation(chosen) ? chosen : null;
+  if (!sandbox) return hasLiveRiderLocation(chosen) ? chosen : null;
+  if (sim?.source === 'gps' && Number.isFinite(Number(sim.lat)) && Number.isFinite(Number(sim.lng))) {
+    return {
+      ...sim,
+      source: 'gps',
+      origin: 'local_gps',
+      lastFixAt: sim.lastFixAt || sim.lastGpsFixAt || new Date().toISOString(),
+    };
+  }
+  if (sim?.source === 'simulation' && (sim.userStarted || ['on_the_way', 'arriving'].includes(order?.status))) {
+    const point = sandboxPointAtProgress(sim.progress);
+    return {
+      ...point,
+      source: 'simulation',
+      origin: 'sandbox_route',
+      timestamp: Number(sim.timestamp) || Date.now(),
+      lastFixAt: sim.lastFixAt || new Date(Number(sim.timestamp) || Date.now()).toISOString(),
+    };
+  }
+  return null;
 }
 
 function renderMapMeta(container, order, location, destination) {
@@ -403,9 +507,14 @@ function renderMapMeta(container, order, location, destination) {
   const source = location.source === 'gps'
     ? 'Ubicación real del repartidor'
     : (RIDER_LOCATION_SOURCES[location.source] || RIDER_LOCATION_SOURCES.simulation);
+  const displaySource = location.origin === 'local_gps'
+    ? 'GPS local activo'
+    : location.origin === 'sandbox_route'
+      ? 'Recorrido de muestra'
+      : source;
   const age = relativeAgeLabel(location.lastFixAt || location.timestamp);
-  const gpsStale = location.source === 'gps' && isLocationStale(location, TRACKING_STALE_MS);
-  const prefix = gpsStale ? 'Última ubicación' : source;
+  const gpsStale = location.origin === 'local_gps' && isLocationStale(location, TRACKING_STALE_MS);
+  const prefix = gpsStale ? 'Última ubicación' : displaySource;
   const showAccuracy = container.dataset.mapRole?.startsWith('rider');
   const accuracy = showAccuracy && Number.isFinite(location.accuracy)
     ? ` · precisión ${Math.round(location.accuracy)} m`

@@ -48,6 +48,7 @@ const ASSETS = [
   './js/core/simulation.js',
   './js/core/storage.js',
   './js/core/validators.js',
+  './js/sandbox/sandbox_map_scenario.js',
   './js/map/map_config.js',
   './js/map/map_view.js',
   './js/map/rider_marker.js',

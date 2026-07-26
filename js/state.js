@@ -207,6 +207,10 @@ function sanitizeSimulation(raw, orders) {
     ...(raw.lastBackendPublishAt ? { lastBackendPublishAt: normalizeIsoDate(raw.lastBackendPublishAt) } : {}),
     ...(raw.lastSentSource ? { lastSentSource: raw.lastSentSource === 'gps' ? 'gps' : 'simulation' } : {}),
     ...(raw.streetMode ? { streetMode: true } : {}),
+    ...(raw.sandboxMode ? { sandboxMode: true } : {}),
+    ...(raw.origin === 'local_gps' || raw.origin === 'sandbox_route'
+      ? { origin: raw.origin }
+      : raw.source === 'gps' ? { origin: 'local_gps' } : {}),
     ...(raw.owner ? { owner: sanitizeText(raw.owner, { maxLength: 80 }) } : {}),
     ...(Number.isFinite(Number(raw.lat)) ? { lat: Number(raw.lat) } : {}),
     ...(Number.isFinite(Number(raw.lng)) ? { lng: Number(raw.lng) } : {}),

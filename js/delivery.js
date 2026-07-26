@@ -94,6 +94,11 @@ export function renderDeliveryPanel() {
   const sim = orderSimulation(order);
   const gpsState = riderGpsShareState(sim);
   const gpsLive = gpsState.live;
+  const sandboxMapActive = isSandboxOrderRepository(repository)
+    && ['on_the_way', 'arriving'].includes(order.status)
+    && ((sim?.source === 'simulation' && sim?.userStarted === true)
+      || (sim?.source === 'gps' && Number.isFinite(Number(sim?.lat))));
+  const mapActive = gpsLive || sandboxMapActive;
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
   const address = normalizeOrderAddressDetails(order);
   const destinationLabel = displayDestinationLabel(address.label || order.address);
@@ -112,10 +117,10 @@ export function renderDeliveryPanel() {
   const waClient = `https://wa.me/${onlyDigits(order.customerPhone)}`;
 
   renderWithStableRealMap(container, `
-    <div class="delivery-layout rider-map-experience ${gpsLive ? '' : 'no-map'}">
-      ${gpsLive ? renderRiderMapStage(order) : ''}
+    <div class="delivery-layout rider-map-experience ${mapActive ? '' : 'no-map'}">
+      ${mapActive ? renderRiderMapStage(order, { sandbox: sandboxMapActive }) : ''}
 
-      <section class="delivery-bottom-sheet rider-sheet rider-card ${gpsLive ? 'is-live' : 'is-offline'}" data-bottom-sheet>
+      <section class="delivery-bottom-sheet rider-sheet rider-card ${mapActive ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <span class="sheet-handle" aria-hidden="true"></span>
         ${renderRiderSheetTopbar()}
         <div class="rider-delivery-head ${statusClass(order.status)}">
@@ -375,8 +380,8 @@ function orderSimulation(order) {
   return sim && sim.orderId === order.id ? sim : null;
 }
 
-// Panel de GPS real del rider. No hay ruta simulada ni recorrido de apoyo:
-// el rider comparte su ubicación real (watchPosition) o no comparte nada.
+// Panel operativo productivo: el rider comparte su ubicación real o no se
+// muestra un mapa. La sandbox agrega explícitamente su modo de recorrido aparte.
 function renderSimControls(order, sim) {
   return `
     <div class="sim-panel street-test-panel is-offline" data-street-test>
@@ -391,46 +396,48 @@ function renderSimControls(order, sim) {
 
 function renderSandboxSimControls(order, sim) {
   if (!isSandboxOrderRepository(getOrderRepository())) return '';
-  const destination = selectedStreetDestination(order, sim);
+  return renderSandboxMapControls(order, sim);
+}
+
+function renderSandboxMapControls(order, sim) {
   const progress = Math.round(Math.max(0, Math.min(1, Number(sim?.progress) || 0)) * 100);
   const eta = Number.isFinite(Number(sim?.etaMinutes)) ? Math.max(0, Math.round(Number(sim.etaMinutes))) : null;
   const running = Boolean(sim?.running);
+  const gpsMode = sim?.origin === 'local_gps' || sim?.mode === 'gps';
+  const gpsActive = isGpsActive();
+  const gpsLabel = sim?.gpsStatus === 'denied'
+    ? 'Permiso de ubicación denegado'
+    : sim?.gpsStatus === 'unavailable'
+      ? 'Ubicación no disponible'
+      : sim?.gpsStatus === 'requesting'
+        ? 'Solicitando ubicación…'
+        : gpsMode && sim?.source === 'gps'
+          ? `Ubicación activa · ${relativeAgeLabel(sim.lastFixAt || sim.timestamp)}`
+          : 'Activá ubicación o usá el recorrido de muestra';
   return `
     <div class="sim-panel street-test-panel sandbox-route-panel ${running ? 'is-running' : ''}" data-street-test data-sandbox-route>
       <div class="sim-head">
         <span class="rider-label">Seguimiento del pedido</span>
-        <span class="sim-state">${running ? 'En movimiento' : sim ? 'En pausa' : 'Sin iniciar'}</span>
-      </div>
-      <div class="sandbox-route-map" aria-label="Ruta de entrega">
-        <svg viewBox="0 0 320 96" role="img" aria-label="Ruta al domicilio">
-          <path d="M18 76 C80 76 78 20 142 25 S206 78 302 20" class="sandbox-route-line" />
-          <circle cx="18" cy="76" r="6" class="sandbox-route-store" />
-          <circle cx="302" cy="20" r="6" class="sandbox-route-destination" />
-          <circle cx="${Math.max(18, Math.min(302, 18 + (284 * progress / 100)))}" cy="${Math.max(20, 76 - (56 * progress / 100))}" r="7" class="sandbox-route-rider" data-sandbox-rider-marker />
-        </svg>
+        <span class="sim-state">${gpsMode && sim?.source === 'gps' ? 'Ubicación activa' : running ? 'En movimiento' : sim?.userStarted ? 'En pausa' : 'Sin iniciar'}</span>
       </div>
       <div class="sandbox-route-meta">
-        <span><small>Ruta</small><strong>${escapeHtml(destination?.label || 'Zona de entrega')}</strong></span>
-        <span><small>Avance</small><strong data-sandbox-progress>${progress}%</strong></span>
-        <span><small>ETA</small><strong data-sandbox-eta>${eta == null ? 'Al iniciar' : `${eta} min`}</strong></span>
+        <span><small>Modo</small><strong>${gpsMode && sim?.source === 'gps' ? 'GPS local' : 'Recorrido de muestra'}</strong></span>
+        <span><small>Avance</small><strong data-sandbox-progress>${gpsMode && sim?.source === 'gps' ? '—' : `${progress}%`}</strong></span>
+        ${gpsMode && sim?.source === 'gps' ? '' : `<span><small>ETA</small><strong data-sandbox-eta>${eta == null ? 'Al iniciar' : `${eta} min`}</strong></span>`}
       </div>
+      <p class="sandbox-gps-status" data-sandbox-gps-status>${escapeHtml(gpsLabel)}${sim?.accuracy ? ` · precisión aprox. ${Math.round(sim.accuracy)} m` : ''}</p>
       <div class="button-row">
-        ${running
-          ? '<button class="secondary-button compact" type="button" data-sim-pause>Pausar seguimiento</button>'
-          : '<button class="primary-button compact" type="button" data-sim-start>Iniciar seguimiento</button>'}
+        ${gpsActive
+          ? '<button class="secondary-button compact" type="button" data-sim-gps-off>Desactivar ubicación</button>'
+          : '<button class="secondary-button compact" type="button" data-sim-gps>Activar ubicación</button>'}
+        ${gpsMode && sim?.source === 'gps' ? '' : running
+          ? '<button class="secondary-button compact" type="button" data-sim-pause>Pausar recorrido</button>'
+          : '<button class="primary-button compact" type="button" data-sim-start>Iniciar recorrido</button>'}
         ${sim ? '<button class="ghost-button compact" type="button" data-sim-reset>Reiniciar ruta</button>' : ''}
       </div>
-      <p class="form-hint">Ruta y ETA de prueba disponibles únicamente en este entorno.</p>
+      <p class="form-hint">${gpsMode && sim?.source === 'gps' ? 'El mapa usa la última ubicación compartida desde este iPhone.' : 'El recorrido de muestra usa calles de Neuquén Capital.'}</p>
     </div>
   `;
-}
-
-function selectedStreetDestination(order, sim) {
-  return getStreetTestDestination(
-    sim?.destinationId
-      || sim?.routeId
-      || order?.delivery?.demoDestinationId,
-  );
 }
 
 function displayDestinationLabel(value) {
@@ -598,12 +605,10 @@ function relativeAgeLabel(value) {
   return `hace ${minutes} min`;
 }
 
-// Escenario de mapa del rider. SÓLO se monta con GPS real en vivo (lo decide
-// renderDeliveryPanel), así que los overlays flotantes —pill de estado con punto
-// vivo, botón de centrar y de navegar— son honestos por construcción: no existen
-// sin ubicación real. "Navegar" abre el mapa nativo con la dirección textual del
-// cliente (búsqueda real, sin ruta inventada dentro de la app).
-function renderRiderMapStage(order) {
+// Escenario de mapa del rider. En producción sólo se monta con GPS real; en
+// sandbox también se habilita con el recorrido geográfico aislado. "Navegar"
+// abre el mapa nativo con la dirección textual del cliente.
+function renderRiderMapStage(order, { sandbox = false } = {}) {
   const address = normalizeOrderAddressDetails(order);
   const destination = displayDestinationLabel(address.label || order.address);
   const navQuery = encodeURIComponent([destination, address.reference].filter(Boolean).join(' '));
@@ -613,7 +618,7 @@ function renderRiderMapStage(order) {
 
   return `
     <div class="delivery-map-stage rider-map-stage" data-map-shell="rider">
-      ${renderRealMapShell(order, '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', 'rider')}
+      ${renderRealMapShell(order, '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', 'rider', sandbox ? 'sandbox' : '')}
       <div class="rider-map-overlay-top">
         <button class="rider-fab" type="button" data-nav-view="home" aria-label="Volver al inicio">${chevronBackGlyph()}</button>
         ${renderRiderStatusPill(order)}
@@ -630,8 +635,7 @@ function renderRiderMapStage(order) {
     </div>`;
 }
 
-// Pill de estado flotante (referencia visual: "Estado / Repartiendo"). El punto
-// vivo es honesto: este pill sólo se renderiza dentro del mapa con GPS real.
+// Pill de estado flotante (referencia visual: "Estado / Repartiendo").
 function renderRiderStatusPill(order) {
   const label = riderPillStatusLabel(order);
   return `
@@ -698,15 +702,17 @@ function messageGlyph() {
   </svg>`;
 }
 
-function renderRealMapShell(order, fallback, role = 'rider') {
+function renderRealMapShell(order, fallback, role = 'rider', mapSource = '') {
   const orderAttr = order?.id ? ` data-order-id="${escapeHtml(order.id)}"` : '';
+  const sourceAttr = mapSource ? ` data-map-source="${escapeHtml(mapSource)}"` : '';
   return `
-    <div class="real-map-shell rider-map-shell" data-real-map data-map-role="${escapeHtml(role)}"${orderAttr}>
+    <div class="real-map-shell rider-map-shell" data-real-map data-map-role="${escapeHtml(role)}"${sourceAttr}${orderAttr}>
       <div class="real-map-canvas" data-map-canvas aria-label="Mapa real del reparto"></div>
       <div class="real-map-fallback" data-map-fallback>
         <p class="map-fallback-note">Mapa no disponible, usando vista simplificada.</p>
         ${fallback}
       </div>
+      <span class="real-map-tile-error" data-map-tile-error hidden>Mapa base no disponible</span>
       <div class="real-map-meta" data-map-meta>Mapa de reparto</div>
     </div>`;
 }

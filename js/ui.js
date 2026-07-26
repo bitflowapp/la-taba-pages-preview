@@ -1234,6 +1234,11 @@ function displayDestinationLabel(value) {
 function trackingPrimaryMetric(order) {
   const sandboxSimulation = getOrderSimulation(order);
   if (isSandboxOrderRepository(getOrderRepository())
+    && sandboxSimulation?.origin === 'local_gps'
+    && ['on_the_way', 'arriving'].includes(order?.status)) {
+    return { label: 'Estado', value: 'Ubicación activa' };
+  }
+  if (isSandboxOrderRepository(getOrderRepository())
     && sandboxSimulation
     && ['on_the_way', 'arriving'].includes(order.status)
     && Number.isFinite(Number(sandboxSimulation.etaMinutes))) {
@@ -1264,52 +1269,50 @@ function trackingPrimaryMetric(order) {
   };
 }
 
-function realMapShell({ order = null, role = 'tracking', fallback }) {
+function realMapShell({ order = null, role = 'tracking', fallback, mapSource = '' }) {
   const orderAttr = order?.id ? ` data-order-id="${escapeHtml(order.id)}"` : '';
+  const sourceAttr = mapSource ? ` data-map-source="${escapeHtml(mapSource)}"` : '';
   return `
-    <div class="real-map-shell" data-real-map data-map-role="${escapeHtml(role)}"${orderAttr}>
+    <div class="real-map-shell" data-real-map data-map-role="${escapeHtml(role)}"${sourceAttr}${orderAttr}>
       <div class="real-map-canvas" data-map-canvas aria-label="Mapa real de seguimiento"></div>
       <div class="real-map-fallback" data-map-fallback>
         <p class="map-fallback-note">Mapa no disponible, usando vista simplificada.</p>
         ${fallback}
       </div>
+      <span class="real-map-tile-error" data-map-tile-error hidden>Mapa base no disponible</span>
       <div class="real-map-meta" data-map-meta>Mapa de seguimiento</div>
     </div>`;
 }
 
-// El mapa del cliente sólo se renderiza cuando hay GPS real (live=true). Muestra
-// únicamente la ubicación real del rider, sin ruta ni marcadores LT/CL falsos.
+// En producción el mapa del cliente sólo se renderiza con GPS real. La vista
+// sandbox usa su escenario geográfico aislado y mantiene la misma shell Leaflet.
 function sandboxTrackingStage(order, simulation) {
-  const progress = Math.max(0, Math.min(1, Number(simulation?.progress) || 0));
-  const percent = Math.round(progress * 100);
-  const eta = Number.isFinite(Number(simulation?.etaMinutes))
-    ? Math.max(0, Math.round(Number(simulation.etaMinutes)))
-    : null;
-  const cx = Math.max(18, Math.min(302, 18 + (284 * progress)));
-  const cy = Math.max(20, 76 - (56 * progress));
+  const progress = Math.round(Math.max(0, Math.min(1, Number(simulation?.progress) || 0)) * 100);
+  const gps = simulation?.origin === 'local_gps';
+  const eta = Number.isFinite(Number(simulation?.etaMinutes)) ? Math.max(0, Math.round(Number(simulation.etaMinutes))) : null;
   return `
     <div class="delivery-map-stage tracking-map-stage sandbox-tracking-stage" data-map-shell="tracking" data-sandbox-tracking>
-      <div class="sandbox-tracking-map" aria-label="Ruta de entrega">
-        <svg viewBox="0 0 320 96" role="img" aria-label="Ruta de entrega">
-          <path d="M18 76 C80 76 78 20 142 25 S206 78 302 20" class="sandbox-route-line" />
-          <circle cx="18" cy="76" r="6" class="sandbox-route-store" />
-          <circle cx="302" cy="20" r="6" class="sandbox-route-destination" />
-          <circle cx="${cx}" cy="${cy}" r="8" class="sandbox-route-rider" data-sandbox-rider-marker />
-        </svg>
+      ${realMapShell({
+        order,
+        role: 'tracking',
+        mapSource: 'sandbox',
+        fallback: '<p class="map-fallback-note">El mapa no está disponible en este momento.</p>',
+      })}
+      <div class="map-floating-top">
+        <span class="map-status-pill ${statusClass(order.status)}"><small>Delivery TABA</small><strong>${escapeHtml(trackingStatusLabel(order.status))}</strong></span>
+        <span class="map-connection-pill">${simulation?.origin === 'local_gps' ? 'Ubicación actual' : 'Recorrido de muestra'}</span>
       </div>
-      <div class="sandbox-tracking-top">
-        <span><small>Seguimiento</small><strong>En camino</strong></span>
-        <span><small>Avance</small><strong data-sandbox-progress>${percent}%</strong></span>
-        <span><small>ETA</small><strong data-sandbox-eta>${eta == null ? 'Calculando' : String(eta) + ' min'}</strong></span>
+      <div class="sandbox-map-stats" aria-label="Estado del recorrido">
+        <span><small>Avance</small><strong data-sandbox-progress>${gps ? '—' : `${progress}%`}</strong></span>
+        ${gps ? '' : `<span><small>ETA</small><strong data-sandbox-eta>${eta == null ? 'Al iniciar' : `${eta} min`}</strong></span>`}
       </div>
-      <p class="sandbox-tracking-destination">Entrega en el domicilio indicado</p>
     </div>`;
 }
 
-function trackingMapStage({ order = null, live = false }) {
+function trackingMapStage({ order = null, live = false, sandbox = false }) {
   return `
     <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
-      ${realMapShell({ order, fallback: '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', role: 'tracking' })}
+      ${realMapShell({ order, fallback: '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', role: 'tracking', mapSource: sandbox ? 'sandbox' : '' })}
       <div class="map-floating-top">
         <span class="map-status-pill ${statusClass(order.status)}"><small>Delivery TABA</small><strong>${escapeHtml(trackingStatusLabel(order.status))}</strong></span>
         <span class="map-connection-pill">${realtimeChip(order)}</span>
@@ -1502,10 +1505,10 @@ export function renderTracking() {
   const liveRider = ['on_the_way', 'arriving'].includes(order.status)
     && hasVerifiedLiveRiderLocation(riderLocation);
   const sandboxSimulation = getOrderSimulation(order);
-  const sandboxRouteActive = isSandboxOrderRepository(getOrderRepository())
+  const sandboxMapActive = isSandboxOrderRepository(getOrderRepository())
     && ['on_the_way', 'arriving'].includes(order.status)
-    && sandboxSimulation?.source === 'simulation'
-    && sandboxSimulation?.userStarted === true;
+    && ((sandboxSimulation?.source === 'simulation' && sandboxSimulation?.userStarted === true)
+      || (sandboxSimulation?.source === 'gps' && Number.isFinite(Number(sandboxSimulation?.lat))));
 
   const itemsHtml = (Array.isArray(order.items) ? order.items : []).map((item) => `
     <div class="order-line">
@@ -1515,11 +1518,11 @@ export function renderTracking() {
   `).join('');
   const orderAddress = normalizeOrderAddressDetails(order);
 
-  const showMap = isDelivery && !isCancelled && (liveRider || sandboxRouteActive);
+  const showMap = isDelivery && !isCancelled && (liveRider || sandboxMapActive);
   const primaryMetric = trackingPrimaryMetric(order);
   renderWithStableRealMap(container, `
     <div class="track-layout tracking-map-experience ${showMap ? '' : 'no-map'}">
-      ${liveRider ? trackingMapStage({ order, live: true }) : sandboxRouteActive ? sandboxTrackingStage(order, sandboxSimulation) : ''}
+      ${sandboxMapActive ? sandboxTrackingStage(order, sandboxSimulation) : liveRider ? trackingMapStage({ order, live: true }) : ''}
 
       <section class="delivery-bottom-sheet tracking-sheet track-progress-card ${showMap ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         <div class="tracking-brand-row">
@@ -1543,8 +1546,10 @@ export function renderTracking() {
         ${isDelivery && !isCancelled
           ? (liveRider
             ? riderTrackingCard(order, riderLocation)
-            : sandboxRouteActive
+            : sandboxMapActive && sandboxSimulation?.origin === 'sandbox_route'
               ? `<div class="delivery-status-card is-live sandbox-status-card"><span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span><div><small>Entrega TABA</small><strong>Seguimiento activo</strong><span>La ruta avanza y el ETA se actualiza en este dispositivo.</span></div></div>`
+              : sandboxMapActive && sandboxSimulation?.origin === 'local_gps'
+                ? `<div class="delivery-status-card is-live sandbox-status-card"><span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span><div><small>Entrega TABA</small><strong>Ubicación actualizada</strong><span>La posición del rider se comparte desde este iPhone.</span></div></div>`
               : trackingWaitingStage(order))
           : ''}
         ${trackingOrderSummaryCard(order)}

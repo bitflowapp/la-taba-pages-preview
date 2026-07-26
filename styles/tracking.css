@@ -64,6 +64,88 @@
   font-size: 11px;
 }
 
+.real-map-canvas {
+  min-height: 300px;
+  overflow: hidden;
+  background: #e8edf0;
+}
+
+.real-map-shell[data-map-source="sandbox"] {
+  min-height: 360px;
+}
+
+.real-map-shell[data-map-source="sandbox"] .real-map-canvas {
+  min-height: 360px;
+}
+
+.real-map-tile-error {
+  position: absolute;
+  z-index: 500;
+  right: 12px;
+  bottom: 42px;
+  padding: 6px 9px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 92%);
+  color: var(--taba-muted);
+  font-size: 11px;
+  box-shadow: var(--shadow-sm);
+}
+
+.lt-place-marker {
+  background: transparent;
+  border: 0;
+}
+
+.lt-place-marker-pin {
+  display: block;
+  width: 44px;
+  height: 54px;
+  filter: drop-shadow(0 3px 5px rgb(20 20 22 / 24%));
+}
+
+.lt-place-marker-pin svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lt-rider-marker {
+  width: 64px;
+  height: 52px;
+}
+
+.lt-rider-helmet-core {
+  width: 58px;
+  height: 52px;
+}
+
+.lt-rider-helmet-icon {
+  width: 64px;
+  height: 52px;
+}
+
+.taba-sandbox-route {
+  stroke-dasharray: 7 7;
+}
+
+@media (max-width: 767px) {
+  .tracking-map-stage,
+  .rider-map-stage {
+    min-height: 360px;
+  }
+
+  .real-map-shell[data-map-source="sandbox"],
+  .real-map-shell[data-map-source="sandbox"] .real-map-canvas {
+    min-height: 320px;
+  }
+
+  .real-map-meta {
+    right: 8px;
+    bottom: 8px;
+    max-width: calc(100% - 16px);
+  }
+}
+
 .map-floating-top {
   position: absolute;
   z-index: 500;

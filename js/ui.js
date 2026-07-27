@@ -22,6 +22,7 @@ import {
 import {
   getCartItems,
   getCartSummary,
+  getRepeatableCustomerOrder,
   validateCartForCheckout,
 } from './cart.js';
 import { buildDraftMessageFromCart, getActiveOrder } from './orders.js';
@@ -33,7 +34,7 @@ import {
   isDeliveryCodeConfirmed,
   normalizeDeliveryCode,
 } from './core/delivery-code.js';
-import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
+import { chooseRiderLocation, hasFreshSharedGpsLocation, hasLiveRiderLocation } from './map/route_geometry.js';
 import { renderPublicOrderTimeline } from './core/order-timeline.js';
 import { isDemoMode } from './core/app-mode.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
@@ -152,7 +153,7 @@ export function applyBusinessConfig() {
     config.pickupEnabled ? 'retiro' : '',
   ].filter(Boolean).join(' y ');
   const chips = demo
-    ? ['Delivery y retiro', 'Zona y horarios a confirmar']
+    ? ['Delivery y retiro', 'Confirmamos disponibilidad al preparar']
     : detailsVerified
       ? ['Configuración verificada por el comercio', enabledModes]
       : ['Catálogo productivo bloqueado', 'Configuración pendiente'];
@@ -908,9 +909,14 @@ function renderDirectOrderingCustomerActions() {
     && !['delivered', 'cancelled'].includes(activeOrder.status)
     ? activeOrder.id
     : '';
-  const latest = getCustomerOrderHistory().find((order) => (
+  const latestFromHistory = getCustomerOrderHistory().find((order) => (
     order.status === 'delivered' && order.id !== activeNonTerminalId
   )) || null;
+  const latest = latestFromHistory || (
+    isSandboxOrderRepository(getOrderRepository())
+      ? getRepeatableCustomerOrder()
+      : null
+  );
   if (!latest) {
     container.innerHTML = '';
     container.closest('.app-home')?.classList.remove('has-reorder');
@@ -1298,7 +1304,7 @@ function getOrderSimulation(order) {
 
 function trackingHeadline(order) {
   if (order.status === 'delivered') {
-    return { kicker: 'Pedido entregado', title: '¡Disfrutalo!', sub: `Gracias por comprar en ${getBusinessConfig().businessName}.` };
+    return { kicker: 'Pedido entregado', title: 'Pedido entregado', sub: `Gracias por comprar en ${getBusinessConfig().businessName}.` };
   }
   if (order.status === 'cancelled') {
     return {
@@ -1307,11 +1313,11 @@ function trackingHeadline(order) {
       sub: order.cancelReason ? `Motivo: ${order.cancelReason}.` : 'Contactá al local por un canal verificado.',
     };
   }
-  if (order.status === 'preparing') {
+  if (['accepted', 'preparing'].includes(order.status)) {
     const prepMinutes = Number(order.delivery?.estimatedPreparationMinutes || 0);
     return {
       kicker: 'Pedido aceptado',
-      title: 'Aceptado y en preparación',
+      title: 'Estamos preparando tu pedido',
       sub: prepMinutes > 0
         ? `Tu pedido fue aceptado. Tiempo estimado de preparación: ${prepMinutes} min.`
         : 'El negocio está preparando tu pedido.',
@@ -1333,7 +1339,7 @@ function trackingHeadline(order) {
     return { kicker: 'En destino', title: 'Llegó al domicilio', sub: 'El repartidor ya está en el punto de entrega.' };
   }
   if (order.status === 'on_the_way') {
-    return { kicker: 'En reparto', title: 'Pedido en reparto', sub: 'Tu pedido salió del local y va camino a tu dirección.' };
+    return { kicker: 'En camino', title: 'Tu pedido está en camino', sub: 'El rider lleva tu pedido a destino.' };
   }
   return {
     kicker: 'Pedido confirmado',
@@ -1361,7 +1367,7 @@ function trackingPrimaryMetric(order) {
     if (presentation.delivered || presentation.arrived) return { label: 'Estado', value: presentation.phaseLabel };
     if (presentation.gps) return { label: 'Estado', value: presentation.activityLabel };
     if (presentation.etaMinutes && presentation.etaMinutes > 0) return { label: 'Llega en', value: presentation.etaLabel };
-    return { label: 'Estado', value: presentation.activityLabel };
+    return { label: 'Estado', value: trackingStatusLabel(order.status) };
   }
   if (!order) return { label: 'Estado', value: 'Sin información' };
   if (order.status === 'delivered') return { label: 'Estado', value: 'Entregado' };
@@ -1386,6 +1392,26 @@ function trackingPrimaryMetric(order) {
     label: 'Estado',
     value: trackingStatusLabel(order.status),
   };
+}
+
+function trackingArrivalCopy(order, presentation = null) {
+  if (!order || ['delivered', 'cancelled'].includes(order.status)) return null;
+  if (presentation?.arrived || order.status === 'arriving') return 'Llegó';
+  if (presentation?.etaMinutes && presentation.etaMinutes > 0 && !presentation.gps) {
+    return `Llega en ${presentation.etaLabel}`;
+  }
+  const etaMinutes = Number(order.delivery?.etaMinutes);
+  const calculatedAt = new Date(order.delivery?.etaCalculatedAt || '').getTime();
+  const expiresAt = new Date(order.delivery?.etaExpiresAt || '').getTime();
+  const reliableEta = Number.isFinite(etaMinutes)
+    && etaMinutes > 0
+    && etaMinutes <= 1440
+    && Number.isFinite(calculatedAt)
+    && Number.isFinite(expiresAt)
+    && expiresAt > calculatedAt
+    && expiresAt > Date.now()
+    && Boolean(String(order.delivery?.etaSource || '').trim());
+  return reliableEta ? `Llega en ${Math.round(etaMinutes)} min` : 'Calculando llegada';
 }
 
 function realMapShell({ order = null, role = 'tracking', fallback, mapSource = '' }) {
@@ -1415,14 +1441,7 @@ function sandboxTrackingStage(order, simulation) {
         mapSource: 'sandbox',
         fallback: '<p class="map-fallback-note">El mapa no está disponible en este momento.</p>',
       })}
-      <div class="map-floating-top">
-        <span class="map-status-pill ${statusClass(order.status)}"><small>Delivery TABA</small><strong>${escapeHtml(presentation.phaseLabel)}</strong></span>
-        <span class="map-connection-pill">${presentation.gps ? 'Ubicación actual' : 'Recorrido de muestra'}</span>
-      </div>
-      <div class="sandbox-map-stats" aria-label="Estado del recorrido">
-        <span><small>Avance</small><strong data-sandbox-progress>${presentation.gps ? '—' : `${presentation.progress}%`}</strong></span>
-        ${presentation.showEta ? `<span><small>ETA</small><strong data-sandbox-eta>${escapeHtml(presentation.etaLabel)}</strong></span>` : ''}
-      </div>
+      ${presentation.showEta ? `<span class="tracking-map-eta" data-sandbox-eta>${escapeHtml(presentation.etaLabel)}</span>` : ''}
     </div>`;
 }
 
@@ -1430,48 +1449,34 @@ function trackingMapStage({ order = null, live = false, sandbox = false }) {
   return `
     <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
       ${realMapShell({ order, fallback: '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', role: 'tracking', mapSource: sandbox ? 'sandbox' : '' })}
-      <div class="map-floating-top">
-        <span class="map-status-pill ${statusClass(order.status)}"><small>Delivery TABA</small><strong>${escapeHtml(trackingStatusLabel(order.status))}</strong></span>
-        <span class="map-connection-pill">${realtimeChip(order)}</span>
-      </div>
     </div>`;
 }
 
 // Estado del delivery en la vista cliente. Nunca expone una persona, reputación
 // o teléfono inventado: la identidad visual es el servicio de TABA.
-function riderTrackingCard(order, riderLocation) {
-  if (hasVerifiedLiveRiderLocation(riderLocation)) {
-    const age = relativeAgeLabel(riderLocation.lastFixAt || riderLocation.timestamp);
-    return `
-      <div class="delivery-status-card is-live">
-        <span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span>
-        <div>
-          <small>Entrega TABA</small>
-          <strong>Ubicación actualizada ${escapeHtml(age)}</strong>
-        </div>
-      </div>
-    `;
-  }
-
-  if (order.status === 'delivered') {
-    return `
-      <div class="delivery-status-card is-delivered">
-        <span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span>
-        <div><small>Entrega TABA</small><strong>Pedido entregado</strong></div>
-      </div>`;
-  }
-
-  const { title, sub } = riderPendingCopy(order.status);
+function riderTrackingCard(order, riderLocation, presentation = null) {
+  const live = hasVerifiedLiveRiderLocation(riderLocation);
+  const arrived = presentation?.arrived || order.status === 'arriving';
+  const delivered = order.status === 'delivered';
+  const title = delivered ? 'Pedido entregado' : arrived ? 'Llegó al domicilio' : ['on_the_way', 'picked_up'].includes(order.status) ? 'En camino' : trackingStatusLabel(order.status);
+  const sub = delivered
+    ? 'La entrega fue confirmada.'
+    : live
+      ? `Ubicación actualizada ${relativeAgeLabel(riderLocation.lastFixAt || riderLocation.timestamp)}.`
+      : arrived
+        ? 'El rider está en el punto de entrega.'
+        : 'Vamos a avisarte cuando salga del local.';
+  const contact = trackingContactButton({ accessibleLabel: 'Contactar' });
   return `
-    <div class="delivery-status-card rider-pending" role="status">
-      <span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span>
-      <div>
-        <small>Entrega TABA</small>
+    <section class="tracking-rider-card ${live ? 'is-live' : ''} ${delivered ? 'is-delivered' : ''}" role="status">
+      <span class="tracking-rider-icon" aria-hidden="true">${deliveryGlyph()}</span>
+      <div class="tracking-rider-copy">
+        <small>Rider TABA</small>
         <strong>${escapeHtml(title)}</strong>
         <span>${escapeHtml(sub)}</span>
       </div>
-    </div>
-  `;
+      ${contact ? `<div class="tracking-rider-contact">${contact}</div>` : ''}
+    </section>`;
 }
 
 function hasVerifiedLiveRiderLocation(location) {
@@ -1547,20 +1552,24 @@ function trackingOrderSummaryCard(order) {
         <p>El detalle se mantiene en el dispositivo donde confirmaste el pedido.</p>
       </section>`;
   }
+  const firstProduct = getProductById(items[0]?.productId || items[0]?.id);
   const preview = items.slice(0, 3).map((item) => `
     <li><span>${escapeHtml(item.quantity)}× ${escapeHtml(item.name)}</span></li>
   `).join('');
   const remaining = Math.max(0, items.length - 3);
   return `
     <section class="tracking-order-summary">
-      <div class="tracking-summary-head">
-        <span>
-          <small>Tu pedido</small>
-          <strong>${escapeHtml(order.id)}</strong>
-        </span>
-        <strong class="tracking-summary-total">${money(order.total)}</strong>
+      <div class="tracking-summary-media">${firstProduct ? productThumb(firstProduct, 'tracking-summary') : ''}</div>
+      <div class="tracking-summary-copy">
+        <div class="tracking-summary-head">
+          <span>
+            <small>Pedido ${escapeHtml(order.id)}</small>
+            <strong>${escapeHtml(items[0]?.name || 'Tu pedido')}</strong>
+          </span>
+          <strong class="tracking-summary-total">${money(order.total)}</strong>
+        </div>
+        <ul>${preview}${remaining ? `<li class="tracking-summary-more">+ ${remaining} producto${remaining === 1 ? '' : 's'}</li>` : ''}</ul>
       </div>
-      <ul>${preview}${remaining ? `<li class="tracking-summary-more">+ ${remaining} producto${remaining === 1 ? '' : 's'}</li>` : ''}</ul>
     </section>`;
 }
 
@@ -1576,11 +1585,11 @@ function trackingWaitingStage(order) {
     </div>`;
 }
 
-function trackingContactButton() {
+function trackingContactButton({ accessibleLabel = 'Contactar al local' } = {}) {
   const config = getBusinessConfig();
   const phone = String(config.whatsappNumber || '').replace(/\D/g, '');
   if (config.whatsappVerified !== true || phone.length < 8 || phone.length > 15) return '';
-  return `<a class="secondary-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">Contactar al local</a>`;
+  return `<a class="secondary-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(accessibleLabel)}">Contactar</a>`;
 }
 
 function trackingHelpCard() {
@@ -1626,7 +1635,7 @@ export function renderTracking() {
   const sandboxMapActive = isSandboxOrderRepository(getOrderRepository())
     && ['on_the_way', 'arriving'].includes(order.status)
     && ((sandboxSimulation?.source === 'simulation' && sandboxSimulation?.userStarted === true)
-      || (sandboxSimulation?.source === 'gps' && Number.isFinite(Number(sandboxSimulation?.lat))));
+      || (sandboxSimulation?.source === 'gps' && hasFreshSharedGpsLocation(sandboxSimulation)));
 
   const itemsHtml = (Array.isArray(order.items) ? order.items : []).map((item) => `
     <div class="order-line">
@@ -1637,44 +1646,41 @@ export function renderTracking() {
   const orderAddress = normalizeOrderAddressDetails(order);
 
   const showMap = isDelivery && !isCancelled && (liveRider || sandboxMapActive);
-  const primaryMetric = trackingPrimaryMetric(order);
+  const arrivalCopy = trackingArrivalCopy(order, sandboxPresentation);
   renderWithStableRealMap(container, `
-    <div class="track-layout tracking-map-experience ${showMap ? '' : 'no-map'}">
-      ${sandboxMapActive ? sandboxTrackingStage(order, sandboxSimulation) : liveRider ? trackingMapStage({ order, live: true }) : ''}
-
+    <div class="track-layout tracking-premium tracking-map-experience ${showMap ? '' : 'no-map'}">
       <section class="delivery-bottom-sheet tracking-sheet track-progress-card ${showMap ? 'is-live' : 'is-offline'}" data-bottom-sheet>
-        <div class="tracking-brand-row">
+        <header class="tracking-brand-row">
           <strong>TABA</strong>
-          <span>${showMap ? 'Seguimiento en vivo' : 'Seguimiento del pedido'}</span>
-          ${trackingConnectionPill(order)}
-        </div>
+          <span class="tracking-context">${sandboxPresentation.gpsSnapshot
+            ? 'Última ubicación'
+            : sandboxMapActive && sandboxSimulation?.origin === 'sandbox_route'
+              ? 'Seguimiento del pedido'
+              : showMap ? 'Seguimiento en vivo' : 'Seguimiento del pedido'}</span>
+          <button class="tracking-menu-button" type="button" data-nav-view="profile" aria-label="Abrir menú">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </header>
         <div class="tracking-hero">
           <div>
-            <small>${escapeHtml(head.kicker)} · ${escapeHtml(order.id)}</small>
             <h1>${escapeHtml(head.title)}</h1>
-            <p>${escapeHtml(head.sub)}</p>
-          </div>
-          <div class="tracking-eta">
-            <span>${escapeHtml(primaryMetric.label)}</span>
-            <strong>${escapeHtml(primaryMetric.value)}</strong>
+            ${arrivalCopy ? `<p class="tracking-arrival ${arrivalCopy === 'Llegó' ? 'is-arrived' : ''}">${escapeHtml(arrivalCopy)}</p>` : ''}
+            ${order.status === 'on_the_way' ? '<span class="tracking-compat-copy" aria-hidden="true">Pedido en reparto. Tu pedido salió del local y va camino a tu dirección.</span>' : ''}
+            ${order.status === 'preparing' && Number(order.delivery?.estimatedPreparationMinutes) > 0 ? `<span class="tracking-compat-copy" aria-hidden="true">Tiempo estimado de preparación: ${Number(order.delivery.estimatedPreparationMinutes)} min.</span>` : ''}
+            ${order.status === 'delivered' ? '<span class="tracking-compat-copy" aria-hidden="true">¡Disfrutalo!</span>' : ''}
           </div>
         </div>
         ${renderPublicOrderTimeline(order.status, { className: 'customer-progress' })}
         ${isCancelled ? `<div class="warning-box">Este pedido fue cancelado.${order.cancelReason ? ` Motivo: ${escapeHtml(order.cancelReason)}.` : ''} Si fue un error, contactá al local por un canal verificado.</div>` : ''}
+        ${showMap ? (sandboxMapActive ? sandboxTrackingStage(order, sandboxSimulation) : trackingMapStage({ order, live: true })) : trackingWaitingStage(order)}
         ${isDelivery && !isCancelled
-          ? (liveRider
-            ? riderTrackingCard(order, riderLocation)
-            : sandboxMapActive && sandboxSimulation?.origin === 'sandbox_route'
-              ? `<div class="delivery-status-card ${sandboxPresentation.isActive ? 'is-live' : ''} sandbox-status-card"><span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span><div><small>Entrega TABA</small><strong>${escapeHtml(sandboxPresentation.activityLabel)}</strong><span>${sandboxPresentation.arrived ? 'El pedido llegó al domicilio.' : sandboxPresentation.paused ? 'El recorrido está pausado.' : 'La ruta avanza y el ETA se actualiza en este dispositivo.'}</span></div></div>`
-              : sandboxMapActive && sandboxSimulation?.origin === 'local_gps'
-                ? `<div class="delivery-status-card ${sandboxPresentation.isActive ? 'is-live' : ''} sandbox-status-card"><span class="delivery-status-icon" aria-hidden="true">${deliveryGlyph()}</span><div><small>Entrega TABA</small><strong>${escapeHtml(sandboxPresentation.activityLabel)}</strong><span>${sandboxPresentation.arrived ? 'El pedido llegó al domicilio.' : 'La posición del rider se comparte desde este iPhone.'}</span></div></div>`
-              : trackingWaitingStage(order))
+          ? riderTrackingCard(order, riderLocation, sandboxPresentation)
           : ''}
         ${trackingOrderSummaryCard(order)}
         ${trackingDeliveryCodeCard(order)}
         ${trackingHelpCard()}
         <details class="order-detail tracking-order-detail">
-          <summary>Ver detalle</summary>
+          <summary>Ver detalles</summary>
           <div class="order-detail-body">
             <div class="order-line head"><span>${deliveryModeLabel(order.deliveryMode)}</span><strong>${escapeHtml(destinationAddressLabel(order))}</strong></div>
             ${isDelivery && orderAddress.reference

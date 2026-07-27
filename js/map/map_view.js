@@ -124,6 +124,7 @@ function readMapViewState(container) {
     fallback,
     canvas,
     emptyMap,
+    role,
     order,
     sim,
     route,
@@ -195,7 +196,7 @@ export function ensureTrackingMap(container, view) {
       });
     }
   });
-  L.control?.zoom?.({ position: 'bottomleft' })?.addTo?.(map);
+  if (view.role !== 'tracking') L.control?.zoom?.({ position: 'bottomleft' })?.addTo?.(map);
   map.on?.('dragstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
   map.on?.('zoomstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
 

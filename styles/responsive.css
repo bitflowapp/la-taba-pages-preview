@@ -585,3 +585,71 @@ body[data-active-view="rider"] .floating-cart {
     font-size: 10px;
   }
 }
+
+@media (max-width: 820px) {
+  [data-view="tracking"] {
+    padding-inline: 12px;
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .tracking-premium.track-layout,
+  .tracking-premium.track-layout.no-map {
+    border-radius: 20px;
+  }
+
+  .tracking-premium .tracking-sheet {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .tracking-premium .tracking-map-stage,
+  .tracking-premium .real-map-shell,
+  .tracking-premium .real-map-canvas {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 360px) {
+  .tracking-premium .tracking-sheet {
+    gap: 18px;
+    padding: 16px;
+  }
+
+  .tracking-premium .tracking-hero h1 {
+    font-size: 30px;
+  }
+
+  .tracking-premium .track-step small {
+    font-size: 10px;
+  }
+
+  .tracking-premium .tracking-map-stage,
+  .tracking-premium .real-map-shell,
+  .tracking-premium .real-map-canvas {
+    min-height: 280px;
+  }
+
+  .tracking-rider-card {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .tracking-rider-contact {
+    width: 100%;
+    margin-left: 67px;
+  }
+}
+
+@media (max-width: 820px) {
+  body[data-active-view="tracking"]:has(.tracking-premium) {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  body[data-active-view="tracking"]:has(.tracking-premium) .mobile-nav {
+    display: none;
+  }
+
+  body[data-active-view="tracking"]:has(.tracking-premium) [data-view="tracking"] {
+    padding-bottom: 32px;
+  }
+}

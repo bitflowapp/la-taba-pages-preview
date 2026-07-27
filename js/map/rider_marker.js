@@ -15,27 +15,14 @@ export function createRiderIcon(L, { status = 'received', source = 'simulation',
     html: `
       <span class="lt-rider-marker-halo" aria-hidden="true"></span>
       <span class="lt-rider-moto-core" style="--heading:${safeHeading}deg" aria-hidden="true">
-        <svg class="lt-rider-moto-icon" viewBox="0 0 120 76" role="img" aria-label="Moto de reparto">
-          <ellipse cx="61" cy="66" rx="43" ry="5" fill="#17191d" opacity=".18"></ellipse>
-          <g stroke="#17191d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="35" cy="55" r="12" fill="#ffffff"></circle>
-            <circle cx="88" cy="55" r="12" fill="#ffffff"></circle>
-            <circle cx="35" cy="55" r="4" fill="#17191d" stroke="none"></circle>
-            <circle cx="88" cy="55" r="4" fill="#17191d" stroke="none"></circle>
-            <path d="M35 55h23l12-22h14l9 22" fill="none"></path>
-            <path d="M47 55 57 37h19l-14 18" fill="none"></path>
-            <path d="m75 33 8-12h15" fill="none"></path>
-            <path d="m88 21 7 3" fill="none"></path>
-            <path d="M59 37h16" fill="none"></path>
-            <path d="M50 42h21" fill="none"></path>
-            <path d="M71 33h13" fill="none"></path>
-            <path d="M33 43h14l5-11" fill="none"></path>
+        <svg class="lt-rider-moto-icon" viewBox="0 0 56 56" role="img" aria-label="Moto de reparto">
+          <circle cx="28" cy="28" r="25" fill="#e30613" stroke="#ffffff" stroke-width="3"></circle>
+          <g fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="36" r="4"></circle>
+            <circle cx="38" cy="36" r="4"></circle>
+            <path d="M18 36h9l5-10h7l3 10M27 36l-4-8h9M33 26l4-6h6M13 27h11v7H14"></path>
+            <path d="M31 27h8"></path>
           </g>
-          <path d="M49 38h27l-7 12H44Z" fill="#e30613" stroke="#17191d" stroke-width="3" stroke-linejoin="round"></path>
-          <path d="M52 40h13l-4 6H49Z" fill="#ffffff" opacity=".94"></path>
-          <rect x="20" y="24" width="28" height="22" rx="4" fill="#ffffff" stroke="#17191d" stroke-width="3"></rect>
-          <path d="M27 31h14M27 37h9" stroke="#e30613" stroke-width="3" stroke-linecap="round"></path>
-          <path d="M96 42h11" stroke="#e30613" stroke-width="4" stroke-linecap="round"></path>
         </svg>
       </span>`,
     iconSize: [62, 52],

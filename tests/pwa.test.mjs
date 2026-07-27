@@ -29,7 +29,8 @@ test('index.html loads the module entry point and avoids root-absolute asset pat
   const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
   assert.ok(indexHtml.includes('<script src="js/pwa-update.js?v=2"></script>'));
-  assert.ok(indexHtml.includes('<script type="module" src="js/app.js?v=29"></script>'));
+  assert.ok(indexHtml.includes('<script src="js/startup-recovery.js?v=1"></script>'));
+  assert.ok(indexHtml.includes('<script type="module" src="js/app.js?v=30"></script>'));
   assert.ok(!indexHtml.includes('src="/js/'));
   assert.ok(!indexHtml.includes('href="/js/'));
   assert.ok(!indexHtml.includes('src="/assets/'));

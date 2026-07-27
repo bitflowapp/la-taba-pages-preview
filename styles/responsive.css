@@ -332,6 +332,23 @@ body[data-active-view="rider"] .floating-cart {
     flex: 1 1 auto;
   }
 
+  .app-recovery {
+    grid-template-columns: auto minmax(0, 1fr);
+    width: calc(100% - 24px);
+    margin-top: 12px;
+    padding: 14px;
+  }
+
+  .app-recovery-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .app-recovery-actions > * {
+    flex: 1 1 0;
+    min-height: var(--tap);
+  }
+
   .status-bar {
     align-items: start;
     flex-direction: column;

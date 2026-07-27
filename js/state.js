@@ -601,7 +601,15 @@ function persist() {
     return true;
   }
   const serializable = { ...state, adminUnlocked: undefined };
-  const persisted = safeStorageSet(getStorageArea('localStorage'), STORAGE_KEYS.state, JSON.stringify(serializable));
+  let encoded = '';
+  try {
+    encoded = JSON.stringify(serializable);
+  } catch (_) {
+    // Una sesión vieja/corrupta no puede impedir que el catálogo inicialice.
+    safeStorageRemove(getStorageArea('localStorage'), STORAGE_KEYS.state);
+    return false;
+  }
+  const persisted = safeStorageSet(getStorageArea('localStorage'), STORAGE_KEYS.state, encoded);
   safeStorageSet(getStorageArea('sessionStorage'), STORAGE_KEYS.adminUnlocked, state.adminUnlocked ? 'true' : 'false');
   return persisted;
 }

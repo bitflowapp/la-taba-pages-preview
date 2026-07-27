@@ -93,6 +93,24 @@
       </div>
 
       <main data-app-main>
+        <!--
+          This panel is intentionally visible in the server-rendered shell.
+          The module bootstrap hides it only after the first complete render.
+          That keeps a failed import, a blocked storage API, or a stale worker
+          recoverable instead of leaving the header over an empty main area.
+        -->
+        <section class="card app-recovery" data-app-recovery role="alert" aria-live="assertive">
+          <div class="app-recovery-mark" aria-hidden="true">!</div>
+          <div class="app-recovery-copy">
+            <strong>No pudimos cargar TABA</strong>
+            <p data-app-recovery-message>Podés reintentar ahora. Tus datos de prueba no se borraron.</p>
+            <small data-app-recovery-code>TABA-BOOT-01</small>
+          </div>
+          <div class="app-recovery-actions">
+            <button class="primary-button compact" type="button" data-app-recovery-retry>Reintentar</button>
+            <button class="secondary-button compact" type="button" data-app-recovery-reset hidden>Reiniciar prueba</button>
+          </div>
+        </section>
         <section class="section app-view app-home is-active" data-view="home" aria-hidden="false">
           <div class="card empty-state" data-production-catalog-gate hidden role="status">
             <strong>Pedidos online no disponibles</strong>
@@ -614,6 +632,7 @@
     <div class="toast hidden" data-toast role="status" aria-live="polite"></div>
 
     <script src="runtime-config.js"></script>
+    <script src="js/startup-recovery.js?v=1"></script>
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -621,6 +640,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=2"></script>
-    <script type="module" src="js/app.js?v=29"></script>
+    <script type="module" src="js/app.js?v=30"></script>
   </body>
 </html>

@@ -19,6 +19,7 @@ export const SANDBOX_STORE_NAME = 'snapshots';
 export const SANDBOX_CLAIMS_STORE_NAME = 'claims';
 export const SANDBOX_SNAPSHOT_KEY = 'active';
 export const SANDBOX_SCHEMA_VERSION = 1;
+const INDEXED_DB_OPEN_TIMEOUT_MS = 2500;
 export const SANDBOX_STATUS_FLOW = Object.freeze([
   'received',
   'preparing',
@@ -96,6 +97,17 @@ function sandboxSeedState() {
 function openDatabase() {
   if (typeof indexedDB === 'undefined') return Promise.resolve(null);
   return new Promise((resolve, reject) => {
+    let settled = false;
+    let timeout = null;
+    const finish = (callback, value) => {
+      if (settled) {
+        if (value && typeof value.close === 'function') value.close();
+        return;
+      }
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      callback(value);
+    };
     const request = indexedDB.open(SANDBOX_DB_NAME, SANDBOX_DB_VERSION);
     request.onupgradeneeded = () => {
       const database = request.result;
@@ -106,13 +118,16 @@ function openDatabase() {
         database.createObjectStore(SANDBOX_CLAIMS_STORE_NAME);
       }
     };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error('No se pudo abrir la base sandbox.'));
+    request.onsuccess = () => finish(resolve, request.result);
+    request.onerror = () => finish(reject, request.error || new Error('No se pudo abrir la base sandbox.'));
     // Una pestaña antigua puede mantener abierta una versión previa durante
     // una actualización. No dejamos la interfaz en blanco esperando un
     // bloqueo de IndexedDB: startSync conserva el estado en memoria y el
     // resto de la sincronización local sigue disponible.
-    request.onblocked = () => reject(new Error('La base sandbox está ocupada por otra pestaña.'));
+    request.onblocked = () => finish(reject, new Error('Sandbox storage is busy.'));
+    timeout = setTimeout(() => {
+      finish(reject, new Error('IndexedDB tardó demasiado en responder.'));
+    }, INDEXED_DB_OPEN_TIMEOUT_MS);
   });
 }
 
@@ -418,7 +433,9 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
         bindSync();
         unsubState = subscribe((state) => {
           if (!started || applyingRemote) return;
-          void persistAndPublish(state);
+          void persistAndPublish(state).catch(() => {
+            database = null;
+          });
         });
         started = true;
         return () => unbindSync();
@@ -429,7 +446,9 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
         bindSync();
         unsubState = subscribe((state) => {
           if (!started || applyingRemote) return;
-          void persistAndPublish(state);
+          void persistAndPublish(state).catch(() => {
+            database = null;
+          });
         });
         started = true;
         return () => unbindSync();
@@ -442,10 +461,29 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
 
   async function resetSandbox() {
     const resetState = sandboxSeedState();
-    if (!database) database = await openDatabase();
-    await clearDatabase(database);
+    if (!database) {
+      try {
+        database = await openDatabase();
+      } catch (_) {
+        database = null;
+      }
+    }
+    try {
+      await clearDatabase(database);
+    } catch (_) {
+      // Un reset de demo siempre puede completar en memoria aunque Safari
+      // mantenga un snapshot bloqueado o la base haya quedado inválida.
+      try { database?.close?.(); } catch (_) { /* sin-op */ }
+      database = null;
+      await clearDatabase(null);
+    }
     setState(resetState);
-    await writeToDatabase(database, cloneStateForSnapshot(getState()));
+    try {
+      await writeToDatabase(database, cloneStateForSnapshot(getState()));
+    } catch (_) {
+      database = null;
+      await writeToDatabase(null, cloneStateForSnapshot(getState()));
+    }
     if (started) await persistAndPublish(getState());
     return repositoryResult(true, { message: 'Sandbox reiniciada.' });
   }

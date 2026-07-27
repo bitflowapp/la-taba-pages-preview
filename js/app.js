@@ -129,28 +129,33 @@ function closeRepeatModal() {
 // borra pedidos, carrito y acceso del negocio guardados en este equipo y recarga
 // limpio. Pensado para empezar una presentación sin pedidos de prueba viejos.
 // No corre en el uso normal (sin el parámetro) ni afecta a otros equipos.
-async function maybeResetDemoSession() {
+function hasDemoResetRequest() {
   if (!isDemoMode()) return false;
   try {
     const params = new URLSearchParams(window.location.search);
-    if (!params.has('reset') && !params.has('demo-reset')) return false;
-    await clearRelayRoomOnReset(params);
-    const repository = getOrderRepository();
-    if (typeof repository.resetSandbox === 'function') await repository.resetSandbox();
-    [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked, STORAGE_KEYS.customerFavorites, STORAGE_KEYS.customerHistory, STORAGE_KEYS.customerProfile].forEach((key) => {
-      try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
-      try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
-    });
-    params.delete('reset');
-    params.delete('demo-reset');
-    const query = params.toString();
-    const cleanUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
-    // Recarga sin el parámetro para arrancar con el estado por defecto.
-    window.location.replace(cleanUrl);
-    return true;
+    return params.has('reset') || params.has('demo-reset');
   } catch (_) {
     return false;
   }
+}
+
+async function maybeResetDemoSession() {
+  if (!hasDemoResetRequest()) return false;
+  const params = new URLSearchParams(window.location.search);
+  await clearRelayRoomOnReset(params);
+  const repository = getOrderRepository();
+  if (typeof repository.resetSandbox === 'function') await repository.resetSandbox();
+  [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked, STORAGE_KEYS.customerFavorites, STORAGE_KEYS.customerHistory, STORAGE_KEYS.customerProfile].forEach((key) => {
+    try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
+    try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
+  });
+  params.delete('reset');
+  params.delete('demo-reset');
+  const query = params.toString();
+  const cleanUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+  // Recarga sin el parámetro para arrancar con el estado por defecto.
+  window.location.replace(cleanUrl);
+  return true;
 }
 
 async function clearRelayRoomOnReset(params) {
@@ -185,26 +190,33 @@ function sanitizeResetRoom(value) {
 
 async function bootstrap() {
   // Si se pidió limpiar la demo, recargamos limpio y no seguimos inicializando.
-  if (await maybeResetDemoSession()) return;
   try {
+    const resetRequested = hasDemoResetRequest();
     applyBusinessConfig();
     bindEvents();
     subscribe(renderAll);
-    initProductionOperations({ onChange: renderAll });
-    if (isDemoMode()) {
-      if (!isSandboxOrderRepository(getOrderRepository())) initRealtime();
-      // La conexión con el relay sólo existe en presentación. Producción usa
-      // exclusivamente el repositorio configurado por el despliegue.
-      onRealtimeStatusChange(renderLiveSurfaces);
-    }
     maybeOpenPitchFromUrl();
     // El primer render no puede depender de IndexedDB: Chrome móvil puede
     // demorar la apertura mientras reanuda una pestaña o actualiza el worker.
     // El estado inicial ya es seguro para pintar y se vuelve a renderizar al
     // hidratar la sesión persistida.
     renderAll();
+    window.TABA_STARTUP_RECOVERY?.hide();
     initPwaInstall();
-    await startOrderRepositorySync();
+    if (resetRequested) {
+      if (await maybeResetDemoSession()) return;
+    }
+    initProductionOperations({ onChange: renderAll });
+    if (isDemoMode()) {
+      if (!isSandboxOrderRepository(getOrderRepository())) initRealtime();
+      onRealtimeStatusChange(renderLiveSurfaces);
+    }
+    try {
+      await startOrderRepositorySync();
+    } catch (error) {
+      window.TABA_STARTUP_RECOVERY?.show({ reason: 'storage', resetAvailable: false });
+      showToast('La sesion local esta temporalmente limitada. Podes continuar.');
+    }
     renderAll();
     playViewEnter(activeView);
     resumeSimulationIfNeeded();
@@ -219,6 +231,9 @@ async function bootstrap() {
       setTimeout(() => showToast(message), 600);
     }
   } catch (error) {
+    window.TABA_STARTUP_RECOVERY?.show({
+      reason: /storage|indexeddb|base sandbox/i.test(error?.message || '') ? 'storage' : 'startup',
+    });
     // Evita pantalla en blanco si algo falla en el primer render.
     showToast('Hubo un problema al iniciar. Recargá la página.');
   }

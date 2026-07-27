@@ -192,6 +192,58 @@ main {
   min-height: calc(100vh - var(--topbar));
 }
 
+.app-recovery {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  width: min(calc(100% - 40px), var(--content));
+  margin: 20px auto 0;
+  padding: 16px 18px;
+  border-color: #f0c8cc;
+  background: #fff9f9;
+  box-shadow: 0 8px 24px rgb(24 24 27 / 7%);
+}
+
+.app-recovery-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--taba-red);
+  color: white;
+  font-weight: 900;
+}
+
+.app-recovery-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app-recovery-copy strong {
+  color: var(--taba-ink);
+}
+
+.app-recovery-copy p,
+.app-recovery-copy small {
+  margin: 0;
+  color: var(--taba-muted);
+}
+
+.app-recovery-copy small {
+  font-size: 11px;
+  letter-spacing: .04em;
+}
+
+.app-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 8px;
+}
+
 .section {
   width: min(100%, var(--content));
   margin-inline: auto;

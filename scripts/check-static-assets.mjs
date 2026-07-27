@@ -37,7 +37,7 @@ if (missing.length) {
 }
 
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-if (!indexHtml.includes('<script type="module" src="js/app.js"></script>')) {
+if (!/<script\s+type="module"\s+src="js\/app\.js(?:\?v=[^"]+)?"><\/script>/.test(indexHtml)) {
   console.error('index.html must load js/app.js as an ES module.');
   process.exit(1);
 }

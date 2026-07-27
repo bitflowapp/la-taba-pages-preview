@@ -198,6 +198,12 @@ async function bootstrap() {
       onRealtimeStatusChange(renderLiveSurfaces);
     }
     maybeOpenPitchFromUrl();
+    // El primer render no puede depender de IndexedDB: Chrome móvil puede
+    // demorar la apertura mientras reanuda una pestaña o actualiza el worker.
+    // El estado inicial ya es seguro para pintar y se vuelve a renderizar al
+    // hidratar la sesión persistida.
+    renderAll();
+    initPwaInstall();
     await startOrderRepositorySync();
     renderAll();
     playViewEnter(activeView);
@@ -216,8 +222,6 @@ async function bootstrap() {
     // Evita pantalla en blanco si algo falla en el primer render.
     showToast('Hubo un problema al iniciar. Recargá la página.');
   }
-  initPwaInstall();
-  registerServiceWorker();
 }
 
 async function copyTextToClipboard(text) {
@@ -531,7 +535,11 @@ function bindEvents() {
   window.addEventListener('popstate', syncViewFromLocation);
   window.addEventListener('hashchange', syncViewFromLocation);
   window.addEventListener('pagehide', () => {
-    disableGpsTracking({ silent: true });
+    // Al ir a segundo plano Chrome puede descartar la pestaña del rider. Se
+    // corta el watcher por privacidad, pero se conserva sólo el último fix
+    // fresco como "Última ubicación" para que otra pestaña del mismo navegador
+    // no pierda el contexto de golpe.
+    disableGpsTracking({ silent: true, preserveLastFix: true });
     handleProductionOperationsPageHide();
   });
   document.addEventListener('visibilitychange', () => {
@@ -1238,8 +1246,11 @@ function initPwaInstall() {
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
     deferredPrompt = event;
-    showInstallBanner();
   });
+
+  // No interrumpimos el primer recorrido con un modal de instalación. Queda
+  // disponible para una acción explícita de la interfaz si se incorpora luego.
+  window.addEventListener('taba:request-install', showInstallBanner);
 
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
@@ -1264,9 +1275,11 @@ function initPwaInstall() {
 
   // iPhone/iPad Safari: no hay beforeinstallprompt, así que mostramos una
   // guía propia sólo cuando corresponde (Safari en iOS, no instalada ya).
-  if (iosBanner && !isIOSGuideDismissed() && shouldShowIOSInstallGuide()) {
-    iosBanner.hidden = false;
-  }
+  window.addEventListener('taba:request-ios-install-guide', () => {
+    if (iosBanner && !isIOSGuideDismissed() && shouldShowIOSInstallGuide()) {
+      iosBanner.hidden = false;
+    }
+  });
   $('[data-pwa-ios-dismiss]')?.addEventListener('click', () => {
     dismissIOSGuide();
     if (iosBanner) iosBanner.hidden = true;
@@ -1286,32 +1299,6 @@ function initPwaInstall() {
     hideInstallBanner();
     if (iosBanner) iosBanner.hidden = true;
   }
-}
-
-function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) return;
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then((registration) => {
-      registration.addEventListener('updatefound', () => {
-        const installing = registration.installing;
-        if (!installing) return;
-        installing.addEventListener('statechange', () => {
-          if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-            installing.postMessage('skip-waiting');
-          }
-        });
-      });
-    }).catch(() => {
-      // Service worker no disponible (por ejemplo, abierto con file://). La app funciona igual.
-    });
-
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    });
-  });
 }
 
 bootstrap();

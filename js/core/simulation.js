@@ -88,9 +88,9 @@ export function createSimulationState(order, { running = true, now = Date.now(),
   if (!order || typeof order.id !== 'string') return null;
   const route = routeForSimulation(order, routeId || destinationId);
   const baseEta = Math.max(1, Math.floor(Number(order?.delivery?.estimatedMinutes) || 12));
-  const startProgress = order.status === 'arriving' ? 0.85
-    : order.status === 'on_the_way' ? 0.08
-    : 0;
+  // Salir del local no equivale a haber iniciado el recorrido. La llegada
+  // manual se ajusta explícitamente en syncSimulationOnStatus().
+  const startProgress = 0;
   const point = route.sandbox ? sandboxPointAtProgress(startProgress) : pointOnRoute(route.id, startProgress);
   const timestamp = Number(now) || Date.now();
   return {

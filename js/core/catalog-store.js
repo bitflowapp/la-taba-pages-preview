@@ -65,7 +65,7 @@ export function restoreDemoCatalog() {
   return buildDemoCatalog();
 }
 
-export function mergeCatalogProducts(baseProducts = demoProducts, savedProducts = []) {
+export function mergeCatalogProducts(baseProducts = demoProducts, savedProducts = [], { refreshBaseCatalog = false } = {}) {
   const baseCatalog = (Array.isArray(baseProducts) ? baseProducts : [])
     .map((product) => normalizeCatalogProduct(product))
     .filter(Boolean);
@@ -79,7 +79,11 @@ export function mergeCatalogProducts(baseProducts = demoProducts, savedProducts 
 
   const merged = baseCatalog.map((baseProduct) => {
     const saved = savedById.get(baseProduct.id);
-    return saved ? normalizeCatalogProduct({ ...baseProduct, ...editableProductFields(saved) }, baseProduct) : baseProduct;
+    if (!saved) return baseProduct;
+    const persistedFields = refreshBaseCatalog
+      ? runtimeCatalogFields(saved)
+      : editableProductFields(saved);
+    return normalizeCatalogProduct({ ...baseProduct, ...persistedFields }, baseProduct);
   });
 
   for (const saved of savedList) {
@@ -321,6 +325,17 @@ function editableProductFields(product) {
     alcoholic: product.alcoholic,
     minimumAge: product.minimumAge,
     image: product.image,
+  };
+}
+
+// Un cambio publicado del catálogo no debe seguir mostrando el nombre, packshot,
+// precio o presentación vieja que quedaron en un navegador. Conservamos sólo
+// decisiones operativas del negocio sandbox que no cambian la identidad comercial.
+function runtimeCatalogFields(product) {
+  return {
+    stock: product.stock,
+    available: product.available,
+    archived: product.archived,
   };
 }
 

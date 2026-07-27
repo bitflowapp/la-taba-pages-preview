@@ -1,5 +1,9 @@
 // Catálogo concreto aislado para preview/demo. Los precios y stocks son tiers QA,
 // no datos productivos. Producción ignora este módulo y carga únicamente Supabase.
+// Se persiste en el estado demo para refrescar identidades/imágenes cuando cambia
+// el catálogo publicado, sin eliminar pedidos, carrito o preferencias compatibles.
+export const PREVIEW_CATALOG_VERSION = 'preview-beverages-2026-07-26-v2';
+
 export const categories = [
   { id: 'all', name: 'Todos' },
   { id: 'promos', name: 'Promos' },

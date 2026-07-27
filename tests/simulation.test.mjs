@@ -75,7 +75,8 @@ test('createSimulationState seeds a coherent state for a delivery order', () => 
   assert.equal(sim.orderId, 'LT-9001');
   assert.equal(sim.running, true);
   assert.equal(sim.baseEta, 18);
-  assert.ok(sim.progress > 0 && sim.progress < 1);
+  assert.equal(sim.progress, 0);
+  assert.equal(sim.etaMinutes, 18);
   assert.ok(Number.isFinite(sim.lat) && Number.isFinite(sim.lng));
 });
 
@@ -269,6 +270,12 @@ test('view changes keep GPS live until the rider stops sharing', () => {
     handleViewChangeForSimulation('tracking');
     assert.equal(isGpsActive(), true);
     assert.equal(clearWatchId, null);
+
+    disableGpsTracking({ preserveLastFix: true });
+    assert.equal(clearWatchId, 45);
+    assert.equal(getState().simulation.gpsStatus, 'last_fix');
+    assert.equal(getState().simulation.gpsPaused, true);
+    assert.equal(isGpsActive(), false);
 
     disableGpsTracking();
     assert.equal(clearWatchId, 45);
@@ -793,7 +800,7 @@ test('simulation does not start over an active GPS watch', () => {
 });
 
 test('simulation can restart after GPS is stopped', () => {
-  createReadyDeliveryOrder();
+  const order = createReadyDeliveryOrder();
   const originalSecureContext = Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext');
   const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
   let successHandler = null;
@@ -824,6 +831,7 @@ test('simulation can restart after GPS is stopped', () => {
     assert.equal(getState().simulation.source, 'gps');
     assert.equal(disableGpsTracking().ok, true);
 
+    updateOrderStatus(order.id, 'on_the_way');
     const result = startSimulation();
     assert.equal(result.ok, true);
     assert.equal(getState().simulation.source, 'simulation');

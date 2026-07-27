@@ -143,8 +143,13 @@
   padding: 2px 2px 8px;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
-  scrollbar-width: thin;
+  scrollbar-width: none;
   scroll-snap-type: x proximity;
+}
+
+.category-strip::-webkit-scrollbar,
+.offers-rail::-webkit-scrollbar {
+  display: none;
 }
 
 .category-button {

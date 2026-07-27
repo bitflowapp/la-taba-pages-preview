@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v12-commercial-cache';
+const CACHE_NAME = 'la-taba-runtime-v29-mobile-cache';
 const ASSETS = [
   './',
   './index.html',
@@ -17,7 +17,8 @@ const ASSETS = [
   './runtime-config.js',
   './assets/icon.svg',
   './assets/products/beverage-placeholder.svg',
-  './js/app.js',
+  './js/pwa-update.js?v=2',
+  './js/app.js?v=29',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -79,9 +80,14 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)),
+    // La instalación de un worker nuevo puede ejecutarse mientras el anterior
+    // todavía controla la pestaña. `reload` evita precachear módulos viejos
+    // desde la caché HTTP y permite que “Actualizar ahora” entregue el bundle
+    // que acaba de publicarse.
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(
+      ASSETS.map((asset) => new Request(asset, { cache: 'reload' })),
+    )),
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

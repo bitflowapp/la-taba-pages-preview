@@ -1,6 +1,8 @@
 import { readRuntimeConfigSource, resolveRuntimeConfig } from './runtime-config.js';
 
-export const APP_DATA_VERSION = 'la-taba-runtime-v2';
+// Incrementa cuando un estado local compatible necesita una migración explícita.
+// La versión v3 actualiza el catálogo base sin descartar pedidos ni carrito demo.
+export const APP_DATA_VERSION = 'la-taba-runtime-v3';
 export const APP_MODE_PUBLIC = 'public';
 export const APP_MODE_DEMO = 'demo';
 export const APP_MODE_PRODUCTION = 'production';

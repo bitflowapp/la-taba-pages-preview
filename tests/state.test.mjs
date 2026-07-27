@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { BUSINESS_CONFIG } from '../js/config.js';
 import { safeJsonParse } from '../js/core/storage.js';
-import { hydrateState } from '../js/state.js';
+import {
+  hydrateState,
+  isDemoStateMigratable,
+  requiresCatalogRefresh,
+} from '../js/state.js';
 
 test('safeJsonParse returns fallback for corrupted storage payloads', () => {
   const fallback = { ok: true };
@@ -75,4 +79,52 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
   assert.equal(hydrated.orders[0].addressDetails.reference, 'Casa verde');
   assert.equal(hydrated.lastOrderId, null);
   assert.equal(hydrated.activeCategory, 'all');
+});
+
+test('a legacy demo catalog upgrades exact products without dropping a valid cart or order', () => {
+  Object.defineProperty(globalThis, 'location', {
+    value: { search: '?demo=1' },
+    configurable: true,
+  });
+  const legacy = {
+    schemaVersion: 4,
+    dataVersion: 'la-taba-runtime-v2',
+    appMode: 'demo',
+    products: [{
+      id: 'qa-promo-bebidas',
+      name: 'Gaseosa cola',
+      description: 'Producto viejo',
+      price: 999,
+      stock: 4,
+      available: true,
+      image: 'assets/products/beverage-placeholder.svg',
+    }],
+    cart: [{ productId: 'qa-promo-bebidas', quantity: 2 }],
+    orders: [{
+      id: 'LT-9010',
+      customerName: 'Cliente sandbox',
+      customerPhone: '2990000000',
+      address: 'Calle de prueba 1',
+      deliveryMode: 'delivery',
+      paymentMethod: 'Efectivo',
+      createdAt: '2026-07-26T12:00:00.000Z',
+      status: 'received',
+      items: [{ productId: 'qa-promo-bebidas', name: 'Gaseosa cola', quantity: 1, unitPrice: 999, unit: 'unidad' }],
+      statusHistory: [{ status: 'received', at: '2026-07-26T12:00:00.000Z' }],
+      delivery: {},
+    }],
+    lastOrderId: 'LT-9010',
+  };
+
+  assert.equal(isDemoStateMigratable(legacy), true);
+  assert.equal(requiresCatalogRefresh(legacy), true);
+
+  const hydrated = hydrateState(legacy, undefined, { refreshBaseCatalog: true });
+  const coca = hydrated.products.find((product) => product.id === 'qa-promo-bebidas');
+  assert.equal(coca.name, 'Coca-Cola Original 1,5 L x6');
+  assert.match(coca.image, /qa-coca-cola-original-15l/);
+  assert.equal(coca.stock, 4);
+  assert.deepEqual(hydrated.cart, [{ productId: 'qa-promo-bebidas', quantity: 2 }]);
+  assert.equal(hydrated.lastOrderId, 'LT-9010');
+  assert.equal(hydrated.orders[0].items[0].name, 'Gaseosa cola');
 });

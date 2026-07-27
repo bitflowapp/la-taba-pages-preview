@@ -1,5 +1,5 @@
 import { BUSINESS_CONFIG, STORAGE_KEYS } from './config.js';
-import { categories, seedOrders } from './data.js';
+import { categories, PREVIEW_CATALOG_VERSION, seedOrders } from './data.js';
 import { buildDemoCatalog, mergeCatalogProducts } from './core/catalog-store.js';
 import { normalizeDeliveryProof } from './core/delivery-proof.js';
 import { normalizeDeliveryCode } from './core/delivery-code.js';
@@ -44,8 +44,9 @@ import { clampProgress } from './core/simulation.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 import { normalizePendingReorder } from './core/reorder.js';
 
-// v4: agrega promociones aisladas y versionadas al sandbox persistente.
-export const STATE_SCHEMA_VERSION = 4;
+// v5: incorpora versión de catálogo para actualizar identidades/packshots demo
+// sin borrar pedidos, carrito ni preferencias locales compatibles.
+export const STATE_SCHEMA_VERSION = 5;
 
 export const SORT_OPTIONS = Object.freeze(['recommended', 'price_asc', 'popular']);
 
@@ -64,6 +65,7 @@ const defaultState = () => {
   return {
     schemaVersion: STATE_SCHEMA_VERSION,
     dataVersion: APP_DATA_VERSION,
+    catalogVersion: isDemoMode() ? PREVIEW_CATALOG_VERSION : '',
     appMode: getAppMode(),
     activeCategory: 'all',
     searchQuery: '',
@@ -106,12 +108,19 @@ function loadState() {
     return { ...base, adminUnlocked: readAdminFlag() };
   }
 
-  if (!isPersistedStateCompatible(parsed, base)) {
+  const compatible = isPersistedStateCompatible(parsed, base);
+  const migratable = isDemoStateMigratable(parsed, base);
+  if (!compatible && !migratable) {
     resetIncompatiblePersistence(localStorage, getStorageArea('sessionStorage'));
     return { ...base, adminUnlocked: false };
   }
 
-  return { ...hydrateState(parsed, base), adminUnlocked: readAdminFlag() };
+  return {
+    ...hydrateState(parsed, base, {
+      refreshBaseCatalog: migratable || requiresCatalogRefresh(parsed, base),
+    }),
+    adminUnlocked: readAdminFlag(),
+  };
 }
 
 export function isPersistedStateCompatible(savedState, baseState = defaultState()) {
@@ -119,6 +128,20 @@ export function isPersistedStateCompatible(savedState, baseState = defaultState(
   return savedState.schemaVersion === STATE_SCHEMA_VERSION
     && savedState.dataVersion === APP_DATA_VERSION
     && savedState.appMode === baseState.appMode;
+}
+
+// Sólo migra estados sandbox conocidos. Producción y configuraciones inválidas
+// siguen cerradas y nunca recuperan datos locales de una sesión demo.
+export function isDemoStateMigratable(savedState, baseState = defaultState()) {
+  if (!isPlainObject(savedState) || baseState.appMode !== 'demo') return false;
+  if (savedState.appMode !== 'demo') return false;
+  return Number(savedState.schemaVersion) === 4
+    && String(savedState.dataVersion || '') === 'la-taba-runtime-v2';
+}
+
+export function requiresCatalogRefresh(savedState, baseState = defaultState()) {
+  if (!isPlainObject(savedState) || baseState.appMode !== 'demo') return false;
+  return String(savedState.catalogVersion || '') !== PREVIEW_CATALOG_VERSION;
 }
 
 function resetIncompatiblePersistence(localStorage, sessionStorage) {
@@ -132,14 +155,22 @@ function resetIncompatiblePersistence(localStorage, sessionStorage) {
   safeStorageRemove(sessionStorage, STORAGE_KEYS.adminUnlocked);
 }
 
-export function hydrateState(savedState, baseState = defaultState()) {
-  return sanitizeState({ ...baseState, ...(isPlainObject(savedState) ? savedState : {}) }, baseState);
+export function hydrateState(savedState, baseState = defaultState(), { refreshBaseCatalog = false } = {}) {
+  return sanitizeState(
+    { ...baseState, ...(isPlainObject(savedState) ? savedState : {}) },
+    baseState,
+    { refreshBaseCatalog },
+  );
 }
 
-export function sanitizeState(nextState, baseState = defaultState()) {
+export function sanitizeState(nextState, baseState = defaultState(), { refreshBaseCatalog = false } = {}) {
   const source = isPlainObject(nextState) ? nextState : {};
   const baseProducts = buildBaseProducts();
-  const mergedProducts = mergeProducts(baseProducts, Array.isArray(source.products) ? source.products : baseState.products);
+  const mergedProducts = mergeProducts(
+    baseProducts,
+    Array.isArray(source.products) ? source.products : baseState.products,
+    { refreshBaseCatalog },
+  );
   const productMap = new Map(mergedProducts.map((product) => [product.id, product]));
   const orders = sanitizeOrders(Array.isArray(source.orders) ? source.orders : baseState.orders);
   const lastOrderId = normalizeLastOrderId(source.lastOrderId, orders);
@@ -147,6 +178,7 @@ export function sanitizeState(nextState, baseState = defaultState()) {
   return {
     schemaVersion: STATE_SCHEMA_VERSION,
     dataVersion: APP_DATA_VERSION,
+    catalogVersion: baseState.appMode === 'demo' ? PREVIEW_CATALOG_VERSION : '',
     appMode: baseState.appMode || getAppMode(),
     activeCategory: normalizeCategoryId(source.activeCategory, baseState.activeCategory || 'all', mergedProducts),
     searchQuery: sanitizeText(source.searchQuery, { fallback: '', maxLength: 80 }),
@@ -186,25 +218,34 @@ function sanitizeSimulation(raw, orders) {
   if (order.status === 'delivered' || order.status === 'cancelled') return null;
 
   const baseEta = Math.max(0, Math.floor(Number(raw.baseEta) || 0));
-  const progress = clampProgress(raw.progress);
+  const userStarted = Boolean(raw.userStarted);
+  const source = raw.source === 'gps' ? 'gps' : 'simulation';
+  // Estados antiguos sembraban 8 % al pasar a reparto. Si el rider nunca
+  // inició la ruta, volvemos al origen para que no sobrevivan ETA/avance
+  // fantasma después de una recarga.
+  const hasMovement = userStarted || source === 'gps';
+  const progress = hasMovement ? clampProgress(raw.progress) : 0;
   const destinationId = normalizeStreetDestinationId(raw.destinationId || raw.demoDestinationId || raw.routeId);
 
   return {
     orderId,
     running: Boolean(raw.running),
-    userStarted: Boolean(raw.userStarted),
+    userStarted,
     mode: raw.mode === 'gps' ? 'gps' : 'demo',
-    source: raw.source === 'gps' ? 'gps' : 'simulation',
+    source,
     routeId: sanitizeText(raw.routeId, { fallback: destinationId || 'neuquen', maxLength: 60 }),
     ...(destinationId ? { destinationId } : {}),
     progress,
     baseEta,
-    etaMinutes: Math.max(0, Math.floor(Number(raw.etaMinutes) || 0)),
+    etaMinutes: hasMovement
+      ? Math.max(0, Math.floor(Number(raw.etaMinutes) || 0))
+      : baseEta,
     speed: Math.max(1, Math.min(8, Math.floor(Number(raw.speed) || 1))),
     startedAt: normalizeIsoDate(raw.startedAt),
     timestamp: Math.max(0, Number(raw.timestamp) || 0),
     lastFixAt: normalizeIsoDate(raw.lastFixAt || raw.timestamp || raw.startedAt),
     gpsStatus: sanitizeText(raw.gpsStatus, { fallback: 'inactive', maxLength: 40 }),
+    ...(raw.gpsPaused ? { gpsPaused: true } : {}),
     ...(raw.gpsRequestedAt ? { gpsRequestedAt: normalizeIsoDate(raw.gpsRequestedAt) } : {}),
     ...(raw.lastGpsFixAt ? { lastGpsFixAt: normalizeIsoDate(raw.lastGpsFixAt) } : {}),
     ...(raw.lastGpsPublishedAt ? { lastGpsPublishedAt: normalizeIsoDate(raw.lastGpsPublishedAt) } : {}),
@@ -528,8 +569,8 @@ function buildBaseProducts() {
   return isDemoMode() ? buildDemoCatalog() : [];
 }
 
-function mergeProducts(baseProducts, savedProducts) {
-  return mergeCatalogProducts(baseProducts, savedProducts);
+function mergeProducts(baseProducts, savedProducts, options = {}) {
+  return mergeCatalogProducts(baseProducts, savedProducts, options);
 }
 
 function buildBaseBusinessConfig() {

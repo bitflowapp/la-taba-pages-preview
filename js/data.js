@@ -1,4 +1,4 @@
-export { categories, products } from './beverage-qa-data.js';
+export { categories, products, PREVIEW_CATALOG_VERSION } from './beverage-qa-data.js';
 
 // Seed interno para mantener estable la numeración local. Las superficies
 // operativas lo excluyen y los datos no representan condiciones comerciales.

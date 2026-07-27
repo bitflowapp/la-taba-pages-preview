@@ -544,6 +544,14 @@
   filter: drop-shadow(0 6px 10px rgb(20 20 22 / 18%));
 }
 
+/* At the end of the local demonstration route the rider is parked beside the
+ * destination pin, rather than covering it. Real GPS coordinates remain
+ * spatially exact; this is strictly the visual endpoint of the sandbox path. */
+.lt-rider-marker.arriving.source-simulation .lt-rider-marker-halo,
+.lt-rider-marker.arriving.source-simulation .lt-rider-moto-core {
+  translate: 22px -8px;
+}
+
 @keyframes taba-marker-pulse {
   from { opacity: 0.7; transform: scale(0.7); }
   to { opacity: 0; transform: scale(1.35); }

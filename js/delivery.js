@@ -39,6 +39,7 @@ import {
   GPS_GOOD_ACCURACY_METERS,
   getStreetTestDestination,
   getStreetTestDestinations,
+  hasFreshSharedGpsLocation,
   hasLiveRiderLocation,
 } from './map/route_geometry.js';
 import { renderOrderTimeline } from './core/order-timeline.js';
@@ -98,7 +99,7 @@ export function renderDeliveryPanel() {
   const sandboxMapActive = isSandboxOrderRepository(repository)
     && ['on_the_way', 'arriving'].includes(order.status)
     && ((sim?.source === 'simulation' && sim?.userStarted === true)
-      || (sim?.source === 'gps' && Number.isFinite(Number(sim?.lat))));
+      || (sim?.source === 'gps' && hasFreshSharedGpsLocation(sim)));
   const mapActive = gpsLive || sandboxMapActive;
   const instructions = order.notes && order.notes !== 'Sin notas' ? order.notes : 'Sin indicaciones especiales del cliente.';
   const address = normalizeOrderAddressDetails(order);
@@ -310,7 +311,7 @@ function renderRiderActions(order, { canLeave, canArrive, canDeliver }) {
     actions.push(`<button class="primary-button" type="button" data-delivery-arrive="${order.id}">Llegué al domicilio</button>`);
   }
   if (canDeliver && isDeliveryCodeConfirmed(order)) {
-    actions.push(`<button class="primary-button" type="button" data-delivery-done="${order.id}">Pedido entregado</button>`);
+    actions.push(`<button class="primary-button" type="button" data-delivery-done="${order.id}">Confirmar entrega</button>`);
   }
   if (!actions.length) return '';
   return `<div class="button-row rider-actions">${actions.join('')}</div>`;
@@ -405,28 +406,48 @@ function renderSandboxMapControls(order, sim) {
   const running = presentation.running;
   const gpsMode = presentation.gps;
   const gpsActive = isGpsActive();
-  const gpsLabel = sim?.gpsStatus === 'denied'
+  const canTrack = order.status === 'on_the_way' || order.status === 'arriving';
+  const gpsRequested = gpsActive || sim?.gpsStatus === 'requesting' || presentation.gps || presentation.gpsStale;
+  const controlContext = gpsRequested ? 'Ubicación' : 'Recorrido';
+  const controlActivity = gpsActive && !gpsMode
+    ? 'Buscando ubicación'
+    : presentation.activityLabel === 'Seguimiento por iniciar'
+    ? 'Sin iniciar'
+    : presentation.activityLabel === 'Ubicación no disponible'
+      ? 'No disponible'
+      : presentation.activityLabel === 'Última ubicación disponible'
+        ? 'Última ubicación'
+        : presentation.activityLabel === 'Ubicación activa'
+          ? 'Activa'
+        : presentation.activityLabel;
+  const gpsLabel = !canTrack
+    ? 'Disponible al salir del local'
+    : gpsActive && !gpsMode
+      ? 'Buscando una ubicación actual desde este dispositivo…'
+    : sim?.gpsStatus === 'denied'
     ? 'Permiso de ubicación denegado'
     : sim?.gpsStatus === 'unavailable'
       ? 'Ubicación no disponible'
       : sim?.gpsStatus === 'requesting'
         ? 'Solicitando ubicación…'
-        : gpsMode && sim?.source === 'gps'
+        : presentation.gpsSnapshot
+          ? `Última ubicación · ${relativeAgeLabel(sim.lastFixAt || sim.timestamp)}`
+          : gpsMode && sim?.source === 'gps'
           ? `Ubicación activa · ${relativeAgeLabel(sim.lastFixAt || sim.timestamp)}`
           : 'Activá ubicación o usá el recorrido de muestra';
   return `
     <div class="sim-panel street-test-panel sandbox-route-panel ${running ? 'is-running' : ''}" data-street-test data-sandbox-route>
       <div class="sim-head">
-        <span class="rider-label">Seguimiento del pedido</span>
-        <span class="sim-state">${escapeHtml(presentation.activityLabel)}</span>
+        <span class="rider-label">${controlContext}</span>
+        <span class="sim-state">${escapeHtml(controlActivity)}</span>
       </div>
       <div class="sandbox-route-meta">
-        <span><small>Modo</small><strong>${gpsMode && sim?.source === 'gps' ? 'GPS local' : 'Recorrido de muestra'}</strong></span>
+        <span><small>Modo</small><strong>${gpsRequested ? 'GPS local' : 'Recorrido de muestra'}</strong></span>
         <span><small>Avance</small><strong data-sandbox-progress>${gpsMode && sim?.source === 'gps' ? '—' : `${presentation.progress}%`}</strong></span>
         ${presentation.showEta ? `<span><small>ETA</small><strong data-sandbox-eta>${escapeHtml(presentation.etaLabel)}</strong></span>` : ''}
       </div>
-      <p class="sandbox-gps-status" data-sandbox-gps-status>${escapeHtml(gpsLabel)}${sim?.accuracy ? ` · precisión aprox. ${Math.round(sim.accuracy)} m` : ''}</p>
-      <div class="button-row">
+      <p class="sandbox-gps-status" data-sandbox-gps-status>${escapeHtml(gpsLabel)}${gpsMode && sim?.source === 'gps' && sim?.accuracy ? ` · precisión aprox. ${Math.round(sim.accuracy)} m` : ''}</p>
+      ${canTrack ? `<div class="button-row">
         ${gpsActive
           ? '<button class="secondary-button compact" type="button" data-sim-gps-off>Desactivar ubicación</button>'
           : '<button class="secondary-button compact" type="button" data-sim-gps>Activar ubicación</button>'}
@@ -434,8 +455,8 @@ function renderSandboxMapControls(order, sim) {
           ? '<button class="secondary-button compact" type="button" data-sim-pause>Pausar recorrido</button>'
           : presentation.canStart ? `<button class="primary-button compact" type="button" data-sim-start>${presentation.paused ? 'Reanudar recorrido' : 'Iniciar recorrido'}</button>` : ''}
         ${presentation.canReset ? '<button class="ghost-button compact" type="button" data-sim-reset>Reiniciar ruta</button>' : ''}
-      </div>
-      <p class="form-hint">${gpsMode && sim?.source === 'gps' ? 'El mapa usa la última ubicación compartida desde este iPhone.' : 'El recorrido de muestra usa calles de Neuquén Capital.'}</p>
+      </div>` : '<p class="form-hint">Confirmá que saliste del local para iniciar ubicación o recorrido.</p>'}
+      <p class="form-hint">${presentation.gpsSnapshot ? 'La última ubicación se muestra sólo mientras siga siendo reciente.' : gpsActive && !gpsMode ? 'Esperando una ubicación actual desde este dispositivo.' : gpsMode && sim?.source === 'gps' ? 'El mapa usa la última ubicación compartida desde este dispositivo.' : 'El recorrido de muestra usa calles de Neuquén Capital.'}</p>
     </div>
   `;
 }
@@ -459,6 +480,7 @@ function gpsProductStatusLabel(sim, active) {
     inactive: 'Ubicación detenida',
     requesting: 'Permiso requerido',
     active: active ? 'Compartiendo ubicación' : 'Sin GPS en vivo',
+    last_fix: 'Última ubicación disponible',
     denied: 'Permiso requerido',
     unavailable: sim?.source === 'gps' ? 'Señal baja, usando última ubicación' : 'Señal baja',
     requires_secure_context: 'Requiere HTTPS',
@@ -469,6 +491,7 @@ function gpsProductStatusLabel(sim, active) {
 function gpsSignalStatusLabel(sim, active) {
   if (!sim || sim.gpsStatus === 'inactive') return 'Ubicación detenida';
   if (sim.gpsStatus === 'requesting') return 'Permiso requerido';
+  if (sim.gpsStatus === 'last_fix') return 'Última ubicación disponible';
   if (sim.gpsStatus === 'denied') return 'Permiso requerido';
   if (sim.gpsStatus === 'requires_secure_context') return 'Permiso requerido';
   if (sim.gpsStatus === 'unavailable') {
@@ -490,6 +513,7 @@ function gpsStatusLabel(sim, active) {
     inactive: 'Detenida',
     requesting: 'Esperando permiso',
     active: active ? 'GPS real activo' : 'Último GPS real',
+    last_fix: 'Última ubicación',
     denied: 'Bloqueada',
     unavailable: 'No disponible',
     requires_secure_context: 'Requiere HTTPS',
@@ -559,6 +583,7 @@ function geolocationLabel() {
 
 function diagnosticGpsState(sim) {
   if (sim?.gpsStatus === 'requesting') return 'Pidiendo permiso';
+  if (sim?.gpsStatus === 'last_fix') return 'Pausado';
   if (sim?.gpsStatus === 'active') return hasLiveRiderLocation(sim) ? 'Activo' : 'Sin GPS en vivo';
   if (sim?.gpsStatus === 'denied' || sim?.gpsStatus === 'unavailable' || sim?.gpsStatus === 'requires_secure_context') return 'Error';
   return 'Inactivo';
@@ -570,6 +595,13 @@ export function riderGpsShareState(sim, { now = Date.now() } = {}) {
     return {
       live: false,
       headSub: 'Compartí ubicación real cuando salgas a reparto.',
+    };
+  }
+
+  if (sim.gpsStatus === 'last_fix') {
+    return {
+      live: false,
+      headSub: 'Ubicación pausada. La última posición se muestra sólo mientras sea reciente.',
     };
   }
 

@@ -162,7 +162,7 @@ export function clearCart() {
 }
 
 export function repeatCustomerOrder(orderId = '', { force = false } = {}) {
-  const order = orderId ? findCustomerOrder(orderId) : getLatestCustomerOrder();
+  const order = getRepeatableCustomerOrder(orderId);
   if (!order) {
     return { ok: false, message: 'No hay pedidos anteriores para repetir.', skipped: [] };
   }
@@ -206,6 +206,26 @@ export function repeatCustomerOrder(orderId = '', { force = false } = {}) {
       ? `Carrito armado con precios actuales.${priceMessage} ${skippedMessage}`
       : `Carrito armado con precios actuales.${priceMessage}`,
   };
+}
+
+// La recompra normal se apoya en el historial con consentimiento. En la
+// sandbox, el pedido ya vive de forma explícita en su estado persistente:
+// permitimos rearmar sólo sus productos aun cuando el cliente haya elegido no
+// recordar sus datos. Fuera de ?demo=1 no existe este fallback.
+export function getRepeatableCustomerOrder(orderId = '') {
+  const knownOrder = orderId ? findCustomerOrder(orderId) : getLatestCustomerOrder();
+  if (knownOrder) return knownOrder;
+  if (!isDemoMode()) return null;
+
+  const orders = getState().orders || [];
+  if (orderId) {
+    return orders.find((order) => (
+      order.id === orderId
+      && order.status === 'delivered'
+      && !order.internalSeed
+    )) || null;
+  }
+  return orders.find((order) => order.status === 'delivered' && !order.internalSeed) || null;
 }
 
 export function validateCartForCheckout(deliveryMode = 'delivery') {

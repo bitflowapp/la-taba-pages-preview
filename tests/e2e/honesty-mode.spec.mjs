@@ -197,7 +197,7 @@ test('estado legacy incompatible y perfil desactualizado se limpian sin reset ma
     history: localStorage.getItem('la_taba_customer_history_v1'),
   }), STATE_KEY);
 
-  expect(persisted.state.dataVersion).toBe('la-taba-runtime-v2');
+  expect(persisted.state.dataVersion).toBe('la-taba-runtime-v3');
   expect(persisted.state.orders).toHaveLength(0);
   expect(persisted.state.products.some((product) => /producto heredado/i.test(product.name))).toBe(false);
   expect(persisted.profile).toBeNull();

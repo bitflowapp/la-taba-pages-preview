@@ -4,19 +4,37 @@ export function clampSandboxProgress(value) {
   return Math.max(0, Math.min(1, numeric));
 }
 
-export function sandboxTrackingPresentation(order = {}, simulation = null) {
+import { hasFreshSharedGpsLocation } from '../map/route_geometry.js';
+
+export function sandboxTrackingPresentation(order = {}, simulation = null, { now = Date.now() } = {}) {
   const status = String(order?.status || '');
-  const gps = simulation?.origin === 'local_gps' || simulation?.source === 'gps' || simulation?.mode === 'gps';
+  // `origin` records how the rider last tried to share a location; it is not
+  // proof that a location is currently available. In particular, a denied
+  // browser permission keeps that provenance so the rider can retry, but must
+  // never make the customer-facing UI say "Ubicación activa".
+  const gpsStatus = String(simulation?.gpsStatus || 'inactive');
+  const hasGpsFix = simulation?.source === 'gps'
+    && ['active', 'last_fix'].includes(gpsStatus)
+    && Number.isFinite(Number(simulation?.lat))
+    && Number.isFinite(Number(simulation?.lng));
+  const freshGpsFix = hasGpsFix && hasFreshSharedGpsLocation(simulation, { now });
+  const gpsLive = freshGpsFix && gpsStatus === 'active' && !simulation?.gpsPaused;
+  const gpsSnapshot = freshGpsFix && gpsStatus === 'last_fix';
+  const gpsStale = hasGpsFix && !freshGpsFix;
+  const gps = gpsLive || gpsSnapshot;
   const delivered = status === 'delivered';
-  const arrived = !delivered && (status === 'arriving' || clampSandboxProgress(simulation?.progress) >= 1);
-  const progress = arrived || delivered ? 100 : Math.round(clampSandboxProgress(simulation?.progress) * 100);
-  const etaMinutes = Number.isFinite(Number(simulation?.etaMinutes))
+  const userStarted = Boolean(simulation?.userStarted);
+  const routeStarted = !gps && userStarted;
+  const arrived = !delivered && (status === 'arriving' || (routeStarted && clampSandboxProgress(simulation?.progress) >= 1));
+  const progress = arrived || delivered
+    ? 100
+    : routeStarted ? Math.round(clampSandboxProgress(simulation?.progress) * 100) : 0;
+  const etaMinutes = routeStarted && Number.isFinite(Number(simulation?.etaMinutes))
     ? Math.max(0, Math.round(Number(simulation.etaMinutes)))
     : null;
   const running = Boolean(simulation?.running) && !arrived && !delivered;
-  const userStarted = Boolean(simulation?.userStarted);
-  const paused = !gps && userStarted && !running && !arrived && !delivered;
-  const inTransit = !arrived && !delivered && (status === 'on_the_way' || progress > 0 || userStarted);
+  const paused = routeStarted && !running && !arrived && !delivered;
+  const inTransit = !arrived && !delivered && (status === 'on_the_way' || progress > 0 || routeStarted || gps);
 
   const phaseLabel = delivered
     ? 'Entregado'
@@ -31,8 +49,12 @@ export function sandboxTrackingPresentation(order = {}, simulation = null) {
     ? 'Seguimiento finalizado'
     : arrived
       ? 'Llegó al domicilio'
-      : gps
+    : gpsLive
         ? 'Ubicación activa'
+    : gpsSnapshot
+          ? 'Última ubicación disponible'
+        : gpsStale
+          ? 'Ubicación no disponible'
         : running
           ? 'Seguimiento activo'
           : paused
@@ -49,20 +71,23 @@ export function sandboxTrackingPresentation(order = {}, simulation = null) {
   return {
     source: gps ? 'local_gps' : 'sandbox_route',
     gps,
+    gpsLive,
+    gpsSnapshot,
+    gpsStale,
     delivered,
     arrived,
     progress,
     etaMinutes,
     etaLabel,
-    showEta: !gps && !delivered,
+    showEta: routeStarted && !delivered,
     running,
     paused,
     inTransit,
     phaseLabel,
     activityLabel,
-    isActive: gps || running,
-    canStart: !gps && !running && !arrived && !delivered,
+    isActive: gpsLive || running,
+    canStart: !gps && status === 'on_the_way' && !running && !arrived && !delivered,
     canPause: !gps && running,
-    canReset: !gps && !arrived && !delivered && status === 'on_the_way',
+    canReset: routeStarted && !arrived && !delivered && status === 'on_the_way',
   };
 }

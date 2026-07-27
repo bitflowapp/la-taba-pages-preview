@@ -166,6 +166,9 @@ test('pedido demo no muestra rider falso, GPS, mapa ni ETA', async ({ page }) =>
   await rider.locator('[data-rider-accept="LT-0002"]').click();
   await expect(rider).toContainText('Entrega aceptada.');
   await expect(rider.locator('[data-real-map]')).toHaveCount(0);
+  await expect(rider.locator('[data-sim-gps]')).toHaveCount(0);
+  await rider.locator('[data-delivery-leave="LT-0002"]').click();
+  await waitForToast(page, 'Pedido marcado como en camino.');
   await expect(rider.locator('[data-sim-gps]')).toHaveCount(1);
 
   await guards.assertClean();

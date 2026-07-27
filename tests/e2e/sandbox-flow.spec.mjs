@@ -87,6 +87,68 @@ test('sandbox tools stay isolated from production mode', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('tracking recovers the newest persisted sandbox state on returning to the foreground', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const client = await context.newPage();
+  const tracking = await context.newPage();
+  installPageGuards(client);
+  installPageGuards(tracking);
+
+  // Reproduce an Android background tab: neither its BroadcastChannel nor the
+  // storage event can advance its in-memory state. The foreground hook must
+  // read IndexedDB when Tracking becomes active again.
+  await tracking.addInitScript(() => {
+    Object.defineProperty(window, 'BroadcastChannel', { value: undefined, configurable: true });
+    window.addEventListener('storage', (event) => event.stopImmediatePropagation(), true);
+  });
+
+  await client.goto('/?reset=1&demo=1&tools=1#home');
+  await client.locator('[data-sandbox-action="seed-order"]').click();
+  const orderId = await client.evaluate(() => import('/js/state.js').then(({ getState }) => getState().lastOrderId));
+
+  await tracking.goto('/?demo=1#tracking');
+  await expect.poll(() => tracking.evaluate(async (id) => {
+    const { getState } = await import('/js/state.js');
+    return getState().orders.find((order) => order.id === id)?.status;
+  }, orderId)).toBe('received');
+
+  await client.evaluate(async (id) => {
+    const { getOrderRepository } = await import('/js/repositories/repository_factory.js');
+    return getOrderRepository().updateOrderStatus(id, 'accepted');
+  }, orderId);
+  await tracking.waitForTimeout(150);
+  expect(await tracking.evaluate(async (id) => {
+    const { getState } = await import('/js/state.js');
+    return getState().orders.find((order) => order.id === id)?.status;
+  }, orderId)).toBe('received');
+
+  await tracking.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect.poll(() => tracking.evaluate(async (id) => {
+    const { getState } = await import('/js/state.js');
+    return getState().orders.find((order) => order.id === id)?.status;
+  }, orderId)).toBe('preparing');
+
+  await context.close();
+});
+
+test('sandbox paints the customer surface before a delayed IndexedDB hydration finishes', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const guards = installPageGuards(page);
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'indexedDB', {
+      configurable: true,
+      value: { open: () => ({}) },
+    });
+  });
+
+  await page.goto('/?demo=1#home');
+  await expect(page.locator('[data-view="home"] [data-search-jump]')).toBeVisible();
+  await expect(page.locator('[data-view="home"]')).not.toBeEmpty();
+  await guards.assertClean();
+  await context.close();
+});
+
 test('sandbox completes client, business, rider, route, delivery and reorder', async ({ page }) => {
   const guards = installPageGuards(page);
   await page.goto('/?reset=1&demo=1#home');

@@ -1,0 +1,11 @@
+id,severity,area,observed_on,defect,resolution,status
+MOTO-01,P1,home,Chrome normal físico,"El aviso automático de instalación competía con la primera acción de compra.","Se eliminó la apertura automática; la actualización usa un aviso explícito y no bloqueante.",RESUELTO
+MOTO-02,P1,tracking,Chrome normal físico,"Un pedido sin recorrido podía mostrar avance y ETA antes de que el rider iniciara seguimiento.","La presentación no calcula mapa, progreso ni ETA hasta que existe una ruta activa o una fijación GPS fresca.",RESUELTO
+MOTO-03,P1,tracking,Chrome normal físico,"Un recorrido simulado podía etiquetarse como seguimiento en vivo.","La cabecera identifica el recorrido de muestra sin sugerir GPS real.",RESUELTO
+MOTO-04,P2,tracking,Chrome normal físico,"Al llegar, la moto podía cubrir el pin de destino.","El marcador de ruta simulada se separa visualmente del destino al 100 % sin alterar GPS local.",RESUELTO
+MOTO-05,P2,rider,Chrome normal físico,"El CTA final era ambiguo después de validar el código.","El CTA se renombró a Confirmar entrega y conserva la secuencia código → entrega.",RESUELTO
+MOTO-06,P1,sincronización,Chrome Android físico,"Una pestaña en segundo plano podía demorar eventos de BroadcastChannel/storage.","Al recuperar foco o visibilidad, Tracking lee el último snapshot de IndexedDB automáticamente.",RESUELTO
+MOTO-07,P2,categorías,Chrome normal físico,"La barra de categorías exponía scrollbar nativo y ruido visual.","Se conserva el desplazamiento táctil y se oculta el scrollbar visual.",RESUELTO
+MOTO-09,P1,arranque,Chrome Android físico,"La superficie podía esperar la hidratación de IndexedDB y dejar el contenido inicial en blanco si otra pestaña retenía la base.","La interfaz se pinta antes de esperar IndexedDB y, si la apertura queda bloqueada, sandbox continúa de forma explícita en memoria.",RESUELTO
+MOTO-10,P1,actualización,Chrome Android físico,"Un worker nuevo podía quedar en espera sin abrir el aviso de actualización por una carrera de instalación o una respuesta HTTP vieja.","El registro evita el caché HTTP, vuelve a evaluar el worker pendiente después de cada chequeo y muestra el aviso sin interrumpir la compra.",RESUELTO
+MOTO-08,EXTERNO,hardware,precheck,"No hubo Moto G13 conectado; el dispositivo autorizado fue moto g15.","No se simuló ni se declaró una prueba inexistente en Moto G13.",ABIERTO

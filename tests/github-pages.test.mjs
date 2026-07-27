@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v12-commercial-cache');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v29-mobile-cache');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -29,7 +29,8 @@ test('service worker caches only existing GitHub Pages assets', () => {
     false,
     'legacy food or unverified catalog imagery must not be precached',
   );
-  assert.ok(assets.includes('./js/app.js'));
+  assert.ok(assets.includes('./js/pwa-update.js?v=2'));
+  assert.ok(assets.includes('./js/app.js?v=29'));
   assert.ok(assets.includes('./js/core/address.js'));
   assert.ok(assets.includes('./js/core/app-mode.js'));
   assert.ok(assets.includes('./js/core/storage.js'));
@@ -51,7 +52,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
 
   for (const asset of assets) {
     if (asset === './') continue;
-    assert.equal(fs.existsSync(path.join(root, asset)), true, `missing asset referenced by sw.js: ${asset}`);
+    assert.equal(fs.existsSync(path.join(root, asset.split('?')[0])), true, `missing asset referenced by sw.js: ${asset}`);
   }
 });
 
@@ -88,6 +89,24 @@ test('service worker sólo elimina caches anteriores de TABA y exige precache co
     source,
     /cache\.addAll\(ASSETS\)\)\.catch\(\(\) => undefined\)/,
   );
+});
+
+test('a published update waits for an explicit customer refresh instead of interrupting the journey', () => {
+  const worker = read('sw.js');
+  const update = read('js/pwa-update.js');
+  const installBlock = worker.match(/self\.addEventListener\('install',[\s\S]*?\n}\);/);
+  assert.ok(installBlock);
+  assert.doesNotMatch(installBlock[0], /skipWaiting\(\)/);
+  assert.match(worker, /event\.data === 'skip-waiting'/);
+  assert.match(update, /data-app-update-banner/);
+  assert.match(update, /pendingUpdate\.waiting\.postMessage\('skip-waiting'\)/);
+  assert.match(update, /register\('\.\/sw\.js', \{ updateViaCache: 'none' \}\)/);
+  assert.match(update, /controllerchange/);
+  assert.match(update, /registration\.update\(\)\.then\(\(\) => announceWaitingUpdate\(registration\)\)/);
+  assert.match(update, /const UPDATE_CHECK_DELAYS = \[0, 250, 1000, 4000, 12000, 30000, 60000\]/);
+  assert.match(update, /scheduleWaitingUpdateChecks\(registration\)/);
+  assert.match(update, /window\.addEventListener\('focus', recheckUpdate\)/);
+  assert.match(update, /window\.addEventListener\('pageshow', recheckUpdate\)/);
 });
 
 test('Leaflet remoto está fijado con SRI y CORS anónimo', () => {

@@ -76,6 +76,9 @@ test('el modo demo ofrece GPS local y recorrido geográfico de respaldo', async 
   await expect(page.locator('[data-rider-assignment-preview="LT-0002"]')).toBeVisible();
   await page.locator('[data-rider-accept="LT-0002"]').click();
   await expect(page.locator('[data-delivery-panel]')).toContainText('Entrega aceptada.');
+  await expect(page.locator('[data-delivery-panel] [data-sim-gps]')).toHaveCount(0);
+  await page.locator('[data-delivery-leave="LT-0002"]').click();
+  await waitForToast(page, 'Pedido marcado como en camino.');
   await expect(page.locator('[data-delivery-panel] [data-sim-gps]')).toHaveCount(1);
   await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
   await page.locator('[data-delivery-panel] [data-sim-start]').click();

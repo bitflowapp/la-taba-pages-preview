@@ -84,6 +84,14 @@
         <small>Revisá internet e intentá nuevamente.</small>
       </div>
 
+      <div class="pwa-banner pwa-banner-update" data-app-update-banner hidden role="status" aria-live="polite">
+        <span class="pwa-banner-copy">
+          <strong>Hay una actualización disponible</strong>
+          <small>Incluye mejoras para tu pedido y seguimiento.</small>
+        </span>
+        <button class="primary-button compact" type="button" data-app-update-now>Actualizar ahora</button>
+      </div>
+
       <main data-app-main>
         <section class="section app-view app-home is-active" data-view="home" aria-hidden="false">
           <div class="card empty-state" data-production-catalog-gate hidden role="status">
@@ -612,6 +620,7 @@
       crossorigin=""
       defer
     ></script>
-    <script type="module" src="js/app.js"></script>
+    <script src="js/pwa-update.js?v=2"></script>
+    <script type="module" src="js/app.js?v=29"></script>
   </body>
 </html>

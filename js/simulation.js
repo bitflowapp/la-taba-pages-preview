@@ -209,9 +209,10 @@ export function startSimulation() {
 
   // Si todavía está en el local, lo hacemos salir para empezar a moverse.
   if (order.status === 'ready') {
-    const left = updateOrderStatus(order.id, 'on_the_way');
-    if (!left.ok) return { ok: false, message: left.message };
-    order = getActiveDeliveryOrder() || order;
+    return { ok: false, message: 'Confirmá que saliste del local antes de iniciar el recorrido.' };
+  }
+  if (order.status !== 'on_the_way') {
+    return { ok: false, message: 'El recorrido sólo puede iniciarse cuando el pedido está en reparto.' };
   }
 
   const current = getState().simulation;
@@ -289,7 +290,7 @@ export function syncSimulationOnStatus(orderId, status) {
   if (!order || order.deliveryMode !== 'delivery') return;
 
   if (status === 'on_the_way') {
-    const next = sim && sim.orderId === orderId
+    const next = sim && sim.orderId === orderId && (sim.userStarted || sim.source === 'gps')
       ? sim
       : createSimulationState(order, { running: false });
     setState({ simulation: next });
@@ -343,6 +344,7 @@ function gpsUnavailableResult(order, gpsStatus, gpsError) {
       source: 'simulation',
       running: false,
       gpsStatus,
+      gpsPaused: false,
       gpsError,
       streetMode: Boolean(preferredDestinationId || base?.streetMode),
       lastSentSource: 'simulation',
@@ -468,6 +470,7 @@ export function enableGpsTracking() {
       source: base?.source === 'gps' ? 'gps' : 'simulation',
       running: false,
       gpsStatus: 'requesting',
+      gpsPaused: false,
       gpsRequestedAt: requestedAt,
       gpsError: undefined,
       owner: getDeviceId(),
@@ -491,7 +494,7 @@ export function enableGpsTracking() {
   return { ok: true, message: 'Solicitando ubicación GPS.' };
 }
 
-export function disableGpsTracking({ silent = false } = {}) {
+export function disableGpsTracking({ silent = false, preserveLastFix = false } = {}) {
   if (gpsWatchId !== null && typeof navigator !== 'undefined' && navigator.geolocation) {
     try { navigator.geolocation.clearWatch(gpsWatchId); } catch (_) { /* no-op */ }
   }
@@ -500,13 +503,19 @@ export function disableGpsTracking({ silent = false } = {}) {
   resetGpsPublishThrottle();
   const sim = getState().simulation;
   if (sim && sim.mode === 'gps') {
+    const keepLastFix = preserveLastFix
+      && sim.source === 'gps'
+      && Number.isFinite(Number(sim.lat))
+      && Number.isFinite(Number(sim.lng))
+      && Date.now() - locationTimestamp(sim) <= GPS_FIX_STALE_MS;
     setState({
       simulation: {
         ...sim,
-        mode: 'demo',
+        mode: keepLastFix ? 'gps' : 'demo',
         source: sim.source === 'gps' ? 'gps' : 'simulation',
         running: false,
-        gpsStatus: 'inactive',
+        gpsStatus: keepLastFix ? 'last_fix' : 'inactive',
+        gpsPaused: keepLastFix,
       },
     });
   }
@@ -558,6 +567,7 @@ function onGpsPosition(position) {
       mode: 'gps',
       source: 'gps',
       gpsStatus: 'active',
+      gpsPaused: false,
       running: false,
       gpsError: undefined,
       lastGpsFixAt: location.lastFixAt,
@@ -588,6 +598,7 @@ function onGpsError(error) {
         source: recentFix ? 'gps' : (sim.source === 'gps' ? 'gps' : 'simulation'),
         running: false,
         gpsStatus: 'unavailable',
+        gpsPaused: false,
         gpsError: recentFix ? 'Señal baja, usando última ubicación.' : message,
       },
     });
@@ -602,6 +613,7 @@ function onGpsError(error) {
         source: sim.source === 'gps' ? 'gps' : 'simulation',
         running: false,
         gpsStatus: denied ? 'denied' : 'unavailable',
+        gpsPaused: false,
         gpsError: message,
       },
     });

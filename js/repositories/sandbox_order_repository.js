@@ -108,6 +108,11 @@ function openDatabase() {
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error || new Error('No se pudo abrir la base sandbox.'));
+    // Una pestaña antigua puede mantener abierta una versión previa durante
+    // una actualización. No dejamos la interfaz en blanco esperando un
+    // bloqueo de IndexedDB: startSync conserva el estado en memoria y el
+    // resto de la sincronización local sigue disponible.
+    request.onblocked = () => reject(new Error('La base sandbox está ocupada por otra pestaña.'));
   });
 }
 
@@ -184,6 +189,7 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
   let channel = null;
   let applyingRemote = false;
   let lastAppliedRevision = 0;
+  let foregroundRefreshHandler = null;
   const lastStorageTickRef = { value: readStorageTick() };
 
   async function persistAndPublish(state = getState()) {
@@ -349,6 +355,18 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
         lastStorageTickRef.value = event.newValue;
         await readAndApplyLatest();
       });
+      // Chrome on Android may freeze a background tab and postpone both its
+      // BroadcastChannel callback and the storage event. When the customer
+      // returns to Tracking, hydrate the latest local snapshot immediately so
+      // the screen never asks them to manually reload.
+      foregroundRefreshHandler = () => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+        void readAndApplyLatest();
+      };
+      window.addEventListener('focus', foregroundRefreshHandler);
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', foregroundRefreshHandler);
+      }
     }
   }
 
@@ -360,6 +378,13 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
     if (unsubState) {
       unsubState();
       unsubState = null;
+    }
+    if (foregroundRefreshHandler && typeof window !== 'undefined') {
+      window.removeEventListener('focus', foregroundRefreshHandler);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', foregroundRefreshHandler);
+      }
+      foregroundRefreshHandler = null;
     }
   }
 

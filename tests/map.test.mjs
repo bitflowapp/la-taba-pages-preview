@@ -9,6 +9,7 @@ import {
   getRoute,
   getStreetTestDestination,
   getStreetTestDestinations,
+  hasFreshSharedGpsLocation,
   hasLiveRiderLocation,
   isLocationStale,
   isUsableGpsFix,
@@ -199,6 +200,20 @@ test('hasLiveRiderLocation solo es true con GPS real y reciente', () => {
   // Sin ubicación: no hay rider en vivo (pedido recién creado).
   assert.equal(hasLiveRiderLocation(null, { now }), false);
   assert.equal(hasLiveRiderLocation(undefined, { now }), false);
+});
+
+test('un último fix fresco se comparte sin presentarse como seguimiento activo', () => {
+  const now = 1_000_000;
+  const snapshot = {
+    lat: -38.95,
+    lng: -68.05,
+    source: 'gps',
+    gpsStatus: 'last_fix',
+    timestamp: now - 5_000,
+  };
+  assert.equal(hasFreshSharedGpsLocation(snapshot, { now }), true);
+  assert.equal(hasLiveRiderLocation(snapshot, { now }), false);
+  assert.equal(hasFreshSharedGpsLocation({ ...snapshot, timestamp: now - 60_000 }, { now }), false);
 });
 
 test('isLocationStale marca como vieja una ubicación pasada el umbral', () => {

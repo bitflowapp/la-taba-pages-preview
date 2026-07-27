@@ -40,7 +40,18 @@
 
         <div class="topbar-actions">
           <button class="primary-button compact cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
-            <span data-cart-total-small>Pedido</span>
+            <span class="cart-button-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 4h2l2.1 10.15a2 2 0 0 0 1.96 1.6h7.94a2 2 0 0 0 1.93-1.47L20.5 9H7.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M9.5 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm8 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" fill="currentColor" stroke="currentColor" />
+              </svg>
+              <span class="cart-button-count" data-cart-count>0</span>
+            </span>
+            <span class="cart-button-copy">
+              <small>Mi pedido</small>
+              <strong data-cart-total-small>$0</strong>
+            </span>
+            <span class="cart-button-arrow" aria-hidden="true">›</span>
           </button>
         </div>
       </header>
@@ -198,18 +209,19 @@
           <div data-catalog-dependent hidden>
           <div class="section-head catalog-head">
             <div>
-              <nav class="crumbs" aria-label="Ruta de navegación">
-                <button class="crumb-link" type="button" data-nav-view="home">Inicio</button>
-                <span class="crumb-sep" aria-hidden="true">›</span>
-                <span class="crumb-current">Catálogo</span>
-              </nav>
-              <h1 class="view-title" data-catalog-title>Todos</h1>
+              <p class="catalog-kicker">CATÁLOGO</p>
+              <h1 class="view-title">¿Qué vas a pedir hoy?</h1>
             </div>
           </div>
 
-          <div class="search-box">
-            <span aria-hidden="true">⌕</span>
-            <input data-search-input type="search" placeholder="Buscar en el catálogo…" aria-label="Buscar en el catálogo completo" />
+          <div class="search-box catalog-search">
+            <span class="catalog-search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="2" />
+                <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </span>
+            <input data-search-input type="search" placeholder="Buscar productos, marcas y más…" aria-label="Buscar productos, marcas y más" />
           </div>
 
           <div class="category-strip" data-category-strip></div>
@@ -217,12 +229,12 @@
           <div class="catalog-toolbar">
             <span class="catalog-count" data-catalog-count>0 productos</span>
             <label class="sort-field">
-              <span>Ordenar</span>
-              <select data-sort-select aria-label="Ordenar productos">
+              <span class="sort-field-label"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 5h11M7 12h8M7 19h5M4 5h.01M4 12h.01M4 19h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg><span>Ordenar por</span></span>
+              <span class="sort-select-wrap"><select data-sort-select aria-label="Ordenar productos">
                 <option value="recommended">Recomendados</option>
                 <option value="price_asc">Menor precio</option>
                 <option value="popular">Más pedidos</option>
-              </select>
+              </select></span>
             </label>
           </div>
 

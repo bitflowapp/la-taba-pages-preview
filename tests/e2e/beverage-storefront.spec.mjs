@@ -43,7 +43,8 @@ test('la home presenta TABA sin etiquetas internas y un storefront comercial lim
   const catalogCategories = page.locator(
     '[data-view="catalog"] [data-category-strip] .category-button:not([data-category-id="all"]):not([data-category-id="favorites"])',
   );
-  await expect(catalogCategories).toHaveCount(realCategories.length);
+  await expect(catalogCategories).toHaveCount(realCategories.length + 1);
+  await expect(page.locator('[data-category-more]')).toBeVisible();
   for (const [id, label] of realCategories) {
     await expect(page.locator(`[data-view="catalog"] [data-category-id="${id}"]`)).toHaveText(label);
   }
@@ -65,7 +66,7 @@ for (const viewport of [
     expect(homeHeight).toBeLessThan(2000);
     await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
     await expect(page.locator('.topbar .brand-text small')).toBeHidden();
-    await expect(page.locator('.topbar-actions .cart-button')).toBeHidden();
+    await expect(page.locator('.topbar-actions .cart-button')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
   });
 }

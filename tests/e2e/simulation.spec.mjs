@@ -47,7 +47,7 @@ test('persistencia del pedido tras recargar la página', async ({ page }) => {
 
   // Recargar: el storage NO se limpia y el pedido debe seguir disponible.
   await page.reload();
-  await expect(page.locator('[data-cart-count]')).toHaveText('0');
+  await expect(page.locator('[data-cart-count]').first()).toHaveText('0');
   await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');

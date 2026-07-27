@@ -11,8 +11,8 @@ test('carga inicial, home sin lista infinita y catálogo por categorías', async
   const guards = installPageGuards(page);
 
   await page.goto('/?demo=1');
-  await expect(page.locator('[data-cart-count]')).toHaveText('0');
-  await expect(page.locator('[data-cart-total-small]')).toHaveText('Pedido');
+  await expect(page.locator('[data-cart-count]').first()).toHaveText('0');
+  await expect(page.locator('[data-cart-total-small]')).toHaveText(/\$\s*0/);
   await expect(page.locator('[data-view="home"]')).toBeVisible();
   await expect(page.locator('[data-view="cart"]')).toBeHidden();
   await expect(page.locator('[data-view]')).toHaveCount(7);
@@ -30,12 +30,10 @@ test('carga inicial, home sin lista infinita y catálogo por categorías', async
 
   // Seleccionar la categoría de gaseosas.
   await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Gaseosas');
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
 
   // Seleccionar la categoría de aguas.
   await page.locator('[data-view="catalog"] [data-category-id="aguas"]').click();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Aguas');
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
 
   // Ordenar por menor precio.
@@ -57,11 +55,10 @@ test('agregar producto desde una categoría del catálogo', async ({ page }) => 
   await page.goto('/?demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Gaseosas');
 
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await waitForToast(page, /agregado al pedido/);
-  await expect(page.locator('[data-cart-count]')).not.toHaveText('0');
+  await expect(page.locator('[data-cart-count]').first()).not.toHaveText('0');
   const desktopCart = page.locator('.topbar [data-open-cart]');
   await expect(desktopCart).toBeVisible();
   await expect(page.locator('[data-cart-total-small]')).toContainText('$');
@@ -75,7 +72,7 @@ test('agregar producto desde una categoría del catálogo', async ({ page }) => 
   await expect(card.locator('.qty-stepper strong')).toHaveText('1');
   await card.locator('[data-cart-inc]').click();
   await expect(card.locator('.qty-stepper strong')).toHaveText('2');
-  await expect(page.locator('[data-cart-count]')).toHaveText('2');
+  await expect(page.locator('[data-cart-count]').first()).toHaveText('2');
   await card.locator('[data-cart-dec]').click();
   await expect(card.locator('.qty-stepper strong')).toHaveText('1');
 
@@ -88,16 +85,13 @@ test('catálogo: tiles limpios (nombre debajo) y breadcrumb compacto', async ({ 
   await page.goto('/?demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-view="catalog"] [data-category-id="energeticas"]').click();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Energéticas');
 
   const card = page.locator('[data-product-grid] .product-card').first();
   await expect(card).toBeVisible();
   // El nombre del producto vive en el cuerpo (h3), no superpuesto sobre el tile.
   await expect(card.locator('.product-body h3')).toBeVisible();
-  await expect(card.locator('.thumb .thumb-name')).toHaveCount(0);
+  await expect(card.locator('.product-media img')).toBeVisible();
 
-  // Breadcrumb compacto en vez del botón grande "Inicio".
-  await expect(page.locator('[data-view="catalog"] .crumbs .crumb-link')).toBeVisible();
   await expect(page.locator('[data-view="catalog"] .section-head .secondary-button')).toHaveCount(0);
 
   await guards.assertClean();

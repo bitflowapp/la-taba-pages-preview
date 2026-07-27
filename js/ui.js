@@ -482,6 +482,11 @@ const CATEGORY_GLYPHS = Object.freeze({
     <rect x="4" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.6"/>
     <rect x="13" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.6"/>
   </svg>`,
+  more: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <circle cx="5" cy="12" r="1.7" fill="currentColor"/>
+    <circle cx="12" cy="12" r="1.7" fill="currentColor"/>
+    <circle cx="19" cy="12" r="1.7" fill="currentColor"/>
+  </svg>`,
 });
 
 function categoryGlyph(categoryId) {
@@ -499,6 +504,11 @@ function renderCategories() {
     ...catalogCategories.slice(1),
   ];
   const homeList = catalogCategories.filter((category) => category.id !== 'all');
+  const catalogTopIds = ['all', 'favorites', 'gaseosas', 'aguas'];
+  const catalogTopList = catalogTopIds
+    .map((id) => fullList.find((category) => category.id === id))
+    .filter(Boolean);
+  const remainingCatalogList = fullList.filter((category) => !catalogTopIds.includes(category.id));
 
   const markupFor = (list) => list.map((category) => `
     <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}">
@@ -507,8 +517,20 @@ function renderCategories() {
     </button>
   `).join('');
 
+  const moreButton = `
+    <button class="category-button category-more" type="button" data-category-more aria-label="Ver más categorías">
+      <span class="category-ico" aria-hidden="true">${categoryGlyph('more')}</span>
+      <span class="category-label">Más</span>
+    </button>`;
+
   strips.forEach((strip) => {
-    strip.innerHTML = markupFor(strip.dataset.categoryStrip === 'home' ? homeList : fullList);
+    const isHome = strip.dataset.categoryStrip === 'home';
+    strip.innerHTML = isHome
+      ? markupFor(homeList)
+      : `${markupFor(catalogTopList)}${remainingCatalogList.length ? moreButton : ''}${markupFor(remainingCatalogList)}`;
+    strip.querySelector('[data-category-more]')?.addEventListener('click', () => {
+      strip.scrollBy({ left: Math.max(220, Math.round(strip.clientWidth * 0.85)), behavior: 'smooth' });
+    });
   });
 }
 
@@ -706,6 +728,14 @@ function renderProducts() {
     const unavailableLabel = !product.available ? 'No disponible' : 'Agotado';
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
+    const favorite = isFavoriteProduct(product.id);
+    const packMatch = unitText(product).match(/\bx\s?(\d+)\b/i);
+    const packBadge = packMatch ? `<span class="product-pack-badge">x${packMatch[1]}</span>` : '';
+    const rawPresentation = product.presentation || product.variant || product.unitLabel || product.packageType || '';
+    const compactPresentation = normalizeSearchText(rawPresentation).replace(/\bpack\b/g, '').trim();
+    const presentation = compactPresentation && normalizeSearchText(product.name).includes(compactPresentation)
+      ? ''
+      : rawPresentation;
     const control = inCart > 0
       ? `<div class="qty-stepper" aria-label="Cantidad de ${escapeHtml(product.name)} en el pedido">
           <button class="icon-button compact" type="button" data-cart-dec="${product.id}" aria-label="Restar uno de ${escapeHtml(product.name)}">−</button>
@@ -720,10 +750,14 @@ function renderProducts() {
         <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
           ${productThumb(product, 'grid')}
           <span class="product-stock-tag">${stockPill(product)}</span>
+          ${packBadge}
+        </button>
+        <button class="product-favorite ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos" aria-pressed="${favorite}">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
         </button>
         <div class="product-body">
           <h3>${escapeHtml(product.name)}</h3>
-          <p>${escapeHtml(product.unitLabel || product.variant || product.packageType || '')}</p>
+          <p>${escapeHtml(presentation)}</p>
           <small class="product-availability ${outOfStock ? 'is-unavailable' : ''}">${escapeHtml(cardAvailabilityLabel(product))}</small>
         </div>
         <div class="product-bottom">
@@ -1008,7 +1042,7 @@ export function renderCartTotals() {
   const floatingText = `Ver pedido · ${money(subtotalSummary.subtotal)}`;
   setText('[data-cart-count]', String(summary.count));
   setText('[data-cart-count-mobile]', String(summary.count));
-  setText('[data-cart-total-small]', summary.count > 0 ? money(subtotalSummary.subtotal) : 'Pedido');
+  setText('[data-cart-total-small]', summary.count > 0 ? money(subtotalSummary.subtotal) : money(0));
   setText('[data-floating-cart-summary]', floatingText);
   $$('[data-cart-count], [data-cart-count-mobile]').forEach((node) => {
     node.classList.toggle('is-empty', summary.count === 0);

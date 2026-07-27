@@ -394,14 +394,24 @@ export function chooseRiderLocation(simRaw, trackedRaw, { now = Date.now(), stal
   return sim || tracked || null;
 }
 
-// ¿Hay un repartidor "en vivo" para este pedido? Sólo cuenta una ubicación GPS
-// REAL y reciente. La simulación / recorrido de apoyo NO es un rider real, así
-// que el tracking del cliente no debe presentarla como tal.
-export function hasLiveRiderLocation(location, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {
+// ¿Hay una posición GPS real, reciente y apta para compartir? A diferencia de
+// `hasLiveRiderLocation`, también admite un último fix fresco que el rider dejó
+// al pasar su pestaña a segundo plano. El cliente lo puede ver como “Última
+// ubicación”, nunca como seguimiento activo.
+export function hasFreshSharedGpsLocation(location, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {
   const normalized = location ? normalizeRiderLocation(location) : null;
   if (!normalized || normalized.source !== 'gps') return false;
   if (['inactive', 'denied', 'unavailable', 'requires_secure_context'].includes(normalized.gpsStatus)) return false;
   return !isLocationStale(normalized, staleMs, now);
+}
+
+// ¿Hay un repartidor "en vivo" para este pedido? Sólo cuenta una ubicación GPS
+// REAL, reciente y con un watcher actualmente activo. La simulación / recorrido
+// de apoyo y un último fix pausado NO se presentan como un rider en vivo.
+export function hasLiveRiderLocation(location, options = {}) {
+  const normalized = location ? normalizeRiderLocation(location) : null;
+  if (!normalized || normalized.gpsStatus === 'last_fix') return false;
+  return hasFreshSharedGpsLocation(normalized, options);
 }
 
 // Estado de "vivacidad" del seguimiento de un pedido. Sirve para que la UI

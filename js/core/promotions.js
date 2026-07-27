@@ -171,19 +171,31 @@ export function normalizePromotionCollection(rawPromotions = []) {
   return normalized.slice(0, 100);
 }
 
+function startOfPromotionDay(value) {
+  if (!value) return NaN;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return Date.parse(`${value}T00:00:00.000`);
+  return Date.parse(value);
+}
+
+function endOfPromotionDay(value) {
+  if (!value) return NaN;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return Date.parse(`${value}T23:59:59.999`);
+  return Date.parse(value);
+}
+
 function promotionDateRangeIsValid(promotion) {
   if (!promotion.validFrom || !promotion.validUntil) return false;
-  const from = Date.parse(promotion.validFrom);
-  const until = Date.parse(promotion.validUntil);
+  const from = startOfPromotionDay(promotion.validFrom);
+  const until = endOfPromotionDay(promotion.validUntil);
   return Number.isFinite(from) && Number.isFinite(until) && until >= from;
 }
 
 function hasVerifiedCommercialValues(promotion) {
+  if (promotion.promotionType === 'envio_gratis') return true;
   if (!promotion.regularPrice || promotion.regularPrice <= 0) return false;
   if (promotion.promotionType === 'descuento_porcentaje') {
     return Number.isFinite(promotion.discountPercentage) && promotion.discountPercentage > 0;
   }
-  if (promotion.promotionType === 'envio_gratis') return true;
   return Number.isFinite(promotion.promotionalPrice)
     && promotion.promotionalPrice >= 0
     && promotion.promotionalPrice < promotion.regularPrice;
@@ -204,18 +216,12 @@ export function validatePromotionForActivation(rawPromotion = {}) {
   return { promotion, ok: errors.length === 0, errors };
 }
 
-function endOfPromotionDay(value) {
-  if (!value) return NaN;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return Date.parse(`${value}T23:59:59.999`);
-  return Date.parse(value);
-}
-
 export function isPromotionActive(rawPromotion, now = new Date()) {
   const promotion = normalizePromotion(rawPromotion);
   const validation = validatePromotionForActivation(promotion);
   if (!promotion.active || !validation.ok) return false;
   const timestamp = now instanceof Date ? now.getTime() : Date.parse(now);
-  const from = Date.parse(promotion.validFrom);
+  const from = startOfPromotionDay(promotion.validFrom);
   const until = endOfPromotionDay(promotion.validUntil);
   return Number.isFinite(timestamp) && timestamp >= from && timestamp <= until;
 }
@@ -354,14 +360,14 @@ export function getProductPromotion(productId, promotions = [], now = new Date()
 export function findPromotionConflicts(rawPromotion, rawPromotions = []) {
   const candidate = normalizePromotion(rawPromotion);
   if (!candidate.validFrom || !candidate.validUntil || !candidate.includedSkus.length) return [];
-  const candidateStart = Date.parse(candidate.validFrom);
+  const candidateStart = startOfPromotionDay(candidate.validFrom);
   const candidateEnd = endOfPromotionDay(candidate.validUntil);
   if (!Number.isFinite(candidateStart) || !Number.isFinite(candidateEnd)) return [];
 
   return normalizePromotionCollection(rawPromotions).filter((other) => {
     if (!other.active || other.promoId === candidate.promoId) return false;
     if (!other.validFrom || !other.validUntil) return false;
-    const otherStart = Date.parse(other.validFrom);
+    const otherStart = startOfPromotionDay(other.validFrom);
     const otherEnd = endOfPromotionDay(other.validUntil);
     const datesOverlap = Number.isFinite(otherStart)
       && Number.isFinite(otherEnd)

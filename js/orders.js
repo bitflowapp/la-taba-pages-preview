@@ -368,7 +368,6 @@ export function buildKitchenTicket(order) {
   const lines = [
     `${String(getBusinessConfig().businessName || 'Comercio').toUpperCase()} — TICKET`,
     `Pedido: ${order.id}`,
-    ...(order.deliveryCode?.code ? [`Codigo entrega: ${order.deliveryCode.code}`] : []),
     `Hora: ${dateTime(order.createdAt)}`,
     `Entrega: ${deliveryModeLabel(order.deliveryMode)}`,
     isPickup ? 'Retiro en el local' : `Dirección: ${address.label || order.address}`,
@@ -540,7 +539,7 @@ function normalizeOrderForMessage(order) {
   const totals = calculateTotals(safeItems, deliveryMode, { discountAmount: discountTotal });
   const coupon = order.coupon && totals.discountTotal > 0
     ? {
-      code: sanitizeText(order.coupon.code, { fallback: 'TABA10', maxLength: 24 }),
+      code: sanitizeText(order.coupon.code, { fallback: 'Promo', maxLength: 24 }),
       discountPercent: Math.max(0, Math.floor(Number(order.coupon.discountPercent) || 0)),
       discountAmount: totals.discountTotal,
     }

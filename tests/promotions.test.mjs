@@ -69,6 +69,23 @@ test('only an approved, dated and verified promotion can become active', () => {
   assert.deepEqual(getActivePromotions([active, future, expired, unapproved], NOW).map((promotion) => promotion.promoId), ['promo-coca-verified']);
 });
 
+test('promotion valid range uses local day boundaries for YYYY-MM-DD values', () => {
+  const localRange = approvedPromotion({
+    promoId: 'local-day-range',
+    validFrom: '2026-07-27',
+    validUntil: '2026-07-31',
+  });
+  const beforeRange = new Date(2026, 6, 26, 23, 59, 59, 999);
+  const startOfRange = new Date(2026, 6, 27, 0, 0, 0, 0);
+  const endOfRange = new Date(2026, 6, 31, 23, 59, 59, 999);
+  const afterRange = new Date(2026, 6, 31, 23, 59, 59, 999 + 1);
+
+  assert.equal(isPromotionActive(localRange, beforeRange), false);
+  assert.equal(isPromotionActive(localRange, startOfRange), true);
+  assert.equal(isPromotionActive(localRange, endOfRange), true);
+  assert.equal(isPromotionActive(localRange, afterRange), false);
+});
+
 test('promotion normalization never turns CSV false into a visible promotion', () => {
   const normalized = normalizePromotion({
     ...approvedPromotion(),
@@ -157,6 +174,32 @@ test('free delivery and the centralized cart total use the active promotion stat
   ]);
 });
 
+test('free delivery promotion validates without regularPrice but still needs SKUs, dates, and approval', () => {
+  const freeDelivery = approvedPromotion({
+    promoId: 'free-delivery-without-regular',
+    promotionType: 'envio_gratis',
+    regularPrice: null,
+    promotionalPrice: null,
+    discountPercentage: null,
+    includedSkus: ['qa-gaseosa-cola'],
+  });
+  assert.equal(validatePromotionForActivation(freeDelivery).ok, true);
+  assert.equal(validatePromotionForActivation({
+    ...freeDelivery,
+    includedSkus: [],
+  }).ok, false);
+  assert.equal(validatePromotionForActivation({
+    ...freeDelivery,
+    validFrom: '',
+    validUntil: '',
+  }).ok, false);
+  assert.equal(validatePromotionForActivation({
+    ...freeDelivery,
+    approvalStatus: 'PENDIENTE',
+    approvalReference: '',
+  }).ok, false);
+});
+
 test('sandbox promotions persist through state hydration and conflicts are detected before activation', () => {
   const active = approvedPromotion();
   const hydrated = hydrateState({
@@ -168,6 +211,43 @@ test('sandbox promotions persist through state hydration and conflicts are detec
 
   const overlapping = approvedPromotion({ promoId: 'promo-overlap', promotionType: 'descuento_porcentaje', discountPercentage: 10, promotionalPrice: null });
   assert.deepEqual(findPromotionConflicts(overlapping, [active]).map((promotion) => promotion.promoId), ['promo-coca-verified']);
+});
+
+test('conflicts use the same day boundaries and detect boundary overlaps', () => {
+  const seed = approvedPromotion({
+    promoId: 'seed',
+    validFrom: '2026-07-10',
+    validUntil: '2026-07-20',
+  });
+
+  const overlapAtStart = approvedPromotion({
+    promoId: 'overlap-start',
+    validFrom: '2026-07-01',
+    validUntil: '2026-07-10',
+    promotionType: 'descuento_porcentaje',
+    discountPercentage: 10,
+    promotionalPrice: null,
+  });
+  const overlapAtEnd = approvedPromotion({
+    promoId: 'overlap-end',
+    validFrom: '2026-07-20',
+    validUntil: '2026-07-25',
+    promotionType: 'descuento_porcentaje',
+    discountPercentage: 10,
+    promotionalPrice: null,
+  });
+  const noOverlap = approvedPromotion({
+    promoId: 'no-overlap',
+    validFrom: '2026-07-21',
+    validUntil: '2026-07-25',
+    promotionType: 'descuento_porcentaje',
+    discountPercentage: 10,
+    promotionalPrice: null,
+  });
+
+  assert.deepEqual(findPromotionConflicts(overlapAtStart, [seed]).map((promotion) => promotion.promoId), ['seed']);
+  assert.deepEqual(findPromotionConflicts(overlapAtEnd, [seed]).map((promotion) => promotion.promoId), ['seed']);
+  assert.deepEqual(findPromotionConflicts(noOverlap, [seed]).map((promotion) => promotion.promoId), []);
 });
 
 test('the versioned CSV only seeds inactive promotion candidates until confirmation exists', async () => {

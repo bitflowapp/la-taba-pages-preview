@@ -54,7 +54,6 @@ import { isTerminalOrderStatus } from './core/order-status.js';
 import { getNextWorkflowStatus, toDemoOrderStatus } from './core/order-workflow.js';
 import {
   dateTime,
-  deliveryModeLabel,
   getState,
   money,
   setState,
@@ -72,7 +71,6 @@ import {
 import { sanitizeText } from './core/validators.js';
 import { getOrderRepository, isPersistentOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { escapeHtml, productCode, stockPill } from './ui.js';
-import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
 import {
   findPromotionConflicts,
   isPromotionActive,
@@ -412,14 +410,6 @@ function filterTone(filterId) {
   return tones[filterId] || 'all';
 }
 
-function countTodayOrders(orders = []) {
-  const today = new Date().toDateString();
-  return orders.filter((order) => {
-    const created = new Date(order.createdAt);
-    return !Number.isNaN(created.getTime()) && created.toDateString() === today;
-  }).length;
-}
-
 // Bloque "Ventas del día" + "Productos más vendidos" (referencia visual de la
 // maqueta comercial). Sólo usa datos reales de los pedidos de la demo.
 function renderBusinessOverview(state, metrics) {
@@ -446,26 +436,6 @@ function renderBusinessOverview(state, metrics) {
         <span class="overview-kicker">Más vendidos del turno</span>
         <ul class="top-products-list">${topList}</ul>
       </article>
-    </section>`;
-}
-
-function renderDeliveredTodaySummary(orders) {
-  const today = new Date().toDateString();
-  const delivered = orders.filter((order) => {
-    const created = new Date(order.createdAt);
-    return order.status === 'delivered'
-      && !Number.isNaN(created.getTime())
-      && created.toDateString() === today;
-  });
-  const total = delivered.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-  return `
-    <section class="delivered-today-card" aria-label="Entregados de hoy">
-      <span class="delivered-icon" aria-hidden="true">✓</span>
-      <div>
-        <strong>Entregados de hoy</strong>
-        <p>${delivered.length} ${delivered.length === 1 ? 'pedido' : 'pedidos'} · ${money(total)}</p>
-      </div>
-      <span class="delivered-chevron" aria-hidden="true">›</span>
     </section>`;
 }
 
@@ -695,24 +665,6 @@ function renderInboxTrackingPanel(order) {
     </section>`;
 }
 
-function orderSimulation(order) {
-  const sim = getState().simulation;
-  return sim && sim.orderId === order.id ? sim : null;
-}
-
-function renderBusinessTrackingMap(order) {
-  return `
-    <div class="business-tracking-map">
-      <div class="real-map-shell business-map-shell" data-real-map data-map-role="business-tracking" data-order-id="${escapeHtml(order.id)}">
-        <div class="real-map-canvas" data-map-canvas aria-label="Mapa del rider en vivo"></div>
-        <div class="real-map-fallback" data-map-fallback>
-          <p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>
-        </div>
-        <div class="real-map-meta" data-map-meta>Ubicación real del repartidor</div>
-      </div>
-    </div>`;
-}
-
 function inboxClosedRow(order) {
   const reason = order.status === 'cancelled' && order.cancelReason
     ? `<small class="inbox-closed-reason">Motivo: ${escapeHtml(order.cancelReason)}</small>`
@@ -856,86 +808,12 @@ function renderDemoGuide() {
     </section>`;
 }
 
-function uniqueCustomerCount(orders) {
-  const today = new Date().toDateString();
-  const customers = new Set(
-    orders
-      .filter((order) => new Date(order.createdAt).toDateString() === today && order.status !== 'cancelled')
-      .map((order) => order.customerPhone || order.customerName)
-      .filter(Boolean),
-  );
-  return customers.size;
-}
-
-function salesChart(orders) {
-  const days = [];
-  const now = new Date();
-  for (let index = 6; index >= 0; index -= 1) {
-    const date = new Date(now);
-    date.setDate(now.getDate() - index);
-    const key = date.toISOString().slice(0, 10);
-    const label = new Intl.DateTimeFormat('es-AR', { weekday: 'short' }).format(date).slice(0, 3);
-    const total = orders
-      .filter((order) => order.status !== 'cancelled' && String(order.createdAt || '').slice(0, 10) === key)
-      .reduce((sum, order) => sum + (Number(order.total) || 0), 0);
-    days.push({ label, total });
-  }
-  const max = Math.max(1, ...days.map((day) => day.total));
-  const bars = days.map((day) => {
-    const height = Math.max(8, Math.round((day.total / max) * 92));
-    const label = day.total > 0 ? money(day.total) : '';
-    return `<span class="sales-bar" style="--h:${height}%"><i>${label}</i><b>${escapeHtml(day.label)}</b></span>`;
-  }).join('');
-  return `<div class="sales-chart">${bars}</div>`;
-}
-
 export function getActiveOrders(orders = getState().orders) {
   return selectActiveOrders(orders);
 }
 
 export function getLowStockProducts(products = getState().products) {
   return selectLowStockProducts(products);
-}
-
-function orderCard(order) {
-  const items = order.items.map((item) => `
-    <div class="order-line">
-      <span>${item.quantity} x ${escapeHtml(item.name)}</span>
-      <strong>${money(item.quantity * item.unitPrice)}</strong>
-    </div>
-  `).join('');
-
-  const canAdvance = !isTerminalOrderStatus(order.status);
-  const address = normalizeOrderAddressDetails(order);
-  const reference = formatAddressReference(order);
-
-  return `
-    <article class="order-card accent-${statusClass(order.status)}">
-      <div class="order-card-head">
-        <div>
-          <h3>${order.id} · ${escapeHtml(order.customerName)}</h3>
-          <div class="order-meta-pills">
-            <span>${escapeHtml(order.deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio')}</span>
-            <span>${money(order.total)}</span>
-            <span>${escapeHtml(order.paymentMethod)}</span>
-          </div>
-          <p>${escapeHtml(order.deliveryMode === 'pickup' ? order.address : address.label || order.address)}</p>
-          ${order.deliveryMode !== 'pickup' && reference ? `<p>Referencia: ${escapeHtml(reference)}</p>` : ''}
-          <p>Teléfono: ${escapeHtml(order.customerPhone)} · ${dateTime(order.createdAt)}</p>
-        </div>
-        <span class="status-chip ${statusClass(order.status)}">${statusLabel(order.status)}</span>
-      </div>
-      ${items}
-      ${Number(order.discountTotal || 0) > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(order.coupon?.code || 'Promo')}</span><strong>-${money(order.discountTotal)}</strong></div>` : ''}
-      <div class="summary-row total"><span>Total</span><strong>${money(order.total)}</strong></div>
-      ${order.cashChange ? `<p><strong>Cambio efectivo:</strong> ${escapeHtml(order.cashChange)}</p>` : ''}
-      <p><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>
-      <div class="order-actions">
-        <button class="primary-button compact" type="button" data-order-advance="${order.id}" ${canAdvance ? '' : 'disabled'}>${actionLabelForOrder(order)}</button>
-        <button class="danger-button compact" type="button" data-order-cancel="${order.id}" ${canAdvance ? '' : 'disabled'}>Cancelar</button>
-      </div>
-    </article>
-  `;
 }
 
 function renderCatalogManager(state) {
@@ -1444,23 +1322,6 @@ function categoryName(categoryId) {
 
 function categoryLabel(category) {
   return category.id === 'retiro' ? 'Retiro local' : category.name;
-}
-
-function stockRow(product) {
-  return `
-    <div class="stock-row">
-      <div>
-        <div class="cart-title"><span class="stock-thumb">${productCode(product)}</span><strong class="stock-name">${escapeHtml(product.name)}</strong></div>
-        <div class="cart-meta">${money(product.price)} · ${stockPill(product)}</div>
-      </div>
-      <div class="stock-actions">
-        <button class="icon-button compact" type="button" data-stock-dec="${product.id}" aria-label="Restar stock de ${escapeHtml(product.name)}">−</button>
-        <strong>${product.stock}</strong>
-        <button class="icon-button compact" type="button" data-stock-inc="${product.id}" aria-label="Sumar stock de ${escapeHtml(product.name)}">+</button>
-        <button class="ghost-button compact" type="button" data-product-toggle="${product.id}">${product.available ? 'Pausar' : 'Activar'}</button>
-      </div>
-    </div>
-  `;
 }
 
 export function handleBusinessAction(target) {
@@ -2306,9 +2167,9 @@ function toggleProductAvailability(productId) {
 
 function copyTicketText(text) {
   try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text);
-    }
+    if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) return;
+    const write = navigator.clipboard.writeText(text);
+    if (write?.catch) write.catch(() => {});
   } catch (_) { /* clipboard no disponible: no romper */ }
 }
 

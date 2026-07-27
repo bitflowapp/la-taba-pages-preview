@@ -4,6 +4,7 @@ import { BUSINESS_CONFIG } from '../js/config.js';
 import { addToCart } from '../js/cart.js';
 import {
   createOrderFromCheckout,
+  buildKitchenTicket,
   buildWhatsAppMessage,
   buildWhatsAppUrl,
   getActiveOrder,
@@ -173,6 +174,54 @@ test('checkout sanitizes text and normalizes invalid payment methods', () => {
   assert.equal(result.order.paymentMethod, 'Pago a coordinar con el local');
   assert.equal(result.order.notes, 'Sin grasa');
   assert.deepEqual(state().cart, []);
+});
+
+test('kitchen ticket does not expose the delivery verification code', () => {
+  addToCart('qa-gaseosa-cola', 1);
+  const created = createOrderFromCheckout({
+    customerName: 'Cliente QA',
+    customerPhone: '2995550000',
+    customerAddress: 'Roca 321',
+    deliveryMode: 'delivery',
+    paymentMethod: 'cash',
+    customerNotes: 'Sin cebolla',
+  });
+  assert.equal(created.ok, true);
+  const ticket = buildKitchenTicket(created.order);
+  assert.ok(!ticket.includes('Codigo entrega'));
+  assert.ok(!ticket.includes('ABCD-1234'));
+});
+
+test('orders with discount but missing coupon code use Promo fallback', () => {
+  const message = buildWhatsAppMessage({
+    id: 'LT-TEST',
+    createdAt: '2026-07-27T12:00:00.000Z',
+    customerName: 'Cliente QA',
+    customerPhone: '2995550000',
+    deliveryMode: 'delivery',
+    address: 'Roca 321',
+    addressDetails: {
+      streetLine: 'Roca 321',
+      neighborhood: 'Centro',
+      usesStructured: true,
+      label: 'Roca 321, Centro',
+      reference: '',
+    },
+    items: [
+      { name: 'Gaseosa QA', quantity: 1, unitPrice: 12000 },
+    ],
+    subtotal: 12000,
+    discountTotal: 2000,
+    deliveryFee: 1200,
+    total: 10000,
+    coupon: { code: '', discountPercent: 15, discountAmount: 2000 },
+    paymentMethod: 'Efectivo',
+    cashChange: '',
+    notes: 'Sin notas',
+  });
+
+  assert.ok(!message.includes('TABA10'));
+  assert.match(message, /Cup.*Promo/);
 });
 
 test('double checkout confirmation cannot create a duplicate order', () => {

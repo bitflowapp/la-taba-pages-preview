@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v35-current-ui-rider-map';
+const CACHE_NAME = 'la-taba-runtime-v36-premium-catalog-rider-map';
 const ASSETS = [
   './',
   './index.html',
@@ -16,7 +16,6 @@ const ASSETS = [
   './manifest.webmanifest',
   './runtime-config.js',
   './assets/icon.svg',
-  './assets/products/beverage-placeholder.svg',
   './assets/catalog/products/qa-coca-cola-original-15l-aa70012decc566a8-1d824eec5604643f.webp',
   './assets/catalog/thumbnails/qa-coca-cola-original-15l-aa70012decc566a8-thumb-ea9fe78055613651.webp',
   './assets/catalog/products/qa-sprite-15l-1989810f07a2c3ef-da1929408b8b0643.webp',
@@ -33,6 +32,18 @@ const ASSETS = [
   './assets/catalog/thumbnails/qa-monster-peachy-keen-473ml-97a89797cdd192ab-thumb-41bf6784558dc908.webp',
   './assets/catalog/products/qa-monster-pipeline-punch-473ml-2ea3e22f3cfadc64-e2fa9d61dc39aafb.webp',
   './assets/catalog/thumbnails/qa-monster-pipeline-punch-473ml-2ea3e22f3cfadc64-thumb-c2f25bbc78ee169e.webp',
+  './assets/catalog/products/qa-pepsi-original-15l-1eb0c8ccb1e7fbd7-c4e775eb3062222e.webp',
+  './assets/catalog/thumbnails/qa-pepsi-original-15l-1eb0c8ccb1e7fbd7-thumb-d12e6cfa145fa49d.webp',
+  './assets/catalog/products/qa-heineken-original-473ml-38f979ff8cce7700-d4917a90ed2277c9.webp',
+  './assets/catalog/thumbnails/qa-heineken-original-473ml-38f979ff8cce7700-thumb-cfc186427dd5d784.webp',
+  './assets/catalog/products/qa-imperial-extra-lager-473ml-37ed9cb96bc29a8e-678fda4a3bf94c5e.webp',
+  './assets/catalog/thumbnails/qa-imperial-extra-lager-473ml-37ed9cb96bc29a8e-thumb-50bfab8a85306842.webp',
+  './assets/catalog/products/qa-villavicencio-sin-gas-500ml-6e55cfa3ea0e016d-5c3deb02388d6380.webp',
+  './assets/catalog/thumbnails/qa-villavicencio-sin-gas-500ml-6e55cfa3ea0e016d-thumb-3264ae2c9f24b6d4.webp',
+  './assets/catalog/products/qa-corona-extra-355ml-424d2a1a94ce2eff-21e867fd5def30fc.webp',
+  './assets/catalog/thumbnails/qa-corona-extra-355ml-424d2a1a94ce2eff-thumb-e2fc282d7883d7cb.webp',
+  './assets/catalog/products/qa-hendricks-gin-700ml-55d9a47d6790ad45-b64b3db01fe2c247.webp',
+  './assets/catalog/thumbnails/qa-hendricks-gin-700ml-55d9a47d6790ad45-thumb-878056c7402bbb48.webp',
   './js/pwa-update.js?v=2',
   './js/startup-recovery.js?v=1',
   './js/app.js?v=30',
@@ -100,6 +111,9 @@ const ASSETS = [
   './js/simulation.js',
   './js/ui.js',
 ];
+const PRECACHE_URLS = new Set(
+  ASSETS.map((asset) => new URL(asset, self.registration.scope).href),
+);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -138,17 +152,18 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  const cacheable = PRECACHE_URLS.has(url.href);
 
   event.respondWith(
     fetch(request)
       .then((response) => {
-        if (response && response.ok) {
+        if (response && response.ok && cacheable) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => undefined);
         }
         return response;
       })
-      .catch(() => caches.match(request).then((cached) => {
+      .catch(() => (cacheable ? caches.match(request) : Promise.resolve(null)).then((cached) => {
         if (cached) return cached;
         if (request.mode === 'navigate') return caches.match('./index.html');
         return Response.error();

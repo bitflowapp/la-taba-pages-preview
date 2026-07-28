@@ -7,11 +7,11 @@ Alcance: catalogo aislado de preview (`?demo=1`).
 ## Resultado
 
 - Productos concretos procesados: **14**.
-- Identidades `EXACTA`: **12**.
-- Identidades `PARCIAL`: **2**.
-- Masters WebP: **12**, 1000 x 1000.
-- Miniaturas WebP: **12**, 400 x 400.
-- Assets integrados en preview: **12**.
+- Identidades `EXACTA`: **14**.
+- Identidades `PARCIAL`: **0**.
+- Masters WebP: **14**, 1000 x 1000.
+- Miniaturas WebP: **14**, 400 x 400.
+- Assets integrados en preview: **14**.
 - Productos con fallback neutro: **2**.
 
 Los cuatro assets nuevos son Heineken Original 473 ml, Imperial Extra Lager 473 ml, Villavicencio Sin Gas 500 ml y Corona Extra 355 ml pack x12. Cada uno fue descargado desde la URL registrada, cotejado por SHA-256 y normalizado en fondo blanco sRGB, con proporcion preservada.

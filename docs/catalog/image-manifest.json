@@ -127,6 +127,35 @@
     {
       "assets": {
         "master": {
+          "bindingSha256": "db0ffb119146a87c545e96c30a9c902778473f9b083ca7150b856520e241e50f",
+          "height": 1000,
+          "path": "assets/catalog/products/qa-hendricks-gin-700ml-55d9a47d6790ad45-b64b3db01fe2c247.webp",
+          "sha256": "b64b3db01fe2c247846cad3a6d4f609797d8993ea688f34fcae76a13b2746653",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "c8e810ec9b58e9249a3a4967fc35cf0e008fb7d47d7df6b882a8754a80f164db",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/qa-hendricks-gin-700ml-55d9a47d6790ad45-thumb-878056c7402bbb48.webp",
+          "sha256": "878056c7402bbb48aa82547d6a886ed0e02dab53ac6d34d449f489f6b5aea212",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-28",
+      "externalId": "qa-hendricks-gin-700ml",
+      "identitySha256": "55d9a47d6790ad45a984ed44003573b82e6952128f56105de5599d9da168bf75",
+      "rawFile": "qa-hendricks-gin-700ml-55d9a47d6790ad45.fb3bfda1d8b256ff3bdfa397323fde9ce16b3e7080a74320748ce65204bbe14e.source",
+      "rightsReference": "fuente-publica-pendiente-de-licencia-2026-07-28",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "qa-hendricks-gin-700ml",
+      "sku": "qa-hendricks-gin-700ml",
+      "sourceSha256": "fb3bfda1d8b256ff3bdfa397323fde9ce16b3e7080a74320748ce65204bbe14e",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://shop.norton.com.ar/cdn/shop/files/Hendricks_1000x1000_dd728a00-83b5-4b58-b2b9-6ade7c9c2bc1_2048x2048_crop_center%402x.png?v=1747053548"
+    },
+    {
+      "assets": {
+        "master": {
           "bindingSha256": "d8cf45e34a29b5f0e694e6342ee2a1ac1117f419f109a228e45429afddd8c5e0",
           "height": 1000,
           "path": "assets/catalog/products/qa-imperial-extra-lager-473ml-37ed9cb96bc29a8e-678fda4a3bf94c5e.webp",
@@ -297,6 +326,35 @@
       "sourceSha256": "45b4a11cd727948f2ffc4ebda4f31e3cf39e1284c8c7c1194e028d87f4a3f856",
       "sourceType": "distribuidor_oficial",
       "sourceUrl": "https://andinacocacolaar.vtexassets.com/arquivos/ids/156318/100362.jpg.jpg?v=638756814979570000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "881295dae29e1efb3d5c0c95783a3d60910eb3d80f8431448addbba4a6ce12c8",
+          "height": 1000,
+          "path": "assets/catalog/products/qa-pepsi-original-15l-1eb0c8ccb1e7fbd7-c4e775eb3062222e.webp",
+          "sha256": "c4e775eb3062222eff37ae344093c4ab0f366ee5fc5c92f2419dd6310601a7d7",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "8aa207d77288de908a635baccd5afe28b9b868fe50838195d4ab154b507d1249",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/qa-pepsi-original-15l-1eb0c8ccb1e7fbd7-thumb-d12e6cfa145fa49d.webp",
+          "sha256": "d12e6cfa145fa49d838dccd112b26029cfaa5b73c8426afdd0fca9a9be161f29",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-28",
+      "externalId": "qa-pepsi-original-15l",
+      "identitySha256": "1eb0c8ccb1e7fbd75476876bdf93ce5c396336b8495468be3b258caff037c7e7",
+      "rawFile": "qa-pepsi-original-15l-1eb0c8ccb1e7fbd7.0c6a833a8fa2c100748d2cb8b7cd82a8caae04c4f7a24843b29af1b28e9a1cf8.source",
+      "rightsReference": "fuente-publica-pendiente-de-licencia-2026-07-28",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "qa-pepsi-original-15l",
+      "sku": "qa-pepsi-original-15l",
+      "sourceSha256": "0c6a833a8fa2c100748d2cb8b7cd82a8caae04c4f7a24843b29af1b28e9a1cf8",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://jumboargentina.vtexassets.com/arquivos/ids/907133-1000-1000?aspect=true&height=1000&v=639124043940670000&width=1000"
     },
     {
       "assets": {

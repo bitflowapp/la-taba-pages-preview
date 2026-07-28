@@ -1,8 +1,5 @@
-## Productos en revision (2)
+## Productos en revision (0)
 
-| preview_id | producto concreto | identity_status | rights_status | motivo |
-| --- | --- | --- | --- | --- |
-| qa-pepsi-original-15l | Pepsi Original, botella PET | PARCIAL | PENDIENTE_DERECHOS | La foto confirma marca, variante y envase, pero no permite leer capacidad ni obtener un packshot que coincida con esa presentacion. |
-| qa-hendricks-gin-700ml | Hendrick's Gin Original, botella | PARCIAL | PENDIENTE_DERECHOS | La foto confirma marca, variante y envase, pero no permite leer capacidad ni obtener un packshot que coincida con esa presentacion. |
-
-Ambos usan el placeholder neutro. No se infiere capacidad, pack ni derecho comercial desde la fotografia.
+Los 14 productos tienen identidad, presentacion y packshot exactos. Los activos
+con `PENDIENTE_DERECHOS` siguen limitados a esta preview y requieren licencia
+comercial antes de cualquier publicacion productiva o campana.

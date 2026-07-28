@@ -65,21 +65,18 @@ test('preview catalog is concrete beverages and internally marked as QA', () => 
   assert.ok(products.every((product) => /Precio y stock QA/.test(product.marketNote)));
   assert.ok(products.every((product) => product.id.startsWith('qa-')));
   for (const product of products) {
-    if (product.image) {
-      if (product.previewCatalogApproved) {
-        assert.match(product.image, /^assets\/catalog\/products\/.+\.webp$/);
-        assert.match(product.imageThumbnail || '', /^assets\/catalog\/thumbnails\/.+\.webp$/);
-        assert.match(product.imageSha256 || '', /^[a-f0-9]{64}$/);
-        assert.match(product.imageThumbnailSha256 || '', /^[a-f0-9]{64}$/);
-        assert.match(product.sourceImageSha256 || '', /^[a-f0-9]{64}$/);
-      } else {
-        assert.equal(product.image, 'assets/products/beverage-placeholder.svg');
-      }
-    }
+    assert.equal(product.previewCatalogApproved, true);
+    assert.match(product.image, /^assets\/catalog\/products\/.+\.webp$/);
+    assert.match(product.imageThumbnail || '', /^assets\/catalog\/thumbnails\/.+\.webp$/);
+    assert.match(product.imageSha256 || '', /^[a-f0-9]{64}$/);
+    assert.match(product.imageThumbnailSha256 || '', /^[a-f0-9]{64}$/);
+    assert.match(product.sourceImageSha256 || '', /^[a-f0-9]{64}$/);
+    assert.equal(fs.existsSync(new URL(`../${product.image}`, import.meta.url)), true);
+    assert.equal(fs.existsSync(new URL(`../${product.imageThumbnail}`, import.meta.url)), true);
   }
-  assert.equal(products.filter((product) => product.previewCatalogApproved).length, 12);
-  assert.equal(products.filter((product) => product.identityStatus === 'EXACTA').length, 12);
-  assert.equal(products.filter((product) => product.identityStatus === 'PARCIAL').length, 2);
+  assert.equal(products.filter((product) => product.previewCatalogApproved).length, 14);
+  assert.equal(products.filter((product) => product.identityStatus === 'EXACTA').length, 14);
+  assert.equal(products.filter((product) => product.identityStatus === 'PARCIAL').length, 0);
   assert.ok(products.every((product) => !/^(gaseosa|energética|cerveza|agua mineral)$/i.test(product.name)));
 });
 

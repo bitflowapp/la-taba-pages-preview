@@ -59,6 +59,10 @@ body[data-active-view="rider"] .floating-cart {
 }
 
 @media (max-width: 820px) {
+  :root {
+    --mobile-nav: 70px;
+  }
+
   html {
     scroll-padding-bottom: var(--mobile-nav-scroll-space);
   }
@@ -91,18 +95,20 @@ body[data-active-view="rider"] .floating-cart {
   .mobile-nav {
     position: fixed;
     z-index: 1150;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    right: 12px;
+    bottom: 8px;
+    left: 12px;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     box-sizing: border-box;
-    min-height: var(--mobile-nav-total-height);
-    padding: 6px 10px calc(10px + var(--safe-area-bottom));
-    border-top: 1px solid rgb(24 28 35 / 9%);
-    background: rgb(255 253 251 / 97%);
-    box-shadow: 0 -7px 20px rgb(24 28 35 / 7%);
-    backdrop-filter: blur(18px);
+    min-height: calc(var(--mobile-nav) + var(--safe-area-bottom));
+    padding: 6px 10px calc(6px + var(--safe-area-bottom));
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 12%);
+    border-radius: 28px;
+    background: rgb(56 59 65 / 96%);
+    box-shadow: 0 12px 30px rgb(20 22 27 / 28%);
+    backdrop-filter: blur(20px);
   }
 
   .mobile-nav button {
@@ -117,12 +123,23 @@ body[data-active-view="rider"] .floating-cart {
     border: 0;
     border-radius: 16px;
     background: transparent;
-    color: var(--taba-muted);
+    color: rgb(255 255 255 / 76%);
   }
 
   .mobile-nav button.active {
-    background: #fff0f1;
-    color: var(--taba-red);
+    background: rgb(255 255 255 / 7%);
+    color: #fff;
+  }
+
+  .mobile-nav button.active::after {
+    position: absolute;
+    right: 28%;
+    bottom: 0;
+    left: 28%;
+    height: 4px;
+    border-radius: 999px;
+    background: currentColor;
+    content: "";
   }
 
   .mn-ico {

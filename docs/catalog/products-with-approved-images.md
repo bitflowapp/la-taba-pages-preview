@@ -1,4 +1,4 @@
-## Productos con packshot exacto para preview (12)
+## Productos con packshot exacto para preview (14)
 
 | preview_id | producto concreto | presentacion | master | thumbnail | derechos |
 | --- | --- | --- | --- | --- | --- |
@@ -10,9 +10,11 @@
 | qa-monster-ultra-white-zero-473ml | Monster Energy Ultra White Zero 473 ml | pack x6 | `assets/catalog/products/qa-monster-ultra-white-zero-473ml-05a05734442e6b9d-014fa5aba916e543.webp` | `assets/catalog/thumbnails/qa-monster-ultra-white-zero-473ml-05a05734442e6b9d-thumb-4ea566a269d72d75.webp` | APROBADOS |
 | qa-monster-peachy-keen-473ml | Monster Energy Ultra Peachy Keen 473 ml | pack x6 | `assets/catalog/products/qa-monster-peachy-keen-473ml-97a89797cdd192ab-847bf12caffaee31.webp` | `assets/catalog/thumbnails/qa-monster-peachy-keen-473ml-97a89797cdd192ab-thumb-41bf6784558dc908.webp` | APROBADOS |
 | qa-monster-pipeline-punch-473ml | Monster Energy Pipeline Punch 473 ml | pack x6 | `assets/catalog/products/qa-monster-pipeline-punch-473ml-2ea3e22f3cfadc64-e2fa9d61dc39aafb.webp` | `assets/catalog/thumbnails/qa-monster-pipeline-punch-473ml-2ea3e22f3cfadc64-thumb-c2f25bbc78ee169e.webp` | APROBADOS |
+| qa-pepsi-original-15l | Pepsi Original 1.5 L | botella x1 | `assets/catalog/products/qa-pepsi-original-15l-1eb0c8ccb1e7fbd7-c4e775eb3062222e.webp` | `assets/catalog/thumbnails/qa-pepsi-original-15l-1eb0c8ccb1e7fbd7-thumb-d12e6cfa145fa49d.webp` | PENDIENTE_DERECHOS |
 | qa-heineken-original-473ml | Heineken Original 473 ml | lata x1 | `assets/catalog/products/qa-heineken-original-473ml-38f979ff8cce7700-d4917a90ed2277c9.webp` | `assets/catalog/thumbnails/qa-heineken-original-473ml-38f979ff8cce7700-thumb-cfc186427dd5d784.webp` | PENDIENTE_DERECHOS |
 | qa-imperial-extra-lager-473ml | Imperial Extra Lager 473 ml | lata x1 | `assets/catalog/products/qa-imperial-extra-lager-473ml-37ed9cb96bc29a8e-678fda4a3bf94c5e.webp` | `assets/catalog/thumbnails/qa-imperial-extra-lager-473ml-37ed9cb96bc29a8e-thumb-50bfab8a85306842.webp` | PENDIENTE_DERECHOS |
 | qa-villavicencio-sin-gas-500ml | Villavicencio Sin Gas 500 ml | botella x1 | `assets/catalog/products/qa-villavicencio-sin-gas-500ml-6e55cfa3ea0e016d-5c3deb02388d6380.webp` | `assets/catalog/thumbnails/qa-villavicencio-sin-gas-500ml-6e55cfa3ea0e016d-thumb-3264ae2c9f24b6d4.webp` | PENDIENTE_DERECHOS |
 | qa-corona-extra-355ml | Corona Extra 355 ml | pack x12, botella descartable | `assets/catalog/products/qa-corona-extra-355ml-424d2a1a94ce2eff-21e867fd5def30fc.webp` | `assets/catalog/thumbnails/qa-corona-extra-355ml-424d2a1a94ce2eff-thumb-e2fc282d7883d7cb.webp` | PENDIENTE_DERECHOS |
+| qa-hendricks-gin-700ml | Hendrick's Gin Original 700 ml | botella x1 | `assets/catalog/products/qa-hendricks-gin-700ml-55d9a47d6790ad45-b64b3db01fe2c247.webp` | `assets/catalog/thumbnails/qa-hendricks-gin-700ml-55d9a47d6790ad45-thumb-878056c7402bbb48.webp` | PENDIENTE_DERECHOS |
 
 Los SHA-256 de la fuente y de ambos WebP quedan registrados en `docs/catalog/image-manifest.json` y `docs/catalog/image-source-audit.csv`. `PENDIENTE_DERECHOS` indica que el packshot es exacto y apto tecnicamente para esta preview, pero requiere licencia comercial antes de cualquier uso productivo o campana.

@@ -1,8 +1,4 @@
-## Productos sin imagen integrada (2)
+## Productos sin imagen integrada (0)
 
-| preview_id | imagen | estado | accion |
-| --- | --- | --- | --- |
-| qa-pepsi-original-15l | `assets/products/beverage-placeholder.svg` | REVISAR | Confirmar capacidad y conseguir packshot de esa misma presentacion. |
-| qa-hendricks-gin-700ml | `assets/products/beverage-placeholder.svg` | REVISAR | Confirmar capacidad y conseguir packshot de esa misma presentacion. |
-
-El fallback es neutro: no representa marca, variante, capacidad, envase ni pack.
+El catalogo premium de preview tiene 14 packshots exactos y no depende del
+placeholder neutro.

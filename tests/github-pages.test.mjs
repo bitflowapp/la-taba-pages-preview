@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v35-current-ui-rider-map');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v36-premium-catalog-rider-map');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -23,7 +23,9 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./index.html'));
   assert.ok(assets.includes('./manifest.webmanifest'));
   assert.ok(assets.includes('./assets/icon.svg'));
-  assert.ok(assets.includes('./assets/products/beverage-placeholder.svg'));
+  assert.equal(assets.some((asset) => /placeholder/i.test(asset)), false);
+  assert.equal(assets.filter((asset) => asset.startsWith('./assets/catalog/products/')).length, 14);
+  assert.equal(assets.filter((asset) => asset.startsWith('./assets/catalog/thumbnails/')).length, 14);
   assert.equal(
     assets.some((asset) => /(?:horno|pizza|parrilla|carne|milanesa|chorizo|combo-familiar|promo-dia|bebida-cola)/i.test(asset)),
     false,
@@ -81,6 +83,37 @@ test('commercial app defaults to light premium theme, not dark fallback', () => 
   assert.doesNotMatch(source, /color-scheme:\s*dark/);
 });
 
+test('current mobile UI keeps the tracked gray bottom banner', () => {
+  const html = read('index.html');
+  const responsive = read('styles/responsive.css');
+  assert.match(html, /<nav class="mobile-nav" data-current-ui-bottom-banner/);
+  assert.match(responsive, /\.mobile-nav\s*\{[\s\S]*?background:\s*rgb\(56 59 65 \/ 96%\)/);
+  assert.match(responsive, /\.mobile-nav\s*\{[\s\S]*?border-radius:\s*28px/);
+  assert.match(responsive, /\.mobile-nav button\.active::after/);
+});
+
+test('production catalog paths are served by tracked files without runtime rewrites', () => {
+  const repository = read('js/repositories/supabase_order_repository.js');
+  assert.doesNotMatch(repository, /resolvePublishedCatalogAssetPath/);
+  assert.match(repository, /const image = sanitizeText\(row\.image_url/);
+  assert.match(repository, /const imageThumbnail = sanitizeText\(row\.image_thumbnail_url/);
+  assert.match(repository, /\.eq\('available', true\)/);
+
+  const publishedQaPaths = [
+    'qa-coca-cola-original-15l-aa70012decc566a8-1d824eec5604643f.webp',
+    'qa-coca-cola-original-15l-aa70012decc566a8-thumb-ea9fe78055613651.webp',
+    'qa-fanta-naranja-15l-40851f95ab71b216-e41698f0e9b8788b.webp',
+    'qa-fanta-naranja-15l-40851f95ab71b216-thumb-6f5544d252c1151c.webp',
+    'qa-monster-green-473ml-c7a66ed57c1f8268-0c999ce7e48f3aca.webp',
+    'qa-monster-green-473ml-c7a66ed57c1f8268-thumb-883c78950d69aa9d.webp',
+    'qa-sprite-15l-1989810f07a2c3ef-da1929408b8b0643.webp',
+    'qa-sprite-15l-1989810f07a2c3ef-thumb-1676fdfe37e31ebf.webp',
+  ];
+  for (const asset of publishedQaPaths) {
+    assert.equal(fs.existsSync(path.join(root, 'assets', 'products', asset)), true, asset);
+  }
+});
+
 test('service worker fallback is guarded to navigation requests only', () => {
   const source = read('sw.js');
   assert.match(source, /request\.mode === 'navigate'/);
@@ -94,6 +127,9 @@ test('service worker sólo elimina caches anteriores de TABA y exige precache co
   assert.match(source, /key\.startsWith\(CACHE_PREFIX\) && key !== CACHE_NAME/);
   assert.match(source, /self\.clients\.claim\(\)/);
   assert.match(source, /event\.data === 'skip-waiting'/);
+  assert.match(source, /const PRECACHE_URLS = new Set/);
+  assert.match(source, /const cacheable = PRECACHE_URLS\.has\(url\.href\)/);
+  assert.match(source, /response && response\.ok && cacheable/);
   assert.doesNotMatch(source, /access_token|refresh_token|tracking_token|rider_locations|delivery_handoff/i);
   assert.doesNotMatch(
     source,

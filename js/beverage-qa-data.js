@@ -2,7 +2,7 @@
 // no datos productivos. Producción ignora este módulo y carga únicamente Supabase.
 // Se persiste en el estado demo para refrescar identidades/imágenes cuando cambia
 // el catálogo publicado, sin eliminar pedidos, carrito o preferencias compatibles.
-export const PREVIEW_CATALOG_VERSION = 'preview-beverages-2026-07-26-v2';
+export const PREVIEW_CATALOG_VERSION = 'preview-beverages-2026-07-28-v3';
 
 export const categories = [
   { id: 'all', name: 'Todos' },
@@ -150,9 +150,14 @@ export const products = [
     previewCatalogApproved: true, unit: 'pack', unitLabel: 'Pack x6', price: QA_PRICES.specialty, stock: 6,
     brand: 'Monster', variant: 'Energy Pipeline Punch', capacityValue: 473, capacityUnit: 'ml', packageType: 'pack', unitsPerPack: 6, identityStatus: 'EXACTA', rightsStatus: 'APROBADOS',
   }),
-  fixture('qa-agua-con-gas', 'Pepsi Original', 'gaseosas', 'Botella PET · capacidad a confirmar', {
-    stock: 10,
-    brand: 'Pepsi', variant: 'Original', packageType: 'botella', identityStatus: 'PARCIAL', rightsStatus: 'PENDIENTE_DERECHOS',
+  fixture('qa-agua-con-gas', 'Pepsi Original 1,5 L', 'gaseosas', 'Botella PET · 1,5 L', {
+    image: 'assets/catalog/products/qa-pepsi-original-15l-1eb0c8ccb1e7fbd7-c4e775eb3062222e.webp',
+    imageThumbnail: 'assets/catalog/thumbnails/qa-pepsi-original-15l-1eb0c8ccb1e7fbd7-thumb-d12e6cfa145fa49d.webp',
+    imageSha256: 'c4e775eb3062222eff37ae344093c4ab0f366ee5fc5c92f2419dd6310601a7d7',
+    imageThumbnailSha256: 'd12e6cfa145fa49d838dccd112b26029cfaa5b73c8426afdd0fca9a9be161f29',
+    sourceImageSha256: '0c6a833a8fa2c100748d2cb8b7cd82a8caae04c4f7a24843b29af1b28e9a1cf8',
+    previewCatalogApproved: true, stock: 10,
+    brand: 'Pepsi', variant: 'Original', capacityValue: 1.5, capacityUnit: 'l', packageType: 'botella', unitsPerPack: 1, identityStatus: 'EXACTA', rightsStatus: 'PENDIENTE_DERECHOS',
   }),
   fixture('qa-cerveza', 'Heineken Original 473 ml', 'cervezas', 'Lata 473 ml', {
     image: 'assets/catalog/products/qa-heineken-original-473ml-38f979ff8cce7700-d4917a90ed2277c9.webp',
@@ -190,8 +195,13 @@ export const products = [
     previewCatalogApproved: true, price: QA_PRICES.alcoholic, stock: 4,
     brand: 'Corona', variant: 'Extra', capacityValue: 355, capacityUnit: 'ml', packageType: 'pack', unitsPerPack: 12, identityStatus: 'EXACTA', rightsStatus: 'PENDIENTE_DERECHOS',
   }),
-  fixture('qa-gin', "Hendrick's Gin Original", 'gins-y-vodkas', 'Botella · capacidad a confirmar', {
-    price: QA_PRICES.alcoholic, stock: 4,
-    brand: "Hendrick's", variant: 'Original', packageType: 'botella', identityStatus: 'PARCIAL', rightsStatus: 'PENDIENTE_DERECHOS',
+  fixture('qa-gin', "Hendrick's Gin Original 700 ml", 'gins-y-vodkas', 'Botella · 700 ml', {
+    image: 'assets/catalog/products/qa-hendricks-gin-700ml-55d9a47d6790ad45-b64b3db01fe2c247.webp',
+    imageThumbnail: 'assets/catalog/thumbnails/qa-hendricks-gin-700ml-55d9a47d6790ad45-thumb-878056c7402bbb48.webp',
+    imageSha256: 'b64b3db01fe2c247846cad3a6d4f609797d8993ea688f34fcae76a13b2746653',
+    imageThumbnailSha256: '878056c7402bbb48aa82547d6a886ed0e02dab53ac6d34d449f489f6b5aea212',
+    sourceImageSha256: 'fb3bfda1d8b256ff3bdfa397323fde9ce16b3e7080a74320748ce65204bbe14e',
+    previewCatalogApproved: true, price: QA_PRICES.alcoholic, stock: 4,
+    brand: "Hendrick's", variant: 'Original', capacityValue: 700, capacityUnit: 'ml', packageType: 'botella', unitsPerPack: 1, identityStatus: 'EXACTA', rightsStatus: 'PENDIENTE_DERECHOS',
   }),
 ];

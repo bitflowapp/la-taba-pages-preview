@@ -500,6 +500,19 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await page.goto('/?demo=1');
   await expect(page.locator('[data-view="home"]')).toBeVisible();
 
+  const mainScrollState = await page.evaluate(() => {
+    const main = document.querySelector('main[data-app-main]');
+    const mainStyle = getComputedStyle(main);
+    return {
+      root: document.scrollingElement?.tagName,
+      overflowY: mainStyle.overflowY,
+      mainScrollable: main.scrollHeight > main.clientHeight + 1,
+    };
+  });
+  expect(mainScrollState.root).toBe('HTML');
+  expect(mainScrollState.overflowY).not.toMatch(/auto|scroll|overlay/);
+  expect(mainScrollState.mainScrollable).toBeFalsy();
+
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.mobile-nav [data-nav-view="home"]').click();
@@ -525,6 +538,128 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
 
   await guards.assertClean();
   await context.close();
+});
+
+test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const guards = installPageGuards(page);
+  const measureNav = () => page.locator('.mobile-nav').evaluate((nav) => {
+    const rect = nav.getBoundingClientRect();
+    return {
+      height: rect.height,
+      mainPaddingBottom: Number.parseFloat(
+        getComputedStyle(document.querySelector('main[data-app-main]')).paddingBottom,
+      ),
+      buttonBottomDistances: [...nav.querySelectorAll('button')]
+        .map((button) => window.innerHeight - button.getBoundingClientRect().bottom),
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    };
+  });
+
+  try {
+    await installBrowserStubs(page);
+    await page.goto('/?demo=1');
+    await expect(page.locator('[data-view="home"]')).toBeVisible();
+
+    const safe0 = await measureNav();
+    await page.addStyleTag({ content: ':root { --safe-area-bottom: 34px; }' });
+    const safe34 = await measureNav();
+
+    await expect(page.locator('.mobile-nav')).toBeVisible();
+    await expect(page.locator('.mobile-nav button')).toHaveCount(4);
+    expect(safe34.height - safe0.height).toBeGreaterThanOrEqual(32);
+    expect(safe34.height - safe0.height).toBeLessThanOrEqual(36);
+    const paddingDelta = safe34.mainPaddingBottom - safe0.mainPaddingBottom;
+    expect(paddingDelta).toBeGreaterThanOrEqual(33);
+    expect(paddingDelta).toBeLessThanOrEqual(35);
+    expect(safe34.mainPaddingBottom).toBeLessThanOrEqual(116);
+    expect(safe34.buttonBottomDistances.every((distance) => distance >= 42)).toBeTruthy();
+    expect(safe34.scrollWidth).toBeLessThanOrEqual(safe34.viewportWidth + 1);
+
+    const initialCta = await page.evaluate(() => {
+      const root = document.scrollingElement ?? document.documentElement;
+      const navRect = document.querySelector('.mobile-nav').getBoundingClientRect();
+      const ctaRect = document.querySelector('button.order-now-cta').getBoundingClientRect();
+      return {
+        overlap: ctaRect.bottom > navRect.top && ctaRect.top < navRect.bottom,
+        maxScroll: root.scrollHeight - root.clientHeight,
+      };
+    });
+    if (initialCta.overlap) {
+      expect(initialCta.maxScroll).toBeGreaterThan(0);
+    }
+
+    await page.evaluate(() => {
+      const root = document.scrollingElement ?? document.documentElement;
+      window.scrollTo({
+        top: root.scrollHeight - root.clientHeight,
+        behavior: 'instant',
+      });
+    });
+    await expect.poll(() => page.evaluate(() => {
+      const root = document.scrollingElement ?? document.documentElement;
+      return Math.abs(window.scrollY - (root.scrollHeight - root.clientHeight));
+    })).toBeLessThanOrEqual(1);
+    const ctaGap = await page.evaluate(() => {
+      const navRect = document.querySelector('.mobile-nav').getBoundingClientRect();
+      const ctaRect = document.querySelector('button.order-now-cta').getBoundingClientRect();
+      return navRect.top - ctaRect.bottom;
+    });
+    expect(ctaGap).toBeGreaterThanOrEqual(12);
+
+    await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
+    await expect(page.locator('.tracking-premium')).toBeVisible();
+    await expect(page.locator('.mobile-nav')).toBeHidden();
+    const measureMain = () => page.evaluate(() => {
+      const main = document.querySelector('main[data-app-main]');
+      const style = getComputedStyle(main);
+      return {
+        root: document.scrollingElement?.tagName,
+        height: main.computedStyleMap().get('height').toString(),
+        overflowY: style.overflowY,
+        paddingBottom: style.paddingBottom,
+        scrollable: main.scrollHeight > main.clientHeight + 1,
+        horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+      };
+    });
+    const trackingState = await measureMain();
+    expect(trackingState).toMatchObject({
+      root: 'HTML',
+      height: 'auto',
+      overflowY: 'visible',
+      paddingBottom: '0px',
+      scrollable: false,
+      horizontalOverflow: false,
+    });
+
+    for (const view of ['business', 'rider']) {
+      await page.goto(`/?demo=1#${view}`);
+      await expect(page.locator(`[data-view="${view}"]`)).toBeVisible();
+      await expect(page.locator('.mobile-nav')).toBeHidden();
+      expect(await measureMain()).toMatchObject({
+        root: 'HTML',
+        height: 'auto',
+        overflowY: 'visible',
+        paddingBottom: '0px',
+        scrollable: false,
+        horizontalOverflow: false,
+      });
+    }
+
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.goto('/?demo=1');
+    await expect(page.locator('.mobile-nav')).toBeHidden();
+    const landscapeState = await measureMain();
+    expect(landscapeState.root).toBe('HTML');
+    expect(landscapeState.overflowY).not.toMatch(/auto|scroll|overlay/);
+    expect(landscapeState.scrollable).toBeFalsy();
+    expect(landscapeState.horizontalOverflow).toBeFalsy();
+    await guards.assertClean();
+  } finally {
+    await context.close();
+  }
 });
 
   for (const [name, viewport] of [

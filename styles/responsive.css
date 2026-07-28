@@ -589,7 +589,7 @@ body[data-active-view="rider"] .floating-cart {
 @media (max-width: 820px) {
   [data-view="tracking"] {
     padding-inline: 12px;
-    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
   }
 
   .tracking-premium.track-layout,
@@ -642,7 +642,7 @@ body[data-active-view="rider"] .floating-cart {
 
 @media (max-width: 820px) {
   body[data-active-view="tracking"]:has(.tracking-premium) {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: calc(var(--mobile-nav) + env(safe-area-inset-bottom, 0px));
   }
 
   body[data-active-view="tracking"]:has(.tracking-premium) .mobile-nav {

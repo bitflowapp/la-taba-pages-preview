@@ -31,23 +31,18 @@ import {
   shouldPublishGpsFix as shouldPublishGpsFixPolicy,
 } from './map/route_geometry.js';
 import { STORE_LOCATION } from './map/map_config.js';
-import { getOrderRepository, isPersistentOrderRepository } from './repositories/repository_factory.js';
 
 let timerId = null;
 let gpsWatchId = null;
 let gpsWatchPolicyKey = null;
 
-// Control de eficiencia GPS: separa fixes aceptados, compartidos y reintentos
-// del backend para evitar writes y renders innecesarios.
-const GPS_BACKEND_RETRY_BASE_MS = 15_000;
-const GPS_BACKEND_RETRY_MAX_MS = 60_000;
+// Control de eficiencia del GPS sandbox: separa fixes aceptados y publicados
+// para evitar renders innecesarios, sin escribir en el backend productivo.
 const GPS_NEAR_CUSTOMER_METERS = 180;
 const TERMINAL_DELIVERY_STATUSES = new Set(['delivered', 'cancelled']);
 
 let lastAcceptedFix = null;
 let lastPublishedFix = null;
-let backendRetryAfter = 0;
-let backendFailureCount = 0;
 
 const GPS_WATCH_POLICIES = Object.freeze({
   idle: Object.freeze({ mode: 'idle-economic', enableHighAccuracy: false, maximumAge: 15_000, timeout: 20_000 }),
@@ -579,7 +574,6 @@ function onGpsPosition(position) {
     },
   });
   rememberPublishedFix(order, location, now);
-  persistRiderLocation(sim.orderId, location);
   syncGpsWatchPolicyForOrder(order, location);
 }
 
@@ -643,50 +637,8 @@ export function handleViewChangeForSimulation(view) {
   return handleGpsVisibilityChange();
 }
 
-function persistRiderLocation(orderId, location) {
-  try {
-    const repository = getOrderRepository();
-    if (!isPersistentOrderRepository(repository)) return;
-    const now = Date.now();
-    if (backendRetryAfter && now < backendRetryAfter) return;
-    Promise.resolve(repository.updateRiderLocation(orderId, location))
-      .then((result) => {
-        const sim = getState().simulation;
-        if (sim && sim.orderId === orderId) {
-          if (result && result.ok === false) {
-            registerBackendPublishFailure(orderId, result.message);
-            return;
-          }
-          backendFailureCount = 0;
-          backendRetryAfter = 0;
-          setState({ simulation: { ...sim, lastBackendPublishAt: new Date().toISOString(), backendError: undefined } });
-        }
-      })
-      .catch(() => {
-        registerBackendPublishFailure(orderId, 'No se pudo enviar la ubicación al backend.');
-      });
-  } catch (_) {
-    // La app conserva el fix local aunque el backend opcional no responda.
-  }
-}
-
-function registerBackendPublishFailure(orderId, message) {
-  backendFailureCount += 1;
-  const delay = Math.min(
-    GPS_BACKEND_RETRY_MAX_MS,
-    GPS_BACKEND_RETRY_BASE_MS * (2 ** Math.min(backendFailureCount - 1, 2)),
-  );
-  backendRetryAfter = Date.now() + delay;
-  const sim = getState().simulation;
-  if (sim && sim.orderId === orderId) {
-    setState({ simulation: { ...sim, backendError: message || 'No se pudo enviar la ubicación al backend.' } });
-  }
-}
-
 // Reset del throttle al detener GPS, para que el próximo arranque publique ya.
 function resetGpsPublishThrottle() {
   lastAcceptedFix = null;
   lastPublishedFix = null;
-  backendRetryAfter = 0;
-  backendFailureCount = 0;
 }

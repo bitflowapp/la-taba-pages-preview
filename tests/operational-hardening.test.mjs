@@ -163,16 +163,20 @@ test('hasLiveRiderLocation: solo GPS real y reciente cuenta como en vivo', () =>
   assert.equal(hasLiveRiderLocation(null, { now }), false);
 });
 
-// ===== 4. Guard anti regresión: marker simple "R", sin casco/moto/rojo =====
-test('el marker del rider usa un icono local de delivery y no una inicial o persona', () => {
+// ===== 4. Guard anti regresión: casco inline, sin moto, persona ni recursos externos =====
+test('el marker del rider usa un casco local accesible y no una moto, inicial o persona', () => {
   const icon = createRiderIcon({ divIcon: (options) => options }, { status: 'on_the_way', source: 'gps', heading: 95 });
-  assert.match(icon.html, /lt-rider-marker-halo/);
-  assert.match(icon.html, /lt-rider-moto-icon/);
-  assert.match(icon.html, /Moto de reparto/);
+  assert.match(icon.html, /lt-rider-helmet-core/);
+  assert.match(icon.html, /<svg[^>]*class="lt-rider-helmet-icon"/);
+  assert.match(icon.html, /role="img"/);
+  assert.match(icon.html, /aria-label="Casco del rider TABA"/);
+  assert.match(icon.html, /<circle[^>]*fill="#c8101e"[^>]*stroke="#ffffff"[^>]*stroke-width="2\.5"/);
   assert.doesNotMatch(icon.html, />R</);
   assert.doesNotMatch(icon.html, /<text/);
-  assert.deepEqual(icon.iconSize, [62, 52]);
-  for (const banned of ['avatar', 'face', 'rider-human', 'rider-person', '#b64c34']) {
+  assert.doesNotMatch(icon.html, /[\u{1F300}-\u{1FAFF}]/u);
+  assert.deepEqual(icon.iconSize, [56, 56]);
+  assert.deepEqual(icon.iconAnchor, [28, 28]);
+  for (const banned of ['moto', 'scooter', 'emoji', '<image', 'href=', 'src=', 'http://', 'https://', 'avatar', 'face', 'rider-human', 'rider-person', '#b64c34']) {
     assert.equal(icon.html.includes(banned), false, `marker no debe contener "${banned}"`);
   }
   assert.match(riderMarkerClass('on_the_way', 'gps'), /lt-rider-marker on-the-way source-gps/);

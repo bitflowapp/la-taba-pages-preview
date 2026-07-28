@@ -52,10 +52,10 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
 
   await page.goto('/?demo=1#tracking');
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Pedido en reparto');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido está en camino');
   await expect(tracking.locator('[data-tracking-map-placeholder]')).toContainText('Ubicación no disponible');
   await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(
-    'Seguimiento por estados, sin GPS ni ubicación en vivo.',
+    'El rider está en camino. La ubicación aparecerá cuando esté disponible.',
   );
   await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
   await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);

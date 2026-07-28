@@ -152,7 +152,7 @@ test('checkout del preview valida inline y mantiene copy comercial', async ({ pa
   await waitForToast(page, 'Pedido confirmado');
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Pedido confirmado');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido fue confirmado');
   await expect(tracking).not.toContainText(/pedido de muestra|no se envió|presentación/i);
   await expect(tracking.locator('[data-delivery-code]')).toHaveCount(0);
   await expect(tracking.locator('.tracking-help-card')).toHaveCount(0);

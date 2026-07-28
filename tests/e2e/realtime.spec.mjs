@@ -27,13 +27,13 @@ test('cliente, negocio y rider completan el recorrido en el mismo dispositivo si
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Pedido confirmado');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido fue confirmado');
   await expect(tracking.locator('.track-steps.public')).toBeVisible();
   await expect(tracking.locator('.track-steps.public')).toContainText('Confirmado');
   await expect(tracking.locator('.track-steps.public')).toContainText('Preparando');
   await expect(tracking.locator('.track-steps.public')).toContainText('En camino');
   await expect(tracking.locator('.track-steps.public')).toContainText('Entregado');
-  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText('Seguimiento por estados, sin GPS ni ubicación en vivo.');
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText('El pedido sigue en el local. La ubicación aparecerá cuando comience el reparto.');
   await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
   await expect(page.locator('[data-delivery-code]')).toHaveCount(0);
 

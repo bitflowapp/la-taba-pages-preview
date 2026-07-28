@@ -30,16 +30,20 @@ import { getRealtimeStatus } from './realtime.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 import {
   formatDeliveryCode,
-  formatDeliveryCodeTime,
-  isDeliveryCodeConfirmed,
   normalizeDeliveryCode,
 } from './core/delivery-code.js';
-import { chooseRiderLocation, hasFreshSharedGpsLocation, hasLiveRiderLocation } from './map/route_geometry.js';
+import {
+  chooseRiderLocation,
+  hasFreshSharedGpsLocation,
+  hasLiveRiderLocation,
+  trackingLocationFreshness,
+} from './map/route_geometry.js';
 import { renderPublicOrderTimeline } from './core/order-timeline.js';
 import { isDemoMode } from './core/app-mode.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { formatPromotionCondition, getActivePromotions, getProductPromotion } from './core/promotions.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
+import { riderHelmetSvg } from './map/rider_marker.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -1277,74 +1281,64 @@ export function updateAddressFieldVisibility() {
 // ===== Seguimiento del pedido (vista cliente) =====
 // El cliente ve cuatro etapas comerciales; los estados internos siguen
 // disponibles en Negocio/Rider, pero no se filtran a esta superficie.
-const TRACKING_STATUS_LABELS = Object.freeze({
-  draft: 'Confirmado',
-  submitted: 'Confirmado',
-  received: 'Confirmado',
-  accepted: 'Preparando',
-  preparing: 'Preparando',
-  ready: 'Preparando',
-  assigned: 'Preparando',
-  picked_up: 'En camino',
-  on_the_way: 'En camino',
-  arrived: 'En camino',
-  arriving: 'Llegó al domicilio',
-  delivered: 'Entregado',
-  cancelled: 'Cancelado',
-});
-
-function trackingStatusLabel(status) {
-  return TRACKING_STATUS_LABELS[status] || statusLabel(status);
-}
-
 function getOrderSimulation(order) {
   const sim = getState().simulation;
   return sim && sim.orderId === order.id ? sim : null;
 }
 
 function trackingHeadline(order) {
+  const status = order?.status || 'received';
+  const pickup = order?.deliveryMode === 'pickup';
   if (order.status === 'delivered') {
-    return { kicker: 'Pedido entregado', title: 'Pedido entregado', sub: `Gracias por comprar en ${getBusinessConfig().businessName}.` };
+    return {
+      title: 'Pedido entregado',
+      sub: `La entrega fue confirmada. Gracias por comprar en ${getBusinessConfig().businessName}.`,
+    };
   }
   if (order.status === 'cancelled') {
     return {
-      kicker: 'Pedido cancelado',
       title: 'Pedido cancelado',
-      sub: order.cancelReason ? `Motivo: ${order.cancelReason}.` : 'Contactá al local por un canal verificado.',
+      sub: order.cancelReason ? `Motivo: ${order.cancelReason}.` : 'El local canceló este pedido.',
     };
   }
-  if (['accepted', 'preparing'].includes(order.status)) {
+  if (['accepted', 'preparing'].includes(status)) {
     const prepMinutes = Number(order.delivery?.estimatedPreparationMinutes || 0);
     return {
-      kicker: 'Pedido aceptado',
       title: 'Estamos preparando tu pedido',
       sub: prepMinutes > 0
-        ? `Tu pedido fue aceptado. Tiempo estimado de preparación: ${prepMinutes} min.`
-        : 'El negocio está preparando tu pedido.',
+        ? `Tiempo estimado de preparación: ${prepMinutes} min.`
+        : 'El local ya está preparando tu pedido.',
     };
   }
-  if (order.status === 'ready') {
+  if (['ready', 'assigned'].includes(status)) {
     return {
-      kicker: 'Pedido listo',
-      title: order.deliveryMode === 'pickup' ? 'Listo para retirar' : 'Listo para reparto',
-      sub: order.deliveryMode === 'pickup'
+      title: pickup ? 'Tu pedido está listo' : 'Tu pedido está listo',
+      sub: pickup
         ? `Te esperamos en ${getBusinessConfig().address}.`
-        : 'El pedido está listo en el local. Falta asignar o iniciar el reparto.',
+        : 'Está listo para salir con el repartidor.',
     };
   }
-  if (order.deliveryMode === 'pickup') {
-    return { kicker: 'Retiro en local', title: order.status === 'ready' ? 'Listo para retirar' : 'Preparando tu pedido', sub: `Te esperamos en ${getBusinessConfig().address}.` };
+  if (pickup) {
+    return {
+      title: 'Tu pedido fue confirmado',
+      sub: 'Te avisaremos cuando esté listo para retirar.',
+    };
   }
-  if (order.status === 'arriving') {
-    return { kicker: 'En destino', title: 'Llegó al domicilio', sub: 'El repartidor ya está en el punto de entrega.' };
+  if (['arrived', 'arriving'].includes(status)) {
+    return {
+      title: 'Tu pedido llegó',
+      sub: 'El repartidor está en tu domicilio',
+    };
   }
-  if (order.status === 'on_the_way') {
-    return { kicker: 'En camino', title: 'Tu pedido está en camino', sub: 'El rider lleva tu pedido a destino.' };
+  if (['picked_up', 'on_the_way'].includes(status)) {
+    return {
+      title: 'Tu pedido está en camino',
+      sub: 'El repartidor va hacia tu domicilio.',
+    };
   }
   return {
-    kicker: 'Pedido confirmado',
-    title: 'Pedido confirmado',
-    sub: 'Guardamos tu pedido. Acá vas a ver cada cambio de estado.',
+    title: 'Tu pedido fue confirmado',
+    sub: 'Recibimos tu pedido y te avisaremos cada avance.',
   };
 }
 
@@ -1358,60 +1352,17 @@ function displayDestinationLabel(value) {
     .replace(/^Local demo\s*·\s*/i, 'Local · ');
 }
 
-function trackingPrimaryMetric(order) {
-  const sandboxSimulation = getOrderSimulation(order);
-  if (isSandboxOrderRepository(getOrderRepository())
-    && sandboxSimulation
-    && ['on_the_way', 'arriving', 'delivered'].includes(order.status)) {
-    const presentation = sandboxTrackingPresentation(order, sandboxSimulation);
-    if (presentation.delivered || presentation.arrived) return { label: 'Estado', value: presentation.phaseLabel };
-    if (presentation.gps) return { label: 'Estado', value: presentation.activityLabel };
-    if (presentation.etaMinutes && presentation.etaMinutes > 0) return { label: 'Llega en', value: presentation.etaLabel };
-    return { label: 'Estado', value: trackingStatusLabel(order.status) };
-  }
-  if (!order) return { label: 'Estado', value: 'Sin información' };
-  if (order.status === 'delivered') return { label: 'Estado', value: 'Entregado' };
-  const etaMinutes = Number(order.delivery?.etaMinutes);
-  const calculatedAt = new Date(order.delivery?.etaCalculatedAt || '').getTime();
-  const expiresAt = new Date(order.delivery?.etaExpiresAt || '').getTime();
-  const reliableEta = Number.isFinite(etaMinutes)
-    && etaMinutes > 0
-    && etaMinutes <= 1440
-    && Number.isFinite(calculatedAt)
-    && Number.isFinite(expiresAt)
-    && expiresAt > calculatedAt
-    && expiresAt > Date.now()
-    && Boolean(String(order.delivery?.etaSource || '').trim());
-  if (reliableEta) {
-    return {
-      label: 'Llega en',
-      value: `${Math.round(etaMinutes)} min`,
-    };
-  }
-  return {
-    label: 'Estado',
-    value: trackingStatusLabel(order.status),
-  };
-}
-
-function trackingArrivalCopy(order, presentation = null) {
-  if (!order || ['delivered', 'cancelled'].includes(order.status)) return null;
-  if (presentation?.arrived || order.status === 'arriving') return 'Llegó';
-  if (presentation?.etaMinutes && presentation.etaMinutes > 0 && !presentation.gps) {
-    return `Llega en ${presentation.etaLabel}`;
-  }
-  const etaMinutes = Number(order.delivery?.etaMinutes);
-  const calculatedAt = new Date(order.delivery?.etaCalculatedAt || '').getTime();
-  const expiresAt = new Date(order.delivery?.etaExpiresAt || '').getTime();
-  const reliableEta = Number.isFinite(etaMinutes)
-    && etaMinutes > 0
-    && etaMinutes <= 1440
-    && Number.isFinite(calculatedAt)
-    && Number.isFinite(expiresAt)
-    && expiresAt > calculatedAt
-    && expiresAt > Date.now()
-    && Boolean(String(order.delivery?.etaSource || '').trim());
-  return reliableEta ? `Llega en ${Math.round(etaMinutes)} min` : 'Calculando llegada';
+function latestTrackingTimestamp(order, riderLocation = null) {
+  const candidates = [
+    order?.updatedAt,
+    order?.createdAt,
+    riderLocation?.lastFixAt,
+    riderLocation?.timestamp,
+    ...(Array.isArray(order?.statusHistory) ? order.statusHistory.map((entry) => entry?.at) : []),
+  ]
+    .map((value) => (typeof value === 'number' ? value : new Date(value || '').getTime()))
+    .filter((value) => Number.isFinite(value) && value <= Date.now() + 10_000);
+  return candidates.length ? Math.max(...candidates) : null;
 }
 
 function realMapShell({ order = null, role = 'tracking', fallback, mapSource = '' }) {
@@ -1421,11 +1372,16 @@ function realMapShell({ order = null, role = 'tracking', fallback, mapSource = '
     <div class="real-map-shell" data-real-map data-map-role="${escapeHtml(role)}"${sourceAttr}${orderAttr}>
       <div class="real-map-canvas" data-map-canvas aria-label="Mapa real de seguimiento"></div>
       <div class="real-map-fallback" data-map-fallback>
-        <p class="map-fallback-note">Mapa no disponible, usando vista simplificada.</p>
         ${fallback}
       </div>
       <span class="real-map-tile-error" data-map-tile-error hidden>Mapa base no disponible</span>
-      <div class="real-map-meta" data-map-meta>Mapa de seguimiento</div>
+      <div class="real-map-meta" data-map-meta role="status" aria-live="polite">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.75"></circle>
+          <path d="M12 7.5v4.9l3.1 1.8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span data-map-meta-text>Última ubicación</span>
+      </div>
     </div>`;
 }
 
@@ -1442,36 +1398,55 @@ function sandboxTrackingStage(order, simulation) {
         fallback: '<p class="map-fallback-note">El mapa no está disponible en este momento.</p>',
       })}
       ${presentation.showEta ? `<span class="tracking-map-eta" data-sandbox-eta>${escapeHtml(presentation.etaLabel)}</span>` : ''}
+      ${trackingRecenterButton()}
     </div>`;
 }
 
-function trackingMapStage({ order = null, live = false, sandbox = false }) {
+function trackingMapStage({ order = null, sandbox = false }) {
   return `
     <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking">
       ${realMapShell({ order, fallback: '<p class="map-fallback-note">Mapa no disponible en este dispositivo.</p>', role: 'tracking', mapSource: sandbox ? 'sandbox' : '' })}
+      ${trackingRecenterButton()}
     </div>`;
+}
+
+function trackingRecenterButton() {
+  return `
+    <button class="tracking-map-recenter" type="button" data-map-recenter aria-label="Recentrar en la ubicación del repartidor">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"></circle>
+        <path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      </svg>
+    </button>`;
 }
 
 // Estado del delivery en la vista cliente. Nunca expone una persona, reputación
 // o teléfono inventado: la identidad visual es el servicio de TABA.
 function riderTrackingCard(order, riderLocation, presentation = null) {
-  const live = hasVerifiedLiveRiderLocation(riderLocation);
-  const arrived = presentation?.arrived || order.status === 'arriving';
-  const delivered = order.status === 'delivered';
-  const title = delivered ? 'Pedido entregado' : arrived ? 'Llegó al domicilio' : ['on_the_way', 'picked_up'].includes(order.status) ? 'En camino' : trackingStatusLabel(order.status);
-  const sub = delivered
-    ? 'La entrega fue confirmada.'
-    : live
-      ? `Ubicación actualizada ${relativeAgeLabel(riderLocation.lastFixAt || riderLocation.timestamp)}.`
-      : arrived
-        ? 'El rider está en el punto de entrega.'
-        : 'Vamos a avisarte cuando salga del local.';
-  const contact = trackingContactButton({ accessibleLabel: 'Contactar' });
+  const freshness = trackingLocationFreshness(riderLocation);
+  const live = freshness === 'fresh' && hasVerifiedLiveRiderLocation(riderLocation);
+  const arrived = presentation?.arrived || ['arrived', 'arriving'].includes(order.status);
+  const assigned = Boolean(order.assignedRiderId)
+    || ['assigned', 'picked_up', 'on_the_way', 'arrived', 'arriving'].includes(order.status);
+  const pending = riderPendingCopy(order.status, assigned);
+  const title = arrived
+    ? 'En la puerta'
+    : ['on_the_way', 'picked_up'].includes(order.status)
+      ? 'En ruta'
+      : pending.title;
+  const sub = arrived
+    ? 'Prepará el código de entrega'
+    : freshness === 'lost'
+      ? 'La ubicación no está disponible por el momento.'
+      : ['on_the_way', 'picked_up'].includes(order.status)
+        ? 'Va hacia tu domicilio.'
+        : pending.sub;
+  const contact = trackingContactButton({ accessibleLabel: 'Contactar al rider TABA' });
   return `
-    <section class="tracking-rider-card ${live ? 'is-live' : ''} ${delivered ? 'is-delivered' : ''}" role="status">
-      <span class="tracking-rider-icon" aria-hidden="true">${deliveryGlyph()}</span>
+    <section class="tracking-rider-card ${live ? 'is-live' : ''}" aria-label="Estado del rider">
+      <span class="tracking-rider-icon">${riderHelmetSvg({ className: 'tracking-rider-helmet', decorative: true })}</span>
       <div class="tracking-rider-copy">
-        <small>Rider TABA</small>
+        <small>${assigned ? 'Rider TABA' : 'Entrega TABA'}</small>
         <strong>${escapeHtml(title)}</strong>
         <span>${escapeHtml(sub)}</span>
       </div>
@@ -1484,9 +1459,12 @@ function hasVerifiedLiveRiderLocation(location) {
     && Number.isFinite(Number(location?.accuracy));
 }
 
-function riderPendingCopy(status) {
-  if (status === 'on_the_way' || status === 'arriving') {
+function riderPendingCopy(status, assigned = false) {
+  if (['picked_up', 'on_the_way', 'arrived', 'arriving'].includes(status)) {
     return { title: 'Seguimiento por iniciar', sub: 'El repartidor todavía no inició el seguimiento.' };
+  }
+  if (['ready', 'assigned'].includes(status) && assigned) {
+    return { title: 'Rider asignado', sub: 'El pedido está listo para que salga del local.' };
   }
   if (status === 'ready') {
     return { title: 'Listo para salir', sub: 'El delivery comenzará cuando el pedido salga del local.' };
@@ -1498,109 +1476,174 @@ function riderPendingCopy(status) {
 }
 
 function relativeAgeLabel(value) {
-  if (!value) return 'recién';
+  if (!value) return 'hace instantes';
   const time = typeof value === 'number' ? value : new Date(value).getTime();
-  if (Number.isNaN(time)) return 'recién';
+  if (Number.isNaN(time)) return 'hace instantes';
   const seconds = Math.max(0, Math.round((Date.now() - time) / 1000));
-  if (seconds < 5) return 'ahora';
   if (seconds < 60) return `hace ${seconds} s`;
   const minutes = Math.round(seconds / 60);
   return `hace ${minutes} min`;
 }
 
 function trackingDeliveryCodeCard(order) {
-  if (!order || order.status === 'cancelled') return '';
-  if (order.deliveryMode !== 'delivery') return '';
-  if (!['arriving', 'delivered'].includes(order.status)) return '';
+  if (!order || order.deliveryMode !== 'delivery') return '';
+  if (!['arrived', 'arriving'].includes(order.status)) return '';
   const deliveryCode = normalizeDeliveryCode(order.deliveryCode);
   if (!deliveryCode) return '';
-  const confirmed = isDeliveryCodeConfirmed(deliveryCode);
-  const confirmedTime = formatDeliveryCodeTime(deliveryCode);
-  if (order.status === 'delivered' && !confirmed) return '';
-  if (order.status === 'delivered') {
-    return `
-      <section class="delivery-code-card is-confirmed" data-delivery-code-card>
-        <div class="delivery-code-copy">
-          <span>Entrega validada</span>
-          <strong class="delivery-code-success">Código confirmado</strong>
-          <small>${confirmedTime ? `Confirmado a las ${escapeHtml(confirmedTime)}.` : 'Recepción confirmada.'}</small>
-        </div>
-      </section>`;
-  }
-  const copy = order.deliveryMode === 'pickup'
-    ? 'Mostralo en mostrador para retirar tu pedido.'
-    : 'Dáselo al repartidor cuando recibas el pedido.';
   return `
-    <section class="delivery-code-card ${confirmed ? 'is-confirmed' : ''}" data-delivery-code-card>
+    <section class="delivery-code-card" data-delivery-code-card>
+      <span class="delivery-code-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 52" focusable="false">
+          <path d="M24 2.5 43 10v13.4c0 12.1-7.5 21.3-19 26.1C12.5 44.7 5 35.5 5 23.4V10l19-7.5Z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path>
+          <rect x="17.5" y="23" width="13" height="11.5" rx="2" fill="none" stroke="currentColor" stroke-width="2.2"></rect>
+          <path d="M20.5 23v-3.2a3.5 3.5 0 0 1 7 0V23M24 27.5v3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>
+        </svg>
+      </span>
       <div class="delivery-code-copy">
-        <span>${confirmed ? 'Código confirmado' : 'Código de entrega'}</span>
+        <span>Código de entrega</span>
         <strong data-delivery-code="${escapeHtml(deliveryCode.code)}">${escapeHtml(formatDeliveryCode(deliveryCode.code))}</strong>
-        <small>${confirmed ? `Confirmado${confirmedTime ? ` a las ${escapeHtml(confirmedTime)}` : ''}.` : escapeHtml(copy)}</small>
+        <small>Decile este código al repartidor cuando recibas el pedido</small>
       </div>
     </section>`;
 }
 
 function trackingOrderSummaryCard(order) {
   const items = Array.isArray(order?.items) ? order.items : [];
-  if (!items.length) {
+  const productCount = items.reduce((total, item) => {
+    const quantity = Number(item?.quantity);
+    return total + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0);
+  }, 0);
+  const total = Number(order?.total);
+  const hasTotal = Number.isFinite(total) && (total > 0 || items.length > 0);
+  const compactTotal = hasTotal ? money(total).replace(/\$\s+/, '$') : '';
+  const meta = [
+    productCount > 0 ? `${productCount} producto${productCount === 1 ? '' : 's'}` : '',
+    compactTotal ? `Total ${compactTotal}` : '',
+  ].filter(Boolean).join(' · ');
+  const orderAddress = normalizeOrderAddressDetails(order);
+  const destination = destinationAddressLabel(order);
+  const itemRows = items.map((item) => {
+    const quantity = Number(item?.quantity) || 0;
+    const unitPrice = Number(item?.unitPrice) || 0;
     return `
-      <section class="tracking-order-summary is-minimized">
-        <div>
-          <small>Pedido ${escapeHtml(order?.id || '')}</small>
-          <strong>Resumen protegido</strong>
-        </div>
-        <p>El detalle se mantiene en el dispositivo donde confirmaste el pedido.</p>
-      </section>`;
-  }
-  const firstProduct = getProductById(items[0]?.productId || items[0]?.id);
-  const preview = items.slice(0, 3).map((item) => `
-    <li><span>${escapeHtml(item.quantity)}× ${escapeHtml(item.name)}</span></li>
-  `).join('');
-  const remaining = Math.max(0, items.length - 3);
+      <div class="order-line">
+        <span>${escapeHtml(quantity)} × ${escapeHtml(item?.name || 'Producto')}</span>
+        ${unitPrice > 0 ? `<strong>${money(quantity * unitPrice)}</strong>` : ''}
+      </div>`;
+  }).join('');
+  const detailRows = [
+    destination
+      ? `<div class="order-line head"><span>${deliveryModeLabel(order.deliveryMode)}</span><strong>${escapeHtml(destination)}</strong></div>`
+      : '',
+    order.deliveryMode !== 'pickup' && orderAddress.reference
+      ? `<p class="tracking-reference"><strong>Referencia:</strong> ${escapeHtml(orderAddress.reference)}</p>`
+      : '',
+    itemRows,
+    Number(order?.subtotal) > 0
+      ? `<div class="summary-row"><span>Subtotal</span><strong>${money(order.subtotal)}</strong></div>`
+      : '',
+    Number(order?.discountTotal) > 0
+      ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(order.coupon?.code || 'Promo')}</span><strong>-${money(order.discountTotal)}</strong></div>`
+      : '',
+    Number(order?.deliveryFee) > 0
+      ? `<div class="summary-row"><span>Envío</span><strong>${money(order.deliveryFee)}</strong></div>`
+      : '',
+    order?.paymentMethod && order.paymentMethod !== 'Sin especificar'
+      ? `<div class="summary-row"><span>Pago</span><strong>${escapeHtml(order.paymentMethod)}</strong></div>`
+      : '',
+    order?.cashChange
+      ? `<div class="summary-row"><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></div>`
+      : '',
+    hasTotal
+      ? `<div class="summary-row total"><span>Total</span><strong>${money(total)}</strong></div>`
+      : '',
+    order?.notes && order.notes !== 'Sin notas'
+      ? `<p><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>`
+      : '',
+  ].filter(Boolean).join('');
   return `
-    <section class="tracking-order-summary">
-      <div class="tracking-summary-media">${firstProduct ? productThumb(firstProduct, 'tracking-summary') : ''}</div>
-      <div class="tracking-summary-copy">
-        <div class="tracking-summary-head">
-          <span>
-            <small>Pedido ${escapeHtml(order.id)}</small>
-            <strong>${escapeHtml(items[0]?.name || 'Tu pedido')}</strong>
-          </span>
-          <strong class="tracking-summary-total">${money(order.total)}</strong>
-        </div>
-        <ul>${preview}${remaining ? `<li class="tracking-summary-more">+ ${remaining} producto${remaining === 1 ? '' : 's'}</li>` : ''}</ul>
+    <details class="tracking-order-summary tracking-order-detail order-detail" data-order-summary-details>
+      <summary>
+        <span class="tracking-summary-copy">
+          <strong title="Pedido ${escapeHtml(order?.id || '')}">Pedido ${escapeHtml(order?.id || '')}</strong>
+          ${meta ? `<small>${escapeHtml(meta)}</small>` : ''}
+        </span>
+        <span class="tracking-summary-action">
+          Ver detalles
+          <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m7.5 4.5 5 5.5-5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </span>
+      </summary>
+      <div class="order-detail-body">
+        ${detailRows || '<p>No hay detalles adicionales disponibles.</p>'}
       </div>
-    </section>`;
+    </details>`;
 }
 
-function trackingWaitingStage(order) {
+function trackingWaitingStage(order, freshness = 'none') {
   if (order.deliveryMode === 'pickup' || ['cancelled', 'delivered'].includes(order.status)) return '';
+  const isOutForDelivery = ['picked_up', 'on_the_way', 'arrived', 'arriving'].includes(order.status);
+  const copy = isOutForDelivery
+    ? freshness === 'lost'
+      ? 'La ubicación no está disponible en este momento.'
+      : 'El rider está en camino. La ubicación aparecerá cuando esté disponible.'
+    : order.status === 'ready'
+      ? 'El pedido sigue en el local y saldrá cuando se asigne un rider.'
+      : 'El pedido sigue en el local. La ubicación aparecerá cuando comience el reparto.';
   return `
     <div class="tracking-map-waiting" data-tracking-map-placeholder>
-      <span aria-hidden="true">${deliveryGlyph()}</span>
+      <span aria-hidden="true">
+        <svg viewBox="0 0 32 32" focusable="false">
+          <path d="M16 28s9-7.7 9-16a9 9 0 1 0-18 0c0 8.3 9 16 9 16Z" fill="none" stroke="currentColor" stroke-width="2"></path>
+          <circle cx="16" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"></circle>
+          <path d="m6 26 20-20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>
+        </svg>
+      </span>
       <div>
-        <strong>Ubicación no disponible</strong>
-        <p data-tracking-gps-note>Seguimiento por estados, sin GPS ni ubicación en vivo.</p>
+        <strong>${isOutForDelivery ? 'Ubicación no disponible' : 'El pedido sigue en el local'}</strong>
+        <p data-tracking-gps-note>${escapeHtml(copy)}</p>
       </div>
     </div>`;
 }
 
-function trackingContactButton({ accessibleLabel = 'Contactar al local' } = {}) {
+function trackingContactButton({
+  accessibleLabel = 'Contactar al local',
+  text = 'Contactar',
+  className = 'secondary-button compact',
+} = {}) {
   const config = getBusinessConfig();
   const phone = String(config.whatsappNumber || '').replace(/\D/g, '');
   if (config.whatsappVerified !== true || phone.length < 8 || phone.length > 15) return '';
-  return `<a class="secondary-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(accessibleLabel)}">Contactar</a>`;
+  return `<a class="${escapeHtml(className)}" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(accessibleLabel)}">${escapeHtml(text)}</a>`;
 }
 
 function trackingHelpCard() {
-  const contact = trackingContactButton();
+  const contact = trackingContactButton({
+    text: 'Contactar al local',
+    className: 'tracking-help-contact',
+  });
   if (!contact) return '';
   return `
-    <section class="tracking-help-card">
-      <span class="tracking-help-icon" aria-hidden="true">?</span>
-      <div><strong>¿Necesitás ayuda?</strong><small>Escribile al canal verificado del local.</small></div>
+    <footer class="tracking-help-card">
+      <span class="tracking-help-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M4.5 13v-2a7.5 7.5 0 0 1 15 0v2M5 12.5H3.8A1.8 1.8 0 0 0 2 14.3v2.4a1.8 1.8 0 0 0 1.8 1.8H5v-6ZM19 12.5h1.2a1.8 1.8 0 0 1 1.8 1.8v2.4a1.8 1.8 0 0 1-1.8 1.8H19v-6ZM19 18.5c0 1.7-1.8 2.5-4.5 2.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </span>
+      <span>¿Necesitás ayuda?</span>
       ${contact}
-    </section>`;
+    </footer>`;
+}
+
+function trackingHeader() {
+  return `
+    <header class="tracking-brand-row">
+      <strong>TABA</strong>
+      <button class="tracking-menu-button" type="button" data-nav-view="profile" aria-label="Abrir menú">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>
+        </svg>
+      </button>
+    </header>`;
 }
 
 export function renderTracking() {
@@ -1610,14 +1653,15 @@ export function renderTracking() {
 
   if (!order) {
     renderWithStableRealMap(container, `
-      <div class="track-layout tracking-map-experience is-empty no-map">
+      <div class="track-layout tracking-premium tracking-map-experience is-empty no-map">
         <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
+          ${trackingHeader()}
           <div class="empty-state sheet-empty">
-          <h1 class="empty-title">Todavía no hay un pedido en curso</h1>
-          <p class="empty-state-copy">Cuando armes tu pedido, acá vas a ver cada avance hasta la entrega.</p>
-          <div class="empty-actions">
-            <button class="primary-button compact" type="button" data-nav-view="catalog">Ver el catálogo</button>
-          </div>
+            <h1 class="empty-title">Todavía no hay un pedido en curso</h1>
+            <p class="empty-state-copy">Cuando armes tu pedido, acá vas a ver cada avance hasta la entrega.</p>
+            <div class="empty-actions">
+              <button class="primary-button compact" type="button" data-nav-view="catalog">Ver el catálogo</button>
+            </div>
           </div>
         </section>
       </div>`, { rolePrefix: 'tracking' });
@@ -1628,78 +1672,43 @@ export function renderTracking() {
   const isDelivery = order.deliveryMode !== 'pickup';
   const head = trackingHeadline(order);
   const riderLocation = chooseRiderLocation(getOrderSimulation(order), order.tracking?.lastLocation);
-  const liveRider = ['on_the_way', 'arriving'].includes(order.status)
-    && hasVerifiedLiveRiderLocation(riderLocation);
+  const locationFreshness = trackingLocationFreshness(riderLocation);
+  const trackableStatus = ['picked_up', 'on_the_way', 'arrived', 'arriving'].includes(order.status);
   const sandboxSimulation = getOrderSimulation(order);
   const sandboxPresentation = sandboxTrackingPresentation(order, sandboxSimulation);
   const sandboxMapActive = isSandboxOrderRepository(getOrderRepository())
-    && ['on_the_way', 'arriving'].includes(order.status)
+    && trackableStatus
     && ((sandboxSimulation?.source === 'simulation' && sandboxSimulation?.userStarted === true)
       || (sandboxSimulation?.source === 'gps' && hasFreshSharedGpsLocation(sandboxSimulation)));
-
-  const itemsHtml = (Array.isArray(order.items) ? order.items : []).map((item) => `
-    <div class="order-line">
-      <span>${item.quantity} × ${escapeHtml(item.name)}</span>
-      <strong>${money(item.quantity * item.unitPrice)}</strong>
-    </div>
-  `).join('');
-  const orderAddress = normalizeOrderAddressDetails(order);
-
-  const showMap = isDelivery && !isCancelled && (liveRider || sandboxMapActive);
-  const arrivalCopy = trackingArrivalCopy(order, sandboxPresentation);
+  const hasUsableLastLocation = trackableStatus
+    && ['fresh', 'delayed'].includes(locationFreshness);
+  const showMap = isDelivery
+    && !['delivered', 'cancelled'].includes(order.status)
+    && (hasUsableLastLocation || sandboxMapActive);
+  const latestUpdate = latestTrackingTimestamp(order, riderLocation);
+  const timelineStatus = order.status === 'arriving' ? 'arrived' : order.status;
+  const showRiderCard = isDelivery
+    && !isCancelled
+    && order.status !== 'delivered'
+    && (Boolean(order.assignedRiderId)
+      || ['assigned', 'picked_up', 'on_the_way', 'arrived', 'arriving'].includes(order.status));
   renderWithStableRealMap(container, `
-    <div class="track-layout tracking-premium tracking-map-experience ${showMap ? '' : 'no-map'}">
+    <div class="track-layout tracking-premium tracking-map-experience status-${escapeHtml(order.status)} ${showMap ? '' : 'no-map'}">
       <section class="delivery-bottom-sheet tracking-sheet track-progress-card ${showMap ? 'is-live' : 'is-offline'}" data-bottom-sheet>
-        <header class="tracking-brand-row">
-          <strong>TABA</strong>
-          <span class="tracking-context">${sandboxPresentation.gpsSnapshot
-            ? 'Última ubicación'
-            : sandboxMapActive && sandboxSimulation?.origin === 'sandbox_route'
-              ? 'Seguimiento del pedido'
-              : showMap ? 'Seguimiento en vivo' : 'Seguimiento del pedido'}</span>
-          <button class="tracking-menu-button" type="button" data-nav-view="profile" aria-label="Abrir menú">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          </button>
-        </header>
+        ${trackingHeader()}
         <div class="tracking-hero">
-          <div>
-            <h1>${escapeHtml(head.title)}</h1>
-            ${arrivalCopy ? `<p class="tracking-arrival ${arrivalCopy === 'Llegó' ? 'is-arrived' : ''}">${escapeHtml(arrivalCopy)}</p>` : ''}
-            ${order.status === 'on_the_way' ? '<span class="tracking-compat-copy" aria-hidden="true">Pedido en reparto. Tu pedido salió del local y va camino a tu dirección.</span>' : ''}
-            ${order.status === 'preparing' && Number(order.delivery?.estimatedPreparationMinutes) > 0 ? `<span class="tracking-compat-copy" aria-hidden="true">Tiempo estimado de preparación: ${Number(order.delivery.estimatedPreparationMinutes)} min.</span>` : ''}
-            ${order.status === 'delivered' ? '<span class="tracking-compat-copy" aria-hidden="true">¡Disfrutalo!</span>' : ''}
-          </div>
+          <h1>${escapeHtml(head.title)}</h1>
+          <p class="tracking-subtitle">${escapeHtml(head.sub)}</p>
+          <p class="tracking-updated">Última actualización ${escapeHtml(relativeAgeLabel(latestUpdate))}</p>
         </div>
-        ${renderPublicOrderTimeline(order.status, { className: 'customer-progress' })}
-        ${isCancelled ? `<div class="warning-box">Este pedido fue cancelado.${order.cancelReason ? ` Motivo: ${escapeHtml(order.cancelReason)}.` : ''} Si fue un error, contactá al local por un canal verificado.</div>` : ''}
-        ${showMap ? (sandboxMapActive ? sandboxTrackingStage(order, sandboxSimulation) : trackingMapStage({ order, live: true })) : trackingWaitingStage(order)}
-        ${isDelivery && !isCancelled
+        ${renderPublicOrderTimeline(timelineStatus, { className: 'customer-progress' })}
+        ${showMap ? (sandboxMapActive ? sandboxTrackingStage(order, sandboxSimulation) : trackingMapStage({ order })) : trackingWaitingStage(order, locationFreshness)}
+        ${showRiderCard
           ? riderTrackingCard(order, riderLocation, sandboxPresentation)
           : ''}
-        ${trackingOrderSummaryCard(order)}
         ${trackingDeliveryCodeCard(order)}
+        ${trackingOrderSummaryCard(order)}
         ${trackingHelpCard()}
-        <details class="order-detail tracking-order-detail">
-          <summary>Ver detalles</summary>
-          <div class="order-detail-body">
-            <div class="order-line head"><span>${deliveryModeLabel(order.deliveryMode)}</span><strong>${escapeHtml(destinationAddressLabel(order))}</strong></div>
-            ${isDelivery && orderAddress.reference
-              ? `<p class="tracking-reference"><strong>Referencia:</strong> ${escapeHtml(orderAddress.reference)}</p>`
-              : ''}
-            ${itemsHtml}
-            <div class="summary-row"><span>Subtotal</span><strong>${money(order.subtotal)}</strong></div>
-            ${Number(order.discountTotal || 0) > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(order.coupon?.code || 'Promo')}</span><strong>-${money(order.discountTotal)}</strong></div>` : ''}
-            <div class="summary-row"><span>Envío</span><strong>${money(order.deliveryFee)}</strong></div>
-            <div class="summary-row"><span>Pago</span><strong>${escapeHtml(order.paymentMethod || 'Pago a coordinar con el local')}</strong></div>
-            ${order.cashChange ? `<div class="summary-row"><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></div>` : ''}
-            <div class="summary-row total"><span>Total</span><strong>${money(order.total)}</strong></div>
-            ${order.notes && order.notes !== 'Sin notas' ? `<p><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>` : ''}
-          </div>
-        </details>
-        ${isCancelled ? '' : `
-        <div class="button-row track-actions">
-          <button class="secondary-button compact" type="button" data-whatsapp-order data-whatsapp-available hidden>WhatsApp del local</button>
-        </div>`}
       </section>
     </div>
   `, { rolePrefix: 'tracking', orderId: showMap ? order.id : '' });
@@ -1850,16 +1859,6 @@ export function bagGlyph() {
   return `<svg class="lt-glyph" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true" focusable="false">
     <path d="M6.4 8.5h11.2l-.9 9.8a2.4 2.4 0 0 1-2.4 2.2H9.7a2.4 2.4 0 0 1-2.4-2.2L6.4 8.5Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
     <path d="M9.2 9V7.4a2.8 2.8 0 0 1 5.6 0V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-  </svg>`;
-}
-
-export function deliveryGlyph() {
-  return `<svg class="lt-glyph" viewBox="0 0 24 24" width="23" height="23" fill="none" aria-hidden="true" focusable="false">
-    <circle cx="7" cy="17.5" r="2.2" stroke="currentColor" stroke-width="1.6"/>
-    <circle cx="17.5" cy="17.5" r="2.2" stroke="currentColor" stroke-width="1.6"/>
-    <path d="M9.2 17.5h5.9l1.8-5.4h-5.2L9.8 8.5H6.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="4.2" y="6" width="6.6" height="5.3" rx="1.4" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M15.3 10h3.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
   </svg>`;
 }
 

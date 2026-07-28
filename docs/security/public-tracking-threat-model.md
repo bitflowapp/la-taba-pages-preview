@@ -16,7 +16,9 @@ referer, logs, fuerza bruta, enumeración y reutilización posterior a la entreg
 - RPC `get_public_order_tracking` como única superficie anónima.
 - Sin SELECT anónimo de `orders`, `order_items`, `order_events`,
   `rider_locations` ni `order_public_tokens`.
-- Polling: el token no entra en canales Realtime, query strings ni logs.
+- Polling: el token no entra en canales Realtime, query strings ni logs. La
+  vista Tracking mantiene una única solicitud abortable y un ciclo de cinco
+  segundos sólo durante reparto; al salir, vencer/revocar o entregar se corta.
 - Ubicación redondeada (~100 m) sólo durante entrega activa; no hay historial.
 
 ## DTO permitido
@@ -34,3 +36,7 @@ Token válido/incorrecto/expirado/revocado, código enumerado, pedido ajeno,
 respuesta terminal sin GPS y revisión de logs/proxy para verificar que el header
 no se registra. La rotación automática de token puede agregarse si el negocio
 requiere enlaces de vida más corta.
+
+La política de frescura en cliente es: fresco hasta 15 s, demorado hasta 45 s y
+perdido después. En los dos últimos casos se puede conservar el último punto
+redondeado, pero nunca se inventa movimiento, ruta ni ETA.

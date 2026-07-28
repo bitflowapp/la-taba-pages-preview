@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { activeTrackingLiveness } from '../js/map/route_geometry.js';
+import {
+  activeTrackingLiveness,
+  trackingLocationFreshness,
+} from '../js/map/route_geometry.js';
 
 // Vivacidad del seguimiento: decide cuándo el cliente/negocio deben volver a un
 // fallback honesto ("Sin GPS en vivo") porque el GPS real se enfrió, sin
@@ -39,19 +42,26 @@ test('activeTrackingLiveness: pedido terminal no se sigue', () => {
 });
 
 test('activeTrackingLiveness: GPS real fresco del pedido => live', () => {
-  assert.equal(activeTrackingLiveness(order('LT-1', 'on_the_way'), gpsSim('LT-1', 4000), { now: NOW }), 'live');
+  assert.equal(activeTrackingLiveness(order('LT-1', 'on_the_way'), gpsSim('LT-1', 4000), { now: NOW }), 'fresh');
+});
+
+test('trackingLocationFreshness clasifica los umbrales de cliente', () => {
+  const source = gpsSim('LT-1', 0);
+  assert.equal(trackingLocationFreshness({ ...source, timestamp: NOW - 15_000 }, { now: NOW }), 'fresh');
+  assert.equal(trackingLocationFreshness({ ...source, timestamp: NOW - 16_000 }, { now: NOW }), 'delayed');
+  assert.equal(trackingLocationFreshness({ ...source, timestamp: NOW - 46_000 }, { now: NOW }), 'lost');
 });
 
 test('activeTrackingLiveness: GPS viejo (sobre 30s) => idle, fallback honesto', () => {
-  assert.equal(activeTrackingLiveness(order('LT-1', 'on_the_way'), gpsSim('LT-1', 31_000), { now: NOW }), 'idle');
+  assert.equal(activeTrackingLiveness(order('LT-1', 'on_the_way'), gpsSim('LT-1', 31_000), { now: NOW }), 'delayed');
 });
 
 test('activeTrackingLiveness: el mismo fix se enfría con el tiempo (live -> idle)', () => {
   const sim = gpsSim('LT-1', 0); // fix "ahora"
   const o = order('LT-1', 'on_the_way');
-  assert.equal(activeTrackingLiveness(o, sim, { now: NOW }), 'live');
+  assert.equal(activeTrackingLiveness(o, sim, { now: NOW }), 'fresh');
   // 40s después, sin un nuevo fix, debe degradar a idle aunque nada cambió el estado.
-  assert.equal(activeTrackingLiveness(o, sim, { now: NOW + 40_000 }), 'idle');
+  assert.equal(activeTrackingLiveness(o, sim, { now: NOW + 40_000 }), 'delayed');
 });
 
 test('activeTrackingLiveness: sin GPS o GPS de otro pedido => idle', () => {
@@ -72,5 +82,5 @@ test('activeTrackingLiveness: usa order.tracking.lastLocation cuando no hay sim 
       timestamp: ts, lastFixAt: new Date(ts).toISOString(),
     },
   };
-  assert.equal(activeTrackingLiveness(order('LT-1', 'on_the_way', tracking), null, { now: NOW }), 'live');
+  assert.equal(activeTrackingLiveness(order('LT-1', 'on_the_way', tracking), null, { now: NOW }), 'fresh');
 });

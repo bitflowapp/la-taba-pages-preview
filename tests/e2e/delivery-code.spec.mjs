@@ -25,7 +25,7 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await waitForToast(page, 'Pedido confirmado');
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Pedido confirmado');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido fue confirmado');
   await expect(tracking.locator('[data-delivery-code-card]')).toHaveCount(0);
 
   await page.goto('/?demo=1#business');
@@ -48,6 +48,12 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await waitForToast(page, 'Llegada al domicilio registrada.');
 
   await page.goto('/?demo=1#tracking');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido llegó');
+  const arrivedTimeline = tracking.getByRole('list', { name: 'Progreso del pedido' });
+  await expect(arrivedTimeline.getByRole('listitem')).toHaveCount(4);
+  await expect(arrivedTimeline.locator('.track-step.done, .track-step.current')).toHaveCount(3);
+  await expect(arrivedTimeline.locator('.track-step.current')).toHaveText('En camino');
+  await expect(arrivedTimeline.locator('.track-step.pending')).toHaveText('Entregado');
   await expect(tracking.locator('[data-delivery-code-card]')).toBeVisible();
   const code = await tracking.locator('[data-delivery-code]').getAttribute('data-delivery-code');
   expect(code).toMatch(/^\d{4}$/);
@@ -71,9 +77,14 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await page.locator('[data-delivery-done="LT-0002"]').click();
   await waitForToast(page, 'Pedido marcado como entregado.');
   await page.goto('/?demo=1#tracking');
-  await expect(tracking).toContainText('¡Disfrutalo!');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Pedido entregado');
   await expect(tracking.locator('[data-delivery-code]')).toHaveCount(0);
-  await expect(tracking.locator('[data-delivery-code-card]')).toContainText('Entrega validada');
+  await expect(tracking.locator('[data-delivery-code-card]')).toHaveCount(0);
+  const deliveredTimeline = tracking.getByRole('list', { name: 'Progreso del pedido' });
+  await expect(deliveredTimeline.getByRole('listitem')).toHaveCount(4);
+  await expect(deliveredTimeline.locator('.track-step.done, .track-step.current')).toHaveCount(4);
+  await expect(deliveredTimeline.locator('.track-step.current')).toHaveText('Entregado');
+  await expect(deliveredTimeline.locator('.track-step.pending')).toHaveCount(0);
 
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   expect(noOverflow).toBeTruthy();

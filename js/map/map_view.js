@@ -6,15 +6,14 @@ import { MAP_PROVIDER, RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getT
 import {
   chooseRiderLocation,
   getRoute,
-  hasLiveRiderLocation,
-  isLocationStale,
+  hasKnownSharedGpsLocation,
   selectRouteForOrder,
   shouldRenderGpsFix,
+  trackingLocationFreshness,
 } from './route_geometry.js';
 import { createPlaceIcon, createRiderIcon, updateRiderMarker } from './rider_marker.js';
 
 const mountedMaps = new Set();
-const TRACKING_STALE_MS = 30_000;
 
 export function canUseLeaflet(root = globalThis) {
   return Boolean(root?.L?.map && root?.L?.tileLayer);
@@ -475,7 +474,7 @@ function getRiderLocation(order, sim, routeId, role, sandbox = false) {
   // Sin eso no hay marcador (ni en cliente ni en rider): no se inventan
   // posiciones, ni se presenta la simulación como si fuera ubicación real.
   const chosen = chooseRiderLocation(sim, order?.tracking?.lastLocation);
-  if (!sandbox) return hasLiveRiderLocation(chosen) ? chosen : null;
+  if (!sandbox) return hasKnownSharedGpsLocation(chosen) ? chosen : null;
   if (sim?.source === 'gps' && Number.isFinite(Number(sim.lat)) && Number.isFinite(Number(sim.lng))) {
     return {
       ...sim,
@@ -501,8 +500,15 @@ function getRiderLocation(order, sim, routeId, role, sandbox = false) {
 function renderMapMeta(container, order, location, destination) {
   const meta = container.querySelector('[data-map-meta]');
   if (!meta) return;
+  const copy = meta.querySelector?.('[data-map-meta-text]') || meta;
   if (!order || !location) {
-    meta.textContent = 'Mapa de seguimiento';
+    copy.textContent = 'Ubicación no disponible';
+    return;
+  }
+
+  const age = relativeAgeLabel(location.lastFixAt || location.timestamp);
+  if (container.dataset.mapRole === 'tracking') {
+    copy.textContent = `Última ubicación · ${age}`;
     return;
   }
 
@@ -514,15 +520,15 @@ function renderMapMeta(container, order, location, destination) {
     : location.origin === 'sandbox_route'
       ? 'Recorrido de muestra'
       : source;
-  const age = relativeAgeLabel(location.lastFixAt || location.timestamp);
-  const gpsStale = location.origin === 'local_gps' && isLocationStale(location, TRACKING_STALE_MS);
+  const freshness = trackingLocationFreshness(location);
+  const gpsStale = location.source === 'gps' && ['delayed', 'lost'].includes(freshness);
   const prefix = gpsStale ? 'Última ubicación' : displaySource;
   const showAccuracy = container.dataset.mapRole?.startsWith('rider');
   const accuracy = showAccuracy && Number.isFinite(location.accuracy)
     ? ` · precisión ${Math.round(location.accuracy)} m`
     : '';
   // Sin coordenadas reales del cliente no calculamos distancia: no se inventan km.
-  meta.textContent = gpsStale
+  copy.textContent = gpsStale
     ? `${prefix} ${age}${accuracy}`
     : `${prefix} · última actualización: ${age}${accuracy}`;
 }

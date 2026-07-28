@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
-const TRACKING_GPS_NOTE = 'Seguimiento por estados, sin GPS ni ubicación en vivo.';
+const TRACKING_GPS_NOTE = 'El pedido sigue en el local. La ubicación aparecerá cuando comience el reparto.';
+const OUT_FOR_DELIVERY_GPS_NOTE = 'El rider está en camino. La ubicación aparecerá cuando esté disponible.';
 
 // Garantiza que sin GPS real el mapa no muestra geografía inventada
 // (ni ruta, ni marcadores LT/CL, ni "En vivo", ni Map/km/ETA falsos) y que el
@@ -38,7 +39,7 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await expect(tracking).toContainText('Casa azul');
 
   // La confirmación inicial usa copy comercial sin afirmar una recepción remota.
-  await expect(tracking).toContainText('Pedido confirmado');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido fue confirmado');
   await expect(tracking).not.toContainText(/pedido de muestra|no se envió|presentación/i);
   await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE);
   await expect(tracking).not.toContainText('En vivo');
@@ -60,7 +61,7 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   expect(text).not.toMatch(/\d+([.,]\d+)?\s*km/i);
   expect(text).not.toMatch(/\bETA\b/i);
 
-  // En reparto sin GPS: marca y hero comerciales, política GPS sólo en la nota única.
+  // En camino sin GPS: header y hero comerciales, política GPS sólo en la nota única.
   await page.evaluate(async () => {
     const { updateState } = await import('/js/state.js');
     updateState((draft) => {
@@ -79,10 +80,9 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
     });
   });
 
-  await expect(tracking.locator('.tracking-brand-row')).toContainText('TABA');
-  await expect(tracking.locator('.tracking-brand-row')).toContainText('Seguimiento del pedido');
-  await expect(tracking.locator('.tracking-hero')).toContainText('Pedido en reparto');
-  await expect(tracking.locator('.tracking-hero')).toContainText('Tu pedido salió del local y va camino a tu dirección.');
+  await expect(tracking.locator('.tracking-brand-row > strong')).toHaveText('TABA');
+  await expect(tracking.getByRole('button', { name: 'Abrir menú' })).toBeVisible();
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido está en camino');
   await expect(tracking.locator('.tracking-hero')).not.toContainText(/GPS|mapa|no mostramos/i);
   await expect(tracking.locator('.customer-progress .track-step')).toHaveCount(4);
   await expect(tracking.locator('.customer-progress')).toContainText('Confirmado');
@@ -90,8 +90,9 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await expect(tracking.locator('.customer-progress')).toContainText('En camino');
   await expect(tracking.locator('.customer-progress')).toContainText('Entregado');
   await expect(tracking.locator('[data-tracking-gps-note]')).toHaveCount(1);
-  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE);
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(OUT_FOR_DELIVERY_GPS_NOTE);
   await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
+  await expect(tracking.locator('[data-delivery-code-card]')).toHaveCount(0);
   await expect(tracking.locator('.sheet-handle')).toHaveCount(0);
 
   // No hay overflow horizontal en 390x844.

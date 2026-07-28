@@ -41,13 +41,17 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await waitForToast(page, /Pedido confirmado/);
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
-  await expect(page.locator('[data-tracking-panel]')).toContainText('Pedido confirmado');
+  await expect(page.locator('[data-tracking-panel] .tracking-hero h1')).toHaveText('Tu pedido fue confirmado');
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/pedido de muestra|no se envió|presentación/i);
   await expect(page.locator('[data-tracking-panel] [data-delivery-code]')).toHaveCount(0);
-  await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveText('Seguimiento por estados, sin GPS ni ubicación en vivo.');
+  await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveText('El pedido sigue en el local. La ubicación aparecerá cuando comience el reparto.');
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(0);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\bETA\b/i);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
+  const orderSummary = page.locator('[data-tracking-panel] [data-order-summary-details]');
+  await expect(orderSummary.locator('summary')).toContainText('Pedido LT-0002');
+  await expect(orderSummary.locator('summary')).toContainText(/1 producto · Total \$[\d.]+/);
+  await expect(orderSummary).not.toContainText('Resumen protegido');
 
   await markLatestOrderDelivered(page);
   await page.reload();
@@ -98,11 +102,30 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel] .lt-rider-marker.source-gps')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel] .lt-rider-marker .lt-rider-helmet-icon[role="img"][aria-label="Casco del rider TABA"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveCount(0);
-  await expect(page.locator('[data-tracking-panel] .tracking-brand-row')).toContainText('Seguimiento en vivo');
-  await expect(page.locator('[data-tracking-panel]')).toContainText('Ubicación real del repartidor');
+  await expect(page.locator('[data-tracking-panel] .tracking-hero h1')).toHaveText('Tu pedido está en camino');
+  await expect(page.locator('[data-tracking-panel] [data-map-meta-text]')).toHaveText(
+    /^Última ubicación · (?:ahora|hace \d+ s|hace \d+ min)$/,
+  );
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\bETA\b/i);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
+
+  await page.evaluate(() => {
+    const key = 'la_taba_mvp_v4_state';
+    const state = JSON.parse(localStorage.getItem(key));
+    const order = state.orders[0];
+    const delayedAt = Date.now() - 20_000;
+    order.tracking.lastLocation.timestamp = delayedAt;
+    order.tracking.lastLocation.lastFixAt = new Date(delayedAt).toISOString();
+    order.tracking.updatedAt = new Date(delayedAt).toISOString();
+    localStorage.setItem(key, JSON.stringify(state));
+  });
+  await page.reload();
+  await expect(page.locator('[data-tracking-panel] [data-real-map]')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel] [data-map-meta-text]')).toHaveText(
+    /^Última ubicación · hace \d+ s$/,
+  );
 
   for (const viewport of [
     { width: 390, height: 844 },

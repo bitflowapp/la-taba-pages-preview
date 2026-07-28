@@ -1,5 +1,6 @@
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
 import { normalizeWorkflowStatus } from './core/order-workflow.js';
+import { createProductionRiderGpsController } from './tracking/production_rider_gps.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
 import {
   dateTime,
@@ -9,8 +10,7 @@ import {
 } from './state.js';
 
 const BUSINESS_ROLES = new Set(['owner', 'admin', 'staff']);
-const TERMINAL_STATUSES = new Set(['delivered', 'canceled']);
-const GPS_PUBLISH_INTERVAL_MS = 6000;
+const TERMINAL_STATUSES = new Set(['delivered', 'canceled', 'cancelled']);
 
 let initialized = false;
 let repository = null;
@@ -20,20 +20,14 @@ let notify = () => {};
 let refreshSequence = 0;
 let availableRiderOrders = [];
 let activeBusinessRiders = [];
+let gpsController = null;
 let access = {
   status: 'signed_out',
   user: null,
   membership: null,
   message: '',
 };
-let gpsShare = {
-  watchId: null,
-  orderId: '',
-  state: 'idle',
-  message: '',
-  lastPublishedAt: 0,
-  publishing: false,
-};
+let gpsShare = emptyGpsShare();
 
 export function initProductionOperations({ onChange = () => {} } = {}) {
   notify = typeof onChange === 'function' ? onChange : () => {};
@@ -41,6 +35,7 @@ export function initProductionOperations({ onChange = () => {} } = {}) {
   initialized = true;
   repository = getOrderRepository();
   auth = repository?.auth || null;
+  configureGpsController();
 
   if (!auth) {
     access = {
@@ -61,6 +56,7 @@ export function initProductionOperations({ onChange = () => {} } = {}) {
 
 export function renderProductionOperations() {
   if (typeof document === 'undefined' || getAppMode() !== APP_MODE_PRODUCTION) return;
+  gpsController?.reconcile();
   renderAccessSurface('business');
   renderAccessSurface('rider');
 }
@@ -324,7 +320,8 @@ export function handleProductionOperationsPageHide() {
 }
 
 export function resetProductionOperationsForTests() {
-  stopGpsShare();
+  gpsController?.destroy();
+  gpsController = null;
   authStop?.();
   authStop = null;
   initialized = false;
@@ -334,6 +331,7 @@ export function resetProductionOperationsForTests() {
   refreshSequence = 0;
   availableRiderOrders = [];
   activeBusinessRiders = [];
+  gpsShare = emptyGpsShare();
   access = {
     status: 'signed_out',
     user: null,
@@ -614,7 +612,7 @@ function riderOrderMarkup(order) {
   const current = workflowStatus(order);
   const next = current === 'arrived' ? null : nextRiderStatus(order);
   const sharing = gpsShare.watchId !== null && gpsShare.orderId === order.id;
-  const canShare = ['on_the_way', 'arrived'].includes(current);
+  const canShare = ['on_the_way', 'arriving', 'arrived'].includes(current);
   const showPrivateDelivery = ['on_the_way', 'arrived'].includes(current);
   return `
     <article class="production-order-card">
@@ -709,93 +707,39 @@ async function updateOrderFromAction(orderId, nextStatus) {
 }
 
 function startGpsShare(orderId) {
-  if (!globalThis.navigator?.geolocation?.watchPosition) {
-    return {
-      handled: true,
-      ok: false,
-      message: 'Este dispositivo no ofrece geolocalización.',
-    };
-  }
-  stopGpsShare();
-  gpsShare = {
-    watchId: null,
-    orderId,
-    state: 'starting',
-    message: 'Solicitando permiso de ubicación…',
-    lastPublishedAt: 0,
-    publishing: false,
+  if (!gpsController) configureGpsController();
+  const result = gpsController?.start(orderId) || {
+    ok: false,
+    message: 'El controlador de ubicación no está disponible.',
   };
-  const watchId = navigator.geolocation.watchPosition(
-    (position) => publishGpsPosition(orderId, position),
-    (error) => {
-      gpsShare.state = 'error';
-      gpsShare.message = gpsErrorMessage(error);
-      notify();
-    },
-    {
-      enableHighAccuracy: true,
-      maximumAge: 4000,
-      timeout: 15000,
-    },
-  );
-  gpsShare.watchId = watchId;
-  notify();
-  return {
-    handled: true,
-    ok: true,
-    message: 'GPS activado. La ubicación se publicará mientras esta vista siga abierta.',
-  };
-}
-
-async function publishGpsPosition(orderId, position) {
-  if (gpsShare.orderId !== orderId || gpsShare.watchId === null || gpsShare.publishing) return;
-  const activeWatchId = gpsShare.watchId;
-  const now = Date.now();
-  if (now - gpsShare.lastPublishedAt < GPS_PUBLISH_INTERVAL_MS) return;
-  gpsShare.publishing = true;
-  let result;
-  try {
-    result = await repository.updateRiderLocation(orderId, {
-      lat: position.coords.latitude,
-      lng: position.coords.longitude,
-      accuracy: position.coords.accuracy,
-      heading: position.coords.heading,
-      speed: position.coords.speed,
-      timestamp: position.timestamp || now,
-      source: 'gps',
-    });
-  } catch (_) {
-    result = {
-      ok: false,
-      message: 'No pudimos publicar la ubicación. Verificá tu conexión.',
-    };
-  } finally {
-    if (gpsShare.orderId === orderId && gpsShare.watchId === activeWatchId) {
-      gpsShare.publishing = false;
-    }
-  }
-  if (gpsShare.orderId !== orderId || gpsShare.watchId !== activeWatchId) return;
-  if (result.ok) {
-    gpsShare.state = 'live';
-    gpsShare.lastPublishedAt = now;
-    gpsShare.message = `GPS compartido · ${new Date(now).toLocaleTimeString('es-AR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    })}`;
-  } else {
-    gpsShare.state = 'error';
-    gpsShare.message = result.message;
-  }
-  notify();
+  gpsShare = gpsController?.getSnapshot?.() || emptyGpsShare();
+  return { handled: true, ...result };
 }
 
 function stopGpsShare() {
-  const stopped = gpsShare.watchId !== null || Boolean(gpsShare.orderId);
-  if (gpsShare.watchId !== null && globalThis.navigator?.geolocation?.clearWatch) {
-    navigator.geolocation.clearWatch(gpsShare.watchId);
-  }
-  gpsShare = {
+  const stopped = gpsController?.stop?.() || false;
+  gpsShare = gpsController?.getSnapshot?.() || emptyGpsShare();
+  return stopped;
+}
+
+function configureGpsController() {
+  gpsController?.destroy?.();
+  gpsController = createProductionRiderGpsController({
+    repository,
+    getAccess: () => access,
+    getOrder: (orderId) => getState().orders.find((order) => (
+      order.id === orderId || order.backendId === orderId || order.code === orderId
+    )) || null,
+    onChange: (snapshot) => {
+      gpsShare = snapshot;
+      notify();
+    },
+  });
+  gpsShare = gpsController.getSnapshot();
+}
+
+function emptyGpsShare() {
+  return {
     watchId: null,
     orderId: '',
     state: 'idle',
@@ -803,7 +747,6 @@ function stopGpsShare() {
     lastPublishedAt: 0,
     publishing: false,
   };
-  return stopped;
 }
 
 function requireViewAccess(view) {
@@ -867,13 +810,6 @@ function formatOrderMoney(value, currencyCode = '') {
 
 function emptyMarkup(message) {
   return `<div class="empty-state"><strong>Sin actividad</strong><p>${escapeHtml(message)}</p></div>`;
-}
-
-function gpsErrorMessage(error) {
-  if (error?.code === 1) return 'Permiso de ubicación denegado.';
-  if (error?.code === 2) return 'El dispositivo no pudo obtener una ubicación.';
-  if (error?.code === 3) return 'La ubicación tardó demasiado. Probá nuevamente.';
-  return 'No pudimos iniciar el GPS.';
 }
 
 function escapeHtml(value) {

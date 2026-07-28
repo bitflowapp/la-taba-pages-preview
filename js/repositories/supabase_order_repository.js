@@ -24,13 +24,18 @@ import {
 } from '../state.js';
 import { createSupabaseAuthService } from '../services/supabase-auth.js';
 import { repositoryResult } from './order_repository.js';
+import { createCustomerTrackingPollController } from '../tracking/customer_tracking_poll.js';
 
 // Se conserva sólo para detectar configuraciones históricas. Producción exige un
 // businessId explícito y verificado en el runtime config.
 export const DEFAULT_SUPABASE_BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
 
 const ORDER_ACCESS_STORAGE_VERSION = 'taba-order-access-v1';
-const ORDER_SELECT = '*,order_items(*),rider_locations(*)';
+// GPS is intentionally never selected from the client-facing order query.
+// Customers obtain the minimized, token-authorized tracking DTO via RPC; the
+// rider publishes through its dedicated RPC. This keeps raw rider_locations
+// outside browser reads even when an order is otherwise visible to the user.
+const ORDER_SELECT = '*,order_items(*)';
 const PUBLIC_TRACKING_GPS_MAX_AGE_MS = 3 * 60 * 1000;
 const PUBLIC_TRACKING_GPS_FUTURE_TOLERANCE_MS = 30 * 1000;
 const PUBLIC_TRACKING_GPS_MAX_ACCURACY_METERS = 250;
@@ -58,7 +63,8 @@ export function createSupabaseOrderRepository({
   const pollingInterval = Math.max(1000, Number(pollMs) || 5000);
   const pendingStorageKey = `${ORDER_ACCESS_STORAGE_VERSION}:${businessId}:pending`;
   const lastAccessStorageKey = `${ORDER_ACCESS_STORAGE_VERSION}:${businessId}:last`;
-  let lastOrderAccess = readStoredAccess(storage, lastAccessStorageKey);
+  let lastOrderAccess = readInitialOrderAccess(storage, lastAccessStorageKey);
+  let unavailableTrackingOrderId = '';
   let trackingClient = null;
   let trackingClientToken = '';
   let pendingRequest = null;
@@ -75,21 +81,45 @@ export function createSupabaseOrderRepository({
     state: 'idle',
     message: 'Catálogo productivo todavía no cargado.',
   };
+  const customerTrackingPoll = createCustomerTrackingPollController({
+    fetchSnapshot: ({ orderId, trackingToken, signal }) => fetchPublicTrackingSnapshot(
+      orderId,
+      { trackingToken, signal, mirror: true },
+    ),
+    onUnavailable: ({ orderId = '' } = {}) => {
+      unavailableTrackingOrderId = String(orderId || '').trim();
+      lastOrderAccess = null;
+      removeStoredAccess(storage, lastAccessStorageKey);
+      selectTrackingOrder(unavailableTrackingOrderId);
+    },
+    onSnapshot: (order) => {
+      const status = normalizeWorkflowStatus(order?.workflowStatus || order?.status, '');
+      if (!['delivered', 'canceled'].includes(status)) return;
+      lastOrderAccess = null;
+      unavailableTrackingOrderId = '';
+      removeStoredAccess(storage, lastAccessStorageKey);
+    },
+    // A poll tick also refreshes derived freshness labels when the DTO did not
+    // change (or the network is slow), without fabricating a new GPS point.
+    onTick: () => updateState(() => {}),
+  });
 
   async function fetchOrderByPublicId(publicId, {
     mirror = false,
     trackingToken = '',
+    signal = null,
   } = {}) {
     const clean = String(publicId || '').trim();
     if (!clean) return null;
     const requestClient = getTrackingClient(trackingToken) || client;
 
     if (trackingToken) {
-      const { data, error } = await requestClient.rpc('get_public_order_tracking', {
-        p_public_id: clean,
+      const result = await fetchPublicTrackingSnapshot(clean, {
+        trackingToken,
+        signal,
+        mirror,
       });
-      if (error || !data) return null;
-      return mirror ? mirrorPublicTracking(data) : data;
+      return result.kind === 'snapshot' ? result.order : null;
     }
 
     let query = requestClient
@@ -118,23 +148,63 @@ export function createSupabaseOrderRepository({
     const orders = mirror
       ? mirrorOrders(rows, { replace: true })
       : rows.map(rowToDemoOrder).filter(Boolean).map(toDomainOrder).filter(Boolean);
+    if (mirror) {
+      const access = getTrackingAccess();
+      if (access) selectTrackingOrder(access.orderId || access.publicCode);
+      else if (unavailableTrackingOrderId) selectTrackingOrder(unavailableTrackingOrderId);
+    }
     return repositoryResult(true, { rows, orders });
   }
 
-  async function refreshStoredCustomerTracking() {
+  function getTrackingAccess() {
     const access = lastOrderAccess || readStoredAccess(storage, lastAccessStorageKey);
-    if (!access?.trackingToken) return null;
-    return fetchOrderByPublicId(
-      access.orderId || access.publicCode,
-      {
-        trackingToken: access.trackingToken,
-        mirror: true,
-      },
-    );
+    if (!hasUsableTrackingAccess(access)) {
+      if (access) removeStoredAccess(storage, lastAccessStorageKey);
+      lastOrderAccess = null;
+      return null;
+    }
+    lastOrderAccess = access;
+    return access;
+  }
+
+  function selectTrackingOrder(orderId) {
+    const requested = String(orderId || '').trim();
+    if (!requested) return null;
+    let selected = null;
+    updateState((draft) => {
+      selected = draft.orders.find((order) => (
+        [order.id, order.code, order.backendId].map(String).includes(requested)
+      )) || null;
+      if (selected) draft.lastOrderId = selected.id;
+    });
+    return selected;
+  }
+
+  async function fetchPublicTrackingSnapshot(publicId, {
+    trackingToken = '',
+    signal = null,
+    mirror = true,
+  } = {}) {
+    const clean = String(publicId || '').trim();
+    const requestClient = getTrackingClient(trackingToken);
+    if (!clean || !requestClient) return { kind: 'unavailable' };
+    let request = requestClient.rpc('get_public_order_tracking', { p_public_id: clean });
+    if (signal && typeof request?.abortSignal === 'function') request = request.abortSignal(signal);
+    const { data, error } = await request;
+    if (signal?.aborted) return { kind: 'aborted' };
+    if (error) {
+      const status = Number(error.status || error.statusCode || 0);
+      const code = String(error.code || '').trim();
+      if ([401, 403].includes(status) || code === '42501') return { kind: 'unavailable' };
+      return { kind: 'network-error', error };
+    }
+    if (!data) return { kind: 'unavailable' };
+    const order = mirror ? mirrorPublicTracking(data) : data;
+    return order ? { kind: 'snapshot', order } : { kind: 'unavailable' };
   }
 
   async function recoverCustomerTrackingAccess(rows = []) {
-    if (lastOrderAccess?.trackingToken) return lastOrderAccess;
+    if (getTrackingAccess()) return lastOrderAccess;
     const { data: userData, error: userError } = await client.auth.getUser();
     const userId = userError ? '' : sanitizeText(userData?.user?.id, { maxLength: 80 });
     if (!isUuid(userId)) return null;
@@ -164,6 +234,7 @@ export function createSupabaseOrderRepository({
       orderId: row.id,
       publicCode: sanitizeText(data.public_code || row.public_code, { maxLength: 80 }),
       trackingToken,
+      tokenExpiresAt: normalizeOptionalIso(data.token_expires_at),
       recoveredAt: new Date().toISOString(),
     };
     lastOrderAccess = access;
@@ -333,6 +404,7 @@ export function createSupabaseOrderRepository({
   }
 
   async function createOrderInternal(orderDraft = {}) {
+    const protectedTrackingAccess = getTrackingAccess();
     const values = normalizeOrderDraft(orderDraft);
     // La instancia productiva no usa mínimos, tarifas ni totales del estado
     // local: la RPC valida el negocio y calcula todo desde filas bloqueadas.
@@ -456,12 +528,13 @@ export function createSupabaseOrderRepository({
       row.delivery_code = deliveryCode;
     }
 
-    lastOrderAccess = {
+    const createdOrderAccess = {
       orderId: row.id,
       publicCode: row.public_code || row.code || '',
       clientRequestId: request.clientRequestId,
       trackingToken: request.trackingToken,
     };
+    lastOrderAccess = protectedTrackingAccess || createdOrderAccess;
     persistOrderAccess({
       storage,
       key: lastAccessStorageKey,
@@ -474,6 +547,9 @@ export function createSupabaseOrderRepository({
     removeStoredAccess(storage, pendingStorageKey);
 
     const order = mirrorCreatedOrder(row);
+    if (protectedTrackingAccess) {
+      selectTrackingOrder(protectedTrackingAccess.orderId || protectedTrackingAccess.publicCode);
+    }
     await loadCatalog().catch(() => null);
     return repositoryResult(true, {
       order,
@@ -497,6 +573,27 @@ export function createSupabaseOrderRepository({
     getCatalogStatus() {
       return { ...catalogStatus };
     },
+    setCustomerTrackingView({ active = false, orderId = '', status = '' } = {}) {
+      if (!active) return customerTrackingPoll.stop();
+      const access = getTrackingAccess();
+      if (!matchesStoredOrderAccess(access, orderId)) return customerTrackingPoll.stop();
+      if (['delivered', 'canceled'].includes(normalizeWorkflowStatus(status, ''))) {
+        lastOrderAccess = null;
+        unavailableTrackingOrderId = '';
+        removeStoredAccess(storage, lastAccessStorageKey);
+        return customerTrackingPoll.stop();
+      }
+      unavailableTrackingOrderId = '';
+      selectTrackingOrder(access.orderId || access.publicCode);
+      return customerTrackingPoll.update({
+        orderId: access.orderId || access.publicCode,
+        trackingToken: access.trackingToken,
+        status,
+      });
+    },
+    getCustomerTrackingPollState() {
+      return customerTrackingPoll.getSnapshot();
+    },
     startSync() {
       if (syncStop) return syncStop;
       let stopped = false;
@@ -508,10 +605,19 @@ export function createSupabaseOrderRepository({
           fetchOrders(),
         ]);
         const orderResult = results[2]?.status === 'fulfilled' ? results[2].value : null;
-        if (!lastOrderAccess?.trackingToken && orderResult?.ok) {
+        if (!getTrackingAccess() && !unavailableTrackingOrderId && orderResult?.ok) {
           await recoverCustomerTrackingAccess(orderResult.rows).catch(() => null);
         }
-        if (!stopped) await refreshStoredCustomerTracking().catch(() => null);
+        const access = getTrackingAccess();
+        if (access && !stopped) {
+          const result = await fetchPublicTrackingSnapshot(
+            access.orderId || access.publicCode,
+            { trackingToken: access.trackingToken, mirror: true },
+          ).catch(() => ({ kind: 'network-error' }));
+          if (result.kind === 'snapshot') {
+            selectTrackingOrder(access.orderId || access.publicCode);
+          }
+        }
       };
       const stopRealtime = createRealtimeWatch({
         client,
@@ -519,7 +625,6 @@ export function createSupabaseOrderRepository({
         name: `taba-sync-${businessId}`,
         changes: [
           tableChange('orders', `business_id=eq.${businessId}`, refresh),
-          tableChange('rider_locations', `business_id=eq.${businessId}`, refresh),
           tableChange('products', `business_id=eq.${businessId}`, () => loadCatalog()),
           tableChange('businesses', `id=eq.${businessId}`, async () => {
             await loadBusinessConfiguration();
@@ -528,23 +633,11 @@ export function createSupabaseOrderRepository({
         ],
         fallbackTask: refresh,
       });
-      // Auth customers deliberately lost SELECT on the exact rider_locations
-      // table. Their Realtime channel may still subscribe for order/catalog
-      // events, but it will not receive GPS rows. Poll only the token-scoped,
-      // rounded DTO so live tracking remains current without reopening base GPS.
-      const stopCustomerTrackingPoll = createRealtimeWatch({
-        client,
-        pollMs: pollingInterval,
-        name: `taba-customer-tracking-${businessId}`,
-        changes: [],
-        fallbackTask: refreshStoredCustomerTracking,
-        pollingOnly: true,
-      });
       refresh();
       syncStop = () => {
         stopped = true;
         stopRealtime();
-        stopCustomerTrackingPoll();
+        customerTrackingPoll.stop();
         syncStop = null;
       };
       return syncStop;
@@ -563,6 +656,21 @@ export function createSupabaseOrderRepository({
     },
     async getActiveOrder() {
       const result = await fetchOrders();
+      const access = getTrackingAccess();
+      if (access) {
+        const tracked = await fetchOrderByPublicId(
+          access.orderId || access.publicCode,
+          { trackingToken: access.trackingToken, mirror: true },
+        );
+        if (tracked) {
+          selectTrackingOrder(access.orderId || access.publicCode);
+          return toDomainOrder(tracked);
+        }
+        return toDomainOrder(selectTrackingOrder(access.orderId || access.publicCode));
+      }
+      if (unavailableTrackingOrderId) {
+        return toDomainOrder(selectTrackingOrder(unavailableTrackingOrderId));
+      }
       const visible = result.ok
         ? result.orders.find((order) => !['delivered', 'canceled', 'cancelled'].includes(order.status))
         || result.orders[0]
@@ -570,13 +678,7 @@ export function createSupabaseOrderRepository({
         : null;
       if (visible) return visible;
 
-      const access = lastOrderAccess || readStoredAccess(storage, lastAccessStorageKey);
-      if (!access?.trackingToken) return null;
-      const row = await fetchOrderByPublicId(
-        access.orderId || access.publicCode,
-        { trackingToken: access.trackingToken },
-      );
-      return row ? toDomainOrder(mirrorPublicTracking(row)) : null;
+      return null;
     },
     async listOrders() {
       const result = await fetchOrders();
@@ -830,7 +932,6 @@ export function createSupabaseOrderRepository({
         name: `taba-order-${orderId}`,
         changes: [
           tableChange('orders', `${isUuid(orderId) ? 'id' : 'public_code'}=eq.${orderId}`, refresh),
-          ...(isUuid(orderId) ? [tableChange('rider_locations', `order_id=eq.${orderId}`, refresh)] : []),
         ],
         fallbackTask: refresh,
         initialTask: refresh,
@@ -850,7 +951,6 @@ export function createSupabaseOrderRepository({
         name: `taba-business-${businessId}`,
         changes: [
           tableChange('orders', `business_id=eq.${businessId}`, refresh),
-          tableChange('rider_locations', `business_id=eq.${businessId}`, refresh),
         ],
         fallbackTask: refresh,
         initialTask: refresh,
@@ -1090,9 +1190,17 @@ function mirrorOrders(rows, { replace = false } = {}) {
         candidate.id === order.id
         || candidate.backendId === order.backendId
       ));
-      return current?.deliveryCode && !order.deliveryCode
-        ? { ...order, deliveryCode: current.deliveryCode }
-        : order;
+      return {
+        ...order,
+        ...(current?.deliveryCode && !order.deliveryCode ? { deliveryCode: current.deliveryCode } : {}),
+        // The token-scoped public DTO may already have supplied a rounded GPS
+        // fix. A normal order refresh intentionally does not reselect that
+        // protected table, so retain the known DTO until it is refreshed or
+        // invalidated by the tracking controller.
+        ...(!order.tracking?.lastLocation && current?.tracking?.lastLocation
+          ? { tracking: current.tracking }
+          : {}),
+      };
     });
     if (replace) {
       draft.orders = orders;
@@ -1133,7 +1241,12 @@ function mirrorOrder(row) {
     const index = draft.orders.findIndex((candidate) => (
       candidate.id === order.id || candidate.backendId === order.backendId
     ));
-    if (index >= 0) draft.orders[index] = order;
+    if (index >= 0) {
+      const current = draft.orders[index];
+      draft.orders[index] = !order.tracking?.lastLocation && current?.tracking?.lastLocation
+        ? { ...order, tracking: current.tracking }
+        : order;
+    }
     else draft.orders.unshift(order);
   });
   return order;
@@ -1727,6 +1840,28 @@ function readStoredAccess(storage, key) {
   }
 }
 
+function readInitialOrderAccess(storage, key) {
+  const current = readStoredAccess(storage, key);
+  if (current) return current;
+
+  const transferredStorage = safeLocalStorage();
+  if (!transferredStorage || transferredStorage === storage) return null;
+  const transferred = readStoredAccess(transferredStorage, key);
+  if (!transferred) return null;
+
+  // A handoff page may only bridge origins through localStorage. Consume it
+  // once, move it to the tab-scoped session store, then remove the durable copy.
+  persistOrderAccess({ storage, key, access: transferred });
+  removeStoredAccess(transferredStorage, key);
+  return transferred;
+}
+
+function hasUsableTrackingAccess(access) {
+  if (!access || !isSafeTrackingToken(access.trackingToken)) return false;
+  const expiresAt = normalizeOptionalIso(access.tokenExpiresAt || access.expiresAt);
+  return !expiresAt || Date.parse(expiresAt) > Date.now();
+}
+
 function removeStoredAccess(storage, key) {
   if (!storage || !key) return;
   try {
@@ -1821,6 +1956,14 @@ function latestIsoTimestamp(values) {
 function safeSessionStorage() {
   try {
     return globalThis.sessionStorage || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function safeLocalStorage() {
+  try {
+    return globalThis.localStorage || null;
   } catch (_) {
     return null;
   }

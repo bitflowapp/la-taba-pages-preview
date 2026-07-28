@@ -477,21 +477,18 @@ test('el sync productivo recupera el código de entrega con el token público', 
 
   const stop = repository.startSync();
   try {
+    repository.setCustomerTrackingView({
+      active: true,
+      orderId: row.id,
+      status: 'arrived',
+    });
     await flushTasks();
     const current = getState().orders.find((order) => order.id === row.public_code);
     assert.equal(current.deliveryCode.code, '4821');
     assert.equal(mock.calls.rpc.some(
       (call) => call.name === 'get_public_order_tracking',
     ), true);
-    const initialTrackingCalls = mock.calls.rpc.filter(
-      (call) => call.name === 'get_public_order_tracking',
-    ).length;
-    await new Promise((resolve) => setTimeout(resolve, 1100));
-    assert.ok(
-      mock.calls.rpc.filter((call) => call.name === 'get_public_order_tracking').length
-        > initialTrackingCalls,
-      'customer tracking must keep polling the minimized DTO after Realtime subscribes',
-    );
+    assert.equal(repository.getCustomerTrackingPollState().active, true);
   } finally {
     stop();
   }
@@ -560,6 +557,169 @@ test('tracking con token público mantiene polling y no abre un canal WebSocket 
     assert.equal(mock.calls.removeChannel, 0);
   } finally {
     stopOrder();
+  }
+});
+
+test('un handoff tokenizado conserva Pedido A aunque Pedido B sea posterior', async () => {
+  const mock = createSupabaseClientMock();
+  const orderA = mock.seedOrder({
+    status: 'on_the_way',
+    assigned_rider_user_id: RIDER_ID,
+    dispatched_at: minutesAgoIso(2),
+  });
+  mock.db.handoffs.set(orderA.id, {
+    code: '4821',
+    failedAttempts: 0,
+    lockedUntil: null,
+    confirmedAt: null,
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  });
+  mock.db.locations.push({
+    id: 'location-token-a',
+    order_id: orderA.id,
+    rider_user_id: RIDER_ID,
+    lat: -38.951,
+    lng: -68.061,
+    accuracy: 100,
+    source: 'gps',
+    created_at: minutesAgoIso(1),
+  });
+
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  storage.setItem(accessKey, JSON.stringify({
+    orderId: orderA.id,
+    publicCode: orderA.public_code,
+    trackingToken: 'H'.repeat(43),
+    tokenExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    transferredAt: new Date().toISOString(),
+  }));
+  const repository = makeRepository(mock, {
+    storage,
+    createTrackingClient: () => mock.client,
+  });
+  const stop = repository.startSync();
+
+  try {
+    await flushTasks();
+    addToCart(PRODUCT_ID, 1);
+    const orderB = await repository.createOrder(checkoutDraft());
+    assert.equal(orderB.ok, true);
+    assert.notEqual(orderB.order.backendId, orderA.id);
+    assert.equal(getState().lastOrderId, orderA.public_code);
+
+    repository.setCustomerTrackingView({
+      active: true,
+      orderId: orderA.id,
+      status: 'on_the_way',
+    });
+    await flushTasks();
+
+    const trackingCalls = mock.calls.rpc.filter(
+      (call) => call.name === 'get_public_order_tracking',
+    );
+    assert.ok(trackingCalls.length >= 1);
+    assert.ok(trackingCalls.every((call) => call.args.p_public_id === orderA.id));
+    assert.equal(repository.getCustomerTrackingPollState().orderId, orderA.id);
+    assert.equal(getState().orders.find(
+      (order) => order.id === orderA.public_code,
+    )?.tracking?.lastLocation?.source, 'gps');
+
+    orderA.status = 'arrived';
+    orderA.arrived_at = new Date().toISOString();
+    await repository.getActiveOrder();
+    const arrived = getState().orders.find((order) => order.id === orderA.public_code);
+    assert.equal(arrived.status, 'arriving');
+    assert.equal(arrived.deliveryCode.code, '4821');
+
+    stop();
+    resetState({
+      products: [LOCAL_PRODUCT],
+      orders: [],
+      cart: [],
+      lastOrderId: null,
+      simulation: null,
+    });
+    const reloaded = makeRepository(mock, {
+      storage,
+      createTrackingClient: () => mock.client,
+    });
+    const stopReloaded = reloaded.startSync();
+    try {
+      await flushTasks();
+      assert.equal(getState().lastOrderId, orderA.public_code);
+      reloaded.setCustomerTrackingView({
+        active: true,
+        orderId: orderA.id,
+        status: 'arrived',
+      });
+      await flushTasks();
+
+      orderA.status = 'delivered';
+      orderA.delivered_at = new Date().toISOString();
+      await reloaded.getActiveOrder();
+      reloaded.setCustomerTrackingView({
+        active: true,
+        orderId: orderA.id,
+        status: 'delivered',
+      });
+      await flushTasks();
+      assert.equal(reloaded.getCustomerTrackingPollState().active, false);
+      assert.equal(storage.getItem(accessKey), null);
+    } finally {
+      stopReloaded();
+    }
+  } finally {
+    stop();
+  }
+});
+
+test('un token inválido no hace fallback silencioso al Pedido B', async () => {
+  const mock = createSupabaseClientMock();
+  const orderA = mock.seedOrder({ status: 'on_the_way', assigned_rider_user_id: RIDER_ID });
+  const orderB = mock.seedOrder({ status: 'received' });
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  storage.setItem(accessKey, JSON.stringify({
+    orderId: orderA.id,
+    publicCode: orderA.public_code,
+    trackingToken: 'I'.repeat(43),
+  }));
+  const deniedClient = {
+    ...mock.client,
+    async rpc(name, args) {
+      if (name === 'get_public_order_tracking') {
+        mock.calls.rpc.push({ name, args });
+        return { data: null, error: null, status: 200 };
+      }
+      return mock.client.rpc(name, args);
+    },
+  };
+  const repository = makeRepository(mock, {
+    storage,
+    createTrackingClient: () => deniedClient,
+  });
+  const stop = repository.startSync();
+
+  try {
+    await flushTasks();
+    assert.equal(getState().lastOrderId, orderA.public_code);
+    repository.setCustomerTrackingView({
+      active: true,
+      orderId: orderA.id,
+      status: 'on_the_way',
+    });
+    await flushTasks();
+    assert.equal(repository.getCustomerTrackingPollState().active, false);
+    assert.equal(getState().lastOrderId, orderA.public_code);
+    assert.notEqual(getState().lastOrderId, orderB.public_code);
+    assert.equal(storage.getItem(accessKey), null);
+    const trackingCalls = mock.calls.rpc.filter(
+      (call) => call.name === 'get_public_order_tracking',
+    );
+    assert.ok(trackingCalls.every((call) => call.args.p_public_id === orderA.id));
+  } finally {
+    stop();
   }
 });
 
@@ -763,7 +923,7 @@ test('tracking con sesión Auth conserva Realtime oficial y desmonta el canal', 
   await flushTasks();
   assert.deepEqual(
     mock.channels[1].bindings.map((binding) => binding.config.table),
-    ['orders', 'rider_locations'],
+    ['orders'],
   );
   stopBusiness();
 });

@@ -137,14 +137,14 @@ test('pedido demo no muestra rider falso, GPS, mapa ni ETA', async ({ page }) =>
   await waitForToast(page, 'Pedido confirmado. Seguilo en Seguimiento.');
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Pedido confirmado');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido fue confirmado');
   await expect(tracking).not.toContainText(/pedido de muestra|no se envió|presentación/i);
   await expect(tracking).toContainText('Roca 123, Neuquen centro');
   await expect(tracking).not.toContainText('Juli');
   await expect(tracking).not.toContainText('2991112233');
-  await expect(tracking.locator('[data-delivery-code], .rider-pending')).toHaveCount(0);
+  await expect(tracking.locator('[data-delivery-code-card]')).toHaveCount(0);
   await expect(tracking.locator('[data-real-map], .lt-rider-marker')).toHaveCount(0);
-  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText('Seguimiento por estados, sin GPS ni ubicación en vivo.');
+  await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText('El pedido sigue en el local. La ubicación aparecerá cuando comience el reparto.');
 
   await page.evaluate(() => { window.location.hash = '#business'; });
   await page.locator('[data-open-pin][data-admin-target="business"]').click();
@@ -327,9 +327,9 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Pedido confirmado');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido fue confirmado');
   await expect(tracking).not.toContainText(/pedido de muestra|no se envió|presentación/i);
-  await tracking.locator('details.order-detail summary').click();
+  await tracking.locator('[data-order-summary-details] > summary').click();
   await expect(tracking.locator('.summary-row').filter({ hasText: 'Pago' })).toContainText('Transferencia');
   await expect(tracking).not.toContainText('Cupón');
   await expect(tracking).toContainText('Entregar bien frio');
@@ -513,7 +513,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-  await expect(page.locator('.mobile-nav')).toBeVisible();
+  await expect(page.locator('.mobile-nav')).toBeHidden();
 
   await page.goto('/?demo=1#profile');
   await expect(page.locator('[data-view="profile"]')).toBeVisible();

@@ -205,11 +205,15 @@ test('sandbox completes client, business, rider, route, delivery and reorder', a
   await page.locator(`[data-delivery-arrive="${orderId}"]`).click();
 
   await page.goto('/?demo=1#tracking');
-  await expect(page.locator('[data-tracking-panel]')).toContainText('Llegó al domicilio');
-  await expect(page.locator('[data-tracking-panel]')).not.toContainText('0 min');
+  const tracking = page.locator('[data-tracking-panel]');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido llegó');
+  await expect(tracking).not.toContainText('0 min');
   await expect(page.locator('[data-sandbox-eta]').first()).toContainText('Llegó');
-  await expect(page.locator('[data-tracking-panel] .track-steps.public .track-step.current')).toContainText('Llegó');
-  await expect(page.locator('[data-tracking-panel] .track-steps.public .track-step.current')).not.toContainText('En camino');
+  const arrivedTimeline = tracking.getByRole('list', { name: 'Progreso del pedido' });
+  await expect(arrivedTimeline.getByRole('listitem')).toHaveCount(4);
+  await expect(arrivedTimeline.locator('.track-step.done, .track-step.current')).toHaveCount(3);
+  await expect(arrivedTimeline.locator('.track-step.current')).toHaveText('En camino');
+  await expect(arrivedTimeline.locator('.track-step.pending')).toHaveText('Entregado');
   const code = await page.locator('[data-delivery-code]').getAttribute('data-delivery-code');
   expect(code).toMatch(/^\d{4}$/);
   await page.goto('/?demo=1#rider');
@@ -218,7 +222,13 @@ test('sandbox completes client, business, rider, route, delivery and reorder', a
   await page.locator(`[data-delivery-done="${orderId}"]`).click();
 
   await page.goto('/?demo=1#tracking');
-  await expect(page.locator('[data-tracking-panel]')).toContainText('Pedido entregado');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Pedido entregado');
+  const deliveredTimeline = tracking.getByRole('list', { name: 'Progreso del pedido' });
+  await expect(deliveredTimeline.getByRole('listitem')).toHaveCount(4);
+  await expect(deliveredTimeline.locator('.track-step.done, .track-step.current')).toHaveCount(4);
+  await expect(deliveredTimeline.locator('.track-step.current')).toHaveText('Entregado');
+  await expect(deliveredTimeline.locator('.track-step.pending')).toHaveCount(0);
+  await expect(tracking.locator('[data-delivery-code-card]')).toHaveCount(0);
   await expect(page.locator('[data-sandbox-tracking]')).toHaveCount(0);
   await page.goto('/?demo=1#home');
   await expect(page.locator('[data-view="home"] .reorder-card')).toBeVisible();

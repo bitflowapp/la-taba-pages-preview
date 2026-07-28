@@ -136,16 +136,18 @@ test('rider marker class reflects status and source', () => {
   assert.match(riderMarkerClass('preparing', 'simulation'), /preparing/);
 
   const icon = createRiderIcon({ divIcon: (options) => options }, { status: 'on_the_way', source: 'gps', heading: 95 });
-  assert.match(icon.html, /lt-rider-moto-core/);
-  assert.match(icon.html, /lt-rider-marker-halo/);
-  assert.match(icon.html, /lt-rider-moto-icon/);
-  assert.match(icon.html, /Moto de reparto/);
+  assert.match(icon.html, /lt-rider-helmet-core/);
+  assert.match(icon.html, /<svg[^>]*class="lt-rider-helmet-icon"/);
+  assert.match(icon.html, /role="img"/);
+  assert.match(icon.html, /aria-label="Casco del rider TABA"/);
+  assert.match(icon.html, /<circle[^>]*fill="#c8101e"[^>]*stroke="#ffffff"[^>]*stroke-width="2\.5"/);
   assert.doesNotMatch(icon.html, />R</);
   assert.doesNotMatch(icon.html, /<text/);
-  assert.doesNotMatch(icon.html, /helmet|avatar|rostro/i);
-  assert.match(icon.html, /--heading:95deg/);
-  assert.deepEqual(icon.iconSize, [62, 52]);
-  assert.deepEqual(icon.iconAnchor, [31, 31]);
+  assert.doesNotMatch(icon.html, /(?:moto|scooter|emoji|<image\b|(?:src|href)=|https?:\/\/)/i);
+  assert.doesNotMatch(icon.html, /[\u{1F300}-\u{1FAFF}]/u);
+  assert.doesNotMatch(icon.html, /--heading/);
+  assert.deepEqual(icon.iconSize, [56, 56]);
+  assert.deepEqual(icon.iconAnchor, [28, 28]);
 });
 
 test('chooseRiderLocation prioriza GPS real sobre simulación', () => {
@@ -273,6 +275,8 @@ test('map renders only the real rider marker (no route/store/client) and reuses 
     // Mapa honesto: SÓLO el marcador del rider real. Sin marcador de local (LT),
     // sin marcador de cliente (CL) y sin polyline de ruta.
     assert.equal(calls.marker, 1);
+    const initialMarker = calls.markers[0];
+    const initialMarkerNode = initialMarker.getElement();
 
     setState({
       simulation: {
@@ -292,6 +296,8 @@ test('map renders only the real rider marker (no route/store/client) and reuses 
     assert.equal(calls.map, 1);
     assert.equal(calls.marker, 1);
     assert.ok(calls.setLatLng >= 1);
+    assert.strictEqual(calls.markers[0], initialMarker);
+    assert.strictEqual(calls.markers[0].getElement(), initialMarkerNode);
   } finally {
     disposeMapViews({ querySelectorAll: () => [shell] });
     restore();
@@ -411,7 +417,7 @@ function createClassList() {
 
 function installLeafletStub() {
   const originalL = globalThis.L;
-  const calls = { map: 0, marker: 0, setLatLng: 0, tileUrls: [] };
+  const calls = { map: 0, marker: 0, setLatLng: 0, tileUrls: [], markers: [] };
   class FakeMarker {
     constructor(latLng, options = {}) {
       calls.marker += 1;
@@ -421,6 +427,7 @@ function installLeafletStub() {
         className: options.icon?.className || '',
         querySelector: () => ({ style: { setProperty() {} } }),
       };
+      calls.markers.push(this);
     }
     addTo() { return this; }
     getLatLng() { return this.latLng; }

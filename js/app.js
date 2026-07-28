@@ -258,6 +258,7 @@ function renderAll() {
   renderCustomerHome();
   renderCart();
   renderTracking();
+  syncCustomerTrackingWithView(activeView);
   if (isDemoMode()) {
     renderBusinessDashboard();
     renderDeliveryPanel();
@@ -556,7 +557,9 @@ function bindEvents() {
     // no pierda el contexto de golpe.
     disableGpsTracking({ silent: true, preserveLastFix: true });
     handleProductionOperationsPageHide();
+    syncCustomerTrackingWithView('');
   });
+  window.addEventListener('pageshow', () => syncCustomerTrackingWithView(activeView));
   document.addEventListener('visibilitychange', () => {
     const result = handleGpsVisibilityChange();
     if (result?.changed && !document.hidden) renderLiveSurfaces();
@@ -1156,6 +1159,26 @@ function syncGpsSharingWithView(view) {
     disableGpsTracking({ silent: true });
   }
   handleProductionOperationsViewChange(view);
+  if (view !== 'tracking') syncCustomerTrackingWithView('');
+}
+
+function syncCustomerTrackingWithView(view) {
+  const repository = getOrderRepository();
+  if (typeof repository?.setCustomerTrackingView !== 'function') return;
+  if (getAppMode() !== APP_MODE_PRODUCTION || view !== 'tracking') {
+    repository.setCustomerTrackingView({ active: false });
+    return;
+  }
+  const order = getActiveOrder();
+  if (!order || order.deliveryMode !== 'delivery') {
+    repository.setCustomerTrackingView({ active: false });
+    return;
+  }
+  repository.setCustomerTrackingView({
+    active: true,
+    orderId: order.backendId || order.id || order.code,
+    status: order.workflowStatus || order.status,
+  });
 }
 
 // Motion premium: marca la sección recién activada para que sus cards entren

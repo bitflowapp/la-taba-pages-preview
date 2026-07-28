@@ -44,7 +44,11 @@ const ROUTES = Object.freeze({
   ...STREET_ROUTES,
 });
 
-export const GPS_FIX_STALE_MS = 30_000;
+export const GPS_LOCATION_FRESH_MS = 15_000;
+export const GPS_LOCATION_DELAYED_MS = 45_000;
+// Compatibility default for acceptance and rendering policies. Product UI uses
+// `trackingLocationFreshness` to distinguish fresh, delayed and lost fixes.
+export const GPS_FIX_STALE_MS = GPS_LOCATION_DELAYED_MS;
 export const GPS_MAX_ACCURACY_METERS = 250;
 export const GPS_BAD_ACCURACY_METERS = 150;
 export const GPS_GOOD_ACCURACY_METERS = 80;
@@ -405,13 +409,31 @@ export function hasFreshSharedGpsLocation(location, { now = Date.now(), staleMs 
   return !isLocationStale(normalized, staleMs, now);
 }
 
+export function trackingLocationFreshness(location, { now = Date.now() } = {}) {
+  const normalized = location ? normalizeRiderLocation(location, { source: 'gps' }) : null;
+  if (!normalized || normalized.source !== 'gps') return 'none';
+  if (['inactive', 'denied', 'unavailable', 'requires_secure_context'].includes(normalized.gpsStatus)) {
+    return 'none';
+  }
+  const timestamp = locationTimestamp(normalized);
+  if (!timestamp || timestamp > now + 10_000) return 'none';
+  const age = Math.max(0, now - timestamp);
+  if (age <= GPS_LOCATION_FRESH_MS) return 'fresh';
+  if (age <= GPS_LOCATION_DELAYED_MS) return 'delayed';
+  return 'lost';
+}
+
+export function hasKnownSharedGpsLocation(location, options = {}) {
+  return trackingLocationFreshness(location, options) !== 'none';
+}
+
 // ¿Hay un repartidor "en vivo" para este pedido? Sólo cuenta una ubicación GPS
 // REAL, reciente y con un watcher actualmente activo. La simulación / recorrido
 // de apoyo y un último fix pausado NO se presentan como un rider en vivo.
 export function hasLiveRiderLocation(location, options = {}) {
   const normalized = location ? normalizeRiderLocation(location) : null;
   if (!normalized || normalized.gpsStatus === 'last_fix') return false;
-  return hasFreshSharedGpsLocation(normalized, options);
+  return trackingLocationFreshness(normalized, options) === 'fresh';
 }
 
 // Estado de "vivacidad" del seguimiento de un pedido. Sirve para que la UI
@@ -420,18 +442,21 @@ export function hasLiveRiderLocation(location, options = {}) {
 // pestaña y deja de publicar). Es puro (sin DOM ni timers) para poder testearlo.
 //   - 'none'     : no hay pedido.
 //   - 'terminal' : pedido entregado/cancelado (no se sigue).
-//   - 'live'     : hay un fix GPS real y fresco del rider.
-//   - 'idle'     : hay pedido activo pero sin GPS real fresco (fallback honesto).
+//   - 'fresh'    : hay un fix GPS real con menos de 15 s.
+//   - 'delayed'  : el último fix tiene entre 16 y 45 s.
+//   - 'lost'     : existe una última ubicación, pero supera 45 s.
+//   - 'idle'     : hay pedido activo pero sin ubicación GPS válida.
 export function activeTrackingLiveness(order, sim = null, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {
   if (!order || !order.id) return 'none';
   if (order.status === 'delivered' || order.status === 'cancelled') return 'terminal';
   const simForOrder = sim && sim.orderId === order.id ? sim : null;
   const location = chooseRiderLocation(simForOrder, order?.tracking?.lastLocation, { now, staleMs });
-  return hasLiveRiderLocation(location, { now, staleMs }) ? 'live' : 'idle';
+  const freshness = trackingLocationFreshness(location, { now, staleMs });
+  return freshness === 'none' ? 'idle' : freshness;
 }
 
-// Indica si un fix quedó "viejo" según un umbral (default 30s).
-export function isLocationStale(location, maxAgeMs = 30_000, now = Date.now()) {
+// Indica si un fix quedó "viejo" según un umbral (default 45s).
+export function isLocationStale(location, maxAgeMs = GPS_FIX_STALE_MS, now = Date.now()) {
   if (!location) return true;
   const ts = locationTimestamp(location);
   if (!ts) return true;

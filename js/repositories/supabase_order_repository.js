@@ -1,6 +1,7 @@
 import { getBusinessConfig } from '../core/business-config-store.js';
 import { getCartItems } from '../cart.js';
 import {
+  normalizeDeliveryLocation,
   normalizeOrderDraft,
   normalizeTrackingLocation,
   toDomainOrder,
@@ -1509,6 +1510,11 @@ function rowToDemoOrder(row = {}) {
   const createdAt = normalizeIso(row.created_at);
   const trustedEta = trustedEstimatedArrival(row);
   const deliveryCode = normalizeDeliveryCodeValue(row.delivery_code);
+  const destinationLocation = deliveryMode === 'pickup' ? null : normalizeDeliveryLocation({
+    latitude: row.delivery_latitude ?? row.address_lat,
+    longitude: row.delivery_longitude ?? row.address_lng,
+    accuracy: row.delivery_geolocation_accuracy,
+  });
   const addressDetails = deliveryMode === 'pickup' ? null : normalizeAddressDetails({
     customerStreetAddress: row.customer_street_address || row.address_label,
     customerNeighborhood: row.customer_neighborhood,
@@ -1527,6 +1533,7 @@ function rowToDemoOrder(row = {}) {
       ? getBusinessConfig().address
       : addressDetails.label || sanitizeText(row.address_label, { fallback: 'Sin dirección', maxLength: 180 }),
     addressDetails,
+    destinationLocation,
     deliveryMode,
     paymentMethodCode: sanitizeText(row.payment_method, { fallback: 'coordinate', maxLength: 40 }),
     paymentMethod: paymentLabel(row.payment_method || 'coordinate'),

@@ -31,6 +31,7 @@ export function createProductionRiderGpsController({
   now = () => Date.now(),
 } = {}) {
   let share = emptyShare();
+  let queuedFix = null;
 
   function snapshot() {
     return { ...share };
@@ -76,7 +77,7 @@ export function createProductionRiderGpsController({
   }
 
   async function publishPosition(orderId, position) {
-    if (share.orderId !== orderId || share.watchId === null || share.publishing) return;
+    if (share.orderId !== orderId || share.watchId === null) return;
     const order = getOrder(orderId);
     const access = getAccess() || {};
     const userId = access.user?.id || access.userId || '';
@@ -99,18 +100,34 @@ export function createProductionRiderGpsController({
     if (!candidate || !shouldAcceptGpsFix(share.lastAcceptedFix, candidate, { now: currentTime })) {
       return;
     }
-    if (!shouldPublishGpsFix(share.lastPublishedFix, candidate, {
-      now: currentTime,
-      orderStatus: normalizeWorkflowStatus(order.workflowStatus || order.status, ''),
-      previousOrderStatus: share.status,
-      nearCustomer: ['arriving', 'arrived'].includes(
-        normalizeWorkflowStatus(order.workflowStatus || order.status, ''),
-      ),
-    })) {
-      share = { ...share, lastAcceptedFix: candidate };
+    share = {
+      ...share,
+      lastAcceptedFix: candidate,
+      state: share.state === 'requesting' ? 'local' : share.state,
+      message: share.state === 'requesting'
+        ? 'Ubicación detectada. Preparando actualización…'
+        : share.message,
+    };
+    emit();
+    if (!shouldPublishCandidate(order, candidate, currentTime)) return;
+    if (share.publishing) {
+      queuedFix = candidate;
       return;
     }
+    await publishCandidate(orderId, candidate);
+  }
 
+  async function publishCandidate(orderId, candidate) {
+    const order = getOrder(orderId);
+    const access = getAccess() || {};
+    if (!canShareProductionRiderGps({
+      order,
+      userId: access.user?.id || access.userId || '',
+      role: access.membership?.role || access.role || '',
+    })) {
+      stop();
+      return;
+    }
     const activeWatchId = share.watchId;
     share = { ...share, publishing: true, state: 'publishing', message: 'Actualizando ubicación…' };
     emit();
@@ -136,7 +153,6 @@ export function createProductionRiderGpsController({
         publishing: false,
         state: 'live',
         status: normalizeWorkflowStatus(order.workflowStatus || order.status, ''),
-        lastAcceptedFix: candidate,
         lastPublishedFix: {
           ...candidate,
           at: publishedAt,
@@ -151,11 +167,56 @@ export function createProductionRiderGpsController({
       const message = result?.message || 'No pudimos publicar la ubicación. Verificá tu conexión.';
       share = { ...share, publishing: false, state: 'error', message };
       if (AUTHORITY_ERRORS.test(message)) {
-        stop();
+        if (share.watchId !== null && navigatorRef?.geolocation?.clearWatch) {
+          try { navigatorRef.geolocation.clearWatch(share.watchId); } catch (_) { /* no-op */ }
+        }
+        share = { ...share, watchId: null };
+        queuedFix = null;
+        emit();
         return;
       }
     }
     emit();
+    const nextFix = queuedFix;
+    queuedFix = null;
+    if (
+      nextFix
+      && share.orderId === orderId
+      && share.watchId !== null
+      && shouldPublishQueuedCandidate(getOrder(orderId), nextFix, now())
+    ) {
+      void publishCandidate(orderId, nextFix);
+    }
+  }
+
+  function shouldPublishCandidate(order, candidate, currentTime) {
+    const orderStatus = normalizeWorkflowStatus(order?.workflowStatus || order?.status, '');
+    return shouldPublishGpsFix(share.lastPublishedFix, candidate, {
+      now: currentTime,
+      orderStatus,
+      previousOrderStatus: share.status,
+      nearCustomer: ['arriving', 'arrived'].includes(orderStatus),
+    });
+  }
+
+  function shouldPublishQueuedCandidate(order, candidate, currentTime) {
+    const previous = share.lastPublishedFix;
+    if (!previous) return shouldPublishCandidate(order, candidate, currentTime);
+    const capturedAt = Number(previous.timestamp)
+      || Date.parse(previous.lastFixAt || '')
+      || Number(previous.publishedAt)
+      || currentTime;
+    const orderStatus = normalizeWorkflowStatus(order?.workflowStatus || order?.status, '');
+    return shouldPublishGpsFix({
+      ...previous,
+      at: capturedAt,
+      publishedAt: capturedAt,
+    }, candidate, {
+      now: currentTime,
+      orderStatus,
+      previousOrderStatus: share.status,
+      nearCustomer: ['arriving', 'arrived'].includes(orderStatus),
+    });
   }
 
   function reconcile() {
@@ -177,6 +238,7 @@ export function createProductionRiderGpsController({
     if (previous.watchId !== null && navigatorRef?.geolocation?.clearWatch) {
       try { navigatorRef.geolocation.clearWatch(previous.watchId); } catch (_) { /* no-op */ }
     }
+    queuedFix = null;
     share = emptyShare();
     if (stopped) emit();
     return stopped;
@@ -189,9 +251,17 @@ export function createProductionRiderGpsController({
   function handlePositionError(error) {
     const message = gpsErrorMessage(error);
     const denied = Number(error?.code) === 1;
-    share = { ...share, state: 'error', message };
+    if (denied && share.watchId !== null && navigatorRef?.geolocation?.clearWatch) {
+      try { navigatorRef.geolocation.clearWatch(share.watchId); } catch (_) { /* no-op */ }
+    }
+    if (denied) queuedFix = null;
+    share = {
+      ...share,
+      watchId: denied ? null : share.watchId,
+      state: 'error',
+      message,
+    };
     emit();
-    if (denied) stop();
   }
 
   function emit() {

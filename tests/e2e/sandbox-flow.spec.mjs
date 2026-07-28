@@ -183,9 +183,10 @@ test('sandbox completes client, business, rider, route, delivery and reorder', a
   await expect(page.locator('[data-sandbox-route]')).toContainText('Seguimiento activo');
   await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-source="sandbox"][data-map-engine="maplibre"]')).toHaveCount(1);
   await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-status="ready"]')).toHaveCount(1);
-  await expect(page.locator('[data-delivery-panel] .lt-place-marker.is-store')).toHaveCount(1);
-  await expect(page.locator('[data-delivery-panel] .lt-place-marker.is-destination')).toHaveCount(1);
-  await expect(page.locator('[data-delivery-panel] .lt-rider-marker')).toHaveCount(1);
+  await expect(page.locator('[data-delivery-panel] .rider-place-marker.is-business')).toHaveCount(1);
+  await expect(page.locator('[data-delivery-panel] .rider-place-marker.is-client')).toHaveCount(1);
+  await expect(page.locator('[data-delivery-panel] .rider-self-marker[aria-label="Tu ubicación"]')).toHaveCount(1);
+  await expect(page.locator('[data-delivery-panel] .lt-rider-marker, [data-delivery-panel] .lt-rider-helmet-icon')).toHaveCount(0);
   await expect(page.locator('[data-delivery-panel] [data-real-map][data-route-source="simulation"]')).toHaveCount(1);
 
   await page.goto('/?demo=1#tracking');

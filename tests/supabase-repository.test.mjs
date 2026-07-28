@@ -300,6 +300,33 @@ test('lista un directorio minimo de riders activos para asignacion de negocio', 
   assert.equal(Object.hasOwn(result.riders[0], 'phone'), false);
 });
 
+test('preserva coordenadas válidas del cliente en el pedido operativo', async () => {
+  const mock = createSupabaseClientMock({ userId: RIDER_ID });
+  const row = mock.seedOrder({
+    status: 'on_the_way',
+    assigned_rider_user_id: RIDER_ID,
+    delivery_latitude: -38.9581,
+    delivery_longitude: -68.0667,
+    delivery_geolocation_accuracy: 18,
+  });
+  const repository = makeRepository(mock);
+
+  const orders = await repository.listOrders();
+  const domainOrder = orders.find((order) => order.id === row.public_code);
+  const stateOrder = getState().orders.find((order) => order.id === row.public_code);
+
+  assert.deepEqual(domainOrder.destinationLocation, {
+    lat: -38.9581,
+    lng: -68.0667,
+    accuracy: 18,
+  });
+  assert.deepEqual(stateOrder.destinationLocation, {
+    lat: -38.9581,
+    lng: -68.0667,
+    accuracy: 18,
+  });
+});
+
 test('lista una cola minimizada y el claim concurrente tiene un solo ganador', async () => {
   const mock = createSupabaseClientMock({ userId: RIDER_ID });
   const row = mock.seedOrder({

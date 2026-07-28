@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v33-customer-delivery';
+const CACHE_NAME = 'la-taba-runtime-v34-customer-delivery-rider-map';
 const ASSETS = [
   './',
   './index.html',
@@ -55,6 +55,7 @@ const ASSETS = [
   './js/map/map_config.js',
   './js/map/maplibre_tracking_map.js',
   './js/map/map_view.js',
+  './js/map/rider_operational_map.js',
   './js/map/rider_marker.js',
   './js/map/route_geometry.js',
   './js/data.js',

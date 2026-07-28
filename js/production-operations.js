@@ -1,7 +1,19 @@
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
+import { getBusinessConfig } from './core/business-config-store.js';
 import { normalizeWorkflowStatus } from './core/order-workflow.js';
+import {
+  buildExternalNavigationUrl,
+  buildRiderMapContext,
+  clearRiderMapContexts,
+  formatRiderDeliveryAddress,
+  retainRiderMapContexts,
+  riderDistanceAndEtaLabel,
+  setRiderMapContext,
+  shortOrderLabel,
+} from './map/rider_operational_map.js';
 import { createProductionRiderGpsController } from './tracking/production_rider_gps.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
+import { renderWithStableRealMap } from './ui.js';
 import {
   dateTime,
   getState,
@@ -21,6 +33,7 @@ let refreshSequence = 0;
 let availableRiderOrders = [];
 let activeBusinessRiders = [];
 let gpsController = null;
+const pendingRiderActions = new Set();
 let access = {
   status: 'signed_out',
   user: null,
@@ -211,12 +224,17 @@ export async function handleProductionOperationsAction(target) {
   if (riderNext) {
     const guard = requireViewAccess('rider');
     if (!guard.ok) return { handled: true, ...guard };
-    const result = await updateOrderFromAction(
-      riderNext.dataset.productionRiderNext,
-      riderNext.dataset.nextStatus,
+    const orderId = riderNext.dataset.productionRiderNext;
+    const nextStatus = riderNext.dataset.nextStatus;
+    return runRiderActionOnce(
+      `status:${orderId}:${nextStatus}`,
+      riderNext,
+      async () => {
+        const result = await updateOrderFromAction(orderId, nextStatus);
+        if (result.ok && nextStatus === 'delivered') stopGpsShare();
+        return result;
+      },
     );
-    if (result.ok && riderNext.dataset.nextStatus === 'delivered') stopGpsShare();
-    return result;
   }
 
   const riderConfirm = target.closest('[data-production-rider-confirm]');
@@ -224,21 +242,23 @@ export async function handleProductionOperationsAction(target) {
     const guard = requireViewAccess('rider');
     if (!guard.ok) return { handled: true, ...guard };
     const orderId = riderConfirm.dataset.productionRiderConfirm;
-    const container = riderConfirm.closest('.production-order-card');
+    const container = riderConfirm.closest('[data-rider-operational-order], .production-order-card');
     const code = container?.querySelector('[data-production-delivery-code]')?.value || '';
-    const result = await repository.confirmDelivery(orderId, code, {
-      expectedStatus: 'arrived',
+    return runRiderActionOnce(`confirm:${orderId}`, riderConfirm, async () => {
+      const result = await repository.confirmDelivery(orderId, code, {
+        expectedStatus: 'arrived',
+      });
+      if (result.ok) {
+        stopGpsShare();
+        await refreshRiderOrders();
+      }
+      notify();
+      return {
+        handled: true,
+        ok: result.ok,
+        message: result.message,
+      };
     });
-    if (result.ok) {
-      stopGpsShare();
-      await refreshRiderOrders();
-    }
-    notify();
-    return {
-      handled: true,
-      ok: result.ok,
-      message: result.message,
-    };
   }
 
   const riderClaim = target.closest('[data-production-rider-claim]');
@@ -331,6 +351,8 @@ export function resetProductionOperationsForTests() {
   refreshSequence = 0;
   availableRiderOrders = [];
   activeBusinessRiders = [];
+  pendingRiderActions.clear();
+  clearRiderMapContexts();
   gpsShare = emptyGpsShare();
   access = {
     status: 'signed_out',
@@ -374,6 +396,7 @@ async function refreshProductionAccess() {
 function clearProductionOrders() {
   availableRiderOrders = [];
   activeBusinessRiders = [];
+  clearRiderMapContexts();
   updateState((draft) => {
     draft.orders = [];
     draft.lastOrderId = null;
@@ -433,12 +456,19 @@ function renderAccessSurface(view) {
   }
 
   if (!authorized) {
+    if (view === 'rider') clearRiderMapContexts();
     workspace.replaceChildren();
     return;
   }
-  workspace.innerHTML = view === 'business'
-    ? businessWorkspaceMarkup()
-    : riderWorkspaceMarkup();
+  if (view === 'business') {
+    workspace.innerHTML = businessWorkspaceMarkup();
+    return;
+  }
+  const primaryOrder = selectPrimaryRiderOrder(riderOperationalOrders());
+  renderWithStableRealMap(workspace, riderWorkspaceMarkup(), {
+    rolePrefix: 'rider',
+    orderId: primaryOrder?.id || '',
+  });
 }
 
 function businessWorkspaceMarkup() {
@@ -543,26 +573,38 @@ function businessOrderMarkup(order) {
 }
 
 function riderWorkspaceMarkup() {
-  const orders = getState().orders.filter((order) => (
-    order.deliveryMode === 'delivery'
-    && ['ready', 'assigned', 'picked_up', 'on_the_way', 'arrived'].includes(workflowStatus(order))
-  ));
-  const rows = orders.map(riderOrderMarkup).join('');
+  const orders = riderOperationalOrders();
+  const primaryOrder = selectPrimaryRiderOrder(orders);
+  const secondaryOrders = primaryOrder
+    ? orders.filter((order) => order.id !== primaryOrder.id)
+    : [];
   const queue = availableRiderOrders.map(availableRiderOrderMarkup).join('');
+  let activeMarkup = '';
+  if (primaryOrder) {
+    const localLocation = gpsShare.orderId === primaryOrder.id
+      ? gpsShare.lastAcceptedFix || gpsShare.lastPublishedFix
+      : null;
+    const context = setRiderMapContext(
+      primaryOrder.id,
+      buildRiderMapContext(primaryOrder, {
+        businessConfig: getBusinessConfig(),
+        localLocation,
+      }),
+    );
+    retainRiderMapContexts([primaryOrder.id]);
+    activeMarkup = riderOperationalOrderMarkup(primaryOrder, context);
+  } else {
+    retainRiderMapContexts([]);
+  }
+
   return `
-    <div class="production-ops-head">
-      <div>
-        <p class="eyebrow">Rider autenticado</p>
-        <h1>Mis entregas</h1>
-        <p>La ubicación sólo se publica cuando activás GPS.</p>
-      </div>
-      <button class="ghost-button compact" type="button" data-production-sign-out>Cerrar sesión</button>
-    </div>
-    ${rows ? `
-      <section class="production-rider-section" aria-labelledby="production-rider-active-title">
-        <div class="panel-head"><h3 id="production-rider-active-title">Entrega activa</h3></div>
-        <div class="production-order-list" aria-live="polite">${rows}</div>
-      </section>` : ''}
+    <div class="production-rider-workspace ${primaryOrder ? 'has-active-map' : ''}">
+      ${activeMarkup}
+      ${secondaryOrders.length ? `
+        <section class="production-rider-section rider-secondary-orders" aria-labelledby="production-rider-secondary-title">
+          <div class="panel-head"><h3 id="production-rider-secondary-title">Otras entregas asignadas</h3></div>
+          <div class="production-order-list">${secondaryOrders.map(riderCompactOrderMarkup).join('')}</div>
+        </section>` : ''}
     ${queue ? `
       <section class="production-rider-section" aria-labelledby="production-rider-queue-title">
         <div class="panel-head">
@@ -574,8 +616,41 @@ function riderWorkspaceMarkup() {
         </div>
         <div class="production-order-list">${queue}</div>
       </section>` : ''}
-    ${!rows && !queue ? emptyMarkup('No hay entregas disponibles o asignadas a esta cuenta.') : ''}
+    ${!primaryOrder && !queue ? `
+      <div class="production-ops-head">
+        <div>
+          <p class="eyebrow">Rider autenticado</p>
+          <h1>Mis entregas</h1>
+          <p>No hay entregas disponibles o asignadas a esta cuenta.</p>
+        </div>
+        <button class="ghost-button compact" type="button" data-production-sign-out>Cerrar sesión</button>
+      </div>
+      ${emptyMarkup('Cuando haya un pedido listo, aparecerá acá para que puedas aceptarlo.')}` : ''}
+    </div>
   `;
+}
+
+function riderOperationalOrders() {
+  return getState().orders.filter((order) => (
+    order.deliveryMode === 'delivery'
+    && ['ready', 'assigned', 'picked_up', 'on_the_way', 'arrived'].includes(workflowStatus(order))
+  ));
+}
+
+export function selectPrimaryRiderOrder(orders = []) {
+  const rank = {
+    arrived: 0,
+    on_the_way: 1,
+    picked_up: 2,
+    assigned: 3,
+    ready: 4,
+  };
+  return [...orders].sort((left, right) => {
+    const statusDelta = (rank[workflowStatus(left)] ?? 99) - (rank[workflowStatus(right)] ?? 99);
+    if (statusDelta) return statusDelta;
+    return Date.parse(right.updatedAt || right.createdAt || 0)
+      - Date.parse(left.updatedAt || left.createdAt || 0);
+  })[0] || null;
 }
 
 function availableRiderOrderMarkup(order) {
@@ -608,74 +683,261 @@ function availableRiderOrderMarkup(order) {
     </article>`;
 }
 
-function riderOrderMarkup(order) {
+export function riderOperationalOrderMarkup(order, context) {
+  const current = workflowStatus(order);
+  const sharing = gpsShare.watchId !== null && gpsShare.orderId === order.id;
+  const canShare = ['on_the_way', 'arrived'].includes(current);
+  const showPrivateDelivery = ['picked_up', 'on_the_way', 'arrived'].includes(current);
+  const beforePickup = ['ready', 'assigned'].includes(current);
+  const address = showPrivateDelivery
+    ? formatRiderDeliveryAddress(order)
+    : {
+      primary: cleanOperationalText(getBusinessConfig().address) || 'Sucursal asignada',
+      secondary: [],
+      hasAddress: true,
+    };
+  const navigationTarget = beforePickup ? context?.store : context?.destination;
+  const navigationUrl = buildExternalNavigationUrl({
+    destination: navigationTarget,
+    address: address.primary,
+  });
+  const distance = riderDistanceAndEtaLabel(order, context?.riderLocation, navigationTarget);
+  const arrivalPending = pendingRiderActions.has(`status:${order.id}:arrived`);
+  const departurePending = pendingRiderActions.has(`status:${order.id}:on_the_way`);
+  const customerPhone = cleanOperationalText(order.customerPhone);
+
+  return `
+    <article class="rider-operational-view" data-rider-operational-order="${escapeAttribute(order.id)}">
+      <header class="rider-operational-header">
+        <button class="rider-header-action" type="button" data-nav-view="home" aria-label="Volver al inicio">
+          ${backGlyph()}
+        </button>
+        <div class="rider-operational-heading">
+          <span>Entrega en curso</span>
+          <strong>Pedido ${escapeHtml(shortOrderLabel(order))}</strong>
+        </div>
+        <span class="rider-operational-status">${escapeHtml(statusLabel(order.status))}</span>
+        <button class="rider-header-action" type="button" data-production-sign-out aria-label="Cerrar sesión">
+          ${logoutGlyph()}
+        </button>
+      </header>
+
+      <div class="rider-operational-map-stage" data-map-shell="rider">
+        <div
+          class="real-map-shell rider-operational-map-shell"
+          data-real-map
+          data-map-role="rider-operational"
+          data-order-id="${escapeAttribute(order.id)}"
+        >
+          <div class="real-map-canvas" data-map-canvas aria-label="Mapa operativo de la entrega"></div>
+          <div class="real-map-fallback rider-operational-map-fallback" data-map-fallback>
+            <p data-map-fallback-message>El mapa no está disponible en este dispositivo.</p>
+          </div>
+          <span class="real-map-tile-error" data-map-tile-error hidden>Mapa base no disponible</span>
+          <div class="real-map-meta rider-operational-map-meta sr-only" data-map-meta aria-live="polite">
+            Buscando tu ubicación…
+          </div>
+        </div>
+        <button
+          class="rider-recenter-control"
+          type="button"
+          data-map-recenter
+          aria-label="Centrar mi ubicación"
+          title="Centrar mi ubicación"
+          ${context?.riderLocation ? '' : 'disabled'}
+        >${locateGlyph()}</button>
+      </div>
+
+      <section class="rider-operational-sheet" aria-labelledby="rider-delivery-address-${escapeAttribute(order.id)}">
+        <span class="rider-sheet-handle" aria-hidden="true"></span>
+        <div class="rider-destination-copy">
+          <span class="rider-operational-eyebrow">${beforePickup ? 'RETIRÁ EN' : 'ENTREGA EN'}</span>
+          <h1 id="rider-delivery-address-${escapeAttribute(order.id)}">${escapeHtml(address.primary)}</h1>
+          ${address.secondary.length ? `
+            <div class="rider-address-details">
+              ${address.secondary.map((line) => `<p>${escapeHtml(line)}</p>`).join('')}
+            </div>` : ''}
+          ${distance ? `<p class="rider-distance">${escapeHtml(distance)}</p>` : ''}
+          ${!beforePickup && !context?.destination
+            ? '<p class="rider-location-warning" role="status">No pudimos ubicar esta dirección en el mapa.</p>'
+            : ''}
+        </div>
+
+        ${renderOperationalGpsState(order, context, { canShare, sharing })}
+
+        <div class="rider-primary-actions ${current === 'on_the_way' ? 'has-arrival' : ''}">
+          ${navigationUrl ? `
+            <a
+              class="primary-button rider-navigation-button"
+              href="${escapeAttribute(navigationUrl)}"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-rider-navigation
+            >${navigationGlyph()}<span>Abrir navegación</span></a>
+          ` : `
+            <button class="primary-button rider-navigation-button" type="button" disabled>
+              ${navigationGlyph()}<span>Abrir navegación</span>
+            </button>
+          `}
+          ${current === 'on_the_way' ? `
+            <button
+              class="secondary-button rider-arrival-button"
+              type="button"
+              data-production-rider-next="${escapeAttribute(order.id)}"
+              data-next-status="arrived"
+              ${arrivalPending ? 'disabled aria-busy="true"' : ''}
+            >${arrivalPending ? 'Registrando…' : 'Llegué'}</button>
+          ` : ''}
+        </div>
+
+        ${['ready', 'assigned', 'picked_up'].includes(current) ? `
+          <button
+            class="primary-button rider-departure-button"
+            type="button"
+            data-production-rider-next="${escapeAttribute(order.id)}"
+            data-next-status="on_the_way"
+            ${departurePending ? 'disabled aria-busy="true"' : ''}
+          >${departurePending
+            ? 'Registrando…'
+            : current === 'picked_up'
+              ? 'Iniciar recorrido'
+              : 'Retiré el pedido'}</button>
+        ` : ''}
+
+        ${current === 'arrived' ? `
+          <div class="rider-arrival-confirmation" role="status">
+            <span aria-hidden="true">✓</span>
+            <div><strong>Llegada registrada</strong><p>El pedido sigue abierto hasta validar la recepción.</p></div>
+          </div>
+          <div class="production-delivery-code rider-operational-delivery-code">
+            <label>
+              Código de entrega
+              <input
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="4"
+                pattern="[0-9]{4}"
+                data-production-delivery-code
+                aria-label="Código de entrega de 4 dígitos"
+              />
+            </label>
+            <button
+              class="primary-button"
+              type="button"
+              data-production-rider-confirm="${escapeAttribute(order.id)}"
+            >Confirmar entrega</button>
+          </div>
+        ` : ''}
+
+        <details class="rider-operational-more">
+          <summary>Datos de la entrega</summary>
+          <dl>
+            ${showPrivateDelivery ? `
+              <div><dt>Cliente</dt><dd>${escapeHtml(order.customerName || 'Cliente')}</dd></div>
+              ${customerPhone ? `<div><dt>Teléfono</dt><dd><a href="tel:${encodeURIComponent(customerPhone)}">${escapeHtml(customerPhone)}</a></dd></div>` : ''}
+            ` : '<div><dt>Próximo paso</dt><dd>Retirar el pedido en el negocio</dd></div>'}
+            <div><dt>Pago</dt><dd>${escapeHtml(order.paymentMethod || 'A coordinar')}</dd></div>
+            <div><dt>Total</dt><dd>${escapeHtml(formatOrderMoney(order.total, order.currencyCode))}</dd></div>
+          </dl>
+        </details>
+      </section>
+    </article>
+  `;
+}
+
+function riderCompactOrderMarkup(order) {
   const current = workflowStatus(order);
   const next = current === 'arrived' ? null : nextRiderStatus(order);
-  const sharing = gpsShare.watchId !== null && gpsShare.orderId === order.id;
-  const canShare = ['on_the_way', 'arriving', 'arrived'].includes(current);
-  const showPrivateDelivery = ['on_the_way', 'arrived'].includes(current);
   return `
-    <article class="production-order-card">
+    <article class="production-order-card rider-compact-order">
       <div class="production-order-head">
         <div>
-          <span class="production-order-code">${escapeHtml(order.id)}</span>
-          <strong>${showPrivateDelivery ? escapeHtml(order.customerName) : 'Retiro en sucursal'}</strong>
+          <span class="production-order-code">${escapeHtml(shortOrderLabel(order))}</span>
+          <strong>${['on_the_way', 'arrived'].includes(current) ? escapeHtml(order.customerName) : 'Retiro en sucursal'}</strong>
         </div>
         <span class="status-pill ${escapeHtml(order.status)}">${escapeHtml(statusLabel(order.status))}</span>
       </div>
-      <p class="production-order-address">${showPrivateDelivery
-        ? escapeHtml(order.address || 'Sin dirección publicada')
-        : 'Retirá el pedido en la sucursal indicada.'}</p>
-      ${showPrivateDelivery && order.addressDetails?.reference
-        ? `<p class="form-hint">Referencia: ${escapeHtml(order.addressDetails.reference)}</p>`
-        : ''}
-      <div class="button-row">
-        ${next ? `
+      ${next ? `
+        <div class="button-row">
           <button
             class="primary-button compact"
             type="button"
             data-production-rider-next="${escapeAttribute(order.id)}"
             data-next-status="${escapeAttribute(next)}"
           >${escapeHtml(actionLabel(next, 'rider'))}</button>
-        ` : ''}
-        ${canShare && !sharing ? `
-          <button
-            class="secondary-button compact"
-            type="button"
-            data-production-gps-start="${escapeAttribute(order.id)}"
-          >Compartir GPS</button>
-        ` : ''}
-        ${sharing ? `
-          <button class="secondary-button compact" type="button" data-production-gps-stop>
-            Detener GPS
-          </button>
-        ` : ''}
-      </div>
-      ${current === 'arrived' ? `
-        <div class="production-delivery-code">
-          <label>
-            Código de entrega
-            <input
-              type="text"
-              inputmode="numeric"
-              autocomplete="one-time-code"
-              maxlength="4"
-              pattern="[0-9]{4}"
-              data-production-delivery-code
-              aria-label="Código de entrega de 4 dígitos"
-            />
-          </label>
-          <button
-            class="primary-button"
-            type="button"
-            data-production-rider-confirm="${escapeAttribute(order.id)}"
-          >Confirmar entrega</button>
         </div>` : ''}
-      ${sharing || gpsShare.orderId === order.id
-        ? `<p class="production-gps-status" role="status">${escapeHtml(gpsShare.message || 'Esperando ubicación GPS…')}</p>`
-        : ''}
     </article>
   `;
+}
+
+function renderOperationalGpsState(order, context, { canShare, sharing }) {
+  const sameOrder = gpsShare.orderId === order.id;
+  const requesting = sameOrder && ['requesting', 'publishing'].includes(gpsShare.state);
+  const failed = sameOrder && gpsShare.state === 'error';
+  const hasLocation = Boolean(context?.riderLocation);
+  const copy = failed
+    ? cleanOperationalText(gpsShare.message) || 'No pudimos obtener tu ubicación.'
+    : sharing
+      ? cleanOperationalText(gpsShare.message) || 'Compartiendo tu ubicación en vivo.'
+      : requesting
+        ? cleanOperationalText(gpsShare.message) || 'Buscando tu ubicación…'
+      : canShare
+        ? hasLocation
+          ? 'Seguimiento pausado. El mapa muestra tu última ubicación.'
+          : 'Activá la ubicación para verte en el mapa.'
+        : 'Tu ubicación estará disponible cuando salgas del negocio.';
+  if (!canShare && hasLocation && !failed) return '';
+  return `
+    <div class="rider-gps-state ${failed ? 'is-error' : ''}" role="status">
+      <span class="rider-gps-state-icon" aria-hidden="true">${locateGlyph()}</span>
+      <p>${escapeHtml(copy)}</p>
+      ${sharing ? `
+        <button
+          class="ghost-button compact"
+          type="button"
+          data-production-gps-stop
+        >Detener GPS</button>
+      ` : ''}
+      ${canShare && !requesting && !sharing ? `
+        <button
+          class="ghost-button compact"
+          type="button"
+          data-production-gps-start="${escapeAttribute(order.id)}"
+        >${failed ? 'Reintentar' : hasLocation ? 'Reactivar GPS' : 'Activar ubicación'}</button>
+      ` : ''}
+    </div>`;
+}
+
+function backGlyph() {
+  return `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M14.5 6.5 9 12l5.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function logoutGlyph() {
+  return `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" aria-hidden="true">
+    <path d="M10 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H10M14.5 8.5 18 12l-3.5 3.5M18 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function locateGlyph() {
+  return `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/>
+    <circle cx="12" cy="12" r="1.6" fill="currentColor"/>
+    <path d="M12 2.6v3M12 18.4v3M2.6 12h3M18.4 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function navigationGlyph() {
+  return `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" aria-hidden="true">
+    <path d="M20.5 4.2 4 11l6.4 2.6L13 20l7.5-15.8Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function cleanOperationalText(value) {
+  const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+  return /^(?:null|undefined|nan)$/i.test(text) ? '' : text;
 }
 
 async function refreshRiderOrders() {
@@ -704,6 +966,36 @@ async function updateOrderFromAction(orderId, nextStatus) {
     ok: result.ok,
     message: result.ok ? 'Estado del pedido actualizado.' : result.message,
   };
+}
+
+async function runRiderActionOnce(key, control, task) {
+  if (pendingRiderActions.has(key)) {
+    return {
+      handled: true,
+      ok: false,
+      message: 'La actualización ya está en curso.',
+    };
+  }
+  pendingRiderActions.add(key);
+  const originalLabel = control?.textContent || '';
+  if (control) {
+    control.disabled = true;
+    control.setAttribute?.('aria-busy', 'true');
+  }
+  try {
+    return await task();
+  } finally {
+    pendingRiderActions.delete(key);
+    if (control?.isConnected) {
+      control.disabled = false;
+      control.removeAttribute?.('aria-busy');
+      if (originalLabel) control.textContent = originalLabel;
+    }
+    // updateOrderFromAction puede haber renderizado mientras la clave seguía
+    // pendiente. Este segundo pulso deja el control nuevo habilitado también
+    // cuando la solicitud falla y el nodo original ya fue reemplazado.
+    notify();
+  }
 }
 
 function startGpsShare(orderId) {
@@ -744,6 +1036,8 @@ function emptyGpsShare() {
     orderId: '',
     state: 'idle',
     message: '',
+    lastAcceptedFix: null,
+    lastPublishedFix: null,
     lastPublishedAt: 0,
     publishing: false,
   };
@@ -789,7 +1083,7 @@ function actionLabel(status, actor) {
   if (status === 'preparing') return 'Iniciar preparación';
   if (status === 'ready') return 'Marcar listo';
   if (status === 'on_the_way') return actor === 'rider' ? 'Tomar y salir' : 'En camino';
-  if (status === 'arrived') return 'Marcar llegada';
+  if (status === 'arrived') return 'Llegué';
   if (status === 'delivered') return 'Confirmar entrega';
   return 'Actualizar';
 }

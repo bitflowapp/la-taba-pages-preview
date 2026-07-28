@@ -13,6 +13,7 @@ import {
   canUseMapLibre as supportsMapLibre,
   createMapLibreTrackingMap,
 } from './maplibre_tracking_map.js';
+import { getRiderMapContext } from './rider_operational_map.js';
 
 const mountedMaps = new Set();
 
@@ -50,7 +51,7 @@ function mapEntryFor(container) {
 }
 
 export function disposeMapViews(root = document) {
-  root.querySelectorAll?.('[data-real-map]').forEach((node) => {
+  mapNodesWithin(root).forEach((node) => {
     const entry = mapEntryFor(node);
     if (entry) disposeMapEntry(entry);
   });
@@ -58,19 +59,30 @@ export function disposeMapViews(root = document) {
 
 export function renderMapViews(root = document) {
   disposeDetachedMaps();
-  root.querySelectorAll?.('[data-real-map]').forEach((node) => renderMapView(node));
+  mapNodesWithin(root).forEach((node) => {
+    if (node.closest?.('[hidden], [aria-hidden="true"]')) return;
+    renderMapView(node);
+  });
 }
 
 // Vuelve a centrar el mapa en la ubicación REAL del rider y reanuda el
 // auto-seguimiento. Si no hay fix real montado, no hace nada (no inventa centro).
 export function recenterMapViews(root = document) {
   let recentered = false;
-  root.querySelectorAll?.('[data-real-map]').forEach((node) => {
+  mapNodesWithin(root).forEach((node) => {
     const entry = mapEntryFor(node);
     if (!entry) return;
     recentered = entry.adapter?.recenter?.() || recentered;
   });
   return recentered;
+}
+
+function mapNodesWithin(root) {
+  if (!root) return [];
+  const nodes = [];
+  if (root.matches?.('[data-real-map]')) nodes.push(root);
+  root.querySelectorAll?.('[data-real-map]').forEach((node) => nodes.push(node));
+  return nodes;
 }
 
 function renderMapView(container) {
@@ -95,9 +107,13 @@ function readMapViewState(container) {
   const role = container.dataset.mapRole?.startsWith('rider') ? 'rider' : 'tracking';
   const sandbox = isSandboxOrderRepository(getOrderRepository()) && container.dataset.mapSource === 'sandbox';
   const sandboxScenario = sandbox ? getSandboxMapScenario() : null;
-  const riderLocation = order ? getRiderLocation(order, sim, sandbox) : null;
-  const destination = sandboxScenario?.destination || null;
-  const store = sandboxScenario?.store || null;
+  const operationalContext = role === 'rider' && order
+    ? getRiderMapContext(order.id)
+    : null;
+  const riderLocation = operationalContext?.riderLocation
+    || (order ? getRiderLocation(order, sim, sandbox) : null);
+  const destination = operationalContext?.destination || sandboxScenario?.destination || null;
+  const store = operationalContext?.store || sandboxScenario?.store || null;
   const points = sandboxScenario?.route || [];
   const preferredTheme = 'light';
   const theme = 'light';
@@ -121,6 +137,7 @@ function readMapViewState(container) {
     freshness,
     sandbox,
     store,
+    priority: operationalContext?.priority || riderMapPriority(order),
     sandboxScenario,
   };
 }
@@ -128,7 +145,16 @@ function readMapViewState(container) {
 export function ensureTrackingMap(container, view) {
   const existing = mapEntryFor(container);
   if (existing) {
+    const lifecycle = existing.adapter.getLifecycleState?.() || {};
+    if (!lifecycle.mounted && !lifecycle.unavailable) {
+      mountMapAdapter(existing.adapter, container, view);
+    }
     existing.adapter.updateFreshness(view.freshness);
+    existing.adapter.updatePlaces({
+      store: view.store,
+      destination: view.destination,
+      priority: view.priority,
+    });
     return existing;
   }
 
@@ -146,14 +172,24 @@ export function ensureTrackingMap(container, view) {
 
   const sandboxGeometryVerified = Boolean(view.sandbox && view.sandboxScenario);
   const showSandboxRoute = sandboxGeometryVerified
-    && view.riderLocation?.origin !== 'local_gps';
+    && view.riderLocation?.origin === 'sandbox_route';
   container.dataset.mapEngine = 'maplibre';
   if (showSandboxRoute) container.dataset.routeSource = 'simulation';
   else delete container.dataset.routeSource;
 
-  // La vista productiva sólo monta el mapa con GPS real y no inventa origen,
-  // destino ni ruta. La sandbox sí usa sus coordenadas ficticias aisladas.
-  adapter.mount({
+  mountMapAdapter(adapter, container, view, {
+    sandboxGeometryVerified,
+    showSandboxRoute,
+  });
+  return entry;
+}
+
+function mountMapAdapter(adapter, container, view, geometry = {}) {
+  const sandboxGeometryVerified = geometry.sandboxGeometryVerified
+    ?? Boolean(view.sandbox && view.sandboxScenario);
+  const showSandboxRoute = geometry.showSandboxRoute
+    ?? (sandboxGeometryVerified && view.riderLocation?.origin === 'sandbox_route');
+  return adapter.mount({
     container: view.canvas,
     shell: container,
     fallback: view.fallback,
@@ -164,12 +200,13 @@ export function ensureTrackingMap(container, view) {
     sandbox: view.sandbox,
     sandboxGeometryVerified,
     route: showSandboxRoute ? view.points : null,
-    store: sandboxGeometryVerified ? view.store : null,
-    destination: sandboxGeometryVerified ? view.destination : null,
-    center: view.riderLocation || (sandboxGeometryVerified ? view.store : null),
+    store: view.role === 'rider' || sandboxGeometryVerified ? view.store : null,
+    destination: view.role === 'rider' || sandboxGeometryVerified ? view.destination : null,
+    priority: view.priority,
+    role: view.role,
+    center: view.riderLocation || view.destination || view.store,
     zoom: view.sandbox ? 14.5 : 16,
   });
-  return entry;
 }
 
 export function scheduleTrackingVisualUpdate(entry, view) {
@@ -189,6 +226,11 @@ function applyTrackingVisualUpdate(entry, view) {
   if (!view) return;
   updateTrackingStatusText(entry.container, view);
   entry.adapter.updateFreshness(view.freshness);
+  entry.adapter.updatePlaces({
+    store: view.store,
+    destination: view.destination,
+    priority: view.priority,
+  });
   if (!view.riderLocation) return;
   updateRiderMarkerPosition(entry, view.riderLocation, {
     status: view.order?.status,
@@ -284,7 +326,9 @@ function renderMapMeta(container, order, location, destination) {
   const copy = meta.querySelector?.('[data-map-meta-text]') || meta;
   if (!order || !location) {
     container.dataset.mapFreshness = 'none';
-    copy.textContent = 'Ubicación temporalmente no disponible';
+    copy.textContent = container.dataset.mapRole?.startsWith('rider')
+      ? 'Buscando tu ubicación…'
+      : 'Ubicación temporalmente no disponible';
     return;
   }
 
@@ -324,6 +368,11 @@ function renderMapMeta(container, order, location, destination) {
   copy.textContent = gpsStale
     ? `${prefix} ${age}${accuracy}`
     : `${prefix} · última actualización: ${age}${accuracy}`;
+}
+
+function riderMapPriority(order = {}) {
+  const status = String(order?.workflowStatus || order?.status || '').toLowerCase();
+  return ['ready', 'assigned'].includes(status) ? 'business' : 'client';
 }
 
 function relativeAgeLabel(value) {

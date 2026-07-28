@@ -44,6 +44,37 @@ export function createRiderMarkerElement(documentRef = globalThis.document, {
   return element;
 }
 
+export function createOwnLocationMarkerElement(documentRef = globalThis.document, {
+  source = 'gps',
+  heading = null,
+} = {}) {
+  if (!documentRef?.createElement) return null;
+  const element = documentRef.createElement('div');
+  element.setAttribute?.('role', 'img');
+  element.setAttribute?.('aria-label', 'Tu ubicación');
+  element.setAttribute?.('title', 'Tu ubicación');
+  element.innerHTML = `
+    <span class="rider-self-heading" aria-hidden="true"></span>
+    <span class="rider-self-halo" aria-hidden="true"></span>
+    <span class="rider-self-core" aria-hidden="true"></span>`;
+  return updateOwnLocationMarkerElement(element, { source, heading });
+}
+
+export function updateOwnLocationMarkerElement(element, {
+  source = 'gps',
+  heading = null,
+} = {}) {
+  if (!element) return null;
+  const normalizedHeading = normalizeHeading(heading);
+  element.className = `rider-self-marker source-${safeClassToken(source)}${normalizedHeading === null ? '' : ' has-heading'}`;
+  if (normalizedHeading === null) {
+    element.style?.removeProperty?.('--rider-heading');
+  } else {
+    element.style?.setProperty?.('--rider-heading', `${normalizedHeading}deg`);
+  }
+  return element;
+}
+
 export function updateRiderMarkerElement(element, {
   status = 'received',
   source = 'simulation',
@@ -51,6 +82,34 @@ export function updateRiderMarkerElement(element, {
   if (!element) return null;
   const nextClass = riderMarkerClass(status, source);
   element.className = mergeMarkerClassName(element.className, nextClass);
+  return element;
+}
+
+export function createOperationalPlaceMarkerElement(documentRef = globalThis.document, {
+  kind = 'business',
+  label = '',
+  priority = false,
+} = {}) {
+  if (!documentRef?.createElement) return null;
+  const element = documentRef.createElement('div');
+  element.innerHTML = operationalPlaceMarkerMarkup({ kind, label });
+  return updateOperationalPlaceMarkerElement(element, { kind, label, priority });
+}
+
+export function updateOperationalPlaceMarkerElement(element, {
+  kind = 'business',
+  label = '',
+  priority = false,
+} = {}) {
+  if (!element) return null;
+  const normalizedKind = normalizeOperationalPlaceKind(kind);
+  const aria = label || (normalizedKind === 'client' ? 'Cliente' : 'Negocio');
+  element.className = `rider-place-marker is-${normalizedKind} ${priority ? 'is-primary' : 'is-secondary'}`;
+  element.setAttribute?.('role', 'img');
+  element.setAttribute?.('aria-label', aria);
+  element.setAttribute?.('title', aria);
+  const visibleLabel = element.querySelector?.('.rider-place-label');
+  if (visibleLabel) visibleLabel.textContent = aria;
   return element;
 }
 
@@ -88,6 +147,42 @@ function placeMarkerMarkup({ kind = 'store', label = '' } = {}) {
         : '<path d="M12 20h20v13H12zM15 20v-5h14v5M16 24h2M22 24h2M28 24h2" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'}
     </svg>
   </span>`;
+}
+
+function operationalPlaceMarkerMarkup({ kind = 'business', label = '' } = {}) {
+  const normalizedKind = normalizeOperationalPlaceKind(kind);
+  const displayLabel = escapeAttribute(label || (normalizedKind === 'client' ? 'Cliente' : 'Negocio'));
+  const icon = normalizedKind === 'client'
+    ? `<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <circle cx="16" cy="10.5" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+        <path d="M7.5 27c.8-6 4.1-9 8.5-9s7.7 3 8.5 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>`
+    : `<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <path d="M7 12h18v14H7zM5.5 7h21l-1.8 6H7.3L5.5 7Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M11 13v4m5-4v4m5-4v4M13 26v-6h6v6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>`;
+  return `<span class="rider-place-visual" aria-hidden="true">
+      <span class="rider-place-disc">${icon}</span>
+      <span class="rider-place-stem"></span>
+      <span class="rider-place-target"></span>
+    </span>
+    <span class="rider-place-label" aria-hidden="true">${displayLabel}</span>`;
+}
+
+function normalizeOperationalPlaceKind(kind) {
+  return ['client', 'destination'].includes(String(kind || '').toLowerCase())
+    ? 'client'
+    : 'business';
+}
+
+function normalizeHeading(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? ((numeric % 360) + 360) % 360 : null;
+}
+
+function safeClassToken(value) {
+  return String(value || 'gps').toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'gps';
 }
 
 function escapeAttribute(value) {

@@ -1,6 +1,10 @@
 import {
+  createOperationalPlaceMarkerElement,
+  createOwnLocationMarkerElement,
   createPlaceMarkerElement,
   createRiderMarkerElement,
+  updateOperationalPlaceMarkerElement,
+  updateOwnLocationMarkerElement,
   updateRiderMarkerElement,
 } from './rider_marker.js';
 
@@ -99,11 +103,17 @@ export function createMapLibreTrackingMap({
     riderElement: null,
     riderLocation: null,
     storeMarker: null,
+    storeElement: null,
     destinationMarker: null,
+    destinationElement: null,
     routeFeature: null,
-    pendingSandboxPlaces: null,
+    places: null,
+    pendingPlaces: null,
+    role: 'tracking',
     sandbox: false,
     sandboxGeometryVerified: false,
+    initialBoundsFitted: false,
+    initialBoundsIncludedRider: false,
     freshness: 'none',
     ready: false,
     unavailable: false,
@@ -133,6 +143,8 @@ export function createMapLibreTrackingMap({
     route = null,
     store = null,
     destination = null,
+    priority = 'client',
+    role = 'tracking',
     center = null,
     zoom = 16,
   } = {}) {
@@ -143,28 +155,35 @@ export function createMapLibreTrackingMap({
       if (isValidMapPoint(riderLocation)) {
         updateRiderLocation(riderLocation, { freshness, status, source });
       }
+      updatePlaces({ store, destination, priority });
       return true;
     }
 
     state.shell = shell;
     state.canvas = container;
     state.fallback = fallback;
+    state.role = String(role || 'tracking');
     state.sandbox = sandbox === true;
     state.sandboxGeometryVerified = state.sandbox && sandboxGeometryVerified === true;
     state.routeFeature = state.sandboxGeometryVerified ? sandboxRouteFeature(route) : null;
     state.freshness = normalizeMapFreshness(freshness);
-    state.pendingSandboxPlaces = state.sandboxGeometryVerified
-      ? { store, destination }
+    state.places = { store, destination, priority };
+    state.pendingPlaces = state.role.startsWith('rider') || state.sandboxGeometryVerified
+      ? state.places
       : null;
 
     const initialCenter = firstValidPoint(
       riderLocation,
       center,
-      state.sandboxGeometryVerified ? store : null,
-      state.sandboxGeometryVerified ? destination : null,
+      store,
+      destination,
       firstRoutePoint(state.routeFeature),
     );
-    if (!initialCenter) return markUnavailable('missing-location');
+    if (!initialCenter) {
+      return state.role.startsWith('rider')
+        ? waitForInitialLocation()
+        : markUnavailable('missing-location');
+    }
 
     const maplibreRef = maplibregl || root?.maplibregl;
     const supported = webglSupported({
@@ -175,6 +194,7 @@ export function createMapLibreTrackingMap({
     });
     if (!supported) return markUnavailable('unsupported-webgl');
 
+    state.failureReason = null;
     prepareMountDom();
     try {
       state.map = new maplibreRef.Map({
@@ -234,7 +254,12 @@ export function createMapLibreTrackingMap({
     state.riderLocation = normalizedPoint(nextLocation);
 
     if (!state.riderMarker) {
-      state.riderElement = createRiderMarkerElement(documentRef, { status, source });
+      state.riderElement = state.role.startsWith('rider')
+        ? createOwnLocationMarkerElement(documentRef, {
+          source,
+          heading: state.riderLocation.heading,
+        })
+        : createRiderMarkerElement(documentRef, { status, source });
       if (!state.riderElement) return null;
       state.riderMarker = new (maplibregl || root?.maplibregl).Marker({
         element: state.riderElement,
@@ -242,10 +267,18 @@ export function createMapLibreTrackingMap({
       })
         .setLngLat(toLngLat(state.riderLocation))
         .addTo(state.map);
+      maybeFitInitialGeometry();
       return state.riderMarker;
     }
 
-    updateRiderMarkerElement(state.riderElement, { status, source });
+    if (state.role.startsWith('rider')) {
+      updateOwnLocationMarkerElement(state.riderElement, {
+        source,
+        heading: state.riderLocation.heading,
+      });
+    } else {
+      updateRiderMarkerElement(state.riderElement, { status, source });
+    }
     cancelMovement();
     const reducedMotion = prefersReducedMotion(root);
     const smooth = animate && shouldAnimateRiderMove(previous, state.riderLocation, {
@@ -255,6 +288,7 @@ export function createMapLibreTrackingMap({
     if (!smooth) {
       state.riderMarker.setLngLat(toLngLat(state.riderLocation));
       maybeFollowRider(state.riderLocation, { reducedMotion });
+      maybeFitInitialGeometry();
       return state.riderMarker;
     }
 
@@ -276,6 +310,7 @@ export function createMapLibreTrackingMap({
         state.movementFrame = requestFrame(step);
       } else {
         maybeFollowRider(end, { reducedMotion: false });
+        maybeFitInitialGeometry();
       }
     };
     state.movementFrame = requestFrame(step);
@@ -304,14 +339,35 @@ export function createMapLibreTrackingMap({
     return freshness;
   }
 
+  function updatePlaces({
+    store = state.places?.store || null,
+    destination = state.places?.destination || null,
+    priority = state.places?.priority || 'client',
+  } = {}) {
+    state.places = { store, destination, priority };
+    if (
+      !state.map
+      || state.unavailable
+      || state.destroyed
+      || (!state.role.startsWith('rider') && !state.sandboxGeometryVerified)
+    ) {
+      state.pendingPlaces = state.places;
+      return false;
+    }
+    syncPlaceMarkers(state.places);
+    maybeFitInitialGeometry();
+    return true;
+  }
+
   function recenter({ animate = true } = {}) {
     if (!state.map || !isValidMapPoint(state.riderLocation) || state.unavailable || state.destroyed) return false;
     state.userInteracted = false;
     const center = toLngLat(state.riderLocation);
+    const camera = state.role.startsWith('rider') ? { center, zoom: 16 } : { center };
     if (animate && !prefersReducedMotion(root) && state.map.easeTo) {
-      state.map.easeTo({ center, duration: 360, essential: false });
+      state.map.easeTo({ ...camera, duration: 360, essential: false });
     } else if (state.map.jumpTo) {
-      state.map.jumpTo({ center });
+      state.map.jumpTo(camera);
     } else {
       state.map.setCenter?.(center);
     }
@@ -359,9 +415,9 @@ export function createMapLibreTrackingMap({
         state.styleTimer = null;
       }
       ensureSandboxRoute();
-      ensureSandboxPlaces(state.pendingSandboxPlaces);
-      fitSandboxGeometry();
-      state.pendingSandboxPlaces = null;
+      syncPlaceMarkers(state.pendingPlaces);
+      state.pendingPlaces = null;
+      maybeFitInitialGeometry();
       state.shell?.classList?.add?.('is-ready');
       state.shell?.classList?.remove?.('map-unavailable');
       if (state.shell?.dataset) state.shell.dataset.mapStatus = 'ready';
@@ -454,30 +510,91 @@ export function createMapLibreTrackingMap({
     }
   }
 
-  function ensureSandboxPlaces(places) {
-    if (!state.sandbox || !state.sandboxGeometryVerified || !state.map || !places) return;
-    if (isValidMapPoint(places.store) && !state.storeMarker) {
-      state.storeMarker = createPlaceMarker({
-        point: places.store,
-        kind: 'store',
-        label: places.store.label || 'Comercio',
-      });
+  function syncPlaceMarkers(places) {
+    if (!state.map || !places) return;
+    const businessPriority = places.priority === 'business';
+    const clientPriority = !businessPriority;
+    if (isValidMapPoint(places.store)) {
+      if (!state.storeMarker) {
+        const created = createPlaceMarker({
+          point: places.store,
+          kind: state.role.startsWith('rider') ? 'business' : 'store',
+          label: places.store.label || 'Negocio',
+          priority: businessPriority,
+        });
+        state.storeMarker = created?.marker || null;
+        state.storeElement = created?.element || null;
+      } else {
+        state.storeMarker.setLngLat(toLngLat(places.store));
+        if (state.role.startsWith('rider')) {
+          updateOperationalPlaceMarkerElement(state.storeElement, {
+            kind: 'business',
+            label: places.store.label || 'Negocio',
+            priority: businessPriority,
+          });
+        }
+      }
+    } else if (state.storeMarker) {
+      state.storeMarker.remove?.();
+      state.storeMarker = null;
+      state.storeElement = null;
     }
-    if (isValidMapPoint(places.destination) && !state.destinationMarker) {
-      state.destinationMarker = createPlaceMarker({
-        point: places.destination,
-        kind: 'destination',
-        label: places.destination.label || 'Destino de entrega',
-      });
+
+    if (isValidMapPoint(places.destination)) {
+      if (!state.destinationMarker) {
+        const created = createPlaceMarker({
+          point: places.destination,
+          kind: state.role.startsWith('rider') ? 'client' : 'destination',
+          label: places.destination.label || 'Cliente',
+          priority: clientPriority,
+        });
+        state.destinationMarker = created?.marker || null;
+        state.destinationElement = created?.element || null;
+      } else {
+        state.destinationMarker.setLngLat(toLngLat(places.destination));
+        if (state.role.startsWith('rider')) {
+          updateOperationalPlaceMarkerElement(state.destinationElement, {
+            kind: 'client',
+            label: places.destination.label || 'Cliente',
+            priority: clientPriority,
+          });
+        }
+      }
+    } else if (state.destinationMarker) {
+      state.destinationMarker.remove?.();
+      state.destinationMarker = null;
+      state.destinationElement = null;
     }
   }
 
-  function fitSandboxGeometry() {
-    const coordinates = state.routeFeature?.geometry?.coordinates;
-    if (!state.map?.fitBounds || !Array.isArray(coordinates) || coordinates.length < 2) return;
+  function maybeFitInitialGeometry() {
+    const hasRiderLocation = isValidMapPoint(state.riderLocation);
+    const canIncludeFirstRider = state.role.startsWith('rider')
+      && state.initialBoundsFitted
+      && !state.initialBoundsIncludedRider
+      && hasRiderLocation;
+    if (
+      (state.initialBoundsFitted && !canIncludeFirstRider)
+      || !state.ready
+      || !state.map?.fitBounds
+      || state.userInteracted
+    ) {
+      return false;
+    }
+    const routeCoordinates = state.routeFeature?.geometry?.coordinates;
+    const coordinates = Array.isArray(routeCoordinates) && routeCoordinates.length >= 2
+      ? routeCoordinates
+      : [
+        state.riderLocation,
+        state.places?.destination,
+        state.places?.store,
+      ].filter(isValidMapPoint).map(toLngLat);
+    if (coordinates.length < 2) return false;
     const lngs = coordinates.map((coordinate) => Number(coordinate[0])).filter(Number.isFinite);
     const lats = coordinates.map((coordinate) => Number(coordinate[1])).filter(Number.isFinite);
-    if (lngs.length < 2 || lats.length < 2) return;
+    if (lngs.length < 2 || lats.length < 2) return false;
+    state.initialBoundsFitted = true;
+    state.initialBoundsIncludedRider = hasRiderLocation;
     state.programmaticMove = true;
     try {
       state.map.fitBounds(
@@ -485,24 +602,35 @@ export function createMapLibreTrackingMap({
           [Math.min(...lngs), Math.min(...lats)],
           [Math.max(...lngs), Math.max(...lats)],
         ],
-        { padding: 34, maxZoom: 15.5, duration: 0 },
+        {
+          padding: state.role.startsWith('rider')
+            ? { top: 70, left: 45, right: 45, bottom: 220 }
+            : 34,
+          maxZoom: 15.5,
+          duration: 0,
+        },
       );
     } finally {
       setTimer(() => {
         state.programmaticMove = false;
       }, 0);
     }
+    return true;
   }
 
-  function createPlaceMarker({ point, kind, label }) {
-    const element = createPlaceMarkerElement(documentRef, { kind, label });
+  function createPlaceMarker({ point, kind, label, priority = false }) {
+    const operational = state.role.startsWith('rider');
+    const element = operational
+      ? createOperationalPlaceMarkerElement(documentRef, { kind, label, priority })
+      : createPlaceMarkerElement(documentRef, { kind, label });
     if (!element) return null;
-    return new (maplibregl || root?.maplibregl).Marker({
+    const marker = new (maplibregl || root?.maplibregl).Marker({
       element,
       anchor: 'bottom',
     })
       .setLngLat(toLngLat(point))
       .addTo(state.map);
+    return { marker, element };
   }
 
   function maybeFollowRider(point, { reducedMotion = false } = {}) {
@@ -537,6 +665,21 @@ export function createMapLibreTrackingMap({
     return false;
   }
 
+  function waitForInitialLocation() {
+    state.failureReason = 'missing-location';
+    state.ready = false;
+    if (state.shell) {
+      state.shell.classList?.remove?.('is-ready', 'map-unavailable');
+      if (state.shell.dataset) {
+        state.shell.dataset.mapStatus = 'waiting-location';
+        state.shell.dataset.mapFailure = state.failureReason;
+      }
+    }
+    presentFallback(state.fallback);
+    state.canvas?.setAttribute?.('hidden', '');
+    return false;
+  }
+
   function cleanupResources() {
     cancelMovement();
     if (state.resizeFrame !== null) {
@@ -565,7 +708,9 @@ export function createMapLibreTrackingMap({
     state.riderMarker = null;
     state.riderElement = null;
     state.storeMarker = null;
+    state.storeElement = null;
     state.destinationMarker = null;
+    state.destinationElement = null;
     if (state.map) {
       try {
         state.map.remove?.();
@@ -611,7 +756,10 @@ export function createMapLibreTrackingMap({
       failureReason: state.failureReason,
       freshness: state.freshness,
       hasRiderMarker: Boolean(state.riderMarker),
+      hasStoreMarker: Boolean(state.storeMarker),
+      hasDestinationMarker: Boolean(state.destinationMarker),
       hasSandboxRoute: Boolean(state.routeFeature),
+      initialBoundsFitted: state.initialBoundsFitted,
       userInteracted: state.userInteracted,
     });
   }
@@ -620,6 +768,7 @@ export function createMapLibreTrackingMap({
     mount,
     updateRiderLocation,
     updateFreshness,
+    updatePlaces,
     recenter,
     resize,
     destroy,

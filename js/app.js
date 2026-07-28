@@ -41,7 +41,7 @@ import {
   resumeSimulationIfNeeded,
 } from './simulation.js';
 import { getRealtimeStatus, initRealtime, onRealtimeStatusChange, retryRelayConnection } from './realtime.js';
-import { recenterMapViews, renderMapViews } from './map/map_view.js';
+import { disposeMapViews, recenterMapViews, renderMapViews } from './map/map_view.js';
 import { activeTrackingLiveness } from './map/route_geometry.js';
 import {
   getOrderRepository,
@@ -563,8 +563,12 @@ function bindEvents() {
     disableGpsTracking({ silent: true, preserveLastFix: true });
     handleProductionOperationsPageHide();
     syncCustomerTrackingWithView('');
+    disposeMapViews(document);
   });
-  window.addEventListener('pageshow', () => syncCustomerTrackingWithView(activeView));
+  window.addEventListener('pageshow', () => {
+    syncCustomerTrackingWithView(activeView);
+    renderMapViews();
+  });
   document.addEventListener('visibilitychange', () => {
     const result = handleGpsVisibilityChange();
     if (result?.changed && !document.hidden) renderLiveSurfaces();
@@ -977,7 +981,11 @@ function bindEvents() {
       return;
     }
     if (target.closest('[data-map-recenter]')) {
-      recenterMapViews();
+      const scope = target.closest('[data-real-map]')
+        || target.closest('[data-map-shell]')
+        || document.querySelector('[data-view]:not([hidden])')
+        || document;
+      recenterMapViews(scope);
       return;
     }
     if (target.closest('[data-whatsapp-copy]')) {
@@ -1172,6 +1180,8 @@ function syncGpsSharingWithView(view) {
     handleViewChangeForSimulation(view);
   } else {
     disableGpsTracking({ silent: true });
+    const riderSection = document.querySelector('[data-view="rider"]');
+    if (riderSection) disposeMapViews(riderSection);
   }
   handleProductionOperationsViewChange(view);
   if (view !== 'tracking') syncCustomerTrackingWithView('');

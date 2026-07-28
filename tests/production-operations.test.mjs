@@ -11,6 +11,8 @@ import {
   nextBusinessStatus,
   nextRiderStatus,
   resetProductionOperationsForTests,
+  riderOperationalOrderMarkup,
+  selectPrimaryRiderOrder,
 } from '../js/production-operations.js';
 import {
   getOrderRepository,
@@ -55,7 +57,30 @@ test('rider reclama, avanza, llega y entrega sin simulaciones', () => {
   assert.equal(nextRiderStatus({ workflowStatus: 'delivered' }), null);
 });
 
-test('GPS productivo se corta al salir de rider y en pagehide', async () => {
+test('elige una entrega primaria determinística y prioriza la que está en curso', () => {
+  const orders = [
+    { id: 'LT-READY', workflowStatus: 'ready', updatedAt: '2026-07-28T14:00:00Z' },
+    { id: 'LT-ROUTE', workflowStatus: 'on_the_way', updatedAt: '2026-07-28T12:00:00Z' },
+    { id: 'LT-ARRIVED-OLD', workflowStatus: 'arrived', updatedAt: '2026-07-28T11:00:00Z' },
+    { id: 'LT-ARRIVED-NEW', workflowStatus: 'arrived', updatedAt: '2026-07-28T13:00:00Z' },
+  ];
+
+  assert.equal(selectPrimaryRiderOrder(orders).id, 'LT-ARRIVED-NEW');
+  assert.equal(selectPrimaryRiderOrder([]), null);
+});
+
+test('el ultimo fix con sharing pausado ofrece estado y control para reactivar GPS', () => {
+  resetProductionOperationsForTests();
+  const order = operationalRiderOrder('LT-GPS-PAUSED');
+  const markup = riderOperationalOrderMarkup(order, operationalMapContext(order.id));
+
+  assert.match(markup, /Seguimiento pausado/i);
+  assert.match(markup, /data-production-gps-start="LT-GPS-PAUSED"/);
+  assert.match(markup, /Reactivar GPS/i);
+  assert.doesNotMatch(markup, /data-production-gps-stop/);
+});
+
+test('GPS productivo muestra Detener GPS al compartir y se corta al salir de rider', async () => {
   const businessId = '11111111-1111-4111-8111-111111111111';
   const riderId = '22222222-2222-4222-8222-222222222222';
   const orderId = '33333333-3333-4333-8333-333333333333';
@@ -129,7 +154,12 @@ test('GPS productivo se corta al salir de rider y en pagehide', async () => {
       storage: null,
       createClientImpl: () => client,
     });
-    initProductionOperations();
+    let operationRenders = 0;
+    initProductionOperations({
+      onChange: () => {
+        operationRenders += 1;
+      },
+    });
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     const gpsTarget = {
@@ -146,6 +176,52 @@ test('GPS productivo se corta al salir de rider y en pagehide', async () => {
       started = await handleProductionOperationsAction(gpsTarget);
     }
     assert.equal(started.ok, true);
+
+    const activeMarkup = riderOperationalOrderMarkup(
+      operationalRiderOrder(order.public_code),
+      operationalMapContext(order.public_code),
+    );
+    assert.match(activeMarkup, /data-production-gps-stop/);
+    assert.match(activeMarkup, /Detener GPS/i);
+    assert.doesNotMatch(activeMarkup, /data-production-gps-start/);
+
+    let resolveStatusUpdate;
+    let statusUpdateAttempts = 0;
+    const statusUpdateResult = new Promise((resolve) => {
+      resolveStatusUpdate = resolve;
+    });
+    getOrderRepository().updateOrderStatus = async () => {
+      statusUpdateAttempts += 1;
+      return statusUpdateResult;
+    };
+    const arrivalControl = {
+      dataset: {
+        productionRiderNext: orderId,
+        nextStatus: 'arrived',
+      },
+      disabled: false,
+      textContent: 'Llegué',
+      setAttribute() {},
+      removeAttribute() {},
+      get isConnected() { return false; },
+      closest(selector) {
+        return selector === '[data-production-rider-next]' ? this : null;
+      },
+    };
+    const rendersBeforeArrival = operationRenders;
+    const firstArrival = handleProductionOperationsAction(arrivalControl);
+    const duplicateArrival = await handleProductionOperationsAction(arrivalControl);
+    assert.equal(statusUpdateAttempts, 1);
+    assert.equal(duplicateArrival.ok, false);
+    assert.match(duplicateArrival.message, /ya está en curso/i);
+    assert.equal(arrivalControl.disabled, true);
+    resolveStatusUpdate({ ok: false, message: 'Falla de red controlada.' });
+    assert.equal((await firstArrival).ok, false);
+    assert.ok(
+      operationRenders >= rendersBeforeArrival + 2,
+      'se vuelve a renderizar después de liberar el guard pendiente',
+    );
+
     let publishAttempts = 0;
     getOrderRepository().updateRiderLocation = async () => {
       publishAttempts += 1;
@@ -190,6 +266,51 @@ test('GPS productivo se corta al salir de rider y en pagehide', async () => {
     else globalThis.__LA_TABA_RUNTIME_CONFIG__ = originalRuntime;
   }
 });
+
+function operationalRiderOrder(id) {
+  return {
+    id,
+    publicCode: id,
+    status: 'on_the_way',
+    workflowStatus: 'on_the_way',
+    deliveryMode: 'delivery',
+    assignedRiderId: '22222222-2222-4222-8222-222222222222',
+    customerName: 'Cliente GPS',
+    customerPhone: '2995550000',
+    address: 'Roca 123',
+    addressDetails: {
+      label: 'Roca 123',
+      streetLine: 'Roca 123',
+      locality: 'Neuquen',
+    },
+    paymentMethod: 'coordinate',
+    total: 1000,
+    currencyCode: 'ARS',
+  };
+}
+
+function operationalMapContext(orderId) {
+  return {
+    orderId,
+    riderLocation: {
+      lat: -38.952,
+      lng: -68.059,
+      accuracy: 10,
+      source: 'gps',
+    },
+    destination: {
+      lat: -38.95,
+      lng: -68.05,
+      label: 'Cliente',
+    },
+    store: {
+      lat: -38.96,
+      lng: -68.07,
+      label: 'TABA',
+    },
+    priority: 'client',
+  };
+}
 
 function createLifecycleClient({ businessId, riderId, order, membership }) {
   const session = { user: { id: riderId, is_anonymous: false } };

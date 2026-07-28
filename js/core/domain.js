@@ -37,6 +37,31 @@ export function normalizeTrackingLocation(location = {}) {
   };
 }
 
+export function normalizeDeliveryLocation(location = {}) {
+  const source = location && typeof location === 'object' ? location : {};
+  const rawLat = source.lat ?? source.latitude;
+  const rawLng = source.lng ?? source.longitude;
+  if (rawLat === '' || rawLat === null || rawLat === undefined) return null;
+  if (rawLng === '' || rawLng === null || rawLng === undefined) return null;
+  const lat = Number(rawLat);
+  const lng = Number(rawLng);
+  if (
+    !Number.isFinite(lat)
+    || !Number.isFinite(lng)
+    || Math.abs(lat) > 90
+    || Math.abs(lng) > 180
+    || (lat === 0 && lng === 0)
+  ) {
+    return null;
+  }
+  const accuracy = Number(source.accuracy ?? source.geolocationAccuracy);
+  return {
+    lat,
+    lng,
+    ...(Number.isFinite(accuracy) && accuracy >= 0 ? { accuracy } : {}),
+  };
+}
+
 export function toDomainOrderItem(item = {}) {
   const quantity = Math.max(0, Math.floor(Number(item.quantity) || 0));
   const unitPrice = normalizeMoneyValue(item.unitPrice, 0);
@@ -60,6 +85,17 @@ export function toDomainOrder(order = {}) {
   const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
   const tracking = normalizeOrderTracking(order.tracking, order.delivery);
   const addressDetails = fulfillmentType === 'pickup' ? null : normalizeOrderAddressDetails(order);
+  const destinationLocation = fulfillmentType === 'pickup'
+    ? null
+    : firstDeliveryLocation([
+      order.destinationLocation,
+      order.deliveryLocation,
+      {
+        latitude: order.deliveryLatitude ?? order.delivery_latitude ?? order.address_lat,
+        longitude: order.deliveryLongitude ?? order.delivery_longitude ?? order.address_lng,
+        accuracy: order.deliveryGeolocationAccuracy ?? order.delivery_geolocation_accuracy,
+      },
+    ]);
 
   return {
     modelVersion: DOMAIN_MODEL_VERSION,
@@ -77,6 +113,7 @@ export function toDomainOrder(order = {}) {
       ? getBusinessConfig().address
       : addressDetails.label || sanitizeText(order.address, { fallback: 'Sin dirección', maxLength: 180 }),
     addressDetails,
+    destinationLocation,
     items,
     totals,
     paymentMethod: sanitizeText(order.paymentMethod, { fallback: 'Efectivo', maxLength: 80 }),
@@ -161,6 +198,14 @@ export function toDomainBusiness(config = getBusinessConfig()) {
     })) : [],
     openingHours: sanitizeText(config.openingHours || config.openingHoursLabel, { maxLength: 120 }),
   };
+}
+
+function firstDeliveryLocation(candidates = []) {
+  for (const candidate of candidates) {
+    const location = normalizeDeliveryLocation(candidate);
+    if (location) return location;
+  }
+  return null;
 }
 
 function normalizeTotals(order, items, fulfillmentType) {

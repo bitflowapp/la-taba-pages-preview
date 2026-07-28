@@ -166,11 +166,13 @@ export function normalizeOrderDraft(draft = {}) {
 }
 
 function normalizeCoordinate(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
 
 function normalizeNonnegativeNumber(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
   const numeric = Number(value);
   return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
 }

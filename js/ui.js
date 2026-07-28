@@ -1275,6 +1275,7 @@ export function getCheckoutFormValues() {
 }
 
 function optionalNumber(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }

@@ -154,6 +154,10 @@ test('crea con intención mínima y acepta sólo importes e IDs del servidor', a
   assert.match(createCall.args.payload.tracking_token, /^[A-Za-z0-9_-]{32,256}$/);
   assert.equal(createCall.args.payload.customer_street_address, 'Roca 321');
   assert.equal(createCall.args.payload.customer_neighborhood, 'Centro');
+  assert.equal(Object.hasOwn(createCall.args.payload, 'delivery_latitude'), false);
+  assert.equal(Object.hasOwn(createCall.args.payload, 'delivery_longitude'), false);
+  assert.equal(Object.hasOwn(createCall.args.payload, 'delivery_geolocation_accuracy'), false);
+  assert.equal(Object.hasOwn(createCall.args.payload, 'delivery_address_source'), false);
   assert.equal(createCall.args.payload.customer_reference, 'Portón negro');
   for (const forbidden of ['id', 'code', 'status', 'subtotal', 'delivery_fee', 'total', 'unit_price', 'name']) {
     assert.equal(Object.hasOwn(createCall.args.payload, forbidden), false, forbidden);

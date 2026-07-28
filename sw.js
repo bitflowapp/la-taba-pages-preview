@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v36-premium-catalog-rider-map';
+const CACHE_NAME = 'la-taba-runtime-v37-premium-catalog-rider-map';
 const ASSETS = [
   './',
   './index.html',

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { BUSINESS_CONFIG } from '../js/config.js';
 import {
+  normalizeOrderDraft,
   normalizeTrackingLocation,
   toDomainBusiness,
   toDomainOrder,
@@ -69,4 +70,27 @@ test('domain normalizes rider, business and tracking primitives', () => {
   const business = toDomainBusiness(BUSINESS_CONFIG);
   assert.equal(business.name, BUSINESS_CONFIG.name);
   assert.ok(business.deliveryZones.length > 0);
+});
+
+test('domain preserves absent delivery coordinates instead of coercing blanks to zero', () => {
+  const draft = normalizeOrderDraft({
+    deliveryMode: 'delivery',
+    deliveryLatitude: '',
+    deliveryLongitude: null,
+    deliveryGeolocationAccuracy: ' ',
+  });
+
+  assert.equal(draft.deliveryLatitude, null);
+  assert.equal(draft.deliveryLongitude, null);
+  assert.equal(draft.deliveryGeolocationAccuracy, null);
+  assert.equal(draft.deliveryAddressSource, 'manual');
+
+  const explicitZero = normalizeOrderDraft({
+    deliveryLatitude: 0,
+    deliveryLongitude: 0,
+    deliveryGeolocationAccuracy: 0,
+  });
+  assert.equal(explicitZero.deliveryLatitude, 0);
+  assert.equal(explicitZero.deliveryLongitude, 0);
+  assert.equal(explicitZero.deliveryGeolocationAccuracy, 0);
 });

@@ -2,21 +2,26 @@ import { getState } from '../state.js';
 import { getActiveOrder } from '../orders.js';
 import { getOrderRepository, isSandboxOrderRepository } from '../repositories/repository_factory.js';
 import { getSandboxMapScenario, sandboxMarkerPointAtProgress } from '../sandbox/sandbox_map_scenario.js';
-import { MAP_PROVIDER, RIDER_LOCATION_SOURCES, STORE_LOCATION, getMapTheme, getTileLayerForTheme } from './map_config.js';
+import { RIDER_LOCATION_SOURCES } from './map_config.js';
 import {
   chooseRiderLocation,
-  getRoute,
   hasKnownSharedGpsLocation,
-  selectRouteForOrder,
   shouldRenderGpsFix,
   trackingLocationFreshness,
 } from './route_geometry.js';
-import { createPlaceIcon, createRiderIcon, updateRiderMarker } from './rider_marker.js';
+import {
+  canUseMapLibre as supportsMapLibre,
+  createMapLibreTrackingMap,
+} from './maplibre_tracking_map.js';
 
 const mountedMaps = new Set();
 
-export function canUseLeaflet(root = globalThis) {
-  return Boolean(root?.L?.map && root?.L?.tileLayer);
+export function canUseMapLibre(root = globalThis) {
+  return supportsMapLibre({
+    root,
+    documentRef: root?.document,
+    maplibregl: root?.maplibregl,
+  });
 }
 
 function disposeDetachedMaps() {
@@ -29,15 +34,11 @@ function disposeDetachedMaps() {
 
 function disposeMapEntry(entry) {
   if (!entry) return;
-  if (entry.resizeTimers?.length) {
-    entry.resizeTimers.forEach((timer) => clearTimeout(timer));
-    entry.resizeTimers = [];
-  }
   if (entry.pendingFrame) {
     cancelFrame(entry.pendingFrame);
     entry.pendingFrame = null;
   }
-  try { entry.map?.remove?.(); } catch (_) { /* no-op */ }
+  entry.adapter?.destroy?.();
   mountedMaps.delete(entry);
 }
 
@@ -67,11 +68,7 @@ export function recenterMapViews(root = document) {
   root.querySelectorAll?.('[data-real-map]').forEach((node) => {
     const entry = mapEntryFor(node);
     if (!entry) return;
-    const view = readMapViewState(node);
-    if (!view.riderLocation) return;
-    entry.userInteracted = false;
-    fitMapToView(entry, view);
-    recentered = true;
+    recentered = entry.adapter?.recenter?.() || recentered;
   });
   return recentered;
 }
@@ -84,19 +81,8 @@ function renderMapView(container) {
   container.classList.toggle('map-theme-dark', view.theme === 'dark');
   container.classList.toggle('map-theme-light', view.theme === 'light');
   updateTrackingStatusText(container, view);
-  updateFallbackMap(container, view);
-
-  if (!canUseLeaflet(globalThis)) {
-    container.classList.add('map-unavailable');
-    view.fallback?.removeAttribute('hidden');
-    return;
-  }
-
-  container.classList.remove('map-unavailable');
-  container.classList.add('is-ready');
-  view.fallback?.setAttribute('hidden', '');
   const entry = ensureTrackingMap(container, view);
-  scheduleMapSizeInvalidations(entry, view);
+  entry?.adapter?.resize?.();
   scheduleTrackingVisualUpdate(entry, view);
 }
 
@@ -106,17 +92,18 @@ function readMapViewState(container) {
   const emptyMap = container.dataset.mapRole === 'tracking-empty' || container.dataset.mapRole === 'rider-empty';
   const order = emptyMap ? null : findOrder(container.dataset.orderId);
   const sim = order ? getOrderSimulation(order.id) : null;
-  const route = order ? selectRouteForOrder(order, sim?.routeId || sim?.destinationId) : getRoute('cipolletti');
   const role = container.dataset.mapRole?.startsWith('rider') ? 'rider' : 'tracking';
   const sandbox = isSandboxOrderRepository(getOrderRepository()) && container.dataset.mapSource === 'sandbox';
   const sandboxScenario = sandbox ? getSandboxMapScenario() : null;
-  const riderLocation = order ? getRiderLocation(order, sim, route.id, role, sandbox) : null;
-  const destination = sandboxScenario?.destination || route.destination;
-  const store = sandboxScenario?.store || STORE_LOCATION;
-  const points = (sandboxScenario?.route || route.points).map((point) => [point.lat, point.lng]);
+  const riderLocation = order ? getRiderLocation(order, sim, sandbox) : null;
+  const destination = sandboxScenario?.destination || null;
+  const store = sandboxScenario?.store || null;
+  const points = sandboxScenario?.route || [];
   const preferredTheme = 'light';
-  const tileLayer = getTileLayerForTheme(preferredTheme);
-  const theme = getMapTheme(tileLayer.theme);
+  const theme = 'light';
+  const freshness = sandbox && riderLocation?.source === 'simulation'
+    ? 'fresh'
+    : trackingLocationFreshness(riderLocation);
 
   return {
     container,
@@ -126,13 +113,12 @@ function readMapViewState(container) {
     role,
     order,
     sim,
-    route,
     riderLocation,
     destination,
     points,
     preferredTheme,
-    tileLayer,
     theme,
+    freshness,
     sandbox,
     store,
     sandboxScenario,
@@ -141,97 +127,49 @@ function readMapViewState(container) {
 
 export function ensureTrackingMap(container, view) {
   const existing = mapEntryFor(container);
-  if (existing) return existing;
+  if (existing) {
+    existing.adapter.updateFreshness(view.freshness);
+    return existing;
+  }
 
-  const L = globalThis.L;
-  const showDesktopControls = shouldShowDesktopRiderControls();
-  const map = L.map(view.canvas, {
-    zoomControl: false,
-    attributionControl: true,
-    dragging: true,
-    scrollWheelZoom: showDesktopControls,
-    doubleClickZoom: showDesktopControls,
-    tap: true,
-  });
-
+  const adapter = createMapLibreTrackingMap();
   const entry = {
     container,
-    map,
-    L,
-    resizeTimers: [],
-    lastSizeKey: null,
+    adapter,
     pendingFrame: null,
     pendingView: null,
-    routeId: null,
-    routeLayer: null,
-    progressLayer: null,
-    storeMarker: null,
-    destinationMarker: null,
-    riderMarker: null,
     lastRenderedLocation: null,
     lastStatus: null,
     lastSource: null,
-    userInteracted: false,
-    programmaticMove: false,
   };
   mountedMaps.add(entry);
 
-  const tiles = L.tileLayer(view.tileLayer.tilesUrl, {
-    maxZoom: 18,
-    attribution: view.tileLayer.attribution,
-  }).addTo(map);
-  entry.tiles = tiles;
-  tiles.on?.('tileerror', () => {
-    container.dataset.mapTiles = 'error';
-    container.querySelector('[data-map-tile-error]')?.removeAttribute('hidden');
-    if (!entry.fallbackTiles && MAP_PROVIDER.tileLayers?.fallback?.tilesUrl) {
-      entry.fallbackTiles = L.tileLayer(MAP_PROVIDER.tileLayers.fallback.tilesUrl, {
-        maxZoom: 18,
-        attribution: MAP_PROVIDER.tileLayers.fallback.attribution,
-      }).addTo(map);
-      entry.fallbackTiles.on?.('tileload', () => {
-        container.dataset.mapTiles = 'fallback';
-        container.querySelector('[data-map-tile-error]')?.setAttribute('hidden', '');
-      });
-    }
-  });
-  if (view.role !== 'tracking') L.control?.zoom?.({ position: 'bottomleft' })?.addTo?.(map);
-  map.on?.('dragstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
-  map.on?.('zoomstart', () => { if (!entry.programmaticMove) entry.userInteracted = true; });
+  const sandboxGeometryVerified = Boolean(view.sandbox && view.sandboxScenario);
+  const showSandboxRoute = sandboxGeometryVerified
+    && view.riderLocation?.origin !== 'local_gps';
+  container.dataset.mapEngine = 'maplibre';
+  if (showSandboxRoute) container.dataset.routeSource = 'simulation';
+  else delete container.dataset.routeSource;
 
   // La vista productiva sólo monta el mapa con GPS real y no inventa origen,
   // destino ni ruta. La sandbox sí usa sus coordenadas ficticias aisladas.
-  if (view.sandbox) ensureSandboxLayers(entry, view);
-  fitMapToView(entry, view);
-  return entry;
-}
-
-function shouldShowDesktopRiderControls() {
-  const width = Number(globalThis.innerWidth || 0);
-  return width >= 768;
-}
-
-function scheduleMapSizeInvalidations(entry, view) {
-  if (!entry) return;
-  const rect = entry.container?.getBoundingClientRect?.();
-  const sizeKey = rect ? `${Math.round(rect.width)}x${Math.round(rect.height)}` : '';
-  if (entry.lastSizeKey === sizeKey) return;
-  if (entry.resizeTimers?.length) {
-    entry.resizeTimers.forEach((timer) => clearTimeout(timer));
-    entry.resizeTimers = [];
-  }
-  entry.lastSizeKey = sizeKey;
-  [0, 120, 360].forEach((delay) => {
-    const timer = setTimeout(() => {
-      entry.resizeTimers = entry.resizeTimers?.filter((candidate) => candidate !== timer) || [];
-      if (!entry.container?.isConnected || !mountedMaps.has(entry)) return;
-      try {
-        entry.map.invalidateSize({ pan: false });
-        if (!entry.userInteracted && (view?.riderLocation || view?.sandbox)) fitMapToView(entry, view);
-      } catch (_) { /* Leaflet may race detached DOM */ }
-    }, delay);
-    entry.resizeTimers.push(timer);
+  adapter.mount({
+    container: view.canvas,
+    shell: container,
+    fallback: view.fallback,
+    riderLocation: view.riderLocation,
+    freshness: view.freshness,
+    status: view.order?.status,
+    source: view.riderLocation?.source,
+    sandbox: view.sandbox,
+    sandboxGeometryVerified,
+    route: showSandboxRoute ? view.points : null,
+    store: sandboxGeometryVerified ? view.store : null,
+    destination: sandboxGeometryVerified ? view.destination : null,
+    center: view.riderLocation || (sandboxGeometryVerified ? view.store : null),
+    zoom: view.sandbox ? 14.5 : 16,
   });
+  return entry;
 }
 
 export function scheduleTrackingVisualUpdate(entry, view) {
@@ -250,182 +188,46 @@ export function scheduleTrackingVisualUpdate(entry, view) {
 function applyTrackingVisualUpdate(entry, view) {
   if (!view) return;
   updateTrackingStatusText(entry.container, view);
-
-  if (view.sandbox) ensureSandboxLayers(entry, view);
-
-  if (!view.riderLocation) {
-    removeRiderMarker(entry);
-    return;
-  }
-
-  if (!entry.userInteracted) fitMapToView(entry, view);
-  ensureRiderMarker(entry, view);
+  entry.adapter.updateFreshness(view.freshness);
+  if (!view.riderLocation) return;
   updateRiderMarkerPosition(entry, view.riderLocation, {
     status: view.order?.status,
     source: view.riderLocation.source,
+    freshness: view.freshness,
   });
 }
 
-function ensureSandboxLayers(entry, view) {
-  if (!entry?.map || !view?.sandbox || !view.sandboxScenario) return;
-  const L = entry.L;
-  const scenario = view.sandboxScenario;
-  const usesLocalGps = view.riderLocation?.origin === 'local_gps';
-  if (usesLocalGps) {
-    if (entry.routeLayer) {
-      try { entry.map.removeLayer?.(entry.routeLayer); } catch (_) { /* no-op */ }
-      entry.routeLayer = null;
-    }
-  } else if (!entry.routeLayer) {
-    entry.routeLayer = L.polyline(view.points, {
-      ...routeLineStyle(view.theme),
-      className: 'taba-sandbox-route',
-    }).addTo(entry.map);
-  } else {
-    entry.routeLayer.setLatLngs(view.points);
-  }
-  if (!entry.storeMarker) {
-    entry.storeMarker = L.marker([scenario.store.lat, scenario.store.lng], {
-      icon: createPlaceIcon(L, { kind: 'store', label: scenario.store.label }),
-      title: scenario.store.label,
-      alt: scenario.store.label,
-    }).addTo(entry.map).bindTooltip(scenario.store.label, { direction: 'top', offset: [0, -42] });
-  }
-  if (!entry.destinationMarker) {
-    entry.destinationMarker = L.marker([scenario.destination.lat, scenario.destination.lng], {
-      icon: createPlaceIcon(L, { kind: 'destination', label: scenario.destination.label }),
-      title: scenario.destination.label,
-      alt: scenario.destination.label,
-    }).addTo(entry.map).bindTooltip(scenario.destination.label, { direction: 'top', offset: [0, -42] });
-  }
-  if (!entry.progressLayer) {
-    entry.progressLayer = L.polyline([], {
-      ...progressLineStyle(view.theme),
-      className: 'taba-sandbox-progress',
-    }).addTo(entry.map);
-  }
-  if (usesLocalGps) {
-    entry.progressLayer.setLatLngs?.([]);
-  } else {
-    updateProgressLine(entry, view.riderLocation, view.store);
-  }
-  entry.routeId = scenario.id;
-}
-
-function updateRouteLayers(entry, view) {
-  if (entry.routeId === view.route.id) return;
-  entry.routeId = view.route.id;
-  entry.routeLayer?.setLatLngs?.(view.points);
-  entry.destinationMarker?.setLatLng?.([view.destination.lat, view.destination.lng]);
-  if (!entry.userInteracted) fitMapToView(entry, view);
-}
-
 export function ensureRiderMarker(entry, view) {
-  if (!view.riderLocation) return null;
-  if (entry.riderMarker) return entry.riderMarker;
-  entry.riderMarker = entry.L.marker([view.riderLocation.lat, view.riderLocation.lng], {
-    icon: createRiderIcon(entry.L, {
-      status: view.order?.status,
-      source: view.riderLocation.source,
-      heading: view.riderLocation.heading,
-    }),
-    alt: 'Ubicación actual del delivery',
-    title: 'Ubicación actual del delivery',
-    keyboard: false,
-    interactive: false,
-  }).addTo(entry.map);
+  if (!entry?.adapter || !view?.riderLocation) return null;
+  const marker = entry.adapter.updateRiderLocation(view.riderLocation, {
+    freshness: view.freshness,
+    status: view.order?.status,
+    source: view.riderLocation.source,
+    animate: false,
+  });
   entry.lastRenderedLocation = { ...view.riderLocation, renderedAt: Date.now() };
   entry.lastStatus = view.order?.status || null;
   entry.lastSource = view.riderLocation.source;
-  return entry.riderMarker;
+  return marker;
 }
 
 export function updateRiderMarkerPosition(entry, location, options = {}) {
-  if (!entry?.riderMarker || !location) return null;
+  if (!entry?.adapter || !location) return null;
   const now = Date.now();
   const statusChanged = entry.lastStatus !== (options.status || null) || entry.lastSource !== location.source;
   if (!statusChanged && !shouldRenderGpsFix(entry.lastRenderedLocation, location, { now })) {
-    return entry.riderMarker.getLatLng?.() || null;
+    return null;
   }
 
-  const next = updateRiderMarker(entry.riderMarker, entry.L, location, options);
+  const next = entry.adapter.updateRiderLocation(location, options);
   entry.lastRenderedLocation = { ...location, renderedAt: now };
   entry.lastStatus = options.status || null;
   entry.lastSource = location.source;
-  maybeFollowRider(entry, next);
   return next;
 }
 
 export function updateTrackingStatusText(container, view) {
   renderMapMeta(container, view.order, view.riderLocation, view.destination);
-}
-
-function updateProgressLine(entry, location, store = STORE_LOCATION) {
-  if (!entry.progressLayer || !location) return;
-  entry.progressLayer.setLatLngs?.([
-    [store.lat, store.lng],
-    [location.lat, location.lng],
-  ]);
-}
-
-function updateFallbackMap(container, view) {
-  const marker = container.querySelector?.('.map-marker.rider');
-  if (!marker?.style || !view.order) return;
-  const progress = Number.isFinite(Number(view.sim?.progress))
-    ? view.sim.progress
-    : view.order.status === 'delivered' ? 1
-      : view.order.status === 'arriving' ? 0.92
-        : view.order.status === 'on_the_way' ? 0.45
-          : view.order.status === 'ready' ? 0.04
-            : 0;
-  marker.style.setProperty('--p', String(progress));
-}
-
-function removeRiderMarker(entry) {
-  if (!entry.riderMarker) return;
-  try { entry.map.removeLayer?.(entry.riderMarker); } catch (_) { /* no-op */ }
-  entry.riderMarker = null;
-  entry.lastRenderedLocation = null;
-  if (entry.progressLayer) entry.progressLayer.setLatLngs?.([]);
-}
-
-function maybeFollowRider(entry, latLng) {
-  if (!latLng || entry.userInteracted) return;
-  const bounds = entry.map.getBounds?.();
-  const innerBounds = bounds?.pad ? bounds.pad(-0.2) : bounds;
-  if (innerBounds?.contains?.(latLng) === false) {
-    try { entry.map.panTo?.(latLng, { animate: true, duration: 0.4 }); } catch (_) { /* no-op */ }
-  }
-}
-
-function fitMapToView(entry, view) {
-  if (view.sandbox) {
-    const coords = view.riderLocation?.origin === 'local_gps'
-      ? [[view.store.lat, view.store.lng], [view.destination.lat, view.destination.lng]]
-      : [...(view.points || [])];
-    if (view.riderLocation) coords.push([view.riderLocation.lat, view.riderLocation.lng]);
-    if (coords.length < 2) return;
-    entry.programmaticMove = true;
-    try {
-      entry.map.fitBounds?.(coords, { padding: [28, 28], maxZoom: 16, animate: false });
-    } catch (_) { /* no-op */ }
-    finally {
-      setTimeout(() => { entry.programmaticMove = false; }, 0);
-    }
-    return;
-  }
-  if (!view.riderLocation) return;
-  const currentZoom = Number(entry.map.getZoom?.());
-  const zoom = Number.isFinite(currentZoom) && currentZoom > 0
-    ? Math.min(Math.max(currentZoom, 14), 16)
-    : 16;
-  entry.programmaticMove = true;
-  try {
-    entry.map.setView([view.riderLocation.lat, view.riderLocation.lng], zoom, { animate: false });
-  } catch (_) { /* no-op */ }
-  finally {
-    setTimeout(() => { entry.programmaticMove = false; }, 0);
-  }
 }
 
 function requestFrame(callback) {
@@ -438,27 +240,6 @@ function cancelFrame(id) {
   else clearTimeout(id);
 }
 
-function labelIcon(L, label, kind) {
-  return L.divIcon({
-    className: `lt-map-marker ${kind}`,
-    html: `<span>${label}</span>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-  });
-}
-
-function routeLineStyle(theme) {
-  return theme === 'light'
-    ? { color: '#5e5045', weight: 4, opacity: 0.72, lineCap: 'round', lineJoin: 'round' }
-    : { color: '#d6b08a', weight: 4, opacity: 0.86, lineCap: 'round', lineJoin: 'round' };
-}
-
-function progressLineStyle(theme) {
-  return theme === 'light'
-    ? { color: '#2f8052', weight: 5, opacity: 0.88, lineCap: 'round', lineJoin: 'round' }
-    : { color: '#82d49a', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' };
-}
-
 function findOrder(orderId) {
   if (!orderId) return getActiveOrder();
   return getState().orders.find((order) => order.id === orderId) || getActiveOrder();
@@ -469,10 +250,10 @@ function getOrderSimulation(orderId) {
   return sim && sim.orderId === orderId ? sim : null;
 }
 
-function getRiderLocation(order, sim, routeId, role, sandbox = false) {
-  // Sólo se muestra al rider en el mapa si hay un fix GPS REAL y reciente.
-  // Sin eso no hay marcador (ni en cliente ni en rider): no se inventan
-  // posiciones, ni se presenta la simulación como si fuera ubicación real.
+function getRiderLocation(order, sim, sandbox = false) {
+  // Producción conserva el último fix GPS conocido, incluso demorado o perdido,
+  // para no reemplazarlo por una posición inventada. Sandbox mantiene sus
+  // coordenadas ficticias estrictamente aisladas.
   const chosen = chooseRiderLocation(sim, order?.tracking?.lastLocation);
   if (!sandbox) return hasKnownSharedGpsLocation(chosen) ? chosen : null;
   if (sim?.source === 'gps' && Number.isFinite(Number(sim.lat)) && Number.isFinite(Number(sim.lng))) {
@@ -502,13 +283,26 @@ function renderMapMeta(container, order, location, destination) {
   if (!meta) return;
   const copy = meta.querySelector?.('[data-map-meta-text]') || meta;
   if (!order || !location) {
-    copy.textContent = 'Ubicación no disponible';
+    container.dataset.mapFreshness = 'none';
+    copy.textContent = 'Ubicación temporalmente no disponible';
     return;
   }
 
   const age = relativeAgeLabel(location.lastFixAt || location.timestamp);
+  const freshness = location.source === 'gps'
+    ? trackingLocationFreshness(location)
+    : 'fresh';
+  container.dataset.mapFreshness = freshness;
   if (container.dataset.mapRole === 'tracking') {
-    copy.textContent = `Última ubicación · ${age}`;
+    if (location.origin === 'sandbox_route' || location.source === 'simulation') {
+      copy.textContent = `Recorrido de muestra · ${age}`;
+    } else if (freshness === 'lost') {
+      copy.textContent = 'Ubicación temporalmente no disponible';
+    } else if (freshness === 'delayed') {
+      copy.textContent = `Última ubicación · ${age}`;
+    } else {
+      copy.textContent = `Ubicación en vivo · ${age}`;
+    }
     return;
   }
 
@@ -520,7 +314,6 @@ function renderMapMeta(container, order, location, destination) {
     : location.origin === 'sandbox_route'
       ? 'Recorrido de muestra'
       : source;
-  const freshness = trackingLocationFreshness(location);
   const gpsStale = location.source === 'gps' && ['delayed', 'lost'].includes(freshness);
   const prefix = gpsStale ? 'Última ubicación' : displaySource;
   const showAccuracy = container.dataset.mapRole?.startsWith('rider');

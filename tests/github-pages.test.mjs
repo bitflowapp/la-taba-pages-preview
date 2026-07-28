@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v31-premium-catalog');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v32-maplibre-tracking');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -40,6 +40,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./js/core/runtime-config.js'));
   assert.ok(assets.includes('./runtime-config.js'));
   assert.ok(assets.includes('./js/core/domain.js'));
+  assert.ok(assets.includes('./js/map/maplibre_tracking_map.js'));
   assert.ok(assets.includes('./js/map/map_view.js'));
   assert.ok(assets.includes('./js/map/route_geometry.js'));
   assert.ok(assets.includes('./js/repositories/repository_factory.js'));
@@ -110,14 +111,14 @@ test('a published update waits for an explicit customer refresh instead of inter
   assert.match(update, /window\.addEventListener\('pageshow', recheckUpdate\)/);
 });
 
-test('Leaflet remoto está fijado con SRI y CORS anónimo', () => {
+test('MapLibre GL remoto está fijado con SRI y CORS anónimo', () => {
   const source = read('index.html');
   assert.match(
     source,
-    /href="https:\/\/unpkg\.com\/leaflet@1\.9\.4\/dist\/leaflet\.css"[\s\S]*?integrity="sha256-p4NxAoJBhIIN\+hmNHrzRCf9tD\/miZyoHS5obTRR9BMY="[\s\S]*?crossorigin=""/,
+    /href="https:\/\/unpkg\.com\/maplibre-gl@5\.24\.0\/dist\/maplibre-gl\.css"[\s\S]*?integrity="sha384-uTttxo\/aOKbdE5RlD\/SPzSDoDmNvGlUYPjONi2MN\/b7c9HPSvW07OIuyP7uL6jxK"[\s\S]*?crossorigin="anonymous"/,
   );
   assert.match(
     source,
-    /src="https:\/\/unpkg\.com\/leaflet@1\.9\.4\/dist\/leaflet\.js"[\s\S]*?integrity="sha256-20nQCchB9co0qIjJZRGuk2\/Z9VM\+kNiyxNV1lvTlZBo="[\s\S]*?crossorigin=""/,
+    /src="https:\/\/unpkg\.com\/maplibre-gl@5\.24\.0\/dist\/maplibre-gl\.js"[\s\S]*?integrity="sha384-5\+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp"[\s\S]*?crossorigin="anonymous"/,
   );
 });

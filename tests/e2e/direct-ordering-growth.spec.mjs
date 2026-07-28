@@ -52,6 +52,22 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(orderSummary.locator('summary')).toContainText('Pedido LT-0002');
   await expect(orderSummary.locator('summary')).toContainText(/1 producto · Total \$[\d.]+/);
   await expect(orderSummary).not.toContainText('Resumen protegido');
+  await expect(orderSummary).not.toContainText('El detalle se mantiene en el dispositivo');
+  const officialThumbnail = orderSummary.locator('[data-order-summary-thumbnail] img');
+  await expect(officialThumbnail).toHaveCount(1);
+  await expect(officialThumbnail).toHaveAttribute('src', /assets\/catalog\/thumbnails\/.+\.webp$/);
+  await expect(officialThumbnail).toHaveAttribute('loading', 'lazy');
+  await expect(officialThumbnail).toHaveAttribute('width', '52');
+  await expect(officialThumbnail).toHaveAttribute('height', '52');
+  await expect(officialThumbnail).not.toHaveAttribute('src', /placeholder|hamburguesa|ensalada/i);
+
+  await setLatestProductThumbnailAuthority(page, false);
+  await expect(orderSummary.locator('[data-order-summary-thumbnails]')).toHaveCount(0);
+  await expect(orderSummary.locator('img[src*="placeholder"]')).toHaveCount(0);
+  await expect(orderSummary.locator('summary')).toContainText('Pedido LT-0002');
+  await expect(orderSummary.locator('summary')).toContainText('Ver detalles');
+  await setLatestProductThumbnailAuthority(page, true);
+  await expect(orderSummary.locator('[data-order-summary-thumbnail] img')).toHaveCount(1);
 
   await markLatestOrderDelivered(page);
   await page.reload();
@@ -103,29 +119,34 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel] .lt-rider-marker.source-gps')).toBeVisible();
   await expect(page.locator('[data-tracking-panel] .lt-rider-marker .lt-rider-helmet-icon[role="img"][aria-label="Casco del rider TABA"]')).toBeVisible();
+  await setTrustedEtaForActiveOrder(page);
   await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveCount(0);
   await expect(page.locator('[data-tracking-panel] .tracking-hero h1')).toHaveText('Tu pedido está en camino');
+  await expect(page.locator('[data-tracking-panel] [data-tracking-arrival]')).toHaveText('Llega en 12 min');
+  await expect(page.locator('[data-tracking-panel] [data-tracking-arrival]')).toHaveAttribute('data-eta-active', 'true');
   await expect(page.locator('[data-tracking-panel] [data-map-meta-text]')).toHaveText(
-    /^Última ubicación · (?:ahora|hace \d+ s|hace \d+ min)$/,
+    /^Ubicación en vivo · (?:ahora|hace \d+ s)$/,
   );
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\bETA\b/i);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
+  await rememberTrackingMapIdentity(page);
 
-  await page.evaluate(() => {
-    const key = 'la_taba_mvp_v4_state';
-    const state = JSON.parse(localStorage.getItem(key));
-    const order = state.orders[0];
-    const delayedAt = Date.now() - 20_000;
-    order.tracking.lastLocation.timestamp = delayedAt;
-    order.tracking.lastLocation.lastFixAt = new Date(delayedAt).toISOString();
-    order.tracking.updatedAt = new Date(delayedAt).toISOString();
-    localStorage.setItem(key, JSON.stringify(state));
-  });
-  await page.reload();
+  const delayedIdentity = await setLatestTrackingFixAge(page, 20_000);
+  expect(delayedIdentity).toEqual({ sameShell: true, sameMarker: true });
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel] [data-map-meta-text]')).toHaveText(
     /^Última ubicación · hace \d+ s$/,
   );
+  await expect(page.locator('[data-tracking-panel] [data-tracking-arrival]')).toHaveText('Calculando llegada');
+  await expect(page.locator('[data-tracking-panel] [data-tracking-arrival]')).toHaveAttribute('data-eta-active', 'false');
+
+  const lostIdentity = await setLatestTrackingFixAge(page, 50_000);
+  expect(lostIdentity).toEqual({ sameShell: true, sameMarker: true });
+  await expect(page.locator('[data-tracking-panel] [data-real-map]')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel] [data-map-meta-text]')).toHaveText('Ubicación temporalmente no disponible');
+  await expect(page.locator('[data-tracking-panel] [data-tracking-freshness="lost"]')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel] [data-rider-message]')).toHaveText('La ubicación no está disponible por el momento.');
+  await expect(page.locator('[data-tracking-panel] [data-tracking-arrival]')).toHaveAttribute('data-eta-active', 'false');
 
   for (const viewport of [
     { width: 390, height: 844 },
@@ -179,7 +200,8 @@ async function enableRealGpsForLatestOrder(page) {
     const key = 'la_taba_mvp_v4_state';
     const state = JSON.parse(localStorage.getItem(key));
     const order = state.orders[0];
-    const now = new Date().toISOString();
+    const nowMs = Date.now();
+    const now = new Date(nowMs).toISOString();
     order.status = 'on_the_way';
     order.statusHistory = [...(order.statusHistory || []), { status: 'on_the_way', at: now }];
     order.tracking = {
@@ -188,8 +210,9 @@ async function enableRealGpsForLatestOrder(page) {
         lat: -38.951,
         lng: -68.059,
         accuracy: 12,
+        gpsStatus: 'active',
         lastFixAt: now,
-        timestamp: Date.now(),
+        timestamp: nowMs,
       },
       source: 'gps',
       updatedAt: now,
@@ -201,6 +224,95 @@ async function enableRealGpsForLatestOrder(page) {
     state.lastOrderId = order.id;
     localStorage.setItem(key, JSON.stringify(state));
   });
+}
+
+async function setTrustedEtaForActiveOrder(page) {
+  await page.evaluate(async () => {
+    const [{ getState }, { renderTracking }, { renderMapViews }] = await Promise.all([
+      import('/js/state.js'),
+      import('/js/ui.js'),
+      import('/js/map/map_view.js'),
+    ]);
+    const state = getState();
+    const order = state.orders.find((candidate) => candidate.id === state.lastOrderId)
+      || state.orders[0];
+    if (!order) return;
+    const now = Date.now();
+    order.delivery = {
+      ...(order.delivery || {}),
+      etaMinutes: 12,
+      etaSource: 'routing',
+      etaCalculatedAt: new Date(now).toISOString(),
+      etaExpiresAt: new Date(now + 12 * 60_000).toISOString(),
+    };
+    renderTracking();
+    renderMapViews();
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+}
+
+async function rememberTrackingMapIdentity(page) {
+  await page.evaluate(() => {
+    globalThis.__trackingMapIdentity = {
+      shell: document.querySelector('[data-tracking-panel] [data-real-map]'),
+      marker: document.querySelector('[data-tracking-panel] .lt-rider-marker'),
+    };
+  });
+}
+
+async function setLatestTrackingFixAge(page, ageMs) {
+  return page.evaluate(async (nextAgeMs) => {
+    const [{ updateState }, { renderTracking }, { renderMapViews }] = await Promise.all([
+      import('/js/state.js'),
+      import('/js/ui.js'),
+      import('/js/map/map_view.js'),
+    ]);
+    updateState((draft) => {
+      const order = draft.orders.find((candidate) => candidate.id === draft.lastOrderId)
+        || draft.orders[0];
+      if (!order?.tracking?.lastLocation) return;
+      const timestamp = Date.now() - nextAgeMs;
+      order.tracking.lastLocation.timestamp = timestamp;
+      order.tracking.lastLocation.lastFixAt = new Date(timestamp).toISOString();
+      order.tracking.updatedAt = new Date(timestamp).toISOString();
+    });
+    renderTracking();
+    renderMapViews();
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const remembered = globalThis.__trackingMapIdentity || {};
+    return {
+      sameShell: remembered.shell === document.querySelector('[data-tracking-panel] [data-real-map]'),
+      sameMarker: remembered.marker === document.querySelector('[data-tracking-panel] .lt-rider-marker'),
+    };
+  }, ageMs);
+}
+
+async function setLatestProductThumbnailAuthority(page, authoritative) {
+  await page.evaluate(async (shouldRestore) => {
+    const [{ getState, updateState }, { renderTracking }] = await Promise.all([
+      import('/js/state.js'),
+      import('/js/ui.js'),
+    ]);
+    const state = getState();
+    const order = state.orders.find((candidate) => candidate.id === state.lastOrderId)
+      || state.orders[0];
+    const productId = order?.items?.[0]?.productId || '';
+    if (!globalThis.__trackingOriginalProductId && productId) {
+      globalThis.__trackingOriginalProductId = productId;
+    }
+    if (!globalThis.__trackingOriginalProductId) return;
+
+    updateState((draft) => {
+      const currentOrder = draft.orders.find((candidate) => candidate.id === draft.lastOrderId)
+        || draft.orders[0];
+      if (!currentOrder?.items?.[0]) return;
+      currentOrder.items[0].productId = shouldRestore
+        ? globalThis.__trackingOriginalProductId
+        : 'unresolved-product-without-thumbnail';
+    });
+    renderTracking();
+  }, authoritative);
 }
 
 async function markLatestOrderDelivered(page) {

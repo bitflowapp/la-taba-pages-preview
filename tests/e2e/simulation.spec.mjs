@@ -48,7 +48,7 @@ test('persistencia del pedido tras recargar la página', async ({ page }) => {
   // Recargar: el storage NO se limpia y el pedido debe seguir disponible.
   await page.reload();
   await expect(page.locator('[data-cart-count]').first()).toHaveText('0');
-  await page.locator('.desktop-nav [data-nav-view="tracking"]').click();
+  await page.goto('/?demo=1#tracking');
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
 });
@@ -82,8 +82,8 @@ test('el modo demo ofrece GPS local y recorrido geográfico de respaldo', async 
   await expect(page.locator('[data-delivery-panel] [data-sim-gps]')).toHaveCount(1);
   await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
   await page.locator('[data-delivery-panel] [data-sim-start]').click();
-  await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-source="sandbox"]')).toHaveCount(1);
-  await expect(page.locator('[data-delivery-panel] .leaflet-container')).toHaveCount(1);
+  await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-source="sandbox"][data-map-engine="maplibre"]')).toHaveCount(1);
+  await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-status="ready"][data-route-source="simulation"]')).toHaveCount(1);
 });
 
 test('abandono de rider y pagehide cortan el watchPosition local', async ({ page }) => {

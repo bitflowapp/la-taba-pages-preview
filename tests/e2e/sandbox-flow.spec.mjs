@@ -181,16 +181,16 @@ test('sandbox completes client, business, rider, route, delivery and reorder', a
   await expect(page.locator('[data-sandbox-route]')).toBeVisible();
   await page.locator('[data-sim-start]').click();
   await expect(page.locator('[data-sandbox-route]')).toContainText('Seguimiento activo');
-  await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-source="sandbox"]')).toHaveCount(1);
-  await expect(page.locator('[data-delivery-panel] .leaflet-container')).toHaveCount(1);
+  await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-source="sandbox"][data-map-engine="maplibre"]')).toHaveCount(1);
+  await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-status="ready"]')).toHaveCount(1);
   await expect(page.locator('[data-delivery-panel] .lt-place-marker.is-store')).toHaveCount(1);
   await expect(page.locator('[data-delivery-panel] .lt-place-marker.is-destination')).toHaveCount(1);
   await expect(page.locator('[data-delivery-panel] .lt-rider-marker')).toHaveCount(1);
-  await expect(page.locator('[data-delivery-panel] .taba-sandbox-route')).toHaveCount(1);
+  await expect(page.locator('[data-delivery-panel] [data-real-map][data-route-source="simulation"]')).toHaveCount(1);
 
   await page.goto('/?demo=1#tracking');
   await expect(page.locator('[data-sandbox-tracking]')).toBeVisible();
-  await expect(page.locator('[data-sandbox-tracking] [data-real-map][data-map-source="sandbox"]')).toHaveCount(1);
+  await expect(page.locator('[data-sandbox-tracking] [data-real-map][data-map-source="sandbox"][data-map-engine="maplibre"][data-map-status="ready"]')).toHaveCount(1);
   await expect(page.locator('[data-sandbox-tracking] .lt-place-marker.is-store')).toHaveCount(1);
   await expect(page.locator('[data-sandbox-tracking] .lt-place-marker.is-destination')).toHaveCount(1);
   await expect(page.locator('[data-sandbox-tracking] .lt-rider-marker')).toHaveCount(1);

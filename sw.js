@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v31-premium-catalog';
+const CACHE_NAME = 'la-taba-runtime-v32-maplibre-tracking';
 const ASSETS = [
   './',
   './index.html',
@@ -52,6 +52,7 @@ const ASSETS = [
   './js/core/validators.js',
   './js/sandbox/sandbox_map_scenario.js',
   './js/map/map_config.js',
+  './js/map/maplibre_tracking_map.js',
   './js/map/map_view.js',
   './js/map/rider_marker.js',
   './js/map/route_geometry.js',

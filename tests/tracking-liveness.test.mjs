@@ -4,6 +4,7 @@ import {
   activeTrackingLiveness,
   trackingLocationFreshness,
 } from '../js/map/route_geometry.js';
+import { trustedTrackingEtaMinutes } from '../js/ui.js';
 
 // Vivacidad del seguimiento: decide cuándo el cliente/negocio deben volver a un
 // fallback honesto ("Sin GPS en vivo") porque el GPS real se enfrió, sin
@@ -50,6 +51,53 @@ test('trackingLocationFreshness clasifica los umbrales de cliente', () => {
   assert.equal(trackingLocationFreshness({ ...source, timestamp: NOW - 15_000 }, { now: NOW }), 'fresh');
   assert.equal(trackingLocationFreshness({ ...source, timestamp: NOW - 16_000 }, { now: NOW }), 'delayed');
   assert.equal(trackingLocationFreshness({ ...source, timestamp: NOW - 46_000 }, { now: NOW }), 'lost');
+});
+
+test('ETA del cliente exige fuente confiable, timestamps válidos y GPS fresco', () => {
+  const etaOrder = {
+    id: 'LT-1',
+    status: 'on_the_way',
+    delivery: {
+      etaSource: 'routing',
+      etaCalculatedAt: new Date(NOW - 30_000).toISOString(),
+      etaExpiresAt: new Date(NOW + 12 * 60_000).toISOString(),
+    },
+  };
+  const fresh = gpsSim('LT-1', 4_000);
+
+  assert.equal(trustedTrackingEtaMinutes(etaOrder, fresh, { now: NOW }), 12);
+  assert.equal(
+    trustedTrackingEtaMinutes(
+      { ...etaOrder, delivery: { ...etaOrder.delivery, etaSource: 'business' } },
+      fresh,
+      { now: NOW },
+    ),
+    12,
+  );
+  assert.equal(trustedTrackingEtaMinutes(etaOrder, gpsSim('LT-1', 20_000), { now: NOW }), null);
+  assert.equal(trustedTrackingEtaMinutes(etaOrder, gpsSim('LT-1', 50_000), { now: NOW }), null);
+  assert.equal(
+    trustedTrackingEtaMinutes(
+      { ...etaOrder, delivery: { ...etaOrder.delivery, etaSource: 'simulation' } },
+      fresh,
+      { now: NOW },
+    ),
+    null,
+  );
+  assert.equal(
+    trustedTrackingEtaMinutes(
+      {
+        ...etaOrder,
+        delivery: {
+          ...etaOrder.delivery,
+          etaCalculatedAt: new Date(NOW - (15 * 60_000) - 1).toISOString(),
+        },
+      },
+      fresh,
+      { now: NOW },
+    ),
+    null,
+  );
 });
 
 test('activeTrackingLiveness: GPS viejo (sobre 30s) => idle, fallback honesto', () => {

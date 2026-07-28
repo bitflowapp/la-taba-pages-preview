@@ -1,8 +1,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { canUseLeaflet, disposeMapViews, renderMapViews } from '../js/map/map_view.js';
-import { getMapTheme, getTileLayerForTheme } from '../js/map/map_config.js';
-import { createRiderIcon, riderMarkerClass } from '../js/map/rider_marker.js';
+import {
+  canUseMapLibre,
+  disposeMapViews,
+  recenterMapViews,
+  renderMapViews,
+} from '../js/map/map_view.js';
+import {
+  MAPLIBRE_FALLBACK_COPY,
+  MAPLIBRE_PUBLIC_STYLE_URL,
+  MAPLIBRE_SANDBOX_ROUTE_LAYER_ID,
+  MAPLIBRE_SANDBOX_ROUTE_SOURCE_ID,
+  createMapLibreTrackingMap,
+  shouldAnimateRiderMove,
+} from '../js/map/maplibre_tracking_map.js';
+import {
+  createRiderMarkerElement,
+  riderHelmetSvg,
+  riderMarkerClass,
+} from '../js/map/rider_marker.js';
 import {
   chooseRiderLocation,
   distanceKm,
@@ -113,21 +129,80 @@ test('GPS policy accepts good fixes and rejects weak replacements or jumps', () 
   assert.equal(shouldAcceptGpsFix(good, jump, { now }), false);
 });
 
-test('map fallback is explicit when Leaflet is unavailable', () => {
-  assert.equal(canUseLeaflet({}), false);
-  assert.equal(canUseLeaflet({ L: { map() {}, tileLayer() {} } }), true);
+test('map fallback is explicit for unsupported WebGL, style and tile failures', () => {
+  assert.equal(canUseMapLibre({}), false);
+  assert.equal(canUseMapLibre({
+    maplibregl: { Map() {}, Marker() {} },
+    document: createFakeDocument({ webgl: false }),
+  }), false);
+  assert.equal(canUseMapLibre({
+    maplibregl: { Map() {}, Marker() {} },
+    document: createFakeDocument(),
+  }), true);
+
+  const unsupportedDocument = createFakeDocument({ webgl: false });
+  const unsupportedShell = createMapShell('LT-NO-WEBGL', { documentRef: unsupportedDocument });
+  const unsupported = createMapLibreTrackingMap({
+    root: { document: unsupportedDocument },
+    documentRef: unsupportedDocument,
+    maplibregl: { Map: class {}, Marker: class {} },
+    webglSupported: () => false,
+  });
+  assert.equal(unsupported.mount({
+    container: unsupportedShell.canvas,
+    shell: unsupportedShell.shell,
+    fallback: unsupportedShell.fallback,
+    riderLocation: { lat: -38.95, lng: -68.05, source: 'gps' },
+  }), false);
+  assert.equal(unsupportedShell.shell.dataset.mapStatus, 'unavailable');
+  assert.equal(unsupportedShell.fallbackCopy.textContent, MAPLIBRE_FALLBACK_COPY);
+  unsupported.destroy();
+
+  const styleEnvironment = installMapLibreStub();
+  const styleShell = createMapShell('LT-STYLE-FAIL', { documentRef: styleEnvironment.document });
+  const styleController = createMapLibreTrackingMap();
+  try {
+    assert.equal(styleController.mount({
+      container: styleShell.canvas,
+      shell: styleShell.shell,
+      fallback: styleShell.fallback,
+      riderLocation: { lat: -38.95, lng: -68.05, source: 'gps' },
+      freshness: 'fresh',
+    }), true);
+    styleEnvironment.calls.maps[0].emit('error', { error: new Error('style failed to load') });
+    assert.equal(styleShell.shell.dataset.mapStatus, 'unavailable');
+    assert.equal(styleShell.fallbackCopy.textContent, MAPLIBRE_FALLBACK_COPY);
+    assert.equal(styleEnvironment.calls.mapRemove, 1);
+  } finally {
+    styleController.destroy();
+    styleEnvironment.restore();
+  }
+
+  const tileEnvironment = installMapLibreStub();
+  const tileShell = createMapShell('LT-TILES-FAIL', { documentRef: tileEnvironment.document });
+  const tileController = createMapLibreTrackingMap();
+  try {
+    tileController.mount({
+      container: tileShell.canvas,
+      shell: tileShell.shell,
+      fallback: tileShell.fallback,
+      riderLocation: { lat: -38.95, lng: -68.05, source: 'gps' },
+      freshness: 'fresh',
+    });
+    tileEnvironment.calls.maps[0].emit('load');
+    for (let index = 0; index < 3; index += 1) {
+      tileEnvironment.calls.maps[0].emit('error', { error: new Error('failed to load tile') });
+    }
+    assert.equal(tileShell.shell.dataset.mapStatus, 'unavailable');
+    assert.equal(tileShell.fallbackCopy.textContent, MAPLIBRE_FALLBACK_COPY);
+  } finally {
+    tileController.destroy();
+    tileEnvironment.restore();
+  }
 });
 
-test('map config selects clean light and dark tile themes', () => {
-  const dark = getTileLayerForTheme('dark');
-  const light = getTileLayerForTheme('light');
-
-  assert.equal(getMapTheme('bad-theme'), 'light');
-  assert.equal(dark.theme, 'dark');
-  assert.equal(light.theme, 'light');
-  assert.match(dark.tilesUrl, /cartocdn\.com\/dark_all/);
-  assert.match(light.tilesUrl, /cartocdn\.com\/light_all/);
-  assert.match(dark.attribution, /OpenStreetMap/);
+test('MapLibre uses the public light OpenFreeMap style', () => {
+  assert.equal(MAPLIBRE_PUBLIC_STYLE_URL, 'https://tiles.openfreemap.org/styles/positron');
 });
 
 test('rider marker class reflects status and source', () => {
@@ -135,19 +210,28 @@ test('rider marker class reflects status and source', () => {
   assert.match(riderMarkerClass('on_the_way', 'gps'), /source-gps/);
   assert.match(riderMarkerClass('preparing', 'simulation'), /preparing/);
 
-  const icon = createRiderIcon({ divIcon: (options) => options }, { status: 'on_the_way', source: 'gps', heading: 95 });
-  assert.match(icon.html, /lt-rider-helmet-core/);
-  assert.match(icon.html, /<svg[^>]*class="lt-rider-helmet-icon"/);
-  assert.match(icon.html, /role="img"/);
-  assert.match(icon.html, /aria-label="Casco del rider TABA"/);
-  assert.match(icon.html, /<circle[^>]*fill="#c8101e"[^>]*stroke="#ffffff"[^>]*stroke-width="2\.5"/);
-  assert.doesNotMatch(icon.html, />R</);
-  assert.doesNotMatch(icon.html, /<text/);
-  assert.doesNotMatch(icon.html, /(?:moto|scooter|emoji|<image\b|(?:src|href)=|https?:\/\/)/i);
-  assert.doesNotMatch(icon.html, /[\u{1F300}-\u{1FAFF}]/u);
-  assert.doesNotMatch(icon.html, /--heading/);
-  assert.deepEqual(icon.iconSize, [56, 56]);
-  assert.deepEqual(icon.iconAnchor, [28, 28]);
+  const marker = createRiderMarkerElement(createFakeDocument(), { status: 'on_the_way', source: 'gps' });
+  assert.match(marker.className, /lt-rider-marker on-the-way source-gps/);
+  assert.match(marker.innerHTML, /lt-rider-helmet-core/);
+  assert.match(marker.innerHTML, /<svg[^>]*class="lt-rider-helmet-icon"/);
+  assert.match(marker.innerHTML, /role="img"/);
+  assert.match(marker.innerHTML, /aria-label="Casco del rider TABA"/);
+  assert.match(marker.innerHTML, /<circle[^>]*fill="#c8101e"[^>]*stroke="#ffffff"[^>]*stroke-width="2\.5"/);
+  assert.doesNotMatch(marker.innerHTML, />R</);
+  assert.doesNotMatch(marker.innerHTML, /<text/);
+  assert.doesNotMatch(marker.innerHTML, /(?:moto|scooter|emoji|<image\b|(?:src|href)=|https?:\/\/)/i);
+  assert.doesNotMatch(marker.innerHTML, /[\u{1F300}-\u{1FAFF}]/u);
+  assert.doesNotMatch(marker.innerHTML, /--heading/);
+});
+
+test('rider marker avatar keeps the helmet with the red-on-pink palette', () => {
+  const avatar = riderHelmetSvg({ className: 'tracking-rider-helmet', decorative: true, palette: 'avatar' });
+  assert.match(avatar, /class="tracking-rider-helmet"/);
+  assert.match(avatar, /aria-hidden="true"/);
+  assert.match(avatar, /<circle[^>]*fill="none"[^>]*stroke="none"/);
+  assert.match(avatar, /<path[^>]*fill="#c8101e"/);
+  assert.match(avatar, /<path[^>]*fill="#fff0f1"/);
+  assert.doesNotMatch(avatar, /(?:moto|scooter|emoji|<image\b|(?:src|href)=|https?:\/\/)/i);
 });
 
 test('chooseRiderLocation prioriza GPS real sobre simulación', () => {
@@ -247,9 +331,13 @@ test('shouldRenderGpsFix throttles noisy marker updates', () => {
   assert.equal(shouldRenderGpsFix(previous, tiny, { now }), false);
   assert.equal(shouldRenderGpsFix({ ...previous, renderedAt: now - 1_300 }, oldEnough, { now: now + 1_300 }), true);
   assert.equal(shouldRenderGpsFix(previous, far, { now }), true);
+  assert.equal(shouldAnimateRiderMove(previous, far, { freshness: 'fresh' }), true);
+  assert.equal(shouldAnimateRiderMove(previous, far, { freshness: 'delayed' }), false);
+  assert.equal(shouldAnimateRiderMove(previous, far, { freshness: 'lost' }), false);
+  assert.equal(shouldAnimateRiderMove(previous, far, { freshness: 'fresh', reducedMotion: true }), false);
 });
 
-test('map renders only the real rider marker (no route/store/client) and reuses it', async () => {
+test('MapLibre keeps one map and one rider Marker node across GPS updates', async () => {
   const now = Date.now();
   resetState({
     orders: [deliveryOrderWithTracking('LT-MAP-1')],
@@ -265,18 +353,22 @@ test('map renders only the real rider marker (no route/store/client) and reuses 
       lastFixAt: new Date(now).toISOString(),
     },
   });
-  const { shell } = createMapShell('LT-MAP-1');
-  const { calls, restore } = installLeafletStub();
+  const environment = installMapLibreStub();
+  const { shell } = createMapShell('LT-MAP-1', { documentRef: environment.document });
 
   try {
     renderMapViews({ querySelectorAll: () => [shell] });
+    environment.calls.maps[0].emit('load');
     await waitForMapFrame();
-    assert.equal(calls.map, 1);
+    assert.equal(environment.calls.maps.length, 1);
     // Mapa honesto: SÓLO el marcador del rider real. Sin marcador de local (LT),
     // sin marcador de cliente (CL) y sin polyline de ruta.
-    assert.equal(calls.marker, 1);
-    const initialMarker = calls.markers[0];
+    assert.equal(environment.calls.markers.length, 1);
+    assert.equal(environment.calls.addSource.length, 0);
+    assert.equal(environment.calls.addLayer.length, 0);
+    const initialMarker = environment.calls.markers[0];
     const initialMarkerNode = initialMarker.getElement();
+    const initialSetLngLatCount = environment.calls.setLngLat.length;
 
     setState({
       simulation: {
@@ -293,18 +385,81 @@ test('map renders only the real rider marker (no route/store/client) and reuses 
     renderMapViews({ querySelectorAll: () => [shell] });
     await waitForMapFrame();
 
-    assert.equal(calls.map, 1);
-    assert.equal(calls.marker, 1);
-    assert.ok(calls.setLatLng >= 1);
-    assert.strictEqual(calls.markers[0], initialMarker);
-    assert.strictEqual(calls.markers[0].getElement(), initialMarkerNode);
+    assert.equal(environment.calls.maps.length, 1);
+    assert.equal(environment.calls.markers.length, 1);
+    assert.ok(environment.calls.setLngLat.length > initialSetLngLatCount);
+    assert.strictEqual(environment.calls.markers[0], initialMarker);
+    assert.strictEqual(environment.calls.markers[0].getElement(), initialMarkerNode);
+
+    assert.equal(recenterMapViews({ querySelectorAll: () => [shell] }), true);
+    const cameraUpdate = environment.calls.jumpTo.at(-1);
+    assert.deepEqual(cameraUpdate.center, [-68.0613, -38.9513]);
+    assert.equal(Object.hasOwn(cameraUpdate, 'zoom'), false);
+    assert.equal(Object.hasOwn(cameraUpdate, 'bearing'), false);
+
+    const map = environment.calls.maps[0];
+    assert.ok(map.listenerCount() > 0);
+    assert.ok(environment.canvasListenerCount() > 0);
+    disposeMapViews({ querySelectorAll: () => [shell] });
+    assert.equal(environment.calls.mapRemove, 1);
+    assert.equal(environment.calls.markerRemove, 1);
+    assert.equal(map.listenerCount(), 0);
+    assert.equal(environment.canvasListenerCount(), 0);
+    assert.equal(environment.document.listenerCount(), 0);
   } finally {
     disposeMapViews({ querySelectorAll: () => [shell] });
-    restore();
+    environment.restore();
   }
 });
 
-test('rider map uses the light commercial tile theme', async () => {
+test('sandbox mounts one verified route source while production stays rider-only', () => {
+  const environment = installMapLibreStub();
+  const { shell, canvas, fallback } = createMapShell('LT-SANDBOX-MAP', {
+    documentRef: environment.document,
+  });
+  const controller = createMapLibreTrackingMap();
+  const route = [
+    { lat: -38.95172, lng: -68.05942 },
+    { lat: -38.94992, lng: -68.06102 },
+    { lat: -38.94688, lng: -68.06678 },
+  ];
+  try {
+    controller.mount({
+      container: canvas,
+      shell,
+      fallback,
+      riderLocation: { ...route[1], source: 'simulation' },
+      freshness: 'fresh',
+      status: 'on_the_way',
+      source: 'simulation',
+      sandbox: true,
+      sandboxGeometryVerified: true,
+      route,
+      store: { ...route[0], label: 'Comercio TABA' },
+      destination: { ...route[2], label: 'Destino sandbox' },
+    });
+    environment.calls.maps[0].emit('load');
+
+    assert.equal(environment.calls.addSource.length, 1);
+    assert.equal(environment.calls.addSource[0].id, MAPLIBRE_SANDBOX_ROUTE_SOURCE_ID);
+    assert.equal(environment.calls.addLayer.length, 1);
+    assert.equal(environment.calls.addLayer[0].id, MAPLIBRE_SANDBOX_ROUTE_LAYER_ID);
+    assert.equal(environment.calls.markers.length, 3);
+    assert.equal(environment.calls.fitBounds.length, 1);
+
+    controller.updateRiderLocation(
+      { lat: -38.9494, lng: -68.06472, source: 'simulation' },
+      { freshness: 'fresh', status: 'on_the_way', source: 'simulation' },
+    );
+    assert.equal(environment.calls.addSource.length, 1);
+    assert.equal(environment.calls.addLayer.length, 1);
+  } finally {
+    controller.destroy();
+    environment.restore();
+  }
+});
+
+test('rider map uses the light commercial MapLibre style', async () => {
   const now = Date.now();
   resetState({
     orders: [deliveryOrderWithTracking('LT-MAP-RIDER-LIGHT')],
@@ -320,18 +475,23 @@ test('rider map uses the light commercial tile theme', async () => {
       lastFixAt: new Date(now).toISOString(),
     },
   });
-  const { shell } = createMapShell('LT-MAP-RIDER-LIGHT', { role: 'rider' });
-  const { calls, restore } = installLeafletStub();
+  const environment = installMapLibreStub();
+  const { shell } = createMapShell('LT-MAP-RIDER-LIGHT', {
+    role: 'rider',
+    documentRef: environment.document,
+  });
 
   try {
     renderMapViews({ querySelectorAll: () => [shell] });
+    environment.calls.maps[0].emit('load');
     await waitForMapFrame();
     assert.equal(shell.dataset.mapTheme, 'light');
-    assert.match(calls.tileUrls[0], /cartocdn\.com\/light_all/);
-    assert.equal(calls.marker, 1);
+    assert.equal(environment.calls.mapOptions[0].style, MAPLIBRE_PUBLIC_STYLE_URL);
+    assert.equal(environment.calls.markers.length, 1);
+    assert.equal(environment.calls.controls[0].position, 'bottom-left');
   } finally {
     disposeMapViews({ querySelectorAll: () => [shell] });
-    restore();
+    environment.restore();
   }
 });
 
@@ -351,16 +511,18 @@ test('without a real GPS fix the map renders no rider marker', async () => {
       lastFixAt: new Date(now).toISOString(),
     },
   });
-  const { shell } = createMapShell('LT-MAP-2');
-  const { calls, restore } = installLeafletStub();
+  const environment = installMapLibreStub();
+  const { shell } = createMapShell('LT-MAP-2', { documentRef: environment.document });
 
   try {
     renderMapViews({ querySelectorAll: () => [shell] });
     await waitForMapFrame();
-    assert.equal(calls.marker, 0);
+    assert.equal(environment.calls.maps.length, 0);
+    assert.equal(environment.calls.markers.length, 0);
+    assert.equal(shell.dataset.mapStatus, 'unavailable');
   } finally {
     disposeMapViews({ querySelectorAll: () => [shell] });
-    restore();
+    environment.restore();
   }
 });
 
@@ -381,13 +543,30 @@ function deliveryOrderWithTracking(id) {
   };
 }
 
-function createMapShell(orderId, { role = 'tracking' } = {}) {
-  const meta = { textContent: '' };
-  const fallback = {
-    setAttribute() {},
-    removeAttribute() {},
+function createMapShell(orderId, { role = 'tracking', documentRef = createFakeDocument() } = {}) {
+  const metaCopy = { textContent: '' };
+  const meta = {
+    textContent: '',
+    querySelector(selector) {
+      return selector === '[data-map-meta-text]' ? metaCopy : null;
+    },
   };
-  const canvas = {};
+  const fallbackCopy = { textContent: '' };
+  const fallback = {
+    hidden: false,
+    setAttribute(name) {
+      if (name === 'hidden') this.hidden = true;
+    },
+    removeAttribute(name) {
+      if (name === 'hidden') this.hidden = false;
+    },
+    querySelector() {
+      return fallbackCopy;
+    },
+  };
+  const canvas = createEventTarget();
+  canvas.removeAttribute = () => {};
+  canvas.setAttribute = () => {};
   const shell = {
     dataset: { mapRole: role, orderId },
     isConnected: true,
@@ -399,7 +578,9 @@ function createMapShell(orderId, { role = 'tracking' } = {}) {
       return null;
     },
   };
-  return { shell, meta, fallback, canvas };
+  canvas.parentElement = shell;
+  canvas.ownerDocument = documentRef;
+  return { shell, meta, metaCopy, fallback, fallbackCopy, canvas };
 }
 
 function createClassList() {
@@ -415,69 +596,210 @@ function createClassList() {
   };
 }
 
-function installLeafletStub() {
-  const originalL = globalThis.L;
-  const calls = { map: 0, marker: 0, setLatLng: 0, tileUrls: [], markers: [] };
-  class FakeMarker {
-    constructor(latLng, options = {}) {
-      calls.marker += 1;
-      this.latLng = normalizeLatLng(latLng);
+function installMapLibreStub({ webgl = true, constructorError = false } = {}) {
+  const originalMapLibre = globalThis.maplibregl;
+  const originalDocument = globalThis.document;
+  const originalMatchMedia = globalThis.matchMedia;
+  const originalResizeObserver = globalThis.ResizeObserver;
+  const documentRef = createFakeDocument({ webgl });
+  const calls = {
+    maps: [],
+    mapOptions: [],
+    markers: [],
+    setLngLat: [],
+    addSource: [],
+    addLayer: [],
+    controls: [],
+    fitBounds: [],
+    jumpTo: [],
+    easeTo: [],
+    mapRemove: 0,
+    markerRemove: 0,
+    resize: 0,
+    observerDisconnect: 0,
+  };
+
+  class FakeMap {
+    constructor(options) {
+      if (constructorError) throw new Error('map constructor failed');
       this.options = options;
-      this.element = {
-        className: options.icon?.className || '',
-        querySelector: () => ({ style: { setProperty() {} } }),
+      this.listeners = new Map();
+      this.sources = new Map();
+      this.layers = new Map();
+      this.canvas = options.container;
+      calls.maps.push(this);
+      calls.mapOptions.push(options);
+    }
+    on(type, listener) {
+      const listeners = this.listeners.get(type) || new Set();
+      listeners.add(listener);
+      this.listeners.set(type, listeners);
+      return this;
+    }
+    off(type, listener) {
+      this.listeners.get(type)?.delete(listener);
+      return this;
+    }
+    emit(type, event = {}) {
+      [...(this.listeners.get(type) || [])].forEach((listener) => listener(event));
+    }
+    listenerCount() {
+      return [...this.listeners.values()].reduce((total, listeners) => total + listeners.size, 0);
+    }
+    addControl(control, position) {
+      calls.controls.push({ control, position });
+      return this;
+    }
+    addSource(id, definition) {
+      const source = {
+        ...definition,
+        setData(data) {
+          this.data = data;
+        },
       };
+      this.sources.set(id, source);
+      calls.addSource.push({ id, definition });
+    }
+    getSource(id) {
+      return this.sources.get(id);
+    }
+    addLayer(layer) {
+      this.layers.set(layer.id, layer);
+      calls.addLayer.push(layer);
+    }
+    getLayer(id) {
+      return this.layers.get(id);
+    }
+    fitBounds(bounds, options) {
+      calls.fitBounds.push({ bounds, options });
+    }
+    getBounds() {
+      return { contains: () => true };
+    }
+    jumpTo(options) {
+      calls.jumpTo.push(options);
+    }
+    easeTo(options) {
+      calls.easeTo.push(options);
+    }
+    getCanvas() {
+      return this.canvas;
+    }
+    resize() {
+      calls.resize += 1;
+    }
+    remove() {
+      calls.mapRemove += 1;
+    }
+    dragRotate = { disable() {} };
+    touchPitch = { disable() {} };
+  }
+
+  class FakeMarker {
+    constructor(options = {}) {
+      this.options = options;
+      this.element = options.element;
       calls.markers.push(this);
     }
-    addTo() { return this; }
-    getLatLng() { return this.latLng; }
-    setLatLng(next) {
-      calls.setLatLng += 1;
-      this.latLng = normalizeLatLng(next);
+    setLngLat(next) {
+      this.lngLat = [...next];
+      calls.setLngLat.push([...next]);
+      return this;
     }
-    setIcon(icon) { this.options.icon = icon; }
-    getElement() { return this.element; }
+    addTo(map) {
+      this.map = map;
+      return this;
+    }
+    getElement() {
+      return this.element;
+    }
+    remove() {
+      calls.markerRemove += 1;
+    }
   }
-  class FakeLine {
-    constructor(points) { this.points = points; }
-    addTo() { return this; }
-    setLatLngs(points) { this.points = points; }
+
+  class FakeAttributionControl {
+    constructor(options) {
+      this.options = options;
+    }
   }
-  globalThis.L = {
-    map() {
-      calls.map += 1;
-      return {
-        fitBounds() {},
-        invalidateSize() {},
-        on() {},
-        remove() {},
-        removeLayer() {},
-        getBounds: () => ({ pad() { return this; }, contains: () => true }),
-        panTo() {},
-      };
-    },
-    tileLayer: (url) => {
-      calls.tileUrls.push(url);
-      return { addTo() { return this; } };
-    },
-    control: { zoom: () => ({ addTo() { return this; } }) },
-    polyline: (points) => new FakeLine(points),
-    marker: (latLng, options) => new FakeMarker(latLng, options),
-    divIcon: (options) => options,
-    latLng: (lat, lng) => ({ lat, lng }),
+
+  class FakeResizeObserver {
+    constructor(callback) {
+      this.callback = callback;
+    }
+    observe() {}
+    disconnect() {
+      calls.observerDisconnect += 1;
+    }
+  }
+
+  globalThis.document = documentRef;
+  globalThis.maplibregl = {
+    Map: FakeMap,
+    Marker: FakeMarker,
+    AttributionControl: FakeAttributionControl,
   };
+  globalThis.matchMedia = () => ({ matches: true });
+  globalThis.ResizeObserver = FakeResizeObserver;
+
   return {
     calls,
+    document: documentRef,
+    canvasListenerCount() {
+      return calls.maps[0]?.canvas?.listenerCount?.() || 0;
+    },
     restore() {
-      if (originalL) globalThis.L = originalL;
-      else delete globalThis.L;
+      if (originalMapLibre) globalThis.maplibregl = originalMapLibre;
+      else delete globalThis.maplibregl;
+      if (originalDocument) globalThis.document = originalDocument;
+      else delete globalThis.document;
+      if (originalMatchMedia) globalThis.matchMedia = originalMatchMedia;
+      else delete globalThis.matchMedia;
+      if (originalResizeObserver) globalThis.ResizeObserver = originalResizeObserver;
+      else delete globalThis.ResizeObserver;
     },
   };
 }
 
-function normalizeLatLng(value) {
-  if (Array.isArray(value)) return { lat: value[0], lng: value[1] };
-  return value;
+function createFakeDocument({ webgl = true } = {}) {
+  const documentRef = createEventTarget();
+  documentRef.hidden = false;
+  documentRef.createElement = (tagName) => {
+    const element = createEventTarget();
+    element.tagName = String(tagName || '').toUpperCase();
+    element.dataset = {};
+    element.className = '';
+    element.innerHTML = '';
+    element.classList = createClassList();
+    element.setAttribute = () => {};
+    element.removeAttribute = () => {};
+    element.getContext = tagName === 'canvas'
+      ? () => (webgl ? { getParameter() {} } : null)
+      : undefined;
+    return element;
+  };
+  return documentRef;
+}
+
+function createEventTarget() {
+  const listeners = new Map();
+  return {
+    addEventListener(type, listener) {
+      const bucket = listeners.get(type) || new Set();
+      bucket.add(listener);
+      listeners.set(type, bucket);
+    },
+    removeEventListener(type, listener) {
+      listeners.get(type)?.delete(listener);
+    },
+    dispatchEvent(type, event = {}) {
+      [...(listeners.get(type) || [])].forEach((listener) => listener(event));
+    },
+    listenerCount() {
+      return [...listeners.values()].reduce((total, bucket) => total + bucket.size, 0);
+    },
+  };
 }
 
 function waitForMapFrame() {

@@ -381,6 +381,7 @@ export function createSupabaseOrderRepository({
       .eq('business_id', businessId)
       .eq('is_active', true)
       .eq('is_verified', true)
+      .eq('available', true)
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
 
@@ -1125,8 +1126,8 @@ function rowToCatalogProduct(row = {}) {
   const price = normalizeMoneyValue(row.price, 0);
   const externalId = sanitizeText(row.external_id, { maxLength: 120 });
   const sku = sanitizeText(row.sku, { maxLength: 120 });
-  const image = resolvePublishedCatalogAssetPath(row.image_url, 'products');
-  const imageThumbnail = resolvePublishedCatalogAssetPath(row.image_thumbnail_url, 'thumbnails');
+  const image = sanitizeText(row.image_url, { maxLength: 500 });
+  const imageThumbnail = sanitizeText(row.image_thumbnail_url, { maxLength: 500 });
   if (!name || price <= 0 || !externalId || !sku || !image || !imageThumbnail) return null;
 
   const categoryName = sanitizeText(row.category, { fallback: 'Otros', maxLength: 80 });
@@ -1194,13 +1195,6 @@ function rowToCatalogProduct(row = {}) {
     sortOrder: Math.max(0, Math.floor(Number(row.sort_order) || 0)),
     prepMinutes: 1,
   };
-}
-
-function resolvePublishedCatalogAssetPath(value, assetKind) {
-  const path = sanitizeText(value, { maxLength: 500 });
-  const match = path.match(/^(?:\.?\/)?assets\/products\/(qa-[a-z0-9-]+\.webp)$/i);
-  if (!match) return path;
-  return `assets/catalog/${assetKind}/${match[1]}`;
 }
 
 function mirrorOrders(rows, { replace = false } = {}) {

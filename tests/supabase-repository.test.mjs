@@ -439,17 +439,14 @@ test('carga catálogo remoto verificado con campos maestros de bebidas', async (
   const result = await repository.loadCatalog();
 
   assert.equal(result.ok, true);
-  assert.equal(result.products.length, 2);
-  assert.equal(result.products[1].available, false);
-  assert.equal(result.products[1].stock, 0);
-  assert.equal(
-    result.products[1].image,
-    'assets/catalog/products/qa-agua-mineral-sin-stock-master.webp',
-  );
-  assert.equal(
-    result.products[1].imageThumbnail,
-    'assets/catalog/thumbnails/qa-agua-mineral-sin-stock-thumb.webp',
-  );
+  assert.equal(result.products.length, 1);
+  const productQuery = mock.calls.from.find((call) => call.table === 'products');
+  assert.deepEqual(productQuery.filters, [
+    ['business_id', BUSINESS_ID],
+    ['is_active', true],
+    ['is_verified', true],
+    ['available', true],
+  ]);
   assert.deepEqual(
     Object.fromEntries([
       'id',

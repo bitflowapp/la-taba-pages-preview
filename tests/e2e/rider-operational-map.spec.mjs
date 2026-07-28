@@ -89,7 +89,7 @@ for (const device of [
     const page = await context.newPage();
     const guards = installPageGuards(page);
     await installBrowserStubs(page);
-    await page.goto('/?demo=1');
+    await page.goto('/?demo=1', { waitUntil: 'networkidle' });
     await mountOperationalRider(page, {
       order: RIDER_FIXTURE,
       riderLocation: RIDER_LOCATION,
@@ -165,7 +165,7 @@ test('rider sin GPS conserva lugares, navegación y tarjeta operativa', async ({
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/?demo=1');
+  await page.goto('/?demo=1', { waitUntil: 'networkidle' });
   await mountOperationalRider(page, {
     order: RIDER_FIXTURE,
     riderLocation: null,
@@ -196,7 +196,7 @@ test('rider continúa sin coordenadas del negocio y no crea un punto ficticio', 
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/?demo=1');
+  await page.goto('/?demo=1', { waitUntil: 'networkidle' });
   await mountOperationalRider(page, {
     order: RIDER_FIXTURE,
     riderLocation: RIDER_LOCATION,
@@ -221,7 +221,7 @@ test('el mapa del cliente sigue mostrando exclusivamente el casco', async ({ pag
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/?demo=1');
+  await page.goto('/?demo=1', { waitUntil: 'networkidle' });
   await mountCustomerTracking(page, {
     ...RIDER_FIXTURE,
     tracking: {

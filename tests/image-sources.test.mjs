@@ -29,20 +29,22 @@ test('preview uses one neutral documented placeholder with a matching SHA-256', 
 });
 
 test('tracked storefront assets contain no legacy food WebP and match the manifest', () => {
-  const candidates = [
+  const canonicalDirectories = [
     path.join(root, 'assets/hero'),
-    path.join(root, 'assets/products'),
     path.join(root, 'assets/catalog/products'),
     path.join(root, 'assets/catalog/thumbnails'),
   ];
-  const webps = candidates.flatMap((directory) => (
+  const canonicalWebps = canonicalDirectories.flatMap((directory) => (
     fs.existsSync(directory)
       ? fs.readdirSync(directory)
         .filter((name) => name.endsWith('.webp'))
         .map((name) => path.relative(root, path.join(directory, name)).replaceAll('\\', '/'))
       : []
   )).sort();
-  for (const file of webps) {
+  const publishedWebps = fs.readdirSync(path.join(root, 'assets/products'))
+    .filter((name) => name.endsWith('.webp'))
+    .sort();
+  for (const file of [...canonicalWebps, ...publishedWebps]) {
     assert.doesNotMatch(file, /pizza|parrilla|carne|milanesa|chorizo|horno|combo-familiar|promo-dia|bebida-cola/i);
   }
 
@@ -54,7 +56,21 @@ test('tracked storefront assets contain no legacy food WebP and match the manife
     source.assets?.master?.path,
     source.assets?.thumbnail?.path,
   ]).filter(Boolean).sort();
-  assert.deepEqual(webps, manifested);
+  assert.deepEqual(canonicalWebps, manifested);
+  assert.equal(publishedWebps.length, 8);
+  for (const name of publishedWebps) {
+    const canonical = name.includes('-thumb-')
+      ? path.join(root, 'assets/catalog/thumbnails', name)
+      : path.join(root, 'assets/catalog/products', name);
+    assert.equal(fs.existsSync(canonical), true, name);
+    const publishedHash = crypto.createHash('sha256')
+      .update(fs.readFileSync(path.join(root, 'assets/products', name)))
+      .digest('hex');
+    const canonicalHash = crypto.createHash('sha256')
+      .update(fs.readFileSync(canonical))
+      .digest('hex');
+    assert.equal(publishedHash, canonicalHash, name);
+  }
 });
 
 test('commercial image audit and manifest are explicit and traceable', () => {

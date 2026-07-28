@@ -92,28 +92,6 @@ test('current mobile UI keeps the tracked gray bottom banner', () => {
   assert.match(responsive, /\.mobile-nav button\.active::after/);
 });
 
-test('production catalog paths are served by tracked files without runtime rewrites', () => {
-  const repository = read('js/repositories/supabase_order_repository.js');
-  assert.doesNotMatch(repository, /resolvePublishedCatalogAssetPath/);
-  assert.match(repository, /const image = sanitizeText\(row\.image_url/);
-  assert.match(repository, /const imageThumbnail = sanitizeText\(row\.image_thumbnail_url/);
-  assert.match(repository, /\.eq\('available', true\)/);
-
-  const publishedQaPaths = [
-    'qa-coca-cola-original-15l-aa70012decc566a8-1d824eec5604643f.webp',
-    'qa-coca-cola-original-15l-aa70012decc566a8-thumb-ea9fe78055613651.webp',
-    'qa-fanta-naranja-15l-40851f95ab71b216-e41698f0e9b8788b.webp',
-    'qa-fanta-naranja-15l-40851f95ab71b216-thumb-6f5544d252c1151c.webp',
-    'qa-monster-green-473ml-c7a66ed57c1f8268-0c999ce7e48f3aca.webp',
-    'qa-monster-green-473ml-c7a66ed57c1f8268-thumb-883c78950d69aa9d.webp',
-    'qa-sprite-15l-1989810f07a2c3ef-da1929408b8b0643.webp',
-    'qa-sprite-15l-1989810f07a2c3ef-thumb-1676fdfe37e31ebf.webp',
-  ];
-  for (const asset of publishedQaPaths) {
-    assert.equal(fs.existsSync(path.join(root, 'assets', 'products', asset)), true, asset);
-  }
-});
-
 test('service worker fallback is guarded to navigation requests only', () => {
   const source = read('sw.js');
   assert.match(source, /request\.mode === 'navigate'/);

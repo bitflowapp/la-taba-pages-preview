@@ -1259,6 +1259,11 @@ export function getCheckoutFormValues() {
     customerReference: addressDetails.reference,
     customerAddress: addressDetails.label,
     addressDetails,
+    customerAddressId: String(formData.get('customerAddressId') || ''),
+    deliveryLatitude: optionalNumber(formData.get('deliveryLatitude')),
+    deliveryLongitude: optionalNumber(formData.get('deliveryLongitude')),
+    deliveryGeolocationAccuracy: optionalNumber(formData.get('deliveryGeolocationAccuracy')),
+    deliveryAddressSource: String(formData.get('deliveryAddressSource') || 'manual'),
     deliveryMode: String(formData.get('deliveryMode') || 'delivery'),
     paymentMethod: String(formData.get('paymentMethod') || 'cash'),
     customerNotes: String(formData.get('customerNotes') || ''),
@@ -1267,6 +1272,11 @@ export function getCheckoutFormValues() {
     rememberCustomer: formData.get('rememberCustomer') === 'on',
     ageConfirmed: formData.get('ageConfirmed') === 'on',
   };
+}
+
+function optionalNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 export function updateAddressFieldVisibility() {

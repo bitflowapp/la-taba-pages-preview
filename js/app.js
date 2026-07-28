@@ -70,6 +70,10 @@ import { isProductionCatalogReady } from './core/runtime-config.js';
 import { handleSandboxToolsAction, handleSandboxToolsChange, renderSandboxTools } from './sandbox-tools.js';
 import { toggleFavoriteProduct } from './core/customer-preferences.js';
 import {
+  initializeCustomerDeliveryCheckout,
+  persistCustomerProfileAfterOrder,
+} from './customer-delivery.js';
+import {
   dismissIOSGuide,
   dismissInstallBanner,
   isInstallBannerDismissed,
@@ -217,6 +221,7 @@ async function bootstrap() {
       window.TABA_STARTUP_RECOVERY?.show({ reason: 'storage', resetAvailable: false });
       showToast('La sesion local esta temporalmente limitada. Podes continuar.');
     }
+    await initializeCustomerDeliveryCheckout();
     renderAll();
     playViewEnter(activeView);
     resumeSimulationIfNeeded();
@@ -935,7 +940,17 @@ function bindEvents() {
         return;
       }
 
-      showToast('Pedido confirmado. Seguilo en Seguimiento.');
+      let profilePersistence = { ok: true };
+      try {
+        profilePersistence = await persistCustomerProfileAfterOrder(values);
+      } catch (_) {
+        // La venta ya fue confirmada por la RPC de pedidos; un guardado opcional
+        // de perfil nunca puede convertirla en un error de checkout.
+        profilePersistence = { ok: false };
+      }
+      showToast(profilePersistence.ok
+        ? 'Pedido confirmado. Seguilo en Seguimiento.'
+        : 'Pedido confirmado. No pudimos guardar tus datos para próximos pedidos.');
       setActiveView('tracking');
     } catch (_) {
       const message = 'No se pudo crear el pedido. Reintentá.';

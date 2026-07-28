@@ -293,7 +293,7 @@
                 </label>
               </div>
 
-              <div class="address-fields" data-address-field>
+                <div class="address-fields" data-address-field>
                 <div class="field-grid">
                   <label>
                     <span class="field-label">Calle y número <span class="req" aria-hidden="true">*</span></span>
@@ -303,15 +303,21 @@
                     <span class="field-label">Localidad o zona <span class="req" aria-hidden="true">*</span></span>
                     <input name="customerNeighborhood" autocomplete="address-level2" placeholder="Localidad o zona" />
                   </label>
+                  </div>
+                  <input type="hidden" name="customerAddress" />
+                  <input type="hidden" name="customerAddressId" />
+                  <input type="hidden" name="deliveryLatitude" />
+                  <input type="hidden" name="deliveryLongitude" />
+                  <input type="hidden" name="deliveryGeolocationAccuracy" />
+                  <input type="hidden" name="deliveryAddressSource" value="manual" />
+                  <div data-customer-addresses hidden></div>
                 </div>
-                <input type="hidden" name="customerAddress" />
-              </div>
 
-              <label class="remember-customer-row remember-customer-compact" data-demo-only hidden>
+              <label class="remember-customer-row remember-customer-compact">
                 <input type="checkbox" name="rememberCustomer" />
                 <span>
                   <strong>Recordar mis datos para próximos pedidos</strong>
-                  <small>Tus datos quedan guardados en este dispositivo para la próxima compra.</small>
+                  <small>Los guardamos solo si lo confirmás, para ayudarte en tu próxima compra.</small>
                 </span>
               </label>
 

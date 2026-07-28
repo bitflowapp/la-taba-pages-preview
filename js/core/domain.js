@@ -96,6 +96,15 @@ export function toDomainOrder(order = {}) {
 export function normalizeOrderDraft(draft = {}) {
   const fulfillmentType = normalizeFulfillmentType(draft.fulfillmentType || draft.deliveryMode);
   const addressDetails = normalizeAddressDetails(draft);
+  const customerAddressId = sanitizeText(draft.customerAddressId || draft.customer_address_id, { fallback: '', maxLength: 80 });
+  const deliveryLatitude = normalizeCoordinate(draft.deliveryLatitude ?? draft.delivery_latitude);
+  const deliveryLongitude = normalizeCoordinate(draft.deliveryLongitude ?? draft.delivery_longitude);
+  const deliveryGeolocationAccuracy = normalizeNonnegativeNumber(
+    draft.deliveryGeolocationAccuracy ?? draft.delivery_geolocation_accuracy,
+  );
+  const deliveryAddressSource = ['manual', 'gps', 'geocoder', 'previous_order'].includes(draft.deliveryAddressSource)
+    ? draft.deliveryAddressSource
+    : deliveryLatitude != null && deliveryLongitude != null ? 'gps' : 'manual';
   return {
     customerName: sanitizeText(draft.customerName || draft.customer?.name, { maxLength: 80 }),
     customerPhone: sanitizeText(draft.customerPhone || draft.customer?.phone, { maxLength: 40 }),
@@ -104,6 +113,11 @@ export function normalizeOrderDraft(draft = {}) {
     customerReference: addressDetails.reference,
     customerAddress: addressDetails.label,
     addressDetails,
+    customerAddressId,
+    deliveryLatitude,
+    deliveryLongitude,
+    deliveryGeolocationAccuracy,
+    deliveryAddressSource,
     deliveryMode: fulfillmentType,
     paymentMethod: sanitizeText(draft.paymentMethod, { fallback: 'cash', maxLength: 40 }),
     customerNotes: sanitizeNotes(draft.customerNotes || draft.notes, ''),
@@ -112,6 +126,16 @@ export function normalizeOrderDraft(draft = {}) {
     rememberCustomer: Boolean(draft.rememberCustomer),
     ageConfirmed: Boolean(draft.ageConfirmed),
   };
+}
+
+function normalizeCoordinate(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function normalizeNonnegativeNumber(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
 }
 
 export function toDomainRider(rider = {}) {

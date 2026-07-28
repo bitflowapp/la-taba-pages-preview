@@ -14,6 +14,7 @@ Se aplican en orden:
 2. `20260531040000_la_taba_phase1_hardening.sql`
 3. `20260601205707_operational_orders_v1.sql`
 4. `20260725030000_taba_production_orders.sql`
+5. `20260728090000_customer_profiles_addresses.sql`
 
 La última migración es aditiva respecto de las fases anteriores y conserva
 columnas legacy necesarias para compatibilidad. También aplica un cierre
@@ -34,6 +35,26 @@ probarla sobre staging con una copia representativa y preparar rollback. No usar
 `supabase db push` contra producción sin autorización explícita.
 
 ## Modelo
+
+### Perfiles, libreta y snapshots de entrega
+
+La migracion `20260728090000_customer_profiles_addresses.sql` usa `auth.uid()`
+en todas las RPC. El navegador no envia ni puede elegir `customer_id`: la
+sesion anonima existente identifica al cliente recurrente en el mismo
+navegador. `customers` y `customer_addresses` tienen RLS; las escrituras se
+realizan solo mediante RPC con validacion de propietario, campos cerrados y
+deduplicacion por direccion normalizada o distancia geografica.
+
+Al crear un pedido, `create_order_with_items(jsonb)` resuelve una direccion
+guardada unicamente si pertenece al `auth.uid()` actual y copia en `orders` la
+direccion, componentes, referencia, coordenadas confirmadas y origen. Por eso
+editar o archivar una direccion no cambia un pedido historico. El enlace
+`customer_address_id` es opcional y usa `ON DELETE SET NULL`.
+
+No hay un geocodificador de cliente configurado en esta base. El GPS se usa
+unicamente tras una accion explicita, queda pendiente de confirmacion y el
+checkout pide revisar calle, altura y localidad manualmente. No se agrego un
+servicio externo ni se incluyo una clave en el navegador.
 
 - `businesses`: comercio, moneda, modalidades, tarifa, mínimo y compuertas de
   habilitación.
@@ -192,6 +213,30 @@ Para validar una instancia aislada:
 6. cargar un catálogo de prueba validado, nunca datos comerciales inventados;
 7. ejecutar las pruebas RLS y el smoke productivo;
 8. eliminar o cancelar los datos creados por la prueba según el runbook.
+
+### Aplicacion y reversion de la libreta
+
+Primero ejecutar la validacion estatica incluida en el repositorio:
+
+```powershell
+npm run migrations:validate
+```
+
+En una base local descartable, `supabase db reset` aplica tambien la migracion
+de perfiles. En staging, revisar el plan y aplicar con `supabase db push` solo
+despues de backup/restauracion ensayada y de probar una sesion anonima real.
+No se ejecuto ninguno de esos comandos contra una instancia remota desde este
+repositorio.
+
+Una reversion destructiva no es segura una vez que existan pedidos con
+snapshots nuevos: eliminar esas columnas perderia evidencia historica. Para
+produccion se debe restaurar el backup o aplicar una migracion de reversion
+revisada que primero conserve los snapshots y restaure la funcion
+`create_order_with_items` anterior. En una base de staging sin datos a
+conservar, la reversion puede: revocar la nueva RPC, eliminar su wrapper,
+renombrar `create_order_with_items_legacy` a `create_order_with_items`, y luego
+retirar las tablas, indices y columnas nuevas dentro de una transaccion. No
+usar ese procedimiento en produccion sin un backup probado.
 
 ## Smoke productivo
 

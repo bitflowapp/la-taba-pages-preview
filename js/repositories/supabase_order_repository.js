@@ -23,6 +23,7 @@ import {
   updateState,
 } from '../state.js';
 import { createSupabaseAuthService } from '../services/supabase-auth.js';
+import { createSupabaseCustomerProfileRepository } from './customer_profile_repository.js';
 import { repositoryResult } from './order_repository.js';
 import { createCustomerTrackingPollController } from '../tracking/customer_tracking_poll.js';
 
@@ -60,6 +61,7 @@ export function createSupabaseOrderRepository({
   }
 
   const auth = authService || createSupabaseAuthService({ client, businessId });
+  const customerProfiles = createSupabaseCustomerProfileRepository({ client, authService: auth });
   const pollingInterval = Math.max(1000, Number(pollMs) || 5000);
   const pendingStorageKey = `${ORDER_ACCESS_STORAGE_VERSION}:${businessId}:pending`;
   const lastAccessStorageKey = `${ORDER_ACCESS_STORAGE_VERSION}:${businessId}:last`;
@@ -486,6 +488,19 @@ export function createSupabaseOrderRepository({
         address_label: values.customerAddress,
         customer_neighborhood: values.addressDetails.neighborhood || undefined,
         customer_reference: values.addressDetails.reference || undefined,
+        ...(values.customerAddressId ? { customer_address_id: values.customerAddressId } : {}),
+        ...(
+          Number.isFinite(values.deliveryLatitude) && Number.isFinite(values.deliveryLongitude)
+            ? {
+              delivery_latitude: values.deliveryLatitude,
+              delivery_longitude: values.deliveryLongitude,
+              ...(Number.isFinite(values.deliveryGeolocationAccuracy)
+                ? { delivery_geolocation_accuracy: values.deliveryGeolocationAccuracy }
+                : {}),
+              delivery_address_source: values.deliveryAddressSource,
+            }
+            : {}
+        ),
       } : {}),
       ...(values.customerNotes ? { customer_notes: values.customerNotes } : {}),
     };
@@ -564,6 +579,7 @@ export function createSupabaseOrderRepository({
     mode: 'supabase',
     businessId,
     auth,
+    customerProfiles,
     async loadCatalog() {
       return loadCatalog();
     },

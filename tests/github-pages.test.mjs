@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v32-maplibre-tracking');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v33-customer-delivery');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -34,6 +34,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./js/app.js?v=30'));
   assert.ok(assets.includes('./js/core/address.js'));
   assert.ok(assets.includes('./js/core/app-mode.js'));
+  assert.ok(assets.includes('./js/core/customer-addresses.js'));
   assert.ok(assets.includes('./js/core/storage.js'));
   assert.ok(assets.includes('./js/core/order-status.js'));
   assert.ok(assets.includes('./js/core/order-workflow.js'));
@@ -45,10 +46,13 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./js/map/route_geometry.js'));
   assert.ok(assets.includes('./js/repositories/repository_factory.js'));
   assert.ok(assets.includes('./js/repositories/demo_order_repository.js'));
+  assert.ok(assets.includes('./js/repositories/customer_profile_repository.js'));
   assert.ok(assets.includes('./js/repositories/supabase_order_repository.js'));
   assert.ok(assets.includes('./js/repositories/unavailable_order_repository.js'));
   assert.ok(assets.includes('./js/services/supabase-auth.js'));
   assert.ok(assets.includes('./js/services/supabase-client.js'));
+  assert.ok(assets.includes('./js/services/customer-geolocation.js'));
+  assert.ok(assets.includes('./js/customer-delivery.js'));
   assert.ok(assets.includes('./js/vendor/supabase.js'));
   assert.ok(assets.includes('./js/production-operations.js'));
 

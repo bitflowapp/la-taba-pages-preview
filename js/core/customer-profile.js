@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from '../config.js';
+import { APP_MODE_PRODUCTION, getAppMode } from './app-mode.js';
 import { normalizeOrderAddressDetails } from './address.js';
 import { calculateLoyaltyProgress, loyaltyProgressCopy } from './loyalty.js';
 import { normalizeDeliveryMode, normalizeMoneyValue, normalizeQuantity } from './pricing.js';
@@ -28,8 +29,11 @@ export function getCustomerProfile() {
   return stored;
 }
 
-export function getRememberedCheckoutValues(profile = getCustomerProfile()) {
-  const normalized = normalizeCustomerProfile(profile);
+export function getRememberedCheckoutValues(profile) {
+  // Producción usa el perfil protegido por Supabase. Una copia legacy local
+  // nunca es la fuente de verdad ni debe autocompletar datos personales allí.
+  if (getAppMode() === APP_MODE_PRODUCTION) return null;
+  const normalized = normalizeCustomerProfile(profile === undefined ? getCustomerProfile() : profile);
   if (!normalized?.rememberCustomer) return null;
   return {
     customerName: normalized.name,

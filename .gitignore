@@ -6,3 +6,4 @@ test-results/
 playwright-report/
 dist_release/
 scripts/catalog-images/.raw/
+.local-staging/

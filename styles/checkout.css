@@ -245,3 +245,186 @@
   margin: -8px 0 0;
   text-align: center;
 }
+
+.saved-addresses-panel {
+  display: grid;
+  gap: 11px;
+  padding: 13px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: var(--taba-subtle);
+}
+
+.saved-addresses-heading,
+.saved-addresses-heading > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.saved-addresses-heading > div {
+  display: grid;
+  justify-content: start;
+}
+
+.saved-addresses-heading small,
+.location-helper small,
+.location-review span,
+.location-review small,
+.saved-address-empty,
+.saved-address-status {
+  color: var(--taba-muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.saved-address-status:empty {
+  display: none;
+}
+
+.saved-address-list {
+  display: grid;
+  gap: 8px;
+}
+
+.saved-address-card {
+  display: grid;
+  gap: 8px;
+  padding: 11px;
+  border: 1px solid var(--taba-border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.saved-address-card.is-selected {
+  border-color: var(--taba-red);
+  box-shadow: 0 0 0 2px var(--taba-red-soft);
+}
+
+.saved-address-select {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.saved-address-select input {
+  width: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--taba-red);
+}
+
+.saved-address-select span {
+  display: grid;
+  gap: 2px;
+}
+
+.saved-address-select strong {
+  color: var(--taba-graphite);
+}
+
+.saved-address-select small {
+  color: var(--taba-muted);
+}
+
+.saved-address-actions,
+.location-helper,
+.address-suggestion > div,
+.address-duplicate > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.text-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 9px;
+  border: 0;
+  background: transparent;
+  color: var(--taba-red);
+  font: inherit;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.text-button.danger {
+  color: #a42c2c;
+}
+
+.location-helper {
+  align-items: flex-start;
+}
+
+.location-review,
+.address-suggestion,
+.address-duplicate {
+  display: grid;
+  gap: 7px;
+  padding: 11px;
+  border: 1px solid #e8c279;
+  border-radius: 12px;
+  background: #fffaf0;
+}
+
+.location-review.is-confirmed {
+  border-color: #9dcbb2;
+  background: #f3fbf6;
+}
+
+.address-suggestion {
+  border-color: #bfc7db;
+  background: #f7f8fc;
+}
+
+.address-duplicate {
+  border-color: #d9b3b3;
+  background: #fff7f7;
+}
+
+.address-editor {
+  display: grid;
+  gap: 11px;
+  padding-top: 11px;
+  border-top: 1px solid var(--taba-border);
+}
+
+.address-editor label {
+  display: grid;
+  gap: 5px;
+  color: var(--taba-graphite);
+  font-weight: 700;
+}
+
+.compact-grid {
+  gap: 10px;
+}
+
+.address-default-toggle {
+  display: flex !important;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+}
+
+.address-default-toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--taba-red);
+}
+
+@media (max-width: 480px) {
+  .saved-addresses-heading {
+    align-items: flex-start;
+  }
+
+  .saved-addresses-heading .secondary-button {
+    flex: 0 0 auto;
+  }
+}

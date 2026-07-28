@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v32-maplibre-tracking';
+const CACHE_NAME = 'la-taba-runtime-v33-customer-delivery';
 const ASSETS = [
   './',
   './index.html',
@@ -30,6 +30,7 @@ const ASSETS = [
   './js/core/business-setup.js',
   './js/core/cashbox-store.js',
   './js/core/catalog-store.js',
+  './js/core/customer-addresses.js',
   './js/core/customer-history.js',
   './js/core/customer-preferences.js',
   './js/core/customer-profile.js',
@@ -60,6 +61,7 @@ const ASSETS = [
   './js/beverage-qa-data.js',
   './js/state.js',
   './js/cart.js',
+  './js/customer-delivery.js',
   './js/orders.js',
   './js/repositories/demo_order_repository.js',
   './js/repositories/http_order_repository.js',
@@ -67,10 +69,12 @@ const ASSETS = [
   './js/repositories/realtime_order_repository.js',
   './js/repositories/repository_factory.js',
   './js/repositories/storage_repository.js',
+  './js/repositories/customer_profile_repository.js',
   './js/repositories/supabase_order_repository.js',
   './js/repositories/unavailable_order_repository.js',
   './js/services/supabase-auth.js',
   './js/services/supabase-client.js',
+  './js/services/customer-geolocation.js',
   './js/vendor/supabase.js',
   './js/business.js',
   './js/delivery.js',

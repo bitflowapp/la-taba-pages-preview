@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v34-customer-delivery-rider-map');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v35-current-ui-rider-map');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -92,6 +92,9 @@ test('service worker sólo elimina caches anteriores de TABA y exige precache co
   const source = read('sw.js');
   assert.match(source, /const CACHE_PREFIX = 'la-taba-runtime-';/);
   assert.match(source, /key\.startsWith\(CACHE_PREFIX\) && key !== CACHE_NAME/);
+  assert.match(source, /self\.clients\.claim\(\)/);
+  assert.match(source, /event\.data === 'skip-waiting'/);
+  assert.doesNotMatch(source, /access_token|refresh_token|tracking_token|rider_locations|delivery_handoff/i);
   assert.doesNotMatch(
     source,
     /cache\.addAll\(ASSETS\)\)\.catch\(\(\) => undefined\)/,

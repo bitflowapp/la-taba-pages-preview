@@ -421,13 +421,35 @@ test('confirma la entrega con código sin devolver datos sensibles al rider', as
 
 test('carga catálogo remoto verificado con campos maestros de bebidas', async () => {
   const mock = createSupabaseClientMock();
+  mock.db.products.push({
+    ...mock.db.products[0],
+    id: '99999999-9999-4999-8999-999999999999',
+    external_id: 'agua-mineral-sin-stock',
+    sku: 'AGUA-MINERAL-SIN-STOCK',
+    name: 'Agua mineral sin stock',
+    available: false,
+    stock: 0,
+    sort_order: 2,
+    image_url: 'assets/products/qa-agua-mineral-sin-stock-master.webp',
+    image_thumbnail_url: 'assets/products/qa-agua-mineral-sin-stock-thumb.webp',
+  });
   const repository = makeRepository(mock);
 
   await repository.loadBusinessConfiguration();
   const result = await repository.loadCatalog();
 
   assert.equal(result.ok, true);
-  assert.equal(result.products.length, 1);
+  assert.equal(result.products.length, 2);
+  assert.equal(result.products[1].available, false);
+  assert.equal(result.products[1].stock, 0);
+  assert.equal(
+    result.products[1].image,
+    'assets/catalog/products/qa-agua-mineral-sin-stock-master.webp',
+  );
+  assert.equal(
+    result.products[1].imageThumbnail,
+    'assets/catalog/thumbnails/qa-agua-mineral-sin-stock-thumb.webp',
+  );
   assert.deepEqual(
     Object.fromEntries([
       'id',

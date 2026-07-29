@@ -166,7 +166,7 @@ for (const viewport of [
   test(`home final de bebidas mantiene layout físico en ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await installBrowserStubs(page);
-    await page.goto('/?reset=1&demo=1&preview=v38');
+    await page.goto('/?reset=1&demo=1&preview=v39');
     await expect.poll(() => new URL(page.url()).searchParams.has('reset')).toBe(false);
     await expect(page.locator('[data-view="home"]')).toBeVisible();
     await expect(page.locator('.mobile-nav [data-nav-view="home"]')).toHaveClass(/active/);
@@ -231,7 +231,7 @@ test('confirmación de edad aparece y es obligatoria sólo con alcohol', async (
 test('Ver todas conserva filtros reales de promociones y más vendidos', async ({ page }) => {
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
-  await page.goto('/?demo=1&preview=v38');
+  await page.goto('/?demo=1&preview=v39');
 
   await page.locator('.home-section-head [data-category-id="popular"]').click();
   await expect(page.locator('[data-view="catalog"]')).toBeVisible();
@@ -269,7 +269,7 @@ test('Ver todas conserva filtros reales de promociones y más vendidos', async (
 test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza indicadores', async ({ page }) => {
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/?demo=1&preview=v38');
+  await page.goto('/?demo=1&preview=v39');
 
   const controlSelector = [
     '.home-section-head button',
@@ -318,7 +318,7 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
 test('los derivados limpios se reutilizan en Home, catálogo, modal y carrito', async ({ page }) => {
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/?demo=1&preview=v38');
+  await page.goto('/?demo=1&preview=v39');
   const cleanAsset = 'coca-cola-original-1-5l-clean-preview.jpg';
   const homeCard = page.locator('[data-home-catalog-preview] .home-catalog-card').filter({ hasText: 'Coca-Cola' });
   await expect(homeCard.locator(`img[src*="${cleanAsset}"]`)).toHaveCount(1);

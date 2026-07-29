@@ -48,7 +48,7 @@ import {
   isPromotionalProduct,
   isUnitStorefrontProduct,
   uniqueProducts,
-} from './core/storefront-filters.js?v=38';
+} from './core/storefront-filters.js?v=39';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 import { riderHelmetSvg } from './map/rider_marker.js';
 

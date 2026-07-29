@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v35-beverage-home-final');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v36-beverage-home-unit-preview');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -25,10 +25,10 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./assets/icon.svg'));
   assert.ok(assets.includes('./assets/products/beverage-placeholder.svg'));
   for (const requiredHomeAsset of [
-    './assets/catalog/products/qa-coca-cola-original-15l-aa70012decc566a8-1d824eec5604643f.webp',
-    './assets/catalog/products/qa-sprite-15l-1989810f07a2c3ef-da1929408b8b0643.webp',
-    './assets/catalog/products/qa-fanta-naranja-15l-40851f95ab71b216-e41698f0e9b8788b.webp',
-    './assets/catalog/products/qa-monster-green-473ml-c7a66ed57c1f8268-0c999ce7e48f3aca.webp',
+    './assets/products/bebidas/coca-cola-original-1-5l.jpg',
+    './assets/products/bebidas/sprite-1-5l.jpg',
+    './assets/products/bebidas/fanta-naranja-1-5l.jpg',
+    './assets/products/bebidas/monster-energy-original-473ml.jpg',
   ]) {
     assert.ok(assets.includes(requiredHomeAsset), `missing Home asset in service worker: ${requiredHomeAsset}`);
   }
@@ -39,10 +39,10 @@ test('service worker caches only existing GitHub Pages assets', () => {
   );
   assert.ok(assets.includes('./js/pwa-update.js?v=2'));
   assert.ok(assets.includes('./js/startup-recovery.js?v=1'));
-  assert.ok(assets.includes('./styles.css?v=35'));
-  assert.ok(assets.includes('./styles/storefront.css?v=35'));
-  assert.ok(assets.includes('./styles/responsive.css?v=35'));
-  assert.ok(assets.includes('./js/app.js?v=31'));
+  assert.ok(assets.includes('./styles.css?v=36'));
+  assert.ok(assets.includes('./styles/storefront.css?v=36'));
+  assert.ok(assets.includes('./styles/responsive.css?v=36'));
+  assert.ok(assets.includes('./js/app.js?v=32'));
   assert.ok(assets.includes('./js/core/address.js'));
   assert.ok(assets.includes('./js/core/app-mode.js'));
   assert.ok(assets.includes('./js/core/customer-addresses.js'));

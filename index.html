@@ -18,7 +18,7 @@
       integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK"
       crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="styles.css?v=35" />
+    <link rel="stylesheet" href="styles.css?v=36" />
   </head>
   <body>
     <div class="app-shell">
@@ -129,24 +129,14 @@
           </div>
           <div class="taba-home-content" data-catalog-dependent hidden>
             <section class="taba-home-hero" aria-labelledby="home-title">
-              <p class="taba-home-eyebrow">CATÁLOGO</p>
+              <p class="taba-home-eyebrow">
+                <span>CATÁLOGO</span>
+                <span class="home-preview-label">PREVIEW INTERNA</span>
+              </p>
               <h1 id="home-title">¿Qué vas a pedir hoy?</h1>
               <p>Elegí tus bebidas favoritas y pedí en minutos.</p>
               <span class="sr-only" data-open-status>Pedidos online</span>
             </section>
-
-            <div class="home-address-chip taba-home-address" role="note" data-home-address>
-              <span class="address-chip-ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                  <path d="M12 21.3s-6.6-6.3-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 4.8-6.6 11.1-6.6 11.1Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                  <circle cx="12" cy="9.9" r="2.3" fill="currentColor"/>
-                </svg>
-              </span>
-              <span class="address-chip-text">
-                <small>Enviar a</small>
-                <strong data-home-address-label>Elegí tu dirección al confirmar el pedido</strong>
-              </span>
-            </div>
 
             <div data-home-active-order hidden></div>
 
@@ -199,6 +189,18 @@
               <span>Ver catálogo completo</span>
               <span aria-hidden="true">›</span>
             </button>
+            <div class="home-address-chip taba-home-address" role="note" data-home-address>
+              <span class="address-chip-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                  <path d="M12 21.3s-6.6-6.3-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 4.8-6.6 11.1-6.6 11.1Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                  <circle cx="12" cy="9.9" r="2.3" fill="currentColor"/>
+                </svg>
+              </span>
+              <span class="address-chip-text">
+                <small>Enviar a</small>
+                <strong data-home-address-label>Elegí tu dirección al confirmar el pedido</strong>
+              </span>
+            </div>
           </div>
         </section>
 
@@ -659,6 +661,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=2"></script>
-    <script type="module" src="js/app.js?v=31"></script>
+    <script type="module" src="js/app.js?v=32"></script>
   </body>
 </html>

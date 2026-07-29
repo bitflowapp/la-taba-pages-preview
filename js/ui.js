@@ -305,6 +305,7 @@ export function productThumb(product, variant = 'grid') {
     image
     && thumbnail
     && (!product.qaFixture || product.previewCatalogApproved === true)
+    && product.imageShowsMultipack !== true
     && hasAuthoritativeHashes,
   );
   const loading = variant === 'modal' ? 'eager' : 'lazy';
@@ -384,10 +385,10 @@ function renderOffers() {
 
 const HOME_CATEGORIES = Object.freeze([
   { id: 'gaseosas', name: 'Gaseosas' },
+  { id: 'gins-y-vodkas', name: 'Fernet' },
   { id: 'cervezas', name: 'Cervezas' },
   { id: 'aguas', name: 'Aguas' },
   { id: 'energeticas', name: 'Energéticas' },
-  { id: 'gins-y-vodkas', name: 'Gins y vodkas' },
   { id: 'promos', name: 'Promos' },
 ]);
 const HOME_PROMOTION_IDS = ['qa-gaseosa-lima-limon', 'qa-promo-bebidas', 'qa-gaseosa-cola'];
@@ -433,7 +434,11 @@ const HOME_CATEGORY_ICONS = Object.freeze({
 function homeProducts(ids) {
   const productsById = new Map(
     getCustomerCatalogProducts(getState().products)
-      .filter((product) => product.rightsStatus === 'APROBADOS')
+      .filter((product) => (
+        product.rightsStatus === 'APROBADOS'
+        || product.rightsStatus === 'REVISION_INTERNA'
+      ))
+      .filter((product) => product.imageShowsMultipack !== true)
       .map((product) => [product.id, product]),
   );
   return ids.map((id) => productsById.get(id)).filter(Boolean);
@@ -1858,6 +1863,7 @@ function hasAuthoritativeTrackingThumbnail(product) {
     image
     && thumbnail
     && (!product.qaFixture || product.previewCatalogApproved === true)
+    && product.imageShowsMultipack !== true
     && hasAuthoritativeHashes
   );
 }

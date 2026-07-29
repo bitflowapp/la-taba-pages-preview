@@ -55,7 +55,10 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(orderSummary).not.toContainText('El detalle se mantiene en el dispositivo');
   const officialThumbnail = orderSummary.locator('[data-order-summary-thumbnail] img');
   await expect(officialThumbnail).toHaveCount(1);
-  await expect(officialThumbnail).toHaveAttribute('src', /assets\/catalog\/thumbnails\/.+\.webp$/);
+  await expect(officialThumbnail).toHaveAttribute(
+    'src',
+    /assets\/(?:catalog\/thumbnails\/.+\.webp|products\/bebidas\/.+\.jpg)$/,
+  );
   await expect(officialThumbnail).toHaveAttribute('loading', 'lazy');
   await expect(officialThumbnail).toHaveAttribute('width', '52');
   await expect(officialThumbnail).toHaveAttribute('height', '52');

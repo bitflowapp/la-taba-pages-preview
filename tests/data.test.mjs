@@ -67,8 +67,8 @@ test('preview catalog is concrete beverages and internally marked as QA', () => 
   for (const product of products) {
     if (product.image) {
       if (product.previewCatalogApproved) {
-        assert.match(product.image, /^assets\/catalog\/products\/.+\.webp$/);
-        assert.match(product.imageThumbnail || '', /^assets\/catalog\/thumbnails\/.+\.webp$/);
+        assert.match(product.image, /^assets\/(?:catalog\/products\/.+\.webp|products\/bebidas\/.+\.jpg)$/);
+        assert.match(product.imageThumbnail || '', /^assets\/(?:catalog\/thumbnails\/.+\.webp|products\/bebidas\/.+\.jpg)$/);
         assert.match(product.imageSha256 || '', /^[a-f0-9]{64}$/);
         assert.match(product.imageThumbnailSha256 || '', /^[a-f0-9]{64}$/);
         assert.match(product.sourceImageSha256 || '', /^[a-f0-9]{64}$/);

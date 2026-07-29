@@ -14,10 +14,10 @@ test('la home presenta TABA sin etiquetas internas y un storefront comercial lim
   await expect(page.locator('[data-view="home"] .taba-home-search')).toBeVisible();
   const homeCategoryLabels = [
     ['gaseosas', 'Gaseosas'],
+    ['gins-y-vodkas', 'Fernet'],
     ['cervezas', 'Cervezas'],
     ['aguas', 'Aguas'],
     ['energeticas', 'Energéticas'],
-    ['gins-y-vodkas', 'Gins y vodkas'],
     ['promos', 'Promos'],
   ];
   const homeCategories = page.locator('[data-view="home"] .home-category-card');
@@ -96,7 +96,7 @@ for (const viewport of [
   test(`home final de bebidas mantiene layout físico en ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await installBrowserStubs(page);
-    await page.goto('/?reset=1&demo=1&home=v35');
+    await page.goto('/?reset=1&demo=1&home=v36');
     await expect(page.locator('[data-view="home"]')).toBeVisible();
     await expect(page.locator('.mobile-nav [data-nav-view="home"]')).toHaveClass(/active/);
     await expect(page.locator('[data-home-promotions]')).toBeVisible();

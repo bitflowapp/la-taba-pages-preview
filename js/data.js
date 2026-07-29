@@ -1,4 +1,4 @@
-export { categories, products, PREVIEW_CATALOG_VERSION } from './beverage-qa-data.js';
+export { categories, products, PREVIEW_CATALOG_VERSION } from './beverage-demo-data.js';
 
 // Seed interno para mantener estable la numeración local. Las superficies
 // operativas lo excluyen y los datos no representan condiciones comerciales.
@@ -22,13 +22,13 @@ export const seedOrders = [
     createdAt: new Date(Date.now() - 1000 * 60 * 22).toISOString(),
     status: 'delivered',
     items: [
-      { productId: 'qa-gaseosa-cola', name: 'Sprite 1,5 L', icon: '', quantity: 1, unitPrice: 5000, unit: 'unidad' },
-      { productId: 'qa-isotonica', name: 'Monster Energy Ultra White Zero 473 ml', icon: '', quantity: 1, unitPrice: 7500, unit: 'unidad' },
-      { productId: 'qa-agua-mineral', name: 'Villavicencio Sin Gas 500 ml', icon: '', quantity: 1, unitPrice: 5000, unit: 'unidad' },
+      { productId: 'sprite-original-pet-1500ml-pack-6', name: 'Sprite', icon: '', quantity: 1, unitPrice: 19999, unit: 'pack' },
+      { productId: 'monster-mango-loco-lata-473ml', name: 'Monster Mango Loco', icon: '', quantity: 1, unitPrice: 3390, unit: 'unidad' },
+      { productId: 'coca-cola-original-pet-500ml-pack-12', name: 'Coca-Cola Original', icon: '', quantity: 1, unitPrice: 17100, unit: 'pack' },
     ],
-    subtotal: 17500,
+    subtotal: 40489,
     deliveryFee: 0,
-    total: 17500,
+    total: 40489,
     statusHistory: [
       { status: 'received', at: new Date(Date.now() - 1000 * 60 * 22).toISOString() },
       { status: 'preparing', at: new Date(Date.now() - 1000 * 60 * 16).toISOString() },

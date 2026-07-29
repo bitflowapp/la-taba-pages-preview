@@ -34,11 +34,12 @@
   --tap: 44px;
   --content: 1180px;
   --topbar: 72px;
-  --mobile-nav: 66px;
+  --taba-bottom-nav-height: 104px;
+  --taba-bottom-nav-gap: 18px;
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --mobile-nav-total-height: calc(var(--mobile-nav) + var(--safe-area-bottom));
-  --mobile-nav-content-gap: 12px;
-  --mobile-nav-scroll-space: calc(var(--mobile-nav-total-height) + var(--mobile-nav-content-gap));
+  --taba-bottom-nav-clearance: calc(
+    var(--taba-bottom-nav-height) + var(--taba-bottom-nav-gap) + var(--safe-area-bottom)
+  );
   --ease: 180ms ease;
 }
 

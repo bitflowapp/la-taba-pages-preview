@@ -28,8 +28,38 @@ export function normalizePhoneDigits(value) {
   return String(value || '').replace(/\D/g, '');
 }
 
+export function normalizeCustomerName(value) {
+  return sanitizeText(value, { fallback: '', maxLength: 80 });
+}
+
+export function validateCustomerName(value) {
+  const name = sanitizeText(value, { fallback: '', maxLength: 160 });
+  if (name.length < 2) {
+    return { ok: false, name, message: 'Ingresá un nombre de al menos 2 caracteres.' };
+  }
+  if (name.length > 80) {
+    return { ok: false, name, message: 'El nombre puede tener hasta 80 caracteres.' };
+  }
+  if (!/\p{L}/u.test(name)) {
+    return { ok: false, name, message: 'El nombre debe incluir letras.' };
+  }
+  return { ok: true, name, message: '' };
+}
+
+export function normalizeArgentinePhone(value) {
+  return normalizePhoneDigits(value).slice(0, 13);
+}
+
+export function formatArgentinePhone(value) {
+  const digits = normalizeArgentinePhone(value);
+  if (digits.length < 8) return digits;
+  const local = digits.slice(-7);
+  const prefix = digits.slice(0, -7);
+  return [prefix, local.slice(0, 3), local.slice(3)].filter(Boolean).join(' ');
+}
+
 export function isValidArgentinePhone(value) {
-  const digits = normalizePhoneDigits(value);
+  const digits = normalizeArgentinePhone(value);
   return digits.length >= 10
     && digits.length <= 13
     && !/^(\d)\1+$/.test(digits);

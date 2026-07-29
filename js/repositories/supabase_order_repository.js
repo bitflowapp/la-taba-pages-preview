@@ -13,7 +13,13 @@ import {
   normalizeWorkflowStatus,
   toDemoOrderStatus,
 } from '../core/order-workflow.js';
-import { sanitizeNotes, sanitizeText } from '../core/validators.js';
+import {
+  isValidArgentinePhone,
+  normalizeArgentinePhone,
+  sanitizeNotes,
+  sanitizeText,
+  validateCustomerName,
+} from '../core/validators.js';
 import { setProductionCatalogReady } from '../core/runtime-config.js';
 import {
   getState,
@@ -172,12 +178,13 @@ export function createSupabaseOrderRepository({
   function selectTrackingOrder(orderId) {
     const requested = String(orderId || '').trim();
     if (!requested) return null;
-    let selected = null;
+    const currentState = getState();
+    const selected = currentState?.orders?.find((order) => (
+      [order.id, order.code, order.backendId].map(String).includes(requested)
+    )) || null;
+    if (!selected || currentState.lastOrderId === selected.id) return selected;
     updateState((draft) => {
-      selected = draft.orders.find((order) => (
-        [order.id, order.code, order.backendId].map(String).includes(requested)
-      )) || null;
-      if (selected) draft.lastOrderId = selected.id;
+      draft.lastOrderId = selected.id;
     });
     return selected;
   }
@@ -385,11 +392,11 @@ export function createSupabaseOrderRepository({
       .order('name', { ascending: true });
 
     if (error) {
-      replaceProductionCatalog([]);
       catalogStatus = {
         state: 'error',
         message: readableSupabaseError(error, 'No pudimos cargar el catálogo verificado.'),
       };
+      replaceProductionCatalog([]);
       return failedQuery(error, status, catalogStatus.message);
     }
 
@@ -434,8 +441,12 @@ export function createSupabaseOrderRepository({
         message: 'Confirmá que sos mayor de edad para pedir bebidas alcohólicas.',
       });
     }
-    if (!values.customerName) return repositoryResult(false, { message: 'Ingresá el nombre del cliente.' });
-    if (!values.customerPhone) return repositoryResult(false, { message: 'Ingresá un teléfono de contacto.' });
+    const nameValidation = validateCustomerName(values.customerName);
+    if (!nameValidation.ok) return repositoryResult(false, { message: nameValidation.message });
+    const customerPhone = normalizeArgentinePhone(values.customerPhone);
+    if (!isValidArgentinePhone(customerPhone)) {
+      return repositoryResult(false, { message: 'Ingresá un teléfono argentino válido, con código de área.' });
+    }
     if (values.deliveryMode === 'delivery' && !values.customerAddress) {
       return repositoryResult(false, { message: 'Ingresá calle y número para el envío.' });
     }
@@ -456,10 +467,15 @@ export function createSupabaseOrderRepository({
     const session = await auth.ensureCustomerSession();
     if (!session.ok) return repositoryResult(false, { message: session.message });
 
+    const normalizedValues = {
+      ...values,
+      customerName: nameValidation.name,
+      customerPhone,
+    };
     let request;
     try {
       request = await prepareIdempotentRequest({
-        values,
+        values: normalizedValues,
         items,
         storage,
         pendingStorageKey,
@@ -478,31 +494,39 @@ export function createSupabaseOrderRepository({
       client_request_id: request.clientRequestId,
       tracking_token: request.trackingToken,
       items,
-      customer_name: values.customerName,
-      customer_phone: values.customerPhone,
-      delivery_mode: values.deliveryMode,
-      payment_method: values.paymentMethod,
-      age_confirmed: values.ageConfirmed,
-      ...(values.deliveryMode === 'delivery' ? {
-        customer_street_address: values.addressDetails.streetLine || values.customerAddress,
-        address_label: values.customerAddress,
-        customer_neighborhood: values.addressDetails.neighborhood || undefined,
-        customer_reference: values.addressDetails.reference || undefined,
-        ...(values.customerAddressId ? { customer_address_id: values.customerAddressId } : {}),
+      customer_name: normalizedValues.customerName,
+      customer_phone: normalizedValues.customerPhone,
+      delivery_mode: normalizedValues.deliveryMode,
+      payment_method: normalizedValues.paymentMethod,
+      age_confirmed: normalizedValues.ageConfirmed,
+      ...(normalizedValues.deliveryMode === 'delivery' ? {
+        customer_street_address: normalizedValues.addressDetails.streetLine || normalizedValues.customerAddress,
+        address_label: normalizedValues.customerAddress,
+        customer_neighborhood: normalizedValues.addressDetails.neighborhood || undefined,
+        customer_reference: normalizedValues.addressDetails.reference || undefined,
+        customer_address_label: normalizedValues.customerAddressLabel || undefined,
+        delivery_street: normalizedValues.deliveryStreet || undefined,
+        delivery_street_number: normalizedValues.deliveryStreetNumber || undefined,
+        delivery_floor: normalizedValues.deliveryFloor || undefined,
+        delivery_apartment: normalizedValues.deliveryApartment || undefined,
+        delivery_city: normalizedValues.deliveryCity || undefined,
+        delivery_province: normalizedValues.deliveryProvince || undefined,
+        delivery_postal_code: normalizedValues.deliveryPostalCode || undefined,
+        ...(normalizedValues.customerAddressId ? { customer_address_id: normalizedValues.customerAddressId } : {}),
         ...(
-          Number.isFinite(values.deliveryLatitude) && Number.isFinite(values.deliveryLongitude)
+          Number.isFinite(normalizedValues.deliveryLatitude) && Number.isFinite(normalizedValues.deliveryLongitude)
             ? {
-              delivery_latitude: values.deliveryLatitude,
-              delivery_longitude: values.deliveryLongitude,
-              ...(Number.isFinite(values.deliveryGeolocationAccuracy)
-                ? { delivery_geolocation_accuracy: values.deliveryGeolocationAccuracy }
+              delivery_latitude: normalizedValues.deliveryLatitude,
+              delivery_longitude: normalizedValues.deliveryLongitude,
+              ...(Number.isFinite(normalizedValues.deliveryGeolocationAccuracy)
+                ? { delivery_geolocation_accuracy: normalizedValues.deliveryGeolocationAccuracy }
                 : {}),
-              delivery_address_source: values.deliveryAddressSource,
+              delivery_address_source: normalizedValues.deliveryAddressSource,
             }
             : {}
         ),
       } : {}),
-      ...(values.customerNotes ? { customer_notes: values.customerNotes } : {}),
+      ...(normalizedValues.customerNotes ? { customer_notes: normalizedValues.customerNotes } : {}),
     };
 
     const { data, error, status } = await client.rpc('create_order_with_items', { payload });
@@ -515,7 +539,7 @@ export function createSupabaseOrderRepository({
       });
     }
 
-    if (values.deliveryMode === 'delivery') {
+    if (normalizedValues.deliveryMode === 'delivery') {
       let deliveryCode = normalizeDeliveryCodeValue(row.delivery_code);
       if (!deliveryCode) {
         const {
@@ -1085,8 +1109,14 @@ async function prepareIdempotentRequest({
     customerPhone: values.customerPhone,
     deliveryMode: values.deliveryMode,
     address: values.customerAddress,
+    addressId: values.customerAddressId,
+    addressLabel: values.customerAddressLabel,
     neighborhood: values.addressDetails.neighborhood,
     reference: values.addressDetails.reference,
+    floor: values.deliveryFloor,
+    apartment: values.deliveryApartment,
+    province: values.deliveryProvince,
+    postalCode: values.deliveryPostalCode,
     notes: values.customerNotes,
     paymentMethod: values.paymentMethod,
   });
@@ -1509,12 +1539,27 @@ function rowToDemoOrder(row = {}) {
   const createdAt = normalizeIso(row.created_at);
   const trustedEta = trustedEstimatedArrival(row);
   const deliveryCode = normalizeDeliveryCodeValue(row.delivery_code);
-  const addressDetails = deliveryMode === 'pickup' ? null : normalizeAddressDetails({
-    customerStreetAddress: row.customer_street_address || row.address_label,
-    customerNeighborhood: row.customer_neighborhood,
-    customerReference: row.customer_reference,
-    customerAddress: row.address_label,
-  });
+  const snapshotStreetLine = [
+    row.delivery_street,
+    row.delivery_street_number,
+  ].filter(Boolean).join(' ');
+  const addressDetails = deliveryMode === 'pickup' ? null : {
+    ...normalizeAddressDetails({
+      customerStreetAddress: snapshotStreetLine || row.customer_street_address || row.address_label,
+      customerNeighborhood: row.delivery_city || row.customer_neighborhood,
+      customerReference: row.delivery_reference ?? row.customer_reference,
+      customerAddress: row.delivery_address_formatted || row.address_label,
+    }),
+    savedLabel: sanitizeText(row.delivery_address_label, { fallback: '', maxLength: 60 }),
+    street: sanitizeText(row.delivery_street, { fallback: '', maxLength: 120 }),
+    streetNumber: sanitizeText(row.delivery_street_number, { fallback: '', maxLength: 24 }),
+    floor: sanitizeText(row.delivery_floor, { fallback: '', maxLength: 24 }),
+    apartment: sanitizeText(row.delivery_apartment, { fallback: '', maxLength: 24 }),
+    city: sanitizeText(row.delivery_city, { fallback: '', maxLength: 100 }),
+    province: sanitizeText(row.delivery_province, { fallback: '', maxLength: 100 }),
+    postalCode: sanitizeText(row.delivery_postal_code, { fallback: '', maxLength: 20 }),
+    snapshotCreatedAt: normalizeIso(row.delivery_snapshot_created_at || row.created_at),
+  };
 
   return {
     id: sanitizeText(row.public_code || row.code || row.id, { maxLength: 80 }),

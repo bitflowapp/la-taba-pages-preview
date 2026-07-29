@@ -16,9 +16,12 @@ import {
   isPlausibleStreetAddress,
   isValidArgentinePhone,
   isValidDeliveryZone,
+  normalizeArgentinePhone,
+  normalizeCustomerName,
   normalizePaymentMethod,
   sanitizeNotes,
   sanitizeText,
+  validateCustomerName,
 } from './core/validators.js';
 import { recordCustomerOrder, updateCustomerOrderSnapshot } from './core/customer-history.js';
 import {
@@ -63,6 +66,8 @@ export function createOrderFromCheckout(formValues = {}) {
   if (!validation.ok) return { ok: false, message: validation.message };
 
   if (!values.customerName) return { ok: false, message: 'Ingresá el nombre del cliente.' };
+  const nameValidation = validateCustomerName(values.customerName);
+  if (!nameValidation.ok) return { ok: false, message: nameValidation.message };
   if (!values.customerPhone) return { ok: false, message: 'Ingresá un teléfono de contacto.' };
   if (!isValidArgentinePhone(values.customerPhone)) {
     return { ok: false, message: 'Ingresá un teléfono argentino válido, con código de área.' };
@@ -171,8 +176,8 @@ function normalizeCheckoutValues(formValues) {
   const deliveryMode = normalizeDeliveryMode(formValues.deliveryMode);
   const addressDetails = normalizeAddressDetails(formValues);
   return {
-    customerName: sanitizeText(formValues.customerName, { maxLength: 80 }),
-    customerPhone: sanitizeText(formValues.customerPhone, { maxLength: 40 }),
+    customerName: normalizeCustomerName(formValues.customerName),
+    customerPhone: normalizeArgentinePhone(formValues.customerPhone),
     customerStreetAddress: addressDetails.streetLine,
     customerNeighborhood: addressDetails.neighborhood,
     customerReference: addressDetails.reference,

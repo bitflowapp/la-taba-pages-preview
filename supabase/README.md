@@ -15,6 +15,7 @@ Se aplican en orden:
 3. `20260601205707_operational_orders_v1.sql`
 4. `20260725030000_taba_production_orders.sql`
 5. `20260728090000_customer_profiles_addresses.sql`
+6. `20260729150000_customer_profile_completion.sql`
 
 La última migración es aditiva respecto de las fases anteriores y conserva
 columnas legacy necesarias para compatibilidad. También aplica un cierre
@@ -38,7 +39,8 @@ probarla sobre staging con una copia representativa y preparar rollback. No usar
 
 ### Perfiles, libreta y snapshots de entrega
 
-La migracion `20260728090000_customer_profiles_addresses.sql` usa `auth.uid()`
+Las migraciones `20260728090000_customer_profiles_addresses.sql` y
+`20260729150000_customer_profile_completion.sql` usan `auth.uid()`
 en todas las RPC. El navegador no envia ni puede elegir `customer_id`: la
 sesion anonima existente identifica al cliente recurrente en el mismo
 navegador. `customers` y `customer_addresses` tienen RLS; las escrituras se
@@ -50,6 +52,9 @@ guardada unicamente si pertenece al `auth.uid()` actual y copia en `orders` la
 direccion, componentes, referencia, coordenadas confirmadas y origen. Por eso
 editar o archivar una direccion no cambia un pedido historico. El enlace
 `customer_address_id` es opcional y usa `ON DELETE SET NULL`.
+La migracion de cierre normaliza nombre y telefono, limita el nombre a 2-80
+caracteres con letras y agrega al snapshot la etiqueta de la direccion y la
+fecha de captura del lado servidor.
 
 No hay un geocodificador de cliente configurado en esta base. El GPS se usa
 unicamente tras una accion explicita, queda pendiente de confirmacion y el

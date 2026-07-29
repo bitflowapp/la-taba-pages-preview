@@ -114,6 +114,14 @@ export function normalizeOrderDraft(draft = {}) {
     customerAddress: addressDetails.label,
     addressDetails,
     customerAddressId,
+    customerAddressLabel: sanitizeText(draft.customerAddressLabel, { fallback: '', maxLength: 60 }),
+    deliveryStreet: sanitizeText(draft.deliveryStreet, { fallback: '', maxLength: 120 }),
+    deliveryStreetNumber: sanitizeText(draft.deliveryStreetNumber, { fallback: '', maxLength: 24 }),
+    deliveryFloor: sanitizeText(draft.deliveryFloor, { fallback: '', maxLength: 24 }),
+    deliveryApartment: sanitizeText(draft.deliveryApartment, { fallback: '', maxLength: 24 }),
+    deliveryCity: sanitizeText(draft.deliveryCity, { fallback: '', maxLength: 100 }),
+    deliveryProvince: sanitizeText(draft.deliveryProvince, { fallback: '', maxLength: 100 }),
+    deliveryPostalCode: sanitizeText(draft.deliveryPostalCode, { fallback: '', maxLength: 20 }),
     deliveryLatitude,
     deliveryLongitude,
     deliveryGeolocationAccuracy,
@@ -129,11 +137,13 @@ export function normalizeOrderDraft(draft = {}) {
 }
 
 function normalizeCoordinate(value) {
+  if (value == null || String(value).trim() === '') return null;
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
 
 function normalizeNonnegativeNumber(value) {
+  if (value == null || String(value).trim() === '') return null;
   const numeric = Number(value);
   return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
 }

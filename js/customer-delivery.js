@@ -4,12 +4,15 @@ import {
   normalizeCustomerAddress,
 } from './core/customer-addresses.js';
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
+import { formatArgentinePhone } from './core/validators.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
 import { createCustomerGeolocationService } from './services/customer-geolocation.js';
 
 const state = {
   initialized: false,
   loading: false,
+  saving: false,
+  loadVersion: 0,
   profile: null,
   addresses: [],
   selectedAddressId: '',
@@ -36,12 +39,20 @@ export async function initializeCustomerDeliveryCheckout() {
   await loadCustomerDeliveryProfile();
 }
 
+export async function refreshCustomerDeliveryCheckout() {
+  if (!isProduction()) return { ok: true, skipped: true };
+  return loadCustomerDeliveryProfile();
+}
+
 export async function persistCustomerProfileAfterOrder(values = {}) {
   if (!isProduction() || !values.rememberCustomer) return { ok: true, skipped: true };
   const repository = profileRepository();
   if (!repository) return { ok: false, message: 'No pudimos guardar tus datos para próximos pedidos.' };
   const result = await repository.saveProfile({ name: values.customerName, phone: values.customerPhone });
-  if (result.ok) state.profile = result.profile;
+  if (result.ok) {
+    state.profile = result.profile;
+    notifyProfileUpdated();
+  }
   return result;
 }
 
@@ -49,6 +60,8 @@ export function resetCustomerDeliveryForTests() {
   Object.assign(state, {
     initialized: false,
     loading: false,
+    saving: false,
+    loadVersion: 0,
     profile: null,
     addresses: [],
     selectedAddressId: '',
@@ -66,14 +79,16 @@ export function resetCustomerDeliveryForTests() {
 
 async function loadCustomerDeliveryProfile() {
   const repository = profileRepository();
-  if (!repository) return;
+  if (!repository) return { ok: false };
+  const loadVersion = ++state.loadVersion;
   state.loading = true;
   render();
   const result = await repository.load();
+  if (loadVersion !== state.loadVersion) return result;
   state.loading = false;
   if (!result.ok) {
     render(result.message);
-    return;
+    return result;
   }
   state.profile = result.profile;
   state.addresses = result.addresses;
@@ -81,6 +96,7 @@ async function loadCustomerDeliveryProfile() {
   const defaultAddress = state.addresses.find((address) => address.isDefault) || state.addresses[0] || null;
   if (defaultAddress && checkoutAddressFieldsEmpty()) selectAddress(defaultAddress.id, { applyToForm: true, renderAfter: false });
   render();
+  return result;
 }
 
 function bindCheckoutEvents() {
@@ -99,6 +115,10 @@ function bindCheckoutEvents() {
     if (!action) return;
     event.preventDefault();
     await handleAction(action, target.closest('[data-customer-address-id]')?.dataset.customerAddressId || '');
+  });
+  window.addEventListener('taba:customer-profile-updated', (event) => {
+    if (event.detail?.source !== 'profile') return;
+    void loadCustomerDeliveryProfile();
   });
 }
 
@@ -215,6 +235,14 @@ function applyAddressToForm(address) {
   setValue(form, 'customerNeighborhood', normalized.city);
   setValue(form, 'customerReference', normalized.reference);
   setValue(form, 'customerAddressId', normalized.id);
+  setValue(form, 'customerAddressLabel', normalized.label);
+  setValue(form, 'deliveryStreet', normalized.street);
+  setValue(form, 'deliveryStreetNumber', normalized.streetNumber);
+  setValue(form, 'deliveryFloor', normalized.floor);
+  setValue(form, 'deliveryApartment', normalized.apartment);
+  setValue(form, 'deliveryCity', normalized.city);
+  setValue(form, 'deliveryProvince', normalized.province);
+  setValue(form, 'deliveryPostalCode', normalized.postalCode);
   if (normalized.latitude != null && normalized.longitude != null) {
     setValue(form, 'deliveryLatitude', normalized.latitude);
     setValue(form, 'deliveryLongitude', normalized.longitude);
@@ -234,39 +262,74 @@ function applyAddressToForm(address) {
 function clearSelectedAddress() {
   if (!state.selectedAddressId) return;
   state.selectedAddressId = '';
-  setValue(checkoutForm(), 'customerAddressId', '');
+  const form = checkoutForm();
+  for (const name of [
+    'customerAddressId',
+    'customerAddressLabel',
+    'deliveryStreet',
+    'deliveryStreetNumber',
+    'deliveryFloor',
+    'deliveryApartment',
+    'deliveryCity',
+    'deliveryProvince',
+    'deliveryPostalCode',
+  ]) setValue(form, name, '');
+  clearLocationFields();
+  state.confirmedLocation = null;
   render();
 }
 
 async function updateDefault(addressId) {
+  if (state.saving) return;
   const repository = profileRepository();
   if (!repository) return;
-  const result = await repository.setDefault(addressId);
-  if (!result.ok) {
-    render(result.message);
-    return;
+  state.saving = true;
+  let finalMessage = '';
+  render('Guardando…');
+  try {
+    const result = await repository.setDefault(addressId);
+    if (!result.ok) {
+      finalMessage = result.message;
+      return;
+    }
+    state.addresses = state.addresses.map((address) => ({ ...address, isDefault: address.id === addressId }));
+    notifyProfileUpdated();
+  } finally {
+    state.saving = false;
+    render(finalMessage);
   }
-  state.addresses = state.addresses.map((address) => ({ ...address, isDefault: address.id === addressId }));
-  render();
 }
 
 async function archiveAddress(addressId) {
+  if (state.saving) return;
   const address = findAddress(addressId);
   if (!address || !window.confirm(`¿Eliminar ${address.label}? Esta acción no modifica pedidos anteriores.`)) return;
   const repository = profileRepository();
   if (!repository) return;
-  const result = await repository.archive(addressId);
-  if (!result.ok) {
-    render(result.message);
-    return;
+  state.saving = true;
+  let finalMessage = '';
+  render('Eliminando…');
+  try {
+    const result = await repository.archive(addressId);
+    if (!result.ok) {
+      finalMessage = result.message;
+      return;
+    }
+    const replacementId = String(result.result?.replacementId || '');
+    state.addresses = state.addresses
+      .filter((entry) => entry.id !== addressId)
+      .map((entry) => ({ ...entry, isDefault: entry.id === replacementId }));
+    if (state.selectedAddressId === addressId) clearSelectedAddress();
+    if (state.editingAddressId === addressId) state.editingAddressId = '';
+    notifyProfileUpdated();
+  } finally {
+    state.saving = false;
+    render(finalMessage);
   }
-  state.addresses = state.addresses.filter((entry) => entry.id !== addressId);
-  if (state.selectedAddressId === addressId) clearSelectedAddress();
-  if (state.editingAddressId === addressId) state.editingAddressId = '';
-  render();
 }
 
 async function saveAddress() {
+  if (state.saving) return;
   const form = checkoutForm();
   if (!form) return;
   const label = String(form.elements?.customerAddressLabel?.value || '').trim();
@@ -294,39 +357,49 @@ async function saveAddress() {
 }
 
 async function persistAddress(candidate, { allowDuplicate = false } = {}) {
+  if (state.saving) return;
   const repository = profileRepository();
   if (!repository) return;
   const form = checkoutForm();
-  const profileResult = await repository.saveProfile({
-    name: form?.elements?.customerName?.value || '',
-    phone: form?.elements?.customerPhone?.value || '',
-  });
-  if (!profileResult.ok) {
-    render(profileResult.message);
-    return;
+  state.saving = true;
+  let finalMessage = '';
+  render('Guardando…');
+  try {
+    const profileResult = await repository.saveProfile({
+      name: form?.elements?.customerName?.value || '',
+      phone: form?.elements?.customerPhone?.value || '',
+    });
+    if (!profileResult.ok) {
+      finalMessage = profileResult.message;
+      return;
+    }
+    state.profile = profileResult.profile;
+    const result = await repository.saveAddress(candidate, { allowDuplicate });
+    if (result.code === 'duplicate') {
+      state.pendingDuplicate = { candidate, duplicate: result.duplicate };
+      render();
+      return;
+    }
+    if (!result.ok) {
+      finalMessage = result.message;
+      return;
+    }
+    const index = state.addresses.findIndex((address) => address.id === result.address.id);
+    if (index >= 0) state.addresses.splice(index, 1, result.address);
+    else state.addresses.unshift(result.address);
+    if (result.address.isDefault) {
+      state.addresses = state.addresses.map((address) => ({ ...address, isDefault: address.id === result.address.id }));
+    }
+    state.editorOpen = false;
+    state.editingAddressId = '';
+    state.pendingDuplicate = null;
+    selectAddress(result.address.id, { renderAfter: false });
+    notifyProfileUpdated();
+    finalMessage = 'Dirección guardada.';
+  } finally {
+    state.saving = false;
+    render(finalMessage);
   }
-  state.profile = profileResult.profile;
-  const result = await repository.saveAddress(candidate, { allowDuplicate });
-  if (result.code === 'duplicate') {
-    state.pendingDuplicate = { candidate, duplicate: result.duplicate };
-    render();
-    return;
-  }
-  if (!result.ok) {
-    render(result.message);
-    return;
-  }
-  const index = state.addresses.findIndex((address) => address.id === result.address.id);
-  if (index >= 0) state.addresses.splice(index, 1, result.address);
-  else state.addresses.unshift(result.address);
-  if (result.address.isDefault) {
-    state.addresses = state.addresses.map((address) => ({ ...address, isDefault: address.id === result.address.id }));
-  }
-  state.editorOpen = false;
-  state.editingAddressId = '';
-  state.pendingDuplicate = null;
-  selectAddress(result.address.id, { renderAfter: false });
-  render('Dirección guardada.');
 }
 
 async function useCurrentLocation() {
@@ -365,7 +438,7 @@ function applyProfileToEmptyFields(profile) {
   const form = checkoutForm();
   if (!form || !profile) return;
   if (!form.elements?.customerName?.value) setValue(form, 'customerName', profile.name);
-  if (!form.elements?.customerPhone?.value) setValue(form, 'customerPhone', profile.phone);
+  if (!form.elements?.customerPhone?.value) setValue(form, 'customerPhone', formatArgentinePhone(profile.phone));
 }
 
 function checkoutAddressFieldsEmpty() {
@@ -404,6 +477,7 @@ function render(message = '') {
         <button class="secondary-button compact" type="button" data-customer-address-action="add">Agregar dirección</button>
       </div>
       <div class="saved-address-status" aria-live="polite">${escapeHtml(status)}</div>
+      <p class="saved-address-order-note">La dirección elegida se usa en este pedido. Solo cambia tu libreta si tocás “Guardar dirección”.</p>
       ${renderAddressList()}
       ${renderLocationPanel()}
       ${renderSuggestion()}
@@ -424,10 +498,10 @@ function renderAddressList() {
           <span><strong>${escapeHtml(address.label)}${address.isDefault ? ' · Principal' : ''}</strong><span>${escapeHtml(addressSummary(address))}</span>${reference}</span>
         </label>
         <div class="saved-address-actions">
-          <button class="text-button" type="button" data-customer-address-action="select">Usar</button>
-          <button class="text-button" type="button" data-customer-address-action="edit">Editar</button>
-          ${address.isDefault ? '' : '<button class="text-button" type="button" data-customer-address-action="make-default">Principal</button>'}
-          <button class="text-button danger" type="button" data-customer-address-action="delete">Eliminar</button>
+          <button class="text-button" type="button" data-customer-address-action="select" ${disabledAttr()}>Usar</button>
+          <button class="text-button" type="button" data-customer-address-action="edit" ${disabledAttr()}>Editar</button>
+          ${address.isDefault ? '' : `<button class="text-button" type="button" data-customer-address-action="make-default" ${disabledAttr()}>Principal</button>`}
+          <button class="text-button danger" type="button" data-customer-address-action="delete" ${disabledAttr()}>Eliminar</button>
         </div>
       </article>`;
     }).join('')}
@@ -481,7 +555,7 @@ function renderAddressEditor(editing) {
       <label>Código postal<input name="customerAddressPostalCode" maxlength="20" value="${escapeAttr(address.postalCode || '')}" autocomplete="postal-code" /></label>
     </div>
     <label class="address-default-toggle"><input name="customerAddressDefault" type="checkbox" ${editing?.isDefault || (!editing && !state.addresses.length) ? 'checked' : ''} /> Marcar como dirección principal</label>
-    <div class="saved-address-actions"><button class="secondary-button compact" type="button" data-customer-address-action="save-address">${editing ? 'Guardar cambios' : 'Guardar dirección'}</button></div>
+    <div class="saved-address-actions"><button class="secondary-button compact" type="button" data-customer-address-action="save-address" ${disabledAttr()}>${state.saving ? 'Guardando…' : editing ? 'Guardar cambios' : 'Guardar dirección'}</button></div>
   </div>`;
 }
 
@@ -509,6 +583,16 @@ function focusEditorLabel() {
 
 function isProduction() {
   return getAppMode() === APP_MODE_PRODUCTION;
+}
+
+function disabledAttr() {
+  return state.saving ? 'disabled aria-disabled="true"' : '';
+}
+
+function notifyProfileUpdated() {
+  window.dispatchEvent(new CustomEvent('taba:customer-profile-updated', {
+    detail: { source: 'checkout' },
+  }));
 }
 
 function escapeHtml(value) {

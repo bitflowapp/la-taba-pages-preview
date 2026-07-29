@@ -13,13 +13,28 @@ export function normalizeAddressDetails(input = {}) {
   const legacyAddress = sanitizeText(source.label ?? source.customerAddress ?? source.address, { maxLength: ADDRESS_MAX });
   const label = formatAddressLabel({ streetLine, neighborhood }, legacyAddress);
 
-  return {
+  const normalized = {
     streetLine,
     neighborhood,
     reference,
     label,
     usesStructured: hasStructuredFields,
   };
+  const optionalFields = {
+    savedLabel: sanitizeText(source.savedLabel, { maxLength: 60 }),
+    street: sanitizeText(source.street, { maxLength: 120 }),
+    streetNumber: sanitizeText(source.streetNumber, { maxLength: 24 }),
+    floor: sanitizeText(source.floor, { maxLength: 24 }),
+    apartment: sanitizeText(source.apartment, { maxLength: 24 }),
+    city: sanitizeText(source.city, { maxLength: 100 }),
+    province: sanitizeText(source.province, { maxLength: 100 }),
+    postalCode: sanitizeText(source.postalCode, { maxLength: 20 }),
+    snapshotCreatedAt: sanitizeText(source.snapshotCreatedAt, { maxLength: 40 }),
+  };
+  for (const [key, value] of Object.entries(optionalFields)) {
+    if (value) normalized[key] = value;
+  }
+  return normalized;
 }
 
 export function normalizeOrderAddressDetails(order = {}) {

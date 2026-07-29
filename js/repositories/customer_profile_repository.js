@@ -1,5 +1,11 @@
 import { normalizeCustomerAddress } from '../core/customer-addresses.js';
-import { sanitizeText } from '../core/validators.js';
+import {
+  isValidArgentinePhone,
+  normalizeArgentinePhone,
+  normalizeCustomerName,
+  sanitizeText,
+  validateCustomerName,
+} from '../core/validators.js';
 
 export function createSupabaseCustomerProfileRepository({ client, authService } = {}) {
   if (!client || typeof client.rpc !== 'function') {
@@ -11,31 +17,52 @@ export function createSupabaseCustomerProfileRepository({ client, authService } 
 
   async function withSession(callback) {
     const session = await authService.ensureCustomerSession();
-    if (!session.ok) return failure(session.message || 'No pudimos validar tu sesión.');
+    if (!session.ok) {
+      return failure(
+        session.message || 'No pudimos validar tu sesión.',
+        isOffline() ? 'offline' : 'session_expired',
+      );
+    }
     try {
       return await callback();
     } catch (_) {
-      return failure('No pudimos conectar tus datos guardados. Podés continuar con los datos ingresados.');
+      return failure(
+        'No pudimos conectar tus datos guardados. Podés continuar con los datos ingresados.',
+        isOffline() ? 'offline' : 'network',
+      );
     }
   }
 
   async function load() {
     return withSession(async () => {
       const { data, error } = await client.rpc('get_current_customer_profile');
-      if (error) return failure('No pudimos recuperar tus datos guardados. Podés completar el pedido manualmente.');
+      if (error) {
+        return queryFailure(
+          error,
+          'No pudimos recuperar tus datos guardados. Podés completar el pedido manualmente.',
+        );
+      }
       const profile = normalizeProfilePayload(data);
       return { ok: true, profile, addresses: profile.addresses };
     });
   }
 
   async function saveProfile({ name, phone } = {}) {
+    const nameValidation = validateCustomerName(name);
+    if (!nameValidation.ok) return failure(nameValidation.message, 'validation');
+    const normalizedPhone = normalizeArgentinePhone(phone);
+    if (!isValidArgentinePhone(normalizedPhone)) {
+      return failure('Ingresá un teléfono argentino válido, con código de área.', 'validation');
+    }
     const payload = {
-      p_name: sanitizeText(name, { fallback: '', maxLength: 120 }),
-      p_phone: sanitizeText(phone, { fallback: '', maxLength: 40 }),
+      p_name: nameValidation.name,
+      p_phone: normalizedPhone,
     };
     return withSession(async () => {
       const { data, error } = await client.rpc('upsert_current_customer_profile', payload);
-      if (error) return failure('No pudimos guardar tus datos. El pedido se puede realizar igualmente.');
+      if (error) {
+        return queryFailure(error, 'No pudimos guardar tus datos. El pedido se puede realizar igualmente.');
+      }
       return { ok: true, profile: normalizeProfile(data) };
     });
   }
@@ -45,7 +72,12 @@ export function createSupabaseCustomerProfileRepository({ client, authService } 
     const payload = { ...normalizedAddress, allowDuplicate: Boolean(allowDuplicate) };
     return withSession(async () => {
       const { data, error } = await client.rpc('upsert_current_customer_address', { p_address: payload });
-      if (error) return failure('No pudimos guardar la dirección. Podés continuar con los datos ingresados.');
+      if (error) {
+        return queryFailure(
+          error,
+          'No pudimos guardar la dirección. Podés continuar con los datos ingresados.',
+        );
+      }
       if (data?.ok === false && data?.code === 'duplicate') {
         return {
           ok: false,
@@ -71,7 +103,7 @@ export function createSupabaseCustomerProfileRepository({ client, authService } 
     if (!id) return failure('Dirección no encontrada.');
     return withSession(async () => {
       const { data, error } = await client.rpc(name, { p_address_id: id });
-      if (error) return failure(failureMessage);
+      if (error) return queryFailure(error, failureMessage);
       return { ok: true, result: data || null };
     });
   }
@@ -91,12 +123,26 @@ function normalizeProfile(value) {
   const source = value && typeof value === 'object' ? value : {};
   return {
     id: sanitizeText(source.id, { fallback: '', maxLength: 80 }),
-    name: sanitizeText(source.name, { fallback: '', maxLength: 120 }),
-    phone: sanitizeText(source.phone, { fallback: '', maxLength: 40 }),
+    name: normalizeCustomerName(source.name),
+    phone: normalizeArgentinePhone(source.phone),
     updatedAt: sanitizeText(source.updatedAt ?? source.updated_at, { fallback: '', maxLength: 40 }),
   };
 }
 
-function failure(message) {
-  return { ok: false, message };
+function queryFailure(error, message) {
+  if (isOffline()) return failure('Sin conexión. Revisá internet y volvé a intentar.', 'offline');
+  const status = Number(error?.status || error?.statusCode || 0);
+  const code = String(error?.code || '').trim();
+  if ([401, 403].includes(status) || code === '42501' || /jwt|session/i.test(String(error?.message || ''))) {
+    return failure('Tu sesión venció. Actualizá la página para volver a ingresar.', 'session_expired');
+  }
+  return failure(message, 'network');
+}
+
+function failure(message, code = 'unknown') {
+  return { ok: false, code, message };
+}
+
+function isOffline() {
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
 }

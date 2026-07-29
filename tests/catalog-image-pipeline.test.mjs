@@ -106,12 +106,26 @@ test('complete master and thumbnail swap between SKUs breaks deterministic ident
   assert.ok(report.errors.some((error) => /bindingSha256 master/.test(error)));
 });
 
-test('image verification accepts the completed preview pipeline', () => {
-  const args = ['scripts/catalog-images/verify.mjs'];
-  const completed = spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8' });
-  assert.equal(completed.status, 0, `${completed.stdout}\n${completed.stderr}`);
+test('image verification accepts the approved demo and keeps the commercial template fail-closed', () => {
+  const approvedDemo = spawnSync(
+    process.execPath,
+    ['scripts/catalog-images/verify-approved-demo.mjs'],
+    { cwd: root, encoding: 'utf8' },
+  );
+  assert.equal(approvedDemo.status, 0, `${approvedDemo.stdout}\n${approvedDemo.stderr}`);
 
-  const templateOnly = spawnSync(process.execPath, [...args, '--allow-empty'], {
+  const commercialArgs = ['scripts/catalog-images/verify.mjs'];
+  const commercialWithoutApproval = spawnSync(process.execPath, commercialArgs, {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  assert.notEqual(commercialWithoutApproval.status, 0);
+  assert.match(
+    `${commercialWithoutApproval.stdout}\n${commercialWithoutApproval.stderr}`,
+    /no contiene im[aá]genes|allow-empty/i,
+  );
+
+  const templateOnly = spawnSync(process.execPath, [...commercialArgs, '--allow-empty'], {
     cwd: root,
     encoding: 'utf8',
   });

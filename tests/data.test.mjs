@@ -2,6 +2,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import { categories, products } from '../js/data.js';
+import {
+  isFernetProduct,
+  isPopularProduct,
+  isPromotionalProduct,
+  isUnitStorefrontProduct,
+  uniqueProducts,
+} from '../js/core/storefront-filters.js';
 
 const EXPECTED_CATEGORY_IDS = [
   'all',
@@ -94,6 +101,56 @@ test('preview catalog sells beverages only by unit and never renders multipacks'
       `multipack copy in active product ${product.id}`,
     );
   }
+});
+
+test('el storefront publicado deriva una única colección de unidades válidas', () => {
+  const storefrontProducts = products.filter(isUnitStorefrontProduct);
+  const categoryIds = new Set(categories.map((category) => category.id));
+  const blockedIds = products
+    .filter((product) => !isUnitStorefrontProduct(product))
+    .map((product) => product.id)
+    .sort();
+
+  assert.deepEqual(blockedIds, [
+    'qa-hielo',
+    'qa-isotonica',
+    'qa-jugo-naranja',
+    'qa-picada',
+    'qa-whisky',
+  ]);
+  assert.equal(uniqueProducts(storefrontProducts).length, storefrontProducts.length);
+
+  for (const product of storefrontProducts) {
+    assert.equal(product.unitsPerPack, 1, `cantidad no unitaria en ${product.id}`);
+    assert.equal(product.imageShowsMultipack, false, `imagen multipack publicada en ${product.id}`);
+    assert.doesNotMatch(product.name, /(?:\b(?:pack|multipack)\b|(?:^|\s)(?:x|×)\s*[2-9]\d*)/i);
+    assert.doesNotMatch(
+      `${product.description} ${product.presentation || ''} ${product.unitLabel}`,
+      /\b(?:pack|multipack)\b/i,
+      `presentación multipack publicada en ${product.id}`,
+    );
+    assert.ok(categoryIds.has(product.categoryId), `categoría inválida en ${product.id}`);
+  }
+});
+
+test('promociones, más vendidos y Fernet usan señales reales del catálogo unitario', () => {
+  const storefrontProducts = products.filter(isUnitStorefrontProduct);
+  const promotions = storefrontProducts.filter((product) => isPromotionalProduct(product));
+  const popular = storefrontProducts.filter(isPopularProduct);
+  const fernet = storefrontProducts.filter(isFernetProduct);
+
+  assert.ok(promotions.length > 0);
+  assert.ok(promotions.every((product) => (
+    String(product.homePromoBadge || '').trim()
+    || Number(product.oldPrice) > Number(product.price)
+  )));
+  assert.ok(popular.length > 0);
+  assert.ok(popular.every((product) => product.popular === true));
+  assert.equal(fernet.length, 0);
+  assert.equal(
+    storefrontProducts.some((product) => /gin/i.test(product.name) && isFernetProduct(product)),
+    false,
+  );
 });
 
 test('preview categories use the canonical beverage ids', () => {

@@ -616,7 +616,17 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
     expect(ctaGap).toBeGreaterThanOrEqual(12);
 
     await page.goto('/?demo=1#catalog');
-    await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(14);
+    const expectedCatalogCount = await page.evaluate(async () => {
+      const [{ getState }, { getCustomerCatalogProducts }, { isUnitStorefrontProduct }] = await Promise.all([
+        import('/js/state.js'),
+        import('/js/core/catalog-store.js'),
+        import('/js/core/storefront-filters.js'),
+      ]);
+      return getCustomerCatalogProducts(getState().products).filter(isUnitStorefrontProduct).length;
+    });
+    expect(expectedCatalogCount).toBeGreaterThan(0);
+    await expect(page.locator('[data-catalog-count]')).toHaveText(`${expectedCatalogCount} productos`);
+    await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(expectedCatalogCount);
     await page.evaluate(() => window.scrollTo({
       top: document.documentElement.scrollHeight,
       behavior: 'instant',

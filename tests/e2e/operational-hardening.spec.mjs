@@ -45,10 +45,12 @@ test('?reset=1 limpia el pedido previo y deja el tracking vacío', async ({ brow
   await installBrowserStubs(page);
 
   await page.goto('/?reset=1&demo=1');
+  await expect(page).toHaveURL(/\/\?demo=1$/);
   await createDemoOrder(page);
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
 
   await page.goto('/?reset=1&demo=1');
+  await expect(page).toHaveURL(/\/\?demo=1$/);
   await page.goto('/?demo=1#tracking');
   const tracking = page.locator('[data-tracking-panel]');
   await expect(tracking).toContainText('Todavía no hay un pedido en curso');

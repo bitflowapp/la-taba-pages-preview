@@ -57,7 +57,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(officialThumbnail).toHaveCount(1);
   await expect(officialThumbnail).toHaveAttribute(
     'src',
-    /assets\/(?:catalog\/thumbnails\/.+\.webp|products\/bebidas\/.+\.jpg)$/,
+    /assets\/catalog\/beverages\/[^/]+\/thumbnail\.webp$/,
   );
   await expect(officialThumbnail).toHaveAttribute('loading', 'lazy');
   await expect(officialThumbnail).toHaveAttribute('width', '52');

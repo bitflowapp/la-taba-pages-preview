@@ -63,7 +63,6 @@ const ASSETS = [
   './js/map/rider_marker.js',
   './js/map/route_geometry.js',
   './js/data.js',
-  './js/beverage-qa-data.js',
   './js/state.js',
   './js/cart.js',
   './js/customer-delivery.js',

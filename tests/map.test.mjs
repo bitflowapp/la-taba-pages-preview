@@ -215,12 +215,14 @@ test('rider marker class reflects status and source', () => {
   assert.match(marker.className, /lt-rider-marker on-the-way source-gps/);
   assert.match(marker.innerHTML, /lt-rider-helmet-core/);
   assert.match(marker.innerHTML, /<svg[^>]*class="[^"]*\blt-rider-helmet-icon\b[^"]*"/);
-  assert.doesNotMatch(marker.innerHTML, /\btaba-map-helmet\b/);
-  assert.doesNotMatch(marker.innerHTML, /data-map-rider-helmet/);
+  assert.match(marker.innerHTML, /\btaba-map-helmet\b/);
+  assert.match(marker.innerHTML, /data-map-rider-helmet/);
   assert.doesNotMatch(marker.innerHTML, /taba-delivery-helmet/);
   assert.match(marker.innerHTML, /role="img"/);
   assert.match(marker.innerHTML, /aria-label="Casco del rider TABA"/);
-  assert.match(marker.innerHTML, /<circle[^>]*fill="#c8101e"[^>]*stroke="#ffffff"[^>]*stroke-width="2\.5"/);
+  assert.match(marker.innerHTML, /<circle[^>]*fill="var\(--taba-white\)"[^>]*stroke="currentColor"[^>]*stroke-width="3\.2"/);
+  assert.match(marker.innerHTML, /<g transform="translate\(4\.4 4\.8\) scale\(\.72\)">/);
+  assert.match(marker.innerHTML, /fill="var\(--delivery-helmet-contrast\)"/);
   assert.doesNotMatch(marker.innerHTML, />R</);
   assert.doesNotMatch(marker.innerHTML, /<text/);
   assert.doesNotMatch(marker.innerHTML, /(?:moto|scooter|emoji|<image\b|(?:src|href)=|https?:\/\/)/i);

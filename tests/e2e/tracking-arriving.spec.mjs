@@ -75,8 +75,9 @@ test('tracking público arriving reproduce la composición y conserva datos real
     '[data-tracking-panel] .status-on_the_way [data-real-map]',
   );
   await expect(onTheWayMap).toHaveAttribute('data-route-source', 'simulation');
-  const onTheWayMarker = onTheWayMap.locator('.lt-rider-helmet-icon');
+  const onTheWayMarker = onTheWayMap.locator('.lt-rider-helmet-icon.taba-map-helmet');
   await expect(onTheWayMarker).toBeVisible();
+  await expect(onTheWayMarker).toHaveAttribute('data-map-rider-helmet', '');
   await expect(onTheWayMap.locator('.taba-delivery-helmet')).toHaveCount(0);
   if (process.env.TABA_CAPTURE_ON_THE_WAY === '1') {
     await expect(onTheWayMap).toHaveAttribute('data-map-status', 'ready', { timeout: 15_000 });
@@ -120,7 +121,7 @@ test('tracking público arriving reproduce la composición y conserva datos real
   const realMap = map.locator('[data-real-map]');
   await expect(realMap).toHaveAttribute('data-map-engine', 'maplibre');
   await expect(realMap).not.toHaveAttribute('data-route-source');
-  await expect(realMap.locator('.lt-rider-helmet-icon')).toBeVisible();
+  await expect(realMap.locator('.lt-rider-helmet-icon.taba-map-helmet')).toBeVisible();
   await expect(realMap.locator('.taba-delivery-helmet')).toHaveCount(0);
   await expect(map.locator('[data-map-meta-text]')).toHaveText(
     /^Última ubicación · hace (?:\d+ s|\d+ min)$/,

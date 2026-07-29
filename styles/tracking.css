@@ -1784,6 +1784,13 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row {
   height: 48px;
 }
 
+.taba-map-helmet {
+  --delivery-helmet-contrast: var(--taba-white);
+  color: var(--taba-red);
+  overflow: visible;
+  filter: none;
+}
+
 .lt-place-marker {
   display: block;
   width: 44px;

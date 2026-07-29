@@ -15,16 +15,16 @@ export function riderHelmetSvg({
   const accessibility = decorative
     ? 'aria-hidden="true" focusable="false"'
     : 'role="img" aria-label="Casco del rider TABA" focusable="false"';
-  return `<svg class="${className}" viewBox="0 0 56 56" ${accessibility}>
-    <circle cx="28" cy="28" r="24.5" fill="#c8101e" stroke="#ffffff" stroke-width="2.5"></circle>
-    <path d="M14.5 29.1c0-8 5.8-13.8 13.8-13.8 8.1 0 13.7 5.9 13.7 14v8.2H29.5l-3.3-7.2H14.5v-1.2Z" fill="#ffffff"></path>
-    <path d="M29.1 24.1h9.2v9.3h-5.7l-3.5-9.3Z" fill="#c8101e"></path>
-    <path d="M16.8 30.3h9.4l3.3 7.2h8.8" fill="none" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"></path>
+  return `<svg class="${className} taba-map-helmet" data-map-rider-helmet viewBox="0 0 56 56" ${accessibility}>
+    <circle cx="28" cy="28" r="24.5" fill="var(--taba-white)" stroke="currentColor" stroke-width="3.2"></circle>
+    <g transform="translate(4.4 4.8) scale(.72)">
+      ${riderHelmetProfileMarkup()}
+    </g>
   </svg>`;
 }
 
-// El avatar no comparte la geometría del marcador del mapa: el tracking público
-// necesita un casco de perfil reconocible incluso dentro de su círculo de 50 px.
+// Avatar y marcador comparten la geometría base, pero conservan wrappers y
+// clases separados para mantener intactas sus escalas y tratamientos visuales.
 export function riderAvatarHelmetSvg({
   className = 'tracking-rider-helmet',
   decorative = true,

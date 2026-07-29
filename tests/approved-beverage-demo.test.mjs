@@ -37,8 +37,13 @@ test('el catálogo demo aprobado contiene exactamente los 22 SKU locales', () =>
   assert.equal(new Set(products.map((product) => product.sku)).size, 22);
   assert.ok(products.every((product) => product.image.startsWith('assets/catalog/beverages/')));
   assert.ok(products.every((product) => product.imageThumbnail.startsWith('assets/catalog/beverages/')));
+  assert.ok(products.every((product) => !product.sku.startsWith('qa-')));
+  assert.ok(products.every((product) => !`${product.image} ${product.imageThumbnail}`.includes('/qa-')));
   assert.ok(products.every((product) => !/^https?:/i.test(product.image) && !/^https?:/i.test(product.imageThumbnail)));
   assert.ok(products.every((product) => !/\b(?:pending|unresolved)\b/i.test(`${product.image} ${product.imageThumbnail}`)));
+  const assets = products.flatMap((product) => [product.image, product.imageThumbnail]);
+  assert.equal(assets.length, 44);
+  assert.equal(new Set(assets).size, 44);
   for (const product of products) {
     assert.ok(fs.statSync(path.join(ROOT, product.image)).size > 0, `${product.sku}: product.webp`);
     assert.ok(fs.statSync(path.join(ROOT, product.imageThumbnail)).size > 0, `${product.sku}: thumbnail.webp`);

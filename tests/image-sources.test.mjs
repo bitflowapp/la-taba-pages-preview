@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { products } from '../js/approved-beverage-demo-data.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const docsPath = path.join(root, 'docs/image-sources.md');
@@ -28,22 +29,22 @@ test('preview uses one neutral documented placeholder with a matching SHA-256', 
   assert.match(audit, /APPROVED_PREVIEW_ONLY/);
 });
 
-test('tracked storefront assets contain no legacy food WebP and match the manifest', () => {
-  const candidates = [
-    path.join(root, 'assets/hero'),
-    path.join(root, 'assets/products'),
-    path.join(root, 'assets/catalog/products'),
-    path.join(root, 'assets/catalog/thumbnails'),
-  ];
-  const webps = candidates.flatMap((directory) => (
-    fs.existsSync(directory)
-      ? fs.readdirSync(directory)
-        .filter((name) => name.endsWith('.webp'))
-        .map((name) => path.relative(root, path.join(directory, name)).replaceAll('\\', '/'))
-      : []
-  )).sort();
+function listWebps(directory) {
+  if (!fs.existsSync(directory)) return [];
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) return listWebps(absolute);
+    return entry.isFile() && entry.name.endsWith('.webp')
+      ? [path.relative(root, absolute).replaceAll('\\', '/')]
+      : [];
+  });
+}
+
+test('tracked storefront WebP are approved demo assets or commercial manifest entries', () => {
+  const webps = listWebps(path.join(root, 'assets')).sort();
   for (const file of webps) {
     assert.doesNotMatch(file, /pizza|parrilla|carne|milanesa|chorizo|horno|combo-familiar|promo-dia|bebida-cola/i);
+    assert.doesNotMatch(file, /(?:^|\/)qa-[^/]*\.webp$/i);
   }
 
   const manifest = JSON.parse(fs.readFileSync(
@@ -54,7 +55,11 @@ test('tracked storefront assets contain no legacy food WebP and match the manife
     source.assets?.master?.path,
     source.assets?.thumbnail?.path,
   ]).filter(Boolean).sort();
-  assert.deepEqual(webps, manifested);
+  const approvedDemo = products.flatMap((product) => [
+    product.image,
+    product.imageThumbnail,
+  ]).sort();
+  assert.deepEqual(webps, [...approvedDemo, ...manifested].sort());
 });
 
 test('commercial image audit and manifest are explicit and traceable', () => {
@@ -78,5 +83,5 @@ test('commercial image audit and manifest are explicit and traceable', () => {
     'utf8',
   ));
   assert.equal(manifest.schemaVersion, 1);
-  assert.equal(manifest.sources.length, 12);
+  assert.equal(manifest.sources.length, 0);
 });

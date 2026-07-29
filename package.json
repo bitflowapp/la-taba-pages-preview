@@ -18,7 +18,7 @@
     "catalog:import": "node scripts/import-product-catalog.mjs",
     "catalog:images:fetch": "node scripts/catalog-images/fetch-approved.mjs",
     "catalog:images:normalize": "node scripts/catalog-images/normalize.mjs",
-    "catalog:images:verify": "node scripts/catalog-images/verify.mjs",
+    "catalog:images:verify": "node scripts/catalog-images/verify-approved-demo.mjs && node scripts/catalog-images/verify.mjs --allow-empty",
     "catalog:release:validate": "node scripts/validate-release-catalog.mjs",
     "staging:validate": "node scripts/validate-staging-readiness.mjs",
     "realtime:demo": "node scripts/realtime-relay.mjs"

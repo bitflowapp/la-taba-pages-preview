@@ -20,6 +20,9 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assetBlock);
 
   const assets = [...assetBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1]);
+  const qaMarker = ['q', 'a', '-'].join('');
+  assert.equal(assets.some((asset) => asset.includes(`/${qaMarker}`)), false);
+  assert.equal(assets.some((asset) => /(?:^|\/)(?:tests|fixtures)(?:\/|$)/i.test(asset)), false);
   assert.ok(assets.includes('./index.html'));
   assert.ok(assets.includes('./manifest.webmanifest'));
   assert.ok(assets.includes('./assets/icon.svg'));

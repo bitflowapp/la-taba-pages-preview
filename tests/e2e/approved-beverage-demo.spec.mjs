@@ -3,6 +3,8 @@ import { installBrowserStubs, installPageGuards } from './helpers.mjs';
 
 test('demo aprobado muestra 22 SKU, packs y assets locales sin hotlinks', async ({ page }) => {
   const guards = installPageGuards(page);
+  const requestedUrls = [];
+  page.on('request', (request) => requestedUrls.push(request.url()));
   await installBrowserStubs(page);
   await page.goto('/?reset=1&demo=1#catalog');
   await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(22);
@@ -18,6 +20,10 @@ test('demo aprobado muestra 22 SKU, packs y assets locales sin hotlinks', async 
   await expect(pendingCard).toContainText('Precio pendiente');
   await expect(page.locator('[data-add-product="red-bull-original-lata-250ml-pack-4"]')).toBeDisabled();
   await expect(pendingCard).not.toContainText('$ 0');
+  const qaMarker = ['q', 'a', '-'].join('');
+  const renderedQaReferences = await page.locator(`[data-product-id^="${qaMarker}"], [data-product-sku^="${qaMarker}"], img[src*="/${qaMarker}"]`).count();
+  expect(renderedQaReferences).toBe(0);
+  expect(requestedUrls.some((url) => url.includes(`/${qaMarker}`))).toBe(false);
   await guards.assertClean();
 });
 

@@ -240,6 +240,7 @@ async function bootstrap() {
   try {
     const resetRequested = hasDemoResetRequest();
     applyBusinessConfig();
+    configureViewScrollRestoration();
     bindEvents();
     subscribe(renderAll);
     maybeOpenPitchFromUrl();
@@ -1196,6 +1197,27 @@ function viewFromHash() {
   return normalizeView(window.location.hash.slice(1));
 }
 
+function configureViewScrollRestoration() {
+  try {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  } catch (_) {
+    // Un navegador sin esta API sigue usando el reset explícito de cada vista.
+  }
+}
+
+function resetPageScroll() {
+  const reset = () => {
+    const scroller = document.scrollingElement || document.documentElement;
+    scroller.scrollTop = 0;
+    scroller.scrollLeft = 0;
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  };
+  reset();
+  requestAnimationFrame(reset);
+}
+
 function setActiveView(view, options = {}) {
   const nextView = normalizeView(view);
   const changed = nextView !== activeView;
@@ -1210,7 +1232,7 @@ function setActiveView(view, options = {}) {
   if (changed) playViewEnter(nextView);
 
   if (changed && options.scroll !== false) {
-    window.scrollTo(0, 0);
+    resetPageScroll();
   }
   if (changed && options.focus !== false) focusActiveViewHeading(nextView);
 }
@@ -1222,7 +1244,7 @@ function syncViewFromLocation() {
   syncGpsSharingWithView(nextView);
   renderAll();
   playViewEnter(nextView);
-  window.scrollTo(0, 0);
+  resetPageScroll();
   focusActiveViewHeading(nextView);
 }
 

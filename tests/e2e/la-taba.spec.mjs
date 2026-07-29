@@ -499,6 +499,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await installBrowserStubs(page);
   await page.goto('/?demo=1');
   await expect(page.locator('[data-view="home"]')).toBeVisible();
+  expect(await page.evaluate(() => history.scrollRestoration)).toBe('manual');
 
   const mainScrollState = await page.evaluate(() => {
     const main = document.querySelector('main[data-app-main]');
@@ -522,6 +523,16 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await expect(page.locator('[data-view="home"]')).toBeHidden();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   expect(new URL(page.url()).hash).toBe('#cart');
+
+  await page.goBack();
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
+  await expect(page.locator('[data-view="cart"]')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  expect(new URL(page.url()).hash).toBe('#home');
+
+  await page.locator('[data-floating-cart]').click();
+  await expect(page.locator('[data-view="cart"]')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 
   await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();

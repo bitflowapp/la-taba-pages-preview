@@ -18,7 +18,7 @@
       integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK"
       crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="styles.css?v=37" />
+    <link rel="stylesheet" href="styles.css?v=38" />
   </head>
   <body>
     <div class="app-shell">
@@ -514,7 +514,11 @@
       </main>
 
       <button class="floating-cart hidden" type="button" data-floating-cart data-open-cart aria-live="polite">
-        <span data-floating-cart-summary>Ver pedido · $0</span>
+        <span class="floating-cart-copy">
+          <span class="floating-cart-label" data-floating-cart-label>Ver carrito</span>
+          <span class="floating-cart-meta"><small data-floating-cart-count></small></span>
+        </span>
+        <strong data-floating-cart-summary>$0</strong>
       </button>
 
       <nav class="mobile-nav" aria-label="Navegación móvil">

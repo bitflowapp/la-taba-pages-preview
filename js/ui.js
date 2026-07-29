@@ -1310,17 +1310,19 @@ export function renderCartTotals() {
   const floatingAllowed = ['home', 'catalog'].includes(
     document.body.dataset.activeView || 'home',
   );
-  const floatingText = `Ver pedido · ${money(subtotalSummary.subtotal)}`;
+  const floatingText = `Ver carrito · ${money(subtotalSummary.total)}`;
   setText('[data-cart-count]', String(summary.count));
   setText('[data-cart-count-mobile]', String(summary.count));
   setText('[data-cart-total-small]', summary.count > 0 ? money(subtotalSummary.subtotal) : money(0));
-  setText('[data-floating-cart-summary]', floatingText);
+  setText('[data-floating-cart-summary]', money(subtotalSummary.total));
+  setText('[data-floating-cart-label]', 'Ver carrito');
+  setText('[data-floating-cart-count]', summary.count === 1 ? '1 producto' : `${summary.count} productos`);
   $$('[data-cart-count], [data-cart-count-mobile]').forEach((node) => {
     node.classList.toggle('is-empty', summary.count === 0);
   });
   $$('[data-floating-cart]').forEach((node) => {
     node.classList.toggle('hidden', summary.count === 0 || !floatingAllowed);
-    node.setAttribute('aria-label', summary.count > 0 ? `${floatingText}. Ver pedido.` : 'Carrito vacío');
+    node.setAttribute('aria-label', summary.count > 0 ? `${floatingText}. Abrir carrito.` : 'Carrito vacío');
   });
 }
 

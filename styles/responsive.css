@@ -59,6 +59,14 @@ body[data-active-view="rider"] .floating-cart {
 }
 
 @media (max-width: 820px) {
+  :root {
+    --taba-bottom-nav-height: 76px;
+    --taba-bottom-nav-gap: 14px;
+    --taba-floating-cart-reserve: calc(
+      var(--taba-bottom-nav-clearance) + var(--taba-floating-cart-height) + var(--taba-floating-cart-gap)
+    );
+  }
+
   html {
     overscroll-behavior-y: none;
     scroll-padding-top: calc(var(--topbar) + 12px);
@@ -186,13 +194,30 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .floating-cart {
-    display: block;
-    right: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    right: 12px;
     bottom: var(--taba-bottom-nav-clearance);
-    left: 14px;
+    left: 12px;
     width: auto;
-    min-height: 54px;
-    text-align: center;
+    min-height: var(--taba-floating-cart-height);
+    padding: 6px 14px;
+    gap: 12px;
+    border-radius: 18px;
+    box-shadow: 0 8px 18px rgb(204 0 16 / 22%), inset 0 1px 0 rgb(255 255 255 / 16%);
+  }
+
+  .floating-cart-label {
+    font-size: 13px;
+  }
+
+  .floating-cart-copy small {
+    font-size: 10px;
+  }
+
+  .floating-cart > strong {
+    font-size: 15px;
   }
 
   .app-home {
@@ -911,8 +936,16 @@ body[data-active-view="rider"] .floating-cart {
     padding: 14px 16px calc(30px + var(--safe-area-bottom));
   }
 
+  html:has([data-floating-cart]:not(.hidden)) {
+    scroll-padding-bottom: var(--taba-floating-cart-reserve);
+  }
+
+  body:has([data-floating-cart]:not(.hidden)) main[data-app-main] {
+    padding-bottom: var(--taba-floating-cart-reserve);
+  }
+
   body:has(.floating-cart:not(.hidden)) .taba-home {
-    padding-bottom: calc(44px + var(--safe-area-bottom));
+    padding-bottom: 0;
   }
 
   .taba-home > .taba-home-content {
@@ -1148,5 +1181,16 @@ body[data-active-view="rider"] .floating-cart {
   body:is([data-active-view="home"], [data-active-view="catalog"], [data-active-view="cart"]) .mobile-nav {
     right: 10px;
     left: 10px;
+  }
+
+  .floating-cart {
+    right: 10px;
+    left: 10px;
+    padding-inline: 12px;
+    gap: 10px;
+  }
+
+  .floating-cart-label {
+    font-size: 12px;
   }
 }

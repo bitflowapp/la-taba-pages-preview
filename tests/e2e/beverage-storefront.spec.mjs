@@ -266,25 +266,57 @@ test('los derivados limpios se reutilizan en Home, catálogo, modal y carrito', 
   await expect(page.locator(`[data-product-grid] img[src*="${cleanAsset}"]`)).toBeVisible();
 });
 
-test('la CTA móvil del pedido queda sobre la navegación sin superponerse', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('la CTA móvil compacta reserva espacio real sobre la navegación', async ({ page }) => {
   await installBrowserStubs(page);
-  await page.goto('/?reset=1&demo=1#catalog');
-  await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
 
-  const floatingCart = page.locator('[data-floating-cart]');
-  const mobileNav = page.locator('.mobile-nav');
-  await expect(floatingCart).toBeVisible();
-  await expect(floatingCart.locator('[data-floating-cart-summary]')).toContainText(/^Ver pedido · \$/);
-  await expect(mobileNav).toBeVisible();
+  for (const viewport of [
+    { width: 320, height: 812 },
+    { width: 360, height: 800 },
+    { width: 390, height: 844 },
+    { width: 430, height: 932 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/?reset=1&demo=1#catalog');
+    await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
 
-  const [floatingBox, navBox] = await Promise.all([
-    floatingCart.boundingBox(),
-    mobileNav.boundingBox(),
-  ]);
-  expect(floatingBox).not.toBeNull();
-  expect(navBox).not.toBeNull();
-  expect(floatingBox.y + floatingBox.height).toBeLessThanOrEqual(navBox.y);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
+    const main = page.locator('main[data-app-main]');
+    const emptyPadding = await main.evaluate((node) => parseFloat(getComputedStyle(node).paddingBottom));
+    await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+
+    const floatingCart = page.locator('[data-floating-cart]');
+    const mobileNav = page.locator('.mobile-nav');
+    await expect(floatingCart).toBeVisible();
+    await expect(floatingCart.locator('[data-floating-cart-label]')).toHaveText('Ver carrito');
+    await expect(floatingCart.locator('[data-floating-cart-count]')).toHaveText('1 producto');
+    await expect(floatingCart.locator('[data-floating-cart-summary]')).toContainText(/^\$/);
+    await expect(mobileNav).toBeVisible();
+
+    const [floatingBox, navBox, visiblePadding] = await Promise.all([
+      floatingCart.boundingBox(),
+      mobileNav.boundingBox(),
+      main.evaluate((node) => parseFloat(getComputedStyle(node).paddingBottom)),
+    ]);
+    expect(floatingBox).not.toBeNull();
+    expect(navBox).not.toBeNull();
+    expect(floatingBox.height, `${viewport.width}px tactile height`).toBeGreaterThanOrEqual(44);
+    expect(floatingBox.height, `${viewport.width}px compact height`).toBeLessThanOrEqual(54);
+    expect(navBox.y - (floatingBox.y + floatingBox.height), `${viewport.width}px visual separation`).toBeGreaterThanOrEqual(10);
+    expect(visiblePadding, `${viewport.width}px dynamic reserve`).toBeGreaterThan(emptyPadding);
+    expect(visiblePadding, `${viewport.width}px reserve behind both bars`).toBeGreaterThanOrEqual(
+      navBox.height + floatingBox.height + 8,
+    );
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
+
+    const lastCard = page.locator('[data-product-grid] .product-card').last();
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+    await page.waitForFunction(() => (
+      window.scrollY >= document.documentElement.scrollHeight - window.innerHeight - 1
+    ));
+    await expect(lastCard).toBeInViewport();
+    const lastCardBox = await lastCard.boundingBox();
+    expect(lastCardBox).not.toBeNull();
+    expect(lastCardBox.y + lastCardBox.height, `${viewport.width}px content clear of the CTA`).toBeLessThanOrEqual(
+      floatingBox.y - 8,
+    );
+  }
 });

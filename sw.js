@@ -1,18 +1,18 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v37-beverage-home-visual-fixes';
+const CACHE_NAME = 'la-taba-runtime-v38-compact-cart-cta';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=37',
-  './styles/tokens.css?v=37',
-  './styles/common.css?v=37',
+  './styles.css?v=38',
+  './styles/tokens.css?v=38',
+  './styles/common.css?v=38',
   './styles/storefront.css?v=37',
   './styles/catalog.css?v=37',
   './styles/checkout.css?v=37',
   './styles/tracking.css?v=37',
   './styles/business.css?v=37',
   './styles/rider.css?v=37',
-  './styles/responsive.css?v=37',
+  './styles/responsive.css?v=38',
   './manifest.webmanifest',
   './runtime-config.js',
   './assets/icon.svg',

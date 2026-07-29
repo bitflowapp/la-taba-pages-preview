@@ -36,6 +36,8 @@
   --topbar: 72px;
   --taba-bottom-nav-height: 104px;
   --taba-bottom-nav-gap: 18px;
+  --taba-floating-cart-height: 52px;
+  --taba-floating-cart-gap: 12px;
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --taba-bottom-nav-clearance: calc(
     var(--taba-bottom-nav-height) + var(--taba-bottom-nav-gap) + var(--safe-area-bottom)

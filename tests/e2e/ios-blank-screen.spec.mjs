@@ -16,7 +16,7 @@ test('clean sandbox paints the customer surface and hides recovery after bootstr
   await expect.poll(() => page.evaluate(async () => {
     const { getState } = await import('/js/state.js');
     return getState().products.length;
-  })).toBe(14);
+  })).toBe(22);
   await guards.assertClean();
 });
 
@@ -37,7 +37,7 @@ test('an old or empty local catalog is rebuilt without losing the first render',
 
   // El estado recupera el catálogo base completo, pero el storefront unitario
   // oculta los cinco assets que representan multipacks.
-  await expect(page.locator('[data-catalog-count]')).toContainText('9 productos');
+  await expect(page.locator('[data-catalog-count]')).toContainText('22 productos');
   await expect(page.locator('[data-app-recovery]')).toBeHidden();
 });
 
@@ -65,7 +65,7 @@ test('a rejected IndexedDB still leaves a usable in-memory sandbox without block
 });
 
 test('a failed application module leaves an actionable recovery shell instead of a blank main', async ({ page }) => {
-  await page.route('**/js/app.js?v=33', (route) => route.fulfill({
+  await page.route('**/js/app.js?v=35', (route) => route.fulfill({
     status: 503,
     contentType: 'text/javascript',
     body: '/* unavailable for recovery test */',

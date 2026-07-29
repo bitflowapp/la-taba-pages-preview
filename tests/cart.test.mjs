@@ -5,6 +5,7 @@ import {
   clearCart,
   decrementCartItem,
   getCartItems,
+  getDeliveryMinimumProgress,
   getCartSubtotal,
   getCartTotal,
   getDeliveryFee,
@@ -89,6 +90,22 @@ test('cart calculates subtotal, delivery fee, and totals correctly', () => {
   assert.equal(getDeliveryFee('delivery'), BUSINESS_CONFIG.deliveryFee);
   assert.equal(getCartTotal('delivery'), subtotal + BUSINESS_CONFIG.deliveryFee);
   assert.equal(getCartTotal('pickup'), subtotal);
+});
+
+test('delivery minimum progress reports the missing amount and caps at completion', () => {
+  const belowMinimum = getDeliveryMinimumProgress(3_000, BUSINESS_CONFIG.minDeliveryOrder);
+  assert.deepEqual(belowMinimum, {
+    subtotal: 3_000,
+    minimum: BUSINESS_CONFIG.minDeliveryOrder,
+    missing: 2_000,
+    reached: false,
+    progress: 60,
+  });
+
+  const aboveMinimum = getDeliveryMinimumProgress(7_000, BUSINESS_CONFIG.minDeliveryOrder);
+  assert.equal(aboveMinimum.missing, 0);
+  assert.equal(aboveMinimum.reached, true);
+  assert.equal(aboveMinimum.progress, 100);
 });
 
 test('empty cart does not charge delivery in totals', () => {

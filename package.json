@@ -5,7 +5,7 @@
   "scripts": {
     "check": "node scripts/check-syntax.mjs && node scripts/check-static-assets.mjs",
     "vendor:build": "node scripts/build-supabase-vendor.mjs",
-    "test": "node --test --test-concurrency=1",
+    "test": "node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1",
     "test:e2e": "playwright test",
     "verify:technical": "npm run check && npm test && npm run test:e2e",
     "verify": "npm run migrations:validate && npm run catalog:release:validate && npm run verify:technical",

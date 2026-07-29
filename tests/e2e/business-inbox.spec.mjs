@@ -222,7 +222,7 @@ function liveBusinessState(now) {
       notes: 'Sin sal',
       createdAt,
       status: 'on_the_way',
-      items: [{ productId: 'qa-gaseosa-cola', name: 'Gaseosa cola 1,5 L', icon: '', quantity: 1, unitPrice: 8990, unit: 'unidad' }],
+      items: [{ productId: 'red-bull-original-lata-250ml', name: 'Red Bull Energy Drink', icon: '', quantity: 1, unitPrice: 3576, unit: 'unidad' }],
       subtotal: 1000,
       deliveryFee: 0,
       total: 1000,

@@ -168,7 +168,9 @@ test('el marker del rider usa un casco local accesible y no una moto, inicial o 
   const documentRef = { createElement: () => ({ className: '', innerHTML: '' }) };
   const marker = createRiderMarkerElement(documentRef, { status: 'on_the_way', source: 'gps' });
   assert.match(marker.innerHTML, /lt-rider-helmet-core/);
-  assert.match(marker.innerHTML, /<svg[^>]*class="lt-rider-helmet-icon"/);
+  assert.match(marker.innerHTML, /<svg[^>]*class="[^"]*\blt-rider-helmet-icon\b[^"]*"/);
+  assert.doesNotMatch(marker.innerHTML, /\btaba-map-helmet\b/);
+  assert.doesNotMatch(marker.innerHTML, /taba-delivery-helmet/);
   assert.match(marker.innerHTML, /role="img"/);
   assert.match(marker.innerHTML, /aria-label="Casco del rider TABA"/);
   assert.match(marker.innerHTML, /<circle[^>]*fill="#c8101e"[^>]*stroke="#ffffff"[^>]*stroke-width="2\.5"/);

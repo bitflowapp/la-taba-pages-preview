@@ -24,34 +24,34 @@ test('sandbox only publishes a human-approved SKU promotion and syncs it to cust
   await business.locator('[data-promotion-new]').click();
   const form = business.locator('[data-promotion-form]');
   await form.locator('[name="promoId"]').fill('promo-coca-confirmada-e2e');
-  await form.locator('[name="title"]').fill('Coca-Cola por unidad — condición confirmada');
-  await form.locator('[name="includedSkus"]').selectOption(['qa-promo-bebidas']);
-  await form.locator('[name="regularPrice"]').fill('5000');
-  await form.locator('[name="promotionalPrice"]').fill('4200');
+  await form.locator('[name="title"]').fill('Coca-Cola Pack x12 — condición confirmada');
+  await form.locator('[name="includedSkus"]').selectOption(['coca-cola-original-pet-500ml-pack-12']);
+  await form.locator('[name="regularPrice"]').fill('17100');
+  await form.locator('[name="promotionalPrice"]').fill('16000');
   await form.locator('[name="validFrom"]').fill('2020-01-01');
   await form.locator('[name="validUntil"]').fill('2099-12-31');
   await form.locator('[name="approvalStatus"]').selectOption('APROBADA');
   await form.locator('[name="approvalReference"]').fill('E2E-APPROVAL-001');
   await form.locator('[name="sourceEvidence"]').fill('Registro de aprobación sandbox para prueba automatizada.');
-  await form.locator('[name="terms"]').fill('Precio especial por unidad.');
+  await form.locator('[name="terms"]').fill('Precio especial por Pack x12.');
   await form.locator('[name="active"]').check();
   await form.locator('[data-promotion-save]').click();
   await waitForToast(business, /Promoción activada/i);
   await expect(business.locator('[data-promotion-row="promo-coca-confirmada-e2e"]')).toContainText('Activa');
 
   await expect(customer.locator('[data-promo-banner]')).toBeVisible();
-  await expect(customer.locator('[data-promo-banner]')).toContainText('Coca-Cola por unidad');
+  await expect(customer.locator('[data-promo-banner]')).toContainText('Coca-Cola Pack x12');
   await customer.goto('/?demo=1#catalog');
   await customer.locator('[data-view="catalog"] [data-category-strip] [data-category-id="promos"]').click();
-  const promotedCard = customer.locator('[data-product-grid] .product-card', { hasText: 'Coca-Cola Original 1,5 L' });
+  const promotedCard = customer.locator('[data-product-grid] .product-card', { hasText: 'Pack x12' }).filter({ hasText: 'Coca-Cola Original' });
   await expect(promotedCard).toBeVisible();
-  await expect(promotedCard).toContainText('4.200');
+  await expect(promotedCard).toContainText('16.000');
   await expect(promotedCard).toContainText('Precio promocional');
   await promotedCard.locator('[data-add-product]').click();
   await customer.locator('[data-floating-cart]').click();
-  await expect(customer.locator('[data-order-summary]')).toContainText('Coca-Cola por unidad — condición confirmada');
-  await expect(customer.locator('[data-order-summary]')).toContainText('800');
-  await expect(customer.locator('[data-order-summary]')).toContainText('6.190');
+  await expect(customer.locator('[data-order-summary]')).toContainText('Coca-Cola Pack x12 — condición confirmada');
+  await expect(customer.locator('[data-order-summary]')).toContainText('1.100');
+  await expect(customer.locator('[data-order-summary]')).toContainText('17.990');
 
   await customer.reload();
   await customer.goto('/?demo=1#home');
@@ -68,11 +68,11 @@ test('business distinguishes scheduled and expired promotions without publishing
   await page.evaluate(async () => {
     const { updateState } = await import(new URL('js/state.js', location.href).href);
     const shared = {
-      title: 'Coca-Cola Original 1,5 L',
-      includedSkus: ['qa-promo-bebidas'],
+      title: 'Coca-Cola Pack x12',
+      includedSkus: ['coca-cola-original-pet-500ml-pack-12'],
       promotionType: 'precio_promocional',
-      regularPrice: 5000,
-      promotionalPrice: 4200,
+      regularPrice: 17100,
+      promotionalPrice: 16000,
       requiredQuantity: 1,
       active: true,
       priority: 10,
@@ -80,7 +80,7 @@ test('business distinguishes scheduled and expired promotions without publishing
       approvalStatus: 'APROBADA',
       approvalReference: 'E2E-APPROVAL-002',
       sourceEvidence: 'Registro de aprobación de prueba.',
-      terms: 'Precio especial por unidad.',
+      terms: 'Precio especial por Pack x12.',
     };
     updateState((draft) => {
       draft.promotions = [

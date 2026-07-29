@@ -16,6 +16,7 @@ import {
 } from '../js/map/maplibre_tracking_map.js';
 import {
   createRiderMarkerElement,
+  riderAvatarHelmetSvg,
   riderHelmetSvg,
   riderMarkerClass,
 } from '../js/map/rider_marker.js';
@@ -213,7 +214,10 @@ test('rider marker class reflects status and source', () => {
   const marker = createRiderMarkerElement(createFakeDocument(), { status: 'on_the_way', source: 'gps' });
   assert.match(marker.className, /lt-rider-marker on-the-way source-gps/);
   assert.match(marker.innerHTML, /lt-rider-helmet-core/);
-  assert.match(marker.innerHTML, /<svg[^>]*class="lt-rider-helmet-icon"/);
+  assert.match(marker.innerHTML, /<svg[^>]*class="[^"]*\blt-rider-helmet-icon\b[^"]*"/);
+  assert.doesNotMatch(marker.innerHTML, /\btaba-map-helmet\b/);
+  assert.doesNotMatch(marker.innerHTML, /data-map-rider-helmet/);
+  assert.doesNotMatch(marker.innerHTML, /taba-delivery-helmet/);
   assert.match(marker.innerHTML, /role="img"/);
   assert.match(marker.innerHTML, /aria-label="Casco del rider TABA"/);
   assert.match(marker.innerHTML, /<circle[^>]*fill="#c8101e"[^>]*stroke="#ffffff"[^>]*stroke-width="2\.5"/);
@@ -224,14 +228,19 @@ test('rider marker class reflects status and source', () => {
   assert.doesNotMatch(marker.innerHTML, /--heading/);
 });
 
-test('rider marker avatar keeps the helmet with the red-on-pink palette', () => {
-  const avatar = riderHelmetSvg({ className: 'tracking-rider-helmet', decorative: true, palette: 'avatar' });
-  assert.match(avatar, /class="tracking-rider-helmet"/);
+test('rider avatar keeps a profile helmet separate from the map marker', () => {
+  const avatar = riderAvatarHelmetSvg({ className: 'tracking-rider-helmet', decorative: true });
+  assert.match(avatar, /class="[^"]*\btracking-rider-helmet\b[^"]*"/);
+  assert.match(avatar, /\btaba-delivery-helmet\b/);
+  assert.doesNotMatch(avatar, /\btaba-rider-isotype\b/);
+  assert.match(avatar, /viewBox="0 0 64 64"/);
+  assert.match(avatar, /preserveAspectRatio="xMidYMid meet"/);
   assert.match(avatar, /aria-hidden="true"/);
-  assert.match(avatar, /<circle[^>]*fill="none"[^>]*stroke="none"/);
-  assert.match(avatar, /<path[^>]*fill="#c8101e"/);
-  assert.match(avatar, /<path[^>]*fill="#fff0f1"/);
+  assert.match(avatar, /fill="currentColor"/);
+  assert.match(avatar, /fill="var\(--delivery-helmet-contrast\)"/);
+  assert.match(avatar, /<circle[^>]*cx="27\.5"[^>]*cy="31\.4"/);
   assert.doesNotMatch(avatar, /(?:moto|scooter|emoji|<image\b|(?:src|href)=|https?:\/\/)/i);
+  assert.doesNotMatch(avatar, /(?:<filter|<linearGradient|<radialGradient|<image\b)/i);
 });
 
 test('chooseRiderLocation prioriza GPS real sobre simulación', () => {
@@ -361,6 +370,7 @@ test('MapLibre keeps one map and one rider Marker node across GPS updates', asyn
     environment.calls.maps[0].emit('load');
     await waitForMapFrame();
     assert.equal(environment.calls.maps.length, 1);
+    assert.equal(environment.calls.mapOptions[0].cooperativeGestures, true);
     // Mapa honesto: SÓLO el marcador del rider real. Sin marcador de local (LT),
     // sin marcador de cliente (CL) y sin polyline de ruta.
     assert.equal(environment.calls.markers.length, 1);
@@ -446,6 +456,23 @@ test('sandbox mounts one verified route source while production stays rider-only
     assert.equal(environment.calls.addLayer[0].id, MAPLIBRE_SANDBOX_ROUTE_LAYER_ID);
     assert.equal(environment.calls.markers.length, 3);
     assert.equal(environment.calls.fitBounds.length, 1);
+    assert.equal(controller.getLifecycleState().hasSandboxRoute, true);
+    assert.equal(controller.getLifecycleState().sandboxRouteVisible, true);
+
+    assert.equal(controller.setSandboxRouteVisible(false), false);
+    assert.deepEqual(environment.calls.setLayoutProperty.at(-1), {
+      id: MAPLIBRE_SANDBOX_ROUTE_LAYER_ID,
+      name: 'visibility',
+      value: 'none',
+    });
+    assert.equal(controller.getLifecycleState().sandboxRouteVisible, false);
+
+    assert.equal(controller.setSandboxRouteVisible(true), true);
+    assert.deepEqual(environment.calls.setLayoutProperty.at(-1), {
+      id: MAPLIBRE_SANDBOX_ROUTE_LAYER_ID,
+      name: 'visibility',
+      value: 'visible',
+    });
 
     controller.updateRiderLocation(
       { lat: -38.9494, lng: -68.06472, source: 'simulation' },
@@ -487,6 +514,7 @@ test('rider map uses the light commercial MapLibre style', async () => {
     await waitForMapFrame();
     assert.equal(shell.dataset.mapTheme, 'light');
     assert.equal(environment.calls.mapOptions[0].style, MAPLIBRE_PUBLIC_STYLE_URL);
+    assert.equal(environment.calls.mapOptions[0].cooperativeGestures, false);
     assert.equal(environment.calls.markers.length, 1);
     assert.equal(environment.calls.controls[0].position, 'bottom-left');
   } finally {
@@ -611,6 +639,7 @@ function installMapLibreStub({ webgl = true, constructorError = false } = {}) {
     addLayer: [],
     controls: [],
     fitBounds: [],
+    setLayoutProperty: [],
     jumpTo: [],
     easeTo: [],
     mapRemove: 0,
@@ -669,6 +698,13 @@ function installMapLibreStub({ webgl = true, constructorError = false } = {}) {
     }
     getLayer(id) {
       return this.layers.get(id);
+    }
+    setLayoutProperty(id, name, value) {
+      const layer = this.layers.get(id);
+      if (layer) {
+        layer.layout = { ...(layer.layout || {}), [name]: value };
+      }
+      calls.setLayoutProperty.push({ id, name, value });
     }
     fitBounds(bounds, options) {
       calls.fitBounds.push({ bounds, options });

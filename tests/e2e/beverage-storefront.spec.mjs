@@ -12,31 +12,22 @@ test('la home presenta TABA con marca interna discreta y un storefront comercial
   await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
   await expect(page.getByRole('heading', { name: '¿Qué vas a pedir hoy?' })).toBeVisible();
   await expect(page.locator('[data-view="home"] .taba-home-search')).toBeVisible();
-  const homeCategoryLabels = [
-    ['gaseosas', 'Gaseosas'],
-    ['cervezas', 'Cervezas'],
-    ['aguas', 'Aguas'],
-    ['energeticas', 'Energéticas'],
-    ['promos', 'Promos'],
-  ];
   const homeCategories = page.locator('[data-view="home"] .home-category-card');
-  await expect(homeCategories).toHaveCount(homeCategoryLabels.length);
-  for (const [id, label] of homeCategoryLabels) {
-    await expect(page.locator(`[data-view="home"] [data-home-category-strip] [data-category-id="${id}"]`)).toHaveText(label);
-  }
+  await expect(homeCategories).toHaveCount(4);
+  await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="gaseosas"]')).toHaveText('Gaseosas');
+  await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="cervezas"]')).toHaveText('Cervezas');
   await expect(page.locator('[data-home-category-strip] [data-category-id="gaseosas"]')).toHaveClass(/active/);
   await expect(page.locator('[data-home-category-strip] [data-category-id="fernet"]')).toHaveCount(0);
   await expect(page.locator('.home-preview-label')).toHaveText('PREVIEW INTERNA');
 
-  // El banner administrativo sigue reservado a promociones aprobadas; las
-  // tarjetas de preview usan condiciones visuales explícitas sobre SKUs unitarios.
+  // Sin una promoción aprobada, fechada y verificable no se muestra ningún
+  // descuento ni precio anterior en la superficie cliente.
   const promoBanner = page.locator('[data-view="home"] [data-promo-banner]');
   await expect(promoBanner).toBeHidden();
-  await expect(page.locator('[data-home-promotions] .home-promo-card')).toHaveCount(3);
-  await expect(page.locator('[data-home-promotions]')).toContainText(/% OFF/i);
+  await expect(page.locator('[aria-labelledby="home-promotions-title"]')).toBeHidden();
+  await expect(page.locator('[data-home-promotions] .home-promo-card')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Los más vendidos' })).toBeVisible();
   await expect(page.locator('[data-home-catalog-preview] .home-catalog-card')).toHaveCount(4);
-  await expect(page.locator('[data-view="home"]')).not.toContainText(/\b(?:pack|x\s?\d+)\b/i);
 
   await expect(page.locator('[data-view="home"] .role-intro')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .product-intro')).toHaveCount(0);
@@ -55,21 +46,12 @@ test('la home presenta TABA con marca interna discreta y un storefront comercial
   const catalogCategories = page.locator(
     '[data-view="catalog"] [data-category-strip] .category-button:not([data-category-id="all"]):not([data-category-id="favorites"])',
   );
-  await expect(catalogCategories).toHaveCount(8);
-  await expect(page.locator('[data-category-more]')).toBeVisible();
-  for (const [id, label] of [
-    ['gaseosas', 'Gaseosas'],
-    ['aguas', 'Aguas'],
-    ['energeticas', 'Energéticas'],
-    ['cervezas', 'Cervezas'],
-    ['gins-y-vodkas', 'Gins y vodkas'],
-  ]) {
-    await expect(page.locator(`[data-view="catalog"] [data-category-id="${id}"]`)).toHaveText(label);
-  }
+  await expect(catalogCategories).toHaveCount(4);
+  await expect(page.locator('[data-view="catalog"] [data-category-id="gaseosas"]')).toHaveText('Gaseosas');
+  await expect(page.locator('[data-view="catalog"] [data-category-id="cervezas"]')).toHaveText('Cervezas');
   await expect(page.locator('[data-product-grid] .product-card').first()).not.toContainText('QA');
   const activeCatalogText = await page.locator('[data-product-grid]').innerText();
   expect(activeCatalogText).not.toMatch(/\b(?:pizza|muzzarella|fugazzeta|calabresa|pepperoni|combo-pizza)\b/i);
-  expect(activeCatalogText).not.toMatch(/\b(?:pack|x\s?\d+)\b/i);
   await guards.assertClean();
 });
 
@@ -100,7 +82,7 @@ for (const viewport of [
     await page.goto('/?reset=1&demo=1&home=v37');
     await expect(page.locator('[data-view="home"]')).toBeVisible();
     await expect(page.locator('.mobile-nav [data-nav-view="home"]')).toHaveClass(/active/);
-    await expect(page.locator('[data-home-promotions]')).toBeVisible();
+    await expect(page.locator('[aria-labelledby="home-promotions-title"]')).toBeHidden();
 
     const geometry = await page.evaluate(() => ({
       viewportWidth: window.innerWidth,
@@ -116,6 +98,10 @@ for (const viewport of [
 
     const productImages = page.locator('[data-view="home"] .thumb-img');
     await expect(productImages.first()).toBeVisible();
+    await productImages.last().scrollIntoViewIfNeeded();
+    await expect.poll(() => productImages.evaluateAll((images) => images.every((image) => (
+      image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
+    )))).toBeTruthy();
     expect(await productImages.evaluateAll((images) => images.every((image) => (
       image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
     )))).toBeTruthy();
@@ -158,41 +144,47 @@ test('confirmación de edad aparece y es obligatoria sólo con alcohol', async (
   await expect(page.locator('[name="ageConfirmed"]')).toHaveAttribute('required', '');
 });
 
-test('Ver todas conserva filtros reales de promociones y más vendidos', async ({ page }) => {
+test('el detalle comparte el control rápido de cantidad del carrito', async ({ page }) => {
+  await installBrowserStubs(page);
+  await page.goto('/?reset=1&demo=1#catalog');
+  await page.locator('[data-view="catalog"] [data-category-id="cervezas"]').click();
+
+  const card = page.locator('[data-product-grid] .product-card').first();
+  await card.locator('[data-product-detail]').click();
+  const modal = page.locator('[data-product-modal]');
+  await expect(modal.locator('.modal-cart-control[data-add-product]')).toBeVisible();
+
+  await modal.locator('.modal-cart-control[data-add-product]').click();
+  await expect(modal).toBeHidden();
+  await card.locator('[data-product-detail]').click();
+  await expect(modal.locator('.modal-cart-control [data-cart-dec] svg')).toBeVisible();
+  await expect(modal.locator('.modal-cart-control strong')).toHaveText('1');
+
+  await modal.locator('.modal-cart-control [data-cart-inc]').click();
+  await expect(modal.locator('.modal-cart-control strong')).toHaveText('2');
+  await page.waitForTimeout(140);
+  await modal.locator('.modal-cart-control [data-cart-dec]').click();
+  await expect(modal.locator('.modal-cart-control strong')).toHaveText('1');
+  await page.waitForTimeout(140);
+  await modal.locator('.modal-cart-control [data-cart-dec]').click();
+  await expect(modal.locator('.modal-cart-control[data-add-product]')).toBeVisible();
+});
+
+test('Los filtros conservan el catálogo real y no fabrican promociones', async ({ page }) => {
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await page.goto('/?demo=1&home=v37');
 
-  await page.locator('.home-section-head [data-category-id="popular"]').click();
+  await page.locator('[data-home-category-strip] [data-category-id="gaseosas"]').click();
   await expect(page.locator('[data-view="catalog"]')).toBeVisible();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Los más vendidos');
-  const popularIds = await page.locator('[data-product-grid] [data-add-product]').evaluateAll(
-    (buttons) => buttons.map((button) => button.dataset.addProduct).sort(),
-  );
-  expect(popularIds).toEqual([
-    'qa-agua-mineral',
-    'qa-energetica',
-    'qa-gaseosa-cola',
-    'qa-promo-bebidas',
-  ]);
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Gaseosas');
+  await expect(page.locator('[data-product-grid] [data-add-product]')).not.toHaveCount(0);
 
   await page.goBack();
   await expect(page.locator('[data-view="home"]')).toBeVisible();
 
-  const homePromoIds = await page.locator('[data-home-promotions] [data-add-product]').evaluateAll(
-    (buttons) => buttons.map((button) => button.dataset.addProduct),
-  );
-  expect(homePromoIds).toHaveLength(3);
-  expect(new Set(homePromoIds).size).toBe(homePromoIds.length);
-  await page.locator('.home-section-head [data-category-id="promos"]').click();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Promociones');
-  await expect(page.locator('[data-catalog-count]')).toHaveText(`${homePromoIds.length} productos`);
-  const catalogPromoIds = await page.locator('[data-product-grid] [data-add-product]').evaluateAll(
-    (buttons) => buttons.map((button) => button.dataset.addProduct).sort(),
-  );
-  expect(catalogPromoIds).toEqual([...homePromoIds].sort());
-  await page.goBack();
-  await expect(page.locator('[data-view="home"]')).toBeVisible();
+  await expect(page.locator('[data-home-promotions] [data-add-product]')).toHaveCount(0);
+  await expect(page.locator('[data-view="catalog"] [data-category-id="promos"]')).toHaveCount(0);
   await guards.assertClean();
 });
 
@@ -202,7 +194,7 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
   await page.goto('/?demo=1&home=v37');
 
   const controlSelector = [
-    '.home-section-head button',
+    '.home-merch-section:not([hidden]) .home-section-head button',
     '[data-home-promotions] .home-add-button',
     '[data-home-best-sellers] .home-add-button',
     '[data-home-catalog-preview] .home-add-button',
@@ -215,7 +207,7 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
   ]) {
     await page.setViewportSize(viewport);
     const controls = page.locator(controlSelector);
-    await expect(controls).toHaveCount(16);
+    await expect(controls).toHaveCount(12);
     const undersized = await controls.evaluateAll((nodes) => nodes
       .map((node) => {
         const rect = node.getBoundingClientRect();
@@ -227,64 +219,86 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
-  const rail = page.locator('[data-home-promotions]');
   const dots = page.locator('[data-home-paging-dots] span');
-  await expect(dots).toHaveCount(2);
+  await expect(dots).toHaveCount(1);
   await expect(dots.first()).toHaveClass(/is-active/);
-  await rail.evaluate((node) => {
-    node.scrollLeft = node.scrollWidth;
-    node.dispatchEvent(new Event('scroll'));
-  });
-  await expect(dots.last()).toHaveClass(/is-active/);
-  await page.setViewportSize({ width: 430, height: 932 });
-  const expectedPages = await rail.evaluate((node) => (
-    node.scrollWidth - node.clientWidth > 1 ? Math.ceil(node.scrollWidth / node.clientWidth) : 1
-  ));
-  await expect(dots).toHaveCount(expectedPages);
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect(page.locator('[data-home-paging-dots]')).toBeHidden();
 });
 
-test('los derivados limpios se reutilizan en Home, catálogo, modal y carrito', async ({ page }) => {
+test('la imagen de un producto real se reutiliza en Home, catálogo, modal y carrito', async ({ page }) => {
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/?demo=1&home=v37');
-  const cleanAsset = 'coca-cola-original-1-5l-clean-preview.jpg';
-  const homeCard = page.locator('[data-home-catalog-preview] .home-catalog-card').filter({ hasText: 'Coca-Cola' });
-  await expect(homeCard.locator(`img[src*="${cleanAsset}"]`)).toHaveCount(1);
+  const homeCard = page.locator('[data-home-catalog-preview] .home-catalog-card').first();
+  const productId = await homeCard.locator('[data-product-detail]').getAttribute('data-product-detail');
+  const source = await homeCard.locator('img').getAttribute('src');
+  expect(productId).toBeTruthy();
+  expect(source).toBeTruthy();
 
   await homeCard.locator('[data-product-detail]').click();
-  await expect(page.locator(`dialog[open] img[src*="${cleanAsset}"]`)).toBeVisible();
+  await expect(page.locator(`dialog[open] [data-modal-product-id="${productId}"] img`)).toHaveAttribute('src', source);
   await page.locator('dialog[open] .modal-close').click();
 
   await homeCard.locator('[data-add-product]').click();
   await page.locator('[data-open-cart]').first().click();
-  await expect(page.locator(`[data-view="cart"] img[src*="${cleanAsset}"]`)).toBeVisible();
+  await expect(page.locator(`[data-view="cart"] img[src="${source}"]`)).toBeVisible();
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-view="catalog"] [data-category-id="promos"]').click();
-  await expect(page.locator(`[data-product-grid] img[src*="${cleanAsset}"]`)).toBeVisible();
+  await expect(page.locator(`[data-product-grid] [data-product-detail="${productId}"] img`)).toHaveAttribute('src', source);
 });
 
-test('la CTA móvil del pedido queda sobre la navegación sin superponerse', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('la CTA móvil compacta reserva espacio real sobre la navegación', async ({ page }) => {
   await installBrowserStubs(page);
-  await page.goto('/?reset=1&demo=1#catalog');
-  await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
 
-  const floatingCart = page.locator('[data-floating-cart]');
-  const mobileNav = page.locator('.mobile-nav');
-  await expect(floatingCart).toBeVisible();
-  await expect(floatingCart.locator('[data-floating-cart-summary]')).toContainText(/^Ver pedido · \$/);
-  await expect(mobileNav).toBeVisible();
+  for (const viewport of [
+    { width: 320, height: 812 },
+    { width: 360, height: 800 },
+    { width: 390, height: 844 },
+    { width: 430, height: 932 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/?reset=1&demo=1#catalog');
+    await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
 
-  const [floatingBox, navBox] = await Promise.all([
-    floatingCart.boundingBox(),
-    mobileNav.boundingBox(),
-  ]);
-  expect(floatingBox).not.toBeNull();
-  expect(navBox).not.toBeNull();
-  expect(floatingBox.y + floatingBox.height).toBeLessThanOrEqual(navBox.y);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
+    const main = page.locator('main[data-app-main]');
+    const emptyPadding = await main.evaluate((node) => parseFloat(getComputedStyle(node).paddingBottom));
+    await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+
+    const floatingCart = page.locator('[data-floating-cart]');
+    const mobileNav = page.locator('.mobile-nav');
+    await expect(floatingCart).toBeVisible();
+    await expect(floatingCart.locator('[data-floating-cart-label]')).toHaveText('Ver carrito');
+    await expect(floatingCart.locator('[data-floating-cart-count]')).toHaveText('1 producto');
+    await expect(floatingCart.locator('[data-floating-cart-summary]')).toContainText(/^\$/);
+    await expect(mobileNav).toBeVisible();
+
+    const [floatingBox, navBox, visiblePadding] = await Promise.all([
+      floatingCart.boundingBox(),
+      mobileNav.boundingBox(),
+      main.evaluate((node) => parseFloat(getComputedStyle(node).paddingBottom)),
+    ]);
+    expect(floatingBox).not.toBeNull();
+    expect(navBox).not.toBeNull();
+    expect(floatingBox.height, `${viewport.width}px tactile height`).toBeGreaterThanOrEqual(44);
+    expect(floatingBox.height, `${viewport.width}px compact height`).toBeLessThanOrEqual(54);
+    expect(navBox.y - (floatingBox.y + floatingBox.height), `${viewport.width}px visual separation`).toBeGreaterThanOrEqual(10);
+    expect(visiblePadding, `${viewport.width}px dynamic reserve`).toBeGreaterThan(emptyPadding);
+    expect(visiblePadding, `${viewport.width}px reserve behind both bars`).toBeGreaterThanOrEqual(
+      navBox.height + floatingBox.height + 8,
+    );
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
+
+    const lastCard = page.locator('[data-product-grid] .product-card').last();
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+    await page.waitForFunction(() => (
+      window.scrollY >= document.documentElement.scrollHeight - window.innerHeight - 1
+    ));
+    await expect(lastCard).toBeInViewport();
+    const lastCardBox = await lastCard.boundingBox();
+    expect(lastCardBox).not.toBeNull();
+    expect(lastCardBox.y + lastCardBox.height, `${viewport.width}px content clear of the CTA`).toBeLessThanOrEqual(
+      floatingBox.y - 8,
+    );
+  }
 });

@@ -9,9 +9,9 @@ import {
   uniqueProducts,
 } from '../js/core/storefront-filters.js';
 
-test('detecta promociones sólo mediante señales comerciales reales', () => {
-  assert.equal(isPromotionalProduct({ id: 'badge', price: 10, homePromoBadge: '20% OFF' }), true);
-  assert.equal(isPromotionalProduct({ id: 'price', price: 80, oldPrice: 100 }), true);
+test('detecta promociones sólo mediante una regla activa validada', () => {
+  assert.equal(isPromotionalProduct({ id: 'badge', price: 10, homePromoBadge: '20% OFF' }), false);
+  assert.equal(isPromotionalProduct({ id: 'price', price: 80, oldPrice: 100 }), false);
   assert.equal(isPromotionalProduct({ id: 'flag', price: 100 }, new Set(['flag'])), true);
   assert.equal(isPromotionalProduct({ id: 'regular', price: 100, oldPrice: 100 }), false);
   assert.equal(isPromotionalProduct({ id: 'invalid', price: 100, oldPrice: 90 }), false);

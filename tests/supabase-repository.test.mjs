@@ -10,6 +10,8 @@ import { createSupabaseOrderRepository } from '../js/repositories/supabase_order
 import {
   getBusinessConfig,
   getState,
+  subscribe,
+  updateState,
 } from '../js/state.js';
 import { resetState } from './helpers.mjs';
 
@@ -155,6 +157,16 @@ test('crea con intención mínima y acepta sólo importes e IDs del servidor', a
   assert.equal(createCall.args.payload.customer_street_address, 'Roca 321');
   assert.equal(createCall.args.payload.customer_neighborhood, 'Centro');
   assert.equal(createCall.args.payload.customer_reference, 'Portón negro');
+  assert.equal(createCall.args.payload.customer_address_label, 'Casa');
+  assert.equal(createCall.args.payload.delivery_street, 'Roca');
+  assert.equal(createCall.args.payload.delivery_street_number, '321');
+  assert.equal(createCall.args.payload.delivery_floor, '2');
+  assert.equal(createCall.args.payload.delivery_apartment, 'B');
+  assert.equal(createCall.args.payload.delivery_province, 'Neuquén');
+  assert.equal(result.order.addressDetails.savedLabel, 'Casa');
+  assert.equal(result.order.addressDetails.floor, '2');
+  assert.equal(result.order.addressDetails.province, 'Neuquén');
+  assert.ok(result.order.addressDetails.snapshotCreatedAt);
   for (const forbidden of ['id', 'code', 'status', 'subtotal', 'delivery_fee', 'total', 'unit_price', 'name']) {
     assert.equal(Object.hasOwn(createCall.args.payload, forbidden), false, forbidden);
   }
@@ -449,6 +461,52 @@ test('carga catálogo remoto verificado con campos maestros de bebidas', async (
   assert.equal(isProductionCatalogReady(), true);
 });
 
+test('publica cuatro productos válidos y excluye el verificado sin external_id', async () => {
+  const mock = createSupabaseClientMock();
+  const validTemplate = mock.db.products[0];
+  const validProducts = [
+    ['22222222-2222-4222-8222-222222222222', 'agua-1', 'AGUA-1'],
+    ['33333333-3333-4333-8333-333333333333', 'agua-2', 'AGUA-2'],
+    ['66666666-6666-4666-8666-666666666666', 'agua-3', 'AGUA-3'],
+    ['77777777-7777-4777-8777-777777777777', 'agua-4', 'AGUA-4'],
+  ].map(([id, externalId, sku], index) => ({
+    ...validTemplate,
+    id,
+    external_id: externalId,
+    sku,
+    name: `Bebida verificada ${index + 1}`,
+    sort_order: index + 1,
+  }));
+  const invalidProduct = {
+    ...validTemplate,
+    id: '99999999-9999-4999-8999-999999999999',
+    external_id: '',
+    sku: 'SIN-EXTERNAL-ID',
+    name: 'Bebida inválida sin external_id',
+    sort_order: 5,
+  };
+  mock.db.products = [...validProducts, invalidProduct];
+  const repository = makeRepository(mock);
+
+  await repository.loadBusinessConfiguration();
+  const result = await repository.loadCatalog();
+
+  assert.equal(result.ok, true);
+  assert.equal(result.products.length, 4);
+  assert.equal(getState().products.length, 4);
+  assert.deepEqual(result.products.map((product) => product.externalId), [
+    'agua-1',
+    'agua-2',
+    'agua-3',
+    'agua-4',
+  ]);
+  assert.equal(invalidProduct.external_id, '');
+  assert.equal(
+    result.products.some((product) => product.sku === invalidProduct.sku),
+    false,
+  );
+});
+
 test('el sync productivo recupera el código de entrega con el token público', async () => {
   const mock = createSupabaseClientMock();
   const row = mock.seedOrder({
@@ -557,6 +615,56 @@ test('tracking con token público mantiene polling y no abre un canal WebSocket 
     assert.equal(mock.calls.removeChannel, 0);
   } finally {
     stopOrder();
+  }
+});
+
+test('activar tracking es idempotente cuando un render reingresa al seleccionar el pedido', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'on_the_way',
+    assigned_rider_user_id: RIDER_ID,
+    dispatched_at: minutesAgoIso(1),
+  });
+  const storage = createStorage();
+  storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'R'.repeat(43),
+  }));
+  const repository = makeRepository(mock, {
+    storage,
+    pollMs: 1000,
+    createTrackingClient: () => mock.client,
+  });
+  const stop = repository.startSync();
+
+  try {
+    await flushTasks();
+    updateState((draft) => { draft.lastOrderId = null; });
+    let renderNotifications = 0;
+    const unsubscribe = subscribe(() => {
+      renderNotifications += 1;
+      repository.setCustomerTrackingView({
+        active: true,
+        orderId: row.id,
+        status: 'on_the_way',
+      });
+    });
+    try {
+      repository.setCustomerTrackingView({
+        active: true,
+        orderId: row.id,
+        status: 'on_the_way',
+      });
+      await flushTasks();
+      assert.ok(renderNotifications >= 1 && renderNotifications <= 5);
+      assert.equal(repository.getCustomerTrackingPollState().active, true);
+      assert.equal(repository.getCustomerTrackingPollState().orderId, row.id);
+    } finally {
+      unsubscribe();
+    }
+  } finally {
+    stop();
   }
 });
 
@@ -944,6 +1052,14 @@ function checkoutDraft() {
     customerStreetAddress: 'Roca 321',
     customerNeighborhood: 'Centro',
     customerReference: 'Portón negro',
+    customerAddressLabel: 'Casa',
+    deliveryStreet: 'Roca',
+    deliveryStreetNumber: '321',
+    deliveryFloor: '2',
+    deliveryApartment: 'B',
+    deliveryCity: 'Centro',
+    deliveryProvince: 'Neuquén',
+    deliveryPostalCode: 'Q8300',
     deliveryMode: 'delivery',
     paymentMethod: 'cash',
     customerNotes: 'Tocar timbre',
@@ -1557,6 +1673,16 @@ function buildOrderRow(payload, sequence, userId) {
     customer_street_address: payload.customer_street_address || 'Roca 321',
     customer_neighborhood: payload.customer_neighborhood || 'Centro',
     customer_reference: payload.customer_reference || '',
+    delivery_address_label: payload.customer_address_label || '',
+    delivery_address_formatted: 'Roca 321, Centro',
+    delivery_street: payload.delivery_street || '',
+    delivery_street_number: payload.delivery_street_number || '',
+    delivery_floor: payload.delivery_floor || '',
+    delivery_apartment: payload.delivery_apartment || '',
+    delivery_city: payload.delivery_city || '',
+    delivery_province: payload.delivery_province || '',
+    delivery_postal_code: payload.delivery_postal_code || '',
+    delivery_snapshot_created_at: now,
     customer_notes: payload.customer_notes || '',
     address_label: 'Roca 321, Centro',
     payment_method: payload.payment_method || 'cash',

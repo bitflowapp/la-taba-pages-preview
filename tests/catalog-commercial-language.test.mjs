@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const activeCatalogFiles = [
-  'js/beverage-qa-data.js',
+  'js/beverage-demo-data.js',
   'js/data.js',
   'data/catalog-template.csv',
   'templates/la-taba-products-template.csv',

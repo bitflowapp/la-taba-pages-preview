@@ -1,131 +1,90 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import { categories, products } from '../js/data.js';
 
-const EXPECTED_CATEGORY_IDS = [
-  'all',
-  'promos',
-  'gaseosas',
-  'aguas',
-  'jugos',
-  'energeticas',
-  'isotonicas',
-  'cervezas',
-  'vinos-y-espumantes',
-  'gins-y-vodkas',
-  'whisky-y-destilados',
-  'picadas-y-deli',
-  'hielo-y-extras',
-];
-const ALCOHOLIC_CATEGORY_IDS = new Set([
-  'cervezas',
-  'vinos-y-espumantes',
-  'gins-y-vodkas',
-  'whisky-y-destilados',
-]);
+import { categories, products } from '../js/approved-beverage-demo-data.js';
+import {
+  getAlcoholProduct,
+  getNonAlcoholProduct,
+  getPricePendingProduct,
+  getPurchasablePackProduct,
+  getPurchasableUnitProduct,
+} from './fixtures/approved-catalog-selectors.mjs';
 
-test('catalog data is internally consistent', () => {
-  assert.ok(Array.isArray(categories) && categories.length > 0);
-  assert.ok(Array.isArray(products) && products.length > 0);
+const EXPECTED_CATEGORY_IDS = ['all', 'gaseosas', 'mixers', 'energizantes', 'cervezas'];
+
+test('approved demo catalog is internally consistent', () => {
+  assert.deepEqual(categories.map((category) => category.id), EXPECTED_CATEGORY_IDS);
+  assert.equal(products.length, 22);
+  assert.equal(new Set(products.map((product) => product.sku)).size, 22);
 
   const categoryIds = new Set(categories.map((category) => category.id));
-  const productIds = new Set();
-  const productCountByCategory = new Map(categories.map((category) => [category.id, 0]));
-
   for (const product of products) {
-    assert.ok(typeof product.id === 'string' && product.id.length > 0);
-    assert.ok(!productIds.has(product.id), `duplicate product id: ${product.id}`);
-    productIds.add(product.id);
-
-    assert.ok(typeof product.name === 'string' && product.name.trim().length > 0);
-    assert.ok(typeof product.categoryId === 'string' && product.categoryId.length > 0);
+    assert.equal(product.id, product.sku);
+    assert.ok(!product.sku.startsWith('qa-'));
     assert.ok(categoryIds.has(product.categoryId), `missing category: ${product.categoryId}`);
-    assert.ok(Number.isFinite(product.price) && product.price > 0);
+    assert.ok(product.name.trim().length > 0);
+    assert.ok(Number.isFinite(product.price) && product.price >= 0);
     assert.ok(Number.isFinite(product.stock) && product.stock >= 0);
+    assert.ok(product.unitsPerPack >= 1);
     assert.equal(typeof product.available, 'boolean');
-    if ('featured' in product) assert.equal(typeof product.featured, 'boolean');
-
-    if (productCountByCategory.has(product.categoryId)) {
-      productCountByCategory.set(product.categoryId, productCountByCategory.get(product.categoryId) + 1);
-    }
   }
-
-  assert.equal(products.length, 14);
-  assert.ok(productCountByCategory.get('gaseosas') > 0);
-  assert.ok(productCountByCategory.get('energeticas') > 0);
 });
 
-test('preview catalog is concrete beverages and internally marked as QA', () => {
-  const categoryNames = new Set(categories.map((category) => category.name));
-  for (const expected of ['Promos', 'Gaseosas', 'Aguas', 'Jugos', 'Cervezas', 'Hielo y extras']) {
-    assert.ok(categoryNames.has(expected), `missing category: ${expected}`);
-  }
-  assert.ok(products.every((product) => product.qaFixture === true));
-  assert.ok(products.every((product) => /Precio y stock QA/.test(product.marketNote)));
-  assert.ok(products.every((product) => product.id.startsWith('qa-')));
+test('approved demo images are local and complete', () => {
   for (const product of products) {
-    if (product.image) {
-      if (product.previewCatalogApproved) {
-        assert.match(product.image, /^assets\/(?:catalog\/products\/.+\.webp|products\/bebidas\/.+\.jpg)$/);
-        assert.match(product.imageThumbnail || '', /^assets\/(?:catalog\/thumbnails\/.+\.webp|products\/bebidas\/.+\.jpg)$/);
-        assert.match(product.imageSha256 || '', /^[a-f0-9]{64}$/);
-        assert.match(product.imageThumbnailSha256 || '', /^[a-f0-9]{64}$/);
-        assert.match(product.sourceImageSha256 || '', /^[a-f0-9]{64}$/);
-      } else {
-        assert.equal(product.image, 'assets/products/beverage-placeholder.svg');
-      }
-    }
-  }
-  assert.equal(products.filter((product) => product.previewCatalogApproved).length, 12);
-  assert.equal(products.filter((product) => product.identityStatus === 'EXACTA').length, 12);
-  assert.equal(products.filter((product) => product.identityStatus === 'PARCIAL').length, 2);
-  assert.ok(products.every((product) => !/^(gaseosa|energética|cerveza|agua mineral)$/i.test(product.name)));
-});
-
-test('preview catalog sells beverages only by unit and never renders multipacks', () => {
-  for (const product of products) {
-    assert.equal(product.unitsPerPack, 1, `unexpected multipack quantity for ${product.id}`);
-    assert.notEqual(product.unit, 'pack', `unexpected pack unit for ${product.id}`);
-    assert.notEqual(product.packageType, 'pack', `unexpected pack presentation for ${product.id}`);
-    assert.doesNotMatch(
-      `${product.name} ${product.description} ${product.unitLabel}`,
-      /\b(?:pack|x\s?\d+)\b/i,
-      `multipack copy in active product ${product.id}`,
-    );
+    assert.match(product.image, /^assets\/catalog\/beverages\/[^/]+\/product\.webp$/);
+    assert.match(product.imageThumbnail, /^assets\/catalog\/beverages\/[^/]+\/thumbnail\.webp$/);
+    assert.doesNotMatch(product.image, /^https?:\/\//i);
+    assert.doesNotMatch(product.imageThumbnail, /^https?:\/\//i);
+    assert.ok(fs.existsSync(new URL(`../${product.image}`, import.meta.url)));
+    assert.ok(fs.existsSync(new URL(`../${product.imageThumbnail}`, import.meta.url)));
   }
 });
 
-test('preview categories use the canonical beverage ids', () => {
-  assert.deepEqual(categories.map((category) => category.id), EXPECTED_CATEGORY_IDS);
+test('approved semantic selectors preserve units, packs, alcohol and pending price contracts', () => {
+  const unit = getPurchasableUnitProduct(products);
+  const pack = getPurchasablePackProduct(products);
+  const alcohol = getAlcoholProduct(products);
+  const nonAlcohol = getNonAlcoholProduct(products);
+  const pending = getPricePendingProduct(products);
+
+  assert.equal(unit.unitsPerPack, 1);
+  assert.ok(pack.unitsPerPack === 6 || pack.unitsPerPack === 12);
+  assert.equal(alcohol.requiresAgeConfirmation, true);
+  assert.equal(nonAlcohol.requiresAgeConfirmation, false);
+  assert.equal(pending.price, 0);
+  assert.equal(pending.available, false);
 });
 
-test('preview alcohol metadata is inferred consistently from category', () => {
-  for (const product of products) {
-    const alcoholic = ALCOHOLIC_CATEGORY_IDS.has(product.categoryId);
-    assert.equal(product.alcoholic, alcoholic, `unexpected alcoholic flag for ${product.id}`);
-    assert.equal(product.minimumAge, alcoholic ? 18 : null, `unexpected minimum age for ${product.id}`);
-  }
-});
-
-test('preview prices are neutral QA tiers, not market estimates', () => {
-  const allowedPrices = new Set([5000, 7500, 10000, 15000]);
-  assert.ok(products.every((product) => allowedPrices.has(product.price)));
+test('approved packs retain x6 and x12 as commercial presentations', () => {
+  const packSizes = new Set(products
+    .filter((product) => product.unitsPerPack > 1)
+    .map((product) => product.unitsPerPack));
+  assert.ok(packSizes.has(6));
+  assert.ok(packSizes.has(12));
+  assert.ok(products.some((product) => product.unitsPerPack === 1));
 });
 
 test('active catalog and data module have no inherited pizzeria identifiers or names', () => {
   const forbidden = /\b(?:pizza|muzzarella|fugazzeta|calabresa|pepperoni|combo-pizza)\b/i;
-  for (const category of categories) {
-    assert.doesNotMatch(`${category.id} ${category.name}`, forbidden);
-  }
-  for (const product of products) {
+  for (const category of categories) assert.doesNotMatch(`${category.id} ${category.name}`, forbidden);
+  for (const product of products) assert.doesNotMatch(`${product.id} ${product.name} ${product.categoryId}`, forbidden);
+  assert.doesNotMatch(fs.readFileSync(new URL('../js/data.js', import.meta.url), 'utf8'), forbidden);
+});
+
+test('browser runtime seeds reference approved SKUs instead of legacy QA products', () => {
+  const runtimeSources = [
+    '../js/data.js',
+    '../js/preview-promotions-data.js',
+    '../js/ui.js',
+    '../data/preview-promotions.csv',
+  ];
+  for (const source of runtimeSources) {
     assert.doesNotMatch(
-      `${product.id} ${product.name} ${product.categoryId}`,
-      forbidden,
-      `inherited pizzeria identifier in active product ${product.id}`,
+      fs.readFileSync(new URL(source, import.meta.url), 'utf8'),
+      /\bqa-[a-z0-9-]+\b/i,
+      source,
     );
   }
-  const dataSource = fs.readFileSync(new URL('../js/data.js', import.meta.url), 'utf8');
-  assert.doesNotMatch(dataSource, forbidden);
-  assert.doesNotMatch(dataSource, /historicalPizzeria/i);
 });

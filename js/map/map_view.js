@@ -126,8 +126,18 @@ function readMapViewState(container) {
 }
 
 export function ensureTrackingMap(container, view) {
+  const sandboxGeometryVerified = Boolean(view.sandbox && view.sandboxScenario);
+  const showSandboxRoute = sandboxGeometryVerified
+    && view.riderLocation?.origin !== 'local_gps'
+    && view.order?.status !== 'arriving';
   const existing = mapEntryFor(container);
   if (existing) {
+    if (showSandboxRoute) container.dataset.routeSource = 'simulation';
+    else delete container.dataset.routeSource;
+    existing.adapter.setSandboxRouteVisible?.(showSandboxRoute);
+    if (!showSandboxRoute && view.order?.status === 'arriving') {
+      existing.adapter.recenter?.({ animate: false });
+    }
     existing.adapter.updateFreshness(view.freshness);
     return existing;
   }
@@ -144,9 +154,6 @@ export function ensureTrackingMap(container, view) {
   };
   mountedMaps.add(entry);
 
-  const sandboxGeometryVerified = Boolean(view.sandbox && view.sandboxScenario);
-  const showSandboxRoute = sandboxGeometryVerified
-    && view.riderLocation?.origin !== 'local_gps';
   container.dataset.mapEngine = 'maplibre';
   if (showSandboxRoute) container.dataset.routeSource = 'simulation';
   else delete container.dataset.routeSource;
@@ -168,6 +175,7 @@ export function ensureTrackingMap(container, view) {
     destination: sandboxGeometryVerified ? view.destination : null,
     center: view.riderLocation || (sandboxGeometryVerified ? view.store : null),
     zoom: view.sandbox ? 14.5 : 16,
+    cooperativeGestures: view.role === 'tracking',
   });
   return entry;
 }
@@ -282,6 +290,7 @@ function renderMapMeta(container, order, location, destination) {
   const meta = container.querySelector('[data-map-meta]');
   if (!meta) return;
   const copy = meta.querySelector?.('[data-map-meta-text]') || meta;
+  delete container.dataset.mapPresentation;
   if (!order || !location) {
     container.dataset.mapFreshness = 'none';
     copy.textContent = 'Ubicación temporalmente no disponible';
@@ -294,7 +303,10 @@ function renderMapMeta(container, order, location, destination) {
     : 'fresh';
   container.dataset.mapFreshness = freshness;
   if (container.dataset.mapRole === 'tracking') {
-    if (location.origin === 'sandbox_route' || location.source === 'simulation') {
+    if (['arrived', 'arriving'].includes(order.status)) {
+      container.dataset.mapPresentation = 'last-location';
+      copy.textContent = `Última ubicación · ${age === 'ahora' ? 'hace 0 s' : age}`;
+    } else if (location.origin === 'sandbox_route' || location.source === 'simulation') {
       copy.textContent = `Recorrido de muestra · ${age}`;
     } else if (freshness === 'lost') {
       copy.textContent = 'Ubicación temporalmente no disponible';

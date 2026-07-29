@@ -465,6 +465,10 @@ begin
     and old.status is distinct from new.status then
     delete from public.rider_locations
      where order_id = new.id;
+    update public.order_public_tokens
+       set revoked_at = coalesce(revoked_at, clock_timestamp())
+     where order_id = new.id
+       and revoked_at is null;
   end if;
   return null;
 end;

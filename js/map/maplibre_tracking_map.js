@@ -101,6 +101,7 @@ export function createMapLibreTrackingMap({
     storeMarker: null,
     destinationMarker: null,
     routeFeature: null,
+    routeVisible: false,
     pendingSandboxPlaces: null,
     sandbox: false,
     sandboxGeometryVerified: false,
@@ -135,6 +136,7 @@ export function createMapLibreTrackingMap({
     destination = null,
     center = null,
     zoom = 16,
+    cooperativeGestures = false,
   } = {}) {
     if (state.destroyed || state.unavailable || !container) return false;
     if (state.map) {
@@ -152,6 +154,7 @@ export function createMapLibreTrackingMap({
     state.sandbox = sandbox === true;
     state.sandboxGeometryVerified = state.sandbox && sandboxGeometryVerified === true;
     state.routeFeature = state.sandboxGeometryVerified ? sandboxRouteFeature(route) : null;
+    state.routeVisible = Boolean(state.routeFeature);
     state.freshness = normalizeMapFreshness(freshness);
     state.pendingSandboxPlaces = state.sandboxGeometryVerified
       ? { store, destination }
@@ -187,6 +190,7 @@ export function createMapLibreTrackingMap({
         pitchWithRotate: false,
         maxPitch: 0,
         renderWorldCopies: false,
+        cooperativeGestures: cooperativeGestures === true,
       });
       if (maplibreRef.AttributionControl && state.map.addControl) {
         state.map.addControl(
@@ -426,7 +430,13 @@ export function createMapLibreTrackingMap({
   }
 
   function ensureSandboxRoute() {
-    if (!state.sandbox || !state.sandboxGeometryVerified || !state.routeFeature || !state.map) return;
+    if (
+      !state.sandbox
+      || !state.sandboxGeometryVerified
+      || !state.routeFeature
+      || !state.routeVisible
+      || !state.map
+    ) return;
     const existing = state.map.getSource?.(MAPLIBRE_SANDBOX_ROUTE_SOURCE_ID);
     if (existing?.setData) {
       existing.setData(state.routeFeature);
@@ -452,6 +462,23 @@ export function createMapLibreTrackingMap({
         },
       });
     }
+  }
+
+  function setSandboxRouteVisible(visible) {
+    const nextVisible = visible === true && Boolean(state.routeFeature);
+    state.routeVisible = nextVisible;
+    if (!state.map || !state.ready) return nextVisible;
+    const layer = state.map.getLayer?.(MAPLIBRE_SANDBOX_ROUTE_LAYER_ID);
+    if (layer && state.map.setLayoutProperty) {
+      state.map.setLayoutProperty(
+        MAPLIBRE_SANDBOX_ROUTE_LAYER_ID,
+        'visibility',
+        nextVisible ? 'visible' : 'none',
+      );
+    } else if (nextVisible) {
+      ensureSandboxRoute();
+    }
+    return nextVisible;
   }
 
   function ensureSandboxPlaces(places) {
@@ -612,6 +639,7 @@ export function createMapLibreTrackingMap({
       freshness: state.freshness,
       hasRiderMarker: Boolean(state.riderMarker),
       hasSandboxRoute: Boolean(state.routeFeature),
+      sandboxRouteVisible: state.routeVisible,
       userInteracted: state.userInteracted,
     });
   }
@@ -620,6 +648,7 @@ export function createMapLibreTrackingMap({
     mount,
     updateRiderLocation,
     updateFreshness,
+    setSandboxRouteVisible,
     recenter,
     resize,
     destroy,

@@ -97,7 +97,10 @@ export function sandboxMarkerPointAtProgress(progress = 0) {
   const deltaLat = Number(to.lat) - Number(from.lat);
   const deltaLng = Number(to.lng) - Number(from.lng);
   const length = Math.hypot(deltaLat, deltaLng) || 1;
-  const offset = 0.00024 * edgeRatio;
+  // El pin de destino mide 54 px y la moto 52 px: una separación visual de
+  // ~70 m evita que se toquen en móviles sin alterar las coordenadas reales
+  // del escenario ni la ruta usada para el cálculo de progreso.
+  const offset = 0.00062 * edgeRatio;
   return {
     ...point,
     lat: point.lat - (deltaLng / length) * offset,

@@ -1515,7 +1515,7 @@ body[data-active-view="tracking"] {
 }
 
 body[data-active-view="tracking"] .topbar {
-  min-height: calc(82px + env(safe-area-inset-top, 0px));
+  min-height: calc(64px + env(safe-area-inset-top, 0px));
   padding:
     env(safe-area-inset-top, 0px)
     max(20px, calc((100vw - 720px) / 2 + 24px))
@@ -1530,10 +1530,11 @@ body[data-active-view="tracking"] .topbar .brand {
 }
 
 body[data-active-view="tracking"] .topbar .brand-word {
-  font-size: 29px;
+  font-size: 27px;
   font-weight: 950;
 }
 
+body[data-active-view="tracking"] .topbar .desktop-nav,
 body[data-active-view="tracking"] .topbar-actions {
   display: none !important;
 }
@@ -1557,8 +1558,8 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row {
 }
 
 .tracking-menu-button {
-  top: calc(19px + env(safe-area-inset-top, 0px));
-  right: max(18px, calc((100vw - 720px) / 2 + 22px));
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  right: max(18px, calc((100vw - 720px) / 2 + 20px));
 }
 
 .tracking-menu-button svg {
@@ -1810,6 +1811,13 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row {
   height: 50px;
 }
 
+.taba-delivery-helmet {
+  --delivery-helmet-contrast: var(--taba-white);
+  color: var(--taba-red);
+  overflow: visible;
+  transform: translate(0.35px, 0.5px);
+}
+
 .tracking-rider-copy {
   gap: 3px;
 }
@@ -1951,6 +1959,450 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row {
 .tracking-help-contact {
   color: #c8101e;
   text-decoration-style: solid;
+}
+
+/* Estado público canónico `arriving`: composición equivalente a la referencia
+   sin alterar el flujo, los datos ni el comportamiento del mapa. */
+body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar {
+  min-height: calc(57px + env(safe-area-inset-top, 0px));
+  padding-inline: max(18px, calc((100vw - 720px) / 2 + 18px));
+}
+
+body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar .brand {
+  min-height: 45px;
+}
+
+body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar .brand-word {
+  font-size: 27px;
+  font-weight: 750;
+  letter-spacing: -0.08em;
+}
+
+.tracking-premium.status-arriving .tracking-menu-button {
+  top: calc(3px + env(safe-area-inset-top, 0px));
+  right: max(6px, calc((100vw - 720px) / 2 + 6px));
+}
+
+.tracking-premium.status-arriving .tracking-menu-button svg {
+  width: 26px;
+  height: 26px;
+}
+
+.tracking-premium.status-arriving .tracking-menu-button path {
+  stroke-width: 1.8px;
+}
+
+.tracking-premium.status-arriving .tracking-sheet {
+  gap: 0;
+  padding: 4px 18px max(0px, env(safe-area-inset-bottom, 0px));
+}
+
+.tracking-premium.status-arriving .tracking-hero {
+  gap: 2px;
+  margin: 0 3px;
+}
+
+.tracking-premium.status-arriving .tracking-hero h1 {
+  color: var(--taba-graphite);
+  font-size: 29px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.tracking-premium.status-arriving .tracking-subtitle {
+  margin-top: 3px;
+  color: var(--taba-graphite-soft);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.32;
+}
+
+.tracking-premium.status-arriving .tracking-updated {
+  margin-top: 5px;
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.tracking-premium.status-arriving .customer-progress {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin: 17px 6px 14px;
+}
+
+.tracking-premium.status-arriving .customer-progress::before,
+.tracking-premium.status-arriving .customer-progress::after {
+  position: absolute;
+  z-index: 0;
+  top: 8.25px;
+  left: 28px;
+  height: 1.5px;
+  content: "";
+}
+
+.tracking-premium.status-arriving .customer-progress::before {
+  right: 27px;
+  background: var(--taba-border-medium);
+}
+
+.tracking-premium.status-arriving .customer-progress::after {
+  width: 57%;
+  background: var(--taba-red-quiet);
+}
+
+.tracking-premium.status-arriving .track-step {
+  width: max-content;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.tracking-premium.status-arriving .track-step::before {
+  display: none;
+}
+
+.tracking-premium.status-arriving .track-dot {
+  width: 18px;
+  height: 18px;
+  border-width: 1px;
+}
+
+.tracking-premium.status-arriving .track-step.done::before,
+.tracking-premium.status-arriving .track-step.current::before,
+.tracking-premium.status-arriving .track-step.done .track-dot,
+.tracking-premium.status-arriving .track-step.current .track-dot {
+  border-color: var(--taba-red-quiet);
+  background: var(--taba-red-quiet);
+}
+
+.tracking-premium.status-arriving .track-step.done .track-dot::after,
+.tracking-premium.status-arriving .track-step.current .track-dot::after {
+  width: 4px;
+  height: 7px;
+  border-width: 0 1.5px 1.5px 0;
+}
+
+.tracking-premium.status-arriving .track-step.pending .track-dot {
+  border-color: var(--taba-border-medium);
+  background: var(--taba-warm-white);
+}
+
+.tracking-premium.status-arriving .track-step small {
+  color: var(--taba-graphite);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.tracking-premium.status-arriving .tracking-map-stage {
+  width: 100%;
+  height: clamp(260px, 71.8vw, 300px);
+  min-height: clamp(260px, 71.8vw, 300px);
+  border-color: var(--taba-border-soft);
+  border-radius: 22px;
+  box-shadow: 0 2px 8px rgb(25 27 31 / 4%);
+}
+
+.tracking-premium.status-arriving .maplibregl-canvas {
+  filter: saturate(0.78) contrast(0.94) brightness(1.025);
+}
+
+.tracking-premium.status-arriving .real-map-meta {
+  top: 12px;
+  min-height: 29px;
+  gap: 4px;
+  padding: 4px 9px;
+  border-color: var(--taba-border-soft);
+  box-shadow: 0 2px 7px rgb(22 24 28 / 7%);
+  color: var(--taba-graphite-soft);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.tracking-premium.status-arriving .real-map-meta-indicator,
+.tracking-premium.status-arriving .real-map-meta-indicator svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tracking-premium.status-arriving
+  .real-map-shell[data-map-presentation="last-location"]
+  .real-map-live-dot {
+  display: none;
+}
+
+.tracking-premium.status-arriving
+  .real-map-shell[data-map-presentation="last-location"]
+  .real-map-meta-indicator
+  > svg {
+  display: block;
+}
+
+.tracking-premium.status-arriving .tracking-map-recenter {
+  right: 15px;
+  bottom: 15px;
+  width: 46px;
+  height: 46px;
+  border-color: var(--taba-border-soft);
+  border-radius: 14px;
+  box-shadow: 0 3px 8px rgb(20 21 24 / 10%);
+  color: var(--taba-graphite);
+}
+
+.tracking-premium.status-arriving .tracking-map-recenter:hover,
+.tracking-premium.status-arriving .tracking-map-recenter:focus-visible {
+  background: var(--taba-white);
+  color: var(--taba-graphite);
+}
+
+.tracking-premium.status-arriving .tracking-map-eta,
+.tracking-premium.status-arriving .lt-place-marker {
+  display: none;
+}
+
+.tracking-premium.status-arriving .lt-rider-marker,
+.tracking-premium.status-arriving .lt-rider-helmet-core,
+.tracking-premium.status-arriving .lt-rider-helmet-icon {
+  width: 43px;
+  height: 43px;
+}
+
+.tracking-premium.status-arriving .lt-rider-marker {
+  filter: drop-shadow(0 2px 4px rgb(23 25 29 / 12%));
+}
+
+.tracking-premium.status-arriving .maplibregl-ctrl-bottom-left {
+  bottom: 5px;
+  left: 6px;
+  max-width: calc(100% - 86px);
+}
+
+.tracking-premium.status-arriving .maplibregl-ctrl-bottom-left .maplibregl-ctrl {
+  margin: 0 4px 0 0;
+}
+
+.tracking-premium.status-arriving .maplibregl-ctrl-attrib.maplibregl-compact {
+  min-height: 20px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 1px 4px rgb(20 21 24 / 6%);
+}
+
+.tracking-premium.status-arriving .maplibregl-ctrl-attrib-button {
+  width: 20px;
+  height: 20px;
+  opacity: 0.62;
+}
+
+.tracking-premium.status-arriving .maplibregl-ctrl-logo {
+  margin: 0;
+  opacity: 0.56;
+  transform: scale(0.66);
+}
+
+.tracking-premium.status-arriving .tracking-rider-card {
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  min-height: 80px;
+  align-items: center;
+  gap: 13px;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border-color: var(--taba-border-soft);
+  border-radius: 20px;
+  background: var(--taba-warm-white);
+  box-shadow: var(--shadow-xs);
+}
+
+.tracking-premium.status-arriving .tracking-rider-icon {
+  width: 50px;
+  height: 50px;
+  background: var(--taba-subtle);
+}
+
+.tracking-premium.status-arriving .tracking-rider-helmet {
+  width: 58px;
+  height: 58px;
+}
+
+.tracking-premium.status-arriving .tracking-rider-copy {
+  gap: 2px;
+}
+
+.tracking-premium.status-arriving .tracking-rider-copy small {
+  color: var(--taba-muted-soft);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.tracking-premium.status-arriving .tracking-rider-copy strong {
+  color: var(--taba-graphite);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.tracking-premium.status-arriving .tracking-rider-copy > span {
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.tracking-premium.status-arriving .tracking-rider-contact {
+  width: auto;
+  margin: 0;
+}
+
+.tracking-premium.status-arriving .tracking-rider-contact .secondary-button {
+  position: relative;
+  isolation: isolate;
+  min-height: 44px;
+  min-width: 82px;
+  border-color: transparent;
+  padding-inline: 10px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--taba-red-quiet);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tracking-premium.status-arriving .tracking-rider-contact .secondary-button::before {
+  position: absolute;
+  z-index: -1;
+  inset: 2px 0;
+  border: 1px solid var(--taba-red-quiet);
+  border-radius: 11px;
+  background: var(--taba-white);
+  content: "";
+  pointer-events: none;
+}
+
+.tracking-premium.status-arriving .tracking-rider-contact .secondary-button:hover,
+.tracking-premium.status-arriving .tracking-rider-contact .secondary-button:focus-visible {
+  background: transparent;
+}
+
+.tracking-premium.status-arriving .delivery-code-card {
+  min-height: 113px;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 15px;
+  padding: 10px 13px;
+  border-color: var(--taba-red-border-soft);
+  border-radius: 20px;
+  background: var(--taba-red-wash);
+  box-shadow: none;
+}
+
+.tracking-premium.status-arriving .delivery-code-icon {
+  width: 48px;
+  height: 52px;
+  color: var(--taba-red-quiet);
+}
+
+.tracking-premium.status-arriving .delivery-code-icon svg {
+  width: 39px;
+  height: 43px;
+}
+
+.tracking-premium.status-arriving .delivery-code-icon :is(path, rect) {
+  stroke-width: 1.9px;
+}
+
+.tracking-premium.status-arriving .delivery-code-copy {
+  gap: 1px;
+}
+
+.tracking-premium.status-arriving .delivery-code-copy > span {
+  color: var(--taba-red-quiet);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.tracking-premium.status-arriving .delivery-code-copy strong {
+  color: var(--taba-red-quiet);
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.06;
+  word-spacing: 0.12em;
+}
+
+.tracking-premium.status-arriving .delivery-code-copy small {
+  max-width: 30ch;
+  color: var(--taba-graphite-soft);
+  font-size: 12.25px;
+  font-weight: 400;
+  line-height: 1.32;
+}
+
+.tracking-premium.status-arriving .tracking-order-summary {
+  margin-top: 13px;
+  border-color: var(--taba-border-soft);
+  border-radius: 19px;
+  box-shadow: var(--shadow-xs);
+}
+
+.tracking-premium.status-arriving .tracking-order-summary > summary {
+  min-height: 68px;
+  padding: 11px 15px;
+}
+
+.tracking-premium.status-arriving .tracking-summary-content {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.tracking-premium.status-arriving .tracking-summary-copy {
+  gap: 3px;
+}
+
+.tracking-premium.status-arriving .tracking-summary-copy > strong {
+  color: var(--taba-graphite);
+  font-size: 15.5px;
+  font-weight: 550;
+}
+
+.tracking-premium.status-arriving .tracking-summary-copy > small {
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.tracking-premium.status-arriving .tracking-summary-action {
+  color: var(--taba-red-quiet);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tracking-premium.status-arriving .tracking-summary-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tracking-premium.status-arriving .tracking-help-card {
+  min-height: 44px;
+  gap: 3px;
+  margin: 0;
+  color: var(--taba-red-quiet);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.tracking-premium.status-arriving .tracking-help-icon {
+  display: none;
+}
+
+.tracking-premium.status-arriving .tracking-help-contact {
+  color: var(--taba-red-quiet);
+  font-weight: 400;
+  text-decoration-style: dotted;
 }
 
 .tracking-premium.status-cancelled .track-step::before {

@@ -245,25 +245,27 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
   await expect(page.locator('[data-home-paging-dots]')).toBeHidden();
 });
 
-test('los derivados limpios se reutilizan en Home, catálogo, modal y carrito', async ({ page }) => {
+test('un producto real usa thumbnail en tarjetas y product.webp en el detalle', async ({ page }) => {
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/?demo=1&home=v37');
-  const cleanAsset = 'coca-cola-original-1-5l-clean-preview.jpg';
-  const homeCard = page.locator('[data-home-catalog-preview] .home-catalog-card').filter({ hasText: 'Coca-Cola' });
-  await expect(homeCard.locator(`img[src*="${cleanAsset}"]`)).toHaveCount(1);
+  const homeCard = page.locator('[data-home-catalog-preview] .home-catalog-card').first();
+  const productId = await homeCard.locator('[data-product-detail]').getAttribute('data-product-detail');
+  const source = await homeCard.locator('img').getAttribute('src');
+  expect(productId).toBeTruthy();
+  expect(source).toMatch(/\/thumbnail\.webp$/);
+  const detailSource = source.replace(/thumbnail\.webp$/, 'product.webp');
 
   await homeCard.locator('[data-product-detail]').click();
-  await expect(page.locator(`dialog[open] img[src*="${cleanAsset}"]`)).toBeVisible();
+  await expect(page.locator(`dialog[open] [data-modal-product-id="${productId}"] img`)).toHaveAttribute('src', detailSource);
   await page.locator('dialog[open] .modal-close').click();
 
   await homeCard.locator('[data-add-product]').click();
   await page.locator('[data-open-cart]').first().click();
-  await expect(page.locator(`[data-view="cart"] img[src*="${cleanAsset}"]`)).toBeVisible();
+  await expect(page.locator(`[data-view="cart"] img[src="${source}"]`)).toBeVisible();
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-view="catalog"] [data-category-id="promos"]').click();
-  await expect(page.locator(`[data-product-grid] img[src*="${cleanAsset}"]`)).toBeVisible();
+  await expect(page.locator(`[data-product-grid] [data-product-detail="${productId}"] img`)).toHaveAttribute('src', source);
 });
 
 test('la CTA móvil compacta reserva espacio real sobre la navegación', async ({ page }) => {

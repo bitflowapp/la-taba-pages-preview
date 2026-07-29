@@ -315,17 +315,23 @@ export function productThumb(product, variant = 'grid') {
     && product.imageShowsMultipack !== true
     && hasAuthoritativeHashes,
   );
-  const loading = variant === 'modal' ? 'eager' : 'lazy';
-  const source = official ? thumbnail : PRODUCT_PLACEHOLDER_IMAGE;
-  const responsive = official
-    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${variant === 'modal' ? '(max-width: 700px) 92vw, 560px' : '(max-width: 700px) 45vw, 260px'}"`
-    : '';
+  const isDetail = variant === 'modal';
+  const loading = isDetail ? 'eager' : 'lazy';
+  const source = official
+    ? (isDetail ? image : thumbnail)
+    : PRODUCT_PLACEHOLDER_IMAGE;
+  const width = official
+    ? Number(isDetail ? (product.imageWidth || 1000) : (product.thumbnailWidth || 400))
+    : 400;
+  const height = official
+    ? Number(isDetail ? (product.imageHeight || 1000) : (product.thumbnailHeight || 400))
+    : 400;
   const label = official
     ? `Imagen oficial de ${product.name || 'producto'}`
     : `Producto sin imagen oficial: ${product.name || 'bebida'}`;
   return `
     <span class="thumb ${official ? 'has-photo' : 'uses-placeholder'} tone-${tone} category-${category} thumb-${variant}" role="img" aria-label="${escapeHtml(label)}">
-      <img class="thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}"${responsive} alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" loading="${loading}" decoding="async" />
+      <img class="thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}" width="${width}" height="${height}" alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" loading="${loading}" decoding="async" />
     </span>`;
 }
 
@@ -364,6 +370,9 @@ function offerBadges(product) {
 }
 
 function priceBlock(product) {
+  if (product.pricePending) {
+    return '<div class="price"><div class="price-amounts"><strong>Precio pendiente</strong></div></div>';
+  }
   const pricing = productPricePresentation(product);
   const old = pricing.regularPrice && pricing.regularPrice > pricing.price
     ? `<s>${money(pricing.regularPrice)}</s>` : '';
@@ -457,7 +466,7 @@ function activePromotionProductIds(state = getState()) {
 }
 
 function unitStorefrontProducts(state = getState()) {
-  return getCustomerCatalogProducts(state.products).filter(isUnitStorefrontProduct);
+  return getCustomerCatalogProducts(state.products);
 }
 
 function promotionalProducts(state = getState()) {
@@ -1040,6 +1049,7 @@ function renderProducts() {
 // Pill de disponibilidad: sólo aparece cuando hay algo que avisar (agotado,
 // pausado, últimas unidades). Lo normal —estar disponible— no se etiqueta.
 export function stockPill(product) {
+  if (product.pricePending) return '<span class="stock-pill empty">Precio pendiente</span>';
   if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
   if (!product.available) return '<span class="stock-pill empty">No disponible</span>';
   if (product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
@@ -1049,6 +1059,7 @@ export function stockPill(product) {
 
 // Texto plano de disponibilidad para el detalle del producto.
 export function availabilityLabel(product) {
+  if (product.pricePending) return 'Precio pendiente';
   if (product.archived || !product.available) return 'No disponible por ahora';
   if (product.stock <= 0) return 'Agotado';
   if (product.stock <= 4) return `Quedan ${product.stock}`;
@@ -2177,11 +2188,11 @@ export function showProductModal(productId) {
         ${product.description ? `<p>${escapeHtml(product.description)}</p>` : ''}
         <div class="modal-commerce-row">
           <div class="modal-price">
-            ${pricing.regularPrice && pricing.regularPrice > pricing.price ? `<s>${money(pricing.regularPrice)}</s>` : ''}
-            <strong>${money(pricing.price)}</strong>
-            ${pricing.condition ? `<small>${escapeHtml(pricing.condition)}</small>` : ''}
+            ${product.pricePending
+              ? '<strong>Precio pendiente</strong>'
+              : `${pricing.regularPrice && pricing.regularPrice > pricing.price ? `<s>${money(pricing.regularPrice)}</s>` : ''}<strong>${money(pricing.price)}</strong>${pricing.condition ? `<small>${escapeHtml(pricing.condition)}</small>` : ''}`}
           </div>
-          <span class="modal-availability ${product.stock <= 0 || !product.available ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>
+          <span class="modal-availability ${product.stock <= 0 || !product.available || product.pricePending ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>
         </div>
         ${variants.length ? `
           <label class="modal-variant-field">

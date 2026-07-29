@@ -20,15 +20,9 @@ function normalizedProductIds(productIds) {
 
 export function isPromotionalProduct(product, activePromotionProductIds = []) {
   if (!product?.id) return false;
-  const price = Number(product.price);
-  const oldPrice = Number(product.oldPrice);
-  const hasReducedPrice = Number.isFinite(price)
-    && Number.isFinite(oldPrice)
-    && oldPrice > price;
-  const hasHomeBadge = Boolean(String(product.homePromoBadge || '').trim());
-  return hasHomeBadge
-    || hasReducedPrice
-    || normalizedProductIds(activePromotionProductIds).has(product.id);
+  // Un precio anterior o un badge del producto no es evidencia comercial
+  // suficiente. Una promo visible exige una regla activa y validada.
+  return normalizedProductIds(activePromotionProductIds).has(product.id);
 }
 
 export function isFernetProduct(product) {

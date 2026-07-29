@@ -469,6 +469,18 @@ function inboxOrderCard(order, options = {}) {
     getState().orders.filter((candidate) => !candidate.internalSeed),
     order,
   );
+  const addressLabel = address.savedLabel
+    ? `${address.savedLabel} · ${address.label || order.address}`
+    : address.label || order.address;
+  const addressUnit = [
+    address.floor && `Piso ${address.floor}`,
+    address.apartment && `Dpto. ${address.apartment}`,
+  ].filter(Boolean).join(' · ');
+  const addressRegion = [
+    address.city || address.neighborhood,
+    address.province,
+    address.postalCode,
+  ].filter(Boolean).join(' · ');
 
   return `
     <article class="inbox-order ${priorityClass} ${freshClass} accent-${statusClass(order.status)}" data-inbox-order="${escapeHtml(order.id)}">
@@ -487,6 +499,7 @@ function inboxOrderCard(order, options = {}) {
             <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
           </div>
           <p class="inbox-status-copy">${itemCount} ${itemCount === 1 ? 'unidad' : 'unidades'} · ${money(order.total)}</p>
+          ${isPickup ? '' : `<p class="inbox-address-summary">${escapeHtml(addressLabel)}</p>`}
           ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparación estimada: <strong>${prepMinutes} min</strong></p>` : ''}
         </div>
 
@@ -512,7 +525,9 @@ function inboxOrderCard(order, options = {}) {
             ${renderCustomerSignals(customerSignals)}
             <div class="inbox-detail-list">
               <p><span>Teléfono</span><strong>${escapeHtml(order.customerPhone)}</strong></p>
-              <p><span>${isPickup ? 'Retiro' : 'Dirección'}</span><strong>${isPickup ? 'Retira en el local' : escapeHtml(address.label || order.address)}</strong></p>
+              <p><span>${isPickup ? 'Retiro' : 'Dirección'}</span><strong>${isPickup ? 'Retira en el local' : escapeHtml(addressLabel)}</strong></p>
+              ${!isPickup && addressUnit ? `<p><span>Piso / departamento</span><strong>${escapeHtml(addressUnit)}</strong></p>` : ''}
+              ${!isPickup && addressRegion ? `<p><span>Ciudad / provincia</span><strong>${escapeHtml(addressRegion)}</strong></p>` : ''}
               ${!isPickup && reference ? `<p><span>Referencia</span><strong>${escapeHtml(reference)}</strong></p>` : ''}
               <p><span>Pago</span><strong>${escapeHtml(order.paymentMethod)}</strong></p>
               ${order.cashChange ? `<p><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></p>` : ''}

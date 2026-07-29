@@ -18,7 +18,7 @@
       integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK"
       crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="styles.css?v=37" />
+    <link rel="stylesheet" href="styles.css?v=39" />
   </head>
   <body>
     <div class="app-shell">
@@ -35,7 +35,7 @@
           <button type="button" data-nav-view="catalog">Catálogo</button>
           <button type="button" data-nav-view="cart">Pedido <span class="mini-badge" data-cart-count>0</span></button>
           <button type="button" data-nav-view="tracking">Seguir</button>
-          <button type="button" data-nav-view="profile">Local</button>
+          <button type="button" data-nav-view="profile">Perfil</button>
         </nav>
 
         <div class="topbar-actions">
@@ -266,6 +266,8 @@
             <div class="card cart-card">
               <h3>Productos</h3>
               <div data-cart-list></div>
+              <div data-cart-minimum-progress></div>
+              <section class="cart-recommendations" data-cart-recommendations hidden aria-labelledby="cart-recommendations-title"></section>
             </div>
 
             <form class="card checkout-form" data-checkout-form novalidate>
@@ -308,6 +310,14 @@
                   </div>
                   <input type="hidden" name="customerAddress" />
                   <input type="hidden" name="customerAddressId" />
+                  <input type="hidden" name="customerAddressLabel" />
+                  <input type="hidden" name="deliveryStreet" />
+                  <input type="hidden" name="deliveryStreetNumber" />
+                  <input type="hidden" name="deliveryFloor" />
+                  <input type="hidden" name="deliveryApartment" />
+                  <input type="hidden" name="deliveryCity" />
+                  <input type="hidden" name="deliveryProvince" />
+                  <input type="hidden" name="deliveryPostalCode" />
                   <input type="hidden" name="deliveryLatitude" />
                   <input type="hidden" name="deliveryLongitude" />
                   <input type="hidden" name="deliveryGeolocationAccuracy" />
@@ -318,8 +328,8 @@
               <label class="remember-customer-row remember-customer-compact">
                 <input type="checkbox" name="rememberCustomer" />
                 <span>
-                  <strong>Recordar mis datos para próximos pedidos</strong>
-                  <small>Los guardamos solo si lo confirmás, para ayudarte en tu próxima compra.</small>
+                  <strong>Guardar estos cambios en mi perfil</strong>
+                  <small>Recordar mis datos es opcional: si no marcás esta opción, se usan únicamente en este pedido.</small>
                 </span>
               </label>
 
@@ -385,16 +395,18 @@
         </section>
 
         <section class="section app-view soft" data-view="profile" hidden aria-hidden="true">
-          <div class="section-head">
+          <div class="section-head profile-page-head">
             <div>
-              <p class="eyebrow">Local</p>
-              <h1 class="view-title" data-business-profile-name>TABA</h1>
-              <p class="profile-lead" data-business-subtitle>Contacto, horarios y condiciones del local.</p>
+              <p class="eyebrow">Tu cuenta</p>
+              <h1 class="view-title">Perfil</h1>
+              <p class="profile-lead">Tus datos se usarán únicamente para preparar y entregar tus pedidos.</p>
             </div>
           </div>
-          <div class="profile-grid">
-            <div class="card">
-              <h3>Información del local</h3>
+          <div data-customer-profile></div>
+
+          <details class="card profile-business-details">
+            <summary>Información del local</summary>
+            <div class="profile-business-details-body">
               <ul class="info-list">
                 <li><span>Local</span><strong data-business-profile-name>TABA</strong></li>
                 <li><span>Dirección</span><strong data-business-address>A confirmar con el local</strong></li>
@@ -407,7 +419,7 @@
                 <li><span>Retiro en local</span><strong>A coordinar con el local</strong></li>
               </ul>
             </div>
-          </div>
+          </details>
         </section>
 
         <section class="section app-view admin-section" data-view="business" data-operational-only hidden aria-hidden="true">
@@ -419,7 +431,7 @@
             </div>
             <div class="button-row">
               <button class="primary-button" type="button" data-open-pin data-admin-target="business">Ingresar código</button>
-              <button class="secondary-button" type="button" data-nav-view="profile">Volver al local</button>
+              <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
             </div>
           </div>
 
@@ -441,7 +453,7 @@
               <p class="form-hint" data-production-auth-message role="status" hidden></p>
               <div class="button-row">
                 <button class="primary-button" type="submit">Ingresar</button>
-                <button class="secondary-button" type="button" data-nav-view="profile">Volver al local</button>
+                <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
               </div>
             </form>
           </div>
@@ -472,7 +484,7 @@
             </div>
             <div class="button-row">
               <button class="primary-button" type="button" data-open-pin data-admin-target="rider">Ingresar código</button>
-              <button class="secondary-button" type="button" data-nav-view="profile">Volver al local</button>
+              <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
             </div>
           </div>
 
@@ -494,7 +506,7 @@
               <p class="form-hint" data-production-auth-message role="status" hidden></p>
               <div class="button-row">
                 <button class="primary-button" type="submit">Ingresar</button>
-                <button class="secondary-button" type="button" data-nav-view="profile">Volver al local</button>
+                <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
               </div>
             </form>
           </div>
@@ -514,19 +526,31 @@
       </main>
 
       <button class="floating-cart hidden" type="button" data-floating-cart data-open-cart aria-live="polite">
-        <span data-floating-cart-summary>Ver pedido · $0</span>
+        <span class="floating-cart-copy">
+          <span class="floating-cart-label" data-floating-cart-label>Ver carrito</span>
+          <span class="floating-cart-meta">
+            <small data-floating-cart-count></small>
+            <span class="floating-cart-saving" data-floating-cart-saving hidden></span>
+            <span class="floating-cart-original" data-floating-cart-original hidden></span>
+          </span>
+        </span>
+        <strong data-floating-cart-summary>$0</strong>
       </button>
 
       <nav class="mobile-nav" aria-label="Navegación móvil">
         <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>
         <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
         <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguir</span></button>
-        <button type="button" data-nav-view="profile"><span class="mn-ico icon-store" aria-hidden="true"></span><span class="mn-label">Local</span></button>
+        <button type="button" data-nav-view="profile"><span class="mn-ico icon-profile" aria-hidden="true"></span><span class="mn-label">Perfil</span></button>
       </nav>
     </div>
 
     <dialog class="product-modal" data-product-modal aria-label="Detalle del producto">
       <div data-modal-content></div>
+    </dialog>
+
+    <dialog class="checkout-suggestions-modal" data-checkout-suggestions-modal aria-labelledby="checkout-suggestions-title">
+      <div data-checkout-suggestions-content></div>
     </dialog>
 
     <dialog class="pin-modal" data-pin-modal data-demo-only aria-label="Acceso del equipo">
@@ -660,6 +684,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=2"></script>
-    <script type="module" src="js/app.js?v=33"></script>
+    <script type="module" src="js/app.js?v=35"></script>
   </body>
 </html>

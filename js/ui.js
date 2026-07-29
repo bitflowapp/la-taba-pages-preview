@@ -21,6 +21,7 @@ import {
 } from './state.js';
 import {
   getCartItems,
+  getDeliveryMinimumProgress,
   getCartSummary,
   getRepeatableCustomerOrder,
   validateCartForCheckout,
@@ -39,9 +40,10 @@ import {
   trackingLocationFreshness,
 } from './map/route_geometry.js';
 import { renderPublicOrderTimeline } from './core/order-timeline.js';
-import { isDemoMode } from './core/app-mode.js';
+import { isDemoMode, isProductionMode } from './core/app-mode.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { formatPromotionCondition, getActivePromotions, getProductPromotion } from './core/promotions.js';
+import { cartNeedsComplementPrompt, getCartRecommendations } from './core/cart-recommendations.js';
 import {
   isFernetProduct,
   isPopularProduct,
@@ -50,7 +52,7 @@ import {
   uniqueProducts,
 } from './core/storefront-filters.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
-import { riderHelmetSvg } from './map/rider_marker.js';
+import { riderAvatarHelmetSvg } from './map/rider_marker.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -267,8 +269,7 @@ export function productPricePresentation(product) {
   const basePrice = Number(product?.price || 0);
   const promotion = activePromotionForProduct(product);
   if (!promotion) {
-    const oldPrice = Number(product?.oldPrice || 0);
-    return { price: basePrice, regularPrice: oldPrice > basePrice ? oldPrice : null, promotion: null, condition: '' };
+    return { price: basePrice, regularPrice: null, promotion: null, condition: '' };
   }
 
   let promotionalPrice = null;
@@ -317,6 +318,8 @@ export function productThumb(product, variant = 'grid') {
   );
   const loading = variant === 'modal' ? 'eager' : 'lazy';
   const source = official ? thumbnail : PRODUCT_PLACEHOLDER_IMAGE;
+  const width = official ? Number(product.thumbnailWidth || 400) : 400;
+  const height = official ? Number(product.thumbnailHeight || 400) : 400;
   const responsive = official
     ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${variant === 'modal' ? '(max-width: 700px) 92vw, 560px' : '(max-width: 700px) 45vw, 260px'}"`
     : '';
@@ -325,7 +328,7 @@ export function productThumb(product, variant = 'grid') {
     : `Producto sin imagen oficial: ${product.name || 'bebida'}`;
   return `
     <span class="thumb ${official ? 'has-photo' : 'uses-placeholder'} tone-${tone} category-${category} thumb-${variant}" role="img" aria-label="${escapeHtml(label)}">
-      <img class="thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}"${responsive} alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" loading="${loading}" decoding="async" />
+      <img class="thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}"${responsive} width="${width}" height="${height}" alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" loading="${loading}" decoding="async" />
     </span>`;
 }
 
@@ -364,6 +367,9 @@ function offerBadges(product) {
 }
 
 function priceBlock(product) {
+  if (product.pricePending) {
+    return '<div class="price"><div class="price-amounts"><strong>Precio pendiente</strong></div></div>';
+  }
   const pricing = productPricePresentation(product);
   const old = pricing.regularPrice && pricing.regularPrice > pricing.price
     ? `<s>${money(pricing.regularPrice)}</s>` : '';
@@ -372,6 +378,35 @@ function priceBlock(product) {
       <div class="price-amounts"><strong>${money(pricing.price)}</strong>${old}</div>
       ${pricing.promotion && pricing.condition ? `<small class="price-condition">${escapeHtml(pricing.condition)}</small>` : ''}
     </div>`;
+}
+
+function removeGlyph() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 7.5h13M9.2 7.5V5.8h5.6v1.7m-7.8 0 .8 11.1h8.4L17 7.5M10 11v4.2m4-4.2v4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+// El mismo control se comparte en catálogo, carruseles, recomendaciones y
+// carrito para que la cantidad sea una única verdad visual por SKU.
+function quantityControl(product, quantity, { className = 'qty-stepper' } = {}) {
+  const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
+  const reachedStock = safeQuantity >= Number(product.stock || 0);
+  const leftLabel = safeQuantity === 1
+    ? `Quitar ${product.name} del pedido`
+    : `Restar uno de ${product.name}`;
+  const leftIcon = safeQuantity === 1 ? removeGlyph() : '<span aria-hidden="true">−</span>';
+  return `
+    <div class="${className}" aria-label="Cantidad de ${escapeHtml(product.name)} en el pedido">
+      <button class="icon-button compact qty-stepper-action qty-stepper-remove" type="button" data-cart-dec="${escapeHtml(product.id)}" aria-label="${escapeHtml(leftLabel)}">${leftIcon}</button>
+      <strong aria-live="polite">${safeQuantity}</strong>
+      <button class="icon-button compact qty-stepper-action" type="button" data-cart-inc="${escapeHtml(product.id)}" aria-label="Sumar uno de ${escapeHtml(product.name)}" ${reachedStock ? 'disabled' : ''}><span aria-hidden="true">+</span></button>
+    </div>`;
+}
+
+function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
+  const outOfStock = product.stock <= 0 || !product.available || product.pricePending;
+  if (quantity > 0) return quantityControl(product, quantity);
+  return `<button class="${className}" type="button" data-add-product="${escapeHtml(product.id)}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>
+    <span class="add-plus" aria-hidden="true">+</span><span class="add-text">${product.pricePending ? 'Precio pendiente' : (outOfStock ? 'No disponible' : 'Agregar')}</span>
+  </button>`;
 }
 
 // "Las más pedidas" del home: productos populares del catálogo activo.
@@ -392,26 +427,24 @@ function renderOffers() {
 
 const HOME_CATEGORIES = Object.freeze([
   { id: 'gaseosas', name: 'Gaseosas' },
-  { id: 'fernet', name: 'Fernet' },
+  { id: 'mixers', name: 'Mixers' },
+  { id: 'energizantes', name: 'Energizantes' },
   { id: 'cervezas', name: 'Cervezas' },
-  { id: 'aguas', name: 'Aguas' },
-  { id: 'energeticas', name: 'Energéticas' },
-  { id: 'promos', name: 'Promos' },
 ]);
-const HOME_PROMOTION_IDS = ['qa-gaseosa-lima-limon', 'qa-promo-bebidas', 'qa-gaseosa-cola'];
-const HOME_BEST_SELLER_IDS = ['qa-promo-bebidas', 'qa-energetica', 'qa-gaseosa-cola'];
-const HOME_CATALOG_PREVIEW_IDS = [
-  'qa-promo-bebidas',
-  'qa-gaseosa-cola',
-  'qa-gaseosa-lima-limon',
-  'qa-energetica',
-];
-
 const HOME_CATEGORY_ICONS = Object.freeze({
   gaseosas: `
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M9.2 2.8h5.6v2.8l1.3 1.5v13.4c0 .8-.7 1.5-1.5 1.5H9.4c-.8 0-1.5-.7-1.5-1.5V7.1l1.3-1.5V2.8Z" fill="currentColor"/>
       <path d="M8 10.2h8M8 16.6h8" stroke="white" stroke-width="1.15" opacity=".9"/>
+    </svg>`,
+  mixers: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8.5 3h7v3l1.4 2.2V20H7.1V8.2L8.5 6V3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M7.2 12h9.6" stroke="currentColor" stroke-width="1.6"/>
+    </svg>`,
+  energizantes: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m13.6 2.8-7 10.4h5.3l-1.5 8 7-11h-5.1l1.3-7.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
     </svg>`,
   fernet: `
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -441,11 +474,7 @@ const HOME_CATEGORY_ICONS = Object.freeze({
 function homeProducts(ids) {
   const productsById = new Map(
     getCustomerCatalogProducts(getState().products)
-      .filter((product) => (
-        product.rightsStatus === 'APROBADOS'
-        || product.rightsStatus === 'REVISION_INTERNA'
-      ))
-      .filter((product) => product.imageShowsMultipack !== true)
+      .filter((product) => !product.pricePending)
       .map((product) => [product.id, product]),
   );
   return ids.map((id) => productsById.get(id)).filter(Boolean);
@@ -457,7 +486,7 @@ function activePromotionProductIds(state = getState()) {
 }
 
 function unitStorefrontProducts(state = getState()) {
-  return getCustomerCatalogProducts(state.products).filter(isUnitStorefrontProduct);
+  return getCustomerCatalogProducts(state.products);
 }
 
 function promotionalProducts(state = getState()) {
@@ -472,14 +501,11 @@ function popularProducts(state = getState()) {
 }
 
 function homePromotionalProducts() {
-  const activeIds = activePromotionProductIds();
-  return uniqueProducts(homeProducts(HOME_PROMOTION_IDS)
-    .filter((product) => isPromotionalProduct(product, activeIds)));
+  return promotionalProducts().slice(0, 6);
 }
 
 function homeBestSellerProducts() {
-  return uniqueProducts(homeProducts(HOME_BEST_SELLER_IDS)
-    .filter(isPopularProduct));
+  return unitStorefrontProducts().filter((product) => !product.pricePending).slice(0, 3);
 }
 
 function homeProductImage(product, className) {
@@ -487,7 +513,7 @@ function homeProductImage(product, className) {
   const responsive = product.image && product.imageThumbnail
     ? ` srcset="${escapeHtml(product.imageThumbnail)} 400w, ${escapeHtml(product.image)} 1000w" sizes="(max-width: 700px) 44vw, 260px"`
     : '';
-  return `<img class="${className} thumb-img" src="${escapeHtml(source)}"${responsive} alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" loading="lazy" decoding="async" />`;
+  return `<img class="${className} thumb-img" src="${escapeHtml(source)}"${responsive} width="${Number(product.thumbnailWidth || 400)}" height="${Number(product.thumbnailHeight || 400)}" alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" loading="lazy" decoding="async" />`;
 }
 
 function homeUnitText(product) {
@@ -510,9 +536,7 @@ function renderHomeShowcase() {
 function renderHomeCategories() {
   const strip = $('[data-home-category-strip]');
   if (!strip) return;
-  const hasFernet = unitStorefrontProducts().some(isFernetProduct);
-  const visibleCategories = HOME_CATEGORIES
-    .filter((category) => category.id !== 'fernet' || hasFernet);
+  const visibleCategories = HOME_CATEGORIES;
   strip.innerHTML = visibleCategories.map((category) => {
     const isActive = category.id === 'gaseosas';
     return `
@@ -526,13 +550,17 @@ function renderHomeCategories() {
 function renderHomePromotions() {
   const container = $('[data-home-promotions]');
   if (!container) return;
-  container.innerHTML = homePromotionalProducts().map((product) => {
+  const products = homePromotionalProducts();
+  const block = container.closest('.home-merch-section');
+  if (block) block.hidden = products.length === 0;
+  const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
+  container.innerHTML = products.map((product) => {
     const pricing = productPricePresentation(product);
     const old = pricing.regularPrice && pricing.regularPrice > pricing.price
       ? `<s>${money(pricing.regularPrice)}</s>`
       : '';
     const discount = discountPercent(product);
-    const badge = product.homePromoBadge || (discount > 0 ? `${discount}% OFF` : 'Por unidad');
+    const badge = discount > 0 ? `${discount}% OFF` : 'Promoción vigente';
     const outOfStock = product.stock <= 0 || !product.available;
     return `
       <article class="home-promo-card ${outOfStock ? 'out-of-stock' : ''}">
@@ -546,7 +574,7 @@ function renderHomePromotions() {
           ${old}
           <small>${escapeHtml(homeUnitText(product))}</small>
         </div>
-        <button class="home-add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>+</button>
+        <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>
       </article>`;
   }).join('');
   bindHomePromotionPaging();
@@ -555,6 +583,7 @@ function renderHomePromotions() {
 function renderHomeBestSellers() {
   const container = $('[data-home-best-sellers]');
   if (!container) return;
+  const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
   container.innerHTML = homeBestSellerProducts().map((product) => {
     const pricing = productPricePresentation(product);
     const outOfStock = product.stock <= 0 || !product.available;
@@ -567,7 +596,7 @@ function renderHomeBestSellers() {
           <strong>${escapeHtml(product.name)}</strong>
           <span>${money(pricing.price)}</span>
         </div>
-        <button class="home-add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>+</button>
+        <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>
       </article>`;
   }).join('');
 }
@@ -614,10 +643,11 @@ function bindHomePromotionPaging() {
 function renderHomeCatalogPreview() {
   const container = $('[data-home-catalog-preview]');
   if (!container) return;
-  container.innerHTML = homeProducts(HOME_CATALOG_PREVIEW_IDS).map((product) => {
+  const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
+  container.innerHTML = unitStorefrontProducts().filter((product) => !product.pricePending).slice(0, 4).map((product) => {
     const favorite = isFavoriteProduct(product.id);
     const pricing = productPricePresentation(product);
-    const outOfStock = product.stock <= 0 || !product.available;
+    const outOfStock = product.stock <= 0 || !product.available || product.pricePending;
     return `
       <article class="home-catalog-card ${outOfStock ? 'out-of-stock' : ''}">
         <button class="home-favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos">
@@ -634,7 +664,7 @@ function renderHomeCatalogPreview() {
           <span class="home-product-price">${money(pricing.price)}</span>
           <small>${escapeHtml(homeUnitText(product))}</small>
         </div>
-        <button class="home-add-button home-add-button-primary" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>+</button>
+        <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button home-add-button-primary' })}</div>
       </article>`;
   }).join('');
 }
@@ -666,6 +696,7 @@ function railCard(product) {
   const pricing = productPricePresentation(product);
   const old = pricing.regularPrice && pricing.regularPrice > pricing.price
     ? `<s>${money(pricing.regularPrice)}</s>` : '';
+  const quantity = getCartItems().find((item) => item.productId === product.id)?.quantity || 0;
   return `
     <article class="offer-card ${product.stock <= 0 || !product.available ? 'out-of-stock' : ''}">
       <button class="offer-card-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
@@ -681,9 +712,7 @@ function railCard(product) {
           ${old}
         </div>
       </div>
-      <button class="rail-add" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>
-        <span aria-hidden="true">+</span> Agregar
-      </button>
+      <div class="rail-card-control">${quickAddControl(product, quantity, { className: 'rail-add' })}</div>
     </article>
   `;
 }
@@ -767,7 +796,7 @@ function renderCategories() {
     ...catalogCategories.slice(1),
   ];
   const homeList = catalogCategories.filter((category) => category.id !== 'all');
-  const catalogTopIds = ['all', 'favorites', 'gaseosas', 'aguas'];
+  const catalogTopIds = ['all', 'favorites', 'gaseosas', 'mixers', 'energizantes', 'cervezas'];
   const catalogTopList = catalogTopIds
     .map((id) => fullList.find((category) => category.id === id))
     .filter(Boolean);
@@ -946,9 +975,19 @@ function renderCatalogOffers() {
 function renderCatalogMeta() {
   setText('[data-catalog-title]', activeCategoryName());
   const count = getFilteredProducts(getState()).length;
-  setText('[data-catalog-count]', count === 1 ? '1 producto' : `${count} productos`);
+  const catalogLoading = isProductionCatalogLoading();
+  setText(
+    '[data-catalog-count]',
+    catalogLoading ? 'Cargando catálogo…' : (count === 1 ? '1 producto' : `${count} productos`),
+  );
   const select = $('[data-sort-select]');
   if (select && select.value !== getState().sortBy) select.value = getState().sortBy;
+}
+
+function isProductionCatalogLoading() {
+  if (!isProductionMode()) return false;
+  const state = getOrderRepository()?.getCatalogStatus?.()?.state || 'idle';
+  return state === 'idle' || state === 'loading';
 }
 
 function renderSearchControls() {
@@ -966,6 +1005,14 @@ function renderProducts() {
   const filteredProducts = getFilteredProducts(state);
 
   if (!filteredProducts.length) {
+    if (isProductionCatalogLoading()) {
+      container.innerHTML = `
+        <div class="empty-state" data-catalog-loading role="status" aria-live="polite">
+          <strong>Cargando catálogo…</strong>
+          <p class="empty-state-copy">Estamos buscando los productos disponibles.</p>
+        </div>`;
+      return;
+    }
     const isFavorites = state.activeCategory === 'favorites';
     const isSearch = Boolean(state.searchQuery.trim());
     const emptyTitle = isFavorites
@@ -992,34 +1039,23 @@ function renderProducts() {
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
 
   container.innerHTML = filteredProducts.map((product) => {
-    const outOfStock = product.stock <= 0 || !product.available;
-    const unavailableLabel = !product.available ? 'No disponible' : 'Agotado';
+    const outOfStock = product.stock <= 0 || !product.available || product.pricePending;
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
     const favorite = isFavoriteProduct(product.id);
-    const packMatch = unitText(product).match(/\bx\s?(\d+)\b/i);
-    const packBadge = packMatch ? `<span class="product-pack-badge">x${packMatch[1]}</span>` : '';
     const rawPresentation = product.presentation || product.variant || product.unitLabel || product.packageType || '';
     const compactPresentation = normalizeSearchText(rawPresentation).replace(/\bpack\b/g, '').trim();
     const presentation = compactPresentation && normalizeSearchText(product.name).includes(compactPresentation)
       ? ''
       : rawPresentation;
-    const control = inCart > 0
-      ? `<div class="qty-stepper" aria-label="Cantidad de ${escapeHtml(product.name)} en el pedido">
-          <button class="icon-button compact" type="button" data-cart-dec="${product.id}" aria-label="Restar uno de ${escapeHtml(product.name)}">−</button>
-          <strong>${inCart}</strong>
-          <button class="icon-button compact" type="button" data-cart-inc="${product.id}" aria-label="Sumar uno de ${escapeHtml(product.name)}" ${inCart >= product.stock ? 'disabled' : ''}>+</button>
-        </div>`
-      : `<button class="add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>
-          <span class="add-plus">+</span><span class="add-text">${outOfStock ? unavailableLabel : 'Agregar'}</span>
-        </button>`;
+    const control = quickAddControl(product, inCart);
     return `
       <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
         <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
           ${productThumb(product, 'grid')}
           <span class="product-stock-tag">${stockPill(product)}</span>
-          ${packBadge}
         </button>
+        <div class="product-media-control">${control}</div>
         <button class="product-favorite ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos" aria-pressed="${favorite}">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
         </button>
@@ -1030,7 +1066,6 @@ function renderProducts() {
         </div>
         <div class="product-bottom">
           ${priceBlock(product)}
-          ${control}
         </div>
       </article>
     `;
@@ -1040,6 +1075,7 @@ function renderProducts() {
 // Pill de disponibilidad: sólo aparece cuando hay algo que avisar (agotado,
 // pausado, últimas unidades). Lo normal —estar disponible— no se etiqueta.
 export function stockPill(product) {
+  if (product.pricePending) return '<span class="stock-pill empty">Precio pendiente</span>';
   if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
   if (!product.available) return '<span class="stock-pill empty">No disponible</span>';
   if (product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
@@ -1049,6 +1085,7 @@ export function stockPill(product) {
 
 // Texto plano de disponibilidad para el detalle del producto.
 export function availabilityLabel(product) {
+  if (product.pricePending) return 'Precio pendiente';
   if (product.archived || !product.available) return 'No disponible por ahora';
   if (product.stock <= 0) return 'Agotado';
   if (product.stock <= 4) return `Quedan ${product.stock}`;
@@ -1269,6 +1306,8 @@ function customerHistoryRow(order) {
 export function renderCart() {
   renderCartTotals();
   renderCartList();
+  renderMinimumOrderProgress();
+  renderCartRecommendations();
   hydrateCheckoutFromProfile();
   renderOrderSummary();
   renderCheckoutVisibility();
@@ -1310,11 +1349,21 @@ export function renderCartTotals() {
   const floatingAllowed = ['home', 'catalog'].includes(
     document.body.dataset.activeView || 'home',
   );
-  const floatingText = `Ver pedido · ${money(subtotalSummary.subtotal)}`;
+  const floatingText = `Ver carrito · ${money(subtotalSummary.total)}`;
   setText('[data-cart-count]', String(summary.count));
   setText('[data-cart-count-mobile]', String(summary.count));
   setText('[data-cart-total-small]', summary.count > 0 ? money(subtotalSummary.subtotal) : money(0));
-  setText('[data-floating-cart-summary]', floatingText);
+  setText('[data-floating-cart-summary]', money(subtotalSummary.total));
+  setText('[data-floating-cart-label]', 'Ver carrito');
+  setText('[data-floating-cart-count]', summary.count === 1 ? '1 producto' : `${summary.count} productos`);
+  setText('[data-floating-cart-saving]', `Ahorrás ${money(subtotalSummary.discountTotal)}`);
+  setText('[data-floating-cart-original]', money(subtotalSummary.subtotal));
+  $$('[data-floating-cart-saving]').forEach((node) => {
+    node.hidden = subtotalSummary.discountTotal <= 0;
+  });
+  $$('[data-floating-cart-original]').forEach((node) => {
+    node.hidden = subtotalSummary.discountTotal <= 0;
+  });
   $$('[data-cart-count], [data-cart-count-mobile]').forEach((node) => {
     node.classList.toggle('is-empty', summary.count === 0);
   });
@@ -1322,6 +1371,98 @@ export function renderCartTotals() {
     node.classList.toggle('hidden', summary.count === 0 || !floatingAllowed);
     node.setAttribute('aria-label', summary.count > 0 ? `${floatingText}. Ver pedido.` : 'Carrito vacío');
   });
+}
+
+function renderMinimumOrderProgress() {
+  const container = $('[data-cart-minimum-progress]');
+  if (!container) return;
+  const items = getCartItems();
+  const config = getBusinessConfig();
+  const canShow = items.length > 0
+    && currentDeliveryMode() === 'delivery'
+    && (isDemoMode() || config.orderingDetailsVerified)
+    && Number(config.minDeliveryOrder) > 0;
+  if (!canShow) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const summary = getCartSummary('delivery');
+  const { minimum, missing, progress } = getDeliveryMinimumProgress(summary.subtotal, config.minDeliveryOrder);
+  container.innerHTML = `
+    <aside class="minimum-order-progress ${missing === 0 ? 'is-complete' : ''}" aria-live="polite">
+      <div>
+        <strong>${missing === 0 ? 'Ya alcanzaste el pedido mínimo' : `Te faltan ${money(missing)} para llegar al mínimo`}</strong>
+        <small>El mínimo de delivery es ${money(minimum)}. El costo de envío se informa por separado.</small>
+      </div>
+      <span class="minimum-order-track" aria-hidden="true"><span style="width:${progress}%"></span></span>
+    </aside>`;
+}
+
+function recommendationCard(product) {
+  return `
+    <article class="recommendation-card">
+      <button class="recommendation-media" type="button" data-product-detail="${escapeHtml(product.id)}" aria-label="Ver ${escapeHtml(product.name)}">
+        ${productThumb(product, 'rail')}
+      </button>
+      <div class="recommendation-copy">
+        <strong>${escapeHtml(product.name)}</strong>
+        <small>${escapeHtml(unitText(product))}</small>
+        <span>${money(productPricePresentation(product).price)}</span>
+      </div>
+      <div class="recommendation-control">${quickAddControl(product, 0, { className: 'recommendation-add' })}</div>
+    </article>`;
+}
+
+function renderCartRecommendations() {
+  const container = $('[data-cart-recommendations]');
+  if (!container) return;
+  const state = getState();
+  const recommendation = getCartRecommendations({
+    products: state.products,
+    cart: state.cart,
+    maxItems: 6,
+  });
+  container.hidden = recommendation.products.length === 0;
+  container.innerHTML = recommendation.products.length ? `
+    <div class="cart-recommendations-heading">
+      <div><p>RECOMENDADOS PARA VOS</p><h3 id="cart-recommendations-title">${escapeHtml(recommendation.title)}</h3></div>
+      <small>${escapeHtml(recommendation.copy)}</small>
+    </div>
+    <div class="recommendations-rail" aria-label="Productos sugeridos">
+      ${recommendation.products.map(recommendationCard).join('')}
+    </div>` : '';
+}
+
+export function shouldShowCheckoutSuggestions() {
+  const state = getState();
+  return cartNeedsComplementPrompt({ products: state.products, cart: state.cart });
+}
+
+export function showCheckoutSuggestions() {
+  const modal = $('[data-checkout-suggestions-modal]');
+  const content = $('[data-checkout-suggestions-content]');
+  const state = getState();
+  const recommendation = getCartRecommendations({ products: state.products, cart: state.cart, maxItems: 4 });
+  if (!modal || !content || !recommendation.products.length) return false;
+  content.innerHTML = `
+    <div class="checkout-suggestions-card" role="document">
+      <button class="modal-close" type="button" data-checkout-suggestions-dismiss aria-label="Cerrar sugerencias">×</button>
+      <p class="eyebrow">ANTES DE PAGAR</p>
+      <h2 id="checkout-suggestions-title">${escapeHtml(recommendation.title)}</h2>
+      <p>${escapeHtml(recommendation.copy)}</p>
+      <div class="checkout-suggestions-list">
+        ${recommendation.products.map(recommendationCard).join('')}
+      </div>
+      <button class="secondary-button checkout-suggestions-continue" type="button" data-checkout-suggestions-dismiss>Continuar sin agregar</button>
+    </div>`;
+  if (!modal.open) modal.showModal();
+  return true;
+}
+
+export function closeCheckoutSuggestions() {
+  const modal = $('[data-checkout-suggestions-modal]');
+  if (modal?.open) modal.close();
 }
 
 function renderCartList() {
@@ -1374,13 +1515,8 @@ function renderCartList() {
         <div class="cart-meta">${escapeHtml(unitText(item.product))} · ${money(item.product.price)}</div>
       </div>
       <div class="cart-item-side">
-        <div class="quantity-control">
-          <button class="icon-button compact" type="button" data-cart-dec="${item.productId}" aria-label="Restar uno de ${escapeHtml(item.product.name)}">−</button>
-          <strong>${item.quantity}</strong>
-          <button class="icon-button compact" type="button" data-cart-inc="${item.productId}" aria-label="Sumar uno de ${escapeHtml(item.product.name)}">+</button>
-        </div>
+        ${quantityControl(item.product, item.quantity, { className: 'quantity-control' })}
         <div class="cart-line">${money(item.product.price * item.quantity)}</div>
-        <button class="cart-remove" type="button" data-cart-remove="${item.productId}" aria-label="Quitar ${escapeHtml(item.product.name)}">Quitar</button>
       </div>
     </div>
   `).join('');
@@ -1512,6 +1648,7 @@ export function getCheckoutFormValues() {
   });
   const hiddenAddress = form.querySelector('[name="customerAddress"]');
   if (hiddenAddress) hiddenAddress.value = addressDetails.label;
+  const manualStreet = splitStreetAndNumber(addressDetails.streetLine);
   return {
     customerName: String(formData.get('customerName') || ''),
     customerPhone: String(formData.get('customerPhone') || ''),
@@ -1521,6 +1658,14 @@ export function getCheckoutFormValues() {
     customerAddress: addressDetails.label,
     addressDetails,
     customerAddressId: String(formData.get('customerAddressId') || ''),
+    customerAddressLabel: String(formData.get('customerAddressLabel') || ''),
+    deliveryStreet: String(formData.get('deliveryStreet') || manualStreet.street),
+    deliveryStreetNumber: String(formData.get('deliveryStreetNumber') || manualStreet.streetNumber),
+    deliveryFloor: String(formData.get('deliveryFloor') || ''),
+    deliveryApartment: String(formData.get('deliveryApartment') || ''),
+    deliveryCity: String(formData.get('deliveryCity') || addressDetails.neighborhood),
+    deliveryProvince: String(formData.get('deliveryProvince') || ''),
+    deliveryPostalCode: String(formData.get('deliveryPostalCode') || ''),
     deliveryLatitude: optionalNumber(formData.get('deliveryLatitude')),
     deliveryLongitude: optionalNumber(formData.get('deliveryLongitude')),
     deliveryGeolocationAccuracy: optionalNumber(formData.get('deliveryGeolocationAccuracy')),
@@ -1536,8 +1681,16 @@ export function getCheckoutFormValues() {
 }
 
 function optionalNumber(value) {
+  if (value == null || String(value).trim() === '') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function splitStreetAndNumber(value) {
+  const clean = String(value || '').trim();
+  const match = clean.match(/^(.*\D)\s+(\d+[A-Za-z]?(?:[/-]\d+[A-Za-z]?)?)$/);
+  if (!match) return { street: clean, streetNumber: '' };
+  return { street: match[1].trim(), streetNumber: match[2].trim() };
 }
 
 export function updateAddressFieldVisibility() {
@@ -1769,10 +1922,9 @@ function riderTrackingCard(order, riderLocation, presentation = null) {
     : '';
   return `
     <section class="tracking-rider-card ${live ? 'is-live' : ''}" data-tracking-rider-card data-rider-assigned="${assigned}" data-rider-freshness="${escapeHtml(freshness)}" aria-label="Estado del rider">
-      <span class="tracking-rider-icon">${riderHelmetSvg({
+      <span class="tracking-rider-icon">${riderAvatarHelmetSvg({
         className: 'tracking-rider-helmet',
         decorative: true,
-        palette: 'avatar',
       })}</span>
       <div class="tracking-rider-copy">
         <small>${assigned ? 'Rider TABA' : 'Entrega TABA'}</small>
@@ -1820,6 +1972,7 @@ function trackingDeliveryCodeCard(order) {
   if (!['arrived', 'arriving'].includes(order.status)) return '';
   const deliveryCode = normalizeDeliveryCode(order.deliveryCode);
   if (!deliveryCode) return '';
+  const accessibleCode = deliveryCode.code.split('').join(' ');
   return `
     <section class="delivery-code-card" data-delivery-code-card>
       <span class="delivery-code-icon" aria-hidden="true">
@@ -1831,7 +1984,7 @@ function trackingDeliveryCodeCard(order) {
       </span>
       <div class="delivery-code-copy">
         <span>Código de entrega</span>
-        <strong data-delivery-code="${escapeHtml(deliveryCode.code)}">${escapeHtml(formatDeliveryCode(deliveryCode.code))}</strong>
+        <strong data-delivery-code="${escapeHtml(deliveryCode.code)}" aria-label="Código de entrega: ${escapeHtml(accessibleCode)}">${escapeHtml(formatDeliveryCode(deliveryCode.code))}</strong>
         <small>Decile este código al repartidor cuando recibas el pedido</small>
       </div>
     </section>`;
@@ -1891,7 +2044,7 @@ function trackingOrderSummaryCard(order) {
       ? `<p><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>`
       : '',
   ].filter(Boolean).join('');
-  const thumbnails = trackingOrderThumbnails(items);
+  const thumbnails = order.status === 'arriving' ? '' : trackingOrderThumbnails(items);
   return `
     <details class="tracking-order-summary tracking-order-detail order-detail" data-order-summary-details>
       <summary>
@@ -2139,6 +2292,16 @@ function onlyDigits(value) {
   return String(value || '').replace(/\D/g, '');
 }
 
+function actualProductVariants(product) {
+  const rawVariants = Array.isArray(product?.variants) ? product.variants : [];
+  const ids = [product?.id, ...rawVariants.map((variant) => (
+    typeof variant === 'string' ? variant : variant?.id
+  ))].filter(Boolean);
+  return [...new Set(ids)]
+    .map((id) => getProductById(id))
+    .filter((candidate) => candidate && isProductVisibleToCustomer(candidate));
+}
+
 export function showProductModal(productId) {
   const product = getProductById(productId);
   const modal = $('[data-product-modal]');
@@ -2147,17 +2310,15 @@ export function showProductModal(productId) {
 
   const pricing = productPricePresentation(product);
   const favorite = isFavoriteProduct(product.id);
-  const variants = Array.isArray(product.variants)
-    ? product.variants.filter((variant) => (
-      variant
-      && typeof variant.id === 'string'
-      && getProductById(variant.id)
-      && isProductVisibleToCustomer(getProductById(variant.id))
-    ))
-    : [];
+  const variants = actualProductVariants(product);
+  const cartQuantity = getCartItems()
+    .find((item) => item.productId === product.id)?.quantity || 0;
+  const modalQuantityControl = cartQuantity > 0
+    ? quantityControl(product, cartQuantity, { className: 'qty-stepper modal-cart-control' })
+    : quickAddControl(product, 0, { className: 'add-button modal-cart-control' });
   const minimumAge = Math.max(18, Number(product.minimumAge || product.minimum_age || 18));
   content.innerHTML = `
-    <div class="modal-card" role="document">
+    <div class="modal-card" role="document" data-modal-product-id="${escapeHtml(product.id)}">
       <button class="modal-close" type="button" data-close-modal aria-label="Cerrar detalle">×</button>
       <div class="modal-media">
         ${productThumb(product, 'modal')}
@@ -2169,28 +2330,35 @@ export function showProductModal(productId) {
         ${product.description ? `<p>${escapeHtml(product.description)}</p>` : ''}
         <div class="modal-commerce-row">
           <div class="modal-price">
-            ${pricing.regularPrice && pricing.regularPrice > pricing.price ? `<s>${money(pricing.regularPrice)}</s>` : ''}
-            <strong>${money(pricing.price)}</strong>
-            ${pricing.condition ? `<small>${escapeHtml(pricing.condition)}</small>` : ''}
+            ${product.pricePending
+              ? '<strong>Precio pendiente</strong>'
+              : `${pricing.regularPrice && pricing.regularPrice > pricing.price ? `<s>${money(pricing.regularPrice)}</s>` : ''}<strong>${money(pricing.price)}</strong>${pricing.condition ? `<small>${escapeHtml(pricing.condition)}</small>` : ''}`}
           </div>
-          <span class="modal-availability ${product.stock <= 0 || !product.available ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>
+          <span class="modal-availability ${product.stock <= 0 || !product.available || product.pricePending ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>
         </div>
-        ${variants.length ? `
-          <label class="modal-variant-field">
-            Presentación
-            <select data-product-variant aria-label="Elegir presentación">
-              <option value="${escapeHtml(product.id)}">${escapeHtml(unitText(product) || product.name)}</option>
-              ${variants.map((variant) => {
-                const item = getProductById(variant.id);
-                return `<option value="${escapeHtml(item.id)}">${escapeHtml(unitText(item) || item.name)} · ${money(item.price)}</option>`;
+        ${variants.length > 1 ? `
+          <fieldset class="modal-variant-field">
+            <legend>Presentación</legend>
+            <div class="modal-variant-grid">
+              ${variants.map((item) => {
+                const itemPricing = productPricePresentation(item);
+                const selected = item.id === product.id;
+                const unavailable = item.stock <= 0 || !item.available;
+                return `<label class="modal-variant-card ${selected ? 'is-selected' : ''} ${unavailable ? 'is-unavailable' : ''}">
+                  <input type="radio" name="productVariant" data-product-variant value="${escapeHtml(item.id)}" ${selected ? 'checked' : ''} ${unavailable ? 'disabled' : ''} />
+                  <span><strong>${escapeHtml(unitText(item) || item.name)}</strong><small>${escapeHtml(item.name)}</small></span>
+                  <b>${money(itemPricing.price)}</b>
+                  ${itemPricing.regularPrice && itemPricing.regularPrice > itemPricing.price ? `<s>${money(itemPricing.regularPrice)}</s>` : ''}
+                  ${unavailable ? '<em>Sin stock</em>' : ''}
+                </label>`;
               }).join('')}
-            </select>
-          </label>` : ''}
+            </div>
+          </fieldset>` : ''}
         <div class="modal-order-fields">
-          <label class="modal-quantity-field">
-            Cantidad
-            <input data-product-quantity type="number" inputmode="numeric" min="1" max="${Math.max(1, Number(product.stock) || 1)}" value="1" />
-          </label>
+          <div class="modal-quantity-field">
+            <span>Cantidad</span>
+            ${modalQuantityControl}
+          </div>
           <label class="modal-note-field">
             Observación <span>(opcional)</span>
             <input data-product-note type="text" maxlength="120" placeholder="Ej.: bien fría" />
@@ -2199,12 +2367,11 @@ export function showProductModal(productId) {
         ${product.alcoholic ? `<p class="product-alcohol-notice">Venta exclusiva a mayores de ${minimumAge} años.</p>` : ''}
       </div>
       <div class="modal-actions">
-        <button class="primary-button" type="button" data-add-product="${escapeHtml(product.id)}" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>Agregar al pedido</button>
         <button class="secondary-button" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}">${favorite ? 'Guardado' : 'Guardar para después'}</button>
       </div>
     </div>
   `;
-  modal.showModal();
+  if (!modal.open) modal.showModal();
 }
 
 export function closeProductModal() {

@@ -77,6 +77,22 @@ export function getCartSubtotal() {
   return getCartSummary().subtotal;
 }
 
+export function getDeliveryMinimumProgress(
+  subtotal = getCartSubtotal(),
+  minimumOrder = getBusinessConfig().minDeliveryOrder,
+) {
+  const safeSubtotal = Math.max(0, Number(subtotal) || 0);
+  const minimum = Math.max(0, Number(minimumOrder) || 0);
+  const missing = Math.max(0, minimum - safeSubtotal);
+  return {
+    subtotal: safeSubtotal,
+    minimum,
+    missing,
+    reached: minimum === 0 || missing === 0,
+    progress: minimum > 0 ? Math.min(100, Math.round((safeSubtotal / minimum) * 100)) : 100,
+  };
+}
+
 export function getDeliveryFee(deliveryMode = 'delivery') {
   return getDeliveryFeeForMode(deliveryMode);
 }
@@ -251,8 +267,9 @@ export function validateCartForCheckout(deliveryMode = 'delivery') {
 
   const config = getBusinessConfig();
   const enforceMinimum = isDemoMode() || config.orderingDetailsVerified;
-  if (normalizedDeliveryMode === 'delivery' && enforceMinimum && subtotal < config.minDeliveryOrder) {
-    const missing = config.minDeliveryOrder - subtotal;
+  const minimumProgress = getDeliveryMinimumProgress(subtotal, config.minDeliveryOrder);
+  if (normalizedDeliveryMode === 'delivery' && enforceMinimum && !minimumProgress.reached) {
+    const { missing } = minimumProgress;
     return {
       ok: false,
       message: `Te faltan ${money(missing)} para llegar al pedido mínimo de delivery. También podés elegir retiro en local.`,

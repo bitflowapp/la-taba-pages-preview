@@ -478,6 +478,22 @@
   font-weight: 850;
 }
 
+.rail-card-control {
+  display: grid;
+  grid-column: 1 / -1;
+  justify-items: stretch;
+  padding: 0 10px 10px;
+}
+
+.rail-card-control .rail-add {
+  width: 100%;
+  margin: 0;
+}
+
+.rail-card-control .qty-stepper {
+  justify-self: center;
+}
+
 .reorder-card,
 .customer-action-panel {
   display: grid;
@@ -895,6 +911,48 @@
 
 .home-add-button:disabled {
   opacity: .45;
+}
+
+.home-card-control {
+  z-index: 4;
+}
+
+.home-promo-card .home-card-control,
+.home-catalog-card .home-card-control {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+}
+
+.home-card-control .home-add-button {
+  position: static;
+  border: 1px solid #e5e5e9;
+  background: #fff;
+  box-shadow: 0 6px 14px rgb(24 28 35 / 14%);
+  color: var(--taba-ink);
+}
+
+.home-card-control .home-add-button:hover {
+  background: #fff;
+  color: var(--taba-red);
+}
+
+.home-card-control .qty-stepper {
+  width: 118px;
+  background: #fff;
+}
+
+.home-best-card:has(.qty-stepper) {
+  grid-template-columns: 80px minmax(0, 1fr);
+  grid-template-rows: minmax(88px, auto) 48px;
+}
+
+.home-best-card:has(.qty-stepper) .home-card-control {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-self: end;
+  align-self: center;
 }
 
 .home-paging-dots {

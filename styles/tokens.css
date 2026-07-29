@@ -3,11 +3,19 @@
   --taba-red: #d0000d;
   --taba-red-hover: #b6000b;
   --taba-red-soft: #fff0f1;
+  --taba-red-quiet: #c51624;
+  --taba-red-border-soft: #e69aa0;
+  --taba-red-wash: #fffafa;
   --taba-ink: #17171a;
   --taba-graphite: #303036;
+  --taba-graphite-soft: #4f5055;
   --taba-muted: #626269;
+  --taba-muted-soft: #707177;
   --taba-subtle: #f5f5f6;
   --taba-border: #e4e4e7;
+  --taba-border-soft: #eceae8;
+  --taba-border-medium: #c9c9ce;
+  --taba-warm-white: #fffefa;
   --taba-white: #fff;
   --taba-success: #18864b;
   --taba-warning: #9a5a00;
@@ -36,6 +44,8 @@
   --topbar: 72px;
   --taba-bottom-nav-height: 104px;
   --taba-bottom-nav-gap: 18px;
+  --taba-floating-cart-height: 52px;
+  --taba-floating-cart-gap: 12px;
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --taba-bottom-nav-clearance: calc(
     var(--taba-bottom-nav-height) + var(--taba-bottom-nav-gap) + var(--safe-area-bottom)

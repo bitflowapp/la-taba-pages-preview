@@ -1,5 +1,6 @@
 export const RUNTIME_CONFIG_GLOBAL_KEY = '__LA_TABA_RUNTIME_CONFIG__';
 export const RUNTIME_MODE_PRODUCTION = 'production';
+export const RUNTIME_MODE_LOCAL_STAGING = 'local-staging';
 export const RUNTIME_REPOSITORY_SUPABASE = 'supabase';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -7,6 +8,7 @@ const DEFAULT_POLL_MS = 5000;
 const MIN_POLL_MS = 1000;
 const MAX_POLL_MS = 60000;
 const DEPLOYMENT_ENVIRONMENTS = new Set(['local', 'staging', 'production']);
+const ACCEPTED_RUNTIME_MODES = new Set([RUNTIME_MODE_PRODUCTION, RUNTIME_MODE_LOCAL_STAGING]);
 let productionCatalogReady = false;
 
 /**
@@ -49,8 +51,9 @@ export function resolveRuntimeConfig(source = readRuntimeConfigSource()) {
     return invalidResult(['La configuración de despliegue debe ser un objeto.']);
   }
 
-  if (normalizeToken(source.mode) !== RUNTIME_MODE_PRODUCTION) {
-    errors.push('El modo de despliegue debe ser production.');
+  const requestedMode = normalizeToken(source.mode);
+  if (!ACCEPTED_RUNTIME_MODES.has(requestedMode)) {
+    errors.push('El modo de despliegue debe ser production o local-staging.');
   }
 
   const repository = source.repository;
@@ -63,7 +66,7 @@ export function resolveRuntimeConfig(source = readRuntimeConfigSource()) {
   let normalizedRepository = null;
 
   if (provider === RUNTIME_REPOSITORY_SUPABASE) {
-    normalizedRepository = normalizeSupabaseRepository(repository, errors);
+    normalizedRepository = normalizeSupabaseRepository(repository, errors, requestedMode);
   } else {
     errors.push('El proveedor productivo debe ser supabase.');
   }
@@ -74,6 +77,7 @@ export function resolveRuntimeConfig(source = readRuntimeConfigSource()) {
     status: 'ready',
     productionRequested: true,
     isProductionReady: true,
+    localStaging: requestedMode === RUNTIME_MODE_LOCAL_STAGING,
     repository: normalizedRepository,
     errors: [],
   });
@@ -95,14 +99,16 @@ export function isProductionCatalogReady() {
   return productionCatalogReady;
 }
 
-function normalizeSupabaseRepository(repository, errors) {
+function normalizeSupabaseRepository(repository, errors, requestedMode = RUNTIME_MODE_PRODUCTION) {
   const supabaseUrl = normalizeSecureUrl(repository.supabaseUrl);
   const publishableKey = normalizeBrowserSupabaseKey(repository.publishableKey || repository.anonKey);
   const businessId = String(repository.businessId || '').trim();
   const pollMs = normalizePollMs(repository.pollMs);
   const requestedEnvironment = normalizeToken(repository.deploymentEnvironment);
   const deploymentEnvironment = requestedEnvironment
-    || (supabaseUrl && isLoopbackHost(new URL(supabaseUrl).hostname) ? 'local' : 'production');
+    || (requestedMode === RUNTIME_MODE_LOCAL_STAGING
+      ? 'local'
+      : (supabaseUrl && isLoopbackHost(new URL(supabaseUrl).hostname) ? 'local' : 'production'));
 
   if (!supabaseUrl) {
     errors.push('Supabase requiere HTTPS; HTTP sólo se admite para localhost en pruebas locales.');

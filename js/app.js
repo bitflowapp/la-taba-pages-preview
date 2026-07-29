@@ -8,6 +8,7 @@ import {
 } from './cart.js';
 import {
   applyBusinessConfig,
+  closeCheckoutSuggestions,
   closeProductModal,
   copyDraftOrderToClipboard,
   getCheckoutFormValues,
@@ -23,6 +24,8 @@ import {
   setCategory,
   setSearchQuery,
   setSortBy,
+  shouldShowCheckoutSuggestions,
+  showCheckoutSuggestions,
   showProductModal,
   showToast,
   updateAddressFieldVisibility,
@@ -73,6 +76,7 @@ import {
   initializeCustomerDeliveryCheckout,
   persistCustomerProfileAfterOrder,
 } from './customer-delivery.js';
+import { initializeCustomerProfileView } from './customer-profile-view.js';
 import {
   dismissIOSGuide,
   dismissInstallBanner,
@@ -116,6 +120,45 @@ let lastLivenessSignature = '';
 let freshnessTimer = null;
 // Pedido pendiente de confirmación al repetir con carrito no vacío.
 let pendingRepeatOrderId = null;
+const CHECKOUT_SUGGESTIONS_DISMISSED_KEY = 'la_taba_checkout_suggestions_dismissed';
+const recentCartActions = new Map();
+
+function checkoutSuggestionsDismissed() {
+  try {
+    return sessionStorage.getItem(CHECKOUT_SUGGESTIONS_DISMISSED_KEY) === 'true';
+  } catch (_) {
+    return false;
+  }
+}
+
+function dismissCheckoutSuggestions() {
+  try {
+    sessionStorage.setItem(CHECKOUT_SUGGESTIONS_DISMISSED_KEY, 'true');
+  } catch (_) {
+    // Si el navegador bloquea storage, la sugerencia sigue siendo descartable
+    // en esta interacción y nunca bloquea la confirmación del pedido.
+  }
+}
+
+function runCartAction(action, productId, callback) {
+  const key = `${action}:${productId}`;
+  const now = Date.now();
+  const previous = recentCartActions.get(key) || 0;
+  // Bloquea la duplicación accidental del mismo evento sin impedir que el
+  // cliente vuelva a tocar el control para cambiar la cantidad a propósito.
+  if (now - previous < 120) return { ok: false, duplicate: true, message: '' };
+  recentCartActions.set(key, now);
+  setTimeout(() => recentCartActions.delete(key), 350);
+  return callback();
+}
+
+function refreshOpenProductModal(productId) {
+  const modal = $('[data-product-modal]');
+  if (!modal?.open) return;
+  const selectedVariant = modal.querySelector('[data-product-variant]:checked')?.value;
+  const displayedProductId = modal.querySelector('[data-modal-product-id]')?.dataset.modalProductId;
+  if (selectedVariant === productId || displayedProductId === productId) showProductModal(productId);
+}
 
 function openRepeatModal(orderId) {
   pendingRepeatOrderId = orderId || null;
@@ -222,6 +265,7 @@ async function bootstrap() {
       showToast('La sesion local esta temporalmente limitada. Podes continuar.');
     }
     await initializeCustomerDeliveryCheckout();
+    await initializeCustomerProfileView();
     renderAll();
     playViewEnter(activeView);
     resumeSimulationIfNeeded();
@@ -653,6 +697,13 @@ function bindEvents() {
       return;
     }
 
+    if (target.closest('[data-checkout-suggestions-dismiss]')) {
+      dismissCheckoutSuggestions();
+      closeCheckoutSuggestions();
+      $('[data-checkout-form]')?.requestSubmit();
+      return;
+    }
+
     const addControl = target.closest('[data-add-product]');
     const addId = addControl?.dataset.addProduct;
     if (addId) {
@@ -661,14 +712,14 @@ function bindEvents() {
         return;
       }
       const modal = addControl.closest('[data-product-modal]');
-      const selectedVariant = modal?.querySelector('[data-product-variant]')?.value;
+      const selectedVariant = modal?.querySelector('[data-product-variant]:checked')?.value;
       const selectedProductId = selectedVariant || addId;
       const requestedQuantity = modal
         ? Number(modal.querySelector('[data-product-quantity]')?.value || 1)
         : 1;
       const productNote = String(modal?.querySelector('[data-product-note]')?.value || '').trim();
-      const result = addToCart(selectedProductId, requestedQuantity);
-      showToast(result.message);
+      const result = runCartAction('add', selectedProductId, () => addToCart(selectedProductId, requestedQuantity));
+      if (!result.duplicate) showToast(result.message);
       if (result.ok) {
         if (productNote) appendProductObservation(selectedProductId, productNote);
         closeProductModal();
@@ -679,15 +730,20 @@ function bindEvents() {
 
     const incId = target.closest('[data-cart-inc]')?.dataset.cartInc;
     if (incId) {
-      const result = incrementCartItem(incId);
-      if (result.ok) pulseCartFeedback();
-      showToast(result.message);
+      const result = runCartAction('inc', incId, () => incrementCartItem(incId));
+      if (result.ok) {
+        pulseCartFeedback();
+        refreshOpenProductModal(incId);
+      }
+      if (!result.duplicate) showToast(result.message);
       return;
     }
 
     const decId = target.closest('[data-cart-dec]')?.dataset.cartDec;
     if (decId) {
-      decrementCartItem(decId);
+      const result = runCartAction('dec', decId, () => decrementCartItem(decId));
+      if (result.ok) refreshOpenProductModal(decId);
+      if (!result.ok && !result.duplicate) showToast(result.message);
       return;
     }
 
@@ -856,6 +912,10 @@ function bindEvents() {
   document.addEventListener('change', async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) return;
+    if (target.matches('[data-product-variant]')) {
+      showProductModal(target.value);
+      return;
+    }
     const sandboxResult = await handleSandboxToolsChange(target);
     if (sandboxResult.handled) {
       if (sandboxResult.message) showToast(sandboxResult.message);
@@ -918,6 +978,9 @@ function bindEvents() {
       showCheckoutInlineError(form, message);
       showToast(message);
       return;
+    }
+    if (!checkoutSuggestionsDismissed() && shouldShowCheckoutSuggestions()) {
+      if (showCheckoutSuggestions()) return;
     }
     if (confirming) return; // evita doble confirmación / doble pedido
     confirming = true;
@@ -1063,6 +1126,16 @@ function bindEvents() {
 
   $('[data-product-modal]')?.addEventListener('click', (event) => {
     if (event.target === event.currentTarget) closeProductModal();
+  });
+
+  $('[data-checkout-suggestions-modal]')?.addEventListener('click', (event) => {
+    if (event.target !== event.currentTarget) return;
+    dismissCheckoutSuggestions();
+    closeCheckoutSuggestions();
+  });
+
+  $('[data-checkout-suggestions-modal]')?.addEventListener('cancel', () => {
+    dismissCheckoutSuggestions();
   });
 
   $('[data-pin-modal]')?.addEventListener('click', (event) => {

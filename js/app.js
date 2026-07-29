@@ -1134,6 +1134,9 @@ function setActiveView(view, options = {}) {
 
   syncGpsSharingWithView(nextView);
   renderAll();
+  if (changed && nextView === 'cart') {
+    window.dispatchEvent(new CustomEvent('taba:checkout-session-started'));
+  }
   if (changed) playViewEnter(nextView);
 
   if (changed && options.scroll !== false) {
@@ -1148,6 +1151,9 @@ function syncViewFromLocation() {
   activeView = nextView;
   syncGpsSharingWithView(nextView);
   renderAll();
+  if (nextView === 'cart') {
+    window.dispatchEvent(new CustomEvent('taba:checkout-session-started'));
+  }
   playViewEnter(nextView);
   window.scrollTo(0, 0);
   focusActiveViewHeading(nextView);

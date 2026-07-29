@@ -59,7 +59,6 @@ const evidence = { device: {}, public: {}, demo: {} };
 
 try {
   evidence.device = {
-    serial: await adbValue('get-serialno'),
     model: await adbValue('shell', 'getprop', 'ro.product.model'),
     product: await adbValue('shell', 'getprop', 'ro.product.name'),
     android: await adbValue('shell', 'getprop', 'ro.build.version.release'),

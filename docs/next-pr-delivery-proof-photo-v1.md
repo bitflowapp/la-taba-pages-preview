@@ -3,7 +3,7 @@
 Actuá como Staff Engineer frontend/producto. Implementá un PR chico y verificable para agregar prueba visual de entrega local-first, sin backend y sin Supabase Storage.
 
 Repo:
-`C:\1212\la-taba-pages`
+`<REPO_ROOT>`
 
 Branch base:
 `origin/main`

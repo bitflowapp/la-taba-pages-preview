@@ -1,7 +1,7 @@
 # Auditoría de producción de TABA
 
 Fecha: 2026-07-25
-Repositorio auditado: `C:\1212\la-taba-pages`
+Repositorio auditado: `<REPO_ROOT>`
 Rama: `feat/taba-production-beverages`
 Commit base: `333b5a2c5016afb0383ce409c2c381e54d93fcf9`
 

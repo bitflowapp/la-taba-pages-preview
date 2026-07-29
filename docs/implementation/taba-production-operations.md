@@ -6,7 +6,7 @@ despliegue productivo**.
 
 ## 1. Alcance y reglas de seguridad
 
-- Repositorio vigente: `C:\1212\la-taba-pages`.
+- Repositorio vigente: `<REPO_ROOT>`.
 - Demo y producción son sistemas separados.
 - La demo se habilita sólo con `?demo=1` y usa datos locales/simulados.
 - Producción se habilita sólo con `__LA_TABA_RUNTIME_CONFIG__` completo.

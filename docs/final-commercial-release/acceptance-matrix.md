@@ -4,7 +4,7 @@ Fecha de cierre local: 25 de julio de 2026.
 
 | Gate | Resultado | Evidencia |
 | --- | --- | --- |
-| 0. Seguridad y checkpoint | PASS | Ruta `C:\1212\la-taba-pages`, rama `feat/taba-production-beverages`, checkpoint `6a34cd6`, sin push ni deploy. Baseline técnico y audit de dependencias aprobados. |
+| 0. Seguridad y checkpoint | PASS | Ruta `<REPO_ROOT>`, rama `feat/taba-production-beverages`, checkpoint `6a34cd6`, sin push ni deploy. Baseline técnico y audit de dependencias aprobados. |
 | 1. Experiencia cliente | PASS | Home mobile-first, búsqueda sincronizada, categorías, promo, destacados, recompra condicional, producto, una CTA móvil de pedido y checkout corto. Estados vacíos/error/cerrado/agotado cubiertos. |
 | 2. Catálogo comercial | PASS para preview privada | Doce categorías canónicas, modelo completo, importación validada, autoridad de publicación, placeholder neutro y pipeline WebP/hash. Producción permanece bloqueada sin catálogo, precio, stock e imagen oficiales. |
 | 3. Tracking honesto | PASS | Cuatro pasos públicos, mapa sólo con GPS válido y fresco, moto SVG neutral, sin ruta ni ETA inventadas, contacto sólo con canal verificado y DTO público minimizado. |

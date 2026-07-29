@@ -1,7 +1,7 @@
 # Inventario preflight de archivos no rastreados
 
 Fecha de inspección: 2026-07-25
-Repositorio: `C:\1212\la-taba-pages`
+Repositorio: `<REPO_ROOT>`
 Rama: `feat/taba-production-beverages`
 HEAD: `333b5a2c5016afb0383ce409c2c381e54d93fcf9`
 Fuente del inventario: `git -c core.quotepath=false ls-files --others --exclude-standard`
@@ -276,7 +276,7 @@ Se excluyen del resguardo externo por ser configuración local, caché o logs de
 
 ## Resguardo externo verificado
 
-Destino: `C:\1212\la-taba-pages-backup-pre-production`
+Destino: `<EXTERNAL_BACKUP_ROOT>/la-taba-pages-backup-pre-production`
 Inicio: `2026-07-25T02:29:35.7244036-03:00`
 Finalización: `2026-07-25T02:29:44.3015132-03:00`
 Archivos copiados: **520**

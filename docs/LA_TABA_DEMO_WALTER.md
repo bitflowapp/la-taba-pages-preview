@@ -10,8 +10,8 @@ Sin jerga técnica: se muestra el producto funcionando.
 
 ## 1 · Preparación (antes de que llegue Walter)
 
-- Levantar la app en esta compu:
-  `python -m http.server 8080 --directory C:\1212\la-taba-pages`
+- Desde `<REPO_ROOT>`, levantar la app en esta compu:
+  `python -m http.server 8080 --directory .`
 - **URL de la demo:** `http://127.0.0.1:8080/?reset=1&pitch=1`
   - `reset=1` borra pedidos de prueba viejos y deja la demo limpia.
   - `pitch=1` abre la presentación comercial de entrada.

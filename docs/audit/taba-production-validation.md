@@ -1,7 +1,7 @@
 # Evidencia de validación de la base productiva TABA
 
 Fecha: 25 de julio de 2026
-Repositorio: `C:\1212\la-taba-pages`
+Repositorio: `<REPO_ROOT>`
 Rama: `feat/taba-production-beverages`
 HEAD base sin nuevos commits: `333b5a2c5016afb0383ce409c2c381e54d93fcf9`
 
@@ -15,7 +15,7 @@ inyectó una runtime config y no se hizo despliegue.
 ## Preservación y trazabilidad
 
 - Backup externo verificado:
-  `C:\1212\la-taba-pages-backup-pre-production`.
+  `<EXTERNAL_BACKUP_ROOT>/la-taba-pages-backup-pre-production`.
 - Ventana de copia: `2026-07-25T02:29:35.7244036-03:00` a
   `2026-07-25T02:29:44.3015132-03:00`.
 - Resultado: 520 archivos, 138.208.104 bytes, cero faltantes, extras,
@@ -29,14 +29,14 @@ inyectó una runtime config y no se hizo despliegue.
 Durante la ejecución, el volumen `C:` quedó sin espacio. Para preservar datos se
 copió y verificó `.dart_tool` en:
 
-- `E:\taba-backups\la-taba-pages-20260725-enospc\verified-copy\mobile\ojo_claro\.dart_tool`;
-- `E:\taba-backups\la-taba-pages-20260725-enospc\relocated-original\mobile\ojo_claro\.dart_tool`.
+- `<EXTERNAL_BACKUP_ROOT>/la-taba-pages-20260725-enospc/verified-copy/mobile/ojo_claro/.dart_tool`;
+- `<EXTERNAL_BACKUP_ROOT>/la-taba-pages-20260725-enospc/relocated-original/mobile/ojo_claro/.dart_tool`.
 
 También se reubicaron de forma recuperable `.git` y `node_modules`; dentro del
 repositorio son junctions hacia:
 
-- `E:\taba-backups\la-taba-pages-20260725-enospc\relocated-runtime\git-dir`;
-- `E:\taba-backups\la-taba-pages-20260725-enospc\relocated-runtime\node_modules`.
+- `<EXTERNAL_BACKUP_ROOT>/la-taba-pages-20260725-enospc/relocated-runtime/git-dir`;
+- `<EXTERNAL_BACKUP_ROOT>/la-taba-pages-20260725-enospc/relocated-runtime/node_modules`.
 
 ## Entorno de validación
 

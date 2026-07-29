@@ -1,5 +1,6 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
 const CACHE_NAME = 'la-taba-runtime-v39-overlay-fix';
+// Revisión v39.1: actualiza la geometría del toast dentro del top layer del modal.
 const ASSETS = [
   './',
   './index.html',

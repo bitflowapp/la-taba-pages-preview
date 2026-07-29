@@ -117,6 +117,14 @@ body[data-active-view="rider"] .floating-cart {
     bottom: var(--taba-toast-bottom-with-cart);
   }
 
+  body[data-active-view]:has(dialog[open]) dialog[open] > .toast {
+    top: max(16px, env(safe-area-inset-top));
+    bottom: auto;
+    height: auto;
+    max-height: calc(100dvh - 32px - env(safe-area-inset-top));
+    align-self: start;
+  }
+
   .mobile-nav button {
     position: relative;
     display: grid;

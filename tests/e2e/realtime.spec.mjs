@@ -1,9 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
+const RELAY_PORT = Number.parseInt(process.env.TABA_E2E_RELAY_PORT || '18787', 10);
+const RELAY_URL = encodeURIComponent(`http://127.0.0.1:${RELAY_PORT}`);
+
 test('el preview privado ignora parámetros de relay y mantiene la operación local', async ({ page }) => {
   await installPageGuards(page);
-  await page.goto('/?demo=1&relay=http%3A%2F%2F127.0.0.1%3A18787&room=honesty#rider');
+  await page.goto(`/?demo=1&relay=${RELAY_URL}&room=honesty#rider`);
   await page.locator('[data-view="rider"] [data-open-pin]').click();
   await page.getByLabel('Código del modo negocio').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');

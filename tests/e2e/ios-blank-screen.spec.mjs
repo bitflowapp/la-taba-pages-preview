@@ -35,7 +35,9 @@ test('an old or empty local catalog is rebuilt without losing the first render',
   }, stateKey);
   await page.goto('/?demo=1#catalog');
 
-  await expect(page.locator('[data-catalog-count]')).toContainText('14 productos');
+  // El estado recupera el catálogo base completo, pero el storefront unitario
+  // oculta los cinco assets que representan multipacks.
+  await expect(page.locator('[data-catalog-count]')).toContainText('9 productos');
   await expect(page.locator('[data-app-recovery]')).toBeHidden();
 });
 
@@ -63,7 +65,7 @@ test('a rejected IndexedDB still leaves a usable in-memory sandbox without block
 });
 
 test('a failed application module leaves an actionable recovery shell instead of a blank main', async ({ page }) => {
-  await page.route('**/js/app.js?v=32', (route) => route.fulfill({
+  await page.route('**/js/app.js?v=33', (route) => route.fulfill({
     status: 503,
     contentType: 'text/javascript',
     body: '/* unavailable for recovery test */',

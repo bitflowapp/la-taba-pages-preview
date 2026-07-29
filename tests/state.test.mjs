@@ -122,7 +122,7 @@ test('a legacy demo catalog upgrades exact products without dropping a valid car
   const hydrated = hydrateState(legacy, undefined, { refreshBaseCatalog: true });
   const coca = hydrated.products.find((product) => product.id === 'qa-promo-bebidas');
   assert.equal(coca.name, 'Coca-Cola Original 1,5 L');
-  assert.equal(coca.image, 'assets/products/bebidas/coca-cola-original-1-5l.jpg');
+  assert.equal(coca.image, 'assets/products/bebidas/coca-cola-original-1-5l-clean-preview.jpg');
   assert.equal(coca.stock, 4);
   assert.deepEqual(hydrated.cart, [{ productId: 'qa-promo-bebidas', quantity: 2 }]);
   assert.equal(hydrated.lastOrderId, 'LT-9010');

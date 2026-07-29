@@ -173,14 +173,14 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .mn-label {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 800;
   }
 
   .floating-cart {
     display: block;
     right: 14px;
-    bottom: calc(var(--mobile-nav-total-height) + 12px);
+    bottom: calc(var(--mobile-nav-total-height) + 13px);
     left: 14px;
     width: auto;
     min-height: 54px;
@@ -756,8 +756,8 @@ body[data-active-view="rider"] .floating-cart {
   .home-add-button {
     right: 10px;
     bottom: 10px;
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     font-size: 20px;
   }
 
@@ -776,8 +776,8 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .home-best-card .home-add-button {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
   }
 
   .home-catalog-preview {
@@ -800,8 +800,8 @@ body[data-active-view="rider"] .floating-cart {
   .home-favorite-button {
     top: 8px;
     right: 8px;
-    width: 31px;
-    height: 31px;
+    width: 44px;
+    height: 44px;
   }
 }
 
@@ -900,7 +900,11 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .taba-home {
-    padding: 14px 16px calc(104px + var(--safe-area-bottom));
+    padding: 14px 16px calc(30px + var(--safe-area-bottom));
+  }
+
+  body:has(.floating-cart:not(.hidden)) .taba-home {
+    padding-bottom: calc(44px + var(--safe-area-bottom));
   }
 
   .taba-home > .taba-home-content {
@@ -935,7 +939,7 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .cart-button-copy small {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .cart-button-copy strong {
@@ -952,12 +956,12 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .taba-home-address {
-    margin-top: 9px;
+    margin: 0 0 12px;
   }
 
   .taba-home-search {
     height: 50px;
-    margin: 11px 0 12px;
+    margin: 11px 0 10px;
   }
 
   .taba-home-search input {
@@ -1026,11 +1030,11 @@ body[data-active-view="rider"] .floating-cart {
 
   .taba-home .home-add-button,
   .taba-home .home-best-card .home-add-button {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
 
-  body[data-active-view="home"] .mobile-nav {
+  body:is([data-active-view="home"], [data-active-view="catalog"], [data-active-view="cart"]) .mobile-nav {
     right: 16px;
     bottom: 10px;
     left: 16px;
@@ -1043,20 +1047,20 @@ body[data-active-view="rider"] .floating-cart {
     color: #fff;
   }
 
-  body[data-active-view="home"] .mobile-nav button {
+  body:is([data-active-view="home"], [data-active-view="catalog"], [data-active-view="cart"]) .mobile-nav button {
     min-width: 0;
     min-height: 48px;
     color: #f2f2f3;
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 650;
   }
 
-  body[data-active-view="home"] .mobile-nav button.active {
+  body:is([data-active-view="home"], [data-active-view="catalog"], [data-active-view="cart"]) .mobile-nav button.active {
     background: transparent;
     color: var(--taba-red);
   }
 
-  body[data-active-view="home"] .mobile-nav .mn-ico {
+  body:is([data-active-view="home"], [data-active-view="catalog"], [data-active-view="cart"]) .mobile-nav .mn-ico {
     width: 21px;
     height: 21px;
   }
@@ -1124,14 +1128,16 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .home-catalog-copy strong {
-    font-size: 11.5px;
+    min-height: 45px;
+    font-size: 12px;
+    -webkit-line-clamp: 3;
   }
 
   .taba-home-search input {
     font-size: 12px;
   }
 
-  body[data-active-view="home"] .mobile-nav {
+  body:is([data-active-view="home"], [data-active-view="catalog"], [data-active-view="cart"]) .mobile-nav {
     right: 10px;
     left: 10px;
   }

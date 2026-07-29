@@ -1068,13 +1068,13 @@
 
 .taba-home-hero > p:last-of-type {
   margin: 0;
-  color: #777980;
+  color: #62656c;
   font-size: clamp(15px, 2vw, 18px);
 }
 
 .taba-home-address {
   min-height: 44px;
-  margin-top: 10px;
+  margin: 0 0 14px;
   padding: 6px 10px;
   border-color: rgb(28 32 39 / 7%);
   border-radius: 14px;
@@ -1094,20 +1094,20 @@
 
 .taba-home-address .address-chip-text small {
   color: var(--taba-red);
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .taba-home-address .address-chip-text strong {
   overflow: hidden;
-  color: #565960;
-  font-size: 12px;
+  color: #4e5158;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .taba-home-search {
   height: 54px;
-  margin: 12px 0 14px;
+  margin: 12px 0 10px;
   padding: 0 18px;
   border-color: rgb(28 32 39 / 7%);
   box-shadow: 0 8px 22px rgb(25 28 34 / 7%);
@@ -1126,7 +1126,7 @@
 }
 
 .taba-home-search input::placeholder {
-  color: #8a8c93;
+  color: #62656c;
   opacity: 1;
 }
 
@@ -1208,8 +1208,9 @@
 }
 
 .home-section-head button {
-  min-height: 32px;
-  padding: 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 2px;
   border: 0;
   background: transparent;
   color: var(--taba-red);
@@ -1255,8 +1256,8 @@
 
 .home-live-promotion small,
 .home-live-promotion [data-promo-banner-includes] {
-  color: #73767c;
-  font-size: 10px;
+  color: #5f6269;
+  font-size: 12px;
 }
 
 .home-live-promotion strong,
@@ -1271,7 +1272,7 @@
 
 .home-live-promotion em {
   color: var(--taba-success);
-  font-size: 10px;
+  font-size: 12px;
   font-style: normal;
 }
 
@@ -1385,22 +1386,22 @@
 .home-promo-copy s {
   min-height: 13px;
   margin-top: 1px;
-  color: #9a9ca1;
-  font-size: 11px;
+  color: #62656c;
+  font-size: 12px;
   line-height: 1.05;
 }
 
 .home-promo-copy small,
 .home-catalog-copy small {
   margin-top: 2px;
-  color: #97999e;
-  font-size: 11px;
+  color: #62656c;
+  font-size: 12px;
 }
 
 .home-add-button {
   display: grid;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   padding: 0 0 2px;
   border: 1px solid rgb(28 32 39 / 6%);
@@ -1446,7 +1447,7 @@
 .home-best-card {
   position: relative;
   display: grid;
-  grid-template-columns: 45px minmax(0, 1fr) 30px;
+  grid-template-columns: 45px minmax(0, 1fr) 44px;
   align-items: center;
   gap: 6px;
   width: auto;
@@ -1479,7 +1480,7 @@
   display: -webkit-box;
   overflow: hidden;
   color: #25282e;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1.22;
   -webkit-box-orient: vertical;
@@ -1489,13 +1490,13 @@
 .home-best-copy span {
   margin-top: 5px;
   color: var(--taba-red);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
 }
 
 .home-best-card .home-add-button {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   font-size: 21px;
 }
 
@@ -1528,8 +1529,8 @@
   top: 7px;
   right: 7px;
   display: grid;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   padding: 9px;
   border: 0;
@@ -1565,54 +1566,26 @@
   object-fit: contain;
 }
 
-.home-promo-image[src^="assets/products/bebidas/"],
-.home-best-image[src^="assets/products/bebidas/"],
-.home-catalog-image[src^="assets/products/bebidas/"] {
-  position: static;
-  inset: auto;
-  width: auto;
-  height: 100%;
-  max-width: none;
-  justify-self: center;
-  padding-right: 0;
-  padding-left: 0;
-  clip-path: inset(0 26% 0 0);
-  object-fit: contain;
-  transform: translateX(13%);
-}
-
-.home-promo-image[src^="assets/products/bebidas/"] {
-  height: 84px;
-}
-
-.home-best-image[src^="assets/products/bebidas/"] {
-  height: 60px;
-}
-
-.home-catalog-image[src^="assets/products/bebidas/"] {
-  height: 112px;
-}
-
 .home-catalog-copy {
   padding-right: 36px;
 }
 
 .home-catalog-copy strong {
   display: -webkit-box;
-  min-height: 31px;
+  min-height: 45px;
   overflow: hidden;
   color: #24272c;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.25;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
 }
 
 .home-available {
   margin-top: 3px;
   color: var(--taba-success);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 

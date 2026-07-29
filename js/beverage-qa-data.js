@@ -2,7 +2,7 @@
 // no datos productivos. Producción ignora este módulo y carga únicamente Supabase.
 // Se persiste en el estado demo para refrescar identidades/imágenes cuando cambia
 // el catálogo publicado, sin eliminar pedidos, carrito o preferencias compatibles.
-export const PREVIEW_CATALOG_VERSION = 'preview-beverages-2026-07-28-unit-v3';
+export const PREVIEW_CATALOG_VERSION = 'preview-beverages-2026-07-28-unit-v4';
 
 export const categories = [
   { id: 'all', name: 'Todos' },
@@ -82,37 +82,37 @@ const fixture = (id, name, categoryId, presentation, options = {}) => {
 
 export const products = [
   fixture('qa-promo-bebidas', 'Coca-Cola Original 1,5 L', 'gaseosas', 'Botella 1,5 L', {
-    image: 'assets/products/bebidas/coca-cola-original-1-5l.jpg',
-    imageThumbnail: 'assets/products/bebidas/coca-cola-original-1-5l.jpg',
-    imageSha256: '7a9a7bb12c1211e6b8919f0a6380c74e61511dd04b1f57ebf41c945f964cb8c0',
-    imageThumbnailSha256: '7a9a7bb12c1211e6b8919f0a6380c74e61511dd04b1f57ebf41c945f964cb8c0',
+    image: 'assets/products/bebidas/coca-cola-original-1-5l-clean-preview.jpg',
+    imageThumbnail: 'assets/products/bebidas/coca-cola-original-1-5l-clean-preview.jpg',
+    imageSha256: '204584a6cffcbfe03f516317f22e13b593f7ae3932db15e09863881d467cce8d',
+    imageThumbnailSha256: '204584a6cffcbfe03f516317f22e13b593f7ae3932db15e09863881d467cce8d',
     sourceImageSha256: '7a9a7bb12c1211e6b8919f0a6380c74e61511dd04b1f57ebf41c945f964cb8c0',
     previewCatalogApproved: true, unit: 'unidad', unitLabel: 'Botella 1,5 L', price: 5000, oldPrice: 6250, homePromoBadge: '20% OFF', popular: true, featured: true, stock: 14,
     brand: 'Coca-Cola', variant: 'Original', capacityValue: 1.5, capacityUnit: 'l', packageType: 'botella', unitsPerPack: 1, identityStatus: 'EXACTA', rightsStatus: 'REVISION_INTERNA',
   }),
   fixture('qa-gaseosa-cola', 'Sprite 1,5 L', 'gaseosas', 'Botella 1,5 L', {
-    image: 'assets/products/bebidas/sprite-1-5l.jpg',
-    imageThumbnail: 'assets/products/bebidas/sprite-1-5l.jpg',
-    imageSha256: '3e4594331fd057575ae5f65000d8a401b4ba370e27485133420bfeef8ac1838d',
-    imageThumbnailSha256: '3e4594331fd057575ae5f65000d8a401b4ba370e27485133420bfeef8ac1838d',
+    image: 'assets/products/bebidas/sprite-1-5l-clean-preview.jpg',
+    imageThumbnail: 'assets/products/bebidas/sprite-1-5l-clean-preview.jpg',
+    imageSha256: '2aa4ceeda5bc0c6bfab4dd7970afac2dbdf4597fd2bdb71eb3dd72cec18ec3b3',
+    imageThumbnailSha256: '2aa4ceeda5bc0c6bfab4dd7970afac2dbdf4597fd2bdb71eb3dd72cec18ec3b3',
     sourceImageSha256: '3e4594331fd057575ae5f65000d8a401b4ba370e27485133420bfeef8ac1838d',
     previewCatalogApproved: true, unit: 'unidad', unitLabel: 'Botella 1,5 L', price: 5000, oldPrice: 7150, homePromoBadge: '30% OFF', popular: true, stock: 10,
     brand: 'Sprite', variant: 'Original', capacityValue: 1.5, capacityUnit: 'l', packageType: 'botella', unitsPerPack: 1, identityStatus: 'EXACTA', rightsStatus: 'REVISION_INTERNA',
   }),
   fixture('qa-gaseosa-lima-limon', 'Fanta Naranja 1,5 L', 'gaseosas', 'Botella 1,5 L', {
-    image: 'assets/products/bebidas/fanta-naranja-1-5l.jpg',
-    imageThumbnail: 'assets/products/bebidas/fanta-naranja-1-5l.jpg',
-    imageSha256: '4ff98b62636d0823584bc0c52c3951efd51283dfc46504ac6f340f0129db0563',
-    imageThumbnailSha256: '4ff98b62636d0823584bc0c52c3951efd51283dfc46504ac6f340f0129db0563',
+    image: 'assets/products/bebidas/fanta-naranja-1-5l-clean-preview.jpg',
+    imageThumbnail: 'assets/products/bebidas/fanta-naranja-1-5l-clean-preview.jpg',
+    imageSha256: '0a218a4b06c50737258d8787477e511d0bab104741fbb8df0a5b1b55e6668eca',
+    imageThumbnailSha256: '0a218a4b06c50737258d8787477e511d0bab104741fbb8df0a5b1b55e6668eca',
     sourceImageSha256: '4ff98b62636d0823584bc0c52c3951efd51283dfc46504ac6f340f0129db0563',
     previewCatalogApproved: true, unit: 'unidad', unitLabel: 'Botella 1,5 L', price: 5000, oldPrice: 6250, homePromoBadge: '20% OFF', featured: true, stock: 10,
     brand: 'Fanta', variant: 'Naranja', capacityValue: 1.5, capacityUnit: 'l', packageType: 'botella', unitsPerPack: 1, identityStatus: 'EXACTA', rightsStatus: 'REVISION_INTERNA',
   }),
   fixture('qa-energetica', 'Monster Energy Original Green 473 ml', 'energeticas', 'Lata 473 ml', {
-    image: 'assets/products/bebidas/monster-energy-original-473ml.jpg',
-    imageThumbnail: 'assets/products/bebidas/monster-energy-original-473ml.jpg',
-    imageSha256: 'f7f5e2f693b8bf37030eda3e2dbddbe3dadccf3705e870656549c078dfe2924e',
-    imageThumbnailSha256: 'f7f5e2f693b8bf37030eda3e2dbddbe3dadccf3705e870656549c078dfe2924e',
+    image: 'assets/products/bebidas/monster-energy-original-473ml-clean-preview.jpg',
+    imageThumbnail: 'assets/products/bebidas/monster-energy-original-473ml-clean-preview.jpg',
+    imageSha256: '64fd245575b3c8f5317b500ac0910fb8de749517702efb72d47e1b945b079c70',
+    imageThumbnailSha256: '64fd245575b3c8f5317b500ac0910fb8de749517702efb72d47e1b945b079c70',
     sourceImageSha256: 'f7f5e2f693b8bf37030eda3e2dbddbe3dadccf3705e870656549c078dfe2924e',
     previewCatalogApproved: true, unit: 'unidad', unitLabel: 'Lata 473 ml', price: QA_PRICES.specialty, popular: true, stock: 6,
     brand: 'Monster', variant: 'Energy Original Green', capacityValue: 473, capacityUnit: 'ml', packageType: 'lata', unitsPerPack: 1, identityStatus: 'EXACTA', rightsStatus: 'REVISION_INTERNA',

@@ -13,6 +13,24 @@ ni descargadas sin comprobar producto y derechos.
 Su SHA-256 y estado están registrados en
 `docs/final-commercial-release/catalog-asset-audit.csv`.
 
+## Derivados locales para la preview interna v37
+
+Cuatro imágenes ya presentes en el build v36 incluían franjas publicitarias
+laterales. Para v37 se generaron recortes locales deterministas que conservan
+el envase completo y eliminan únicamente ese espacio externo. No se descargó
+material nuevo ni se alteraron los archivos fuente.
+
+| Derivado | Fuente local | Transformación | SHA-256 | Estado |
+| --- | --- | --- | --- | --- |
+| `assets/products/bebidas/coca-cola-original-1-5l-clean-preview.jpg` | `coca-cola-original-1-5l.jpg` | recorte `756×1000` desde `x=0` | `204584a6cffcbfe03f516317f22e13b593f7ae3932db15e09863881d467cce8d` | `REVISION_INTERNA` |
+| `assets/products/bebidas/sprite-1-5l-clean-preview.jpg` | `sprite-1-5l.jpg` | recorte `532×1000` desde `x=0` | `2aa4ceeda5bc0c6bfab4dd7970afac2dbdf4597fd2bdb71eb3dd72cec18ec3b3` | `REVISION_INTERNA` |
+| `assets/products/bebidas/fanta-naranja-1-5l-clean-preview.jpg` | `fanta-naranja-1-5l.jpg` | recorte `763×1000` desde `x=0` | `0a218a4b06c50737258d8787477e511d0bab104741fbb8df0a5b1b55e6668eca` | `REVISION_INTERNA` |
+| `assets/products/bebidas/monster-energy-original-473ml-clean-preview.jpg` | `monster-energy-original-473ml.jpg` | recorte `565×1000` desde `x=0`, centrado en lienzo blanco `605×1000` | `64fd245575b3c8f5317b500ac0910fb8de749517702efb72d47e1b945b079c70` | `REVISION_INTERNA` |
+
+Estos derivados mejoran únicamente la presentación visual de la preview. No
+resuelven ni implican autorización comercial; la marca `PREVIEW INTERNA` debe
+mantenerse mientras los derechos sigan pendientes.
+
 ## Cadena obligatoria para imágenes comerciales
 
 1. Registrar la fuente en `docs/catalog/image-source-audit.csv`.

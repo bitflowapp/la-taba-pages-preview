@@ -3,7 +3,7 @@ import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { installBrowserStubs, installPageGuards } from './helpers.mjs';
 
-test('la home presenta TABA sin etiquetas internas y un storefront comercial limpio', async ({ page }) => {
+test('la home presenta TABA con marca interna discreta y un storefront comercial limpio', async ({ page }) => {
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await page.goto('/?reset=1&demo=1');
@@ -14,7 +14,6 @@ test('la home presenta TABA sin etiquetas internas y un storefront comercial lim
   await expect(page.locator('[data-view="home"] .taba-home-search')).toBeVisible();
   const homeCategoryLabels = [
     ['gaseosas', 'Gaseosas'],
-    ['gins-y-vodkas', 'Fernet'],
     ['cervezas', 'Cervezas'],
     ['aguas', 'Aguas'],
     ['energeticas', 'Energéticas'],
@@ -26,6 +25,8 @@ test('la home presenta TABA sin etiquetas internas y un storefront comercial lim
     await expect(page.locator(`[data-view="home"] [data-home-category-strip] [data-category-id="${id}"]`)).toHaveText(label);
   }
   await expect(page.locator('[data-home-category-strip] [data-category-id="gaseosas"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-home-category-strip] [data-category-id="fernet"]')).toHaveCount(0);
+  await expect(page.locator('.home-preview-label')).toHaveText('PREVIEW INTERNA');
 
   // El banner administrativo sigue reservado a promociones aprobadas; las
   // tarjetas de preview usan condiciones visuales explícitas sobre SKUs unitarios.
@@ -54,7 +55,7 @@ test('la home presenta TABA sin etiquetas internas y un storefront comercial lim
   const catalogCategories = page.locator(
     '[data-view="catalog"] [data-category-strip] .category-button:not([data-category-id="all"]):not([data-category-id="favorites"])',
   );
-  await expect(catalogCategories).toHaveCount(6);
+  await expect(catalogCategories).toHaveCount(8);
   await expect(page.locator('[data-category-more]')).toBeVisible();
   for (const [id, label] of [
     ['gaseosas', 'Gaseosas'],
@@ -96,7 +97,7 @@ for (const viewport of [
   test(`home final de bebidas mantiene layout físico en ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await installBrowserStubs(page);
-    await page.goto('/?reset=1&demo=1&home=v36');
+    await page.goto('/?reset=1&demo=1&home=v37');
     await expect(page.locator('[data-view="home"]')).toBeVisible();
     await expect(page.locator('.mobile-nav [data-nav-view="home"]')).toHaveClass(/active/);
     await expect(page.locator('[data-home-promotions]')).toBeVisible();
@@ -155,6 +156,114 @@ test('confirmación de edad aparece y es obligatoria sólo con alcohol', async (
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-age-confirmation]')).toBeVisible();
   await expect(page.locator('[name="ageConfirmed"]')).toHaveAttribute('required', '');
+});
+
+test('Ver todas conserva filtros reales de promociones y más vendidos', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await installBrowserStubs(page);
+  await page.goto('/?demo=1&home=v37');
+
+  await page.locator('.home-section-head [data-category-id="popular"]').click();
+  await expect(page.locator('[data-view="catalog"]')).toBeVisible();
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Los más vendidos');
+  const popularIds = await page.locator('[data-product-grid] [data-add-product]').evaluateAll(
+    (buttons) => buttons.map((button) => button.dataset.addProduct).sort(),
+  );
+  expect(popularIds).toEqual([
+    'qa-agua-mineral',
+    'qa-energetica',
+    'qa-gaseosa-cola',
+    'qa-promo-bebidas',
+  ]);
+
+  await page.goBack();
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
+
+  const homePromoIds = await page.locator('[data-home-promotions] [data-add-product]').evaluateAll(
+    (buttons) => buttons.map((button) => button.dataset.addProduct),
+  );
+  expect(homePromoIds).toHaveLength(3);
+  expect(new Set(homePromoIds).size).toBe(homePromoIds.length);
+  await page.locator('.home-section-head [data-category-id="promos"]').click();
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Promociones');
+  await expect(page.locator('[data-catalog-count]')).toHaveText(`${homePromoIds.length} productos`);
+  const catalogPromoIds = await page.locator('[data-product-grid] [data-add-product]').evaluateAll(
+    (buttons) => buttons.map((button) => button.dataset.addProduct).sort(),
+  );
+  expect(catalogPromoIds).toEqual([...homePromoIds].sort());
+  await page.goBack();
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
+  await guards.assertClean();
+});
+
+test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza indicadores', async ({ page }) => {
+  await installBrowserStubs(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?demo=1&home=v37');
+
+  const controlSelector = [
+    '.home-section-head button',
+    '[data-home-promotions] .home-add-button',
+    '[data-home-best-sellers] .home-add-button',
+    '[data-home-catalog-preview] .home-add-button',
+    '[data-home-catalog-preview] .home-favorite-button',
+  ].join(', ');
+  for (const viewport of [
+    { width: 320, height: 812 },
+    { width: 390, height: 844 },
+    { width: 430, height: 932 },
+  ]) {
+    await page.setViewportSize(viewport);
+    const controls = page.locator(controlSelector);
+    await expect(controls).toHaveCount(16);
+    const undersized = await controls.evaluateAll((nodes) => nodes
+      .map((node) => {
+        const rect = node.getBoundingClientRect();
+        return { selector: node.outerHTML.slice(0, 120), width: rect.width, height: rect.height };
+      })
+      .filter(({ width, height }) => width < 44 || height < 44));
+    expect(undersized, `${viewport.width}x${viewport.height}`).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const rail = page.locator('[data-home-promotions]');
+  const dots = page.locator('[data-home-paging-dots] span');
+  await expect(dots).toHaveCount(2);
+  await expect(dots.first()).toHaveClass(/is-active/);
+  await rail.evaluate((node) => {
+    node.scrollLeft = node.scrollWidth;
+    node.dispatchEvent(new Event('scroll'));
+  });
+  await expect(dots.last()).toHaveClass(/is-active/);
+  await page.setViewportSize({ width: 430, height: 932 });
+  const expectedPages = await rail.evaluate((node) => (
+    node.scrollWidth - node.clientWidth > 1 ? Math.ceil(node.scrollWidth / node.clientWidth) : 1
+  ));
+  await expect(dots).toHaveCount(expectedPages);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(page.locator('[data-home-paging-dots]')).toBeHidden();
+});
+
+test('los derivados limpios se reutilizan en Home, catálogo, modal y carrito', async ({ page }) => {
+  await installBrowserStubs(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?demo=1&home=v37');
+  const cleanAsset = 'coca-cola-original-1-5l-clean-preview.jpg';
+  const homeCard = page.locator('[data-home-catalog-preview] .home-catalog-card').filter({ hasText: 'Coca-Cola' });
+  await expect(homeCard.locator(`img[src*="${cleanAsset}"]`)).toHaveCount(1);
+
+  await homeCard.locator('[data-product-detail]').click();
+  await expect(page.locator(`dialog[open] img[src*="${cleanAsset}"]`)).toBeVisible();
+  await page.locator('dialog[open] .modal-close').click();
+
+  await homeCard.locator('[data-add-product]').click();
+  await page.locator('[data-open-cart]').first().click();
+  await expect(page.locator(`[data-view="cart"] img[src*="${cleanAsset}"]`)).toBeVisible();
+
+  await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-view="catalog"] [data-category-id="promos"]').click();
+  await expect(page.locator(`[data-product-grid] img[src*="${cleanAsset}"]`)).toBeVisible();
 });
 
 test('la CTA móvil del pedido queda sobre la navegación sin superponerse', async ({ page }) => {

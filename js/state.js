@@ -54,7 +54,9 @@ const listeners = new Set();
 const STREET_DESTINATION_IDS = new Set(
   (BUSINESS_CONFIG.demoStreetTestDestinations || []).map((destination) => destination.id),
 );
-const CUSTOMER_CATEGORY_IDS = new Set(['favorites']);
+// Filtros virtuales del storefront: no dependen de una categoría persistida en
+// el producto, pero deben sobrevivir al mismo saneamiento que los chips reales.
+const CUSTOMER_CATEGORY_IDS = new Set(['favorites', 'popular', 'fernet']);
 
 const defaultState = () => {
   const baseProducts = buildBaseProducts();

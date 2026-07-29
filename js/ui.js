@@ -42,6 +42,13 @@ import { renderPublicOrderTimeline } from './core/order-timeline.js';
 import { isDemoMode } from './core/app-mode.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { formatPromotionCondition, getActivePromotions, getProductPromotion } from './core/promotions.js';
+import {
+  isFernetProduct,
+  isPopularProduct,
+  isPromotionalProduct,
+  isUnitStorefrontProduct,
+  uniqueProducts,
+} from './core/storefront-filters.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 import { riderHelmetSvg } from './map/rider_marker.js';
 
@@ -385,7 +392,7 @@ function renderOffers() {
 
 const HOME_CATEGORIES = Object.freeze([
   { id: 'gaseosas', name: 'Gaseosas' },
-  { id: 'gins-y-vodkas', name: 'Fernet' },
+  { id: 'fernet', name: 'Fernet' },
   { id: 'cervezas', name: 'Cervezas' },
   { id: 'aguas', name: 'Aguas' },
   { id: 'energeticas', name: 'Energéticas' },
@@ -406,7 +413,7 @@ const HOME_CATEGORY_ICONS = Object.freeze({
       <path d="M9.2 2.8h5.6v2.8l1.3 1.5v13.4c0 .8-.7 1.5-1.5 1.5H9.4c-.8 0-1.5-.7-1.5-1.5V7.1l1.3-1.5V2.8Z" fill="currentColor"/>
       <path d="M8 10.2h8M8 16.6h8" stroke="white" stroke-width="1.15" opacity=".9"/>
     </svg>`,
-  'gins-y-vodkas': `
+  fernet: `
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M10 2.5h4v4.1l1.6 2.1v12.2H8.4V8.7L10 6.6V2.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
       <path d="M8.8 11h6.4" stroke="currentColor" stroke-width="1.6"/>
@@ -444,6 +451,37 @@ function homeProducts(ids) {
   return ids.map((id) => productsById.get(id)).filter(Boolean);
 }
 
+function activePromotionProductIds(state = getState()) {
+  return new Set(getActivePromotions(state.promotions)
+    .flatMap((promotion) => promotion.includedSkus));
+}
+
+function unitStorefrontProducts(state = getState()) {
+  return getCustomerCatalogProducts(state.products).filter(isUnitStorefrontProduct);
+}
+
+function promotionalProducts(state = getState()) {
+  const activeIds = activePromotionProductIds(state);
+  return uniqueProducts(unitStorefrontProducts(state)
+    .filter((product) => isPromotionalProduct(product, activeIds)));
+}
+
+function popularProducts(state = getState()) {
+  return uniqueProducts(unitStorefrontProducts(state)
+    .filter(isPopularProduct));
+}
+
+function homePromotionalProducts() {
+  const activeIds = activePromotionProductIds();
+  return uniqueProducts(homeProducts(HOME_PROMOTION_IDS)
+    .filter((product) => isPromotionalProduct(product, activeIds)));
+}
+
+function homeBestSellerProducts() {
+  return uniqueProducts(homeProducts(HOME_BEST_SELLER_IDS)
+    .filter(isPopularProduct));
+}
+
 function homeProductImage(product, className) {
   const source = product.imageThumbnail || product.image || PRODUCT_PLACEHOLDER_IMAGE;
   const responsive = product.image && product.imageThumbnail
@@ -472,7 +510,10 @@ function renderHomeShowcase() {
 function renderHomeCategories() {
   const strip = $('[data-home-category-strip]');
   if (!strip) return;
-  strip.innerHTML = HOME_CATEGORIES.map((category) => {
+  const hasFernet = unitStorefrontProducts().some(isFernetProduct);
+  const visibleCategories = HOME_CATEGORIES
+    .filter((category) => category.id !== 'fernet' || hasFernet);
+  strip.innerHTML = visibleCategories.map((category) => {
     const isActive = category.id === 'gaseosas';
     return `
       <button class="home-category-card ${isActive ? 'active' : ''}" type="button" data-category-id="${category.id}" ${isActive ? 'aria-current="true"' : ''}>
@@ -485,7 +526,7 @@ function renderHomeCategories() {
 function renderHomePromotions() {
   const container = $('[data-home-promotions]');
   if (!container) return;
-  container.innerHTML = homeProducts(HOME_PROMOTION_IDS).map((product) => {
+  container.innerHTML = homePromotionalProducts().map((product) => {
     const pricing = productPricePresentation(product);
     const old = pricing.regularPrice && pricing.regularPrice > pricing.price
       ? `<s>${money(pricing.regularPrice)}</s>`
@@ -508,12 +549,13 @@ function renderHomePromotions() {
         <button class="home-add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>+</button>
       </article>`;
   }).join('');
+  bindHomePromotionPaging();
 }
 
 function renderHomeBestSellers() {
   const container = $('[data-home-best-sellers]');
   if (!container) return;
-  container.innerHTML = homeProducts(HOME_BEST_SELLER_IDS).map((product) => {
+  container.innerHTML = homeBestSellerProducts().map((product) => {
     const pricing = productPricePresentation(product);
     const outOfStock = product.stock <= 0 || !product.available;
     return `
@@ -528,6 +570,45 @@ function renderHomeBestSellers() {
         <button class="home-add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>+</button>
       </article>`;
   }).join('');
+}
+
+let homePromotionResizeObserver = null;
+
+function updateHomePromotionPaging() {
+  const rail = $('[data-home-promotions]');
+  const dots = $('[data-home-paging-dots]');
+  if (!rail || !dots) return;
+  const cardCount = rail.querySelectorAll('.home-promo-card').length;
+  const maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+  const pageCount = maxScroll > 1
+    ? Math.min(cardCount, Math.ceil(rail.scrollWidth / rail.clientWidth))
+    : 1;
+  dots.hidden = pageCount <= 1;
+  if (dots.childElementCount !== pageCount) {
+    dots.innerHTML = Array.from({ length: pageCount }, () => '<span></span>').join('');
+  }
+  const activeIndex = pageCount <= 1 || maxScroll <= 0
+    ? 0
+    : Math.min(pageCount - 1, Math.round((rail.scrollLeft / maxScroll) * (pageCount - 1)));
+  [...dots.children].forEach((dot, index) => {
+    dot.classList.toggle('is-active', index === activeIndex);
+  });
+}
+
+function bindHomePromotionPaging() {
+  const rail = $('[data-home-promotions]');
+  if (!rail) return;
+  let frame = 0;
+  rail.onscroll = () => {
+    if (frame) cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(updateHomePromotionPaging);
+  };
+  homePromotionResizeObserver?.disconnect();
+  if (typeof ResizeObserver === 'function') {
+    homePromotionResizeObserver = new ResizeObserver(updateHomePromotionPaging);
+    homePromotionResizeObserver.observe(rail);
+  }
+  requestAnimationFrame(updateHomePromotionPaging);
 }
 
 function renderHomeCatalogPreview() {
@@ -720,12 +801,16 @@ function renderCategories() {
 function getFilteredProducts(state) {
   const query = normalizeSearchText(state.searchQuery);
   const favoriteIds = new Set(getFavoriteProductIds());
-  const filtered = getCustomerCatalogProducts(state.products).filter((product) => {
-    const promoProductIds = new Set(getActivePromotions(state.promotions).flatMap((promotion) => promotion.includedSkus));
+  const promoProductIds = activePromotionProductIds(state);
+  const filtered = unitStorefrontProducts(state).filter((product) => {
     const matchesCategory = state.activeCategory === 'favorites'
       ? favoriteIds.has(product.id)
       : state.activeCategory === 'promos'
-        ? promoProductIds.has(product.id)
+        ? isPromotionalProduct(product, promoProductIds)
+        : state.activeCategory === 'popular'
+          ? isPopularProduct(product)
+          : state.activeCategory === 'fernet'
+            ? isFernetProduct(product)
         : state.activeCategory === 'all' || product.categoryId === state.activeCategory;
     const searchable = [
       product.brand,
@@ -792,12 +877,12 @@ function categoriesForCurrentCatalog() {
   }
   if (!remote.size) return categories;
 
-  const activePromotionSkus = new Set(getActivePromotions(getState().promotions)
-    .flatMap((promotion) => promotion.includedSkus));
-  if (activePromotionSkus.size) remote.set('promos', 'Promos');
+  if (promotionalProducts().length) remote.set('promos', 'Promociones');
+  if (popularProducts().length) remote.set('popular', 'Los más vendidos');
 
   const preferredOrder = [
     'promos',
+    'popular',
     'gaseosas',
     'aguas',
     'jugos',
@@ -833,14 +918,15 @@ function renderCatalogOffers() {
   if (!container) return;
   const state = getState();
   const searching = Boolean(state.searchQuery.trim());
-  const promoProductIds = new Set(getActivePromotions(state.promotions)
-    .flatMap((promotion) => promotion.includedSkus));
-  const offers = searching ? [] : getCustomerCatalogProducts(state.products)
+  const promoProductIds = activePromotionProductIds(state);
+  const offers = searching ? [] : unitStorefrontProducts(state)
     .filter((product) => {
       const inCategory = state.activeCategory === 'all'
         || (state.activeCategory === 'promos'
-          ? promoProductIds.has(product.id)
-          : product.categoryId === state.activeCategory);
+          ? isPromotionalProduct(product, promoProductIds)
+          : state.activeCategory === 'popular'
+            ? isPopularProduct(product)
+            : product.categoryId === state.activeCategory);
       return inCategory && product.available && product.stock > 0
         && (discountPercent(product) > 0 || product.featured || promoProductIds.has(product.id));
     })
@@ -2137,7 +2223,7 @@ export function showToast(message) {
   toast.textContent = message;
   toast.classList.remove('hidden');
   clearTimeout(showToast.timeoutId);
-  showToast.timeoutId = setTimeout(() => toast.classList.add('hidden'), 2600);
+  showToast.timeoutId = setTimeout(() => toast.classList.add('hidden'), 2200);
 }
 
 export function escapeHtml(value) {

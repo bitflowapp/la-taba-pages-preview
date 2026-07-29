@@ -18,7 +18,7 @@
       integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK"
       crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="styles.css?v=36" />
+    <link rel="stylesheet" href="styles.css?v=37" />
   </head>
   <body>
     <div class="app-shell">
@@ -148,6 +148,19 @@
               <input data-search-input data-search-jump type="search" placeholder="Buscar productos, marcas y más..." aria-label="Buscar productos, marcas y más" />
             </label>
 
+            <div class="home-address-chip taba-home-address" role="note" data-home-address>
+              <span class="address-chip-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                  <path d="M12 21.3s-6.6-6.3-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 4.8-6.6 11.1-6.6 11.1Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                  <circle cx="12" cy="9.9" r="2.3" fill="currentColor"/>
+                </svg>
+              </span>
+              <span class="address-chip-text">
+                <small>Enviar a</small>
+                <strong data-home-address-label>Elegí tu dirección al confirmar el pedido</strong>
+              </span>
+            </div>
+
             <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip aria-label="Categorías de bebidas"></div>
 
             <section class="home-merch-section" aria-labelledby="home-promotions-title">
@@ -166,15 +179,13 @@
                 </span>
               </button>
               <div class="home-promotions-rail" data-home-promotions></div>
-              <div class="home-paging-dots" aria-hidden="true">
-                <span class="is-active"></span><span></span><span></span><span></span>
-              </div>
+              <div class="home-paging-dots" data-home-paging-dots aria-hidden="true" hidden></div>
             </section>
 
             <section class="home-merch-section home-best-section" aria-labelledby="home-best-title">
               <div class="home-section-head">
                 <h2 id="home-best-title">Los más vendidos</h2>
-                <button type="button" data-nav-view="catalog">Ver todas</button>
+                <button type="button" data-category-id="popular">Ver todas</button>
               </div>
               <div class="home-best-sellers offers-rail" data-home-best-sellers data-offers-rail></div>
             </section>
@@ -189,18 +200,6 @@
               <span>Ver catálogo completo</span>
               <span aria-hidden="true">›</span>
             </button>
-            <div class="home-address-chip taba-home-address" role="note" data-home-address>
-              <span class="address-chip-ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                  <path d="M12 21.3s-6.6-6.3-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 4.8-6.6 11.1-6.6 11.1Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                  <circle cx="12" cy="9.9" r="2.3" fill="currentColor"/>
-                </svg>
-              </span>
-              <span class="address-chip-text">
-                <small>Enviar a</small>
-                <strong data-home-address-label>Elegí tu dirección al confirmar el pedido</strong>
-              </span>
-            </div>
           </div>
         </section>
 
@@ -213,7 +212,7 @@
           <div class="section-head catalog-head">
             <div>
               <p class="catalog-kicker">CATÁLOGO</p>
-              <h1 class="view-title">¿Qué vas a pedir hoy?</h1>
+              <h1 class="view-title" data-catalog-title>¿Qué vas a pedir hoy?</h1>
             </div>
           </div>
 
@@ -661,6 +660,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=2"></script>
-    <script type="module" src="js/app.js?v=32"></script>
+    <script type="module" src="js/app.js?v=33"></script>
   </body>
 </html>

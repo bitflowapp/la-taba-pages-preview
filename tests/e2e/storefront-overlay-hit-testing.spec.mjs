@@ -109,6 +109,21 @@ test('los controles principales reciben hit-testing físico en Home, catálogo, 
   await expect.poll(() => page.locator('[data-toast]').evaluate(
     (toast) => toast.parentElement?.matches('[data-product-modal]'),
   )).toBeTruthy();
+  const modalToastGeometry = await page.locator('[data-toast]').evaluate((toast) => {
+    const toastBox = toast.getBoundingClientRect();
+    const fields = [...toast.parentElement.querySelectorAll(
+      '.modal-order-fields input, .modal-order-fields textarea, .modal-actions button',
+    )].map((control) => control.getBoundingClientRect());
+    const intersects = (a, b) => !(
+      a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom
+    );
+    return {
+      height: toastBox.height,
+      coveredFields: fields.filter((field) => intersects(field, toastBox)).length,
+    };
+  });
+  expect(modalToastGeometry.height, 'toast del modal estirado').toBeLessThanOrEqual(96);
+  expect(modalToastGeometry.coveredFields, 'toast cubre campos/acciones del modal').toBe(0);
   await expectPhysicalCenterClick(productModal.locator('[data-close-modal]'), 'Cerrar modal');
   await expect(productModal).toBeHidden();
   await expect(page.locator('[data-toast]')).toBeVisible();

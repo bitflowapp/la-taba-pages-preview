@@ -1,5 +1,5 @@
 import { normalizeCustomerAddress } from '../core/customer-addresses.js';
-import { sanitizeText } from '../core/validators.js';
+import { sanitizeText, validateRequiredStreetNumber } from '../core/validators.js';
 
 export function createSupabaseCustomerProfileRepository({ client, authService } = {}) {
   if (!client || typeof client.rpc !== 'function') {
@@ -42,6 +42,10 @@ export function createSupabaseCustomerProfileRepository({ client, authService } 
 
   async function saveAddress(address, { allowDuplicate = false } = {}) {
     const { lastUsedAt, ...normalizedAddress } = normalizeCustomerAddress(address);
+    const streetNumberValidation = validateRequiredStreetNumber(normalizedAddress.streetNumber);
+    if (!streetNumberValidation.ok) {
+      return failure(streetNumberValidation.message, 'validation');
+    }
     const payload = { ...normalizedAddress, allowDuplicate: Boolean(allowDuplicate) };
     return withSession(async () => {
       const { data, error } = await client.rpc('upsert_current_customer_address', { p_address: payload });

@@ -10,7 +10,7 @@ import {
 } from './core/customer-delivery-address-hydration.js';
 import { splitStreetAndNumber } from './core/address.js';
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
-import { formatArgentinePhone } from './core/validators.js';
+import { formatArgentinePhone, validateRequiredStreetNumber } from './core/validators.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
 import { createCustomerGeolocationService } from './services/customer-geolocation.js';
 
@@ -461,7 +461,8 @@ async function saveAddress() {
     source: state.confirmedLocation?.source || 'manual',
     isDefault: Boolean(form.elements?.customerAddressDefault?.checked),
   });
-  if (!label || !candidate.street || !candidate.streetNumber || !candidate.city) {
+  const streetNumberValidation = validateRequiredStreetNumber(candidate.streetNumber);
+  if (!label || !candidate.street || !streetNumberValidation.ok || !candidate.city) {
     render('Completá etiqueta, calle, número y localidad antes de guardar la dirección.');
     return;
   }

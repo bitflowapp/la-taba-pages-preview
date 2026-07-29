@@ -24,6 +24,14 @@ export function hasText(value) {
   return sanitizeText(value).length > 0;
 }
 
+export function validateRequiredStreetNumber(value) {
+  const streetNumber = sanitizeText(value, { fallback: '', maxLength: 24 });
+  if (!streetNumber) {
+    return { ok: false, streetNumber, message: 'Ingresá el número de la calle.' };
+  }
+  return { ok: true, streetNumber, message: '' };
+}
+
 export function normalizePhoneDigits(value) {
   return String(value || '').replace(/\D/g, '');
 }

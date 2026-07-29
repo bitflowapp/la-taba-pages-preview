@@ -479,8 +479,8 @@
   }
 
   .product-card {
-    grid-template-rows: 150px minmax(74px, 1fr) 92px;
-    min-height: 316px;
+    grid-template-rows: 150px minmax(94px, 1fr) 92px;
+    min-height: 336px;
     border-radius: 18px;
   }
 

@@ -36,9 +36,24 @@
   --topbar: 72px;
   --taba-bottom-nav-height: 104px;
   --taba-bottom-nav-gap: 18px;
+  --taba-floating-cart-height: 54px;
+  --taba-overlay-gap: 12px;
+  --taba-toast-reserved-height: 74px;
+  --taba-content-end-gap: 18px;
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --taba-bottom-nav-clearance: calc(
     var(--taba-bottom-nav-height) + var(--taba-bottom-nav-gap) + var(--safe-area-bottom)
+  );
+  --taba-floating-cart-clearance: calc(
+    var(--taba-bottom-nav-clearance) + var(--taba-floating-cart-height) + var(--taba-overlay-gap)
+  );
+  --taba-toast-bottom-with-cart: var(--taba-floating-cart-clearance);
+  --taba-content-clearance-with-cart: calc(
+    var(--taba-floating-cart-clearance) + var(--taba-content-end-gap)
+  );
+  --taba-content-clearance-with-toast: calc(
+    var(--taba-floating-cart-clearance) + var(--taba-toast-reserved-height)
+    + var(--taba-overlay-gap) + var(--taba-content-end-gap)
   );
   --ease: 180ms ease;
 }

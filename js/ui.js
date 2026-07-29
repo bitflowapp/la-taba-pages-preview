@@ -2220,10 +2220,27 @@ export async function copyDraftOrderToClipboard() {
 export function showToast(message) {
   const toast = $('[data-toast]');
   if (!toast) return;
+  showToast.homeParent ||= toast.parentElement;
+  const openDialog = document.querySelector('dialog[open]');
+  if (openDialog && toast.parentElement !== openDialog) {
+    openDialog.append(toast);
+    openDialog.addEventListener('close', () => {
+      if (showToast.homeParent && toast.parentElement === openDialog) {
+        showToast.homeParent.append(toast);
+      }
+    }, { once: true });
+  } else if (!openDialog && showToast.homeParent && toast.parentElement !== showToast.homeParent) {
+    showToast.homeParent.append(toast);
+  }
   toast.textContent = message;
   toast.classList.remove('hidden');
   clearTimeout(showToast.timeoutId);
-  showToast.timeoutId = setTimeout(() => toast.classList.add('hidden'), 2200);
+  showToast.timeoutId = setTimeout(() => {
+    toast.classList.add('hidden');
+    if (showToast.homeParent && toast.parentElement !== showToast.homeParent) {
+      showToast.homeParent.append(toast);
+    }
+  }, 2200);
 }
 
 export function escapeHtml(value) {

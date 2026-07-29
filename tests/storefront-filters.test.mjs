@@ -39,8 +39,26 @@ test('más vendidos usa sólo la bandera popular real y elimina duplicados', () 
   );
 });
 
-test('el storefront unitario rechaza assets o cantidades de multipack', () => {
-  assert.equal(isUnitStorefrontProduct({ id: 'unit', unitsPerPack: 1 }), true);
-  assert.equal(isUnitStorefrontProduct({ id: 'strip', unitsPerPack: 1, imageShowsMultipack: true }), false);
-  assert.equal(isUnitStorefrontProduct({ id: 'six', unitsPerPack: 6 }), false);
+test('el storefront unitario acepta una unidad válida y rechaza toda señal de multipack', () => {
+  const unit = {
+    id: 'unit',
+    name: 'Bebida individual 473 ml',
+    description: 'Lata 473 ml',
+    unit: 'unidad',
+    unitLabel: 'Lata 473 ml',
+    packageType: 'lata',
+    unitsPerPack: 1,
+    imageShowsMultipack: false,
+    price: 5000,
+    stock: 4,
+    available: true,
+  };
+
+  assert.equal(isUnitStorefrontProduct(unit), true);
+  assert.equal(isUnitStorefrontProduct({ ...unit, id: 'strip', imageShowsMultipack: true }), false);
+  assert.equal(isUnitStorefrontProduct({ ...unit, id: 'six', unitsPerPack: 6 }), false);
+  assert.equal(isUnitStorefrontProduct({ ...unit, id: 'copy-x6', name: 'Bebida x6' }), false);
+  assert.equal(isUnitStorefrontProduct({ ...unit, id: 'copy-pack', unitLabel: 'Pack de latas' }), false);
+  assert.equal(isUnitStorefrontProduct({ ...unit, id: 'package', packageType: 'pack' }), false);
+  assert.equal(isUnitStorefrontProduct({ ...unit, id: 'missing-units', unitsPerPack: undefined }), false);
 });

@@ -14,9 +14,12 @@ test('clean sandbox paints the customer surface and hides recovery after bootstr
   await expect(page.locator('[data-view="home"] [data-search-jump]')).toBeVisible();
   await expect(page.locator('[data-app-recovery]')).toBeHidden();
   await expect.poll(() => page.evaluate(async () => {
-    const { getState } = await import('/js/state.js');
-    return getState().products.length;
-  })).toBe(14);
+    const [{ getState }, { products }] = await Promise.all([
+      import('/js/state.js'),
+      import('/js/beverage-qa-data.js'),
+    ]);
+    return getState().products.length === products.length;
+  })).toBe(true);
   await guards.assertClean();
 });
 
@@ -35,9 +38,16 @@ test('an old or empty local catalog is rebuilt without losing the first render',
   }, stateKey);
   await page.goto('/?demo=1#catalog');
 
-  // El estado recupera el catálogo base completo, pero el storefront unitario
-  // oculta los cinco assets que representan multipacks.
-  await expect(page.locator('[data-catalog-count]')).toContainText('9 productos');
+  const expectedCatalogCount = await page.evaluate(async () => {
+    const [{ getState }, { getCustomerCatalogProducts }, { isUnitStorefrontProduct }] = await Promise.all([
+      import('/js/state.js'),
+      import('/js/core/catalog-store.js'),
+      import('/js/core/storefront-filters.js'),
+    ]);
+    return getCustomerCatalogProducts(getState().products).filter(isUnitStorefrontProduct).length;
+  });
+  await expect(page.locator('[data-catalog-count]')).toHaveText(`${expectedCatalogCount} productos`);
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(expectedCatalogCount);
   await expect(page.locator('[data-app-recovery]')).toBeHidden();
 });
 

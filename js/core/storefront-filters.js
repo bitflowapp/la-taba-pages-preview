@@ -18,6 +18,17 @@ function normalizedProductIds(productIds) {
   return new Set(Array.isArray(productIds) ? productIds : []);
 }
 
+const UNIT_PACKAGE_TYPES = new Set(['botella', 'lata', 'bidon', 'unidad', 'envase']);
+const MULTIPACK_COPY_PATTERN = /(?:\b(?:pack|multipack)\b|(?:^|[\s(])(?:x|×)\s*[2-9]\d*(?=$|[\s),.-]))/i;
+
+function normalizedUnitText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
 export function isPromotionalProduct(product, activePromotionProductIds = []) {
   if (!product?.id) return false;
   const price = Number(product.price);
@@ -40,9 +51,30 @@ export function isPopularProduct(product) {
 }
 
 export function isUnitStorefrontProduct(product) {
-  if (!product || product.imageShowsMultipack === true) return false;
-  const unitsPerPack = Number(product.unitsPerPack ?? 1);
-  return Number.isFinite(unitsPerPack) && unitsPerPack === 1;
+  if (!product?.id || product.imageShowsMultipack === true) return false;
+
+  const unitsPerPack = Number(product.unitsPerPack);
+  if (!Number.isFinite(unitsPerPack) || unitsPerPack !== 1) return false;
+
+  const packageType = normalizedUnitText(product.packageType);
+  if (!UNIT_PACKAGE_TYPES.has(packageType)) return false;
+
+  const unitCopy = [
+    product.name,
+    product.description,
+    product.presentation,
+    product.unit,
+    product.unitLabel,
+  ].filter(Boolean).join(' ');
+  if (MULTIPACK_COPY_PATTERN.test(unitCopy)) return false;
+
+  const price = Number(product.price);
+  const stock = Number(product.stock);
+  return Number.isFinite(price)
+    && price > 0
+    && Number.isFinite(stock)
+    && stock >= 0
+    && typeof product.available === 'boolean';
 }
 
 export function uniqueProducts(products) {

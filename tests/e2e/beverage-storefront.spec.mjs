@@ -73,6 +73,75 @@ test('la home presenta TABA con marca interna discreta y un storefront comercial
   await guards.assertClean();
 });
 
+test('Todos, contador, búsqueda y categorías comparten el catálogo unitario válido', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await installBrowserStubs(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?reset=1&demo=1#catalog');
+
+  const expectedProducts = await page.evaluate(async () => {
+    const [{ getState }, { getCustomerCatalogProducts }, { isUnitStorefrontProduct }] = await Promise.all([
+      import('/js/state.js'),
+      import('/js/core/catalog-store.js'),
+      import('/js/core/storefront-filters.js'),
+    ]);
+    return getCustomerCatalogProducts(getState().products)
+      .filter(isUnitStorefrontProduct)
+      .map(({ id, name, categoryId }) => ({ id, name, categoryId }));
+  });
+  const expectedIds = expectedProducts.map(({ id }) => id).sort();
+  const productCards = page.locator('[data-product-grid] .product-card');
+  const renderedIds = () => page.locator('[data-product-grid] [data-add-product]').evaluateAll(
+    (buttons) => buttons.map((button) => button.dataset.addProduct).sort(),
+  );
+
+  expect(expectedIds.length).toBeGreaterThan(0);
+  await expect(page.locator('[data-catalog-count]')).toHaveText(`${expectedIds.length} productos`);
+  await expect(productCards).toHaveCount(expectedIds.length);
+  expect(await renderedIds()).toEqual(expectedIds);
+  expect(new Set(await renderedIds()).size).toBe(expectedIds.length);
+  await expect(page.locator('[data-product-grid]')).not.toContainText(
+    /(?:\b(?:pack|multipack)\b|(?:^|\s)(?:x|×)\s*[2-9]\d*)/i,
+  );
+
+  const search = page.locator('[data-view="catalog"] [data-search-input]');
+  for (const product of expectedProducts) {
+    await search.fill(product.name);
+    await expect(productCards).toHaveCount(1);
+    await expect(page.locator(`[data-product-grid] [data-add-product="${product.id}"]`)).toBeVisible();
+  }
+  await search.fill('');
+  await expect(productCards).toHaveCount(expectedIds.length);
+
+  const categories = [...new Set(expectedProducts.map(({ categoryId }) => categoryId))];
+  for (const categoryId of categories) {
+    const expectedCategoryIds = expectedProducts
+      .filter((product) => product.categoryId === categoryId)
+      .map(({ id }) => id)
+      .sort();
+    await page.locator(`[data-view="catalog"] [data-category-id="${categoryId}"]`).click();
+    expect(await renderedIds()).toEqual(expectedCategoryIds);
+  }
+  await page.locator('[data-view="catalog"] [data-category-id="all"]').click();
+  await expect(productCards).toHaveCount(expectedIds.length);
+  expect(await renderedIds()).toEqual(expectedIds);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  for (const productId of expectedIds) {
+    const add = page.locator(`[data-product-grid] [data-add-product="${productId}"]`);
+    await expect(add).toBeEnabled();
+    await add.evaluate((button) => button.scrollIntoView({ block: 'center' }));
+    await add.click();
+    const card = page.locator(`[data-product-grid] .product-card:has([data-product-detail="${productId}"])`);
+    await expect(card).toHaveClass(/in-cart/);
+    const decrement = card.locator(`[data-cart-dec="${productId}"]`);
+    await decrement.evaluate((button) => button.scrollIntoView({ block: 'center' }));
+    await decrement.click();
+    await expect(card).not.toHaveClass(/in-cart/);
+  }
+  await guards.assertClean();
+});
+
 for (const viewport of [
   { name: '320', width: 320, height: 700 },
   { name: '390', width: 390, height: 844 },
@@ -98,6 +167,7 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     await installBrowserStubs(page);
     await page.goto('/?reset=1&demo=1&home=v37');
+    await expect.poll(() => new URL(page.url()).searchParams.has('reset')).toBe(false);
     await expect(page.locator('[data-view="home"]')).toBeVisible();
     await expect(page.locator('.mobile-nav [data-nav-view="home"]')).toHaveClass(/active/);
     await expect(page.locator('[data-home-promotions]')).toBeVisible();
@@ -116,9 +186,9 @@ for (const viewport of [
 
     const productImages = page.locator('[data-view="home"] .thumb-img');
     await expect(productImages.first()).toBeVisible();
-    expect(await productImages.evaluateAll((images) => images.every((image) => (
+    await expect.poll(() => productImages.evaluateAll((images) => images.every((image) => (
       image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
-    )))).toBeTruthy();
+    )))).toBe(true);
 
     const captureDir = process.env.TABA_HOME_CAPTURE_DIR;
     if (captureDir) {

@@ -5,6 +5,7 @@ import {
   normalizeCustomerName,
   sanitizeText,
   validateCustomerName,
+  validateRequiredStreetNumber,
 } from '../core/validators.js';
 
 export function createSupabaseCustomerProfileRepository({ client, authService } = {}) {
@@ -69,6 +70,10 @@ export function createSupabaseCustomerProfileRepository({ client, authService } 
 
   async function saveAddress(address, { allowDuplicate = false } = {}) {
     const { lastUsedAt, ...normalizedAddress } = normalizeCustomerAddress(address);
+    const streetNumberValidation = validateRequiredStreetNumber(normalizedAddress.streetNumber);
+    if (!streetNumberValidation.ok) {
+      return failure(streetNumberValidation.message, 'validation');
+    }
     const payload = { ...normalizedAddress, allowDuplicate: Boolean(allowDuplicate) };
     return withSession(async () => {
       const { data, error } = await client.rpc('upsert_current_customer_address', { p_address: payload });

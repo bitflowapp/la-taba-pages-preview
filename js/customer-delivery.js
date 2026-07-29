@@ -3,8 +3,14 @@ import {
   findNearbySavedAddress,
   normalizeCustomerAddress,
 } from './core/customer-addresses.js';
+import {
+  ADDRESS_HYDRATION_ACTION,
+  ADDRESS_SOURCE,
+  resolveAddressHydration,
+} from './core/customer-delivery-address-hydration.js';
+import { splitStreetAndNumber } from './core/address.js';
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
-import { formatArgentinePhone } from './core/validators.js';
+import { formatArgentinePhone, validateRequiredStreetNumber } from './core/validators.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
 import { createCustomerGeolocationService } from './services/customer-geolocation.js';
 
@@ -12,10 +18,13 @@ const state = {
   initialized: false,
   loading: false,
   saving: false,
-  loadVersion: 0,
+  profileHydrationVersion: 0,
+  addressInteractionVersion: 0,
   profile: null,
   addresses: [],
   selectedAddressId: '',
+  addressSource: ADDRESS_SOURCE.PROFILE_DEFAULT,
+  addressFormDirty: false,
   editingAddressId: '',
   editorOpen: false,
   pendingDuplicate: null,
@@ -61,10 +70,13 @@ export function resetCustomerDeliveryForTests() {
     initialized: false,
     loading: false,
     saving: false,
-    loadVersion: 0,
+    profileHydrationVersion: 0,
+    addressInteractionVersion: 0,
     profile: null,
     addresses: [],
     selectedAddressId: '',
+    addressSource: ADDRESS_SOURCE.PROFILE_DEFAULT,
+    addressFormDirty: false,
     editingAddressId: '',
     editorOpen: false,
     pendingDuplicate: null,
@@ -80,11 +92,12 @@ export function resetCustomerDeliveryForTests() {
 async function loadCustomerDeliveryProfile() {
   const repository = profileRepository();
   if (!repository) return { ok: false };
-  const loadVersion = ++state.loadVersion;
+  const hydrationVersion = ++state.profileHydrationVersion;
+  const interactionVersionAtStart = state.addressInteractionVersion;
   state.loading = true;
   render();
   const result = await repository.load();
-  if (loadVersion !== state.loadVersion) return result;
+  if (hydrationVersion !== state.profileHydrationVersion) return result;
   state.loading = false;
   if (!result.ok) {
     render(result.message);
@@ -93,8 +106,7 @@ async function loadCustomerDeliveryProfile() {
   state.profile = result.profile;
   state.addresses = result.addresses;
   applyProfileToEmptyFields(result.profile);
-  const defaultAddress = state.addresses.find((address) => address.isDefault) || state.addresses[0] || null;
-  if (defaultAddress && checkoutAddressFieldsEmpty()) selectAddress(defaultAddress.id, { applyToForm: true, renderAfter: false });
+  reconcileHydratedAddress({ interactionVersionAtStart });
   render();
   return result;
 }
@@ -104,7 +116,7 @@ function bindCheckoutEvents() {
   form?.addEventListener('input', (event) => {
     if (!(event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)) return;
     if (['customerStreetAddress', 'customerNeighborhood', 'customerReference'].includes(event.target.name)) {
-      clearSelectedAddress();
+      markAddressFormEditedByUser();
     }
   });
 
@@ -120,6 +132,56 @@ function bindCheckoutEvents() {
     if (event.detail?.source !== 'profile') return;
     void loadCustomerDeliveryProfile();
   });
+  window.addEventListener('taba:checkout-session-started', () => {
+    void beginCheckoutSession();
+  });
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash === '#cart') void beginCheckoutSession();
+  });
+}
+
+async function beginCheckoutSession() {
+  if (!isProduction()) return { ok: true, skipped: true };
+  state.addressInteractionVersion += 1;
+  state.addressSource = ADDRESS_SOURCE.PROFILE_DEFAULT;
+  state.addressFormDirty = false;
+  const cachedDefault = defaultAddress();
+  if (cachedDefault) {
+    selectAddress(cachedDefault.id, {
+      source: ADDRESS_SOURCE.PROFILE_DEFAULT,
+      userInitiated: false,
+      renderAfter: false,
+    });
+  } else {
+    clearSelectedAddress({ renderAfter: false });
+  }
+  render();
+  return loadCustomerDeliveryProfile();
+}
+
+function reconcileHydratedAddress({ interactionVersionAtStart }) {
+  const currentDefault = defaultAddress();
+  const currentSelection = findAddress(state.selectedAddressId);
+  const action = resolveAddressHydration({
+    selectedAddressId: state.selectedAddressId,
+    selectedAddressExists: Boolean(currentSelection),
+    defaultAddressId: currentDefault?.id,
+    addressSource: state.addressSource,
+    addressFormDirty: state.addressFormDirty,
+    userInteractedWhileLoading: state.addressInteractionVersion !== interactionVersionAtStart,
+  });
+
+  if (action === ADDRESS_HYDRATION_ACTION.APPLY_DEFAULT && currentDefault) {
+    selectAddress(currentDefault.id, {
+      source: ADDRESS_SOURCE.PROFILE_DEFAULT,
+      userInitiated: false,
+      renderAfter: false,
+    });
+  } else if (action === ADDRESS_HYDRATION_ACTION.MANUAL_ENTRY) {
+    moveToManualEntry({ preserveVisibleValues: true });
+  } else if (action === ADDRESS_HYDRATION_ACTION.REAPPLY_SELECTION && currentSelection) {
+    applyAddressToForm(currentSelection);
+  }
 }
 
 async function handleAction(action, addressId) {
@@ -139,7 +201,7 @@ async function handleAction(action, addressId) {
     return;
   }
   if (action === 'select') {
-    selectAddress(addressId);
+    selectAddress(addressId, { source: ADDRESS_SOURCE.SAVED_ADDRESS_SELECTED });
     return;
   }
   if (action === 'edit') {
@@ -147,7 +209,10 @@ async function handleAction(action, addressId) {
     if (!address) return;
     state.editingAddressId = address.id;
     state.editorOpen = true;
-    applyAddressToForm(address);
+    selectAddress(address.id, {
+      source: ADDRESS_SOURCE.SAVED_ADDRESS_SELECTED,
+      renderAfter: false,
+    });
     render();
     focusEditorLabel();
     return;
@@ -180,7 +245,7 @@ async function handleAction(action, addressId) {
     return;
   }
   if (action === 'suggestion-use') {
-    selectAddress(addressId);
+    selectAddress(addressId, { source: ADDRESS_SOURCE.SAVED_ADDRESS_SELECTED });
     state.suggestion = null;
     state.pendingLocation = null;
     render();
@@ -202,7 +267,9 @@ async function handleAction(action, addressId) {
   if (action === 'duplicate-use') {
     const duplicate = state.pendingDuplicate?.duplicate;
     state.pendingDuplicate = null;
-    if (duplicate?.id) selectAddress(duplicate.id);
+    if (duplicate?.id) {
+      selectAddress(duplicate.id, { source: ADDRESS_SOURCE.SAVED_ADDRESS_SELECTED });
+    }
     return;
   }
   if (action === 'duplicate-save') {
@@ -217,10 +284,18 @@ async function handleAction(action, addressId) {
   }
 }
 
-function selectAddress(addressId, { applyToForm = true, renderAfter = true } = {}) {
+function selectAddress(addressId, {
+  applyToForm = true,
+  renderAfter = true,
+  source = ADDRESS_SOURCE.SAVED_ADDRESS_SELECTED,
+  userInitiated = true,
+} = {}) {
   const address = findAddress(addressId);
   if (!address) return;
+  if (userInitiated) state.addressInteractionVersion += 1;
   state.selectedAddressId = address.id;
+  state.addressSource = source;
+  state.addressFormDirty = false;
   state.pendingLocation = null;
   state.confirmedLocation = null;
   if (applyToForm) applyAddressToForm(address);
@@ -259,8 +334,7 @@ function applyAddressToForm(address) {
   }
 }
 
-function clearSelectedAddress() {
-  if (!state.selectedAddressId) return;
+function clearSelectedAddress({ renderAfter = true } = {}) {
   state.selectedAddressId = '';
   const form = checkoutForm();
   for (const name of [
@@ -276,7 +350,25 @@ function clearSelectedAddress() {
   ]) setValue(form, name, '');
   clearLocationFields();
   state.confirmedLocation = null;
-  render();
+  if (renderAfter) render();
+}
+
+function markAddressFormEditedByUser() {
+  state.addressInteractionVersion += 1;
+  state.addressFormDirty = true;
+  state.addressSource = hasSavedProfileContext()
+    ? ADDRESS_SOURCE.MANUAL_ENTRY
+    : ADDRESS_SOURCE.GUEST_ENTRY;
+  clearSelectedAddress();
+}
+
+function moveToManualEntry({ preserveVisibleValues = true } = {}) {
+  state.addressSource = hasSavedProfileContext()
+    ? ADDRESS_SOURCE.MANUAL_ENTRY
+    : ADDRESS_SOURCE.GUEST_ENTRY;
+  state.addressFormDirty = hasCheckoutAddressInput();
+  clearSelectedAddress({ renderAfter: false });
+  if (!preserveVisibleValues) clearVisibleAddressFields();
 }
 
 async function updateDefault(addressId) {
@@ -293,6 +385,13 @@ async function updateDefault(addressId) {
       return;
     }
     state.addresses = state.addresses.map((address) => ({ ...address, isDefault: address.id === addressId }));
+    if (state.addressSource === ADDRESS_SOURCE.PROFILE_DEFAULT) {
+      selectAddress(addressId, {
+        source: ADDRESS_SOURCE.PROFILE_DEFAULT,
+        userInitiated: false,
+        renderAfter: false,
+      });
+    }
     notifyProfileUpdated();
   } finally {
     state.saving = false;
@@ -319,7 +418,18 @@ async function archiveAddress(addressId) {
     state.addresses = state.addresses
       .filter((entry) => entry.id !== addressId)
       .map((entry) => ({ ...entry, isDefault: entry.id === replacementId }));
-    if (state.selectedAddressId === addressId) clearSelectedAddress();
+    if (state.selectedAddressId === addressId) {
+      const replacement = defaultAddress();
+      if (replacement) {
+        selectAddress(replacement.id, {
+          source: ADDRESS_SOURCE.PROFILE_DEFAULT,
+          userInitiated: false,
+          renderAfter: false,
+        });
+      } else {
+        moveToManualEntry({ preserveVisibleValues: true });
+      }
+    }
     if (state.editingAddressId === addressId) state.editingAddressId = '';
     notifyProfileUpdated();
   } finally {
@@ -333,10 +443,12 @@ async function saveAddress() {
   const form = checkoutForm();
   if (!form) return;
   const label = String(form.elements?.customerAddressLabel?.value || '').trim();
+  const streetParts = splitStreetAndNumber(form.elements?.customerStreetAddress?.value || '');
   const candidate = normalizeCustomerAddress({
     id: state.editingAddressId,
     label,
-    street: form.elements?.customerStreetAddress?.value || '',
+    street: streetParts.street,
+    streetNumber: streetParts.streetNumber,
     city: form.elements?.customerNeighborhood?.value || '',
     reference: form.elements?.customerReference?.value || '',
     floor: form.elements?.customerAddressFloor?.value || '',
@@ -349,8 +461,9 @@ async function saveAddress() {
     source: state.confirmedLocation?.source || 'manual',
     isDefault: Boolean(form.elements?.customerAddressDefault?.checked),
   });
-  if (!label || !candidate.street || !candidate.city) {
-    render('Completá etiqueta, calle y localidad antes de guardar la dirección.');
+  const streetNumberValidation = validateRequiredStreetNumber(candidate.streetNumber);
+  if (!label || !candidate.street || !streetNumberValidation.ok || !candidate.city) {
+    render('Completá etiqueta, calle, número y localidad antes de guardar la dirección.');
     return;
   }
   await persistAddress(candidate);
@@ -393,7 +506,10 @@ async function persistAddress(candidate, { allowDuplicate = false } = {}) {
     state.editorOpen = false;
     state.editingAddressId = '';
     state.pendingDuplicate = null;
-    selectAddress(result.address.id, { renderAfter: false });
+    selectAddress(result.address.id, {
+      source: ADDRESS_SOURCE.SAVED_ADDRESS_SELECTED,
+      renderAfter: false,
+    });
     notifyProfileUpdated();
     finalMessage = 'Dirección guardada.';
   } finally {
@@ -410,6 +526,12 @@ async function useCurrentLocation() {
     render(result.message);
     return;
   }
+  state.addressInteractionVersion += 1;
+  state.addressFormDirty = true;
+  state.addressSource = hasSavedProfileContext()
+    ? ADDRESS_SOURCE.MANUAL_ENTRY
+    : ADDRESS_SOURCE.GUEST_ENTRY;
+  clearSelectedAddress({ renderAfter: false });
   state.pendingLocation = result.location;
   state.confirmedLocation = null;
   clearLocationFields();
@@ -441,11 +563,13 @@ function applyProfileToEmptyFields(profile) {
   if (!form.elements?.customerPhone?.value) setValue(form, 'customerPhone', formatArgentinePhone(profile.phone));
 }
 
-function checkoutAddressFieldsEmpty() {
+function hasCheckoutAddressInput() {
   const form = checkoutForm();
-  return !String(form?.elements?.customerStreetAddress?.value || '').trim()
-    && !String(form?.elements?.customerNeighborhood?.value || '').trim()
-    && !String(form?.elements?.customerReference?.value || '').trim();
+  return [
+    'customerStreetAddress',
+    'customerNeighborhood',
+    'customerReference',
+  ].some((name) => String(form?.elements?.[name]?.value || '').trim());
 }
 
 function clearLocationFields() {
@@ -460,8 +584,26 @@ function findAddress(addressId) {
   return state.addresses.find((address) => address.id === addressId) || null;
 }
 
+function defaultAddress() {
+  return state.addresses.find((address) => address.isDefault) || null;
+}
+
+function hasSavedProfileContext() {
+  return Boolean(state.profile?.id || state.addresses.length);
+}
+
+function clearVisibleAddressFields() {
+  const form = checkoutForm();
+  for (const name of [
+    'customerStreetAddress',
+    'customerNeighborhood',
+    'customerReference',
+  ]) setValue(form, name, '');
+}
+
 function render(message = '') {
   if (!isProduction()) return;
+  syncAddressContractToForm();
   const container = document.querySelector('[data-customer-addresses]');
   if (!container) return;
   container.hidden = false;
@@ -484,6 +626,14 @@ function render(message = '') {
       ${renderDuplicatePanel()}
       ${renderAddressEditor(editing)}
     </section>`;
+}
+
+function syncAddressContractToForm() {
+  const form = checkoutForm();
+  if (!form) return;
+  form.dataset.addressSource = state.addressSource;
+  form.dataset.addressFormDirty = String(state.addressFormDirty);
+  form.dataset.profileHydrationVersion = String(state.profileHydrationVersion);
 }
 
 function renderAddressList() {

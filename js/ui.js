@@ -1320,7 +1320,13 @@ function renderCheckoutVisibility() {
   const cartItems = getCartItems();
   const isEmpty = cartItems.length === 0;
   const form = $('[data-checkout-form]');
-  if (form) form.hidden = isEmpty;
+  const wasHidden = form?.hidden === true;
+  if (form) {
+    form.hidden = isEmpty;
+    if (wasHidden && !isEmpty) {
+      window.dispatchEvent(new CustomEvent('taba:checkout-session-started'));
+    }
+  }
   $$('[data-clear-cart]').forEach((button) => { button.hidden = isEmpty; });
   const requiresAgeConfirmation = cartItems.some((item) => item.product.alcoholic);
   const requiredAge = Math.max(

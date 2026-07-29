@@ -75,3 +75,10 @@ export function appendReferenceToNotes(notes = '', reference = '') {
   if (!cleanNotes || cleanNotes === 'Sin notas') return `Referencia: ${cleanReference}`;
   return `${cleanNotes}\nReferencia: ${cleanReference}`;
 }
+
+export function splitStreetAndNumber(value = '') {
+  const clean = sanitizeText(value, { maxLength: ADDRESS_PART_MAX });
+  const match = clean.match(/^(.*\D)\s+(\d+(?:\s*[A-Za-z])?(?:[/-]\d+(?:\s*[A-Za-z])?)?|S\/N)$/i);
+  if (!match) return { street: clean, streetNumber: '' };
+  return { street: match[1].trim(), streetNumber: match[2].trim() };
+}

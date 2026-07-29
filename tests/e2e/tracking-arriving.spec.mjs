@@ -4,6 +4,7 @@ import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import {
   fillCheckout,
+  gotoDemoReset,
   installBrowserStubs,
   installPageGuards,
   waitForToast,
@@ -28,7 +29,7 @@ test('tracking público arriving reproduce la composición y conserva datos real
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1&demo=1');
+  await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('[data-floating-cart]').click();

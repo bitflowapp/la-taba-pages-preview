@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { installBrowserStubs, installPageGuards } from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
 
 // Pulido comercial mobile-first 390x844.
 
@@ -87,7 +87,7 @@ test('negocio: catálogo editable compacto y guía operativa separada', async ({
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1&demo=1#business');
+  await gotoDemoReset(page, '/?reset=1&demo=1#business');
   await page.getByRole('button', { name: /Ingresar c[óo]digo/i }).click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');

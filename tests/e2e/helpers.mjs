@@ -33,6 +33,18 @@ export async function installBrowserStubs(page) {
   });
 }
 
+export async function gotoDemoReset(page, target) {
+  await page.goto(target);
+  const cleanUrl = new URL(page.url());
+  if (!cleanUrl.searchParams.has('reset') && !cleanUrl.searchParams.has('demo-reset')) {
+    await page.waitForLoadState('load');
+    return;
+  }
+  cleanUrl.searchParams.delete('reset');
+  cleanUrl.searchParams.delete('demo-reset');
+  await page.waitForURL(cleanUrl.toString(), { waitUntil: 'load' });
+}
+
 export function installPageGuards(page) {
   const errors = [];
   const badResponses = [];

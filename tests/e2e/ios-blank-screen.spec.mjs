@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { installPageGuards } from './helpers.mjs';
+import { gotoDemoReset, installPageGuards } from './helpers.mjs';
 
 const stateKey = 'la_taba_mvp_v4_state';
 
@@ -42,9 +42,8 @@ test('an old or empty local catalog is rebuilt without losing the first render',
 });
 
 test('reset query renders first, removes itself, and does not loop', async ({ page }) => {
-  await page.goto('/?reset=1&demo=1#home');
+  await gotoDemoReset(page, '/?reset=1&demo=1#home');
   await expect(page.locator('[data-view="home"] [data-search-jump]')).toBeVisible();
-  await expect.poll(() => page.url()).toMatch(/\?demo=1#home$/);
   await expect(page.url()).not.toContain('reset=1');
   await expect(page.locator('[data-app-recovery]')).toBeHidden();
 });

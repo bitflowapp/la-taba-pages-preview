@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
 test('sandbox only publishes a human-approved SKU promotion and syncs it to customer tabs', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -10,7 +10,7 @@ test('sandbox only publishes a human-approved SKU promotion and syncs it to cust
   await installBrowserStubs(business);
   await installBrowserStubs(customer);
 
-  await customer.goto('/?reset=1&demo=1#home');
+  await gotoDemoReset(customer, '/?reset=1&demo=1#home');
   await expect(customer.locator('[data-promo-banner]')).toBeHidden();
 
   await business.goto('/?demo=1#business');

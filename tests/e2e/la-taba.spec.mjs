@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, installBrowserStubs, installPageGuards, openFirstProductModal, waitForToast } from './helpers.mjs';
+import {
+  fillCheckout,
+  gotoDemoReset,
+  installBrowserStubs,
+  installPageGuards,
+  openFirstProductModal,
+  waitForToast,
+} from './helpers.mjs';
 
 const TRACKING_GPS_NOTE = 'Seguimiento por estados, sin GPS ni ubicación en vivo.';
 
@@ -120,7 +127,7 @@ test('carrito vacío oculta el formulario de checkout y lo muestra al cargar pro
 
 test('pedido demo no muestra rider falso, GPS, mapa ni ETA', async ({ page }) => {
   const guards = installPageGuards(page);
-  await page.goto('/?reset=1&demo=1');
+  await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
@@ -300,7 +307,7 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
   const guards = installPageGuards(page);
 
   await installBrowserStubs(page);
-  await page.goto('/?reset=1&demo=1');
+  await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('[data-floating-cart]').click();

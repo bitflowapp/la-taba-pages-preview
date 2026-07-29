@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
 const TRACKING_GPS_NOTE = 'El pedido sigue en el local. La ubicación aparecerá cuando comience el reparto.';
 const OUT_FOR_DELIVERY_GPS_NOTE = 'El rider está en camino. La ubicación aparecerá cuando esté disponible.';
@@ -14,7 +14,7 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1&demo=1');
+  await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('[data-floating-cart]').click();

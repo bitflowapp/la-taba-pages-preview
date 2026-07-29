@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
 async function createDemoOrder(page) {
   await page.locator('[data-nav-view="catalog"]:visible').first().click();
@@ -44,13 +44,11 @@ test('?reset=1 limpia el pedido previo y deja el tracking vacío', async ({ brow
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1&demo=1');
-  await expect(page).toHaveURL(/\/\?demo=1$/);
+  await gotoDemoReset(page, '/?reset=1&demo=1');
   await createDemoOrder(page);
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
 
-  await page.goto('/?reset=1&demo=1');
-  await expect(page).toHaveURL(/\/\?demo=1$/);
+  await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.goto('/?demo=1#tracking');
   const tracking = page.locator('[data-tracking-panel]');
   await expect(tracking).toContainText('Todavía no hay un pedido en curso');

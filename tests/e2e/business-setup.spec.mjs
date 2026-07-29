@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installPageGuards, waitForToast } from './helpers.mjs';
 
 test('Business setup wizard mobile: guarda, persiste y restaura solo la config demo', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -28,7 +28,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
     }
   });
 
-  await page.goto('/?reset=1&demo=1#business');
+  await gotoDemoReset(page, '/?reset=1&demo=1#business');
   await page.getByRole('button', { name: /Ingresar c[óo]digo/i }).click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');

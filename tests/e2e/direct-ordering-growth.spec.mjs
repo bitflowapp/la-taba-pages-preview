@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
   fillCheckout,
+  gotoDemoReset,
   installPageGuards,
   waitForToast,
 } from './helpers.mjs';
@@ -10,7 +11,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   const page = await context.newPage();
   const guards = installPageGuards(page);
 
-  await page.goto('/?reset=1&demo=1');
+  await gotoDemoReset(page, '/?reset=1&demo=1');
   await expectHomeSections(page, [
     '[data-view="home"] .home-search',
     '[data-category-strip="home"]',

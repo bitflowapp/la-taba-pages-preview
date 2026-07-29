@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installPageGuards, waitForToast } from './helpers.mjs';
 
 test('sandbox persists, synchronizes between tabs, exports/imports and resets', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -8,8 +8,7 @@ test('sandbox persists, synchronizes between tabs, exports/imports and resets', 
   installPageGuards(client);
   installPageGuards(business);
 
-  await client.goto('/?reset=1&demo=1&tools=1#home');
-  await expect(client).toHaveURL(/\/\?demo=1&tools=1#home$/);
+  await gotoDemoReset(client, '/?reset=1&demo=1&tools=1#home');
   await expect(client.locator('[data-sandbox-tools]')).toBeVisible();
   await client.locator('[data-sandbox-action="seed-order"]').click();
   await expect.poll(() => client.evaluate(() => {
@@ -103,8 +102,7 @@ test('tracking recovers the newest persisted sandbox state on returning to the f
     window.addEventListener('storage', (event) => event.stopImmediatePropagation(), true);
   });
 
-  await client.goto('/?reset=1&demo=1&tools=1#home');
-  await expect(client).toHaveURL(/\/\?demo=1&tools=1#home$/);
+  await gotoDemoReset(client, '/?reset=1&demo=1&tools=1#home');
   await client.locator('[data-sandbox-action="seed-order"]').click();
   const orderId = await client.evaluate(() => import('/js/state.js').then(({ getState }) => getState().lastOrderId));
 
@@ -153,8 +151,7 @@ test('sandbox paints the customer surface before a delayed IndexedDB hydration f
 
 test('sandbox completes client, business, rider, route, delivery and reorder', async ({ page }) => {
   const guards = installPageGuards(page);
-  await page.goto('/?reset=1&demo=1#home');
-  await expect(page).toHaveURL(/\/\?demo=1#home$/);
+  await gotoDemoReset(page, '/?reset=1&demo=1#home');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();

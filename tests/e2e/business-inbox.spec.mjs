@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
 // Central de pedidos v1: el pedido del cliente entra al negocio, se ve completo
 // y el negocio lo gestiona. Mobile-first 390x844, sin geografía falsa.
@@ -9,7 +9,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1&demo=1#business');
+  await gotoDemoReset(page, '/?reset=1&demo=1#business');
 
   // 1. Negocio sin pedidos: empty state claro.
   await page.locator('[data-open-pin][data-admin-target="business"]').click();

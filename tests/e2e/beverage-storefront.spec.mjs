@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
-import { installBrowserStubs, installPageGuards } from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
 
 test('la home presenta TABA con marca interna discreta y un storefront comercial limpio', async ({ page }) => {
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
-  await page.goto('/?reset=1&demo=1');
+  await gotoDemoReset(page, '/?reset=1&demo=1');
 
   await expect(page.locator('[data-demo-mode-banner]')).toHaveCount(0);
   await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
@@ -42,7 +42,7 @@ test('la home presenta TABA con marca interna discreta y un storefront comercial
   ]) {
     await expect(page.locator('[data-view="home"]')).not.toContainText(forbidden);
   }
-  await page.goto('/?reset=1&demo=1#catalog');
+  await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
   const catalogCategories = page.locator(
     '[data-view="catalog"] [data-category-strip] .category-button:not([data-category-id="all"]):not([data-category-id="favorites"])',
   );
@@ -62,7 +62,7 @@ for (const viewport of [
   test(`home compacta debajo de 2000 px en ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await installBrowserStubs(page);
-    await page.goto('/?reset=1&demo=1');
+    await gotoDemoReset(page, '/?reset=1&demo=1');
     const homeHeight = await page.locator('[data-view="home"]').evaluate((node) => Math.ceil(node.getBoundingClientRect().height));
     expect(homeHeight).toBeLessThan(2000);
     await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
@@ -79,7 +79,7 @@ for (const viewport of [
   test(`home final de bebidas mantiene layout físico en ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await installBrowserStubs(page);
-    await page.goto('/?reset=1&demo=1&home=v37');
+    await gotoDemoReset(page, '/?reset=1&demo=1&home=v37');
     await expect(page.locator('[data-view="home"]')).toBeVisible();
     await expect(page.locator('.mobile-nav [data-nav-view="home"]')).toHaveClass(/active/);
     await expect(page.locator('[aria-labelledby="home-promotions-title"]')).toBeHidden();
@@ -129,14 +129,14 @@ for (const viewport of [
 test('confirmación de edad aparece y es obligatoria sólo con alcohol', async ({ page }) => {
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1&demo=1#catalog');
+  await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
   await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-age-confirmation]')).toBeHidden();
   await expect(page.locator('[name="ageConfirmed"]')).not.toHaveAttribute('required');
 
-  await page.goto('/?reset=1&demo=1#catalog');
+  await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
   await page.locator('[data-view="catalog"] [data-category-id="cervezas"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
@@ -146,7 +146,7 @@ test('confirmación de edad aparece y es obligatoria sólo con alcohol', async (
 
 test('el detalle comparte el control rápido de cantidad del carrito', async ({ page }) => {
   await installBrowserStubs(page);
-  await page.goto('/?reset=1&demo=1#catalog');
+  await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
   await page.locator('[data-view="catalog"] [data-category-id="cervezas"]').click();
 
   const card = page.locator('[data-product-grid] .product-card').first();
@@ -258,7 +258,7 @@ test('la CTA móvil compacta reserva espacio real sobre la navegación', async (
     { width: 430, height: 932 },
   ]) {
     await page.setViewportSize(viewport);
-    await page.goto('/?reset=1&demo=1#catalog');
+    await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
     await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
 
     const main = page.locator('main[data-app-main]');

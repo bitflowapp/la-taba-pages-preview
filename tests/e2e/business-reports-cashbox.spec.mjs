@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
 
 test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -7,7 +7,7 @@ test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ brows
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
 
-  await page.goto('/?reset=1&demo=1');
+  await gotoDemoReset(page, '/?reset=1&demo=1');
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   const productCard = page.locator('[data-product-grid] .product-card').first();

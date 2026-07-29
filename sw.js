@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v41-compact-cart-bar';
+const CACHE_NAME = 'la-taba-runtime-v42-release-hygiene';
 const ASSETS = [
   './',
   './index.html',
@@ -18,10 +18,6 @@ const ASSETS = [
   './runtime-config.js',
   './assets/icon.svg',
   './assets/products/beverage-placeholder.svg',
-  './assets/products/bebidas/coca-cola-original-1-5l-clean-preview.jpg',
-  './assets/products/bebidas/sprite-1-5l-clean-preview.jpg',
-  './assets/products/bebidas/fanta-naranja-1-5l-clean-preview.jpg',
-  './assets/products/bebidas/monster-energy-original-473ml-clean-preview.jpg',
   './js/pwa-update.js?v=2',
   './js/startup-recovery.js?v=1',
   './js/app.js?v=35',

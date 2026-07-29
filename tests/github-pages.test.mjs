@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v41-compact-cart-bar');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v42-release-hygiene');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -27,14 +27,11 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./manifest.webmanifest'));
   assert.ok(assets.includes('./assets/icon.svg'));
   assert.ok(assets.includes('./assets/products/beverage-placeholder.svg'));
-  for (const requiredHomeAsset of [
-    './assets/products/bebidas/coca-cola-original-1-5l-clean-preview.jpg',
-    './assets/products/bebidas/sprite-1-5l-clean-preview.jpg',
-    './assets/products/bebidas/fanta-naranja-1-5l-clean-preview.jpg',
-    './assets/products/bebidas/monster-energy-original-473ml-clean-preview.jpg',
-  ]) {
-    assert.ok(assets.includes(requiredHomeAsset), `missing Home asset in service worker: ${requiredHomeAsset}`);
-  }
+  assert.equal(
+    assets.some((asset) => asset.startsWith('./assets/products/bebidas/')),
+    false,
+    'obsolete beverage source and preview derivatives must not be precached',
+  );
   assert.equal(
     assets.some((asset) => /(?:horno|pizza|parrilla|carne|milanesa|chorizo|combo-familiar|promo-dia|bebida-cola)/i.test(asset)),
     false,

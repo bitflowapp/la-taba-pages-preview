@@ -30,12 +30,14 @@ test('approved catalog products use existing local product and thumbnail routes'
   }
 });
 
-test('approved products provide responsive thumbnail/master source pairs', () => {
+test('approved products use thumbnails outside detail and product masters in detail', () => {
   for (const product of products) {
-    const html = productThumb(product);
-    assert.match(html, / srcset="/);
-    assert.match(html, new RegExp(`${product.imageThumbnail} 400w`));
-    assert.match(html, new RegExp(`${product.image} 1000w`));
+    const card = productThumb(product);
+    const detail = productThumb(product, 'modal');
+    assert.match(card, new RegExp(`src="${escapeRegex(product.imageThumbnail)}"`));
+    assert.doesNotMatch(card, /srcset=/);
+    assert.match(detail, new RegExp(`src="${escapeRegex(product.image)}"`));
+    assert.doesNotMatch(detail, /srcset=/);
   }
 });
 
@@ -57,4 +59,8 @@ test('broken approved image switches to the neutral accessible fallback', () => 
 function classList(...initial) {
   const values = new Set(initial);
   return { add(value) { values.add(value); }, remove(value) { values.delete(value); }, contains(value) { return values.has(value); } };
+}
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

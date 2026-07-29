@@ -267,8 +267,7 @@ export function productPricePresentation(product) {
   const basePrice = Number(product?.price || 0);
   const promotion = activePromotionForProduct(product);
   if (!promotion) {
-    const oldPrice = Number(product?.oldPrice || 0);
-    return { price: basePrice, regularPrice: oldPrice > basePrice ? oldPrice : null, promotion: null, condition: '' };
+    return { price: basePrice, regularPrice: null, promotion: null, condition: '' };
   }
 
   let promotionalPrice = null;
@@ -315,17 +314,23 @@ export function productThumb(product, variant = 'grid') {
     && product.imageShowsMultipack !== true
     && hasAuthoritativeHashes,
   );
-  const loading = variant === 'modal' ? 'eager' : 'lazy';
-  const source = official ? thumbnail : PRODUCT_PLACEHOLDER_IMAGE;
-  const responsive = official
-    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${variant === 'modal' ? '(max-width: 700px) 92vw, 560px' : '(max-width: 700px) 45vw, 260px'}"`
-    : '';
+  const isDetail = variant === 'modal';
+  const loading = isDetail ? 'eager' : 'lazy';
+  const source = official
+    ? (isDetail ? image : thumbnail)
+    : PRODUCT_PLACEHOLDER_IMAGE;
+  const width = official
+    ? Number(isDetail ? (product.imageWidth || 1000) : (product.thumbnailWidth || 400))
+    : 400;
+  const height = official
+    ? Number(isDetail ? (product.imageHeight || 1000) : (product.thumbnailHeight || 400))
+    : 400;
   const label = official
     ? `Imagen oficial de ${product.name || 'producto'}`
     : `Producto sin imagen oficial: ${product.name || 'bebida'}`;
   return `
     <span class="thumb ${official ? 'has-photo' : 'uses-placeholder'} tone-${tone} category-${category} thumb-${variant}" role="img" aria-label="${escapeHtml(label)}">
-      <img class="thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}"${responsive} alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" loading="${loading}" decoding="async" />
+      <img class="thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}" width="${width}" height="${height}" alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" loading="${loading}" decoding="async" />
     </span>`;
 }
 
@@ -364,6 +369,9 @@ function offerBadges(product) {
 }
 
 function priceBlock(product) {
+  if (product.pricePending) {
+    return '<div class="price"><div class="price-amounts"><strong>Precio pendiente</strong></div></div>';
+  }
   const pricing = productPricePresentation(product);
   const old = pricing.regularPrice && pricing.regularPrice > pricing.price
     ? `<s>${money(pricing.regularPrice)}</s>` : '';
@@ -392,26 +400,25 @@ function renderOffers() {
 
 const HOME_CATEGORIES = Object.freeze([
   { id: 'gaseosas', name: 'Gaseosas' },
-  { id: 'fernet', name: 'Fernet' },
+  { id: 'mixers', name: 'Mixers' },
+  { id: 'energizantes', name: 'Energizantes' },
   { id: 'cervezas', name: 'Cervezas' },
-  { id: 'aguas', name: 'Aguas' },
-  { id: 'energeticas', name: 'Energéticas' },
-  { id: 'promos', name: 'Promos' },
 ]);
-const HOME_PROMOTION_IDS = ['qa-gaseosa-lima-limon', 'qa-promo-bebidas', 'qa-gaseosa-cola'];
-const HOME_BEST_SELLER_IDS = ['qa-promo-bebidas', 'qa-energetica', 'qa-gaseosa-cola'];
-const HOME_CATALOG_PREVIEW_IDS = [
-  'qa-promo-bebidas',
-  'qa-gaseosa-cola',
-  'qa-gaseosa-lima-limon',
-  'qa-energetica',
-];
 
 const HOME_CATEGORY_ICONS = Object.freeze({
   gaseosas: `
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M9.2 2.8h5.6v2.8l1.3 1.5v13.4c0 .8-.7 1.5-1.5 1.5H9.4c-.8 0-1.5-.7-1.5-1.5V7.1l1.3-1.5V2.8Z" fill="currentColor"/>
       <path d="M8 10.2h8M8 16.6h8" stroke="white" stroke-width="1.15" opacity=".9"/>
+    </svg>`,
+  mixers: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8.5 3h7v3l1.4 2.2V20H7.1V8.2L8.5 6V3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M7.2 12h9.6" stroke="currentColor" stroke-width="1.6"/>
+    </svg>`,
+  energizantes: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m13.6 2.8-7 10.4h5.3l-1.5 8 7-11h-5.1l1.3-7.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
     </svg>`,
   fernet: `
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -438,26 +445,13 @@ const HOME_CATEGORY_ICONS = Object.freeze({
     </svg>`,
 });
 
-function homeProducts(ids) {
-  const productsById = new Map(
-    getCustomerCatalogProducts(getState().products)
-      .filter((product) => (
-        product.rightsStatus === 'APROBADOS'
-        || product.rightsStatus === 'REVISION_INTERNA'
-      ))
-      .filter((product) => product.imageShowsMultipack !== true)
-      .map((product) => [product.id, product]),
-  );
-  return ids.map((id) => productsById.get(id)).filter(Boolean);
-}
-
 function activePromotionProductIds(state = getState()) {
   return new Set(getActivePromotions(state.promotions)
     .flatMap((promotion) => promotion.includedSkus));
 }
 
 function unitStorefrontProducts(state = getState()) {
-  return getCustomerCatalogProducts(state.products).filter(isUnitStorefrontProduct);
+  return getCustomerCatalogProducts(state.products);
 }
 
 function promotionalProducts(state = getState()) {
@@ -472,22 +466,16 @@ function popularProducts(state = getState()) {
 }
 
 function homePromotionalProducts() {
-  const activeIds = activePromotionProductIds();
-  return uniqueProducts(homeProducts(HOME_PROMOTION_IDS)
-    .filter((product) => isPromotionalProduct(product, activeIds)));
+  return promotionalProducts().slice(0, 6);
 }
 
 function homeBestSellerProducts() {
-  return uniqueProducts(homeProducts(HOME_BEST_SELLER_IDS)
-    .filter(isPopularProduct));
+  return unitStorefrontProducts().filter((product) => !product.pricePending).slice(0, 3);
 }
 
 function homeProductImage(product, className) {
   const source = product.imageThumbnail || product.image || PRODUCT_PLACEHOLDER_IMAGE;
-  const responsive = product.image && product.imageThumbnail
-    ? ` srcset="${escapeHtml(product.imageThumbnail)} 400w, ${escapeHtml(product.image)} 1000w" sizes="(max-width: 700px) 44vw, 260px"`
-    : '';
-  return `<img class="${className} thumb-img" src="${escapeHtml(source)}"${responsive} alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" loading="lazy" decoding="async" />`;
+  return `<img class="${className} thumb-img" src="${escapeHtml(source)}" width="${Number(product.thumbnailWidth || 400)}" height="${Number(product.thumbnailHeight || 400)}" alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" loading="lazy" decoding="async" />`;
 }
 
 function homeUnitText(product) {
@@ -510,9 +498,7 @@ function renderHomeShowcase() {
 function renderHomeCategories() {
   const strip = $('[data-home-category-strip]');
   if (!strip) return;
-  const hasFernet = unitStorefrontProducts().some(isFernetProduct);
-  const visibleCategories = HOME_CATEGORIES
-    .filter((category) => category.id !== 'fernet' || hasFernet);
+  const visibleCategories = HOME_CATEGORIES;
   strip.innerHTML = visibleCategories.map((category) => {
     const isActive = category.id === 'gaseosas';
     return `
@@ -526,13 +512,17 @@ function renderHomeCategories() {
 function renderHomePromotions() {
   const container = $('[data-home-promotions]');
   if (!container) return;
-  container.innerHTML = homePromotionalProducts().map((product) => {
+  const products = homePromotionalProducts();
+  const block = container.closest('.home-merch-section');
+  if (block) block.hidden = products.length === 0;
+  const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
+  container.innerHTML = products.map((product) => {
     const pricing = productPricePresentation(product);
     const old = pricing.regularPrice && pricing.regularPrice > pricing.price
       ? `<s>${money(pricing.regularPrice)}</s>`
       : '';
     const discount = discountPercent(product);
-    const badge = product.homePromoBadge || (discount > 0 ? `${discount}% OFF` : 'Por unidad');
+    const badge = discount > 0 ? `${discount}% OFF` : 'Promoción vigente';
     const outOfStock = product.stock <= 0 || !product.available;
     return `
       <article class="home-promo-card ${outOfStock ? 'out-of-stock' : ''}">
@@ -614,10 +604,11 @@ function bindHomePromotionPaging() {
 function renderHomeCatalogPreview() {
   const container = $('[data-home-catalog-preview]');
   if (!container) return;
-  container.innerHTML = homeProducts(HOME_CATALOG_PREVIEW_IDS).map((product) => {
+  const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
+  container.innerHTML = unitStorefrontProducts().filter((product) => !product.pricePending).slice(0, 4).map((product) => {
     const favorite = isFavoriteProduct(product.id);
     const pricing = productPricePresentation(product);
-    const outOfStock = product.stock <= 0 || !product.available;
+    const outOfStock = product.stock <= 0 || !product.available || product.pricePending;
     return `
       <article class="home-catalog-card ${outOfStock ? 'out-of-stock' : ''}">
         <button class="home-favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos">
@@ -767,7 +758,7 @@ function renderCategories() {
     ...catalogCategories.slice(1),
   ];
   const homeList = catalogCategories.filter((category) => category.id !== 'all');
-  const catalogTopIds = ['all', 'favorites', 'gaseosas', 'aguas'];
+  const catalogTopIds = ['all', 'favorites', 'gaseosas', 'mixers', 'energizantes', 'cervezas'];
   const catalogTopList = catalogTopIds
     .map((id) => fullList.find((category) => category.id === id))
     .filter(Boolean);
@@ -1040,6 +1031,7 @@ function renderProducts() {
 // Pill de disponibilidad: sólo aparece cuando hay algo que avisar (agotado,
 // pausado, últimas unidades). Lo normal —estar disponible— no se etiqueta.
 export function stockPill(product) {
+  if (product.pricePending) return '<span class="stock-pill empty">Precio pendiente</span>';
   if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
   if (!product.available) return '<span class="stock-pill empty">No disponible</span>';
   if (product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
@@ -1049,6 +1041,7 @@ export function stockPill(product) {
 
 // Texto plano de disponibilidad para el detalle del producto.
 export function availabilityLabel(product) {
+  if (product.pricePending) return 'Precio pendiente';
   if (product.archived || !product.available) return 'No disponible por ahora';
   if (product.stock <= 0) return 'Agotado';
   if (product.stock <= 4) return `Quedan ${product.stock}`;

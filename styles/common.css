@@ -34,6 +34,7 @@
     linear-gradient(115deg, #13171d 0%, #1c2128 55%, #12161b 100%);
   box-shadow: 0 6px 18px rgb(7 9 12 / 22%);
   color: #fff;
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
 
@@ -635,7 +636,7 @@ dialog::backdrop {
 }
 
 .pwa-banner-update {
-  bottom: calc(var(--mobile-nav) + 18px + env(safe-area-inset-bottom));
+  bottom: calc(66px + 18px + env(safe-area-inset-bottom));
 }
 
 .profile-grid {

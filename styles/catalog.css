@@ -59,6 +59,8 @@
   gap: 10px;
   margin: 0 -2px;
   padding: 2px 2px 12px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
   scroll-padding-inline: 2px;
 }
 
@@ -205,6 +207,7 @@
 .product-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
   gap: 16px;
 }
 
@@ -218,6 +221,7 @@
   grid-template-rows: 190px minmax(78px, 1fr) 62px;
   min-width: 0;
   min-height: 330px;
+  height: 100%;
   overflow: hidden;
   border: 1px solid #ececf0;
   border-radius: 22px;

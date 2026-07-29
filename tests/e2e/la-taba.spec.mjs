@@ -546,8 +546,11 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
   const guards = installPageGuards(page);
   const measureNav = () => page.locator('.mobile-nav').evaluate((nav) => {
     const rect = nav.getBoundingClientRect();
+    const rootStyle = getComputedStyle(document.documentElement);
     return {
       height: rect.height,
+      navHeightToken: rootStyle.getPropertyValue('--taba-bottom-nav-height').trim(),
+      navGapToken: rootStyle.getPropertyValue('--taba-bottom-nav-gap').trim(),
       mainPaddingBottom: Number.parseFloat(
         getComputedStyle(document.querySelector('main[data-app-main]')).paddingBottom,
       ),
@@ -569,12 +572,15 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
 
     await expect(page.locator('.mobile-nav')).toBeVisible();
     await expect(page.locator('.mobile-nav button')).toHaveCount(4);
+    expect(safe0.navHeightToken).toBe('104px');
+    expect(safe0.navGapToken).toBe('18px');
+    expect(safe0.mainPaddingBottom).toBe(122);
     expect(safe34.height - safe0.height).toBeGreaterThanOrEqual(32);
     expect(safe34.height - safe0.height).toBeLessThanOrEqual(36);
     const paddingDelta = safe34.mainPaddingBottom - safe0.mainPaddingBottom;
     expect(paddingDelta).toBeGreaterThanOrEqual(33);
     expect(paddingDelta).toBeLessThanOrEqual(35);
-    expect(safe34.mainPaddingBottom).toBeLessThanOrEqual(116);
+    expect(safe34.mainPaddingBottom).toBe(156);
     expect(safe34.buttonBottomDistances.every((distance) => distance >= 42)).toBeTruthy();
     expect(safe34.scrollWidth).toBeLessThanOrEqual(safe34.viewportWidth + 1);
 
@@ -608,6 +614,36 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
       return navRect.top - ctaRect.bottom;
     });
     expect(ctaGap).toBeGreaterThanOrEqual(12);
+
+    await page.goto('/?demo=1#catalog');
+    await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(14);
+    await page.evaluate(() => window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'instant',
+    }));
+    const catalogGeometry = await page.evaluate(() => {
+      const navRect = document.querySelector('.mobile-nav').getBoundingClientRect();
+      const cards = [...document.querySelectorAll('[data-product-grid] .product-card')];
+      const lastRowTop = Math.max(...cards.map((card) => card.getBoundingClientRect().top));
+      const lastRow = cards
+        .map((card) => card.getBoundingClientRect())
+        .filter((rect) => Math.abs(rect.top - lastRowTop) <= 1);
+      const topbarRect = document.querySelector('.topbar').getBoundingClientRect();
+      const categoryStrip = document.querySelector('[data-view="catalog"] .category-strip');
+      return {
+        lastRowGap: navRect.top - Math.max(...lastRow.map((rect) => rect.bottom)),
+        lastRowHeightDelta: Math.max(...lastRow.map((rect) => rect.height))
+          - Math.min(...lastRow.map((rect) => rect.height)),
+        topbarTop: topbarRect.top,
+        horizontalFilterScrollable: categoryStrip.scrollWidth > categoryStrip.clientWidth,
+        horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+      };
+    });
+    expect(catalogGeometry.lastRowGap).toBeGreaterThanOrEqual(18);
+    expect(catalogGeometry.lastRowHeightDelta).toBeLessThanOrEqual(1);
+    expect(Math.abs(catalogGeometry.topbarTop)).toBeLessThanOrEqual(1);
+    expect(catalogGeometry.horizontalFilterScrollable).toBeTruthy();
+    expect(catalogGeometry.horizontalOverflow).toBeFalsy();
 
     await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
     await expect(page.locator('.tracking-premium')).toBeVisible();

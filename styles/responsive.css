@@ -113,6 +113,10 @@ body[data-active-view="rider"] .floating-cart {
     bottom: var(--taba-bottom-nav-clearance);
   }
 
+  body:is([data-active-view="home"], [data-active-view="catalog"]):has(.floating-cart:not(.hidden)) .toast {
+    bottom: var(--taba-toast-bottom-with-cart);
+  }
+
   .mobile-nav button {
     position: relative;
     display: grid;
@@ -191,7 +195,7 @@ body[data-active-view="rider"] .floating-cart {
     bottom: var(--taba-bottom-nav-clearance);
     left: 14px;
     width: auto;
-    min-height: 54px;
+    min-height: var(--taba-floating-cart-height);
     text-align: center;
   }
 
@@ -556,13 +560,14 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .product-body h3 {
-    min-height: 38px;
+    min-height: 53px;
     font-size: 14px;
+    -webkit-line-clamp: 3;
   }
 
   .product-body p,
   .product-availability {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .price strong,
@@ -758,7 +763,7 @@ body[data-active-view="rider"] .floating-cart {
     top: 9px;
     left: 9px;
     padding: 5px 7px;
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .home-add-button {
@@ -907,6 +912,14 @@ body[data-active-view="rider"] .floating-cart {
     padding-bottom: var(--taba-bottom-nav-clearance);
   }
 
+  body:is([data-active-view="home"], [data-active-view="catalog"]):has(.floating-cart:not(.hidden)) main[data-app-main] {
+    padding-bottom: var(--taba-content-clearance-with-cart);
+  }
+
+  body:is([data-active-view="home"], [data-active-view="catalog"]):has(.toast:not(.hidden)) main[data-app-main] {
+    padding-bottom: var(--taba-content-clearance-with-toast);
+  }
+
   .taba-home {
     padding: 14px 16px calc(30px + var(--safe-area-bottom));
   }
@@ -917,6 +930,17 @@ body[data-active-view="rider"] .floating-cart {
 
   .taba-home > .taba-home-content {
     gap: 0;
+  }
+
+  .taba-home-address .address-chip-text strong {
+    display: -webkit-box;
+    max-width: none;
+    overflow: hidden;
+    line-height: 1.25;
+    text-overflow: clip;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .topbar {
@@ -1102,10 +1126,6 @@ body[data-active-view="rider"] .floating-cart {
 
   .taba-home-hero > p:last-of-type {
     font-size: 13px;
-  }
-
-  .taba-home-address .address-chip-text strong {
-    max-width: 208px;
   }
 
   .home-category-card {

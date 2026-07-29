@@ -22,7 +22,9 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: `python -m http.server ${httpPort}`,
+      // Reuse the native Node server to avoid the cold module-graph failures
+      // observed with the Python development server under parallel workers.
+      command: `node scripts/realtime-relay.mjs ${httpPort}`,
       url: `http://127.0.0.1:${httpPort}/`,
       reuseExistingServer: false,
       timeout: 120_000,

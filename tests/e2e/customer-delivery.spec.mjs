@@ -203,6 +203,7 @@ test('checkout actualiza sólo el default automático y preserva una selección 
   await expect(page.locator('body')).toHaveAttribute('data-active-view', 'cart');
   const checkout = page.locator('[data-checkout-form]');
   const savedAddresses = page.locator('[data-customer-addresses]');
+  const savedAddressStatus = savedAddresses.locator('.saved-address-status');
   await expect(checkout).toBeVisible();
   await expect(checkout.locator('[name="customerAddressId"]')).toHaveValue(addresses[0].id);
   await expect(checkout).toHaveAttribute('data-address-source', 'profile_default');
@@ -214,24 +215,28 @@ test('checkout actualiza sólo el default automático y preserva una selección 
       detail: { source: 'profile' },
     }));
   });
+  await expect(savedAddressStatus).toContainText('Cargando');
+  await expect(savedAddressStatus).toHaveText('');
   await expect(checkout.locator('[name="customerAddressId"]')).toHaveValue(addresses[1].id);
   await expect(checkout.locator('[name="customerStreetAddress"]')).toHaveValue('Mitre 456');
 
   await savedAddresses
     .locator(`[data-customer-address-id="${addresses[0].id}"] [data-customer-address-action="select"]`)
     .last()
-    .evaluate((button) => button.click());
+    .click();
   await expect(checkout).toHaveAttribute('data-address-source', 'saved_address_selected');
   await page.evaluate(() => {
     window.dispatchEvent(new CustomEvent('taba:customer-profile-updated', {
       detail: { source: 'profile' },
     }));
   });
+  await expect(savedAddressStatus).toContainText('Cargando');
+  await expect(savedAddressStatus).toHaveText('');
   await expect(checkout.locator('[name="customerAddressId"]')).toHaveValue(addresses[0].id);
 
   await savedAddresses
     .locator(`[data-customer-address-id="${addresses[0].id}"] [data-customer-address-action="edit"]`)
-    .evaluate((button) => button.click());
+    .click();
   await expect(savedAddresses.locator('[data-address-editor]')).toBeVisible();
   await checkout.locator('[name="customerStreetAddress"]').fill('Roca Norte 321 A');
   await checkout.locator('[name="customerNeighborhood"]').fill('Neuquén Oeste');

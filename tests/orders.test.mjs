@@ -48,7 +48,7 @@ test('creates a valid delivery order and builds a complete WhatsApp message', ()
   assert.match(message, /Teléfono: 2995551234/);
   assert.match(message, /Entrega: Envío a domicilio/);
   assert.match(message, /Dirección: Fotheringham 123/);
-  assert.match(message, /Sprite 1,5 L x6/);
+  assert.match(message, /Sprite 1,5 L/);
   assert.match(message, /Subtotal: /);
   assert.match(message, /Envío: /);
   assert.match(message, /Total: /);

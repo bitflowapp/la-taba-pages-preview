@@ -24,7 +24,7 @@ test('sandbox only publishes a human-approved SKU promotion and syncs it to cust
   await business.locator('[data-promotion-new]').click();
   const form = business.locator('[data-promotion-form]');
   await form.locator('[name="promoId"]').fill('promo-coca-confirmada-e2e');
-  await form.locator('[name="title"]').fill('Coca-Cola x6 — condición confirmada');
+  await form.locator('[name="title"]').fill('Coca-Cola por unidad — condición confirmada');
   await form.locator('[name="includedSkus"]').selectOption(['qa-promo-bebidas']);
   await form.locator('[name="regularPrice"]').fill('5000');
   await form.locator('[name="promotionalPrice"]').fill('4200');
@@ -33,23 +33,23 @@ test('sandbox only publishes a human-approved SKU promotion and syncs it to cust
   await form.locator('[name="approvalStatus"]').selectOption('APROBADA');
   await form.locator('[name="approvalReference"]').fill('E2E-APPROVAL-001');
   await form.locator('[name="sourceEvidence"]').fill('Registro de aprobación sandbox para prueba automatizada.');
-  await form.locator('[name="terms"]').fill('Precio especial por pack x6.');
+  await form.locator('[name="terms"]').fill('Precio especial por unidad.');
   await form.locator('[name="active"]').check();
   await form.locator('[data-promotion-save]').click();
   await waitForToast(business, /Promoción activada/i);
   await expect(business.locator('[data-promotion-row="promo-coca-confirmada-e2e"]')).toContainText('Activa');
 
   await expect(customer.locator('[data-promo-banner]')).toBeVisible();
-  await expect(customer.locator('[data-promo-banner]')).toContainText('Coca-Cola x6');
+  await expect(customer.locator('[data-promo-banner]')).toContainText('Coca-Cola por unidad');
   await customer.goto('/?demo=1#catalog');
   await customer.locator('[data-view="catalog"] [data-category-strip] [data-category-id="promos"]').click();
-  const promotedCard = customer.locator('[data-product-grid] .product-card', { hasText: 'Coca-Cola Original 1,5 L x6' });
+  const promotedCard = customer.locator('[data-product-grid] .product-card', { hasText: 'Coca-Cola Original 1,5 L' });
   await expect(promotedCard).toBeVisible();
   await expect(promotedCard).toContainText('4.200');
   await expect(promotedCard).toContainText('Precio promocional');
   await promotedCard.locator('[data-add-product]').click();
   await customer.locator('[data-floating-cart]').click();
-  await expect(customer.locator('[data-order-summary]')).toContainText('Coca-Cola x6 — condición confirmada');
+  await expect(customer.locator('[data-order-summary]')).toContainText('Coca-Cola por unidad — condición confirmada');
   await expect(customer.locator('[data-order-summary]')).toContainText('800');
   await expect(customer.locator('[data-order-summary]')).toContainText('6.190');
 
@@ -68,7 +68,7 @@ test('business distinguishes scheduled and expired promotions without publishing
   await page.evaluate(async () => {
     const { updateState } = await import(new URL('js/state.js', location.href).href);
     const shared = {
-      title: 'Coca-Cola Original 1,5 L x6',
+      title: 'Coca-Cola Original 1,5 L',
       includedSkus: ['qa-promo-bebidas'],
       promotionType: 'precio_promocional',
       regularPrice: 5000,
@@ -80,7 +80,7 @@ test('business distinguishes scheduled and expired promotions without publishing
       approvalStatus: 'APROBADA',
       approvalReference: 'E2E-APPROVAL-002',
       sourceEvidence: 'Registro de aprobación de prueba.',
-      terms: 'Precio especial por pack x6.',
+      terms: 'Precio especial por unidad.',
     };
     updateState((draft) => {
       draft.promotions = [

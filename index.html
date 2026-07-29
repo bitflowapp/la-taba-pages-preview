@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#11151b" />
     <meta name="description" content="TABA: bebidas, promos y delivery rápido en una experiencia simple y segura." />
     <title>TABA · Bebidas en minutos</title>
     <link rel="manifest" href="manifest.webmanifest" />
@@ -18,7 +18,7 @@
       integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK"
       crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=35" />
   </head>
   <body>
     <div class="app-shell">
@@ -122,82 +122,83 @@
             <button class="secondary-button compact" type="button" data-app-recovery-reset hidden>Reiniciar prueba</button>
           </div>
         </section>
-        <section class="section app-view app-home is-active" data-view="home" aria-hidden="false">
+        <section class="section app-view app-home taba-home is-active" data-view="home" aria-hidden="false">
           <div class="card empty-state" data-production-catalog-gate hidden role="status">
             <strong>Pedidos online no disponibles</strong>
             <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
           </div>
-          <div data-catalog-dependent hidden>
-          <h1 class="sr-only">TABA · Bebidas en minutos</h1>
-          <div class="status-bar" role="status">
-            <span class="status-dot" data-open-status>Pedidos online: muy pronto</span>
-            <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Bebidas frías con delivery y retiro</span>
-            <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Cobertura según tu zona</span>
-          </div>
+          <div class="taba-home-content" data-catalog-dependent hidden>
+            <section class="taba-home-hero" aria-labelledby="home-title">
+              <p class="taba-home-eyebrow">CATÁLOGO</p>
+              <h1 id="home-title">¿Qué vas a pedir hoy?</h1>
+              <p>Elegí tus bebidas favoritas y pedí en minutos.</p>
+              <span class="sr-only" data-open-status>Pedidos online</span>
+            </section>
 
-          <div class="home-address-chip" role="note" data-home-address>
-            <span class="address-chip-ico" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                <path d="M12 21.3s-6.6-6.3-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 4.8-6.6 11.1-6.6 11.1Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                <circle cx="12" cy="9.9" r="2.3" fill="currentColor"/>
-              </svg>
-            </span>
-            <span class="address-chip-text">
-              <small>Enviar a</small>
-              <strong data-home-address-label>Elegí tu dirección al confirmar el pedido</strong>
-            </span>
-          </div>
-
-          <div data-home-active-order hidden></div>
-
-          <div class="search-box home-search">
-            <span aria-hidden="true">⌕</span>
-            <input data-search-input data-search-jump type="search" placeholder="Buscar bebidas…" aria-label="Buscar bebidas" />
-          </div>
-
-          <button class="promo-banner promo-banner-neutral" type="button" data-category-id="promos" data-promo-banner hidden>
-            <span class="promo-product-art" data-promo-banner-image aria-hidden="true"></span>
-            <span class="promo-banner-copy">
-              <small>Elegida para hoy</small>
-              <strong data-promo-banner-title>Promo TABA</strong>
-              <span class="promo-includes" data-promo-banner-includes></span>
-              <span class="promo-price-row">
-                <b data-promo-banner-price></b>
-                <em class="promo-save" data-promo-banner-save hidden></em>
+            <div class="home-address-chip taba-home-address" role="note" data-home-address>
+              <span class="address-chip-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                  <path d="M12 21.3s-6.6-6.3-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 4.8-6.6 11.1-6.6 11.1Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                  <circle cx="12" cy="9.9" r="2.3" fill="currentColor"/>
+                </svg>
               </span>
-            </span>
-            <span class="promo-cta">Ver promociones</span>
-          </button>
-
-          <div class="rail-block">
-            <div class="rail-head">
-              <h2>Más pedidos</h2>
-              <button class="rail-link" type="button" data-nav-view="catalog">Ver todas ›</button>
+              <span class="address-chip-text">
+                <small>Enviar a</small>
+                <strong data-home-address-label>Elegí tu dirección al confirmar el pedido</strong>
+              </span>
             </div>
-            <div class="offers-rail" data-offers-rail></div>
-          </div>
 
-          <div class="rail-block home-categories-block">
-            <div class="rail-head">
-              <h2>Categorías</h2>
-              <button class="rail-link" type="button" data-nav-view="catalog">Ver todas ›</button>
-            </div>
-            <div class="category-strip category-tiles" data-category-strip="home"></div>
-          </div>
+            <div data-home-active-order hidden></div>
 
-          <div class="home-reorder-slot" data-customer-actions></div>
-
-          <button class="order-now-cta" type="button" data-nav-view="catalog">
-            <span class="order-now-ico" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-                <path d="M5 8h14l-1.4 11H6.4L5 8Z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-                <path d="M9 8V6a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            <label class="search-box home-search taba-home-search">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+                <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+                <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
-            </span>
-            <span>Ver catálogo completo</span>
-          </button>
+              <input data-search-input data-search-jump type="search" placeholder="Buscar productos, marcas y más..." aria-label="Buscar productos, marcas y más" />
+            </label>
+
+            <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip aria-label="Categorías de bebidas"></div>
+
+            <section class="home-merch-section" aria-labelledby="home-promotions-title">
+              <div class="home-section-head">
+                <h2 id="home-promotions-title">Promociones</h2>
+                <button type="button" data-category-id="promos">Ver todas</button>
+              </div>
+              <button class="home-live-promotion" type="button" data-category-id="promos" data-promo-banner hidden>
+                <span data-promo-banner-image aria-hidden="true"></span>
+                <span>
+                  <small>Promoción vigente</small>
+                  <strong data-promo-banner-title>Promo TABA</strong>
+                  <span data-promo-banner-includes></span>
+                  <span data-promo-banner-price></span>
+                  <em data-promo-banner-save hidden></em>
+                </span>
+              </button>
+              <div class="home-promotions-rail" data-home-promotions></div>
+              <div class="home-paging-dots" aria-hidden="true">
+                <span class="is-active"></span><span></span><span></span><span></span>
+              </div>
+            </section>
+
+            <section class="home-merch-section home-best-section" aria-labelledby="home-best-title">
+              <div class="home-section-head">
+                <h2 id="home-best-title">Los más vendidos</h2>
+                <button type="button" data-nav-view="catalog">Ver todas</button>
+              </div>
+              <div class="home-best-sellers offers-rail" data-home-best-sellers data-offers-rail></div>
+            </section>
+
+            <section class="home-catalog-preview-section" aria-labelledby="home-catalog-preview-title">
+              <h2 class="sr-only" id="home-catalog-preview-title">Vista previa del catálogo</h2>
+              <div class="home-catalog-preview" data-home-catalog-preview></div>
+            </section>
+
+            <div class="home-reorder-slot" data-customer-actions></div>
+            <button class="order-now-cta" type="button" data-nav-view="catalog">
+              <span>Ver catálogo completo</span>
+              <span aria-hidden="true">›</span>
+            </button>
           </div>
         </section>
 
@@ -658,6 +659,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=2"></script>
-    <script type="module" src="js/app.js?v=30"></script>
+    <script type="module" src="js/app.js?v=31"></script>
   </body>
 </html>

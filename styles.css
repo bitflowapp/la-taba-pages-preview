@@ -1,12 +1,12 @@
-@import url("./styles/tokens.css");
-@import url("./styles/common.css");
-@import url("./styles/storefront.css");
-@import url("./styles/catalog.css");
-@import url("./styles/checkout.css");
-@import url("./styles/tracking.css");
-@import url("./styles/business.css");
-@import url("./styles/rider.css");
-@import url("./styles/responsive.css");
+@import url("./styles/tokens.css?v=35");
+@import url("./styles/common.css?v=35");
+@import url("./styles/storefront.css?v=35");
+@import url("./styles/catalog.css?v=35");
+@import url("./styles/checkout.css?v=35");
+@import url("./styles/tracking.css?v=35");
+@import url("./styles/business.css?v=35");
+@import url("./styles/rider.css?v=35");
+@import url("./styles/responsive.css?v=35");
 
 /* Sandbox local: mapa y controles de prueba, aislados por data attributes. */
 .sandbox-tools-panel { position: fixed; z-index: 40; right: 16px; bottom: 16px; width: min(420px, calc(100vw - 32px)); max-height: min(82vh, 620px); overflow: auto; padding: 16px; border: 1px solid rgba(31,35,40,.16); border-radius: 18px; background: rgba(255,255,255,.97); box-shadow: 0 18px 50px rgba(20,25,30,.22); }

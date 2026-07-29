@@ -236,6 +236,7 @@ export function renderCatalog() {
   renderOffers();
   renderCombos();
   renderCategories();
+  renderHomeShowcase();
   renderCatalogOffers();
   renderCatalogMeta();
   renderSearchControls();
@@ -379,6 +380,177 @@ function renderOffers() {
   const container = $('[data-offers-rail]');
   if (!container) return;
   container.innerHTML = homeOfferProducts().map(railCard).join('');
+}
+
+const HOME_CATEGORIES = Object.freeze([
+  { id: 'gaseosas', name: 'Gaseosas' },
+  { id: 'cervezas', name: 'Cervezas' },
+  { id: 'aguas', name: 'Aguas' },
+  { id: 'energeticas', name: 'Energéticas' },
+  { id: 'gins-y-vodkas', name: 'Gins y vodkas' },
+  { id: 'promos', name: 'Promos' },
+]);
+const HOME_PROMOTION_IDS = ['qa-gaseosa-lima-limon', 'qa-promo-bebidas', 'qa-gaseosa-cola'];
+const HOME_BEST_SELLER_IDS = ['qa-promo-bebidas', 'qa-energetica', 'qa-gaseosa-cola'];
+const HOME_CATALOG_PREVIEW_IDS = [
+  'qa-promo-bebidas',
+  'qa-gaseosa-cola',
+  'qa-gaseosa-lima-limon',
+  'qa-energetica',
+];
+
+const HOME_CATEGORY_ICONS = Object.freeze({
+  gaseosas: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9.2 2.8h5.6v2.8l1.3 1.5v13.4c0 .8-.7 1.5-1.5 1.5H9.4c-.8 0-1.5-.7-1.5-1.5V7.1l1.3-1.5V2.8Z" fill="currentColor"/>
+      <path d="M8 10.2h8M8 16.6h8" stroke="white" stroke-width="1.15" opacity=".9"/>
+    </svg>`,
+  'gins-y-vodkas': `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M10 2.5h4v4.1l1.6 2.1v12.2H8.4V8.7L10 6.6V2.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M8.8 11h6.4" stroke="currentColor" stroke-width="1.6"/>
+    </svg>`,
+  cervezas: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9.5 2.5h5v3l1.5 2.2V21H8V7.7l1.5-2.2v-3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M8.4 10.5h7.2M8.4 15.7h7.2" stroke="currentColor" stroke-width="1.5"/>
+    </svg>`,
+  aguas: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2.8S6.4 10 6.4 14.2a5.6 5.6 0 1 0 11.2 0C17.6 10 12 2.8 12 2.8Z" fill="none" stroke="currentColor" stroke-width="1.7"/>
+    </svg>`,
+  energeticas: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m13.6 2.8-7 10.4h5.3l-1.5 8 7-11h-5.1l1.3-7.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    </svg>`,
+  promos: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m3.5 12 8.6-8.5h7.3l1.1 1.1v7.3L12 20.5 3.5 12Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <circle cx="16.4" cy="7.6" r="1.2" fill="currentColor"/>
+    </svg>`,
+});
+
+function homeProducts(ids) {
+  const productsById = new Map(
+    getCustomerCatalogProducts(getState().products)
+      .filter((product) => product.rightsStatus === 'APROBADOS')
+      .map((product) => [product.id, product]),
+  );
+  return ids.map((id) => productsById.get(id)).filter(Boolean);
+}
+
+function homeProductImage(product, className) {
+  const source = product.imageThumbnail || product.image || PRODUCT_PLACEHOLDER_IMAGE;
+  const responsive = product.image && product.imageThumbnail
+    ? ` srcset="${escapeHtml(product.imageThumbnail)} 400w, ${escapeHtml(product.image)} 1000w" sizes="(max-width: 700px) 44vw, 260px"`
+    : '';
+  return `<img class="${className} thumb-img" src="${escapeHtml(source)}"${responsive} alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" loading="lazy" decoding="async" />`;
+}
+
+function homeUnitText(product) {
+  const value = Number(product.capacityValue);
+  const unit = String(product.capacityUnit || '').toLowerCase();
+  if (Number.isFinite(value) && value > 0 && unit) {
+    const formatted = Number.isInteger(value) ? String(value) : String(value).replace('.', ',');
+    return `${formatted} ${unit === 'l' ? 'L' : unit}`;
+  }
+  return unitText(product).replace(/^(?:botella|lata)\s+/i, '');
+}
+
+function renderHomeShowcase() {
+  renderHomeCategories();
+  renderHomePromotions();
+  renderHomeBestSellers();
+  renderHomeCatalogPreview();
+}
+
+function renderHomeCategories() {
+  const strip = $('[data-home-category-strip]');
+  if (!strip) return;
+  strip.innerHTML = HOME_CATEGORIES.map((category) => {
+    const isActive = category.id === 'gaseosas';
+    return `
+      <button class="home-category-card ${isActive ? 'active' : ''}" type="button" data-category-id="${category.id}" ${isActive ? 'aria-current="true"' : ''}>
+        <span class="home-category-icon">${HOME_CATEGORY_ICONS[category.id]}</span>
+        <span>${escapeHtml(category.name)}</span>
+      </button>`;
+  }).join('');
+}
+
+function renderHomePromotions() {
+  const container = $('[data-home-promotions]');
+  if (!container) return;
+  container.innerHTML = homeProducts(HOME_PROMOTION_IDS).map((product) => {
+    const pricing = productPricePresentation(product);
+    const old = pricing.regularPrice && pricing.regularPrice > pricing.price
+      ? `<s>${money(pricing.regularPrice)}</s>`
+      : '';
+    const discount = discountPercent(product);
+    const badge = product.homePromoBadge || (discount > 0 ? `${discount}% OFF` : 'Por unidad');
+    const outOfStock = product.stock <= 0 || !product.available;
+    return `
+      <article class="home-promo-card ${outOfStock ? 'out-of-stock' : ''}">
+        <button class="home-promo-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+          <span class="home-promo-badge">${escapeHtml(badge)}</span>
+          ${homeProductImage(product, 'home-promo-image')}
+        </button>
+        <div class="home-promo-copy">
+          <strong>${escapeHtml(product.name)}</strong>
+          <span class="home-product-price">${money(pricing.price)}</span>
+          ${old}
+          <small>${escapeHtml(homeUnitText(product))}</small>
+        </div>
+        <button class="home-add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>+</button>
+      </article>`;
+  }).join('');
+}
+
+function renderHomeBestSellers() {
+  const container = $('[data-home-best-sellers]');
+  if (!container) return;
+  container.innerHTML = homeProducts(HOME_BEST_SELLER_IDS).map((product) => {
+    const pricing = productPricePresentation(product);
+    const outOfStock = product.stock <= 0 || !product.available;
+    return `
+      <article class="home-best-card ${outOfStock ? 'out-of-stock' : ''}">
+        <button class="home-best-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+          ${homeProductImage(product, 'home-best-image')}
+        </button>
+        <div class="home-best-copy">
+          <strong>${escapeHtml(product.name)}</strong>
+          <span>${money(pricing.price)}</span>
+        </div>
+        <button class="home-add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>+</button>
+      </article>`;
+  }).join('');
+}
+
+function renderHomeCatalogPreview() {
+  const container = $('[data-home-catalog-preview]');
+  if (!container) return;
+  container.innerHTML = homeProducts(HOME_CATALOG_PREVIEW_IDS).map((product) => {
+    const favorite = isFavoriteProduct(product.id);
+    const pricing = productPricePresentation(product);
+    const outOfStock = product.stock <= 0 || !product.available;
+    return `
+      <article class="home-catalog-card ${outOfStock ? 'out-of-stock' : ''}">
+        <button class="home-favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20.8 4.8a5.3 5.3 0 0 0-7.5 0L12 6.1l-1.3-1.3a5.3 5.3 0 0 0-7.5 7.5L12 21l8.8-8.7a5.3 5.3 0 0 0 0-7.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="home-catalog-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+          ${homeProductImage(product, 'home-catalog-image')}
+        </button>
+        <div class="home-catalog-copy">
+          <strong>${escapeHtml(product.name)}</strong>
+          <span class="home-available">${outOfStock ? 'Agotado' : 'Disponible'}</span>
+          <span class="home-product-price">${money(pricing.price)}</span>
+          <small>${escapeHtml(homeUnitText(product))}</small>
+        </div>
+        <button class="home-add-button home-add-button-primary" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>+</button>
+      </article>`;
+  }).join('');
 }
 
 function renderCombos() {
@@ -927,8 +1099,6 @@ function renderDirectOrderingCustomerActions() {
     return;
   }
   container.closest('.app-home')?.classList.add('has-reorder');
-  const promo = $('[data-promo-banner]');
-  if (promo && container.nextElementSibling !== promo) promo.before(container);
 
   const preview = buildReorderPreview(latest, getState().products);
   const itemNames = preview.items.slice(0, 2).map((item) => `${item.quantity}× ${item.name}`);

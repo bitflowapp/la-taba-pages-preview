@@ -83,6 +83,19 @@ test('preview catalog is concrete beverages and internally marked as QA', () => 
   assert.ok(products.every((product) => !/^(gaseosa|energética|cerveza|agua mineral)$/i.test(product.name)));
 });
 
+test('preview catalog sells beverages only by unit and never renders multipacks', () => {
+  for (const product of products) {
+    assert.equal(product.unitsPerPack, 1, `unexpected multipack quantity for ${product.id}`);
+    assert.notEqual(product.unit, 'pack', `unexpected pack unit for ${product.id}`);
+    assert.notEqual(product.packageType, 'pack', `unexpected pack presentation for ${product.id}`);
+    assert.doesNotMatch(
+      `${product.name} ${product.description} ${product.unitLabel}`,
+      /\b(?:pack|x\s?\d+)\b/i,
+      `multipack copy in active product ${product.id}`,
+    );
+  }
+});
+
 test('preview categories use the canonical beverage ids', () => {
   assert.deepEqual(categories.map((category) => category.id), EXPECTED_CATEGORY_IDS);
 });

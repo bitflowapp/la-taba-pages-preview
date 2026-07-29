@@ -773,7 +773,36 @@ test('un handoff tokenizado conserva Pedido A aunque Pedido B sea posterior', as
       });
       await flushTasks();
       assert.equal(reloaded.getCustomerTrackingPollState().active, false);
-      assert.equal(storage.getItem(accessKey), null);
+      assert.ok(storage.getItem(accessKey));
+
+      stopReloaded();
+      resetState({
+        products: [LOCAL_PRODUCT],
+        orders: [],
+        cart: [],
+        lastOrderId: null,
+        simulation: null,
+      });
+      const terminalReload = makeRepository(mock, {
+        storage,
+        createTrackingClient: () => mock.client,
+      });
+      const stopTerminalReload = terminalReload.startSync();
+      try {
+        await flushTasks();
+        const delivered = getState().orders.find((order) => order.id === orderA.public_code);
+        assert.equal(delivered?.status, 'delivered');
+        assert.equal(delivered?.tracking, undefined);
+        assert.equal(delivered?.deliveryCode, undefined);
+        terminalReload.setCustomerTrackingView({
+          active: true,
+          orderId: orderA.id,
+          status: 'delivered',
+        });
+        assert.equal(terminalReload.getCustomerTrackingPollState().active, false);
+      } finally {
+        stopTerminalReload();
+      }
     } finally {
       stopReloaded();
     }

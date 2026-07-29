@@ -103,9 +103,7 @@ export function createSupabaseOrderRepository({
     onSnapshot: (order) => {
       const status = normalizeWorkflowStatus(order?.workflowStatus || order?.status, '');
       if (!['delivered', 'canceled'].includes(status)) return;
-      lastOrderAccess = null;
       unavailableTrackingOrderId = '';
-      removeStoredAccess(storage, lastAccessStorageKey);
     },
     // A poll tick also refreshes derived freshness labels when the DTO did not
     // change (or the network is slow), without fabricating a new GPS point.
@@ -618,9 +616,7 @@ export function createSupabaseOrderRepository({
       const access = getTrackingAccess();
       if (!matchesStoredOrderAccess(access, orderId)) return customerTrackingPoll.stop();
       if (['delivered', 'canceled'].includes(normalizeWorkflowStatus(status, ''))) {
-        lastOrderAccess = null;
         unavailableTrackingOrderId = '';
-        removeStoredAccess(storage, lastAccessStorageKey);
         return customerTrackingPoll.stop();
       }
       unavailableTrackingOrderId = '';

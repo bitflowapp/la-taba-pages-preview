@@ -118,6 +118,7 @@ export function createSupabaseOrderRepository({
     removeStoredAccess(storage, lastAccessStorageKey);
     trackingClient = null;
     trackingClientToken = '';
+    customerTrackingPoll.stop();
     if (!unavailableId) return;
 
     updateState((draft) => {
@@ -170,6 +171,7 @@ export function createSupabaseOrderRepository({
   }
 
   async function fetchOrders({ mirror = true } = {}) {
+    const publicTrackingAccess = mirror ? getTrackingAccess() : null;
     const { data, error, status } = await client
       .from('orders')
       .select(ORDER_SELECT)
@@ -180,7 +182,7 @@ export function createSupabaseOrderRepository({
     if (error) return failedQuery(error, status, 'No pudimos cargar los pedidos.');
     const rows = Array.isArray(data) ? data : [];
     const orders = mirror
-      ? mirrorOrders(rows, { replace: true })
+      ? mirrorOrders(rows, { replace: true, publicTrackingAccess })
       : rows.map(rowToDemoOrder).filter(Boolean).map(toDomainOrder).filter(Boolean);
     if (mirror) {
       const access = getTrackingAccess();
@@ -193,8 +195,8 @@ export function createSupabaseOrderRepository({
   function getTrackingAccess() {
     const access = lastOrderAccess || readStoredAccess(storage, lastAccessStorageKey);
     if (!hasUsableTrackingAccess(access)) {
-      if (access) removeStoredAccess(storage, lastAccessStorageKey);
-      lastOrderAccess = null;
+      if (access) markTrackingUnavailable(access.orderId || access.publicCode);
+      else lastOrderAccess = null;
       return null;
     }
     lastOrderAccess = access;
@@ -215,13 +217,33 @@ export function createSupabaseOrderRepository({
     return selected;
   }
 
-  function hasTerminalTrackingState(access) {
-    const requested = String(access?.orderId || access?.publicCode || '').trim();
-    if (!requested) return false;
-    const order = getState().orders.find((candidate) => (
-      [candidate.id, candidate.code, candidate.backendId].map(String).includes(requested)
-    ));
-    return normalizeWorkflowStatus(order?.workflowStatus || order?.status, '') === 'delivered';
+  function trackingOrderFor(...identifiers) {
+    const requested = new Set(
+      identifiers.flat().map((value) => String(value || '').trim()).filter(Boolean),
+    );
+    if (!requested.size) return null;
+    return getState().orders.find((order) => (
+      [order.id, order.code, order.backendId]
+        .map((value) => String(value || '').trim())
+        .some((value) => requested.has(value))
+    )) || null;
+  }
+
+  function keepTerminalTrackingDeadline(access, order = null, {
+    authoritativeSnapshot = false,
+  } = {}) {
+    const trackedOrder = order || trackingOrderFor(access?.orderId, access?.publicCode);
+    if (
+      normalizeWorkflowStatus(trackedOrder?.workflowStatus || trackedOrder?.status, '') !== 'delivered'
+    ) return false;
+    if (!trackedOrder?.terminalVisibleUntil && !authoritativeSnapshot) return false;
+    customerTrackingPoll.update({
+      orderId: access.orderId || access.publicCode,
+      trackingToken: access.trackingToken,
+      status: 'delivered',
+      terminalVisibleUntil: trackedOrder.terminalVisibleUntil,
+    });
+    return true;
   }
 
   async function fetchPublicTrackingSnapshot(publicId, {
@@ -649,7 +671,10 @@ export function createSupabaseOrderRepository({
       return { ...catalogStatus };
     },
     setCustomerTrackingView({ active = false, orderId = '', status = '' } = {}) {
-      if (!active) return customerTrackingPoll.stop();
+      if (!active) {
+        const pollState = customerTrackingPoll.getSnapshot();
+        return pollState.terminal ? pollState : customerTrackingPoll.stop();
+      }
       const access = getTrackingAccess();
       if (!matchesStoredOrderAccess(access, orderId)) return customerTrackingPoll.stop();
       if (normalizeWorkflowStatus(status, '') === 'canceled') {
@@ -683,13 +708,19 @@ export function createSupabaseOrderRepository({
           await recoverCustomerTrackingAccess(orderResult.rows).catch(() => null);
         }
         const access = getTrackingAccess();
-        if (access && !stopped && !hasTerminalTrackingState(access)) {
+        if (access && !stopped && keepTerminalTrackingDeadline(access)) {
+          return;
+        }
+        if (access && !stopped) {
           const result = await fetchPublicTrackingSnapshot(
             access.orderId || access.publicCode,
             { trackingToken: access.trackingToken, mirror: true },
           ).catch(() => ({ kind: 'network-error' }));
           if (result.kind === 'snapshot') {
             selectTrackingOrder(access.orderId || access.publicCode);
+            keepTerminalTrackingDeadline(access, result.order, {
+              authoritativeSnapshot: true,
+            });
           } else if (result.kind === 'unavailable') {
             markTrackingUnavailable(access.orderId || access.publicCode);
           }
@@ -719,7 +750,8 @@ export function createSupabaseOrderRepository({
       return syncStop;
     },
     stopSync() {
-      syncStop?.();
+      if (syncStop) syncStop();
+      else customerTrackingPoll.stop();
     },
     async createOrder(orderDraft = {}) {
       if (createInFlight) return createInFlight;
@@ -734,13 +766,24 @@ export function createSupabaseOrderRepository({
       const result = await fetchOrders();
       const access = getTrackingAccess();
       if (access) {
-        const tracked = await fetchOrderByPublicId(
+        const tracked = await fetchPublicTrackingSnapshot(
           access.orderId || access.publicCode,
           { trackingToken: access.trackingToken, mirror: true },
-        );
-        if (tracked) {
+        ).catch(() => ({ kind: 'network-error' }));
+        if (tracked.kind === 'snapshot') {
           selectTrackingOrder(access.orderId || access.publicCode);
-          return toDomainOrder(tracked);
+          const handledTerminal = keepTerminalTrackingDeadline(access, tracked.order, {
+            authoritativeSnapshot: true,
+          });
+          if (handledTerminal && !tracked.order.terminalVisibleUntil) {
+            return toDomainOrder(selectTrackingOrder(access.orderId || access.publicCode));
+          }
+          return toDomainOrder(tracked.order);
+        }
+        if (tracked.kind === 'unavailable') {
+          const requested = access.orderId || access.publicCode;
+          markTrackingUnavailable(requested);
+          return toDomainOrder(selectTrackingOrder(requested));
         }
         return toDomainOrder(selectTrackingOrder(access.orderId || access.publicCode));
       }
@@ -1262,8 +1305,28 @@ function rowToCatalogProduct(row = {}) {
   };
 }
 
-function mirrorOrders(rows, { replace = false } = {}) {
+function canRetainRiderTracking(order) {
+  return ['picked_up', 'on_the_way', 'arrived'].includes(
+    normalizeWorkflowStatus(order?.workflowStatus || order?.status, ''),
+  );
+}
+
+function isTerminalPublicTrackingOrder(order) {
+  return ['delivered', 'canceled'].includes(
+    normalizeWorkflowStatus(order?.workflowStatus || order?.status, ''),
+  );
+}
+
+function mirrorOrders(rows, {
+  replace = false,
+  publicTrackingAccess = null,
+} = {}) {
   const normalizedOrders = rows.map(rowToDemoOrder).filter(Boolean);
+  const publicTrackingIds = new Set(
+    [publicTrackingAccess?.orderId, publicTrackingAccess?.publicCode]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean),
+  );
   let orders = normalizedOrders;
   updateState((draft) => {
     const currentLastOrderId = draft.lastOrderId;
@@ -1274,23 +1337,46 @@ function mirrorOrders(rows, { replace = false } = {}) {
       ));
       return {
         ...order,
-        ...(current?.deliveryCode && !order.deliveryCode ? { deliveryCode: current.deliveryCode } : {}),
+        ...(current?.deliveryCode
+          && !order.deliveryCode
+          && !isTerminalPublicTrackingOrder(order)
+          ? { deliveryCode: current.deliveryCode }
+          : {}),
+        ...(isTerminalPublicTrackingOrder(order)
+          && !order.terminalVisibleUntil
+          && current?.terminalVisibleUntil
+          ? { terminalVisibleUntil: current.terminalVisibleUntil }
+          : {}),
         // The token-scoped public DTO may already have supplied a rounded GPS
         // fix. A normal order refresh intentionally does not reselect that
         // protected table, so retain the known DTO until it is refreshed or
         // invalidated by the tracking controller.
-        ...(!order.tracking?.lastLocation && current?.tracking?.lastLocation
+        ...(canRetainRiderTracking(order)
+          && !order.tracking?.lastLocation
+          && current?.tracking?.lastLocation
           ? { tracking: current.tracking }
           : {}),
       };
     });
+    const keys = new Set(
+      orders.flatMap((order) => [order.id, order.code, order.backendId]).filter(Boolean),
+    );
     if (replace) {
-      draft.orders = orders;
-    } else {
-      const keys = new Set(orders.flatMap((order) => [order.id, order.backendId]).filter(Boolean));
       draft.orders = [
         ...orders,
-        ...draft.orders.filter((order) => !keys.has(order.id) && !keys.has(order.backendId)),
+        ...draft.orders.filter((order) => (
+          order.publicTrackingOnly === true
+          && [order.id, order.code, order.backendId]
+            .some((value) => publicTrackingIds.has(String(value || '').trim()))
+          && ![order.id, order.code, order.backendId].some((value) => keys.has(value))
+        )),
+      ];
+    } else {
+      draft.orders = [
+        ...orders,
+        ...draft.orders.filter((order) => (
+          ![order.id, order.code, order.backendId].some((value) => keys.has(value))
+        )),
       ];
     }
     const currentOrder = draft.orders.find((order) => (
@@ -1325,9 +1411,24 @@ function mirrorOrder(row) {
     ));
     if (index >= 0) {
       const current = draft.orders[index];
-      draft.orders[index] = !order.tracking?.lastLocation && current?.tracking?.lastLocation
-        ? { ...order, tracking: current.tracking }
-        : order;
+      draft.orders[index] = {
+        ...order,
+        ...(current?.deliveryCode
+          && !order.deliveryCode
+          && !isTerminalPublicTrackingOrder(order)
+          ? { deliveryCode: current.deliveryCode }
+          : {}),
+        ...(isTerminalPublicTrackingOrder(order)
+          && !order.terminalVisibleUntil
+          && current?.terminalVisibleUntil
+          ? { terminalVisibleUntil: current.terminalVisibleUntil }
+          : {}),
+        ...(canRetainRiderTracking(order)
+          && !order.tracking?.lastLocation
+          && current?.tracking?.lastLocation
+          ? { tracking: current.tracking }
+          : {}),
+      };
     }
     else draft.orders.unshift(order);
   });
@@ -1385,7 +1486,6 @@ function normalizePublicTrackingDto(dto = {}) {
   const updatedAt = latestIsoTimestamp([
     normalizeOptionalIso(dto.updated_at),
     deliveredAt,
-    terminalVisibleUntil,
     cancelledAt,
     rejectedAt,
     arrivedAt,
@@ -1395,7 +1495,8 @@ function normalizePublicTrackingDto(dto = {}) {
     acceptedAt,
     createdAt,
   ]) || createdAt;
-  const location = latestPublicRiderLocation(dto.rider_location);
+  const terminal = isTerminalPublicTrackingOrder({ workflowStatus });
+  const location = terminal ? null : latestPublicRiderLocation(dto.rider_location);
   const statusHistory = statusHistoryFromRow({
     accepted_at: acceptedAt,
     preparing_at: preparingAt,
@@ -1408,7 +1509,7 @@ function normalizePublicTrackingDto(dto = {}) {
     updated_at: updatedAt,
   }, status, createdAt);
   const trustedEta = trustedEstimatedArrival(dto);
-  const deliveryCode = normalizeDeliveryCodeValue(dto.delivery_code);
+  const deliveryCode = terminal ? '' : normalizeDeliveryCodeValue(dto.delivery_code);
   const deliveryCodeConfirmedAt = normalizeOptionalIso(dto.delivery_code_confirmed_at);
 
   return {
@@ -1446,6 +1547,7 @@ function normalizePublicTrackingDto(dto = {}) {
 }
 
 function mergePublicTracking(order, tracking) {
+  const terminal = isTerminalPublicTrackingOrder(tracking);
   const confirmedDeliveryCode = tracking.deliveryCode
     || (tracking.deliveryCodeConfirmedAt && order.deliveryCode?.code
       ? buildDeliveryCode(order.deliveryCode.code, {
@@ -1468,8 +1570,10 @@ function mergePublicTracking(order, tracking) {
     deliveredAt: tracking.deliveredAt,
     terminalVisibleUntil: tracking.terminalVisibleUntil,
     statusHistory: tracking.statusHistory,
-    tracking: tracking.tracking,
-    ...(confirmedDeliveryCode ? { deliveryCode: confirmedDeliveryCode } : {}),
+    tracking: terminal ? undefined : tracking.tracking,
+    ...(terminal
+      ? { deliveryCode: undefined }
+      : (confirmedDeliveryCode ? { deliveryCode: confirmedDeliveryCode } : {})),
     delivery: {
       ...(order.delivery || {}),
       estimatedMinutes: tracking.estimatedMinutes,

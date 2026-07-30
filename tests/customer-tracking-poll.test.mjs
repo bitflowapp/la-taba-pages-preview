@@ -61,6 +61,7 @@ test('poll tokenizado consulta de inmediato y conserva un único ciclo cada 5 s'
   const controller = createCustomerTrackingPollController({
     documentRef,
     windowRef,
+    AbortControllerImpl: null,
     setTimeoutImpl: timers.set,
     clearTimeoutImpl: timers.clear,
     fetchSnapshot: async (request) => {
@@ -271,6 +272,7 @@ test('focus, online, pageshow y visibilitychange deduplican una revalidación te
   const controller = createCustomerTrackingPollController({
     documentRef,
     windowRef,
+    AbortControllerImpl: null,
     setTimeoutImpl: timers.set,
     clearTimeoutImpl: timers.clear,
     fetchSnapshot: (request) => {
@@ -351,12 +353,14 @@ test('un DTO terminal vencido devuelto por el servidor no crea un timer de demor
   let clock = Date.parse('2026-07-29T20:00:00.000Z');
   const terminalVisibleUntil = new Date(clock + 1_000).toISOString();
   let calls = 0;
+  const unavailable = [];
   const controller = createCustomerTrackingPollController({
     documentRef,
     windowRef,
     now: () => clock,
     setTimeoutImpl: timers.set,
     clearTimeoutImpl: timers.clear,
+    onUnavailable: (value) => unavailable.push(value),
     fetchSnapshot: async () => {
       calls += 1;
       return {
@@ -380,8 +384,56 @@ test('un DTO terminal vencido devuelto por el servidor no crea un timer de demor
   await tick();
 
   assert.equal(calls, 1);
+  assert.deepEqual(unavailable, []);
   assert.equal(controller.getSnapshot().terminal, true);
   assert.equal(timers.size(), 0);
+  controller.stop();
+});
+
+test('un error de red al vencer conserva el acceso y reintenta sólo por lifecycle', async () => {
+  const documentRef = eventTarget();
+  const windowRef = eventTarget();
+  const timers = fakeTimers();
+  let clock = Date.parse('2026-07-29T20:00:00.000Z');
+  let calls = 0;
+  const errors = [];
+  const unavailable = [];
+  const controller = createCustomerTrackingPollController({
+    documentRef,
+    windowRef,
+    now: () => clock,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    onError: (value) => errors.push(value),
+    onUnavailable: (value) => unavailable.push(value),
+    fetchSnapshot: async () => {
+      calls += 1;
+      return { kind: 'network-error', error: new Error('offline') };
+    },
+  });
+  const terminalVisibleUntil = new Date(clock + 1_000).toISOString();
+
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 'n'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil,
+  });
+  clock += 1_000;
+  timers.runNext();
+  await tick();
+
+  assert.equal(calls, 1);
+  assert.equal(errors.length, 1);
+  assert.deepEqual(unavailable, []);
+  assert.equal(controller.getSnapshot().terminal, true);
+  assert.equal(timers.size(), 0);
+
+  windowRef.emit('online');
+  await tick();
+  assert.equal(calls, 2);
+  assert.equal(errors.length, 2);
+  assert.deepEqual(unavailable, []);
   controller.stop();
 });
 

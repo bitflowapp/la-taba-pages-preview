@@ -134,7 +134,7 @@ export function createCustomerTrackingPollController({
     }
     clearTimer();
     abortRequest();
-    const request = AbortControllerImpl ? new AbortControllerImpl() : null;
+    const request = createRequestHandle();
     requestController = request;
     hasStartedCurrentAccess = true;
     const current = { ...session, request };
@@ -254,7 +254,7 @@ export function createCustomerTrackingPollController({
   function revalidateTerminal() {
     if (!session.terminal || requestController) return;
     clearTimer();
-    const request = AbortControllerImpl ? new AbortControllerImpl() : null;
+    const request = createRequestHandle();
     requestController = request;
     const current = { ...session, request };
 
@@ -353,6 +353,14 @@ export function createCustomerTrackingPollController({
   function abortRequest() {
     if (requestController) requestController.abort();
     requestController = null;
+  }
+
+  function createRequestHandle() {
+    if (typeof AbortControllerImpl === 'function') return new AbortControllerImpl();
+    return {
+      signal: undefined,
+      abort() {},
+    };
   }
 
   function isCurrentRequest(request) {

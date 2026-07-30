@@ -856,7 +856,8 @@ test('un handoff tokenizado conserva Pedido A aunque Pedido B sea posterior', as
 });
 
 test('un DTO public terminal sin codigo borra el deliveryCode cacheado del pedido terminal', async () => {
-  const mock = createSupabaseClientMock();
+  const publicTrackingOverrides = {};
+  const mock = createSupabaseClientMock({ publicTrackingOverrides });
   const orderA = mock.seedOrder({
     status: 'arrived',
     assigned_rider_user_id: RIDER_ID,
@@ -926,6 +927,7 @@ test('un DTO public terminal sin codigo borra el deliveryCode cacheado del pedid
     assert.equal(preTerminalB?.deliveryCode?.code, '7395');
     assert.equal(preTerminalB?.id, orderB.public_code);
 
+    publicTrackingOverrides.delivery_code = '9999';
     orderA.status = 'delivered';
     orderA.delivered_at = new Date().toISOString();
     orderA.terminal_visible_until = new Date(Date.now() + 30 * 60_000).toISOString();
@@ -941,9 +943,17 @@ test('un DTO public terminal sin codigo borra el deliveryCode cacheado del pedid
     const terminalA = getState().orders.find((order) => order.id === orderA.public_code);
     assert.equal(terminalA?.id, orderA.public_code);
     assert.equal(terminalA?.status, 'delivered');
-    assert.equal(Object.hasOwn(terminalA, 'deliveryCode'), false);
     assert.equal(terminalA?.deliveryCode, undefined);
+    assert.equal(Object.hasOwn(terminalA, 'deliveryCode'), false);
     assert.equal(JSON.stringify(terminalA).includes('4821'), false);
+    assert.equal(JSON.stringify(terminalA).includes('9999'), false);
+    const persistedAccess = JSON.parse(storage.getItem(accessKey) || '{}');
+    assert.equal(persistedAccess.orderId, orderA.id);
+    assert.equal(persistedAccess.publicCode, orderA.public_code);
+    assert.equal(persistedAccess.deliveryCode, undefined);
+    assert.equal(JSON.stringify(persistedAccess).includes('4821'), false);
+    assert.equal(JSON.stringify(persistedAccess).includes('9999'), false);
+    assert.equal(JSON.stringify(persistedAccess).includes('7395'), false);
 
     stop();
     resetState({
@@ -965,9 +975,13 @@ test('un DTO public terminal sin codigo borra el deliveryCode cacheado del pedid
       const reloadedB = getState().orders.find((order) => order.id === orderB.public_code);
       assert.equal(Object.hasOwn(reloadedA, 'deliveryCode'), false);
       assert.equal(reloadedA?.deliveryCode, undefined);
+      assert.equal(JSON.stringify(reloadedA).includes('4821'), false);
+      assert.equal(JSON.stringify(reloadedA).includes('9999'), false);
       assert.equal(reloadedB?.deliveryCode?.code, '7395');
       assert.equal(reloadedB?.id, orderB.public_code);
       assert.equal(reloaded.getCustomerTrackingPollState().terminal, false);
+      assert.equal(reloaded.getCustomerTrackingPollState().orderId, '');
+      assert.equal(Object.hasOwn(reloadedB, 'deliveryCode'), true);
     } finally {
       stopReloaded();
     }

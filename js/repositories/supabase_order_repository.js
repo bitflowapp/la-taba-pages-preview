@@ -1447,6 +1447,9 @@ function normalizePublicTrackingDto(dto = {}) {
 
 function mergePublicTracking(order, tracking) {
   const isDeliveredTerminal = normalizeWorkflowStatus(tracking.workflowStatus, '') === 'delivered';
+  const orderWithoutDeliveryCode = isDeliveredTerminal
+    ? (({ deliveryCode: _deliveryCode, ...rest }) => rest)(order)
+    : order;
   const confirmedDeliveryCode = tracking.deliveryCode
     || (tracking.deliveryCodeConfirmedAt && order.deliveryCode?.code
       ? buildDeliveryCode(order.deliveryCode.code, {
@@ -1455,7 +1458,7 @@ function mergePublicTracking(order, tracking) {
       })
       : null);
   return {
-    ...order,
+    ...orderWithoutDeliveryCode,
     deliveryMode: tracking.deliveryMode,
     workflowStatus: tracking.workflowStatus,
     status: tracking.status,
@@ -1470,9 +1473,7 @@ function mergePublicTracking(order, tracking) {
     terminalVisibleUntil: tracking.terminalVisibleUntil,
     statusHistory: tracking.statusHistory,
     tracking: tracking.tracking,
-    ...(isDeliveredTerminal
-      ? { deliveryCode: tracking.deliveryCode || undefined }
-      : (confirmedDeliveryCode ? { deliveryCode: confirmedDeliveryCode } : {})),
+    ...(isDeliveredTerminal ? {} : (confirmedDeliveryCode ? { deliveryCode: confirmedDeliveryCode } : {})),
     delivery: {
       ...(order.delivery || {}),
       estimatedMinutes: tracking.estimatedMinutes,
@@ -1495,6 +1496,7 @@ function mergePublicTracking(order, tracking) {
 }
 
 function publicTrackingShell(tracking) {
+  const isDeliveredTerminal = normalizeWorkflowStatus(tracking.workflowStatus, '') === 'delivered';
   return {
     id: tracking.publicCode,
     code: tracking.publicCode,
@@ -1524,7 +1526,7 @@ function publicTrackingShell(tracking) {
     total: 0,
     currencyCode: '',
     assignedRiderId: '',
-    ...(tracking.deliveryCode ? { deliveryCode: tracking.deliveryCode } : {}),
+    ...(isDeliveredTerminal ? {} : (tracking.deliveryCode ? { deliveryCode: tracking.deliveryCode } : {})),
     delivery: {
       driverName: 'Sin asignar',
       driverPhone: '',

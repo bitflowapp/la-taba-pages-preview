@@ -499,6 +499,23 @@ export function createMapLibreTrackingMap({
     }
   }
 
+  // Los pines de origen y destino se anclan por su punta y crecen hacia arriba,
+  // y la superficie superpone la píldora de estado, el recentrado y la
+  // atribución. El encuadre reserva ese alto real —proporcional al contenedor,
+  // para que sirva igual en la vista cliente y en la del rider— y así ningún
+  // marcador queda recortado contra los bordes del mapa.
+  function sandboxFitPadding() {
+    const width = Number(state.canvas?.clientWidth) || 0;
+    const height = Number(state.canvas?.clientHeight) || 0;
+    if (!(width > 0) || !(height > 0)) return 34;
+    return {
+      top: Math.round(Math.min(height * 0.24, 78)),
+      bottom: Math.round(Math.min(height * 0.19, 66)),
+      left: Math.round(Math.min(width * 0.13, 44)),
+      right: Math.round(Math.min(width * 0.13, 44)),
+    };
+  }
+
   function fitSandboxGeometry() {
     const coordinates = state.routeFeature?.geometry?.coordinates;
     if (!state.map?.fitBounds || !Array.isArray(coordinates) || coordinates.length < 2) return;
@@ -512,7 +529,7 @@ export function createMapLibreTrackingMap({
           [Math.min(...lngs), Math.min(...lats)],
           [Math.max(...lngs), Math.max(...lats)],
         ],
-        { padding: 34, maxZoom: 15.5, duration: 0 },
+        { padding: sandboxFitPadding(), maxZoom: 15.5, duration: 0 },
       );
     } finally {
       setTimer(() => {

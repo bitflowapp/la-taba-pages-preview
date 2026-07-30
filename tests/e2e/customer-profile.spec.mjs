@@ -117,22 +117,33 @@ test('Perfil permite editar datos y direcciones propias sin overflow ni PII en c
 
   await profile.locator('[data-profile-action="add-address"]').click();
   await expect(profile.locator('[data-profile-address-form]')).toBeVisible();
+  await expect(profile.locator('[name="profileAddressNumber"]')).toHaveAttribute('inputmode', 'text');
   await profile.locator('[name="profileAddressLabel"]').selectOption('Otra');
   await profile.locator('[name="profileAddressStreet"]').fill('San Martín');
-  await profile.locator('[name="profileAddressNumber"]').fill('500');
+  await profile.locator('[name="profileAddressNumber"]').fill('S/N');
   await profile.locator('[name="profileAddressCity"]').fill('Neuquén');
   await profile.locator('[name="profileAddressProvince"]').fill('Neuquén');
   await profile.locator('[name="profileAddressReference"]').fill('Puerta lateral');
   await profile.locator('[data-profile-action="save-address"]').click();
-  await expect(profile).toContainText('San Martín 500');
+  await expect(profile).toContainText('San Martín S/N');
   const addressSave = rpcCalls.find((call) => call.rpc === 'upsert_current_customer_address');
   expect(addressSave.payload.p_address).not.toHaveProperty('customer_id');
   expect(addressSave.payload.p_address).not.toHaveProperty('user_id');
+  expect(addressSave.payload.p_address.streetNumber).toBe('S/N');
 
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
+  const addressActionBoxes = await profile.locator('.profile-address-actions .text-button').evaluateAll(
+    (buttons) => buttons.map((button) => {
+      const rect = button.getBoundingClientRect();
+      return { height: rect.height, left: rect.left, right: rect.right };
+    }),
+  );
+  expect(addressActionBoxes.length).toBeGreaterThan(0);
+  expect(addressActionBoxes.every(({ height }) => height >= 44)).toBe(true);
+  expect(addressActionBoxes.every(({ left, right }) => left >= 0 && right <= 320)).toBe(true);
   const layout = await page.evaluate(() => ({
     profilePaddingBottom: getComputedStyle(document.querySelector('[data-view="profile"]')).paddingBottom,
     navBottom: getComputedStyle(document.querySelector('.mobile-nav')).bottom,

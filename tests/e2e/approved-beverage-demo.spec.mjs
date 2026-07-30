@@ -16,10 +16,27 @@ test('demo aprobado muestra 22 SKU, packs y assets locales sin hotlinks', async 
   await expect(packImage).toHaveAttribute('src', /assets\/catalog\/beverages\//);
   await expect(packImage).toHaveAttribute('loading', 'lazy');
   await expect(packImage).toHaveAttribute('width', '400');
-  const pendingCard = page.locator('[data-product-grid] .product-card').filter({ hasText: 'Precio pendiente' });
-  await expect(pendingCard).toContainText('Precio pendiente');
-  await expect(page.locator('[data-add-product="red-bull-original-lata-250ml-pack-4"]')).toBeDisabled();
+  const pendingCard = page.locator('[data-product-grid] .product-card').filter({
+    has: page.locator('[data-add-product="red-bull-original-lata-250ml-pack-4"]'),
+  });
+  const pendingMessage = pendingCard.locator('[data-price-pending-message]');
+  await expect(pendingMessage).toHaveCount(1);
+  await expect(pendingMessage).toContainText('Precio a confirmar');
+  await expect(pendingMessage).toContainText('Todavía no se puede agregar.');
+  await expect(pendingCard).not.toContainText('Precio pendiente');
+  const pendingAction = pendingCard.locator('[data-add-product="red-bull-original-lata-250ml-pack-4"]');
+  await expect(pendingAction).toBeDisabled();
+  await expect(pendingAction).toHaveText('A confirmar');
   await expect(pendingCard).not.toContainText('$ 0');
+  await pendingCard.locator('[data-product-detail]').click();
+  const pendingModal = page.locator('[data-modal-product-id="red-bull-original-lata-250ml-pack-4"]');
+  await expect(pendingModal).toBeVisible();
+  await expect(pendingModal.locator('[data-price-pending-message]')).toHaveCount(1);
+  await expect(pendingModal.locator('[data-price-pending-message]')).toContainText('Precio a confirmar');
+  await expect(pendingModal.locator('[data-price-pending-message]')).toContainText('Todavía no se puede agregar.');
+  await expect(pendingModal).not.toContainText('Precio pendiente');
+  await expect(pendingModal.locator('[data-add-product="red-bull-original-lata-250ml-pack-4"]')).toBeDisabled();
+  await pendingModal.locator('[data-close-modal]').click();
   const qaMarker = ['q', 'a', '-'].join('');
   const renderedQaReferences = await page.locator(`[data-product-id^="${qaMarker}"], [data-product-sku^="${qaMarker}"], img[src*="/${qaMarker}"]`).count();
   expect(renderedQaReferences).toBe(0);

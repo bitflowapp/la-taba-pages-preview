@@ -20,6 +20,15 @@ test('stockPill: estados que sí se avisan (agotado, pausado, últimas unidades,
   assert.match(stockPill({ available: true, stock: 5, archived: true }), /Archivado/);
 });
 
+test('pricePending: usa un único mensaje claro en vez de sumar una pill de stock', () => {
+  const pending = { available: false, stock: 0, pricePending: true };
+  assert.equal(stockPill(pending), '');
+  assert.equal(
+    availabilityLabel(pending),
+    'Precio a confirmar; todavía no se puede agregar.',
+  );
+});
+
 test('availabilityLabel: texto plano honesto para el detalle del producto', () => {
   assert.equal(availabilityLabel({ available: true, stock: 12 }), 'Disponible hoy');
   assert.equal(availabilityLabel({ available: true, stock: 2 }), 'Quedan 2');

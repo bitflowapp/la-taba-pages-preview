@@ -14,19 +14,23 @@ test('Perfil permite editar datos y direcciones propias sin overflow ni PII en c
       address({
         id: '20000000-0000-4000-8000-000000000001',
         label: 'Casa',
-        street: 'Antártida Argentina',
-        streetNumber: '1234',
-        reference: 'Portón negro, tocar timbre 2',
+        street: 'Calle Demo',
+        streetNumber: '100',
+        city: 'Ciudad Demo',
+        province: 'Provincia Demo',
+        reference: 'Referencia de prueba',
         isDefault: true,
       }),
       address({
         id: '20000000-0000-4000-8000-000000000002',
         label: 'Trabajo',
-        street: 'Buenos Aires',
-        streetNumber: '850',
+        street: 'Avenida Ficticia',
+        streetNumber: '200',
         floor: '2',
         apartment: 'B',
-        reference: 'Recepción',
+        city: 'Ciudad Demo',
+        province: 'Provincia Demo',
+        reference: 'Referencia de prueba',
       }),
     ],
   };
@@ -96,8 +100,8 @@ test('Perfil permite editar datos y direcciones propias sin overflow ni PII en c
   await expect(profile).toHaveAttribute('data-customer-profile-state', 'ready');
   await expect(profile).toContainText('Cliente Demo');
   await expect(profile).toContainText('299 000 0000');
-  await expect(profile).toContainText('Antártida Argentina 1234');
-  await expect(profile).toContainText('Portón negro, tocar timbre 2');
+  await expect(profile).toContainText('Calle Demo 100');
+  await expect(profile).toContainText('Referencia de prueba');
   await expect(page.locator('.mobile-nav [data-nav-view="profile"]')).toHaveClass(/active/);
 
   await profile.locator('[data-profile-action="edit-personal"]').click();

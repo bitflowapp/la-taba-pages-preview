@@ -96,6 +96,18 @@ test('demo profile uses an explicitly synthetic identity', () => {
   assert.match(profile[2], /^2990{7}$/);
 });
 
+test('demo profile uses explicitly synthetic addresses', () => {
+  const source = readFileSync(new URL('../js/customer-profile-view.js', import.meta.url), 'utf8');
+  const addresses = source.match(
+    /function demoAddresses\(\)[\s\S]*?\n}\n\nfunction escapeHtml/,
+  )?.[0] || '';
+
+  assert.match(addresses, /street:\s*'Calle Demo'/);
+  assert.match(addresses, /street:\s*'Avenida Ficticia'/);
+  assert.match(addresses, /city:\s*'Ciudad Demo'/);
+  assert.match(addresses, /province:\s*'Provincia Demo'/);
+});
+
 test('tracked release files satisfy every hygiene rule', () => {
   assert.deepEqual(auditReleaseHygiene(), []);
 });

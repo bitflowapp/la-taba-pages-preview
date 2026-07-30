@@ -860,6 +860,60 @@ test('un token inválido no hace fallback silencioso al Pedido B', async () => {
   }
 });
 
+test('un token vencido o revocado retira sólo el shell público persistido', async () => {
+  const mock = createSupabaseClientMock();
+  const orderId = '77777777-7777-4777-8777-777777777777';
+  const publicCode = 'LT-7777';
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  storage.setItem(accessKey, JSON.stringify({
+    orderId,
+    publicCode,
+    trackingToken: 'V'.repeat(43),
+  }));
+  resetState({
+    products: [LOCAL_PRODUCT],
+    orders: [{
+      id: publicCode,
+      code: publicCode,
+      backendId: '',
+      status: 'on_the_way',
+      workflowStatus: 'on_the_way',
+      deliveryMode: 'delivery',
+      publicTrackingOnly: true,
+    }],
+    cart: [],
+    lastOrderId: publicCode,
+    simulation: null,
+  });
+  const deniedClient = {
+    ...mock.client,
+    async rpc(name, args) {
+      if (name === 'get_public_order_tracking') {
+        mock.calls.rpc.push({ name, args });
+        return { data: null, error: null, status: 200 };
+      }
+      return mock.client.rpc(name, args);
+    },
+  };
+  const repository = makeRepository(mock, {
+    storage,
+    createTrackingClient: () => deniedClient,
+  });
+
+  repository.setCustomerTrackingView({
+    active: true,
+    orderId,
+    status: 'on_the_way',
+  });
+  await flushTasks();
+
+  assert.equal(storage.getItem(accessKey), null);
+  assert.equal(getState().orders.some((order) => order.publicTrackingOnly), false);
+  assert.equal(getState().lastOrderId, null);
+  assert.equal(repository.getCustomerTrackingPollState().active, false);
+});
+
 test('tracking público normaliza el DTO mínimo y preserva los detalles locales del pedido', async () => {
   const mock = createSupabaseClientMock();
   const storage = createStorage();

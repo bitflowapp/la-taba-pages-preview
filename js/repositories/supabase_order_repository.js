@@ -1464,6 +1464,7 @@ function normalizePublicTrackingDto(dto = {}) {
 }
 
 function mergePublicTracking(order, tracking) {
+  const isDeliveredTerminal = normalizeWorkflowStatus(tracking.workflowStatus, '') === 'delivered';
   const confirmedDeliveryCode = tracking.deliveryCode
     || (tracking.deliveryCodeConfirmedAt && order.deliveryCode?.code
       ? buildDeliveryCode(order.deliveryCode.code, {
@@ -1487,7 +1488,9 @@ function mergePublicTracking(order, tracking) {
     terminalVisibleUntil: tracking.terminalVisibleUntil,
     statusHistory: tracking.statusHistory,
     tracking: tracking.tracking,
-    ...(confirmedDeliveryCode ? { deliveryCode: confirmedDeliveryCode } : {}),
+    ...(isDeliveredTerminal
+      ? { deliveryCode: tracking.deliveryCode || undefined }
+      : (confirmedDeliveryCode ? { deliveryCode: confirmedDeliveryCode } : {})),
     delivery: {
       ...(order.delivery || {}),
       estimatedMinutes: tracking.estimatedMinutes,

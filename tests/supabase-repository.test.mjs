@@ -1095,6 +1095,141 @@ test('tracking terminal nunca usa deliveryCode ni códigos operativos como ident
   assert.equal(repository.getCustomerTrackingPollState().terminal, false);
 });
 
+test('un DTO public terminal sin codigo borra el deliveryCode cacheado del pedido terminal', async () => {
+  const publicTrackingOverrides = {};
+  const mock = createSupabaseClientMock({ publicTrackingOverrides });
+  const orderA = mock.seedOrder({
+    status: 'arrived',
+    assigned_rider_user_id: RIDER_ID,
+    arrived_at: new Date().toISOString(),
+  });
+  const orderB = mock.seedOrder({
+    status: 'on_the_way',
+    assigned_rider_user_id: RIDER_ID,
+    preparing_at: minutesAgoIso(1),
+  });
+  mock.db.handoffs.set(orderA.id, {
+    code: '4821',
+    failedAttempts: 0,
+    lockedUntil: null,
+    confirmedAt: null,
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  });
+  mock.db.handoffs.set(orderB.id, {
+    code: '7395',
+    failedAttempts: 0,
+    lockedUntil: null,
+    confirmedAt: new Date(Date.now() - 10_000).toISOString(),
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  });
+
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  storage.setItem(accessKey, JSON.stringify({
+    orderId: orderA.id,
+    publicCode: orderA.public_code,
+    trackingToken: 'Q'.repeat(43),
+    tokenExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    transferredAt: new Date().toISOString(),
+  }));
+
+  const repository = makeRepository(mock, {
+    storage,
+    createTrackingClient: () => mock.client,
+  });
+  const stop = repository.startSync();
+
+  try {
+    await flushTasks();
+    repository.setCustomerTrackingView({
+      active: true,
+      orderId: orderA.id,
+      status: 'arrived',
+    });
+    await flushTasks();
+
+    const preTerminalA = getState().orders.find((order) => order.id === orderA.public_code);
+    assert.equal(preTerminalA?.deliveryCode?.code, '4821');
+    assert.equal(getState().lastOrderId, orderA.public_code);
+
+    updateState((draft) => {
+      const keptB = draft.orders.find((row) => row.id === orderB.public_code);
+      if (keptB) {
+        keptB.deliveryCode = {
+          code: '7395',
+          confirmedAt: new Date(Date.now() - 5_000).toISOString(),
+          confirmedBy: 'rider',
+        };
+      }
+    });
+
+    const preTerminalB = getState().orders.find((order) => order.id === orderB.public_code);
+    assert.equal(preTerminalB?.deliveryCode?.code, '7395');
+    assert.equal(preTerminalB?.id, orderB.public_code);
+
+    publicTrackingOverrides.delivery_code = '9999';
+    orderA.status = 'delivered';
+    orderA.delivered_at = new Date().toISOString();
+    orderA.terminal_visible_until = new Date(Date.now() + 30 * 60_000).toISOString();
+    await repository.getActiveOrder();
+
+    repository.setCustomerTrackingView({
+      active: true,
+      orderId: orderA.id,
+      status: 'delivered',
+    });
+    await flushTasks();
+
+    const terminalA = getState().orders.find((order) => order.id === orderA.public_code);
+    assert.equal(terminalA?.id, orderA.public_code);
+    assert.equal(terminalA?.status, 'delivered');
+    assert.equal(terminalA?.deliveryCode, undefined);
+    assert.equal(Object.hasOwn(terminalA, 'deliveryCode'), false);
+    assert.equal(JSON.stringify(terminalA).includes('4821'), false);
+    assert.equal(JSON.stringify(terminalA).includes('9999'), false);
+    const persistedAccess = JSON.parse(storage.getItem(accessKey) || '{}');
+    assert.equal(persistedAccess.orderId, orderA.id);
+    assert.equal(persistedAccess.publicCode, orderA.public_code);
+    assert.equal(persistedAccess.deliveryCode, undefined);
+    assert.equal(JSON.stringify(persistedAccess).includes('4821'), false);
+    assert.equal(JSON.stringify(persistedAccess).includes('9999'), false);
+    assert.equal(JSON.stringify(persistedAccess).includes('7395'), false);
+
+    stop();
+    resetState({
+      products: [LOCAL_PRODUCT],
+      orders: preTerminalB ? [preTerminalB] : [],
+      cart: [],
+      lastOrderId: orderA.public_code,
+      simulation: null,
+    });
+
+    const reloaded = makeRepository(mock, {
+      storage,
+      createTrackingClient: () => mock.client,
+    });
+    const stopReloaded = reloaded.startSync();
+    try {
+      await flushTasks();
+      const reloadedA = getState().orders.find((order) => order.id === orderA.public_code);
+      const reloadedB = getState().orders.find((order) => order.id === orderB.public_code);
+      assert.equal(Object.hasOwn(reloadedA, 'deliveryCode'), false);
+      assert.equal(reloadedA?.deliveryCode, undefined);
+      assert.equal(JSON.stringify(reloadedA).includes('4821'), false);
+      assert.equal(JSON.stringify(reloadedA).includes('9999'), false);
+      assert.equal(reloadedB?.deliveryCode?.code, '7395');
+      assert.equal(reloadedB?.id, orderB.public_code);
+      assert.equal(reloaded.getCustomerTrackingPollState().terminal, false);
+      assert.equal(reloaded.getCustomerTrackingPollState().orderId, '');
+      assert.equal(Object.hasOwn(reloadedB, 'deliveryCode'), true);
+    } finally {
+      stopReloaded();
+    }
+  } finally {
+    stop();
+  }
+});
+
 test('un token inválido no hace fallback silencioso al Pedido B', async () => {
   const mock = createSupabaseClientMock();
   const orderA = mock.seedOrder({ status: 'on_the_way', assigned_rider_user_id: RIDER_ID });

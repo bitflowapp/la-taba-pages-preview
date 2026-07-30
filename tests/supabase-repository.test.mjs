@@ -618,6 +618,47 @@ test('tracking con token público mantiene polling y no abre un canal WebSocket 
   }
 });
 
+test('un DTO delivered detiene el sync global y no reactiva polling GPS', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'delivered',
+    delivered_at: new Date().toISOString(),
+    terminal_visible_until: new Date(Date.now() + 30 * 60_000).toISOString(),
+  });
+  const storage = createStorage();
+  storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'T'.repeat(43),
+  }));
+  const repository = makeRepository(mock, {
+    storage,
+    pollMs: 1000,
+    createTrackingClient: () => mock.client,
+  });
+  const stop = repository.startSync();
+
+  try {
+    await flushTasks();
+    repository.setCustomerTrackingView({
+      active: true,
+      orderId: row.id,
+      status: 'delivered',
+    });
+    const publicCalls = () => mock.calls.rpc.filter(
+      (call) => call.name === 'get_public_order_tracking',
+    ).length;
+    const before = publicCalls();
+    await new Promise((resolve) => setTimeout(resolve, 1150));
+
+    assert.equal(repository.getCustomerTrackingPollState().active, false);
+    assert.equal(repository.getCustomerTrackingPollState().terminal, true);
+    assert.equal(publicCalls(), before);
+  } finally {
+    stop();
+  }
+});
+
 test('activar tracking es idempotente cuando un render reingresa al seleccionar el pedido', async () => {
   const mock = createSupabaseClientMock();
   const row = mock.seedOrder({
@@ -765,6 +806,7 @@ test('un handoff tokenizado conserva Pedido A aunque Pedido B sea posterior', as
 
       orderA.status = 'delivered';
       orderA.delivered_at = new Date().toISOString();
+      orderA.terminal_visible_until = new Date(Date.now() + 30 * 60_000).toISOString();
       await reloaded.getActiveOrder();
       reloaded.setCustomerTrackingView({
         active: true,
@@ -773,6 +815,7 @@ test('un handoff tokenizado conserva Pedido A aunque Pedido B sea posterior', as
       });
       await flushTasks();
       assert.equal(reloaded.getCustomerTrackingPollState().active, false);
+      assert.equal(reloaded.getCustomerTrackingPollState().terminal, true);
       assert.ok(storage.getItem(accessKey));
 
       stopReloaded();
@@ -800,6 +843,7 @@ test('un handoff tokenizado conserva Pedido A aunque Pedido B sea posterior', as
           status: 'delivered',
         });
         assert.equal(terminalReload.getCustomerTrackingPollState().active, false);
+        assert.equal(terminalReload.getCustomerTrackingPollState().terminal, true);
       } finally {
         stopTerminalReload();
       }
@@ -881,10 +925,52 @@ test('un token vencido o revocado retira sólo el shell público persistido', as
       workflowStatus: 'on_the_way',
       deliveryMode: 'delivery',
       publicTrackingOnly: true,
+      customerName: 'Cliente',
+      customerPhone: '',
+      address: '',
+      paymentMethodCode: 'unknown',
+      paymentMethod: 'Sin especificar',
+      createdAt: new Date().toISOString(),
+      items: [],
+      delivery: {
+        driverName: 'Sin asignar',
+        driverPhone: '',
+        estimatedMinutes: 0,
+        currentLocationLabel: 'En camino',
+      },
     }],
     cart: [],
     lastOrderId: publicCode,
     simulation: null,
+  });
+  updateState((draft) => {
+    draft.orders.push({
+      id: 'LT-ACTIVE',
+      code: 'LT-ACTIVE',
+      backendId: '88888888-8888-4888-8888-888888888888',
+      status: 'preparing',
+      workflowStatus: 'preparing',
+      deliveryMode: 'delivery',
+      customerName: 'Cliente activo',
+      customerPhone: '2995551111',
+      address: 'Roca 500, Centro',
+      paymentMethodCode: 'cash',
+      paymentMethod: 'Efectivo',
+      createdAt: new Date().toISOString(),
+      items: [{
+        productId: PRODUCT_ID,
+        name: 'Agua mineral 1,5 L',
+        quantity: 1,
+        unitPrice: 2300,
+        unit: 'Botella',
+      }],
+      delivery: {
+        driverName: 'Sin asignar',
+        driverPhone: '',
+        estimatedMinutes: 20,
+        currentLocationLabel: 'Preparando',
+      },
+    });
   });
   const deniedClient = {
     ...mock.client,
@@ -910,6 +996,7 @@ test('un token vencido o revocado retira sólo el shell público persistido', as
 
   assert.equal(storage.getItem(accessKey), null);
   assert.equal(getState().orders.some((order) => order.publicTrackingOnly), false);
+  assert.equal(getState().orders.some((order) => order.id === 'LT-ACTIVE'), true);
   assert.equal(getState().lastOrderId, null);
   assert.equal(repository.getCustomerTrackingPollState().active, false);
 });
@@ -1830,6 +1917,9 @@ function publicTrackingDto(row, db) {
     cancelled_at: row.cancelled_at || row.canceled_at,
     rejected_at: row.rejected_at,
     is_delivered: row.status === 'delivered',
+    ...(row.status === 'delivered' ? {
+      terminal_visible_until: row.terminal_visible_until,
+    } : {}),
     ...(reliableEta ? {
       estimated_arrival_at: row.estimated_arrival_at,
       estimated_arrival_source: row.estimated_arrival_source,

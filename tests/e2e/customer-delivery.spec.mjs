@@ -3,6 +3,10 @@ import { expect, test } from '@playwright/test';
 const BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
 const CUSTOMER_ID = '10000000-0000-4000-8000-000000000001';
 const PROFILE_REGRESSION_PRODUCT_ID = '30000000-0000-4000-8000-000000000001';
+// Holgura muy por encima del intervalo de sondeo de Playwright y muy por debajo
+// del timeout de `expect`, para que el estado de carga sea observable sin
+// volver lenta la prueba.
+const PROFILE_RELOAD_HOLD_MS = 750;
 
 test('checkout productivo recupera direcciones y solicita GPS sólo después del toque', async ({ page }) => {
   const consoleMessages = [];
@@ -137,6 +141,13 @@ test('checkout actualiza sólo el default automático y preserva una selección 
     },
   ];
 
+  // `loadCustomerDeliveryProfile` marca `state.loading`, renderiza y recién ahí
+  // espera al repositorio, así que el anuncio `aria-live` de carga dura
+  // exactamente lo que tarde la respuesta. Con el stub respondiendo dentro del
+  // mismo frame, observarlo depende de la velocidad de la máquina. Retener las
+  // recargas posteriores a la carga inicial mantiene la aserción del estado
+  // transitorio, pero deja de depender del temporizado del runner.
+  let profileFetches = 0;
   await page.route('https://taba-customer-profile-test.supabase.co/**', async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname.includes('/auth/v1/token')) {
@@ -148,6 +159,10 @@ test('checkout actualiza sólo el default automático y preserva una selección 
       return;
     }
     if (url.pathname.includes('/rest/v1/rpc/get_current_customer_profile')) {
+      profileFetches += 1;
+      if (profileFetches > 1) {
+        await new Promise((resolve) => { setTimeout(resolve, PROFILE_RELOAD_HOLD_MS); });
+      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

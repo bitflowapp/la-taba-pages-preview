@@ -51,7 +51,9 @@ test('el catálogo demo aprobado contiene exactamente los 22 SKU locales', () =>
 });
 
 test('packs, precios pendientes y alcohol conservan su semántica comercial', () => {
-  const catalog = products.map((product) => normalizeCatalogProduct(product));
+  const catalog = products.map((product) => normalizeCatalogProduct(product)).filter(Boolean);
+  assert.equal(catalog.length, 22);
+  assert.equal(new Set(catalog.map((product) => product.sku)).size, 22);
   const packSix = catalog.find((product) => product.sku === 'heineken-original-lata-473ml-pack-6');
   const packTwelve = catalog.find((product) => product.sku === 'coca-cola-original-pet-500ml-pack-12');
   const pending = catalog.find((product) => product.sku === 'red-bull-original-lata-250ml-pack-4');
@@ -59,6 +61,8 @@ test('packs, precios pendientes y alcohol conservan su semántica comercial', ()
   assert.deepEqual([packTwelve.unitLabel, packTwelve.unitsPerPack], ['Pack x12', 12]);
   assert.equal(pending.pricePending, true);
   assert.equal(pending.price, 0);
+  assert.equal(pending.oldPrice, undefined);
+  assert.equal(pending.badge, undefined);
   assert.equal(isProductOrderable(pending), false);
   assert.ok(catalog.filter((product) => product.alcoholic).every((product) => product.requiresAgeConfirmation && product.minimumAge === 18));
   assert.ok(catalog.filter((product) => !product.alcoholic).every((product) => !product.requiresAgeConfirmation));

@@ -24,9 +24,9 @@ export function canUseMapLibre(root = globalThis) {
   });
 }
 
-function disposeDetachedMaps() {
+function disposeInactiveMaps() {
   for (const entry of [...mountedMaps]) {
-    if (!entry.container?.isConnected) {
+    if (!entry.container?.isConnected || !isMapInActiveView(entry.container)) {
       disposeMapEntry(entry);
     }
   }
@@ -57,8 +57,10 @@ export function disposeMapViews(root = document) {
 }
 
 export function renderMapViews(root = document) {
-  disposeDetachedMaps();
-  root.querySelectorAll?.('[data-real-map]').forEach((node) => renderMapView(node));
+  disposeInactiveMaps();
+  root.querySelectorAll?.('[data-real-map]').forEach((node) => {
+    if (isMapInActiveView(node)) renderMapView(node);
+  });
 }
 
 // Vuelve a centrar el mapa en la ubicación REAL del rider y reanuda el
@@ -84,6 +86,12 @@ function renderMapView(container) {
   const entry = ensureTrackingMap(container, view);
   entry?.adapter?.resize?.();
   scheduleTrackingVisualUpdate(entry, view);
+}
+
+function isMapInActiveView(container) {
+  const view = container?.closest?.('[data-view]');
+  if (!view) return true;
+  return view.hidden !== true && view.getAttribute?.('aria-hidden') !== 'true';
 }
 
 function readMapViewState(container) {

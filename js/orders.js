@@ -428,8 +428,6 @@ export function updateOrderStatus(orderId, status, options = {}) {
     order.status = status;
     order.statusHistory.push({ status, at: now });
     order.delivery = order.delivery || {};
-    draft.lastOrderId = orderId;
-    allowActiveOrderFallback();
 
     if (status === 'preparing') {
       const estimatedPreparationMinutes = normalizePreparationMinutes(

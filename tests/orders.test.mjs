@@ -376,6 +376,41 @@ test('selector global de orden activa no selecciona fallback cuando está suprim
   assert.equal(getActiveOrder(), null);
 });
 
+test('actualización de estado automática no reabre fallback', () => {
+  const orderId = 'LT-B';
+  resetState({
+    orders: [
+      {
+        id: orderId,
+        status: 'preparing',
+        createdAt: new Date().toISOString(),
+        statusHistory: [{ status: 'preparing', at: new Date().toISOString() }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
+        deliveryMode: 'delivery',
+        customerName: 'Cliente activo',
+        customerPhone: '2995559999',
+        address: 'Roca 500',
+        paymentMethod: 'Efectivo',
+      },
+    ],
+    lastOrderId: null,
+  });
+  suppressActiveOrderFallback();
+
+  assert.equal(getActiveOrderId(), null);
+  assert.equal(getActiveOrder(), null);
+
+  const transition = updateOrderStatus(orderId, 'ready');
+  const stateAfter = getState();
+  const targetOrder = stateAfter.orders.find((candidate) => candidate.id === orderId);
+
+  assert.equal(transition.ok, true);
+  assert.equal(targetOrder?.status, 'ready');
+  assert.equal(stateAfter.lastOrderId, null);
+  assert.equal(getActiveOrderId(), null);
+  assert.equal(getActiveOrder(), null);
+});
+
 test('la supresión explícita se desactiva con selección explícita por id', () => {
   resetState({
     orders: [
@@ -445,6 +480,66 @@ test('una nueva selección explícita vuelve a habilitar fallback normal', () =>
   assert.equal(getActiveOrder()?.id, 'LT-NEW');
 });
 
+test('después de una actualización con fallback suprimido, sólo persistir manualmente vuelve a habilitarlo', () => {
+  const orderId = 'LT-CONTROL';
+  resetState({
+    orders: [
+      {
+        id: orderId,
+        status: 'preparing',
+        createdAt: new Date().toISOString(),
+        statusHistory: [{ status: 'preparing', at: new Date().toISOString() }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
+        deliveryMode: 'delivery',
+        customerName: 'Cliente activo',
+        customerPhone: '2995559999',
+        address: 'Roca 500',
+        paymentMethod: 'Efectivo',
+      },
+    ],
+    lastOrderId: null,
+  });
+  suppressActiveOrderFallback();
+
+  assert.equal(updateOrderStatus(orderId, 'ready').ok, true);
+  assert.equal(getState().lastOrderId, null);
+  assert.equal(getActiveOrderId(), null);
+  assert.equal(getActiveOrder(), null);
+
+  const wasPersisted = persistActiveOrderId(orderId);
+  assert.equal(wasPersisted, true);
+  assert.equal(getActiveOrderId(), orderId);
+  assert.equal(getActiveOrder()?.id, orderId);
+});
+
+test('simulación: actualizar a arriving conserva la supresión y no reaparece como fallback', () => {
+  const orderId = 'LT-SIM-ARRIVING';
+  resetState({
+    orders: [
+      {
+        id: orderId,
+        status: 'on_the_way',
+        createdAt: new Date().toISOString(),
+        statusHistory: [{ status: 'on_the_way', at: new Date().toISOString() }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
+        deliveryMode: 'delivery',
+        customerName: 'Cliente de simulación',
+        customerPhone: '2995557777',
+        address: 'San Martín 900',
+        paymentMethod: 'Efectivo',
+      },
+    ],
+    lastOrderId: null,
+  });
+  suppressActiveOrderFallback();
+
+  assert.equal(updateOrderStatus(orderId, 'arriving').ok, true);
+  assert.equal(getState().orders.find((candidate) => candidate.id === orderId)?.status, 'arriving');
+  assert.equal(getActiveOrderId(), null);
+  assert.equal(getActiveOrder(), null);
+  assert.equal(getState().lastOrderId, null);
+});
+
 test('la supresión aislada en una prueba no afecta al resto del selector', () => {
   resetState({
     orders: [
@@ -471,7 +566,7 @@ test('la supresión aislada en una prueba no afecta al resto del selector', () =
   assert.equal(getActiveOrder()?.id, 'LT-ACTIVE-B');
 });
 
-test('status transitions persist the active order id', () => {
+test('status transitions no persisten ni activan la orden de forma automática', () => {
   addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
     customerName: 'Activo QA',
@@ -484,7 +579,7 @@ test('status transitions persist the active order id', () => {
   setState({ lastOrderId: null });
 
   assert.equal(updateOrderStatus(created.order.id, 'preparing').ok, true);
-  assert.equal(getState().lastOrderId, created.order.id);
+  assert.equal(getState().lastOrderId, null);
 });
 
 test('order status transitions reject invalid jumps and preserve history', () => {

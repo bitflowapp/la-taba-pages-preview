@@ -25,6 +25,8 @@ const ALCOHOLIC_CATEGORY_IDS = new Set([
 
 const TONE_BY_CATEGORY = Object.freeze({
   gaseosas: 'drink',
+  mixers: 'drink',
+  energizantes: 'drink',
   aguas: 'drink',
   jugos: 'drink',
   energeticas: 'drink',
@@ -40,6 +42,8 @@ const TONE_BY_CATEGORY = Object.freeze({
 
 const UNIT_BY_CATEGORY = Object.freeze({
   gaseosas: { unit: 'unidad', unitLabel: 'Unidad' },
+  mixers: { unit: 'unidad', unitLabel: 'Unidad' },
+  energizantes: { unit: 'unidad', unitLabel: 'Unidad' },
   aguas: { unit: 'unidad', unitLabel: 'Unidad' },
   jugos: { unit: 'unidad', unitLabel: 'Unidad' },
   energeticas: { unit: 'unidad', unitLabel: 'Unidad' },
@@ -105,7 +109,7 @@ export function isProductVisibleToCustomer(product) {
 }
 
 export function isProductOrderable(product) {
-  return Boolean(isProductVisibleToCustomer(product) && product.available && Number(product.stock) > 0);
+  return Boolean(isProductVisibleToCustomer(product) && product.available && !product.pricePending && Number(product.stock) > 0);
 }
 
 export function validateCatalogProductInput(input = {}) {
@@ -189,8 +193,9 @@ export function normalizeCatalogProduct(raw, fallback = null) {
   const name = sanitizeText(source.name, { fallback: fallback?.name || '', maxLength: 100 });
   const categoryId = normalizeCategoryId(source.categoryId || fallback?.categoryId) || DEFAULT_CATEGORY_ID;
   const defaults = defaultsForCategory(categoryId);
+  const pricePending = source.pricePending === true;
   const price = normalizeCatalogPrice(source.price, fallback?.price ?? 0);
-  if (!id || !name || price <= 0) return fallback ? { ...fallback } : null;
+  if (!id || !name || (price <= 0 && !pricePending)) return fallback ? { ...fallback } : null;
 
   const archived = source.archived === true;
   const stock = normalizeStock(source.stock ?? fallback?.stock ?? DEFAULT_NEW_PRODUCT_STOCK);
@@ -239,6 +244,7 @@ export function normalizeCatalogProduct(raw, fallback = null) {
       ? 'alcoholic'
       : sanitizeText(source.tone, { fallback: defaults.tone, maxLength: 40 }),
     price,
+    pricePending,
     oldPrice: oldPrice > price ? oldPrice : undefined,
     stock,
     available: source.available !== false && !archived,

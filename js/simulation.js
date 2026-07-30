@@ -31,6 +31,7 @@ import {
   shouldPublishGpsFix as shouldPublishGpsFixPolicy,
 } from './map/route_geometry.js';
 import { STORE_LOCATION } from './map/map_config.js';
+import { isDemoMode, isShowcaseMode } from './core/app-mode.js';
 
 let timerId = null;
 let gpsWatchId = null;
@@ -93,11 +94,7 @@ function routePreferenceForOrder(order) {
 }
 
 function sandboxUrlEnabled() {
-  try {
-    return new URLSearchParams(globalThis.location?.search || '').get('demo') === '1';
-  } catch (_) {
-    return false;
-  }
+  return isDemoMode();
 }
 
 function orderWithDestination(order, destination) {
@@ -427,6 +424,13 @@ function rememberPublishedFix(order, location, now = Date.now()) {
 }
 
 export function enableGpsTracking() {
+  if (isShowcaseMode()) {
+    return {
+      ok: false,
+      message: 'El GPS real está desactivado en el modo demostración local.',
+    };
+  }
+
   const order = getStreetTestOrder();
   if (!order) {
     return { ok: false, message: 'No hay un pedido asignado para usar tu ubicación.' };

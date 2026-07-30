@@ -15,6 +15,7 @@ un fallback silencioso de producción a datos simulados.
 | --- | --- | --- |
 | Preview seguro | URL normal, sin configuración productiva | No envía pedidos reales ni habilita vistas operativas. |
 | Demo | `?demo=1` | Flujo simulado y persistencia local para una presentación. El PIN `1234` existe sólo en este modo. |
+| Showcase local | `?showcase=1` | Recorrido guiado de 14 funciones con fixtures sintéticas y almacenamiento aislado. Fuerza sandbox local e ignora cualquier `relay` o runtime Supabase. |
 | Producción | `globalThis.__LA_TABA_RUNTIME_CONFIG__` válido | Catálogo, pedidos, Auth y Realtime de Supabase. |
 | No disponible | Se solicita producción con configuración inválida o incompleta | Bloqueo explícito; no usa el catálogo demo ni acepta pedidos. |
 
@@ -31,6 +32,19 @@ http://127.0.0.1:8080/?reset=1&demo=1
 
 `reset=1` borra una vez el estado local de la demo y luego desaparece de la URL.
 No debe utilizarse sobre una sesión operativa.
+
+Para el recorrido comercial guiado:
+
+```text
+http://127.0.0.1:8080/?showcase=1&reset=1#home
+```
+
+El showcase muestra siempre la etiqueta `Modo demostración local`, utiliza un
+namespace separado para estado, Perfil, IndexedDB, BroadcastChannel y rider, y
+no consulta Supabase remoto aunque la página reciba configuración productiva o
+un parámetro `relay`. Sus productos, pedidos, importes, direcciones y recorridos
+son fixtures sintéticas; no acreditan staging, piloto, prueba física ni
+producción. Mercado Pago no se presenta como implementado.
 
 ## Configuración de despliegue
 

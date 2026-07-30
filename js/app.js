@@ -68,9 +68,20 @@ import {
   getAppMode,
   isDemoMode,
   isOperationalView,
+  isShowcaseMode,
 } from './core/app-mode.js';
 import { isProductionCatalogReady } from './core/runtime-config.js';
 import { handleSandboxToolsAction, handleSandboxToolsChange, renderSandboxTools } from './sandbox-tools.js';
+import {
+  SHOWCASE_STEPS,
+  configureShowcase,
+  renderShowcase,
+} from './showcase.js';
+import {
+  SHOWCASE_PENDING_PRODUCT_ID,
+  isShowcaseFixtureOrder,
+  prepareShowcaseScenario,
+} from './showcase-fixtures.js';
 import { toggleFavoriteProduct } from './core/customer-preferences.js';
 import {
   initializeCustomerDeliveryCheckout,
@@ -121,6 +132,7 @@ let freshnessTimer = null;
 // Pedido pendiente de confirmación al repetir con carrito no vacío.
 let pendingRepeatOrderId = null;
 const CHECKOUT_SUGGESTIONS_DISMISSED_KEY = 'la_taba_checkout_suggestions_dismissed';
+const SHOWCASE_RECOVERY_KEY = 'taba-showcase-recovery-v1';
 const recentCartActions = new Map();
 
 function checkoutSuggestionsDismissed() {
@@ -199,13 +211,12 @@ function hasDemoResetRequest() {
 async function maybeResetDemoSession() {
   if (!hasDemoResetRequest()) return false;
   const params = new URLSearchParams(window.location.search);
-  await clearRelayRoomOnReset(params);
+  // Showcase is a strictly local namespace: even a crafted relay parameter
+  // must never turn its reset flow into an external request.
+  if (!isShowcaseMode()) await clearRelayRoomOnReset(params);
   const repository = getOrderRepository();
   if (typeof repository.resetSandbox === 'function') await repository.resetSandbox();
-  [STORAGE_KEYS.state, STORAGE_KEYS.adminUnlocked, STORAGE_KEYS.customerFavorites, STORAGE_KEYS.customerHistory, STORAGE_KEYS.customerProfile].forEach((key) => {
-    try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
-    try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
-  });
+  clearModeStorage();
   params.delete('reset');
   params.delete('demo-reset');
   const query = params.toString();
@@ -245,6 +256,204 @@ function sanitizeResetRoom(value) {
   return String(value || 'demo').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60) || 'demo';
 }
 
+function initializeShowcase() {
+  if (!isShowcaseMode()) return;
+
+  configureShowcase({
+    onSelectStep: presentShowcaseStep,
+    onReset: resetShowcaseTour,
+    onExit: exitShowcaseTour,
+  });
+
+  const recovery = readShowcaseRecovery();
+  if (recovery) {
+    const order = getState().orders.find((candidate) => candidate.id === recovery.orderId);
+    const recovered = Boolean(
+      order
+        && order.status === recovery.status
+        && isShowcaseFixtureOrder(order),
+    );
+    removeShowcaseRecovery();
+    setActiveView('tracking', {
+      replace: true,
+      scroll: false,
+      focus: false,
+    });
+    renderShowcase({
+      activeStepId: 'session-recovery',
+      message: recovered
+        ? `Sesión recuperada: el pedido sintético ${order.id} conserva su estado ${order.status}.`
+        : 'La sesión local no pudo recuperar el mismo pedido sintético.',
+      messageTone: recovered ? 'success' : 'error',
+    });
+    return;
+  }
+
+  renderShowcase();
+  queueMicrotask(() => {
+    document.querySelector('[data-showcase-action="return"]')?.click();
+  });
+}
+
+async function presentShowcaseStep(step) {
+  if (!isShowcaseMode() || !SHOWCASE_STEPS.some((candidate) => candidate.id === step?.id)) {
+    return { ok: false, message: 'La parada solicitada no pertenece al recorrido local.' };
+  }
+
+  const scenarioId = showcaseScenarioId(step.id);
+  const prepared = await prepareShowcaseScenario(scenarioId);
+  if (!prepared.ok) return prepared;
+
+  if (['business', 'order-management', 'rider'].includes(step.id)) {
+    unlockAdmin(getBusinessConfig().adminPin);
+  }
+
+  if (step.id === 'catalog' || step.id === 'pending-price') {
+    setSearchQuery('');
+    setCategory('all');
+  }
+
+  setActiveView(step.view);
+
+  if (step.id === 'pending-price') {
+    requestAnimationFrame(() => showProductModal(SHOWCASE_PENDING_PRODUCT_ID));
+  }
+  if (step.id === 'checkout') {
+    focusShowcaseTarget('[data-checkout-form]');
+  }
+  if (step.id === 'delivery-pickup') {
+    focusShowcaseTarget('.delivery-mode');
+  }
+  if (step.id === 'addresses') {
+    focusShowcaseTarget('.addresses-card');
+  }
+  if (step.id === 'privacy-security') {
+    focusShowcaseTarget('.profile-privacy-card');
+  }
+  if (step.id === 'session-recovery') {
+    const recoveryStored = writeShowcaseRecovery({
+      orderId: prepared.orderId,
+      status: prepared.status,
+    });
+    if (!recoveryStored) {
+      return {
+        ok: false,
+        message: 'El navegador bloqueó la sesión local; no se puede demostrar una recuperación real.',
+      };
+    }
+    setTimeout(() => window.location.reload(), 0);
+    return {
+      ok: true,
+      message: 'Recargando la misma sesión local para comprobar su recuperación…',
+    };
+  }
+
+  return {
+    ok: true,
+    message: `${step.title}: ${prepared.message || 'vista real preparada con datos sintéticos.'}`,
+  };
+}
+
+function showcaseScenarioId(stepId) {
+  const scenarios = {
+    catalog: 'catalog',
+    'pending-price': 'catalog',
+    cart: 'cart',
+    checkout: 'checkout',
+    'delivery-pickup': 'delivery-options',
+    profile: 'profile',
+    addresses: 'addresses',
+    business: 'business-new',
+    'order-management': 'business-manage',
+    rider: 'rider',
+    'tracking-map': 'tracking-map',
+    delivered: 'delivered',
+    'session-recovery': 'recovery',
+    'privacy-security': 'security',
+  };
+  return scenarios[stepId] || 'catalog';
+}
+
+function focusShowcaseTarget(selector) {
+  requestAnimationFrame(() => {
+    const target = document.querySelector(selector);
+    if (!(target instanceof HTMLElement)) return;
+    target.setAttribute('tabindex', '-1');
+    target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    target.focus({ preventScroll: true });
+  });
+}
+
+function resetShowcaseTour() {
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.searchParams.set('showcase', '1');
+  url.searchParams.set('reset', '1');
+  url.hash = '#home';
+  window.location.assign(url);
+  return { ok: true, message: 'Reiniciando el recorrido local…' };
+}
+
+async function exitShowcaseTour() {
+  const repository = getOrderRepository();
+  if (isSandboxOrderRepository(repository) && repository.sandboxNamespace === 'showcase') {
+    await repository.resetSandbox();
+  }
+  clearModeStorage();
+  removeShowcaseRecovery();
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.hash = '#home';
+  window.location.assign(url);
+  return { ok: true, message: 'Saliendo del modo demostración local.' };
+}
+
+function clearModeStorage() {
+  [
+    STORAGE_KEYS.state,
+    STORAGE_KEYS.adminUnlocked,
+    STORAGE_KEYS.customerFavorites,
+    STORAGE_KEYS.customerHistory,
+    STORAGE_KEYS.customerProfile,
+    STORAGE_KEYS.cashboxClosures,
+  ].forEach((key) => {
+    try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
+    try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
+  });
+}
+
+function writeShowcaseRecovery(value) {
+  try {
+    window.sessionStorage?.setItem(SHOWCASE_RECOVERY_KEY, JSON.stringify({
+      orderId: String(value?.orderId || ''),
+      status: String(value?.status || ''),
+    }));
+    return window.sessionStorage?.getItem(SHOWCASE_RECOVERY_KEY) !== null;
+  } catch (_) {
+    return false;
+  }
+}
+
+function readShowcaseRecovery() {
+  try {
+    const parsed = JSON.parse(window.sessionStorage?.getItem(SHOWCASE_RECOVERY_KEY) || 'null');
+    if (!parsed || typeof parsed !== 'object') return null;
+    const orderId = String(parsed.orderId || '');
+    const status = String(parsed.status || '');
+    return orderId && status ? { orderId, status } : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function removeShowcaseRecovery() {
+  try {
+    window.sessionStorage?.removeItem(SHOWCASE_RECOVERY_KEY);
+  } catch (_) {
+    // Sin storage no queda un marcador que limpiar.
+  }
+}
+
 async function bootstrap() {
   // Si se pidió limpiar la demo, recargamos limpio y no seguimos inicializando.
   try {
@@ -277,6 +486,7 @@ async function bootstrap() {
     }
     await initializeCustomerDeliveryCheckout();
     await initializeCustomerProfileView();
+    initializeShowcase();
     renderAll();
     playViewEnter(activeView);
     resumeSimulationIfNeeded();
@@ -628,6 +838,20 @@ function bindEvents() {
   document.addEventListener('click', async (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+
+    const externalShowcaseAction = target.closest([
+      'a[href^="tel:"]',
+      'a[href*="wa.me"]',
+      'a[href*="google.com/maps"]',
+      '[data-whatsapp-copy]',
+      '[data-whatsapp-order]',
+      '[data-pitch-go="whatsapp"]',
+    ].join(','));
+    if (isShowcaseMode() && externalShowcaseAction) {
+      event.preventDefault();
+      showToast('Contacto y navegación externa desactivados en la demostración local.');
+      return;
+    }
 
     const sandboxResult = await handleSandboxToolsAction(target);
     if (sandboxResult.handled) {

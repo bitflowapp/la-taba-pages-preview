@@ -1,6 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Identidad única de TABA. La presentación comercial y el storefront comparten
 // marca para evitar que el cliente vea nombres de producto distintos.
+import { isShowcaseMode } from './core/showcase-mode.js';
+
 export const BRAND = Object.freeze({
   productName: 'TABA',
   tagline: 'Bebidas, pedidos y delivery en una experiencia simple.',
@@ -124,7 +126,7 @@ export const BUSINESS_CONFIG = Object.freeze({
   demoCategories: [],
 });
 
-export const STORAGE_KEYS = Object.freeze({
+export const DEFAULT_STORAGE_KEYS = Object.freeze({
   state: 'la_taba_mvp_v4_state',
   adminUnlocked: 'la_taba_mvp_v4_admin_unlocked',
   customerFavorites: 'la_taba_customer_favorites_v1',
@@ -132,3 +134,26 @@ export const STORAGE_KEYS = Object.freeze({
   customerProfile: 'la_taba_customer_profile_v1',
   cashboxClosures: 'la_taba_cashbox_closures_v1',
 });
+
+export const SHOWCASE_STORAGE_KEYS = Object.freeze({
+  state: 'la_taba_showcase_mvp_v4_state',
+  adminUnlocked: 'la_taba_showcase_mvp_v4_admin_unlocked',
+  customerFavorites: 'la_taba_showcase_customer_favorites_v1',
+  customerHistory: 'la_taba_showcase_customer_history_v1',
+  customerProfile: 'la_taba_showcase_customer_profile_v1',
+  cashboxClosures: 'la_taba_showcase_cashbox_closures_v1',
+});
+
+export function storageKeysForSearch(search = currentSearch()) {
+  return isShowcaseMode(search) ? SHOWCASE_STORAGE_KEYS : DEFAULT_STORAGE_KEYS;
+}
+
+export const STORAGE_KEYS = storageKeysForSearch();
+
+function currentSearch() {
+  try {
+    return globalThis.location?.search ?? '';
+  } catch (_) {
+    return '';
+  }
+}

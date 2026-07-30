@@ -40,7 +40,7 @@ import {
   trackingLocationFreshness,
 } from './map/route_geometry.js';
 import { renderPublicOrderTimeline } from './core/order-timeline.js';
-import { isDemoMode, isProductionMode } from './core/app-mode.js';
+import { isDemoMode, isProductionMode, isShowcaseMode } from './core/app-mode.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { formatPromotionCondition, getActivePromotions, getProductPromotion } from './core/promotions.js';
 import { cartNeedsComplementPrompt, getCartRecommendations } from './core/cart-recommendations.js';
@@ -2154,6 +2154,9 @@ function trackingContactButton({
   text = 'Contactar',
   className = 'secondary-button compact',
 } = {}) {
+  if (isShowcaseMode()) {
+    return `<button class="${escapeHtml(className)}" type="button" disabled data-showcase-contact-disabled aria-label="Contacto externo desactivado en demostración">Contacto desactivado</button>`;
+  }
   const config = getBusinessConfig();
   const phone = String(config.whatsappNumber || '').replace(/\D/g, '');
   if (config.whatsappVerified !== true || phone.length < 8 || phone.length > 15) return '';

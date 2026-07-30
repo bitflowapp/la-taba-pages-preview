@@ -6,6 +6,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const requiredFiles = [
   'index.html',
   'styles.css',
+  'styles/showcase.css',
   'manifest.webmanifest',
   'runtime-config.js',
   'sw.js',
@@ -22,10 +23,13 @@ const requiredFiles = [
   'js/delivery.js',
   'js/production-operations.js',
   'js/core/runtime-config.js',
+  'js/core/showcase-mode.js',
   'js/repositories/unavailable_order_repository.js',
   'js/services/supabase-auth.js',
   'js/services/supabase-client.js',
   'js/ui.js',
+  'js/showcase-fixtures.js',
+  'js/showcase.js',
   'js/app.js',
   'js/vendor/supabase.js',
 ];

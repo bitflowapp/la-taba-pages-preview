@@ -19,6 +19,8 @@ export const SANDBOX_STORE_NAME = 'snapshots';
 export const SANDBOX_CLAIMS_STORE_NAME = 'claims';
 export const SANDBOX_SNAPSHOT_KEY = 'active';
 export const SANDBOX_SCHEMA_VERSION = 1;
+export const SANDBOX_NAMESPACE_DEMO = 'demo';
+export const SANDBOX_NAMESPACE_SHOWCASE = 'showcase';
 const INDEXED_DB_OPEN_TIMEOUT_MS = 2500;
 export const SANDBOX_STATUS_FLOW = Object.freeze([
   'received',
@@ -34,7 +36,32 @@ const SANDBOX_SYNC_KEY = 'taba-sandbox-sync-v1';
 const SANDBOX_RIDER_KEY = 'taba-sandbox-rider-id';
 const SANDBOX_CHANNEL = 'taba-sandbox-state-v1';
 
-let memorySnapshot = null;
+const SANDBOX_STORAGE_NAMESPACES = Object.freeze({
+  [SANDBOX_NAMESPACE_DEMO]: Object.freeze({
+    namespace: SANDBOX_NAMESPACE_DEMO,
+    databaseName: SANDBOX_DB_NAME,
+    syncKey: SANDBOX_SYNC_KEY,
+    riderKey: SANDBOX_RIDER_KEY,
+    channelName: SANDBOX_CHANNEL,
+    memoryKey: SANDBOX_NAMESPACE_DEMO,
+  }),
+  [SANDBOX_NAMESPACE_SHOWCASE]: Object.freeze({
+    namespace: SANDBOX_NAMESPACE_SHOWCASE,
+    databaseName: 'taba-showcase-sandbox',
+    syncKey: 'taba-showcase-sandbox-sync-v1',
+    riderKey: 'taba-showcase-sandbox-rider-id',
+    channelName: 'taba-showcase-sandbox-state-v1',
+    memoryKey: SANDBOX_NAMESPACE_SHOWCASE,
+  }),
+});
+
+const memorySnapshots = new Map();
+
+export function getSandboxStorageNamespace(namespace = SANDBOX_NAMESPACE_DEMO) {
+  return namespace === SANDBOX_NAMESPACE_SHOWCASE
+    ? SANDBOX_STORAGE_NAMESPACES[SANDBOX_NAMESPACE_SHOWCASE]
+    : SANDBOX_STORAGE_NAMESPACES[SANDBOX_NAMESPACE_DEMO];
+}
 
 function clone(value) {
   if (typeof structuredClone === 'function') return structuredClone(value);
@@ -45,16 +72,21 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function riderId() {
+function riderId(storageNamespace) {
   try {
     const storage = globalThis.sessionStorage;
-    const current = storage?.getItem(SANDBOX_RIDER_KEY);
+    const current = storage?.getItem(storageNamespace.riderKey);
     if (current) return current;
-    const generated = `sandbox-rider-${Math.random().toString(36).slice(2, 10)}`;
-    storage?.setItem(SANDBOX_RIDER_KEY, generated);
+    const prefix = storageNamespace.namespace === SANDBOX_NAMESPACE_SHOWCASE
+      ? 'showcase-rider'
+      : 'sandbox-rider';
+    const generated = `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+    storage?.setItem(storageNamespace.riderKey, generated);
     return generated;
   } catch (_) {
-    return 'sandbox-rider-local';
+    return storageNamespace.namespace === SANDBOX_NAMESPACE_SHOWCASE
+      ? 'showcase-rider-local'
+      : 'sandbox-rider-local';
   }
 }
 
@@ -94,7 +126,7 @@ function sandboxSeedState() {
   };
 }
 
-function openDatabase() {
+function openDatabase(storageNamespace) {
   if (typeof indexedDB === 'undefined') return Promise.resolve(null);
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -108,7 +140,7 @@ function openDatabase() {
       if (timeout) clearTimeout(timeout);
       callback(value);
     };
-    const request = indexedDB.open(SANDBOX_DB_NAME, SANDBOX_DB_VERSION);
+    const request = indexedDB.open(storageNamespace.databaseName, SANDBOX_DB_VERSION);
     request.onupgradeneeded = () => {
       const database = request.result;
       if (!database.objectStoreNames.contains(SANDBOX_STORE_NAME)) {
@@ -131,8 +163,8 @@ function openDatabase() {
   });
 }
 
-function readFromDatabase(database) {
-  if (!database) return Promise.resolve(memorySnapshot);
+function readFromDatabase(database, storageNamespace) {
+  if (!database) return Promise.resolve(memorySnapshots.get(storageNamespace.memoryKey) || null);
   return new Promise((resolve, reject) => {
     const request = database
       .transaction(SANDBOX_STORE_NAME, 'readonly')
@@ -150,8 +182,8 @@ export function canTransitionSandboxStatus(currentStatus, nextStatus) {
   return currentIndex >= 0 && SANDBOX_STATUS_FLOW[currentIndex + 1] === nextStatus;
 }
 
-function writeToDatabase(database, snapshot) {
-  memorySnapshot = clone(snapshot);
+function writeToDatabase(database, snapshot, storageNamespace) {
+  memorySnapshots.set(storageNamespace.memoryKey, clone(snapshot));
   if (!database) return Promise.resolve(true);
   return new Promise((resolve, reject) => {
     const request = database
@@ -163,8 +195,8 @@ function writeToDatabase(database, snapshot) {
   });
 }
 
-function clearDatabase(database) {
-  memorySnapshot = null;
+function clearDatabase(database, storageNamespace) {
+  memorySnapshots.delete(storageNamespace.memoryKey);
   if (!database) return Promise.resolve(true);
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(
@@ -178,25 +210,29 @@ function clearDatabase(database) {
   });
 }
 
-function publishStorageTick(lastStorageTickRef = null) {
+function publishStorageTick(storageNamespace, lastStorageTickRef = null) {
   try {
     const tick = String(Date.now());
     if (lastStorageTickRef) lastStorageTickRef.value = tick;
-    globalThis.localStorage?.setItem(SANDBOX_SYNC_KEY, tick);
+    globalThis.localStorage?.setItem(storageNamespace.syncKey, tick);
   } catch (_) {
     // El canal BroadcastChannel sigue funcionando aunque storage esté bloqueado.
   }
 }
 
-function readStorageTick() {
+function readStorageTick(storageNamespace) {
   try {
-    return globalThis.localStorage?.getItem(SANDBOX_SYNC_KEY) || '';
+    return globalThis.localStorage?.getItem(storageNamespace.syncKey) || '';
   } catch (_) {
     return '';
   }
 }
 
-export function createSandboxOrderRepository({ baseRepository = createDemoOrderRepository() } = {}) {
+export function createSandboxOrderRepository({
+  baseRepository = createDemoOrderRepository(),
+  namespace = SANDBOX_NAMESPACE_DEMO,
+} = {}) {
+  const storageNamespace = getSandboxStorageNamespace(namespace);
   let database = null;
   let started = false;
   let starting = null;
@@ -205,12 +241,12 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
   let applyingRemote = false;
   let lastAppliedRevision = 0;
   let foregroundRefreshHandler = null;
-  const lastStorageTickRef = { value: readStorageTick() };
+  const lastStorageTickRef = { value: readStorageTick(storageNamespace) };
 
   async function persistAndPublish(state = getState()) {
     const snapshot = cloneStateForSnapshot(state);
     lastAppliedRevision = Math.max(lastAppliedRevision, Date.parse(snapshot.savedAt) || Date.now());
-    await writeToDatabase(database, snapshot);
+    await writeToDatabase(database, snapshot, storageNamespace);
     if (channel) {
       try {
         channel.postMessage({
@@ -222,7 +258,7 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
         // La persistencia local no depende del canal de sincronización.
       }
     }
-    publishStorageTick(lastStorageTickRef);
+    publishStorageTick(storageNamespace, lastStorageTickRef);
     return snapshot;
   }
 
@@ -234,7 +270,7 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
     applyingRemote = true;
     try {
       setState(snapshotState(snapshot));
-      await writeToDatabase(database, snapshot);
+      await writeToDatabase(database, snapshot, storageNamespace);
     } finally {
       applyingRemote = false;
     }
@@ -242,7 +278,7 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
   }
 
   async function readAndApplyLatest() {
-    const snapshot = await readFromDatabase(database);
+    const snapshot = await readFromDatabase(database, storageNamespace);
     if (!isValidSnapshot(snapshot)) return false;
     return applySnapshot(snapshot);
   }
@@ -334,7 +370,7 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
             // La persistencia local no depende del canal de sincronizaciÃ³n.
           }
         }
-        publishStorageTick(lastStorageTickRef);
+        publishStorageTick(storageNamespace, lastStorageTickRef);
         resolve(outcome);
       };
       transaction.onerror = () => {
@@ -361,12 +397,12 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
 
   function bindSync() {
     if (typeof BroadcastChannel !== 'undefined') {
-      channel = new BroadcastChannel(SANDBOX_CHANNEL);
+      channel = new BroadcastChannel(storageNamespace.channelName);
       channel.addEventListener('message', (event) => receiveMessage(event.data));
     }
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', async (event) => {
-        if (event.key !== SANDBOX_SYNC_KEY || !event.newValue || event.newValue === lastStorageTickRef.value) return;
+        if (event.key !== storageNamespace.syncKey || !event.newValue || event.newValue === lastStorageTickRef.value) return;
         lastStorageTickRef.value = event.newValue;
         await readAndApplyLatest();
       });
@@ -408,8 +444,8 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
     if (starting) return starting;
     starting = (async () => {
       try {
-        database = await openDatabase();
-        const existing = await readFromDatabase(database);
+        database = await openDatabase(storageNamespace);
+        const existing = await readFromDatabase(database, storageNamespace);
         if (isValidSnapshot(existing)) {
           const local = getState();
           const localHasOperationalData = local.orders.some((order) => !order.internalSeed)
@@ -422,13 +458,13 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
               || local.orders.length !== existingState.orders.length
               || local.orders.some((order) => order.tracking?.lastLocation?.source === 'gps'));
           if (localLooksNewer) {
-            await writeToDatabase(database, cloneStateForSnapshot(local));
+            await writeToDatabase(database, cloneStateForSnapshot(local), storageNamespace);
           } else {
             lastAppliedRevision = Date.parse(existing.savedAt) || 0;
             setState({ ...existingState, adminUnlocked: local.adminUnlocked });
           }
         } else {
-          await writeToDatabase(database, cloneStateForSnapshot(getState()));
+          await writeToDatabase(database, cloneStateForSnapshot(getState()), storageNamespace);
         }
         bindSync();
         unsubState = subscribe((state) => {
@@ -442,7 +478,7 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
       } catch (error) {
         // Sandbox sigue usable en memoria si IndexedDB fue bloqueado por el navegador.
         database = null;
-        await writeToDatabase(null, cloneStateForSnapshot(getState()));
+        await writeToDatabase(null, cloneStateForSnapshot(getState()), storageNamespace);
         bindSync();
         unsubState = subscribe((state) => {
           if (!started || applyingRemote) return;
@@ -463,26 +499,26 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
     const resetState = sandboxSeedState();
     if (!database) {
       try {
-        database = await openDatabase();
+        database = await openDatabase(storageNamespace);
       } catch (_) {
         database = null;
       }
     }
     try {
-      await clearDatabase(database);
+      await clearDatabase(database, storageNamespace);
     } catch (_) {
       // Un reset de demo siempre puede completar en memoria aunque Safari
       // mantenga un snapshot bloqueado o la base haya quedado inválida.
       try { database?.close?.(); } catch (_) { /* sin-op */ }
       database = null;
-      await clearDatabase(null);
+      await clearDatabase(null, storageNamespace);
     }
     setState(resetState);
     try {
-      await writeToDatabase(database, cloneStateForSnapshot(getState()));
+      await writeToDatabase(database, cloneStateForSnapshot(getState()), storageNamespace);
     } catch (_) {
       database = null;
-      await writeToDatabase(null, cloneStateForSnapshot(getState()));
+      await writeToDatabase(null, cloneStateForSnapshot(getState()), storageNamespace);
     }
     if (started) await persistAndPublish(getState());
     return repositoryResult(true, { message: 'Sandbox reiniciada.' });
@@ -513,11 +549,12 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
   const repository = {
     ...baseRepository,
     mode: 'sandbox',
+    sandboxNamespace: storageNamespace.namespace,
     startSync,
     resetSandbox,
     exportSandboxState,
     importSandboxState,
-    getRiderId: riderId,
+    getRiderId: () => riderId(storageNamespace),
     verifyDeliveryCode(orderId, code) {
       return confirmDeliveryCode(orderId, code);
     },
@@ -529,7 +566,7 @@ export function createSandboxOrderRepository({ baseRepository = createDemoOrderR
           message: 'Otro rider ya tomó este pedido.',
         });
       }
-      const assigned = options.riderId || riderId();
+      const assigned = options.riderId || riderId(storageNamespace);
       if (database && started) {
         const atomicResult = await claimRiderOrderAtomically(publicCode, assigned);
         if (atomicResult) return atomicResult;

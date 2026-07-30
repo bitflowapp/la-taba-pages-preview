@@ -2412,6 +2412,540 @@ body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar
   text-decoration-style: dotted;
 }
 
+/* Estado público `on_the_way` (y su equivalente interno `picked_up`, que el
+   cliente lee con el mismo título y el mismo paso de progreso): adopta el
+   lenguaje visual ya certificado en `arriving` y reparte el presupuesto
+   vertical que libera la ausencia de la tarjeta de código en un mapa más alto
+   y en un ritmo más aireado. Sólo composición y estilo: ni los datos, ni los
+   estados, ni el comportamiento del mapa cambian. */
+body[data-active-view="tracking"]:has(
+  .tracking-premium:is(.status-on_the_way, .status-picked_up)
+) .topbar {
+  min-height: calc(57px + env(safe-area-inset-top, 0px));
+  padding-inline: max(18px, calc((100vw - 720px) / 2 + 18px));
+}
+
+body[data-active-view="tracking"]:has(
+  .tracking-premium:is(.status-on_the_way, .status-picked_up)
+) .topbar .brand {
+  min-height: 45px;
+}
+
+body[data-active-view="tracking"]:has(
+  .tracking-premium:is(.status-on_the_way, .status-picked_up)
+) .topbar .brand-word {
+  font-size: 27px;
+  font-weight: 750;
+  letter-spacing: -0.08em;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-menu-button {
+  top: calc(3px + env(safe-area-inset-top, 0px));
+  right: max(6px, calc((100vw - 720px) / 2 + 6px));
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-menu-button svg {
+  width: 26px;
+  height: 26px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-menu-button path {
+  stroke-width: 1.8px;
+}
+
+/* La segunda variante cubre el mismo estado sin ubicación disponible, donde el
+   aviso reemplaza al mapa: el ritmo de la hoja no debe cambiar por eso. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-sheet,
+.tracking-premium:is(.status-on_the_way, .status-picked_up).track-layout.no-map .tracking-sheet {
+  gap: 0;
+  padding: 4px 18px max(10px, env(safe-area-inset-bottom, 0px));
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-hero {
+  gap: 2px;
+  margin: 0 3px;
+}
+
+/* El titular es más largo que el de `arriving`, así que escala con el ancho
+   para sostener una sola línea desde 320px sin bajar de tamaño de lectura. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-hero h1 {
+  color: var(--taba-graphite);
+  font-size: clamp(25.5px, 7.35vw, 29px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-subtitle {
+  margin-top: 3px;
+  color: var(--taba-graphite-soft);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.32;
+}
+
+/* Sin ETA confiable la línea es una espera, no un dato: baja de jerarquía en
+   vez de competir con el titular. Con ETA, el número es el ancla de la vista. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .tracking-subtitle[data-eta-active="false"] {
+  color: var(--taba-muted-soft);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-subtitle strong {
+  color: var(--taba-graphite);
+  font-size: 18.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-updated {
+  margin-top: 5px;
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .customer-progress {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin: 17px 6px 14px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .customer-progress::before,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .customer-progress::after {
+  position: absolute;
+  z-index: 0;
+  top: 8.25px;
+  left: 28px;
+  height: 1.5px;
+  content: "";
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .customer-progress::before {
+  right: 27px;
+  background: var(--taba-border-medium);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .customer-progress::after {
+  width: 57%;
+  background: var(--taba-red-quiet);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step {
+  width: max-content;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step::before {
+  display: none;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-dot {
+  width: 18px;
+  height: 18px;
+  border-width: 1px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step.done .track-dot,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step.current .track-dot {
+  border-color: var(--taba-red-quiet);
+  background: var(--taba-red-quiet);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step.done .track-dot::after,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step.current .track-dot::after {
+  width: 4px;
+  height: 7px;
+  border-width: 0 1.5px 1.5px 0;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step.pending .track-dot {
+  border-color: var(--taba-border-medium);
+  background: var(--taba-warm-white);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step small {
+  color: var(--taba-graphite);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+/* El mapa es la razón de ser de este estado: se queda con el espacio que en
+   `arriving` ocupa la tarjeta de código, sin llegar a empujar el pie fuera de
+   pantalla en el dispositivo de referencia. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-stage,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-shell,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-canvas,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-map,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-canvas-container {
+  height: clamp(300px, 87vw, 356px);
+  min-height: clamp(300px, 87vw, 356px);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-stage {
+  width: 100%;
+  border-color: var(--taba-border-soft);
+  border-radius: 22px;
+  box-shadow: 0 2px 8px rgb(25 27 31 / 4%);
+}
+
+/* Base calmada: el recorrido rojo, el casco y los pines quedan como única
+   información saturada del encuadre. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-canvas {
+  filter: saturate(0.78) contrast(0.94) brightness(1.025);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-meta {
+  top: 12px;
+  min-height: 29px;
+  gap: 5px;
+  padding: 4px 9px;
+  border-color: var(--taba-border-soft);
+  box-shadow: 0 2px 7px rgb(22 24 28 / 7%);
+  color: var(--taba-graphite-soft);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-meta-indicator,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-meta-indicator svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-live-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--taba-red-quiet);
+  box-shadow: 0 0 0 0 rgb(197 22 36 / 24%);
+}
+
+/* Sólo late cuando la ubicación es realmente fresca: el latido es el estado,
+   no un adorno permanente. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .real-map-shell[data-map-freshness="fresh"]
+  .real-map-live-dot {
+  animation: taba-tracking-live-halo 2400ms ease-out infinite;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-recenter {
+  right: 15px;
+  bottom: 15px;
+  width: 46px;
+  height: 46px;
+  border-color: var(--taba-border-soft);
+  border-radius: 14px;
+  box-shadow: 0 3px 8px rgb(20 21 24 / 10%);
+  color: var(--taba-graphite);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-recenter:hover,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-recenter:focus-visible {
+  background: var(--taba-white);
+  color: var(--taba-graphite);
+}
+
+/* La estimación de la sandbox se apila sobre la atribución en vez de taparla,
+   y baja de peso para no disputarle la lectura al titular. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-eta {
+  right: auto;
+  bottom: 34px;
+  left: 13px;
+  min-height: 27px;
+  padding: 5px 10px;
+  border: 1px solid var(--taba-border-soft);
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 2px 7px rgb(22 24 28 / 7%);
+  color: var(--taba-red-quiet);
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: -0.005em;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-ctrl-bottom-left {
+  bottom: 5px;
+  left: 6px;
+  max-width: calc(100% - 86px);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .maplibregl-ctrl-bottom-left
+  .maplibregl-ctrl {
+  margin: 0 4px 0 0;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .maplibregl-ctrl-attrib.maplibregl-compact {
+  min-height: 20px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 1px 4px rgb(20 21 24 / 6%);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-ctrl-attrib-button {
+  width: 20px;
+  height: 20px;
+  opacity: 0.62;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-ctrl-logo {
+  margin: 0;
+  opacity: 0.56;
+  transform: scale(0.66);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-rider-marker,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-rider-helmet-core,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-rider-helmet-icon {
+  width: 43px;
+  height: 43px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-rider-marker {
+  filter: drop-shadow(0 2px 5px rgb(23 25 29 / 16%));
+}
+
+/* Origen y destino son contexto, no protagonistas: bajan de escala y quedan
+   por debajo del casco para que el rider siga siendo el único foco del
+   encuadre incluso cuando acaba de salir del local y los tres puntos coinciden. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-rider-marker {
+  z-index: 3;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-place-marker {
+  z-index: 2;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-place-marker,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-place-marker-pin,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-place-marker-pin svg {
+  width: 34px;
+  height: 42px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-place-marker {
+  filter: drop-shadow(0 2px 4px rgb(24 26 30 / 14%));
+}
+
+/* El destino comparte el rojo tokenizado del resto de la superficie en lugar de
+   sumar un cuarto rojo al encuadre. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .lt-place-marker.is-destination
+  svg
+  path:first-of-type {
+  fill: var(--taba-red-quiet);
+}
+
+/* El local ya quedó atrás en el viaje: sigue legible, pero cede la jerarquía al
+   rider y al domicilio. Se atenúa el contenido y no el marcador, porque
+   MapLibre administra la opacidad del propio elemento del marcador. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .lt-place-marker.is-store
+  .lt-place-marker-pin {
+  opacity: 0.72;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-card {
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  min-height: 80px;
+  align-items: center;
+  gap: 13px;
+  margin-top: 16px;
+  padding: 8px 14px;
+  border-color: var(--taba-border-soft);
+  border-radius: 20px;
+  background: var(--taba-warm-white);
+  box-shadow: var(--shadow-xs);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-icon {
+  width: 50px;
+  height: 50px;
+  background: var(--taba-subtle);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-helmet {
+  width: 58px;
+  height: 58px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-copy {
+  gap: 2px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-copy small {
+  color: var(--taba-muted-soft);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-copy strong {
+  color: var(--taba-graphite);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-copy > span {
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-contact {
+  width: auto;
+  margin: 0;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .tracking-rider-contact
+  .secondary-button {
+  position: relative;
+  isolation: isolate;
+  min-width: 82px;
+  min-height: 44px;
+  border-color: transparent;
+  padding-inline: 10px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--taba-red-quiet);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .tracking-rider-contact
+  .secondary-button::before {
+  position: absolute;
+  z-index: -1;
+  inset: 2px 0;
+  border: 1px solid var(--taba-red-quiet);
+  border-radius: 11px;
+  background: var(--taba-white);
+  content: "";
+  pointer-events: none;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .tracking-rider-contact
+  .secondary-button:hover,
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .tracking-rider-contact
+  .secondary-button:focus-visible {
+  background: transparent;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-order-summary {
+  margin-top: 14px;
+  border-color: var(--taba-border-soft);
+  border-radius: 19px;
+  box-shadow: var(--shadow-xs);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-order-summary > summary {
+  min-height: 68px;
+  padding: 11px 15px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-content {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-copy {
+  gap: 3px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-copy > strong {
+  color: var(--taba-graphite);
+  font-size: 15.5px;
+  font-weight: 550;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-copy > small {
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-action {
+  color: var(--taba-red-quiet);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-thumbnail,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-thumbnail-more {
+  width: 38px;
+  height: 42px;
+  flex: 0 0 38px;
+  border-color: var(--taba-border-soft);
+  border-radius: 10px;
+  background: var(--taba-subtle);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-thumbnail-more {
+  color: var(--taba-graphite);
+  font-size: 13.5px;
+  font-weight: 550;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-help-card {
+  min-height: 44px;
+  gap: 3px;
+  margin: 16px 0 0;
+  color: var(--taba-red-quiet);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-help-icon {
+  display: none;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-help-contact {
+  color: var(--taba-red-quiet);
+  font-weight: 400;
+  text-decoration-style: dotted;
+}
+
+/* Sin mapa el estado conserva el mismo ritmo, con el aviso de ubicación
+   ocupando el lugar del encuadre. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-waiting {
+  margin-top: 2px;
+  border-color: var(--taba-border-soft);
+  border-radius: 20px;
+  background: var(--taba-warm-white);
+}
+
+@keyframes taba-tracking-live-halo {
+  0% {
+    box-shadow: 0 0 0 0 rgb(197 22 36 / 26%);
+  }
+
+  70% {
+    box-shadow: 0 0 0 7px rgb(197 22 36 / 0%);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgb(197 22 36 / 0%);
+  }
+}
+
 .tracking-premium.status-cancelled .track-step::before {
   background: #d8d8db;
 }
@@ -2437,5 +2971,11 @@ body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar
   .lt-rider-marker.is-motion-enabled,
   .tracking-summary-action svg {
     transition: none !important;
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up)
+    .real-map-shell[data-map-freshness="fresh"]
+    .real-map-live-dot {
+    animation: none !important;
   }
 }

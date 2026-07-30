@@ -1,8 +1,9 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
 import { categories, products } from '../js/approved-beverage-demo-data.js';
+import { APPROVED_DEMO_BASE_PRODUCT_COUNT } from '../scripts/approved-demo-base-skus.mjs';
 import {
   getAlcoholProduct,
   getNonAlcoholProduct,
@@ -11,14 +12,21 @@ import {
   getPurchasableUnitProduct,
 } from './fixtures/approved-catalog-selectors.mjs';
 
-const EXPECTED_CATEGORY_IDS = ['all', 'gaseosas', 'mixers', 'energizantes', 'cervezas'];
+const REQUIRED_BASE_CATEGORY_IDS = new Set([
+  'all',
+  'gaseosas',
+  'mixers',
+  'energizantes',
+  'cervezas',
+]);
 
 test('approved demo catalog is internally consistent', () => {
-  assert.deepEqual(categories.map((category) => category.id), EXPECTED_CATEGORY_IDS);
-  assert.equal(products.length, 22);
-  assert.equal(new Set(products.map((product) => product.sku)).size, 22);
-
   const categoryIds = new Set(categories.map((category) => category.id));
+  for (const categoryId of REQUIRED_BASE_CATEGORY_IDS) {
+    assert.ok(categoryIds.has(categoryId), `category missing: ${categoryId}`);
+  }
+  assert.ok(products.length >= APPROVED_DEMO_BASE_PRODUCT_COUNT);
+  assert.equal(new Set(products.map((product) => product.sku)).size, products.length);
   for (const product of products) {
     assert.equal(product.id, product.sku);
     assert.ok(!product.sku.startsWith('qa-'));

@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+﻿import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
@@ -13,11 +13,10 @@ test('la home presenta TABA con marca interna discreta y un storefront comercial
   await expect(page.getByRole('heading', { name: '¿Qué vas a pedir hoy?' })).toBeVisible();
   await expect(page.locator('[data-view="home"] .taba-home-search')).toBeVisible();
   const homeCategories = page.locator('[data-view="home"] .home-category-card');
-  await expect(homeCategories).toHaveCount(4);
+  expect(await homeCategories.count()).toBeGreaterThanOrEqual(4);
   await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="gaseosas"]')).toHaveText('Gaseosas');
   await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="cervezas"]')).toHaveText('Cervezas');
   await expect(page.locator('[data-home-category-strip] [data-category-id="gaseosas"]')).toHaveClass(/active/);
-  await expect(page.locator('[data-home-category-strip] [data-category-id="fernet"]')).toHaveCount(0);
   await expect(page.locator('.home-preview-label')).toHaveText('PREVIEW INTERNA');
 
   // Sin una promoción aprobada, fechada y verificable no se muestra ningún
@@ -46,7 +45,7 @@ test('la home presenta TABA con marca interna discreta y un storefront comercial
   const catalogCategories = page.locator(
     '[data-view="catalog"] [data-category-strip] .category-button:not([data-category-id="all"]):not([data-category-id="favorites"])',
   );
-  await expect(catalogCategories).toHaveCount(4);
+  expect(await catalogCategories.count()).toBeGreaterThanOrEqual(4);
   await expect(page.locator('[data-view="catalog"] [data-category-id="gaseosas"]')).toHaveText('Gaseosas');
   await expect(page.locator('[data-view="catalog"] [data-category-id="cervezas"]')).toHaveText('Cervezas');
   await expect(page.locator('[data-product-grid] .product-card').first()).not.toContainText('QA');
@@ -301,4 +300,40 @@ test('la CTA móvil compacta reserva espacio real sobre la navegación', async (
       floatingBox.y - 8,
     );
   }
+});
+
+test('la búsqueda del storefront responde con y sin resultados según el query', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await installBrowserStubs(page);
+  await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
+
+  const search = page.locator('[data-view="catalog"] [data-search-input]');
+  const cards = page.locator('[data-product-grid] .product-card');
+  const emptyState = page.locator('[data-product-grid] .empty-state');
+
+  const expectations = [
+    ['cerveza', true],
+    ['energizante', true],
+    ['gin', true],
+    ['fernet', false],
+    ['vodka', false],
+    ['whisky', false],
+    ['vino', false],
+    ['agua', false],
+  ];
+
+  for (const [query, shouldHaveResults] of expectations) {
+    await search.fill(query);
+    if (shouldHaveResults) {
+      await expect.poll(async () => cards.count(), { timeout: 1_000 }).toBeGreaterThan(0);
+      await expect(emptyState).toHaveCount(0);
+    } else {
+      await expect.poll(async () => cards.count(), { timeout: 1_000 }).toBe(0);
+      await expect(emptyState).toHaveCount(1);
+      await expect(emptyState).toContainText('No encontramos esa bebida.');
+    }
+    await search.fill('');
+  }
+
+  await guards.assertClean();
 });

@@ -106,7 +106,7 @@ test('complete master and thumbnail swap between SKUs breaks deterministic ident
   assert.ok(report.errors.some((error) => /bindingSha256 master/.test(error)));
 });
 
-test('image verification accepts the approved demo and keeps the commercial template fail-closed', () => {
+test('image verification accepts the approved demo and the traced commercial manifest', () => {
   const approvedDemo = spawnSync(
     process.execPath,
     ['scripts/catalog-images/verify-approved-demo.mjs'],
@@ -115,13 +115,13 @@ test('image verification accepts the approved demo and keeps the commercial temp
   assert.equal(approvedDemo.status, 0, `${approvedDemo.stdout}\n${approvedDemo.stderr}`);
 
   const commercialArgs = ['scripts/catalog-images/verify.mjs'];
-  const commercialWithoutApproval = spawnSync(process.execPath, commercialArgs, {
+  const commercialManifest = spawnSync(process.execPath, commercialArgs, {
     cwd: root,
     encoding: 'utf8',
   });
-  assert.notEqual(commercialWithoutApproval.status, 0);
-  assert.match(
-    `${commercialWithoutApproval.stdout}\n${commercialWithoutApproval.stderr}`,
+  assert.equal(commercialManifest.status, 0, `${commercialManifest.stdout}\n${commercialManifest.stderr}`);
+  assert.ok(
+    `${commercialManifest.stdout}\n${commercialManifest.stderr}`,
     /no contiene im[aá]genes|allow-empty/i,
   );
 

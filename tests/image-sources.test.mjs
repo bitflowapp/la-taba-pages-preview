@@ -83,5 +83,6 @@ test('commercial image audit and manifest are explicit and traceable', () => {
     'utf8',
   ));
   assert.equal(manifest.schemaVersion, 1);
-  assert.equal(manifest.sources.length, 0);
+  assert.equal(manifest.sources.length, 44);
+  assert.ok(manifest.sources.every((source) => source.rightsStatus === 'PENDIENTE_DERECHOS'));
 });

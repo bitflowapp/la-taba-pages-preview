@@ -1,5 +1,6 @@
-import { expect, test } from '@playwright/test';
+﻿import { expect, test } from '@playwright/test';
 import { gotoDemoReset, installPageGuards } from './helpers.mjs';
+import { APPROVED_DEMO_BASE_PRODUCT_COUNT } from '../../scripts/approved-demo-base-skus.mjs';
 
 const SHOWCASE_PATH = '/?showcase=1#home';
 const LIVE_EXTERNAL_LINKS = [
@@ -186,7 +187,8 @@ test('customer showcase stops use the real catalog, cart, checkout, profile and 
 
   await selectShowcaseStep(page, 'catalog');
   await expectActiveView(page, 'catalog');
-  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(22);
+  const cards = page.locator('[data-product-grid] .product-card');
+  await expect.poll(async () => cards.count()).toBeGreaterThanOrEqual(APPROVED_DEMO_BASE_PRODUCT_COUNT);
 
   await selectShowcaseStep(page, 'pending-price');
   await expectActiveView(page, 'catalog');

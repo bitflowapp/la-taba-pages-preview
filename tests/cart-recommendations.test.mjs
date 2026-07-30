@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   cartNeedsComplementPrompt,
@@ -7,6 +7,7 @@ import {
 
 const products = [
   { id: 'beer', name: 'Cerveza', categoryId: 'cervezas', alcoholic: true, available: true, stock: 6, price: 1000 },
+  { id: 'fernet', name: 'Fernet Branca', categoryId: 'fernet-y-aperitivos', alcoholic: true, available: true, stock: 5, price: 5000 },
   { id: 'ice', name: 'Hielo en cubos', categoryId: 'hielo-y-extras', tags: ['hielo'], available: true, stock: 8, price: 500 },
   { id: 'candy', name: 'Golosinas', categoryId: 'picadas-y-deli', tags: ['golosinas'], available: true, stock: 5, price: 700 },
   { id: 'cola', name: 'Gaseosa cola', categoryId: 'gaseosas', available: true, stock: 9, price: 1200 },
@@ -21,7 +22,16 @@ test('cerveza prioriza hielo y acompañamientos disponibles, sin sugerir más al
   assert.ok(result.products.some((product) => product.id === 'candy'));
   assert.ok(result.products.some((product) => product.id === 'cola'));
   assert.ok(!result.products.some((product) => product.id === 'gin'));
+  assert.ok(!result.products.some((product) => product.id === 'fernet'));
   assert.ok(!result.products.some((product) => product.id === 'sold-out-snack'));
+});
+
+test('Fernet también activa complementos sin permitir sugerir otro producto alcohólico', () => {
+  const result = getCartRecommendations({ products, cart: [{ productId: 'fernet', quantity: 1 }] });
+  assert.equal(result.title, 'Completá tu pedido');
+  assert.ok(result.products.some((product) => product.id === 'ice'));
+  assert.ok(!result.products.some((product) => product.id === 'gin'));
+  assert.ok(!result.products.some((product) => product.id === 'fernet'));
 });
 
 test('no vuelve a abrir el paso previo si el carrito ya tiene un acompañamiento', () => {

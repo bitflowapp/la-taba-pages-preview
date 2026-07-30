@@ -1,13 +1,15 @@
-import { expect, test } from '@playwright/test';
+﻿import { expect, test } from '@playwright/test';
 import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
+import { APPROVED_DEMO_BASE_PRODUCT_COUNT } from '../../scripts/approved-demo-base-skus.mjs';
 
-test('demo aprobado muestra 22 SKU, packs y assets locales sin hotlinks', async ({ page }) => {
+test('demo aprobado muestra el catálogo base, packs y assets locales sin hotlinks', async ({ page }) => {
   const guards = installPageGuards(page);
   const requestedUrls = [];
   page.on('request', (request) => requestedUrls.push(request.url()));
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
-  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(22);
+  const cards = page.locator('[data-product-grid] .product-card');
+  await expect.poll(async () => cards.count()).toBeGreaterThanOrEqual(APPROVED_DEMO_BASE_PRODUCT_COUNT);
   await expect(page.locator('[data-view="catalog"] [data-category-id="mixers"]')).toBeVisible();
   await expect(page.locator('[data-view="catalog"] [data-category-id="energizantes"]')).toBeVisible();
   const pack = page.locator('[data-product-grid] .product-card').filter({ hasText: 'Coca-Cola Original' }).first();

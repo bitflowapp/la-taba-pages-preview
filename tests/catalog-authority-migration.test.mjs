@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
@@ -12,6 +12,7 @@ const sql = fs.readFileSync(migrationPath, 'utf8');
 const categories = [
   'Promos',
   'Gaseosas',
+  'Mixers',
   'Aguas',
   'Jugos',
   'Energéticas',
@@ -22,6 +23,15 @@ const categories = [
   'Whisky y destilados',
   'Picadas y deli',
   'Hielo y extras',
+  'fernet-y-aperitivos',
+  'aguas-y-sodas',
+  'isotonicas',
+  'vodkas',
+  'gin',
+  'whisky',
+  'ron-tequila-y-licores',
+  'vinos',
+  'espumantes',
 ];
 
 test('catalog authority migration is ordered after alcohol hardening', () => {
@@ -31,7 +41,7 @@ test('catalog authority migration is ordered after alcohol hardening', () => {
   assert.ok(names.indexOf(migrationName) > names.indexOf('20260725060000_alcohol_reservations_abuse.sql'));
 });
 
-test('verified products accept exactly the twelve canonical beverage categories', () => {
+test('verified products accept the expanded canonical beverage categories', () => {
   assert.match(sql, /products_verified_canonical_beverage_category/i);
   for (const category of categories) assert.match(sql, new RegExp(`'${category}'`, 'u'));
   assert.match(sql, /not is_verified\s+or category in/i);

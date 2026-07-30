@@ -20,7 +20,7 @@ test('Negocio: crea, edita, pausa y restaura el catálogo editable', async ({ br
   await expect(page.locator('[data-catalog-form]')).toBeVisible();
 
   await page.getByLabel('Producto a vender').fill('Producto Catalogo QA');
-  await page.getByLabel('Precio').fill('12345');
+  await page.getByRole('spinbutton', { name: 'Precio', exact: true }).fill('12345');
   await page.locator('select[name="categoryId"]').selectOption('gaseosas');
   await page.getByLabel('Descripción breve').fill('Producto creado desde negocio');
   await page.getByLabel('Etiqueta opcional').selectOption('Nuevo');
@@ -35,7 +35,7 @@ test('Negocio: crea, edita, pausa y restaura el catálogo editable', async ({ br
   await page.evaluate(() => { window.location.hash = '#business'; });
   const adminRow = page.locator('[data-catalog-admin-row]').filter({ hasText: 'Producto Catalogo QA' });
   await adminRow.getByRole('button', { name: 'Editar' }).click();
-  await page.getByLabel('Precio').fill('15999');
+  await page.getByRole('spinbutton', { name: 'Precio', exact: true }).fill('15999');
   await page.getByRole('button', { name: 'Guardar cambios' }).click();
   await waitForToast(page, 'Producto actualizado.');
 

@@ -1968,6 +1968,156 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row {
   text-decoration-style: solid;
 }
 
+/* Estado público canónico `on_the_way`: es el tramo con más tiempo de
+   pantalla real del cliente (pedido en movimiento, mapa en vivo). Reutiliza
+   la geometría del conector de progreso ya certificada en `arriving` (mismo
+   índice de paso, 2 de 4) para no tocar layout probado, pero con la energía
+   de marca —rojo vivo y un pulso sutil en el paso activo— en vez de la calma
+   de "ya llegó". */
+.tracking-premium.status-on_the_way .customer-progress {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin: 17px 6px 14px;
+}
+
+.tracking-premium.status-on_the_way .customer-progress::before,
+.tracking-premium.status-on_the_way .customer-progress::after {
+  position: absolute;
+  z-index: 0;
+  top: 8.25px;
+  left: 28px;
+  height: 1.5px;
+  content: "";
+}
+
+.tracking-premium.status-on_the_way .customer-progress::before {
+  right: 27px;
+  background: var(--taba-border-medium);
+}
+
+.tracking-premium.status-on_the_way .customer-progress::after {
+  width: 57%;
+  background: var(--taba-red);
+}
+
+.tracking-premium.status-on_the_way .track-step {
+  width: max-content;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.tracking-premium.status-on_the_way .track-step::before {
+  display: none;
+}
+
+.tracking-premium.status-on_the_way .track-dot {
+  width: 18px;
+  height: 18px;
+  border-width: 1px;
+}
+
+.tracking-premium.status-on_the_way .track-step.done .track-dot,
+.tracking-premium.status-on_the_way .track-step.current .track-dot {
+  border-color: var(--taba-red);
+  background: var(--taba-red);
+}
+
+.tracking-premium.status-on_the_way .track-step.done .track-dot::after {
+  width: 4px;
+  height: 7px;
+  border-width: 0 1.5px 1.5px 0;
+}
+
+/* El paso activo no lleva tilde de "hecho": es un punto sólido con un halo
+   estático, para que se distinga de un vistazo lo que ya pasó (tilde) de lo
+   que está pasando ahora (halo). Antes ambos se veían idénticos.
+   El halo es fijo (sin pulso propio): revisado en pantalla real, un pulso acá
+   compitiendo con el del punto "en vivo" del mapa y el aro del rider leía
+   como ruido. El único movimiento real que queda es el del marcador GPS, que
+   es la señal que efectivamente informa frescura de datos en tiempo real. */
+.tracking-premium.status-on_the_way .track-step.current .track-dot::after {
+  content: none;
+}
+
+.tracking-premium.status-on_the_way .track-step.current .track-dot {
+  box-shadow: 0 0 0 5px var(--taba-red-soft);
+}
+
+.tracking-premium.status-on_the_way .track-step.pending .track-dot {
+  border-color: var(--taba-border-medium);
+  background: var(--taba-warm-white);
+}
+
+.tracking-premium.status-on_the_way .track-step small {
+  color: var(--taba-graphite);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.tracking-premium.status-on_the_way .track-step.current small {
+  color: var(--taba-red);
+  font-weight: 750;
+}
+
+/* Titular y ETA: el minuto estimado es el dato que más se revisa en este
+   estado, así que gana peso y color de marca sin cambiar texto ni layout. */
+.tracking-premium.status-on_the_way .tracking-hero h1 {
+  font-weight: 780;
+}
+
+.tracking-premium.status-on_the_way .tracking-subtitle.is-active-eta strong {
+  color: var(--taba-red);
+  font-size: 1.06em;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* Mapa: mismo tamaño y comportamiento certificados; acá el mapa es el
+   protagonista de la pantalla, así que suma un poco más de elevación. */
+.tracking-premium.status-on_the_way .tracking-map-stage {
+  border-color: var(--taba-border-soft);
+  box-shadow: 0 10px 28px rgb(25 27 31 / 10%);
+}
+
+.tracking-premium.status-on_the_way .real-map-shell[data-map-freshness="fresh"] .real-map-live-dot {
+  animation: taba-live-dot-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes taba-live-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgb(220 24 39 / 9%); }
+  50% { box-shadow: 0 0 0 6px rgb(220 24 39 / 16%); }
+}
+
+.tracking-premium.status-on_the_way .lt-rider-marker.on-the-way {
+  filter: drop-shadow(0 4px 10px rgb(208 0 13 / 28%));
+}
+
+/* Tarjeta del rider: el aro sólo aparece cuando el GPS está confirmado en
+   vivo (el mismo dato que ya enciende el punto del mapa), para no prometer
+   una ubicación en tiempo real que no esté respaldada por datos. Es un halo
+   estático a propósito — ver la nota junto al paso activo del timeline: con
+   movimiento propio competía con el pulso del marcador GPS en el mapa. */
+.tracking-premium.status-on_the_way .tracking-rider-icon {
+  position: relative;
+}
+
+.tracking-premium.status-on_the_way .tracking-rider-card.is-live .tracking-rider-icon::after {
+  position: absolute;
+  inset: -4px;
+  border: 1.5px solid var(--taba-red);
+  border-radius: 50%;
+  opacity: 0.55;
+  content: "";
+  pointer-events: none;
+}
+
+.tracking-premium.status-on_the_way .tracking-rider-card.is-live [data-rider-status] {
+  color: var(--taba-red);
+}
+
 /* Estado público canónico `arriving`: composición equivalente a la referencia
    sin alterar el flujo, los datos ni el comportamiento del mapa. */
 body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar {
@@ -2437,5 +2587,9 @@ body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar
   .lt-rider-marker.is-motion-enabled,
   .tracking-summary-action svg {
     transition: none !important;
+  }
+
+  .tracking-premium.status-on_the_way .real-map-shell[data-map-freshness="fresh"] .real-map-live-dot {
+    animation: none !important;
   }
 }

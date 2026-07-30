@@ -132,6 +132,31 @@ test('tracking público arriving reproduce la composición y conserva datos real
     'Recentrar en la ubicación del repartidor',
   );
 
+  const mapTouchActions = await page.evaluate(() => {
+    const mapShell = document.querySelector(
+      '[data-tracking-panel] .status-arriving [data-real-map]',
+    );
+    const mapCanvas = mapShell?.querySelector('.maplibre-gl-canvas, .maplibregl-canvas');
+    const mapCanvasContainer = mapShell?.querySelector('.real-map-canvas');
+    const recenter = document.querySelector(
+      '[data-tracking-panel] .status-arriving [data-map-recenter]',
+    );
+    return {
+      mapShellAction: mapShell ? getComputedStyle(mapShell).touchAction : null,
+      mapCanvasAction: mapCanvas ? getComputedStyle(mapCanvas).touchAction : null,
+      mapCanvasContainerAction: mapCanvasContainer
+        ? getComputedStyle(mapCanvasContainer).touchAction
+        : null,
+      recenterAction: recenter ? getComputedStyle(recenter).touchAction : null,
+    };
+  });
+  expect(mapTouchActions.mapShellAction).not.toBe('manipulation');
+  expect(mapTouchActions.mapCanvasAction).not.toBe('manipulation');
+  expect(mapTouchActions.mapCanvasAction).not.toBe('none');
+  expect(mapTouchActions.mapCanvasContainerAction).not.toBe('manipulation');
+  expect(mapTouchActions.mapCanvasContainerAction).not.toBe('none');
+  expect(mapTouchActions.recenterAction).not.toBe('none');
+
   const riderCard = tracking.locator('[data-tracking-rider-card]');
   await expect(riderCard.locator('[data-rider-status]')).toHaveText('En la puerta');
   await expect(riderCard.locator('[data-rider-message]')).toHaveText(

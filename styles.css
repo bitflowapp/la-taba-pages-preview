@@ -30,3 +30,56 @@
 .sandbox-tools-links a { color:#a7192a; font-size:.8rem; font-weight:700; }
 .sandbox-tools-status { margin:12px 0 0; color:#5d626a; font-size:.78rem; }
 @media (max-width: 600px) { .sandbox-tools-panel { right: 8px; bottom: 8px; width: calc(100vw - 16px); } }
+
+@media (hover: none), (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  button,
+  a,
+  [role="button"],
+  [role="link"],
+  [data-nav-view],
+  [data-category-id],
+  [data-product-detail],
+  [data-favorite-toggle],
+  [data-add-product],
+  [data-cart-inc],
+  [data-cart-dec],
+  [data-cart-remove],
+  [data-clear-cart],
+  [data-open-cart],
+  [data-close-modal],
+  [data-checkout-suggestions-dismiss],
+  [data-map-recenter],
+  [data-repeat-order],
+  [data-repeat-confirm],
+  [data-repeat-dismiss],
+  .product-card,
+  .home-catalog-card,
+  .offer-card,
+  .recommendation-card,
+  .product-media,
+  .offer-card-media,
+  .home-catalog-media,
+  .recommendation-media,
+  .product-favorite,
+  .home-favorite-button,
+  .quantity-control,
+  .qty-stepper,
+  .modal-close,
+  .active-order-banner,
+  .mobile-nav,
+  [data-floating-cart],
+  .floating-cart,
+  .floating-cart-cta,
+  .tracking-menu-button,
+  .tracking-map-recenter,
+  .modal-quantity-field,
+  [role="button"][tabindex] {
+    touch-action: manipulation;
+  }
+}

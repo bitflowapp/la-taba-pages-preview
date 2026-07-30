@@ -1199,6 +1199,7 @@ function syncCustomerTrackingWithView(view) {
     active: true,
     orderId: order.backendId || order.id || order.code,
     status: order.workflowStatus || order.status,
+    terminalVisibleUntil: order.terminalVisibleUntil,
   });
 }
 

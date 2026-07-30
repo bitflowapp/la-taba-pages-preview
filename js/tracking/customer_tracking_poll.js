@@ -39,6 +39,7 @@ export function createCustomerTrackingPollController({
   setTimeoutImpl = globalThis.setTimeout,
   clearTimeoutImpl = globalThis.clearTimeout,
   AbortControllerImpl = globalThis.AbortController,
+  now = () => Date.now(),
   pollMs = CUSTOMER_TRACKING_POLL_MS,
   backgroundPollMs = CUSTOMER_TRACKING_BACKGROUND_POLL_MS,
 } = {}) {
@@ -57,6 +58,7 @@ export function createCustomerTrackingPollController({
   function getSnapshot() {
     return {
       active: session.active,
+      terminal: session.terminal,
       inFlight: Boolean(requestController),
       orderId: session.orderId,
       status: session.status,
@@ -67,9 +69,19 @@ export function createCustomerTrackingPollController({
     const orderId = String(next.orderId || '').trim();
     const trackingToken = String(next.trackingToken || '').trim();
     const status = normalizeWorkflowStatus(next.status, '');
+    const terminalVisibleUntil = normalizeTerminalVisibleUntil(next.terminalVisibleUntil);
     const changedAccess = orderId !== session.orderId || trackingToken !== session.trackingToken;
 
-    if (!orderId || !trackingToken || isTerminalCustomerTrackingStatus(status)) {
+    if (!orderId || !trackingToken) {
+      stop();
+      return getSnapshot();
+    }
+
+    if (status === 'delivered') {
+      startTerminalVisibility({ orderId, trackingToken, terminalVisibleUntil, changedAccess });
+      return getSnapshot();
+    }
+    if (isTerminalCustomerTrackingStatus(status)) {
       stop();
       return getSnapshot();
     }
@@ -78,7 +90,7 @@ export function createCustomerTrackingPollController({
       abortRequest();
       hasStartedCurrentAccess = false;
     }
-    session = { active: true, orderId, trackingToken, status };
+    session = { active: true, terminal: false, orderId, trackingToken, status, terminalVisibleUntil: '' };
     bindLifecycle();
 
     if (!shouldPollCustomerTracking(status)) {
@@ -136,12 +148,22 @@ export function createCustomerTrackingPollController({
           return;
         }
         if (result?.kind === 'snapshot' && result.order) {
-          session.status = normalizeWorkflowStatus(
+          const nextStatus = normalizeWorkflowStatus(
             result.order.workflowStatus || result.order.status || session.status,
             session.status,
           );
+          session.status = nextStatus;
           onSnapshot(result.order);
-          if (isTerminalCustomerTrackingStatus(session.status)) {
+          if (nextStatus === 'delivered') {
+            startTerminalVisibility({
+              orderId: current.orderId,
+              trackingToken: current.trackingToken,
+              terminalVisibleUntil: normalizeTerminalVisibleUntil(result.order.terminalVisibleUntil),
+              changedAccess: false,
+            });
+            return;
+          }
+          if (isTerminalCustomerTrackingStatus(nextStatus)) {
             stop();
             return;
           }
@@ -167,12 +189,119 @@ export function createCustomerTrackingPollController({
     }, delay);
   }
 
+  function startTerminalVisibility({ orderId, trackingToken, terminalVisibleUntil, changedAccess }) {
+    if (!terminalVisibleUntil) {
+      onUnavailable({ orderId });
+      stop();
+      return;
+    }
+    const unchangedTerminal = session.terminal
+      && !changedAccess
+      && session.terminalVisibleUntil === terminalVisibleUntil;
+    if (unchangedTerminal) {
+      scheduleTerminalRevalidation();
+      return;
+    }
+
+    clearTimer();
+    abortRequest();
+    hasStartedCurrentAccess = false;
+    session = {
+      active: false,
+      terminal: true,
+      orderId,
+      trackingToken,
+      status: 'delivered',
+      terminalVisibleUntil,
+    };
+    bindLifecycle();
+    if (terminalExpiresAt() <= now()) {
+      void revalidateTerminal();
+      return;
+    }
+    scheduleTerminalRevalidation();
+  }
+
+  function scheduleTerminalRevalidation() {
+    clearTimer();
+    if (!session.terminal) return;
+    const delay = Math.max(0, terminalExpiresAt() - now());
+    timerId = setTimeoutImpl(() => {
+      timerId = null;
+      void revalidateTerminal();
+    }, delay);
+  }
+
+  function revalidateTerminal() {
+    if (!session.terminal) return;
+    clearTimer();
+    abortRequest();
+    const request = AbortControllerImpl ? new AbortControllerImpl() : null;
+    requestController = request;
+    const current = { ...session, request };
+
+    Promise.resolve(fetchSnapshot({
+      orderId: current.orderId,
+      trackingToken: current.trackingToken,
+      signal: request?.signal,
+    }))
+      .then((result) => {
+        if (!isCurrentTerminalRequest(current)) return;
+        requestController = null;
+        if (result?.kind === 'aborted') return;
+        if (result?.kind === 'unavailable') {
+          onUnavailable({ orderId: current.orderId });
+          stop();
+          return;
+        }
+        if (result?.kind === 'snapshot' && result.order) {
+          const nextStatus = normalizeWorkflowStatus(
+            result.order.workflowStatus || result.order.status || current.status,
+            current.status,
+          );
+          onSnapshot(result.order);
+          if (nextStatus === 'delivered') {
+            startTerminalVisibility({
+              orderId: current.orderId,
+              trackingToken: current.trackingToken,
+              terminalVisibleUntil: normalizeTerminalVisibleUntil(result.order.terminalVisibleUntil),
+              changedAccess: false,
+            });
+            return;
+          }
+          update({
+            orderId: current.orderId,
+            trackingToken: current.trackingToken,
+            status: nextStatus,
+          });
+          return;
+        }
+        onError({ orderId: current.orderId, error: result?.error || null });
+      })
+      .catch((error) => {
+        if (!isCurrentTerminalRequest(current) || isAbortError(error)) return;
+        requestController = null;
+        onError({ orderId: current.orderId, error });
+      });
+  }
+
   function onLifecycleResume() {
+    if (session.terminal) {
+      // A suspended timeout is not authoritative on mobile. Resuming a page or
+      // recovering connectivity always asks the server again, which also makes
+      // a manual security revocation immediate on the next lifecycle signal.
+      void revalidateTerminal();
+      return;
+    }
     if (!session.active || documentRef?.hidden) return;
     void pollNow();
   }
 
   function onVisibilityChange() {
+    if (session.terminal) {
+      if (!documentRef?.hidden) onLifecycleResume();
+      return;
+    }
     if (!session.active) return;
     if (documentRef?.hidden) {
       clearTimer();
@@ -188,6 +317,7 @@ export function createCustomerTrackingPollController({
     documentRef?.addEventListener?.('visibilitychange', onVisibilityChange);
     windowRef?.addEventListener?.('focus', onLifecycleResume);
     windowRef?.addEventListener?.('pageshow', onLifecycleResume);
+    windowRef?.addEventListener?.('online', onLifecycleResume);
   }
 
   function unbindLifecycle() {
@@ -196,6 +326,7 @@ export function createCustomerTrackingPollController({
     documentRef?.removeEventListener?.('visibilitychange', onVisibilityChange);
     windowRef?.removeEventListener?.('focus', onLifecycleResume);
     windowRef?.removeEventListener?.('pageshow', onLifecycleResume);
+    windowRef?.removeEventListener?.('online', onLifecycleResume);
   }
 
   function clearTimer() {
@@ -215,11 +346,35 @@ export function createCustomerTrackingPollController({
       && requestController === request.request;
   }
 
+  function isCurrentTerminalRequest(request) {
+    return session.terminal
+      && session.orderId === request.orderId
+      && session.trackingToken === request.trackingToken
+      && session.terminalVisibleUntil === request.terminalVisibleUntil
+      && requestController === request.request;
+  }
+
+  function terminalExpiresAt() {
+    return Date.parse(session.terminalVisibleUntil);
+  }
+
   return { getSnapshot, pollNow, stop, update };
 }
 
 function emptySession() {
-  return { active: false, orderId: '', trackingToken: '', status: '' };
+  return {
+    active: false,
+    terminal: false,
+    orderId: '',
+    trackingToken: '',
+    status: '',
+    terminalVisibleUntil: '',
+  };
+}
+
+function normalizeTerminalVisibleUntil(value) {
+  const timestamp = Date.parse(String(value || ''));
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : '';
 }
 
 function isAbortError(error) {

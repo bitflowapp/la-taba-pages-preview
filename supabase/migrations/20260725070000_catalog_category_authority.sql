@@ -1,4 +1,4 @@
--- Canonical beverage taxonomy and authoritative alcohol metadata.
+﻿-- Canonical beverage taxonomy and authoritative alcohol metadata.
 --
 -- Catalog imports remain fail-closed: rows that do not satisfy this contract
 -- may exist while unverified, but they cannot be verified or published.
@@ -15,6 +15,7 @@ update public.products
      category in (
        'Promos',
        'Gaseosas',
+       'Mixers',
        'Aguas',
        'Jugos',
        'Energéticas',
@@ -24,7 +25,16 @@ update public.products
        'Gins y vodkas',
        'Whisky y destilados',
        'Picadas y deli',
-       'Hielo y extras'
+       'Hielo y extras',
+       'fernet-y-aperitivos',
+       'aguas-y-sodas',
+       'isotonicas',
+       'vodkas',
+       'gin',
+       'whisky',
+       'ron-tequila-y-licores',
+       'vinos',
+       'espumantes'
      )
      and (
        (
@@ -32,17 +42,27 @@ update public.products
            'Cervezas',
            'Vinos y espumantes',
            'Gins y vodkas',
-           'Whisky y destilados'
+           'Whisky y destilados',
+           'fernet-y-aperitivos',
+           'vodkas',
+           'gin',
+           'whisky',
+           'ron-tequila-y-licores',
+           'vinos',
+           'espumantes'
          )
          and is_alcoholic is true
        )
        or (
          category in (
            'Gaseosas',
+           'Mixers',
            'Aguas',
            'Jugos',
            'Energéticas',
            'Isotónicas',
+           'aguas-y-sodas',
+           'isotonicas',
            'Picadas y deli',
            'Hielo y extras'
          )
@@ -70,6 +90,7 @@ alter table public.products
     or category in (
       'Promos',
       'Gaseosas',
+      'Mixers',
       'Aguas',
       'Jugos',
       'Energéticas',
@@ -79,7 +100,16 @@ alter table public.products
       'Gins y vodkas',
       'Whisky y destilados',
       'Picadas y deli',
-      'Hielo y extras'
+      'Hielo y extras',
+      'fernet-y-aperitivos',
+      'aguas-y-sodas',
+      'isotonicas',
+      'vodkas',
+      'gin',
+      'whisky',
+      'ron-tequila-y-licores',
+      'vinos',
+      'espumantes'
     )
   );
 
@@ -95,17 +125,27 @@ alter table public.products
             'Cervezas',
             'Vinos y espumantes',
             'Gins y vodkas',
-            'Whisky y destilados'
+            'Whisky y destilados',
+            'fernet-y-aperitivos',
+            'vodkas',
+            'gin',
+            'whisky',
+            'ron-tequila-y-licores',
+            'vinos',
+            'espumantes'
           )
           and is_alcoholic is true
         )
         or (
           category in (
             'Gaseosas',
+            'Mixers',
             'Aguas',
             'Jugos',
             'Energéticas',
             'Isotónicas',
+            'aguas-y-sodas',
+            'isotonicas',
             'Picadas y deli',
             'Hielo y extras'
           )
@@ -135,6 +175,6 @@ create unique index products_business_sku_key
 on public.products(business_id, sku);
 
 comment on constraint products_verified_canonical_beverage_category on public.products is
-  'Verified products use one of the twelve canonical TABA beverage categories.';
+  'Verified products use one of the expanded canonical TABA beverage categories.';
 comment on constraint products_verified_alcohol_coherence on public.products is
   'Verified alcohol metadata is category-consistent; alcohol requires an age from 18 to 99.';

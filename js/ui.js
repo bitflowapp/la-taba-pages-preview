@@ -1,4 +1,4 @@
-import { getBusinessConfig } from './core/business-config-store.js';
+﻿import { getBusinessConfig } from './core/business-config-store.js';
 import { BRAND } from './config.js';
 import { categories } from './data.js';
 import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
@@ -836,7 +836,7 @@ function renderCategories() {
 }
 
 // Productos filtrados por categoría + búsqueda, ya ordenados.
-function getFilteredProducts(state) {
+export function getFilteredProducts(state) {
   const query = normalizeSearchText(state.searchQuery);
   const favoriteIds = new Set(getFavoriteProductIds());
   const promoProductIds = activePromotionProductIds(state);

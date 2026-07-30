@@ -1,4 +1,4 @@
-import { categories, products as demoProducts } from '../data.js';
+﻿import { categories, products as demoProducts } from '../data.js';
 import { normalizeMoneyValue, normalizeStock } from './pricing.js';
 import { sanitizeText } from './validators.js';
 
@@ -21,6 +21,13 @@ const ALCOHOLIC_CATEGORY_IDS = new Set([
   'vinos-y-espumantes',
   'gins-y-vodkas',
   'whisky-y-destilados',
+  'fernet-y-aperitivos',
+  'vodkas',
+  'gin',
+  'whisky',
+  'ron-tequila-y-licores',
+  'vinos',
+  'espumantes',
 ]);
 
 const TONE_BY_CATEGORY = Object.freeze({
@@ -30,11 +37,19 @@ const TONE_BY_CATEGORY = Object.freeze({
   aguas: 'drink',
   jugos: 'drink',
   energeticas: 'drink',
-  isotonicas: 'drink',
+  'aguas-y-sodas': 'drink',
+  'isotonicas': 'drink',
   cervezas: 'alcoholic',
   'vinos-y-espumantes': 'alcoholic',
   'gins-y-vodkas': 'alcoholic',
   'whisky-y-destilados': 'alcoholic',
+  'fernet-y-aperitivos': 'alcoholic',
+  'vodkas': 'alcoholic',
+  'gin': 'alcoholic',
+  'whisky': 'alcoholic',
+  'ron-tequila-y-licores': 'alcoholic',
+  'vinos': 'alcoholic',
+  'espumantes': 'alcoholic',
   'picadas-y-deli': 'food',
   'hielo-y-extras': 'ice',
   promos: 'promo',
@@ -50,8 +65,16 @@ const UNIT_BY_CATEGORY = Object.freeze({
   isotonicas: { unit: 'unidad', unitLabel: 'Unidad' },
   cervezas: { unit: 'unidad', unitLabel: 'Unidad' },
   'vinos-y-espumantes': { unit: 'unidad', unitLabel: 'Unidad' },
+  'fernet-y-aperitivos': { unit: 'unidad', unitLabel: 'Unidad' },
+  'aguas-y-sodas': { unit: 'unidad', unitLabel: 'Unidad' },
   'gins-y-vodkas': { unit: 'unidad', unitLabel: 'Unidad' },
   'whisky-y-destilados': { unit: 'unidad', unitLabel: 'Unidad' },
+  vodkas: { unit: 'unidad', unitLabel: 'Unidad' },
+  gin: { unit: 'unidad', unitLabel: 'Unidad' },
+  whisky: { unit: 'unidad', unitLabel: 'Unidad' },
+  'ron-tequila-y-licores': { unit: 'unidad', unitLabel: 'Unidad' },
+  vinos: { unit: 'unidad', unitLabel: 'Unidad' },
+  espumantes: { unit: 'unidad', unitLabel: 'Unidad' },
   'picadas-y-deli': { unit: 'unidad', unitLabel: 'Unidad' },
   'hielo-y-extras': { unit: 'unidad', unitLabel: 'Unidad' },
   promos: { unit: 'promo', unitLabel: 'Promo' },

@@ -1,4 +1,4 @@
--- Authoritative catalog publication and approved image registry.
+﻿-- Authoritative catalog publication and approved image registry.
 --
 -- Product imports are staged unpublished. Only an active owner/admin may
 -- register approved assets and publish a product through the RPCs below.
@@ -660,14 +660,24 @@ begin
     if v_category not in (
       'Promos',
       'Gaseosas',
+      'Mixers',
       'Aguas',
       'Jugos',
       'Energéticas',
       'Isotónicas',
+      'fernet-y-aperitivos',
+      'aguas-y-sodas',
+      'isotonicas',
       'Cervezas',
       'Vinos y espumantes',
       'Gins y vodkas',
       'Whisky y destilados',
+      'vodkas',
+      'gin',
+      'whisky',
+      'ron-tequila-y-licores',
+      'vinos',
+      'espumantes',
       'Picadas y deli',
       'Hielo y extras'
     ) then

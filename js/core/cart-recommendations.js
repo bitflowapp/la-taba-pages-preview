@@ -1,4 +1,4 @@
-// Reglas de venta complementaria locales, legibles y deterministas. No usan
+﻿// Reglas de venta complementaria locales, legibles y deterministas. No usan
 // perfiles personales ni servicios remotos: sólo catálogo, carrito y stock.
 const DRINK_CATEGORIES = new Set([
   'gaseosas',
@@ -7,13 +7,30 @@ const DRINK_CATEGORIES = new Set([
   'energeticas',
   'isotonicas',
   'cervezas',
+  'fernet-y-aperitivos',
+  'aguas-y-sodas',
+  'gin',
+  'vodkas',
+  'whisky',
+  'ron-tequila-y-licores',
+  'vinos',
+  'espumantes',
   'vinos-y-espumantes',
   'gins-y-vodkas',
   'whisky-y-destilados',
+  'mixers',
 ]);
 
 const ALCOHOL_CATEGORIES = new Set([
   'cervezas',
+  'fernet-y-aperitivos',
+  'aguas-y-sodas',
+  'gin',
+  'vodkas',
+  'whisky',
+  'ron-tequila-y-licores',
+  'vinos',
+  'espumantes',
   'vinos-y-espumantes',
   'gins-y-vodkas',
   'whisky-y-destilados',

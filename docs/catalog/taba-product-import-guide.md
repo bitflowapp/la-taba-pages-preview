@@ -1,12 +1,13 @@
-# Importación del catálogo TABA
+﻿# Importación del catálogo TABA
 
 `data/catalog-template.csv` contiene sólo encabezados: no inventa precios,
 stock, marcas ni productos. Completar una fila por SKU aprobado, UTF-8 y punto
 decimal. `external_id` y `sku` deben ser estables y únicos por comercio.
 
-Categorías exactas: Promos, Gaseosas, Aguas, Jugos, Energéticas, Isotónicas,
-Cervezas, Vinos y espumantes, Gins y vodkas, Whisky y destilados, Picadas y
-deli, Hielo y extras.
+Categorías exactas: Promos, Gaseosas, Mixers, Aguas, Jugos, Energéticas,
+Isotónicas, Cervezas, Vinos y espumantes, Gins y vodkas, Whisky y destilados,
+fernet-y-aperitivos, aguas-y-sodas, isotonicas, vodkas, gin, whisky,
+ron-tequila-y-licores, vinos, espumantes, Picadas y deli, Hielo y extras.
 
 Validar antes de importar. El comando sin archivo falla deliberadamente para
 evitar aprobar por accidente el template vacío:

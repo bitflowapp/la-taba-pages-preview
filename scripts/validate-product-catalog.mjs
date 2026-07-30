@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+﻿import fs from 'node:fs';
 import path from 'node:path';
 import {
   findManifestSource,
@@ -9,6 +9,7 @@ import {
 export const CATEGORY_NAMES = Object.freeze([
   'Promos',
   'Gaseosas',
+  'Mixers',
   'Aguas',
   'Jugos',
   'Energéticas',
@@ -19,6 +20,15 @@ export const CATEGORY_NAMES = Object.freeze([
   'Whisky y destilados',
   'Picadas y deli',
   'Hielo y extras',
+  'fernet-y-aperitivos',
+  'aguas-y-sodas',
+  'isotonicas',
+  'vodkas',
+  'gin',
+  'whisky',
+  'ron-tequila-y-licores',
+  'vinos',
+  'espumantes',
 ]);
 
 export const CATEGORIES = new Set(CATEGORY_NAMES);
@@ -29,13 +39,23 @@ export const ALCOHOL_REQUIRED_CATEGORIES = new Set([
   'Vinos y espumantes',
   'Gins y vodkas',
   'Whisky y destilados',
+  'fernet-y-aperitivos',
+  'vodkas',
+  'gin',
+  'whisky',
+  'ron-tequila-y-licores',
+  'vinos',
+  'espumantes',
 ]);
 export const ALCOHOL_FORBIDDEN_CATEGORIES = new Set([
+  'Mixers',
   'Gaseosas',
   'Aguas',
   'Jugos',
   'Energéticas',
   'Isotónicas',
+  'aguas-y-sodas',
+  'isotonicas',
   'Picadas y deli',
   'Hielo y extras',
 ]);

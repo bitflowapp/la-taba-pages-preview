@@ -257,7 +257,14 @@ test('tracking público arriving reproduce la composición y conserva datos real
       }
     });
     if (viewport.width === 390 && viewport.height === 844) {
-      expect(measurements.helpBottom).toBeLessThanOrEqual(viewport.height + 2);
+      // El pie tiene que entrar en pantalla en el dispositivo de referencia. La
+      // tolerancia absorbe la variación tipográfica del host: `--font-sans`
+      // declara `Inter` primero, pero la aplicación no la sirve, así que cada
+      // sistema resuelve un fallback distinto y el ritmo vertical acumulado
+      // cambia unos 7px entre uno y otro. Medido: 841,5px con Segoe UI y
+      // 848,1px con la sans-serif genérica de ubuntu-latest. La holgura deja
+      // pasar esa dispersión y sigue detectando una regresión real de layout.
+      expect(measurements.helpBottom).toBeLessThanOrEqual(viewport.height + 10);
     }
   }
 

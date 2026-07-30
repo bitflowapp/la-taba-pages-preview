@@ -101,6 +101,6 @@ function normalizeProfile(value) {
   };
 }
 
-function failure(message) {
-  return { ok: false, message };
+function failure(message, code) {
+  return { ok: false, ...(code ? { code } : {}), message };
 }

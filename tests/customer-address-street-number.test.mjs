@@ -17,6 +17,10 @@ const customerAddressMigration = fs.readFileSync(
   path.join(root, 'supabase', 'migrations', '20260728090000_customer_profiles_addresses.sql'),
   'utf8',
 );
+const customerProfileView = fs.readFileSync(
+  path.join(root, 'js', 'customer-profile-view.js'),
+  'utf8',
+);
 
 test('la captura combinada conserva número con letra y S/N explícito', () => {
   assert.deepEqual(splitStreetAndNumber('Roca 1234 A'), {
@@ -40,6 +44,17 @@ test('el contrato frontend rechaza ausentes y vacíos sin inventar S/N', () => {
     assert.equal(result.ok, true, value);
     assert.equal(result.streetNumber, value.trim());
   }
+});
+
+test('el campo de número abre un teclado compatible con 1234 A, Lote 4 y S/N', () => {
+  assert.match(
+    customerProfileView,
+    /name="profileAddressNumber"[^>]*inputmode="text"[^>]*placeholder="1234, 1234 A o S\/N"/i,
+  );
+  assert.doesNotMatch(
+    customerProfileView,
+    /name="profileAddressNumber"[^>]*inputmode="numeric"/i,
+  );
 });
 
 test('el repositorio acepta números explícitos y la migración rechaza sólo vacíos activos', async () => {

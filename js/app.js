@@ -172,6 +172,16 @@ function closeRepeatModal() {
   if (modal?.open) modal.close();
 }
 
+function openClearCartModal() {
+  const modal = document.querySelector('[data-clear-cart-modal]');
+  if (modal && typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+}
+
+function closeClearCartModal() {
+  const modal = document.querySelector('[data-clear-cart-modal]');
+  if (modal?.open) modal.close();
+}
+
 // Limpieza segura de la sesión demo: abrir la app con ?reset=1 (o ?demo-reset=1)
 // borra pedidos, carrito y acceso del negocio guardados en este equipo y recarga
 // limpio. Pensado para empezar una presentación sin pedidos de prueba viejos.
@@ -756,8 +766,19 @@ function bindEvents() {
     }
 
     if (target.closest('[data-clear-cart]')) {
-      clearCart();
-      showToast('Carrito vaciado.');
+      if (getState().cart.length) openClearCartModal();
+      return;
+    }
+
+    if (target.closest('[data-clear-cart-confirm]')) {
+      const result = clearCart();
+      closeClearCartModal();
+      showToast(result.message || 'Carrito vaciado.');
+      return;
+    }
+
+    if (target.closest('[data-clear-cart-dismiss]')) {
+      closeClearCartModal();
       return;
     }
 
@@ -1145,6 +1166,10 @@ function bindEvents() {
 
   $('[data-pitch-modal]')?.addEventListener('click', (event) => {
     if (event.target === event.currentTarget) closePitchModal();
+  });
+
+  $('[data-clear-cart-modal]')?.addEventListener('click', (event) => {
+    if (event.target === event.currentTarget) closeClearCartModal();
   });
 }
 

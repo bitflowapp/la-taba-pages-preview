@@ -282,9 +282,15 @@
 }
 
 .profile-address-actions .text-button {
-  min-height: 36px;
-  padding: 5px 3px;
+  flex: 0 1 auto;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 8px 3px;
   font-size: 12px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .profile-no-addresses {

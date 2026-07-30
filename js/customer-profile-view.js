@@ -524,7 +524,7 @@ function renderAddressEditor() {
     <div class="profile-form-grid">
       <label><span>Etiqueta</span><select name="profileAddressLabel">${['Casa', 'Trabajo', 'Otra'].map((label) => `<option value="${label}" ${(address.label || 'Casa') === label ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
       <label class="is-wide"><span>Calle</span><input name="profileAddressStreet" maxlength="120" autocomplete="address-line1" required value="${escapeAttr(address.street || '')}" placeholder="Antártida Argentina" /></label>
-      <label><span>Número</span><input name="profileAddressNumber" maxlength="24" inputmode="numeric" required value="${escapeAttr(address.streetNumber || '')}" placeholder="1234" /></label>
+      <label><span>Número</span><input name="profileAddressNumber" maxlength="24" inputmode="text" required value="${escapeAttr(address.streetNumber || '')}" placeholder="1234, 1234 A o S/N" /></label>
       <label><span>Piso <em>opcional</em></span><input name="profileAddressFloor" maxlength="24" autocomplete="address-line2" value="${escapeAttr(address.floor || '')}" /></label>
       <label><span>Departamento <em>opcional</em></span><input name="profileAddressApartment" maxlength="24" autocomplete="address-line2" value="${escapeAttr(address.apartment || '')}" /></label>
       <label><span>Ciudad</span><input name="profileAddressCity" maxlength="100" autocomplete="address-level2" required value="${escapeAttr(city)}" /></label>

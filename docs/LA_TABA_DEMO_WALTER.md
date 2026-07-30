@@ -12,13 +12,14 @@ Sin jerga técnica: se muestra el producto funcionando.
 
 - Desde `<REPO_ROOT>`, levantar la app en esta compu:
   `python -m http.server 8080 --directory .`
-- **URL de la demo:** `http://127.0.0.1:8080/?reset=1&pitch=1`
+- **URL de la demo:** `http://127.0.0.1:8080/?demo=1&reset=1&pitch=1`
+  - `demo=1` activa de forma explícita el repositorio y los permisos locales de demostración.
   - `reset=1` borra pedidos de prueba viejos y deja la demo limpia.
   - `pitch=1` abre la presentación comercial de entrada.
   - Con esta URL de demo el local se muestra **Abierto** aunque presentes fuera del
     horario real (9–21 h): es un **horario ampliado solo de demostración**, no cambia
     el horario real del comercio. Sin estas flags, el Home respeta el horario real.
-    (También sirve `?demo=1` como flag explícita de demo.)
+    La URL canónica de arriba ya incluye la flag explícita de demo.
 - Si algo queda sucio a mitad de la demo: panel del negocio →
   **Guía para presentar la demo → Reiniciar demo**, o recargar con la URL de arriba.
 - PIN del comercio (demo): `1234`.

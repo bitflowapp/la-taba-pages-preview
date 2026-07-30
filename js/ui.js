@@ -366,9 +366,15 @@ function offerBadges(product) {
   return badge ? `<div class="product-badges">${badge}</div>` : '';
 }
 
+const PRICE_PENDING_TITLE = 'Precio a confirmar';
+const PRICE_PENDING_DETAIL = 'Todavía no se puede agregar.';
+
 function priceBlock(product) {
   if (product.pricePending) {
-    return '<div class="price"><div class="price-amounts"><strong>Precio pendiente</strong></div></div>';
+    return `<div class="price" data-price-pending-message>
+      <div class="price-amounts"><strong>${PRICE_PENDING_TITLE}</strong></div>
+      <small class="price-condition">${PRICE_PENDING_DETAIL}</small>
+    </div>`;
   }
   const pricing = productPricePresentation(product);
   const old = pricing.regularPrice && pricing.regularPrice > pricing.price
@@ -404,8 +410,11 @@ function quantityControl(product, quantity, { className = 'qty-stepper' } = {}) 
 function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
   const outOfStock = product.stock <= 0 || !product.available || product.pricePending;
   if (quantity > 0) return quantityControl(product, quantity);
-  return `<button class="${className}" type="button" data-add-product="${escapeHtml(product.id)}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${outOfStock ? 'disabled' : ''}>
-    <span class="add-plus" aria-hidden="true">+</span><span class="add-text">${product.pricePending ? 'Precio pendiente' : (outOfStock ? 'No disponible' : 'Agregar')}</span>
+  const actionLabel = product.pricePending
+    ? `${product.name}: ${PRICE_PENDING_TITLE.toLowerCase()}; ${PRICE_PENDING_DETAIL.toLowerCase()}`
+    : `Agregar ${product.name} al pedido`;
+  return `<button class="${className}${product.pricePending ? ' is-price-pending' : ''}" type="button" data-add-product="${escapeHtml(product.id)}" aria-label="${escapeHtml(actionLabel)}" ${outOfStock ? 'disabled' : ''}>
+    ${product.pricePending ? '' : '<span class="add-plus" aria-hidden="true">+</span>'}<span class="add-text">${product.pricePending ? 'A confirmar' : outOfStock ? 'No disponible' : 'Agregar'}</span>
   </button>`;
 }
 
@@ -1062,7 +1071,7 @@ function renderProducts() {
         <div class="product-body">
           <h3>${escapeHtml(product.name)}</h3>
           <p>${escapeHtml(presentation)}</p>
-          <small class="product-availability ${outOfStock ? 'is-unavailable' : ''}">${escapeHtml(cardAvailabilityLabel(product))}</small>
+          ${product.pricePending ? '' : `<small class="product-availability ${outOfStock ? 'is-unavailable' : ''}">${escapeHtml(cardAvailabilityLabel(product))}</small>`}
         </div>
         <div class="product-bottom">
           ${priceBlock(product)}
@@ -1075,7 +1084,7 @@ function renderProducts() {
 // Pill de disponibilidad: sólo aparece cuando hay algo que avisar (agotado,
 // pausado, últimas unidades). Lo normal —estar disponible— no se etiqueta.
 export function stockPill(product) {
-  if (product.pricePending) return '<span class="stock-pill empty">Precio pendiente</span>';
+  if (product.pricePending) return '';
   if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
   if (!product.available) return '<span class="stock-pill empty">No disponible</span>';
   if (product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
@@ -1085,7 +1094,7 @@ export function stockPill(product) {
 
 // Texto plano de disponibilidad para el detalle del producto.
 export function availabilityLabel(product) {
-  if (product.pricePending) return 'Precio pendiente';
+  if (product.pricePending) return `${PRICE_PENDING_TITLE}; ${PRICE_PENDING_DETAIL.toLowerCase()}`;
   if (product.archived || !product.available) return 'No disponible por ahora';
   if (product.stock <= 0) return 'Agotado';
   if (product.stock <= 4) return `Quedan ${product.stock}`;
@@ -1093,6 +1102,7 @@ export function availabilityLabel(product) {
 }
 
 function cardAvailabilityLabel(product) {
+  if (product.pricePending) return '';
   if (product.archived || !product.available) return 'No disponible';
   if (product.stock <= 0) return 'Agotado';
   if (product.stock <= 4) return `Últimas ${product.stock}`;
@@ -2337,10 +2347,10 @@ export function showProductModal(productId) {
         <div class="modal-commerce-row">
           <div class="modal-price">
             ${product.pricePending
-              ? '<strong>Precio pendiente</strong>'
+              ? `<div data-price-pending-message><strong>${PRICE_PENDING_TITLE}</strong><small>${PRICE_PENDING_DETAIL}</small></div>`
               : `${pricing.regularPrice && pricing.regularPrice > pricing.price ? `<s>${money(pricing.regularPrice)}</s>` : ''}<strong>${money(pricing.price)}</strong>${pricing.condition ? `<small>${escapeHtml(pricing.condition)}</small>` : ''}`}
           </div>
-          <span class="modal-availability ${product.stock <= 0 || !product.available || product.pricePending ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>
+          ${product.pricePending ? '' : `<span class="modal-availability ${product.stock <= 0 || !product.available ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>`}
         </div>
         ${variants.length > 1 ? `
           <fieldset class="modal-variant-field">
@@ -2362,13 +2372,13 @@ export function showProductModal(productId) {
           </fieldset>` : ''}
         <div class="modal-order-fields">
           <div class="modal-quantity-field">
-            <span>Cantidad</span>
+            <span>${product.pricePending ? 'Disponibilidad' : 'Cantidad'}</span>
             ${modalQuantityControl}
           </div>
-          <label class="modal-note-field">
+          ${product.pricePending ? '' : `<label class="modal-note-field">
             Observación <span>(opcional)</span>
             <input data-product-note type="text" maxlength="120" placeholder="Ej.: bien fría" />
-          </label>
+          </label>`}
         </div>
         ${product.alcoholic ? `<p class="product-alcohol-notice">Venta exclusiva a mayores de ${minimumAge} años.</p>` : ''}
       </div>

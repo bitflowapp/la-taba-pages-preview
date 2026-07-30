@@ -409,6 +409,22 @@
   display: none;
 }
 
+[data-add-product].is-price-pending {
+  width: auto;
+  min-width: 82px;
+  flex-basis: auto;
+  padding-inline: 10px;
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+}
+
+[data-add-product].is-price-pending .add-text {
+  display: inline;
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
 .qty-stepper,
 .quantity-control {
   display: grid;
@@ -623,6 +639,17 @@
 
 .modal-price {
   display: grid;
+}
+
+.modal-price [data-price-pending-message] {
+  display: grid;
+  gap: 4px;
+}
+
+.modal-price [data-price-pending-message] small {
+  color: var(--taba-muted);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .modal-price strong {

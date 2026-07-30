@@ -75,6 +75,15 @@ test('service worker caches only existing GitHub Pages assets', () => {
   }
 });
 
+test('viewport mobile does not block accessibility zoom', () => {
+  const source = read('index.html');
+  const viewportMatch = source.match(/<meta\s+name="viewport"\s+content="([^"]+)"/i);
+  assert.ok(viewportMatch, 'missing viewport meta');
+  const viewportContent = viewportMatch[1];
+  assert.doesNotMatch(viewportContent, /user-scalable\s*=\s*no/i);
+  assert.doesNotMatch(viewportContent, /maximum-scale\s*=/i);
+});
+
 test('commercial app defaults to light premium theme, not dark fallback', () => {
   const source = [
     'styles/tokens.css',

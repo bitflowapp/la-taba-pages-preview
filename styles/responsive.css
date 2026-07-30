@@ -921,13 +921,19 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .tracking-rider-card {
+    grid-template-columns: 50px minmax(0, 1fr);
     align-items: flex-start;
-    flex-wrap: wrap;
   }
 
   .tracking-rider-contact {
+    grid-column: 2;
     width: 100%;
-    margin-left: 67px;
+    margin-left: 0;
+  }
+
+  .tracking-premium:not(.status-arriving) .tracking-rider-contact .secondary-button {
+    width: 100%;
+    white-space: normal;
   }
 
   .tracking-premium.status-arriving .tracking-sheet {

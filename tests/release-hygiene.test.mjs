@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -82,6 +83,17 @@ test('release hygiene permits QA-only fixture paths outside public runtime', () 
 
   assert.deepEqual(findPublicQaAssets(`tests/fixtures/${qaFileName}`), []);
   assert.deepEqual(findPublicQaAssets('tests/fixtures/catalog.mjs', fixtureSource), []);
+});
+
+test('demo profile uses an explicitly synthetic identity', () => {
+  const source = readFileSync(new URL('../js/customer-profile-view.js', import.meta.url), 'utf8');
+  const profile = source.match(
+    /function demoProfile\(\)[\s\S]*?name:\s*'([^']+)'[\s\S]*?phone:\s*'([^']+)'/,
+  );
+
+  assert.ok(profile, 'demoProfile must declare its visible identity');
+  assert.equal(profile[1], 'Cliente Demo');
+  assert.match(profile[2], /^2990{7}$/);
 });
 
 test('tracked release files satisfy every hygiene rule', () => {

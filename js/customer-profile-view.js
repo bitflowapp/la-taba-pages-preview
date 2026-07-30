@@ -600,8 +600,8 @@ function notifyUpdated() {
 function demoProfile() {
   return {
     id: 'demo-customer',
-    name: 'Marco Luna',
-    phone: '2996209136',
+    name: 'Cliente Demo',
+    phone: '2990000000',
     updatedAt: new Date().toISOString(),
   };
 }

@@ -9,7 +9,7 @@ test('Perfil permite editar datos y direcciones propias sin overflow ni PII en c
   page.on('console', (message) => consoleMessages.push(message.text()));
 
   const remote = {
-    profile: { id: CUSTOMER_ID, name: 'Marco Luna', phone: '2996209136' },
+    profile: { id: CUSTOMER_ID, name: 'Cliente Demo', phone: '2990000000' },
     addresses: [
       address({
         id: '20000000-0000-4000-8000-000000000001',
@@ -94,21 +94,21 @@ test('Perfil permite editar datos y direcciones propias sin overflow ni PII en c
   await page.goto('/#profile');
   const profile = page.locator('[data-customer-profile]');
   await expect(profile).toHaveAttribute('data-customer-profile-state', 'ready');
-  await expect(profile).toContainText('Marco Luna');
-  await expect(profile).toContainText('299 620 9136');
+  await expect(profile).toContainText('Cliente Demo');
+  await expect(profile).toContainText('299 000 0000');
   await expect(profile).toContainText('Antártida Argentina 1234');
   await expect(profile).toContainText('Portón negro, tocar timbre 2');
   await expect(page.locator('.mobile-nav [data-nav-view="profile"]')).toHaveClass(/active/);
 
   await profile.locator('[data-profile-action="edit-personal"]').click();
-  await profile.locator('[name="profileFullName"]').fill('  Marco   Luna Pérez  ');
-  await profile.locator('[name="profilePhone"]').fill('(299) 620-9140');
+  await profile.locator('[name="profileFullName"]').fill('  Cliente   Demo Editado  ');
+  await profile.locator('[name="profilePhone"]').fill('(299) 000-0001');
   await profile.locator('[data-profile-action="save-personal"]').click();
-  await expect(profile).toContainText('Marco Luna Pérez');
-  await expect(profile).toContainText('299 620 9140');
+  await expect(profile).toContainText('Cliente Demo Editado');
+  await expect(profile).toContainText('299 000 0001');
   expect(rpcCalls.find((call) => call.rpc === 'upsert_current_customer_profile')?.payload).toEqual({
-    p_name: 'Marco Luna Pérez',
-    p_phone: '2996209140',
+    p_name: 'Cliente Demo Editado',
+    p_phone: '2990000001',
   });
 
   await profile.locator('[data-profile-action="add-address"]').click();
@@ -135,8 +135,8 @@ test('Perfil permite editar datos y direcciones propias sin overflow ni PII en c
   }));
   expect(parseFloat(layout.profilePaddingBottom)).toBeGreaterThan(80);
   expect(parseFloat(layout.navBottom)).toBeGreaterThanOrEqual(0);
-  expect(consoleMessages.join('\n')).not.toContain('Marco Luna');
-  expect(consoleMessages.join('\n')).not.toContain('299620');
+  expect(consoleMessages.join('\n')).not.toContain('Cliente Demo');
+  expect(consoleMessages.join('\n')).not.toContain('299000');
 });
 
 test('Perfil muestra una recuperación clara cuando la sesión venció', async ({ page }) => {

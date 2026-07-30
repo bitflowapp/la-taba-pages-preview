@@ -24,18 +24,18 @@ const profileView = fs.readFileSync(
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 test('nombre y teléfono del perfil se normalizan con límites operativos', () => {
-  assert.deepEqual(validateCustomerName('  Marco    Luna  '), {
+  assert.deepEqual(validateCustomerName('  Cliente    Demo  '), {
     ok: true,
-    name: 'Marco Luna',
+    name: 'Cliente Demo',
     message: '',
   });
   assert.equal(validateCustomerName('$$$').ok, false);
   assert.equal(validateCustomerName('M').ok, false);
   assert.equal(validateCustomerName('a'.repeat(81)).ok, false);
-  assert.equal(normalizeArgentinePhone('(299) 620-9136'), '2996209136');
-  assert.equal(isValidArgentinePhone('2996209136'), true);
+  assert.equal(normalizeArgentinePhone('(299) 000-0000'), '2990000000');
+  assert.equal(isValidArgentinePhone('2990000000'), true);
   assert.equal(isValidArgentinePhone('1111111111'), false);
-  assert.equal(formatArgentinePhone('2996209136'), '299 620 9136');
+  assert.equal(formatArgentinePhone('2990000000'), '299 000 0000');
 });
 
 test('la migración incremental completa etiqueta y fecha del snapshot sin mutar pedidos históricos', () => {
@@ -78,8 +78,8 @@ test('la pantalla pide sólo datos de entrega y expone guardado explícito del c
 
 test('checkout conserva componentes confirmados y no inventa coordenadas 0,0 para campos vacíos', () => {
   const draft = normalizeOrderDraft({
-    customerName: 'Marco Luna',
-    customerPhone: '2996209136',
+    customerName: 'Cliente Demo',
+    customerPhone: '2990000000',
     customerStreetAddress: 'Antártida Argentina 1234',
     customerNeighborhood: 'Neuquén',
     customerAddressLabel: 'Casa',

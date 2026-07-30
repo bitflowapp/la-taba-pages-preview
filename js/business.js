@@ -77,7 +77,7 @@ import {
   normalizePromotion,
   validatePromotionForActivation,
 } from './core/promotions.js';
-import { isDemoMode } from './core/app-mode.js';
+import { isDemoMode, isShowcaseMode } from './core/app-mode.js';
 
 let seenOrderIds = null; // se inicializa en el primer render para detectar pedidos nuevos
 let soundEnabled = readSoundPref();
@@ -542,8 +542,10 @@ function inboxOrderCard(order, options = {}) {
             ${renderDeliveryProofSummary(order)}
             ${renderInboxTrackingPanel(order)}
             <div class="inbox-actions">
-              ${phone ? `<a class="ghost-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
-              ${order.customerPhone ? `<a class="ghost-button compact" href="tel:${encodeURIComponent(order.customerPhone)}">Llamar</a>` : ''}
+              ${isShowcaseMode()
+                ? '<button class="ghost-button compact" type="button" disabled data-showcase-contact-disabled>Contacto desactivado</button>'
+                : `${phone ? `<a class="ghost-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
+                   ${order.customerPhone ? `<a class="ghost-button compact" href="tel:${encodeURIComponent(order.customerPhone)}">Llamar</a>` : ''}`}
               ${showTrack ? `<button class="ghost-button compact" type="button" data-order-track="${escapeHtml(order.id)}">Ver tracking</button>` : ''}
               <button class="ghost-button compact" type="button" data-order-ticket="${escapeHtml(order.id)}">Copiar ticket</button>
               ${canBusinessCancelOrder(order) ? `<button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${escapeHtml(order.id)}">Cancelar pedido</button>` : ''}

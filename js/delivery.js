@@ -6,6 +6,7 @@ import {
   updateOrderStatus,
 } from './orders.js';
 import { getRiderActionState } from './core/rider.js';
+import { isShowcaseMode } from './core/app-mode.js';
 import {
   activateStreetTestMode,
   disableGpsTracking,
@@ -116,6 +117,7 @@ export function renderDeliveryPanel() {
       ? 'Usá “Llegué al domicilio” cuando estés en el punto de entrega.'
       : 'Confirmá la recepción para completar la entrega.';
 
+  const showcase = isShowcaseMode();
   const waClient = `https://wa.me/${onlyDigits(order.customerPhone)}`;
 
   renderWithStableRealMap(container, `
@@ -138,8 +140,11 @@ export function renderDeliveryPanel() {
             <strong>${escapeHtml(order.customerName)}</strong>
             <em>${escapeHtml(order.customerPhone)}</em>
           </span>
-          <a class="round-action call" href="tel:${encodeURIComponent(order.customerPhone)}" aria-label="Llamar al cliente">${phoneGlyph()}</a>
-          <a class="round-action whatsapp" href="${waClient}" target="_blank" rel="noopener noreferrer" aria-label="Enviar WhatsApp al cliente">${messageGlyph()}</a>
+          ${showcase
+            ? `<button class="round-action call" type="button" disabled data-showcase-contact-disabled aria-label="Llamada desactivada en demostración">${phoneGlyph()}</button>
+               <button class="round-action whatsapp" type="button" disabled data-showcase-contact-disabled aria-label="WhatsApp desactivado en demostración">${messageGlyph()}</button>`
+            : `<a class="round-action call" href="tel:${encodeURIComponent(order.customerPhone)}" aria-label="Llamar al cliente">${phoneGlyph()}</a>
+               <a class="round-action whatsapp" href="${waClient}" target="_blank" rel="noopener noreferrer" aria-label="Enviar WhatsApp al cliente">${messageGlyph()}</a>`}
         </div>
 
         <div class="rider-address">
@@ -218,6 +223,9 @@ function renderRiderAssignmentPreview(container, order) {
         <div class="button-row rider-actions">
           <button class="primary-button" type="button" data-rider-accept="${escapeHtml(order.id)}">Aceptar entrega</button>
         </div>
+        ${isShowcaseMode()
+          ? '<p class="empty-state-copy" data-showcase-gps-disabled>GPS real desactivado: el recorrido usa solamente datos sintéticos locales.</p>'
+          : ''}
         <p class="empty-state-copy">El nombre, teléfono, domicilio y detalle se habilitan después de aceptar.</p>
         ${renderRiderHistory(order)}
       </section>
@@ -239,6 +247,14 @@ function renderRiderSheetTopbar() {
 // el mapa nativo (búsqueda real por la dirección textual, sin ruta inventada
 // dentro de la app) y llamar al cliente.
 function renderRiderQuickActions(order, destinationLabel, address) {
+  if (isShowcaseMode()) {
+    return `
+      <div class="rider-quick-actions" data-showcase-external-actions-disabled>
+        <button class="secondary-button rider-quick-button" type="button" disabled>Abrir ruta · desactivado</button>
+        <button class="secondary-button rider-quick-button" type="button" disabled>Llamar · desactivado</button>
+      </div>`;
+  }
+
   const navQuery = encodeURIComponent([destinationLabel, address?.reference].filter(Boolean).join(' '));
   const navUrl = navQuery ? `https://www.google.com/maps/dir/?api=1&destination=${navQuery}` : '';
   const phone = String(order.customerPhone || '').trim();
@@ -402,12 +418,14 @@ function renderSandboxSimControls(order, sim) {
 }
 
 function renderSandboxMapControls(order, sim) {
+  const showcase = isShowcaseMode();
   const presentation = sandboxTrackingPresentation(order, sim);
   const running = presentation.running;
-  const gpsMode = presentation.gps;
-  const gpsActive = isGpsActive();
+  const gpsMode = !showcase && presentation.gps;
+  const gpsActive = !showcase && isGpsActive();
   const canTrack = order.status === 'on_the_way' || order.status === 'arriving';
-  const gpsRequested = gpsActive || sim?.gpsStatus === 'requesting' || presentation.gps || presentation.gpsStale;
+  const gpsRequested = !showcase
+    && (gpsActive || sim?.gpsStatus === 'requesting' || presentation.gps || presentation.gpsStale);
   const controlContext = gpsRequested ? 'Ubicación' : 'Recorrido';
   const controlActivity = gpsActive && !gpsMode
     ? 'Buscando ubicación'
@@ -420,7 +438,9 @@ function renderSandboxMapControls(order, sim) {
         : presentation.activityLabel === 'Ubicación activa'
           ? 'Activa'
         : presentation.activityLabel;
-  const gpsLabel = !canTrack
+  const gpsLabel = showcase
+    ? 'GPS real desactivado: esta demostración usa un recorrido sintético local'
+    : !canTrack
     ? 'Disponible al salir del local'
     : gpsActive && !gpsMode
       ? 'Buscando una ubicación actual desde este dispositivo…'
@@ -442,13 +462,13 @@ function renderSandboxMapControls(order, sim) {
         <span class="sim-state">${escapeHtml(controlActivity)}</span>
       </div>
       <div class="sandbox-route-meta">
-        <span><small>Modo</small><strong>${gpsRequested ? 'GPS local' : 'Recorrido de muestra'}</strong></span>
+        <span><small>Modo</small><strong>${showcase ? 'Recorrido sintético' : gpsRequested ? 'GPS local' : 'Recorrido de muestra'}</strong></span>
         <span><small>Avance</small><strong data-sandbox-progress>${gpsMode && sim?.source === 'gps' ? '—' : `${presentation.progress}%`}</strong></span>
         ${presentation.showEta ? `<span><small>ETA</small><strong data-sandbox-eta>${escapeHtml(presentation.etaLabel)}</strong></span>` : ''}
       </div>
       <p class="sandbox-gps-status" data-sandbox-gps-status>${escapeHtml(gpsLabel)}${gpsMode && sim?.source === 'gps' && sim?.accuracy ? ` · precisión aprox. ${Math.round(sim.accuracy)} m` : ''}</p>
       ${canTrack ? `<div class="button-row">
-        ${gpsActive
+        ${showcase ? '' : gpsActive
           ? '<button class="secondary-button compact" type="button" data-sim-gps-off>Desactivar ubicación</button>'
           : '<button class="secondary-button compact" type="button" data-sim-gps>Activar ubicación</button>'}
         ${gpsMode && sim?.source === 'gps' ? '' : presentation.canPause
@@ -456,7 +476,7 @@ function renderSandboxMapControls(order, sim) {
           : presentation.canStart ? `<button class="primary-button compact" type="button" data-sim-start>${presentation.paused ? 'Reanudar recorrido' : 'Iniciar recorrido'}</button>` : ''}
         ${presentation.canReset ? '<button class="ghost-button compact" type="button" data-sim-reset>Reiniciar ruta</button>' : ''}
       </div>` : '<p class="form-hint">Confirmá que saliste del local para iniciar ubicación o recorrido.</p>'}
-      <p class="form-hint">${presentation.gpsSnapshot ? 'La última ubicación se muestra sólo mientras siga siendo reciente.' : gpsActive && !gpsMode ? 'Esperando una ubicación actual desde este dispositivo.' : gpsMode && sim?.source === 'gps' ? 'El mapa usa la última ubicación compartida desde este dispositivo.' : 'El recorrido de muestra usa calles de Neuquén Capital.'}</p>
+      <p class="form-hint">${showcase ? 'No se solicita ubicación del dispositivo ni se comparten coordenadas reales.' : presentation.gpsSnapshot ? 'La última ubicación se muestra sólo mientras siga siendo reciente.' : gpsActive && !gpsMode ? 'Esperando una ubicación actual desde este dispositivo.' : gpsMode && sim?.source === 'gps' ? 'El mapa usa la última ubicación compartida desde este dispositivo.' : 'El recorrido de muestra usa calles de Neuquén Capital.'}</p>
     </div>
   `;
 }
@@ -641,6 +661,7 @@ function relativeAgeLabel(value) {
 // sandbox también se habilita con el recorrido geográfico aislado. "Navegar"
 // abre el mapa nativo con la dirección textual del cliente.
 function renderRiderMapStage(order, { sandbox = false } = {}) {
+  const showcase = isShowcaseMode();
   const address = normalizeOrderAddressDetails(order);
   const destination = displayDestinationLabel(address.label || order.address);
   const navQuery = encodeURIComponent([destination, address.reference].filter(Boolean).join(' '));
@@ -654,13 +675,17 @@ function renderRiderMapStage(order, { sandbox = false } = {}) {
       <div class="rider-map-overlay-top">
         <button class="rider-fab" type="button" data-nav-view="home" aria-label="Volver al inicio">${chevronBackGlyph()}</button>
         ${renderRiderStatusPill(order)}
-        ${supportUrl
+        ${showcase
+          ? `<button class="rider-fab" type="button" disabled data-showcase-contact-disabled aria-label="Soporte externo desactivado">${headsetGlyph()}</button>`
+          : supportUrl
           ? `<a class="rider-fab" href="${supportUrl}" target="_blank" rel="noopener noreferrer" aria-label="Soporte por WhatsApp">${headsetGlyph()}</a>`
           : `<span class="rider-fab is-ghost" aria-hidden="true">${headsetGlyph()}</span>`}
       </div>
       <div class="rider-map-actions">
         <button class="rider-fab" type="button" data-map-recenter aria-label="Centrar en mi ubicación">${locateGlyph()}</button>
-        ${navUrl
+        ${showcase
+          ? `<button class="rider-fab accent" type="button" disabled data-showcase-contact-disabled aria-label="Navegación externa desactivada">${navigateGlyph()}</button>`
+          : navUrl
           ? `<a class="rider-fab accent" href="${navUrl}" target="_blank" rel="noopener noreferrer" aria-label="Navegar al domicilio del cliente">${navigateGlyph()}</a>`
           : ''}
       </div>

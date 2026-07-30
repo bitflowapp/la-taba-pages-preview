@@ -3,6 +3,7 @@ import {
   APP_MODE_PRODUCTION,
   APP_MODE_UNAVAILABLE,
   getAppMode,
+  isShowcaseMode,
 } from '../core/app-mode.js';
 import { resolveRuntimeConfig } from '../core/runtime-config.js';
 import {
@@ -20,6 +21,7 @@ let orderRepository = null;
 let repositoryDiagnostic = null;
 
 export function getDataMode() {
+  if (isShowcaseMode()) return 'showcase';
   const appMode = getAppMode();
   if (appMode === APP_MODE_DEMO) {
     return readDemoParams().has('relay') ? 'demo-realtime' : 'demo';
@@ -57,6 +59,11 @@ export function getOrderRepository() {
   const demoRepository = createDemoOrderRepository();
   if (mode === 'demo-realtime') {
     orderRepository = assertOrderRepository(createRealtimeOrderRepository(demoRepository));
+  } else if (mode === 'showcase') {
+    orderRepository = assertOrderRepository(createSandboxOrderRepository({
+      baseRepository: demoRepository,
+      namespace: 'showcase',
+    }));
   } else if (mode === 'demo') {
     orderRepository = assertOrderRepository(createSandboxOrderRepository({ baseRepository: demoRepository }));
   } else {

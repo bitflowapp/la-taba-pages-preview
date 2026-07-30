@@ -1,15 +1,16 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v42-release-hygiene';
+const CACHE_NAME = 'la-taba-runtime-v43-showcase';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=39',
+  './styles.css?v=40',
   './styles/tokens.css?v=39',
   './styles/common.css?v=39',
   './styles/storefront.css?v=39',
   './styles/catalog.css?v=39',
   './styles/checkout.css?v=39',
   './styles/profile.css?v=39',
+  './styles/showcase.css?v=1',
   './styles/tracking.css?v=39',
   './styles/business.css?v=39',
   './styles/rider.css?v=39',
@@ -20,7 +21,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=2',
   './js/startup-recovery.js?v=1',
-  './js/app.js?v=35',
+  './js/app.js?v=36',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -50,6 +51,7 @@ const ASSETS = [
   './js/core/reorder.js',
   './js/core/rider.js',
   './js/core/runtime-config.js',
+  './js/core/showcase-mode.js',
   './js/core/simulation.js',
   './js/core/storage.js',
   './js/core/storefront-filters.js',
@@ -86,6 +88,8 @@ const ASSETS = [
   './js/production-operations.js',
   './js/realtime.js',
   './js/simulation.js',
+  './js/showcase-fixtures.js',
+  './js/showcase.js',
   './js/ui.js',
 ];
 

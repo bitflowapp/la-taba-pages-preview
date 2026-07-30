@@ -1,13 +1,13 @@
 import { addToCart } from './cart.js';
 import { getState, setState } from './state.js';
 import { enableGpsTracking, pauseSimulation, startSimulation } from './simulation.js';
-import { isDemoMode } from './core/app-mode.js';
+import { isDemoMode, isShowcaseMode } from './core/app-mode.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 
 let feedback = '';
 
 export function isSandboxToolsEnabled() {
-  if (!isDemoMode()) return false;
+  if (!isDemoMode() || isShowcaseMode()) return false;
   try {
     return new URLSearchParams(globalThis.location?.search || '').get('tools') === '1';
   } catch (_) {

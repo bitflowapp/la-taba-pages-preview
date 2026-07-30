@@ -1,4 +1,7 @@
 import { readRuntimeConfigSource, resolveRuntimeConfig } from './runtime-config.js';
+import { isShowcaseMode } from './showcase-mode.js';
+
+export { isShowcaseMode };
 
 // Incrementa cuando un estado local compatible necesita una migración explícita.
 // La versión v3 actualiza el catálogo base sin descartar pedidos ni carrito demo.
@@ -10,7 +13,8 @@ export const APP_MODE_UNAVAILABLE = 'unavailable';
 
 export function isDemoMode(search = currentSearch()) {
   try {
-    return new URLSearchParams(String(search || '')).get('demo') === '1';
+    const params = new URLSearchParams(String(search || ''));
+    return params.get('demo') === '1' || isShowcaseMode(search);
   } catch (_) {
     return false;
   }

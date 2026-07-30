@@ -94,12 +94,7 @@ export function createSupabaseOrderRepository({
       orderId,
       { trackingToken, signal, mirror: true },
     ),
-    onUnavailable: ({ orderId = '' } = {}) => {
-      unavailableTrackingOrderId = String(orderId || '').trim();
-      lastOrderAccess = null;
-      removeStoredAccess(storage, lastAccessStorageKey);
-      selectTrackingOrder(unavailableTrackingOrderId);
-    },
+    onUnavailable: ({ orderId = '' } = {}) => markTrackingUnavailable(orderId),
     onSnapshot: (order) => {
       const status = normalizeWorkflowStatus(order?.workflowStatus || order?.status, '');
       if (!['delivered', 'canceled'].includes(status)) return;
@@ -109,6 +104,31 @@ export function createSupabaseOrderRepository({
     // change (or the network is slow), without fabricating a new GPS point.
     onTick: () => updateState(() => {}),
   });
+
+  function markTrackingUnavailable(orderId = '') {
+    const unavailableId = String(orderId || '').trim();
+    unavailableTrackingOrderId = unavailableId;
+    lastOrderAccess = null;
+    removeStoredAccess(storage, lastAccessStorageKey);
+    if (!unavailableId) return;
+
+    updateState((draft) => {
+      let removedSelectedShell = false;
+      draft.orders = draft.orders.filter((order) => {
+        const matches = [order.id, order.code, order.backendId]
+          .filter(Boolean)
+          .map(String)
+          .includes(unavailableId);
+        const remove = matches && order.publicTrackingOnly === true;
+        if (remove && [order.id, order.code].map(String).includes(String(draft.lastOrderId))) {
+          removedSelectedShell = true;
+        }
+        return !remove;
+      });
+      if (removedSelectedShell) draft.lastOrderId = null;
+    });
+    selectTrackingOrder(unavailableId);
+  }
 
   async function fetchOrderByPublicId(publicId, {
     mirror = false,
@@ -652,6 +672,8 @@ export function createSupabaseOrderRepository({
           ).catch(() => ({ kind: 'network-error' }));
           if (result.kind === 'snapshot') {
             selectTrackingOrder(access.orderId || access.publicCode);
+          } else if (result.kind === 'unavailable') {
+            markTrackingUnavailable(access.orderId || access.publicCode);
           }
         }
       };

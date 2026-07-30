@@ -1,9 +1,6 @@
 name: Deploy preview to GitHub Pages
 
 on:
-  push:
-    branches:
-      - feat/taba-production-beverages
   workflow_dispatch:
 
 permissions:

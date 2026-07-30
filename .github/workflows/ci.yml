@@ -1,0 +1,72 @@
+name: Validate release candidate
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Technical validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out candidate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Build browser vendor bundle
+        run: npm run vendor:build
+
+      - name: Run static and hygiene checks
+        run: npm run check
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Validate migrations statically
+        run: npm run migrations:validate
+
+      - name: Verify approved catalog images
+        run: npm run catalog:images:verify
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Run full end-to-end suite
+        id: e2e
+        env:
+          PLAYWRIGHT_HTML_OPEN: never
+        run: npm run test:e2e -- --reporter=line,html --trace=retain-on-failure
+
+      - name: Upload Playwright failure reports
+        if: ${{ failure() && steps.e2e.outcome == 'failure' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 7

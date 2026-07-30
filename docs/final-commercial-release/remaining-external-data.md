@@ -1,5 +1,9 @@
 # Datos externos todavía necesarios
 
+> Estado actual del candidato: hay 17 migraciones versionadas. Su situación por
+> entorno se controla con la matriz de migraciones generada durante la preparación
+> del release; este documento no constituye evidencia de aplicación remota.
+
 Todo lo resoluble sin información externa quedó implementado. Para convertir el
 preview privado en staging con pedidos reales faltan exclusivamente insumos del
 negocio y acceso autorizado:
@@ -41,7 +45,8 @@ placeholder neutro y el producto no se publica como verificado.
 - URL y publishable key apta para navegador;
 - usuarios de prueba por rol;
 - `business_id` de staging;
-- autorización para aplicar las doce migraciones y ejecutar smoke tests.
+- autorización para aplicar en un entorno permitido las migraciones que la
+  matriz marque como pendientes y ejecutar smoke tests.
 
 No se requieren cambios de arquitectura para cargar estos datos. Hasta que se
 entreguen, el estado correcto es `listo para preview privada`; no `staging` ni

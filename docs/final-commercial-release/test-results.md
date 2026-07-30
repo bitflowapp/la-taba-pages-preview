@@ -1,5 +1,10 @@
 # Resultados de pruebas
 
+> Snapshot histórico: las cifras de esta tabla pertenecen al corte original de
+> esta evidencia y no describen la validación vigente del candidato. La
+> preparación actual vuelve a ejecutar los gates y registra sus totales en el
+> informe final; el repositorio contiene actualmente 17 migraciones versionadas.
+
 ## Suite final local
 
 | Comando o validación | Resultado |
@@ -9,7 +14,7 @@
 | `npm run test:e2e` | PASS — 53/53 |
 | `npm audit --audit-level=high` | PASS — 0 vulnerabilidades |
 | `git diff --check` | PASS |
-| `npm run migrations:validate` | PASS — 12 migraciones |
+| `npm run migrations:validate` | PASS — 12 migraciones en este snapshot histórico |
 | `npm run catalog:template:validate` | PASS — plantilla válida, 0 filas comerciales |
 | `npm run catalog:images:verify -- --allow-empty` | PASS — pipeline válido, 0 packshots comerciales aprobados |
 | `npm run vendor:build` | PASS |

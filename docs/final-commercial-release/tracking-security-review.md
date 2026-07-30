@@ -74,9 +74,11 @@ verificada; de lo contrario oculta toda la tarjeta de ayuda.
 ## Revisión independiente
 
 El revisor independiente ejecutó 66 pruebas focales, el check estático, la
-validación de doce migraciones y `git diff --check`; todo pasó. También verificó
-respuestas RPC nulas, carreras de asignación, swap de assets y valores numéricos
-fuera de rango.
+validación de doce migraciones que existían en ese snapshot histórico y
+`git diff --check`; todo pasó. El candidato contiene actualmente 17 migraciones
+versionadas, cuya situación por entorno se registra por separado en la matriz
+de release. El revisor también verificó respuestas RPC nulas, carreras de
+asignación, swap de assets y valores numéricos fuera de rango.
 
 ## Límite de la evidencia
 

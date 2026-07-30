@@ -21,6 +21,9 @@ function eventTarget({ hidden = false } = {}) {
     emit(type) {
       listeners.get(type)?.forEach((callback) => callback());
     },
+    listenerCount(type) {
+      return listeners.get(type)?.size || 0;
+    },
   };
 }
 
@@ -210,6 +213,219 @@ test('un token vencido o revocado vuelve el seguimiento a no disponible y se det
   await tick();
   assert.deepEqual(unavailable, [{ orderId: 'LT-100' }]);
   assert.equal(controller.getSnapshot().active, false);
+});
+
+test('delivered agenda una única revalidación al llegar terminal_visible_until', async () => {
+  const documentRef = eventTarget();
+  const windowRef = eventTarget();
+  const timers = fakeTimers();
+  let clock = Date.parse('2026-07-29T20:00:00.000Z');
+  const calls = [];
+  const unavailable = [];
+  const ticks = [];
+  const controller = createCustomerTrackingPollController({
+    documentRef,
+    windowRef,
+    now: () => clock,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    onTick: (value) => ticks.push(value),
+    onUnavailable: (value) => unavailable.push(value),
+    fetchSnapshot: async (request) => {
+      calls.push(request);
+      return { kind: 'unavailable' };
+    },
+  });
+  const terminalVisibleUntil = new Date(clock + 30_000).toISOString();
+
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 't'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil,
+  });
+
+  assert.equal(controller.getSnapshot().active, false);
+  assert.equal(controller.getSnapshot().terminal, true);
+  assert.equal(timers.size(), 1);
+  assert.equal(timers.nextDelay(), 30_000);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(ticks, []);
+
+  clock += 30_000;
+  timers.runNext();
+  await tick();
+
+  assert.equal(calls.length, 1);
+  assert.deepEqual(unavailable, [{ orderId: 'LT-100' }]);
+  assert.equal(controller.getSnapshot().terminal, false);
+  assert.equal(timers.size(), 0);
+});
+
+test('focus, online, pageshow y visibilitychange deduplican una revalidación terminal concurrente', async () => {
+  const documentRef = eventTarget({ hidden: false });
+  const windowRef = eventTarget();
+  const timers = fakeTimers();
+  let resolveRequest;
+  const calls = [];
+  const controller = createCustomerTrackingPollController({
+    documentRef,
+    windowRef,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    fetchSnapshot: (request) => {
+      calls.push(request);
+      return new Promise((resolve) => { resolveRequest = resolve; });
+    },
+  });
+  const terminalVisibleUntil = new Date(Date.now() + 60_000).toISOString();
+
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 'u'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil,
+  });
+  windowRef.emit('focus');
+  windowRef.emit('online');
+  windowRef.emit('pageshow');
+  documentRef.emit('visibilitychange');
+  await tick();
+
+  assert.equal(calls.length, 1);
+  assert.equal(controller.getSnapshot().inFlight, true);
+
+  resolveRequest({
+    kind: 'snapshot',
+    order: {
+      ...trackingOrder('delivered'),
+      terminalVisibleUntil,
+    },
+  });
+  await tick();
+
+  assert.equal(controller.getSnapshot().terminal, true);
+  assert.equal(timers.size(), 1);
+  controller.stop();
+});
+
+test('una pestaña oculta revalida al volver visible aunque su timer haya quedado suspendido', async () => {
+  const documentRef = eventTarget({ hidden: false });
+  const windowRef = eventTarget();
+  const timers = fakeTimers();
+  let clock = Date.parse('2026-07-29T20:00:00.000Z');
+  const calls = [];
+  const controller = createCustomerTrackingPollController({
+    documentRef,
+    windowRef,
+    now: () => clock,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    fetchSnapshot: async (request) => {
+      calls.push(request);
+      return { kind: 'unavailable' };
+    },
+  });
+
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 'v'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil: new Date(clock + 30_000).toISOString(),
+  });
+  documentRef.hidden = true;
+  documentRef.emit('visibilitychange');
+  clock += 30_000;
+  documentRef.hidden = false;
+  documentRef.emit('visibilitychange');
+  await tick();
+
+  assert.equal(calls.length, 1);
+  assert.equal(controller.getSnapshot().terminal, false);
+});
+
+test('un DTO terminal vencido devuelto por el servidor no crea un timer de demora cero', async () => {
+  const documentRef = eventTarget();
+  const windowRef = eventTarget();
+  const timers = fakeTimers();
+  let clock = Date.parse('2026-07-29T20:00:00.000Z');
+  const terminalVisibleUntil = new Date(clock + 1_000).toISOString();
+  let calls = 0;
+  const controller = createCustomerTrackingPollController({
+    documentRef,
+    windowRef,
+    now: () => clock,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    fetchSnapshot: async () => {
+      calls += 1;
+      return {
+        kind: 'snapshot',
+        order: {
+          ...trackingOrder('delivered'),
+          terminalVisibleUntil,
+        },
+      };
+    },
+  });
+
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 'w'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil,
+  });
+  clock += 1_000;
+  timers.runNext();
+  await tick();
+
+  assert.equal(calls, 1);
+  assert.equal(controller.getSnapshot().terminal, true);
+  assert.equal(timers.size(), 0);
+  controller.stop();
+});
+
+test('detener o reemplazar tracking cancela timers, requests y listeners terminales', async () => {
+  const documentRef = eventTarget();
+  const windowRef = eventTarget();
+  const timers = fakeTimers();
+  const controller = createCustomerTrackingPollController({
+    documentRef,
+    windowRef,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    fetchSnapshot: async () => ({ kind: 'snapshot', order: trackingOrder() }),
+  });
+
+  controller.update({
+    orderId: 'ORDER-A',
+    trackingToken: 'x'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil: new Date(Date.now() + 60_000).toISOString(),
+  });
+  assert.equal(timers.size(), 1);
+  for (const type of ['focus', 'online', 'pageshow']) {
+    assert.equal(windowRef.listenerCount(type), 1);
+  }
+  assert.equal(documentRef.listenerCount('visibilitychange'), 1);
+
+  controller.update({
+    orderId: 'ORDER-B',
+    trackingToken: 'y'.repeat(32),
+    status: 'on_the_way',
+  });
+  await tick();
+  assert.equal(controller.getSnapshot().orderId, 'ORDER-B');
+  assert.equal(controller.getSnapshot().terminal, false);
+  assert.equal(timers.size(), 1);
+
+  controller.stop();
+  assert.equal(timers.size(), 0);
+  assert.equal(controller.getSnapshot().inFlight, false);
+  for (const type of ['focus', 'online', 'pageshow']) {
+    assert.equal(windowRef.listenerCount(type), 0);
+  }
+  assert.equal(documentRef.listenerCount('visibilitychange'), 0);
 });
 
 function tick() {

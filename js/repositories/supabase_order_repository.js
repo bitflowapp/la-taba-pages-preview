@@ -107,9 +107,17 @@ export function createSupabaseOrderRepository({
 
   function markTrackingUnavailable(orderId = '') {
     const unavailableId = String(orderId || '').trim();
+    const access = lastOrderAccess || readStoredAccess(storage, lastAccessStorageKey);
+    const unavailableIds = new Set([
+      unavailableId,
+      String(access?.orderId || '').trim(),
+      String(access?.publicCode || '').trim(),
+    ].filter(Boolean));
     unavailableTrackingOrderId = unavailableId;
     lastOrderAccess = null;
     removeStoredAccess(storage, lastAccessStorageKey);
+    trackingClient = null;
+    trackingClientToken = '';
     if (!unavailableId) return;
 
     updateState((draft) => {
@@ -118,7 +126,7 @@ export function createSupabaseOrderRepository({
         const matches = [order.id, order.code, order.backendId]
           .filter(Boolean)
           .map(String)
-          .includes(unavailableId);
+          .some((candidate) => unavailableIds.has(candidate));
         const remove = matches && order.publicTrackingOnly === true;
         if (remove && [order.id, order.code].map(String).includes(String(draft.lastOrderId))) {
           removedSelectedShell = true;
@@ -205,6 +213,15 @@ export function createSupabaseOrderRepository({
       draft.lastOrderId = selected.id;
     });
     return selected;
+  }
+
+  function hasTerminalTrackingState(access) {
+    const requested = String(access?.orderId || access?.publicCode || '').trim();
+    if (!requested) return false;
+    const order = getState().orders.find((candidate) => (
+      [candidate.id, candidate.code, candidate.backendId].map(String).includes(requested)
+    ));
+    return normalizeWorkflowStatus(order?.workflowStatus || order?.status, '') === 'delivered';
   }
 
   async function fetchPublicTrackingSnapshot(publicId, {
@@ -635,16 +652,17 @@ export function createSupabaseOrderRepository({
       if (!active) return customerTrackingPoll.stop();
       const access = getTrackingAccess();
       if (!matchesStoredOrderAccess(access, orderId)) return customerTrackingPoll.stop();
-      if (['delivered', 'canceled'].includes(normalizeWorkflowStatus(status, ''))) {
+      if (normalizeWorkflowStatus(status, '') === 'canceled') {
         unavailableTrackingOrderId = '';
         return customerTrackingPoll.stop();
       }
       unavailableTrackingOrderId = '';
-      selectTrackingOrder(access.orderId || access.publicCode);
+      const selected = selectTrackingOrder(access.orderId || access.publicCode);
       return customerTrackingPoll.update({
         orderId: access.orderId || access.publicCode,
         trackingToken: access.trackingToken,
         status,
+        terminalVisibleUntil: selected?.terminalVisibleUntil,
       });
     },
     getCustomerTrackingPollState() {
@@ -665,7 +683,7 @@ export function createSupabaseOrderRepository({
           await recoverCustomerTrackingAccess(orderResult.rows).catch(() => null);
         }
         const access = getTrackingAccess();
-        if (access && !stopped) {
+        if (access && !stopped && !hasTerminalTrackingState(access)) {
           const result = await fetchPublicTrackingSnapshot(
             access.orderId || access.publicCode,
             { trackingToken: access.trackingToken, mirror: true },
@@ -1361,11 +1379,13 @@ function normalizePublicTrackingDto(dto = {}) {
   const dispatchedAt = normalizeOptionalIso(dto.dispatched_at);
   const arrivedAt = normalizeOptionalIso(dto.arrived_at);
   const deliveredAt = normalizeOptionalIso(dto.delivered_at);
+  const terminalVisibleUntil = normalizeOptionalIso(dto.terminal_visible_until);
   const cancelledAt = normalizeOptionalIso(dto.cancelled_at);
   const rejectedAt = normalizeOptionalIso(dto.rejected_at);
   const updatedAt = latestIsoTimestamp([
     normalizeOptionalIso(dto.updated_at),
     deliveredAt,
+    terminalVisibleUntil,
     cancelledAt,
     rejectedAt,
     arrivedAt,
@@ -1404,6 +1424,7 @@ function normalizePublicTrackingDto(dto = {}) {
     dispatchedAt,
     arrivedAt,
     deliveredAt,
+    terminalVisibleUntil,
     cancelledAt,
     rejectedAt,
     statusHistory,
@@ -1445,6 +1466,7 @@ function mergePublicTracking(order, tracking) {
     pickedUpAt: tracking.dispatchedAt,
     arrivedAt: tracking.arrivedAt,
     deliveredAt: tracking.deliveredAt,
+    terminalVisibleUntil: tracking.terminalVisibleUntil,
     statusHistory: tracking.statusHistory,
     tracking: tracking.tracking,
     ...(confirmedDeliveryCode ? { deliveryCode: confirmedDeliveryCode } : {}),
@@ -1491,6 +1513,7 @@ function publicTrackingShell(tracking) {
     pickedUpAt: tracking.dispatchedAt,
     arrivedAt: tracking.arrivedAt,
     deliveredAt: tracking.deliveredAt,
+    terminalVisibleUntil: tracking.terminalVisibleUntil,
     statusHistory: tracking.statusHistory,
     items: [],
     subtotal: 0,
@@ -1553,8 +1576,11 @@ function rowToDemoOrder(row = {}) {
   const items = Array.isArray(row.order_items)
     ? row.order_items.map(rowToDemoItem).filter(Boolean)
     : [];
-  const latestLocation = latestRiderLocation(row.rider_locations);
+  const latestLocation = ['picked_up', 'on_the_way', 'arrived'].includes(workflowStatus)
+    ? latestRiderLocation(row.rider_locations)
+    : null;
   const createdAt = normalizeIso(row.created_at);
+  const terminalVisibleUntil = normalizeOptionalIso(row.terminal_visible_until);
   const trustedEta = trustedEstimatedArrival(row);
   const deliveryCode = normalizeDeliveryCodeValue(row.delivery_code);
   const snapshotStreetLine = [
@@ -1596,6 +1622,9 @@ function rowToDemoOrder(row = {}) {
     notes: sanitizeNotes(row.customer_notes || row.notes),
     createdAt,
     updatedAt: normalizeIso(row.updated_at || row.created_at),
+    ...(workflowStatus === 'delivered' && terminalVisibleUntil
+      ? { terminalVisibleUntil }
+      : {}),
     status,
     items,
     subtotal: normalizeMoneyValue(row.subtotal, 0),

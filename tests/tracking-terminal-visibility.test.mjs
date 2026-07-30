@@ -232,17 +232,21 @@ test('el frontend conserva el handoff terminal para recargar dentro de la ventan
   const snapshotHandler = repositorySource.match(
     /onSnapshot: \(order\) => \{([\s\S]*?)\n\s*\},/i,
   )?.[1] || '';
-  const terminalView = repositorySource.match(
-    /if \(\['delivered', 'canceled'\]\.includes\(normalizeWorkflowStatus\(status, ''\)\)\) \{([\s\S]*?)\n\s*\}/i,
-  )?.[1] || '';
   assert.doesNotMatch(snapshotHandler, /removeStoredAccess|lastOrderAccess = null/i);
-  assert.doesNotMatch(terminalView, /removeStoredAccess|lastOrderAccess = null/i);
-  assert.match(terminalView, /customerTrackingPoll\.stop\(\)/i);
+  assert.match(repositorySource, /terminalVisibleUntil: selected\?\.terminalVisibleUntil/i);
+  assert.match(repositorySource, /terminalVisibleUntil = normalizeOptionalIso\(dto\.terminal_visible_until\)/i);
+  assert.match(repositorySource, /terminalVisibleUntil: tracking\.terminalVisibleUntil/i);
 });
 
-test('polling, timers y listeners se liberan al observar delivered', () => {
-  assert.match(pollingSource, /if \(isTerminalCustomerTrackingStatus\(session\.status\)\) \{\s*stop\(\)/i);
+test('delivered reemplaza polling frecuente por un timer terminal desmontable', () => {
+  assert.match(pollingSource, /if \(status === 'delivered'\) \{[\s\S]*startTerminalVisibility/i);
+  assert.match(pollingSource, /function scheduleTerminalRevalidation\(\)/i);
+  assert.match(pollingSource, /addEventListener\?\.\('online', onLifecycleResume\)/i);
   assert.match(pollingSource, /clearTimer\(\);[\s\S]*abortRequest\(\);[\s\S]*unbindLifecycle\(\)/i);
+  assert.doesNotMatch(
+    pollingSource.match(/function revalidateTerminal\(\) \{([\s\S]*?)\n  \}/i)?.[1] || '',
+    /onTick\(/i,
+  );
 });
 
 test('la pantalla final usa copy entregado, timeline de cuatro pasos y oculta código/mapa', () => {

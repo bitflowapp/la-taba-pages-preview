@@ -31,6 +31,11 @@ import {
 import { createSupabaseAuthService } from '../services/supabase-auth.js';
 import { createSupabaseCustomerProfileRepository } from './customer_profile_repository.js';
 import { repositoryResult } from './order_repository.js';
+import {
+  allowActiveOrderFallback,
+  getActiveOrderId,
+  suppressActiveOrderFallback,
+} from '../orders.js';
 import { createCustomerTrackingPollController } from '../tracking/customer_tracking_poll.js';
 
 // Se conserva sólo para detectar configuraciones históricas. Producción exige un
@@ -105,7 +110,7 @@ export function createSupabaseOrderRepository({
     onTick: () => updateState(() => {}),
   });
 
-  function markTrackingUnavailable(orderId = '') {
+  function markTrackingUnavailable(orderId = '', { selectLocalOrder = false } = {}) {
     const unavailableId = String(orderId || '').trim();
     const access = lastOrderAccess || readStoredAccess(storage, lastAccessStorageKey);
     const unavailableIds = new Set([
@@ -114,6 +119,7 @@ export function createSupabaseOrderRepository({
       String(access?.publicCode || '').trim(),
     ].filter(Boolean));
     unavailableTrackingOrderId = unavailableId;
+    suppressActiveOrderFallback();
     lastOrderAccess = null;
     removeStoredAccess(storage, lastAccessStorageKey);
     trackingClient = null;
@@ -135,7 +141,9 @@ export function createSupabaseOrderRepository({
       });
       if (removedSelectedShell) draft.lastOrderId = null;
     });
-    selectTrackingOrder(unavailableId);
+    if (selectLocalOrder) {
+      selectTrackingOrder(unavailableId);
+    }
   }
 
   async function fetchOrderByPublicId(publicId, {
@@ -185,7 +193,6 @@ export function createSupabaseOrderRepository({
     if (mirror) {
       const access = getTrackingAccess();
       if (access) selectTrackingOrder(access.orderId || access.publicCode);
-      else if (unavailableTrackingOrderId) selectTrackingOrder(unavailableTrackingOrderId);
     }
     return repositoryResult(true, { rows, orders });
   }
@@ -210,6 +217,7 @@ export function createSupabaseOrderRepository({
     )) || null;
     if (!selected || currentState.lastOrderId === selected.id) return selected;
     updateState((draft) => {
+      allowActiveOrderFallback();
       draft.lastOrderId = selected.id;
     });
     return selected;
@@ -649,19 +657,35 @@ export function createSupabaseOrderRepository({
       return { ...catalogStatus };
     },
     setCustomerTrackingView({ active = false, orderId = '', status = '' } = {}) {
-      if (!active) return customerTrackingPoll.stop();
+      if (!active) {
+        return customerTrackingPoll.stop();
+      }
       const access = getTrackingAccess();
       if (!matchesStoredOrderAccess(access, orderId)) return customerTrackingPoll.stop();
-      if (normalizeWorkflowStatus(status, '') === 'canceled') {
+      const trackingStatus = normalizeWorkflowStatus(status, '');
+      if (trackingStatus === 'canceled') {
         unavailableTrackingOrderId = '';
         return customerTrackingPoll.stop();
       }
+      const resolution = resolveTrackingAccessOrder(getState().orders, access);
+      if (
+        resolution.kind === 'conflict'
+        || (resolution.kind === 'missing' && trackingStatus === 'delivered')
+      ) {
+        markTrackingUnavailable(access.orderId || access.publicCode, {
+          selectLocalOrder: false,
+        });
+        return customerTrackingPoll.stop();
+      }
       unavailableTrackingOrderId = '';
-      const selected = selectTrackingOrder(access.orderId || access.publicCode);
+      allowActiveOrderFallback();
+      const selected = resolution.order
+        ? selectTrackingOrder(resolution.order.id)
+        : null;
       return customerTrackingPoll.update({
         orderId: access.orderId || access.publicCode,
         trackingToken: access.trackingToken,
-        status,
+        status: trackingStatus,
         terminalVisibleUntil: selected?.terminalVisibleUntil,
       });
     },
@@ -744,16 +768,10 @@ export function createSupabaseOrderRepository({
         }
         return toDomainOrder(selectTrackingOrder(access.orderId || access.publicCode));
       }
-      if (unavailableTrackingOrderId) {
-        return toDomainOrder(selectTrackingOrder(unavailableTrackingOrderId));
-      }
-      const visible = result.ok
-        ? result.orders.find((order) => !['delivered', 'canceled', 'cancelled'].includes(order.status))
-        || result.orders[0]
-        || null
-        : null;
-      if (visible) return visible;
-
+      const state = getState();
+      const activeOrderId = getActiveOrderId(state);
+      const activeOrder = state.orders.find((order) => order.id === activeOrderId);
+      if (activeOrder) return toDomainOrder(activeOrder);
       return null;
     },
     async listOrders() {
@@ -2019,6 +2037,40 @@ function matchesStoredOrderAccess(access, orderId) {
     && isSafeTrackingToken(access.trackingToken)
     && [access.orderId, access.publicCode].map(String).includes(requested),
   );
+}
+
+function resolveTrackingAccessOrder(orders, access) {
+  const candidates = Array.isArray(orders) ? orders : [];
+  const backendId = String(access?.orderId || '').trim();
+  const publicCode = String(access?.publicCode || '').trim();
+  const backendMatches = backendId
+    ? candidates.filter((order) => (
+      String(order?.backendId || '').trim() === backendId
+      || (isUuid(order?.id) && String(order.id) === backendId)
+    ))
+    : [];
+  const publicMatches = publicCode
+    ? candidates.filter((order) => String(order?.code || '').trim() === publicCode)
+    : [];
+
+  if (backendMatches.length > 1 || publicMatches.length > 1) {
+    return { kind: 'conflict', order: null };
+  }
+
+  const backendOrder = backendMatches[0] || null;
+  const publicOrder = publicMatches[0] || null;
+  if (backendOrder && publicOrder && backendOrder !== publicOrder) {
+    return { kind: 'conflict', order: null };
+  }
+
+  const order = backendOrder || publicOrder;
+  if (!order) return { kind: 'missing', order: null };
+  return {
+    kind: backendOrder && publicOrder
+      ? 'backend-and-public'
+      : backendOrder ? 'backend' : 'public',
+    order,
+  };
 }
 
 function slugifyCategory(value) {

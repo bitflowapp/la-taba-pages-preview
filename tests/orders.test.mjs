@@ -7,8 +7,11 @@ import {
   buildKitchenTicket,
   buildWhatsAppMessage,
   buildWhatsAppUrl,
+  allowActiveOrderFallback,
   getActiveOrder,
   getActiveOrderId,
+  persistActiveOrderId,
+  suppressActiveOrderFallback,
   updateOrderStatus,
 } from '../js/orders.js';
 import { dateTime, getState, setState } from '../js/state.js';
@@ -20,6 +23,7 @@ beforeEach(() => {
     configurable: true,
   });
   resetState();
+  allowActiveOrderFallback();
 });
 
 test('creates a valid delivery order and builds a complete WhatsApp message', () => {
@@ -346,6 +350,125 @@ test('valid lastOrderId stays authoritative over another live order', () => {
 
   assert.equal(getActiveOrderId(), 'LT-READY');
   assert.equal(getActiveOrder()?.id, 'LT-READY');
+});
+
+test('selector global de orden activa no selecciona fallback cuando está suprimido', () => {
+  resetState({
+    orders: [
+      {
+        id: 'LT-ACTIVE-B',
+        status: 'preparing',
+        createdAt: new Date().toISOString(),
+        statusHistory: [{ status: 'preparing', at: new Date().toISOString() }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
+        deliveryMode: 'delivery',
+        customerName: 'Cliente activo',
+        customerPhone: '2995559999',
+        address: 'Roca 500',
+        paymentMethod: 'Efectivo',
+      },
+    ],
+    lastOrderId: null,
+  });
+  suppressActiveOrderFallback();
+
+  assert.equal(getActiveOrderId(), null);
+  assert.equal(getActiveOrder(), null);
+});
+
+test('la supresión explícita se desactiva con selección explícita por id', () => {
+  resetState({
+    orders: [
+      {
+        id: 'LT-ACTIVE-B',
+        status: 'preparing',
+        createdAt: new Date().toISOString(),
+        statusHistory: [{ status: 'preparing', at: new Date().toISOString() }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
+        deliveryMode: 'delivery',
+        customerName: 'Cliente activo',
+        customerPhone: '2995559999',
+        address: 'Roca 500',
+        paymentMethod: 'Efectivo',
+      },
+    ],
+    lastOrderId: null,
+  });
+
+  suppressActiveOrderFallback();
+  const hasSelection = persistActiveOrderId('LT-ACTIVE-B');
+  assert.equal(hasSelection, true);
+  assert.equal(getActiveOrderId(), 'LT-ACTIVE-B');
+  assert.equal(getActiveOrder()?.id, 'LT-ACTIVE-B');
+});
+
+test('una nueva selección explícita vuelve a habilitar fallback normal', () => {
+  const now = Date.now();
+  const activeStatusAt = new Date(now - 10_000).toISOString();
+  const nextStatusAt = new Date(now - 20_000).toISOString();
+  resetState({
+    orders: [
+      {
+        id: 'LT-B',
+        status: 'preparing',
+        createdAt: activeStatusAt,
+        statusHistory: [{ status: 'preparing', at: activeStatusAt }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
+        deliveryMode: 'delivery',
+        customerName: 'Cliente activo',
+        customerPhone: '2995554444',
+        address: 'Roca 500',
+        paymentMethod: 'Efectivo',
+      },
+      {
+        id: 'LT-NEW',
+        status: 'on_the_way',
+        createdAt: nextStatusAt,
+        statusHistory: [{ status: 'on_the_way', at: nextStatusAt }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
+        deliveryMode: 'delivery',
+        customerName: 'Cliente nuevo',
+        customerPhone: '2995558888',
+        address: 'Mendoza 10',
+        paymentMethod: 'Efectivo',
+      },
+    ],
+    lastOrderId: null,
+  });
+
+  suppressActiveOrderFallback();
+  assert.equal(getActiveOrderId(), null);
+
+  const selected = persistActiveOrderId('LT-NEW');
+  assert.equal(selected, true);
+  assert.equal(getActiveOrderId(), 'LT-NEW');
+  assert.equal(getActiveOrder()?.id, 'LT-NEW');
+});
+
+test('la supresión aislada en una prueba no afecta al resto del selector', () => {
+  resetState({
+    orders: [
+      {
+        id: 'LT-ACTIVE-B',
+        status: 'preparing',
+        createdAt: new Date().toISOString(),
+        statusHistory: [{ status: 'preparing', at: new Date().toISOString() }],
+        items: [{ productId: 'qa-gaseosa-cola', name: 'Bebida QA', quantity: 1, unitPrice: 11200, unit: 'unidad' }],
+        deliveryMode: 'delivery',
+        customerName: 'Cliente activo',
+        customerPhone: '2995551111',
+        address: 'Roca 500',
+        paymentMethod: 'Efectivo',
+      },
+    ],
+    lastOrderId: null,
+  });
+
+  suppressActiveOrderFallback();
+  assert.equal(getActiveOrderId(), null);
+  allowActiveOrderFallback();
+  assert.equal(getActiveOrderId(), 'LT-ACTIVE-B');
+  assert.equal(getActiveOrder()?.id, 'LT-ACTIVE-B');
 });
 
 test('status transitions persist the active order id', () => {

@@ -855,6 +855,246 @@ test('un handoff tokenizado conserva Pedido A aunque Pedido B sea posterior', as
   }
 });
 
+test('tracking terminal resuelve un shell por publicCode cuando el UUID no está espejado', (t) => {
+  const backendOrderId = '77777777-7777-4777-8777-777777777771';
+  const publicCode = 'LT-IDENTITY-A';
+  const activeOrder = trackingIdentityOrder({
+    id: 'LT-ACTIVE-B',
+    code: 'LT-ACTIVE-B',
+    backendId: '88888888-8888-4888-8888-888888888881',
+    status: 'preparing',
+  });
+  const publicShell = trackingIdentityOrder({
+    id: publicCode,
+    code: publicCode,
+    publicTrackingOnly: true,
+  });
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  const access = {
+    orderId: backendOrderId,
+    publicCode,
+    trackingToken: 'J'.repeat(43),
+    tokenExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+  };
+  storage.setItem(accessKey, JSON.stringify(access));
+  resetState({
+    products: [LOCAL_PRODUCT],
+    orders: [publicShell, activeOrder],
+    cart: [],
+    lastOrderId: activeOrder.id,
+    simulation: null,
+  });
+  const repository = makeRepository(createSupabaseClientMock(), { storage });
+  t.after(() => repository.setCustomerTrackingView({ active: false }));
+
+  repository.setCustomerTrackingView({
+    active: true,
+    orderId: publicCode,
+    status: 'delivered',
+  });
+
+  assert.equal(getState().lastOrderId, publicCode);
+  assert.equal(getState().orders.some((order) => order.id === activeOrder.id), true);
+  assert.equal(storage.getItem(accessKey), JSON.stringify(access));
+  assert.deepEqual(repository.getCustomerTrackingPollState(), {
+    active: false,
+    terminal: true,
+    inFlight: false,
+    orderId: backendOrderId,
+    status: 'delivered',
+  });
+});
+
+test('tracking terminal conserva la resolución backend exacta por UUID', (t) => {
+  const backendOrderId = '77777777-7777-4777-8777-777777777772';
+  const backendOrder = trackingIdentityOrder({
+    id: 'LT-BACKEND-A',
+    code: 'LT-BACKEND-A',
+    backendId: backendOrderId,
+  });
+  const activeOrder = trackingIdentityOrder({
+    id: 'LT-ACTIVE-B',
+    code: 'LT-ACTIVE-B',
+    backendId: '88888888-8888-4888-8888-888888888882',
+    status: 'preparing',
+  });
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  storage.setItem(accessKey, JSON.stringify({
+    orderId: backendOrderId,
+    publicCode: 'LT-PUBLIC-NOT-MIRRORED',
+    trackingToken: 'K'.repeat(43),
+  }));
+  resetState({
+    products: [LOCAL_PRODUCT],
+    orders: [backendOrder, activeOrder],
+    cart: [],
+    lastOrderId: activeOrder.id,
+    simulation: null,
+  });
+  const repository = makeRepository(createSupabaseClientMock(), { storage });
+  t.after(() => repository.setCustomerTrackingView({ active: false }));
+
+  repository.setCustomerTrackingView({
+    active: true,
+    orderId: backendOrderId,
+    status: 'delivered',
+  });
+
+  assert.equal(getState().lastOrderId, backendOrder.id);
+  assert.ok(storage.getItem(accessKey));
+  assert.deepEqual(repository.getCustomerTrackingPollState(), {
+    active: false,
+    terminal: true,
+    inFlight: false,
+    orderId: backendOrderId,
+    status: 'delivered',
+  });
+});
+
+test('tracking terminal falla cerrado si UUID y publicCode resuelven pedidos distintos', (t) => {
+  const backendOrderId = '77777777-7777-4777-8777-777777777773';
+  const publicCode = 'LT-CONFLICT-PUBLIC';
+  const backendOrder = trackingIdentityOrder({
+    id: 'LT-CONFLICT-BACKEND',
+    code: 'LT-CONFLICT-BACKEND',
+    backendId: backendOrderId,
+  });
+  const conflictingShell = trackingIdentityOrder({
+    id: publicCode,
+    code: publicCode,
+    publicTrackingOnly: true,
+  });
+  const unrelatedActive = trackingIdentityOrder({
+    id: 'LT-ACTIVE-C',
+    code: 'LT-ACTIVE-C',
+    backendId: '88888888-8888-4888-8888-888888888883',
+    status: 'preparing',
+  });
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  storage.setItem(accessKey, JSON.stringify({
+    orderId: backendOrderId,
+    publicCode,
+    trackingToken: 'L'.repeat(43),
+  }));
+  resetState({
+    products: [LOCAL_PRODUCT],
+    orders: [backendOrder, conflictingShell, unrelatedActive],
+    cart: [],
+    lastOrderId: unrelatedActive.id,
+    simulation: null,
+  });
+  const repository = makeRepository(createSupabaseClientMock(), { storage });
+  t.after(() => repository.setCustomerTrackingView({ active: false }));
+
+  repository.setCustomerTrackingView({
+    active: true,
+    orderId: backendOrderId,
+    status: 'delivered',
+  });
+
+  assert.equal(storage.getItem(accessKey), null);
+  assert.equal(getState().lastOrderId, unrelatedActive.id);
+  assert.equal(getState().orders.some((order) => order.id === backendOrder.id), true);
+  assert.equal(getState().orders.some((order) => order.id === conflictingShell.id), false);
+  assert.equal(getState().orders.some((order) => order.id === unrelatedActive.id), true);
+  assert.deepEqual(repository.getCustomerTrackingPollState(), {
+    active: false,
+    terminal: false,
+    inFlight: false,
+    orderId: '',
+    status: '',
+  });
+});
+
+test('tracking terminal sin coincidencias limpia el acceso sin elegir un pedido reciente', (t) => {
+  const backendOrderId = '77777777-7777-4777-8777-777777777774';
+  const publicCode = 'LT-MISSING-A';
+  const unrelatedShell = trackingIdentityOrder({
+    id: 'LT-UNRELATED-SHELL',
+    code: 'LT-UNRELATED-SHELL',
+    publicTrackingOnly: true,
+  });
+  const activeOrder = trackingIdentityOrder({
+    id: 'LT-ACTIVE-B',
+    code: 'LT-ACTIVE-B',
+    backendId: '88888888-8888-4888-8888-888888888884',
+    status: 'preparing',
+  });
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  storage.setItem(accessKey, JSON.stringify({
+    orderId: backendOrderId,
+    publicCode,
+    trackingToken: 'M'.repeat(43),
+  }));
+  resetState({
+    products: [LOCAL_PRODUCT],
+    orders: [unrelatedShell, activeOrder],
+    cart: [],
+    lastOrderId: null,
+    simulation: null,
+  });
+  const repository = makeRepository(createSupabaseClientMock(), { storage });
+  t.after(() => repository.setCustomerTrackingView({ active: false }));
+
+  repository.setCustomerTrackingView({
+    active: true,
+    orderId: backendOrderId,
+    status: 'delivered',
+  });
+
+  assert.equal(storage.getItem(accessKey), null);
+  assert.equal(getState().lastOrderId, null);
+  assert.equal(getState().orders.some((order) => order.id === unrelatedShell.id), true);
+  assert.equal(getState().orders.some((order) => order.id === activeOrder.id), true);
+  assert.equal(repository.getCustomerTrackingPollState().terminal, false);
+});
+
+test('tracking terminal nunca usa deliveryCode ni códigos operativos como identidad pública', (t) => {
+  const backendOrderId = '77777777-7777-4777-8777-777777777775';
+  const confusableCode = '4821';
+  const activeOrder = trackingIdentityOrder({
+    id: 'LT-ACTIVE-B',
+    code: 'LT-ACTIVE-B',
+    backendId: '88888888-8888-4888-8888-888888888885',
+    status: 'preparing',
+    deliveryCode: { code: confusableCode },
+    riderOperationalCode: confusableCode,
+    administrativeId: confusableCode,
+  });
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  storage.setItem(accessKey, JSON.stringify({
+    orderId: backendOrderId,
+    publicCode: confusableCode,
+    trackingToken: 'N'.repeat(43),
+  }));
+  resetState({
+    products: [LOCAL_PRODUCT],
+    orders: [activeOrder],
+    cart: [],
+    lastOrderId: null,
+    simulation: null,
+  });
+  const repository = makeRepository(createSupabaseClientMock(), { storage });
+  t.after(() => repository.setCustomerTrackingView({ active: false }));
+
+  repository.setCustomerTrackingView({
+    active: true,
+    orderId: backendOrderId,
+    status: 'delivered',
+  });
+
+  assert.equal(storage.getItem(accessKey), null);
+  assert.equal(getState().lastOrderId, null);
+  assert.equal(getState().orders[0].id, activeOrder.id);
+  assert.equal(getState().orders[0].deliveryCode.code, confusableCode);
+  assert.equal(repository.getCustomerTrackingPollState().terminal, false);
+});
+
 test('un token inválido no hace fallback silencioso al Pedido B', async () => {
   const mock = createSupabaseClientMock();
   const orderA = mock.seedOrder({ status: 'on_the_way', assigned_rider_user_id: RIDER_ID });
@@ -1213,6 +1453,42 @@ function makeRepository(mock, overrides = {}) {
     storage: createStorage(),
     ...overrides,
   });
+}
+
+function trackingIdentityOrder({
+  id,
+  code = id,
+  backendId = '',
+  status = 'delivered',
+  publicTrackingOnly = false,
+  terminalVisibleUntil = new Date(Date.now() + 30 * 60_000).toISOString(),
+  ...overrides
+} = {}) {
+  return {
+    id,
+    code,
+    ...(backendId ? { backendId } : {}),
+    status,
+    workflowStatus: status,
+    deliveryMode: 'delivery',
+    publicTrackingOnly,
+    customerName: 'Cliente',
+    customerPhone: '',
+    address: '',
+    paymentMethodCode: 'unknown',
+    paymentMethod: 'Sin especificar',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...(status === 'delivered' ? { terminalVisibleUntil } : {}),
+    items: [],
+    delivery: {
+      driverName: 'Sin asignar',
+      driverPhone: '',
+      estimatedMinutes: 0,
+      currentLocationLabel: status === 'delivered' ? 'Pedido entregado' : 'Preparando',
+    },
+    ...overrides,
+  };
 }
 
 function checkoutDraft() {

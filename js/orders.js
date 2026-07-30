@@ -60,6 +60,8 @@ import {
   validateCartForCheckout,
 } from './cart.js';
 
+let activeOrderFallbackSuppressed = false;
+
 export function createOrderFromCheckout(formValues = {}) {
   const values = normalizeCheckoutValues(formValues);
   const validation = validateCartForCheckout(values.deliveryMode);
@@ -142,6 +144,7 @@ export function createOrderFromCheckout(formValues = {}) {
     ...(reorder ? { reorder } : {}),
   };
 
+  allowActiveOrderFallback();
   updateState((draft) => {
     draft.orders.unshift(order);
     draft.lastOrderId = order.id;
@@ -200,6 +203,7 @@ export function getLastOrder() {
 
 export function getActiveOrderId(sourceState = getState()) {
   const orders = Array.isArray(sourceState.orders) ? sourceState.orders : [];
+  if (activeOrderFallbackSuppressed) return null;
   if (typeof sourceState.lastOrderId === 'string' && orders.some((order) => order.id === sourceState.lastOrderId)) {
     return sourceState.lastOrderId;
   }
@@ -221,10 +225,22 @@ export function persistActiveOrderId(orderId) {
       persisted = true;
     }
   });
+  if (persisted) {
+    allowActiveOrderFallback();
+  }
   return persisted;
 }
 
+export function suppressActiveOrderFallback() {
+  activeOrderFallbackSuppressed = true;
+}
+
+export function allowActiveOrderFallback() {
+  activeOrderFallbackSuppressed = false;
+}
+
 export function clearActiveOrderStateOnReset() {
+  allowActiveOrderFallback();
   updateState((draft) => {
     draft.lastOrderId = null;
     draft.simulation = null;
@@ -413,6 +429,7 @@ export function updateOrderStatus(orderId, status, options = {}) {
     order.statusHistory.push({ status, at: now });
     order.delivery = order.delivery || {};
     draft.lastOrderId = orderId;
+    allowActiveOrderFallback();
 
     if (status === 'preparing') {
       const estimatedPreparationMinutes = normalizePreparationMinutes(

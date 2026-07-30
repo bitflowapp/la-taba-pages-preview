@@ -36,6 +36,18 @@ export function normalizePhoneDigits(value) {
   return String(value || '').replace(/\D/g, '');
 }
 
+export function normalizeArgentinePhone(value) {
+  return normalizePhoneDigits(value).slice(0, 13);
+}
+
+export function formatArgentinePhone(value) {
+  const digits = normalizeArgentinePhone(value);
+  if (digits.length < 8) return digits;
+  const local = digits.slice(-7);
+  const prefix = digits.slice(0, -7);
+  return [prefix, local.slice(0, 3), local.slice(3)].filter(Boolean).join(' ');
+}
+
 export function isValidArgentinePhone(value) {
   const digits = normalizePhoneDigits(value);
   return digits.length >= 10

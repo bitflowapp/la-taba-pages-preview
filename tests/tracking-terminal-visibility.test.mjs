@@ -2,24 +2,20 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const recoveryPath = new URL(
-  '../supabase/migrations/20260725100000_tracking_handoff_recovery.sql',
+const migrationPath = new URL(
+  '../supabase/migrations/20260729210000_tracking_terminal_visibility.sql',
   import.meta.url,
 );
-const handoffPath = new URL(
-  '../supabase/migrations/20260725090000_delivery_handoff_code.sql',
+const supersededMigrationPath = new URL(
+  '../supabase/migrations/20260729203000_public_tracking_terminal_visibility.sql',
   import.meta.url,
 );
 const privacyPath = new URL(
   '../supabase/migrations/20260725050000_tracking_rider_privacy.sql',
   import.meta.url,
 );
-const productionPath = new URL(
-  '../supabase/migrations/20260725030000_taba_production_orders.sql',
-  import.meta.url,
-);
-const fixPath = new URL(
-  '../supabase/migrations/20260729203000_public_tracking_terminal_visibility.sql',
+const assignmentPath = new URL(
+  '../supabase/migrations/20260725080000_rider_assignment_tracking_gate.sql',
   import.meta.url,
 );
 const repositoryPath = new URL(
@@ -30,227 +26,172 @@ const pollingPath = new URL(
   '../js/tracking/customer_tracking_poll.js',
   import.meta.url,
 );
-const uiPath = new URL('../js/ui.js', import.meta.url);
-const timelinePath = new URL('../js/core/order-timeline.js', import.meta.url);
-const recoverySql = readFileSync(recoveryPath, 'utf8');
-const handoffSql = readFileSync(handoffPath, 'utf8');
+const appPath = new URL('../js/app.js', import.meta.url);
+
+const sql = readFileSync(migrationPath, 'utf8');
 const privacySql = readFileSync(privacyPath, 'utf8');
-const productionSql = readFileSync(productionPath, 'utf8');
-const fixSql = existsSync(fixPath) ? readFileSync(fixPath, 'utf8') : '';
+const assignmentSql = readFileSync(assignmentPath, 'utf8');
 const repositorySource = readFileSync(repositoryPath, 'utf8');
 const pollingSource = readFileSync(pollingPath, 'utf8');
-const uiSource = readFileSync(uiPath, 'utf8');
-const timelineSource = readFileSync(timelinePath, 'utf8');
+const appSource = readFileSync(appPath, 'utf8');
 
 function sqlFunction(source, name) {
-  return source.match(
-    new RegExp(`create or replace function public\\.${name}\\([^)]*\\)([\\s\\S]*?)\\$\\$;`, 'i'),
-  )?.[0] || '';
+  const start = source.search(new RegExp(
+    `create or replace function public\\.${name}\\b`,
+    'i',
+  ));
+  assert.notEqual(start, -1, `No se encontró ${name}`);
+  const tail = source.slice(start);
+  const end = tail.search(/\n\$\$;/);
+  assert.notEqual(end, -1, `No se encontró el cierre de ${name}`);
+  return tail.slice(0, end + 4);
 }
 
-function publicRead({ order, token, now }) {
-  if (token.revokedAt || token.expiresAt <= now) return null;
-  return { status: order.status };
-}
-
-test('reproduce el cierre P1: delivered revoca el token antes del siguiente poll', () => {
-  assert.match(
-    recoverySql,
-    /update public\.order_public_tokens[\s\S]*set revoked_at = coalesce\(revoked_at, clock_timestamp\(\)\)/i,
-  );
-  assert.match(handoffSql, /opt\.revoked_at is null/i);
-
-  const now = new Date('2026-07-29T18:00:00.000Z');
-  const order = { status: 'arrived', gpsEnabled: true };
-  const token = {
-    revokedAt: null,
-    expiresAt: new Date('2026-07-30T18:00:00.000Z'),
-  };
-  let browserTitle = 'Tu pedido llegó';
-
-  assert.deepEqual(publicRead({ order, token, now }), { status: 'arrived' });
-  order.status = 'delivered';
-  order.gpsEnabled = false;
-  token.revokedAt = now;
-
-  assert.equal(order.gpsEnabled, false);
-  const nextSnapshot = publicRead({ order, token, now });
-  assert.equal(nextSnapshot, null);
-  if (nextSnapshot?.status === 'delivered') browserTitle = 'Pedido entregado';
-  assert.equal(browserTitle, 'Tu pedido llegó');
+test('la migración terminal usa el nombre y orden del contrato certificado', () => {
+  assert.equal(existsSync(migrationPath), true);
+  assert.equal(existsSync(supersededMigrationPath), false);
+  assert.match(sql, /alter table public\.orders[\s\S]*terminal_visible_until timestamptz/i);
+  assert.doesNotMatch(sql, /alter table public\.order_public_tokens[\s\S]*terminal_visible_until/i);
 });
 
-test('el contrato corregido exige una ventana terminal separada de revoked_at', () => {
-  assert.notEqual(
-    fixSql,
-    '',
-    'Falta la migración correctiva nueva; el snapshot actual todavía reproduce el P1.',
+test('la primera transición a delivered establece una ventana de treinta minutos', () => {
+  const terminal = sqlFunction(sql, 'set_order_terminal_tracking_visibility');
+  assert.match(terminal, /new\.status = 'delivered'/i);
+  assert.match(terminal, /old\.status is distinct from 'delivered'/i);
+  assert.match(
+    terminal,
+    /coalesce\(\s*old\.terminal_visible_until,\s*new\.delivered_at \+ interval '30 minutes',\s*clock_timestamp\(\) \+ interval '30 minutes'\s*\)/i,
   );
   assert.match(
-    fixSql,
-    /add column if not exists terminal_visible_until timestamptz/i,
+    sql,
+    /before update of status, terminal_visible_until on public\.orders/i,
   );
+});
+
+test('delivered repetido y transiciones terminales no renuevan la ventana', () => {
+  const terminal = sqlFunction(sql, 'set_order_terminal_tracking_visibility');
   assert.match(
-    fixSql,
-    /v_terminal_window constant interval := interval '30 minutes'/i,
-  );
-  assert.match(
-    fixSql,
-    /new\.status in \('delivered', 'canceled', 'cancelled', 'rejected'\)[\s\S]*set terminal_visible_until/i,
+    terminal,
+    /elsif old\.terminal_visible_until is not null then\s*new\.terminal_visible_until := old\.terminal_visible_until/i,
   );
   assert.doesNotMatch(
-    fixSql.match(
-      /create or replace function public\.purge_terminal_order_rider_locations\(\)([\s\S]*?)\$\$;/i,
-    )?.[1] || '',
-    /set revoked_at/i,
+    terminal,
+    /new\.status in \('delivered', 'canceled', 'cancelled', 'rejected'\)/i,
   );
+});
+
+test('la purga terminal elimina GPS sin convertir el cierre en revocación', () => {
+  const purge = sqlFunction(sql, 'purge_terminal_order_rider_locations');
   assert.match(
-    fixSql,
-    /opt\.revoked_at is null[\s\S]*opt\.expires_at > clock_timestamp\(\)[\s\S]*terminal_visible_until > clock_timestamp\(\)/i,
+    purge,
+    /new\.status in \('delivered', 'canceled', 'cancelled', 'rejected'\)/i,
   );
+  assert.match(purge, /delete from public\.rider_locations[\s\S]*order_id = new\.id/i);
+  assert.doesNotMatch(purge, /order_public_tokens|revoked_at/i);
 });
 
-test('el trigger terminal purga inmediatamente el GPS exacto del pedido', () => {
-  const trigger = sqlFunction(fixSql, 'purge_terminal_order_rider_locations');
-  assert.match(trigger, /delete from public\.rider_locations[\s\S]*where order_id = new\.id/i);
-  assert.match(trigger, /old\.status is distinct from new\.status/i);
-});
-
-test('el trigger terminal no convierte el cierre operativo en revocación de seguridad', () => {
-  const trigger = sqlFunction(fixSql, 'purge_terminal_order_rider_locations');
-  assert.doesNotMatch(trigger, /set\s+revoked_at/i);
-  assert.match(trigger, /where order_id = new\.id[\s\S]*and revoked_at is null/i);
-});
-
-test('la ventana terminal queda acotada por la expiración general del token', () => {
-  assert.match(
-    fixSql,
-    /set terminal_visible_until = least\(\s*expires_at,\s*clock_timestamp\(\) \+ v_terminal_window\s*\)/i,
-  );
-});
-
-test('la lectura pública sigue ligada al hash y al mismo pedido', () => {
-  const rpc = sqlFunction(fixSql, 'get_public_order_tracking');
-  assert.match(rpc, /join public\.order_public_tokens opt on opt\.order_id = o\.id/i);
-  assert.match(rpc, /opt\.token_hash = v_token_hash/i);
-  assert.match(rpc, /o\.id::text = btrim\(p_public_id\) or o\.public_code = btrim\(p_public_id\)/i);
-});
-
-test('un token ausente o un identificador vacío devuelve cero datos', () => {
-  const rpc = sqlFunction(fixSql, 'get_public_order_tracking');
-  assert.match(
-    rpc,
-    /if v_token_hash is null or p_public_id is null or btrim\(p_public_id\) = '' then\s*return null/i,
-  );
-});
-
-test('la revocación manual continúa siendo inmediata y prevalece sobre la ventana', () => {
+test('revocación manual y expiración general prevalecen sobre delivered', () => {
+  const tracking = sqlFunction(sql, 'get_public_order_tracking');
   assert.match(
     privacySql,
     /function public\.revoke_public_tracking[\s\S]*set revoked_at = coalesce\(revoked_at, clock_timestamp\(\)\)/i,
   );
-  assert.match(sqlFunction(fixSql, 'get_public_order_tracking'), /opt\.revoked_at is null/i);
+  assert.match(tracking, /opt\.token_hash = v_token_hash/i);
+  assert.match(tracking, /opt\.revoked_at is null/i);
+  assert.match(tracking, /opt\.expires_at > clock_timestamp\(\)/i);
 });
 
-test('un token terminal vencido queda fail-closed sin cron ni reactivación', () => {
-  const rpc = sqlFunction(fixSql, 'get_public_order_tracking');
-  assert.match(rpc, /opt\.terminal_visible_until > clock_timestamp\(\)/i);
-  assert.doesNotMatch(fixSql, /\bcron\b|\bpg_cron\b/i);
-  assert.doesNotMatch(fixSql, /set\s+revoked_at\s*=\s*null/i);
-});
-
-test('la expiración general continúa siendo obligatoria en estados activos y terminales', () => {
+test('sólo delivered usa la ventana y cancelación o rechazo quedan fail-closed', () => {
+  const tracking = sqlFunction(sql, 'get_public_order_tracking');
   assert.match(
-    sqlFunction(fixSql, 'get_public_order_tracking'),
-    /opt\.expires_at > clock_timestamp\(\)/i,
+    tracking,
+    /o\.status not in \('delivered', 'canceled', 'cancelled', 'rejected'\)[\s\S]*o\.status = 'delivered'[\s\S]*o\.terminal_visible_until > clock_timestamp\(\)/i,
   );
-});
-
-test('delivered no devuelve mapa, ubicación ni código de entrega activo', () => {
-  const rpc = sqlFunction(fixSql, 'get_public_order_tracking');
-  assert.match(rpc, /v_order\.status in \('picked_up', 'on_the_way', 'arrived'\)/i);
-  assert.match(rpc, /if v_order\.status = 'arrived' then/i);
   assert.doesNotMatch(
-    rpc.match(/if v_order\.status = 'arrived' then([\s\S]*?)end if;/i)?.[1] || '',
-    /delivered/i,
+    tracking,
+    /o\.status in \('delivered', 'canceled', 'cancelled', 'rejected'\)[\s\S]*terminal_visible_until > clock_timestamp\(\)/i,
   );
 });
 
-test('arrived conserva el código únicamente antes de su confirmación', () => {
-  const rpc = sqlFunction(fixSql, 'get_public_order_tracking');
-  assert.match(rpc, /if v_order\.status = 'arrived'[\s\S]*h\.confirmed_at is null/i);
-  assert.match(rpc, /h\.expires_at > clock_timestamp\(\)/i);
+test('la expiración terminal queda fail-closed y no depende de cron', () => {
+  const tracking = sqlFunction(sql, 'get_public_order_tracking');
+  assert.match(tracking, /o\.terminal_visible_until is not null/i);
+  assert.match(tracking, /o\.terminal_visible_until > clock_timestamp\(\)/i);
+  assert.doesNotMatch(sql, /\bcron\b|\bpg_cron\b|set\s+revoked_at\s*=\s*null/i);
 });
 
-test('el DTO terminal es mínimo y no incorpora PII ni IDs administrativos', () => {
-  const rpc = sqlFunction(fixSql, 'get_public_order_tracking');
-  const dto = rpc.match(/return jsonb_strip_nulls\(jsonb_build_object\(([\s\S]*?)\)\);/i)?.[1] || '';
-  assert.match(dto, /'public_code'[\s\S]*'status'[\s\S]*'delivered_at'/i);
-  assert.doesNotMatch(
-    dto,
-    /customer_name|customer_phone|address|assigned_rider_user_id|business_id|rider_user_id|'id'/i,
-  );
-});
-
-test('cancelación y rechazo conservan el mismo cierre público acotado ya soportado por producto', () => {
-  const trigger = sqlFunction(fixSql, 'purge_terminal_order_rider_locations');
-  const rpc = sqlFunction(fixSql, 'get_public_order_tracking');
-  assert.match(trigger, /'canceled', 'cancelled', 'rejected'/i);
-  assert.match(rpc, /'cancelled_at'[\s\S]*'rejected_at'/i);
-});
-
-test('el backfill nunca revive tokens ya revocados', () => {
-  const backfill = fixSql.match(
-    /update public\.order_public_tokens opt([\s\S]*?)and o\.status in \('delivered', 'canceled', 'cancelled', 'rejected'\);/i,
+test('el DTO delivered no contiene GPS, código de entrega ni PII', () => {
+  const tracking = sqlFunction(sql, 'get_public_order_tracking');
+  const dto = tracking.match(
+    /return jsonb_strip_nulls\(jsonb_build_object\([\s\S]*?\)\);/i,
   )?.[0] || '';
+
+  assert.match(tracking, /v_order\.status in \('picked_up', 'on_the_way', 'arrived'\)/i);
+  assert.match(tracking, /if v_order\.status = 'arrived' then/i);
+  assert.match(dto, /'terminal_visible_until'[\s\S]*v_order\.terminal_visible_until/i);
+  for (const prohibited of [
+    'customer_name',
+    'customer_phone',
+    'customer_email',
+    'customer_street_address',
+    'customer_reference',
+    'customer_user_id',
+    'assigned_rider_user_id',
+    'business_id',
+    'token_hash',
+  ]) {
+    assert.doesNotMatch(dto, new RegExp(prohibited, 'i'));
+  }
+});
+
+test('el backfill usa delivered_at y nunca revive un bearer revocado o vencido', () => {
+  const backfill = sql.match(
+    /update public\.orders o([\s\S]*?)\n\s*and exists \(([\s\S]*?)\n\s*\);/i,
+  )?.[0] || '';
+  assert.match(backfill, /o\.status = 'delivered'/i);
+  assert.match(backfill, /o\.delivered_at \+ interval '30 minutes'/i);
   assert.match(backfill, /opt\.revoked_at is null/i);
-  assert.match(backfill, /opt\.terminal_visible_until is null/i);
+  assert.match(backfill, /opt\.expires_at > clock_timestamp\(\)/i);
+  assert.doesNotMatch(backfill, /canceled|cancelled|rejected|set\s+revoked_at/i);
+  assert.match(
+    sql,
+    /drop trigger if exists orders_set_updated_at on public\.orders;[\s\S]*update public\.orders o[\s\S]*create trigger orders_set_updated_at\s*before update on public\.orders/i,
+  );
+});
+
+test('GPS posterior al cierre sigue bloqueado por el contrato de publicación', () => {
+  const publish = sqlFunction(assignmentSql, 'publish_rider_location');
+  assert.match(
+    publish,
+    /v_order\.status not in \('assigned', 'picked_up', 'on_the_way', 'arrived'\)/i,
+  );
+  assert.doesNotMatch(
+    publish,
+    /v_order\.status not in \([^)]*(?:delivered|canceled|cancelled|rejected)[^)]*\)/i,
+  );
 });
 
 test('la función pública conserva search_path cerrado y permisos mínimos', () => {
-  const rpc = sqlFunction(fixSql, 'get_public_order_tracking');
-  assert.match(rpc, /security definer[\s\S]*set search_path = pg_catalog, public, extensions, pg_temp/i);
+  const tracking = sqlFunction(sql, 'get_public_order_tracking');
   assert.match(
-    fixSql,
+    tracking,
+    /security definer[\s\S]*set search_path = pg_catalog, public, extensions, pg_temp/i,
+  );
+  assert.match(
+    sql,
     /revoke all on function public\.get_public_order_tracking\(text\)[\s\S]*grant execute[\s\S]*to anon, authenticated/i,
   );
-  assert.doesNotMatch(fixSql, /disable row level security|grant all/i);
+  assert.doesNotMatch(sql, /disable row level security|grant all|service_role/i);
 });
 
-test('GPS posterior y mutaciones posteriores a delivered siguen bloqueados por contratos existentes', () => {
+test('frontend propaga la fecha terminal y limpia cache y bearer al vencer', () => {
+  assert.match(repositorySource, /normalizeOptionalIso\(dto\.terminal_visible_until\)/i);
+  assert.match(repositorySource, /terminalVisibleUntil: tracking\.terminalVisibleUntil/i);
+  assert.match(appSource, /terminalVisibleUntil: order\.terminalVisibleUntil/i);
   assert.match(
-    handoffSql,
-    /v_order\.status in \('delivered', 'canceled', 'cancelled', 'rejected'\)[\s\S]*raise exception/i,
+    repositorySource,
+    /invalidatePublicTrackingAccess[\s\S]*removeStoredAccess\(storage, lastAccessStorageKey\)[\s\S]*clearPublicTrackingState/i,
   );
-  assert.match(
-    productionSql,
-    /v_current_status not in \('delivered', 'cancelled', 'rejected'\)/i,
-  );
-});
-
-test('el frontend conserva el handoff terminal para recargar dentro de la ventana', () => {
-  const snapshotHandler = repositorySource.match(
-    /onSnapshot: \(order\) => \{([\s\S]*?)\n\s*\},/i,
-  )?.[1] || '';
-  const terminalView = repositorySource.match(
-    /if \(\['delivered', 'canceled'\]\.includes\(normalizeWorkflowStatus\(status, ''\)\)\) \{([\s\S]*?)\n\s*\}/i,
-  )?.[1] || '';
-  assert.doesNotMatch(snapshotHandler, /removeStoredAccess|lastOrderAccess = null/i);
-  assert.doesNotMatch(terminalView, /removeStoredAccess|lastOrderAccess = null/i);
-  assert.match(terminalView, /customerTrackingPoll\.stop\(\)/i);
-});
-
-test('polling, timers y listeners se liberan al observar delivered', () => {
-  assert.match(pollingSource, /if \(isTerminalCustomerTrackingStatus\(session\.status\)\) \{\s*stop\(\)/i);
-  assert.match(pollingSource, /clearTimer\(\);[\s\S]*abortRequest\(\);[\s\S]*unbindLifecycle\(\)/i);
-});
-
-test('la pantalla final usa copy entregado, timeline de cuatro pasos y oculta código/mapa', () => {
-  assert.match(uiSource, /if \(order\.status === 'delivered'\)[\s\S]*title: 'Pedido entregado'/i);
-  assert.match(
-    timelineSource,
-    /PUBLIC_ORDER_TIMELINE_STEPS[\s\S]*'Confirmado'[\s\S]*'Preparando'[\s\S]*'En camino'[\s\S]*'Entregado'/i,
-  );
-  assert.match(uiSource, /if \(!\['arrived', 'arriving'\]\.includes\(order\.status\)\) return ''/i);
-  assert.match(uiSource, /!\['delivered', 'cancelled'\]\.includes\(order\.status\)/i);
+  assert.match(pollingSource, /scheduleTerminalRevalidation/i);
+  assert.match(pollingSource, /revalidateTerminal/i);
 });

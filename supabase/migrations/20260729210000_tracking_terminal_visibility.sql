@@ -1,66 +1,102 @@
--- Keep the final public tracking state observable for a short, read-only
--- window without weakening explicit security revocation.
+-- TABA public tracking terminal visibility.
+--
+-- A delivered order becomes operationally terminal immediately, but its
+-- token remains read-only for a short final-state acknowledgement window.
+-- Manual/security revocation stays independent and always wins.
 
-alter table public.order_public_tokens
+alter table public.orders
   add column if not exists terminal_visible_until timestamptz;
 
-comment on column public.order_public_tokens.terminal_visible_until is
-'Read-only public visibility deadline after a terminal order transition. Explicit revoked_at and expires_at always take precedence.';
+comment on column public.orders.terminal_visible_until is
+  'Natural expiration for the bounded, read-only delivered tracking DTO; distinct from manual token revocation.';
 
--- Preserve an already-established terminal window on replay. This backfill
--- deliberately excludes revoked tokens: a security revocation is irreversible.
-update public.order_public_tokens opt
-   set terminal_visible_until = least(
-     opt.expires_at,
-     coalesce(
-       o.delivered_at,
-       o.cancelled_at,
-       o.canceled_at,
-       o.rejected_at,
-       o.updated_at,
-       clock_timestamp()
-     ) + interval '30 minutes'
-   )
-  from public.orders o
- where opt.order_id = o.id
-   and opt.revoked_at is null
-   and opt.terminal_visible_until is null
-   and o.status in ('delivered', 'canceled', 'cancelled', 'rejected');
+-- Preserve only the remainder of the original delivered window. Historical
+-- cancellations/rejections remain fail-closed, and a revoked/expired bearer is
+-- never made usable again by this migration. The derived authorization field
+-- is not a new business event, so preserve the original order updated_at.
+drop trigger if exists orders_set_updated_at on public.orders;
 
--- Exact GPS data remains operational and transient. Terminal transitions purge
--- it immediately, while unrevoked tokens receive a bounded final-state window.
+update public.orders o
+   set terminal_visible_until = o.delivered_at + interval '30 minutes'
+ where o.status = 'delivered'
+   and o.delivered_at is not null
+   and o.terminal_visible_until is null
+   and o.delivered_at + interval '30 minutes' > clock_timestamp()
+   and exists (
+     select 1
+       from public.order_public_tokens opt
+      where opt.order_id = o.id
+        and opt.revoked_at is null
+        and opt.expires_at > clock_timestamp()
+   );
+
+create trigger orders_set_updated_at
+before update on public.orders
+for each row execute function public.set_updated_at();
+
+-- The first delivered transition owns the deadline. Replays, later writes and
+-- transitions between terminal states preserve it instead of creating a lease.
+create or replace function public.set_order_terminal_tracking_visibility()
+returns trigger
+language plpgsql
+set search_path = pg_catalog, public, extensions, pg_temp
+as $$
+begin
+  if new.status = 'delivered'
+    and old.status is distinct from 'delivered' then
+    new.terminal_visible_until := coalesce(
+      old.terminal_visible_until,
+      new.delivered_at + interval '30 minutes',
+      clock_timestamp() + interval '30 minutes'
+    );
+  elsif old.terminal_visible_until is not null then
+    new.terminal_visible_until := old.terminal_visible_until;
+  else
+    new.terminal_visible_until := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists orders_set_terminal_tracking_visibility on public.orders;
+create trigger orders_set_terminal_tracking_visibility
+before update of status, terminal_visible_until on public.orders
+for each row execute function public.set_order_terminal_tracking_visibility();
+
+revoke execute on function public.set_order_terminal_tracking_visibility()
+from public, anon, authenticated;
+
+-- The release branch includes an older migration that revoked public bearers
+-- from this operational purge trigger. Replace that side effect explicitly:
+-- exact GPS history is still deleted for every terminal state, while revoked_at
+-- remains reserved for manual/security revocation.
 create or replace function public.purge_terminal_order_rider_locations()
 returns trigger
 language plpgsql
 security definer
 set search_path = pg_catalog, public, extensions, pg_temp
 as $$
-declare
-  v_terminal_window constant interval := interval '30 minutes';
 begin
   if new.status in ('delivered', 'canceled', 'cancelled', 'rejected')
     and old.status is distinct from new.status then
     delete from public.rider_locations
      where order_id = new.id;
-
-    update public.order_public_tokens
-       set terminal_visible_until = least(
-         expires_at,
-         clock_timestamp() + v_terminal_window
-       )
-     where order_id = new.id
-       and revoked_at is null;
   end if;
   return null;
 end;
 $$;
 
+drop trigger if exists orders_purge_terminal_rider_locations
+on public.orders;
+create trigger orders_purge_terminal_rider_locations
+after update of status on public.orders
+for each row execute function public.purge_terminal_order_rider_locations();
+
 revoke execute on function public.purge_terminal_order_rider_locations()
 from public, anon, authenticated;
 
--- Public tracking remains token-scoped and minimized. Active orders use the
--- existing token expiry; terminal orders additionally require their bounded
--- visibility window. Explicit revoked_at denies access immediately in both.
+-- Public tracking remains token-scoped and minimized. Only delivered receives
+-- the bounded acknowledgement window; canceled/rejected stay fail-closed.
 create or replace function public.get_public_order_tracking(p_public_id text)
 returns jsonb
 language plpgsql
@@ -72,7 +108,6 @@ declare
   v_raw_token text := public.request_order_token();
   v_token_hash bytea := public.request_order_token_hash();
   v_order public.orders%rowtype;
-  v_terminal_visible_until timestamptz;
   v_location jsonb;
   v_delivery_code text;
   v_code_confirmed_at timestamptz;
@@ -93,20 +128,16 @@ begin
      and (
        o.status not in ('delivered', 'canceled', 'cancelled', 'rejected')
        or (
-         opt.terminal_visible_until is not null
-         and opt.terminal_visible_until > clock_timestamp()
+         o.status = 'delivered'
+         and o.terminal_visible_until is not null
+         and o.terminal_visible_until > clock_timestamp()
        )
      )
    limit 1;
 
-  if not found then return null; end if;
-
-  select opt.terminal_visible_until
-    into v_terminal_visible_until
-    from public.order_public_tokens opt
-   where opt.order_id = v_order.id
-     and opt.token_hash = v_token_hash
-   limit 1;
+  if not found then
+    return null;
+  end if;
 
   v_reliable_eta :=
     v_order.status not in ('delivered', 'canceled', 'cancelled', 'rejected')
@@ -138,6 +169,8 @@ begin
      limit 1;
   end if;
 
+  -- The handoff code remains an arrived-only secret. Delivered never reads or
+  -- exposes it, even inside the acknowledgement window.
   if v_order.status = 'arrived' then
     begin
       select case
@@ -168,12 +201,9 @@ begin
     'dispatched_at', coalesce(v_order.dispatched_at, v_order.picked_up_at),
     'arrived_at', v_order.arrived_at,
     'delivered_at', v_order.delivered_at,
-    'cancelled_at', coalesce(v_order.cancelled_at, v_order.canceled_at),
-    'rejected_at', v_order.rejected_at,
     'is_delivered', v_order.status = 'delivered',
     'terminal_visible_until', case
-      when v_order.status in ('delivered', 'canceled', 'cancelled', 'rejected')
-        then v_terminal_visible_until
+      when v_order.status = 'delivered' then v_order.terminal_visible_until
       else null
     end,
     'estimated_arrival_at', case when v_reliable_eta then v_order.estimated_arrival_at else null end,
@@ -199,4 +229,4 @@ grant execute on function public.get_public_order_tracking(text)
 to anon, authenticated;
 
 comment on function public.get_public_order_tracking(text) is
-'Minimized token-scoped tracking DTO with immediate security revocation and a bounded read-only terminal visibility window.';
+  'Minimized token-scoped tracking DTO; delivered remains read-only for 30 minutes unless the bearer expires or is manually revoked.';

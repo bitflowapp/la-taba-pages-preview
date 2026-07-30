@@ -50,6 +50,13 @@ function trackingOrder(status = 'on_the_way') {
   return { id: 'LT-100', workflowStatus: status, status };
 }
 
+function deliveredTrackingOrder(terminalVisibleUntil) {
+  return {
+    ...trackingOrder('delivered'),
+    terminalVisibleUntil,
+  };
+}
+
 test('poll tokenizado consulta de inmediato y conserva un único ciclo cada 5 s', async () => {
   const documentRef = eventTarget();
   const windowRef = eventTarget();
@@ -210,6 +217,161 @@ test('un token vencido o revocado vuelve el seguimiento a no disponible y se det
   await tick();
   assert.deepEqual(unavailable, [{ orderId: 'LT-100' }]);
   assert.equal(controller.getSnapshot().active, false);
+});
+
+test('delivered detiene el polling frecuente y revalida una sola vez al vencer', async () => {
+  const documentRef = eventTarget();
+  const windowRef = eventTarget();
+  const timers = fakeTimers();
+  let clock = Date.parse('2026-07-29T20:00:00.000Z');
+  const calls = [];
+  const unavailable = [];
+  const ticks = [];
+  const controller = createCustomerTrackingPollController({
+    documentRef,
+    windowRef,
+    now: () => clock,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    onTick: (value) => ticks.push(value),
+    onUnavailable: (value) => unavailable.push(value),
+    fetchSnapshot: async (request) => {
+      calls.push(request);
+      return { kind: 'unavailable' };
+    },
+  });
+  const terminalVisibleUntil = new Date(clock + 30_000).toISOString();
+
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 't'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil,
+  });
+  assert.equal(controller.getSnapshot().active, false);
+  assert.equal(controller.getSnapshot().terminal, true);
+  assert.equal(timers.nextDelay(), 30_000);
+  assert.deepEqual(ticks, []);
+  assert.deepEqual(calls, []);
+
+  clock += 30_000;
+  timers.runNext();
+  await tick();
+  assert.equal(calls.length, 1);
+  assert.deepEqual(unavailable, [{ orderId: 'LT-100' }]);
+  assert.equal(controller.getSnapshot().terminal, false);
+  assert.equal(timers.size(), 0);
+});
+
+test('una segunda escritura delivered conserva el vencimiento original', () => {
+  const timers = fakeTimers();
+  let clock = Date.parse('2026-07-29T20:00:00.000Z');
+  const terminalVisibleUntil = new Date(clock + 30_000).toISOString();
+  const controller = createCustomerTrackingPollController({
+    now: () => clock,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    fetchSnapshot: async () => ({
+      kind: 'snapshot',
+      order: deliveredTrackingOrder(terminalVisibleUntil),
+    }),
+  });
+
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 'w'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil,
+  });
+  assert.equal(timers.nextDelay(), 30_000);
+
+  clock += 10_000;
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 'w'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil,
+  });
+  assert.equal(timers.nextDelay(), 20_000);
+  controller.stop();
+});
+
+test('pageshow revalida una revocación manual antes del vencimiento sin reactivar polling', async () => {
+  const windowRef = eventTarget();
+  const timers = fakeTimers();
+  const unavailable = [];
+  const ticks = [];
+  let calls = 0;
+  const controller = createCustomerTrackingPollController({
+    windowRef,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    onUnavailable: (value) => unavailable.push(value),
+    onTick: (value) => ticks.push(value),
+    fetchSnapshot: async () => {
+      calls += 1;
+      return { kind: 'unavailable' };
+    },
+  });
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 'v'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil: new Date(Date.now() + 60_000).toISOString(),
+  });
+
+  windowRef.emit('pageshow');
+  await tick();
+  assert.equal(calls, 1);
+  assert.deepEqual(unavailable, [{ orderId: 'LT-100' }]);
+  assert.deepEqual(ticks, []);
+  assert.equal(controller.getSnapshot().terminal, false);
+});
+
+test('un error de red al vencer limpia delivered de forma fail-closed', async () => {
+  const timers = fakeTimers();
+  let clock = Date.parse('2026-07-29T20:00:00.000Z');
+  const unavailable = [];
+  const errors = [];
+  const controller = createCustomerTrackingPollController({
+    now: () => clock,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    onUnavailable: (value) => unavailable.push(value),
+    onError: (value) => errors.push(value),
+    fetchSnapshot: async () => ({
+      kind: 'network-error',
+      error: new Error('offline'),
+    }),
+  });
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 'x'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil: new Date(clock + 5_000).toISOString(),
+  });
+
+  clock += 5_000;
+  timers.runNext();
+  await tick();
+  assert.deepEqual(unavailable, [{ orderId: 'LT-100' }]);
+  assert.deepEqual(errors, []);
+  assert.equal(controller.getSnapshot().terminal, false);
+});
+
+test('delivered sin vencimiento canónico se descarta inmediatamente', () => {
+  const unavailable = [];
+  const controller = createCustomerTrackingPollController({
+    onUnavailable: (value) => unavailable.push(value),
+    fetchSnapshot: async () => ({ kind: 'unavailable' }),
+  });
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 'y'.repeat(32),
+    status: 'delivered',
+  });
+  assert.deepEqual(unavailable, [{ orderId: 'LT-100' }]);
+  assert.equal(controller.getSnapshot().terminal, false);
 });
 
 function tick() {

@@ -245,6 +245,42 @@ test('cambia estados sólo por RPC con compare-and-swap', async () => {
   assert.equal(mock.calls.from.some((call) => call.action === 'update'), false);
 });
 
+test('mirrorOrder no conserva GPS cacheado cuando una actualización entrega el pedido', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'arrived',
+    assigned_rider_user_id: RIDER_ID,
+    arrived_at: new Date().toISOString(),
+  });
+  mock.db.locations.push({
+    id: 'location-before-internal-delivery',
+    order_id: row.id,
+    rider_user_id: RIDER_ID,
+    lat: -38.951,
+    lng: -68.061,
+    accuracy: 100,
+    source: 'gps',
+    created_at: new Date().toISOString(),
+  });
+  const repository = makeRepository(mock);
+
+  await repository.listOrders();
+  assert.equal(
+    getState().orders.find((order) => order.id === row.public_code)
+      ?.tracking?.lastLocation?.source,
+    'gps',
+  );
+
+  const result = await repository.updateOrderStatus(row.public_code, 'delivered');
+
+  assert.equal(result.ok, true);
+  assert.equal(result.order.workflowStatus, 'delivered');
+  assert.equal(
+    getState().orders.find((order) => order.id === row.public_code)?.tracking,
+    undefined,
+  );
+});
+
 test('asigna rider con CAS y publica GPS sólo por las RPC autorizadas', async () => {
   const mock = createSupabaseClientMock({ userId: RIDER_ID });
   const row = mock.seedOrder({
@@ -618,6 +654,152 @@ test('tracking con token público mantiene polling y no abre un canal WebSocket 
   }
 });
 
+test('un DTO delivered conserva sólo la revalidación terminal, sin polling global', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'delivered',
+    delivered_at: new Date().toISOString(),
+    terminal_visible_until: new Date(Date.now() + 30 * 60_000).toISOString(),
+  });
+  const storage = createStorage();
+  storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'T'.repeat(43),
+  }));
+  const repository = makeRepository(mock, {
+    storage,
+    pollMs: 1000,
+    createTrackingClient: () => mock.client,
+  });
+  const stop = repository.startSync();
+
+  try {
+    await flushTasks();
+    repository.setCustomerTrackingView({
+      active: true,
+      orderId: row.id,
+      status: 'delivered',
+      terminalVisibleUntil: row.terminal_visible_until,
+    });
+    const publicCalls = () => mock.calls.rpc.filter(
+      (call) => call.name === 'get_public_order_tracking',
+    ).length;
+    const before = publicCalls();
+    await new Promise((resolve) => setTimeout(resolve, 1150));
+
+    assert.equal(repository.getCustomerTrackingPollState().active, false);
+    assert.equal(repository.getCustomerTrackingPollState().terminal, true);
+    assert.equal(publicCalls(), before);
+  } finally {
+    stop();
+  }
+});
+
+test('la transición a delivered descarta el GPS cacheado sin una consulta pública frecuente', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'on_the_way',
+    assigned_rider_user_id: RIDER_ID,
+    dispatched_at: minutesAgoIso(2),
+  });
+  mock.db.locations.push({
+    id: 'location-before-delivered',
+    order_id: row.id,
+    rider_user_id: RIDER_ID,
+    lat: -38.951,
+    lng: -68.061,
+    accuracy: 100,
+    source: 'gps',
+    created_at: new Date().toISOString(),
+  });
+  const storage = createStorage();
+  storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'G'.repeat(43),
+  }));
+  const repository = makeRepository(mock, {
+    storage,
+    pollMs: 1000,
+    createTrackingClient: () => mock.client,
+  });
+  const stop = repository.startSync();
+
+  try {
+    await flushTasks();
+    const before = getState().orders.find((order) => order.id === row.public_code);
+    assert.equal(before?.tracking?.lastLocation?.source, 'gps');
+    const publicCalls = () => mock.calls.rpc.filter(
+      (call) => call.name === 'get_public_order_tracking',
+    ).length;
+    const callsBeforeDelivery = publicCalls();
+
+    row.status = 'delivered';
+    row.delivered_at = new Date().toISOString();
+    row.terminal_visible_until = new Date(Date.now() + 30 * 60_000).toISOString();
+    const orderChange = mock.channels
+      .flatMap((channel) => channel.bindings)
+      .find((binding) => binding.config.table === 'orders');
+    assert.ok(orderChange);
+    orderChange.handler();
+    await flushTasks();
+    await flushTasks();
+
+    const delivered = getState().orders.find((order) => order.id === row.public_code);
+    assert.equal(delivered?.status, 'delivered');
+    assert.equal(delivered?.tracking, undefined);
+    assert.equal(repository.getCustomerTrackingPollState().terminal, true);
+    assert.equal(publicCalls(), callsBeforeDelivery);
+  } finally {
+    stop();
+  }
+});
+
+test('el vencimiento terminal sigue activo al salir de la vista y limpia el acceso', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'delivered',
+    delivered_at: new Date().toISOString(),
+    terminal_visible_until: new Date(Date.now() + 250).toISOString(),
+  });
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  storage.setItem(accessKey, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'E'.repeat(43),
+  }));
+  const repository = makeRepository(mock, {
+    storage,
+    pollMs: 1000,
+    createTrackingClient: () => mock.client,
+  });
+  const stop = repository.startSync();
+
+  try {
+    await flushTasks();
+    repository.setCustomerTrackingView({
+      active: true,
+      orderId: row.id,
+      status: 'delivered',
+      terminalVisibleUntil: row.terminal_visible_until,
+    });
+    repository.setCustomerTrackingView({ active: false });
+    assert.equal(repository.getCustomerTrackingPollState().terminal, true);
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await flushTasks();
+    assert.equal(repository.getCustomerTrackingPollState().terminal, false);
+    assert.equal(storage.getItem(accessKey), null);
+    assert.equal(getState().orders.some(
+      (order) => [order.id, order.code, order.backendId].includes(row.public_code),
+    ), false);
+  } finally {
+    stop();
+  }
+});
+
 test('activar tracking es idempotente cuando un render reingresa al seleccionar el pedido', async () => {
   const mock = createSupabaseClientMock();
   const row = mock.seedOrder({
@@ -765,14 +947,17 @@ test('un handoff tokenizado conserva Pedido A aunque Pedido B sea posterior', as
 
       orderA.status = 'delivered';
       orderA.delivered_at = new Date().toISOString();
+      orderA.terminal_visible_until = new Date(Date.now() + 30 * 60_000).toISOString();
       await reloaded.getActiveOrder();
       reloaded.setCustomerTrackingView({
         active: true,
         orderId: orderA.id,
         status: 'delivered',
+        terminalVisibleUntil: orderA.terminal_visible_until,
       });
       await flushTasks();
       assert.equal(reloaded.getCustomerTrackingPollState().active, false);
+      assert.equal(reloaded.getCustomerTrackingPollState().terminal, true);
       assert.ok(storage.getItem(accessKey));
 
       stopReloaded();
@@ -794,12 +979,15 @@ test('un handoff tokenizado conserva Pedido A aunque Pedido B sea posterior', as
         assert.equal(delivered?.status, 'delivered');
         assert.equal(delivered?.tracking, undefined);
         assert.equal(delivered?.deliveryCode, undefined);
+        assert.equal(delivered?.terminalVisibleUntil, orderA.terminal_visible_until);
         terminalReload.setCustomerTrackingView({
           active: true,
           orderId: orderA.id,
           status: 'delivered',
+          terminalVisibleUntil: delivered?.terminalVisibleUntil,
         });
         assert.equal(terminalReload.getCustomerTrackingPollState().active, false);
+        assert.equal(terminalReload.getCustomerTrackingPollState().terminal, true);
       } finally {
         stopTerminalReload();
       }
@@ -840,7 +1028,10 @@ test('un token inválido no hace fallback silencioso al Pedido B', async () => {
 
   try {
     await flushTasks();
-    assert.equal(getState().lastOrderId, orderA.public_code);
+    assert.equal(getState().lastOrderId, null);
+    assert.equal(getState().orders.some(
+      (order) => [order.id, order.code, order.backendId].includes(orderA.public_code),
+    ), false);
     repository.setCustomerTrackingView({
       active: true,
       orderId: orderA.id,
@@ -848,7 +1039,7 @@ test('un token inválido no hace fallback silencioso al Pedido B', async () => {
     });
     await flushTasks();
     assert.equal(repository.getCustomerTrackingPollState().active, false);
-    assert.equal(getState().lastOrderId, orderA.public_code);
+    assert.equal(getState().lastOrderId, null);
     assert.notEqual(getState().lastOrderId, orderB.public_code);
     assert.equal(storage.getItem(accessKey), null);
     const trackingCalls = mock.calls.rpc.filter(
@@ -858,6 +1049,45 @@ test('un token inválido no hace fallback silencioso al Pedido B', async () => {
   } finally {
     stop();
   }
+});
+
+test('getActiveOrder limpia un delivered revocado en vez de devolver el cache', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'delivered',
+    delivered_at: new Date().toISOString(),
+    terminal_visible_until: new Date(Date.now() + 30 * 60_000).toISOString(),
+  });
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  storage.setItem(accessKey, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'V'.repeat(43),
+  }));
+  const deniedClient = {
+    ...mock.client,
+    async rpc(name, args) {
+      if (name === 'get_public_order_tracking') {
+        mock.calls.rpc.push({ name, args });
+        return { data: null, error: null, status: 200 };
+      }
+      return mock.client.rpc(name, args);
+    },
+  };
+  const repository = makeRepository(mock, {
+    storage,
+    createTrackingClient: () => deniedClient,
+  });
+
+  const active = await repository.getActiveOrder();
+
+  assert.equal(active, null);
+  assert.equal(storage.getItem(accessKey), null);
+  assert.equal(getState().lastOrderId, null);
+  assert.equal(getState().orders.some(
+    (order) => [order.id, order.code, order.backendId].includes(row.public_code),
+  ), false);
 });
 
 test('tracking público normaliza el DTO mínimo y preserva los detalles locales del pedido', async () => {
@@ -978,6 +1208,59 @@ test('tracking público crea un shell sin PII cuando no hay copia local', async 
     assert.equal(snapshot.customer.phone, '');
     assert.equal(snapshot.tracking.lastLocation.source, 'gps');
     assert.doesNotMatch(serialized, /No debe filtrarse|2995999999|Dirección privada|999999|Producto privado/);
+  } finally {
+    stop();
+  }
+});
+
+test('la invalidación por UUID también elimina un shell público identificado por código', async () => {
+  const mock = createSupabaseClientMock({ userId: '' });
+  const row = mock.seedOrder({
+    status: 'on_the_way',
+    assigned_rider_user_id: RIDER_ID,
+    dispatched_at: minutesAgoIso(2),
+  });
+  const storage = createStorage();
+  const accessKey = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  storage.setItem(accessKey, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'S'.repeat(43),
+  }));
+  let trackingAvailable = true;
+  const trackingClient = {
+    ...mock.client,
+    async rpc(name, args) {
+      if (name === 'get_public_order_tracking' && !trackingAvailable) {
+        mock.calls.rpc.push({ name, args });
+        return { data: null, error: null, status: 200 };
+      }
+      return mock.client.rpc(name, args);
+    },
+  };
+  const repository = makeRepository(mock, {
+    storage,
+    createTrackingClient: () => trackingClient,
+  });
+  const stop = repository.subscribeToOrder(row.public_code, () => {});
+
+  try {
+    await flushTasks();
+    const shell = getState().orders.find((order) => order.id === row.public_code);
+    assert.equal(shell?.publicTrackingOnly, true);
+    assert.equal(shell?.backendId, undefined);
+
+    trackingAvailable = false;
+    repository.setCustomerTrackingView({
+      active: true,
+      orderId: row.id,
+      status: 'on_the_way',
+    });
+    await flushTasks();
+
+    assert.equal(storage.getItem(accessKey), null);
+    assert.equal(getState().lastOrderId, null);
+    assert.equal(getState().orders.some((order) => order.id === row.public_code), false);
   } finally {
     stop();
   }
@@ -1795,6 +2078,10 @@ function publicTrackingDto(row, db) {
     } : {}),
     ...(row.status === 'arrived' && db.handoffs.get(row.id)?.confirmedAt == null ? {
       delivery_code: db.handoffs.get(row.id)?.code,
+    } : {}),
+    ...(row.status === 'delivered' ? {
+      terminal_visible_until: row.terminal_visible_until
+        || new Date(Date.now() + 30 * 60_000).toISOString(),
     } : {}),
     ...(db.handoffs.get(row.id)?.confirmedAt ? {
       delivery_code_confirmed_at: db.handoffs.get(row.id).confirmedAt,

@@ -64,12 +64,26 @@ for (const source of rawManifest.sources) {
     throw new Error(`${source.sku}: la fuente raw no coincide con el manifiesto.`);
   }
 
+  const inputMetadata = await sharp(input).metadata();
+  const cropWidth = Number.parseInt(source.crop_width, 10);
+  const crop = Number.isInteger(cropWidth)
+    && cropWidth > 0
+    && cropWidth < Number(inputMetadata.width || 0)
+    ? {
+      left: 0,
+      top: 0,
+      width: cropWidth,
+      height: Number(inputMetadata.height || 0),
+    }
+    : null;
+
   const assets = {};
   for (const [kind, size] of [['master', 1000], ['thumbnail', 400]]) {
     const tempPath = path.join(RAW, `.normalize-${process.pid}-${source.safeSku}-${kind}.webp`);
     try {
-      await sharp(input)
-        .rotate()
+      const transformer = sharp(input).rotate();
+      if (crop) transformer.extract(crop);
+      await transformer
         .resize(size, size, { fit: 'contain', background: '#ffffff' })
         .flatten({ background: '#ffffff' })
         .webp({ quality: 84, effort: 6 })

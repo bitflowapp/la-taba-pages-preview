@@ -7,5 +7,1326 @@
     "version": "0.35.3"
   },
   "schemaVersion": 1,
-  "sources": []
+  "sources": [
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "9eb7151f61c18a1e24afb815f3e9686b30dac30c1335942efc9e9027d5ed55f7",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-10096-0f23a25c3728db3b-f3abd31b9dbd3660.webp",
+          "sha256": "f3abd31b9dbd36604530d55acee8648b19e4f3466d1e8c37622395b90faf01a6",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "abc39aa8574a0ed909323f02fc6b4bb614d522f851576f98de2ac087d4a30a3c",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-10096-0f23a25c3728db3b-thumb-d23a65546e6d464e.webp",
+          "sha256": "d23a65546e6d464ef2b51787e57b01c7c813d17477274167ae77c42c8b8f9087",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-10096",
+      "identitySha256": "0f23a25c3728db3ba45b11c65051b6a719f3ea30f9097f4770017e1ae8890153",
+      "rawFile": "taba-jumbo-10096-0f23a25c3728db3b.dce2343305fc4cdbd28841d180be430cc8baee6ab496394979161c2bf0cdc4b1.source",
+      "rightsReference": "https://www.jumbo.com.ar/tequila-jose-cuervo-especial-750-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-10096",
+      "sku": "TABA-JUMBO-10096",
+      "sourceSha256": "dce2343305fc4cdbd28841d180be430cc8baee6ab496394979161c2bf0cdc4b1",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/602960/Tequila-Jos-Cuervo-Especial-750-Ml-1-10781.jpg?v=637358232326170000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "7dc5d2aa1e1a3f0f62c2319f8ee697208be2ec52616852a3c2459412b9b772d2",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-10496-ec43c42c8538b95e-1de3ab93c767ad6b.webp",
+          "sha256": "1de3ab93c767ad6b67cb2f7cff72405e9a88d664e26d23e1ac8bd6d882ecccd3",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "b9c2a61443c86436338caa72510721299a8ad91bc85ca851d3b753673cbb9ed6",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-10496-ec43c42c8538b95e-thumb-6d4dbe0cd7e38842.webp",
+          "sha256": "6d4dbe0cd7e38842c6028b6216fa5066789514234043afcf6f2ac9366fa9b904",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-10496",
+      "identitySha256": "ec43c42c8538b95e699246514b0ac053b81db28d5eec7bd0acfb74382d4c931d",
+      "rawFile": "taba-jumbo-10496-ec43c42c8538b95e.23fa7022406b5b95e4a32969dfa7c67d63a62bb1bb03fe4dc727d34760c1cbb1.source",
+      "rightsReference": "https://www.jumbo.com.ar/fernet-vittone-750-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-10496",
+      "sku": "TABA-JUMBO-10496",
+      "sourceSha256": "23fa7022406b5b95e4a32969dfa7c67d63a62bb1bb03fe4dc727d34760c1cbb1",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/585065/Fernet-Vittone-750-Ml-2-11188.jpg?v=639168049015200000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "2da65ab354923a3f714e2d67c3bd17127446f376b2c4ba38bd070594a44c42b0",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-13460-5ca9274718c37124-4e69b15c6e96ce5e.webp",
+          "sha256": "4e69b15c6e96ce5ee3cea3b59a9395cd6772b4281173eab7bbd3eca93029aea5",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "b671032ebf9bcbe331e17e8efe5032a952c0a596256bcc0f7665ea722b55082b",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-13460-5ca9274718c37124-thumb-5f306a3eca42783c.webp",
+          "sha256": "5f306a3eca42783cf559bde64bcd3a9fec288906b562bde75872e1c69d92d9a3",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-13460",
+      "identitySha256": "5ca9274718c3712430d19e9f660696769a063d0fbe80cbfc770479453120f41c",
+      "rawFile": "taba-jumbo-13460-5ca9274718c37124.ede20da403b7bdb48971eefba2bdf1f425676f6dc9b5ca2af6deb42ce90499e7.source",
+      "rightsReference": "https://www.jumbo.com.ar/aperitivo-fernet-750-ml-1882/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-13460",
+      "sku": "TABA-JUMBO-13460",
+      "sourceSha256": "ede20da403b7bdb48971eefba2bdf1f425676f6dc9b5ca2af6deb42ce90499e7",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/917720/Fernet-1882-Fernet-1882-750-Ml-2-14168.jpg?v=639165231710800000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "9706f9a619292f22312370bd0a30ce73899659a487299272a33683e1bf9a5814",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-1364805-b4b4cccaf1ca9383-4d0345d43bc5c91e.webp",
+          "sha256": "4d0345d43bc5c91edc0bd219fe25f0ae756c5f6fe3ec234d978a90c3b34dada3",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "059297f4b8de904e579ee843576ac72e65b7babfc526d0df3f750b41ec96a11b",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-1364805-b4b4cccaf1ca9383-thumb-ca39c03ee99304e2.webp",
+          "sha256": "ca39c03ee99304e2809257b593e454d7947a745e2bcc4279dd9d426260fee3c5",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-1364805",
+      "identitySha256": "b4b4cccaf1ca9383bc62883baa67cec3a909b389b9935f73d71943878e8e80c5",
+      "rawFile": "taba-jumbo-1364805-b4b4cccaf1ca9383.c098f1616290412759e3c4984e019b53e8410be1793c56c7c67148c97ff8307e.source",
+      "rightsReference": "https://www.jumbo.com.ar/espumante-latitud-33-sweet/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-1364805",
+      "sku": "TABA-JUMBO-1364805",
+      "sourceSha256": "c098f1616290412759e3c4984e019b53e8410be1793c56c7c67148c97ff8307e",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/869762/12410764001.jpg?v=638845495405600000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "f07f8a90a59036c5f947b63c0a6e4fe3a8ccdfda8f798d85d437cce1445d959b",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-1370276-49beb1e0152ec9ce-cc9a42c81f45aea4.webp",
+          "sha256": "cc9a42c81f45aea428977eb204b8570ca617a61ddd007f4f0775793adba781a9",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "73189c00f69171851c1a784457c7b96e617dc302596f2ab285d369e477f535a8",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-1370276-49beb1e0152ec9ce-thumb-9376748c462329e6.webp",
+          "sha256": "9376748c462329e6f81cb95ca77c9f60ddd49dc791cce9b2ead078fcbecfbd0e",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-1370276",
+      "identitySha256": "49beb1e0152ec9cefaad09b064321b0600352b8d94213227a08acc3eb61253f3",
+      "rawFile": "taba-jumbo-1370276-49beb1e0152ec9ce.d7f0ccd59feb93fa4bd00e55d8d540f4f903521ceb75c37cd5655d04204ba79b.source",
+      "rightsReference": "https://www.jumbo.com.ar/ron-bacardi-carta-blanca-700cc/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-1370276",
+      "sku": "TABA-JUMBO-1370276",
+      "sourceSha256": "d7f0ccd59feb93fa4bd00e55d8d540f4f903521ceb75c37cd5655d04204ba79b",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/848102/Ron-Bacardi-Carta-Blanca-700cc-1-1029983.jpg?v=638690962178630000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "21fa999126a2cc04bc39d55c57078e9fc3d9303facf89f626022cb47277c4396",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-1370277-da4bf924a79c7739-30bf833a97bd23ba.webp",
+          "sha256": "30bf833a97bd23ba9e0e7a13803bfa2ed6b1960b915f6e64172b99b622e11e19",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "67e92e8527962b7e985fd56a3211085c2719477828bc7a9e79092e76a0a905dd",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-1370277-da4bf924a79c7739-thumb-81c66cc7c6084224.webp",
+          "sha256": "81c66cc7c6084224349ebce519a25d35e4324256661e7dc21af066166ddc9a8e",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-1370277",
+      "identitySha256": "da4bf924a79c7739458b261aea5dd2afc33f6644c2cc5771782b780f794f6d23",
+      "rawFile": "taba-jumbo-1370277-da4bf924a79c7739.ab5a903a0d7937bee92bfe5f94e1c5fc0258a084d2a218698458bc5dc7b9b2e5.source",
+      "rightsReference": "https://www.jumbo.com.ar/ron-bacardi-carta-oro-700cc/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-1370277",
+      "sku": "TABA-JUMBO-1370277",
+      "sourceSha256": "ab5a903a0d7937bee92bfe5f94e1c5fc0258a084d2a218698458bc5dc7b9b2e5",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/848103/Ron-Bacardi-Carta-Oro-700cc-1-1029984.jpg?v=638690962180800000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "bfeb64ba5de37dc26ee17ce0b562e9706aafd6121efea6d5714a32e27808a8c1",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-14041-127613aa08359cd3-64314051c16fa4b8.webp",
+          "sha256": "64314051c16fa4b876f3fc5175a8a6ff7cd3dd336df3db1598e772e12e839d9d",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "27eba6323b920fbcb6ccbd05524b69b4161ffe8b28c1b0fb15fb73753203e3d2",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-14041-127613aa08359cd3-thumb-7c503ce8e93c1b40.webp",
+          "sha256": "7c503ce8e93c1b40fc6bcf64b04d2d90c66c9e79c055b541f9fb1aaf284eb705",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-14041",
+      "identitySha256": "127613aa08359cd31411da61639a2e76c55dcf987342ea0256246e2094231f04",
+      "rawFile": "taba-jumbo-14041-127613aa08359cd3.6ee276b97d89785c48294c60fb07b631f1e34a2006d2d6f37de7815f8e329117.source",
+      "rightsReference": "https://www.jumbo.com.ar/vino-alma-mora-malbec-750cc/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-14041",
+      "sku": "TABA-JUMBO-14041",
+      "sourceSha256": "6ee276b97d89785c48294c60fb07b631f1e34a2006d2d6f37de7815f8e329117",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/215358/Vino-Alma-Mora-Malbec-Vino-Alma-Mora-Malbec-X-750-Cc-2-14750.jpg?v=636383800605270000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "e0c39a13d54798f2cb2848da2e5ad89e5f0c5a1797d52785f89f7410452da60b",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-148860-1bca45d50f7b7103-a86a11a4f12e22e8.webp",
+          "sha256": "a86a11a4f12e22e86574e1822f3028c59cf4bb08c722c5a39264d2dff5c9ded3",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "e1855110793e119c7cfb8bdb1888d2f3364b0dbadf8bb8753c09d74a42cda461",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-148860-1bca45d50f7b7103-thumb-b03c09a4bdf69043.webp",
+          "sha256": "b03c09a4bdf690434e2f9345c05f4f5f824644679e2f82cc1a4f0bdde3048498",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-148860",
+      "identitySha256": "1bca45d50f7b7103edb574c8b144ed463f3aabbc83006b83a55f1f775947ed9c",
+      "rawFile": "taba-jumbo-148860-1bca45d50f7b7103.b7fc26f1c2597fe66221f90fcfaa1ee1f7b7ecb75582f1c9739ea565ea16af70.source",
+      "rightsReference": "https://www.jumbo.com.ar/gin-bombay-750-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-148860",
+      "sku": "TABA-JUMBO-148860",
+      "sourceSha256": "b7fc26f1c2597fe66221f90fcfaa1ee1f7b7ecb75582f1c9739ea565ea16af70",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/793738/Gin-Bombay-750-Gin-Bombay-750-Ml-2-31356.jpg?v=638303997636830000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "6d58b973915ccbd80f8f8d6d4597e435f2ac244fb0811f03723d6257a3274e66",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-167929-a6d0a73b4b9f41e5-e78e453aa2e275cf.webp",
+          "sha256": "e78e453aa2e275cfe8e601552346fd0492f433951a81fd6254032561ce5313a6",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "a829c2f595821f57cbae6b6b9c5334bb142922cad9d57780b57193c36b3cc362",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-167929-a6d0a73b4b9f41e5-thumb-92cea0d0d6d41a33.webp",
+          "sha256": "92cea0d0d6d41a333dc370c86f667aa9ee56884fc6a9944b4ac59a6af6e70e34",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-167929",
+      "identitySha256": "a6d0a73b4b9f41e5f3dda19225e683a23f87f36821780737dbbbc173ee9a00cf",
+      "rawFile": "taba-jumbo-167929-a6d0a73b4b9f41e5.82dc6d365ebeea9d23dfb676982999cc782003b4a9cc3eb63017bf3e22736c8f.source",
+      "rightsReference": "https://www.jumbo.com.ar/aperitivo-gancia-950-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-167929",
+      "sku": "TABA-JUMBO-167929",
+      "sourceSha256": "82dc6d365ebeea9d23dfb676982999cc782003b4a9cc3eb63017bf3e22736c8f",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/418477/Aperitivo-Gancia-950-Ml-2-237510.jpg?v=636442174678630000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "e659089b5f7fd9791a50fafb1632de24464b72c11ed21e3ee16273e874604dd4",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-18822-894566625fad74f9-2ee3dd74c2cb3ee3.webp",
+          "sha256": "2ee3dd74c2cb3ee38cf190573afe31ef7e354a766a9ca2211814e6647ccc64b4",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "d9d4e2688e13eb6ee28314616d1c48b4ea8d1955d3581bdb5fbd712f71ed9a44",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-18822-894566625fad74f9-thumb-887ed5f3ec3e4348.webp",
+          "sha256": "887ed5f3ec3e4348888a38ad0640bdbeba92ce6c0b1a18ca50d9e30cdaeb5d11",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-18822",
+      "identitySha256": "894566625fad74f98619c26c2d9b520d90a98e227b9179c984613278e1580a48",
+      "rawFile": "taba-jumbo-18822-894566625fad74f9.3e09ec92d7ff1efd9b711304b70c2b4fba1c9854995d7a09838d30d0bca48ece.source",
+      "rightsReference": "https://www.jumbo.com.ar/vodka-beldevere-750-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-18822",
+      "sku": "TABA-JUMBO-18822",
+      "sourceSha256": "3e09ec92d7ff1efd9b711304b70c2b4fba1c9854995d7a09838d30d0bca48ece",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/214715/Vodka-Beldevere-X-750cc-Vodka-Beldevere-750-Ml-2-19567.jpg?v=636383794549600000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "06d4013970ab2f351aa7bfe827c07f468a1a612d8886d74fca3a3a7123d60a43",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-21259-7c33d2411921b656-6f20f3e8b68fde59.webp",
+          "sha256": "6f20f3e8b68fde5941b04625fcee10761aaf4e80646f8a2924e1bf1e92af22ba",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "e25a077d7e3ee867428fa816e43918b413604ed37bf5df50534c1e34d9997649",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-21259-7c33d2411921b656-thumb-bb12eadf85e1b548.webp",
+          "sha256": "bb12eadf85e1b5488cd1e6d64dbf4a5b7d022cf30c872411b0a83fa062a77ca9",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-21259",
+      "identitySha256": "7c33d2411921b6569292c103ac27fa90e6341f165f58594f9a2ec16049890f3c",
+      "rawFile": "taba-jumbo-21259-7c33d2411921b656.e703a9305da09c772d45d4d35a36f472f7aade839b5dbf0a2c9cb07fff9a5bca.source",
+      "rightsReference": "https://www.jumbo.com.ar/gin-beefeater-london-700-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-21259",
+      "sku": "TABA-JUMBO-21259",
+      "sourceSha256": "e703a9305da09c772d45d4d35a36f472f7aade839b5dbf0a2c9cb07fff9a5bca",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/578840/Gin-Beefeater-London-Dry-700-Ml-1-22018.jpg?v=637209618308530000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "920687c1bc34692c60b12b7afe98f4dd59f5e0e48b58f93a540a971d2e331dbe",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-238130-0e6608fd330d9bd3-9f7582b8b06c37c8.webp",
+          "sha256": "9f7582b8b06c37c80c74434f2cffbd648e646d3c273566d58666060fb49edbd2",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "c1020205f2e7ae901cf1e6d5170e46749a65396970072ec4af2409c6319ddddd",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-238130-0e6608fd330d9bd3-thumb-bbe45a37bdbe0c06.webp",
+          "sha256": "bbe45a37bdbe0c0645e72fce63c9fa8cd8aecd00664fe6e3a7aa3a185428bb4b",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-238130",
+      "identitySha256": "0e6608fd330d9bd36fb1162aee27c42dafa83af48d0e170b2c52024b05541d88",
+      "rawFile": "taba-jumbo-238130-0e6608fd330d9bd3.9b60e3752b3bdbf9702471ef4fcf73aabff9fa784beca704cf6bf1bd8e8a259c.source",
+      "rightsReference": "https://www.jumbo.com.ar/fernet-branca-450-ml-2/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-238130",
+      "sku": "TABA-JUMBO-238130",
+      "sourceSha256": "9b60e3752b3bdbf9702471ef4fcf73aabff9fa784beca704cf6bf1bd8e8a259c",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/433480/Fernet-Branca-450-Ml-3-238507.jpg?v=639168048363170000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "0c1068f7e77ab700ffdfe1e190a1f858fb6d759b9f94461e45472f61204975e5",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-238699-b2be1f4244c54dbb-33adbb26ca9cdfed.webp",
+          "sha256": "33adbb26ca9cdfed57109c404219e7df01657234298fbe7704301d0c24827aaa",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "4808a164540ac95ae1ea598125c99b0e14bcde47442f73cade583b9d9561d7e2",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-238699-b2be1f4244c54dbb-thumb-59f64413402fa9e9.webp",
+          "sha256": "59f64413402fa9e93ab749d1bfc7cd403c04b512eb537b0a3c4257a046d84884",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-238699",
+      "identitySha256": "b2be1f4244c54dbbc827d2ac5c78d57e5403dd668210886a9c96e77215a1b7d6",
+      "rawFile": "taba-jumbo-238699-b2be1f4244c54dbb.bbf3d88406b667ce2691896ec2562cb9ba437a577a730f45c505918862ef5d38.source",
+      "rightsReference": "https://www.jumbo.com.ar/agua-eco-de-los-andes-con-gas-botella-1-5ltx1/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-238699",
+      "sku": "TABA-JUMBO-238699",
+      "sourceSha256": "bbf3d88406b667ce2691896ec2562cb9ba437a577a730f45c505918862ef5d38",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/575868/Agua-Mineral-De-Manantial-Eco-De-Los-Andes-Con-Gas-15-L-2-239793.jpg?v=637178520074400000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "d4ca190ac717c427888daf5cb87696b866053eb89968f8e721824ad5e24a5981",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-238851-294a865c82477f8a-f0c435cdcf814027.webp",
+          "sha256": "f0c435cdcf814027b88cec0f223731c9ca7a13dc3c09c9a1d1b3bef039b1f7d4",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "613545e81907fc181ab6ee61c35fccaa963017d469192bd944167c0bb3883816",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-238851-294a865c82477f8a-thumb-c8264af8c7a6656f.webp",
+          "sha256": "c8264af8c7a6656f2512336fbcc587ff5479c2c3541f1d78f0cbbc60f1985d15",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-238851",
+      "identitySha256": "294a865c82477f8a8c7ba1b1729ec789158a2fe7b2a453a7c6b48a26a5c0190e",
+      "rawFile": "taba-jumbo-238851-294a865c82477f8a.5efad8ec400198990e9b332a66b63a3d10a50c6ee4dea74773348e6be083f238.source",
+      "rightsReference": "https://www.jumbo.com.ar/agua-baja-en-sodio-glaciar-con-gas-1-5-l/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-238851",
+      "sku": "TABA-JUMBO-238851",
+      "sourceSha256": "5efad8ec400198990e9b332a66b63a3d10a50c6ee4dea74773348e6be083f238",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/545287/Agua-Baja-En-Sodio-Glaciar-Con-Gas-15-L-2-240110.jpg?v=639118581890070000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "fd6e76f02a71e70271d8ffef986e6544f8dda5eb77ecb12bac5e0e8d2629e9b1",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-243481-51dc153cc75e5137-5a2ede1f258bdef2.webp",
+          "sha256": "5a2ede1f258bdef2fa9ced86d694f3788a2a40ae6784b5f05646f7fc7b4f07f0",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "724ba9a52e12e6c412a18f87b479a5f5e51a95a80fa574a0ef32b44b174a5086",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-243481-51dc153cc75e5137-thumb-ef02edc2607259f2.webp",
+          "sha256": "ef02edc2607259f2d4bfee7b64ad3f4d05b45dd5b93e1a5ad59c33d5c831d006",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-243481",
+      "identitySha256": "51dc153cc75e5137cdc0312d821e3ea8fd69602bd0547738558f042df033bc14",
+      "rawFile": "taba-jumbo-243481-51dc153cc75e5137.97608c70658dfc7f0bef1940ff3041331aa7edf5ad9305e4258004e7e2b5ac47.source",
+      "rightsReference": "https://www.jumbo.com.ar/espumante-baron-b-extra-brut-750-cc/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-243481",
+      "sku": "TABA-JUMBO-243481",
+      "sourceSha256": "97608c70658dfc7f0bef1940ff3041331aa7edf5ad9305e4258004e7e2b5ac47",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/418479/Champaña-Baron-B-Extra-Brut-750-Cc-2-244074.jpg?v=636442174702770000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "88090ef1a3b3be0aeebaba7ff3a4abae0bd9dbdc098fa22583081eb7d9ffebc3",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-243792-b0a7daaea11337dd-b26209cc11ec9e06.webp",
+          "sha256": "b26209cc11ec9e0668ee3d9612139696d7d680aa74b0f23562c37131177cf687",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "e47082b05f39b3e193828df2b56564db177f093040ab200422e949cdd73ca298",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-243792-b0a7daaea11337dd-thumb-ccfe19ee80bd2b5b.webp",
+          "sha256": "ccfe19ee80bd2b5b4d1c67225e17f72e5e9dc03069bbdfa1d6d0bdbcf5a720f9",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "650",
+      "externalId": "jumbo-243792",
+      "identitySha256": "b0a7daaea11337dd20c4a7db261e3503d92e22c442c6e0495d0556bd85810e56",
+      "rawFile": "taba-jumbo-243792-b0a7daaea11337dd.1734c1bb404b7b709c4db48083aa3ae03419866ac5a3ec5d324f13357e94d4fd.source",
+      "rightsReference": "https://www.jumbo.com.ar/espumante-mercier-dulce-750-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-243792",
+      "sku": "TABA-JUMBO-243792",
+      "sourceSha256": "1734c1bb404b7b709c4db48083aa3ae03419866ac5a3ec5d324f13357e94d4fd",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/596397/Espumante-Mercier-Dulce-750-Cc-1-244386.jpg?v=637315459550770000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "aa21d0e3e4dab4ed689eb4e5125e2d44f835590d58bf3f4ceb5b5ce8760d6b6c",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-247367-e84b168f95b77e4d-51142476a9cd124a.webp",
+          "sha256": "51142476a9cd124ae442abd157ef5dcc857848ab05597f66bfd92f96f12d8b4c",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "c5415438e7ed282e8da0bffd5ebc00bda42c54d9596d5bc933c8cb335c929ab6",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-247367-e84b168f95b77e4d-thumb-e99ac0516ac87fd4.webp",
+          "sha256": "e99ac0516ac87fd40956ae66102ee5fe435ac29d581df5d3cef78ff3591fb7e4",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "460",
+      "externalId": "jumbo-247367",
+      "identitySha256": "e84b168f95b77e4dde4f9c2e6d846a9c9128fc0aa99fdcb5d851b573b7c9bd44",
+      "rawFile": "taba-jumbo-247367-e84b168f95b77e4d.a523929058d9f8e62b5635c6d47581e64240dd99475d5c977896103788b9451f.source",
+      "rightsReference": "https://www.jumbo.com.ar/whisky-johnnie-walker-black-label-1000ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-247367",
+      "sku": "TABA-JUMBO-247367",
+      "sourceSha256": "a523929058d9f8e62b5635c6d47581e64240dd99475d5c977896103788b9451f",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/580854/Whisky-Johnnie-Walker-Black-Label-1-L-1-247958.jpg?v=637220856267230000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "74a36ba33561886f6cd5d278f82b9289ddd8f7c2e68b4fcb0022df970c803c1d",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-26054-c94c8af628b0ea19-85693097339b173b.webp",
+          "sha256": "85693097339b173b207d9fad2953623366f8e7c2c7e434c7fd1052ded6d0d9b6",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "382ffb9d60c6b70ee2b984b7589d1df9d3a9a62183f1962c5c6d447e86c10238",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-26054-c94c8af628b0ea19-thumb-344a445e95411edc.webp",
+          "sha256": "344a445e95411edcc5deb5ece338b396896f11faac3c7b1ee4cc31fa62f1ce77",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-26054",
+      "identitySha256": "c94c8af628b0ea19d497151d60a861c93612175d609227c7777d94d07627581b",
+      "rawFile": "taba-jumbo-26054-c94c8af628b0ea19.d251cf25b7a772504be9a7cac629d9a1ef81c1e379569190d8fb83d868d4e824.source",
+      "rightsReference": "https://www.jumbo.com.ar/bebida-isotonica-mountain-blast-500-ml-powerade/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-26054",
+      "sku": "TABA-JUMBO-26054",
+      "sourceSha256": "d251cf25b7a772504be9a7cac629d9a1ef81c1e379569190d8fb83d868d4e824",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/895507/Isotonico-Powerade-Mountain-Blast-500cc-2-26829.jpg?v=639045288301700000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "48de3871b4e20d731f1d47cbf1009f52bdf00f7038d89cfdd64c26116e1f5364",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-277189-d669403974ddd662-be6d5f94569bcfa0.webp",
+          "sha256": "be6d5f94569bcfa06d4e7d20717c936ffee5e0d9f5f67b29f8356ab37753eeb4",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "e6aa8ced752ba7cdc40463aa67fa019f573f435fddf69fee245e42fc53685abf",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-277189-d669403974ddd662-thumb-ec394f7ae238ee9c.webp",
+          "sha256": "ec394f7ae238ee9c5426cd2507e4ea3227d2c35e7d18e57802533b5c6dc42c30",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-277189",
+      "identitySha256": "d669403974ddd662d00e08f0681aa7ad5dd039f757bd08c9e3d44855cfd0f629",
+      "rawFile": "taba-jumbo-277189-d669403974ddd662.d7049222ed1873d6253d47011722560a95c438a76aa4a761eaf2dc4e97e42486.source",
+      "rightsReference": "https://www.jumbo.com.ar/saborizada-aquarius-pomelo-2-25lt/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-277189",
+      "sku": "TABA-JUMBO-277189",
+      "sourceSha256": "d7049222ed1873d6253d47011722560a95c438a76aa4a761eaf2dc4e97e42486",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/782889/Agua-Saborizada-Aquarius-Pomelo-2-25-Lt-2-468820.jpg?v=638206690035430000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "513f57a948ce1973cad8f490e81e2860979a2ee7d30bd1cf9a1732665b1758b2",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-277199-dd8a37c645b52aef-2b694697ddc05988.webp",
+          "sha256": "2b694697ddc0598836f70394a27478740049327b3ff032382c0acfed4c9dd79c",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "8fb3dd057d5b6edfa0154d36c586b007c158d1058e83bf755a908451c96ba095",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-277199-dd8a37c645b52aef-thumb-c0cea2de46ed09f7.webp",
+          "sha256": "c0cea2de46ed09f7e6e67bca85d09457ffbed89d822e0ec93a82655e7818a143",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-277199",
+      "identitySha256": "dd8a37c645b52aef943ccd2508196ade61b61305e8bb95c92591e686ff6ed3b0",
+      "rawFile": "taba-jumbo-277199-dd8a37c645b52aef.c45c63d1f6b5e76626a8e2c5ab0d335dc55f71a7b1ff677cca5f2d16af80ba36.source",
+      "rightsReference": "https://www.jumbo.com.ar/saborizada-aquarius-pera-2-2lt/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-277199",
+      "sku": "TABA-JUMBO-277199",
+      "sourceSha256": "c45c63d1f6b5e76626a8e2c5ab0d335dc55f71a7b1ff677cca5f2d16af80ba36",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/782893/Agua-Saborizada-Aquarius-Pera-2-25-Lt-2-468830.jpg?v=638206690050300000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "fd40d3df8630a41a039de9d0e7eb3c4dbb5d9e4c603e06aab2cd96346d658447",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-277209-1e7e134fae35d51c-29ddfbfb0b8fb735.webp",
+          "sha256": "29ddfbfb0b8fb735f1140da7f5251bb6bbd252ab81b27faa94b939323f4af9c1",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "db13b0e18a58e978c4c700a8263b92f84243b86c515ee36506ff4d8c8c2b3dee",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-277209-1e7e134fae35d51c-thumb-9d4c046363e8fc4c.webp",
+          "sha256": "9d4c046363e8fc4cb894dc7dd7a101c632a544abe963fd09e8117e233bf50d33",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-277209",
+      "identitySha256": "1e7e134fae35d51c4589fe45a36474a26dd6a481bf9b08b75d748a9a74bb82c5",
+      "rawFile": "taba-jumbo-277209-1e7e134fae35d51c.a7de29deddaf797b088f9112e142258e3a50d3e4b1cf0fa67232f24b935d89a5.source",
+      "rightsReference": "https://www.jumbo.com.ar/saborizada-aquarius-manzana-2-25lt/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-277209",
+      "sku": "TABA-JUMBO-277209",
+      "sourceSha256": "a7de29deddaf797b088f9112e142258e3a50d3e4b1cf0fa67232f24b935d89a5",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/893215/Saborizada-Aquarius-Manzana-2-25lt-2-468840.jpg?v=639009777755930000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "25695474b0d6c37aeff740895eea10689c42e1464a58803c54ee9672c4dc4b50",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-291446-a3612697a16765b6-592044dd1332261f.webp",
+          "sha256": "592044dd1332261f05ce2ca25779592900038d97533132caee26df176aa068c3",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "75d9ee16ac1fd5f31934557f719c4d849b4f8a8a4bead60fb1fb9030adc7fadd",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-291446-a3612697a16765b6-thumb-1915d07431794772.webp",
+          "sha256": "1915d074317947725cb50bb3de0a5ce5611e99b35d3088b4a1a8c1c354db9621",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-291446",
+      "identitySha256": "a3612697a16765b670a8c969da2a7e605d75c50a44232a1c30a62bd4499e76d0",
+      "rawFile": "taba-jumbo-291446-a3612697a16765b6.c5de80039cf0acbfb8ee6bc2d3eacd60a6e23843174dfd0d27bab9563cb8f51e.source",
+      "rightsReference": "https://www.jumbo.com.ar/vino-lola-malbec-750cc/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-291446",
+      "sku": "TABA-JUMBO-291446",
+      "sourceSha256": "c5de80039cf0acbfb8ee6bc2d3eacd60a6e23843174dfd0d27bab9563cb8f51e",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/548332/Vino-Lola-Montes-Malbec-750cc-1-621720.jpg?v=637043733352670000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "ae10e93e0360b1bdb03eafc261e995d1be9001cad71869b75067c147c7047fe7",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-29273-01022b0d88bbd8a6-5051a9f96d103fea.webp",
+          "sha256": "5051a9f96d103fea0b42c1c57ebd3f6f88cdeac2ce742359b35fe6bbf7edba87",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "6f4fc116d5d4996fa98935352fff0ffcbf789b1b61f768256c891ee89ecac1c2",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-29273-01022b0d88bbd8a6-thumb-4e552e483caf10bc.webp",
+          "sha256": "4e552e483caf10bcf2578acd4801de677667c18f817ba57fb2da0fbe7bcf574b",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-29273",
+      "identitySha256": "01022b0d88bbd8a62f357bded33155af79760007d3881c12dc59ec88953ae869",
+      "rawFile": "taba-jumbo-29273-01022b0d88bbd8a6.ef10ceca6bb6f7d2b2bf5466b5f28f583067ce0293b2bf99b08e6fd47c08a62c.source",
+      "rightsReference": "https://www.jumbo.com.ar/vodka-skyy-750-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-29273",
+      "sku": "TABA-JUMBO-29273",
+      "sourceSha256": "ef10ceca6bb6f7d2b2bf5466b5f28f583067ce0293b2bf99b08e6fd47c08a62c",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/799809/Vodka-Skyy-750cc-1-30056.jpg?v=638348926874530000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "455e96b576d26a337e5e7c16f33ce51cf3484f8eddd7ffcbc82af37aa9eb70b3",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-29550-e1b5ae1c1571bdfd-d7af6e1146fa6284.webp",
+          "sha256": "d7af6e1146fa6284a7628c45b9dbfc6fac90e90c31e915d44f67f2896f382c4d",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "0a9ef6489f2ca821c1e05824eac61b4e8c64a009fc0e30c995586c389cb5ec23",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-29550-e1b5ae1c1571bdfd-thumb-ff6b851c7470e6b9.webp",
+          "sha256": "ff6b851c7470e6b9c904a1f14c6f41722547002f23ad94707162068d35f14b8b",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "460",
+      "externalId": "jumbo-29550",
+      "identitySha256": "e1b5ae1c1571bdfd27f787854e378de411097e0ef786861fd873f0a47c41b21e",
+      "rawFile": "taba-jumbo-29550-e1b5ae1c1571bdfd.6117f8d2d6dba447f75477ae48e3469efaa8d16f7a5d97b99050de2fd8ab510f.source",
+      "rightsReference": "https://www.jumbo.com.ar/vodka-smirnoff-700-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-29550",
+      "sku": "TABA-JUMBO-29550",
+      "sourceSha256": "6117f8d2d6dba447f75477ae48e3469efaa8d16f7a5d97b99050de2fd8ab510f",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/580828/Vodka-Smirnoff-700-Ml-1-30335.jpg?v=637220856183930000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "ce89a7d0109fb85b3eed510ba38fdeee601c0fb3eb2ef4901d821424d12e16b4",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-299100-1bdeac86b89ba815-77417f4d3120bb1f.webp",
+          "sha256": "77417f4d3120bb1fa1dde82ae79276154a4c273469498c378846eadceb32153e",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "2e9d5e04fa20bb544ef0d3142129728742b8cdd436d28b0f56c63dd65266c284",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-299100-1bdeac86b89ba815-thumb-c83bb09b9aec6f01.webp",
+          "sha256": "c83bb09b9aec6f01e72dc891ca10df9a85861c4756a1f618e9c69ffe7d0acf4b",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-299100",
+      "identitySha256": "1bdeac86b89ba815257bd5f71d91b6fd379bc9509286743f94162bbf8c4fc300",
+      "rawFile": "taba-jumbo-299100-1bdeac86b89ba815.3863b7183e9bec743755eea4827ccf9578761460275eb5000ae3cfd18f949393.source",
+      "rightsReference": "https://www.jumbo.com.ar/agua-smart-water-sin-gas-1-5lt/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-299100",
+      "sku": "TABA-JUMBO-299100",
+      "sourceSha256": "3863b7183e9bec743755eea4827ccf9578761460275eb5000ae3cfd18f949393",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/787812/Agua-Mineral-Smartwater-Sin-Gas-1-5-Lt-2-797448.jpg?v=638246001767200000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "eac2851a0cd5e5279c3ea4a6ea5cf440784f9a6b8889017c6978c44780f2c189",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-305676-94769c96ab620b07-75e511f758d4331c.webp",
+          "sha256": "75e511f758d4331c82fa26eb163a89f29b5fcf1b0b11c461b6e8993db19d0e85",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "f1ab921658097f88c5195a0fee128564d8be06b12dd94e80460a64e0482c9466",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-305676-94769c96ab620b07-thumb-891f6962efb581f1.webp",
+          "sha256": "891f6962efb581f13f31b493eaed2bd68f94592f9525e9f6cbdf400251740780",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-305676",
+      "identitySha256": "94769c96ab620b07e24f638aad5d6e199d29e3751c991dc2247b7bcc2b6cd36e",
+      "rawFile": "taba-jumbo-305676-94769c96ab620b07.eefc4210584de01a2525797ac6a94077bbb0cac9b83fc2d8f6cf82ef8d009d5c.source",
+      "rightsReference": "https://www.jumbo.com.ar/vodka-sernova-700-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-305676",
+      "sku": "TABA-JUMBO-305676",
+      "sourceSha256": "eefc4210584de01a2525797ac6a94077bbb0cac9b83fc2d8f6cf82ef8d009d5c",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/845778/Vodka-Sernova-700-Ml-1-842520.jpg?v=638670225891400000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "b949ed991355eba1b29e7ebd1ffd0605ff38e2b84c0b5a0f5e3f197cccb18354",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-3072355-230b9136a249a0d2-ded4058c97e8b6be.webp",
+          "sha256": "ded4058c97e8b6bee8f48ec55dcb35fd84465576cc749154c240927b621badce",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "6e2d6aa9fab000aac63f9cda6fc3de567715751ce44feed78def2841725b5484",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-3072355-230b9136a249a0d2-thumb-c257fc9b64c2dc0c.webp",
+          "sha256": "c257fc9b64c2dc0ce140ec736701ccb15197b6018a158ad901bb6e704869f379",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-3072355",
+      "identitySha256": "230b9136a249a0d2bdca21ecc302a37161f13995e5280e55a6337eab04d02979",
+      "rawFile": "taba-jumbo-3072355-230b9136a249a0d2.33abbbe5e669d9ebeed9142a3d717149e30e81880e75c878c8ffa93b02067a62.source",
+      "rightsReference": "https://www.jumbo.com.ar/tequila-x-700-cc-volcan-de-mi-tierra/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-3072355",
+      "sku": "TABA-JUMBO-3072355",
+      "sourceSha256": "33abbbe5e669d9ebeed9142a3d717149e30e81880e75c878c8ffa93b02067a62",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/874912/Tequila-Volcan-De-Mi-Tierra-700cc-1-1039495.jpg?v=638871754174530000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "6cdd7986db888b5087c0c6f15a8e98e938e3a936deca2bc77102a77fd16350f1",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-3080066-a0a1c01aee245ca6-ca47b4b166436584.webp",
+          "sha256": "ca47b4b16643658452694fdde0718cd9af79c87f968e7874b922c90461bb8465",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "3b9fa937e44ce2deaa4cebad03471b6b4fa67e66e243246e14931cec1bcda552",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-3080066-a0a1c01aee245ca6-thumb-b96e8ea4a76efc05.webp",
+          "sha256": "b96e8ea4a76efc05d8ebad57af10fbc2a202c31c3e3ade533eb9bf56059f9907",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-3080066",
+      "identitySha256": "a0a1c01aee245ca60119d6abe4ada9a211d9830854bc758364fc4e3d20dd7760",
+      "rawFile": "taba-jumbo-3080066-a0a1c01aee245ca6.ec92887fc993ba7643ef66b263434db9b97a82f054b933825fcc572dbc75fe92.source",
+      "rightsReference": "https://www.jumbo.com.ar/vodka-700ml-skyy/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-3080066",
+      "sku": "TABA-JUMBO-3080066",
+      "sourceSha256": "ec92887fc993ba7643ef66b263434db9b97a82f054b933825fcc572dbc75fe92",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/890217/Vodka-700ml-Skyy-2-1051210.jpg?v=638985801703730000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "f932b5f3cee45f1d310b1505235d9adc8ed38558dbe09271654b8ebb240333f3",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-3086984-79ec307ecff3f536-e565e3e7d1f810ad.webp",
+          "sha256": "e565e3e7d1f810ad3e67b86e0f30d511759d74b03bc1bf66778411531d659733",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "8a8f56f8207f6b3b2174c62e13287b875342f8ae60ab2856729211fd474144e7",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-3086984-79ec307ecff3f536-thumb-a7ac51ba9cded177.webp",
+          "sha256": "a7ac51ba9cded177f95e1ebf9fe9aea14ed512431ddb74e9e2f45671e02f3899",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-3086984",
+      "identitySha256": "79ec307ecff3f536063e28e362ab3e711b1d4fd4a66d58d43ad9e0e8c26a6a85",
+      "rawFile": "taba-jumbo-3086984-79ec307ecff3f536.be6b6d8ea6f110953f4e27f3008ccf45cc0d6c1732efa507ad896bbbfa1de9cd.source",
+      "rightsReference": "https://www.jumbo.com.ar/fernet-buhero-negro-450ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-3086984",
+      "sku": "TABA-JUMBO-3086984",
+      "sourceSha256": "be6b6d8ea6f110953f4e27f3008ccf45cc0d6c1732efa507ad896bbbfa1de9cd",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/916034/Fernet-Buhero-Negro-450ml-1-1058701.jpg?v=639155145771100000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "178129dc050ddcc9a3e6d5ab7c6d10f161dad299096be5deb1fca7c38588e857",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-318125-54a796e3336e7494-9fd2ad85abccf110.webp",
+          "sha256": "9fd2ad85abccf110ee60093b5512449943e7ef346e98680a39cdd3138291ed0f",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "9ae693c3cb1b2f2457b2744f12a543da409971e3648699ff53f54a485e74374f",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-318125-54a796e3336e7494-thumb-bb5074c243fb24e6.webp",
+          "sha256": "bb5074c243fb24e6efa0587fa54a50eb2b68ac426c14322f7ba41fb827097e07",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-318125",
+      "identitySha256": "54a796e3336e749428c57d66f8f4ea4447a06653018f939fb0961ca233c1ad7a",
+      "rawFile": "taba-jumbo-318125-54a796e3336e7494.a3d81ddee5587f3d58ad4a035ff61b6b8afa5e4c16347e57f157631ff10840ed.source",
+      "rightsReference": "https://www.jumbo.com.ar/fernet-branca-750-ml-2/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-318125",
+      "sku": "TABA-JUMBO-318125",
+      "sourceSha256": "a3d81ddee5587f3d58ad4a035ff61b6b8afa5e4c16347e57f157631ff10840ed",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/617349/Fernet-Branca-Bot-750-Cc-1-856717.jpg?v=637437282860830000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "a1857302c5d8bf7ebe0bfae6b6bbbfb282563b0f141dad483669dc4408dcca07",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-322220-0c57fa5243911d18-cd035591dd0360c7.webp",
+          "sha256": "cd035591dd0360c7d64714dcae86da4e87bb216b2cbd8600106f2aacb823580e",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "423e7d564de0533e521b77e91822f5f3a3a883748c0783830b89bf29a9aa729e",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-322220-0c57fa5243911d18-thumb-36ed80d6a768cd1b.webp",
+          "sha256": "36ed80d6a768cd1bce0cf2b6f2ae35f877baf1328641b0804001d9ce6e2f69fe",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "430",
+      "externalId": "jumbo-322220",
+      "identitySha256": "0c57fa5243911d1847c5ef21a43ef11db2a27bab811f18ee3ebd10b212b2e869",
+      "rawFile": "taba-jumbo-322220-0c57fa5243911d18.20c6540c11b354b7124cb4d909270440340c9d8bee6c101a8d6c1574b8f0676a.source",
+      "rightsReference": "https://www.jumbo.com.ar/espumante-chandon-delice-750-ml-3/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-322220",
+      "sku": "TABA-JUMBO-322220",
+      "sourceSha256": "20c6540c11b354b7124cb4d909270440340c9d8bee6c101a8d6c1574b8f0676a",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/793064/Espumante-Chandon-Delice-750ml-1-861819.jpg?v=638301297742430000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "6fb8429c570d1fbd27441fee7a64782e6c14c41c7a511032d8a9595e244a3f42",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-336126-f978163f39d12a8a-3cc6dd6b3da81763.webp",
+          "sha256": "3cc6dd6b3da81763a15b591b98eec11dec88823c77819c42b918561dc5a6f8d6",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "bf9492096449541ba5b5805b10e52c9439037dda8dad939998b01c2f9dcf1fa8",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-336126-f978163f39d12a8a-thumb-1b57fc94d1d89722.webp",
+          "sha256": "1b57fc94d1d89722b08af5b202a953d04efdcf2f2bda953a50d96a6af40f1bc6",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-336126",
+      "identitySha256": "f978163f39d12a8a61bd3885661a4405fa4d70909a79eb196fe4d2671a876876",
+      "rawFile": "taba-jumbo-336126-f978163f39d12a8a.b62eac1f6a851acf877b7e052bcf6a0ddc00f70317cb6aa3ff805ca222807e2b.source",
+      "rightsReference": "https://www.jumbo.com.ar/gin-tanqueray-dry-700-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-336126",
+      "sku": "TABA-JUMBO-336126",
+      "sourceSha256": "b62eac1f6a851acf877b7e052bcf6a0ddc00f70317cb6aa3ff805ca222807e2b",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/791020/Gin-Tanqueray-Dry-700-Ml-5-875755.jpg?v=638283369715270000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "3c100a6e05cc7846c8986eee8afaa134e33b165e9d62b1051a96596e4f198d49",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-344440-5cf350bb461f82c2-badf030ce82682a9.webp",
+          "sha256": "badf030ce82682a978df5450dee93c743e0f24eb8f5517e41ac5e731f0c296e6",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "71e579f73d8d5fa759d6172f65eec73e4f54ad508beb1026e4fb32988c71e343",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-344440-5cf350bb461f82c2-thumb-cc48b059d7eabf8e.webp",
+          "sha256": "cc48b059d7eabf8e5cdd7ab821d9a5198cc2ca8f2b3184416db34cbe399075cb",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-344440",
+      "identitySha256": "5cf350bb461f82c2f626d463c3937832abb7912565a9c0aed7ed587eb04f4b08",
+      "rawFile": "taba-jumbo-344440-5cf350bb461f82c2.bbd227ebe7613b1cd8366b8390cc5a50f5bc2532fd18ace73fc50e6ccb807700.source",
+      "rightsReference": "https://www.jumbo.com.ar/vodka-absolut-700ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-344440",
+      "sku": "TABA-JUMBO-344440",
+      "sourceSha256": "bbd227ebe7613b1cd8366b8390cc5a50f5bc2532fd18ace73fc50e6ccb807700",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/774468/Vodka-Absolut-700ml-1-884184.jpg?v=638150854029570000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "3d3b1110d671445efb90aa329287b6ef77de447b6887abe826fa7c3242eb9296",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-344508-773c561114dac071-6c66aa6a4024fe54.webp",
+          "sha256": "6c66aa6a4024fe542b7e370b6c5cfc6584de39e1a9f4e10088c3ebd4cfe2781b",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "bf5f548311c94adb656c7a5b2533cf4eb7259c9700e477db6c4bca21cb23dec2",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-344508-773c561114dac071-thumb-f820d1f67fe312c0.webp",
+          "sha256": "f820d1f67fe312c0fe2a1a967333ca79ebcd5d749a2d0bd5dab7225be9387075",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-344508",
+      "identitySha256": "773c561114dac0715417376ee7d8eb4081b2cf55a513579d45d456587ff12c73",
+      "rawFile": "taba-jumbo-344508-773c561114dac071.2a9fa6eba73d283864a20d5f0f12dec2ae9670b466fbfddfc3eb15f3412b2653.source",
+      "rightsReference": "https://www.jumbo.com.ar/whisky-premium-750-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-344508",
+      "sku": "TABA-JUMBO-344508",
+      "sourceSha256": "2a9fa6eba73d283864a20d5f0f12dec2ae9670b466fbfddfc3eb15f3412b2653",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/687637/Whisky-Premium-750ml-1-884253.jpg?v=637798665923830000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "d67d337e94e65177a901e7ab5ffc09186ce1c806d2780ff586b5c2030999cba3",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-34559-b8ccc2e1d9156fe1-15093a9e521c64f5.webp",
+          "sha256": "15093a9e521c64f56e82302b7a6bc5397b8cbd9a1ff123675aebc770f9570f53",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "fd7e279d9eb2e652ff071eee855c8b85db28628ba3602829bb604b51e4103334",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-34559-b8ccc2e1d9156fe1-thumb-0a25d4e8565170d3.webp",
+          "sha256": "0a25d4e8565170d3a481e59ebcb1b86f8efc1b08905f2df828d74fb416fafea6",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-34559",
+      "identitySha256": "b8ccc2e1d9156fe1402f0f346412b7397da7aaf9b7b9b0d18b3c93ac8de2b8be",
+      "rawFile": "taba-jumbo-34559-b8ccc2e1d9156fe1.86e742d085da52d3d210d8e34ea4fb44f5157f5f4b86ead23d688404f08d058a.source",
+      "rightsReference": "https://www.jumbo.com.ar/ron-malibu-750-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-34559",
+      "sku": "TABA-JUMBO-34559",
+      "sourceSha256": "86e742d085da52d3d210d8e34ea4fb44f5157f5f4b86ead23d688404f08d058a",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/550159/Malibu-750-Ml-1-35361.jpg?v=637056691148900000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "3f244278552f4fbe9278e4101b5801306dc62d5d80d698d049b0bd7a4b221fea",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-346822-b4bd06e5b606fcd0-b009fbf878bc7991.webp",
+          "sha256": "b009fbf878bc79916311265e8ab5807df485f32e840e51673ef868b648c30903",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "248d0d52b743385e5999362c07442b0e18dc9bd83a5ca1500849a7641dcd18d2",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-346822-b4bd06e5b606fcd0-thumb-8304c83235545eba.webp",
+          "sha256": "8304c83235545eba5201bf065a20f59651f763dd40ec3dd4b0e9b4ca96a020ca",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-346822",
+      "identitySha256": "b4bd06e5b606fcd035068d849a467bf44bfd3749dda95bd890235ab197a8b216",
+      "rawFile": "taba-jumbo-346822-b4bd06e5b606fcd0.45f3fdd8a00ad960b8e50127843c312e47bf05109015646aac1e7ae3a4a69f85.source",
+      "rightsReference": "https://www.jumbo.com.ar/whisky-ballantines-finest-700-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-346822",
+      "sku": "TABA-JUMBO-346822",
+      "sourceSha256": "45f3fdd8a00ad960b8e50127843c312e47bf05109015646aac1e7ae3a4a69f85",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/844048/Whisky-Ballantines-Finest-700-Ml-1-886753.jpg?v=638660722110600000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "c80dad20f75520a0ecf49c42463a86d0ee0c38c3b539537a0f50d1f89f796fc1",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-352498-0afb52f41fc9fd00-c4d3d493cea38fc2.webp",
+          "sha256": "c4d3d493cea38fc230a0596e0720c766217ca509b9c0f7532e9d4fd18f84608f",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "61b53c384416c03e01478820558c5f36a1cb9eedf2fe305ec8525be07b6d573f",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-352498-0afb52f41fc9fd00-thumb-3d4c66ff90ed9938.webp",
+          "sha256": "3d4c66ff90ed9938d61c82f96e69326881fc67c304bf429b7b601d362ce463cc",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-352498",
+      "identitySha256": "0afb52f41fc9fd0091134b372f9eaf34af18ace441c5dbcff15d7b742f83bf64",
+      "rawFile": "taba-jumbo-352498-0afb52f41fc9fd00.580d997066f0a90036af2eed02f1c20975ff7e3e3e88f466841696c56b11fe88.source",
+      "rightsReference": "https://www.jumbo.com.ar/vino-sottano-familia-malbec/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-352498",
+      "sku": "TABA-JUMBO-352498",
+      "sourceSha256": "580d997066f0a90036af2eed02f1c20975ff7e3e3e88f466841696c56b11fe88",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/755034/Vino-Sottano-Familia-Malbec-1-892449.jpg?v=638023089703100000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "c67caaf8ecde8f0dce9909e90984b5cfb85e80930636fd869d65bbb32387e331",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-382766-7660133f42bd39ae-abd6742da761eaec.webp",
+          "sha256": "abd6742da761eaecdc0b797f6b26ad68612699f1e8a463d2099bdd5096100460",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "7d58fe3ee1a6300ec2e04a8c90aed5466e2d015674ab93bb11c68fd297586266",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-382766-7660133f42bd39ae-thumb-c6026e8404e0c020.webp",
+          "sha256": "c6026e8404e0c0206826aec379de75f3d30a66c0938729e1de925f7091fb8a1f",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-382766",
+      "identitySha256": "7660133f42bd39aeb0f42d106fbc8fc18d424dc1ed7dc78b2633af00a944a866",
+      "rawFile": "taba-jumbo-382766-7660133f42bd39ae.502a2642648cfd7727b9ead1655bcf0867000b3b0c00823082613ddc390c40cb.source",
+      "rightsReference": "https://www.jumbo.com.ar/fernet-buhero-700-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-382766",
+      "sku": "TABA-JUMBO-382766",
+      "sourceSha256": "502a2642648cfd7727b9ead1655bcf0867000b3b0c00823082613ddc390c40cb",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/755212/Fernet-Buhero-700cc-1-939981.jpg?v=638023198536070000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "669957b7eae47858b0a485da8fb0521c83b0e23a01e714700799e5720445407a",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-391515-83c49ee6a942f902-89625c5d2c255479.webp",
+          "sha256": "89625c5d2c255479caabdcf18e3bdd5722c9905199c4bb902f26a5e50fd18a4f",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "67e318ad985d13367909cde9a66d222b15f460f97f52b44d5337869d1cc9c5cc",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-391515-83c49ee6a942f902-thumb-974b49631cc95006.webp",
+          "sha256": "974b49631cc950066aa403d1021195c180df41a7d008a6ed6bbaaac03e1c1a40",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-391515",
+      "identitySha256": "83c49ee6a942f9021e9c9a718064cb8c821cef90ce89c013625fdbb9fe3991ad",
+      "rawFile": "taba-jumbo-391515-83c49ee6a942f902.05c0ccb78819ac9ffda754a5f1fc688a44d50ca6145fa2e1b09714c403060e19.source",
+      "rightsReference": "https://www.jumbo.com.ar/vino-cadus-tupungato-750cc/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-391515",
+      "sku": "TABA-JUMBO-391515",
+      "sourceSha256": "05c0ccb78819ac9ffda754a5f1fc688a44d50ca6145fa2e1b09714c403060e19",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/780177/Vino-Cadus-Tupungato-750cc-1-957290.jpg?v=638191570061470000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "7194236f91805faf6b8d568ffd866ad5b81862638fba48ca71fe463ec3605e5a",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-393052-b7a841b42bc2939d-51724f084ecd28c3.webp",
+          "sha256": "51724f084ecd28c38bbe60c99ed3bf00221e9edbb2b524cc3441163515374a31",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "65a0589ec28cd1c838fe566250e0d336346eecd52395e5c959e6e5b6ceca45ea",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-393052-b7a841b42bc2939d-thumb-14e41c7237cc758b.webp",
+          "sha256": "14e41c7237cc758b0510ea6a44b5833fee0d16ceeff9fdf69f7a548e837f667b",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-393052",
+      "identitySha256": "b7a841b42bc2939d8233b95884cdf5760ef10190889d8107f63fab1a39e11a8f",
+      "rawFile": "taba-jumbo-393052-b7a841b42bc2939d.3c664dab9824e72f65428939d6d13ac695667af1faafff7870ae6baef8a17d75.source",
+      "rightsReference": "https://www.jumbo.com.ar/whisky-buchanan-bot-750-cc/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-393052",
+      "sku": "TABA-JUMBO-393052",
+      "sourceSha256": "3c664dab9824e72f65428939d6d13ac695667af1faafff7870ae6baef8a17d75",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/840875/Whisky-Buchanan-Bot-750-Cc-1-961816.jpg?v=638652946723030000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "51b7df72f41887329363149f05749768078d5793f426322f4ee7ca8119ad6b28",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-39797-f64bf66098ca26e0-c6fffe592a18e587.webp",
+          "sha256": "c6fffe592a18e587834d718bc8fe230a4936f041fdd090c10ba215e6eebcebef",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "d44d5b1b6b55988775d7ee1212568c5e7ebde2addf22753fc927f06465d43144",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-39797-f64bf66098ca26e0-thumb-af54244ac56fe67d.webp",
+          "sha256": "af54244ac56fe67d7487c5df5673cf134a2c6d943620eb8e979f31ddcea0d1ad",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-39797",
+      "identitySha256": "f64bf66098ca26e0d5097b6e03d7b61511ea23a4313c9f73d0e0f7b9d2559451",
+      "rawFile": "taba-jumbo-39797-f64bf66098ca26e0.280b559baf0270457c9b9ca8b4fb0afb4b723f6e02f759558ffeac7a40ee1b64.source",
+      "rightsReference": "https://www.jumbo.com.ar/isotonico-powerade-mountain-blast-995cc/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-39797",
+      "sku": "TABA-JUMBO-39797",
+      "sourceSha256": "280b559baf0270457c9b9ca8b4fb0afb4b723f6e02f759558ffeac7a40ee1b64",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/895078/Isotonico-Powerade-Mountain-Blast-995cc-2-40615.jpg?v=639033969729500000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "32a32ab1df0f7b1cf277ed0564ebdcbe0a766d353198d89990fc51a53ee82635",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-39999-226d08b0f26008c2-4d95ca08d14c74a7.webp",
+          "sha256": "4d95ca08d14c74a7613709b7b241c747c31f25a1e7e7760b429003bc22f3814f",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "50a490092f6ebef0cd4e1d4de6771791d43d67dc9ef42488c31274ff5debe7a5",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-39999-226d08b0f26008c2-thumb-47bc59f6bab81584.webp",
+          "sha256": "47bc59f6bab81584c2ba1b73633d6babd12c7439f7f7b5e2ea20e749fe70ec73",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-39999",
+      "identitySha256": "226d08b0f26008c2ab41958c24186c96761eac2e8734f1766fefc5eaf0135aa5",
+      "rawFile": "taba-jumbo-39999-226d08b0f26008c2.186ed95f12b8aa66ff8304a7688ea01448ba71bcc0937de4ad42a4d3e8cedc54.source",
+      "rightsReference": "https://www.jumbo.com.ar/isotonico-powerade-manzana-995cc/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-39999",
+      "sku": "TABA-JUMBO-39999",
+      "sourceSha256": "186ed95f12b8aa66ff8304a7688ea01448ba71bcc0937de4ad42a4d3e8cedc54",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/895080/Isotonico-Powerade-Manzana-995cc-2-40818.jpg?v=639033969737300000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "cafeabb8b1aafdfd60b2f75960df4837140283935d343c763ac4701a6841a797",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-408664-08b8d4ae861bf1df-17e09ab82b0bc468.webp",
+          "sha256": "17e09ab82b0bc468b383816e34ceec0ab80a23be67677ec063fb919b37076b73",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "2b4e5fbe02084cb29407f5b95afd8c10ad704627f26be18390c7058702807415",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-408664-08b8d4ae861bf1df-thumb-f4bf4a1c8e8642db.webp",
+          "sha256": "f4bf4a1c8e8642db94d0ff3f71c2cf6b55196e51fa7e4d33772419a1d79dbd29",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "700",
+      "externalId": "jumbo-408664",
+      "identitySha256": "08b8d4ae861bf1df8ae1c6d3a7ec7ee21b23837fbe21b246c678e3a19f503b9a",
+      "rawFile": "taba-jumbo-408664-08b8d4ae861bf1df.978012759d8bd21770ab07e5f69bfa6a0f5a6df2fdfdc72cc01d699f21986b5e.source",
+      "rightsReference": "https://www.jumbo.com.ar/ron-havana-club-7-anos-700/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-408664",
+      "sku": "TABA-JUMBO-408664",
+      "sourceSha256": "978012759d8bd21770ab07e5f69bfa6a0f5a6df2fdfdc72cc01d699f21986b5e",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/818442/Ron-Havana-Club-7-A-os-700-1-941366.jpg?v=638483818944600000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "0f459f241b5d4e672bad963dba80a6c44be99f58227d8fb7319a44d6827fa416",
+          "height": 1000,
+          "path": "assets/catalog/products/taba-jumbo-5646-99b94b29c1131978-a36d5d3fe74c67aa.webp",
+          "sha256": "a36d5d3fe74c67aad333db29c69570e39121ea28dbfe6ef5b9b7adf1e3b14a44",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "0892e9c4af6cd588c5a650e4e57955fcdf7a13560c9c6f02fc7809eef363e4db",
+          "height": 400,
+          "path": "assets/catalog/thumbnails/taba-jumbo-5646-99b94b29c1131978-thumb-d2f10863b4b08be8.webp",
+          "sha256": "d2f10863b4b08be8a4a83eea27c61ca9cfe7d33ff99a8c654503d26133d06f3e",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-07-30",
+      "crop_width": "",
+      "externalId": "jumbo-5646",
+      "identitySha256": "99b94b29c11319784589ea8be50b8c6c6d4de484c16f495ffa2f99b3abbc8aae",
+      "rawFile": "taba-jumbo-5646-99b94b29c1131978.208c7878aa49d3c13433f84e93ab0ed38b4e0d9197928763ef610fbed4abb672.source",
+      "rightsReference": "https://www.jumbo.com.ar/fernet-branca-menta-450-ml/p",
+      "rightsStatus": "PENDIENTE_DERECHOS",
+      "safeSku": "taba-jumbo-5646",
+      "sku": "TABA-JUMBO-5646",
+      "sourceSha256": "208c7878aa49d3c13433f84e93ab0ed38b4e0d9197928763ef610fbed4abb672",
+      "sourceType": "retailer_public",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/433481/Fernet-Branca-Menta-450-Ml-3-6308.jpg?v=639168049164300000"
+    }
+  ]
 }

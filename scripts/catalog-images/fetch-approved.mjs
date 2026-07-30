@@ -71,6 +71,7 @@ for (const source of approved) {
 
   manifestSources.push({
     checkedAt: source.checked_at,
+    crop_width: source.crop_width,
     externalId: source.external_id,
     identitySha256,
     rawFile,

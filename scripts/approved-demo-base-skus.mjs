@@ -1,0 +1,26 @@
+﻿export const APPROVED_DEMO_BASE_SKUS = [
+  'coca-cola-original-pet-500ml-pack-12',
+  'coca-cola-zero-pet-500ml-pack-12',
+  'sprite-original-pet-500ml-pack-12',
+  'coca-cola-original-pet-1500ml-pack-6',
+  'coca-cola-zero-pet-1500ml-pack-6',
+  'sprite-original-pet-1500ml-pack-6',
+  'fanta-naranja-pet-1500ml-pack-6',
+  'schweppes-tonica-pet-1500ml-pack-6',
+  'schweppes-citrus-pet-1500ml-pack-6',
+  'red-bull-original-lata-250ml',
+  'red-bull-original-lata-250ml-pack-4',
+  'speed-original-lata-473ml',
+  'speed-zero-lata-473ml',
+  'monster-mango-loco-lata-473ml',
+  'heineken-original-lata-473ml',
+  'heineken-original-lata-473ml-pack-6',
+  'imperial-golden-lata-473ml',
+  'imperial-extra-lager-lata-473ml',
+  'imperial-apa-lata-473ml',
+  'imperial-cream-stout-lata-473ml',
+  'schneider-rubia-lata-710ml',
+  'corona-extra-botella-330ml',
+];
+
+export const APPROVED_DEMO_BASE_PRODUCT_COUNT = APPROVED_DEMO_BASE_SKUS.length;

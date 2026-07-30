@@ -22,6 +22,7 @@ const SOURCE_TYPES = new Set([
   'marca',
   'distribuidor_oficial',
   'proveedor_aprobado',
+  'retailer_public',
   'propio',
 ]);
 const RIGHTS_STATUSES = new Set([

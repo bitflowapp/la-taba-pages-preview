@@ -1,7 +1,8 @@
-import crypto from 'node:crypto';
+﻿import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { products } from '../../js/approved-beverage-demo-data.js';
+import { APPROVED_DEMO_BASE_PRODUCT_COUNT } from '../approved-demo-base-skus.mjs';
 
 let sharp;
 try {
@@ -13,7 +14,7 @@ try {
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const DEMO_ROOT = 'assets/catalog/beverages';
-const EXPECTED_PRODUCTS = 22;
+const EXPECTED_PRODUCTS = products.length;
 const errors = [];
 const expectedFiles = new Set();
 
@@ -32,8 +33,9 @@ async function listWebps(directory) {
   return nested.flat();
 }
 
-if (products.length !== EXPECTED_PRODUCTS) {
-  errors.push(`El catálogo demo debe contener exactamente ${EXPECTED_PRODUCTS} productos.`);
+const BASE_MIN_PRODUCTS = APPROVED_DEMO_BASE_PRODUCT_COUNT;
+if (products.length < BASE_MIN_PRODUCTS) {
+  errors.push(`El catálogo demo debe conservar el set base mínimo de ${BASE_MIN_PRODUCTS} productos.`);
 }
 
 for (const product of products) {

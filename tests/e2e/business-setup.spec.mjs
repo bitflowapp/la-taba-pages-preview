@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, gotoDemoReset, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installPageGuards, openBusinessSection, waitForToast } from './helpers.mjs';
 
 test('Business setup wizard mobile: guarda, persiste y restaura solo la config demo', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -34,7 +34,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
 
-  await page.locator('[data-scroll-business-setup]').click();
+  await openBusinessSection(page, '[data-scroll-business-setup]');
   const setup = page.locator('[data-business-setup]');
   await expect(setup).toBeVisible();
 
@@ -96,7 +96,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await page.evaluate(() => { window.location.hash = '#business'; });
   await expect(page.locator('[data-view="business"]')).toBeVisible();
 
-  await page.locator('[data-scroll-business-setup]').click();
+  await openBusinessSection(page, '[data-scroll-business-setup]');
   await setup.getByRole('button', { name: 'Restaurar configuración base' }).first().click();
   const resetModal = page.locator('[data-business-setup-reset-modal]');
   await expect(resetModal).toBeVisible();

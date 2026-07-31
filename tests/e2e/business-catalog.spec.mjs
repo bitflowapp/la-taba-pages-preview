@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards, openBusinessSection, waitForToast } from './helpers.mjs';
 
 test('Negocio: crea, edita, pausa y restaura el catálogo editable', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -12,7 +12,7 @@ test('Negocio: crea, edita, pausa y restaura el catálogo editable', async ({ br
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
-  await page.locator('[data-scroll-catalog]').click();
+  await openBusinessSection(page, '[data-scroll-catalog]');
 
   // El formulario de alta arranca cerrado: se abre con "Nuevo producto".
   await expect(page.locator('[data-catalog-form]')).toHaveCount(0);

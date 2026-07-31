@@ -18,7 +18,9 @@ test('la home presenta TABA con marca interna discreta y un storefront comercial
   await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="cervezas"]')).toHaveText('Cervezas');
   await expect(page.locator('[data-home-category-strip] [data-category-id="gaseosas"]')).toHaveClass(/active/);
   await expect(page.locator('[data-home-category-strip] [data-category-id="fernet"]')).toHaveCount(0);
-  await expect(page.locator('.home-preview-label')).toHaveText('PREVIEW INTERNA');
+  // Ninguna etiqueta técnica en la superficie del cliente.
+  await expect(page.locator('.home-preview-label')).toHaveCount(0);
+  await expect(page.locator('[data-view="home"]')).not.toContainText('PREVIEW INTERNA');
 
   // Sin una promoción aprobada, fechada y verificable no se muestra ningún
   // descuento ni precio anterior en la superficie cliente.
@@ -26,7 +28,9 @@ test('la home presenta TABA con marca interna discreta y un storefront comercial
   await expect(promoBanner).toBeHidden();
   await expect(page.locator('[aria-labelledby="home-promotions-title"]')).toBeHidden();
   await expect(page.locator('[data-home-promotions] .home-promo-card')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Los más vendidos' })).toBeVisible();
+  // Copy honesto: "Destacados" es una selección del local, no una métrica.
+  await expect(page.getByRole('heading', { name: 'Destacados' })).toBeVisible();
+  await expect(page.locator('[data-view="home"]')).not.toContainText('Los más vendidos');
   await expect(page.locator('[data-home-catalog-preview] .home-catalog-card')).toHaveCount(4);
 
   await expect(page.locator('[data-view="home"] .role-intro')).toHaveCount(0);
@@ -89,12 +93,20 @@ for (const viewport of [
       documentWidth: document.documentElement.scrollWidth,
       homeRight: document.querySelector('[data-view="home"]')?.getBoundingClientRect().right || 0,
       navBottom: document.querySelector('.mobile-nav')?.getBoundingClientRect().bottom || 0,
+      navHeight: Math.round(document.querySelector('.mobile-nav')?.getBoundingClientRect().height || 0),
+      navBlockToken: Math.round(Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--nav-h'),
+      ) + Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--safe-area-bottom') || '0',
+      )),
       innerHeight: window.innerHeight,
     }));
     expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
     expect(geometry.homeRight).toBeLessThanOrEqual(geometry.viewportWidth + 1);
-    expect(geometry.innerHeight - geometry.navBottom).toBeGreaterThanOrEqual(9);
-    expect(geometry.innerHeight - geometry.navBottom).toBeLessThanOrEqual(11);
+    // La navegación es una barra a sangre con hairline, no una píldora
+    // flotante: llega al borde inferior y su alto sale del token del stack.
+    expect(geometry.innerHeight - geometry.navBottom).toBe(0);
+    expect(geometry.navHeight).toBe(geometry.navBlockToken);
 
     const productImages = page.locator('[data-view="home"] .thumb-img');
     await expect(productImages.first()).toBeVisible();

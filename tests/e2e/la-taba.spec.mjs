@@ -1,13 +1,5 @@
 import { expect, test } from '@playwright/test';
-import {
-  fillCheckout,
-  gotoDemoReset,
-  installBrowserStubs,
-  installPageGuards,
-  openFirstProductModal,
-  seedCheckoutProfile,
-  waitForToast,
-} from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, openBusinessSection, openFirstProductModal, seedCheckoutProfile, waitForToast } from './helpers.mjs';
 
 const TRACKING_GPS_NOTE = 'Seguimiento por estados, sin GPS ni ubicación en vivo.';
 
@@ -406,7 +398,10 @@ test('modo negocio y delivery', async ({ page }) => {
   await expect(page.locator('[data-business-dashboard]')).toContainText('Nuevos');
   await expect(page.locator('[data-business-dashboard]')).toContainText('En preparación');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Listos');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('En camino');
+  // La banda operativa es el único control del estado del reparto: las
+  // tarjetas de métrica que decían "En camino" se fusionaron con el filtro,
+  // que ya nombraba lo mismo como "En reparto".
+  await expect(page.locator('[data-business-dashboard]')).toContainText('En reparto');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Mitre 456, Area centro');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Casa verde');
 
@@ -420,7 +415,7 @@ test('modo negocio y delivery', async ({ page }) => {
   await expect(page.locator('[data-business-dashboard]')).toContainText('Abrir reparto');
 
   // Catálogo y promos arranca plegado: el acceso rápido lo abre.
-  await page.locator('[data-scroll-catalog]').click();
+  await openBusinessSection(page, '[data-scroll-catalog]');
   const stockInc = page.locator('[data-stock-inc]').first();
   const stockDec = page.locator('[data-stock-dec]').first();
   const stockBefore = Number(await stockInc.evaluate((button) => button.parentElement.querySelector('strong').textContent));

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, openBusinessSection, waitForToast } from './helpers.mjs';
 
 test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -48,7 +48,7 @@ test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ brows
   await page.locator('[data-delivery-code-confirm="LT-0002"]').click();
   await page.locator('[data-delivery-done="LT-0002"]').click();
   await page.getByRole('button', { name: 'Ir al panel del negocio' }).click();
-  await page.locator('[data-scroll-reports]').click();
+  await openBusinessSection(page, '[data-scroll-reports]');
 
   const report = page.locator('[data-business-report]');
   await expect(report).toContainText('Resumen del período');
@@ -83,7 +83,7 @@ test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ brows
   await page.locator('[data-cancel-confirm]').click();
   await waitForToast(page, /Pedido LT-0003 cancelado/);
 
-  await page.locator('[data-scroll-reports]').click();
+  await openBusinessSection(page, '[data-scroll-reports]');
   await expect(report.locator('.board-chip.cancelled')).toContainText('1');
   await expect(report).toContainText('Sin stock');
 

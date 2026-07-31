@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards, openBusinessSection, waitForToast } from './helpers.mjs';
 
 test('sandbox only publishes a human-approved SKU promotion and syncs it to customer tabs', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -17,7 +17,7 @@ test('sandbox only publishes a human-approved SKU promotion and syncs it to cust
   await business.getByRole('button', { name: /Ingresar c[óo]digo/i }).click();
   await business.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await business.locator('[data-pin-form]').press('Enter');
-  await business.locator('[data-business-view="promotions"]').click();
+  await openBusinessSection(business, '[data-business-view="promotions"]');
   await expect(business.locator('[data-promotion-manager]')).toBeVisible();
   await expect(business.locator('[data-promotion-row="promo-candidate-monster-import"]')).toContainText('No publicada');
 
@@ -96,7 +96,7 @@ test('business distinguishes scheduled and expired promotions without publishing
     await page.locator('[data-pin-form]').press('Enter');
   }
   await dashboard.waitFor({ state: 'visible' });
-  await page.locator('[data-business-view="promotions"]').click();
+  await openBusinessSection(page, '[data-business-view="promotions"]');
   await expect(page.locator('[data-promotion-row="promo-futura-e2e"]')).toContainText('Programada');
   await expect(page.locator('[data-promotion-row="promo-vencida-e2e"]')).toContainText('Vencida');
   await expect(page.locator('.business-promo-count')).toContainText('0 activas');

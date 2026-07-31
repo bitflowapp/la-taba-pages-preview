@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards, openBusinessSection } from './helpers.mjs';
 
 // Pulido comercial mobile-first 390x844.
 
@@ -41,11 +41,14 @@ test('catálogo: un solo grid, búsqueda vacía coherente y tarjetas sin ruido',
   // Una búsqueda sin resultados conserva una única salida vacía y un contador consistente.
   await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
   await page.locator('[data-view="catalog"] [data-search-input]').fill('zzzz-no-existe');
-  await expect(page.locator('[data-catalog-count]')).toHaveText('0 productos');
+  // El contador lleva el contexto del filtro activo.
+  await expect(page.locator('[data-catalog-count]')).toHaveText('0 productos en Gaseosas');
   await expect(page.locator('[data-catalog-offers-block], [data-catalog-offers]')).toHaveCount(0);
   await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(0);
   const emptyState = page.locator('[data-product-grid] .empty-state');
-  await expect(emptyState).toContainText('No encontramos esa bebida.');
+  // El estado vacío nombra la consulta y ofrece deshacer su causa.
+  await expect(emptyState).toContainText('No encontramos «zzzz-no-existe»');
+  await expect(emptyState.getByRole('button', { name: 'Limpiar búsqueda' })).toBeVisible();
   await emptyState.getByRole('button', { name: 'Ver todo el catálogo' }).click();
   await expect(page.locator('[data-view="catalog"] [data-search-input]')).toHaveValue('');
   await expect(page.locator('[data-view="catalog"] [data-category-id="all"]')).toHaveClass(/active/);
@@ -93,7 +96,7 @@ test('negocio: catálogo editable compacto y guía operativa separada', async ({
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
   // Catálogo y promos arranca plegado: el acceso rápido lo abre.
-  await page.locator('[data-scroll-catalog]').click();
+  await openBusinessSection(page, '[data-scroll-catalog]');
 
   // Lista de productos paginada: muestra un anticipo y se expande a pedido.
   const rows = page.locator('[data-catalog-admin-row]');
@@ -106,7 +109,7 @@ test('negocio: catálogo editable compacto y guía operativa separada', async ({
   // El formulario de alta sigue cerrado hasta tocar "Nuevo producto".
   await expect(page.locator('[data-catalog-form]')).toHaveCount(0);
 
-  await page.locator('[data-business-view="guide"]').click();
+  await openBusinessSection(page, '[data-business-view="guide"]');
   await expect(page.locator('.demo-guide')).toContainText('Guía operativa');
   await expect(page.locator('[data-demo-reset]')).toHaveCount(0);
   await expect(page.locator('[data-business-dashboard]')).not.toContainText(/muestra|presentación|datos de ejemplo/i);

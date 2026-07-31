@@ -33,6 +33,19 @@ export async function installBrowserStubs(page) {
   });
 }
 
+// El panel del negocio usa cuatro destinos fijos en móvil (Pedidos · Métricas
+// · Caja · Local). Catálogo, Promociones, Reportes, Configuración y Guía viven
+// dentro de "Local". En escritorio siguen en la fila superior, así que este
+// helper abre el destino sólo cuando hace falta.
+export async function openBusinessSection(page, selector) {
+  const target = page.locator(selector);
+  if (!(await target.isVisible().catch(() => false))) {
+    await page.locator('[data-business-view="local"]').click();
+    await target.waitFor({ state: 'visible' });
+  }
+  await target.click();
+}
+
 export async function gotoDemoReset(page, target) {
   await page.goto(target);
   const cleanUrl = new URL(page.url());

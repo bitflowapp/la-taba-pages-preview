@@ -144,11 +144,24 @@ test('Perfil permite editar datos y direcciones propias sin overflow ni PII en c
   expect(addressActionBoxes.length).toBeGreaterThan(0);
   expect(addressActionBoxes.every(({ height }) => height >= 44)).toBe(true);
   expect(addressActionBoxes.every(({ left, right }) => left >= 0 && right <= 320)).toBe(true);
-  const layout = await page.evaluate(() => ({
-    profilePaddingBottom: getComputedStyle(document.querySelector('[data-view="profile"]')).paddingBottom,
-    navBottom: getComputedStyle(document.querySelector('.mobile-nav')).bottom,
-  }));
-  expect(parseFloat(layout.profilePaddingBottom)).toBeGreaterThan(80);
+  // La reserva inferior se declara UNA vez, en `main`, y Perfil ya no la
+  // duplica. Se mide el efecto real —que la navegación no tape contenido al
+  // final del scroll— en vez del valor duplicado.
+  const layout = await page.evaluate(() => {
+    const root = document.scrollingElement ?? document.documentElement;
+    window.scrollTo({ top: root.scrollHeight - root.clientHeight, behavior: 'instant' });
+    const nav = document.querySelector('.mobile-nav').getBoundingClientRect();
+    const profile = document.querySelector('[data-view="profile"]').getBoundingClientRect();
+    return {
+      mainPaddingBottom: parseFloat(
+        getComputedStyle(document.querySelector('main[data-app-main]')).paddingBottom,
+      ),
+      navBottom: getComputedStyle(document.querySelector('.mobile-nav')).bottom,
+      gapOverNav: nav.top - profile.bottom,
+    };
+  });
+  expect(layout.mainPaddingBottom).toBeGreaterThanOrEqual(56);
+  expect(layout.gapOverNav).toBeGreaterThanOrEqual(0);
   expect(parseFloat(layout.navBottom)).toBeGreaterThanOrEqual(0);
   expect(consoleMessages.join('\n')).not.toContain('Cliente Demo');
   expect(consoleMessages.join('\n')).not.toContain('299000');

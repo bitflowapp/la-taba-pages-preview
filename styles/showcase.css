@@ -463,21 +463,7 @@
 @media (max-width: 768px) {
   .showcase-launcher {
     right: max(10px, env(safe-area-inset-right, 0px));
-    bottom: calc(
-      var(--taba-bottom-nav-clearance, 82px)
-      + var(--taba-floating-cart-height, 52px)
-      + var(--taba-floating-cart-gap, 12px)
-      + 10px
-    );
-  }
-
-  body:is(
-    [data-active-view="home"],
-    [data-active-view="catalog"],
-    [data-active-view="cart"],
-    [data-active-view="profile"]
-  ):not(:has(.floating-cart:not(.hidden))) .showcase-launcher {
-    bottom: calc(var(--taba-bottom-nav-clearance, 82px) + 8px);
+    bottom: calc(var(--bottom-reserve) + 8px);
   }
 
   body:is(

@@ -920,6 +920,23 @@ function bindEvents() {
       return;
     }
 
+    // "Limpiar búsqueda" deshace exactamente la causa del vacío: la consulta.
+    // La categoría elegida se conserva.
+    const clearSearch = target.closest('[data-clear-search]');
+    if (clearSearch) {
+      setSearchQuery('');
+      if (activeView !== 'catalog') setActiveView('catalog');
+      return;
+    }
+
+    // "Buscar en todo" conserva la consulta y suelta el filtro de categoría.
+    const searchEverywhere = target.closest('[data-search-everywhere]');
+    if (searchEverywhere) {
+      setCategory('all');
+      if (activeView !== 'catalog') setActiveView('catalog');
+      return;
+    }
+
     const navView = target.closest('[data-nav-view]')?.dataset.navView;
     if (navView) {
       event.preventDefault();

@@ -214,9 +214,34 @@ function formatWhatsappDisplay(value) {
   return digits ? `+${digits}` : '';
 }
 
+// Rótulo del app bar operativo. La variante corta existe para que a 320px el
+// texto se acorte por diseño en vez de recortarse con elipsis.
+const OPERATIONAL_TOPBAR_LABELS = Object.freeze({
+  business: { full: 'OPERACIÓN DEL LOCAL', short: 'OPERACIÓN' },
+  rider: { full: 'REPARTO', short: 'REPARTO' },
+});
+
 export function renderNavigation(activeView = 'home') {
   document.body.dataset.activeView = activeView;
+  // El app bar del panel operativo no habla de la dirección del cliente: dice
+  // qué local se opera. El control de dirección se retira por CSS en estas
+  // vistas y este bloque toma su lugar.
+  const opsLabel = OPERATIONAL_TOPBAR_LABELS[activeView] || null;
+  $$('[data-topbar-ops]').forEach((node) => {
+    node.hidden = !opsLabel;
+  });
+  if (opsLabel) {
+    setText('[data-topbar-ops-label]', opsLabel.full);
+    setText('[data-topbar-ops-label-short]', opsLabel.short);
+  }
+  // El aviso sonoro pertenece a la cola de pedidos: no aparece en Repartidor.
+  $$('.topbar-ops-sound[data-sound-toggle]').forEach((node) => {
+    if (activeView !== 'business') node.hidden = true;
+  });
   $$('[data-nav-view]').forEach((control) => {
+    // Los accesos que no son destinos de navegación (el control de dirección
+    // del app bar) no reciben `aria-current`: `page` debe apuntar a uno solo.
+    if (control.hasAttribute('data-nav-passive')) return;
     const isActive = control.dataset.navView === activeView;
     control.classList.toggle('active', isActive);
     if (isActive) {
@@ -419,8 +444,8 @@ function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
   </button>`;
 }
 
-// "Las más pedidas" del home: productos populares del catálogo activo.
-// primero. Se exporta la lista para que "Combos y promos" no repita productos.
+// "Destacados" del home: selección del local marcada en el catálogo. No es una
+// métrica de ventas y el copy no la presenta como tal.
 function homeOfferProducts() {
   return getCustomerCatalogProducts(getState().products)
     .filter((product) => product.available && product.stock > 0 && (product.popular || product.featured))
@@ -798,7 +823,10 @@ function categoryGlyph(categoryId) {
 function renderCategories() {
   const strips = $$('[data-category-strip]');
   if (!strips.length) return;
-  const { activeCategory } = getState();
+  const state = getState();
+  // Con búsqueda activa ninguna categoría queda marcada: la consulta es el
+  // filtro dominante y dos filtros marcados a la vez se contradicen.
+  const activeCategory = state.searchQuery.trim() ? null : state.activeCategory;
   const catalogCategories = categoriesForCurrentCatalog();
   const fullList = [
     catalogCategories[0],
@@ -813,7 +841,7 @@ function renderCategories() {
   const remainingCatalogList = fullList.filter((category) => !catalogTopIds.includes(category.id));
 
   const markupFor = (list) => list.map((category) => `
-    <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}">
+    <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}" aria-pressed="${activeCategory === category.id}">
       <span class="category-ico" aria-hidden="true">${categoryGlyph(category.id)}</span>
       <span class="category-label">${escapeHtml(category.name)}</span>
     </button>
@@ -917,7 +945,7 @@ function categoriesForCurrentCatalog() {
   if (!remote.size) return categories;
 
   if (promotionalProducts().length) remote.set('promos', 'Promociones');
-  if (popularProducts().length) remote.set('popular', 'Los más vendidos');
+  if (popularProducts().length) remote.set('popular', 'Destacados');
 
   const preferredOrder = [
     'promos',
@@ -983,15 +1011,29 @@ function renderCatalogOffers() {
 }
 
 function renderCatalogMeta() {
-  setText('[data-catalog-title]', activeCategoryName());
-  const count = getFilteredProducts(getState()).length;
+  const state = getState();
+  const query = state.searchQuery.trim();
+  // Con búsqueda activa el título es "Resultados": la consulta vive en el
+  // input y, sólo si no hay coincidencias, en el mensaje vacío. No se repite
+  // como chip ni como encabezado entre comillas.
+  setText('[data-catalog-title]', query ? 'Resultados' : activeCategoryName());
+  const count = getFilteredProducts(state).length;
   const catalogLoading = isProductionCatalogLoading();
+  // El contador lleva el contexto del filtro: "0 productos en Gaseosas" dice
+  // por qué está vacío; "0 productos" a secas, no.
+  const context = state.activeCategory === 'all' ? '' : ` en ${activeCategoryName()}`;
   setText(
     '[data-catalog-count]',
-    catalogLoading ? 'Cargando catálogo…' : (count === 1 ? '1 producto' : `${count} productos`),
+    catalogLoading
+      ? 'Cargando catálogo…'
+      : `${count === 1 ? '1 producto' : `${count} productos`}${context}`,
   );
+  // Con 0 resultados el control de orden no tiene nada que ordenar: se retira
+  // del árbol de accesibilidad en lugar de quedar inerte.
+  const sortField = $('[data-sort-field]');
+  if (sortField) sortField.hidden = !catalogLoading && count === 0;
   const select = $('[data-sort-select]');
-  if (select && select.value !== getState().sortBy) select.value = getState().sortBy;
+  if (select && select.value !== state.sortBy) select.value = state.sortBy;
 }
 
 function isProductionCatalogLoading() {
@@ -1004,6 +1046,11 @@ function renderSearchControls() {
   const query = getState().searchQuery;
   $$('[data-search-input]').forEach((input) => {
     if (input.value !== query) input.value = query;
+  });
+  // El botón de limpiar sólo existe con contenido: 44×44 y accesible por
+  // nombre. No hay control inerte esperando en el campo vacío.
+  $$('.search-clear').forEach((button) => {
+    button.hidden = !query.trim();
   });
 }
 
@@ -1024,22 +1071,29 @@ function renderProducts() {
       return;
     }
     const isFavorites = state.activeCategory === 'favorites';
-    const isSearch = Boolean(state.searchQuery.trim());
-    const emptyTitle = isFavorites
+    const query = state.searchQuery.trim();
+    const isSearch = Boolean(query);
+    const narrowed = state.activeCategory !== 'all';
+    // El estado vacío nombra la causa concreta —la consulta— y su acción
+    // primaria la deshace. Es el único lugar, junto al input, donde la
+    // consulta se repite.
+    const emptyTitle = isFavorites && !isSearch
       ? 'Todavía no guardaste favoritos.'
       : isSearch
-        ? 'No encontramos esa bebida.'
+        ? `No encontramos «${escapeHtml(query)}»`
         : 'No hay productos disponibles en esta categoría.';
-    const emptyCopy = isFavorites
+    const emptyCopy = isFavorites && !isSearch
       ? 'Tocá Guardar en un producto para encontrarlo acá.'
       : isSearch
-        ? 'Probá con la marca, la presentación o limpiá el buscador.'
+        ? 'Probá con la marca o la presentación.'
         : 'Volvé a ver el catálogo completo o elegí otra categoría.';
     container.innerHTML = `
       <div class="empty-state">
         <strong>${emptyTitle}</strong>
         <p class="empty-state-copy">${emptyCopy}</p>
         <div class="empty-actions">
+          ${isSearch ? '<button class="primary-button compact" type="button" data-clear-search>Limpiar búsqueda</button>' : ''}
+          ${isSearch && narrowed ? '<button class="secondary-button compact" type="button" data-search-everywhere>Buscar en todo</button>' : ''}
           <button class="secondary-button compact" type="button" data-clear-catalog-filters>Ver todo el catálogo</button>
         </div>
       </div>`;
@@ -1061,21 +1115,24 @@ function renderProducts() {
     const control = quickAddControl(product, inCart);
     return `
       <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
-        <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
-          ${productThumb(product, 'grid')}
-          <span class="product-stock-tag">${stockPill(product)}</span>
-        </button>
-        <div class="product-media-control">${control}</div>
-        <button class="product-favorite ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos" aria-pressed="${favorite}">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-        </button>
+        <div class="product-media-frame">
+          <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+            ${productThumb(product, 'grid')}
+            <span class="product-stock-tag">${stockPill(product)}</span>
+          </button>
+          <button class="product-favorite ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos" aria-pressed="${favorite}">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
         <div class="product-body">
+          ${product.brand ? `<span class="product-brand">${escapeHtml(product.brand)}</span>` : ''}
           <h3>${escapeHtml(product.name)}</h3>
           <p>${escapeHtml(presentation)}</p>
-          ${product.pricePending ? '' : `<small class="product-availability ${outOfStock ? 'is-unavailable' : ''}">${escapeHtml(cardAvailabilityLabel(product))}</small>`}
-        </div>
-        <div class="product-bottom">
-          ${priceBlock(product)}
+          ${product.pricePending || !cardAvailabilityLabel(product) ? '' : `<small class="product-availability ${outOfStock ? 'is-unavailable' : ''}">${escapeHtml(cardAvailabilityLabel(product))}</small>`}
+          <div class="product-foot">
+            ${priceBlock(product)}
+            <div class="product-action">${control}</div>
+          </div>
         </div>
       </article>
     `;
@@ -1102,12 +1159,14 @@ export function availabilityLabel(product) {
   return 'Disponible hoy';
 }
 
+// En la tarjeta sólo se rotula lo que hay que avisar. Estar disponible es lo
+// normal: etiquetarlo llena la grilla de cintas y no aporta información.
 function cardAvailabilityLabel(product) {
   if (product.pricePending) return '';
   if (product.archived || !product.available) return 'No disponible';
   if (product.stock <= 0) return 'Agotado';
   if (product.stock <= 4) return `Últimas ${product.stock}`;
-  return 'Disponible';
+  return '';
 }
 
 // Acceso directo a Tracking desde Home cuando hay un pedido en curso.
@@ -1148,11 +1207,15 @@ function renderHomeAddressChip() {
   if (!label) return;
   const remembered = getRememberedCheckoutValues();
   const street = remembered?.customerStreetAddress?.trim();
+  const control = label.closest('[data-home-address]');
   if (street) {
     const neighborhood = remembered?.customerNeighborhood?.trim();
     label.textContent = neighborhood ? `${street} · ${neighborhood}` : street;
+    control?.classList.remove('is-missing');
   } else {
-    label.textContent = 'Elegí tu dirección al confirmar el pedido';
+    // Sin dirección el valor pasa a tono de advertencia y nombra la acción.
+    label.textContent = 'Elegí tu dirección';
+    control?.classList.add('is-missing');
   }
 }
 
@@ -1388,6 +1451,11 @@ export function renderCartTotals() {
     node.classList.toggle('hidden', summary.count === 0 || !floatingAllowed);
     node.setAttribute('aria-label', summary.count > 0 ? `${floatingText}. Ver pedido.` : 'Carrito vacío');
   });
+  // Entrada única de la reserva inferior: la barra de carrito existe sólo con
+  // productos, y sólo entonces el contenido reserva su altura. El token
+  // derivado vive en `body` (styles/tokens.css) para que resuelva con este
+  // valor y no con el de `:root`.
+  document.body.dataset.cart = summary.count > 0 && floatingAllowed ? 'filled' : 'empty';
 }
 
 function renderMinimumOrderProgress() {

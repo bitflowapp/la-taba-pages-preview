@@ -424,6 +424,8 @@
   box-shadow: none;
 }
 
+/* La marca de verificación entra completa en su círculo: el glifo heredaba
+   16px sobre una caja de 28 y quedaba recortado. */
 .profile-privacy-card > span {
   display: grid;
   width: 28px;
@@ -433,7 +435,9 @@
   border-radius: 50%;
   background: #dceee2;
   color: #23613c;
+  font-size: 14px;
   font-weight: 900;
+  line-height: 1;
 }
 
 .profile-privacy-card strong {
@@ -494,7 +498,7 @@
 
 @media (max-width: 760px) {
   [data-view="profile"] {
-    padding: 18px 16px calc(var(--taba-bottom-nav-clearance) + 18px);
+    padding: 18px 16px 16px;
   }
 
   .customer-profile-grid {

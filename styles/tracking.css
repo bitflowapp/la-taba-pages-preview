@@ -1401,13 +1401,19 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row > strong
   white-space: nowrap;
 }
 
+/* El resumen del pedido se lee entero: con "6 productos · Total $20.752" no
+   entra en un renglón a 390px y el recorte ocultaba el importe. Envuelve a dos
+   líneas en vez de truncar. */
 .tracking-premium .tracking-summary-copy > small {
+  display: -webkit-box;
   overflow: hidden;
   color: #66686d;
   font-size: 12.5px;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.25;
+  text-overflow: clip;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .tracking-summary-action {

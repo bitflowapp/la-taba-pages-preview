@@ -1,105 +1,156 @@
 .catalog-head {
-  margin-bottom: 16px;
+  margin-bottom: 4px;
 }
 
 .catalog-head .crumbs {
   display: none;
 }
 
-.catalog-kicker {
-  margin: 0 0 8px;
-  color: var(--taba-red);
-  font-size: 13px;
-  font-weight: 850;
-  letter-spacing: 0.06em;
-}
-
+/* El título del catálogo es el nombre del filtro activo, a 22px. */
 .catalog-head .view-title {
+  min-width: 0;
   margin: 0;
+  overflow: hidden;
   color: var(--taba-ink);
-  font-size: clamp(28px, 7.5vw, 42px);
-  letter-spacing: -0.055em;
-  line-height: 1.04;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* Campo de 46px con input de 44 a 16px (sin zoom en iOS) y borde que porta
+   información. */
 .catalog-search {
-  min-height: 64px;
-  margin-bottom: 18px;
-  padding-inline: 20px;
-  border-color: #e7e7eb;
-  box-shadow: 0 8px 18px rgb(24 28 35 / 8%);
+  min-height: 46px;
+  margin-bottom: 10px;
+  padding-inline: 12px;
+  border-color: var(--taba-line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
 }
 
 .catalog-search .catalog-search-icon {
   display: grid;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
   place-items: center;
-  color: var(--taba-red);
+  color: var(--taba-muted);
 }
 
 .catalog-search .catalog-search-icon svg {
-  width: 23px;
-  height: 23px;
+  width: 20px;
+  height: 20px;
 }
 
 .catalog-search input {
   min-width: 0;
+  min-height: var(--tap);
   color: var(--taba-ink);
-  font-size: clamp(14px, 4vw, 16px);
+  font-size: 16px;
 }
 
 .catalog-search input::placeholder {
-  color: #96979e;
+  color: var(--taba-muted);
   opacity: 1;
 }
 
-[data-view="catalog"] .category-strip {
-  gap: 10px;
-  margin: 0 -2px;
-  padding: 2px 2px 12px;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-inline: contain;
-  scroll-padding-inline: 2px;
+.search-clear {
+  display: grid;
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 var(--tap);
+  place-items: center;
+  margin-right: -8px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--taba-muted);
 }
 
-[data-view="catalog"] .category-button {
-  min-width: 88px;
-  min-height: 102px;
-  gap: 8px;
-  padding: 11px 8px;
-  border-color: #ececf0;
-  border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 6px 14px rgb(24 28 35 / 7%);
+.search-clear:hover {
+  background: var(--taba-subtle);
   color: var(--taba-ink);
 }
 
-[data-view="catalog"] .category-button:hover,
+/* Categorías: chips de 44px con máscara de degradado en el borde derecho y
+   `scroll-snap` para que el corte nunca parezca un chip roto. La continuidad
+   se señala; no se descubre por accidente. Home y catálogo comparten
+   componente: no hay dos sistemas de categorías. */
+[data-view="catalog"] .category-strip {
+  gap: 8px;
+  margin: 0;
+  padding: 0 0 10px;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: 0;
+  scroll-snap-type: inline proximity;
+}
+
+[data-view="catalog"] .category-button {
+  scroll-snap-align: start;
+}
+
+/* Sin desbordamiento no hay nada que señalar: la máscara se retira. */
+@media (min-width: 900px) {
+  [data-view="catalog"] .category-strip {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+[data-view="catalog"] .category-button {
+  display: inline-flex;
+  min-width: 0;
+  min-height: var(--tap);
+  align-items: center;
+  flex-direction: row;
+  gap: 6px;
+  padding: 0 14px;
+  border-color: var(--taba-border-medium);
+  border-radius: var(--radius-pill);
+  background: #fff;
+  box-shadow: none;
+  color: var(--taba-ink);
+}
+
+[data-view="catalog"] .category-button:hover {
+  border-color: var(--taba-line-strong);
+  background: var(--taba-subtle);
+  box-shadow: none;
+  color: var(--taba-ink);
+}
+
+/* Activo en tinta, no en rojo: el rojo queda para la acción primaria. */
 [data-view="catalog"] .category-button.active {
-  border-color: var(--taba-red);
-  background: var(--taba-red);
-  box-shadow: 0 8px 18px rgb(204 0 16 / 22%);
+  border-color: var(--taba-ink);
+  background: var(--taba-ink);
+  box-shadow: none;
   color: #fff;
 }
 
 [data-view="catalog"] .category-ico,
 [data-view="catalog"] .category-button.active .category-ico {
-  width: 32px;
-  height: 32px;
+  width: 18px;
+  height: 18px;
   background: transparent;
 }
 
 [data-view="catalog"] .category-ico svg {
-  width: 25px;
-  height: 25px;
+  width: 18px;
+  height: 18px;
 }
 
 [data-view="catalog"] .category-label {
-  max-width: 76px;
-  font-size: 12px;
-  font-weight: 800;
+  max-width: none;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 [data-view="catalog"] .category-more {
@@ -124,22 +175,24 @@
   font-weight: 750;
 }
 
+/* Fila del título: nombre del filtro + control de orden de 44px. La barra de
+   orden dedicada desaparece; el contador queda debajo como caption. */
 .catalog-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 52px;
-  margin: 14px 0 18px;
-  padding-top: 12px;
-  border-top: 1px solid #efeff2;
+  min-height: var(--tap);
+  margin: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .catalog-count {
-  flex: 0 0 auto;
-  color: var(--taba-ink);
-  font-size: 15px;
-  font-weight: 800;
+  margin: 0 0 12px;
+  color: var(--taba-muted);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .sort-field {
@@ -147,12 +200,13 @@
   align-items: center;
   justify-content: flex-end;
   min-width: 0;
-  min-height: 44px;
-  padding: 3px 6px 3px 12px;
-  border: 1px solid #e5e5e9;
+  min-height: var(--tap);
+  flex: 0 0 auto;
+  padding: 0 4px 0 10px;
+  border: 1px solid var(--taba-border-medium);
   border-radius: var(--radius-pill);
   background: #fff;
-  box-shadow: 0 3px 9px rgb(24 28 35 / 4%);
+  box-shadow: none;
   color: var(--taba-ink);
 }
 
@@ -167,10 +221,14 @@
   white-space: nowrap;
 }
 
+.sort-label-short {
+  display: none;
+}
+
 .sort-field-label svg {
   width: 15px;
   height: 15px;
-  color: var(--taba-red);
+  color: var(--taba-muted);
 }
 
 .sort-select-wrap {
@@ -179,15 +237,17 @@
   min-width: 0;
 }
 
+/* Ningún campo baja de 16px, ni siquiera en escritorio: es un solo
+   componente para todas las superficies (y evita el zoom de iOS). */
 .sort-field select {
-  width: 126px;
+  width: 148px;
   min-height: var(--tap);
   padding: 0 26px 0 8px;
   border: 0;
   background: transparent;
-  color: var(--taba-red);
-  font-size: 13px;
-  font-weight: 850;
+  color: var(--taba-ink);
+  font-size: 16px;
+  font-weight: 700;
   outline: 0;
 }
 
@@ -197,63 +257,80 @@
   right: 8px;
   width: 7px;
   height: 7px;
-  border-right: 2px solid var(--taba-red);
-  border-bottom: 2px solid var(--taba-red);
+  border-right: 2px solid var(--taba-muted);
+  border-bottom: 2px solid var(--taba-muted);
   pointer-events: none;
   content: "";
   transform: translateY(-65%) rotate(45deg);
 }
 
+/* El número de columnas no se declara: se deriva del ancho mínimo de tarjeta,
+   así ningún breakpoint queda desincronizado con el layout. */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(214px, 1fr));
   align-items: stretch;
-  gap: 16px;
+  gap: 18px;
+}
+
+@media (min-width: 1900px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  }
 }
 
 .product-grid > .empty-state {
   grid-column: 1 / -1;
 }
 
+/* La tarjeta no declara alturas: la caja del packshot la da `aspect-ratio` y
+   las filas de la grilla se igualan solas. Cero número mágico de layout. */
 .product-card {
   position: relative;
-  display: grid;
-  grid-template-rows: 190px minmax(78px, 1fr) 62px;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  min-height: 330px;
   height: 100%;
   overflow: hidden;
-  border: 1px solid #ececf0;
-  border-radius: 22px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
   background: white;
-  box-shadow: 0 8px 18px rgb(24 28 35 / 7%);
-  transition: border-color var(--ease), box-shadow var(--ease), transform var(--ease);
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--ease), box-shadow var(--ease);
 }
 
+/* Sin desplazamiento vertical en hover: en una grilla densa produce ruido. */
 .product-card:hover {
-  border-color: #e0e0e5;
-  box-shadow: 0 12px 24px rgb(24 28 35 / 10%);
-  transform: translateY(-2px);
+  border-color: var(--taba-border-medium);
+  box-shadow: var(--shadow-sm);
 }
 
 .product-card.out-of-stock {
   background: #fafafa;
 }
 
+/* Marco del packshot: única caja a la que se ancla el favorito. Su alto lo
+   fija `aspect-ratio`, así que el solape con el título es imposible por
+   construcción. */
+.product-media-frame {
+  position: relative;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+/* Caja cuadrada y blanca: los packshots traen fondo blanco horneado, así que
+   cualquier tinte queda tapado por el propio bitmap. El encuadre lo da el
+   hairline inferior. `p-media--shelf` queda para el día que haya alfa. */
 .product-media {
   position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   min-height: 0;
   padding: 0;
   overflow: hidden;
   border: 0;
+  border-bottom: 1px solid var(--taba-border-soft);
   background: white;
-}
-
-.product-media-control {
-  position: absolute;
-  z-index: 4;
-  right: 10px;
-  bottom: 136px;
 }
 
 .thumb {
@@ -268,17 +345,25 @@
   color: #4c4c52;
 }
 
-.thumb-img {
+/* Packshot contenido: ocupa el 78% del alto útil, sin recorte ni
+   deformación, y conserva la etiqueta completa.
+   Va acotado a `.thumb`, la caja del packshot: la Home reutiliza la clase
+   `thumb-img` sólo para heredar el respaldo de imagen rota, y su caja es
+   otra. Sin acotar, esta regla la posicionaba en absoluto sobre la tarjeta. */
+.thumb .thumb-img {
   position: absolute;
   inset: 0;
   width: 100%;
-  height: 100%;
-  padding: 11%;
+  height: 78%;
+  margin: 11% auto;
+  padding: 0;
   object-fit: contain;
-  background: white;
+  background: transparent;
 }
 
-.thumb-img.is-placeholder {
+.thumb .thumb-img.is-placeholder {
+  height: 100%;
+  margin: 0;
   padding: 10%;
   background: #f7f7f8;
 }
@@ -311,34 +396,47 @@
   color: var(--taba-muted);
 }
 
+/* Jerarquía fija: producto → presentación → precio → acción. Sin `min-height`
+   encadenados: el pie se ancla con `margin-top: auto` y los precios de una
+   misma fila comparten línea de base. */
 .product-body {
-  display: grid;
-  align-content: start;
-  gap: 4px;
-  padding: 8px 14px 4px;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px 12px;
+}
+
+.product-brand {
+  overflow: hidden;
+  color: var(--taba-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .product-body h3 {
   display: -webkit-box;
-  min-height: 38px;
   margin: 0;
   overflow: hidden;
   color: var(--taba-ink);
   font-size: 15px;
+  font-weight: 700;
   line-height: 1.25;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
 .product-body p {
-  min-height: 16px;
   margin: 0;
   color: var(--taba-muted);
   font-size: 12px;
 }
 
 .product-availability {
-  min-height: 16px;
   color: var(--taba-success);
   font-size: 12px;
   font-weight: 750;
@@ -348,12 +446,115 @@
   color: var(--taba-muted);
 }
 
-.product-bottom {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
+/* Pie apilado: a ~171px de ancho un precio de 5 dígitos y un control de 44px
+   no conviven en un renglón. `--inline` sólo en tarjetas anchas. */
+.product-foot {
+  display: grid;
+  align-items: center;
   gap: 8px;
-  padding: 4px 14px 12px;
+  margin-top: auto;
+  padding: 8px 0 0;
+}
+
+.product-action {
+  display: grid;
+}
+
+/* La acción va EN FLUJO: por construcción no puede solaparse con el título. */
+.product-action .add-button {
+  width: 100%;
+  min-width: 0;
+  height: var(--tap);
+  flex: 1 1 auto;
+  padding-inline: 12px;
+  border: 1px solid var(--taba-red);
+  border-radius: var(--radius-sm);
+  background: var(--taba-red);
+  box-shadow: none;
+  color: #fff;
+}
+
+.product-action .add-button:hover {
+  border-color: var(--taba-red-hover);
+  background: var(--taba-red-hover);
+  color: #fff;
+}
+
+.product-action .add-button:disabled {
+  border-color: var(--taba-border);
+  background: var(--taba-subtle);
+  color: var(--taba-muted);
+}
+
+.product-action .add-plus {
+  display: none;
+}
+
+.product-action .add-text {
+  display: inline;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* Producto sin precio: la acción es secundaria y no permite comprar. */
+.product-action [data-add-product].is-price-pending {
+  width: 100%;
+  min-width: 0;
+  border-color: var(--taba-border-medium);
+  background: var(--taba-white);
+  color: var(--taba-graphite);
+}
+
+.product-action [data-add-product].is-price-pending .add-text {
+  font-size: 13px;
+}
+
+/* El stepper sustituye a la CTA en su mismo lugar: 44 · 1fr · 44. */
+.product-action .qty-stepper {
+  width: 100%;
+  min-width: 0;
+  height: 46px;
+  border-color: var(--taba-red-border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--taba-red-soft);
+  box-shadow: none;
+}
+
+@media (min-width: 700px) {
+  .product-foot {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .product-action .add-button {
+    width: var(--tap);
+    flex: 0 0 var(--tap);
+    padding-inline: 0;
+  }
+
+  .product-action .add-plus {
+    display: inline;
+    font-size: 24px;
+  }
+
+  .product-action .add-text {
+    display: none;
+  }
+
+  .product-action [data-add-product].is-price-pending {
+    width: auto;
+    min-width: 96px;
+    flex-basis: auto;
+    padding-inline: 12px;
+  }
+
+  .product-action [data-add-product].is-price-pending .add-text {
+    display: inline;
+  }
+
+  .product-action .qty-stepper {
+    width: 124px;
+    min-width: 124px;
+  }
 }
 
 .price,
@@ -364,17 +565,38 @@
   gap: 7px;
 }
 
+/* El precio es tinta, no rojo: el rojo queda para la acción y la marca. */
 .price strong,
 .price-amounts strong {
-  color: var(--taba-red);
-  font-size: 19px;
-  font-weight: 900;
+  color: var(--taba-ink);
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 .price s,
 .price-amounts s {
   color: var(--taba-muted);
   font-size: 12px;
+}
+
+/* "Precio a confirmar" no usa la tipografía de precio: no es un importe. */
+.product-foot [data-price-pending-message] strong {
+  color: var(--taba-warning);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.product-card:has([data-price-pending-message]) .product-media {
+  filter: saturate(0.55);
+}
+
+/* Contraste sobre blanco: el favorito no compite con la compra porque vive
+   en otra zona de la tarjeta. */
+.product-favorite {
+  color: var(--taba-muted);
 }
 
 .add-button,
@@ -517,26 +739,11 @@
   }
 
   .product-card {
-    grid-template-rows: 150px minmax(74px, 1fr) 92px;
-    min-height: 316px;
-    border-radius: 18px;
+    border-radius: var(--radius-md);
   }
 
   .product-body {
     padding-inline: 12px;
-  }
-
-  .product-bottom {
-    padding: 4px 12px 12px;
-  }
-
-  .product-bottom .price {
-    position: static;
-  }
-
-  .product-media-control {
-    right: 8px;
-    bottom: 166px;
   }
 
   .price strong,
@@ -557,8 +764,9 @@
 
 .qty-stepper .icon-button,
 .quantity-control .icon-button {
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
 }
+
 
 .product-modal {
   width: min(calc(100vw - 24px), 760px);

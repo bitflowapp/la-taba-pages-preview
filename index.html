@@ -129,10 +129,6 @@
           </div>
           <div class="taba-home-content" data-catalog-dependent hidden>
             <section class="taba-home-hero" aria-labelledby="home-title">
-              <p class="taba-home-eyebrow">
-                <span>CATÁLOGO</span>
-                <span class="home-preview-label">PREVIEW INTERNA</span>
-              </p>
               <h1 id="home-title">¿Qué vas a pedir hoy?</h1>
               <p>Elegí tus bebidas favoritas y pedí en minutos.</p>
               <span class="sr-only" data-open-status>Pedidos online</span>
@@ -147,19 +143,6 @@
               </svg>
               <input data-search-input data-search-jump type="search" placeholder="Buscar productos, marcas y más..." aria-label="Buscar productos, marcas y más" />
             </label>
-
-            <div class="home-address-chip taba-home-address" role="note" data-home-address>
-              <span class="address-chip-ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                  <path d="M12 21.3s-6.6-6.3-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 4.8-6.6 11.1-6.6 11.1Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                  <circle cx="12" cy="9.9" r="2.3" fill="currentColor"/>
-                </svg>
-              </span>
-              <span class="address-chip-text">
-                <small>Enviar a</small>
-                <strong data-home-address-label>Elegí tu dirección al confirmar el pedido</strong>
-              </span>
-            </div>
 
             <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip aria-label="Categorías de bebidas"></div>
 
@@ -184,8 +167,17 @@
 
             <section class="home-merch-section home-best-section" aria-labelledby="home-best-title">
               <div class="home-section-head">
-                <h2 id="home-best-title">Los más vendidos</h2>
-                <button type="button" data-category-id="popular">Ver todas</button>
+                <!--
+                  Copy honesto: "Destacados" es una selección del local, no una
+                  métrica de ventas. Un nombre como "Más pedidos" exigiría
+                  pedidos completados agregados, ventana temporal explícita y
+                  volumen mínimo; no existen, así que no se afirman.
+                -->
+                <div class="home-section-title">
+                  <h2 id="home-best-title">Destacados</h2>
+                  <small>Selección del local</small>
+                </div>
+                <button type="button" data-category-id="popular">Ver todos</button>
               </div>
               <div class="home-best-sellers offers-rail" data-home-best-sellers data-offers-rail></div>
             </section>
@@ -209,13 +201,11 @@
             <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
           </div>
           <div data-catalog-dependent hidden>
-          <div class="section-head catalog-head">
-            <div>
-              <p class="catalog-kicker">CATÁLOGO</p>
-              <h1 class="view-title" data-catalog-title>¿Qué vas a pedir hoy?</h1>
-            </div>
-          </div>
-
+          <!--
+            Orden del catálogo: buscador → categorías → título del filtro con
+            el control de orden → contador → grilla. Sin eyebrow ni hero: el
+            título ES el nombre del filtro activo.
+          -->
           <div class="search-box catalog-search">
             <span class="catalog-search-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none">
@@ -224,21 +214,27 @@
               </svg>
             </span>
             <input data-search-input type="search" placeholder="Buscar productos, marcas y más…" aria-label="Buscar productos, marcas y más" />
+            <button class="search-clear" type="button" data-clear-search aria-label="Limpiar búsqueda" hidden>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
           </div>
 
           <div class="category-strip" data-category-strip></div>
 
-          <div class="catalog-toolbar">
-            <span class="catalog-count" data-catalog-count>0 productos</span>
-            <label class="sort-field">
-              <span class="sort-field-label"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 5h11M7 12h8M7 19h5M4 5h.01M4 12h.01M4 19h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg><span>Ordenar por</span></span>
+          <div class="catalog-head catalog-toolbar">
+            <h1 class="view-title" data-catalog-title>Todos</h1>
+            <label class="sort-field" data-sort-field>
+              <span class="sort-field-label"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 5h11M7 12h8M7 19h5M4 5h.01M4 12h.01M4 19h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg><span class="sort-label-full">Ordenar por</span><span class="sort-label-short">Ordenar</span></span>
               <span class="sort-select-wrap"><select data-sort-select aria-label="Ordenar productos">
                 <option value="recommended">Recomendados</option>
                 <option value="price_asc">Menor precio</option>
-                <option value="popular">Más pedidos</option>
+                <option value="popular">Destacados</option>
               </select></span>
             </label>
           </div>
+          <p class="catalog-count" data-catalog-count>0 productos</p>
 
           <div class="grid-block">
             <div class="product-grid" data-product-grid></div>

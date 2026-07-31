@@ -86,6 +86,9 @@ let soundEnabled = readSoundPref();
 let audioCtx = null;
 let businessOrderFilter = 'all';
 let businessOrderQuery = '';
+// Selección del master-detail de escritorio. Se guarda por id para que el
+// detalle siga al mismo pedido cuando cambia de estado y de grupo.
+let businessSelectedOrderId = null;
 let businessReportPeriod = 'today';
 let businessReportCopyFallback = '';
 let businessSetupFeedback = '';
@@ -179,32 +182,13 @@ export function renderBusinessDashboard() {
 
   const todayLabel = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long' }).format(new Date());
 
+  syncBusinessTopbar({ todayLabel, receivedCount: receivedOrders.length });
+
   container.innerHTML = `
     <div class="business-main business-inbox-main">
       <header class="business-main business-inbox-hero-stack">
-        <div class="business-queue-toolbar">
-          <div>
-            <strong>Hoy, ${escapeHtml(todayLabel)}</strong>
-            <span>${receivedOrders.length ? `${receivedOrders.length} pedido${receivedOrders.length === 1 ? '' : 's'} nuevo${receivedOrders.length === 1 ? '' : 's'}` : 'Cola al día'}</span>
-          </div>
-          ${renderRealtimeSyncControl()}
-          <button
-            class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}"
-            type="button"
-            data-sound-toggle
-            aria-pressed="${soundEnabled}"
-            aria-label="${soundEnabled ? 'Desactivar' : 'Activar'} aviso sonoro${receivedOrders.length ? `; ${receivedOrders.length} pedido${receivedOrders.length === 1 ? '' : 's'} nuevo${receivedOrders.length === 1 ? '' : 's'}` : ''}"
-          >
-            <span>${soundEnabled ? 'Sonido activo' : 'Sonido'}</span>
-            ${receivedOrders.length ? `<strong class="sound-count" aria-hidden="true">${receivedOrders.length}</strong>` : ''}
-          </button>
-        </div>
-        <div class="business-stat-grid" aria-label="Cola operativa">
-          <article class="stat-tile"><span>Nuevos</span><strong>${metrics.ordersByStatus.received}</strong></article>
-          <article class="stat-tile tone-amber"><span>En preparación</span><strong>${metrics.ordersByStatus.preparing}</strong></article>
-          <article class="stat-tile"><span>Listos</span><strong>${metrics.ordersByStatus.ready}</strong></article>
-          <article class="stat-tile tone-green"><span>En camino</span><strong>${metrics.ordersByStatus.on_the_way + metrics.ordersByStatus.arriving}</strong></article>
-        </div>
+        ${renderConnectionStrip()}
+        ${isBusinessDesktop() ? `
         <nav class="business-jump-nav" aria-label="Secciones del negocio">
           ${renderBusinessViewButton('orders', 'Pedidos')}
           ${renderBusinessViewButton('metrics', 'Métricas')}
@@ -214,7 +198,7 @@ export function renderBusinessDashboard() {
           ${isDemoMode() ? renderBusinessViewButton('promotions', 'Promociones') : ''}
           ${renderBusinessViewButton('setup', 'Configuración')}
           ${renderBusinessViewButton('guide', 'Guía')}
-        </nav>
+        </nav>` : ''}
       </header>
 
       <div class="business-workspace" data-business-workspace="${escapeHtml(businessActiveView)}">
@@ -228,7 +212,114 @@ export function renderBusinessDashboard() {
         })}
       </div>
     </div>
+    ${isBusinessDesktop() ? '' : renderBusinessBottomNav()}
   `;
+}
+
+// Navegación del panel: cuatro destinos fijos en móvil (Pedidos · Métricas ·
+// Caja · Local) y el resto de las secciones agrupadas dentro de "Local". En
+// escritorio se conserva la fila completa. Los `data-business-view` no cambian:
+// cambia dónde vive cada botón, no su contrato.
+const BUSINESS_DESTINATIONS = Object.freeze([
+  { view: 'orders', label: 'Pedidos' },
+  { view: 'metrics', label: 'Métricas' },
+  { view: 'cashbox', label: 'Caja' },
+  { view: 'local', label: 'Local' },
+]);
+
+const BUSINESS_LOCAL_SECTIONS = Object.freeze([
+  { view: 'catalog', label: 'Catálogo', hint: 'Productos, stock y precios' },
+  { view: 'promotions', label: 'Promociones', hint: 'Sólo en modo demo', demoOnly: true },
+  { view: 'reports', label: 'Reportes', hint: 'Ventas y cierres del turno' },
+  { view: 'setup', label: 'Configuración', hint: 'Datos del local y entrega' },
+  { view: 'guide', label: 'Guía', hint: 'Operación paso a paso' },
+]);
+
+const BUSINESS_LOCAL_VIEWS = new Set(BUSINESS_LOCAL_SECTIONS.map((section) => section.view));
+
+// Barra inferior de cuatro destinos: sin scroll horizontal y sin tabs
+// cortadas. El destino "Local" queda activo mientras se navega cualquiera de
+// sus secciones, para que la posición nunca se pierda.
+function renderBusinessBottomNav() {
+  const active = BUSINESS_LOCAL_VIEWS.has(businessActiveView) ? 'local' : businessActiveView;
+  return `
+    <nav class="b-bottomnav" aria-label="Secciones del negocio">
+      ${BUSINESS_DESTINATIONS.map((destination) => {
+        const isActive = active === destination.view;
+        return `
+          <button class="b-bottomnav-button ${isActive ? 'active' : ''}" type="button"
+            data-business-view="${escapeHtml(destination.view)}"
+            aria-pressed="${isActive}" ${isActive ? 'aria-current="page"' : ''}>
+            <span class="b-bottomnav-label">${escapeHtml(destination.label)}</span>
+          </button>`;
+      }).join('')}
+    </nav>`;
+}
+
+// Sección "Local": filas agrupadas con título, resumen y chevron. Es la
+// arquitectura jerárquica aprobada; nada depende de pulsación larga ni de
+// arrastre y cada fila mide 56px de área táctil.
+function renderBusinessLocalSections() {
+  const rows = BUSINESS_LOCAL_SECTIONS
+    .filter((section) => !section.demoOnly || isDemoMode())
+    .map((section) => {
+      const legacyAttribute = {
+        reports: 'data-scroll-reports',
+        catalog: 'data-scroll-catalog',
+        setup: 'data-scroll-business-setup',
+      }[section.view] || '';
+      return `
+        <button class="b-row" type="button" data-business-view="${escapeHtml(section.view)}" ${legacyAttribute}>
+          <span class="b-row-copy">
+            <strong>${escapeHtml(section.label)}</strong>
+            <small>${escapeHtml(section.hint)}</small>
+          </span>
+          <span class="b-row-chevron" aria-hidden="true">›</span>
+        </button>`;
+    }).join('');
+  // "Vista rider" y "Salir" no se repiten acá: viven una sola vez en la barra
+  // de contexto del panel. Un mismo control, un único nodo.
+  return `
+    <section class="b-group" aria-label="Secciones del local">
+      <div class="b-group-body">${rows}</div>
+    </section>`;
+}
+
+// La barra de contexto del panel concentra fecha, cola y sonido. Antes eran
+// una fila propia de 44px dentro de la cola; ahora viven en el app bar, que ya
+// existe, y el presupuesto vertical del móvil se recupera entero.
+function syncBusinessTopbar({ todayLabel, receivedCount }) {
+  if (typeof document === 'undefined') return;
+  const queue = receivedCount
+    ? `${receivedCount} pedido${receivedCount === 1 ? '' : 's'} nuevo${receivedCount === 1 ? '' : 's'}`
+    : 'Cola al día';
+  const context = document.querySelector('[data-topbar-ops-context]');
+  if (context) context.textContent = `Hoy, ${todayLabel} · ${queue}`;
+  // Variantes cortas para pantallas angostas: el texto se acorta por diseño en
+  // vez de recortarse con elipsis, y siempre dice una frase completa. El dato
+  // íntegro sigue en la banda operativa.
+  const contextShort = document.querySelector('[data-topbar-ops-context-short]');
+  if (contextShort) contextShort.textContent = queue;
+  const contextMini = document.querySelector('[data-topbar-ops-context-mini]');
+  if (contextMini) {
+    contextMini.textContent = receivedCount
+      ? `${receivedCount} nuevo${receivedCount === 1 ? '' : 's'}`
+      : 'Cola al día';
+  }
+  const sound = document.querySelector('.topbar-ops-sound[data-sound-toggle]');
+  if (!sound) return;
+  sound.hidden = false;
+  sound.classList.toggle('on', soundEnabled);
+  sound.setAttribute('aria-pressed', String(soundEnabled));
+  sound.setAttribute(
+    'aria-label',
+    `${soundEnabled ? 'Desactivar' : 'Activar'} aviso sonoro${receivedCount ? `; ${receivedCount} pedido${receivedCount === 1 ? '' : 's'} nuevo${receivedCount === 1 ? '' : 's'}` : ''}`,
+  );
+  const count = sound.querySelector('[data-sound-count]');
+  if (count) {
+    count.hidden = receivedCount === 0;
+    count.textContent = String(receivedCount);
+  }
 }
 
 function renderBusinessViewButton(view, label) {
@@ -239,8 +330,11 @@ function renderBusinessViewButton(view, label) {
     catalog: 'data-scroll-catalog',
     setup: 'data-scroll-business-setup',
   }[view] || '';
+  // Navegar no es una acción primaria: el segmento activo se marca con tinta,
+  // no con el relleno rojo, para que la única primaria de la pantalla sea la
+  // decisión que avanza el pedido.
   return `
-    <button class="${active ? 'primary-button' : 'secondary-button'} compact" type="button"
+    <button class="business-nav-button compact ${active ? 'active' : ''}" type="button"
       data-business-view="${escapeHtml(view)}" ${legacyAttribute} aria-pressed="${active}">
       ${escapeHtml(label)}
     </button>`;
@@ -256,6 +350,7 @@ function renderBusinessWorkspace({ view, state, metrics, report, cashboxClosures
   if (view === 'promotions' && isDemoMode()) return renderPromotionManager(state);
   if (view === 'setup') return renderBusinessSetupPanel();
   if (view === 'guide') return renderDemoGuide();
+  if (view === 'local') return renderBusinessLocalSections();
   return renderOrderInbox(state, metrics, freshOrderIds);
 }
 
@@ -269,6 +364,23 @@ function renderRealtimeSyncControl() {
     <button class="rt-chip ${tone}" type="button" data-retry-relay data-realtime-sync="business">
       ${escapeHtml(label)}${time ? ` · ${escapeHtml(time)}` : ''}
     </button>`;
+}
+
+// Franja de conexión: aparece SÓLO si el estado no es "Sincronizado", y dice
+// la hora del último dato, no un genérico "actualizando". Silenciosa cuando
+// todo está bien, persistente mientras dure el problema.
+function renderConnectionStrip() {
+  const status = getRealtimeStatus();
+  if (!status.relayEnabled) return '';
+  const label = relayStatusLabel(status);
+  if (label === 'Sincronizado') return '';
+  const time = formatRealtimeTime(status.lastSyncAt);
+  return `
+    <div class="b-connection" role="status">
+      <span class="b-connection-dot" aria-hidden="true"></span>
+      <span>${escapeHtml(label)}${time ? ` · último dato ${escapeHtml(time)}` : ''}</span>
+      <button class="secondary-button compact" type="button" data-retry-relay>Sincronizar</button>
+    </div>`;
 }
 
 function formatRealtimeTime(value) {
@@ -351,7 +463,68 @@ function renderOrderInbox(state, metrics, freshOrderIds = new Set()) {
       </details>`
     : '';
 
+  // Escritorio: master-detail. La cola y el detalle conviven con scroll propio
+  // y el operador no navega para trabajar. La acción primaria vive UNA sola vez
+  // —en el detalle— y no se repite por fila, así que en 1024, 1280, 1440 y 1920
+  // hay exactamente una acción primaria dominante visible.
+  if (isBusinessDesktop()) {
+    const selected = active.find((order) => order.id === businessSelectedOrderId)
+      || priorityOrder
+      || active[0]
+      || null;
+    businessSelectedOrderId = selected?.id || null;
+    const queue = active.length
+      ? active.map((order) => inboxOrderCard(order, {
+        compact: true,
+        selected: order.id === businessSelectedOrderId,
+        fresh: freshOrderIds.has(order.id),
+      })).join('')
+      : `
+        <div class="inbox-empty" data-inbox-empty>
+          <strong>${query ? 'No hay pedidos que coincidan' : 'Sin pedidos en la cola'}</strong>
+          <p>${query ? 'Probá buscar por código, cliente o dirección.' : 'Cuando un cliente confirme una compra, va a aparecer acá para aceptarla y prepararla.'}</p>
+        </div>`;
+    return `
+      <div class="order-inbox d-workbench" data-order-inbox data-ops-board>
+        ${renderInboxControls(orders, metrics)}
+        <div class="d-panels">
+          <div class="d-queue" role="list" aria-label="Cola de pedidos">${queue}${historyBody}${closedBlock}</div>
+          <section class="d-detail" aria-label="Detalle del pedido">
+            ${selected ? inboxOrderDetail(selected) : `
+              <div class="inbox-empty" data-inbox-empty>
+                <strong>Elegí un pedido de la cola</strong>
+                <p>El detalle completo, el pago y la acción del pedido aparecen acá.</p>
+              </div>`}
+          </section>
+          ${selected ? `<aside class="d-rail" aria-label="Acciones del pedido">${inboxOrderActions(selected)}</aside>` : ''}
+        </div>
+      </div>`;
+  }
+
   return `<div class="order-inbox" data-order-inbox data-ops-board>${renderInboxControls(orders, metrics)}${body}${historyBody}${closedBlock}</div>`;
+}
+
+// El umbral de escritorio se consulta al renderizar, no se declara dos veces:
+// por debajo de 1024 la superficie sigue siendo la pila móvil intacta.
+const BUSINESS_DESKTOP_QUERY = '(min-width: 1024px)';
+
+function isBusinessDesktop() {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia(BUSINESS_DESKTOP_QUERY).matches;
+}
+
+// Al cruzar el umbral se vuelve a componer la misma información: la pila
+// apilada por debajo, el master-detail por encima. Nada del estado del pedido
+// depende de esto.
+if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+  const query = window.matchMedia(BUSINESS_DESKTOP_QUERY);
+  const onChange = () => {
+    if (document.querySelector('[data-business-dashboard] [data-order-inbox]')) {
+      renderBusinessDashboard();
+    }
+  };
+  if (typeof query.addEventListener === 'function') query.addEventListener('change', onChange);
 }
 
 // Señales comerciales del canal propio (recompra, recurrencia, entregas
@@ -379,27 +552,28 @@ function renderDirectOrderingMetrics(metrics) {
     </section>`;
 }
 
+// La banda operativa es resumen y filtro a la vez: el número ES la métrica y
+// el segmento ES el filtro. Reemplaza las cuatro tarjetas de métrica y la fila
+// de tabs de estado por una sola franja. No hay dos controles diciendo lo
+// mismo, y la fila "Nuevos pendientes" desaparece porque ese dato ya está acá.
 function renderInboxControls(orders, metrics) {
   const counts = getBusinessOrderFilterCounts(orders);
   const pendingCount = metrics.ordersByStatus.received;
   return `
     <div class="inbox-ops-head">
-      <div class="pending-counter ${pendingCount ? 'has-pending' : ''}" role="status">
-        <span>Nuevos pendientes</span>
-        <strong>${pendingCount}</strong>
-      </div>
       <label class="business-search-field">
-        <span>Buscar pedido</span>
+        <span class="sr-only business-search-label">Buscar pedido</span>
         <input data-business-order-search type="search" value="${escapeHtml(businessOrderQuery)}" placeholder="ID, cliente o dirección" autocomplete="off" />
       </label>
     </div>
-    <div class="inbox-tabs" aria-label="Filtros de pedidos">
+    <div class="inbox-tabs b-band" role="group" aria-label="Filtros de pedidos">
       ${BUSINESS_ORDER_FILTERS.map((filter) => {
         const active = normalizeBusinessOrderFilter(businessOrderFilter) === filter.id;
+        const fresh = filter.id === 'new' && pendingCount > 0;
         return `
           <button class="inbox-tab ${filterTone(filter.id)} ${active ? 'active' : ''} ${counts[filter.id] > 0 ? 'has-count' : ''}" type="button" data-order-filter="${filter.id}" aria-pressed="${active}">
             <span>${escapeHtml(filter.label)}</span>
-            <strong>${counts[filter.id] || 0}</strong>
+            <strong>${counts[filter.id] || 0}${fresh ? '<i class="b-band-dot" aria-hidden="true"></i>' : ''}</strong>
           </button>`;
       }).join('')}
     </div>`;
@@ -485,6 +659,9 @@ function inboxOrderCard(order, options = {}) {
   const showTrack = order.deliveryMode === 'delivery' && ['ready', 'on_the_way', 'arriving'].includes(order.status);
   const priorityClass = options.priority ? 'is-priority' : 'is-secondary';
   const freshClass = options.fresh ? 'is-fresh' : '';
+  // En escritorio la fila de la cola no repite la acción: selecciona. La
+  // decisión vive una sola vez, en el detalle.
+  const compact = options.compact === true;
   const prepMinutes = normalizePreparationMinutes(order.delivery?.estimatedPreparationMinutes, 0);
   const customerSignals = buildCustomerSignals(
     getState().orders.filter((candidate) => !candidate.internalSeed),
@@ -502,6 +679,25 @@ function inboxOrderCard(order, options = {}) {
     address.province,
     address.postalCode,
   ].filter(Boolean).join(' · ');
+
+  if (compact) {
+    return `
+      <article class="inbox-order o-card is-compact ${freshClass} accent-${statusClass(order.status)} ${options.selected ? 'is-selected' : ''}" data-inbox-order="${escapeHtml(order.id)}" role="listitem">
+        <button class="o-card-select" type="button" data-order-select="${escapeHtml(order.id)}" aria-pressed="${Boolean(options.selected)}">
+          <span class="inbox-order-top">
+            <span class="inbox-id">${escapeHtml(order.id)}</span>
+            <span class="status-chip ${statusClass(order.status)}">${escapeHtml(statusMeta.shortLabel)}</span>
+            <span class="inbox-time">${escapeHtml(timeAgo(order.createdAt))}</span>
+          </span>
+          <span class="o-card-line"><strong>${escapeHtml(order.customerName)}</strong> · ${isPickup ? 'Retiro en local' : 'Delivery'}</span>
+          ${isPickup ? '' : `<span class="o-card-address">${escapeHtml(addressLabel)}</span>`}
+          <span class="o-card-foot">
+            <span>${itemCount} ${itemCount === 1 ? 'artículo' : 'artículos'}</span>
+            <strong>${money(order.total)}</strong>
+          </span>
+        </button>
+      </article>`;
+  }
 
   return `
     <article class="inbox-order ${priorityClass} ${freshClass} accent-${statusClass(order.status)}" data-inbox-order="${escapeHtml(order.id)}">
@@ -575,6 +771,97 @@ function inboxOrderCard(order, options = {}) {
         </details>
       </div>
     </article>`;
+}
+
+// Detalle del master-detail de escritorio. Usa exactamente las mismas piezas
+// que la pila móvil —mismo contrato de datos y mismos `data-*`—: cambia la
+// composición, no los componentes. La acción primaria va al pie, sola, y las
+// destructivas quedan separadas en la fila secundaria.
+function inboxOrderDetail(order) {
+  const isPickup = order.deliveryMode === 'pickup';
+  const address = normalizeOrderAddressDetails(order);
+  const reference = formatAddressReference(order);
+  const statusMeta = getBusinessStatusMeta(order.status);
+  const itemsList = order.items.map((item) => `
+        <li><span>${item.quantity}× ${escapeHtml(item.name)}</span><strong>${money(item.quantity * item.unitPrice)}</strong></li>`).join('');
+  const prepMinutes = normalizePreparationMinutes(order.delivery?.estimatedPreparationMinutes, 0);
+  const addressLabel = address.savedLabel
+    ? `${address.savedLabel} · ${address.label || order.address}`
+    : address.label || order.address;
+  const addressUnit = [
+    address.floor && `Piso ${address.floor}`,
+    address.apartment && `Dpto. ${address.apartment}`,
+  ].filter(Boolean).join(' · ');
+  const addressRegion = [
+    address.city || address.neighborhood,
+    address.province,
+    address.postalCode,
+  ].filter(Boolean).join(' · ');
+
+  return `
+    <article class="d-detail-card accent-${statusClass(order.status)}" data-order-detail-panel="${escapeHtml(order.id)}">
+      <header class="d-detail-head">
+        <strong class="inbox-id">${escapeHtml(order.id)}</strong>
+        <span class="status-chip ${statusClass(order.status)}">${escapeHtml(statusMeta.shortLabel)}</span>
+        <span class="inbox-time">${escapeHtml(timeAgo(order.createdAt))} · ${isPickup ? 'Retiro en local' : 'Envío a domicilio'}</span>
+      </header>
+
+      <div class="d-detail-body">
+        <p class="inbox-status-copy">${escapeHtml(statusMeta.copy)}</p>
+        ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparación estimada: <strong>${prepMinutes} min</strong></p>` : ''}
+
+        <div class="inbox-detail-list">
+          <p><span>Cliente</span><strong>${escapeHtml(order.customerName)}</strong></p>
+          <p><span>Teléfono</span><strong>${escapeHtml(order.customerPhone)}</strong></p>
+          <p><span>${isPickup ? 'Retiro' : 'Dirección'}</span><strong>${isPickup ? 'Retira en el local' : escapeHtml(addressLabel)}</strong></p>
+          ${!isPickup && addressUnit ? `<p><span>Piso / departamento</span><strong>${escapeHtml(addressUnit)}</strong></p>` : ''}
+          ${!isPickup && addressRegion ? `<p><span>Ciudad / provincia</span><strong>${escapeHtml(addressRegion)}</strong></p>` : ''}
+          ${!isPickup && reference ? `<p><span>Referencia</span><strong>${escapeHtml(reference)}</strong></p>` : ''}
+          <p><span>Pago</span><strong>${escapeHtml(order.paymentMethod)}</strong></p>
+          ${order.cashChange ? `<p><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></p>` : ''}
+          ${Number(order.discountTotal || 0) > 0 ? `<p><span>Cupón</span><strong>${escapeHtml(order.coupon?.code || 'Promo')} · -${money(order.discountTotal)}</strong></p>` : ''}
+          <p><span>Total a cobrar</span><strong>${money(order.total)}</strong></p>
+        </div>
+
+        <div class="inbox-products-block">
+          <span>Productos</span>
+          <ul class="inbox-items">${itemsList}</ul>
+        </div>
+        ${order.notes && order.notes !== 'Sin notas' ? `<p class="inbox-notes">Observaciones del pedido: ${escapeHtml(order.notes)}</p>` : ''}
+        ${renderDeliveryCodeSummary(order)}
+        ${renderDeliveryProofSummary(order)}
+        ${renderInboxTrackingPanel(order)}
+        ${renderOrderTimeline(order.status, { className: 'tight inbox-order-timeline' })}
+      </div>
+
+    </article>`;
+}
+
+// Acciones del pedido seleccionado. Viven en un único bloque: por debajo de
+// 1440 se compone como barra al pie del detalle y a partir de 1440 como riel
+// lateral. Nunca se duplican: es el mismo nodo, recolocado por la grilla.
+function inboxOrderActions(order) {
+  const isPickup = order.deliveryMode === 'pickup';
+  const phone = onlyDigits(order.customerPhone);
+  const businessOwnsNextStep = ['received', 'preparing'].includes(order.status)
+    || (isPickup && order.status === 'ready');
+  const primaryAction = businessOwnsNextStep ? getBusinessOrderPrimaryAction(order) : null;
+  const showTrack = order.deliveryMode === 'delivery' && ['ready', 'on_the_way', 'arriving'].includes(order.status);
+  return `
+    <div class="d-detail-primary">
+      ${renderPrimaryOrderAction(order, primaryAction)}
+      ${!isPickup && order.status === 'ready' ? '<button class="primary-button compact main-order-action" type="button" data-open-admin-view="rider">Abrir reparto</button>' : ''}
+      ${!isPickup && ['on_the_way', 'arriving'].includes(order.status) ? `<button class="primary-button compact main-order-action" type="button" data-order-track="${escapeHtml(order.id)}">Ver seguimiento</button>` : ''}
+    </div>
+    <div class="inbox-actions d-detail-secondary">
+      ${isShowcaseMode()
+        ? '<button class="ghost-button compact" type="button" disabled data-showcase-contact-disabled>Contacto desactivado</button>'
+        : `${phone ? `<a class="ghost-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
+           ${order.customerPhone ? `<a class="ghost-button compact" href="tel:${encodeURIComponent(order.customerPhone)}">Llamar</a>` : ''}`}
+      ${showTrack ? `<button class="ghost-button compact" type="button" data-order-track="${escapeHtml(order.id)}">Ver tracking</button>` : ''}
+      <button class="ghost-button compact" type="button" data-order-ticket="${escapeHtml(order.id)}">Copiar ticket</button>
+      ${canBusinessCancelOrder(order) ? `<button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${escapeHtml(order.id)}">Cancelar pedido…</button>` : ''}
+    </div>`;
 }
 
 function renderCustomerSignals(signals) {
@@ -1366,7 +1653,7 @@ export function handleBusinessAction(target) {
   const viewButton = target.closest('[data-business-view]');
   if (viewButton) {
     const nextView = viewButton.dataset.businessView;
-    const allowedViews = new Set(['orders', 'metrics', 'reports', 'cashbox', 'catalog', 'setup', 'guide']);
+    const allowedViews = new Set(['orders', 'metrics', 'reports', 'cashbox', 'catalog', 'setup', 'guide', 'local']);
     if (isDemoMode()) allowedViews.add('promotions');
     if (!allowedViews.has(nextView)) return { handled: true, ok: false, message: 'Vista no disponible.' };
     businessActiveView = nextView;
@@ -1377,6 +1664,15 @@ export function handleBusinessAction(target) {
   const filterButton = target.closest('[data-order-filter]');
   if (filterButton) {
     businessOrderFilter = normalizeBusinessOrderFilter(filterButton.dataset.orderFilter);
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  // Selección de la cola en escritorio: sólo mueve el foco del detalle. No
+  // avanza estados ni toca el pedido.
+  const selectButton = target.closest('[data-order-select]');
+  if (selectButton) {
+    businessSelectedOrderId = selectButton.dataset.orderSelect || null;
     if (typeof document !== 'undefined') renderBusinessDashboard();
     return { handled: true, ok: true, message: '' };
   }

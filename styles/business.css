@@ -2,6 +2,37 @@
   max-width: var(--content);
 }
 
+/* ==========================================================================
+   App bar del negocio — 56px, informativa.
+   El H1 deja de ser un titular de 90px y pasa a ser el contexto de la barra;
+   "Vista rider" y "Salir" quedan como acciones secundarias de la misma fila,
+   no como una franja propia de 60px.
+   ====================================================================== */
+[data-view="business"] [data-admin-unlocked] > .section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--taba-border);
+}
+
+/* El rótulo "Operación del local" ya vive en el app bar operativo: repetirlo
+   como eyebrow del panel no agrega contexto, lo duplica. */
+[data-view="business"] [data-admin-unlocked] > .section-head .eyebrow {
+  display: none;
+}
+
+[data-view="business"] [data-admin-unlocked] > .section-head h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
 .admin-lock-card,
 .production-auth-card {
   display: grid;
@@ -84,7 +115,6 @@
 }
 
 .business-jump-nav,
-.inbox-tabs,
 .report-period-tabs {
   display: flex;
   gap: 8px;
@@ -95,7 +125,7 @@
 }
 
 .business-jump-nav button,
-.inbox-tab,
+.business-nav-button,
 .report-period-tab {
   min-height: var(--tap);
   flex: 0 0 auto;
@@ -108,11 +138,135 @@
 }
 
 .business-jump-nav button.active,
-.inbox-tab.active,
+.business-nav-button.active,
 .report-period-tab.active {
-  background: white;
-  box-shadow: var(--shadow-xs);
-  color: var(--taba-red);
+  background: var(--taba-ink);
+  box-shadow: none;
+  color: #fff;
+}
+
+/* ==========================================================================
+   Banda operativa — resumen y filtro a la vez, 52px.
+   Reemplaza cuatro tarjetas de métrica (~260px) y una fila de tabs de estado
+   (~60px). El número ES la métrica y el segmento ES el filtro: no hay dos
+   controles diciendo lo mismo.
+   ====================================================================== */
+.inbox-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--taba-border);
+  border-radius: 0;
+  background: transparent;
+  scrollbar-width: none;
+}
+
+.inbox-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.inbox-tab {
+  position: relative;
+  display: flex;
+  min-width: 84px;
+  min-height: 52px;
+  flex: 1 0 auto;
+  flex-direction: column-reverse;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--taba-muted);
+  font-weight: 700;
+}
+
+.inbox-tab > span {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.inbox-tab > strong {
+  position: relative;
+  color: var(--taba-ink);
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+/* Activo: subrayado rojo, no relleno. El estado no se comunica sólo con
+   color: el segmento además lleva `aria-pressed`. */
+.inbox-tab.active {
+  background: transparent;
+  box-shadow: none;
+  color: var(--taba-ink);
+}
+
+.inbox-tab.active::after {
+  position: absolute;
+  right: 8px;
+  bottom: -1px;
+  left: 8px;
+  height: 2.5px;
+  border-radius: 3px 3px 0 0;
+  background: var(--taba-red);
+  content: "";
+}
+
+/* Franja de conexión: honesta y silenciosa cuando todo está bien. */
+.b-connection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap);
+  padding: 6px 12px;
+  border: 1px solid #f0d9ae;
+  border-radius: var(--radius-sm);
+  background: #fff4e0;
+  color: var(--taba-warning);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.b-connection-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.b-connection button {
+  margin-left: auto;
+}
+
+/* La acción de la cola va en tinta, no en rojo: cuatro botones rojos apilados
+   anulan el significado del rojo. El rojo queda para la decisión del detalle. */
+.inbox-feed .main-order-action {
+  border-color: var(--taba-ink);
+  background: var(--taba-ink);
+  color: #fff;
+}
+
+.inbox-feed .main-order-action:hover {
+  border-color: var(--taba-graphite);
+  background: var(--taba-graphite);
+}
+
+/* Punto de novedad: señala pedidos nuevos sin depender del sonido. */
+.b-band-dot {
+  position: absolute;
+  top: 0;
+  right: -8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--taba-red);
 }
 
 .business-stat-grid,
@@ -124,7 +278,6 @@
 }
 
 .stat-tile,
-.status-chip,
 .board-chip {
   display: grid;
   gap: 3px;
@@ -136,16 +289,72 @@
 }
 
 .stat-tile small,
-.status-chip small,
 .board-chip small {
   color: var(--taba-muted);
   font-size: 12px;
 }
 
 .stat-tile strong,
-.status-chip strong,
 .board-chip strong {
   font-size: 24px;
+}
+
+/* Pill de estado: punto + texto, alto mínimo 22. El estado NUNCA se comunica
+   sólo con color; el punto es redundancia de forma y el texto es el portador.
+   Antes compartía la caja de 84px de las tarjetas de métrica. */
+.status-chip {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-pill);
+  background: var(--taba-white);
+  color: var(--taba-graphite);
+  font-size: 12px;
+  font-weight: 700;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.status-chip::before {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.status-chip.received {
+  border-color: var(--taba-red-border-soft);
+  background: var(--taba-red-soft);
+  color: var(--taba-danger);
+}
+
+.status-chip.preparing {
+  border-color: #f0d9ae;
+  background: #fff4e0;
+  color: var(--taba-warning);
+}
+
+.status-chip.ready {
+  border-color: #b7ddc6;
+  background: #e8f5ed;
+  color: var(--taba-success);
+}
+
+.status-chip.way {
+  border-color: #bcd0f2;
+  background: #eaf1fd;
+  color: #1a5fd0;
+}
+
+.status-chip.cancelled {
+  border-color: var(--taba-border-medium);
+  background: var(--taba-subtle);
+  color: var(--taba-muted);
 }
 
 .order-inbox,
@@ -337,10 +546,26 @@
 }
 
 .inbox-detail-list li,
+.inbox-detail-list p,
+.inbox-items li,
 .production-order-items li {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 14px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.inbox-detail-list p > span,
+.inbox-items li > span {
+  color: var(--taba-muted);
+}
+
+.inbox-detail-list p > strong,
+.inbox-items li > strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .business-report-grid,
@@ -453,4 +678,619 @@
 .example-data-banner,
 .demo-guide {
   display: none !important;
+}
+
+/* ==========================================================================
+   Negocio escritorio — master-detail.
+   El operador no navega para trabajar: ve la cola y el detalle a la vez, cada
+   panel con scroll propio (`min-height: 0` + `overflow: auto`). La acción
+   primaria vive UNA sola vez, en el detalle, y no se repite por fila.
+   Este bloque va después de la definición base de `.inbox-*` para que la
+   cascada no lo anule (defecto R6 documentado en la revisión).
+   ========================================================================== */
+@media (min-width: 1024px) {
+  /* Altura declarada UNA vez: el alto de la ventana menos la barra superior.
+     Todo lo demás se deriva con `minmax(0, 1fr)`, así que los paneles reparten
+     el resto y cada uno hace su propio scroll. Cero número mágico. */
+  [data-view="business"].section {
+    padding-bottom: 20px;
+  }
+
+  .business-inbox-main {
+    height: calc(100vh - var(--topbar) - 52px);
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .business-inbox-main > .business-workspace {
+    display: grid;
+    min-height: 0;
+  }
+
+  .d-workbench {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 12px;
+    min-height: 0;
+  }
+
+  .d-panels {
+    display: grid;
+    grid-template-columns: minmax(330px, 360px) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: stretch;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  .d-queue {
+    grid-row: 1 / -1;
+  }
+
+  .d-queue {
+    display: grid;
+    height: 100%;
+    align-content: start;
+    gap: 8px;
+    min-height: 0;
+    overflow: auto;
+    padding-right: 4px;
+  }
+
+  .d-detail {
+    display: grid;
+    height: 100%;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
+    overflow: auto;
+    border: 1px solid var(--taba-border);
+    border-radius: var(--radius-md);
+    background: white;
+  }
+
+  /* Fila de la cola: selecciona, no actúa. */
+  .inbox-order.is-compact {
+    display: block;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--taba-border);
+    border-left: 3px solid var(--taba-border-medium);
+    border-radius: var(--radius-sm);
+    background: white;
+  }
+
+  .inbox-order.is-compact.accent-received { border-left-color: var(--taba-red); }
+  .inbox-order.is-compact.accent-preparing { border-left-color: var(--taba-warning); }
+  .inbox-order.is-compact.accent-ready { border-left-color: var(--taba-success); }
+  .inbox-order.is-compact.accent-way { border-left-color: #1a5fd0; }
+
+  .inbox-order.is-compact.is-selected {
+    border-color: var(--taba-ink);
+    box-shadow: 0 0 0 1px var(--taba-ink);
+  }
+
+  .o-card-select {
+    display: grid;
+    width: 100%;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+  }
+
+  .o-card-select:hover {
+    background: var(--taba-subtle);
+  }
+
+  .o-card-select .inbox-order-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .o-card-select .inbox-id {
+    font-size: 14px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .o-card-select .inbox-time {
+    margin-left: auto;
+    color: var(--taba-muted);
+    font-size: 12px;
+  }
+
+  .o-card-line {
+    font-size: 13px;
+  }
+
+  .o-card-address {
+    overflow: hidden;
+    color: var(--taba-muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .o-card-foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    color: var(--taba-muted);
+    font-size: 12px;
+  }
+
+  .o-card-foot strong {
+    color: var(--taba-ink);
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .d-detail-card {
+    display: grid;
+    gap: 0;
+  }
+
+  .d-detail-head {
+    position: sticky;
+    z-index: var(--z-sticky-section);
+    top: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--taba-border);
+    background: white;
+  }
+
+  .d-detail-head .inbox-time {
+    margin-left: auto;
+    color: var(--taba-muted);
+    font-size: 12px;
+  }
+
+  .d-detail-body {
+    display: grid;
+    gap: 14px;
+    max-width: 780px;
+    padding: 16px 18px;
+  }
+
+  /* Definición base del riel: por debajo de 1440 se compone como barra de
+     acción al pie del detalle, dentro del panel, sin tapar contenido porque
+     ocupa su propia fila de la grilla. */
+  .d-rail {
+    display: grid;
+    grid-column: 2;
+    grid-row: 2;
+    gap: 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--taba-border);
+    border-radius: var(--radius-md);
+    background: white;
+  }
+
+  .d-rail .primary-action-block {
+    display: grid;
+    gap: 8px;
+  }
+
+  .d-rail .main-order-action {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .d-detail-secondary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* A partir de 1440 el riel lateral toma las acciones y el pie del detalle las
+   suelta: o riel, o detalle, nunca las dos. */
+/* A partir de 1440 el mismo nodo pasa a riel lateral: tercera columna, fila
+   completa. Nunca se duplican las acciones — es el mismo bloque recolocado.
+   Este override va DESPUÉS de la definición base de `.d-rail` para que la
+   cascada lo respete (defecto R6 de la revisión). */
+@media (min-width: 1440px) {
+  .d-panels {
+    grid-template-columns: minmax(360px, 380px) minmax(0, 1fr) 300px;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .d-rail {
+    align-content: start;
+    grid-column: 3;
+    grid-row: 1;
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px;
+  }
+}
+
+@media (min-width: 1900px) {
+  .d-workbench {
+    width: min(100%, 1800px);
+    margin-inline: auto;
+  }
+}
+
+/* ==========================================================================
+   Negocio móvil — arquitectura jerárquica.
+   El presupuesto vertical antes del primer pedido baja de ~700px a ~200px:
+   el contexto vive en una barra de 44px, la banda operativa reemplaza las
+   tarjetas de métrica y el buscador pierde el rótulo redundante.
+   ========================================================================== */
+@media (max-width: 1023px) {
+  [data-view="business"] [data-admin-unlocked] > .section-head {
+    min-height: var(--tap);
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+  }
+
+  [data-view="business"] [data-admin-unlocked] > .section-head .view-actions {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  [data-view="business"] [data-admin-unlocked] > .section-head .view-actions > * {
+    flex: 0 0 auto;
+  }
+
+  /* Tarjeta de pedido compacta: una columna, la acción a ancho completo al
+     pie y el texto de apoyo debajo. Nada compite con la decisión. */
+  .inbox-card-layout {
+    display: grid;
+    gap: 10px;
+  }
+
+  /* Pedido nuevo: el bloque de cobro y decisión es el último de la tarjeta,
+     después del detalle plegado. Con la barra de contexto absorbiendo fecha,
+     cola y sonido, la tarjeta entra completa y "Aceptar pedido" queda visible
+     sin scroll ni superficie fija que tape información. */
+  .inbox-order.is-priority .inbox-card-details {
+    order: 3;
+  }
+
+  .inbox-order.is-priority .inbox-commerce-panel {
+    order: 2;
+  }
+
+  .inbox-commerce-panel {
+    display: grid;
+    gap: 8px;
+  }
+
+  .inbox-payment-panel {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .inbox-payment-panel strong {
+    font-size: 17px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .primary-action-block {
+    display: grid;
+    gap: 6px;
+  }
+
+  .primary-action-block .main-order-action {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .primary-action-block > small {
+    color: var(--taba-muted);
+    font-size: 12px;
+  }
+
+  .inbox-order-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .inbox-order-top .inbox-time {
+    margin-left: auto;
+  }
+
+  .inbox-status-label {
+    color: var(--taba-muted);
+    font-size: 12px;
+  }
+
+  [data-view="business"] [data-admin-unlocked] > .section-head .view-actions {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  [data-view="business"] [data-admin-unlocked] > .section-head .view-actions button {
+    padding-inline: 10px;
+    font-size: 13px;
+  }
+
+  .business-queue-toolbar {
+    min-height: var(--tap);
+    padding: 0;
+  }
+
+  .business-queue-toolbar > div strong {
+    font-size: 14px;
+  }
+
+  .business-jump-nav {
+    gap: 4px;
+    padding: 3px;
+    scrollbar-width: none;
+  }
+
+  .business-jump-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .business-nav-button {
+    min-height: 40px;
+    padding-inline: 12px;
+    font-size: 13px;
+  }
+
+
+  .inbox-ops-head {
+    margin-bottom: 6px;
+  }
+
+  .inbox-priority .inbox-section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .inbox-priority .inbox-section-head > small {
+    display: none;
+  }
+
+  .inbox-group {
+    padding: 10px;
+  }
+
+  .order-inbox,
+  .inbox-feed {
+    gap: 10px;
+  }
+}
+
+/* ==========================================================================
+   Cierre visual — navegación del negocio en móvil.
+   Cuatro destinos fijos en una barra a sangre: cero tabs con scroll
+   horizontal y cero contenido cortado en el borde derecho.
+   ========================================================================== */
+.b-bottomnav {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  /* El bloque de navegación del panel se declara acá: `--nav-block` vale 0 en
+     Negocio y Repartidor porque ahí no existe la nav del cliente. Una medida,
+     un dueño. */
+  .b-bottomnav {
+    --b-nav-block: calc(var(--nav-h) + var(--safe-b));
+
+    position: fixed;
+    z-index: var(--z-bottomnav);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    box-sizing: border-box;
+    height: var(--b-nav-block);
+    padding: 3px 8px calc(9px + var(--safe-b));
+    border-top: 1px solid var(--taba-border);
+    background: rgb(255 253 251 / 97%);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+  }
+
+  .b-bottomnav-button {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: var(--tap);
+    place-items: center;
+    align-content: center;
+    padding: 2px;
+    border: 0;
+    border-radius: var(--radius-xs);
+    background: transparent;
+    color: var(--taba-muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .b-bottomnav-button.active {
+    color: var(--taba-red);
+  }
+
+  .b-bottomnav-button.active::before {
+    position: absolute;
+    top: -3px;
+    right: 22%;
+    left: 22%;
+    height: 2.5px;
+    border-radius: 0 0 3px 3px;
+    background: var(--taba-red);
+    content: "";
+  }
+
+  /* Reserva propia de la vista: `main` conserva su padding en 0 y la barra
+     inferior nunca tapa la última tarjeta de la cola. */
+  [data-view="business"].section {
+    padding-bottom: calc(var(--nav-h) + var(--safe-b) + var(--stack-gap));
+  }
+
+  /* La banda operativa deja de desplazarse en horizontal: se acomoda en
+     filas completas. Con menos de 360px pasa a dos columnas. */
+  .inbox-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: visible;
+    border-bottom: 1px solid var(--taba-border);
+  }
+
+  .inbox-tab {
+    min-width: 0;
+    min-height: 52px;
+    padding: 4px 6px;
+  }
+
+  .inbox-tab > span {
+    overflow-wrap: anywhere;
+    text-align: center;
+    white-space: normal;
+  }
+}
+
+/* A 320px las cuatro columnas todavía entran con la etiqueta completa en dos
+   líneas (medido: 74px por segmento). Por debajo de eso la banda pasa a dos
+   columnas antes que recortar un estado. */
+@media (max-width: 319px) {
+  .inbox-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Filas agrupadas de la sección "Local": icono implícito, título, resumen y
+   chevron, con 56px de área táctil por fila. */
+.b-group {
+  display: grid;
+  gap: 14px;
+}
+
+.b-group-body {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: white;
+}
+
+.b-row {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--taba-border-soft);
+  background: transparent;
+  text-align: left;
+}
+
+.b-row:last-child {
+  border-bottom: 0;
+}
+
+.b-row:hover {
+  background: var(--taba-subtle);
+}
+
+.b-row-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.b-row-copy strong {
+  color: var(--taba-ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.b-row-copy small {
+  color: var(--taba-muted);
+  font-size: 12px;
+}
+
+.b-row-chevron {
+  flex: 0 0 auto;
+  color: var(--taba-muted);
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* La acción destructiva vive separada del resto de las filas. */
+.b-row--danger strong {
+  color: var(--taba-danger);
+}
+
+/* ==========================================================================
+   Corrección precommit — presupuesto vertical del panel a 320px.
+   La decisión ("Aceptar pedido") tiene que entrar entera sobre la barra de
+   navegación sin scroll. Se recorta sólo información repetida: el rótulo de
+   estado que ya dice la pill, el encabezado de sección que ya dice la banda,
+   y el rótulo del tiempo de preparación que pasa a la misma fila del control.
+   ========================================================================== */
+@media (max-width: 359px) {
+  /* La banda conserva sus siete estados legibles en dos filas de 44px: el
+     objetivo táctil se mantiene y se recuperan 25px de altura. */
+  .inbox-tab {
+    min-height: var(--tap);
+    padding: 2px 4px;
+  }
+
+  .inbox-tab > strong {
+    font-size: 16px;
+  }
+
+  .inbox-tab > span {
+    font-size: 10.5px;
+    line-height: 1.15;
+  }
+
+  .inbox-order {
+    padding: 10px;
+  }
+
+  .inbox-card-layout {
+    gap: 8px;
+  }
+
+  /* La pill ya dice "Pedido nuevo": el rótulo largo repetía el estado y
+     empujaba la fila superior a dos líneas. */
+  .inbox-order.is-priority .inbox-status-label {
+    display: none;
+  }
+
+  /* La banda ya muestra "Nuevos 1" con su punto de novedad. */
+  .inbox-priority .inbox-section-head {
+    display: none;
+  }
+
+  .prep-time-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .prep-time-field > span {
+    flex: 0 1 auto;
+  }
+
+  .prep-time-field select {
+    width: auto;
+    min-width: 108px;
+    flex: 0 0 auto;
+  }
 }

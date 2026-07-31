@@ -746,6 +746,7 @@ function renderLiveSurfaces() {
 
 function renderGlobalRealtimeStatus() {
   const status = getRealtimeStatus();
+  renderOperationalSyncChip(status);
   let control = document.querySelector('[data-realtime-sync="global"]');
   if (!status.relayEnabled) {
     control?.remove();
@@ -767,6 +768,25 @@ function renderGlobalRealtimeStatus() {
   control.className = `rt-chip ${synchronized ? 'live' : 'warn'}`;
   control.textContent = `${relayStatusLabel(status)}${time ? ` · ${time}` : ''}`;
   control.setAttribute('aria-label', `${relayStatusLabel(status)}. Reintentar sincronización`);
+}
+
+// Estado de sincronización del app bar operativo. Usa la MISMA fuente que el
+// resto de la app (`getRealtimeStatus` + `relayStatusLabel`): sin relay dice
+// "Sólo este equipo", que es la verdad, y nunca un genérico "actualizando".
+function renderOperationalSyncChip(status) {
+  const chip = document.querySelector('[data-realtime-sync="business"]');
+  if (!chip) return;
+  const label = relayStatusLabel(status);
+  const synchronized = status.relayEnabled
+    && status.relayState === 'connected'
+    && !status.pendingSnapshot;
+  const date = status.lastSyncAt ? new Date(status.lastSyncAt) : null;
+  const time = date && !Number.isNaN(date.getTime())
+    ? date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    : '';
+  chip.className = `rt-chip topbar-ops-sync ${synchronized ? 'live' : 'warn'}`;
+  chip.textContent = `${label}${time ? ` · ${time}` : ''}`;
+  chip.setAttribute('aria-label', `Sincronización: ${label}. Reintentar sincronización`);
 }
 
 // Firma de vivacidad del pedido activo: id + estado live/idle del GPS real. Si

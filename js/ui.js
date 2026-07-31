@@ -1713,7 +1713,11 @@ export function updateAddressFieldVisibility() {
   const field = $('[data-address-field]');
   if (!field) return;
   const isPickup = currentDeliveryMode() === 'pickup';
-  field.classList.toggle('hidden', isPickup);
+  // The address contract is rendered inside this legacy wrapper. Its inputs
+  // are hidden fields, but the Profile-owned checkout surface must remain
+  // visible for pickup so the user can see why no address is needed.
+  field.hidden = false;
+  field.classList.remove('hidden');
   const title = $('[data-checkout-details-title]');
   if (title) title.textContent = isPickup ? 'Datos para retirar' : 'Datos de entrega';
 }

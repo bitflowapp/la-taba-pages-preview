@@ -6,6 +6,7 @@ import {
   APP_MODE_DEMO,
   APP_MODE_PRODUCTION,
   getAppMode,
+  isShowcaseMode,
 } from './core/app-mode.js';
 import {
   formatArgentinePhone,
@@ -29,27 +30,22 @@ const state = {
   status: '',
   statusTone: '',
   availability: 'ready',
+  returnTo: '',
 };
+
+const PROFILE_RETURN_STORAGE_KEY = 'taba:profile-return';
 
 export async function initializeCustomerProfileView() {
   if (state.initialized) return;
   state.initialized = true;
+  state.returnTo = resolveProfileReturnTarget();
   bindEvents();
   await loadCustomerProfileView();
 }
 
 export async function loadCustomerProfileView() {
   const mode = getAppMode();
-  if (mode === APP_MODE_DEMO) {
-    if (!state.profile) {
-      state.profile = demoProfile();
-      state.addresses = demoAddresses();
-    }
-    state.availability = 'ready';
-    render();
-    return { ok: true, profile: state.profile, addresses: state.addresses };
-  }
-  if (mode !== APP_MODE_PRODUCTION) {
+  if (![APP_MODE_DEMO, APP_MODE_PRODUCTION].includes(mode)) {
     state.availability = 'preview';
     state.profile = null;
     state.addresses = [];
@@ -105,6 +101,7 @@ export function resetCustomerProfileViewForTests() {
     status: '',
     statusTone: '',
     availability: 'ready',
+    returnTo: '',
   });
 }
 
@@ -128,6 +125,9 @@ function bindEvents() {
     }
     void loadCustomerProfileView();
   });
+  window.addEventListener('taba:navigate-profile', () => {
+    if (isEditableMode()) void loadCustomerProfileView();
+  });
   window.addEventListener('online', () => {
     if (['offline', 'network', 'error'].includes(state.availability)) void loadCustomerProfileView();
   });
@@ -138,6 +138,17 @@ async function handleAction(action, addressId) {
   if (state.saving) return;
   if (action === 'retry') {
     await loadCustomerProfileView();
+    return;
+  }
+  if (action === 'return-to-checkout') {
+    const returnTo = state.returnTo || resolveProfileReturnTarget();
+    state.returnTo = '';
+    state.editingPersonal = false;
+    state.editorOpen = false;
+    state.status = returnTo ? '' : 'No encontramos a dónde retornar. Volviendo al inicio de tu carrito.';
+    state.statusTone = returnTo ? '' : 'error';
+    clearProfileReturnTarget();
+    window.dispatchEvent(new CustomEvent('taba:profile-return', { detail: { returnTo } }));
     return;
   }
   if (action === 'edit-personal') {
@@ -223,13 +234,9 @@ async function savePersonalData() {
   }
 
   await runSaving(async () => {
-    if (getAppMode() === APP_MODE_DEMO) {
-      state.profile = { ...(state.profile || {}), name: nameValidation.name, phone };
-    } else {
-      const result = await profileRepository()?.saveProfile({ name: nameValidation.name, phone });
-      if (!result?.ok) return failOperation(result);
-      state.profile = result.profile;
-    }
+    const result = await profileRepository()?.saveProfile({ name: nameValidation.name, phone });
+    if (!result?.ok) return failOperation(result);
+    state.profile = result.profile;
     state.editingPersonal = false;
     notifyUpdated();
     return { ok: true, message: 'Datos personales guardados.' };
@@ -271,21 +278,13 @@ async function saveAddress(allowDuplicate) {
 async function persistAddress(candidate, allowDuplicate) {
   if (!candidate) return;
   await runSaving(async () => {
-    let savedAddress;
-    if (getAppMode() === APP_MODE_DEMO) {
-      savedAddress = {
-        ...candidate,
-        id: candidate.id || `demo-address-${Date.now()}`,
-      };
-    } else {
-      const result = await profileRepository()?.saveAddress(candidate, { allowDuplicate });
-      if (result?.code === 'duplicate') {
-        state.pendingDuplicate = { candidate, duplicate: result.duplicate };
-        return { ok: false, preserveStatus: true };
-      }
-      if (!result?.ok) return failOperation(result);
-      savedAddress = result.address;
+    const result = await profileRepository()?.saveAddress(candidate, { allowDuplicate });
+    if (result?.code === 'duplicate') {
+      state.pendingDuplicate = { candidate, duplicate: result.duplicate };
+      return { ok: false, preserveStatus: true };
     }
+    if (!result?.ok) return failOperation(result);
+    const savedAddress = result.address;
 
     const index = state.addresses.findIndex((address) => address.id === savedAddress.id);
     if (index >= 0) state.addresses.splice(index, 1, savedAddress);
@@ -308,10 +307,8 @@ async function setDefaultAddress(addressId) {
   const address = findAddress(addressId);
   if (!address || !isEditableMode()) return;
   await runSaving(async () => {
-    if (getAppMode() !== APP_MODE_DEMO) {
-      const result = await profileRepository()?.setDefault(addressId);
-      if (!result?.ok) return failOperation(result);
-    }
+    const result = await profileRepository()?.setDefault(addressId);
+    if (!result?.ok) return failOperation(result);
     state.addresses = state.addresses.map((entry) => ({
       ...entry,
       isDefault: entry.id === addressId,
@@ -326,12 +323,9 @@ async function deleteAddress(addressId) {
   if (!address || !isEditableMode()) return;
   if (!window.confirm(`¿Eliminar ${address.label}? Los pedidos anteriores conservarán su dirección.`)) return;
   await runSaving(async () => {
-    let replacementId = '';
-    if (getAppMode() !== APP_MODE_DEMO) {
-      const result = await profileRepository()?.archive(addressId);
-      if (!result?.ok) return failOperation(result);
-      replacementId = String(result.result?.replacementId || '');
-    }
+    const result = await profileRepository()?.archive(addressId);
+    if (!result?.ok) return failOperation(result);
+    let replacementId = String(result.result?.replacementId || '');
     state.addresses = state.addresses.filter((entry) => entry.id !== addressId);
     if (address.isDefault && state.addresses.length) {
       replacementId ||= state.addresses[0].id;
@@ -376,6 +370,7 @@ function failOperation(result) {
 }
 
 function render() {
+  state.returnTo = resolveProfileReturnTarget() || state.returnTo;
   const container = profileContainer();
   if (!container) return;
   container.dataset.customerProfileState = state.loading
@@ -402,7 +397,7 @@ function render() {
       ${renderAddressesCard()}
     </div>
     <aside class="profile-privacy-card">
-      <span aria-hidden="true">✓</span>
+      <span aria-hidden="true">âœ“</span>
       <div>
         <strong>TABA no necesita tu DNI.</strong>
         <p>Solo guardamos los datos necesarios para identificar al destinatario y entregar tus pedidos.</p>
@@ -444,9 +439,10 @@ function renderStatus() {
 function renderPersonalCard() {
   const profile = state.profile || {};
   const hasProfile = hasOperationalProfile();
+  const returnAction = renderReturnToCheckoutAction();
   if (state.editingPersonal) {
     return `<section class="profile-card personal-card" aria-labelledby="personal-data-title">
-      <div class="profile-card-heading"><div><span class="profile-card-kicker">Datos personales</span><h2 id="personal-data-title">${hasProfile ? 'Editá tus datos' : 'Completá tus datos'}</h2></div></div>
+      <div class="profile-card-heading"><div><span class="profile-card-kicker">Datos personales</span><h2 id="personal-data-title">${hasProfile ? 'Editá tus datos' : 'Completá tus datos'}</h2></div>${returnAction}</div>
       <form data-profile-personal-form novalidate>
         <label><span>Nombre y apellido</span><input name="profileFullName" autocomplete="name" minlength="2" maxlength="80" required value="${escapeAttr(profile.name || '')}" placeholder="Tu nombre y apellido" /></label>
         <label><span>Teléfono</span><input name="profilePhone" autocomplete="tel" inputmode="tel" maxlength="24" required value="${escapeAttr(formatArgentinePhone(profile.phone || ''))}" placeholder="Ej. 299 620 9136" /></label>
@@ -461,6 +457,7 @@ function renderPersonalCard() {
   return `<section class="profile-card personal-card ${hasProfile ? '' : 'is-empty'}" aria-labelledby="personal-data-title">
     <div class="profile-card-heading">
       <div><span class="profile-card-kicker">Datos personales</span><h2 id="personal-data-title">${hasProfile ? 'Quién recibe el pedido' : 'Todavía no cargaste tus datos'}</h2></div>
+      ${returnAction}
       ${hasProfile ? '<button class="text-button" type="button" data-profile-action="edit-personal">Editar</button>' : ''}
     </div>
     ${hasProfile ? `<dl class="personal-data-list">
@@ -470,7 +467,6 @@ function renderPersonalCard() {
       <button class="primary-button compact" type="button" data-profile-action="edit-personal">Completar datos</button>`}
   </section>`;
 }
-
 function renderAddressesCard() {
   return `<section class="profile-card addresses-card" aria-labelledby="profile-addresses-title">
     <div class="profile-card-heading">
@@ -523,7 +519,7 @@ function renderAddressEditor() {
     <div class="profile-card-heading"><div><span class="profile-card-kicker">${address.id ? 'Editar' : 'Nueva dirección'}</span><h3>${address.id ? address.label : 'Datos de entrega'}</h3></div><button class="text-button" type="button" data-profile-action="cancel-address">Cerrar</button></div>
     <div class="profile-form-grid">
       <label><span>Etiqueta</span><select name="profileAddressLabel">${['Casa', 'Trabajo', 'Otra'].map((label) => `<option value="${label}" ${(address.label || 'Casa') === label ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
-      <label class="is-wide"><span>Calle</span><input name="profileAddressStreet" maxlength="120" autocomplete="address-line1" required value="${escapeAttr(address.street || '')}" placeholder="Antártida Argentina" /></label>
+      <label class="is-wide"><span>Calle</span><input name="profileAddressStreet" maxlength="120" autocomplete="address-line1" required value="${escapeAttr(address.street || '')}" placeholder="AntÃ¡rtida Argentina" /></label>
       <label><span>Número</span><input name="profileAddressNumber" maxlength="24" inputmode="text" required value="${escapeAttr(address.streetNumber || '')}" placeholder="1234, 1234 A o S/N" /></label>
       <label><span>Piso <em>opcional</em></span><input name="profileAddressFloor" maxlength="24" autocomplete="address-line2" value="${escapeAttr(address.floor || '')}" /></label>
       <label><span>Departamento <em>opcional</em></span><input name="profileAddressApartment" maxlength="24" autocomplete="address-line2" value="${escapeAttr(address.apartment || '')}" /></label>
@@ -597,42 +593,26 @@ function notifyUpdated() {
   }));
 }
 
-function demoProfile() {
-  return {
-    id: 'demo-customer',
-    name: 'Cliente Demo',
-    phone: '2990000000',
-    updatedAt: new Date().toISOString(),
-  };
+function resolveProfileReturnTarget() {
+  try {
+    return window.sessionStorage?.getItem?.(PROFILE_RETURN_STORAGE_KEY) || '';
+  } catch (_) {
+    return '';
+  }
 }
 
-function demoAddresses() {
-  return [
-    normalizeCustomerAddress({
-      id: 'demo-address-home',
-      label: 'Casa',
-      street: 'Calle Demo',
-      streetNumber: '100',
-      city: 'Ciudad Demo',
-      province: 'Provincia Demo',
-      reference: 'Referencia de prueba',
-      isDefault: true,
-      source: 'manual',
-    }),
-    normalizeCustomerAddress({
-      id: 'demo-address-work',
-      label: 'Trabajo',
-      street: 'Avenida Ficticia',
-      streetNumber: '200',
-      floor: '2',
-      apartment: 'B',
-      city: 'Ciudad Demo',
-      province: 'Provincia Demo',
-      reference: 'Referencia de prueba',
-      isDefault: false,
-      source: 'manual',
-    }),
-  ];
+function clearProfileReturnTarget() {
+  try {
+    window.sessionStorage?.removeItem?.(PROFILE_RETURN_STORAGE_KEY);
+  } catch (_) {
+    // Sin sessionStorage no hay retorno pendiente para limpiar.
+  }
+}
+
+function renderReturnToCheckoutAction() {
+  const target = resolveProfileReturnTarget() || state.returnTo;
+  if (!target) return '';
+  return '<button class="text-button" type="button" data-profile-action="return-to-checkout">Volver al pedido</button>';
 }
 
 function escapeHtml(value) {

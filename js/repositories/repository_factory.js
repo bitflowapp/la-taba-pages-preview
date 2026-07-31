@@ -14,6 +14,7 @@ import { assertOrderRepository } from './order_repository.js';
 import { createDemoOrderRepository } from './demo_order_repository.js';
 import { createRealtimeOrderRepository } from './realtime_order_repository.js';
 import { createSandboxOrderRepository, isSandboxOrderRepository } from './sandbox_order_repository.js';
+import { createSandboxCustomerProfileRepository } from './sandbox_customer_profile_repository.js';
 import { createSupabaseOrderRepository } from './supabase_order_repository.js';
 import { createUnavailableOrderRepository } from './unavailable_order_repository.js';
 
@@ -58,7 +59,12 @@ export function getOrderRepository() {
 
   const demoRepository = createDemoOrderRepository();
   if (mode === 'demo-realtime') {
-    orderRepository = assertOrderRepository(createRealtimeOrderRepository(demoRepository));
+    // El repositorio de pedidos conserva su autoridad propia. Perfil mantiene
+    // una autoridad sandbox local y nunca se publica como estado de pedido.
+    orderRepository = assertOrderRepository(createRealtimeOrderRepository({
+      ...demoRepository,
+      customerProfiles: createSandboxCustomerProfileRepository({ namespace: 'demo' }),
+    }));
   } else if (mode === 'showcase') {
     orderRepository = assertOrderRepository(createSandboxOrderRepository({
       baseRepository: demoRepository,

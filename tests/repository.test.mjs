@@ -4,6 +4,10 @@ import { addToCart } from '../js/cart.js';
 import { createHttpOrderRepository } from '../js/repositories/http_order_repository.js';
 import { createDemoOrderRepository } from '../js/repositories/demo_order_repository.js';
 import {
+  PROFILE_CHECKOUT_AUTHORITY_SANDBOX,
+  profileCheckoutAuthority,
+} from '../js/core/profile-checkout.js';
+import {
   getDataMode,
   getOrderRepository,
   getRepositoryDiagnostic,
@@ -43,6 +47,10 @@ test('repository factory exposes relay only with demo=1', () => {
   assert.equal(getDataMode(), 'demo-realtime');
   assert.equal(repository.mode, 'demo-realtime');
   assert.equal(typeof repository.getTransportStatus, 'function');
+  assert.equal(profileCheckoutAuthority(), PROFILE_CHECKOUT_AUTHORITY_SANDBOX);
+  assert.equal(typeof repository.customerProfiles?.load, 'function');
+  assert.equal(typeof repository.customerProfiles?.saveProfile, 'function');
+  assert.equal(typeof repository.customerProfiles?.saveAddress, 'function');
 });
 
 test('query strings no activan Supabase ni producen fallback técnico', () => {

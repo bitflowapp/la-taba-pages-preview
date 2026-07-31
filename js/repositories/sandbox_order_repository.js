@@ -12,6 +12,7 @@ import {
 import { toDomainOrder } from '../core/domain.js';
 import { createDemoOrderRepository } from './demo_order_repository.js';
 import { repositoryResult } from './order_repository.js';
+import { createSandboxCustomerProfileRepository } from './sandbox_customer_profile_repository.js';
 
 export const SANDBOX_DB_NAME = 'taba-sandbox';
 export const SANDBOX_DB_VERSION = 2;
@@ -550,6 +551,13 @@ export function createSandboxOrderRepository({
     ...baseRepository,
     mode: 'sandbox',
     sandboxNamespace: storageNamespace.namespace,
+    // Autoridad de Perfil para demo y showcase. Se engancha únicamente acá: el
+    // repositorio de preview y el de configuración productiva inválida no
+    // exponen `customerProfiles`, así que el checkout por Perfil falla cerrado
+    // en vez de degradar en silencio hacia datos sintéticos.
+    customerProfiles: createSandboxCustomerProfileRepository({
+      namespace: storageNamespace.namespace,
+    }),
     startSync,
     resetSandbox,
     exportSandboxState,

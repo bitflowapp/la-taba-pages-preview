@@ -86,6 +86,7 @@ import { toggleFavoriteProduct } from './core/customer-preferences.js';
 import {
   initializeCustomerDeliveryCheckout,
   persistCustomerProfileAfterOrder,
+  consumeProfileReturnTarget,
 } from './customer-delivery.js';
 import { initializeCustomerProfileView } from './customer-profile-view.js';
 import {
@@ -101,6 +102,7 @@ import {
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
 const RESET_RELAY_TIMEOUT_MS = 1200;
+const PROFILE_RETURN_STORAGE_KEY = 'taba:profile-return';
 // Cada cuánto revisamos si el GPS real del pedido activo se enfrió. Es bien por
 // debajo del umbral de "stale" (30 s) para volver a un fallback honesto a tiempo.
 const FRESHNESS_TICK_MS = 5000;
@@ -420,6 +422,14 @@ function clearModeStorage() {
     try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
     try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
   });
+}
+
+function clearProfileReturnTarget() {
+  try {
+    window.sessionStorage?.removeItem(PROFILE_RETURN_STORAGE_KEY);
+  } catch (_) {
+    // Sin sessionStorage, no hay retorno persistente para limpiar.
+  }
 }
 
 function writeShowcaseRecovery(value) {
@@ -820,6 +830,21 @@ function showCheckoutInlineError(form, message) {
 function bindEvents() {
   window.addEventListener('popstate', syncViewFromLocation);
   window.addEventListener('hashchange', syncViewFromLocation);
+  window.addEventListener('taba:navigate-profile', (event) => {
+    const requestedReturn = String(event?.detail?.returnTo || 'cart');
+    const returnTo = normalizeView(requestedReturn) || 'cart';
+    try {
+      window.sessionStorage?.setItem(PROFILE_RETURN_STORAGE_KEY, returnTo);
+    } catch (_) {
+      // Sin sessionStorage, el retorno se pierde pero la navegaci?n a Perfil sigue viva.
+    }
+    setActiveView('profile');
+  });
+  window.addEventListener('taba:profile-return', (event) => {
+    const requestedReturn = event?.detail?.returnTo || consumeProfileReturnTarget();
+    const returnTo = normalizeView(requestedReturn) || 'cart';
+    setActiveView(returnTo);
+  });
   window.addEventListener('pagehide', () => {
     // Al ir a segundo plano Chrome puede descartar la pestaña del rider. Se
     // corta el watcher por privacidad, pero se conserva sólo el último fix
@@ -870,6 +895,9 @@ function bindEvents() {
     const navView = target.closest('[data-nav-view]')?.dataset.navView;
     if (navView) {
       event.preventDefault();
+      if (normalizeView(navView) === 'profile') {
+        clearProfileReturnTarget();
+      }
       setActiveView(navView);
       return;
     }
@@ -1471,6 +1499,9 @@ function setActiveView(view, options = {}) {
   const nextView = normalizeView(view);
   const changed = nextView !== activeView;
   activeView = nextView;
+  if (nextView !== 'profile') {
+    clearProfileReturnTarget();
+  }
 
   if (options.writeHash !== false) {
     writeViewHash(nextView, options.replace === true);

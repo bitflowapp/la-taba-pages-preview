@@ -28,6 +28,7 @@ import {
 } from './cart.js';
 import { buildDraftMessageFromCart, getActiveOrder } from './orders.js';
 import { getRealtimeStatus } from './realtime.js';
+import { relayStatusLabel } from './core/realtime-sync.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 import {
   formatDeliveryCode,
@@ -1713,7 +1714,11 @@ export function updateAddressFieldVisibility() {
   const field = $('[data-address-field]');
   if (!field) return;
   const isPickup = currentDeliveryMode() === 'pickup';
-  field.classList.toggle('hidden', isPickup);
+  // The address contract is rendered inside this legacy wrapper. Its inputs
+  // are hidden fields, but the Profile-owned checkout surface must remain
+  // visible for pickup so the user can see why no address is needed.
+  field.hidden = false;
+  field.classList.remove('hidden');
   const title = $('[data-checkout-details-title]');
   if (title) title.textContent = isPickup ? 'Datos para retirar' : 'Datos de entrega';
 }
@@ -2273,15 +2278,13 @@ export function renderTracking() {
 // por eso dice "Conectado" y nunca "En vivo" (eso queda para GPS real).
 // Sin esto, si la sala se cae el cliente ve un estado viejo sin enterarse.
 function trackingConnectionPill(order) {
-  if (isDemoMode()) return '';
   const status = getRealtimeStatus();
   if (!status.relayEnabled) return '';
   if (!order || order.status === 'delivered' || order.status === 'cancelled') return '';
-  const chip = status.relayConnected
-    ? '<span class="rt-chip live">Conectado</span>'
-    : status.relayState === 'offline'
-      ? '<span class="rt-chip warn">Sin conexión</span>'
-      : '<span class="rt-chip warn">Reconectando</span>';
+  const label = relayStatusLabel(status);
+  const tone = status.relayState === 'connected' && !status.pendingSnapshot ? 'live' : 'warn';
+  const time = formatRealtimeTime(status.lastSyncAt);
+  const chip = `<button class="rt-chip ${tone}" type="button" data-retry-relay data-realtime-sync="client">${escapeHtml(label)}${time ? ` · ${escapeHtml(time)}` : ''}</button>`;
   return `<span class="sheet-connection-pill">${chip}</span>`;
 }
 
@@ -2292,11 +2295,18 @@ function realtimeChip(order = null) {
   }
   const status = getRealtimeStatus();
   if (status.relayEnabled) {
-    if (status.relayConnected) return '<span class="rt-chip live">En vivo</span>';
-    if (status.relayState === 'offline') return '<span class="rt-chip warn">Sin conexión</span>';
-    return '<span class="rt-chip warn">Reconectando</span>';
+    const label = relayStatusLabel(status);
+    const tone = status.relayState === 'connected' && !status.pendingSnapshot ? 'live' : 'warn';
+    const time = formatRealtimeTime(status.lastSyncAt);
+    return `<button class="rt-chip ${tone}" type="button" data-retry-relay data-realtime-sync="client">${escapeHtml(label)}${time ? ` · ${escapeHtml(time)}` : ''}</button>`;
   }
   return '<span class="rt-chip local">En vivo</span>';
+}
+
+function formatRealtimeTime(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 }
 
 function initials(name) {

@@ -39,8 +39,8 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('[data-floating-cart]').click();
   await fillCheckout(page, {
-    name: 'Walter Cliente',
-    phone: '2995551234',
+    name: 'Cliente Demo',
+    phone: '2990000001',
     street: 'Mendoza 851',
     neighborhood: 'Centro',
     reference: 'Portón gris',
@@ -65,8 +65,8 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(card).toContainText('LT-0002');
   await expect(card).toContainText('Pedido nuevo');
   await expect(card).toContainText('Nuevo / pendiente');
-  await expect(card).toContainText('Walter Cliente');
-  await expect(card).toContainText('2995551234');
+  await expect(card).toContainText('Cliente Demo');
+  await expect(card).toContainText(/Teléfono\s*299\s*000\s*0001/);
   await expect(card).toContainText('Delivery');
   await expect(card).toContainText('Mendoza 851, Centro');
   await expect(card).toContainText('Portón gris');
@@ -76,7 +76,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(card.getByLabel('Tiempo estimado de preparación')).toBeVisible();
   await expect(card.locator('details.inbox-card-details')).not.toHaveAttribute('open', '');
 
-  await page.getByLabel('Buscar pedido').fill('Walter');
+  await page.getByLabel('Buscar pedido').fill('Cliente Demo');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toBeVisible();
   await page.locator('[data-order-filter="new"]').click();
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toBeVisible();
@@ -112,11 +112,11 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(page.locator('.desktop-nav')).toBeHidden();
   const riderPanel = page.locator('[data-delivery-panel]');
   await expect(riderPanel.locator('[data-rider-assignment-preview="LT-0002"]')).toBeVisible();
-  await expect(riderPanel).not.toContainText('Walter Cliente');
+  await expect(riderPanel).not.toContainText('Cliente Demo');
   await expect(riderPanel).not.toContainText('Mendoza 851');
   await riderPanel.locator('[data-rider-accept="LT-0002"]').click();
   await waitForToast(page, 'Entrega aceptada. Ya podés ver los datos del pedido.');
-  await expect(riderPanel).toContainText('Walter Cliente');
+  await expect(riderPanel).toContainText('Cliente Demo');
   await expect(riderPanel.locator('.rider-avatar')).toHaveCount(0);
   await expect(riderPanel.locator('.round-action')).toHaveCount(2);
   for (const action of await riderPanel.locator('.round-action').all()) {
@@ -212,8 +212,8 @@ function liveBusinessState(now) {
     appMode: 'demo',
     orders: [{
       id: 'LT-LIVE-1',
-      customerName: 'Walter Cliente',
-      customerPhone: '2995551234',
+      customerName: 'Cliente Demo',
+      customerPhone: '2990000001',
       address: 'Mendoza 851, Centro',
       addressDetails: { streetLine: 'Mendoza 851', neighborhood: 'Centro', reference: 'Portón gris', label: 'Mendoza 851, Centro' },
       deliveryMode: 'delivery',

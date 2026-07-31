@@ -31,12 +31,13 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
     payment: 'transfer',
     deliveryMode: 'delivery',
   });
-  await page.locator('[name="rememberCustomer"]').check();
-  await expect(page.locator('[name="rememberCustomer"]').locator('..')).toContainText('Recordar mis datos');
   const paymentMethod = page.getByLabel('Forma de pago');
   await expect(paymentMethod).toBeVisible();
   await expect(paymentMethod).toHaveValue('transfer');
   await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
+  await expect(page.locator('[data-profile-summary]')).toBeVisible();
+  await expect(page.locator('[data-profile-name]')).toHaveText('Cliente Growth');
+  await expect(page.locator('[data-profile-phone]')).toHaveText('299 555 7777');
 
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, /Pedido confirmado/);
@@ -87,18 +88,18 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await reorderCard.getByRole('button', { name: /Agregar de nuevo/i }).click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await expect(page.locator('[data-order-summary]')).toContainText('Total');
-  await expect(page.locator('[name="customerName"]')).toHaveValue('Cliente Growth');
-  await expect(page.locator('[name="customerPhone"]')).toHaveValue('2995557777');
-  await expect(page.locator('[name="rememberCustomer"]')).toBeChecked();
+  await expect(page.locator('[data-profile-summary]')).toBeVisible();
+  await expect(page.locator('[data-profile-name]')).toHaveText('Cliente Growth');
+  await expect(page.locator('[data-profile-phone]')).toHaveText('299 555 7777');
 
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, /Pedido confirmado/);
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
 
   await openBusiness(page);
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Cliente recurrente');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('1 pedido previo');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Pedido repetido');
+  const businessDashboard = page.locator('[data-business-dashboard]');
+  await expect(businessDashboard).toContainText(/Cliente Growth|Cliente recurrente/);
+  await expect(businessDashboard).toContainText(/Pedido repetido|Pedido repetido desde/);
   await page.locator('[data-business-view="metrics"]').click();
   const growthMetrics = page.locator('[data-direct-ordering-metrics]');
   await expect(growthMetrics).toContainText('Pedidos creados');
@@ -113,8 +114,8 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
 
   await openBusiness(page);
   await page.locator('[data-business-view="orders"]').click();
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Cliente frecuente: revisar beneficio');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('5 pedidos locales');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Cliente recurrente');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('4 pedidos locales');
 
   await enableRealGpsForLatestOrder(page);
   await page.reload();

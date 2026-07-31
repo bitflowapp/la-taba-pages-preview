@@ -233,14 +233,27 @@ function renderRiderAssignmentPreview(container, order) {
 }
 
 function renderRiderSheetTopbar() {
+  const status = getRealtimeStatus();
+  const label = relayStatusLabel(status);
+  const tone = status.relayState === 'connected' && !status.pendingSnapshot ? 'live' : 'warn';
+  const time = formatRealtimeTime(status.lastSyncAt);
+  const syncControl = status.relayEnabled
+    ? `<button class="rt-chip ${tone}" type="button" data-retry-relay data-realtime-sync="rider">${escapeHtml(label)}${time ? ` · ${escapeHtml(time)}` : ''}</button>`
+    : '<span class="rider-online-chip is-local" aria-label="Operación activa"><i aria-hidden="true"></i>En servicio</span>';
   return `
     <div class="rider-sheet-topbar">
-      <span class="rider-online-chip is-local" aria-label="Operación activa"><i aria-hidden="true"></i>En servicio</span>
+      ${syncControl}
       <div class="rider-sheet-actions">
         <button class="ghost-button compact" type="button" data-open-admin-view="business" aria-label="Volver al panel del negocio">Negocio</button>
         <button class="ghost-button compact" type="button" data-lock-admin>Salir</button>
       </div>
     </div>`;
+}
+
+function formatRealtimeTime(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 }
 
 // Accesos rápidos del rider (referencia visual de la maqueta): abrir la ruta en

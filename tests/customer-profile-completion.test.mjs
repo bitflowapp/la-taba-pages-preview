@@ -61,9 +61,12 @@ test('RPCs derivan propiedad de auth.uid, normalizan perfil y cierran el acceso 
   assert.doesNotMatch(migration, /p_customer_id|p_user_id|service_role|disable row level security/i);
 });
 
-test('la pantalla pide sólo datos de entrega y expone guardado explícito del checkout', () => {
+test('la pantalla pide sólo datos de entrega y Perfil es la única fuente editable', () => {
   assert.match(index, /data-view="profile"[\s\S]*data-customer-profile/i);
-  assert.match(index, /Guardar estos cambios en mi perfil/i);
+  // El checkout dejó de ofrecer un guardado propio del Perfil: administrar los
+  // datos del cliente es responsabilidad exclusiva de Perfil.
+  assert.doesNotMatch(index, /Guardar estos cambios en mi perfil/i);
+  assert.doesNotMatch(index, /name="rememberCustomer"/i);
   assert.match(profileView, /Nombre y apellido/);
   assert.match(profileView, /Teléfono/);
   assert.match(profileView, /Calle/);

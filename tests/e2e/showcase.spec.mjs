@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { gotoDemoReset, installPageGuards } from './helpers.mjs';
+import {
+  buildCheckoutAddresses,
+  seedCheckoutProfile,
+  selectCheckoutAddress,
+} from './helpers.mjs';
 
 const SHOWCASE_PATH = '/?showcase=1#home';
 const LIVE_EXTERNAL_LINKS = [
@@ -222,24 +227,191 @@ test('customer showcase stops use the real catalog, cart, checkout, profile and 
   await expectActiveView(page, 'cart');
   await expect(page.getByLabel('Delivery')).toBeChecked();
   await page.getByLabel('Retiro en local').check();
-  await expect(page.locator('[data-address-field]')).toBeHidden();
+  await expect(page.locator('[data-profile-pickup]')).toBeVisible();
+  await expect(page.locator('[data-checkout-form] .profile-address-list')).toHaveCount(0);
   await page.getByLabel('Delivery').check();
-  await expect(page.locator('[data-address-field]')).toBeVisible();
+  await expect(page.locator('[data-profile-pickup]')).toBeHidden();
+  await expect(page.locator('[data-checkout-form] .profile-address-list')).toBeVisible();
 
   await selectShowcaseStep(page, 'profile');
   await expectActiveView(page, 'profile');
   await expect(page.locator('[data-customer-profile] .customer-profile-grid')).toBeVisible();
-  await expect(page.locator('[data-customer-profile]')).toContainText(/Cliente Demo/i);
+  await expect(page.locator('[data-customer-profile]')).toContainText(/Camila/i);
 
   await selectShowcaseStep(page, 'addresses');
   await expectActiveView(page, 'profile');
   const addresses = page.locator('.addresses-card');
   await expect(addresses).toBeVisible();
-  await expect(addresses.locator('[data-profile-address-id]')).toHaveCount(2);
+  await expect(addresses.locator('[data-profile-address-id]')).toHaveCount(4);
   await expect(addresses).toContainText('Predeterminada');
   await expect(addresses.locator('[data-profile-action="add-address"]')).toBeVisible();
   await guards.assertClean();
 });
+
+test('showcase covers profile variants, delivery/pickup and preserves cart on profile return', async ({ page }) => {
+  const guards = installPageGuards(page);
+  const cartItems = page.locator('[data-cart-list] .cart-item');
+  const checkout = page.locator('[data-checkout-form]');
+  const addressList = checkout.locator('.profile-address-list');
+  const addressToggle = page.locator('[data-profile-checkout-action="toggle-addresses"]');
+  const selectDeliveryMode = page.getByLabel('Delivery');
+  const selectPickupMode = page.getByLabel('Retiro en local');
+
+  await gotoShowcase(page);
+  await selectShowcaseStep(page, 'catalog');
+  await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await page.evaluate(() => {
+    window.location.hash = '#cart';
+  });
+  await selectShowcaseStep(page, 'checkout');
+  await expect(checkout).toBeVisible();
+  await expect(cartItems).toHaveCount(1);
+
+  const oneAddress = buildCheckoutAddresses(1, 'showcase-1');
+  await seedCheckoutProfile(page, {
+    name: 'Cliente con 1',
+    phone: '2991110001',
+    addresses: oneAddress,
+    namespace: 'showcase',
+  });
+  await expect(addressList).toHaveAttribute('data-address-total', '1');
+  await expect(addressList.locator('.profile-address-card')).toHaveCount(1);
+  await expect(addressToggle).toHaveCount(0);
+  await expect(checkout).toHaveAttribute('data-address-source', /profile_default|saved_address_selected/);
+  await expect(checkout.locator('[data-checkout-submit]')).toBeEnabled();
+
+  const fourAddresses = buildCheckoutAddresses(4, 'showcase-4');
+  await seedCheckoutProfile(page, {
+    name: 'Cliente con 4',
+    phone: '2991110004',
+    addresses: fourAddresses,
+    namespace: 'showcase',
+  });
+  await page.evaluate(() => {
+    window.location.hash = '#cart';
+  });
+  await expect(addressList).toHaveAttribute('data-address-total', '4');
+  await expect(addressList.locator('.profile-address-card')).toHaveCount(3);
+  await expect(addressToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(addressToggle).toContainText(/Ver las 4 direcciones/);
+  await addressToggle.click();
+  await expect(addressToggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(addressList.locator('.profile-address-card')).toHaveCount(4);
+  await selectCheckoutAddress(page, { id: fourAddresses[3].id });
+  await expect(addressList.locator(`.profile-address-card[data-customer-address-id="${fourAddresses[3].id}"]`))
+    .toHaveClass(/is-selected/);
+  await expect(addressList.locator(`.profile-address-card[data-customer-address-id="${fourAddresses[0].id}"]`))
+    .toContainText('Principal');
+  await expect(addressList.locator(`.profile-address-card[data-customer-address-id="${fourAddresses[0].id}"]`))
+    .not.toHaveClass(/is-selected/);
+
+  const tenAddresses = buildCheckoutAddresses(10, 'showcase-10');
+  await seedCheckoutProfile(page, {
+    name: 'Cliente con 10',
+    phone: '2991110010',
+    addresses: tenAddresses,
+    namespace: 'showcase',
+  });
+  await page.evaluate(() => {
+    window.location.hash = '#cart';
+  });
+  await expect(addressList).toHaveAttribute('data-address-total', '10');
+  await expect(addressToggle).toHaveAttribute('aria-expanded', 'true');
+  await addressToggle.click();
+  await expect(addressList.locator('.profile-address-card')).toHaveCount(3);
+  await expect(addressToggle).toContainText(/Ver las 10 direcciones/);
+  await expect(addressToggle).toContainText(/7/);
+  await addressToggle.click();
+  await expect(addressToggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(addressList.locator('.profile-address-card')).toHaveCount(10);
+  await selectCheckoutAddress(page, { id: tenAddresses[9].id });
+  await expect(addressList.locator(`.profile-address-card[data-customer-address-id="${tenAddresses[9].id}"]`))
+    .toHaveClass(/is-selected/);
+  const checkoutBox = await checkout.boundingBox();
+  const addressListBox = await addressList.boundingBox();
+  expect(addressListBox?.x + addressListBox?.width).toBeLessThanOrEqual((checkoutBox?.x || 0) + (checkoutBox?.width || 0) + 1);
+
+  await seedCheckoutProfile(page, {
+    name: 'Cliente sin direcciones',
+    phone: '2991110011',
+    addresses: [],
+    namespace: 'showcase',
+  });
+  await page.evaluate(() => {
+    window.location.hash = '#cart';
+  });
+  await expect(page.locator('[data-profile-block="no-address"]')).toBeVisible();
+  await expect(cartItems).toHaveCount(1);
+  await checkout.locator('[data-checkout-submit]').click();
+  await expect(checkout.locator('[data-checkout-warning]')).toBeVisible();
+  await expect(checkout.locator('[data-checkout-warning]')).toContainText(/direcci[oó]n|calle|n[uú]mero/i);
+  await expectActiveView(page, 'cart');
+  const noAddressAction = page.locator('[data-profile-block="no-address"] [data-profile-checkout-action="add-address"]');
+  await expect(noAddressAction).toBeVisible();
+  await noAddressAction.click();
+  await expect(page.locator('[data-customer-profile]')).toBeVisible();
+  await page.locator('[data-profile-action="return-to-checkout"]').click();
+  await expectActiveView(page, 'cart');
+  await expect(cartItems).toHaveCount(1);
+  await expect(page.locator('[data-profile-block="no-address"]')).toBeVisible();
+
+  await seedCheckoutProfile(page, {
+    name: '',
+    phone: '',
+    addresses: buildCheckoutAddresses(1, 'showcase-incomplete'),
+    namespace: 'showcase',
+  });
+  await page.evaluate(() => {
+    window.location.hash = '#cart';
+  });
+  await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
+  await checkout.locator('[data-checkout-submit]').click();
+  await expect(checkout.locator('[data-checkout-warning]')).toBeVisible();
+  await expect(checkout.locator('[data-checkout-warning]')).toContainText(/perfil|nombre|tel[eé]fono/i);
+  await expectActiveView(page, 'cart');
+  const incompleteEdit = page.locator('[data-profile-block="incomplete"] [data-profile-checkout-action="edit-profile"]');
+  await expect(incompleteEdit).toBeVisible();
+  await incompleteEdit.click();
+  await expect(page.locator('[data-customer-profile]')).toBeVisible();
+  await page.locator('[data-profile-action="return-to-checkout"]').click();
+  await expectActiveView(page, 'cart');
+  await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
+  await expect(cartItems).toHaveCount(1);
+
+  const completeAddresses = buildCheckoutAddresses(4, 'showcase-complete');
+  const savedAddressId = completeAddresses[2].id;
+  await seedCheckoutProfile(page, {
+    name: 'Cliente complete',
+    phone: '2991111111',
+    addresses: completeAddresses,
+    namespace: 'showcase',
+  });
+  await page.evaluate(() => {
+    window.location.hash = '#cart';
+  });
+  await selectCheckoutAddress(page, { id: savedAddressId });
+  await expect(addressList.locator(`.profile-address-card[data-customer-address-id="${savedAddressId}"]`))
+    .toHaveClass(/is-selected/);
+  await checkout.locator('[data-profile-checkout-action="edit-profile"]').click();
+  await expect(page.locator('[data-customer-profile]')).toBeVisible();
+  await page.locator('[data-profile-action="return-to-checkout"]').click();
+  await expectActiveView(page, 'cart');
+  await expect(cartItems).toHaveCount(1);
+  await expect(selectDeliveryMode).toBeChecked();
+  await expect(addressList.locator(`.profile-address-card[data-customer-address-id="${savedAddressId}"]`))
+    .toHaveClass(/is-selected/);
+
+  await selectPickupMode.check();
+  await expect(page.locator('[data-profile-pickup]')).toBeVisible();
+  await expect(addressList).toHaveCount(0);
+  await selectDeliveryMode.check();
+  await expect(addressList).toBeVisible();
+  await expect(page.locator('[data-profile-pickup]')).toBeHidden();
+  await expect(checkout).toHaveAttribute('data-address-source', /profile_default|saved_address_selected/);
+  await guards.assertClean();
+});
+
 
 test('operational showcase stops use real business, rider, tracking, terminal and recovery surfaces', async ({ page }) => {
   const guards = installPageGuards(page);

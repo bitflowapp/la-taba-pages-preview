@@ -23,6 +23,11 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Pedido confirmado');
+  const orderId = await page.evaluate(async () => {
+    const { getActiveOrder } = await import(new URL('js/orders.js', location.href).href);
+    return getActiveOrder()?.id || '';
+  });
+  expect(orderId).not.toBe('');
 
   const tracking = page.locator('[data-tracking-panel]');
   await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido fue confirmado');
@@ -32,19 +37,19 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
-  await expect(page.locator('[data-inbox-order="LT-0002"]')).toBeVisible();
-  await page.locator('[data-inbox-order="LT-0002"] [data-prep-minutes]').selectOption('20');
-  await page.locator('[data-order-advance="LT-0002"]').click();
+  await expect(page.locator(`[data-inbox-order="${orderId}"]`)).toBeVisible();
+  await page.locator(`[data-inbox-order="${orderId}"] [data-prep-minutes]`).selectOption('20');
+  await page.locator(`[data-order-advance="${orderId}"]`).click();
   await waitForToast(page, 'Estado del pedido actualizado.');
-  await page.locator('[data-order-advance="LT-0002"]').click();
+  await page.locator(`[data-order-advance="${orderId}"]`).click();
   await waitForToast(page, 'Estado del pedido actualizado.');
 
   await page.goto('/?demo=1#rider');
-  await page.locator('[data-rider-accept="LT-0002"]').click();
+  await page.locator(`[data-rider-accept="${orderId}"]`).click();
   await waitForToast(page, 'Entrega aceptada. Ya podés ver los datos del pedido.');
-  await page.locator('[data-delivery-leave="LT-0002"]').click();
+  await page.locator(`[data-delivery-leave="${orderId}"]`).click();
   await waitForToast(page, 'Pedido marcado como en camino.');
-  await page.locator('[data-delivery-arrive="LT-0002"]').click();
+  await page.locator(`[data-delivery-arrive="${orderId}"]`).click();
   await waitForToast(page, 'Llegada al domicilio registrada.');
 
   await page.goto('/?demo=1#tracking');
@@ -61,20 +66,20 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await page.goto('/?demo=1#rider');
   const riderPanel = page.locator('[data-delivery-panel]');
   await expect(riderPanel.locator('[data-delivery-code-panel]')).toBeVisible();
-  await riderPanel.locator('[data-delivery-code-input="LT-0002"]').fill('0000');
-  await riderPanel.locator('[data-delivery-code-confirm="LT-0002"]').click();
+  await riderPanel.locator(`[data-delivery-code-input="${orderId}"]`).fill('0000');
+  await riderPanel.locator(`[data-delivery-code-confirm="${orderId}"]`).click();
   await waitForToast(page, 'Código incorrecto. Revisalo con el cliente.');
 
-  await riderPanel.locator('[data-delivery-code-input="LT-0002"]').fill(code);
-  await riderPanel.locator('[data-delivery-code-confirm="LT-0002"]').click();
+  await riderPanel.locator(`[data-delivery-code-input="${orderId}"]`).fill(code);
+  await riderPanel.locator(`[data-delivery-code-confirm="${orderId}"]`).click();
   await waitForToast(page, 'Código de entrega confirmado.');
   await expect(riderPanel.locator('[data-delivery-code-panel]')).toContainText('Código de entrega confirmado');
 
   await page.goto('/?demo=1#business');
-  await expect(page.locator('[data-delivery-code-summary="LT-0002"]')).toContainText('Código validado');
+  await expect(page.locator(`[data-delivery-code-summary="${orderId}"]`)).toContainText('Código validado');
 
   await page.goto('/?demo=1#rider');
-  await page.locator('[data-delivery-done="LT-0002"]').click();
+  await page.locator(`[data-delivery-done="${orderId}"]`).click();
   await waitForToast(page, 'Pedido marcado como entregado.');
   await page.goto('/?demo=1#tracking');
   await expect(tracking.locator('.tracking-hero h1')).toHaveText('Pedido entregado');

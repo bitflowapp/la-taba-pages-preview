@@ -1,220 +1,311 @@
-// Relay realtime de demostración para La Taba — SIN dependencias externas.
-// Solo usa módulos nativos de Node (http, fs, os, url).
-//
-// Sirve la app estática Y hace de puente realtime entre celulares en la misma
-// red Wi-Fi usando Server-Sent Events (SSE):
-//   - GET  /events?room=ROOM   -> stream SSE; cada dispositivo se suscribe a una sala.
-//   - POST /publish?room=ROOM   -> reenvía el mensaje JSON a los demás de la sala.
-//   - GET  /health              -> chequeo simple.
-//
-// Es una demo local: los mensajes viajan por la LAN, no se guardan en disco ni
-// se mandan a ningún servicio externo. Para producción real se usaría
-// Supabase Realtime / Firebase / WebSocket gestionado (ver README).
 import http from 'node:http';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRelayAuthority, normalizeRelayRoom } from './realtime-relay-state.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PORT = Number(process.env.PORT) || Number(process.argv[2]) || 8787;
+const PORT = readPort(process.argv[2] || process.env.PORT || '8080');
+const MAX_BODY_BYTES = 1024 * 1024;
 const HEARTBEAT_MS = 25_000;
-const MAX_BODY_BYTES = 256 * 1024;
+const authority = createRelayAuthority({ stateDir: process.env.TABA_RELAY_STATE_DIR || '' });
+const clientsByRoom = new Map();
 
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.webmanifest': 'application/manifest+json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.ico': 'image/x-icon',
-  '.map': 'application/json; charset=utf-8',
-};
+await authority.load();
 
-// rooms: Map<roomName, Set<ServerResponse>>
-const rooms = new Map();
-const lastRoomMessages = new Map();
+const server = http.createServer((request, response) => {
+  handleRequest(request, response).catch(() => {
+    if (!response.headersSent) sendJson(response, 500, { ok: false, error: 'internal_error' });
+    else response.end();
+  });
+});
 
-function roomClients(room) {
-  if (!rooms.has(room)) rooms.set(room, new Set());
-  return rooms.get(room);
+server.listen(PORT, '0.0.0.0', () => {
+  const persistence = process.env.TABA_RELAY_STATE_DIR ? 'enabled' : 'disabled';
+  console.log(`TABA relay listening on http://0.0.0.0:${PORT} (persistence ${persistence})`);
+});
+
+const heartbeat = setInterval(() => {
+  for (const clients of clientsByRoom.values()) {
+    for (const response of clients) {
+      try { response.write(': heartbeat\n\n'); } catch (_) { /* disconnected */ }
+    }
+  }
+}, HEARTBEAT_MS);
+heartbeat.unref?.();
+
+const expirySweep = setInterval(() => {
+  authority.cleanupExpired().catch(() => undefined);
+}, 60 * 60 * 1000);
+expirySweep.unref?.();
+
+async function handleRequest(request, response) {
+  setCorsHeaders(response);
+  if (request.method === 'OPTIONS') {
+    response.writeHead(204);
+    response.end();
+    return;
+  }
+
+  const url = new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`);
+  if (url.pathname === '/health' && request.method === 'GET') {
+    sendJson(response, 200, {
+      ok: true,
+      rooms: authority.roomCount(),
+      persistence: Boolean(process.env.TABA_RELAY_STATE_DIR),
+    });
+    return;
+  }
+
+  if (url.pathname === '/snapshot' && request.method === 'GET') {
+    const result = authority.snapshot(url.searchParams.get('room'), url.searchParams.get('key'));
+    if (!result.ok) return sendAuthorityError(response, result);
+    sendJson(response, 200, publicRoom(result.record));
+    return;
+  }
+
+  if (url.pathname === '/events' && request.method === 'GET') {
+    openEventStream(request, response, url);
+    return;
+  }
+
+  if (url.pathname === '/publish' && request.method === 'POST') {
+    const room = normalizeRelayRoom(url.searchParams.get('room'));
+    const key = url.searchParams.get('key');
+    const authenticated = authority.snapshot(room, key);
+    if (!authenticated.ok) return sendAuthorityError(response, authenticated);
+    const body = await readJsonBody(request);
+    if (!body || typeof body !== 'object') {
+      sendJson(response, 400, { ok: false, error: 'invalid_json' });
+      return;
+    }
+
+    if (body.kind === 'hello') {
+      sendJson(response, 200, {
+        ok: true,
+        accepted: false,
+        revision: authenticated.record.revision,
+        delivered: 0,
+      });
+      return;
+    }
+    if (body.kind !== 'state') {
+      sendJson(response, 400, { ok: false, error: 'invalid_kind' });
+      return;
+    }
+
+    const incoming = body.snapshot && typeof body.snapshot === 'object' ? body.snapshot : body;
+    const result = await authority.publish(room, key, incoming, body.sender);
+    if (!result.ok) return sendAuthorityError(response, result);
+    let delivered = 0;
+    if (result.accepted) {
+      delivered = broadcast(room, stateMessage(result.record));
+    }
+    sendJson(response, 200, {
+      ok: true,
+      accepted: result.accepted,
+      revision: result.record.revision,
+      updatedAt: result.record.updatedAt,
+      delivered,
+    });
+    return;
+  }
+
+  if (url.pathname === '/reset' && request.method === 'POST') {
+    const room = normalizeRelayRoom(url.searchParams.get('room'));
+    const result = await authority.reset(room, url.searchParams.get('key'), 'reset');
+    if (!result.ok) return sendAuthorityError(response, result);
+    const delivered = broadcast(room, {
+      kind: 'reset',
+      room,
+      revision: result.record.revision,
+      updatedAt: result.record.updatedAt,
+      snapshot: result.record.snapshot,
+    });
+    sendJson(response, 200, {
+      ok: true,
+      accepted: true,
+      revision: result.record.revision,
+      delivered,
+    });
+    return;
+  }
+
+  if (url.pathname.startsWith('/events')
+    || url.pathname.startsWith('/publish')
+    || url.pathname.startsWith('/snapshot')
+    || url.pathname.startsWith('/reset')) {
+    sendJson(response, 405, { ok: false, error: 'method_not_allowed' });
+    return;
+  }
+
+  serveStatic(response, url.pathname);
 }
 
-function sanitizeRoom(value) {
-  return String(value || 'demo').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60) || 'demo';
-}
+function openEventStream(request, response, url) {
+  const room = normalizeRelayRoom(url.searchParams.get('room'));
+  const result = authority.snapshot(room, url.searchParams.get('key'));
+  if (!result.ok) return sendAuthorityError(response, result);
 
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-}
-
-function handleEvents(req, res, room) {
-  setCors(res);
-  res.writeHead(200, {
+  response.writeHead(200, {
     'Content-Type': 'text/event-stream; charset=utf-8',
     'Cache-Control': 'no-cache, no-transform',
     Connection: 'keep-alive',
     'X-Accel-Buffering': 'no',
+    'Access-Control-Allow-Origin': '*',
   });
-  res.write(`retry: 3000\n`);
-  res.write(`event: ready\ndata: {"room":"${room}"}\n\n`);
 
-  const clients = roomClients(room);
-  clients.add(res);
-  const lastMessage = lastRoomMessages.get(room);
-  if (lastMessage) {
-    try { res.write(`event: message\ndata: ${lastMessage.replace(/\n/g, ' ')}\n\n`); } catch (_) { /* ignore */ }
-  }
+  const clients = clientsByRoom.get(room) || new Set();
+  clients.add(response);
+  clientsByRoom.set(room, clients);
+  writeEvent(response, 'ready', {
+    room,
+    revision: result.record.revision,
+    updatedAt: result.record.updatedAt,
+    connectedClients: clients.size,
+  });
+  writeEvent(response, 'message', stateMessage(result.record));
 
-  const heartbeat = setInterval(() => {
-    try { res.write(`:ping\n\n`); } catch (_) { /* ignore */ }
-  }, HEARTBEAT_MS);
-
-  const cleanup = () => {
-    clearInterval(heartbeat);
-    clients.delete(res);
-    if (clients.size === 0) rooms.delete(room);
-  };
-  req.on('close', cleanup);
-  req.on('error', cleanup);
+  request.on('close', () => {
+    clients.delete(response);
+    if (!clients.size) clientsByRoom.delete(room);
+  });
 }
 
-function handlePublish(req, res, room) {
-  setCors(res);
+function stateMessage(record) {
+  return {
+    kind: 'state',
+    room: record.room,
+    revision: record.revision,
+    updatedAt: record.updatedAt,
+    publisher: record.lastPublisher || null,
+    snapshot: record.snapshot,
+    orders: record.snapshot.orders,
+    lastOrderId: record.snapshot.lastOrderId,
+    simulation: record.snapshot.simulation,
+  };
+}
+
+function publicRoom(record) {
+  return {
+    ok: true,
+    room: record.room,
+    revision: record.revision,
+    snapshot: record.snapshot,
+    updatedAt: record.updatedAt,
+    publisher: record.lastPublisher || null,
+    connectedClients: clientsByRoom.get(record.room)?.size || 0,
+  };
+}
+
+function broadcast(room, payload) {
+  const clients = clientsByRoom.get(room);
+  if (!clients) return 0;
+  let delivered = 0;
+  for (const response of clients) {
+    try {
+      writeEvent(response, 'message', payload);
+      delivered += 1;
+    } catch (_) {
+      clients.delete(response);
+    }
+  }
+  if (!clients.size) clientsByRoom.delete(room);
+  return delivered;
+}
+
+function writeEvent(response, event, data) {
+  response.write(`event: ${event}\n`);
+  response.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+async function readJsonBody(request) {
   let size = 0;
   const chunks = [];
-  req.on('data', (chunk) => {
+  for await (const chunk of request) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) {
-      res.writeHead(413).end('payload too large');
-      req.destroy();
-      return;
-    }
+    if (size > MAX_BODY_BYTES) throw new Error('body_too_large');
     chunks.push(chunk);
+  }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+  } catch (_) {
+    return null;
+  }
+}
+
+function sendAuthorityError(response, result) {
+  sendJson(response, result.status || 400, { ok: false, error: result.code || 'request_rejected' });
+}
+
+function sendJson(response, status, value) {
+  const body = JSON.stringify(value);
+  response.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store',
+    'Content-Length': Buffer.byteLength(body),
   });
-  req.on('end', () => {
-    const raw = Buffer.concat(chunks).toString('utf8');
-    // Validamos que sea JSON; si no, 400 (no rompemos el relay).
-    let parsed;
-    try { parsed = JSON.parse(raw); } catch (_) {
-      res.writeHead(400, { 'Content-Type': 'application/json' }).end('{"ok":false}');
+  response.end(body);
+}
+
+function setCorsHeaders(response) {
+  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
+function serveStatic(response, rawPathname) {
+  let pathname = '/';
+  try { pathname = decodeURIComponent(rawPathname || '/'); } catch (_) { /* invalid path */ }
+  const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
+  let target = path.resolve(ROOT, relative);
+  if (!target.startsWith(`${ROOT}${path.sep}`) && target !== ROOT) {
+    response.writeHead(403);
+    response.end('Forbidden');
+    return;
+  }
+
+  try {
+    if (fs.statSync(target).isDirectory()) target = path.join(target, 'index.html');
+  } catch (_) {
+    if (!path.extname(relative)) target = path.join(ROOT, 'index.html');
+  }
+
+  fs.readFile(target, (error, data) => {
+    if (error) {
+      response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      response.end('Not found');
       return;
     }
-    if (parsed && parsed.kind === 'state') lastRoomMessages.set(room, raw);
-    const clients = rooms.get(room);
-    let delivered = 0;
-    if (clients) {
-      const payload = `event: message\ndata: ${raw.replace(/\n/g, ' ')}\n\n`;
-      for (const client of clients) {
-        try { client.write(payload); delivered += 1; } catch (_) { /* ignore */ }
-      }
-    }
-    res.writeHead(200, { 'Content-Type': 'application/json' }).end(`{"ok":true,"delivered":${delivered}}`);
-  });
-}
-
-function handleRoomReset(res, room) {
-  setCors(res);
-  lastRoomMessages.delete(room);
-  const clients = rooms.get(room);
-  let delivered = 0;
-  if (clients) {
-    const raw = JSON.stringify({ kind: 'reset', sender: 'relay', room, ts: Date.now() });
-    const payload = `event: message\ndata: ${raw}\n\n`;
-    for (const client of clients) {
-      try { client.write(payload); delivered += 1; } catch (_) { /* ignore */ }
-    }
-  }
-  res.writeHead(200, { 'Content-Type': 'application/json' }).end(`{"ok":true,"room":"${room}","delivered":${delivered}}`);
-}
-
-function serveStatic(req, res, pathname) {
-  // Normaliza y previene path traversal.
-  const safePath = path.normalize(decodeURIComponent(pathname)).replace(/^(\.\.[/\\])+/, '');
-  let filePath = path.join(ROOT, safePath);
-  if (!filePath.startsWith(ROOT)) {
-    res.writeHead(403).end('forbidden');
-    return;
-  }
-  fs.stat(filePath, (err, stat) => {
-    if (!err && stat.isDirectory()) filePath = path.join(filePath, 'index.html');
-    fs.readFile(filePath, (readErr, data) => {
-      if (readErr) {
-        // Fallback SPA: navegación desconocida -> index.html.
-        fs.readFile(path.join(ROOT, 'index.html'), (fallbackErr, html) => {
-          if (fallbackErr) { res.writeHead(404).end('not found'); return; }
-          res.writeHead(200, { 'Content-Type': MIME['.html'] }).end(html);
-        });
-        return;
-      }
-      const ext = path.extname(filePath).toLowerCase();
-      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' }).end(data);
+    response.writeHead(200, {
+      'Content-Type': contentType(target),
+      'Cache-Control': 'no-cache',
     });
+    response.end(data);
   });
 }
 
-const server = http.createServer((req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const room = sanitizeRoom(url.searchParams.get('room'));
-
-  if (req.method === 'OPTIONS') {
-    setCors(res);
-    res.writeHead(204).end();
-    return;
-  }
-  if (url.pathname === '/health') {
-    setCors(res);
-    res.writeHead(200, { 'Content-Type': 'application/json' }).end('{"ok":true}');
-    return;
-  }
-  if (url.pathname === '/events' && req.method === 'GET') {
-    handleEvents(req, res, room);
-    return;
-  }
-  if (url.pathname === '/publish' && req.method === 'POST') {
-    handlePublish(req, res, room);
-    return;
-  }
-  if (url.pathname === '/reset' && req.method === 'POST') {
-    handleRoomReset(res, room);
-    return;
-  }
-  if (req.method === 'GET') {
-    serveStatic(req, res, url.pathname === '/' ? '/index.html' : url.pathname);
-    return;
-  }
-  res.writeHead(405).end('method not allowed');
-});
-
-function lanAddresses() {
-  const out = [];
-  const ifaces = os.networkInterfaces();
-  for (const name of Object.keys(ifaces)) {
-    for (const net of ifaces[name] || []) {
-      if (net.family === 'IPv4' && !net.internal) out.push(net.address);
-    }
-  }
-  return out;
+function contentType(file) {
+  return ({
+    '.css': 'text/css; charset=utf-8',
+    '.html': 'text/html; charset=utf-8',
+    '.ico': 'image/x-icon',
+    '.jpeg': 'image/jpeg',
+    '.jpg': 'image/jpeg',
+    '.js': 'text/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.mjs': 'text/javascript; charset=utf-8',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml',
+    '.webmanifest': 'application/manifest+json; charset=utf-8',
+    '.woff2': 'font/woff2',
+  })[path.extname(file).toLowerCase()] || 'application/octet-stream';
 }
 
-server.listen(PORT, '0.0.0.0', () => {
-  const ips = lanAddresses();
-  const room = 'demo-review';
-  /* eslint-disable no-console */
-  console.log(`\nLa Taba · relay realtime demo escuchando en puerto ${PORT}`);
-  console.log('Simulación local por LAN. No se guarda nada en disco ni se envía a internet.\n');
-  if (ips.length) {
-    const ip = ips[0];
-    console.log('Probar con dos celulares en la MISMA Wi-Fi:');
-    console.log(`  Cliente: http://${ip}:${PORT}/?relay=http://${ip}:${PORT}&room=${room}`);
-    console.log(`  Rider:   http://${ip}:${PORT}/?relay=http://${ip}:${PORT}&room=${room}#rider\n`);
-  } else {
-    console.log(`Local: http://localhost:${PORT}/?relay=http://localhost:${PORT}&room=${room}\n`);
+function readPort(value) {
+  const port = Number.parseInt(String(value), 10);
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) {
+    throw new Error('Port must be between 1024 and 65535.');
   }
-  /* eslint-enable no-console */
-});
+  return port;
+}

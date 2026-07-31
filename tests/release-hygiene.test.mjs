@@ -86,26 +86,26 @@ test('release hygiene permits QA-only fixture paths outside public runtime', () 
 });
 
 test('demo profile uses an explicitly synthetic identity', () => {
-  const source = readFileSync(new URL('../js/customer-profile-view.js', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../js/repositories/sandbox_customer_profile_repository.js', import.meta.url), 'utf8');
   const profile = source.match(
-    /function demoProfile\(\)[\s\S]*?name:\s*'([^']+)'[\s\S]*?phone:\s*'([^']+)'/,
+    /demo:\s*\{[\s\S]*?name:\s*'([^']+)'[\s\S]*?phone:\s*'([^']+)'/,
   );
 
-  assert.ok(profile, 'demoProfile must declare its visible identity');
+  assert.ok(profile, 'the sandbox profile repository must declare its visible demo identity');
   assert.equal(profile[1], 'Cliente Demo');
-  assert.match(profile[2], /^2990{7}$/);
+  assert.match(profile[2], /^2990{6}1$/);
 });
 
 test('demo profile uses explicitly synthetic addresses', () => {
-  const source = readFileSync(new URL('../js/customer-profile-view.js', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../js/repositories/sandbox_customer_profile_repository.js', import.meta.url), 'utf8');
   const addresses = source.match(
-    /function demoAddresses\(\)[\s\S]*?\n}\n\nfunction escapeHtml/,
+    /const SYNTHETIC_ADDRESSES[\s\S]*?\]\);/,
   )?.[0] || '';
 
-  assert.match(addresses, /street:\s*'Calle Demo'/);
-  assert.match(addresses, /street:\s*'Avenida Ficticia'/);
-  assert.match(addresses, /city:\s*'Ciudad Demo'/);
-  assert.match(addresses, /province:\s*'Provincia Demo'/);
+  assert.match(addresses, /street:\s*'Avenida Argentina'/);
+  assert.match(addresses, /street:\s*'Julio Argentino Roca'/);
+  assert.match(addresses, /city:\s*'Neuquén Capital'/);
+  assert.match(source, /son ficticias y no corresponden a[\s\S]*ninguna persona real/i);
 });
 
 test('tracked release files satisfy every hygiene rule', () => {

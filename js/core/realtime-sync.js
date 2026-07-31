@@ -156,13 +156,77 @@ export function relayStatusLabel(status = {}) {
   if (!status.relayEnabled) return 'Sólo este equipo';
   switch (status.relayState) {
     case 'connected':
-      return 'En vivo entre equipos';
+      return status.pendingSnapshot ? 'Reconectando' : 'Sincronizado';
     case 'connecting':
-      return 'Conectando con la sala…';
+      return 'Reconectando';
     case 'offline':
-      return 'Sin conexión con la sala';
+      return 'Sin conexión';
     case 'reconnecting':
     default:
-      return status.relayConnected ? 'En vivo entre equipos' : 'Reconectando con la sala…';
+      return status.relayConnected && !status.pendingSnapshot ? 'Sincronizado' : 'Reconectando';
   }
+}
+
+export function normalizeRealtimeSnapshot(value = {}) {
+  const orders = Array.isArray(value?.orders)
+    ? value.orders.filter((order) => order && typeof order === 'object' && String(order.id || '').trim())
+    : [];
+  const lastOrderId = typeof value?.lastOrderId === 'string' && value.lastOrderId.trim()
+    ? value.lastOrderId.trim()
+    : null;
+  const simulation = value?.simulation && typeof value.simulation === 'object'
+    ? value.simulation
+    : null;
+  return { orders, lastOrderId, simulation };
+}
+
+// El relay nunca reemplaza ciegamente una sala. Fusiona cada pedido por su
+// timestamp de dominio, conserva entidades ausentes en un emisor atrasado y
+// sólo cambia la simulación cuando trae un sello más reciente.
+export function mergeRealtimeSnapshots(authoritativeValue = {}, incomingValue = {}) {
+  const authoritative = normalizeRealtimeSnapshot(authoritativeValue);
+  const incoming = normalizeRealtimeSnapshot(incomingValue);
+  const mergedOrders = mergeOrders(authoritative.orders, incoming.orders).orders;
+  const lastOrderId = chooseActiveOrderId(
+    authoritative.orders,
+    authoritative.lastOrderId,
+    incoming.orders,
+    incoming.lastOrderId,
+  );
+  const simulation = chooseRealtimeSimulation(authoritative.simulation, incoming.simulation);
+  const snapshot = {
+    orders: mergedOrders,
+    lastOrderId: mergedOrders.some((order) => order.id === lastOrderId) ? lastOrderId : null,
+    simulation,
+  };
+  return {
+    snapshot,
+    changed: realtimeSnapshotFingerprint(snapshot) !== realtimeSnapshotFingerprint(authoritative),
+  };
+}
+
+export function realtimeSnapshotFingerprint(value = {}) {
+  return JSON.stringify(normalizeRealtimeSnapshot(value));
+}
+
+function chooseRealtimeSimulation(authoritative, incoming) {
+  if (!incoming) return authoritative || null;
+  if (!authoritative) return incoming;
+  const incomingTime = realtimeSimulationTimestamp(incoming);
+  const authoritativeTime = realtimeSimulationTimestamp(authoritative);
+  return incomingTime > authoritativeTime ? incoming : authoritative;
+}
+
+function realtimeSimulationTimestamp(value) {
+  if (!value) return 0;
+  const numeric = Number(value.timestamp);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  const parsed = Date.parse(
+    value.lastGpsFixAt
+      || value.lastFixAt
+      || value.lastPublishedAt
+      || value.updatedAt
+      || '',
+  );
+  return Number.isNaN(parsed) ? 0 : parsed;
 }

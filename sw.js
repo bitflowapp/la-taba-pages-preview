@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v43-showcase';
+const CACHE_NAME = 'la-taba-runtime-v44-reliable-sync';
 const ASSETS = [
   './',
   './index.html',
@@ -21,7 +21,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=2',
   './js/startup-recovery.js?v=1',
-  './js/app.js?v=36',
+  './js/app.js?v=37',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',

@@ -286,28 +286,20 @@
                 </label>
               </div>
 
-              <div class="field-grid">
-                <label>
-                  <span class="field-label">Nombre <span class="req" aria-hidden="true">*</span></span>
-                  <input name="customerName" autocomplete="name" required placeholder="Tu nombre" />
-                </label>
-                <label>
-                  <span class="field-label">Teléfono <span class="req" aria-hidden="true">*</span></span>
-                  <input name="customerPhone" autocomplete="tel" inputmode="tel" required placeholder="Ej. 299 555 1234" />
-                </label>
-              </div>
+              <!--
+                El cliente y sus direcciones se administran exclusivamente en
+                Perfil. El checkout sólo lee: no existe un segundo formulario
+                editable que pueda convertirse en otra fuente de verdad. Los
+                campos ocultos siguen alimentando el snapshot del pedido y se
+                sincronizan desde el Perfil y la dirección elegida.
+              -->
+              <input type="hidden" name="customerName" />
+              <input type="hidden" name="customerPhone" />
 
                 <div class="address-fields" data-address-field>
-                <div class="field-grid">
-                  <label>
-                    <span class="field-label">Calle y número <span class="req" aria-hidden="true">*</span></span>
-                    <input name="customerStreetAddress" autocomplete="address-line1" placeholder="Calle y número" />
-                  </label>
-                  <label>
-                    <span class="field-label">Localidad o zona <span class="req" aria-hidden="true">*</span></span>
-                    <input name="customerNeighborhood" autocomplete="address-level2" placeholder="Localidad o zona" />
-                  </label>
-                  </div>
+                  <input type="hidden" name="customerStreetAddress" />
+                  <input type="hidden" name="customerNeighborhood" />
+                  <input type="hidden" name="customerReference" />
                   <input type="hidden" name="customerAddress" />
                   <input type="hidden" name="customerAddressId" />
                   <input type="hidden" name="customerAddressLabel" />
@@ -325,14 +317,6 @@
                   <div data-customer-addresses hidden></div>
                 </div>
 
-              <label class="remember-customer-row remember-customer-compact">
-                <input type="checkbox" name="rememberCustomer" />
-                <span>
-                  <strong>Guardar estos cambios en mi perfil</strong>
-                  <small>Recordar mis datos es opcional: si no marcás esta opción, se usan únicamente en este pedido.</small>
-                </span>
-              </label>
-
               <label class="checkout-payment-field">
                 Forma de pago
                 <select name="paymentMethod" aria-label="Forma de pago">
@@ -346,10 +330,6 @@
               <details class="checkout-instructions">
                 <summary>Agregar indicaciones</summary>
                 <div class="checkout-instructions-fields">
-                  <label>
-                    Referencia de entrega
-                    <input name="customerReference" autocomplete="off" placeholder="Ej: casa con portón negro, tocar timbre" />
-                  </label>
                   <label>
                     Observaciones del pedido
                     <textarea name="customerNotes" rows="3" placeholder="Ej: indicaciones para preparar o entregar el pedido"></textarea>
@@ -695,6 +675,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=2"></script>
-    <script type="module" src="js/app.js?v=36"></script>
+    <script type="module" src="js/app.js?v=37"></script>
   </body>
 </html>

@@ -35,6 +35,7 @@ import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, getA
 import { getState, subscribe } from './state.js';
 import { BRAND, STORAGE_KEYS } from './config.js';
 import { getBusinessConfig } from './core/business-config-store.js';
+import { relayStatusLabel } from './core/realtime-sync.js';
 import { handleBusinessAction, handleBusinessInput, lockAdmin, renderBusinessDashboard, submitBusinessSetupForm, unlockAdmin } from './business.js';
 import { handleDeliveryAction, handleDeliveryChange, renderDeliveryPanel } from './delivery.js';
 import {
@@ -86,6 +87,7 @@ import { toggleFavoriteProduct } from './core/customer-preferences.js';
 import {
   initializeCustomerDeliveryCheckout,
   persistCustomerProfileAfterOrder,
+  consumeProfileReturnTarget,
 } from './customer-delivery.js';
 import { initializeCustomerProfileView } from './customer-profile-view.js';
 import {
@@ -101,6 +103,7 @@ import {
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
 const RESET_RELAY_TIMEOUT_MS = 1200;
+const PROFILE_RETURN_STORAGE_KEY = 'taba:profile-return';
 // Cada cuánto revisamos si el GPS real del pedido activo se enfrió. Es bien por
 // debajo del umbral de "stale" (30 s) para volver a un fallback honesto a tiempo.
 const FRESHNESS_TICK_MS = 5000;
@@ -228,7 +231,8 @@ async function maybeResetDemoSession() {
 
 async function clearRelayRoomOnReset(params) {
   const relay = params.get('relay');
-  if (!relay || typeof fetch !== 'function') return;
+  const key = params.get('key');
+  if (!relay || !key || typeof fetch !== 'function') return;
   const room = sanitizeResetRoom(params.get('room') || safeStorageGet(RELAY_ROOM_STORAGE_KEY) || 'demo');
   const base = relay.replace(/\/+$/, '');
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -236,7 +240,7 @@ async function clearRelayRoomOnReset(params) {
     ? setTimeout(() => controller.abort(), RESET_RELAY_TIMEOUT_MS)
     : null;
   try {
-    await fetch(`${base}/reset?room=${encodeURIComponent(room)}`, {
+    await fetch(`${base}/reset?room=${encodeURIComponent(room)}&key=${encodeURIComponent(key)}`, {
       method: 'POST',
       keepalive: true,
       ...(controller ? { signal: controller.signal } : {}),
@@ -420,6 +424,14 @@ function clearModeStorage() {
     try { window.localStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
     try { window.sessionStorage?.removeItem(key); } catch (_) { /* sin storage: ignorar */ }
   });
+}
+
+function clearProfileReturnTarget() {
+  try {
+    window.sessionStorage?.removeItem(PROFILE_RETURN_STORAGE_KEY);
+  } catch (_) {
+    // Sin sessionStorage, no hay retorno persistente para limpiar.
+  }
 }
 
 function writeShowcaseRecovery(value) {
@@ -727,8 +739,34 @@ function renderLiveSurfaces() {
   }
   renderProductionOperations();
   renderMapViews();
+  renderGlobalRealtimeStatus();
   applyRenderedModeState();
   lastLivenessSignature = trackingLivenessSignature();
+}
+
+function renderGlobalRealtimeStatus() {
+  const status = getRealtimeStatus();
+  let control = document.querySelector('[data-realtime-sync="global"]');
+  if (!status.relayEnabled) {
+    control?.remove();
+    return;
+  }
+  if (!control) {
+    control = document.createElement('button');
+    control.type = 'button';
+    control.dataset.retryRelay = '';
+    control.dataset.realtimeSync = 'global';
+  }
+  const host = document.querySelector('.topbar');
+  if (host && control.parentElement !== host) host.append(control);
+  const synchronized = status.relayState === 'connected' && !status.pendingSnapshot;
+  const date = status.lastSyncAt ? new Date(status.lastSyncAt) : null;
+  const time = date && !Number.isNaN(date.getTime())
+    ? date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    : '';
+  control.className = `rt-chip ${synchronized ? 'live' : 'warn'}`;
+  control.textContent = `${relayStatusLabel(status)}${time ? ` · ${time}` : ''}`;
+  control.setAttribute('aria-label', `${relayStatusLabel(status)}. Reintentar sincronización`);
 }
 
 // Firma de vivacidad del pedido activo: id + estado live/idle del GPS real. Si
@@ -820,6 +858,21 @@ function showCheckoutInlineError(form, message) {
 function bindEvents() {
   window.addEventListener('popstate', syncViewFromLocation);
   window.addEventListener('hashchange', syncViewFromLocation);
+  window.addEventListener('taba:navigate-profile', (event) => {
+    const requestedReturn = String(event?.detail?.returnTo || 'cart');
+    const returnTo = normalizeView(requestedReturn) || 'cart';
+    try {
+      window.sessionStorage?.setItem(PROFILE_RETURN_STORAGE_KEY, returnTo);
+    } catch (_) {
+      // Sin sessionStorage, el retorno se pierde pero la navegación a Perfil sigue viva.
+    }
+    setActiveView('profile');
+  });
+  window.addEventListener('taba:profile-return', (event) => {
+    const requestedReturn = event?.detail?.returnTo || consumeProfileReturnTarget();
+    const returnTo = normalizeView(requestedReturn) || 'cart';
+    setActiveView(returnTo);
+  });
   window.addEventListener('pagehide', () => {
     // Al ir a segundo plano Chrome puede descartar la pestaña del rider. Se
     // corta el watcher por privacidad, pero se conserva sólo el último fix
@@ -870,6 +923,9 @@ function bindEvents() {
     const navView = target.closest('[data-nav-view]')?.dataset.navView;
     if (navView) {
       event.preventDefault();
+      if (normalizeView(navView) === 'profile') {
+        clearProfileReturnTarget();
+      }
       setActiveView(navView);
       return;
     }
@@ -1323,11 +1379,11 @@ function bindEvents() {
     const riderLink = target.closest('[data-copy-rider-link]');
     if (clientLink || riderLink) {
       const status = getRealtimeStatus();
-      if (!status.relayEnabled || !status.relayBase) {
-        showToast('Abrí la app con ?relay=…&room=… para compartir links.');
+      if (!status.relayEnabled || !status.relayBase || !status.roomKey) {
+        showToast('Abrí la app con ?relay=…&room=…&key=… para compartir links.');
         return;
       }
-      const base = `${status.relayBase}/?demo=1&relay=${encodeURIComponent(status.relayBase)}&room=${encodeURIComponent(status.room)}`;
+      const base = `${status.relayBase}/?demo=1&relay=${encodeURIComponent(status.relayBase)}&room=${encodeURIComponent(status.room)}&key=${encodeURIComponent(status.roomKey)}`;
       const link = riderLink ? `${base}#rider` : base;
       copyTextToClipboard(link)
         .then(() => showToast(riderLink ? 'Link del rider copiado.' : 'Link del cliente copiado.'))
@@ -1471,6 +1527,9 @@ function setActiveView(view, options = {}) {
   const nextView = normalizeView(view);
   const changed = nextView !== activeView;
   activeView = nextView;
+  if (nextView !== 'profile') {
+    clearProfileReturnTarget();
+  }
 
   if (options.writeHash !== false) {
     writeViewHash(nextView, options.replace === true);
@@ -1478,6 +1537,7 @@ function setActiveView(view, options = {}) {
 
   syncGpsSharingWithView(nextView);
   renderAll();
+  window.dispatchEvent(new CustomEvent('taba:realtime-view-enter', { detail: { view: nextView } }));
   if (changed) playViewEnter(nextView);
 
   if (changed && options.scroll !== false) {
@@ -1492,6 +1552,7 @@ function syncViewFromLocation() {
   activeView = nextView;
   syncGpsSharingWithView(nextView);
   renderAll();
+  window.dispatchEvent(new CustomEvent('taba:realtime-view-enter', { detail: { view: nextView } }));
   playViewEnter(nextView);
   resetPageScroll();
   focusActiveViewHeading(nextView);

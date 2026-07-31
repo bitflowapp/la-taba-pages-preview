@@ -10,6 +10,7 @@ import {
 } from './core/customer-delivery-address-hydration.js';
 import { splitStreetAndNumber } from './core/address.js';
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
+import { supportsProfileCheckout } from './core/profile-checkout.js';
 import { formatArgentinePhone, validateRequiredStreetNumber } from './core/validators.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
 import { createCustomerGeolocationService } from './services/customer-geolocation.js';
@@ -33,7 +34,14 @@ const state = {
   suggestion: null,
   suggestionDismissed: false,
   suggestionShown: false,
+  blockedReason: '',
+  addressListExpanded: false,
 };
+
+// A partir de esta cantidad el listado se muestra compacto y expandible, para
+// que 10 direcciones no empujen el resto del checkout fuera de pantalla.
+export const ADDRESS_LIST_COMPACT_THRESHOLD = 4;
+export const ADDRESS_LIST_COMPACT_VISIBLE = 3;
 
 let locationService = null;
 
@@ -41,28 +49,27 @@ export async function initializeCustomerDeliveryCheckout() {
   if (state.initialized) return;
   state.initialized = true;
   bindCheckoutEvents();
-  if (!isProduction()) {
-    setContainerVisibility(false);
+  // El checkout por Perfil es el único checkout. Si el modo no declara una
+  // autoridad de datos —preview o configuración productiva incompleta— no se
+  // muestra ningún formulario alternativo: el pedido queda bloqueado.
+  if (!supportsProfileCheckout()) {
+    state.blockedReason = 'unsupported';
+    render();
     return;
   }
   await loadCustomerDeliveryProfile();
 }
 
 export async function refreshCustomerDeliveryCheckout() {
-  if (!isProduction()) return { ok: true, skipped: true };
+  if (!supportsProfileCheckout()) return { ok: true, skipped: true };
   return loadCustomerDeliveryProfile();
 }
 
-export async function persistCustomerProfileAfterOrder(values = {}) {
-  if (!isProduction() || !values.rememberCustomer) return { ok: true, skipped: true };
-  const repository = profileRepository();
-  if (!repository) return { ok: false, message: 'No pudimos guardar tus datos para próximos pedidos.' };
-  const result = await repository.saveProfile({ name: values.customerName, phone: values.customerPhone });
-  if (result.ok) {
-    state.profile = result.profile;
-    notifyProfileUpdated();
-  }
-  return result;
+// Confirmar un pedido nunca escribe el Perfil. La administración de datos vive
+// exclusivamente en Perfil; esta función se conserva para no romper el contrato
+// de llamada, pero es deliberadamente inerte.
+export async function persistCustomerProfileAfterOrder() {
+  return { ok: true, skipped: true };
 }
 
 export function resetCustomerDeliveryForTests() {
@@ -120,9 +127,25 @@ function bindCheckoutEvents() {
     }
   });
 
+  // El modo de entrega decide si el selector de domicilios tiene sentido.
+  form?.addEventListener('change', (event) => {
+    if (event.target instanceof HTMLInputElement && event.target.name === 'deliveryMode') {
+      render();
+    }
+  });
+
   document.addEventListener('click', async (event) => {
     const target = event.target;
-    if (!(target instanceof Element) || !target.closest('[data-customer-addresses]')) return;
+    if (!(target instanceof Element)) return;
+
+    const profileAction = target.closest('[data-profile-checkout-action]')?.dataset.profileCheckoutAction;
+    if (profileAction && target.closest('[data-customer-addresses]')) {
+      event.preventDefault();
+      handleProfileCheckoutAction(profileAction);
+      return;
+    }
+
+    if (!target.closest('[data-customer-addresses]')) return;
     const action = target.closest('[data-customer-address-action]')?.dataset.customerAddressAction;
     if (!action) return;
     event.preventDefault();
@@ -160,6 +183,13 @@ async function beginCheckoutSession() {
 }
 
 function reconcileHydratedAddress({ interactionVersionAtStart }) {
+  if (!state.addresses.length) {
+    state.addressSource = ADDRESS_SOURCE.PROFILE_DEFAULT;
+    state.addressFormDirty = false;
+    clearSelectedAddress({ renderAfter: false });
+    clearVisibleAddressFields();
+    return;
+  }
   const currentDefault = defaultAddress();
   const currentSelection = findAddress(state.selectedAddressId);
   const action = resolveAddressHydration({
@@ -559,8 +589,10 @@ function confirmPendingLocation() {
 function applyProfileToEmptyFields(profile) {
   const form = checkoutForm();
   if (!form || !profile) return;
-  if (!form.elements?.customerName?.value) setValue(form, 'customerName', profile.name);
-  if (!form.elements?.customerPhone?.value) setValue(form, 'customerPhone', formatArgentinePhone(profile.phone));
+  // Nombre y teléfono tienen una única autoridad: Perfil. El checkout no los
+  // edita, por lo que nunca debe conservar valores ocultos de otro snapshot.
+  setValue(form, 'customerName', profile.name);
+  setValue(form, 'customerPhone', formatArgentinePhone(profile.phone));
 }
 
 function hasCheckoutAddressInput() {
@@ -601,31 +633,104 @@ function clearVisibleAddressFields() {
   ]) setValue(form, name, '');
 }
 
+// El checkout sólo lee. Muestra quién recibe, deja elegir entre las direcciones
+// guardadas y, si falta algo, bloquea con un camino claro hacia Perfil. Nunca
+// crea, edita ni elimina datos del cliente.
 function render(message = '') {
-  if (!isProduction()) return;
   syncAddressContractToForm();
   const container = document.querySelector('[data-customer-addresses]');
   if (!container) return;
   container.hidden = false;
-  const editing = findAddress(state.editingAddressId);
   const status = message || (state.loading ? 'Cargando tus datos guardados…' : '');
   container.innerHTML = `
-    <section class="saved-addresses-panel" aria-labelledby="saved-addresses-title">
-      <div class="saved-addresses-heading">
-        <div>
-          <span class="field-label" id="saved-addresses-title">Direcciones guardadas</span>
-          <small>${state.addresses.length ? 'Elegí una dirección o administrá tu libreta.' : 'Podés guardar una dirección cuando quieras, sin frenar el pedido.'}</small>
-        </div>
-        <button class="secondary-button compact" type="button" data-customer-address-action="add">Agregar dirección</button>
-      </div>
+    <section class="profile-checkout" data-profile-checkout aria-labelledby="profile-checkout-title">
+      <h4 class="profile-checkout-title" id="profile-checkout-title">Tus datos</h4>
       <div class="saved-address-status" aria-live="polite">${escapeHtml(status)}</div>
-      <p class="saved-address-order-note">La dirección elegida se usa en este pedido. Solo cambia tu libreta si tocás “Guardar dirección”.</p>
-      ${renderAddressList()}
-      ${renderLocationPanel()}
-      ${renderSuggestion()}
-      ${renderDuplicatePanel()}
-      ${renderAddressEditor(editing)}
+      ${renderProfileSummary()}
+      ${renderDeliveryAddressBlock()}
     </section>`;
+}
+
+function renderProfileSummary() {
+  if (state.blockedReason === 'unsupported') {
+    return `<div class="profile-checkout-block" data-profile-block="unsupported" role="status">
+      <strong>No podemos tomar tu pedido en este momento.</strong>
+      <span>Esta vista no tiene una sesión de cliente disponible.</span>
+    </div>`;
+  }
+  const profile = state.profile || {};
+  const missing = !String(profile.name || '').trim() || !String(profile.phone || '').trim();
+  if (missing) {
+    return `<div class="profile-checkout-block" data-profile-block="incomplete" role="status">
+      <strong>Completá tu perfil para continuar</strong>
+      <span>Necesitamos tu nombre y teléfono para que el local pueda entregarte el pedido.</span>
+      <button class="primary-button compact" type="button" data-profile-checkout-action="edit-profile">Completar Perfil</button>
+    </div>`;
+  }
+  return `<div class="profile-checkout-summary" data-profile-summary>
+    <div class="profile-checkout-identity">
+      <strong data-profile-name>${escapeHtml(profile.name)}</strong>
+      <span data-profile-phone>${escapeHtml(formatArgentinePhone(profile.phone))}</span>
+    </div>
+    <button class="text-button" type="button" data-profile-checkout-action="edit-profile">Editar en Perfil</button>
+  </div>`;
+}
+
+function renderDeliveryAddressBlock() {
+  if (state.blockedReason === 'unsupported') return '';
+  if (currentDeliveryModeIsPickup()) {
+    return `<div class="profile-checkout-pickup" data-profile-pickup>
+      <strong>Retirás en el local</strong>
+      <span>No hace falta una dirección: te esperamos en el mostrador.</span>
+    </div>`;
+  }
+  if (!state.addresses.length) {
+    return `<div class="profile-checkout-block" data-profile-block="no-address" role="status">
+      <strong>Agregá una dirección para recibir el pedido</strong>
+      <span>Guardás la dirección una vez en tu Perfil y después la elegís en cada compra.</span>
+      <button class="primary-button compact" type="button" data-profile-checkout-action="add-address">Agregar dirección en Perfil</button>
+    </div>`;
+  }
+  return `<div class="profile-checkout-addresses">
+    <div class="profile-checkout-addresses-head">
+      <span class="field-label" id="profile-addresses-title">¿Dónde lo llevamos?</span>
+      <button class="text-button" type="button" data-profile-checkout-action="manage-addresses">Administrar en Perfil</button>
+    </div>
+    ${renderAddressList()}
+  </div>`;
+}
+
+function currentDeliveryModeIsPickup() {
+  const form = checkoutForm();
+  return String(form?.elements?.deliveryMode?.value || '') === 'pickup';
+}
+
+// Navegar a Perfil no puede costar el carrito ni la selección ya hecha: se deja
+// una marca de retorno y el estado del checkout permanece intacto en memoria.
+function handleProfileCheckoutAction(action) {
+  if (action === 'toggle-addresses') {
+    state.addressListExpanded = !state.addressListExpanded;
+    render();
+    return;
+  }
+  if (['edit-profile', 'add-address', 'manage-addresses'].includes(action)) {
+    try {
+      globalThis.sessionStorage?.setItem?.('taba:profile-return', 'cart');
+    } catch (_) { /* sin sessionStorage el retorno se hace con la navegación normal */ }
+    window.dispatchEvent(new CustomEvent('taba:navigate-profile', {
+      detail: { reason: action, returnTo: 'cart' },
+    }));
+  }
+}
+
+export function consumeProfileReturnTarget() {
+  try {
+    const value = globalThis.sessionStorage?.getItem?.('taba:profile-return') || '';
+    if (value) globalThis.sessionStorage?.removeItem?.('taba:profile-return');
+    return value;
+  } catch (_) {
+    return '';
+  }
 }
 
 function syncAddressContractToForm() {
@@ -636,26 +741,63 @@ function syncAddressContractToForm() {
   form.dataset.profileHydrationVersion = String(state.profileHydrationVersion);
 }
 
+// Sólo selección: administrar direcciones es responsabilidad de Perfil. Con
+// pocas direcciones se listan todas; a partir del umbral el listado se muestra
+// compacto y expandible para no desbordar el checkout.
 function renderAddressList() {
-  if (!state.addresses.length) return '<p class="saved-address-empty">Todavía no tenés direcciones guardadas.</p>';
-  return `<div class="saved-address-list" role="radiogroup" aria-label="Direcciones guardadas">
-    ${state.addresses.map((address) => {
-      const selected = address.id === state.selectedAddressId;
-      const reference = address.reference ? `<small>${escapeHtml(address.reference)}</small>` : '';
-      return `<article class="saved-address-card ${selected ? 'is-selected' : ''}" data-customer-address-id="${escapeAttr(address.id)}">
-        <label class="saved-address-select">
-          <input type="radio" name="savedCustomerAddress" ${selected ? 'checked' : ''} aria-label="Usar ${escapeAttr(address.label)}" data-customer-address-action="select" />
-          <span><strong>${escapeHtml(address.label)}${address.isDefault ? ' · Principal' : ''}</strong><span>${escapeHtml(addressSummary(address))}</span>${reference}</span>
-        </label>
-        <div class="saved-address-actions">
-          <button class="text-button" type="button" data-customer-address-action="select" ${disabledAttr()}>Usar</button>
-          <button class="text-button" type="button" data-customer-address-action="edit" ${disabledAttr()}>Editar</button>
-          ${address.isDefault ? '' : `<button class="text-button" type="button" data-customer-address-action="make-default" ${disabledAttr()}>Principal</button>`}
-          <button class="text-button danger" type="button" data-customer-address-action="delete" ${disabledAttr()}>Eliminar</button>
-        </div>
-      </article>`;
-    }).join('')}
-  </div>`;
+  const total = state.addresses.length;
+  const compact = total >= ADDRESS_LIST_COMPACT_THRESHOLD && !state.addressListExpanded;
+  const selectedIndex = state.addresses.findIndex((address) => address.id === state.selectedAddressId);
+  const visible = compact
+    ? dedupeById([
+      ...(selectedIndex >= 0 ? [state.addresses[selectedIndex]] : []),
+      ...state.addresses.slice(0, ADDRESS_LIST_COMPACT_VISIBLE),
+    ]).slice(0, ADDRESS_LIST_COMPACT_VISIBLE)
+    : state.addresses;
+  const hidden = total - visible.length;
+
+  const cards = visible.map((address) => {
+    const selected = address.id === state.selectedAddressId;
+    const reference = address.reference ? `<small>${escapeHtml(address.reference)}</small>` : '';
+    return `<label class="profile-address-card ${selected ? 'is-selected' : ''}" data-customer-address-id="${escapeAttr(address.id)}">
+      <input
+        type="radio"
+        name="savedCustomerAddress"
+        value="${escapeAttr(address.id)}"
+        ${selected ? 'checked' : ''}
+        data-customer-address-action="select"
+      />
+      <span class="profile-address-copy">
+        <span class="profile-address-head">
+          <strong>${escapeHtml(address.label)}</strong>
+          ${address.isDefault ? '<span class="profile-address-badge">Principal</span>' : ''}
+        </span>
+        <span class="profile-address-line">${escapeHtml(addressSummary(address))}</span>
+        ${reference}
+      </span>
+    </label>`;
+  }).join('');
+
+  const toggle = total >= ADDRESS_LIST_COMPACT_THRESHOLD
+    ? `<button class="text-button profile-address-toggle" type="button" data-profile-checkout-action="toggle-addresses" aria-expanded="${state.addressListExpanded ? 'true' : 'false'}">${
+      state.addressListExpanded
+        ? 'Ver menos direcciones'
+        : `Ver las ${total} direcciones${hidden > 0 ? ` (${hidden} más)` : ''}`
+    }</button>`
+    : '';
+
+  return `<div class="profile-address-list ${state.addressListExpanded ? 'is-expanded' : ''}" role="radiogroup" aria-labelledby="profile-addresses-title" data-address-total="${total}">
+    ${cards}
+  </div>${toggle}`;
+}
+
+function dedupeById(list) {
+  const seen = new Set();
+  return list.filter((item) => {
+    if (!item || seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
 }
 
 function renderLocationPanel() {

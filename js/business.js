@@ -1,4 +1,6 @@
 import { getBusinessConfig } from './core/business-config-store.js';
+import { relayStatusLabel } from './core/realtime-sync.js';
+import { getRealtimeStatus } from './realtime.js';
 import { formatAddressReference, normalizeOrderAddressDetails } from './core/address.js';
 import {
   CATALOG_BADGE_OPTIONS,
@@ -185,6 +187,7 @@ export function renderBusinessDashboard() {
             <strong>Hoy, ${escapeHtml(todayLabel)}</strong>
             <span>${receivedOrders.length ? `${receivedOrders.length} pedido${receivedOrders.length === 1 ? '' : 's'} nuevo${receivedOrders.length === 1 ? '' : 's'}` : 'Cola al día'}</span>
           </div>
+          ${renderRealtimeSyncControl()}
           <button
             class="ghost-button compact sound-toggle ${soundEnabled ? 'on' : ''}"
             type="button"
@@ -254,6 +257,24 @@ function renderBusinessWorkspace({ view, state, metrics, report, cashboxClosures
   if (view === 'setup') return renderBusinessSetupPanel();
   if (view === 'guide') return renderDemoGuide();
   return renderOrderInbox(state, metrics, freshOrderIds);
+}
+
+function renderRealtimeSyncControl() {
+  const status = getRealtimeStatus();
+  if (!status.relayEnabled) return '';
+  const label = relayStatusLabel(status);
+  const tone = status.relayState === 'connected' && !status.pendingSnapshot ? 'live' : 'warn';
+  const time = formatRealtimeTime(status.lastSyncAt);
+  return `
+    <button class="rt-chip ${tone}" type="button" data-retry-relay data-realtime-sync="business">
+      ${escapeHtml(label)}${time ? ` · ${escapeHtml(time)}` : ''}
+    </button>`;
+}
+
+function formatRealtimeTime(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 }
 
 const INBOX_GROUPS = [

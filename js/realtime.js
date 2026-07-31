@@ -1,333 +1,472 @@
-// Puente realtime de demostración para La Taba.
-//
-// Dos transportes, misma lógica de aplicación:
-//   1) BroadcastChannel  -> sincroniza pestañas/ventanas en el MISMO navegador
-//      (ideal para probar en una compu o en los tests e2e). Siempre activo.
-//   2) Relay SSE opcional -> sincroniza DOS dispositivos distintos en la misma
-//      Wi-Fi, si la página se abre con ?relay=...&room=... (ver scripts/realtime-relay.mjs).
-//
-// Si no hay relay, la app funciona igual en modo local (un solo equipo).
-// Nunca se envía nada a internet: el relay es un proceso propio en la LAN.
-//
-// IMPORTANTE: esto es una demo. El tiempo real "de verdad" entre clientes
-// remotos necesita backend gestionado (Supabase Realtime, Firebase, WebSocket).
+// Sincronización demo entre pestañas/equipos. El servidor es autoridad por sala:
+// cada snapshot tiene revisión, ACK y recuperación explícita. Esto sigue siendo
+// infraestructura de demostración; no reemplaza un backend operativo autenticado.
 import { getState, setState, subscribe } from './state.js';
 import {
-  chooseActiveOrderId,
   computeRelayBackoffMs,
-  isNewerTimestamp,
-  mergeOrders,
-  orderTimestamp,
+  mergeRealtimeSnapshots,
+  normalizeRealtimeSnapshot,
+  realtimeSnapshotFingerprint,
 } from './core/realtime-sync.js';
 
-const DEVICE_KEY = 'la_taba_device_id';
-const ROOM_KEY = 'la_taba_rt_room';
+const DEVICE_STORAGE_KEY = 'la_taba_realtime_device';
+const ROOM_STORAGE_KEY = 'la_taba_realtime_room';
+const KEY_PATTERN = /^(?:[a-fA-F0-9]{64,128}|[a-zA-Z0-9_-]{43,128})$/;
+const CONNECTED_POLL_MS = 20_000;
+const RECOVERY_POLL_MS = 4_000;
+const REQUEST_TIMEOUT_MS = 8_000;
 
-let deviceId = null;
+let deviceId = '';
 let room = 'demo';
-let relayBase = null;
-let channel = null;
-let eventSource = null;
+let roomKey = '';
+let relayBase = '';
+let relayEnabled = false;
+let relayState = 'offline';
 let relayConnected = false;
-// Estado de conexión con el relay: 'idle' (sin relay) | 'connecting' |
-// 'connected' | 'reconnecting' | 'offline'. Permite mostrar en la UI un estado
-// honesto y decidir cuándo reabrir el stream nosotros mismos.
-let relayState = 'idle';
-let relayErrorCount = 0;
-let relayReconnectTimer = null;
-let relayManualClose = false;
+let relayTransport = 'local';
+let eventSource = null;
+let channel = null;
+let started = false;
 let applyingRemote = false;
 let lastSnapshotHash = '';
-let lastRemoteSimTs = 0;
-let started = false;
-const RECENT_GPS_MS = 5 * 60 * 1000;
-// Tras este número de errores seguidos mostramos "Sin conexión" (y el botón de
-// reintento), aunque por detrás sigamos reabriendo el stream con backoff.
-const RELAY_OFFLINE_AFTER_ATTEMPTS = 3;
-const EVENT_SOURCE_CLOSED = 2;
+let lastServerRevision = 0;
+let lastAckRevision = 0;
+let lastSyncAt = null;
+let lastAckAt = null;
+let lastError = '';
+let pendingSnapshot = null;
+let publishInFlight = false;
+let publishAttempt = 0;
+let reconnectAttempt = 0;
+let reconnectTimer = null;
+let publishRetryTimer = null;
+let pollTimer = null;
+let recoveryPromise = null;
+const statusListeners = new Set();
 
-export function getDeviceId() {
-  if (deviceId) return deviceId;
-  let stored = safeGet(DEVICE_KEY);
-  if (!stored) {
-    stored = (globalThis.crypto?.randomUUID?.() || `dev-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    safeSet(DEVICE_KEY, stored);
+export function initRealtime() {
+  if (started) return getRealtimeStatus();
+  started = true;
+  readParams();
+  setupLifecycleRecovery();
+  if (!relayEnabled) {
+    relayState = relayBase ? 'offline' : 'local';
+    notifyStatus();
+    return getRealtimeStatus();
   }
-  deviceId = stored;
-  return deviceId;
+
+  setupBroadcastChannel();
+  subscribe(handleLocalChange);
+  lastSnapshotHash = realtimeSnapshotFingerprint(currentSnapshot());
+  setRelayState('connecting', false, 'initializing');
+  openEventSource();
+  void recoverFromRelay('startup');
+  return getRealtimeStatus();
 }
 
-function safeGet(key) {
-  try { return globalThis.localStorage?.getItem(key) ?? null; } catch (_) { return null; }
+export function getRealtimeStatus() {
+  return {
+    room,
+    roomKey,
+    deviceId: getDeviceId(),
+    relayBase,
+    relayEnabled,
+    relayConnected,
+    relayState,
+    relayTransport,
+    revision: lastServerRevision,
+    ackRevision: lastAckRevision,
+    lastSyncAt,
+    lastAckAt,
+    lastError,
+    pendingSnapshot: Boolean(pendingSnapshot),
+    channel: Boolean(channel),
+  };
 }
-function safeSet(key, value) {
-  try { globalThis.localStorage?.setItem(key, value); } catch (_) { /* ignore */ }
+
+export function onRealtimeStatusChange(listener) {
+  if (typeof listener !== 'function') return () => undefined;
+  statusListeners.add(listener);
+  return () => statusListeners.delete(listener);
+}
+
+export function retryRelayConnection() {
+  if (!relayEnabled) {
+    return { ok: false, message: 'Esta sesión no tiene una sala compartida válida.' };
+  }
+  clearReconnectTimer();
+  closeEventSource();
+  setRelayState('reconnecting', false, 'manual_retry');
+  openEventSource();
+  void recoverFromRelay('manual');
+  return { ok: true, message: 'Sincronizando la sala…' };
 }
 
 function readParams() {
-  let search = '';
-  try { search = globalThis.location?.search || ''; } catch (_) { search = ''; }
-  const params = new URLSearchParams(search);
-  const paramRoom = params.get('room');
-  room = sanitizeRoom(paramRoom || safeGet(ROOM_KEY) || 'demo');
-  safeSet(ROOM_KEY, room);
-  const relay = params.get('relay');
-  relayBase = relay ? relay.replace(/\/+$/, '') : null;
-}
-
-function sanitizeRoom(value) {
-  return String(value || 'demo').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60) || 'demo';
-}
-
-export function initRealtime() {
-  if (started) return;
-  started = true;
-  getDeviceId();
-  readParams();
-  setupBroadcastChannel();
-  if (relayBase) setupRelay();
-  // Publicamos cuando cambian los pedidos o la simulación.
-  subscribe(handleLocalChange);
-  lastSnapshotHash = hashSnapshot(snapshot());
-  // Pedimos a los pares su estado actual (un rider recién abierto recibe el pedido del cliente).
-  publish({ kind: 'hello' });
+  let params;
+  try { params = new URLSearchParams(globalThis.location?.search || ''); } catch (_) { params = new URLSearchParams(); }
+  room = sanitizeRoom(params.get('room') || safeStorageGet(ROOM_STORAGE_KEY) || 'demo');
+  roomKey = String(params.get('key') || '').trim();
+  relayBase = sanitizeRelayBase(params.get('relay'));
+  relayEnabled = Boolean(relayBase && KEY_PATTERN.test(roomKey));
+  if (room) safeStorageSet(ROOM_STORAGE_KEY, room);
+  if (relayBase && !relayEnabled) lastError = 'missing_or_invalid_key';
 }
 
 function setupBroadcastChannel() {
   if (typeof BroadcastChannel === 'undefined') return;
   try {
     channel = new BroadcastChannel(`la-taba-rt-${room}`);
-    channel.onmessage = (event) => applyRemote(event.data);
+    channel.onmessage = (event) => applyIncoming(event.data, { source: 'channel' });
   } catch (_) {
     channel = null;
   }
 }
 
-function setupRelay() {
-  if (typeof EventSource === 'undefined' || !relayBase) return;
-  relayManualClose = false;
-  relayState = 'connecting';
+function openEventSource() {
+  if (!relayEnabled || typeof EventSource === 'undefined' || eventSource) return;
   try {
-    eventSource = new EventSource(`${relayBase}/events?room=${encodeURIComponent(room)}`);
-    eventSource.addEventListener('ready', onRelayOpen);
-    eventSource.addEventListener('message', (event) => {
-      try { applyRemote(JSON.parse(event.data)); } catch (_) { /* ignore malformed */ }
+    eventSource = new EventSource(apiUrl('/events'));
+    eventSource.addEventListener('ready', (event) => {
+      reconnectAttempt = 0;
+      markConnected('sse');
+      try {
+        const ready = JSON.parse(event.data || '{}');
+        if (Number.isInteger(Number(ready.revision))) {
+          lastServerRevision = Math.max(lastServerRevision, Number(ready.revision));
+        }
+      } catch (_) { /* malformed ready is recovered by snapshot */ }
+      void recoverFromRelay('sse_ready');
     });
-    eventSource.onopen = onRelayOpen;
-    eventSource.onerror = onRelayError;
+    eventSource.addEventListener('message', (event) => {
+      try { applyIncoming(JSON.parse(event.data), { source: 'sse' }); } catch (_) { /* ignore malformed */ }
+    });
+    eventSource.onopen = () => markConnected('sse');
+    eventSource.onerror = () => {
+      closeEventSource();
+      setRelayState(isOnline() ? 'reconnecting' : 'offline', false, 'sse_error');
+      scheduleReconnect();
+      schedulePoll(RECOVERY_POLL_MS);
+    };
   } catch (_) {
     eventSource = null;
-    relayState = 'offline';
+    setRelayState(isOnline() ? 'reconnecting' : 'offline', false, 'sse_open_failed');
+    scheduleReconnect();
   }
-  rerenderStatus();
 }
 
-function onRelayOpen() {
-  relayConnected = true;
-  relayErrorCount = 0;
-  relayState = 'connected';
-  clearRelayReconnectTimer();
-  rerenderStatus();
+function closeEventSource() {
+  if (!eventSource) return;
+  try { eventSource.close(); } catch (_) { /* ignore */ }
+  eventSource = null;
 }
 
-// Una sola caída cuenta como "reconectando"; varias seguidas pasan a "sin
-// conexión" (para mostrar el botón de reintento). Si el navegador cerró el
-// stream (CLOSED) lo reabrimos nosotros con backoff acotado; si quedó
-// reintentando solo (CONNECTING), lo dejamos hacer y no abrimos un segundo.
-function onRelayError() {
-  if (relayManualClose) return;
-  relayConnected = false;
-  relayErrorCount += 1;
-  relayState = relayErrorCount >= RELAY_OFFLINE_AFTER_ATTEMPTS ? 'offline' : 'reconnecting';
-  if (eventSource && eventSource.readyState === EVENT_SOURCE_CLOSED) {
-    scheduleRelayReconnect();
-  }
-  rerenderStatus();
-}
-
-function scheduleRelayReconnect() {
-  if (relayReconnectTimer !== null || typeof setTimeout !== 'function') return;
-  const delay = computeRelayBackoffMs(relayErrorCount);
-  relayReconnectTimer = setTimeout(() => {
-    relayReconnectTimer = null;
-    if (relayManualClose) return;
-    reopenRelay();
+function scheduleReconnect() {
+  if (!relayEnabled || reconnectTimer || !isOnline()) return;
+  reconnectAttempt += 1;
+  const delay = computeRelayBackoffMs(reconnectAttempt);
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    openEventSource();
+    void recoverFromRelay('sse_reconnect');
   }, delay);
 }
 
-function clearRelayReconnectTimer() {
-  if (relayReconnectTimer !== null) {
-    clearTimeout(relayReconnectTimer);
-    relayReconnectTimer = null;
+function clearReconnectTimer() {
+  if (!reconnectTimer) return;
+  clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+}
+
+async function recoverFromRelay(reason) {
+  if (!relayEnabled) return false;
+  if (!isOnline()) {
+    setRelayState('offline', false, 'browser_offline');
+    schedulePoll(RECOVERY_POLL_MS);
+    return false;
   }
+  if (recoveryPromise) return recoveryPromise;
+
+  recoveryPromise = (async () => {
+    if (!relayConnected) setRelayState(reason === 'startup' ? 'connecting' : 'reconnecting', false, reason);
+    try {
+      const response = await relayFetch(apiUrl('/snapshot'), { method: 'GET', cache: 'no-store' });
+      if (!response.ok) throw relayHttpError(response.status);
+      const envelope = await response.json();
+      applyIncoming({ kind: 'state', ...envelope }, { source: 'snapshot' });
+      markConnected(eventSource ? 'sse' : 'polling');
+      queueSnapshot(currentSnapshot());
+      await flushPendingSnapshot();
+      schedulePoll(CONNECTED_POLL_MS);
+      return true;
+    } catch (error) {
+      lastError = error?.code || error?.message || 'snapshot_failed';
+      setRelayState(error?.status === 401 || error?.status === 403 ? 'offline' : 'reconnecting', false, lastError);
+      schedulePoll(error?.status === 401 || error?.status === 403 ? 15_000 : RECOVERY_POLL_MS);
+      return false;
+    } finally {
+      recoveryPromise = null;
+    }
+  })();
+  return recoveryPromise;
 }
 
-function closeRelayStream({ manual }) {
-  relayManualClose = manual;
-  if (eventSource) {
-    try { eventSource.close(); } catch (_) { /* ignore */ }
-    eventSource = null;
-  }
-}
-
-function reopenRelay() {
-  closeRelayStream({ manual: false });
-  setupRelay();
-}
-
-// Reintento manual a pedido del usuario ("Reintentar conexión"). Reinicia el
-// backoff, reabre el stream y pide el estado actual a los pares.
-export function retryRelayConnection() {
-  if (!relayBase) {
-    return { ok: false, message: 'No hay servidor de sala configurado en este equipo.' };
-  }
-  clearRelayReconnectTimer();
-  relayErrorCount = 0;
-  reopenRelay();
-  publish({ kind: 'hello' });
-  return { ok: true, message: 'Reintentando conexión con la sala…' };
-}
-
-function snapshot() {
-  const state = getState();
-  return { orders: state.orders, lastOrderId: state.lastOrderId, simulation: state.simulation };
-}
-
-function hashSnapshot(snap) {
-  const orders = (snap.orders || []).map((order) => `${order.id}:${order.status}:${orderTimestamp(order)}`).join('|');
-  const sim = snap.simulation
-    ? `${snap.simulation.orderId}:${snap.simulation.routeId || ''}:${snap.simulation.destinationId || ''}:${snap.simulation.progress}:${snap.simulation.running}:${snap.simulation.etaMinutes}:${snap.simulation.lat}:${snap.simulation.lng}:${snap.simulation.mode || ''}:${snap.simulation.source}:${snap.simulation.gpsStatus || ''}:${snap.simulation.timestamp || snap.simulation.lastFixAt || ''}`
-    : 'none';
-  return `${orders}#${snap.lastOrderId || ''}#${sim}`;
+function schedulePoll(delay) {
+  if (!relayEnabled) return;
+  if (pollTimer) clearTimeout(pollTimer);
+  pollTimer = setTimeout(() => {
+    pollTimer = null;
+    void recoverFromRelay('poll');
+  }, Math.max(500, Number(delay) || RECOVERY_POLL_MS));
 }
 
 function handleLocalChange() {
-  if (applyingRemote) return;
-  const snap = snapshot();
-  const hash = hashSnapshot(snap);
+  if (applyingRemote || !relayEnabled) return;
+  const snapshot = currentSnapshot();
+  const hash = realtimeSnapshotFingerprint(snapshot);
   if (hash === lastSnapshotHash) return;
   lastSnapshotHash = hash;
-  publish({ kind: 'state', orders: snap.orders, lastOrderId: snap.lastOrderId, simulation: snap.simulation });
+  postToLocalPeers(snapshot);
+  queueSnapshot(snapshot);
+  void flushPendingSnapshot();
 }
 
-function publish(message) {
-  const payload = { ...message, sender: getDeviceId(), room, ts: Date.now() };
-  if (channel) {
-    try { channel.postMessage(payload); } catch (_) { /* ignore */ }
-  }
-  if (relayBase && typeof fetch === 'function') {
-    try {
-      fetch(`${relayBase}/publish?room=${encodeURIComponent(room)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      }).catch(() => { /* relay caído: seguimos en local */ });
-    } catch (_) { /* ignore */ }
+function queueSnapshot(snapshot) {
+  const normalized = normalizeRealtimeSnapshot(snapshot);
+  pendingSnapshot = {
+    snapshot: normalized,
+    hash: realtimeSnapshotFingerprint(normalized),
+    queuedAt: Date.now(),
+  };
+  notifyStatus();
+}
+
+async function flushPendingSnapshot() {
+  if (!relayEnabled || publishInFlight || !pendingSnapshot || !isOnline()) return false;
+  const pending = pendingSnapshot;
+  publishInFlight = true;
+  try {
+    const payload = {
+      kind: 'state',
+      sender: getDeviceId(),
+      ts: Date.now(),
+      snapshot: pending.snapshot,
+      orders: pending.snapshot.orders,
+      lastOrderId: pending.snapshot.lastOrderId,
+      simulation: pending.snapshot.simulation,
+    };
+    const response = await relayFetch(apiUrl('/publish'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw relayHttpError(response.status);
+    const ack = await response.json();
+    if (!ack?.ok || !Number.isInteger(Number(ack.revision))) throw new Error('invalid_ack');
+    lastAckRevision = Math.max(lastAckRevision, Number(ack.revision));
+    lastServerRevision = Math.max(lastServerRevision, Number(ack.revision));
+    lastAckAt = Date.now();
+    lastSyncAt = Number(ack.updatedAt) || lastAckAt;
+    lastError = '';
+    publishAttempt = 0;
+    if (pendingSnapshot?.hash === pending.hash) pendingSnapshot = null;
+    markConnected(eventSource ? 'sse' : 'polling');
+    notifyStatus();
+    return true;
+  } catch (error) {
+    lastError = error?.code || error?.message || 'publish_failed';
+    publishAttempt += 1;
+    setRelayState(isOnline() ? 'reconnecting' : 'offline', false, lastError);
+    schedulePublishRetry();
+    return false;
+  } finally {
+    publishInFlight = false;
+    if (pendingSnapshot && !publishRetryTimer) {
+      queueMicrotask(() => void flushPendingSnapshot());
+    }
   }
 }
 
-function applyRemote(message) {
+function schedulePublishRetry() {
+  if (publishRetryTimer || !pendingSnapshot || !relayEnabled) return;
+  const delay = computeRelayBackoffMs(publishAttempt, { baseMs: 750, maxMs: 15_000 });
+  publishRetryTimer = setTimeout(() => {
+    publishRetryTimer = null;
+    void recoverFromRelay('publish_retry');
+  }, delay);
+}
+
+function applyIncoming(message, { source } = {}) {
   if (!message || typeof message !== 'object') return;
-  if (message.sender && message.sender === getDeviceId()) return; // no aplicar el propio eco
   if (message.room && message.room !== room) return;
+  if (source === 'channel' && message.sender === getDeviceId()) return;
 
-  if (message.kind === 'hello') {
-    // Un par pide el estado actual: se lo mandamos.
-    const snap = snapshot();
-    publish({ kind: 'state', orders: snap.orders, lastOrderId: snap.lastOrderId, simulation: snap.simulation });
-    return;
-  }
+  const revision = Number(message.revision);
+  const hasRevision = Number.isInteger(revision) && revision >= 0;
+  if (hasRevision && revision < lastServerRevision) return;
+
   if (message.kind === 'reset') {
+    if (hasRevision && revision <= lastServerRevision) return;
     applyingRemote = true;
     setState({ orders: [], lastOrderId: null, simulation: null });
     applyingRemote = false;
-    lastSnapshotHash = hashSnapshot(snapshot());
-    if (isNewerTimestamp(message.ts, lastRemoteSimTs)) lastRemoteSimTs = message.ts;
+    pendingSnapshot = null;
+    lastSnapshotHash = realtimeSnapshotFingerprint(currentSnapshot());
+    lastServerRevision = hasRevision ? revision : lastServerRevision;
+    lastSyncAt = Number(message.updatedAt) || Date.now();
+    notifyStatus();
     return;
   }
-  if (message.kind !== 'state') return;
+  if (message.kind && message.kind !== 'state') return;
 
-  const local = getState();
-  const { orders, changed } = mergeOrders(local.orders, message.orders || []);
-  const nextLastOrderId = chooseActiveOrderId(local.orders, local.lastOrderId, message.orders || [], message.lastOrderId);
-  const lastOrderChanged = nextLastOrderId !== (local.lastOrderId || null);
-
-  let nextSimulation = local.simulation;
-  let simChanged = false;
-  if (Object.prototype.hasOwnProperty.call(message, 'simulation')) {
-    const incomingSimulation = message.simulation || null;
-    const shouldApplySimulation = shouldApplyRemoteSimulation(local.simulation, incomingSimulation, message.ts);
-    if (isNewerTimestamp(message.ts, lastRemoteSimTs)) lastRemoteSimTs = message.ts;
-    if (shouldApplySimulation) {
-      nextSimulation = incomingSimulation;
-      simChanged = JSON.stringify(nextSimulation) !== JSON.stringify(local.simulation);
-    }
+  const incoming = normalizeRealtimeSnapshot(message.snapshot || message);
+  const local = currentSnapshot();
+  const merged = mergeRealtimeSnapshots(local, incoming);
+  if (merged.changed) {
+    applyingRemote = true;
+    setState(merged.snapshot);
+    applyingRemote = false;
+    lastSnapshotHash = realtimeSnapshotFingerprint(currentSnapshot());
   }
 
-  if (!changed && !lastOrderChanged && !simChanged) return;
+  if (hasRevision) lastServerRevision = Math.max(lastServerRevision, revision);
+  if (source !== 'channel') {
+    lastSyncAt = Number(message.updatedAt) || Date.now();
+    lastError = '';
+    markConnected(source === 'sse' ? 'sse' : 'polling');
+  }
 
-  applyingRemote = true;
-  setState({
-    orders: changed ? orders : local.orders,
-    ...(lastOrderChanged ? { lastOrderId: nextLastOrderId } : {}),
-    ...(simChanged ? { simulation: nextSimulation } : {}),
+  if (realtimeSnapshotFingerprint(merged.snapshot) !== realtimeSnapshotFingerprint(incoming)) {
+    queueSnapshot(merged.snapshot);
+    void flushPendingSnapshot();
+  }
+  notifyStatus();
+}
+
+function postToLocalPeers(snapshot) {
+  if (!channel) return;
+  try {
+    channel.postMessage({
+      kind: 'state',
+      sender: getDeviceId(),
+      room,
+      snapshot,
+      orders: snapshot.orders,
+      lastOrderId: snapshot.lastOrderId,
+      simulation: snapshot.simulation,
+      ts: Date.now(),
+    });
+  } catch (_) { /* channel unavailable */ }
+}
+
+function setupLifecycleRecovery() {
+  if (typeof window === 'undefined') return;
+  window.addEventListener('online', () => {
+    clearReconnectTimer();
+    openEventSource();
+    void recoverFromRelay('online');
   });
-  applyingRemote = false;
-  lastSnapshotHash = hashSnapshot(snapshot());
+  window.addEventListener('offline', () => {
+    closeEventSource();
+    setRelayState('offline', false, 'browser_offline');
+  });
+  window.addEventListener('pageshow', () => void recoverFromRelay('pageshow'));
+  window.addEventListener('taba:realtime-view-enter', () => void recoverFromRelay('view_enter'));
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) void recoverFromRelay('visible');
+  });
 }
 
-function shouldApplyRemoteSimulation(localSimulation, incomingSimulation, messageTs) {
-  if (!incomingSimulation) return isNewerTimestamp(messageTs, lastRemoteSimTs);
-  const incomingIsGps = incomingSimulation.source === 'gps';
-  const localIsGps = localSimulation?.source === 'gps';
-
-  if (incomingIsGps && !localIsGps) return true;
-  if (localIsGps && !incomingIsGps && isRecentOrActiveGps(localSimulation)) return false;
-
-  if (incomingIsGps && localIsGps) {
-    const incomingFix = simulationTime(incomingSimulation);
-    const localFix = simulationTime(localSimulation);
-    if (incomingFix !== localFix) return incomingFix > localFix;
-  }
-
-  return isNewerTimestamp(messageTs, lastRemoteSimTs);
+function currentSnapshot() {
+  const state = getState();
+  return normalizeRealtimeSnapshot({
+    orders: state.orders,
+    lastOrderId: state.lastOrderId,
+    simulation: state.simulation,
+  });
 }
 
-function isRecentOrActiveGps(simulation) {
-  if (!simulation || simulation.source !== 'gps') return false;
-  if (simulation.gpsStatus === 'active' || simulation.gpsStatus === 'requesting') return true;
-  if (['inactive', 'denied', 'unavailable', 'requires_secure_context'].includes(simulation.gpsStatus)) return false;
-  const fixTime = simulationTime(simulation);
-  return fixTime > 0 && Date.now() - fixTime <= RECENT_GPS_MS;
+function markConnected(transport) {
+  relayTransport = transport || relayTransport;
+  setRelayState('connected', true, '');
 }
 
-function simulationTime(simulation) {
-  if (!simulation) return 0;
-  const numeric = Number(simulation.timestamp);
-  if (Number.isFinite(numeric) && numeric > 0) return numeric;
-  const fix = Date.parse(simulation.lastGpsFixAt || simulation.lastFixAt || simulation.lastPublishedAt || '');
-  return Number.isNaN(fix) ? 0 : fix;
+function setRelayState(nextState, connected, error) {
+  const changed = relayState !== nextState || relayConnected !== Boolean(connected) || (error && lastError !== error);
+  relayState = nextState;
+  relayConnected = Boolean(connected);
+  if (error) lastError = String(error);
+  if (changed) notifyStatus();
 }
 
-let statusListener = null;
-export function onRealtimeStatusChange(listener) {
-  statusListener = typeof listener === 'function' ? listener : null;
-}
-function rerenderStatus() {
-  if (statusListener) {
-    try { statusListener(getRealtimeStatus()); } catch (_) { /* ignore */ }
+function notifyStatus() {
+  const status = getRealtimeStatus();
+  for (const listener of statusListeners) {
+    try { listener(status); } catch (_) { /* a renderer cannot break sync */ }
   }
 }
 
-export function getRealtimeStatus() {
-  return {
-    room,
-    deviceId: getDeviceId(),
-    relayEnabled: Boolean(relayBase),
-    relayBase,
-    relayConnected,
-    relayState: relayBase ? relayState : 'idle',
-    channelEnabled: Boolean(channel),
-  };
+async function relayFetch(url, options) {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
+  try {
+    return await fetch(url, { ...options, ...(controller ? { signal: controller.signal } : {}) });
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function apiUrl(pathname) {
+  const separator = pathname.includes('?') ? '&' : '?';
+  return `${relayBase}${pathname}${separator}room=${encodeURIComponent(room)}&key=${encodeURIComponent(roomKey)}`;
+}
+
+function relayHttpError(status) {
+  const error = new Error(`relay_http_${status}`);
+  error.status = status;
+  error.code = status === 401 || status === 403 ? 'relay_auth_failed' : `relay_http_${status}`;
+  return error;
+}
+
+function sanitizeRelayBase(value) {
+  const raw = String(value || '').trim().replace(/\/+$/, '');
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw, globalThis.location?.href || 'http://localhost/');
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+    return parsed.origin + parsed.pathname.replace(/\/+$/, '');
+  } catch (_) {
+    return '';
+  }
+}
+
+function sanitizeRoom(value) {
+  const normalized = String(value || 'demo').trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+  return normalized || 'demo';
+}
+
+export function getDeviceId() {
+  if (deviceId) return deviceId;
+  const stored = safeStorageGet(DEVICE_STORAGE_KEY);
+  if (stored) {
+    deviceId = stored;
+    return deviceId;
+  }
+  const random = globalThis.crypto?.randomUUID?.()
+    || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  deviceId = `device-${String(random).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60)}`;
+  safeStorageSet(DEVICE_STORAGE_KEY, deviceId);
+  return deviceId;
+}
+
+function safeStorageGet(key) {
+  try { return globalThis.sessionStorage?.getItem(key) || ''; } catch (_) { return ''; }
+}
+
+function safeStorageSet(key, value) {
+  try { globalThis.sessionStorage?.setItem(key, value); } catch (_) { /* storage optional */ }
+}
+
+function isOnline() {
+  return typeof navigator === 'undefined' || navigator.onLine !== false;
 }

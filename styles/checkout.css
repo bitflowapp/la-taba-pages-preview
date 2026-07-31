@@ -728,3 +728,187 @@
     flex: 0 0 auto;
   }
 }
+
+/* Checkout basado en Perfil: el cliente sólo lee y elige. La administración de
+   datos vive en Perfil, así que acá no hay formularios ni acciones destructivas. */
+.profile-checkout {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-checkout-title {
+  margin: 0;
+  color: var(--taba-ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.profile-checkout-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 60px;
+  padding: 12px 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: var(--taba-white);
+}
+
+.profile-checkout-identity {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.profile-checkout-identity strong {
+  color: var(--taba-ink);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.profile-checkout-identity span {
+  color: var(--taba-muted);
+  font-size: 13.5px;
+}
+
+.profile-checkout-summary .text-button,
+.profile-checkout-addresses-head .text-button,
+.profile-address-toggle {
+  display: inline-flex;
+  min-height: var(--tap);
+  align-items: center;
+  padding-inline: 4px;
+  color: var(--taba-red-quiet);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.profile-checkout-block {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--taba-red-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--taba-red-wash);
+}
+
+.profile-checkout-block strong {
+  color: var(--taba-ink);
+  font-size: 14.5px;
+}
+
+.profile-checkout-block span {
+  color: var(--taba-graphite-soft);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.profile-checkout-block .primary-button {
+  justify-self: start;
+  min-height: var(--tap);
+  margin-top: 4px;
+}
+
+.profile-checkout-pickup {
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: var(--taba-subtle);
+}
+
+.profile-checkout-pickup strong {
+  font-size: 14.5px;
+}
+
+.profile-checkout-pickup span {
+  color: var(--taba-muted);
+  font-size: 13px;
+}
+
+.profile-checkout-addresses-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.profile-address-list {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-address-card {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-height: var(--tap);
+  padding: 12px 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: var(--taba-white);
+  cursor: pointer;
+}
+
+.profile-address-card.is-selected {
+  border-color: var(--taba-red-quiet);
+  background: var(--taba-red-wash);
+}
+
+.profile-address-card input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--taba-red-quiet);
+}
+
+.profile-address-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.profile-address-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-address-head strong {
+  font-size: 14.5px;
+  font-weight: 650;
+}
+
+.profile-address-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--taba-subtle);
+  color: var(--taba-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.profile-address-line {
+  color: var(--taba-graphite-soft);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.profile-address-copy small {
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+}
+
+.profile-address-toggle {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.profile-checkout :is(.text-button, .primary-button, .profile-address-card):focus-visible {
+  outline: 3px solid rgb(200 16 30 / 28%);
+  outline-offset: 2px;
+}

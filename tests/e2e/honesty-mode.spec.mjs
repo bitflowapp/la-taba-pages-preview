@@ -118,17 +118,47 @@ test('runtime productivo incompleto falla cerrado y no cae a preview/demo', asyn
   await expect(page.locator('.topbar [data-production-only]')).toBeHidden();
 });
 
-test('checkout del preview valida inline y mantiene copy comercial', async ({ page }) => {
+test('checkout del preview valida contrato de Perfil y mantiene copy comercial', async ({ page }) => {
   await installPageGuards(page);
   await installBrowserStubs(page);
   await page.goto('/?demo=1#catalog');
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.getByRole('button', { name: 'Ver mi pedido' }).click();
 
-  await page.getByLabel('Nombre').fill('Cliente prueba');
-  await page.getByLabel('Teléfono').fill('1');
-  await page.getByLabel('Calle y número').fill('x');
-  await page.getByLabel('Localidad o zona').fill('Neuquén Capital');
+  await fillCheckout(page, {
+    name: '',
+    phone: '',
+    addresses: [],
+    payment: 'transfer',
+    deliveryMode: 'delivery',
+  });
+  await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
+  await expect(
+    page.locator('[data-profile-block="incomplete"] [data-profile-checkout-action="edit-profile"]'),
+  ).toBeVisible();
+
+  await fillCheckout(page, {
+    name: 'Cliente prueba',
+    phone: '2995551234',
+    addresses: [],
+    payment: 'transfer',
+    deliveryMode: 'delivery',
+  });
+  await expect(page.locator('[data-profile-block="no-address"]')).toBeVisible();
+  await expect(
+    page.locator('[data-profile-block="no-address"] [data-profile-checkout-action="add-address"]'),
+  ).toBeVisible();
+
+  await fillCheckout(page, {
+    name: 'Cliente prueba',
+    phone: '2995551234',
+    street: 'Roca 123',
+    neighborhood: 'Neuquen Capital',
+    reference: 'Porton gris',
+    notes: '',
+    payment: 'transfer',
+    deliveryMode: 'delivery',
+  });
   const paymentMethod = page.getByLabel('Forma de pago');
   await expect(paymentMethod).toBeVisible();
   await expect(paymentMethod.locator('option')).toHaveCount(3);
@@ -136,24 +166,11 @@ test('checkout del preview valida inline y mantiene copy comercial', async ({ pa
   await paymentMethod.selectOption('transfer');
   await expect(paymentMethod).toHaveValue('transfer');
   await page.locator('[data-checkout-submit]').click();
-  await waitForToast(page, 'Ingresá un teléfono argentino válido');
-  await expect(page.locator('[data-checkout-warning]')).toContainText('Ingresá un teléfono argentino válido');
-  await expect(page.getByLabel('Teléfono')).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.getByLabel('Teléfono')).toBeFocused();
-
-  await page.getByLabel('Teléfono').fill('2995551234');
-  await page.locator('[data-checkout-submit]').click();
-  await waitForToast(page, 'Ingresá una calle y número válidos');
-  await expect(page.getByLabel('Calle y número')).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.getByLabel('Calle y número')).toBeFocused();
-
-  await page.getByLabel('Calle y número').fill('Roca 123');
-  await page.locator('[data-checkout-submit]').click();
   await waitForToast(page, 'Pedido confirmado');
 
   const tracking = page.locator('[data-tracking-panel]');
   await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido fue confirmado');
-  await expect(tracking).not.toContainText(/pedido de muestra|no se envió|presentación/i);
+  await expect(tracking).not.toContainText(/pedido de muestra|no se envio|presentacion/i);
   await expect(tracking.locator('[data-delivery-code]')).toHaveCount(0);
   await expect(tracking.locator('.tracking-help-card')).toHaveCount(0);
   await expect(tracking.getByRole('link', { name: 'Contactar al local' })).toHaveCount(0);

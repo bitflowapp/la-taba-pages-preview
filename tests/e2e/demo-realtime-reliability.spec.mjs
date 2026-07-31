@@ -204,9 +204,7 @@ test('key incorrecta queda aislada y un duplicado no incrementa revisión', asyn
 });
 
 test('reinicio real con TABA_RELAY_STATE_DIR recupera la sala', async ({ browser }) => {
-  const artifactRoot = process.platform === 'win32'
-    ? 'C:\\1212\\artifacts\\taba-relay-reliable-sync'
-    : path.join(os.tmpdir(), 'taba-relay-reliable-sync');
+  const artifactRoot = path.join(os.tmpdir(), 'taba-relay-reliable-sync');
   await mkdir(artifactRoot, { recursive: true });
   const stateDir = await mkdtemp(path.join(artifactRoot, 'e2e-state-'));
   const port = 23_000 + (process.pid % 10_000);

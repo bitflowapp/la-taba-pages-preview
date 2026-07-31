@@ -163,9 +163,20 @@ test('sandbox completes client, business, rider, route, delivery and reorder', a
     reference: 'Portón gris',
     notes: 'Pedido de prueba',
   });
-  await page.locator('[name="rememberCustomer"]').check();
+  const initialProfileState = await page.evaluate(() => {
+    const snapshot = localStorage.getItem('la-taba-sandbox-profile:demo');
+    return snapshot ? JSON.parse(snapshot) : null;
+  });
+  await expect(page.locator('[data-profile-summary]')).toBeVisible();
+  await expect(page.locator('[data-profile-name]')).toHaveText('Cliente Sandbox');
+  await expect(page.locator('[data-profile-phone]')).toHaveText('299 555 0101');
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, /Pedido confirmado/);
+  const finalProfileState = await page.evaluate(() => {
+    const snapshot = localStorage.getItem('la-taba-sandbox-profile:demo');
+    return snapshot ? JSON.parse(snapshot) : null;
+  });
+  expect(finalProfileState).toEqual(initialProfileState);
 
   const orderId = await page.evaluate(() => import('/js/state.js').then(({ getState }) => getState().lastOrderId));
   await page.goto('/?demo=1#business');

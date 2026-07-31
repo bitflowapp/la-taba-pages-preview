@@ -5,6 +5,7 @@ import {
   installBrowserStubs,
   installPageGuards,
   openFirstProductModal,
+  seedCheckoutProfile,
   waitForToast,
 } from './helpers.mjs';
 
@@ -215,43 +216,20 @@ test('flujo cliente con delivery', async ({ page }) => {
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await page.getByLabel('Delivery').check();
 
-  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Ingresá el nombre del cliente.');
+  // Contrato nuevo: el checkout no valida datos de cliente al confirmar, porque
+  // ya no los pide. Un Perfil incompleto o sin dirección se bloquea antes, con
+  // un camino explícito hacia Perfil.
+  await seedCheckoutProfile(page, { name: '', phone: '', addresses: [] });
+  await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
+  await expect(
+    page.locator('[data-profile-block="incomplete"] [data-profile-checkout-action="edit-profile"]'),
+  ).toBeVisible();
 
-  await fillCheckout(page, {
-    name: '',
-    phone: '2995550000',
-    street: 'Roca 123',
-    neighborhood: 'Neuquen centro',
-    notes: 'Sin hueso',
-    payment: 'transfer',
-    deliveryMode: 'delivery',
-  });
-  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Ingresá el nombre del cliente.');
-
-  await fillCheckout(page, {
-    name: 'Walter QA',
-    phone: '',
-    street: 'Roca 123',
-    neighborhood: 'Neuquen centro',
-    notes: 'Sin hueso',
-    payment: 'transfer',
-    deliveryMode: 'delivery',
-  });
-  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Ingresá un teléfono de contacto.');
-
-  await fillCheckout(page, {
-    name: 'Walter QA',
-    phone: '2995550000',
-    address: '',
-    notes: 'Sin hueso',
-    payment: 'transfer',
-    deliveryMode: 'delivery',
-  });
-  await page.getByRole('button', { name: /Confirmar pedido/i }).click();
-  await waitForToast(page, 'Ingresá una calle y número válidos para el envío.');
+  await seedCheckoutProfile(page, { name: 'Walter QA', phone: '2995550000', addresses: [] });
+  await expect(page.locator('[data-profile-block="no-address"]')).toBeVisible();
+  await expect(
+    page.locator('[data-profile-block="no-address"] [data-profile-checkout-action="add-address"]'),
+  ).toBeVisible();
 
   await fillCheckout(page, {
     name: 'Walter QA',
@@ -366,7 +344,8 @@ test('flujo retiro en local', async ({ page }) => {
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await page.getByLabel('Retiro en local').check();
 
-  await expect(page.locator('[data-address-field]')).toBeHidden();
+  await expect(page.locator('[data-profile-pickup]')).toBeVisible();
+  await expect(page.locator('[data-customer-addresses] .profile-address-list')).toHaveCount(0);
   await expect(page.locator('[data-checkout-details-title]')).toHaveText('Datos para retirar');
   await expect(page.locator('[data-order-summary]')).not.toContainText('Pedido mínimo delivery');
   await expect(page.locator('[data-order-summary]')).toContainText('Retiro en local');

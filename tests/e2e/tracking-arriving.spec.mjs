@@ -294,10 +294,10 @@ test('tracking público arriving reproduce la composición y conserva datos real
   await page.evaluate(() => window.scrollTo(0, 0));
   const mapBounds = await map.boundingBox();
   expect(mapBounds).not.toBeNull();
-  await page.mouse.move(
-    mapBounds.x + (mapBounds.width / 2),
-    mapBounds.y + (mapBounds.height / 2),
-  );
+  // Scroll from the page gutter: the map intentionally owns wheel gestures
+  // over its surface, so centering the pointer there does not test page scroll.
+  await page.setViewportSize({ width: 390, height: 620 });
+  await page.mouse.move(8, 540);
   await page.mouse.wheel(0, 180);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
 

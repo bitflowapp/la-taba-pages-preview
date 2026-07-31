@@ -13,8 +13,8 @@ function seededState(status) {
     appMode: 'demo',
     orders: [{
       id: 'LT-0002',
-      customerName: 'Walter Cliente',
-      customerPhone: '2995551234',
+      customerName: 'Cliente Demo',
+      customerPhone: '2990000001',
       address: 'Mendoza 851, Centro',
       addressDetails: { streetLine: 'Mendoza 851', neighborhood: 'Centro', reference: 'Portón gris', label: 'Mendoza 851, Centro' },
       deliveryMode: 'delivery',

@@ -176,10 +176,10 @@ test('computeRelayBackoffMs crece exponencial y queda acotado', () => {
 
 test('relayStatusLabel describe la conexión con la sala sin inventar', () => {
   assert.equal(relayStatusLabel({ relayEnabled: false }), 'Sólo este equipo');
-  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'connected' }), 'En vivo entre equipos');
-  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'connecting' }), 'Conectando con la sala…');
-  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'offline' }), 'Sin conexión con la sala');
-  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'reconnecting' }), 'Reconectando con la sala…');
+  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'connected' }), 'Sincronizado');
+  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'connecting' }), 'Reconectando');
+  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'offline' }), 'Sin conexión');
+  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'reconnecting' }), 'Reconectando');
   // Defensa: reconnecting pero ya reconectado => no muestra "reconectando".
-  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'reconnecting', relayConnected: true }), 'En vivo entre equipos');
+  assert.equal(relayStatusLabel({ relayEnabled: true, relayState: 'reconnecting', relayConnected: true }), 'Sincronizado');
 });

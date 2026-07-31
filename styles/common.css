@@ -19,21 +19,21 @@
   border: 0 !important;
 }
 
+/* App bar de papel con hairline: el negro queda concentrado en el wordmark,
+   no en tres superficies grandes. */
 .topbar {
   position: sticky;
-  z-index: 1000;
+  z-index: var(--z-appbar);
   top: 0;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   min-height: var(--topbar);
-  padding: 10px max(18px, calc((100vw - var(--content)) / 2));
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-  background:
-    radial-gradient(circle at 12% -80%, rgb(255 255 255 / 12%), transparent 50%),
-    linear-gradient(115deg, #13171d 0%, #1c2128 55%, #12161b 100%);
-  box-shadow: 0 6px 18px rgb(7 9 12 / 22%);
-  color: #fff;
+  padding: 0 max(18px, calc((100vw - var(--content)) / 2));
+  border-bottom: 1px solid var(--taba-border);
+  background: rgb(255 253 251 / 92%);
+  box-shadow: none;
+  color: var(--taba-ink);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
@@ -60,13 +60,13 @@
   font-style: italic;
   letter-spacing: -0.05em;
   line-height: 1;
-  color: #fff;
+  color: var(--taba-ink);
 }
 
 .brand-text::after {
-  width: 42px;
-  height: 3px;
-  margin-top: 7px;
+  width: 34px;
+  height: 2.5px;
+  margin-top: 5px;
   border-radius: var(--radius-pill);
   background: var(--taba-red);
   content: "";
@@ -78,10 +78,213 @@
   font-size: 11px;
 }
 
+.topbar-mid {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
 .desktop-nav {
   display: flex;
   justify-content: center;
   gap: 4px;
+}
+
+/* Control de dirección: 44px, flexible, valor truncado con elipsis. */
+.topbar-address {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--tap);
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--taba-ink);
+  text-align: left;
+}
+
+.topbar-address:hover {
+  background: var(--taba-subtle);
+}
+
+.topbar-address .address-chip-ico {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--taba-red);
+}
+
+.topbar-address .address-chip-text {
+  display: grid;
+  min-width: 0;
+  gap: 0;
+}
+
+.topbar-address .address-chip-text small {
+  color: var(--taba-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.topbar-address .address-chip-text strong {
+  overflow: hidden;
+  color: var(--taba-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-address.is-missing .address-chip-text strong {
+  color: var(--taba-danger);
+}
+
+/* App bar operativo: el contexto del local reemplaza al control de dirección
+   del cliente. Nunca conviven. */
+.topbar-ops {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-ops-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0;
+}
+
+.topbar-ops-copy small {
+  overflow: hidden;
+  color: var(--taba-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-ops-copy strong {
+  overflow: hidden;
+  color: var(--taba-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ops-label-short,
+.ops-context-short,
+.ops-context-mini {
+  display: none;
+}
+
+/* En pantallas angostas el rótulo y el contexto tienen variante corta: el
+   texto se acorta por diseño, nunca se recorta con elipsis.
+   Umbral medido: la columna de texto vale ~(ancho − 258px), y la frase
+   completa "Hoy, 31 de julio · N pedidos nuevos" necesita 202px. */
+@media (max-width: 519px) {
+  .ops-label-full,
+  .ops-context-full {
+    display: none;
+  }
+
+  .ops-label-short,
+  .ops-context-short {
+    display: inline;
+  }
+
+  .topbar-ops {
+    gap: 6px;
+  }
+
+  .topbar-ops-sync {
+    padding-inline: 6px;
+    font-size: 11px;
+  }
+}
+
+/* Por debajo de 341px ni siquiera "1 pedido nuevo" entra junto al estado de
+   sincronización: se usa la frase mínima, también completa. */
+@media (max-width: 340px) {
+  .ops-context-short {
+    display: none;
+  }
+
+  .ops-context-mini {
+    display: inline;
+  }
+
+  .topbar-ops-copy small {
+    letter-spacing: 0;
+  }
+
+  .topbar-ops-sync {
+    padding-inline: 5px;
+    font-size: 10.5px;
+  }
+}
+
+.topbar-ops-sync {
+  flex: 0 0 auto;
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+/* Conmutador de sonido: estado explícito con `aria-pressed` y contador de
+   pedidos nuevos. Es la función más crítica del turno. */
+.topbar-ops-sound {
+  position: relative;
+  display: grid;
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 var(--tap);
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: var(--taba-white);
+  color: var(--taba-muted);
+}
+
+.topbar-ops-sound.on {
+  border-color: var(--taba-ink);
+  color: var(--taba-ink);
+}
+
+.topbar-ops-sound-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  border-radius: var(--radius-pill);
+  background: var(--taba-red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.topbar-address-chevron {
+  flex: 0 0 auto;
+  color: var(--taba-muted);
+  font-size: 18px;
+  line-height: 1;
 }
 
 .desktop-nav button,
@@ -101,49 +304,58 @@
 
 .desktop-nav button:hover,
 .desktop-nav button.active {
-  background: rgb(255 255 255 / 9%);
-  color: #fff;
+  background: var(--taba-subtle);
+  color: var(--taba-ink);
 }
 
 .topbar .desktop-nav button {
-  color: rgb(255 255 255 / 72%);
+  color: var(--taba-muted);
 }
 
-.topbar .desktop-nav .mini-badge {
-  box-shadow: 0 2px 8px rgb(0 0 0 / 24%);
+.topbar .desktop-nav button.active {
+  color: var(--taba-red);
 }
 
+/* Icono con badge: la cifra sólo existe si hay contenido. */
 .topbar .cart-button {
   display: inline-flex;
-  min-width: 154px;
-  min-height: 48px;
+  width: var(--tap);
+  min-width: var(--tap);
+  min-height: var(--tap);
   align-items: center;
+  justify-content: center;
   gap: 9px;
-  padding: 4px 10px 4px 4px;
-  border: 1px solid rgb(255 255 255 / 16%);
-  border-radius: var(--radius-pill);
-  background: rgb(9 12 16 / 58%);
-  box-shadow: 0 6px 14px rgb(0 0 0 / 22%), inset 0 1px 0 rgb(255 255 255 / 7%);
-  color: #fff;
+  padding: 0;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: var(--taba-white);
+  box-shadow: none;
+  color: var(--taba-ink);
   overflow: visible;
   white-space: nowrap;
 }
 
 .topbar .cart-button:hover {
-  background: rgb(9 12 16 / 78%);
-  transform: translateY(-1px);
+  border-color: var(--taba-border-medium);
+  background: var(--taba-subtle);
+}
+
+.topbar .cart-button .cart-button-copy,
+.topbar .cart-button .cart-button-arrow {
+  display: none;
 }
 
 .cart-button-icon {
   position: relative;
   display: grid;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 var(--tap);
   place-items: center;
-  border-radius: 50%;
-  background: var(--taba-red);
-  box-shadow: 0 3px 8px rgb(185 10 19 / 30%);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  box-shadow: none;
+  color: var(--taba-ink);
 }
 
 .cart-button-icon svg {
@@ -171,12 +383,9 @@
   box-shadow: 0 2px 6px rgb(0 0 0 / 22%);
 }
 
-.cart-button-count[hidden] {
-  display: grid !important;
-}
-
+/* El badge no existe con el carrito vacío: no se muestra un "0". */
 .cart-button-count.is-empty {
-  display: grid !important;
+  display: none !important;
 }
 
 .cart-button-copy {
@@ -473,15 +682,18 @@ label {
   gap: 3px;
 }
 
+/* El borde del campo PORTA información: usa `--taba-line-strong` (3,26:1
+   sobre blanco) para cumplir WCAG 1.4.11, y nunca baja de 16px de fuente. */
 input,
 select,
 textarea {
   width: 100%;
   min-height: var(--tap);
   padding: 10px 12px;
-  border: 1px solid var(--taba-border);
+  border: 1px solid var(--taba-line-strong);
   border-radius: var(--radius-xs);
   background: var(--taba-white);
+  font-size: 16px;
 }
 
 textarea {
@@ -519,7 +731,7 @@ summary {
 
 .toast {
   position: fixed;
-  z-index: 3000;
+  z-index: var(--z-toast);
   pointer-events: none;
   left: 50%;
   bottom: calc(88px + env(safe-area-inset-bottom));
@@ -593,19 +805,22 @@ dialog::backdrop {
 
 .floating-cart {
   position: fixed;
-  z-index: 1200;
+  z-index: var(--z-sticky-cta);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   right: 18px;
   bottom: 20px;
-  min-height: 62px;
-  padding: 8px 18px;
-  border: 1px solid rgb(255 255 255 / 24%);
-  border-radius: var(--radius-pill);
-  background: var(--taba-red);
-  box-shadow: 0 10px 24px rgb(204 0 16 / 25%), inset 0 1px 0 rgb(255 255 255 / 18%);
+  height: var(--cta-h);
+  min-height: var(--cta-h);
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-md);
+  /* Barra oscura frente a la nav de papel: por contraste de superficie no se
+     leen como una sola franja, y el rojo no ocupa el ancho de la pantalla. */
+  background: var(--taba-ink);
+  box-shadow: var(--shadow-sm);
   color: white;
   font-weight: 800;
   text-align: left;
@@ -652,12 +867,21 @@ dialog::backdrop {
 .floating-cart > strong {
   white-space: nowrap;
   font-size: 16px;
-  font-weight: 950;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La consulta se retira del campo con un único control: el nativo de
+   `type="search"` se oculta para no duplicar la "✕". */
+.search-box input[type="search"]::-webkit-search-cancel-button,
+.search-box input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .pwa-banner {
   position: fixed;
-  z-index: 2500;
+  z-index: var(--z-toast);
   right: 16px;
   bottom: 16px;
   display: flex;

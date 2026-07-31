@@ -1,35 +1,45 @@
+/* ============================================================================
+   TABA — Tokens · dirección visual "Mostrador Patagónico"
+   Neutros grises fríos (basalto), rojo TABA reservado a acción y marca,
+   producto sobre blanco. Ninguna medida de chrome se escribe dos veces.
+   ========================================================================== */
+
 :root {
   color-scheme: light;
   --taba-red: #d0000d;
-  --taba-red-hover: #b6000b;
+  --taba-red-hover: #a80009;
   --taba-red-soft: #fff0f1;
-  --taba-red-quiet: #c51624;
-  --taba-red-border-soft: #e69aa0;
+  --taba-red-quiet: #b3121b;
+  --taba-red-border-soft: #f0c2c6;
   --taba-red-wash: #fffafa;
-  --taba-ink: #17171a;
-  --taba-graphite: #303036;
-  --taba-graphite-soft: #4f5055;
-  --taba-muted: #626269;
-  --taba-muted-soft: #707177;
-  --taba-subtle: #f5f5f6;
-  --taba-border: #e4e4e7;
-  --taba-border-soft: #eceae8;
-  --taba-border-medium: #c9c9ce;
-  --taba-warm-white: #fffefa;
+  --taba-ink: #14161a;
+  --taba-graphite: #2a2e35;
+  --taba-graphite-soft: #414751;
+  --taba-muted: #5b6270;
+  --taba-muted-soft: #656d79;
+  --taba-subtle: #f5f7f9;
+  --taba-border: #e4e7ec;
+  --taba-border-soft: #eef0f3;
+  --taba-border-medium: #d7dbe1;
+  /* Borde que PORTA información (campos): 3,26:1 sobre blanco, WCAG 1.4.11. */
+  --taba-line-strong: #878f9d;
+  --taba-warm-white: #fffdfb;
   --taba-white: #fff;
-  --taba-success: #18864b;
-  --taba-warning: #9a5a00;
-  --taba-danger: #c51620;
-  --taba-focus: #1d5fd1;
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --radius-xs: 8px;
-  --radius-sm: 12px;
-  --radius-md: 18px;
-  --radius-lg: 24px;
+  --taba-success: #0f7a3d;
+  --taba-warning: #8a5300;
+  --taba-danger: #b3121b;
+  --taba-focus: #1a5fd0;
+  /* Tipografía de sistema: no se declara ninguna fuente que no se sirva. */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
   --radius-pill: 999px;
-  --shadow-xs: 0 1px 2px rgb(20 20 22 / 5%);
-  --shadow-sm: 0 8px 24px rgb(20 20 22 / 8%);
-  --shadow-md: 0 18px 48px rgb(20 20 22 / 12%);
+  /* El borde hace el trabajo; la sombra es soporte. */
+  --shadow-xs: 0 1px 2px rgb(20 22 26 / 6%);
+  --shadow-sm: 0 4px 12px rgb(20 22 26 / 8%);
+  --shadow-md: 0 12px 32px rgb(20 22 26 / 14%);
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -41,16 +51,75 @@
   --space-12: 48px;
   --tap: 44px;
   --content: 1180px;
-  --topbar: 72px;
-  --taba-bottom-nav-height: 104px;
-  --taba-bottom-nav-gap: 18px;
-  --taba-floating-cart-height: 52px;
-  --taba-floating-cart-gap: 12px;
+  --topbar: 56px;
+
+  /* --- Escala de apilamiento: un único orden, sin números sueltos. --- */
+  --z-base: 0;
+  --z-sticky-section: 100;
+  --z-appbar: 200;
+  --z-bottomnav: 300;
+  --z-sticky-cta: 400;
+  --z-backdrop: 500;
+  --z-sheet: 510;
+  --z-modal: 600;
+  --z-toast: 700;
+
+  /* ==========================================================================
+     STICKY STACK — fórmula única. La altura de la nav se declara UNA vez;
+     todo lo demás se deriva. Reemplaza los cuatro valores contradictorios
+     (104px token / 76px responsive / 70px min-height / 82px fallback).
+     ====================================================================== */
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --taba-bottom-nav-clearance: calc(
-    var(--taba-bottom-nav-height) + var(--taba-bottom-nav-gap) + var(--safe-area-bottom)
-  );
-  --ease: 180ms ease;
+  --safe-b: var(--safe-area-bottom);
+  --nav-h: 56px;                                   /* contenido de la nav */
+  --cta-h: 52px;                                   /* barra de carrito */
+  --stack-gap: 12px;                               /* separación del stack */
+  --nav-block: calc(var(--nav-h) + var(--safe-b)); /* nav + safe area */
+
+  /* Alias heredados: los consumen medidas antiguas y la suite E2E. Derivan
+     de los tokens nuevos para que sigan existiendo sin duplicar la medida. */
+  --taba-bottom-nav-height: var(--nav-h);
+  --taba-bottom-nav-gap: var(--stack-gap);
+  --taba-floating-cart-height: var(--cta-h);
+  --taba-floating-cart-gap: var(--stack-gap);
+  --taba-bottom-nav-clearance: calc(var(--nav-block) + var(--stack-gap));
+
+  --ease: 160ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ⚠️ REGLA CRÍTICA DEL SISTEMA — no mover estas declaraciones a :root.
+   La sustitución de una custom property ocurre en el elemento donde se
+   DECLARA, no donde se usa. Si `--bottom-reserve` se declarara en :root
+   resolvería `var(--cta-block)` con el valor de :root y el override de
+   `body` no tendría efecto: el contenido reservaría de menos y la barra de
+   carrito taparía el último precio. Es exactamente el mecanismo por el que
+   `--taba-floating-cart-reserve` quedó sin efecto real.
+   Invariante: un token derivado se declara en el MISMO scope donde varían
+   sus entradas. */
+body {
+  --cta-block: 0px;
+  --bottom-reserve: calc(var(--nav-block) + var(--cta-block) + var(--stack-gap));
+}
+
+/* El carrito con contenido es lo ÚNICO que activa la reserva extra. */
+body[data-cart="filled"] {
+  --cta-block: calc(var(--cta-h) + var(--stack-gap));
+}
+
+/* Superficies sin navegación inferior (negocio, rider) no reservan nada. */
+body:is([data-active-view="business"], [data-active-view="rider"]) {
+  --nav-block: 0px;
+  --cta-block: 0px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 *,

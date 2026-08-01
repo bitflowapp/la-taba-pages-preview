@@ -1591,6 +1591,16 @@ function mirrorGpsLocation(order, location) {
   });
 }
 
+// orders.revision es bigint: PostgREST puede entregarlo como número o como
+// string. Un valor ausente (pedido anterior a la migración, o repositorio sin
+// respaldo Supabase) devuelve null para que el reconciliador caiga en el
+// criterio por marca de tiempo en vez de asumir una versión falsa.
+function normalizeOrderRevision(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const revision = Number(value);
+  return Number.isSafeInteger(revision) && revision > 0 ? revision : null;
+}
+
 function rowToDemoOrder(row = {}) {
   if (!row.id) return null;
   const workflowStatus = normalizeWorkflowStatus(row.status);
@@ -1645,6 +1655,10 @@ function rowToDemoOrder(row = {}) {
     notes: sanitizeNotes(row.customer_notes || row.notes),
     createdAt,
     updatedAt: normalizeIso(row.updated_at || row.created_at),
+    // Versión monótona del servidor. Es el criterio autoritativo para descartar
+    // mensajes Realtime atrasados: created_at/updated_at empatan entre escrituras
+    // de una misma transacción y no pueden desempatarlas.
+    revision: normalizeOrderRevision(row.revision),
     ...(workflowStatus === 'delivered' && terminalVisibleUntil
       ? { terminalVisibleUntil }
       : {}),

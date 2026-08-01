@@ -46,10 +46,41 @@ export function chooseActiveLiveOrderId(orders = []) {
     })[0]?.id || null;
 }
 
+// Versión monótona que asigna PostgreSQL (orders.revision). Devuelve null
+// cuando el pedido no proviene de Supabase (demo, relay, sandbox) o es anterior
+// a la migración que agregó la columna.
+export function orderRevision(order) {
+  if (!order || typeof order !== 'object') return null;
+  const revision = Number(order.revision);
+  return Number.isSafeInteger(revision) && revision > 0 ? revision : null;
+}
+
 // Devuelve true si `incoming` debe reemplazar a `local` (es más nuevo o el local no existe).
+//
+// La revisión manda sobre la marca de tiempo. Motivo medido en staging: now()
+// es constante durante toda una transacción de PostgreSQL, así que dos
+// escrituras de la misma transacción comparten created_at al microsegundo (3
+// de 19 eventos reales). Con la comparación por timestamp y `>` estricto, la
+// segunda actualización se descartaba en silencio. orders.revision, en cambio,
+// crece con CADA UPDATE efectivo, así que nunca empata.
+//
+// Cuando alguno de los dos lados no tiene revisión se conserva el criterio por
+// marca de tiempo: los pedidos de demo/relay/sandbox no tienen versión de
+// servidor y deben seguir reconciliándose como antes.
 export function shouldReplaceOrder(localOrder, incomingOrder) {
   if (!incomingOrder || typeof incomingOrder.id !== 'string') return false;
   if (!localOrder) return true;
+
+  const incomingRevision = orderRevision(incomingOrder);
+  const localRevision = orderRevision(localOrder);
+  if (incomingRevision !== null && localRevision !== null) {
+    return incomingRevision > localRevision;
+  }
+  // Un lado versionado y el otro no: el versionado proviene del servidor y es
+  // la autoridad. Adoptarlo evita quedar pegado a una copia local sin versión.
+  if (incomingRevision !== null) return true;
+  if (localRevision !== null) return false;
+
   return orderTimestamp(incomingOrder) > orderTimestamp(localOrder);
 }
 

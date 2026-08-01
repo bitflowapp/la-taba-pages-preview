@@ -83,6 +83,11 @@ export function toDomainOrder(order = {}) {
     notes: sanitizeNotes(order.notes),
     createdAt: normalizeTimestamp(order.createdAt),
     updatedAt: normalizeTimestamp(order.updatedAt || lastHistoryAt(history) || order.createdAt),
+    // Se propaga tal cual (número o null). Un pedido sin respaldo Supabase no
+    // tiene revisión y debe seguir reconciliándose por marca de tiempo.
+    revision: Number.isSafeInteger(Number(order.revision)) && Number(order.revision) > 0
+      ? Number(order.revision)
+      : null,
     acceptedAt: normalizeTimestamp(order.acceptedAt || statusAt(history, 'preparing'), null),
     readyAt: normalizeTimestamp(order.readyAt || statusAt(history, 'ready'), null),
     pickedUpAt: normalizeTimestamp(order.pickedUpAt || statusAt(history, 'on_the_way'), null),

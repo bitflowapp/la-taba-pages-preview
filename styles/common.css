@@ -1,5 +1,12 @@
+/* `100vh` en Safari iOS es el viewport MÁS GRANDE posible (con la barra de
+   direcciones colapsada), no el visible en cada momento: recién cargada la
+   página, con la barra expandida, `100vh` excede el alto real visible y el
+   documento queda con espacio de scroll de sobra debajo del contenido. La
+   segunda declaración usa `dvh` (viewport dinámico) y sólo la aplican los
+   navegadores que la entienden; el resto conserva `vh` como respaldo. */
 .app-shell {
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 [hidden],
@@ -519,6 +526,7 @@
 
 main {
   min-height: calc(100vh - var(--topbar));
+  min-height: calc(100dvh - var(--topbar));
 }
 
 .app-recovery {

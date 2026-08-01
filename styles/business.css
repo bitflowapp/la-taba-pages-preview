@@ -670,7 +670,13 @@
   background: var(--taba-subtle);
 }
 
+/* `<pre>` trae margen UA de 1em (16px) que no se usaba en ningún lado: al
+   vivir al final de `<body>` (fuera del flujo visible, sólo se llena para
+   imprimir un ticket), ese margen se sumaba al `scrollHeight` del documento
+   en TODAS las vistas — el origen del "colchón" de ~16px que aparecía al
+   hacer scroll hasta el final en cualquier pantalla. */
 .print-ticket {
+  margin: 0;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   white-space: pre-wrap;
 }

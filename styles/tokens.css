@@ -137,6 +137,9 @@ html {
 body {
   min-width: 320px;
   min-height: 100vh;
+  /* `dvh` sigue la barra de direcciones de Safari; `vh` es el respaldo para
+     navegadores que no la soportan (ver `.app-shell` en common.css). */
+  min-height: 100dvh;
   margin: 0;
   overflow-x: hidden;
   background: var(--taba-white);

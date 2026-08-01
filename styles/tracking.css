@@ -907,6 +907,10 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row {
 /* Tracking exacto: composición móvil de una sola columna basada en la
    referencia y los datos reales existentes. */
 body[data-active-view="tracking"] {
+  /* El topbar de Seguimiento mide 64px, no los 56px por defecto: se redefine
+     el token acá para que `main` (regla general en common.css) derive la
+     resta correcta sin repetir el número en dos lugares. */
+  --topbar: 64px;
   padding-bottom: env(safe-area-inset-bottom);
   background: #fdfcf9;
   color: #17181b;
@@ -917,7 +921,6 @@ body[data-active-view="tracking"] .floating-cart {
 }
 
 body[data-active-view="tracking"] .topbar {
-  min-height: 64px;
   padding: 6px max(18px, calc((100vw - 720px) / 2 + 24px));
   border: 0;
   background: #fdfcf9;
@@ -934,8 +937,19 @@ body[data-active-view="tracking"] .topbar .brand-word {
   letter-spacing: -0.045em;
 }
 
+/* Causa raíz del scroll fantasma en Seguimiento: esta regla forzaba `main` a
+   ser 100vh COMPLETO, sin restar el topbar que está arriba en el mismo
+   `app-shell`. El resultado era `topbar + 100vh`, es decir, la página excedía
+   el viewport en exactamente la altura del topbar (~64px) en TODAS las
+   pantallas de seguimiento, con contenido corto o largo.
+   Se alinea con la regla general de `main` (common.css) y además prefiere
+   `100dvh` (viewport dinámico, que sigue a la barra de Safari) sobre `100vh`
+   (que en iOS Safari es el viewport más grande posible, con la barra
+   colapsada): la segunda declaración gana sólo en navegadores que entienden
+   `dvh`; los demás conservan el cálculo con `vh` como respaldo. */
 body[data-active-view="tracking"] main {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--topbar));
+  min-height: calc(100dvh - var(--topbar));
 }
 
 [data-view="tracking"] {

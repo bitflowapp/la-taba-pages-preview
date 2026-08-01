@@ -152,6 +152,11 @@
   background: #fff;
   color: var(--profile-ink);
   font: inherit;
+  /* `font: inherit` toma el tamaño del `<label>` que envuelve el campo (13px):
+     Safari interpreta ese valor y hace zoom automático al enfocar. Se fija el
+     tamaño explícito después del shorthand para conservar familia y estilo
+     heredados sin heredar un tamaño por debajo del umbral de iOS. */
+  font-size: 16px;
   font-weight: 600;
   transition: border-color var(--ease), box-shadow var(--ease);
 }

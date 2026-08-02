@@ -31,6 +31,7 @@ let busy = false;
 let posItems = [];
 let fiscalProfile = null;
 let fiscalDocuments = [];
+let fiscalInitialRefreshStarted = false;
 let packingSession = null;
 let productDraft = null;
 
@@ -65,7 +66,10 @@ export function activateBusinessOperations(view = currentView) {
   const mode = VIEW_META[view]?.[1];
   if (!mode) {
     scanner?.stop();
-    if (view === 'fiscal-status' || view === 'fiscal-config') void refreshFiscal();
+    if ((view === 'fiscal-status' || view === 'fiscal-config') && !fiscalInitialRefreshStarted) {
+      fiscalInitialRefreshStarted = true;
+      void refreshFiscal();
+    }
     return;
   }
   scanner ||= createBarcodeScannerService();
@@ -155,6 +159,7 @@ export function resetBusinessOperationsForTests() {
   posItems = [];
   fiscalProfile = null;
   fiscalDocuments = [];
+  fiscalInitialRefreshStarted = false;
   packingSession = null;
   productDraft = null;
 }

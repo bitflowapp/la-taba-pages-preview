@@ -720,7 +720,7 @@ begin
     v_subtotal := v_subtotal + v_quantity * v_product.price;
   end loop;
   insert into public.pos_payments(sale_id, payment_method, amount, status) values(v_sale.id, p_payment_method, v_subtotal, 'confirmed');
-  update public.pos_sales set subtotal = v_subtotal, total = v_subtotal, state = case when p_request_fiscal then 'completed_fiscal_pending' else 'completed' end, completed_at = now() where id = v_sale.id returning * into v_sale;
+  update public.pos_sales set subtotal = v_subtotal, total = v_subtotal, state = 'completed', completed_at = now() where id = v_sale.id returning * into v_sale;
   return jsonb_build_object('sale_id', v_sale.id, 'state', v_sale.state, 'total', v_sale.total, 'fiscal_requested', p_request_fiscal, 'idempotent_replay', false);
 end;
 $checkout_pos$;
@@ -860,6 +860,36 @@ create table if not exists public.fiscal_parameter_snapshots (
   synchronized_at timestamptz not null,
   unique(environment, parameter_type, version)
 );
+
+create or replace function public.save_fiscal_parameter_snapshot(
+  p_environment text,
+  p_parameter_type text,
+  p_version text,
+  p_values_json jsonb,
+  p_synchronized_at timestamptz
+)
+returns public.fiscal_parameter_snapshots
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions, pg_temp
+as $save_fiscal_parameters$
+declare v_snapshot public.fiscal_parameter_snapshots%rowtype;
+begin
+  if p_environment not in ('homologation','production')
+    or p_parameter_type not in ('document_types','recipient_document_types','vat_types','currencies','concepts','points_of_sale')
+    or char_length(coalesce(p_version,'')) not between 1 and 128
+    or p_values_json is null
+    or p_synchronized_at is null
+    or p_synchronized_at > now() + interval '5 minutes'
+  then raise exception 'snapshot de parametros fiscales invalido' using errcode='22023'; end if;
+  insert into public.fiscal_parameter_snapshots(environment,parameter_type,version,values_json,synchronized_at)
+  values(p_environment,p_parameter_type,left(p_version,128),p_values_json,p_synchronized_at)
+  on conflict(environment,parameter_type,version) do update
+    set synchronized_at=greatest(public.fiscal_parameter_snapshots.synchronized_at,excluded.synchronized_at)
+  returning * into v_snapshot;
+  return v_snapshot;
+end;
+$save_fiscal_parameters$;
 
 create table if not exists public.notification_outbox (
   id uuid primary key default gen_random_uuid(),
@@ -1055,6 +1085,36 @@ begin
 end;
 $claim_fiscal$;
 
+create or replace function public.reserve_fiscal_document_number(
+  p_document_id uuid,
+  p_worker_id text,
+  p_expected_number bigint
+)
+returns public.fiscal_documents
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions, pg_temp
+as $reserve_fiscal_number$
+declare
+  v_document public.fiscal_documents%rowtype;
+  v_outbox public.fiscal_outbox%rowtype;
+begin
+  if p_expected_number < 1 then raise exception 'numero fiscal invalido' using errcode='22023'; end if;
+  select d.* into v_document from public.fiscal_documents d where d.id=p_document_id for update;
+  if not found then raise exception 'documento fiscal inexistente' using errcode='P0002'; end if;
+  select o.* into v_outbox from public.fiscal_outbox o where o.fiscal_document_id=p_document_id for update;
+  if not found or v_outbox.state<>'leased' or v_outbox.lease_owner<>p_worker_id or v_outbox.lease_deadline<=now() then raise exception 'lease fiscal invalido' using errcode='40001'; end if;
+  if v_document.state in ('authorized','credited') or v_document.document_number is not null then return v_document; end if;
+  if v_document.document_type < 1 then raise exception 'tipo de comprobante requiere revision fiscal' using errcode='22023'; end if;
+  perform pg_advisory_xact_lock(hashtextextended(concat_ws(':',v_document.environment,v_document.cuit,v_document.point_of_sale,v_document.document_type),0));
+  if exists(select 1 from public.fiscal_documents d where d.environment=v_document.environment and d.cuit=v_document.cuit and d.point_of_sale=v_document.point_of_sale and d.document_type=v_document.document_type and d.document_number=p_expected_number and d.id<>v_document.id) then
+    raise exception 'numero fiscal ya reservado localmente' using errcode='40001';
+  end if;
+  update public.fiscal_documents set document_number=p_expected_number,state='authorizing' where id=p_document_id returning * into v_document;
+  return v_document;
+end;
+$reserve_fiscal_number$;
+
 create or replace function public.complete_fiscal_attempt(
   p_outbox_id uuid,
   p_worker_id text,
@@ -1076,6 +1136,8 @@ begin
   select d.* into v_document from public.fiscal_documents d where d.id=v_outbox.fiscal_document_id for update;
   v_class := p_result->>'classification';
   v_cae := regexp_replace(coalesce(p_result->>'cae',''),'[^0-9]','','g');
+  insert into public.fiscal_request_attempts(fiscal_document_id,outbox_id,request_id,operation,result_class,request_hash,response_hash,duration_ms,error_code,error_message)
+  values(v_document.id,v_outbox.id,left(coalesce(p_result->>'request_id',gen_random_uuid()::text),128),left(coalesce(p_result->>'operation','FECAESolicitar'),80),v_class,left(p_result->>'request_hash',128),left(p_result->>'response_hash',128),greatest(0,coalesce((p_result->>'duration_ms')::integer,0)),left(p_result->>'error_code',80),left(p_result->>'error_message',300));
   if v_class in ('authorized','authorized_with_observations') then
     if length(v_cae) <> 14 or coalesce((p_result->>'document_number')::bigint,0) < 1 then raise exception 'autorizacion sin CAE o numero valido' using errcode='22023'; end if;
     update public.fiscal_documents set state='authorized',result=v_class,cae=v_cae,cae_expiration=(p_result->>'cae_expiration')::date,document_number=(p_result->>'document_number')::bigint,issue_date=(p_result->>'issue_date')::date,observations=coalesce(p_result->'observations','[]'::jsonb),request_hash=p_result->>'request_hash',response_hash=p_result->>'response_hash',authorized_at=now() where id=v_document.id returning * into v_document;
@@ -1089,6 +1151,9 @@ begin
   elsif v_class='rejected' then
     update public.fiscal_documents set state='rejected',result='rejected',observations=coalesce(p_result->'observations','[]'::jsonb),errors=coalesce(p_result->'errors','[]'::jsonb) where id=v_document.id;
     update public.fiscal_outbox set state='dead_letter',processed_at=now(),lease_owner=null,lease_deadline=null,last_error_code='ARCA_REJECTED' where id=v_outbox.id;
+  elsif p_result->>'error_code'='REQUIRES_FISCAL_REVIEW' then
+    update public.fiscal_documents set state='failed',result='configuration_error',errors=coalesce(p_result->'errors','[]'::jsonb) where id=v_document.id;
+    update public.fiscal_outbox set state='dead_letter',processed_at=now(),lease_owner=null,lease_deadline=null,last_error_code='REQUIRES_FISCAL_REVIEW',last_error_message='Requiere datos fiscales o revision' where id=v_outbox.id;
   else
     update public.fiscal_documents set state='retry_wait',result=coalesce(v_class,'service_error') where id=v_document.id;
     update public.fiscal_outbox set state=case when attempt_count>=8 then 'dead_letter' else 'retry_wait' end,next_attempt_at=now()+least(interval '30 minutes',make_interval(secs=>30*(2^least(attempt_count,6)))),lease_owner=null,lease_deadline=null,last_error_code=left(coalesce(p_result->>'error_code','SERVICE_ERROR'),80),last_error_message=left(coalesce(p_result->>'error_message',''),300) where id=v_outbox.id;
@@ -1181,9 +1246,10 @@ grant execute on function public.acknowledge_order(uuid,bigint,text),
   public.request_full_credit_note(uuid,text,text)
 to authenticated;
 
-revoke all on function public.claim_fiscal_outbox(text,integer,integer), public.complete_fiscal_attempt(uuid,text,jsonb)
+revoke all on function public.claim_fiscal_outbox(text,integer,integer), public.save_fiscal_parameter_snapshot(text,text,text,jsonb,timestamptz), public.complete_fiscal_attempt(uuid,text,jsonb)
 from public, anon, authenticated;
-grant execute on function public.claim_fiscal_outbox(text,integer,integer), public.complete_fiscal_attempt(uuid,text,jsonb)
+revoke all on function public.reserve_fiscal_document_number(uuid,text,bigint) from public, anon, authenticated;
+grant execute on function public.claim_fiscal_outbox(text,integer,integer), public.reserve_fiscal_document_number(uuid,text,bigint), public.save_fiscal_parameter_snapshot(text,text,text,jsonb,timestamptz), public.complete_fiscal_attempt(uuid,text,jsonb)
 to service_role;
 
 -- Realtime is an accelerator; snapshots/RPC remain authoritative.

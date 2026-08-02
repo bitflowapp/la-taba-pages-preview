@@ -287,7 +287,9 @@ async function confirmPos(target) {
     idempotencyKey: createKey('pos-sale'),
   });
   feedback = response?.ok
-    ? (response.data?.fiscal_document_id ? 'Venta confirmada; comprobante fiscal pendiente.' : 'Venta confirmada por el servidor.')
+    ? (response.data?.fiscal_status === 'request_failed'
+      ? 'Venta confirmada; la solicitud fiscal requiere revisión.'
+      : response.data?.fiscal_document_id ? 'Venta confirmada; comprobante fiscal pendiente.' : 'Venta confirmada por el servidor.')
     : response?.message || 'La venta no fue confirmada.';
   if (response?.ok) posItems = [];
   context.onChange();

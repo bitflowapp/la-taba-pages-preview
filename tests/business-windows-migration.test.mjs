@@ -74,12 +74,23 @@ test('outbox fiscal aplica exactly-once, numeraci\u00f3n \u00fanica, SKIP LOCKED
   assert.match(sql, /for update skip locked/i);
   assert.match(sql, /lease_owner[\s\S]*lease_deadline/i);
   assert.match(sql, /dead_letter/i);
+  assert.match(sql, /reserve_fiscal_document_number[\s\S]*pg_advisory_xact_lock/i);
+  assert.match(sql, /insert into public[.]fiscal_request_attempts/i);
+});
+
+test('parámetros WSFE se guardan versionados sólo desde el worker privado', () => {
+  assert.match(sql, /save_fiscal_parameter_snapshot/i);
+  assert.match(sql, /unique[(]environment, parameter_type, version[)]/i);
+  assert.match(sql, /p_parameter_type not in \('document_types','recipient_document_types','vat_types','currencies','concepts','points_of_sale'\)/i);
+  assert.match(sql, /save_fiscal_parameter_snapshot[\s\S]*from public, anon, authenticated/i);
+  assert.match(sql, /save_fiscal_parameter_snapshot[\s\S]*to service_role/i);
 });
 
 test('autorizaci\u00f3n exige CAE y ambig\u00fcedad vuelve a reconciliaci\u00f3n', () => {
   assert.match(sql, /fiscal_authorized_has_cae[\s\S]*cae ~ '\^\[0-9\][{]14[}]\$'/i);
   assert.match(sql, /v_class='ambiguous'[\s\S]*state='ambiguous'[\s\S]*state='retry_wait'/i);
   assert.match(sql, /autorizacion sin CAE o numero valido/i);
+  assert.match(sql, /REQUIRES_FISCAL_REVIEW[\s\S]*state='dead_letter'/i);
 });
 
 test('nota de cr\u00e9dito conserva la factura y requiere acci\u00f3n owner/admin con motivo', () => {

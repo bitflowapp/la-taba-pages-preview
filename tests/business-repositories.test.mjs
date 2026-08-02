@@ -46,6 +46,24 @@ test('POS env\u00eda IDs/cantidades y nunca totales calculados por cliente', asy
   assert.equal(call.name, 'checkout_pos_sale');
   assert.deepEqual(call.args.p_items, [{ productId: 'p1', quantity: 3 }]);
   assert.equal(Object.hasOwn(call.args, 'total'), false);
+  assert.equal(client.calls[1].name, 'request_fiscal_document');
+  assert.equal(client.calls[1].args.p_source_id, 'sale-1');
+  assert.equal(client.calls[1].args.p_idempotency_key, 'checkout-00001-fiscal');
+});
+
+test('una falla fiscal posterior no revierte ni disfraza la venta confirmada', async () => {
+  const client = mockClient();
+  client.rpc = async (name, args) => {
+    client.calls.push({ name, args });
+    if (name === 'checkout_pos_sale') return { data: { sale_id: 'sale-2', state: 'completed', total: 100 }, error: null, status: 200 };
+    return { data: null, error: { code: 'P0001', message: 'fiscalizacion deshabilitada' }, status: 400 };
+  };
+  const repository = createSupabasePosRepository({ client, businessId: BUSINESS_ID });
+  const result = await repository.checkout({ items: [{ productId: 'p1', quantity: 1 }], paymentMethod: 'cash', idempotencyKey: 'checkout-00002', requestFiscal: true });
+  assert.equal(result.ok, true);
+  assert.equal(result.data.state, 'completed');
+  assert.equal(result.data.fiscal_status, 'request_failed');
+  assert.equal(result.fiscal.ok, false);
 });
 
 test('packing inicia, registra, deshace y confirma s\u00f3lo mediante RPC', async () => {
@@ -80,7 +98,10 @@ function mockClient() {
   const queries = [];
   return {
     calls, queries,
-    async rpc(name, args) { calls.push({ name, args }); return { data: { ok: true }, error: null, status: 200 }; },
+    async rpc(name, args) {
+      calls.push({ name, args });
+      return { data: name === 'checkout_pos_sale' ? { sale_id: 'sale-1', state: 'completed', total: 100 } : { ok: true, fiscal_document_id: 'fiscal-1', state: 'queued' }, error: null, status: 200 };
+    },
     from(table) {
       const record = { table, filters: {} };
       queries.push(record);

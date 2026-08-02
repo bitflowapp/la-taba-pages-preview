@@ -1,0 +1,55 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import test from 'node:test';
+
+const root = path.resolve(import.meta.dirname, '..');
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
+const config = JSON.parse(read('src-tauri/tauri.conf.json'));
+const capability = JSON.parse(read('src-tauri/capabilities/default.json'));
+const shell = read('src-tauri/src/lib.rs');
+const outbox = read('src-tauri/src/outbox.rs');
+const printing = read('src-tauri/src/printing.rs');
+
+test('desktop empaqueta la misma aplicación con identidad Windows estable', () => {
+  assert.equal(config.productName, 'TABA Negocio');
+  assert.equal(config.identifier, 'ar.com.lataba.negocio');
+  assert.equal(config.build.frontendDist, '../dist-desktop');
+  assert.deepEqual(config.bundle.targets, ['msi', 'nsis']);
+  assert.equal(config.bundle.windows.nsis.installMode, 'currentUser');
+});
+
+test('CSP y capabilities permanecen cerradas a APIs y hosts necesarios', () => {
+  assert.match(config.app.security.csp, /default-src 'self'/);
+  assert.match(config.app.security.csp, /https:\/\/\*\.supabase\.co/);
+  assert.doesNotMatch(config.app.security.csp, /https:\s|http:\s|\*\s*;/);
+  assert.deepEqual(capability.permissions, ['core:default']);
+  assert.doesNotMatch(JSON.stringify(capability), /shell|process|fs:/i);
+});
+
+test('shell implementa instancia única, bandeja y cierre explícito', () => {
+  assert.match(shell, /tauri_plugin_single_instance::init/);
+  assert.match(shell, /TrayIconBuilder/);
+  assert.match(shell, /CloseRequested/);
+  assert.match(shell, /explicit_exit/);
+  assert.match(shell, /tauri_plugin_window_state/);
+});
+
+test('outbox nativo es SQLite durable y no almacena secretos', () => {
+  for (const field of ['idempotency_key', 'attempt_count', 'next_attempt_at', 'last_error']) {
+    assert.match(outbox, new RegExp(field));
+  }
+  assert.match(outbox, /journal_mode\s*=\s*WAL/);
+  assert.match(outbox, /rejects_sensitive_payload/);
+  for (const blockedKey of ['servicerole', 'privatekey', 'certificate']) {
+    assert.match(outbox, new RegExp(`"${blockedKey}"`));
+  }
+});
+
+test('impresión usa Winspool con contrato RAW acotado, sin shell arbitrario', () => {
+  for (const api of ['OpenPrinterW', 'StartDocPrinterW', 'WritePrinter', 'ClosePrinter']) {
+    assert.match(printing, new RegExp(api));
+  }
+  assert.match(printing, /raw_text/);
+  assert.doesNotMatch(printing, /Command::new|powershell|cmd\.exe/i);
+});

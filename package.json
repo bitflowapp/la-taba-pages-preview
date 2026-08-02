@@ -22,10 +22,14 @@
     "catalog:images:verify": "node scripts/catalog-images/verify-approved-demo.mjs && node scripts/catalog-images/verify.mjs --allow-empty",
     "catalog:release:validate": "node scripts/validate-release-catalog.mjs",
     "staging:validate": "node scripts/validate-staging-readiness.mjs",
-    "realtime:demo": "node scripts/realtime-relay.mjs"
+    "realtime:demo": "node scripts/realtime-relay.mjs",
+    "desktop:assets": "node scripts/build-desktop-assets.mjs",
+    "tauri": "tauri",
+    "tauri:build": "tauri build"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
+    "@tauri-apps/cli": "2.11.4",
     "esbuild": "0.28.1",
     "sharp": "0.35.3"
   },

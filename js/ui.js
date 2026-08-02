@@ -963,7 +963,8 @@ function getFilteredProducts(state) {
       product.categoryId,
       ...(Array.isArray(product.tags) ? product.tags : []),
     ].filter(Boolean).join(' ');
-    const matchesQuery = !query || normalizeSearchText(searchable).includes(query);
+    const searchableText = normalizeSearchText(searchable);
+    const matchesQuery = !query || query.split(' ').every((term) => searchableText.includes(term));
     const isAvailable = product.available && Number(product.stock) > 0 && !product.pricePending;
     const matchesFilters = (
       (filters.brand === 'all' || normalizeSearchText(product.brand) === filters.brand)
@@ -985,7 +986,8 @@ function normalizeSearchText(value) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[^a-z0-9.,]+/g, ' ');
   const millilitres = normalized.replace(/(\d+(?:[.,]\d+)?)\s*l\b/g, (_, value) => (
     `${Math.round(Number(String(value).replace(',', '.')) * 1000)}ml`
   ));

@@ -69,3 +69,12 @@ test('filtros comerciales distinguen precio pendiente y formatos reales', async 
   await page.locator('[data-catalog-filter="pack"]').selectOption('pack');
   await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(10);
 });
+
+test('bÃºsqueda normaliza marca y capacidad con puntuaciÃ³n local', async ({ page }) => {
+  await installBrowserStubs(page);
+  await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
+  await page.locator('[data-view="catalog"] [data-search-input]').fill('coca cola 1,5 l');
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(2);
+  await expect(page.locator('[data-product-grid]')).toContainText('Coca-Cola Original');
+  await expect(page.locator('[data-product-grid]')).toContainText('Coca-Cola Zero');
+});

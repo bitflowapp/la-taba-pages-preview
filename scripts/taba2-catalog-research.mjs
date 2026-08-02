@@ -52,6 +52,7 @@ const RESEARCH_SOURCES = [
 ];
 
 await Promise.all([OUT, CATALOG, DESIGN].map((directory) => fs.mkdir(directory, { recursive: true })));
+const manifestGeneratedAt = await existingManifestTimestamp(path.join(CATALOG, 'image-manifest.json')) || RETRIEVED_AT;
 
 const localAssets = await scanLocalLibrary(LIBRARY_ROOT);
 const normalizedProducts = products.map(normalizeProduct);
@@ -73,7 +74,7 @@ await write(DESIGN, 'ECOMMERCE_BENCHMARK.md', benchmark());
 await fs.writeFile(path.join(CATALOG, 'products.json'), `${JSON.stringify(normalizedProducts, null, 2)}\n`);
 await fs.writeFile(path.join(CATALOG, 'image-manifest.json'), `${JSON.stringify({
   schema_version: 1,
-  generated_at: RETRIEVED_AT,
+  generated_at: manifestGeneratedAt,
   publication_status: 'blocked_rights_review',
   sources: normalizedProducts.map((product) => ({
     sku: product.sku,
@@ -344,6 +345,15 @@ function benchmark() {
 
 async function write(directory, name, content) {
   await fs.writeFile(path.join(directory, name), content);
+}
+
+async function existingManifestTimestamp(file) {
+  try {
+    const value = JSON.parse(await fs.readFile(file, 'utf8')).generated_at;
+    return typeof value === 'string' && Number.isFinite(Date.parse(value)) ? value : '';
+  } catch {
+    return '';
+  }
 }
 
 async function writeCsv(file, rows) {

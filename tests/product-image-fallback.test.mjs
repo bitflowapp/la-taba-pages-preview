@@ -23,8 +23,8 @@ test('all QA or unofficial products use the same neutral placeholder', () => {
 
 test('approved catalog products use existing local product and thumbnail routes', () => {
   for (const product of products) {
-    assert.match(product.image, /^assets\/catalog\/beverages\/[^/]+\/product\.webp$/);
-    assert.match(product.imageThumbnail, /^assets\/catalog\/beverages\/[^/]+\/thumbnail\.webp$/);
+    assert.match(product.image, /^assets\/catalog\/(?:beverages\/[^/]+\/product|products\/[^/]+\/[^/]+-master)\.webp$/);
+    assert.match(product.imageThumbnail, /^assets\/catalog\/(?:beverages\/[^/]+\/thumbnail|products\/[^/]+\/[^/]+-thumb)\.webp$/);
     assert.ok(fs.existsSync(path.join(root, product.image)), `${product.id}: product image does not exist`);
     assert.ok(fs.existsSync(path.join(root, product.imageThumbnail)), `${product.id}: thumbnail does not exist`);
   }

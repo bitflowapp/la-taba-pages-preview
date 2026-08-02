@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { products as catalogProducts } from '../../js/approved-beverage-demo-data.js';
 import { gotoDemoReset, installPageGuards } from './helpers.mjs';
 import {
   buildCheckoutAddresses,
@@ -191,7 +192,7 @@ test('customer showcase stops use the real catalog, cart, checkout, profile and 
 
   await selectShowcaseStep(page, 'catalog');
   await expectActiveView(page, 'catalog');
-  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(61);
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(catalogProducts.filter((product) => !product.archived).length);
 
   await selectShowcaseStep(page, 'pending-price');
   await expectActiveView(page, 'catalog');

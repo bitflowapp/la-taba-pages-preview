@@ -39,13 +39,13 @@ test('commercial filter state accepts only supported values and defaults safely'
 
 test('research deliverables and normalized price handoff are present', () => {
   for (const relative of [
-    'artifacts/taba2-catalog-research/CURRENT_CATALOG_AUDIT.md',
-    'artifacts/taba2-catalog-research/CATEGORY_COVERAGE.md',
-    'artifacts/taba2-catalog-research/MISSING_PRODUCTS.md',
-    'artifacts/taba2-catalog-research/DUPLICATES.md',
-    'artifacts/taba2-catalog-research/IMAGE_QUALITY_AUDIT.md',
-    'artifacts/taba2-catalog-research/FINAL_CATALOG_COVERAGE.md',
-    'artifacts/taba2-design-review/ECOMMERCE_BENCHMARK.md',
+    'artifacts/taba2-catalog-finalization/EXECUTIVE_SUMMARY.md',
+    'artifacts/taba2-catalog-finalization/P0_COMPLETION_REPORT.md',
+    'artifacts/taba2-catalog-finalization/CATEGORY_COVERAGE.md',
+    'artifacts/taba2-catalog-finalization/IMAGE_RIGHTS_AUDIT.md',
+    'artifacts/taba2-catalog-finalization/DUPLICATE_ASSET_AUDIT.md',
+    'artifacts/taba2-catalog-finalization/PRICE_LOAD_READINESS.md',
+    'artifacts/taba2-catalog-finalization/COMMERCIAL_GATE_STATUS.md',
     'catalog/products.json',
     'catalog/pending-prices.csv',
     'catalog/image-sources.csv',

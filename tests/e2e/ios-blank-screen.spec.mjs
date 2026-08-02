@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { gotoDemoReset, installPageGuards } from './helpers.mjs';
+import { products as catalogProducts } from '../../js/approved-beverage-demo-data.js';
+
+const totalCatalogProducts = catalogProducts.length;
+const visibleCatalogProducts = catalogProducts.filter((product) => !product.archived).length;
 
 const stateKey = 'la_taba_mvp_v4_state';
 
@@ -16,7 +20,7 @@ test('clean sandbox paints the customer surface and hides recovery after bootstr
   await expect.poll(() => page.evaluate(async () => {
     const { getState } = await import('/js/state.js');
     return getState().products.length;
-  })).toBe(62);
+  })).toBe(totalCatalogProducts);
   await guards.assertClean();
 });
 
@@ -37,7 +41,7 @@ test('an old or empty local catalog is rebuilt without losing the first render',
 
   // El estado recupera el catálogo base completo, pero el storefront unitario
   // oculta el pack Heineken rechazado y mantiene los SKU sin precio visibles.
-  await expect(page.locator('[data-catalog-count]')).toContainText('61 productos');
+  await expect(page.locator('[data-catalog-count]')).toContainText(`${visibleCatalogProducts} productos`);
   await expect(page.locator('[data-app-recovery]')).toBeHidden();
 });
 

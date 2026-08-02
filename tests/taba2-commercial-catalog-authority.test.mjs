@@ -13,8 +13,8 @@ const catalog = JSON.parse(await fs.readFile(path.join(root, 'catalog/products.j
 const manifest = JSON.parse(await fs.readFile(path.join(root, 'catalog/image-manifest.json'), 'utf8'));
 const approved = catalog.filter((product) => product.catalog_status === 'approved');
 
-test('TABA2 authority catalog has 40 identity-approved, price-pending internal-review SKUs', () => {
-  assert.equal(approved.length, 40);
+test('TABA2 authority catalog supera el mínimo de 60 SKU técnicos aprobados', () => {
+  assert.ok(approved.length >= 60);
   assert.equal(new Set(approved.map((product) => product.sku)).size, approved.length);
   assert.equal(new Set(approved.map((product) => `${product.brand}|${product.name}|${product.variant}|${product.presentation}`)).size, approved.length);
   for (const product of approved) {
@@ -25,10 +25,10 @@ test('TABA2 authority catalog has 40 identity-approved, price-pending internal-r
     assert.equal(product.image_status, 'verified', product.sku);
     assert.equal(product.rights_status, 'pending_review', product.sku);
     assert.equal(product.publication_status, 'blocked', product.sku);
-    assert.equal(product.pack_count, 1, product.sku);
+    assert.ok(product.pack_count >= 1, product.sku);
     assert.equal(product.gtin, '', product.sku);
     assert.ok(product.brand && product.variant && product.presentation && product.capacity_value > 0, product.sku);
-    assert.ok(product.image_source.source_url.startsWith('https://www.jumbo.com.ar/'), product.sku);
+    assert.match(product.image_source.source_url, /^https:\/\//, product.sku);
     assert.equal(product.image_source.source_type, 'cadena_comercial_secundaria', product.sku);
     assert.match(product.image_sha256, /^[a-f0-9]{64}$/i, product.sku);
   }

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 import { categories, products } from '../js/approved-beverage-demo-data.js';
+import { pendingProducts } from '../js/taba2-commercial-pending-data.js';
 import {
   getAlcoholProduct,
   getNonAlcoholProduct,
@@ -15,7 +16,7 @@ const LEGACY_CATEGORY_IDS = ['all', 'gaseosas', 'mixers', 'energizantes', 'cerve
 
 test('approved demo catalog is internally consistent', () => {
   assert.deepEqual(categories.slice(0, LEGACY_CATEGORY_IDS.length).map((category) => category.id), LEGACY_CATEGORY_IDS);
-  assert.equal(products.length, 62);
+  assert.equal(products.length, 22 + pendingProducts.length);
   assert.equal(new Set(products.map((product) => product.sku)).size, products.length);
 
   const categoryIds = new Set(categories.map((category) => category.id));

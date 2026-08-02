@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { products } from '../js/approved-beverage-demo-data.js';
+import { pendingProducts } from '../js/taba2-commercial-pending-data.js';
 import { isProductOrderable, normalizeCatalogProduct } from '../js/core/catalog-store.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -32,7 +33,8 @@ const EXPECTED_SKUS = [
 ];
 
 test('el catálogo demo aprobado contiene exactamente los 22 SKU locales', () => {
-  assert.equal(products.length, EXPECTED_SKUS.length + 40);
+  assert.equal(products.length, EXPECTED_SKUS.length + pendingProducts.length);
+  assert.ok(pendingProducts.length >= 60);
   assert.deepEqual(products.slice(0, EXPECTED_SKUS.length).map((product) => product.sku), EXPECTED_SKUS);
   assert.equal(new Set(products.map((product) => product.sku)).size, products.length);
   assert.ok(products.every((product) => product.image.startsWith('assets/catalog/beverages/') || product.image.startsWith('assets/catalog/products/')));

@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
+import { products as catalogProducts } from '../../js/approved-beverage-demo-data.js';
+
+const visibleProducts = catalogProducts.filter((product) => !product.archived).length;
+const pendingProducts = catalogProducts.filter((product) => product.pricePending && !product.archived).length;
+const packProducts = catalogProducts.filter((product) => product.unitsPerPack > 1 && !product.archived).length;
 
 test('demo aprobado muestra SKU publicables, packs y assets locales sin hotlinks', async ({ page }) => {
   const guards = installPageGuards(page);
@@ -7,7 +12,7 @@ test('demo aprobado muestra SKU publicables, packs y assets locales sin hotlinks
   page.on('request', (request) => requestedUrls.push(request.url()));
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
-  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(61);
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(visibleProducts);
   await expect(page.locator('[data-view="catalog"] [data-category-id="mixers"]')).toBeVisible();
   await expect(page.locator('[data-view="catalog"] [data-category-id="energizantes"]')).toBeVisible();
   const pack = page.locator('[data-product-grid] .product-card').filter({ hasText: 'Coca-Cola Original' }).first();
@@ -63,11 +68,11 @@ test('filtros comerciales distinguen precio pendiente y formatos reales', async 
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
   await page.locator('[data-catalog-filters] summary').click();
   await page.locator('[data-catalog-filter="price"]').selectOption('pending');
-  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(41);
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(pendingProducts);
   await expect(page.locator('[data-product-grid]')).toContainText('Precio próximamente');
   await page.locator('[data-reset-catalog-filters]').click();
   await page.locator('[data-catalog-filter="pack"]').selectOption('pack');
-  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(10);
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(packProducts);
 });
 
 test('bÃºsqueda normaliza marca y capacidad con puntuaciÃ³n local', async ({ page }) => {

@@ -1,1 +1,2 @@
 *.pdf binary
+js/vendor/supabase.js whitespace=-trailing-space

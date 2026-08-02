@@ -50,7 +50,7 @@ test('la home presenta TABA2 con marca discreta y un storefront comercial limpio
   const catalogCategories = page.locator(
     '[data-view="catalog"] [data-category-strip] .category-button:not([data-category-id="all"]):not([data-category-id="favorites"])',
   );
-  await expect(catalogCategories).toHaveCount(4);
+  await expect(catalogCategories).toHaveCount(15);
   await expect(page.locator('[data-view="catalog"] [data-category-id="gaseosas"]')).toHaveText('Gaseosas');
   await expect(page.locator('[data-view="catalog"] [data-category-id="cervezas"]')).toHaveText('Cervezas');
   await expect(page.locator('[data-product-grid] .product-card').first()).not.toContainText('QA');

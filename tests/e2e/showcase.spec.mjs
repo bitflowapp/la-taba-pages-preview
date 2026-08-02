@@ -191,7 +191,7 @@ test('customer showcase stops use the real catalog, cart, checkout, profile and 
 
   await selectShowcaseStep(page, 'catalog');
   await expectActiveView(page, 'catalog');
-  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(21);
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(61);
 
   await selectShowcaseStep(page, 'pending-price');
   await expectActiveView(page, 'catalog');

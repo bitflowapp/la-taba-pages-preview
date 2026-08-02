@@ -7,7 +7,7 @@ test('demo aprobado muestra SKU publicables, packs y assets locales sin hotlinks
   page.on('request', (request) => requestedUrls.push(request.url()));
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
-  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(21);
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(61);
   await expect(page.locator('[data-view="catalog"] [data-category-id="mixers"]')).toBeVisible();
   await expect(page.locator('[data-view="catalog"] [data-category-id="energizantes"]')).toBeVisible();
   const pack = page.locator('[data-product-grid] .product-card').filter({ hasText: 'Coca-Cola Original' }).first();
@@ -63,7 +63,7 @@ test('filtros comerciales distinguen precio pendiente y formatos reales', async 
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
   await page.locator('[data-catalog-filters] summary').click();
   await page.locator('[data-catalog-filter="price"]').selectOption('pending');
-  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(1);
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(41);
   await expect(page.locator('[data-product-grid]')).toContainText('Precio próximamente');
   await page.locator('[data-reset-catalog-filters]').click();
   await page.locator('[data-catalog-filter="pack"]').selectOption('pack');

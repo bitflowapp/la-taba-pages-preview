@@ -16,7 +16,7 @@ test('clean sandbox paints the customer surface and hides recovery after bootstr
   await expect.poll(() => page.evaluate(async () => {
     const { getState } = await import('/js/state.js');
     return getState().products.length;
-  })).toBe(22);
+  })).toBe(62);
   await guards.assertClean();
 });
 
@@ -36,8 +36,8 @@ test('an old or empty local catalog is rebuilt without losing the first render',
   await page.goto('/?demo=1#catalog');
 
   // El estado recupera el catálogo base completo, pero el storefront unitario
-  // oculta los cinco assets que representan multipacks.
-  await expect(page.locator('[data-catalog-count]')).toContainText('21 productos');
+  // oculta el pack Heineken rechazado y mantiene los SKU sin precio visibles.
+  await expect(page.locator('[data-catalog-count]')).toContainText('61 productos');
   await expect(page.locator('[data-app-recovery]')).toBeHidden();
 });
 

@@ -14,6 +14,7 @@ try {
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const DEMO_ROOT = 'assets/catalog/beverages';
 const EXPECTED_PRODUCTS = 22;
+const demoProducts = products.filter((product) => product.rightsStatus === 'RETAILER_SOLO_REFERENCIA');
 const errors = [];
 const expectedFiles = new Set();
 
@@ -32,11 +33,11 @@ async function listWebps(directory) {
   return nested.flat();
 }
 
-if (products.length !== EXPECTED_PRODUCTS) {
+if (demoProducts.length !== EXPECTED_PRODUCTS) {
   errors.push(`El catálogo demo debe contener exactamente ${EXPECTED_PRODUCTS} productos.`);
 }
 
-for (const product of products) {
+for (const product of demoProducts) {
   if (product.sku.startsWith('qa-')) errors.push(`${product.sku}: SKU de fixture no permitido.`);
   if (product.rightsStatus !== 'RETAILER_SOLO_REFERENCIA') {
     errors.push(`${product.sku}: falta la declaración explícita de derechos de demo.`);

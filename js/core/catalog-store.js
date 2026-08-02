@@ -206,7 +206,9 @@ export function normalizeCatalogProduct(raw, fallback = null) {
     source.imageThumbnail || source.thumbnail || source.thumbnail_url,
     { maxLength: 2048 },
   );
-  const alcoholic = ALCOHOLIC_CATEGORY_IDS.has(categoryId) || isExplicitlyAlcoholic(source.alcoholic);
+  const alcoholic = source.alcoholic === false || source.nonAlcoholic === true
+    ? false
+    : ALCOHOLIC_CATEGORY_IDS.has(categoryId) || isExplicitlyAlcoholic(source.alcoholic);
   const minimumAge = alcoholic
     ? normalizeMinimumAge(source.minimumAge ?? source.minimum_age)
     : null;

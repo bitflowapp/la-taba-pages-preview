@@ -1,8 +1,10 @@
 // Generado por scripts/import-approved-beverages.mjs. No editar manualmente.
 // Fuente autorizada: catalog-demo.json + approved-demo/. Sólo se carga con ?demo=1.
+import { authorityCategories, pendingProducts } from './taba2-commercial-pending-data.js';
+
 export const PREVIEW_CATALOG_VERSION = 'approved-beverages-2026-07-29-v1';
 
-export const categories = [
+export const legacyCategories = [
   {
     "id": "all",
     "name": "Todos"
@@ -25,7 +27,12 @@ export const categories = [
   }
 ];
 
-export const products = [
+export const categories = [
+  ...legacyCategories,
+  ...authorityCategories.filter((category) => category.id !== 'all' && !legacyCategories.some((legacy) => legacy.id === category.id)),
+];
+
+export const legacyProducts = [
   {
     "id": "coca-cola-original-pet-500ml-pack-12",
     "sku": "coca-cola-original-pet-500ml-pack-12",
@@ -1245,3 +1252,5 @@ export const products = [
     "prepMinutes": 10
   }
 ];
+
+export const products = [...legacyProducts, ...pendingProducts];

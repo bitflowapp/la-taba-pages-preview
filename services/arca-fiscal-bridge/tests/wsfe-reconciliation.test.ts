@@ -6,7 +6,7 @@ import { reconcileAmbiguousAuthorization } from '../src/reconciliation.js';
 import { syncOfficialParameterTables } from '../src/parameters.js';
 
 const config: ArcaConfig = {
-  environment: 'homologation', cuit: '20123456789', certificatePath: 'C:\\secure\\cert.pem', privateKeyPath: 'C:\\secure\\key.pem', workerId: 'worker-01', healthPort: 8787,
+  environment: 'homologation', cuit: '20123456789', certificatePath: 'synthetic-certificate-path', privateKeyPath: 'synthetic-private-key-path', workerId: 'worker-01', healthPort: 8787,
   endpoints: { wsaa: 'https://wsaahomo.afip.gov.ar/ws/services/LoginCms', wsfe: 'https://wswhomo.afip.gov.ar/wsfev1/service.asmx' },
   homologationConsent: true, productionEnabled: false,
 };

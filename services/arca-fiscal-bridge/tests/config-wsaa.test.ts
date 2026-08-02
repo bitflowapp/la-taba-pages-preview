@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import forge from 'node-forge';
+import path from 'node:path';
 import { assertRemoteExecutionAllowed, loadArcaConfig, OFFICIAL_ENDPOINTS } from '../src/config.js';
 import { buildTra, parseLoginTicketResponse, signTraCms, WsaaClient } from '../src/wsaa.js';
 import { parseTrustedSoap } from '../src/xml.js';
@@ -8,8 +9,8 @@ import { parseTrustedSoap } from '../src/xml.js';
 const baseEnv = {
   ARCA_ENVIRONMENT: 'homologation',
   ARCA_CUIT: '20123456789',
-  ARCA_CERTIFICATE_PATH: 'C:\\secure\\certificate.pem',
-  ARCA_PRIVATE_KEY_PATH: 'C:\\secure\\private-key.pem',
+  ARCA_CERTIFICATE_PATH: path.resolve('synthetic-secrets', 'certificate.pem'),
+  ARCA_PRIVATE_KEY_PATH: path.resolve('synthetic-secrets', 'private-key.pem'),
   FISCAL_WORKER_ID: 'worker-01',
   FISCAL_HEALTH_PORT: '8787',
 };

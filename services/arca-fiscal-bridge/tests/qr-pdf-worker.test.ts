@@ -37,7 +37,7 @@ class MemoryStore implements FiscalStore {
   async saveParameterSnapshot(_snapshot: FiscalParameterSnapshot): Promise<void> {}
 }
 
-const config: ArcaConfig = { environment: 'homologation', cuit: '20123456789', certificatePath: 'C:\\secure\\cert.pem', privateKeyPath: 'C:\\secure\\key.pem', workerId: 'worker-01', healthPort: 8787, endpoints: { wsaa: 'https://wsaahomo.afip.gov.ar/ws/services/LoginCms', wsfe: 'https://wswhomo.afip.gov.ar/wsfev1/service.asmx' }, homologationConsent: true, productionEnabled: false };
+const config: ArcaConfig = { environment: 'homologation', cuit: '20123456789', certificatePath: 'synthetic-certificate-path', privateKeyPath: 'synthetic-private-key-path', workerId: 'worker-01', healthPort: 8787, endpoints: { wsaa: 'https://wsaahomo.afip.gov.ar/ws/services/LoginCms', wsfe: 'https://wswhomo.afip.gov.ar/wsfev1/service.asmx' }, homologationConsent: true, productionEnabled: false };
 const ticket: LoginTicket = { token: 't', sign: 's', generationTime: '', expirationTime: '2026-08-03T00:00:00Z', service: 'wsfe' };
 const fiscalRequest: FiscalRequest = { cuit: config.cuit, pointOfSale: 5, documentType: 11, concept: 1, recipientDocumentType: 99, recipientDocumentNumber: '0', documentNumber: 0, issueDate: '20260802', totalAmount: 121, netAmount: 100, vatAmount: 21, exemptAmount: 0, nonTaxedAmount: 0, otherTaxesAmount: 0, currencyCode: 'PES', currencyRate: 1, vatItems: [{ id: 5, baseAmount: 100, amount: 21 }] };
 

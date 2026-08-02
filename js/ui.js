@@ -2488,11 +2488,49 @@ function actualProductVariants(product) {
     .filter((candidate) => candidate && isProductVisibleToCustomer(candidate));
 }
 
-export function showProductModal(productId) {
+let productModalRestoreFocus = null;
+let productModalRestoreProductId = '';
+let productModalCloseBound = false;
+let productModalDocumentBound = false;
+
+function restoreProductModalFocus() {
+  const trigger = productModalRestoreFocus?.isConnected
+    ? productModalRestoreFocus
+    : [...document.querySelectorAll('[data-product-detail]')]
+      .find((node) => node.dataset.productDetail === productModalRestoreProductId);
+  productModalRestoreFocus = null;
+  productModalRestoreProductId = '';
+  if (!trigger?.isConnected || trigger.disabled) return;
+  // Safari puede ejecutar el cierre nativo del dialog después del handler de
+  // click; esperar un frame evita perder el foco restaurado al body.
+  setTimeout(() => requestAnimationFrame(() => trigger.focus({ preventScroll: true })), 0);
+}
+
+export function showProductModal(productId, restoreTrigger = null) {
   const product = getProductById(productId);
   const modal = $('[data-product-modal]');
   const content = $('[data-modal-content]');
   if (!product || !isProductVisibleToCustomer(product) || !modal || !content) return;
+  if (!productModalCloseBound) {
+    modal.addEventListener('close', restoreProductModalFocus);
+    modal.addEventListener('click', (event) => {
+      if (event.target?.closest?.('[data-close-modal]')) restoreProductModalFocus();
+    });
+    productModalCloseBound = true;
+  }
+  if (!productModalDocumentBound) {
+    document.addEventListener('click', (event) => {
+      if (event.target?.closest?.('[data-close-modal]')) restoreProductModalFocus();
+    }, true);
+    productModalDocumentBound = true;
+  }
+  if (!modal.open) {
+    const active = restoreTrigger || document.activeElement;
+    productModalRestoreFocus = active && active !== document.body && typeof active.focus === 'function'
+      ? active
+      : null;
+    productModalRestoreProductId = product.id;
+  }
 
   const pricing = productPricePresentation(product);
   const favorite = isFavoriteProduct(product.id);
@@ -2562,7 +2600,12 @@ export function showProductModal(productId) {
 
 export function closeProductModal() {
   const modal = $('[data-product-modal]');
-  if (modal?.open) modal.close();
+  if (modal?.open) {
+    modal.close();
+    // WebKit no siempre entrega el evento close antes de devolver el foco al
+    // documento; el cierre explícito conserva el mismo fallback accesible.
+    restoreProductModalFocus();
+  }
 }
 
 export async function copyDraftOrderToClipboard() {

@@ -101,6 +101,7 @@ import {
   shouldShowAndroidInstallCta,
   shouldShowIOSInstallGuide,
 } from './core/pwa-install.js';
+import { initMotion } from './motion.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
@@ -474,6 +475,10 @@ async function bootstrap() {
     const resetRequested = hasDemoResetRequest();
     applyBusinessConfig();
     configureViewScrollRestoration();
+    const motionController = initMotion();
+    // Exponer sólo diagnósticos locales para QA visual/performance; no forma
+    // parte de contratos de negocio ni cambia el estado del catálogo.
+    window.TABA2_MOTION = motionController;
     bindEvents();
     subscribe(renderAll);
     maybeOpenPitchFromUrl();
@@ -987,7 +992,7 @@ function bindEvents() {
 
     const detailId = target.closest('[data-product-detail]')?.dataset.productDetail;
     if (detailId) {
-      showProductModal(detailId);
+      showProductModal(detailId, target.closest('[data-product-detail]'));
       return;
     }
 
@@ -1343,6 +1348,7 @@ function bindEvents() {
       button.disabled = true;
       button.textContent = 'Creando pedido…';
     }
+    form.dataset.motionBusy = 'true';
     try {
       const values = {
         ...getCheckoutFormValues(),
@@ -1378,6 +1384,7 @@ function bindEvents() {
         button.disabled = isProductionOrderingBlocked();
         button.textContent = originalLabel || checkoutModeCopy(getAppMode()).submit;
       }
+      delete form.dataset.motionBusy;
     }
   });
 

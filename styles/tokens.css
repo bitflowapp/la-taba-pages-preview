@@ -85,6 +85,20 @@
   --taba-bottom-nav-clearance: calc(var(--nav-block) + var(--stack-gap));
 
   --ease: 160ms cubic-bezier(0.2, 0, 0, 1);
+
+  /* Motion system: short, predictable and limited to compositor-friendly
+     properties. Components should consume these tokens instead of inventing
+     local timings. */
+  --motion-duration-instant: 100ms;
+  --motion-duration-fast: 160ms;
+  --motion-duration-base: 220ms;
+  --motion-duration-slow: 320ms;
+  --motion-duration-modal: 360ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
+  --motion-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-distance-reveal: 16px;
 }
 
 /* ⚠️ REGLA CRÍTICA DEL SISTEMA — no mover estas declaraciones a :root.

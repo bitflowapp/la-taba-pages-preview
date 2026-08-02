@@ -1333,8 +1333,10 @@ body[data-active-view="rider"] .floating-cart {
 
   .taba-home .home-add-button,
   .taba-home .home-best-card .home-add-button {
-    width: 44px;
-    height: 44px;
+    /* Fractional viewport rounding can report 43.9999px; keep the 44px
+       touch target above the strict accessibility floor on every DPR. */
+    width: 44.1px;
+    height: 44.1px;
   }
 
   .mobile-nav .mn-ico {

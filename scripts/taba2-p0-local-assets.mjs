@@ -10,7 +10,9 @@ const CATALOG = path.join(ROOT, 'catalog');
 const NOW = new Date().toISOString();
 const OUT = path.join(ROOT, 'assets/catalog/products');
 
-const L = 'C:/Users/marco/Documents/New project/bebidas';
+// The source inventory stays outside runtime and is supplied explicitly when
+// this one-off authority pipeline is rerun. Never commit a machine-local path.
+const L = path.resolve(process.env.TABA2_LOCAL_SOURCE_ROOT || path.join(ROOT, 'artifacts/source-bebidas'));
 const A = path.join(ROOT, 'artifacts/alt-candidates');
 const secondary = (sourceUrl, imageUrl, sourceFile, sourceDomain = new URL(sourceUrl).hostname) => ({ sourceUrl, imageUrl, sourceFile, sourceDomain, sourceType: 'cadena_comercial_secundaria' });
 

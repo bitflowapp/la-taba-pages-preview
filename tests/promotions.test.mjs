@@ -158,8 +158,14 @@ test('free delivery and the centralized cart total use the active promotion stat
     promotionalPrice: null,
     priority: 20,
     terms: 'Envío sin cargo confirmado.',
+    validFrom: '2020-01-01',
+    validUntil: '2099-12-31',
   });
-  const fixed = approvedPromotion({ priority: 10 });
+  const fixed = approvedPromotion({
+    priority: 10,
+    validFrom: '2020-01-01',
+    validUntil: '2099-12-31',
+  });
   resetState({ promotions: [freeDelivery, fixed] });
   assert.equal(addToCart('qa-promo-bebidas').ok, true);
 

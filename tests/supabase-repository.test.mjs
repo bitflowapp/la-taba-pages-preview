@@ -180,6 +180,26 @@ test('crea con intención mínima y acepta sólo importes e IDs del servidor', a
   assert.equal(storage.getItem(`taba-order-access-v1:${BUSINESS_ID}:pending`), null);
 });
 
+test('doble confirmación del cliente comparte una sola creación en vuelo', async () => {
+  const mock = createSupabaseClientMock();
+  const repository = makeRepository(mock);
+  addToCart(PRODUCT_ID, 1);
+
+  const [first, second] = await Promise.all([
+    repository.createOrder(checkoutDraft()),
+    repository.createOrder(checkoutDraft()),
+  ]);
+
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, true);
+  assert.equal(first.order.backendId, second.order.backendId);
+  assert.equal(
+    mock.calls.rpc.filter((call) => call.name === 'create_order_with_items').length,
+    1,
+  );
+  assert.equal(mock.db.orders.length, 1);
+});
+
 test('reintenta una falla con la misma clave y usa otra después de un éxito', async () => {
   const mock = createSupabaseClientMock({ failFirstCreate: true });
   const storage = createStorage();
@@ -236,13 +256,71 @@ test('cambia estados sólo por RPC con compare-and-swap', async () => {
 
   assert.equal(result.ok, true);
   assert.equal(result.order.workflowStatus, 'accepted');
-  const change = mock.calls.rpc.find((call) => call.name === 'change_order_status');
+  const change = mock.calls.rpc.find((call) => call.name === 'transition_order');
   assert.deepEqual(change.args, {
     p_order_id: row.id,
-    p_expected_status: 'submitted',
+    p_expected_revision: 1,
     p_new_status: 'accepted',
   });
   assert.equal(mock.calls.from.some((call) => call.action === 'update'), false);
+});
+
+test('snapshot de Negocio exige business_id, revision e ítems completos sin espejar parciales', async () => {
+  const mock = createSupabaseClientMock();
+  const valid = mock.seedOrder({ status: 'submitted', revision: 7 });
+  const repository = makeRepository(mock);
+
+  const complete = await repository.fetchBusinessOrderSnapshot();
+  assert.equal(complete.ok, true);
+  assert.equal(complete.orders.length, 1);
+  assert.equal(complete.orders[0].backendId, valid.id);
+  assert.equal(complete.orders[0].revision, 7);
+  assert.equal(getState().orders.length, 0, 'la consulta no debe mutar antes del coordinador');
+
+  valid.customer_name = '';
+  const partial = await repository.fetchBusinessOrderSnapshot();
+  assert.equal(partial.ok, false);
+  assert.equal(partial.code, 'BUSINESS_ORDER_INCOMPLETE');
+  assert.equal(getState().orders.length, 0);
+});
+
+test('snapshot de Negocio reproduce order_events por sequence aunque created_at empate', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({ status: 'on_the_way', revision: 3 });
+  const sameInstant = row.created_at;
+  row.order_events = [
+    {
+      id: 'event-sequence-3',
+      sequence: 3,
+      event_type: 'order.status_changed',
+      metadata: { next_status: 'on_the_way' },
+      created_at: sameInstant,
+    },
+    {
+      id: 'event-sequence-1',
+      sequence: 1,
+      event_type: 'order.received',
+      metadata: {},
+      created_at: sameInstant,
+    },
+    {
+      id: 'event-sequence-2',
+      sequence: 2,
+      event_type: 'order.status_changed',
+      metadata: { next_status: 'ready' },
+      created_at: sameInstant,
+    },
+  ];
+  const repository = makeRepository(mock);
+
+  const snapshot = await repository.fetchBusinessOrderSnapshot();
+
+  assert.equal(snapshot.ok, true);
+  assert.deepEqual(
+    snapshot.orders[0].statusHistory.map((event) => event.status),
+    ['received', 'ready', 'on_the_way'],
+  );
+  assert.equal(snapshot.orders[0].lastEventSequence, 3);
 });
 
 test('asigna rider con CAS y publica GPS sólo por las RPC autorizadas', async () => {
@@ -1893,18 +1971,27 @@ function createSupabaseClientMock({
           status: 200,
         };
       }
-      if (name === 'change_order_status') {
+      if (name === 'transition_order') {
         const row = db.orders.find((candidate) => candidate.id === args.p_order_id);
-        const current = normalizeDbStatus(row?.status);
-        if (!row || current !== args.p_expected_status) {
+        if (!row || row.revision !== args.p_expected_revision) {
           return {
             data: null,
-            error: { code: '40001', message: 'conflicto de estado esperado' },
+            error: { code: '40001', message: 'revision desactualizada' },
             status: 409,
           };
         }
+        const previousStatus = row.status;
         row.status = args.p_new_status;
+        row.revision += 1;
         row.updated_at = new Date().toISOString();
+        row.order_events.push({
+          id: `event-${row.id}-${row.revision}`,
+          sequence: Math.max(...row.order_events.map((event) => event.sequence), 0) + 1,
+          event_type: 'order.status_changed',
+          metadata: { previous_status: previousStatus, next_status: row.status },
+          payload: { previous_status: previousStatus, next_status: row.status },
+          created_at: row.updated_at,
+        });
         return { data: withRelations(row, db), error: null, status: 200 };
       }
       if (name === 'list_available_rider_orders') {
@@ -2154,6 +2241,7 @@ function createQuery({ table, db, calls }) {
     table,
     action: 'select',
     filters: [],
+    inFilters: [],
     insertPayload: null,
   };
   calls.from.push(operation);
@@ -2164,6 +2252,10 @@ function createQuery({ table, db, calls }) {
     },
     eq(field, value) {
       operation.filters.push([field, value]);
+      return this;
+    },
+    in(field, values) {
+      operation.inFilters.push([field, Array.isArray(values) ? values : []]);
       return this;
     },
     order() {
@@ -2212,7 +2304,8 @@ function executeQuery(operation, db) {
   }
   if (operation.table === 'orders') {
     return ok(
-      applyFilters(db.orders, operation.filters).map((row) => withRelations(row, db)),
+      applyFilters(db.orders, operation.filters, operation.inFilters)
+        .map((row) => withRelations(row, db)),
     );
   }
   if (operation.table === 'rider_locations' && operation.action === 'insert') {
@@ -2231,9 +2324,12 @@ function ok(data) {
   return { data, error: null, status: 200 };
 }
 
-function applyFilters(rows, filters) {
+function applyFilters(rows, filters, inFilters = []) {
   return rows.filter(
-    (row) => filters.every(([field, value]) => row[field] === value),
+    (row) => (
+      filters.every(([field, value]) => row[field] === value)
+      && inFilters.every(([field, values]) => values.includes(row[field]))
+    ),
   );
 }
 
@@ -2271,6 +2367,15 @@ function buildOrderRow(payload, sequence, userId) {
     delivery_fee: 500,
     total: (2300 * quantity) + 500,
     currency_code: 'ARS',
+    revision: 1,
+    order_events: [{
+      id: `event-${sequence}-1`,
+      sequence: sequence,
+      event_type: 'order.received',
+      metadata: { source: 'test' },
+      payload: { source: 'test' },
+      created_at: now,
+    }],
     created_at: now,
     updated_at: now,
     client_request_id: payload.client_request_id,
@@ -2281,6 +2386,7 @@ function buildOrderRow(payload, sequence, userId) {
 function withRelations(row, db) {
   return {
     ...row,
+    order_events: row.order_events || [],
     order_items: (row.items || []).map((item, index) => ({
       id: `77777777-7777-4777-8777-${String(index + 1).padStart(12, '0')}`,
       order_id: row.id,

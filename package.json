@@ -11,6 +11,7 @@
     "verify": "npm run migrations:validate && npm run catalog:release:validate && npm run verify:technical",
     "release:folder": "npm run vendor:build && npm run verify && node scripts/create-release-folder.mjs",
     "smoke:supabase": "node scripts/smoke-supabase-production.mjs",
+    "smoke:business-intake:staging": "node scripts/run-business-intake-staging-smoke.mjs",
     "config:check": "node scripts/check-runtime-config.mjs",
     "migrations:validate": "node scripts/validate-supabase-migrations.mjs",
     "catalog:validate": "node scripts/validate-product-catalog.mjs",

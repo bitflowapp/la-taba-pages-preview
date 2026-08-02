@@ -63,6 +63,34 @@
   gap: 16px;
 }
 
+.production-intake-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 8px;
+  color: var(--taba-muted);
+  font-size: 12px;
+}
+
+.production-intake-status strong {
+  color: var(--taba-success, #147a45);
+}
+
+.production-intake-status.is-recovering strong {
+  color: var(--taba-warning, #9a5a00);
+}
+
+.production-intake-status.is-offline strong,
+.production-intake-status.is-error strong,
+.production-intake-error {
+  color: var(--taba-danger, #b42318);
+}
+
+.production-intake-error {
+  flex-basis: 100%;
+}
+
 .business-queue-toolbar {
   display: flex;
   align-items: center;

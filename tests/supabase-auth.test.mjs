@@ -136,6 +136,20 @@ test('no autoriza una cuenta sin membresía activa', async () => {
   assert.equal(client.calls.signOut, 1);
 });
 
+test('token expirado no autoriza la bandeja ni intenta resolver una membership', async () => {
+  const client = createAuthMock({
+    session: null,
+    getSessionError: { status: 401, message: 'JWT expired' },
+  });
+  const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
+
+  const result = await auth.getTeamAccess();
+
+  assert.equal(result.ok, false);
+  assert.equal(result.customerSession, undefined);
+  assert.equal(client.calls.filters.length, 0);
+});
+
 test('expone suscripción Auth desmontable', () => {
   const client = createAuthMock();
   const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
@@ -151,6 +165,7 @@ test('expone suscripción Auth desmontable', () => {
 
 function createAuthMock({
   session = { user: { id: 'team-1' } },
+  getSessionError = null,
   membership = {
     business_id: BUSINESS_ID,
     user_id: 'team-1',
@@ -183,7 +198,7 @@ function createAuthMock({
     calls,
     auth: {
       async getSession() {
-        return { data: { session }, error: null };
+        return { data: { session }, error: getSessionError };
       },
       async signInAnonymously() {
         calls.anonymous += 1;

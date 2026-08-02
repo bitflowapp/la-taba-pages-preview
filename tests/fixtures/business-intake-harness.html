@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Business intake reliability harness</title>
+    <style>
+      body { font: 16px system-ui, sans-serif; margin: 24px; color: #17202a; }
+      [data-status] { display: grid; gap: 4px; padding: 12px; border: 1px solid #ccd4dd; border-radius: 10px; }
+      [data-orders] { display: grid; gap: 10px; margin-top: 16px; }
+      [data-order] { padding: 12px; border: 1px solid #ccd4dd; border-radius: 10px; }
+      [data-alert-count] { margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Pedidos del negocio</h1>
+      <div data-status role="status">
+        <strong data-phase>Recuperando pedidos</strong>
+        <span data-last-sync>Todavía sin una sincronización exitosa</span>
+        <span data-error></span>
+      </div>
+      <button type="button" data-create-order hidden>Confirmar pedido</button>
+      <p data-client-result></p>
+      <p data-alert-count>Alertas: 0</p>
+      <section data-orders aria-live="polite"></section>
+    </main>
+    <script type="module">
+      import { createBusinessOrderIntakeCoordinator } from '/js/core/business-order-intake.js';
+
+      const params = new URLSearchParams(location.search);
+      const clientMode = params.has('client');
+      const createButton = document.querySelector('[data-create-order]');
+      const clientResult = document.querySelector('[data-client-result]');
+      let currentOrders = [];
+      let realtimeHandlers = null;
+      let alertCount = 0;
+
+      if (clientMode) {
+        document.querySelector('[data-status]').hidden = true;
+        document.querySelector('[data-orders]').hidden = true;
+        document.querySelector('[data-alert-count]').hidden = true;
+        createButton.hidden = false;
+        createButton.addEventListener('click', async () => {
+          const requestId = createButton.dataset.requestId || crypto.randomUUID();
+          createButton.dataset.requestId = requestId;
+          const response = await fetch('/__intake/create', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ clientRequestId: requestId }),
+          });
+          const result = await response.json();
+          clientResult.textContent = result.ok ? `Pedido confirmado: ${result.order.id}` : 'Error al confirmar';
+        });
+        globalThis.__intakeReady = Promise.resolve({ ok: true, client: true });
+      } else {
+        const coordinator = createBusinessOrderIntakeCoordinator({
+          businessId: '11111111-1111-4111-8111-111111111111',
+          fetchSnapshot: async () => {
+            const response = await fetch('/__intake/snapshot', { cache: 'no-store' });
+            if (!response.ok) return { ok: false, message: `snapshot ${response.status}` };
+            return response.json();
+          },
+          subscribeRealtime: (handlers) => {
+            realtimeHandlers = handlers;
+            queueMicrotask(() => handlers.onStatus('SUBSCRIBED'));
+            return () => { realtimeHandlers = null; };
+          },
+          getCurrentOrders: () => currentOrders,
+          applyOrders: (orders) => {
+            currentOrders = structuredClone(orders);
+            const list = document.querySelector('[data-orders]');
+            list.replaceChildren(...orders.map((order) => {
+              const card = document.createElement('article');
+              card.dataset.order = order.id;
+              const title = document.createElement('strong');
+              title.textContent = `${order.id} · ${order.customerName}`;
+              const detail = document.createElement('p');
+              detail.textContent = `${order.workflowStatus} · revisión ${order.revision} · ${order.items.length} ítem(s)`;
+              card.append(title, detail);
+              return card;
+            }));
+          },
+          onStatusChange: (status) => {
+            const labels = {
+              connected: 'Conectado',
+              recovering: 'Recuperando pedidos',
+              offline: 'Sin conexión',
+              error: 'Error recuperable',
+              idle: 'Recuperando pedidos',
+            };
+            document.querySelector('[data-phase]').textContent = labels[status.phase] || labels.recovering;
+            document.querySelector('[data-last-sync]').textContent = status.lastSuccessfulSyncAt
+              ? `Última sincronización: ${status.lastSuccessfulSyncAt}`
+              : 'Todavía sin una sincronización exitosa';
+            document.querySelector('[data-error]').textContent = status.error || '';
+          },
+          onOrderAlert: () => {
+            alertCount += 1;
+            document.querySelector('[data-alert-count]').textContent = `Alertas: ${alertCount}`;
+          },
+          pollMs: 60_000,
+        });
+        globalThis.__intakeCoordinator = coordinator;
+        globalThis.__intakeReady = coordinator.start();
+        globalThis.__emitRealtime = (payload = {}) => realtimeHandlers?.onInvalidate(payload);
+        globalThis.__emitRealtimeStatus = (status) => realtimeHandlers?.onStatus(status);
+        globalThis.__stopIntake = () => coordinator.stop();
+      }
+    </script>
+  </body>
+</html>

@@ -485,7 +485,10 @@ async function bootstrap() {
     if (resetRequested) {
       if (await maybeResetDemoSession()) return;
     }
-    initProductionOperations({ onChange: renderAll });
+    initProductionOperations({
+      onChange: renderAll,
+      onOrderAlert: (message) => showToast(message),
+    });
     if (isDemoMode()) {
       if (!isSandboxOrderRepository(getOrderRepository())) initRealtime();
       onRealtimeStatusChange(renderLiveSurfaces);

@@ -37,6 +37,10 @@ import {
   suppressActiveOrderFallback,
 } from '../orders.js';
 import { createCustomerTrackingPollController } from '../tracking/customer_tracking_poll.js';
+import {
+  BUSINESS_INBOX_DATABASE_STATUSES,
+  BUSINESS_INBOX_STATUSES,
+} from '../core/business-order-intake.js';
 
 // Se conserva sólo para detectar configuraciones históricas. Producción exige un
 // businessId explícito y verificado en el runtime config.
@@ -48,11 +52,13 @@ const ORDER_ACCESS_STORAGE_VERSION = 'taba-order-access-v1';
 // rider publishes through its dedicated RPC. This keeps raw rider_locations
 // outside browser reads even when an order is otherwise visible to the user.
 const ORDER_SELECT = '*,order_items(*)';
+const BUSINESS_ORDER_SELECT = '*,order_items(*),order_events(*)';
 const PUBLIC_TRACKING_GPS_MAX_AGE_MS = 3 * 60 * 1000;
 const PUBLIC_TRACKING_GPS_FUTURE_TOLERANCE_MS = 30 * 1000;
 const PUBLIC_TRACKING_GPS_MAX_ACCURACY_METERS = 250;
 const TRUSTED_ETA_MAX_AGE_MS = 15 * 60 * 1000;
 const TRUSTED_ETA_SOURCES = new Set(['business', 'routing']);
+const MAX_BUSINESS_INBOX_ORDERS = 500;
 let channelSequence = 0;
 
 export function createSupabaseOrderRepository({
@@ -195,6 +201,51 @@ export function createSupabaseOrderRepository({
       if (access) selectTrackingOrder(access.orderId || access.publicCode);
     }
     return repositoryResult(true, { rows, orders });
+  }
+
+  async function fetchBusinessOrderSnapshot() {
+    const { data, error, status } = await client
+      .from('orders')
+      .select(BUSINESS_ORDER_SELECT)
+      .eq('business_id', businessId)
+      .in('status', BUSINESS_INBOX_DATABASE_STATUSES)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .limit(MAX_BUSINESS_INBOX_ORDERS + 1);
+
+    if (error) {
+      return failedQuery(error, status, businessSnapshotErrorMessage(error, status));
+    }
+    const rows = Array.isArray(data) ? data : [];
+    if (rows.length > MAX_BUSINESS_INBOX_ORDERS) {
+      return repositoryResult(false, {
+        code: 'BUSINESS_INBOX_LIMIT_EXCEEDED',
+        message: 'La bandeja supera 500 pedidos activos; no se aplicó un snapshot truncado.',
+      });
+    }
+
+    for (const row of rows) {
+      const validationError = validateBusinessOrderRow(row, businessId);
+      if (validationError) {
+        return repositoryResult(false, {
+          code: 'BUSINESS_ORDER_INCOMPLETE',
+          message: `PostgreSQL devolvió un pedido incompleto (${validationError}).`,
+        });
+      }
+    }
+
+    const orders = rows.map(rowToDemoOrder).filter(Boolean);
+    if (orders.length !== rows.length) {
+      return repositoryResult(false, {
+        code: 'BUSINESS_ORDER_NORMALIZATION_FAILED',
+        message: 'No se pudo normalizar el snapshot completo de pedidos.',
+      });
+    }
+    return repositoryResult(true, {
+      rows,
+      orders,
+      syncedAt: new Date().toISOString(),
+    });
   }
 
   function getTrackingAccess() {
@@ -645,6 +696,7 @@ export function createSupabaseOrderRepository({
   const repository = {
     mode: 'supabase',
     businessId,
+    pollMs: pollingInterval,
     auth,
     customerProfiles,
     async loadCatalog() {
@@ -778,22 +830,58 @@ export function createSupabaseOrderRepository({
       const result = await fetchOrders();
       return result.ok ? result.orders : [];
     },
-    async updateOrderStatus(orderId, status) {
+    async fetchBusinessOrderSnapshot() {
+      return fetchBusinessOrderSnapshot();
+    },
+    watchBusinessOrderInvalidations({ onInvalidate, onStatus } = {}) {
+      const channel = client.channel(`taba-business-intake-${businessId}-${++channelSequence}`);
+      channel.on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+        filter: `business_id=eq.${businessId}`,
+      }, (payload) => {
+        if (typeof onInvalidate !== 'function') return;
+        const row = payload?.new && Object.keys(payload.new).length ? payload.new : payload?.old;
+        onInvalidate({
+          eventType: String(payload?.eventType || ''),
+          orderId: sanitizeText(row?.id, { maxLength: 80 }),
+          revision: normalizeOrderRevision(row?.revision),
+        });
+      });
+      channel.subscribe((nextStatus) => onStatus?.(nextStatus));
+      return () => {
+        if (typeof client.removeChannel === 'function') {
+          Promise.resolve(client.removeChannel(channel)).catch(() => null);
+        } else {
+          channel.unsubscribe?.();
+        }
+      };
+    },
+    async updateOrderStatus(orderId, status, { expectedRevision = null } = {}) {
       const row = await fetchOrderByPublicId(orderId);
       if (!row) return repositoryResult(false, { message: 'Pedido no encontrado o acceso denegado.' });
 
-      const expectedStatus = normalizeWorkflowStatus(row.status);
       const nextStatus = normalizeWorkflowStatus(status);
-      const { data, error, status: responseStatus } = await client.rpc('change_order_status', {
+      const revision = normalizeOrderRevision(expectedRevision) || normalizeOrderRevision(row.revision);
+      if (revision === null) {
+        return repositoryResult(false, {
+          code: 'ORDER_REVISION_REQUIRED',
+          message: 'El pedido no tiene una revisión válida; recuperá la bandeja antes de reintentar.',
+        });
+      }
+      const { data, error, status: responseStatus } = await client.rpc('transition_order', {
         p_order_id: row.id,
-        p_expected_status: expectedStatus,
+        p_expected_revision: revision,
         p_new_status: nextStatus,
       });
       if (error) {
         return failedQuery(error, responseStatus, readableStatusError(error));
       }
 
-      const updatedRow = unwrapOrderRow(data) || await fetchOrderByPublicId(row.id);
+      // transition_order devuelve la fila de orders, no las relaciones. La
+      // tarjeta sólo se actualiza con una lectura completa posterior.
+      const updatedRow = await fetchOrderByPublicId(row.id) || unwrapOrderRow(data);
       if (!updatedRow) return repositoryResult(false, { message: 'El backend no devolvió el pedido actualizado.' });
       const order = mirrorOrder(updatedRow);
       return repositoryResult(true, {
@@ -1659,6 +1747,7 @@ function rowToDemoOrder(row = {}) {
     // mensajes Realtime atrasados: created_at/updated_at empatan entre escrituras
     // de una misma transacción y no pueden desempatarlas.
     revision: normalizeOrderRevision(row.revision),
+    lastEventSequence: latestOrderEventSequence(row.order_events),
     ...(workflowStatus === 'delivered' && terminalVisibleUntil
       ? { terminalVisibleUntil }
       : {}),
@@ -1698,6 +1787,14 @@ function rowToDemoOrder(row = {}) {
       updatedAt: latestLocation.lastFixAt,
     } : undefined,
   };
+}
+
+function latestOrderEventSequence(events) {
+  if (!Array.isArray(events)) return null;
+  const sequences = events
+    .map((event) => Number(event?.sequence))
+    .filter((sequence) => Number.isSafeInteger(sequence) && sequence > 0);
+  return sequences.length ? Math.max(...sequences) : null;
 }
 
 function rowToDemoItem(item = {}) {
@@ -1810,6 +1907,9 @@ function latestRiderLocation(locations) {
 }
 
 function statusHistoryFromRow(row, status, createdAt) {
+  const sequencedHistory = statusHistoryFromSequencedEvents(row.order_events, createdAt);
+  if (sequencedHistory.length) return dedupeHistory(sequencedHistory);
+
   const history = [{ status: 'received', at: createdAt }];
   if (row.accepted_at || row.preparing_at || ['preparing', 'ready', 'on_the_way', 'arriving', 'delivered'].includes(status)) {
     history.push({ status: 'preparing', at: normalizeIso(row.preparing_at || row.accepted_at || row.updated_at || createdAt) });
@@ -1839,6 +1939,27 @@ function statusHistoryFromRow(row, status, createdAt) {
     });
   }
   return dedupeHistory(history);
+}
+
+function statusHistoryFromSequencedEvents(events, createdAt) {
+  if (!Array.isArray(events)) return [];
+  return [...events]
+    .filter((event) => Number.isSafeInteger(Number(event?.sequence)) && Number(event.sequence) > 0)
+    .sort((a, b) => Number(a.sequence) - Number(b.sequence))
+    .map((event) => {
+      const eventType = String(event.event_type || event.type || '');
+      if (eventType === 'order.received') {
+        return { status: 'received', at: normalizeIso(event.created_at || createdAt) };
+      }
+      if (eventType !== 'order.status_changed') return null;
+      const nextStatus = event.metadata?.next_status || event.payload?.next_status;
+      if (!nextStatus) return null;
+      return {
+        status: toDemoOrderStatus(normalizeWorkflowStatus(nextStatus)),
+        at: normalizeIso(event.created_at || createdAt),
+      };
+    })
+    .filter(Boolean);
 }
 
 function dedupeHistory(history) {
@@ -1886,6 +2007,53 @@ function unwrapOrderRow(payload) {
     order_items: value.order_items || value.items || [],
     rider_locations: value.rider_locations || [],
   };
+}
+
+function validateBusinessOrderRow(row, expectedBusinessId) {
+  if (!row || typeof row !== 'object') return 'payload inválido';
+  if (!isUuid(row.id)) return 'order_id ausente';
+  if (row.business_id !== expectedBusinessId) return 'business_id incorrecto';
+  if (!sanitizeText(row.public_code || row.code, { maxLength: 80 })) return 'código público ausente';
+  if (normalizeOrderRevision(row.revision) === null) return 'revision ausente';
+  if (!BUSINESS_INBOX_STATUSES.includes(normalizeWorkflowStatus(row.status, ''))) return 'estado fuera de bandeja';
+  if (!Number.isFinite(Date.parse(row.created_at || ''))) return 'created_at inválido';
+  if (!Number.isFinite(Date.parse(row.updated_at || row.created_at || ''))) return 'updated_at inválido';
+  if (!sanitizeText(row.customer_name, { maxLength: 80 })) return 'cliente ausente';
+  if (!sanitizeText(row.customer_phone, { maxLength: 40 })) return 'teléfono ausente';
+  if (!['delivery', 'pickup'].includes(row.delivery_mode || row.fulfillment_type)) return 'modalidad ausente';
+  if (!Array.isArray(row.order_items) || row.order_items.length === 0) return 'items ausentes';
+  if (row.order_items.some((item) => (
+    !item
+    || !sanitizeText(item.product_uuid || item.product_id, { maxLength: 80 })
+    || !sanitizeText(item.name, { maxLength: 100 })
+    || !Number.isFinite(Number(item.quantity))
+    || Number(item.quantity) <= 0
+  ))) return 'item incompleto';
+  if (!Array.isArray(row.order_events)) return 'eventos ausentes';
+  if (row.order_events.some((event) => (
+    !event
+    || !Number.isSafeInteger(Number(event.sequence))
+    || Number(event.sequence) < 1
+  ))) return 'secuencia de eventos inválida';
+  if (!Number.isFinite(Number(row.total)) || Number(row.total) < 0) return 'total inválido';
+  if (!sanitizeText(row.currency_code, { maxLength: 3 })) return 'moneda ausente';
+  if ((row.delivery_mode || row.fulfillment_type) === 'delivery') {
+    const address = row.delivery_address_formatted || row.address_label || row.customer_street_address;
+    if (!sanitizeText(address, { maxLength: 180 })) return 'dirección ausente';
+  }
+  return '';
+}
+
+function businessSnapshotErrorMessage(error, status) {
+  const responseStatus = Number(status || error?.status || 0);
+  const text = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
+  if (responseStatus === 401 || text.includes('jwt') || text.includes('token')) {
+    return 'La sesión venció. Volvé a iniciar sesión para recuperar los pedidos.';
+  }
+  if (responseStatus === 403 || error?.code === '42501' || text.includes('permission')) {
+    return 'La membresía no autoriza leer pedidos de este comercio.';
+  }
+  return 'No pudimos consultar PostgreSQL; conservamos la última bandeja confirmada.';
 }
 
 function failedQuery(error, status, fallback) {

@@ -1,4 +1,5 @@
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
+import { createBusinessOrderIntakeCoordinator } from './core/business-order-intake.js';
 import { normalizeWorkflowStatus } from './core/order-workflow.js';
 import { createProductionRiderGpsController } from './tracking/production_rider_gps.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
@@ -17,10 +18,13 @@ let repository = null;
 let auth = null;
 let authStop = null;
 let notify = () => {};
+let notifyOrderAlert = () => {};
 let refreshSequence = 0;
 let availableRiderOrders = [];
 let activeBusinessRiders = [];
 let gpsController = null;
+let businessIntake = null;
+let businessIntakeStatus = emptyBusinessIntakeStatus();
 let access = {
   status: 'signed_out',
   user: null,
@@ -29,8 +33,12 @@ let access = {
 };
 let gpsShare = emptyGpsShare();
 
-export function initProductionOperations({ onChange = () => {} } = {}) {
+export function initProductionOperations({
+  onChange = () => {},
+  onOrderAlert = () => {},
+} = {}) {
   notify = typeof onChange === 'function' ? onChange : () => {};
+  notifyOrderAlert = typeof onOrderAlert === 'function' ? onOrderAlert : () => {};
   if (getAppMode() !== APP_MODE_PRODUCTION || initialized) return;
   initialized = true;
   repository = getOrderRepository();
@@ -131,6 +139,7 @@ export async function handleProductionOperationsAction(target) {
 
   if (target.closest('[data-production-sign-out]')) {
     stopGpsShare();
+    stopBusinessIntake();
     repository?.stopSync?.();
     const result = await auth.signOut();
     clearProductionOrders();
@@ -183,7 +192,7 @@ export async function handleProductionOperationsAction(target) {
         expectedRiderId: order.assignedRiderId || null,
       },
     );
-    if (result.ok) await repository.listOrders();
+    if (result.ok) await businessIntake?.invalidate?.('rider-assigned');
     notify();
     return {
       handled: true,
@@ -307,6 +316,10 @@ export function canAssignBusinessRider(order = {}) {
     && ['ready', 'assigned'].includes(workflowStatus(order));
 }
 
+export function getBusinessIntakeStatus() {
+  return { ...businessIntakeStatus };
+}
+
 // El permiso de geolocalización no implica compartir fuera de la superficie
 // operativa del rider. Este corte es idempotente y lo invoca app.js tanto al
 // abandonar #rider como cuando la página deja de existir.
@@ -320,6 +333,7 @@ export function handleProductionOperationsPageHide() {
 }
 
 export function resetProductionOperationsForTests() {
+  stopBusinessIntake();
   gpsController?.destroy();
   gpsController = null;
   authStop?.();
@@ -328,9 +342,11 @@ export function resetProductionOperationsForTests() {
   repository = null;
   auth = null;
   notify = () => {};
+  notifyOrderAlert = () => {};
   refreshSequence = 0;
   availableRiderOrders = [];
   activeBusinessRiders = [];
+  businessIntakeStatus = emptyBusinessIntakeStatus();
   gpsShare = emptyGpsShare();
   access = {
     status: 'signed_out',
@@ -355,6 +371,7 @@ async function refreshProductionAccess() {
   if (sequence !== refreshSequence) return;
   if (!result.ok) {
     stopGpsShare();
+    stopBusinessIntake();
     // El cliente productivo usa una sesión Auth anónima válida para ser dueño
     // de su pedido. Ese evento no es un cierre de sesión del equipo y no debe
     // borrar el pedido recién espejado en memoria.
@@ -383,22 +400,33 @@ function clearProductionOrders() {
 
 async function activateAuthorizedAccess(result, expectedSequence = null) {
   const sequence = expectedSequence ?? ++refreshSequence;
+  stopBusinessIntake();
   repository?.stopSync?.();
-  repository?.startSync?.();
   if (result.membership?.role === 'rider') {
+    repository?.startSync?.();
     activeBusinessRiders = [];
     await refreshRiderOrders();
   } else {
     availableRiderOrders = [];
-    const [, ridersResult] = await Promise.all([
-      repository.listOrders(),
+    const [intakeResult, ridersResult] = await Promise.all([
+      startBusinessIntake(result.membership?.business_id),
       repository.listActiveRiders(),
     ]);
+    if (!intakeResult?.ok && businessIntakeStatus.phase === 'idle') {
+      businessIntakeStatus = {
+        ...businessIntakeStatus,
+        phase: 'error',
+        error: intakeResult?.message || 'No pudimos recuperar los pedidos.',
+      };
+    }
     activeBusinessRiders = ridersResult?.ok && Array.isArray(ridersResult.riders)
       ? ridersResult.riders
       : [];
   }
-  if (expectedSequence !== null && sequence !== refreshSequence) return;
+  if (expectedSequence !== null && sequence !== refreshSequence) {
+    stopBusinessIntake();
+    return;
+  }
   access = {
     status: 'authenticated',
     user: result.user,
@@ -406,6 +434,56 @@ async function activateAuthorizedAccess(result, expectedSequence = null) {
     message: '',
   };
   notify();
+}
+
+async function startBusinessIntake(businessId) {
+  if (
+    typeof repository?.fetchBusinessOrderSnapshot !== 'function'
+    || typeof repository?.watchBusinessOrderInvalidations !== 'function'
+  ) {
+    return {
+      ok: false,
+      message: 'El repositorio no ofrece recepción autoritativa de pedidos.',
+    };
+  }
+  businessIntake = createBusinessOrderIntakeCoordinator({
+    businessId,
+    fetchSnapshot: () => repository.fetchBusinessOrderSnapshot(),
+    subscribeRealtime: (handlers) => repository.watchBusinessOrderInvalidations(handlers),
+    getCurrentOrders: () => getState().orders,
+    applyOrders: (orders) => {
+      updateState((draft) => {
+        draft.orders = orders;
+        draft.lastOrderId = null;
+        draft.simulation = null;
+      });
+    },
+    onStatusChange: (nextStatus) => {
+      businessIntakeStatus = nextStatus;
+      notify();
+    },
+    onOrderAlert: (order) => {
+      notifyOrderAlert(`Nuevo pedido ${order?.id || ''}`.trim());
+    },
+    pollMs: repository.pollMs || 5000,
+  });
+  return businessIntake.start();
+}
+
+function stopBusinessIntake() {
+  businessIntake?.stop?.();
+  businessIntake = null;
+  businessIntakeStatus = emptyBusinessIntakeStatus();
+}
+
+function emptyBusinessIntakeStatus() {
+  return {
+    phase: 'idle',
+    realtime: 'idle',
+    lastSuccessfulSyncAt: null,
+    error: '',
+    reason: '',
+  };
 }
 
 function renderAccessSurface(view) {
@@ -452,10 +530,35 @@ function businessWorkspaceMarkup() {
         <p class="eyebrow">Operación segura</p>
         <h1>Pedidos del negocio</h1>
         <p>${escapeHtml(roleLabel(access.membership?.role))} · sesión verificada</p>
+        ${businessIntakeStatusMarkup()}
       </div>
       <button class="ghost-button compact" type="button" data-production-sign-out>Cerrar sesión</button>
     </div>
     <div class="production-order-list" aria-live="polite">${rows}</div>
+  `;
+}
+
+function businessIntakeStatusMarkup() {
+  const hasRecentSnapshot = Boolean(businessIntakeStatus.lastSuccessfulSyncAt);
+  const label = businessIntakeStatus.phase === 'offline'
+    ? 'Sin conexión'
+    : businessIntakeStatus.phase === 'error'
+      ? 'Error recuperable'
+      : businessIntakeStatus.phase === 'connected' && hasRecentSnapshot
+        ? 'Conectado'
+        : 'Recuperando pedidos';
+  const lastSync = hasRecentSnapshot
+    ? `Última sincronización: ${dateTime(businessIntakeStatus.lastSuccessfulSyncAt)}`
+    : 'Todavía sin una sincronización exitosa';
+  const error = businessIntakeStatus.phase === 'error' && businessIntakeStatus.error
+    ? `<span class="production-intake-error">${escapeHtml(businessIntakeStatus.error)}</span>`
+    : '';
+  return `
+    <div class="production-intake-status is-${escapeAttribute(businessIntakeStatus.phase)}" data-business-intake-status>
+      <strong>${escapeHtml(label)}</strong>
+      <span>${escapeHtml(lastSync)}</span>
+      ${error}
+    </div>
   `;
 }
 
@@ -693,10 +796,15 @@ async function updateOrderFromAction(orderId, nextStatus) {
   if (!orderId || !nextStatus) {
     return { handled: true, ok: false, message: 'Acción de pedido inválida.' };
   }
-  const result = await repository.updateOrderStatus(orderId, nextStatus);
+  const currentOrder = getState().orders.find((order) => (
+    order.id === orderId || order.backendId === orderId || order.code === orderId
+  ));
+  const result = await repository.updateOrderStatus(orderId, nextStatus, {
+    expectedRevision: currentOrder?.revision,
+  });
   if (result.ok) {
     if (access.membership?.role === 'rider') await refreshRiderOrders();
-    else await repository.listOrders();
+    else await businessIntake?.invalidate?.('status-transition');
   }
   notify();
   return {

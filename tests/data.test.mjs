@@ -24,7 +24,7 @@ test('approved demo catalog is internally consistent', () => {
     assert.ok(!product.sku.startsWith('qa-'));
     assert.ok(categoryIds.has(product.categoryId), `missing category: ${product.categoryId}`);
     assert.ok(product.name.trim().length > 0);
-    assert.ok(Number.isFinite(product.price) && product.price >= 0);
+    assert.ok(product.pricePending ? product.price === null : Number.isFinite(product.price) && product.price > 0);
     assert.ok(Number.isFinite(product.stock) && product.stock >= 0);
     assert.ok(product.unitsPerPack >= 1);
     assert.equal(typeof product.available, 'boolean');
@@ -53,7 +53,7 @@ test('approved semantic selectors preserve units, packs, alcohol and pending pri
   assert.ok(pack.unitsPerPack === 6 || pack.unitsPerPack === 12);
   assert.equal(alcohol.requiresAgeConfirmation, true);
   assert.equal(nonAlcohol.requiresAgeConfirmation, false);
-  assert.equal(pending.price, 0);
+  assert.equal(pending.price, null);
   assert.equal(pending.available, false);
 });
 

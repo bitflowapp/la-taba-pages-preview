@@ -37,7 +37,7 @@ test('an old or empty local catalog is rebuilt without losing the first render',
 
   // El estado recupera el catálogo base completo, pero el storefront unitario
   // oculta los cinco assets que representan multipacks.
-  await expect(page.locator('[data-catalog-count]')).toContainText('22 productos');
+  await expect(page.locator('[data-catalog-count]')).toContainText('21 productos');
   await expect(page.locator('[data-app-recovery]')).toBeHidden();
 });
 

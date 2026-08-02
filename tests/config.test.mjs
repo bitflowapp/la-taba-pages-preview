@@ -3,8 +3,8 @@ import test from 'node:test';
 import { BUSINESS_CONFIG } from '../js/config.js';
 
 test('BUSINESS_CONFIG exposes the expected business settings', () => {
-  assert.equal(BUSINESS_CONFIG.businessName, 'TABA');
-  assert.equal(BUSINESS_CONFIG.name, 'TABA');
+  assert.equal(BUSINESS_CONFIG.businessName, 'TABA2');
+  assert.equal(BUSINESS_CONFIG.name, 'TABA2');
   assert.equal(BUSINESS_CONFIG.subtitle, 'Tienda de bebidas');
   assert.equal(BUSINESS_CONFIG.whatsappNumber, '');
   assert.equal(BUSINESS_CONFIG.whatsappVerified, false);

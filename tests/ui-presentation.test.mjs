@@ -16,7 +16,7 @@ test('stockPill: producto disponible normal no muestra etiqueta', () => {
 test('stockPill: estados que sí se avisan (agotado, pausado, últimas unidades, archivado)', () => {
   assert.match(stockPill({ available: true, stock: 0 }), /Agotado/);
   assert.match(stockPill({ available: false, stock: 10 }), /No disponible/);
-  assert.match(stockPill({ available: true, stock: 3 }), /Quedan 3/);
+  assert.match(stockPill({ available: true, stock: 3 }), /Últimas 3/);
   assert.match(stockPill({ available: true, stock: 5, archived: true }), /Archivado/);
 });
 
@@ -25,13 +25,13 @@ test('pricePending: usa un único mensaje claro en vez de sumar una pill de stoc
   assert.equal(stockPill(pending), '');
   assert.equal(
     availabilityLabel(pending),
-    'Precio a confirmar; todavía no se puede agregar.',
+    'Precio próximamente; este producto todavía no está disponible para compra.',
   );
 });
 
 test('availabilityLabel: texto plano honesto para el detalle del producto', () => {
-  assert.equal(availabilityLabel({ available: true, stock: 12 }), 'Disponible hoy');
-  assert.equal(availabilityLabel({ available: true, stock: 2 }), 'Quedan 2');
+  assert.equal(availabilityLabel({ available: true, stock: 12 }), 'Disponible');
+  assert.equal(availabilityLabel({ available: true, stock: 2 }), 'Últimas 2');
   assert.equal(availabilityLabel({ available: true, stock: 0 }), 'Agotado');
   assert.equal(availabilityLabel({ available: false, stock: 9 }), 'No disponible por ahora');
 });

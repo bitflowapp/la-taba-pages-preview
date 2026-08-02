@@ -22,8 +22,10 @@ import {
   renderOrderSummary,
   renderTracking,
   setCategory,
+  setCatalogFilter,
   setSearchQuery,
   setSortBy,
+  resetCatalogFilters,
   shouldShowCheckoutSuggestions,
   showCheckoutSuggestions,
   showProductModal,
@@ -939,7 +941,13 @@ function bindEvents() {
     if (clearCatalogFilters) {
       setSearchQuery('');
       setCategory('all');
+      resetCatalogFilters();
       if (activeView !== 'catalog') setActiveView('catalog');
+      return;
+    }
+
+    if (target.closest('[data-reset-catalog-filters]')) {
+      resetCatalogFilters();
       return;
     }
 
@@ -1282,6 +1290,9 @@ function bindEvents() {
     }
     if (target.matches('[data-sort-select]')) {
       setSortBy(target.value || 'recommended');
+    }
+    if (target.matches('[data-catalog-filter]')) {
+      setCatalogFilter(target.dataset.catalogFilter, target.value || 'all');
     }
     const deliveryChange = isDemoMode()
       ? await Promise.resolve(handleDeliveryChange(target))

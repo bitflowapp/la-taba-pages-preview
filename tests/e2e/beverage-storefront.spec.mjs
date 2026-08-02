@@ -3,14 +3,14 @@ import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
 
-test('la home presenta TABA con marca interna discreta y un storefront comercial limpio', async ({ page }) => {
+test('la home presenta TABA2 con marca discreta y un storefront comercial limpio', async ({ page }) => {
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1');
 
   await expect(page.locator('[data-demo-mode-banner]')).toHaveCount(0);
-  await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
-  await expect(page.getByRole('heading', { name: '¿Qué vas a pedir hoy?' })).toBeVisible();
+  await expect(page.locator('.topbar .brand-word')).toHaveText('TABA2');
+  await expect(page.getByRole('heading', { name: 'Elegí bebidas para tu momento.' })).toBeVisible();
   await expect(page.locator('[data-view="home"] .taba-home-search')).toBeVisible();
   const homeCategories = page.locator('[data-view="home"] .home-category-card');
   await expect(homeCategories).toHaveCount(4);
@@ -69,7 +69,7 @@ for (const viewport of [
     await gotoDemoReset(page, '/?reset=1&demo=1');
     const homeHeight = await page.locator('[data-view="home"]').evaluate((node) => Math.ceil(node.getBoundingClientRect().height));
     expect(homeHeight).toBeLessThan(2000);
-    await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
+    await expect(page.locator('.topbar .brand-word')).toHaveText('TABA2');
     await expect(page.locator('.topbar .brand-text small')).toBeHidden();
     await expect(page.locator('.topbar-actions .cart-button')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();

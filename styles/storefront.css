@@ -616,6 +616,15 @@
   max-width: 760px;
 }
 
+.taba-home-kicker {
+  margin: 0;
+  color: var(--taba-red);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
 .taba-home-eyebrow {
   display: flex;
   align-items: center;

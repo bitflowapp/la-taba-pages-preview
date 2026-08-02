@@ -58,9 +58,11 @@ test('packs, precios pendientes y alcohol conservan su semántica comercial', ()
   const packTwelve = catalog.find((product) => product.sku === 'coca-cola-original-pet-500ml-pack-12');
   const pending = catalog.find((product) => product.sku === 'red-bull-original-lata-250ml-pack-4');
   assert.deepEqual([packSix.unitLabel, packSix.unitsPerPack], ['Pack x6', 6]);
+  assert.equal(packSix.archived, true);
+  assert.equal(isProductOrderable(packSix), false);
   assert.deepEqual([packTwelve.unitLabel, packTwelve.unitsPerPack], ['Pack x12', 12]);
   assert.equal(pending.pricePending, true);
-  assert.equal(pending.price, 0);
+  assert.equal(pending.price, null);
   assert.equal(pending.oldPrice, undefined);
   assert.equal(pending.badge, undefined);
   assert.equal(isProductOrderable(pending), false);

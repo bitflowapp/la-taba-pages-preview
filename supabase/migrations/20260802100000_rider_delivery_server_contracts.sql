@@ -61,10 +61,11 @@ create table if not exists public.delivery_outbox (
   business_id uuid not null references public.businesses(id) on delete cascade,
   order_id uuid not null references public.orders(id) on delete cascade,
   event_type text not null check (event_type in ('delivery_confirmed', 'rider_issue_reported')),
+  event_key text not null check (event_key ~ '^[A-Za-z0-9_-]{8,128}$'),
   payload jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default clock_timestamp(),
   dispatched_at timestamptz,
-  unique (order_id, event_type)
+  unique (order_id, event_type, event_key)
 );
 
 comment on table public.delivery_outbox is
@@ -610,9 +611,9 @@ begin
   update public.order_delivery_handoffs set confirmed_at = v_now, confirmed_by_user_id = auth.uid(), failed_attempts = 0, locked_until = null where order_id = v_order.id;
   perform set_config('taba.delivery_code_confirmed', 'true', true);
   update public.orders set status = 'delivered', delivered_at = v_now where id = v_order.id and status = 'arrived';
-  insert into public.delivery_outbox(business_id, order_id, event_type, payload)
-  values (v_order.business_id, v_order.id, 'delivery_confirmed', jsonb_build_object('revision', (select revision from public.orders where id = v_order.id), 'confirmed_at', v_now))
-  on conflict (order_id, event_type) do nothing;
+  insert into public.delivery_outbox(business_id, order_id, event_type, event_key, payload)
+  values (v_order.business_id, v_order.id, 'delivery_confirmed', v_key, jsonb_build_object('revision', (select revision from public.orders where id = v_order.id), 'confirmed_at', v_now))
+  on conflict (order_id, event_type, event_key) do nothing;
   v_result := jsonb_build_object('ok', true, 'outcome', 'confirmed', 'idempotent_no_op', false, 'order', public.rider_active_delivery_payload(v_order.id));
   insert into public.delivery_confirmation_attempts(business_id, order_id, rider_id, request_id, result)
   values (v_order.business_id, v_order.id, auth.uid(), v_key, 'confirmed');
@@ -653,9 +654,9 @@ begin
   if v_order.status not in ('assigned', 'picked_up', 'on_the_way', 'arrived') then return jsonb_build_object('ok', false, 'code', 'terminal', 'revision', v_order.revision); end if;
   insert into public.rider_delivery_issues(business_id, order_id, rider_id, issue_type, request_id)
   values (v_order.business_id, v_order.id, auth.uid(), v_issue, v_key);
-  insert into public.delivery_outbox(business_id, order_id, event_type, payload)
-  values (v_order.business_id, v_order.id, 'rider_issue_reported', jsonb_build_object('issue_type', v_issue))
-  on conflict (order_id, event_type) do nothing;
+  insert into public.delivery_outbox(business_id, order_id, event_type, event_key, payload)
+  values (v_order.business_id, v_order.id, 'rider_issue_reported', v_key, jsonb_build_object('issue_type', v_issue))
+  on conflict (order_id, event_type, event_key) do nothing;
   insert into public.order_events(order_id, business_id, actor_user_id, actor_role, actor_type, actor_id, event_type, type, message, metadata, payload)
   values (v_order.id, v_order.business_id, auth.uid(), 'rider', 'rider', auth.uid(), 'order.rider_issue_reported', 'order.rider_issue_reported', 'Rider reporto una incidencia', jsonb_build_object('issue_type', v_issue), jsonb_build_object('issue_type', v_issue));
   v_result := jsonb_build_object('ok', true, 'outcome', 'issue_reported', 'idempotent_no_op', false, 'order', public.rider_active_delivery_payload(v_order.id));

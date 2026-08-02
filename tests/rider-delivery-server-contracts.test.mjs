@@ -103,6 +103,8 @@ test('code confirmation stores no code, rate-limits server-side and closes deliv
 test('issues are controlled, audited and never cancel or release automatically', () => {
   const issue = functionSql('report_rider_delivery_issue');
   assert.match(sql, /create table if not exists public\.rider_delivery_issues/i);
+  assert.match(sql, /event_key text not null/i);
+  assert.match(sql, /unique \(order_id, event_type, event_key\)/i);
   assert.match(issue, /customer_unavailable/i);
   assert.match(issue, /wrong_address/i);
   assert.match(issue, /insert into public\.delivery_outbox/i);

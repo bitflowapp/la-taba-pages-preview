@@ -217,9 +217,9 @@ async function writeRuntimeCatalog(products) {
     capacity: product.capacity_value >= 1000 && product.category_id !== 'complementos' ? `${String(product.capacity_value / 1000).replace('.', ',')} L` : product.category_id === 'complementos' ? '4 kg' : `${product.capacity_value} ml`,
     capacityValue: product.capacity_value, capacityUnit: product.capacity_unit, packageType: product.package_type || 'unidad', unit: 'unidad', unitLabel: 'Unidad', unitsPerPack: 1,
     price: null, pricePending: true, stock: 0, available: false, sourceAvailable: true, stockStatus: 'BUSINESS_CONFIRMATION_REQUIRED', requiresBusinessConfirmation: true,
-    alcoholic: product.age_restricted, requiresAgeConfirmation: product.age_restricted, minimumAge: product.age_restricted ? 18 : null,
+    alcoholic: product.age_restricted, nonAlcoholic: product.age_restricted === false, requiresAgeConfirmation: product.age_restricted, minimumAge: product.age_restricted ? 18 : null,
     tags: product.tags, recommendationTags: product.tags, complementaryCategories: [], image: product.image_master, imageThumbnail: product.image_thumbnail,
-    imageSha256: product.image_sha256, imageThumbnailSha256: product.image_thumbnail_sha256, imageWidth: 1000, imageHeight: 1000, thumbnailWidth: 400, thumbnailHeight: 400,
+    imageSha256: product.image_sha256, imageThumbnailSha256: product.image_thumbnail_sha256, sourceImageSha256: product.image_source?.source_sha256 || '', imageWidth: 1000, imageHeight: 1000, thumbnailWidth: 400, thumbnailHeight: 400,
     rightsStatus: 'PENDING_REVIEW', imageStatus: 'verified', catalogStatus: 'approved', publicationStatus: 'blocked', marketNote: 'Precio próximamente. No disponible para compra hasta confirmación del negocio.', prepMinutes: 10,
   }));
   const categories = CATEGORIES.filter((category) => category.id === 'all' || runtime.some((product) => product.categoryId === category.id));

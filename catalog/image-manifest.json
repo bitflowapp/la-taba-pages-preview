@@ -1,6 +1,6 @@
 {
-  "schema_version": 2,
-  "generated_at": "2026-08-02T20:11:51.452Z",
+  "schema_version": 3,
+  "generated_at": "2026-08-02T21:10:09.058Z",
   "publication_status": "blocked",
   "sources": [
     {
@@ -28,11 +28,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "fanta-naranja-2250ml",
@@ -59,11 +55,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "pepsi-black-1500ml",
@@ -90,11 +82,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "schweppes-pomelo-sin-azucar-2250ml",
@@ -121,11 +109,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "schweppes-ginger-ale-310ml",
@@ -152,11 +136,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "paso-de-los-toros-pomelo-1500ml",
@@ -183,11 +163,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "paso-de-los-toros-tonica-1500ml",
@@ -214,11 +190,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "soda-ivess-1500ml",
@@ -245,11 +217,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "britvic-ginger-beer-200ml",
@@ -276,11 +244,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "villavicencio-sin-gas-500ml",
@@ -307,11 +271,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "eco-de-los-andes-sin-gas-2000ml",
@@ -338,11 +298,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "glaciar-sin-gas-1500ml",
@@ -369,11 +325,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "glaciar-con-gas-1500ml",
@@ -400,11 +352,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "h2oh-limon-1500ml",
@@ -431,11 +379,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "red-bull-energy-drink-355ml",
@@ -462,11 +406,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "monster-mango-loco-473ml",
@@ -493,11 +433,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "speed-zero-473ml",
@@ -524,11 +460,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "gatorade-zero-fresa-kiwi-400ml",
@@ -555,11 +487,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "powerade-mountain-blast-995ml",
@@ -586,11 +514,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "buhero-negro-450ml",
@@ -617,11 +541,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "cinzano-rosso-950ml",
@@ -648,11 +568,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "campari-bitter-750ml",
@@ -679,11 +595,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "aperol-750ml",
@@ -710,11 +622,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "quilmes-clasica-710ml",
@@ -741,11 +649,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "patagonia-lager-del-sur-730ml",
@@ -772,11 +676,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "heineken-710ml",
@@ -803,11 +703,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "stella-artois-sin-alcohol-330ml",
@@ -834,11 +730,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 999,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "corona-extra-330ml",
@@ -865,11 +757,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "imperial-golden-473ml",
@@ -896,11 +784,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "brahma-chopp-1000ml",
@@ -927,11 +811,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 999,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "amstel-lager-473ml",
@@ -958,11 +838,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "rutini-malbec-750ml",
@@ -989,11 +865,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "trapiche-reserva-malbec-750ml",
@@ -1020,11 +892,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "fin-del-mundo-cabernet-franc-750ml",
@@ -1051,11 +919,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "chandon-delice-750ml",
@@ -1082,11 +946,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "tanqueray-dry-700ml",
@@ -1113,11 +973,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "bombay-sapphire-750ml",
@@ -1144,11 +1000,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "bosque-nativo-500ml",
@@ -1175,11 +1027,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "johnnie-walker-red-label-750ml",
@@ -1206,11 +1054,7 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
-        "width": 1000,
-        "height": 1000,
-        "format": "jpeg"
-      }
+      "white_background": {}
     },
     {
       "sku": "hielo-cristal-4kg",
@@ -1237,10 +1081,586 @@
         "format": "webp",
         "color_space": "srgb"
       },
-      "white_background": {
+      "white_background": {}
+    },
+    {
+      "sku": "coca-cola-original-2250ml-local",
+      "source_url": "https://www.jumbo.com.ar/gaseosa-coca-cola-sabor-original-2-25-l/p",
+      "image_source_url": "https://jumboargentina.vtexassets.com/arquivos/ids/782825/Gaseosa-Coca-cola-Sabor-Original-2-25-L-2-247191.jpg?v=638206689776800000",
+      "source_title": "Coca-Cola Sabor Original 2,25 L",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "44853226d5093b72becd3b21bc57bfb58d6bfcc2f8667b23941f3a53b6d38f1e",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/gaseosas/coca-cola-original-2250ml-local-master.webp",
+        "sha256": "e10ae1cb9f7f6cace7fae64e35f218ddb9c5c590f9fb838f289344f83044fb05",
         "width": 1000,
         "height": 1000,
-        "format": "jpeg"
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/gaseosas/coca-cola-original-2250ml-local-thumb.webp",
+        "sha256": "d96b0914f0154af3b007cf57213bc4eb16ed23d530e7d0e23928b400a60a030f",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 5
+      }
+    },
+    {
+      "sku": "coca-cola-sin-azucar-2250ml-local",
+      "source_url": "https://www.jumbo.com.ar/coca-cola-zero-2-25-lt/p",
+      "image_source_url": "https://jumboargentina.vtexassets.com/arquivos/ids/799869/Gaseosa-Coca-Cola-Sin-Azucar-2-25lt-2-19721.jpg?v=638349573657430000",
+      "source_title": "Coca-Cola Sin Azúcar 2,25 L",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "e978a29a7037a5cf44791cc91eb998df7ebe2b2b5230403b5b0c6755ea49a64f",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/gaseosas/coca-cola-sin-azucar-2250ml-local-master.webp",
+        "sha256": "547da4b3086209623780b44c2559621c8b95b3b3c3ae0ff84eae79d172fe908c",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/gaseosas/coca-cola-sin-azucar-2250ml-local-thumb.webp",
+        "sha256": "17937379e0478df114be5ee5c5a88adcb71f517ee36915be0f1d9d0820dbe3c7",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 2
+      }
+    },
+    {
+      "sku": "sprite-sin-azucar-2250ml-local",
+      "source_url": "https://www.vea.com.ar/gaseosa-sprite-lima-limon-zero-2-25lt-2/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/562193/Gaseosa-Sprite-225-Lts-Sin-Azucar-1-838913.jpg?v=637117604012800000",
+      "source_title": "Sprite 2,25 L",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "b7ebdea2e62ccd27e0e162a3d3341e39768480201dff3224bbc28f41c77e0057",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/gaseosas/sprite-sin-azucar-2250ml-local-master.webp",
+        "sha256": "79f237237e587bda4ee3d4b79396cb1632431976b627efd1260b0a174f6787a8",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/gaseosas/sprite-sin-azucar-2250ml-local-thumb.webp",
+        "sha256": "ca056bad1dedae05571c6158ed79a89ece5a116f00b9595e6bad33398fb9f2c4",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 1
+      }
+    },
+    {
+      "sku": "7up-original-2000ml-local",
+      "source_url": "https://www.vea.com.ar/gaseosa-lima-limon-x-2-lts-7-up/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/904889/Gaseosa-Lima-Lim-n-X-2-Lts-7-Up-1-1057020.jpg?v=639118749814970000",
+      "source_title": "7UP 2 L",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "2e71e6b6dc2427df324e2716fe56858fe37f50a420b5ca275b074e8e293c5a7f",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/gaseosas/7up-original-2000ml-local-master.webp",
+        "sha256": "7b08f25648f422e397a8acb1a2697c3369c07bbc0fb33654de41aab18effd2fa",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/gaseosas/7up-original-2000ml-local-thumb.webp",
+        "sha256": "32f23a6df4dc43fa9cf009a1a04b81b88a76620be95cdfd673a7ab1fbe87f4f3",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 0
+      }
+    },
+    {
+      "sku": "bonaqua-sin-gas-2250ml-local",
+      "source_url": "https://www.vea.com.ar/agua-mineral-bonaqua-sin-gas-2-25-lt/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/580641/Bonaqua-Agua-Sin-Gas-225-L-1-244936.jpg?v=637219994244430000",
+      "source_title": "Bonaqua 2,25 L",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "7919f5957d821e4d634def4f6a73c5ea6eacccded7764f63594c427e6548a9fc",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/aguas/bonaqua-sin-gas-2250ml-local-master.webp",
+        "sha256": "516a937639cbf4f3c8e6bebaeb6fe0c69de79ea414ee5c58b864afd73105b85b",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/aguas/bonaqua-sin-gas-2250ml-local-thumb.webp",
+        "sha256": "19c42b25f6f537e65e0564c38ca0961fa2ebd30b0a924ce3b4291d65d2e99d3e",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 0
+      }
+    },
+    {
+      "sku": "manaos-lima-limon-2250ml-local",
+      "source_url": "https://www.vea.com.ar/manaos-lima-limon/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/209840/Manaos-Lima-Limon-Manaos-Lima-LimOn-225-L-1-46242.jpg?v=636383733104870000",
+      "source_title": "Manaos 2,25 L",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "bb0abcbdf5979891726763be30b90381fc3212243a8c421115f5e4c3e9ce1dc0",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/gaseosas/manaos-lima-limon-2250ml-local-master.webp",
+        "sha256": "a37fd5092787b36bda645051d2cfc0024584036db597f7aec0a654a505dbc1f7",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/gaseosas/manaos-lima-limon-2250ml-local-thumb.webp",
+        "sha256": "f424e34f0508854df15fc875455a0ba1ef2d809b45c65935a6a55271deec9bd6",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 5
+      }
+    },
+    {
+      "sku": "manaos-naranja-2250ml-local",
+      "source_url": "https://www.vea.com.ar/manaos-naranja/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/209654/Manaos-Naranja-Manaos-Naranja-225-L-1-46056.jpg?v=636383729320530000",
+      "source_title": "Manaos 2,25 L",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "9bad6bd403608395ab962575ac7871d0f43976cb2e6d0f4802c821a94b582ae4",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/gaseosas/manaos-naranja-2250ml-local-master.webp",
+        "sha256": "bae272320403d8083531707de7b547f9f17eb227c509b9bdbcb20dc26bbee50f",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/gaseosas/manaos-naranja-2250ml-local-thumb.webp",
+        "sha256": "08b783fb79ee945d8f4140de1aade8d11d0c885fa178357a9d104f05fc94bac6",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 7
+      }
+    },
+    {
+      "sku": "pepsi-black-2250ml-local",
+      "source_url": "https://www.vea.com.ar/pepsi-sin-azucar-2-25-l/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/411939/Pepsi-Sin-Azucar-225-L-1-237878.jpg?v=636442054847200000",
+      "source_title": "Pepsi Black 2,25 L",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "fb312f36cee2e64f77d2ab92e048c77aa7412f37693f9f7bbe166cc43598b2c5",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/gaseosas/pepsi-black-2250ml-local-master.webp",
+        "sha256": "ea43555c9bbb75d3baed58b175ee223aaf6a0110d0079448846515c3a5e554be",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/gaseosas/pepsi-black-2250ml-local-thumb.webp",
+        "sha256": "07ca52c2d016cd6cb3c5de3fafcee361cb1ae707dce9d2ca2e4093dafea3b3a0",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 5
+      }
+    },
+    {
+      "sku": "schweppes-tonica-354ml-local",
+      "source_url": "https://www.jumbo.com.ar/gaseosa-schweppes-tonica-354-ml/p",
+      "image_source_url": "https://jumboargentina.vtexassets.com/arquivos/ids/782871/Gaseosa-Schweppes-T-nica-354-Ml-2-6811.jpg?v=638206689960470000",
+      "source_title": "Schweppes Tónica 354 ml",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "b64c14b67076f187ce59aa054226813855412b336b0417e0de14038721449634",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/mixers/schweppes-tonica-354ml-local-master.webp",
+        "sha256": "53c9f4a662802a19c90b67bb1086a87b1f2dc540e8cddb5397fea0c277f00b13",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/mixers/schweppes-tonica-354ml-local-thumb.webp",
+        "sha256": "a0b173c9c41b6cdd1a4f1b825c328e5285a37d95df4e6cd5692f9cf9f01bef29",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 2
+      }
+    },
+    {
+      "sku": "levite-manzana-2250ml-local",
+      "source_url": "https://www.jumbo.com.ar/saborizada-levite-manzana-2-25lt/p",
+      "image_source_url": "https://jumboargentina.vtexassets.com/arquivos/ids/620139/Agua-Saborizada-Villa-Del-Sur-Levite-Manzana-Sin-Gas-2-25-L-2-838138.jpg?v=637466226136070000",
+      "source_title": "Levité 2,25 L",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "207ef422b805b1501eb33f64baff8c984a7bf69d182aef9328fbeb62083c3461",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/aguas-saborizadas/levite-manzana-2250ml-local-master.webp",
+        "sha256": "8bc1e8c59652fcaa927132f4f32c735e2fdb692868ef7967d9340b5cc4eb73ed",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/aguas-saborizadas/levite-manzana-2250ml-local-thumb.webp",
+        "sha256": "3e77d493218af749bdb1173a9ff6b6bd8d19ca49e55485b8e4fae9e36c8a1ce5",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 6
+      }
+    },
+    {
+      "sku": "gancia-americano-950ml-local",
+      "source_url": "https://www.jumbo.com.ar/aperitivo-gancia-950-ml/p",
+      "image_source_url": "https://jumboargentina.vtexassets.com/arquivos/ids/418477/Aperitivo-Gancia-950-Ml-2-237510.jpg?v=636442174678630000",
+      "source_title": "Gancia 950 ml",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "82dc6d365ebeea9d23dfb676982999cc782003b4a9cc3eb63017bf3e22736c8f",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/aperitivos/gancia-americano-950ml-local-master.webp",
+        "sha256": "0fd57b39bff53d71955c1ab5057bf46abcedac89f2da5e5760b5aa5c7ef73a0d",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/aperitivos/gancia-americano-950ml-local-thumb.webp",
+        "sha256": "a087463039ef4045ad5b244ca57b0b0e1d79552d766069d22b97973ee851cc3f",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 1
+      }
+    },
+    {
+      "sku": "martini-bianco-1000ml-local",
+      "source_url": "https://www.jumbo.com.ar/aperitivo-martini-bianco-1-l/p",
+      "image_source_url": "https://jumboargentina.vtexassets.com/arquivos/ids/431608/Aperitivo-Martini-Bianco-1-L-2-243250.jpg?v=636513303942100000",
+      "source_title": "Martini Bianco 1 L",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "debf017ffbc6b31f09919fad3903405cb8d12be2d6235447097678c4a9e9129e",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/aperitivos/martini-bianco-1000ml-local-master.webp",
+        "sha256": "efa9aacfc4a7ce6bd9e852bcc7da8b991fa12fe2900b27bcac2f6d137e6e8d3e",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/aperitivos/martini-bianco-1000ml-local-thumb.webp",
+        "sha256": "d4a2049654478c3884fef2cecfa978b9d4d34d8b305697eb03da9f52c681a9ec",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 0
+      }
+    },
+    {
+      "sku": "monster-ultra-473ml-local",
+      "source_url": "https://www.jumbo.com.ar/bebida-energizante-energy-ultra-473-ml-monster/p",
+      "image_source_url": "https://jumboargentina.vtexassets.com/arquivos/ids/881647/Bebida-Energizante-Energy-Ultra-473-Ml-Monster-2-597947.jpg?v=638919057731470000",
+      "source_title": "Monster Ultra 473 ml",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "5542783cffdab1b3ae8cd9418c740711b72f1b98b5569bd6688e8a901ad69e35",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/energizantes/monster-ultra-473ml-local-master.webp",
+        "sha256": "3d937b032c3157d85c3c925f504f7cde0122244823eb462fddcae4c40ccf2816",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/energizantes/monster-ultra-473ml-local-thumb.webp",
+        "sha256": "537b60daffbb7727947179cefd52ffd5f1db8e8867f116b6b03492f94128bb39",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 5
+      }
+    },
+    {
+      "sku": "fernet-branca-edicion-mundial-750ml",
+      "source_url": "https://www.vea.com.ar/fernet-branca-edicion-mundial-750/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/753736/Fernet-Branca-Edicion-Mundial-750-1-939535.jpg?v=638016393828030000",
+      "source_title": "Fernet Branca Edición Mundial 750 ml",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "b3e81a5df65a374a051b73a57e2f7dca5cdf4b4a889a52dc526d32eb32cb3d0e",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/fernet/fernet-branca-edicion-mundial-750ml-master.webp",
+        "sha256": "23fcf048bec4d67eb22fd90cda858275eb28f4d1b5ca7c693dba3cc6fbb401e6",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/fernet/fernet-branca-edicion-mundial-750ml-thumb.webp",
+        "sha256": "cbd409f86b5313adaa6efe4e7d096fa38e60d61f413b7123eef2b2ced1b83bc6",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 0
+      }
+    },
+    {
+      "sku": "fernet-vittone-1000ml",
+      "source_url": "https://www.vea.com.ar/fernet-vittone-x-100-cl/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/204176/Fernet-Vittone-X-100-Cl-Fernet-Vittone-1-L-1-40569.jpg?v=636383662637700000",
+      "source_title": "Fernet Vittone 1 L",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "76038e0076c93aaa66fe8c338f66cf891490f67c57b263696e77e8efc169cec7",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/fernet/fernet-vittone-1000ml-master.webp",
+        "sha256": "459e82f40f374a71ab660edaabde223fb34f5ee7fe480ba18ae4bf5886427be8",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/fernet/fernet-vittone-1000ml-thumb.webp",
+        "sha256": "c0de5e66bf497792f482bf90786b0c250d33a3cb1aeee3052f315eb138627eb6",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 0
+      }
+    },
+    {
+      "sku": "budweiser-lata-473ml-pack-6-local",
+      "source_url": "https://www.vea.com.ar/cerveza-budweiser-473-ml-x-6-un-2/p",
+      "image_source_url": "https://jumboargentina.vtexassets.com/arquivos/ids/217369/Cerveza-Budweiser-Cerveza-Budweiser-473-Ml---Pack-6-2-44476.jpg?v=639140701148230000",
+      "source_title": "Budweiser 473 ml",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "69e4710afe0f0ccd16f7c1171c5e2d9e2c4e052504fd3b33f56b8caac22c4f9f",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/cervezas/budweiser-lata-473ml-pack-6-local-master.webp",
+        "sha256": "6ba5c7e2b2e577a044ef9196cf192c4630fc5607d786d36b722345a3e915625e",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/cervezas/budweiser-lata-473ml-pack-6-local-thumb.webp",
+        "sha256": "7223660bbd10d23d34a5eaea544b58361a2cc1fe91212be633651b3c0d10d8cf",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 0
+      }
+    },
+    {
+      "sku": "alamos-malbec-750ml-local",
+      "source_url": "https://www.jumbo.com.ar/vino-alamos-malbec-x-750cc/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/709749/Vino-Alamos-Malbec-X-750cc-1-159111.jpg?v=637927402400100000",
+      "source_title": "Alamos Malbec 750 ml",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "6f08127f2d3eec328f02405c45657ef941d0e626f1c21bf775aa2907e867cf6e",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/vinos/alamos-malbec-750ml-local-master.webp",
+        "sha256": "0b62e183659ac20bb11810d35dfc3e4fc93e7b1c3720ec962cb857be5620f50b",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/vinos/alamos-malbec-750ml-local-thumb.webp",
+        "sha256": "32f334596ad432fc6a797488aabd3b7d31c885a7c2d3563bcb3a3870518774f1",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 0
+      }
+    },
+    {
+      "sku": "norton-malbec-750ml-local",
+      "source_url": "https://www.vea.com.ar/vino-norton-malbec-750-ml-select/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/878665/Vino-Norton-Malbec-750-Ml-Select-1-987113.jpg?v=638894217756570000",
+      "source_title": "Norton Malbec 750 ml",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "b34867a018d58a3e438bc69eda6deec7422d84f2c3f7cce46b1951a28a84ad99",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/vinos/norton-malbec-750ml-local-master.webp",
+        "sha256": "e094fe4533994149268dece6d47eff66e1a933f08a8225ad6c50fddd76c0c305",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/vinos/norton-malbec-750ml-local-thumb.webp",
+        "sha256": "18ef84554a5c7da581e038206afd4ffef284f1cf7b6a911d0f5f2a4a76929132",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 0
+      }
+    },
+    {
+      "sku": "rutini-cabernet-malbec-750ml-local",
+      "source_url": "https://www.disco.com.ar/vino-tinto-rutini-cabernet-malbec-750-cc/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/188714/Vino-Rutini-Cabernet-Malbec-Vino-Tinto-Rutini-Cabernet---Malbec-750-Cc-1-25059.jpg?v=636383496995730000",
+      "source_title": "Rutini 750 ml",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "a3801189966ae4902712a6b0c81014ab9a57cb6cd9b99f0b569b29eebd326517",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/vinos/rutini-cabernet-malbec-750ml-local-master.webp",
+        "sha256": "99d2fb3f22df16932497306205e4071fb4696a30643f57652cc88c6963fc73da",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/vinos/rutini-cabernet-malbec-750ml-local-thumb.webp",
+        "sha256": "e31e06bf43d6234967a40ec5f15373a725a9a5d1dc4108f0027461e778846fde",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 0
+      }
+    },
+    {
+      "sku": "trumpeter-malbec-750ml-local",
+      "source_url": "https://www.vea.com.ar/vino-tinto-trumpeter-malbec-750-cc/p",
+      "image_source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/180222/Vino-Trumpeter-Malbec-Vino-Trumpeter-Malbec-Botella-750-Cc-1-11394.jpg?v=636383392055830000",
+      "source_title": "Trumpeter Malbec 750 ml",
+      "source_type": "cadena_comercial_secundaria",
+      "retrieved_at": "2026-08-02T21:10:09.058Z",
+      "source_sha256": "2fe9b2dd767d3bb75af7a6c5ac6f804254984c24eb4662ab192ce0a617709037",
+      "rights_status": "pending_review",
+      "master": {
+        "path": "assets/catalog/products/vinos/trumpeter-malbec-750ml-local-master.webp",
+        "sha256": "d4a7c53c0ec9eea621e8b1a21a098039ea43581232b8e166e3751013d9143e83",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "thumbnail": {
+        "path": "assets/catalog/products/vinos/trumpeter-malbec-750ml-local-thumb.webp",
+        "sha256": "44e148eb48a5362c49ec6e4334159fffdfb7caa6b5052054b0c04c53e11b0c22",
+        "width": 400,
+        "height": 400,
+        "format": "webp",
+        "color_space": "srgb"
+      },
+      "white_background": {
+        "border_nonwhite_percent": 0
       }
     }
   ]

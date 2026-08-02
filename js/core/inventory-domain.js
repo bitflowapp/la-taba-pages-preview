@@ -39,7 +39,7 @@ export function buildInventoryMovement({
   return Object.freeze({
     businessId: String(businessId), productId: String(productId), barcodeId,
     movementType, quantityDelta, previousStock: current, resultingStock,
-    unitFactor: Number(unitFactor), referenceType, referenceId,
+    packageQuantity: Number(packageQuantity), direction, unitFactor: Number(unitFactor), referenceType, referenceId,
     reason: String(reason).trim(), operatorId: String(operatorId),
     idempotencyKey: String(idempotencyKey), createdAt: now().toISOString(),
   });

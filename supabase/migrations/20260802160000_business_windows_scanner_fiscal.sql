@@ -490,11 +490,13 @@ create table if not exists public.order_packing_sessions (
   order_revision bigint not null,
   status text not null default 'in_progress' check (status in ('not_started','in_progress','complete','exception_required','confirmed','cancelled')),
   operator_id uuid not null references auth.users(id) on delete restrict,
+  idempotency_key text not null,
   exception_reason text,
   exception_authorized_by uuid references auth.users(id) on delete restrict,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  confirmed_at timestamptz
+  confirmed_at timestamptz,
+  unique(business_id, idempotency_key)
 );
 
 create unique index if not exists order_packing_one_open_session
@@ -553,6 +555,89 @@ begin
   return jsonb_build_object('ok', true, 'complete', v_complete, 'product_id', v_barcode.product_id, 'unit_factor', v_barcode.unit_factor);
 end;
 $packing_scan$;
+
+create or replace function public.start_packing_session(
+  p_order_id uuid,
+  p_expected_revision bigint,
+  p_idempotency_key text
+)
+returns public.order_packing_sessions
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions, pg_temp
+as $start_packing$
+declare
+  v_order public.orders%rowtype;
+  v_session public.order_packing_sessions%rowtype;
+begin
+  if btrim(coalesce(p_idempotency_key,'')) !~ '^[A-Za-z0-9:_-]{8,128}$' then raise exception 'idempotency_key invalida' using errcode='22023'; end if;
+  select o.* into v_order from public.orders o where o.id=p_order_id for update;
+  if not found then raise exception 'pedido inexistente' using errcode='P0002'; end if;
+  if not public.has_business_role(v_order.business_id,array['owner','admin','staff']) then raise exception 'operador no autorizado' using errcode='42501'; end if;
+  select s.* into v_session from public.order_packing_sessions s where s.business_id=v_order.business_id and s.idempotency_key=p_idempotency_key;
+  if found then return v_session; end if;
+  if v_order.revision<>p_expected_revision then raise exception 'conflicto de revision' using errcode='40001'; end if;
+  if public.normalize_order_status_vocabulary(v_order.status) not in ('accepted','preparing') then raise exception 'estado no permite packing' using errcode='P0001'; end if;
+  insert into public.order_packing_sessions(business_id,order_id,order_revision,status,operator_id,idempotency_key)
+  values(v_order.business_id,v_order.id,v_order.revision,'in_progress',auth.uid(),p_idempotency_key)
+  returning * into v_session;
+  return v_session;
+end;
+$start_packing$;
+
+create or replace function public.undo_last_packing_scan(p_session_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions, pg_temp
+as $undo_packing$
+declare
+  v_session public.order_packing_sessions%rowtype;
+  v_scan_id uuid;
+begin
+  select s.* into v_session from public.order_packing_sessions s where s.id=p_session_id for update;
+  if not found then raise exception 'sesion inexistente' using errcode='P0002'; end if;
+  if not public.has_business_role(v_session.business_id,array['owner','admin','staff']) then raise exception 'operador no autorizado' using errcode='42501'; end if;
+  if v_session.status not in ('in_progress','complete') then raise exception 'sesion cerrada' using errcode='P0001'; end if;
+  select s.id into v_scan_id from public.order_packing_scans s where s.session_id=p_session_id and s.reverted_at is null order by s.created_at desc,s.id desc limit 1 for update;
+  if not found then return jsonb_build_object('ok',false,'code','NOTHING_TO_UNDO'); end if;
+  update public.order_packing_scans set reverted_at=now() where id=v_scan_id;
+  update public.order_packing_sessions set status='in_progress',updated_at=now() where id=p_session_id;
+  return jsonb_build_object('ok',true,'scan_id',v_scan_id);
+end;
+$undo_packing$;
+
+create or replace function public.confirm_packing_session(
+  p_session_id uuid,
+  p_exception_reason text default null
+)
+returns public.order_packing_sessions
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions, pg_temp
+as $confirm_packing$
+declare
+  v_session public.order_packing_sessions%rowtype;
+  v_complete boolean;
+begin
+  select s.* into v_session from public.order_packing_sessions s where s.id=p_session_id for update;
+  if not found then raise exception 'sesion inexistente' using errcode='P0002'; end if;
+  if not public.has_business_role(v_session.business_id,array['owner','admin','staff']) then raise exception 'operador no autorizado' using errcode='42501'; end if;
+  select not exists(
+    select 1 from public.order_items oi where oi.order_id=v_session.order_id
+      and coalesce((select sum(ps.unit_factor) from public.order_packing_scans ps where ps.session_id=v_session.id and ps.order_item_id=oi.id and ps.reverted_at is null),0)<>oi.quantity
+  ) into v_complete;
+  if not v_complete and (not public.has_business_role(v_session.business_id,array['owner','admin']) or char_length(btrim(coalesce(p_exception_reason,''))) not between 3 and 300) then
+    update public.order_packing_sessions set status='exception_required',updated_at=now() where id=p_session_id;
+    raise exception 'faltantes requieren excepcion owner/admin con motivo' using errcode='42501';
+  end if;
+  update public.order_packing_sessions
+  set status='confirmed',exception_reason=case when v_complete then null else btrim(p_exception_reason) end,
+      exception_authorized_by=case when v_complete then null else auth.uid() end,confirmed_at=now(),updated_at=now()
+  where id=p_session_id returning * into v_session;
+  return v_session;
+end;
+$confirm_packing$;
 
 -- ===== Atomic POS =====
 
@@ -1077,7 +1162,9 @@ revoke all on function public.business_command_request_hash(text,uuid,jsonb),
   public.create_catalog_product_draft(uuid,text,jsonb,text),
   public.publish_catalog_product_draft(uuid,text,text,numeric,text,integer),
   public.apply_inventory_movement(uuid,uuid,uuid,text,integer,integer,text,uuid,text,text),
-  public.record_packing_scan(uuid,text,text), public.checkout_pos_sale(uuid,jsonb,text,text,boolean),
+  public.start_packing_session(uuid,bigint,text), public.record_packing_scan(uuid,text,text),
+  public.undo_last_packing_scan(uuid), public.confirm_packing_session(uuid,text),
+  public.checkout_pos_sale(uuid,jsonb,text,text,boolean),
   public.configure_fiscal_profile(uuid,jsonb), public.request_fiscal_document(uuid,text,uuid,text,text),
   public.request_full_credit_note(uuid,text,text)
 from public, anon, authenticated;
@@ -1087,7 +1174,9 @@ grant execute on function public.acknowledge_order(uuid,bigint,text),
   public.cancel_order(uuid,bigint,text,text), public.create_catalog_product_draft(uuid,text,jsonb,text),
   public.publish_catalog_product_draft(uuid,text,text,numeric,text,integer),
   public.apply_inventory_movement(uuid,uuid,uuid,text,integer,integer,text,uuid,text,text),
-  public.record_packing_scan(uuid,text,text), public.checkout_pos_sale(uuid,jsonb,text,text,boolean),
+  public.start_packing_session(uuid,bigint,text), public.record_packing_scan(uuid,text,text),
+  public.undo_last_packing_scan(uuid), public.confirm_packing_session(uuid,text),
+  public.checkout_pos_sale(uuid,jsonb,text,text,boolean),
   public.configure_fiscal_profile(uuid,jsonb), public.request_fiscal_document(uuid,text,uuid,text,text),
   public.request_full_credit_note(uuid,text,text)
 to authenticated;

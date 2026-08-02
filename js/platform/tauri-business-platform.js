@@ -1,4 +1,5 @@
 import { BusinessPlatformAdapter } from './business-platform-adapter.js';
+import { BrowserBusinessPlatform } from './browser-business-platform.js';
 
 export class TauriBusinessPlatform extends BusinessPlatformAdapter {
   constructor(invoke = globalThis.__TAURI__?.core?.invoke) { super(); this.invoke = invoke; }
@@ -26,5 +27,5 @@ export class TauriBusinessPlatform extends BusinessPlatformAdapter {
 export function createBusinessPlatform() {
   return typeof globalThis.__TAURI__?.core?.invoke === 'function'
     ? new TauriBusinessPlatform()
-    : null;
+    : new BrowserBusinessPlatform();
 }

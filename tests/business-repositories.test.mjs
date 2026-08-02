@@ -5,6 +5,7 @@ import { createSupabaseBusinessRepository, classifyRpcError } from '../js/reposi
 import { createSupabaseInventoryRepository } from '../js/repositories/supabase-inventory-repository.js';
 import { createSupabasePosRepository } from '../js/repositories/supabase-pos-repository.js';
 import { createSupabaseFiscalRepository } from '../js/repositories/supabase-fiscal-repository.js';
+import { createSupabasePackingRepository } from '../js/repositories/supabase-packing-repository.js';
 
 const BUSINESS_ID = 'business-1';
 
@@ -47,6 +48,18 @@ test('POS env\u00eda IDs/cantidades y nunca totales calculados por cliente', asy
   assert.equal(Object.hasOwn(call.args, 'total'), false);
 });
 
+test('packing inicia, registra, deshace y confirma s\u00f3lo mediante RPC', async () => {
+  const client = mockClient();
+  const repository = createSupabasePackingRepository({ client });
+  await repository.start({ orderId: 'o1', expectedRevision: 3, idempotencyKey: 'packing-o1-r3' });
+  await repository.scan({ sessionId: 's1', gtin: '4006381333931', scanKey: 'scan-00001' });
+  await repository.undo({ sessionId: 's1' });
+  await repository.confirm({ sessionId: 's1', exceptionReason: null });
+  assert.deepEqual(client.calls.map(({ name }) => name), [
+    'start_packing_session', 'record_packing_scan', 'undo_last_packing_scan', 'confirm_packing_session',
+  ]);
+});
+
 test('fiscal no acepta endpoints, certificado, CAE ni n\u00famero desde el panel', async () => {
   const client = mockClient();
   const repository = createSupabaseFiscalRepository({ client, businessId: BUSINESS_ID });
@@ -56,7 +69,7 @@ test('fiscal no acepta endpoints, certificado, CAE ni n\u00famero desde el panel
 });
 
 test('repositorios cr\u00edticos no contienen mutaciones directas PostgREST', () => {
-  for (const relative of ['supabase-business-repository.js','supabase-inventory-repository.js','supabase-pos-repository.js','supabase-fiscal-repository.js']) {
+  for (const relative of ['supabase-business-repository.js','supabase-inventory-repository.js','supabase-packing-repository.js','supabase-pos-repository.js','supabase-fiscal-repository.js']) {
     const source = fs.readFileSync(new URL(`../js/repositories/${relative}`, import.meta.url), 'utf8');
     assert.doesNotMatch(source, /[.]from\([^\n]+\)[\s\S]{0,400}[.](?:insert|update|delete|upsert)\(/i);
   }

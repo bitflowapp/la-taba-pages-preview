@@ -3,6 +3,21 @@ import { createBusinessOrderIntakeCoordinator } from './core/business-order-inta
 import { normalizeWorkflowStatus } from './core/order-workflow.js';
 import { createProductionRiderGpsController } from './tracking/production_rider_gps.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
+import { createSupabaseInventoryRepository } from './repositories/supabase-inventory-repository.js';
+import { createSupabasePosRepository } from './repositories/supabase-pos-repository.js';
+import { createSupabaseFiscalRepository } from './repositories/supabase-fiscal-repository.js';
+import { createSupabasePackingRepository } from './repositories/supabase-packing-repository.js';
+import { getSupabaseClient } from './services/supabase-client.js';
+import { resolveRuntimeConfig } from './core/runtime-config.js';
+import { createBusinessPlatform } from './platform/tauri-business-platform.js';
+import { createBusinessPanelController } from './business/business-panel-controller.js';
+import {
+  BUSINESS_OPERATION_VIEWS,
+  configureBusinessOperations,
+  handleBusinessOperationsAction,
+  renderBusinessOperations,
+  resetBusinessOperationsForTests,
+} from './business/business-operations-center.js';
 import {
   dateTime,
   getState,
@@ -25,6 +40,13 @@ let activeBusinessRiders = [];
 let gpsController = null;
 let businessIntake = null;
 let businessIntakeStatus = emptyBusinessIntakeStatus();
+let businessCommandController = null;
+let businessCommandStatus = null;
+let businessOperationsView = 'orders';
+let inventoryRepository = null;
+let posRepository = null;
+let fiscalRepository = null;
+let packingRepository = null;
 let access = {
   status: 'signed_out',
   user: null,
@@ -140,6 +162,7 @@ export async function handleProductionOperationsAction(target) {
   if (target.closest('[data-production-sign-out]')) {
     stopGpsShare();
     stopBusinessIntake();
+    stopBusinessCommandRuntime();
     repository?.stopSync?.();
     const result = await auth.signOut();
     clearProductionOrders();
@@ -152,6 +175,31 @@ export async function handleProductionOperationsAction(target) {
     repository?.startSync?.();
     notify();
     return { handled: true, ok: result.ok, message: access.message };
+  }
+
+  const operationsResult = await handleBusinessOperationsAction(target);
+  if (operationsResult.handled) {
+    if (operationsResult.view) {
+      const nextView = operationsResult.view;
+      if (!BUSINESS_OPERATION_VIEWS.includes(nextView)) {
+        return { handled: true, ok: false, message: 'Vista operativa no disponible.' };
+      }
+      const guard = requireViewAccess('business');
+      if (!guard.ok) return { handled: true, ...guard };
+      businessOperationsView = nextView;
+      notify();
+      return { handled: true, ok: true, message: '' };
+    }
+    notify();
+    return operationsResult;
+  }
+
+  if (target.closest('[data-production-orders-view]')) {
+    const guard = requireViewAccess('business');
+    if (!guard.ok) return { handled: true, ...guard };
+    businessOperationsView = 'orders';
+    notify();
+    return { handled: true, ok: true, message: '' };
   }
 
   const businessNext = target.closest('[data-production-business-next]');
@@ -205,14 +253,13 @@ export async function handleProductionOperationsAction(target) {
   if (businessCancel) {
     const guard = requireViewAccess('business');
     if (!guard.ok) return { handled: true, ...guard };
-    const confirmed = typeof globalThis.confirm === 'function'
-      && globalThis.confirm('¿Confirmás la cancelación de este pedido?');
-    if (!confirmed) {
-      return { handled: true, ok: false, message: 'Cancelación no realizada.' };
-    }
+    const card = businessCancel.closest('.production-order-card');
+    const reason = String(card?.querySelector('[data-production-cancel-reason]')?.value || '').trim();
+    if (!reason) return { handled: true, ok: false, message: 'Ingresá un motivo antes de cancelar.' };
     return updateOrderFromAction(
       businessCancel.dataset.productionBusinessCancel,
       'canceled',
+      { commandType: 'cancel_order', reason },
     );
   }
 
@@ -334,6 +381,8 @@ export function handleProductionOperationsPageHide() {
 
 export function resetProductionOperationsForTests() {
   stopBusinessIntake();
+  stopBusinessCommandRuntime();
+  resetBusinessOperationsForTests();
   gpsController?.destroy();
   gpsController = null;
   authStop?.();
@@ -346,6 +395,11 @@ export function resetProductionOperationsForTests() {
   refreshSequence = 0;
   availableRiderOrders = [];
   activeBusinessRiders = [];
+  businessOperationsView = 'orders';
+  inventoryRepository = null;
+  posRepository = null;
+  fiscalRepository = null;
+  packingRepository = null;
   businessIntakeStatus = emptyBusinessIntakeStatus();
   gpsShare = emptyGpsShare();
   access = {
@@ -422,6 +476,7 @@ async function activateAuthorizedAccess(result, expectedSequence = null) {
     activeBusinessRiders = ridersResult?.ok && Array.isArray(ridersResult.riders)
       ? ridersResult.riders
       : [];
+    await configureBusinessRuntime(result);
   }
   if (expectedSequence !== null && sequence !== refreshSequence) {
     stopBusinessIntake();
@@ -476,6 +531,104 @@ function stopBusinessIntake() {
   businessIntakeStatus = emptyBusinessIntakeStatus();
 }
 
+async function configureBusinessRuntime(result) {
+  stopBusinessCommandRuntime();
+  const businessId = String(result.membership?.business_id || '');
+  const operatorId = String(result.user?.id || '');
+  if (!businessId || !operatorId) return;
+
+  const runtime = resolveRuntimeConfig();
+  const client = getSupabaseClient(runtime.repository);
+  inventoryRepository = createSupabaseInventoryRepository({ client, businessId });
+  posRepository = createSupabasePosRepository({ client, businessId });
+  fiscalRepository = createSupabaseFiscalRepository({ client, businessId });
+  packingRepository = createSupabasePackingRepository({ client });
+  configureBusinessOperations({
+    operatorId,
+    getOrders: () => getState().orders,
+    lookupBarcode: (gtin) => inventoryRepository.lookupBarcode(gtin),
+    createProductDraft: (input) => inventoryRepository.createProductDraft(input),
+    publishProductDraft: (input) => inventoryRepository.publishProductDraft(input),
+    applyInventoryMovement: (input) => inventoryRepository.applyMovement(input),
+    checkoutPos: (input) => posRepository.checkout(input),
+    getFiscalProfile: () => fiscalRepository.getProfile(),
+    listFiscalDocuments: () => fiscalRepository.listDocuments(),
+    configureFiscalProfile: (profile) => fiscalRepository.configureProfile(profile),
+    requestCreditNote: (input) => fiscalRepository.requestFullCreditNote(input),
+    startPacking: (input) => packingRepository.start(input),
+    recordPackingScan: ({ session, event }) => packingRepository.scan({
+      sessionId: session.serverSessionId,
+      gtin: event.normalizedValue,
+      scanKey: createRuntimeKey('packing-scan'),
+    }),
+    undoPackingScan: ({ session }) => packingRepository.undo({ sessionId: session.serverSessionId }),
+    confirmPacking: ({ session, exceptionReason }) => packingRepository.confirm({
+      sessionId: session.serverSessionId,
+      exceptionReason,
+    }),
+    onChange: () => notify(),
+  });
+
+  businessCommandController = createBusinessPanelController({
+    platform: createBusinessPlatform(),
+    reconcileCommand: reconcileBusinessCommand,
+    sendCommand: sendBusinessCommand,
+    onChange: (snapshot) => {
+      businessCommandStatus = snapshot;
+      notify();
+    },
+  });
+  businessCommandStatus = await businessCommandController.initialize();
+}
+
+function stopBusinessCommandRuntime() {
+  businessCommandController?.connectivity?.destroy?.();
+  businessCommandController = null;
+  businessCommandStatus = null;
+  inventoryRepository = null;
+  posRepository = null;
+  fiscalRepository = null;
+  packingRepository = null;
+}
+
+async function reconcileBusinessCommand(command) {
+  const snapshot = await repository.fetchBusinessOrderSnapshot();
+  if (!snapshot?.ok) {
+    const error = new Error(snapshot?.message || 'No se pudo reconciliar el pedido.');
+    error.code = snapshot?.code || 'SERVER_UNAVAILABLE';
+    throw error;
+  }
+  const order = (snapshot.orders || []).find((candidate) => [candidate.id, candidate.backendId, candidate.code]
+    .map(String).includes(String(command.orderId)));
+  if (!order) return { conflict: true, code: 'NOT_FOUND', message: 'El pedido ya no está en el snapshot autoritativo.' };
+  const targetStatus = normalizeWorkflowStatus(command.payload?.newStatus || '');
+  const currentStatus = workflowStatus(order);
+  if (targetStatus && currentStatus === targetStatus) return { alreadyApplied: true, revision: order.revision };
+  if (Number(order.revision) !== Number(command.expectedRevision)) {
+    return { conflict: true, code: 'REVISION_CONFLICT', message: 'El pedido cambió en otro dispositivo.', revision: order.revision };
+  }
+  return { order, revision: order.revision };
+}
+
+async function sendBusinessCommand(command) {
+  const options = {
+    expectedRevision: command.expectedRevision,
+    idempotencyKey: command.idempotencyKey,
+  };
+  const response = command.commandType === 'cancel_order'
+    ? await repository.cancelBusinessOrder(command.orderId, { ...options, reason: command.payload.reason })
+    : await repository.updateOrderStatus(command.orderId, command.payload.newStatus, options);
+  return response?.ok
+    ? { ok: true, revision: response.order?.revision }
+    : {
+      ok: false,
+      conflict: response?.code === 'ORDER_REVISION_CONFLICT' || /cambi|revision|revisi/i.test(response?.message || ''),
+      retryable: Number(response?.status || 0) === 0 || Number(response?.status || 0) >= 500,
+      code: response?.code || response?.errorCode || 'RPC_ERROR',
+      message: response?.message,
+    };
+}
+
 function emptyBusinessIntakeStatus() {
   return {
     phase: 'idle',
@@ -524,18 +677,40 @@ function businessWorkspaceMarkup() {
   const rows = orders.length
     ? orders.map(businessOrderMarkup).join('')
     : emptyMarkup('Todavía no hay pedidos visibles para este comercio.');
+  const operations = businessOperationsView === 'orders'
+    ? `<div class="production-order-list" aria-live="polite">${rows}</div>`
+    : renderBusinessOperations(businessOperationsView);
   return `
     <div class="production-ops-head">
       <div>
         <p class="eyebrow">Operación segura</p>
-        <h1>Pedidos del negocio</h1>
+        <h1>Centro operativo del negocio</h1>
         <p>${escapeHtml(roleLabel(access.membership?.role))} · sesión verificada</p>
         ${businessIntakeStatusMarkup()}
+        ${businessCommandStatusMarkup()}
       </div>
       <button class="ghost-button compact" type="button" data-production-sign-out>Cerrar sesión</button>
     </div>
-    <div class="production-order-list" aria-live="polite">${rows}</div>
+    <nav class="production-operations-shortcuts" aria-label="Áreas operativas">
+      <button type="button" class="business-ops-nav-button ${businessOperationsView === 'orders' ? 'active' : ''}" data-production-orders-view>Pedidos</button>
+      ${['scanner', 'inventory-receive', 'packing', 'pos', 'fiscal-status', 'fiscal-config'].map((view) => `
+        <button type="button" class="business-ops-nav-button ${businessOperationsView === view ? 'active' : ''}" data-business-ops-view="${view}">${escapeHtml({ scanner: 'Escáner', 'inventory-receive': 'Inventario', packing: 'Preparación', pos: 'Mostrador', 'fiscal-status': 'Fiscal', 'fiscal-config': 'Configuración' }[view])}</button>`).join('')}
+    </nav>
+    ${operations}
   `;
+}
+
+function businessCommandStatusMarkup() {
+  const status = businessCommandStatus;
+  if (!status) return '<p class="production-command-status">Persistencia local iniciando…</p>';
+  const attention = Number(status.attentionRequired || 0);
+  const lastSync = status.lastReconciledAt ? dateTime(status.lastReconciledAt) : 'sin reconciliación confirmada';
+  return `<div class="production-command-status is-${escapeAttribute(status.connectionState)}" data-business-command-status>
+    <strong>${escapeHtml(status.connectionLabel)}</strong>
+    <span>Última reconciliación: ${escapeHtml(lastSync)}</span>
+    <span>${status.pendingCount} comando${status.pendingCount === 1 ? '' : 's'} pendiente${status.pendingCount === 1 ? '' : 's'}</span>
+    ${attention ? `<span class="production-intake-error">${attention} requiere${attention === 1 ? '' : 'n'} intervención</span>` : ''}
+  </div>`;
 }
 
 function businessIntakeStatusMarkup() {
@@ -617,11 +792,15 @@ function businessOrderMarkup(order) {
           >${escapeHtml(actionLabel(next, 'business'))}</button>
         ` : ''}
         ${!terminal ? `
+          <label class="production-cancel-control">
+            <span class="sr-only">Motivo de cancelación</span>
+            <input type="text" maxlength="160" placeholder="Motivo obligatorio" data-production-cancel-reason>
+          </label>
           <button
             class="ghost-button compact"
             type="button"
             data-production-business-cancel="${escapeAttribute(order.id)}"
-          >Cancelar</button>
+          >Cancelar con motivo</button>
         ` : ''}
       </div>
       ${canAssignRider ? `
@@ -792,16 +971,26 @@ async function refreshRiderOrders() {
   return assigned;
 }
 
-async function updateOrderFromAction(orderId, nextStatus) {
+async function updateOrderFromAction(orderId, nextStatus, { commandType = 'transition_order', reason = '' } = {}) {
   if (!orderId || !nextStatus) {
     return { handled: true, ok: false, message: 'Acción de pedido inválida.' };
   }
   const currentOrder = getState().orders.find((order) => (
     order.id === orderId || order.backendId === orderId || order.code === orderId
   ));
-  const result = await repository.updateOrderStatus(orderId, nextStatus, {
-    expectedRevision: currentOrder?.revision,
-  });
+  const result = businessCommandController && access.membership?.role !== 'rider'
+    ? await businessCommandController.queue({
+      businessId: access.membership.business_id,
+      orderId,
+      commandType,
+      expectedRevision: currentOrder?.revision,
+      idempotencyKey: `${commandType}:${currentOrder?.backendId || orderId}:${currentOrder?.revision}:${nextStatus}`,
+      payload: { newStatus: nextStatus, ...(reason ? { reason } : {}) },
+    })
+    : await repository.updateOrderStatus(orderId, nextStatus, {
+      expectedRevision: currentOrder?.revision,
+      idempotencyKey: `direct:${currentOrder?.backendId || orderId}:${currentOrder?.revision}:${nextStatus}`,
+    });
   if (result.ok) {
     if (access.membership?.role === 'rider') await refreshRiderOrders();
     else await businessIntake?.invalidate?.('status-transition');
@@ -810,7 +999,7 @@ async function updateOrderFromAction(orderId, nextStatus) {
   return {
     handled: true,
     ok: result.ok,
-    message: result.ok ? 'Estado del pedido actualizado.' : result.message,
+    message: result.ok ? 'Estado confirmado por el servidor.' : result.message,
   };
 }
 
@@ -931,4 +1120,8 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   return escapeHtml(value);
+}
+
+function createRuntimeKey(prefix) {
+  return `${prefix}:${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
 }

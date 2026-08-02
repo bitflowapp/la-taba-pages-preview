@@ -858,7 +858,7 @@ export function createSupabaseOrderRepository({
         }
       };
     },
-    async updateOrderStatus(orderId, status, { expectedRevision = null } = {}) {
+    async updateOrderStatus(orderId, status, { expectedRevision = null, idempotencyKey = '' } = {}) {
       const row = await fetchOrderByPublicId(orderId);
       if (!row) return repositoryResult(false, { message: 'Pedido no encontrado o acceso denegado.' });
 
@@ -874,6 +874,7 @@ export function createSupabaseOrderRepository({
         p_order_id: row.id,
         p_expected_revision: revision,
         p_new_status: nextStatus,
+        p_idempotency_key: normalizeIdempotencyKey(idempotencyKey),
       });
       if (error) {
         return failedQuery(error, responseStatus, readableStatusError(error));
@@ -887,6 +888,28 @@ export function createSupabaseOrderRepository({
       return repositoryResult(true, {
         order,
         message: `Pedido ${order.id} actualizado a ${statusLabel(order.status)}.`,
+      });
+    },
+    async cancelBusinessOrder(orderId, { expectedRevision = null, idempotencyKey = '', reason = '' } = {}) {
+      const row = await fetchOrderByPublicId(orderId);
+      if (!row) return repositoryResult(false, { message: 'Pedido no encontrado o acceso denegado.' });
+      const revision = normalizeOrderRevision(expectedRevision) || normalizeOrderRevision(row.revision);
+      const cleanReason = sanitizeText(reason, { maxLength: 160 });
+      if (revision === null || !cleanReason) {
+        return repositoryResult(false, { message: 'La cancelación requiere revisión vigente y motivo.' });
+      }
+      const { data, error, status: responseStatus } = await client.rpc('cancel_order', {
+        p_order_id: row.id,
+        p_expected_revision: revision,
+        p_reason: cleanReason,
+        p_idempotency_key: normalizeIdempotencyKey(idempotencyKey),
+      });
+      if (error) return failedQuery(error, responseStatus, readableStatusError(error));
+      const updatedRow = await fetchOrderByPublicId(row.id) || unwrapOrderRow(data);
+      if (!updatedRow) return repositoryResult(false, { message: 'El backend no devolvió el pedido cancelado.' });
+      return repositoryResult(true, {
+        order: mirrorOrder(updatedRow),
+        message: 'Pedido cancelado por el servidor.',
       });
     },
     async listAvailableRiderOrders() {
@@ -2279,6 +2302,14 @@ function sanitizeChannelName(value) {
 
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+}
+
+function normalizeIdempotencyKey(value) {
+  const normalized = String(value || '').trim();
+  if (/^[A-Za-z0-9:_-]{8,128}$/.test(normalized)) return normalized;
+  const uuid = globalThis.crypto?.randomUUID?.();
+  if (uuid) return `order-transition:${uuid}`;
+  return `order-transition:${Date.now()}:${Math.random().toString(36).slice(2)}`;
 }
 
 function normalizeIso(value, fallback = new Date().toISOString()) {

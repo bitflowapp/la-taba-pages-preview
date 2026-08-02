@@ -38,6 +38,10 @@ test('packing persiste sesiones/scans y rechaza producto o cantidad incorrectos'
   assert.match(sql, /create table if not exists public[.]order_packing_scans/i);
   assert.match(sql, /producto equivocado/i);
   assert.match(sql, /cantidad excedida/i);
+  assert.match(sql, /start_packing_session[\s\S]*conflicto de revision/i);
+  assert.match(sql, /undo_last_packing_scan/i);
+  assert.match(sql, /confirm_packing_session[\s\S]*excepcion owner\/admin con motivo/i);
+  assert.match(sql, /unique[(]business_id, idempotency_key[)]/i);
 });
 
 test('POS calcula precios en servidor, bloquea producto y descuenta stock at\u00f3micamente', () => {

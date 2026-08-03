@@ -32,7 +32,7 @@ Una vez autorizado, la nota sigue el mismo circuito de evidencia privada: QR arm
 
 ## Homologación controlada
 
-Nunca ejecutar producción desde el panel. Para homologación real deben estar disponibles la confirmación exacta `I_UNDERSTAND_THIS_USES_ARCA_HOMOLOGATION`, certificado, clave, CUIT, punto de venta y relación autorizada. Con esos insumos se ejecuta, en homologación, una factura sintética y una nota asociada, se consultan ambas, se valida CAE/QR/PDF persistido, se descarga con URL efímera y se prueba el spool local.
+Nunca ejecutar producción desde el panel. Para homologación real deben estar disponibles la confirmación exacta `I_AUTHORIZE_ARCA_HOMOLOGATION`, certificado, clave, CUIT, punto de venta y relación autorizada. Con esos insumos se ejecuta, en homologación, una factura sintética y una nota asociada, se consultan ambas, se valida CAE/QR/PDF persistido, se descarga con URL efímera y se prueba el spool local.
 
 Si falta cualquier insumo o permiso, registrar `ARCA_HOMOLOGATION_BLOCKED`. No interpretar fixtures, CAE de fixture ni pruebas unitarias como homologación externa aprobada. Producción sigue `ARCA_PRODUCTION_DISABLED_BY_DESIGN` hasta que controles independientes autoricen el ambiente.
 

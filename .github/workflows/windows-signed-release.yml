@@ -1,0 +1,67 @@
+name: Build signed Windows release candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: signed-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  signed_release:
+    name: Build once with protected signing material
+    runs-on: windows-latest
+    timeout-minutes: 90
+    environment: windows-release-signing
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Require release branch
+        shell: pwsh
+        run: |
+          if (-not '${{ github.ref_name }}'.StartsWith('release/')) {
+            throw 'Signed artifacts may only be built from release/*.'
+          }
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
+        with:
+          toolchain: stable
+          cache: false
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build, sign, verify and hash once
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TABA_UPDATER_PUBLIC_KEY: ${{ vars.TABA_UPDATER_PUBLIC_KEY }}
+          TABA_UPDATER_ENDPOINTS_JSON: ${{ vars.TABA_UPDATER_ENDPOINTS_JSON }}
+          TABA_WINDOWS_CERTIFICATE_THUMBPRINT: ${{ vars.TABA_WINDOWS_CERTIFICATE_THUMBPRINT }}
+          TABA_WINDOWS_TIMESTAMP_URL: ${{ vars.TABA_WINDOWS_TIMESTAMP_URL }}
+          TABA_WINDOWS_RELEASE_OUTPUT: ${{ github.workspace }}\artifacts\windows-release\${{ github.sha }}
+        run: npm run release:windows:signed
+
+      - name: Upload immutable signed candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-signed-${{ github.sha }}
+          path: artifacts/windows-release/${{ github.sha }}/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Deployment remains manual and separate
+        run: Write-Output 'Artifact built and verified. No staging or production deployment is performed by this workflow.'

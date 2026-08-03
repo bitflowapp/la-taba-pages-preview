@@ -41,6 +41,9 @@
     "realtime:demo": "node scripts/realtime-relay.mjs",
     "desktop:assets": "node scripts/build-desktop-assets.mjs",
     "desktop:signed-config": "node scripts/prepare-tauri-signed-release-config.mjs",
+    "release:sbom": "node scripts/create-sbom.mjs",
+    "release:windows:signed": "node scripts/build-windows-signed-release.mjs",
+    "release:windows:hash": "node scripts/hash-windows-artifacts.mjs",
     "tauri": "tauri",
     "tauri:build": "tauri build"
   },

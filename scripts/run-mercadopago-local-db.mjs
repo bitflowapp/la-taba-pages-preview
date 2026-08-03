@@ -2,6 +2,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import crypto from 'node:crypto';
+import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 
 if (process.env.TABA_LOCAL_PAYMENT_DB !== '1') {
@@ -12,6 +14,7 @@ if (process.env.TABA_LOCAL_PAYMENT_DB !== '1') {
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const container = process.env.TABA_SUPABASE_DB_CONTAINER || 'supabase_db_la-taba-real-orders-staging';
 const database = `taba2_mp_verify_${process.pid}`.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+const restoreDatabase = `${database}_restore`;
 const dockerCommand = process.platform === 'win32' ? 'docker.exe' : 'docker';
 const migrations = fs.readdirSync(path.join(root, 'supabase', 'migrations'))
   .filter((name) => name.endsWith('.sql'))
@@ -27,18 +30,27 @@ function docker(args, options = {}) {
   });
 }
 
-function psql(sql) {
-  docker(['exec', '-i', container, 'psql', '-U', 'postgres', '-d', database, '-v', 'ON_ERROR_STOP=1', '-q'], { input: sql });
+function psql(sql, targetDatabase = database) {
+  docker(['exec', '-i', container, 'psql', '-U', 'postgres', '-d', targetDatabase, '-v', 'ON_ERROR_STOP=1', '-q'], { input: sql });
 }
 
-function psqlCapture(sql) {
+function psqlCapture(sql, targetDatabase = database) {
   return execFileSync(dockerCommand, [
-    'exec', '-i', container, 'psql', '-U', 'postgres', '-d', database,
+    'exec', '-i', container, 'psql', '-U', 'postgres', '-d', targetDatabase,
     '-v', 'ON_ERROR_STOP=1', '-q', '-X', '-A', '-t',
   ], {
     cwd: root,
     encoding: 'utf8',
     input: sql,
+    stdio: ['pipe', 'pipe', 'inherit'],
+  });
+}
+
+function dockerBuffer(args, input) {
+  return execFileSync(dockerCommand, args, {
+    cwd: root,
+    input,
+    maxBuffer: 256 * 1024 * 1024,
     stdio: ['pipe', 'pipe', 'inherit'],
   });
 }
@@ -50,6 +62,31 @@ function runPgTap(relativePath) {
   if (/^not ok\b/m.test(output) || !/^1\.\.[0-9]+$/m.test(output)) {
     throw new Error(`pgTAP did not pass: ${relativePath}`);
   }
+}
+
+function databaseSummary(targetDatabase) {
+  const output = psqlCapture(`
+    select json_build_object(
+      'public_tables', (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p')),
+      'public_functions', (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public'),
+      'restore_marker', (select marker from restore_drill.evidence where id=1),
+      'critical_contracts',
+        to_regclass('public.orders') is not null
+        and to_regclass('public.payment_intents') is not null
+        and to_regclass('public.fiscal_documents') is not null
+        and to_regclass('public.daily_reconciliations') is not null
+        and to_regprocedure('public.finalize_paid_checkout_session(uuid)') is not null
+    )::text;
+  `, targetDatabase).trim();
+  return JSON.parse(output);
+}
+
+function writeRestoreReport(report) {
+  const requested = String(process.env.TABA_RESTORE_DRILL_REPORT || '').trim();
+  if (!requested) return;
+  const output = path.resolve(requested);
+  fs.mkdirSync(path.dirname(output), { recursive: true });
+  fs.writeFileSync(output, `${JSON.stringify(report, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
 }
 
 try {
@@ -70,11 +107,49 @@ try {
   runPgTap(path.join('supabase', 'tests', 'business_windows_scanner_fiscal_test.sql'));
   runPgTap(path.join('supabase', 'tests', 'fiscal_document_closure_test.sql'));
   runPgTap(path.join('supabase', 'tests', 'production_operations_control_plane_test.sql'));
-  console.log(`Integrated PostgreSQL lifecycle verified in isolated local database ${database}.`);
-} finally {
-  const cleanup = spawnSync(dockerCommand, ['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', database], {
-    cwd: root,
-    stdio: 'inherit',
+  psql(`
+    create schema restore_drill;
+    create table restore_drill.evidence(id integer primary key, marker text not null);
+    insert into restore_drill.evidence(id,marker)
+    values(1,'TABA2_SYNTHETIC_RESTORE_DRILL_V1');
+  `);
+  const sourceSummary = databaseSummary(database);
+  const restoreStarted = performance.now();
+  const archive = dockerBuffer([
+    'exec', container, 'pg_dump', '-U', 'postgres', '-d', database,
+    '--format=custom', '--no-owner', '--no-privileges',
+  ]);
+  const dumpSha256 = crypto.createHash('sha256').update(archive).digest('hex');
+  docker(['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', restoreDatabase]);
+  docker(['exec', container, 'createdb', '-U', 'postgres', restoreDatabase]);
+  dockerBuffer([
+    'exec', '-i', container, 'pg_restore', '-U', 'postgres', '-d', restoreDatabase,
+    '--no-owner', '--no-privileges', '--exit-on-error',
+  ], archive);
+  const restoredSummary = databaseSummary(restoreDatabase);
+  if (JSON.stringify(sourceSummary) !== JSON.stringify(restoredSummary) || restoredSummary.critical_contracts !== true) {
+    throw new Error('Isolated restore drill did not reproduce the critical database contract.');
+  }
+  const restoreDurationMs = Math.round(performance.now() - restoreStarted);
+  writeRestoreReport({
+    schemaVersion: 1,
+    scope: 'isolated-local-postgresql',
+    productionDataUsed: false,
+    migrationsApplied: migrations.length,
+    dumpSizeBytes: archive.length,
+    dumpSha256,
+    restoreDurationMs,
+    sourceSummary,
+    restoredSummary,
+    passed: true,
   });
-  if (cleanup.status !== 0) console.error(`Temporary local database cleanup failed: ${database}`);
+  console.log(`Integrated PostgreSQL lifecycle and restore drill verified (${archive.length} bytes, ${restoreDurationMs} ms).`);
+} finally {
+  for (const temporaryDatabase of [restoreDatabase, database]) {
+    const cleanup = spawnSync(dockerCommand, ['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', temporaryDatabase], {
+      cwd: root,
+      stdio: 'inherit',
+    });
+    if (cleanup.status !== 0) console.error(`Temporary local database cleanup failed: ${temporaryDatabase}`);
+  }
 }

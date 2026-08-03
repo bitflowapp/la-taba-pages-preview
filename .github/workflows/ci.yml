@@ -13,60 +13,192 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: '22'
+  SUPABASE_CLI_VERSION: '2.101.0'
+
 jobs:
-  validate:
-    name: Technical validation
+  web_backend:
+    name: Web, backend, fiscal and security gates
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
-      - name: Check out candidate
-        uses: actions/checkout@v4
+      - name: Check out exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - name: Install dependencies
+      - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Install Playwright browser
+      - name: Install fiscal bridge dependencies
+        run: npm --prefix services/arca-fiscal-bridge ci --no-audit --no-fund
+
+      - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
       - name: Build browser vendor bundle
         run: npm run vendor:build
 
-      - name: Run static and hygiene checks
-        run: npm run check
+      - name: Static, migration and release hygiene checks
+        run: |
+          npm run check
+          npm run migrations:validate
+          npm run catalog:images:verify
 
-      - name: Run unit tests
+      - name: Commercial catalog gate
+        run: npm run catalog:release:validate
+
+      - name: Secret scan
+        run: npm run secrets:scan
+
+      - name: Production dependency audits
+        run: |
+          npm audit --omit=dev
+          npm --prefix services/arca-fiscal-bridge audit --omit=dev
+
+      - name: Unit and contract tests
         run: npm test
 
-      - name: Validate migrations statically
-        run: npm run migrations:validate
+      - name: Build and test fiscal TypeScript service
+        run: |
+          npm run fiscal:build
+          npm run fiscal:test
 
-      - name: Verify approved catalog images
-        run: npm run catalog:images:verify
+      - name: Mercado Pago webhook signature tests
+        run: npm run test:webhook
 
-      - name: Audit dependencies
-        run: npm audit --audit-level=high
-
-      - name: Run full end-to-end suite
+      - name: Full browser E2E
         id: e2e
         env:
           PLAYWRIGHT_HTML_OPEN: never
         run: npm run test:e2e -- --reporter=line,html --trace=retain-on-failure
 
-      - name: Upload Playwright failure reports
+      - name: Generate source SBOM
+        run: npm run release:sbom -- --output artifacts/ci/sbom.cdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: source-sbom-${{ github.sha }}
+          path: artifacts/ci/sbom.cdx.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Playwright failure evidence
         if: ${{ failure() && steps.e2e.outcome == 'failure' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             playwright-report/
             test-results/
           if-no-files-found: warn
+          retention-days: 7
+
+  database_contracts:
+    name: Migrations, pgTAP and isolated restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Set up pinned Supabase CLI
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Start isolated Supabase stack
+        run: supabase start
+
+      - name: Apply every migration, run 90 pgTAP assertions and restore drill
+        env:
+          TABA_LOCAL_PAYMENT_DB: '1'
+          TABA_SUPABASE_DB_CONTAINER: supabase_db_la-taba-real-orders-staging
+          TABA_RESTORE_DRILL_REPORT: artifacts/ci/restore-drill.json
+        run: npm run test:db:isolated
+
+      - name: Stop disposable Supabase stack
+        if: always()
+        run: supabase stop --no-backup
+
+      - name: Upload restore drill evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: restore-drill-${{ github.sha }}
+          path: artifacts/ci/restore-drill.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  windows_desktop:
+    name: Windows Rust and unsigned verification bundles
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Set up Rust with lint components
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
+        with:
+          toolchain: stable
+          components: rustfmt,clippy
+          cache: false
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build desktop assets
+        run: npm run desktop:assets
+
+      - name: Rust formatting, lint and tests
+        working-directory: src-tauri
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test
+
+      - name: Build local verification EXE, MSI and NSIS
+        run: npm run tauri:build
+
+      - name: Hash Windows verification artifacts
+        run: npm run release:windows:hash -- --root src-tauri/target/release --output artifacts/ci/windows-hashes.json
+
+      - name: Upload Windows verification artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-unsigned-verification-${{ github.sha }}
+          path: |
+            src-tauri/target/release/taba-negocio.exe
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            artifacts/ci/windows-hashes.json
+          if-no-files-found: error
           retention-days: 7

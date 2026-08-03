@@ -21,6 +21,7 @@ import {
   renderNavigation,
   renderOrderSummary,
   renderTracking,
+  setMercadoPagoCheckoutAvailability,
   setCategory,
   setCatalogFilter,
   setSearchQuery,
@@ -507,6 +508,7 @@ async function bootstrap() {
       window.TABA_STARTUP_RECOVERY?.show({ reason: 'storage', resetAvailable: false });
       showToast('La sesion local esta temporalmente limitada. Podes continuar.');
     }
+    await refreshMercadoPagoCheckoutAvailability();
     await initializeCustomerDeliveryCheckout();
     await initializeCustomerProfileView();
     initializeShowcase();
@@ -529,6 +531,24 @@ async function bootstrap() {
     });
     // Evita pantalla en blanco si algo falla en el primer render.
     showToast('Hubo un problema al iniciar. Recargá la página.');
+  }
+}
+
+async function refreshMercadoPagoCheckoutAvailability() {
+  if (getAppMode() !== APP_MODE_PRODUCTION) {
+    setMercadoPagoCheckoutAvailability({ available: false });
+    return;
+  }
+  const repository = getOrderRepository();
+  if (typeof repository?.getMercadoPagoCheckoutAvailability !== 'function') {
+    setMercadoPagoCheckoutAvailability({ available: false });
+    return;
+  }
+  try {
+    const result = await repository.getMercadoPagoCheckoutAvailability();
+    setMercadoPagoCheckoutAvailability({ available: result?.ok && result.available === true });
+  } catch (_) {
+    setMercadoPagoCheckoutAvailability({ available: false });
   }
 }
 
@@ -608,6 +628,7 @@ function applyAppMode() {
   if (modeNote) modeNote.textContent = checkoutCopy.note;
 
   applyProductionCatalogGate(mode);
+  if (!production) setMercadoPagoCheckoutAvailability({ available: false });
   applyWhatsappAvailability();
 }
 
@@ -1357,6 +1378,20 @@ function bindEvents() {
         ...getCheckoutFormValues(),
         previewOnly: getAppMode() === APP_MODE_PUBLIC,
       };
+      if (values.paymentMethod === 'mercadopago') {
+        if (button) button.textContent = 'Preparando pago…';
+        const result = await Promise.resolve(getOrderRepository().createMercadoPagoCheckout?.(values));
+        if (!result?.ok || !result.initPoint) {
+          const message = result?.message || 'No pudimos preparar Mercado Pago. Conservamos tu carrito para que vuelvas a intentar.';
+          showCheckoutInlineError(form, message);
+          showToast(message);
+          return;
+        }
+        if (button) button.textContent = 'Te llevamos a Mercado Pago…';
+        showToast('Te llevamos a Mercado Pago para completar el pago de forma segura.');
+        window.location.assign(result.initPoint);
+        return;
+      }
       const result = await Promise.resolve(getOrderRepository().createOrder(values));
 
       if (!result.ok) {

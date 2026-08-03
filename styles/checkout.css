@@ -912,3 +912,51 @@
   outline: 3px solid rgb(200 16 30 / 28%);
   outline-offset: 2px;
 }
+
+.payment-return-page {
+  width: min(100% - 32px, 540px);
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 14px;
+  margin: 0 auto;
+  padding: max(36px, env(safe-area-inset-top)) 0 max(36px, env(safe-area-inset-bottom));
+}
+
+.payment-return-page h1 {
+  margin: 0;
+  color: var(--taba-ink);
+  font-size: clamp(30px, 8vw, 44px);
+  line-height: 1.04;
+}
+
+.payment-return-detail {
+  max-width: 48ch;
+  margin: 0;
+  color: var(--taba-graphite-soft);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.payment-return-status {
+  min-height: 24px;
+  margin: 0;
+  color: var(--taba-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.payment-return-status[data-state="completed"] {
+  color: var(--taba-success, #147a4d);
+  font-weight: 700;
+}
+
+.payment-return-status[data-state="manual_review"] {
+  color: var(--taba-red-quiet);
+}
+
+.payment-return-action {
+  margin-top: 10px;
+  text-decoration: none;
+}

@@ -30,6 +30,13 @@ import {
 } from '../state.js';
 import { createSupabaseAuthService } from '../services/supabase-auth.js';
 import { createSupabaseCustomerProfileRepository } from './customer_profile_repository.js';
+import {
+  buildMercadoPagoCheckoutPayload,
+  clearMercadoPagoCheckoutRecord,
+  createCheckoutClientRequestId,
+  readMercadoPagoCheckoutRecord,
+  writeMercadoPagoCheckoutRecord,
+} from '../payments/mercadopago-checkout.js';
 import { repositoryResult } from './order_repository.js';
 import {
   allowActiveOrderFallback,
@@ -88,6 +95,8 @@ export function createSupabaseOrderRepository({
   let trackingClientToken = '';
   let pendingRequest = null;
   let createInFlight = null;
+  let mercadoPagoCheckoutInFlight = null;
+  const mercadoPagoStorage = safeLocalStorage();
   let syncStop = null;
   let catalogProductCount = 0;
   let businessStatus = {
@@ -193,11 +202,16 @@ export function createSupabaseOrderRepository({
 
     if (error) return failedQuery(error, status, 'No pudimos cargar los pedidos.');
     const rows = Array.isArray(data) ? data : [];
+    const access = getTrackingAccess();
     const orders = mirror
-      ? mirrorOrders(rows, { replace: true })
+      ? mirrorOrders(rows, {
+        replace: true,
+        preservePublicTrackingIds: access && !unavailableTrackingOrderId
+          ? [access.orderId, access.publicCode]
+          : [],
+      })
       : rows.map(rowToDemoOrder).filter(Boolean).map(toDomainOrder).filter(Boolean);
     if (mirror) {
-      const access = getTrackingAccess();
       if (access) selectTrackingOrder(access.orderId || access.publicCode);
     }
     return repositoryResult(true, { rows, orders });
@@ -463,6 +477,7 @@ export function createSupabaseOrderRepository({
         'packaging_type',
         'units_per_pack',
         'price',
+        'price_status',
         'stock',
         'available',
         'chilled',
@@ -693,6 +708,246 @@ export function createSupabaseOrderRepository({
     });
   }
 
+  async function getMercadoPagoCheckoutAvailability() {
+    const session = await auth.ensureCustomerSession();
+    if (!session.ok) return repositoryResult(false, { available: false, message: session.message });
+    const { data, error } = await client.rpc('get_mercadopago_checkout_availability', {
+      p_business_id: businessId,
+    });
+    if (error || !data || typeof data !== 'object') {
+      return repositoryResult(false, {
+        available: false,
+        message: 'Mercado Pago no está disponible en este momento.',
+      });
+    }
+    return repositoryResult(true, {
+      available: data.available === true,
+      environment: sanitizeText(data.environment, { maxLength: 20 }),
+      checkoutMode: sanitizeText(data.checkout_mode, { maxLength: 40 }),
+      allowOfflinePaymentMethods: data.allow_offline_payment_methods === true,
+      installmentsLimit: Number.isInteger(Number(data.installments_limit))
+        ? Number(data.installments_limit)
+        : null,
+    });
+  }
+
+  async function createMercadoPagoCheckout(orderDraft = {}) {
+    if (mercadoPagoCheckoutInFlight) return mercadoPagoCheckoutInFlight;
+    mercadoPagoCheckoutInFlight = createMercadoPagoCheckoutInternal(orderDraft);
+    try {
+      return await mercadoPagoCheckoutInFlight;
+    } finally {
+      mercadoPagoCheckoutInFlight = null;
+    }
+  }
+
+  async function createMercadoPagoCheckoutInternal(orderDraft = {}) {
+    const values = normalizeOrderDraft(orderDraft);
+    if (values.paymentMethod !== 'mercadopago') {
+      return repositoryResult(false, { message: 'Elegí Mercado Pago para continuar con este checkout.' });
+    }
+    if (businessStatus.state === 'idle') await loadBusinessConfiguration();
+    if (catalogStatus.state === 'idle') await loadCatalog();
+    if (!businessStatus.orderingReady || catalogProductCount < 1) {
+      return repositoryResult(false, {
+        message: 'El comercio todavía no habilitó una configuración verificada para pedidos.',
+      });
+    }
+    if (
+      (values.deliveryMode === 'delivery' && !businessStatus.deliveryEnabled)
+      || (values.deliveryMode === 'pickup' && !businessStatus.pickupEnabled)
+    ) {
+      return repositoryResult(false, { message: 'La modalidad elegida no está habilitada por el comercio.' });
+    }
+    const cartItems = getCartItems();
+    if (!cartItems.length) return repositoryResult(false, { message: 'Agregá al menos un producto antes de pagar.' });
+    if (cartItems.some((item) => item.product.pricePending)) {
+      return repositoryResult(false, { message: 'Hay productos con precio pendiente. No se pueden pagar todavía.' });
+    }
+    if (cartItems.some((item) => item.product.alcoholic) && !values.ageConfirmed) {
+      return repositoryResult(false, {
+        message: 'Confirmá que sos mayor de edad para pedir bebidas alcohólicas.',
+      });
+    }
+    const nameValidation = validateCustomerName(values.customerName);
+    if (!nameValidation.ok) return repositoryResult(false, { message: nameValidation.message });
+    const customerPhone = normalizeArgentinePhone(values.customerPhone);
+    if (!isValidArgentinePhone(customerPhone)) {
+      return repositoryResult(false, { message: 'Ingresá un teléfono argentino válido, con código de área.' });
+    }
+    if (values.deliveryMode === 'delivery' && !values.customerAddress) {
+      return repositoryResult(false, { message: 'Ingresá calle y número para el envío.' });
+    }
+    const items = cartItems.map((item) => ({
+      product_id: String(item.product.id || ''),
+      quantity: Math.max(0, Math.floor(Number(item.quantity) || 0)),
+    }));
+    if (items.some((item) => !isUuid(item.product_id) || item.quantity < 1)) {
+      return repositoryResult(false, {
+        message: 'El catálogo productivo no está sincronizado. Actualizá la página antes de pagar.',
+      });
+    }
+
+    const availability = await getMercadoPagoCheckoutAvailability();
+    if (!availability.ok || !availability.available || availability.checkoutMode !== 'checkout_pro') {
+      return repositoryResult(false, { message: 'Mercado Pago todavía no está habilitado para este comercio.' });
+    }
+
+    let clientRequestId;
+    try {
+      clientRequestId = createCheckoutClientRequestId(cryptoImpl);
+    } catch (_) {
+      return repositoryResult(false, {
+        message: 'Este dispositivo no puede generar una solicitud de pago segura.',
+      });
+    }
+    const payload = buildMercadoPagoCheckoutPayload({
+      businessId,
+      clientRequestId,
+      values: {
+        ...values,
+        customerName: nameValidation.name,
+        customerPhone,
+      },
+      items,
+    });
+    const sessionResult = await invokePaymentFunction('mercadopago-create-checkout-session', payload);
+    if (!sessionResult.ok || !sessionResult.data?.checkout) {
+      return repositoryResult(false, {
+        code: sessionResult.data?.code || 'CHECKOUT_NOT_AVAILABLE',
+        message: sessionResult.data?.message || 'No pudimos preparar este pago. Revisá el carrito y volvé a intentar.',
+      });
+    }
+    const checkout = sessionResult.data.checkout;
+    const checkoutSessionId = String(checkout.checkout_session_id || '').trim();
+    if (!isUuid(checkoutSessionId)) {
+      return repositoryResult(false, { message: 'No recibimos una sesión de pago válida.' });
+    }
+    writeMercadoPagoCheckoutRecord(mercadoPagoStorage, businessId, checkoutSessionId);
+    const preferenceResult = await invokePaymentFunction('mercadopago-create-preference', {
+      checkout_session_id: checkoutSessionId,
+    });
+    if (!preferenceResult.ok || !preferenceResult.data?.init_point) {
+      return repositoryResult(false, {
+        code: preferenceResult.data?.code || 'PREFERENCE_RECONCILING',
+        status: preferenceResult.data?.status || 'reconciling',
+        checkoutSessionId,
+        message: preferenceResult.data?.message
+          || 'Estamos verificando la preparación de tu pago. No vuelvas a pagar todavía.',
+      });
+    }
+    const initPoint = trustedMercadoPagoCheckoutUrl(preferenceResult.data.init_point);
+    if (!initPoint) {
+      return repositoryResult(false, { message: 'No recibimos una URL de pago segura.' });
+    }
+    return repositoryResult(true, {
+      checkoutSessionId,
+      initPoint,
+      expiresAt: String(preferenceResult.data.expires_at || checkout.expires_at || ''),
+    });
+  }
+
+  async function getMercadoPagoCheckoutStatus(checkoutSessionId) {
+    if (!isUuid(checkoutSessionId)) {
+      return repositoryResult(false, { message: 'La sesión de pago no es válida.' });
+    }
+    const session = await auth.ensureCustomerSession();
+    if (!session.ok) return repositoryResult(false, { message: session.message });
+    const result = await invokePaymentFunction('mercadopago-checkout-status', {
+      checkout_session_id: checkoutSessionId,
+    });
+    if (!result.ok || !result.data?.checkout) {
+      return repositoryResult(false, {
+        code: result.data?.code || 'CHECKOUT_NOT_FOUND',
+        message: result.data?.message || 'No pudimos verificar tu pago todavía.',
+      });
+    }
+    return repositoryResult(true, { checkout: result.data.checkout });
+  }
+
+  function getMercadoPagoCheckoutRecovery() {
+    return readMercadoPagoCheckoutRecord(mercadoPagoStorage, businessId);
+  }
+
+  function clearMercadoPagoCheckoutRecovery() {
+    clearMercadoPagoCheckoutRecord(mercadoPagoStorage, businessId);
+  }
+
+  async function listMercadoPagoBusinessPayments() {
+    const teamAccess = await auth.getTeamAccess();
+    if (!teamAccess.ok || !['owner', 'admin'].includes(teamAccess.membership?.role)) {
+      return repositoryResult(false, { message: 'Tu rol no puede consultar pagos.' });
+    }
+    const { data, error } = await client.rpc('list_business_payments', {
+      p_business_id: businessId,
+    });
+    if (error) return repositoryResult(false, { message: 'No pudimos cargar los pagos.' });
+    return repositoryResult(true, { payments: Array.isArray(data) ? data : [] });
+  }
+
+  async function reconcileMercadoPagoPayment(paymentIntentId) {
+    if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
+    const { data, error } = await client.rpc('enqueue_payment_reconciliation', {
+      p_payment_intent_id: paymentIntentId,
+    });
+    if (error || !data?.queued) return repositoryResult(false, { message: 'No pudimos programar la reconciliación.' });
+    return repositoryResult(true, { message: 'Reconciliación de pago programada.' });
+  }
+
+  async function requestMercadoPagoRefund({ paymentIntentId, amount = null, reason = '', confirmation = '' } = {}) {
+    if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
+    let idempotencyKey;
+    try {
+      idempotencyKey = createCheckoutClientRequestId(cryptoImpl);
+    } catch (_) {
+      return repositoryResult(false, { message: 'No pudimos generar una solicitud de reembolso segura.' });
+    }
+    const result = await invokePaymentFunction('mercadopago-refund', {
+      payment_intent_id: paymentIntentId,
+      amount,
+      reason,
+      confirmation,
+      idempotency_key: idempotencyKey,
+    });
+    return repositoryResult(result.ok, {
+      code: result.data?.code || '',
+      status: result.data?.status || '',
+      message: result.data?.message || (result.ok ? 'Solicitud de reembolso enviada.' : 'No se pudo solicitar el reembolso.'),
+    });
+  }
+
+  async function requestMercadoPagoCancellation({ paymentIntentId, confirmation = '' } = {}) {
+    if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
+    let idempotencyKey;
+    try {
+      idempotencyKey = createCheckoutClientRequestId(cryptoImpl);
+    } catch (_) {
+      return repositoryResult(false, { message: 'No pudimos generar una solicitud de cancelación segura.' });
+    }
+    const result = await invokePaymentFunction('mercadopago-cancel-payment', {
+      payment_intent_id: paymentIntentId,
+      confirmation,
+      idempotency_key: idempotencyKey,
+    });
+    return repositoryResult(result.ok, {
+      code: result.data?.code || '',
+      status: result.data?.status || '',
+      message: result.data?.message || (result.ok ? 'Solicitud de cancelación enviada.' : 'No se pudo solicitar la cancelación.'),
+    });
+  }
+
+  async function invokePaymentFunction(name, body) {
+    if (typeof client.functions?.invoke !== 'function') {
+      return { ok: false, data: null };
+    }
+    try {
+      const { data, error } = await client.functions.invoke(name, { body });
+      return { ok: !error && data?.ok === true, data: data || null };
+    } catch (_) {
+      return { ok: false, data: null };
+    }
+  }
+
   const repository = {
     mode: 'supabase',
     businessId,
@@ -759,7 +1014,15 @@ export function createSupabaseOrderRepository({
           await recoverCustomerTrackingAccess(orderResult.rows).catch(() => null);
         }
         const access = getTrackingAccess();
-        if (access && !stopped && !hasTerminalTrackingState(access)) {
+        const trackingPollState = customerTrackingPoll.getSnapshot();
+        const terminalTrackingIsBeingRevalidated = trackingPollState.terminal
+          && trackingPollState.orderId === (access?.orderId || access?.publicCode || '');
+        if (
+          access
+          && !stopped
+          && !terminalTrackingIsBeingRevalidated
+          && !hasTerminalTrackingState(access)
+        ) {
           const result = await fetchPublicTrackingSnapshot(
             access.orderId || access.publicCode,
             { trackingToken: access.trackingToken, mirror: true },
@@ -805,6 +1068,33 @@ export function createSupabaseOrderRepository({
       } finally {
         createInFlight = null;
       }
+    },
+    async getMercadoPagoCheckoutAvailability() {
+      return getMercadoPagoCheckoutAvailability();
+    },
+    async createMercadoPagoCheckout(orderDraft = {}) {
+      return createMercadoPagoCheckout(orderDraft);
+    },
+    async getMercadoPagoCheckoutStatus(checkoutSessionId) {
+      return getMercadoPagoCheckoutStatus(checkoutSessionId);
+    },
+    getMercadoPagoCheckoutRecovery() {
+      return getMercadoPagoCheckoutRecovery();
+    },
+    clearMercadoPagoCheckoutRecovery() {
+      clearMercadoPagoCheckoutRecovery();
+    },
+    async listMercadoPagoBusinessPayments() {
+      return listMercadoPagoBusinessPayments();
+    },
+    async reconcileMercadoPagoPayment(paymentIntentId) {
+      return reconcileMercadoPagoPayment(paymentIntentId);
+    },
+    async requestMercadoPagoRefund(payload = {}) {
+      return requestMercadoPagoRefund(payload);
+    },
+    async requestMercadoPagoCancellation(payload = {}) {
+      return requestMercadoPagoCancellation(payload);
     },
     async getActiveOrder() {
       const result = await fetchOrders();
@@ -1317,12 +1607,13 @@ function replaceProductionCatalog(products) {
 function rowToCatalogProduct(row = {}) {
   if (!isUuid(row.id) || !row.is_verified) return null;
   const name = sanitizeText(row.name, { maxLength: 100 });
-  const price = normalizeMoneyValue(row.price, 0);
+  const pricePending = row.price_status === 'pending';
+  const price = pricePending ? null : normalizeMoneyValue(row.price, 0);
   const externalId = sanitizeText(row.external_id, { maxLength: 120 });
   const sku = sanitizeText(row.sku, { maxLength: 120 });
   const image = sanitizeText(row.image_url, { maxLength: 500 });
   const imageThumbnail = sanitizeText(row.image_thumbnail_url, { maxLength: 500 });
-  if (!name || price <= 0 || !externalId || !sku || !image || !imageThumbnail) return null;
+  if (!name || (!pricePending && price <= 0) || !externalId || !sku || !image || !imageThumbnail) return null;
 
   const categoryName = sanitizeText(row.category, { fallback: 'Otros', maxLength: 80 });
   const variant = sanitizeText(row.variant, { maxLength: 100 });
@@ -1376,7 +1667,9 @@ function rowToCatalogProduct(row = {}) {
     sourceImageSha256: sanitizeText(row.source_image_sha256, { maxLength: 64 }),
     price,
     stock,
-    available: Boolean(row.available) && stock > 0,
+    available: Boolean(row.available) && stock > 0 && !pricePending,
+    pricePending,
+    priceStatus: pricePending ? 'pending' : 'confirmed',
     alcoholic: Boolean(row.is_alcoholic),
     minimumAge,
     tags,
@@ -1391,8 +1684,14 @@ function rowToCatalogProduct(row = {}) {
   };
 }
 
-function mirrorOrders(rows, { replace = false } = {}) {
+function mirrorOrders(rows, {
+  replace = false,
+  preservePublicTrackingIds = [],
+} = {}) {
   const normalizedOrders = rows.map(rowToDemoOrder).filter(Boolean);
+  const preservedIds = new Set(
+    preservePublicTrackingIds.map((value) => String(value || '').trim()).filter(Boolean),
+  );
   let orders = normalizedOrders;
   updateState((draft) => {
     const currentLastOrderId = draft.lastOrderId;
@@ -1414,7 +1713,14 @@ function mirrorOrders(rows, { replace = false } = {}) {
       };
     });
     if (replace) {
-      draft.orders = orders;
+      const refreshedKeys = new Set(orders.flatMap((order) => [order.id, order.backendId]).filter(Boolean));
+      const preservedTerminalShells = draft.orders.filter((order) => (
+        order.publicTrackingOnly === true
+        && [order.id, order.code, order.backendId].filter(Boolean).map(String)
+          .some((candidate) => preservedIds.has(candidate))
+        && ![order.id, order.backendId].filter(Boolean).some((candidate) => refreshedKeys.has(candidate))
+      ));
+      draft.orders = [...orders, ...preservedTerminalShells];
     } else {
       const keys = new Set(orders.flatMap((order) => [order.id, order.backendId]).filter(Boolean));
       draft.orders = [
@@ -2292,6 +2598,20 @@ function slugifyCategory(value) {
     .replace(/^-+|-+$/g, '')
     .slice(0, 40);
   return slug || 'otros';
+}
+
+function trustedMercadoPagoCheckoutUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    const host = url.hostname.toLowerCase();
+    const trusted = host === 'mercadopago.com'
+      || host.endsWith('.mercadopago.com')
+      || host === 'mercadopago.com.ar'
+      || host.endsWith('.mercadopago.com.ar');
+    return url.protocol === 'https:' && trusted ? url.toString() : '';
+  } catch (_) {
+    return '';
+  }
 }
 
 function sanitizeChannelName(value) {

@@ -48,6 +48,9 @@ let inventoryRepository = null;
 let posRepository = null;
 let fiscalRepository = null;
 let packingRepository = null;
+let businessPayments = [];
+let businessPaymentsStatus = { phase: 'idle', message: '' };
+let paymentRefreshTimer = null;
 let access = {
   status: 'signed_out',
   user: null,
@@ -203,6 +206,77 @@ export async function handleProductionOperationsAction(target) {
     return { handled: true, ok: true, message: '' };
   }
 
+  const paymentReconcile = target.closest('[data-production-payment-reconcile]');
+  if (paymentReconcile) {
+    const guard = requirePaymentAdminAccess();
+    if (!guard.ok) return { handled: true, ...guard };
+    const result = await repository.reconcileMercadoPagoPayment(
+      paymentReconcile.dataset.productionPaymentReconcile,
+    );
+    await refreshBusinessPayments();
+    notify();
+    return { handled: true, ...result };
+  }
+
+  const paymentRefund = target.closest('[data-production-payment-refund]');
+  if (paymentRefund) {
+    const guard = requirePaymentAdminAccess();
+    if (!guard.ok) return { handled: true, ...guard };
+    const amountInput = globalThis.prompt?.(
+      'Importe a reembolsar en ARS. Dejá vacío para solicitar el total autorizado.',
+      '',
+    );
+    if (amountInput === null) return { handled: true, ok: false, message: 'Reembolso no solicitado.' };
+    const confirmation = globalThis.prompt?.(
+      'Para solicitar el reembolso en Mercado Pago, escribí exactamente: I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_REFUND',
+      '',
+    ) || '';
+    const amount = String(amountInput).trim() === '' ? null : Number(String(amountInput).replace(',', '.'));
+    const result = await repository.requestMercadoPagoRefund({
+      paymentIntentId: paymentRefund.dataset.productionPaymentRefund,
+      amount,
+      confirmation,
+    });
+    await refreshBusinessPayments();
+    notify();
+    return { handled: true, ...result };
+  }
+
+  const paymentCancel = target.closest('[data-production-payment-cancel]');
+  if (paymentCancel) {
+    const guard = requirePaymentAdminAccess();
+    if (!guard.ok) return { handled: true, ...guard };
+    const confirmation = globalThis.prompt?.(
+      'Para solicitar la cancelación en Mercado Pago, escribí exactamente: I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_CANCELLATION',
+      '',
+    ) || '';
+    const result = await repository.requestMercadoPagoCancellation({
+      paymentIntentId: paymentCancel.dataset.productionPaymentCancel,
+      confirmation,
+    });
+    await refreshBusinessPayments();
+    notify();
+    return { handled: true, ...result };
+  }
+
+  const paymentDispute = target.closest('[data-production-payment-dispute]');
+  if (paymentDispute) {
+    const guard = requirePaymentAdminAccess();
+    if (!guard.ok) return { handled: true, ...guard };
+    const row = businessPayments.find((payment) => (
+      String(payment.payment_intent_id) === String(paymentDispute.dataset.productionPaymentDispute)
+    ));
+    return {
+      handled: true,
+      ok: Boolean(row?.dispute_type),
+      message: row?.documentation_required
+        ? 'La disputa requiere documentación. Conservá evidencia y seguí el procedimiento de contracargos.'
+        : row?.dispute_type
+          ? `Disputa ${row.dispute_type}: ${row.dispute_status || 'en revisión'}.`
+          : 'No hay una disputa abierta para este pago.',
+    };
+  }
+
   const businessNext = target.closest('[data-production-business-next]');
   if (businessNext) {
     const guard = requireViewAccess('business');
@@ -347,6 +421,16 @@ export function isRoleAuthorizedForView(role, view) {
   return false;
 }
 
+function requirePaymentAdminAccess() {
+  if (
+    access.status !== 'authenticated'
+    || !['owner', 'admin'].includes(access.membership?.role)
+  ) {
+    return { ok: false, message: 'Sólo owner o administrador puede operar pagos.' };
+  }
+  return { ok: true };
+}
+
 export function nextBusinessStatus(order = {}) {
   const current = workflowStatus(order);
   if (current === 'submitted') return 'accepted';
@@ -389,6 +473,7 @@ export function resetProductionOperationsForTests() {
   stopBusinessIntake();
   stopBusinessCommandRuntime();
   resetBusinessOperationsForTests();
+  stopPaymentRefresh();
   gpsController?.destroy();
   gpsController = null;
   authStop?.();
@@ -407,6 +492,8 @@ export function resetProductionOperationsForTests() {
   fiscalRepository = null;
   packingRepository = null;
   businessIntakeStatus = emptyBusinessIntakeStatus();
+  businessPayments = [];
+  businessPaymentsStatus = { phase: 'idle', message: '' };
   gpsShare = emptyGpsShare();
   access = {
     status: 'signed_out',
@@ -451,6 +538,9 @@ async function refreshProductionAccess() {
 function clearProductionOrders() {
   availableRiderOrders = [];
   activeBusinessRiders = [];
+  businessPayments = [];
+  businessPaymentsStatus = { phase: 'idle', message: '' };
+  stopPaymentRefresh();
   updateState((draft) => {
     draft.orders = [];
     draft.lastOrderId = null;
@@ -494,6 +584,14 @@ async function activateAuthorizedAccess(result, expectedSequence = null) {
     membership: result.membership,
     message: '',
   };
+  if (['owner', 'admin'].includes(access.membership?.role)) {
+    await refreshBusinessPayments();
+    startPaymentRefresh();
+  } else {
+    businessPayments = [];
+    businessPaymentsStatus = { phase: 'idle', message: '' };
+    stopPaymentRefresh();
+  }
   notify();
 }
 
@@ -642,6 +740,36 @@ async function sendBusinessCommand(command) {
     };
 }
 
+async function refreshBusinessPayments() {
+  if (!['owner', 'admin'].includes(access.membership?.role)) return;
+  if (typeof repository?.listMercadoPagoBusinessPayments !== 'function') {
+    businessPayments = [];
+    businessPaymentsStatus = { phase: 'error', message: 'El repositorio no ofrece monitoreo de pagos.' };
+    return;
+  }
+  businessPaymentsStatus = { phase: 'loading', message: '' };
+  const result = await repository.listMercadoPagoBusinessPayments();
+  if (!result?.ok) {
+    businessPayments = [];
+    businessPaymentsStatus = { phase: 'error', message: result?.message || 'No pudimos cargar los pagos.' };
+    return;
+  }
+  businessPayments = Array.isArray(result.payments) ? result.payments : [];
+  businessPaymentsStatus = { phase: 'ready', message: '' };
+}
+
+function startPaymentRefresh() {
+  stopPaymentRefresh();
+  paymentRefreshTimer = globalThis.setInterval?.(() => {
+    refreshBusinessPayments().then(notify).catch(() => {});
+  }, 15_000) || null;
+}
+
+function stopPaymentRefresh() {
+  if (paymentRefreshTimer !== null) globalThis.clearInterval?.(paymentRefreshTimer);
+  paymentRefreshTimer = null;
+}
+
 function emptyBusinessIntakeStatus() {
   return {
     phase: 'idle',
@@ -686,6 +814,9 @@ function renderAccessSurface(view) {
 }
 
 function businessWorkspaceMarkup() {
+  const paymentMonitor = ['owner', 'admin'].includes(access.membership?.role)
+    ? businessPaymentsMarkup()
+    : '';
   const orders = getState().orders;
   const rows = orders.length
     ? orders.map(businessOrderMarkup).join('')
@@ -710,6 +841,7 @@ function businessWorkspaceMarkup() {
         <button type="button" class="business-ops-nav-button ${businessOperationsView === view ? 'active' : ''}" data-business-ops-view="${view}">${escapeHtml({ scanner: 'Escáner', 'inventory-receive': 'Inventario', packing: 'Preparación', pos: 'Mostrador', 'fiscal-status': 'Fiscal', 'fiscal-config': 'Configuración' }[view])}</button>`).join('')}
     </nav>
     ${operations}
+    ${paymentMonitor}
   `;
 }
 
@@ -724,6 +856,84 @@ function businessCommandStatusMarkup() {
     <span>${status.pendingCount} comando${status.pendingCount === 1 ? '' : 's'} pendiente${status.pendingCount === 1 ? '' : 's'}</span>
     ${attention ? `<span class="production-intake-error">${attention} requiere${attention === 1 ? '' : 'n'} intervención</span>` : ''}
   </div>`;
+}
+
+function businessPaymentsMarkup() {
+  const body = businessPayments.length
+    ? businessPayments.map(businessPaymentMarkup).join('')
+    : businessPaymentsStatus.phase === 'loading'
+      ? '<p class="form-hint">Cargando pagos verificados…</p>'
+      : businessPaymentsStatus.phase === 'error'
+        ? `<p class="production-intake-error">${escapeHtml(businessPaymentsStatus.message)}</p>`
+        : '<p class="form-hint">Todavía no hay pagos de Mercado Pago para mostrar.</p>';
+  return `
+    <section class="production-payments-section" aria-labelledby="production-payments-title">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Operación financiera</p>
+          <h2 id="production-payments-title">Pagos</h2>
+        </div>
+        <span class="form-hint">Sólo owner y admin</span>
+      </div>
+      <div class="production-payment-list" aria-live="polite">${body}</div>
+    </section>
+  `;
+}
+
+function businessPaymentMarkup(payment) {
+  const status = paymentStatusLabel(payment);
+  const order = payment.order_public_code || 'Sin pedido operativo';
+  const method = payment.method || 'Mercado Pago';
+  const provider = [payment.provider_status, payment.provider_status_detail].filter(Boolean).join(' · ') || 'Sin actualización';
+  const actions = [
+    payment.can_reconcile
+      ? `<button class="ghost-button compact" type="button" data-production-payment-reconcile="${escapeAttribute(payment.payment_intent_id)}">Reconciliar</button>`
+      : '',
+    payment.can_refund
+      ? `<button class="ghost-button compact" type="button" data-production-payment-refund="${escapeAttribute(payment.payment_intent_id)}">Solicitar refund</button>`
+      : '',
+    payment.can_cancel
+      ? `<button class="ghost-button compact" type="button" data-production-payment-cancel="${escapeAttribute(payment.payment_intent_id)}">Cancelar pago</button>`
+      : '',
+    payment.dispute_type
+      ? `<button class="ghost-button compact" type="button" data-production-payment-dispute="${escapeAttribute(payment.payment_intent_id)}">Ver disputa</button>`
+      : '',
+  ].filter(Boolean).join('');
+  return `
+    <article class="production-payment-card">
+      <div class="production-order-head">
+        <div>
+          <span class="production-order-code">${escapeHtml(order)}</span>
+          <strong>${escapeHtml(status)}</strong>
+        </div>
+        <span class="status-pill ${escapeAttribute(paymentStatusClass(payment))}">${escapeHtml(payment.internal_status || 'sin estado')}</span>
+      </div>
+      <dl class="production-order-meta">
+        <div><dt>Importe</dt><dd>${escapeHtml(formatOrderMoney(payment.amount, payment.currency))}</dd></div>
+        <div><dt>Método</dt><dd>${escapeHtml(method)}</dd></div>
+        <div><dt>Estado Mercado Pago</dt><dd>${escapeHtml(provider)}</dd></div>
+        <div><dt>Fecha</dt><dd>${escapeHtml(dateTime(payment.approved_at || payment.created_at))}</dd></div>
+        <div><dt>Pago</dt><dd>${escapeHtml(payment.payment_id_short ? `••••${payment.payment_id_short}` : 'Aún sin ID')}</dd></div>
+        <div><dt>Refund</dt><dd>${escapeHtml(payment.latest_refund_status || (Number(payment.refunded_amount) > 0 ? 'registrado' : 'sin refund'))}</dd></div>
+      </dl>
+      ${payment.documentation_required ? '<p class="production-intake-error">Requiere documentación para la disputa.</p>' : ''}
+      ${actions ? `<div class="button-row">${actions}</div>` : '<p class="form-hint">No hay acciones compatibles con el estado actual.</p>'}
+    </article>
+  `;
+}
+
+function paymentStatusLabel(payment) {
+  if (payment.dispute_type === 'chargeback' && !payment.dispute_status?.match(/resolved|closed/i)) return 'Contracargo abierto';
+  if (payment.documentation_required) return 'Requiere documentación';
+  if (['security_review_required', 'ambiguous'].includes(payment.internal_status)) return 'Pago en revisión';
+  return payment.internal_status || 'Pago sin estado';
+}
+
+function paymentStatusClass(payment) {
+  if (payment.dispute_type === 'chargeback') return 'canceled';
+  if (['security_review_required', 'ambiguous'].includes(payment.internal_status)) return 'received';
+  if (payment.internal_status === 'completed') return 'delivered';
+  return 'submitted';
 }
 
 function businessIntakeStatusMarkup() {

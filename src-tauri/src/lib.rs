@@ -1,12 +1,16 @@
+mod fiscal_printing;
 mod outbox;
 mod printing;
 
 use outbox::LocalCommand;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Mutex,
+use std::{
+    path::Path,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Mutex,
+    },
 };
 use tauri::{
     menu::{Menu, MenuItem},
@@ -19,6 +23,7 @@ use tauri_plugin_notification::NotificationExt;
 struct DesktopState {
     database: Mutex<Connection>,
     database_path: String,
+    fiscal_spool_directory: String,
     muted: AtomicBool,
     explicit_exit: AtomicBool,
 }
@@ -155,6 +160,33 @@ fn print_document(request: printing::PrintRequest) -> Result<bool, String> {
 }
 
 #[tauri::command]
+fn queue_fiscal_print(
+    state: State<'_, DesktopState>,
+    request: fiscal_printing::FiscalPrintRequest,
+) -> Result<fiscal_printing::FiscalPrintOutcome, String> {
+    let spool_directory = state.fiscal_spool_directory.clone();
+    let job = {
+        let connection = state
+            .database
+            .lock()
+            .map_err(|_| "Persistencia local ocupada.".to_string())?;
+        fiscal_printing::enqueue(&connection, Path::new(&spool_directory), &request)?
+    };
+    let outcome = fiscal_printing::dispatch(Path::new(&spool_directory), &job, &request);
+    let connection = state
+        .database
+        .lock()
+        .map_err(|_| "Persistencia local ocupada.".to_string())?;
+    fiscal_printing::record_outcome(&connection, &request.print_job_id, &outcome)?;
+    Ok(outcome)
+}
+
+#[tauri::command]
+fn open_fiscal_cache_folder(state: State<'_, DesktopState>) -> Result<bool, String> {
+    fiscal_printing::open_spool_directory(Path::new(&state.fiscal_spool_directory))
+}
+
+#[tauri::command]
 fn exit_application(app: AppHandle, state: State<'_, DesktopState>) -> bool {
     state.explicit_exit.store(true, Ordering::Relaxed);
     app.exit(0);
@@ -244,11 +276,15 @@ pub fn run() {
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
             let database_path = data_dir.join("taba-negocio.sqlite3");
+            let fiscal_spool_directory = data_dir.join("fiscal-spool");
             let database = Connection::open(&database_path)?;
             outbox::migrate(&database).map_err(std::io::Error::other)?;
+            fiscal_printing::migrate(&database).map_err(std::io::Error::other)?;
+            std::fs::create_dir_all(&fiscal_spool_directory)?;
             app.manage(DesktopState {
                 database: Mutex::new(database),
                 database_path: database_path.to_string_lossy().into_owned(),
+                fiscal_spool_directory: fiscal_spool_directory.to_string_lossy().into_owned(),
                 muted: AtomicBool::new(false),
                 explicit_exit: AtomicBool::new(false),
             });
@@ -275,6 +311,8 @@ pub fn run() {
             set_autostart_enabled,
             list_printers,
             print_document,
+            queue_fiscal_print,
+            open_fiscal_cache_folder,
             exit_application
         ])
         .build(tauri::generate_context!())

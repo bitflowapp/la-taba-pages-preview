@@ -34,6 +34,15 @@
 .business-status.success { background: #e4f6e9; color: #175f2c; }
 .business-status.warning { background: #fff0c8; color: #6d4c00; }
 .business-status.danger { background: #ffe2e4; color: #8b151d; }
+.business-fiscal-actions, .business-fiscal-credit, .business-fiscal-preview { display: grid; gap: 10px; grid-column: 1 / -1; }
+.business-fiscal-print { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-column: 1 / -1; }
+.business-fiscal-credit { border: 1px solid #e7e9ec; border-radius: 10px; padding: 10px; }
+.business-fiscal-credit-line { display: grid; grid-template-columns: minmax(180px, 1fr) repeat(3, minmax(100px, 1fr)); gap: 8px; align-items: end; }
+.business-fiscal-credit-line label { display: grid; gap: 4px; font-size: .8rem; }
+.business-fiscal-hash { color: #53606c; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .78rem; }
+.business-fiscal-error { color: #8b151d !important; grid-column: 1 / -1; }
+.business-fiscal-preview { border: 1px solid #d6dde5; border-radius: 12px; padding: 12px; margin: 14px 0; }
+.business-fiscal-preview iframe { width: 100%; min-height: 540px; border: 1px solid #d6dde5; border-radius: 8px; background: #fff; }
 .production-operations-shortcuts { display: flex; gap: 8px; overflow-x: auto; margin: 4px 0 18px; padding-bottom: 8px; }
 .production-command-status { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: #5a626d; font-size: .86rem; }
 .production-command-status strong { color: #262b31; }
@@ -41,7 +50,7 @@
 .production-cancel-control { flex: 1 1 190px; }
 .production-cancel-control input { min-height: 42px; width: 100%; border: 1px solid #bdc3cb; border-radius: 9px; padding: 8px 10px; font: inherit; }
 @media (max-width: 720px) {
-  .business-scanner-input, .business-ops-form, .business-scan-result dl { grid-template-columns: 1fr; }
+  .business-scanner-input, .business-ops-form, .business-fiscal-print, .business-scan-result dl, .business-fiscal-credit-line { grid-template-columns: 1fr; }
   .business-fiscal-row { grid-template-columns: 1fr; }
 }
 

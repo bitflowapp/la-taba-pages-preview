@@ -543,6 +543,7 @@ async function configureBusinessRuntime(result) {
   posRepository = createSupabasePosRepository({ client, businessId });
   fiscalRepository = createSupabaseFiscalRepository({ client, businessId });
   packingRepository = createSupabasePackingRepository({ client });
+  const desktopPlatform = createBusinessPlatform();
   configureBusinessOperations({
     operatorId,
     getOrders: () => getState().orders,
@@ -554,7 +555,13 @@ async function configureBusinessRuntime(result) {
     getFiscalProfile: () => fiscalRepository.getProfile(),
     listFiscalDocuments: () => fiscalRepository.listDocuments(),
     configureFiscalProfile: (profile) => fiscalRepository.configureProfile(profile),
-    requestCreditNote: (input) => fiscalRepository.requestFullCreditNote(input),
+    requestCreditNote: (input) => fiscalRepository.requestCreditNote(input),
+    listFiscalArtifacts: () => fiscalRepository.listArtifacts(),
+    requestFiscalArtifactUrl: (input) => fiscalRepository.requestArtifactUrl(input),
+    regenerateFiscalArtifact: (fiscalDocumentId) => fiscalRepository.regenerateArtifact(fiscalDocumentId),
+    requestFiscalPrintJob: (input) => fiscalRepository.requestPrintJob(input),
+    updateFiscalPrintJob: (input) => fiscalRepository.updatePrintJob(input),
+    desktopPlatform,
     startPacking: (input) => packingRepository.start(input),
     recordPackingScan: ({ session, event }) => packingRepository.scan({
       sessionId: session.serverSessionId,
@@ -570,7 +577,7 @@ async function configureBusinessRuntime(result) {
   });
 
   businessCommandController = createBusinessPanelController({
-    platform: createBusinessPlatform(),
+    platform: desktopPlatform,
     reconcileCommand: reconcileBusinessCommand,
     sendCommand: sendBusinessCommand,
     onChange: (snapshot) => {

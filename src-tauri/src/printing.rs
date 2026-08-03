@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,15 +33,41 @@ pub fn validate_print_request(request: &PrintRequest) -> Result<(), String> {
     Ok(())
 }
 
+pub fn validate_pdf_print_request(
+    path: &Path,
+    printer_name: &str,
+    title: &str,
+    copies: u8,
+) -> Result<(), String> {
+    if printer_name.trim().is_empty()
+        || printer_name.len() > 260
+        || title.trim().is_empty()
+        || title.len() > 120
+        || !(1..=5).contains(&copies)
+    {
+        return Err("Solicitud de impresión PDF inválida.".into());
+    }
+    let metadata = std::fs::metadata(path)
+        .map_err(|_| "El PDF fiscal local no está disponible.".to_string())?;
+    if metadata.len() == 0
+        || metadata.len() > 16_777_216
+        || path.extension().and_then(|value| value.to_str()) != Some("pdf")
+    {
+        return Err("El PDF fiscal local no es válido.".into());
+    }
+    Ok(())
+}
+
 #[cfg(windows)]
 mod windows_printing {
-    use super::{validate_print_request, PrintRequest, PrinterInfo};
-    use std::{ffi::c_void, ptr};
+    use super::{validate_pdf_print_request, validate_print_request, PrintRequest, PrinterInfo};
+    use std::{ffi::c_void, path::Path, ptr};
     use windows_sys::Win32::Graphics::Printing::{
         ClosePrinter, EndDocPrinter, EndPagePrinter, EnumPrintersW, OpenPrinterW, StartDocPrinterW,
         StartPagePrinter, WritePrinter, DOC_INFO_1W, PRINTER_ENUM_CONNECTIONS, PRINTER_ENUM_LOCAL,
         PRINTER_HANDLE, PRINTER_INFO_4W,
     };
+    use windows_sys::Win32::UI::Shell::ShellExecuteW;
 
     pub fn list_printers() -> Result<Vec<PrinterInfo>, String> {
         let mut needed = 0_u32;
@@ -141,6 +168,34 @@ mod windows_printing {
         Ok(())
     }
 
+    pub fn print_pdf(
+        path: &Path,
+        printer_name: &str,
+        title: &str,
+        copies: u8,
+    ) -> Result<(), String> {
+        validate_pdf_print_request(path, printer_name, title, copies)?;
+        let operation = wide("printto");
+        let file_name = wide(&path.to_string_lossy());
+        let printer = wide(printer_name);
+        for _ in 0..copies {
+            let result = unsafe {
+                ShellExecuteW(
+                    ptr::null_mut(),
+                    operation.as_ptr(),
+                    file_name.as_ptr(),
+                    printer.as_ptr(),
+                    ptr::null(),
+                    0,
+                )
+            };
+            if result as isize <= 32 {
+                return Err("Windows no pudo entregar el PDF al controlador de impresión.".into());
+            }
+        }
+        Ok(())
+    }
+
     fn wide(value: &str) -> Vec<u16> {
         value.encode_utf16().chain(std::iter::once(0)).collect()
     }
@@ -165,7 +220,7 @@ mod windows_printing {
 }
 
 #[cfg(windows)]
-pub use windows_printing::{list_printers, print};
+pub use windows_printing::{list_printers, print, print_pdf};
 
 #[cfg(not(windows))]
 pub fn list_printers() -> Result<Vec<PrinterInfo>, String> {
@@ -176,6 +231,12 @@ pub fn list_printers() -> Result<Vec<PrinterInfo>, String> {
 pub fn print(request: &PrintRequest) -> Result<(), String> {
     validate_print_request(request)?;
     Err("La impresión nativa de esta entrega está disponible únicamente en Windows.".into())
+}
+
+#[cfg(not(windows))]
+pub fn print_pdf(path: &Path, printer_name: &str, title: &str, copies: u8) -> Result<(), String> {
+    validate_pdf_print_request(path, printer_name, title, copies)?;
+    Err("La impresión PDF nativa de esta entrega está disponible únicamente en Windows.".into())
 }
 
 #[cfg(test)]

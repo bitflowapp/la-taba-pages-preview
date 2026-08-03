@@ -31,6 +31,9 @@ let busy = false;
 let posItems = [];
 let fiscalProfile = null;
 let fiscalDocuments = [];
+let fiscalArtifacts = [];
+let fiscalPreview = null;
+let fiscalPrinters = [];
 let fiscalInitialRefreshStarted = false;
 let packingSession = null;
 let productDraft = null;
@@ -139,6 +142,20 @@ export async function handleBusinessOperationsAction(target) {
     await refreshFiscal();
     return result(true, 'Estado fiscal actualizado.');
   }
+  if (target.closest('[data-fiscal-preview-close]')) {
+    fiscalPreview = null;
+    context.onChange();
+    return result(true, 'Vista previa cerrada.');
+  }
+  const preview = target.closest('[data-fiscal-preview]');
+  if (preview) return previewFiscalArtifact(preview);
+  const download = target.closest('[data-fiscal-download]');
+  if (download) return downloadFiscalArtifact(download);
+  const print = target.closest('[data-fiscal-print]');
+  if (print) return printFiscalArtifact(print);
+  const regenerate = target.closest('[data-fiscal-regenerate]');
+  if (regenerate) return regenerateFiscalArtifact(regenerate);
+  if (target.closest('[data-fiscal-open-cache]')) return openFiscalCacheFolder();
   if (target.closest('[data-fiscal-config-save]')) return saveFiscalConfiguration(target);
   const creditNote = target.closest('[data-fiscal-credit-note]');
   if (creditNote) return requestCreditNote(creditNote);
@@ -159,6 +176,9 @@ export function resetBusinessOperationsForTests() {
   posItems = [];
   fiscalProfile = null;
   fiscalDocuments = [];
+  fiscalArtifacts = [];
+  fiscalPreview = null;
+  fiscalPrinters = [];
   fiscalInitialRefreshStarted = false;
   packingSession = null;
   productDraft = null;
@@ -346,10 +366,21 @@ async function confirmPacking(target) {
 }
 
 async function refreshFiscal() {
-  const [profile, documents] = await Promise.all([context.getFiscalProfile(), context.listFiscalDocuments()]);
+  const [profile, documents, artifacts] = await Promise.all([context.getFiscalProfile(), context.listFiscalDocuments(), context.listFiscalArtifacts()]);
   fiscalProfile = profile?.ok ? profile.data : null;
   fiscalDocuments = documents?.ok && Array.isArray(documents.data) ? documents.data : [];
+  fiscalArtifacts = artifacts?.ok && Array.isArray(artifacts.data) ? artifacts.data : [];
+  await refreshFiscalPrinters();
   context.onChange();
+}
+
+async function refreshFiscalPrinters() {
+  try {
+    const printers = await context.desktopPlatform.listPrinters();
+    fiscalPrinters = Array.isArray(printers) ? printers.filter((printer) => printer?.name) : [];
+  } catch (_) {
+    fiscalPrinters = [];
+  }
 }
 
 async function saveFiscalConfiguration(target) {
@@ -364,6 +395,7 @@ async function saveFiscalConfiguration(target) {
     default_currency: 'PES',
     default_concept: 1,
     invoice_policy: 'manual',
+    default_recipient_condition: String(root?.querySelector('[name="defaultRecipientCondition"]')?.value || '').trim(),
     is_enabled: false,
   };
   if (!/^\d{11}$/.test(profile.cuit) || !profile.legal_name || !profile.tax_condition || !profile.business_address || profile.point_of_sale < 1) {
@@ -376,16 +408,131 @@ async function saveFiscalConfiguration(target) {
 }
 
 async function requestCreditNote(button) {
-  const reason = String(button.closest('[data-fiscal-document]')?.querySelector('[name="creditReason"]')?.value || '').trim();
+  const row = button.closest('[data-fiscal-document]');
+  const reason = String(row?.querySelector('[name="creditReason"]')?.value || '').trim();
+  const creditKind = String(row?.querySelector('[name="creditKind"]')?.value || 'total');
   if (!reason) return result(false, 'La nota de crédito requiere un motivo.');
+  const lines = creditKind === 'total' ? [] : [...(row?.querySelectorAll('[data-credit-line]') || [])]
+    .map((line) => {
+      const quantity = Number(line.querySelector('[name="creditQuantity"]')?.value || 0);
+      const input = { original_item_id: line.dataset.creditLine, quantity };
+      if (creditKind === 'commercial_adjustment') {
+        input.net_amount = Number(line.querySelector('[name="creditNet"]')?.value || 0);
+        input.tax_amount = Number(line.querySelector('[name="creditTax"]')?.value || 0);
+      }
+      return input;
+    })
+    .filter((line) => line.quantity > 0);
+  if (creditKind !== 'total' && !lines.length) return result(false, 'Indicá al menos un ítem y cantidad para la nota parcial.');
   const response = await context.requestCreditNote({
     originalDocumentId: button.dataset.fiscalCreditNote,
     reason,
+    creditKind,
+    lines,
     idempotencyKey: createKey('credit-note'),
   });
-  feedback = response?.ok ? 'Nota de crédito completa solicitada.' : response?.message || 'La solicitud requiere revisión.';
+  feedback = response?.ok ? 'Nota de crédito solicitada; ARCA la procesará de forma idempotente.' : fiscalMessage(response, 'La solicitud requiere revisión.');
   context.onChange();
   return result(Boolean(response?.ok), feedback);
+}
+
+async function previewFiscalArtifact(button) {
+  const access = await context.requestFiscalArtifactUrl({ artifactId: button.dataset.fiscalPreview, action: 'preview' });
+  if (!access?.ok) return result(false, fiscalMessage(access, 'No se pudo abrir la vista previa privada.'));
+  fiscalPreview = { artifactId: button.dataset.fiscalPreview, signedUrl: access.data.signedUrl, expiresAt: access.data.expiresAt || null };
+  feedback = 'Vista previa privada abierta. El enlace vence en breve.';
+  context.onChange();
+  return result(true, feedback);
+}
+
+async function downloadFiscalArtifact(button) {
+  const access = await context.requestFiscalArtifactUrl({ artifactId: button.dataset.fiscalDownload, action: 'download' });
+  if (!access?.ok) return result(false, fiscalMessage(access, 'No se pudo preparar la descarga privada.'));
+  const anchor = globalThis.document?.createElement?.('a');
+  if (!anchor) return result(false, 'La descarga privada requiere una ventana del panel.');
+  anchor.href = access.data.signedUrl;
+  anchor.download = `comprobante-fiscal-${button.dataset.fiscalDocument || 'autorizado'}.pdf`;
+  anchor.rel = 'noreferrer';
+  anchor.style.display = 'none';
+  globalThis.document.body?.append(anchor);
+  anchor.click();
+  anchor.remove();
+  feedback = 'Descarga privada iniciada. Si el enlace vence, solicitá uno nuevo.';
+  context.onChange();
+  return result(true, feedback);
+}
+
+async function regenerateFiscalArtifact(button) {
+  const response = await context.regenerateFiscalArtifact(button.dataset.fiscalRegenerate);
+  feedback = response?.ok ? 'Regeneración auditada en cola; el PDF actual se conserva hasta que el nuevo esté listo.' : fiscalMessage(response, 'No tenés permiso para regenerar este documento.');
+  if (response?.ok) await refreshFiscal();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function openFiscalCacheFolder() {
+  try {
+    await context.desktopPlatform.openFiscalCacheFolder();
+    return result(true, 'Se abrió únicamente la caché local autorizada.');
+  } catch (error) {
+    return result(false, error?.message || 'La caché local sólo está disponible en Windows.');
+  }
+}
+
+async function printFiscalArtifact(button) {
+  const row = button.closest('article[data-fiscal-document]');
+  const printerName = String(row?.querySelector('[name="fiscalPrinter"]')?.value || '').trim();
+  const format = String(row?.querySelector('[name="fiscalPrintFormat"]')?.value || 'a4');
+  const copies = Number(row?.querySelector('[name="fiscalPrintCopies"]')?.value || 1);
+  if (!printerName || !['a4', 'thermal'].includes(format) || !Number.isSafeInteger(copies) || copies < 1 || copies > 5) {
+    return result(false, 'Seleccioná impresora, formato y entre una y cinco copias.');
+  }
+  const confirmed = typeof globalThis.confirm === 'function'
+    ? globalThis.confirm(`Enviar ${copies} copia(s) ${format === 'a4' ? 'A4' : 'térmica(s)'} a ${printerName}?`)
+    : true;
+  if (!confirmed) return result(false, 'Impresión cancelada antes de enviar al spooler.');
+  const artifactId = button.dataset.fiscalPrint;
+  const printerNameHash = await sha256Text(printerName);
+  if (!printerNameHash) return result(false, 'No se pudo proteger el identificador local de impresora.');
+  const requested = await context.requestFiscalPrintJob({
+    fiscalDocumentId: button.dataset.fiscalDocument,
+    artifactId,
+    printerNameHash,
+    format,
+    copies,
+    idempotencyKey: createKey('fiscal-print'),
+  });
+  if (!requested?.ok) return result(false, fiscalMessage(requested, 'No se pudo auditar la solicitud de impresión.'));
+  const printJobId = requested.data?.print_job_id;
+  const access = await context.requestFiscalArtifactUrl({ artifactId, action: 'print' });
+  if (!access?.ok) {
+    await context.updateFiscalPrintJob({ printJobId, status: 'failed', errorCode: 'PRIVATE_ACCESS_FAILED' });
+    return result(false, fiscalMessage(access, 'No se pudo recuperar el PDF privado para imprimir.'));
+  }
+  try {
+    const response = await fetch(access.data.signedUrl, { cache: 'no-store', credentials: 'omit', redirect: 'error' });
+    if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? 'El enlace privado venció; solicitá una nueva impresión.' : 'No se pudo descargar el PDF privado.');
+    const pdf = new Uint8Array(await response.arrayBuffer());
+    const outcome = await context.desktopPlatform.queueFiscalPrint({
+      printJobId,
+      fiscalDocumentId: button.dataset.fiscalDocument,
+      artifactId,
+      printerName,
+      printerNameHash,
+      format,
+      copies,
+      title: fiscalPrintTitle(row),
+      pdfBase64: bytesToBase64(pdf),
+      thermalContent: format === 'thermal' ? thermalContent(row) : '',
+    });
+    await context.updateFiscalPrintJob({ printJobId, status: outcome?.status || 'unknown', errorCode: outcome?.errorCode || null });
+    feedback = printOutcomeMessage(outcome?.status);
+    context.onChange();
+    return result(true, feedback);
+  } catch (error) {
+    await context.updateFiscalPrintJob({ printJobId, status: 'failed', errorCode: 'LOCAL_SPOOL_FAILED' });
+    return result(false, error?.message || 'La impresora no aceptó el trabajo.');
+  }
 }
 
 function renderNavigation() {
@@ -417,15 +564,37 @@ function renderPos() {
   return panel('Venta de mostrador', 'El servidor revalora precios y stock; el cliente envía sólo IDs y cantidades.', `${scannerInput()}${renderScanResult()}<ul class="business-ops-cart">${items}</ul><div class="business-ops-form"><label>Medio de pago<select name="paymentMethod"><option value="cash">Efectivo</option><option value="debit_card">Débito</option><option value="credit_card">Crédito</option><option value="transfer">Transferencia</option><option value="qr">QR</option></select></label><label class="business-ops-check"><input name="requestFiscal" type="checkbox"> Solicitar comprobante fiscal</label><div class="button-row"><button class="primary-button" type="button" data-pos-checkout>Confirmar venta</button><button class="ghost-button" type="button" data-pos-clear>Vaciar borrador</button></div></div>`);
 }
 function renderFiscalStatus() {
-  const rows = fiscalDocuments.length ? fiscalDocuments.map((document) => {
-    const status = presentFiscalStatus(document);
-    return `<article class="business-fiscal-row" data-fiscal-document="${escapeHtml(document.id)}"><div><strong>${escapeHtml(status.label)}</strong><small>${escapeHtml(document.document_type || document.document_intent || 'Comprobante')} ${document.document_number || ''}</small></div><span class="business-status ${status.tone}">${escapeHtml(document.state || '')}</span>${document.state === 'authorized' ? `<label>Motivo para nota de crédito<input name="creditReason" maxlength="160"></label><button class="ghost-button compact" type="button" data-fiscal-credit-note="${escapeHtml(document.id)}">Nota de crédito total</button>` : ''}</article>`;
-  }).join('') : '<div class="empty-state"><strong>Sin comprobantes</strong><p>No se inventan autorizaciones ni CAE.</p></div>';
-  return panel('Estado fiscal', 'Autorizado sólo cuando ARCA devolvió CAE válido.', `<button class="secondary-button compact" type="button" data-fiscal-refresh>Actualizar</button>${rows}`);
+  const rows = fiscalDocuments.length ? fiscalDocuments.map((document) => renderFiscalDocument(document)).join('') : '<div class="empty-state"><strong>Sin comprobantes</strong><p>No se inventan autorizaciones ni CAE.</p></div>';
+  const preview = fiscalPreview ? `<section class="business-fiscal-preview" data-fiscal-preview-surface><div class="button-row"><strong>Vista previa privada</strong><button class="ghost-button compact" type="button" data-fiscal-preview-close>Cerrar</button></div><iframe title="Vista previa de comprobante fiscal" src="${escapeHtml(fiscalPreview.signedUrl)}" sandbox="allow-scripts allow-same-origin"></iframe><small>El acceso temporal vence automáticamente; el PDF no se guarda en el navegador.</small></section>` : '';
+  return panel('Estado fiscal', 'Autorizado sólo cuando ARCA devolvió CAE válido. La autorización y el PDF se recuperan por separado.', `<div class="button-row"><button class="secondary-button compact" type="button" data-fiscal-refresh>Actualizar</button><button class="ghost-button compact" type="button" data-fiscal-open-cache>Abrir caché de impresión</button></div>${preview}${rows}`);
+}
+
+function renderFiscalDocument(document) {
+  const status = presentFiscalStatus(document);
+  const artifact = fiscalArtifacts.find((candidate) => candidate.fiscal_document_id === document.id && candidate.is_current);
+  const artifactState = artifact ? 'PDF disponible' : artifactLabel(document.artifact_state);
+  const stateDetail = document.artifact_error_code ? `<small class="business-fiscal-error">${escapeHtml(fiscalError(document))}</small>` : '';
+  const identity = `${document.document_intent === 'credit_note' ? 'Nota de crédito' : 'Comprobante'} ${document.document_type || ''} ${document.document_number || ''}`.trim();
+  const artifactControls = artifact ? `<div class="business-fiscal-actions"><span class="business-fiscal-hash" title="SHA-256">SHA-256 ${escapeHtml(shortHash(artifact.sha256))}</span><button class="ghost-button compact" type="button" data-fiscal-preview="${escapeHtml(artifact.artifact_id)}">Vista previa</button><button class="ghost-button compact" type="button" data-fiscal-download="${escapeHtml(artifact.artifact_id)}" data-fiscal-document="${escapeHtml(document.id)}">Descargar PDF</button>${renderPrintControls(document, artifact)}</div>` : '';
+  const canCredit = document.document_intent === 'invoice' && ['authorized', 'credited'].includes(document.state) && /^\d{14}$/.test(String(document.cae || ''));
+  const credit = canCredit ? renderCreditControls(document) : '';
+  const association = document.associated_document_id ? `<small>Asociado a comprobante ${escapeHtml(String(document.associated_document_id).slice(0, 8))}</small>` : '';
+  return `<article class="business-fiscal-row" data-fiscal-document="${escapeHtml(document.id)}"><div><strong>${escapeHtml(status.label)}</strong><small>${escapeHtml(identity)}</small>${association}</div><span class="business-status ${status.tone}">${escapeHtml(document.state || '')}</span><span class="business-status ${artifact ? 'success' : 'warning'}">${escapeHtml(artifactState)}</span>${stateDetail}${artifactControls}${!artifact && ['authorized', 'credited'].includes(document.state) ? `<button class="ghost-button compact" type="button" data-fiscal-regenerate="${escapeHtml(document.id)}">Regenerar PDF (permiso)</button>` : ''}${credit}</article>`;
+}
+
+function renderPrintControls(document, artifact) {
+  const options = fiscalPrinters.length ? fiscalPrinters.map((printer) => `<option value="${escapeHtml(printer.name)}">${escapeHtml(printer.name)}${printer.isDefault ? ' (predeterminada)' : ''}</option>`).join('') : '<option value="">Abrí TABA Windows para listar impresoras</option>';
+  return `<div class="business-ops-form business-fiscal-print"><label>Impresora<select name="fiscalPrinter">${options}</select></label><label>Formato<select name="fiscalPrintFormat"><option value="a4">A4 (PDF)</option><option value="thermal">Térmica</option></select></label><label>Copias<input name="fiscalPrintCopies" type="number" min="1" max="5" step="1" value="1"></label><button class="secondary-button compact" type="button" data-fiscal-print="${escapeHtml(artifact.artifact_id)}" data-fiscal-document="${escapeHtml(document.id)}">Imprimir / reimprimir</button></div>`;
+}
+
+function renderCreditControls(document) {
+  const items = Array.isArray(document.fiscal_document_items) ? document.fiscal_document_items : [];
+  const lines = items.map((item) => `<div class="business-fiscal-credit-line" data-credit-line="${escapeHtml(item.id)}"><span>${escapeHtml(item.description)} · máximo ${escapeHtml(item.quantity)}</span><label>Cantidad<input name="creditQuantity" type="number" min="0" max="${escapeHtml(item.quantity)}" step="0.001" value="0"></label><label>Ajuste neto<input name="creditNet" type="number" min="0" step="0.01" value="0"></label><label>Ajuste IVA<input name="creditTax" type="number" min="0" step="0.01" value="0"></label></div>`).join('');
+  return `<details class="business-fiscal-credit"><summary>Solicitar nota de crédito</summary><label>Motivo<input name="creditReason" maxlength="300"></label><label>Tipo<select name="creditKind"><option value="total">Total del saldo acreditable</option><option value="partial">Parcial por ítem/cantidad</option><option value="commercial_adjustment">Ajuste comercial autorizado</option></select></label><small>Los importes parciales se calculan desde snapshots; el ajuste comercial exige política aprobada.</small>${lines}<button class="ghost-button compact" type="button" data-fiscal-credit-note="${escapeHtml(document.id)}">Solicitar nota</button></details>`;
 }
 function renderFiscalConfig() {
   const profile = fiscalProfile || {};
-  return panel('Configuración fiscal', 'Sólo homologación desde el panel. Producción requiere revisión contable y activación del servidor.', `<div class="business-fiscal-lock"><strong>Producción fiscal deshabilitada</strong><span>Revisión contable: ${escapeHtml(profile.accountant_review_status || 'pendiente')}</span><span>Gate: ${escapeHtml(profile.production_gate_status || 'bloqueado')}</span></div><div class="business-ops-form"><label>Razón social<input name="legalName" value="${escapeHtml(profile.legal_name || '')}" maxlength="160"></label><label>CUIT<input name="cuit" value="${escapeHtml(profile.cuit || '')}" inputmode="numeric" maxlength="11"></label><label>Condición fiscal<input name="taxCondition" value="${escapeHtml(profile.tax_condition || '')}" maxlength="80"></label><label>Domicilio comercial<input name="businessAddress" value="${escapeHtml(profile.business_address || '')}" maxlength="200"></label><label>Punto de venta<input name="pointOfSale" value="${escapeHtml(profile.point_of_sale || '')}" type="number" min="1"></label><button class="primary-button" type="button" data-fiscal-config-save>Guardar perfil de homologación</button></div>`);
+  return panel('Configuración fiscal', 'Sólo homologación desde el panel. Producción requiere revisión contable y activación del servidor.', `<div class="business-fiscal-lock"><strong>Producción fiscal deshabilitada</strong><span>Revisión contable: ${escapeHtml(profile.accountant_review_status || 'pendiente')}</span><span>Gate: ${escapeHtml(profile.production_gate_status || 'bloqueado')}</span></div><div class="business-ops-form"><label>Razón social<input name="legalName" value="${escapeHtml(profile.legal_name || '')}" maxlength="160"></label><label>CUIT<input name="cuit" value="${escapeHtml(profile.cuit || '')}" inputmode="numeric" maxlength="11"></label><label>Condición fiscal<input name="taxCondition" value="${escapeHtml(profile.tax_condition || '')}" maxlength="80"></label><label>Condición predeterminada del receptor<input name="defaultRecipientCondition" value="${escapeHtml(profile.default_recipient_condition || '')}" maxlength="80"></label><label>Domicilio comercial<input name="businessAddress" value="${escapeHtml(profile.business_address || '')}" maxlength="200"></label><label>Punto de venta<input name="pointOfSale" value="${escapeHtml(profile.point_of_sale || '')}" type="number" min="1"></label><button class="primary-button" type="button" data-fiscal-config-save>Guardar perfil de homologación</button></div>`);
 }
 
 function scannerInput() { return `<div class="business-scanner-input"><label>Código<input data-barcode-input inputmode="numeric" autocomplete="off" maxlength="64" placeholder="Escaneá o ingresá un GTIN"></label><button class="primary-button" type="button" data-business-scan-test ${busy ? 'disabled' : ''}>Procesar</button></div>`; }
@@ -439,4 +608,40 @@ function panel(title, subtitle, body) { return `<section class="business-ops-pan
 function result(ok, message) { return { handled: true, ok, message }; }
 function positiveInteger(value, fallback) { const number = Number(value); return Number.isSafeInteger(number) && number > 0 ? number : fallback; }
 function createKey(prefix) { return `${prefix}:${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`; }
-function defaultContext() { return { operatorId: '', getOrders: () => [], lookupBarcode: async () => ({ ok: true, data: null }), createProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }), publishProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }), applyInventoryMovement: async () => ({ ok: false, message: 'Repositorio no disponible.' }), checkoutPos: async () => ({ ok: false, message: 'Repositorio no disponible.' }), startPacking: async () => ({ ok: false, message: 'Repositorio no disponible.' }), recordPackingScan: async () => ({ ok: false, message: 'Repositorio no disponible.' }), undoPackingScan: async () => ({ ok: false, message: 'Repositorio no disponible.' }), confirmPacking: async () => ({ ok: false, message: 'Repositorio no disponible.' }), getFiscalProfile: async () => ({ ok: true, data: null }), listFiscalDocuments: async () => ({ ok: true, data: [] }), configureFiscalProfile: async () => ({ ok: false, message: 'Repositorio no disponible.' }), requestCreditNote: async () => ({ ok: false, message: 'Repositorio no disponible.' }), onChange: () => {} }; }
+function artifactLabel(state) { return ({ artifact_pending: 'PDF pendiente', artifact_generating: 'Generando PDF', artifact_ready: 'PDF disponible', artifact_failed: 'PDF fallido', artifact_superseded: 'PDF reemplazado' })[state] || 'PDF pendiente'; }
+function shortHash(value) { const hash = String(value || ''); return hash.length === 64 ? `${hash.slice(0, 12)}…${hash.slice(-8)}` : 'no disponible'; }
+function fiscalError(document) { return document.artifact_error_message || document.artifact_error_code || 'El PDF requiere revisión técnica.'; }
+function fiscalMessage(response, fallback) { return String(response?.message || response?.error?.message || fallback).slice(0, 300); }
+function fiscalPrintTitle(row) { return `TABA fiscal ${String(row?.dataset?.fiscalDocument || '').slice(0, 12)}`; }
+function printOutcomeMessage(status) { return ({ queued: 'Impresión en cola local durable.', sent_to_spooler: 'Trabajo enviado al spooler; todavía no se confirma impresión física.', completed_when_verifiable: 'Impresión verificada.', unknown: 'El spooler no permite verificar el resultado; confirmá físicamente antes de reintentar.' })[status] || 'No se pudo verificar el resultado de impresión.'; }
+function thermalContent(row) {
+  const document = fiscalDocuments.find((candidate) => candidate.id === row?.dataset?.fiscalDocument);
+  if (!document) return '';
+  const items = (document.fiscal_document_items || []).map((item) => `${item.quantity} x ${item.description} ${Number(item.net_amount || 0) + Number(item.tax_amount || 0)}`).join('\n');
+  return ['TABA - COMPROBANTE FISCAL', `${document.document_intent === 'credit_note' ? 'NOTA DE CREDITO' : 'FACTURA'} ${document.document_type || ''} ${document.document_number || ''}`, `CAE ${document.cae || ''}`, `VTO CAE ${document.cae_expiration || ''}`, items, `TOTAL ${document.currency || 'PES'} ${Number(document.total_amount || 0).toFixed(2)}`].filter(Boolean).join('\n');
+}
+async function sha256Text(value) {
+  if (!globalThis.crypto?.subtle || typeof TextEncoder !== 'function') return '';
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+function bytesToBase64(bytes) {
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += 8192) binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+  return globalThis.btoa(binary);
+}
+function defaultContext() {
+  return {
+    operatorId: '', getOrders: () => [], lookupBarcode: async () => ({ ok: true, data: null }),
+    createProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }), publishProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    applyInventoryMovement: async () => ({ ok: false, message: 'Repositorio no disponible.' }), checkoutPos: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    startPacking: async () => ({ ok: false, message: 'Repositorio no disponible.' }), recordPackingScan: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    undoPackingScan: async () => ({ ok: false, message: 'Repositorio no disponible.' }), confirmPacking: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    getFiscalProfile: async () => ({ ok: true, data: null }), listFiscalDocuments: async () => ({ ok: true, data: [] }), listFiscalArtifacts: async () => ({ ok: true, data: [] }),
+    configureFiscalProfile: async () => ({ ok: false, message: 'Repositorio no disponible.' }), requestCreditNote: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    requestFiscalArtifactUrl: async () => ({ ok: false, message: 'Acceso privado no disponible.' }), regenerateFiscalArtifact: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    requestFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }), updateFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    desktopPlatform: { listPrinters: async () => [], queueFiscalPrint: async () => { throw new Error('La impresión fiscal requiere TABA para Windows.'); }, openFiscalCacheFolder: async () => { throw new Error('La caché local requiere TABA para Windows.'); } },
+    onChange: () => {},
+  };
+}

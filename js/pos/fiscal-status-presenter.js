@@ -1,5 +1,5 @@
 export function presentFiscalStatus(document = {}) {
-  const status = String(document.status || document.fiscal_status || 'not_requested');
+  const status = String(document.state || document.status || document.fiscal_status || 'not_requested');
   if (status === 'authorized' && /^\d{14}$/.test(String(document.cae || ''))) {
     return Object.freeze({ tone: 'success', label: 'Factura autorizada', canPrintFiscal: true });
   }

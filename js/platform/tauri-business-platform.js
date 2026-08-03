@@ -10,6 +10,8 @@ export class TauriBusinessPlatform extends BusinessPlatformAdapter {
   async setAutostart(enabled) { this.assertAvailable(); return this.invoke('set_autostart_enabled', { enabled: Boolean(enabled) }); }
   async listPrinters() { this.assertAvailable(); return this.invoke('list_printers'); }
   async print(request) { this.assertAvailable(); return this.invoke('print_document', { request }); }
+  async queueFiscalPrint(request) { this.assertAvailable(); return this.invoke('queue_fiscal_print', { request }); }
+  async openFiscalCacheFolder() { this.assertAvailable(); return this.invoke('open_fiscal_cache_folder'); }
   async exit() { this.assertAvailable(); return this.invoke('exit_application'); }
   async commandStorage() {
     this.assertAvailable();

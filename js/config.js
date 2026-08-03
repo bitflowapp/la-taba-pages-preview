@@ -7,7 +7,10 @@ export const BRAND = Object.freeze({
   productName: 'TABA2',
   tagline: 'Bebidas, pedidos y retiro en una experiencia clara.',
   shortTagline: 'Tienda de bebidas',
-  demoBusinessName: 'TABA2',
+  // Nombre del COMERCIO (distinto del nombre de producto). Es una semilla
+  // editable desde Panel Negocio → Configuración: la superficie nunca escribe
+  // el nombre a mano, siempre lee `businessConfig.businessName`.
+  demoBusinessName: 'La Taba 2',
   demoBusinessSubtitle: 'Tienda de bebidas',
   demoBusinessClaim: 'Tus bebidas, ahora a un toque.',
   demoBusinessClaimSecondary: 'Pedí. Seguí. Disfrutá.',
@@ -22,7 +25,11 @@ export const BUSINESS_CONFIG = Object.freeze({
   // habilitar pedidos reales. La presentación usa valores operativos de ejemplo.
   whatsappNumber: '',
   whatsappVerified: false,
-  address: 'Dirección a confirmar con el local',
+  // Dirección postal confirmada por el comercio. Sigue siendo una semilla
+  // editable: la superficie la lee de `businessConfig.address`, nunca la
+  // escribe a mano. La COORDENADA continúa sin verificar (ver más abajo), así
+  // que el mapa del cliente sigue sin plotear un marcador del local.
+  address: 'Mendoza 827, Neuquén',
   // Dirección textual del local. NO hay una coordenada lat/lng verificada para
   // esta dirección, así que el mapa del cliente NO plotea un marcador del local
   // (no inventamos su ubicación). `businessLocation` queda sólo como referencia

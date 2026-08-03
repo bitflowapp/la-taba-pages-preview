@@ -29,6 +29,42 @@
   --taba-warning: #8a5300;
   --taba-danger: #b3121b;
   --taba-focus: #1a5fd0;
+
+  /* ==========================================================================
+     MARCA — superficie oscura de la home (La Taba 2)
+     --------------------------------------------------------------------------
+     La app es y sigue siendo clara: catálogo, carrito, checkout, tracking y los
+     paneles operativos NO cambian. Estos tokens describen UNA superficie: la
+     home comercial, donde la marca se presenta sobre grafito y el producto
+     sigue viviendo sobre blanco (ver `--taba-white` en las cards).
+
+     El rojo NO se duplica: la acción usa `--taba-red`, el mismo del sistema.
+     Sobre negro ese rojo da 3,4:1, suficiente para superficie y borde pero no
+     para texto chico; por eso existe `--brand-red-ink`, la única variante
+     pensada para TEXTO sobre oscuro (6,0:1).
+     ====================================================================== */
+  --brand-bg: #090b0e;              /* 17,9:1 con --brand-ink */
+  --brand-bg-raised: #111419;
+  --brand-surface: #171a20;
+  --brand-surface-hover: #1e222a;
+  --brand-border: rgb(255 255 255 / 12%);
+  --brand-border-strong: rgb(255 255 255 / 24%);
+  --brand-ink: #f5f5f5;             /* 17,9:1 sobre --brand-bg */
+  --brand-ink-muted: #a8abb2;       /*  8,5:1 sobre --brand-bg */
+  --brand-red-ink: #ff4d55;         /*  6,0:1 sobre --brand-bg (texto/enlace) */
+  --brand-gold: #c9953e;            /*  7,3:1 sobre --brand-bg (acento premium) */
+  --brand-gold-soft: #e4b45f;
+  --brand-focus: #8ab4ff;           /* foco visible sobre oscuro */
+  /* Aro de historias: rojo → naranja → dorado. Es el ÚNICO degradado de la
+     identidad y existe sólo en el aro; no se usa como fondo de sección. */
+  --brand-story-ring: conic-gradient(
+    from 140deg,
+    var(--taba-red) 0deg,
+    #f2622a 110deg,
+    var(--brand-gold-soft) 205deg,
+    var(--taba-red) 360deg
+  );
+
   /* Tipografía de sistema: no se declara ninguna fuente que no se sirva. */
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --radius-xs: 6px;

@@ -10,6 +10,10 @@ const handoffSql = readFileSync(
   new URL('../supabase/migrations/20260725100000_tracking_handoff_recovery.sql', import.meta.url),
   'utf8',
 );
+const legacyStartRevocationSql = readFileSync(
+  new URL('../supabase/migrations/20260802101000_rider_delivery_legacy_start_revocation.sql', import.meta.url),
+  'utf8',
+);
 
 function functionSql(name) {
   const start = sql.search(new RegExp(`create or replace function public\\.${name}\\b`, 'i'));
@@ -37,6 +41,12 @@ test('canonical Rider RPCs are security-definer, authenticated and explicitly gr
   assert.match(sql, /execute 'revoke all on function public\.claim_available_rider_order/i);
   assert.match(sql, /to_regprocedure\('public\.publish_rider_location\(uuid,double precision/i);
   assert.match(sql, /execute 'revoke all on function public\.confirm_order_delivery\(uuid, text, text\)/i);
+});
+
+test('incremental certification revokes the legacy non-idempotent route-start signature', () => {
+  assert.match(legacyStartRevocationSql, /to_regprocedure\('public\.start_rider_delivery\(uuid,bigint\)'\)/i);
+  assert.match(legacyStartRevocationSql, /execute 'revoke all on function public\.start_rider_delivery\(uuid, bigint\)/i);
+  assert.match(legacyStartRevocationSql, /start_rider_delivery\(uuid, bigint, text\)/i);
 });
 
 test('queue is minimized and revision-aware', () => {

@@ -472,6 +472,7 @@ function removeShowcaseRecovery() {
 }
 
 async function bootstrap() {
+  document.documentElement.dataset.tabaStartup = 'starting';
   // Si se pidió limpiar la demo, recargamos limpio y no seguimos inicializando.
   try {
     const resetRequested = hasDemoResetRequest();
@@ -525,7 +526,9 @@ async function bootstrap() {
         : 'No se pudo conectar al servidor de pedidos.';
       setTimeout(() => showToast(message), 600);
     }
+    document.documentElement.dataset.tabaStartup = 'ready';
   } catch (error) {
+    document.documentElement.dataset.tabaStartup = 'failed';
     window.TABA_STARTUP_RECOVERY?.show({
       reason: /storage|indexeddb|base sandbox/i.test(error?.message || '') ? 'storage' : 'startup',
     });

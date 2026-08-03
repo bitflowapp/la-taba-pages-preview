@@ -137,6 +137,7 @@ async function measureBrowserProfile(browserInstance, profile) {
     samples.initial_load.push(await duration(async () => {
       await page.goto(`${baseUrl}/?reset=1&demo=1#home`, { waitUntil: 'load' });
       await page.waitForURL((url) => !url.searchParams.has('reset'), { waitUntil: 'load' });
+      await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
       await page.locator('[data-view="home"]').waitFor({ state: 'visible' });
       await page.locator('[data-home-catalog-preview] .home-catalog-card').first().waitFor({ state: 'visible' });
     }));

@@ -47,15 +47,22 @@ export async function openBusinessSection(page, selector) {
 }
 
 export async function gotoDemoReset(page, target) {
-  await page.goto(target);
-  const cleanUrl = new URL(page.url());
-  if (!cleanUrl.searchParams.has('reset') && !cleanUrl.searchParams.has('demo-reset')) {
-    await page.waitForLoadState('load');
-    return;
+  const requestedUrl = new URL(target, 'http://taba.invalid');
+  const resetRequested = requestedUrl.searchParams.has('reset')
+    || requestedUrl.searchParams.has('demo-reset');
+  try {
+    await page.goto(target, { waitUntil: 'domcontentloaded' });
+  } catch (error) {
+    const interrupted = /ERR_ABORTED|frame was detached|navigation.*interrupted/i.test(String(error?.message || error));
+    if (!resetRequested || !interrupted) throw error;
   }
-  cleanUrl.searchParams.delete('reset');
-  cleanUrl.searchParams.delete('demo-reset');
-  await page.waitForURL(cleanUrl.toString(), { waitUntil: 'load' });
+  if (resetRequested) {
+    await page.waitForURL((url) => (
+      !url.searchParams.has('reset') && !url.searchParams.has('demo-reset')
+    ), { waitUntil: 'domcontentloaded' });
+  }
+  await page.waitForLoadState('load');
+  await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
 }
 
 export function installPageGuards(page) {

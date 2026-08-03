@@ -128,3 +128,46 @@ test('staff puede preparar pero no finalizar un cierre desde el panel', async ()
   assert.match(closedResult.message, /owner o admin/);
   resetBusinessOperationsForTests();
 });
+
+test('Windows crea backup verificado y diagnóstico sanitizado desde el Centro de operación', async () => {
+  const calls = [];
+  const desktopPlatform = {
+    isNative: true,
+    async createLocalBackup() {
+      calls.push({ name: 'backup' });
+      return { backupId: 'backup-one', sha256: 'a'.repeat(64), integrityVerified: true };
+    },
+    async exportSupportDiagnostic(request) {
+      calls.push({ name: 'diagnostic', request });
+      return { exportId: 'diagnostic-one', sha256: 'b'.repeat(64) };
+    },
+    async openSupportExportFolder() { calls.push({ name: 'open' }); return true; },
+  };
+  configureBusinessOperations({
+    role: 'owner',
+    desktopPlatform,
+    getOperationCenter: async () => ({
+      ok: true,
+      data: {
+        generated_at: '2026-08-02T12:00:00Z', metrics: {}, recent_closures: [],
+        alerts: [{ correlation_id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' }],
+      },
+    }),
+    onChange() {},
+  });
+  renderBusinessOperations('operation-center');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const markup = renderBusinessOperations('operation-center');
+  assert.match(markup, /Crear backup local verificado/);
+  assert.match(markup, /Exportar diagnóstico sanitizado/);
+
+  const target = (selector) => ({ closest: (candidate) => candidate === selector ? {} : null });
+  assert.equal((await handleBusinessOperationsAction(target('[data-local-backup-create]'))).ok, true);
+  assert.equal((await handleBusinessOperationsAction(target('[data-support-diagnostic-export]'))).ok, true);
+  assert.equal((await handleBusinessOperationsAction(target('[data-support-export-folder]'))).ok, true);
+  assert.deepEqual(calls.map(({ name }) => name), ['backup', 'diagnostic', 'open']);
+  assert.deepEqual(calls[1].request.correlationIds, ['cccccccc-cccc-4ccc-8ccc-cccccccccccc']);
+  assert.equal(calls[1].request.activeView, 'operation-center');
+  assert.match(calls[1].request.networkStatus, /^(online|offline|unknown)$/);
+  resetBusinessOperationsForTests();
+});

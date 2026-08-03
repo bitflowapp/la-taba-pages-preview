@@ -44,6 +44,7 @@ let operationCenterSnapshot = null;
 let operationCenterStatus = { phase: 'idle', message: '' };
 let operationCenterRefreshStarted = false;
 let operationCenterRefreshTimer = null;
+let signedUpdateStatus = null;
 
 export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
@@ -52,6 +53,7 @@ export function configureBusinessOperations(next = {}) {
   operationCenterSnapshot = null;
   operationCenterStatus = { phase: 'idle', message: '' };
   operationCenterRefreshStarted = false;
+  signedUpdateStatus = null;
   return context;
 }
 
@@ -177,6 +179,12 @@ export async function handleBusinessOperationsAction(target) {
   const creditNote = target.closest('[data-fiscal-credit-note]');
   if (creditNote) return requestCreditNote(creditNote);
   if (target.closest('[data-operation-center-refresh]')) return refreshOperationCenterAction();
+  if (target.closest('[data-local-backup-create]')) return createLocalBackup();
+  if (target.closest('[data-support-diagnostic-export]')) return exportSupportDiagnostic();
+  if (target.closest('[data-support-export-folder]')) return openSupportExportFolder();
+  if (target.closest('[data-signed-update-check]')) return checkForSignedUpdate();
+  const installUpdate = target.closest('[data-signed-update-install]');
+  if (installUpdate) return installSignedUpdate(installUpdate);
   const acknowledgeAlert = target.closest('[data-operational-alert-acknowledge]');
   if (acknowledgeAlert) return acknowledgeOperationalAlert(acknowledgeAlert);
   const resolveAlert = target.closest('[data-operational-alert-resolve]');
@@ -229,6 +237,7 @@ export function resetBusinessOperationsForTests() {
   operationCenterSnapshot = null;
   operationCenterStatus = { phase: 'idle', message: '' };
   operationCenterRefreshStarted = false;
+  signedUpdateStatus = null;
 }
 
 async function processScan(event) {
@@ -707,6 +716,97 @@ async function closeDailyReconciliation(button) {
   return result(Boolean(response?.ok), feedback);
 }
 
+async function createLocalBackup() {
+  if (busy) return result(false, 'Ya hay una acción local en curso.');
+  busy = true;
+  try {
+    const backup = await context.desktopPlatform.createLocalBackup();
+    feedback = `Backup local consistente y verificado. SHA-256 ${shortHash(backup?.sha256)}.`;
+    return result(true, feedback);
+  } catch (error) {
+    feedback = error?.message || 'No se pudo crear y verificar el backup local.';
+    return result(false, feedback);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
+}
+
+async function exportSupportDiagnostic() {
+  if (busy) return result(false, 'Ya hay una accion local en curso.');
+  const correlations = (operationCenterSnapshot?.alerts || [])
+    .map((alert) => String(alert?.correlation_id || ''))
+    .filter(isUuid)
+    .slice(0, 20);
+  const online = globalThis.navigator?.onLine;
+  busy = true;
+  try {
+    const exported = await context.desktopPlatform.exportSupportDiagnostic({
+      networkStatus: online === true ? 'online' : online === false ? 'offline' : 'unknown',
+      activeView: currentView,
+      correlationIds: correlations,
+    });
+    feedback = `Diagnóstico sanitizado exportado. SHA-256 ${shortHash(exported?.sha256)}.`;
+    return result(true, feedback);
+  } catch (error) {
+    feedback = error?.message || 'No se pudo exportar el diagnóstico sanitizado.';
+    return result(false, feedback);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
+}
+
+async function openSupportExportFolder() {
+  try {
+    await context.desktopPlatform.openSupportExportFolder();
+    return result(true, 'Carpeta privada de exportaciones abierta.');
+  } catch (error) {
+    return result(false, error?.message || 'No se pudo abrir la carpeta de exportaciones.');
+  }
+}
+
+async function checkForSignedUpdate() {
+  if (busy) return result(false, 'Ya hay una acción local en curso.');
+  busy = true;
+  try {
+    signedUpdateStatus = await context.desktopPlatform.checkForSignedUpdate();
+    feedback = !signedUpdateStatus?.configured
+      ? 'Este build local no tiene un canal de actualizaciones firmado configurado.'
+      : signedUpdateStatus.available
+        ? `Actualización firmada ${signedUpdateStatus.version} disponible. Requiere confirmación para instalar.`
+        : 'La versión instalada es la última publicada en el canal firmado.';
+    return result(true, feedback);
+  } catch (error) {
+    signedUpdateStatus = null;
+    feedback = error?.message || 'No se pudo consultar el canal de actualizaciones firmadas.';
+    return result(false, feedback);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
+}
+
+async function installSignedUpdate(button) {
+  const expectedVersion = String(button.dataset.signedUpdateInstall || '');
+  if (!signedUpdateStatus?.available || expectedVersion !== signedUpdateStatus.version) {
+    return result(false, 'La actualización cambió; volvé a consultar antes de instalar.');
+  }
+  if (busy) return result(false, 'Ya hay una acción local en curso.');
+  busy = true;
+  try {
+    await context.desktopPlatform.installSignedUpdate({ expectedVersion, confirmed: true });
+    feedback = 'Actualización firmada instalada. Windows cerrará la aplicación para completar el cambio.';
+    return result(true, feedback);
+  } catch (error) {
+    feedback = error?.message || 'No se pudo instalar la actualización firmada.';
+    return result(false, feedback);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
+}
+
 function renderOperationCenter() {
   if (operationCenterStatus.phase === 'loading' && !operationCenterSnapshot) {
     return panel('Centro de operación', 'Estado autoritativo del negocio.', '<p class="form-hint" aria-live="polite">Reconciliando operación…</p>');
@@ -741,6 +841,15 @@ function renderOperationCenter() {
   const closures = Array.isArray(snapshot.recent_closures) && snapshot.recent_closures.length
     ? snapshot.recent_closures.map(renderDailyReconciliation).join('')
     : '<p class="form-hint">Todavía no hay cierres diarios preparados.</p>';
+  const localContinuity = context.desktopPlatform?.isNative
+    ? `<div class="button-row">
+        <button class="secondary-button compact" type="button" data-local-backup-create>Crear backup local verificado</button>
+        <button class="ghost-button compact" type="button" data-support-diagnostic-export>Exportar diagnóstico sanitizado</button>
+        <button class="ghost-button compact" type="button" data-support-export-folder>Abrir exportaciones</button>
+        <button class="ghost-button compact" type="button" data-signed-update-check>Buscar actualización firmada</button>
+        ${signedUpdateStatus?.available ? `<button class="primary-button compact" type="button" data-signed-update-install="${escapeHtml(String(signedUpdateStatus.version || ''))}">Instalar ${escapeHtml(String(signedUpdateStatus.version || ''))} y reiniciar</button>` : ''}
+      </div>`
+    : '<p class="form-hint">Backup local y diagnóstico disponibles en TABA para Windows.</p>';
   return panel('Centro de operación', 'Prioriza excepciones, conciliación y acciones recuperables.', `
     <div class="operation-center-toolbar">
       <span class="form-hint">Actualizado ${escapeHtml(formatOperationTimestamp(snapshot.generated_at))}</span>
@@ -760,6 +869,11 @@ function renderOperationCenter() {
         <button class="secondary-button" type="button" data-daily-reconciliation-prepare>Preparar conciliación</button>
       </div>
       <div class="daily-reconciliation-list">${closures}</div>
+    </section>
+    <section class="operation-support" aria-labelledby="operation-support-title">
+      <h3 id="operation-support-title">Continuidad local y soporte</h3>
+      <p class="form-hint">El backup protege la cola local; PostgreSQL y Storage privados siguen siendo la fuente de verdad. La exportación excluye payloads, secretos, rutas e identificadores de impresora.</p>
+      ${localContinuity}
     </section>`);
 }
 
@@ -932,6 +1046,7 @@ function formatOperationMoney(value) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number.isFinite(amount) ? amount : 0);
 }
 function shortCorrelation(value) { return String(value || '').slice(0, 8); }
+function isUuid(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || '')); }
 function shortTextFingerprint(value) {
   let hash = 2166136261;
   for (const character of String(value || '')) {
@@ -965,7 +1080,18 @@ function defaultContext() {
     getOperationCenter: async () => ({ ok: false, message: 'Centro de operación no disponible.' }),
     acknowledgeOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }), resolveOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     prepareDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }), closeDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
-    desktopPlatform: { listPrinters: async () => [], queueFiscalPrint: async () => { throw new Error('La impresión fiscal requiere TABA para Windows.'); }, openFiscalCacheFolder: async () => { throw new Error('La caché local requiere TABA para Windows.'); } },
+    desktopPlatform: {
+      isNative: false,
+      listPrinters: async () => [],
+      queueFiscalPrint: async () => { throw new Error('La impresión fiscal requiere TABA para Windows.'); },
+      openFiscalCacheFolder: async () => { throw new Error('La caché local requiere TABA para Windows.'); },
+      createLocalBackup: async () => { throw new Error('El backup local requiere TABA para Windows.'); },
+      verifyLocalBackup: async () => { throw new Error('La verificación local requiere TABA para Windows.'); },
+      exportSupportDiagnostic: async () => { throw new Error('El diagnóstico local requiere TABA para Windows.'); },
+      openSupportExportFolder: async () => { throw new Error('Las exportaciones requieren TABA para Windows.'); },
+      checkForSignedUpdate: async () => ({ configured: false, available: false }),
+      installSignedUpdate: async () => { throw new Error('El canal firmado requiere TABA para Windows.'); },
+    },
     onChange: () => {},
   };
 }

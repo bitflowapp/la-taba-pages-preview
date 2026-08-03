@@ -1,12 +1,14 @@
 mod fiscal_printing;
 mod outbox;
 mod printing;
+mod support;
+mod updates;
 
 use outbox::LocalCommand;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use std::{
-    path::Path,
+    path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
         Mutex,
@@ -22,8 +24,9 @@ use tauri_plugin_notification::NotificationExt;
 
 struct DesktopState {
     database: Mutex<Connection>,
-    database_path: String,
     fiscal_spool_directory: String,
+    backup_directory: PathBuf,
+    support_export_directory: PathBuf,
     muted: AtomicBool,
     explicit_exit: AtomicBool,
 }
@@ -31,10 +34,17 @@ struct DesktopState {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct RuntimeInfo {
-    database_path: String,
-    log_directory: String,
+    version: String,
+    build: String,
+    os: String,
+    arch: String,
     muted: bool,
     autostart_enabled: bool,
+    database_health: String,
+    wal_enabled: bool,
+    pending_command_count: i64,
+    uncertain_print_count: i64,
+    signed_updater_configured: bool,
 }
 
 #[derive(Deserialize)]
@@ -49,17 +59,69 @@ fn initialize_business_runtime(
     app: AppHandle,
     state: State<'_, DesktopState>,
 ) -> Result<RuntimeInfo, String> {
-    let log_directory = app
-        .path()
-        .app_log_dir()
-        .map_err(|_| "No se pudo resolver el directorio de logs.".to_string())?;
     let autostart_enabled = app.autolaunch().is_enabled().unwrap_or(false);
+    let health = {
+        let connection = state
+            .database
+            .lock()
+            .map_err(|_| "Persistencia local ocupada.".to_string())?;
+        support::runtime_health(&connection)?
+    };
     Ok(RuntimeInfo {
-        database_path: state.database_path.clone(),
-        log_directory: log_directory.to_string_lossy().into_owned(),
+        version: app.package_info().version.to_string(),
+        build: option_env!("TABA_BUILD_SHA")
+            .unwrap_or("local-unidentified")
+            .to_string(),
+        os: std::env::consts::OS.to_string(),
+        arch: std::env::consts::ARCH.to_string(),
         muted: state.muted.load(Ordering::Relaxed),
         autostart_enabled,
+        database_health: health.database_health,
+        wal_enabled: health.wal_enabled,
+        pending_command_count: health.pending_command_count,
+        uncertain_print_count: health.uncertain_print_count,
+        signed_updater_configured: updates::is_configured(),
     })
+}
+
+#[tauri::command]
+fn create_local_backup(
+    state: State<'_, DesktopState>,
+) -> Result<support::LocalBackupResult, String> {
+    let connection = state
+        .database
+        .lock()
+        .map_err(|_| "Persistencia local ocupada.".to_string())?;
+    support::create_local_backup(&connection, &state.backup_directory)
+}
+
+#[tauri::command]
+fn verify_local_backup(
+    state: State<'_, DesktopState>,
+    backup_id: String,
+) -> Result<support::LocalBackupResult, String> {
+    let connection = state
+        .database
+        .lock()
+        .map_err(|_| "Persistencia local ocupada.".to_string())?;
+    support::verify_local_backup(&connection, &state.backup_directory, &backup_id)
+}
+
+#[tauri::command]
+fn export_support_diagnostic(
+    state: State<'_, DesktopState>,
+    request: support::SupportDiagnosticRequest,
+) -> Result<support::SupportExportResult, String> {
+    let connection = state
+        .database
+        .lock()
+        .map_err(|_| "Persistencia local ocupada.".to_string())?;
+    support::export_support_diagnostic(&connection, &state.support_export_directory, &request)
+}
+
+#[tauri::command]
+fn open_support_export_folder(state: State<'_, DesktopState>) -> Result<bool, String> {
+    support::open_private_directory(&state.support_export_directory)
 }
 
 #[tauri::command]
@@ -255,6 +317,7 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
             focus_main_window(app)
         }))
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
@@ -277,14 +340,20 @@ pub fn run() {
             std::fs::create_dir_all(&data_dir)?;
             let database_path = data_dir.join("taba-negocio.sqlite3");
             let fiscal_spool_directory = data_dir.join("fiscal-spool");
+            let backup_directory = data_dir.join("backups");
+            let support_export_directory = data_dir.join("support-exports");
             let database = Connection::open(&database_path)?;
             outbox::migrate(&database).map_err(std::io::Error::other)?;
             fiscal_printing::migrate(&database).map_err(std::io::Error::other)?;
+            support::migrate(&database).map_err(std::io::Error::other)?;
             std::fs::create_dir_all(&fiscal_spool_directory)?;
+            std::fs::create_dir_all(&backup_directory)?;
+            std::fs::create_dir_all(&support_export_directory)?;
             app.manage(DesktopState {
                 database: Mutex::new(database),
-                database_path: database_path.to_string_lossy().into_owned(),
                 fiscal_spool_directory: fiscal_spool_directory.to_string_lossy().into_owned(),
+                backup_directory,
+                support_export_directory,
                 muted: AtomicBool::new(false),
                 explicit_exit: AtomicBool::new(false),
             });
@@ -302,6 +371,12 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             initialize_business_runtime,
+            create_local_backup,
+            verify_local_backup,
+            export_support_diagnostic,
+            open_support_export_folder,
+            updates::check_for_signed_update,
+            updates::install_signed_update,
             outbox_put,
             outbox_get,
             outbox_list,

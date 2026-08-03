@@ -40,6 +40,7 @@
     "staging:validate": "node scripts/validate-staging-readiness.mjs",
     "realtime:demo": "node scripts/realtime-relay.mjs",
     "desktop:assets": "node scripts/build-desktop-assets.mjs",
+    "desktop:signed-config": "node scripts/prepare-tauri-signed-release-config.mjs",
     "tauri": "tauri",
     "tauri:build": "tauri build"
   },

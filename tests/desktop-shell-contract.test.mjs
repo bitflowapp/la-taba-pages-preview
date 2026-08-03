@@ -10,6 +10,7 @@ const capability = JSON.parse(read('src-tauri/capabilities/default.json'));
 const shell = read('src-tauri/src/lib.rs');
 const outbox = read('src-tauri/src/outbox.rs');
 const printing = read('src-tauri/src/printing.rs');
+const support = read('src-tauri/src/support.rs');
 
 test('desktop empaqueta la misma aplicación con identidad Windows estable', () => {
   assert.equal(config.productName, 'TABA Negocio');
@@ -52,4 +53,15 @@ test('impresión usa Winspool con contrato RAW acotado, sin shell arbitrario', (
   }
   assert.match(printing, /raw_text/);
   assert.doesNotMatch(printing, /Command::new|powershell|cmd\.exe/i);
+});
+
+test('backup y diagnóstico nativos son verificables y no exponen rutas o payloads', () => {
+  const supportRuntime = support.split('#[cfg(test)]')[0];
+  assert.match(support, /VACUUM INTO/);
+  assert.match(support, /PRAGMA quick_check/);
+  assert.match(support, /Sha256/);
+  assert.match(support, /OpenFlags::SQLITE_OPEN_READ_ONLY/);
+  assert.match(support, /correlationIds/);
+  assert.doesNotMatch(shell, /database_path:\s*String|log_directory:\s*String/);
+  assert.doesNotMatch(supportRuntime, /printer_name|payload_json|last_error_message/);
 });

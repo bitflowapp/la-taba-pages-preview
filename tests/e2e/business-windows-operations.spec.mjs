@@ -109,7 +109,7 @@ test('panel fiscal usa artefactos privados, descarga, reimpresiÃ³n y nota de c
 
 test('Centro de operación prioriza alertas y finaliza un cierre diario auditable', async ({ page }) => {
   const session = staffSession('owner');
-  await installRuntime(page, session, { operationCenter: operationCenterFixture() });
+  await installRuntime(page, session, { desktop: true, operationCenter: operationCenterFixture() });
   await page.goto('/#business');
   const workspace = page.locator('[data-production-workspace="business"]');
   const center = workspace.locator('[data-business-ops-center="operation-center"]');
@@ -130,6 +130,13 @@ test('Centro de operación prioriza alertas y finaliza un cierre diario auditabl
 
   await center.locator('[data-daily-reconciliation-close]').click();
   await expect(workspace.locator('.business-ops-feedback')).toContainText('Cierre diario finalizado e inmutable');
+
+  await center.locator('[data-local-backup-create]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('Backup local consistente y verificado');
+  await center.locator('[data-support-diagnostic-export]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('Diagnóstico sanitizado exportado');
+  await center.locator('[data-signed-update-check]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('no tiene un canal de actualizaciones firmado');
 });
 
 async function installRuntime(page, session, fiscal = null) {
@@ -181,6 +188,10 @@ async function installRuntime(page, session, fiscal = null) {
         if (command === 'list_printers') return [{ name: 'Printer Fixture', isDefault: true }];
         if (command === 'queue_fiscal_print') return { status: 'sent_to_spooler', errorCode: null };
         if (command === 'open_fiscal_cache_folder') return true;
+        if (command === 'create_local_backup') return { backupId: 'backup-e2e', sha256: 'd'.repeat(64), integrityVerified: true };
+        if (command === 'export_support_diagnostic') return { exportId: 'diagnostic-e2e', sha256: 'e'.repeat(64) };
+        if (command === 'open_support_export_folder') return true;
+        if (command === 'check_for_signed_update') return { configured: false, available: false, currentVersion: '0.1.0', version: null };
         throw new Error(`Unexpected Tauri command: ${command}`);
       } } };
     }

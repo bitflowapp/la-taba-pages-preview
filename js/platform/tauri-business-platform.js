@@ -3,6 +3,7 @@ import { BrowserBusinessPlatform } from './browser-business-platform.js';
 
 export class TauriBusinessPlatform extends BusinessPlatformAdapter {
   constructor(invoke = globalThis.__TAURI__?.core?.invoke) { super(); this.invoke = invoke; }
+  get isNative() { return true; }
   assertAvailable() { if (typeof this.invoke !== 'function') throw new Error('El bridge Tauri no est\u00e1 disponible.'); }
   async initialize() { this.assertAvailable(); return this.invoke('initialize_business_runtime'); }
   async notify(payload) { this.assertAvailable(); return this.invoke('notify_business_event', { payload }); }
@@ -12,6 +13,12 @@ export class TauriBusinessPlatform extends BusinessPlatformAdapter {
   async print(request) { this.assertAvailable(); return this.invoke('print_document', { request }); }
   async queueFiscalPrint(request) { this.assertAvailable(); return this.invoke('queue_fiscal_print', { request }); }
   async openFiscalCacheFolder() { this.assertAvailable(); return this.invoke('open_fiscal_cache_folder'); }
+  async createLocalBackup() { this.assertAvailable(); return this.invoke('create_local_backup'); }
+  async verifyLocalBackup(backupId) { this.assertAvailable(); return this.invoke('verify_local_backup', { backupId }); }
+  async exportSupportDiagnostic(request) { this.assertAvailable(); return this.invoke('export_support_diagnostic', { request }); }
+  async openSupportExportFolder() { this.assertAvailable(); return this.invoke('open_support_export_folder'); }
+  async checkForSignedUpdate() { this.assertAvailable(); return this.invoke('check_for_signed_update'); }
+  async installSignedUpdate(request) { this.assertAvailable(); return this.invoke('install_signed_update', { request }); }
   async exit() { this.assertAvailable(); return this.invoke('exit_application'); }
   async commandStorage() {
     this.assertAvailable();

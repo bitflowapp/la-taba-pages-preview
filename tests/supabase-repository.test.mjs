@@ -252,7 +252,9 @@ test('cambia estados sólo por RPC con compare-and-swap', async () => {
   const row = mock.seedOrder({ status: 'received' });
   const repository = makeRepository(mock);
 
-  const result = await repository.updateOrderStatus(row.public_code, 'accepted');
+  const result = await repository.updateOrderStatus(row.public_code, 'accepted', {
+    idempotencyKey: 'transition:test-order:revision-1',
+  });
 
   assert.equal(result.ok, true);
   assert.equal(result.order.workflowStatus, 'accepted');
@@ -261,6 +263,7 @@ test('cambia estados sólo por RPC con compare-and-swap', async () => {
     p_order_id: row.id,
     p_expected_revision: 1,
     p_new_status: 'accepted',
+    p_idempotency_key: 'transition:test-order:revision-1',
   });
   assert.equal(mock.calls.from.some((call) => call.action === 'update'), false);
 });

@@ -1,0 +1,1 @@
+{"main-capability":{"identifier":"main-capability","description":"Permisos mínimos para la ventana operativa principal.","local":true,"windows":["main"],"permissions":["core:default"]}}

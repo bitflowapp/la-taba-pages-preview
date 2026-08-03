@@ -5,6 +5,8 @@ node_modules/
 test-results/
 playwright-report/
 dist_release/
+dist-desktop/
+src-tauri/target/
 scripts/catalog-images/.raw/
 .local-staging/
 artifacts/release-preparation/

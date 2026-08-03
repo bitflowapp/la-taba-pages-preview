@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-capability",
+  "description": "Permisos mínimos para la ventana operativa principal.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

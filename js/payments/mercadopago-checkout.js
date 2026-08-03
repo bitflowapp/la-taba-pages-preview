@@ -96,10 +96,10 @@ export function paymentStatusPresentation(checkout = {}) {
     return { state: 'completed', label: 'Pedido confirmado', terminal: true, clearCart: true };
   }
   if (sessionStatus === 'manual_review_required' || paymentStatus === 'security_review_required') {
-    return { state: 'manual_review', label: 'Necesitamos revisar tu pago', terminal: true, clearCart: false };
+    return { state: 'manual_review', label: 'Necesitamos revisar este pago', terminal: true, clearCart: false };
   }
   if (sessionStatus === 'payment_approved' || sessionStatus === 'finalizing_order' || paymentStatus === 'approved_order_pending') {
-    return { state: 'finalizing', label: 'Pago aprobado, confirmando tu pedido…', terminal: false, clearCart: false };
+    return { state: 'finalizing', label: 'Confirmando tu pedido', terminal: false, clearCart: false };
   }
   if (['pending', 'in_process'].includes(paymentStatus) || sessionStatus === 'payment_pending') {
     return { state: 'pending', label: 'Pago pendiente', terminal: false, clearCart: false };
@@ -107,7 +107,7 @@ export function paymentStatusPresentation(checkout = {}) {
   if (['rejected', 'cancelled', 'expired', 'failed'].includes(paymentStatus) || ['cancelled', 'expired'].includes(sessionStatus)) {
     return { state: 'rejected', label: 'Pago rechazado', terminal: true, clearCart: false };
   }
-  return { state: 'verifying', label: 'Verificando tu pago…', terminal: false, clearCart: false };
+  return { state: 'verifying', label: 'Verificando el pago', terminal: false, clearCart: false };
 }
 
 function compactObject(value) {

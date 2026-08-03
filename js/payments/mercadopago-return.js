@@ -24,7 +24,7 @@ async function start() {
 
 async function verify(repository, checkoutSessionId) {
   clearTimer();
-  show('Verificando tu pago…', 'verifying');
+  show('Verificando el pago', 'verifying');
   if (navigator.onLine === false) {
     show('Sin conexión. Conservamos tu carrito y verificaremos el pago al volver a conectarte.', 'pending');
     return;
@@ -78,7 +78,19 @@ function show(message, state, checkout = null) {
   const detail = document.querySelector('[data-payment-return-detail]');
   const status = document.querySelector('[data-payment-return-status]');
   const action = document.querySelector('[data-payment-return-action]');
-  if (title) title.textContent = state === 'completed' ? 'Pedido confirmado' : 'Estado del pago';
+  if (title) {
+    title.textContent = state === 'completed'
+      ? 'Pedido confirmado'
+      : state === 'finalizing'
+        ? 'Confirmando tu pedido'
+        : state === 'pending'
+          ? 'Pago pendiente'
+          : state === 'manual_review'
+            ? 'Necesitamos revisar este pago'
+            : state === 'rejected'
+              ? 'Pago rechazado'
+              : 'Verificando el pago';
+  }
   if (detail) detail.textContent = message;
   if (status) {
     status.dataset.state = state;

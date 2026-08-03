@@ -32,9 +32,11 @@ test('canonical Rider RPCs are security-definer, authenticated and explicitly gr
     assert.match(body, /set search_path = pg_catalog, public, extensions, pg_temp/i, name);
   }
   assert.match(sql, /grant execute on function public\.confirm_delivery_code\(uuid, bigint, text, text\)\s+to authenticated/i);
-  assert.match(sql, /revoke all on function public\.claim_available_rider_order/i);
-  assert.match(sql, /revoke all on function public\.publish_rider_location\(uuid, double precision/i);
-  assert.match(sql, /revoke all on function public\.confirm_order_delivery\(uuid, text, text\)/i);
+  assert.match(sql, /do \$revoke_legacy_rider_functions\$/i);
+  assert.match(sql, /to_regprocedure\('public\.claim_available_rider_order\(uuid,text,text,uuid\)'\)/i);
+  assert.match(sql, /execute 'revoke all on function public\.claim_available_rider_order/i);
+  assert.match(sql, /to_regprocedure\('public\.publish_rider_location\(uuid,double precision/i);
+  assert.match(sql, /execute 'revoke all on function public\.confirm_order_delivery\(uuid, text, text\)/i);
 });
 
 test('queue is minimized and revision-aware', () => {

@@ -778,9 +778,22 @@ grant execute on function public.release_or_reassign_delivery(uuid, bigint, uuid
 
 -- Earlier signatures cannot express CAS revisions or idempotency receipts.
 -- Revoke them instead of retaining an unsafe bypass for mobile callers.
-revoke all on function public.claim_available_rider_order(uuid, text, text, uuid) from public, anon, authenticated;
-revoke all on function public.publish_rider_location(uuid, double precision, double precision, double precision, double precision, double precision) from public, anon, authenticated;
-revoke all on function public.confirm_order_delivery(uuid, text, text) from public, anon, authenticated;
+-- Some older staging baselines never created one or more of these signatures.
+-- Guard each REVOKE so the migration remains additive while still closing every
+-- legacy path that does exist.
+do $revoke_legacy_rider_functions$
+begin
+  if to_regprocedure('public.claim_available_rider_order(uuid,text,text,uuid)') is not null then
+    execute 'revoke all on function public.claim_available_rider_order(uuid, text, text, uuid) from public, anon, authenticated';
+  end if;
+  if to_regprocedure('public.publish_rider_location(uuid,double precision,double precision,double precision,double precision,double precision)') is not null then
+    execute 'revoke all on function public.publish_rider_location(uuid, double precision, double precision, double precision, double precision, double precision) from public, anon, authenticated';
+  end if;
+  if to_regprocedure('public.confirm_order_delivery(uuid,text,text)') is not null then
+    execute 'revoke all on function public.confirm_order_delivery(uuid, text, text) from public, anon, authenticated';
+  end if;
+end;
+$revoke_legacy_rider_functions$;
 
 comment on function public.get_rider_queue(uuid) is 'Minimized ready-for-pickup queue for the authenticated active rider.';
 comment on function public.get_active_rider_delivery() is 'Authoritative active assigned delivery snapshot for recovery after process/network loss.';

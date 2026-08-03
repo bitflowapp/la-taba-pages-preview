@@ -13,7 +13,8 @@ test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ brows
   const productCard = page.locator('[data-product-grid] .product-card').first();
   const productName = (await productCard.locator('.product-body h3').innerText()).trim();
   await productCard.locator('[data-add-product]:not([disabled])').click();
-  await page.locator('[data-floating-cart]').click();
+  await expect(page.locator('.topbar .cart-button-count')).toHaveText('1');
+  await page.locator('[data-floating-cart]:visible, .topbar [data-open-cart]:visible').first().click();
   await fillCheckout(page, {
     name: 'Cliente Reporte',
     phone: '2995557000',
@@ -59,7 +60,8 @@ test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ brows
 
   await page.goto('/?demo=1#catalog');
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('[data-floating-cart]').click();
+  await expect(page.locator('.topbar .cart-button-count')).toHaveText('1');
+  await page.locator('[data-floating-cart]:visible, .topbar [data-open-cart]:visible').first().click();
   await fillCheckout(page, {
     name: 'Cliente Cancelado',
     phone: '2995558000',

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
-import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
+import { clickAfterScrollSettles, gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
 
 test('la home presenta TABA2 con marca discreta y un storefront comercial limpio', async ({ page }) => {
   const guards = installPageGuards(page);
@@ -204,6 +204,7 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/?demo=1&home=v37');
+  await expect(page.locator('html')).toHaveAttribute('data-app-bootstrap', 'ready');
 
   const controlSelector = [
     '.home-merch-section:not([hidden]) .home-section-head button',
@@ -218,15 +219,25 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
     { width: 430, height: 932 },
   ]) {
     await page.setViewportSize(viewport);
-    const controls = page.locator(controlSelector);
-    await expect(controls).toHaveCount(12);
-    const undersized = await controls.evaluateAll((nodes) => nodes
-      .map((node) => {
+    const geometry = await page.locator(controlSelector).evaluateAll((nodes) => {
+      const visibleControls = nodes.filter((node) => {
         const rect = node.getBoundingClientRect();
-        return { selector: node.outerHTML.slice(0, 120), width: rect.width, height: rect.height };
-      })
-      .filter(({ width, height }) => width < 44 || height < 44));
-    expect(undersized, `${viewport.width}x${viewport.height}`).toEqual([]);
+        const style = getComputedStyle(node);
+        return rect.width > 0
+          && rect.height > 0
+          && style.display !== 'none'
+          && style.visibility !== 'hidden';
+      });
+      return {
+        count: visibleControls.length,
+        undersized: visibleControls.map((node) => {
+          const rect = node.getBoundingClientRect();
+          return { selector: node.outerHTML.slice(0, 120), width: rect.width, height: rect.height };
+        }).filter(({ width, height }) => width < 44 || height < 44),
+      };
+    });
+    expect(geometry.count, `${viewport.width}x${viewport.height} visible controls`).toBe(12);
+    expect(geometry.undersized, `${viewport.width}x${viewport.height}`).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
   }
 
@@ -260,57 +271,65 @@ test('la imagen de un producto real se reutiliza en Home, catálogo, modal y car
   await expect(page.locator(`[data-product-grid] [data-product-detail="${productId}"] img`)).toHaveAttribute('src', source);
 });
 
-test('la CTA móvil compacta reserva espacio real sobre la navegación', async ({ page }) => {
-  await installBrowserStubs(page);
-
+test('la CTA móvil compacta reserva espacio real sobre la navegación', async ({ browser }) => {
   for (const viewport of [
     { width: 320, height: 812 },
     { width: 360, height: 800 },
     { width: 390, height: 844 },
     { width: 430, height: 932 },
   ]) {
-    await page.setViewportSize(viewport);
-    await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
-    await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
+    const context = await browser.newContext({ viewport, serviceWorkers: 'block' });
+    const page = await context.newPage();
+    await installBrowserStubs(page);
+    try {
+      await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
+      await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
 
-    const main = page.locator('main[data-app-main]');
-    const emptyPadding = await main.evaluate((node) => parseFloat(getComputedStyle(node).paddingBottom));
-    await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+      const main = page.locator('main[data-app-main]');
+      const emptyPadding = await main.evaluate((node) => parseFloat(getComputedStyle(node).paddingBottom));
+      await clickAfterScrollSettles(
+        page,
+        page.locator('[data-product-grid] [data-add-product]:not([disabled])').first(),
+      );
+      await expect(page.locator('.topbar .cart-button-count')).toHaveText('1');
 
-    const floatingCart = page.locator('[data-floating-cart]');
-    const mobileNav = page.locator('.mobile-nav');
-    await expect(floatingCart).toBeVisible();
-    await expect(floatingCart.locator('[data-floating-cart-label]')).toHaveText('Ver carrito');
-    await expect(floatingCart.locator('[data-floating-cart-count]')).toHaveText('1 producto');
-    await expect(floatingCart.locator('[data-floating-cart-summary]')).toContainText(/^\$/);
-    await expect(mobileNav).toBeVisible();
+      const floatingCart = page.locator('[data-floating-cart]');
+      const mobileNav = page.locator('.mobile-nav');
+      await expect(floatingCart).toBeVisible();
+      await expect(floatingCart.locator('[data-floating-cart-label]')).toHaveText('Ver carrito');
+      await expect(floatingCart.locator('[data-floating-cart-count]')).toHaveText('1 producto');
+      await expect(floatingCart.locator('[data-floating-cart-summary]')).toContainText(/^\$/);
+      await expect(mobileNav).toBeVisible();
 
-    const [floatingBox, navBox, visiblePadding] = await Promise.all([
-      floatingCart.boundingBox(),
-      mobileNav.boundingBox(),
-      main.evaluate((node) => parseFloat(getComputedStyle(node).paddingBottom)),
-    ]);
-    expect(floatingBox).not.toBeNull();
-    expect(navBox).not.toBeNull();
-    expect(floatingBox.height, `${viewport.width}px tactile height`).toBeGreaterThanOrEqual(44);
-    expect(floatingBox.height, `${viewport.width}px compact height`).toBeLessThanOrEqual(54);
-    expect(navBox.y - (floatingBox.y + floatingBox.height), `${viewport.width}px visual separation`).toBeGreaterThanOrEqual(10);
-    expect(visiblePadding, `${viewport.width}px dynamic reserve`).toBeGreaterThan(emptyPadding);
-    expect(visiblePadding, `${viewport.width}px reserve behind both bars`).toBeGreaterThanOrEqual(
-      navBox.height + floatingBox.height + 8,
-    );
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
+      const [floatingBox, navBox, visiblePadding] = await Promise.all([
+        floatingCart.boundingBox(),
+        mobileNav.boundingBox(),
+        main.evaluate((node) => parseFloat(getComputedStyle(node).paddingBottom)),
+      ]);
+      expect(floatingBox).not.toBeNull();
+      expect(navBox).not.toBeNull();
+      expect(floatingBox.height, `${viewport.width}px tactile height`).toBeGreaterThanOrEqual(44);
+      expect(floatingBox.height, `${viewport.width}px compact height`).toBeLessThanOrEqual(54);
+      expect(navBox.y - (floatingBox.y + floatingBox.height), `${viewport.width}px visual separation`).toBeGreaterThanOrEqual(10);
+      expect(visiblePadding, `${viewport.width}px dynamic reserve`).toBeGreaterThan(emptyPadding);
+      expect(visiblePadding, `${viewport.width}px reserve behind both bars`).toBeGreaterThanOrEqual(
+        navBox.height + floatingBox.height + 8,
+      );
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
 
-    const lastCard = page.locator('[data-product-grid] .product-card').last();
-    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
-    await page.waitForFunction(() => (
-      window.scrollY >= document.documentElement.scrollHeight - window.innerHeight - 1
-    ));
-    await expect(lastCard).toBeInViewport();
-    const lastCardBox = await lastCard.boundingBox();
-    expect(lastCardBox).not.toBeNull();
-    expect(lastCardBox.y + lastCardBox.height, `${viewport.width}px content clear of the CTA`).toBeLessThanOrEqual(
-      floatingBox.y - 8,
-    );
+      const lastCard = page.locator('[data-product-grid] .product-card').last();
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+      await page.waitForFunction(() => (
+        window.scrollY >= document.documentElement.scrollHeight - window.innerHeight - 1
+      ));
+      await expect(lastCard).toBeInViewport();
+      const lastCardBox = await lastCard.boundingBox();
+      expect(lastCardBox).not.toBeNull();
+      expect(lastCardBox.y + lastCardBox.height, `${viewport.width}px content clear of the CTA`).toBeLessThanOrEqual(
+        floatingBox.y - 8,
+      );
+    } finally {
+      await context.close();
+    }
   }
 });

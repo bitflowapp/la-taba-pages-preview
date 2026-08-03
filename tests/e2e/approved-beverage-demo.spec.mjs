@@ -58,6 +58,7 @@ test('carrito preserva una oferta pack y exige edad para cerveza', async ({ page
   await page.locator('[data-nav-view="catalog"]:visible').first().click();
   await page.locator('[data-view="catalog"] [data-category-id="cervezas"]').click();
   await page.locator('[data-product-grid] [data-add-product="heineken-original-lata-473ml"]').click();
+  await expect(page.locator('.topbar .cart-button-count')).toHaveText('3');
   await page.locator('[data-open-cart]').first().click();
   await expect(page.locator('[data-age-confirmation]')).toBeVisible();
   await expect(page.locator('[name="ageConfirmed"]')).toHaveAttribute('required', '');

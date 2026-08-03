@@ -16,7 +16,8 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('[data-floating-cart]').click();
+  await expect(page.locator('.topbar .cart-button-count')).toHaveText('1');
+  await page.locator('[data-floating-cart]:visible, .topbar [data-open-cart]:visible').first().click();
   await fillCheckout(page, {
     name: 'Cliente Foto',
     phone: '2995557777',
@@ -87,10 +88,11 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
   await businessNoProofPage.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await businessNoProofPage.locator('[data-pin-form]').press('Enter');
   await expect(businessNoProofPage.locator('[data-view="business"]')).toBeVisible();
-  await expect(businessNoProofPage.locator('[data-inbox-order="LT-0002"] [data-delivery-proof-summary]')).toHaveCount(0);
+  const businessNoProofOrder = businessNoProofPage.locator('[data-inbox-order="LT-0002"]');
+  await expect(businessNoProofOrder).toBeVisible();
+  await expect(businessNoProofOrder.locator('[data-delivery-proof-summary]')).toHaveCount(0);
   await businessNoProofPage.close();
 
-  await page.goto('/?demo=1#rider');
   await expect(page.locator('[data-delivery-panel]')).toContainText('LT-0002');
   await page.locator('[data-delivery-proof-input="LT-0002"]').setInputFiles({
     name: 'proof-2.png',

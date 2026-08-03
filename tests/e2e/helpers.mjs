@@ -58,6 +58,28 @@ export async function gotoDemoReset(page, target) {
   await page.waitForURL(cleanUrl.toString(), { waitUntil: 'load' });
 }
 
+export async function clickAfterScrollSettles(page, locator, options) {
+  await locator.scrollIntoViewIfNeeded();
+  await page.evaluate(() => new Promise((resolve) => {
+    let previousX = window.scrollX;
+    let previousY = window.scrollY;
+    let stableFrames = 0;
+
+    const inspect = () => {
+      const nextX = window.scrollX;
+      const nextY = window.scrollY;
+      stableFrames = nextX === previousX && nextY === previousY ? stableFrames + 1 : 0;
+      previousX = nextX;
+      previousY = nextY;
+      if (stableFrames >= 3) resolve();
+      else requestAnimationFrame(inspect);
+    };
+
+    requestAnimationFrame(inspect);
+  }));
+  await locator.click(options);
+}
+
 export function installPageGuards(page) {
   const errors = [];
   const badResponses = [];
@@ -230,6 +252,7 @@ export async function fillCheckout(page, {
   addresses,
   namespace = 'demo',
 } = {}) {
+  await expect(page.locator('[data-cart-list] .cart-item')).not.toHaveCount(0);
   const streetLine = street ?? address ?? '';
   const parsed = splitStreetLine(streetLine);
   const seededAddresses = addresses ?? (streetLine

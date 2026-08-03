@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import {
+  clickAfterScrollSettles,
+  fillCheckout,
+  gotoDemoReset,
+  installBrowserStubs,
+  installPageGuards,
+  waitForToast,
+} from './helpers.mjs';
 
 test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -9,8 +16,12 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
 
   await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('[data-floating-cart]').click();
+  await clickAfterScrollSettles(
+    page,
+    page.locator('[data-product-grid] [data-add-product]:not([disabled])').first(),
+  );
+  await expect(page.locator('.topbar .cart-button-count')).toHaveText('1');
+  await page.locator('[data-floating-cart]:visible, .topbar [data-open-cart]:visible').first().click();
   await fillCheckout(page, {
     name: 'Cliente Codigo',
     phone: '2995551212',

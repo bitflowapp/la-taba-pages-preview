@@ -29,7 +29,9 @@ test('un GPS local sandbox se presenta en mapa sin inventar ETA', async ({ page 
   });
 
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking.locator('[data-real-map][data-map-source="sandbox"]')).toHaveCount(1);
+  await expect(tracking.locator(
+    '[data-real-map][data-map-source="sandbox"][data-map-status="ready"]',
+  )).toHaveCount(1, { timeout: 15_000 });
   await expect(tracking.locator('.lt-rider-marker')).toHaveCount(1);
   await expect(tracking.locator('.lt-place-marker.is-store')).toHaveCount(1);
   await expect(tracking.locator('.lt-place-marker.is-destination')).toHaveCount(1);

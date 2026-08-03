@@ -83,7 +83,7 @@ test('el modo demo ofrece GPS local y recorrido geográfico de respaldo', async 
   await expect(page.locator('[data-delivery-panel] [data-real-map]')).toHaveCount(0);
   await page.locator('[data-delivery-panel] [data-sim-start]').click();
   await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-source="sandbox"][data-map-engine="maplibre"]')).toHaveCount(1);
-  await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-status="ready"][data-route-source="simulation"]')).toHaveCount(1);
+  await expect(page.locator('[data-delivery-panel] [data-real-map][data-map-status="ready"][data-route-source="simulation"]')).toHaveCount(1, { timeout: 15_000 });
 });
 
 test('abandono de rider y pagehide cortan el watchPosition local', async ({ page }) => {

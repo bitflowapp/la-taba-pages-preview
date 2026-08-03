@@ -47,7 +47,8 @@ test('demo-realtime toma Perfil local al confirmar y sincroniza solo el pedido p
 
     await client.locator('.mobile-nav [data-nav-view="catalog"]').click();
     await client.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-    await client.getByRole('button', { name: /Ver carrito/i }).click();
+    await expect(client.locator('.topbar .cart-button-count')).toHaveText('1');
+    await client.locator('[data-floating-cart]:visible, .topbar [data-open-cart]:visible').first().click();
     await expect(client.locator('[data-cart-list] .cart-item')).toHaveCount(1);
 
     await client.locator('[data-profile-checkout-action="edit-profile"]').first().click();

@@ -37,7 +37,8 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   // 2. El cliente confirma un pedido con dirección real.
   await page.evaluate(() => { window.location.hash = '#catalog'; });
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('[data-floating-cart]').click();
+  await expect(page.locator('.topbar .cart-button-count')).toHaveText('1');
+  await page.locator('[data-floating-cart]:visible, .topbar [data-open-cart]:visible').first().click();
   await fillCheckout(page, {
     name: 'Cliente Demo',
     phone: '2990000001',

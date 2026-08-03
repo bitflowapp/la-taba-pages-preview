@@ -69,6 +69,16 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function cartSignature(state) {
+  return JSON.stringify((Array.isArray(state?.cart) ? state.cart : [])
+    .map((item) => ({
+      productId: String(item?.productId || ''),
+      quantity: Number(item?.quantity || 0),
+    }))
+    .filter((item) => item.productId && item.quantity > 0)
+    .sort((left, right) => left.productId.localeCompare(right.productId)));
+}
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -242,6 +252,7 @@ export function createSandboxOrderRepository({
   let applyingRemote = false;
   let lastAppliedRevision = 0;
   let foregroundRefreshHandler = null;
+  const hydrationBaselineCartSignature = cartSignature(getState());
   const lastStorageTickRef = { value: readStorageTick(storageNamespace) };
 
   async function persistAndPublish(state = getState()) {
@@ -449,15 +460,23 @@ export function createSandboxOrderRepository({
         const existing = await readFromDatabase(database, storageNamespace);
         if (isValidSnapshot(existing)) {
           const local = getState();
+          // Si el usuario agrega o quita un producto mientras IndexedDB está
+          // hidratando, ese cambio local es posterior al snapshot leído y no
+          // debe ser reemplazado por él. Comparamos contra el carrito exacto
+          // observado al iniciar la hidratación, sin asumir que una mera
+          // diferencia entre localStorage e IndexedDB vuelve autoritativo a
+          // ninguno de los dos.
+          const existingState = snapshotState(existing);
+          const localCartChangedDuringHydration = cartSignature(local) !== hydrationBaselineCartSignature;
           const localHasOperationalData = local.orders.some((order) => !order.internalSeed)
             || local.simulation?.source === 'gps'
             || local.orders.some((order) => order.tracking?.lastLocation?.source === 'gps');
-          const existingState = snapshotState(existing);
-          const localLooksNewer = localHasOperationalData
+          const localLooksNewer = localCartChangedDuringHydration
+            || (localHasOperationalData
             && (local.lastOrderId !== existingState.lastOrderId
               || local.simulation?.source !== existingState.simulation?.source
               || local.orders.length !== existingState.orders.length
-              || local.orders.some((order) => order.tracking?.lastLocation?.source === 'gps'));
+              || local.orders.some((order) => order.tracking?.lastLocation?.source === 'gps')));
           if (localLooksNewer) {
             await writeToDatabase(database, cloneStateForSnapshot(local), storageNamespace);
           } else {

@@ -67,6 +67,7 @@ test('home: estado claro y recorrido comercial compacto', async ({ browser }) =>
 
   await page.goto('/?demo=1');
   // El chip de estado dice abierto o cerrado de verdad (según horario configurado).
+  await expect(page.locator('html')).toHaveAttribute('data-app-bootstrap', 'ready');
   await expect(page.locator('[data-open-status]')).toContainText(/Pedidos disponibles|Pedidos online/);
 
   // Ofertas y combos destacados no repiten el mismo producto en el home.

@@ -470,9 +470,19 @@ function removeShowcaseRecovery() {
   }
 }
 
+function setAppBootstrapState(status) {
+  const main = document.querySelector('main[data-app-main]');
+  const pending = status === 'pending';
+  main?.toggleAttribute('inert', pending);
+  if (pending) main?.setAttribute('aria-busy', 'true');
+  else main?.removeAttribute('aria-busy');
+  document.documentElement.dataset.appBootstrap = status;
+}
+
 async function bootstrap() {
   // Si se pidió limpiar la demo, recargamos limpio y no seguimos inicializando.
   try {
+    setAppBootstrapState('pending');
     const resetRequested = hasDemoResetRequest();
     applyBusinessConfig();
     configureViewScrollRestoration();
@@ -524,7 +534,9 @@ async function bootstrap() {
         : 'No se pudo conectar al servidor de pedidos.';
       setTimeout(() => showToast(message), 600);
     }
+    setAppBootstrapState('ready');
   } catch (error) {
+    setAppBootstrapState('error');
     window.TABA_STARTUP_RECOVERY?.show({
       reason: /storage|indexeddb|base sandbox/i.test(error?.message || '') ? 'storage' : 'startup',
     });
@@ -957,10 +969,16 @@ function bindEvents() {
       return;
     }
 
-    const sandboxResult = await handleSandboxToolsAction(target);
-    if (sandboxResult.handled) {
-      if (sandboxResult.message) showToast(sandboxResult.message);
-      return;
+    // Las herramientas son el único camino que puede requerir I/O asíncrono.
+    // Evitar un `await` incondicional acá mantiene atómicas las acciones
+    // ordinarias (agregar al carrito, navegar, abrir checkout): WebKit puede
+    // despachar el siguiente tap antes de que continúe un listener async.
+    if (target.closest('[data-sandbox-action]')) {
+      const sandboxResult = await handleSandboxToolsAction(target);
+      if (sandboxResult.handled) {
+        if (sandboxResult.message) showToast(sandboxResult.message);
+        return;
+      }
     }
 
     const clearCatalogFilters = target.closest('[data-clear-catalog-filters]');

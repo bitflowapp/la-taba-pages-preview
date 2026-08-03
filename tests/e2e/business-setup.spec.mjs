@@ -69,7 +69,8 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   const productCountBeforeRestore = await page.locator('[data-product-grid] .product-card').count();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('[data-floating-cart]').click();
+  await expect(page.locator('.topbar .cart-button-count')).toHaveText('1');
+  await page.locator('[data-floating-cart]:visible, .topbar [data-open-cart]:visible').first().click();
   await expect(page.locator('[data-order-summary]')).toContainText('$ 777');
   await expect(page.locator('[data-order-summary]')).toContainText('$ 1.000');
   await fillCheckout(page, {

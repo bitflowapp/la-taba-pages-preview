@@ -46,6 +46,7 @@ export interface FiscalRequest {
   currencyCode: string;
   currencyRate: number;
   vatItems: ReadonlyArray<{ id: number; baseAmount: number; amount: number }>;
+  documentIntent?: 'invoice' | 'credit_note';
   associatedDocument?: { documentType: number; pointOfSale: number; documentNumber: number; cuit?: string; issueDate?: string };
 }
 
@@ -62,6 +63,9 @@ export interface ArcaResult {
   cae?: string;
   caeExpiration?: string;
   issueDate?: string;
+  totalAmount?: number;
+  pointOfSale?: number;
+  documentType?: number;
   observations: ReadonlyArray<{ code: string; message: string }>;
   errors: ReadonlyArray<{ code: string; message: string }>;
   requestHash?: string;

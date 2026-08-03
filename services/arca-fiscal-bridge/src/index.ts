@@ -1,6 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import { loadAndValidateCredentials, loadArcaConfig } from './config.js';
-import { loadPrivateStoreConfig, SupabaseFiscalStore } from './store.js';
+import { loadPrivateStoreConfig, SupabaseFiscalStore, SupabasePrivateArtifactStorage } from './store.js';
+import { FiscalArtifactWorker } from './artifact-worker.js';
 import { WsaaClient } from './wsaa.js';
 import { WsfeClient } from './wsfe.js';
 import { FiscalWorker, structuredLogger } from './worker.js';
@@ -8,6 +9,7 @@ import { startHealthServer } from './health.js';
 import { syncOfficialParameterTables } from './parameters.js';
 
 export * from './config.js';
+export * from './artifact-worker.js';
 export * from './health.js';
 export * from './pdf.js';
 export * from './parameters.js';
@@ -32,7 +34,9 @@ export async function startFiscalBridge(): Promise<void> {
   const credentials = loadAndValidateCredentials(config);
   credentialsReady = true;
   if (credentials.expiringSoon) structuredLogger.warn('arca_certificate_expiring', { expiresAt: credentials.expiresAt, daysRemaining: credentials.daysRemaining });
-  const store = new SupabaseFiscalStore(loadPrivateStoreConfig());
+  const privateStoreConfig = loadPrivateStoreConfig();
+  const store = new SupabaseFiscalStore(privateStoreConfig);
+  const artifactStorage = new SupabasePrivateArtifactStorage(privateStoreConfig);
   databaseReady = true;
   const wsaa = new WsaaClient(config, credentials);
   const wsfe = new WsfeClient(config);
@@ -48,7 +52,13 @@ export async function startFiscalBridge(): Promise<void> {
     wsaa,
     wsfe,
   });
-  const metrics = { cycles: 0, claimed: 0, completed: 0, errors: 0 };
+  const artifactWorker = new FiscalArtifactWorker({
+    workerId: config.workerId,
+    store,
+    storage: artifactStorage,
+    logger: structuredLogger,
+  });
+  const metrics = { cycles: 0, claimed: 0, completed: 0, artifactClaimed: 0, artifactCompleted: 0, errors: 0 };
   const server = startHealthServer(config, () => ({ credentials: credentialsReady, database: databaseReady, metrics: { ...metrics } }));
   structuredLogger.info('fiscal_worker_started', { environment: config.environment, workerId: config.workerId, port: config.healthPort });
   const tick = async () => {
@@ -57,6 +67,9 @@ export async function startFiscalBridge(): Promise<void> {
       const result = await worker.runOnce();
       metrics.claimed += result.claimed;
       metrics.completed += result.completed;
+      const artifacts = await artifactWorker.runOnce();
+      metrics.artifactClaimed += artifacts.claimed;
+      metrics.artifactCompleted += artifacts.completed;
     }
     catch (error) {
       metrics.errors += 1;

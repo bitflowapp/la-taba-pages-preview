@@ -7,6 +7,10 @@ process.env.TABA_E2E_RELAY_PORT = String(relayPort);
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
+  // Los specs de concurrencia crean sus propios navegadores/tabs. Ejecutar
+  // archivos distintos en paralelo compite por el relay y el servidor estÃ¡tico,
+  // convirtiendo saturaciÃ³n del host en timeouts no deterministas del gate.
+  workers: 1,
   forbidOnly: true,
   retries: 0,
   reporter: [['list']],

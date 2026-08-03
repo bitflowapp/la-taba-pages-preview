@@ -162,6 +162,8 @@ test('el panel Negocio real muestra estado honesto y conserva tarjetas ante fall
   await page.goto('/#business');
   const workspace = page.locator('[data-production-workspace="business"]');
   await expect(workspace).toBeVisible();
+  await expect(workspace.locator('[data-business-ops-center="operation-center"]')).toBeVisible();
+  await workspace.locator('[data-production-orders-view]').click();
   await expect(workspace.locator('.production-order-card')).toHaveCount(1);
   await expect(workspace).toContainText('Cliente sintético 1');
   await expect(workspace.locator('[data-business-intake-status] strong')).toHaveText('Conectado');

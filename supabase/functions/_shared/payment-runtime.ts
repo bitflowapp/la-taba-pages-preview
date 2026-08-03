@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient, type User } from 'npm:@supabase/supabase-js@2.110.8';
+import { validatePaymentWorkerSignature } from './payment-worker-signature.ts';
 
 const JSON_HEADERS = {
   'content-type': 'application/json; charset=utf-8',
@@ -280,9 +281,13 @@ export async function timingSafeEqual(left: string, right: string): Promise<bool
 }
 
 export async function requireWorkerAuthorization(request: Request): Promise<void> {
-  const provided = request.headers.get('x-taba-payment-worker-secret') || '';
-  const expected = getRequiredEnv('PAYMENT_WORKER_SECRET');
-  if (!await timingSafeEqual(provided, expected)) {
+  const valid = await validatePaymentWorkerSignature({
+    secret: getRequiredEnv('PAYMENT_WORKER_SECRET'),
+    timestamp: request.headers.get('x-taba-worker-timestamp') || '',
+    nonce: request.headers.get('x-taba-worker-nonce') || '',
+    signature: request.headers.get('x-taba-worker-signature') || '',
+  });
+  if (!valid) {
     throw new PublicPaymentError(401, 'WORKER_AUTH_REQUIRED', 'No autorizado.');
   }
 }

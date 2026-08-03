@@ -55,12 +55,18 @@ export function reviewMigrations(directory = DIR) {
   }
 
   const incompatible = [
-    [/\buuid_generate_v4\s*\(/i, 'uuid_generate_v4 requiere extensión uuid-ossp; preferir gen_random_uuid().'],
-    [/\bextensions\.http_/i, 'Dependencia de extensión HTTP no portable.'],
-    [/\bnet\.http_/i, 'Dependencia de pg_net no garantizada en una base vacía.'],
+    [/\buuid_generate_v4\s*\(/i, 'uuid_generate_v4 requiere extensión uuid-ossp; preferir gen_random_uuid().', null],
+    [/\bextensions\.http_/i, 'Dependencia de extensión HTTP no portable.', null],
+    [
+      /\bnet\.http_/i,
+      'Dependencia de pg_net no garantizada en una base vacía.',
+      /create\s+extension\s+if\s+not\s+exists\s+pg_net\b/i,
+    ],
   ];
-  for (const [pattern, message] of incompatible) {
-    if (pattern.test(combined)) issues.push(issue('warning', '*', message));
+  for (const [pattern, message, guaranteedBy] of incompatible) {
+    if (pattern.test(combined) && !(guaranteedBy && guaranteedBy.test(combined))) {
+      issues.push(issue('warning', '*', message));
+    }
   }
 
   const createdColumns = new Set(

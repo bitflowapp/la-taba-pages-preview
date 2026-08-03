@@ -19,7 +19,7 @@ test('config usa allowlist oficial y bloquea homologación sin frase', () => {
   const config = loadArcaConfig(baseEnv);
   assert.deepEqual(config.endpoints, OFFICIAL_ENDPOINTS.homologation);
   assert.throws(() => assertRemoteExecutionAllowed(config), /ARCA_HOMOLOGATION_BLOCKED/);
-  const enabled = loadArcaConfig({ ...baseEnv, ARCA_HOMOLOGATION_CONSENT: 'I_UNDERSTAND_THIS_USES_ARCA_HOMOLOGATION' });
+  const enabled = loadArcaConfig({ ...baseEnv, ARCA_HOMOLOGATION_CONSENT: 'I_AUTHORIZE_ARCA_HOMOLOGATION' });
   assert.doesNotThrow(() => assertRemoteExecutionAllowed(enabled));
 });
 
@@ -82,7 +82,7 @@ test('WSAA comparte una sola renovación concurrente por CUIT, servicio y ambien
     const ticketXml = '&lt;loginTicketResponse&gt;&lt;header&gt;&lt;generationTime&gt;2026-08-02T11:50:00Z&lt;/generationTime&gt;&lt;expirationTime&gt;2026-08-02T23:50:00Z&lt;/expirationTime&gt;&lt;/header&gt;&lt;credentials&gt;&lt;token&gt;token-test&lt;/token&gt;&lt;sign&gt;sign-test&lt;/sign&gt;&lt;/credentials&gt;&lt;service&gt;wsfe&lt;/service&gt;&lt;/loginTicketResponse&gt;';
     return new Response(`<Envelope><Body><loginCmsReturn>${ticketXml}</loginCmsReturn></Body></Envelope>`, { status: 200 });
   };
-  const config = loadArcaConfig({ ...baseEnv, ARCA_HOMOLOGATION_CONSENT: 'I_UNDERSTAND_THIS_USES_ARCA_HOMOLOGATION' });
+  const config = loadArcaConfig({ ...baseEnv, ARCA_HOMOLOGATION_CONSENT: 'I_AUTHORIZE_ARCA_HOMOLOGATION' });
   const client = new WsaaClient(config, { certificatePem: forge.pki.certificateToPem(certificate), privateKeyPem: forge.pki.privateKeyToPem(keys.privateKey) }, fetchImpl as typeof fetch);
   const now = new Date('2026-08-02T12:00:00Z');
   const [first, second] = await Promise.all([client.login('wsfe', now), client.login('wsfe', now)]);

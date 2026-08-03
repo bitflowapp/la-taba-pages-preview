@@ -34,10 +34,11 @@ function psql(sql) {
 try {
   docker(['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', database]);
   docker(['exec', container, 'createdb', '-U', 'postgres', database]);
-  const authSchema = execFileSync(dockerCommand, [
-    'exec', container, 'pg_dump', '-U', 'postgres', '-d', 'postgres', '--schema-only', '--schema=auth', '--no-owner', '--no-privileges',
+  const platformSchemas = execFileSync(dockerCommand, [
+    'exec', container, 'pg_dump', '-U', 'postgres', '-d', 'postgres', '--schema-only',
+    '--schema=auth', '--schema=storage', '--no-owner', '--no-privileges',
   ]);
-  psql(authSchema);
+  psql(platformSchemas);
   psql('create schema if not exists extensions; create extension if not exists pgcrypto with schema extensions;');
   for (const migration of migrations) psql(fs.readFileSync(migration));
   psql(fs.readFileSync(path.join(root, 'supabase', 'tests', 'mercadopago_checkout_pro.local.sql')));

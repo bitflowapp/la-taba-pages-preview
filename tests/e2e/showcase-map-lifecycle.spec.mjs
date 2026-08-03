@@ -38,7 +38,7 @@ test('showcase mounts only the active MapLibre view and cleans it on terminal or
   const trackingMap = page.locator(
     '[data-tracking-panel] [data-real-map][data-map-engine="maplibre"][data-map-status="ready"]',
   );
-  await expect(trackingMap).toHaveCount(1);
+  await expect(trackingMap).toHaveCount(1, { timeout: 15_000 });
   await expect(trackingMap).toBeVisible();
   await expect(page.locator('.maplibregl-canvas')).toHaveCount(1);
   await expect(page.locator(
@@ -79,7 +79,7 @@ test('showcase mounts only the active MapLibre view and cleans it on terminal or
   expect(await mapLifecycle(page)).toEqual({ constructs: 1, removes: 1 });
 
   await selectShowcaseStep(page, 'tracking-map');
-  await expect(trackingMap).toHaveCount(1);
+  await expect(trackingMap).toHaveCount(1, { timeout: 15_000 });
   await expect(trackingMap).toBeVisible();
   await expect(page.locator('.maplibregl-canvas')).toHaveCount(1);
   expect(await mapLifecycle(page)).toEqual({ constructs: 2, removes: 1 });

@@ -3,6 +3,7 @@ node_modules/
 .env
 **/.env
 test-results/
+test-results-certification/
 playwright-report/
 dist_release/
 dist-desktop/

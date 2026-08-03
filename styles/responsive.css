@@ -1348,10 +1348,15 @@ body[data-active-view="rider"] .floating-cart {
     height: 112px;
   }
 
+  /* Fractional viewport/compositor rounding can report 43.9999px; keep
+     every 44px Home action above the strict accessibility floor. */
+  .taba-home .home-section-head button {
+    min-height: 44.1px;
+  }
+
+  .taba-home .home-favorite-button,
   .taba-home .home-add-button,
   .taba-home .home-best-card .home-add-button {
-    /* Fractional viewport rounding can report 43.9999px; keep the 44px
-       touch target above the strict accessibility floor on every DPR. */
     width: 44.1px;
     height: 44.1px;
   }

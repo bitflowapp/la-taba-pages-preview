@@ -1,3 +1,7 @@
+.app-view[data-view="catalog"] {
+  overflow-x: clip;
+}
+
 .catalog-head {
   margin-bottom: 4px;
 }

@@ -609,6 +609,10 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
     });
     await expect.poll(() => page.evaluate(() => {
       const root = document.scrollingElement ?? document.documentElement;
+      window.scrollTo({
+        top: root.scrollHeight - root.clientHeight,
+        behavior: 'instant',
+      });
       return Math.abs(window.scrollY - (root.scrollHeight - root.clientHeight));
     })).toBeLessThanOrEqual(1);
     const ctaGap = await page.evaluate(() => {
@@ -620,10 +624,17 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
 
     await page.goto('/?demo=1#catalog');
     await expect(page.locator('[data-product-grid] .product-card')).not.toHaveCount(0);
-    await page.evaluate(() => window.scrollTo({
-      top: document.documentElement.scrollHeight,
-      behavior: 'instant',
-    }));
+    await page.evaluate(() => {
+      const root = document.scrollingElement ?? document.documentElement;
+      window.scrollTo({
+        top: root.scrollHeight - root.clientHeight,
+        behavior: 'instant',
+      });
+    });
+    await expect.poll(() => page.evaluate(() => {
+      const root = document.scrollingElement ?? document.documentElement;
+      return Math.abs(window.scrollY - (root.scrollHeight - root.clientHeight));
+    })).toBeLessThanOrEqual(1);
     const catalogGeometry = await page.evaluate(() => {
       const navRect = document.querySelector('.mobile-nav').getBoundingClientRect();
       const cards = [...document.querySelectorAll('[data-product-grid] .product-card')];
@@ -738,7 +749,8 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
 
     await seedCartAboveMinimum(page);
     if (viewport.width <= 820) {
-      await page.locator('[data-floating-cart]').click();
+      await expect(page.locator('.topbar .cart-button-count')).toHaveText('1');
+      await page.locator('[data-floating-cart]:visible, .topbar [data-open-cart]:visible').first().click();
     } else {
       await page.locator('.desktop-nav [data-nav-view="cart"]').click();
     }

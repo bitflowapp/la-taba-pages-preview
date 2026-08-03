@@ -207,7 +207,11 @@ body:is([data-active-view="business"], [data-active-view="rider"]) {
 
 html {
   min-width: 320px;
-  scroll-behavior: smooth;
+  /* El desplazamiento animado es opt-in en las acciones que lo necesitan.
+     Aplicarlo globalmente puede mantener un control en movimiento entre
+     pointerdown y pointerup (especialmente en WebKit) y entregar el click al
+     elemento que queda debajo. */
+  scroll-behavior: auto;
   -webkit-text-size-adjust: 100%;
 }
 

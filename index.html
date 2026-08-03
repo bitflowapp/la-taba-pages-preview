@@ -20,7 +20,13 @@
     />
     <link rel="stylesheet" href="styles.css?v=40" />
   </head>
-  <body>
+  <!--
+    La vista activa se declara ya en el shell servido. `renderNavigation` la
+    sobrescribe en cada navegación, pero sin este valor inicial la home pintaba
+    un fotograma con la superficie clara antes de que el módulo arrancara: un
+    destello blanco justo en la pantalla más vista del producto.
+  -->
+  <body data-active-view="home">
     <div class="app-shell">
       <header class="topbar">
         <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio del comercio">

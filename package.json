@@ -15,6 +15,8 @@
     "fiscal:install": "npm --prefix services/arca-fiscal-bridge ci",
     "fiscal:build": "npm --prefix services/arca-fiscal-bridge run build",
     "fiscal:test": "npm --prefix services/arca-fiscal-bridge test",
+    "arca:credentials": "node scripts/arca-credentials.mjs",
+    "arca:health": "node scripts/arca-credentials.mjs health",
     "test:db:local": "supabase test db --local supabase/tests/business_windows_scanner_fiscal_test.sql",
     "verify:technical": "npm run check && npm test && npm run fiscal:test && npm run test:e2e",
     "verify": "npm run migrations:validate && npm run catalog:release:validate && npm run verify:technical",

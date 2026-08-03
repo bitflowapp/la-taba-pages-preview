@@ -4,6 +4,20 @@ import type { ArcaConfig } from './types.js';
 export interface HealthSnapshot {
   database: boolean;
   credentials: boolean;
+  credentialStatus?: {
+    certificatePresent: boolean;
+    privateKeyPresent: boolean;
+    pairMatches: boolean;
+    cuitMatches: boolean;
+    expiresAt: string | null;
+    expiringSoon: boolean | null;
+  };
+  wsaaRelation?: 'pending' | 'verified' | 'failed' | 'not_configured';
+  wsfeRelation?: 'pending' | 'verified' | 'failed' | 'not_configured';
+  arcaConnection?: 'not_tested' | 'verified' | 'failed';
+  lastTestAt?: string | null;
+  lastError?: string | null;
+  outboxPending?: number | null;
   metrics?: { cycles: number; claimed: number; completed: number; errors: number };
 }
 
@@ -27,7 +41,8 @@ export function startHealthServer(config: ArcaConfig, readiness: () => HealthSna
     const remoteExecutionEnabled = config.environment === 'homologation'
       ? config.homologationConsent
       : config.environment === 'production' && config.productionEnabled;
-    const isReady = ready.database && ready.credentials && remoteExecutionEnabled;
+    const isReady = ready.database && ready.credentials && remoteExecutionEnabled
+      && ready.wsaaRelation === 'verified' && ready.wsfeRelation === 'verified';
     const body = {
       service: 'taba-arca-fiscal-bridge',
       version: '0.1.0',
@@ -36,6 +51,13 @@ export function startHealthServer(config: ArcaConfig, readiness: () => HealthSna
       database: ready.database,
       credentials: ready.credentials,
       remoteExecutionEnabled,
+      ...(ready.credentialStatus ? { credentialStatus: ready.credentialStatus } : {}),
+      ...(ready.wsaaRelation ? { wsaaRelation: ready.wsaaRelation } : {}),
+      ...(ready.wsfeRelation ? { wsfeRelation: ready.wsfeRelation } : {}),
+      ...(ready.arcaConnection ? { arcaConnection: ready.arcaConnection } : {}),
+      ...(ready.lastTestAt ? { lastTestAt: ready.lastTestAt } : {}),
+      ...(ready.lastError ? { lastError: ready.lastError } : {}),
+      ...(ready.outboxPending !== undefined ? { outboxPending: ready.outboxPending } : {}),
       ...(ready.metrics ? { metrics: ready.metrics } : {}),
     };
     response.writeHead(request.url === '/ready' && !isReady ? 503 : 200, {

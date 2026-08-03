@@ -14,7 +14,7 @@ export const OFFICIAL_ENDPOINTS: Readonly<Record<Exclude<ArcaEnvironment, 'disab
   }),
 });
 
-const HOMOLOGATION_PHRASE = 'I_UNDERSTAND_THIS_USES_ARCA_HOMOLOGATION';
+export const HOMOLOGATION_CONSENT_PHRASE = 'I_AUTHORIZE_ARCA_HOMOLOGATION';
 const PRODUCTION_PHRASE = 'I_UNDERSTAND_THIS_USES_ARCA_PRODUCTION';
 
 export function loadArcaConfig(env: NodeJS.ProcessEnv = process.env): ArcaConfig {
@@ -38,7 +38,7 @@ export function loadArcaConfig(env: NodeJS.ProcessEnv = process.env): ArcaConfig
     workerId,
     healthPort,
     endpoints,
-    homologationConsent: env.ARCA_HOMOLOGATION_CONSENT === HOMOLOGATION_PHRASE,
+    homologationConsent: env.ARCA_HOMOLOGATION_CONSENT === HOMOLOGATION_CONSENT_PHRASE,
     productionEnabled: environment === 'production' && env.ARCA_PRODUCTION_ENABLE === PRODUCTION_PHRASE,
   });
 }

@@ -25,15 +25,53 @@ export async function startFiscalBridge(): Promise<void> {
   const config = loadArcaConfig();
   let credentialsReady = false;
   let databaseReady = false;
+  const readiness = {
+    credentialStatus: {
+      certificatePresent: false,
+      privateKeyPresent: false,
+      pairMatches: false,
+      cuitMatches: false,
+      expiresAt: null as string | null,
+      expiringSoon: null as boolean | null,
+    },
+    wsaaRelation: 'not_configured' as 'pending' | 'verified' | 'failed' | 'not_configured',
+    wsfeRelation: 'not_configured' as 'pending' | 'verified' | 'failed' | 'not_configured',
+    arcaConnection: 'not_tested' as 'not_tested' | 'verified' | 'failed',
+    lastTestAt: null as string | null,
+    lastError: null as string | null,
+  };
   if (config.environment === 'disabled') {
-    const server = startHealthServer(config, () => ({ credentials: false, database: false }));
+    const server = startHealthServer(config, () => ({ credentials: false, database: false, ...readiness }));
     installShutdown(server);
     structuredLogger.info('fiscal_worker_disabled', { environment: config.environment, workerId: config.workerId, port: config.healthPort });
     return;
   }
-  const credentials = loadAndValidateCredentials(config);
-  credentialsReady = true;
-  if (credentials.expiringSoon) structuredLogger.warn('arca_certificate_expiring', { expiresAt: credentials.expiresAt, daysRemaining: credentials.daysRemaining });
+  if (config.environment === 'homologation' && !config.homologationConsent) {
+    const server = startHealthServer(config, () => ({ credentials: false, database: false, ...readiness }));
+    installShutdown(server);
+    structuredLogger.warn('arca_homologation_blocked', { code: 'ARCA_HOMOLOGATION_BLOCKED', workerId: config.workerId });
+    return;
+  }
+  let credentials;
+  try {
+    credentials = loadAndValidateCredentials(config);
+    credentialsReady = true;
+    readiness.credentialStatus = {
+      certificatePresent: true,
+      privateKeyPresent: true,
+      pairMatches: true,
+      cuitMatches: true,
+      expiresAt: credentials.expiresAt,
+      expiringSoon: credentials.expiringSoon,
+    };
+    if (credentials.expiringSoon) structuredLogger.warn('arca_certificate_expiring', { expiresAt: credentials.expiresAt, daysRemaining: credentials.daysRemaining });
+  } catch (error) {
+    readiness.lastError = sanitizeHealthError(error);
+    const server = startHealthServer(config, () => ({ credentials: false, database: false, ...readiness }));
+    installShutdown(server);
+    structuredLogger.warn('arca_credentials_blocked', { code: 'ARCA_CREDENTIALS_INVALID' });
+    return;
+  }
   const privateStoreConfig = loadPrivateStoreConfig();
   const store = new SupabaseFiscalStore(privateStoreConfig);
   const artifactStorage = new SupabasePrivateArtifactStorage(privateStoreConfig);
@@ -45,7 +83,27 @@ export async function startFiscalBridge(): Promise<void> {
     getParameters: (ticket, type) => wsfe.getParameters(ticket, type),
     save: (snapshot) => store.saveParameterSnapshot(snapshot),
   });
-  await syncParameters();
+  const metrics = { cycles: 0, claimed: 0, completed: 0, artifactClaimed: 0, artifactCompleted: 0, errors: 0 };
+  const server = startHealthServer(config, () => ({ credentials: credentialsReady, database: databaseReady, ...readiness, metrics: { ...metrics } }));
+  try {
+    readiness.wsaaRelation = 'pending';
+    readiness.wsfeRelation = 'pending';
+    await syncParameters();
+    readiness.wsaaRelation = 'verified';
+    readiness.wsfeRelation = 'verified';
+    readiness.arcaConnection = 'verified';
+    readiness.lastTestAt = new Date().toISOString();
+    readiness.lastError = null;
+  } catch (error) {
+    readiness.wsaaRelation = 'failed';
+    readiness.wsfeRelation = 'failed';
+    readiness.arcaConnection = 'failed';
+    readiness.lastTestAt = new Date().toISOString();
+    readiness.lastError = sanitizeHealthError(error);
+    structuredLogger.warn('fiscal_parameter_sync_failed', { code: 'FISCAL_PARAMETER_SYNC_ERROR' });
+    installShutdown(server);
+    return;
+  }
   const worker = new FiscalWorker({
     config,
     store,
@@ -58,8 +116,6 @@ export async function startFiscalBridge(): Promise<void> {
     storage: artifactStorage,
     logger: structuredLogger,
   });
-  const metrics = { cycles: 0, claimed: 0, completed: 0, artifactClaimed: 0, artifactCompleted: 0, errors: 0 };
-  const server = startHealthServer(config, () => ({ credentials: credentialsReady, database: databaseReady, metrics: { ...metrics } }));
   structuredLogger.info('fiscal_worker_started', { environment: config.environment, workerId: config.workerId, port: config.healthPort });
   const tick = async () => {
     metrics.cycles += 1;
@@ -82,6 +138,12 @@ export async function startFiscalBridge(): Promise<void> {
     void syncParameters().catch((error) => structuredLogger.warn('fiscal_parameter_sync_failed', { code: error?.code || 'PARAMETER_SYNC_ERROR', message: error?.message || 'No se pudieron sincronizar parámetros.' }));
   }, 6 * 60 * 60_000);
   installShutdown(server, [timer, parameterTimer]);
+}
+
+function sanitizeHealthError(error: unknown): string {
+  return String((error as { code?: string })?.code || (error as Error)?.message || 'ARCA readiness failed')
+    .replace(/token|sign|secret|password|private.?key|service.?role|-----BEGIN[^-]+-----[\s\S]*?-----END[^-]+-----/gi, '[redacted]')
+    .slice(0, 240);
 }
 
 function installShutdown(server: import('node:http').Server, timers: NodeJS.Timeout[] = []): void {

@@ -14,6 +14,9 @@ export class BusinessPlatformAdapter {
   async openSupportExportFolder() { throw new Error('Las exportaciones de soporte requieren TABA para Windows.'); }
   async checkForSignedUpdate() { return { configured: false, available: false }; }
   async installSignedUpdate() { throw new Error('El canal de actualizaciones firmadas no est\u00e1 disponible.'); }
+  async savePackingCache() { throw new Error('La cach\u00e9 durable de packing no est\u00e1 disponible.'); }
+  async loadPackingCache() { return null; }
+  async deletePackingCache() { return false; }
   async exit() { return false; }
   async commandStorage() { throw new Error('No hay almacenamiento de comandos configurado.'); }
 }

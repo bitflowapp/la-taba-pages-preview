@@ -652,6 +652,7 @@ async function configureBusinessRuntime(result) {
   operationsRepository = createSupabaseOperationsRepository({ client, businessId });
   const desktopPlatform = createBusinessPlatform();
   configureBusinessOperations({
+    businessId,
     operatorId,
     getOrders: () => getState().orders,
     lookupBarcode: (gtin) => inventoryRepository.lookupBarcode(gtin),
@@ -670,15 +671,35 @@ async function configureBusinessRuntime(result) {
     updateFiscalPrintJob: (input) => fiscalRepository.updatePrintJob(input),
     desktopPlatform,
     startPacking: (input) => packingRepository.start(input),
-    recordPackingScan: ({ session, event }) => packingRepository.scan({
-      sessionId: session.serverSessionId,
-      gtin: event.normalizedValue,
-      scanKey: createRuntimeKey('packing-scan'),
+    getPackingManifest: (sessionId) => packingRepository.manifest({ sessionId }),
+    recordPackingScan: ({ session, event, scanKey }) => businessCommandController.queue({
+      businessId,
+      orderId: session.orderId,
+      commandType: 'packing_scan',
+      expectedRevision: session.orderRevision,
+      idempotencyKey: scanKey,
+      payload: {
+        sessionId: session.serverSessionId,
+        gtin: event.normalizedValue,
+        scanKey,
+      },
     }),
-    undoPackingScan: ({ session }) => packingRepository.undo({ sessionId: session.serverSessionId }),
-    confirmPacking: ({ session, exceptionReason }) => packingRepository.confirm({
+    revertPackingScan: ({ session, scanKey, idempotencyKey }) => businessCommandController.queue({
+      businessId,
+      orderId: session.orderId,
+      commandType: 'packing_scan_revert',
+      expectedRevision: session.orderRevision,
+      idempotencyKey,
+      payload: { sessionId: session.serverSessionId, scanKey },
+    }),
+    cancelPackingScan: (scanKey) => businessCommandController.cancelByIdempotencyKey(scanKey),
+    drainPackingCommands: () => businessCommandController.drain(),
+    listPackingCommands: () => businessCommandController.getSnapshot().commands
+      .filter((command) => command.commandType.startsWith('packing_')),
+    confirmPacking: ({ session, exceptionReason, idempotencyKey }) => packingRepository.confirm({
       sessionId: session.serverSessionId,
       exceptionReason,
+      idempotencyKey,
     }),
     role: result.membership?.role,
     getOperationCenter: () => operationsRepository.getCenter(),
@@ -713,6 +734,35 @@ function stopBusinessCommandRuntime() {
 }
 
 async function reconcileBusinessCommand(command) {
+  if (command.commandType === 'packing_scan' || command.commandType === 'packing_scan_revert') {
+    const response = await packingRepository.manifest({ sessionId: command.payload?.sessionId });
+    if (!response?.ok) {
+      const error = new Error(response?.message || 'No se pudo reconciliar la preparación.');
+      error.code = response?.code || 'SERVER_UNAVAILABLE';
+      throw error;
+    }
+    const manifest = response.data;
+    if (manifest.session.businessId !== command.businessId || manifest.session.orderId !== command.orderId) {
+      return { conflict: true, code: 'PACKING_SCOPE_MISMATCH', message: 'La sesión de packing pertenece a otro pedido o negocio.' };
+    }
+    const scan = manifest.scans.find((candidate) => candidate.scanKey === command.payload?.scanKey);
+    if (command.commandType === 'packing_scan') {
+      if (scan && !scan.revertedAt && scan.gtin === command.payload?.gtin) {
+        return { alreadyApplied: true, revision: manifest.session.orderRevision };
+      }
+      if (scan) return { conflict: true, code: 'PACKING_SCAN_CONFLICT', message: 'La clave de lectura ya existe con otro estado o código.' };
+      if (!['in_progress', 'complete'].includes(manifest.session.status)) {
+        return { conflict: true, code: 'PACKING_SESSION_CLOSED', message: 'La sesión de packing ya no acepta lecturas.' };
+      }
+    } else {
+      if (scan?.revertedAt) return { alreadyApplied: true, revision: manifest.session.orderRevision };
+      if (!scan) return { conflict: true, code: 'PACKING_SCAN_NOT_FOUND', message: 'La lectura a revertir no existe en el servidor.' };
+      if (!['in_progress', 'complete'].includes(manifest.session.status)) {
+        return { conflict: true, code: 'PACKING_SESSION_CLOSED', message: 'La sesión de packing ya no admite correcciones.' };
+      }
+    }
+    return { manifest, revision: manifest.session.orderRevision };
+  }
   const snapshot = await repository.fetchBusinessOrderSnapshot();
   if (!snapshot?.ok) {
     const error = new Error(snapshot?.message || 'No se pudo reconciliar el pedido.');
@@ -732,6 +782,20 @@ async function reconcileBusinessCommand(command) {
 }
 
 async function sendBusinessCommand(command) {
+  if (command.commandType === 'packing_scan') {
+    return packingCommandResult(await packingRepository.scan({
+      sessionId: command.payload.sessionId,
+      gtin: command.payload.gtin,
+      scanKey: command.payload.scanKey,
+    }), command.expectedRevision);
+  }
+  if (command.commandType === 'packing_scan_revert') {
+    return packingCommandResult(await packingRepository.revert({
+      sessionId: command.payload.sessionId,
+      scanKey: command.payload.scanKey,
+      idempotencyKey: command.idempotencyKey,
+    }), command.expectedRevision);
+  }
   const options = {
     expectedRevision: command.expectedRevision,
     idempotencyKey: command.idempotencyKey,
@@ -746,6 +810,18 @@ async function sendBusinessCommand(command) {
       conflict: response?.code === 'ORDER_REVISION_CONFLICT' || /cambi|revision|revisi/i.test(response?.message || ''),
       retryable: Number(response?.status || 0) === 0 || Number(response?.status || 0) >= 500,
       code: response?.code || response?.errorCode || 'RPC_ERROR',
+      message: response?.message,
+    };
+}
+
+function packingCommandResult(response, revision) {
+  return response?.ok
+    ? { ok: true, revision }
+    : {
+      ok: false,
+      conflict: ['23505', '23514', '42501', 'P0001', 'P0002'].includes(String(response?.code || '')),
+      retryable: Number(response?.status || 0) === 0 || Number(response?.status || 0) >= 500,
+      code: response?.code || 'PACKING_RPC_ERROR',
       message: response?.message,
     };
 }

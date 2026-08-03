@@ -68,6 +68,15 @@ export function createBusinessPanelController({
     return commands;
   }
 
+  async function cancelByIdempotencyKey(idempotencyKey) {
+    if (!initialized) await initialize();
+    const command = (await outbox.list()).find((item) => item.idempotencyKey === String(idempotencyKey || ''));
+    if (!command || !['pending', 'failed', 'conflicted'].includes(command.state)) return false;
+    const cancelled = await outbox.cancel(command.commandId);
+    await refreshCommands();
+    return cancelled;
+  }
+
   function getSnapshot() {
     return {
       initialized,
@@ -77,5 +86,5 @@ export function createBusinessPanelController({
     };
   }
 
-  return Object.freeze({ initialize, queue, drain, refreshCommands, getSnapshot, connectivity });
+  return Object.freeze({ initialize, queue, drain, refreshCommands, cancelByIdempotencyKey, getSnapshot, connectivity });
 }

@@ -66,15 +66,17 @@ test('una falla fiscal posterior no revierte ni disfraza la venta confirmada', a
   assert.equal(result.fiscal.ok, false);
 });
 
-test('packing inicia, registra, deshace y confirma s\u00f3lo mediante RPC', async () => {
+test('packing inicia, reconcilia, revierte y confirma idempotente sólo mediante RPC', async () => {
   const client = mockClient();
   const repository = createSupabasePackingRepository({ client });
   await repository.start({ orderId: 'o1', expectedRevision: 3, idempotencyKey: 'packing-o1-r3' });
   await repository.scan({ sessionId: 's1', gtin: '4006381333931', scanKey: 'scan-00001' });
-  await repository.undo({ sessionId: 's1' });
-  await repository.confirm({ sessionId: 's1', exceptionReason: null });
+  await repository.manifest({ sessionId: 's1' });
+  await repository.revert({ sessionId: 's1', scanKey: 'scan-00001', idempotencyKey: 'revert-00001' });
+  await repository.confirm({ sessionId: 's1', exceptionReason: null, idempotencyKey: 'confirm-00001' });
   assert.deepEqual(client.calls.map(({ name }) => name), [
-    'start_packing_session', 'record_packing_scan', 'undo_last_packing_scan', 'confirm_packing_session',
+    'start_packing_session', 'record_packing_scan', 'get_packing_manifest',
+    'revert_packing_scan', 'confirm_packing_session_once',
   ]);
 });
 

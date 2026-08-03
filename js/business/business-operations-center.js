@@ -1,6 +1,10 @@
 import { createBarcodeScannerService, SCANNER_MODES } from '../catalog/barcode-scanner-service.js';
 import { escapeHtml } from '../ui.js';
-import { applyPackingScan, createPackingSession, undoLastPackingScan } from './business-packing-verification.js';
+import {
+  applyPackingScan, createPackingCacheSnapshot, createPackingSessionFromManifest,
+  markPackingScanConfirmed, pendingPackingScanCount, restorePackingCacheSnapshot,
+  revertPackingScanLocally, undoLastPackingScan,
+} from './business-packing-verification.js';
 import { presentFiscalStatus } from '../pos/fiscal-status-presenter.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
@@ -39,6 +43,8 @@ let fiscalPrinters = [];
 let fiscalInitialRefreshStarted = false;
 let fiscalCreditDrafts = new Map();
 let packingSession = null;
+let packingRestoreStarted = false;
+let packingCacheStatus = '';
 let productDraft = null;
 let operationCenterSnapshot = null;
 let operationCenterStatus = { phase: 'idle', message: '' };
@@ -50,6 +56,8 @@ export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
   context = { ...defaultContext(), ...next };
   packingSession = null;
+  packingRestoreStarted = false;
+  packingCacheStatus = '';
   operationCenterSnapshot = null;
   operationCenterStatus = { phase: 'idle', message: '' };
   operationCenterRefreshStarted = false;
@@ -97,6 +105,10 @@ export function activateBusinessOperations(view = currentView) {
   scanner ||= createBarcodeScannerService();
   unsubscribeScanner ||= scanner.subscribe((event) => { void processScan(event); });
   scanner.start(mode);
+  if (view === 'packing' && !packingRestoreStarted) {
+    packingRestoreStarted = true;
+    void restorePackingSession();
+  }
 }
 
 export async function handleBusinessOperationsAction(target) {
@@ -148,10 +160,20 @@ export async function handleBusinessOperationsAction(target) {
   if (target.closest('[data-packing-start]')) return startPacking(target);
   if (target.closest('[data-packing-undo]')) {
     if (!packingSession) return result(false, 'No hay preparación activa.');
-    const server = await context.undoPackingScan({ session: packingSession });
-    if (!server?.ok) return result(false, server?.message || 'El servidor no confirmó el deshacer.');
+    const scan = packingSession.scans.at(-1);
+    if (!scan) return result(false, 'No hay lecturas para deshacer.');
+    let server;
+    if (scan.syncState !== 'confirmed') {
+      const cancelled = await context.cancelPackingScan(scan.scanKey);
+      server = cancelled ? { ok: true, pendingCancelled: true } : { ok: false, message: 'La lectura pendiente ya cambió; reconciliá antes de deshacer.' };
+    } else {
+      const idempotencyKey = `packing-revert:${scan.scanKey}`;
+      server = await context.revertPackingScan({ session: packingSession, scanKey: scan.scanKey, idempotencyKey });
+    }
+    if (!server?.ok && !server?.pending) return result(false, server?.message || 'El servidor no confirmó el deshacer.');
     const response = undoLastPackingScan(packingSession);
-    feedback = response.message;
+    await persistPackingSession();
+    feedback = server?.pending ? 'Lectura revertida localmente; corrección pendiente en la cola durable.' : response.message;
     context.onChange();
     return result(response.ok, response.message);
   }
@@ -233,6 +255,8 @@ export function resetBusinessOperationsForTests() {
   fiscalInitialRefreshStarted = false;
   fiscalCreditDrafts = new Map();
   packingSession = null;
+  packingRestoreStarted = false;
+  packingCacheStatus = '';
   productDraft = null;
   operationCenterSnapshot = null;
   operationCenterStatus = { phase: 'idle', message: '' };
@@ -249,8 +273,16 @@ async function processScan(event) {
     context.onChange();
     return;
   }
+  const packingBinding = currentView === 'packing' ? cachedPackingBinding(event.normalizedValue) : null;
+  if (currentView === 'packing' && packingSession && !packingBinding && globalThis.navigator?.onLine === false) {
+    feedback = 'Código fuera del manifiesto cacheado; no se contabilizó sin conexión.';
+    context.onChange();
+    return;
+  }
   busy = true;
-  lookup = await context.lookupBarcode(event.normalizedValue);
+  lookup = packingBinding
+    ? { ok: true, data: packingBinding }
+    : await context.lookupBarcode(event.normalizedValue);
   busy = false;
   const binding = lookup?.data || null;
   if (!binding) {
@@ -265,14 +297,20 @@ async function processScan(event) {
       if (item && !item.barcodes.some((barcode) => barcode.gtin === event.normalizedValue)) {
         item.barcodes.push({ gtin: event.normalizedValue, unitFactor: positiveInteger(binding.unit_factor, 1) });
       }
-      const response = applyPackingScan(packingSession, event);
+      const scanKey = createKey('packing-scan');
+      const previewSession = clonePackingSession(packingSession);
+      const response = applyPackingScan(previewSession, event, { scanKey });
       feedback = response.message;
       if (response.ok) {
-        const server = await context.recordPackingScan({ session: packingSession, event });
-        if (!server?.ok) {
-          undoLastPackingScan(packingSession);
-          feedback = server?.message || 'El servidor rechazó la lectura; no se contabilizó.';
-        }
+        const server = await context.recordPackingScan({ session: packingSession, event, scanKey });
+        if (server?.ok || server?.pending) {
+          applyPackingScan(packingSession, event, { scanKey, syncState: server.ok ? 'confirmed' : 'pending' });
+          if (server.ok) markPackingScanConfirmed(packingSession, scanKey);
+          await persistPackingSession();
+          feedback = server.pending
+            ? 'Lectura guardada en la cola local durable; falta confirmación del servidor.'
+            : response.message;
+        } else feedback = server?.message || 'El servidor rechazó la lectura; no se contabilizó.';
       }
     }
   } else {
@@ -390,20 +428,13 @@ async function startPacking(target) {
       idempotencyKey: `packing:${orderId}:${order.revision}`,
     });
     if (!server?.ok) return result(false, server?.message || 'El servidor no inició la preparación.');
-    packingSession = createPackingSession({
-      orderId,
-      orderRevision: Number(order.revision || 1),
-      operatorId: context.operatorId || 'operator',
-      items: (order.items || []).map((item) => ({
-        productId: item.productId,
-        name: item.name,
-        quantity: item.quantity,
-        barcodes: item.barcodes || [],
-      })),
-    });
     const serverSession = Array.isArray(server.data) ? server.data[0] : server.data;
-    packingSession.serverSessionId = serverSession?.id;
-    if (!packingSession.serverSessionId) throw new Error('El servidor no devolvió la sesión de preparación.');
+    const serverSessionId = serverSession?.id;
+    if (!serverSessionId) throw new Error('El servidor no devolvió la sesión de preparación.');
+    const manifest = await context.getPackingManifest(serverSessionId);
+    if (!manifest?.ok) throw new Error(manifest?.message || 'La sesión comenzó, pero no se pudo recuperar su manifiesto seguro.');
+    packingSession = createPackingSessionFromManifest(manifest.data, { operatorId: context.operatorId });
+    await persistPackingSession();
     feedback = 'Preparación iniciada. Escaneá cada unidad o pack.';
     context.onChange();
     return result(true, feedback);
@@ -414,13 +445,113 @@ async function startPacking(target) {
 
 async function confirmPacking(target) {
   if (!packingSession) return result(false, 'No hay preparación activa.');
+  if (globalThis.navigator?.onLine === false) return result(false, 'La preparación queda guardada; reconectá para reconciliar y confirmar.');
   const root = target.closest('[data-business-ops-center]');
   const exceptionReason = String(root?.querySelector('[name="packingExceptionReason"]')?.value || '').trim();
-  const server = await context.confirmPacking({ session: packingSession, exceptionReason: exceptionReason || null });
-  feedback = server?.ok ? 'Preparación confirmada por el servidor.' : server?.message || 'La preparación requiere revisión.';
+  await context.drainPackingCommands();
+  const blockedCommands = context.listPackingCommands().filter((command) => command.payload?.sessionId === packingSession.serverSessionId
+    && ['pending', 'sending', 'failed', 'conflicted'].includes(command.state));
+  if (blockedCommands.length) return result(false, 'Hay lecturas sin reconciliar; revisá la outbox antes de confirmar.');
+  const reconciled = await context.getPackingManifest(packingSession.serverSessionId);
+  if (!reconciled?.ok) return result(false, reconciled?.message || 'No se pudo reconciliar la preparación.');
+  packingSession = createPackingSessionFromManifest(reconciled.data, { operatorId: context.operatorId });
+  await persistPackingSession();
+  const idempotencyKey = `packing-confirm:${packingSession.serverSessionId}`;
+  let server = await context.confirmPacking({ session: packingSession, exceptionReason: exceptionReason || null, idempotencyKey });
+  if (!server?.ok) {
+    const afterAmbiguity = await context.getPackingManifest(packingSession.serverSessionId);
+    if (afterAmbiguity?.ok && afterAmbiguity.data?.session?.status === 'confirmed') server = { ok: true, recovered: true };
+  }
+  if (server?.ok) {
+    await context.desktopPlatform.deletePackingCache(context.businessId);
+    packingSession = null;
+  }
+  feedback = server?.ok
+    ? (server.recovered ? 'Preparación confirmada y recuperada tras una respuesta ambigua.' : 'Preparación confirmada por el servidor.')
+    : server?.message || 'La preparación requiere revisión.';
   context.onChange();
   return result(Boolean(server?.ok), feedback);
 }
+
+async function restorePackingSession() {
+  if (!context.businessId) return;
+  try {
+    const cached = await context.desktopPlatform.loadPackingCache(context.businessId);
+    if (!cached) return;
+    let restored = restorePackingCacheSnapshot(cached, {
+      businessId: context.businessId,
+      operatorId: context.operatorId,
+    });
+    if (globalThis.navigator?.onLine !== false) {
+      const manifest = await context.getPackingManifest(restored.serverSessionId);
+      if (manifest?.ok) restored = createPackingSessionFromManifest(manifest.data, { operatorId: context.operatorId });
+      else packingCacheStatus = 'No se pudo reconciliar la caché; la confirmación permanece bloqueada.';
+    } else packingCacheStatus = 'Sesión recuperada de la caché local; lecturas nuevas quedarán pendientes.';
+    packingSession = mergePackingCommands(restored, context.listPackingCommands());
+    await persistPackingSession();
+    feedback = packingCacheStatus || 'Preparación recuperada y reconciliada.';
+  } catch (error) {
+    packingSession = null;
+    packingCacheStatus = 'La caché local no superó la validación; reconectá para recuperar el manifiesto.';
+    feedback = error?.message || packingCacheStatus;
+  }
+  context.onChange();
+}
+
+function mergePackingCommands(session, commands) {
+  const relevant = (Array.isArray(commands) ? commands : [])
+    .filter((command) => command.payload?.sessionId === session.serverSessionId)
+    .sort((left, right) => String(left.createdAt).localeCompare(String(right.createdAt)));
+  for (const command of relevant) {
+    const active = ['pending', 'sending', 'confirmed'].includes(command.state);
+    if (command.commandType === 'packing_scan') {
+      const existing = session.scans.find((scan) => scan.scanKey === command.payload?.scanKey);
+      if (!active) {
+        if (existing?.syncState !== 'confirmed') revertPackingScanLocally(session, command.payload?.scanKey);
+        continue;
+      }
+      if (!existing) {
+        const response = applyPackingScan(session, { isValid: true, normalizedValue: command.payload?.gtin }, {
+          scanKey: command.payload?.scanKey,
+          syncState: command.state === 'confirmed' ? 'confirmed' : 'pending',
+        });
+        if (!response.ok) packingCacheStatus = 'Una lectura local no coincide con el manifiesto y requiere revisión.';
+      } else if (command.state === 'confirmed') markPackingScanConfirmed(session, command.payload?.scanKey);
+    }
+    if (command.commandType === 'packing_scan_revert' && active) {
+      revertPackingScanLocally(session, command.payload?.scanKey);
+    }
+  }
+  return session;
+}
+
+async function persistPackingSession() {
+  if (!packingSession || !context.businessId) return false;
+  try {
+    const snapshot = createPackingCacheSnapshot(packingSession, { businessId: context.businessId });
+    await context.desktopPlatform.savePackingCache(snapshot);
+    return true;
+  } catch (error) {
+    packingCacheStatus = 'La sesión sigue en PostgreSQL/outbox, pero falló la caché visual local.';
+    return false;
+  }
+}
+
+function cachedPackingBinding(gtin) {
+  if (!packingSession) return null;
+  for (const item of packingSession.items) {
+    const barcode = item.barcodes.find((candidate) => candidate.gtin === String(gtin || ''));
+    if (barcode) return {
+      product_id: item.productId,
+      name: item.name,
+      unit_factor: barcode.unitFactor,
+      presentation: barcode.unitFactor > 1 ? 'Pack' : 'Unidad',
+    };
+  }
+  return null;
+}
+
+function clonePackingSession(session) { return JSON.parse(JSON.stringify(session)); }
 
 async function refreshFiscal() {
   const [profile, documents, artifacts] = await Promise.all([context.getFiscalProfile(), context.listFiscalDocuments(), context.listFiscalArtifacts()]);
@@ -934,7 +1065,11 @@ function renderPacking() {
   const orders = context.getOrders().filter((order) => !['delivered', 'cancelled', 'canceled'].includes(order.status));
   const options = orders.map((order) => `<option value="${escapeHtml(order.backendId || order.id)}">${escapeHtml(order.code || order.id)}</option>`).join('');
   const progress = packingSession ? packingSession.items.map((item) => `<li><strong>${escapeHtml(item.name)}</strong><span>${item.scanned}/${item.required}</span></li>`).join('') : '';
-  return panel('Preparación de pedido', 'Detecta producto equivocado, exceso, faltantes y packs.', `<div class="business-ops-form"><label>Pedido<select name="packingOrder">${options || '<option value="">Sin pedidos activos</option>'}</select></label><button class="secondary-button" type="button" data-packing-start>Iniciar</button></div>${scannerInput()}${renderScanResult()}${progress ? `<ul class="business-ops-progress">${progress}</ul><div class="business-ops-form"><label>Motivo de excepción si hay faltantes<input name="packingExceptionReason" maxlength="300"></label><div class="button-row"><button class="ghost-button" type="button" data-packing-undo>Deshacer última lectura</button><button class="primary-button" type="button" data-packing-confirm>Confirmar preparación</button></div></div>` : ''}`);
+  const pending = pendingPackingScanCount(packingSession);
+  const durability = packingSession
+    ? `<p class="business-ops-feedback" data-packing-durability>${pending ? `${pending} lectura(s) en cola durable; no se puede confirmar todavía.` : 'Lecturas reconciliadas con PostgreSQL.'}${packingCacheStatus ? ` ${escapeHtml(packingCacheStatus)}` : ''}</p>`
+    : '';
+  return panel('Preparación de pedido', 'El manifiesto se cachea sin datos del cliente; los scans offline se encolan y la confirmación exige reconciliación.', `<div class="business-ops-form"><label>Pedido<select name="packingOrder">${options || '<option value="">Sin pedidos activos</option>'}</select></label><button class="secondary-button" type="button" data-packing-start>Iniciar</button></div>${scannerInput()}${renderScanResult()}${durability}${progress ? `<ul class="business-ops-progress">${progress}</ul><div class="business-ops-form"><label>Motivo de excepción si hay faltantes<input name="packingExceptionReason" maxlength="300"></label><div class="button-row"><button class="ghost-button" type="button" data-packing-undo>Deshacer última lectura</button><button class="primary-button" type="button" data-packing-confirm>Confirmar preparación</button></div></div>` : ''}`);
 }
 function renderPos() {
   const items = posItems.length ? posItems.map((item) => `<li><span>${item.quantity} × ${escapeHtml(item.name)}</span><button type="button" class="ghost-button compact" data-pos-remove="${escapeHtml(item.productId)}">Quitar</button></li>`).join('') : '<li class="empty-state">Escaneá productos para preparar la venta.</li>';
@@ -1068,11 +1203,13 @@ function bytesToBase64(bytes) {
 function defaultContext() {
   return {
     role: 'staff',
-    operatorId: '', getOrders: () => [], lookupBarcode: async () => ({ ok: true, data: null }),
+    businessId: '', operatorId: '', getOrders: () => [], lookupBarcode: async () => ({ ok: true, data: null }),
     createProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }), publishProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     applyInventoryMovement: async () => ({ ok: false, message: 'Repositorio no disponible.' }), checkoutPos: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
-    startPacking: async () => ({ ok: false, message: 'Repositorio no disponible.' }), recordPackingScan: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
-    undoPackingScan: async () => ({ ok: false, message: 'Repositorio no disponible.' }), confirmPacking: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    startPacking: async () => ({ ok: false, message: 'Repositorio no disponible.' }), getPackingManifest: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    recordPackingScan: async () => ({ ok: false, message: 'Repositorio no disponible.' }), revertPackingScan: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    cancelPackingScan: async () => false, drainPackingCommands: async () => [], listPackingCommands: () => [],
+    confirmPacking: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     getFiscalProfile: async () => ({ ok: true, data: null }), listFiscalDocuments: async () => ({ ok: true, data: [] }), listFiscalArtifacts: async () => ({ ok: true, data: [] }),
     configureFiscalProfile: async () => ({ ok: false, message: 'Repositorio no disponible.' }), requestCreditNote: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     requestFiscalArtifactUrl: async () => ({ ok: false, message: 'Acceso privado no disponible.' }), regenerateFiscalArtifact: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
@@ -1091,6 +1228,9 @@ function defaultContext() {
       openSupportExportFolder: async () => { throw new Error('Las exportaciones requieren TABA para Windows.'); },
       checkForSignedUpdate: async () => ({ configured: false, available: false }),
       installSignedUpdate: async () => { throw new Error('El canal firmado requiere TABA para Windows.'); },
+      savePackingCache: async () => { throw new Error('La caché de packing requiere almacenamiento durable.'); },
+      loadPackingCache: async () => null,
+      deletePackingCache: async () => false,
     },
     onChange: () => {},
   };

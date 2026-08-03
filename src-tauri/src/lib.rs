@@ -1,5 +1,6 @@
 mod fiscal_printing;
 mod outbox;
+mod packing_cache;
 mod printing;
 mod support;
 mod updates;
@@ -167,6 +168,42 @@ fn outbox_find_by_idempotency_key(
         .lock()
         .map_err(|_| "Persistencia local ocupada.".to_string())?;
     outbox::find_by_idempotency_key(&connection, &idempotency_key)
+}
+
+#[tauri::command]
+fn save_packing_cache(
+    state: State<'_, DesktopState>,
+    snapshot: packing_cache::PackingCacheSnapshot,
+) -> Result<packing_cache::PackingCacheSnapshot, String> {
+    let mut connection = state
+        .database
+        .lock()
+        .map_err(|_| "Persistencia local ocupada.".to_string())?;
+    packing_cache::save(&mut connection, &snapshot)
+}
+
+#[tauri::command]
+fn load_packing_cache(
+    state: State<'_, DesktopState>,
+    business_id: String,
+) -> Result<Option<packing_cache::PackingCacheSnapshot>, String> {
+    let connection = state
+        .database
+        .lock()
+        .map_err(|_| "Persistencia local ocupada.".to_string())?;
+    packing_cache::load(&connection, &business_id)
+}
+
+#[tauri::command]
+fn delete_packing_cache(
+    state: State<'_, DesktopState>,
+    business_id: String,
+) -> Result<bool, String> {
+    let mut connection = state
+        .database
+        .lock()
+        .map_err(|_| "Persistencia local ocupada.".to_string())?;
+    packing_cache::delete(&mut connection, &business_id)
 }
 
 #[tauri::command]
@@ -344,6 +381,7 @@ pub fn run() {
             let support_export_directory = data_dir.join("support-exports");
             let database = Connection::open(&database_path)?;
             outbox::migrate(&database).map_err(std::io::Error::other)?;
+            packing_cache::migrate(&database).map_err(std::io::Error::other)?;
             fiscal_printing::migrate(&database).map_err(std::io::Error::other)?;
             support::migrate(&database).map_err(std::io::Error::other)?;
             std::fs::create_dir_all(&fiscal_spool_directory)?;
@@ -381,6 +419,9 @@ pub fn run() {
             outbox_get,
             outbox_list,
             outbox_find_by_idempotency_key,
+            save_packing_cache,
+            load_packing_cache,
+            delete_packing_cache,
             notify_business_event,
             set_notifications_muted,
             set_autostart_enabled,

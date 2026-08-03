@@ -19,6 +19,9 @@ export class TauriBusinessPlatform extends BusinessPlatformAdapter {
   async openSupportExportFolder() { this.assertAvailable(); return this.invoke('open_support_export_folder'); }
   async checkForSignedUpdate() { this.assertAvailable(); return this.invoke('check_for_signed_update'); }
   async installSignedUpdate(request) { this.assertAvailable(); return this.invoke('install_signed_update', { request }); }
+  async savePackingCache(snapshot) { this.assertAvailable(); return this.invoke('save_packing_cache', { snapshot }); }
+  async loadPackingCache(businessId) { this.assertAvailable(); return this.invoke('load_packing_cache', { businessId }); }
+  async deletePackingCache(businessId) { this.assertAvailable(); return this.invoke('delete_packing_cache', { businessId }); }
   async exit() { this.assertAvailable(); return this.invoke('exit_application'); }
   async commandStorage() {
     this.assertAvailable();

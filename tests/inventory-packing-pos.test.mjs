@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildInventoryMovement, calculateBaseUnits, calculateStockCountAdjustment } from '../js/core/inventory-domain.js';
-import { applyPackingScan, confirmPackingSession, createPackingSession, undoLastPackingScan } from '../js/business/business-packing-verification.js';
+import {
+  applyPackingScan, confirmPackingSession, createPackingCacheSnapshot, createPackingSession,
+  createPackingSessionFromManifest, markPackingScanConfirmed, pendingPackingScanCount,
+  restorePackingCacheSnapshot, revertPackingScanLocally, undoLastPackingScan,
+} from '../js/business/business-packing-verification.js';
 import { addPosItem, buildPosCheckoutIntent, createPosCart, presentPosCompletion, pricePosCart } from '../js/core/pos-domain.js';
 
 test('inventario convierte packs a unidades base y conserva ledger auditable', () => {
@@ -41,6 +45,43 @@ test('packing detecta producto equivocado, faltante, deshacer y excepci\u00f3n a
   assert.equal(confirmPackingSession(session).code, 'PACKING_INCOMPLETE');
   assert.equal(confirmPackingSession(session, { authorizedException: true, role: 'staff', reason: 'falta' }).ok, false);
   assert.equal(confirmPackingSession(session, { authorizedException: true, role: 'admin', reason: 'Faltante confirmado con cliente' }).ok, true);
+});
+
+test('packing recupera manifiesto autoritativo y no incluye datos de cliente en caché', () => {
+  const manifest = {
+    schemaVersion: 1,
+    session: {
+      id: 'session-1', businessId: 'business-1', orderId: 'order-1', orderRevision: 4,
+      status: 'in_progress', operatorId: 'operator-1', updatedAt: '2026-08-02T10:00:00Z',
+    },
+    items: [{ productId: 'product-1', name: 'Producto', quantity: 2, barcodes: [{ gtin: '4006381333931', unitFactor: 1 }] }],
+    scans: [{ scanKey: 'packing-scan:1', gtin: '4006381333931', productId: 'product-1', unitFactor: 1, createdAt: '2026-08-02T10:01:00Z', revertedAt: null }],
+  };
+  const session = createPackingSessionFromManifest(manifest, { operatorId: 'operator-1' });
+  assert.equal(session.items[0].scanned, 1);
+  assert.equal(session.scans[0].syncState, 'confirmed');
+  const snapshot = createPackingCacheSnapshot(session, { businessId: 'business-1', now: () => new Date('2026-08-02T10:02:00Z') });
+  assert.equal(JSON.stringify(snapshot).includes('customer'), false);
+  assert.equal(JSON.stringify(snapshot).includes('deliveryCode'), false);
+  const restored = restorePackingCacheSnapshot(snapshot, { businessId: 'business-1', operatorId: 'operator-1' });
+  assert.equal(restored.serverSessionId, 'session-1');
+  assert.equal(restored.items[0].scanned, 1);
+  assert.throws(() => restorePackingCacheSnapshot(snapshot, { businessId: 'business-2' }), /negocio autenticado/i);
+});
+
+test('packing distingue scans pendientes, confirmados y reversiones exactas', () => {
+  const session = createPackingSession({
+    orderId: 'order-2', orderRevision: 1, operatorId: 'operator-1',
+    items: [{ productId: 'product-1', name: 'Producto', quantity: 2, barcodes: [{ gtin: '4006381333931', unitFactor: 1 }] }],
+  });
+  applyPackingScan(session, scan('4006381333931'), { scanKey: 'packing-scan:a' });
+  applyPackingScan(session, scan('4006381333931'), { scanKey: 'packing-scan:b' });
+  assert.equal(pendingPackingScanCount(session), 2);
+  assert.equal(markPackingScanConfirmed(session, 'packing-scan:a'), true);
+  assert.equal(pendingPackingScanCount(session), 1);
+  assert.equal(revertPackingScanLocally(session, 'packing-scan:a').ok, true);
+  assert.equal(session.scans[0].scanKey, 'packing-scan:b');
+  assert.equal(session.items[0].scanned, 1);
 });
 
 test('POS suma packs, calcula promoci\u00f3n y env\u00eda s\u00f3lo intenci\u00f3n al servidor', () => {

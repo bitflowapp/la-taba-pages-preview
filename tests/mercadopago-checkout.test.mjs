@@ -66,9 +66,13 @@ test('return state is derived from the server checkout, never from redirect quer
   assert.deepEqual(paymentStatusPresentation({ status: 'completed', payment_status: 'completed' }), {
     state: 'completed', label: 'Pedido confirmado', terminal: true, clearCart: true,
   });
+  assert.equal(paymentStatusPresentation({ status: 'payment_approved', payment_status: 'approved' }).label, 'Confirmando tu pedido');
   assert.equal(paymentStatusPresentation({ status: 'payment_pending', payment_status: 'pending' }).state, 'pending');
+  assert.equal(paymentStatusPresentation({ status: 'payment_pending', payment_status: 'pending' }).label, 'Pago pendiente');
   assert.equal(paymentStatusPresentation({ status: 'manual_review_required', payment_status: 'approved' }).state, 'manual_review');
+  assert.equal(paymentStatusPresentation({ status: 'manual_review_required', payment_status: 'approved' }).label, 'Necesitamos revisar este pago');
   assert.equal(paymentStatusPresentation({ status: 'cancelled', payment_status: 'cancelled' }).state, 'rejected');
+  assert.equal(paymentStatusPresentation({ status: 'redirected', payment_status: 'created' }).label, 'Verificando el pago');
 
   const returnScript = fs.readFileSync(path.join(root, 'js/payments/mercadopago-return.js'), 'utf8');
   assert.match(returnScript, /getMercadoPagoCheckoutStatus/);

@@ -9,6 +9,10 @@
 @import url("./styles/business.css?v=39");
 @import url("./styles/rider.css?v=39");
 @import url("./styles/responsive.css?v=39");
+/* Después de responsive.css a propósito: la superficie de marca de la home es
+   la última palabra sobre esa vista (incluido el fondo claro que responsive
+   fija por debajo de 820px). Antes de motion.css, que sigue cerrando. */
+@import url("./styles/brand-home.css?v=1");
 @import url("./styles/motion.css?v=1");
 
 /* Sandbox local: mapa y controles de prueba, aislados por data attributes. */

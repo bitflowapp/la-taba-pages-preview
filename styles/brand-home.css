@@ -1,0 +1,893 @@
+/* ============================================================================
+   LA TABA 2 — Sistema visual de la home comercial
+   ----------------------------------------------------------------------------
+   ALCANCE. Todo lo de este archivo cuelga de `body[data-active-view="home"]`.
+   El catálogo, el carrito, el checkout, el tracking, el perfil y los paneles
+   operativos conservan exactamente la superficie clara que el RC certificó:
+   ninguna regla de acá los alcanza.
+
+   PRINCIPIO. La marca vive en el fondo (grafito) y en la acción (rojo). El
+   PRODUCTO vive sobre blanco: las tarjetas siguen siendo claras porque el
+   packshot y el precio se leen mejor así, y porque es la misma tarjeta que el
+   cliente vuelve a encontrar en el catálogo.
+
+   El dorado es acento, no superficie: aro de historias, filete del banner y
+   poco más. Nunca es fondo de sección ni color de texto largo.
+   ========================================================================== */
+
+body[data-active-view="home"] {
+  background: var(--brand-bg);
+}
+
+/* El shell completo toma el fondo de marca para que el rebote elástico de iOS
+   no descubra una franja blanca debajo del contenido. */
+body[data-active-view="home"] .app-shell {
+  background: var(--brand-bg);
+}
+
+body[data-active-view="home"] .taba-home {
+  color: var(--brand-ink);
+}
+
+/* Foco sobre oscuro: el azul del sistema pierde presencia contra el grafito. */
+body[data-active-view="home"] .taba-home :focus-visible,
+body[data-active-view="home"] .topbar :focus-visible,
+body[data-active-view="home"] .mobile-nav :focus-visible {
+  outline: 3px solid var(--brand-focus);
+  outline-offset: 3px;
+}
+
+/* ============================================================================
+   1 · APP BAR
+   La barra no cambia de geometría: mismo alto, mismas columnas, mismos
+   controles. Cambia la superficie, para que la home se lea como una sola pieza
+   desde la barra de estado del teléfono hasta la navegación inferior.
+   ========================================================================== */
+body[data-active-view="home"] .topbar {
+  border-bottom-color: var(--brand-border);
+  background: rgb(9 11 14 / 92%);
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .brand-word,
+body[data-active-view="home"] .topbar-address .address-chip-text strong {
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .topbar-address .address-chip-text small,
+body[data-active-view="home"] .topbar-address-chevron {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="home"] .topbar-address.is-missing .address-chip-text strong {
+  color: var(--brand-red-ink);
+}
+
+body[data-active-view="home"] .topbar-address:hover {
+  background: var(--brand-surface);
+}
+
+body[data-active-view="home"] .topbar .cart-button {
+  border-color: var(--brand-border);
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .topbar .cart-button:hover {
+  border-color: var(--brand-border-strong);
+  background: var(--brand-surface-hover);
+}
+
+body[data-active-view="home"] .cart-button-icon {
+  color: var(--brand-ink);
+}
+
+/* El anillo del badge separa la cifra del icono: sobre oscuro ese anillo tiene
+   que ser oscuro, no blanco. */
+body[data-active-view="home"] .cart-button-count {
+  border-color: var(--brand-bg);
+}
+
+body[data-active-view="home"] .topbar-search {
+  border-color: var(--brand-border);
+  background: var(--brand-surface);
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="home"] .topbar-search input {
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .topbar-search input::placeholder {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="home"] .topbar .desktop-nav button {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="home"] .topbar .desktop-nav button:hover {
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .topbar .desktop-nav button.active {
+  background: transparent;
+  color: var(--brand-red-ink);
+}
+
+/* ============================================================================
+   2 · ENCABEZADO DE MARCA
+   ========================================================================== */
+.brand-hero {
+  display: grid;
+  gap: 10px;
+  padding: 4px 2px 2px;
+}
+
+.brand-hero-identity {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+}
+
+/* Caja reservada: el estado de historias cambia el contenido, nunca el tamaño.
+   Sin esto el aro aparecería después del primer render y correría el título. */
+.brand-logo-slot {
+  position: relative;
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+}
+
+.brand-logo {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+/* El logo interactivo cumple el objetivo táctil de 44px con holgura (56px). */
+.brand-logo-action {
+  position: absolute;
+  inset: 0;
+}
+
+/* Cara del logo: recorte circular propio. El asset de marca trae su propio
+   marco redondeado oscuro; sin este recorte el logo se leía como un cuadrado
+   crema flotando sobre el fondo. El `scale` lleva el arte interior hasta el
+   borde del círculo en vez de fabricar una variante nueva del asset. */
+.brand-logo-face {
+  display: block;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #fff8f1;
+}
+
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  scale: 1.14;
+}
+
+/* Aro: existe sólo cuando hay historias. Sin historias el logo es una imagen
+   limpia, sin adorno que prometa contenido inexistente. */
+.brand-logo-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+[data-stories-state="unseen"] .brand-logo-ring,
+[data-stories-state="seen"] .brand-logo-ring {
+  background: var(--brand-story-ring);
+  -webkit-mask: radial-gradient(circle, transparent 0 47%, #000 47.8%);
+  mask: radial-gradient(circle, transparent 0 47%, #000 47.8%);
+}
+
+[data-stories-state="seen"] .brand-logo-ring {
+  opacity: 0.34;
+}
+
+/* Movimiento mínimo y continuo sólo para lo NO visto. `prefers-reduced-motion`
+   lo detiene desde tokens.css y el aro queda estático: el estado se sigue
+   comunicando por el color del aro y por el texto del acceso, nunca sólo por
+   la animación. */
+[data-stories-state="unseen"] .brand-logo-ring {
+  animation: brand-story-ring 5.5s linear infinite;
+}
+
+@keyframes brand-story-ring {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.brand-hero-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.brand-hero-welcome {
+  margin: 0;
+  color: var(--brand-ink-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+body[data-active-view="home"] .taba-home-hero h1 {
+  margin: 0;
+  color: var(--brand-ink);
+  font-size: clamp(26px, 7.4vw, 34px);
+  font-weight: 950;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+  overflow-wrap: break-word;
+}
+
+.brand-hero-place {
+  margin: 0;
+  color: var(--brand-gold);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.brand-hero-state {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 0;
+}
+
+/* Estado de pedidos: punto + texto. El punto acompaña, no informa solo. */
+.brand-state-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 26px;
+  padding: 0 11px 0 9px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-pill);
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.brand-state-chip::before {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #35c46a;
+  content: "";
+}
+
+.brand-state-chip.is-closed::before,
+.brand-state-chip.is-soon::before {
+  background: var(--brand-red-ink);
+}
+
+.brand-hero-hours {
+  color: var(--brand-ink-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* Acceso a historias: segundo y último llamado. No hay un tercero. */
+.brand-stories-cta {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: var(--tap);
+  padding: 5px 12px 5px 7px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-pill);
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+  text-align: left;
+}
+
+.brand-stories-cta:hover {
+  border-color: var(--brand-border-strong);
+  background: var(--brand-surface-hover);
+}
+
+.brand-stories-thumb {
+  display: block;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--brand-bg-raised) center / cover no-repeat;
+  box-shadow: 0 0 0 1.5px var(--brand-gold);
+}
+
+.brand-stories-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0;
+}
+
+.brand-stories-copy strong {
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.brand-stories-copy small {
+  overflow: hidden;
+  color: var(--brand-gold);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand-stories-go {
+  color: var(--brand-ink-muted);
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* ============================================================================
+   3 · BUSCADOR
+   Ancho completo, 52px de alto, 16px de fuente (sin zoom en iOS).
+   ========================================================================== */
+body[data-active-view="home"] .taba-home-search {
+  width: 100%;
+  border-color: var(--brand-border);
+  background: var(--brand-surface);
+  box-shadow: none;
+}
+
+body[data-active-view="home"] .taba-home-search:focus-within {
+  border-color: var(--brand-border-strong);
+}
+
+body[data-active-view="home"] .taba-home-search svg {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="home"] .taba-home-search input {
+  background: transparent;
+  caret-color: var(--brand-ink);
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .taba-home-search input::placeholder {
+  color: var(--brand-ink-muted);
+  opacity: 1;
+}
+
+/* ============================================================================
+   4 · CATEGORÍAS
+   Fila horizontal con scroll táctil. La activa se marca con relleno rojo +
+   `aria-current`, nunca sólo con color.
+   ========================================================================== */
+/* Píldora horizontal: icono + nombre en la misma línea. Ocupa la mitad de alto
+   que la tarjeta cuadrada anterior, que es exactamente lo que la home necesita
+   para que la primera oferta entre en el primer pantallazo. */
+body[data-active-view="home"] .home-category-card {
+  display: flex;
+  min-width: 0;
+  min-height: var(--tap);
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 15px 0 12px;
+  border-color: var(--brand-border);
+  border-radius: var(--radius-pill);
+  background: var(--brand-surface);
+  box-shadow: none;
+  color: var(--brand-ink);
+  font-size: 12.5px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+/* El círculo claro venía de la tarjeta cuadrada: sobre grafito era una mancha
+   blanca con el glifo invisible (icono `currentColor` sobre fondo claro). La
+   variante `.active` traía además `background: white` con más especificidad,
+   así que la píldora activa mostraba un cuadrado blanco en vez del icono. */
+body[data-active-view="home"] .home-category-card.active .home-category-icon,
+body[data-active-view="home"] .home-category-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 0;
+  background: transparent;
+  color: currentColor;
+}
+
+body[data-active-view="home"] .home-category-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+body[data-active-view="home"] .home-category-card:hover {
+  border-color: var(--brand-border-strong);
+  background: var(--brand-surface-hover);
+}
+
+body[data-active-view="home"] .home-category-card.active {
+  border-color: var(--taba-red);
+  background: var(--taba-red);
+  box-shadow: none;
+  color: var(--taba-white);
+}
+
+body[data-active-view="home"] .home-category-card .home-category-icon {
+  color: currentColor;
+}
+
+/* ============================================================================
+   5 · TÍTULOS DE SECCIÓN
+   ========================================================================== */
+body[data-active-view="home"] .home-section-head h2 {
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .home-section-title small {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="home"] .home-section-head button {
+  color: var(--brand-red-ink);
+}
+
+/* ============================================================================
+   6 · TARJETAS DE PRODUCTO
+   Siguen sobre blanco. Sobre grafito ya no necesitan sombra para despegarse,
+   así que se retira: menos ruido, menos pintado.
+   ========================================================================== */
+body[data-active-view="home"] .home-promo-card,
+body[data-active-view="home"] .home-best-card,
+body[data-active-view="home"] .home-catalog-card {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Disponibilidad de la oferta: texto explícito, no sólo color. */
+.home-offer-availability {
+  margin-top: 2px;
+  color: var(--taba-success);
+  font-size: 11.5px;
+  font-weight: 750;
+}
+
+.home-promo-card.out-of-stock .home-offer-availability {
+  color: var(--taba-muted);
+}
+
+/* Agotado sobre oscuro: bajar opacidad hunde el texto por debajo del contraste
+   mínimo. La tarjeta se atenúa apenas y el estado lo dice la etiqueta. */
+body[data-active-view="home"] .home-promo-card.out-of-stock,
+body[data-active-view="home"] .home-best-card.out-of-stock,
+body[data-active-view="home"] .home-catalog-card.out-of-stock {
+  opacity: 0.82;
+}
+
+/* ============================================================================
+   7 · BANNER EDITORIAL
+   ========================================================================== */
+.home-brand-banners:not(:empty) {
+  display: grid;
+  gap: 10px;
+  padding: 4px 2px 2px;
+}
+
+/* En teléfono la home muestra un solo banner: el alto del primer pantallazo
+   pertenece al producto. El segundo aparece recién cuando hay ancho para que
+   los dos convivan sin empujar la primera tarjeta fuera de pantalla. */
+@media (max-width: 760px) {
+  .home-brand-banner:nth-child(n + 2) {
+    display: none;
+  }
+}
+
+.home-brand-banner {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-height: 96px;
+  padding: 14px 16px;
+  overflow: hidden;
+  border: 1px solid var(--brand-border);
+  border-left: 3px solid var(--brand-gold);
+  border-radius: var(--radius-md);
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgb(201 149 62 / 16%) 0%, transparent 58%),
+    var(--brand-bg-raised);
+  color: var(--brand-ink);
+  text-align: left;
+}
+
+.home-brand-banner:hover {
+  border-color: var(--brand-border-strong);
+  border-left-color: var(--brand-gold-soft);
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgb(201 149 62 / 22%) 0%, transparent 58%),
+    var(--brand-surface);
+}
+
+.home-brand-banner small {
+  color: var(--brand-gold);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.home-brand-banner strong {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.home-brand-banner span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: var(--brand-red-ink);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+/* ============================================================================
+   8 · BLOQUES DE ESTADO Y CIERRE DE LA HOME
+   ========================================================================== */
+body[data-active-view="home"] .home-live-promotion {
+  border-color: var(--brand-border);
+  background: var(--brand-bg-raised);
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .home-live-promotion small,
+body[data-active-view="home"] .home-live-promotion [data-promo-banner-includes] {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="home"] .home-live-promotion [data-promo-banner-price] {
+  color: var(--brand-red-ink);
+}
+
+body[data-active-view="home"] .home-live-promotion em {
+  color: #4ad07f;
+}
+
+body[data-active-view="home"] .home-paging-dots span {
+  background: rgb(255 255 255 / 26%);
+}
+
+body[data-active-view="home"] .home-paging-dots span.is-active {
+  background: var(--brand-red-ink);
+}
+
+body[data-active-view="home"] .order-now-cta {
+  border-color: var(--brand-border);
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .order-now-cta:hover {
+  border-color: var(--brand-border-strong);
+  color: var(--brand-red-ink);
+}
+
+body[data-active-view="home"] .active-order-banner {
+  border-color: rgb(255 77 85 / 34%);
+  background: var(--brand-bg-raised);
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .active-order-banner .active-order-go {
+  color: var(--brand-red-ink);
+}
+
+body[data-active-view="home"] .reorder-card,
+body[data-active-view="home"] .customer-action-panel,
+body[data-active-view="home"] .taba-home .card {
+  border-color: var(--brand-border);
+  background: var(--brand-bg-raised);
+  box-shadow: none;
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .taba-home .empty-state {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="home"] .taba-home .empty-state strong,
+body[data-active-view="home"] .reorder-card strong,
+body[data-active-view="home"] .customer-action-panel strong {
+  color: var(--brand-ink);
+}
+
+body[data-active-view="home"] .reorder-card small,
+body[data-active-view="home"] .customer-action-panel small {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="home"] .reorder-kicker {
+  color: var(--brand-red-ink);
+}
+
+body[data-active-view="home"] .reorder-icon {
+  background: rgb(255 77 85 / 14%);
+  color: var(--brand-red-ink);
+}
+
+/* ============================================================================
+   9 · NAVEGACIÓN INFERIOR Y BARRA DE CARRITO
+   Misma arquitectura, mismas rutas, mismo alto por token. Sólo la superficie.
+   ========================================================================== */
+body[data-active-view="home"] .mobile-nav {
+  border-top-color: var(--brand-border);
+  background: rgb(9 11 14 / 97%);
+}
+
+body[data-active-view="home"] .mobile-nav button {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="home"] .mobile-nav button.active {
+  color: var(--brand-red-ink);
+}
+
+body[data-active-view="home"] .mobile-nav button.active::before {
+  background: var(--brand-red-ink);
+}
+
+/* Sobre la nav oscura una barra grafito sería la misma franja. El carrito es
+   la acción principal de la home, así que toma el rojo de marca: se separa por
+   color y por jerarquía, no sólo por el hueco de 12px. */
+body[data-active-view="home"] .floating-cart {
+  background: var(--taba-red);
+  color: var(--taba-white);
+}
+
+body[data-active-view="home"] .floating-cart:hover {
+  background: var(--taba-red-hover);
+}
+
+body[data-active-view="home"] .floating-cart-saving {
+  color: #ffe9a8;
+}
+
+/* ============================================================================
+   10 · VISOR DE HISTORIAS
+   ========================================================================== */
+.stories-modal {
+  width: min(calc(100vw - 24px), 420px);
+  max-height: calc(100dvh - 24px);
+  border-radius: var(--radius-lg);
+  background: var(--brand-bg);
+  color: var(--brand-ink);
+}
+
+.stories-card {
+  display: grid;
+  gap: 0;
+}
+
+.stories-progress {
+  display: flex;
+  gap: 4px;
+  padding: 12px 12px 8px;
+}
+
+.stories-progress span {
+  height: 3px;
+  flex: 1 1 0;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 24%);
+}
+
+.stories-progress span.is-active {
+  background: var(--brand-ink);
+}
+
+.stories-media {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: var(--brand-bg-raised);
+}
+
+.stories-media img,
+.stories-media video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.stories-body {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px 16px;
+}
+
+.stories-body h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.stories-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stories-actions .primary-button {
+  flex: 1 1 160px;
+}
+
+.stories-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stories-nav button {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 0 14px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-sm);
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+  font-weight: 800;
+}
+
+.stories-nav button:disabled {
+  opacity: 0.45;
+}
+
+.stories-modal .modal-close {
+  border-color: var(--brand-border);
+  background: var(--brand-surface);
+  color: var(--brand-ink);
+}
+
+/* ============================================================================
+   11 · ESCRITORIO Y TABLET
+   El foco es móvil, pero la home ancha no puede ser un teléfono estirado: el
+   encabezado se acuesta, las tarjetas ganan columnas y el banner ocupa el
+   ancho útil sin crecer en alto.
+   ========================================================================== */
+@media (min-width: 761px) {
+  .brand-hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px 24px;
+    padding-block: 10px 4px;
+  }
+
+  .brand-hero-identity {
+    grid-template-columns: 72px minmax(0, 1fr);
+    grid-row: 1;
+    gap: 18px;
+  }
+
+  .brand-logo-slot,
+  .brand-logo {
+    width: 72px;
+    height: 72px;
+  }
+
+  .brand-logo-img {
+    width: 58px;
+    height: 58px;
+  }
+
+  .brand-hero-state {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  .brand-stories-cta {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    align-self: center;
+  }
+
+  body[data-active-view="home"] .taba-home-hero h1 {
+    font-size: clamp(34px, 4vw, 46px);
+  }
+
+  .brand-hero-welcome {
+    font-size: 16px;
+  }
+
+  .brand-hero-place {
+    font-size: 15px;
+  }
+
+  .home-brand-banners:not(:empty) {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+
+  .home-brand-banner {
+    min-height: 112px;
+  }
+
+  .home-brand-banner strong {
+    font-size: 22px;
+  }
+
+  /* La vista previa del catálogo son SIEMPRE cuatro productos: con cuatro
+     columnas entran en una fila y dejan de ser dos tarjetas gigantes, que es
+     exactamente la composición de teléfono estirada. */
+  body[data-active-view="home"] .home-catalog-preview {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  /* A 768px la columna de texto quedaba en ~90px y recortaba "Coca-Cola
+     Original" a "Coca-Cola…". La tarjeta recibe el ancho que su contenido
+     necesita. */
+  body[data-active-view="home"] .home-best-sellers {
+    grid-auto-columns: minmax(244px, 31%);
+  }
+}
+
+@media (min-width: 1021px) {
+  body[data-active-view="home"] .taba-home-search {
+    width: min(100%, 620px);
+  }
+}
+
+/* A 320px el encabezado no puede pelear por el ancho: el logo baja a 48px y el
+   acceso a historias pasa a ocupar la fila completa. */
+@media (max-width: 359px) {
+  .brand-hero-identity {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 11px;
+  }
+
+  .brand-logo-slot,
+  .brand-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .brand-logo-img {
+    width: 38px;
+    height: 38px;
+  }
+
+  .brand-hero-welcome {
+    font-size: 13px;
+  }
+
+  .brand-stories-cta {
+    width: 100%;
+  }
+
+  .home-brand-banner strong {
+    font-size: 17px;
+  }
+}

@@ -1339,6 +1339,22 @@ body[data-active-view="rider"] .floating-cart {
     height: 44.1px;
   }
 
+  /* Mismo motivo, mismos 0,1px de guarda. Estos dos controles viven dentro de
+     elementos con `will-change: transform` (el sistema de motion los revela),
+     así que su alto se mide a través de una capa compuesta y cae en
+     43,99993px según dónde quede la fila. El piso de 44px no puede depender de
+     la posición vertical que le toque a la sección. */
+  .taba-home .home-favorite-button,
+  .taba-home .home-section-head button {
+    min-width: 44.1px;
+    min-height: 44.1px;
+  }
+
+  .taba-home .home-favorite-button {
+    width: 44.1px;
+    height: 44.1px;
+  }
+
   .mobile-nav .mn-ico {
     width: 21px;
     height: 21px;

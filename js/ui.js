@@ -55,6 +55,13 @@ import {
 } from './core/storefront-filters.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 import { riderAvatarHelmetSvg } from './map/rider_marker.js';
+import {
+  markStorySeen,
+  publishedStories,
+  readSeenStoryIds,
+  readStoriesSource,
+  storyEntryState,
+} from './core/stories.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -135,6 +142,7 @@ export function applyBusinessConfig() {
   setText('[data-business-whatsapp]', formatWhatsappDisplay(config.whatsappNumber) || 'A confirmar con el local');
   setText('[data-business-address]', config.address);
   setText('[data-business-hours]', config.openingHoursLabel);
+  applyHomeBrandHeader(config);
   setText('[data-business-zone]', config.deliveryZone);
   setText('[data-rider-business-name]', config.businessName);
   setText('[data-admin-pin]', config.adminPin);
@@ -178,6 +186,40 @@ export function applyBusinessConfig() {
     item.hidden = !label;
     if (seps[index]) seps[index].hidden = !label;
   });
+}
+
+// Un dato del comercio existe para el cliente sólo si está PUBLICADO. Las
+// semillas usan frases explícitas de "todavía no confirmado"; ninguna de ellas
+// puede presentarse en el encabezado como si fuera información real. Es la
+// misma regla que impide inventar un horario en el código.
+const UNPUBLISHED_BUSINESS_VALUE = /(?:a confirmar|no publicad)/i;
+
+export function publishedBusinessValue(value) {
+  const text = String(value || '').trim();
+  return text && !UNPUBLISHED_BUSINESS_VALUE.test(text) ? text : '';
+}
+
+// Encabezado de marca de la home: nombre, rubro, dirección y horario salen de
+// `businessConfig`. La dirección se agrega al rubro sólo cuando está publicada;
+// el horario tiene su propio nodo y desaparece si no existe.
+function applyHomeBrandHeader(config) {
+  const rubro = String(config.subtitle || BRAND.shortTagline || '').trim();
+  const address = publishedBusinessValue(config.address);
+  const hours = publishedBusinessValue(config.openingHoursLabel);
+
+  const place = $('[data-home-business-place]');
+  if (place) {
+    place.textContent = address && rubro
+      ? `${rubro} · ${address}`
+      : address || rubro;
+    place.hidden = !place.textContent;
+  }
+
+  const hoursNode = $('[data-home-business-hours]');
+  if (hoursNode) {
+    hoursNode.textContent = hours;
+    hoursNode.hidden = !hours;
+  }
 }
 
 function applyFulfillmentAvailability(availability) {
@@ -462,51 +504,29 @@ function renderOffers() {
   container.innerHTML = homeOfferProducts().map(railCard).join('');
 }
 
-const HOME_CATEGORIES = Object.freeze([
-  { id: 'gaseosas', name: 'Gaseosas' },
-  { id: 'mixers', name: 'Mixers' },
-  { id: 'energizantes', name: 'Energizantes' },
-  { id: 'cervezas', name: 'Cervezas' },
+// Orden comercial de la home: primero aquello por lo que este local es un
+// especialista en bebidas. NO es una lista fija de categorías a mostrar: es
+// una PRIORIDAD. Sólo entran las que hoy tienen algo efectivamente comprable
+// (con precio publicado y stock); las demás siguen accesibles desde "Todas".
+// Así la home nunca lleva a una categoría vacía ni promete un rubro que el
+// comercio todavía no publicó.
+const HOME_CATEGORY_PRIORITY = Object.freeze([
+  'gaseosas',
+  'cervezas',
+  'fernet',
+  'whisky',
+  'vinos',
+  'aperitivos',
+  'gin',
+  'espumantes',
+  'energizantes',
+  'isotonicas',
+  'aguas',
+  'aguas-saborizadas',
+  'mixers',
+  'complementos',
 ]);
-const HOME_CATEGORY_ICONS = Object.freeze({
-  gaseosas: `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M9.2 2.8h5.6v2.8l1.3 1.5v13.4c0 .8-.7 1.5-1.5 1.5H9.4c-.8 0-1.5-.7-1.5-1.5V7.1l1.3-1.5V2.8Z" fill="currentColor"/>
-      <path d="M8 10.2h8M8 16.6h8" stroke="white" stroke-width="1.15" opacity=".9"/>
-    </svg>`,
-  mixers: `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8.5 3h7v3l1.4 2.2V20H7.1V8.2L8.5 6V3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-      <path d="M7.2 12h9.6" stroke="currentColor" stroke-width="1.6"/>
-    </svg>`,
-  energizantes: `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m13.6 2.8-7 10.4h5.3l-1.5 8 7-11h-5.1l1.3-7.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-    </svg>`,
-  fernet: `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M10 2.5h4v4.1l1.6 2.1v12.2H8.4V8.7L10 6.6V2.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-      <path d="M8.8 11h6.4" stroke="currentColor" stroke-width="1.6"/>
-    </svg>`,
-  cervezas: `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M9.5 2.5h5v3l1.5 2.2V21H8V7.7l1.5-2.2v-3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-      <path d="M8.4 10.5h7.2M8.4 15.7h7.2" stroke="currentColor" stroke-width="1.5"/>
-    </svg>`,
-  aguas: `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 2.8S6.4 10 6.4 14.2a5.6 5.6 0 1 0 11.2 0C17.6 10 12 2.8 12 2.8Z" fill="none" stroke="currentColor" stroke-width="1.7"/>
-    </svg>`,
-  energeticas: `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m13.6 2.8-7 10.4h5.3l-1.5 8 7-11h-5.1l1.3-7.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-    </svg>`,
-  promos: `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m3.5 12 8.6-8.5h7.3l1.1 1.1v7.3L12 20.5 3.5 12Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-      <circle cx="16.4" cy="7.6" r="1.2" fill="currentColor"/>
-    </svg>`,
-});
+const HOME_CATEGORY_LIMIT = 8;
 
 function homeProducts(ids) {
   const productsById = new Map(
@@ -566,19 +586,232 @@ function homeUnitText(product) {
 function renderHomeShowcase() {
   renderHomeCategories();
   renderHomePromotions();
+  renderHomeBanners();
   renderHomeBestSellers();
   renderHomeCatalogPreview();
+  renderStoryEntry();
+}
+
+// Banner editorial. NO afirma un descuento: invita a recorrer una categoría que
+// existe y tiene productos comprables. Si el comercio publica una promoción
+// real, el bloque de ofertas se ocupa de ella y este banner sigue siendo lo que
+// es: una puerta, no un precio.
+const HOME_BANNER_COPY = Object.freeze({
+  cervezas: { eyebrow: 'Para el finde', title: 'Cervezas bien frías' },
+  fernet: { eyebrow: 'Clásico argentino', title: 'Fernet y amargos' },
+  whisky: { eyebrow: 'Selección premium', title: 'El mejor whisky' },
+  vinos: { eyebrow: 'Bodega', title: 'Vinos para la mesa' },
+  gaseosas: { eyebrow: 'Siempre en casa', title: 'Gaseosas y packs' },
+  energizantes: { eyebrow: 'Energía', title: 'Energizantes fríos' },
+  aperitivos: { eyebrow: 'La previa', title: 'Aperitivos y vermús' },
+  gin: { eyebrow: 'Destilados', title: 'Gin y tónicas' },
+  mixers: { eyebrow: 'Para mezclar', title: 'Tónicas y mixers' },
+  aguas: { eyebrow: 'Hidratación', title: 'Aguas y sodas' },
+  complementos: { eyebrow: 'Complementos', title: 'Hielo y accesorios' },
+});
+// Dos como máximo. En teléfono sólo se muestra el primero (el segundo se
+// oculta por CSS): el presupuesto de altura del primer pantallazo es para
+// producto, no para vidriera.
+const HOME_BANNER_LIMIT = 2;
+
+function renderHomeBanners() {
+  const container = $('[data-home-banners]');
+  if (!container) return;
+  const purchasable = purchasableCategoryIds();
+  const byId = new Map(categoriesForCurrentCatalog().map((category) => [category.id, category]));
+  // Se prioriza el rubro "premium" que el local sí puede vender hoy; si ninguno
+  // califica, el contenedor queda vacío y no ocupa altura.
+  const picks = ['whisky', 'fernet', 'vinos', 'aperitivos', 'cervezas', 'gin', 'energizantes', 'gaseosas']
+    .filter((id) => purchasable.has(id) && byId.has(id) && HOME_BANNER_COPY[id])
+    .slice(0, HOME_BANNER_LIMIT);
+
+  container.innerHTML = picks.map((id) => {
+    const copy = HOME_BANNER_COPY[id];
+    const name = byId.get(id).name;
+    return `
+      <button class="home-brand-banner" type="button" data-category-id="${escapeHtml(id)}" aria-label="${escapeHtml(`${copy.title}. Ver categoría ${name}`)}">
+        <small>${escapeHtml(copy.eyebrow)}</small>
+        <strong>${escapeHtml(copy.title)}</strong>
+        <span>Ver ${escapeHtml(name.toLowerCase())} <span aria-hidden="true">→</span></span>
+      </button>`;
+  }).join('');
+}
+
+// ─── Historias comerciales ───────────────────────────────────────────────────
+// La home sólo lee el contrato. Sin historias publicadas y vigentes el logo NO
+// es un botón, el aro no existe y el acceso permanece oculto: nada promete un
+// contenido que no está.
+let cachedStories = null;
+
+export function getHomeStories({ refresh = false } = {}) {
+  if (refresh || cachedStories === null) {
+    cachedStories = publishedStories(readStoriesSource());
+  }
+  return cachedStories;
+}
+
+export function invalidateHomeStories() {
+  cachedStories = null;
+}
+
+function renderStoryEntry() {
+  const slot = $('[data-stories-slot]');
+  if (!slot) return;
+  const entry = storyEntryState(getHomeStories(), readSeenStoryIds());
+  const businessName = getBusinessConfig().businessName || BRAND.demoBusinessName;
+
+  slot.dataset.storiesState = entry.state;
+  const staticLogo = $('[data-stories-static]', slot);
+  const actionLogo = $('.brand-logo-action', slot);
+  if (staticLogo) staticLogo.hidden = entry.available;
+  if (actionLogo) {
+    actionLogo.hidden = !entry.available;
+    actionLogo.setAttribute(
+      'aria-label',
+      entry.unseen
+        ? `Ver ${entry.unseen === 1 ? 'la historia nueva' : `las ${entry.unseen} historias nuevas`} de ${businessName}`
+        : `Ver las historias de ${businessName}`,
+    );
+  }
+
+  const cta = $('.brand-stories-cta');
+  if (cta) {
+    cta.hidden = !entry.available;
+    const detail = $('[data-stories-cta-detail]', cta);
+    // El estado no viaja sólo en el color del aro: el texto lo dice.
+    if (detail) {
+      detail.textContent = entry.unseen
+        ? `${entry.unseen} ${entry.unseen === 1 ? 'historia nueva' : 'historias nuevas'}`
+        : 'Ver historias';
+    }
+    const thumb = $('[data-stories-cta-thumb]', cta);
+    if (thumb) thumb.style.backgroundImage = entry.thumbnail ? `url("${encodeURI(entry.thumbnail)}")` : '';
+    cta.setAttribute('aria-label', `Novedades de hoy de ${businessName}. Ver historias.`);
+  }
+}
+
+let storiesRestoreFocus = null;
+let storiesCloseBound = false;
+let storiesIndex = 0;
+
+export function closeStoriesModal() {
+  const modal = $('[data-stories-modal]');
+  if (modal?.open) modal.close();
+}
+
+/**
+ * Abre el visor. Devuelve `false` cuando no hay historias vigentes: la home
+ * nunca abre un diálogo vacío.
+ */
+export function showStoriesModal(index = 0, restoreTrigger = null) {
+  const modal = $('[data-stories-modal]');
+  const content = $('[data-stories-content]');
+  const stories = getHomeStories();
+  if (!modal || !content || !stories.length) return false;
+
+  if (!storiesCloseBound) {
+    modal.addEventListener('close', () => {
+      const target = storiesRestoreFocus;
+      storiesRestoreFocus = null;
+      // Al cerrar, el aro y el acceso se recalculan con las vistas nuevas.
+      renderStoryEntry();
+      if (target?.isConnected && typeof target.focus === 'function') target.focus();
+    });
+    storiesCloseBound = true;
+  }
+
+  if (!modal.open) {
+    const active = restoreTrigger || document.activeElement;
+    storiesRestoreFocus = active && active !== document.body && typeof active.focus === 'function'
+      ? active
+      : null;
+  }
+
+  storiesIndex = Math.min(Math.max(0, Number(index) || 0), stories.length - 1);
+  const story = stories[storiesIndex];
+  markStorySeen(story.id);
+
+  const media = story.mediaType === 'video'
+    ? `<video src="${escapeHtml(story.mediaUrl)}" controls playsinline preload="metadata"${story.thumbnailUrl ? ` poster="${escapeHtml(story.thumbnailUrl)}"` : ''}></video>`
+    : `<img src="${escapeHtml(story.mediaUrl)}" alt="${escapeHtml(story.title || 'Historia del comercio')}" loading="eager" decoding="async" />`;
+
+  // La CTA sólo existe si el contrato la validó (tipo conocido + destino). Sin
+  // eso el visor muestra la historia y nada más: no se fabrica un botón.
+  const cta = story.cta
+    ? `<button class="primary-button" type="button" data-story-cta data-story-action="${escapeHtml(story.cta.action)}" data-story-target="${escapeHtml(story.cta.target)}">${escapeHtml(story.cta.label)}</button>`
+    : '';
+
+  content.innerHTML = `
+    <div class="stories-card" role="document">
+      <button class="modal-close" type="button" data-close-stories aria-label="Cerrar historias">×</button>
+      <div class="stories-progress" role="group" aria-label="Historia ${storiesIndex + 1} de ${stories.length}">
+        ${stories.map((_, position) => `<span class="${position === storiesIndex ? 'is-active' : ''}"></span>`).join('')}
+      </div>
+      <div class="stories-media">${media}</div>
+      <div class="stories-body">
+        ${story.title ? `<h2>${escapeHtml(story.title)}</h2>` : ''}
+        ${cta ? `<div class="stories-actions">${cta}</div>` : ''}
+        <div class="stories-nav">
+          <button type="button" data-story-prev ${storiesIndex === 0 ? 'disabled' : ''}>Anterior</button>
+          <button type="button" data-story-next ${storiesIndex >= stories.length - 1 ? 'disabled' : ''}>Siguiente</button>
+        </div>
+      </div>
+    </div>`;
+
+  if (typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+  return true;
+}
+
+export function stepStoriesModal(delta) {
+  return showStoriesModal(storiesIndex + delta);
+}
+
+// Categorías con al menos un producto comprable ahora mismo: precio publicado,
+// disponible y con stock. Es exactamente el criterio que usa la tarjeta para
+// habilitar "Agregar", así que la fila no puede contradecir al catálogo.
+function purchasableCategoryIds(state = getState()) {
+  return new Set(getCustomerCatalogProducts(state.products)
+    .filter((product) => !product.pricePending && product.available && Number(product.stock) > 0)
+    .map((product) => product.categoryId)
+    .filter(Boolean));
+}
+
+function homeCategoryList() {
+  const state = getState();
+  const purchasable = purchasableCategoryIds(state);
+  const byId = new Map(categoriesForCurrentCatalog().map((category) => [category.id, category]));
+  const ordered = HOME_CATEGORY_PRIORITY
+    .filter((id) => purchasable.has(id) && byId.has(id))
+    .map((id) => byId.get(id));
+  // Una categoría comprable que todavía no figura en la prioridad no puede
+  // quedar invisible sólo por no estar en la lista: se suma al final.
+  const rest = [...purchasable]
+    .filter((id) => byId.has(id) && !HOME_CATEGORY_PRIORITY.includes(id))
+    .map((id) => byId.get(id));
+  return [...ordered, ...rest].slice(0, HOME_CATEGORY_LIMIT);
 }
 
 function renderHomeCategories() {
   const strip = $('[data-home-category-strip]');
   if (!strip) return;
-  const visibleCategories = HOME_CATEGORIES;
-  strip.innerHTML = visibleCategories.map((category) => {
-    const isActive = category.id === 'gaseosas';
+  const state = getState();
+  const activeCategory = state.searchQuery.trim() ? null : state.activeCategory;
+  const list = homeCategoryList();
+  if (!list.length) {
+    strip.innerHTML = '';
+    strip.hidden = true;
+    return;
+  }
+  strip.hidden = false;
+  // "Todas" abre la fila: es el filtro activo por defecto, así que su marca
+  // roja tiene que estar VISIBLE sin scroll. Además deja a un toque el resto
+  // del catálogo, incluidas las categorías que aún no publican precio.
+  const entries = [{ id: 'all', name: 'Todas' }, ...list];
+  strip.innerHTML = entries.map((category) => {
+    const isActive = activeCategory === category.id;
     return `
-      <button class="home-category-card ${isActive ? 'active' : ''}" type="button" data-category-id="${category.id}" ${isActive ? 'aria-current="true"' : ''}>
-        <span class="home-category-icon">${HOME_CATEGORY_ICONS[category.id]}</span>
+      <button class="home-category-card ${isActive ? 'active' : ''}" type="button" data-category-id="${category.id}"${isActive ? ' aria-current="true"' : ''}>
+        <span class="home-category-icon" aria-hidden="true">${categoryGlyph(category.id)}</span>
         <span>${escapeHtml(category.name)}</span>
       </button>`;
   }).join('');
@@ -610,6 +843,7 @@ function renderHomePromotions() {
           <span class="home-product-price">${money(pricing.price)}</span>
           ${old}
           <small>${escapeHtml(homeUnitText(product))}</small>
+          <small class="home-offer-availability">${outOfStock ? 'Agotado' : 'Disponible'}</small>
         </div>
         <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>
       </article>`;
@@ -816,10 +1050,38 @@ const CATEGORY_GLYPHS = Object.freeze({
     <circle cx="12" cy="12" r="1.7" fill="currentColor"/>
     <circle cx="19" cy="12" r="1.7" fill="currentColor"/>
   </svg>`,
+  fernet: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M10 3h4v4l1.6 2.1V21H8.4V9.1L10 7V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M8.4 12.4h7.2" stroke="currentColor" stroke-width="1.6"/>
+  </svg>`,
+  aperitivos: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M4.5 5h15l-7.5 8-7.5-8Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M12 13v6M9 19h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`,
+  mixers: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M8.5 3h7v3.2l1.4 2.2V20a1 1 0 0 1-1 1H8.1a1 1 0 0 1-1-1V8.4L8.5 6.2V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M7.4 13.2h9.2" stroke="currentColor" stroke-width="1.6"/>
+  </svg>`,
+});
+
+// Los ids reales del catálogo no siempre coinciden con la clave del glifo
+// (heredada de una taxonomía anterior). El alias evita que media docena de
+// categorías caiga en el icono genérico de grilla, que era la principal fuente
+// de iconografía inconsistente en la fila.
+const CATEGORY_GLYPH_ALIASES = Object.freeze({
+  energizantes: 'energeticas',
+  vinos: 'vinos-y-espumantes',
+  espumantes: 'vinos-y-espumantes',
+  whisky: 'whisky-y-destilados',
+  gin: 'gins-y-vodkas',
+  complementos: 'hielo-y-extras',
+  'aguas-saborizadas': 'aguas',
+  'jugos-y-saborizadas': 'jugos',
 });
 
 function categoryGlyph(categoryId) {
-  return CATEGORY_GLYPHS[categoryId] || CATEGORY_GLYPHS.all;
+  const key = CATEGORY_GLYPH_ALIASES[categoryId] || categoryId;
+  return CATEGORY_GLYPHS[key] || CATEGORY_GLYPHS.all;
 }
 
 function renderCategories() {
@@ -2376,7 +2638,10 @@ function trackingHelpCard() {
 function trackingHeader() {
   return `
     <header class="tracking-brand-row">
-      <strong>TABA2</strong>
+      <!-- El seguimiento es una superficie del CLIENTE: dice el nombre del
+           local, no el de la plataforma. Antes estaba escrito a mano y quedaba
+           desalineado con el resto de la app cuando el comercio se renombraba. -->
+      <strong data-business-name>${escapeHtml(getBusinessConfig().businessName)}</strong>
       <button class="tracking-menu-button" type="button" data-nav-view="profile" aria-label="Abrir menú">
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>

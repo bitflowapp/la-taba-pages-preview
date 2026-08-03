@@ -10,6 +10,7 @@ import {
   applyBusinessConfig,
   closeCheckoutSuggestions,
   closeProductModal,
+  closeStoriesModal,
   copyDraftOrderToClipboard,
   getCheckoutFormValues,
   renderAdminVisibility,
@@ -30,7 +31,9 @@ import {
   shouldShowCheckoutSuggestions,
   showCheckoutSuggestions,
   showProductModal,
+  showStoriesModal,
   showToast,
+  stepStoriesModal,
   updateAddressFieldVisibility,
   $,
 } from './ui.js';
@@ -995,6 +998,52 @@ function bindEvents() {
     if (searchEverywhere) {
       setCategory('all');
       if (activeView !== 'catalog') setActiveView('catalog');
+      return;
+    }
+
+    // ─── Historias comerciales ───────────────────────────────────────────────
+    // Todo el bloque es inerte sin historias publicadas: `showStoriesModal`
+    // devuelve `false` y no se abre nada.
+    const storiesOpen = target.closest('[data-stories-open]');
+    if (storiesOpen) {
+      event.preventDefault();
+      showStoriesModal(0, storiesOpen);
+      return;
+    }
+
+    if (target.closest('[data-close-stories]')) {
+      closeStoriesModal();
+      return;
+    }
+
+    if (target.closest('[data-story-prev]')) {
+      stepStoriesModal(-1);
+      return;
+    }
+
+    if (target.closest('[data-story-next]')) {
+      stepStoriesModal(1);
+      return;
+    }
+
+    // La CTA de una historia se resuelve contra acciones que YA existen. No hay
+    // navegación externa ni destinos nuevos: producto, categoría o alta al
+    // carrito, exactamente lo que el contrato admite.
+    const storyCta = target.closest('[data-story-cta]');
+    if (storyCta) {
+      const action = storyCta.dataset.storyAction;
+      const storyTarget = storyCta.dataset.storyTarget || '';
+      closeStoriesModal();
+      if (action === 'category') {
+        setCategory(storyTarget);
+        setActiveView('catalog');
+      } else if (action === 'product') {
+        showProductModal(storyTarget);
+      } else if (action === 'add') {
+        const result = addToCart(storyTarget, 1);
+        showToast(result.message);
+        renderAll();
+      }
       return;
     }
 

@@ -25,7 +25,7 @@
       <header class="topbar">
         <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio del comercio">
           <span class="brand-text">
-            <strong class="brand-word" data-business-name>TABA2</strong>
+            <strong class="brand-word" data-business-name>La Taba 2</strong>
             <small data-business-subtitle>Tienda de bebidas</small>
           </span>
         </button>
@@ -52,7 +52,7 @@
                 <span class="ops-label-short" data-topbar-ops-label-short>OPERACIÓN</span>
               </small>
               <strong class="topbar-ops-context">
-                <span class="ops-context-full" data-topbar-ops-context>TABA2</span>
+                <span class="ops-context-full" data-topbar-ops-context>La Taba 2</span>
                 <span class="ops-context-short" data-topbar-ops-context-short>Cola al día</span>
                 <span class="ops-context-mini" data-topbar-ops-context-mini>Cola al día</span>
               </strong>
@@ -195,11 +195,52 @@
             <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
           </div>
           <div class="taba-home-content" data-catalog-dependent hidden>
-            <section class="taba-home-hero" aria-labelledby="home-title">
-              <p class="taba-home-kicker">TABA2 · Tienda de bebidas</p>
-              <h1 id="home-title">Elegí bebidas para tu momento.</h1>
-              <p>Buscá por marca, sabor o presentación y revisá la disponibilidad antes de comprar.</p>
-              <span class="sr-only" data-open-status>Pedidos online</span>
+            <!--
+              Encabezado de marca de La Taba 2. Todo lo que afirma sale del
+              modelo real: nombre, dirección, horario y estado provienen de
+              `businessConfig`; ninguno se escribe acá. Los que no estén
+              publicados no se muestran (fail-closed), no se inventan.
+            -->
+            <section class="taba-home-hero brand-hero" aria-labelledby="home-title">
+              <div class="brand-hero-identity">
+                <!--
+                  Caja del logo reservada por CSS (56px) para que el estado de
+                  historias no mueva el layout. El logo es BOTÓN sólo cuando hay
+                  historias publicadas; sin ellas es una imagen decorativa que no
+                  se anuncia como control.
+                -->
+                <span class="brand-logo-slot" data-stories-slot data-stories-state="empty">
+                  <span class="brand-logo brand-logo-static" data-stories-static>
+                    <span class="brand-logo-ring" aria-hidden="true"></span>
+                    <span class="brand-logo-face" aria-hidden="true">
+                      <img class="brand-logo-img" src="assets/icon.svg" width="56" height="56" alt="" decoding="async" />
+                    </span>
+                  </span>
+                  <button class="brand-logo brand-logo-action" type="button" data-stories-open hidden>
+                    <span class="brand-logo-ring" aria-hidden="true"></span>
+                    <span class="brand-logo-face" aria-hidden="true">
+                      <img class="brand-logo-img" src="assets/icon.svg" width="56" height="56" alt="" decoding="async" />
+                    </span>
+                  </button>
+                </span>
+                <div class="brand-hero-copy">
+                  <p class="brand-hero-welcome">¡Bienvenido a</p>
+                  <h1 id="home-title"><span data-business-name>La Taba 2</span></h1>
+                  <p class="brand-hero-place" data-home-business-place>Tu autoservicio de bebidas</p>
+                </div>
+              </div>
+              <p class="brand-hero-state">
+                <span class="brand-state-chip" data-open-status>Pedidos online</span>
+                <span class="brand-hero-hours" data-home-business-hours hidden></span>
+              </p>
+              <button class="brand-stories-cta" type="button" data-stories-open hidden>
+                <span class="brand-stories-thumb" data-stories-cta-thumb aria-hidden="true"></span>
+                <span class="brand-stories-copy">
+                  <strong>Novedades de hoy</strong>
+                  <small data-stories-cta-detail>Ver historias</small>
+                </span>
+                <span class="brand-stories-go" aria-hidden="true">›</span>
+              </button>
             </section>
 
             <div data-home-active-order hidden></div>
@@ -209,14 +250,14 @@
                 <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
                 <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
-              <input data-search-input data-search-jump type="search" placeholder="Buscar productos, marcas y más..." aria-label="Buscar productos, marcas y más" />
+              <input data-search-input data-search-jump type="search" placeholder="Buscar bebidas, marcas y ofertas…" aria-label="Buscar bebidas, marcas y ofertas" />
             </label>
 
             <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip aria-label="Categorías de bebidas"></div>
 
-            <section class="home-merch-section" aria-labelledby="home-promotions-title">
+            <section class="home-merch-section home-offers-section" aria-labelledby="home-promotions-title">
               <div class="home-section-head">
-                <h2 id="home-promotions-title">Promociones</h2>
+                <h2 id="home-promotions-title">Ofertas del día</h2>
                 <button type="button" data-category-id="promos">Ver todas</button>
               </div>
               <button class="home-live-promotion" type="button" data-category-id="promos" data-promo-banner hidden>
@@ -232,6 +273,13 @@
               <div class="home-promotions-rail" data-home-promotions></div>
               <div class="home-paging-dots" data-home-paging-dots aria-hidden="true" hidden></div>
             </section>
+
+            <!--
+              Banner editorial. No afirma un descuento: es una puerta a una
+              categoría que EXISTE y tiene productos comprables. Si ninguna
+              califica, el contenedor queda vacío y no ocupa espacio.
+            -->
+            <div class="home-brand-banners" data-home-banners></div>
 
             <section class="home-merch-section home-best-section" aria-labelledby="home-best-title">
               <div class="home-section-head">
@@ -467,7 +515,7 @@
             <summary>Información del local</summary>
             <div class="profile-business-details-body">
               <ul class="info-list">
-                <li><span>Local</span><strong data-business-profile-name>TABA2</strong></li>
+                <li><span>Local</span><strong data-business-profile-name>La Taba 2</strong></li>
                 <li><span>Dirección</span><strong data-business-address>A confirmar con el local</strong></li>
                 <li><span>Horarios</span><strong data-business-hours>A confirmar con el local</strong></li>
                 <li><span>Zona de entrega</span><strong data-business-zone>A confirmar con el local</strong></li>
@@ -575,7 +623,7 @@
           <div data-admin-unlocked hidden>
             <div class="section-head rider-section-head">
               <div>
-                <p class="eyebrow">Repartidor de <span data-rider-business-name>TABA2</span></p>
+                <p class="eyebrow">Repartidor de <span data-rider-business-name>La Taba 2</span></p>
                 <h1 class="rider-title">Mis entregas</h1>
               </div>
             </div>
@@ -610,6 +658,15 @@
 
     <dialog class="checkout-suggestions-modal" data-checkout-suggestions-modal aria-labelledby="checkout-suggestions-title">
       <div data-checkout-suggestions-content></div>
+    </dialog>
+
+    <!--
+      Historias comerciales. El diálogo existe siempre en el shell pero sólo se
+      abre cuando `js/core/stories.js` devuelve historias publicadas y vigentes.
+      Sin datos no hay entrada, no hay aro y no hay contenido: fail-closed.
+    -->
+    <dialog class="stories-modal" data-stories-modal aria-label="Historias del comercio">
+      <div data-stories-content></div>
     </dialog>
 
     <dialog class="pin-modal" data-pin-modal data-demo-only aria-label="Acceso del equipo">

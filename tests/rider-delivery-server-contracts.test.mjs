@@ -18,6 +18,10 @@ const legacyClaimGpsRevocationSql = readFileSync(
   new URL('../supabase/migrations/20260802102000_rider_delivery_legacy_claim_gps_revocation.sql', import.meta.url),
   'utf8',
 );
+const queueReadLockModeSql = readFileSync(
+  new URL('../supabase/migrations/20260802103000_rider_queue_read_lock_mode.sql', import.meta.url),
+  'utf8',
+);
 
 function functionSql(name) {
   const start = sql.search(new RegExp(`create or replace function public\\.${name}\\b`, 'i'));
@@ -58,6 +62,12 @@ test('incremental certification revokes legacy non-idempotent claim and GPS over
   assert.match(legacyClaimGpsRevocationSql, /execute 'revoke all on function public\.claim_available_rider_order\(uuid, text, bigint, text, uuid\)/i);
   assert.match(legacyClaimGpsRevocationSql, /to_regprocedure\('public\.publish_rider_location\(uuid,bigint,double precision/i);
   assert.match(legacyClaimGpsRevocationSql, /execute 'revoke all on function public\.publish_rider_location\(uuid, bigint, double precision/i);
+});
+
+test('incremental certification executes the membership-locking queue outside a read-only transaction', () => {
+  assert.match(queueReadLockModeSql, /alter function public\.get_rider_queue\(uuid\) volatile/i);
+  assert.match(queueReadLockModeSql, /FOR SHARE/i);
+  assert.match(queueReadLockModeSql, /without changing data/i);
 });
 
 test('queue is minimized and revision-aware', () => {

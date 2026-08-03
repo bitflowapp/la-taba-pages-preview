@@ -8,10 +8,11 @@ const CHECKOUT_VIEWPORTS = [
 ];
 const MOBILE_PROBE = devices['iPhone 13'];
 
-const createMobileContext = async (browser, viewport) => browser.newContext({
-  ...MOBILE_PROBE,
-  viewport,
-});
+const createMobileContext = async (browser, viewport) => {
+  const options = { ...MOBILE_PROBE, viewport };
+  if (browser.browserType().name() === 'firefox') delete options.isMobile;
+  return browser.newContext(options);
+};
 
 async function openCheckoutFlow(page) {
   await page.goto('/?reset=1&demo=1#catalog');

@@ -193,7 +193,7 @@ begin
     raise exception 'importe de reembolso no coincide' using errcode = '22023';
   end if;
   update public.payment_refunds
-     set provider_refund_id = nullif(left(btrim(coalesce(p_provider_refund_id, '')), 200)),
+     set provider_refund_id = nullif(left(btrim(coalesce(p_provider_refund_id, '')), 200), ''),
          status = p_status,
          raw_response_hash = p_response_hash,
          completed_at = case when p_status in ('approved', 'rejected') then clock_timestamp() else completed_at end

@@ -267,10 +267,13 @@ begin
 end;
 $packing_confirm$;
 
-revoke all on function public.record_packing_scan(uuid,text,text),
-  public.get_packing_manifest(uuid),
-  public.revert_packing_scan(uuid,text,text),
-  public.confirm_packing_session_once(uuid,text,text)
+revoke all on function public.record_packing_scan(uuid,text,text)
+from public,anon,authenticated;
+revoke all on function public.get_packing_manifest(uuid)
+from public,anon,authenticated;
+revoke all on function public.revert_packing_scan(uuid,text,text)
+from public,anon,authenticated;
+revoke all on function public.confirm_packing_session_once(uuid,text,text)
 from public,anon,authenticated;
 grant execute on function public.record_packing_scan(uuid,text,text),
   public.get_packing_manifest(uuid),

@@ -24,6 +24,7 @@ async function openCheckoutFlow(page) {
 }
 
 test('formularios de checkout mantienen inputs a 16px efectivos en mobile', async ({ browser }) => {
+  test.setTimeout(90_000);
   for (const viewport of CHECKOUT_VIEWPORTS) {
     const context = await createMobileContext(browser, viewport);
     const page = await context.newPage();

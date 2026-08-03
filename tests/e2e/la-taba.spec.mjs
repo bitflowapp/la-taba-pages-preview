@@ -647,7 +647,9 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
       const style = getComputedStyle(main);
       return {
         root: document.scrollingElement?.tagName,
-        height: main.computedStyleMap().get('height').toString(),
+        height: typeof main.computedStyleMap === 'function'
+          ? main.computedStyleMap().get('height').toString()
+          : (main.style.height || 'auto'),
         overflowY: style.overflowY,
         paddingBottom: style.paddingBottom,
         scrollable: main.scrollHeight > main.clientHeight + 1,

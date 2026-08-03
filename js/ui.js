@@ -641,17 +641,12 @@ function renderHomeBanners() {
 // La home sólo lee el contrato. Sin historias publicadas y vigentes el logo NO
 // es un botón, el aro no existe y el acceso permanece oculto: nada promete un
 // contenido que no está.
-let cachedStories = null;
-
-export function getHomeStories({ refresh = false } = {}) {
-  if (refresh || cachedStories === null) {
-    cachedStories = publishedStories(readStoriesSource());
-  }
-  return cachedStories;
-}
-
-export function invalidateHomeStories() {
-  cachedStories = null;
+// Sin caché a propósito. La vigencia depende del reloj: una historia que vence
+// durante la sesión tiene que desaparecer sola, y un origen que se publica
+// después del primer pintado tiene que aparecer sin recargar. Normalizar unos
+// pocos registros por render es más barato que sostener invalidación.
+export function getHomeStories() {
+  return publishedStories(readStoriesSource());
 }
 
 function renderStoryEntry() {

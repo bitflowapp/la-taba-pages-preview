@@ -14,6 +14,10 @@ const legacyStartRevocationSql = readFileSync(
   new URL('../supabase/migrations/20260802101000_rider_delivery_legacy_start_revocation.sql', import.meta.url),
   'utf8',
 );
+const legacyClaimGpsRevocationSql = readFileSync(
+  new URL('../supabase/migrations/20260802102000_rider_delivery_legacy_claim_gps_revocation.sql', import.meta.url),
+  'utf8',
+);
 
 function functionSql(name) {
   const start = sql.search(new RegExp(`create or replace function public\\.${name}\\b`, 'i'));
@@ -47,6 +51,13 @@ test('incremental certification revokes the legacy non-idempotent route-start si
   assert.match(legacyStartRevocationSql, /to_regprocedure\('public\.start_rider_delivery\(uuid,bigint\)'\)/i);
   assert.match(legacyStartRevocationSql, /execute 'revoke all on function public\.start_rider_delivery\(uuid, bigint\)/i);
   assert.match(legacyStartRevocationSql, /start_rider_delivery\(uuid, bigint, text\)/i);
+});
+
+test('incremental certification revokes legacy non-idempotent claim and GPS overloads', () => {
+  assert.match(legacyClaimGpsRevocationSql, /to_regprocedure\('public\.claim_available_rider_order\(uuid,text,bigint,text,uuid\)'\)/i);
+  assert.match(legacyClaimGpsRevocationSql, /execute 'revoke all on function public\.claim_available_rider_order\(uuid, text, bigint, text, uuid\)/i);
+  assert.match(legacyClaimGpsRevocationSql, /to_regprocedure\('public\.publish_rider_location\(uuid,bigint,double precision/i);
+  assert.match(legacyClaimGpsRevocationSql, /execute 'revoke all on function public\.publish_rider_location\(uuid, bigint, double precision/i);
 });
 
 test('queue is minimized and revision-aware', () => {

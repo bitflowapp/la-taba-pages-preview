@@ -240,7 +240,9 @@ test('cambiar de demo a público invalida pedidos de ejemplo y deja medios hones
 });
 
 test('Moto g15: no hay overflow horizontal y los controles principales alcanzan 44 px', async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 432, height: 815 }, isMobile: true, hasTouch: true });
+  const contextOptions = { viewport: { width: 432, height: 815 }, hasTouch: true };
+  if (browser.browserType().name() !== 'firefox') contextOptions.isMobile = true;
+  const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
   await page.goto('/?demo=1');
 

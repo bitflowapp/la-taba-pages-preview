@@ -6,6 +6,7 @@ import {
   revertPackingScanLocally, undoLastPackingScan,
 } from './business-packing-verification.js';
 import { presentFiscalStatus } from '../pos/fiscal-status-presenter.js';
+import { buildFiscalActivationStatus } from '../pos/fiscal-activation-status.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
   'operation-center', 'scanner', 'product-create', 'inventory-receive', 'inventory-adjust',
@@ -554,10 +555,11 @@ function cachedPackingBinding(gtin) {
 function clonePackingSession(session) { return JSON.parse(JSON.stringify(session)); }
 
 async function refreshFiscal() {
-  const [profile, documents, artifacts] = await Promise.all([context.getFiscalProfile(), context.listFiscalDocuments(), context.listFiscalArtifacts()]);
+  const [profile, documents, artifacts, operationCenter] = await Promise.all([context.getFiscalProfile(), context.listFiscalDocuments(), context.listFiscalArtifacts(), context.getOperationCenter()]);
   fiscalProfile = profile?.ok ? profile.data : null;
   fiscalDocuments = documents?.ok && Array.isArray(documents.data) ? documents.data : [];
   fiscalArtifacts = artifacts?.ok && Array.isArray(artifacts.data) ? artifacts.data : [];
+  if (operationCenter?.ok && operationCenter.data && !Array.isArray(operationCenter.data)) operationCenterSnapshot = operationCenter.data;
   await refreshFiscalPrinters();
   // The snapshot remains fresh after navigation, but a late fiscal request must
   // never redraw another operational surface and erase an in-progress scan.
@@ -1109,7 +1111,7 @@ function renderCreditControls(document) {
   }).join('');
   return `<details class="business-fiscal-credit"${draft ? ' open' : ''}><summary>Solicitar nota de crédito</summary><label>Motivo<input name="creditReason" maxlength="300" value="${escapeHtml(draft?.reason || '')}"></label><label>Tipo<select name="creditKind"><option value="total"${kind === 'total' ? ' selected' : ''}>Total del saldo acreditable</option><option value="partial"${kind === 'partial' ? ' selected' : ''}>Parcial por ítem/cantidad</option><option value="commercial_adjustment"${kind === 'commercial_adjustment' ? ' selected' : ''}>Ajuste comercial autorizado</option></select></label><small>Los importes parciales se calculan desde snapshots; el ajuste comercial exige política aprobada.</small>${lines}<button class="ghost-button compact" type="button" data-fiscal-credit-note="${escapeHtml(document.id)}">Solicitar nota</button></details>`;
 }
-function renderFiscalConfig() {
+function renderLegacyFiscalConfig() {
   const profile = fiscalProfile || {};
   return panel('Configuración fiscal', 'Sólo homologación desde el panel. Producción requiere revisión contable y activación del servidor.', `<div class="business-fiscal-lock"><strong>Producción fiscal deshabilitada</strong><span>Revisión contable: ${escapeHtml(profile.accountant_review_status || 'pendiente')}</span><span>Gate: ${escapeHtml(profile.production_gate_status || 'bloqueado')}</span></div><div class="business-ops-form"><label>Razón social<input name="legalName" value="${escapeHtml(profile.legal_name || '')}" maxlength="160"></label><label>CUIT<input name="cuit" value="${escapeHtml(profile.cuit || '')}" inputmode="numeric" maxlength="11"></label><label>Condición fiscal<input name="taxCondition" value="${escapeHtml(profile.tax_condition || '')}" maxlength="80"></label><label>Condición predeterminada del receptor<input name="defaultRecipientCondition" value="${escapeHtml(profile.default_recipient_condition || '')}" maxlength="80"></label><label>Domicilio comercial<input name="businessAddress" value="${escapeHtml(profile.business_address || '')}" maxlength="200"></label><label>Punto de venta<input name="pointOfSale" value="${escapeHtml(profile.point_of_sale || '')}" type="number" min="1"></label><button class="primary-button" type="button" data-fiscal-config-save>Guardar perfil de homologación</button></div>`);
 }
@@ -1121,6 +1123,30 @@ function renderScanResult() {
   return `<div class="business-scan-result ${lastScan.isValid ? 'is-valid' : 'is-invalid'}"><dl><div><dt>Código</dt><dd>${escapeHtml(lastScan.normalizedValue || lastScan.rawValue || '—')}</dd></div><div><dt>Formato</dt><dd>${escapeHtml(lastScan.format || 'Inválido')}</dd></div><div><dt>Producto</dt><dd>${escapeHtml(product?.name || (busy ? 'Buscando…' : 'Desconocido'))}</dd></div><div><dt>Presentación</dt><dd>${escapeHtml(product?.presentation || '—')}</dd></div><div><dt>Factor</dt><dd>${escapeHtml(lookup?.data?.unit_factor || 1)}</dd></div><div><dt>Stock actual</dt><dd>${product ? `${product.stock} (último conocido)` : '—'}</dd></div></dl></div>`;
 }
 function normalizedProduct(binding) { const product = Array.isArray(binding.products) ? binding.products[0] : binding.products || {}; return { id: String(binding.product_id || product.id || ''), name: String(product.name || 'Producto'), presentation: String(product.presentation || binding.package_type || ''), stock: Number.isInteger(product.stock) ? product.stock : Number(product.stock || 0) }; }
+function renderFiscalConfig() {
+  const profile = fiscalProfile || {};
+  const readiness = buildFiscalActivationStatus(profile, operationCenterSnapshot);
+  const rows = [
+    ['Ambiente', readiness.environment],
+    ['CUIT configurado', readiness.cuitConfigured],
+    ['Certificado presente', readiness.certificatePresent],
+    ['Clave privada presente', readiness.privateKeyPresent],
+    ['Certificado y clave coinciden', readiness.pairMatches],
+    ['Vencimiento del certificado', readiness.certificateExpiresAt],
+    ['Relacion WSAA', readiness.wsaaRelation],
+    ['Relacion WSFEv1', readiness.wsfev1Relation],
+    ['Punto de venta', readiness.pointOfSale],
+    ['Condicion fiscal', readiness.taxCondition],
+    ['Politica contable', readiness.accountingPolicy],
+    ['Conexion ARCA', readiness.arcaConnection],
+    ['Ultima prueba', readiness.lastTestAt],
+    ['Ultimo error sanitizado', readiness.lastError],
+    ['Outbox pendiente', readiness.outboxPending],
+    ['Certificado proximo a vencer', readiness.certificateExpiring],
+  ].map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(String(value))}</dd></div>`).join('');
+  return panel('Configuración fiscal', 'Sólo homologación desde el panel. Producción requiere revisión contable y activación del servidor.', `<div class="business-fiscal-lock"><strong>Producción fiscal deshabilitada</strong><span>La política contable no se marca como aprobada desde este panel.</span><span>Los estados de certificado y clave sólo llegan como indicadores sanitizados del worker privado.</span></div><dl class="business-fiscal-readiness">${rows}</dl><div class="business-ops-form"><label>Razón social<input name="legalName" value="${escapeHtml(profile.legal_name || '')}" maxlength="160"></label><label>CUIT<input name="cuit" value="${escapeHtml(profile.cuit || '')}" inputmode="numeric" maxlength="11"></label><label>Condición fiscal<input name="taxCondition" value="${escapeHtml(profile.tax_condition || '')}" maxlength="80"></label><label>Condición predeterminada del receptor<input name="defaultRecipientCondition" value="${escapeHtml(profile.default_recipient_condition || '')}" maxlength="80"></label><label>Domicilio comercial<input name="businessAddress" value="${escapeHtml(profile.business_address || '')}" maxlength="200"></label><label>Punto de venta<input name="pointOfSale" value="${escapeHtml(profile.point_of_sale || '')}" type="number" min="1"></label><button class="primary-button" type="button" data-fiscal-config-save>Guardar perfil de homologación</button></div>`);
+}
+
 function panel(title, subtitle, body) { return `<section class="business-ops-panel"><header><div><p class="eyebrow">Centro operativo</p><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div></header>${body}</section>`; }
 function result(ok, message) { return { handled: true, ok, message }; }
 function positiveInteger(value, fallback) { const number = Number(value); return Number.isSafeInteger(number) && number > 0 ? number : fallback; }

@@ -22,6 +22,10 @@ const queueReadLockModeSql = readFileSync(
   new URL('../supabase/migrations/20260802103000_rider_queue_read_lock_mode.sql', import.meta.url),
   'utf8',
 );
+const riderLocationReceiptRevisionSql = readFileSync(
+  new URL('../supabase/migrations/20260802104000_rider_location_receipt_revision.sql', import.meta.url),
+  'utf8',
+);
 
 function functionSql(name) {
   const start = sql.search(new RegExp(`create or replace function public\\.${name}\\b`, 'i'));
@@ -68,6 +72,12 @@ test('incremental certification executes the membership-locking queue outside a 
   assert.match(queueReadLockModeSql, /alter function public\.get_rider_queue\(uuid\) volatile/i);
   assert.match(queueReadLockModeSql, /FOR SHARE/i);
   assert.match(queueReadLockModeSql, /without changing data/i);
+});
+
+test('incremental certification persists the authoritative revision for accepted GPS receipts', () => {
+  assert.match(riderLocationReceiptRevisionSql, /order_revision, captured_at/i);
+  assert.match(riderLocationReceiptRevisionSql, /'gps', v_key, v_order\.revision, p_captured_at/i);
+  assert.match(riderLocationReceiptRevisionSql, /grant execute on function public\.publish_rider_location_receipt/i);
 });
 
 test('queue is minimized and revision-aware', () => {

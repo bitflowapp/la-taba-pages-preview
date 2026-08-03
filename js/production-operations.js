@@ -7,6 +7,7 @@ import { createSupabaseInventoryRepository } from './repositories/supabase-inven
 import { createSupabasePosRepository } from './repositories/supabase-pos-repository.js';
 import { createSupabaseFiscalRepository } from './repositories/supabase-fiscal-repository.js';
 import { createSupabasePackingRepository } from './repositories/supabase-packing-repository.js';
+import { createSupabaseOperationsRepository } from './repositories/supabase-operations-repository.js';
 import { getSupabaseClient } from './services/supabase-client.js';
 import { resolveRuntimeConfig } from './core/runtime-config.js';
 import { createBusinessPlatform } from './platform/tauri-business-platform.js';
@@ -43,11 +44,12 @@ let businessIntake = null;
 let businessIntakeStatus = emptyBusinessIntakeStatus();
 let businessCommandController = null;
 let businessCommandStatus = null;
-let businessOperationsView = 'orders';
+let businessOperationsView = 'operation-center';
 let inventoryRepository = null;
 let posRepository = null;
 let fiscalRepository = null;
 let packingRepository = null;
+let operationsRepository = null;
 let businessPayments = [];
 let businessPaymentsStatus = { phase: 'idle', message: '' };
 let paymentRefreshTimer = null;
@@ -486,7 +488,7 @@ export function resetProductionOperationsForTests() {
   refreshSequence = 0;
   availableRiderOrders = [];
   activeBusinessRiders = [];
-  businessOperationsView = 'orders';
+  businessOperationsView = 'operation-center';
   inventoryRepository = null;
   posRepository = null;
   fiscalRepository = null;
@@ -647,6 +649,7 @@ async function configureBusinessRuntime(result) {
   posRepository = createSupabasePosRepository({ client, businessId });
   fiscalRepository = createSupabaseFiscalRepository({ client, businessId });
   packingRepository = createSupabasePackingRepository({ client });
+  operationsRepository = createSupabaseOperationsRepository({ client, businessId });
   const desktopPlatform = createBusinessPlatform();
   configureBusinessOperations({
     operatorId,
@@ -677,6 +680,12 @@ async function configureBusinessRuntime(result) {
       sessionId: session.serverSessionId,
       exceptionReason,
     }),
+    role: result.membership?.role,
+    getOperationCenter: () => operationsRepository.getCenter(),
+    acknowledgeOperationalAlert: (alertId) => operationsRepository.acknowledgeAlert(alertId),
+    resolveOperationalAlert: (input) => operationsRepository.resolveAlert(input),
+    prepareDailyReconciliation: (input) => operationsRepository.prepareDailyReconciliation(input),
+    closeDailyReconciliation: (input) => operationsRepository.closeDailyReconciliation(input),
     onChange: () => notify(),
   });
 
@@ -700,6 +709,7 @@ function stopBusinessCommandRuntime() {
   posRepository = null;
   fiscalRepository = null;
   packingRepository = null;
+  operationsRepository = null;
 }
 
 async function reconcileBusinessCommand(command) {
@@ -836,6 +846,7 @@ function businessWorkspaceMarkup() {
       <button class="ghost-button compact" type="button" data-production-sign-out>Cerrar sesión</button>
     </div>
     <nav class="production-operations-shortcuts" aria-label="Áreas operativas">
+      <button type="button" class="business-ops-nav-button ${businessOperationsView === 'operation-center' ? 'active' : ''}" data-business-ops-view="operation-center">Centro de operación</button>
       <button type="button" class="business-ops-nav-button ${businessOperationsView === 'orders' ? 'active' : ''}" data-production-orders-view>Pedidos</button>
       ${['scanner', 'inventory-receive', 'packing', 'pos', 'fiscal-status', 'fiscal-config'].map((view) => `
         <button type="button" class="business-ops-nav-button ${businessOperationsView === view ? 'active' : ''}" data-business-ops-view="${view}">${escapeHtml({ scanner: 'Escáner', 'inventory-receive': 'Inventario', packing: 'Preparación', pos: 'Mostrador', 'fiscal-status': 'Fiscal', 'fiscal-config': 'Configuración' }[view])}</button>`).join('')}

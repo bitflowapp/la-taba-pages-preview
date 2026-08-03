@@ -107,12 +107,37 @@ test('panel fiscal usa artefactos privados, descarga, reimpresiÃ³n y nota de c
   await expect(workspace.locator('.business-ops-feedback')).toContainText('owner/admin requerido');
 });
 
+test('Centro de operación prioriza alertas y finaliza un cierre diario auditable', async ({ page }) => {
+  const session = staffSession('owner');
+  await installRuntime(page, session, { operationCenter: operationCenterFixture() });
+  await page.goto('/#business');
+  const workspace = page.locator('[data-production-workspace="business"]');
+  const center = workspace.locator('[data-business-ops-center="operation-center"]');
+  await expect(center).toBeVisible();
+  await expect(center.getByRole('heading', { name: 'Centro de operación' })).toBeVisible();
+  await expect(center.locator('[data-operation-metric="new_orders"]')).toContainText('2');
+  await expect(center.locator('[data-operation-metric="reconciliations_required"]')).toContainText('1');
+  await expect(center.locator('[data-operational-alert]')).toContainText('Pago aprobado sin pedido operativo');
+  await expect(center.locator('[data-operational-alert]')).toContainText('no cobrar nuevamente');
+
+  await center.locator('[data-operational-alert-acknowledge]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('Alerta reconocida');
+
+  await center.locator('[name="dailyDeclaredCash"]').fill('900');
+  await center.locator('[name="dailyDifferenceNote"]').fill('Diferencia recontada y documentada por caja.');
+  await center.locator('[data-daily-reconciliation-prepare]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('Conciliación preparada');
+
+  await center.locator('[data-daily-reconciliation-close]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('Cierre diario finalizado e inmutable');
+});
+
 async function installRuntime(page, session, fiscal = null) {
   await page.route(`${SUPABASE_URL}/**`, async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/auth/v1/user')) return json(route, session.user);
     if (url.pathname.includes('/auth/v1/token')) return json(route, session);
-    if (url.pathname.includes('/rest/v1/business_members')) return json(route, { business_id: BUSINESS_ID, user_id: STAFF_ID, role: 'staff', is_active: true });
+    if (url.pathname.includes('/rest/v1/business_members')) return json(route, { business_id: BUSINESS_ID, user_id: STAFF_ID, role: session.fixtureRole || 'staff', is_active: true });
     if (url.pathname.includes('/rest/v1/businesses')) return json(route, businessFixture());
     if (url.pathname.includes('/rest/v1/product_barcodes')) return json(route, barcodeFixture(url.searchParams.get('gtin') || ''));
     if (url.pathname.includes('/functions/v1/fiscal-artifact-access')) return json(route, fiscal?.artifactAccess || { signedUrl: 'https://signed.example.invalid/document.pdf', expiresAt: '2026-08-02T12:01:00Z', sha256: 'a'.repeat(64) });
@@ -121,6 +146,10 @@ async function installRuntime(page, session, fiscal = null) {
     if (url.pathname.includes('/rest/v1/rpc/request_credit_note')) return fiscal?.creditResponse ? json(route, fiscal.creditResponse) : json(route, { fiscal_document_id: 'credit-queued', state: 'queued' });
     if (url.pathname.includes('/rest/v1/rpc/request_fiscal_print_job')) return json(route, fiscal?.printResponse || { print_job_id: '99999999-9999-4999-8999-999999999999', status: 'queued' });
     if (url.pathname.includes('/rest/v1/rpc/update_fiscal_print_job')) return json(route, { print_job_id: '99999999-9999-4999-8999-999999999999', status: 'sent_to_spooler' });
+    if (url.pathname.includes('/rest/v1/rpc/get_production_operation_center')) return json(route, fiscal?.operationCenter || operationCenterFixture({ empty: true }));
+    if (url.pathname.includes('/rest/v1/rpc/transition_operational_alert')) return json(route, { ok: true, status: 'acknowledged' });
+    if (url.pathname.includes('/rest/v1/rpc/prepare_daily_reconciliation')) return json(route, { ok: true, reconciliation: fiscal?.operationCenter?.recent_closures?.[0] || null });
+    if (url.pathname.includes('/rest/v1/rpc/close_daily_reconciliation')) return json(route, { ok: true, reconciliation: { status: 'closed', snapshot_sha256: 'c'.repeat(64) } });
     if (url.pathname.includes('/rest/v1/rpc/request_fiscal_artifact_regeneration')) return fiscal?.regenerationFailure
       ? route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ code: '42501', message: fiscal.regenerationFailure }) })
       : json(route, { fiscal_document_id: 'fixture', artifact_state: 'artifact_pending' });
@@ -188,11 +217,40 @@ function fiscalFixture(overrides = {}) {
   };
 }
 
-function staffSession() {
+function staffSession(fixtureRole = 'staff') {
   const expiresAt = Math.floor(Date.now() / 1000) + 3600;
   const encode = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
   const accessToken = `${encode({ alg: 'none', typ: 'JWT' })}.${encode({ sub: STAFF_ID, exp: expiresAt, role: 'authenticated' })}.signature`;
-  return { access_token: accessToken, token_type: 'bearer', expires_in: 3600, expires_at: expiresAt, refresh_token: 'business-windows-e2e-refresh', user: { id: STAFF_ID, aud: 'authenticated', role: 'authenticated', is_anonymous: false, user_metadata: { taba_actor: 'staff' } } };
+  return { access_token: accessToken, token_type: 'bearer', expires_in: 3600, expires_at: expiresAt, refresh_token: 'business-windows-e2e-refresh', fixtureRole, user: { id: STAFF_ID, aud: 'authenticated', role: 'authenticated', is_anonymous: false, user_metadata: { taba_actor: fixtureRole } } };
+}
+
+function operationCenterFixture({ empty = false } = {}) {
+  const metrics = Object.fromEntries([
+    'new_orders', 'delayed_orders', 'pending_payments', 'payments_in_review',
+    'orders_without_stock', 'packing_incomplete', 'active_deliveries',
+    'riders_without_signal', 'fiscal_documents_pending', 'failed_prints',
+    'pending_credit_notes', 'blocked_outboxes', 'reconciliations_required',
+  ].map((key) => [key, 0]));
+  if (!empty) {
+    metrics.new_orders = 2;
+    metrics.reconciliations_required = 1;
+  }
+  return {
+    generated_at: '2026-08-02T12:00:00Z', metrics,
+    alerts: empty ? [] : [{
+      id: '12121212-1212-4212-8212-121212121212', severity: 'CRITICAL',
+      code: 'PAYMENT_APPROVED_WITHOUT_ORDER', status: 'open',
+      summary: 'Pago aprobado sin pedido operativo.',
+      required_action: 'Reconciliar el pago y finalizar el pedido; no cobrar nuevamente.',
+      correlation_id: '34343434-3434-4434-8434-343434343434', occurrence_count: 1,
+    }],
+    recent_closures: empty ? [] : [{
+      id: '56565656-5656-4656-8656-565656565656', business_date: '2026-08-02',
+      status: 'open', revision: 1, declared_cash: 900, expected_cash: 1000,
+      cash_difference: -100, difference_note: 'Diferencia recontada.',
+      open_alerts: 1, critical_alerts: 1, snapshot_sha256: null,
+    }],
+  };
 }
 
 async function json(route, body) {

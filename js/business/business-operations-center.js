@@ -4,11 +4,12 @@ import { applyPackingScan, createPackingSession, undoLastPackingScan } from './b
 import { presentFiscalStatus } from '../pos/fiscal-status-presenter.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
-  'scanner', 'product-create', 'inventory-receive', 'inventory-adjust',
+  'operation-center', 'scanner', 'product-create', 'inventory-receive', 'inventory-adjust',
   'stock-count', 'packing', 'pos', 'fiscal-status', 'fiscal-config',
 ]);
 
 const VIEW_META = Object.freeze({
+  'operation-center': ['Centro de operación', null],
   scanner: ['Escáner rápido', 'product_lookup'],
   'product-create': ['Alta de producto', 'product_create'],
   'inventory-receive': ['Recepción', 'inventory_receive'],
@@ -39,16 +40,25 @@ let fiscalInitialRefreshStarted = false;
 let fiscalCreditDrafts = new Map();
 let packingSession = null;
 let productDraft = null;
+let operationCenterSnapshot = null;
+let operationCenterStatus = { phase: 'idle', message: '' };
+let operationCenterRefreshStarted = false;
+let operationCenterRefreshTimer = null;
 
 export function configureBusinessOperations(next = {}) {
+  stopOperationCenterRefresh();
   context = { ...defaultContext(), ...next };
   packingSession = null;
+  operationCenterSnapshot = null;
+  operationCenterStatus = { phase: 'idle', message: '' };
+  operationCenterRefreshStarted = false;
   return context;
 }
 
 export function renderBusinessOperations(view) {
   currentView = BUSINESS_OPERATION_VIEWS.includes(view) ? view : 'scanner';
   const content = ({
+    'operation-center': renderOperationCenter,
     scanner: renderScanner,
     'product-create': renderProductCreate,
     'inventory-receive': () => renderInventory('purchase_receipt'),
@@ -69,8 +79,13 @@ export function renderBusinessOperations(view) {
 
 export function activateBusinessOperations(view = currentView) {
   const mode = VIEW_META[view]?.[1];
+  if (view !== 'operation-center') stopOperationCenterRefresh();
   if (!mode) {
     scanner?.stop();
+    if (view === 'operation-center' && !operationCenterRefreshStarted) {
+      operationCenterRefreshStarted = true;
+      void refreshOperationCenter();
+    }
     if ((view === 'fiscal-status' || view === 'fiscal-config') && !fiscalInitialRefreshStarted) {
       fiscalInitialRefreshStarted = true;
       void refreshFiscal();
@@ -161,6 +176,14 @@ export async function handleBusinessOperationsAction(target) {
   if (target.closest('[data-fiscal-config-save]')) return saveFiscalConfiguration(target);
   const creditNote = target.closest('[data-fiscal-credit-note]');
   if (creditNote) return requestCreditNote(creditNote);
+  if (target.closest('[data-operation-center-refresh]')) return refreshOperationCenterAction();
+  const acknowledgeAlert = target.closest('[data-operational-alert-acknowledge]');
+  if (acknowledgeAlert) return acknowledgeOperationalAlert(acknowledgeAlert);
+  const resolveAlert = target.closest('[data-operational-alert-resolve]');
+  if (resolveAlert) return resolveOperationalAlert(resolveAlert);
+  if (target.closest('[data-daily-reconciliation-prepare]')) return prepareDailyReconciliation(target);
+  const closeDaily = target.closest('[data-daily-reconciliation-close]');
+  if (closeDaily) return closeDailyReconciliation(closeDaily);
   return { handled: false };
 }
 
@@ -181,6 +204,7 @@ export function handleBusinessOperationsInput(target) {
 }
 
 export function resetBusinessOperationsForTests() {
+  stopOperationCenterRefresh();
   unsubscribeScanner?.();
   scanner?.stop();
   scanner = null;
@@ -202,6 +226,9 @@ export function resetBusinessOperationsForTests() {
   fiscalCreditDrafts = new Map();
   packingSession = null;
   productDraft = null;
+  operationCenterSnapshot = null;
+  operationCenterStatus = { phase: 'idle', message: '' };
+  operationCenterRefreshStarted = false;
 }
 
 async function processScan(event) {
@@ -559,6 +586,218 @@ async function printFiscalArtifact(button) {
   }
 }
 
+async function refreshOperationCenter() {
+  if (operationCenterRefreshTimer !== null) globalThis.clearTimeout?.(operationCenterRefreshTimer);
+  operationCenterRefreshTimer = null;
+  operationCenterStatus = { phase: 'loading', message: '' };
+  if (currentView === 'operation-center') context.onChange();
+  const response = await context.getOperationCenter();
+  if (!response?.ok || !response.data || Array.isArray(response.data) || typeof response.data !== 'object') {
+    operationCenterSnapshot = null;
+    operationCenterStatus = {
+      phase: 'error',
+      message: response?.message || 'No se pudo obtener el estado autoritativo de la operación.',
+    };
+  } else {
+    operationCenterSnapshot = response.data;
+    operationCenterStatus = { phase: 'ready', message: '' };
+  }
+  if (currentView === 'operation-center') context.onChange();
+  if (currentView === 'operation-center') {
+    operationCenterRefreshTimer = globalThis.setTimeout?.(() => { void refreshOperationCenter(); }, 30_000) || null;
+  }
+  return response;
+}
+
+function stopOperationCenterRefresh() {
+  if (operationCenterRefreshTimer !== null) globalThis.clearTimeout?.(operationCenterRefreshTimer);
+  operationCenterRefreshTimer = null;
+  operationCenterRefreshStarted = false;
+}
+
+async function refreshOperationCenterAction() {
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  busy = true;
+  const response = await refreshOperationCenter();
+  busy = false;
+  feedback = response?.ok
+    ? 'Centro de operación reconciliado con PostgreSQL.'
+    : operationCenterStatus.message;
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function acknowledgeOperationalAlert(button) {
+  if (busy) return result(false, 'Ya hay una acción en curso.');
+  busy = true;
+  const response = await context.acknowledgeOperationalAlert(button.dataset.operationalAlertAcknowledge);
+  busy = false;
+  feedback = response?.ok ? 'Alerta reconocida; la causa continúa visible hasta resolverse.' : fiscalMessage(response, 'No se pudo reconocer la alerta.');
+  if (response?.ok) await refreshOperationCenter();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function resolveOperationalAlert(button) {
+  if (busy) return result(false, 'Ya hay una acción en curso.');
+  const row = button.closest('[data-operational-alert]');
+  const note = String(row?.querySelector('[name="operationalResolutionNote"]')?.value || '').trim();
+  if (note.length < 5) return result(false, 'Indicá qué se verificó o corrigió antes de resolver.');
+  busy = true;
+  const response = await context.resolveOperationalAlert({
+    alertId: button.dataset.operationalAlertResolve,
+    note,
+  });
+  busy = false;
+  feedback = response?.ok ? 'Resolución auditada. La alerta reaparecerá si la condición persiste.' : fiscalMessage(response, 'No se pudo resolver la alerta.');
+  if (response?.ok) await refreshOperationCenter();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function prepareDailyReconciliation(target) {
+  if (busy) return result(false, 'Ya hay un cierre en curso.');
+  const root = target.closest('[data-business-ops-center]');
+  const businessDate = String(root?.querySelector('[name="dailyBusinessDate"]')?.value || '');
+  const timezone = String(root?.querySelector('[name="dailyTimezone"]')?.value || operationTimezone());
+  const declaredCash = Number(root?.querySelector('[name="dailyDeclaredCash"]')?.value || 0);
+  const differenceNote = String(root?.querySelector('[name="dailyDifferenceNote"]')?.value || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(businessDate) || !Number.isFinite(declaredCash) || declaredCash < 0) {
+    return result(false, 'Ingresá una fecha y un efectivo declarado válidos.');
+  }
+  const cents = Math.round(declaredCash * 100);
+  const idempotencyKey = `daily-prepare:${businessDate}:${cents}:${shortTextFingerprint(differenceNote)}`;
+  busy = true;
+  const response = await context.prepareDailyReconciliation({
+    businessDate,
+    timezone,
+    declaredCash,
+    differenceNote,
+    idempotencyKey,
+  });
+  busy = false;
+  feedback = response?.ok
+    ? 'Conciliación preparada con valores autoritativos. Revisá diferencias antes de cerrar.'
+    : fiscalMessage(response, 'No se pudo preparar la conciliación.');
+  if (response?.ok) await refreshOperationCenter();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function closeDailyReconciliation(button) {
+  if (busy) return result(false, 'Ya hay un cierre en curso.');
+  if (!['owner', 'admin'].includes(context.role)) return result(false, 'El cierre final requiere owner o admin.');
+  const reconciliationId = String(button.dataset.dailyReconciliationClose || '');
+  const expectedRevision = Number(button.dataset.dailyReconciliationRevision || 0);
+  if (!reconciliationId || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
+    return result(false, 'La revisión del cierre no es válida; actualizá el Centro de operación.');
+  }
+  busy = true;
+  const response = await context.closeDailyReconciliation({
+    reconciliationId,
+    expectedRevision,
+    idempotencyKey: `daily-close:${reconciliationId}`,
+  });
+  busy = false;
+  feedback = response?.ok
+    ? 'Cierre diario finalizado e inmutable. El hash quedó registrado.'
+    : fiscalMessage(response, 'No se pudo finalizar el cierre diario.');
+  if (response?.ok) await refreshOperationCenter();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+function renderOperationCenter() {
+  if (operationCenterStatus.phase === 'loading' && !operationCenterSnapshot) {
+    return panel('Centro de operación', 'Estado autoritativo del negocio.', '<p class="form-hint" aria-live="polite">Reconciliando operación…</p>');
+  }
+  if (operationCenterStatus.phase === 'error' && !operationCenterSnapshot) {
+    return panel('Centro de operación', 'No se confirman estados que PostgreSQL no pudo entregar.', `
+      <p class="production-intake-error" role="alert">${escapeHtml(operationCenterStatus.message)}</p>
+      <button class="primary-button" type="button" data-operation-center-refresh>Reintentar</button>`);
+  }
+  const snapshot = operationCenterSnapshot || { metrics: {}, alerts: [], recent_closures: [] };
+  const metrics = snapshot.metrics || {};
+  const cards = [
+    ['new_orders', 'Pedidos nuevos'],
+    ['delayed_orders', 'Pedidos demorados'],
+    ['pending_payments', 'Pagos pendientes'],
+    ['payments_in_review', 'Pagos en revisión'],
+    ['orders_without_stock', 'Pedidos sin stock'],
+    ['packing_incomplete', 'Packing incompleto'],
+    ['active_deliveries', 'Entregas activas'],
+    ['riders_without_signal', 'Riders sin señal'],
+    ['fiscal_documents_pending', 'Documentos fiscales pendientes'],
+    ['failed_prints', 'Impresiones fallidas'],
+    ['pending_credit_notes', 'Notas de crédito pendientes'],
+    ['blocked_outboxes', 'Outbox bloqueadas'],
+    ['reconciliations_required', 'Reconciliaciones requeridas'],
+  ].map(([key, label]) => `<article class="operation-metric ${Number(metrics[key] || 0) > 0 ? 'requires-attention' : ''}" data-operation-metric="${key}">
+      <strong>${escapeHtml(String(Number(metrics[key] || 0)))}</strong><span>${escapeHtml(label)}</span>
+    </article>`).join('');
+  const alerts = Array.isArray(snapshot.alerts) && snapshot.alerts.length
+    ? snapshot.alerts.map(renderOperationalAlert).join('')
+    : '<p class="form-hint">No hay alertas operativas abiertas.</p>';
+  const closures = Array.isArray(snapshot.recent_closures) && snapshot.recent_closures.length
+    ? snapshot.recent_closures.map(renderDailyReconciliation).join('')
+    : '<p class="form-hint">Todavía no hay cierres diarios preparados.</p>';
+  return panel('Centro de operación', 'Prioriza excepciones, conciliación y acciones recuperables.', `
+    <div class="operation-center-toolbar">
+      <span class="form-hint">Actualizado ${escapeHtml(formatOperationTimestamp(snapshot.generated_at))}</span>
+      <button class="ghost-button compact" type="button" data-operation-center-refresh>Actualizar</button>
+    </div>
+    <div class="operation-metrics-grid" aria-label="Resumen operativo">${cards}</div>
+    <section class="operation-alerts" aria-labelledby="operation-alerts-title">
+      <h3 id="operation-alerts-title">Alertas con acción</h3>${alerts}
+    </section>
+    <section class="daily-reconciliation" aria-labelledby="daily-reconciliation-title">
+      <h3 id="daily-reconciliation-title">Conciliación y cierre diario</h3>
+      <div class="business-ops-form daily-reconciliation-form">
+        <label>Fecha operativa<input name="dailyBusinessDate" type="date" value="${operationBusinessDate()}"></label>
+        <input name="dailyTimezone" type="hidden" value="${escapeHtml(operationTimezone())}">
+        <label>Efectivo declarado<input name="dailyDeclaredCash" type="number" min="0" step="0.01" value="0"></label>
+        <label>Diferencia o explicación<textarea name="dailyDifferenceNote" maxlength="500" placeholder="Obligatoria si la caja difiere"></textarea></label>
+        <button class="secondary-button" type="button" data-daily-reconciliation-prepare>Preparar conciliación</button>
+      </div>
+      <div class="daily-reconciliation-list">${closures}</div>
+    </section>`);
+}
+
+function renderOperationalAlert(alert) {
+  const status = String(alert.status || 'open');
+  const correlation = String(alert.correlation_id || '');
+  return `<article class="operation-alert severity-${escapeHtml(String(alert.severity || 'INFO').toLowerCase())}" data-operational-alert="${escapeHtml(String(alert.id || ''))}">
+    <header><strong>${escapeHtml(String(alert.severity || 'INFO'))}</strong><span>${escapeHtml(String(alert.summary || 'Alerta operativa'))}</span></header>
+    <p>${escapeHtml(String(alert.required_action || 'Revisar la operación.'))}</p>
+    <p class="form-hint">${escapeHtml(String(alert.code || 'OPERATION_ALERT'))}${correlation ? ` · correlación ${escapeHtml(shortCorrelation(correlation))}` : ''} · ${escapeHtml(status)}</p>
+    <div class="business-ops-form compact">
+      ${status === 'open' ? `<button class="ghost-button compact" type="button" data-operational-alert-acknowledge="${escapeHtml(String(alert.id || ''))}">Reconocer</button>` : ''}
+      <label>Resolución<input name="operationalResolutionNote" maxlength="500" placeholder="Qué se verificó o corrigió"></label>
+      <button class="secondary-button compact" type="button" data-operational-alert-resolve="${escapeHtml(String(alert.id || ''))}">Resolver con auditoría</button>
+    </div>
+  </article>`;
+}
+
+function renderDailyReconciliation(run) {
+  const difference = Number(run.cash_difference || 0);
+  const closed = run.status === 'closed';
+  const closeButton = !closed && ['owner', 'admin'].includes(context.role)
+    ? `<button class="primary-button compact" type="button" data-daily-reconciliation-close="${escapeHtml(String(run.id || ''))}" data-daily-reconciliation-revision="${escapeHtml(String(run.revision || 0))}">Finalizar cierre</button>`
+    : '';
+  return `<article class="daily-reconciliation-row ${difference ? 'has-difference' : ''}" data-daily-reconciliation="${escapeHtml(String(run.id || ''))}">
+    <header><strong>${escapeHtml(String(run.business_date || ''))}</strong><span>${closed ? 'Cerrado' : 'Abierto · revisar'}</span></header>
+    <dl>
+      <div><dt>Efectivo esperado</dt><dd>${formatOperationMoney(run.expected_cash)}</dd></div>
+      <div><dt>Efectivo declarado</dt><dd>${formatOperationMoney(run.declared_cash)}</dd></div>
+      <div><dt>Diferencia</dt><dd>${formatOperationMoney(difference)}</dd></div>
+      <div><dt>Alertas</dt><dd>${Number(run.open_alerts || 0)} abiertas · ${Number(run.critical_alerts || 0)} críticas</dd></div>
+    </dl>
+    ${run.difference_note ? `<p><strong>Explicación:</strong> ${escapeHtml(String(run.difference_note))}</p>` : ''}
+    ${run.snapshot_sha256 ? `<p class="form-hint">SHA-256 ${escapeHtml(shortHash(String(run.snapshot_sha256)))}</p>` : ''}
+    ${closeButton}
+  </article>`;
+}
+
 function renderNavigation() {
   return `<nav class="business-ops-nav" aria-label="Herramientas operativas">${BUSINESS_OPERATION_VIEWS.map((view) => `
     <button type="button" class="business-ops-nav-button ${view === currentView ? 'active' : ''}" data-business-ops-view="${view}" aria-pressed="${view === currentView}">${escapeHtml(VIEW_META[view][0])}</button>`).join('')}</nav>`;
@@ -667,6 +906,40 @@ function thermalContent(row) {
   const items = (document.fiscal_document_items || []).map((item) => `${item.quantity} x ${item.description} ${Number(item.net_amount || 0) + Number(item.tax_amount || 0)}`).join('\n');
   return ['TABA - COMPROBANTE FISCAL', `${document.document_intent === 'credit_note' ? 'NOTA DE CREDITO' : 'FACTURA'} ${document.document_type || ''} ${document.document_number || ''}`, `CAE ${document.cae || ''}`, `VTO CAE ${document.cae_expiration || ''}`, items, `TOTAL ${document.currency || 'PES'} ${Number(document.total_amount || 0).toFixed(2)}`].filter(Boolean).join('\n');
 }
+function operationTimezone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Argentina/Buenos_Aires';
+  } catch (_) {
+    return 'America/Argentina/Buenos_Aires';
+  }
+}
+function operationBusinessDate(date = new Date()) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: operationTimezone(), year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(date).reduce((result, part) => ({ ...result, [part.type]: part.value }), {});
+    return `${parts.year}-${parts.month}-${parts.day}`;
+  } catch (_) {
+    return date.toISOString().slice(0, 10);
+  }
+}
+function formatOperationTimestamp(value) {
+  const date = new Date(value || 0);
+  return Number.isNaN(date.getTime()) ? 'sin hora confirmada' : date.toLocaleString('es-AR');
+}
+function formatOperationMoney(value) {
+  const amount = Number(value || 0);
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number.isFinite(amount) ? amount : 0);
+}
+function shortCorrelation(value) { return String(value || '').slice(0, 8); }
+function shortTextFingerprint(value) {
+  let hash = 2166136261;
+  for (const character of String(value || '')) {
+    hash ^= character.codePointAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
 async function sha256Text(value) {
   if (!globalThis.crypto?.subtle || typeof TextEncoder !== 'function') return '';
   const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
@@ -679,6 +952,7 @@ function bytesToBase64(bytes) {
 }
 function defaultContext() {
   return {
+    role: 'staff',
     operatorId: '', getOrders: () => [], lookupBarcode: async () => ({ ok: true, data: null }),
     createProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }), publishProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     applyInventoryMovement: async () => ({ ok: false, message: 'Repositorio no disponible.' }), checkoutPos: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
@@ -688,6 +962,9 @@ function defaultContext() {
     configureFiscalProfile: async () => ({ ok: false, message: 'Repositorio no disponible.' }), requestCreditNote: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     requestFiscalArtifactUrl: async () => ({ ok: false, message: 'Acceso privado no disponible.' }), regenerateFiscalArtifact: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     requestFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }), updateFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    getOperationCenter: async () => ({ ok: false, message: 'Centro de operación no disponible.' }),
+    acknowledgeOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }), resolveOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    prepareDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }), closeDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     desktopPlatform: { listPrinters: async () => [], queueFiscalPrint: async () => { throw new Error('La impresión fiscal requiere TABA para Windows.'); }, openFiscalCacheFolder: async () => { throw new Error('La caché local requiere TABA para Windows.'); } },
     onChange: () => {},
   };

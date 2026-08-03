@@ -163,4 +163,3 @@ La jornada no se considera cerrada hasta conservar el cierre inmutable, sus
 diferencias visibles, el backup local verificado y la lista asignada de
 excepciones remanentes. El cierre comercial no transforma `unknown` en
 `completed`, ni un pago pendiente en aprobado, ni un CAE ambiguo en autorizado.
-

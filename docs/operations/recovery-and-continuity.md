@@ -129,4 +129,3 @@ real siguen siendo obligatorios y distintos.
 
 Los nombres de personas y guardias se registran en el sistema operativo del
 piloto, no en el repositorio.
-

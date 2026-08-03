@@ -82,4 +82,3 @@ fue recibida en esta etapa.
 - Emisión ARCA productiva exige la confirmación distinta
   `I_AUTHORIZE_ARCA_PRODUCTION_ISSUANCE`.
 - El piloto exige su propia confirmación y no habilita un lanzamiento masivo.
-

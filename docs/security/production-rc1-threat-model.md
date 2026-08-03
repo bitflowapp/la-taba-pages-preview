@@ -86,4 +86,3 @@ En este host se ejecutan análisis locales y de dependencias. Security Advisor,
 configuración organizacional Supabase, MFA, red, TLS desplegado, secrets
 remotos, firma aprobada y rotación real permanecen `NOT_RUN` hasta contar con
 entorno y responsables autorizados.
-

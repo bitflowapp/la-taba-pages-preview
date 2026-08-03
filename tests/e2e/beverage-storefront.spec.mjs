@@ -3,21 +3,26 @@ import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
 
-test('la home presenta TABA2 con marca discreta y un storefront comercial limpio', async ({ page }) => {
+test('la home presenta La Taba 2 con marca propia y un storefront comercial limpio', async ({ page }) => {
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1');
 
   await expect(page.locator('[data-demo-mode-banner]')).toHaveCount(0);
-  await expect(page.locator('.topbar .brand-word')).toHaveText('TABA2');
-  await expect(page.getByRole('heading', { name: 'Elegí bebidas para tu momento.' })).toBeVisible();
+  await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba 2');
+  await expect(page.getByRole('heading', { name: 'La Taba 2', level: 1 })).toBeVisible();
   await expect(page.locator('[data-view="home"] .taba-home-search')).toBeVisible();
+  // La fila la componen las categorías con producto comprable + "Todas".
   const homeCategories = page.locator('[data-view="home"] .home-category-card');
-  await expect(homeCategories).toHaveCount(4);
+  await expect(homeCategories).toHaveCount(5);
   await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="gaseosas"]')).toHaveText('Gaseosas');
   await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="cervezas"]')).toHaveText('Cervezas');
-  await expect(page.locator('[data-home-category-strip] [data-category-id="gaseosas"]')).toHaveClass(/active/);
+  // La marca activa refleja el filtro REAL del catálogo, que arranca en "Todas".
+  await expect(page.locator('[data-home-category-strip] [data-category-id="all"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-home-category-strip] [data-category-id="gaseosas"]')).not.toHaveClass(/active/);
+  // Un rubro sin precio publicado no puede ser protagonista de la home.
   await expect(page.locator('[data-home-category-strip] [data-category-id="fernet"]')).toHaveCount(0);
+  await expect(page.locator('[data-home-category-strip] [data-category-id="whisky"]')).toHaveCount(0);
   // Ninguna etiqueta técnica en la superficie del cliente.
   await expect(page.locator('.home-preview-label')).toHaveCount(0);
   await expect(page.locator('[data-view="home"]')).not.toContainText('PREVIEW INTERNA');
@@ -69,7 +74,7 @@ for (const viewport of [
     await gotoDemoReset(page, '/?reset=1&demo=1');
     const homeHeight = await page.locator('[data-view="home"]').evaluate((node) => Math.ceil(node.getBoundingClientRect().height));
     expect(homeHeight).toBeLessThan(2000);
-    await expect(page.locator('.topbar .brand-word')).toHaveText('TABA2');
+    await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba 2');
     await expect(page.locator('.topbar .brand-text small')).toBeHidden();
     await expect(page.locator('.topbar-actions .cart-button')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();

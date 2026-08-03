@@ -35,6 +35,7 @@ let fiscalArtifacts = [];
 let fiscalPreview = null;
 let fiscalPrinters = [];
 let fiscalInitialRefreshStarted = false;
+let fiscalCreditDrafts = new Map();
 let packingSession = null;
 let productDraft = null;
 
@@ -162,6 +163,18 @@ export async function handleBusinessOperationsAction(target) {
   return { handled: false };
 }
 
+export function handleBusinessOperationsInput(target) {
+  if (!target?.matches?.('[name="creditReason"], [name="creditKind"], [name="creditQuantity"], [name="creditNet"], [name="creditTax"]')) {
+    return { handled: false };
+  }
+  const row = target.closest('[data-fiscal-document]');
+  const details = target.closest('details.business-fiscal-credit');
+  const documentId = String(row?.dataset?.fiscalDocument || '');
+  if (!row || !details || !documentId) return { handled: false };
+  fiscalCreditDrafts.set(documentId, readCreditDraft(row));
+  return { handled: true };
+}
+
 export function resetBusinessOperationsForTests() {
   unsubscribeScanner?.();
   scanner?.stop();
@@ -180,6 +193,7 @@ export function resetBusinessOperationsForTests() {
   fiscalPreview = null;
   fiscalPrinters = [];
   fiscalInitialRefreshStarted = false;
+  fiscalCreditDrafts = new Map();
   packingSession = null;
   productDraft = null;
 }
@@ -432,6 +446,7 @@ async function requestCreditNote(button) {
     idempotencyKey: createKey('credit-note'),
   });
   feedback = response?.ok ? 'Nota de crédito solicitada; ARCA la procesará de forma idempotente.' : fiscalMessage(response, 'La solicitud requiere revisión.');
+  if (response?.ok) fiscalCreditDrafts.delete(String(row?.dataset?.fiscalDocument || ''));
   context.onChange();
   return result(Boolean(response?.ok), feedback);
 }
@@ -589,8 +604,13 @@ function renderPrintControls(document, artifact) {
 
 function renderCreditControls(document) {
   const items = Array.isArray(document.fiscal_document_items) ? document.fiscal_document_items : [];
-  const lines = items.map((item) => `<div class="business-fiscal-credit-line" data-credit-line="${escapeHtml(item.id)}"><span>${escapeHtml(item.description)} · máximo ${escapeHtml(item.quantity)}</span><label>Cantidad<input name="creditQuantity" type="number" min="0" max="${escapeHtml(item.quantity)}" step="0.001" value="0"></label><label>Ajuste neto<input name="creditNet" type="number" min="0" step="0.01" value="0"></label><label>Ajuste IVA<input name="creditTax" type="number" min="0" step="0.01" value="0"></label></div>`).join('');
-  return `<details class="business-fiscal-credit"><summary>Solicitar nota de crédito</summary><label>Motivo<input name="creditReason" maxlength="300"></label><label>Tipo<select name="creditKind"><option value="total">Total del saldo acreditable</option><option value="partial">Parcial por ítem/cantidad</option><option value="commercial_adjustment">Ajuste comercial autorizado</option></select></label><small>Los importes parciales se calculan desde snapshots; el ajuste comercial exige política aprobada.</small>${lines}<button class="ghost-button compact" type="button" data-fiscal-credit-note="${escapeHtml(document.id)}">Solicitar nota</button></details>`;
+  const draft = fiscalCreditDrafts.get(String(document.id));
+  const kind = creditKindValue(draft?.kind);
+  const lines = items.map((item) => {
+    const line = draft?.lines?.[String(item.id)] || {};
+    return `<div class="business-fiscal-credit-line" data-credit-line="${escapeHtml(item.id)}"><span>${escapeHtml(item.description)} · máximo ${escapeHtml(item.quantity)}</span><label>Cantidad<input name="creditQuantity" type="number" min="0" max="${escapeHtml(item.quantity)}" step="0.001" value="${escapeHtml(line.quantity || '0')}"></label><label>Ajuste neto<input name="creditNet" type="number" min="0" step="0.01" value="${escapeHtml(line.netAmount || '0')}"></label><label>Ajuste IVA<input name="creditTax" type="number" min="0" step="0.01" value="${escapeHtml(line.taxAmount || '0')}"></label></div>`;
+  }).join('');
+  return `<details class="business-fiscal-credit"${draft ? ' open' : ''}><summary>Solicitar nota de crédito</summary><label>Motivo<input name="creditReason" maxlength="300" value="${escapeHtml(draft?.reason || '')}"></label><label>Tipo<select name="creditKind"><option value="total"${kind === 'total' ? ' selected' : ''}>Total del saldo acreditable</option><option value="partial"${kind === 'partial' ? ' selected' : ''}>Parcial por ítem/cantidad</option><option value="commercial_adjustment"${kind === 'commercial_adjustment' ? ' selected' : ''}>Ajuste comercial autorizado</option></select></label><small>Los importes parciales se calculan desde snapshots; el ajuste comercial exige política aprobada.</small>${lines}<button class="ghost-button compact" type="button" data-fiscal-credit-note="${escapeHtml(document.id)}">Solicitar nota</button></details>`;
 }
 function renderFiscalConfig() {
   const profile = fiscalProfile || {};
@@ -612,6 +632,24 @@ function artifactLabel(state) { return ({ artifact_pending: 'PDF pendiente', art
 function shortHash(value) { const hash = String(value || ''); return hash.length === 64 ? `${hash.slice(0, 12)}…${hash.slice(-8)}` : 'no disponible'; }
 function fiscalError(document) { return document.artifact_error_message || document.artifact_error_code || 'El PDF requiere revisión técnica.'; }
 function fiscalMessage(response, fallback) { return String(response?.message || response?.error?.message || fallback).slice(0, 300); }
+function readCreditDraft(row) {
+  const lines = {};
+  for (const line of row.querySelectorAll('[data-credit-line]')) {
+    const itemId = String(line.dataset.creditLine || '');
+    if (!itemId) continue;
+    lines[itemId] = {
+      quantity: String(line.querySelector('[name="creditQuantity"]')?.value || '0').slice(0, 32),
+      netAmount: String(line.querySelector('[name="creditNet"]')?.value || '0').slice(0, 32),
+      taxAmount: String(line.querySelector('[name="creditTax"]')?.value || '0').slice(0, 32),
+    };
+  }
+  return {
+    reason: String(row.querySelector('[name="creditReason"]')?.value || '').slice(0, 300),
+    kind: creditKindValue(row.querySelector('[name="creditKind"]')?.value),
+    lines,
+  };
+}
+function creditKindValue(value) { return ['total', 'partial', 'commercial_adjustment'].includes(String(value)) ? String(value) : 'total'; }
 function fiscalPrintTitle(row) { return `TABA fiscal ${String(row?.dataset?.fiscalDocument || '').slice(0, 12)}`; }
 function printOutcomeMessage(status) { return ({ queued: 'Impresión en cola local durable.', sent_to_spooler: 'Trabajo enviado al spooler; todavía no se confirma impresión física.', completed_when_verifiable: 'Impresión verificada.', unknown: 'El spooler no permite verificar el resultado; confirmá físicamente antes de reintentar.' })[status] || 'No se pudo verificar el resultado de impresión.'; }
 function thermalContent(row) {

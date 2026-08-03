@@ -15,6 +15,7 @@ import {
   BUSINESS_OPERATION_VIEWS,
   configureBusinessOperations,
   handleBusinessOperationsAction,
+  handleBusinessOperationsInput,
   renderBusinessOperations,
   resetBusinessOperationsForTests,
 } from './business/business-operations-center.js';
@@ -333,6 +334,11 @@ export async function handleProductionOperationsAction(target) {
   }
 
   return { handled: false };
+}
+
+export function handleProductionOperationsInput(target) {
+  if (getAppMode() !== APP_MODE_PRODUCTION || !target?.closest) return { handled: false };
+  return handleBusinessOperationsInput(target);
 }
 
 export function isRoleAuthorizedForView(role, view) {

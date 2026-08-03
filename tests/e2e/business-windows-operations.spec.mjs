@@ -95,6 +95,10 @@ test('panel fiscal usa artefactos privados, descarga, reimpresiÃ³n y nota de c
   await invoice.locator('summary').click();
   await invoice.locator('[name="creditReason"]').fill('DevoluciÃ³n parcial sintÃ©tica');
   await invoice.locator('[name="creditKind"]').selectOption('partial');
+  await workspace.locator('[data-fiscal-refresh]').click();
+  await expect(invoice.locator('details.business-fiscal-credit')).toHaveAttribute('open', '');
+  await expect(invoice.locator('[name="creditReason"]')).toHaveValue('DevoluciÃ³n parcial sintÃ©tica');
+  await expect(invoice.locator('[name="creditKind"]')).toHaveValue('partial');
   await invoice.locator('[data-credit-line] [name="creditQuantity"]').fill('1');
   await invoice.locator('[data-fiscal-credit-note]').click();
   await expect(workspace.locator('.business-ops-feedback')).toContainText(/Nota de cr.dito solicitada/);

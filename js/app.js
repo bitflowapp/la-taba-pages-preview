@@ -58,6 +58,7 @@ import {
   handleProductionOperationsViewChange,
   handleProductionAuthSubmit,
   handleProductionOperationsAction,
+  handleProductionOperationsInput,
   initProductionOperations,
   renderProductionOperations,
 } from './production-operations.js';
@@ -1227,7 +1228,7 @@ function bindEvents() {
       }
     }
 
-    const businessInput = isDemoMode() ? handleBusinessInput(event.target) : { handled: false };
+    const businessInput = isDemoMode() ? handleBusinessInput(event.target) : handleProductionOperationsInput(event.target);
     if (businessInput.handled) return;
 
     if (event.target?.matches?.('[name="couponCode"]')) {
@@ -1254,6 +1255,8 @@ function bindEvents() {
   document.addEventListener('change', async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) return;
+    const productionInput = handleProductionOperationsInput(target);
+    if (productionInput.handled) return;
     if (target.matches('[data-product-variant]')) {
       showProductModal(target.value);
       return;

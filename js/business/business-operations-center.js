@@ -24,6 +24,7 @@ let context = defaultContext();
 let currentView = 'scanner';
 let scanner = null;
 let unsubscribeScanner = null;
+let scannerDraftValue = '';
 let lastScan = null;
 let lookup = null;
 let feedback = '';
@@ -164,6 +165,10 @@ export async function handleBusinessOperationsAction(target) {
 }
 
 export function handleBusinessOperationsInput(target) {
+  if (target?.matches?.('[data-barcode-input]')) {
+    scannerDraftValue = String(target.value || '').slice(0, 64);
+    return { handled: true };
+  }
   if (!target?.matches?.('[name="creditReason"], [name="creditKind"], [name="creditQuantity"], [name="creditNet"], [name="creditTax"]')) {
     return { handled: false };
   }
@@ -180,6 +185,7 @@ export function resetBusinessOperationsForTests() {
   scanner?.stop();
   scanner = null;
   unsubscribeScanner = null;
+  scannerDraftValue = '';
   context = defaultContext();
   currentView = 'scanner';
   lastScan = null;
@@ -199,6 +205,7 @@ export function resetBusinessOperationsForTests() {
 }
 
 async function processScan(event) {
+  scannerDraftValue = '';
   lastScan = event;
   lookup = null;
   if (!event.isValid) {
@@ -619,7 +626,7 @@ function renderFiscalConfig() {
   return panel('Configuración fiscal', 'Sólo homologación desde el panel. Producción requiere revisión contable y activación del servidor.', `<div class="business-fiscal-lock"><strong>Producción fiscal deshabilitada</strong><span>Revisión contable: ${escapeHtml(profile.accountant_review_status || 'pendiente')}</span><span>Gate: ${escapeHtml(profile.production_gate_status || 'bloqueado')}</span></div><div class="business-ops-form"><label>Razón social<input name="legalName" value="${escapeHtml(profile.legal_name || '')}" maxlength="160"></label><label>CUIT<input name="cuit" value="${escapeHtml(profile.cuit || '')}" inputmode="numeric" maxlength="11"></label><label>Condición fiscal<input name="taxCondition" value="${escapeHtml(profile.tax_condition || '')}" maxlength="80"></label><label>Condición predeterminada del receptor<input name="defaultRecipientCondition" value="${escapeHtml(profile.default_recipient_condition || '')}" maxlength="80"></label><label>Domicilio comercial<input name="businessAddress" value="${escapeHtml(profile.business_address || '')}" maxlength="200"></label><label>Punto de venta<input name="pointOfSale" value="${escapeHtml(profile.point_of_sale || '')}" type="number" min="1"></label><button class="primary-button" type="button" data-fiscal-config-save>Guardar perfil de homologación</button></div>`);
 }
 
-function scannerInput() { return `<div class="business-scanner-input"><label>Código<input data-barcode-input inputmode="numeric" autocomplete="off" maxlength="64" placeholder="Escaneá o ingresá un GTIN"></label><button class="primary-button" type="button" data-business-scan-test ${busy ? 'disabled' : ''}>Procesar</button></div>`; }
+function scannerInput() { return `<div class="business-scanner-input"><label>Código<input data-barcode-input inputmode="numeric" autocomplete="off" maxlength="64" value="${escapeHtml(scannerDraftValue)}" placeholder="Escaneá o ingresá un GTIN"></label><button class="primary-button" type="button" data-business-scan-test ${busy ? 'disabled' : ''}>Procesar</button></div>`; }
 function renderScanResult() {
   if (!lastScan) return '<div class="business-scan-result is-idle"><strong>Esperando lectura</strong><span>EAN-8, UPC-A, EAN-13 o GTIN-14.</span></div>';
   const product = lookup?.data ? normalizedProduct(lookup.data) : null;

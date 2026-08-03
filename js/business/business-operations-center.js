@@ -385,7 +385,9 @@ async function refreshFiscal() {
   fiscalDocuments = documents?.ok && Array.isArray(documents.data) ? documents.data : [];
   fiscalArtifacts = artifacts?.ok && Array.isArray(artifacts.data) ? artifacts.data : [];
   await refreshFiscalPrinters();
-  context.onChange();
+  // The snapshot remains fresh after navigation, but a late fiscal request must
+  // never redraw another operational surface and erase an in-progress scan.
+  if (currentView === 'fiscal-status' || currentView === 'fiscal-config') context.onChange();
 }
 
 async function refreshFiscalPrinters() {

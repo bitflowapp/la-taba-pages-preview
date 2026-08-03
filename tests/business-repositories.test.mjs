@@ -86,6 +86,32 @@ test('fiscal no acepta endpoints, certificado, CAE ni n\u00famero desde el panel
   assert.deepEqual(Object.keys(args).sort(), ['p_business_id', 'p_document_intent', 'p_idempotency_key', 'p_source_id', 'p_source_type']);
 });
 
+test('panel fiscal solicita nota parcial, artefacto privado y reimpresión sólo mediante contratos server-side', async () => {
+  const client = mockClient();
+  const repository = createSupabaseFiscalRepository({ client, businessId: BUSINESS_ID });
+  await repository.requestCreditNote({ originalDocumentId: 'd1', reason: 'Devolución parcial válida', creditKind: 'partial', lines: [{ original_item_id: 'i1', quantity: 1 }], idempotencyKey: 'credit-00001' });
+  await repository.regenerateArtifact('d1');
+  await repository.listArtifacts();
+  await repository.requestPrintJob({ fiscalDocumentId: 'd1', artifactId: 'a1', printerNameHash: 'a'.repeat(64), format: 'a4', copies: 1, idempotencyKey: 'print-00001' });
+  await repository.updatePrintJob({ printJobId: 'p1', status: 'unknown' });
+  assert.deepEqual(client.calls.map(({ name }) => name), ['request_credit_note', 'request_fiscal_artifact_regeneration', 'list_fiscal_document_artifacts', 'request_fiscal_print_job', 'update_fiscal_print_job']);
+  assert.equal(client.calls[0].args.p_credit_kind, 'partial');
+  assert.deepEqual(client.calls[0].args.p_lines, [{ original_item_id: 'i1', quantity: 1 }]);
+  assert.equal(client.calls[3].args.p_printer_name_hash, 'a'.repeat(64));
+});
+
+test('URL de PDF sólo llega desde Edge privada y no expone storage_path en el repositorio', async () => {
+  const client = mockClient();
+  const repository = createSupabaseFiscalRepository({ client, businessId: BUSINESS_ID });
+  const response = await repository.requestArtifactUrl({ artifactId: 'artifact-1', action: 'preview' });
+  assert.equal(response.ok, true);
+  assert.equal(response.data.signedUrl, 'https://example.invalid/signed.pdf');
+  assert.deepEqual(client.functions.calls[0], { name: 'fiscal-artifact-access', args: { body: { artifactId: 'artifact-1', action: 'preview' } } });
+  const source = fs.readFileSync(new URL('../js/repositories/supabase-fiscal-repository.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /storage_path/i);
+  assert.doesNotMatch(source, /service.?role/i);
+});
+
 test('repositorios cr\u00edticos no contienen mutaciones directas PostgREST', () => {
   for (const relative of ['supabase-business-repository.js','supabase-inventory-repository.js','supabase-packing-repository.js','supabase-pos-repository.js','supabase-fiscal-repository.js']) {
     const source = fs.readFileSync(new URL(`../js/repositories/${relative}`, import.meta.url), 'utf8');
@@ -96,8 +122,16 @@ test('repositorios cr\u00edticos no contienen mutaciones directas PostgREST', ()
 function mockClient() {
   const calls = [];
   const queries = [];
+  const functionCalls = [];
   return {
     calls, queries,
+    functions: {
+      calls: functionCalls,
+      async invoke(name, args) {
+        functionCalls.push({ name, args });
+        return { data: { signedUrl: 'https://example.invalid/signed.pdf' }, error: null };
+      },
+    },
     async rpc(name, args) {
       calls.push({ name, args });
       return { data: name === 'checkout_pos_sale' ? { sale_id: 'sale-1', state: 'completed', total: 100 } : { ok: true, fiscal_document_id: 'fiscal-1', state: 'queued' }, error: null, status: 200 };

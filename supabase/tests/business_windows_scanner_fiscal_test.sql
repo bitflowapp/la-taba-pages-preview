@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(30);
 
 select has_table('public', 'product_barcodes', 'barcodes persistidos');
 select has_table('public', 'inventory_movements', 'ledger de inventario persistido');
@@ -47,7 +47,23 @@ select throws_ok(
 select is((select state from public.pos_sales where idempotency_key='integration-checkout-1'), 'completed', 'falla fiscal no revierte la venta');
 select is((select count(*)::integer from public.fiscal_documents), 0, 'falla fiscal no inventa comprobante');
 
+set local role postgres;
+
 select is((select relrowsecurity from pg_class where oid='public.fiscal_outbox'::regclass), true, 'outbox fiscal tiene RLS');
+
+select has_table('public', 'fiscal_document_artifacts', 'artefactos fiscales persistidos');
+select has_table('public', 'fiscal_artifact_outbox', 'outbox de artefactos persistida');
+select has_table('public', 'fiscal_print_jobs', 'auditoria de impresion persistida');
+select has_table('public', 'fiscal_accounting_policies', 'politicas contables versionadas');
+select has_table('public', 'fiscal_credit_allocations', 'saldo acreditable persistido');
+select has_function('public', 'request_credit_note', array['uuid','text','text','jsonb','text'], 'nota de credito parcial existe');
+select has_function('public', 'claim_fiscal_artifact_outbox', array['text','integer','integer'], 'worker de artefactos privado existe');
+select has_function('public', 'complete_fiscal_artifact', array['uuid','text','jsonb'], 'persistencia de artefacto existe');
+select has_function('public', 'authorize_fiscal_artifact_access', array['uuid','text'], 'autorizacion de descarga privada existe');
+select has_function('public', 'request_fiscal_print_job', array['uuid','uuid','text','text','integer','text'], 'solicitud de reimpresion existe');
+select is((select public from storage.buckets where id='fiscal-documents'), false, 'bucket fiscal es privado');
+select is((select relrowsecurity from pg_class where oid='public.fiscal_document_artifacts'::regclass), true, 'artefactos fiscales tienen RLS');
+select is((select relrowsecurity from pg_class where oid='public.fiscal_print_jobs'::regclass), true, 'auditoria de impresion tiene RLS');
 
 select * from finish();
 rollback;

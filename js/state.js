@@ -46,7 +46,7 @@ import { normalizePendingReorder } from './core/reorder.js';
 
 // v5: incorpora versión de catálogo para actualizar identidades/packshots demo
 // sin borrar pedidos, carrito ni preferencias locales compatibles.
-export const STATE_SCHEMA_VERSION = 5;
+export const STATE_SCHEMA_VERSION = 6;
 
 export const SORT_OPTIONS = Object.freeze(['recommended', 'price_asc', 'popular']);
 
@@ -72,6 +72,7 @@ const defaultState = () => {
     activeCategory: 'all',
     searchQuery: '',
     sortBy: 'recommended',
+    catalogFilters: defaultCatalogFilters(),
     cart: [],
     orders: baseOrders,
     products: baseProducts,
@@ -137,7 +138,7 @@ export function isPersistedStateCompatible(savedState, baseState = defaultState(
 export function isDemoStateMigratable(savedState, baseState = defaultState()) {
   if (!isPlainObject(savedState) || baseState.appMode !== 'demo') return false;
   if (savedState.appMode !== 'demo') return false;
-  return Number(savedState.schemaVersion) === 4
+  return [4, 5].includes(Number(savedState.schemaVersion))
     && String(savedState.dataVersion || '') === 'la-taba-runtime-v2';
 }
 
@@ -185,6 +186,7 @@ export function sanitizeState(nextState, baseState = defaultState(), { refreshBa
     activeCategory: normalizeCategoryId(source.activeCategory, baseState.activeCategory || 'all', mergedProducts),
     searchQuery: sanitizeText(source.searchQuery, { fallback: '', maxLength: 80 }),
     sortBy: normalizeSortBy(source.sortBy),
+    catalogFilters: normalizeCatalogFilters(source.catalogFilters),
     cart: sanitizeCart(source.cart, productMap),
     orders,
     products: mergedProducts,
@@ -203,6 +205,39 @@ export function sanitizeState(nextState, baseState = defaultState(), { refreshBa
 function normalizeSortBy(value) {
   const candidate = sanitizeText(value, { fallback: 'recommended', maxLength: 24 });
   return SORT_OPTIONS.includes(candidate) ? candidate : 'recommended';
+}
+
+export function defaultCatalogFilters() {
+  return {
+    brand: 'all',
+    capacity: 'all',
+    presentation: 'all',
+    pack: 'all',
+    alcohol: 'all',
+    availability: 'all',
+    price: 'all',
+    promotion: 'all',
+  };
+}
+
+export function normalizeCatalogFilters(value) {
+  const source = isPlainObject(value) ? value : {};
+  const values = defaultCatalogFilters();
+  const allowed = {
+    pack: new Set(['all', 'unit', 'pack']),
+    alcohol: new Set(['all', 'with', 'without']),
+    availability: new Set(['all', 'available', 'unavailable']),
+    price: new Set(['all', 'confirmed', 'pending']),
+    promotion: new Set(['all', 'active']),
+  };
+  for (const key of ['brand', 'capacity', 'presentation']) {
+    values[key] = sanitizeText(source[key], { fallback: 'all', maxLength: 100 }) || 'all';
+  }
+  for (const [key, allowedValues] of Object.entries(allowed)) {
+    const candidate = sanitizeText(source[key], { fallback: 'all', maxLength: 24 });
+    values[key] = allowedValues.has(candidate) ? candidate : 'all';
+  }
+  return values;
 }
 
 function normalizeStreetDestinationId(value) {
@@ -579,8 +614,8 @@ function buildBaseBusinessConfig() {
   const base = buildDefaultBusinessConfig();
   if (![APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(getAppMode())) return base;
   return mergeBusinessConfig(base, {
-    businessName: 'TABA',
-    name: 'TABA',
+    businessName: 'TABA2',
+    name: 'TABA2',
     subtitle: 'Tienda de bebidas',
     address: 'Dirección no publicada',
     deliveryZone: 'Cobertura no publicada',

@@ -8,3 +8,17 @@ dist_release/
 scripts/catalog-images/.raw/
 .local-staging/
 artifacts/release-preparation/
+artifacts/taba2-catalog-authority/
+artifacts/taba2-catalog-finalization/
+artifacts/taba2-storefront-motion/
+artifacts/alt-candidates/
+artifacts/alt-candidates-contact.png
+artifacts/local-bebidas-contact.png
+test-output.txt
+e2e-output*.txt
+verify-technical-output.txt
+importer-*.txt
+local-*.json
+catalog/photo-intake/validation.json
+catalog/photo-intake/review.json
+catalog/photo-intake/ingest-report.json

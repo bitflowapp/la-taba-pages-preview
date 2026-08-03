@@ -29,6 +29,6 @@ export function getNonAlcoholProduct(catalog) {
 
 export function getPricePendingProduct(catalog) {
   return findCompatibleProduct(catalog, 'one price-pending product', (product) => (
-    product.pricePending === true && product.available === false && product.price === 0
+    product.pricePending === true && product.available === false && product.price == null
   ));
 }

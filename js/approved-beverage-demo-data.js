@@ -1,8 +1,10 @@
 // Generado por scripts/import-approved-beverages.mjs. No editar manualmente.
 // Fuente autorizada: catalog-demo.json + approved-demo/. Sólo se carga con ?demo=1.
+import { authorityCategories, pendingProducts } from './taba2-commercial-pending-data.js';
+
 export const PREVIEW_CATALOG_VERSION = 'approved-beverages-2026-07-29-v1';
 
-export const categories = [
+export const legacyCategories = [
   {
     "id": "all",
     "name": "Todos"
@@ -25,7 +27,12 @@ export const categories = [
   }
 ];
 
-export const products = [
+export const categories = [
+  ...legacyCategories,
+  ...authorityCategories.filter((category) => category.id !== 'all' && !legacyCategories.some((legacy) => legacy.id === category.id)),
+];
+
+export const legacyProducts = [
   {
     "id": "coca-cola-original-pet-500ml-pack-12",
     "sku": "coca-cola-original-pet-500ml-pack-12",
@@ -600,7 +607,7 @@ export const products = [
     "unit": "pack",
     "unitLabel": "Pack x4",
     "unitsPerPack": 4,
-    "price": 0,
+    "price": null,
     "pricePending": true,
     "stock": 0,
     "available": false,
@@ -873,10 +880,12 @@ export const products = [
     "unit": "pack",
     "unitLabel": "Pack x6",
     "unitsPerPack": 6,
-    "price": 20000,
-    "pricePending": false,
-    "stock": 99,
-    "available": true,
+    "price": null,
+    "pricePending": true,
+    "stock": 0,
+    "available": false,
+    "archived": true,
+    "imageQualityStatus": "rejected_duplicate_identity",
     "sourceAvailable": true,
     "stockStatus": "BUSINESS_CONFIRMATION_REQUIRED",
     "requiresBusinessConfirmation": true,
@@ -1243,3 +1252,5 @@ export const products = [
     "prepMinutes": 10
   }
 ];
+
+export const products = [...legacyProducts, ...pendingProducts];

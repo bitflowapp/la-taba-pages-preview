@@ -193,20 +193,22 @@ export function normalizeCatalogProduct(raw, fallback = null) {
   const name = sanitizeText(source.name, { fallback: fallback?.name || '', maxLength: 100 });
   const categoryId = normalizeCategoryId(source.categoryId || fallback?.categoryId) || DEFAULT_CATEGORY_ID;
   const defaults = defaultsForCategory(categoryId);
-  const pricePending = source.pricePending === true;
-  const price = normalizeCatalogPrice(source.price, fallback?.price ?? 0);
-  if (!id || !name || (price <= 0 && !pricePending)) return fallback ? { ...fallback } : null;
+  const pricePending = source.pricePending === true || source.price_status === 'pending';
+  const price = pricePending ? null : normalizeCatalogPrice(source.price, fallback?.price ?? 0);
+  if (!id || !name || (price == null && !pricePending)) return fallback ? { ...fallback } : null;
 
   const archived = source.archived === true;
   const stock = normalizeStock(source.stock ?? fallback?.stock ?? DEFAULT_NEW_PRODUCT_STOCK);
-  const oldPrice = source.oldPrice == null ? undefined : normalizeMoneyValue(source.oldPrice, 0);
+  const oldPrice = pricePending || source.oldPrice == null ? undefined : normalizeMoneyValue(source.oldPrice, 0);
   const badge = sanitizeText(source.badge, { maxLength: 32 });
   const image = sanitizeText(source.image || source.imageUrl || source.image_url, { maxLength: 2048 });
   const imageThumbnail = sanitizeText(
     source.imageThumbnail || source.thumbnail || source.thumbnail_url,
     { maxLength: 2048 },
   );
-  const alcoholic = ALCOHOLIC_CATEGORY_IDS.has(categoryId) || isExplicitlyAlcoholic(source.alcoholic);
+  const alcoholic = source.nonAlcoholic === true
+    ? false
+    : ALCOHOLIC_CATEGORY_IDS.has(categoryId) || isExplicitlyAlcoholic(source.alcoholic);
   const minimumAge = alcoholic
     ? normalizeMinimumAge(source.minimumAge ?? source.minimum_age)
     : null;
@@ -227,11 +229,12 @@ export function normalizeCatalogProduct(raw, fallback = null) {
     description: sanitizeText(source.description, { fallback: fallback?.description || '', maxLength: 180 }),
     externalId: sanitizeText(source.externalId || source.external_id, { maxLength: 100 }),
     sku: sanitizeText(source.sku, { maxLength: 100 }),
+    gtin: sanitizeText(source.gtin, { maxLength: 40 }),
     brand: sanitizeText(source.brand, { maxLength: 100 }),
     variant: sanitizeText(source.variant, { maxLength: 100 }),
     categoryId,
     categoryName,
-    subcategory: sanitizeText(source.subcategory, { maxLength: 100 }),
+    subcategory: sanitizeText(source.subcategory || source.subcategory_id, { maxLength: 100 }),
     capacity,
     capacityValue,
     capacityUnit,
@@ -245,10 +248,14 @@ export function normalizeCatalogProduct(raw, fallback = null) {
       : sanitizeText(source.tone, { fallback: defaults.tone, maxLength: 40 }),
     price,
     pricePending,
-    oldPrice: oldPrice > price ? oldPrice : undefined,
+    priceStatus: pricePending ? 'pending' : 'confirmed',
+    regularPrice: oldPrice > Number(price) ? oldPrice : null,
+    oldPrice: oldPrice > Number(price) ? oldPrice : undefined,
     stock,
     available: source.available !== false && !archived,
     archived,
+    isActive: source.isActive ?? source.is_active ?? (!archived && source.available !== false),
+    isVerified: Boolean(source.isVerified ?? source.is_verified),
     featured: Boolean(source.featured),
     chilled: Boolean(source.chilled ?? source.refrigerated),
     refrigerated: Boolean(source.chilled ?? source.refrigerated),
@@ -263,6 +270,10 @@ export function normalizeCatalogProduct(raw, fallback = null) {
     alcoholic,
     minimumAge,
     tags: normalizeCatalogTags(source.tags),
+    imageAlt: sanitizeText(source.imageAlt || source.image_alt, { maxLength: 200 }),
+    imageSource: source.imageSource || source.image_source || null,
+    imageRightsStatus: sanitizeText(source.imageRightsStatus || source.image_rights_status || source.rightsStatus, { maxLength: 60 }),
+    imageSha256: sanitizeText(source.imageSha256 || source.image_sha256, { maxLength: 64 }),
     ...(image ? { image } : {}),
     ...(imageThumbnail ? { imageThumbnail } : {}),
   };

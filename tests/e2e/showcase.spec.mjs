@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { products as catalogProducts } from '../../js/approved-beverage-demo-data.js';
 import { gotoDemoReset, installPageGuards } from './helpers.mjs';
 import {
   buildCheckoutAddresses,
@@ -191,13 +192,13 @@ test('customer showcase stops use the real catalog, cart, checkout, profile and 
 
   await selectShowcaseStep(page, 'catalog');
   await expectActiveView(page, 'catalog');
-  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(22);
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(catalogProducts.filter((product) => !product.archived).length);
 
   await selectShowcaseStep(page, 'pending-price');
   await expectActiveView(page, 'catalog');
   const pendingModal = page.locator('[data-modal-product-id="red-bull-original-lata-250ml-pack-4"]');
   await expect(pendingModal).toBeVisible();
-  await expect(pendingModal.locator('[data-price-pending-message]')).toContainText('Precio a confirmar');
+  await expect(pendingModal.locator('[data-price-pending-message]')).toContainText('Precio próximamente');
   await expect(pendingModal.locator('[data-add-product="red-bull-original-lata-250ml-pack-4"]'))
     .toBeDisabled();
   await pendingModal.locator('[data-close-modal]').click();

@@ -4,14 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#11151b" />
-    <meta name="description" content="TABA: bebidas, promos y delivery rápido en una experiencia simple y segura." />
-    <title>TABA · Bebidas en minutos</title>
+    <meta name="description" content="TABA2: tienda argentina de bebidas con catálogo y disponibilidad claros." />
+    <title>TABA2 · Tienda de bebidas</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="assets/icon.svg" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="TABA" />
+    <meta name="apple-mobile-web-app-title" content="TABA2" />
     <link
       rel="stylesheet"
       href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css"
@@ -25,7 +25,7 @@
       <header class="topbar">
         <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio del comercio">
           <span class="brand-text">
-            <strong class="brand-word" data-business-name>TABA</strong>
+            <strong class="brand-word" data-business-name>TABA2</strong>
             <small data-business-subtitle>Tienda de bebidas</small>
           </span>
         </button>
@@ -33,10 +33,10 @@
         <div class="topbar-mid">
           <nav class="desktop-nav" aria-label="Navegación principal">
             <button type="button" data-nav-view="home">Inicio</button>
-            <button type="button" data-nav-view="catalog">Catálogo</button>
-            <button type="button" data-nav-view="cart">Pedido <span class="mini-badge" data-cart-count>0</span></button>
+            <button type="button" data-nav-view="catalog">Categorías</button>
+            <button type="button" data-nav-view="cart">Pedidos <span class="mini-badge" data-cart-count>0</span></button>
             <button type="button" data-nav-view="tracking">Seguir</button>
-            <button type="button" data-nav-view="profile">Perfil</button>
+            <button type="button" data-nav-view="profile">Cuenta</button>
           </nav>
 
           <!--
@@ -52,7 +52,7 @@
                 <span class="ops-label-short" data-topbar-ops-label-short>OPERACIÓN</span>
               </small>
               <strong class="topbar-ops-context">
-                <span class="ops-context-full" data-topbar-ops-context>TABA</span>
+                <span class="ops-context-full" data-topbar-ops-context>TABA2</span>
                 <span class="ops-context-short" data-topbar-ops-context-short>Cola al día</span>
                 <span class="ops-context-mini" data-topbar-ops-context-mini>Cola al día</span>
               </strong>
@@ -97,6 +97,14 @@
           </button>
         </div>
 
+        <label class="topbar-search" aria-label="Buscar en TABA2">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" aria-hidden="true">
+            <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="1.8" />
+            <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+          <input data-search-input data-search-jump type="search" placeholder="Buscar bebidas, marcas o presentaciones" />
+        </label>
+
         <div class="topbar-actions">
           <button class="primary-button compact cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
             <span class="cart-button-icon" aria-hidden="true">
@@ -123,7 +131,7 @@
           </svg>
         </span>
         <span class="pwa-banner-copy">
-          <strong>Instalar TABA</strong>
+          <strong>Instalar TABA2</strong>
           <small>Acceso directo desde tu pantalla de inicio.</small>
         </span>
         <button class="primary-button compact" type="button" data-pwa-install-action>Instalar</button>
@@ -139,7 +147,7 @@
           </svg>
         </span>
         <span class="pwa-banner-copy">
-          <strong>Para instalar TABA:</strong>
+          <strong>Para instalar TABA2:</strong>
           <ol class="pwa-ios-steps">
             <li>Tocá <strong>Compartir</strong></li>
             <li>Elegí <strong>“Agregar a pantalla de inicio”</strong></li>
@@ -172,9 +180,9 @@
         <section class="card app-recovery" data-app-recovery role="alert" aria-live="assertive">
           <div class="app-recovery-mark" aria-hidden="true">!</div>
           <div class="app-recovery-copy">
-            <strong>No pudimos cargar TABA</strong>
+            <strong>No pudimos cargar TABA2</strong>
             <p data-app-recovery-message>Podés reintentar ahora. Tus datos de prueba no se borraron.</p>
-            <small data-app-recovery-code>TABA-BOOT-01</small>
+            <small data-app-recovery-code>TABA2-BOOT-01</small>
           </div>
           <div class="app-recovery-actions">
             <button class="primary-button compact" type="button" data-app-recovery-retry>Reintentar</button>
@@ -188,8 +196,9 @@
           </div>
           <div class="taba-home-content" data-catalog-dependent hidden>
             <section class="taba-home-hero" aria-labelledby="home-title">
-              <h1 id="home-title">¿Qué vas a pedir hoy?</h1>
-              <p>Elegí tus bebidas favoritas y pedí en minutos.</p>
+              <p class="taba-home-kicker">TABA2 · Tienda de bebidas</p>
+              <h1 id="home-title">Elegí bebidas para tu momento.</h1>
+              <p>Buscá por marca, sabor o presentación y revisá la disponibilidad antes de comprar.</p>
               <span class="sr-only" data-open-status>Pedidos online</span>
             </section>
 
@@ -214,7 +223,7 @@
                 <span data-promo-banner-image aria-hidden="true"></span>
                 <span>
                   <small>Promoción vigente</small>
-                  <strong data-promo-banner-title>Promo TABA</strong>
+                  <strong data-promo-banner-title>Promoción TABA2</strong>
                   <span data-promo-banner-includes></span>
                   <span data-promo-banner-price></span>
                   <em data-promo-banner-save hidden></em>
@@ -281,6 +290,21 @@
           </div>
 
           <div class="category-strip" data-category-strip></div>
+
+          <details class="catalog-filters" data-catalog-filters>
+            <summary><span data-catalog-filter-count>Filtros</span><span aria-hidden="true">⌄</span></summary>
+            <div class="catalog-filter-grid">
+              <label data-catalog-filter-field="brand"><span>Marca</span><select data-catalog-filter="brand" aria-label="Filtrar por marca"></select></label>
+              <label data-catalog-filter-field="capacity"><span>Capacidad</span><select data-catalog-filter="capacity" aria-label="Filtrar por capacidad"></select></label>
+              <label data-catalog-filter-field="presentation"><span>Presentación</span><select data-catalog-filter="presentation" aria-label="Filtrar por presentación"></select></label>
+              <label data-catalog-filter-field="pack"><span>Formato</span><select data-catalog-filter="pack" aria-label="Filtrar por formato"></select></label>
+              <label data-catalog-filter-field="alcohol"><span>Alcohol</span><select data-catalog-filter="alcohol" aria-label="Filtrar por alcohol"></select></label>
+              <label data-catalog-filter-field="availability"><span>Disponibilidad</span><select data-catalog-filter="availability" aria-label="Filtrar por disponibilidad"></select></label>
+              <label data-catalog-filter-field="price"><span>Precio</span><select data-catalog-filter="price" aria-label="Filtrar por estado de precio"></select></label>
+              <label data-catalog-filter-field="promotion"><span>Promoción</span><select data-catalog-filter="promotion" aria-label="Filtrar por promoción"></select></label>
+            </div>
+            <button class="ghost-button compact" type="button" data-reset-catalog-filters hidden>Limpiar filtros</button>
+          </details>
 
           <div class="catalog-head catalog-toolbar">
             <h1 class="view-title" data-catalog-title>Todos</h1>
@@ -411,7 +435,7 @@
               ></div>
 
               <div class="trust-row" aria-hidden="false">
-                <span class="trust-text"><strong data-checkout-trust-title>Revisá tus datos.</strong><small data-checkout-trust-copy>Vas a ver el avance del pedido desde TABA.</small></span>
+                <span class="trust-text"><strong data-checkout-trust-title>Revisá tus datos.</strong><small data-checkout-trust-copy>Vas a ver el avance del pedido desde TABA2.</small></span>
               </div>
 
               <div class="button-row">
@@ -443,7 +467,7 @@
             <summary>Información del local</summary>
             <div class="profile-business-details-body">
               <ul class="info-list">
-                <li><span>Local</span><strong data-business-profile-name>TABA</strong></li>
+                <li><span>Local</span><strong data-business-profile-name>TABA2</strong></li>
                 <li><span>Dirección</span><strong data-business-address>A confirmar con el local</strong></li>
                 <li><span>Horarios</span><strong data-business-hours>A confirmar con el local</strong></li>
                 <li><span>Zona de entrega</span><strong data-business-zone>A confirmar con el local</strong></li>
@@ -551,7 +575,7 @@
           <div data-admin-unlocked hidden>
             <div class="section-head rider-section-head">
               <div>
-                <p class="eyebrow">Repartidor de <span data-rider-business-name>TABA</span></p>
+                <p class="eyebrow">Repartidor de <span data-rider-business-name>TABA2</span></p>
                 <h1 class="rider-title">Mis entregas</h1>
               </div>
             </div>
@@ -637,7 +661,7 @@
 
     <dialog class="pitch-modal" data-pitch-modal aria-labelledby="pitch-title">
       <div class="pitch-card">
-        <p class="eyebrow"><span data-product-name>TABA</span> · canal directo</p>
+        <p class="eyebrow"><span data-product-name>TABA2</span> · canal directo</p>
         <h2 id="pitch-title">Tu propio canal de pedidos</h2>
         <p class="pitch-lead" data-product-tagline>Tu sistema de pedidos directo, sin depender de apps con comisión.</p>
 

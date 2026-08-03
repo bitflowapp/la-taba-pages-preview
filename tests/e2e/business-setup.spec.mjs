@@ -107,7 +107,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await setup.getByRole('button', { name: 'Restaurar configuración base' }).first().click();
   await resetModal.getByRole('button', { name: 'Restaurar configuración base' }).click();
   await waitForToast(page, 'Configuración base restaurada.');
-  await expect(page.locator('.topbar .brand')).toContainText('TABA');
+  await expect(page.locator('.topbar .brand')).toContainText('TABA2');
   await page.locator('[data-business-view="orders"]').click();
   await expect(page.locator('[data-business-dashboard]')).toContainText('QA-0001');
 

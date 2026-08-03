@@ -18,6 +18,7 @@ import {
   setState,
   statusClass,
   statusLabel,
+  defaultCatalogFilters,
 } from './state.js';
 import {
   getCartItems,
@@ -271,6 +272,7 @@ export function renderCatalog() {
   renderOffers();
   renderCombos();
   renderCategories();
+  renderCatalogFilters();
   renderHomeShowcase();
   renderCatalogOffers();
   renderCatalogMeta();
@@ -392,8 +394,8 @@ function offerBadges(product) {
   return badge ? `<div class="product-badges">${badge}</div>` : '';
 }
 
-const PRICE_PENDING_TITLE = 'Precio a confirmar';
-const PRICE_PENDING_DETAIL = 'Todavía no se puede agregar.';
+const PRICE_PENDING_TITLE = 'Precio próximamente';
+const PRICE_PENDING_DETAIL = 'Este producto todavía no está disponible para compra.';
 
 function priceBlock(product) {
   if (product.pricePending) {
@@ -440,7 +442,7 @@ function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
     ? `${product.name}: ${PRICE_PENDING_TITLE.toLowerCase()}; ${PRICE_PENDING_DETAIL.toLowerCase()}`
     : `Agregar ${product.name} al pedido`;
   return `<button class="${className}${product.pricePending ? ' is-price-pending' : ''}" type="button" data-add-product="${escapeHtml(product.id)}" aria-label="${escapeHtml(actionLabel)}" ${outOfStock ? 'disabled' : ''}>
-    ${product.pricePending ? '' : '<span class="add-plus" aria-hidden="true">+</span>'}<span class="add-text">${product.pricePending ? 'A confirmar' : outOfStock ? 'No disponible' : 'Agregar'}</span>
+    ${product.pricePending ? '' : '<span class="add-plus" aria-hidden="true">+</span>'}<span class="add-text">${product.pricePending ? 'Precio pendiente' : outOfStock ? 'No disponible' : 'Agregar'}</span>
   </button>`;
 }
 
@@ -864,11 +866,81 @@ function renderCategories() {
   });
 }
 
+function renderCatalogFilters() {
+  const panel = $('[data-catalog-filters]');
+  if (!panel) return;
+  const state = getState();
+  const filters = { ...defaultCatalogFilters(), ...(state.catalogFilters || {}) };
+  const products = unitStorefrontProducts(state);
+  const options = {
+    brand: uniqueFilterValues(products, (product) => product.brand),
+    capacity: uniqueFilterValues(products, (product) => product.capacity),
+    presentation: uniqueFilterValues(products, (product) => product.packageType),
+  };
+  const available = products.filter((product) => product.available && Number(product.stock) > 0 && !product.pricePending).length;
+  const pending = products.filter((product) => product.pricePending).length;
+  const alcohol = products.filter((product) => product.alcoholic).length;
+  const packs = products.filter((product) => Number(product.unitsPerPack) > 1).length;
+  const promo = activePromotionProductIds(state).size;
+  const select = (key, label, values, { all = `Todas las ${label.toLowerCase()}` } = {}) => {
+    const field = panel.querySelector(`[data-catalog-filter-field="${key}"]`);
+    const control = panel.querySelector(`[data-catalog-filter="${key}"]`);
+    if (!field || !control) return;
+    field.hidden = values.length < 2;
+    control.innerHTML = [
+      `<option value="all">${escapeHtml(all)}</option>`,
+      ...values.map(({ value, label: optionLabel }) => `<option value="${escapeHtml(value)}">${escapeHtml(optionLabel)}</option>`),
+    ].join('');
+    control.value = values.some((option) => option.value === filters[key]) ? filters[key] : 'all';
+  };
+  select('brand', 'marcas', options.brand, { all: 'Todas las marcas' });
+  select('capacity', 'capacidades', options.capacity, { all: 'Todas las capacidades' });
+  select('presentation', 'presentaciones', options.presentation, { all: 'Todas las presentaciones' });
+  select('pack', 'formatos', [
+    ...(products.some((product) => Number(product.unitsPerPack) === 1) ? [{ value: 'unit', label: 'Unidad' }] : []),
+    ...(packs ? [{ value: 'pack', label: 'Pack' }] : []),
+  ], { all: 'Unidad o pack' });
+  select('alcohol', 'tipos', [
+    ...(alcohol ? [{ value: 'with', label: 'Con alcohol' }] : []),
+    ...(products.some((product) => !product.alcoholic) ? [{ value: 'without', label: 'Sin alcohol' }] : []),
+  ], { all: 'Con y sin alcohol' });
+  select('availability', 'disponibilidad', [
+    ...(available ? [{ value: 'available', label: 'Disponible' }] : []),
+    ...(products.length - available ? [{ value: 'unavailable', label: 'No disponible' }] : []),
+  ], { all: 'Toda disponibilidad' });
+  select('price', 'precios', [
+    ...(products.some((product) => !product.pricePending) ? [{ value: 'confirmed', label: 'Con precio' }] : []),
+    ...(pending ? [{ value: 'pending', label: 'Precio próximamente' }] : []),
+  ], { all: 'Todos los precios' });
+  select('promotion', 'promociones', promo ? [{ value: 'active', label: 'Promoción activa' }] : [], { all: 'Sin filtro de promoción' });
+
+  const count = Object.values(filters).filter((value) => value !== 'all').length;
+  const countNode = panel.querySelector('[data-catalog-filter-count]');
+  if (countNode) {
+    countNode.textContent = count ? `${count} ${count === 1 ? 'filtro activo' : 'filtros activos'}` : 'Filtros';
+  }
+  const reset = panel.querySelector('[data-reset-catalog-filters]');
+  if (reset) reset.hidden = count === 0;
+}
+
+function uniqueFilterValues(products, getter) {
+  const values = new Map();
+  for (const product of products) {
+    const label = String(getter(product) || '').trim();
+    const value = normalizeSearchText(label);
+    if (label && value && !values.has(value)) values.set(value, label);
+  }
+  return [...values.entries()]
+    .map(([value, label]) => ({ value, label }))
+    .sort((left, right) => left.label.localeCompare(right.label, 'es'));
+}
+
 // Productos filtrados por categoría + búsqueda, ya ordenados.
 function getFilteredProducts(state) {
   const query = normalizeSearchText(state.searchQuery);
   const favoriteIds = new Set(getFavoriteProductIds());
   const promoProductIds = activePromotionProductIds(state);
+  const filters = { ...defaultCatalogFilters(), ...(state.catalogFilters || {}) };
   const filtered = unitStorefrontProducts(state).filter((product) => {
     const matchesCategory = state.activeCategory === 'favorites'
       ? favoriteIds.has(product.id)
@@ -891,18 +963,35 @@ function getFilteredProducts(state) {
       product.categoryId,
       ...(Array.isArray(product.tags) ? product.tags : []),
     ].filter(Boolean).join(' ');
-    const matchesQuery = !query || normalizeSearchText(searchable).includes(query);
-    return matchesCategory && matchesQuery;
+    const searchableText = normalizeSearchText(searchable);
+    const matchesQuery = !query || query.split(' ').every((term) => searchableText.includes(term));
+    const isAvailable = product.available && Number(product.stock) > 0 && !product.pricePending;
+    const matchesFilters = (
+      (filters.brand === 'all' || normalizeSearchText(product.brand) === filters.brand)
+      && (filters.capacity === 'all' || normalizeSearchText(product.capacity) === filters.capacity)
+      && (filters.presentation === 'all' || normalizeSearchText(product.packageType) === filters.presentation)
+      && (filters.pack === 'all' || (filters.pack === 'pack' ? Number(product.unitsPerPack) > 1 : Number(product.unitsPerPack) === 1))
+      && (filters.alcohol === 'all' || (filters.alcohol === 'with' ? product.alcoholic : !product.alcoholic))
+      && (filters.availability === 'all' || (filters.availability === 'available' ? isAvailable : !isAvailable))
+      && (filters.price === 'all' || (filters.price === 'pending' ? product.pricePending : !product.pricePending))
+      && (filters.promotion === 'all' || isPromotionalProduct(product, promoProductIds))
+    );
+    return matchesCategory && matchesQuery && matchesFilters;
   });
   return sortProducts(filtered, state.sortBy);
 }
 
 function normalizeSearchText(value) {
-  return String(value || '')
+  const normalized = String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[^a-z0-9.,]+/g, ' ');
+  const millilitres = normalized.replace(/(\d+(?:[.,]\d+)?)\s*l\b/g, (_, value) => (
+    `${Math.round(Number(String(value).replace(',', '.')) * 1000)}ml`
+  ));
+  return millilitres.replace(/(\d+)\s*ml\b/g, '$1ml').replace(/\s+/g, ' ').trim();
 }
 
 function recommendedScore(product) {
@@ -1146,7 +1235,7 @@ export function stockPill(product) {
   if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
   if (!product.available) return '<span class="stock-pill empty">No disponible</span>';
   if (product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
-  if (product.stock <= 4) return `<span class="stock-pill low">Quedan ${product.stock}</span>`;
+  if (product.stock <= 4) return `<span class="stock-pill low">Últimas ${product.stock}</span>`;
   return '';
 }
 
@@ -1155,8 +1244,8 @@ export function availabilityLabel(product) {
   if (product.pricePending) return `${PRICE_PENDING_TITLE}; ${PRICE_PENDING_DETAIL.toLowerCase()}`;
   if (product.archived || !product.available) return 'No disponible por ahora';
   if (product.stock <= 0) return 'Agotado';
-  if (product.stock <= 4) return `Quedan ${product.stock}`;
-  return 'Disponible hoy';
+  if (product.stock <= 4) return `Últimas ${product.stock}`;
+  return 'Disponible';
 }
 
 // En la tarjeta sólo se rotula lo que hay que avisar. Estar disponible es lo
@@ -2016,7 +2105,7 @@ function riderTrackingCard(order, riderLocation, presentation = null) {
         decorative: true,
       })}</span>
       <div class="tracking-rider-copy">
-        <small>${assigned ? 'Rider TABA' : 'Entrega TABA'}</small>
+        <small>${assigned ? 'Rider TABA2' : 'Entrega TABA2'}</small>
         <strong data-rider-status>${escapeHtml(title)}</strong>
         <span data-rider-message>${escapeHtml(sub)}</span>
       </div>
@@ -2257,7 +2346,7 @@ function trackingHelpCard() {
 function trackingHeader() {
   return `
     <header class="tracking-brand-row">
-      <strong>TABA</strong>
+      <strong>TABA2</strong>
       <button class="tracking-menu-button" type="button" data-nav-view="profile" aria-label="Abrir menú">
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>
@@ -2399,11 +2488,49 @@ function actualProductVariants(product) {
     .filter((candidate) => candidate && isProductVisibleToCustomer(candidate));
 }
 
-export function showProductModal(productId) {
+let productModalRestoreFocus = null;
+let productModalRestoreProductId = '';
+let productModalCloseBound = false;
+let productModalDocumentBound = false;
+
+function restoreProductModalFocus() {
+  const trigger = productModalRestoreFocus?.isConnected
+    ? productModalRestoreFocus
+    : [...document.querySelectorAll('[data-product-detail]')]
+      .find((node) => node.dataset.productDetail === productModalRestoreProductId);
+  productModalRestoreFocus = null;
+  productModalRestoreProductId = '';
+  if (!trigger?.isConnected || trigger.disabled) return;
+  // Safari puede ejecutar el cierre nativo del dialog después del handler de
+  // click; esperar un frame evita perder el foco restaurado al body.
+  setTimeout(() => requestAnimationFrame(() => trigger.focus({ preventScroll: true })), 0);
+}
+
+export function showProductModal(productId, restoreTrigger = null) {
   const product = getProductById(productId);
   const modal = $('[data-product-modal]');
   const content = $('[data-modal-content]');
   if (!product || !isProductVisibleToCustomer(product) || !modal || !content) return;
+  if (!productModalCloseBound) {
+    modal.addEventListener('close', restoreProductModalFocus);
+    modal.addEventListener('click', (event) => {
+      if (event.target?.closest?.('[data-close-modal]')) restoreProductModalFocus();
+    });
+    productModalCloseBound = true;
+  }
+  if (!productModalDocumentBound) {
+    document.addEventListener('click', (event) => {
+      if (event.target?.closest?.('[data-close-modal]')) restoreProductModalFocus();
+    }, true);
+    productModalDocumentBound = true;
+  }
+  if (!modal.open) {
+    const active = restoreTrigger || document.activeElement;
+    productModalRestoreFocus = active && active !== document.body && typeof active.focus === 'function'
+      ? active
+      : null;
+    productModalRestoreProductId = product.id;
+  }
 
   const pricing = productPricePresentation(product);
   const favorite = isFavoriteProduct(product.id);
@@ -2473,7 +2600,12 @@ export function showProductModal(productId) {
 
 export function closeProductModal() {
   const modal = $('[data-product-modal]');
-  if (modal?.open) modal.close();
+  if (modal?.open) {
+    modal.close();
+    // WebKit no siempre entrega el evento close antes de devolver el foco al
+    // documento; el cierre explícito conserva el mismo fallback accesible.
+    restoreProductModalFocus();
+  }
 }
 
 export async function copyDraftOrderToClipboard() {
@@ -2536,4 +2668,16 @@ export function setSearchQuery(query) {
 export function setSortBy(sortBy) {
   if (getState().sortBy === sortBy) return;
   setState({ sortBy });
+}
+
+export function setCatalogFilter(key, value) {
+  const current = { ...defaultCatalogFilters(), ...(getState().catalogFilters || {}) };
+  if (!Object.hasOwn(current, key)) return;
+  const next = { ...current, [key]: String(value || 'all') };
+  if (JSON.stringify(next) === JSON.stringify(current)) return;
+  setState({ catalogFilters: next });
+}
+
+export function resetCatalogFilters() {
+  setState({ catalogFilters: defaultCatalogFilters() });
 }

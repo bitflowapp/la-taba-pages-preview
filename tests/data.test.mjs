@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 import { categories, products } from '../js/approved-beverage-demo-data.js';
+import { pendingProducts } from '../js/taba2-commercial-pending-data.js';
 import {
   getAlcoholProduct,
   getNonAlcoholProduct,
@@ -11,12 +12,12 @@ import {
   getPurchasableUnitProduct,
 } from './fixtures/approved-catalog-selectors.mjs';
 
-const EXPECTED_CATEGORY_IDS = ['all', 'gaseosas', 'mixers', 'energizantes', 'cervezas'];
+const LEGACY_CATEGORY_IDS = ['all', 'gaseosas', 'mixers', 'energizantes', 'cervezas'];
 
 test('approved demo catalog is internally consistent', () => {
-  assert.deepEqual(categories.map((category) => category.id), EXPECTED_CATEGORY_IDS);
-  assert.equal(products.length, 22);
-  assert.equal(new Set(products.map((product) => product.sku)).size, 22);
+  assert.deepEqual(categories.slice(0, LEGACY_CATEGORY_IDS.length).map((category) => category.id), LEGACY_CATEGORY_IDS);
+  assert.equal(products.length, 22 + pendingProducts.length);
+  assert.equal(new Set(products.map((product) => product.sku)).size, products.length);
 
   const categoryIds = new Set(categories.map((category) => category.id));
   for (const product of products) {
@@ -24,7 +25,7 @@ test('approved demo catalog is internally consistent', () => {
     assert.ok(!product.sku.startsWith('qa-'));
     assert.ok(categoryIds.has(product.categoryId), `missing category: ${product.categoryId}`);
     assert.ok(product.name.trim().length > 0);
-    assert.ok(Number.isFinite(product.price) && product.price >= 0);
+    assert.ok(product.pricePending ? product.price === null : Number.isFinite(product.price) && product.price > 0);
     assert.ok(Number.isFinite(product.stock) && product.stock >= 0);
     assert.ok(product.unitsPerPack >= 1);
     assert.equal(typeof product.available, 'boolean');
@@ -33,8 +34,8 @@ test('approved demo catalog is internally consistent', () => {
 
 test('approved demo images are local and complete', () => {
   for (const product of products) {
-    assert.match(product.image, /^assets\/catalog\/beverages\/[^/]+\/product\.webp$/);
-    assert.match(product.imageThumbnail, /^assets\/catalog\/beverages\/[^/]+\/thumbnail\.webp$/);
+    assert.match(product.image, /^assets\/catalog\/(?:beverages\/[^/]+\/product|products\/[^/]+\/[^/]+-master)\.webp$/);
+    assert.match(product.imageThumbnail, /^assets\/catalog\/(?:beverages\/[^/]+\/thumbnail|products\/[^/]+\/[^/]+-thumb)\.webp$/);
     assert.doesNotMatch(product.image, /^https?:\/\//i);
     assert.doesNotMatch(product.imageThumbnail, /^https?:\/\//i);
     assert.ok(fs.existsSync(new URL(`../${product.image}`, import.meta.url)));
@@ -53,7 +54,7 @@ test('approved semantic selectors preserve units, packs, alcohol and pending pri
   assert.ok(pack.unitsPerPack === 6 || pack.unitsPerPack === 12);
   assert.equal(alcohol.requiresAgeConfirmation, true);
   assert.equal(nonAlcohol.requiresAgeConfirmation, false);
-  assert.equal(pending.price, 0);
+  assert.equal(pending.price, null);
   assert.equal(pending.available, false);
 });
 

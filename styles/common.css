@@ -45,6 +45,48 @@
   backdrop-filter: blur(16px);
 }
 
+@media (min-width: 1021px) {
+  .topbar {
+    grid-template-columns: auto auto minmax(260px, 420px) auto;
+    gap: 14px;
+  }
+}
+
+.topbar-search {
+  display: inline-flex;
+  min-width: 0;
+  min-height: var(--tap);
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px;
+  border: 1px solid var(--taba-border-medium);
+  border-radius: var(--radius-pill);
+  background: var(--taba-white);
+  color: var(--taba-muted);
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+
+.topbar-search:focus-within {
+  border-color: var(--taba-focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--taba-focus) 16%, transparent);
+}
+
+.topbar-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--taba-ink);
+  font-size: 14px;
+}
+
+.topbar-search input::placeholder {
+  color: var(--taba-muted);
+  opacity: 1;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;

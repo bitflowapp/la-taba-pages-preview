@@ -5,11 +5,13 @@ body[data-active-view="business"] .desktop-nav,
 body[data-active-view="business"] .mobile-nav,
 body[data-active-view="business"] .topbar-actions,
 body[data-active-view="business"] .topbar-address,
+body[data-active-view="business"] .topbar-search,
 body[data-active-view="business"] .floating-cart,
 body[data-active-view="rider"] .desktop-nav,
 body[data-active-view="rider"] .mobile-nav,
 body[data-active-view="rider"] .topbar-actions,
 body[data-active-view="rider"] .topbar-address,
+body[data-active-view="rider"] .topbar-search,
 body[data-active-view="rider"] .floating-cart {
   display: none !important;
 }
@@ -25,6 +27,10 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .desktop-nav {
+    display: none;
+  }
+
+  .topbar-search {
     display: none;
   }
 
@@ -1327,8 +1333,10 @@ body[data-active-view="rider"] .floating-cart {
 
   .taba-home .home-add-button,
   .taba-home .home-best-card .home-add-button {
-    width: 44px;
-    height: 44px;
+    /* Fractional viewport rounding can report 43.9999px; keep the 44px
+       touch target above the strict accessibility floor on every DPR. */
+    width: 44.1px;
+    height: 44.1px;
   }
 
   .mobile-nav .mn-ico {

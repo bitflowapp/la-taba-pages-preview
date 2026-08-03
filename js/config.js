@@ -4,14 +4,14 @@
 import { isShowcaseMode } from './core/showcase-mode.js';
 
 export const BRAND = Object.freeze({
-  productName: 'TABA',
-  tagline: 'Bebidas, pedidos y delivery en una experiencia simple.',
-  shortTagline: 'Bebidas en minutos',
-  demoBusinessName: 'TABA',
+  productName: 'TABA2',
+  tagline: 'Bebidas, pedidos y retiro en una experiencia clara.',
+  shortTagline: 'Tienda de bebidas',
+  demoBusinessName: 'TABA2',
   demoBusinessSubtitle: 'Tienda de bebidas',
   demoBusinessClaim: 'Tus bebidas, ahora a un toque.',
   demoBusinessClaimSecondary: 'Pedí. Seguí. Disfrutá.',
-  contactWhatsappMessage: 'Hola, vi TABA y quiero más información.',
+  contactWhatsappMessage: 'Hola, vi TABA2 y quiero más información.',
 });
 
 export const BUSINESS_CONFIG = Object.freeze({
@@ -93,8 +93,8 @@ export const BUSINESS_CONFIG = Object.freeze({
     },
     {
       id: 'la-taba-demo',
-      label: 'Local La Taba demo',
-      addressLabel: 'Local demo · La Taba',
+      label: 'Local TABA2 demo',
+      addressLabel: 'Local demo · TABA2',
       city: 'Neuquén',
       lat: -38.9516,
       lng: -68.0591,

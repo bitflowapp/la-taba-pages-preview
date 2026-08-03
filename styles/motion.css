@@ -1,0 +1,327 @@
+/* TABA2 motion layer: progressive enhancement over the existing storefront. */
+
+.motion-ready {
+  --motion-reveal-distance: var(--motion-distance-reveal);
+}
+
+.motion-ready .topbar {
+  animation: taba-motion-shell-in var(--motion-duration-base) var(--motion-ease-enter) both;
+}
+
+@keyframes taba-motion-shell-in {
+  from { opacity: 0; transform: translate3d(0, -6px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+/* The JS layer only adds this class after it has installed a safe observer.
+   Without JS the content remains visible and fully usable. */
+.motion-ready [data-motion-reveal] {
+  opacity: 0;
+  transform: translate3d(0, var(--motion-reveal-distance), 0);
+  transition: opacity var(--motion-duration-slow) var(--motion-ease-enter),
+    transform var(--motion-duration-slow) var(--motion-ease-enter);
+  will-change: opacity, transform;
+}
+
+.motion-ready [data-motion-reveal].is-motion-visible {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+.motion-ready [data-motion-reveal][data-motion-reveal="hero"] {
+  --motion-reveal-distance: 12px;
+}
+
+.motion-ready [data-motion-reveal][data-motion-reveal="card"] {
+  transition-delay: calc(min(var(--motion-index, 0), 3) * 34ms);
+}
+
+/* View changes have one short hierarchy pass. It never hides the section: the
+   animation is additive and can be disabled without changing layout. */
+.view-enter .section-head,
+.view-enter .catalog-toolbar,
+.view-enter .catalog-search,
+.view-enter .taba-home-hero,
+.view-enter .home-section-head {
+  animation: taba-motion-enter var(--motion-duration-base) var(--motion-ease-enter) both;
+}
+
+.view-enter .product-card:nth-child(-n + 4),
+.view-enter .home-catalog-card:nth-child(-n + 4),
+.view-enter .recommendation-card:nth-child(-n + 3) {
+  animation: taba-motion-enter var(--motion-duration-slow) var(--motion-ease-enter) both;
+  animation-delay: calc(min(var(--motion-index, 0), 3) * 30ms);
+}
+
+@keyframes taba-motion-enter {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Sticky app bar: only paint properties change, so scrolling never reflows
+   the document or moves the first interactive target. */
+.topbar {
+  transition: background-color var(--motion-duration-base) var(--motion-ease-standard),
+    border-color var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+body[data-motion-scrolled="true"] .topbar {
+  border-color: color-mix(in srgb, var(--taba-border) 72%, var(--taba-ink));
+  background: rgb(255 253 251 / 96%);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Tactile response is intentionally tiny and never changes layout. */
+.primary-button,
+.secondary-button,
+.ghost-button,
+.danger-button,
+.add-button,
+.icon-button,
+.category-button,
+.home-category-card,
+.product-favorite,
+.cart-button,
+.floating-cart,
+.mobile-nav button,
+.search-clear {
+  transition: background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-instant) var(--motion-ease-standard);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .primary-button:hover:not(:disabled),
+  .secondary-button:hover:not(:disabled),
+  .add-button:hover:not(:disabled),
+  .category-button:hover:not(:disabled),
+  .home-category-card:hover:not(:disabled),
+  .product-favorite:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  .product-card,
+  .home-catalog-card,
+  .recommendation-card {
+    transition: transform var(--motion-duration-base) var(--motion-ease-enter),
+      border-color var(--motion-duration-base) var(--motion-ease-standard),
+      box-shadow var(--motion-duration-base) var(--motion-ease-standard);
+  }
+
+  .product-card:hover,
+  .home-catalog-card:hover,
+  .recommendation-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--taba-border-medium);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .product-card:hover .product-media img,
+  .home-catalog-card:hover .thumb-img,
+  .recommendation-card:hover .thumb-img {
+    transform: scale(1.015);
+  }
+}
+
+.product-media img,
+.home-catalog-card .thumb-img,
+.recommendation-card .thumb-img {
+  transition: transform var(--motion-duration-slow) var(--motion-ease-enter),
+    opacity var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.primary-button:active:not(:disabled),
+.secondary-button:active:not(:disabled),
+.add-button:active:not(:disabled),
+.icon-button:active:not(:disabled),
+.category-button:active:not(:disabled),
+.mobile-nav button:active:not(:disabled),
+.floating-cart:active:not(:disabled),
+.product-favorite:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.motion-pressing {
+  transform: scale(0.97) !important;
+}
+
+.category-button.active,
+.desktop-nav button.active,
+.mobile-nav button.active {
+  transition: background-color var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard),
+    border-color var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.product-favorite.is-favorite svg {
+  animation: taba-motion-favorite var(--motion-duration-base) var(--motion-ease-emphasized);
+}
+
+@keyframes taba-motion-favorite {
+  0% { transform: scale(0.88); }
+  65% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.cart-bump {
+  animation: taba-motion-cart-bump 420ms var(--motion-ease-emphasized);
+}
+
+.badge-pop {
+  animation: taba-motion-badge-pop 360ms var(--motion-ease-emphasized);
+}
+
+@keyframes taba-motion-cart-bump {
+  0%, 100% { transform: translateY(0); }
+  45% { transform: translateY(-3px); }
+}
+
+@keyframes taba-motion-badge-pop {
+  0% { transform: scale(0.82); }
+  70% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.qty-stepper strong,
+.quantity-control strong {
+  display: inline-block;
+  min-width: 1.2ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.motion-quantity-pop {
+  animation: taba-motion-quantity var(--motion-duration-fast) var(--motion-ease-emphasized);
+}
+
+@keyframes taba-motion-quantity {
+  from { opacity: 0.55; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Checkout feedback is tied to the real request lifecycle in app.js. */
+[data-motion-busy] [data-checkout-submit] {
+  position: relative;
+  pointer-events: none;
+}
+
+[data-motion-busy] [data-checkout-submit]::after {
+  content: '';
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-inline-start: 0.5em;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.12em;
+  animation: taba-motion-spinner 700ms linear infinite;
+}
+
+@keyframes taba-motion-spinner {
+  to { transform: rotate(360deg); }
+}
+
+/* Native dialogs and the existing toast keep their semantics while gaining a
+   short entrance. Closing remains immediate when the platform owns dismissal. */
+dialog[open] {
+  animation: taba-motion-dialog-in var(--motion-duration-modal) var(--motion-ease-enter) both;
+}
+
+dialog[open]::backdrop {
+  animation: taba-motion-backdrop-in var(--motion-duration-base) var(--motion-ease-standard) both;
+}
+
+@keyframes taba-motion-dialog-in {
+  from { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes taba-motion-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.toast:not(.hidden) {
+  animation: taba-motion-toast-in var(--motion-duration-base) var(--motion-ease-enter) both;
+}
+
+@keyframes taba-motion-toast-in {
+  from { opacity: 0; transform: translate3d(-50%, 8px, 0); }
+  to { opacity: 1; transform: translate3d(-50%, 0, 0); }
+}
+
+/* Reusable, bounded skeleton utility for real waits. It is not mounted on a
+   fast response, and it never replaces an error state. */
+.motion-skeleton {
+  position: relative;
+  overflow: hidden;
+  min-height: 1em;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(90deg, var(--taba-subtle) 0%, #fff 48%, var(--taba-subtle) 100%);
+  background-size: 220% 100%;
+  animation: taba-motion-skeleton 1.2s linear infinite;
+}
+
+@keyframes taba-motion-skeleton {
+  from { background-position: 180% 0; }
+  to { background-position: -20% 0; }
+}
+
+@media (max-width: 700px) {
+  .motion-ready [data-motion-reveal] { --motion-reveal-distance: 10px; }
+  .product-card:hover,
+  .home-catalog-card:hover,
+  .recommendation-card:hover { transform: none; box-shadow: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-ready [data-motion-reveal],
+  .motion-ready [data-motion-reveal].is-motion-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .view-enter .section-head,
+  .view-enter .catalog-toolbar,
+  .view-enter .catalog-search,
+  .view-enter .taba-home-hero,
+  .view-enter .home-section-head,
+  .view-enter .product-card:nth-child(-n + 4),
+  .view-enter .home-catalog-card:nth-child(-n + 4),
+  .view-enter .recommendation-card:nth-child(-n + 3),
+  .motion-ready .topbar,
+  .product-favorite.is-favorite svg,
+  .cart-bump,
+  .badge-pop,
+  .motion-quantity-pop,
+  [data-motion-busy] [data-checkout-submit]::after,
+  dialog[open],
+  dialog[open]::backdrop,
+  .toast:not(.hidden),
+  .motion-skeleton {
+    animation: none !important;
+  }
+
+  .motion-skeleton {
+    background: var(--taba-subtle);
+  }
+}
+
+@media (prefers-reduced-data: reduce), (update: slow) {
+  .motion-skeleton { animation: none; background: var(--taba-subtle); }
+  .product-card:hover .product-media img,
+  .home-catalog-card:hover .thumb-img,
+  .recommendation-card:hover .thumb-img { transform: none; }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .product-card,
+  .home-catalog-card,
+  .recommendation-card { transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
+}

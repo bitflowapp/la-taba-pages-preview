@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+import { products } from '../js/approved-beverage-demo-data.js';
+import { getCustomerCatalogProducts, isProductOrderable, normalizeCatalogProduct } from '../js/core/catalog-store.js';
+import { defaultCatalogFilters, normalizeCatalogFilters } from '../js/state.js';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+test('TABA2 keeps price-pending products non-purchasable without a zero price', () => {
+  const pending = products.find((product) => product.sku === 'red-bull-original-lata-250ml-pack-4');
+  const normalized = normalizeCatalogProduct(pending);
+  assert.equal(pending.price, null);
+  assert.equal(normalized.price, null);
+  assert.equal(normalized.priceStatus, 'pending');
+  assert.equal(isProductOrderable(normalized), false);
+});
+
+test('TABA2 excludes a pack with an image-identity collision from customer catalog', () => {
+  const rejected = products.find((product) => product.sku === 'heineken-original-lata-473ml-pack-6');
+  assert.equal(rejected.archived, true);
+  assert.equal(rejected.imageQualityStatus, 'rejected_duplicate_identity');
+  assert.ok(!getCustomerCatalogProducts(products).some((product) => product.sku === rejected.sku));
+});
+
+test('commercial filter state accepts only supported values and defaults safely', () => {
+  assert.deepEqual(defaultCatalogFilters(), {
+    brand: 'all', capacity: 'all', presentation: 'all', pack: 'all', alcohol: 'all',
+    availability: 'all', price: 'all', promotion: 'all',
+  });
+  assert.deepEqual(normalizeCatalogFilters({ alcohol: 'with', price: 'pending', pack: 'invalid' }), {
+    brand: 'all', capacity: 'all', presentation: 'all', pack: 'all', alcohol: 'with',
+    availability: 'all', price: 'pending', promotion: 'all',
+  });
+});
+
+test('research deliverables and normalized price handoff are present', () => {
+  for (const relative of [
+    'artifacts/taba2-catalog-finalization/EXECUTIVE_SUMMARY.md',
+    'artifacts/taba2-catalog-finalization/P0_COMPLETION_REPORT.md',
+    'artifacts/taba2-catalog-finalization/CATEGORY_COVERAGE.md',
+    'artifacts/taba2-catalog-finalization/IMAGE_RIGHTS_AUDIT.md',
+    'artifacts/taba2-catalog-finalization/DUPLICATE_ASSET_AUDIT.md',
+    'artifacts/taba2-catalog-finalization/PRICE_LOAD_READINESS.md',
+    'artifacts/taba2-catalog-finalization/COMMERCIAL_GATE_STATUS.md',
+    'catalog/products.json',
+    'catalog/pending-prices.csv',
+    'catalog/image-sources.csv',
+  ]) assert.ok(fs.existsSync(path.join(root, relative)), relative);
+  const handoff = fs.readFileSync(path.join(root, 'catalog/pending-prices.csv'), 'utf8');
+  assert.match(handoff, /price_status/);
+  assert.match(handoff, /pending/);
+  assert.doesNotMatch(handoff, /,0(?:,|\r?\n)/);
+});
+
+test('public storefront shell uses the exact TABA2 name', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const manifest = fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8');
+  assert.match(html, /<title>TABA2 · Tienda de bebidas<\/title>/);
+  assert.match(html, /data-business-name>TABA2</);
+  assert.doesNotMatch(html, /data-business-name>TABA</);
+  assert.match(manifest, /"short_name": "TABA2"/);
+});

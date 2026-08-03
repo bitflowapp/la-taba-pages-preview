@@ -31,6 +31,27 @@ function psql(sql) {
   docker(['exec', '-i', container, 'psql', '-U', 'postgres', '-d', database, '-v', 'ON_ERROR_STOP=1', '-q'], { input: sql });
 }
 
+function psqlCapture(sql) {
+  return execFileSync(dockerCommand, [
+    'exec', '-i', container, 'psql', '-U', 'postgres', '-d', database,
+    '-v', 'ON_ERROR_STOP=1', '-q', '-X', '-A', '-t',
+  ], {
+    cwd: root,
+    encoding: 'utf8',
+    input: sql,
+    stdio: ['pipe', 'pipe', 'inherit'],
+  });
+}
+
+function runPgTap(relativePath) {
+  const sql = `set search_path = public, extensions;\n${fs.readFileSync(path.join(root, relativePath), 'utf8')}`;
+  const output = psqlCapture(sql);
+  process.stdout.write(output);
+  if (/^not ok\b/m.test(output) || !/^1\.\.[0-9]+$/m.test(output)) {
+    throw new Error(`pgTAP did not pass: ${relativePath}`);
+  }
+}
+
 try {
   docker(['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', database]);
   docker(['exec', container, 'createdb', '-U', 'postgres', database]);
@@ -39,10 +60,17 @@ try {
     '--schema=auth', '--schema=storage', '--no-owner', '--no-privileges',
   ]);
   psql(platformSchemas);
-  psql('create schema if not exists extensions; create extension if not exists pgcrypto with schema extensions;');
+  psql(`
+    create schema if not exists extensions;
+    grant usage on schema extensions to anon, authenticated, service_role;
+    create extension if not exists pgcrypto with schema extensions;
+  `);
   for (const migration of migrations) psql(fs.readFileSync(migration));
   psql(fs.readFileSync(path.join(root, 'supabase', 'tests', 'mercadopago_checkout_pro.local.sql')));
-  console.log(`Mercado Pago PostgreSQL lifecycle verified in isolated local database ${database}.`);
+  runPgTap(path.join('supabase', 'tests', 'business_windows_scanner_fiscal_test.sql'));
+  runPgTap(path.join('supabase', 'tests', 'fiscal_document_closure_test.sql'));
+  runPgTap(path.join('supabase', 'tests', 'production_operations_control_plane_test.sql'));
+  console.log(`Integrated PostgreSQL lifecycle verified in isolated local database ${database}.`);
 } finally {
   const cleanup = spawnSync(dockerCommand, ['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', database], {
     cwd: root,

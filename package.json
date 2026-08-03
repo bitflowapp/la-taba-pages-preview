@@ -9,6 +9,7 @@
     "test:payments": "node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/mercadopago-*.test.mjs",
     "test:webhook": "node scripts/run-mercadopago-webhook-tests.mjs",
     "test:payments:local-db": "node scripts/run-mercadopago-local-db.mjs",
+    "test:db:isolated": "node scripts/run-mercadopago-local-db.mjs",
     "secrets:scan": "node scripts/scan-secrets.mjs",
     "test:e2e": "playwright test",
     "fiscal:install": "npm --prefix services/arca-fiscal-bridge ci",

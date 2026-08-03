@@ -52,7 +52,10 @@ El cierre de la ventana la oculta y conserva la aplicación en tray. Desde el tr
 
 Para soporte, capturar versión, estado de conexión, número de pendientes y códigos sanitizados. No copiar JWT, service role, contenido PEM, datos completos de receptores ni códigos de entrega.
 
+## Comprobantes fiscales
+
+El circuito de PDF privado, hash, URL efímera, spool local durable, reimpresión y recuperación está documentado en [Comprobantes fiscales persistidos en Windows](fiscal-artifacts-and-printing.md).
+
 ## Rollback
 
 El binario puede volver a un instalador anterior firmado y conservado por operaciones. Las migraciones PostgreSQL no se revierten borrando tablas: se prepara una migración correctiva incremental, se prueba localmente y se aplica con aprobación separada. Antes de cambiar versión, permitir la reconciliación o respaldar SQLite. Producción y staging requieren confirmación explícita independiente.
-

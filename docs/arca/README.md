@@ -61,6 +61,10 @@ Una factura autorizada es inmutable y no se elimina. La solicitud de nota de cr�
 
 Sin certificado/configuración/consentimiento, el resultado correcto es `ARCA_HOMOLOGATION_BLOCKED`; nunca se declara PASS.
 
+## Notas de crédito y evidencia documental
+
+La resolución versionada de tipo, crédito total/parcial, reconciliación, PDF/QR propio y homologación están especificados en [Notas de crédito, política contable y homologación](credit-notes-and-homologation.md).
+
 ## Checklist contable previo a producción
 
 - Condición fiscal y razón social del emisor.
@@ -81,4 +85,3 @@ La aprobación se registra en el servidor; no es una preferencia de operador. Ha
 Ejecutar el worker en una red privada, con Node.js 22+, identidad de servicio dedicada, secret manager, reloj sincronizado, TLS saliente, logs centralizados y una sola release verificable. Health, métricas y shutdown ordenado están incluidos. No desplegar junto al panel ni incluir secretos en imagen o variables visibles al usuario.
 
 Si el proceso cae, el lease vence y otro worker reclama. Si la caída ocurrió tras enviar, el documento queda ambiguo y se consulta. No cambiar de número ni reenviar a ciegas. Para rollback, detener nuevos claims, esperar leases, conservar intentos/documentos, desplegar la versión anterior compatible y reconciliar ambiguos antes de reanudar. Nunca borrar una autorización ni una evidencia para revertir software.
-

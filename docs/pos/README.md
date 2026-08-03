@@ -21,9 +21,12 @@ El servicio privado genera A4/PDF. Antes del CAE sólo puede producir “Comprob
 
 Checklist: instalar el driver del fabricante, seleccionar la impresora, imprimir una prueba no fiscal, desconectarla para verificar el error, reconectarla y reimprimir. Confirmar ancho/papel/codificación en el equipo final. Para PDF, verificar visualmente emisor, receptor aplicable, items, totales, CAE, vencimiento y QR.
 
+## Operación de comprobantes
+
+Los pasos de preview, descarga privada, reimpresión confirmada, solicitud de nota, recuperación y escalamiento están en [Operación POS de comprobantes y notas de crédito](fiscal-document-operations.md).
+
 ## Recuperación y rollback
 
 Una venta incompleta se recupera por su idempotency key. No crear otra clave mientras no se haya reconciliado. Una venta confirmada no se elimina para corregir fiscalidad; corresponde el documento rectificativo autorizado que determine la política contable.
 
 El rollback de UI no altera ventas existentes. Ante falla de impresión, conservar el estado fiscal, corregir la impresora y usar reimpresión. Ante rechazo fiscal, mostrar código/mensaje sanitizado y derivar a revisión; no convertirlo en éxito.
-

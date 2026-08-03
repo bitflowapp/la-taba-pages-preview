@@ -214,6 +214,11 @@ test('tracking público arriving reproduce la composición y conserva datos real
 
   for (const viewport of ARRIVING_VIEWPORTS) {
     await page.setViewportSize(viewport);
+    // Firefox can expose the prior viewport's vw-based map height for one
+    // paint after resize. Wait for layout to settle before measuring it.
+    await page.evaluate(() => new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    }));
     await page.evaluate(() => window.scrollTo(0, 0));
     const measurements = await page.evaluate(() => {
       const mapNode = document.querySelector(

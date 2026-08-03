@@ -1,0 +1,49 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
+
+test('Mercado Pago webhook uses the official SDK validator and literal data.id query field', () => {
+  const signature = read('supabase/functions/_shared/mercadopago-webhook-signature.ts');
+  const webhook = read('supabase/functions/mercadopago-webhook/index.ts');
+
+  assert.match(signature, /WebhookSignatureValidator\.validate/);
+  assert.match(signature, /xSignature: signature/);
+  assert.match(signature, /xRequestId: requestId/);
+  assert.match(signature, /dataId/);
+  assert.match(signature, /SIGNATURE_MAX_AGE_SECONDS/);
+  assert.match(webhook, /searchParams\.get\('data\.id'\)/);
+  assert.match(webhook, /new URL\(request\.url\)\.protocol !== 'https:'/);
+  assert.match(webhook, /WEBHOOK_MAX_BYTES/);
+  assert.match(webhook, /signatureValid: false/);
+  assert.match(webhook, /return jsonResponse\(request, \{ ok: false, code: 'INVALID_WEBHOOK' \}, 401\)/);
+});
+
+test('webhook receipt and worker enforce durable deduplication, leases and API reconciliation', () => {
+  const sql = read('supabase/migrations/20260802093000_mercadopago_checkout_pro_lifecycle.sql');
+  const foundation = read('supabase/migrations/20260802090000_mercadopago_checkout_pro_foundation.sql');
+  const worker = read('supabase/functions/mercadopago-payment-worker/index.ts');
+
+  assert.match(foundation, /unique \(provider, environment, webhook_event_id, event_type, resource_id\)/);
+  assert.match(sql, /on conflict \(provider, environment, webhook_event_id, event_type, resource_id\) do nothing/i);
+  assert.match(sql, /for update skip locked/i);
+  assert.match(sql, /lease_expires_at/);
+  assert.match(sql, /dead_letter/);
+  assert.match(sql, /signature_valid/);
+  assert.match(worker, /fetchPayment\(/);
+  assert.match(worker, /record_mercadopago_payment_snapshot/);
+  assert.match(worker, /finalize_paid_checkout_session/);
+  assert.match(worker, /fetchChargeback/);
+  assert.match(worker, /fetchClaim/);
+});
+
+test('signature unit suite covers valid, invalid, stale and altered webhook cases', () => {
+  const tests = read('supabase/functions/_shared/mercadopago-webhook-signature.deno.ts');
+  for (const wording of ['firma válida', 'secret erróneo', 'request ID erróneo', 'data.id incorrecto', 'payload alterado', 'sin firma', 'timestamp vencido']) {
+    assert.match(tests, new RegExp(wording));
+  }
+});

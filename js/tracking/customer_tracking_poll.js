@@ -54,6 +54,10 @@ export function createCustomerTrackingPollController({
   let requestController = null;
   let lifecycleBound = false;
   let hasStartedCurrentAccess = false;
+  // Once the terminal visibility deadline is reached, a timeout and a browser
+  // lifecycle event can land in the same event-loop turn. Keep that expiry
+  // check single-flight even if the first network response settles quickly.
+  let terminalExpiryRevalidationStarted = false;
 
   function getSnapshot() {
     return {
@@ -122,6 +126,7 @@ export function createCustomerTrackingPollController({
     abortRequest();
     session = emptySession();
     hasStartedCurrentAccess = false;
+    terminalExpiryRevalidationStarted = false;
     unbindLifecycle();
     return getSnapshot();
   }
@@ -224,6 +229,7 @@ export function createCustomerTrackingPollController({
     clearTimer();
     abortRequest();
     hasStartedCurrentAccess = false;
+    terminalExpiryRevalidationStarted = false;
     session = {
       active: false,
       terminal: true,
@@ -253,6 +259,9 @@ export function createCustomerTrackingPollController({
 
   function revalidateTerminal() {
     if (!session.terminal || requestController) return;
+    const revalidatingAtExpiry = terminalExpiresAt() <= now();
+    if (revalidatingAtExpiry && terminalExpiryRevalidationStarted) return;
+    if (revalidatingAtExpiry) terminalExpiryRevalidationStarted = true;
     clearTimer();
     const request = AbortControllerImpl ? new AbortControllerImpl() : null;
     requestController = request;

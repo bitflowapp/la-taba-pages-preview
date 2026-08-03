@@ -394,6 +394,19 @@
   gap: 12px;
 }
 
+.production-payments-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--taba-border);
+}
+
+.production-payment-list {
+  display: grid;
+  gap: 12px;
+}
+
 .inbox-group {
   padding: 16px;
   border: 1px solid var(--taba-border);
@@ -415,7 +428,8 @@
 }
 
 .inbox-order,
-.production-order-card {
+.production-order-card,
+.production-payment-card {
   display: grid;
   gap: 14px;
   padding: 16px;

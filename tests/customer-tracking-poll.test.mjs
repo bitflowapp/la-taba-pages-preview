@@ -262,6 +262,40 @@ test('delivered agenda una única revalidación al llegar terminal_visible_until
   assert.equal(timers.size(), 0);
 });
 
+test('el vencimiento terminal coalesce el timer y un evento de ciclo de vida', async () => {
+  const documentRef = eventTarget();
+  const windowRef = eventTarget();
+  const timers = fakeTimers();
+  let clock = Date.parse('2026-07-29T20:00:00.000Z');
+  const calls = [];
+  const controller = createCustomerTrackingPollController({
+    documentRef,
+    windowRef,
+    now: () => clock,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    fetchSnapshot: async (request) => {
+      calls.push(request);
+      return { kind: 'unavailable' };
+    },
+  });
+
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 'z'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil: new Date(clock + 30_000).toISOString(),
+  });
+  clock += 30_000;
+  timers.runNext();
+  windowRef.emit('focus');
+  windowRef.emit('online');
+  await tick();
+
+  assert.equal(calls.length, 1);
+  assert.equal(controller.getSnapshot().terminal, false);
+});
+
 test('focus, online, pageshow y visibilitychange deduplican una revalidación terminal concurrente', async () => {
   const documentRef = eventTarget({ hidden: false });
   const windowRef = eventTarget();

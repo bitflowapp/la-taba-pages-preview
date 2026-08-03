@@ -1752,6 +1752,24 @@ function currentPaymentMethod() {
   return field?.value || 'coordinate';
 }
 
+export function setMercadoPagoCheckoutAvailability({ available = false } = {}) {
+  const field = $('[name="paymentMethod"]');
+  if (!field) return;
+  const enabled = available === true;
+  let option = field.querySelector('option[value="mercadopago"]');
+  if (enabled && !option) {
+    option = document.createElement('option');
+    option.value = 'mercadopago';
+    option.textContent = 'Mercado Pago — Tarjeta, débito o dinero en cuenta';
+    field.append(option);
+  }
+  if (!enabled && option) {
+    if (field.value === 'mercadopago') field.value = 'coordinate';
+    option.remove();
+  }
+  field.dataset.mercadopagoAvailable = String(enabled);
+}
+
 function currentCouponCode() {
   const field = $('[name="couponCode"]');
   return field?.value || '';
@@ -1760,6 +1778,7 @@ function currentCouponCode() {
 function renderCheckoutPaymentFields() {
   const paymentMethod = currentPaymentMethod();
   const isCash = paymentMethod === 'cash';
+  const isMercadoPago = paymentMethod === 'mercadopago';
   const cashField = $('[data-cash-change-field]');
   if (cashField) {
     cashField.classList.toggle('hidden', !isCash);
@@ -1772,7 +1791,18 @@ function renderCheckoutPaymentFields() {
   const note = $('[data-payment-note]');
   if (!note) return;
   note.classList.remove('hidden');
-  note.textContent = 'El pago se coordina con el local antes de preparar el pedido.';
+  note.textContent = isMercadoPago
+    ? 'Vas a pagar en el entorno seguro de Mercado Pago. No guardamos datos de tu tarjeta.'
+    : 'El pago se coordina con el local antes de preparar el pedido.';
+
+  const submit = $('[data-checkout-submit]');
+  if (submit && !submit.disabled) {
+    submit.textContent = isMercadoPago ? 'Pagar con Mercado Pago' : 'Confirmar pedido';
+  }
+  const modeNote = $('[data-checkout-mode-note]');
+  if (modeNote && isMercadoPago) {
+    modeNote.textContent = 'Serás redirigido a Mercado Pago y confirmaremos el pedido sólo después de verificar el pago.';
+  }
 }
 
 function renderCouponMessage(coupon) {

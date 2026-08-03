@@ -52,9 +52,13 @@ test('financial mutations reuse persisted idempotency keys and require owner/adm
 
 test('production payment activation is fail-closed behind review and explicit confirmation', () => {
   const runtime = fs.readFileSync(path.join(root, 'supabase/functions/_shared/payment-runtime.ts'), 'utf8');
+  const provider = fs.readFileSync(path.join(root, 'supabase/functions/_shared/mercadopago.ts'), 'utf8');
   assert.match(runtime, /MERCADOPAGO_PRODUCTION_REVIEW_STATUS/);
-  assert.match(runtime, /MERCADOPAGO_PRODUCTION_ENABLE_CONFIRMATION/);
-  assert.match(runtime, /I_UNDERSTAND_THIS_ENABLES_REAL_MERCADO_PAGO_PAYMENTS/);
+  assert.match(runtime, /MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION/);
+  assert.match(runtime, /I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE/);
+  assert.match(provider, /requireRealPaymentSmokeAuthorization\(environment\)/);
+  assert.match(provider, /mercadoPagoRequest[\s\S]*providerEnvironment\(\);[\s\S]*MERCADOPAGO_ACCESS_TOKEN/);
+  assert.doesNotMatch(runtime, /I_UNDERSTAND_THIS_ENABLES_REAL_MERCADO_PAGO_PAYMENTS/);
 });
 
 test('isolated PostgreSQL lifecycle test certifies duplicate, reservation and payment finalization paths', () => {

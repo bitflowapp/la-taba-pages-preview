@@ -196,14 +196,17 @@ export function providerEnvironment(): PaymentEnvironment {
   if (value === 'production' && optionalEnv('MERCADOPAGO_PRODUCTION_REVIEW_STATUS') !== 'approved') {
     throw new Error('Production Mercado Pago review is not approved');
   }
-  if (
-    value === 'production'
-    && optionalEnv('MERCADOPAGO_PRODUCTION_ENABLE_CONFIRMATION')
-      !== 'I_UNDERSTAND_THIS_ENABLES_REAL_MERCADO_PAGO_PAYMENTS'
-  ) {
-    throw new Error('Production Mercado Pago enablement has not been explicitly confirmed');
-  }
   return value;
+}
+
+export function requireRealPaymentSmokeAuthorization(environment: PaymentEnvironment): void {
+  if (
+    environment === 'production'
+    && optionalEnv('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION')
+      !== 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE'
+  ) {
+    throw new Error('A real Mercado Pago payment smoke has not been explicitly authorized');
+  }
 }
 
 export function checkoutBaseUrl(): URL {

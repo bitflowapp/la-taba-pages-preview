@@ -28,8 +28,15 @@ Para producción además son obligatorios:
 
 ```text
 MERCADOPAGO_PRODUCTION_REVIEW_STATUS=approved
-MERCADOPAGO_PRODUCTION_ENABLE_CONFIRMATION=I_UNDERSTAND_THIS_ENABLES_REAL_MERCADO_PAGO_PAYMENTS
 ```
+
+La revisión aprobada permite procesar consultas, webhooks y reconciliaciones del ambiente productivo; no autoriza crear una preferencia que pueda cobrar dinero real. Para el smoke controlado, y sólo durante su ventana autorizada, agregar:
+
+```text
+MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION=I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE
+```
+
+Retirar esa confirmación al terminar el smoke. Nunca guardarla en Git ni en el panel.
 
 La Public Key no se usa en Checkout Pro por redirect y no debe exponerse salvo que una integración futura oficial realmente la requiera.
 

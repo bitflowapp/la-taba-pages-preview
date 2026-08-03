@@ -4,6 +4,7 @@ import {
   getRequiredEnv,
   hashSensitive,
   providerEnvironment,
+  requireRealPaymentSmokeAuthorization,
   sha256Hex,
   webhookUrl,
 } from './payment-runtime.ts';
@@ -45,9 +46,11 @@ export type MercadoPagoApiResult = {
 };
 
 export function assertPreparationEnvironment(preparation: PreferencePreparation): void {
-  if (preparation.environment !== providerEnvironment()) {
+  const environment = providerEnvironment();
+  if (preparation.environment !== environment) {
     throw new Error('Mercado Pago environment does not match payment settings');
   }
+  requireRealPaymentSmokeAuthorization(environment);
   if (preparation.currency !== 'ARS' || !Number.isFinite(Number(preparation.total)) || Number(preparation.total) <= 0) {
     throw new Error('Invalid server-side preference snapshot');
   }
@@ -98,6 +101,9 @@ export async function mercadoPagoRequest(
   path: string,
   init: RequestInit & { idempotencyKey?: string } = {},
 ): Promise<MercadoPagoApiResult> {
+  // Every provider call, including webhook reconciliation and refunds, checks
+  // the environment review before the backend-only access token is read.
+  providerEnvironment();
   const accessToken = getRequiredEnv('MERCADOPAGO_ACCESS_TOKEN');
   const headers = new Headers(init.headers || {});
   headers.set('Authorization', `Bearer ${accessToken}`);

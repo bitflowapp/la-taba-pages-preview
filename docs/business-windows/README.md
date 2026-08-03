@@ -56,6 +56,14 @@ Para soporte, capturar versión, estado de conexión, número de pendientes y c�
 
 El circuito de PDF privado, hash, URL efímera, spool local durable, reimpresión y recuperación está documentado en [Comprobantes fiscales persistidos en Windows](fiscal-artifacts-and-printing.md).
 
+## Runbooks del release candidate
+
+- [Operación diaria y Centro de operación](../operations/production-rc1-operations.md)
+- [Recuperación, backup y continuidad](../operations/recovery-and-continuity.md)
+- [Certificación física y piloto](../operations/physical-and-pilot-certification.md)
+- [Threat model del release candidate](../security/production-rc1-threat-model.md)
+- [Medición de rendimiento](../performance/production-rc1-performance.md)
+
 ## Rollback
 
 El binario puede volver a un instalador anterior firmado y conservado por operaciones. Las migraciones PostgreSQL no se revierten borrando tablas: se prepara una migración correctiva incremental, se prueba localmente y se aplica con aprobación separada. Antes de cambiar versión, permitir la reconciliación o respaldar SQLite. Producción y staging requieren confirmación explícita independiente.

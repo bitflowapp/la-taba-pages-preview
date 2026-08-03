@@ -6,7 +6,10 @@ let sharp;
 try { ({ default: sharp } = await import('sharp')); } catch { throw new Error('sharp es obligatorio.'); }
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const INTAKE = path.join(ROOT, 'catalog/photo-intake');
+const configuredIntake = process.env.TABA_CATALOG_PHOTO_INTAKE_DIR?.trim();
+const INTAKE = configuredIntake
+  ? path.resolve(configuredIntake)
+  : path.join(ROOT, 'catalog/photo-intake');
 const CATALOG = path.join(ROOT, 'catalog');
 const productsFile = path.join(CATALOG, 'products.json');
 const validationFile = path.join(INTAKE, 'validation.json');

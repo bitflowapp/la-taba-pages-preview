@@ -37,18 +37,13 @@ test('commercial filter state accepts only supported values and defaults safely'
   });
 });
 
-test('research deliverables and normalized price handoff are present', () => {
+test('versioned catalog evidence and normalized price handoff are present', () => {
   for (const relative of [
-    'artifacts/taba2-catalog-finalization/EXECUTIVE_SUMMARY.md',
-    'artifacts/taba2-catalog-finalization/P0_COMPLETION_REPORT.md',
-    'artifacts/taba2-catalog-finalization/CATEGORY_COVERAGE.md',
-    'artifacts/taba2-catalog-finalization/IMAGE_RIGHTS_AUDIT.md',
-    'artifacts/taba2-catalog-finalization/DUPLICATE_ASSET_AUDIT.md',
-    'artifacts/taba2-catalog-finalization/PRICE_LOAD_READINESS.md',
-    'artifacts/taba2-catalog-finalization/COMMERCIAL_GATE_STATUS.md',
     'catalog/products.json',
     'catalog/pending-prices.csv',
     'catalog/image-sources.csv',
+    'catalog/publication-readiness.csv',
+    'catalog/review-queue.csv',
   ]) assert.ok(fs.existsSync(path.join(root, relative)), relative);
   const handoff = fs.readFileSync(path.join(root, 'catalog/pending-prices.csv'), 'utf8');
   assert.match(handoff, /price_status/);

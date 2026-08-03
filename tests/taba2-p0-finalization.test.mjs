@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
@@ -24,9 +26,8 @@ test('Heineken x6 remains rejected and is not reused', () => {
   assert.doesNotMatch(product.image_master || '', /products\/cervezas/);
 });
 
-test('finalization artifacts and photo capture package exist', () => {
-  const artifactDir = path.join(root, 'artifacts/taba2-catalog-finalization');
-  for (const file of ['EXECUTIVE_SUMMARY.md', 'P0_COMPLETION_REPORT.md', 'CATEGORY_COVERAGE.md', 'IMAGE_RIGHTS_AUDIT.md', 'RIGHTS_EVIDENCE_INDEX.md', 'IMPORT_PLAN.md', 'PRICE_LOAD_READINESS.md', 'COMMERCIAL_GATE_STATUS.md', 'TEST_RESULTS.md']) assert.ok(fs.existsSync(path.join(artifactDir, file)), file);
+test('versioned finalization outputs and photo capture package exist', () => {
+  for (const file of ['products.json', 'publication-readiness.csv', 'image-rights.csv', 'image-manifest.json', 'rejected-assets.csv']) assert.ok(fs.existsSync(path.join(root, 'catalog', file)), file);
   for (const file of ['PHOTO_CAPTURE_SHOT_LIST.csv', 'PHOTO_CAPTURE_GUIDE.md', 'PHOTO_CAPTURE_LABELS.pdf']) assert.ok(fs.existsSync(path.join(root, 'catalog/photo-capture', file)), file);
   assert.match(fs.readFileSync(path.join(root, 'catalog/photo-capture/PHOTO_CAPTURE_LABELS.pdf'), 'latin1'), /^%PDF-1\.4/);
 });
@@ -34,7 +35,18 @@ test('finalization artifacts and photo capture package exist', () => {
 test('photo intake pipeline is reproducible and empty input validates closed-safe', () => {
   const readme = fs.readFileSync(path.join(root, 'catalog/photo-intake/README.md'), 'utf8');
   assert.match(readme, /<sku>__front/);
-  const validation = JSON.parse(fs.readFileSync(path.join(root, 'catalog/photo-intake/validation.json'), 'utf8'));
-  assert.equal(validation.files, 0);
-  assert.deepEqual(validation.valid, []);
+  const intake = fs.mkdtempSync(path.join(os.tmpdir(), 'taba2-photo-intake-'));
+  try {
+    const result = spawnSync(process.execPath, ['scripts/catalog-photos.mjs', 'validate'], {
+      cwd: root,
+      encoding: 'utf8',
+      env: { ...process.env, TABA_CATALOG_PHOTO_INTAKE_DIR: intake },
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const validation = JSON.parse(fs.readFileSync(path.join(intake, 'validation.json'), 'utf8'));
+    assert.equal(validation.files, 0);
+    assert.deepEqual(validation.valid, []);
+  } finally {
+    fs.rmSync(intake, { recursive: true, force: true });
+  }
 });

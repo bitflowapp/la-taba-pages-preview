@@ -690,10 +690,12 @@ body[data-active-view="home"] .floating-cart-saving {
   gap: 0;
 }
 
+/* El padding derecho libera la caja de 44px del control de cierre: sin él la
+   "×" se apoyaba encima del último segmento de progreso. */
 .stories-progress {
   display: flex;
   gap: 4px;
-  padding: 12px 12px 8px;
+  padding: 12px 66px 8px 12px;
 }
 
 .stories-progress span {

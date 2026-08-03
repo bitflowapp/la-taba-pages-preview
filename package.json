@@ -44,6 +44,7 @@
     "release:sbom": "node scripts/create-sbom.mjs",
     "release:windows:signed": "node scripts/build-windows-signed-release.mjs",
     "release:windows:hash": "node scripts/hash-windows-artifacts.mjs",
+    "performance:local": "node scripts/measure-local-rc-performance.mjs",
     "tauri": "tauri",
     "tauri:build": "tauri build"
   },

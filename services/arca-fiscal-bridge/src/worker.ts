@@ -39,22 +39,41 @@ export class FiscalWorker {
     const requestId = randomUUID();
     const startedAt = Date.now();
     let result: ArcaResult;
+    let reconciled = false;
     try {
       const loaded = await this.#store.load(job.fiscalDocumentId);
       if (loaded.state === 'authorized' || loaded.state === 'credited') return;
       if (loaded.request.documentType < 1 || loaded.request.recipientDocumentType < 1) {
         throw Object.assign(new Error('Requiere datos fiscales o revisión.'), { code: 'REQUIRES_FISCAL_REVIEW', retryable: false });
       }
-      const ticket = await this.#wsaa.login('wsfe');
-      const last = await this.#wsfe.lastAuthorized(ticket, loaded.request.pointOfSale, loaded.request.documentType);
-      loaded.request.documentNumber = await this.#store.reserveNumber(job.fiscalDocumentId, this.#config.workerId, last + 1);
-      validateFiscalRequest(loaded.request, this.#config.cuit);
       try {
-        result = await this.#wsfe.authorize(ticket, loaded.request);
+        // Validate every immutable component before reserving a number. A bad
+        // local snapshot must dead-letter for review, never consume the next
+        // ARCA number and block a later valid document.
+        validateFiscalRequest({ ...loaded.request, documentNumber: Math.max(1, loaded.request.documentNumber) }, this.#config.cuit);
       } catch (error) {
-        result = classifyTransportFailure(error, loaded.request.documentNumber);
-        if (result.classification === 'ambiguous') {
-          result = await reconcileAmbiguousAuthorization({ client: this.#wsfe, ticket, request: loaded.request });
+        throw Object.assign(error instanceof Error ? error : new Error('Requiere datos fiscales o revisión.'), {
+          code: 'REQUIRES_FISCAL_REVIEW', retryable: false,
+        });
+      }
+      const ticket = await this.#wsaa.login('wsfe');
+      if (loaded.state === 'ambiguous' || loaded.request.documentNumber > 0) {
+        // A persisted number means a previous process may have reached ARCA. Consult
+        // first even if the local process died before saving a response.
+        reconciled = true;
+        result = await reconcileAmbiguousAuthorization({ client: this.#wsfe, ticket, request: loaded.request });
+      } else {
+        const last = await this.#wsfe.lastAuthorized(ticket, loaded.request.pointOfSale, loaded.request.documentType);
+        loaded.request.documentNumber = await this.#store.reserveNumber(job.fiscalDocumentId, this.#config.workerId, last + 1);
+        validateFiscalRequest(loaded.request, this.#config.cuit);
+        try {
+          result = await this.#wsfe.authorize(ticket, loaded.request);
+        } catch (error) {
+          result = classifyTransportFailure(error, loaded.request.documentNumber);
+          if (result.classification === 'ambiguous') {
+            reconciled = true;
+            result = await reconcileAmbiguousAuthorization({ client: this.#wsfe, ticket, request: loaded.request });
+          }
         }
       }
       if (['authorized', 'authorized_with_observations'].includes(result.classification) && !result.issueDate) {
@@ -66,7 +85,7 @@ export class FiscalWorker {
     const enriched = {
       ...result,
       request_id: requestId,
-      operation: result.classification === 'ambiguous' ? 'FECompConsultar' : 'FECAESolicitar',
+      operation: reconciled ? 'FECompConsultar' : 'FECAESolicitar',
       duration_ms: Date.now() - startedAt,
     };
     await this.#store.complete(job.outboxId, this.#config.workerId, enriched);

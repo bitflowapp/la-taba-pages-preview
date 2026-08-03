@@ -19,17 +19,28 @@ export async function reconcileAmbiguousAuthorization({
       errors: [{ code: 'NOT_FOUND_AFTER_AMBIGUOUS', message: 'ARCA aún no devuelve el comprobante consultado.' }],
     };
   }
-  if (result.documentNumber !== request.documentNumber || (result.issueDate && result.issueDate !== request.issueDate)) {
+  const mismatch = result.documentNumber !== request.documentNumber
+    || (result.issueDate && result.issueDate !== request.issueDate)
+    || (result.pointOfSale !== undefined && result.pointOfSale !== request.pointOfSale)
+    || (result.documentType !== undefined && result.documentType !== request.documentType)
+    || (result.totalAmount !== undefined && cents(result.totalAmount) !== cents(request.totalAmount));
+  if (mismatch) {
     return {
       classification: 'service_error',
       documentNumber: request.documentNumber,
       observations: result.observations,
       errors: [{ code: 'ARCA_RECONCILIATION_MISMATCH', message: 'La consulta no coincide con la intención fiscal local.' }],
+      errorCode: 'ARCA_RECONCILIATION_MISMATCH',
+      errorMessage: 'La consulta no coincide con la intención fiscal local.',
       ...(result.requestHash ? { requestHash: result.requestHash } : {}),
       ...(result.responseHash ? { responseHash: result.responseHash } : {}),
     };
   }
   return result;
+}
+
+function cents(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100);
 }
 
 export function classifyTransportFailure(error: unknown, documentNumber?: number): ArcaResult {

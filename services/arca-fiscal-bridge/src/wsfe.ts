@@ -54,9 +54,15 @@ export class WsfeClient {
     const result = findFirst(parsed, 'ResultGet');
     if (!result || !xmlText(findFirst(result, 'CbteNro'))) return null;
     const cae = xmlText(findFirst(result, 'CodAutorizacion'));
+    const totalAmount = numberOrUndefined(xmlText(findFirst(result, 'ImpTotal')));
+    const pointOfSale = numberOrUndefined(xmlText(findFirst(result, 'PtoVta')));
+    const documentType = numberOrUndefined(xmlText(findFirst(result, 'CbteTipo')));
     return {
       classification: /^\d{14}$/.test(cae) ? 'authorized' : 'service_error',
       documentNumber: Number(xmlText(findFirst(result, 'CbteNro'))),
+      ...(totalAmount !== undefined ? { totalAmount } : {}),
+      ...(pointOfSale !== undefined ? { pointOfSale } : {}),
+      ...(documentType !== undefined ? { documentType } : {}),
       ...(cae ? { cae } : {}),
       ...(xmlText(findFirst(result, 'FchVto')) ? { caeExpiration: xmlText(findFirst(result, 'FchVto')) } : {}),
       ...(xmlText(findFirst(result, 'CbteFch')) ? { issueDate: xmlText(findFirst(result, 'CbteFch')) } : {}),
@@ -119,6 +125,14 @@ export function validateFiscalRequest(request: FiscalRequest, configuredCuit: st
   if (Math.abs(cents(components) - cents(request.totalAmount)) > 1) throw new Error('El total fiscal no coincide con sus componentes.');
   if (request.vatItems.some((item) => !Number.isSafeInteger(item.id) || item.baseAmount < 0 || item.amount < 0)) throw new Error('Detalle IVA inválido.');
   if ((request.concept === 2 || request.concept === 3) && (!request.serviceFrom || !request.serviceTo || !request.paymentDueDate)) throw new Error('Servicios requieren período y vencimiento.');
+  if (request.documentIntent === 'credit_note' && !request.associatedDocument) throw new Error('La nota de crédito requiere comprobante asociado.');
+  if (request.associatedDocument) {
+    assertPositiveInteger(request.associatedDocument.documentType, 'tipo asociado');
+    assertPositiveInteger(request.associatedDocument.pointOfSale, 'punto de venta asociado');
+    assertPositiveInteger(request.associatedDocument.documentNumber, 'número asociado');
+    if (request.associatedDocument.cuit && !/^\d{11}$/.test(request.associatedDocument.cuit)) throw new Error('CUIT asociado inválido.');
+    if (request.associatedDocument.issueDate && !/^\d{8}$/.test(request.associatedDocument.issueDate)) throw new Error('Fecha asociada inválida.');
+  }
 }
 
 export function parseCaeResponse(xml: string, requestHash = '', responseHash = '', expectedNumber?: number): ArcaResult {
@@ -182,3 +196,4 @@ function validateCuit(value: string): void { if (!/^\d{11}$/.test(value)) throw 
 function assertPositiveInteger(value: number, label: string): void { if (!Number.isSafeInteger(value) || value < 1) throw new Error(`${label} inválido.`); }
 function cents(value: number): number { return Math.round((value + Number.EPSILON) * 100); }
 function money(value: number): string { return (Math.round((value + Number.EPSILON) * 100) / 100).toFixed(2); }
+function numberOrUndefined(value: string): number | undefined { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : undefined; }

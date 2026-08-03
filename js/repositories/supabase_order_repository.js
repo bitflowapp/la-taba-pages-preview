@@ -875,7 +875,7 @@ export function createSupabaseOrderRepository({
 
   async function listMercadoPagoBusinessPayments() {
     const teamAccess = await auth.getTeamAccess();
-    if (!teamAccess.ok || !['owner', 'admin'].includes(teamAccess.membership?.role)) {
+    if (!teamAccess.ok || !['owner', 'admin', 'staff'].includes(teamAccess.membership?.role)) {
       return repositoryResult(false, { message: 'Tu rol no puede consultar pagos.' });
     }
     const { data, error } = await client.rpc('list_business_payments', {
@@ -890,8 +890,20 @@ export function createSupabaseOrderRepository({
     const { data, error } = await client.rpc('enqueue_payment_reconciliation', {
       p_payment_intent_id: paymentIntentId,
     });
-    if (error || !data?.queued) return repositoryResult(false, { message: 'No pudimos programar la reconciliación.' });
-    return repositoryResult(true, { message: 'Reconciliación de pago programada.' });
+    if (error) return repositoryResult(false, { message: 'No pudimos actualizar el estado del pago.' });
+    if (data?.terminal) {
+      return repositoryResult(true, {
+        ...data,
+        message: data.internal_status === 'completed' || data.order_id
+          ? 'El pedido ya había sido creado.'
+          : 'El pago ya está cerrado y no admite otro reintento.',
+      });
+    }
+    if (!data?.queued) return repositoryResult(false, { message: 'No pudimos programar la recuperación.' });
+    return repositoryResult(true, {
+      ...data,
+      message: 'Reintentando…',
+    });
   }
 
   async function requestMercadoPagoRefund({ paymentIntentId, amount = null, reason = '', confirmation = '' } = {}) {

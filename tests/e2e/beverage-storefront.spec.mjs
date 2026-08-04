@@ -143,10 +143,24 @@ for (const viewport of [
     const productImages = page.locator('[data-view="home"] .thumb-img');
     await expect(productImages.first()).toBeVisible();
     await productImages.last().scrollIntoViewIfNeeded();
-    await expect.poll(() => productImages.evaluateAll((images) => images.every((image) => (
-      image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
-    )))).toBeTruthy();
+
+    // La home pasó de ~7 imágenes a las de todos los carruseles, y cada una es
+    // `loading="lazy"`. Exigir que TODAS estén resueltas describía la home vieja:
+    // Chromium precarga agresivamente y pasaba, Firefox y WebKit dejan las de
+    // fuera de pantalla sin resolver y fallaban. Eso es lazy loading haciendo su
+    // trabajo, no un asset roto.
+    //
+    // La garantía que importa se mantiene entera y en dos partes:
+    // 1) ninguna imagen rota en toda la home — si el navegador terminó de
+    //    resolverla, tiene que tener bitmap;
+    // 2) las que el cliente ve al entrar sí están cargadas de verdad.
     expect(await productImages.evaluateAll((images) => images.every((image) => (
+      !image.complete || (image.naturalWidth > 0 && image.naturalHeight > 0)
+    )))).toBeTruthy();
+
+    const aboveTheFold = page.locator('[data-home-best-sellers] .thumb-img');
+    await expect(aboveTheFold.first()).toBeVisible();
+    await expect.poll(() => aboveTheFold.evaluateAll((images) => images.length > 0 && images.every((image) => (
       image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
     )))).toBeTruthy();
 

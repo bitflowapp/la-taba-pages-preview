@@ -252,7 +252,13 @@
     opacity: 88%;
   }
 
+  /* Con el sheet abierto el disparador tiene que quedar POR ENCIMA del fondo.
+     Si no, el fondo a pantalla completa lo tapa y se come el toque: el panel
+     queda abierto sin forma de cerrarlo, porque un ::before no puede escuchar
+     clics. Elevarlo devuelve el gesto de "toco Filtros y se cierra". */
   .catalog-filters[open] summary {
+    position: relative;
+    z-index: var(--z-modal);
     border-bottom: 1px solid currentcolor;
   }
 

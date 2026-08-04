@@ -71,6 +71,18 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) :focus-v
   outline-offset: 3px;
 }
 
+/* Al navegar, `focusActiveViewHeading` mueve el foco al título de la vista para
+   que los lectores de pantalla anuncien dónde quedó el usuario. `tokens.css` ya
+   silenciaba ese anillo, pero la regla de foco de acá —que carga última— lo
+   volvía a pintar: en el Moto cada toque de la barra inferior dejaba un
+   recuadro celeste alrededor de "Mi perfil".
+   Sólo se silencia el título, que nadie enfocó con el teclado. Todo control
+   real conserva su anillo. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) [data-view] :is(h1, h2)[tabindex="-1"]:focus,
+body:not([data-active-view="business"]):not([data-active-view="rider"]) [data-view] :is(h1, h2)[tabindex="-1"]:focus-visible {
+  outline: none;
+}
+
 /* ============================================================================
    1 · APP BAR
    Misma geometría: mismo alto, mismas columnas, mismos controles.

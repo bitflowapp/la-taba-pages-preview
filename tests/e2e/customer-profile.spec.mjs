@@ -185,6 +185,47 @@ test('Perfil muestra una recuperación clara cuando la sesión venció', async (
   await expect(page.locator('[data-customer-profile]')).toContainText('Tu sesión venció');
 });
 
+// Contrato visual del Perfil aprobado. Lo que se fija no es una captura sino
+// las decisiones que la revisión pidió y que un refactor podría deshacer sin
+// que ninguna otra prueba se entere.
+test('Perfil ofrece UNA acción principal y la dirección en uso no repite la acción aplicada', async ({ page }) => {
+  await page.setViewportSize({ width: 432, height: 815 });
+  await page.goto('/?reset=1&demo=1', { waitUntil: 'load' });
+  await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
+  await page.locator('.mobile-nav [data-nav-view="profile"]').click();
+  await expect(page.locator('[data-view="profile"]')).toBeVisible();
+  const profile = page.locator('[data-customer-profile]');
+  await expect(profile).toHaveAttribute('data-customer-profile-state', 'ready');
+
+  // Una sola entrada al formulario: antes había un botón en el encabezado y
+  // otro al pie, los dos abriendo lo mismo en la misma pantalla.
+  await expect(profile.locator('[data-profile-action="add-address"]')).toHaveCount(1);
+  await expect(profile.locator('.profile-add-address')).toBeVisible();
+
+  // La dirección activa DECLARA su estado; ofrecer "Usar esta" sobre la que ya
+  // está en uso es un control sin efecto.
+  const activa = profile.locator('.profile-address.is-default');
+  await expect(activa).toHaveCount(1);
+  await expect(activa.locator('.profile-address-inuse')).toHaveText(/En uso/);
+  await expect(activa.locator('[data-profile-action="make-default"]')).toHaveCount(0);
+  await expect(activa.locator('.profile-address-title span')).toHaveText('Predeterminada');
+  const otras = profile.locator('.profile-address:not(.is-default)');
+  expect(await otras.count()).toBeGreaterThan(0);
+  await expect(otras.first().locator('[data-profile-action="make-default"]')).toHaveText(/Usar esta/);
+
+  // Superficies crema, no blanco puro: sobre el shell grafito el blanco recorta.
+  const superficies = await profile.locator('.personal-card, .profile-address').evaluateAll(
+    (nodes) => [...new Set(nodes.map((node) => getComputedStyle(node).backgroundColor))],
+  );
+  expect(superficies).toEqual(['rgb(247, 244, 239)']);
+
+  // Eliminar no puede ser un toque suelto: pide confirmación.
+  const antes = await profile.locator('.profile-address').count();
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await otras.first().locator('[data-profile-action="delete-address"]').click();
+  await expect(profile.locator('.profile-address')).toHaveCount(antes);
+});
+
 async function installRuntime(page) {
   const session = authSession();
   await page.addInitScript(({ businessId, persistedSession }) => {

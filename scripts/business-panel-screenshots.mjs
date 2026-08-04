@@ -7,7 +7,8 @@ import path from 'node:path';
 
 const PORT = Number.parseInt(process.env.TABA_PANEL_SHOT_PORT || '8151', 10);
 const BASE = `http://127.0.0.1:${PORT}`;
-const OUT = path.resolve('artifacts/business-operations-panel');
+// Se puede redirigir la salida cuando el disco del repositorio está justo.
+const OUT = path.resolve(process.env.TABA_PANEL_SHOT_DIR || 'artifacts/business-operations-panel');
 const SUPABASE_URL = 'https://taba-panel-screenshots.supabase.co';
 const BUSINESS_ID = '11111111-1111-4111-8111-111111111111';
 const OWNER_ID = '22222222-2222-4222-8222-222222222222';

@@ -700,6 +700,10 @@ body[data-active-view="rider"] .floating-cart {
   .catalog-toolbar .sort-select-wrap {
     position: absolute;
     inset: 0;
+    display: flex;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
   }
 
   .catalog-toolbar .sort-select-wrap::after {
@@ -707,8 +711,10 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .catalog-toolbar .sort-field select {
-    position: absolute;
-    inset: 0;
+    position: static;
+    min-width: 0;
+    max-width: 100%;
+    flex: 1 1 auto;
     width: 100%;
     height: 100%;
     opacity: 0;
@@ -1445,11 +1451,6 @@ body[data-active-view="rider"] .floating-cart {
     -webkit-line-clamp: 3;
   }
 
-
-  body:is([data-active-view="home"], [data-active-view="catalog"], [data-active-view="cart"], [data-active-view="profile"]) .mobile-nav {
-    right: 10px;
-    left: 10px;
-  }
 
   .floating-cart {
     right: 10px;

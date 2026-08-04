@@ -191,7 +191,6 @@ body {
      navegadores que no la soportan (ver `.app-shell` en common.css). */
   min-height: 100dvh;
   margin: 0;
-  overflow-x: hidden;
   background: var(--taba-white);
   color: var(--taba-ink);
   font-family: var(--font-sans);

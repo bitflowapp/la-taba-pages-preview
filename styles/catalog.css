@@ -83,13 +83,22 @@
 [data-view="catalog"] .category-strip {
   gap: 8px;
   margin: 0;
-  padding: 0 0 10px;
+  padding: 0 16px 10px 0;
   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
   mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-inline: contain;
-  scroll-padding-inline: 0;
+  scroll-padding-inline: 0 16px;
   scroll-snap-type: inline proximity;
+}
+
+/* Safari/WebKit propaga al documento el gutter de un rail horizontal si su
+   wrapper queda con overflow visible. El wrapper sigue dejando scrollear al
+   rail; sólo recorta esa superficie secundaria para que el viewport no gane
+   los 6–8px del scrollbar fantasma. */
+[data-view="catalog"] [data-catalog-dependent] {
+  min-width: 0;
+  overflow-x: clip;
 }
 
 [data-view="catalog"] .category-button {

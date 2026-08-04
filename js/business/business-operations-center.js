@@ -397,6 +397,11 @@ export function handleBusinessOperationsInput(target) {
     scannerDraftValue = String(target.value || '').slice(0, 64);
     return { handled: true };
   }
+  // La frase de autorización se conserva para que un refresco no la borre a mitad de escribirla.
+  if (target?.matches?.('[name="arcaAuthorization"]')) {
+    arcaAuthorizationDraft = String(target.value || '').slice(0, 40);
+    return { handled: true };
+  }
   if (!target?.matches?.('[name="creditReason"], [name="creditKind"], [name="creditQuantity"], [name="creditNet"], [name="creditTax"]')) {
     return { handled: false };
   }

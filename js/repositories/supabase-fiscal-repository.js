@@ -25,6 +25,14 @@ export function createSupabaseFiscalRepository({ client, businessId }) {
       p_original_document_id: originalDocumentId, p_reason: reason, p_idempotency_key: idempotencyKey,
     }),
     regenerateArtifact: (fiscalDocumentId) => rpc('request_fiscal_artifact_regeneration', { p_fiscal_document_id: fiscalDocumentId }),
+    getActivationStatus: () => rpc('get_arca_activation_status', { p_business_id: businessId }),
+    // La frase viaja tal cual la escribió el operador: el servidor es quien decide si vale.
+    authorizeHomologation: (authorization) => rpc('authorize_arca_homologation', {
+      p_business_id: businessId, p_authorization: authorization,
+    }),
+    recordVerification: (verification) => rpc('record_fiscal_verification', {
+      p_business_id: businessId, p_verification: verification,
+    }),
     listArtifacts: () => rpc('list_fiscal_document_artifacts', { p_business_id: businessId }),
     requestPrintJob: ({ fiscalDocumentId, artifactId, printerNameHash, format, copies, idempotencyKey }) => rpc('request_fiscal_print_job', {
       p_fiscal_document_id: fiscalDocumentId,

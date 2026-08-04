@@ -253,6 +253,11 @@ fn list_printers() -> Result<Vec<printing::PrinterInfo>, String> {
 }
 
 #[tauri::command]
+fn probe_printer(printer_name: String) -> Result<printing::PrinterProbe, String> {
+    printing::probe_printer(&printer_name)
+}
+
+#[tauri::command]
 fn print_document(request: printing::PrintRequest) -> Result<bool, String> {
     printing::print(&request)?;
     Ok(true)
@@ -426,6 +431,7 @@ pub fn run() {
             set_notifications_muted,
             set_autostart_enabled,
             list_printers,
+            probe_printer,
             print_document,
             queue_fiscal_print,
             open_fiscal_cache_folder,

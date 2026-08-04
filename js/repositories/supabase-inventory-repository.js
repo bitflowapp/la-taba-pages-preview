@@ -22,6 +22,10 @@ export function createSupabaseInventoryRepository({ client, businessId }) {
     publishProductDraft: ({ draftId, name, category, price, packageType, unitFactor }) => rpc('publish_catalog_product_draft', {
       p_draft_id: draftId, p_name: name, p_category: category, p_price: price, p_package_type: packageType, p_unit_factor: unitFactor,
     }),
+    completeScannedProduct: ({ productId, details }) => rpc('complete_scanned_product', {
+      p_product_id: productId, p_details: details,
+    }),
+    getScannedProductReadiness: (productId) => rpc('get_scanned_product_readiness', { p_product_id: productId }),
     applyMovement: (intent) => rpc('apply_inventory_movement', {
       p_business_id: businessId,
       p_product_id: intent.productId,

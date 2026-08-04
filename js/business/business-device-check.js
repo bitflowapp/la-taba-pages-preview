@@ -38,10 +38,11 @@ export const DEVICE_CHECKS = Object.freeze([
     needsNative: true,
   }),
   Object.freeze({
+    // Se prueba el QR real del comprobante, no uno de adorno: es el único que le sirve al cliente.
     id: 'qr',
     label: 'QR del comprobante',
-    proves: 'Que el QR del comprobante se dibuja y se puede leer con el celular.',
-    howTo: 'Mostramos un QR de prueba; escanealo con la cámara del celular.',
+    proves: 'Que el QR del comprobante se ve y se puede leer con el celular.',
+    howTo: 'Abrí la vista previa de un comprobante y escaneá su QR con la cámara del celular.',
     needsNative: false,
   }),
   Object.freeze({
@@ -133,25 +134,29 @@ export function classifySpoolerCheck(printers) {
 
 export function classifyQrCheck(rendered) {
   if (rendered === true) {
-    return buildResult('qr', 'connected', 'El QR se dibujó. Escanealo con el celular para confirmar que se lee.');
+    return buildResult('qr', 'connected', 'El comprobante se abrió con su QR. Escanealo con el celular para confirmar que se lee.');
   }
   if (rendered === false) {
-    return buildResult('qr', 'error', 'No se pudo dibujar el QR de prueba en esta pantalla.');
+    return buildResult('qr', 'error', 'No hay ningún comprobante autorizado con QR para revisar todavía.');
   }
-  return buildResult('qr', 'untested', 'Todavía no se generó el QR de prueba.');
+  return buildResult('qr', 'untested', 'Abrí un comprobante para revisar su QR.');
 }
 
 export function summarizeDeviceChecks(results = {}) {
   const rows = DEVICE_CHECKS.map((check) => {
     const result = results[check.id];
     const state = result?.state && DEVICE_STATES.includes(result.state) ? result.state : 'untested';
+    const described = describeDeviceState(state);
     return Object.freeze({
       id: check.id,
       label: check.label,
       proves: check.proves,
       howTo: check.howTo,
       needsNative: check.needsNative,
-      ...describeDeviceState(state),
+      state: described.state,
+      stateLabel: described.label,
+      meaning: described.meaning,
+      tone: described.tone,
       detail: String(result?.detail || ''),
     });
   });

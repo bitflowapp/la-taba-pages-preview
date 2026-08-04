@@ -135,7 +135,7 @@ test.describe('iOS Safari · ningún control editable dispara autozoom', () => {
     const guards = installPageGuards(page);
     await installBrowserStubs(page);
     await gotoDemoReset(page, '/?reset=1&demo=1');
-    await page.waitForSelector('[data-view="home"] .home-catalog-card');
+    await page.waitForSelector('[data-view="home"] .home-best-card');
 
     const controls = await collectEditableControls(page, '[data-view="home"]');
     assertAllAtLeast16(controls, 'home');

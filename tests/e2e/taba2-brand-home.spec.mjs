@@ -93,7 +93,7 @@ async function openHome(page, { stories = null, viewport = PHONE } = {}) {
     await page.addInitScript((fixtures) => { window.TABA2_STORIES = fixtures; }, stories);
   }
   await gotoDemoReset(page, '/?reset=1&demo=1');
-  await page.waitForSelector('[data-view="home"] .home-catalog-card');
+  await page.waitForSelector('[data-view="home"] .home-best-card');
 }
 
 test('el encabezado presenta la identidad real del comercio, no una escrita a mano', async ({ page }) => {
@@ -247,7 +247,7 @@ test('el shell de marca es continuo entre las vistas del cliente', async ({ page
   const home = await leer();
   // Fondo de marca oscuro, producto sobre blanco.
   expect(home.body).toBe('rgb(9, 11, 14)');
-  expect(await page.locator('.home-catalog-card').first().evaluate((n) => getComputedStyle(n).backgroundColor))
+  expect(await page.locator('.home-best-card').first().evaluate((n) => getComputedStyle(n).backgroundColor))
     .toBe('rgb(255, 255, 255)');
 
   // Navegar NO puede producir un salto negro → blanco: el shell se conserva.
@@ -273,7 +273,7 @@ test('el panel operativo conserva su superficie clara', async ({ page }) => {
 
 test('ningún texto de las vistas del cliente queda por debajo de 3:1', async ({ page }) => {
   await openHome(page);
-  await page.locator('[data-home-catalog-preview] [data-add-product]:not([disabled])').first().click();
+  await page.locator('[data-home-sections] [data-add-product]:not([disabled])').first().click();
 
   for (const vista of ['home', 'catalog', 'cart', 'profile', 'tracking']) {
     await page.locator(`.mobile-nav [data-nav-view="${vista}"]`).click();
@@ -361,7 +361,7 @@ test('la barra de carrito aparece con productos, respeta la nav y no la tapa', a
   const bar = page.locator('[data-floating-cart]');
   await expect(bar).toBeHidden();
 
-  await page.locator('[data-home-catalog-preview] [data-add-product]:not([disabled])').first().click();
+  await page.locator('[data-home-sections] [data-add-product]:not([disabled])').first().click();
   await expect(bar).toBeVisible();
   await expect(bar.locator('[data-floating-cart-count]')).toHaveText('1 producto');
   await expect(bar.locator('[data-floating-cart-summary]')).toContainText(/^\$/);
@@ -417,13 +417,20 @@ test('la home no crece sin control en los anchos objetivo', async ({ page }) => 
     await page.setViewportSize(viewport);
     await installBrowserStubs(page);
     await gotoDemoReset(page, '/?reset=1&demo=1');
-    await page.waitForSelector('[data-view="home"] .home-catalog-card');
+    await page.waitForSelector('[data-view="home"] .home-best-card');
     const geometry = await page.evaluate(() => ({
       documentWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
       homeHeight: Math.ceil(document.querySelector('[data-view="home"]').getBoundingClientRect().height),
+      homeSections: document.querySelectorAll('[data-home-sections] .home-category-section').length,
     }));
     expect(geometry.documentWidth, `${viewport.width}px`).toBeLessThanOrEqual(geometry.viewportWidth + 1);
-    expect(geometry.homeHeight, `${viewport.width}px`).toBeLessThan(2000);
+    // La home pasó de una grilla de vista previa de 4 tarjetas a carruseles por
+    // sección de bebidas, así que es deliberadamente más alta. Lo que se
+    // controla ya no es un alto arbitrario sino la CANTIDAD de secciones: el
+    // tope real vive en HOME_MAX_SECTIONS y este techo lo respalda. Sin ese
+    // tope las 11 secciones definidas darían ~4000px y esto volvería a fallar.
+    expect(geometry.homeSections, `${viewport.width}px`).toBeLessThanOrEqual(6);
+    expect(geometry.homeHeight, `${viewport.width}px`).toBeLessThan(2800);
   }
 });

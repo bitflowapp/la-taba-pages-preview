@@ -36,7 +36,25 @@ test('la home presenta La Taba 2 con marca propia y un storefront comercial limp
   // Copy honesto: "Destacados" es una selección del local, no una métrica.
   await expect(page.getByRole('heading', { name: 'Destacados' })).toBeVisible();
   await expect(page.locator('[data-view="home"]')).not.toContainText('Los más vendidos');
-  await expect(page.locator('[data-home-catalog-preview] .home-catalog-card')).toHaveCount(4);
+  // La home se compone de carruseles por sección de bebidas. El contrato ya no
+  // es un número fijo de tarjetas sino QUÉ puede aparecer: la home es la
+  // superficie de compra, así que todo lo que muestra tiene que ser comprable.
+  // Un precio pendiente sigue vivo en catálogo y en la búsqueda, pero no acá.
+  const homeSectionCards = page.locator('[data-home-sections] .home-best-card');
+  await expect(homeSectionCards.first()).toBeVisible();
+  expect(await homeSectionCards.count()).toBeGreaterThan(0);
+  await expect(page.locator('[data-home-sections] [data-add-product][disabled]')).toHaveCount(0);
+  await expect(page.locator('[data-home-sections] .is-price-pending')).toHaveCount(0);
+  await expect(page.locator('[data-home-sections]')).not.toContainText('Precio pendiente');
+  // Ninguna sección se renderiza vacía ni sin título: no quedan huecos.
+  const homeSections = page.locator('[data-home-sections] .home-category-section');
+  const homeSectionCount = await homeSections.count();
+  expect(homeSectionCount).toBeGreaterThan(0);
+  for (let index = 0; index < homeSectionCount; index += 1) {
+    const section = homeSections.nth(index);
+    await expect(section.locator('h2')).not.toBeEmpty();
+    expect(await section.locator('.home-best-card').count()).toBeGreaterThan(0);
+  }
 
   await expect(page.locator('[data-view="home"] .role-intro')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .product-intro')).toHaveCount(0);
@@ -68,12 +86,21 @@ for (const viewport of [
   { name: '320', width: 320, height: 700 },
   { name: '390', width: 390, height: 844 },
 ]) {
-  test(`home compacta debajo de 2000 px en ${viewport.name}`, async ({ page }) => {
+  test(`home acotada por secciones en ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await installBrowserStubs(page);
     await gotoDemoReset(page, '/?reset=1&demo=1');
-    const homeHeight = await page.locator('[data-view="home"]').evaluate((node) => Math.ceil(node.getBoundingClientRect().height));
-    expect(homeHeight).toBeLessThan(2000);
+    // La home dejó de ser una grilla de vista previa y pasó a ser una vidriera
+    // de carruseles por sección: crece con el catálogo, así que lo que se acota
+    // es la cantidad de secciones (HOME_MAX_SECTIONS), no un alto fijo. El
+    // techo queda como backstop de crecimiento descontrolado.
+    const geometry = await page.evaluate(() => ({
+      height: Math.ceil(document.querySelector('[data-view="home"]').getBoundingClientRect().height),
+      sections: document.querySelectorAll('[data-home-sections] .home-category-section').length,
+    }));
+    expect(geometry.sections).toBeGreaterThan(0);
+    expect(geometry.sections).toBeLessThanOrEqual(6);
+    expect(geometry.height).toBeLessThan(2800);
     await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba 2');
     await expect(page.locator('.topbar .brand-text small')).toBeHidden();
     await expect(page.locator('.topbar-actions .cart-button')).toBeVisible();
@@ -131,7 +158,7 @@ for (const viewport of [
       });
     }
 
-    const finalCard = page.locator('[data-home-catalog-preview] .home-catalog-card').last();
+    const finalCard = page.locator('[data-home-sections] .home-best-card').last();
     await finalCard.scrollIntoViewIfNeeded();
     const [finalCardBox, navBox] = await Promise.all([
       finalCard.boundingBox(),
@@ -214,8 +241,8 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
     '.home-merch-section:not([hidden]) .home-section-head button',
     '[data-home-promotions] .home-add-button',
     '[data-home-best-sellers] .home-add-button',
-    '[data-home-catalog-preview] .home-add-button',
-    '[data-home-catalog-preview] .home-favorite-button',
+    '[data-home-sections] .home-add-button',
+    '[data-home-sections] .home-favorite-button',
   ].join(', ');
   for (const viewport of [
     { width: 320, height: 812 },
@@ -224,7 +251,12 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
   ]) {
     await page.setViewportSize(viewport);
     const controls = page.locator(controlSelector);
-    await expect(controls).toHaveCount(12);
+    // El conteo exacto describía la composición vieja (una grilla de 4 tarjetas).
+    // Con carruseles por sección la cantidad depende del catálogo, así que el
+    // contrato pasa a ser el que importa y no se relaja: TODO control táctil de
+    // la home mide 44x44, sea cual sea el número. Se exige un piso para que un
+    // render vacío no haga pasar la prueba por ausencia de controles.
+    expect(await controls.count(), `${viewport.width}x${viewport.height}`).toBeGreaterThanOrEqual(12);
     const undersized = await controls.evaluateAll((nodes) => nodes
       .map((node) => {
         const rect = node.getBoundingClientRect();
@@ -247,7 +279,7 @@ test('la imagen de un producto real se reutiliza en Home, catálogo, modal y car
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/?demo=1&home=v37');
-  const homeCard = page.locator('[data-home-catalog-preview] .home-catalog-card').first();
+  const homeCard = page.locator('[data-home-sections] .home-best-card').first();
   const productId = await homeCard.locator('[data-product-detail]').getAttribute('data-product-detail');
   const source = await homeCard.locator('img').getAttribute('src');
   expect(productId).toBeTruthy();

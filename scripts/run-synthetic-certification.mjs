@@ -63,12 +63,28 @@ ${rows}
 ${detail}
 ## Alcance y límites
 
-- El backend sintético reproduce las invariantes del servidor pero **no es PostgreSQL**. La
-  aplicación real de esas reglas en base está cubierta por los tests de contrato SQL del
-  repositorio; su ejecución contra una instancia viva se declara aparte.
-- Ninguna impresión afirma salida física: el escenario 5 verifica que un trabajo aceptado por
-  el spooler se reporte como enviado y nunca como impreso.
-- La facturación permanece en homologación en todos los fixtures; no hay ruta de producción.
+Esta certificación prueba **el panel**, no la base de datos. El backend sintético existe para
+poder recorrer una jornada completa; las invariantes que aparecen abajo las garantiza el
+servidor y aquí sólo se reproducen para verificar que el panel se comporta bien frente a ellas.
+
+| Invariante | Dónde se garantiza de verdad | Qué certifica esta corrida |
+|---|---|---|
+| Un pago aprobado produce un solo pedido | \`finalize_paid_checkout_session\` | Que reintentar la recuperación desde el panel no duplica el pedido |
+| El stock no se descuenta dos veces | \`apply_inventory_movement\` y su ledger inmutable | Que el panel no dispara un segundo descuento al reintentar |
+| La revisión esperada evita pisar cambios ajenos | \`transition_order\`, \`start_packing_session\` | Que el panel manda la revisión y traduce el conflicto sin jerga |
+| Una lectura de packing pertenece al pedido | \`record_packing_scan\` | Que el panel no cuenta un producto ajeno ni confirma con faltantes |
+| Publicar producto exige owner/admin | \`publish_catalog_product_draft\` | Que el panel no ofrece la acción al equipo |
+| Homologación exige la frase exacta | \`authorize_arca_homologation\` | Que el panel no la deja pasar con otro texto |
+
+Lo que **no** cubre esta corrida:
+
+- La aplicación real de esas reglas contra PostgreSQL. Ese gate se declara por separado y no
+  se da por aprobado si no se ejecutó.
+- Impresión física: ninguna comprobación afirma que haya salido papel. El escenario 5 verifica
+  justamente lo contrario, que un trabajo aceptado por el spooler se reporte como enviado.
+- GPS real del repartidor: el escenario 7 recorre la asignación y el cierre sin posición física.
+
+La facturación permanece en homologación en todos los fixtures; no hay ruta de producción.
 `;
 }
 

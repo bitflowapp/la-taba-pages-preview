@@ -694,7 +694,7 @@ function renderStoryEntry() {
     if (detail) {
       detail.textContent = entry.unseen
         ? `${entry.unseen} ${entry.unseen === 1 ? 'historia nueva' : 'historias nuevas'}`
-        : 'Mirar historias';
+        : 'Ver historias';
     }
     const thumb = $('[data-stories-cta-thumb]', cta);
     if (thumb) thumb.style.backgroundImage = entry.thumbnail ? `url("${encodeURI(entry.thumbnail)}")` : '';

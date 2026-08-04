@@ -71,6 +71,102 @@
                        "ancho":  400,
                        "alto":  500,
                        "uso":  "banner editorial de categoria"
+                   },
+                   {
+                       "path":  "assets/promos/story-cervezas-heineken.webp",
+                       "origen":  "catalog-assets/promos/stories/story-001",
+                       "marca":  "Heineken",
+                       "producto":  "Heineken botella",
+                       "categoria":  "cervezas",
+                       "url_fuente":  "https://www.otaphotography.com/beverage",
+                       "dominio_fuente":  "otaphotography.com",
+                       "ancho":  720,
+                       "alto":  1280,
+                       "uso":  "historia de la home"
+                   },
+                   {
+                       "path":  "assets/promos/story-cervezas-heineken-thumb.webp",
+                       "origen":  "catalog-assets/promos/stories/story-001",
+                       "marca":  "Heineken",
+                       "producto":  "Heineken botella",
+                       "categoria":  "cervezas",
+                       "url_fuente":  "https://www.otaphotography.com/beverage",
+                       "dominio_fuente":  "otaphotography.com",
+                       "ancho":  128,
+                       "alto":  128,
+                       "uso":  "miniatura del acceso a historias"
+                   },
+                   {
+                       "path":  "assets/promos/story-energizantes-monster.webp",
+                       "origen":  "catalog-assets/promos/stories/story-012",
+                       "marca":  "Monster",
+                       "producto":  "Monster lata",
+                       "categoria":  "energizantes",
+                       "url_fuente":  "https://www.behance.net/gallery/114027701/Monster-Energy",
+                       "dominio_fuente":  "behance.net",
+                       "ancho":  720,
+                       "alto":  1280,
+                       "uso":  "historia de la home"
+                   },
+                   {
+                       "path":  "assets/promos/story-energizantes-monster-thumb.webp",
+                       "origen":  "catalog-assets/promos/stories/story-012",
+                       "marca":  "Monster",
+                       "producto":  "Monster lata",
+                       "categoria":  "energizantes",
+                       "url_fuente":  "https://www.behance.net/gallery/114027701/Monster-Energy",
+                       "dominio_fuente":  "behance.net",
+                       "ancho":  128,
+                       "alto":  128,
+                       "uso":  "miniatura del acceso a historias"
+                   },
+                   {
+                       "path":  "assets/promos/story-whisky-jack-daniels.webp",
+                       "origen":  "catalog-assets/promos/stories/story-007",
+                       "marca":  "Jack Daniel's",
+                       "producto":  "Jack Daniel's Old No. 7",
+                       "categoria":  "whisky",
+                       "url_fuente":  "https://www.behance.net/gallery/242345313/Show-up-with-N-7-Jack-Daniels",
+                       "dominio_fuente":  "behance.net",
+                       "ancho":  720,
+                       "alto":  1280,
+                       "uso":  "historia de la home"
+                   },
+                   {
+                       "path":  "assets/promos/story-whisky-jack-daniels-thumb.webp",
+                       "origen":  "catalog-assets/promos/stories/story-007",
+                       "marca":  "Jack Daniel's",
+                       "producto":  "Jack Daniel's Old No. 7",
+                       "categoria":  "whisky",
+                       "url_fuente":  "https://www.behance.net/gallery/242345313/Show-up-with-N-7-Jack-Daniels",
+                       "dominio_fuente":  "behance.net",
+                       "ancho":  128,
+                       "alto":  128,
+                       "uso":  "miniatura del acceso a historias"
+                   },
+                   {
+                       "path":  "assets/promos/story-mixers-schweppes.webp",
+                       "origen":  "catalog-assets/promos/stories/story-009",
+                       "marca":  "Schweppes",
+                       "producto":  "Schweppes Tonica",
+                       "categoria":  "mixers",
+                       "url_fuente":  "https://www.schweppes.es/tonicas/tonica-original/",
+                       "dominio_fuente":  "schweppes.es",
+                       "ancho":  422,
+                       "alto":  929,
+                       "uso":  "historia de la home"
+                   },
+                   {
+                       "path":  "assets/promos/story-mixers-schweppes-thumb.webp",
+                       "origen":  "catalog-assets/promos/stories/story-009",
+                       "marca":  "Schweppes",
+                       "producto":  "Schweppes Tonica",
+                       "categoria":  "mixers",
+                       "url_fuente":  "https://www.schweppes.es/tonicas/tonica-original/",
+                       "dominio_fuente":  "schweppes.es",
+                       "ancho":  128,
+                       "alto":  128,
+                       "uso":  "miniatura del acceso a historias"
                    }
                ],
     "nota":  "Fotografia editorial de categoria. NO es una promocion: no afirma precio, descuento, ranking ni stock. Lote curado y vetado en la-taba2-beverage-catalog-home/catalog-assets/promos (ver curation-report.md); cada pieza conserva su pagina fuente."

@@ -190,6 +190,46 @@ export function visibleBeverageHomeSections(products = [], promotions = [], opti
   return buildBeverageHomeSections(products, promotions, options).filter((section) => !section.hidden);
 }
 
+/**
+ * Vidriera de "Destacados": lo comprable HOY, ordenado por prioridad comercial
+ * y con una marca por tarjeta antes de repetir.
+ *
+ * Por qué la vuelta por marca: el orden comercial puro abre con las tres
+ * variantes de Coca-Cola, así que el primer carrusel —el único que muchos ven
+ * sin scrollear— parecía un solo producto repetido en vez del surtido del
+ * local. Primero entra un representante de cada marca y recién después se
+ * completan las variantes, así el cupo se gasta en surtido.
+ *
+ * Sólo entra lo comprable: un precio pendiente sigue vivo en el catálogo y en
+ * la búsqueda, pero la vidriera es la superficie de compra.
+ */
+export function featuredBeverageProducts(products = [], { limit = 8 } = {}) {
+  const ordered = uniqueBeverageProducts(products)
+    .filter(isPurchasableBeverageProduct)
+    .sort(compareBeverageProducts);
+
+  const safeLimit = Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : ordered.length;
+  // Igualdad exacta de marca: alcanza con normalizar caja y espacios. No se
+  // quitan diacríticos porque acá no se comparan cadenas parecidas sino la
+  // misma marca escrita igual, y "Andes" nunca se confunde con "Andés".
+  const brandKey = (product) => String(product?.brand || product?.name || product?.id || '')
+    .toLowerCase()
+    .trim();
+
+  const seenBrands = new Set();
+  const firstPerBrand = [];
+  const rest = [];
+  for (const product of ordered) {
+    const key = brandKey(product);
+    if (key && seenBrands.has(key)) rest.push(product);
+    else {
+      seenBrands.add(key);
+      firstPerBrand.push(product);
+    }
+  }
+  return [...firstPerBrand, ...rest].slice(0, safeLimit);
+}
+
 export function getBeverageHomeSection(sectionId, products = [], promotions = [], options = {}) {
   return buildBeverageHomeSections(products, promotions, options)
     .find((section) => section.id === sectionId) || null;

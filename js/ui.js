@@ -56,6 +56,7 @@ import {
 import {
   BEVERAGE_HOME_CATEGORY_ORDER,
   buildBeverageHomeSections,
+  featuredBeverageProducts,
   getBeverageHomeSection,
   isPurchasableBeverageProduct,
 } from './core/beverage-home-sections.js';
@@ -68,6 +69,7 @@ import {
   readStoriesSource,
   storyEntryState,
 } from './core/stories.js';
+import { PREVIEW_STORY_SEED } from './preview-stories-data.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -553,12 +555,18 @@ function homePromotionalProducts() {
   return promotionalProducts().slice(0, 6);
 }
 
+// Cupo del primer carrusel. Ocho y no tres: con veinte productos comprables un
+// rail de tres se lee como una demo a la que le faltan datos, no como la
+// vidriera de un local. Ocho llenan el desplazamiento lateral sin volver la
+// home un catálogo.
+const HOME_BEST_SELLERS_LIMIT = 8;
+
 function homePopularSection() {
   return getBeverageHomeSection(
     'popular',
     getState().products,
     getState().promotions,
-    { limit: 3 },
+    { limit: HOME_BEST_SELLERS_LIMIT },
   );
 }
 
@@ -567,7 +575,10 @@ function homeBestSellerProducts() {
   if (popular.length) return popular.filter((product) => !product.pricePending);
   // La selección heredada se mantiene como "Destacados" cuando todavía no
   // existe una marca popular real. Nunca se presenta como "Lo más pedido".
-  return unitStorefrontProducts().filter((product) => !product.pricePending).slice(0, 3);
+  // Sale del mismo orden comercial que las secciones de abajo —y con una marca
+  // por tarjeta— en vez del orden de carga del catálogo, que abría con tres
+  // variantes seguidas de Coca-Cola.
+  return featuredBeverageProducts(getState().products, { limit: HOME_BEST_SELLERS_LIMIT });
 }
 
 function homeProductImage(product, className) {
@@ -697,7 +708,14 @@ function renderHomeBanners() {
 // después del primer pintado tiene que aparecer sin recargar. Normalizar unos
 // pocos registros por render es más barato que sostener invalidación.
 export function getHomeStories() {
-  return publishedStories(readStoriesSource());
+  // El global publicado por el backend siempre gana; `readStoriesSource` sólo
+  // cae en las fixtures cuando NO hay origen real. En producción `demo` y
+  // `showcase` son falsos, así que sin backend la lista sigue vacía y el aro
+  // sigue apagado: el fail-closed no se toca.
+  return publishedStories(readStoriesSource({
+    showcase: isDemoMode() || isShowcaseMode(),
+    fixtures: PREVIEW_STORY_SEED,
+  }));
 }
 
 function renderStoryEntry() {
@@ -904,22 +922,12 @@ function renderHomeBestSellers() {
   const title = document.getElementById('home-best-title');
   if (title) title.textContent = popularSection?.products.length ? popularSection.title : 'Destacados';
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
-  container.innerHTML = homeBestSellerProducts().map((product) => {
-    const pricing = productPricePresentation(product);
-    const outOfStock = product.stock <= 0 || !product.available;
-    return `
-      <article class="home-best-card ${outOfStock ? 'out-of-stock' : ''}">
-        <button class="home-best-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
-          ${homeProductImage(product, 'home-best-image')}
-        </button>
-        <div class="home-best-copy">
-          <strong>${escapeHtml(product.name)}</strong>
-          <small>${escapeHtml(homeUnitText(product))}</small>
-          <span>${money(pricing.price)}</span>
-        </div>
-        <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>
-      </article>`;
-  }).join('');
+  // Misma tarjeta que los carruseles de abajo. Antes "Destacados" emitía su
+  // propia variante sin el botón de favorito: dos tarjetas distintas en la
+  // misma pantalla, y la primera —la más vista— era la que no dejaba guardar.
+  container.innerHTML = homeBestSellerProducts()
+    .map((product) => homeSectionCard(product, cartQuantities))
+    .join('');
 }
 
 let homePromotionResizeObserver = null;

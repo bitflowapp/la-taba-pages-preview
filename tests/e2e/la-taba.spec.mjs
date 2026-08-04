@@ -563,7 +563,12 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
     const safe34 = await measureNav();
 
     await expect(page.locator('.mobile-nav')).toBeVisible();
-    await expect(page.locator('.mobile-nav button')).toHaveCount(4);
+    // Cinco rutas reales, una por control y sin destino repetido: el ancla de
+    // marca del centro ES el inicio.
+    await expect(page.locator('.mobile-nav button')).toHaveCount(5);
+    for (const view of ['home', 'catalog', 'cart', 'tracking', 'profile']) {
+      await expect(page.locator(`.mobile-nav [data-nav-view="${view}"]`)).toHaveCount(1);
+    }
     const navHeight = Number.parseFloat(safe0.navHeightToken);
     const navGap = Number.parseFloat(safe0.navGapToken);
     expect(navHeight).toBeGreaterThan(0);

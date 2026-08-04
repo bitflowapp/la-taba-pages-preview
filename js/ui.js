@@ -614,25 +614,42 @@ const HOME_BANNER_COPY = Object.freeze({
 // producto, no para vidriera.
 const HOME_BANNER_LIMIT = 2;
 
+// Prioridad del banner: primero los rubros premium. A diferencia de la fila de
+// categorías, acá NO se exige precio publicado, porque el banner es editorial
+// ("Explorar la selección") y no promete importe: sólo pide que la categoría
+// exista y tenga productos que el cliente pueda mirar. Una categoría vacía sí
+// queda afuera: eso sería un link muerto.
+const HOME_BANNER_PRIORITY = Object.freeze([
+  'whisky', 'fernet', 'vinos', 'aperitivos', 'gin', 'espumantes',
+  'cervezas', 'energizantes', 'mixers', 'gaseosas', 'aguas', 'complementos',
+]);
+
+function categoriesWithProducts(state = getState()) {
+  return new Set(getCustomerCatalogProducts(state.products)
+    .map((product) => product.categoryId)
+    .filter(Boolean));
+}
+
 function renderHomeBanners() {
   const container = $('[data-home-banners]');
   if (!container) return;
+  const withProducts = categoriesWithProducts();
   const purchasable = purchasableCategoryIds();
   const byId = new Map(categoriesForCurrentCatalog().map((category) => [category.id, category]));
-  // Se prioriza el rubro "premium" que el local sí puede vender hoy; si ninguno
-  // califica, el contenedor queda vacío y no ocupa altura.
-  const picks = ['whisky', 'fernet', 'vinos', 'aperitivos', 'cervezas', 'gin', 'energizantes', 'gaseosas']
-    .filter((id) => purchasable.has(id) && byId.has(id) && HOME_BANNER_COPY[id])
+  const picks = HOME_BANNER_PRIORITY
+    .filter((id) => withProducts.has(id) && byId.has(id) && HOME_BANNER_COPY[id])
     .slice(0, HOME_BANNER_LIMIT);
 
   container.innerHTML = picks.map((id) => {
     const copy = HOME_BANNER_COPY[id];
     const name = byId.get(id).name;
+    // El verbo distingue lo que se puede comprar de lo que sólo se puede mirar.
+    const action = purchasable.has(id) ? 'Ver' : 'Explorar';
     return `
-      <button class="home-brand-banner" type="button" data-category-id="${escapeHtml(id)}" aria-label="${escapeHtml(`${copy.title}. Ver categoría ${name}`)}">
+      <button class="home-brand-banner" type="button" data-category-id="${escapeHtml(id)}" aria-label="${escapeHtml(`${copy.title}. ${action} la categoría ${name}`)}">
         <small>${escapeHtml(copy.eyebrow)}</small>
         <strong>${escapeHtml(copy.title)}</strong>
-        <span>Ver ${escapeHtml(name.toLowerCase())} <span aria-hidden="true">→</span></span>
+        <span>${escapeHtml(action)} ${escapeHtml(name.toLowerCase())} <span aria-hidden="true">→</span></span>
       </button>`;
   }).join('');
 }
@@ -677,7 +694,7 @@ function renderStoryEntry() {
     if (detail) {
       detail.textContent = entry.unseen
         ? `${entry.unseen} ${entry.unseen === 1 ? 'historia nueva' : 'historias nuevas'}`
-        : 'Ver historias';
+        : 'Mirar historias';
     }
     const thumb = $('[data-stories-cta-thumb]', cta);
     if (thumb) thumb.style.backgroundImage = entry.thumbnail ? `url("${encodeURI(entry.thumbnail)}")` : '';
@@ -860,6 +877,7 @@ function renderHomeBestSellers() {
         </button>
         <div class="home-best-copy">
           <strong>${escapeHtml(product.name)}</strong>
+          <small>${escapeHtml(homeUnitText(product))}</small>
           <span>${money(pricing.price)}</span>
         </div>
         <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>

@@ -235,28 +235,83 @@ test('el banner editorial lleva a una categoría real y no afirma un descuento',
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
 });
 
-test('la superficie de marca se aplica a la home y NO se filtra al catálogo', async ({ page }) => {
+test('el shell de marca es continuo entre las vistas del cliente', async ({ page }) => {
   await openHome(page);
-  const homeSurface = await page.evaluate(() => ({
+  const leer = () => page.evaluate(() => ({
+    vista: document.body.dataset.activeView,
     body: getComputedStyle(document.body).backgroundColor,
     topbar: getComputedStyle(document.querySelector('.topbar')).backgroundColor,
     nav: getComputedStyle(document.querySelector('.mobile-nav')).backgroundColor,
-    card: getComputedStyle(document.querySelector('.home-catalog-card')).backgroundColor,
   }));
-  // Fondo de marca oscuro, producto sobre blanco.
-  expect(homeSurface.body).toBe('rgb(9, 11, 14)');
-  expect(homeSurface.card).toBe('rgb(255, 255, 255)');
 
-  await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
-  await expect(page.locator('[data-view="catalog"]')).toBeVisible();
-  const catalogSurface = await page.evaluate(() => ({
-    body: getComputedStyle(document.body).backgroundColor,
-    topbar: getComputedStyle(document.querySelector('.topbar')).backgroundColor,
-    nav: getComputedStyle(document.querySelector('.mobile-nav')).backgroundColor,
-  }));
-  expect(catalogSurface.body).not.toBe('rgb(9, 11, 14)');
-  expect(catalogSurface.topbar).not.toBe(homeSurface.topbar);
-  expect(catalogSurface.nav).not.toBe(homeSurface.nav);
+  const home = await leer();
+  // Fondo de marca oscuro, producto sobre blanco.
+  expect(home.body).toBe('rgb(9, 11, 14)');
+  expect(await page.locator('.home-catalog-card').evaluate((n) => getComputedStyle(n).backgroundColor))
+    .toBe('rgb(255, 255, 255)');
+
+  // Navegar NO puede producir un salto negro → blanco: el shell se conserva.
+  for (const vista of ['catalog', 'cart', 'profile', 'tracking']) {
+    await page.locator(`.mobile-nav [data-nav-view="${vista}"]`).click();
+    await expect(page.locator(`[data-view="${vista}"]`)).toBeVisible();
+    const actual = await leer();
+    expect(actual.vista, `vista ${vista}`).toBe(vista);
+    expect(actual.body, `fondo en ${vista}`).toBe(home.body);
+    expect(actual.topbar, `barra en ${vista}`).toBe(home.topbar);
+    expect(actual.nav, `navegación en ${vista}`).toBe(home.nav);
+  }
+});
+
+test('el panel operativo conserva su superficie clara', async ({ page }) => {
+  await openHome(page);
+  const home = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await page.goto('/?demo=1#business');
+  await expect(page.locator('[data-view="business"]')).toBeVisible();
+  const negocio = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(negocio).not.toBe(home);
+});
+
+test('ningún texto de las vistas del cliente queda por debajo de 3:1', async ({ page }) => {
+  await openHome(page);
+  await page.locator('[data-home-catalog-preview] [data-add-product]:not([disabled])').first().click();
+
+  for (const vista of ['home', 'catalog', 'cart', 'profile', 'tracking']) {
+    await page.locator(`.mobile-nav [data-nav-view="${vista}"]`).click();
+    await expect(page.locator(`[data-view="${vista}"]`)).toBeVisible();
+    await page.waitForTimeout(250);
+    const malos = await page.evaluate(() => {
+      const parse = (v) => {
+        const p = String(v).match(/[\d.]+/g);
+        if (!p) return null;
+        const [r, g, b, a = '1'] = p.map(Number);
+        return { r, g, b, a };
+      };
+      const lum = ({ r, g, b }) => {
+        const c = (v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+        return 0.2126 * c(r) + 0.7152 * c(g) + 0.0722 * c(b);
+      };
+      const out = [];
+      for (const node of document.querySelectorAll('.app-view:not([hidden]) *')) {
+        if (![...node.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1)) continue;
+        const rect = node.getBoundingClientRect();
+        if (rect.width < 2 || rect.height < 2) continue;
+        const cs = getComputedStyle(node);
+        if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.15) continue;
+        const fg = parse(cs.color);
+        if (!fg || fg.a < 0.15) continue;
+        let bg = null;
+        for (let c = node; c; c = c.parentElement) {
+          const cand = parse(getComputedStyle(c).backgroundColor);
+          if (cand && cand.a >= 0.9) { bg = cand; break; }
+        }
+        if (!bg) continue;
+        const ratio = (Math.max(lum(fg), lum(bg)) + 0.05) / (Math.min(lum(fg), lum(bg)) + 0.05);
+        if (ratio < 3) out.push(`${ratio.toFixed(2)}:1 <${node.tagName.toLowerCase()}> "${node.textContent.trim().slice(0, 40)}"`);
+      }
+      return out;
+    });
+    expect(malos, `contraste en ${vista}`).toEqual([]);
+  }
 });
 
 test('el texto de la home cumple el contraste mínimo sobre la superficie oscura', async ({ page }) => {
@@ -322,7 +377,11 @@ test('la barra de carrito aparece con productos, respeta la nav y no la tapa', a
 test('la navegación inferior conserva rutas, contador y estado accesible', async ({ page }) => {
   await openHome(page);
   const nav = page.locator('.mobile-nav');
-  await expect(nav.locator('button')).toHaveCount(4);
+  await expect(nav.locator('button')).toHaveCount(5);
+  // Cinco destinos distintos: ninguno repetido, así `aria-current` apunta a uno.
+  for (const vista of ['home', 'catalog', 'cart', 'tracking', 'profile']) {
+    await expect(nav.locator(`[data-nav-view="${vista}"]`)).toHaveCount(1);
+  }
   await expect(nav.locator('[data-nav-view="home"]')).toHaveAttribute('aria-current', 'page');
   await expect(nav.locator('[data-nav-view="catalog"]')).not.toHaveAttribute('aria-current', 'page');
 

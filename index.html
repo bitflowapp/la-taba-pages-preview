@@ -231,19 +231,24 @@
                 </span>
                 <div class="brand-hero-copy">
                   <p class="brand-hero-welcome">¡Bienvenido a</p>
-                  <h1 id="home-title"><span data-business-name>La Taba 2</span></h1>
+                  <!--
+                    El "!" es decorativo y va `aria-hidden`: el nombre accesible
+                    del encabezado sigue siendo exactamente el nombre del
+                    comercio que publica la config.
+                  -->
+                  <h1 id="home-title"><span data-business-name>La Taba 2</span><span class="brand-hero-bang" aria-hidden="true">!</span></h1>
                   <p class="brand-hero-place" data-home-business-place>Tu autoservicio de bebidas</p>
+                  <p class="brand-hero-state">
+                    <span class="brand-state-chip" data-open-status>Pedidos online</span>
+                    <span class="brand-hero-hours" data-home-business-hours hidden></span>
+                  </p>
                 </div>
               </div>
-              <p class="brand-hero-state">
-                <span class="brand-state-chip" data-open-status>Pedidos online</span>
-                <span class="brand-hero-hours" data-home-business-hours hidden></span>
-              </p>
               <button class="brand-stories-cta" type="button" data-stories-open hidden>
                 <span class="brand-stories-thumb" data-stories-cta-thumb aria-hidden="true"></span>
                 <span class="brand-stories-copy">
                   <strong>Novedades de hoy</strong>
-                  <small data-stories-cta-detail>Ver historias</small>
+                  <small data-stories-cta-detail>Mirar historias</small>
                 </span>
                 <span class="brand-stories-go" aria-hidden="true">›</span>
               </button>
@@ -650,10 +655,27 @@
         <strong data-floating-cart-summary>$0</strong>
       </button>
 
+      <!--
+        Cinco rutas REALES, una por control y sin repetir destino: el ancla de
+        marca del centro ES el inicio, así que `data-nav-view="home"` sigue
+        siendo único en la barra y `aria-current="page"` apunta a un solo
+        control. El quinto lugar lo ocupa el carrito, que hasta ahora sólo era
+        alcanzable desde la barra flotante o el app bar.
+      -->
       <nav class="mobile-nav" aria-label="Navegación móvil">
-        <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>
         <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
         <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguir</span></button>
+        <button class="mn-brand" type="button" data-nav-view="home">
+          <span class="mn-brand-disc" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" focusable="false">
+              <path d="M4 9.5 5.6 5h12.8L20 9.5" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+              <path d="M5.4 9.5h13.2V19a1 1 0 0 1-1 1H6.4a1 1 0 0 1-1-1V9.5Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+              <path d="M10 20v-4.6h4V20" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="mn-label" data-business-name>La Taba 2</span>
+        </button>
+        <button type="button" data-nav-view="cart"><span class="mn-ico icon-cart" aria-hidden="true"></span><span class="mn-label">Carrito</span><span class="mn-badge" data-cart-count>0</span></button>
         <button type="button" data-nav-view="profile"><span class="mn-ico icon-profile" aria-hidden="true"></span><span class="mn-label">Perfil</span></button>
       </nav>
     </div>

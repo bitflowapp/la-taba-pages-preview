@@ -129,7 +129,9 @@ body[data-active-view="rider"] .floating-cart {
     bottom: 0;
     left: 0;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* Cinco ranuras: las cuatro rutas de siempre más el ancla de marca al
+       centro. El alto sigue saliendo de `--nav-block`: la barra no crece. */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     box-sizing: border-box;
     height: var(--nav-block);
     padding: 3px 8px calc(9px + var(--safe-b));
@@ -214,6 +216,19 @@ body[data-active-view="rider"] .floating-cart {
     border: 0;
     border-radius: 50%;
     background: currentColor;
+  }
+
+  /* Canasta: cuerpo abajo y asa arriba, con el mismo lenguaje de trazo que el
+     resto de los glifos de la barra. */
+  .icon-cart::before {
+    inset: 7px 1px 2px;
+    border-radius: 3px 3px 7px 7px;
+  }
+
+  .icon-cart::after {
+    inset: 1px 5px 12px;
+    border-width: 2px 2px 0;
+    border-radius: 7px 7px 0 0;
   }
 
   .icon-store::before {

@@ -700,6 +700,8 @@ body[data-active-view="rider"] .floating-cart {
   .catalog-toolbar .sort-select-wrap {
     position: absolute;
     inset: 0;
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   .catalog-toolbar .sort-select-wrap::after {

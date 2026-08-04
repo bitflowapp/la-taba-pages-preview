@@ -1,0 +1,77 @@
+{
+    "piezas":  [
+                   {
+                       "path":  "assets/promos/cervezas-heineken.jpg",
+                       "origen":  "catalog-assets/promos/home/home-001",
+                       "marca":  "Heineken",
+                       "producto":  "Heineken botella",
+                       "categoria":  "cervezas",
+                       "url_fuente":  "https://www.otaphotography.com/beverage",
+                       "dominio_fuente":  "otaphotography.com",
+                       "ancho":  1500,
+                       "alto":  1100,
+                       "uso":  "banner editorial de categoria"
+                   },
+                   {
+                       "path":  "assets/promos/energizantes-red-bull.jpg",
+                       "origen":  "catalog-assets/promos/home/home-002",
+                       "marca":  "Red Bull",
+                       "producto":  "Red Bull lata",
+                       "categoria":  "energizantes",
+                       "url_fuente":  "https://www.otaphotography.com/beverage",
+                       "dominio_fuente":  "otaphotography.com",
+                       "ancho":  1500,
+                       "alto":  1100,
+                       "uso":  "banner editorial de categoria"
+                   },
+                   {
+                       "path":  "assets/promos/aperitivos-gancia.webp",
+                       "origen":  "catalog-assets/promos/home/home-005",
+                       "marca":  "Gancia",
+                       "producto":  "Gancia Americano",
+                       "categoria":  "aperitivos",
+                       "url_fuente":  "https://www.behance.net/gallery/222467641/175-Aniversario-Edicion-limitada",
+                       "dominio_fuente":  "behance.net",
+                       "ancho":  1400,
+                       "alto":  875,
+                       "uso":  "banner editorial de categoria"
+                   },
+                   {
+                       "path":  "assets/promos/whisky-chivas.webp",
+                       "origen":  "catalog-assets/promos/home/home-009",
+                       "marca":  "Chivas Regal",
+                       "producto":  "Chivas Regal 12",
+                       "categoria":  "whisky",
+                       "url_fuente":  "https://www.behance.net/gallery/30269189/Chivas-Live-With-Chivalry",
+                       "dominio_fuente":  "behance.net",
+                       "ancho":  1200,
+                       "alto":  848,
+                       "uso":  "banner editorial de categoria"
+                   },
+                   {
+                       "path":  "assets/promos/mixers-schweppes.jpg",
+                       "origen":  "catalog-assets/promos/home/home-011",
+                       "marca":  "Schweppes",
+                       "producto":  "Schweppes TÃ³nica",
+                       "categoria":  "mixers",
+                       "url_fuente":  "https://www.schweppes.it/recipes/citrus",
+                       "dominio_fuente":  "schweppes.it",
+                       "ancho":  2880,
+                       "alto":  1622,
+                       "uso":  "banner editorial de categoria"
+                   },
+                   {
+                       "path":  "assets/promos/fernet-brancamenta.jpg",
+                       "origen":  "catalog-assets/promos/card/card-020",
+                       "marca":  "Brancamenta",
+                       "producto":  "Brancamenta",
+                       "categoria":  "aperitivos",
+                       "url_fuente":  "https://www.passionspirits.com/fernet-branca-brancamenta-750ml",
+                       "dominio_fuente":  "passionspirits.com",
+                       "ancho":  400,
+                       "alto":  500,
+                       "uso":  "banner editorial de categoria"
+                   }
+               ],
+    "nota":  "Fotografia editorial de categoria. NO es una promocion: no afirma precio, descuento, ranking ni stock. Lote curado y vetado en la-taba2-beverage-catalog-home/catalog-assets/promos (ver curation-report.md); cada pieza conserva su pagina fuente."
+}

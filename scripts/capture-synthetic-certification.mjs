@@ -10,7 +10,8 @@ import {
 
 const PORT = Number.parseInt(process.env.TABA_CERT_SHOT_PORT || '8163', 10);
 const BASE = `http://127.0.0.1:${PORT}`;
-const OUT = path.resolve(process.env.TABA_CERT_SHOT_DIR || 'C:/1212/artifacts/la-taba-business-synthetic-certification/capturas');
+// Ruta relativa al repositorio por defecto: una ruta de disco local no puede vivir en el árbol.
+const OUT = path.resolve(process.env.TABA_CERT_SHOT_DIR || 'artifacts/la-taba-business-synthetic-certification/capturas');
 const SUPABASE_URL = 'https://taba-synthetic-certification.supabase.co';
 const OWNER_ID = '00000000-0000-4000-8000-0000000000b1';
 

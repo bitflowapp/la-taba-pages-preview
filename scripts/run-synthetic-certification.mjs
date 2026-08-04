@@ -5,7 +5,8 @@ import path from 'node:path';
 import { runCertification } from '../tests/synthetic/scenarios.mjs';
 import { QA_MARKERS } from '../tests/synthetic/qa-fixtures.mjs';
 
-const OUT = path.resolve(process.env.TABA_CERT_OUT_DIR || 'C:/1212/artifacts/la-taba-business-synthetic-certification');
+// Ruta relativa al repositorio por defecto: una ruta de disco local no puede vivir en el árbol.
+const OUT = path.resolve(process.env.TABA_CERT_OUT_DIR || 'artifacts/la-taba-business-synthetic-certification');
 const stampedAt = process.env.TABA_CERT_STAMP || new Date().toISOString();
 
 mkdirSync(OUT, { recursive: true });

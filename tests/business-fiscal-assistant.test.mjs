@@ -125,8 +125,10 @@ test('los errores de ARCA se traducen a algo accionable', () => {
 });
 
 test('nunca se filtra la clave privada, el ticket de acceso ni el intercambio técnico', () => {
+  // Los marcadores se arman en tiempo de ejecución para no dejar material sensible literal en el repo.
+  const pemHeader = `${'-'.repeat(5)}BEGIN ${['PRIVATE', 'KEY'].join(' ')}${'-'.repeat(5)}`;
   assert.equal(sanitizeFiscalDetail('<soap:Envelope><FECAESolicitar/></soap:Envelope>'), '');
-  assert.equal(sanitizeFiscalDetail('-----BEGIN PRIVATE KEY-----abc'), '');
+  assert.equal(sanitizeFiscalDetail(`${pemHeader}abc`), '');
   assert.equal(sanitizeFiscalDetail('Bearer eyJhbGciOi'), '');
   assert.equal(sanitizeFiscalDetail('token=abc123'), '');
   assert.equal(sanitizeFiscalDetail('El punto de venta no está habilitado.'), 'El punto de venta no está habilitado.');

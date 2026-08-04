@@ -191,10 +191,14 @@ export async function handleProductionOperationsAction(target) {
     if (operationsResult.view) {
       const nextView = operationsResult.view;
       if (!BUSINESS_OPERATION_VIEWS.includes(nextView)) {
-        return { handled: true, ok: false, message: 'Vista operativa no disponible.' };
+        return { handled: true, ok: false, message: 'Esa pantalla no existe en el panel.' };
       }
       const guard = requireViewAccess('business');
       if (!guard.ok) return { handled: true, ...guard };
+      // El panel no muestra estas pantallas, pero el cambio de vista también se valida.
+      if (nextView !== 'orders' && !allowedBusinessOperationViews(access.membership?.role).includes(nextView)) {
+        return { handled: true, ok: false, message: 'Esa pantalla la abre el dueño o el encargado.' };
+      }
       businessOperationsView = nextView;
       notify();
       return { handled: true, ok: true, message: '' };

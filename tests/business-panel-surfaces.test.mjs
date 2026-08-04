@@ -94,7 +94,8 @@ test('el equipo ve los pagos pero no la devolución', async () => {
   await settle();
   const markup = renderBusinessOperations('payments');
   assert.doesNotMatch(markup, /Devolver el dinero/);
-  assert.match(markup, /Actualizar desde Mercado Pago/);
+  assert.doesNotMatch(markup, /Consultar a Mercado Pago/);
+  assert.match(markup, /Actualizar la lista/);
 
   const denied = await handleBusinessOperationsAction(target('[data-payment-action]', { paymentAction: 'refund', paymentIntent: 'p-2' }));
   assert.equal(denied.ok, false);

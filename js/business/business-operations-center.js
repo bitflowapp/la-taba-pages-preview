@@ -1378,7 +1378,8 @@ async function runPaymentAction(button) {
     return result(true, 'Revisá el importe y confirmá por escrito antes de devolver.');
   }
   if (action === 'diagnostic') return exportPaymentDiagnostic(paymentIntentId);
-  const guard = requireCapability(action === 'reconcile' ? 'payments.reconcile' : 'payments.view');
+  if (action === 'refresh') return refreshPaymentsAction();
+  const guard = requireCapability('payments.reconcile');
   if (!guard.ok) return guard.result;
   if (busy) return result(false, 'Ya hay algo en curso.');
   busy = true;

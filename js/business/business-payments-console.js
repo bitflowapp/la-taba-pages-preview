@@ -140,18 +140,20 @@ export function paymentActionsFor(payment = {}, { elevated = false } = {}) {
   const classification = classifyBusinessPayment(payment);
   const actions = [
     {
+      // Releer lo que ya sabemos: no toca al proveedor ni al dinero.
       id: 'refresh',
-      label: 'Actualizar desde Mercado Pago',
+      label: 'Actualizar la lista',
       kind: 'safe',
-      available: Boolean(payment.can_reconcile),
-      hint: 'Vuelve a preguntar el resultado. No cambia el dinero.',
+      available: true,
+      hint: 'Vuelve a leer el estado guardado. No cambia nada.',
     },
     {
+      // Preguntarle a Mercado Pago y dejar el pedido en su lugar.
       id: 'reconcile',
-      label: 'Conciliar con el pedido',
+      label: 'Consultar a Mercado Pago',
       kind: 'elevated',
-      available: Boolean(payment.can_reconcile) && ['approved-without-order', 'in-review'].includes(classification.state),
-      hint: 'Compara importe y referencia y deja el pedido en su lugar.',
+      available: Boolean(payment.can_reconcile),
+      hint: 'Pregunta el resultado, compara importe y referencia, y acomoda el pedido.',
     },
     {
       id: 'diagnostic',

@@ -126,6 +126,21 @@ test('las acciones sensibles no se le ofrecen al equipo', () => {
   assert.equal(paymentActionsFor(payment, { elevated: true }).find((action) => action.id === 'refund').requiresConfirmation, true);
 });
 
+test('actualizar la lista y consultar al proveedor son dos acciones distintas', () => {
+  const actions = paymentActionsFor({ can_reconcile: true, internal_status: 'in_process' }, { elevated: true });
+  const refresh = actions.find((action) => action.id === 'refresh');
+  const reconcile = actions.find((action) => action.id === 'reconcile');
+  assert.equal(refresh.kind, 'safe');
+  assert.match(refresh.hint, /No cambia nada/i);
+  assert.equal(reconcile.kind, 'elevated');
+  assert.match(reconcile.label, /Mercado Pago/);
+
+  // Releer siempre se puede, incluso en un pago que el proveedor ya no acepta consultar.
+  const closed = paymentActionsFor({ internal_status: 'rejected' }, { elevated: true }).map((action) => action.id);
+  assert.ok(closed.includes('refresh'));
+  assert.equal(closed.includes('reconcile'), false);
+});
+
 test('el reembolso exige motivo, confirmación escrita y tope del importe cobrado', () => {
   assert.equal(validateRefundRequest({ reason: 'ok', confirmation: REFUND_CONFIRMATION_PHRASE }).ok, false);
   assert.equal(validateRefundRequest({ reason: 'Producto roto', confirmation: 'si' }).ok, false);

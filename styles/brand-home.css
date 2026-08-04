@@ -665,33 +665,36 @@ body[data-active-view="home"] .home-best-sellers {
 body[data-active-view="home"] .home-best-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 132px minmax(0, 1fr) auto;
+  grid-template-rows: 148px minmax(0, 1fr) auto;
   align-items: stretch;
   width: auto;
-  height: 252px;
-  min-height: 252px;
+  height: 268px;
+  min-height: 268px;
   gap: 0;
   padding: 8px 10px 9px;
 }
 
+/* Caja CUADRADA: el packshot es un cuadrado de 400×400 y `contain` lo escala al
+   lado menor, así que mientras la caja fue más ancha que alta el ancho sobrante
+   quedaba sin usar. Igualarla al ancho útil de la tarjeta agranda el envase un
+   12% sin recortar un solo píxel. */
 body[data-active-view="home"] .home-best-media {
   width: 100%;
-  height: 132px;
+  height: 148px;
   overflow: hidden;
 }
 
-/* Los packshots aprobados son cuadrados de 400×400 y el envase ocupa entre el
-   52% y el 73% del alto: el resto es fondo. Con `contain` esa mitad vacía se
-   pintaba dentro de la tarjeta y el producto se leía como una miniatura. El
-   `scale` recorta fondo —nunca envase, porque el margen sobra por los cuatro
-   lados— y devuelve al packshot el peso que tiene en la referencia. Es el mismo
-   recurso que ya usa `.brand-logo-img`, y 1.18 deja headroom incluso para el
-   packshot más lleno del lote (Heineken, 73%). */
+/* Después de igualar la caja queda el fondo horneado en el propio bitmap: el
+   envase ocupa entre el 52% y el 93% del alto según el SKU. Un `scale` recorta
+   ese fondo, pero el tope NO es libre: lo fija el packshot más lleno del lote
+   —Monster Mango Loco, 93% con apenas 15px de margen— y ese tope medido es
+   1.08. Se usa 1.06 para dejar un margen de seguridad, así ningún envase pierde
+   su etiqueta al agregar una lata nueva al catálogo. */
 body[data-active-view="home"] .home-best-image {
   width: 100%;
-  height: 132px;
+  height: 148px;
   padding: 0;
-  scale: 1.18;
+  scale: 1.06;
 }
 
 body[data-active-view="home"] .home-best-copy {

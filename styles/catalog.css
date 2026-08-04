@@ -512,20 +512,33 @@
   color: #4c4c52;
 }
 
-/* Packshot contenido: ocupa el 78% del alto útil, sin recorte ni
-   deformación, y conserva la etiqueta completa.
+/* Packshot contenido: sin recorte ni deformación, y con la etiqueta completa.
    Va acotado a `.thumb`, la caja del packshot: la Home reutiliza la clase
    `thumb-img` sólo para heredar el respaldo de imagen rota, y su caja es
-   otra. Sin acotar, esta regla la posicionaba en absoluto sobre la tarjeta. */
+   otra. Sin acotar, esta regla la posicionaba en absoluto sobre la tarjeta.
+
+   Ocupaba el 78% del alto útil y el envase quedaba como una miniatura dentro de
+   una caja cuadrada casi vacía: en el catálogo el packshot medía 152px sobre una
+   tarjeta de 368 (41%), contra el 62% que tiene la misma bebida en la home. Dos
+   superficies del mismo producto que no se parecían.
+   92% + `scale: 1.06` deja el render en 192px sobre una caja de 197: crece un
+   26% y sigue SIN recortar, porque el escalado ocurre dentro del alto que la
+   caja ya tenía de sobra. */
 .thumb .thumb-img {
   position: absolute;
   inset: 0;
   width: 100%;
-  height: 78%;
-  margin: 11% auto;
+  height: 92%;
+  margin: 4% auto;
   padding: 0;
   object-fit: contain;
   background: transparent;
+  scale: 1.06;
+}
+
+/* El respaldo ya viene con su propio aire: no se escala ni se recorta. */
+.thumb .thumb-img.is-placeholder {
+  scale: 1;
 }
 
 .thumb .thumb-img.is-placeholder {

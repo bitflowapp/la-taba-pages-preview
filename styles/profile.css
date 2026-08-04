@@ -43,7 +43,9 @@
 .profile-loading {
   min-width: 0;
   border: 1px solid var(--profile-line);
-  border-radius: 22px;
+  /* Mismo radio que la tarjeta de producto de la home: el perfil usaba 22px y
+     se leía como otro sistema al cambiar de pestaña. */
+  border-radius: 20px;
   background: var(--profile-soft);
   box-shadow: 0 10px 34px rgb(0 0 0 / 26%);
 }
@@ -252,7 +254,7 @@
   gap: 12px;
   padding: 15px;
   border: 1px solid var(--profile-line);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   background: var(--profile-soft);
 }
 
@@ -578,7 +580,7 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--profile-line);
-  border-radius: 22px;
+  border-radius: 20px;
   background: var(--profile-soft);
 }
 

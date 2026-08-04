@@ -311,6 +311,30 @@ test('la imagen de un producto real se reutiliza en Home, catálogo, modal y car
   await expect(page.locator(`[data-product-grid] [data-product-detail="${productId}"] img`)).toHaveAttribute('src', source);
 });
 
+test('la card de la home declara el pack cuando el precio es del pack completo', async ({ page }) => {
+  await installBrowserStubs(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?demo=1&home=v37');
+
+  // El precio que la card muestra al lado es el del pack entero. Si la línea de
+  // unidad dice sólo la capacidad de una botella, la home afirma un precio
+  // unitario inexistente. Este contrato se ancla en el catálogo, que ya declara
+  // el pack, y exige que la home diga lo mismo.
+  const packCard = page.locator('[data-home-sections] .home-best-card', {
+    has: page.locator('[data-product-detail*="pack"]'),
+  }).first();
+  await expect(packCard).toBeVisible();
+
+  const productId = await packCard.locator('[data-product-detail]').getAttribute('data-product-detail');
+  const perPack = Number(/pack-(\d+)$/.exec(productId || '')?.[1]);
+  expect(perPack, `${productId} debe declarar unidades por pack`).toBeGreaterThan(1);
+
+  await expect(packCard.locator('.home-best-copy small')).toHaveText(new RegExp(`Pack x${perPack}\\b`));
+
+  // La honestidad no puede costar el layout: la home sigue sin overflow.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
+});
+
 test('la CTA móvil compacta reserva espacio real sobre la navegación', async ({ page }) => {
   await installBrowserStubs(page);
 

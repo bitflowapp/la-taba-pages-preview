@@ -578,7 +578,7 @@ function homeProductImage(product, className) {
   return `<img class="${className} thumb-img" src="${escapeHtml(source)}"${responsive} width="${Number(product.thumbnailWidth || 400)}" height="${Number(product.thumbnailHeight || 400)}" alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" loading="lazy" decoding="async" />`;
 }
 
-function homeUnitText(product) {
+function homeCapacityText(product) {
   const value = Number(product.capacityValue);
   const unit = String(product.capacityUnit || '').toLowerCase();
   if (Number.isFinite(value) && value > 0 && unit) {
@@ -586,6 +586,20 @@ function homeUnitText(product) {
     return `${formatted} ${unit === 'l' ? 'L' : unit}`;
   }
   return unitText(product).replace(/^(?:botella|lata)\s+/i, '');
+}
+
+// La card compacta mostraba sólo la capacidad de la unidad ("500 ml") mientras
+// el precio de al lado es el del pack completo. Un pack x12 a $17.100 leído como
+// "500 ml · $17.100" afirma un precio unitario que el negocio no ofrece. La
+// capacidad sola es correcta para la unidad suelta y engañosa para el pack, así
+// que el multiplicador viaja adelante: es lo que cambia el precio.
+function homeUnitText(product) {
+  const capacity = homeCapacityText(product);
+  const perPack = Number(product.unitsPerPack);
+  if (Number.isFinite(perPack) && perPack > 1) {
+    return capacity ? `Pack x${perPack} · ${capacity}` : `Pack x${perPack}`;
+  }
+  return capacity;
 }
 
 function renderHomeShowcase() {

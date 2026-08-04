@@ -247,7 +247,7 @@ test('el shell de marca es continuo entre las vistas del cliente', async ({ page
   const home = await leer();
   // Fondo de marca oscuro, producto sobre blanco.
   expect(home.body).toBe('rgb(9, 11, 14)');
-  expect(await page.locator('.home-catalog-card').evaluate((n) => getComputedStyle(n).backgroundColor))
+  expect(await page.locator('.home-catalog-card').first().evaluate((n) => getComputedStyle(n).backgroundColor))
     .toBe('rgb(255, 255, 255)');
 
   // Navegar NO puede producir un salto negro → blanco: el shell se conserva.

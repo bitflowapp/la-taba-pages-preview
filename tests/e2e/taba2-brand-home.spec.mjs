@@ -131,6 +131,57 @@ test('sin historias publicadas el logo no se anuncia como botón', async ({ page
   expect(ringPainted).toBe(false);
 });
 
+// El emblema de marca es el elemento de identidad de la home. Lo que se fija no
+// es su dibujo sino que se PINTE: el aro de historias es `position: absolute` y
+// basta que la cara pierda su `z-index` para que le tape "LA TABA".
+test('el emblema de marca se ve entero, con y sin el aro de historias encendido', async ({ page }) => {
+  await openHome(page, { stories: STORY_FIXTURES });
+
+  const logo = page.locator('.brand-logo-action');
+  await expect(logo.locator('img')).toHaveAttribute('src', /taba2-emblem\.svg$/);
+
+  const capas = await logo.evaluate((nodo) => {
+    const cara = nodo.querySelector('.brand-logo-face');
+    const aro = nodo.querySelector('.brand-logo-ring');
+    const caja = cara.getBoundingClientRect();
+    const imagen = cara.querySelector('img').getBoundingClientRect();
+    // Punto justo dentro del borde superior del emblema, donde vive "LA TABA".
+    const x = Math.round(caja.left + caja.width / 2);
+    const y = Math.round(caja.top + 6);
+    return {
+      encima: document.elementFromPoint(x, y)?.className || '',
+      caraZ: getComputedStyle(cara).zIndex,
+      caraPos: getComputedStyle(cara).position,
+      aroPos: getComputedStyle(aro).position,
+      emblemaLleno: Math.round(imagen.width) === Math.round(caja.width),
+      caraDentroDelSlot: Math.round(caja.width) < Math.round(nodo.getBoundingClientRect().width),
+    };
+  });
+
+  // Quien recibe el toque sobre el emblema no puede ser el aro.
+  expect(capas.encima, 'algo tapa el emblema').not.toContain('brand-logo-ring');
+  expect(capas.aroPos).toBe('absolute');
+  expect(capas.caraPos).toBe('relative');
+  expect(capas.caraZ).not.toBe('auto');
+  expect(capas.emblemaLleno, 'el emblema no llena su caja').toBe(true);
+  // El aro corre por fuera: si la cara midiera lo mismo que el slot, no habría
+  // lugar donde pintarlo.
+  expect(capas.caraDentroDelSlot).toBe(true);
+
+  // Sin historias el emblema sigue siendo visible sobre el shell oscuro, que es
+  // justo cuando el aro no está para separarlo del fondo.
+  const limpio = await page.context().browser().newContext({ viewport: PHONE });
+  const sinHistorias = await limpio.newPage();
+  await installBrowserStubs(sinHistorias);
+  await sinHistorias.addInitScript(() => { window.TABA2_STORIES = []; });
+  await gotoDemoReset(sinHistorias, '/?reset=1&demo=1');
+  await sinHistorias.waitForSelector('[data-stories-slot][data-stories-state="empty"]');
+  const cara = sinHistorias.locator('[data-stories-static] .brand-logo-face');
+  await expect(cara.locator('img')).toBeVisible();
+  expect(await cara.evaluate((n) => getComputedStyle(n).boxShadow)).not.toBe('none');
+  await limpio.close();
+});
+
 test('la caja del logo no se mueve entre estados: sin historias y con historias mide igual', async ({ page }) => {
   await openHome(page);
   const empty = await page.locator('[data-stories-slot]').boundingBox();

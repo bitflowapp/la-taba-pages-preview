@@ -1,0 +1,72 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="La Taba 2 Autoservicios">
+  <!--
+    Emblema de La Taba 2, reconstruido en vector a partir de la referencia
+    aprobada. Es VECTOR y no un recorte del mockup a propósito: el emblema mide
+    ~148px en esa pieza y la home lo pinta a 250px físicos en el Moto G15, así
+    que un reescalado habría llegado borroso justo en el texto curvo.
+
+    Sustituirlo por el archivo original de marca es cambiar UN archivo: mantiene
+    el mismo nombre y el mismo lienzo cuadrado.
+  -->
+  <defs>
+    <radialGradient id="taba2-disc" cx="38%" cy="30%" r="78%">
+      <stop offset="0%" stop-color="#33383f" />
+      <stop offset="58%" stop-color="#212429" />
+      <stop offset="100%" stop-color="#141619" />
+    </radialGradient>
+    <linearGradient id="taba2-rim" x1="12%" y1="0%" x2="88%" y2="100%">
+      <stop offset="0%" stop-color="#8d1d26" />
+      <stop offset="50%" stop-color="#4a1015" />
+      <stop offset="100%" stop-color="#7e1a22" />
+    </linearGradient>
+    <linearGradient id="taba2-ribbon" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#d0202c" />
+      <stop offset="100%" stop-color="#8d141d" />
+    </linearGradient>
+    <!-- Guías del texto curvo. La de arriba recorre el arco superior de
+         izquierda a derecha; la de abajo recorre el INFERIOR, también de
+         izquierda a derecha (sweep 0), que es lo que deja "AUTOSERVICIOS"
+         derecho en vez de cabeza abajo. -->
+    <path id="taba2-arc-top" d="M 76 256 A 180 180 0 0 1 436 256" />
+    <path id="taba2-arc-bottom" d="M 84 256 A 172 172 0 0 0 428 256" />
+  </defs>
+
+  <circle cx="256" cy="256" r="256" fill="url(#taba2-disc)" />
+  <circle cx="256" cy="256" r="248" fill="none" stroke="url(#taba2-rim)" stroke-width="9" />
+  <circle cx="256" cy="256" r="228" fill="none" stroke="#3d1418" stroke-width="3" />
+  <circle cx="256" cy="256" r="186" fill="none" stroke="#5d1a21" stroke-width="4" />
+
+  <g font-family="system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" fill="#f3f0ec" font-weight="700">
+    <text font-size="46" letter-spacing="7">
+      <textPath href="#taba2-arc-top" startOffset="50%" text-anchor="middle">LA TABA</textPath>
+    </text>
+    <text font-size="37" letter-spacing="5">
+      <textPath href="#taba2-arc-bottom" startOffset="50%" text-anchor="middle">AUTOSERVICIOS</textPath>
+    </text>
+  </g>
+
+  <!-- Cintas laterales con el año de origen. -->
+  <g fill="url(#taba2-ribbon)">
+    <path d="M60 246h96v34H60l13-17z" />
+    <path d="M452 246h-96v34h96l-13-17z" />
+  </g>
+  <g font-family="system-ui, 'Segoe UI', Roboto, Arial, sans-serif" fill="#fdf6f2" font-size="19" font-weight="700" text-anchor="middle">
+    <text x="110" y="270">desde</text>
+    <text x="402" y="270">2005</text>
+  </g>
+
+  <!-- Kiosco: mástil, toldo festoneado, dos columnas, mostrador y banqueta.
+       Trazo abierto y grueso: a 100px de lado el relleno se empasta y el
+       toldo deja de leerse. -->
+  <g fill="none" stroke="#c8202b" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M256 148v20" />
+    <path d="M146 202l16-34h188l16 34z" />
+    <path d="M146 202c13.75 0 13.75 25 27.5 25s13.75-25 27.5-25 13.75 25 27.5 25 13.75-25 27.5-25 13.75 25 27.5 25 13.75-25 27.5-25 13.75 25 27.5 25 13.75-25 27.5-25" />
+    <path d="M176 240v130" />
+    <path d="M336 240v130" />
+    <path d="M176 370h160" />
+    <path d="M256 240v58" />
+    <path d="M206 298h100" />
+    <path d="M232 330h48v40h-48z" />
+  </g>
+</svg>

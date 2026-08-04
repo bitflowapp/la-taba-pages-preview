@@ -209,24 +209,36 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
   inset: 0;
 }
 
-/* Cara del logo: recorte circular propio. El asset de marca trae su propio
-   marco redondeado oscuro; sin este recorte el logo se leía como un cuadrado
-   crema flotando. El `scale` lleva el arte interior hasta el borde del círculo
-   en vez de fabricar una variante nueva del asset. */
+/* Cara del logo: el emblema de marca ya ES un disco, así que ocupa la caja
+   entera y no necesita recorte ni relleno propio. Antes vivía acá un disco
+   crema porque el asset anterior era un ícono cuadrado.
+   El hairline existe para el estado SIN historias: el emblema es oscuro sobre
+   un shell oscuro y, sin el aro de historias encendido, se quedaba sin borde
+   que lo separara del fondo. */
+/* `position` + `z-index` no son decorativos acá: el aro es `position: absolute`
+   y, sin esto, pinta POR ENCIMA del emblema y le tapa "LA TABA". */
 .brand-logo-face {
+  position: relative;
+  z-index: 1;
   display: block;
-  width: 84px;
-  height: 84px;
+  width: 86px;
+  height: 86px;
   overflow: hidden;
   border-radius: 50%;
-  background: #fff8f1;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 10%);
+}
+
+[data-stories-state="unseen"] .brand-logo-face,
+[data-stories-state="seen"] .brand-logo-face {
+  /* Con el aro encendido el hairline sobra: serían dos bordes concéntricos. */
+  box-shadow: none;
 }
 
 .brand-logo-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  scale: 1.14;
+  object-fit: contain;
 }
 
 /* Aro: existe sólo cuando hay historias. Sin ellas el logo es una imagen
@@ -238,11 +250,17 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
   background: transparent;
 }
 
+/* El aro corre POR FUERA del emblema, con un hueco de por medio: en la
+   referencia el degradado no toca el borde del disco.
+   El hueco va en PÍXELES y con `closest-side`. En porcentaje, un
+   `radial-gradient` mide contra la esquina más lejana (70,7px en una caja de
+   100), no contra el borde, así que el 45% caía en 31,8px y el aro invadía el
+   emblema. En píxeles el hueco coincide exactamente con el radio de la cara. */
 [data-stories-state="unseen"] .brand-logo-ring,
 [data-stories-state="seen"] .brand-logo-ring {
   background: var(--brand-story-ring);
-  -webkit-mask: radial-gradient(circle, transparent 0 41%, #000 42%);
-  mask: radial-gradient(circle, transparent 0 41%, #000 42%);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 0 44px, #000 45px);
+  mask: radial-gradient(circle closest-side, transparent 0 44px, #000 45px);
 }
 
 [data-stories-state="seen"] .brand-logo-ring {
@@ -1322,8 +1340,8 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   }
 
   .brand-logo-face {
-    width: 100px;
-    height: 100px;
+    width: 103px;
+    height: 103px;
   }
 
   .brand-stories-cta {
@@ -1395,8 +1413,8 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   }
 
   .brand-logo-face {
-    width: 70px;
-    height: 70px;
+    width: 72px;
+    height: 72px;
   }
 
   .brand-hero-welcome {

@@ -13,6 +13,22 @@ ni descargadas sin comprobar producto y derechos.
 Su SHA-256 y estado están registrados en
 `docs/final-commercial-release/catalog-asset-audit.csv`.
 
+## Emblema de marca
+
+| Archivo | Rol | Fuente | Estado |
+| --- | --- | --- | --- |
+| `assets/brand/taba2-emblem.svg` | Emblema de La Taba 2 en el encabezado de la home | Dibujado en vector dentro del repositorio, reproduciendo el emblema de la referencia visual aprobada por el comercio | **Provisorio** hasta recibir el archivo original de marca |
+
+Es vector y no un recorte del mockup a propósito: en esa pieza el emblema mide
+~148 px y la home lo pinta a 250 px físicos en el Moto G15, así que un
+reescalado habría llegado borroso justo en el texto curvo.
+
+No es una imagen de producto ni afirma nada comercial, así que no entra en la
+cadena de abajo. Cuando el comercio entregue su archivo original, reemplazarlo
+es cambiar ESE archivo: conserva el nombre y el lienzo cuadrado. El ícono de la
+aplicación (`assets/icon.svg`) sigue siendo la marca reducida, porque a 48 px el
+texto curvo del emblema deja de leerse.
+
 ## Artefactos de preview retirados
 
 Las cuatro fuentes JPG del build v36 y sus cuatro recortes de la preview v37

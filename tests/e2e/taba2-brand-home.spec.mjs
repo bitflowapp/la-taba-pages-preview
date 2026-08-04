@@ -86,6 +86,15 @@ async function contrast(page, selector) {
   return page.evaluate(new Function(`return ${CONTRAST_PROBE}`)(), selector);
 }
 
+// La entrada a historias existe en DOS lugares —el encabezado de la home y el
+// de Perfil— y comparte marcado, así que cada aserción tiene que decir de cuál
+// habla. Estos helpers evitan que un selector suelto vuelva a apuntar a las dos.
+const HERO = '.brand-hero';
+const PERFIL_HEAD = '.profile-page-head';
+const entradaHome = (page) => page.locator(`${HERO} [data-stories-slot]`);
+const logoHome = (page) => page.locator(`${HERO} .brand-logo-action`);
+const logoEstaticoHome = (page) => page.locator(`${HERO} [data-stories-static]`);
+
 async function openHome(page, { stories = null, viewport = PHONE } = {}) {
   await page.setViewportSize(viewport);
   await installBrowserStubs(page);
@@ -121,12 +130,19 @@ test('el encabezado presenta la identidad real del comercio, no una escrita a ma
 test('sin historias publicadas el logo no se anuncia como botón', async ({ page }) => {
   await openHome(page, { stories: [] });
 
-  await expect(page.locator('[data-stories-slot]')).toHaveAttribute('data-stories-state', 'empty');
-  await expect(page.locator('.brand-logo-action')).toBeHidden();
+  // El fail-closed rige en TODAS las entradas, no sólo en la de la home.
+  await expect(page.locator('[data-stories-slot]')).toHaveCount(2);
+  for (const estado of await page.locator('[data-stories-slot]').evaluateAll(
+    (nodos) => nodos.map((n) => n.dataset.storiesState),
+  )) {
+    expect(estado).toBe('empty');
+  }
+  await expect(logoHome(page)).toBeHidden();
+  await expect(page.locator(`${PERFIL_HEAD} .brand-logo-action`)).toBeHidden();
   await expect(page.locator('.brand-stories-cta')).toBeHidden();
-  await expect(page.locator('[data-stories-static]')).toBeVisible();
+  await expect(logoEstaticoHome(page)).toBeVisible();
   // El aro no se pinta: nada promete contenido inexistente.
-  const ringPainted = await page.locator('[data-stories-static] .brand-logo-ring')
+  const ringPainted = await page.locator(`${HERO} [data-stories-static] .brand-logo-ring`)
     .evaluate((node) => getComputedStyle(node).backgroundImage !== 'none');
   expect(ringPainted).toBe(false);
 });
@@ -137,7 +153,7 @@ test('sin historias publicadas el logo no se anuncia como botón', async ({ page
 test('el emblema de marca se ve entero, con y sin el aro de historias encendido', async ({ page }) => {
   await openHome(page, { stories: STORY_FIXTURES });
 
-  const logo = page.locator('.brand-logo-action');
+  const logo = logoHome(page);
   await expect(logo.locator('img')).toHaveAttribute('src', /taba2-emblem\.svg$/);
 
   const capas = await logo.evaluate((nodo) => {
@@ -176,7 +192,7 @@ test('el emblema de marca se ve entero, con y sin el aro de historias encendido'
   await sinHistorias.addInitScript(() => { window.TABA2_STORIES = []; });
   await gotoDemoReset(sinHistorias, '/?reset=1&demo=1');
   await sinHistorias.waitForSelector('[data-stories-slot][data-stories-state="empty"]');
-  const cara = sinHistorias.locator('[data-stories-static] .brand-logo-face');
+  const cara = sinHistorias.locator(`${HERO} [data-stories-static] .brand-logo-face`);
   await expect(cara.locator('img')).toBeVisible();
   expect(await cara.evaluate((n) => getComputedStyle(n).boxShadow)).not.toBe('none');
   await limpio.close();
@@ -184,15 +200,15 @@ test('el emblema de marca se ve entero, con y sin el aro de historias encendido'
 
 test('la caja del logo no se mueve entre estados: sin historias y con historias mide igual', async ({ page }) => {
   await openHome(page);
-  const empty = await page.locator('[data-stories-slot]').boundingBox();
+  const empty = await entradaHome(page).boundingBox();
 
   const context = await page.context().browser().newContext({ viewport: PHONE });
   const withStories = await context.newPage();
   await installBrowserStubs(withStories);
   await withStories.addInitScript((fixtures) => { window.TABA2_STORIES = fixtures; }, STORY_FIXTURES);
   await gotoDemoReset(withStories, '/?reset=1&demo=1');
-  await withStories.waitForSelector('.brand-logo-action:not([hidden])');
-  const filled = await withStories.locator('[data-stories-slot]').boundingBox();
+  await withStories.waitForSelector(`${HERO} .brand-logo-action:not([hidden])`);
+  const filled = await entradaHome(withStories).boundingBox();
 
   expect(Math.round(filled.width)).toBe(Math.round(empty.width));
   expect(Math.round(filled.height)).toBe(Math.round(empty.height));
@@ -202,8 +218,8 @@ test('la caja del logo no se mueve entre estados: sin historias y con historias 
 test('con historias vigentes el logo es botón, el aro se enciende y el acceso dice cuántas hay', async ({ page }) => {
   await openHome(page, { stories: STORY_FIXTURES });
 
-  await expect(page.locator('[data-stories-slot]')).toHaveAttribute('data-stories-state', 'unseen');
-  const logo = page.locator('.brand-logo-action');
+  await expect(entradaHome(page)).toHaveAttribute('data-stories-state', 'unseen');
+  const logo = logoHome(page);
   await expect(logo).toBeVisible();
   await expect(logo).toHaveAttribute('aria-label', /2 historias nuevas de La Taba 2/);
   // El estado no viaja sólo en el color del aro.
@@ -225,21 +241,52 @@ test('con historias vigentes el logo es botón, el aro se enciende y el acceso d
 
 test('las historias vistas atenúan el aro en vez de desaparecer', async ({ page }) => {
   await openHome(page, { stories: STORY_FIXTURES });
-  await page.locator('.brand-logo-action').click();
+  await logoHome(page).click();
   await page.locator('[data-story-next]').click();
   await page.locator('[data-close-stories]').click();
 
-  await expect(page.locator('[data-stories-slot]')).toHaveAttribute('data-stories-state', 'seen');
+  await expect(entradaHome(page)).toHaveAttribute('data-stories-state', 'seen');
   await expect(page.locator('[data-stories-cta-detail]')).toHaveText('Ver historias');
-  await expect(page.locator('.brand-logo-action')).toBeVisible();
+  await expect(logoHome(page)).toBeVisible();
 });
 
 test('el foco vuelve al logo al cerrar el visor', async ({ page }) => {
   await openHome(page, { stories: STORY_FIXTURES });
-  const logo = page.locator('.brand-logo-action');
+  const logo = logoHome(page);
   await logo.click();
   await page.locator('[data-close-stories]').click();
   await expect(logo).toBeFocused();
+});
+
+// Perfil es la segunda entrada. Lo que se fija es que NO sea una copia con vida
+// propia: mismo estado, misma cuenta de nuevas y el visor devuelve el foco al
+// logo que se tocó, no al de la home.
+test('Perfil ofrece la misma entrada a historias que la home, sincronizada', async ({ page }) => {
+  await openHome(page, { stories: STORY_FIXTURES });
+  await page.locator('.mobile-nav [data-nav-view="profile"]').click();
+  await expect(page.locator('[data-view="profile"]')).toBeVisible();
+
+  const enPerfil = page.locator(`${PERFIL_HEAD} .brand-logo-action`);
+  await expect(enPerfil).toBeVisible();
+  await expect(page.locator(`${PERFIL_HEAD} [data-stories-slot]`))
+    .toHaveAttribute('data-stories-state', 'unseen');
+  // La etiqueta sale del MISMO estado que la de la home: si divergen, una de las
+  // dos le está mintiendo al cliente sobre cuántas historias le faltan.
+  await expect(enPerfil).toHaveAttribute('aria-label', /2 historias nuevas de La Taba 2/);
+
+  await enPerfil.click();
+  const modal = page.locator('[data-stories-modal]');
+  await expect(modal).toBeVisible();
+  await page.locator('[data-close-stories]').click();
+  // El foco vuelve al control que se tocó, no al de la otra vista.
+  await expect(enPerfil).toBeFocused();
+
+  // Ver una historia en Perfil tiene que apagarla también en la home.
+  await expect(page.locator(`${PERFIL_HEAD} [data-stories-slot]`))
+    .toHaveAttribute('data-stories-state', 'unseen');
+  await expect(entradaHome(page)).toHaveAttribute('data-stories-state', 'unseen');
+  await expect(enPerfil).toHaveAttribute('aria-label', /la historia nueva de La Taba 2/);
+  await expect(logoHome(page)).toHaveAttribute('aria-label', /la historia nueva de La Taba 2/);
 });
 
 test('el buscador ocupa el ancho útil, es táctil y no dispara el zoom de iOS', async ({ page }) => {
@@ -454,7 +501,7 @@ test('con movimiento reducido el aro deja de animarse y el estado sigue siendo l
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openHome(page, { stories: STORY_FIXTURES });
 
-  const ring = page.locator('.brand-logo-action .brand-logo-ring');
+  const ring = page.locator(`${HERO} .brand-logo-action .brand-logo-ring`);
   const duration = await ring.evaluate((node) => getComputedStyle(node).animationDuration);
   expect(parseFloat(duration)).toBeLessThanOrEqual(0.01);
   // El aro sigue pintado y el texto sigue diciendo el estado.

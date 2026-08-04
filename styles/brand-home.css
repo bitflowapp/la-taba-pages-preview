@@ -184,19 +184,28 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
 }
 
 /* Caja reservada: el estado de historias cambia el contenido, nunca el tamaño.
-   Sin esto el aro aparecería tras el primer render y correría el título. */
+   Sin esto el aro aparecería tras el primer render y correría el título.
+
+   La entrada a historias vive en más de un lugar y en más de un tamaño (el
+   encabezado de la home y el de Perfil), así que su geometría sale de DOS
+   números y no de medidas repetidas: el lado de la caja y el del emblema. El
+   hueco del aro se calcula solo a partir del segundo, que es lo que evita que
+   un tamaño nuevo lo deje invadiendo el disco. */
 .brand-logo-slot {
+  --logo-size: 100px;
+  --logo-face: 86px;
+
   position: relative;
   display: grid;
-  width: 100px;
-  height: 100px;
+  width: var(--logo-size);
+  height: var(--logo-size);
   place-items: center;
 }
 
 .brand-logo {
   display: grid;
-  width: 100px;
-  height: 100px;
+  width: var(--logo-size);
+  height: var(--logo-size);
   place-items: center;
   padding: 0;
   border: 0;
@@ -207,6 +216,26 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
 .brand-logo-action {
   position: absolute;
   inset: 0;
+}
+
+/* Segunda entrada a historias: el encabezado de Perfil. Vive acá y no en
+   `profile.css` por orden de carga —esta hoja es la última y es la que define
+   la geometría del logo—, y porque `responsive.css` apila TODO `.section-head`
+   en móvil: sin esta fila el emblema quedaba en un renglón propio, gigante y
+   despegado del título.
+   Más chico que en la home a propósito: acá el título manda. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .profile-page-head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+
+.profile-stories-slot {
+  --logo-size: 64px;
+  --logo-face: 55px;
+
+  flex: 0 0 auto;
 }
 
 /* Cara del logo: el emblema de marca ya ES un disco, así que ocupa la caja
@@ -221,8 +250,8 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
   position: relative;
   z-index: 1;
   display: block;
-  width: 86px;
-  height: 86px;
+  width: var(--logo-face);
+  height: var(--logo-face);
   overflow: hidden;
   border-radius: 50%;
   background: transparent;
@@ -252,15 +281,16 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
 
 /* El aro corre POR FUERA del emblema, con un hueco de por medio: en la
    referencia el degradado no toca el borde del disco.
-   El hueco va en PÍXELES y con `closest-side`. En porcentaje, un
-   `radial-gradient` mide contra la esquina más lejana (70,7px en una caja de
+   El hueco se DERIVA del radio del emblema y usa `closest-side`. En porcentaje,
+   un `radial-gradient` mide contra la esquina más lejana (70,7px en una caja de
    100), no contra el borde, así que el 45% caía en 31,8px y el aro invadía el
-   emblema. En píxeles el hueco coincide exactamente con el radio de la cara. */
+   emblema. Calculado desde `--logo-face`, cualquier tamaño nuevo queda bien
+   sin volver a medir nada. */
 [data-stories-state="unseen"] .brand-logo-ring,
 [data-stories-state="seen"] .brand-logo-ring {
   background: var(--brand-story-ring);
-  -webkit-mask: radial-gradient(circle closest-side, transparent 0 44px, #000 45px);
-  mask: radial-gradient(circle closest-side, transparent 0 44px, #000 45px);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 0 calc(var(--logo-face) / 2 + 1px), #000 calc(var(--logo-face) / 2 + 2px));
+  mask: radial-gradient(circle closest-side, transparent 0 calc(var(--logo-face) / 2 + 1px), #000 calc(var(--logo-face) / 2 + 2px));
 }
 
 [data-stories-state="seen"] .brand-logo-ring {
@@ -1333,15 +1363,9 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
     gap: 22px;
   }
 
-  .brand-logo-slot,
-  .brand-logo {
-    width: 120px;
-    height: 120px;
-  }
-
-  .brand-logo-face {
-    width: 103px;
-    height: 103px;
+  .brand-hero .brand-logo-slot {
+    --logo-size: 120px;
+    --logo-face: 103px;
   }
 
   .brand-stories-cta {
@@ -1406,15 +1430,9 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
     gap: 12px;
   }
 
-  .brand-logo-slot,
-  .brand-logo {
-    width: 84px;
-    height: 84px;
-  }
-
-  .brand-logo-face {
-    width: 72px;
-    height: 72px;
+  .brand-hero .brand-logo-slot {
+    --logo-size: 84px;
+    --logo-face: 72px;
   }
 
   .brand-hero-welcome {

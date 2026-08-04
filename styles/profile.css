@@ -11,8 +11,16 @@
     var(--profile-surface);
 }
 
+/* El encabezado abre con el emblema, que además es la entrada a historias.
+   Su tamaño y la fila viven en `brand-home.css`: `responsive.css` apila todo
+   `.section-head` en móvil y la geometría del logo se define allá, y las dos
+   hojas cargan DESPUÉS de esta. Poner las reglas acá las dejaba perdiendo. */
 .profile-page-head {
   margin-bottom: 22px;
+}
+
+.profile-page-head > div {
+  min-width: 0;
 }
 
 .profile-page-head .profile-lead {

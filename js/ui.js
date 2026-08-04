@@ -726,24 +726,29 @@ export function getHomeStories() {
   }));
 }
 
+// Pinta TODOS los puntos de entrada a historias —hoy el encabezado de la home y
+// el de Perfil— desde el mismo estado. Con un solo `querySelector` el segundo
+// slot se quedaba con el `data-stories-state` del marcado inicial: aro apagado
+// en una vista y encendido en la otra, y una historia vista en la home que en
+// Perfil seguía figurando como nueva.
 function renderStoryEntry() {
-  const slot = $('[data-stories-slot]');
-  if (!slot) return;
+  const slots = $$('[data-stories-slot]');
+  if (!slots.length) return;
   const entry = storyEntryState(getHomeStories(), readSeenStoryIds());
   const businessName = getBusinessConfig().businessName || BRAND.demoBusinessName;
+  const actionLabel = entry.unseen
+    ? `Ver ${entry.unseen === 1 ? 'la historia nueva' : `las ${entry.unseen} historias nuevas`} de ${businessName}`
+    : `Ver las historias de ${businessName}`;
 
-  slot.dataset.storiesState = entry.state;
-  const staticLogo = $('[data-stories-static]', slot);
-  const actionLogo = $('.brand-logo-action', slot);
-  if (staticLogo) staticLogo.hidden = entry.available;
-  if (actionLogo) {
-    actionLogo.hidden = !entry.available;
-    actionLogo.setAttribute(
-      'aria-label',
-      entry.unseen
-        ? `Ver ${entry.unseen === 1 ? 'la historia nueva' : `las ${entry.unseen} historias nuevas`} de ${businessName}`
-        : `Ver las historias de ${businessName}`,
-    );
+  for (const slot of slots) {
+    slot.dataset.storiesState = entry.state;
+    const staticLogo = $('[data-stories-static]', slot);
+    const actionLogo = $('.brand-logo-action', slot);
+    if (staticLogo) staticLogo.hidden = entry.available;
+    if (actionLogo) {
+      actionLogo.hidden = !entry.available;
+      actionLogo.setAttribute('aria-label', actionLabel);
+    }
   }
 
   const cta = $('.brand-stories-cta');

@@ -525,6 +525,27 @@
 
         <section class="section app-view soft" data-view="profile" hidden aria-hidden="true">
           <div class="section-head profile-page-head">
+            <!--
+              Segunda entrada a las historias, con el MISMO contrato que la de
+              la home: `renderStoryEntry` pinta todos los slots a la vez, así
+              que el aro, el estado y la etiqueta no pueden divergir entre las
+              dos. Sin historias publicadas el logo vuelve a ser una imagen y
+              deja de anunciarse como control.
+            -->
+            <span class="brand-logo-slot profile-stories-slot" data-stories-slot data-stories-state="empty">
+              <span class="brand-logo brand-logo-static" data-stories-static>
+                <span class="brand-logo-ring" aria-hidden="true"></span>
+                <span class="brand-logo-face" aria-hidden="true">
+                  <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="64" height="64" alt="" decoding="async" />
+                </span>
+              </span>
+              <button class="brand-logo brand-logo-action" type="button" data-stories-open hidden>
+                <span class="brand-logo-ring" aria-hidden="true"></span>
+                <span class="brand-logo-face" aria-hidden="true">
+                  <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="64" height="64" alt="" decoding="async" />
+                </span>
+              </button>
+            </span>
             <div>
               <p class="eyebrow">Tu cuenta</p>
               <h1 class="view-title">Mi perfil</h1>

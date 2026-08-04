@@ -704,6 +704,8 @@ body[data-active-view="rider"] .floating-cart {
     min-width: 0;
     max-width: 100%;
     width: 100%;
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   .catalog-toolbar .sort-select-wrap::after {

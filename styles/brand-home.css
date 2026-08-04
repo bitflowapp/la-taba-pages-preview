@@ -634,15 +634,18 @@ body[data-active-view="home"] .home-best-sellers {
   padding: 1px 2px 4px;
 }
 
+/* La tarjeta se compacta recortando aire muerto, no la imagen: el packshot
+   conserva sus 132px y pasa a ocupar ~57% de la tarjeta, que es lo que la hace
+   leerse como producto y no como ficha. El botón mantiene sus 44px. */
 body[data-active-view="home"] .home-best-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: 132px minmax(0, 1fr) auto;
   align-items: stretch;
   width: auto;
-  min-height: 268px;
+  min-height: 232px;
   gap: 0;
-  padding: 10px 11px 12px;
+  padding: 8px 10px 10px;
 }
 
 body[data-active-view="home"] .home-best-media {
@@ -659,11 +662,11 @@ body[data-active-view="home"] .home-best-image {
 body[data-active-view="home"] .home-best-copy {
   align-content: start;
   gap: 0;
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
 body[data-active-view="home"] .home-best-copy strong {
-  min-height: 34px;
+  min-height: 32px;
   color: #24272d;
   font-size: 13.5px;
   font-weight: 800;
@@ -671,13 +674,13 @@ body[data-active-view="home"] .home-best-copy strong {
 }
 
 body[data-active-view="home"] .home-best-copy small {
-  margin-top: 2px;
+  margin-top: 1px;
   color: #62656c;
   font-size: 12px;
 }
 
 body[data-active-view="home"] .home-best-copy span {
-  margin-top: 5px;
+  margin-top: 3px;
   font-size: 17px;
   font-weight: 950;
 }
@@ -685,13 +688,17 @@ body[data-active-view="home"] .home-best-copy span {
 /* La acción pasa a ser una barra ancha: es el control de la tarjeta, no un
    apéndice de 44px en una esquina. */
 body[data-active-view="home"] .home-best-card .home-card-control {
-  margin-top: 9px;
+  margin-top: 7px;
 }
 
 body[data-active-view="home"] .home-best-card .home-add-button {
   display: flex;
   width: 100%;
+  /* `min-height` además de `height`: la tarjeta vive en una fila de grilla que
+     reparte espacio fraccionario, y sin el piso el botón se comprimía a
+     43.9998px. Es invisible a simple vista pero rompe el mínimo táctil real. */
   height: 44px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: 6px;

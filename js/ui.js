@@ -944,6 +944,10 @@ function bindHomePromotionPaging() {
 // superficie de compra. Una sección sin nada comprable no se renderiza, así que
 // no deja un hueco con título y vacío debajo.
 const HOME_SECTION_PRODUCT_LIMIT = 8;
+// La home es una vidriera, no el catálogo. El tope de secciones existe para que
+// agregar rubros al catálogo no alargue la home indefinidamente: lo que no entra
+// acá sigue estando a un toque en "Ver catálogo completo".
+const HOME_MAX_SECTIONS = 6;
 
 function renderHomeSections() {
   const container = $('[data-home-sections]');
@@ -960,7 +964,8 @@ function renderHomeSections() {
         .filter(isPurchasableBeverageProduct)
         .slice(0, HOME_SECTION_PRODUCT_LIMIT),
     }))
-    .filter((section) => section.products.length > 0);
+    .filter((section) => section.products.length > 0)
+    .slice(0, HOME_MAX_SECTIONS);
 
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
   container.innerHTML = sections.map((section) => {

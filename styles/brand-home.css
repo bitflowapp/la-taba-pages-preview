@@ -694,11 +694,13 @@ body[data-active-view="home"] .home-best-card .home-card-control {
 body[data-active-view="home"] .home-best-card .home-add-button {
   display: flex;
   width: 100%;
-  /* `min-height` además de `height`: la tarjeta vive en una fila de grilla que
-     reparte espacio fraccionario, y sin el piso el botón se comprimía a
-     43.9998px. Es invisible a simple vista pero rompe el mínimo táctil real. */
-  height: 44px;
-  min-height: 44px;
+  /* 45 y no 44. Las secciones entran con `translate3d` + `will-change`, que las
+     promueve a capa de composición: mientras la capa vive, getBoundingClientRect
+     devuelve el alto en float32 y un 44px exacto se lee como 43.9998 (44 - 1/8192).
+     El botón medía bien, pero el piso táctil no puede depender del redondeo del
+     compositor. Un píxel de headroom lo vuelve incondicional. */
+  height: 45px;
+  min-height: 45px;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -796,6 +798,42 @@ body[data-active-view="catalog"] .product-card {
     linear-gradient(103deg, #14171d 0%, #1b1f27 58%, #241d16 100%);
   color: var(--brand-ink);
   text-align: left;
+}
+
+/* Fotografía editorial curada. Ocupa el lateral derecho y se desvanece hacia la
+   izquierda para que el copy conserve el contraste que mide la prueba: la
+   imagen agrega deseo, no puede comerse la legibilidad. Es decorativa
+   (aria-hidden) y no aporta ninguna información que no esté en el texto. */
+.home-brand-banner-media {
+  position: absolute;
+  /* Cubre el banner entero, no una banda lateral: estas piezas reservan el
+     espacio vacío para el overlay, así que recortar por la derecha mostraba
+     justamente el fondo y dejaba el producto afuera. Con `cover` sobre el ancho
+     completo el producto cae en el centro y la máscara apaga sólo la mitad
+     izquierda, que es donde va el copy. */
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  /* Opacidad baja a propósito. Estas piezas tienen el producto a la izquierda,
+     que es donde va el copy: a 400px de ancho no hay recorte que evite el
+     choque. Como textura de marca aporta color y profundidad sin disputarle
+     legibilidad al texto, y el contraste medido se mantiene. Subir esto exige
+     antes elegir piezas con el producto a la derecha. */
+  opacity: 30%;
+  -webkit-mask-image: linear-gradient(90deg, transparent 2%, #000 55%);
+  mask-image: linear-gradient(90deg, transparent 2%, #000 55%);
+  pointer-events: none;
+}
+
+/* La capa de imagen también es un <span> directo: excluirla acá es lo que la
+   deja fuera de flujo. Sin el :not() hereda el `position: relative` del CTA y
+   la foto colapsa a una miniatura dentro de la grilla del banner. */
+.home-brand-banner > small,
+.home-brand-banner > strong,
+.home-brand-banner > span:not(.home-brand-banner-media) {
+  position: relative;
+  z-index: 1;
 }
 
 /* Filete dorado a la izquierda: el acento premium, sin ocupar superficie. */

@@ -601,16 +601,22 @@ function renderHomeShowcase() {
 // existe y tiene productos comprables. Si el comercio publica una promoción
 // real, el bloque de ofertas se ocupa de ella y este banner sigue siendo lo que
 // es: una puerta, no un precio.
+// `image` es fotografía editorial curada (assets/promos), NO una promoción: el
+// lote fue vetado con su fuente registrada y el propio reporte de curaduría
+// aclara que no implica precio ni oferta vigente. Por eso vive acá, en el banner
+// que invita a recorrer una categoría, y no en el bloque de ofertas.
+// Las categorías sin pieza vetada quedan sin `image` y el banner se pinta como
+// hasta ahora: preferimos un banner sobrio a una imagen prestada de otro rubro.
 const HOME_BANNER_COPY = Object.freeze({
-  cervezas: { eyebrow: 'Para el finde', title: 'Cervezas bien frías' },
-  fernet: { eyebrow: 'Clásico argentino', title: 'Fernet y amargos' },
-  whisky: { eyebrow: 'Selección premium', title: 'El mejor whisky' },
+  cervezas: { eyebrow: 'Para el finde', title: 'Cervezas bien frías', image: 'assets/promos/cervezas-heineken.jpg' },
+  fernet: { eyebrow: 'Clásico argentino', title: 'Fernet y amargos', image: 'assets/promos/fernet-brancamenta.jpg' },
+  whisky: { eyebrow: 'Selección premium', title: 'El mejor whisky', image: 'assets/promos/whisky-chivas.webp' },
   vinos: { eyebrow: 'Bodega', title: 'Vinos para la mesa' },
   gaseosas: { eyebrow: 'Siempre en casa', title: 'Gaseosas y packs' },
-  energizantes: { eyebrow: 'Energía', title: 'Energizantes fríos' },
-  aperitivos: { eyebrow: 'La previa', title: 'Aperitivos y vermús' },
+  energizantes: { eyebrow: 'Energía', title: 'Energizantes fríos', image: 'assets/promos/energizantes-red-bull.jpg' },
+  aperitivos: { eyebrow: 'La previa', title: 'Aperitivos y vermús', image: 'assets/promos/aperitivos-gancia.webp' },
   gin: { eyebrow: 'Destilados', title: 'Gin y tónicas' },
-  mixers: { eyebrow: 'Para mezclar', title: 'Tónicas y mixers' },
+  mixers: { eyebrow: 'Para mezclar', title: 'Tónicas y mixers', image: 'assets/promos/mixers-schweppes.jpg' },
   aguas: { eyebrow: 'Hidratación', title: 'Aguas y sodas' },
   complementos: { eyebrow: 'Complementos', title: 'Hielo y accesorios' },
 });
@@ -624,9 +630,14 @@ const HOME_BANNER_LIMIT = 2;
 // ("Explorar la selección") y no promete importe: sólo pide que la categoría
 // exista y tenga productos que el cliente pueda mirar. Una categoría vacía sí
 // queda afuera: eso sería un link muerto.
+// En teléfono se pinta UN solo banner, así que el primero de esta lista es el
+// que decide la vidriera. Encabeza cervezas porque es la pieza que la curaduría
+// señala con espacio lateral para overlay y alto contraste: las escenas de bar
+// (whisky) quedan preciosas en grande pero a 400px de ancho no se distingue el
+// producto. Detrás siguen los rubros premium.
 const HOME_BANNER_PRIORITY = Object.freeze([
-  'whisky', 'fernet', 'vinos', 'aperitivos', 'gin', 'espumantes',
-  'cervezas', 'energizantes', 'mixers', 'gaseosas', 'aguas', 'complementos',
+  'cervezas', 'whisky', 'fernet', 'aperitivos', 'energizantes', 'mixers',
+  'vinos', 'gin', 'espumantes', 'gaseosas', 'aguas', 'complementos',
 ]);
 
 function categoriesWithProducts(state = getState()) {
@@ -650,8 +661,12 @@ function renderHomeBanners() {
     const name = byId.get(id).name;
     // El verbo distingue lo que se puede comprar de lo que sólo se puede mirar.
     const action = purchasable.has(id) ? 'Ver' : 'Explorar';
+    const media = copy.image
+      ? `<span class="home-brand-banner-media" aria-hidden="true" style="background-image:url('${encodeURI(copy.image)}')"></span>`
+      : '';
     return `
-      <button class="home-brand-banner" type="button" data-category-id="${escapeHtml(id)}" aria-label="${escapeHtml(`${copy.title}. ${action} la categoría ${name}`)}">
+      <button class="home-brand-banner ${copy.image ? 'has-media' : ''}" type="button" data-category-id="${escapeHtml(id)}" aria-label="${escapeHtml(`${copy.title}. ${action} la categoría ${name}`)}">
+        ${media}
         <small>${escapeHtml(copy.eyebrow)}</small>
         <strong>${escapeHtml(copy.title)}</strong>
         <span>${escapeHtml(action)} ${escapeHtml(name.toLowerCase())} <span aria-hidden="true">→</span></span>

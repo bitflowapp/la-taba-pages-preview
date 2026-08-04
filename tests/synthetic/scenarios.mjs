@@ -564,11 +564,20 @@ async function scenarioClosure(backend) {
     correlation_id: '22222222-2222-4222-8222-222222222222',
   });
 
+  // Las cinco diferencias controladas que el cierre tiene que saber contar.
+  backend.refundPayment({ paymentIntentId: 'qa-pay-approved', amount: 1_000 });
+  const openOrder = backend.createOrder({
+    code: `${QA_ORDER.code}-ABIERTO`,
+    items: [{ productId: 'qa-product-gaseosa-pack', quantity: 1 }],
+    idempotencyKey: 'qa-order-open',
+  });
+
   const prepared = backend.prepareReconciliation({
     businessDate: '2026-08-05', declaredCash: 9_400, differenceNote: '', idempotencyKey: 'qa-daily-1',
   });
   const run = prepared.data.reconciliation;
   const closure = evaluateDailyClosure(run, { alerts: backend.state.alerts });
+  const byId = Object.fromEntries(closure.sections.map((section) => [section.id, section]));
 
   check(checks, 'el cierre explica cada diferencia en su propia sección', () => (
     closure.sections.length === 9 && closure.sections.every((section) => section.label && noJargon(section.label))
@@ -581,10 +590,20 @@ async function scenarioClosure(backend) {
   check(checks, 'los problemas críticos bloquean el cierre', () => (
     closure.criticalAlerts >= 1 && closure.blockers.some((blocker) => blocker.id === 'critical-alerts')
   ));
-  check(checks, 'las diferencias de pedido abierto y comprobante pendiente se informan', () => {
-    const byId = Object.fromEntries(closure.sections.map((section) => [section.id, section]));
-    return Number(byId.orders.detail.replace(/\D/g, '')) >= 0 && byId.documents.detail.includes('pendiente');
-  });
+  check(checks, 'la devolución de Mercado Pago aparece como diferencia del día', () => (
+    /1\.000/.test(byId.refunds.value) && /1 devoluci/.test(byId.refunds.detail)
+  ));
+  check(checks, 'el pedido abierto se cuenta sin cerrarlo por su cuenta', () => (
+    Number(byId.orders.value) >= 1
+    && /sin cerrar/.test(byId.orders.detail)
+    && backend.state.orders.get(openOrder.order.id).status === 'submitted'
+  ));
+  check(checks, 'los movimientos de stock del día quedan informados', () => (
+    Number(byId.stock.value) > 0 && /negativo/.test(byId.stock.detail)
+  ));
+  check(checks, 'los comprobantes pendientes se informan sin darlos por emitidos', () => (
+    /pendiente/.test(byId.documents.detail) && Number(byId.documents.detail.replace(/\D/g, '')) >= 1
+  ));
   check(checks, 'CERRAR IGUAL se exige sólo cuando hay problemas críticos', () => (
     validateClosureOverride({ criticalAlerts: 0 }).ok === true
     && validateClosureOverride({ criticalAlerts: 1, note: 'Se revisa mañana con el contador.', confirmation: 'si' }).ok === false

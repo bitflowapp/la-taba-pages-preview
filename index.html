@@ -285,13 +285,6 @@
               <div class="home-paging-dots" data-home-paging-dots aria-hidden="true" hidden></div>
             </section>
 
-            <!--
-              Banner editorial. No afirma un descuento: es una puerta a una
-              categoría que EXISTE y tiene productos comprables. Si ninguna
-              califica, el contenedor queda vacío y no ocupa espacio.
-            -->
-            <div class="home-brand-banners" data-home-banners></div>
-
             <section class="home-merch-section home-best-section" aria-labelledby="home-best-title">
               <div class="home-section-head">
                 <!--
@@ -309,10 +302,21 @@
               <div class="home-best-sellers offers-rail" data-home-best-sellers data-offers-rail></div>
             </section>
 
-            <section class="home-catalog-preview-section" aria-labelledby="home-catalog-preview-title">
-              <h2 class="sr-only" id="home-catalog-preview-title">Vista previa del catálogo</h2>
-              <div class="home-catalog-preview" data-home-catalog-preview></div>
-            </section>
+            <!--
+              Banner editorial. No afirma un descuento: es una puerta a una
+              categoría que EXISTE y tiene productos comprables. Si ninguna
+              califica, el contenedor queda vacío y no ocupa espacio.
+              Va DESPUÉS del primer tramo de producto: el presupuesto de altura
+              del primer pantallazo es para bebidas, no para vidriera.
+            -->
+            <div class="home-brand-banners" data-home-banners></div>
+
+            <!--
+              Carruseles por sección de bebidas. El orden y el contenido salen
+              de core/beverage-home-sections.js; una sección sin productos no se
+              renderiza, así que no quedan huecos.
+            -->
+            <div class="home-sections" data-home-sections></div>
 
             <div class="home-reorder-slot" data-customer-actions></div>
             <button class="order-now-cta" type="button" data-nav-view="catalog">

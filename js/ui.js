@@ -57,6 +57,7 @@ import {
   BEVERAGE_HOME_CATEGORY_ORDER,
   buildBeverageHomeSections,
   getBeverageHomeSection,
+  isPurchasableBeverageProduct,
 } from './core/beverage-home-sections.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 import { riderAvatarHelmetSvg } from './map/rider_marker.js';
@@ -592,7 +593,7 @@ function renderHomeShowcase() {
   renderHomePromotions();
   renderHomeBanners();
   renderHomeBestSellers();
-  renderHomeCatalogPreview();
+  renderHomeSections();
   renderStoryEntry();
 }
 
@@ -931,43 +932,77 @@ function bindHomePromotionPaging() {
   requestAnimationFrame(updateHomePromotionPaging);
 }
 
-function renderHomeCatalogPreview() {
-  const container = $('[data-home-catalog-preview]');
+// Carruseles por sección de bebidas. Reutilizan el rail y la tarjeta de
+// "Destacados" para que la home se lea como una sola superficie y no como dos
+// sistemas de tarjeta distintos.
+//
+// Sólo entran secciones de categoría: ofertas y populares ya tienen su bloque
+// propio más arriba, y repetirlas acá duplicaría producto sin agregar oferta.
+//
+// Se filtra por `isPurchasableBeverageProduct`: un precio pendiente sigue vivo
+// en el catálogo y en la búsqueda, pero no puede ocupar la home, que es la
+// superficie de compra. Una sección sin nada comprable no se renderiza, así que
+// no deja un hueco con título y vacío debajo.
+const HOME_SECTION_PRODUCT_LIMIT = 8;
+
+function renderHomeSections() {
+  const container = $('[data-home-sections]');
   if (!container) return;
-  const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
-  const categoryProducts = buildBeverageHomeSections(
+  const sections = buildBeverageHomeSections(
     getState().products,
     getState().promotions,
-    { limit: 6 },
+    { limit: Number.POSITIVE_INFINITY },
   )
     .filter((section) => section.kind === 'category')
-    .flatMap((section) => section.products);
-  const previewProducts = uniqueProducts(categoryProducts)
-    .filter((product) => !product.pricePending)
-    .slice(0, 4);
-  container.innerHTML = previewProducts.map((product) => {
-    const favorite = isFavoriteProduct(product.id);
-    const pricing = productPricePresentation(product);
-    const outOfStock = product.stock <= 0 || !product.available || product.pricePending;
+    .map((section) => ({
+      ...section,
+      products: section.products
+        .filter(isPurchasableBeverageProduct)
+        .slice(0, HOME_SECTION_PRODUCT_LIMIT),
+    }))
+    .filter((section) => section.products.length > 0);
+
+  const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
+  container.innerHTML = sections.map((section) => {
+    const headingId = `home-section-${escapeHtml(section.id)}`;
+    const target = section.categoryIds[0] || 'all';
+    const cards = section.products
+      .map((product) => homeSectionCard(product, cartQuantities))
+      .join('');
     return `
-      <article class="home-catalog-card ${outOfStock ? 'out-of-stock' : ''}">
-        <button class="home-favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20.8 4.8a5.3 5.3 0 0 0-7.5 0L12 6.1l-1.3-1.3a5.3 5.3 0 0 0-7.5 7.5L12 21l8.8-8.7a5.3 5.3 0 0 0 0-7.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        <button class="home-catalog-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
-          ${homeProductImage(product, 'home-catalog-image')}
-        </button>
-        <div class="home-catalog-copy">
-          <strong>${escapeHtml(product.name)}</strong>
-          <span class="home-available">${outOfStock ? 'Agotado' : 'Disponible'}</span>
-          <span class="home-product-price">${money(pricing.price)}</span>
-          <small>${escapeHtml(homeUnitText(product))}</small>
+      <section class="home-merch-section home-category-section" aria-labelledby="${headingId}">
+        <div class="home-section-head">
+          <div class="home-section-title">
+            <h2 id="${headingId}">${escapeHtml(section.title)}</h2>
+          </div>
+          <button type="button" data-category-id="${escapeHtml(target)}">Ver todos</button>
         </div>
-        <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button home-add-button-primary' })}</div>
-      </article>`;
+        <div class="home-best-sellers offers-rail">${cards}</div>
+      </section>`;
   }).join('');
+}
+
+function homeSectionCard(product, cartQuantities) {
+  const pricing = productPricePresentation(product);
+  const outOfStock = product.stock <= 0 || !product.available;
+  const favorite = isFavoriteProduct(product.id);
+  return `
+    <article class="home-best-card ${outOfStock ? 'out-of-stock' : ''}">
+      <button class="home-favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20.8 4.8a5.3 5.3 0 0 0-7.5 0L12 6.1l-1.3-1.3a5.3 5.3 0 0 0-7.5 7.5L12 21l8.8-8.7a5.3 5.3 0 0 0 0-7.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="home-best-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+        ${homeProductImage(product, 'home-best-image')}
+      </button>
+      <div class="home-best-copy">
+        <strong>${escapeHtml(product.name)}</strong>
+        <small>${escapeHtml(homeUnitText(product))}</small>
+        <span>${money(pricing.price)}</span>
+      </div>
+      <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>
+    </article>`;
 }
 
 function renderCombos() {

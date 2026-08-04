@@ -28,12 +28,17 @@ test('panel Windows recorre las nueve herramientas, detecta GTIN y conserva la v
     ['stock-count', 'Conteo físico'],
     ['packing', 'Preparación de pedido'],
     ['fiscal-status', 'Estado fiscal'],
-    ['fiscal-config', 'Configuración fiscal'],
+    ['devices', 'Probar dispositivos'],
   ];
   for (const [view, heading] of views) {
     await workspace.locator(`[data-business-ops-view="${view}"]`).first().click();
     await expect(workspace.locator(`[data-business-ops-center="${view}"]`)).toBeVisible();
     await expect(workspace.getByRole('heading', { name: heading })).toBeVisible();
+  }
+
+  // El equipo no recibe las pantallas que confirma el dueño o el encargado.
+  for (const restricted of ['fiscal-config', 'fiscal-setup', 'payments-setup', 'day-close']) {
+    await expect(workspace.locator(`[data-business-ops-view="${restricted}"]`)).toHaveCount(0);
   }
 
   await workspace.locator('[data-business-ops-view="pos"]').first().click();
@@ -53,7 +58,8 @@ test('panel fiscal usa artefactos privados, descarga, reimpresiÃ³n y nota de c
   const regenerateId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
   const invoiceArtifactId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
   const creditArtifactId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
-  const session = staffSession();
+  // La nota de crédito es una corrección de dinero: la confirma el dueño o el encargado.
+  const session = staffSession('owner');
   await installRuntime(page, session, {
     desktop: true,
     profile: { environment: 'homologation', accountant_review_status: 'approved', production_gate_status: 'blocked', is_enabled: true },
@@ -117,20 +123,40 @@ test('Centro de operación prioriza alertas y finaliza un cierre diario auditabl
   await expect(center.getByRole('heading', { name: 'Centro de operación' })).toBeVisible();
   await expect(center.locator('[data-operation-metric="new_orders"]')).toContainText('2');
   await expect(center.locator('[data-operation-metric="reconciliations_required"]')).toContainText('1');
-  await expect(center.locator('[data-operational-alert]')).toContainText('Pago aprobado sin pedido operativo');
-  await expect(center.locator('[data-operational-alert]')).toContainText('no cobrar nuevamente');
 
-  await center.locator('[data-operational-alert-acknowledge]').click();
+  // La alerta se cuenta en castellano y responde las cuatro preguntas del mostrador.
+  const alert = center.locator('[data-operational-alert]').first();
+  await expect(alert).toContainText('Entró un pago aprobado que todavía no tiene pedido armado');
+  await expect(alert).toContainText('Qué se conserva');
+  await expect(alert).toContainText('Riesgo');
+  await expect(alert).toContainText('Qué conviene hacer');
+  await expect(alert.locator('[data-business-ops-view="payments"]')).toBeVisible();
+  // El identificador técnico existe pero queda plegado bajo el detalle para soporte.
+  await expect(alert.locator('.operation-alert-support')).toContainText('TABA-PAGO-01');
+  await expect(center).not.toContainText('PAYMENT_APPROVED_WITHOUT_ORDER');
+
+  await alert.locator('[data-operational-alert-acknowledge]').click();
   await expect(workspace.locator('.business-ops-feedback')).toContainText('Alerta reconocida');
 
-  await center.locator('[name="dailyDeclaredCash"]').fill('900');
-  await center.locator('[name="dailyDifferenceNote"]').fill('Diferencia recontada y documentada por caja.');
-  await center.locator('[data-daily-reconciliation-prepare]').click();
-  await expect(workspace.locator('.business-ops-feedback')).toContainText('Conciliación preparada');
+  await workspace.locator('[data-business-ops-view="day-close"]').first().click();
+  const closure = workspace.locator('[data-business-ops-center="day-close"]');
+  await expect(closure).toBeVisible();
+  await closure.locator('[name="dailyDeclaredCash"]').fill('900');
+  await closure.locator('[name="dailyDifferenceNote"]').fill('Diferencia recontada y documentada por caja.');
+  await closure.locator('[data-daily-reconciliation-prepare]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('Cierre calculado');
 
-  await center.locator('[data-daily-reconciliation-close]').click();
-  await expect(workspace.locator('.business-ops-feedback')).toContainText('Cierre diario finalizado e inmutable');
+  // El problema crítico sigue abierto: el cierre se niega y dice por qué en pantalla.
+  await expect(closure).toContainText('Hay 1 problema sin resolver');
+  await closure.locator('[data-daily-reconciliation-close]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('Explicá en una frase');
 
+  await closure.locator('[name="closureOverrideNote"]').fill('Se reconcilia mañana con el contador.');
+  await closure.locator('[name="closureOverrideConfirmation"]').fill('CERRAR IGUAL');
+  await closure.locator('[data-daily-reconciliation-close]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('Día cerrado');
+
+  await workspace.locator('[data-business-ops-view="operation-center"]').first().click();
   await center.locator('[data-local-backup-create]').click();
   await expect(workspace.locator('.business-ops-feedback')).toContainText('Backup local consistente y verificado');
   await center.locator('[data-support-diagnostic-export]').click();

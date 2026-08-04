@@ -107,6 +107,7 @@ let openingStatusRaw = null;
 let openingLoadStarted = false;
 let deviceResults = {};
 let deviceCheckPrinters = [];
+let devicePrintersLoadStarted = false;
 let productPlan = null;
 let productDraftView = null;
 let productPreview = null;
@@ -138,6 +139,7 @@ export function configureBusinessOperations(next = {}) {
   openingLoadStarted = false;
   deviceResults = {};
   deviceCheckPrinters = [];
+  devicePrintersLoadStarted = false;
   resetProductOnboarding();
   dailyRun = null;
   return context;
@@ -232,7 +234,11 @@ export function activateBusinessOperations(view = currentView) {
   scanner ||= createBarcodeScannerService();
   unsubscribeScanner ||= scanner.subscribe((event) => { void processScan(event); });
   scanner.start(mode);
-  if (view === 'devices' && !deviceCheckPrinters.length) void refreshDeviceCheckPrinters();
+  // Una sola consulta por sesión: volver a pedirla en cada render encadena re-renders sin fin.
+  if (view === 'devices' && !devicePrintersLoadStarted) {
+    devicePrintersLoadStarted = true;
+    void refreshDeviceCheckPrinters();
+  }
   if (view === 'packing' && !packingRestoreStarted) {
     packingRestoreStarted = true;
     void restorePackingSession();
@@ -444,6 +450,7 @@ export function resetBusinessOperationsForTests() {
   openingLoadStarted = false;
   deviceResults = {};
   deviceCheckPrinters = [];
+  devicePrintersLoadStarted = false;
   resetProductOnboarding();
   dailyRun = null;
 }
@@ -1023,7 +1030,7 @@ async function closeDailyReconciliation(button) {
   const reconciliationId = String(button.dataset.dailyReconciliationClose || '');
   const expectedRevision = Number(button.dataset.dailyReconciliationRevision || 0);
   if (!reconciliationId || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
-    return result(false, 'El cierre cambió mientras lo mirabas. Volvé a calcularlo.');
+    return refuseClosure('El cierre cambió mientras lo mirabas. Volvé a calcularlo.');
   }
   // Con problemas críticos abiertos, el cierre exige explicación y confirmación escrita.
   const closure = evaluateDailyClosure(dailyRun || {}, { alerts: operationCenterSnapshot?.alerts || [] });
@@ -1033,10 +1040,9 @@ async function closeDailyReconciliation(button) {
     note: root?.querySelector('[name="closureOverrideNote"]')?.value,
     confirmation: root?.querySelector('[name="closureOverrideConfirmation"]')?.value,
   });
-  if (!override.ok) return result(false, override.message);
-  if (closure.blockers.some((blocker) => blocker.id === 'cash-difference')) {
-    return result(false, closure.blockers.find((blocker) => blocker.id === 'cash-difference').detail);
-  }
+  if (!override.ok) return refuseClosure(override.message);
+  const cashBlocker = closure.blockers.find((blocker) => blocker.id === 'cash-difference');
+  if (cashBlocker) return refuseClosure(cashBlocker.detail);
   busy = true;
   const response = await context.closeDailyReconciliation({
     reconciliationId,
@@ -1051,6 +1057,13 @@ async function closeDailyReconciliation(button) {
   if (response?.ok) await refreshOperationCenter();
   else context.onChange();
   return result(Boolean(response?.ok), feedback);
+}
+
+// Un cierre que no se firma tiene que decir en pantalla por qué; si no, es un cierre silencioso al revés.
+function refuseClosure(message) {
+  feedback = message;
+  context.onChange();
+  return result(false, message);
 }
 
 function readReconciliation(data) {

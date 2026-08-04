@@ -89,10 +89,17 @@ export async function measureStableControls(page, selector, { maxFrames = 180 } 
 
     await document.fonts.ready;
 
+    // Visible es visible en LOS DOS EJES. El filtro sólo miraba el vertical, y
+    // en un carrusel horizontal eso incluye las tarjetas que están a la derecha
+    // del pantallazo: su imagen es `loading="lazy"`, el navegador nunca la pide,
+    // y `decode()` sobre una imagen que jamás se carga no resuelve ni rechaza.
+    // Con el rail de tres tarjetas nunca se notó porque todas entraban a lo
+    // ancho; con ocho, WebKit se quedaba colgado hasta agotar el test.
     const visibleImages = [...document.images].filter((image) => {
       const rect = image.getBoundingClientRect();
       return rect.width > 0 && rect.height > 0
-        && rect.bottom > 0 && rect.top < window.innerHeight;
+        && rect.bottom > 0 && rect.top < window.innerHeight
+        && rect.right > 0 && rect.left < window.innerWidth;
     });
     await Promise.all(visibleImages.map((image) => image.decode().catch(() => undefined)));
 

@@ -160,11 +160,30 @@ for (const viewport of [
       !image.complete || (image.naturalWidth > 0 && image.naturalHeight > 0)
     )))).toBeTruthy();
 
+    // "Lo que ve el cliente al entrar" son las tarjetas EFECTIVAMENTE dentro del
+    // pantallazo. El rail de Destacados pasó de tres tarjetas —todas visibles— a
+    // ocho, así que exigir las ocho resueltas describía la composición vieja y
+    // volvía a castigar al lazy loading por hacer su trabajo: en un carrusel
+    // horizontal las de la derecha están fuera de pantalla a propósito.
+    // La garantía que importa no se toca: lo que entra en el primer pantallazo
+    // tiene bitmap de verdad, y el `every` de más arriba sigue prohibiendo una
+    // imagen rota en TODA la home.
+    // El paso anterior bajó hasta la última imagen de la home; "lo que ve el
+    // cliente al entrar" se mide desde arriba.
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     const aboveTheFold = page.locator('[data-home-best-sellers] .thumb-img');
     await expect(aboveTheFold.first()).toBeVisible();
-    await expect.poll(() => aboveTheFold.evaluateAll((images) => images.length > 0 && images.every((image) => (
-      image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
-    )))).toBeTruthy();
+    await expect.poll(() => aboveTheFold.evaluateAll((images) => {
+      const visibles = images.filter((image) => {
+        const rect = image.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0
+          && rect.left < window.innerWidth && rect.right > 0
+          && rect.top < window.innerHeight && rect.bottom > 0;
+      });
+      return visibles.length > 0 && visibles.every((image) => (
+        image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
+      ));
+    })).toBeTruthy();
 
     const captureDir = process.env.TABA_HOME_CAPTURE_DIR;
     if (captureDir) {

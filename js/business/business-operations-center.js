@@ -191,8 +191,8 @@ export function renderBusinessOperations(view) {
     orders: () => '',
   })[currentView]();
   queueMicrotask(() => activateBusinessOperations(currentView));
+  // La navegación la dibuja el contenedor: una sola fila para todo el panel, también en Pedidos.
   return `<section class="business-ops-center" data-business-ops-center="${escapeHtml(currentView)}">
-    ${renderNavigation()}
     ${feedback ? `<p class="business-ops-feedback" role="status">${escapeHtml(feedback)}</p>` : ''}
     ${content}
   </section>`;
@@ -1168,10 +1168,8 @@ async function installSignedUpdate(button) {
   }
 }
 
-function renderNavigation() {
-  const views = allowedBusinessOperationViews(context.role).filter((view) => view !== 'orders');
-  return `<nav class="business-ops-nav" aria-label="Herramientas del panel">${views.map((view) => `
-    <button type="button" class="business-ops-nav-button ${view === currentView ? 'active' : ''}" data-business-ops-view="${view}" aria-pressed="${view === currentView}">${escapeHtml(VIEW_META[view][0])}</button>`).join('')}</nav>`;
+export function businessOperationViewLabel(view) {
+  return VIEW_META[view]?.[0] || '';
 }
 
 function renderScanner() { return panel('Escáner rápido', 'Lectura HID tipo teclado, Enter o Tab para confirmar.', `${scannerInput()}${renderScanResult()}`); }

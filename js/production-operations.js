@@ -15,6 +15,7 @@ import { createBusinessPlatform } from './platform/tauri-business-platform.js';
 import { createBusinessPanelController } from './business/business-panel-controller.js';
 import {
   allowedBusinessOperationViews,
+  businessOperationViewLabel,
   BUSINESS_OPERATION_VIEWS,
   configureBusinessOperations,
   handleBusinessOperationsAction,
@@ -925,21 +926,17 @@ function renderAccessSurface(view) {
     : riderWorkspaceMarkup();
 }
 
-// Atajos del día: lo que se toca a cada rato, en el orden en que se usa.
-const BUSINESS_SHORTCUTS = Object.freeze([
-  ['day-open', 'Abrir'],
-  ['operation-center', 'Qué pasa'],
-  ['orders', 'Pedidos'],
-  ['payments', 'Pagos'],
-  ['packing', 'Preparación'],
-  ['pos', 'Mostrador'],
-  ['scanner', 'Escáner'],
-  ['product-create', 'Alta'],
-  ['inventory-receive', 'Inventario'],
-  ['fiscal-status', 'Comprobantes'],
-  ['devices', 'Dispositivos'],
-  ['day-close', 'Cerrar'],
+// El orden del día: abrir, mirar, atender, preparar, cobrar, cerrar.
+const BUSINESS_VIEW_ORDER = Object.freeze([
+  'day-open', 'operation-center', 'orders', 'payments', 'packing', 'pos', 'scanner',
+  'product-create', 'inventory-receive', 'inventory-adjust', 'stock-count',
+  'fiscal-status', 'fiscal-setup', 'fiscal-config', 'payments-setup', 'devices', 'day-close',
 ]);
+
+const BUSINESS_VIEW_SHORT_LABELS = Object.freeze({
+  'day-open': 'Abrir', 'operation-center': 'Qué pasa', orders: 'Pedidos', payments: 'Pagos',
+  'product-create': 'Alta', 'inventory-receive': 'Recepción', 'day-close': 'Cerrar',
+});
 
 function businessWorkspaceMarkup() {
   const role = access.membership?.role;
@@ -951,11 +948,13 @@ function businessWorkspaceMarkup() {
   const operations = businessOperationsView === 'orders'
     ? `<div class="production-order-list" aria-live="polite">${rows}</div>`
     : renderBusinessOperations(businessOperationsView);
-  const shortcuts = BUSINESS_SHORTCUTS
-    .filter(([view]) => view === 'orders' || allowed.has(view))
-    .map(([view, label]) => `
+  // Una sola navegación para todo el panel: dos filas con los mismos destinos confunden.
+  const shortcuts = BUSINESS_VIEW_ORDER
+    .filter((view) => allowed.has(view))
+    .map((view) => `
       <button type="button" class="business-ops-nav-button ${businessOperationsView === view ? 'active' : ''}"
-        ${view === 'orders' ? 'data-production-orders-view' : `data-business-ops-view="${escapeAttribute(view)}"`}>${escapeHtml(label)}</button>`)
+        aria-pressed="${businessOperationsView === view}"
+        ${view === 'orders' ? 'data-production-orders-view' : `data-business-ops-view="${escapeAttribute(view)}"`}>${escapeHtml(BUSINESS_VIEW_SHORT_LABELS[view] || businessOperationViewLabel(view))}</button>`)
     .join('');
   return `
     <div class="production-ops-head">
@@ -1425,10 +1424,10 @@ function roleMismatchMessage(role, view) {
 }
 
 function roleLabel(role) {
-  if (role === 'owner') return 'Owner';
-  if (role === 'admin') return 'Administrador';
-  if (role === 'staff') return 'Empleado';
-  if (role === 'rider') return 'Rider';
+  if (role === 'owner') return 'Dueño';
+  if (role === 'admin') return 'Encargado';
+  if (role === 'staff') return 'Equipo';
+  if (role === 'rider') return 'Repartidor';
   return 'Cuenta';
 }
 

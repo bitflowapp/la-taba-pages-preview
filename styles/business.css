@@ -1474,3 +1474,228 @@
 .daily-reconciliation-row dd {
   margin: 0.2rem 0 0;
 }
+
+/* Panel del negocio: superficies del trabajo diario. */
+.operation-summary {
+  align-items: center;
+  background: var(--taba-surface, #fff);
+  border: 1px solid var(--taba-border, #dedbd5);
+  border-left-width: 5px;
+  border-radius: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.operation-summary strong {
+  font-size: 1.05rem;
+}
+
+.operation-summary span {
+  color: var(--taba-muted, #6d675f);
+}
+
+.tone-critical { border-left-color: #9f1d20; }
+.tone-attention { border-left-color: #b66b16; }
+.tone-calm { border-left-color: #2f7a4f; }
+.tone-info { border-left-color: #2f5f8a; }
+.tone-muted { border-left-color: var(--taba-border, #dedbd5); }
+
+button.operation-metric {
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  border-left-width: 5px;
+}
+
+.operation-metric small {
+  color: var(--taba-muted, #6d675f);
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.operation-alert h4 {
+  margin: 0.5rem 0;
+}
+
+.operation-alert-severity {
+  font-weight: 700;
+}
+
+.operation-alert-status {
+  color: var(--taba-muted, #6d675f);
+}
+
+.operation-alert-facts {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.operation-alert-facts dt {
+  color: var(--taba-muted, #6d675f);
+  font-size: 0.85rem;
+}
+
+.operation-alert-facts dd {
+  margin: 0.15rem 0 0;
+}
+
+.operation-alert-support summary {
+  color: var(--taba-muted, #6d675f);
+  cursor: pointer;
+}
+
+/* Asistentes de conexión: un paso por fila, con su estado a la vista. */
+.business-wizard {
+  display: grid;
+  gap: 0.6rem;
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+}
+
+.business-wizard-step {
+  background: var(--taba-surface, #fff);
+  border: 1px solid var(--taba-border, #dedbd5);
+  border-left: 5px solid var(--taba-border, #dedbd5);
+  border-radius: 12px;
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.8rem 1rem;
+}
+
+.business-wizard-step.is-done { border-left-color: #2f7a4f; }
+.business-wizard-step.is-current { border-left-color: #b66b16; }
+.business-wizard-step.is-blocked { border-left-color: #9f1d20; }
+
+.business-wizard-step p,
+.business-wizard-step small {
+  display: block;
+  margin: 0.2rem 0 0;
+}
+
+.business-wizard-step small {
+  color: var(--taba-muted, #6d675f);
+}
+
+.business-wizard-why {
+  font-style: italic;
+}
+
+.business-wizard-index {
+  align-items: center;
+  background: var(--taba-border, #dedbd5);
+  border-radius: 50%;
+  display: flex;
+  flex: 0 0 auto;
+  font-weight: 700;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.business-wizard-step.is-done .business-wizard-index {
+  background: #2f7a4f;
+  color: #fff;
+}
+
+/* Tableros de estado: facturación, dispositivos, apertura y cierre. */
+.fiscal-board,
+.device-grid,
+.opening-grid,
+.closure-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  margin: 1rem 0;
+}
+
+.fiscal-board-card,
+.device-row,
+.opening-check,
+.closure-section {
+  background: var(--taba-surface, #fff);
+  border: 1px solid var(--taba-border, #dedbd5);
+  border-left-width: 5px;
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+}
+
+.fiscal-board-card span,
+.closure-section span {
+  color: var(--taba-muted, #6d675f);
+  display: block;
+  font-size: 0.85rem;
+}
+
+.fiscal-board-card strong,
+.closure-section strong {
+  display: block;
+  font-size: 1.2rem;
+  margin: 0.2rem 0;
+}
+
+.fiscal-board-card small,
+.closure-section small,
+.device-row small,
+.opening-check small {
+  color: var(--taba-muted, #6d675f);
+  display: block;
+}
+
+.device-row header,
+.opening-check header {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.closure-note {
+  margin: 0.5rem 0 1rem;
+}
+
+/* Alta de producto: la ficha se ve como la va a ver el cliente. */
+.product-preview {
+  margin-top: 1.2rem;
+}
+
+.product-preview-card {
+  border: 1px solid var(--taba-border, #dedbd5);
+  border-radius: 14px;
+  display: grid;
+  gap: 0.3rem;
+  max-width: 320px;
+  padding: 1rem;
+}
+
+.product-preview-price {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0.3rem 0;
+}
+
+.payment-refund-form {
+  border: 1px solid #9f1d20;
+  border-radius: 12px;
+  margin-top: 0.75rem;
+  padding: 0.85rem;
+}
+
+.business-role-footer {
+  border-top: 1px solid var(--taba-border, #dedbd5);
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .operation-summary,
+  .business-wizard-step {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

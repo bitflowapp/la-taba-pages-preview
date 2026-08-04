@@ -46,15 +46,26 @@ const VIEW_META = Object.freeze({
   'day-close': ['Cerrar el día', null],
 });
 
-// Qué necesita cada pantalla para poder abrirse.
+// Qué necesita cada pantalla para poder abrirse. Toda vista lleva permiso:
+// así un rol ajeno al negocio (por ejemplo un repartidor) no recibe ninguna.
 const VIEW_CAPABILITY = Object.freeze({
+  'operation-center': 'orders.view',
+  'day-open': 'day.open',
+  orders: 'orders.view',
   payments: 'payments.view',
   'payments-setup': 'payments.reconcile',
+  scanner: 'scanner.use',
+  'product-create': 'products.draft',
+  'inventory-receive': 'inventory.receive',
+  'inventory-adjust': 'inventory.receive',
+  'stock-count': 'inventory.count',
+  packing: 'packing.run',
+  pos: 'orders.advance',
+  'fiscal-status': 'printing.run',
   'fiscal-setup': 'fiscal.configure',
   'fiscal-config': 'fiscal.configure',
-  'day-close': 'day.close',
-  'day-open': 'day.open',
   devices: 'devices.test',
+  'day-close': 'day.close',
 });
 
 let context = defaultContext();
@@ -187,10 +198,7 @@ export function renderBusinessOperations(view) {
 
 // El panel no ofrece pantallas que el rol no puede usar; el servidor igual revalida.
 export function allowedBusinessOperationViews(role) {
-  return BUSINESS_OPERATION_VIEWS.filter((view) => {
-    const capability = VIEW_CAPABILITY[view];
-    return !capability || can(role, capability);
-  });
+  return BUSINESS_OPERATION_VIEWS.filter((view) => can(role, VIEW_CAPABILITY[view]));
 }
 
 export function activateBusinessOperations(view = currentView) {
@@ -778,10 +786,13 @@ async function saveFiscalConfiguration(target) {
 }
 
 async function requestCreditNote(button) {
+  // El servidor también lo exige; acá se evita ofrecer un botón que va a fallar.
+  const guard = requireCapability('fiscal.configure');
+  if (!guard.ok) return result(false, 'Las notas de crédito las confirma el dueño o el encargado.');
   const row = button.closest('[data-fiscal-document]');
   const reason = String(row?.querySelector('[name="creditReason"]')?.value || '').trim();
   const creditKind = String(row?.querySelector('[name="creditKind"]')?.value || 'total');
-  if (!reason) return result(false, 'La nota de crédito requiere un motivo.');
+  if (!reason) return result(false, 'Escribí por qué hacés la nota de crédito.');
   const lines = creditKind === 'total' ? [] : [...(row?.querySelectorAll('[data-credit-line]') || [])]
     .map((line) => {
       const quantity = Number(line.querySelector('[name="creditQuantity"]')?.value || 0);
@@ -1452,21 +1463,19 @@ async function authorizeArcaHomologation(target) {
 // ===== Abrir el negocio =====
 
 async function refreshOpeningStatus() {
-  const [opening, center] = await Promise.all([
-    context.getOpeningStatus(),
-    operationCenterSnapshot ? Promise.resolve({ ok: true, data: operationCenterSnapshot }) : context.getOperationCenter(),
-  ]);
+  const opening = await context.getOpeningStatus();
   openingStatusRaw = opening?.ok && opening.data && typeof opening.data === 'object' ? opening.data : null;
-  const snapshot = center?.ok && center.data && typeof center.data === 'object' ? center.data : operationCenterSnapshot;
-  openingSignals = buildOpeningSignals(openingStatusRaw, snapshot);
+  openingSignals = buildOpeningSignals(openingStatusRaw, Boolean(opening?.ok));
   if (!opening?.ok) feedback = humanizeFailure(opening?.message, 'No pudimos revisar todo antes de abrir.');
   context.onChange();
   return opening;
 }
 
 // Cruza lo que confirma el servidor con lo que sólo se puede ver desde esta computadora.
-function buildOpeningSignals(status, snapshot) {
-  const online = globalThis.navigator?.onLine;
+function buildOpeningSignals(status, serverAnswered) {
+  // Que el servidor haya contestado es la prueba de que hay internet; el aviso del
+  // navegador sólo se usa para detectar que se cayó.
+  const online = globalThis.navigator?.onLine === false ? false : serverAnswered ? true : globalThis.navigator?.onLine;
   const scannerReady = deviceResults.scanner?.state === 'connected';
   const printersReady = deviceResults.spooler?.state === 'connected' || deviceCheckPrinters.length > 0;
   const scannerTested = Boolean(deviceResults.scanner);
@@ -1474,9 +1483,11 @@ function buildOpeningSignals(status, snapshot) {
   return {
     internet: {
       status: online === false ? 'failed' : online === true ? 'ok' : 'unknown',
-      detail: online === false ? 'Esta computadora está sin internet.' : online === true ? 'Hay conexión.' : 'No se pudo determinar la conexión.',
+      detail: online === false
+        ? 'Esta computadora está sin internet.'
+        : online === true ? 'Hay conexión.' : 'No se pudo determinar la conexión.',
     },
-    backend: status?.backend || { status: status ? 'ok' : 'unknown' },
+    backend: status?.backend || { status: serverAnswered ? 'ok' : 'unknown' },
     payments: status?.payments || { status: 'unknown' },
     fiscal: status?.fiscal || { status: 'unknown' },
     riders: status?.riders || { status: 'unknown' },
@@ -1489,7 +1500,6 @@ function buildOpeningSignals(status, snapshot) {
       status: !printersTested ? 'unknown' : printersReady ? 'ok' : 'failed',
       detail: !printersTested ? 'Probalas desde Dispositivos.' : printersReady ? 'Hay impresoras disponibles.' : 'No se detectaron impresoras.',
     },
-    ...(snapshot ? {} : {}),
   };
 }
 

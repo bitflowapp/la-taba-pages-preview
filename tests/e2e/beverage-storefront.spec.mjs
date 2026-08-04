@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
-import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
+import {
+  gotoDemoReset, installBrowserStubs, installPageGuards, measureStableControls,
+} from './helpers.mjs';
 
 test('la home presenta La Taba 2 con marca propia y un storefront comercial limpio', async ({ page }) => {
   const guards = installPageGuards(page);
@@ -264,21 +266,27 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
     { width: 430, height: 932 },
   ]) {
     await page.setViewportSize(viewport);
-    const controls = page.locator(controlSelector);
+    // Consulta y medición en el mismo turno de JS: la home reemplaza su subárbol
+    // al recomponer los carruseles, y medir en dos viajes distintos dejaba leer
+    // nodos ya desconectados como si midieran 0x0. Ver measureStableControls.
+    const measured = await measureStableControls(page, controlSelector);
     // El conteo exacto describía la composición vieja (una grilla de 4 tarjetas).
     // Con carruseles por sección la cantidad depende del catálogo, así que el
     // contrato pasa a ser el que importa y no se relaja: TODO control táctil de
     // la home mide 44x44, sea cual sea el número. Se exige un piso para que un
     // render vacío no haga pasar la prueba por ausencia de controles.
-    expect(await controls.count(), `${viewport.width}x${viewport.height}`).toBeGreaterThanOrEqual(12);
-    const undersized = await controls.evaluateAll((nodes) => nodes
-      .map((node) => {
-        const rect = node.getBoundingClientRect();
-        return { selector: node.outerHTML.slice(0, 120), width: rect.width, height: rect.height };
-      })
-      .filter(({ width, height }) => width < 44 || height < 44));
+    expect(measured.controls.length, `${viewport.width}x${viewport.height}`).toBeGreaterThanOrEqual(12);
+    // Un control medido fuera del documento no describe la home que ve el
+    // cliente: si aparece, la medición no vale y el test tiene que decirlo.
+    expect(
+      measured.controls.filter(({ connected }) => !connected),
+      `${viewport.width}x${viewport.height} controles desconectados`,
+    ).toEqual([]);
+    const undersized = measured.controls
+      .filter(({ width, height }) => width < 44 || height < 44)
+      .map(({ selector, width, height }) => ({ selector, width, height }));
     expect(undersized, `${viewport.width}x${viewport.height}`).toEqual([]);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
+    expect(measured.scrollWidth).toBeLessThanOrEqual(measured.innerWidth + 1);
   }
 
   await page.setViewportSize({ width: 390, height: 844 });

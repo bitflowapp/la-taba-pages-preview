@@ -53,6 +53,11 @@ import {
   isUnitStorefrontProduct,
   uniqueProducts,
 } from './core/storefront-filters.js';
+import {
+  BEVERAGE_HOME_CATEGORY_ORDER,
+  buildBeverageHomeSections,
+  getBeverageHomeSection,
+} from './core/beverage-home-sections.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 import { riderAvatarHelmetSvg } from './map/rider_marker.js';
 import {
@@ -491,11 +496,12 @@ function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
 // "Destacados" del home: selección del local marcada en el catálogo. No es una
 // métrica de ventas y el copy no la presenta como tal.
 function homeOfferProducts() {
-  return getCustomerCatalogProducts(getState().products)
-    .filter((product) => product.available && product.stock > 0 && (product.popular || product.featured))
-    .filter((product) => !product.combo)
-    .sort((a, b) => popularScore(b) - popularScore(a))
-    .slice(0, 6);
+  return getBeverageHomeSection(
+    'offers',
+    getState().products,
+    getState().promotions,
+    { limit: 6 },
+  )?.products || [];
 }
 
 function renderOffers() {
@@ -510,23 +516,8 @@ function renderOffers() {
 // (con precio publicado y stock); las demás siguen accesibles desde "Todas".
 // Así la home nunca lleva a una categoría vacía ni promete un rubro que el
 // comercio todavía no publicó.
-const HOME_CATEGORY_PRIORITY = Object.freeze([
-  'gaseosas',
-  'cervezas',
-  'fernet',
-  'whisky',
-  'vinos',
-  'aperitivos',
-  'gin',
-  'espumantes',
-  'energizantes',
-  'isotonicas',
-  'aguas',
-  'aguas-saborizadas',
-  'mixers',
-  'complementos',
-]);
-const HOME_CATEGORY_LIMIT = 8;
+const HOME_CATEGORY_PRIORITY = BEVERAGE_HOME_CATEGORY_ORDER;
+const HOME_CATEGORY_LIMIT = BEVERAGE_HOME_CATEGORY_ORDER.length;
 
 function homeProducts(ids) {
   const productsById = new Map(
@@ -561,7 +552,20 @@ function homePromotionalProducts() {
   return promotionalProducts().slice(0, 6);
 }
 
+function homePopularSection() {
+  return getBeverageHomeSection(
+    'popular',
+    getState().products,
+    getState().promotions,
+    { limit: 3 },
+  );
+}
+
 function homeBestSellerProducts() {
+  const popular = homePopularSection()?.products || [];
+  if (popular.length) return popular.filter((product) => !product.pricePending);
+  // La selección heredada se mantiene como "Destacados" cuando todavía no
+  // existe una marca popular real. Nunca se presenta como "Lo más pedido".
   return unitStorefrontProducts().filter((product) => !product.pricePending).slice(0, 3);
 }
 
@@ -866,6 +870,9 @@ function renderHomePromotions() {
 function renderHomeBestSellers() {
   const container = $('[data-home-best-sellers]');
   if (!container) return;
+  const popularSection = homePopularSection();
+  const title = document.getElementById('home-best-title');
+  if (title) title.textContent = popularSection?.products.length ? popularSection.title : 'Destacados';
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
   container.innerHTML = homeBestSellerProducts().map((product) => {
     const pricing = productPricePresentation(product);
@@ -928,7 +935,17 @@ function renderHomeCatalogPreview() {
   const container = $('[data-home-catalog-preview]');
   if (!container) return;
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
-  container.innerHTML = unitStorefrontProducts().filter((product) => !product.pricePending).slice(0, 4).map((product) => {
+  const categoryProducts = buildBeverageHomeSections(
+    getState().products,
+    getState().promotions,
+    { limit: 6 },
+  )
+    .filter((section) => section.kind === 'category')
+    .flatMap((section) => section.products);
+  const previewProducts = uniqueProducts(categoryProducts)
+    .filter((product) => !product.pricePending)
+    .slice(0, 4);
+  container.innerHTML = previewProducts.map((product) => {
     const favorite = isFavoriteProduct(product.id);
     const pricing = productPricePresentation(product);
     const outOfStock = product.stock <= 0 || !product.available || product.pricePending;

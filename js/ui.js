@@ -645,10 +645,11 @@ const HOME_BANNER_COPY = Object.freeze({
   aguas: { eyebrow: 'Hidratación', title: 'Aguas y sodas' },
   complementos: { eyebrow: 'Complementos', title: 'Hielo y accesorios' },
 });
-// Dos como máximo. En teléfono sólo se muestra el primero (el segundo se
-// oculta por CSS): el presupuesto de altura del primer pantallazo es para
-// producto, no para vidriera.
-const HOME_BANNER_LIMIT = 2;
+// UNO en el encabezado. Antes eran dos y el CSS ocultaba el segundo en
+// teléfono; el resultado era que la segunda pieza —whisky, la más premium del
+// local— no existía en móvil, que es donde se compra. Ahora el encabezado se
+// queda con uno y los demás se reparten entre los carruseles, donde sí se ven.
+const HOME_BANNER_LIMIT = 1;
 
 // Prioridad del banner: primero los rubros premium. A diferencia de la fila de
 // categorías, acá NO se exige precio publicado, porque el banner es editorial
@@ -661,8 +662,8 @@ const HOME_BANNER_LIMIT = 2;
 // (whisky) quedan preciosas en grande pero a 400px de ancho no se distingue el
 // producto. Detrás siguen los rubros premium.
 const HOME_BANNER_PRIORITY = Object.freeze([
-  'cervezas', 'whisky', 'fernet', 'aperitivos', 'energizantes', 'mixers',
-  'vinos', 'gin', 'espumantes', 'gaseosas', 'aguas', 'complementos',
+  'cervezas', 'whisky', 'fernet', 'vinos', 'aperitivos', 'gin',
+  'energizantes', 'mixers', 'espumantes', 'gaseosas', 'aguas', 'complementos',
 ]);
 
 function categoriesWithProducts(state = getState()) {
@@ -671,32 +672,39 @@ function categoriesWithProducts(state = getState()) {
     .filter(Boolean));
 }
 
+// Categorías que hoy pueden encabezar un banner: existen en el catálogo, tienen
+// producto que mirar y tienen copy editorial escrito.
+function bannerEligibleCategoryIds() {
+  const withProducts = categoriesWithProducts();
+  const byId = new Map(categoriesForCurrentCatalog().map((category) => [category.id, category]));
+  return HOME_BANNER_PRIORITY.filter((id) => withProducts.has(id) && byId.has(id) && HOME_BANNER_COPY[id]);
+}
+
+function homeBannerMarkup(id) {
+  const copy = HOME_BANNER_COPY[id];
+  const category = categoriesForCurrentCatalog().find((entry) => entry.id === id);
+  if (!copy || !category) return '';
+  // El verbo distingue lo que se puede comprar de lo que sólo se puede mirar.
+  const action = purchasableCategoryIds().has(id) ? 'Ver' : 'Explorar';
+  const media = copy.image
+    ? `<span class="home-brand-banner-media" aria-hidden="true" style="background-image:url('${encodeURI(copy.image)}')"></span>`
+    : '';
+  return `
+    <button class="home-brand-banner ${copy.image ? 'has-media' : ''}" type="button" data-category-id="${escapeHtml(id)}" aria-label="${escapeHtml(`${copy.title}. ${action} la categoría ${category.name}`)}">
+      ${media}
+      <small>${escapeHtml(copy.eyebrow)}</small>
+      <strong>${escapeHtml(copy.title)}</strong>
+      <span>${escapeHtml(action)} ${escapeHtml(category.name.toLowerCase())} <span aria-hidden="true">→</span></span>
+    </button>`;
+}
+
 function renderHomeBanners() {
   const container = $('[data-home-banners]');
   if (!container) return;
-  const withProducts = categoriesWithProducts();
-  const purchasable = purchasableCategoryIds();
-  const byId = new Map(categoriesForCurrentCatalog().map((category) => [category.id, category]));
-  const picks = HOME_BANNER_PRIORITY
-    .filter((id) => withProducts.has(id) && byId.has(id) && HOME_BANNER_COPY[id])
-    .slice(0, HOME_BANNER_LIMIT);
-
-  container.innerHTML = picks.map((id) => {
-    const copy = HOME_BANNER_COPY[id];
-    const name = byId.get(id).name;
-    // El verbo distingue lo que se puede comprar de lo que sólo se puede mirar.
-    const action = purchasable.has(id) ? 'Ver' : 'Explorar';
-    const media = copy.image
-      ? `<span class="home-brand-banner-media" aria-hidden="true" style="background-image:url('${encodeURI(copy.image)}')"></span>`
-      : '';
-    return `
-      <button class="home-brand-banner ${copy.image ? 'has-media' : ''}" type="button" data-category-id="${escapeHtml(id)}" aria-label="${escapeHtml(`${copy.title}. ${action} la categoría ${name}`)}">
-        ${media}
-        <small>${escapeHtml(copy.eyebrow)}</small>
-        <strong>${escapeHtml(copy.title)}</strong>
-        <span>${escapeHtml(action)} ${escapeHtml(name.toLowerCase())} <span aria-hidden="true">→</span></span>
-      </button>`;
-  }).join('');
+  container.innerHTML = bannerEligibleCategoryIds()
+    .slice(0, HOME_BANNER_LIMIT)
+    .map(homeBannerMarkup)
+    .join('');
 }
 
 // ─── Historias comerciales ───────────────────────────────────────────────────
@@ -1004,13 +1012,34 @@ function renderHomeSections() {
     .filter((section) => section.products.length > 0)
     .slice(0, HOME_MAX_SECTIONS);
 
+  // Vidriera intercalada. Los rubros premium del local —whisky, fernet, vinos—
+  // todavía no publican precio, así que no pueden ser sección ni chip sin
+  // afirmar algo que el negocio no dijo. Sí pueden ser puerta: un banner
+  // editorial por tramo, con CTA a la categoría real, que rompe la sucesión de
+  // carruseles y hace que la home se lea como una tienda y no como una lista.
+  //
+  // Un banner sólo entra si su rubro NO tiene ya un carrusel propio en la home:
+  // repetir "Energizantes" como banner justo debajo del carrusel de
+  // energizantes gasta un tramo entero en decir dos veces lo mismo. Por
+  // construcción, entonces, los banners cubren exactamente lo que las secciones
+  // no pueden cubrir.
+  const sectionCategoryIds = new Set(sections.flatMap((section) => section.categoryIds));
+  const usedByHeader = new Set(bannerEligibleCategoryIds().slice(0, HOME_BANNER_LIMIT));
+  const interleaved = bannerEligibleCategoryIds()
+    .filter((id) => !usedByHeader.has(id) && !sectionCategoryIds.has(id));
+
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
-  container.innerHTML = sections.map((section) => {
+  container.innerHTML = sections.map((section, index) => {
     const headingId = `home-section-${escapeHtml(section.id)}`;
     const target = section.categoryIds[0] || 'all';
     const cards = section.products
       .map((product) => homeSectionCard(product, cartQuantities))
       .join('');
+    // El primer tramo va limpio: arriba ya hay un banner y encadenarlos deja al
+    // cliente con dos vidrieras seguidas antes del segundo producto.
+    const banner = index > 0 && interleaved.length
+      ? `<div class="home-brand-banners home-brand-banners-inline">${homeBannerMarkup(interleaved.shift())}</div>`
+      : '';
     return `
       <section class="home-merch-section home-category-section" aria-labelledby="${headingId}">
         <div class="home-section-head">
@@ -1020,7 +1049,7 @@ function renderHomeSections() {
           <button type="button" data-category-id="${escapeHtml(target)}">Ver todos</button>
         </div>
         <div class="home-best-sellers offers-rail">${cards}</div>
-      </section>`;
+      </section>${banner}`;
   }).join('');
 }
 

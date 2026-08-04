@@ -807,6 +807,20 @@ body[data-active-view="catalog"] .product-card {
   padding: 0 2px;
 }
 
+/* Los carruseles se apilaban sin separación: el rail de un rubro terminaba y el
+   título del siguiente empezaba pegado, así que los tramos se leían como una
+   lista continua en vez de como estantes distintos. */
+body[data-active-view="home"] .home-sections {
+  display: grid;
+  gap: 20px;
+}
+
+/* Banner intercalado entre tramos. Respira más que el bloque de arriba porque
+   corta la sucesión de carruseles: es el cambio de ritmo, no un renglón más. */
+.home-brand-banners-inline {
+  margin-top: 4px;
+}
+
 @media (max-width: 760px) {
   .home-brand-banner:nth-child(n + 2) {
     display: none;

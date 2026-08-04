@@ -89,7 +89,10 @@ async function contrast(page, selector) {
 async function openHome(page, { stories = null, viewport = PHONE } = {}) {
   await page.setViewportSize(viewport);
   await installBrowserStubs(page);
-  if (stories) {
+  // `null` = sin origen declarado: manda lo que traiga el modo (la demo siembra
+  // sus fixtures). Un array —incluido `[]`— declara el origen real y gana
+  // siempre, que es el contrato que consumirá el backend.
+  if (Array.isArray(stories)) {
     await page.addInitScript((fixtures) => { window.TABA2_STORIES = fixtures; }, stories);
   }
   await gotoDemoReset(page, '/?reset=1&demo=1');
@@ -111,8 +114,12 @@ test('el encabezado presenta la identidad real del comercio, no una escrita a ma
   await guards.assertClean();
 });
 
+// El origen productivo es el global que publica el backend. La demo siembra
+// fixtures propias (`preview-stories-data.js`), así que para ejercitar el
+// fail-closed hay que declarar explícitamente que el origen real está vacío:
+// es exactamente lo que ocurre en producción antes del primer publicado.
 test('sin historias publicadas el logo no se anuncia como botón', async ({ page }) => {
-  await openHome(page);
+  await openHome(page, { stories: [] });
 
   await expect(page.locator('[data-stories-slot]')).toHaveAttribute('data-stories-state', 'empty');
   await expect(page.locator('.brand-logo-action')).toBeHidden();
@@ -423,6 +430,8 @@ test('la home no crece sin control en los anchos objetivo', async ({ page }) => 
       viewportWidth: window.innerWidth,
       homeHeight: Math.ceil(document.querySelector('[data-view="home"]').getBoundingClientRect().height),
       homeSections: document.querySelectorAll('[data-home-sections] .home-category-section').length,
+      homeBanners: [...document.querySelectorAll('[data-view="home"] .home-brand-banner')]
+        .filter((node) => getComputedStyle(node).display !== 'none').length,
     }));
     expect(geometry.documentWidth, `${viewport.width}px`).toBeLessThanOrEqual(geometry.viewportWidth + 1);
     // La home pasó de una grilla de vista previa de 4 tarjetas a carruseles por
@@ -431,6 +440,63 @@ test('la home no crece sin control en los anchos objetivo', async ({ page }) => 
     // tope real vive en HOME_MAX_SECTIONS y este techo lo respalda. Sin ese
     // tope las 11 secciones definidas darían ~4000px y esto volvería a fallar.
     expect(geometry.homeSections, `${viewport.width}px`).toBeLessThanOrEqual(6);
-    expect(geometry.homeHeight, `${viewport.width}px`).toBeLessThan(2800);
+    // Cada tramo puede cerrar con un banner editorial, así que el techo sube con
+    // la vidriera: 6 secciones + 6 banners de 150px en escritorio. Sigue siendo
+    // un techo real —una sección de más lo rompe— y se acompaña del invariante
+    // de abajo, que impide que los banners crezcan por su cuenta.
+    expect(geometry.homeBanners, `${viewport.width}px`).toBeLessThanOrEqual(geometry.homeSections);
+    expect(geometry.homeHeight, `${viewport.width}px`).toBeLessThan(3200);
+  }
+});
+
+// La vidriera intercalada tiene tres reglas que no pueden aflojarse sin que la
+// home vuelva a ser un muestrario: un banner no repite un rubro que ya tiene
+// carrusel, nunca hay dos seguidos y ninguno afirma un precio.
+test('los banners editoriales cortan el ritmo sin repetir rubro ni prometer precio', async ({ page }) => {
+  await openHome(page);
+
+  const composicion = await page.evaluate(() => {
+    const visible = (node) => getComputedStyle(node).display !== 'none';
+    const banners = [...document.querySelectorAll('[data-view="home"] .home-brand-banner')].filter(visible);
+    const secciones = [...document.querySelectorAll('[data-home-sections] .home-category-section')];
+    return {
+      rubrosBanner: banners.map((node) => node.dataset.categoryId),
+      textos: banners.map((node) => node.textContent.replace(/\s+/g, ' ').trim()),
+      seccionesConCarrusel: secciones
+        .map((node) => node.querySelector('[data-category-id]')?.dataset.categoryId)
+        .filter(Boolean),
+      // Dos banners "seguidos" = sin un tramo de producto entre medio.
+      adyacentes: banners.filter((node, index) => {
+        if (index === 0) return false;
+        const previo = banners[index - 1].getBoundingClientRect().bottom;
+        return node.getBoundingClientRect().top - previo < 60;
+      }).length,
+    };
+  });
+
+  expect(composicion.rubrosBanner.length).toBeGreaterThan(0);
+  expect(composicion.adyacentes, 'banners consecutivos').toBe(0);
+  expect(new Set(composicion.rubrosBanner).size, 'rubros repetidos entre banners')
+    .toBe(composicion.rubrosBanner.length);
+
+  // Un banner sobre un rubro que ya tiene carrusel gasta un tramo en repetir.
+  // El encabezado es la única excepción: abre la home antes del primer carrusel.
+  for (const rubro of composicion.rubrosBanner.slice(1)) {
+    expect(composicion.seccionesConCarrusel, `banner ${rubro} duplica su carrusel`)
+      .not.toContain(rubro);
+  }
+
+  for (const texto of composicion.textos) {
+    expect(texto, 'un banner editorial no puede afirmar importe ni descuento')
+      .not.toMatch(/\$|%|\bdescuento\b|\boferta\b|\bpromo\b/i);
+  }
+
+  // Ningún banner puede ser un link muerto.
+  for (const rubro of composicion.rubrosBanner) {
+    await page.locator(`[data-view="home"] .home-brand-banner[data-category-id="${rubro}"]`).click();
+    await expect(page.locator('[data-view="catalog"]')).toBeVisible();
+    await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
+    await page.goBack();
+    await expect(page.locator('[data-view="home"]')).toBeVisible();
   }
 });

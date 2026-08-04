@@ -6,14 +6,32 @@ import {
   revertPackingScanLocally, undoLastPackingScan,
 } from './business-packing-verification.js';
 import { presentFiscalStatus } from '../pos/fiscal-status-presenter.js';
+import { can, isElevated } from './business-capabilities.js';
+import { humanizeFailure } from './business-operation-language.js';
+import { validateRefundRequest } from './business-payments-console.js';
+import { validateHomologationAuthorization } from './business-fiscal-assistant.js';
+import {
+  classifyPrinterProbe, classifyPrintSubmission, classifyQrCheck, classifyScannerCheck, classifySpoolerCheck,
+} from './business-device-check.js';
+import { evaluateDailyClosure, validateClosureOverride } from './business-day-control.js';
+import { buildStorefrontPreview, describeDraft, planScanOutcome, validateProductDraft } from './business-product-onboarding.js';
+import {
+  renderDayCloseSurface, renderDayOpenSurface, renderDevicesSurface, renderFiscalSetupSurface,
+  renderOperationCenterSurface, renderPaymentsSetupSurface, renderPaymentsSurface, renderProductOnboardingSurface,
+} from './business-panel-render.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
-  'operation-center', 'scanner', 'product-create', 'inventory-receive', 'inventory-adjust',
-  'stock-count', 'packing', 'pos', 'fiscal-status', 'fiscal-config',
+  'operation-center', 'day-open', 'orders', 'payments', 'payments-setup', 'scanner', 'product-create',
+  'inventory-receive', 'inventory-adjust', 'stock-count', 'packing', 'pos',
+  'fiscal-status', 'fiscal-setup', 'fiscal-config', 'devices', 'day-close',
 ]);
 
 const VIEW_META = Object.freeze({
   'operation-center': ['Centro de operación', null],
+  'day-open': ['Abrir el negocio', null],
+  orders: ['Pedidos', null],
+  payments: ['Pagos', null],
+  'payments-setup': ['Conectar Mercado Pago', null],
   scanner: ['Escáner rápido', 'product_lookup'],
   'product-create': ['Alta de producto', 'product_create'],
   'inventory-receive': ['Recepción', 'inventory_receive'],
@@ -21,8 +39,22 @@ const VIEW_META = Object.freeze({
   'stock-count': ['Conteo físico', 'stock_count'],
   packing: ['Preparación', 'order_packing'],
   pos: ['Mostrador', 'pos_sale'],
-  'fiscal-status': ['Estado fiscal', null],
-  'fiscal-config': ['Configuración fiscal', null],
+  'fiscal-status': ['Comprobantes', null],
+  'fiscal-setup': ['Facturación', null],
+  'fiscal-config': ['Datos fiscales', null],
+  devices: ['Dispositivos', 'product_lookup'],
+  'day-close': ['Cerrar el día', null],
+});
+
+// Qué necesita cada pantalla para poder abrirse.
+const VIEW_CAPABILITY = Object.freeze({
+  payments: 'payments.view',
+  'payments-setup': 'payments.reconcile',
+  'fiscal-setup': 'fiscal.configure',
+  'fiscal-config': 'fiscal.configure',
+  'day-close': 'day.close',
+  'day-open': 'day.open',
+  devices: 'devices.test',
 });
 
 let context = defaultContext();
@@ -51,6 +83,26 @@ let operationCenterStatus = { phase: 'idle', message: '' };
 let operationCenterRefreshStarted = false;
 let operationCenterRefreshTimer = null;
 let signedUpdateStatus = null;
+let paymentsActivation = null;
+let payments = [];
+let paymentsStatus = { phase: 'idle', message: '' };
+let paymentsLoadStarted = false;
+let refundTarget = '';
+let arcaActivation = null;
+let arcaLoadStarted = false;
+let arcaAuthorizationDraft = '';
+let openingSignals = null;
+let openingStatusRaw = null;
+let openingLoadStarted = false;
+let deviceResults = {};
+let deviceCheckPrinters = [];
+let productPlan = null;
+let productDraftView = null;
+let productPreview = null;
+let productErrors = [];
+let productReadiness = null;
+let productId = '';
+let dailyRun = null;
 
 export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
@@ -62,15 +114,60 @@ export function configureBusinessOperations(next = {}) {
   operationCenterStatus = { phase: 'idle', message: '' };
   operationCenterRefreshStarted = false;
   signedUpdateStatus = null;
+  paymentsActivation = null;
+  payments = [];
+  paymentsStatus = { phase: 'idle', message: '' };
+  paymentsLoadStarted = false;
+  refundTarget = '';
+  arcaActivation = null;
+  arcaLoadStarted = false;
+  arcaAuthorizationDraft = '';
+  openingSignals = null;
+  openingStatusRaw = null;
+  openingLoadStarted = false;
+  deviceResults = {};
+  deviceCheckPrinters = [];
+  resetProductOnboarding();
+  dailyRun = null;
   return context;
 }
 
 export function renderBusinessOperations(view) {
   currentView = BUSINESS_OPERATION_VIEWS.includes(view) ? view : 'scanner';
   const content = ({
-    'operation-center': renderOperationCenter,
+    'operation-center': () => renderOperationCenterSurface({
+      snapshot: operationCenterSnapshot,
+      status: operationCenterStatus,
+      role: context.role,
+      busy,
+      support: { isNative: context.desktopPlatform?.isNative, signedUpdate: signedUpdateStatus },
+    }),
+    'day-open': () => renderDayOpenSurface({
+      opening: openingSignals, businessStatus: openingStatusRaw?.business_status, role: context.role, busy,
+    }),
+    payments: () => renderPaymentsSurface({
+      payments, status: paymentsStatus, role: context.role, activation: paymentsActivation, busy, refundTarget,
+    }),
+    'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, role: context.role, busy }),
+    'fiscal-setup': () => renderFiscalSetupSurface({
+      activation: arcaActivation, role: context.role, busy, authorizationDraft: arcaAuthorizationDraft,
+    }),
+    devices: () => renderDevicesSurface({
+      results: deviceResults, printers: deviceCheckPrinters, isNative: context.desktopPlatform?.isNative, busy,
+    }),
+    'day-close': () => renderDayCloseSurface({
+      run: dailyRun,
+      alerts: operationCenterSnapshot?.alerts || [],
+      role: context.role,
+      busy,
+      businessDate: operationBusinessDate(),
+      timezone: operationTimezone(),
+    }),
     scanner: renderScanner,
-    'product-create': renderProductCreate,
+    'product-create': () => renderProductOnboardingSurface({
+      plan: productPlan, draft: productDraftView, readiness: productReadiness,
+      preview: productPreview, errors: productErrors, role: context.role, busy,
+    }),
     'inventory-receive': () => renderInventory('purchase_receipt'),
     'inventory-adjust': () => renderInventory('manual_adjustment'),
     'stock-count': renderStockCount,
@@ -78,6 +175,7 @@ export function renderBusinessOperations(view) {
     pos: renderPos,
     'fiscal-status': renderFiscalStatus,
     'fiscal-config': renderFiscalConfig,
+    orders: () => '',
   })[currentView]();
   queueMicrotask(() => activateBusinessOperations(currentView));
   return `<section class="business-ops-center" data-business-ops-center="${escapeHtml(currentView)}">
@@ -87,9 +185,18 @@ export function renderBusinessOperations(view) {
   </section>`;
 }
 
+// El panel no ofrece pantallas que el rol no puede usar; el servidor igual revalida.
+export function allowedBusinessOperationViews(role) {
+  return BUSINESS_OPERATION_VIEWS.filter((view) => {
+    const capability = VIEW_CAPABILITY[view];
+    return !capability || can(role, capability);
+  });
+}
+
 export function activateBusinessOperations(view = currentView) {
   const mode = VIEW_META[view]?.[1];
   if (view !== 'operation-center') stopOperationCenterRefresh();
+  if (view !== 'devices' && view !== 'product-create') productPreview = null;
   if (!mode) {
     scanner?.stop();
     if (view === 'operation-center' && !operationCenterRefreshStarted) {
@@ -100,11 +207,24 @@ export function activateBusinessOperations(view = currentView) {
       fiscalInitialRefreshStarted = true;
       void refreshFiscal();
     }
+    if ((view === 'payments' || view === 'payments-setup') && !paymentsLoadStarted) {
+      paymentsLoadStarted = true;
+      void refreshPayments();
+    }
+    if (view === 'fiscal-setup' && !arcaLoadStarted) {
+      arcaLoadStarted = true;
+      void refreshArcaActivation();
+    }
+    if (view === 'day-open' && !openingLoadStarted) {
+      openingLoadStarted = true;
+      void refreshOpeningStatus();
+    }
     return;
   }
   scanner ||= createBarcodeScannerService();
   unsubscribeScanner ||= scanner.subscribe((event) => { void processScan(event); });
   scanner.start(mode);
+  if (view === 'devices' && !deviceCheckPrinters.length) void refreshDeviceCheckPrinters();
   if (view === 'packing' && !packingRestoreStarted) {
     packingRestoreStarted = true;
     void restorePackingSession();
@@ -124,7 +244,7 @@ export async function handleBusinessOperationsAction(target) {
   }
 
   if (target.closest('[data-create-product-draft]')) {
-    if (!lastScan?.isValid) return result(false, 'Escaneá un GTIN válido antes de crear el borrador.');
+    if (!lastScan?.isValid) return result(false, 'Escaneá un código válido antes de abrir el borrador.');
     busy = true;
     const response = await context.createProductDraft({
       gtin: lastScan.normalizedValue,
@@ -132,13 +252,54 @@ export async function handleBusinessOperationsAction(target) {
       idempotencyKey: createKey('product-draft'),
     });
     busy = false;
-    if (response?.ok) productDraft = Array.isArray(response.data) ? response.data[0] : response.data;
-    feedback = response?.ok ? 'Borrador creado. Requiere confirmación owner/admin.' : response?.message || 'No se pudo crear el borrador.';
+    if (response?.ok) {
+      productDraft = Array.isArray(response.data) ? response.data[0] : response.data;
+      productDraftView = describeDraft(productDraft, { operatorName: context.operatorName });
+      productErrors = [];
+      productPreview = null;
+    }
+    feedback = response?.ok
+      ? 'Borrador abierto. Falta completar los datos antes de publicarlo.'
+      : humanizeFailure(response?.message, 'No se pudo abrir el borrador.');
     context.onChange();
     return result(Boolean(response?.ok), feedback);
   }
 
-  if (target.closest('[data-publish-product-draft]')) return publishProductDraft(target);
+  if (target.closest('[data-product-preview]')) return previewProductDraft(target);
+  if (target.closest('[data-product-complete]')) return completeProductDraft(target);
+  if (target.closest('[data-product-publish]')) return refreshProductReadiness();
+
+  if (target.closest('[data-payments-refresh]')) return refreshPaymentsAction();
+  if (target.closest('[data-mercadopago-status-refresh]')) return refreshPaymentsAction();
+  if (target.closest('[data-mercadopago-settings-save]')) return saveMercadoPagoSettings(target);
+  if (target.closest('[data-mercadopago-enable]')) return enableMercadoPagoTestCharges();
+  const paymentAction = target.closest('[data-payment-action]');
+  if (paymentAction) return runPaymentAction(paymentAction);
+  const refundConfirm = target.closest('[data-payment-refund-confirm]');
+  if (refundConfirm) return confirmPaymentRefund(refundConfirm);
+  if (target.closest('[data-payment-refund-cancel]')) {
+    refundTarget = '';
+    context.onChange();
+    return result(true, 'Devolución cancelada. No se movió dinero.');
+  }
+
+  if (target.closest('[data-arca-status-refresh]')) {
+    await refreshArcaActivation();
+    return result(true, 'Estado de facturación actualizado.');
+  }
+  if (target.closest('[data-arca-authorize]')) return authorizeArcaHomologation(target);
+
+  if (target.closest('[data-opening-refresh]')) {
+    await refreshOpeningStatus();
+    return result(true, 'Revisión de apertura actualizada.');
+  }
+  const openState = target.closest('[data-business-open-state]');
+  if (openState) return setBusinessOpenState(openState);
+
+  const deviceTest = target.closest('[data-device-test]');
+  if (deviceTest) return runDeviceTest(deviceTest);
+  const deviceConfirm = target.closest('[data-device-confirm]');
+  if (deviceConfirm) return confirmDevicePrint(deviceConfirm);
 
   const inventoryButton = target.closest('[data-inventory-confirm]');
   if (inventoryButton) return confirmInventory(inventoryButton);
@@ -262,13 +423,45 @@ export function resetBusinessOperationsForTests() {
   operationCenterStatus = { phase: 'idle', message: '' };
   operationCenterRefreshStarted = false;
   signedUpdateStatus = null;
+  paymentsActivation = null;
+  payments = [];
+  paymentsStatus = { phase: 'idle', message: '' };
+  paymentsLoadStarted = false;
+  refundTarget = '';
+  arcaActivation = null;
+  arcaLoadStarted = false;
+  arcaAuthorizationDraft = '';
+  openingSignals = null;
+  openingStatusRaw = null;
+  openingLoadStarted = false;
+  deviceResults = {};
+  deviceCheckPrinters = [];
+  resetProductOnboarding();
+  dailyRun = null;
+}
+
+function resetProductOnboarding() {
+  productDraft = null;
+  productDraftView = null;
+  productPlan = null;
+  productPreview = null;
+  productErrors = [];
+  productReadiness = null;
+  productId = '';
 }
 
 async function processScan(event) {
   scannerDraftValue = '';
   lastScan = event;
   lookup = null;
+  if (currentView === 'devices') {
+    deviceResults = { ...deviceResults, scanner: classifyScannerCheck(event) };
+    feedback = deviceResults.scanner.detail;
+    context.onChange();
+    return;
+  }
   if (!event.isValid) {
+    if (currentView === 'product-create') productPlan = planScanOutcome({ scan: event, lookup: null });
     feedback = event.reason === 'DUPLICATE_SCAN' ? 'Lectura duplicada ignorada.' : 'Código inválido.';
     context.onChange();
     return;
@@ -285,8 +478,18 @@ async function processScan(event) {
     : await context.lookupBarcode(event.normalizedValue);
   busy = false;
   const binding = lookup?.data || null;
+  if (currentView === 'product-create') {
+    productPlan = planScanOutcome({ scan: event, lookup: binding });
+    productDraftView = null;
+    productPreview = null;
+    productErrors = [];
+    productReadiness = null;
+    feedback = productPlan.headline;
+    context.onChange();
+    return;
+  }
   if (!binding) {
-    feedback = 'Producto desconocido. Podés crear un borrador para revisión.';
+    feedback = 'Este código todavía no está cargado. Abrilo como borrador desde Alta de producto.';
   } else if (currentView === 'pos') {
     addScannedPosItem(binding);
     feedback = 'Producto agregado al borrador de venta.';
@@ -347,29 +550,6 @@ async function confirmInventory(button) {
     idempotencyKey: createKey('inventory'),
   });
   feedback = response?.ok ? 'Stock actualizado por el servidor.' : response?.message || 'Stock pendiente de confirmación.';
-  context.onChange();
-  return result(Boolean(response?.ok), feedback);
-}
-
-async function publishProductDraft(target) {
-  if (!productDraft?.id) return result(false, 'No hay un borrador pendiente de revisión.');
-  const root = target.closest('[data-business-ops-center]');
-  const input = {
-    draftId: productDraft.id,
-    name: String(root?.querySelector('[name="productName"]')?.value || '').trim(),
-    category: String(root?.querySelector('[name="productCategory"]')?.value || '').trim(),
-    price: Number(root?.querySelector('[name="productPrice"]')?.value),
-    packageType: String(root?.querySelector('[name="packageType"]')?.value || 'unit'),
-    unitFactor: positiveInteger(root?.querySelector('[name="unitFactor"]')?.value, 0),
-  };
-  if (!input.name || !input.category || !Number.isFinite(input.price) || input.price < 0 || !input.unitFactor) {
-    return result(false, 'Completá nombre, categoría, precio y factor.');
-  }
-  const response = await context.publishProductDraft(input);
-  feedback = response?.ok
-    ? 'Producto creado inactivo y no verificado; falta la verificación de catálogo antes de vender.'
-    : response?.message || 'No se pudo publicar el borrador.';
-  if (response?.ok) productDraft = null;
   context.onChange();
   return result(Boolean(response?.ok), feedback);
 }
@@ -803,7 +983,7 @@ async function prepareDailyReconciliation(target) {
   const declaredCash = Number(root?.querySelector('[name="dailyDeclaredCash"]')?.value || 0);
   const differenceNote = String(root?.querySelector('[name="dailyDifferenceNote"]')?.value || '').trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(businessDate) || !Number.isFinite(declaredCash) || declaredCash < 0) {
-    return result(false, 'Ingresá una fecha y un efectivo declarado válidos.');
+    return result(false, 'Poné la fecha del día y cuánto efectivo contaste.');
   }
   const cents = Math.round(declaredCash * 100);
   const idempotencyKey = `daily-prepare:${businessDate}:${cents}:${shortTextFingerprint(differenceNote)}`;
@@ -816,9 +996,10 @@ async function prepareDailyReconciliation(target) {
     idempotencyKey,
   });
   busy = false;
+  if (response?.ok) dailyRun = readReconciliation(response.data);
   feedback = response?.ok
-    ? 'Conciliación preparada con valores autoritativos. Revisá diferencias antes de cerrar.'
-    : fiscalMessage(response, 'No se pudo preparar la conciliación.');
+    ? 'Cierre calculado con los números del servidor. Revisá las diferencias antes de firmar.'
+    : humanizeFailure(fiscalMessage(response, ''), 'No se pudo calcular el cierre.');
   if (response?.ok) await refreshOperationCenter();
   else context.onChange();
   return result(Boolean(response?.ok), feedback);
@@ -826,11 +1007,24 @@ async function prepareDailyReconciliation(target) {
 
 async function closeDailyReconciliation(button) {
   if (busy) return result(false, 'Ya hay un cierre en curso.');
-  if (!['owner', 'admin'].includes(context.role)) return result(false, 'El cierre final requiere owner o admin.');
+  const guard = requireCapability('day.close');
+  if (!guard.ok) return result(false, 'El cierre del día lo firma el dueño o el encargado.');
   const reconciliationId = String(button.dataset.dailyReconciliationClose || '');
   const expectedRevision = Number(button.dataset.dailyReconciliationRevision || 0);
   if (!reconciliationId || !Number.isSafeInteger(expectedRevision) || expectedRevision < 1) {
-    return result(false, 'La revisión del cierre no es válida; actualizá el Centro de operación.');
+    return result(false, 'El cierre cambió mientras lo mirabas. Volvé a calcularlo.');
+  }
+  // Con problemas críticos abiertos, el cierre exige explicación y confirmación escrita.
+  const closure = evaluateDailyClosure(dailyRun || {}, { alerts: operationCenterSnapshot?.alerts || [] });
+  const root = button.closest('[data-business-ops-center]');
+  const override = validateClosureOverride({
+    criticalAlerts: closure.criticalAlerts,
+    note: root?.querySelector('[name="closureOverrideNote"]')?.value,
+    confirmation: root?.querySelector('[name="closureOverrideConfirmation"]')?.value,
+  });
+  if (!override.ok) return result(false, override.message);
+  if (closure.blockers.some((blocker) => blocker.id === 'cash-difference')) {
+    return result(false, closure.blockers.find((blocker) => blocker.id === 'cash-difference').detail);
   }
   busy = true;
   const response = await context.closeDailyReconciliation({
@@ -839,12 +1033,19 @@ async function closeDailyReconciliation(button) {
     idempotencyKey: `daily-close:${reconciliationId}`,
   });
   busy = false;
+  if (response?.ok) dailyRun = readReconciliation(response.data);
   feedback = response?.ok
-    ? 'Cierre diario finalizado e inmutable. El hash quedó registrado.'
-    : fiscalMessage(response, 'No se pudo finalizar el cierre diario.');
+    ? 'Día cerrado. Queda registrado y ya no se puede modificar.'
+    : humanizeFailure(fiscalMessage(response, ''), 'No se pudo cerrar el día.');
   if (response?.ok) await refreshOperationCenter();
   else context.onChange();
   return result(Boolean(response?.ok), feedback);
+}
+
+function readReconciliation(data) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const run = payload.reconciliation && typeof payload.reconciliation === 'object' ? payload.reconciliation : payload;
+  return run && run.id ? run : null;
 }
 
 async function createLocalBackup() {
@@ -938,121 +1139,13 @@ async function installSignedUpdate(button) {
   }
 }
 
-function renderOperationCenter() {
-  if (operationCenterStatus.phase === 'loading' && !operationCenterSnapshot) {
-    return panel('Centro de operación', 'Estado autoritativo del negocio.', '<p class="form-hint" aria-live="polite">Reconciliando operación…</p>');
-  }
-  if (operationCenterStatus.phase === 'error' && !operationCenterSnapshot) {
-    return panel('Centro de operación', 'No se confirman estados que PostgreSQL no pudo entregar.', `
-      <p class="production-intake-error" role="alert">${escapeHtml(operationCenterStatus.message)}</p>
-      <button class="primary-button" type="button" data-operation-center-refresh>Reintentar</button>`);
-  }
-  const snapshot = operationCenterSnapshot || { metrics: {}, alerts: [], recent_closures: [] };
-  const metrics = snapshot.metrics || {};
-  const cards = [
-    ['new_orders', 'Pedidos nuevos'],
-    ['delayed_orders', 'Pedidos demorados'],
-    ['pending_payments', 'Pagos pendientes'],
-    ['payments_in_review', 'Pagos en revisión'],
-    ['orders_without_stock', 'Pedidos sin stock'],
-    ['packing_incomplete', 'Packing incompleto'],
-    ['active_deliveries', 'Entregas activas'],
-    ['riders_without_signal', 'Riders sin señal'],
-    ['fiscal_documents_pending', 'Documentos fiscales pendientes'],
-    ['failed_prints', 'Impresiones fallidas'],
-    ['pending_credit_notes', 'Notas de crédito pendientes'],
-    ['blocked_outboxes', 'Outbox bloqueadas'],
-    ['reconciliations_required', 'Reconciliaciones requeridas'],
-  ].map(([key, label]) => `<article class="operation-metric ${Number(metrics[key] || 0) > 0 ? 'requires-attention' : ''}" data-operation-metric="${key}">
-      <strong>${escapeHtml(String(Number(metrics[key] || 0)))}</strong><span>${escapeHtml(label)}</span>
-    </article>`).join('');
-  const alerts = Array.isArray(snapshot.alerts) && snapshot.alerts.length
-    ? snapshot.alerts.map(renderOperationalAlert).join('')
-    : '<p class="form-hint">No hay alertas operativas abiertas.</p>';
-  const closures = Array.isArray(snapshot.recent_closures) && snapshot.recent_closures.length
-    ? snapshot.recent_closures.map(renderDailyReconciliation).join('')
-    : '<p class="form-hint">Todavía no hay cierres diarios preparados.</p>';
-  const localContinuity = context.desktopPlatform?.isNative
-    ? `<div class="button-row">
-        <button class="secondary-button compact" type="button" data-local-backup-create>Crear backup local verificado</button>
-        <button class="ghost-button compact" type="button" data-support-diagnostic-export>Exportar diagnóstico sanitizado</button>
-        <button class="ghost-button compact" type="button" data-support-export-folder>Abrir exportaciones</button>
-        <button class="ghost-button compact" type="button" data-signed-update-check>Buscar actualización firmada</button>
-        ${signedUpdateStatus?.available ? `<button class="primary-button compact" type="button" data-signed-update-install="${escapeHtml(String(signedUpdateStatus.version || ''))}">Instalar ${escapeHtml(String(signedUpdateStatus.version || ''))} y reiniciar</button>` : ''}
-      </div>`
-    : '<p class="form-hint">Backup local y diagnóstico disponibles en TABA para Windows.</p>';
-  return panel('Centro de operación', 'Prioriza excepciones, conciliación y acciones recuperables.', `
-    <div class="operation-center-toolbar">
-      <span class="form-hint">Actualizado ${escapeHtml(formatOperationTimestamp(snapshot.generated_at))}</span>
-      <button class="ghost-button compact" type="button" data-operation-center-refresh>Actualizar</button>
-    </div>
-    <div class="operation-metrics-grid" aria-label="Resumen operativo">${cards}</div>
-    <section class="operation-alerts" aria-labelledby="operation-alerts-title">
-      <h3 id="operation-alerts-title">Alertas con acción</h3>${alerts}
-    </section>
-    <section class="daily-reconciliation" aria-labelledby="daily-reconciliation-title">
-      <h3 id="daily-reconciliation-title">Conciliación y cierre diario</h3>
-      <div class="business-ops-form daily-reconciliation-form">
-        <label>Fecha operativa<input name="dailyBusinessDate" type="date" value="${operationBusinessDate()}"></label>
-        <input name="dailyTimezone" type="hidden" value="${escapeHtml(operationTimezone())}">
-        <label>Efectivo declarado<input name="dailyDeclaredCash" type="number" min="0" step="0.01" value="0"></label>
-        <label>Diferencia o explicación<textarea name="dailyDifferenceNote" maxlength="500" placeholder="Obligatoria si la caja difiere"></textarea></label>
-        <button class="secondary-button" type="button" data-daily-reconciliation-prepare>Preparar conciliación</button>
-      </div>
-      <div class="daily-reconciliation-list">${closures}</div>
-    </section>
-    <section class="operation-support" aria-labelledby="operation-support-title">
-      <h3 id="operation-support-title">Continuidad local y soporte</h3>
-      <p class="form-hint">El backup protege la cola local; PostgreSQL y Storage privados siguen siendo la fuente de verdad. La exportación excluye payloads, secretos, rutas e identificadores de impresora.</p>
-      ${localContinuity}
-    </section>`);
-}
-
-function renderOperationalAlert(alert) {
-  const status = String(alert.status || 'open');
-  const correlation = String(alert.correlation_id || '');
-  return `<article class="operation-alert severity-${escapeHtml(String(alert.severity || 'INFO').toLowerCase())}" data-operational-alert="${escapeHtml(String(alert.id || ''))}">
-    <header><strong>${escapeHtml(String(alert.severity || 'INFO'))}</strong><span>${escapeHtml(String(alert.summary || 'Alerta operativa'))}</span></header>
-    <p>${escapeHtml(String(alert.required_action || 'Revisar la operación.'))}</p>
-    <p class="form-hint">${escapeHtml(String(alert.code || 'OPERATION_ALERT'))}${correlation ? ` · correlación ${escapeHtml(shortCorrelation(correlation))}` : ''} · ${escapeHtml(status)}</p>
-    <div class="business-ops-form compact">
-      ${status === 'open' ? `<button class="ghost-button compact" type="button" data-operational-alert-acknowledge="${escapeHtml(String(alert.id || ''))}">Reconocer</button>` : ''}
-      <label>Resolución<input name="operationalResolutionNote" maxlength="500" placeholder="Qué se verificó o corrigió"></label>
-      <button class="secondary-button compact" type="button" data-operational-alert-resolve="${escapeHtml(String(alert.id || ''))}">Resolver con auditoría</button>
-    </div>
-  </article>`;
-}
-
-function renderDailyReconciliation(run) {
-  const difference = Number(run.cash_difference || 0);
-  const closed = run.status === 'closed';
-  const closeButton = !closed && ['owner', 'admin'].includes(context.role)
-    ? `<button class="primary-button compact" type="button" data-daily-reconciliation-close="${escapeHtml(String(run.id || ''))}" data-daily-reconciliation-revision="${escapeHtml(String(run.revision || 0))}">Finalizar cierre</button>`
-    : '';
-  return `<article class="daily-reconciliation-row ${difference ? 'has-difference' : ''}" data-daily-reconciliation="${escapeHtml(String(run.id || ''))}">
-    <header><strong>${escapeHtml(String(run.business_date || ''))}</strong><span>${closed ? 'Cerrado' : 'Abierto · revisar'}</span></header>
-    <dl>
-      <div><dt>Efectivo esperado</dt><dd>${formatOperationMoney(run.expected_cash)}</dd></div>
-      <div><dt>Efectivo declarado</dt><dd>${formatOperationMoney(run.declared_cash)}</dd></div>
-      <div><dt>Diferencia</dt><dd>${formatOperationMoney(difference)}</dd></div>
-      <div><dt>Alertas</dt><dd>${Number(run.open_alerts || 0)} abiertas · ${Number(run.critical_alerts || 0)} críticas</dd></div>
-    </dl>
-    ${run.difference_note ? `<p><strong>Explicación:</strong> ${escapeHtml(String(run.difference_note))}</p>` : ''}
-    ${run.snapshot_sha256 ? `<p class="form-hint">SHA-256 ${escapeHtml(shortHash(String(run.snapshot_sha256)))}</p>` : ''}
-    ${closeButton}
-  </article>`;
-}
-
 function renderNavigation() {
-  return `<nav class="business-ops-nav" aria-label="Herramientas operativas">${BUSINESS_OPERATION_VIEWS.map((view) => `
+  const views = allowedBusinessOperationViews(context.role).filter((view) => view !== 'orders');
+  return `<nav class="business-ops-nav" aria-label="Herramientas del panel">${views.map((view) => `
     <button type="button" class="business-ops-nav-button ${view === currentView ? 'active' : ''}" data-business-ops-view="${view}" aria-pressed="${view === currentView}">${escapeHtml(VIEW_META[view][0])}</button>`).join('')}</nav>`;
 }
 
 function renderScanner() { return panel('Escáner rápido', 'Lectura HID tipo teclado, Enter o Tab para confirmar.', `${scannerInput()}${renderScanResult()}`); }
-function renderProductCreate() {
-  const review = productDraft ? `<div class="business-ops-form" data-product-draft-review><label>Nombre<input name="productName" value="${escapeHtml(productDraft.suggested_name || '')}" maxlength="160"></label><label>Categoría<input name="productCategory" value="${escapeHtml(productDraft.suggested_category || '')}" maxlength="80"></label><label>Precio<input name="productPrice" type="number" min="0" step="0.01"></label><label>Presentación<select name="packageType"><option value="unit">Unidad</option><option value="pack">Pack</option><option value="case">Caja</option></select></label><label>Factor en unidades<input name="unitFactor" type="number" min="1" step="1" value="1"></label><button class="primary-button" type="button" data-publish-product-draft>Confirmar borrador</button></div>` : '';
-  return panel('Alta de producto', 'La detección asiste; un owner/admin confirma antes de publicar.', `${scannerInput()}${renderScanResult()}${lastScan?.isValid && !lookup?.data && !productDraft ? '<button class="primary-button" type="button" data-create-product-draft>Crear borrador para revisión</button>' : ''}${review}`);
-}
 function renderInventory(type) {
   const adjustment = type === 'manual_adjustment';
   return panel(adjustment ? 'Ajuste de stock' : 'Recepción de mercadería', 'Todo cambio crea un movimiento de ledger auditable.', `${scannerInput()}${renderScanResult()}
@@ -1172,15 +1265,6 @@ function operationBusinessDate(date = new Date()) {
     return date.toISOString().slice(0, 10);
   }
 }
-function formatOperationTimestamp(value) {
-  const date = new Date(value || 0);
-  return Number.isNaN(date.getTime()) ? 'sin hora confirmada' : date.toLocaleString('es-AR');
-}
-function formatOperationMoney(value) {
-  const amount = Number(value || 0);
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number.isFinite(amount) ? amount : 0);
-}
-function shortCorrelation(value) { return String(value || '').slice(0, 8); }
 function isUuid(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || '')); }
 function shortTextFingerprint(value) {
   let hash = 2166136261;
@@ -1200,9 +1284,453 @@ function bytesToBase64(bytes) {
   for (let offset = 0; offset < bytes.length; offset += 8192) binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
   return globalThis.btoa(binary);
 }
+// ===== Pagos =====
+
+async function refreshPayments() {
+  paymentsStatus = { phase: 'loading', message: '' };
+  context.onChange();
+  const [list, activation] = await Promise.all([context.listPayments(), context.getPaymentsActivation()]);
+  payments = list?.ok && Array.isArray(list.data) ? list.data : [];
+  paymentsActivation = activation?.ok && activation.data && typeof activation.data === 'object' ? activation.data : null;
+  paymentsStatus = list?.ok
+    ? { phase: 'ready', message: '' }
+    : { phase: 'error', message: humanizeFailure(list?.message, 'No pudimos leer los pagos ahora.') };
+  context.onChange();
+  return list;
+}
+
+async function refreshPaymentsAction() {
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  busy = true;
+  const response = await refreshPayments();
+  busy = false;
+  feedback = response?.ok ? 'Pagos actualizados.' : paymentsStatus.message;
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function saveMercadoPagoSettings(target) {
+  const guard = requireCapability('payments.reconcile');
+  if (!guard.ok) return guard.result;
+  const root = target.closest('[data-business-ops-center]');
+  const collector = String(root?.querySelector('[name="collectorId"]')?.value || '').trim();
+  const application = String(root?.querySelector('[name="applicationId"]')?.value || '').trim();
+  if (!/^\d{6,32}$/.test(collector) || !/^\d{6,32}$/.test(application)) {
+    return result(false, 'Los dos números de la cuenta tienen que ser numéricos, tal como figuran en Mercado Pago.');
+  }
+  busy = true;
+  const response = await context.configurePaymentSettings({ collector_id: collector, application_id: application });
+  busy = false;
+  feedback = response?.ok
+    ? 'Datos de la cuenta guardados. Ninguna clave secreta se guarda en el panel.'
+    : humanizeFailure(response?.message, 'No se pudieron guardar los datos de la cuenta.');
+  if (response?.ok) await refreshPayments();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function enableMercadoPagoTestCharges() {
+  const guard = requireCapability('payments.reconcile');
+  if (!guard.ok) return guard.result;
+  busy = true;
+  const response = await context.configurePaymentSettings({ enabled: true, reserve_stock: true });
+  busy = false;
+  feedback = response?.ok
+    ? 'Cobros de prueba activados. No se mueve dinero real.'
+    : humanizeFailure(response?.message, 'No se pudieron activar los cobros de prueba.');
+  if (response?.ok) await refreshPayments();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function runPaymentAction(button) {
+  const action = String(button.dataset.paymentAction || '');
+  const paymentIntentId = String(button.dataset.paymentIntent || '');
+  if (action === 'refund') {
+    const guard = requireCapability('payments.refund');
+    if (!guard.ok) return guard.result;
+    refundTarget = paymentIntentId;
+    context.onChange();
+    return result(true, 'Revisá el importe y confirmá por escrito antes de devolver.');
+  }
+  if (action === 'diagnostic') return exportPaymentDiagnostic(paymentIntentId);
+  const guard = requireCapability(action === 'reconcile' ? 'payments.reconcile' : 'payments.view');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  busy = true;
+  const response = await context.reconcilePayment(paymentIntentId);
+  busy = false;
+  feedback = response?.ok
+    ? 'Le pedimos el resultado a Mercado Pago. En unos segundos se actualiza solo.'
+    : humanizeFailure(response?.message, 'No pudimos consultar el pago ahora.');
+  if (response?.ok) await refreshPayments();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function confirmPaymentRefund(button) {
+  const guard = requireCapability('payments.refund');
+  if (!guard.ok) return guard.result;
+  const paymentIntentId = String(button.dataset.paymentRefundConfirm || '');
+  const form = button.closest('[data-payment-refund-form]');
+  const payment = payments.find((candidate) => String(candidate.payment_intent_id) === paymentIntentId);
+  const validation = validateRefundRequest({
+    amount: form?.querySelector('[name="refundAmount"]')?.value,
+    reason: form?.querySelector('[name="refundReason"]')?.value,
+    confirmation: form?.querySelector('[name="refundConfirmation"]')?.value,
+    maximum: Number(payment?.amount || 0),
+  });
+  if (!validation.ok) return result(false, validation.message);
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  busy = true;
+  const response = await context.refundPayment({
+    paymentIntentId,
+    amount: validation.amount,
+    reason: validation.reason,
+    confirmation: 'CONFIRMED',
+  });
+  busy = false;
+  refundTarget = response?.ok ? '' : refundTarget;
+  feedback = response?.ok
+    ? 'Devolución enviada. Cuando Mercado Pago la confirme, se ve acá.'
+    : humanizeFailure(response?.message, 'No se pudo enviar la devolución.');
+  if (response?.ok) await refreshPayments();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function exportPaymentDiagnostic(paymentIntentId) {
+  const payment = payments.find((candidate) => String(candidate.payment_intent_id) === paymentIntentId);
+  if (!payment) return result(false, 'No encontramos ese pago en la lista.');
+  try {
+    await context.desktopPlatform.exportSupportDiagnostic({
+      networkStatus: globalThis.navigator?.onLine === false ? 'offline' : 'online',
+      activeView: 'payments',
+      correlationIds: [],
+    });
+    feedback = 'Diagnóstico preparado en la carpeta de exportaciones.';
+    return result(true, feedback);
+  } catch (error) {
+    feedback = humanizeFailure(error?.message, 'Preparar el diagnóstico necesita TABA para Windows.');
+    context.onChange();
+    return result(false, feedback);
+  }
+}
+
+// ===== Facturación =====
+
+async function refreshArcaActivation() {
+  const response = await context.getArcaActivation();
+  arcaActivation = response?.ok && response.data && typeof response.data === 'object' ? response.data : null;
+  if (!response?.ok) {
+    feedback = humanizeFailure(response?.message, 'No pudimos leer el estado de la facturación.');
+  }
+  context.onChange();
+  return response;
+}
+
+async function authorizeArcaHomologation(target) {
+  const guard = requireCapability('fiscal.authorize');
+  if (!guard.ok) return guard.result;
+  const root = target.closest('[data-business-ops-center]');
+  const phrase = String(root?.querySelector('[name="arcaAuthorization"]')?.value || '');
+  const validation = validateHomologationAuthorization(phrase);
+  if (!validation.ok) return result(false, validation.message);
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  busy = true;
+  const response = await context.authorizeArcaHomologation(phrase);
+  busy = false;
+  arcaAuthorizationDraft = response?.ok ? '' : arcaAuthorizationDraft;
+  feedback = response?.ok
+    ? 'Pruebas con ARCA habilitadas. La facturación real sigue apagada.'
+    : humanizeFailure(response?.message, 'No se pudieron habilitar las pruebas con ARCA.');
+  if (response?.ok) await refreshArcaActivation();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+// ===== Abrir el negocio =====
+
+async function refreshOpeningStatus() {
+  const [opening, center] = await Promise.all([
+    context.getOpeningStatus(),
+    operationCenterSnapshot ? Promise.resolve({ ok: true, data: operationCenterSnapshot }) : context.getOperationCenter(),
+  ]);
+  openingStatusRaw = opening?.ok && opening.data && typeof opening.data === 'object' ? opening.data : null;
+  const snapshot = center?.ok && center.data && typeof center.data === 'object' ? center.data : operationCenterSnapshot;
+  openingSignals = buildOpeningSignals(openingStatusRaw, snapshot);
+  if (!opening?.ok) feedback = humanizeFailure(opening?.message, 'No pudimos revisar todo antes de abrir.');
+  context.onChange();
+  return opening;
+}
+
+// Cruza lo que confirma el servidor con lo que sólo se puede ver desde esta computadora.
+function buildOpeningSignals(status, snapshot) {
+  const online = globalThis.navigator?.onLine;
+  const scannerReady = deviceResults.scanner?.state === 'connected';
+  const printersReady = deviceResults.spooler?.state === 'connected' || deviceCheckPrinters.length > 0;
+  const scannerTested = Boolean(deviceResults.scanner);
+  const printersTested = Boolean(deviceResults.spooler) || deviceCheckPrinters.length > 0;
+  return {
+    internet: {
+      status: online === false ? 'failed' : online === true ? 'ok' : 'unknown',
+      detail: online === false ? 'Esta computadora está sin internet.' : online === true ? 'Hay conexión.' : 'No se pudo determinar la conexión.',
+    },
+    backend: status?.backend || { status: status ? 'ok' : 'unknown' },
+    payments: status?.payments || { status: 'unknown' },
+    fiscal: status?.fiscal || { status: 'unknown' },
+    riders: status?.riders || { status: 'unknown' },
+    queues: status?.queues || { status: 'unknown' },
+    scanner: {
+      status: !scannerTested ? 'unknown' : scannerReady ? 'ok' : 'failed',
+      detail: !scannerTested ? 'Probalo desde Dispositivos.' : scannerReady ? 'El lector responde.' : 'El lector no entregó una lectura completa.',
+    },
+    printers: {
+      status: !printersTested ? 'unknown' : printersReady ? 'ok' : 'failed',
+      detail: !printersTested ? 'Probalas desde Dispositivos.' : printersReady ? 'Hay impresoras disponibles.' : 'No se detectaron impresoras.',
+    },
+    ...(snapshot ? {} : {}),
+  };
+}
+
+async function setBusinessOpenState(button) {
+  const guard = requireCapability('day.open');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  const next = String(button.dataset.businessOpenState || '');
+  busy = true;
+  const response = await context.setBusinessOpenState(next);
+  busy = false;
+  feedback = response?.ok
+    ? next === 'open' ? 'Negocio abierto. Ya podés recibir pedidos.' : 'Pedidos pausados. La web deja de tomar nuevos.'
+    : humanizeFailure(response?.message, 'No se pudo cambiar el estado del negocio.');
+  if (response?.ok) await refreshOpeningStatus();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+// ===== Dispositivos =====
+
+async function refreshDeviceCheckPrinters() {
+  try {
+    const list = await context.desktopPlatform.listPrinters();
+    deviceCheckPrinters = Array.isArray(list) ? list : [];
+  } catch (_) {
+    deviceCheckPrinters = [];
+  }
+  context.onChange();
+}
+
+async function runDeviceTest(button) {
+  const guard = requireCapability('devices.test');
+  if (!guard.ok) return guard.result;
+  const device = String(button.dataset.deviceTest || '');
+  if (busy) return result(false, 'Ya hay una prueba en curso.');
+  busy = true;
+  try {
+    if (device === 'scanner') {
+      feedback = 'Escaneá cualquier producto con el lector para probarlo.';
+      return result(true, feedback);
+    }
+    if (device === 'spooler') {
+      await refreshDeviceCheckPrinters();
+      deviceResults = { ...deviceResults, spooler: classifySpoolerCheck(deviceCheckPrinters) };
+      feedback = deviceResults.spooler.detail;
+      return result(deviceResults.spooler.state === 'connected', feedback);
+    }
+    if (device === 'qr') {
+      const artifact = fiscalArtifacts.find((candidate) => candidate.is_current);
+      deviceResults = { ...deviceResults, qr: classifyQrCheck(Boolean(artifact)) };
+      feedback = deviceResults.qr.detail;
+      return result(Boolean(artifact), feedback);
+    }
+    return runPrinterTest(button, device);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
+}
+
+async function runPrinterTest(button, device) {
+  const root = button.closest('[data-business-ops-center]');
+  const printerName = String(root?.querySelector('[name="deviceTestPrinter"]')?.value || '');
+  if (!printerName) {
+    deviceResults = { ...deviceResults, [device]: { device, state: 'no-response', detail: 'Elegí una impresora de la lista.' } };
+    return result(false, 'Elegí una impresora de la lista.');
+  }
+  try {
+    const probe = await context.desktopPlatform.probePrinter(printerName);
+    const probed = classifyPrinterProbe(probe);
+    if (['no-response', 'no-paper', 'error'].includes(probed.state)) {
+      deviceResults = { ...deviceResults, [device]: probed };
+      feedback = probed.detail;
+      return result(false, feedback);
+    }
+    const outcome = await context.desktopPlatform.print({
+      printerName,
+      title: 'TABA prueba de impresora',
+      content: buildDeviceTestTicket(device),
+      format: 'raw_text',
+    });
+    const submission = classifyPrintSubmission(outcome || { status: 'sent_to_spooler' });
+    deviceResults = { ...deviceResults, [device]: submission };
+    feedback = submission.detail;
+    return result(true, feedback);
+  } catch (error) {
+    const detail = humanizeFailure(error?.message, 'La prueba de impresión necesita TABA para Windows.');
+    deviceResults = { ...deviceResults, [device]: { device, state: 'error', detail } };
+    feedback = detail;
+    return result(false, detail);
+  }
+}
+
+// La confirmación física es la única prueba real de que el papel salió.
+function confirmDevicePrint(button) {
+  const device = String(button.dataset.deviceConfirm || '');
+  deviceResults = {
+    ...deviceResults,
+    [device]: { device, state: 'connected', detail: 'Confirmaste que salió el papel.' },
+  };
+  feedback = 'Impresión confirmada a mano.';
+  context.onChange();
+  return result(true, feedback);
+}
+
+function buildDeviceTestTicket(device) {
+  return [
+    'TABA - PRUEBA DE IMPRESORA',
+    `Formato: ${device === 'a4' ? 'A4' : 'termica'}`,
+    'Si lees esto, la impresora funciona.',
+    'Volve al panel y confirma que salio el papel.',
+    '',
+    '',
+  ].join('\n');
+}
+
+// ===== Alta de producto =====
+
+function readProductFields(target) {
+  const form = target.closest('[data-product-draft]') || target.closest('[data-business-ops-center]');
+  const value = (name) => String(form?.querySelector(`[name="${name}"]`)?.value || '');
+  return {
+    name: value('productName'),
+    brand: value('productBrand'),
+    category: value('productCategory'),
+    variant: value('productVariant'),
+    capacityValue: value('productCapacityValue'),
+    capacityUnit: value('productCapacityUnit'),
+    packageType: value('productPackageType'),
+    unitsPerPack: value('productUnitsPerPack'),
+    stock: value('productStock'),
+    price: value('productPrice'),
+    cost: value('productCost'),
+    pricePending: Boolean(form?.querySelector('[name="productPricePending"]')?.checked),
+  };
+}
+
+function previewProductDraft(target) {
+  const validation = validateProductDraft(readProductFields(target));
+  productErrors = validation.ok ? [] : [...validation.errors];
+  productPreview = validation.ok ? buildStorefrontPreview(validation.value, { imageReady: false }) : null;
+  feedback = validation.ok ? 'Así lo va a ver el cliente.' : 'Revisá los datos marcados antes de seguir.';
+  context.onChange();
+  return result(validation.ok, feedback);
+}
+
+async function completeProductDraft(target) {
+  const guard = requireCapability('products.publish');
+  if (!guard.ok) return guard.result;
+  const validation = validateProductDraft(readProductFields(target));
+  productErrors = validation.ok ? [] : [...validation.errors];
+  if (!validation.ok) {
+    context.onChange();
+    return result(false, 'Revisá los datos marcados antes de publicar.');
+  }
+  if (!productDraft?.id) return result(false, 'Abrí el borrador antes de guardar.');
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  busy = true;
+  const published = await context.publishProductDraft({
+    draftId: productDraft.id,
+    name: validation.value.name,
+    category: validation.value.category,
+    price: validation.value.pricePending ? 0 : validation.value.price,
+    packageType: validation.value.packageType,
+    unitFactor: validation.value.unitsPerPack,
+  });
+  if (!published?.ok) {
+    busy = false;
+    feedback = humanizeFailure(published?.message, 'No se pudo crear el producto.');
+    context.onChange();
+    return result(false, feedback);
+  }
+  productId = String(published.data?.product_id || '');
+  const completed = await context.completeScannedProduct({
+    productId,
+    details: {
+      name: validation.value.name,
+      brand: validation.value.brand,
+      category: validation.value.category,
+      variant: validation.value.variant,
+      capacity_value: validation.value.capacityValue,
+      capacity_unit: validation.value.capacityUnit,
+      units_per_pack: validation.value.unitsPerPack,
+      price: validation.value.pricePending ? null : validation.value.price,
+      price_pending: validation.value.pricePending,
+      unit_cost: validation.value.cost,
+      stock: validation.value.stock,
+    },
+  });
+  busy = false;
+  if (completed?.ok) {
+    productReadiness = completed.data;
+    productPreview = buildStorefrontPreview(validation.value, { imageReady: Boolean(completed.data?.image_bound) });
+    feedback = validation.value.pricePending
+      ? 'Producto guardado con precio pendiente: se ve en la web pero todavía no se puede comprar.'
+      : 'Producto guardado. Abajo te decimos qué falta para que aparezca en la web.';
+  } else {
+    feedback = humanizeFailure(completed?.message, 'El producto se creó pero no se pudieron guardar todos los datos.');
+  }
+  context.onChange();
+  return result(Boolean(completed?.ok), feedback);
+}
+
+async function refreshProductReadiness() {
+  if (!productId) return result(false, 'Todavía no hay un producto para revisar.');
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  busy = true;
+  const response = await context.getScannedProductReadiness(productId);
+  busy = false;
+  if (response?.ok) productReadiness = response.data;
+  feedback = response?.ok
+    ? 'Estado de publicación actualizado.'
+    : humanizeFailure(response?.message, 'No pudimos leer el estado de publicación.');
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+function requireCapability(capability) {
+  if (can(context.role, capability)) return { ok: true };
+  const message = capability === 'payments.refund'
+    ? 'Devolver dinero lo confirma el dueño o el encargado.'
+    : 'Esta acción la confirma el dueño o el encargado.';
+  return { ok: false, result: result(false, message) };
+}
+
 function defaultContext() {
   return {
     role: 'staff',
+    operatorName: '',
+    listPayments: async () => ({ ok: false, message: 'Los pagos no están disponibles.' }),
+    getPaymentsActivation: async () => ({ ok: false, message: 'El estado de cobros no está disponible.' }),
+    configurePaymentSettings: async () => ({ ok: false, message: 'La configuración de cobros no está disponible.' }),
+    reconcilePayment: async () => ({ ok: false, message: 'La consulta de pagos no está disponible.' }),
+    refundPayment: async () => ({ ok: false, message: 'Las devoluciones no están disponibles.' }),
+    getArcaActivation: async () => ({ ok: false, message: 'El estado de facturación no está disponible.' }),
+    authorizeArcaHomologation: async () => ({ ok: false, message: 'La autorización fiscal no está disponible.' }),
+    getOpeningStatus: async () => ({ ok: false, message: 'La revisión de apertura no está disponible.' }),
+    setBusinessOpenState: async () => ({ ok: false, message: 'No se puede cambiar el estado del negocio.' }),
+    completeScannedProduct: async () => ({ ok: false, message: 'El alta de producto no está disponible.' }),
+    getScannedProductReadiness: async () => ({ ok: false, message: 'El estado de publicación no está disponible.' }),
     businessId: '', operatorId: '', getOrders: () => [], lookupBarcode: async () => ({ ok: true, data: null }),
     createProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }), publishProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     applyInventoryMovement: async () => ({ ok: false, message: 'Repositorio no disponible.' }), checkoutPos: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
@@ -1220,6 +1748,8 @@ function defaultContext() {
     desktopPlatform: {
       isNative: false,
       listPrinters: async () => [],
+      probePrinter: async () => null,
+      print: async () => { throw new Error('La prueba de impresión requiere TABA para Windows.'); },
       queueFiscalPrint: async () => { throw new Error('La impresión fiscal requiere TABA para Windows.'); },
       openFiscalCacheFolder: async () => { throw new Error('La caché local requiere TABA para Windows.'); },
       createLocalBackup: async () => { throw new Error('El backup local requiere TABA para Windows.'); },

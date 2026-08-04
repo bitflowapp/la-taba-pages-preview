@@ -35,5 +35,7 @@ export function createSupabaseOperationsRepository({ client, businessId }) {
       p_expected_revision: expectedRevision,
       p_idempotency_key: idempotencyKey,
     }),
+    getOpeningStatus: () => rpc('get_business_opening_status', { p_business_id: businessId }),
+    setOpenState: (status) => rpc('set_business_open_state', { p_business_id: businessId, p_status: status }),
   });
 }

@@ -8,11 +8,13 @@ import { createSupabasePosRepository } from './repositories/supabase-pos-reposit
 import { createSupabaseFiscalRepository } from './repositories/supabase-fiscal-repository.js';
 import { createSupabasePackingRepository } from './repositories/supabase-packing-repository.js';
 import { createSupabaseOperationsRepository } from './repositories/supabase-operations-repository.js';
+import { createSupabasePaymentsRepository } from './repositories/supabase-payments-repository.js';
 import { getSupabaseClient } from './services/supabase-client.js';
 import { resolveRuntimeConfig } from './core/runtime-config.js';
 import { createBusinessPlatform } from './platform/tauri-business-platform.js';
 import { createBusinessPanelController } from './business/business-panel-controller.js';
 import {
+  allowedBusinessOperationViews,
   BUSINESS_OPERATION_VIEWS,
   configureBusinessOperations,
   handleBusinessOperationsAction,
@@ -50,6 +52,7 @@ let posRepository = null;
 let fiscalRepository = null;
 let packingRepository = null;
 let operationsRepository = null;
+let paymentsRepository = null;
 let businessPayments = [];
 let businessPaymentsStatus = { phase: 'idle', message: '' };
 let paymentRefreshTimer = null;
@@ -646,6 +649,7 @@ async function configureBusinessRuntime(result) {
   const runtime = resolveRuntimeConfig();
   const client = getSupabaseClient(runtime.repository);
   inventoryRepository = createSupabaseInventoryRepository({ client, businessId });
+  paymentsRepository = createSupabasePaymentsRepository({ client, businessId });
   posRepository = createSupabasePosRepository({ client, businessId });
   fiscalRepository = createSupabaseFiscalRepository({ client, businessId });
   packingRepository = createSupabasePackingRepository({ client });
@@ -702,11 +706,29 @@ async function configureBusinessRuntime(result) {
       idempotencyKey,
     }),
     role: result.membership?.role,
+    operatorName: String(result.user?.email || '').split('@')[0],
     getOperationCenter: () => operationsRepository.getCenter(),
     acknowledgeOperationalAlert: (alertId) => operationsRepository.acknowledgeAlert(alertId),
     resolveOperationalAlert: (input) => operationsRepository.resolveAlert(input),
     prepareDailyReconciliation: (input) => operationsRepository.prepareDailyReconciliation(input),
     closeDailyReconciliation: (input) => operationsRepository.closeDailyReconciliation(input),
+    getOpeningStatus: () => operationsRepository.getOpeningStatus(),
+    setBusinessOpenState: (status) => operationsRepository.setOpenState(status),
+    // Los pagos siguen pasando por el repositorio existente: acá sólo se los presenta.
+    listPayments: async () => {
+      const response = await repository.listMercadoPagoBusinessPayments();
+      return response?.ok
+        ? { ok: true, data: response.payments || [] }
+        : { ok: false, message: response?.message || '' };
+    },
+    getPaymentsActivation: () => paymentsRepository.getActivationStatus(),
+    configurePaymentSettings: (settings) => paymentsRepository.configureSettings(settings),
+    reconcilePayment: (paymentIntentId) => repository.reconcileMercadoPagoPayment(paymentIntentId),
+    refundPayment: (input) => repository.requestMercadoPagoRefund(input),
+    getArcaActivation: () => fiscalRepository.getActivationStatus(),
+    authorizeArcaHomologation: (phrase) => fiscalRepository.authorizeHomologation(phrase),
+    completeScannedProduct: (input) => inventoryRepository.completeScannedProduct(input),
+    getScannedProductReadiness: (productId) => inventoryRepository.getScannedProductReadiness(productId),
     onChange: () => notify(),
   });
 
@@ -899,10 +921,25 @@ function renderAccessSurface(view) {
     : riderWorkspaceMarkup();
 }
 
+// Atajos del día: lo que se toca a cada rato, en el orden en que se usa.
+const BUSINESS_SHORTCUTS = Object.freeze([
+  ['day-open', 'Abrir'],
+  ['operation-center', 'Qué pasa'],
+  ['orders', 'Pedidos'],
+  ['payments', 'Pagos'],
+  ['packing', 'Preparación'],
+  ['pos', 'Mostrador'],
+  ['scanner', 'Escáner'],
+  ['product-create', 'Alta'],
+  ['inventory-receive', 'Inventario'],
+  ['fiscal-status', 'Comprobantes'],
+  ['devices', 'Dispositivos'],
+  ['day-close', 'Cerrar'],
+]);
+
 function businessWorkspaceMarkup() {
-  const paymentMonitor = ['owner', 'admin'].includes(access.membership?.role)
-    ? businessPaymentsMarkup()
-    : '';
+  const role = access.membership?.role;
+  const allowed = new Set(allowedBusinessOperationViews(role));
   const orders = getState().orders;
   const rows = orders.length
     ? orders.map(businessOrderMarkup).join('')
@@ -910,25 +947,25 @@ function businessWorkspaceMarkup() {
   const operations = businessOperationsView === 'orders'
     ? `<div class="production-order-list" aria-live="polite">${rows}</div>`
     : renderBusinessOperations(businessOperationsView);
+  const shortcuts = BUSINESS_SHORTCUTS
+    .filter(([view]) => view === 'orders' || allowed.has(view))
+    .map(([view, label]) => `
+      <button type="button" class="business-ops-nav-button ${businessOperationsView === view ? 'active' : ''}"
+        ${view === 'orders' ? 'data-production-orders-view' : `data-business-ops-view="${escapeAttribute(view)}"`}>${escapeHtml(label)}</button>`)
+    .join('');
   return `
     <div class="production-ops-head">
       <div>
-        <p class="eyebrow">Operación segura</p>
-        <h1>Centro operativo del negocio</h1>
-        <p>${escapeHtml(roleLabel(access.membership?.role))} · sesión verificada</p>
+        <p class="eyebrow">Panel del negocio</p>
+        <h1>Tu día, en un solo lugar</h1>
+        <p>${escapeHtml(roleLabel(role))} · sesión verificada</p>
         ${businessIntakeStatusMarkup()}
         ${businessCommandStatusMarkup()}
       </div>
       <button class="ghost-button compact" type="button" data-production-sign-out>Cerrar sesión</button>
     </div>
-    <nav class="production-operations-shortcuts" aria-label="Áreas operativas">
-      <button type="button" class="business-ops-nav-button ${businessOperationsView === 'operation-center' ? 'active' : ''}" data-business-ops-view="operation-center">Centro de operación</button>
-      <button type="button" class="business-ops-nav-button ${businessOperationsView === 'orders' ? 'active' : ''}" data-production-orders-view>Pedidos</button>
-      ${['scanner', 'inventory-receive', 'packing', 'pos', 'fiscal-status', 'fiscal-config'].map((view) => `
-        <button type="button" class="business-ops-nav-button ${businessOperationsView === view ? 'active' : ''}" data-business-ops-view="${view}">${escapeHtml({ scanner: 'Escáner', 'inventory-receive': 'Inventario', packing: 'Preparación', pos: 'Mostrador', 'fiscal-status': 'Fiscal', 'fiscal-config': 'Configuración' }[view])}</button>`).join('')}
-    </nav>
+    <nav class="production-operations-shortcuts" aria-label="Atajos del día">${shortcuts}</nav>
     ${operations}
-    ${paymentMonitor}
   `;
 }
 

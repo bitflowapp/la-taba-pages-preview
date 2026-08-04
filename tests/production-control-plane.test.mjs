@@ -77,15 +77,61 @@ test('Centro de operación muestra las trece excepciones y diferencias sin ocult
   await new Promise((resolve) => setTimeout(resolve, 0));
   const markup = renderBusinessOperations('operation-center');
   for (const label of [
-    'Pedidos nuevos', 'Pedidos demorados', 'Pagos pendientes', 'Pagos en revisión',
-    'Pedidos sin stock', 'Packing incompleto', 'Entregas activas', 'Riders sin señal',
-    'Documentos fiscales pendientes', 'Impresiones fallidas', 'Notas de crédito pendientes',
-    'Outbox bloqueadas', 'Reconciliaciones requeridas',
+    'Pedidos nuevos', 'Pedidos demorados', 'Pagos en camino', 'Pagos a revisar',
+    'Pedidos sin stock', 'Preparaciones abiertas', 'Envíos en la calle', 'Repartidores sin señal',
+    'Comprobantes pendientes', 'Impresiones con problema', 'Notas de crédito pendientes',
+    'Envíos internos trabados', 'Para conciliar',
   ]) assert.match(markup, new RegExp(label));
-  assert.match(markup, /Pago aprobado sin pedido operativo/);
-  assert.match(markup, /Reconciliar sin cobrar nuevamente/);
+  // La alerta se cuenta en castellano y con las cuatro respuestas que necesita el mostrador.
+  assert.match(markup, /Entró un pago aprobado que todavía no tiene pedido armado/);
+  assert.match(markup, /Qué se conserva/);
+  assert.match(markup, /Riesgo/);
+  assert.match(markup, /Qué conviene hacer/);
+  assert.match(markup, /Ir a Pagos/);
+  // El identificador técnico existe pero queda detrás del detalle para soporte.
+  assert.match(markup, /Detalle para soporte[\s\S]*TABA-PAGO-01/);
+  assert.doesNotMatch(markup, /PAYMENT_APPROVED_WITHOUT_ORDER/);
+  resetBusinessOperationsForTests();
+});
+
+test('el cierre del día vive en su propia pantalla y muestra las nueve secciones', async () => {
+  configureBusinessOperations({
+    role: 'owner',
+    prepareDailyReconciliation: async () => ({
+      ok: true,
+      data: {
+        reconciliation: {
+          id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', business_date: '2026-08-02', status: 'open',
+          revision: 2, expected_cash: 1000, declared_cash: 900, cash_difference: -100,
+          difference_note: 'Falta de caja verificada.', snapshot: {},
+        },
+      },
+    }),
+    getOperationCenter: async () => ({ ok: true, data: { metrics: {}, alerts: [], recent_closures: [] } }),
+    onChange() {},
+  });
+  const inputs = {
+    dailyBusinessDate: { value: '2026-08-02' },
+    dailyTimezone: { value: 'America/Argentina/Buenos_Aires' },
+    dailyDeclaredCash: { value: '900' },
+    dailyDifferenceNote: { value: 'Falta de caja verificada.' },
+  };
+  const root = { querySelector: (selector) => inputs[selector.match(/name="([^"]+)/)?.[1]] || null };
+  const prepareTarget = {
+    closest(selector) {
+      if (selector === '[data-daily-reconciliation-prepare]') return prepareTarget;
+      if (selector === '[data-business-ops-center]') return root;
+      return null;
+    },
+  };
+  assert.equal((await handleBusinessOperationsAction(prepareTarget)).ok, true);
+  const markup = renderBusinessOperations('day-close');
+  for (const label of [
+    'Ventas del día', 'Cobrado por Mercado Pago', 'Efectivo', 'Devoluciones', 'Pedidos',
+    'Movimientos de stock', 'Comprobantes', 'Diferencias', 'Quedó pendiente',
+  ]) assert.match(markup, new RegExp(label));
   assert.match(markup, /Falta de caja verificada/);
-  assert.match(markup, /Finalizar cierre/);
+  assert.match(markup, /Cerrar el día/);
   resetBusinessOperationsForTests();
 });
 
@@ -125,7 +171,7 @@ test('staff puede preparar pero no finalizar un cierre desde el panel', async ()
   const closedResult = await handleBusinessOperationsAction(closeTarget);
   assert.equal(closedResult.ok, false);
   assert.equal(closed, false);
-  assert.match(closedResult.message, /owner o admin/);
+  assert.match(closedResult.message, /dueño o el encargado/);
   resetBusinessOperationsForTests();
 });
 
@@ -158,8 +204,8 @@ test('Windows crea backup verificado y diagnóstico sanitizado desde el Centro d
   renderBusinessOperations('operation-center');
   await new Promise((resolve) => setTimeout(resolve, 0));
   const markup = renderBusinessOperations('operation-center');
-  assert.match(markup, /Crear backup local verificado/);
-  assert.match(markup, /Exportar diagnóstico sanitizado/);
+  assert.match(markup, /Guardar respaldo del día/);
+  assert.match(markup, /Preparar diagnóstico/);
 
   const target = (selector) => ({ closest: (candidate) => candidate === selector ? {} : null });
   assert.equal((await handleBusinessOperationsAction(target('[data-local-backup-create]'))).ok, true);

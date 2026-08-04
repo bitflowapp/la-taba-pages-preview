@@ -70,12 +70,24 @@ test('la cola de impresión distingue no responder de no tener impresoras', () =
   assert.deepEqual(ok.printers, ['EPSON TM-T20', 'HP LaserJet']);
 });
 
-test('el QR probado no se da por leído: se pide confirmarlo con el celular', () => {
+test('el QR probado es el del comprobante real y se confirma con el celular', () => {
   const rendered = classifyQrCheck(true);
   assert.equal(rendered.state, 'connected');
   assert.match(rendered.detail, /celular/i);
   assert.equal(classifyQrCheck(false).state, 'error');
   assert.equal(classifyQrCheck(undefined).state, 'untested');
+  assert.match(DEVICE_CHECKS.find((check) => check.id === 'qr').howTo, /vista previa de un comprobante/i);
+});
+
+test('el resumen conserva el nombre del dispositivo junto al estado', () => {
+  const rows = summarizeDeviceChecks({ thermal: { state: 'no-paper', detail: 'Cargá papel.' } }).rows;
+  const thermal = rows.find((row) => row.id === 'thermal');
+  assert.equal(thermal.label, 'Impresora térmica');
+  assert.equal(thermal.stateLabel, 'Sin papel');
+  assert.equal(thermal.detail, 'Cargá papel.');
+  assert.deepEqual(rows.map((row) => row.label), [
+    'Lector de códigos', 'Impresora térmica', 'Impresora A4', 'QR del comprobante', 'Cola de impresión',
+  ]);
 });
 
 test('el resumen prioriza lo que no funciona y habla en castellano llano', () => {

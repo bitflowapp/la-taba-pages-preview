@@ -202,15 +202,23 @@
   font-weight: 750;
 }
 
+/* El padding derecho no es simetría: estos select conservan la flecha nativa,
+   que el navegador dibuja dentro de la caja. Con 10px a la derecha, "Todas las
+   presentaciones" corría por debajo del chevron y se leía cortada a mitad de
+   palabra. Se le reserva la pista igual que en `.sort-field select`, y el
+   recorte pasa a ser un ellipsis legible en vez de un tajo. */
 .catalog-filter-grid select {
   width: 100%;
   min-width: 0;
   min-height: var(--tap);
-  padding: 0 10px;
+  padding: 0 22px 0 10px;
+  overflow: hidden;
   border: 1px solid var(--taba-border-medium);
   border-radius: var(--radius-sm);
   background: var(--taba-white);
   color: var(--taba-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 16px;
   font-weight: 650;
 }

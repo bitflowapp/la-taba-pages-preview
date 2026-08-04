@@ -59,7 +59,7 @@ async function scenarioOpening(backend) {
 
   await panel.open('day-open');
   const readyMarkup = renderBusinessOperations('day-open');
-  check(checks, 'los siete verificadores del servidor y los dos locales se muestran', () => {
+  check(checks, 'la apertura revisa backend, pagos, fiscal, Rider, colas, lector, impresoras e internet', () => {
     const evaluated = evaluateBusinessOpening(openingSignals(backend, { scannerTested: true, printersTested: true }));
     return evaluated.checks.length === 8
       && ['internet', 'backend', 'payments', 'fiscal', 'scanner', 'printers', 'riders', 'queues']

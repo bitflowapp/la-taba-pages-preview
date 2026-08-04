@@ -267,6 +267,7 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
 body[data-active-view="home"] .taba-home-hero h1 {
   display: flex;
   align-items: baseline;
+  min-width: 0;
   margin: 0;
   color: var(--brand-ink);
   font-size: clamp(29px, 8.6vw, 38px);
@@ -274,6 +275,10 @@ body[data-active-view="home"] .taba-home-hero h1 {
   letter-spacing: -0.05em;
   line-height: 1.02;
   overflow-wrap: break-word;
+}
+
+body[data-active-view="home"] .taba-home-hero h1 [data-business-name] {
+  white-space: nowrap;
 }
 
 .brand-hero-bang {
@@ -456,7 +461,8 @@ body[data-active-view="catalog"] .search-clear {
    ========================================================================== */
 body[data-active-view="home"] .home-category-strip {
   gap: 10px;
-  padding: 2px 2px 6px;
+  padding: 2px 14px 6px 2px;
+  scroll-padding-inline: 2px 14px;
 }
 
 body[data-active-view="home"] .home-category-card {
@@ -576,7 +582,8 @@ body[data-active-view="home"] .home-catalog-card {
 body[data-active-view="home"] .home-promotions-rail {
   grid-auto-columns: 168px;
   gap: 12px;
-  padding: 1px 2px 4px;
+  padding: 1px 14px 6px 2px;
+  scroll-padding-inline: 2px 14px;
 }
 
 body[data-active-view="home"] .home-promo-card {
@@ -631,7 +638,8 @@ body[data-active-view="home"] .home-product-price {
 body[data-active-view="home"] .home-best-sellers {
   grid-auto-columns: 168px;
   gap: 12px;
-  padding: 1px 2px 4px;
+  padding: 1px 14px 6px 2px;
+  scroll-padding-inline: 2px 14px;
 }
 
 body[data-active-view="home"] .home-best-card {
@@ -1330,5 +1338,22 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
 
   body:not([data-active-view="business"]):not([data-active-view="rider"]) .mobile-nav .mn-brand .mn-label {
     font-size: 9.5px;
+  }
+}
+
+/* En un rail angosto una tarjeta fija de 168px dejaba la siguiente cortada
+   justo en el borde. Dos tarjetas completas entran desde 360px; a 320px se
+   muestra una tarjeta completa y la siguiente se alcanza con un gesto claro. */
+@media (min-width: 360px) and (max-width: 420px) {
+  body[data-active-view="home"] .home-promotions-rail,
+  body[data-active-view="home"] .home-best-sellers {
+    grid-auto-columns: calc((100% - 12px) / 2);
+  }
+}
+
+@media (max-width: 359px) {
+  body[data-active-view="home"] .home-promotions-rail,
+  body[data-active-view="home"] .home-best-sellers {
+    grid-auto-columns: 100%;
   }
 }

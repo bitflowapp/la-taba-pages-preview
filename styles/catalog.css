@@ -215,13 +215,92 @@
   font-weight: 650;
 }
 
-.catalog-filters > .ghost-button {
+/* Descendiente y no hijo directo: el botón pasó a vivir dentro de
+   .catalog-filters-sheet, que es el envoltorio que el bottom sheet necesita. */
+.catalog-filters .ghost-button {
   margin: 0 14px 14px;
 }
 
 @media (max-width: 820px) {
   .catalog-filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* ── Filtros como bottom sheet ────────────────────────────────────────────
+     En teléfono, ocho selects apilados sobre la grilla se leen como un panel
+     administrativo y empujan el producto fuera de pantalla. Acá el <summary>
+     queda como botón "Filtros" y el contenido se despliega desde abajo, que es
+     donde llega el pulgar.
+
+     Es CSS sobre el mismo <details>: los <select> son los mismos nodos, con los
+     mismos listeners y la misma lógica de filtrado. No hay un segundo control
+     ni estado paralelo, así que no puede desincronizarse del catálogo. */
+  .catalog-filters {
+    margin-bottom: 12px;
+    border: 0;
+    background: none;
+  }
+
+  /* Sin fondo propio: el disparador se apoya en la superficie de la vista, igual
+     que los chips de categoría que tiene al lado. Pintarlo de blanco cálido lo
+     dejaba con el texto del tema oscuro encima y no se leía. */
+  .catalog-filters summary {
+    min-height: var(--tap);
+    border: 1px solid currentcolor;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    opacity: 88%;
+  }
+
+  .catalog-filters[open] summary {
+    border-bottom: 1px solid currentcolor;
+  }
+
+  /* Escala de tokens: la nav inferior vive en --z-bottomnav (300) y la barra de
+     carrito en --z-sticky-cta (400). El sheet es modal, así que va en
+     --z-modal (600) y el fondo justo debajo: si no, la nav le tapa el último
+     filtro y el botón de limpiar. */
+  .catalog-filters[open]::before {
+    position: fixed;
+    z-index: calc(var(--z-modal) - 1);
+    inset: 0;
+    background: rgb(0 0 0 / 55%);
+    content: '';
+  }
+
+  .catalog-filters[open] .catalog-filters-sheet {
+    position: fixed;
+    z-index: var(--z-modal);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-height: 72vh;
+    overflow-y: auto;
+    border-radius: 22px 22px 0 0;
+    background: var(--taba-warm-white);
+    box-shadow: 0 -12px 32px rgb(0 0 0 / 32%);
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  /* Manija: dice que el panel viene desde abajo y se puede cerrar. */
+  .catalog-filters[open] .catalog-filters-sheet::before {
+    display: block;
+    width: 42px;
+    height: 4px;
+    margin: 10px auto 2px;
+    border-radius: 999px;
+    background: var(--taba-border);
+    content: '';
+  }
+
+  .catalog-filters[open] .catalog-filter-grid {
+    padding: 12px 16px;
+  }
+
+  .catalog-filters[open] .ghost-button {
+    width: calc(100% - 32px);
+    min-height: var(--tap);
+    margin: 0 16px 4px;
   }
 }
 

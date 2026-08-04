@@ -354,8 +354,14 @@
 
           <div class="category-strip" data-category-strip></div>
 
+          <!--
+            En teléfono este bloque se pinta como bottom sheet (ver catalog.css).
+            Sigue siendo un <details> con los mismos <select>: no se duplica
+            control ni se toca la lógica de filtrado, sólo cambia dónde aparece.
+          -->
           <details class="catalog-filters" data-catalog-filters>
             <summary><span data-catalog-filter-count>Filtros</span><span aria-hidden="true">⌄</span></summary>
+            <div class="catalog-filters-sheet">
             <div class="catalog-filter-grid">
               <label data-catalog-filter-field="brand"><span>Marca</span><select data-catalog-filter="brand" aria-label="Filtrar por marca"></select></label>
               <label data-catalog-filter-field="capacity"><span>Capacidad</span><select data-catalog-filter="capacity" aria-label="Filtrar por capacidad"></select></label>
@@ -367,6 +373,7 @@
               <label data-catalog-filter-field="promotion"><span>Promoción</span><select data-catalog-filter="promotion" aria-label="Filtrar por promoción"></select></label>
             </div>
             <button class="ghost-button compact" type="button" data-reset-catalog-filters hidden>Limpiar filtros</button>
+            </div>
           </details>
 
           <div class="catalog-head catalog-toolbar">

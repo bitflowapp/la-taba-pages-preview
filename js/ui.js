@@ -642,7 +642,7 @@ function renderHomeShowcase() {
 const HOME_HERO_PROMO = Object.freeze({
   categoryId: 'cervezas',
   eyebrow: 'La vidriera',
-  title: 'Bien fría, bien tirada',
+  title: 'Bien fría, como tiene que ser',
   subtitle: 'La selección de cervezas del local, lista para llevar.',
   image: 'assets/promos/cervezas-heineken.jpg',
 });

@@ -990,6 +990,19 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(
   box-shadow: var(--shadow-cream-flat), inset 0 0 0 1px var(--cream-line);
 }
 
+/* Estado vacío suelto (catálogo sin resultados, favoritos sin guardar). No
+   lleva `.card`, así que era transparente: su tinta —calibrada para papel—
+   caía directamente sobre el grafito y el título daba 1,09:1, es decir
+   invisible. Es un defecto que ya existía antes de esta tarea; se cierra acá
+   porque el pedido incluye no dejar texto ilegible en el catálogo.
+   Se resuelve con la misma tarjeta crema del resto: no hace falta una tinta
+   especial, alcanza con darle la superficie que le corresponde. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .empty-state:not(.card) {
+  border-radius: 20px;
+  background: var(--cream);
+  box-shadow: var(--shadow-cream-flat), inset 0 0 0 1px var(--cream-line);
+}
+
 /* La tarjeta grande de una vista (carrito, checkout, perfil) se despega más:
    es la superficie principal, no un ítem dentro de un rail. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(

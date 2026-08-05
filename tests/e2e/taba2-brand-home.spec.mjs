@@ -455,6 +455,49 @@ test('ningún texto de las vistas del cliente queda por debajo de 3:1', async ({
   }
 });
 
+// Los estados VACÍOS son los que ningún recorrido feliz visita, y por eso
+// acumulan deuda: el estado "todavía no guardaste favoritos" tenía su título en
+// 1,09:1 —invisible— desde antes de esta tarea, porque el bloque no lleva
+// `.card` y su tinta, calibrada para papel, caía directo sobre el grafito.
+test('los estados vacíos del cliente se apoyan en la superficie de contenido', async ({ page }) => {
+  await openHome(page);
+  await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-category-strip] [data-category-id="favorites"]').click();
+  const vacio = page.locator('[data-product-grid] .empty-state');
+  await expect(vacio).toBeVisible();
+  expect(await vacio.evaluate((node) => getComputedStyle(node).backgroundColor)).toBe(CREMA);
+
+  const flojos = await page.evaluate(() => {
+    const parse = (v) => {
+      const p = String(v).match(/[\d.]+/g);
+      if (!p) return null;
+      const [r, g, b, a = '1'] = p.map(Number);
+      return { r, g, b, a };
+    };
+    const lum = ({ r, g, b }) => {
+      const c = (v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+      return 0.2126 * c(r) + 0.7152 * c(g) + 0.0722 * c(b);
+    };
+    const out = [];
+    for (const node of document.querySelectorAll('[data-product-grid] .empty-state *')) {
+      if (![...node.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1)) continue;
+      const cs = getComputedStyle(node);
+      const fg = parse(cs.color);
+      if (!fg) continue;
+      let bg = null;
+      for (let c = node; c; c = c.parentElement) {
+        const cand = parse(getComputedStyle(c).backgroundColor);
+        if (cand && cand.a >= 0.9) { bg = cand; break; }
+      }
+      if (!bg) continue;
+      const ratio = (Math.max(lum(fg), lum(bg)) + 0.05) / (Math.min(lum(fg), lum(bg)) + 0.05);
+      if (ratio < 4.5) out.push(`${ratio.toFixed(2)}:1 "${node.textContent.trim().slice(0, 40)}"`);
+    }
+    return out;
+  });
+  expect(flojos, 'texto del estado vacío por debajo de 4,5:1').toEqual([]);
+});
+
 // Seguimiento CON pedido, que es el estado que el test de arriba no alcanza:
 // sin pedido la vista es una tarjeta vacía y todo su texto vive adentro. Con
 // pedido aparecen el titular, su bajada y las etiquetas de la línea de tiempo

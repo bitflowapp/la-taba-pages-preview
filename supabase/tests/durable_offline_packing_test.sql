@@ -29,8 +29,8 @@ insert into public.product_barcodes(id,business_id,product_id,gtin,barcode_type,
 values
   ('64000000-0000-4000-8000-000000000001','62000000-0000-4000-8000-000000000001','63000000-0000-4000-8000-000000000001','4006381333931','EAN-13','unit',1,true,'manual',now(),'61000000-0000-4000-8000-000000000001'),
   ('64000000-0000-4000-8000-000000000002','62000000-0000-4000-8000-000000000001','63000000-0000-4000-8000-000000000001','5901234123457','EAN-13','unit',1,false,'manual',now(),'61000000-0000-4000-8000-000000000001');
-insert into public.orders(id,business_id,code,status,fulfillment_type,customer_name,subtotal,delivery_fee,total)
-values('65000000-0000-4000-8000-000000000001','62000000-0000-4000-8000-000000000001','PACKING-FIXTURE-1','accepted','pickup','CLIENTE_SINTETICO_NO_CACHEAR',100,0,100);
+insert into public.orders(id,business_id,code,public_code,status,fulfillment_type,delivery_mode,client_request_id,customer_name,subtotal,delivery_fee,total)
+values('65000000-0000-4000-8000-000000000001','62000000-0000-4000-8000-000000000001','PACKING-FIXTURE-1','PACKING-FIXTURE-1','accepted','pickup','pickup','packing-fixture-request-1','CLIENTE_SINTETICO_NO_CACHEAR',100,0,100);
 insert into public.order_items(id,order_id,product_id,product_uuid,name,quantity,unit,unit_price,subtotal)
 values('66000000-0000-4000-8000-000000000001','65000000-0000-4000-8000-000000000001','packing-product','63000000-0000-4000-8000-000000000001','Producto packing sintético',1,'unidad',100,100);
 
@@ -65,7 +65,7 @@ select is(
   (select public.get_packing_manifest(id)#>>'{items,0,barcodes,0,gtin}' from public.order_packing_sessions where order_id='65000000-0000-4000-8000-000000000001'),
   '4006381333931','manifiesto contiene barcode autorizado'
 );
-select unlike(
+select unalike(
   (select public.get_packing_manifest(id)::text from public.order_packing_sessions where order_id='65000000-0000-4000-8000-000000000001'),
   '%CLIENTE_SINTETICO_NO_CACHEAR%','manifiesto no expone datos del cliente'
 );
@@ -116,9 +116,15 @@ select lives_ok(
 select is((select status from public.order_packing_sessions where order_id='65000000-0000-4000-8000-000000000001'),'confirmed','sesion queda confirmada');
 select is((select count(*)::integer from public.business_command_receipts where idempotency_key='packing-confirm:fixture:complete'),1,'confirmacion conserva un recibo');
 
+-- El id de la sesion se resuelve mientras la ve su propio operador. Buscarlo ya como forastero
+-- lo devolveria en null por RLS, y la RPC responderia 'sesion inexistente' sin llegar a ejercer
+-- el guard de autorizacion que esta prueba quiere demostrar.
+create temporary table packing_fixture_session on commit drop as
+select id from public.order_packing_sessions where order_id='65000000-0000-4000-8000-000000000001';
+
 set local request.jwt.claims = '{"sub":"61000000-0000-4000-8000-000000000002","role":"authenticated"}';
 select throws_ok(
-  format($sql$select public.get_packing_manifest(%L::uuid)$sql$,(select id from public.order_packing_sessions where order_id='65000000-0000-4000-8000-000000000001')),
+  format($sql$select public.get_packing_manifest(%L::uuid)$sql$,(select id from packing_fixture_session)),
   '42501','operador no autorizado','otro negocio no obtiene el manifiesto'
 );
 

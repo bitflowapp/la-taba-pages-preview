@@ -61,6 +61,7 @@ import {
   isPurchasableBeverageProduct,
   isVisibleBeverageProduct,
 } from './core/beverage-home-sections.js';
+import { hasPurchasableDestination, storyCtaDestination } from './core/purchasable-destination.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 import { riderAvatarHelmetSvg } from './map/rider_marker.js';
 import {
@@ -761,50 +762,39 @@ const HOME_BANNER_COPY = Object.freeze({
 // a vivir sólo intercalados entre carruseles, que es donde cortan el ritmo.
 const HOME_BANNER_LIMIT = 0;
 
-// Prioridad del banner: primero los rubros premium. A diferencia de la fila de
-// categorías, acá NO se exige precio publicado, porque el banner es editorial
-// ("Explorar la selección") y no promete importe: sólo pide que la categoría
-// exista y tenga productos que el cliente pueda mirar. Una categoría vacía sí
-// queda afuera: eso sería un link muerto.
-// En teléfono se pinta UN solo banner, así que el primero de esta lista es el
-// que decide la vidriera. Encabeza cervezas porque es la pieza que la curaduría
-// señala con espacio lateral para overlay y alto contraste: las escenas de bar
-// (whisky) quedan preciosas en grande pero a 400px de ancho no se distingue el
-// producto. Detrás siguen los rubros premium.
+// Prioridad del banner: primero los rubros premium. La ELEGIBILIDAD vive en
+// `bannerEligibleCategoryIds` y exige destino con producto comprable (P1-2);
+// esta lista sólo decide el ORDEN entre las puertas que califican. Antes acá
+// no se exigía precio publicado y la vidriera invitaba a rubros donde no se
+// podía comprar nada: la auditoría lo midió como decepción directa.
+// En teléfono se pinta UN solo banner, así que el primero de esta lista que
+// califique decide la vidriera. Encabeza cervezas porque es la pieza que la
+// curaduría señala con espacio lateral para overlay y alto contraste: las
+// escenas de bar (whisky) quedan preciosas en grande pero a 400px de ancho no
+// se distingue el producto. Detrás siguen los rubros premium.
 const HOME_BANNER_PRIORITY = Object.freeze([
   'cervezas', 'whisky', 'fernet', 'heineken', 'vinos', 'aperitivos', 'gin',
   'andes-origen', 'energizantes', 'mixers', 'espumantes', 'gaseosas', 'aguas',
   'complementos',
 ]);
 
-function categoriesWithProducts(state = getState()) {
-  return new Set(getCustomerCatalogProducts(state.products)
-    .map((product) => product.categoryId)
-    .filter(Boolean));
-}
-
-// Marcas que hoy pueden encabezar un banner: existen en el catálogo del cliente
-// con al menos un producto visible. Igualdad exacta de marca tras normalizar
-// caja y acentos: acá no se comparan cadenas parecidas sino la misma marca.
-function catalogBrandNames(state = getState()) {
-  return new Set(getCustomerCatalogProducts(state.products)
-    .filter(isVisibleBeverageProduct)
-    .map((product) => normalizeSearchText(product.brand || ''))
-    .filter(Boolean));
-}
-
 // Puertas que hoy pueden pintarse: tienen copy editorial escrito Y un destino
-// con producto real. Una categoría vacía o una marca que el local todavía no
-// carga quedan afuera: eso sería un link muerto.
+// con al menos un producto COMPRABLE ahora mismo (P1-2, auditoría comercial).
+// Es el mismo criterio fail-closed del hero y de la fila de categorías: una
+// puerta editorial promete una acción de compra, así que un rubro sin precio
+// publicado o una marca que el local todavía no puede vender quedan afuera.
+// Nada se oculta del catálogo —esos productos siguen navegables y buscables
+// con su estado honesto—: sólo no reciben vidriera. El día que el local
+// publique esos precios, la puerta aparece sola, sin tocar código (la misma
+// mecánica que ya mantiene apagado a Andes Origen).
 function bannerEligibleCategoryIds() {
-  const withProducts = categoriesWithProducts();
-  const brands = catalogBrandNames();
+  const products = getCustomerCatalogProducts(getState().products);
   const byId = new Map(categoriesForCurrentCatalog().map((category) => [category.id, category]));
   return HOME_BANNER_PRIORITY.filter((id) => {
     const copy = HOME_BANNER_COPY[id];
     if (!copy) return false;
-    if (copy.brand) return brands.has(normalizeSearchText(copy.brand));
-    return withProducts.has(id) && byId.has(id);
+    if (copy.brand) return hasPurchasableDestination(products, { brandQuery: copy.brand });
+    return byId.has(id) && hasPurchasableDestination(products, { categoryId: id });
   });
 }
 
@@ -835,8 +825,10 @@ function homeBannerMarkup(id) {
 
   const category = categoriesForCurrentCatalog().find((entry) => entry.id === id);
   if (!category) return '';
-  // El verbo distingue lo que se puede comprar de lo que sólo se puede mirar.
-  const action = purchasableCategoryIds().has(id) ? 'Ver' : 'Explorar';
+  // Invariante P1-2: un banner de rubro sólo se pinta con destino comprable
+  // (`bannerEligibleCategoryIds`), así que el verbo es siempre el de compra.
+  // "Explorar" quedó reservado para superficies que muestran sin vender.
+  const action = 'Ver';
   return `
     <button class="home-brand-banner ${copy.image ? 'has-media' : ''}" type="button" data-category-id="${escapeHtml(id)}" aria-label="${escapeHtml(`${copy.title}. ${action} la categoría ${category.name}`)}">
       ${media}
@@ -868,10 +860,22 @@ export function getHomeStories() {
   // cae en las fixtures cuando NO hay origen real. En producción `demo` y
   // `showcase` son falsos, así que sin backend la lista sigue vacía y el aro
   // sigue apagado: el fail-closed no se toca.
-  return publishedStories(readStoriesSource({
+  const stories = publishedStories(readStoriesSource({
     showcase: isDemoMode() || isShowcaseMode(),
     fixtures: PREVIEW_STORY_SEED,
   }));
+  // P1-2 (auditoría comercial): una historia CON CTA sólo se publica si su
+  // destino tiene producto comprable AHORA — el mismo criterio del hero y de
+  // los banners, aplicado a CUALQUIER origen (fixtures o backend). Una
+  // historia sin CTA sigue siendo editorial válida: no promete acción. La que
+  // se apaga acá reaparece sola cuando el local publique el precio de su
+  // destino; el registro de vistas no se toca.
+  const products = getCustomerCatalogProducts(getState().products);
+  return stories.filter((story) => {
+    if (!story.cta) return true;
+    const destination = storyCtaDestination(story.cta);
+    return Boolean(destination) && hasPurchasableDestination(products, destination);
+  });
 }
 
 // Pinta TODOS los puntos de entrada a historias —hoy el encabezado de la home y

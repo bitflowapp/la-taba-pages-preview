@@ -331,18 +331,22 @@ test('la fila de categorías sólo ofrece rubros que hoy se pueden comprar', asy
   }
 });
 
-test('el banner editorial lleva a una categoría real y no afirma un descuento', async ({ page }) => {
+test('el banner editorial lleva a un destino con producto comprable y no afirma un descuento', async ({ page }) => {
   await openHome(page);
   const banner = page.locator('.home-brand-banner').first();
   await expect(banner).toBeVisible();
   await expect(banner).not.toContainText('%');
   await expect(banner).not.toContainText('$');
 
-  const categoryId = await banner.getAttribute('data-category-id');
-  expect(categoryId).toBeTruthy();
+  // El destino puede ser de rubro (`data-category-id`) o de marca
+  // (`data-brand-query`); lo que NO puede es prometer una compra que el
+  // catálogo no respalda (P1-2): al tocarlo tiene que aparecer al menos un
+  // producto con "Agregar" habilitado, no una góndola de precios pendientes.
+  const destino = await banner.evaluate((node) => node.dataset.categoryId || node.dataset.brandQuery);
+  expect(destino).toBeTruthy();
   await banner.click();
   await expect(page.locator('[data-view="catalog"]')).toBeVisible();
-  await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
+  await expect(page.locator('[data-product-grid] [data-add-product]:not([disabled])').first()).toBeVisible();
 });
 
 test('el shell de marca es continuo entre las vistas del cliente', async ({ page }) => {
@@ -697,8 +701,8 @@ test('la home no crece sin control en los anchos objetivo', async ({ page }) => 
 // filtra el catálogo por rubro y `data-brand-query` lo busca por marca. La de
 // marca existe porque hay marcas que son un motivo de compra en sí mismas
 // (Heineken) y que, metidas dentro del banner de "Cervezas", desaparecían. El
-// test las trata igual: lo que se verifica es que el destino EXISTA y traiga
-// producto, no de qué clase es.
+// test las trata igual: lo que se verifica es que el destino traiga producto
+// COMPRABLE (P1-2), no de qué clase es.
 test('los banners editoriales cortan el ritmo sin repetir destino ni prometer precio', async ({ page }) => {
   await openHome(page);
 
@@ -749,14 +753,16 @@ test('los banners editoriales cortan el ritmo sin repetir destino ni prometer pr
       .not.toMatch(/\$|%|\bdescuento\b|\boferta\b|\bpromo\b/i);
   }
 
-  // Ningún banner puede ser un link muerto, sea de rubro o de marca.
+  // Ningún banner puede ser un link muerto NI una góndola sin compra: cada
+  // destino trae al menos un producto con "Agregar" habilitado (P1-2, el
+  // mismo criterio comprable que ya exigía el hero).
   for (const { tipo, valor } of composicion.destinos) {
     const selector = tipo === 'categoria'
       ? `[data-view="home"] .home-brand-banner[data-category-id="${valor}"]`
       : `[data-view="home"] .home-brand-banner[data-brand-query="${valor}"]`;
     await page.locator(selector).click();
     await expect(page.locator('[data-view="catalog"]')).toBeVisible();
-    await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
+    await expect(page.locator('[data-product-grid] [data-add-product]:not([disabled])').first()).toBeVisible();
     await page.goBack();
     await expect(page.locator('[data-view="home"]')).toBeVisible();
   }

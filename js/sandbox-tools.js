@@ -1,4 +1,6 @@
 import { addToCart } from './cart.js';
+import { getBusinessConfig } from './core/business-config-store.js';
+import { isProductOrderable } from './core/catalog-store.js';
 import { getState, setState } from './state.js';
 import { enableGpsTracking, pauseSimulation, startSimulation } from './simulation.js';
 import { isDemoMode, isShowcaseMode } from './core/app-mode.js';
@@ -61,10 +63,15 @@ function currentSandboxOrder() {
 
 async function createSandboxTestOrder() {
   const repository = getOrderRepository();
-  const product = getState().products.find((candidate) => candidate.active !== false && Number(candidate.stock) > 0)
-    || getState().products[0];
+  // Elegibilidad y cantidad salen de contratos que ya existen: el pack de
+  // abastecimiento no se vende, y desde que la góndola es de unidades ninguna
+  // sola llega al mínimo de delivery del comercio.
+  const product = getState().products.find(isProductOrderable);
   if (!product) return { ok: false, message: 'No hay productos disponibles para crear el pedido.' };
-  const added = addToCart(product.id, 1);
+  const minimum = Number(getBusinessConfig().minDeliveryOrder) || 0;
+  const unitPrice = Number(product.price) || 0;
+  const needed = minimum > 0 && unitPrice > 0 ? Math.ceil(minimum / unitPrice) : 1;
+  const added = addToCart(product.id, Math.max(1, Math.min(needed, Number(product.stock) || 1)));
   if (!added.ok) return added;
   return repository.createOrder({
     customerName: 'Cliente Sandbox',

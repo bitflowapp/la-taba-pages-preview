@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, gotoDemoReset, installPageGuards, openBusinessSection, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installPageGuards, openBusinessSection, seedCartAboveMinimum, waitForToast } from './helpers.mjs';
 
 test('Business setup wizard mobile: guarda, persiste y restaura solo la config demo', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
@@ -68,7 +68,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   const productCountBeforeRestore = await page.locator('[data-product-grid] .product-card').count();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('[data-floating-cart]').click();
   await expect(page.locator('[data-order-summary]')).toContainText('$ 777');
   await expect(page.locator('[data-order-summary]')).toContainText('$ 1.000');

@@ -1,12 +1,5 @@
 import { expect, test } from '@playwright/test';
-import {
-  installBrowserStubs,
-  installPageGuards,
-  gotoDemoReset,
-  seedCheckoutProfile,
-  selectCheckoutAddress,
-  waitForToast,
-} from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMinimum, seedCheckoutProfile, selectCheckoutAddress, waitForToast } from './helpers.mjs';
 
 const RELAY_PORT = Number.parseInt(process.env.TABA_E2E_RELAY_PORT || '18787', 10);
 const RELAY_BASE = `http://127.0.0.1:${RELAY_PORT}`;
@@ -46,7 +39,12 @@ test('demo-realtime toma Perfil local al confirmar y sincroniza solo el pedido p
     await waitForRelay(business);
 
     await client.locator('.mobile-nav [data-nav-view="catalog"]').click();
-    await client.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+    const clientAddButton = client.locator('[data-product-grid] [data-add-product]:not([disabled]) >> visible=true').first();
+    const clientProductId = await clientAddButton.getAttribute('data-add-product');
+    await clientAddButton.click();
+    // Dos unidades: desde que la góndola es de unidades, ninguna sola llega al
+    // mínimo de delivery del comercio.
+    await client.locator(`[data-cart-inc="${clientProductId}"] >> visible=true`).first().click();
     await client.getByRole('button', { name: /Ver carrito/i }).click();
     await expect(client.locator('[data-cart-list] .cart-item')).toHaveCount(1);
 
@@ -142,7 +140,7 @@ test('demo-realtime mantiene bloqueos de Perfil y permite pickup sin direccion',
   await gotoDemoReset(page, `/?demo=1&relay=${RELAY_URL}&room=${room}&key=${ROOM_KEY}&reset=1#catalog`);
   await waitForRelay(page);
 
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
 
   await seedCheckoutProfile(page, {

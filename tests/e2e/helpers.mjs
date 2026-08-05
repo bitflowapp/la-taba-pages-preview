@@ -379,3 +379,25 @@ export async function openFirstProductModal(page) {
   await page.locator('[data-product-grid] [data-product-detail]').first().click();
   await expect(page.locator('[data-product-modal]')).toBeVisible();
 }
+
+/**
+ * Arma un carrito que supera el mínimo de delivery.
+ *
+ * Desde la publicación minorista la góndola es toda de unidades y ninguna
+ * llega sola al mínimo del comercio: el producto más caro son $ 3.900 contra
+ * un mínimo de $ 5.000. Antes alcanzaba con un clic porque el primer producto
+ * comprable era un pack de proveedor de $ 17.100. Dos unidades del más barato
+ * ($ 2.925) ya lo superan, así que el helper agrega una y suma la segunda con
+ * el mismo control de cantidad de la tarjeta.
+ */
+export async function seedCartAboveMinimum(page, selector = '[data-product-grid] [data-add-product]:not([disabled])') {
+  // `visible=true` importa: las vistas ocultas siguen en el DOM con los mismos
+  // data-*, así que un locator suelto puede quedarse esperando un control del
+  // rail de la home mientras el catálogo está a la vista.
+  const add = page.locator(`${selector} >> visible=true`).first();
+  await add.waitFor({ state: 'visible' });
+  const productId = await add.getAttribute('data-add-product');
+  await add.click();
+  await page.locator(`[data-cart-inc="${productId}"] >> visible=true`).first().click();
+  return productId;
+}

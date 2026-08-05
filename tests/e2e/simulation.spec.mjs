@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, installPageGuards, seedCartAboveMinimum, waitForToast } from './helpers.mjs';
 
 // Stub que limpia el storage SOLO en la primera carga del contexto, para poder
 // probar la persistencia tras recargar la página.
@@ -24,7 +24,7 @@ async function installPersistentStubs(page) {
 
 async function createDeliveryOrder(page) {
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await fillCheckout(page, {
     name: 'Rider QA',

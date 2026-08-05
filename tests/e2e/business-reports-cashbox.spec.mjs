@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, openBusinessSection, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, openBusinessSection, seedCartAboveMinimum, waitForToast } from './helpers.mjs';
 
 test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -13,6 +13,9 @@ test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ brows
   const productCard = page.locator('[data-product-grid] .product-card').first();
   const productName = (await productCard.locator('.product-body h3').innerText()).trim();
   await productCard.locator('[data-add-product]:not([disabled])').click();
+  // Dos unidades: desde que la góndola es de unidades, ninguna sola llega al
+  // mínimo de delivery del comercio.
+  await productCard.locator('[data-cart-inc]').click();
   await page.locator('[data-floating-cart]').click();
   await fillCheckout(page, {
     name: 'Cliente Reporte',
@@ -58,7 +61,7 @@ test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ brows
   await expect(report).toContainText(productName);
 
   await page.goto('/?demo=1#catalog');
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('[data-floating-cart]').click();
   await fillCheckout(page, {
     name: 'Cliente Cancelado',

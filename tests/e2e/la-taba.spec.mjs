@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, openBusinessSection, openFirstProductModal, seedCheckoutProfile, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, openBusinessSection, openFirstProductModal, seedCartAboveMinimum, seedCheckoutProfile, waitForToast } from './helpers.mjs';
 
 const TRACKING_GPS_NOTE = 'Seguimiento por estados, sin GPS ni ubicación en vivo.';
 
@@ -54,9 +54,13 @@ test('agregar producto desde una categoría del catálogo', async ({ page }) => 
 
   await page.goto('/?demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
+  // Energizantes: gaseosas quedó sin comprables al retirar de la góndola el
+  // pack de proveedor; sus botellas sueltas todavía esperan precio.
+  await page.locator('[data-view="catalog"] [data-category-id="energizantes"]').click();
 
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  // Una sola unidad: este contrato mide el stepper de la tarjeta, no el mínimo
+  // de delivery, así que no hace falta llegar a él.
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled]) >> visible=true').first().click();
   await waitForToast(page, /agregado al pedido/);
   await expect(page.locator('[data-cart-count]').first()).not.toHaveText('0');
   const desktopCart = page.locator('.topbar [data-open-cart]');
@@ -110,7 +114,7 @@ test('carrito vacío oculta el formulario de checkout y lo muestra al cargar pro
 
   // Al agregar un producto, el formulario aparece para completar el pedido.
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-checkout-form]')).toBeVisible();
   await expect(page.locator('[data-clear-cart]')).toBeVisible();
@@ -122,7 +126,7 @@ test('pedido demo no muestra rider falso, GPS, mapa ni ETA', async ({ page }) =>
   const guards = installPageGuards(page);
   await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await fillCheckout(page, {
     name: 'Cliente Demo',
@@ -173,7 +177,7 @@ test('home muestra acceso al pedido en curso tras confirmar', async ({ page }) =
 
   await page.goto('/?demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await fillCheckout(page, {
     name: 'Walter QA',
@@ -203,7 +207,7 @@ test('flujo cliente con delivery', async ({ page }) => {
 
   await page.goto('/?demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await page.getByLabel('Delivery').check();
@@ -279,7 +283,7 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('[data-floating-cart]').click();
 
   await fillCheckout(page, {
@@ -331,7 +335,7 @@ test('flujo retiro en local', async ({ page }) => {
 
   await page.goto('/?demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await page.getByLabel('Retiro en local').check();
@@ -368,7 +372,7 @@ test('modo negocio y delivery', async ({ page }) => {
 
   await page.goto('/?demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await fillCheckout(page, {
     name: 'Cliente Calle',
@@ -496,7 +500,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   expect(mainScrollState.mainScrollable).toBeFalsy();
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.mobile-nav [data-nav-view="home"]').click();
   await page.evaluate(() => window.scrollTo(0, 520));
   await page.locator('[data-floating-cart]').click();
@@ -732,7 +736,7 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
     await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
     await expect.poll(() => page.locator('[data-product-grid] .product-card').count()).toBeGreaterThan(0);
 
-    await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+    await seedCartAboveMinimum(page);
     if (viewport.width <= 820) {
       await page.locator('[data-floating-cart]').click();
     } else {

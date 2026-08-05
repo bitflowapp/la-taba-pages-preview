@@ -1,9 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
-import {
-  gotoDemoReset, installBrowserStubs, installPageGuards, measureStableControls,
-} from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards, measureStableControls, seedCartAboveMinimum } from './helpers.mjs';
 
 test('la home presenta La Taba 2 con marca propia y un storefront comercial limpio', async ({ page }) => {
   const guards = installPageGuards(page);
@@ -14,14 +12,18 @@ test('la home presenta La Taba 2 con marca propia y un storefront comercial limp
   await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba 2');
   await expect(page.getByRole('heading', { name: 'La Taba 2', level: 1 })).toBeVisible();
   await expect(page.locator('[data-view="home"] .taba-home-search')).toBeVisible();
-  // La fila la componen las categorías con producto comprable + "Todas".
+  // La fila la componen las categorías con producto comprable + "Todas". Desde
+  // la publicación minorista son Cervezas y Energizantes: gaseosas y mixers
+  // siguen navegables en el catálogo, pero sus botellas sueltas todavía esperan
+  // precio y el pack de proveedor ya no se vende.
   const homeCategories = page.locator('[data-view="home"] .home-category-card');
-  await expect(homeCategories).toHaveCount(5);
-  await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="gaseosas"]')).toHaveText('Gaseosas');
+  await expect(homeCategories).toHaveCount(3);
   await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="cervezas"]')).toHaveText('Cervezas');
+  await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="energizantes"]')).toHaveText('Energizantes');
+  await expect(page.locator('[data-home-category-strip] [data-category-id="gaseosas"]')).toHaveCount(0);
   // La marca activa refleja el filtro REAL del catálogo, que arranca en "Todas".
   await expect(page.locator('[data-home-category-strip] [data-category-id="all"]')).toHaveClass(/active/);
-  await expect(page.locator('[data-home-category-strip] [data-category-id="gaseosas"]')).not.toHaveClass(/active/);
+  await expect(page.locator('[data-home-category-strip] [data-category-id="cervezas"]')).not.toHaveClass(/active/);
   // Un rubro sin precio publicado no puede ser protagonista de la home.
   await expect(page.locator('[data-home-category-strip] [data-category-id="fernet"]')).toHaveCount(0);
   await expect(page.locator('[data-home-category-strip] [data-category-id="whisky"]')).toHaveCount(0);
@@ -213,15 +215,17 @@ test('confirmación de edad aparece y es obligatoria sólo con alcohol', async (
   await installBrowserStubs(page);
 
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
-  await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  // Energizantes: sin alcohol y con producto comprable. Gaseosas quedó sin
+  // comprables al retirar el pack de proveedor de la góndola.
+  await page.locator('[data-view="catalog"] [data-category-id="energizantes"]').click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-age-confirmation]')).toBeHidden();
   await expect(page.locator('[name="ageConfirmed"]')).not.toHaveAttribute('required');
 
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
   await page.locator('[data-view="catalog"] [data-category-id="cervezas"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-age-confirmation]')).toBeVisible();
   await expect(page.locator('[name="ageConfirmed"]')).toHaveAttribute('required', '');
@@ -258,9 +262,9 @@ test('Los filtros conservan el catálogo real y no fabrican promociones', async 
   await installBrowserStubs(page);
   await page.goto('/?demo=1&home=v37');
 
-  await page.locator('[data-home-category-strip] [data-category-id="gaseosas"]').click();
+  await page.locator('[data-home-category-strip] [data-category-id="energizantes"]').click();
   await expect(page.locator('[data-view="catalog"]')).toBeVisible();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Gaseosas');
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Energizantes');
   await expect(page.locator('[data-product-grid] [data-add-product]')).not.toHaveCount(0);
 
   await page.goBack();
@@ -342,25 +346,28 @@ test('la imagen de un producto real se reutiliza en Home, catálogo, modal y car
   await expect(page.locator(`[data-product-grid] [data-product-detail="${productId}"] img`)).toHaveAttribute('src', source);
 });
 
-test('la card de la home declara el pack cuando el precio es del pack completo', async ({ page }) => {
+test('la card de la home declara la unidad que se vende, nunca un pack', async ({ page }) => {
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/?demo=1&home=v37');
 
-  // El precio que la card muestra al lado es el del pack entero. Si la línea de
-  // unidad dice sólo la capacidad de una botella, la home afirma un precio
-  // unitario inexistente. Este contrato se ancla en el catálogo, que ya declara
-  // el pack, y exige que la home diga lo mismo.
-  const packCard = page.locator('[data-home-sections] .home-best-card', {
-    has: page.locator('[data-product-detail*="pack"]'),
-  }).first();
-  await expect(packCard).toBeVisible();
+  // El precio de la card es el de lo que el cliente se lleva. Desde la
+  // publicación minorista eso es siempre una unidad: el pack abastece al local
+  // y no está en góndola, así que ninguna card puede declarar un formato de
+  // pack junto a un precio.
+  const cards = page.locator('[data-home-sections] .home-best-card');
+  const total = await cards.count();
+  expect(total).toBeGreaterThan(0);
 
-  const productId = await packCard.locator('[data-product-detail]').getAttribute('data-product-detail');
-  const perPack = Number(/pack-(\d+)$/.exec(productId || '')?.[1]);
-  expect(perPack, `${productId} debe declarar unidades por pack`).toBeGreaterThan(1);
-
-  await expect(packCard.locator('.home-best-copy small')).toHaveText(new RegExp(`Pack x${perPack}\\b`));
+  for (let index = 0; index < total; index += 1) {
+    const card = cards.nth(index);
+    const detalle = await card.locator('[data-product-detail]').getAttribute('data-product-detail');
+    expect(detalle, `${detalle} es un pack de proveedor`).not.toMatch(/-pack-\d+$/);
+    const linea = (await card.locator('.home-best-copy small').innerText()).trim();
+    expect(linea, `${detalle}: "${linea}"`).not.toMatch(/pack|caja|bulto|x\s?\d/i);
+    // Y la línea sigue diciendo el contenido, que es lo que define el precio.
+    expect(linea, `${detalle}: "${linea}"`).toMatch(/\d/);
+  }
 
   // La honestidad no puede costar el layout: la home sigue sin overflow.
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
@@ -377,11 +384,13 @@ test('la CTA móvil compacta reserva espacio real sobre la navegación', async (
   ]) {
     await page.setViewportSize(viewport);
     await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
-    await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
+    await page.locator('[data-view="catalog"] [data-category-id="energizantes"]').click();
 
     const main = page.locator('main[data-app-main]');
     const emptyPadding = await main.evaluate((node) => parseFloat(getComputedStyle(node).paddingBottom));
-    await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+    // Una sola unidad: este contrato mide el espacio que reserva la CTA, no el
+    // mínimo de delivery.
+    await page.locator('[data-product-grid] [data-add-product]:not([disabled]) >> visible=true').first().click();
 
     const floatingCart = page.locator('[data-floating-cart]');
     const mobileNav = page.locator('.mobile-nav');

@@ -1,10 +1,5 @@
 import { expect, test } from '@playwright/test';
-import {
-  fillCheckout,
-  gotoDemoReset,
-  installPageGuards,
-  waitForToast,
-} from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installPageGuards, seedCartAboveMinimum, waitForToast } from './helpers.mjs';
 
 test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion y tracking honesto', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -18,7 +13,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
     '[data-offers-rail]',
   ]);
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('[data-floating-cart]').click();
 
   await fillCheckout(page, {
@@ -52,7 +47,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
   const orderSummary = page.locator('[data-tracking-panel] [data-order-summary-details]');
   await expect(orderSummary.locator('summary')).toContainText('Pedido LT-0002');
-  await expect(orderSummary.locator('summary')).toContainText(/1 producto · Total \$[\d.]+/);
+  await expect(orderSummary.locator('summary')).toContainText(/2 productos · Total \$[\d.]+/);
   await expect(orderSummary).not.toContainText('Resumen protegido');
   await expect(orderSummary).not.toContainText('El detalle se mantiene en el dispositivo');
   const officialThumbnail = orderSummary.locator('[data-order-summary-thumbnail] img');

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMinimum, waitForToast } from './helpers.mjs';
 
 // Central de pedidos v1: el pedido del cliente entra al negocio, se ve completo
 // y el negocio lo gestiona. Mobile-first 390x844, sin geografía falsa.
@@ -36,7 +36,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
 
   // 2. El cliente confirma un pedido con dirección real.
   await page.evaluate(() => { window.location.hash = '#catalog'; });
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('[data-floating-cart]').click();
   await fillCheckout(page, {
     name: 'Cliente Demo',

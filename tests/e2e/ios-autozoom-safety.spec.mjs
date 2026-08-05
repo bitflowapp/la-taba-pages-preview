@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gotoDemoReset, installBrowserStubs, installPageGuards, openBusinessSection } from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards, openBusinessSection, seedCartAboveMinimum } from './helpers.mjs';
 
 // Safari en iOS hace zoom automático al enfocar un campo de texto/select con
 // `font-size` computado menor a 16px. La regla no es de diseño: es un piso
@@ -173,7 +173,7 @@ test.describe('iOS Safari · ningún control editable dispara autozoom', () => {
     await installBrowserStubs(page);
     await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
     await page.waitForSelector('[data-product-grid] .product-card');
-    await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+    await seedCartAboveMinimum(page);
     await page.locator('[data-floating-cart]').click();
     await expect(page.locator('[data-checkout-form]')).toBeVisible();
     await page.locator('.checkout-instructions summary').click();

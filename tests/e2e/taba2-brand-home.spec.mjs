@@ -10,7 +10,7 @@
 // Las capturas reales se generan como artefacto fuera de Git para la revisión
 // humana; acá vive lo que puede fallar automáticamente.
 import { expect, test } from '@playwright/test';
-import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMinimum } from './helpers.mjs';
 
 const PHONE = { width: 390, height: 844 };
 
@@ -46,7 +46,7 @@ const STORY_FIXTURES = [
     expires_at: null,
     priority: 1,
     cta_type: 'category',
-    cta_target: 'gaseosas',
+    cta_target: 'energizantes',
     is_highlight: false,
     published: true,
   },
@@ -316,8 +316,11 @@ test('la fila de categorías sólo ofrece rubros que hoy se pueden comprar', asy
   const ids = await chips.evaluateAll((nodes) => nodes.map((node) => node.dataset.categoryId));
 
   expect(ids[0]).toBe('all');
-  expect(ids).toContain('gaseosas');
+  // Desde la publicación minorista los rubros con comprables son cervezas y
+  // energizantes: las botellas sueltas de gaseosas y mixers esperan precio.
   expect(ids).toContain('cervezas');
+  expect(ids).toContain('energizantes');
+  expect(ids).not.toContain('gaseosas');
   // Sin precio publicado un rubro no puede ser protagonista de la home.
   expect(ids).not.toContain('whisky');
   expect(ids).not.toContain('fernet');
@@ -511,7 +514,7 @@ test('los estados vacíos del cliente se apoyan en la superficie de contenido', 
 test('el seguimiento con pedido activo se lee sobre el shell oscuro', async ({ page }) => {
   await openHome(page);
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.mobile-nav [data-nav-view="cart"]').click();
 
   const direccion = page.locator('[data-profile-checkout] input[type="radio"]').first();

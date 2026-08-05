@@ -635,12 +635,16 @@ function renderHomeShowcase() {
 // Fail-closed como todo lo demás: si la categoría de destino no tiene producto
 // comprable, el hero NO se pinta. Preferimos abrir con el primer carrusel a
 // abrir con una foto grande que lleva a una pantalla vacía.
+// Dos productos en escena —la botella y el vaso servido— y ni uno más: es la
+// composición que pide el hero. La pieza además tiene el fondo negro a la
+// izquierda, que es donde se apoya el copy, así que la escena no se pelea con
+// el texto ni hay que apagarla para leerlo.
 const HOME_HERO_PROMO = Object.freeze({
   categoryId: 'cervezas',
   eyebrow: 'La vidriera',
-  title: 'Bien fría, bien de acá',
+  title: 'Bien fría, bien tirada',
   subtitle: 'La selección de cervezas del local, lista para llevar.',
-  image: 'assets/promos/cervezas-patagonia.jpg',
+  image: 'assets/promos/cervezas-heineken.jpg',
 });
 
 function renderHomeHeroPromo() {
@@ -735,8 +739,10 @@ function renderHomeEditorialSelection() {
 // justo el producto —de la escena de Chivas quedaba una banda de mantel—. El
 // valor sale de mirar cada pieza, y una sin `focus` cae en `center`.
 const HOME_BANNER_COPY = Object.freeze({
-  cervezas: { eyebrow: 'Para el finde', title: 'Cervezas bien frías', image: 'assets/promos/cervezas-heineken.jpg', focus: '44% 58%' },
-  heineken: { brand: 'Heineken', eyebrow: 'La marca', title: 'Heineken bien tirada', image: 'assets/promos/cervezas-heineken.jpg', focus: '44% 58%' },
+  cervezas: { eyebrow: 'Para el finde', title: 'Cervezas bien frías', image: 'assets/promos/cervezas-patagonia.jpg', focus: '50% 62%' },
+  // Otra toma, no la del hero. Compartir la foto entre el hero y el banner de
+  // marca dejaba la misma escena dos veces en la misma pantalla.
+  heineken: { brand: 'Heineken', eyebrow: 'La marca', title: 'Heineken bien fría', image: 'assets/promos/cervezas-heineken-botella.jpg', focus: '50% 45%' },
   'andes-origen': { brand: 'Andes Origen', eyebrow: 'De la Patagonia', title: 'Andes Origen', image: 'assets/promos/cervezas-andes-origen.webp' },
   fernet: { eyebrow: 'Clásico argentino', title: 'Fernet y amargos', image: 'assets/promos/fernet-brancamenta.jpg', focus: '50% 48%' },
   whisky: { eyebrow: 'Selección premium', title: 'El mejor whisky', image: 'assets/promos/whisky-chivas.webp', focus: '64% 55%' },

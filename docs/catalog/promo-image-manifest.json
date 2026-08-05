@@ -195,6 +195,20 @@
                        "normalizacion":  "reescalado a 1400px de ancho, JPEG q76, sin recorte"
                    },
                    {
+                       "path":  "assets/promos/cervezas-heineken-botella.jpg",
+                       "origen":  "catalog-assets/promos/stories/story-002",
+                       "marca":  "Heineken",
+                       "producto":  "Heineken botella",
+                       "categoria":  "cervezas",
+                       "url_fuente":  "https://www.otaphotography.com/beverage",
+                       "dominio_fuente":  "otaphotography.com",
+                       "ancho":  1100,
+                       "alto":  1500,
+                       "uso":  "banner editorial de marca",
+                       "normalizacion":  "reescalado a 1100px de ancho, JPEG q76, sin recorte",
+                       "nota_origen":  "el lote curado la rotula 'Heineken servido'; la pieza muestra la botella sobre la estrella, no un vaso servido"
+                   },
+                   {
                        "path":  "assets/promos/cervezas-andes-origen.webp",
                        "origen":  "catalog-assets/promos/cards/card-001",
                        "marca":  "Andes Origen",

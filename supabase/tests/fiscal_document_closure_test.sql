@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(28);
+select plan(40);
 
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
 values ('41000000-0000-4000-8000-000000000001','authenticated','authenticated','fiscal-owner@example.invalid','',now(),'{}','{}',now(),now());
@@ -35,6 +35,105 @@ select throws_ok(
   $$select public.resolve_fiscal_accounting_policy('42000000-0000-4000-8000-000000000001','homologation','Responsable Inscripto','Sin Politica',1,11,current_date)$$,
   'P0001','fiscal_policy_review_required','sin politica no inventa un tipo fiscal'
 );
+
+-- ===== Configurar homologacion no es autorizarla, y autorizarla no es emitir =====
+-- El fixture de arriba ya dejo el perfil en homologation sin autorizacion: ese estado intermedio
+-- es legitimo y la base tiene que admitirlo.
+select is(
+  (select environment from public.fiscal_profiles where business_id='42000000-0000-4000-8000-000000000001'),
+  'homologation',
+  'la base admite un perfil configurado para homologacion'
+);
+select ok(
+  (select homologation_authorized_at is null from public.fiscal_profiles where business_id='42000000-0000-4000-8000-000000000001'),
+  'configurar homologacion no inventa una fecha de autorizacion'
+);
+select ok(
+  (select homologation_authorized_by is null from public.fiscal_profiles where business_id='42000000-0000-4000-8000-000000000001'),
+  'configurar homologacion no inventa un actor autorizante'
+);
+
+-- Emitir de verdad si exige la autorizacion humana registrada.
+select throws_ok(
+  $$insert into public.fiscal_documents(
+      business_id,source_type,source_id,document_intent,environment,cuit,point_of_sale,document_type,concept,currency,currency_rate,
+      recipient_type,recipient_document_type,recipient_document_number,net_amount,tax_amount,exempt_amount,non_taxed_amount,other_taxes_amount,total_amount,
+      state,idempotency_key,issuer_snapshot,recipient_snapshot,fiscal_policy_version
+    ) values (
+      '42000000-0000-4000-8000-000000000001','pos_sale','44000000-0000-4000-8000-000000000009','invoice',
+      'homologation','20123456789',1,11,1,'PES',1,'Consumidor Final',96,'0',100,21,0,0,0,121,
+      'queued','fixture-invoice-unauthorized-1','{}'::jsonb,'{}'::jsonb,'fixture-approved-v1'
+    )$$,
+  '42501','homologacion no autorizada','sin autorizacion registrada no se emite ningun comprobante'
+);
+
+-- Media autorizacion no es autorizacion: el par viaja completo o no viaja.
+select throws_ok(
+  $$update public.fiscal_profiles set homologation_authorized_at = now()
+    where business_id='42000000-0000-4000-8000-000000000001'$$,
+  '23514',
+  null::text,
+  'la base rechaza metadata de autorizacion parcial'
+);
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"41000000-0000-4000-8000-000000000001","role":"authenticated"}';
+
+-- Guardar "Datos fiscales" con homologacion elegida es configuracion valida y no autoriza nada.
+select lives_ok(
+  $$select public.configure_fiscal_profile('42000000-0000-4000-8000-000000000001', jsonb_build_object(
+      'legal_name','TABA Fiscal Fixture','cuit','20123456789','tax_condition','Responsable Inscripto',
+      'business_address','Direccion fiscal fixture','environment','homologation','point_of_sale',1,
+      'default_currency','PES','default_concept',1,'invoice_policy','manual','is_enabled',true,
+      'default_recipient_condition','Consumidor Final'
+    ))$$,
+  'se puede guardar un perfil de homologacion sin autorizar ARCA'
+);
+select ok(
+  (select homologation_authorized_at is null and homologation_authorized_by is null
+     from public.fiscal_profiles where business_id='42000000-0000-4000-8000-000000000001'),
+  'guardar datos fiscales no autoriza la homologacion de forma implicita'
+);
+
+-- La produccion sigue sin ruta de activacion desde el panel.
+select throws_ok(
+  $$select public.configure_fiscal_profile('42000000-0000-4000-8000-000000000001', jsonb_build_object(
+      'legal_name','TABA Fiscal Fixture','cuit','20123456789','tax_condition','Responsable Inscripto',
+      'environment','production','point_of_sale',1,'is_enabled',true,
+      'default_recipient_condition','Consumidor Final'
+    ))$$,
+  '42501','produccion no se configura desde el panel','la facturacion real sigue apagada desde el panel'
+);
+
+select throws_ok(
+  $$select public.authorize_arca_homologation('42000000-0000-4000-8000-000000000001','I_AUTHORIZE_ARCA')$$,
+  '22023','autorizacion de homologacion ausente','una frase aproximada no autoriza'
+);
+select throws_ok(
+  $$select public.authorize_arca_homologation('42000000-0000-4000-8000-000000000001','I_AUTHORIZE_ARCA_HOMOLOGATION')$$,
+  'P0001','falta la aprobacion contable','la autorizacion exige revision contable aprobada'
+);
+
+set local role postgres;
+update public.fiscal_profiles set
+  accountant_review_status='approved',
+  certificate_fingerprint_sha256=repeat('b',64),
+  certificate_expires_at=now()+interval '90 days'
+where business_id='42000000-0000-4000-8000-000000000001';
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"41000000-0000-4000-8000-000000000001","role":"authenticated"}';
+select lives_ok(
+  $$select public.authorize_arca_homologation('42000000-0000-4000-8000-000000000001','I_AUTHORIZE_ARCA_HOMOLOGATION')$$,
+  'la frase exacta con revision contable aprobada autoriza la homologacion'
+);
+select ok(
+  (select homologation_authorized_at is not null and homologation_authorized_by = '41000000-0000-4000-8000-000000000001'
+     from public.fiscal_profiles where business_id='42000000-0000-4000-8000-000000000001'),
+  'la autorizacion deja fecha y actor reales, no inventados'
+);
+
+set local role postgres;
 
 insert into public.fiscal_documents(
   id,business_id,source_type,source_id,document_intent,environment,cuit,point_of_sale,document_type,concept,currency,currency_rate,

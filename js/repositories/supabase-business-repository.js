@@ -39,4 +39,9 @@ export function classifyRpcError(error, status = 0) {
 }
 
 function assertClient(client) { if (typeof client?.rpc !== 'function') throw new Error('Cliente Supabase inv\u00e1lido.'); }
-function safeMessage(value) { return String(value || '').replace(/[\r\n\t]+/g, ' ').slice(0, 300); }
+// PostgreSQL nombra la tabla y el constraint cuando rechaza una fila. El operador no tiene que leer eso.
+const RAW_DATABASE_ERROR = /violates .*constraint|new row for relation|null value in column|duplicate key value|permission denied for|\bpg_[a-z_]+\b|invalid input syntax/i;
+function safeMessage(value) {
+  const flat = String(value || '').replace(/[\r\n\t]+/g, ' ').slice(0, 300);
+  return RAW_DATABASE_ERROR.test(flat) ? 'La operación no fue aceptada por el servidor.' : flat;
+}

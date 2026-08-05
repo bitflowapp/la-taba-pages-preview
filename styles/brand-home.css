@@ -172,15 +172,18 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
    ========================================================================== */
 .brand-hero {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   padding: 2px 2px 0;
 }
 
-.brand-hero-identity {
+/* Fila 1: emblema + acceso a historias. El emblema baja de 100 a 72px porque ya
+   no comparte fila con el título —no tiene que sostener tres renglones de
+   copy— y el acceso ocupa el ancho que sobra en vez de un renglón propio. */
+.brand-hero-top {
   display: grid;
-  grid-template-columns: 100px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 /* Caja reservada: el estado de historias cambia el contenido, nunca el tamaño.
@@ -192,13 +195,14 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
    hueco del aro se calcula solo a partir del segundo, que es lo que evita que
    un tamaño nuevo lo deje invadiendo el disco. */
 .brand-logo-slot {
-  --logo-size: 100px;
-  --logo-face: 86px;
+  --logo-size: 72px;
+  --logo-face: 61px;
 
   position: relative;
   display: grid;
   width: var(--logo-size);
   height: var(--logo-size);
+  flex: 0 0 auto;
   place-items: center;
 }
 
@@ -319,19 +323,21 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .profile
 .brand-hero-welcome {
   margin: 0;
   color: var(--brand-ink-muted);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1.15;
 }
 
+/* Título grande y corto sobre el ancho completo. Ya no comparte fila con el
+   emblema, así que puede crecer sin partirse en dos renglones a 320px. */
 body[data-active-view="home"] .taba-home-hero h1 {
   display: flex;
   align-items: baseline;
   margin: 0;
   color: var(--brand-ink);
-  font-size: clamp(29px, 8.6vw, 38px);
-  font-weight: 950;
-  letter-spacing: -0.05em;
+  font-size: clamp(30px, 9.4vw, 40px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
   line-height: 1.02;
   overflow-wrap: break-word;
 }
@@ -341,12 +347,15 @@ body[data-active-view="home"] .taba-home-hero h1 {
   font-size: 1em;
 }
 
+/* Rubro y dirección: el dorado como acento MODERADO, no como color de línea
+   completa. Antes toda la línea era dorada y competía con el título; ahora la
+   tinta es la secundaria del sistema y sólo el separador queda dorado. */
 .brand-hero-place {
-  margin: 2px 0 0;
-  color: var(--brand-gold);
+  margin: 4px 0 0;
+  color: var(--brand-ink-muted);
   font-size: 13.5px;
-  font-weight: 700;
-  line-height: 1.3;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .brand-hero-state {
@@ -396,16 +405,18 @@ body[data-active-view="home"] .taba-home-hero h1 {
 /* 50px y no 62: el acceso es el segundo llamado del encabezado, y cada píxel
    que ocupa acá se lo saca al primer producto. Sigue por encima del piso táctil
    de 44 y conserva la miniatura, el título y el estado. */
+/* Acceso a historias: vive en la MISMA fila que el emblema, no en un renglón
+   propio. Los dos abren el visor; juntos forman el encabezado de la vidriera. */
 .brand-stories-cta {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) auto;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 50px;
-  padding: 5px 12px 5px 6px;
+  min-height: 56px;
+  padding: 5px 12px 5px 7px;
   border: 1px solid var(--brand-border);
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--brand-bg-raised);
   color: var(--brand-ink);
   text-align: left;
@@ -418,8 +429,8 @@ body[data-active-view="home"] .taba-home-hero h1 {
 
 .brand-stories-thumb {
   display: block;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: var(--brand-surface) center / cover no-repeat;
   box-shadow: 0 0 0 2px var(--brand-gold);
@@ -633,34 +644,49 @@ body[data-active-view="home"] .home-catalog-preview-section {
    Imagen protagonista, texto al mínimo indispensable: nombre, presentación,
    precio y acción. Sobre grafito ya no hace falta sombra para despegarlas.
    ========================================================================== */
+/* Superficie CREMA, no blanco puro. Sobre grafito el #fff recorta la pantalla
+   como un papel pegado; el crema se apoya. Es el mismo token que ya usaba
+   Perfil, ahora compartido con la home, el catálogo, el carrito y el checkout:
+   una sola superficie de contenido en toda la app del cliente.
+   UNA sombra por superficie y hairline interno: el borde no compite con ella. */
 body[data-active-view="home"] .home-promo-card,
 body[data-active-view="home"] .home-best-card,
 body[data-active-view="home"] .home-catalog-card {
   border-color: transparent;
   border-radius: 20px;
-  box-shadow: none;
+  background: var(--cream);
+  box-shadow: var(--shadow-cream-flat), inset 0 0 0 1px var(--cream-line);
 }
 
-/* Rail de ofertas: tarjeta vertical con packshot grande. */
-body[data-active-view="home"] .home-promotions-rail {
-  grid-auto-columns: 168px;
-  gap: 12px;
-  padding: 1px 2px 4px;
-}
-
+/* Rail de ofertas: misma tarjeta que Destacados. El ancho lo fija el bloque de
+   más abajo, que reparte los dos rails con la misma fracción. */
 body[data-active-view="home"] .home-promo-card {
-  grid-template-rows: 132px minmax(0, 1fr);
-  min-height: 244px;
-  padding: 10px 11px 12px;
+  grid-template-rows: 150px 1fr auto;
+  height: auto;
+  min-height: 262px;
+  padding: 9px 10px 10px;
+}
+
+/* Mismo plato blanco que en el catálogo: los packshots traen el fondo horneado,
+   así que la caja lo asume con radio propio y crema alrededor en vez de dejar
+   un rectángulo blanco a sangre contra la tarjeta. */
+body[data-active-view="home"] .home-promo-media,
+body[data-active-view="home"] .home-best-media,
+body[data-active-view="home"] .home-catalog-media {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--taba-white);
 }
 
 body[data-active-view="home"] .home-promo-media {
-  height: 132px;
+  height: 150px;
 }
 
 body[data-active-view="home"] .home-promo-image {
-  height: 130px;
-  padding: 4px 6px 0;
+  height: 148px;
+  padding: 0;
+  scale: 1.06;
 }
 
 body[data-active-view="home"] .home-promo-badge {
@@ -673,13 +699,22 @@ body[data-active-view="home"] .home-promo-badge {
   font-size: 10.5px;
 }
 
-body[data-active-view="home"] .home-promo-copy strong {
-  font-size: 13.5px;
-  font-weight: 800;
+body[data-active-view="home"] .home-promo-copy {
+  gap: 0;
+  padding: 1px 0 0;
 }
 
-body[data-active-view="home"] .home-product-price {
-  font-size: 17px;
+body[data-active-view="home"] .home-promo-copy strong {
+  color: var(--cream-ink);
+  font-size: 13.5px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  -webkit-line-clamp: 1;
+}
+
+body[data-active-view="home"] .home-promo-copy small {
+  color: var(--cream-muted);
+  font-size: 12px;
 }
 
 /* Disponibilidad de la oferta: texto explícito, no sólo color. */
@@ -696,9 +731,18 @@ body[data-active-view="home"] .home-product-price {
 
 /* Destacados: tarjeta VERTICAL con packshot grande, como la vidriera de la
    referencia. Antes era una fila con el producto en 62px, que dejaba a la
-   imagen como miniatura y al texto como protagonista. */
-body[data-active-view="home"] .home-best-sellers {
-  grid-auto-columns: 168px;
+   imagen como miniatura y al texto como protagonista.
+
+   El ancho ya no es un número fijo sino una FRACCIÓN del rail, y la fracción es
+   la composición que pide la referencia: dos tarjetas enteras y un asomo de la
+   tercera. Con 168px fijos el asomo medía 80px a 432 CSS —media tarjeta— y el
+   corte caía justo sobre el precio y el botón: se leía como una tarjeta rota,
+   no como "hay más a la derecha". Con 2,3 columnas el asomo queda en ~30% del
+   ancho, que muestra el packshot y ninguna palabra cortada, y la proporción se
+   conserva igual a 320, 360, 390 y 412px sin una regla por ancho. */
+body[data-active-view="home"] .home-best-sellers,
+body[data-active-view="home"] .home-promotions-rail {
+  grid-auto-columns: calc((100% - 24px) / 2.3);
   gap: 12px;
   padding: 1px 2px 4px;
 }
@@ -710,16 +754,24 @@ body[data-active-view="home"] .home-best-sellers {
    El alto es FIJO, no un mínimo: el nombre a una línea y la presentación a una
    línea garantizan que todas las tarjetas del carrusel midan igual, así ninguna
    queda cortada ni desalineada respecto de sus vecinas. */
+/* El alto ya NO es un número fijo. Lo era para garantizar que todas las
+   tarjetas del carrusel midieran igual, pero el rail es `grid-auto-flow:
+   column`: todas las tarjetas comparten la misma fila y por lo tanto el mismo
+   alto, sin que nadie lo declare. El número fijo sólo agregaba una forma de
+   equivocarse, y se equivocó: con `minmax(0, 1fr)` la fila de texto podía
+   encogerse POR DEBAJO de su contenido y el precio quedaba cortado a la mitad
+   detrás del botón. `1fr` (que es `minmax(auto, 1fr)`) respeta el mínimo del
+   contenido, así que el precio nunca se recorta y la altura se iguala sola. */
 body[data-active-view="home"] .home-best-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 148px minmax(0, 1fr) auto;
+  grid-template-rows: 150px 1fr auto;
   align-items: stretch;
   width: auto;
-  height: 268px;
-  min-height: 268px;
+  height: auto;
+  min-height: 262px;
   gap: 0;
-  padding: 8px 10px 9px;
+  padding: 9px 10px 10px;
 }
 
 /* Caja CUADRADA: el packshot es un cuadrado de 400×400 y `contain` lo escala al
@@ -728,7 +780,7 @@ body[data-active-view="home"] .home-best-card {
    12% sin recortar un solo píxel. */
 body[data-active-view="home"] .home-best-media {
   width: 100%;
-  height: 148px;
+  height: 150px;
   overflow: hidden;
 }
 
@@ -740,7 +792,7 @@ body[data-active-view="home"] .home-best-media {
    su etiqueta al agregar una lata nueva al catálogo. */
 body[data-active-view="home"] .home-best-image {
   width: 100%;
-  height: 148px;
+  height: 150px;
   padding: 0;
   scale: 1.06;
 }
@@ -757,33 +809,46 @@ body[data-active-view="home"] .home-best-copy {
    disponible en el `aria-label` del packshot, en el `alt` y en la ficha. */
 body[data-active-view="home"] .home-best-copy strong {
   min-height: 18px;
-  color: #24272d;
+  color: var(--cream-ink);
   font-size: 13.5px;
-  font-weight: 800;
+  font-weight: 750;
+  letter-spacing: -0.01em;
   line-height: 1.32;
   -webkit-line-clamp: 1;
 }
 
 body[data-active-view="home"] .home-best-copy small {
   margin-top: 0;
-  color: #62656c;
+  color: var(--cream-muted);
   font-size: 12px;
   line-height: 1.3;
 }
 
-body[data-active-view="home"] .home-best-copy span {
-  margin-top: 2px;
-  font-size: 17px;
-  font-weight: 950;
+/* El precio vuelve a TINTA. En rojo competía con el botón —dos rojos por
+   tarjeta, veinte por pantallazo— y el resultado era una vidriera que gritaba
+   oferta sin que hubiera ninguna. El rojo queda reservado a la acción; el
+   precio se jerarquiza por tamaño y peso, que es lo que se lee de un vistazo. */
+body[data-active-view="home"] .home-best-copy span,
+body[data-active-view="home"] .home-promo-copy .home-product-price {
+  margin-top: 3px;
+  color: var(--cream-ink);
+  font-size: 17.5px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
   line-height: 1.2;
 }
 
 /* La acción pasa a ser una barra ancha: es el control de la tarjeta, no un
-   apéndice de 44px en una esquina. */
-body[data-active-view="home"] .home-best-card .home-card-control {
-  margin-top: 6px;
+   apéndice de 44px en una esquina. La tarjeta de oferta usa la MISMA barra: en
+   la esquina flotaba un disco blanco sobre el packshot y las dos tarjetas de la
+   home se leían como dos sistemas distintos. */
+body[data-active-view="home"] .home-best-card .home-card-control,
+body[data-active-view="home"] .home-promo-card .home-card-control {
+  position: static;
+  margin-top: 7px;
 }
 
+body[data-active-view="home"] .home-promo-card .home-add-button,
 body[data-active-view="home"] .home-best-card .home-add-button {
   display: flex;
   width: 100%;
@@ -808,20 +873,23 @@ body[data-active-view="home"] .home-best-card .home-add-button {
 
 /* `quickAddControl` emite "+" y la palabra. En el disco de 44px el grid los
    apilaba en dos filas; en la barra ancha la palabra es la que manda. */
-body[data-active-view="home"] .home-best-card .home-add-button .add-plus {
+body[data-active-view="home"] .home-best-card .home-add-button .add-plus,
+body[data-active-view="home"] .home-promo-card .home-add-button .add-plus {
   display: none;
 }
 
 /* `catalog.css` oculta `.add-text` de forma global para que la acción sea un
    disco con "+". Acá la barra es ancha y la palabra es la que manda, así que
    hay que reponer el `display` explícitamente. */
-body[data-active-view="home"] .home-best-card .home-add-button .add-text {
+body[data-active-view="home"] .home-best-card .home-add-button .add-text,
+body[data-active-view="home"] .home-promo-card .home-add-button .add-text {
   display: inline;
   font-size: 13px;
   letter-spacing: 0.02em;
 }
 
-body[data-active-view="home"] .home-best-card .qty-stepper {
+body[data-active-view="home"] .home-best-card .qty-stepper,
+body[data-active-view="home"] .home-promo-card .qty-stepper {
   width: 100%;
 }
 
@@ -855,9 +923,112 @@ body[data-active-view="home"] .home-catalog-card.out-of-stock {
   opacity: 0.82;
 }
 
-/* Tarjetas del catálogo completo: blancas sobre el shell oscuro. */
-body[data-active-view="catalog"] .product-card {
+/* ============================================================================
+   6b · SUPERFICIE DE CONTENIDO — la MISMA en todas las vistas del cliente
+   ----------------------------------------------------------------------------
+   El salto que rompía la experiencia no era de color de fondo (el shell ya era
+   continuo) sino de SUPERFICIE: la home mostraba una vidriera y al tocar
+   "Carrito" aparecía un formulario blanco puro, con otra sombra y otro radio.
+   Se leía como otra aplicación.
+
+   Acá el contenido del cliente pasa a tener una sola superficie —la crema de la
+   referencia—, un solo radio y UNA sombra. Perfil ya estaba así; esta regla
+   lleva al resto al mismo lugar en vez de repetir sus valores en cada hoja.
+
+   El alcance es deliberadamente el del shell: `business` y `rider` conservan la
+   superficie clara que el RC certificó.
+   ========================================================================== */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(
+  .app-view .card,
+  .app-view .product-card,
+  .app-view .offer-card,
+  .app-view .recommendation-card,
+  .app-view .summary-box,
+  .modal-card
+) {
   border-color: transparent;
+  border-radius: 20px;
+  background: var(--cream);
+  box-shadow: var(--shadow-cream-flat), inset 0 0 0 1px var(--cream-line);
+}
+
+/* La tarjeta grande de una vista (carrito, checkout, perfil) se despega más:
+   es la superficie principal, no un ítem dentro de un rail. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(
+  .app-view .cart-card,
+  .app-view .checkout-form,
+  .modal-card
+) {
+  border-radius: 22px;
+  box-shadow: var(--shadow-cream), inset 0 0 0 1px var(--cream-line);
+}
+
+/* Sub-superficies: lo que va DENTRO de una tarjeta crema se distingue por un
+   crema más claro o más hundido, nunca por blanco puro. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
+  .summary-box,
+  .catalog-filter-grid select,
+  .checkout-payment-field select,
+  .checkout-instructions,
+  .modal-quantity-field select,
+  .modal-note-field textarea,
+  .checkout-instructions textarea
+) {
+  border-color: var(--cream-line-strong);
+  background: var(--cream-raised);
+  color: var(--cream-ink);
+}
+
+/* El packshot vive sobre un PLATO BLANCO deliberado. Los bitmaps del catálogo
+   traen el fondo blanco horneado —son opacos, sin canal alfa—, así que teñir la
+   caja no sirve de nada: el propio archivo pinta su rectángulo. Peleado contra
+   el bitmap el resultado era un recorte duro a media tarjeta; asumido como
+   plato, con radio propio y crema alrededor, se lee como la bandeja donde se
+   apoya el producto. El plato es #fff exacto para que no se vea el borde entre
+   la caja y el fondo del propio archivo. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .product-media-frame {
+  padding: 9px 9px 0;
+  background: transparent;
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
+  .product-media,
+  .thumb
+) {
+  overflow: hidden;
+  border-color: transparent;
+  border-radius: 14px;
+  background: var(--taba-white);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-media {
+  padding: 12px 12px 0;
+  background: transparent;
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-media .thumb {
+  border-radius: 16px;
+}
+
+/* Los discos que flotan sobre el packshot (favorito, agregar rápido) eran
+   blancos puros: sobre crema se veían como parches. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
+  .product-favorite,
+  .home-favorite-button
+) {
+  border-color: var(--cream-line);
+  background: color-mix(in srgb, var(--cream-raised) 92%, transparent);
+}
+
+/* Tinta del contenido: el gris frío del sistema estaba calibrado para papel
+   blanco. Sobre crema se lee apenas apagado, así que la secundaria pasa a la
+   del propio sistema crema, que se midió contra esta superficie. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
+  .card,
+  .product-card,
+  .modal-card
+) :is(small, .muted, .form-hint, .product-body p, .info-list span) {
+  color: var(--cream-muted);
 }
 
 /* ============================================================================
@@ -890,19 +1061,34 @@ body[data-active-view="home"] .home-sections {
   }
 }
 
+/* Composición EDITORIAL: copy a la izquierda, fotografía en su propio panel a
+   la derecha. No es la del hero (foto a sangre con el texto encima) y es a
+   propósito: son dos piezas distintas y tienen que leerse distinto.
+
+   El motivo es medible, no estético. A 428×186 una foto de fondo se recorta a
+   una franja de 2,3:1: de la escena de Chivas quedaba una banda de manteles
+   oscuros sin botella, y de Brancamenta —que es vertical— una banda de hielo.
+   Encima, para que el copy conservara contraste había que apagar la foto, así
+   que el "banner editorial" no mostraba nada editorial. Con el panel derecho la
+   foto conserva una proporción casi vertical, que es donde vive una botella, y
+   el copy se apoya en la superficie plana: legible sin apagar la imagen. */
 .home-brand-banner {
   position: relative;
   display: grid;
+  align-content: center;
   gap: 3px;
   width: 100%;
-  min-height: 128px;
-  padding: 18px 20px;
+  min-height: 184px;
+  /* El padding derecho reserva la columna de la foto. Es la misma medida que
+     el ancho del panel, así que copy e imagen nunca se pisan por más que el
+     título crezca. */
+  padding: 18px 44% 18px 20px;
   overflow: hidden;
   border: 1px solid var(--brand-border);
   border-radius: 20px;
-  background:
-    radial-gradient(90% 130% at 100% 10%, rgb(201 149 62 / 26%) 0%, transparent 62%),
-    linear-gradient(103deg, #14171d 0%, #1b1f27 58%, #241d16 100%);
+  /* Superficie sobria: el degradado dorado exagerado se fue. */
+  background: linear-gradient(160deg, #171a20 0%, #101318 100%);
+  box-shadow: var(--shadow-cream-flat);
   color: var(--brand-ink);
   text-align: left;
 }
@@ -911,31 +1097,26 @@ body[data-active-view="home"] .home-sections {
    izquierda para que el copy conserve el contraste que mide la prueba: la
    imagen agrega deseo, no puede comerse la legibilidad. Es decorativa
    (aria-hidden) y no aporta ninguna información que no esté en el texto. */
+/* Panel derecho, a plena opacidad. El único velo es un desvanecido hacia la
+   IZQUIERDA para que la foto no termine en un canto duro contra la superficie:
+   se funde con ella, como una fotografía sangrada al borde de una página. El
+   punto de anclaje lo declara cada pieza (`--banner-focus`), porque cada botella
+   está en un lugar distinto de su escena y un `center` genérico deja afuera
+   justo el producto. */
 .home-brand-banner-media {
   position: absolute;
-  /* Cubre el banner entero, no una banda lateral: estas piezas reservan el
-     espacio vacío para el overlay, así que recortar por la derecha mostraba
-     justamente el fondo y dejaba el producto afuera. Con `cover` sobre el ancho
-     completo el producto cae en el centro y la máscara apaga sólo la mitad
-     izquierda, que es donde va el copy. */
-  inset: 0;
-  background-position: center;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 44%;
+  background-position: var(--banner-focus, center);
   background-size: cover;
   background-repeat: no-repeat;
-  /* Opacidad baja a propósito. Estas piezas tienen el producto a la izquierda,
-     que es donde va el copy: a 400px de ancho no hay recorte que evite el
-     choque. Como textura de marca aporta color y profundidad sin disputarle
-     legibilidad al texto, y el contraste medido se mantiene. Subir esto exige
-     antes elegir piezas con el producto a la derecha. */
-  opacity: 30%;
-  -webkit-mask-image: linear-gradient(90deg, transparent 2%, #000 55%);
-  mask-image: linear-gradient(90deg, transparent 2%, #000 55%);
   pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
 }
 
-/* La capa de imagen también es un <span> directo: excluirla acá es lo que la
-   deja fuera de flujo. Sin el :not() hereda el `position: relative` del CTA y
-   la foto colapsa a una miniatura dentro de la grilla del banner. */
 .home-brand-banner > small,
 .home-brand-banner > strong,
 .home-brand-banner > span:not(.home-brand-banner-media) {
@@ -943,17 +1124,9 @@ body[data-active-view="home"] .home-sections {
   z-index: 1;
 }
 
-/* Filete dorado a la izquierda: el acento premium, sin ocupar superficie. */
-.home-brand-banner::before {
-  position: absolute;
-  top: 14px;
-  bottom: 14px;
-  left: 0;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: linear-gradient(180deg, var(--brand-gold-soft), var(--brand-gold));
-  content: "";
-}
+/* El filete dorado vertical se retiró: con la fotografía a plena vista era un
+   adorno más compitiendo con la escena. El dorado queda donde informa —el
+   rótulo de rubro— y en ningún lado más. */
 
 .home-brand-banner:hover {
   border-color: var(--brand-border-strong);
@@ -978,19 +1151,175 @@ body[data-active-view="home"] .home-sections {
 /* Hijo directo: el `<span>` interno de la flecha es descendiente y con el
    selector amplio recibía la misma píldora, dibujando un círculo alrededor
    de la flecha. */
-.home-brand-banner > span {
+/* CTA del banner: píldora clara sobre la foto. El contorno dorado sobre una
+   escena fotográfica se perdía contra los reflejos de la propia imagen; una
+   superficie translúcida clara se lee sobre cualquier pieza y deja el dorado
+   como acento único del rótulo. 44px: es un control real, no un adorno. */
+/* CTA del banner: píldora clara. Puede ocupar dos renglones —"Explorar fernet
+   y aperitivos" no entra en uno a 432px— y por eso lleva padding vertical y
+   `align-items: center` en vez de un alto fijo: dos líneas se ven deliberadas
+   en lugar de desbordadas, y el piso táctil se sostiene con `min-height`. */
+/* `:not(...)` obligatorio: la capa de imagen TAMBIÉN es un <span> hijo directo.
+   Sin excluirla heredaba la píldora entera —ancho `fit-content`, borde y radio
+   999px— y la fotografía colapsaba a una cápsula de 40px en el medio del
+   banner. Antes no se notaba porque la imagen era `position: absolute`. */
+.home-brand-banner > span:not(.home-brand-banner-media) {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   width: fit-content;
-  min-height: 40px;
-  margin-top: 8px;
-  padding: 0 16px;
-  border: 1px solid var(--brand-gold);
+  max-width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 8px 16px;
+  border: 1px solid rgb(255 255 255 / 26%);
   border-radius: var(--radius-pill);
-  color: var(--brand-gold-soft);
+  background: rgb(255 255 255 / 12%);
+  color: var(--brand-ink);
   font-size: 13px;
-  font-weight: 850;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+/* ============================================================================
+   7b · HERO PROMOCIONAL
+   La pieza de apertura de la vidriera. Fotografía a plena vista, título corto,
+   subtítulo y una CTA que cae en una categoría real con producto comprable.
+   NO afirma precio ni descuento: eso vive en el bloque de promociones, que sale
+   del contrato validado.
+   ========================================================================== */
+.home-hero-promo-slot:not([hidden]) {
+  padding: 0 2px;
+}
+
+.home-hero-promo {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 268px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--brand-border);
+  border-radius: 24px;
+  background: linear-gradient(160deg, #171a20 0%, #101318 100%);
+  box-shadow: var(--shadow-cream);
+  color: var(--brand-ink);
+  text-align: left;
+}
+
+/* El encuadre no es "centrado": la pieza tiene el producto en el tercio
+   inferior-centro y el cielo arriba. A 428×268 el recorte de `cover` se come
+   170px de alto, y centrarlo dejaba afuera justamente las botellas. Con el
+   anclaje en el 62% del alto entran el producto y la línea de montañas, que es
+   lo que hace reconocible la escena. */
+.home-hero-promo-media {
+  position: absolute;
+  inset: 0;
+  background-position: center 62%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* Velo VERTICAL: la escena se ve entera arriba y el copy se apoya sobre negro
+   abajo. Es el pie de foto de una portada, no un filtro sobre la imagen. */
+.home-hero-promo-media::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgb(5 7 10 / 95%) 0%,
+    rgb(5 7 10 / 90%) 30%,
+    rgb(5 7 10 / 46%) 62%,
+    rgb(5 7 10 / 10%) 100%
+  );
+  content: "";
+}
+
+.home-hero-promo-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: end;
+  gap: 2px;
+  min-height: 268px;
+  padding: 20px;
+}
+
+.home-hero-promo-copy small {
+  color: var(--brand-gold-soft);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Sin `max-width` en caracteres: el título es corto por diseño y limitarlo a
+   14ch lo partía en "Bien fría, bien de / acá", dejando una palabra huérfana
+   en el renglón de abajo. El ancho de la caja ya lo acota. */
+.home-hero-promo-copy strong {
+  margin-top: 4px;
+  font-size: clamp(26px, 7.6vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.home-hero-promo-sub {
+  max-width: 30ch;
+  margin-top: 5px;
+  color: var(--brand-ink-muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.home-hero-promo-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 46px;
+  margin-top: 14px;
+  padding: 0 20px;
+  border-radius: var(--radius-pill);
+  background: var(--taba-red);
+  color: var(--taba-white);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.home-hero-promo:hover .home-hero-promo-cta {
+  background: var(--taba-red-hover);
+}
+
+/* ============================================================================
+   7c · SELECCIÓN DEL LOCAL — estado honesto sin precio
+   ========================================================================== */
+/* Sin precio publicado la tarjeta lo dice con el mismo peso que tendría el
+   importe: es la misma jerarquía, distinto contenido. No se atenúa la tarjeta
+   entera —el producto existe y se puede mirar—, sólo cambia lo que se afirma. */
+body[data-active-view="home"] .home-price-pending {
+  margin-top: 3px;
+  color: var(--cream-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+/* La acción de una tarjeta sin precio no puede parecer un "Agregar" apagado:
+   es otra acción, y la única que hoy funciona con ese producto. Superficie
+   clara con hairline en vez del rojo de compra. */
+body[data-active-view="home"] .home-best-card .home-add-button.is-price-pending {
+  border: 1px solid var(--cream-line-strong);
+  background: var(--cream-raised);
+  color: var(--cream-ink);
+}
+
+body[data-active-view="home"] .home-best-card .home-add-button.is-price-pending:hover {
+  background: var(--cream-sunken);
 }
 
 /* ============================================================================
@@ -1114,7 +1443,9 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .reorder
   color: var(--brand-red-ink);
 }
 
-/* Controles del catálogo sobre el shell oscuro. */
+/* Controles del catálogo sobre el shell oscuro. El disparador "Filtros" y el
+   selector de orden viven SOBRE el shell, así que son oscuros; el contenido del
+   panel es contenido y por lo tanto crema, igual que en el bottom sheet. */
 body[data-active-view="catalog"] .catalog-filters,
 body[data-active-view="catalog"] .sort-field {
   border: 1px solid var(--brand-border);
@@ -1128,11 +1459,27 @@ body[data-active-view="catalog"] .sort-field .sort-field-label {
   color: var(--brand-ink);
 }
 
-/* Rótulos de los filtros: heredaban `--taba-muted`, pensado para papel, y
-   sobre la superficie oscura del panel daban 2,84:1. */
+/* El desplegable (escritorio) y el bottom sheet (teléfono) son la MISMA
+   superficie crema. Antes el panel era oscuro en escritorio y crema en
+   teléfono, así que los rótulos tenían que elegir un color y quedaban mal en
+   uno de los dos: `--brand-ink-muted` sobre crema da 2,2:1 y en el Moto las
+   etiquetas "Marca", "Capacidad", "Precio" se leían lavadas. */
+body[data-active-view="catalog"] .catalog-filters-sheet {
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  background: var(--cream);
+}
+
 body[data-active-view="catalog"] .catalog-filter-grid label,
 body[data-active-view="catalog"] .catalog-filter-grid label > span {
-  color: var(--brand-ink-muted);
+  color: var(--cream-muted);
+}
+
+body[data-active-view="catalog"] .catalog-filters-actions .ghost-button {
+  color: var(--cream-ink);
+}
+
+body[data-active-view="catalog"] .catalog-filters-actions .ghost-button:hover:not(:disabled) {
+  background: var(--cream-sunken);
 }
 
 /* ============================================================================

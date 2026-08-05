@@ -455,6 +455,61 @@ test('ningún texto de las vistas del cliente queda por debajo de 3:1', async ({
   }
 });
 
+// Seguimiento CON pedido, que es el estado que el test de arriba no alcanza:
+// sin pedido la vista es una tarjeta vacía y todo su texto vive adentro. Con
+// pedido aparecen el titular, su bajada y las etiquetas de la línea de tiempo
+// DIRECTAMENTE sobre el shell, y esos tres estaban calibrados para el fondo
+// claro que la vista pintaba antes: al soltarlo, el titular quedó en 1,11:1.
+// Un texto invisible no es un detalle de color, así que acá se mide.
+test('el seguimiento con pedido activo se lee sobre el shell oscuro', async ({ page }) => {
+  await openHome(page);
+  await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+
+  const direccion = page.locator('[data-profile-checkout] input[type="radio"]').first();
+  if (await direccion.count()) await direccion.check();
+  await page.locator('[data-checkout-submit]').click();
+  await expect(page.locator('[data-view="tracking"] [data-tracking-title]')).toBeVisible();
+
+  const flojos = await page.evaluate(() => {
+    const parse = (v) => {
+      const p = String(v).match(/[\d.]+/g);
+      if (!p) return null;
+      const [r, g, b, a = '1'] = p.map(Number);
+      return { r, g, b, a };
+    };
+    const lum = ({ r, g, b }) => {
+      const c = (v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+      return 0.2126 * c(r) + 0.7152 * c(g) + 0.0722 * c(b);
+    };
+    const out = [];
+    for (const node of document.querySelectorAll('[data-view="tracking"] *')) {
+      if (![...node.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1)) continue;
+      const rect = node.getBoundingClientRect();
+      if (rect.width < 2 || rect.height < 2) continue;
+      const cs = getComputedStyle(node);
+      if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.15) continue;
+      const fg = parse(cs.color);
+      if (!fg || fg.a < 0.15) continue;
+      let bg = null;
+      for (let c = node; c; c = c.parentElement) {
+        const cand = parse(getComputedStyle(c).backgroundColor);
+        if (cand && cand.a >= 0.9) { bg = cand; break; }
+      }
+      if (!bg) continue;
+      const ratio = (Math.max(lum(fg), lum(bg)) + 0.05) / (Math.min(lum(fg), lum(bg)) + 0.05);
+      if (ratio < 4.5) out.push(`${ratio.toFixed(2)}:1 "${node.textContent.trim().slice(0, 40)}"`);
+    }
+    return out;
+  });
+  expect(flojos, 'texto del seguimiento por debajo de 4,5:1').toEqual([]);
+
+  // Y sus tarjetas son la misma superficie que el resto del cliente.
+  expect(await page.locator('.tracking-rider-card').first()
+    .evaluate((node) => getComputedStyle(node).backgroundColor)).toBe(CREMA);
+});
+
 test('el texto de la home cumple el contraste mínimo sobre la superficie oscura', async ({ page }) => {
   await openHome(page, { stories: STORY_FIXTURES });
 

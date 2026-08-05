@@ -149,7 +149,13 @@
   --motion-duration-instant: 100ms;
   --motion-duration-fast: 160ms;
   --motion-duration-base: 220ms;
-  --motion-duration-slow: 320ms;
+  /* 240 y no 320. Este token gobierna la MICRO-interacción que más se ve: la
+     entrada de cada sección y de cada tarjeta al scrollear la home. A 320ms el
+     contenido llegaba después del pulgar y la vidriera se sentía perezosa; 240
+     es el techo del rango corto y deja la entrada por debajo del gesto.
+     El modal se queda en 360: no es una micro-interacción sino la presentación
+     de una hoja completa, y acortarla la vuelve un salto. */
+  --motion-duration-slow: 240ms;
   --motion-duration-modal: 360ms;
   --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --motion-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);

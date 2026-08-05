@@ -281,11 +281,16 @@
      carrito en --z-sticky-cta (400). El sheet es modal, así que va en
      --z-modal (600) y el fondo justo debajo: si no, la nav le tapa el último
      filtro y el botón de limpiar. */
+  /* Fondo oscuro con un desenfoque mínimo. 3px y no más: el sheet es la única
+     superficie con glass además del encabezado, y en un Moto G15 un blur grande
+     a pantalla completa se paga en frames justo mientras el panel entra. */
   .catalog-filters[open]::before {
     position: fixed;
     z-index: calc(var(--z-modal) - 1);
     inset: 0;
-    background: rgb(0 0 0 / 55%);
+    background: rgb(0 0 0 / 58%);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
     content: '';
   }
 

@@ -31,8 +31,13 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-she
 }
 
 /* El catálogo, el carrito y el perfil usan `.section.soft`, cuyo fondo claro
-   partía la continuidad del shell justo debajo de la barra. */
-body:not([data-active-view="business"]):not([data-active-view="rider"]) .section.soft {
+   partía la continuidad del shell justo debajo de la barra.
+   Seguimiento no usa `.soft`: declara su propio `#fdfcf9` y por eso era la
+   ÚNICA vista del cliente que seguía pintando una losa casi blanca a sangre
+   sobre el shell grafito. Sus tarjetas ya flotan (la hoja interna es
+   transparente), así que soltar el fondo la alinea con el resto. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .section.soft,
+body[data-active-view="tracking"] [data-view="tracking"] {
   background: transparent;
 }
 
@@ -45,6 +50,35 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view > [data-catalog-dependent] > .section-head :is(h1, h2, .view-title),
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view > [data-catalog-dependent] > .catalog-head :is(h1, .view-title) {
   color: var(--brand-ink);
+}
+
+/* Seguimiento suelta su fondo claro, así que el poco texto que vive DIRECTAMENTE
+   sobre el shell —el titular, su bajada y la etiqueta del paso actual— cambia de
+   tinta. Estaban calibrados para el `#fdfcf9` de la vista: sobre grafito el
+   titular daba 1,11:1, es decir invisible. El resto del seguimiento ya vive
+   dentro de tarjetas y no se toca. */
+body[data-active-view="tracking"] [data-tracking-title] {
+  color: var(--brand-ink);
+}
+
+body[data-active-view="tracking"] .tracking-subtitle,
+body[data-active-view="tracking"] .tracking-subtitle strong {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="tracking"] .track-step small {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="tracking"] :is(.track-step.current, .track-step.done) small {
+  color: var(--brand-ink);
+}
+
+/* La tarjeta del repartidor era el último blanco puro del cliente. */
+body[data-active-view="tracking"] .tracking-rider-card {
+  border-color: transparent;
+  background: var(--cream);
+  box-shadow: var(--shadow-cream-flat), inset 0 0 0 1px var(--cream-line);
 }
 
 /* Botón fantasma: su tinta es grafito, pensada para papel. Sobre el shell

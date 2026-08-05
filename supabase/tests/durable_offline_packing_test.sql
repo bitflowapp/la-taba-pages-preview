@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(27);
+select plan(28);
 
 select has_function('public','get_packing_manifest',array['uuid'],'manifiesto de packing recuperable existe');
 select has_function('public','revert_packing_scan',array['uuid','text','text'],'reversion de scan idempotente existe');
@@ -24,7 +24,7 @@ values
 -- Fixture sintético: no representa aprobación ni datos comerciales reales.
 alter table public.products drop constraint products_verified_publication_authority;
 insert into public.products(id,business_id,name,description,category,price,image_url,is_active,brand,subcategory,presentation,capacity,packaging_type,stock,available,is_alcoholic,tags,is_verified,verified_at,verified_by,external_id,variant,capacity_value,capacity_unit,catalog_origin,units_per_pack)
-values('63000000-0000-4000-8000-000000000001','62000000-0000-4000-8000-000000000001','Producto packing sintético','Fixture aislado','Pruebas',100,'https://example.invalid/packing.webp',true,'Marca sintética','Pruebas','Unidad','1 u','unidad',10,true,false,'{}',true,now(),'61000000-0000-4000-8000-000000000001','packing-fixture','Unidad',1,'unidad','test_only',1);
+values('63000000-0000-4000-8000-000000000001','62000000-0000-4000-8000-000000000001','Producto packing sintético','Fixture aislado','Aguas',100,'https://example.invalid/packing.webp',true,'Marca sintética','Pruebas','Unidad','1 u','unidad',10,true,false,'{}',true,now(),'61000000-0000-4000-8000-000000000001','packing-fixture','Unidad',1,'unidad','test_only',1);
 insert into public.product_barcodes(id,business_id,product_id,gtin,barcode_type,package_type,unit_factor,is_primary,source,verified_at,created_by)
 values
   ('64000000-0000-4000-8000-000000000001','62000000-0000-4000-8000-000000000001','63000000-0000-4000-8000-000000000001','4006381333931','EAN-13','unit',1,true,'manual',now(),'61000000-0000-4000-8000-000000000001'),
@@ -34,14 +34,20 @@ values('65000000-0000-4000-8000-000000000001','62000000-0000-4000-8000-000000000
 insert into public.order_items(id,order_id,product_id,product_uuid,name,quantity,unit,unit_price,subtotal)
 values('66000000-0000-4000-8000-000000000001','65000000-0000-4000-8000-000000000001','packing-product','63000000-0000-4000-8000-000000000001','Producto packing sintético',1,'unidad',100,100);
 
--- El producto del fixture siempre representó una unidad discreta: presentacion 'Unidad',
--- packaging_type 'unidad', un item por pack y la linea del pedido en 'unidad'. La capacidad
--- estructurada usa el mismo vocabulario que acepta el esquema del catalogo.
+-- El producto del fixture siempre representó una unidad discreta no alcoholica: presentacion
+-- 'Unidad', packaging_type 'unidad', un item por pack y la linea del pedido en 'unidad'. La
+-- capacidad estructurada y la categoria usan el vocabulario que acepta el esquema del catalogo,
+-- que para un producto verificado exige categoria real coherente con el alcohol.
 select is(
   (select capacity_unit || '/' || units_per_pack::text || '/' || packaging_type
      from public.products where id='63000000-0000-4000-8000-000000000001'),
   'unidad/1/unidad',
   'el fixture declara una unidad discreta con el vocabulario que el catalogo acepta'
+);
+select ok(
+  (select is_verified and not is_alcoholic and minimum_age is null and category = 'Aguas'
+     from public.products where id='63000000-0000-4000-8000-000000000001'),
+  'el fixture verificado declara una categoria real y coherente con el alcohol'
 );
 
 set local role authenticated;

@@ -28,6 +28,17 @@ test('errores RPC diferencian conflicto, sesi\u00f3n y transitorio', () => {
   assert.equal(classifyRpcError({ code: '23514', message: 'stock' }, 400).retryable, false);
 });
 
+test('el operador nunca ve el constraint ni el SQL crudo que rechazó la fila', () => {
+  const raw = classifyRpcError({
+    code: '23514',
+    message: 'new row for relation "fiscal_profiles" violates check constraint "fiscal_profiles_homologation_authorization_pairing"',
+  }, 400);
+  assert.equal(raw.code, '23514');
+  assert.doesNotMatch(raw.message, /constraint|relation|fiscal_profiles/i);
+  // Los mensajes que el propio servidor ya redactó llegan intactos.
+  assert.equal(classifyRpcError({ code: '42501', message: 'homologacion no autorizada' }, 400).message, 'homologacion no autorizada');
+});
+
 test('inventario busca por negocio y muta s\u00f3lo mediante RPC', async () => {
   const client = mockClient();
   const repository = createSupabaseInventoryRepository({ client, businessId: BUSINESS_ID });

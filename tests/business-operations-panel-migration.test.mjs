@@ -53,8 +53,9 @@ test('la homologación de ARCA exige la frase exacta y deja rastro de quién aut
   assert.match(sql, /p_authorization is distinct from 'I_AUTHORIZE_ARCA_HOMOLOGATION'/);
   assert.match(sql, /homologation_authorized_by = auth[.]uid[(][)]/i);
   assert.match(sql, /insert into public[.]fiscal_events [(]business_id, fiscal_document_id, event_type, detail[)]/i);
-  // La base impide quedar en homologación sin autorización registrada.
-  assert.match(sql, /constraint fiscal_profiles_homologation_gate check [(][\s\S]*homologation_authorized_at is not null/i);
+  // El gate original de esta migración confundía configurar con autorizar y quedaba en una
+  // dependencia circular. La garantía real vive ahora en la ruta de ejecución; se verifica en
+  // fiscal-homologation-authorization-migration.test.mjs.
 });
 
 test('la homologación se niega sin contador, sin datos fiscales o con certificado vencido', () => {

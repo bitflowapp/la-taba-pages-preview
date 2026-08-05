@@ -167,6 +167,44 @@
                        "ancho":  128,
                        "alto":  128,
                        "uso":  "miniatura del acceso a historias"
+                   },
+                   {
+                       "path":  "assets/promos/cervezas-patagonia.jpg",
+                       "origen":  "catalog-assets/promos/home/home-012",
+                       "marca":  "Patagonia",
+                       "producto":  "Patagonia cerveza, variedades",
+                       "categoria":  "cervezas",
+                       "url_fuente":  "https://kotyhu.com/cerveza-patagonia-destinos-patagonicos",
+                       "dominio_fuente":  "kotyhu.com",
+                       "ancho":  1400,
+                       "alto":  1050,
+                       "uso":  "banner editorial de categoria",
+                       "normalizacion":  "reescalado a 1400px de ancho, JPEG q76, sin recorte"
+                   },
+                   {
+                       "path":  "assets/promos/gin-tanqueray.jpg",
+                       "origen":  "catalog-assets/promos/home/home-003",
+                       "marca":  "Tanqueray",
+                       "producto":  "Tanqueray gin",
+                       "categoria":  "gin",
+                       "url_fuente":  "https://www.otaphotography.com/beverage",
+                       "dominio_fuente":  "otaphotography.com",
+                       "ancho":  1400,
+                       "alto":  1027,
+                       "uso":  "banner editorial de categoria",
+                       "normalizacion":  "reescalado a 1400px de ancho, JPEG q76, sin recorte"
+                   },
+                   {
+                       "path":  "assets/promos/cervezas-andes-origen.webp",
+                       "origen":  "catalog-assets/promos/cards/card-001",
+                       "marca":  "Andes Origen",
+                       "producto":  "Andes Origen Rubia",
+                       "categoria":  "cervezas",
+                       "url_fuente":  "https://andesorigen.com.ar/andes-origen-rubia",
+                       "dominio_fuente":  "andesorigen.com.ar",
+                       "ancho":  494,
+                       "alto":  355,
+                       "uso":  "banner editorial de marca (inactivo: el catalogo todavia no publica Andes Origen)"
                    }
                ],
     "nota":  "Fotografia editorial de categoria. NO es una promocion: no afirma precio, descuento, ranking ni stock. Lote curado y vetado en la-taba2-beverage-catalog-home/catalog-assets/promos (ver curation-report.md); cada pieza conserva su pagina fuente."

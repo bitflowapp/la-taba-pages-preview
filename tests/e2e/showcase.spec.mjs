@@ -1,5 +1,17 @@
 import { expect, test } from '@playwright/test';
 import { products as catalogProducts } from '../../js/approved-beverage-demo-data.js';
+import {
+  applyRetailCatalogModel,
+  getCustomerCatalogProducts,
+  normalizeCatalogProduct,
+} from '../../js/core/catalog-store.js';
+
+// La góndola sale del funnel real: el pack de abastecimiento no se muestra y
+// la unidad que representa sí. Contar sobre el archivo crudo volvería a medir
+// el catálogo de proveedor, no el del cliente.
+const retailCatalogSize = getCustomerCatalogProducts(
+  applyRetailCatalogModel(catalogProducts.map((product) => normalizeCatalogProduct(product)).filter(Boolean)),
+).length;
 import { gotoDemoReset, installPageGuards } from './helpers.mjs';
 import {
   buildCheckoutAddresses,
@@ -192,14 +204,14 @@ test('customer showcase stops use the real catalog, cart, checkout, profile and 
 
   await selectShowcaseStep(page, 'catalog');
   await expectActiveView(page, 'catalog');
-  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(catalogProducts.filter((product) => !product.archived).length);
+  await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(retailCatalogSize);
 
   await selectShowcaseStep(page, 'pending-price');
   await expectActiveView(page, 'catalog');
-  const pendingModal = page.locator('[data-modal-product-id="red-bull-original-lata-250ml-pack-4"]');
+  const pendingModal = page.locator('[data-modal-product-id="coca-cola-original-pet-1500ml"]');
   await expect(pendingModal).toBeVisible();
   await expect(pendingModal.locator('[data-price-pending-message]')).toContainText('Precio próximamente');
-  await expect(pendingModal.locator('[data-add-product="red-bull-original-lata-250ml-pack-4"]'))
+  await expect(pendingModal.locator('[data-add-product="coca-cola-original-pet-1500ml"]'))
     .toBeDisabled();
   await pendingModal.locator('[data-close-modal]').click();
 

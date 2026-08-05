@@ -1,6 +1,7 @@
 import { categories, products as demoProducts } from '../data.js';
 import { normalizeMoneyValue, normalizeStock } from './pricing.js';
 import { sanitizeText } from './validators.js';
+import { applyRetailNaming, linkProcurementPacks } from './retail-packaging.js';
 
 export const DEFAULT_NEW_PRODUCT_STOCK = 99;
 export const CATALOG_BADGE_OPTIONS = Object.freeze(['', 'Promo', 'Nuevo', 'Más vendido']);
@@ -61,8 +62,21 @@ export function getEditableCategories() {
   return categories.filter((category) => category.id !== 'all');
 }
 
+/**
+ * Pasada minorista del catálogo. Es de nivel CATÁLOGO —no de producto— porque
+ * las dos cosas que resuelve necesitan ver a los vecinos: desambiguar un nombre
+ * exige saber con quién colisiona, y vincular un pack de compra con su unidad
+ * exige encontrar esa unidad. Va después de normalizar cada fila y es
+ * idempotente: correrla dos veces da el mismo catálogo.
+ */
+export function applyRetailCatalogModel(list) {
+  return linkProcurementPacks(applyRetailNaming(list));
+}
+
 export function buildDemoCatalog() {
-  return demoProducts.map((product) => normalizeCatalogProduct(product)).filter(Boolean);
+  return applyRetailCatalogModel(
+    demoProducts.map((product) => normalizeCatalogProduct(product)).filter(Boolean),
+  );
 }
 
 export function restoreDemoCatalog() {
@@ -97,7 +111,7 @@ export function mergeCatalogProducts(baseProducts = demoProducts, savedProducts 
     if (product) merged.push(product);
   }
 
-  return merged;
+  return applyRetailCatalogModel(merged);
 }
 
 export function getCustomerCatalogProducts(products = []) {

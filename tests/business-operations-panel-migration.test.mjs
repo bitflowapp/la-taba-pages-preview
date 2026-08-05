@@ -52,7 +52,8 @@ test('las acciones de dinero, publicación y fiscal exigen owner o admin', () =>
 test('la homologación de ARCA exige la frase exacta y deja rastro de quién autorizó', () => {
   assert.match(sql, /p_authorization is distinct from 'I_AUTHORIZE_ARCA_HOMOLOGATION'/);
   assert.match(sql, /homologation_authorized_by = auth[.]uid[(][)]/i);
-  assert.match(sql, /insert into public[.]fiscal_events [(]business_id, fiscal_document_id, event_type, detail[)]/i);
+  // El insert original apuntaba a columnas que fiscal_events no tiene y exigía un comprobante que
+  // una autorización no emite. Se corrigió en 20260805120000; se verifica en el test de esa migración.
   // El gate original de esta migración confundía configurar con autorizar y quedaba en una
   // dependencia circular. La garantía real vive ahora en la ruta de ejecución; se verifica en
   // fiscal-homologation-authorization-migration.test.mjs.

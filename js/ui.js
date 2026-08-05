@@ -678,8 +678,15 @@ function renderHomeHeroPromo() {
 const HOME_EDITORIAL_CATEGORIES = Object.freeze(['whisky', 'vinos', 'fernet', 'aperitivos', 'gin', 'espumantes']);
 const HOME_EDITORIAL_LIMIT = 6;
 
+// Sólo entra lo que NO se puede comprar todavía. No es un filtro cosmético: es
+// lo que hace que este tramo se vacíe solo. El día que el local publique el
+// precio de un whisky, ese producto sale de acá y entra al carrusel comprable
+// de arriba, sin quedar en los dos lados a la vez. Si todos los rubros premium
+// publican precio, la sección entera desaparece.
 function homeEditorialProducts() {
-  const catalog = getCustomerCatalogProducts(getState().products).filter(isVisibleBeverageProduct);
+  const catalog = getCustomerCatalogProducts(getState().products)
+    .filter(isVisibleBeverageProduct)
+    .filter((product) => !isPurchasableBeverageProduct(product));
   const picked = [];
   for (const categoryId of HOME_EDITORIAL_CATEGORIES) {
     const product = catalog.find((entry) => entry.categoryId === categoryId);

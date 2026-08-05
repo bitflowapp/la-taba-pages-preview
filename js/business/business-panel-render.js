@@ -277,8 +277,8 @@ export function renderDevicesSurface({ results, printers, isNative, busy } = {})
     <div class="device-grid">${rows}</div>
     <p class="form-hint">Después de imprimir, mirá la impresora y confirmá si salió: es el único dato que vale.</p>
     <div class="button-row">
-      ${DEVICE_CHECKS.filter((check) => check.id === 'thermal' || check.id === 'a4').map((check) => `
-        <button class="ghost-button compact" type="button" data-device-confirm="${escapeHtml(check.id)}" ${busy ? 'disabled' : ''}>Salió el papel de ${escapeHtml(check.label.toLowerCase())}</button>`).join('')}
+      ${DEVICE_CHECKS.filter((check) => check.paperName).map((check) => `
+        <button class="ghost-button compact" type="button" data-device-confirm="${escapeHtml(check.id)}" ${busy ? 'disabled' : ''}>Salió el papel de ${escapeHtml(check.paperName)}</button>`).join('')}
     </div>`);
 }
 

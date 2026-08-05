@@ -26,6 +26,8 @@ export const DEVICE_CHECKS = Object.freeze([
   Object.freeze({
     id: 'thermal',
     label: 'Impresora térmica',
+    // Nombre corto para la confirmación manual: la única prueba de que salió el papel.
+    paperName: 'la térmica',
     proves: 'Que sale el ticket del mostrador.',
     howTo: 'Enviamos un ticket de prueba y después mirás si salió el papel.',
     needsNative: true,
@@ -33,6 +35,7 @@ export const DEVICE_CHECKS = Object.freeze([
   Object.freeze({
     id: 'a4',
     label: 'Impresora A4',
+    paperName: 'la A4',
     proves: 'Que se puede imprimir un comprobante en hoja.',
     howTo: 'Enviamos una hoja de prueba a la impresora que elijas.',
     needsNative: true,

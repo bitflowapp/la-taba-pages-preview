@@ -17,6 +17,17 @@ test('los cinco dispositivos pedidos están cubiertos', () => {
   assert.deepEqual(DEVICE_CHECKS.map((check) => check.id), ['scanner', 'thermal', 'a4', 'qr', 'spooler']);
 });
 
+test('los dispositivos que sacan papel se declaran en los datos, con su nombre corto', () => {
+  // El panel arma la confirmación manual desde este campo en vez de recortar la etiqueta.
+  const paperDevices = DEVICE_CHECKS.filter((check) => check.paperName);
+  assert.deepEqual(paperDevices.map((check) => check.id), ['thermal', 'a4']);
+  assert.deepEqual(paperDevices.map((check) => check.paperName), ['la térmica', 'la A4']);
+  // Ninguno pierde las mayúsculas al armar la frase.
+  for (const check of paperDevices) {
+    assert.doesNotMatch(`Salió el papel de ${check.paperName}`, /impresora a4/);
+  }
+});
+
 test('los estados son exactamente los seis honestos más "sin probar"', () => {
   assert.deepEqual([...DEVICE_STATES], [
     'connected', 'no-response', 'no-paper', 'job-sent', 'not-verifiable', 'error', 'untested',

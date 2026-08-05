@@ -246,6 +246,10 @@ test('un trabajo aceptado por Windows se muestra como enviado, no como impreso',
   assert.match(markup, /Trabajo enviado/);
   assert.match(markup, /Un trabajo aceptado por Windows no quiere decir que haya salido el papel/);
 
+  assert.match(markup, /Salió el papel de la térmica/);
+  assert.match(markup, /Salió el papel de la A4/);
+  assert.doesNotMatch(markup, /impresora a4/);
+
   await handleBusinessOperationsAction(target('[data-device-confirm]', { deviceConfirm: 'thermal' }));
   assert.match(renderBusinessOperations('devices'), /Confirmaste que salió el papel/);
   resetBusinessOperationsForTests();

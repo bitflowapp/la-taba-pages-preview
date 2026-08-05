@@ -55,6 +55,27 @@
   --brand-gold: #c9953e;            /*  7,3:1 sobre --brand-bg (acento premium) */
   --brand-gold-soft: #e4b45f;
   --brand-focus: #8ab4ff;           /* foco visible sobre oscuro */
+
+  /* ------------------------------------------------------------------------
+     CREMA — la superficie donde vive el contenido del cliente.
+     Una sola familia para TODA la app del cliente: tarjeta de producto,
+     formulario, carrito, checkout, perfil y bottom sheet. Antes cada hoja
+     elegía la suya (`--taba-white` en las tarjetas, `#f7f4ef` en Perfil), y el
+     resultado era el salto "home premium → formulario blanco genérico": el
+     blanco puro sobre grafito recorta la pantalla, el crema se apoya.
+     El valor es el de la referencia aprobada; el resto se deriva de él.
+     --------------------------------------------------------------------- */
+  --cream: #f7f4ef;                 /* superficie base */
+  --cream-raised: #fffdf9;          /* sub-superficie: campo, fila, chip */
+  --cream-sunken: #efeae2;          /* hueco: barra de progreso, separador */
+  --cream-line: #e9e3dc;            /* hairline de 1px sobre crema */
+  --cream-line-strong: #d6cec3;     /* borde que porta información */
+  --cream-ink: #22242a;             /* 14,4:1 sobre --cream */
+  --cream-muted: #62605c;           /*  6,3:1 sobre --cream */
+  /* UNA sombra por superficie. La tarjeta no lleva borde y sombra compitiendo:
+     sobre grafito la sombra es la que la despega, el hairline es interno. */
+  --shadow-cream: 0 10px 34px rgb(0 0 0 / 26%);
+  --shadow-cream-flat: 0 4px 16px rgb(0 0 0 / 18%);
   /* Aro de historias: rojo → naranja → dorado. Es el ÚNICO degradado de la
      identidad y existe sólo en el aro; no se usa como fondo de sección. */
   --brand-story-ring: conic-gradient(

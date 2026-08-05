@@ -1,9 +1,14 @@
+/* Los cuatro valores de la superficie crema dejaron de escribirse acá: son los
+   tokens compartidos de `tokens.css`. Perfil fue la primera vista que llegó a
+   la referencia aprobada, así que su paleta se promovió al sistema y ahora la
+   consumen también la home, el catálogo, el carrito y el checkout. Los alias
+   locales se conservan porque los usan ~60 reglas de esta hoja. */
 [data-view="profile"] {
-  --profile-surface: #fffefa;
-  --profile-soft: #f7f4ef;
-  --profile-line: #e9e3dc;
-  --profile-ink: #22242a;
-  --profile-muted: #6e6a67;
+  --profile-surface: var(--cream-raised);
+  --profile-soft: var(--cream);
+  --profile-line: var(--cream-line);
+  --profile-ink: var(--cream-ink);
+  --profile-muted: var(--cream-muted);
   max-width: 1080px;
   padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
   background:

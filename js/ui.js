@@ -62,6 +62,7 @@ import {
   isVisibleBeverageProduct,
 } from './core/beverage-home-sections.js';
 import { hasPurchasableDestination, storyCtaDestination } from './core/purchasable-destination.js';
+import { resolveRetailProductId } from './core/retail-packaging.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 import { riderAvatarHelmetSvg } from './map/rider_marker.js';
 import {
@@ -3117,7 +3118,10 @@ function restoreProductModalFocus() {
 }
 
 export function showProductModal(productId, restoreTrigger = null) {
-  const product = getProductById(productId);
+  // Alias seguro: un favorito o un enlace guardado cuando el pack todavía
+  // estaba en góndola abre la unidad que hoy lo reemplaza, en vez de no abrir
+  // nada. Sin unidad que lo reemplace el id no cambia y la ficha no abre.
+  const product = getProductById(resolveRetailProductId(getState().products, productId));
   const modal = $('[data-product-modal]');
   const content = $('[data-modal-content]');
   if (!product || !isProductVisibleToCustomer(product) || !modal || !content) return;

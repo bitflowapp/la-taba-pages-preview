@@ -60,11 +60,14 @@ function normalizedTags(product = {}) {
 // Sólo puede sugerirse lo que el cliente puede COMPRAR ahora: disponible, con
 // stock y con precio publicado (P1-3 de la auditoría comercial — sugerir un
 // "Precio próximamente" sería ofrecer lo invendible en el paso de pagar).
+// Tampoco entra un pack de abastecimiento: no está en la góndola, así que no
+// puede aparecer como sugerencia en el paso de pagar.
 function isOrderable(product) {
   return Boolean(
     product
       && product.available !== false
       && !product.archived
+      && product.procurementOnly !== true
       && Number(product.stock) > 0
       && product.pricePending !== true
       && Number(product.price) > 0,

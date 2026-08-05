@@ -266,6 +266,189 @@ export function linkProcurementPacks(products = []) {
   });
 }
 
+// ─── Publicación minorista ───────────────────────────────────────────────────
+// Decisión comercial humana (2026-08-05): el pack, la caja y el bulto son
+// abastecimiento del negocio. El cliente ve y compra la unidad. Ningún pack se
+// mantiene como producto público sin autorización individual, y hoy no hay
+// ninguna otorgada.
+//
+// Lo que sigue implementa esa decisión sin inventar nada: el pack no se borra
+// —conserva su id, su ficha y su historial— pero deja la góndola, y en su lugar
+// se publica la unidad que representa. La unidad hereda sólo lo que ya estaba
+// escrito en el registro del pack (marca, variedad, capacidad por unidad,
+// categoría, envase). Precio, stock, código de barras e imagen nacen
+// pendientes: son datos que sólo puede aportar el local.
+
+export const RETAIL_UNIT_PLACEHOLDER_IMAGE = 'assets/products/beverage-placeholder.svg';
+
+const PACKAGE_LABELS = Object.freeze({
+  'botella-pet': 'Botella PET',
+  'botella-retornable': 'Botella retornable',
+  botella: 'Botella',
+  lata: 'Lata',
+  sifon: 'Sifón',
+  bolsa: 'Bolsa',
+});
+
+/** "1500 ml" se lee "1,5 L" en góndola; por debajo del litro manda el ml. */
+export function retailCapacityLabel(value, unit) {
+  const amount = Number(value);
+  const symbol = String(unit || '').toLowerCase();
+  if (!Number.isFinite(amount) || amount <= 0) return '';
+  if (symbol === 'ml' && amount >= 1000) {
+    return `${String(Number((amount / 1000).toFixed(2))).replace('.', ',')} L`;
+  }
+  if (symbol === 'g' && amount >= 1000) {
+    return `${String(Number((amount / 1000).toFixed(2))).replace('.', ',')} kg`;
+  }
+  return `${amount} ${symbol}`;
+}
+
+function packageLabel(packageType) {
+  return PACKAGE_LABELS[String(packageType || '').toLowerCase()] || 'Unidad';
+}
+
+/**
+ * Id estable de la unidad que representa un pack: el mismo id sin el sufijo
+ * logístico. Determinista y legible, para que el vínculo se entienda de sólo
+ * leerlo. Si el id no declara el sufijo, se agrega `-unidad` en vez de
+ * arriesgar una colisión.
+ */
+export function deriveRetailUnitId(packId) {
+  const id = String(packId || '').trim();
+  if (!id) return '';
+  const stripped = id.replace(/-(?:pack|caja|bulto|bandeja)-\d{1,3}$/i, '');
+  return stripped !== id ? stripped : `${id}-unidad`;
+}
+
+/**
+ * Unidad minorista derivada de un pack de abastecimiento.
+ *
+ * Hereda identidad comercial —marca, nombre, variedad, categoría, envase y la
+ * capacidad DE CADA UNIDAD, que es la que el pack ya declaraba— y nada más.
+ * Precio, stock, código e imagen nacen pendientes: el precio del pack no se
+ * divide, no se estima y no se trata como costo.
+ */
+export function deriveRetailUnitFromPack(pack, { unitId = '' } = {}) {
+  if (!pack) return null;
+  const id = unitId || deriveRetailUnitId(pack.id);
+  if (!id) return null;
+  const capacity = retailCapacityLabel(pack.capacityValue, pack.capacityUnit);
+  const container = packageLabel(pack.packageType);
+  const name = stripLogisticsFromName(pack.name);
+
+  return {
+    id,
+    sku: id,
+    externalId: id,
+    brand: pack.brand,
+    name,
+    variant: pack.variant,
+    categoryId: pack.categoryId,
+    subcategory: pack.subcategory,
+    // Copy factual, con el mismo patrón que ya usa el catálogo de autoridad.
+    description: capacity ? `${name} en ${container.toLowerCase()} de ${capacity}.` : '',
+    presentation: [container, capacity, 'Unidad'].filter(Boolean).join(' · '),
+    capacity,
+    capacityValue: pack.capacityValue,
+    capacityUnit: pack.capacityUnit,
+    packageType: pack.packageType,
+    unit: 'unidad',
+    unitLabel: 'Unidad',
+    unitsPerPack: 1,
+    // Datos que sólo puede aportar el local. Nada se deriva del pack.
+    price: null,
+    pricePending: true,
+    stock: 0,
+    available: false,
+    gtin: '',
+    // La foto del pack muestra seis botellas: no puede hacer de unidad.
+    image: RETAIL_UNIT_PLACEHOLDER_IMAGE,
+    imageThumbnail: RETAIL_UNIT_PLACEHOLDER_IMAGE,
+    imagePending: true,
+    alcoholic: pack.alcoholic === true,
+    requiresAgeConfirmation: pack.requiresAgeConfirmation === true,
+    minimumAge: pack.minimumAge ?? null,
+    tags: (Array.isArray(pack.tags) ? pack.tags : [])
+      .filter((tag) => !/^(?:pack|para-compartir|caja|bulto)$/i.test(String(tag))),
+    marketNote: pack.marketNote,
+    prepMinutes: pack.prepMinutes,
+    // Trazabilidad del origen y del abastecimiento.
+    retailUnitDerivedFrom: pack.id,
+    purchasePack: {
+      productId: pack.id,
+      purchaseUnit: 'pack',
+      unitsPerPurchasePack: positiveInteger(pack.unitsPerPack ?? pack.units_per_pack),
+    },
+  };
+}
+
+/**
+ * Aplica la decisión comercial al catálogo.
+ *
+ * Cada pack no ambiguo sale de la superficie pública (`procurementOnly`) y
+ * queda como referencia de abastecimiento. Si su unidad ya existe, sólo se
+ * vincula; si no existe, se publica la unidad derivada. Un pack con empaque
+ * ambiguo NO se toca: sin multiplicador confiable no hay unidad que derivar.
+ */
+export function publishRetailUnits(products = []) {
+  const list = Array.isArray(products) ? products : [];
+  const byId = new Map(list.map((product) => [product?.id, product]));
+  const derived = [];
+
+  const result = list.map((product) => {
+    if (!product) return product;
+    const packaging = detectPurchasePackaging(product);
+    if (packaging.ambiguous || packaging.isPack !== true) return product;
+
+    const existingUnitId = product.procurement?.retailUnitId;
+    if (existingUnitId) {
+      // CASO A: la unidad ya se vende. El pack sólo abastece.
+      return { ...product, procurementOnly: true, retailUnitId: existingUnitId };
+    }
+
+    // CASO B: no hay unidad publicada. Se crea, con id libre y estable.
+    const unitId = deriveRetailUnitId(product.id);
+    if (!unitId || byId.has(unitId)) return { ...product, procurementOnly: true };
+    const unit = deriveRetailUnitFromPack(product, { unitId });
+    if (!unit) return { ...product, procurementOnly: true };
+    derived.push(unit);
+    byId.set(unitId, unit);
+    return {
+      ...product,
+      procurementOnly: true,
+      retailUnitId: unitId,
+      procurement: {
+        ...(product.procurement || {}),
+        supplierProductName: [product.brand, product.name, product.presentation].filter(Boolean).join(' · '),
+        purchaseUnit: packaging.purchaseUnit,
+        unitsPerPurchasePack: packaging.unitsPerPack,
+        retailUnitId: unitId,
+        supplierPackBarcode: product.procurement?.supplierPackBarcode ?? null,
+        supplierPackCost: product.procurement?.supplierPackCost ?? null,
+        supplierReference: product.id,
+      },
+    };
+  });
+
+  return [...result, ...derived];
+}
+
+/**
+ * Alias seguro para enlaces viejos: un favorito o un enlace directo que apunta
+ * a un pack retirado resuelve a la unidad que lo reemplazó. Devuelve el mismo
+ * id cuando no hay nada que redirigir.
+ */
+export function resolveRetailProductId(products = [], productId = '') {
+  const id = String(productId || '');
+  if (!id) return id;
+  const list = Array.isArray(products) ? products : [];
+  const product = list.find((candidate) => candidate?.id === id);
+  if (!product?.procurementOnly) return id;
+  const target = product.retailUnitId || product.procurement?.retailUnitId;
+  return target && list.some((candidate) => candidate?.id === target) ? target : id;
+}
+
 /**
  * Unidades que ingresan al stock por una compra. Un pack x6 recibido suma 6
  * unidades; una unidad suma 1. Multiplicador inválido o ambiguo devuelve

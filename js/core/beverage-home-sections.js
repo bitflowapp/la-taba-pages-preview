@@ -72,10 +72,15 @@ const REQUESTED_PRODUCT_PRIORITY = Object.freeze([
 
 const PRODUCT_PRIORITY = new Map(REQUESTED_PRODUCT_PRIORITY.map((term, index) => [term, index]));
 
+// `procurementOnly` marca el pack con el que el local se surte. No es un
+// producto de góndola, así que ninguna superficie del cliente puede mostrarlo
+// ni ofrecerlo: dejarlo afuera acá alcanza para las tres —vidriera, carrusel y
+// destino de una pieza editorial— porque todas parten de esta definición.
 export function isVisibleBeverageProduct(product) {
   return Boolean(
     product
       && product.archived !== true
+      && product.procurementOnly !== true
       && (String(product.image || '').trim() || String(product.imageThumbnail || '').trim()),
   );
 }

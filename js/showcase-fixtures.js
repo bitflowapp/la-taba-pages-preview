@@ -1,4 +1,6 @@
 import { addToCart, clearCart } from './cart.js';
+import { getBusinessConfig } from './core/business-config-store.js';
+import { isProductOrderable } from './core/catalog-store.js';
 import { getState } from './state.js';
 import { pauseSimulation, startSimulation } from './simulation.js';
 import { isShowcaseMode } from './core/showcase-mode.js';
@@ -7,7 +9,11 @@ import {
   isSandboxOrderRepository,
 } from './repositories/repository_factory.js';
 
-export const SHOWCASE_PENDING_PRODUCT_ID = 'red-bull-original-lata-250ml-pack-4';
+// Producto que el recorrido guiado usa para mostrar el estado "precio
+// pendiente". Antes era el pack x4 de Red Bull; desde la publicación minorista
+// ese pack abastece al local y no está en góndola, así que el ejemplo pasa a
+// ser una unidad real esperando precio — que es el caso que hoy más importa.
+export const SHOWCASE_PENDING_PRODUCT_ID = 'coca-cola-original-pet-1500ml';
 
 export const SHOWCASE_SYNTHETIC_CUSTOMER = Object.freeze({
   name: 'Cliente de demostración',
@@ -126,20 +132,28 @@ async function createSyntheticOrder(repository) {
 
 function prepareSyntheticCart() {
   clearCart();
+  // La elegibilidad sale del contrato del carrito (`isProductOrderable`), no de
+  // una lista propia: repetirla acá hacía que el recorrido eligiera un pack de
+  // abastecimiento —que existe en el catálogo interno pero no se vende— y el
+  // paso fallara al agregarlo.
   const product = getState().products.find((candidate) => (
-    candidate.active !== false
-      && candidate.available === true
-      && candidate.pricePending !== true
-      && Number(candidate.stock) > 0
-      && Number(candidate.price) > 0
-      && candidate.alcoholic !== true
+    isProductOrderable(candidate) && candidate.alcoholic !== true
   ));
   if (!product) return failure('SHOWCASE_PRODUCT_MISSING', 'No hay un producto demo disponible.');
-  const result = addToCart(product.id, 1);
+  // Cantidad, no precio: el recorrido tiene que llegar al checkout, y con una
+  // sola unidad del producto más accesible el carrito queda bajo el mínimo de
+  // delivery. Antes alcanzaba con una porque el primer elegible era un pack de
+  // proveedor; hoy la góndola es de unidades.
+  const minimum = Number(getBusinessConfig().minDeliveryOrder) || 0;
+  const unitPrice = Number(product.price) || 0;
+  const needed = minimum > 0 && unitPrice > 0 ? Math.ceil(minimum / unitPrice) : 1;
+  const quantity = Math.max(1, Math.min(needed, Number(product.stock) || 1));
+  const result = addToCart(product.id, quantity);
   if (!result.ok) return failure('SHOWCASE_CART_FAILED', result.message);
   return {
     ok: true,
     productId: product.id,
+    quantity,
     message: 'Carrito sintético preparado.',
   };
 }

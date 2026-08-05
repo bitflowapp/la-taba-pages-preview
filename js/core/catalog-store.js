@@ -1,7 +1,7 @@
 import { categories, products as demoProducts } from '../data.js';
 import { normalizeMoneyValue, normalizeStock } from './pricing.js';
 import { sanitizeText } from './validators.js';
-import { applyRetailNaming, linkProcurementPacks } from './retail-packaging.js';
+import { applyRetailNaming, linkProcurementPacks, publishRetailUnits } from './retail-packaging.js';
 
 export const DEFAULT_NEW_PRODUCT_STOCK = 99;
 export const CATALOG_BADGE_OPTIONS = Object.freeze(['', 'Promo', 'Nuevo', 'Más vendido']);
@@ -70,7 +70,10 @@ export function getEditableCategories() {
  * idempotente: correrla dos veces da el mismo catálogo.
  */
 export function applyRetailCatalogModel(list) {
-  return linkProcurementPacks(applyRetailNaming(list));
+  // Orden: nombres → vínculo compra/venta → publicación minorista. El último
+  // paso aplica la decisión comercial —el pack abastece, la unidad se vende— y
+  // necesita los dos anteriores resueltos.
+  return publishRetailUnits(linkProcurementPacks(applyRetailNaming(list)));
 }
 
 export function buildDemoCatalog() {
@@ -119,7 +122,10 @@ export function getCustomerCatalogProducts(products = []) {
 }
 
 export function isProductVisibleToCustomer(product) {
-  return Boolean(product && product.archived !== true);
+  // `procurementOnly` es abastecimiento: el pack con el que el local se surte
+  // no es un producto de góndola. Sigue existiendo en el catálogo interno —con
+  // su id, su ficha y su historial— pero no se le ofrece al cliente.
+  return Boolean(product && product.archived !== true && product.procurementOnly !== true);
 }
 
 export function isProductOrderable(product) {

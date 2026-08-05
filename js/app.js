@@ -28,8 +28,6 @@ import {
   setSearchQuery,
   setSortBy,
   resetCatalogFilters,
-  shouldShowCheckoutSuggestions,
-  showCheckoutSuggestions,
   showProductModal,
   showStoriesModal,
   showToast,
@@ -145,14 +143,6 @@ let pendingRepeatOrderId = null;
 const CHECKOUT_SUGGESTIONS_DISMISSED_KEY = 'la_taba_checkout_suggestions_dismissed';
 const SHOWCASE_RECOVERY_KEY = 'taba-showcase-recovery-v1';
 const recentCartActions = new Map();
-
-function checkoutSuggestionsDismissed() {
-  try {
-    return sessionStorage.getItem(CHECKOUT_SUGGESTIONS_DISMISSED_KEY) === 'true';
-  } catch (_) {
-    return false;
-  }
-}
 
 function dismissCheckoutSuggestions() {
   try {
@@ -1434,9 +1424,14 @@ function bindEvents() {
       showToast(message);
       return;
     }
-    if (!checkoutSuggestionsDismissed() && shouldShowCheckoutSuggestions()) {
-      if (showCheckoutSuggestions()) return;
-    }
+    // P1-3 (auditoría comercial): acá vivía la compuerta del modal de
+    // sugerencias, que interceptaba el PRIMER tap de pagar ANTES de validar el
+    // pedido — con el carrito bajo el mínimo ofrecía packs y recién después
+    // mostraba el error real. El rail "RECOMENDADOS PARA VOS" del carrito ya
+    // ofrece las mismas sugerencias a la vista, así que el modal salió del
+    // flujo principal: Confirmar valida y confirma; nunca vende antes de
+    // validar. El markup del diálogo y sus cierres quedan inertes por si una
+    // superficie futura lo reutiliza DESPUÉS de una validación exitosa.
     if (confirming) return; // evita doble confirmación / doble pedido
     confirming = true;
     const button = event.currentTarget.querySelector('[type="submit"]');

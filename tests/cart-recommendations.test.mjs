@@ -43,3 +43,23 @@ test('sin productos compatibles disponibles no se inventa una recomendación', (
   assert.deepEqual(result.products, []);
   assert.equal(cartNeedsComplementPrompt({ products: unavailable, cart: [{ productId: 'beer', quantity: 1 }] }), false);
 });
+
+// P1-3 (auditoría comercial): la sugerencia nunca ofrece lo invendible ni
+// empuja lo más caro primero.
+
+test('nunca sugiere un producto sin precio publicado', () => {
+  const withPending = [
+    ...products,
+    { id: 'pending-mixer', name: 'Agua tónica premium', categoryId: 'gaseosas', tags: ['mixer'], available: true, stock: 3, price: null, pricePending: true },
+  ];
+  const result = getCartRecommendations({ products: withPending, cart: [{ productId: 'beer', quantity: 1 }] });
+  assert.ok(result.products.length > 0);
+  assert.ok(!result.products.some((product) => product.id === 'pending-mixer'));
+});
+
+test('ordena las sugerencias por precio ascendente', () => {
+  const result = getCartRecommendations({ products, cart: [{ productId: 'beer', quantity: 1 }] });
+  const prices = result.products.map((product) => Number(product.price));
+  assert.deepEqual(prices, [...prices].sort((left, right) => left - right));
+  assert.deepEqual(result.products.map((product) => product.id), ['ice', 'candy', 'cola']);
+});

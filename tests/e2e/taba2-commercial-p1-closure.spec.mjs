@@ -135,3 +135,77 @@ test('P1-2: el contrato aplica a cualquier origen — historia con destino no co
   await page.keyboard.press('Escape');
   await guards.assertClean();
 });
+
+// ── P1-3 ─────────────────────────────────────────────────────────────────────
+
+test('P1-3: bajo el mínimo, Confirmar muestra el error real y nunca un upsell', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await openHome(page);
+
+  // Una Heineken ($3.900) queda bajo el mínimo de delivery ($5.000). Con
+  // alcohol y sin acompañamiento, éste era exactamente el carrito que antes
+  // disparaba el modal "ANTES DE PAGAR" por delante del error.
+  await page.locator('[data-add-product="heineken-original-lata-473ml"]').first().click();
+  await page.locator('[data-open-cart]').first().click();
+  await expect(page.locator('[data-view="cart"]')).toBeVisible();
+
+  await page.locator('[data-checkout-submit]').click();
+
+  // Cero upsell: ningún diálogo abierto. El error del mínimo, visible y con
+  // el foco en el bloque del aviso.
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
+  const warning = page.locator('[data-checkout-warning]');
+  await expect(warning).toBeVisible();
+  await expect(warning).toContainText('pedido mínimo');
+  expect(await page.evaluate(() => document.activeElement?.className || '')).toContain('warning-box');
+
+  // El pedido NO se envió y el carrito conserva sus datos.
+  expect(await ordersInState(page)).toBe(1); // sólo la semilla LT-0001
+  await expect(page.locator('.mobile-nav [data-cart-count]')).toHaveText('1');
+  await guards.assertClean();
+});
+
+test('P1-3: con alcohol sin confirmar edad, el error llega antes que cualquier venta', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await openHome(page);
+
+  await page.locator('[data-add-product="heineken-original-lata-473ml"]').first().click();
+  // Segunda unidad para superar el mínimo: el control ya es un stepper.
+  await page.locator('[data-cart-inc="heineken-original-lata-473ml"]').first().click();
+  await page.locator('[data-open-cart]').first().click();
+
+  await page.locator('[data-checkout-submit]').click();
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
+  await expect(page.locator('[data-checkout-warning]')).toContainText('mayor de edad');
+  expect(await ordersInState(page)).toBe(1);
+
+  // Con la edad confirmada el pedido sale: el camino feliz no cambió.
+  await page.locator('[data-checkout-form] input[name="ageConfirmed"]').check();
+  await page.locator('[data-checkout-submit]').click();
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+  await expect(page.locator('[data-view="tracking"]')).toContainText('Tu pedido fue confirmado');
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
+  expect(await ordersInState(page)).toBe(2);
+  await guards.assertClean();
+});
+
+test('P1-3: el doble tap del CTA crea exactamente un pedido y ningún modal', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await openHome(page);
+
+  // Gaseosas: supera el mínimo y no exige edad.
+  await page.locator('[data-add-product="coca-cola-original-pet-1500ml-pack-6"]').first().click();
+  await page.locator('[data-open-cart]').first().click();
+  await expect(page.locator('[data-view="cart"]')).toBeVisible();
+
+  await page.evaluate(() => {
+    const button = document.querySelector('[data-checkout-submit]');
+    button.click();
+    button.click();
+  });
+
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+  await expect(page.locator('dialog[open]')).toHaveCount(0);
+  expect(await ordersInState(page)).toBe(2); // semilla + UN pedido nuevo
+  await guards.assertClean();
+});

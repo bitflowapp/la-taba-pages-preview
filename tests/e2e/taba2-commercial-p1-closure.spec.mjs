@@ -1,5 +1,6 @@
 // Cierre comercial P1 — contratos de los tres hallazgos de la auditoría
-// (C:\1212\artifacts\taba2-commercial-audit-fable5\auditoria-comercial.md).
+// comercial Fable 5 (auditoria-comercial.md, en los artefactos de auditoría
+// que viven fuera del repositorio).
 //
 //   P1-1  "Ver todos" de Destacados nunca abre una tienda vacía.
 //   P1-2  Ninguna pieza editorial (banner/historia) promete una acción de

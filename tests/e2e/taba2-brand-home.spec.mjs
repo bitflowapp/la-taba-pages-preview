@@ -14,6 +14,11 @@ import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers
 
 const PHONE = { width: 390, height: 844 };
 
+// Superficie de contenido del cliente (`--cream` en tokens.css) ya resuelta.
+// Se escribe el color pintado y no el token porque lo que este contrato protege
+// es lo que el ojo ve, no cómo se llama la variable.
+const CREMA = 'rgb(247, 244, 239)';
+
 const STORY_FIXTURES = [
   {
     id: 'story-combo',
@@ -350,10 +355,14 @@ test('el shell de marca es continuo entre las vistas del cliente', async ({ page
   }));
 
   const home = await leer();
-  // Fondo de marca oscuro, producto sobre blanco.
+  // Fondo de marca oscuro, producto sobre CREMA. El blanco puro se retiró: sobre
+  // grafito recortaba la pantalla como un papel pegado y, sobre todo, era el
+  // origen del salto "home premium → formulario blanco genérico", porque cada
+  // hoja elegía su propio blanco. Ahora hay una sola superficie de contenido y
+  // este test la fija en su valor resuelto, no en un token.
   expect(home.body).toBe('rgb(9, 11, 14)');
   expect(await page.locator('.home-best-card').first().evaluate((n) => getComputedStyle(n).backgroundColor))
-    .toBe('rgb(255, 255, 255)');
+    .toBe(CREMA);
 
   // Navegar NO puede producir un salto negro → blanco: el shell se conserva.
   for (const vista of ['catalog', 'cart', 'profile', 'tracking']) {
@@ -365,6 +374,33 @@ test('el shell de marca es continuo entre las vistas del cliente', async ({ page
     expect(actual.topbar, `barra en ${vista}`).toBe(home.topbar);
     expect(actual.nav, `navegación en ${vista}`).toBe(home.nav);
   }
+});
+
+// Lo que hacía sentir "otra aplicación" al tocar Carrito no era el fondo —el
+// shell ya era continuo— sino la SUPERFICIE del contenido: la home mostraba una
+// vidriera y el carrito un formulario blanco puro, con otra sombra y otro radio.
+// Esto fija que la tarjeta de producto, la del carrito y la del perfil sean
+// exactamente la misma superficie.
+test('la superficie de contenido es la misma en toda la app del cliente', async ({ page }) => {
+  await openHome(page);
+  const superficie = async (selector) => page.locator(selector).first()
+    .evaluate((node) => getComputedStyle(node).backgroundColor);
+
+  expect(await superficie('.home-best-card'), 'tarjeta de la home').toBe(CREMA);
+
+  await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
+  await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
+  expect(await superficie('[data-product-grid] .product-card'), 'tarjeta del catálogo').toBe(CREMA);
+
+  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await expect(page.locator('[data-view="cart"] .cart-card')).toBeVisible();
+  expect(await superficie('[data-view="cart"] .cart-card'), 'tarjeta del carrito').toBe(CREMA);
+  expect(await superficie('[data-view="cart"] .checkout-form'), 'formulario del checkout').toBe(CREMA);
+
+  await page.locator('.mobile-nav [data-nav-view="profile"]').click();
+  await expect(page.locator('[data-view="profile"] .profile-card').first()).toBeVisible();
+  expect(await superficie('[data-view="profile"] .profile-card'), 'tarjeta del perfil').toBe(CREMA);
 });
 
 test('el panel operativo conserva su superficie clara', async ({ page }) => {
@@ -539,26 +575,44 @@ test('la home no crece sin control en los anchos objetivo', async ({ page }) => 
     // tope las 11 secciones definidas darían ~4000px y esto volvería a fallar.
     expect(geometry.homeSections, `${viewport.width}px`).toBeLessThanOrEqual(6);
     // Cada tramo puede cerrar con un banner editorial, así que el techo sube con
-    // la vidriera: 6 secciones + 6 banners de 150px en escritorio. Sigue siendo
+    // la vidriera: 6 secciones + 6 banners en escritorio. Sigue siendo
     // un techo real —una sección de más lo rompe— y se acompaña del invariante
     // de abajo, que impide que los banners crezcan por su cuenta.
     expect(geometry.homeBanners, `${viewport.width}px`).toBeLessThanOrEqual(geometry.homeSections);
-    expect(geometry.homeHeight, `${viewport.width}px`).toBeLessThan(3200);
+    // El techo subió de 3200 a 3700 con la composición cerrada: la home suma el
+    // HERO promocional (270px) y el tramo de "Selección del local" (≈370px), que
+    // son piezas del pedido comercial, no crecimiento accidental. Medido da
+    // 3552–3559 en los seis anchos de teléfono y 3396–3512 en tablet/escritorio,
+    // así que 3700 deja ~140px de holgura para variaciones de copy y NO alcanza
+    // para un tramo más: una sección nueva (≈330px) o un banner extra (≈200px)
+    // lo rompen, que es exactamente lo que este techo tiene que detectar.
+    expect(geometry.homeHeight, `${viewport.width}px`).toBeLessThan(3700);
   }
 });
 
-// La vidriera intercalada tiene tres reglas que no pueden aflojarse sin que la
-// home vuelva a ser un muestrario: un banner no repite un rubro que ya tiene
-// carrusel, nunca hay dos seguidos y ninguno afirma un precio.
-test('los banners editoriales cortan el ritmo sin repetir rubro ni prometer precio', async ({ page }) => {
+// La vidriera intercalada tiene cuatro reglas que no pueden aflojarse sin que la
+// home vuelva a ser un muestrario: un banner no repite un destino que ya tiene
+// carrusel, no hay dos destinos iguales, nunca hay dos seguidos y ninguno afirma
+// un precio.
+//
+// Un banner tiene DOS formas de destino y las dos son reales: `data-category-id`
+// filtra el catálogo por rubro y `data-brand-query` lo busca por marca. La de
+// marca existe porque hay marcas que son un motivo de compra en sí mismas
+// (Heineken) y que, metidas dentro del banner de "Cervezas", desaparecían. El
+// test las trata igual: lo que se verifica es que el destino EXISTA y traiga
+// producto, no de qué clase es.
+test('los banners editoriales cortan el ritmo sin repetir destino ni prometer precio', async ({ page }) => {
   await openHome(page);
 
   const composicion = await page.evaluate(() => {
     const visible = (node) => getComputedStyle(node).display !== 'none';
     const banners = [...document.querySelectorAll('[data-view="home"] .home-brand-banner')].filter(visible);
     const secciones = [...document.querySelectorAll('[data-home-sections] .home-category-section')];
+    const destino = (node) => (node.dataset.categoryId
+      ? { tipo: 'categoria', valor: node.dataset.categoryId }
+      : { tipo: 'marca', valor: node.dataset.brandQuery });
     return {
-      rubrosBanner: banners.map((node) => node.dataset.categoryId),
+      destinos: banners.map(destino),
       textos: banners.map((node) => node.textContent.replace(/\s+/g, ' ').trim()),
       seccionesConCarrusel: secciones
         .map((node) => node.querySelector('[data-category-id]')?.dataset.categoryId)
@@ -572,16 +626,24 @@ test('los banners editoriales cortan el ritmo sin repetir rubro ni prometer prec
     };
   });
 
-  expect(composicion.rubrosBanner.length).toBeGreaterThan(0);
+  expect(composicion.destinos.length).toBeGreaterThan(0);
   expect(composicion.adyacentes, 'banners consecutivos').toBe(0);
-  expect(new Set(composicion.rubrosBanner).size, 'rubros repetidos entre banners')
-    .toBe(composicion.rubrosBanner.length);
+
+  // Ningún destino puede quedar sin declarar: un banner sin categoría ni marca
+  // sería un botón que no lleva a ninguna parte.
+  for (const { tipo, valor } of composicion.destinos) {
+    expect(valor, `banner de ${tipo} sin destino`).toBeTruthy();
+  }
+
+  const claves = composicion.destinos.map(({ tipo, valor }) => `${tipo}:${valor}`);
+  expect(new Set(claves).size, 'destinos repetidos entre banners').toBe(claves.length);
 
   // Un banner sobre un rubro que ya tiene carrusel gasta un tramo en repetir.
-  // El encabezado es la única excepción: abre la home antes del primer carrusel.
-  for (const rubro of composicion.rubrosBanner.slice(1)) {
-    expect(composicion.seccionesConCarrusel, `banner ${rubro} duplica su carrusel`)
-      .not.toContain(rubro);
+  // Ya no hay excepción de encabezado: ese lugar lo ocupa el hero promocional,
+  // así que TODOS los banners viven intercalados y ninguno puede duplicar.
+  for (const { tipo, valor } of composicion.destinos.filter((d) => d.tipo === 'categoria')) {
+    expect(composicion.seccionesConCarrusel, `banner de ${tipo} ${valor} duplica su carrusel`)
+      .not.toContain(valor);
   }
 
   for (const texto of composicion.textos) {
@@ -589,12 +651,40 @@ test('los banners editoriales cortan el ritmo sin repetir rubro ni prometer prec
       .not.toMatch(/\$|%|\bdescuento\b|\boferta\b|\bpromo\b/i);
   }
 
-  // Ningún banner puede ser un link muerto.
-  for (const rubro of composicion.rubrosBanner) {
-    await page.locator(`[data-view="home"] .home-brand-banner[data-category-id="${rubro}"]`).click();
+  // Ningún banner puede ser un link muerto, sea de rubro o de marca.
+  for (const { tipo, valor } of composicion.destinos) {
+    const selector = tipo === 'categoria'
+      ? `[data-view="home"] .home-brand-banner[data-category-id="${valor}"]`
+      : `[data-view="home"] .home-brand-banner[data-brand-query="${valor}"]`;
+    await page.locator(selector).click();
     await expect(page.locator('[data-view="catalog"]')).toBeVisible();
     await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
     await page.goBack();
     await expect(page.locator('[data-view="home"]')).toBeVisible();
   }
+});
+
+// El hero promocional es la pieza de apertura de la vidriera. Lo que este
+// contrato protege es que sea EDITORIAL y no una promoción disfrazada: puede
+// invitar, no puede afirmar un importe ni un descuento que el negocio no
+// publicó, y su CTA tiene que caer en producto comprable de verdad.
+test('el hero promocional invita sin afirmar precio y su CTA lleva a producto comprable', async ({ page }) => {
+  await openHome(page);
+
+  const hero = page.locator('.home-hero-promo');
+  await expect(hero).toBeVisible();
+  const texto = (await hero.textContent()).replace(/\s+/g, ' ').trim();
+  expect(texto, 'el hero no puede afirmar importe ni descuento')
+    .not.toMatch(/\$|%|\bdescuento\b|\boferta\b|\bpromo\b|\bantes\b/i);
+
+  // Va DESPUÉS del primer tramo comprable: el pliegue es del producto.
+  const [destacados, cajaHero] = await Promise.all([
+    page.locator('.home-best-section').boundingBox(),
+    hero.boundingBox(),
+  ]);
+  expect(cajaHero.y, 'el hero no puede empujar al primer producto').toBeGreaterThan(destacados.y);
+
+  await hero.click();
+  await expect(page.locator('[data-view="catalog"]')).toBeVisible();
+  await expect(page.locator('[data-product-grid] [data-add-product]:not([disabled])').first()).toBeVisible();
 });

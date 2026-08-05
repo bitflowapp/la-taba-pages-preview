@@ -102,7 +102,11 @@ for (const viewport of [
     }));
     expect(geometry.sections).toBeGreaterThan(0);
     expect(geometry.sections).toBeLessThanOrEqual(6);
-    expect(geometry.height).toBeLessThan(2800);
+    // 3700 y no 2800: la composición cerrada suma el hero promocional (270px) y
+    // el tramo de "Selección del local" (≈370px). Medido da 3552–3559 en los
+    // anchos de teléfono, así que el techo deja holgura para el copy y sigue
+    // rompiéndose con un tramo de más, que es lo que tiene que detectar.
+    expect(geometry.height).toBeLessThan(3700);
     await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba 2');
     await expect(page.locator('.topbar .brand-text small')).toBeHidden();
     await expect(page.locator('.topbar-actions .cart-button')).toBeVisible();

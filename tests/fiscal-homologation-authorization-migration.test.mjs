@@ -45,13 +45,18 @@ test('el constraint se valida de verdad: nada de NOT VALID para esconder el prob
 
 test('la migración corre sobre datos existentes sin inventar autorizaciones', () => {
   // Una autorización a medias se descarta; jamás se completa con una fecha o un actor inventados.
-  const saneo = sql.indexOf('update public.fiscal_profiles');
-  const constraint = sql.indexOf('add constraint fiscal_profiles_homologation_authorization_pairing');
+  const saneo = code.indexOf('update public.fiscal_profiles');
+  const constraint = code.indexOf('add constraint fiscal_profiles_homologation_authorization_pairing');
   assert.ok(saneo > -1, 'debería sanear los pares incompletos');
   assert.ok(constraint > -1, 'debería endurecer el par');
   assert.ok(saneo < constraint, 'el saneo tiene que ocurrir antes de endurecer el par');
-  assert.match(code, /set\s+homologation_authorized_at = null,\s*\n\s*homologation_authorized_by = null/i);
-  assert.doesNotMatch(code, /homologation_authorized_at\s*=\s*(?:now|clock_timestamp)\s*\(/i);
+  // El saneo sólo borra pares incompletos. Sellar la fecha es potestad de authorize_arca_homologation,
+  // que exige la frase exacta; acá no se completa ninguna autorización a medias.
+  const bloque = code.slice(saneo, constraint);
+  assert.match(bloque, /set\s+homologation_authorized_at = null,\s*\n\s*homologation_authorized_by = null/i);
+  assert.doesNotMatch(bloque, /homologation_authorized_at\s*=\s*(?:now|clock_timestamp)\s*\(/i);
+  assert.doesNotMatch(bloque, /homologation_authorized_by\s*=\s*'[0-9a-f-]{36}'/i);
+  // Ninguna parte de la migración inventa un actor concreto.
   assert.doesNotMatch(code, /homologation_authorized_by\s*=\s*'[0-9a-f-]{36}'/i);
 });
 
@@ -98,6 +103,26 @@ test('configurar un perfil nunca escribe las columnas de autorización', () => {
 
 test('autorizar sigue exigiendo la frase exacta y deja rastro real', () => {
   assert.match(panel, /p_authorization is distinct from 'I_AUTHORIZE_ARCA_HOMOLOGATION'/);
-  assert.match(panel, /homologation_authorized_at = clock_timestamp\(\)/i);
-  assert.match(panel, /homologation_authorized_by = auth[.]uid\(\)/i);
+  assert.match(code, /p_authorization is distinct from 'I_AUTHORIZE_ARCA_HOMOLOGATION'/);
+  assert.match(code, /homologation_authorized_at = clock_timestamp\(\)/i);
+  assert.match(code, /homologation_authorized_by = auth[.]uid\(\)/i);
+  // Las mismas condiciones humanas de siempre: contador, datos fiscales y certificado vigente.
+  for (const guard of [
+    /accountant_review_status <> 'approved'/i,
+    /faltan datos fiscales obligatorios/i,
+    /certificate_expires_at <= clock_timestamp\(\)/i,
+    /autorizacion fiscal requiere owner o admin/i,
+  ]) {
+    assert.match(code, guard);
+  }
+});
+
+test('la autorización se puede registrar: el evento va a la tabla que sí lo admite', () => {
+  // fiscal_events exige fiscal_document_id not null y no tiene business_id ni detail; autorizar una
+  // homologación no emite comprobante, así que el insert original era imposible (42703).
+  assert.match(code, /create table if not exists public[.]fiscal_profile_events/i);
+  assert.match(code, /insert into public[.]fiscal_profile_events \(business_id, event_type, actor_id, detail\)/i);
+  assert.doesNotMatch(code, /insert into public[.]fiscal_events/i);
+  assert.match(code, /alter table public[.]fiscal_profile_events enable row level security/i);
+  assert.match(code, /create policy "business reads fiscal profile events"[\s\S]*?is_business_member\(business_id\)/i);
 });

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(41);
 
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
 values ('41000000-0000-4000-8000-000000000001','authenticated','authenticated','fiscal-owner@example.invalid','',now(),'{}','{}',now(),now());
@@ -131,6 +131,12 @@ select ok(
   (select homologation_authorized_at is not null and homologation_authorized_by = '41000000-0000-4000-8000-000000000001'
      from public.fiscal_profiles where business_id='42000000-0000-4000-8000-000000000001'),
   'la autorizacion deja fecha y actor reales, no inventados'
+);
+select is(
+  (select count(*)::integer from public.fiscal_profile_events
+    where business_id='42000000-0000-4000-8000-000000000001' and event_type='homologation_authorized'),
+  1,
+  'la autorizacion queda auditada con su actor'
 );
 
 set local role postgres;

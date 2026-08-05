@@ -78,3 +78,87 @@ drop trigger if exists fiscal_documents_require_execution_authorization on publi
 create trigger fiscal_documents_require_execution_authorization
   before insert on public.fiscal_documents
   for each row execute function public.assert_fiscal_execution_authorized();
+
+-- ===== 3. Registrar la autorización era imposible =====
+-- authorize_arca_homologation insertaba en public.fiscal_events (business_id, fiscal_document_id,
+-- event_type, detail). Esa tabla no tiene business_id ni detail, y exige fiscal_document_id not null.
+-- Autorizar una homologación no emite ningún comprobante, así que nunca hubo documento al que colgar
+-- el evento: la función moría con 42703 y la autorización no podía registrarse jamás. Los eventos que
+-- son del perfil, y no de un comprobante, viven en su propia tabla.
+
+create table if not exists public.fiscal_profile_events (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  event_type text not null check (event_type in ('homologation_authorized')),
+  actor_id uuid not null references auth.users(id) on delete restrict,
+  detail jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default clock_timestamp()
+);
+
+create index if not exists fiscal_profile_events_business_idx
+  on public.fiscal_profile_events (business_id, created_at desc);
+
+alter table public.fiscal_profile_events enable row level security;
+
+grant select on table public.fiscal_profile_events to authenticated;
+
+drop policy if exists "business reads fiscal profile events" on public.fiscal_profile_events;
+create policy "business reads fiscal profile events" on public.fiscal_profile_events
+for select to authenticated using (public.is_business_member(business_id));
+
+-- Misma autorización explícita de siempre: la frase exacta, la revisión contable y el certificado.
+-- Lo único que cambia es que ahora el rastro se puede escribir.
+create or replace function public.authorize_arca_homologation(
+  p_business_id uuid,
+  p_authorization text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, public, pg_temp
+as $authorize_arca_homologation$
+declare
+  v_profile public.fiscal_profiles%rowtype;
+begin
+  if not public.has_business_role(p_business_id, array['owner', 'admin']) then
+    raise exception 'autorizacion fiscal requiere owner o admin' using errcode = '42501';
+  end if;
+  if p_authorization is distinct from 'I_AUTHORIZE_ARCA_HOMOLOGATION' then
+    raise exception 'autorizacion de homologacion ausente' using errcode = '22023';
+  end if;
+
+  select * into v_profile from public.fiscal_profiles where business_id = p_business_id for update;
+  if not found then
+    raise exception 'perfil fiscal inexistente' using errcode = 'P0002';
+  end if;
+  if v_profile.accountant_review_status <> 'approved' then
+    raise exception 'falta la aprobacion contable' using errcode = 'P0001';
+  end if;
+  if coalesce(v_profile.cuit, '') !~ '^[0-9]{11}$'
+     or coalesce(v_profile.point_of_sale, 0) < 1
+     or coalesce(btrim(v_profile.legal_name), '') = ''
+     or coalesce(btrim(v_profile.tax_condition), '') = '' then
+    raise exception 'faltan datos fiscales obligatorios' using errcode = '22023';
+  end if;
+  if v_profile.certificate_fingerprint_sha256 is null then
+    raise exception 'falta el certificado' using errcode = 'P0001';
+  end if;
+  if v_profile.certificate_expires_at is not null and v_profile.certificate_expires_at <= clock_timestamp() then
+    raise exception 'certificado vencido' using errcode = 'P0001';
+  end if;
+
+  update public.fiscal_profiles set
+    environment = 'homologation',
+    is_enabled = true,
+    homologation_authorized_at = clock_timestamp(),
+    homologation_authorized_by = auth.uid(),
+    updated_at = now()
+  where business_id = p_business_id
+  returning * into v_profile;
+
+  insert into public.fiscal_profile_events (business_id, event_type, actor_id, detail)
+  values (p_business_id, 'homologation_authorized', auth.uid(), jsonb_build_object('environment', v_profile.environment));
+
+  return jsonb_build_object('ok', true, 'environment', v_profile.environment);
+end;
+$authorize_arca_homologation$;

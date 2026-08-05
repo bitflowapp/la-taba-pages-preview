@@ -1083,6 +1083,11 @@ function renderHomeBestSellers() {
   const popularSection = homePopularSection();
   const title = document.getElementById('home-best-title');
   if (title) title.textContent = popularSection?.products.length ? popularSection.title : 'Destacados';
+  // P1-1: la CTA "Ver todos" apunta a la colección que el rail muestra de
+  // verdad: `popular` sólo cuando esa colección tiene productos; si no, el
+  // catálogo completo. Nunca un filtro que abre en "0 productos".
+  const viewAll = $('.home-best-section .home-section-head button[data-category-id]');
+  if (viewAll) viewAll.dataset.categoryId = popularSection?.products.length ? 'popular' : 'all';
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
   // Misma tarjeta que los carruseles de abajo. Antes "Destacados" emitía su
   // propia variante sin el botón de favorito: dos tarjetas distintas en la

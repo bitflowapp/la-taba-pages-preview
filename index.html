@@ -291,7 +291,16 @@
                   <h2 id="home-best-title">Destacados</h2>
                   <small>Selección del local</small>
                 </div>
-                <button type="button" data-category-id="popular">Ver todos</button>
+                <!--
+                  P1-1 (auditoría comercial): la CTA sigue a la FUENTE real del
+                  rail. Sin productos `popular` publicados el rail muestra la
+                  selección comprable, así que "Ver todos" abre el catálogo
+                  completo; `renderHomeBestSellers` la re-apunta a `popular`
+                  sólo cuando esa colección existe. Antes apuntaba fijo a
+                  `popular` (sin datos) y la primera CTA comercial de la home
+                  aterrizaba en "0 productos": una tienda declarándose vacía.
+                -->
+                <button type="button" data-category-id="all">Ver todos</button>
               </div>
               <div class="home-best-sellers offers-rail" data-home-best-sellers data-offers-rail></div>
             </section>

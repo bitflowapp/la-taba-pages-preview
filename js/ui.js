@@ -59,6 +59,7 @@ import {
   featuredBeverageProducts,
   getBeverageHomeSection,
   isPurchasableBeverageProduct,
+  isVisibleBeverageProduct,
 } from './core/beverage-home-sections.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 import { riderAvatarHelmetSvg } from './map/rider_marker.js';
@@ -615,11 +616,87 @@ function homeUnitText(product) {
 
 function renderHomeShowcase() {
   renderHomeCategories();
+  renderHomeHeroPromo();
   renderHomePromotions();
   renderHomeBanners();
   renderHomeBestSellers();
   renderHomeSections();
+  renderHomeEditorialSelection();
   renderStoryEntry();
+}
+
+// ─── Hero promocional ────────────────────────────────────────────────────────
+// La pieza de apertura de la vidriera. Es EDITORIAL, no promocional: una
+// fotografía curada, un título corto, un subtítulo y una CTA que cae en una
+// categoría real con producto comprable. No dice precio, no dice porcentaje y
+// no dice "oferta": la promoción comercial, cuando exista, tiene su propio
+// bloque y sale del contrato validado de promociones, no de acá.
+//
+// Fail-closed como todo lo demás: si la categoría de destino no tiene producto
+// comprable, el hero NO se pinta. Preferimos abrir con el primer carrusel a
+// abrir con una foto grande que lleva a una pantalla vacía.
+const HOME_HERO_PROMO = Object.freeze({
+  categoryId: 'cervezas',
+  eyebrow: 'La vidriera',
+  title: 'Bien fría, bien de acá',
+  subtitle: 'La selección de cervezas del local, lista para llevar.',
+  image: 'assets/promos/cervezas-patagonia.jpg',
+});
+
+function renderHomeHeroPromo() {
+  const slot = $('[data-home-hero-promo]');
+  if (!slot) return;
+  const hero = HOME_HERO_PROMO;
+  const category = categoriesForCurrentCatalog().find((entry) => entry.id === hero.categoryId);
+  if (!category || !purchasableCategoryIds().has(hero.categoryId)) {
+    slot.innerHTML = '';
+    slot.hidden = true;
+    return;
+  }
+  slot.hidden = false;
+  slot.innerHTML = `
+    <button class="home-hero-promo" type="button" data-category-id="${escapeHtml(hero.categoryId)}" aria-label="${escapeHtml(`${hero.title}. ${hero.subtitle} Ver ${category.name.toLowerCase()}`)}">
+      <span class="home-hero-promo-media" aria-hidden="true" style="background-image:url('${encodeURI(hero.image)}')"></span>
+      <span class="home-hero-promo-copy">
+        <small>${escapeHtml(hero.eyebrow)}</small>
+        <strong>${escapeHtml(hero.title)}</strong>
+        <span class="home-hero-promo-sub">${escapeHtml(hero.subtitle)}</span>
+        <span class="home-hero-promo-cta">Ver ${escapeHtml(category.name.toLowerCase())} <span aria-hidden="true">→</span></span>
+      </span>
+    </button>`;
+}
+
+// ─── Selección del local (tarjetas con estado honesto) ───────────────────────
+// Los rubros premium existen en el catálogo pero todavía no publican precio, así
+// que no pueden ser carrusel comprable ni chip de categoría. Acá aparecen con su
+// tarjeta real y el estado que corresponde: precio si lo hay, "Precio a
+// confirmar" si no. La CTA de una tarjeta sin precio abre la ficha —donde el
+// cliente ve el detalle y el aviso— en vez de un "Agregar" que fallaría.
+//
+// Una tarjeta por rubro como máximo: es una vidriera de cierre, no un segundo
+// catálogo. Y sólo entra el rubro que NO tiene carrusel arriba.
+const HOME_EDITORIAL_CATEGORIES = Object.freeze(['whisky', 'vinos', 'fernet', 'aperitivos', 'gin', 'espumantes']);
+const HOME_EDITORIAL_LIMIT = 6;
+
+function homeEditorialProducts() {
+  const catalog = getCustomerCatalogProducts(getState().products).filter(isVisibleBeverageProduct);
+  const picked = [];
+  for (const categoryId of HOME_EDITORIAL_CATEGORIES) {
+    const product = catalog.find((entry) => entry.categoryId === categoryId);
+    if (product) picked.push(product);
+    if (picked.length >= HOME_EDITORIAL_LIMIT) break;
+  }
+  return picked;
+}
+
+function renderHomeEditorialSelection() {
+  const rail = $('[data-home-editorial-rail]');
+  if (!rail) return;
+  const section = rail.closest('.home-merch-section');
+  const products = homeEditorialProducts();
+  if (section) section.hidden = products.length === 0;
+  const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
+  rail.innerHTML = products.map((product) => homeSectionCard(product, cartQuantities)).join('');
 }
 
 // Banner editorial. NO afirma un descuento: invita a recorrer una categoría que
@@ -632,24 +709,44 @@ function renderHomeShowcase() {
 // que invita a recorrer una categoría, y no en el bloque de ofertas.
 // Las categorías sin pieza vetada quedan sin `image` y el banner se pinta como
 // hasta ahora: preferimos un banner sobrio a una imagen prestada de otro rubro.
+// Dos clases de puerta, un solo componente:
+//
+//   · de RUBRO  → `category`, filtra el catálogo por esa categoría.
+//   · de MARCA  → `brand`, busca esa marca en el catálogo real.
+//
+// La de marca existe porque el local tiene marcas que son un motivo de compra
+// en sí mismas (Heineken, Andes Origen) y meterlas en el banner de "Cervezas"
+// las volvía invisibles. Su destino NO es inventado: es la misma búsqueda que
+// escribiría el cliente, así que cae en el catálogo con resultados reales.
+// Un banner de marca sin producto en el catálogo NO se pinta: es la misma regla
+// fail-closed de las categorías vacías, y es lo que hoy mantiene apagado a
+// Andes Origen —la pieza está vetada y registrada, el catálogo todavía no la
+// publica—. El día que el local la cargue, aparece sola.
+// `focus` es el punto de anclaje del recorte (background-position del panel de
+// la derecha). No es decoración: el panel es casi cuadrado y cada botella está
+// en un lugar distinto de su escena, así que un `center` genérico deja afuera
+// justo el producto —de la escena de Chivas quedaba una banda de mantel—. El
+// valor sale de mirar cada pieza, y una sin `focus` cae en `center`.
 const HOME_BANNER_COPY = Object.freeze({
-  cervezas: { eyebrow: 'Para el finde', title: 'Cervezas bien frías', image: 'assets/promos/cervezas-heineken.jpg' },
-  fernet: { eyebrow: 'Clásico argentino', title: 'Fernet y amargos', image: 'assets/promos/fernet-brancamenta.jpg' },
-  whisky: { eyebrow: 'Selección premium', title: 'El mejor whisky', image: 'assets/promos/whisky-chivas.webp' },
+  cervezas: { eyebrow: 'Para el finde', title: 'Cervezas bien frías', image: 'assets/promos/cervezas-heineken.jpg', focus: '44% 58%' },
+  heineken: { brand: 'Heineken', eyebrow: 'La marca', title: 'Heineken bien tirada', image: 'assets/promos/cervezas-heineken.jpg', focus: '44% 58%' },
+  'andes-origen': { brand: 'Andes Origen', eyebrow: 'De la Patagonia', title: 'Andes Origen', image: 'assets/promos/cervezas-andes-origen.webp' },
+  fernet: { eyebrow: 'Clásico argentino', title: 'Fernet y amargos', image: 'assets/promos/fernet-brancamenta.jpg', focus: '50% 48%' },
+  whisky: { eyebrow: 'Selección premium', title: 'El mejor whisky', image: 'assets/promos/whisky-chivas.webp', focus: '64% 55%' },
   vinos: { eyebrow: 'Bodega', title: 'Vinos para la mesa' },
   gaseosas: { eyebrow: 'Siempre en casa', title: 'Gaseosas y packs' },
-  energizantes: { eyebrow: 'Energía', title: 'Energizantes fríos', image: 'assets/promos/energizantes-red-bull.jpg' },
+  energizantes: { eyebrow: 'Energía', title: 'Energizantes fríos', image: 'assets/promos/energizantes-red-bull.jpg', focus: '48% 55%' },
   aperitivos: { eyebrow: 'La previa', title: 'Aperitivos y vermús', image: 'assets/promos/aperitivos-gancia.webp' },
-  gin: { eyebrow: 'Destilados', title: 'Gin y tónicas' },
+  gin: { eyebrow: 'Destilados', title: 'Gin y tónicas', image: 'assets/promos/gin-tanqueray.jpg', focus: '62% 52%' },
   mixers: { eyebrow: 'Para mezclar', title: 'Tónicas y mixers', image: 'assets/promos/mixers-schweppes.jpg' },
   aguas: { eyebrow: 'Hidratación', title: 'Aguas y sodas' },
   complementos: { eyebrow: 'Complementos', title: 'Hielo y accesorios' },
 });
-// UNO en el encabezado. Antes eran dos y el CSS ocultaba el segundo en
-// teléfono; el resultado era que la segunda pieza —whisky, la más premium del
-// local— no existía en móvil, que es donde se compra. Ahora el encabezado se
-// queda con uno y los demás se reparten entre los carruseles, donde sí se ven.
-const HOME_BANNER_LIMIT = 1;
+// CERO en el encabezado: ese lugar es ahora del hero promocional. Antes el
+// contenedor de arriba pintaba un banner y, con el hero delante, quedaban dos
+// vidrieras fotográficas seguidas antes del segundo producto. Los banners pasan
+// a vivir sólo intercalados entre carruseles, que es donde cortan el ritmo.
+const HOME_BANNER_LIMIT = 0;
 
 // Prioridad del banner: primero los rubros premium. A diferencia de la fila de
 // categorías, acá NO se exige precio publicado, porque el banner es editorial
@@ -662,8 +759,9 @@ const HOME_BANNER_LIMIT = 1;
 // (whisky) quedan preciosas en grande pero a 400px de ancho no se distingue el
 // producto. Detrás siguen los rubros premium.
 const HOME_BANNER_PRIORITY = Object.freeze([
-  'cervezas', 'whisky', 'fernet', 'vinos', 'aperitivos', 'gin',
-  'energizantes', 'mixers', 'espumantes', 'gaseosas', 'aguas', 'complementos',
+  'cervezas', 'whisky', 'fernet', 'heineken', 'vinos', 'aperitivos', 'gin',
+  'andes-origen', 'energizantes', 'mixers', 'espumantes', 'gaseosas', 'aguas',
+  'complementos',
 ]);
 
 function categoriesWithProducts(state = getState()) {
@@ -672,23 +770,60 @@ function categoriesWithProducts(state = getState()) {
     .filter(Boolean));
 }
 
-// Categorías que hoy pueden encabezar un banner: existen en el catálogo, tienen
-// producto que mirar y tienen copy editorial escrito.
+// Marcas que hoy pueden encabezar un banner: existen en el catálogo del cliente
+// con al menos un producto visible. Igualdad exacta de marca tras normalizar
+// caja y acentos: acá no se comparan cadenas parecidas sino la misma marca.
+function catalogBrandNames(state = getState()) {
+  return new Set(getCustomerCatalogProducts(state.products)
+    .filter(isVisibleBeverageProduct)
+    .map((product) => normalizeSearchText(product.brand || ''))
+    .filter(Boolean));
+}
+
+// Puertas que hoy pueden pintarse: tienen copy editorial escrito Y un destino
+// con producto real. Una categoría vacía o una marca que el local todavía no
+// carga quedan afuera: eso sería un link muerto.
 function bannerEligibleCategoryIds() {
   const withProducts = categoriesWithProducts();
+  const brands = catalogBrandNames();
   const byId = new Map(categoriesForCurrentCatalog().map((category) => [category.id, category]));
-  return HOME_BANNER_PRIORITY.filter((id) => withProducts.has(id) && byId.has(id) && HOME_BANNER_COPY[id]);
+  return HOME_BANNER_PRIORITY.filter((id) => {
+    const copy = HOME_BANNER_COPY[id];
+    if (!copy) return false;
+    if (copy.brand) return brands.has(normalizeSearchText(copy.brand));
+    return withProducts.has(id) && byId.has(id);
+  });
 }
 
 function homeBannerMarkup(id) {
   const copy = HOME_BANNER_COPY[id];
+  if (!copy) return '';
+  // `--banner-focus` sólo se emite si la pieza lo declara; el CSS ya trae el
+  // `center` de respaldo. El valor viene de una tabla del código, nunca del
+  // catálogo ni de la URL, así que no hay dónde inyectar.
+  const focus = /^[\d.]+% [\d.]+%$/.test(copy.focus || '') ? `;--banner-focus:${copy.focus}` : '';
+  const media = copy.image
+    ? `<span class="home-brand-banner-media" aria-hidden="true" style="background-image:url('${encodeURI(copy.image)}')${focus}"></span>`
+    : '';
+
+  // Puerta de MARCA: el destino es la búsqueda real de esa marca en el
+  // catálogo. Sin `data-category-id`, así que no compite con el rubro que ya
+  // tiene carrusel ni se confunde con él en la composición.
+  if (copy.brand) {
+    const label = `${copy.title}. Ver ${copy.brand} en el catálogo`;
+    return `
+      <button class="home-brand-banner ${copy.image ? 'has-media' : ''}" type="button" data-brand-query="${escapeHtml(copy.brand)}" aria-label="${escapeHtml(label)}">
+        ${media}
+        <small>${escapeHtml(copy.eyebrow)}</small>
+        <strong>${escapeHtml(copy.title)}</strong>
+        <span>Ver ${escapeHtml(copy.brand)} <span aria-hidden="true">→</span></span>
+      </button>`;
+  }
+
   const category = categoriesForCurrentCatalog().find((entry) => entry.id === id);
-  if (!copy || !category) return '';
+  if (!category) return '';
   // El verbo distingue lo que se puede comprar de lo que sólo se puede mirar.
   const action = purchasableCategoryIds().has(id) ? 'Ver' : 'Explorar';
-  const media = copy.image
-    ? `<span class="home-brand-banner-media" aria-hidden="true" style="background-image:url('${encodeURI(copy.image)}')"></span>`
-    : '';
   return `
     <button class="home-brand-banner ${copy.image ? 'has-media' : ''}" type="button" data-category-id="${escapeHtml(id)}" aria-label="${escapeHtml(`${copy.title}. ${action} la categoría ${category.name}`)}">
       ${media}
@@ -1062,8 +1197,19 @@ function homeSectionCard(product, cartQuantities) {
   const pricing = productPricePresentation(product);
   const outOfStock = product.stock <= 0 || !product.available;
   const favorite = isFavoriteProduct(product.id);
+  // Sin precio publicado la tarjeta lo DICE. Antes caía en `money(0)` y la
+  // vidriera mostraba "$ 0", que es peor que no mostrar nada: afirma un precio
+  // que el local nunca ofreció. Y la acción deja de ser un "Agregar" apagado
+  // para ser lo único que sí se puede hacer con ese producto hoy: abrir la
+  // ficha y leer el detalle.
+  const price = product.pricePending
+    ? `<span class="home-price-pending">${escapeHtml(PRICE_PENDING_TITLE)}</span>`
+    : `<span>${money(pricing.price)}</span>`;
+  const control = product.pricePending
+    ? `<button class="home-add-button is-price-pending" type="button" data-product-detail="${escapeHtml(product.id)}" aria-label="${escapeHtml(`Ver la ficha de ${product.name}. ${PRICE_PENDING_DETAIL}`)}"><span class="add-text">Ver detalle</span></button>`
+    : quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' });
   return `
-    <article class="home-best-card ${outOfStock ? 'out-of-stock' : ''}">
+    <article class="home-best-card ${outOfStock && !product.pricePending ? 'out-of-stock' : ''}">
       <button class="home-favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M20.8 4.8a5.3 5.3 0 0 0-7.5 0L12 6.1l-1.3-1.3a5.3 5.3 0 0 0-7.5 7.5L12 21l8.8-8.7a5.3 5.3 0 0 0 0-7.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
@@ -1075,9 +1221,9 @@ function homeSectionCard(product, cartQuantities) {
       <div class="home-best-copy">
         <strong>${escapeHtml(product.name)}</strong>
         <small>${escapeHtml(homeUnitText(product))}</small>
-        <span>${money(pricing.price)}</span>
+        ${price}
       </div>
-      <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>
+      <div class="home-card-control">${control}</div>
     </article>`;
 }
 
@@ -1322,8 +1468,13 @@ function renderCatalogFilters() {
   if (countNode) {
     countNode.textContent = count ? `${count} ${count === 1 ? 'filtro activo' : 'filtros activos'}` : 'Filtros';
   }
+  // El botón no desaparece: se apaga. En el bottom sheet un control que se va
+  // reacomoda la fila de acciones justo cuando el cliente va a tocarla.
   const reset = panel.querySelector('[data-reset-catalog-filters]');
-  if (reset) reset.hidden = count === 0;
+  if (reset) {
+    reset.hidden = false;
+    reset.disabled = count === 0;
+  }
 }
 
 function uniqueFilterValues(products, getter) {

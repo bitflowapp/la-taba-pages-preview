@@ -984,6 +984,15 @@ function bindEvents() {
       return;
     }
 
+    // "Aplicar" cierra el bottom sheet. El filtrado ya ocurrió al cambiar cada
+    // <select>: no hay un segundo estado que confirmar, y fabricar uno sería
+    // inventar un paso que la lógica no tiene.
+    if (target.closest('[data-close-catalog-filters]')) {
+      const panel = target.closest('[data-catalog-filters]');
+      if (panel) panel.open = false;
+      return;
+    }
+
     // "Limpiar búsqueda" deshace exactamente la causa del vacío: la consulta.
     // La categoría elegida se conserva.
     const clearSearch = target.closest('[data-clear-search]');
@@ -1054,6 +1063,18 @@ function bindEvents() {
         clearProfileReturnTarget();
       }
       setActiveView(navView);
+      return;
+    }
+
+    // Puerta de MARCA (banner editorial). El destino no es una ruta nueva: es
+    // exactamente la búsqueda que escribiría el cliente, resuelta contra el
+    // catálogo real. La categoría se suelta para que la marca se vea completa
+    // aunque tenga productos en más de un rubro.
+    const brandQuery = target.closest('[data-brand-query]')?.dataset.brandQuery;
+    if (brandQuery) {
+      setCategory('all');
+      setSearchQuery(brandQuery);
+      if (activeView !== 'catalog') setActiveView('catalog');
       return;
     }
 

@@ -208,13 +208,18 @@
               publicados no se muestran (fail-closed), no se inventan.
             -->
             <section class="taba-home-hero brand-hero" aria-labelledby="home-title">
-              <div class="brand-hero-identity">
-                <!--
-                  Caja del logo reservada por CSS (56px) para que el estado de
-                  historias no mueva el layout. El logo es BOTÓN sólo cuando hay
-                  historias publicadas; sin ellas es una imagen decorativa que no
-                  se anuncia como control.
-                -->
+              <!--
+                Fila 1 — EMBLEMA E HISTORIAS. Las dos entradas a historias viven
+                juntas: el emblema (con su aro) y el acceso con miniatura. Antes
+                el emblema compartía fila con el título y el acceso ocupaba un
+                renglón entero debajo; separarlos deja el título a ancho
+                completo y devuelve ~30px al primer producto.
+                Caja del logo reservada por CSS para que el estado de historias
+                no mueva el layout. El logo es BOTÓN sólo cuando hay historias
+                publicadas; sin ellas es una imagen decorativa que no se anuncia
+                como control.
+              -->
+              <div class="brand-hero-top">
                 <span class="brand-logo-slot" data-stories-slot data-stories-state="empty">
                   <span class="brand-logo brand-logo-static" data-stories-static>
                     <span class="brand-logo-ring" aria-hidden="true"></span>
@@ -229,29 +234,31 @@
                     </span>
                   </button>
                 </span>
-                <div class="brand-hero-copy">
-                  <p class="brand-hero-welcome">¡Bienvenido a</p>
-                  <!--
-                    El "!" es decorativo y va `aria-hidden`: el nombre accesible
-                    del encabezado sigue siendo exactamente el nombre del
-                    comercio que publica la config.
-                  -->
-                  <h1 id="home-title"><span data-business-name>La Taba 2</span><span class="brand-hero-bang" aria-hidden="true">!</span></h1>
-                  <p class="brand-hero-place" data-home-business-place>Tu autoservicio de bebidas</p>
-                  <p class="brand-hero-state">
-                    <span class="brand-state-chip" data-open-status>Pedidos online</span>
-                    <span class="brand-hero-hours" data-home-business-hours hidden></span>
-                  </p>
-                </div>
+                <button class="brand-stories-cta" type="button" data-stories-open hidden>
+                  <span class="brand-stories-thumb" data-stories-cta-thumb aria-hidden="true"></span>
+                  <span class="brand-stories-copy">
+                    <strong>Novedades de hoy</strong>
+                    <small data-stories-cta-detail>Ver historias</small>
+                  </span>
+                  <span class="brand-stories-go" aria-hidden="true">›</span>
+                </button>
               </div>
-              <button class="brand-stories-cta" type="button" data-stories-open hidden>
-                <span class="brand-stories-thumb" data-stories-cta-thumb aria-hidden="true"></span>
-                <span class="brand-stories-copy">
-                  <strong>Novedades de hoy</strong>
-                  <small data-stories-cta-detail>Ver historias</small>
-                </span>
-                <span class="brand-stories-go" aria-hidden="true">›</span>
-              </button>
+              <!--
+                Fila 2 — BIENVENIDA Y DIRECCIÓN. Título grande y corto sobre el
+                ancho completo, con el rubro, la dirección y el estado debajo.
+                El "!" es decorativo y va `aria-hidden`: el nombre accesible del
+                encabezado sigue siendo exactamente el nombre del comercio que
+                publica la config.
+              -->
+              <div class="brand-hero-copy">
+                <p class="brand-hero-welcome">¡Bienvenido a</p>
+                <h1 id="home-title"><span data-business-name>La Taba 2</span><span class="brand-hero-bang" aria-hidden="true">!</span></h1>
+                <p class="brand-hero-place" data-home-business-place>Tu autoservicio de bebidas</p>
+                <p class="brand-hero-state">
+                  <span class="brand-state-chip" data-open-status>Pedidos online</span>
+                  <span class="brand-hero-hours" data-home-business-hours hidden></span>
+                </p>
+              </div>
             </section>
 
             <div data-home-active-order hidden></div>
@@ -265,6 +272,37 @@
             </label>
 
             <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip aria-label="Categorías de bebidas"></div>
+
+            <!--
+              DESTACADOS abre la vidriera: es el primer tramo COMPRABLE y tiene
+              que caer sobre el pliegue. Antes lo precedía "Ofertas del día",
+              que sin una promoción vigente queda `hidden` pero igual reservaba
+              el lugar de arriba para un bloque que casi nunca existe.
+            -->
+            <section class="home-merch-section home-best-section" aria-labelledby="home-best-title">
+              <div class="home-section-head">
+                <!--
+                  Copy honesto: "Destacados" es una selección del local, no una
+                  métrica de ventas. Un nombre como "Más pedidos" exigiría
+                  pedidos completados agregados, ventana temporal explícita y
+                  volumen mínimo; no existen, así que no se afirman.
+                -->
+                <div class="home-section-title">
+                  <h2 id="home-best-title">Destacados</h2>
+                  <small>Selección del local</small>
+                </div>
+                <button type="button" data-category-id="popular">Ver todos</button>
+              </div>
+              <div class="home-best-sellers offers-rail" data-home-best-sellers data-offers-rail></div>
+            </section>
+
+            <!--
+              HERO PROMOCIONAL. Fotografía editorial curada a plena vista, con
+              título corto, subtítulo y una CTA que lleva a una categoría real
+              con producto comprable. NO afirma precio ni descuento: la promoción
+              comercial, cuando exista, vive en el bloque de abajo.
+            -->
+            <div class="home-hero-promo-slot" data-home-hero-promo></div>
 
             <section class="home-merch-section home-offers-section" aria-labelledby="home-promotions-title">
               <div class="home-section-head">
@@ -285,23 +323,6 @@
               <div class="home-paging-dots" data-home-paging-dots aria-hidden="true" hidden></div>
             </section>
 
-            <section class="home-merch-section home-best-section" aria-labelledby="home-best-title">
-              <div class="home-section-head">
-                <!--
-                  Copy honesto: "Destacados" es una selección del local, no una
-                  métrica de ventas. Un nombre como "Más pedidos" exigiría
-                  pedidos completados agregados, ventana temporal explícita y
-                  volumen mínimo; no existen, así que no se afirman.
-                -->
-                <div class="home-section-title">
-                  <h2 id="home-best-title">Destacados</h2>
-                  <small>Selección del local</small>
-                </div>
-                <button type="button" data-category-id="popular">Ver todos</button>
-              </div>
-              <div class="home-best-sellers offers-rail" data-home-best-sellers data-offers-rail></div>
-            </section>
-
             <!--
               Banner editorial. No afirma un descuento: es una puerta a una
               categoría que EXISTE y tiene productos comprables. Si ninguna
@@ -317,6 +338,26 @@
               renderiza, así que no quedan huecos.
             -->
             <div class="home-sections" data-home-sections></div>
+
+            <!--
+              SELECCIÓN DEL LOCAL. Los rubros premium —whisky, fernet, vinos,
+              gin, aperitivos— existen en el catálogo pero todavía no publican
+              precio, así que no pueden ser carrusel comprable ni chip. Acá se
+              muestran con su tarjeta real: marca, nombre, presentación y el
+              precio SI existe; si no, el estado honesto ("Precio a confirmar")
+              y una CTA que abre la ficha en vez de un botón de compra que
+              fallaría. Ninguna afirma oferta, porcentaje ni precio tachado.
+            -->
+            <section class="home-merch-section home-editorial-section" data-home-editorial-section aria-labelledby="home-editorial-title" hidden>
+              <div class="home-section-head">
+                <div class="home-section-title">
+                  <h2 id="home-editorial-title">Selección del local</h2>
+                  <small>Vinos, whisky y aperitivos</small>
+                </div>
+                <button type="button" data-category-id="all">Ver todos</button>
+              </div>
+              <div class="home-best-sellers offers-rail" data-home-editorial-rail></div>
+            </section>
 
             <div class="home-reorder-slot" data-customer-actions></div>
             <button class="order-now-cta" type="button" data-nav-view="catalog">
@@ -372,7 +413,20 @@
               <label data-catalog-filter-field="price"><span>Precio</span><select data-catalog-filter="price" aria-label="Filtrar por estado de precio"></select></label>
               <label data-catalog-filter-field="promotion"><span>Promoción</span><select data-catalog-filter="promotion" aria-label="Filtrar por promoción"></select></label>
             </div>
-            <button class="ghost-button compact" type="button" data-reset-catalog-filters hidden>Limpiar filtros</button>
+            <!--
+              Cierre del panel. En teléfono el bloque es un bottom sheet y un
+              sheet sin acciones no dice cómo se sale: el filtro se aplica al
+              instante (los <select> disparan el filtrado), pero el cliente no
+              tiene forma de saber que ya terminó. "Aplicar" no aplica nada
+              nuevo —cierra— y por eso dice exactamente eso: cierra el panel y
+              devuelve el resultado. "Limpiar" existe siempre; sin filtros
+              activos queda deshabilitado en vez de desaparecer, así el par de
+              botones no cambia de forma entre estados.
+            -->
+            <div class="catalog-filters-actions">
+              <button class="ghost-button compact" type="button" data-reset-catalog-filters disabled>Limpiar</button>
+              <button class="primary-button compact" type="button" data-close-catalog-filters>Aplicar</button>
+            </div>
             </div>
           </details>
 

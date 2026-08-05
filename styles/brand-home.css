@@ -74,8 +74,12 @@ body[data-active-view="tracking"] :is(.track-step.current, .track-step.done) sma
   color: var(--brand-ink);
 }
 
-/* La tarjeta del repartidor era el último blanco puro del cliente. */
-body[data-active-view="tracking"] .tracking-rider-card {
+/* Las dos tarjetas que el seguimiento pinta con su propio blanco: la del
+   repartidor y la del estado vacío. Ninguna hereda `.card`, así que la regla
+   general no las alcanzaba y quedaban como los últimos blancos puros del
+   cliente. */
+body[data-active-view="tracking"] .tracking-rider-card,
+body[data-active-view="tracking"] .tracking-premium.is-empty .sheet-empty {
   border-color: transparent;
   background: var(--cream);
   box-shadow: var(--shadow-cream-flat), inset 0 0 0 1px var(--cream-line);

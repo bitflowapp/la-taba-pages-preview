@@ -324,3 +324,21 @@ computado es idéntico en Chromium, WebKit y Firefox y en los dos sistemas.
 
 Las capturas reales se generan como artefacto fuera del repositorio para la
 revisión humana.
+
+### Qué esperar de cada motor
+
+`playwright.config.mjs` no declara proyectos, así que la suite corre en Chromium
+por defecto y los otros dos motores hay que pedirlos con `--browser`. Eso importa
+al leer un resultado:
+
+| Motor | Estado | Nota |
+| --- | --- | --- |
+| Chromium | verde | es el gate |
+| WebKit | 2 fallos | `business-windows-operations` y `delivery-proof`, ambos en paneles operativos y **reproducibles en el commit base** |
+| Firefox | 3 fallos deterministas | `honesty-mode` y `mobile-touch-gesture` fallan con `browser.newContext: options.isMobile is not supported in Firefox`: crean contextos móviles, que Firefox no soporta. No pueden pasar en ningún build |
+
+Además, en Firefox la familia `customer-delivery` es **no determinista**. Medido
+sobre el commit base sin modificar, dos corridas idénticas dieron 7 fallos y 1
+fallo. Un conteo de fallos de Firefox no significa nada por sí solo: para
+distinguir regresión de inestabilidad hay que correr el mismo spec varias veces
+sobre los dos builds y comparar, no comparar una corrida contra otra.

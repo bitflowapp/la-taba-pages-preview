@@ -187,7 +187,7 @@ convierte en botón**: no se fabrican links muertos.
 | `unseen` | degradado + rotación sutil | "N historias nuevas" |
 | `seen` | degradado atenuado (34%) | "Ver historias" |
 
-La caja del logo mide 72px por CSS en los tres estados (64 en Perfil, 84 por
+La caja del logo mide 72px por CSS en los tres estados (64 en Perfil y por
 debajo de 360px), así que el aro nunca mueve el layout. El estado no viaja sólo
 en el color: el texto del acceso lo dice, que es lo que lo hace legible con
 `prefers-reduced-motion` y para quien no distingue el aro.

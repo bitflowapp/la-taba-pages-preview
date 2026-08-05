@@ -1771,28 +1771,24 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
    El foco es móvil, pero la home ancha no puede ser un teléfono estirado.
    ========================================================================== */
 @media (min-width: 761px) {
+  /* Dos columnas: identidad a la izquierda, bienvenida a la derecha. La
+     FLEXIBLE es la del copy y no la de la identidad —al revés de como estaba—:
+     con la columna elástica del lado del emblema, el título quedaba capado en
+     360px mientras el hueco del emblema crecía con la pantalla. El que tiene
+     que aprovechar el ancho es el nombre del comercio.
+     Las reglas de `.brand-hero-identity` y el reposicionamiento del acceso a
+     historias se retiraron: ese nodo dejó de existir y el acceso ya vive dentro
+     de la fila de identidad, así que ambas eran inertes. */
   .brand-hero {
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
     align-items: center;
     gap: 16px 28px;
     padding-block: 14px 4px;
   }
 
-  .brand-hero-identity {
-    grid-template-columns: 120px minmax(0, 1fr);
-    grid-row: 1;
-    gap: 22px;
-  }
-
   .brand-hero .brand-logo-slot {
-    --logo-size: 120px;
-    --logo-face: 103px;
-  }
-
-  .brand-stories-cta {
-    grid-row: 1;
-    grid-column: 2;
-    align-self: center;
+    --logo-size: 104px;
+    --logo-face: 89px;
   }
 
   body[data-active-view="home"] .taba-home-hero h1 {
@@ -1846,14 +1842,15 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
 /* A 320px el encabezado no puede pelear por el ancho: el logo baja a 84px sin
    perder presencia y el título ajusta su escala. */
 @media (max-width: 359px) {
-  .brand-hero-identity {
-    grid-template-columns: 84px minmax(0, 1fr);
-    gap: 12px;
-  }
-
+  /* 64 y no 84. El 84 venía del encabezado anterior, donde el emblema medía
+     100px y ESTE breakpoint lo achicaba; con la fila nueva el emblema ya mide
+     72, así que la misma regla lo hacía CRECER justo en el ancho más apretado.
+     Ahora achica de verdad y le devuelve ~20px al acceso a historias, que
+     comparte la fila. La regla de `.brand-hero-identity` se retiró: ese nodo
+     dejó de existir cuando el encabezado se partió en dos filas. */
   .brand-hero .brand-logo-slot {
-    --logo-size: 84px;
-    --logo-face: 72px;
+    --logo-size: 64px;
+    --logo-face: 54px;
   }
 
   .brand-hero-welcome {

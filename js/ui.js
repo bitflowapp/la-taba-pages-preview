@@ -1051,6 +1051,7 @@ function renderHomePromotions() {
           ${homeProductImage(product, 'home-promo-image')}
         </button>
         <div class="home-promo-copy">
+          ${product.brand ? `<span class="home-promo-brand">${escapeHtml(product.brand)}</span>` : ''}
           <strong>${escapeHtml(product.name)}</strong>
           <span class="home-product-price">${money(pricing.price)}</span>
           ${old}

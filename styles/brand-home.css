@@ -742,6 +742,21 @@ body[data-active-view="home"] .home-promo-copy {
   padding: 1px 0 0;
 }
 
+/* La marca sobre el nombre. Es el mismo rótulo en versalitas que ya usa la
+   tarjeta del catálogo: una promoción tiene que decir DE QUÉ MARCA es sin que
+   el cliente lo deduzca del nombre del producto. */
+body[data-active-view="home"] .home-promo-brand {
+  color: var(--cream-muted);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 body[data-active-view="home"] .home-promo-copy strong {
   color: var(--cream-ink);
   font-size: 13.5px;
@@ -784,6 +799,14 @@ body[data-active-view="home"] .home-promotions-rail {
   gap: 12px;
   padding: 1px 2px 4px;
 }
+
+/* El rail de ofertas es el único cuyo cupo lo decide el comercio: puede tener
+   una promoción o seis. Se probó estirarlas a `1fr` cuando hay menos de tres,
+   para que llenaran la fila, y sale peor: el plato del packshot pasa a ser una
+   banda ancha y baja con el envase diminuto en el medio. La tarjeta conserva
+   entonces la MISMA geometría en todos los rails; con una sola promoción el
+   rail termina antes, que es lo que hace cualquier vidriera corta, y el ancho
+   completo ya lo ocupa el banner de promoción vigente que va arriba. */
 
 /* La tarjeta se compacta recortando aire muerto, no la imagen: el packshot
    conserva sus 132px y pasa a ocupar ~52% de la tarjeta —la misma proporción

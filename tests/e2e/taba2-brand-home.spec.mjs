@@ -680,7 +680,7 @@ test('la home no crece sin control en los anchos objetivo', async ({ page }) => 
     // El techo subió de 3200 a 3700 con la composición cerrada: la home suma el
     // HERO promocional (270px) y el tramo de "Selección del local" (≈370px), que
     // son piezas del pedido comercial, no crecimiento accidental. Medido da
-    // 3552–3559 en los seis anchos de teléfono y 3396–3512 en tablet/escritorio,
+    // 3539–3559 en los seis anchos de teléfono y 3396–3512 en tablet/escritorio,
     // así que 3700 deja ~140px de holgura para variaciones de copy y NO alcanza
     // para un tramo más: una sección nueva (≈330px) o un banner extra (≈200px)
     // lo rompen, que es exactamente lo que este techo tiene que detectar.

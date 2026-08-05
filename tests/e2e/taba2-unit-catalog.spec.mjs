@@ -74,18 +74,34 @@ test('el carrito y el checkout muestran la presentación minorista y el precio d
   await guards.assertClean();
 });
 
-test('un pack que el local vende dice que es un pack en toda la compra', async ({ page }) => {
+test('ningún pack de abastecimiento queda en la góndola ni se puede pedir', async ({ page }) => {
   const guards = installPageGuards(page);
   await openHome(page);
   await openCatalog(page);
 
-  await page.locator('[data-view="catalog"] [data-product-grid] [data-add-product="coca-cola-original-pet-1500ml-pack-6"]').first().click();
-  await page.locator('[data-open-cart]').first().click();
+  // Decisión comercial: el pack abastece al local, el cliente compra la
+  // unidad. Ninguna tarjeta comprable declara un formato de pack.
+  await expect(page.locator('[data-product-grid] [data-add-product="coca-cola-original-pet-1500ml-pack-6"]')).toHaveCount(0);
+  const packsEnGondola = await page.evaluate(() => [...document.querySelectorAll('[data-product-grid] .product-card')]
+    .filter((card) => /pack x\d/i.test(card.innerText))
+    .map((card) => ({
+      texto: card.innerText.replace(/\s+/g, ' ').trim().slice(0, 60),
+      comprable: Boolean(card.querySelector('[data-add-product]:not([disabled])')),
+    })));
+  // Única excepción admitida: el producto de empaque contradictorio, que no se
+  // convierte por regla —sin multiplicador confiable no hay unidad que
+  // derivar— y que por no tener precio tampoco se puede comprar.
+  expect(packsEnGondola.length).toBeLessThanOrEqual(1);
+  for (const pack of packsEnGondola) expect(pack.comprable, pack.texto).toBe(false);
 
-  const linea = page.locator('[data-cart-list] li, [data-cart-list] article, [data-cart-list] > *').first();
-  await expect(linea).toContainText('Coca-Cola Original');
-  await expect(linea).toContainText('Pack x6');
-  await expect(linea).toContainText('$ 19.999');
+  // Y en su lugar está la unidad de 1,5 L, esperando precio.
+  const unidad = page.locator('[data-product-grid] .product-card').filter({
+    has: page.locator('[data-add-product="coca-cola-original-pet-1500ml"]'),
+  });
+  await expect(unidad).toContainText('1,5 L');
+  await expect(unidad).toContainText('Unidad');
+  await expect(unidad).toContainText('Precio próximamente');
+  await expect(unidad.locator('[data-add-product]')).toBeDisabled();
   await guards.assertClean();
 });
 

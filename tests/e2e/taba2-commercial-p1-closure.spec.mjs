@@ -84,17 +84,21 @@ test('P1-2: en demo la historia de whisky (sin comprables) se apaga y ninguna pr
   const guards = installPageGuards(page);
   await openHome(page);
 
-  // De las 4 historias sembradas, la de Jack Daniel's apuntaba a `whisky`
-  // (1 producto, sin precio, y de otra marca). Quedan las 3 con destino
-  // comprable, cada una con su CTA real.
+  // De las 4 historias sembradas quedan las que tienen destino comprable. La
+  // de Jack Daniel's apuntaba a `whisky` (1 producto, sin precio, y de otra
+  // marca). Desde la publicación minorista también se apagó la de Schweppes:
+  // mixers dejó de tener comprables cuando el pack de seis salió de la góndola
+  // y la botella suelta todavía espera precio. El contrato es el mismo —una
+  // historia no promete lo que no se puede comprar— y sigue al catálogo.
+  const historiasEsperadas = 2;
   await page.locator('.brand-hero .brand-logo-action').click();
   const modal = page.locator('[data-stories-modal]');
   await expect(modal).toBeVisible();
-  await expect(modal.locator('.stories-progress span')).toHaveCount(3);
-  for (let index = 0; index < 3; index += 1) {
+  await expect(modal.locator('.stories-progress span')).toHaveCount(historiasEsperadas);
+  for (let index = 0; index < historiasEsperadas; index += 1) {
     await expect(modal.locator('h2')).not.toContainText('Jack');
     await expect(modal.locator('[data-story-cta]')).toBeVisible();
-    if (index < 2) await modal.locator('[data-story-next]').click();
+    if (index < historiasEsperadas - 1) await modal.locator('[data-story-next]').click();
   }
   await page.keyboard.press('Escape');
   await guards.assertClean();
@@ -194,8 +198,11 @@ test('P1-3: el doble tap del CTA crea exactamente un pedido y ningún modal', as
   const guards = installPageGuards(page);
   await openHome(page);
 
-  // Gaseosas: supera el mínimo y no exige edad.
-  await page.locator('[data-add-product="coca-cola-original-pet-1500ml-pack-6"]').first().click();
+  // Dos energizantes: superan el mínimo y no exigen edad. (Antes alcanzaba un
+  // pack de gaseosa; desde la publicación minorista los packs abastecen y no
+  // se venden, y las botellas sueltas todavía esperan precio.)
+  await page.locator('[data-add-product="red-bull-original-lata-250ml"]').first().click();
+  await page.locator('[data-add-product="monster-mango-loco-lata-473ml"]').first().click();
   await page.locator('[data-open-cart]').first().click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
 

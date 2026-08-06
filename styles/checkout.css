@@ -511,6 +511,20 @@
   color: var(--taba-success);
 }
 
+/* Las filas informativas del resumen —el mínimo de delivery, una promoción
+   todavía no alcanzada— no son cargos y no pueden pesar como uno: en la
+   columna de montos un número en negrita se suma solo. Se aflojan y achican
+   para que el ojo las lea como nota, no como línea de la cuenta. */
+.summary-row.muted {
+  color: var(--taba-muted);
+  font-size: 13px;
+}
+
+.summary-row.muted > strong {
+  color: inherit;
+  font-weight: 600;
+}
+
 .summary-row.total {
   padding-top: 10px;
   border-top: 1px solid var(--taba-border);

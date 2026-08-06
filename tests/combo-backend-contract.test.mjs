@@ -7,6 +7,7 @@ const read = (name) => fs.readFileSync(new URL(`../supabase/migrations/${name}`,
 const catalog = read('20260806240000_taba2_combo_catalog_contract.sql');
 const pricing = read('20260806250000_taba2_combo_checkout_pricing.sql');
 const preference = read('20260806260000_taba2_combo_preference_lines.sql');
+const total = read('20260806270000_taba2_order_total_with_discount.sql');
 const foundation = read('20260802090000_mercadopago_checkout_pro_foundation.sql');
 const both = `${catalog}\n${pricing}`;
 
@@ -88,6 +89,20 @@ test('el descuento nunca puede superar el subtotal', () => {
   assert.match(pricing, /orders_discount_total_check[\s\S]{0,120}discount_total <= subtotal/);
   // La invariante de dinero del pedido se vuelve explícita en vez de desaparecer.
   assert.match(pricing, /orders_total_not_below_subtotal[\s\S]{0,120}total >= subtotal - discount_total/);
+});
+
+test('la aritmética del pedido cuenta el descuento como una parte más', () => {
+  // Medido sobre staging con un pago real aprobado: `20260806250000` relajó una
+  // de las dos invariantes de dinero del pedido y se le pasó la otra, declarada
+  // inline en la primera migración de pedidos. `finalize_paid_checkout_session`
+  // levantaba 23514 en cada intento y el comprador veía "Confirmando tu pedido"
+  // para siempre, con el pago ya verificado.
+  assert.match(total, /drop constraint if exists orders_total_matches_parts/);
+  assert.match(total, /check \(total = subtotal - discount_total \+ delivery_fee\)/);
+  // Las DOS invariantes tienen que estar de acuerdo sobre el descuento.
+  const declaradas = `${pricing}\n${total}`;
+  assert.doesNotMatch(declaradas, /check \(total = subtotal \+ delivery_fee\)/);
+  assert.doesNotMatch(declaradas, /check \(total >= subtotal\)/);
 });
 
 test('el stock disponible es el del componente limitante', () => {

@@ -14,10 +14,15 @@ import { gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMin
 
 const PHONE = { width: 390, height: 844 };
 
-// Superficie de contenido del cliente (`--cream` en tokens.css) ya resuelta.
+// Superficie de contenido del cliente (`--shelf` en tokens.css) ya resuelta.
 // Se escribe el color pintado y no el token porque lo que este contrato protege
 // es lo que el ojo ve, no cómo se llama la variable.
-const CREMA = 'rgb(247, 244, 239)';
+//
+// El valor cambió de crema a grafito: la identidad comercial de TABA2 es
+// negro/grafito, blanco, rojo intenso y dorado, y el beige no está en esa
+// paleta. Lo que el contrato protege NO cambió: sigue habiendo UNA superficie
+// para todas las vistas del cliente, y el test la fija en su valor pintado.
+const GONDOLA = 'rgb(25, 29, 35)';
 
 const STORY_FIXTURES = [
   {
@@ -362,14 +367,14 @@ test('el shell de marca es continuo entre las vistas del cliente', async ({ page
   }));
 
   const home = await leer();
-  // Fondo de marca oscuro, producto sobre CREMA. El blanco puro se retiró: sobre
+  // Fondo de marca oscuro, producto sobre GONDOLA. El blanco puro se retiró: sobre
   // grafito recortaba la pantalla como un papel pegado y, sobre todo, era el
   // origen del salto "home premium → formulario blanco genérico", porque cada
   // hoja elegía su propio blanco. Ahora hay una sola superficie de contenido y
   // este test la fija en su valor resuelto, no en un token.
   expect(home.body).toBe('rgb(9, 11, 14)');
   expect(await page.locator('.home-best-card').first().evaluate((n) => getComputedStyle(n).backgroundColor))
-    .toBe(CREMA);
+    .toBe(GONDOLA);
 
   // Navegar NO puede producir un salto negro → blanco: el shell se conserva.
   for (const vista of ['catalog', 'cart', 'profile', 'tracking']) {
@@ -393,21 +398,21 @@ test('la superficie de contenido es la misma en toda la app del cliente', async 
   const superficie = async (selector) => page.locator(selector).first()
     .evaluate((node) => getComputedStyle(node).backgroundColor);
 
-  expect(await superficie('.home-best-card'), 'tarjeta de la home').toBe(CREMA);
+  expect(await superficie('.home-best-card'), 'tarjeta de la home').toBe(GONDOLA);
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
-  expect(await superficie('[data-product-grid] .product-card'), 'tarjeta del catálogo').toBe(CREMA);
+  expect(await superficie('[data-product-grid] .product-card'), 'tarjeta del catálogo').toBe(GONDOLA);
 
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('.mobile-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-view="cart"] .cart-card')).toBeVisible();
-  expect(await superficie('[data-view="cart"] .cart-card'), 'tarjeta del carrito').toBe(CREMA);
-  expect(await superficie('[data-view="cart"] .checkout-form'), 'formulario del checkout').toBe(CREMA);
+  expect(await superficie('[data-view="cart"] .cart-card'), 'tarjeta del carrito').toBe(GONDOLA);
+  expect(await superficie('[data-view="cart"] .checkout-form'), 'formulario del checkout').toBe(GONDOLA);
 
   await page.locator('.mobile-nav [data-nav-view="profile"]').click();
   await expect(page.locator('[data-view="profile"] .profile-card').first()).toBeVisible();
-  expect(await superficie('[data-view="profile"] .profile-card'), 'tarjeta del perfil').toBe(CREMA);
+  expect(await superficie('[data-view="profile"] .profile-card'), 'tarjeta del perfil').toBe(GONDOLA);
 });
 
 test('el panel operativo conserva su superficie clara', async ({ page }) => {
@@ -472,7 +477,7 @@ test('los estados vacíos del cliente se apoyan en la superficie de contenido', 
   await page.locator('[data-category-strip] [data-category-id="favorites"]').click();
   const vacio = page.locator('[data-product-grid] .empty-state');
   await expect(vacio).toBeVisible();
-  expect(await vacio.evaluate((node) => getComputedStyle(node).backgroundColor)).toBe(CREMA);
+  expect(await vacio.evaluate((node) => getComputedStyle(node).backgroundColor)).toBe(GONDOLA);
 
   const flojos = await page.evaluate(() => {
     const parse = (v) => {
@@ -557,7 +562,7 @@ test('el seguimiento con pedido activo se lee sobre el shell oscuro', async ({ p
 
   // Y sus tarjetas son la misma superficie que el resto del cliente.
   expect(await page.locator('.tracking-rider-card').first()
-    .evaluate((node) => getComputedStyle(node).backgroundColor)).toBe(CREMA);
+    .evaluate((node) => getComputedStyle(node).backgroundColor)).toBe(GONDOLA);
 });
 
 test('el texto de la home cumple el contraste mínimo sobre la superficie oscura', async ({ page }) => {

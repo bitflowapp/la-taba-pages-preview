@@ -165,7 +165,7 @@
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
 }
 
 .topbar-address .address-chip-text {
@@ -362,7 +362,7 @@
 }
 
 .topbar .desktop-nav button.active {
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
 }
 
 /* Icono con badge: la cifra sólo existe si hay contenido. */
@@ -660,7 +660,7 @@ main {
 
 .eyebrow {
   margin-bottom: 6px;
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
   font-size: 12px;
   font-weight: 850;
   letter-spacing: 0.11em;
@@ -702,13 +702,16 @@ main {
   margin-top: 4px;
 }
 
+/* Aviso y error del formulario. Los tres valores pasan a token porque este
+   bloque lo comparten el checkout del cliente (grafito) y los paneles
+   operativos (papel): con literales sólo podía estar bien en uno de los dos. */
 .warning-box,
 .notice-box {
   padding: 14px 16px;
-  border: 1px solid #ffd5d8;
+  border: 1px solid var(--taba-red-border-soft);
   border-radius: var(--radius-sm);
-  background: #fff6f6;
-  color: #7e171e;
+  background: var(--taba-red-soft);
+  color: var(--taba-red-quiet);
   font-size: 14px;
 }
 
@@ -765,7 +768,7 @@ textarea:focus {
 }
 
 .req {
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
 }
 
 details {

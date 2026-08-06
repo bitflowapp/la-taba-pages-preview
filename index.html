@@ -18,7 +18,7 @@
       integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK"
       crossorigin="anonymous"
     />
-    <link rel="stylesheet" href="styles.css?v=40" />
+    <link rel="stylesheet" href="styles.css?v=41" />
   </head>
   <!--
     La vista activa se declara ya en el shell servido. `renderNavigation` la
@@ -303,6 +303,23 @@
                 <button type="button" data-category-id="all">Ver todos</button>
               </div>
               <div class="home-best-sellers offers-rail" data-home-best-sellers data-offers-rail></div>
+            </section>
+
+            <!--
+              COMBOS. Armados sobre componentes con precio y stock confirmados;
+              el precio individual, el promocional, el ahorro y el stock los
+              deriva `core/combos.js` del catálogo vivo, así que la tarjeta no
+              puede prometer un ahorro que dejó de existir. Una sección sin
+              combos armables queda oculta: nunca aparece un rail vacío.
+            -->
+            <section class="home-merch-section home-combos-section" data-home-combos-section aria-labelledby="home-combos-title" hidden>
+              <div class="home-section-head">
+                <div class="home-section-title">
+                  <h2 id="home-combos-title">Combos</h2>
+                  <small data-home-combos-subtitle>Armados por el local</small>
+                </div>
+              </div>
+              <div class="home-combos-rail offers-rail" data-combos-rail></div>
             </section>
 
             <!--
@@ -783,6 +800,16 @@
 
     <dialog class="product-modal" data-product-modal aria-label="Detalle del producto">
       <div data-modal-content></div>
+    </dialog>
+
+    <!--
+      Detalle del combo. Muestra lo que la tarjeta no puede: la lista completa
+      de componentes con su cantidad y su precio de lista, el ahorro contra la
+      suma de esos precios, qué se puede sustituir sin costo y cuántas unidades
+      sostiene el componente limitante.
+    -->
+    <dialog class="product-modal combo-modal" data-combo-modal aria-label="Detalle del combo">
+      <div data-combo-modal-content></div>
     </dialog>
 
     <dialog class="checkout-suggestions-modal" data-checkout-suggestions-modal aria-labelledby="checkout-suggestions-title">

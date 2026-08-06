@@ -81,8 +81,8 @@ body[data-active-view="tracking"] :is(.track-step.current, .track-step.done) sma
 body[data-active-view="tracking"] .tracking-rider-card,
 body[data-active-view="tracking"] .tracking-premium.is-empty .sheet-empty {
   border-color: transparent;
-  background: var(--cream);
-  box-shadow: var(--shadow-cream-flat), inset 0 0 0 1px var(--cream-line);
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf-flat), inset 0 0 0 1px var(--shelf-line);
 }
 
 /* Botón fantasma: su tinta es grafito, pensada para papel. Sobre el shell
@@ -381,7 +381,7 @@ body[data-active-view="home"] .taba-home-hero h1 {
 }
 
 .brand-hero-bang {
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
   font-size: 1em;
 }
 
@@ -419,12 +419,16 @@ body[data-active-view="home"] .taba-home-hero h1 {
   font-weight: 750;
 }
 
+/* El punto "abierto" era el único verde que quedaba en la vidriera y era además
+   el primer color que se ve al abrir la app. Pasa a dorado, que es el acento de
+   la identidad para lo confirmado. El estado no viaja sólo en el color: el chip
+   dice "Pedidos disponibles" con todas las letras. */
 .brand-state-chip::before {
   width: 6px;
   height: 6px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: #35c46a;
+  background: var(--brand-gold-soft);
   content: "";
 }
 
@@ -692,8 +696,8 @@ body[data-active-view="home"] .home-best-card,
 body[data-active-view="home"] .home-catalog-card {
   border-color: transparent;
   border-radius: 20px;
-  background: var(--cream);
-  box-shadow: var(--shadow-cream-flat), inset 0 0 0 1px var(--cream-line);
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf-flat), inset 0 0 0 1px var(--shelf-line);
 }
 
 /* Rail de ofertas: misma tarjeta que Destacados. El ancho lo fija el bloque de
@@ -746,7 +750,7 @@ body[data-active-view="home"] .home-promo-copy {
    tarjeta del catálogo: una promoción tiene que decir DE QUÉ MARCA es sin que
    el cliente lo deduzca del nombre del producto. */
 body[data-active-view="home"] .home-promo-brand {
-  color: var(--cream-muted);
+  color: var(--shelf-muted);
   font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -758,7 +762,7 @@ body[data-active-view="home"] .home-promo-brand {
 }
 
 body[data-active-view="home"] .home-promo-copy strong {
-  color: var(--cream-ink);
+  color: var(--shelf-ink);
   font-size: 13.5px;
   font-weight: 750;
   letter-spacing: -0.01em;
@@ -766,7 +770,7 @@ body[data-active-view="home"] .home-promo-copy strong {
 }
 
 body[data-active-view="home"] .home-promo-copy small {
-  color: var(--cream-muted);
+  color: var(--shelf-muted);
   font-size: 12px;
 }
 
@@ -870,7 +874,7 @@ body[data-active-view="home"] .home-best-copy {
    disponible en el `aria-label` del packshot, en el `alt` y en la ficha. */
 body[data-active-view="home"] .home-best-copy strong {
   min-height: 18px;
-  color: var(--cream-ink);
+  color: var(--shelf-ink);
   font-size: 13.5px;
   font-weight: 750;
   letter-spacing: -0.01em;
@@ -880,7 +884,7 @@ body[data-active-view="home"] .home-best-copy strong {
 
 body[data-active-view="home"] .home-best-copy small {
   margin-top: 0;
-  color: var(--cream-muted);
+  color: var(--shelf-muted);
   font-size: 12px;
   line-height: 1.3;
 }
@@ -892,7 +896,7 @@ body[data-active-view="home"] .home-best-copy small {
 body[data-active-view="home"] .home-best-copy span,
 body[data-active-view="home"] .home-promo-copy .home-product-price {
   margin-top: 3px;
-  color: var(--cream-ink);
+  color: var(--shelf-ink);
   font-size: 17.5px;
   font-weight: 800;
   letter-spacing: -0.025em;
@@ -992,13 +996,73 @@ body[data-active-view="home"] .home-catalog-card.out-of-stock {
    "Carrito" aparecía un formulario blanco puro, con otra sombra y otro radio.
    Se leía como otra aplicación.
 
-   Acá el contenido del cliente pasa a tener una sola superficie —la crema de la
-   referencia—, un solo radio y UNA sombra. Perfil ya estaba así; esta regla
-   lleva al resto al mismo lugar en vez de repetir sus valores en cada hoja.
+   Acá el contenido del cliente pasa a tener una sola superficie —la góndola de
+   grafito—, un solo radio y UNA sombra. Esta regla lleva a todas las vistas al
+   mismo lugar en vez de repetir sus valores en cada hoja.
+
+   La superficie NO se declara sola: junto con el fondo va la TINTA. Ese fue el
+   defecto de la versión anterior de este bloque, que pintaba el fondo y dejaba
+   que el color lo resolviera `--taba-ink` —un grafito calibrado para papel—.
+   Mientras la superficie fue clara nadie lo notó; sobre grafito habría dejado
+   el catálogo entero en negro sobre negro. Fondo y tinta se declaran juntos.
 
    El alcance es deliberadamente el del shell: `business` y `rider` conservan la
    superficie clara que el RC certificó.
    ========================================================================== */
+
+/* `color-scheme` gobierna lo que el navegador pinta por su cuenta y que ninguna
+   regla alcanza: la flecha del <select>, la barra de scroll del bottom sheet,
+   el fondo del desplegable nativo y el resaltado de autocompletado. Sin esto la
+   lista de "Forma de pago" se abre en blanco sobre una app negra. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) {
+  color-scheme: dark;
+
+  /* --------------------------------------------------------------------------
+     REMAPEO DE LA PALETA DE PAPEL — el mecanismo, no la lista de excepciones.
+     --------------------------------------------------------------------------
+     Los componentes compartidos (`common.css`, `checkout.css`, `catalog.css`)
+     están escritos contra la paleta de papel: `--taba-ink` para el texto,
+     `--taba-muted` para lo secundario, `--taba-border` para el hairline. Todos
+     ellos se siguen usando tal cual en Negocio y Rider, que NO cambian.
+
+     Reescribir cada regla habría significado duplicar el sistema y dejar la
+     próxima regla nueva naciendo en color papel. En vez de eso se reasignan los
+     tokens EN EL SCOPE del cliente: cada componente sigue pidiendo
+     `--taba-muted` y recibe el gris que se midió contra grafito.
+
+     `--taba-white` NO se toca a propósito: es el plato del packshot y el texto
+     sobre el rojo de acción. Los tres lugares que usaban `--taba-ink` como
+     FONDO (chip de categoría activa, toast y barra de carrito) se resuelven
+     explícitamente más abajo: ahí el remapeo no alcanza porque invertirían
+     tinta y superficie a la vez.
+     ----------------------------------------------------------------------- */
+  --taba-ink: var(--shelf-ink);
+  --taba-graphite: var(--shelf-ink);
+  --taba-graphite-soft: var(--shelf-muted);
+  --taba-muted: var(--shelf-muted);
+  --taba-muted-soft: var(--shelf-muted);
+  --taba-subtle: var(--shelf-raised);
+  --taba-warm-white: var(--shelf);
+  --taba-border: var(--shelf-line);
+  --taba-border-soft: var(--shelf-line);
+  --taba-border-medium: var(--shelf-line-strong);
+  --taba-line-strong: var(--shelf-line-strong);
+  /* El rojo de MARCA sigue siendo el mismo; lo que cambia es el rojo que se
+     usa como TINTA, que sobre grafito necesita subir para poder leerse. */
+  --taba-red-quiet: var(--shelf-red-ink);
+  --taba-danger: var(--shelf-red-ink);
+  --taba-red-soft: var(--shelf-red-wash);
+  --taba-red-wash: var(--shelf-red-wash);
+  --taba-red-border-soft: rgb(255 77 85 / 42%);
+  /* Confirmación y advertencia en DORADO. El verde y el ámbar del sistema de
+     papel no están en la identidad comercial, y sobre grafito el verde daba
+     3,1:1. El dorado es el acento que la marca ya reserva para lo premium y da
+     6,3:1 sobre la góndola, así que también sirve para texto chico. */
+  --taba-success: var(--shelf-gold-soft);
+  --taba-warning: var(--shelf-gold-soft);
+  --taba-focus: var(--shelf-gold-soft);
+}
+
 body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(
   .app-view .card,
   .app-view .product-card,
@@ -1009,8 +1073,25 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(
 ) {
   border-color: transparent;
   border-radius: 20px;
-  background: var(--cream);
-  box-shadow: var(--shadow-cream-flat), inset 0 0 0 1px var(--cream-line);
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf-flat), inset 0 0 0 1px var(--shelf-line);
+  color: var(--shelf-ink);
+}
+
+/* Títulos y cifras dentro de la góndola. `h1…h4` y `strong` heredan del bloque
+   de arriba, pero muchas reglas de catálogo/checkout fijan su propia tinta de
+   papel; acá se las devuelve a la tinta de la superficie que las contiene. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
+  .card,
+  .product-card,
+  .offer-card,
+  .recommendation-card,
+  .summary-box,
+  .cart-card,
+  .checkout-form
+) :is(h1, h2, h3, h4, strong, dt, dd, label, legend, th, td),
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-card :is(h1, h2, h3, h4, strong, label) {
+  color: var(--shelf-ink);
 }
 
 /* Estado vacío suelto (catálogo sin resultados, favoritos sin guardar). No
@@ -1022,8 +1103,8 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(
    especial, alcanza con darle la superficie que le corresponde. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .empty-state:not(.card) {
   border-radius: 20px;
-  background: var(--cream);
-  box-shadow: var(--shadow-cream-flat), inset 0 0 0 1px var(--cream-line);
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf-flat), inset 0 0 0 1px var(--shelf-line);
 }
 
 /* La tarjeta grande de una vista (carrito, checkout, perfil) se despega más:
@@ -1034,23 +1115,57 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(
   .modal-card
 ) {
   border-radius: 22px;
-  box-shadow: var(--shadow-cream), inset 0 0 0 1px var(--cream-line);
+  box-shadow: var(--shadow-shelf), inset 0 0 0 1px var(--shelf-line);
 }
 
-/* Sub-superficies: lo que va DENTRO de una tarjeta crema se distingue por un
-   crema más claro o más hundido, nunca por blanco puro. */
+/* Sub-superficies: lo que va DENTRO de una tarjeta de góndola se distingue por
+   un grafito más claro o más hundido, nunca por blanco puro.
+
+   Los campos se enumeran por ELEMENTO y no por clase. La lista de clases que
+   había acá cubría los seis campos que existían el día que se escribió, así
+   que cada campo nuevo del checkout nacía blanco y había que acordarse de
+   sumarlo. Sobre grafito ese olvido ya no es un matiz: es un rectángulo blanco
+   en medio del pedido. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
   .summary-box,
-  .catalog-filter-grid select,
-  .checkout-payment-field select,
-  .checkout-instructions,
-  .modal-quantity-field select,
-  .modal-note-field textarea,
-  .checkout-instructions textarea
+  .checkout-instructions
+),
+body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(.app-view, .modal-card) :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea
 ) {
-  border-color: var(--cream-line-strong);
-  background: var(--cream-raised);
-  color: var(--cream-ink);
+  border-color: var(--shelf-line-strong);
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(.app-view, .modal-card) :is(
+  input,
+  select,
+  textarea
+)::placeholder {
+  color: var(--shelf-muted);
+  opacity: 1;
+}
+
+/* Casilla y radio nativos: sin `accent-color` el navegador los pinta con su
+   azul de sistema, que no está en la paleta. El +18 del checkout era el caso
+   visible. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
+  input[type="checkbox"],
+  input[type="radio"]
+) {
+  accent-color: var(--taba-red);
+}
+
+/* Foco sobre la góndola. El anillo azul del sistema (`--taba-focus`) se midió
+   contra papel y sobre grafito compite con nada de la identidad. Acá el foco es
+   dorado: es el único acento que no significa "acción" (rojo) ni "producto"
+   (blanco), así que no se confunde con un estado de compra. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(.app-view, .modal-card, .mobile-nav, .app-topbar) :focus-visible {
+  outline: 3px solid var(--shelf-gold-soft);
+  outline-offset: 3px;
 }
 
 /* El packshot vive sobre un PLATO BLANCO deliberado. Los bitmaps del catálogo
@@ -1090,8 +1205,8 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
   .product-favorite,
   .home-favorite-button
 ) {
-  border-color: var(--cream-line);
-  background: color-mix(in srgb, var(--cream-raised) 92%, transparent);
+  border-color: var(--shelf-line);
+  background: color-mix(in srgb, var(--shelf-raised) 92%, transparent);
 }
 
 /* Tinta del contenido: el gris frío del sistema estaba calibrado para papel
@@ -1102,7 +1217,119 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
   .product-card,
   .modal-card
 ) :is(small, .muted, .form-hint, .product-body p, .info-list span) {
-  color: var(--cream-muted);
+  color: var(--shelf-muted);
+}
+
+/* ============================================================================
+   6c · COMPONENTES COMPARTIDOS SOBRE LA GÓNDOLA
+   ----------------------------------------------------------------------------
+   Lo que el remapeo de tokens no puede resolver: reglas que fijan un color
+   literal, y los tres componentes que usaban `--taba-ink` como SUPERFICIE.
+   Todo lo de acá vive en el scope del cliente; Negocio y Rider no lo ven.
+   ========================================================================== */
+
+/* Los tres que invertían tinta y superficie ------------------------------- */
+
+/* Chip de categoría activo. En papel era tinta sobre blanco; el equivalente
+   sobre grafito es BLANCO sobre grafito. No se pasa a rojo porque el rojo
+   sigue siendo la acción de compra y una fila de ocho chips rojos convierte la
+   navegación en ocho botones de "Agregar". */
+body[data-active-view="catalog"] [data-view="catalog"] .category-button.active,
+body[data-active-view="home"] .home-category-card.active {
+  border-color: var(--taba-white);
+  background: var(--taba-white);
+  box-shadow: none;
+  color: #14161a;
+}
+
+body[data-active-view="catalog"] [data-view="catalog"] .category-button.active .category-ico,
+body[data-active-view="home"] .home-category-card.active .home-category-icon {
+  color: #14161a;
+}
+
+/* Toast: pastilla blanca sobre la app oscura. Es el mensaje más efímero de la
+   interfaz y tiene que leerse de una sola pasada. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .toast {
+  background: var(--taba-white);
+  box-shadow: 0 14px 38px rgb(0 0 0 / 62%);
+  color: #14161a;
+}
+
+/* Barra de carrito. Sobre papel se pintaba en grafito para no gritar; sobre
+   grafito ese mismo gris desaparece contra el fondo y el pedido en curso deja
+   de verse. Pasa al rojo de acción: es la única barra persistente de la app y
+   lleva a la única conversión que existe. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .floating-cart-cta {
+  background: var(--taba-red);
+  box-shadow: 0 10px 26px rgb(208 0 13 / 34%);
+  color: var(--taba-white);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .floating-cart-cta:hover {
+  background: var(--taba-red-hover);
+}
+
+/* Botones compartidos ------------------------------------------------------ */
+
+/* Secundario: en papel era blanco con borde gris. Sobre grafito el blanco lo
+   convertía en el elemento más brillante de la pantalla —más que el producto—,
+   así que pasa a superficie elevada con borde que porta información. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(.app-view, .modal-card) .secondary-button {
+  border-color: var(--shelf-line-strong);
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(.app-view, .modal-card) .secondary-button:hover {
+  border-color: var(--taba-white);
+  background: var(--shelf-sunken);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(.app-view, .modal-card) :is(.ghost-button, .icon-button):hover {
+  background: var(--shelf-raised);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(.app-view, .modal-card) .danger-button {
+  border-color: rgb(255 77 85 / 42%);
+  background: var(--shelf-red-wash);
+  color: var(--shelf-red-ink);
+}
+
+/* Cierre del modal: estaba en blanco 94% y su aspa heredaba la tinta de la
+   góndola, así que quedaba blanco sobre blanco. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-close {
+  border-color: var(--shelf-line-strong);
+  background: color-mix(in srgb, var(--shelf-raised) 92%, transparent);
+  color: var(--shelf-ink);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-close:hover {
+  background: var(--shelf-raised);
+}
+
+/* Steppers de cantidad (tarjeta, ficha y carrito): la caja blanca con la cifra
+   dentro era el otro parche brillante de la pantalla. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(.app-view, .modal-card) :is(
+  .quantity-control,
+  .qty-stepper
+) {
+  border-color: var(--shelf-line-strong);
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+}
+
+/* Acción de un producto sin precio publicado. No puede parecer un "Agregar"
+   apagado —es otra acción— pero tampoco puede ser lo más brillante de la
+   grilla. Hairline dorado: dice "pendiente", no "comprá". */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .add-button.is-price-pending {
+  border-color: rgb(201 149 62 / 52%);
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .add-button.is-price-pending:hover {
+  border-color: var(--shelf-gold-soft);
+  background: rgb(201 149 62 / 22%);
 }
 
 /* ============================================================================
@@ -1162,7 +1389,7 @@ body[data-active-view="home"] .home-sections {
   border-radius: 20px;
   /* Superficie sobria: el degradado dorado exagerado se fue. */
   background: linear-gradient(160deg, #171a20 0%, #101318 100%);
-  box-shadow: var(--shadow-cream-flat);
+  box-shadow: var(--shadow-shelf-flat);
   color: var(--brand-ink);
   text-align: left;
 }
@@ -1276,7 +1503,7 @@ body[data-active-view="home"] .home-sections {
   border: 1px solid var(--brand-border);
   border-radius: 24px;
   background: linear-gradient(160deg, #171a20 0%, #101318 100%);
-  box-shadow: var(--shadow-cream);
+  box-shadow: var(--shadow-shelf);
   color: var(--brand-ink);
   text-align: left;
 }
@@ -1376,7 +1603,7 @@ body[data-active-view="home"] .home-sections {
    entera —el producto existe y se puede mirar—, sólo cambia lo que se afirma. */
 body[data-active-view="home"] .home-price-pending {
   margin-top: 3px;
-  color: var(--cream-muted);
+  color: var(--shelf-muted);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -1387,13 +1614,13 @@ body[data-active-view="home"] .home-price-pending {
    es otra acción, y la única que hoy funciona con ese producto. Superficie
    clara con hairline en vez del rojo de compra. */
 body[data-active-view="home"] .home-best-card .home-add-button.is-price-pending {
-  border: 1px solid var(--cream-line-strong);
-  background: var(--cream-raised);
-  color: var(--cream-ink);
+  border: 1px solid var(--shelf-line-strong);
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
 }
 
 body[data-active-view="home"] .home-best-card .home-add-button.is-price-pending:hover {
-  background: var(--cream-sunken);
+  background: var(--shelf-sunken);
 }
 
 /* ============================================================================
@@ -1540,20 +1767,20 @@ body[data-active-view="catalog"] .sort-field .sort-field-label {
    etiquetas "Marca", "Capacidad", "Precio" se leían lavadas. */
 body[data-active-view="catalog"] .catalog-filters-sheet {
   border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-  background: var(--cream);
+  background: var(--shelf);
 }
 
 body[data-active-view="catalog"] .catalog-filter-grid label,
 body[data-active-view="catalog"] .catalog-filter-grid label > span {
-  color: var(--cream-muted);
+  color: var(--shelf-muted);
 }
 
 body[data-active-view="catalog"] .catalog-filters-actions .ghost-button {
-  color: var(--cream-ink);
+  color: var(--shelf-ink);
 }
 
 body[data-active-view="catalog"] .catalog-filters-actions .ghost-button:hover:not(:disabled) {
-  background: var(--cream-sunken);
+  background: var(--shelf-sunken);
 }
 
 /* ============================================================================
@@ -1888,5 +2115,423 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
 
   body:not([data-active-view="business"]):not([data-active-view="rider"]) .mobile-nav .mn-brand .mn-label {
     font-size: 9.5px;
+  }
+}
+
+/* ============================================================================
+   COMBOS
+   ----------------------------------------------------------------------------
+   La pieza comercial más cara de la home: es lo único que puede mostrar un
+   precio tachado sin mentir, porque el precio de arriba es la suma real de los
+   componentes con precio confirmado.
+
+   El ahorro es el dato, no la decoración: va en dorado —el acento que la
+   identidad reserva para lo premium— y aparece dos veces, sobre la foto y en la
+   fila de precio, porque es la única razón por la que alguien mira un combo.
+   ========================================================================== */
+.home-combos-section .home-combos-rail {
+  display: grid;
+  grid-auto-columns: minmax(268px, 78%);
+  grid-auto-flow: column;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 2px 1px 8px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.combo-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: 132px minmax(0, 1fr);
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf-flat), inset 0 0 0 1px var(--shelf-line);
+  scroll-snap-align: start;
+}
+
+.combo-card-media {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 132px;
+  padding: 9px 9px 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+}
+
+/* Los componentes se apoyan sobre el MISMO plato blanco que el packshot del
+   catálogo: es el material que la identidad reserva para el producto, y hace
+   que un combo se lea como una bandeja armada y no como un banner. */
+.combo-media-plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  padding: 6px 10px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--taba-white);
+}
+
+.combo-media-item {
+  position: relative;
+  display: block;
+  min-width: 0;
+  flex: 0 1 auto;
+  height: 100%;
+}
+
+.combo-media-item img {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/* La cantidad va SOBRE el packshot: seis latas iguales no se pintan seis veces
+   —no entran y además la fila deja de leerse—, se pinta una y se dice cuántas. */
+.combo-media-item em {
+  position: absolute;
+  right: -2px;
+  bottom: 2px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: #14161a;
+  color: var(--taba-white);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.combo-media-more {
+  align-self: flex-end;
+  margin-bottom: 6px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: rgb(20 22 26 / 10%);
+  color: #14161a;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+/* El sello de ahorro se apoya sobre la foto y NO sobre un degradado: una banda
+   oscura al pie de cada foto convertía el rail en cinco rectángulos iguales. */
+.combo-save-badge {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-gold);
+  color: #17120a;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.combo-card-body {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  padding: 13px 14px 15px;
+}
+
+.combo-card-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.combo-card-copy strong {
+  color: var(--shelf-ink);
+  font-size: 16px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.combo-card-copy small,
+.combo-card-contents {
+  color: var(--shelf-muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.combo-card-contents {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.combo-card-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+}
+
+.combo-card-price s {
+  color: var(--shelf-muted);
+  font-size: 13px;
+}
+
+.combo-card-price strong {
+  color: var(--shelf-ink);
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.combo-card-price em {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--shelf-gold-wash);
+  color: var(--brand-gold-soft);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.combo-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.combo-chip {
+  padding: 3px 9px;
+  border: 1px solid var(--shelf-line);
+  border-radius: var(--radius-pill);
+  background: var(--shelf-raised);
+  color: var(--shelf-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+/* +18 no es un chip más: es la única condición legal de la tarjeta. */
+.combo-chip.is-age {
+  border-color: rgb(201 149 62 / 55%);
+  background: var(--shelf-gold-wash);
+  color: var(--brand-gold-soft);
+  font-weight: 900;
+}
+
+.combo-card-cta {
+  width: 100%;
+  margin-top: 2px;
+}
+
+/* --- Detalle ------------------------------------------------------------- */
+
+.combo-modal-card {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 24px);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.combo-modal-media {
+  flex: 0 0 auto;
+  height: min(28vh, 210px);
+  padding: 12px 12px 0;
+  overflow: hidden;
+}
+
+.combo-modal-media .combo-media-plate {
+  border-radius: 16px;
+  gap: 4px;
+  padding: 10px 14px;
+}
+
+.combo-modal-copy {
+  flex: 1 1 auto;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 18px 14px;
+  overscroll-behavior: contain;
+}
+
+.combo-modal-copy h2 {
+  margin: 0;
+  color: var(--shelf-ink);
+  font-size: clamp(23px, 6vw, 30px);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.combo-modal-tagline {
+  margin: -4px 0 0;
+  color: var(--shelf-muted);
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+/* La comparación es el corazón de la ficha: precio de lista arriba, precio del
+   combo abajo y el ahorro cerrando el bloque. Los tres juntos, para que no haya
+   que scrollear entre el número tachado y el que se paga. */
+.combo-modal-price {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 14px;
+  padding: 13px 15px;
+  border: 1px solid rgb(201 149 62 / 34%);
+  border-radius: 16px;
+  background: var(--shelf-gold-wash);
+}
+
+.combo-modal-price > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.combo-modal-price small {
+  color: var(--shelf-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.combo-modal-price s {
+  color: var(--shelf-muted);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.combo-modal-price strong {
+  color: var(--shelf-ink);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.combo-modal-save {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  color: var(--brand-gold-soft);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.combo-modal-subtitle {
+  margin: 2px 0 -4px;
+  color: var(--shelf-ink);
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.combo-component-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.combo-component-list li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 11px 0;
+  border-top: 1px solid var(--shelf-line);
+}
+
+.combo-component-list li:first-child {
+  border-top: 0;
+}
+
+.combo-component-qty {
+  color: var(--brand-gold-soft);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.combo-component-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.combo-component-copy strong {
+  color: var(--shelf-ink);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.combo-component-copy small {
+  color: var(--shelf-muted);
+  font-size: 12px;
+}
+
+/* Las sustituciones se declaran acá y no en un chip: son una frase, no una
+   etiqueta, y el cliente necesita leer POR QUÉ puede cambiarlo sin costo. */
+.combo-component-subs {
+  margin-top: 2px;
+  color: var(--brand-gold-soft);
+  font-size: 11.5px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.combo-component-line {
+  color: var(--shelf-ink);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.combo-modal-stock {
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.combo-modal-stock strong {
+  color: var(--shelf-ink);
+}
+
+.combo-modal-actions {
+  gap: 10px;
+}
+
+.combo-modal-pending {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid rgb(201 149 62 / 45%);
+  border-radius: var(--radius-sm);
+  background: var(--shelf-gold-wash);
+  color: var(--brand-gold-soft);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+@media (min-width: 821px) {
+  .home-combos-section .home-combos-rail {
+    grid-auto-columns: minmax(290px, 1fr);
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    overflow: visible;
+  }
+
+  .combo-modal {
+    width: min(calc(100vw - 24px), 620px);
+  }
+
+  .combo-modal-media {
+    height: 240px;
   }
 }

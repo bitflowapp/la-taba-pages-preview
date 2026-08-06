@@ -3457,7 +3457,7 @@
     "capacity_value": 700,
     "capacity_unit": "ml",
     "pack_count": 1,
-    "category_id": "gin",
+    "category_id": "destilados",
     "subcategory_id": "london-dry",
     "description": "Gin en botella de 700 ml.",
     "tags": [
@@ -3511,7 +3511,7 @@
     "capacity_value": 750,
     "capacity_unit": "ml",
     "pack_count": 1,
-    "category_id": "gin",
+    "category_id": "destilados",
     "subcategory_id": "london-dry",
     "description": "Gin en botella de 750 ml.",
     "tags": [
@@ -3565,7 +3565,7 @@
     "capacity_value": 500,
     "capacity_unit": "ml",
     "pack_count": 1,
-    "category_id": "gin",
+    "category_id": "destilados",
     "subcategory_id": "nativo",
     "description": "Gin en botella de 500 ml.",
     "tags": [
@@ -3619,7 +3619,7 @@
     "capacity_value": 700,
     "capacity_unit": "ml",
     "pack_count": 1,
-    "category_id": "vodka",
+    "category_id": "destilados",
     "subcategory_id": "original",
     "description": "Vodka en botella de 700 ml.",
     "tags": [
@@ -3674,7 +3674,7 @@
     "capacity_value": 750,
     "capacity_unit": "ml",
     "pack_count": 1,
-    "category_id": "whisky",
+    "category_id": "destilados",
     "subcategory_id": "red-label",
     "description": "Whisky en botella de 750 ml.",
     "tags": [
@@ -3728,7 +3728,7 @@
     "capacity_value": 4000,
     "capacity_unit": "g",
     "pack_count": 1,
-    "category_id": "complementos",
+    "category_id": "hielo",
     "subcategory_id": "bolsa-de-hielo",
     "description": "Hielo Cristal en bolsa de 4 kg.",
     "tags": [

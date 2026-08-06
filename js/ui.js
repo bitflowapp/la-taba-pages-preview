@@ -2,6 +2,8 @@ import { getBusinessConfig } from './core/business-config-store.js';
 import { BRAND } from './config.js';
 import { categories } from './data.js';
 import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
+import { COMBO_MANIFEST } from './combos-data.js';
+import { purchasableCombos } from './core/combos.js';
 import { getCustomerOrderHistory, getLatestCustomerOrder } from './core/customer-history.js';
 import {
   getCustomerProfile,
@@ -1251,27 +1253,175 @@ function homeSectionCard(product, cartQuantities) {
     </article>`;
 }
 
+/*
+ * COMBOS
+ *
+ * La versión anterior de este bloque buscaba productos con `combo: true` en el
+ * catálogo y, como ningún producto lo trae, no renderizaba nada; su contenedor
+ * tampoco existía en el shell. Un combo, además, no es un producto con una
+ * bandera: es una composición con cantidades, sustituciones y un ahorro que
+ * sólo tiene sentido contra la suma de los precios de sus partes.
+ *
+ * Acá los combos salen del manifiesto (`combos-data.js`) y se resuelven contra
+ * el catálogo vivo. Uno que no se puede armar entero —falta un componente, no
+ * tiene precio confirmado o se quedó sin stock— NO se muestra: la góndola no
+ * ofrece un combo que el mostrador no puede armar.
+ */
+export function customerCombos() {
+  return purchasableCombos(COMBO_MANIFEST, getCustomerCatalogProducts(getState().products));
+}
+
 function renderCombos() {
   const container = $('[data-combos-rail]');
   if (!container) return;
-  const offerIds = new Set(homeOfferProducts().map((product) => product.id));
-  const secondaryPromotionSkus = new Set(getActivePromotions(getState().promotions)
-    .slice(1, 3)
-    .flatMap((promotion) => promotion.includedSkus));
-  const combos = getCustomerCatalogProducts(getState().products)
-    .filter((product) => (
-      product.available
-      && product.stock > 0
-      && (product.combo || secondaryPromotionSkus.has(product.id))
-    ))
-    .filter((product) => !offerIds.has(product.id))
-    .slice(0, 2);
+  const combos = customerCombos();
+  const section = container.closest('.home-combos-section') || container.closest('.rail-block');
+  if (section) section.hidden = !combos.length;
 
-  const block = container.closest('.rail-block');
-  if (block) block.hidden = !combos.length;
-  container.innerHTML = combos.length
-    ? combos.map(railCard).join('')
-    : '';
+  const subtitle = $('[data-home-combos-subtitle]');
+  if (subtitle) {
+    const mayor = combos.reduce((best, combo) => (combo.savings > (best?.savings || 0) ? combo : best), null);
+    subtitle.textContent = mayor
+      ? `Armados por el local · hasta ${money(mayor.savings)} de ahorro`
+      : 'Armados por el local';
+  }
+
+  container.innerHTML = combos.map(comboCard).join('');
+}
+
+/*
+ * La foto del combo son sus PRODUCTOS, no una imagen de ambiente.
+ *
+ * La primera versión usaba las fotos editoriales de `assets/promos/`, y el
+ * resultado fue una tarjeta de "Previa Imperial" ilustrada con botellas de
+ * Patagonia y una de "Corona Extra x6" con una botella de Heineken. En una
+ * tienda de bebidas eso no es una licencia estética: es mostrar una marca y
+ * entregar otra.
+ *
+ * Los packshots de los componentes ya están verificados uno por uno y vienen
+ * con fondo blanco horneado, así que la fila se apoya sobre el mismo plato
+ * blanco que el resto de la góndola y el combo se lee por lo que trae.
+ */
+function comboMedia(combo) {
+  const shown = combo.components.slice(0, 4);
+  const extra = combo.components.length - shown.length;
+  return `
+    <span class="combo-media-plate">
+      ${shown.map((component) => `
+        <span class="combo-media-item">
+          <img src="${escapeHtml(component.product.imageThumbnail || component.product.image)}" alt="" width="120" height="120" loading="lazy" decoding="async" />
+          ${component.quantity > 1 ? `<em>×${component.quantity}</em>` : ''}
+        </span>`).join('')}
+      ${extra > 0 ? `<span class="combo-media-more">+${extra}</span>` : ''}
+    </span>`;
+}
+
+function comboCard(combo) {
+  const unidades = combo.components.reduce((total, component) => total + component.quantity, 0);
+  return `
+    <article class="combo-card" data-combo-card="${escapeHtml(combo.comboId)}">
+      <button class="combo-card-media" type="button" data-combo-detail="${escapeHtml(combo.comboId)}" aria-label="Ver el combo ${escapeHtml(combo.name)}">
+        ${comboMedia(combo)}
+        <span class="combo-save-badge">Ahorrás ${money(combo.savings)}</span>
+      </button>
+      <div class="combo-card-body">
+        <div class="combo-card-copy">
+          <strong>${escapeHtml(combo.name)}</strong>
+          <small>${escapeHtml(combo.tagline)}</small>
+        </div>
+        <p class="combo-card-contents">${combo.components.map((component) => `${component.quantity}× ${escapeHtml(component.product.name)}`).join(' · ')}</p>
+        <div class="combo-card-price">
+          <s>${money(combo.individualPrice)}</s>
+          <strong>${money(combo.promotionalPrice)}</strong>
+          <em>−${combo.savingsPercentage}%</em>
+        </div>
+        <div class="combo-card-meta">
+          ${combo.ageRestricted ? '<span class="combo-chip is-age">+18</span>' : ''}
+          <span class="combo-chip">${unidades} ${unidades === 1 ? 'unidad' : 'unidades'}</span>
+          <span class="combo-chip">Quedan ${combo.stock}</span>
+        </div>
+        <button class="secondary-button compact combo-card-cta" type="button" data-combo-detail="${escapeHtml(combo.comboId)}">Ver qué trae</button>
+      </div>
+    </article>`;
+}
+
+export function showComboModal(comboId, restoreTrigger = null) {
+  const combo = customerCombos().find((candidate) => candidate.comboId === comboId);
+  const modal = $('[data-combo-modal]');
+  const content = $('[data-combo-modal-content]');
+  if (!combo || !modal || !content) return;
+  if (!modal.open) {
+    const active = restoreTrigger || document.activeElement;
+    comboModalRestoreFocus = active && active !== document.body && typeof active.focus === 'function' ? active : null;
+  }
+
+  content.innerHTML = `
+    <div class="modal-card combo-modal-card" role="document" data-modal-combo-id="${escapeHtml(combo.comboId)}">
+      <button class="modal-close" type="button" data-close-combo-modal aria-label="Cerrar detalle del combo">×</button>
+      <div class="combo-modal-media">${comboMedia(combo)}</div>
+      <div class="combo-modal-copy">
+        <span class="modal-presentation">Combo del local</span>
+        <h2>${escapeHtml(combo.name)}</h2>
+        <p class="combo-modal-tagline">${escapeHtml(combo.description)}</p>
+
+        <div class="combo-modal-price">
+          <div>
+            <small>Comprado por separado</small>
+            <s>${money(combo.individualPrice)}</s>
+          </div>
+          <div>
+            <small>Precio del combo</small>
+            <strong>${money(combo.promotionalPrice)}</strong>
+          </div>
+          <p class="combo-modal-save">Ahorrás ${money(combo.savings)} · ${combo.savingsPercentage}%</p>
+        </div>
+
+        <h3 class="combo-modal-subtitle">Qué trae</h3>
+        <ul class="combo-component-list">
+          ${combo.components.map((component) => `
+            <li>
+              <span class="combo-component-qty">${component.quantity}×</span>
+              <span class="combo-component-copy">
+                <strong>${escapeHtml(component.product.name)}</strong>
+                <small>${escapeHtml(unitText(component.product))} · ${money(component.unitPrice)} c/u</small>
+                ${component.substitutions.length
+                  ? `<em class="combo-component-subs">Se puede cambiar por ${component.substitutions.map((sub) => escapeHtml(sub.name)).join(', ')} sin costo.</em>`
+                  : ''}
+              </span>
+              <span class="combo-component-line">${money(component.linePrice)}</span>
+            </li>`).join('')}
+        </ul>
+
+        <!--
+          Stock y +18 no son adorno: el stock sale del componente limitante y la
+          restricción de edad de cualquier componente alcanzado.
+        -->
+        <p class="combo-modal-stock">Alcanza para <strong>${combo.stock}</strong> ${combo.stock === 1 ? 'combo' : 'combos'}: es lo que sostiene ${escapeHtml(combo.components.find((component) => component.sku === combo.limitingSku)?.product?.name || 'el componente más escaso')}.</p>
+        ${combo.ageRestricted ? `<p class="product-alcohol-notice">Contiene alcohol. Venta exclusiva a mayores de ${combo.minimumAge} años; se valida al recibir el pedido.</p>` : ''}
+      </div>
+      <div class="modal-actions combo-modal-actions">
+        <!--
+          El combo todavía NO se cobra a su precio promocional: el descuento es
+          una propuesta armada sobre precios de componente confirmados y quien
+          lo aplica al total es el backend de pedidos. Ofrecer "Agregar combo"
+          acá cobraría la suma de los precios de lista y el ahorro anunciado
+          sería mentira. Hasta que Operaciones lo integre, la ficha muestra la
+          composición y lleva a los componentes.
+        -->
+        <p class="combo-modal-pending">Combo listo para publicar. El local lo aprueba antes de que se pueda pedir como combo; mientras tanto podés agregar los productos por separado.</p>
+        <button class="secondary-button" type="button" data-combo-open-component="${escapeHtml(combo.components[0].sku)}">Ver ${escapeHtml(combo.components[0].product.name)}</button>
+      </div>
+    </div>`;
+  if (!modal.open) modal.showModal();
+}
+
+export function closeComboModal() {
+  const modal = $('[data-combo-modal]');
+  if (modal?.open) modal.close();
+  if (comboModalRestoreFocus) {
+    try { comboModalRestoreFocus.focus(); } catch { /* el disparador dejó el DOM */ }
+    comboModalRestoreFocus = null;
+  }
 }
 
 function railCard(product) {
@@ -1383,8 +1533,15 @@ const CATEGORY_GLYPH_ALIASES = Object.freeze({
   energizantes: 'energeticas',
   vinos: 'vinos-y-espumantes',
   espumantes: 'vinos-y-espumantes',
+  destilados: 'whisky-y-destilados',
+  hielo: 'hielo-y-extras',
+  snacks: 'picadas-y-deli',
+  golosinas: 'picadas-y-deli',
+  // Ids heredados: un favorito o un enlace guardado antes de agrupar la
+  // góndola sigue encontrando su glifo en vez de caer al genérico.
   whisky: 'whisky-y-destilados',
   gin: 'gins-y-vodkas',
+  vodka: 'gins-y-vodkas',
   complementos: 'hielo-y-extras',
   'aguas-saborizadas': 'aguas',
   'jugos-y-saborizadas': 'jugos',
@@ -3100,6 +3257,10 @@ function actualProductVariants(product) {
 }
 
 let productModalRestoreFocus = null;
+// El detalle del combo devuelve el foco al control que lo abrió, igual que la
+// ficha de producto: sin esto el lector de pantalla vuelve al principio del
+// documento al cerrar y hay que recorrer la home entera otra vez.
+let comboModalRestoreFocus = null;
 let productModalRestoreProductId = '';
 let productModalCloseBound = false;
 let productModalDocumentBound = false;
@@ -3192,20 +3353,31 @@ export function showProductModal(productId, restoreTrigger = null) {
               }).join('')}
             </div>
           </fieldset>` : ''}
-        <div class="modal-order-fields">
-          <div class="modal-quantity-field">
-            <span>${product.pricePending ? 'Disponibilidad' : 'Cantidad'}</span>
-            ${modalQuantityControl}
-          </div>
-          ${product.pricePending ? '' : `<label class="modal-note-field">
+        ${product.pricePending ? '' : `<div class="modal-order-fields">
+          <label class="modal-note-field">
             Observación <span>(opcional)</span>
             <input data-product-note type="text" maxlength="120" placeholder="Ej.: bien fría" />
-          </label>`}
-        </div>
+          </label>
+        </div>`}
         ${product.alcoholic ? `<p class="product-alcohol-notice">Venta exclusiva a mayores de ${minimumAge} años.</p>` : ''}
       </div>
-      <div class="modal-actions">
-        <button class="secondary-button" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}">${favorite ? 'Guardado' : 'Guardar para después'}</button>
+      <!--
+        Pie de la ficha. Antes la única acción de la ficha era "Guardar para
+        después" y el control de compra vivía arriba, entre los campos, como un
+        "+" suelto de 44px al lado del rótulo "Cantidad": la ficha de producto
+        de una tienda no ofrecía comprar. Acá el pie es la barra de acción —se
+        queda pegada al borde inferior mientras la ficha scrollea— y la compra
+        es lo que ocupa el ancho.
+
+        Sin precio publicado no hay acción de compra que ofrecer, así que el
+        pie dice exactamente eso y el favorito pasa a ser la acción principal:
+        es la única que hoy hace algo con ese producto.
+      -->
+      <div class="modal-actions${product.pricePending ? ' is-price-pending' : ''}">
+        <button class="secondary-button modal-favorite" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}">${favorite ? 'Guardado' : 'Guardar para después'}</button>
+        ${product.pricePending
+          ? '<p class="modal-pending-note">Todavía no se puede comprar. Guardalo y te va a estar esperando cuando el local publique el precio.</p>'
+          : `<div class="modal-quantity-field"><span>Cantidad</span>${modalQuantityControl}</div>`}
       </div>
     </div>
   `;

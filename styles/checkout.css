@@ -78,7 +78,7 @@
   padding: 14px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-sm);
-  background: white;
+  background: var(--shelf-raised);
 }
 
 .minimum-order-progress {
@@ -88,7 +88,7 @@
   padding: 14px;
   border: 1px solid #f0d5d8;
   border-radius: var(--radius-sm);
-  background: #fff9f9;
+  background: var(--shelf-red-wash);
 }
 
 .minimum-order-progress > div {
@@ -112,7 +112,7 @@
   height: 7px;
   overflow: hidden;
   border-radius: var(--radius-pill);
-  background: #f2e6e7;
+  background: var(--shelf-sunken);
 }
 
 .minimum-order-track > span {
@@ -123,9 +123,12 @@
   transition: width 180ms ease;
 }
 
+/* Mínimo alcanzado. En papel era un verde pálido; sobre la góndola el estado
+   positivo es dorado, que es el acento que la identidad ya reserva para lo
+   confirmado y no compite con el rojo de la acción. */
 .minimum-order-progress.is-complete {
-  border-color: #cfe8db;
-  background: #f5fcf8;
+  border-color: rgb(201 149 62 / 46%);
+  background: var(--shelf-gold-wash);
 }
 
 .minimum-order-progress.is-complete .minimum-order-track > span {
@@ -153,7 +156,7 @@
 .cart-recommendations-heading p,
 .checkout-suggestions-card .eyebrow {
   margin: 0;
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: .08em;
@@ -192,7 +195,7 @@
   overflow: hidden;
   border: 1px solid var(--taba-border);
   border-radius: 16px;
-  background: #fff;
+  background: var(--shelf-raised);
   scroll-snap-align: start;
 }
 
@@ -251,9 +254,9 @@
   padding: 0;
   border: 1px solid #e4e4e8;
   border-radius: 50%;
-  background: white;
+  background: var(--shelf-raised);
   box-shadow: 0 5px 12px rgb(24 28 35 / 14%);
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
 }
 
 .checkout-suggestions-modal {
@@ -276,7 +279,7 @@
   display: grid;
   gap: 13px;
   padding: 28px 18px calc(18px + env(safe-area-inset-bottom));
-  background: white;
+  background: var(--shelf-raised);
 }
 
 .checkout-suggestions-card h2 {
@@ -330,7 +333,7 @@
   padding: 11px;
   border: 1px solid var(--taba-border);
   border-radius: 13px;
-  background: white;
+  background: var(--shelf-raised);
   cursor: pointer;
 }
 
@@ -387,7 +390,7 @@
 }
 
 .checkout-heading span {
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
   font-size: 12px;
   font-weight: 850;
   text-transform: uppercase;
@@ -430,9 +433,9 @@
 }
 
 .delivery-mode input:checked + span {
-  background: white;
+  background: var(--shelf-raised);
   box-shadow: var(--shadow-xs);
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
 }
 
 .remember-customer-row,
@@ -444,12 +447,15 @@
   padding: 13px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-sm);
-  background: white;
+  background: var(--shelf-raised);
 }
 
+/* 24px y no 20: por debajo de 24 el cuadrado nativo queda más chico que
+   cualquier otro objetivo táctil de la pantalla y en el teléfono hay que
+   apuntar. La fila entera sigue siendo clickeable a través del <label>. */
 .remember-customer-row input {
-  width: 20px;
-  min-height: 20px;
+  width: 24px;
+  min-height: 24px;
   margin-top: 2px;
   accent-color: var(--taba-red);
 }
@@ -459,9 +465,11 @@
   gap: 2px;
 }
 
+/* +18: el único bloque legal del checkout. Dorado, no ámbar de sistema: es el
+   sello premium de la identidad y se distingue del rojo de la acción. */
 .age-confirmation {
-  border-color: #f3c77a;
-  background: #fffaf0;
+  border-color: rgb(201 149 62 / 55%);
+  background: var(--shelf-gold-wash);
 }
 
 .checkout-payment-field small {
@@ -577,7 +585,7 @@
   margin: 0;
   padding: 9px 10px;
   border-radius: 10px;
-  background: #fff;
+  background: var(--shelf-raised);
   color: var(--taba-muted);
   font-size: 12px;
   line-height: 1.4;
@@ -594,7 +602,7 @@
   padding: 11px;
   border: 1px solid var(--taba-border);
   border-radius: 12px;
-  background: #fff;
+  background: var(--shelf-raised);
 }
 
 .saved-address-card.is-selected {
@@ -646,7 +654,10 @@
   padding: 8px 9px;
   border: 0;
   background: transparent;
-  color: var(--taba-red);
+  /* Tinta, no superficie: `--taba-red` está calibrado para PINTAR un botón
+     lleno; como texto da 2,97:1 sobre la góndola. `--taba-red-quiet` es la
+     variante de texto y se remapea junto con la superficie. */
+  color: var(--taba-red-quiet);
   font: inherit;
   font-weight: 750;
   text-decoration: underline;
@@ -655,7 +666,7 @@
 }
 
 .text-button.danger {
-  color: #a42c2c;
+  color: var(--taba-danger);
 }
 
 .location-helper {
@@ -668,14 +679,14 @@
   display: grid;
   gap: 7px;
   padding: 11px;
-  border: 1px solid #e8c279;
+  border: 1px solid rgb(201 149 62 / 55%);
   border-radius: 12px;
-  background: #fffaf0;
+  background: var(--shelf-gold-wash);
 }
 
 .location-review.is-confirmed {
-  border-color: #9dcbb2;
-  background: #f3fbf6;
+  border-color: rgb(201 149 62 / 40%);
+  background: rgb(201 149 62 / 9%);
 }
 
 .address-suggestion {
@@ -685,7 +696,7 @@
 
 .address-duplicate {
   border-color: #d9b3b3;
-  background: #fff7f7;
+  background: var(--shelf-red-wash);
 }
 
 .address-editor {
@@ -752,7 +763,7 @@
   padding: 12px 14px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-md);
-  background: var(--taba-white);
+  background: var(--shelf-raised);
 }
 
 .profile-checkout-identity {
@@ -850,7 +861,10 @@
   padding: 12px 14px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-md);
-  background: var(--taba-white);
+  /* Sub-superficie de la góndola, no blanco: la tarjeta de dirección vive
+     DENTRO del formulario de checkout, así que se eleva sobre él en vez de
+     abrir un tercer material. */
+  background: var(--shelf-raised);
   cursor: pointer;
 }
 
@@ -913,50 +927,188 @@
   outline-offset: 2px;
 }
 
+/* ============================================================================
+   RETORNO DE MERCADO PAGO
+   ----------------------------------------------------------------------------
+   Es la última pantalla del pedido y hasta acá era la única del cliente sin
+   marca, sin superficie y sin jerarquía: cuatro párrafos sueltos centrados
+   sobre el shell. Además su tinta era la de papel sobre el shell oscuro, así
+   que el título daba 1,3:1 —el estado del pago era literalmente ilegible—.
+
+   Ahora es una tarjeta de góndola con el emblema, el estado y una sola acción.
+   El SELLO no lo pinta el marcado: se deriva del `data-state` que el script ya
+   publica en `.payment-return-status`, de modo que la página no puede afirmar
+   un estado distinto del que se verificó contra el repositorio.
+   ========================================================================== */
 .payment-return-page {
   width: min(100% - 32px, 540px);
   min-height: 100dvh;
   display: grid;
   align-content: center;
+  margin: 0 auto;
+  padding: max(28px, env(safe-area-inset-top)) 0 max(28px, env(safe-area-inset-bottom));
+}
+
+.payment-return-card {
+  display: grid;
   justify-items: start;
   gap: 14px;
-  margin: 0 auto;
-  padding: max(36px, env(safe-area-inset-top)) 0 max(36px, env(safe-area-inset-bottom));
+  padding: 26px 22px 22px;
+  border-radius: 22px;
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf), inset 0 0 0 1px var(--shelf-line);
+  color: var(--shelf-ink);
+}
+
+.payment-return-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0;
+}
+
+.payment-return-brand img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.payment-return-brand span {
+  display: grid;
+}
+
+.payment-return-brand strong {
+  color: var(--shelf-ink);
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+}
+
+.payment-return-brand small {
+  color: var(--shelf-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* Sello de estado. Neutro mientras se verifica; el `:has()` lo resuelve cuando
+   el script publica un estado terminal. Sin soporte de `:has()` queda el sello
+   neutro, que es el estado honesto de "todavía verificando". */
+.payment-return-seal {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  margin-top: 4px;
+  border: 1px solid var(--shelf-line-strong);
+  border-radius: 50%;
+  background: var(--shelf-raised);
+  color: var(--shelf-muted);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.payment-return-seal::before {
+  content: "•••";
+  font-size: 15px;
+  letter-spacing: 0.06em;
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="completed"]) .payment-return-seal {
+  border-color: rgb(201 149 62 / 60%);
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="completed"]) .payment-return-seal::before {
+  content: "✓";
+  font-size: 26px;
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="pending"]) .payment-return-seal::before,
+.payment-return-card:has([data-payment-return-status][data-state="verifying"]) .payment-return-seal::before,
+.payment-return-card:has([data-payment-return-status][data-state="finalizing"]) .payment-return-seal::before {
+  content: "⏱";
+  font-size: 22px;
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="manual_review"]) .payment-return-seal,
+.payment-return-card:has([data-payment-return-status][data-state="rejected"]) .payment-return-seal {
+  border-color: rgb(255 77 85 / 48%);
+  background: var(--shelf-red-wash);
+  color: var(--shelf-red-ink);
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="manual_review"]) .payment-return-seal::before {
+  content: "!";
+  font-size: 26px;
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="rejected"]) .payment-return-seal::before {
+  content: "×";
+  font-size: 30px;
+}
+
+.payment-return-page .eyebrow {
+  margin: 0;
+  color: var(--taba-red-quiet);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
 .payment-return-page h1 {
   margin: 0;
-  color: var(--taba-ink);
-  font-size: clamp(30px, 8vw, 44px);
-  line-height: 1.04;
+  color: var(--shelf-ink);
+  /* 34px de techo y no 44: a 320px un título de 44 partía "Necesitamos" en dos
+     y la tarjeta arrancaba con una palabra cortada. */
+  font-size: clamp(26px, 6.6vw, 34px);
+  letter-spacing: -0.03em;
+  line-height: 1.08;
 }
 
 .payment-return-detail {
-  max-width: 48ch;
+  max-width: 46ch;
   margin: 0;
-  color: var(--taba-graphite-soft);
-  font-size: 16px;
-  line-height: 1.55;
+  color: var(--shelf-muted);
+  font-size: 15.5px;
+  line-height: 1.5;
 }
 
-.payment-return-status {
-  min-height: 24px;
+.payment-return-status:not(:empty) {
   margin: 0;
-  color: var(--taba-muted);
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
   font-size: 13px;
+  font-weight: 700;
   line-height: 1.4;
 }
 
 .payment-return-status[data-state="completed"] {
-  color: var(--taba-success, #147a4d);
-  font-weight: 700;
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
 }
 
-.payment-return-status[data-state="manual_review"] {
-  color: var(--taba-red-quiet);
+.payment-return-status[data-state="manual_review"],
+.payment-return-status[data-state="rejected"] {
+  background: var(--shelf-red-wash);
+  color: var(--shelf-red-ink);
 }
 
 .payment-return-action {
-  margin-top: 10px;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 4px;
+  border-radius: var(--radius-pill);
   text-decoration: none;
+}
+
+.payment-return-foot {
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
 }

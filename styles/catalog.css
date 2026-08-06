@@ -985,14 +985,31 @@
   background: var(--shelf-raised);
 }
 
+/* En escritorio el packshot es una columna ENTERA, no la primera celda de la
+   primera fila. La ficha es una grilla de dos columnas y dos filas (copy
+   arriba, barra de acción abajo); sin `grid-row: 1 / -1` el packshot ocupaba
+   sólo la fila del copy y quedaban dos bandas grises —arriba y abajo del
+   plato— con el producto flotando en el medio de una caja vacía. */
 .modal-media {
   position: relative;
+  display: grid;
+  /* `span 2` y no `1 / -1`: la grilla no declara filas explícitas, así que
+     `-1` resuelve a la última línea EXPLÍCITA —la 2— y el tramo terminaba
+     ocupando sólo la primera fila, que es justo el defecto que se quería
+     corregir. */
+  grid-row: 1 / span 2;
   min-height: 480px;
   background: var(--taba-subtle);
 }
 
+/* El plato blanco del packshot. `--taba-white` exacto porque los bitmaps traen
+   el fondo blanco horneado: cualquier otro valor dibuja el borde del archivo
+   dentro del plato. La regla general de §6b sólo alcanza a `.app-view`, y la
+   ficha vive en un <dialog> fuera del shell. */
 .modal-media .thumb {
   min-height: 480px;
+  height: 100%;
+  background: var(--taba-white);
 }
 
 .offer-badge-wrap {
@@ -1082,29 +1099,63 @@
 
 .modal-order-fields {
   display: grid;
-  grid-template-columns: 100px minmax(0, 1fr);
   gap: 12px;
 }
 
 .modal-quantity-field {
   display: grid;
-  align-content: start;
-  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
   color: var(--taba-ink);
   font-size: 13px;
   font-weight: 800;
 }
 
+/* La compra de la ficha. Era un disco de 46px con un "+" adentro —el mismo
+   control que la tarjeta de la grilla, donde el espacio manda— y en la ficha
+   quedaba como un detalle al lado del rótulo "Cantidad". Acá es lo que ocupa
+   el ancho del pie: en una ficha de producto la acción de comprar no compite
+   con nada. */
 .modal-cart-control.add-button {
-  width: 46px;
-  min-width: 46px;
-  background: var(--shelf-raised);
-  color: var(--taba-ink);
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  border-color: var(--taba-red);
+  border-radius: var(--radius-pill);
+  background: var(--taba-red);
+  color: var(--taba-white);
+  font-size: 15px;
 }
 
-.modal-cart-control.add-button:hover {
-  background: var(--shelf-raised);
-  color: var(--taba-red-quiet);
+.modal-cart-control.add-button:hover:not(:disabled) {
+  border-color: var(--taba-red-hover);
+  background: var(--taba-red-hover);
+  color: var(--taba-white);
+}
+
+/* `.add-text` está oculto globalmente porque en la grilla la acción es un disco
+   con un "+": ahí el nombre no entra. En la ficha entra y hace falta, así que
+   acá se invierte la regla y el "+" es el que sobra. */
+.modal-cart-control.add-button .add-plus {
+  display: none;
+}
+
+.modal-cart-control.add-button .add-text {
+  display: inline;
+  font-size: 15px;
+}
+
+.modal-cart-control.add-button .add-text::after {
+  content: " al pedido";
+}
+
+/* Ya en el carrito: el stepper reemplaza al botón y ocupa el mismo lugar, así
+   que la barra no cambia de altura al agregar el primero. */
+.qty-stepper.modal-cart-control {
+  width: 100%;
+  min-height: 52px;
+  border-radius: var(--radius-pill);
 }
 
 .modal-note-field span {
@@ -1114,16 +1165,73 @@
 
 .product-alcohol-notice {
   padding: 10px 12px;
+  border: 1px solid rgb(201 149 62 / 45%);
   border-radius: var(--radius-xs);
   background: var(--shelf-gold-wash);
-  color: #6f4500 !important;
+  color: var(--shelf-gold-soft);
   font-size: 13px;
 }
 
+/* Pie de la ficha: barra de acción pegada al borde inferior. `sticky` y no
+   `fixed` porque el pie pertenece a la columna de la ficha, no a la ventana:
+   en escritorio la ficha es de dos columnas y una barra fija se saldría de la
+   tarjeta. El fondo es opaco para que el contenido pase POR DEBAJO y no se lea
+   a través de la barra. */
 .modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   grid-column: 2;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  padding: 0 28px 28px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin-top: auto;
+  padding: 14px 28px calc(18px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--shelf-line);
+  background: var(--shelf-raised);
+}
+
+/* Orden visual: comprar arriba, guardar abajo. En el marcado el favorito va
+   primero porque sin precio publicado ES la acción principal y tiene que
+   recibir el foco antes que el aviso. */
+.modal-actions .modal-quantity-field {
+  order: -1;
+}
+
+.modal-actions .modal-quantity-field > span {
+  color: var(--taba-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* El rótulo "Cantidad" sólo tiene sentido al lado del stepper. Antes del primer
+   agregado el control es el botón de compra, y ahí el rótulo lo empuja y no
+   describe nada. */
+.modal-actions .modal-quantity-field:has(.add-button) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.modal-actions .modal-quantity-field:has(.add-button) > span {
+  display: none;
+}
+
+.modal-actions .secondary-button {
+  min-height: 46px;
+}
+
+/* Sin precio publicado el pie no ofrece comprar: lo dice. */
+.modal-pending-note {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid rgb(201 149 62 / 45%);
+  border-radius: var(--radius-sm);
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.modal-actions.is-price-pending .modal-pending-note {
+  order: -1;
 }

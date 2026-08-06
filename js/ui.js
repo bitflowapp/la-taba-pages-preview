@@ -3192,20 +3192,31 @@ export function showProductModal(productId, restoreTrigger = null) {
               }).join('')}
             </div>
           </fieldset>` : ''}
-        <div class="modal-order-fields">
-          <div class="modal-quantity-field">
-            <span>${product.pricePending ? 'Disponibilidad' : 'Cantidad'}</span>
-            ${modalQuantityControl}
-          </div>
-          ${product.pricePending ? '' : `<label class="modal-note-field">
+        ${product.pricePending ? '' : `<div class="modal-order-fields">
+          <label class="modal-note-field">
             Observación <span>(opcional)</span>
             <input data-product-note type="text" maxlength="120" placeholder="Ej.: bien fría" />
-          </label>`}
-        </div>
+          </label>
+        </div>`}
         ${product.alcoholic ? `<p class="product-alcohol-notice">Venta exclusiva a mayores de ${minimumAge} años.</p>` : ''}
       </div>
-      <div class="modal-actions">
-        <button class="secondary-button" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}">${favorite ? 'Guardado' : 'Guardar para después'}</button>
+      <!--
+        Pie de la ficha. Antes la única acción de la ficha era "Guardar para
+        después" y el control de compra vivía arriba, entre los campos, como un
+        "+" suelto de 44px al lado del rótulo "Cantidad": la ficha de producto
+        de una tienda no ofrecía comprar. Acá el pie es la barra de acción —se
+        queda pegada al borde inferior mientras la ficha scrollea— y la compra
+        es lo que ocupa el ancho.
+
+        Sin precio publicado no hay acción de compra que ofrecer, así que el
+        pie dice exactamente eso y el favorito pasa a ser la acción principal:
+        es la única que hoy hace algo con ese producto.
+      -->
+      <div class="modal-actions${product.pricePending ? ' is-price-pending' : ''}">
+        <button class="secondary-button modal-favorite" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}">${favorite ? 'Guardado' : 'Guardar para después'}</button>
+        ${product.pricePending
+          ? '<p class="modal-pending-note">Todavía no se puede comprar. Guardalo y te va a estar esperando cuando el local publique el precio.</p>'
+          : `<div class="modal-quantity-field"><span>Cantidad</span>${modalQuantityControl}</div>`}
       </div>
     </div>
   `;

@@ -1311,8 +1311,7 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-c
    dentro era el otro parche brillante de la pantalla. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(.app-view, .modal-card) :is(
   .quantity-control,
-  .qty-stepper,
-  .modal-cart-control
+  .qty-stepper
 ) {
   border-color: var(--shelf-line-strong);
   background: var(--shelf-raised);

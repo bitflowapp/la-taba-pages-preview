@@ -1,12 +1,5 @@
 import { expect, test } from '@playwright/test';
-import {
-  buildCheckoutAddresses,
-  fillCheckout,
-  selectCheckoutAddress,
-  seedCheckoutProfile,
-  SANDBOX_PROFILE_STORAGE_PREFIX,
-  waitForToast,
-} from './helpers.mjs';
+import { SANDBOX_PROFILE_STORAGE_PREFIX, buildCheckoutAddresses, fillCheckout, seedCartAboveMinimum, seedCheckoutProfile, selectCheckoutAddress, waitForToast } from './helpers.mjs';
 
 const BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
 const CUSTOMER_ID = '10000000-0000-4000-8000-000000000001';
@@ -296,7 +289,7 @@ test('checkout actualiza sólo el default automático y preserva una selección 
 test('checkout permite editar Perfil y volver al pedido conservando selecciÃ³n', async ({ page }) => {
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.evaluate(() => {
     window.location.hash = '#cart';
   });
@@ -347,7 +340,7 @@ test('checkout permite editar Perfil y volver al pedido conservando selecciÃ³n
 test('checkout con 4 direcciones renderiza compactado y permite expandir para seleccionar la cuarta', async ({ page }) => {
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.evaluate(() => {
     window.location.hash = '#cart';
   });
@@ -386,7 +379,7 @@ test('checkout con 4 direcciones renderiza compactado y permite expandir para se
 test('checkout con 1 dirección conserva la selección predeterminada visible', async ({ page }) => {
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.evaluate(() => {
     window.location.hash = '#cart';
   });
@@ -417,7 +410,7 @@ test('checkout con 1 dirección conserva la selección predeterminada visible', 
 test('checkout con 10 direcciones inicia compactado y puede seleccionar una dirección oculta', async ({ page }) => {
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.evaluate(() => {
     window.location.hash = '#cart';
   });
@@ -463,7 +456,7 @@ test('checkout bloquea por Perfil incompleto y permite volver desde completar Pe
   const namespace = 'e2e-profile-incomplete';
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.evaluate(() => {
     window.location.hash = '#cart';
   });
@@ -492,7 +485,7 @@ test('checkout bloquea sin direcciones y permite volver desde agregar dirección
   const namespace = 'e2e-no-address';
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.evaluate(() => {
     window.location.hash = '#cart';
   });
@@ -521,7 +514,7 @@ test('checkout permite retiro en local sin direcciones', async ({ page }) => {
   const namespace = 'e2e-pickup-no-address';
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.evaluate(() => {
     window.location.hash = '#cart';
   });
@@ -553,7 +546,7 @@ test('checkout conserva dirección seleccionada al volver desde retiro a deliver
 
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.evaluate(() => {
     window.location.hash = '#cart';
   });
@@ -594,7 +587,7 @@ test('confirmar en checkout no muta la entidad de Perfil sandbox', async ({ page
   const profileKey = `${SANDBOX_PROFILE_STORAGE_PREFIX}:demo`;
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.evaluate(() => {
     window.location.hash = '#cart';
   });
@@ -634,7 +627,7 @@ test('borrar la dirección seleccionada no rompe el checkout', async ({ page }) 
 
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.evaluate(() => {
     window.location.hash = '#cart';
   });

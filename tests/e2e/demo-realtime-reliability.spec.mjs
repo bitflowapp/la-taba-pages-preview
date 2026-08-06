@@ -45,7 +45,12 @@ test('cliente, negocio y rider convergen por UI con revisión y ACK', async ({ b
     await unlockAdmin(business, 'business');
     await unlockAdmin(rider, 'rider');
 
-    await client.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+    const clientAddButton = client.locator('[data-product-grid] [data-add-product]:not([disabled]) >> visible=true').first();
+    const clientProductId = await clientAddButton.getAttribute('data-add-product');
+    await clientAddButton.click();
+    // Dos unidades: desde que la góndola es de unidades, ninguna sola llega al
+    // mínimo de delivery del comercio.
+    await client.locator(`[data-cart-inc="${clientProductId}"] >> visible=true`).first().click();
     await client.locator('[data-floating-cart]').click();
     await fillCheckout(client, {
       name: 'Cliente Sintetico Realtime',

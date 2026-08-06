@@ -2,13 +2,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 import { expect, test } from '@playwright/test';
-import {
-  fillCheckout,
-  gotoDemoReset,
-  installBrowserStubs,
-  installPageGuards,
-  waitForToast,
-} from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMinimum, waitForToast } from './helpers.mjs';
 
 const ARRIVING_VIEWPORTS = [
   { width: 320, height: 568 },
@@ -31,7 +25,7 @@ test('tracking público arriving reproduce la composición y conserva datos real
 
   await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('[data-floating-cart]').click();
   const increment = page.locator('[data-view="cart"].is-active [data-cart-inc]').first();
   for (let count = 1; count < 5; count += 1) {

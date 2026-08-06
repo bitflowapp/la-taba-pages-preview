@@ -65,6 +65,95 @@ export async function gotoDemoReset(page, target) {
   await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
 }
 
+/**
+ * Mide un conjunto de controles recién cuando el layout dejó de moverse.
+ *
+ * Por qué existe: la home pinta un esqueleto y ~350 ms después reemplaza el
+ * subárbol entero con los carruseles definitivos. Un `locator.count()` seguido
+ * de un `locator.evaluateAll()` son dos viajes distintos al navegador; si el
+ * reemplazo cae entre medio, el segundo mide element handles que ya quedaron
+ * fuera del documento, y `getBoundingClientRect()` de un nodo desconectado
+ * devuelve 0×0. Eso producía "todos los controles miden 0" sin que hubiera
+ * nada roto en la página — en WebKit fallaba 6 de cada 20 corridas.
+ *
+ * Acá la consulta y la medición ocurren en el mismo turno de JS, así que no hay
+ * ventana donde un handle pueda quedar viejo, y antes de medir se espera a que
+ * lo que mueve la geometría haya terminado: fuentes, imágenes visibles y dos
+ * frames; después se sondea hasta repetir la misma medición en tres frames
+ * seguidos. Si no se estabiliza dentro del presupuesto, lanza: una home que no
+ * asienta es un fallo real, no algo para tragarse en silencio.
+ */
+export async function measureStableControls(page, selector, { maxFrames = 180 } = {}) {
+  const measurement = await page.evaluate(async ({ sel, budget }) => {
+    const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+    await document.fonts.ready;
+
+    // Visible es visible en LOS DOS EJES. El filtro sólo miraba el vertical, y
+    // en un carrusel horizontal eso incluye las tarjetas que están a la derecha
+    // del pantallazo: su imagen es `loading="lazy"`, el navegador nunca la pide,
+    // y `decode()` sobre una imagen que jamás se carga no resuelve ni rechaza.
+    // Con el rail de tres tarjetas nunca se notó porque todas entraban a lo
+    // ancho; con ocho, WebKit se quedaba colgado hasta agotar el test.
+    const visibleImages = [...document.images].filter((image) => {
+      const rect = image.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0
+        && rect.bottom > 0 && rect.top < window.innerHeight
+        && rect.right > 0 && rect.left < window.innerWidth;
+    });
+    await Promise.all(visibleImages.map((image) => image.decode().catch(() => undefined)));
+
+    await nextFrame();
+    await nextFrame();
+
+    const sample = () => {
+      const nodes = [...document.querySelectorAll(sel)];
+      return nodes.map((node) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          selector: node.outerHTML.slice(0, 120),
+          width: rect.width,
+          height: rect.height,
+          connected: node.isConnected,
+        };
+      });
+    };
+    const signature = (rows) => JSON.stringify(rows.map((r) => [
+      Math.round(r.width * 100), Math.round(r.height * 100), r.connected,
+    ]));
+
+    let current = sample();
+    let stableFor = 0;
+    for (let frame = 0; frame < budget; frame += 1) {
+      await nextFrame();
+      const next = sample();
+      if (signature(next) === signature(current)) {
+        stableFor += 1;
+        if (stableFor >= 3) {
+          return {
+            controls: next,
+            scrollWidth: document.documentElement.scrollWidth,
+            innerWidth: window.innerWidth,
+            stabilizedAfter: frame + 1,
+          };
+        }
+      } else {
+        stableFor = 0;
+      }
+      current = next;
+    }
+    return { unstable: true, frames: budget, controls: current };
+  }, { sel: selector, budget: maxFrames });
+
+  if (measurement.unstable) {
+    throw new Error(
+      `El layout no se estabilizó en ${measurement.frames} frames: `
+      + `${measurement.controls.length} controles seguían cambiando de geometría.`,
+    );
+  }
+  return measurement;
+}
+
 export function installPageGuards(page) {
   const errors = [];
   const badResponses = [];
@@ -289,4 +378,26 @@ function splitStreetLine(value) {
 export async function openFirstProductModal(page) {
   await page.locator('[data-product-grid] [data-product-detail]').first().click();
   await expect(page.locator('[data-product-modal]')).toBeVisible();
+}
+
+/**
+ * Arma un carrito que supera el mínimo de delivery.
+ *
+ * Desde la publicación minorista la góndola es toda de unidades y ninguna
+ * llega sola al mínimo del comercio: el producto más caro son $ 3.900 contra
+ * un mínimo de $ 5.000. Antes alcanzaba con un clic porque el primer producto
+ * comprable era un pack de proveedor de $ 17.100. Dos unidades del más barato
+ * ($ 2.925) ya lo superan, así que el helper agrega una y suma la segunda con
+ * el mismo control de cantidad de la tarjeta.
+ */
+export async function seedCartAboveMinimum(page, selector = '[data-product-grid] [data-add-product]:not([disabled])') {
+  // `visible=true` importa: las vistas ocultas siguen en el DOM con los mismos
+  // data-*, así que un locator suelto puede quedarse esperando un control del
+  // rail de la home mientras el catálogo está a la vista.
+  const add = page.locator(`${selector} >> visible=true`).first();
+  await add.waitFor({ state: 'visible' });
+  const productId = await add.getAttribute('data-add-product');
+  await add.click();
+  await page.locator(`[data-cart-inc="${productId}"] >> visible=true`).first().click();
+  return productId;
 }

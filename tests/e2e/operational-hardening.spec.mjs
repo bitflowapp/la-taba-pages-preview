@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMinimum, waitForToast } from './helpers.mjs';
 
 async function createDemoOrder(page) {
   await page.locator('[data-nav-view="catalog"]:visible').first().click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('[data-floating-cart]:visible, .topbar [data-open-cart]:visible').first().click();
   await fillCheckout(page, {
     name: 'Hardening QA', phone: '2995550000', street: 'Mendoza 851', neighborhood: 'Centro',

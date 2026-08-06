@@ -1,23 +1,32 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
-import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards, measureStableControls, seedCartAboveMinimum } from './helpers.mjs';
 
-test('la home presenta TABA2 con marca discreta y un storefront comercial limpio', async ({ page }) => {
+test('la home presenta La Taba 2 con marca propia y un storefront comercial limpio', async ({ page }) => {
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1');
 
   await expect(page.locator('[data-demo-mode-banner]')).toHaveCount(0);
-  await expect(page.locator('.topbar .brand-word')).toHaveText('TABA2');
-  await expect(page.getByRole('heading', { name: 'Elegí bebidas para tu momento.' })).toBeVisible();
+  await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba 2');
+  await expect(page.getByRole('heading', { name: 'La Taba 2', level: 1 })).toBeVisible();
   await expect(page.locator('[data-view="home"] .taba-home-search')).toBeVisible();
+  // La fila la componen las categorías con producto comprable + "Todas". Desde
+  // la publicación minorista son Cervezas y Energizantes: gaseosas y mixers
+  // siguen navegables en el catálogo, pero sus botellas sueltas todavía esperan
+  // precio y el pack de proveedor ya no se vende.
   const homeCategories = page.locator('[data-view="home"] .home-category-card');
-  await expect(homeCategories).toHaveCount(4);
-  await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="gaseosas"]')).toHaveText('Gaseosas');
+  await expect(homeCategories).toHaveCount(3);
   await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="cervezas"]')).toHaveText('Cervezas');
-  await expect(page.locator('[data-home-category-strip] [data-category-id="gaseosas"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-view="home"] [data-home-category-strip] [data-category-id="energizantes"]')).toHaveText('Energizantes');
+  await expect(page.locator('[data-home-category-strip] [data-category-id="gaseosas"]')).toHaveCount(0);
+  // La marca activa refleja el filtro REAL del catálogo, que arranca en "Todas".
+  await expect(page.locator('[data-home-category-strip] [data-category-id="all"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-home-category-strip] [data-category-id="cervezas"]')).not.toHaveClass(/active/);
+  // Un rubro sin precio publicado no puede ser protagonista de la home.
   await expect(page.locator('[data-home-category-strip] [data-category-id="fernet"]')).toHaveCount(0);
+  await expect(page.locator('[data-home-category-strip] [data-category-id="whisky"]')).toHaveCount(0);
   // Ninguna etiqueta técnica en la superficie del cliente.
   await expect(page.locator('.home-preview-label')).toHaveCount(0);
   await expect(page.locator('[data-view="home"]')).not.toContainText('PREVIEW INTERNA');
@@ -31,7 +40,25 @@ test('la home presenta TABA2 con marca discreta y un storefront comercial limpio
   // Copy honesto: "Destacados" es una selección del local, no una métrica.
   await expect(page.getByRole('heading', { name: 'Destacados' })).toBeVisible();
   await expect(page.locator('[data-view="home"]')).not.toContainText('Los más vendidos');
-  await expect(page.locator('[data-home-catalog-preview] .home-catalog-card')).toHaveCount(4);
+  // La home se compone de carruseles por sección de bebidas. El contrato ya no
+  // es un número fijo de tarjetas sino QUÉ puede aparecer: la home es la
+  // superficie de compra, así que todo lo que muestra tiene que ser comprable.
+  // Un precio pendiente sigue vivo en catálogo y en la búsqueda, pero no acá.
+  const homeSectionCards = page.locator('[data-home-sections] .home-best-card');
+  await expect(homeSectionCards.first()).toBeVisible();
+  expect(await homeSectionCards.count()).toBeGreaterThan(0);
+  await expect(page.locator('[data-home-sections] [data-add-product][disabled]')).toHaveCount(0);
+  await expect(page.locator('[data-home-sections] .is-price-pending')).toHaveCount(0);
+  await expect(page.locator('[data-home-sections]')).not.toContainText('Precio pendiente');
+  // Ninguna sección se renderiza vacía ni sin título: no quedan huecos.
+  const homeSections = page.locator('[data-home-sections] .home-category-section');
+  const homeSectionCount = await homeSections.count();
+  expect(homeSectionCount).toBeGreaterThan(0);
+  for (let index = 0; index < homeSectionCount; index += 1) {
+    const section = homeSections.nth(index);
+    await expect(section.locator('h2')).not.toBeEmpty();
+    expect(await section.locator('.home-best-card').count()).toBeGreaterThan(0);
+  }
 
   await expect(page.locator('[data-view="home"] .role-intro')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .product-intro')).toHaveCount(0);
@@ -63,13 +90,26 @@ for (const viewport of [
   { name: '320', width: 320, height: 700 },
   { name: '390', width: 390, height: 844 },
 ]) {
-  test(`home compacta debajo de 2000 px en ${viewport.name}`, async ({ page }) => {
+  test(`home acotada por secciones en ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await installBrowserStubs(page);
     await gotoDemoReset(page, '/?reset=1&demo=1');
-    const homeHeight = await page.locator('[data-view="home"]').evaluate((node) => Math.ceil(node.getBoundingClientRect().height));
-    expect(homeHeight).toBeLessThan(2000);
-    await expect(page.locator('.topbar .brand-word')).toHaveText('TABA2');
+    // La home dejó de ser una grilla de vista previa y pasó a ser una vidriera
+    // de carruseles por sección: crece con el catálogo, así que lo que se acota
+    // es la cantidad de secciones (HOME_MAX_SECTIONS), no un alto fijo. El
+    // techo queda como backstop de crecimiento descontrolado.
+    const geometry = await page.evaluate(() => ({
+      height: Math.ceil(document.querySelector('[data-view="home"]').getBoundingClientRect().height),
+      sections: document.querySelectorAll('[data-home-sections] .home-category-section').length,
+    }));
+    expect(geometry.sections).toBeGreaterThan(0);
+    expect(geometry.sections).toBeLessThanOrEqual(6);
+    // 3700 y no 2800: la composición cerrada suma el hero promocional (270px) y
+    // el tramo de "Selección del local" (≈370px). Medido da 3539–3559 en los
+    // anchos de teléfono, así que el techo deja holgura para el copy y sigue
+    // rompiéndose con un tramo de más, que es lo que tiene que detectar.
+    expect(geometry.height).toBeLessThan(3700);
+    await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba 2');
     await expect(page.locator('.topbar .brand-text small')).toBeHidden();
     await expect(page.locator('.topbar-actions .cart-button')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
@@ -111,12 +151,45 @@ for (const viewport of [
     const productImages = page.locator('[data-view="home"] .thumb-img');
     await expect(productImages.first()).toBeVisible();
     await productImages.last().scrollIntoViewIfNeeded();
-    await expect.poll(() => productImages.evaluateAll((images) => images.every((image) => (
-      image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
-    )))).toBeTruthy();
+
+    // La home pasó de ~7 imágenes a las de todos los carruseles, y cada una es
+    // `loading="lazy"`. Exigir que TODAS estén resueltas describía la home vieja:
+    // Chromium precarga agresivamente y pasaba, Firefox y WebKit dejan las de
+    // fuera de pantalla sin resolver y fallaban. Eso es lazy loading haciendo su
+    // trabajo, no un asset roto.
+    //
+    // La garantía que importa se mantiene entera y en dos partes:
+    // 1) ninguna imagen rota en toda la home — si el navegador terminó de
+    //    resolverla, tiene que tener bitmap;
+    // 2) las que el cliente ve al entrar sí están cargadas de verdad.
     expect(await productImages.evaluateAll((images) => images.every((image) => (
-      image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
+      !image.complete || (image.naturalWidth > 0 && image.naturalHeight > 0)
     )))).toBeTruthy();
+
+    // "Lo que ve el cliente al entrar" son las tarjetas EFECTIVAMENTE dentro del
+    // pantallazo. El rail de Destacados pasó de tres tarjetas —todas visibles— a
+    // ocho, así que exigir las ocho resueltas describía la composición vieja y
+    // volvía a castigar al lazy loading por hacer su trabajo: en un carrusel
+    // horizontal las de la derecha están fuera de pantalla a propósito.
+    // La garantía que importa no se toca: lo que entra en el primer pantallazo
+    // tiene bitmap de verdad, y el `every` de más arriba sigue prohibiendo una
+    // imagen rota en TODA la home.
+    // El paso anterior bajó hasta la última imagen de la home; "lo que ve el
+    // cliente al entrar" se mide desde arriba.
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    const aboveTheFold = page.locator('[data-home-best-sellers] .thumb-img');
+    await expect(aboveTheFold.first()).toBeVisible();
+    await expect.poll(() => aboveTheFold.evaluateAll((images) => {
+      const visibles = images.filter((image) => {
+        const rect = image.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0
+          && rect.left < window.innerWidth && rect.right > 0
+          && rect.top < window.innerHeight && rect.bottom > 0;
+      });
+      return visibles.length > 0 && visibles.every((image) => (
+        image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
+      ));
+    })).toBeTruthy();
 
     const captureDir = process.env.TABA_HOME_CAPTURE_DIR;
     if (captureDir) {
@@ -126,7 +199,7 @@ for (const viewport of [
       });
     }
 
-    const finalCard = page.locator('[data-home-catalog-preview] .home-catalog-card').last();
+    const finalCard = page.locator('[data-home-sections] .home-best-card').last();
     await finalCard.scrollIntoViewIfNeeded();
     const [finalCardBox, navBox] = await Promise.all([
       finalCard.boundingBox(),
@@ -142,15 +215,17 @@ test('confirmación de edad aparece y es obligatoria sólo con alcohol', async (
   await installBrowserStubs(page);
 
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
-  await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  // Energizantes: sin alcohol y con producto comprable. Gaseosas quedó sin
+  // comprables al retirar el pack de proveedor de la góndola.
+  await page.locator('[data-view="catalog"] [data-category-id="energizantes"]').click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-age-confirmation]')).toBeHidden();
   await expect(page.locator('[name="ageConfirmed"]')).not.toHaveAttribute('required');
 
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
   await page.locator('[data-view="catalog"] [data-category-id="cervezas"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await expect(page.locator('[data-age-confirmation]')).toBeVisible();
   await expect(page.locator('[name="ageConfirmed"]')).toHaveAttribute('required', '');
@@ -187,9 +262,9 @@ test('Los filtros conservan el catálogo real y no fabrican promociones', async 
   await installBrowserStubs(page);
   await page.goto('/?demo=1&home=v37');
 
-  await page.locator('[data-home-category-strip] [data-category-id="gaseosas"]').click();
+  await page.locator('[data-home-category-strip] [data-category-id="energizantes"]').click();
   await expect(page.locator('[data-view="catalog"]')).toBeVisible();
-  await expect(page.locator('[data-catalog-title]')).toHaveText('Gaseosas');
+  await expect(page.locator('[data-catalog-title]')).toHaveText('Energizantes');
   await expect(page.locator('[data-product-grid] [data-add-product]')).not.toHaveCount(0);
 
   await page.goBack();
@@ -209,8 +284,8 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
     '.home-merch-section:not([hidden]) .home-section-head button',
     '[data-home-promotions] .home-add-button',
     '[data-home-best-sellers] .home-add-button',
-    '[data-home-catalog-preview] .home-add-button',
-    '[data-home-catalog-preview] .home-favorite-button',
+    '[data-home-sections] .home-add-button',
+    '[data-home-sections] .home-favorite-button',
   ].join(', ');
   for (const viewport of [
     { width: 320, height: 812 },
@@ -218,16 +293,27 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
     { width: 430, height: 932 },
   ]) {
     await page.setViewportSize(viewport);
-    const controls = page.locator(controlSelector);
-    await expect(controls).toHaveCount(12);
-    const undersized = await controls.evaluateAll((nodes) => nodes
-      .map((node) => {
-        const rect = node.getBoundingClientRect();
-        return { selector: node.outerHTML.slice(0, 120), width: rect.width, height: rect.height };
-      })
-      .filter(({ width, height }) => width < 44 || height < 44));
+    // Consulta y medición en el mismo turno de JS: la home reemplaza su subárbol
+    // al recomponer los carruseles, y medir en dos viajes distintos dejaba leer
+    // nodos ya desconectados como si midieran 0x0. Ver measureStableControls.
+    const measured = await measureStableControls(page, controlSelector);
+    // El conteo exacto describía la composición vieja (una grilla de 4 tarjetas).
+    // Con carruseles por sección la cantidad depende del catálogo, así que el
+    // contrato pasa a ser el que importa y no se relaja: TODO control táctil de
+    // la home mide 44x44, sea cual sea el número. Se exige un piso para que un
+    // render vacío no haga pasar la prueba por ausencia de controles.
+    expect(measured.controls.length, `${viewport.width}x${viewport.height}`).toBeGreaterThanOrEqual(12);
+    // Un control medido fuera del documento no describe la home que ve el
+    // cliente: si aparece, la medición no vale y el test tiene que decirlo.
+    expect(
+      measured.controls.filter(({ connected }) => !connected),
+      `${viewport.width}x${viewport.height} controles desconectados`,
+    ).toEqual([]);
+    const undersized = measured.controls
+      .filter(({ width, height }) => width < 44 || height < 44)
+      .map(({ selector, width, height }) => ({ selector, width, height }));
     expect(undersized, `${viewport.width}x${viewport.height}`).toEqual([]);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();
+    expect(measured.scrollWidth).toBeLessThanOrEqual(measured.innerWidth + 1);
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -242,7 +328,7 @@ test('la imagen de un producto real se reutiliza en Home, catálogo, modal y car
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/?demo=1&home=v37');
-  const homeCard = page.locator('[data-home-catalog-preview] .home-catalog-card').first();
+  const homeCard = page.locator('[data-home-sections] .home-best-card').first();
   const productId = await homeCard.locator('[data-product-detail]').getAttribute('data-product-detail');
   const source = await homeCard.locator('img').getAttribute('src');
   expect(productId).toBeTruthy();
@@ -260,6 +346,33 @@ test('la imagen de un producto real se reutiliza en Home, catálogo, modal y car
   await expect(page.locator(`[data-product-grid] [data-product-detail="${productId}"] img`)).toHaveAttribute('src', source);
 });
 
+test('la card de la home declara la unidad que se vende, nunca un pack', async ({ page }) => {
+  await installBrowserStubs(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?demo=1&home=v37');
+
+  // El precio de la card es el de lo que el cliente se lleva. Desde la
+  // publicación minorista eso es siempre una unidad: el pack abastece al local
+  // y no está en góndola, así que ninguna card puede declarar un formato de
+  // pack junto a un precio.
+  const cards = page.locator('[data-home-sections] .home-best-card');
+  const total = await cards.count();
+  expect(total).toBeGreaterThan(0);
+
+  for (let index = 0; index < total; index += 1) {
+    const card = cards.nth(index);
+    const detalle = await card.locator('[data-product-detail]').getAttribute('data-product-detail');
+    expect(detalle, `${detalle} es un pack de proveedor`).not.toMatch(/-pack-\d+$/);
+    const linea = (await card.locator('.home-best-copy small').innerText()).trim();
+    expect(linea, `${detalle}: "${linea}"`).not.toMatch(/pack|caja|bulto|x\s?\d/i);
+    // Y la línea sigue diciendo el contenido, que es lo que define el precio.
+    expect(linea, `${detalle}: "${linea}"`).toMatch(/\d/);
+  }
+
+  // La honestidad no puede costar el layout: la home sigue sin overflow.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();
+});
+
 test('la CTA móvil compacta reserva espacio real sobre la navegación', async ({ page }) => {
   await installBrowserStubs(page);
 
@@ -271,11 +384,13 @@ test('la CTA móvil compacta reserva espacio real sobre la navegación', async (
   ]) {
     await page.setViewportSize(viewport);
     await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
-    await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
+    await page.locator('[data-view="catalog"] [data-category-id="energizantes"]').click();
 
     const main = page.locator('main[data-app-main]');
     const emptyPadding = await main.evaluate((node) => parseFloat(getComputedStyle(node).paddingBottom));
-    await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+    // Una sola unidad: este contrato mide el espacio que reserva la CTA, no el
+    // mínimo de delivery.
+    await page.locator('[data-product-grid] [data-add-product]:not([disabled]) >> visible=true').first().click();
 
     const floatingCart = page.locator('[data-floating-cart]');
     const mobileNav = page.locator('.mobile-nav');

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
+import { gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMinimum } from './helpers.mjs';
 
 // Reproduce el "scroll fantasma" reportado en iPhone físico: al llegar al
 // final de la página quedaba una superficie blanca desplazable debajo de la
@@ -193,7 +193,7 @@ for (const viewport of [IPHONE_13, IPHONE_SE_1]) {
       const guards = installPageGuards(page);
       await installBrowserStubs(page);
       await gotoDemoReset(page, '/?reset=1&demo=1');
-      await page.waitForSelector('[data-view="home"] .home-catalog-card');
+      await page.waitForSelector('[data-view="home"] .home-best-card');
       await assertNoPhantomScroll(page, 'Home');
       await guards.assertClean();
       await context.close();
@@ -227,7 +227,7 @@ for (const viewport of [IPHONE_13, IPHONE_SE_1]) {
 
       await page.evaluate(() => { window.location.hash = '#catalog'; });
       await page.waitForSelector('[data-product-grid] .product-card');
-      await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+      await seedCartAboveMinimum(page);
       await page.evaluate(() => { window.location.hash = '#cart'; });
       await expect(page.locator('[data-checkout-form]')).toBeVisible();
       await assertNoPhantomScroll(page, 'Carrito con productos');
@@ -243,7 +243,7 @@ for (const viewport of [IPHONE_13, IPHONE_SE_1]) {
       await installBrowserStubs(page);
       await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
       await page.waitForSelector('[data-product-grid] .product-card');
-      await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+      await seedCartAboveMinimum(page);
       await page.locator('[data-floating-cart]').click();
       await expect(page.locator('[data-checkout-form]')).toBeVisible();
       await page.waitForTimeout(3200); // el aviso efímero de "agregado" se retira solo

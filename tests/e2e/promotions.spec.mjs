@@ -24,34 +24,35 @@ test('sandbox only publishes a human-approved SKU promotion and syncs it to cust
   await business.locator('[data-promotion-new]').click();
   const form = business.locator('[data-promotion-form]');
   await form.locator('[name="promoId"]').fill('promo-coca-confirmada-e2e');
-  await form.locator('[name="title"]').fill('Coca-Cola Pack x12 — condición confirmada');
-  await form.locator('[name="includedSkus"]').selectOption(['coca-cola-original-pet-500ml-pack-12']);
-  await form.locator('[name="regularPrice"]').fill('17100');
-  await form.locator('[name="promotionalPrice"]').fill('16000');
+  await form.locator('[name="title"]').fill('Red Bull 250 ml — condición confirmada');
+  await form.locator('[name="includedSkus"]').selectOption(['red-bull-original-lata-250ml']);
+  await form.locator('[name="regularPrice"]').fill('3576');
+  await form.locator('[name="promotionalPrice"]').fill('3200');
   await form.locator('[name="validFrom"]').fill('2020-01-01');
   await form.locator('[name="validUntil"]').fill('2099-12-31');
   await form.locator('[name="approvalStatus"]').selectOption('APROBADA');
   await form.locator('[name="approvalReference"]').fill('E2E-APPROVAL-001');
   await form.locator('[name="sourceEvidence"]').fill('Registro de aprobación sandbox para prueba automatizada.');
-  await form.locator('[name="terms"]').fill('Precio especial por Pack x12.');
+  await form.locator('[name="terms"]').fill('Precio especial por unidad.');
   await form.locator('[name="active"]').check();
   await form.locator('[data-promotion-save]').click();
   await waitForToast(business, /Promoción activada/i);
   await expect(business.locator('[data-promotion-row="promo-coca-confirmada-e2e"]')).toContainText('Activa');
 
   await expect(customer.locator('[data-promo-banner]')).toBeVisible();
-  await expect(customer.locator('[data-promo-banner]')).toContainText('Coca-Cola Pack x12');
+  await expect(customer.locator('[data-promo-banner]')).toContainText('Red Bull 250 ml');
   await customer.goto('/?demo=1#catalog');
   await customer.locator('[data-view="catalog"] [data-category-strip] [data-category-id="promos"]').click();
-  const promotedCard = customer.locator('[data-product-grid] .product-card', { hasText: 'Pack x12' }).filter({ hasText: 'Coca-Cola Original' });
+  const promotedCard = customer.locator('[data-product-grid] .product-card')
+    .filter({ has: customer.locator('[data-add-product="red-bull-original-lata-250ml"]') });
   await expect(promotedCard).toBeVisible();
-  await expect(promotedCard).toContainText('16.000');
+  await expect(promotedCard).toContainText('3.200');
   await expect(promotedCard).toContainText('Precio promocional');
   await promotedCard.locator('[data-add-product]').click();
   await customer.locator('[data-floating-cart]').click();
-  await expect(customer.locator('[data-order-summary]')).toContainText('Coca-Cola Pack x12 — condición confirmada');
-  await expect(customer.locator('[data-order-summary]')).toContainText('1.100');
-  await expect(customer.locator('[data-order-summary]')).toContainText('17.990');
+  await expect(customer.locator('[data-order-summary]')).toContainText('Red Bull 250 ml — condición confirmada');
+  await expect(customer.locator('[data-order-summary]')).toContainText('376');
+  await expect(customer.locator('[data-order-summary]')).toContainText('5.190');
 
   await customer.reload();
   await customer.goto('/?demo=1#home');

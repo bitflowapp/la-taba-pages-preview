@@ -20,12 +20,18 @@
     />
     <link rel="stylesheet" href="styles.css?v=40" />
   </head>
-  <body>
+  <!--
+    La vista activa se declara ya en el shell servido. `renderNavigation` la
+    sobrescribe en cada navegación, pero sin este valor inicial la home pintaba
+    un fotograma con la superficie clara antes de que el módulo arrancara: un
+    destello blanco justo en la pantalla más vista del producto.
+  -->
+  <body data-active-view="home">
     <div class="app-shell">
       <header class="topbar">
         <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio del comercio">
           <span class="brand-text">
-            <strong class="brand-word" data-business-name>TABA2</strong>
+            <strong class="brand-word" data-business-name>La Taba 2</strong>
             <small data-business-subtitle>Tienda de bebidas</small>
           </span>
         </button>
@@ -52,7 +58,7 @@
                 <span class="ops-label-short" data-topbar-ops-label-short>OPERACIÓN</span>
               </small>
               <strong class="topbar-ops-context">
-                <span class="ops-context-full" data-topbar-ops-context>TABA2</span>
+                <span class="ops-context-full" data-topbar-ops-context>La Taba 2</span>
                 <span class="ops-context-short" data-topbar-ops-context-short>Cola al día</span>
                 <span class="ops-context-mini" data-topbar-ops-context-mini>Cola al día</span>
               </strong>
@@ -195,11 +201,64 @@
             <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
           </div>
           <div class="taba-home-content" data-catalog-dependent hidden>
-            <section class="taba-home-hero" aria-labelledby="home-title">
-              <p class="taba-home-kicker">TABA2 · Tienda de bebidas</p>
-              <h1 id="home-title">Elegí bebidas para tu momento.</h1>
-              <p>Buscá por marca, sabor o presentación y revisá la disponibilidad antes de comprar.</p>
-              <span class="sr-only" data-open-status>Pedidos online</span>
+            <!--
+              Encabezado de marca de La Taba 2. Todo lo que afirma sale del
+              modelo real: nombre, dirección, horario y estado provienen de
+              `businessConfig`; ninguno se escribe acá. Los que no estén
+              publicados no se muestran (fail-closed), no se inventan.
+            -->
+            <section class="taba-home-hero brand-hero" aria-labelledby="home-title">
+              <!--
+                Fila 1 — EMBLEMA E HISTORIAS. Las dos entradas a historias viven
+                juntas: el emblema (con su aro) y el acceso con miniatura. Antes
+                el emblema compartía fila con el título y el acceso ocupaba un
+                renglón entero debajo; separarlos deja el título a ancho
+                completo y devuelve ~30px al primer producto.
+                Caja del logo reservada por CSS para que el estado de historias
+                no mueva el layout. El logo es BOTÓN sólo cuando hay historias
+                publicadas; sin ellas es una imagen decorativa que no se anuncia
+                como control.
+              -->
+              <div class="brand-hero-top">
+                <span class="brand-logo-slot" data-stories-slot data-stories-state="empty">
+                  <span class="brand-logo brand-logo-static" data-stories-static>
+                    <span class="brand-logo-ring" aria-hidden="true"></span>
+                    <span class="brand-logo-face" aria-hidden="true">
+                      <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="100" height="100" alt="" decoding="async" />
+                    </span>
+                  </span>
+                  <button class="brand-logo brand-logo-action" type="button" data-stories-open hidden>
+                    <span class="brand-logo-ring" aria-hidden="true"></span>
+                    <span class="brand-logo-face" aria-hidden="true">
+                      <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="100" height="100" alt="" decoding="async" />
+                    </span>
+                  </button>
+                </span>
+                <button class="brand-stories-cta" type="button" data-stories-open hidden>
+                  <span class="brand-stories-thumb" data-stories-cta-thumb aria-hidden="true"></span>
+                  <span class="brand-stories-copy">
+                    <strong>Novedades de hoy</strong>
+                    <small data-stories-cta-detail>Ver historias</small>
+                  </span>
+                  <span class="brand-stories-go" aria-hidden="true">›</span>
+                </button>
+              </div>
+              <!--
+                Fila 2 — BIENVENIDA Y DIRECCIÓN. Título grande y corto sobre el
+                ancho completo, con el rubro, la dirección y el estado debajo.
+                El "!" es decorativo y va `aria-hidden`: el nombre accesible del
+                encabezado sigue siendo exactamente el nombre del comercio que
+                publica la config.
+              -->
+              <div class="brand-hero-copy">
+                <p class="brand-hero-welcome">¡Bienvenido a</p>
+                <h1 id="home-title"><span data-business-name>La Taba 2</span><span class="brand-hero-bang" aria-hidden="true">!</span></h1>
+                <p class="brand-hero-place" data-home-business-place>Tu autoservicio de bebidas</p>
+                <p class="brand-hero-state">
+                  <span class="brand-state-chip" data-open-status>Pedidos online</span>
+                  <span class="brand-hero-hours" data-home-business-hours hidden></span>
+                </p>
+              </div>
             </section>
 
             <div data-home-active-order hidden></div>
@@ -209,14 +268,54 @@
                 <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
                 <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
-              <input data-search-input data-search-jump type="search" placeholder="Buscar productos, marcas y más..." aria-label="Buscar productos, marcas y más" />
+              <input data-search-input data-search-jump type="search" placeholder="Buscar bebidas, marcas y ofertas…" aria-label="Buscar bebidas, marcas y ofertas" />
             </label>
 
             <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip aria-label="Categorías de bebidas"></div>
 
-            <section class="home-merch-section" aria-labelledby="home-promotions-title">
+            <!--
+              DESTACADOS abre la vidriera: es el primer tramo COMPRABLE y tiene
+              que caer sobre el pliegue. Antes lo precedía "Ofertas del día",
+              que sin una promoción vigente queda `hidden` pero igual reservaba
+              el lugar de arriba para un bloque que casi nunca existe.
+            -->
+            <section class="home-merch-section home-best-section" aria-labelledby="home-best-title">
               <div class="home-section-head">
-                <h2 id="home-promotions-title">Promociones</h2>
+                <!--
+                  Copy honesto: "Destacados" es una selección del local, no una
+                  métrica de ventas. Un nombre como "Más pedidos" exigiría
+                  pedidos completados agregados, ventana temporal explícita y
+                  volumen mínimo; no existen, así que no se afirman.
+                -->
+                <div class="home-section-title">
+                  <h2 id="home-best-title">Destacados</h2>
+                  <small>Selección del local</small>
+                </div>
+                <!--
+                  P1-1 (auditoría comercial): la CTA sigue a la FUENTE real del
+                  rail. Sin productos `popular` publicados el rail muestra la
+                  selección comprable, así que "Ver todos" abre el catálogo
+                  completo; `renderHomeBestSellers` la re-apunta a `popular`
+                  sólo cuando esa colección existe. Antes apuntaba fijo a
+                  `popular` (sin datos) y la primera CTA comercial de la home
+                  aterrizaba en "0 productos": una tienda declarándose vacía.
+                -->
+                <button type="button" data-category-id="all">Ver todos</button>
+              </div>
+              <div class="home-best-sellers offers-rail" data-home-best-sellers data-offers-rail></div>
+            </section>
+
+            <!--
+              HERO PROMOCIONAL. Fotografía editorial curada a plena vista, con
+              título corto, subtítulo y una CTA que lleva a una categoría real
+              con producto comprable. NO afirma precio ni descuento: la promoción
+              comercial, cuando exista, vive en el bloque de abajo.
+            -->
+            <div class="home-hero-promo-slot" data-home-hero-promo></div>
+
+            <section class="home-merch-section home-offers-section" aria-labelledby="home-promotions-title">
+              <div class="home-section-head">
+                <h2 id="home-promotions-title">Ofertas del día</h2>
                 <button type="button" data-category-id="promos">Ver todas</button>
               </div>
               <button class="home-live-promotion" type="button" data-category-id="promos" data-promo-banner hidden>
@@ -233,26 +332,46 @@
               <div class="home-paging-dots" data-home-paging-dots aria-hidden="true" hidden></div>
             </section>
 
-            <section class="home-merch-section home-best-section" aria-labelledby="home-best-title">
-              <div class="home-section-head">
-                <!--
-                  Copy honesto: "Destacados" es una selección del local, no una
-                  métrica de ventas. Un nombre como "Más pedidos" exigiría
-                  pedidos completados agregados, ventana temporal explícita y
-                  volumen mínimo; no existen, así que no se afirman.
-                -->
-                <div class="home-section-title">
-                  <h2 id="home-best-title">Destacados</h2>
-                  <small>Selección del local</small>
-                </div>
-                <button type="button" data-category-id="popular">Ver todos</button>
-              </div>
-              <div class="home-best-sellers offers-rail" data-home-best-sellers data-offers-rail></div>
-            </section>
+            <!--
+              Banner editorial. No afirma un descuento: es una puerta a una
+              categoría que EXISTE y tiene productos comprables. Si ninguna
+              califica, el contenedor queda vacío y no ocupa espacio.
+              Va DESPUÉS del primer tramo de producto: el presupuesto de altura
+              del primer pantallazo es para bebidas, no para vidriera.
+            -->
+            <div class="home-brand-banners" data-home-banners></div>
 
-            <section class="home-catalog-preview-section" aria-labelledby="home-catalog-preview-title">
-              <h2 class="sr-only" id="home-catalog-preview-title">Vista previa del catálogo</h2>
-              <div class="home-catalog-preview" data-home-catalog-preview></div>
+            <!--
+              Carruseles por sección de bebidas. El orden y el contenido salen
+              de core/beverage-home-sections.js; una sección sin productos no se
+              renderiza, así que no quedan huecos.
+            -->
+            <div class="home-sections" data-home-sections></div>
+
+            <!--
+              SELECCIÓN DEL LOCAL. Los rubros premium —whisky, fernet, vinos,
+              gin, aperitivos— existen en el catálogo pero todavía no publican
+              precio, así que no pueden ser carrusel comprable ni chip. Acá se
+              muestran con su tarjeta real: marca, nombre, presentación y el
+              precio SI existe; si no, el estado honesto ("Precio a confirmar")
+              y una CTA que abre la ficha en vez de un botón de compra que
+              fallaría. Ninguna afirma oferta, porcentaje ni precio tachado.
+            -->
+            <section class="home-merch-section home-editorial-section" data-home-editorial-section aria-labelledby="home-editorial-title" hidden>
+              <div class="home-section-head">
+                <div class="home-section-title">
+                  <h2 id="home-editorial-title">Selección del local</h2>
+                  <!--
+                    "Bodega y destilados" cubre lo que el tramo muestra de
+                    verdad: vinos y espumantes por un lado, whisky, gin, fernet
+                    y aperitivos por el otro. Decía "Vinos, whisky y
+                    aperitivos" y dejaba afuera tres rubros que sí aparecen.
+                  -->
+                  <small>Bodega y destilados</small>
+                </div>
+                <button type="button" data-category-id="all">Ver todos</button>
+              </div>
+              <div class="home-best-sellers offers-rail" data-home-editorial-rail></div>
             </section>
 
             <div class="home-reorder-slot" data-customer-actions></div>
@@ -291,8 +410,14 @@
 
           <div class="category-strip" data-category-strip></div>
 
+          <!--
+            En teléfono este bloque se pinta como bottom sheet (ver catalog.css).
+            Sigue siendo un <details> con los mismos <select>: no se duplica
+            control ni se toca la lógica de filtrado, sólo cambia dónde aparece.
+          -->
           <details class="catalog-filters" data-catalog-filters>
             <summary><span data-catalog-filter-count>Filtros</span><span aria-hidden="true">⌄</span></summary>
+            <div class="catalog-filters-sheet">
             <div class="catalog-filter-grid">
               <label data-catalog-filter-field="brand"><span>Marca</span><select data-catalog-filter="brand" aria-label="Filtrar por marca"></select></label>
               <label data-catalog-filter-field="capacity"><span>Capacidad</span><select data-catalog-filter="capacity" aria-label="Filtrar por capacidad"></select></label>
@@ -303,7 +428,21 @@
               <label data-catalog-filter-field="price"><span>Precio</span><select data-catalog-filter="price" aria-label="Filtrar por estado de precio"></select></label>
               <label data-catalog-filter-field="promotion"><span>Promoción</span><select data-catalog-filter="promotion" aria-label="Filtrar por promoción"></select></label>
             </div>
-            <button class="ghost-button compact" type="button" data-reset-catalog-filters hidden>Limpiar filtros</button>
+            <!--
+              Cierre del panel. En teléfono el bloque es un bottom sheet y un
+              sheet sin acciones no dice cómo se sale: el filtro se aplica al
+              instante (los <select> disparan el filtrado), pero el cliente no
+              tiene forma de saber que ya terminó. "Aplicar" no aplica nada
+              nuevo —cierra— y por eso dice exactamente eso: cierra el panel y
+              devuelve el resultado. "Limpiar" existe siempre; sin filtros
+              activos queda deshabilitado en vez de desaparecer, así el par de
+              botones no cambia de forma entre estados.
+            -->
+            <div class="catalog-filters-actions">
+              <button class="ghost-button compact" type="button" data-reset-catalog-filters disabled>Limpiar</button>
+              <button class="primary-button compact" type="button" data-close-catalog-filters>Aplicar</button>
+            </div>
+            </div>
           </details>
 
           <div class="catalog-head catalog-toolbar">
@@ -455,10 +594,31 @@
 
         <section class="section app-view soft" data-view="profile" hidden aria-hidden="true">
           <div class="section-head profile-page-head">
+            <!--
+              Segunda entrada a las historias, con el MISMO contrato que la de
+              la home: `renderStoryEntry` pinta todos los slots a la vez, así
+              que el aro, el estado y la etiqueta no pueden divergir entre las
+              dos. Sin historias publicadas el logo vuelve a ser una imagen y
+              deja de anunciarse como control.
+            -->
+            <span class="brand-logo-slot profile-stories-slot" data-stories-slot data-stories-state="empty">
+              <span class="brand-logo brand-logo-static" data-stories-static>
+                <span class="brand-logo-ring" aria-hidden="true"></span>
+                <span class="brand-logo-face" aria-hidden="true">
+                  <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="64" height="64" alt="" decoding="async" />
+                </span>
+              </span>
+              <button class="brand-logo brand-logo-action" type="button" data-stories-open hidden>
+                <span class="brand-logo-ring" aria-hidden="true"></span>
+                <span class="brand-logo-face" aria-hidden="true">
+                  <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="64" height="64" alt="" decoding="async" />
+                </span>
+              </button>
+            </span>
             <div>
               <p class="eyebrow">Tu cuenta</p>
-              <h1 class="view-title">Perfil</h1>
-              <p class="profile-lead">Tus datos se usarán únicamente para preparar y entregar tus pedidos.</p>
+              <h1 class="view-title">Mi perfil</h1>
+              <p class="profile-lead">Tus datos se usarán para preparar y entregar tus pedidos.</p>
             </div>
           </div>
           <div data-customer-profile></div>
@@ -467,7 +627,7 @@
             <summary>Información del local</summary>
             <div class="profile-business-details-body">
               <ul class="info-list">
-                <li><span>Local</span><strong data-business-profile-name>TABA2</strong></li>
+                <li><span>Local</span><strong data-business-profile-name>La Taba 2</strong></li>
                 <li><span>Dirección</span><strong data-business-address>A confirmar con el local</strong></li>
                 <li><span>Horarios</span><strong data-business-hours>A confirmar con el local</strong></li>
                 <li><span>Zona de entrega</span><strong data-business-zone>A confirmar con el local</strong></li>
@@ -575,7 +735,7 @@
           <div data-admin-unlocked hidden>
             <div class="section-head rider-section-head">
               <div>
-                <p class="eyebrow">Repartidor de <span data-rider-business-name>TABA2</span></p>
+                <p class="eyebrow">Repartidor de <span data-rider-business-name>La Taba 2</span></p>
                 <h1 class="rider-title">Mis entregas</h1>
               </div>
             </div>
@@ -596,10 +756,27 @@
         <strong data-floating-cart-summary>$0</strong>
       </button>
 
+      <!--
+        Cinco rutas REALES, una por control y sin repetir destino: el ancla de
+        marca del centro ES el inicio, así que `data-nav-view="home"` sigue
+        siendo único en la barra y `aria-current="page"` apunta a un solo
+        control. El quinto lugar lo ocupa el carrito, que hasta ahora sólo era
+        alcanzable desde la barra flotante o el app bar.
+      -->
       <nav class="mobile-nav" aria-label="Navegación móvil">
-        <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>
         <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
         <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguir</span></button>
+        <button class="mn-brand" type="button" data-nav-view="home">
+          <span class="mn-brand-disc" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" focusable="false">
+              <path d="M4 9.5 5.6 5h12.8L20 9.5" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+              <path d="M5.4 9.5h13.2V19a1 1 0 0 1-1 1H6.4a1 1 0 0 1-1-1V9.5Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+              <path d="M10 20v-4.6h4V20" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="mn-label" data-business-name>La Taba 2</span>
+        </button>
+        <button type="button" data-nav-view="cart"><span class="mn-ico icon-cart" aria-hidden="true"></span><span class="mn-label">Carrito</span><span class="mn-badge" data-cart-count>0</span></button>
         <button type="button" data-nav-view="profile"><span class="mn-ico icon-profile" aria-hidden="true"></span><span class="mn-label">Perfil</span></button>
       </nav>
     </div>
@@ -610,6 +787,15 @@
 
     <dialog class="checkout-suggestions-modal" data-checkout-suggestions-modal aria-labelledby="checkout-suggestions-title">
       <div data-checkout-suggestions-content></div>
+    </dialog>
+
+    <!--
+      Historias comerciales. El diálogo existe siempre en el shell pero sólo se
+      abre cuando `js/core/stories.js` devuelve historias publicadas y vigentes.
+      Sin datos no hay entrada, no hay aro y no hay contenido: fail-closed.
+    -->
+    <dialog class="stories-modal" data-stories-modal aria-label="Historias del comercio">
+      <div data-stories-content></div>
     </dialog>
 
     <dialog class="pin-modal" data-pin-modal data-demo-only aria-label="Acceso del equipo">

@@ -1,6 +1,6 @@
 import { BUSINESS_CONFIG, STORAGE_KEYS } from './config.js';
 import { categories, PREVIEW_CATALOG_VERSION, seedOrders } from './data.js';
-import { buildDemoCatalog, mergeCatalogProducts } from './core/catalog-store.js';
+import { buildDemoCatalog, isProductVisibleToCustomer, mergeCatalogProducts } from './core/catalog-store.js';
 import { normalizeDeliveryProof } from './core/delivery-proof.js';
 import { normalizeDeliveryCode } from './core/delivery-code.js';
 import {
@@ -328,7 +328,10 @@ function sanitizeCart(rawCart, productMap) {
   for (const item of rawCart) {
     if (!item || typeof item.productId !== 'string') continue;
     const product = productMap.get(item.productId);
-    if (!product || product.archived || !product.available || product.stock <= 0) continue;
+    // Un carrito guardado antes de que el pack dejara la góndola no se
+    // corrompe: esa línea se descarta al hidratar, igual que la de un producto
+    // archivado o sin stock, y el resto del carrito se conserva.
+    if (!product || !isProductVisibleToCustomer(product) || !product.available || product.stock <= 0) continue;
 
     const quantity = normalizeCartQuantity(item.quantity);
     if (quantity <= 0) continue;
@@ -614,8 +617,8 @@ function buildBaseBusinessConfig() {
   const base = buildDefaultBusinessConfig();
   if (![APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(getAppMode())) return base;
   return mergeBusinessConfig(base, {
-    businessName: 'TABA2',
-    name: 'TABA2',
+    businessName: 'La Taba 2',
+    name: 'La Taba 2',
     subtitle: 'Tienda de bebidas',
     address: 'Dirección no publicada',
     deliveryZone: 'Cobertura no publicada',

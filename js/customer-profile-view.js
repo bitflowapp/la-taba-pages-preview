@@ -35,6 +35,16 @@ const state = {
 
 const PROFILE_RETURN_STORAGE_KEY = 'taba:profile-return';
 
+// Iconografía del perfil. Van `aria-hidden`: el nombre accesible de cada control
+// es su texto visible, que dice exactamente lo mismo (WCAG 2.5.3). Los glifos
+// tipográficos que había antes (⌂, ▣) se veían distintos en cada equipo y en el
+// Moto quedaban como un cuadrado.
+const PIN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true"><path d="M12 21.3s-6.4-6.1-6.4-10.8a6.4 6.4 0 0 1 12.8 0c0 4.7-6.4 10.8-6.4 10.8Z" fill="currentColor"/><circle cx="12" cy="10.2" r="2.4" fill="#fff"/></svg>';
+const PERSON_ICON = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true"><circle cx="12" cy="7.8" r="3.9" stroke="currentColor" stroke-width="1.9"/><path d="M4.6 20.2a7.4 7.4 0 0 1 14.8 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>';
+const PENCIL_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden="true"><path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16v4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+const TRASH_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2m-7 0 .9 12h8.2L17 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHECK_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden="true"><path d="m5 12.6 4.6 4.6L19 7.8" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 export async function initializeCustomerProfileView() {
   if (state.initialized) return;
   state.initialized = true;
@@ -397,7 +407,7 @@ function render() {
       ${renderAddressesCard()}
     </div>
     <aside class="profile-privacy-card">
-      <span aria-hidden="true">âœ“</span>
+      <span aria-hidden="true">${CHECK_ICON}</span>
       <div>
         <strong>TABA no necesita tu DNI.</strong>
         <p>Solo guardamos los datos necesarios para identificar al destinatario y entregar tus pedidos.</p>
@@ -419,7 +429,7 @@ function renderPreviewState() {
     <h2>Perfil de cliente</h2>
     <p>Estará disponible cuando el local habilite los pedidos online. No necesitás cargar DNI ni otros datos innecesarios.</p>
   </div>
-  <aside class="profile-privacy-card"><span aria-hidden="true">✓</span><div><strong>TABA no necesita tu DNI.</strong><p>Solo usamos nombre, teléfono y dirección para preparar y entregar pedidos.</p></div></aside>`;
+  <aside class="profile-privacy-card"><span aria-hidden="true">${CHECK_ICON}</span><div><strong>TABA no necesita tu DNI.</strong><p>Solo usamos nombre, teléfono y dirección para preparar y entregar pedidos.</p></div></aside>`;
 }
 
 function renderUnavailableState() {
@@ -456,7 +466,8 @@ function renderPersonalCard() {
   }
   return `<section class="profile-card personal-card ${hasProfile ? '' : 'is-empty'}" aria-labelledby="personal-data-title">
     <div class="profile-card-heading">
-      <div><span class="profile-card-kicker">Datos personales</span><h2 id="personal-data-title">${hasProfile ? 'Quién recibe el pedido' : 'Todavía no cargaste tus datos'}</h2></div>
+      <span class="profile-card-ico" aria-hidden="true">${PERSON_ICON}</span>
+      <div><h2 id="personal-data-title">Datos personales</h2><small>${hasProfile ? 'Quién recibe el pedido' : 'Todavía no cargaste tus datos'}</small></div>
       ${returnAction}
       ${hasProfile ? '<button class="text-button" type="button" data-profile-action="edit-personal">Editar</button>' : ''}
     </div>
@@ -467,45 +478,61 @@ function renderPersonalCard() {
       <button class="primary-button compact" type="button" data-profile-action="edit-personal">Completar datos</button>`}
   </section>`;
 }
+// El bloque de direcciones NO es una tarjeta: su título vive directamente sobre
+// el shell oscuro y cada dirección flota como su propia superficie clara, que es
+// la composición de la referencia aprobada.
+//
+// Una sola acción principal. Antes había un "Agregar dirección" en el
+// encabezado; con el botón grande del final eran dos entradas al mismo
+// formulario compitiendo en la misma pantalla. Queda el de abajo, que es el que
+// se alcanza con el pulgar después de leer la lista.
 function renderAddressesCard() {
   return `<section class="profile-card addresses-card" aria-labelledby="profile-addresses-title">
     <div class="profile-card-heading">
-      <div><span class="profile-card-kicker">Direcciones</span><h2 id="profile-addresses-title">Tus lugares de entrega</h2></div>
-      <button class="secondary-button compact" type="button" data-profile-action="add-address" ${disabledAttr()}>Agregar dirección</button>
+      <div><h2 id="profile-addresses-title">Tus direcciones</h2><small>Elegí a dónde llevamos tu pedido</small></div>
     </div>
     ${state.addresses.length ? `<div class="profile-address-list">${state.addresses.map(renderAddressCard).join('')}</div>` : renderNoAddresses()}
     ${renderDuplicate()}
     ${renderAddressEditor()}
+    ${state.editorOpen ? '' : `<button class="primary-button profile-add-address" type="button" data-profile-action="add-address" ${disabledAttr()}>
+      <span class="profile-add-address-plus" aria-hidden="true">+</span>Agregar nueva dirección
+    </button>`}
   </section>`;
 }
 
 function renderNoAddresses() {
   return `<div class="profile-no-addresses">
-    <span aria-hidden="true">⌂</span>
+    <span aria-hidden="true">${PIN_ICON}</span>
     <strong>Todavía no tenés direcciones guardadas</strong>
     <p>Podés agregarlas ahora o completar una dirección manualmente durante el checkout.</p>
   </div>`;
 }
 
+// `addressSummary` ya incorpora piso y departamento, así que la tarjeta no los
+// repite: antes mostraba "Piso 3 · Dpto. B" dos veces, una en la línea de la
+// dirección y otra debajo.
 function renderAddressCard(rawAddress) {
   const address = normalizeCustomerAddress(rawAddress);
-  const unit = [address.floor && `Piso ${address.floor}`, address.apartment && `Dpto. ${address.apartment}`]
-    .filter(Boolean)
-    .join(' · ');
+  // La dirección activa DECLARA su estado ("En uso") en vez de ofrecer otra vez
+  // la acción que ya está aplicada: un botón "Usar esta" sobre la dirección que
+  // ya se está usando es una acción sin efecto, y el cliente no puede saber si
+  // la tocó bien.
+  const useAction = address.isDefault
+    ? `<span class="profile-address-inuse">${CHECK_ICON}En uso</span>`
+    : `<button class="text-button" type="button" data-profile-action="make-default" ${disabledAttr()}>${CHECK_ICON}Usar esta</button>`;
   return `<article class="profile-address ${address.isDefault ? 'is-default' : ''}" data-profile-address-id="${escapeAttr(address.id)}">
     <div class="profile-address-main">
-      <div class="profile-address-icon" aria-hidden="true">${address.label === 'Trabajo' ? '▣' : '⌂'}</div>
+      <div class="profile-address-icon" aria-hidden="true">${PIN_ICON}</div>
       <div>
         <div class="profile-address-title"><strong>${escapeHtml(address.label)}</strong>${address.isDefault ? '<span>Predeterminada</span>' : ''}</div>
         <p>${escapeHtml(addressSummary(address))}</p>
-        ${unit ? `<small>${escapeHtml(unit)}</small>` : ''}
-        ${address.reference ? `<small>Referencia: ${escapeHtml(address.reference)}</small>` : ''}
+        ${address.reference ? `<small>${escapeHtml(address.reference)}</small>` : ''}
       </div>
     </div>
     <div class="profile-address-actions">
-      <button class="text-button" type="button" data-profile-action="edit-address" ${disabledAttr()}>Editar</button>
-      ${address.isDefault ? '' : `<button class="text-button" type="button" data-profile-action="make-default" ${disabledAttr()}>Hacer predeterminada</button>`}
-      <button class="text-button danger" type="button" data-profile-action="delete-address" ${disabledAttr()}>Eliminar</button>
+      <button class="text-button" type="button" data-profile-action="edit-address" ${disabledAttr()}>${PENCIL_ICON}Editar</button>
+      <button class="text-button danger" type="button" data-profile-action="delete-address" ${disabledAttr()}>${TRASH_ICON}Eliminar</button>
+      ${useAction}
     </div>
   </article>`;
 }
@@ -519,7 +546,7 @@ function renderAddressEditor() {
     <div class="profile-card-heading"><div><span class="profile-card-kicker">${address.id ? 'Editar' : 'Nueva dirección'}</span><h3>${address.id ? address.label : 'Datos de entrega'}</h3></div><button class="text-button" type="button" data-profile-action="cancel-address">Cerrar</button></div>
     <div class="profile-form-grid">
       <label><span>Etiqueta</span><select name="profileAddressLabel">${['Casa', 'Trabajo', 'Otra'].map((label) => `<option value="${label}" ${(address.label || 'Casa') === label ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
-      <label class="is-wide"><span>Calle</span><input name="profileAddressStreet" maxlength="120" autocomplete="address-line1" required value="${escapeAttr(address.street || '')}" placeholder="AntÃ¡rtida Argentina" /></label>
+      <label class="is-wide"><span>Calle</span><input name="profileAddressStreet" maxlength="120" autocomplete="address-line1" required value="${escapeAttr(address.street || '')}" placeholder="Antártida Argentina" /></label>
       <label><span>Número</span><input name="profileAddressNumber" maxlength="24" inputmode="text" required value="${escapeAttr(address.streetNumber || '')}" placeholder="1234, 1234 A o S/N" /></label>
       <label><span>Piso <em>opcional</em></span><input name="profileAddressFloor" maxlength="24" autocomplete="address-line2" value="${escapeAttr(address.floor || '')}" /></label>
       <label><span>Departamento <em>opcional</em></span><input name="profileAddressApartment" maxlength="24" autocomplete="address-line2" value="${escapeAttr(address.apartment || '')}" /></label>

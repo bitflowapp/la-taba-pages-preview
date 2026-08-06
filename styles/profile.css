@@ -1,9 +1,14 @@
+/* Los cuatro valores de la superficie crema dejaron de escribirse acá: son los
+   tokens compartidos de `tokens.css`. Perfil fue la primera vista que llegó a
+   la referencia aprobada, así que su paleta se promovió al sistema y ahora la
+   consumen también la home, el catálogo, el carrito y el checkout. Los alias
+   locales se conservan porque los usan ~60 reglas de esta hoja. */
 [data-view="profile"] {
-  --profile-surface: #fffefa;
-  --profile-soft: #f7f4ef;
-  --profile-line: #e9e3dc;
-  --profile-ink: #22242a;
-  --profile-muted: #6e6a67;
+  --profile-surface: var(--cream-raised);
+  --profile-soft: var(--cream);
+  --profile-line: var(--cream-line);
+  --profile-ink: var(--cream-ink);
+  --profile-muted: var(--cream-muted);
   max-width: 1080px;
   padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
   background:
@@ -11,8 +16,16 @@
     var(--profile-surface);
 }
 
+/* El encabezado abre con el emblema, que además es la entrada a historias.
+   Su tamaño y la fila viven en `brand-home.css`: `responsive.css` apila todo
+   `.section-head` en móvil y la geometría del logo se define allá, y las dos
+   hojas cargan DESPUÉS de esta. Poner las reglas acá las dejaba perdiendo. */
 .profile-page-head {
   margin-bottom: 22px;
+}
+
+.profile-page-head > div {
+  min-width: 0;
 }
 
 .profile-page-head .profile-lead {
@@ -35,21 +48,25 @@
   gap: 18px;
 }
 
+/* Superficie crema, no blanco puro. Sobre el shell grafito un #fff levanta un
+   recorte duro; el crema de la referencia se apoya sin cortar la pantalla. */
 .profile-card,
 .profile-privacy-card,
 .profile-empty-state,
 .profile-loading {
   min-width: 0;
   border: 1px solid var(--profile-line);
-  border-radius: 22px;
-  background: rgb(255 255 255 / 95%);
-  box-shadow: 0 10px 34px rgb(35 31 28 / 7%);
+  /* Mismo radio que la tarjeta de producto de la home: el perfil usaba 22px y
+     se leía como otro sistema al cambiar de pestaña. */
+  border-radius: 20px;
+  background: var(--profile-soft);
+  box-shadow: 0 10px 34px rgb(0 0 0 / 26%);
 }
 
 .profile-card {
   display: grid;
-  gap: 20px;
-  padding: 22px;
+  gap: 18px;
+  padding: 20px;
 }
 
 .profile-card-heading {
@@ -57,11 +74,34 @@
   min-width: 0;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
 }
 
 .profile-card-heading > div {
   min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Marca del bloque: el icono reemplaza al rótulo en versalitas. Dice lo mismo
+   ocupando una línea menos, que es la diferencia entre ver una dirección o dos
+   sin scrollear. */
+.profile-card-ico {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  margin-top: 1px;
+  color: var(--taba-red);
+}
+
+.profile-card-heading > div > small {
+  display: block;
+  margin-top: 2px;
+  color: var(--profile-muted);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
 }
 
 .profile-card-kicker {
@@ -196,6 +236,26 @@
   line-height: 1.5;
 }
 
+/* "Tus direcciones" es la sección principal del perfil: su título vive sobre el
+   shell oscuro y cada dirección flota como su propia superficie clara, en vez
+   de apilarse dentro de una tarjeta que las envuelve a todas. Así la lista se
+   lee como una lista y no como el interior de una ficha. */
+.addresses-card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.addresses-card > .profile-card-heading h2 {
+  color: var(--brand-ink, #f4f6f8);
+}
+
+.addresses-card > .profile-card-heading > div > small {
+  color: var(--brand-ink-muted, #a6adb8);
+}
+
 .profile-address-list {
   display: grid;
   gap: 11px;
@@ -207,14 +267,18 @@
   gap: 12px;
   padding: 15px;
   border: 1px solid var(--profile-line);
-  border-radius: 16px;
-  background: #fff;
+  border-radius: var(--radius-lg);
+  background: var(--profile-soft);
 }
 
+/* La activa se marca con borde rojo Y con el badge "Predeterminada": el estado
+   no viaja sólo en el color, que es lo que exige el contraste y lo que necesita
+   quien no distingue el rojo. */
 .profile-address.is-default {
-  border-color: rgb(191 31 46 / 38%);
-  background: linear-gradient(135deg, #fff, #fff8f8);
-  box-shadow: inset 3px 0 0 var(--taba-red);
+  border-color: var(--taba-red);
+  border-width: 2px;
+  padding: 14px;
+  box-shadow: 0 0 0 1px rgb(191 31 46 / 30%), 0 6px 22px rgb(191 31 46 / 22%);
 }
 
 .profile-address-main {
@@ -228,11 +292,9 @@
   width: 40px;
   height: 40px;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 50%;
   background: var(--taba-red-soft);
   color: var(--taba-red);
-  font-size: 20px;
-  font-weight: 850;
 }
 
 .profile-address-title {
@@ -282,20 +344,63 @@
 .profile-address-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px 8px;
+  align-items: center;
+  gap: 2px 14px;
   padding-left: 51px;
 }
 
 .profile-address-actions .text-button {
+  display: inline-flex;
   flex: 0 1 auto;
+  align-items: center;
+  gap: 6px;
   min-width: 44px;
   min-height: 44px;
   max-width: 100%;
   padding: 8px 3px;
-  font-size: 12px;
+  color: var(--taba-red);
+  font-size: 12.5px;
+  font-weight: 750;
   line-height: 1.2;
   overflow-wrap: anywhere;
   white-space: normal;
+}
+
+.profile-address-actions .text-button svg {
+  flex: 0 0 auto;
+}
+
+/* La dirección en uso declara su estado; no repite la acción ya aplicada. Es
+   texto, no un control, así que no entra en el orden de tabulación ni promete
+   un toque que no haría nada. */
+.profile-address-inuse {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--profile-muted);
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+/* Acción principal del perfil: una sola, ancha y al alcance del pulgar. */
+.profile-add-address {
+  display: flex;
+  width: 100%;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 3px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.profile-add-address-plus {
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .profile-no-addresses {
@@ -420,12 +525,14 @@
   color: #76551e;
 }
 
+/* Misma superficie crema que el resto del perfil: el verde apenas distinto se
+   leía como un tercer material en una pantalla que ya tiene dos. */
 .profile-privacy-card {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   padding: 17px 19px;
-  background: #f5f7f4;
+  background: var(--profile-soft);
   box-shadow: none;
 }
 
@@ -479,10 +586,15 @@
   animation: profile-spin 800ms linear infinite;
 }
 
+/* `.card` global lo pinta blanco puro; en el perfil comparte la crema del
+   resto para que el pie de la pantalla no cambie de material. */
 .profile-business-details {
   margin-top: 18px;
   padding: 0;
   overflow: hidden;
+  border: 1px solid var(--profile-line);
+  border-radius: 20px;
+  background: var(--profile-soft);
 }
 
 .profile-business-details summary {

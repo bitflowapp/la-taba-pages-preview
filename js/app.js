@@ -10,6 +10,7 @@ import {
   applyBusinessConfig,
   closeCheckoutSuggestions,
   closeProductModal,
+  closeStoriesModal,
   copyDraftOrderToClipboard,
   getCheckoutFormValues,
   renderAdminVisibility,
@@ -27,10 +28,10 @@ import {
   setSearchQuery,
   setSortBy,
   resetCatalogFilters,
-  shouldShowCheckoutSuggestions,
-  showCheckoutSuggestions,
   showProductModal,
+  showStoriesModal,
   showToast,
+  stepStoriesModal,
   updateAddressFieldVisibility,
   $,
 } from './ui.js';
@@ -142,14 +143,6 @@ let pendingRepeatOrderId = null;
 const CHECKOUT_SUGGESTIONS_DISMISSED_KEY = 'la_taba_checkout_suggestions_dismissed';
 const SHOWCASE_RECOVERY_KEY = 'taba-showcase-recovery-v1';
 const recentCartActions = new Map();
-
-function checkoutSuggestionsDismissed() {
-  try {
-    return sessionStorage.getItem(CHECKOUT_SUGGESTIONS_DISMISSED_KEY) === 'true';
-  } catch (_) {
-    return false;
-  }
-}
 
 function dismissCheckoutSuggestions() {
   try {
@@ -981,6 +974,15 @@ function bindEvents() {
       return;
     }
 
+    // "Aplicar" cierra el bottom sheet. El filtrado ya ocurrió al cambiar cada
+    // <select>: no hay un segundo estado que confirmar, y fabricar uno sería
+    // inventar un paso que la lógica no tiene.
+    if (target.closest('[data-close-catalog-filters]')) {
+      const panel = target.closest('[data-catalog-filters]');
+      if (panel) panel.open = false;
+      return;
+    }
+
     // "Limpiar búsqueda" deshace exactamente la causa del vacío: la consulta.
     // La categoría elegida se conserva.
     const clearSearch = target.closest('[data-clear-search]');
@@ -998,6 +1000,52 @@ function bindEvents() {
       return;
     }
 
+    // ─── Historias comerciales ───────────────────────────────────────────────
+    // Todo el bloque es inerte sin historias publicadas: `showStoriesModal`
+    // devuelve `false` y no se abre nada.
+    const storiesOpen = target.closest('[data-stories-open]');
+    if (storiesOpen) {
+      event.preventDefault();
+      showStoriesModal(0, storiesOpen);
+      return;
+    }
+
+    if (target.closest('[data-close-stories]')) {
+      closeStoriesModal();
+      return;
+    }
+
+    if (target.closest('[data-story-prev]')) {
+      stepStoriesModal(-1);
+      return;
+    }
+
+    if (target.closest('[data-story-next]')) {
+      stepStoriesModal(1);
+      return;
+    }
+
+    // La CTA de una historia se resuelve contra acciones que YA existen. No hay
+    // navegación externa ni destinos nuevos: producto, categoría o alta al
+    // carrito, exactamente lo que el contrato admite.
+    const storyCta = target.closest('[data-story-cta]');
+    if (storyCta) {
+      const action = storyCta.dataset.storyAction;
+      const storyTarget = storyCta.dataset.storyTarget || '';
+      closeStoriesModal();
+      if (action === 'category') {
+        setCategory(storyTarget);
+        setActiveView('catalog');
+      } else if (action === 'product') {
+        showProductModal(storyTarget);
+      } else if (action === 'add') {
+        const result = addToCart(storyTarget, 1);
+        showToast(result.message);
+        renderAll();
+      }
+      return;
+    }
+
     const navView = target.closest('[data-nav-view]')?.dataset.navView;
     if (navView) {
       event.preventDefault();
@@ -1005,6 +1053,18 @@ function bindEvents() {
         clearProfileReturnTarget();
       }
       setActiveView(navView);
+      return;
+    }
+
+    // Puerta de MARCA (banner editorial). El destino no es una ruta nueva: es
+    // exactamente la búsqueda que escribiría el cliente, resuelta contra el
+    // catálogo real. La categoría se suelta para que la marca se vea completa
+    // aunque tenga productos en más de un rubro.
+    const brandQuery = target.closest('[data-brand-query]')?.dataset.brandQuery;
+    if (brandQuery) {
+      setCategory('all');
+      setSearchQuery(brandQuery);
+      if (activeView !== 'catalog') setActiveView('catalog');
       return;
     }
 
@@ -1364,9 +1424,14 @@ function bindEvents() {
       showToast(message);
       return;
     }
-    if (!checkoutSuggestionsDismissed() && shouldShowCheckoutSuggestions()) {
-      if (showCheckoutSuggestions()) return;
-    }
+    // P1-3 (auditoría comercial): acá vivía la compuerta del modal de
+    // sugerencias, que interceptaba el PRIMER tap de pagar ANTES de validar el
+    // pedido — con el carrito bajo el mínimo ofrecía packs y recién después
+    // mostraba el error real. El rail "RECOMENDADOS PARA VOS" del carrito ya
+    // ofrece las mismas sugerencias a la vista, así que el modal salió del
+    // flujo principal: Confirmar valida y confirma; nunca vende antes de
+    // validar. El markup del diálogo y sus cierres quedan inertes por si una
+    // superficie futura lo reutiliza DESPUÉS de una validación exitosa.
     if (confirming) return; // evita doble confirmación / doble pedido
     confirming = true;
     const button = event.currentTarget.querySelector('[type="submit"]');

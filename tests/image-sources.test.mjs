@@ -59,7 +59,22 @@ test('tracked storefront WebP are approved demo assets or commercial manifest en
     product.image,
     product.imageThumbnail,
   ]).sort();
-  assert.deepEqual(webps, [...approvedDemo, ...manifested].sort());
+  // Arte editorial de categoría (banners de la home). No es producto, así que no
+  // vive en el manifest de catálogo, pero se le exige exactamente la misma
+  // trazabilidad: cada pieza declara su origen en el lote curado y su página
+  // fuente. La regla que importa se mantiene intacta: ninguna imagen puede estar
+  // en assets/ sin procedencia declarada.
+  const promoManifest = JSON.parse(fs.readFileSync(
+    path.join(root, 'docs/catalog/promo-image-manifest.json'),
+    'utf8',
+  ));
+  const promoArt = promoManifest.piezas.map((piece) => piece.path);
+  for (const piece of promoManifest.piezas) {
+    assert.ok(piece.url_fuente, `${piece.path} sin url_fuente`);
+    assert.ok(piece.origen, `${piece.path} sin origen en el lote curado`);
+    assert.ok(fs.existsSync(path.join(root, piece.path)), `${piece.path} declarado pero ausente`);
+  }
+  assert.deepEqual(webps, [...approvedDemo, ...manifested, ...promoArt.filter((p) => p.endsWith('.webp'))].sort());
 });
 
 test('commercial image audit and manifest are explicit and traceable', () => {

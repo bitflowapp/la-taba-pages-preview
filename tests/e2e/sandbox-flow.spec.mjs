@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, gotoDemoReset, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installPageGuards, seedCartAboveMinimum, waitForToast } from './helpers.mjs';
 
 test('sandbox persists, synchronizes between tabs, exports/imports and resets', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -153,7 +153,7 @@ test('sandbox completes client, business, rider, route, delivery and reorder', a
   const guards = installPageGuards(page);
   await gotoDemoReset(page, '/?reset=1&demo=1#home');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await fillCheckout(page, {
     name: 'Cliente Sandbox',

@@ -57,8 +57,21 @@ function normalizedTags(product = {}) {
     .filter(Boolean));
 }
 
+// Sólo puede sugerirse lo que el cliente puede COMPRAR ahora: disponible, con
+// stock y con precio publicado (P1-3 de la auditoría comercial — sugerir un
+// "Precio próximamente" sería ofrecer lo invendible en el paso de pagar).
+// Tampoco entra un pack de abastecimiento: no está en la góndola, así que no
+// puede aparecer como sugerencia en el paso de pagar.
 function isOrderable(product) {
-  return Boolean(product && product.available !== false && !product.archived && Number(product.stock) > 0);
+  return Boolean(
+    product
+      && product.available !== false
+      && !product.archived
+      && product.procurementOnly !== true
+      && Number(product.stock) > 0
+      && product.pricePending !== true
+      && Number(product.price) > 0,
+  );
 }
 
 function isAlcohol(product = {}) {
@@ -88,8 +101,10 @@ function scoreCandidate(product, rules) {
 }
 
 /**
- * Devuelve sólo artículos disponibles que todavía no están en el carrito.
- * La lista es estable: a igual relevancia se ordena por nombre e id.
+ * Devuelve sólo artículos comprables (disponibles, con stock y con precio
+ * publicado) que todavía no están en el carrito, ordenados por precio
+ * ascendente. La lista es estable: a igual precio decide la relevancia de la
+ * regla y después nombre e id.
  */
 export function getCartRecommendations({ products = [], cart = [], maxItems = 6 } = {}) {
   const productById = new Map((Array.isArray(products) ? products : []).map((product) => [product.id, product]));
@@ -106,8 +121,12 @@ export function getCartRecommendations({ products = [], cart = [], maxItems = 6 
     .filter((product) => !sourceHasAlcohol || !isAlcohol(product))
     .map((product) => ({ product, score: scoreCandidate(product, rules) }))
     .filter((entry) => entry.score > 0)
+    // Primero lo más accesible: la sugerencia acompaña el pedido, no lo
+    // agranda a la fuerza (P1-3 — antes se ofrecían packs de $19.999 para una
+    // brecha de mínimo de $1.100). A igual precio decide la relevancia.
     .sort((left, right) => (
-      right.score - left.score
+      (Number(left.product.price) || 0) - (Number(right.product.price) || 0)
+      || right.score - left.score
       || String(left.product.name || '').localeCompare(String(right.product.name || ''), 'es')
       || String(left.product.id || '').localeCompare(String(right.product.id || ''))
     ))

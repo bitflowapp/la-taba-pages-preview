@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, installBrowserStubs, installPageGuards, seedCartAboveMinimum, waitForToast } from './helpers.mjs';
 
 const STATE_KEY = 'la_taba_mvp_v4_state';
 
@@ -122,7 +122,7 @@ test('checkout del preview valida contrato de Perfil y mantiene copy comercial',
   await installPageGuards(page);
   await installBrowserStubs(page);
   await page.goto('/?demo=1#catalog');
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.getByRole('button', { name: 'Ver mi pedido' }).click();
 
   await fillCheckout(page, {

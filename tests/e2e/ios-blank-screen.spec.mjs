@@ -1,9 +1,21 @@
 import { expect, test } from '@playwright/test';
 import { gotoDemoReset, installPageGuards } from './helpers.mjs';
 import { products as catalogProducts } from '../../js/approved-beverage-demo-data.js';
+import {
+  applyRetailCatalogModel,
+  getCustomerCatalogProducts,
+  normalizeCatalogProduct,
+} from '../../js/core/catalog-store.js';
 
-const totalCatalogProducts = catalogProducts.length;
-const visibleCatalogProducts = catalogProducts.filter((product) => !product.archived).length;
+// El estado carga el catálogo pasado por el funnel minorista: los packs de
+// abastecimiento siguen adentro (con su id y su historial) y se suman las
+// unidades publicadas en su lugar. La góndola, en cambio, sólo cuenta lo que
+// el cliente ve.
+const retailCatalog = applyRetailCatalogModel(
+  catalogProducts.map((product) => normalizeCatalogProduct(product)).filter(Boolean),
+);
+const totalCatalogProducts = retailCatalog.length;
+const visibleCatalogProducts = getCustomerCatalogProducts(retailCatalog).length;
 
 const stateKey = 'la_taba_mvp_v4_state';
 
@@ -39,8 +51,9 @@ test('an old or empty local catalog is rebuilt without losing the first render',
   }, stateKey);
   await page.goto('/?demo=1#catalog');
 
-  // El estado recupera el catálogo base completo, pero el storefront unitario
-  // oculta el pack Heineken rechazado y mantiene los SKU sin precio visibles.
+  // El estado recupera el catálogo base completo, pero la góndola oculta los
+  // packs de abastecimiento y muestra las unidades, con sus SKU sin precio
+  // visibles y no comprables.
   await expect(page.locator('[data-catalog-count]')).toContainText(`${visibleCatalogProducts} productos`);
   await expect(page.locator('[data-app-recovery]')).toBeHidden();
 });

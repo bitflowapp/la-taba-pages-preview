@@ -368,7 +368,7 @@ export function createSandboxOrderRepository({
               snapshot: committedSnapshot,
             });
           } catch (_) {
-            // La persistencia local no depende del canal de sincronizaciÃ³n.
+            // La persistencia local no depende del canal de sincronización.
           }
         }
         publishStorageTick(storageNamespace, lastStorageTickRef);

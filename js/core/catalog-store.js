@@ -1,6 +1,7 @@
 import { categories, products as demoProducts } from '../data.js';
 import { normalizeMoneyValue, normalizeStock } from './pricing.js';
 import { sanitizeText } from './validators.js';
+import { applyRetailNaming, linkProcurementPacks, publishRetailUnits } from './retail-packaging.js';
 
 export const DEFAULT_NEW_PRODUCT_STOCK = 99;
 export const CATALOG_BADGE_OPTIONS = Object.freeze(['', 'Promo', 'Nuevo', 'Más vendido']);
@@ -61,8 +62,24 @@ export function getEditableCategories() {
   return categories.filter((category) => category.id !== 'all');
 }
 
+/**
+ * Pasada minorista del catálogo. Es de nivel CATÁLOGO —no de producto— porque
+ * las dos cosas que resuelve necesitan ver a los vecinos: desambiguar un nombre
+ * exige saber con quién colisiona, y vincular un pack de compra con su unidad
+ * exige encontrar esa unidad. Va después de normalizar cada fila y es
+ * idempotente: correrla dos veces da el mismo catálogo.
+ */
+export function applyRetailCatalogModel(list) {
+  // Orden: nombres → vínculo compra/venta → publicación minorista. El último
+  // paso aplica la decisión comercial —el pack abastece, la unidad se vende— y
+  // necesita los dos anteriores resueltos.
+  return publishRetailUnits(linkProcurementPacks(applyRetailNaming(list)));
+}
+
 export function buildDemoCatalog() {
-  return demoProducts.map((product) => normalizeCatalogProduct(product)).filter(Boolean);
+  return applyRetailCatalogModel(
+    demoProducts.map((product) => normalizeCatalogProduct(product)).filter(Boolean),
+  );
 }
 
 export function restoreDemoCatalog() {
@@ -97,7 +114,7 @@ export function mergeCatalogProducts(baseProducts = demoProducts, savedProducts 
     if (product) merged.push(product);
   }
 
-  return merged;
+  return applyRetailCatalogModel(merged);
 }
 
 export function getCustomerCatalogProducts(products = []) {
@@ -105,7 +122,10 @@ export function getCustomerCatalogProducts(products = []) {
 }
 
 export function isProductVisibleToCustomer(product) {
-  return Boolean(product && product.archived !== true);
+  // `procurementOnly` es abastecimiento: el pack con el que el local se surte
+  // no es un producto de góndola. Sigue existiendo en el catálogo interno —con
+  // su id, su ficha y su historial— pero no se le ofrece al cliente.
+  return Boolean(product && product.archived !== true && product.procurementOnly !== true);
 }
 
 export function isProductOrderable(product) {

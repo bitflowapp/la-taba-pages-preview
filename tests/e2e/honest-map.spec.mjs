@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMinimum, waitForToast } from './helpers.mjs';
 
 const TRACKING_GPS_NOTE = 'El pedido sigue en el local. La ubicación aparecerá cuando comience el reparto.';
 const OUT_FOR_DELIVERY_GPS_NOTE = 'El rider está en camino. La ubicación aparecerá cuando esté disponible.';
@@ -16,7 +16,7 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
 
   await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('[data-floating-cart]').click();
   await fillCheckout(page, {
     name: 'Cliente Honesto',
@@ -80,7 +80,7 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
     });
   });
 
-  await expect(tracking.locator('.tracking-brand-row > strong')).toHaveText('TABA2');
+  await expect(tracking.locator('.tracking-brand-row > strong')).toHaveText('La Taba 2');
   await expect(tracking.getByRole('button', { name: 'Abrir menú' })).toBeVisible();
   await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido está en camino');
   await expect(tracking.locator('.tracking-hero')).not.toContainText(/GPS|mapa|no mostramos/i);
@@ -103,11 +103,18 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await context.close();
 });
 
-test('el local no inventa una dirección todavía no verificada', async ({ page }) => {
+// La dirección POSTAL está confirmada por el comercio y se publica desde la
+// config. La COORDENADA sigue sin verificar, así que lo que este test cuida es
+// lo que siempre cuidó: que el mapa del cliente no plotee un local inventado.
+test('el local publica su dirección desde la config y no inventa su ubicación en el mapa', async ({ page }) => {
   await installBrowserStubs(page);
   const guards = installPageGuards(page);
   await page.goto('/?demo=1#profile');
   await expect(page.locator('[data-view="profile"]')).toBeVisible();
-  await expect(page.locator('[data-business-address]').first()).toContainText('Dirección a confirmar con el local');
+  await expect(page.locator('[data-business-address]').first()).toContainText('Mendoza 827, Neuquén');
+  const businessMarkers = await page.evaluate(() => (
+    document.querySelectorAll('[data-map-role*="business"], .map-marker-business').length
+  ));
+  expect(businessMarkers).toBe(0);
   await guards.assertClean();
 });

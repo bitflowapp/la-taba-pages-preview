@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, waitForToast } from './helpers.mjs';
+import { fillCheckout, gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMinimum, waitForToast } from './helpers.mjs';
 
 const RELAY_PORT = Number.parseInt(process.env.TABA_E2E_RELAY_PORT || '18787', 10);
 const RELAY_URL = encodeURIComponent(`http://127.0.0.1:${RELAY_PORT}`);
@@ -21,7 +21,7 @@ test('cliente, negocio y rider completan el recorrido en el mismo dispositivo si
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.locator('.desktop-nav [data-nav-view="catalog"]').click();
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
+  await seedCartAboveMinimum(page);
   await page.locator('.desktop-nav [data-nav-view="cart"]').click();
   await fillCheckout(page, {
     name: 'Walter Local', phone: '2995551234', street: 'Roca 123', neighborhood: 'Neuquén centro',

@@ -51,11 +51,14 @@ test('versioned catalog evidence and normalized price handoff are present', () =
   assert.doesNotMatch(handoff, /,0(?:,|\r?\n)/);
 });
 
-test('public storefront shell uses the exact TABA2 name', () => {
+test('public storefront shell separates the product name from the business name', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const manifest = fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8');
+  // Producto/plataforma: TABA2. No cambia con el comercio.
   assert.match(html, /<title>TABA2 · Tienda de bebidas<\/title>/);
-  assert.match(html, /data-business-name>TABA2</);
-  assert.doesNotMatch(html, /data-business-name>TABA</);
   assert.match(manifest, /"short_name": "TABA2"/);
+  // Comercio: el fallback de primer pintado dice el nombre del local y luego
+  // `applyBusinessConfig` lo reemplaza con el valor real de la config.
+  assert.match(html, /data-business-name>La Taba 2</);
+  assert.doesNotMatch(html, /data-business-name>TABA</);
 });

@@ -55,6 +55,43 @@ function dockerBuffer(args, input) {
   });
 }
 
+// Fixture de clúster para pg_cron.
+//
+// La migración 20260803120000 instala pg_cron y programa el job del worker. pg_cron
+// sólo admite ambas cosas desde la base indicada por el GUC `cron.database_name`,
+// que es postmaster-level; el harness corre en una base efímera distinta, así que
+// la migración abortaba y ninguna de las cinco suites llegaba a ejecutarse.
+//
+// En vez de modificar la migración —que además todavía no está desplegada en
+// staging— se apunta el GUC del clúster LOCAL a la base efímera y se restaura al
+// terminar. La migración se aplica exactamente como está escrita.
+//
+// El rol `postgres` de Supabase no es superusuario, por eso no alcanza ALTER
+// SYSTEM: se edita el conf.d del contenedor como root y se reinicia.
+const CRON_CONF = '/etc/postgresql-custom/conf.d/pg_cron.conf';
+
+function waitForDatabaseContainer(timeoutMs = 120000) {
+  const started = Date.now();
+  for (;;) {
+    const probe = spawnSync(dockerCommand, ['exec', container, 'pg_isready', '-U', 'postgres'], { encoding: 'utf8' });
+    if (probe.status === 0) return;
+    if (Date.now() - started > timeoutMs) throw new Error('the local database container did not come back');
+  }
+}
+
+function setClusterCronDatabase(name) {
+  const value = name === null ? 'postgres' : name;
+  execFileSync(dockerCommand, ['exec', '-u', 'root', container, 'sh', '-c',
+    `sed -i "s|^cron.database_name = .*|cron.database_name = '${value}'|" ${CRON_CONF}`], { cwd: root, stdio: 'pipe' });
+  execFileSync(dockerCommand, ['restart', container], { cwd: root, stdio: 'pipe' });
+  waitForDatabaseContainer();
+  const active = execFileSync(dockerCommand, ['exec', container, 'psql', '-U', 'postgres', '-d', 'postgres', '-A', '-t', '-c',
+    'show cron.database_name;'], { cwd: root, encoding: 'utf8' }).trim();
+  if (active !== value) {
+    throw new Error(`cluster cron fixture did not take effect: cron.database_name=${active} expected=${value}`);
+  }
+}
+
 function runPgTap(relativePath) {
   const sql = `set search_path = public, extensions;\n${fs.readFileSync(path.join(root, relativePath), 'utf8')}`;
   const output = psqlCapture(sql);
@@ -90,7 +127,13 @@ function writeRestoreReport(report) {
 }
 
 try {
-  docker(['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', database]);
+  // pg_cron sólo deja instalar la extensión y programar jobs desde la base
+  // indicada por `cron.database_name`, que es postmaster-level. Sin esto, la
+  // migración 20260803120000 aborta el runner completo y ninguna suite corre.
+  // Se apunta el GUC del clúster local a la base efímera y se restaura al final:
+  // la migración se aplica tal como está escrita, sin saltos ni excepciones.
+  setClusterCronDatabase(database);
+  docker(['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', '--force', database]);
   docker(['exec', container, 'createdb', '-U', 'postgres', database]);
   const platformSchemas = execFileSync(dockerCommand, [
     'exec', container, 'pg_dump', '-U', 'postgres', '-d', 'postgres', '--schema-only',
@@ -101,6 +144,7 @@ try {
     create schema if not exists extensions;
     grant usage on schema extensions to anon, authenticated, service_role;
     create extension if not exists pgcrypto with schema extensions;
+    create schema if not exists vault;
   `);
   for (const migration of migrations) psql(fs.readFileSync(migration));
   psql(fs.readFileSync(path.join(root, 'supabase', 'tests', 'mercadopago_checkout_pro.local.sql')));
@@ -116,12 +160,26 @@ try {
   `);
   const sourceSummary = databaseSummary(database);
   const restoreStarted = performance.now();
+  // El drill excluye las extensiones de plataforma que instala 20260803120000:
+  // pg_cron, supabase_vault y pg_net. Las tres marcan tablas propias como
+  // configuración (cron.job, vault.secrets, net.http_request_queue), así que
+  // pg_dump arrastra su contenido y pg_restore falla con `permission denied`:
+  // el rol `postgres` de Supabase no es superusuario. pg_cron además sólo puede
+  // instalarse en la base de `cron.database_name`, y el restore usa otra.
+  //
+  // Son estado del clúster, no contrato de la aplicación. El drill sigue
+  // probando lo que debe: que el esquema de negocio —tablas, funciones y los
+  // contratos críticos que verifica databaseSummary— sobrevive íntegro un
+  // dump/restore.
   const archive = dockerBuffer([
     'exec', container, 'pg_dump', '-U', 'postgres', '-d', database,
     '--format=custom', '--no-owner', '--no-privileges',
+    '--exclude-extension=pg_cron', '--exclude-schema=cron',
+    '--exclude-extension=supabase_vault', '--exclude-schema=vault',
+    '--exclude-extension=pg_net', '--exclude-schema=net',
   ]);
   const dumpSha256 = crypto.createHash('sha256').update(archive).digest('hex');
-  docker(['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', restoreDatabase]);
+  docker(['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', '--force', restoreDatabase]);
   docker(['exec', container, 'createdb', '-U', 'postgres', restoreDatabase]);
   dockerBuffer([
     'exec', '-i', container, 'pg_restore', '-U', 'postgres', '-d', restoreDatabase,
@@ -147,10 +205,15 @@ try {
   console.log(`Integrated PostgreSQL lifecycle and restore drill verified (${archive.length} bytes, ${restoreDurationMs} ms).`);
 } finally {
   for (const temporaryDatabase of [restoreDatabase, database]) {
-    const cleanup = spawnSync(dockerCommand, ['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', temporaryDatabase], {
+    const cleanup = spawnSync(dockerCommand, ['exec', container, 'dropdb', '-U', 'postgres', '--if-exists', '--force', temporaryDatabase], {
       cwd: root,
       stdio: 'inherit',
     });
     if (cleanup.status !== 0) console.error(`Temporary local database cleanup failed: ${temporaryDatabase}`);
+  }
+  try {
+    setClusterCronDatabase(null);
+  } catch (error) {
+    console.error(`Cluster cron fixture restore failed: ${error.message}`);
   }
 }

@@ -118,7 +118,7 @@
   padding: 0 14px;
   border-color: var(--taba-border-medium);
   border-radius: var(--radius-pill);
-  background: #fff;
+  background: var(--shelf-raised);
   box-shadow: none;
   color: var(--taba-ink);
 }
@@ -309,7 +309,7 @@
     max-height: 76vh;
     overflow-y: auto;
     border-radius: 24px 24px 0 0;
-    background: var(--cream);
+    background: var(--shelf);
     box-shadow: 0 -12px 32px rgb(0 0 0 / 38%);
     /* La barra de gestos de Android/iOS vive debajo del sheet: sin esto el
        último control queda tapado justo cuando el pulgar llega. */
@@ -323,7 +323,7 @@
     height: 4px;
     margin: 10px auto 2px;
     border-radius: 999px;
-    background: var(--cream-line-strong);
+    background: var(--shelf-line-strong);
     content: '';
   }
 
@@ -337,8 +337,8 @@
     position: sticky;
     bottom: 0;
     padding: 12px 16px calc(4px + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid var(--cream-line);
-    background: var(--cream);
+    border-top: 1px solid var(--shelf-line);
+    background: var(--shelf);
   }
 }
 
@@ -362,7 +362,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
   font-weight: 750;
 }
 
@@ -396,7 +396,7 @@
   padding: 0 4px 0 10px;
   border: 1px solid var(--taba-border-medium);
   border-radius: var(--radius-pill);
-  background: #fff;
+  background: var(--shelf-raised);
   box-shadow: none;
   color: var(--taba-ink);
 }
@@ -485,7 +485,7 @@
   overflow: hidden;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-md);
-  background: white;
+  background: var(--shelf-raised);
   box-shadow: var(--shadow-xs);
   transition: border-color var(--ease), box-shadow var(--ease);
 }
@@ -521,7 +521,7 @@
   overflow: hidden;
   border: 0;
   border-bottom: 1px solid var(--taba-border-soft);
-  background: white;
+  background: var(--shelf-raised);
 }
 
 .thumb {
@@ -532,7 +532,7 @@
   min-height: inherit;
   place-items: center;
   overflow: hidden;
-  background: white;
+  background: var(--shelf-raised);
   color: #4c4c52;
 }
 
@@ -589,7 +589,7 @@
   min-height: 28px;
   padding: 0 9px;
   border-radius: var(--radius-pill);
-  background: #fff8e7;
+  background: var(--shelf-gold-wash);
   color: #7c4a00;
   font-size: 12px;
   font-weight: 850;
@@ -815,15 +815,15 @@
   padding: 0;
   border: 1px solid #ececf0;
   border-radius: 50%;
-  background: white;
+  background: var(--shelf-raised);
   box-shadow: 0 7px 16px rgb(24 28 35 / 15%);
   color: var(--taba-ink);
 }
 
 .add-button:hover {
   border-color: #dadade;
-  background: white;
-  color: var(--taba-red);
+  background: var(--shelf-raised);
+  color: var(--taba-red-quiet);
 }
 
 .add-plus {
@@ -857,7 +857,7 @@
   grid-template-columns: var(--tap) 1fr var(--tap);
   align-items: center;
   border: 1px solid var(--taba-border);
-  background: white;
+  background: var(--shelf-raised);
   text-align: center;
 }
 
@@ -879,7 +879,7 @@
   width: 44px;
   min-width: 44px;
   height: 44px;
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
   font-size: 22px;
 }
 
@@ -912,7 +912,7 @@
 }
 
 .product-favorite.is-favorite {
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
 }
 
 .product-pack-badge {
@@ -982,7 +982,7 @@
   grid-template-columns: minmax(250px, 0.9fr) minmax(300px, 1.1fr);
   padding: 0;
   overflow: hidden;
-  background: white;
+  background: var(--shelf-raised);
 }
 
 .modal-media {
@@ -1021,7 +1021,7 @@
 }
 
 .modal-presentation {
-  color: var(--taba-red);
+  color: var(--taba-red-quiet);
   font-size: 12px;
   font-weight: 850;
   letter-spacing: 0.08em;
@@ -1098,13 +1098,13 @@
 .modal-cart-control.add-button {
   width: 46px;
   min-width: 46px;
-  background: white;
+  background: var(--shelf-raised);
   color: var(--taba-ink);
 }
 
 .modal-cart-control.add-button:hover {
-  background: white;
-  color: var(--taba-red);
+  background: var(--shelf-raised);
+  color: var(--taba-red-quiet);
 }
 
 .modal-note-field span {
@@ -1115,7 +1115,7 @@
 .product-alcohol-notice {
   padding: 10px 12px;
   border-radius: var(--radius-xs);
-  background: #fff8e8;
+  background: var(--shelf-gold-wash);
   color: #6f4500 !important;
   font-size: 13px;
 }

@@ -287,6 +287,25 @@ test('snapshot de Negocio exige business_id, revision e ítems completos sin esp
   assert.equal(getState().orders.length, 0);
 });
 
+test('la bandeja del Negocio deja los pedidos QA fuera de la operación real', async () => {
+  const mock = createSupabaseClientMock();
+  const real = mock.seedOrder({ status: 'submitted', revision: 2 });
+  mock.seedOrder({ status: 'submitted', revision: 2, origin: 'qa', origin_reason: 'qa_fixture_product' });
+  const repository = makeRepository(mock);
+
+  const snapshot = await repository.fetchBusinessOrderSnapshot();
+
+  assert.equal(snapshot.ok, true);
+  assert.equal(snapshot.orders.length, 1, 'el pedido QA no debe entrar a la bandeja');
+  assert.equal(snapshot.orders[0].backendId, real.id);
+  // La exclusión se pide al backend, no se filtra después de traer todo.
+  const query = mock.calls.from.filter((call) => call.table === 'orders').at(-1);
+  assert.ok(
+    query.filters.some(([field, value]) => field === 'origin' && value === 'production'),
+    'la consulta debería filtrar por origin=production',
+  );
+});
+
 test('snapshot de Negocio reproduce order_events por sequence aunque created_at empate', async () => {
   const mock = createSupabaseClientMock();
   const row = mock.seedOrder({ status: 'on_the_way', revision: 3 });
@@ -2365,6 +2384,9 @@ function buildOrderRow(payload, sequence, userId) {
     delivery_snapshot_created_at: now,
     customer_notes: payload.customer_notes || '',
     address_label: 'Roca 321, Centro',
+    // La columna es NOT NULL DEFAULT 'production' desde 20260806160000: un
+    // pedido nace en la operación real salvo que el catálogo diga otra cosa.
+    origin: payload.origin || 'production',
     payment_method: payload.payment_method || 'cash',
     subtotal: 2300 * quantity,
     delivery_fee: 500,

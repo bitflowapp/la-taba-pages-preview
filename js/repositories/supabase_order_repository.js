@@ -66,6 +66,7 @@ const PUBLIC_TRACKING_GPS_MAX_ACCURACY_METERS = 250;
 const TRUSTED_ETA_MAX_AGE_MS = 15 * 60 * 1000;
 const TRUSTED_ETA_SOURCES = new Set(['business', 'routing']);
 const MAX_BUSINESS_INBOX_ORDERS = 500;
+const BUSINESS_INBOX_ORIGIN = 'production';
 let channelSequence = 0;
 
 export function createSupabaseOrderRepository({
@@ -222,6 +223,11 @@ export function createSupabaseOrderRepository({
       .from('orders')
       .select(BUSINESS_ORDER_SELECT)
       .eq('business_id', businessId)
+      // La bandeja operativa es la operación real. Un pedido QA se conserva
+      // como evidencia en la base y sigue siendo consultable, pero no entra a
+      // la cola que el negocio acepta, prepara y despacha: nadie puede mandar
+      // una moto a una dirección inventada por un E2E.
+      .eq('origin', BUSINESS_INBOX_ORIGIN)
       .in('status', BUSINESS_INBOX_DATABASE_STATUSES)
       .order('created_at', { ascending: true })
       .order('id', { ascending: true })

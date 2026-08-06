@@ -1220,7 +1220,12 @@ body[data-active-view="rider"] .floating-cart {
 }
 
 @media (max-width: 820px) {
-  body[data-active-view="tracking"]:has(.tracking-premium) .mobile-nav {
+  /* La experiencia inmersiva de mapa esconde la navegación para que el estado
+     y el mapa manden. Pero SIN pedido en curso no hay nada que maximizar:
+     esconder la barra ahí dejaba al cliente en una pantalla casi vacía sin
+     forma de volver, como si "Seguir" fuera otra aplicación. El vacío conserva
+     la navegación; el pedido activo conserva su inmersión. */
+  body[data-active-view="tracking"]:has(.tracking-premium:not(.is-empty)) .mobile-nav {
     display: none;
   }
 

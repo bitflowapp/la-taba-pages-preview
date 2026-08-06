@@ -6,6 +6,7 @@ const read = (name) => fs.readFileSync(new URL(`../supabase/migrations/${name}`,
 
 const catalog = read('20260806240000_taba2_combo_catalog_contract.sql');
 const pricing = read('20260806250000_taba2_combo_checkout_pricing.sql');
+const preference = read('20260806260000_taba2_combo_preference_lines.sql');
 const foundation = read('20260802090000_mercadopago_checkout_pro_foundation.sql');
 const both = `${catalog}\n${pricing}`;
 
@@ -174,6 +175,36 @@ test('las tablas nuevas habilitan RLS y no se pueden mutar desde el navegador', 
     assert.match(both, new RegExp(`revoke all privileges on table public[.]${table} from public, anon, authenticated`));
     assert.doesNotMatch(both, new RegExp(`grant (insert|update|delete)[^;]*on table public[.]${table}`, 'i'));
   }
+});
+
+test('la preferencia de Mercado Pago cobra el combo, no sus componentes', () => {
+  // Medido en staging: con los componentes a precio de lista la suma de los
+  // ítems (11.700) superaba el total autoritativo (10.650) y el armador de la
+  // preferencia lanzaba, lo que el Edge Function clasificaba como
+  // `network_or_timeout`. El combo se RESERVA por componentes y se COBRA como
+  // combo; la preferencia tiene que contar la segunda historia.
+  assert.match(preference, /from public[.]checkout_session_combos c/);
+  assert.match(preference, /'unit_price', c[.]promotional_price/);
+  assert.doesNotMatch(preference, /'unit_price', c[.]list_price/);
+
+  // Y del producto sólo viaja lo que ningún combo consume.
+  assert.match(preference, /i[.]quantity - coalesce\(\(\s*select sum\(cc[.]quantity \* c[.]quantity\)/);
+  assert.match(preference, /and suelto[.]quantity > 0/);
+});
+
+test('la redefinición de la preferencia conserva sus guardas de autorización', () => {
+  for (const guard of [
+    'checkout no autorizado',
+    'checkout vencido',
+    'Mercado Pago no esta habilitado',
+    'checkout no admite otra preferencia',
+    'reserva de stock no valida',
+    'el pago actual no admite un nuevo intento controlado',
+  ]) {
+    assert.ok(preference.includes(guard), `la redefinición conserva ${guard}`);
+  }
+  // El total sigue saliendo del intent, no de la suma de los ítems.
+  assert.match(preference, /'total', v_intent[.]expected_amount/);
 });
 
 test('la góndola pública sólo ve combos aprobados de un negocio abierto', () => {

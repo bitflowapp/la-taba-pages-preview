@@ -800,11 +800,11 @@ summary {
   transform: translateX(-50%);
 }
 
-body[data-active-view="cart"] .toast {
-  top: calc(76px + env(safe-area-inset-top));
-  bottom: auto;
-}
-
+/* El toast vive SIEMPRE sobre la navegación inferior. La excepción que lo
+   subía arriba en el carrito lo ponía a tapar "Tu pedido" y la fila de
+   acciones —lo único fijo de esa pantalla—, y convertía el mensaje más
+   efímero de la interfaz en el único componente que cambiaba de lugar
+   según la vista. Abajo no pisa nada anclado: el contenido scrollea. */
 body:has(dialog[open]) .toast {
   top: max(16px, env(safe-area-inset-top));
   right: 80px;

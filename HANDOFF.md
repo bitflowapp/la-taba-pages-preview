@@ -1,6 +1,6 @@
 # HANDOFF — TABA2, circuito de pedidos real
 
-Fecha: 2026-08-06 · Worktree: `D:\1212\la-taba2-real-orders-ops` · Rama: `feature/taba2-real-orders-ops`
+Fecha: 2026-08-06 · Worktree: `la-taba2-real-orders-ops` · Rama: `feature/taba2-real-orders-ops`
 
 | | |
 | --- | --- |

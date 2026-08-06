@@ -6,9 +6,9 @@ Entrega del worktree exclusivo `la-taba2-commercial-storefront`, rama
 | | |
 | --- | --- |
 | Base | `6294a98` — *fix(mercadopago): close the checkout without depending on a webhook* |
-| HEAD final | `e3d40d3` (ver `git log 6294a98..HEAD`) |
-| Commits | 10, todos locales. Sin push, sin merges, sin cherry-picks. |
-| Archivos | 45 (+3.383 / −497) |
+| HEAD final | El commit que agrega este archivo. `git log --oneline 6294a98..HEAD` lista la entrega completa; `git rev-parse HEAD` da el hash. No se fija acá porque un documento no puede contener el hash del commit que lo introduce, y una cabecera que se equivoca en su propia base es lo primero que hace dudar del resto. |
+| Commits | 11, todos locales. Sin push, sin merges, sin cherry-picks. |
+| Archivos | 45 (+3.383 / −497) sobre la base |
 | Git | Limpio. Sin `amend`, `reset`, `clean`, `stash` ni `git add .`. |
 
 ---

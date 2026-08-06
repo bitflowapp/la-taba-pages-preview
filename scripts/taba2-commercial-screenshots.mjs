@@ -121,6 +121,12 @@ for (const engine of ['chromium', 'webkit']) {
 
     await hash(page, 'profile');
     await shot(page, out, '14-perfil');
+    // Editor de dirección: la vista "formulario" que la entrega pide capturar.
+    await page.locator('[data-view="profile"] .profile-address-actions .text-button').first().click().catch(() => {});
+    await page.waitForTimeout(800);
+    await shot(page, out, '14b-direccion');
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
     await hash(page, 'tracking');
     await page.waitForTimeout(800);
     await shot(page, out, '15-seguimiento');

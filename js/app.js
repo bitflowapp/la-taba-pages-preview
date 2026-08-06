@@ -1,7 +1,9 @@
 import {
+  addComboToCart,
   addToCart,
   clearCart,
   decrementCartItem,
+  decrementComboItem,
   incrementCartItem,
   removeCartItem,
   repeatCustomerOrder,
@@ -1198,6 +1200,39 @@ function bindEvents() {
       return;
     }
 
+    // Combos: el botón sólo existe cuando el backend puede cobrar el combo a su
+    // precio de combo, así que acá no hace falta volver a decidirlo; lo que sí
+    // se revalida es el stock compartido con las líneas sueltas.
+    const addComboId = target.closest('[data-add-combo]')?.dataset.addCombo;
+    if (addComboId) {
+      if (isProductionOrderingBlocked()) {
+        showToast('El catálogo verificado todavía no está disponible.');
+        return;
+      }
+      const result = runCartAction('add-combo', addComboId, () => addComboToCart(addComboId, 1));
+      if (!result.duplicate) showToast(result.message);
+      if (result.ok) {
+        closeComboModal();
+        pulseCartFeedback();
+      }
+      return;
+    }
+
+    const comboIncId = target.closest('[data-combo-increment]')?.dataset.comboIncrement;
+    if (comboIncId) {
+      const result = runCartAction('inc-combo', comboIncId, () => addComboToCart(comboIncId, 1));
+      if (result.ok) pulseCartFeedback();
+      if (!result.duplicate) showToast(result.message);
+      return;
+    }
+
+    const comboDecId = target.closest('[data-combo-decrement]')?.dataset.comboDecrement;
+    if (comboDecId) {
+      const result = runCartAction('dec-combo', comboDecId, () => decrementComboItem(comboDecId));
+      if (!result.ok && !result.duplicate) showToast(result.message);
+      return;
+    }
+
     const incId = target.closest('[data-cart-inc]')?.dataset.cartInc;
     if (incId) {
       const result = runCartAction('inc', incId, () => incrementCartItem(incId));
@@ -1225,7 +1260,7 @@ function bindEvents() {
     }
 
     if (target.closest('[data-clear-cart]')) {
-      if (getState().cart.length) openClearCartModal();
+      if (getState().cart.length || getState().comboSelections.length) openClearCartModal();
       return;
     }
 

@@ -55,6 +55,7 @@ import {
   updateState,
 } from './state.js';
 import {
+  getCartCombos,
   getCartItems,
   getCartSummary,
   validateCartForCheckout,
@@ -64,7 +65,7 @@ let activeOrderFallbackSuppressed = false;
 
 export function createOrderFromCheckout(formValues = {}) {
   const values = normalizeCheckoutValues(formValues);
-  const validation = validateCartForCheckout(values.deliveryMode);
+  const validation = validateCartForCheckout(values.deliveryMode, { paymentMethod: values.paymentMethod });
   if (!validation.ok) return { ok: false, message: validation.message };
 
   if (!values.customerName) return { ok: false, message: 'Ingresá el nombre del cliente.' };
@@ -83,9 +84,26 @@ export function createOrderFromCheckout(formValues = {}) {
 
   const now = new Date().toISOString();
   const cartItems = getCartItems();
-  if (cartItems.some((item) => item.product.alcoholic) && !values.ageConfirmed) {
+  const comboLines = getCartCombos();
+  // El +18 de un componente alcanza al combo entero: no existe un combo medio
+  // alcohólico, y la confirmación de edad se pide igual que por el producto.
+  const alcoholic = cartItems.some((item) => item.product.alcoholic)
+    || comboLines.some((line) => line.combo.ageRestricted);
+  if (alcoholic && !values.ageConfirmed) {
     return { ok: false, message: 'Confirmá que sos mayor de edad para pedir bebidas alcohólicas.' };
   }
+  // El combo se despacha por sus componentes: el mostrador arma latas, no
+  // combos. La línea del combo vive en `combos` para que el pedido pueda
+  // explicar de dónde salió el descuento.
+  const comboItems = comboLines.flatMap((line) => line.combo.components.map((component) => ({
+    productId: component.product.id,
+    name: component.product.name,
+    icon: component.product.icon,
+    quantity: component.quantity * line.quantity,
+    unitPrice: component.unitPrice,
+    unit: component.product.unit,
+    comboId: line.combo.comboId,
+  })));
   const items = cartItems.map((item) => ({
     productId: item.product.id,
     name: item.product.name,
@@ -93,6 +111,14 @@ export function createOrderFromCheckout(formValues = {}) {
     quantity: item.quantity,
     unitPrice: item.product.price,
     unit: item.product.unit,
+  })).concat(comboItems);
+  const combos = comboLines.map((line) => ({
+    comboId: line.combo.comboId,
+    name: line.combo.name,
+    quantity: line.quantity,
+    listPrice: line.combo.individualPrice,
+    promotionalPrice: line.combo.promotionalPrice,
+    discountAmount: line.listPrice - line.price,
   }));
   const cartSummary = getCartSummary(values.deliveryMode, { couponCode: values.couponCode });
   const coupon = buildAppliedCoupon(values.couponCode, cartSummary.subtotal);
@@ -126,6 +152,7 @@ export function createOrderFromCheckout(formValues = {}) {
     status: 'received',
     previewOnly: values.previewOnly,
     items,
+    combos,
     subtotal: totals.subtotal,
     discountTotal: totals.discountTotal,
     deliveryFee: totals.deliveryFee,
@@ -159,6 +186,7 @@ export function createOrderFromCheckout(formValues = {}) {
     }
 
     draft.cart = [];
+    draft.comboSelections = [];
   });
   if (values.rememberCustomer && !values.previewOnly) {
     recordCustomerOrder(order);

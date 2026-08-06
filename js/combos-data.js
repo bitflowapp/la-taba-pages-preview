@@ -6,11 +6,19 @@
  * el promocional, el ahorro y el stock los deriva `js/core/combos.js` del
  * catálogo vivo. Ver el comentario de ese módulo para el porqué.
  *
- * `approvalStatus` es PENDIENTE_APROBACION_COMERCIAL en los siete: el descuento
- * es una propuesta armada sobre precios de componente confirmados, no una
- * promoción aprobada. Mientras esté en ese estado el combo se muestra y se
- * puede comparar, pero no se cobra: el precio promocional lo tiene que aplicar
- * el backend de pedidos, y eso es integración de Operaciones.
+ * `approvalStatus` pasó a APROBADO_COMERCIAL en los siete al cerrar el
+ * bloqueante: la migración `20260806250000` hace que el backend calcule el
+ * precio de lista con los precios que bloquea al reservar, aplique el descuento
+ * declarado acá y decida el total. El descuento dejó de ser una propuesta que
+ * nadie aplicaba.
+ *
+ * Aprobado NO quiere decir comprable. Un combo se cobra sólo si además resuelve
+ * entero contra el catálogo VIVO —todos sus componentes publicados, con precio
+ * confirmado y stock—, y esa parte la decide `js/core/combos.js` en cada render
+ * y el backend otra vez al reservar. En staging, por ejemplo, sólo tres de los
+ * siete tienen sus componentes cargados.
+ *
+ * La autoridad del precio es el backend: acá no hay ni un número de dinero.
  */
 
 export const COMBO_MANIFEST = Object.freeze([
@@ -22,8 +30,8 @@ export const COMBO_MANIFEST = Object.freeze([
     categoryId: 'cervezas',
     discountPercentage: 12,
     terms: 'Requiere validación de mayoría de edad al recibir.',
-    approvalStatus: 'PENDIENTE_APROBACION_COMERCIAL',
-    previewOnly: true,
+    approvalStatus: 'APROBADO_COMERCIAL',
+    previewOnly: false,
     components: Object.freeze([
       Object.freeze({
         sku: 'imperial-golden-lata-473ml',
@@ -44,8 +52,8 @@ export const COMBO_MANIFEST = Object.freeze([
     categoryId: 'cervezas',
     discountPercentage: 10,
     terms: 'Requiere validación de mayoría de edad al recibir.',
-    approvalStatus: 'PENDIENTE_APROBACION_COMERCIAL',
-    previewOnly: true,
+    approvalStatus: 'APROBADO_COMERCIAL',
+    previewOnly: false,
     components: Object.freeze([
       Object.freeze({ sku: 'heineken-original-lata-473ml', quantity: 6, substitutions: Object.freeze([]) }),
     ]),
@@ -58,8 +66,8 @@ export const COMBO_MANIFEST = Object.freeze([
     categoryId: 'cervezas',
     discountPercentage: 10,
     terms: 'Requiere validación de mayoría de edad al recibir.',
-    approvalStatus: 'PENDIENTE_APROBACION_COMERCIAL',
-    previewOnly: true,
+    approvalStatus: 'APROBADO_COMERCIAL',
+    previewOnly: false,
     components: Object.freeze([
       Object.freeze({ sku: 'corona-extra-botella-330ml', quantity: 6, substitutions: Object.freeze([]) }),
     ]),
@@ -72,8 +80,8 @@ export const COMBO_MANIFEST = Object.freeze([
     categoryId: 'cervezas',
     discountPercentage: 12,
     terms: 'Requiere validación de mayoría de edad al recibir.',
-    approvalStatus: 'PENDIENTE_APROBACION_COMERCIAL',
-    previewOnly: true,
+    approvalStatus: 'APROBADO_COMERCIAL',
+    previewOnly: false,
     components: Object.freeze([
       Object.freeze({
         sku: 'imperial-golden-lata-473ml',
@@ -99,8 +107,8 @@ export const COMBO_MANIFEST = Object.freeze([
     categoryId: 'cervezas',
     discountPercentage: 10,
     terms: 'Requiere validación de mayoría de edad al recibir.',
-    approvalStatus: 'PENDIENTE_APROBACION_COMERCIAL',
-    previewOnly: true,
+    approvalStatus: 'APROBADO_COMERCIAL',
+    previewOnly: false,
     components: Object.freeze([
       Object.freeze({ sku: 'imperial-golden-lata-473ml', quantity: 1, substitutions: Object.freeze([]) }),
       Object.freeze({ sku: 'imperial-extra-lager-lata-473ml', quantity: 1, substitutions: Object.freeze([]) }),
@@ -118,8 +126,8 @@ export const COMBO_MANIFEST = Object.freeze([
     categoryId: 'cervezas',
     discountPercentage: 12,
     terms: 'Requiere validación de mayoría de edad al recibir.',
-    approvalStatus: 'PENDIENTE_APROBACION_COMERCIAL',
-    previewOnly: true,
+    approvalStatus: 'APROBADO_COMERCIAL',
+    previewOnly: false,
     components: Object.freeze([
       Object.freeze({ sku: 'heineken-original-lata-473ml', quantity: 4, substitutions: Object.freeze([]) }),
       Object.freeze({ sku: 'red-bull-original-lata-250ml', quantity: 2, substitutions: Object.freeze([]) }),
@@ -133,8 +141,8 @@ export const COMBO_MANIFEST = Object.freeze([
     categoryId: 'energizantes',
     discountPercentage: 10,
     terms: 'Sin alcohol. No requiere validación de edad.',
-    approvalStatus: 'PENDIENTE_APROBACION_COMERCIAL',
-    previewOnly: true,
+    approvalStatus: 'APROBADO_COMERCIAL',
+    previewOnly: false,
     components: Object.freeze([
       Object.freeze({
         sku: 'speed-original-lata-473ml',

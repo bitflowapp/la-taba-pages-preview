@@ -1,6 +1,8 @@
 import { BUSINESS_CONFIG, STORAGE_KEYS } from './config.js';
 import { categories, PREVIEW_CATALOG_VERSION, seedOrders } from './data.js';
 import { buildDemoCatalog, isProductVisibleToCustomer, mergeCatalogProducts } from './core/catalog-store.js';
+import { chargeableCombos } from './core/combos.js';
+import { COMBO_MANIFEST } from './combos-data.js';
 import { normalizeDeliveryProof } from './core/delivery-proof.js';
 import { normalizeDeliveryCode } from './core/delivery-code.js';
 import {
@@ -74,6 +76,7 @@ const defaultState = () => {
     sortBy: 'recommended',
     catalogFilters: defaultCatalogFilters(),
     cart: [],
+    comboSelections: [],
     orders: baseOrders,
     products: baseProducts,
     lastOrderId: null,
@@ -188,6 +191,7 @@ export function sanitizeState(nextState, baseState = defaultState(), { refreshBa
     sortBy: normalizeSortBy(source.sortBy),
     catalogFilters: normalizeCatalogFilters(source.catalogFilters),
     cart: sanitizeCart(source.cart, productMap),
+    comboSelections: sanitizeComboSelections(source.comboSelections, mergedProducts),
     orders,
     products: mergedProducts,
     lastOrderId,
@@ -341,6 +345,37 @@ function sanitizeCart(rawCart, productMap) {
   }
 
   return [...byProduct.entries()].map(([productId, quantity]) => ({ productId, quantity }));
+}
+
+/*
+ * Un combo guardado se rehidrata sólo si HOY se puede cobrar.
+ *
+ * Un carrito de ayer con un combo que perdió un componente, se quedó sin stock
+ * o dejó de estar aprobado no se corrompe ni se completa con lo que quedó: esa
+ * línea se descarta, igual que la de un producto archivado, y el resto del
+ * carrito se conserva. Rearmar el combo con menos componentes sería cobrar un
+ * combo que el mostrador no puede armar.
+ */
+function sanitizeComboSelections(rawSelections, products) {
+  if (!Array.isArray(rawSelections) || !rawSelections.length) return [];
+  const byCombo = new Map();
+  const chargeable = new Map(
+    chargeableCombos(COMBO_MANIFEST, products).map((combo) => [combo.comboId, combo]),
+  );
+
+  for (const selection of rawSelections) {
+    const comboId = typeof selection?.comboId === 'string' ? selection.comboId : '';
+    const combo = chargeable.get(comboId);
+    if (!combo) continue;
+    const quantity = normalizeCartQuantity(selection.quantity);
+    if (quantity <= 0) continue;
+    const current = byCombo.get(comboId) || 0;
+    byCombo.set(comboId, Math.min(combo.stock, current + quantity));
+  }
+
+  return [...byCombo.entries()]
+    .filter(([, quantity]) => quantity > 0)
+    .map(([comboId, quantity]) => ({ comboId, quantity }));
 }
 
 function normalizeCartQuantity(value) {

@@ -128,11 +128,85 @@ test('el manifiesto importable declara los mismos combos que el runtime', () => 
   assert.deepEqual(ids, COMBO_MANIFEST.map((combo) => combo.comboId));
 });
 
-test('ningún combo se publica sin la aprobación comercial de Operaciones', () => {
+/*
+ * Este contrato cambió al cerrar el bloqueante, y conviene entender por qué.
+ *
+ * Antes protegía que ningún combo se ofreciera para comprar, porque el backend
+ * no sabía aplicar su descuento y ofrecerlo habría cobrado la suma de los
+ * precios de lista. Eso dejó de ser cierto: `20260806250000` hace que el
+ * backend derive el precio de lista de los precios que bloquea al reservar y
+ * aplique el descuento aprobado.
+ *
+ * Lo que el test protegía —que un combo NUNCA se cobre a un precio que el
+ * backend no vaya a aplicar— sigue protegido, ahora del lado correcto: el
+ * manifiesto declara la aprobación y `chargeable` es lo único que habilita la
+ * compra. Un combo aprobado pero no armable sigue sin ofrecerse.
+ */
+test('la aprobación comercial está declarada y es lo único que habilita cobrar', () => {
   for (const combo of COMBO_MANIFEST) {
-    assert.equal(combo.approvalStatus, 'PENDIENTE_APROBACION_COMERCIAL', combo.comboId);
-    assert.equal(combo.previewOnly, true, combo.comboId);
+    assert.equal(combo.approvalStatus, 'APROBADO_COMERCIAL', combo.comboId);
+    assert.equal(combo.previewOnly, false, combo.comboId);
   }
+
+  const csv = readFileSync(path.join(root, 'data/combos.csv'), 'utf8').trim().split(/\r?\n/);
+  for (const line of csv.slice(1)) {
+    assert.ok(line.includes('APROBADO_COMERCIAL'), `el manifiesto importable declara la aprobación: ${line.split(',')[0]}`);
+    assert.ok(!line.includes('PENDIENTE_APROBACION_COMERCIAL'), 'el CSV no puede quedar desincronizado del runtime');
+  }
+});
+
+test('un combo sin aprobación no se puede cobrar aunque se pueda armar entero', () => {
+  const products = [
+    { id: 'lata', sku: 'lata', name: 'Lata', price: 1000, stock: 50, available: true, alcoholic: false },
+  ];
+  const definicion = { comboId: 'combo-test', name: 'Test', discountPercentage: 10, components: [{ sku: 'lata', quantity: 6 }] };
+
+  const aprobado = resolveCombo({ ...definicion, approvalStatus: 'APROBADO_COMERCIAL' }, products);
+  assert.equal(aprobado.available, true);
+  assert.equal(aprobado.chargeable, true);
+  assert.equal(aprobado.promotionalPrice, 5400);
+
+  const pendiente = resolveCombo({ ...definicion, approvalStatus: 'PENDIENTE_APROBACION_COMERCIAL' }, products);
+  assert.equal(pendiente.available, true, 'se puede armar');
+  assert.equal(pendiente.chargeable, false, 'pero no se puede cobrar');
+});
+
+test('un combo aprobado que perdió un componente deja de ser cobrable', () => {
+  const combo = resolveCombo(
+    {
+      comboId: 'combo-test',
+      approvalStatus: 'APROBADO_COMERCIAL',
+      discountPercentage: 10,
+      components: [{ sku: 'lata', quantity: 6 }, { sku: 'fantasma', quantity: 1 }],
+    },
+    [{ id: 'lata', sku: 'lata', name: 'Lata', price: 1000, stock: 50, available: true }],
+  );
+  assert.equal(combo.chargeable, false);
+  assert.equal(combo.promotionalPrice, null, 'sin precio parcial');
+  assert.ok(combo.blockers.some((blocker) => blocker.includes('fantasma')));
+});
+
+test('el manifiesto resuelve por SKU aunque el catálogo use UUID como id', () => {
+  // Contra Supabase el `id` del producto es un UUID y el SKU comercial viaja
+  // aparte. Con el índice por `id` solamente, la góndola productiva mostraba
+  // cero combos: todos los componentes quedaban "fuera del catálogo".
+  const combo = resolveCombo(
+    { comboId: 'c', approvalStatus: 'APROBADO_COMERCIAL', discountPercentage: 10, components: [{ sku: 'heineken-original-lata-473ml', quantity: 6 }] },
+    [{
+      id: '6f1ca8f8-bd7b-4815-ae80-1874b1f8e481',
+      sku: 'heineken-original-lata-473ml',
+      name: 'Heineken',
+      price: 3900,
+      stock: 99,
+      available: true,
+      alcoholic: true,
+    }],
+  );
+  assert.equal(combo.chargeable, true);
+  assert.equal(combo.individualPrice, 23400);
+  assert.equal(combo.promotionalPrice, 21000);
+  assert.equal(combo.savings, 2400);
+  assert.equal(combo.ageRestricted, true);
 });
 
 test('el manifiesto no guarda ningún precio: el precio siempre se deriva', () => {

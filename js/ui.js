@@ -23,6 +23,7 @@ import {
   defaultCatalogFilters,
 } from './state.js';
 import {
+  getCartCombos,
   getCartItems,
   getDeliveryMinimumProgress,
   getCartSummary,
@@ -1345,6 +1346,18 @@ function comboCard(combo) {
     </article>`;
 }
 
+/*
+ * Un combo que no se puede cobrar tiene que decir por qué, no desaparecer sin
+ * explicación ni ofrecer un botón que no hace nada.
+ */
+function comboBlockedCopy(combo) {
+  if (combo.approvalStatus !== 'APROBADO_COMERCIAL') {
+    return 'El local todavía no aprobó el precio de este combo; mientras tanto podés agregar los productos por separado.';
+  }
+  if (combo.blockers.length) return combo.blockers[0];
+  return 'Este combo no está disponible para pedir en este momento.';
+}
+
 export function showComboModal(comboId, restoreTrigger = null) {
   const combo = customerCombos().find((candidate) => candidate.comboId === comboId);
   const modal = $('[data-combo-modal]');
@@ -1401,14 +1414,17 @@ export function showComboModal(comboId, restoreTrigger = null) {
       </div>
       <div class="modal-actions combo-modal-actions">
         <!--
-          El combo todavía NO se cobra a su precio promocional: el descuento es
-          una propuesta armada sobre precios de componente confirmados y quien
-          lo aplica al total es el backend de pedidos. Ofrecer "Agregar combo"
-          acá cobraría la suma de los precios de lista y el ahorro anunciado
-          sería mentira. Hasta que Operaciones lo integre, la ficha muestra la
-          composición y lleva a los componentes.
+          "Agregar combo" aparece SÓLO si el combo se puede cobrar a su precio
+          de combo: aprobado comercialmente y armable entero contra el catálogo
+          vivo. Quien decide el precio final es el backend, que lo deriva de los
+          precios que bloquea al reservar; este botón sólo manda el identificador
+          del combo y su cantidad. Mientras el combo no sea cobrable, la ficha
+          dice por qué y lleva a los componentes en vez de ofrecer una compra
+          que cobraría la suma de los precios de lista.
         -->
-        <p class="combo-modal-pending">Combo listo para publicar. El local lo aprueba antes de que se pueda pedir como combo; mientras tanto podés agregar los productos por separado.</p>
+        ${combo.chargeable
+          ? `<button class="primary-button" type="button" data-add-combo="${escapeHtml(combo.comboId)}">Agregar combo · ${money(combo.promotionalPrice)}</button>`
+          : `<p class="combo-modal-pending">${escapeHtml(comboBlockedCopy(combo))}</p>`}
         <button class="secondary-button" type="button" data-combo-open-component="${escapeHtml(combo.components[0].sku)}">Ver ${escapeHtml(combo.components[0].product.name)}</button>
       </div>
     </div>`;
@@ -2216,7 +2232,8 @@ export function renderCart() {
 // el acceso a productos, para que la vista del pedido se sienta limpia.
 function renderCheckoutVisibility() {
   const cartItems = getCartItems();
-  const isEmpty = cartItems.length === 0;
+  const comboLines = getCartCombos();
+  const isEmpty = cartItems.length === 0 && comboLines.length === 0;
   const form = $('[data-checkout-form]');
   const wasHidden = form?.hidden === true;
   if (form) {
@@ -2226,12 +2243,17 @@ function renderCheckoutVisibility() {
     }
   }
   $$('[data-clear-cart]').forEach((button) => { button.hidden = isEmpty; });
-  const requiresAgeConfirmation = cartItems.some((item) => item.product.alcoholic);
+  // El +18 de cualquier componente alcanza al combo entero.
+  const requiresAgeConfirmation = cartItems.some((item) => item.product.alcoholic)
+    || comboLines.some((line) => line.combo.ageRestricted);
   const requiredAge = Math.max(
     18,
     ...cartItems
       .filter((item) => item.product.alcoholic)
       .map((item) => Number(item.product.minimumAge || item.product.minimum_age || 18)),
+    ...comboLines
+      .filter((line) => line.combo.ageRestricted)
+      .map((line) => Number(line.combo.minimumAge || 18)),
   );
   const ageRow = $('[data-age-confirmation]');
   const ageInput = $('[name="ageConfirmed"]');
@@ -2378,8 +2400,9 @@ function renderCartList() {
   const container = $('[data-cart-list]');
   if (!container) return;
   const items = getCartItems();
+  const comboLines = getCartCombos();
 
-  if (!items.length) {
+  if (!items.length && !comboLines.length) {
     const activeOrder = getActiveOrder();
     const hasActiveOrder = activeOrder && !['delivered', 'cancelled'].includes(activeOrder.status);
     const activeNonTerminalId = hasActiveOrder ? activeOrder.id : '';
@@ -2416,7 +2439,31 @@ function renderCartList() {
     return;
   }
 
-  container.innerHTML = items.map((item) => `
+  /*
+   * El combo se muestra como UNA línea con lo que trae adentro, no como sus
+   * componentes sueltos: el cliente eligió un combo y el ahorro es del combo.
+   * Desarmarlo en la vista escondería de dónde sale el descuento y dejaría al
+   * cliente sin forma de sacarlo entero.
+   */
+  const comboCards = comboLines.map((line) => `
+    <div class="cart-item cart-item-combo" data-cart-combo="${escapeHtml(line.combo.comboId)}">
+      <div class="cart-item-info">
+        <div class="cart-title">${escapeHtml(line.combo.name)}<span class="cart-combo-tag">Combo</span></div>
+        <div class="cart-meta">${line.combo.components.map((component) => `${component.quantity}× ${escapeHtml(component.product.name)}`).join(' · ')}</div>
+        <div class="cart-meta cart-combo-saving">Ahorrás ${money(line.listPrice - line.price)}</div>
+      </div>
+      <div class="cart-item-side">
+        <div class="quantity-control" role="group" aria-label="Cantidad de ${escapeHtml(line.combo.name)}">
+          <button type="button" data-combo-decrement="${escapeHtml(line.combo.comboId)}" aria-label="Quitar un ${escapeHtml(line.combo.name)}">−</button>
+          <span data-combo-quantity="${escapeHtml(line.combo.comboId)}">${line.quantity}</span>
+          <button type="button" data-combo-increment="${escapeHtml(line.combo.comboId)}" aria-label="Sumar un ${escapeHtml(line.combo.name)}">+</button>
+        </div>
+        <div class="cart-line"><s>${money(line.listPrice)}</s> ${money(line.price)}</div>
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = comboCards + items.map((item) => `
     <div class="cart-item">
       ${productThumb(item.product, 'cart')}
       <div class="cart-item-info">
@@ -2439,6 +2486,8 @@ export function renderOrderSummary() {
   const couponCode = currentCouponCode();
   const {
     items,
+    combos,
+    comboDiscount,
     subtotal,
     deliveryFee,
     total,
@@ -2446,7 +2495,7 @@ export function renderOrderSummary() {
     promotions,
     promotion,
   } = getCartSummary(deliveryMode, { couponCode });
-  const validation = validateCartForCheckout(deliveryMode);
+  const validation = validateCartForCheckout(deliveryMode, { paymentMethod: currentPaymentMethod() });
   renderCheckoutPaymentFields();
   renderCouponMessage(coupon);
 
@@ -2459,6 +2508,7 @@ export function renderOrderSummary() {
     .slice(0, 2);
   container.innerHTML = `
     <div class="summary-row"><span>Subtotal</span><strong>${money(subtotal)}</strong></div>
+    ${comboDiscount > 0 ? `<div class="summary-row discount"><span>${combos.length === 1 ? 'Combo' : 'Combos'} del local</span><strong>-${money(comboDiscount)}</strong></div>` : ''}
     ${promotions.map((entry) => `<div class="summary-row discount"><span>${escapeHtml(entry.title)}</span><strong>-${money(entry.discountAmount)}</strong></div>`).join('')}
     ${coupon.discountAmount > 0 ? `<div class="summary-row discount"><span>Cupón ${escapeHtml(coupon.code)}</span><strong>-${money(coupon.discountAmount)}</strong></div>` : ''}
     ${promotion.freeDelivery ? '<div class="summary-row discount"><span>Promoción de envío</span><strong>Envío sin cargo</strong></div>' : ''}
@@ -2470,7 +2520,7 @@ export function renderOrderSummary() {
 
   const warning = $('[data-checkout-warning]');
   if (warning) {
-    const cartIsEmpty = items.length === 0;
+    const cartIsEmpty = items.length === 0 && combos.length === 0;
     const hide = validation.ok || cartIsEmpty;
     warning.classList.toggle('hidden', hide);
     warning.textContent = validation.message;

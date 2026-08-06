@@ -1,5 +1,5 @@
 import { getBusinessConfig } from '../core/business-config-store.js';
-import { getCartItems } from '../cart.js';
+import { getCartCombos, getCartItems } from '../cart.js';
 import {
   normalizeOrderDraft,
   normalizeTrackingLocation,
@@ -530,6 +530,15 @@ export function createSupabaseOrderRepository({
   async function createOrderInternal(orderDraft = {}) {
     const protectedTrackingAccess = getTrackingAccess();
     const values = normalizeOrderDraft(orderDraft);
+    // La ruta directa de pedidos sólo acepta líneas de producto: es el backend
+    // que NO deriva el precio de un combo. Dejar pasar un combo por acá lo
+    // cobraría a la suma de los precios de lista, así que se rechaza en vez de
+    // expandirlo en silencio. El combo se cobra por Checkout Pro.
+    if (getCartCombos().length) {
+      return repositoryResult(false, {
+        message: 'Los combos se cobran con Mercado Pago. Elegí Mercado Pago o quitá el combo del carrito.',
+      });
+    }
     // La instancia productiva no usa mínimos, tarifas ni totales del estado
     // local: la RPC valida el negocio y calcula todo desde filas bloqueadas.
     if (businessStatus.state === 'idle') await loadBusinessConfiguration();
@@ -766,11 +775,16 @@ export function createSupabaseOrderRepository({
       return repositoryResult(false, { message: 'La modalidad elegida no está habilitada por el comercio.' });
     }
     const cartItems = getCartItems();
-    if (!cartItems.length) return repositoryResult(false, { message: 'Agregá al menos un producto antes de pagar.' });
+    const comboLines = getCartCombos();
+    if (!cartItems.length && !comboLines.length) {
+      return repositoryResult(false, { message: 'Agregá al menos un producto antes de pagar.' });
+    }
     if (cartItems.some((item) => item.product.pricePending)) {
       return repositoryResult(false, { message: 'Hay productos con precio pendiente. No se pueden pagar todavía.' });
     }
-    if (cartItems.some((item) => item.product.alcoholic) && !values.ageConfirmed) {
+    const requiresAge = cartItems.some((item) => item.product.alcoholic)
+      || comboLines.some((line) => line.combo.ageRestricted);
+    if (requiresAge && !values.ageConfirmed) {
       return repositoryResult(false, {
         message: 'Confirmá que sos mayor de edad para pedir bebidas alcohólicas.',
       });
@@ -791,6 +805,18 @@ export function createSupabaseOrderRepository({
     if (items.some((item) => !isUuid(item.product_id) || item.quantity < 1)) {
       return repositoryResult(false, {
         message: 'El catálogo productivo no está sincronizado. Actualizá la página antes de pagar.',
+      });
+    }
+    // El combo se manda por identificador y sin precio. Expandirlo acá a sus
+    // componentes lo cobraria a precio de lista, que es exactamente el defecto
+    // que el contrato de combos cierra.
+    const comboItems = comboLines.map((line) => ({
+      combo_id: String(line.combo.comboId || ''),
+      quantity: Math.max(0, Math.floor(Number(line.quantity) || 0)),
+    }));
+    if (comboItems.some((item) => !/^[a-z0-9][a-z0-9-]{2,63}$/.test(item.combo_id) || item.quantity < 1)) {
+      return repositoryResult(false, {
+        message: 'Hay un combo que ya no es válido. Actualizá la página antes de pagar.',
       });
     }
 
@@ -815,7 +841,7 @@ export function createSupabaseOrderRepository({
         customerName: nameValidation.name,
         customerPhone,
       },
-      items,
+      items: items.concat(comboItems),
     });
     const sessionResult = await invokePaymentFunction('mercadopago-create-checkout-session', payload);
     if (!sessionResult.ok || !sessionResult.data?.checkout) {
@@ -1765,6 +1791,7 @@ function mirrorCreatedOrder(row) {
     ];
     draft.lastOrderId = order.id;
     draft.cart = [];
+    draft.comboSelections = [];
   });
   return order;
 }

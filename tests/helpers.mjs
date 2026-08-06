@@ -12,6 +12,7 @@ export function resetState(overrides = {}) {
     activeCategory: 'all',
     searchQuery: '',
     cart: [],
+    comboSelections: [],
     orders: clone(seedOrders),
     products: clone(products),
     lastOrderId: null,

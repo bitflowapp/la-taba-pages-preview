@@ -13,10 +13,19 @@ export function buildMercadoPagoCheckoutPayload({
   values = {},
   items = [],
 } = {}) {
-  const normalizedItems = items.map((item) => ({
-    product_id: String(item?.product_id || item?.productId || '').trim(),
-    quantity: Math.max(0, Math.floor(Number(item?.quantity) || 0)),
-  }));
+  // Una línea es de producto o de combo. El combo viaja por su identificador
+  // estable y NUNCA con un precio: el backend deriva el precio de lista de los
+  // precios que bloquea al reservar y aplica el descuento aprobado. Mandar un
+  // precio desde acá sería justamente lo que el contrato prohíbe.
+  const normalizedItems = items.map((item) => {
+    const comboId = String(item?.combo_id || item?.comboId || '').trim();
+    const quantity = Math.max(0, Math.floor(Number(item?.quantity) || 0));
+    if (comboId) return { combo_id: comboId, quantity };
+    return {
+      product_id: String(item?.product_id || item?.productId || '').trim(),
+      quantity,
+    };
+  });
   const delivery = String(values.deliveryMode || values.fulfillmentType || 'delivery').trim().toLowerCase();
   const address = delivery === 'delivery'
     ? compactObject({

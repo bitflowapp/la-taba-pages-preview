@@ -190,6 +190,33 @@ export async function fetchPayment(paymentId: string): Promise<Record<string, un
   return result.body;
 }
 
+// Reconciliation entry point. Mercado Pago only delivers Checkout Pro test
+// notifications through the preference's notification_url, signed with the
+// auto-provisioned test application's key, which the panel never exposes — so
+// those notifications can be received but never validated. Reading the payment
+// back from the provider with the backend-only access token is a stronger
+// check than the HMAC: nothing here is taken from the caller.
+export async function findPaymentByExternalReference(externalReference: string): Promise<Record<string, unknown> | null> {
+  const query = new URLSearchParams({
+    external_reference: externalReference,
+    sort: 'date_created',
+    criteria: 'desc',
+    limit: '10',
+  });
+  const result = await mercadoPagoRequest(`/v1/payments/search?${query.toString()}`);
+  if (!result.response.ok || !result.body) {
+    throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
+  }
+  const results = Array.isArray(result.body.results) ? result.body.results : [];
+  const owned = results.filter((item) => text(object(item).external_reference) === externalReference);
+  const chosen = owned.find((item) => text(object(item).status).toLowerCase() === 'approved') || owned[0];
+  const paymentId = chosen ? text(object(chosen).id) : '';
+  if (!paymentId) return null;
+  // The search payload is a summary; the durable snapshot always comes from the
+  // full payment resource, exactly like the webhook worker builds it.
+  return await fetchPayment(paymentId);
+}
+
 export async function findPreferenceByExternalReference(externalReference: string): Promise<Record<string, unknown> | null> {
   const query = new URLSearchParams({
     external_reference: externalReference,

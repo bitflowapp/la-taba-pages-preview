@@ -131,9 +131,13 @@ Deno.serve(async (request) => {
 });
 
 function selectedInitPoint(preparation: PreferencePreparation): string {
-  return preparation.environment === 'test'
-    ? String(preparation.sandbox_init_point || preparation.init_point || '').trim()
-    : String(preparation.init_point || '').trim();
+  // `sandbox_init_point` is Mercado Pago's deprecated sandbox host. Measured on
+  // 2026-08-06 from an iPhone-shaped WebKit context: it renders the checkout for
+  // the same preference but rejects every attempt with "No pudimos procesar tu
+  // pago", while `init_point` completes it against the same sandbox collector
+  // and the same test card. The test environment is already determined by the
+  // credentials, not by the host, so `init_point` is the one to send.
+  return String(preparation.init_point || preparation.sandbox_init_point || '').trim();
 }
 
 function preferenceResponse(request: Request, preparation: PreferencePreparation, initPoint: string): Response {

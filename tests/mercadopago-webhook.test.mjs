@@ -16,7 +16,9 @@ test('Mercado Pago webhook uses the official SDK validator and literal data.id q
   assert.match(signature, /xRequestId: requestId/);
   assert.match(signature, /dataId/);
   assert.match(signature, /SIGNATURE_MAX_AGE_SECONDS/);
-  assert.match(webhook, /searchParams\.get\('data\.id'\)/);
+  // The literal data.id lookup now lives in the shared notification parser.
+  assert.match(read('supabase/functions/_shared/webhook-notification.ts'), /searchParams\.get\('data\.id'\)/);
+  assert.match(webhook, /webhookResourceId\(url\)/);
   assert.match(webhook, /if \(!requestIsHttps\(request\)\)/);
   assert.match(webhook, /WEBHOOK_MAX_BYTES/);
   assert.match(webhook, /signatureValid: false/);
@@ -73,4 +75,20 @@ test('proxy protocol suite covers forwarded HTTPS, real HTTP and fallback', () =
 test('run-mercadopago-webhook-tests runs the proxy protocol suite', () => {
   const runner = read('scripts/run-mercadopago-webhook-tests.mjs');
   assert.match(runner, /request-protocol\.deno\.ts/);
+  assert.match(runner, /webhook-notification\.deno\.ts/);
+});
+
+test('notification parser resolves both Mercado Pago delivery shapes', () => {
+  const parser = read('supabase/functions/_shared/webhook-notification.ts');
+
+  // Merchant orders arrive as ?topic=<t>&id=<n>; reading only data.id stored
+  // them against a payload hash and no signature could ever match.
+  assert.match(parser, /searchParams\.get\('topic'\)/);
+  assert.match(parser, /searchParams\.get\('id'\)/);
+  assert.match(parser, /if \(!topic\) return '';/);
+
+  const suite = read('supabase/functions/_shared/webhook-notification.deno.ts');
+  for (const wording of ['notificacion moderna', 'merchant order legacy', 'data.id gana sobre el id legacy', 'id suelto sin topic']) {
+    assert.match(suite, new RegExp(wording));
+  }
 });

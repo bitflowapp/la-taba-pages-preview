@@ -11,6 +11,7 @@ import {
 } from '../_shared/payment-runtime.ts';
 import { validateMercadoPagoWebhookSignature } from '../_shared/mercadopago-webhook-signature.ts';
 import { requestIsHttps } from '../_shared/request-protocol.ts';
+import { webhookEventType, webhookResourceId } from '../_shared/webhook-notification.ts';
 
 const WEBHOOK_MAX_BYTES = 16_000;
 
@@ -33,11 +34,11 @@ Deno.serve(async (request) => {
     // Mercado Pago's current official SDK recipe signs the `data.id` query
     // parameter, not a reconstructed event object. Do not substitute a
     // body-derived identifier in the validator.
-    const dataId = url.searchParams.get('data.id')?.trim() || '';
+    const dataId = webhookResourceId(url);
     const bodyDataId = object(body.data).id === undefined ? '' : String(object(body.data).id).trim();
     const signature = request.headers.get('x-signature')?.trim() || '';
     const requestId = request.headers.get('x-request-id')?.trim() || '';
-    const eventType = String(body.type || body.topic || '').trim().toLowerCase();
+    const eventType = webhookEventType(url, body);
     const payloadHash = await sha256Hex(rawBody);
     const webhookEventId = String(body.id || requestId || payloadHash).trim();
 

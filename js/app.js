@@ -471,6 +471,8 @@ function setAppBootstrapState(status) {
   if (pending) main?.setAttribute('aria-busy', 'true');
   else main?.removeAttribute('aria-busy');
   document.documentElement.dataset.appBootstrap = status;
+  if (status === 'ready') document.documentElement.dataset.tabaStartup = 'ready';
+  else if (status === 'error') document.documentElement.dataset.tabaStartup = 'failed';
 }
 
 async function bootstrap() {

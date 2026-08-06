@@ -100,7 +100,12 @@ test('la aritmética del pedido cuenta el descuento como una parte más', () => 
   assert.match(total, /drop constraint if exists orders_total_matches_parts/);
   assert.match(total, /check \(total = subtotal - discount_total \+ delivery_fee\)/);
   // Las DOS invariantes tienen que estar de acuerdo sobre el descuento.
-  const declaradas = `${pricing}\n${total}`;
+  //
+  // Se comparan sin comentarios: la migración CITA la constraint vieja para
+  // explicar qué estaba mal, y una comparación cruda leería esa cita como si
+  // la constraint siguiera declarada.
+  const sinComentarios = (sql) => sql.replace(/--[^\n]*/g, '');
+  const declaradas = sinComentarios(`${pricing}\n${total}`);
   assert.doesNotMatch(declaradas, /check \(total = subtotal \+ delivery_fee\)/);
   assert.doesNotMatch(declaradas, /check \(total >= subtotal\)/);
 });

@@ -70,8 +70,62 @@ test('el detalle abre con componentes, sustituciones y stock del limitante', asy
   await expect(ficha.locator('.combo-modal-stock')).toContainText('24');
   await expect(ficha.locator('.combo-modal-stock')).toContainText('Imperial Golden');
 
-  // Y el combo declara que todavía no se cobra a precio de combo.
-  await expect(ficha.locator('.combo-modal-pending')).toContainText('aprueba');
+  // Y el pie ofrece comprarlo al precio que el backend va a cobrar.
+  //
+  // Este contrato cambió al cerrar el bloqueante. Antes el pie decía que el
+  // combo todavía no se cobraba a precio de combo, porque nadie aplicaba el
+  // descuento al total. Ahora lo aplica el backend, así que ofrecer la compra
+  // dejó de ser una promesa que el pedido no iba a cumplir.
+  await expect(ficha.locator('.combo-modal-pending')).toHaveCount(0);
+  await expect(ficha.locator('[data-add-combo="combo-birra-y-energia"]'))
+    .toHaveText(`Agregar combo · ${money(15700)}`);
+});
+
+test('agregar un combo lo cobra a precio de combo, no a la suma de sus partes', async ({ page }) => {
+  // La afirmación cara de toda la góndola: el ahorro anunciado tiene que ser
+  // el que el pedido cobra. Seis Heineken a $3.900 son $23.400 de lista; el
+  // combo se cobra $21.000 y el carrito muestra los $2.400 de diferencia como
+  // descuento, exactamente como los representa el backend.
+  await abrirHome(page);
+
+  await page.locator('[data-combo-card="combo-heineken-x6"] [data-combo-detail]').first().click();
+  await page.locator('[data-add-combo="combo-heineken-x6"]').click();
+  await expect(page.locator('[data-combo-modal]')).toBeHidden();
+
+  await page.locator('[data-nav-view="cart"] >> visible=true').first().click();
+  const linea = page.locator('[data-cart-combo="combo-heineken-x6"]');
+  await expect(linea).toBeVisible();
+  await expect(linea.locator('.cart-title')).toContainText('Heineken x6');
+  await expect(linea.locator('.cart-meta').first()).toContainText('6× Heineken');
+  await expect(linea.locator('.cart-combo-saving')).toHaveText(`Ahorrás ${money(2400)}`);
+
+  const resumen = page.locator('[data-order-summary]');
+  await expect(resumen.locator('.summary-row').first()).toContainText(money(23400));
+  await expect(resumen.locator('.summary-row.discount')).toContainText(`-${money(2400)}`);
+});
+
+test('sumar y quitar el combo mueve el carrito y no deja líneas fantasma', async ({ page }) => {
+  await abrirHome(page);
+
+  await page.locator('[data-combo-card="combo-heineken-x6"] [data-combo-detail]').first().click();
+  await page.locator('[data-add-combo="combo-heineken-x6"]').click();
+  await page.locator('[data-nav-view="cart"] >> visible=true').first().click();
+
+  const linea = page.locator('[data-cart-combo="combo-heineken-x6"]');
+  await linea.locator('[data-combo-increment]').click();
+  await expect(linea.locator('[data-combo-quantity]')).toHaveText('2');
+  await expect(page.locator('[data-order-summary] .summary-row.discount')).toContainText(`-${money(4800)}`);
+
+  await linea.locator('[data-combo-decrement]').click();
+  await expect(linea.locator('[data-combo-quantity]')).toHaveText('1');
+
+  // El carrito ignora el mismo control dos veces en menos de 120 ms: es el
+  // guard contra la duplicación accidental del evento, el mismo que ya protege
+  // a los productos. Un cliente que toca dos veces a propósito espera más que
+  // eso; el test también, en vez de pedirle al producto que baje la guardia.
+  await page.waitForTimeout(200);
+  await linea.locator('[data-combo-decrement]').click();
+  await expect(page.locator('[data-cart-combo="combo-heineken-x6"]')).toHaveCount(0);
 });
 
 test('desde el detalle del combo se llega a la ficha de un componente sin dejar dos hojas abiertas', async ({ page }) => {

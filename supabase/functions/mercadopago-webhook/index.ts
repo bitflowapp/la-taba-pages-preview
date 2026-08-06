@@ -10,13 +10,14 @@ import {
   sha256Hex,
 } from '../_shared/payment-runtime.ts';
 import { validateMercadoPagoWebhookSignature } from '../_shared/mercadopago-webhook-signature.ts';
+import { requestIsHttps } from '../_shared/request-protocol.ts';
 
 const WEBHOOK_MAX_BYTES = 16_000;
 
 Deno.serve(async (request) => {
   try {
     requirePost(request);
-    if (new URL(request.url).protocol !== 'https:') {
+    if (!requestIsHttps(request)) {
       return jsonResponse(request, { ok: false, code: 'HTTPS_REQUIRED' }, 400);
     }
 

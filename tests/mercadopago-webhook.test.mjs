@@ -17,7 +17,7 @@ test('Mercado Pago webhook uses the official SDK validator and literal data.id q
   assert.match(signature, /dataId/);
   assert.match(signature, /SIGNATURE_MAX_AGE_SECONDS/);
   assert.match(webhook, /searchParams\.get\('data\.id'\)/);
-  assert.match(webhook, /new URL\(request\.url\)\.protocol !== 'https:'/);
+  assert.match(webhook, /if \(!requestIsHttps\(request\)\)/);
   assert.match(webhook, /WEBHOOK_MAX_BYTES/);
   assert.match(webhook, /signatureValid: false/);
   assert.match(webhook, /return jsonResponse\(request, \{ ok: false, code: 'INVALID_WEBHOOK' \}, 401\)/);
@@ -46,4 +46,31 @@ test('signature unit suite covers valid, invalid, stale and altered webhook case
   for (const wording of ['firma válida', 'secret erróneo', 'request ID erróneo', 'data.id incorrecto', 'payload alterado', 'sin firma', 'timestamp vencido']) {
     assert.match(tests, new RegExp(wording));
   }
+});
+
+test('HTTPS guard reads the proxy header and keeps request.url as fallback', () => {
+  const guard = read('supabase/functions/_shared/request-protocol.ts');
+
+  // Supabase terminates TLS at the edge, so request.url is plaintext inside the
+  // runtime. Reading it alone rejected every real notification with 400.
+  assert.match(guard, /x-forwarded-proto/);
+  assert.match(guard, /split\(','\)\[0\]/);
+  assert.match(guard, /=== 'https'/);
+  assert.match(guard, /new URL\(request\.url\)\.protocol === 'https:'/);
+
+  const webhook = read('supabase/functions/mercadopago-webhook/index.ts');
+  assert.match(webhook, /import \{ requestIsHttps \} from '\.\.\/_shared\/request-protocol\.ts'/);
+  assert.doesNotMatch(webhook, /new URL\(request\.url\)\.protocol/);
+});
+
+test('proxy protocol suite covers forwarded HTTPS, real HTTP and fallback', () => {
+  const tests = read('supabase/functions/_shared/request-protocol.deno.ts');
+  for (const wording of ['proxy HTTPS', 'HTTP real detrás del proxy', 'cadena de proxies', 'sin encabezado se cae a request\\.url', 'encabezado vacío']) {
+    assert.match(tests, new RegExp(wording));
+  }
+});
+
+test('run-mercadopago-webhook-tests runs the proxy protocol suite', () => {
+  const runner = read('scripts/run-mercadopago-webhook-tests.mjs');
+  assert.match(runner, /request-protocol\.deno\.ts/);
 });

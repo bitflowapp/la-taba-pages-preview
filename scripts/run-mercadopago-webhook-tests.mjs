@@ -4,7 +4,8 @@ import path from 'node:path';
 const steps = [
   ['npx', ['--yes', 'deno@2.6.1', 'test', '--node-modules-dir=auto',
     'supabase/functions/_shared/mercadopago-webhook-signature.deno.ts',
-    'supabase/functions/_shared/payment-worker-signature.deno.ts']],
+    'supabase/functions/_shared/payment-worker-signature.deno.ts',
+    'supabase/functions/_shared/request-protocol.deno.ts']],
   ['node', ['--import', './tests/test-bootstrap.mjs', '--test', '--test-concurrency=1',
     'tests/mercadopago-webhook.test.mjs',
     'tests/mercadopago-scheduler.test.mjs']],

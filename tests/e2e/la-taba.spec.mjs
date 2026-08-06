@@ -749,7 +749,7 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
 
     await seedCartAboveMinimum(page);
     if (viewport.width <= 820) {
-      await expect(page.locator('.topbar .cart-button-count')).toHaveText('1');
+      await expect(page.locator('.topbar .cart-button-count')).toHaveText('2');
       await page.locator('[data-floating-cart]:visible, .topbar [data-open-cart]:visible').first().click();
     } else {
       await page.locator('.desktop-nav [data-nav-view="cart"]').click();

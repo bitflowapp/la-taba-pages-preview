@@ -2117,3 +2117,421 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
     font-size: 9.5px;
   }
 }
+
+/* ============================================================================
+   COMBOS
+   ----------------------------------------------------------------------------
+   La pieza comercial más cara de la home: es lo único que puede mostrar un
+   precio tachado sin mentir, porque el precio de arriba es la suma real de los
+   componentes con precio confirmado.
+
+   El ahorro es el dato, no la decoración: va en dorado —el acento que la
+   identidad reserva para lo premium— y aparece dos veces, sobre la foto y en la
+   fila de precio, porque es la única razón por la que alguien mira un combo.
+   ========================================================================== */
+.home-combos-section .home-combos-rail {
+  display: grid;
+  grid-auto-columns: minmax(268px, 78%);
+  grid-auto-flow: column;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 2px 1px 8px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.combo-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: 132px minmax(0, 1fr);
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf-flat), inset 0 0 0 1px var(--shelf-line);
+  scroll-snap-align: start;
+}
+
+.combo-card-media {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 132px;
+  padding: 9px 9px 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+}
+
+/* Los componentes se apoyan sobre el MISMO plato blanco que el packshot del
+   catálogo: es el material que la identidad reserva para el producto, y hace
+   que un combo se lea como una bandeja armada y no como un banner. */
+.combo-media-plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  padding: 6px 10px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--taba-white);
+}
+
+.combo-media-item {
+  position: relative;
+  display: block;
+  min-width: 0;
+  flex: 0 1 auto;
+  height: 100%;
+}
+
+.combo-media-item img {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/* La cantidad va SOBRE el packshot: seis latas iguales no se pintan seis veces
+   —no entran y además la fila deja de leerse—, se pinta una y se dice cuántas. */
+.combo-media-item em {
+  position: absolute;
+  right: -2px;
+  bottom: 2px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: #14161a;
+  color: var(--taba-white);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.combo-media-more {
+  align-self: flex-end;
+  margin-bottom: 6px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: rgb(20 22 26 / 10%);
+  color: #14161a;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+/* El sello de ahorro se apoya sobre la foto y NO sobre un degradado: una banda
+   oscura al pie de cada foto convertía el rail en cinco rectángulos iguales. */
+.combo-save-badge {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-gold);
+  color: #17120a;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.combo-card-body {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  padding: 13px 14px 15px;
+}
+
+.combo-card-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.combo-card-copy strong {
+  color: var(--shelf-ink);
+  font-size: 16px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.combo-card-copy small,
+.combo-card-contents {
+  color: var(--shelf-muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.combo-card-contents {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.combo-card-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+}
+
+.combo-card-price s {
+  color: var(--shelf-muted);
+  font-size: 13px;
+}
+
+.combo-card-price strong {
+  color: var(--shelf-ink);
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.combo-card-price em {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--shelf-gold-wash);
+  color: var(--brand-gold-soft);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.combo-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.combo-chip {
+  padding: 3px 9px;
+  border: 1px solid var(--shelf-line);
+  border-radius: var(--radius-pill);
+  background: var(--shelf-raised);
+  color: var(--shelf-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+/* +18 no es un chip más: es la única condición legal de la tarjeta. */
+.combo-chip.is-age {
+  border-color: rgb(201 149 62 / 55%);
+  background: var(--shelf-gold-wash);
+  color: var(--brand-gold-soft);
+  font-weight: 900;
+}
+
+.combo-card-cta {
+  width: 100%;
+  margin-top: 2px;
+}
+
+/* --- Detalle ------------------------------------------------------------- */
+
+.combo-modal-card {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 24px);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.combo-modal-media {
+  flex: 0 0 auto;
+  height: min(28vh, 210px);
+  padding: 12px 12px 0;
+  overflow: hidden;
+}
+
+.combo-modal-media .combo-media-plate {
+  border-radius: 16px;
+  gap: 4px;
+  padding: 10px 14px;
+}
+
+.combo-modal-copy {
+  flex: 1 1 auto;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 18px 14px;
+  overscroll-behavior: contain;
+}
+
+.combo-modal-copy h2 {
+  margin: 0;
+  color: var(--shelf-ink);
+  font-size: clamp(23px, 6vw, 30px);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.combo-modal-tagline {
+  margin: -4px 0 0;
+  color: var(--shelf-muted);
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+/* La comparación es el corazón de la ficha: precio de lista arriba, precio del
+   combo abajo y el ahorro cerrando el bloque. Los tres juntos, para que no haya
+   que scrollear entre el número tachado y el que se paga. */
+.combo-modal-price {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 14px;
+  padding: 13px 15px;
+  border: 1px solid rgb(201 149 62 / 34%);
+  border-radius: 16px;
+  background: var(--shelf-gold-wash);
+}
+
+.combo-modal-price > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.combo-modal-price small {
+  color: var(--shelf-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.combo-modal-price s {
+  color: var(--shelf-muted);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.combo-modal-price strong {
+  color: var(--shelf-ink);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.combo-modal-save {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  color: var(--brand-gold-soft);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.combo-modal-subtitle {
+  margin: 2px 0 -4px;
+  color: var(--shelf-ink);
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.combo-component-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.combo-component-list li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 11px 0;
+  border-top: 1px solid var(--shelf-line);
+}
+
+.combo-component-list li:first-child {
+  border-top: 0;
+}
+
+.combo-component-qty {
+  color: var(--brand-gold-soft);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.combo-component-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.combo-component-copy strong {
+  color: var(--shelf-ink);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.combo-component-copy small {
+  color: var(--shelf-muted);
+  font-size: 12px;
+}
+
+/* Las sustituciones se declaran acá y no en un chip: son una frase, no una
+   etiqueta, y el cliente necesita leer POR QUÉ puede cambiarlo sin costo. */
+.combo-component-subs {
+  margin-top: 2px;
+  color: var(--brand-gold-soft);
+  font-size: 11.5px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.combo-component-line {
+  color: var(--shelf-ink);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.combo-modal-stock {
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.combo-modal-stock strong {
+  color: var(--shelf-ink);
+}
+
+.combo-modal-actions {
+  gap: 10px;
+}
+
+.combo-modal-pending {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid rgb(201 149 62 / 45%);
+  border-radius: var(--radius-sm);
+  background: var(--shelf-gold-wash);
+  color: var(--brand-gold-soft);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+@media (min-width: 821px) {
+  .home-combos-section .home-combos-rail {
+    grid-auto-columns: minmax(290px, 1fr);
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    overflow: visible;
+  }
+
+  .combo-modal {
+    width: min(calc(100vw - 24px), 620px);
+  }
+
+  .combo-modal-media {
+    height: 240px;
+  }
+}

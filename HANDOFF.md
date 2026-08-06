@@ -6,9 +6,9 @@ Entrega del worktree exclusivo `la-taba2-commercial-storefront`, rama
 | | |
 | --- | --- |
 | Base | `6294a98` — *fix(mercadopago): close the checkout without depending on a webhook* |
-| HEAD final | `9781f58` (ver `git log 6294a98..HEAD`) |
-| Commits | 8, todos locales. Sin push, sin merges, sin cherry-picks. |
-| Archivos | 44 (+3.166 / −497) |
+| HEAD final | `e3d40d3` (ver `git log 6294a98..HEAD`) |
+| Commits | 10, todos locales. Sin push, sin merges, sin cherry-picks. |
+| Archivos | 45 (+3.383 / −497) |
 | Git | Limpio. Sin `amend`, `reset`, `clean`, `stash` ni `git add .`. |
 
 ---

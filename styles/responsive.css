@@ -108,7 +108,7 @@ body[data-active-view="rider"] .floating-cart {
 
   body[data-active-view="business"] main[data-app-main],
   body[data-active-view="rider"] main[data-app-main],
-  body[data-active-view="tracking"]:has(.tracking-premium) main[data-app-main] {
+  body[data-active-view="tracking"]:has(.tracking-premium:not(.is-empty)) main[data-app-main] {
     padding-bottom: 0;
   }
 

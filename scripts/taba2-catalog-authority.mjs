@@ -30,6 +30,19 @@ const VISUAL_REJECTED = new Map([
   ['smirnoff-700ml', 'La revisión visual detectó conflicto: la imagen declara 750 ml y el SKU 700 ml.'],
 ]);
 
+// Tipo de destilado por SKU. Antes lo daba la categoría (`gin`, `vodka`,
+// `whisky` eran estantes propios) y la descripción salía de ahí. Al agrupar
+// los tres bajo DESTILADOS esa fuente desapareció, y sin este mapa la
+// descripción generada habría pasado de "Gin en botella de 700 ml" a repetir
+// el nombre del producto.
+const SPIRIT_KIND = {
+  'tanqueray-dry-700ml': 'Gin',
+  'bombay-sapphire-750ml': 'Gin',
+  'bosque-nativo-500ml': 'Gin',
+  'smirnoff-700ml': 'Vodka',
+  'johnnie-walker-red-label-750ml': 'Whisky',
+};
+
 // Curación manual: cada ficha se revisó contra su título visible en Jumbo el 2026-08-02.
 // No hay precios, GTIN ni graduación alcohólica en esta fuente de trabajo.
 const SEEDS = [
@@ -80,16 +93,32 @@ const SEEDS = [
   p('P0','vinos','portillo-malbec-750ml','Portillo','Portillo Malbec','Malbec',750,'botella','/vino-portillo-malbec-750-ml/p',true),
   p('P2','vinos','fin-del-mundo-cabernet-franc-750ml','Fin del Mundo','Fin del Mundo','Cabernet Franc',750,'botella','/vino-fin-cabernet-franc-750cc-2/p',true),
   p('P1','espumantes','chandon-delice-750ml','Chandon','Chandon Délice','Délice',750,'botella','/espumante-chandon-delice-750-ml-3/p',true),
-  p('P0','gin','tanqueray-dry-700ml','Tanqueray','Tanqueray Dry','London Dry',700,'botella','/gin-tanqueray-dry-700-ml/p',true),
-  p('P0','gin','bombay-sapphire-750ml','Bombay Sapphire','Bombay Sapphire','London Dry',750,'botella','/gin-bombay-750-ml/p',true),
-  p('P0','gin','bosque-nativo-500ml','Bosque','Bosque Nativo','Nativo',500,'botella','/gin-bosque-nativo-botella-500mlx1-2/p',true),
-  p('P0','vodka','smirnoff-700ml','Smirnoff','Smirnoff','Original',700,'botella','/vodka-smirnoff-700-ml/p',true),
-  p('P0','whisky','johnnie-walker-red-label-750ml','Johnnie Walker','Johnnie Walker Red Label','Red Label',750,'botella','/whisky-johnnie-walker-red-label-botella-750ml/p',true),
-  p('P0','complementos','hielo-cristal-4kg','Cristal','Hielo Cristal','Bolsa de hielo',4000,'bolsa','/hielo-cristal-bolsa-4-kg/p'),
+  p('P0','destilados','tanqueray-dry-700ml','Tanqueray','Tanqueray Dry','London Dry',700,'botella','/gin-tanqueray-dry-700-ml/p',true),
+  p('P0','destilados','bombay-sapphire-750ml','Bombay Sapphire','Bombay Sapphire','London Dry',750,'botella','/gin-bombay-750-ml/p',true),
+  p('P0','destilados','bosque-nativo-500ml','Bosque','Bosque Nativo','Nativo',500,'botella','/gin-bosque-nativo-botella-500mlx1-2/p',true),
+  p('P0','destilados','smirnoff-700ml','Smirnoff','Smirnoff','Original',700,'botella','/vodka-smirnoff-700-ml/p',true),
+  p('P0','destilados','johnnie-walker-red-label-750ml','Johnnie Walker','Johnnie Walker Red Label','Red Label',750,'botella','/whisky-johnnie-walker-red-label-botella-750ml/p',true),
+  p('P0','hielo','hielo-cristal-4kg','Cristal','Hielo Cristal','Bolsa de hielo',4000,'bolsa','/hielo-cristal-bolsa-4-kg/p'),
 ];
 
+// Góndola comercial de TABA2. El orden es el del recorrido de una tienda de
+// bebidas: primero lo que se compra sin pensar, después el alcohol por rubro y
+// al final lo que acompaña.
+//
+// `gin`, `vodka` y `whisky` dejaron de ser tres estantes propios y pasaron a
+// ser subcategorías de DESTILADOS: con uno, tres y un SKU respectivamente,
+// tres estantes casi vacíos se leían como un catálogo incompleto en vez de
+// como una góndola. La subcategoría se conserva en cada SKU, así que la
+// distinción no se pierde y el filtro por presentación la sigue viendo.
+//
+// `complementos` pasa a llamarse HIELO, que es lo que realmente contiene y lo
+// que el cliente busca por ese nombre.
+//
+// `snacks` y `golosinas` están declarados y hoy no tienen ningún SKU relevado:
+// la lista de abajo sólo publica las categorías que tienen producto, así que
+// no aparecen en la app. Su estado y su motivo viven en catalog-pending.csv.
 const CATEGORIES = [
-  ['all','Todos'], ['gaseosas','Gaseosas'], ['mixers','Mixers'], ['aguas','Aguas'], ['aguas-saborizadas','Aguas saborizadas'], ['energizantes','Energizantes'], ['isotonicas','Isotónicas'], ['fernet','Fernet y amargos'], ['aperitivos','Aperitivos'], ['cervezas','Cervezas'], ['vinos','Vinos'], ['espumantes','Espumantes y sidras'], ['gin','Gin'], ['vodka','Vodka'], ['whisky','Whisky'], ['complementos','Complementos'],
+  ['all','Todos'], ['gaseosas','Gaseosas'], ['aguas','Aguas'], ['aguas-saborizadas','Aguas saborizadas'], ['isotonicas','Isotónicas'], ['energizantes','Energizantes'], ['mixers','Mixers'], ['cervezas','Cervezas'], ['fernet','Fernet y amargos'], ['aperitivos','Aperitivos'], ['vinos','Vinos'], ['espumantes','Espumantes y sidras'], ['destilados','Destilados'], ['hielo','Hielo'], ['snacks','Snacks'], ['golosinas','Golosinas'],
 ].map(([id,name]) => ({ id, name }));
 
 const reportOnly = process.argv.includes('--report-only');
@@ -180,13 +209,13 @@ console.log(JSON.stringify({ legacy: legacy.length, approved_for_internal_review
 
 function productFor(seed, image) {
   const alcohol = Boolean(seed.alcoholic);
-  const unit = seed.ml >= 1000 && seed.category !== 'complementos' ? `${String(seed.ml / 1000).replace('.', ',')} L` : seed.category === 'complementos' ? '4 kg' : `${seed.ml} ml`;
+  const unit = seed.ml >= 1000 && seed.category !== 'hielo' ? `${String(seed.ml / 1000).replace('.', ',')} L` : seed.category === 'hielo' ? '4 kg' : `${seed.ml} ml`;
   const packageName = ({ lata: 'Lata', sifon: 'Sifón', bolsa: 'Bolsa', 'botella-pet': 'Botella PET', 'botella-retornable': 'Botella retornable', botella: 'Botella' })[seed.packageType] || 'Envase';
   return {
     id: seed.sku, external_id: seed.sku, sku: seed.sku, slug: seed.sku, gtin: '',
-    brand: seed.brand, name: seed.name, variant: seed.variant, presentation: `${packageName} · ${unit} · Unidad`, capacity_value: seed.ml, capacity_unit: seed.category === 'complementos' ? 'g' : 'ml', pack_count: 1,
+    brand: seed.brand, name: seed.name, variant: seed.variant, presentation: `${packageName} · ${unit} · Unidad`, capacity_value: seed.ml, capacity_unit: seed.category === 'hielo' ? 'g' : 'ml', pack_count: 1,
     category_id: seed.category, subcategory_id: seed.variant.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), package_type: seed.packageType,
-    description: `${seed.category === 'cervezas' ? 'Cerveza' : seed.category === 'vinos' ? 'Vino' : seed.category === 'gin' ? 'Gin' : seed.category === 'vodka' ? 'Vodka' : seed.category === 'whisky' ? 'Whisky' : seed.name} en ${packageName.toLowerCase()} de ${unit}.`,
+    description: `${seed.category === 'cervezas' ? 'Cerveza' : seed.category === 'vinos' ? 'Vino' : seed.category === 'destilados' ? SPIRIT_KIND[seed.sku] || seed.name : seed.name} en ${packageName.toLowerCase()} de ${unit}.`,
     tags: [seed.category, seed.brand.toLowerCase().replaceAll(' ', '-'), seed.variant.toLowerCase().replaceAll(' ', '-')], alcohol_percentage: null, alcohol_status: alcohol ? 'not_supplied_by_source' : 'not_applicable', age_restricted: alcohol,
     price: null, regular_price: null, price_status: 'pending', stock_status: 'confirmation_required', is_active: false, is_verified: true,
     catalog_status: 'approved', image_status: 'verified', rights_status: 'pending_review', publication_status: 'blocked', commercial_status: 'identity_verified_price_pending', identity_status: 'approved',
@@ -214,7 +243,7 @@ async function writeRuntimeCatalog(products) {
   const runtime = products.map((product) => ({
     id: product.id, sku: product.sku, externalId: product.external_id, brand: product.brand, name: product.name, variant: product.variant,
     categoryId: product.category_id, subcategory: product.subcategory_id, description: product.description, presentation: product.presentation,
-    capacity: product.capacity_value >= 1000 && product.category_id !== 'complementos' ? `${String(product.capacity_value / 1000).replace('.', ',')} L` : product.category_id === 'complementos' ? '4 kg' : `${product.capacity_value} ml`,
+    capacity: product.capacity_value >= 1000 && product.category_id !== 'hielo' ? `${String(product.capacity_value / 1000).replace('.', ',')} L` : product.category_id === 'hielo' ? '4 kg' : `${product.capacity_value} ml`,
     capacityValue: product.capacity_value, capacityUnit: product.capacity_unit, packageType: product.package_type || 'unidad', unit: 'unidad', unitLabel: 'Unidad', unitsPerPack: 1,
     price: null, pricePending: true, stock: 0, available: false, sourceAvailable: true, stockStatus: 'BUSINESS_CONFIRMATION_REQUIRED', requiresBusinessConfirmation: true,
     alcoholic: product.age_restricted, nonAlcoholic: product.age_restricted === false, requiresAgeConfirmation: product.age_restricted, minimumAge: product.age_restricted ? 18 : null,

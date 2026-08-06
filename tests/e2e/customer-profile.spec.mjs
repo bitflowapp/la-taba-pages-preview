@@ -213,11 +213,12 @@ test('Perfil ofrece UNA acción principal y la dirección en uso no repite la ac
   expect(await otras.count()).toBeGreaterThan(0);
   await expect(otras.first().locator('[data-profile-action="make-default"]')).toHaveText(/Usar esta/);
 
-  // Superficies crema, no blanco puro: sobre el shell grafito el blanco recorta.
+  // Una sola superficie de góndola, no blanco puro: sobre el shell grafito el
+  // blanco recorta la pantalla y reabre el salto "home premium → formulario".
   const superficies = await profile.locator('.personal-card, .profile-address').evaluateAll(
     (nodes) => [...new Set(nodes.map((node) => getComputedStyle(node).backgroundColor))],
   );
-  expect(superficies).toEqual(['rgb(247, 244, 239)']);
+  expect(superficies).toEqual(['rgb(25, 29, 35)']);
 
   // Eliminar no puede ser un toque suelto: pide confirmación.
   const antes = await profile.locator('.profile-address').count();

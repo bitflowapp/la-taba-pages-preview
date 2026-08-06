@@ -77,7 +77,32 @@ test('la home presenta La Taba 2 con marca propia y un storefront comercial limp
   const catalogCategories = page.locator(
     '[data-view="catalog"] [data-category-strip] .category-button:not([data-category-id="all"]):not([data-category-id="favorites"])',
   );
-  await expect(catalogCategories).toHaveCount(15);
+  // La góndola completa, por su composición y no por un número suelto: un
+  // conteo no dice qué estante se perdió cuando cambia. `gin`, `vodka` y
+  // `whisky` dejaron de ser tres estantes de uno o tres SKU y hoy son
+  // subcategorías de DESTILADOS; `complementos` se llama HIELO, que es lo que
+  // contiene y lo que el cliente busca por ese nombre.
+  const gondola = (await catalogCategories.evaluateAll(
+    (nodes) => nodes.map((node) => node.dataset.categoryId).filter(Boolean),
+  )).sort();
+  // Se compara el CONJUNTO y no el orden: el orden de la fila lo decide la
+  // vista (fila fija arriba, resto detrás de "Más") y no es lo que este test
+  // protege. Lo que protege es qué estantes existen.
+  expect(gondola).toEqual([
+    'aguas',
+    'aguas-saborizadas',
+    'aperitivos',
+    'cervezas',
+    'destilados',
+    'energizantes',
+    'espumantes',
+    'fernet',
+    'gaseosas',
+    'hielo',
+    'isotonicas',
+    'mixers',
+    'vinos',
+  ]);
   await expect(page.locator('[data-view="catalog"] [data-category-id="gaseosas"]')).toHaveText('Gaseosas');
   await expect(page.locator('[data-view="catalog"] [data-category-id="cervezas"]')).toHaveText('Cervezas');
   await expect(page.locator('[data-product-grid] .product-card').first()).not.toContainText('QA');

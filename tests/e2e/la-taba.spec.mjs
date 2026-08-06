@@ -522,7 +522,11 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-  await expect(page.locator('.mobile-nav')).toBeHidden();
+  // Sin pedido en curso el seguimiento es una vista más de la app: conserva
+  // la navegación. La barra sólo se retira en la experiencia inmersiva de
+  // mapa, que exige un pedido activo (.tracking-premium:not(.is-empty)).
+  await expect(page.locator('.tracking-premium.is-empty')).toBeVisible();
+  await expect(page.locator('.mobile-nav')).toBeVisible();
 
   await page.goto('/?demo=1#profile');
   await expect(page.locator('[data-view="profile"]')).toBeVisible();
@@ -661,7 +665,18 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
 
     await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
     await expect(page.locator('.tracking-premium')).toBeVisible();
-    await expect(page.locator('.mobile-nav')).toBeHidden();
+    // El seguimiento vacío conserva la barra y, con ella, la reserva
+    // inferior de cualquier vista con navegación: la altura real de la nav
+    // (que ya absorbe la safe area fijada más arriba en este mismo
+    // documento: la navegación por hash no recarga) más la separación del
+    // stack. El carrito está vacío, así que no hay bloque de CTA.
+    await expect(page.locator('.tracking-premium.is-empty')).toBeVisible();
+    await expect(page.locator('.mobile-nav')).toBeVisible();
+    const emptyTrackingReserve = await page.evaluate(() => {
+      const rootStyle = getComputedStyle(document.documentElement);
+      return document.querySelector('.mobile-nav').getBoundingClientRect().height
+        + Number.parseFloat(rootStyle.getPropertyValue('--taba-bottom-nav-gap'));
+    });
     const measureMain = () => page.evaluate(() => {
       const main = document.querySelector('main[data-app-main]');
       const style = getComputedStyle(main);
@@ -681,7 +696,7 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
       root: 'HTML',
       height: 'auto',
       overflowY: 'visible',
-      paddingBottom: '0px',
+      paddingBottom: `${emptyTrackingReserve}px`,
       scrollable: false,
       horizontalOverflow: false,
     });

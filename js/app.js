@@ -9,6 +9,7 @@ import {
 import {
   applyBusinessConfig,
   closeCheckoutSuggestions,
+  closeComboModal,
   closeProductModal,
   closeStoriesModal,
   copyDraftOrderToClipboard,
@@ -28,6 +29,7 @@ import {
   setSearchQuery,
   setSortBy,
   resetCatalogFilters,
+  showComboModal,
   showProductModal,
   showStoriesModal,
   showToast,
@@ -1090,6 +1092,27 @@ function bindEvents() {
     if (categoryId) {
       setCategory(categoryId);
       if (activeView !== 'catalog') setActiveView('catalog');
+      return;
+    }
+
+    // El detalle del combo va ANTES que el de producto: el botón que abre un
+    // componente desde el combo cierra primero su propia hoja, y si el orden
+    // fuera el inverso quedarían los dos diálogos abiertos a la vez.
+    const comboComponentId = target.closest('[data-combo-open-component]')?.dataset.comboOpenComponent;
+    if (comboComponentId) {
+      closeComboModal();
+      showProductModal(comboComponentId);
+      return;
+    }
+
+    if (target.closest('[data-close-combo-modal]')) {
+      closeComboModal();
+      return;
+    }
+
+    const comboId = target.closest('[data-combo-detail]')?.dataset.comboDetail;
+    if (comboId) {
+      showComboModal(comboId, target.closest('[data-combo-detail]'));
       return;
     }
 

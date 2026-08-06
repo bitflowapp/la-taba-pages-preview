@@ -61,7 +61,12 @@ test('demo aprobado muestra SKU publicables, unidades minoristas y assets locale
   await expect(pendingModal).toBeVisible();
   await expect(pendingModal.locator('[data-price-pending-message]')).toHaveCount(1);
   await expect(pendingModal.locator('[data-price-pending-message]')).toContainText('Precio próximamente');
-  await expect(pendingModal.locator('[data-add-product="coca-cola-original-pet-1500ml"]')).toBeDisabled();
+  // Sin precio publicado la ficha ya no renderiza un "Agregar" deshabilitado:
+  // un control que existe y no hace nada obliga a tocarlo para descubrirlo. El
+  // pie dice el estado con todas las letras y el favorito pasa a ser la acción
+  // principal, que es la única que hoy hace algo con ese producto.
+  await expect(pendingModal.locator('[data-add-product]')).toHaveCount(0);
+  await expect(pendingModal.locator('.modal-pending-note')).toContainText('Todavía no se puede comprar');
   await pendingModal.locator('[data-close-modal]').click();
 
   const qaMarker = ['q', 'a', '-'].join('');

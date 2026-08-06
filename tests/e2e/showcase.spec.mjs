@@ -211,8 +211,12 @@ test('customer showcase stops use the real catalog, cart, checkout, profile and 
   const pendingModal = page.locator('[data-modal-product-id="coca-cola-original-pet-1500ml"]');
   await expect(pendingModal).toBeVisible();
   await expect(pendingModal.locator('[data-price-pending-message]')).toContainText('Precio próximamente');
-  await expect(pendingModal.locator('[data-add-product="coca-cola-original-pet-1500ml"]'))
-    .toBeDisabled();
+  // Sin precio publicado la ficha ya no renderiza un "Agregar" deshabilitado:
+  // un control que existe y no hace nada obliga a tocarlo para descubrirlo. El
+  // pie dice el estado con todas las letras y el favorito pasa a ser la acción
+  // principal, que es la única que hoy hace algo con ese producto.
+  await expect(pendingModal.locator('[data-add-product]')).toHaveCount(0);
+  await expect(pendingModal.locator('.modal-pending-note')).toContainText('Todavía no se puede comprar');
   await pendingModal.locator('[data-close-modal]').click();
 
   await selectShowcaseStep(page, 'cart');

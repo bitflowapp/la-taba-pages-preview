@@ -57,25 +57,51 @@
   --brand-focus: #8ab4ff;           /* foco visible sobre oscuro */
 
   /* ------------------------------------------------------------------------
-     CREMA — la superficie donde vive el contenido del cliente.
+     GÓNDOLA — la superficie donde vive el contenido del cliente.
      Una sola familia para TODA la app del cliente: tarjeta de producto,
      formulario, carrito, checkout, perfil y bottom sheet. Antes cada hoja
      elegía la suya (`--taba-white` en las tarjetas, `#f7f4ef` en Perfil), y el
-     resultado era el salto "home premium → formulario blanco genérico": el
-     blanco puro sobre grafito recorta la pantalla, el crema se apoya.
-     El valor es el de la referencia aprobada; el resto se deriva de él.
+     resultado era el salto "home premium → formulario blanco genérico".
+
+     El crema resolvió ESE salto pero abrió otro: la identidad comercial de
+     TABA2 es negro/grafito, blanco, rojo intenso y dorado sutil, y el beige no
+     está en esa paleta. Media app se leía premium sobre grafito y la otra
+     media —tarjeta, ficha, carrito, checkout— aterrizaba en papel beige con
+     tinta azulada. Dos idiomas visuales en el mismo pedido.
+
+     Acá la superficie del cliente pasa a grafito. El producto NO cambia: sigue
+     viviendo sobre el plato blanco (`--taba-white`), que ahora además es el
+     acento de más contraste de la pantalla y hace que el packshot sea lo
+     primero que se ve. El blanco de la paleta es el del producto y el de la
+     tinta; el beige no vuelve.
+
+     Los cuatro valores están medidos contra la superficie donde se usan, no
+     contra el fondo de página: una tarjeta sobre `--brand-bg` es más clara que
+     la página, y la tinta se calibra sobre la TARJETA.
      --------------------------------------------------------------------- */
-  --cream: #f7f4ef;                 /* superficie base */
-  --cream-raised: #fffdf9;          /* sub-superficie: campo, fila, chip */
-  --cream-sunken: #efeae2;          /* hueco: barra de progreso, separador */
-  --cream-line: #e9e3dc;            /* hairline de 1px sobre crema */
-  --cream-line-strong: #d6cec3;     /* borde que porta información */
-  --cream-ink: #22242a;             /* 14,4:1 sobre --cream */
-  --cream-muted: #62605c;           /*  6,3:1 sobre --cream */
-  /* UNA sombra por superficie. La tarjeta no lleva borde y sombra compitiendo:
-     sobre grafito la sombra es la que la despega, el hairline es interno. */
-  --shadow-cream: 0 10px 34px rgb(0 0 0 / 26%);
-  --shadow-cream-flat: 0 4px 16px rgb(0 0 0 / 18%);
+  --shelf: #191d23;                 /* superficie base (tarjeta, formulario) */
+  --shelf-raised: #22272f;          /* sub-superficie: campo, fila, chip */
+  --shelf-sunken: #101317;          /* hueco: barra de progreso, separador */
+  --shelf-line: rgb(255 255 255 / 10%);        /* hairline de 1px */
+  /* Borde que PORTA información (campo, radio, selector activo): 3,7:1 sobre
+     `--shelf`, por encima del mínimo de WCAG 1.4.11 para componentes. */
+  --shelf-line-strong: rgb(255 255 255 / 38%);
+  --shelf-ink: #f7f7f8;             /* 16,9:1 sobre --shelf */
+  --shelf-muted: #aab0b9;           /*  7,7:1 sobre --shelf */
+  /* Acento premium sobre la góndola: ahorro, +18, sello de confirmado.
+     6,3:1 sobre --shelf, así que también sirve para texto chico. */
+  --shelf-gold: #c9953e;
+  --shelf-gold-soft: #e4b45f;
+  --shelf-gold-wash: rgb(201 149 62 / 14%);
+  /* Rojo que se puede LEER sobre la góndola. El rojo de acción (--taba-red) es
+     una superficie, no una tinta: sobre grafito da 2,3:1. */
+  --shelf-red-ink: #ff4d55;
+  --shelf-red-wash: rgb(208 0 13 / 16%);
+  /* UNA sombra por superficie. Sobre grafito la sombra despega poco, así que
+     el hairline interno es el que dibuja el borde de la tarjeta; la sombra
+     sólo aporta la profundidad. */
+  --shadow-shelf: 0 14px 38px rgb(0 0 0 / 52%);
+  --shadow-shelf-flat: 0 6px 18px rgb(0 0 0 / 38%);
   /* Aro de historias: rojo → naranja → dorado. Es el ÚNICO degradado de la
      identidad y existe sólo en el aro; no se usa como fondo de sección. */
   --brand-story-ring: conic-gradient(

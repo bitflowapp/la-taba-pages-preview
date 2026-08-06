@@ -27,3 +27,4 @@ local-*.json
 catalog/photo-intake/validation.json
 catalog/photo-intake/review.json
 catalog/photo-intake/ingest-report.json
+artifacts/taba2-commercial-audit/

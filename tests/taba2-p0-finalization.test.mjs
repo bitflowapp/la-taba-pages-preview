@@ -16,7 +16,7 @@ test('P0 finalization emits separate authority states and price-safe records', (
   assert.ok(approved.every((p) => p.price === null && p.regular_price === null && p.price_status === 'pending'));
   assert.ok(approved.every((p) => p.publication_status === 'blocked' && p.rights_status === 'pending_review'));
   assert.ok(approved.every((p) => p.image_status === 'verified' && p.identity_status === 'verified'));
-  assert.ok(approved.every((p) => (p.category_id === 'complementos' ? p.capacity_unit === 'g' : p.capacity_unit === 'ml') && p.capacity_value > 0 && p.pack_count >= 1));
+  assert.ok(approved.every((p) => (p.category_id === 'hielo' ? p.capacity_unit === 'g' : p.capacity_unit === 'ml') && p.capacity_value > 0 && p.pack_count >= 1));
 });
 
 test('Heineken x6 remains rejected and is not reused', () => {

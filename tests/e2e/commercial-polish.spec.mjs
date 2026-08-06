@@ -70,8 +70,17 @@ test('home: estado claro y recorrido comercial compacto', async ({ browser }) =>
   await expect(page.locator('html')).toHaveAttribute('data-app-bootstrap', 'ready');
   await expect(page.locator('[data-open-status]')).toContainText(/Pedidos disponibles|Pedidos online/);
 
-  // Ofertas y combos destacados no repiten el mismo producto en el home.
-  await expect(page.locator('[data-view="home"] [data-combos-rail]')).toHaveCount(0);
+  // El rail de combos existe y está poblado. Esta aserción decía
+  // `toHaveCount(0)` cuando el contenedor no existía en el shell y el render
+  // buscaba productos con `combo: true` que nadie publicaba: comprobaba que la
+  // sección muerta no apareciera. Ahora los combos se arman del manifiesto y lo
+  // que hay que proteger es lo contrario —que estén y que digan su ahorro—,
+  // porque un combo sin ahorro visible no es un combo.
+  const comboCards = page.locator('[data-view="home"] [data-combos-rail] .combo-card');
+  await expect(comboCards.first()).toBeVisible();
+  for (const texto of await comboCards.locator('.combo-save-badge').allTextContents()) {
+    expect(texto).toMatch(/^Ahorrás \$\s?[\d.]+$/);
+  }
   await expect(page.locator('[data-view="home"] .home-search')).toBeVisible();
   await expect(page.locator('[data-category-strip="home"]')).toBeVisible();
   await expect(page.locator('[data-promo-banner]')).toBeHidden();

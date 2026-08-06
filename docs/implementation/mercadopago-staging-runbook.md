@@ -19,6 +19,55 @@ Secrets que la integración necesita: `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_W
 `MERCADOPAGO_ENVIRONMENT=test`, `PAYMENT_WORKER_SECRET`, `PAYMENT_LOG_HASH_SALT`,
 `TABA_CHECKOUT_BASE_URL`, `TABA_ALLOWED_ORIGINS`.
 
+## Corrección 2026-08-06: el 401 no era de credenciales
+
+El `401 "Unauthorized use of live credentials"` que motivó este runbook **no venía del
+producto**: lo devolvía `POST /v1/payments`, que es la Payments API. Las credenciales de
+prueba de una aplicación Checkout Pro son un **usuario de prueba** con token `APP_USR-`, y ese
+formato no habilita la Payments API. El producto no usa ese endpoint: crea preferencias con
+`POST /checkout/preferences`, que responde **201** con el mismo token.
+
+Medido: `/users/me` devuelve `tags: [user_product_seller, test_user, normal]`, dominio
+`testuser.com`. El token cargado en `MERCADOPAGO_ACCESS_TOKEN` es el correcto y oficial.
+
+La tabla de más abajo queda **retractada** en su fila del 401.
+
+## Lo que Mercado Pago devuelve de verdad (y rompía la finalización)
+
+Verificado contra pagos sandbox reales de `la-taba-staging`:
+
+| Campo | Realidad medida | Consecuencia |
+| --- | --- | --- |
+| `live_mode` | **`true`** en pagos hechos con las credenciales de prueba | `live_mode_mismatch` en todo intent `test` |
+| `application_id` | **ausente** en `GET /v1/payments/{id}` y en el merchant order | `application_mismatch` siempre |
+| `preference_id` | **ausente** en el pago; sólo está en el merchant order | `preference_mismatch` siempre |
+
+Corregido en `20260806140000` (las dos aserciones SQL) y en `_shared/mercadopago.ts`
+(`paymentSnapshot` resuelve el `preference_id` por el merchant order). En producción la
+exigencia de `live_mode = true` se mantiene intacta.
+
+Además: la preferencia no incluía el **costo de envío**, así que el comprador pagaba el
+subtotal y el intent esperaba el total (`amount_mismatch`, y envío nunca cobrado). Y
+`finalize_paid_checkout_session` no proyectaba el `address_snapshot` al pedido: el pedido
+llegaba al Panel sin número de calle y sin columnas `delivery_*` (`20260806150000`).
+
+## Firma de las notificaciones: el canal importa
+
+- Notificaciones que dispara el `notification_url` **de la preferencia**: las firma la
+  aplicación dueña de las credenciales de prueba (el usuario de prueba). Mercado Pago **no
+  expone esa clave**: en su panel el campo aparece enmascarado y la configuración de webhooks
+  no persiste. Verificado que ninguna valida contra la clave de la aplicación padre, probando
+  14 variantes de manifiesto × 3 codificaciones de clave.
+- Notificaciones del canal de **aplicación** (panel → Webhooks): las firma la aplicación, con
+  la clave que el panel sí muestra. Validan correctamente contra `MERCADOPAGO_WEBHOOK_SECRET`.
+- Con credenciales de prueba, el canal de aplicación **no se dispara solo**: quitar
+  `notification_url` de la preferencia no produce ninguna entrega, y `notifications_history`
+  del MCP oficial no registra ni un intento.
+
+Consecuencia operativa: en staging la notificación firmada se dispara desde
+**panel → Webhooks → Simular notificación**, con el `payment_id` real. Es una notificación
+genuina de Mercado Pago, firmada con la clave de la aplicación.
+
 ## Preflight de credenciales: hacerlo antes que cualquier prueba E2E
 
 Un checkout que falla con la pantalla genérica **"Algo salió mal... No pudimos procesar tu pago"**

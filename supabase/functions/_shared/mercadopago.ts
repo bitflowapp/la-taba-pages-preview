@@ -69,15 +69,34 @@ export function preferenceRequest(preparation: PreferencePreparation): Record<st
   if (Number.isInteger(preparation.installments_limit) && Number(preparation.installments_limit) > 0) {
     paymentMethods.installments = preparation.installments_limit;
   }
+  const items = preparation.items.map((item) => ({
+    id: item.id,
+    title: item.title,
+    description: item.description || undefined,
+    quantity: item.quantity,
+    currency_id: 'ARS' as const,
+    unit_price: Number(item.unit_price),
+  }));
+  // `items` carries only the products, so a delivery fee would never reach
+  // Mercado Pago: the payer was charged the subtotal while the intent expected
+  // the full total, which both undercharges the order and fails the
+  // amount_mismatch assertion when the payment comes back.
+  const itemsTotal = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+  const surcharge = Number((Number(preparation.total) - itemsTotal).toFixed(2));
+  if (surcharge > 0) {
+    items.push({
+      id: 'taba-delivery-fee',
+      title: 'Envío a domicilio',
+      description: undefined,
+      quantity: 1,
+      currency_id: 'ARS' as const,
+      unit_price: surcharge,
+    });
+  } else if (surcharge < 0) {
+    throw new Error('Preference items exceed the server-side checkout total');
+  }
   return {
-    items: preparation.items.map((item) => ({
-      id: item.id,
-      title: item.title,
-      description: item.description || undefined,
-      quantity: item.quantity,
-      currency_id: 'ARS',
-      unit_price: Number(item.unit_price),
-    })),
+    items,
     external_reference: preparation.external_reference,
     notification_url: webhookUrl(),
     back_urls: {
@@ -192,6 +211,15 @@ export async function findPreferenceByExternalReference(externalReference: strin
   return preference.body;
 }
 
+// A Checkout Pro payment does not carry `preference_id`: it is only reachable
+// through its merchant order. Without this hop the stored snapshot has an empty
+// preference and the intent assertion can never match.
+export async function fetchMerchantOrder(merchantOrderId: string): Promise<Record<string, unknown> | null> {
+  const result = await mercadoPagoRequest(`/merchant_orders/${encodeURIComponent(merchantOrderId)}`);
+  if (!result.response.ok || !result.body) return null;
+  return result.body;
+}
+
 export async function fetchChargeback(chargebackId: string): Promise<Record<string, unknown>> {
   const result = await mercadoPagoRequest(`/v1/chargebacks/${encodeURIComponent(chargebackId)}`);
   if (!result.response.ok || !result.body) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
@@ -210,11 +238,17 @@ export async function paymentSnapshot(payment: Record<string, unknown>): Promise
   const refundedAmount = refunds.reduce((total, refund) => total + number(object(refund).amount), 0);
   const rawResponseHash = await sha256Hex(JSON.stringify(payment));
   const email = text(payer.email).toLowerCase();
+  const merchantOrderId = text(object(payment.order).id);
+  let preferenceId = text(payment.preference_id);
+  if (!preferenceId && merchantOrderId) {
+    const merchantOrder = await fetchMerchantOrder(merchantOrderId);
+    preferenceId = text(object(merchantOrder).preference_id);
+  }
   return {
     provider_payment_id: text(payment.id),
     external_reference: text(payment.external_reference),
-    preference_id: text(payment.preference_id),
-    merchant_order_id: text(object(payment.order).id),
+    preference_id: preferenceId,
+    merchant_order_id: merchantOrderId,
     collector_id: text(payment.collector_id),
     application_id: text(payment.application_id),
     currency: text(payment.currency_id).toUpperCase(),

@@ -1,6 +1,6 @@
 # HANDOFF · Storefront comercial TABA2
 
-Entrega del worktree `D:\1212\la-taba2-commercial-storefront`, rama
+Entrega del worktree exclusivo `la-taba2-commercial-storefront`, rama
 `feature/taba2-commercial-storefront`.
 
 | | |

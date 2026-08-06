@@ -5,10 +5,16 @@ Fecha: 2026-08-06 · Worktree: `D:\1212\la-taba2-real-orders-ops` · Rama: `feat
 | | |
 | --- | --- |
 | Base | `6294a98` — *fix(mercadopago): close the checkout without depending on a webhook* |
-| HEAD final | `eb36e0b` — *test(orders): certificar el circuito real contra staging* |
-| Commits | 5, todos locales. Sin push, sin amend, sin merges ni cherry-picks. |
-| Diff | 13 archivos, +1894 líneas, 0 borradas |
+| HEAD funcional | `eb36e0b` — *test(orders): certificar el circuito real contra staging*. Todo lo que se verifica más abajo corresponde a ese árbol. |
+| Tip de la rama | este commit de documentación (`git log -1`) |
+| Commits | 5 de código + los de este handoff, todos locales. Sin push, sin amend, sin merges ni cherry-picks. |
+| Diff de código | 13 archivos, +1894 líneas, 0 borradas |
 | Proyecto mutado | `la-taba-staging` (`ukxqbgswjlibmnjemrzd`) — sólo backend, Functions y migraciones |
+
+> El commit `32331f3` quedó con un BOM al inicio del asunto por la codificación de
+> `Set-Content` en PowerShell 5.1. Como la consigna prohíbe `amend`, se corrigió con un
+> `revert` y un commit nuevo (`f37b707`) en vez de reescribir historia. De ahí los tres
+> commits de documentación.
 
 ---
 

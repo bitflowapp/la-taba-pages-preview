@@ -565,6 +565,29 @@ body[data-active-view="catalog"] .search-clear {
   color: var(--brand-ink-muted);
 }
 
+/* El buscador es UNA superficie. La regla de sub-superficies (§6b) pinta todo
+   input de `.app-view` con `--shelf-raised`; dentro de la cáscara de búsqueda
+   eso mete una segunda caja con su propia costura, y el anillo de foco dorado
+   abrazaba esa caja interna en vez del campo que se ve. El input vuelve a ser
+   transparente y el foco lo porta la cáscara completa. Los `:not()` del tipo
+   no filtran nada acá (siempre es `type="search"`): igualan la especificidad
+   de la regla de sub-superficies para ganarle sin depender del orden. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .search-box input:not([type="checkbox"]):not([type="radio"]) {
+  border: 0;
+  background: transparent;
+  color: var(--shelf-ink);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .search-box input:focus,
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .search-box input:focus-visible {
+  outline: none;
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .search-box:focus-within {
+  border-color: var(--shelf-gold-soft);
+  box-shadow: 0 0 0 3px var(--shelf-gold-wash);
+}
+
 /* ============================================================================
    4 · CATEGORÍAS
    Píldoras grandes: icono de 26px y etiqueta de 13px. La activa se marca con

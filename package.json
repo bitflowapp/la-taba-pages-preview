@@ -54,7 +54,8 @@
     "release:windows:hash": "node scripts/hash-windows-artifacts.mjs",
     "performance:local": "node scripts/measure-local-rc-performance.mjs",
     "tauri": "tauri",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "certify:circuit:staging": "node scripts/certify-order-operational-circuit.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

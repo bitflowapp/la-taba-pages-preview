@@ -1,32 +1,55 @@
 // Reglas de venta complementaria locales, legibles y deterministas. No usan
 // perfiles personales ni servicios remotos: sólo catálogo, carrito y stock.
+// Los ids son los del catálogo de bebidas real. Antes esta lista arrastraba
+// los del catálogo heredado —`energeticas`, `vinos-y-espumantes`,
+// `gins-y-vodkas`, `whisky-y-destilados`, `hielo-y-extras`, `picadas-y-deli`—
+// que no existen acá: la regla de "no sumar más alcohol" no reconocía un
+// fernet ni un gin, y los destinos apuntaban a rubros inexistentes.
 const DRINK_CATEGORIES = new Set([
   'gaseosas',
   'aguas',
-  'jugos',
-  'energeticas',
+  'aguas-saborizadas',
   'isotonicas',
+  'energizantes',
+  'mixers',
   'cervezas',
-  'vinos-y-espumantes',
-  'gins-y-vodkas',
-  'whisky-y-destilados',
+  'fernet',
+  'aperitivos',
+  'vinos',
+  'espumantes',
+  'gin',
+  'whisky',
 ]);
 
 const ALCOHOL_CATEGORIES = new Set([
   'cervezas',
-  'vinos-y-espumantes',
-  'gins-y-vodkas',
-  'whisky-y-destilados',
+  'fernet',
+  'aperitivos',
+  'vinos',
+  'espumantes',
+  'gin',
+  'whisky',
 ]);
 
-// El orden de cada target es también su prioridad comercial. Las categorías
-// pueden existir o no en un catálogo: si no hay stock real, no se muestran.
+// Cómo se acompaña cada compra en un autoservicio de bebidas. El orden de
+// `targetCategories` es la prioridad comercial. `snacks` todavía no existe como
+// rubro: queda declarado para que la regla se encienda sola el día que el local
+// cargue papas y picadas, sin volver a tocar código.
 export const CART_RECOMMENDATION_RULES = Object.freeze([
+  Object.freeze({
+    id: 'fernet-cola-hielo',
+    when: 'fernet',
+    targetCategories: ['gaseosas', 'complementos', 'mixers'],
+    targetTags: ['cola', 'hielo', 'ice', 'mixer'],
+    priority: 120,
+    title: 'Para el fernet',
+    copy: 'La cola y el hielo que faltan, disponibles ahora.',
+  }),
   Object.freeze({
     id: 'alcohol-accompaniments',
     when: 'alcohol',
-    targetCategories: ['hielo-y-extras', 'picadas-y-deli', 'gaseosas'],
-    targetTags: ['hielo', 'ice', 'snack', 'snacks', 'golosina', 'golosinas', 'candy', 'mixer'],
+    targetCategories: ['snacks', 'complementos', 'gaseosas', 'mixers'],
+    targetTags: ['snack', 'snacks', 'papas', 'mani', 'picada', 'golosina', 'golosinas', 'hielo', 'ice', 'mixer'],
     priority: 100,
     title: 'Completá tu pedido',
     copy: 'Elegimos acompañamientos sin alcohol disponibles para tu compra.',
@@ -34,8 +57,8 @@ export const CART_RECOMMENDATION_RULES = Object.freeze([
   Object.freeze({
     id: 'soft-drink-accompaniments',
     when: 'soft-drinks',
-    targetCategories: ['hielo-y-extras', 'picadas-y-deli'],
-    targetTags: ['hielo', 'ice', 'snack', 'snacks', 'golosina', 'golosinas', 'candy'],
+    targetCategories: ['complementos', 'snacks'],
+    targetTags: ['hielo', 'ice', 'snack', 'snacks', 'papas', 'mani', 'golosina', 'golosinas'],
     priority: 80,
     title: 'Podés sumar',
     copy: 'Una selección disponible para acompañar tus bebidas.',
@@ -43,11 +66,11 @@ export const CART_RECOMMENDATION_RULES = Object.freeze([
   Object.freeze({
     id: 'energy-snacks',
     when: 'energy',
-    targetCategories: ['picadas-y-deli'],
-    targetTags: ['snack', 'snacks', 'golosina', 'golosinas', 'candy'],
+    targetCategories: ['snacks', 'aguas'],
+    targetTags: ['snack', 'snacks', 'papas', 'mani', 'golosina', 'golosinas', 'agua'],
     priority: 70,
     title: 'Para acompañar',
-    copy: 'Productos disponibles que combinan con tus energéticas.',
+    copy: 'Productos disponibles que combinan con tus energizantes.',
   }),
 ]);
 
@@ -79,12 +102,17 @@ function isAlcohol(product = {}) {
 }
 
 function matchesRule(rule, cartProducts) {
+  // El fernet tiene su propia regla porque su acompañamiento es específico —la
+  // cola y el hielo— y no cualquier snack. Se evalúa antes que la de alcohol.
+  if (rule.when === 'fernet') {
+    return cartProducts.some((product) => product.categoryId === 'fernet');
+  }
   if (rule.when === 'alcohol') return cartProducts.some(isAlcohol);
   if (rule.when === 'soft-drinks') {
     return cartProducts.some((product) => product.categoryId === 'gaseosas');
   }
   if (rule.when === 'energy') {
-    return cartProducts.some((product) => product.categoryId === 'energeticas');
+    return cartProducts.some((product) => product.categoryId === 'energizantes');
   }
   return false;
 }

@@ -160,6 +160,12 @@ on public.product_combos for select
 to authenticated
 using (public.has_business_role(business_id, array['owner', 'admin', 'staff']));
 
+-- `combo_id` se califica con el nombre completo de la tabla a propósito: dentro
+-- del subquery, `product_combos` tiene su propia columna `combo_id` —el
+-- identificador estable, de tipo text— y sin calificar gana esa, no la uuid de
+-- la fila que la política está filtrando. La base lo rechaza con
+-- `operator does not exist: uuid = text`, que es la forma ruidosa de un bug que
+-- en otro contexto habría comparado silenciosamente la columna equivocada.
 drop policy if exists "combo components follow combo access" on public.product_combo_components;
 create policy "combo components follow combo access"
 on public.product_combo_components for select
@@ -168,7 +174,7 @@ using (
   exists (
     select 1
       from public.product_combos c
-     where c.id = combo_id
+     where c.id = public.product_combo_components.combo_id
        and c.is_active
        and c.approval_status = 'APROBADO_COMERCIAL'
   )
@@ -182,7 +188,7 @@ using (
   exists (
     select 1
       from public.product_combos c
-     where c.id = combo_id
+     where c.id = public.product_combo_components.combo_id
        and public.has_business_role(c.business_id, array['owner', 'admin', 'staff'])
   )
 );
@@ -196,7 +202,7 @@ using (
     select 1
       from public.product_combo_components cc
       join public.product_combos c on c.id = cc.combo_id
-     where cc.id = component_id
+     where cc.id = public.product_combo_substitutions.component_id
        and c.is_active
        and c.approval_status = 'APROBADO_COMERCIAL'
   )

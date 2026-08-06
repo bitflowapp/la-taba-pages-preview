@@ -17,27 +17,54 @@ export const BEVERAGE_HOME_CATEGORY_ORDER = Object.freeze([
   'complementos',
 ]);
 
+// Orden comercial de la góndola (tanda 1). No es el orden del catálogo: es el
+// orden en que un autoservicio de barrio quiere que le compren.
+//
+//   1. Lo más pedido    → `popular`. Fail-closed: sin pedidos agregados que
+//                          respalden la métrica, la vidriera se titula
+//                          "Destacados" y no afirma un ranking que no existe.
+//   2. Para esta noche  → fila curada que cruza los rubros de consumo
+//                          inmediato. Es editorial: no afirma métrica.
+//   3-7. Rubros por prioridad comercial: cervezas, gaseosas, fernet y combos,
+//        energizantes, agua e hielo.
+//   8. Algo para picar  → el rubro todavía no existe en el catálogo. La fila
+//                          queda definida y se enciende sola el día que se den
+//                          de alta snacks con datos reales.
+//
+// Toda fila es fail-closed: sin producto comprable no se pinta. `ui.js` corta
+// en HOME_MAX_SECTIONS para no inflar la home, así que las últimas esperan a
+// que las de arriba tengan mercadería.
 export const BEVERAGE_HOME_SECTION_DEFINITIONS = Object.freeze([
   Object.freeze({ id: 'offers', title: 'Ofertas del día', kind: 'offers' }),
   Object.freeze({ id: 'popular', title: 'Lo más pedido', kind: 'popular' }),
-  Object.freeze({ id: 'gaseosas', title: 'Gaseosas', kind: 'category', categoryIds: ['gaseosas'] }),
+  Object.freeze({
+    id: 'para-esta-noche',
+    title: 'Para esta noche',
+    kind: 'category',
+    categoryIds: ['cervezas', 'fernet', 'energizantes', 'mixers'],
+  }),
   Object.freeze({ id: 'cervezas', title: 'Cervezas', kind: 'category', categoryIds: ['cervezas'] }),
-  Object.freeze({ id: 'aguas', title: 'Aguas', kind: 'category', categoryIds: ['aguas', 'aguas-saborizadas'] }),
+  Object.freeze({ id: 'gaseosas', title: 'Gaseosas', kind: 'category', categoryIds: ['gaseosas'] }),
+  Object.freeze({
+    id: 'fernet-y-combos',
+    title: 'Fernet y combos',
+    kind: 'category',
+    categoryIds: ['fernet', 'aperitivos', 'mixers'],
+  }),
   Object.freeze({ id: 'energizantes', title: 'Energizantes', kind: 'category', categoryIds: ['energizantes'] }),
   Object.freeze({
-    id: 'fernet-y-aperitivos',
-    title: 'Fernet y aperitivos',
+    id: 'agua-e-hielo',
+    title: 'Agua e hielo',
     kind: 'category',
-    categoryIds: ['fernet', 'aperitivos'],
+    categoryIds: ['aguas', 'aguas-saborizadas', 'isotonicas', 'complementos'],
   }),
+  Object.freeze({ id: 'algo-para-picar', title: 'Algo para picar', kind: 'category', categoryIds: ['snacks'] }),
   Object.freeze({
     id: 'vinos-y-whisky',
     title: 'Vinos y whisky',
     kind: 'category',
-    categoryIds: ['vinos', 'whisky'],
+    categoryIds: ['vinos', 'whisky', 'gin', 'espumantes'],
   }),
-  Object.freeze({ id: 'mixers', title: 'Mixers', kind: 'category', categoryIds: ['mixers'] }),
-  Object.freeze({ id: 'hielo', title: 'Hielo', kind: 'category', categoryIds: ['complementos'] }),
   Object.freeze({ id: 'combos', title: 'Combos', kind: 'combos' }),
 ]);
 

@@ -28,17 +28,20 @@ test('la home ordena categorías por foco de bebidas', () => {
   ]);
   assert.deepEqual(
     BEVERAGE_HOME_SECTION_DEFINITIONS.map((definition) => definition.id),
+    // Orden comercial de la góndola (tanda 1): lo más pedido, la fila curada
+    // de consumo inmediato y después los rubros por prioridad. "Algo para
+    // picar" queda declarada aunque el rubro todavía no exista.
     [
       'offers',
       'popular',
-      'gaseosas',
+      'para-esta-noche',
       'cervezas',
-      'aguas',
+      'gaseosas',
+      'fernet-y-combos',
       'energizantes',
-      'fernet-y-aperitivos',
+      'agua-e-hielo',
+      'algo-para-picar',
       'vinos-y-whisky',
-      'mixers',
-      'hielo',
       'combos',
     ],
   );

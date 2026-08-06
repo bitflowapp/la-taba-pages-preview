@@ -11,10 +11,10 @@ export const BEVERAGE_HOME_CATEGORY_ORDER = Object.freeze([
   'fernet',
   'aperitivos',
   'vinos',
-  'whisky',
-  'gin',
+  'espumantes',
+  'destilados',
   'mixers',
-  'complementos',
+  'hielo',
 ]);
 
 export const BEVERAGE_HOME_SECTION_DEFINITIONS = Object.freeze([
@@ -31,13 +31,14 @@ export const BEVERAGE_HOME_SECTION_DEFINITIONS = Object.freeze([
     categoryIds: ['fernet', 'aperitivos'],
   }),
   Object.freeze({
-    id: 'vinos-y-whisky',
-    title: 'Vinos y whisky',
+    id: 'vinos-y-espumantes',
+    title: 'Vinos y espumantes',
     kind: 'category',
-    categoryIds: ['vinos', 'whisky'],
+    categoryIds: ['vinos', 'espumantes'],
   }),
+  Object.freeze({ id: 'destilados', title: 'Destilados', kind: 'category', categoryIds: ['destilados'] }),
   Object.freeze({ id: 'mixers', title: 'Mixers', kind: 'category', categoryIds: ['mixers'] }),
-  Object.freeze({ id: 'hielo', title: 'Hielo', kind: 'category', categoryIds: ['complementos'] }),
+  Object.freeze({ id: 'hielo', title: 'Hielo', kind: 'category', categoryIds: ['hielo'] }),
   Object.freeze({ id: 'combos', title: 'Combos', kind: 'combos' }),
 ]);
 

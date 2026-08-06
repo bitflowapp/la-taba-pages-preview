@@ -9,10 +9,6 @@ export const authorityCategories = [
     "name": "Gaseosas"
   },
   {
-    "id": "mixers",
-    "name": "Mixers"
-  },
-  {
     "id": "aguas",
     "name": "Aguas"
   },
@@ -21,12 +17,20 @@ export const authorityCategories = [
     "name": "Aguas saborizadas"
   },
   {
+    "id": "isotonicas",
+    "name": "Isotónicas"
+  },
+  {
     "id": "energizantes",
     "name": "Energizantes"
   },
   {
-    "id": "isotonicas",
-    "name": "Isotónicas"
+    "id": "mixers",
+    "name": "Mixers"
+  },
+  {
+    "id": "cervezas",
+    "name": "Cervezas"
   },
   {
     "id": "fernet",
@@ -37,10 +41,6 @@ export const authorityCategories = [
     "name": "Aperitivos"
   },
   {
-    "id": "cervezas",
-    "name": "Cervezas"
-  },
-  {
     "id": "vinos",
     "name": "Vinos"
   },
@@ -49,16 +49,12 @@ export const authorityCategories = [
     "name": "Espumantes y sidras"
   },
   {
-    "id": "gin",
-    "name": "Gin"
+    "id": "destilados",
+    "name": "Destilados"
   },
   {
-    "id": "whisky",
-    "name": "Whisky"
-  },
-  {
-    "id": "complementos",
-    "name": "Complementos"
+    "id": "hielo",
+    "name": "Hielo"
   }
 ];
 
@@ -2030,7 +2026,7 @@ export const pendingProducts = [
     "brand": "Tanqueray",
     "name": "Tanqueray Dry",
     "variant": "London Dry",
-    "categoryId": "gin",
+    "categoryId": "destilados",
     "subcategory": "london-dry",
     "description": "Gin en botella de 700 ml.",
     "presentation": "Botella · 700 ml · Unidad",
@@ -2086,7 +2082,7 @@ export const pendingProducts = [
     "brand": "Bombay Sapphire",
     "name": "Bombay Sapphire",
     "variant": "London Dry",
-    "categoryId": "gin",
+    "categoryId": "destilados",
     "subcategory": "london-dry",
     "description": "Gin en botella de 750 ml.",
     "presentation": "Botella · 750 ml · Unidad",
@@ -2142,7 +2138,7 @@ export const pendingProducts = [
     "brand": "Bosque",
     "name": "Bosque Nativo",
     "variant": "Nativo",
-    "categoryId": "gin",
+    "categoryId": "destilados",
     "subcategory": "nativo",
     "description": "Gin en botella de 500 ml.",
     "presentation": "Botella · 500 ml · Unidad",
@@ -2198,7 +2194,7 @@ export const pendingProducts = [
     "brand": "Johnnie Walker",
     "name": "Johnnie Walker Red Label",
     "variant": "Red Label",
-    "categoryId": "whisky",
+    "categoryId": "destilados",
     "subcategory": "red-label",
     "description": "Whisky en botella de 750 ml.",
     "presentation": "Botella · 750 ml · Unidad",
@@ -2254,7 +2250,7 @@ export const pendingProducts = [
     "brand": "Cristal",
     "name": "Hielo Cristal",
     "variant": "Bolsa de hielo",
-    "categoryId": "complementos",
+    "categoryId": "hielo",
     "subcategory": "bolsa-de-hielo",
     "description": "Hielo Cristal en bolsa de 4 kg.",
     "presentation": "Bolsa · 4 kg · Unidad",

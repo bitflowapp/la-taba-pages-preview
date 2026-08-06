@@ -1383,8 +1383,15 @@ const CATEGORY_GLYPH_ALIASES = Object.freeze({
   energizantes: 'energeticas',
   vinos: 'vinos-y-espumantes',
   espumantes: 'vinos-y-espumantes',
+  destilados: 'whisky-y-destilados',
+  hielo: 'hielo-y-extras',
+  snacks: 'picadas-y-deli',
+  golosinas: 'picadas-y-deli',
+  // Ids heredados: un favorito o un enlace guardado antes de agrupar la
+  // góndola sigue encontrando su glifo en vez de caer al genérico.
   whisky: 'whisky-y-destilados',
   gin: 'gins-y-vodkas',
+  vodka: 'gins-y-vodkas',
   complementos: 'hielo-y-extras',
   'aguas-saborizadas': 'aguas',
   'jugos-y-saborizadas': 'jugos',

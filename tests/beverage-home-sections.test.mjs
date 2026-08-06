@@ -21,10 +21,10 @@ test('la home ordena categorías por foco de bebidas', () => {
     'fernet',
     'aperitivos',
     'vinos',
-    'whisky',
-    'gin',
+    'espumantes',
+    'destilados',
     'mixers',
-    'complementos',
+    'hielo',
   ]);
   assert.deepEqual(
     BEVERAGE_HOME_SECTION_DEFINITIONS.map((definition) => definition.id),
@@ -36,7 +36,8 @@ test('la home ordena categorías por foco de bebidas', () => {
       'aguas',
       'energizantes',
       'fernet-y-aperitivos',
-      'vinos-y-whisky',
+      'vinos-y-espumantes',
+      'destilados',
       'mixers',
       'hielo',
       'combos',

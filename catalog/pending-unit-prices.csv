@@ -1,0 +1,10 @@
+external_id,sku,brand,name,variant,category,subcategory,capacity_value,capacity_unit,package_type,units_per_pack,price,stock,available,alcoholic,minimum_age,chilled,featured,sort_order,image_path,tags
+coca-cola-original-pet-1500ml,coca-cola-original-pet-1500ml,Coca-Cola,Coca-Cola Original,Original,Gaseosas,cola,1500,ml,botella-pet,1,,,true,false,,false,false,0,,gaseosa|cola
+coca-cola-original-pet-500ml,coca-cola-original-pet-500ml,Coca-Cola,Coca-Cola Original,Original,Gaseosas,cola,500,ml,botella-pet,1,,,true,false,,false,false,0,,gaseosa|cola
+coca-cola-zero-pet-1500ml,coca-cola-zero-pet-1500ml,Coca-Cola,Coca-Cola Zero,Sin azúcar,Gaseosas,cola-sin-azucar,1500,ml,botella-pet,1,,,true,false,,false,false,0,,gaseosa|cola|sin-azucar
+coca-cola-zero-pet-500ml,coca-cola-zero-pet-500ml,Coca-Cola,Coca-Cola Zero,Sin azúcar,Gaseosas,cola-sin-azucar,500,ml,botella-pet,1,,,true,false,,false,false,0,,gaseosa|cola|sin-azucar
+fanta-naranja-pet-1500ml,fanta-naranja-pet-1500ml,Fanta,Fanta Naranja,Naranja,Gaseosas,naranja,1500,ml,botella-pet,1,,,true,false,,false,false,0,,gaseosa|naranja
+schweppes-citrus-pet-1500ml,schweppes-citrus-pet-1500ml,Schweppes,Schweppes Citrus,Citrus,Gaseosas,citrus,1500,ml,botella-pet,1,,,true,false,,false,false,0,,citrus|mixer
+schweppes-tonica-pet-1500ml,schweppes-tonica-pet-1500ml,Schweppes,Schweppes Tónica,Tónica,Gaseosas,tonica,1500,ml,botella-pet,1,,,true,false,,false,false,0,,tonica|mixer
+sprite-original-pet-1500ml,sprite-original-pet-1500ml,Sprite,Sprite Original,Original,Gaseosas,lima-limon,1500,ml,botella-pet,1,,,true,false,,false,false,0,,gaseosa|lima-limon
+sprite-original-pet-500ml,sprite-original-pet-500ml,Sprite,Sprite Original,Original,Gaseosas,lima-limon,500,ml,botella-pet,1,,,true,false,,false,false,0,,gaseosa|lima-limon

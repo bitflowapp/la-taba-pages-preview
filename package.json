@@ -23,6 +23,7 @@
     "smoke:business-intake:staging": "node scripts/run-business-intake-staging-smoke.mjs",
     "config:check": "node scripts/check-runtime-config.mjs",
     "migrations:validate": "node scripts/validate-supabase-migrations.mjs",
+    "catalog:pending": "node scripts/build-catalog-pending.mjs",
     "catalog:validate": "node scripts/validate-product-catalog.mjs",
     "catalog:template:validate": "node scripts/validate-product-catalog.mjs data/catalog-template.csv --template",
     "catalog:import": "node scripts/import-product-catalog.mjs",

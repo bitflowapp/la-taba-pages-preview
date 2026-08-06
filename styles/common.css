@@ -925,9 +925,12 @@ dialog::backdrop {
 }
 
 /* La consulta se retira del campo con un único control: el nativo de
-   `type="search"` se oculta para no duplicar la "✕". */
+   `type="search"` se oculta para no duplicar la "✕". `appearance: none` no
+   alcanza: WebKit real (Safari/iPhone) sigue pintando su goma de borrar al
+   lado de la nuestra; `display: none` sí lo retira. */
 .search-box input[type="search"]::-webkit-search-cancel-button,
 .search-box input[type="search"]::-webkit-search-decoration {
+  display: none;
   -webkit-appearance: none;
   appearance: none;
 }

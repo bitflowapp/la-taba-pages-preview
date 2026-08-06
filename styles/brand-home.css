@@ -1222,14 +1222,26 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-m
   border-radius: 16px;
 }
 
-/* Los discos que flotan sobre el packshot (favorito, agregar rápido) eran
-   blancos puros: sobre crema se veían como parches. */
+/* Los discos que flotan sobre el packshot (favorito, agregar rápido) no están
+   sobre la góndola: están sobre el PLATO BLANCO de la foto. Pintarlos grafito
+   abría un agujero oscuro sobre el producto y tapaba cintas y sellos del
+   propio envase —Monster, Imperial Lager—, que es lo único que la tarjeta no
+   puede permitirse tapar. Sobre blanco el disco es blanco translúcido con una
+   línea de pelo: presente para el pulgar, invisible para la foto. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
   .product-favorite,
   .home-favorite-button
 ) {
-  border-color: var(--shelf-line);
-  background: color-mix(in srgb, var(--shelf-raised) 92%, transparent);
+  border: 1px solid rgb(20 22 26 / 12%);
+  background: rgb(255 255 255 / 88%);
+  box-shadow: none;
+}
+
+/* La tinta del corazón se mide contra ese blanco: el gris de base daba 2,9:1.
+   `--taba-muted` es la tinta de papel (4,5:1 sobre blanco). El favorito activo
+   conserva su rojo: esta regla no lo alcanza. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .product-favorite:not(.is-favorite) {
+  color: var(--taba-muted);
 }
 
 /* Tinta del contenido: el gris frío del sistema estaba calibrado para papel

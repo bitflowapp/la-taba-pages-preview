@@ -1,0 +1,81 @@
+{
+  "candidato": {
+    "lat": -38.9460539,
+    "lng": -68.053236
+  },
+  "momento": "2026-08-07T21:30:54.104Z",
+  "comprobaciones": [
+    {
+      "nombre": "1. dentro de Neuquén Capital",
+      "ok": true,
+      "detalle": "lat -38.982..-38.904, lng -68.105..-67.955"
+    },
+    {
+      "nombre": "2. reverse geocoding responde",
+      "ok": true,
+      "detalle": "Diagonal España, Santa Genoveva, Neuquén, Municipio de Neuquén, Departamento Confluencia, Neuqué"
+    },
+    {
+      "nombre": "   2b. la calle es Mendoza",
+      "ok": false,
+      "detalle": "road=\"Diagonal España\""
+    },
+    {
+      "nombre": "   2c. la ciudad es Neuquén",
+      "ok": true,
+      "detalle": "city=\"Neuquén\""
+    },
+    {
+      "nombre": "3a. no es el punto de Zapala",
+      "ok": true,
+      "detalle": "175.0 km de distancia"
+    },
+    {
+      "nombre": "3b. no es Islas Malvinas 145",
+      "ok": true,
+      "detalle": "368 m del POI \"Mercado La Taba\" de OSM"
+    },
+    {
+      "nombre": "4. coherente con el tramo de Mendoza",
+      "ok": true,
+      "detalle": "desvío en longitud 0.000227°, entre los dos tramos conocidos"
+    }
+  ],
+  "reverse": {
+    "display_name": "Diagonal España, Santa Genoveva, Neuquén, Municipio de Neuquén, Departamento Confluencia, Neuquén, Q8300BMH, Argentina",
+    "address": {
+      "road": "Diagonal España",
+      "suburb": "Santa Genoveva",
+      "city": "Neuquén",
+      "municipality": "Municipio de Neuquén",
+      "state_district": "Departamento Confluencia",
+      "state": "Neuquén",
+      "ISO3166-2-lvl4": "AR-Q",
+      "postcode": "Q8300BMH",
+      "country": "Argentina",
+      "country_code": "ar"
+    }
+  },
+  "distancias": {
+    "zapala_km": 175,
+    "islas_malvinas_m": 368,
+    "tramos": [
+      {
+        "lat": -38.952393,
+        "lng": -68.053463,
+        "nombre": "Calle Mendoza — Área Centro Este",
+        "d": 705
+      },
+      {
+        "lat": -38.944324,
+        "lng": -68.053406,
+        "nombre": "Calle Mendoza — Santa Genoveva",
+        "d": 193
+      }
+    ]
+  },
+  "googleMaps": {
+    "consulta": "La Taba 2, Mendoza 827",
+    "url": "https://www.google.com/maps/search/?api=1&query=La%20Taba%202%2C%20Mendoza%20827"
+  }
+}

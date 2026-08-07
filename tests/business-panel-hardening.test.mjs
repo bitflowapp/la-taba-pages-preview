@@ -241,3 +241,30 @@ test('cerrar el negocio exige owner/admin y el concepto fiscal queda validado', 
   assert.match(HARDENING_MIGRATION, /coalesce\(\(p_profile->>'default_concept'\)::integer, 1\) not in \(1, 2, 3\)/);
   assert.match(HARDENING_MIGRATION, /coalesce\(p_package_type, ''\) not in \('unit', 'pack', 'case', 'internal'\)/);
 });
+
+// ─── 20260807100000: los eventos de negocio llenan `type` sin perder guardas ─
+
+const EVENTS_MIGRATION = readFileSync(join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..', 'supabase', 'migrations', '20260807100000_order_events_type_in_business_commands.sql',
+), 'utf8');
+
+test('cancel/acknowledge/estimate insertan event_type Y type, con todas las guardas', () => {
+  for (const fn of ['cancel_order', 'acknowledge_order', 'set_preparation_estimate']) {
+    const start = EVENTS_MIGRATION.indexOf(`create or replace function public.${fn}(`);
+    assert.ok(start >= 0, `${fn} redefinida`);
+    const body = EVENTS_MIGRATION.slice(start, EVENTS_MIGRATION.indexOf('$;', start));
+    // order_events.type es NOT NULL desde la fase 1: el insert que no lo llena
+    // revienta la transacción entera y el comando de la UI nunca se aplica.
+    assert.match(body, /order_events\(order_id, business_id, actor_user_id, actor_role, event_type, type, message, metadata\)/, `${fn}: insert con type`);
+    assert.match(body, /auth\.uid\(\) is null/, `${fn}: autenticación`);
+    assert.match(body, /has_business_role\(v_order\.business_id, array\['owner', 'admin', 'staff'\]\)/, `${fn}: rol`);
+    assert.match(body, /business_command_receipts/, `${fn}: receipts`);
+    assert.match(body, /request_hash <> v_hash/, `${fn}: replay verificado`);
+    assert.match(body, /\^\[A-Za-z0-9:_-\]\{8,128\}\$/, `${fn}: alfabeto de claves`);
+  }
+  // Cada evento lleva el MISMO nombre en las dos columnas del vocabulario dual.
+  assert.match(EVENTS_MIGRATION, /'business_cancel_reason', 'business_cancel_reason'/);
+  assert.match(EVENTS_MIGRATION, /'business_acknowledged', 'business_acknowledged'/);
+  assert.match(EVENTS_MIGRATION, /'preparation_estimate_set', 'preparation_estimate_set'/);
+});

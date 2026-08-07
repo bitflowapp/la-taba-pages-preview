@@ -179,7 +179,9 @@ export async function handleProductionAuthSubmit(form) {
   }
 
   form.reset();
-  await activateAuthorizedAccess(result);
+  // La activación va por la MISMA cola que el evento SIGNED_IN: un solo camino
+  // serializado. Activar directo acá era la mitad de la carrera.
+  await refreshProductionAccess();
   return { handled: true, ok: true, message: 'Acceso seguro iniciado.' };
 }
 
@@ -647,6 +649,7 @@ export function resetProductionOperationsForTests() {
   gpsController = null;
   authStop?.();
   authStop = null;
+  accessRefreshChain = Promise.resolve();
   initialized = false;
   repository = null;
   auth = null;
@@ -676,7 +679,21 @@ export function resetProductionOperationsForTests() {
   };
 }
 
-async function refreshProductionAccess() {
+// TODAS las activaciones de acceso (evento de auth o submit del formulario)
+// pasan por una cola de una sola corrida. Sin esto, el submit y el evento
+// SIGNED_IN corrían activateAuthorizedAccess en paralelo y el PERDEDOR
+// ejecutaba stopBusinessIntake() al entrar, matando el intake del ganador:
+// panel autenticado con la bandeja congelada en "Error recuperable".
+// Medido contra staging real; en tests locales la latencia lo escondía.
+let accessRefreshChain = Promise.resolve();
+
+function refreshProductionAccess() {
+  const run = accessRefreshChain.then(() => refreshProductionAccessNow());
+  accessRefreshChain = run.catch(() => {});
+  return run;
+}
+
+async function refreshProductionAccessNow() {
   if (!auth) return;
   const sequence = ++refreshSequence;
   access = {

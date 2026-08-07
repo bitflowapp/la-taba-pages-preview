@@ -1,13 +1,13 @@
 # BUSINESS-PANEL-HARDENING — auditoría y endurecimiento del Panel del negocio
 
-Fecha: 2026-08-07 · Worktree: `D:\1212\la-taba2-business-panel-hardening` ·
+Fecha: 2026-08-07 · Worktree: `la-taba2-business-panel-hardening` ·
 Rama: `feature/taba2-business-panel-hardening` · Base: `11a0b02`
 
 | | |
 | --- | --- |
-| Commits | `5220ce9` (cliente + migración), `07ceef4` (alfabeto de claves), `54ba648` (POS fiscal + E2E). Todos locales, sin push. |
-| Staging mutado | `la-taba-staging` (`ukxqbgswjlibmnjemrzd`): migración `20260807090000` aplicada por `supabase db push`; Edge Function `mercadopago-refund` re-desplegada. Nada más. |
-| Lock | `D:\1212\_claude-locks\taba2-business-panel-hardening.txt`. El lock ajeno `taba2-staging-mutation.lock` (HOLDING, espera compra iPhone) se respetó: no se tocó su deploy de Pages ni sus pedidos, y la migración **arregla** su Panel desplegado (ver H1). |
+| Commits | `5220ce9` (cliente + migración), `07ceef4` (alfabeto de claves), `54ba648` (POS fiscal + E2E), `433f638` (informe), + el commit de la recertificación (carrera de acceso + eventos de negocio + spec staging). Todos locales, sin push. |
+| Staging mutado | `la-taba-staging` (`ukxqbgswjlibmnjemrzd`): migraciones `20260807090000` y `20260807100000` aplicadas por `supabase db push`; Edge Function `mercadopago-refund` re-desplegada. Pedidos de certificación: LT-0084 (delivered, retirado a QA), LT-0085/LT-0088 y los del smoke (cancelados). Nada más. |
+| Lock | `taba2-business-panel-hardening.txt` en el directorio compartido de locks. El lock ajeno `taba2-staging-mutation.lock` (HOLDING, espera compra iPhone) se respetó: no se tocó su deploy de Pages ni sus pedidos, y la migración **arregla** su Panel desplegado (ver H1). |
 | Producción / ARCA real / LT-0030 | Intactos. `fiscal_documents` y `fiscal_outbox` sin actividad nueva. |
 
 ## 0. El hallazgo que ordena todo lo demás
@@ -155,13 +155,14 @@ real en `checkout_pos_sale`; (2) vía de aprobación de políticas contables;
 
 | Gate | Resultado |
 | --- | --- |
-| `npm test` | **1100/1100** (base 1086; +14 de este trabajo) |
-| `npm run test:e2e` | **207/207** (Chromium + Firefox; base 206, +1 del POS deshabilitado) |
+| `npm test` | **1102/1102** (base 1086; +16 de este trabajo) |
+| `npm run test:e2e` | **207/207** (Chromium + Firefox; base 206, +1 del POS deshabilitado; re-corrida verde tras el fix de la carrera de acceso) |
 | `npm run check` | pasa |
-| `npm run migrations:validate` | aprobado (incluye la migración nueva) |
+| `npm run migrations:validate` | aprobado (incluye las dos migraciones nuevas) |
 | `npm run secrets:scan` | limpio |
-| `supabase db push` | `20260807090000` aplicada a `la-taba-staging` |
+| `supabase db push` | `20260807090000` y `20260807100000` aplicadas a `la-taba-staging` |
 | `supabase functions deploy mercadopago-refund` | desplegada |
+| Certificación viva | 47/47 pipeline · circuito LT-0084 verde · smoke UI 1/1 · 19/19 sondas (§6) |
 | `git diff --check` | limpio |
 
 Pruebas nuevas: claves válidas ante el regex del servidor (transition/cancel/
@@ -172,40 +173,62 @@ force-recover, `nextDueAt`, drain al reconectar, reintento agendado, chip sin
 mentiras), migración sin pérdida de guardas, y E2E del POS con facturación
 habilitada y deshabilitada.
 
-## 6. Certificación viva — DIFERIDA (único pendiente bloqueante)
+## 6. Recertificación viva — CERRADA (con dos regresiones encontradas y corregidas)
 
-La re-certificación del pipeline contra staging (pedido → Panel → aceptar →
-preparar → rider → entregar, con concurrencia y duplicados sobre la base real)
-**no se pudo correr en esta sesión**: el clasificador de permisos bloqueó la
-extracción de las claves del proyecto (`supabase projects api-keys`) y no
-corresponde rodearlo. Reload/offline/duplicados quedaron cubiertos por unit +
-E2E; la concurrencia por los contratos del servidor (receipts, CAS, FOR
-UPDATE) ya certificados 47/47 sobre esta misma base **antes** de la migración
-— pero la corrida post-migración es la prueba que falta.
+Corrida completa contra `la-taba-staging` con las credenciales obtenidas en
+runtime por la CLI (autorizado; nunca impresas ni persistidas), con
+`20260807090000` y `20260807100000` aplicadas:
 
-Para cerrarla (dos comandos, ~5 minutos):
+| Prueba viva | Resultado |
+| --- | --- |
+| `certify:orders:staging` (pipeline completo: pedido único → Panel → rider canónico → código de entrega → QA aislado → pago no falsificable → stock recuperado → LT-0030/33/34/35 intactos) | **47/47** |
+| Circuito operativo sobre pedido fresco (LT-0084, delivery): Panel acepta/prepara/listo, revisión atrasada rechazada, claim + doble claim no-op, retiro/salida/llegada, código incorrecto no cierra, entrega con código, dinero inmóvil | **todo verde** (retirado como QA auditado) |
+| Smoke de UI del Panel REAL contra staging: login, bandeja antes/después del pedido, 3 pestañas convergentes, snapshots deduplicados, **offline retiene + reconexión recupera**, una sola alerta multi-tab, orden determinístico, **transiciones desde la UI (accepted → preparing)**, no-regresión multi-tab, **reload completo recupera**, una reserva de stock por pedido, limpieza PostgreSQL | **1/1** |
+| Bug A muerto sobre datos reales: claves de idempotencia que la UI dejó en `business_command_receipts` (`transition_order-<uuid>-3-accepted`, `-4-preparing`) | todas `^[A-Za-z0-9_-]{8,128}$`, sin `:` |
+| Bug B muerto en vivo: `claim_available_rider_order`/`confirm_order_delivery`/packing superseded → `42501 permission denied`; `claim_delivery_order` accesible con refusals saneados | 19/19 sondas |
+| Endurecimiento vivo: rider sin acceso a PDFs fiscales, `closed` sólo owner/admin, ack de alertas saneado, `mercadopago-refund` desplegada responde 409 sin frase (sin mover dinero), RLS anónimo = 0 filas | incluido en las 19 sondas |
+| Combos reales: LT-0079 y la compra iPhone LT-0086 de la RC de piloto verifican `total = subtotal − descuento + envío` y `order_combos` visible para el Panel | verificado |
+| `cancel_order` vivo (ver R2): LT-0088 cancelado por el contrato real con motivo auditado | verificado |
 
-```powershell
-cd D:\1212\la-taba2-business-panel-hardening
-$env:SUPABASE_URL = 'https://ukxqbgswjlibmnjemrzd.supabase.co'
-$env:SUPABASE_SERVICE_ROLE_KEY = '<service_role de la-taba-staging>'
-$env:SUPABASE_ANON_KEY = '<anon/publishable de la-taba-staging>'
-$env:TABA_BUSINESS_ID = '00000000-0000-4000-8000-000000000001'
-$env:TABA_CERTIFY_CONFIRM = 'I_UNDERSTAND_THIS_MUTATES_STAGING'
-npm run certify:orders:staging          # 47 comprobaciones del pipeline
-npm run certify:circuit:staging -- LT-0079   # 17 del circuito operativo
-```
+**Las dos regresiones que SOLO la corrida viva destapó** (ambas corregidas,
+con test de regresión, y verificadas de nuevo en vivo):
 
-(O permitir `supabase projects api-keys --project-ref ukxqbgswjlibmnjemrzd`
-y lo corro yo.)
+- **R1 — Carrera de activación del acceso.** El submit del login y el evento
+  `SIGNED_IN` corrían `activateAuthorizedAccess` en paralelo; el perdedor
+  ejecutaba `stopBusinessIntake()` matando el intake del ganador: panel
+  autenticado con la bandeja congelada en "Error recuperable". Con la latencia
+  real de staging perdía SIEMPRE. Ahora toda activación pasa por una cola de
+  una sola corrida (`js/production-operations.js`).
+- **R2 — "Cancelar con motivo" nunca funcionó.** `order_events.type` es NOT
+  NULL desde la fase 1 y `cancel_order`/`acknowledge_order`/
+  `set_preparation_estimate` (20260802160000) insertaban sólo `event_type`:
+  la transacción entera se revertía con 23502. Invisible para los scripts de
+  certificación porque transicionan por el núcleo de `transition_order`.
+  Corregido en `20260807100000` (aplicada a staging) y verificado en vivo.
+
+Nota de coexistencia: durante esta recertificación, la sesión del RC de piloto
+completó su compra iPhone real (LT-0086, combo Heineken x6, $21.150) sobre el
+backend ya endurecido: recibida → aceptada → preparada → lista → entregada.
+Ninguna de las dos corridas pisó a la otra; cada pedido se verificó por su
+propio código.
+
+El spec de staging (`tests/staging/business-intake-staging.spec.mjs`) era
+anterior al panel multivista y al aislamiento QA: se actualizó para entrar a
+la vista Pedidos y para cargar el login desde el main world (93/93 teclas
+medidas caían en BODY: el focus de automatización no llega a esos campos; el
+contrato del Panel lee FormData del DOM — mismo criterio que el E2E de
+Mercado Pago con el form de tarjeta).
 
 ## 7. Declaración
 
-**TABA2_BUSINESS_PANEL_CONTRACT_CERTIFIED_FOR_PILOT — DIFERIDA.**
-
 El contrato del Panel quedó auditado área por área, endurecido en cliente y
-backend, con la facturación presentada honestamente como no operativa y sin
+backend, certificado VIVO contra staging por script y por UI real —incluida la
+compra iPhone real de la RC de piloto operada de punta a punta sobre este
+backend—, con la facturación presentada honestamente como no operativa y sin
 ningún botón, métrica o estado que prometa lo que el backend no garantiza.
-Falta UNA cosa para estampar la declaración: la corrida viva post-migración de
-§6. Declarar sin esa corrida sería exactamente el tipo de promesa sin
-evidencia que este trabajo vino a eliminar.
+
+**TABA2_BUSINESS_PANEL_CONTRACT_CERTIFIED_FOR_PILOT**
+
+Exclusión explícita de la certificación: Facturación ARCA (área 17) queda
+PARCIAL/NO OPERATIVA por los tres cortes de contrato de §4 — y la UI lo dice.
+Certificarla exige los seis puntos listados al final de §4.

@@ -130,6 +130,7 @@ test('PostgreSQL recupera pedidos sintéticos en panel real antes/después, sin 
 
     await pages[1].reload();
     await assertConnectedAfterSnapshot(pages[1]);
+    await openOrdersView(pages[1]);
     for (const order of createdOrders) await expectSyntheticCardCount(pages[1], order, 1);
     evidence.checks.push('full-reload-recovers');
 
@@ -320,15 +321,40 @@ async function signInBusinessPanel(page) {
   await page.goto('/#business');
   const form = page.locator('[data-production-auth-form="business"]');
   await expect(form).toBeVisible();
-  await form.locator('[name="email"]').fill(staffEmail);
-  await form.locator('[name="password"]').fill(staffPassword);
+  // El fill/typeo por protocolo no logra enfocar estos inputs (la sección
+  // re-anima `view-enter` en cada render y el focus de automatización nunca
+  // llega; medido: 93/93 teclas a BODY). El contrato del Panel lee FormData
+  // del DOM, así que se cargan los valores desde el main world con su evento
+  // `input` — el mismo criterio que el E2E de Mercado Pago usó con el form de
+  // tarjeta: es la automatización, no el producto.
+  await page.evaluate(({ mail, pass }) => {
+    const target = document.querySelector('[data-production-auth-form="business"]');
+    const emailInput = target.querySelector('[name="email"]');
+    const passwordInput = target.querySelector('[name="password"]');
+    emailInput.value = mail;
+    passwordInput.value = pass;
+    emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+  }, { mail: staffEmail, pass: staffPassword });
   await form.locator('[type="submit"]').click();
   await assertConnectedAfterSnapshot(page);
+  await openOrdersView(page);
 }
 
 async function openAuthenticatedBusinessPanel(page) {
   await page.goto('/#business');
   await assertConnectedAfterSnapshot(page);
+  await openOrdersView(page);
+}
+
+// El panel multivista abre en el Centro de operación; las tarjetas de pedido
+// viven en la vista Pedidos. Este spec es anterior a ese panel: sin este paso
+// las aserciones de tarjetas miran una superficie que ya no las dibuja.
+async function openOrdersView(page) {
+  const ordersButton = page.locator('[data-production-orders-view]');
+  await expect(ordersButton).toBeVisible();
+  await ordersButton.click();
+  await expect(page.locator('.production-order-list')).toBeVisible();
 }
 
 async function assertConnectedAfterSnapshot(page) {

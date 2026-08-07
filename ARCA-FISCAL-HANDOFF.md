@@ -5,141 +5,197 @@ Rama: `feature/taba2-arca-fiscal-automation` · Base: `c7c3bbd`
 
 | | |
 | --- | --- |
-| Commits (locales, sin push) | `6c038fa` contrato de base · `353ffed` puente ARCA · `6062d16` proyección de estados y Panel · `4b26b4d` CSR y handoff · más el commit de cierre |
-| Alcance | 37 archivos, +3894/−140 |
-| Lock de staging | `taba2-staging-mutation.lock` estaba **ocupado** (OWNER=TABA2_PILOT_RC, HOLDING). No se tocó, no se borró, no se completó. **Todo el trabajo es local.** |
+| Fase anterior | circuito implementado y certificado localmente (`cb490bc`) |
+| Esta fase | certificación sintética completa: `c418333` rider · `0aa4aab` importes contra ARCA · `4896fb7` marca de ambiente · `ac0368c` reinicio del worker · `c6a8609` dígito verificador del CUIT · `ee92ad8` muestra del comprobante · `faa72c3` el mostrador perdía el pedido de comprobante |
+| Lock de staging | `taba2-staging-mutation.lock` **ocupado** (OWNER=TABA2_FIRST_PHYSICAL_E2E, HOLDING, `ARCA_SCOPE=EXCLUIDA`). No se tocó, no se borró, no se completó. **Todo el trabajo es local.** |
 | Staging / producción / ARCA real | **Intactos.** Ninguna migración aplicada a staging, ninguna Edge Function desplegada, ningún comprobante emitido en ningún ambiente. |
-| Ambiente ARCA usado | Ninguno todavía: falta el certificado (ver §8). Producción sigue bloqueada por triple defensa. |
+| Ambiente ARCA usado | Ninguno: falta el certificado (§10). Producción sigue bloqueada por triple defensa. |
 
 ---
 
 ## 1. Veredicto
 
-**Antes:** área 17 del Panel, "Facturación ARCA", clasificada PARCIAL / **NO
-OPERATIVA**. Tres cortes de contrato independientes, cada uno suficiente para
-que no se emitiera nunca nada, ni siquiera simulado.
+El circuito fiscal completo está **cerrado de punta a punta con fixtures
+sintéticos** y verde en todos los gates. Cada paso —desde un pedido pagado
+sintético hasta el documento fiscal en el Panel, incluida la recuperación
+después de una caída— tiene una prueba automática que corre en cada cambio.
 
-**Ahora:** el circuito completo existe, está cableado de punta a punta y está
-probado contra una base real, contra una ARCA simulada que reproduce los fallos
-que homologación no deja provocar a voluntad, y —en lo que no exige
-certificado— **contra los endpoints oficiales de homologación**: `FEDummy`
-respondió `OK/OK/OK` y WSAA evaluó y rechazó un certificado que no emitió (§7bis).
-Los cuatro cortes —los tres del informe más uno que ese informe no había
-encontrado— están cerrados.
+Esta fase encontró y cerró **seis defectos que la fase anterior no había
+visto**. Tres habrían impedido facturar, uno filtraba datos fiscales al
+repartidor, y uno hacía que el mostrador cobrara sin pedir el comprobante que el
+operador había tildado, sin decirlo (§2).
 
-**Lo que todavía no está:** la certificación contra la HOMOLOGACIÓN oficial de
-ARCA. No es un pendiente de software: **falta el certificado X.509**, y
-obtenerlo exige una persona con Clave Fiscal frente a WSASS. Todo lo que
-depende de ese certificado está listo y esperando; nada de eso se declara
-certificado hasta que corra contra los endpoints reales. Ver §8 y §11.
+**Lo que sigue sin estar, y no se disfraza:** la certificación contra la
+HOMOLOGACIÓN oficial de ARCA. No es un pendiente de software. Falta el
+certificado X.509, y obtenerlo exige una persona con Clave Fiscal frente a
+WSASS. Ver §10 y §11.
 
 ---
 
-## 2. Los cuatro cortes
+## 2. Lo que esta fase encontró
 
-Los tres primeros son los de `BUSINESS-PANEL-HARDENING.md` §4. El cuarto no
-figura ahí y era igual de terminal.
+Ninguno estaba en el informe anterior. Salieron de contrastar el código contra
+el manual WSFEv1 vigente, contra el modelo de roles real, y de perseguir un
+test que fallaba de a ratos en vez de declararlo intermitente.
 
-### Corte 1 — toda venta del mostrador rompía en el primer ítem
+### D10 — el detalle de IVA se armaba por línea, no por alícuota
 
-`checkout_pos_sale` escribía `tax_snapshot = {"configured_by_server": true}`
-(M160:717) y `request_fiscal_document` exige las cinco claves de importes
-(M170:751). Ninguna venta POS podía convertirse en comprobante.
+El manual es explícito (**error 10022**): *"El campo Id en AlicIVA no debe
+repetirse. Deberá totalizarse por alícuota."*
 
-**Cerrado:** `checkout_pos_sale` desagrega neto e IVA con la alícuota declarada
-en la política contable aprobada. Con IVA incluido en el precio,
-`neto = round(bruto / (1 + tasa/100), 2)` e `iva = bruto − neto`: la suma cierra
-al centavo contra lo cobrado, siempre, porque el IVA se calcula por diferencia y
-no por redondeo independiente. **Sin política aprobada la venta se cobra igual**
-—el mostrador no se cae porque falte facturación— y el snapshot dice
-literalmente `{"fiscal_pricing":"unavailable"}` en vez de fingir un precio
-fiscal que no existe.
+Se emitía **una entrada `AlicIva` por línea del comprobante**. Un comprobante
+con dos productos al 21% —o sea, prácticamente cualquier comprobante real—
+mandaba dos `AlicIva` con el mismo `Id`. **ARCA lo habría rechazado siempre.**
 
-### Corte 2 — no había forma de crear ni aprobar una política contable
+Cerrado: se totaliza por alícuota, con redondeo a centavos para no arrastrar
+coma flotante. Probado desde la fila de base hasta el XML.
 
-Sin política, `request_fiscal_document` lanzaba siempre (M170:740-746). No
-existía RPC, ni UI, ni seed: la tabla `fiscal_accounting_policies` nunca había
-tenido una fila y no había manera de que la tuviera.
+### D11 — el rider veía todos los comprobantes del negocio
 
-**Cerrado:** `upsert_fiscal_accounting_policy`, `approve_fiscal_accounting_policy`,
-`revoke_fiscal_accounting_policy` y `list_fiscal_accounting_policies`. Declarar
-una política **no** la habilita; aprobarla exige owner/admin más la frase exacta
-`I_APPROVE_THIS_FISCAL_ACCOUNTING_POLICY`, y queda registrado quién y cuándo.
-Tocar una política aprobada la devuelve a `pending`: cambiar un dato fiscal
-obliga a que alguien lo vuelva a aprobar.
+Todas las superficies fiscales leían con `public.is_business_member()`, que es
+verdadero para **cualquier** miembro activo: owner, admin, staff **y rider**.
+Un repartidor —muchas veces un tercero— podía leer CUIT, CAE, tipo y número de
+documento del receptor, importes, la huella del certificado, las intenciones de
+emisión y hasta que un comprobante se había impreso.
 
-### Corte 3 — el botón de homologación no podía habilitarse nunca
+El bucket `fiscal-documents` siempre fue privado y `service_role`, así que los
+bytes del PDF nunca estuvieron expuestos. Lo que estaba expuesto era todo lo
+demás.
 
-Nadie llamaba a `record_fiscal_credential_health`; el puente sólo imprimía a
-stdout. `certificate_fingerprint_sha256` quedaba NULL y
-`authorize_arca_homologation` fallaba siempre en M5120:143.
+Cerrado: la regla vive en `public.can_read_fiscal_documents()` —owner, admin,
+staff— y se aplica a las nueve superficies fiscales. Un rol nuevo en
+`business_members` ya no ensancha el acceso fiscal por descuido.
 
-**Cerrado:** el puente publica huella SHA-256, vencimiento y CUIT del
-certificado al arrancar y tras cada verificación de conexión, y marca la
-delegación como verificada sólo después de un `FEDummy` exitoso. La clave
-privada y el PEM no salen del proceso.
+### D12 — un comprobante de homologación era indistinguible de uno real
 
-### Corte 4 — encontrado en esta intervención, no registrado antes
+El PDF de un comprobante autorizado en homologación tenía el mismo layout, un
+CAE de catorce dígitos y un QR que apunta al verificador oficial de ARCA. **Nada
+en el archivo decía de qué ambiente salió.** Alcanzaba con imprimirlo y
+entregarlo.
 
-`authorize_arca_homologation` exige `fiscal_profiles.accountant_review_status =
-'approved'` (M4090:134). **Ninguna función, UI, seed ni migración del
-repositorio podía escribir ese valor.** Con certificado cargado, parámetros
-sincronizados y política aprobada, el botón seguía siendo inalcanzable.
+Cerrado: el ambiente es un campo obligatorio del comprobante —sin valor por
+omisión, así que el compilador encontró todos los lugares que no lo declaraban—
+y cuando no es producción el PDF lo dice cuatro veces (§8).
 
-**Cerrado:** `record_fiscal_accountant_review(business, decision, frase, notas)`,
-owner/admin, frase exacta `I_CONFIRM_THE_FISCAL_DATA_WERE_REVIEWED`, con actor y
-fecha. La revisión contable es una decisión de una persona, no un efecto
-colateral de guardar un formulario.
+### D13 — el CUIT no verificaba su dígito
+
+El perfil fiscal validaba once dígitos y nada más. El CUIT que usaba **todo el
+repositorio como fixture**, `20123456789`, tiene dígito verificador 6: no era un
+CUIT. `00000000000` también se guardaba como CUIT habilitado.
+
+El costo de no verificarlo no se paga en la configuración: se paga con un
+certificado ya emitido por ARCA para el CUIT equivocado, y ese viaje a WSASS no
+se deshace.
+
+Cerrado: módulo 11 en los tres puntos donde un CUIT entra al sistema
+—configuración del worker, pedido de certificado, comprobante— y un trigger en
+`fiscal_profiles`. El fixture pasa a `20123456786`, que sí cierra.
+
+### D14 — las validaciones de importes de ARCA no estaban
+
+Se verificaba una sola: que el total fuera la suma de sus componentes. El manual
+valida bastante más, y cada regla ausente es **un rechazo seguro después de
+haber consumido un número de la secuencia**. Faltaban:
+
+| Código | Regla del manual |
+| --- | --- |
+| 10023 | La suma de `<Importe>` en `<IVA>` debe dar `ImpIVA`. Margen: error relativo ≤ 0.01% o absoluto ≤ 0.01 × cantidad de alícuotas. |
+| 10022 | El `Id` no puede repetirse; debe totalizarse por alícuota. |
+| 10018 | Con `ImpIVA` > 0 el detalle es obligatorio; con `ImpIVA` = 0 sólo puede informarse la alícuota 0%. |
+| 10020 | `BaseImp` mayor a cero, salvo los tipos 2, 3, 7, 8, 52 y 53. |
+| 1434 / 1435 / 1438 | Clase C: `ImpTotConc`, `ImpOpEx` e `ImpIVA` en cero. |
+| 1439 | Clase C: `ImpTotal` = `ImpNeto` + `ImpTrib`. |
+| 1443 | Clase C: el array de IVA no debe informarse. |
+
+Cerrado: todas, con el código de error del manual en el mensaje, y **antes de
+reservar número**. Los siete tipos clase C (11, 12, 13, 15, 211, 212, 213) se
+tratan como clase C.
+
+> El fixture del puente era tipo 11 —Factura C— con IVA distinto de cero y array
+> de IVA informado: inválido según 1438 y 1443. Nadie lo había notado porque
+> nada lo validaba. Pasa a tipo 6, que es lo que declara la política contable.
+
+### D15 — el mostrador cobraba sin pedir el comprobante que le habían tildado
+
+El operador tildaba **"Solicitar comprobante fiscal"**, un refresco periódico
+volvía a dibujar el mostrador, el tilde se perdía, y "Confirmar venta" cobraba
+**sin llamar a `request_fiscal_document`**. La pantalla decía "Venta confirmada
+por el servidor": ni una palabra sobre el comprobante que nadie pidió. La venta
+quedaba cobrada y sin facturar, en silencio.
+
+El mismo agujero se llevaba el **medio de pago**: elegir Transferencia y que un
+refresco lo devolviera a Efectivo cambiaba lo que se registraba cobrado.
+
+La causa es que el borrador de venta estaba partido: los ítems vivían en el
+módulo y sobrevivían al refresco, pero el tilde y el medio de pago existían sólo
+en el DOM, que es justamente lo que el refresco vuelve a dibujar. El panel ya
+resolvía esto para la frase de autorización de ARCA y para el código a medio
+tipear; al mostrador le faltaba.
+
+Cerrado: el borrador entero vive en el módulo, el render lo dibuja desde ahí y
+la confirmación lo lee de ahí. Cobrada la venta el borrador vuelve a cero, para
+que el próximo cliente no herede el pedido de comprobante del anterior. Sin
+perfil fiscal habilitado no se pide comprobante aunque quede un tilde viejo.
+
+> Apareció como un E2E que fallaba **sólo cuando el recorrido era lo bastante
+> lento** como para que un refresco cayera entre el tilde y el click, que es
+> exactamente lo que pasa con una persona real frente al mostrador. Era un
+> defecto real disfrazado de test intermitente.
 
 ---
 
-## 3. Defectos encontrados contra el contrato real de ARCA
+## 3. Los cuatro cortes de la fase anterior (siguen cerrados)
 
-Estos no estaban en ningún informe. Aparecieron al contrastar el código con el
-WSDL vigente y el Manual del Desarrollador de WSAA (Publicación 20.2.19).
+1. **Toda venta del mostrador rompía en el primer ítem.** `checkout_pos_sale`
+   escribía un `tax_snapshot` sin las cinco claves de importes que exige
+   `request_fiscal_document`. Ahora desagrega neto e IVA con la alícuota de la
+   política aprobada; sin política la venta se cobra igual y el snapshot dice
+   `{"fiscal_pricing":"unavailable"}` en vez de fingir un precio fiscal.
+2. **No había forma de crear ni aprobar una política contable.** Ahora existen
+   las cuatro RPC; aprobar exige owner/admin más la frase exacta
+   `I_APPROVE_THIS_FISCAL_ACCOUNTING_POLICY`.
+3. **El botón de homologación no podía habilitarse nunca.** Nadie llamaba a
+   `record_fiscal_credential_health`. Ahora el puente publica huella SHA-256,
+   vencimiento y CUIT del certificado.
+4. **`accountant_review_status` no se podía escribir desde ningún lado.** Ahora
+   existe `record_fiscal_accountant_review`, con frase exacta, actor y fecha.
 
-| # | Defecto | Por qué importa |
-| --- | --- | --- |
-| D1 | `FECAESolicitar` enviaba **`ImpIVA` antes que `ImpTrib`** | El WSDL vigente declara `ImpOpEx, ImpTrib, ImpIVA` dentro de un `xsd:sequence`. Un `.asmx` lee la secuencia **en orden** y descarta lo que llega fuera de lugar: ARCA recibía ceros donde iban los importes y habría rechazado por inconsistencia de totales. Un comprobante jamás habría sido autorizado. |
-| D2 | Faltaba **`CondicionIVAReceptorId`** | Está publicado en el WSDL vigente (`FEParamGetCondicionIvaReceptor` existe como tabla oficial). Ahora viaja desde la política aprobada, en su posición exacta: después de `MonCotiz`, antes de `CbtesAsoc`. |
-| D3 | Los **SOAP Fault viajan con HTTP 500** y el transporte los descartaba como "ARCA caída" | Reintentaba a ciegas fallas permanentes (certificado inválido, ambiente equivocado) y ocultaba el único mensaje con el que WSAA avisa que el TA anterior sigue vigente. |
-| D4 | El **Ticket de Acceso vivía sólo en memoria** | WSAA retiene el TA vigente y rechaza pedidos repetidos dentro de una ventana de retención: **10 minutos en homologación, 2 en producción**, "modificables dinámicamente y sin aviso previo" según el manual. Reiniciar el worker lo dejaba bloqueado hasta que esa ventana venciera. |
-| D5 | Un comprobante **ya autorizado dejaba la cola girando** | `worker.ts` hacía `return` sin cerrar el lease: vencía, otro worker reclamaba el mismo trabajo terminado, volvía a soltarlo. Bucle infinito sobre un documento resuelto. |
-| D6 | Sólo el **timeout** se consideraba ambiguo | Un 502 del borde o una conexión cortada después de enviar un `FECAESolicitar` dejan exactamente la misma duda. Reenviar a ciegas es la única forma de emitir dos veces. |
-| D7 | El **claim de la outbox era multi-tenant y multi-ambiente** | Un worker de homologación con el certificado de un CUIT podía reclamar comprobantes de otro CUIT o de producción. |
-| D8 | El TRA se emitía en **UTC con `Z`** | El manual documenta el formato con desplazamiento de Argentina y advierte que el equipo debe estar en GMT-3. Se emite `-03:00`, y un reloj corrido frente a ARCA ahora falla cerrado en vez de producir rechazos inexplicables. |
-| D9 | Un **worker mal configurado mataba comprobantes sanos** | Sin la frase de consentimiento, con el reloj corrido o con el TA retenido por WSAA, cada ciclo de cinco segundos quemaba un intento: a los ocho, un comprobante perfectamente válido caía a dead-letter por culpa de una variable de entorno. Ahora esos casos sueltan el lease y **devuelven el intento**, y el trabajo vuelve a la cola intacto. |
-
-Todos corregidos, todos con prueba de regresión.
+Y los nueve defectos contra el contrato real de ARCA (D1–D9) que documentó la
+fase anterior siguen corregidos, cada uno con su prueba de regresión: orden de
+`ImpTrib`/`ImpIVA` en el `xsd:sequence`, `CondicionIVAReceptorId`, SOAP Fault
+sobre HTTP 500, TA persistente, lease de comprobante ya autorizado, ambigüedad
+más allá del timeout, claim de outbox por CUIT y ambiente, TRA en GMT-3, y un
+worker mal configurado que devuelve el intento en vez de quemarlo.
 
 ---
 
-## 4. El circuito, tal como quedó
+## 4. Arquitectura
 
 ```
-pedido pagado  /  venta de mostrador cobrada
+pedido pagado sintético  /  venta de mostrador cobrada
    └─ disparador idempotente (nunca puede voltear la venta ni el pedido)
-        └─ fiscal_emission_intents        ← unique(negocio, origen, id, intención)
-             └─ promote_fiscal_emission_intents  (worker, con lease y backoff)
-                  └─ política contable aprobada + tablas oficiales frescas
+        └─ fiscal_emission_intents            ← unique(negocio, origen, id, intención)
+             └─ promote_fiscal_emission_intents   (worker, con lease y backoff)
+                  └─ política contable aprobada + tablas oficiales frescas (< 7 días)
                        └─ fiscal_documents 'queued' + fiscal_outbox
-                            └─ WSAA homologación (TA persistente, ±reloj)
-                                 └─ FECompUltimoAutorizado
-                                      └─ reserva local del número (advisory lock + unique)
-                                           └─ FECAESolicitar
-                                                ├─ CAE  → 'authorized' → PDF + QR
-                                                ├─ R    → 'rejected'
-                                                └─ falla → FECompConsultar → CAE o reintento
+                            └─ WSAA homologación  (TA persistente, ±reloj, CMS PKCS#7)
+                                 └─ validación de importes contra el manual  ← falla acá es gratis
+                                      └─ FECompUltimoAutorizado
+                                           └─ reserva local del número (advisory lock + unique)
+                                                └─ FECAESolicitar
+                                                     ├─ CAE  → 'authorized' → PDF marcado + QR
+                                                     ├─ R    → 'rejected'
+                                                     └─ falla → FECompConsultar → CAE o reintento
 ```
 
-**Cero doble emisión, con dos defensas independientes:** unicidad de la
+**Dos defensas independientes contra la doble emisión:** unicidad de la
 intención por origen, y unicidad del comprobante por
 `(negocio, origen, id, intención)`. Una tercera clave de idempotencia distinta
 sobre el mismo origen devuelve el comprobante que ya existe.
 
-**Estados del sistema:** `pending` · `processing` · `authorized` · `rejected` ·
-`retry` · `manual_review`. Se agregó `manual_review` a `fiscal_documents`: un
-problema de configuración ya no se disfraza de `failed` genérico.
+**La validación de importes corre antes de reservar el número.** Es deliberado:
+fallar de este lado no cuesta nada; fallar en ARCA consume un número de la
+secuencia y bloquea el siguiente comprobante válido.
 
 **La venta sale de `completed_fiscal_pending`** cuando el comprobante se
 resuelve —autorizado o no—. Cobrada es cobrada; el problema fiscal vive en el
@@ -147,79 +203,92 @@ comprobante, que es donde el Panel lo muestra.
 
 ---
 
-## 5. La UI dice exactamente cinco cosas
+## 5. Estados
 
-`pendiente` · `procesando` · `autorizado` · `rechazado` · `requiere atención`.
+Estados del sistema: `pending` · `processing` · `authorized` · `rejected` ·
+`retry` · `manual_review`.
 
-Antes el chip de cada comprobante mostraba el estado crudo del backend
-(`authorizing`, `retry_wait`, `ambiguous`). La proyección canónica está escrita
-**dos veces a propósito** —`public.fiscal_public_state` y
-`js/core/fiscal-domain.js`— y un test compara rama por rama las dos
-implementaciones sobre los trece estados reales: servidor y pantalla no pueden
-divergir en silencio.
+La UI dice exactamente cinco cosas: **pendiente · procesando · autorizado ·
+rechazado · requiere atención**.
+
+La proyección canónica está escrita **dos veces a propósito**
+—`public.fiscal_public_state` y `js/core/fiscal-domain.js`— y un test compara
+rama por rama las dos implementaciones sobre los trece estados reales: servidor
+y pantalla no pueden divergir en silencio.
 
 **Nunca "emitido" sin CAE.** Un `authorized` sin CAE de catorce dígitos se
 muestra como *requiere atención*, no como éxito, en las dos implementaciones. Un
-test recorre todas las etiquetas y todos los detalles buscando las palabras
-"emitido" y "factura autorizada": no aparecen en ninguna. El mostrador usa la
-misma proyección en vez de su frase propia, que llamaba "comprobante pendiente"
-a un rechazo.
-
-El asistente fiscal ganó el paso que faltaba —**política contable aprobada**— y
-distingue `readyToHomologate` de `readyToEmit`: autorizar homologación nunca
-alcanzó para emitir.
+test recorre todas las etiquetas y todos los detalles buscando "emitido" y
+"factura autorizada": no aparecen en ninguna.
 
 ---
 
-## 6. Ninguna decisión fiscal se infiere
+## 6. Fixtures sintéticos
 
-Condición frente al IVA del receptor, alícuota, si el IVA se discrimina, si los
-precios ya lo incluyen, tipo de comprobante, tipo de nota de crédito, tipo y
-número de documento del receptor, concepto, punto de venta y **tratamiento del
-envío**: todos se declaran en la política contable. Ninguno tiene valor por
-omisión en el código.
+Todo lo de abajo es sintético y está marcado como tal. **Ninguno es una decisión
+fiscal**: los valores reales los declara el titular o su contador.
 
-Cada identificador declarado se valida **contra la tabla oficial que el puente
-bajó de ARCA**, con snapshot de menos de siete días, en dos momentos: al aprobar
-la política y en cada uso. Es la diferencia entre "el contador escribió 6" y
-"ARCA reconoce el 6".
+| Dato | Valor de fixture | Nota |
+| --- | --- | --- |
+| CUIT | `20123456786` | dígito verificador válido; no pertenece a nadie |
+| Punto de venta | `3` (base) · `5` (puente) | |
+| Tipo de comprobante | `6` — Factura B | validado contra `FEParamGetTiposCbte` |
+| Tipo de nota de crédito | `8` — Nota de Crédito B | |
+| Condición IVA del receptor | `5` | validado contra `FEParamGetCondicionIvaReceptor` |
+| Documento del receptor | tipo `99`, número `0` | validado contra `FEParamGetTiposDoc` |
+| Alícuota | `5` (21%) | validado contra `FEParamGetTiposIva` |
+| Concepto | `1` — Productos | |
+| Moneda | `PES`, cotización `1` | |
+| CAE de muestra | `99999999999999` | catorce nueves, inconfundible |
+| Ambiente | `homologation` / `synthetic` | nunca `production` |
 
-Si algo no está declarado, el circuito **se detiene y pide revisión**. Un pedido
-con envío y sin tratamiento del envío declarado no se factura "con la misma
-alícuota, total da igual": va a `manual_review`.
-
-La herramienta de certificación se niega explícitamente a completar un caso
-fiscal incompleto y nombra los campos que faltan.
+**Ninguna decisión fiscal se infiere.** Condición frente al IVA, alícuota, si el
+IVA se discrimina, si los precios ya lo incluyen, tipo de comprobante, tipo de
+nota de crédito, documento del receptor, concepto, punto de venta y tratamiento
+del envío se declaran en la política contable. Ninguno tiene valor por omisión en
+el código. Cada identificador se valida contra la tabla oficial que el puente
+bajó de ARCA, con snapshot de menos de siete días, al aprobar la política y en
+cada uso. Si algo no está declarado, el circuito **se detiene y pide revisión**.
 
 ---
 
-## 7. Gates y evidencia
+## 7. Cobertura
 
-| Gate | Resultado |
-| --- | --- |
-| `npm test` | **1111/1111** (base 1102; +8 de la suite de estados fiscales, +1 del asistente) |
-| `npm run fiscal:test` | **50/50** (base 17) |
-| `npm run fiscal:db:local` | **166 aserciones** sobre una PostgreSQL **vacía**: 57 migraciones aplicadas desde cero + 95 + 41 + 30 |
-| `npm run migrations:validate` | aprobado |
-| `npm run check` | pasa |
-| `npm run secrets:scan` | limpio |
-| `npm run test:e2e` | **207/207** (Chromium + Firefox), igual que la base |
-| `npm run fiscal:probe` | **contacto real con homologación oficial** (ver §7bis) |
-| Certificación fiscal en homologación oficial | **PENDIENTE — falta el certificado (§8)** |
-
-`npm run fiscal:db:local` levanta su propio contenedor, aplica las 57
-migraciones sobre una base vacía y corre las tres suites pgTAP fiscales. Es
+`npm run fiscal:db:local` levanta su propio contenedor, aplica las **59
+migraciones sobre una base vacía** y corre las tres suites pgTAP fiscales. Es
 reproducible sin staging y sin ARCA.
 
-**Escenarios probados** (pgTAP contra base real + ARCA simulada):
-TA vigente / por vencer / vencido · retención de WSAA con y sin ticket guardado ·
-reloj corrido · CAE aprobado · CAE rechazado · **timeout después de que ARCA
-autorizó** · caída de ARCA (503) · consulta posterior que encuentra el
-comprobante · reintento con backoff · dos workers en paralelo · doble click ·
-montos y prorrateo de descuento al centavo · numeración correlativa · CAE de 13
-y de 15 dígitos rechazados · inmutabilidad post-CAE · permisos (`authenticated`
-no puede reclamar la outbox, correr el promotor ni saltear la puerta de
-autorización) · y auditoría sin token, sign ni PEM.
+| Escenario obligatorio | Dónde |
+| --- | --- |
+| CAE aprobado | `arca-circuit` · pgTAP |
+| CAE rechazado | `arca-circuit` · pgTAP (13 y 15 dígitos también) |
+| SOAP Fault | `config-wsaa` (incluye la respuesta real de ARCA fijada como regresión) |
+| TA vencido · vigente · por vencer | `config-wsaa` |
+| Retención de WSAA con y sin ticket guardado | `config-wsaa` |
+| Reloj corrido | `config-wsaa` |
+| Timeout después de que ARCA autorizó | `arca-circuit` |
+| Retry con backoff | `arca-circuit` · pgTAP |
+| Recuperación por consulta | `arca-circuit` · `wsfe-reconciliation` |
+| Doble emisión / doble click | `arca-circuit` · pgTAP |
+| Concurrencia (dos workers) | `arca-circuit` · pgTAP |
+| Montos incorrectos | `fiscal-money` (10048, 10023, 10022, 10018, 10020, clase C) |
+| Numeración correlativa | `arca-circuit` · pgTAP |
+| Permisos y RLS | pgTAP (incluye rider) |
+| Caída de ARCA (503) | `arca-circuit` |
+| **Reinicio del worker** | `arca-circuit` (tres casos) · `config-wsaa` (TA persistente) |
+
+**Reinicio del worker**, los tres estados que deja una caída real:
+
+1. ARCA autorizó y no lo supimos → consulta primero, adopta el CAE que ya
+   existía y **no consume un segundo número**.
+2. ARCA nunca lo recibió → consulta, no encuentra nada y **conserva el mismo
+   número reservado** en vez de quemar otro.
+3. El comprobante ya estaba resuelto → cierra el lease sin una sola llamada.
+
+**Dinero:** neto, IVA, exento (`ImpOpEx`), no gravado (`ImpTotConc`), otros
+tributos, total, redondeo, descuento prorrateado al centavo, envío como línea
+propia con su tratamiento declarado, totalización por alícuota sin arrastre de
+coma flotante, y márgenes de error idénticos a los del manual.
 
 **La propia herramienta de certificación tiene prueba automática**: recorre
 credenciales → `FEDummy` → WSAA → tablas oficiales → último autorizado →
@@ -227,57 +296,125 @@ credenciales → `FEDummy` → WSAA → tablas oficiales → último autorizado 
 consulta por número devuelva el mismo CAE, y comprueba que la evidencia no
 contenga token, sign, PEM ni XML crudo. También verifica que se niegue sin la
 frase de consentimiento, que se niegue contra producción, y que un rechazo de
-ARCA no se declare certificación exitosa. Si tiene un error, se descubre acá y
-no con una persona esperando frente a la Clave Fiscal.
+ARCA no se declare certificación exitosa.
 
 ---
 
-## 7bis. Contacto real con la homologación oficial (sin certificado)
+## 8. El documento fiscal
+
+El PDF lleva tipo de comprobante de la tabla oficial, punto de venta, número,
+fecha, moneda, receptor, detalle por línea, los cinco importes, total, CAE,
+vencimiento del CAE, QR versión 1 y **estado**.
+
+Cuando el ambiente no es producción, lo dice **cuatro veces**:
+
+- un aviso en caja roja arriba y otro abajo, con `SIN VALIDEZ FISCAL`;
+- una marca de agua diagonal en **todas** las páginas —recortar la primera o
+  imprimir sólo la última no alcanza para perder el aviso—;
+- `Ambiente: HOMOLOGATION` (o `SYNTHETIC`) como un dato más del comprobante;
+- el título, el asunto y las palabras clave del archivo
+  (`[HOMOLOGATION] …`, `NO_VALIDO_COMO_COMPROBANTE`).
+
+El worker de artefactos toma el ambiente **de la fila del comprobante**, no de
+su propia configuración, y se niega a generar nada si la fila no lo declara: un
+ambiente desconocido no se adivina. La suite lee el PDF generado —no el input— y
+verifica que diga lo que tiene que decir, que producción no lleve ninguna de esas
+marcas, y que haya exactamente una marca de agua por página.
+
+Para verlo con los ojos antes de que exista un comprobante real:
+
+```powershell
+npm run fiscal:sample -- --out <ruta absoluta .pdf>
+```
+
+Genera el mismo PDF que produce el worker, con el mismo generador y el mismo
+layout, con datos de fixture y ambiente `synthetic`. No acepta un caso fiscal ni
+un CAE de afuera a propósito: esa herramienta no puede fabricar algo que se
+parezca a un comprobante emitido.
+
+---
+
+## 9. Seguridad
+
+- **Rider sin acceso fiscal.** `can_read_fiscal_documents()` = owner, admin,
+  staff. La suite verifica que el rider siga siendo miembro activo del negocio y
+  aun así no vea una sola fila fiscal, y que ninguna política fiscal conserve el
+  predicado viejo.
+- La ruta de storage del PDF **no la lee nadie con rol `authenticated`, ni el
+  owner**: el Panel la pide por RPC y el puente la escribe con `service_role`.
+- Clave privada y certificado se montan como **rutas absolutas fuera del
+  repositorio**; las variables rechazan cualquier valor que parezca un PEM o que
+  no sea absoluto.
+- El **Ticket de Acceso** persiste como el secreto que es: archivo 600,
+  escritura atómica, fuera del repositorio. Un archivo ilegible se trata como
+  "sin ticket", no tumba el worker.
+- `record_fiscal_credential_health` es **service_role únicamente**.
+  `claim_fiscal_outbox`, `promote_fiscal_emission_intents`,
+  `release_fiscal_outbox_lease`, `settle_completed_fiscal_outbox` e
+  `internal_create_fiscal_document` están revocadas para `authenticated`, y hay
+  prueba de que lo están.
+- `fiscal_accounting_policies` **no es legible directamente ni por el owner**.
+- El logger filtra por nombre de campo
+  `token|sign|secret|password|certificate|private key|service role|recipient`, y
+  un test le pasa un token con marca y verifica que no aparezca en la auditoría.
+- `secrets:scan` limpio. Cero secretos en el frontend.
+- Producción sigue bloqueada por triple defensa: variable de entorno con frase
+  propia, `production_gate_status` en la base y el trigger
+  `assert_fiscal_execution_authorized`. La política de producción **no se puede
+  declarar ni aprobar desde el Panel**.
+
+---
+
+## 10. Gates
+
+| Gate | Resultado |
+| --- | --- |
+| `npm test` | **1113/1113** (base 1111; +2 del borrador del mostrador) |
+| `npm run fiscal:test` | **81/81** (base de la fase anterior: 50) |
+| `npm run fiscal:db:local` | **191 aserciones** sobre PostgreSQL **vacía**: 59 migraciones desde cero + 120 + 41 + 30 |
+| `npm run migrations:validate` | aprobado |
+| `npm run check` | pasa |
+| `npm run secrets:scan` | limpio |
+| `npm run test:e2e` | **207/207** (Chromium + Firefox) |
+| `git diff --check` | limpio |
+| Certificación en homologación oficial | **PENDIENTE — falta el certificado (§11)** |
+
+---
+
+## 11. Contacto real con la homologación oficial (sin certificado)
 
 Los mocks no bastan, y no se usaron para esto. `FEDummy` es el único método de
-WSFEv1 que, según el WSDL vigente, **no lleva `Auth`**: se puede ejecutar antes
-de tener certificado. `npm run fiscal:probe` lo corre contra el endpoint
-oficial, y con `--wsaa` intenta además autenticar.
+WSFEv1 que, según el WSDL vigente, **no lleva `Auth`**. `npm run fiscal:probe` lo
+corre contra el endpoint oficial, y con `--wsaa` intenta además autenticar.
 
-Corrida del **2026-08-07**, con el código de este worktree, contra los endpoints
-oficiales:
+Corrida del **2026-08-07**, con el código de este worktree:
 
 | Operación | Endpoint real | Resultado |
 | --- | --- | --- |
 | `FEDummy` | `https://wswhomo.afip.gov.ar/wsfev1/service.asmx` | HTTP **200** · `AppServer=OK` `DbServer=OK` `AuthServer=OK` |
 | `loginCms` | `https://wsaahomo.afip.gov.ar/ws/services/LoginCms` | HTTP **500** · SOAP Fault `ns1:cms.cert.blacklist` · "Certificado bloqueado" |
 
-**Qué queda probado contra ARCA de verdad, no contra la simulación:**
+Queda probado contra ARCA de verdad: TLS, DNS y la allowlist; el sobre SOAP 1.1,
+el header `SOAPAction` y el parser XML con anti-XXE contra una respuesta real; y
+que **el TRA y el CMS/PKCS#7 son correctos** —WSAA llegó a *evaluar el
+certificado*: no rechazó por schema, ni por `generationTime` en el futuro, ni por
+formato de fecha, que son los tres errores que el manual documenta como los más
+frecuentes—. La detección de desfase de reloj contra el header `Date` real de
+ARCA dio **0 segundos**.
 
-1. TLS, DNS y la allowlist de endpoints oficiales compilada.
-2. El sobre SOAP 1.1, el header `SOAPAction` y el parser XML —con
-   `removeNSPrefix` y anti-XXE— contra una respuesta real de ARCA.
-3. **El TRA y el CMS/PKCS#7 son correctos.** WSAA llegó a *evaluar el
-   certificado*: no rechazó por schema, ni por `generationTime` en el futuro, ni
-   por formato de fecha. Los tres son los errores que el manual documenta como
-   los más frecuentes, y ninguno ocurrió. Los timestamps en GMT-3 funcionan.
-4. **El defecto D3 no era teórico.** El fault llegó con **HTTP 500**. Con el
-   código anterior se habría clasificado `ARCA_UNAVAILABLE`, `retryable: true`, y
-   un certificado bloqueado se habría reintentado para siempre en vez de
-   aparecer como lo que es: un problema permanente y accionable. La respuesta
-   real quedó fijada como test de regresión (`config-wsaa.test.ts`).
-5. La detección de desfase de reloj contra el header `Date` real de ARCA:
-   **0 segundos**.
-
-El certificado usado para la sonda de WSAA fue **autofirmado y sintético**,
-generado sólo para esa verificación y **borrado inmediatamente después**. ARCA lo
-rechazó, que es exactamente lo que debía pasar. **No se emitió ningún
-comprobante, no se consultó ningún padrón y no se tocó producción.**
+El certificado usado para esa sonda fue **autofirmado y sintético**, generado
+sólo para esa verificación y **borrado inmediatamente después**. **No se emitió
+ningún comprobante, no se consultó ningún padrón y no se tocó producción.**
 
 Esto es validación de transporte y autenticación, **no es la certificación
-fiscal**: sin un certificado emitido por ARCA no hay Ticket de Acceso, y sin
-Ticket de Acceso no hay CAE. Ver §8.
+fiscal**: sin certificado emitido por ARCA no hay Ticket de Acceso, y sin Ticket
+de Acceso no hay CAE.
 
 ---
 
-## 8. HUMAN_CHECKPOINT_ARCA_1
+## 12. HUMAN_CHECKPOINT_ARCA_CERTIFICADO_HOMOLOGACION
 
-> **Acción concreta:** entrar a **WSASS** con Clave Fiscal y obtener el
+> **La única acción que falta:** entrar a **WSASS** con Clave Fiscal y obtener el
 > certificado X.509 de **homologación** para el CUIT de La Taba, asociado al
 > servicio **`wsfe`**.
 
@@ -291,9 +428,10 @@ npm run fiscal:csr -- --cuit <11 dígitos> --organization "<razón social>" `
 
 Genera la clave privada (RSA 2048, permisos 600) y el `.csr` con el subject
 exacto que documenta el manual de WSASS:
-`/C=AR/O=<empresa>/CN=<sistema>/serialNumber=CUIT <11 dígitos>`. La herramienta
-**se niega** a escribir dentro del repositorio y **se niega** a pisar una clave
-existente. La clave privada nunca se imprime.
+`/C=AR/O=<empresa>/CN=<sistema>/serialNumber=CUIT <11 dígitos>`. **Verifica el
+dígito verificador del CUIT antes de generar nada.** Se niega a escribir dentro
+del repositorio y se niega a pisar una clave existente. La clave privada nunca se
+imprime.
 
 Sólo se necesita a una persona para: login con Clave Fiscal (MFA/reCAPTCHA),
 habilitar WSASS, pegar el `.csr`, descargar el certificado y autorizarlo al
@@ -317,7 +455,7 @@ números son ceros a propósito: los completa el titular o su contador. La
 evidencia que se escribe está saneada (permisos 600) y nunca contiene token,
 sign, PEM ni XML crudo.
 
-**HUMAN_CHECKPOINT_ARCA_2** quedará abierto después: las decisiones fiscales del
+**HUMAN_CHECKPOINT_ARCA_2** queda abierto después: las decisiones fiscales del
 caso de homologación (tipo de comprobante, condición frente al IVA del receptor,
 alícuota, punto de venta). No se piden ahora porque sin certificado no se pueden
 validar contra las tablas oficiales de ARCA, que es justamente lo que impide
@@ -325,101 +463,71 @@ inventarlas.
 
 ---
 
-## 9. Seguridad
-
-- Clave privada y certificado se montan como **rutas absolutas fuera del
-  repositorio**; `ARCA_CERTIFICATE_PATH` y `ARCA_PRIVATE_KEY_PATH` rechazan
-  cualquier valor que parezca un PEM o que no sea absoluto.
-- El **Ticket de Acceso** ahora persiste, y por eso se trata como el secreto que
-  es: archivo con permisos 600, escritura atómica (temporal + rename), fuera del
-  repositorio, con su propia variable `ARCA_TICKET_STATE_PATH`. Un archivo
-  ilegible se trata como "sin ticket", no tumba el worker.
-- `record_fiscal_credential_health` es **service_role únicamente**; el navegador
-  no puede escribir salud de credenciales. `claim_fiscal_outbox`,
-  `promote_fiscal_emission_intents`, `release_fiscal_outbox_lease`,
-  `settle_completed_fiscal_outbox` e `internal_create_fiscal_document` están
-  revocadas para `authenticated` y hay prueba de que lo están.
-- La tabla `fiscal_accounting_policies` **no es legible directamente ni por el
-  owner**: el Panel la ve por RPC.
-- El logger del worker filtra por nombre de campo `token|sign|secret|password|
-  certificate|private key|service role|recipient`, y hay un test que le pasa un
-  token con marca y verifica que no aparezca en la auditoría.
-- `secrets:scan` limpio. `.gitignore` del puente cubre `.env`, certificados y
-  claves.
-- Producción sigue bloqueada por triple defensa: variable de entorno con frase
-  propia, `production_gate_status` en la base y el trigger
-  `assert_fiscal_execution_authorized`. La política de producción **no se puede
-  declarar ni aprobar desde el Panel**.
-
----
-
-## 10. Hallazgo fuera de alcance, reportado sin tocar
-
-`supabase/migrations/20260806160000_order_qa_origin_classification.sql` **no se
-puede aplicar sobre una base vacía**: hace `create or replace function
-public.get_rider_queue(uuid)` cambiando sus columnas `OUT`, cosa que PostgreSQL
-rechaza (`cannot change return type of existing function`). En staging ya está
-aplicada, así que nadie lo notó; pero **ningún entorno nuevo se puede construir
-desde estas migraciones**.
-
-Es ajeno a lo fiscal y pertenece a otra línea de trabajo, así que **no se tocó
-la migración histórica**. El harness local lo sortea con un
-`drop function if exists` explícito y comentado
-(`scripts/run-arca-fiscal-local-db.mjs`). El arreglo real es una línea:
-
-```sql
-drop function if exists public.get_rider_queue(uuid);
-```
-
-inmediatamente antes del `create or replace` de esa migración.
-
-Dos suites pgTAP preexistentes tampoco corren hoy sobre una base limpia por
-motivos igualmente ajenos: `durable_offline_packing_test` inserta pedidos sin
-`payment_method`, que `20260806170000` volvió `NOT NULL`.
-
----
-
-## 11. Reservas explícitas
+## 13. Riesgos y reservas explícitas
 
 1. **La certificación en homologación oficial NO está hecha.** Falta el
    certificado. Todo lo que la habilita está construido y probado; nada de eso
    la reemplaza. Los mocks no bastan y no se presentan como si bastaran.
-2. **La política contable de ejemplo no es una decisión fiscal.** Los valores de
+2. **Un comprobante que ARCA nunca recibió queda esperando a una persona.** Si
+   el proceso muere antes de que ARCA reciba el `FECAESolicitar`, cada reintento
+   consulta, no encuentra nada y conserva el número; al agotar los intentos cae
+   a `manual_review`. Es deliberado: reenviar a ciegas es la única forma de
+   emitir dos veces, y cero doble facturación gana sobre cero intervención.
+   Un reenvío seguro sería posible —`FECompConsultar` sin resultado **más**
+   `FECompUltimoAutorizado` menor al número reservado prueban que ARCA no lo
+   tiene— pero es un cambio de comportamiento de emisión y no se hizo sin
+   certificado con qué verificarlo.
+3. **El dígito verificador del CUIT es necesario, no suficiente.** Once ceros lo
+   cumplen y no son el CUIT de nadie. Quien decide eso es el padrón de ARCA; esa
+   regla no se inventó acá.
+4. **La política contable de ejemplo no es una decisión fiscal.** Los valores de
    `docs/arca/homologation-case.example.json` y del fixture pgTAP son sintéticos
    y están marcados como tales.
-3. **Nada se aplicó a staging.** El lock estaba ocupado. Las dos migraciones
-   nuevas (`20260807110000`, `20260807120000`) están validadas estáticamente y
-   aplicadas sobre una base local desde cero, pero **no** contra
+5. **Nada se aplicó a staging.** El lock estaba ocupado por otra sesión, con
+   `ARCA_SCOPE=EXCLUIDA`. Las cuatro migraciones nuevas están validadas
+   estáticamente y aplicadas sobre una base local desde cero, pero **no** contra
    `la-taba-staging`.
-4. **La cotización queda en 1 y la moneda en PES.** Moneda extranjera exige
+6. **La cotización queda en 1 y la moneda en PES.** Moneda extranjera exige
    `FEParamGetCotizacion` y una decisión contable que nadie tomó: el circuito no
    la ofrece en vez de aproximarla.
-5. **`FECAEASolicitar`, exportación, `wsmtxca` y regímenes especiales siguen
-   fuera de alcance**, igual que antes.
-6. **Las notas de crédito automáticas siguen siendo manuales**: existen las RPC y
+7. **`FECAEASolicitar`, exportación, `wsmtxca` y regímenes especiales siguen
+   fuera de alcance.**
+8. **Las notas de crédito automáticas siguen siendo manuales**: existen las RPC y
    están probadas, pero ningún disparador las emite solo.
-7. **El puente no está desplegado.** Corre local. Su despliegue en red privada
+9. **El puente no está desplegado.** Corre local. Su despliegue en red privada
    es una tarea de infraestructura documentada en `docs/arca/README.md`.
+10. **Hallazgo ajeno, reportado sin tocar.**
+    `20260806160000_order_qa_origin_classification.sql` no se puede aplicar sobre
+    una base vacía: hace `create or replace function public.get_rider_queue(uuid)`
+    cambiando sus columnas `OUT`. En staging ya está aplicada, así que nadie lo
+    notó. El arreglo real es una línea —`drop function if exists
+    public.get_rider_queue(uuid);` antes del `create or replace`— pero pertenece
+    a otra línea de trabajo y no se tocó la migración histórica. El harness local
+    lo sortea con un `drop` explícito y comentado.
 
 ---
 
-## 12. Declaración
+## 14. Declaración
 
-El circuito fiscal de TABA2 quedó implementado de punta a punta, con los cuatro
-cortes de contrato cerrados, nueve defectos contra el contrato real de ARCA
-corregidos, cero decisiones fiscales inferidas, dos defensas independientes
-contra la doble emisión, y una UI que dice exactamente cinco cosas y nunca
-promete un CAE que no existe.
+El circuito fiscal sintético de TABA2 está completo y verde: pedido pagado
+sintético → job fiscal → configuración fiscal fixture → WSAA simulada fiel →
+Token/Sign → `FECompUltimoAutorizado` → numeración → validación de importes →
+`FECAESolicitar` → CAE aprobado o rechazado → persistencia → documento fiscal
+marcado → Panel → recuperación y reintento, incluido el reinicio del worker.
 
-**La declaración `TABA2_ARCA_HOMOLOGATION_FISCAL_FLOW_CERTIFIED` NO se emite
-todavía**, y no se va a emitir contra mocks. Requiere una corrida contra los
-endpoints oficiales de homologación —`wsaahomo.afip.gov.ar` y
-`wswhomo.afip.gov.ar`— con un certificado real. Ese es el único paso que falta,
-está bloqueado en **HUMAN_CHECKPOINT_ARCA_1**, y el comando que produce su
+Cuatro cortes de contrato cerrados, quince defectos contra el contrato real de
+ARCA corregidos, cero decisiones fiscales inferidas, dos defensas independientes
+contra la doble emisión, el rider fuera de todo dato fiscal, y un documento que
+no se puede confundir con un comprobante real.
+
+**TABA2_ARCA_SYNTHETIC_FISCAL_FLOW_CERTIFIED**
+
+La declaración `TABA2_ARCA_HOMOLOGATION_FISCAL_FLOW_CERTIFIED` **NO se emite**, y
+no se va a emitir contra mocks. Requiere una corrida contra los endpoints
+oficiales —`wsaahomo.afip.gov.ar` y `wswhomo.afip.gov.ar`— con un certificado
+real. Ese es el único paso que falta, está bloqueado en
+**HUMAN_CHECKPOINT_ARCA_CERTIFICADO_HOMOLOGACION**, y el comando que produce su
 evidencia ya está escrito y probado.
 
-Declarar certificado un circuito que nunca habló con ARCA sería exactamente la
-clase de mentira que este trabajo vino a eliminar.
-
-**TABA2_ARCA_FISCAL_FLOW_IMPLEMENTED_AND_LOCALLY_CERTIFIED — HOMOLOGACIÓN
-OFICIAL PENDIENTE DE CERTIFICADO**
+Declarar certificado contra ARCA un circuito que nunca habló con ARCA sería
+exactamente la clase de mentira que este trabajo vino a eliminar.

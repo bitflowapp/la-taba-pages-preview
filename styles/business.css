@@ -1709,3 +1709,206 @@ button.operation-metric {
     flex-direction: column;
   }
 }
+
+/* ============================================================================
+   MARKETING → HISTORIAS
+   Administración de la vidriera. Vive en el Panel, sobre superficie clara, y
+   usa los mismos ladrillos que el resto del panel (`business-catalog-card`,
+   `catalog-admin-*`): una pantalla nueva no estrena un sistema visual nuevo.
+   ========================================================================== */
+.stories-admin-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.stories-admin-chip {
+  display: grid;
+  gap: 2px;
+  padding: 10px 8px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: var(--taba-subtle);
+  text-align: center;
+}
+
+.stories-admin-chip strong {
+  font-size: 20px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.stories-admin-chip small {
+  color: var(--taba-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* En 320px cuatro columnas dejan 50px de contenido por chip y "PROGRAMADA" no
+   entra: se parte en dos filas de dos antes que recortar una palabra que es el
+   estado de la historia. */
+@media (max-width: 420px) {
+  .stories-admin-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Fila de historia. En 320px la miniatura y el texto comparten la primera
+   línea, y el orden y las acciones bajan cada uno a la suya: nada se corta y
+   nada obliga a desplazar en horizontal. */
+.stories-admin-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  grid-template-areas:
+    "thumb copy"
+    "order order"
+    "actions actions";
+  align-items: start;
+  gap: 10px 12px;
+  padding: 13px;
+  border: 1px solid var(--taba-border);
+  /* El estado se lee antes que el texto: una franja de color en el canto
+     izquierdo con la misma escala que los estados de pedido. */
+  border-left: 3px solid var(--taba-border-medium);
+  border-radius: var(--radius-sm);
+  background: white;
+}
+
+.stories-admin-row.is-active { border-left-color: var(--taba-success); }
+.stories-admin-row.is-scheduled { border-left-color: var(--taba-focus); }
+.stories-admin-row.is-draft { border-left-color: var(--taba-line-strong); }
+.stories-admin-row.is-finished { border-left-color: var(--taba-border-medium); }
+
+.stories-admin-thumb {
+  grid-area: thumb;
+  display: block;
+  width: 52px;
+  height: 65px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-xs);
+  background-color: var(--taba-subtle);
+  background-position: center;
+  background-size: cover;
+}
+
+.stories-admin-copy {
+  grid-area: copy;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.stories-admin-headline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stories-admin-headline strong {
+  font-size: 14.5px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+}
+
+.stories-admin-state {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.stories-admin-state.is-active { background: rgb(15 122 61 / 12%); color: var(--taba-success); }
+.stories-admin-state.is-scheduled { background: rgb(26 95 208 / 12%); color: var(--taba-focus); }
+.stories-admin-state.is-draft { background: var(--taba-subtle); color: var(--taba-muted); }
+.stories-admin-state.is-finished { background: var(--taba-border-soft); color: var(--taba-muted); }
+
+.stories-admin-age {
+  padding: 2px 7px;
+  border: 1px solid var(--taba-warning);
+  border-radius: var(--radius-pill);
+  color: var(--taba-warning);
+  font-size: 10.5px;
+  font-weight: 900;
+}
+
+.stories-admin-body {
+  color: var(--taba-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.stories-admin-meta,
+.stories-admin-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  gap: 4px 12px;
+  color: var(--taba-muted);
+  font-size: 11.5px;
+}
+
+.stories-admin-metrics {
+  color: var(--taba-graphite-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.stories-admin-order {
+  grid-area: order;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stories-admin-order button {
+  min-width: var(--tap);
+  min-height: var(--tap);
+}
+
+.stories-admin-position {
+  color: var(--taba-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stories-admin-actions {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stories-admin-actions button {
+  min-height: var(--tap);
+}
+
+.stories-admin-note {
+  margin: 10px 0 0;
+  color: var(--taba-muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.stories-admin-form .catalog-availability-field small {
+  display: block;
+  margin-top: 2px;
+  color: var(--taba-muted);
+  font-size: 11px;
+}
+
+@media (min-width: 720px) {
+  .stories-admin-row {
+    grid-template-columns: 52px minmax(0, 1fr) auto auto;
+    grid-template-areas: "thumb copy order actions";
+    align-items: center;
+  }
+
+  .stories-admin-order {
+    flex-direction: column;
+    gap: 4px;
+  }
+}

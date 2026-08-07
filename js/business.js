@@ -72,7 +72,30 @@ import {
 } from './orders.js';
 import { sanitizeText } from './core/validators.js';
 import { getOrderRepository, isPersistentOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
-import { escapeHtml, productCode, stockPill } from './ui.js';
+import {
+  escapeHtml,
+  previewStoryInViewer,
+  productCode,
+  renderCustomerHome,
+  stockPill,
+  storyCatalogContext,
+} from './ui.js';
+import { normalizeStoryCollection, storyStatus } from './core/stories.js';
+import {
+  createStoryDraft,
+  moveStory,
+  readStoredStories,
+  removeStory,
+  setStoryEnabled,
+  storyFromForm,
+  upsertStory,
+  validateStoryForActivation,
+  writeStoredStories,
+} from './core/story-store.js';
+import { resolveStoryDestination, storyAgeRestriction } from './core/story-destination.js';
+import { forgetStoryMetrics, readStoryMetrics } from './core/story-analytics.js';
+import { renderStoriesManager, readStoryForm } from './business/business-stories-panel.js';
+import { PREVIEW_STORY_SEED } from './preview-stories-data.js';
 import {
   findPromotionConflicts,
   isPromotionActive,
@@ -80,6 +103,7 @@ import {
   validatePromotionForActivation,
 } from './core/promotions.js';
 import { isDemoMode, isShowcaseMode } from './core/app-mode.js';
+import { resolveRuntimeConfig } from './core/runtime-config.js';
 
 let seenOrderIds = null; // se inicializa en el primer render para detectar pedidos nuevos
 let soundEnabled = readSoundPref();
@@ -113,6 +137,15 @@ let lastTouchedCatalogProductId = null;
 let promotionFormVisible = false;
 let editingPromotionId = null;
 let promotionFeedback = '';
+// Marketing → Historias. El borrador en edición vive acá y no en el almacén:
+// una historia a medio escribir no es una historia del comercio hasta que
+// alguien la guarda, y guardar cada tecla convertiría un formulario abierto en
+// un borrador que nadie pidió.
+let editingStory = null;
+let storyFeedback = '';
+// Eliminar es irreversible: el primer toque arma la confirmación, el segundo
+// borra. Es el mismo patrón que usa la cancelación de un pedido.
+let pendingStoryDeleteId = null;
 const CANCEL_REASON_PRESETS = BUSINESS_CANCEL_REASONS;
 
 function readSoundPref() {
@@ -195,6 +228,7 @@ export function renderBusinessDashboard() {
           ${renderBusinessViewButton('reports', 'Reportes')}
           ${renderBusinessViewButton('cashbox', 'Caja')}
           ${renderBusinessViewButton('catalog', 'Catálogo')}
+          ${renderBusinessViewButton('marketing', 'Marketing')}
           ${isDemoMode() ? renderBusinessViewButton('promotions', 'Promociones') : ''}
           ${renderBusinessViewButton('setup', 'Configuración')}
           ${renderBusinessViewButton('guide', 'Guía')}
@@ -229,6 +263,7 @@ const BUSINESS_DESTINATIONS = Object.freeze([
 
 const BUSINESS_LOCAL_SECTIONS = Object.freeze([
   { view: 'catalog', label: 'Catálogo', hint: 'Productos, stock y precios' },
+  { view: 'marketing', label: 'Marketing', hint: 'Historias de la vidriera' },
   { view: 'promotions', label: 'Promociones', hint: 'Sólo en modo demo', demoOnly: true },
   { view: 'reports', label: 'Reportes', hint: 'Ventas y cierres del turno' },
   { view: 'setup', label: 'Configuración', hint: 'Datos del local y entrega' },
@@ -347,6 +382,7 @@ function renderBusinessWorkspace({ view, state, metrics, report, cashboxClosures
   if (view === 'reports') return renderBusinessReportsPanel(report, cashboxClosures, { mode: 'reports' });
   if (view === 'cashbox') return renderBusinessReportsPanel(report, cashboxClosures, { mode: 'cashbox' });
   if (view === 'catalog') return renderCatalogManager(state);
+  if (view === 'marketing') return renderMarketingStories();
   if (view === 'promotions' && isDemoMode()) return renderPromotionManager(state);
   if (view === 'setup') return renderBusinessSetupPanel();
   if (view === 'guide') return renderDemoGuide();
@@ -1174,6 +1210,235 @@ function renderCatalogManager(state) {
     </section>`;
 }
 
+// ─── Marketing → Historias ───────────────────────────────────────────────────
+// El Panel administra el almacén LOCAL. Si algún día el backend publica
+// `TABA2_STORIES`, ese origen gana en la vidriera y esta pantalla lo dice en vez
+// de dejar al comercio editando algo que nadie ve.
+
+function backendOwnsStories() {
+  try {
+    return Array.isArray(globalThis.TABA2_STORIES);
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * Colección administrable. `null` del almacén significa "nunca se administró":
+ * ahí, y sólo ahí, la demo arranca con las historias de ejemplo para que la
+ * pantalla no se estrene vacía. Un almacén vacío a propósito se respeta.
+ */
+export function getAdminStories() {
+  const stored = readStoredStories();
+  if (Array.isArray(stored)) return stored;
+  return isDemoMode() || isShowcaseMode() ? normalizeStoryCollection(PREVIEW_STORY_SEED) : [];
+}
+
+function persistStories(stories) {
+  const collection = normalizeStoryCollection(stories);
+  writeStoredStories(collection);
+  // El Panel y la vidriera son la MISMA aplicación: activar una historia tiene
+  // que encender el aro sin recargar. El almacén no vive en `state.js` —una
+  // historia no es estado operativo—, así que no hay suscripción que dispare el
+  // repintado y se pide explícitamente.
+  if (typeof document !== 'undefined') renderCustomerHome();
+  return collection;
+}
+
+function renderMarketingStories() {
+  return renderStoriesManager({
+    stories: getAdminStories(),
+    catalog: storyCatalogContext(),
+    editing: editingStory,
+    feedback: storyFeedback,
+    metrics: readStoryMetrics().stories,
+    pendingDeleteId: pendingStoryDeleteId,
+    backendOwned: backendOwnsStories(),
+    now: Date.now(),
+  });
+}
+
+function refreshStoriesPanel() {
+  if (typeof document === 'undefined') return;
+  businessActiveView = 'marketing';
+  renderBusinessDashboard();
+}
+
+/** Borrador en edición: la historia normalizada más el estado del formulario. */
+function toEditingStory(story, { isNew = false, pendingCtaType = '' } = {}) {
+  return { ...story, isNew, pendingCtaType };
+}
+
+// El comercio del registro sale del runtime, que es de donde lo va a tomar la
+// tabla. En sandbox no hay ninguno configurado y queda vacío: es más honesto que
+// inventar un identificador que después no va a coincidir con nada.
+function currentBusinessId() {
+  try {
+    return String(resolveRuntimeConfig()?.repository?.businessId || '').trim();
+  } catch (_) {
+    return '';
+  }
+}
+
+function startNewStory() {
+  editingStory = toEditingStory(createStoryDraft({ businessId: currentBusinessId() }), { isNew: true });
+  pendingStoryDeleteId = null;
+  storyFeedback = '';
+  refreshStoriesPanel();
+  if (typeof document !== 'undefined') {
+    setTimeout(() => document.querySelector('[data-story-form] [name="title"]')?.focus(), 0);
+  }
+  return { handled: true, ok: true, message: '' };
+}
+
+function editStory(id) {
+  const story = getAdminStories().find((candidate) => candidate.id === id);
+  if (!story) return { handled: true, ok: false, message: 'La historia ya no existe.' };
+  editingStory = toEditingStory(story, { pendingCtaType: story.cta?.type || '' });
+  pendingStoryDeleteId = null;
+  storyFeedback = '';
+  refreshStoriesPanel();
+  return { handled: true, ok: true, message: '' };
+}
+
+function closeStoryForm() {
+  editingStory = null;
+  storyFeedback = '';
+  refreshStoriesPanel();
+  return { handled: true, ok: true, message: '' };
+}
+
+/**
+ * Relee el formulario sin guardarlo. Se usa cuando cambia el tipo de CTA o el
+ * destino: la lista de destinos y el candado del +18 dependen de esas dos
+ * decisiones, así que el formulario se vuelve a pintar con lo tipeado intacto.
+ */
+function syncStoryDraftFromForm({ pendingCtaType, resetTarget = false } = {}) {
+  if (typeof document === 'undefined' || !editingStory) return null;
+  const form = document.querySelector('[data-story-form]');
+  if (!form) return null;
+  const values = readStoryForm(form);
+  // Cambiar la acción invalida el destino anterior: el id de un producto no es
+  // un rubro. Descartarlo evita que el formulario muestre un error derivado de
+  // una combinación que nadie eligió.
+  if (resetTarget) values.ctaTarget = '';
+  const draft = storyFromForm(values, { previous: editingStory });
+  if (!draft) return null;
+  editingStory = toEditingStory(draft, {
+    isNew: editingStory.isNew,
+    pendingCtaType: pendingCtaType ?? draft.cta?.type ?? values.ctaType ?? '',
+  });
+  return editingStory;
+}
+
+function saveStoryFromForm() {
+  const form = typeof document !== 'undefined' ? document.querySelector('[data-story-form]') : null;
+  if (!form || !editingStory) return { handled: true, ok: false, message: 'Formulario no disponible.' };
+
+  const values = readStoryForm(form);
+  const draft = storyFromForm(values, { previous: editingStory });
+  if (!draft) {
+    setStoryFormError('Falta la imagen o el video de la historia.');
+    return { handled: true, ok: false, message: 'Falta la imagen o el video de la historia.' };
+  }
+
+  const catalog = storyCatalogContext();
+  // El +18 derivado del catálogo se GUARDA, no sólo se muestra: así el registro
+  // que persiste ya trae la restricción y no depende de que alguien la vuelva a
+  // derivar. Desmarcar la casilla nunca puede apagarla.
+  const age = storyAgeRestriction(draft, resolveStoryDestination(draft.cta, catalog));
+  const story = { ...draft, ageRestricted: age.restricted };
+
+  const validation = validateStoryForActivation(story, catalog);
+  if (story.enabled && !validation.ok) {
+    const message = `No se puede activar. ${validation.errors.join(' ')}`;
+    setStoryFormError(message);
+    return { handled: true, ok: false, message };
+  }
+
+  const stories = persistStories(upsertStory(getAdminStories(), story));
+  const saved = stories.find((candidate) => candidate.id === story.id) || story;
+  editingStory = null;
+  pendingStoryDeleteId = null;
+  storyFeedback = story.enabled
+    ? `Historia guardada. Estado: ${storyStatus(saved)}.`
+    : 'Historia guardada como BORRADOR: todavía no se ve.';
+  refreshStoriesPanel();
+  return { handled: true, ok: true, message: storyFeedback };
+}
+
+function toggleStoryEnabled(id) {
+  const stories = getAdminStories();
+  const current = stories.find((candidate) => candidate.id === id);
+  if (!current) return { handled: true, ok: false, message: 'La historia ya no existe.' };
+
+  if (!current.enabled) {
+    const validation = validateStoryForActivation(current, storyCatalogContext());
+    if (!validation.ok) {
+      storyFeedback = `No se activó. ${validation.errors.join(' ')}`;
+      refreshStoriesPanel();
+      return { handled: true, ok: false, message: storyFeedback };
+    }
+  }
+
+  const next = persistStories(setStoryEnabled(stories, id, !current.enabled));
+  const saved = next.find((candidate) => candidate.id === id);
+  storyFeedback = `Historia ${saved && saved.enabled ? 'activada' : 'desactivada'}. Estado: ${storyStatus(saved)}.`;
+  pendingStoryDeleteId = null;
+  refreshStoriesPanel();
+  return { handled: true, ok: true, message: storyFeedback };
+}
+
+function moveStoryPosition(id, delta) {
+  persistStories(moveStory(getAdminStories(), id, delta));
+  storyFeedback = 'Orden actualizado.';
+  refreshStoriesPanel();
+  return { handled: true, ok: true, message: storyFeedback };
+}
+
+function requestStoryDelete(id) {
+  pendingStoryDeleteId = id;
+  storyFeedback = '';
+  refreshStoriesPanel();
+  return { handled: true, ok: true, message: '' };
+}
+
+function cancelStoryDelete() {
+  pendingStoryDeleteId = null;
+  refreshStoriesPanel();
+  return { handled: true, ok: true, message: '' };
+}
+
+function confirmStoryDelete(id) {
+  persistStories(removeStory(getAdminStories(), id));
+  // Los contadores se van con la historia: dejarlos sería guardar métricas de
+  // algo que ya no existe y que nadie puede volver a mirar.
+  forgetStoryMetrics(id);
+  if (editingStory?.id === id) editingStory = null;
+  pendingStoryDeleteId = null;
+  storyFeedback = 'Historia eliminada.';
+  refreshStoriesPanel();
+  return { handled: true, ok: true, message: storyFeedback };
+}
+
+function previewStory(story, trigger) {
+  if (!story) return { handled: true, ok: false, message: 'La historia ya no existe.' };
+  const opened = previewStoryInViewer(story, trigger || null);
+  return {
+    handled: true,
+    ok: opened,
+    message: opened ? '' : 'La vista previa necesita una imagen o un video válidos.',
+  };
+}
+
+function setStoryFormError(message) {
+  if (typeof document === 'undefined') return;
+  const error = document.querySelector('[data-story-form-error]');
+  if (!error) return;
+  error.textContent = message;
+  error.classList.remove('hidden');
+}
+
 function renderPromotionManager(state) {
   const promotions = Array.isArray(state.promotions) ? state.promotions : [];
   let editingPromotion = editingPromotionId
@@ -1653,7 +1918,7 @@ export function handleBusinessAction(target) {
   const viewButton = target.closest('[data-business-view]');
   if (viewButton) {
     const nextView = viewButton.dataset.businessView;
-    const allowedViews = new Set(['orders', 'metrics', 'reports', 'cashbox', 'catalog', 'setup', 'guide', 'local']);
+    const allowedViews = new Set(['orders', 'metrics', 'reports', 'cashbox', 'catalog', 'marketing', 'setup', 'guide', 'local']);
     if (isDemoMode()) allowedViews.add('promotions');
     if (!allowedViews.has(nextView)) return { handled: true, ok: false, message: 'Vista no disponible.' };
     businessActiveView = nextView;
@@ -1806,6 +2071,62 @@ export function handleBusinessAction(target) {
 
   if (target.closest('[data-business-setup-reset-confirm]')) {
     return confirmBusinessSetupReset();
+  }
+
+  // ─── Marketing → Historias ─────────────────────────────────────────────────
+  if (target.closest('[data-story-new]')) {
+    return startNewStory();
+  }
+
+  const storyEditId = target.closest('[data-story-edit]')?.dataset.storyEdit;
+  if (storyEditId) {
+    return editStory(storyEditId);
+  }
+
+  if (target.closest('[data-story-form-close]')) {
+    return closeStoryForm();
+  }
+
+  if (target.closest('[data-story-save]')) {
+    return saveStoryFromForm();
+  }
+
+  // Vista previa desde el formulario: primero se lee lo tipeado, así se
+  // previsualiza lo que hay en pantalla y no la última versión guardada.
+  if (target.closest('[data-story-form-preview]')) {
+    return previewStory(syncStoryDraftFromForm(), target.closest('[data-story-form-preview]'));
+  }
+
+  const storyPreviewId = target.closest('[data-story-preview]')?.dataset.storyPreview;
+  if (storyPreviewId) {
+    return previewStory(
+      getAdminStories().find((candidate) => candidate.id === storyPreviewId),
+      target.closest('[data-story-preview]'),
+    );
+  }
+
+  const storyToggleId = target.closest('[data-story-toggle]')?.dataset.storyToggle;
+  if (storyToggleId) {
+    return toggleStoryEnabled(storyToggleId);
+  }
+
+  const storyMoveButton = target.closest('[data-story-move]');
+  if (storyMoveButton) {
+    return moveStoryPosition(storyMoveButton.dataset.storyId, Number(storyMoveButton.dataset.storyMove) || 0);
+  }
+
+  const storyDeleteId = target.closest('[data-story-delete]')?.dataset.storyDelete;
+  if (storyDeleteId) {
+    return requestStoryDelete(storyDeleteId);
+  }
+
+  if (target.closest('[data-story-delete-cancel]')) {
+    return cancelStoryDelete();
+  }
+
+  const storyDeleteConfirmId = target.closest('[data-story-delete-confirm]')?.dataset.storyDeleteConfirm;
+  if (storyDeleteConfirmId) {
+    return confirmStoryDelete(storyDeleteConfirmId);
   }
 
   if (target.closest('[data-promotion-new]')) {
@@ -1967,6 +2288,26 @@ export function handleBusinessAction(target) {
 }
 
 export function handleBusinessInput(target) {
+  // Los dos selectores del formulario de historias mandan sobre el resto de la
+  // pantalla: el tipo de CTA decide QUÉ destinos existen y el destino decide si
+  // el +18 queda trabado. Se vuelve a pintar el formulario con lo tipeado
+  // intacto —`syncStoryDraftFromForm` lo relee antes— en vez de manipular el
+  // DOM a mano, que es como se llega a una casilla +18 que dice una cosa y un
+  // registro que guarda otra.
+  const storySelect = target.closest?.('[data-story-cta-type], [data-story-cta-target]');
+  if (storySelect && editingStory) {
+    const changingType = storySelect.matches('[data-story-cta-type]');
+    syncStoryDraftFromForm(changingType
+      ? { pendingCtaType: storySelect.value, resetTarget: true }
+      : {});
+    refreshStoriesPanel();
+    if (typeof document !== 'undefined') {
+      const restored = document.querySelector(changingType ? '[data-story-cta-type]' : '[data-story-cta-target]');
+      restored?.focus?.();
+    }
+    return { handled: true, ok: true, message: '' };
+  }
+
   const setupInput = target.closest?.('[data-business-setup-form] input, [data-business-setup-form] textarea');
   if (setupInput) {
     businessSetupFeedback = '';

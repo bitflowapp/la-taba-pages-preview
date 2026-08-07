@@ -258,10 +258,10 @@ Escrito acá para que nadie lo descubra en el piloto.
 
 ### 6.1 No se validó contra staging
 
-**El lock `taba2-staging-mutation.lock` del directorio de locks compartido lo
-sostiene `TABA2_PILOT_RC`** (`STATUS=HOLDING_ESPERANDO_COMPRA_IPHONE`). No se mutó
-staging ni se aplicaron estas migraciones ahí. Toda la verificación es local,
-sobre bases efímeras.
+**El lock `taba2-staging-mutation.lock` estuvo tomado por otro agente durante
+toda esta rama** —primero `TABA2_PILOT_RC`, después `TABA2_FIRST_PHYSICAL_E2E`—
+así que nunca se pudo adquirir. No se mutó staging ni se aplicaron estas
+migraciones ahí. Toda la verificación es local, sobre bases efímeras.
 
 Para desplegar hace falta tomar el lock y aplicar, en orden:
 

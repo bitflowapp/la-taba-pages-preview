@@ -59,7 +59,8 @@
     "fiscal:db:local": "node scripts/run-arca-fiscal-local-db.mjs",
     "fiscal:certify:homologation": "npm --prefix services/arca-fiscal-bridge run certify:homologation --",
     "fiscal:csr": "npm --prefix services/arca-fiscal-bridge run csr:create --",
-    "fiscal:probe": "npm --prefix services/arca-fiscal-bridge run probe:homologation --"
+    "fiscal:probe": "npm --prefix services/arca-fiscal-bridge run probe:homologation --",
+    "fiscal:sample": "npm --prefix services/arca-fiscal-bridge run sample:document --"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

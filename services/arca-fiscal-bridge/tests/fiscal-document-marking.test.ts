@@ -5,8 +5,12 @@
 // Esta suite lee el PDF generado —no el input— y verifica qué dice de sí mismo.
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { inflateSync } from 'node:zlib';
 import { createAuthorizedFiscalPdf, createReceiptPdf } from '../src/pdf.js';
+import { buildSampleDocument, writeSampleDocument } from '../src/create-sample-document.js';
 import { FiscalArtifactWorker } from '../src/artifact-worker.js';
 import type { FiscalArtifactCompletion, FiscalArtifactJob, FiscalArtifactStore, LoadedFiscalArtifactDocument } from '../src/store.js';
 
@@ -172,6 +176,32 @@ test('el PDF que persiste el worker sale marcado según el ambiente del comproba
   assert.match(text, /SIN VALIDEZ FISCAL/);
   assert.match(text, /Estado: authorized/);
   assert.match(text, /Tipo de comprobante ARCA: 006/);
+});
+
+test('la muestra que mira una persona sale marcada como sintética y con los totales cerrados', async () => {
+  const sample = buildSampleDocument();
+  const lineTotal = sample.items.reduce((sum, item) => sum + item.amount, 0);
+  assert.equal(lineTotal, sample.totalAmount, 'las líneas suman el total');
+  assert.equal(sample.netAmount + sample.vatAmount, sample.totalAmount, 'neto más IVA cierra al centavo');
+
+  const text = pdfText(await createAuthorizedFiscalPdf(sample));
+  assert.match(text, /NO EMITIDO POR ARCA/);
+  assert.match(text, /Ambiente: SYNTHETIC/);
+  assert.match(text, /SINTÉTICO/);
+  assert.match(text, /No corresponde a ninguna operación/);
+  assert.doesNotMatch(text, /HOMOLOGACIÓN ARCA/, 'no se disfraza de homologación tampoco');
+});
+
+test('la muestra se escribe sólo donde se le pide, y como PDF', async () => {
+  await assert.rejects(() => writeSampleDocument('comprobante.pdf'), /absoluta/);
+  await assert.rejects(() => writeSampleDocument(path.join(os.tmpdir(), 'comprobante.txt')), /es un PDF/);
+
+  const target = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'taba-sample-')), 'muestra.pdf');
+  const result = await writeSampleDocument(target);
+  assert.equal(result.path, target);
+  assert.match(result.sha256, /^[0-9a-f]{64}$/);
+  assert.match(pdfText(fs.readFileSync(target)), /Ambiente: SYNTHETIC/);
+  fs.rmSync(path.dirname(target), { recursive: true, force: true });
 });
 
 test('un comprobante que no declara ambiente no produce PDF, produce revisión', async () => {

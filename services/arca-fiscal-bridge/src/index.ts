@@ -16,6 +16,7 @@ export * from './health.js';
 export * from './pdf.js';
 export * from './homologation-certification.js';
 export * from './parameters.js';
+export * from './probe-homologation.js';
 export * from './qr.js';
 export * from './reconciliation.js';
 export * from './simulated-arca.js';

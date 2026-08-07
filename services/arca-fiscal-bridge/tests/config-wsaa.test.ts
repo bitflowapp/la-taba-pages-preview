@@ -5,7 +5,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { assertRemoteExecutionAllowed, loadArcaConfig, OFFICIAL_ENDPOINTS } from '../src/config.js';
-import { buildTra, parseLoginTicketResponse, signTraCms, WsaaClient } from '../src/wsaa.js';
+import { buildTra, isTicketRetentionFault, parseLoginTicketResponse, signTraCms, WsaaClient } from '../src/wsaa.js';
+import { isSoapFault, postSoap } from '../src/transport.js';
 import { parseTrustedSoap } from '../src/xml.js';
 import { FileTicketStore } from '../src/ticket-store.js';
 import { createSimulatedArca } from '../src/simulated-arca.js';
@@ -237,4 +238,53 @@ test('el TA vencido se renueva y el vigente se reutiliza', async () => {
   } finally {
     fs.rmSync(file, { force: true });
   }
+});
+
+// ===== Evidencia real de homologación oficial =====
+//
+// Respuesta observada el 2026-08-07 contra https://wsaahomo.afip.gov.ar al
+// presentar un certificado que ARCA no emitió: HTTP 500 con un SOAP Fault
+// `ns1:cms.cert.blacklist` / "Certificado bloqueado". Antes del arreglo del
+// transporte, ese 500 se clasificaba ARCA_UNAVAILABLE y se reintentaba a
+// ciegas: un certificado bloqueado no mejora reintentando.
+const REAL_WSAA_BLACKLIST_FAULT = '<?xml version="1.0" encoding="UTF-8"?>'
+  + '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">'
+  + '<soapenv:Body><soapenv:Fault><faultcode>ns1:cms.cert.blacklist</faultcode>'
+  + '<faultstring>Certificado bloqueado</faultstring></soapenv:Fault>'
+  + '</soapenv:Body></soapenv:Envelope>';
+
+test('un SOAP Fault de WSAA sobre HTTP 500 se lee como fault, no como caída de ARCA', async () => {
+  assert.equal(isSoapFault(REAL_WSAA_BLACKLIST_FAULT), true);
+  const fetchImpl = (async () => new Response(REAL_WSAA_BLACKLIST_FAULT, { status: 500 })) as unknown as typeof fetch;
+  const response = await postSoap({
+    endpoint: OFFICIAL_ENDPOINTS.homologation.wsaa,
+    action: '',
+    body: '<envelope/>',
+    fetchImpl,
+  });
+  assert.equal(response.status, 500, 'el cuerpo llega igual, con su código real');
+  assert.throws(
+    () => parseLoginTicketResponse(response.body),
+    (error: { code?: string; retryable?: boolean; message?: string }) => {
+      assert.equal(error.code, 'ns1:cms.cert.blacklist');
+      assert.equal(error.message, 'Certificado bloqueado');
+      assert.equal(error.retryable, false, 'un certificado bloqueado no mejora reintentando');
+      return true;
+    },
+  );
+  // Y no se confunde con la retención del ticket, que sí es reintentable.
+  assert.equal(isTicketRetentionFault('Certificado bloqueado'), false);
+  assert.equal(isTicketRetentionFault('El CEE ya posee un TA valido para el acceso al WSN solicitado'), true);
+});
+
+test('un HTTP 500 sin fault sigue siendo una caída reintentable', async () => {
+  const fetchImpl = (async () => new Response('<html>502 Bad Gateway</html>', { status: 500 })) as unknown as typeof fetch;
+  await assert.rejects(
+    () => postSoap({ endpoint: OFFICIAL_ENDPOINTS.homologation.wsfe, action: '', body: '<envelope/>', fetchImpl }),
+    (error: { code?: string; retryable?: boolean }) => {
+      assert.equal(error.code, 'ARCA_UNAVAILABLE');
+      assert.equal(error.retryable, true);
+      return true;
+    },
+  );
 });

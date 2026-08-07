@@ -20,9 +20,12 @@ OPERATIVA**. Tres cortes de contrato independientes, cada uno suficiente para
 que no se emitiera nunca nada, ni siquiera simulado.
 
 **Ahora:** el circuito completo existe, está cableado de punta a punta y está
-probado contra una base real y contra una ARCA simulada que reproduce los
-fallos que homologación no deja provocar a voluntad. Los cuatro cortes —los
-tres del informe más uno que ese informe no había encontrado— están cerrados.
+probado contra una base real, contra una ARCA simulada que reproduce los fallos
+que homologación no deja provocar a voluntad, y —en lo que no exige
+certificado— **contra los endpoints oficiales de homologación**: `FEDummy`
+respondió `OK/OK/OK` y WSAA evaluó y rechazó un certificado que no emitió (§7bis).
+Los cuatro cortes —los tres del informe más uno que ese informe no había
+encontrado— están cerrados.
 
 **Lo que todavía no está:** la certificación contra la HOMOLOGACIÓN oficial de
 ARCA. No es un pendiente de software: **falta el certificado X.509**, y
@@ -195,13 +198,14 @@ fiscal incompleto y nombra los campos que faltan.
 | Gate | Resultado |
 | --- | --- |
 | `npm test` | **1111/1111** (base 1102; +8 de la suite de estados fiscales, +1 del asistente) |
-| `npm run fiscal:test` | **48/48** (base 17) |
+| `npm run fiscal:test` | **50/50** (base 17) |
 | `npm run fiscal:db:local` | **166 aserciones** sobre una PostgreSQL **vacía**: 57 migraciones aplicadas desde cero + 95 + 41 + 30 |
 | `npm run migrations:validate` | aprobado |
 | `npm run check` | pasa |
 | `npm run secrets:scan` | limpio |
 | `npm run test:e2e` | **207/207** (Chromium + Firefox), igual que la base |
-| Certificación en homologación oficial | **PENDIENTE — falta el certificado (§8)** |
+| `npm run fiscal:probe` | **contacto real con homologación oficial** (ver §7bis) |
+| Certificación fiscal en homologación oficial | **PENDIENTE — falta el certificado (§8)** |
 
 `npm run fiscal:db:local` levanta su propio contenedor, aplica las 57
 migraciones sobre una base vacía y corre las tres suites pgTAP fiscales. Es
@@ -225,6 +229,49 @@ contenga token, sign, PEM ni XML crudo. También verifica que se niegue sin la
 frase de consentimiento, que se niegue contra producción, y que un rechazo de
 ARCA no se declare certificación exitosa. Si tiene un error, se descubre acá y
 no con una persona esperando frente a la Clave Fiscal.
+
+---
+
+## 7bis. Contacto real con la homologación oficial (sin certificado)
+
+Los mocks no bastan, y no se usaron para esto. `FEDummy` es el único método de
+WSFEv1 que, según el WSDL vigente, **no lleva `Auth`**: se puede ejecutar antes
+de tener certificado. `npm run fiscal:probe` lo corre contra el endpoint
+oficial, y con `--wsaa` intenta además autenticar.
+
+Corrida del **2026-08-07**, con el código de este worktree, contra los endpoints
+oficiales:
+
+| Operación | Endpoint real | Resultado |
+| --- | --- | --- |
+| `FEDummy` | `https://wswhomo.afip.gov.ar/wsfev1/service.asmx` | HTTP **200** · `AppServer=OK` `DbServer=OK` `AuthServer=OK` |
+| `loginCms` | `https://wsaahomo.afip.gov.ar/ws/services/LoginCms` | HTTP **500** · SOAP Fault `ns1:cms.cert.blacklist` · "Certificado bloqueado" |
+
+**Qué queda probado contra ARCA de verdad, no contra la simulación:**
+
+1. TLS, DNS y la allowlist de endpoints oficiales compilada.
+2. El sobre SOAP 1.1, el header `SOAPAction` y el parser XML —con
+   `removeNSPrefix` y anti-XXE— contra una respuesta real de ARCA.
+3. **El TRA y el CMS/PKCS#7 son correctos.** WSAA llegó a *evaluar el
+   certificado*: no rechazó por schema, ni por `generationTime` en el futuro, ni
+   por formato de fecha. Los tres son los errores que el manual documenta como
+   los más frecuentes, y ninguno ocurrió. Los timestamps en GMT-3 funcionan.
+4. **El defecto D3 no era teórico.** El fault llegó con **HTTP 500**. Con el
+   código anterior se habría clasificado `ARCA_UNAVAILABLE`, `retryable: true`, y
+   un certificado bloqueado se habría reintentado para siempre en vez de
+   aparecer como lo que es: un problema permanente y accionable. La respuesta
+   real quedó fijada como test de regresión (`config-wsaa.test.ts`).
+5. La detección de desfase de reloj contra el header `Date` real de ARCA:
+   **0 segundos**.
+
+El certificado usado para la sonda de WSAA fue **autofirmado y sintético**,
+generado sólo para esa verificación y **borrado inmediatamente después**. ARCA lo
+rechazó, que es exactamente lo que debía pasar. **No se emitió ningún
+comprobante, no se consultó ningún padrón y no se tocó producción.**
+
+Esto es validación de transporte y autenticación, **no es la certificación
+fiscal**: sin un certificado emitido por ARCA no hay Ticket de Acceso, y sin
+Ticket de Acceso no hay CAE. Ver §8.
 
 ---
 

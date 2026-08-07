@@ -259,6 +259,17 @@ reserva convertida, stock 99→93, outbox vacío, LT-0030 y ARCA intactos) →
 **circuito operativo completo 17/17** (Panel acepta/prepara/lista → rider toma,
 retira, sale, llega → entrega con el código del cliente, `delivered`).
 
+**Combo mixto Noche larga (2026-08-07, segunda certificación).** El otro combo
++18 cobrable —**4× Heineken (+18) · 2× Red Bull (sin alcohol)**, $ 22.752 de
+lista → **$ 20.000**— certifica lo que Heineken x6 no cubría: la reserva
+atómica de DOS productos y la propagación del +18 desde un solo componente.
+Sondas backend 12/12 (el rechazo sin edad no deja colgada NI la reserva del
+componente sin alcohol; con edad, ambos productos se reservan en la misma
+transacción); compra real → pago aprobado por **$ 20.150 exactos** (operación
+) → **pedido ** con 17 invariantes verdes (los DOS
+items, snapshot con ambos componentes, Heineken 93→89 y Red Bull 96→94,
+reservas convertidas) → circuito operativo **17/17** hasta .
+
 Nota de coexistencia que conviene conocer: `TABA_CHECKOUT_BASE_URL` apunta al
 dominio principal, así que el retorno de Mercado Pago cayó en el build de la
 otra RC, que sin el storage del origen de compra no pudo reconciliar. El cierre

@@ -1934,6 +1934,11 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
 .stories-modal {
   width: min(calc(100vw - 24px), 420px);
   max-height: calc(100dvh - 24px);
+  /* Explícito y no heredado del navegador: si el contenido supera el alto, la
+     tarjeta se desplaza en vez de recortar la CTA, y el desplazamiento no se
+     escapa a la página de atrás. */
+  overflow: auto;
+  overscroll-behavior: contain;
   border-radius: var(--radius-lg);
   background: var(--brand-bg);
   color: var(--brand-ink);
@@ -1942,6 +1947,13 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
 .stories-card {
   display: grid;
   gap: 0;
+}
+
+/* La tarjeta recibe el foco al abrir para que la lectura empiece arriba, pero
+   no es un control: no lleva anillo. El anillo lo llevan los botones. */
+.stories-card:focus,
+.stories-card:focus-visible {
+  outline: none;
 }
 
 /* El padding derecho libera la caja de 44px del control de cierre: sin él la
@@ -1953,20 +1965,63 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
 }
 
 .stories-progress span {
+  overflow: hidden;
   height: 3px;
   flex: 1 1 0;
   border-radius: var(--radius-pill);
   background: rgb(255 255 255 / 24%);
 }
 
-.stories-progress span.is-active {
-  background: var(--brand-ink);
+/* El relleno cuenta el tiempo que falta. Es la única animación del visor y su
+   duración la fija el JS con la misma constante que dispara el avance: si un
+   día cambia, la barra y el reloj no pueden discrepar.
+   Dorado y no blanco: el blanco puro era una superficie clara sobrante dentro
+   de una vidriera grafito —lo que el auditor marca— y además el dorado es el
+   final del degradado del aro, así que la barra y el aro hablan el mismo
+   idioma. */
+.stories-progress span i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand-gold-soft);
 }
 
+.stories-progress span.is-done i {
+  width: 100%;
+}
+
+.stories-progress span.is-active i {
+  width: 100%;
+  animation-name: stories-progress-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes stories-progress-fill {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/* Sin animación el segmento activo se pinta entero: el estado sigue siendo
+   legible, sólo deja de contar el tiempo. */
+@media (prefers-reduced-motion: reduce) {
+  .stories-progress span.is-active i {
+    animation: none;
+    width: 100%;
+  }
+}
+
+/* La proporción es 4:5, pero en una pantalla de 568px de alto esa foto sola se
+   come el presupuesto entero y deja la CTA por debajo del pliegue. El tope en
+   `dvh` la deja respirar sin que el botón haya que ir a buscarlo: con
+   `object-fit: contain` la imagen no se recorta, sólo se achica. */
 .stories-media {
+  position: relative;
   display: grid;
   place-items: center;
   aspect-ratio: 4 / 5;
+  max-height: 46dvh;
   overflow: hidden;
   background: var(--brand-bg-raised);
 }
@@ -1978,10 +2033,54 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   object-fit: contain;
 }
 
+/* Zonas de toque. Ocupan mitad y mitad del medio, no llevan tinta y no reciben
+   foco: el gesto es para el pulgar y los botones de abajo son para todo lo
+   demás. El video se queda con su franja de controles libre —los últimos 56px—
+   para que tocar "pausa" no avance la historia. */
+.stories-zone {
+  position: absolute;
+  top: 0;
+  bottom: 56px;
+  width: 50%;
+}
+
+.stories-zone-prev { left: 0; }
+.stories-zone-next { right: 0; }
+
 .stories-body {
   display: grid;
   gap: 10px;
   padding: 14px 16px 16px;
+}
+
+.stories-eyebrow {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  gap: 8px;
+  color: var(--brand-ink-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stories-eyebrow .stories-position {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+/* El +18 es dorado y no rojo: el rojo de la identidad es la acción de comprar,
+   y una advertencia legal no compite con ella. */
+.stories-age-chip {
+  padding: 2px 7px;
+  border: 1px solid var(--brand-gold);
+  border-radius: var(--radius-pill);
+  color: var(--brand-gold-soft);
+  font-size: 11px;
+  letter-spacing: 0.04em;
 }
 
 .stories-body h2 {
@@ -1991,14 +2090,33 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   letter-spacing: -0.03em;
 }
 
+.stories-text {
+  margin: 0;
+  color: var(--brand-ink-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+/* El aviso +18 usa la misma tinta y el mismo tono que en la ficha del producto
+   y en la del combo: es la MISMA regla del catálogo, no una versión propia del
+   visor. */
+.stories-modal .product-alcohol-notice {
+  margin: 0;
+  color: var(--brand-gold-soft);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
 .stories-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.stories-actions .primary-button {
-  flex: 1 1 160px;
+.stories-actions .primary-button,
+.stories-cta {
+  width: 100%;
+  min-height: var(--tap);
 }
 
 .stories-nav {
@@ -2007,7 +2125,7 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   gap: 8px;
 }
 
-.stories-nav button {
+.stories-nav-button {
   min-width: var(--tap);
   min-height: var(--tap);
   padding: 0 14px;
@@ -2018,7 +2136,7 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   font-weight: 800;
 }
 
-.stories-nav button:disabled {
+.stories-nav-button:disabled {
   opacity: 0.45;
 }
 

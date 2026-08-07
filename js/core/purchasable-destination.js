@@ -65,15 +65,9 @@ export function hasPurchasableDestination(products, destination = {}) {
   return false;
 }
 
-/**
- * Traduce la CTA normalizada de una historia (core/stories.js) al destino que
- * entiende `hasPurchasableDestination`: `category` filtra el catálogo por
- * rubro; `product` y `add` apuntan a un producto puntual. Una acción
- * desconocida devuelve `null` y la pieza se trata como sin destino resoluble.
- */
-export function storyCtaDestination(cta) {
-  if (!cta || !cta.target) return null;
-  if (cta.action === 'category') return { categoryId: String(cta.target) };
-  if (cta.action === 'product' || cta.action === 'add') return { productId: String(cta.target) };
-  return null;
-}
+// Las HISTORIAS ya no pasan por acá. Desde que su CTA puede apuntar a un combo
+// —que no es un producto del catálogo sino una composición derivada— resolver su
+// destino dejó de ser un caso de este módulo y pasó a `core/story-destination.js`,
+// que además deriva la restricción +18 del destino real. Dos módulos resolviendo
+// el mismo destino con reglas distintas es precisamente la divergencia que el
+// P1-2 vino a cerrar; por eso el traductor de historias vive en un solo lugar.

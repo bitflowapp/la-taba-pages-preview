@@ -3,7 +3,7 @@ import { BRAND } from './config.js';
 import { categories } from './data.js';
 import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
 import { COMBO_MANIFEST } from './combos-data.js';
-import { purchasableCombos } from './core/combos.js';
+import { purchasableCombos, resolveCombos } from './core/combos.js';
 import { getCustomerOrderHistory, getLatestCustomerOrder } from './core/customer-history.js';
 import {
   getCustomerProfile,
@@ -63,7 +63,7 @@ import {
   isPurchasableBeverageProduct,
   isVisibleBeverageProduct,
 } from './core/beverage-home-sections.js';
-import { hasPurchasableDestination, storyCtaDestination } from './core/purchasable-destination.js';
+import { hasPurchasableDestination } from './core/purchasable-destination.js';
 import { resolveRetailProductId } from './core/retail-packaging.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 import { riderAvatarHelmetSvg } from './map/rider_marker.js';
@@ -73,7 +73,15 @@ import {
   readSeenStoryIds,
   readStoriesSource,
   storyEntryState,
+  storyVideoPreload,
 } from './core/stories.js';
+import {
+  hasRealStoryDestination,
+  resolveStoryDestination,
+  storyAgeRestriction,
+} from './core/story-destination.js';
+import { readStoredStories } from './core/story-store.js';
+import { createImpressionGate, recordStoryEvent } from './core/story-analytics.js';
 import { PREVIEW_STORY_SEED } from './preview-stories-data.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
@@ -858,27 +866,35 @@ function renderHomeBanners() {
 // durante la sesión tiene que desaparecer sola, y un origen que se publica
 // después del primer pintado tiene que aparecer sin recargar. Normalizar unos
 // pocos registros por render es más barato que sostener invalidación.
+/**
+ * Catálogo contra el que se resuelve TODO destino de historia. Los combos
+ * entran completos —también los bloqueados— para que el Panel pueda explicar
+ * por qué un destino no se puede publicar en vez de decir que no existe.
+ */
+export function storyCatalogContext() {
+  const products = getCustomerCatalogProducts(getState().products);
+  return { products, combos: resolveCombos(COMBO_MANIFEST, products), categories };
+}
+
 export function getHomeStories() {
-  // El global publicado por el backend siempre gana; `readStoriesSource` sólo
-  // cae en las fixtures cuando NO hay origen real. En producción `demo` y
-  // `showcase` son falsos, así que sin backend la lista sigue vacía y el aro
-  // sigue apagado: el fail-closed no se toca.
+  // Autoridad del origen, de mayor a menor: el global que publique el backend,
+  // después lo que administró el comercio en Marketing → Historias, y sólo en
+  // preview las fixtures. En producción `demo` y `showcase` son falsos, así que
+  // sin backend y sin Panel la lista sigue vacía y el aro sigue apagado: el
+  // fail-closed no se toca.
   const stories = publishedStories(readStoriesSource({
     showcase: isDemoMode() || isShowcaseMode(),
+    local: readStoredStories(),
     fixtures: PREVIEW_STORY_SEED,
   }));
   // P1-2 (auditoría comercial): una historia CON CTA sólo se publica si su
-  // destino tiene producto comprable AHORA — el mismo criterio del hero y de
-  // los banners, aplicado a CUALQUIER origen (fixtures o backend). Una
+  // destino tiene contenido comprable AHORA — el mismo criterio del hero y de
+  // los banners, aplicado a CUALQUIER origen (fixtures, Panel o backend). Una
   // historia sin CTA sigue siendo editorial válida: no promete acción. La que
   // se apaga acá reaparece sola cuando el local publique el precio de su
   // destino; el registro de vistas no se toca.
-  const products = getCustomerCatalogProducts(getState().products);
-  return stories.filter((story) => {
-    if (!story.cta) return true;
-    const destination = storyCtaDestination(story.cta);
-    return Boolean(destination) && hasPurchasableDestination(products, destination);
-  });
+  const context = storyCatalogContext();
+  return stories.filter((story) => hasRealStoryDestination(story, context));
 }
 
 // Pinta TODOS los puntos de entrada a historias —hoy el encabezado de la home y
@@ -890,6 +906,9 @@ function renderStoryEntry() {
   const slots = $$('[data-stories-slot]');
   if (!slots.length) return;
   const entry = storyEntryState(getHomeStories(), readSeenStoryIds());
+  // Dónde abre el visor. Se guarda en el disparador para que el manejador de
+  // `app.js` no tenga que volver a calcular la lista entera sólo para saberlo.
+  storyEntryIndex = entry.firstIndex;
   const businessName = getBusinessConfig().businessName || BRAND.demoBusinessName;
   const actionLabel = entry.unseen
     ? `Ver ${entry.unseen === 1 ? 'la historia nueva' : `las ${entry.unseen} historias nuevas`} de ${businessName}`
@@ -922,13 +941,217 @@ function renderStoryEntry() {
   }
 }
 
+// ─── Visor ───────────────────────────────────────────────────────────────────
+// Estado del visor. Vive acá y no en `state.js` porque no sobrevive al cierre:
+// una historia abierta no es un dato del negocio, es una sesión de lectura.
+let storyEntryIndex = 0;
+
+/** Índice donde debe abrir el visor: la primera historia sin ver. */
+export function getStoryEntryIndex() {
+  return storyEntryIndex;
+}
+
 let storiesRestoreFocus = null;
 let storiesCloseBound = false;
 let storiesIndex = 0;
+let storiesList = [];
+// Vista previa del Panel: muestra la historia tal cual la verá la clientela,
+// pero NO cuenta métricas ni la marca como vista. Medir la propia previsualización
+// del comercio ensuciaría el único número que el Panel tiene para decidir.
+let storiesPreview = false;
+let storiesImpressions = createImpressionGate();
+let storiesTimer = null;
+let storiesPointerStart = null;
+
+// Duración de una historia de imagen. Un video dura lo que dura y avanza al
+// terminar: recortarlo a cinco segundos sería mostrar un pedazo de algo que el
+// comercio grabó entero.
+const STORY_IMAGE_DURATION_MS = 5000;
+
+function storiesMotionAllowed() {
+  try {
+    return !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  } catch (_) {
+    return true;
+  }
+}
+
+// La decisión vive en `core/stories.js` para poder probarse sin navegador; acá
+// sólo se le acerca el `navigator.connection` de este dispositivo.
+function storiesVideoPreload() {
+  try {
+    return storyVideoPreload(globalThis.navigator?.connection);
+  } catch (_) {
+    return 'metadata';
+  }
+}
+
+function trackStory(id, event) {
+  if (storiesPreview) return;
+  recordStoryEvent(id, event);
+}
+
+function clearStoriesTimer() {
+  if (storiesTimer === null) return;
+  clearTimeout(storiesTimer);
+  storiesTimer = null;
+}
+
+/**
+ * Avance automático. No corre cuando la persona pidió menos movimiento, cuando
+ * la pestaña está oculta, cuando el visor está en la última historia o cuando
+ * el foco está dentro del cuerpo —si alguien está por tocar "Comprar", el visor
+ * no puede cambiarle el botón debajo del dedo—.
+ */
+function scheduleStoriesAdvance(story) {
+  clearStoriesTimer();
+  if (storiesPreview || !storiesMotionAllowed()) return;
+  if (storiesIndex >= storiesList.length - 1) return;
+  if (story.mediaType === 'video') return;
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+  storiesTimer = setTimeout(() => {
+    storiesTimer = null;
+    const card = $('.stories-card');
+    if (card?.contains(document.activeElement) && document.activeElement !== card) return;
+    stepStoriesModal(1);
+  }, STORY_IMAGE_DURATION_MS);
+}
 
 export function closeStoriesModal() {
+  clearStoriesTimer();
   const modal = $('[data-stories-modal]');
   if (modal?.open) modal.close();
+}
+
+function storyMediaMarkup(story) {
+  if (story.mediaType === 'video') {
+    const poster = story.thumbnailUrl && story.thumbnailUrl !== story.mediaUrl
+      ? ` poster="${escapeHtml(story.thumbnailUrl)}"`
+      : '';
+    // `controls` siempre: un video sin controles en una vidriera es un video que
+    // no se puede pausar. `playsinline` evita que iOS lo saque a pantalla
+    // completa y se lleve puesto el visor.
+    return `<video src="${escapeHtml(story.mediaUrl)}" controls playsinline preload="${storiesVideoPreload()}"${poster} data-story-video></video>`;
+  }
+  return `<img src="${escapeHtml(story.mediaUrl)}" alt="${escapeHtml(story.title || 'Historia del comercio')}" loading="eager" decoding="async" />`;
+}
+
+function storyCtaMarkup(story, destination) {
+  // La CTA sólo existe si el contrato la validó (tipo conocido + destino) y si
+  // el destino sigue siendo real. Sin eso el visor muestra la historia y nada
+  // más: no se fabrica un botón.
+  if (!story.cta || !destination?.exists || !destination.purchasable) return '';
+  return `
+    <button class="primary-button stories-cta" type="button" data-story-cta
+      data-story-action="${escapeHtml(story.cta.action)}"
+      data-story-target="${escapeHtml(story.cta.target)}"
+      data-story-id="${escapeHtml(story.id)}">${escapeHtml(story.cta.label)}</button>`;
+}
+
+function storiesProgressMarkup(total, index) {
+  const animated = storiesMotionAllowed() && !storiesPreview;
+  return Array.from({ length: total }, (_, position) => {
+    const state = position < index ? 'is-done' : (position === index ? 'is-active' : '');
+    const fill = position === index && animated
+      ? `<i style="animation-duration:${STORY_IMAGE_DURATION_MS}ms"></i>`
+      : '<i></i>';
+    return `<span class="${state}">${fill}</span>`;
+  }).join('');
+}
+
+function renderStoriesCard(story, { total, index, businessName }) {
+  const destination = resolveStoryDestination(story.cta, storyCatalogContext());
+  const age = storyAgeRestriction(story, destination);
+  const position = `Historia ${index + 1} de ${total}`;
+
+  return `
+    <div class="stories-card" role="document" tabindex="-1" data-story-id="${escapeHtml(story.id)}" data-story-index="${index}">
+      <div class="stories-progress" role="group" aria-label="${escapeHtml(position)}">
+        ${storiesProgressMarkup(total, index)}
+      </div>
+      <button class="modal-close" type="button" data-close-stories aria-label="Cerrar historias">×</button>
+      <div class="stories-media" data-stories-media>
+        ${storyMediaMarkup(story)}
+        <!--
+          Zonas táctiles: mitad izquierda vuelve, mitad derecha avanza, que es el
+          gesto que la gente ya trae aprendido. Son aria-hidden y no reciben
+          foco a propósito: quien navega con teclado o lector tiene los botones
+          "Anterior" y "Siguiente" de abajo, con nombre y estado. Duplicar el
+          control en el árbol de accesibilidad sólo agregaría dos paradas mudas.
+        -->
+        <span class="stories-zone stories-zone-prev" data-story-zone="-1" aria-hidden="true"></span>
+        <span class="stories-zone stories-zone-next" data-story-zone="1" aria-hidden="true"></span>
+      </div>
+      <div class="stories-body">
+        <p class="stories-eyebrow">
+          <span>${escapeHtml(businessName)}</span>
+          ${age.restricted ? '<span class="stories-age-chip">+18</span>' : ''}
+          <span class="stories-position">${escapeHtml(position)}</span>
+        </p>
+        ${story.title ? `<h2>${escapeHtml(story.title)}</h2>` : ''}
+        ${story.body ? `<p class="stories-text">${escapeHtml(story.body)}</p>` : ''}
+        ${age.restricted
+          ? `<p class="product-alcohol-notice">Venta exclusiva a mayores de ${age.minimumAge} años.</p>`
+          : ''}
+        ${storyCtaMarkup(story, destination)}
+        <div class="stories-nav">
+          <button class="stories-nav-button" type="button" data-story-prev ${index === 0 ? 'disabled' : ''}>Anterior</button>
+          <button class="stories-nav-button" type="button" data-story-next ${index >= total - 1 ? 'disabled' : ''}>Siguiente</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function bindStoriesModal(modal) {
+  if (storiesCloseBound) return;
+  modal.addEventListener('close', () => {
+    clearStoriesTimer();
+    const target = storiesRestoreFocus;
+    storiesRestoreFocus = null;
+    storiesList = [];
+    storiesPreview = false;
+    storiesImpressions.reset();
+    // Al cerrar, el aro y el acceso se recalculan con las vistas nuevas.
+    renderStoryEntry();
+    if (target?.isConnected && typeof target.focus === 'function') target.focus();
+  });
+
+  // Teclado: las flechas mueven, Inicio/Fin saltan a los extremos. `Escape` no
+  // se intercepta —`<dialog>` ya cierra— y volver a atarlo sólo podría romperlo.
+  modal.addEventListener('keydown', (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.key === 'ArrowRight') { event.preventDefault(); stepStoriesModal(1); }
+    else if (event.key === 'ArrowLeft') { event.preventDefault(); stepStoriesModal(-1); }
+    else if (event.key === 'Home') { event.preventDefault(); showStoriesModal(0); }
+    else if (event.key === 'End') { event.preventDefault(); showStoriesModal(storiesList.length - 1); }
+  });
+
+  // Gesto: se mide sobre el medio y sólo cuenta si el desplazamiento horizontal
+  // le gana claramente al vertical. Un pulgar que baja para cerrar el diálogo no
+  // puede terminar avanzando una historia.
+  modal.addEventListener('pointerdown', (event) => {
+    if (!event.target?.closest?.('[data-stories-media]')) { storiesPointerStart = null; return; }
+    storiesPointerStart = { x: event.clientX, y: event.clientY };
+    clearStoriesTimer();
+  });
+  modal.addEventListener('pointerup', (event) => {
+    const start = storiesPointerStart;
+    storiesPointerStart = null;
+    if (!start) return;
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    if (Math.abs(deltaX) >= 44 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      stepStoriesModal(deltaX < 0 ? 1 : -1);
+      return;
+    }
+    // Sin gesto: fue un toque. La zona decide, y el video se queda quieto para
+    // que tocar "pausa" no avance la historia.
+    const zone = event.target?.closest?.('[data-story-zone]');
+    if (zone) stepStoriesModal(Number(zone.dataset.storyZone) || 0);
+    else scheduleStoriesAdvance(storiesList[storiesIndex] || {});
+  });
+
+  storiesCloseBound = true;
 }
 
 /**
@@ -938,64 +1161,88 @@ export function closeStoriesModal() {
 export function showStoriesModal(index = 0, restoreTrigger = null) {
   const modal = $('[data-stories-modal]');
   const content = $('[data-stories-content]');
-  const stories = getHomeStories();
-  if (!modal || !content || !stories.length) return false;
+  if (!modal || !content) return false;
 
-  if (!storiesCloseBound) {
-    modal.addEventListener('close', () => {
-      const target = storiesRestoreFocus;
-      storiesRestoreFocus = null;
-      // Al cerrar, el aro y el acceso se recalculan con las vistas nuevas.
-      renderStoryEntry();
-      if (target?.isConnected && typeof target.focus === 'function') target.focus();
-    });
-    storiesCloseBound = true;
-  }
+  const opening = !modal.open;
+  // La lista se congela al abrir. Recalcularla en cada paso dejaría que una
+  // historia que vence a mitad de la lectura corra los índices debajo del dedo;
+  // vencida o no, la que ya se está viendo termina de verse, y la próxima
+  // apertura ya no la trae.
+  if (opening) storiesList = storiesPreview ? storiesList : getHomeStories();
+  if (!storiesList.length) return false;
 
-  if (!modal.open) {
+  bindStoriesModal(modal);
+
+  if (opening) {
     const active = restoreTrigger || document.activeElement;
     storiesRestoreFocus = active && active !== document.body && typeof active.focus === 'function'
       ? active
       : null;
+    storiesImpressions = createImpressionGate();
   }
 
-  storiesIndex = Math.min(Math.max(0, Number(index) || 0), stories.length - 1);
-  const story = stories[storiesIndex];
-  markStorySeen(story.id);
+  const previous = storiesIndex;
+  storiesIndex = Math.min(Math.max(0, Number(index) || 0), storiesList.length - 1);
+  const story = storiesList[storiesIndex];
 
-  const media = story.mediaType === 'video'
-    ? `<video src="${escapeHtml(story.mediaUrl)}" controls playsinline preload="metadata"${story.thumbnailUrl ? ` poster="${escapeHtml(story.thumbnailUrl)}"` : ''}></video>`
-    : `<img src="${escapeHtml(story.mediaUrl)}" alt="${escapeHtml(story.title || 'Historia del comercio')}" loading="eager" decoding="async" />`;
+  if (opening) trackStory(story.id, 'open');
+  else if (storiesIndex > previous) trackStory(storiesList[previous]?.id, 'advance');
+  if (storiesImpressions.shouldCount(story.id)) trackStory(story.id, 'impression');
+  if (!storiesPreview) markStorySeen(story.id);
 
-  // La CTA sólo existe si el contrato la validó (tipo conocido + destino). Sin
-  // eso el visor muestra la historia y nada más: no se fabrica un botón.
-  const cta = story.cta
-    ? `<button class="primary-button" type="button" data-story-cta data-story-action="${escapeHtml(story.cta.action)}" data-story-target="${escapeHtml(story.cta.target)}">${escapeHtml(story.cta.label)}</button>`
-    : '';
+  // Avanzar reemplaza la tarjeta entera, y con ella el botón que se acababa de
+  // pulsar. Sin esto el foco caía al `<body>` y quien navega con teclado tenía
+  // que volver a tabular desde el principio en CADA historia. Se recuerda QUÉ
+  // control tenía el foco —no el nodo, que ya no existirá— y se le devuelve a
+  // su equivalente.
+  const focusedControl = ['data-story-next', 'data-story-prev', 'data-story-cta']
+    .find((attribute) => document.activeElement?.closest?.(`[${attribute}]`));
 
-  content.innerHTML = `
-    <div class="stories-card" role="document">
-      <button class="modal-close" type="button" data-close-stories aria-label="Cerrar historias">×</button>
-      <div class="stories-progress" role="group" aria-label="Historia ${storiesIndex + 1} de ${stories.length}">
-        ${stories.map((_, position) => `<span class="${position === storiesIndex ? 'is-active' : ''}"></span>`).join('')}
-      </div>
-      <div class="stories-media">${media}</div>
-      <div class="stories-body">
-        ${story.title ? `<h2>${escapeHtml(story.title)}</h2>` : ''}
-        ${cta ? `<div class="stories-actions">${cta}</div>` : ''}
-        <div class="stories-nav">
-          <button type="button" data-story-prev ${storiesIndex === 0 ? 'disabled' : ''}>Anterior</button>
-          <button type="button" data-story-next ${storiesIndex >= stories.length - 1 ? 'disabled' : ''}>Siguiente</button>
-        </div>
-      </div>
-    </div>`;
+  content.innerHTML = renderStoriesCard(story, {
+    total: storiesList.length,
+    index: storiesIndex,
+    businessName: getBusinessConfig().businessName || BRAND.demoBusinessName,
+  });
 
-  if (typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+  const video = $('[data-story-video]', content);
+  if (video) video.addEventListener('ended', () => stepStoriesModal(1), { once: true });
+
+  if (opening && typeof modal.showModal === 'function') modal.showModal();
+
+  // Al abrir, el foco entra a la tarjeta y no al primer botón: quien abre
+  // quiere leer, y desde la tarjeta el tabulador llega igual a la CTA.
+  const restored = focusedControl ? $(`[${focusedControl}]:not([disabled])`, content) : null;
+  (restored || $('.stories-card', content))?.focus?.();
+  scheduleStoriesAdvance(story);
   return true;
 }
 
 export function stepStoriesModal(delta) {
-  return showStoriesModal(storiesIndex + delta);
+  const next = storiesIndex + delta;
+  if (next < 0 || next >= storiesList.length) return false;
+  return showStoriesModal(next);
+}
+
+/**
+ * Vista previa del Panel: abre el visor real con la historia que se está
+ * editando, incluso si todavía es BORRADOR o si está PROGRAMADA. Es la única
+ * forma honesta de previsualizar —enseñar una maqueta aparte garantiza que
+ * algún día deje de parecerse a lo que ve la clientela— y no toca ni las
+ * métricas ni el registro de vistas.
+ */
+export function previewStoryInViewer(story, restoreTrigger = null) {
+  const modal = $('[data-stories-modal]');
+  if (!modal || !story) return false;
+  // No se cierra y se vuelve a abrir: `dialog.close()` encola su evento, así que
+  // el manejador de cierre correría DESPUÉS de armar la previsualización y la
+  // dejaría vacía. Se arma el estado y se pinta; el diálogo se abre si hace
+  // falta y se re-renderiza si ya estaba abierto.
+  clearStoriesTimer();
+  storiesPreview = true;
+  storiesList = [story];
+  storiesIndex = 0;
+  storiesImpressions = createImpressionGate();
+  return showStoriesModal(0, restoreTrigger);
 }
 
 // Categorías con al menos un producto comprable ahora mismo: precio publicado,

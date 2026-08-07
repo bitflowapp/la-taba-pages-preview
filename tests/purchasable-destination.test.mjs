@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  hasPurchasableDestination,
-  storyCtaDestination,
-} from '../js/core/purchasable-destination.js';
+import { hasPurchasableDestination } from '../js/core/purchasable-destination.js';
 
 // Un comprable real y dos pendientes (el estado exacto del catálogo que motivó
 // P1-2: whisky y fernet existen pero no publican precio).
@@ -85,11 +82,6 @@ test('sin destino declarado no hay promesa válida', () => {
   assert.equal(hasPurchasableDestination(undefined, { categoryId: 'cervezas' }), false);
 });
 
-test('storyCtaDestination traduce las acciones normalizadas del contrato de historias', () => {
-  assert.deepEqual(storyCtaDestination({ action: 'category', target: 'cervezas' }), { categoryId: 'cervezas' });
-  assert.deepEqual(storyCtaDestination({ action: 'product', target: 'heineken-lata' }), { productId: 'heineken-lata' });
-  assert.deepEqual(storyCtaDestination({ action: 'add', target: 'heineken-lata' }), { productId: 'heineken-lata' });
-  assert.equal(storyCtaDestination({ action: 'social', target: 'x' }), null);
-  assert.equal(storyCtaDestination({ action: 'category', target: '' }), null);
-  assert.equal(storyCtaDestination(null), null);
-});
+// El destino de una HISTORIA ya no se traduce acá: vive en
+// `core/story-destination.js`, que además resuelve combos y deriva el +18. Su
+// contrato se prueba en `tests/story-destination.test.mjs`.

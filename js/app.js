@@ -14,6 +14,7 @@ import {
   closeStoriesModal,
   copyDraftOrderToClipboard,
   getCheckoutFormValues,
+  getStoryEntryIndex,
   renderAdminVisibility,
   renderCart,
   renderCartTotals,
@@ -39,6 +40,7 @@ import {
 } from './ui.js';
 import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, getActiveOrder, getLastOrder } from './orders.js';
 import { getState, subscribe } from './state.js';
+import { recordStoryEvent } from './core/story-analytics.js';
 import { BRAND, STORAGE_KEYS } from './config.js';
 import { getBusinessConfig } from './core/business-config-store.js';
 import { relayStatusLabel } from './core/realtime-sync.js';
@@ -1026,7 +1028,9 @@ function bindEvents() {
     const storiesOpen = target.closest('[data-stories-open]');
     if (storiesOpen) {
       event.preventDefault();
-      showStoriesModal(0, storiesOpen);
+      // Abre en la primera SIN VER, no siempre en la primera: quien ya miró las
+      // dos de arriba entra donde dejó.
+      showStoriesModal(getStoryEntryIndex(), storiesOpen);
       return;
     }
 
@@ -1046,20 +1050,35 @@ function bindEvents() {
     }
 
     // La CTA de una historia se resuelve contra acciones que YA existen. No hay
-    // navegación externa ni destinos nuevos: producto, categoría o alta al
+    // navegación externa ni destinos nuevos: producto, combo, rubro o alta al
     // carrito, exactamente lo que el contrato admite.
+    //
+    // "Comprar" NO tiene un camino propio: llama al mismo `addToCart` que la
+    // ficha del producto, así que hereda entera la validación del catálogo
+    // —stock, disponibilidad, precio confirmado— y la historia queda del lado
+    // correcto de la puerta +18: la confirmación de edad se pide en el carrito,
+    // como en cualquier otra alta, y desde acá no se puede saltar.
     const storyCta = target.closest('[data-story-cta]');
     if (storyCta) {
       const action = storyCta.dataset.storyAction;
       const storyTarget = storyCta.dataset.storyTarget || '';
+      const storyId = storyCta.dataset.storyId || '';
+      recordStoryEvent(storyId, 'cta');
       closeStoriesModal();
       if (action === 'category') {
         setCategory(storyTarget);
         setActiveView('catalog');
       } else if (action === 'product') {
+        recordStoryEvent(storyId, 'product_open');
         showProductModal(storyTarget);
-      } else if (action === 'add') {
+      } else if (action === 'combo') {
+        recordStoryEvent(storyId, 'product_open');
+        showComboModal(storyTarget);
+      } else if (action === 'buy') {
         const result = addToCart(storyTarget, 1);
+        // Sólo cuenta el alta que el carrito ACEPTÓ. Contar el intento fallido
+        // convertiría un "sin stock" en una métrica de venta.
+        if (result?.ok === true) recordStoryEvent(storyId, 'add_to_cart');
         showToast(result.message);
         renderAll();
       }
@@ -1423,6 +1442,13 @@ function bindEvents() {
     }
     if (target.matches('[data-sort-select]')) {
       setSortBy(target.value || 'recommended');
+    }
+    // Los `<select>` no disparan `input` en todos los WebKit que soportamos, así
+    // que el formulario de historias también escucha `change`. `handleBusinessInput`
+    // es idempotente: relee el formulario y vuelve a pintarlo.
+    if (isDemoMode() && target.closest?.('[data-story-form]')) {
+      handleBusinessInput(target);
+      return;
     }
     if (target.matches('[data-catalog-filter]')) {
       setCatalogFilter(target.dataset.catalogFilter, target.value || 'all');

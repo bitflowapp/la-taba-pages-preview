@@ -3,11 +3,31 @@ import {
   createRiderMarkerElement,
   updateRiderMarkerElement,
 } from './rider_marker.js';
+import { applyTabaMapTheme } from './taba_map_theme.js';
 
 export const MAPLIBRE_PUBLIC_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
 export const MAPLIBRE_FALLBACK_COPY = 'Mapa no disponible. Seguimos actualizando el estado de tu pedido.';
 export const MAPLIBRE_SANDBOX_ROUTE_SOURCE_ID = 'taba-sandbox-route';
 export const MAPLIBRE_SANDBOX_ROUTE_LAYER_ID = 'taba-sandbox-route-line';
+export const MAPLIBRE_SANDBOX_ROUTE_CASING_LAYER_ID = 'taba-sandbox-route-casing';
+
+/*
+ * La ruta sobre el lienzo nocturno se dibuja en dos capas del mismo source:
+ * un casing casi negro que la despega de la trama de calles y la línea roja
+ * TABA encima. El rojo es un paso más luminoso que el de la marca (#d0000d):
+ * sobre grafito, el institucional se apaga; éste conserva la identidad y
+ * gana la jerarquía que una ruta activa necesita.
+ */
+export const SANDBOX_ROUTE_CASING_PAINT = Object.freeze({
+  'line-color': '#0a0b0d',
+  'line-opacity': 0.85,
+  'line-width': ['interpolate', ['linear'], ['zoom'], 12, 6.5, 16, 10],
+});
+export const SANDBOX_ROUTE_LINE_PAINT = Object.freeze({
+  'line-color': '#e8273a',
+  'line-opacity': 0.95,
+  'line-width': ['interpolate', ['linear'], ['zoom'], 12, 3.5, 16, 5.5],
+});
 
 const LOCATION_FRESHNESS = new Set(['fresh', 'delayed', 'lost', 'none']);
 const DEFAULT_STYLE_TIMEOUT_MS = 10_000;
@@ -198,6 +218,15 @@ export function createMapLibreTrackingMap({
           'bottom-left',
         );
       }
+      // Zoom de escritorio. En táctil chico lo esconde el CSS: ahí mandan los
+      // gestos y los botones sólo taparían mapa. Guardado por feature-detect
+      // para que un runtime sin NavigationControl siga montando igual.
+      if (maplibreRef.NavigationControl && state.map.addControl) {
+        state.map.addControl(
+          new maplibreRef.NavigationControl({ showCompass: false, showZoom: true }),
+          'top-right',
+        );
+      }
     } catch (_) {
       state.map = null;
       return markUnavailable('constructor');
@@ -362,6 +391,11 @@ export function createMapLibreTrackingMap({
         clearTimer(state.styleTimer);
         state.styleTimer = null;
       }
+      // El tema nocturno TABA2 se aplica ANTES de revelar el canvas (is-ready):
+      // como este bloque es síncrono, el navegador no pinta ningún frame claro
+      // en el medio. Si el tema no puede aplicarse, queda el estilo claro
+      // original: un mapa legible, nunca uno roto.
+      applyTabaMapTheme(state.map);
       ensureSandboxRoute();
       ensureSandboxPlaces(state.pendingSandboxPlaces);
       fitSandboxGeometry();
@@ -446,6 +480,19 @@ export function createMapLibreTrackingMap({
         data: state.routeFeature,
       });
     }
+    // Casing debajo, línea encima: el orden de inserción es la jerarquía.
+    if (!state.map.getLayer?.(MAPLIBRE_SANDBOX_ROUTE_CASING_LAYER_ID)) {
+      state.map.addLayer?.({
+        id: MAPLIBRE_SANDBOX_ROUTE_CASING_LAYER_ID,
+        type: 'line',
+        source: MAPLIBRE_SANDBOX_ROUTE_SOURCE_ID,
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: { ...SANDBOX_ROUTE_CASING_PAINT },
+      });
+    }
     if (!state.map.getLayer?.(MAPLIBRE_SANDBOX_ROUTE_LAYER_ID)) {
       state.map.addLayer?.({
         id: MAPLIBRE_SANDBOX_ROUTE_LAYER_ID,
@@ -455,11 +502,7 @@ export function createMapLibreTrackingMap({
           'line-cap': 'round',
           'line-join': 'round',
         },
-        paint: {
-          'line-color': '#c8101e',
-          'line-width': 4,
-          'line-opacity': 0.9,
-        },
+        paint: { ...SANDBOX_ROUTE_LINE_PAINT },
       });
     }
   }
@@ -470,11 +513,12 @@ export function createMapLibreTrackingMap({
     if (!state.map || !state.ready) return nextVisible;
     const layer = state.map.getLayer?.(MAPLIBRE_SANDBOX_ROUTE_LAYER_ID);
     if (layer && state.map.setLayoutProperty) {
-      state.map.setLayoutProperty(
-        MAPLIBRE_SANDBOX_ROUTE_LAYER_ID,
-        'visibility',
-        nextVisible ? 'visible' : 'none',
-      );
+      // Las dos capas de la ruta (casing + línea) se muestran y ocultan juntas.
+      for (const layerId of [MAPLIBRE_SANDBOX_ROUTE_CASING_LAYER_ID, MAPLIBRE_SANDBOX_ROUTE_LAYER_ID]) {
+        if (state.map.getLayer?.(layerId)) {
+          state.map.setLayoutProperty(layerId, 'visibility', nextVisible ? 'visible' : 'none');
+        }
+      }
     } else if (nextVisible) {
       ensureSandboxRoute();
     }

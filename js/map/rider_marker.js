@@ -93,17 +93,26 @@ export function mergeMarkerClassName(current, nextClass) {
   return [...kept, ...nextClass.split(/\s+/)].join(' ');
 }
 
+/*
+ * Pines para el lienzo nocturno. El DESTINO es el protagonista del reparto y
+ * lleva el rojo TABA con glifo blanco; el LOCAL es el punto de partida y se
+ * cuenta en negativo —pin blanco con glifo grafito— para contrastar sobre el
+ * mapa oscuro sin competir con el destino. El hairline dorado del local es el
+ * mismo dorado sutil de la marca: identifica al comercio sin gritar.
+ */
 function placeMarkerMarkup({ kind = 'store', label = '' } = {}) {
   const isDestination = kind === 'destination';
-  const color = isDestination ? '#bd1e2d' : '#25282d';
   const aria = label || (isDestination ? 'Destino de entrega' : 'Comercio');
   const safeAria = escapeAttribute(aria);
+  const body = isDestination
+    ? '<path d="M22 2C11 2 3 10 3 21c0 13 19 30 19 30s19-17 19-30C41 10 33 2 22 2Z" fill="#d0000d" stroke="#fff" stroke-width="2.4"/>'
+      + '<path d="M13 23h18M16 18h12v12H16z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>'
+    : '<path d="M22 2C11 2 3 10 3 21c0 13 19 30 19 30s19-17 19-30C41 10 33 2 22 2Z" fill="#fff" stroke="#1c2026" stroke-width="2"/>'
+      + '<path d="M22 3.6C11.9 3.6 4.6 11 4.6 21c0 11.9 17.4 27.6 17.4 27.6S39.4 32.9 39.4 21C39.4 11 32.1 3.6 22 3.6Z" fill="none" stroke="#c9953e" stroke-width="1.1" opacity="0.85"/>'
+      + '<path d="M12 20h20v13H12zM15 20v-5h14v5M16 24h2M22 24h2M28 24h2" fill="none" stroke="#1c2026" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
   return `<span class="lt-place-marker-pin" aria-label="${safeAria}" role="img">
     <svg viewBox="0 0 44 54" aria-hidden="true" focusable="false">
-      <path d="M22 2C11 2 3 10 3 21c0 13 19 30 19 30s19-17 19-30C41 10 33 2 22 2Z" fill="${color}" stroke="#fff" stroke-width="2"/>
-      ${isDestination
-        ? '<path d="M13 23h18M16 18h12v12H16z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>'
-        : '<path d="M12 20h20v13H12zM15 20v-5h14v5M16 24h2M22 24h2M28 24h2" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'}
+      ${body}
     </svg>
   </span>`;
 }

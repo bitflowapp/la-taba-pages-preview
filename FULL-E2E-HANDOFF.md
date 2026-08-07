@@ -4,10 +4,10 @@ Worktree `la-taba2-first-physical-e2e`, rama `release/taba2-first-physical-e2e`,
 base `11a0b02`. Todo local: sin push, sin `amend`, `reset`, `clean`, `stash` ni
 `git add .`.
 
-**Este documento no declara la certificación completa.** El circuito cliente →
-negocio quedó cerrado y el pedido para el piloto humano quedó preparado con el
-mapa vivo por primera vez. El rol Rider está **bloqueado por un defecto de la
-app Android** que se aisló, se reprodujo y se documenta abajo con la evidencia.
+**Este documento no declara todavía la certificación completa.** Se cerraron el
+cliente, el negocio y —sobre `LT-0096`— la cola del Rider hasta `delivered`
+desde la app real. Falta la corrida del Rider sobre `LT-0098`, que quedó
+detenida por una razón física: **el teléfono está en uso por una persona**.
 
 ---
 
@@ -16,8 +16,10 @@ app Android** que se aisló, se reprodujo y se documenta abajo con la evidencia.
 | | |
 | --- | --- |
 | Pedido preparado | **`LT-0098`** — Red Bull Energy Drink, real, **sin alcohol**, $ 3.726, pago Mercado Pago **TEST** aprobado (op. `171665077885`) |
-| Novedad | primer pedido de la historia del proyecto que llega con **los dos puntos del mapa** en su instantánea |
-| Bloqueo | la app Rider **autentica bien y vuelve sola a la pantalla de ingreso** |
+| Novedad | primer pedido del proyecto que llega con **los dos puntos del mapa** en su instantánea, y primer mapa del Rider que dibuja el local sobre calles reales |
+| Cerrado hoy | 5 defectos, uno de ellos el que dejaba a la app Rider mostrando la pantalla de ingreso con la sesión viva |
+| `LT-0096` | **`delivered`** desde la app real: llegada, código y entrega |
+| Pendiente | los 25 pasos sobre `LT-0098`. El Moto lo está usando una persona |
 | Producción | intacta. ARCA sin emisión. `LT-0030` idéntico |
 
 ---
@@ -159,18 +161,30 @@ cuando cambió una hoja.
 
 ---
 
-## 3. NEGOCIO — Panel real
+## 3. NEGOCIO — Panel real, sobre `LT-0098`
 
-Certificado en la sesión anterior sobre `LT-0096` con un actor `staff`, cada
-avance por click en la UI, ningún RPC directo: el pedido entra solo, aceptar →
-preparar → listo (`revisión 2 → 5`), doble click sin cuarta transición, reload
-completo con una sola tarjeta, offline sin mover el servidor, reconexión
-aplicando el comando retenido **una sola vez**, 3 recibos de idempotencia, claves
-sin `:` y `order_events` con `type` lleno. **0 errores de página.**
+Panel publicado (`/#business`), login real con el actor `owner`
+(`qa-business-staging@local.taba`), solapa **Pedidos**. Cada avance salió de un
+click en la UI: **ningún RPC directo**.
 
-`LT-0098` **no** pasó por el Panel en esta sesión: se detuvo en `received` porque
-el rol Rider quedó bloqueado y no tenía sentido moverlo a `ready` para que nadie
-pudiera levantarlo.
+| Prueba | Resultado |
+| --- | --- |
+| El pedido entra solo | `LT-0098` aparece en la bandeja sin buscarlo: **una sola aparición** |
+| Aceptar | `received → accepted`, revisión **2 → 3** |
+| Preparar | `accepted → preparing`, revisión **3 → 4** |
+| Listo con **doble click** | `preparing → ready`, revisión **4 → 5**: dos pulsaciones, **una sola transición** |
+| Reload completo | el estado sobrevive en `ready` y sigue habiendo una sola tarjeta |
+| Offline | con la red cortada el servidor **no se movió** (revisión 5 → 5) |
+| Reconexión | sin duplicar (revisión 5 → 5) |
+| Errores de página | **0** |
+
+Se observó además el diseño offline-first funcionando de verdad: el Panel encola
+los comandos y los concilia contra el backend, así que una espera fija mide la
+latencia de la red y no al producto. El driver espera al estado observable.
+
+La sesión anterior había certificado la misma matriz sobre `LT-0096` con un
+actor `staff`, incluidos los 3 recibos de idempotencia, las claves sin `:` y los
+`order_events` con `type` lleno.
 
 ---
 
@@ -189,57 +203,76 @@ pudiera levantarlo.
 | Cola y privacidad | pre-claim la cola muestra **«Zona general: Neuquen»**; post-claim la dirección completa. El contrato de privacidad **funciona** |
 | Contratos vigentes | `get_rider_queue` filtra `origin='production'`, oculta `customer_location` antes del claim y **no** es ejecutable por `anon` |
 
-### 4.2 El defecto que bloquea
+### 4.2 El defecto grande: una ubicación desautenticaba al Rider
 
-**La app autentica correctamente, persiste la sesión en disco y vuelve sola a la
-pantalla de ingreso.**
+Síntoma: **la app autentica bien, persiste la sesión en disco y vuelve sola a la
+pantalla de ingreso**, con el formulario vacío y **sin ningún mensaje de error**.
 
-Reproducido con el formulario correctamente completo —captura
-`rider-login-directo/formulario-completo.png`: `qa-rider-2-staging@local.taba` y
-la contraseña, ambos en su campo—. Tras enviar:
+Costó media jornada porque todo lo observable decía que estaba sana: el archivo
+`no_backup/rider_session.enc` quedaba escrito, el servicio de reparto arrancaba,
+y el backend no registraba ningún cierre de sesión. Se descartaron, con
+evidencia, la membresía (la consulta exacta de la app con un JWT real devuelve
+`200` con la fila), la competencia de sesiones, el tipeo, el reloj del teléfono
+y las credenciales.
 
-- se escribe `no_backup/rider_session.enc` (la autenticación **sí** ocurrió);
-- 16 s después la pantalla es el formulario **vacío y sin mensaje de error**;
-- sobrevive a reinicios sólo a veces: tres arranques en frío seguidos dieron
-  formulario las tres veces.
+Lo que lo destrabó fue instrumentar el puente con un rastro de vocabulario
+cerrado (`TabaAuth`, sin secretos). La traza lo dice sin ambigüedad:
 
-Un formulario vacío **sin error** no es un rechazo de credenciales: `_setError`
-dejaría `authError` a la vista. Es un evento `signedOut` llegando desde la capa
-nativa después de un ingreso exitoso.
+```
+15:11:32.130  emit type=signedIn state=signedIn role=rider listeners=1
+15:11:32.132  flutter: evento type=signedIn version=1 hayData=true
+15:11:32.498  flutter: resultado ok=true state=signedIn role=rider
+15:11:33.574  bridge listAvailableOrders -> ArrayList
+15:11:35.417  flutter: evento type=locationChanged version=1 hayData=true
+```
 
-Pistas ya reunidas para quien lo tome:
+**Causa.** El canal de eventos es **uno solo** y lo comparten la sesión, el
+servicio de reparto y la ubicación. `AuthController._onEvent` descartaba
+únicamente `serviceStateChanged` y construía una `RiderSession` con **cualquier
+otro payload**. Apenas el GPS entrega un fix llega `locationChanged`, cuyo `data`
+es una ubicación: `RiderSession.fromMap` no encuentra `state` y cae en
+`signedOut` por el caso por defecto del `switch`. Tres segundos entre el ingreso
+y la pérdida de la pantalla.
 
-1. `logcat` registra `E TlcKM: lookup_operation(session, operation_handle, &op) == -28`
-   —un fallo de **Keymaster/Keystore**— exactamente en el instante del ingreso.
-2. `SessionManager.establishMembership` reintenta **una sola vez** ante un 401 de
-   membresía y propaga cualquier otro error. `requireRiderMembership` exige
-   `businessId`, `userId`, rol y `is_active`.
-3. **La membresía no es la causa**: se probó la consulta exacta de
-   `SupabaseAuthClient.getRiderMembership` con un JWT real del rider y la
-   publishable key compilada → `200` con la fila correcta.
-4. **La competencia de sesiones tampoco**: se repitió el ingreso rotando la
-   contraseña una sola vez y sin ningún `password grant` de verificación. Mismo
-   resultado.
-5. `pm clear` **mejora** la situación de forma transitoria: inmediatamente
-   después de limpiar los datos, un ingreso quedó autenticado y sobrevivió un
-   arranque en frío. Volvió a fallar después.
+Eso explica todo lo que parecía contradictorio: con el permiso de ubicación
+denegado no pasaba, con el permiso concedido pasaba siempre, y `pm clear`
+—que resetea permisos— lo «arreglaba» una vez.
 
-La sospecha en pie es la clave del almacén cifrado de sesión: se escribe pero no
-se puede volver a operar. Es coherente con el `TlcKM -28`, con que `pm clear`
-—que borra las entradas de Keystore de la app— destrabe una vez, y con que la
-app deje `rider_session.enc` en disco aunque arranque pidiendo ingreso.
+**Arreglo.** Lista blanca en vez de lista negra: sólo los seis tipos que
+describen la sesión se aplican. Un tipo que este controlador no entiende no
+puede tocarla. Con test que **falla sin el arreglo** (2 de 4 casos) y pasa con
+él; `flutter test` **251/251**.
 
-### 4.3 Consecuencia honesta
+### 4.3 Lo que se certificó después del arreglo
 
-`LT-0096` quedó **`on_the_way` con el Rider asignado** (revisión 10). Su código
-de entrega se recuperó por el camino que el producto ofrece
-—`recover_order_tracking_access`, que revoca el token viejo, emite uno nuevo y
-**regenera** el código cifrándolo con él— y quedó listo para usar. No se pudo
-aplicar porque la app no sostiene la sesión.
+| Prueba | Resultado |
+| --- | --- |
+| Ingreso estable | autenticado y **sobrevive arranque en frío**; 35 s con el GPS entregando fixes sin perder la sesión |
+| Identidad del negocio | «La Taba 2 · Mendoza 827», sin el bloqueo «Retiro no reconocido» |
+| **Mapa vivo** | tiles reales de Neuquén Capital con el **pin del local dibujado** en el punto autorizado, brújula, recentrado y navegación |
+| Privacidad pre-claim | «Zona Neuquén — Zona aproximada. La dirección exacta se muestra al aceptar» |
+| `LT-0096` llegada y código | fase `ARRIVAL_AND_CODE` **PHASE_PASSED** |
+| `LT-0096` entrega | **`delivered`**: `arrived_at` 18:33:28, `delivered_at` 18:33:56, revisión 12 |
+| Rider libre | 0 pedidos en vuelo tras la entrega |
 
-**No se declara la certificación del Rider.** No hubo llegada, ni código
-incorrecto rechazado, ni código correcto, ni `delivered`, ni GPS en movimiento.
-Nada de eso se afirma acá.
+El mapa de `LT-0096` sigue diciendo «sin coordenadas» y **está bien**: ese pedido
+nació antes de los arreglos y su instantánea es inmutable por contrato. El que
+tiene los dos puntos es `LT-0098`.
+
+### 4.4 Por qué falta la corrida sobre `LT-0098`
+
+El arnés hubo que adaptarlo dos veces —el rediseño comercial fusionó cola y
+detalle en una sola pantalla con mapa y hoja paginable, así que la cabecera
+«Pedidos disponibles» ya no existe y el pedido puede estar detrás de «Ver N
+pedidos más»—. Con eso corregido, la fase de preflight llegó a la barrera de
+readiness y falló ahí.
+
+El motivo no es del producto: **una persona está usando el teléfono**. La app
+Rider perdió el foreground. No se insiste, no se sigue capturando la pantalla y
+no se declara nada sobre pasos que no ocurrieron.
+
+`LT-0098` quedó en `ready`, revisión 6, con el Rider libre y el teléfono sin
+residuos técnicos: red intacta, sin manifiesto QA en la caché privada.
 
 ---
 
@@ -271,9 +304,8 @@ es justo lo que este trabajo evita.
 
 ## 6. Primer pedido humano físico
 
-Lo que falta es **una sola cosa**: que la app Rider sostenga la sesión.
-
-Cuando eso esté resuelto, el pedido ya está comprado y esperando:
+Lo que falta es **una sola cosa**: el teléfono libre para terminar los 25 pasos
+sobre `LT-0098`. El pedido ya está comprado, pago y listo para salir:
 
 1. **URL del cliente** — `https://taba2-staging.pages.dev`
    (tu pareja compra desde ahí; en el Perfil, «Usar mi ubicación» → «Confirmar

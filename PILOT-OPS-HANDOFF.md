@@ -1,7 +1,6 @@
 # PILOT-OPS-HANDOFF — TABA2 operable, monitoreable y medible
 
-**Rama:** `feature/taba2-pilot-ops` · **Base:** `c7c3bbd` ·
-**Worktree:** `D:\1212\la-taba2-pilot-ops`
+**Rama:** `feature/taba2-pilot-ops` · **Base:** `c7c3bbd`
 
 Este documento cuenta qué se construyó, con qué evidencia, qué se encontró roto
 por el camino y qué queda pendiente. Los otros dos entregables son
@@ -259,8 +258,8 @@ Escrito acá para que nadie lo descubra en el piloto.
 
 ### 6.1 No se validó contra staging
 
-**El lock `D:\1212\_claude-locks\taba2-staging-mutation.lock` lo sostiene
-`TABA2_PILOT_RC`** (`STATUS=HOLDING_ESPERANDO_COMPRA_IPHONE`). No se mutó
+**El lock `taba2-staging-mutation.lock` del directorio de locks compartido lo
+sostiene `TABA2_PILOT_RC`** (`STATUS=HOLDING_ESPERANDO_COMPRA_IPHONE`). No se mutó
 staging ni se aplicaron estas migraciones ahí. Toda la verificación es local,
 sobre bases efímeras.
 
@@ -349,8 +348,7 @@ fuera de la máquina.
   `stash`, `amend` ni `git add .`.
 - `PRODUCTION_TOUCHED=false` · `STAGING_TOUCHED=false` · `ARCA_TOUCHED=false` ·
   `RIDER_ANDROID_TOUCHED=false`
-- Lock de cómputo pesado tomado y liberado:
-  `D:\1212\_claude-locks\heavy-compute.lock`
+- Lock de cómputo pesado (`heavy-compute.lock`) tomado y liberado.
 - Lock de mutación de staging **no tomado**: lo sostenía otro agente.
 - Datos: cero datos humanos. Todo el escenario es sintético y declarado.
 

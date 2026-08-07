@@ -80,24 +80,32 @@ test('P1-2: los banners sólo pintan destinos con producto comprable', async ({ 
   await guards.assertClean();
 });
 
-test('P1-2: en demo la historia de whisky (sin comprables) se apaga y ninguna promete lo invendible', async ({ page }) => {
+test('P1-2: en demo las cuatro historias sembradas prometen sólo lo que se puede comprar', async ({ page }) => {
   const guards = installPageGuards(page);
   await openHome(page);
 
-  // De las 4 historias sembradas quedan las que tienen destino comprable. La
-  // de Jack Daniel's apuntaba a `whisky` (1 producto, sin precio, y de otra
-  // marca). Desde la publicación minorista también se apagó la de Schweppes:
-  // mixers dejó de tener comprables cuando el pack de seis salió de la góndola
-  // y la botella suelta todavía espera precio. El contrato es el mismo —una
-  // historia no promete lo que no se puede comprar— y sigue al catálogo.
-  const historiasEsperadas = 2;
+  // Este test fijaba `2`, y ese 2 no era el contrato: era el síntoma. De las
+  // cuatro historias sembradas, la de Jack Daniel's apuntaba a `whisky` y la de
+  // Schweppes a `mixers`, y los dos rubros están enteros en "precio
+  // próximamente" desde la publicación minorista. El fail-closed las apagaba y
+  // la vidriera del piloto mostraba la mitad de lo que declaraba.
+  //
+  // La semilla se corrigió (producto, combo, comprar y rubro, cada CTA contra
+  // un destino comprable hoy), así que ahora las cuatro llegan. El contrato que
+  // este test protege no cambió —una historia no promete lo que no se puede
+  // comprar—: lo que cambió es que la semilla dejó de violarlo.
+  const historiasEsperadas = 4;
   await page.locator('.brand-hero .brand-logo-action').click();
   const modal = page.locator('[data-stories-modal]');
   await expect(modal).toBeVisible();
   await expect(modal.locator('.stories-progress span')).toHaveCount(historiasEsperadas);
   for (let index = 0; index < historiasEsperadas; index += 1) {
     await expect(modal.locator('h2')).not.toContainText('Jack');
-    await expect(modal.locator('[data-story-cta]')).toBeVisible();
+    const cta = modal.locator('[data-story-cta]');
+    await expect(cta).toBeVisible();
+    // Y el destino de cada una existe: la CTA se pinta sólo cuando el catálogo
+    // lo sostiene, así que verla visible YA es la aserción del contrato.
+    await expect(cta).not.toHaveText('');
     if (index < historiasEsperadas - 1) await modal.locator('[data-story-next]').click();
   }
   await page.keyboard.press('Escape');

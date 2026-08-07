@@ -80,6 +80,36 @@ test('el borrador de ubicación no sobrevive al guardado ni salta entre direccio
   assert.match(profileView, /hydrateLocationDraft\(findAddress\(addressId\)\)/);
 });
 
+test('pedir la ubicación no borra lo que la persona ya escribió', () => {
+  // Medido en el navegador contra el sitio publicado: al confirmar la ubicación
+  // el editor se volvía a dibujar desde el estado y ciudad y provincia quedaban
+  // vacías, porque lo tipeado vivía sólo en el DOM. El borrador lo sostiene.
+  assert.match(profileView, /function captureEditorDraft\(\)/);
+  const handlers = profileView.slice(
+    profileView.indexOf("if (action === 'use-location')"),
+    profileView.indexOf("if (action === 'make-default')"),
+  );
+  assert.ok(handlers.length > 0, 'no encontré los manejadores de ubicación');
+  for (const action of ['use-location', 'confirm-location', 'discard-location']) {
+    const desde = handlers.indexOf(`action === '${action}'`);
+    const siguiente = handlers.indexOf('if (action ===', desde + 10);
+    const bloque = handlers.slice(desde, siguiente === -1 ? undefined : siguiente);
+    assert.match(
+      bloque,
+      /captureEditorDraft\(\)/,
+      `${action} re-dibuja el editor y tiene que preservar lo escrito`,
+    );
+  }
+  // El editor tiene que dibujarse desde el borrador cuando existe.
+  const editor = profileView.slice(
+    profileView.indexOf('function renderAddressEditor()'),
+    profileView.indexOf('function renderDuplicate()'),
+  );
+  assert.match(editor, /state\.addressDraft \? \{ \.\.\.saved, \.\.\.state\.addressDraft \} : saved/);
+  // Y no puede sobrevivir a cerrar o guardar.
+  assert.match(profileView, /state\.addressDraft = null;/);
+});
+
 test('el normalizador conserva la ubicación confirmada y marca el origen', () => {
   const normalized = normalizeCustomerAddress({
     label: 'Casa',

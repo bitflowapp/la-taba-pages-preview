@@ -35,6 +35,9 @@ const state = {
   confirmedLocation: null,
   locating: false,
   locationError: '',
+  // Lo que la persona tiene escrito en el editor, para que un re-render no se
+  // lo lleve puesto.
+  addressDraft: null,
   status: '',
   statusTone: '',
   availability: 'ready',
@@ -222,11 +225,13 @@ async function handleAction(action, addressId) {
     return;
   }
   if (action === 'use-location') {
+    captureEditorDraft();
     await requestLocation();
     return;
   }
   if (action === 'confirm-location') {
     if (!state.pendingLocation) return;
+    captureEditorDraft();
     state.confirmedLocation = state.pendingLocation;
     state.pendingLocation = null;
     state.locationError = '';
@@ -234,6 +239,7 @@ async function handleAction(action, addressId) {
     return;
   }
   if (action === 'discard-location') {
+    captureEditorDraft();
     state.pendingLocation = null;
     state.confirmedLocation = null;
     state.locationError = '';
@@ -292,6 +298,7 @@ function resetLocationDraft() {
   state.confirmedLocation = null;
   state.locationError = '';
   state.locating = false;
+  state.addressDraft = null;
 }
 
 function hydrateLocationDraft(address) {
@@ -644,9 +651,32 @@ function renderAddressCard(rawAddress) {
   </article>`;
 }
 
+// Lo tipeado vive sólo en el DOM: cada `render()` reconstruye el formulario y
+// se lo lleva puesto. Mientras el editor estuvo abierto sin re-renders eso no
+// se notaba, pero pedir la ubicación sí re-renderiza, y sin esto la persona
+// perdía ciudad y provincia justo después de confirmar dónde vive.
+function captureEditorDraft() {
+  const form = profileContainer()?.querySelector('[data-profile-address-form]');
+  if (!form) return;
+  state.addressDraft = {
+    label: form.elements?.profileAddressLabel?.value || '',
+    street: form.elements?.profileAddressStreet?.value || '',
+    streetNumber: form.elements?.profileAddressNumber?.value || '',
+    floor: form.elements?.profileAddressFloor?.value || '',
+    apartment: form.elements?.profileAddressApartment?.value || '',
+    city: form.elements?.profileAddressCity?.value || '',
+    province: form.elements?.profileAddressProvince?.value || '',
+    postalCode: form.elements?.profileAddressPostalCode?.value || '',
+    reference: form.elements?.profileAddressReference?.value || '',
+    isDefault: Boolean(form.elements?.profileAddressDefault?.checked),
+  };
+}
+
 function renderAddressEditor() {
   if (!state.editorOpen) return '';
-  const address = findAddress(state.editingAddressId) || {};
+  const saved = findAddress(state.editingAddressId) || {};
+  // El borrador manda sobre lo guardado: es lo que la persona tiene escrito.
+  const address = state.addressDraft ? { ...saved, ...state.addressDraft } : saved;
   const province = address.province || (getAppMode() === APP_MODE_DEMO ? 'Neuquén' : '');
   const city = address.city || (getAppMode() === APP_MODE_DEMO ? 'Neuquén' : '');
   return `<form class="profile-address-editor" data-profile-address-form novalidate>

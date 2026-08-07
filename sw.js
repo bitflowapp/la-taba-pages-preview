@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v48-cliente-coordenadas';
+const CACHE_NAME = 'la-taba-runtime-v49-borrador-direccion';
 const ASSETS = [
   './',
   './index.html',

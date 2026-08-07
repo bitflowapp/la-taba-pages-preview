@@ -7,6 +7,8 @@
     "vendor:build": "node scripts/build-supabase-vendor.mjs",
     "test": "node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/*.test.mjs",
     "test:payments": "node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/mercadopago-*.test.mjs",
+    "test:whatsapp": "node scripts/run-whatsapp-channel-tests.mjs",
+    "test:whatsapp:e2e": "node scripts/run-whatsapp-commerce-e2e.mjs",
     "test:webhook": "node scripts/run-mercadopago-webhook-tests.mjs",
     "test:payments:local-db": "node scripts/run-mercadopago-local-db.mjs",
     "test:db:isolated": "node scripts/run-mercadopago-local-db.mjs",

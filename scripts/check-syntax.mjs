@@ -4,8 +4,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// `supabase/functions` guarda módulos de servidor en JavaScript plano para que
+// los ejecuten los dos runtimes: Deno en la función de borde y Node en los
+// tests. Sin esta línea, un error de sintaxis ahí sólo aparecía al desplegar.
 const files = [
   ...collectJavaScriptFiles(path.join(root, 'js')).map((filePath) => path.relative(root, filePath)),
+  ...collectJavaScriptFiles(path.join(root, 'supabase', 'functions')).map((filePath) => path.relative(root, filePath)),
   'sw.js',
 ].sort();
 

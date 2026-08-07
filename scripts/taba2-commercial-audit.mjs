@@ -65,7 +65,10 @@ const PROBE = () => {
   const smallTargets = [];
   const seen = new Set();
 
-  document.querySelectorAll('.app-view:not([hidden]) *, .modal-card *, .mobile-nav *, .app-topbar *').forEach((el) => {
+  // El visor de historias vive FUERA de `.app-view` y su tarjeta no es
+  // `.modal-card`: hasta que se sumó acá, la superficie comercial más nueva era
+  // la única que el auditor no miraba.
+  document.querySelectorAll('.app-view:not([hidden]) *, .modal-card *, .stories-card *, .mobile-nav *, .app-topbar *').forEach((el) => {
     if (!visible(el)) return;
     if (el.closest('[data-view="business"], [data-view="rider"], .sandbox-tools-panel')) return;
     const cs = getComputedStyle(el);
@@ -76,7 +79,7 @@ const PROBE = () => {
       // Blanco DELIBERADO de la paleta: el plato del packshot, el chip de
       // categoría activo, la pastilla del toast y los controles nativos, que el
       // navegador pinta por su cuenta.
-      const isPlate = el.closest('.product-media, .thumb, .modal-media, .home-catalog-media, .home-best-media, .home-promo-media, .offer-card-media, .recommendation-media, .combo-media-plate, [data-story], .story-ring, .category-button.active, .home-category-card.active, .toast, .floating-cart-cta');
+      const isPlate = el.closest('.product-media, .thumb, .modal-media, .home-catalog-media, .home-best-media, .home-promo-media, .offer-card-media, .recommendation-media, .combo-media-plate, .stories-media, [data-story], .story-ring, .category-button.active, .home-category-card.active, .toast, .floating-cart-cta');
       const isNativeControl = el.matches('input[type="checkbox"], input[type="radio"]');
       if (!isPlate && !isNativeControl) {
         const key = 'S:' + label(el);
@@ -157,6 +160,18 @@ for (const w of WIDTHS) {
       await page.locator('[data-checkout-suggestions-dismiss], .checkout-suggestions-continue').first().click().catch(() => {});
       await page.waitForTimeout(600);
     }],
+    // Vidriera de historias: la superficie comercial nueva, con y sin CTA, y
+    // recorrida hasta la última para que el auditor vea las cuatro tarjetas.
+    ['stories', async () => {
+      await hash(page, 'home');
+      await page.locator('[data-view="home"] [data-stories-slot] .brand-logo-action').first().click().catch(() => {});
+      await page.waitForTimeout(700);
+    }],
+    ['stories-last', async () => {
+      await page.keyboard.press('End').catch(() => {});
+      await page.waitForTimeout(600);
+    }],
+    ['stories-close', async () => { await page.keyboard.press('Escape'); await page.waitForTimeout(400); }],
     ['profile', async () => { await hash(page, 'profile'); }],
     ['profile-editor', async () => {
       await page.locator('[data-view="profile"] .profile-address-actions .text-button').first().click().catch(() => {});

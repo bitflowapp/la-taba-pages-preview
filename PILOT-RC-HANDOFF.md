@@ -288,9 +288,9 @@ Consecuencias reales para esta RC:
    que es exactamente lo que la consigna ordenó.
 3. **No se tocó ninguno de sus artefactos**: LT-0078 y LT-0079 quedaron como estaban.
 
-El lock `D:\1212\_claude-locks\taba2-staging-mutation.lock` se adquirió de forma atómica
-(`set -o noclobber`) antes de la primera mutación y registra el alcance, las fuentes y esta
-convivencia.
+El lock `_claude-locks/taba2-staging-mutation.lock` del directorio de trabajo se adquirió de
+forma atómica (`set -o noclobber`) antes de la primera mutación y registra el alcance, las
+fuentes y esta convivencia.
 
 ---
 

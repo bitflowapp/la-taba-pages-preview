@@ -9,6 +9,7 @@ import { createSimulatedArca } from '../src/simulated-arca.js';
 import type { ArcaResult, FiscalParameterSnapshot, FiscalRequest, LoginTicket } from '../src/types.js';
 import type { CredentialHealth, FiscalJob, FiscalScope, FiscalStore, LoadedFiscalDocument } from '../src/store.js';
 import { readFiscalCase, sanitizeArcaResult } from '../src/homologation-certification.js';
+import { buildCertificateSubject, createArcaCsr } from '../src/create-csr.js';
 import { testConfig, testRequest, testTicket } from './fixtures.js';
 
 // Réplica mínima del contrato de base: documentos con estado y número, y una
@@ -267,4 +268,50 @@ test('la evidencia de homologación no puede arrastrar secretos', () => {
   ]);
   const serialized = JSON.stringify(sanitized);
   assert.doesNotMatch(serialized, /token|sign|BEGIN|Envelope/i);
+});
+
+test('el pedido de certificado usa el subject exacto que documenta WSASS', () => {
+  assert.equal(
+    buildCertificateSubject({ cuit: '20123456789', organization: 'MiEmpresa', system: 'TestSystem' }),
+    '/C=AR/O=MiEmpresa/CN=TestSystem/serialNumber=CUIT 20123456789',
+  );
+  assert.throws(() => buildCertificateSubject({ cuit: '20-12345678-9', organization: 'X', system: 'S1' }), /once dígitos/);
+  assert.throws(() => buildCertificateSubject({ cuit: '20123456789', organization: '  ', system: 'S1' }), /empresa/);
+});
+
+test('la clave privada nunca se genera dentro del repositorio', () => {
+  const repositoryRoot = path.join(os.tmpdir(), `taba-repo-${process.pid}`);
+  fs.mkdirSync(repositoryRoot, { recursive: true });
+  try {
+    assert.throws(
+      () => createArcaCsr({ cuit: '20123456789', organization: 'X', system: 'sistema', outputDirectory: path.join(repositoryRoot, 'secrets') }, { repositoryRoot }),
+      /dentro del repositorio/,
+    );
+  } finally {
+    fs.rmSync(repositoryRoot, { recursive: true, force: true });
+  }
+});
+
+test('el CSR generado es válido, la clave queda a 600 y no se pisa', () => {
+  const repositoryRoot = path.join(os.tmpdir(), `taba-repo-b-${process.pid}`);
+  const outputDirectory = path.join(os.tmpdir(), `taba-secrets-${process.pid}`);
+  fs.mkdirSync(repositoryRoot, { recursive: true });
+  try {
+    const result = createArcaCsr(
+      { cuit: '20123456789', organization: 'La Taba', system: 'taba-homologacion', outputDirectory, keyBits: 1024 },
+      { repositoryRoot },
+    );
+    assert.match(result.csrPem, /BEGIN CERTIFICATE REQUEST/);
+    assert.doesNotMatch(result.csrPem, /PRIVATE KEY/);
+    if (process.platform !== 'win32') {
+      assert.equal(fs.statSync(result.privateKeyPath).mode & 0o077, 0);
+    }
+    assert.throws(
+      () => createArcaCsr({ cuit: '20123456789', organization: 'La Taba', system: 'taba-homologacion', outputDirectory, keyBits: 1024 }, { repositoryRoot }),
+      /No se pisa/,
+    );
+  } finally {
+    fs.rmSync(repositoryRoot, { recursive: true, force: true });
+    fs.rmSync(outputDirectory, { recursive: true, force: true });
+  }
 });

@@ -11,7 +11,8 @@
     "credentials:check": "npm run build && node dist/src/check-credentials.js",
     "test": "npm run build && node --test --test-concurrency=1 dist/tests/*.test.js",
     "start": "node dist/src/index.js",
-    "certify:homologation": "npm run build && node dist/src/homologation-certification.js"
+    "certify:homologation": "npm run build && node dist/src/homologation-certification.js",
+    "csr:create": "npm run build && node dist/src/create-csr.js"
   },
   "dependencies": {
     "fast-xml-parser": "5.10.1",

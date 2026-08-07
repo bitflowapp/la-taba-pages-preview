@@ -10,6 +10,7 @@ import { syncOfficialParameterTables } from './parameters.js';
 import { FileTicketStore } from './ticket-store.js';
 
 export * from './config.js';
+export * from './create-csr.js';
 export * from './artifact-worker.js';
 export * from './health.js';
 export * from './pdf.js';

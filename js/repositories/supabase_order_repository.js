@@ -59,7 +59,7 @@ const ORDER_ACCESS_STORAGE_VERSION = 'taba-order-access-v1';
 // rider publishes through its dedicated RPC. This keeps raw rider_locations
 // outside browser reads even when an order is otherwise visible to the user.
 const ORDER_SELECT = '*,order_items(*)';
-const BUSINESS_ORDER_SELECT = '*,order_items(*),order_events(*)';
+const BUSINESS_ORDER_SELECT = '*,order_items(*),order_events(*),order_combos(*)';
 const PUBLIC_TRACKING_GPS_MAX_AGE_MS = 3 * 60 * 1000;
 const PUBLIC_TRACKING_GPS_FUTURE_TOLERANCE_MS = 30 * 1000;
 const PUBLIC_TRACKING_GPS_MAX_ACCURACY_METERS = 250;
@@ -1274,35 +1274,94 @@ export function createSupabaseOrderRepository({
         .filter(Boolean);
       return repositoryResult(true, { riders });
     },
+    // Contrato canónico del rider: claim_delivery_order (idempotente, con
+    // revisión). La sobrecarga legacy claim_available_rider_order fue dropeada
+    // y revocada por migración: llamarla es prometer un botón que falla siempre.
     async claimRiderOrder(publicCode, {
-      expectedStatus = 'ready',
-      expectedRiderId = null,
+      expectedRevision = null,
+      idempotencyKey = '',
     } = {}) {
       const cleanPublicCode = sanitizeText(publicCode, { maxLength: 80 });
       if (!cleanPublicCode) {
         return repositoryResult(false, { message: 'Ingresá un código de pedido válido.' });
       }
-      const cleanExpectedRiderId = isUuid(expectedRiderId) ? expectedRiderId : null;
-      const { data, error, status } = await client.rpc('claim_available_rider_order', {
+      const revision = normalizeOrderRevision(expectedRevision);
+      if (revision === null) {
+        return repositoryResult(false, {
+          code: 'ORDER_REVISION_REQUIRED',
+          message: 'La cola cambió; actualizá los pedidos listos antes de tomar uno.',
+        });
+      }
+      const { data, error, status } = await client.rpc('claim_delivery_order', {
         p_business_id: businessId,
         p_public_code: cleanPublicCode,
-        p_expected_status: normalizeWorkflowStatus(expectedStatus),
-        p_expected_rider_user_id: cleanExpectedRiderId,
+        p_expected_revision: revision,
+        p_idempotency_key: normalizeIdempotencyKey(idempotencyKey || `rider-claim-${cleanPublicCode}-${revision}`),
       });
       if (error) {
         return failedQuery(error, status, readableRiderAssignmentError(error));
       }
-
-      const updatedRow = unwrapOrderRow(data);
-      if (!updatedRow) {
+      if (!data?.ok) {
+        return riderContractRefusal(data, {
+          not_available: 'El pedido ya no está disponible para reparto.',
+          active_delivery_exists: 'Ya tenés una entrega activa. Terminala antes de tomar otra.',
+          stale_revision: 'La cola cambió; actualizá los pedidos listos antes de tomar uno.',
+          taken_by_other: 'Otro rider tomó este pedido primero.',
+        }, 'No pudimos asignarte el pedido.');
+      }
+      return repositoryResult(true, {
+        publicCode: cleanPublicCode,
+        idempotentNoOp: data.idempotent_no_op === true,
+        message: `Pedido ${cleanPublicCode} asignado a tu cuenta.`,
+      });
+    },
+    // Avance de la entrega por los RPCs canónicos por estado. transition_order
+    // exige rol de negocio y el rider no lo tiene: usarlo desde la vista rider
+    // era una promesa sin backend.
+    async advanceRiderDelivery(orderId, targetStatus, {
+      expectedRevision = null,
+      idempotencyKey = '',
+    } = {}) {
+      const target = normalizeWorkflowStatus(targetStatus);
+      const rpcByTarget = {
+        picked_up: 'mark_delivery_picked_up',
+        on_the_way: 'start_rider_delivery',
+        arrived: 'mark_rider_arrived',
+      };
+      const rpcName = rpcByTarget[target];
+      if (!rpcName) {
+        return repositoryResult(false, { message: 'Ese paso no existe en el circuito del rider.' });
+      }
+      const row = await fetchOrderByPublicId(orderId);
+      if (!row) return repositoryResult(false, { message: 'Pedido no encontrado o acceso denegado.' });
+      const revision = normalizeOrderRevision(expectedRevision) ?? normalizeOrderRevision(row.revision);
+      if (revision === null) {
         return repositoryResult(false, {
-          message: 'El backend no devolvió el pedido asignado.',
+          code: 'ORDER_REVISION_REQUIRED',
+          message: 'El pedido no tiene revisión válida; actualizá antes de continuar.',
         });
       }
-      const order = mirrorOrder(updatedRow);
+      const { data, error, status } = await client.rpc(rpcName, {
+        p_order_id: row.id,
+        p_expected_revision: revision,
+        p_idempotency_key: normalizeIdempotencyKey(idempotencyKey || `rider-${target}-${row.id}-${revision}`),
+      });
+      if (error) return failedQuery(error, status, readableRiderAssignmentError(error));
+      if (!data?.ok) {
+        return riderContractRefusal(data, {
+          not_assigned: 'Este pedido no está asignado a tu cuenta.',
+          stale_revision: 'El pedido cambió en otro dispositivo. Actualizá antes de continuar.',
+          not_ready_for_pickup: 'El pedido todavía no está listo para retirar.',
+          not_picked_up: 'Registrá el retiro antes de salir en camino.',
+          not_on_the_way: 'Marcá la salida antes de registrar la llegada.',
+        }, 'No pudimos registrar el avance de la entrega.');
+      }
+      const updatedRow = await fetchOrderByPublicId(row.id);
+      const order = updatedRow ? mirrorOrder(updatedRow) : null;
       return repositoryResult(true, {
         order,
-        message: `Pedido ${order.id} asignado a tu cuenta.`,
+        idempotentNoOp: data.idempotent_no_op === true,
+        message: 'Avance confirmado por el servidor.',
       });
     },
     async assignRider(orderId, riderId, {
@@ -1351,7 +1410,9 @@ export function createSupabaseOrderRepository({
     async reassignRider(orderId, riderId, options = {}) {
       return repository.assignRider(orderId, riderId, options);
     },
-    async confirmDelivery(orderId, code, { expectedStatus = 'arrived' } = {}) {
+    // confirm_order_delivery quedó con execute revocado por migración; el
+    // contrato vivo es confirm_delivery_code, que exige revisión y clave.
+    async confirmDelivery(orderId, code, { expectedRevision = null, idempotencyKey = '' } = {}) {
       const deliveryCode = normalizeDeliveryCodeValue(code);
       if (!deliveryCode) {
         return repositoryResult(false, { message: 'Ingresá el código de 4 dígitos del cliente.' });
@@ -1369,32 +1430,43 @@ export function createSupabaseOrderRepository({
       if (!backendOrderId) {
         return repositoryResult(false, { message: 'Pedido no encontrado o acceso denegado.' });
       }
-      const { data, error, status } = await client.rpc('confirm_order_delivery', {
+      const revision = normalizeOrderRevision(expectedRevision)
+        ?? normalizeOrderRevision(knownOrder?.revision);
+      if (revision === null) {
+        return repositoryResult(false, {
+          code: 'ORDER_REVISION_REQUIRED',
+          message: 'El pedido no tiene revisión válida; actualizá antes de confirmar.',
+        });
+      }
+      const { data, error, status } = await client.rpc('confirm_delivery_code', {
         p_order_id: backendOrderId,
-        p_expected_status: normalizeWorkflowStatus(expectedStatus),
+        p_expected_revision: revision,
         p_delivery_code: deliveryCode,
+        p_idempotency_key: normalizeIdempotencyKey(idempotencyKey || `rider-confirm-${backendOrderId}-${revision}-${deliveryCode}`),
       });
       if (error) {
         return failedQuery(error, status, readableRiderAssignmentError(error));
       }
       if (!data?.ok) {
-        const messages = {
-          INVALID_FORMAT: 'Ingresá el código de 4 dígitos del cliente.',
-          MISMATCH: `Código incorrecto. Te quedan ${Math.max(0, Number(data?.remaining_attempts) || 0)} intento(s).`,
-          LOCKED: 'Demasiados intentos. Esperá hasta que el código vuelva a habilitarse.',
-          CODE_UNAVAILABLE: 'El código de entrega no está disponible o venció.',
-        };
-        return repositoryResult(false, {
-          code: data?.code || 'HANDOFF_FAILED',
-          message: messages[data?.code] || 'No pudimos confirmar la entrega.',
-        });
+        const retrySeconds = Math.max(0, Number(data?.retry_after_seconds) || 0);
+        return riderContractRefusal(data, {
+          invalid_format: 'Ingresá el código de 4 dígitos del cliente.',
+          not_assigned: 'Este pedido no está asignado a tu cuenta.',
+          stale_revision: 'El pedido cambió en otro dispositivo. Actualizá antes de confirmar.',
+          not_arrived: 'Marcá la llegada antes de confirmar la entrega.',
+          code_unavailable: 'El código de entrega no está disponible o venció.',
+          temporarily_locked: `Demasiados intentos. Probá de nuevo en ${retrySeconds || 300} segundos.`,
+          incorrect_code: `Código incorrecto. Te quedan ${Math.max(0, Number(data?.remaining_attempts) || 0)} intento(s).`,
+        }, 'No pudimos confirmar la entrega.');
       }
       return repositoryResult(true, {
         order: null,
-        publicCode: sanitizeText(data?.public_code || knownOrder?.code || orderId, { maxLength: 80 }),
-        status: normalizeWorkflowStatus(data?.status || 'delivered'),
-        confirmedAt: sanitizeText(data?.confirmed_at, { maxLength: 64 }),
-        message: 'Código confirmado. Pedido entregado.',
+        publicCode: sanitizeText(knownOrder?.code || orderId, { maxLength: 80 }),
+        status: 'delivered',
+        alreadyDelivered: data?.outcome === 'already_delivered',
+        message: data?.outcome === 'already_delivered'
+          ? 'El pedido ya estaba entregado y confirmado.'
+          : 'Código confirmado. Pedido entregado.',
       });
     },
     async updateRiderLocation(orderId, location) {
@@ -1423,25 +1495,47 @@ export function createSupabaseOrderRepository({
         return repositoryResult(false, { message: 'Este pedido no está asignado a tu cuenta de rider.' });
       }
 
-      const { data, error, status } = await client.rpc('publish_rider_location', {
+      // publish_rider_location (6 argumentos) fue dropeada por migración; el
+      // contrato vivo es publish_rider_location_receipt, con revisión, hora de
+      // captura y clave idempotente. Cada fix lleva clave propia: dos fixes
+      // distintos son dos hechos distintos.
+      const revision = normalizeOrderRevision(row.revision);
+      if (revision === null) {
+        return repositoryResult(false, { message: 'El pedido no tiene revisión válida para publicar GPS.' });
+      }
+      const { data, error, status } = await client.rpc('publish_rider_location_receipt', {
         p_order_id: row.id,
+        p_expected_revision: revision,
         p_lat: normalized.lat,
         p_lng: normalized.lng,
         p_accuracy: normalized.accuracy,
         p_heading: normalized.heading ?? null,
         p_speed: normalized.speed ?? null,
+        p_captured_at: normalizeIso(normalized.lastFixAt),
+        p_idempotency_key: normalizeIdempotencyKey(`gps-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`),
+        p_is_mock: false,
       });
       if (error) return failedQuery(error, status, 'No pudimos publicar la ubicación del rider.');
+      if (!data?.ok) {
+        const retrySeconds = Math.max(0, Number(data?.retry_after_seconds) || 0);
+        return riderContractRefusal(data, {
+          inaccurate: 'Esperá una señal GPS más precisa antes de compartir la ubicación.',
+          stale: 'La ubicación llegó vieja o el pedido cambió; se descartó sin publicar.',
+          throttled: `El servidor pide esperar ${retrySeconds || 5} segundos entre publicaciones.`,
+          impossible_jump: 'El salto de ubicación no es físicamente posible; se descartó.',
+          not_assigned: 'Este pedido no está asignado a tu cuenta de rider.',
+          not_active: 'La ubicación sólo se publica en camino o al llegar.',
+          terminal: 'El pedido ya terminó; no se publica más ubicación.',
+          mock_location_rejected: 'La ubicación simulada fue rechazada.',
+        }, 'No pudimos publicar la ubicación del rider.');
+      }
 
       const serverLocation = normalizeTrackingLocation({
-        ...(data && typeof data === 'object' ? data : {}),
+        ...normalized,
         source: 'gps',
-        timestamp: data?.created_at || normalized.lastFixAt,
+        timestamp: data?.recorded_at || normalized.lastFixAt,
       }) || normalized;
-      const fullRow = await fetchOrderByPublicId(row.id) || {
-        ...row,
-        rider_locations: [data, ...(row.rider_locations || [])].filter(Boolean),
-      };
+      const fullRow = await fetchOrderByPublicId(row.id) || row;
       const order = mirrorOrder(fullRow);
       mirrorGpsLocation(order, serverLocation);
       return repositoryResult(true, {
@@ -2129,6 +2223,13 @@ function rowToDemoOrder(row = {}) {
     items,
     subtotal: normalizeMoneyValue(row.subtotal, 0),
     deliveryFee: normalizeMoneyValue(row.delivery_fee, 0),
+    // El descuento de combos es parte de la invariante de dinero del backend
+    // (total = subtotal - discount_total + delivery_fee). Sin mapearlo, el Panel
+    // mostraba subtotal y total que "no cierran" y los reportes recalculaban de más.
+    discountTotal: normalizeMoneyValue(row.discount_total, 0),
+    combos: Array.isArray(row.order_combos)
+      ? row.order_combos.map(rowToDemoCombo).filter(Boolean)
+      : [],
     total: normalizeMoneyValue(row.total, 0),
     currencyCode: sanitizeText(row.currency_code, { maxLength: 3 }).toUpperCase(),
     assignedRiderId: sanitizeText(row.assigned_rider_user_id || row.assigned_rider_id, { maxLength: 80 }),
@@ -2171,6 +2272,20 @@ function latestOrderEventSequence(events) {
   return sequences.length ? Math.max(...sequences) : null;
 }
 
+function rowToDemoCombo(combo = {}) {
+  if (!combo || typeof combo !== 'object') return null;
+  const comboId = sanitizeText(combo.combo_id, { maxLength: 80 });
+  if (!comboId) return null;
+  return {
+    comboId,
+    name: sanitizeText(combo.name, { fallback: 'Combo', maxLength: 120 }),
+    quantity: Math.max(1, Math.floor(Number(combo.quantity) || 1)),
+    listPrice: normalizeMoneyValue(combo.list_price, 0),
+    promotionalPrice: normalizeMoneyValue(combo.promotional_price, 0),
+    discountAmount: normalizeMoneyValue(combo.discount_amount, 0),
+  };
+}
+
 function rowToDemoItem(item = {}) {
   const productId = sanitizeText(item.product_uuid || item.product_id, { maxLength: 80 });
   if (!productId) return null;
@@ -2205,6 +2320,9 @@ function normalizeAvailableRiderOrder(row = {}) {
       ? Math.max(1, Math.min(1440, Math.ceil(rawEstimate)))
       : null,
     operationalRestrictions: sanitizeText(row.operational_restrictions, { maxLength: 180 }),
+    // La revisión del servidor viaja hasta el botón "Aceptar entrega": el claim
+    // canónico la exige y sin ella el rider no puede tomar ningún pedido.
+    revision: normalizeOrderRevision(row.revision),
     expectedStatus: 'ready',
     expectedRiderId: null,
   };
@@ -2435,6 +2553,19 @@ function failedQuery(error, status, fallback) {
     message: fallback || readableSupabaseError(error),
     errorCode: sanitizeText(error?.code, { maxLength: 40 }),
     status: Number(status || error?.status || 0) || undefined,
+  });
+}
+
+// Los RPC canónicos del rider devuelven { ok:false, code } en jsonb en vez de
+// levantar excepción. Se traduce cada código a una frase operable y se conserva
+// el código y la revisión fresca para que el caller distinga conflicto de fallo.
+function riderContractRefusal(data, messages, fallback) {
+  const code = sanitizeText(data?.code, { maxLength: 60 });
+  return repositoryResult(false, {
+    code: code || 'RIDER_CONTRACT_REFUSED',
+    conflict: code === 'stale_revision' || code === 'taken_by_other',
+    revision: normalizeOrderRevision(data?.revision) ?? undefined,
+    message: messages[code] || fallback,
   });
 }
 
@@ -2669,12 +2800,16 @@ function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
 }
 
+// El contrato del servidor (transition_order, cancel_order, y todos los RPC de
+// rider) valida `^[A-Za-z0-9_-]{8,128}$`: sin dos puntos. Una clave con `:`
+// muere en 22023 y el outbox la clasifica como fallo permanente, así que acá
+// se sanea de forma DETERMINÍSTICA (mismo input → misma clave) antes de enviar.
 function normalizeIdempotencyKey(value) {
-  const normalized = String(value || '').trim();
-  if (/^[A-Za-z0-9:_-]{8,128}$/.test(normalized)) return normalized;
+  const normalized = String(value || '').trim().replace(/[^A-Za-z0-9_-]/g, '-');
+  if (/^[A-Za-z0-9_-]{8,128}$/.test(normalized)) return normalized;
   const uuid = globalThis.crypto?.randomUUID?.();
-  if (uuid) return `order-transition:${uuid}`;
-  return `order-transition:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  if (uuid) return `order-transition-${uuid}`;
+  return `order-transition-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function normalizeIso(value, fallback = new Date().toISOString()) {

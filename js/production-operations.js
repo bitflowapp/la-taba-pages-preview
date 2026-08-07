@@ -69,6 +69,7 @@ let businessPayments = [];
 let businessPaymentsStatus = { phase: 'idle', message: '' };
 let paymentRefreshTimer = null;
 const paymentActionsInFlight = new Set();
+const orderActionsInFlight = new Set();
 const paymentActionMessages = new Map();
 const paymentDiagnostics = new Map();
 const REFUND_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_REFUND';
@@ -178,7 +179,9 @@ export async function handleProductionAuthSubmit(form) {
   }
 
   form.reset();
-  await activateAuthorizedAccess(result);
+  // La activación va por la MISMA cola que el evento SIGNED_IN: un solo camino
+  // serializado. Activar directo acá era la mitad de la carrera.
+  await refreshProductionAccess();
   return { handled: true, ok: true, message: 'Acceso seguro iniciado.' };
 }
 
@@ -364,6 +367,10 @@ export async function handleProductionOperationsAction(target) {
   if (paymentCancel) {
     const guard = requirePaymentAdminAccess();
     if (!guard.ok) return { handled: true, ...guard };
+    const cancelIntentId = paymentCancel.dataset.productionPaymentCancel;
+    if (paymentActionsInFlight.has(cancelIntentId)) {
+      return { handled: true, ok: false, message: 'Ya estamos procesando este pago.' };
+    }
     const confirmationInput = globalThis.prompt?.(
       'Esto cancelará el pago pendiente en Mercado Pago. Escribí CANCELAR para confirmar.',
       '',
@@ -371,13 +378,19 @@ export async function handleProductionOperationsAction(target) {
     const confirmation = String(confirmationInput).trim().toUpperCase() === FRIENDLY_CANCELLATION_CONFIRMATION
       ? CANCELLATION_CONFIRMATION
       : '';
-    const result = await repository.requestMercadoPagoCancellation({
-      paymentIntentId: paymentCancel.dataset.productionPaymentCancel,
-      confirmation,
-    });
-    await refreshBusinessPayments();
+    paymentActionsInFlight.add(cancelIntentId);
     notify();
-    return { handled: true, ...result };
+    try {
+      const result = await repository.requestMercadoPagoCancellation({
+        paymentIntentId: cancelIntentId,
+        confirmation,
+      });
+      await refreshBusinessPayments();
+      return { handled: true, ...result };
+    } finally {
+      paymentActionsInFlight.delete(cancelIntentId);
+      notify();
+    }
   }
 
   const paymentDispute = target.closest('[data-production-payment-dispute]');
@@ -476,16 +489,29 @@ export async function handleProductionOperationsAction(target) {
     const guard = requireViewAccess('rider');
     if (!guard.ok) return { handled: true, ...guard };
     const orderId = riderConfirm.dataset.productionRiderConfirm;
+    if (orderActionsInFlight.has(orderId)) {
+      return { handled: true, ok: false, message: 'Ya estamos procesando este pedido.' };
+    }
     const container = riderConfirm.closest('.production-order-card');
     const code = container?.querySelector('[data-production-delivery-code]')?.value || '';
-    const result = await repository.confirmDelivery(orderId, code, {
-      expectedStatus: 'arrived',
-    });
-    if (result.ok) {
-      stopGpsShare();
-      await refreshRiderOrders();
-    }
+    const currentOrder = getState().orders.find((order) => (
+      order.id === orderId || order.backendId === orderId || order.code === orderId
+    ));
+    orderActionsInFlight.add(orderId);
     notify();
+    let result;
+    try {
+      result = await repository.confirmDelivery(orderId, code, {
+        expectedRevision: currentOrder?.revision,
+      });
+      if (result.ok) {
+        stopGpsShare();
+        await refreshRiderOrders();
+      }
+    } finally {
+      orderActionsInFlight.delete(orderId);
+      notify();
+    }
     return {
       handled: true,
       ok: result.ok,
@@ -497,15 +523,26 @@ export async function handleProductionOperationsAction(target) {
   if (riderClaim) {
     const guard = requireViewAccess('rider');
     if (!guard.ok) return { handled: true, ...guard };
-    const result = await repository.claimRiderOrder(
-      riderClaim.dataset.productionRiderClaim,
-      {
-        expectedStatus: riderClaim.dataset.expectedStatus || 'ready',
-        expectedRiderId: null,
-      },
-    );
-    if (result.ok) await refreshRiderOrders();
+    const publicCode = riderClaim.dataset.productionRiderClaim;
+    if (orderActionsInFlight.has(publicCode)) {
+      return { handled: true, ok: false, message: 'Ya estamos procesando esta entrega.' };
+    }
+    // El claim canónico exige la revisión que la cola devolvió: si el pedido
+    // cambió entre el render y el click, el servidor lo dice en vez de asignar
+    // sobre datos viejos.
+    const queued = availableRiderOrders.find((candidate) => candidate.publicCode === publicCode);
+    orderActionsInFlight.add(publicCode);
     notify();
+    let result;
+    try {
+      result = await repository.claimRiderOrder(publicCode, {
+        expectedRevision: queued?.revision ?? Number(riderClaim.dataset.expectedRevision || 0) ?? null,
+      });
+      if (result.ok || result.conflict) await refreshRiderOrders();
+    } finally {
+      orderActionsInFlight.delete(publicCode);
+      notify();
+    }
     return {
       handled: true,
       ok: result.ok,
@@ -571,11 +608,14 @@ export function nextBusinessStatus(order = {}) {
   return null;
 }
 
+// La cadena canónica del servidor: assigned → picked_up → on_the_way → arrived,
+// y de arrived se sale SOLO con el código del cliente (confirm_delivery_code).
+// Saltear picked_up era prometer un avance que el backend rechaza.
 export function nextRiderStatus(order = {}) {
   const current = workflowStatus(order);
-  if (current === 'ready' || current === 'assigned' || current === 'picked_up') return 'on_the_way';
+  if (current === 'assigned') return 'picked_up';
+  if (current === 'picked_up') return 'on_the_way';
   if (current === 'on_the_way') return 'arrived';
-  if (current === 'arrived') return 'delivered';
   return null;
 }
 
@@ -609,6 +649,7 @@ export function resetProductionOperationsForTests() {
   gpsController = null;
   authStop?.();
   authStop = null;
+  accessRefreshChain = Promise.resolve();
   initialized = false;
   repository = null;
   auth = null;
@@ -626,6 +667,7 @@ export function resetProductionOperationsForTests() {
   businessPayments = [];
   businessPaymentsStatus = { phase: 'idle', message: '' };
   paymentActionsInFlight.clear();
+  orderActionsInFlight.clear();
   paymentActionMessages.clear();
   paymentDiagnostics.clear();
   gpsShare = emptyGpsShare();
@@ -637,7 +679,21 @@ export function resetProductionOperationsForTests() {
   };
 }
 
-async function refreshProductionAccess() {
+// TODAS las activaciones de acceso (evento de auth o submit del formulario)
+// pasan por una cola de una sola corrida. Sin esto, el submit y el evento
+// SIGNED_IN corrían activateAuthorizedAccess en paralelo y el PERDEDOR
+// ejecutaba stopBusinessIntake() al entrar, matando el intake del ganador:
+// panel autenticado con la bandeja congelada en "Error recuperable".
+// Medido contra staging real; en tests locales la latencia lo escondía.
+let accessRefreshChain = Promise.resolve();
+
+function refreshProductionAccess() {
+  const run = accessRefreshChain.then(() => refreshProductionAccessNow());
+  accessRefreshChain = run.catch(() => {});
+  return run;
+}
+
+async function refreshProductionAccessNow() {
   if (!auth) return;
   const sequence = ++refreshSequence;
   access = {
@@ -859,6 +915,7 @@ async function configureBusinessRuntime(result) {
     refundPayment: (input) => repository.requestMercadoPagoRefund(input),
     getArcaActivation: () => fiscalRepository.getActivationStatus(),
     authorizeArcaHomologation: (phrase) => fiscalRepository.authorizeHomologation(phrase),
+    recordFiscalVerification: (verification) => fiscalRepository.recordVerification(verification),
     completeScannedProduct: (input) => inventoryRepository.completeScannedProduct(input),
     getScannedProductReadiness: (productId) => inventoryRepository.getScannedProductReadiness(productId),
     onChange: () => notify(),
@@ -873,11 +930,33 @@ async function configureBusinessRuntime(result) {
       notify();
     },
   });
-  businessCommandStatus = await businessCommandController.initialize();
+  try {
+    businessCommandStatus = await businessCommandController.initialize();
+  } catch (error) {
+    // Sin persistencia local (IndexedDB bloqueada o modo privado) el panel
+    // sigue operable en modo directo: los comandos van sin outbox y se dice.
+    businessCommandController?.destroy?.();
+    businessCommandController = null;
+    businessCommandStatus = {
+      initialized: false,
+      commands: [],
+      lastDrain: null,
+      connectionLabel: 'Sin persistencia local',
+      connectionState: 'server_unavailable',
+      lastReconciledAt: null,
+      pendingCount: 0,
+      conflictCount: 0,
+      failedCount: 0,
+      muted: false,
+      attentionRequired: 0,
+      storageError: error?.message || 'El almacenamiento local no está disponible.',
+    };
+    notify();
+  }
 }
 
 function stopBusinessCommandRuntime() {
-  businessCommandController?.connectivity?.destroy?.();
+  businessCommandController?.destroy?.();
   businessCommandController = null;
   businessCommandStatus = null;
   inventoryRepository = null;
@@ -961,7 +1040,12 @@ async function sendBusinessCommand(command) {
     ? { ok: true, revision: response.order?.revision }
     : {
       ok: false,
-      conflict: response?.code === 'ORDER_REVISION_CONFLICT' || /cambi|revision|revisi/i.test(response?.message || ''),
+      // El conflicto real llega como SQLSTATE 40001 en errorCode; el texto en
+      // español queda sólo como red de seguridad si el código no viaja.
+      conflict: response?.errorCode === '40001'
+        || response?.code === 'ORDER_REVISION_CONFLICT'
+        || response?.conflict === true
+        || /cambi|revision|revisi/i.test(response?.message || ''),
       retryable: Number(response?.status || 0) === 0 || Number(response?.status || 0) >= 500,
       code: response?.code || response?.errorCode || 'RPC_ERROR',
       message: response?.message,
@@ -1306,8 +1390,19 @@ function businessOrderMarkup(order) {
         <div><dt>Hora</dt><dd>${escapeHtml(dateTime(order.createdAt))}</dd></div>
         <div><dt>Entrega</dt><dd>${order.deliveryMode === 'pickup' ? 'Retiro' : 'Delivery'}</dd></div>
         <div><dt>Productos</dt><dd>${itemCount}</dd></div>
+        ${Number(order.discountTotal || 0) > 0 ? `
+        <div><dt>Combo del local</dt><dd>−${escapeHtml(formatOrderMoney(order.discountTotal, order.currencyCode))}</dd></div>
+        ` : ''}
         <div><dt>Total</dt><dd>${escapeHtml(formatOrderMoney(order.total, order.currencyCode))}</dd></div>
       </dl>
+      ${(order.combos || []).length ? `
+      <ul class="production-order-items" aria-label="Combos del pedido">${order.combos.map((combo) => `
+        <li>
+          <strong>${escapeHtml(String(combo.quantity))} × ${escapeHtml(combo.name)} (combo)</strong>
+          <span>a ${escapeHtml(formatOrderMoney(combo.promotionalPrice, order.currencyCode))} c/u — los productos de abajo son sus componentes</span>
+        </li>
+      `).join('')}</ul>
+      ` : ''}
       <ul class="production-order-items" aria-label="Detalle de productos">${items}</ul>
       <dl class="production-order-contact">
         <div><dt>Teléfono</dt><dd>${escapeHtml(order.customerPhone || 'No informado')}</dd></div>
@@ -1327,7 +1422,8 @@ function businessOrderMarkup(order) {
             type="button"
             data-production-business-next="${escapeAttribute(order.id)}"
             data-next-status="${escapeAttribute(next)}"
-          >${escapeHtml(actionLabel(next, 'business'))}</button>
+            ${orderActionsInFlight.has(order.id) ? 'disabled aria-disabled="true"' : ''}
+          >${orderActionsInFlight.has(order.id) ? 'Confirmando…' : escapeHtml(actionLabel(next, 'business'))}</button>
         ` : ''}
         ${!terminal ? `
           <label class="production-cancel-control">
@@ -1363,9 +1459,12 @@ function businessOrderMarkup(order) {
 }
 
 function riderWorkspaceMarkup() {
+  // "Mis entregas" son las asignadas a esta cuenta. Un pedido `ready` sin
+  // asignar pertenece a la cola de claim, no acá: mostrarlo como entrega
+  // activa ofrecía un avance que el servidor rechaza.
   const orders = getState().orders.filter((order) => (
     order.deliveryMode === 'delivery'
-    && ['ready', 'assigned', 'picked_up', 'on_the_way', 'arrived'].includes(workflowStatus(order))
+    && ['assigned', 'picked_up', 'on_the_way', 'arrived'].includes(workflowStatus(order))
   ));
   const rows = orders.map(riderOrderMarkup).join('');
   const queue = availableRiderOrders.map(availableRiderOrderMarkup).join('');
@@ -1423,8 +1522,9 @@ function availableRiderOrderMarkup(order) {
         class="primary-button"
         type="button"
         data-production-rider-claim="${escapeAttribute(order.publicCode)}"
-        data-expected-status="${escapeAttribute(order.expectedStatus || 'ready')}"
-      >Aceptar entrega</button>
+        data-expected-revision="${escapeAttribute(String(order.revision ?? ''))}"
+        ${orderActionsInFlight.has(order.publicCode) ? 'disabled aria-disabled="true"' : ''}
+      >${orderActionsInFlight.has(order.publicCode) ? 'Asignando…' : 'Aceptar entrega'}</button>
     </article>`;
 }
 
@@ -1456,7 +1556,8 @@ function riderOrderMarkup(order) {
             type="button"
             data-production-rider-next="${escapeAttribute(order.id)}"
             data-next-status="${escapeAttribute(next)}"
-          >${escapeHtml(actionLabel(next, 'rider'))}</button>
+            ${orderActionsInFlight.has(order.id) ? 'disabled aria-disabled="true"' : ''}
+          >${orderActionsInFlight.has(order.id) ? 'Confirmando…' : escapeHtml(actionLabel(next, 'rider'))}</button>
         ` : ''}
         ${canShare && !sharing ? `
           <button
@@ -1509,36 +1610,59 @@ async function refreshRiderOrders() {
   return assigned;
 }
 
+// Las claves NO llevan dos puntos: el contrato del servidor valida
+// `^[A-Za-z0-9_-]{8,128}$` y una clave con `:` muere en 22023 antes de tocar
+// el pedido. Guion como separador, determinístico por (comando, pedido,
+// revisión, destino) para que el reintento sea replay y el doble click no-op.
+function orderCommandKey(commandType, backendId, revision, nextStatus) {
+  return `${commandType}-${backendId}-${revision}-${nextStatus}`.replace(/[^A-Za-z0-9_-]/g, '-');
+}
+
 async function updateOrderFromAction(orderId, nextStatus, { commandType = 'transition_order', reason = '' } = {}) {
   if (!orderId || !nextStatus) {
     return { handled: true, ok: false, message: 'Acción de pedido inválida.' };
   }
+  if (orderActionsInFlight.has(orderId)) {
+    return { handled: true, ok: false, message: 'Ya estamos procesando este pedido.' };
+  }
   const currentOrder = getState().orders.find((order) => (
     order.id === orderId || order.backendId === orderId || order.code === orderId
   ));
-  const result = businessCommandController && access.membership?.role !== 'rider'
-    ? await businessCommandController.queue({
-      businessId: access.membership.business_id,
-      orderId,
-      commandType,
-      expectedRevision: currentOrder?.revision,
-      idempotencyKey: `${commandType}:${currentOrder?.backendId || orderId}:${currentOrder?.revision}:${nextStatus}`,
-      payload: { newStatus: nextStatus, ...(reason ? { reason } : {}) },
-    })
-    : await repository.updateOrderStatus(orderId, nextStatus, {
-      expectedRevision: currentOrder?.revision,
-      idempotencyKey: `direct:${currentOrder?.backendId || orderId}:${currentOrder?.revision}:${nextStatus}`,
-    });
-  if (result.ok) {
-    if (access.membership?.role === 'rider') await refreshRiderOrders();
-    else await businessIntake?.invalidate?.('status-transition');
-  }
+  orderActionsInFlight.add(orderId);
   notify();
-  return {
-    handled: true,
-    ok: result.ok,
-    message: result.ok ? 'Estado confirmado por el servidor.' : result.message,
-  };
+  try {
+    const isRider = access.membership?.role === 'rider';
+    const result = businessCommandController && !isRider
+      ? await businessCommandController.queue({
+        businessId: access.membership.business_id,
+        orderId,
+        commandType,
+        expectedRevision: currentOrder?.revision,
+        idempotencyKey: orderCommandKey(commandType, currentOrder?.backendId || orderId, currentOrder?.revision, nextStatus),
+        payload: { newStatus: nextStatus, ...(reason ? { reason } : {}) },
+      })
+      : isRider
+        ? await repository.advanceRiderDelivery(orderId, nextStatus, {
+          expectedRevision: currentOrder?.revision,
+          idempotencyKey: orderCommandKey('rider', currentOrder?.backendId || orderId, currentOrder?.revision, nextStatus),
+        })
+        : await repository.updateOrderStatus(orderId, nextStatus, {
+          expectedRevision: currentOrder?.revision,
+          idempotencyKey: orderCommandKey('direct', currentOrder?.backendId || orderId, currentOrder?.revision, nextStatus),
+        });
+    if (result.ok) {
+      if (isRider) await refreshRiderOrders();
+      else await businessIntake?.invalidate?.('status-transition');
+    }
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? 'Estado confirmado por el servidor.' : result.message,
+    };
+  } finally {
+    orderActionsInFlight.delete(orderId);
+    notify();
+  }
 }
 
 function startGpsShare(orderId) {
@@ -1623,7 +1747,8 @@ function actionLabel(status, actor) {
   if (status === 'accepted') return 'Aceptar pedido';
   if (status === 'preparing') return 'Iniciar preparación';
   if (status === 'ready') return 'Marcar listo';
-  if (status === 'on_the_way') return actor === 'rider' ? 'Tomar y salir' : 'En camino';
+  if (status === 'picked_up') return 'Registrar retiro';
+  if (status === 'on_the_way') return actor === 'rider' ? 'Salir en camino' : 'En camino';
   if (status === 'arrived') return 'Marcar llegada';
   if (status === 'delivered') return 'Confirmar entrega';
   return 'Actualizar';

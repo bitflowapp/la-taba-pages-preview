@@ -9,6 +9,7 @@ import {
 import {
   MAPLIBRE_FALLBACK_COPY,
   MAPLIBRE_PUBLIC_STYLE_URL,
+  MAPLIBRE_SANDBOX_ROUTE_CASING_LAYER_ID,
   MAPLIBRE_SANDBOX_ROUTE_LAYER_ID,
   MAPLIBRE_SANDBOX_ROUTE_SOURCE_ID,
   createMapLibreTrackingMap,
@@ -454,14 +455,25 @@ test('sandbox mounts one verified route source while production stays rider-only
 
     assert.equal(environment.calls.addSource.length, 1);
     assert.equal(environment.calls.addSource[0].id, MAPLIBRE_SANDBOX_ROUTE_SOURCE_ID);
-    assert.equal(environment.calls.addLayer.length, 1);
-    assert.equal(environment.calls.addLayer[0].id, MAPLIBRE_SANDBOX_ROUTE_LAYER_ID);
+    // La ruta pasó a dibujarse en dos capas del MISMO source —casing casi negro
+    // debajo, línea roja encima— para tener jerarquía sobre el lienzo nocturno.
+    // Lo que este test protege sigue intacto: UNA sola fuente de geometría (la
+    // producción no inventa rutas); la cantidad de capas es presentación.
+    assert.equal(environment.calls.addLayer.length, 2);
+    assert.equal(environment.calls.addLayer[0].id, MAPLIBRE_SANDBOX_ROUTE_CASING_LAYER_ID);
+    assert.equal(environment.calls.addLayer[1].id, MAPLIBRE_SANDBOX_ROUTE_LAYER_ID);
     assert.equal(environment.calls.markers.length, 3);
     assert.equal(environment.calls.fitBounds.length, 1);
     assert.equal(controller.getLifecycleState().hasSandboxRoute, true);
     assert.equal(controller.getLifecycleState().sandboxRouteVisible, true);
 
     assert.equal(controller.setSandboxRouteVisible(false), false);
+    // Casing y línea cambian de visibilidad juntas, en orden de dibujo.
+    assert.deepEqual(environment.calls.setLayoutProperty.at(-2), {
+      id: MAPLIBRE_SANDBOX_ROUTE_CASING_LAYER_ID,
+      name: 'visibility',
+      value: 'none',
+    });
     assert.deepEqual(environment.calls.setLayoutProperty.at(-1), {
       id: MAPLIBRE_SANDBOX_ROUTE_LAYER_ID,
       name: 'visibility',
@@ -481,7 +493,7 @@ test('sandbox mounts one verified route source while production stays rider-only
       { freshness: 'fresh', status: 'on_the_way', source: 'simulation' },
     );
     assert.equal(environment.calls.addSource.length, 1);
-    assert.equal(environment.calls.addLayer.length, 1);
+    assert.equal(environment.calls.addLayer.length, 2);
   } finally {
     controller.destroy();
     environment.restore();

@@ -490,6 +490,55 @@
   background: var(--shelf-gold-wash);
 }
 
+/* Captura de ubicación dentro del editor de direcciones. Es opcional y por eso
+   se lee como un bloque aparte del formulario, no como un campo más. */
+.profile-location {
+  display: grid;
+  gap: 8px;
+  padding: 13px 14px;
+  border: 1px dashed #d8d2cc;
+  border-radius: 15px;
+  background: var(--shelf-raised);
+}
+
+.profile-location.is-pending {
+  border-style: solid;
+  border-color: #d6b26a;
+  background: var(--shelf-gold-wash);
+}
+
+.profile-location.is-confirmed {
+  border-style: solid;
+  border-color: #7ba46b;
+}
+
+.profile-location strong {
+  color: var(--profile-ink);
+  font-size: 14px;
+  font-weight: 780;
+}
+
+.profile-location p {
+  margin: 0;
+  color: var(--profile-muted);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.profile-location .profile-location-note {
+  font-size: 12px;
+}
+
+.profile-location .profile-location-error {
+  color: var(--taba-red);
+  font-weight: 750;
+}
+
+.profile-location .profile-card-actions {
+  margin: 0;
+}
+
 .profile-status {
   min-height: 0;
   margin: 0;

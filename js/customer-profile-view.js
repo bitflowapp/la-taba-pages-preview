@@ -15,6 +15,7 @@ import {
   validateCustomerName,
 } from './core/validators.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
+import { createCustomerGeolocationService } from './services/customer-geolocation.js';
 
 const state = {
   initialized: false,
@@ -27,11 +28,20 @@ const state = {
   editorOpen: false,
   editingAddressId: '',
   pendingDuplicate: null,
+  // Ubicación recibida del dispositivo y todavía sin confirmar por la persona.
+  pendingLocation: null,
+  // Ubicación que la persona confirmó para esta dirección; es la única que se
+  // guarda. Sin confirmación explícita la dirección queda `manual`, como antes.
+  confirmedLocation: null,
+  locating: false,
+  locationError: '',
   status: '',
   statusTone: '',
   availability: 'ready',
   returnTo: '',
 };
+
+const geolocationService = createCustomerGeolocationService();
 
 const PROFILE_RETURN_STORAGE_KEY = 'taba:profile-return';
 
@@ -186,6 +196,7 @@ async function handleAction(action, addressId) {
     state.editorOpen = true;
     state.editingAddressId = '';
     state.pendingDuplicate = null;
+    resetLocationDraft();
     setStatus('', '');
     queueFocus('[name="profileAddressStreet"]');
     return;
@@ -195,6 +206,9 @@ async function handleAction(action, addressId) {
     state.editorOpen = true;
     state.editingAddressId = addressId;
     state.pendingDuplicate = null;
+    // Editar no puede perder la ubicación ya guardada: se rehidrata desde la
+    // dirección, si no volvería a salir como `manual` al volver a guardar.
+    hydrateLocationDraft(findAddress(addressId));
     setStatus('', '');
     queueFocus('[name="profileAddressStreet"]');
     return;
@@ -203,7 +217,27 @@ async function handleAction(action, addressId) {
     state.editorOpen = false;
     state.editingAddressId = '';
     state.pendingDuplicate = null;
+    resetLocationDraft();
     setStatus('', '');
+    return;
+  }
+  if (action === 'use-location') {
+    await requestLocation();
+    return;
+  }
+  if (action === 'confirm-location') {
+    if (!state.pendingLocation) return;
+    state.confirmedLocation = state.pendingLocation;
+    state.pendingLocation = null;
+    state.locationError = '';
+    render();
+    return;
+  }
+  if (action === 'discard-location') {
+    state.pendingLocation = null;
+    state.confirmedLocation = null;
+    state.locationError = '';
+    render();
     return;
   }
   if (action === 'save-address') {
@@ -253,10 +287,77 @@ async function savePersonalData() {
   });
 }
 
+function resetLocationDraft() {
+  state.pendingLocation = null;
+  state.confirmedLocation = null;
+  state.locationError = '';
+  state.locating = false;
+}
+
+function hydrateLocationDraft(address) {
+  resetLocationDraft();
+  const normalized = address ? normalizeCustomerAddress(address) : null;
+  if (normalized?.latitude == null || normalized?.longitude == null) return;
+  state.confirmedLocation = {
+    latitude: normalized.latitude,
+    longitude: normalized.longitude,
+    accuracy: normalized.geolocationAccuracy,
+    source: normalized.source,
+  };
+}
+
+async function requestLocation() {
+  if (state.locating) return;
+  state.locating = true;
+  state.locationError = '';
+  render();
+  const result = await geolocationService.requestCurrentLocation();
+  state.locating = false;
+  if (!result?.ok) {
+    // El mensaje del servicio ya distingue permiso, precisión y tiempo de
+    // espera. No se reemplaza por uno genérico: dice qué hacer.
+    state.locationError = result?.message || 'No pudimos obtener la ubicación.';
+    state.pendingLocation = null;
+    render();
+    return;
+  }
+  state.pendingLocation = result.location;
+  render();
+}
+
+// La ubicación es opcional y explícita: sin confirmar no viaja nada, y el aviso
+// dice para qué se usa. Sin este bloque el editor no tenía forma de capturar
+// coordenadas y toda dirección se guardaba `manual` con lat/lng nulas, que es
+// justo lo que dejaba al Rider sin punto de entrega en el mapa.
+function renderLocationCapture() {
+  if (state.pendingLocation) {
+    const accuracy = Number(state.pendingLocation.accuracy);
+    return `<aside class="profile-location is-pending" data-profile-location aria-live="polite">
+      <strong>Ubicación recibida</strong>
+      <p>La usamos para que quien reparte encuentre la puerta. No se guarda hasta que la confirmes.${Number.isFinite(accuracy) ? ` Precisión aproximada: ${Math.round(accuracy)} m.` : ''}</p>
+      <p class="profile-location-note">No hay un geocodificador configurado: revisá calle, número y localidad a mano.</p>
+      <div class="profile-card-actions"><button class="secondary-button compact" type="button" data-profile-action="confirm-location">Confirmar ubicación</button><button class="ghost-button compact" type="button" data-profile-action="discard-location">Descartar</button></div>
+    </aside>`;
+  }
+  if (state.confirmedLocation) {
+    return `<aside class="profile-location is-confirmed" data-profile-location aria-live="polite">
+      <strong>Ubicación confirmada para esta dirección</strong>
+      <p>Se guarda junto con la dirección postal. Revisá igual calle y número.</p>
+      <div class="profile-card-actions"><button class="ghost-button compact" type="button" data-profile-action="discard-location">Quitar ubicación</button></div>
+    </aside>`;
+  }
+  return `<aside class="profile-location" data-profile-location>
+    <div class="profile-card-actions"><button class="secondary-button compact" type="button" data-profile-action="use-location" ${state.locating ? 'disabled aria-disabled="true"' : ''}>${state.locating ? 'Buscando…' : 'Usar mi ubicación'}</button></div>
+    <p>Opcional. Ayuda a que quien reparte llegue a la puerta correcta.</p>
+    ${state.locationError ? `<p class="profile-location-error" role="alert">${escapeHtml(state.locationError)}</p>` : ''}
+  </aside>`;
+}
+
 async function saveAddress(allowDuplicate) {
   if (!isEditableMode()) return;
   const form = profileContainer()?.querySelector('[data-profile-address-form]');
   if (!form) return;
+  const location = state.confirmedLocation;
   const candidate = normalizeCustomerAddress({
     id: state.editingAddressId,
     label: form.elements?.profileAddressLabel?.value || 'Casa',
@@ -269,7 +370,10 @@ async function saveAddress(allowDuplicate) {
     postalCode: form.elements?.profileAddressPostalCode?.value || '',
     reference: form.elements?.profileAddressReference?.value || '',
     isDefault: Boolean(form.elements?.profileAddressDefault?.checked),
-    source: 'manual',
+    latitude: location?.latitude ?? null,
+    longitude: location?.longitude ?? null,
+    geolocationAccuracy: location?.accuracy ?? null,
+    source: location?.source || 'manual',
   });
   const required = [
     ['profileAddressStreet', candidate.street, 'Ingresá la calle.'],
@@ -308,6 +412,9 @@ async function persistAddress(candidate, allowDuplicate) {
     state.editorOpen = false;
     state.editingAddressId = '';
     state.pendingDuplicate = null;
+    // El borrador no puede sobrevivir al guardado: si quedara, la próxima
+    // dirección nueva heredaría la ubicación de la anterior.
+    resetLocationDraft();
     notifyUpdated();
     return { ok: true, message: 'Dirección guardada.' };
   });
@@ -555,6 +662,7 @@ function renderAddressEditor() {
       <label><span>Código postal <em>opcional</em></span><input name="profileAddressPostalCode" maxlength="20" autocomplete="postal-code" value="${escapeAttr(address.postalCode || '')}" /></label>
       <label class="is-full"><span>Referencias <em>opcional</em></span><textarea name="profileAddressReference" maxlength="180" rows="3" placeholder="Ej. Portón negro, tocar timbre 2">${escapeHtml(address.reference || '')}</textarea></label>
     </div>
+    ${renderLocationCapture()}
     <label class="profile-default-check"><input name="profileAddressDefault" type="checkbox" ${address.isDefault || (!address.id && !state.addresses.length) ? 'checked' : ''} /><span>Usar como dirección predeterminada</span></label>
     <p class="profile-field-error" data-profile-field-error role="alert"></p>
     <div class="profile-card-actions"><button class="primary-button compact" type="button" data-profile-action="save-address" ${disabledAttr()}>${state.saving ? 'Guardando…' : 'Guardar dirección'}</button><button class="ghost-button compact" type="button" data-profile-action="cancel-address">Cancelar</button></div>

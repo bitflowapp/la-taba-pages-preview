@@ -548,7 +548,7 @@
   min-height: 0;
   margin-inline: auto;
   overflow: visible;
-  border: 1px solid #ececef;
+  border: 1px solid var(--shelf-line);
   border-radius: 24px;
   background: var(--shelf-raised);
   box-shadow: 0 14px 34px rgb(25 25 28 / 7%);
@@ -684,7 +684,7 @@
   min-height: 340px;
   margin: 0;
   overflow: hidden;
-  border: 1px solid #e7e7ea;
+  border: 1px solid var(--shelf-line);
   border-radius: 20px;
   background: var(--shelf-raised);
 }
@@ -871,7 +871,7 @@
 /* Tracking conserva la navegación de la aplicación, pero la convierte en una
    cabecera blanca y silenciosa para que el estado y el mapa sean protagonistas. */
 body[data-active-view="tracking"] .topbar {
-  border-bottom: 1px solid #ececef;
+  border-bottom: 1px solid var(--shelf-line);
   background: var(--shelf-raised);
   box-shadow: none;
   color: var(--shelf-ink);
@@ -1221,7 +1221,7 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row > strong
   gap: 13px;
   margin: 0;
   padding: 15px;
-  border: 1px solid #e5e4e2;
+  border: 1px solid var(--shelf-line);
   border-radius: 20px;
   background: var(--shelf-raised);
 }
@@ -1760,8 +1760,10 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row {
 }
 
 .tracking-premium .maplibregl-ctrl-attrib-button {
-  width: 25px;
-  height: 25px;
+  width: 44px;
+  height: 44px;
+  background-position: center;
+  background-size: 24px 24px;
 }
 
 .tracking-premium .maplibregl-ctrl-logo {
@@ -2142,11 +2144,11 @@ body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar
   min-height: 29px;
   gap: 4px;
   padding: 4px 9px;
-  border-color: var(--taba-border-soft);
-  box-shadow: 0 2px 7px rgb(22 24 28 / 7%);
-  color: var(--taba-graphite-soft);
+  border-color: var(--shelf-line);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-muted);
   font-size: 11.5px;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .tracking-premium.status-arriving .real-map-meta-indicator,
@@ -2173,16 +2175,16 @@ body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar
   bottom: 15px;
   width: 46px;
   height: 46px;
-  border-color: var(--taba-border-soft);
+  border-color: var(--shelf-line);
   border-radius: 14px;
-  box-shadow: 0 3px 8px rgb(20 21 24 / 10%);
-  color: var(--taba-graphite);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
 }
 
 .tracking-premium.status-arriving .tracking-map-recenter:hover,
 .tracking-premium.status-arriving .tracking-map-recenter:focus-visible {
-  background: var(--taba-white);
-  color: var(--taba-graphite);
+  background: rgb(30 35 42 / 96%);
+  color: #ff6473;
 }
 
 .tracking-premium.status-arriving .tracking-map-eta,
@@ -2219,8 +2221,8 @@ body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar
 }
 
 .tracking-premium.status-arriving .maplibregl-ctrl-attrib-button {
-  width: 20px;
-  height: 20px;
+  width: 44px;
+  height: 44px;
   opacity: 0.62;
 }
 
@@ -2659,16 +2661,16 @@ body[data-active-view="tracking"]:has(
   bottom: 15px;
   width: 46px;
   height: 46px;
-  border-color: var(--taba-border-soft);
+  border-color: var(--shelf-line);
   border-radius: 14px;
-  box-shadow: 0 3px 8px rgb(20 21 24 / 10%);
-  color: var(--taba-graphite);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
 }
 
 .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-recenter:hover,
 .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-recenter:focus-visible {
-  background: var(--taba-white);
-  color: var(--taba-graphite);
+  background: rgb(30 35 42 / 96%);
+  color: #ff6473;
 }
 
 /* La estimación de la sandbox se apila sobre la atribución en vez de taparla,
@@ -2679,12 +2681,14 @@ body[data-active-view="tracking"]:has(
   left: 13px;
   min-height: 27px;
   padding: 5px 10px;
-  border: 1px solid var(--taba-border-soft);
-  background: rgb(255 255 255 / 96%);
-  box-shadow: 0 2px 7px rgb(22 24 28 / 7%);
-  color: var(--taba-red-quiet);
+  border: 1px solid var(--shelf-line);
+  background: rgb(18 21 26 / 92%);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
   font-size: 12px;
-  font-weight: 550;
+  font-weight: 650;
   letter-spacing: -0.005em;
 }
 
@@ -2709,8 +2713,8 @@ body[data-active-view="tracking"]:has(
 }
 
 .tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-ctrl-attrib-button {
-  width: 20px;
-  height: 20px;
+  width: 44px;
+  height: 44px;
   opacity: 0.62;
 }
 
@@ -2997,5 +3001,235 @@ body[data-active-view="tracking"]:has(
     .real-map-shell[data-map-freshness="fresh"]
     .real-map-live-dot {
     animation: none !important;
+  }
+}
+
+/* ============================================================================
+   Mapa nocturno TABA2 — la superficie sobre el lienzo grafito.
+
+   El tema del LIENZO vive en js/map/taba_map_theme.js (post-proceso de las
+   capas MapLibre). Este bloque integra todo lo que flota SOBRE ese lienzo:
+   píldoras de estado, ETA, recentrado, atribución, carga, GPS demorado o
+   perdido. Regla dura de la sección: ningún overlay decorativo captura
+   gestos — pointer-events: none en todo lo que no sea un control — y acá no
+   se declara touch-action: la superficie táctil del mapa es de MapLibre.
+   ========================================================================== */
+
+/* --- Carga: shimmer grafito hasta que el estilo está listo ---------------- */
+
+.tracking-premium .real-map-shell::before {
+  position: absolute;
+  z-index: 4;
+  background:
+    linear-gradient(100deg, transparent 32%, rgb(255 255 255 / 4%) 46%, rgb(255 255 255 / 7%) 50%, rgb(255 255 255 / 4%) 54%, transparent 68%) no-repeat,
+    var(--shelf-sunken);
+  background-size: 220% 100%;
+  content: "";
+  inset: 0;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+
+.tracking-premium .real-map-shell.is-ready::before {
+  animation: none;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tracking-premium .real-map-shell:not(.is-ready)::before {
+    animation: taba-map-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes taba-map-shimmer {
+  from { background-position: 130% 0; }
+  to { background-position: -30% 0; }
+}
+
+/* --- Píldora de estado de la ubicación ------------------------------------ */
+
+.tracking-premium .real-map-meta {
+  border-color: var(--shelf-line);
+  background: rgb(18 21 26 / 90%);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
+}
+
+/* Demorado: el reloj y el borde toman el dorado sutil de la marca. */
+.tracking-premium .real-map-shell[data-map-freshness="delayed"] .real-map-meta {
+  border-color: rgb(201 149 62 / 55%);
+  color: var(--shelf-gold);
+}
+
+/* Perdido: honestidad primero — la píldora avisa en el rojo de la marca. */
+.tracking-premium .real-map-shell[data-map-freshness="lost"] .real-map-meta {
+  border-color: rgb(232 39 58 / 45%);
+  color: #ff8b96;
+}
+
+/* El velo del GPS perdido atenúa el lienzo sin capturar un solo gesto. */
+.tracking-premium .real-map-shell::after {
+  position: absolute;
+  z-index: 3;
+  background: rgb(13 15 18 / 45%);
+  content: "";
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+.tracking-premium .real-map-shell.is-ready[data-map-freshness="lost"]::after {
+  opacity: 1;
+}
+
+.tracking-premium .real-map-shell.is-ready[data-map-freshness="lost"] .lt-rider-marker {
+  filter: grayscale(0.45) opacity(0.82);
+}
+
+/* --- ETA: el número que el cliente vino a buscar -------------------------- */
+
+.tracking-map-eta {
+  border: 1px solid var(--shelf-line);
+  background: rgb(18 21 26 / 92%);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
+}
+
+/* --- Recentrar: un control de verdad, no una pastilla flotante ------------ */
+
+.tracking-map-recenter {
+  border: 1px solid var(--shelf-line);
+  background: rgb(22 26 32 / 94%);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
+}
+
+.tracking-map-recenter:hover,
+.tracking-map-recenter:focus-visible {
+  background: rgb(30 35 42 / 96%);
+  color: #ff6473;
+}
+
+.tracking-map-recenter:focus-visible {
+  outline: 2px solid var(--shelf-gold);
+  outline-offset: 2px;
+}
+
+/* --- Controles nativos de MapLibre (zoom en escritorio, atribución) ------- */
+
+.tracking-premium .maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid var(--shelf-line);
+  border-radius: 13px;
+  background: rgb(22 26 32 / 94%);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+}
+
+.tracking-premium .maplibregl-ctrl-group button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+}
+
+.tracking-premium .maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--shelf-line);
+}
+
+.tracking-premium .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  /* Los glifos de zoom del sprite nativo son tinta oscura: en negativo quedan
+     blancos sobre el control grafito, sin tocar el SVG del vendor. */
+  filter: invert(0.92);
+}
+
+.tracking-premium .maplibregl-ctrl-group button:hover {
+  background: rgb(255 255 255 / 8%);
+}
+
+/* En táctil chico mandan los gestos: el zoom de botones es ruido que tapa
+   mapa. Se conserva desde tablet/escritorio, donde sí es el control natural. */
+@media (max-width: 767px) {
+  .tracking-premium .maplibregl-ctrl-top-right {
+    display: none;
+  }
+}
+
+.tracking-premium .maplibregl-ctrl-attrib:not(.maplibregl-compact) {
+  background: rgb(18 21 26 / 82%);
+  color: var(--shelf-muted);
+}
+
+.tracking-premium .maplibregl-ctrl-attrib a {
+  color: var(--shelf-muted);
+}
+
+.tracking-premium .maplibregl-ctrl-attrib.maplibregl-compact {
+  border: 1px solid var(--shelf-line);
+  background: rgb(18 21 26 / 88%);
+  color: var(--shelf-muted);
+}
+
+.tracking-premium .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
+  color: var(--shelf-muted);
+}
+
+.tracking-premium .maplibregl-ctrl-attrib-button {
+  filter: invert(0.85);
+}
+
+/* --- Marcador del rider: pulso sólo con GPS fresco y en camino ------------ */
+
+.tracking-premium .lt-rider-marker::before {
+  position: absolute;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  content: "";
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tracking-premium .real-map-shell.is-location-fresh .lt-rider-marker.on-the-way::before {
+    animation: taba-rider-pulse 2.4s ease-out infinite;
+    background: rgb(232 39 58 / 35%);
+  }
+}
+
+@keyframes taba-rider-pulse {
+  0% { opacity: 0.75; transform: scale(0.62); }
+  70% { opacity: 0; transform: scale(1.55); }
+  100% { opacity: 0; transform: scale(1.55); }
+}
+
+/* Sobre lienzo oscuro el casco necesita despegue, no más borde. */
+.tracking-premium .lt-rider-helmet-icon {
+  filter: drop-shadow(0 4px 10px rgb(6 7 9 / 55%));
+}
+
+.tracking-premium .lt-place-marker-pin {
+  filter: drop-shadow(0 4px 9px rgb(6 7 9 / 55%));
+}
+
+/* --- Safe areas: notch lateral y mentón en móvil -------------------------- */
+
+.tracking-premium .tracking-sheet {
+  padding-inline: max(24px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 767px) {
+  .tracking-premium .tracking-sheet {
+    padding-inline: max(18px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
   }
 }

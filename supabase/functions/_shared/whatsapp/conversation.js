@@ -390,9 +390,13 @@ async function showSearch({ state, waId, backend, terms, quantity }) {
   }
   if (!found) {
     const shelves = await backend.shelves();
+    const miss = `No encontré «${terms.join(' y ')}» en el catálogo de hoy.`;
+    // Una lista sin filas es un 400 de la Cloud API: con la góndola vacía se
+    // contesta con texto en vez de mandar un mensaje que nunca va a llegar.
+    if (!shelves.length) return reply(state, [textMessage(waId, `${miss} Escribinos en un rato 🙏`)]);
     return reply(state, [
       listMessage(waId, {
-        body: `No encontré «${terms.join(' y ')}» en el catálogo de hoy. Probá con otra cosa o mirá las categorías.`,
+        body: `${miss} Probá con otra cosa o mirá las categorías.`,
         button: 'Ver categorías',
         sections: [{
           title: 'Categorías',

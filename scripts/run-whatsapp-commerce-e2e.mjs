@@ -846,6 +846,32 @@ async function run() {
   `.replace(/\s+/g, ' ')));
   check('la conversación queda cerrada y sin carrito', closed.state === 'completed' && closed.cart.length === 0, JSON.stringify(closed));
 
+  // Quien mientras se acreditaba el pago ya empezó a armar el próximo pedido no
+  // puede perder ese carrito cuando entra la confirmación del anterior.
+  const orderId = query(`select id from public.orders where business_id = '${BUSINESS_ID}'`);
+  psql(`
+    update public.whatsapp_conversations
+       set state = 'browsing',
+           cart = '[{"product_id":"${COCA}","quantity":1}]'::jsonb,
+           checkout_session_id = '${webCheckout.checkout_session_id}';
+    update public.checkout_sessions
+       set completed_order_id = '${orderId}'
+     where id = '${webCheckout.checkout_session_id}';
+  `);
+  const preserved = queryJson(`
+    select jsonb_build_object('state', state, 'cart', cart, 'checkout', checkout_session_id)
+      from public.whatsapp_conversations limit 1
+  `.replace(/\s+/g, ' '));
+  check(
+    'un carrito nuevo sobrevive a la confirmación del pedido anterior',
+    preserved.state === 'browsing' && preserved.cart.length === 1 && preserved.checkout === null,
+    JSON.stringify(preserved),
+  );
+  check(
+    'la confirmación de ese pedido sigue encolada una sola vez',
+    count(`select count(*) from public.whatsapp_outbound_messages where kind = 'order_confirmed'`) === 1,
+  );
+
   // ---- 17. Higiene del canal ---------------------------------------------
   const storedEvents = queryJson((`
     select coalesce(jsonb_agg(to_jsonb(e)), '[]'::jsonb) from public.whatsapp_inbound_events e

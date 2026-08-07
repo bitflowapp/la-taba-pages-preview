@@ -1383,8 +1383,13 @@ begin
       v_conversation.id
     );
 
+    -- Se cierra la conversación sólo si seguía esperando ESTE pago. Alguien que
+    -- mientras tanto empezó a armar el próximo pedido no puede perder su carrito
+    -- porque le acreditaron el anterior.
     update public.whatsapp_conversations
-       set state = 'completed', cart = '[]'::jsonb, checkout_session_id = null
+       set state = case when state = 'awaiting_payment' then 'completed' else state end,
+           cart = case when state = 'awaiting_payment' then '[]'::jsonb else cart end,
+           checkout_session_id = null
      where id = v_conversation.id;
   exception when others then
     -- El pedido ya está cobrado y creado. Un aviso que no se pudo encolar es un

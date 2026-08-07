@@ -257,6 +257,23 @@ test('una búsqueda propone pero no agrega nada al carrito', async () => {
   assert.match(rendered, /Coca-Cola/);
 });
 
+test('con la góndola vacía se contesta con texto, no con una lista sin filas', async () => {
+  // Una lista sin filas es un 400 de la Cloud API: el cliente se quedaría sin
+  // respuesta en vez de leer que no hay nada.
+  const backend = fakeBackend({
+    shelves: async () => [],
+    products: async () => ({ shelf_id: null, total: 0, products: [] }),
+  });
+  const { replies } = await respond({
+    intent: { kind: 'search', terms: ['fernet'], quantity: 1 },
+    session: session(),
+    contact: CONTACT,
+    backend,
+  });
+  assert.equal(replies[0].type, 'text');
+  assert.match(replies[0].text.body, /No encontré/);
+});
+
 test('agregar valida primero contra el catálogo vivo', async () => {
   const backend = fakeBackend({
     products: async () => ({ shelf_id: null, total: 0, products: [] }),

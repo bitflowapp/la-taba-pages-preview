@@ -1,21 +1,21 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v46-tracking-nocturno';
+const CACHE_NAME = 'la-taba-runtime-v47-first-physical-e2e';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=42',
-  './styles/tokens.css?v=42',
-  './styles/common.css?v=42',
-  './styles/storefront.css?v=42',
-  './styles/catalog.css?v=42',
-  './styles/checkout.css?v=42',
-  './styles/profile.css?v=42',
-  './styles/showcase.css?v=42',
-  './styles/tracking.css?v=42',
-  './styles/business.css?v=42',
-  './styles/rider.css?v=42',
-  './styles/responsive.css?v=42',
-  './styles/brand-home.css?v=42',
+  './styles.css?v=43',
+  './styles/tokens.css?v=43',
+  './styles/common.css?v=43',
+  './styles/storefront.css?v=43',
+  './styles/catalog.css?v=43',
+  './styles/checkout.css?v=43',
+  './styles/profile.css?v=43',
+  './styles/showcase.css?v=43',
+  './styles/tracking.css?v=43',
+  './styles/business.css?v=43',
+  './styles/rider.css?v=43',
+  './styles/responsive.css?v=43',
+  './styles/brand-home.css?v=43',
   './manifest.webmanifest',
   './runtime-config.js',
   './assets/icon.svg',
@@ -64,6 +64,10 @@ const ASSETS = [
   './js/map/map_view.js',
   './js/map/rider_marker.js',
   './js/map/route_geometry.js',
+  // El tema nocturno es un import ESTÁTICO de maplibre_tracking_map.js. Sin él
+  // acá, offline el importador no evalúa —`Response.error()`— y el cliente
+  // pierde el mapa entero, no sólo el color.
+  './js/map/taba_map_theme.js',
   './js/data.js',
   './js/beverage-demo-data.js',
   './js/approved-beverage-demo-data.js',

@@ -243,7 +243,17 @@ export function checkoutReturnUrl(path: '/pago/resultado' | '/pago/pendiente' | 
 export async function enforceRateLimit(
   service: SupabaseClient,
   request: Request,
-  scope: 'checkout_session' | 'preference' | 'checkout_status' | 'webhook' | 'refund' | 'cancellation' | 'worker',
+  scope:
+    | 'checkout_session'
+    | 'preference'
+    | 'checkout_status'
+    | 'webhook'
+    | 'refund'
+    | 'cancellation'
+    | 'worker'
+    // El canal de WhatsApp usa este mismo limitador en vez de fabricar otro.
+    | 'whatsapp_inbound'
+    | 'whatsapp_outbound',
   limit: number,
   windowSeconds: number,
   subject = '',

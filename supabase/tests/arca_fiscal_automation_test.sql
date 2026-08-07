@@ -7,7 +7,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(86);
+select plan(91);
 
 -- ===== Fixture =====
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -124,6 +124,14 @@ select lives_ok(
 select lives_ok(
   $$select public.save_fiscal_parameter_snapshot('homologation','vat_receptor_conditions','arca-fixture-1','[{"Id":5}]'::jsonb,now())$$,
   'el puente guarda la tabla oficial de condicion IVA del receptor'
+);
+-- El puente sincroniza las siete tablas; el Panel considera "sincronizado" solo
+-- cuando estan las siete y ninguna tiene mas de siete dias.
+select lives_ok(
+  $$select public.save_fiscal_parameter_snapshot('homologation','currencies','arca-fixture-1','[{"Id":"PES"}]'::jsonb,now())
+    ; select public.save_fiscal_parameter_snapshot('homologation','concepts','arca-fixture-1','[{"Id":1},{"Id":2},{"Id":3}]'::jsonb,now())
+    ; select public.save_fiscal_parameter_snapshot('homologation','points_of_sale','arca-fixture-1','[{"Nro":3}]'::jsonb,now())$$,
+  'el puente guarda tambien monedas, conceptos y puntos de venta'
 );
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000001","role":"authenticated"}';
@@ -522,6 +530,30 @@ select is(
   'cambiar un dato fiscal exige que alguien lo vuelva a aprobar'
 );
 
+
+-- ===== 14. El Panel ve si se puede facturar, no solo si hay certificado =====
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000001","role":"authenticated"}';
+select is(
+  ((select public.get_fiscal_policy_status('52000000-0000-4000-8000-000000000001'))->>'fiscal_parameters_synchronized')::boolean,
+  true,
+  'el Panel sabe que las tablas oficiales estan sincronizadas'
+);
+select is(
+  ((select public.get_fiscal_policy_status('52000000-0000-4000-8000-000000000001'))->>'accounting_policy_ready')::boolean,
+  false,
+  'tras corregir la politica sin volver a aprobarla, el Panel deja de decir que se puede facturar'
+);
+select is(
+  ((select public.get_fiscal_policy_status('52000000-0000-4000-8000-000000000001'))->>'accounting_policy_declared')::boolean,
+  true,
+  'pero distingue "declarada sin aprobar" de "no existe"'
+);
+select is(
+  ((select public.get_fiscal_policy_status('52000000-0000-4000-8000-000000000001'))->>'documents_requiring_attention')::int,
+  0,
+  'ningun comprobante de esta corrida quedo pidiendo atencion'
+);
 
 select * from finish();
 rollback;

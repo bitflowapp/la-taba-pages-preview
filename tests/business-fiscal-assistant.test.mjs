@@ -35,19 +35,35 @@ const READY = Object.freeze({
   environment: 'homologation',
   pending_documents: 0,
   stalled_documents: 0,
+  accounting_policy_ready: true,
+  accounting_policy_version: 'arca-v1',
+  fiscal_parameters_synchronized: true,
 });
 
-test('el asistente tiene los diez pasos en el orden pedido', () => {
-  assert.equal(ARCA_STEPS.length, 10);
+test('el asistente tiene los once pasos en el orden pedido', () => {
+  assert.equal(ARCA_STEPS.length, 11);
   assert.deepEqual([...ARCA_STEPS], [
     'tax-data', 'accountant', 'certificate', 'delegation', 'point-of-sale',
-    'connection', 'invoice-test', 'credit-note-test', 'print-test', 'production-lock',
+    'connection', 'accounting-policy', 'invoice-test', 'credit-note-test', 'print-test', 'production-lock',
   ]);
   const { steps } = evaluateArcaActivation(READY);
-  assert.deepEqual(steps.map((step) => step.index), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.deepEqual(steps.map((step) => step.index), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
 });
 
-test('con todo verificado en pruebas, el décimo paso confirma que la facturación real sigue apagada', () => {
+// Autorizar homologación no es poder emitir: sin política contable aprobada, la
+// primera solicitud se detiene y pide revisión. El asistente lo distingue.
+test('sin política contable aprobada el asistente no declara que se puede emitir', () => {
+  const withoutPolicy = evaluateArcaActivation({ ...READY, accounting_policy_ready: false });
+  assert.equal(withoutPolicy.readyToHomologate, true);
+  assert.equal(withoutPolicy.readyToEmit, false);
+  assert.equal(withoutPolicy.homologationComplete, false);
+  const step = withoutPolicy.steps.find((item) => item.id === 'accounting-policy');
+  assert.notEqual(step.state, 'done');
+  assert.match(step.detail, /pol[íi]tica contable aprobada|tablas oficiales/i);
+  assert.equal(evaluateArcaActivation(READY).readyToEmit, true);
+});
+
+test('con todo verificado en pruebas, el último paso confirma que la facturación real sigue apagada', () => {
   const result = evaluateArcaActivation(READY);
   assert.equal(result.homologationComplete, true);
   assert.equal(result.productionEnabled, false);

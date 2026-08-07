@@ -97,8 +97,14 @@ test('POS suma packs, calcula promoci\u00f3n y env\u00eda s\u00f3lo intenci\u00f
 
 test('POS distingue venta confirmada de factura autorizada', () => {
   assert.equal(presentPosCompletion({ saleConfirmed: false }), 'Venta pendiente de confirmaci\u00f3n');
-  assert.equal(presentPosCompletion({ saleConfirmed: true, fiscalStatus: 'queued' }), 'Venta registrada \u2014 comprobante pendiente');
-  assert.equal(presentPosCompletion({ saleConfirmed: true, fiscalStatus: 'authorized', cae: '12345678901234' }), 'Venta registrada \u2014 factura autorizada');
+  assert.equal(presentPosCompletion({ saleConfirmed: true }), 'Venta registrada \u2014 sin comprobante fiscal');
+  assert.equal(presentPosCompletion({ saleConfirmed: true, fiscalStatus: 'queued' }), 'Venta registrada \u2014 comprobante: pendiente');
+  assert.equal(presentPosCompletion({ saleConfirmed: true, fiscalStatus: 'authorizing' }), 'Venta registrada \u2014 comprobante: procesando');
+  assert.equal(presentPosCompletion({ saleConfirmed: true, fiscalStatus: 'rejected' }), 'Venta registrada \u2014 comprobante: rechazado');
+  assert.equal(presentPosCompletion({ saleConfirmed: true, fiscalStatus: 'manual_review' }), 'Venta registrada \u2014 comprobante: requiere atenci\u00f3n');
+  assert.equal(presentPosCompletion({ saleConfirmed: true, fiscalStatus: 'authorized', cae: '12345678901234' }), 'Venta registrada \u2014 comprobante: autorizado');
+  // Un backend que dice "authorized" sin CAE no consigue que el mostrador lo repita.
+  assert.equal(presentPosCompletion({ saleConfirmed: true, fiscalStatus: 'authorized', cae: '123' }), 'Venta registrada \u2014 comprobante: requiere atenci\u00f3n');
 });
 
 function scan(normalizedValue) { return { isValid: true, normalizedValue }; }

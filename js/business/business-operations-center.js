@@ -1243,7 +1243,10 @@ function renderFiscalDocument(document) {
   const canCredit = document.document_intent === 'invoice' && ['authorized', 'credited'].includes(document.state) && /^\d{14}$/.test(String(document.cae || ''));
   const credit = canCredit ? renderCreditControls(document) : '';
   const association = document.associated_document_id ? `<small>Asociado a comprobante ${escapeHtml(String(document.associated_document_id).slice(0, 8))}</small>` : '';
-  return `<article class="business-fiscal-row" data-fiscal-document="${escapeHtml(document.id)}"><div><strong>${escapeHtml(status.label)}</strong><small>${escapeHtml(identity)}</small>${association}</div><span class="business-status ${status.tone}">${escapeHtml(document.state || '')}</span><span class="business-status ${artifact ? 'success' : 'warning'}">${escapeHtml(artifactState)}</span>${stateDetail}${artifactControls}${!artifact && ['authorized', 'credited'].includes(document.state) ? `<button class="ghost-button compact" type="button" data-fiscal-regenerate="${escapeHtml(document.id)}">Regenerar PDF (permiso)</button>` : ''}${credit}</article>`;
+  // El chip muestra una de las cinco palabras, nunca el estado crudo del
+  // backend: "authorizing" no le dice nada a quien atiende el mostrador, y
+  // "authorized" sin CAE seria directamente falso.
+  return `<article class="business-fiscal-row" data-fiscal-document="${escapeHtml(document.id)}" data-fiscal-public-state="${escapeHtml(status.publicState)}"><div><strong>${escapeHtml(identity)}</strong><small>${escapeHtml(status.detail)}</small>${association}</div><span class="business-status ${status.tone}">${escapeHtml(status.label)}</span><span class="business-status ${artifact ? 'success' : 'warning'}">${escapeHtml(artifactState)}</span>${stateDetail}${artifactControls}${!artifact && ['authorized', 'credited'].includes(document.state) ? `<button class="ghost-button compact" type="button" data-fiscal-regenerate="${escapeHtml(document.id)}">Regenerar PDF (permiso)</button>` : ''}${credit}</article>`;
 }
 
 function renderPrintControls(document, artifact) {
@@ -1481,7 +1484,16 @@ async function exportPaymentDiagnostic(paymentIntentId) {
 
 async function refreshArcaActivation() {
   const response = await context.getArcaActivation();
-  arcaActivation = response?.ok && response.data && typeof response.data === 'object' ? response.data : null;
+  const activation = response?.ok && response.data && typeof response.data === 'object' ? response.data : null;
+  // La política contable y las tablas oficiales viven en otra consulta: sin
+  // ellas el asistente marcaría "listo para facturar" cuando la primera
+  // solicitud todavía se va a detener pidiendo revisión.
+  let policy = null;
+  if (activation && typeof context.getFiscalPolicyStatus === 'function') {
+    const policyResponse = await context.getFiscalPolicyStatus();
+    policy = policyResponse?.ok && policyResponse.data && typeof policyResponse.data === 'object' ? policyResponse.data : null;
+  }
+  arcaActivation = activation ? { ...activation, ...(policy || {}) } : null;
   if (!response?.ok) {
     feedback = humanizeFailure(response?.message, 'No pudimos leer el estado de la facturación.');
   }
@@ -1785,6 +1797,7 @@ function defaultContext() {
     reconcilePayment: async () => ({ ok: false, message: 'La consulta de pagos no está disponible.' }),
     refundPayment: async () => ({ ok: false, message: 'Las devoluciones no están disponibles.' }),
     getArcaActivation: async () => ({ ok: false, message: 'El estado de facturación no está disponible.' }),
+    getFiscalPolicyStatus: async () => ({ ok: false, message: 'El estado de la política contable no está disponible.' }),
     authorizeArcaHomologation: async () => ({ ok: false, message: 'La autorización fiscal no está disponible.' }),
     getOpeningStatus: async () => ({ ok: false, message: 'La revisión de apertura no está disponible.' }),
     setBusinessOpenState: async () => ({ ok: false, message: 'No se puede cambiar el estado del negocio.' }),

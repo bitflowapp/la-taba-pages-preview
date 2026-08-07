@@ -1,3 +1,5 @@
+import { FISCAL_PUBLIC_STATE_LABELS, fiscalPublicState } from './fiscal-domain.js';
+
 export const POS_PAYMENT_METHODS = Object.freeze(['cash', 'debit_card', 'credit_card', 'transfer', 'qr']);
 
 export function createPosCart({ saleId, businessId, operatorId, now = () => new Date() }) {
@@ -42,10 +44,14 @@ export function buildPosCheckoutIntent(cart, { paymentMethod, idempotencyKey, re
   });
 }
 
+// El mostrador no decide por su cuenta qu\u00e9 pas\u00f3 con el comprobante: usa la
+// misma proyecci\u00f3n de cinco estados que el Panel y la base. Sin CAE de catorce
+// d\u00edgitos, "autorizado" no es una opci\u00f3n.
 export function presentPosCompletion({ saleConfirmed, fiscalStatus, cae }) {
   if (!saleConfirmed) return 'Venta pendiente de confirmaci\u00f3n';
-  if (fiscalStatus === 'authorized' && String(cae || '').length === 14) return 'Venta registrada \u2014 factura autorizada';
-  return 'Venta registrada \u2014 comprobante pendiente';
+  if (!fiscalStatus) return 'Venta registrada \u2014 sin comprobante fiscal';
+  const label = FISCAL_PUBLIC_STATE_LABELS[fiscalPublicState(fiscalStatus, cae)];
+  return `Venta registrada \u2014 comprobante: ${label.toLowerCase()}`;
 }
 
 function sanitizeRecipient(value) {

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import { presentFiscalStatus } from '../js/pos/fiscal-status-presenter.js';
-import { FISCAL_DOCUMENT_STATES } from '../js/core/fiscal-domain.js';
+import { FISCAL_DOCUMENT_STATES, FISCAL_PUBLIC_STATES, FISCAL_PUBLIC_STATE_LABELS } from '../js/core/fiscal-domain.js';
 import { createCommandOutbox, createMemoryCommandStorage } from '../js/business/business-command-outbox.js';
 import { createBusinessPanelController } from '../js/business/business-panel-controller.js';
 import { CONNECTIVITY_STATES } from '../js/business/business-connectivity.js';
@@ -13,26 +13,31 @@ import { buildBusinessRuntimeViewModel } from '../js/business/business-view-mode
 
 // ─── Presentador fiscal: ningún estado real cae al default engañoso ─────────
 
-test('cada estado fiscal real tiene una etiqueta propia; ninguno se disfraza de "sin solicitud"', () => {
+test('cada estado fiscal real cae en una de las cinco palabras que la UI puede decir', () => {
   for (const state of FISCAL_DOCUMENT_STATES) {
-    const presented = presentFiscalStatus({ state, cae: state === 'authorized' ? '1'.repeat(14) : '' });
-    assert.notEqual(
-      presented.label,
-      'Sin solicitud fiscal',
-      `el estado real "${state}" no puede mostrarse como si nunca se hubiera pedido`,
+    const presented = presentFiscalStatus({ state, cae: /^(authorized|credited|observed)$/.test(state) ? '1'.repeat(14) : '' });
+    assert.ok(
+      FISCAL_PUBLIC_STATES.includes(presented.publicState),
+      `el estado real "${state}" no puede caer fuera de las cinco palabras`,
     );
+    assert.equal(presented.label, FISCAL_PUBLIC_STATE_LABELS[presented.publicState]);
+    assert.ok(presented.detail.length > 0, `el estado "${state}" tiene que explicar por qué`);
   }
 });
 
-test('failed y credited dicen la verdad; authorized sin CAE no imprime', () => {
-  assert.match(presentFiscalStatus({ state: 'failed' }).label, /fallida|soporte/i);
+test('failed y manual_review piden atención; authorized sin CAE no imprime ni dice autorizado', () => {
+  assert.equal(presentFiscalStatus({ state: 'failed' }).publicState, 'attention');
   assert.equal(presentFiscalStatus({ state: 'failed' }).tone, 'danger');
-  assert.match(presentFiscalStatus({ state: 'credited' }).label, /nota de crédito/i);
+  assert.equal(presentFiscalStatus({ state: 'manual_review' }).label, 'Requiere atención');
+  assert.equal(presentFiscalStatus({ state: 'credited', cae: '1'.repeat(14) }).publicState, 'authorized');
+  assert.equal(presentFiscalStatus({ state: 'credited', cae: '1'.repeat(14) }).canPrintFiscal, false);
   const inconsistent = presentFiscalStatus({ state: 'authorized', cae: '123' });
   assert.equal(inconsistent.canPrintFiscal, false);
+  assert.equal(inconsistent.publicState, 'attention');
   assert.equal(inconsistent.tone, 'danger');
   const authorized = presentFiscalStatus({ state: 'authorized', cae: '1'.repeat(14) });
   assert.equal(authorized.canPrintFiscal, true);
+  assert.equal(authorized.label, 'Autorizado');
 });
 
 // ─── Outbox: serialización, recuperación forzada y agenda de reintentos ─────

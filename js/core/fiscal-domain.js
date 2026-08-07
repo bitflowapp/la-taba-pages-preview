@@ -1,5 +1,45 @@
 export const FISCAL_ENVIRONMENTS = Object.freeze(['disabled', 'homologation', 'production']);
-export const FISCAL_DOCUMENT_STATES = Object.freeze(['draft', 'queued', 'claiming', 'authenticating', 'authorizing', 'authorized', 'observed', 'rejected', 'ambiguous', 'retry_wait', 'failed', 'credited']);
+export const FISCAL_DOCUMENT_STATES = Object.freeze(['draft', 'queued', 'claiming', 'authenticating', 'authorizing', 'authorized', 'observed', 'rejected', 'ambiguous', 'retry_wait', 'failed', 'manual_review', 'credited']);
+
+// Las cinco palabras —y sólo esas cinco— que la UI puede decir sobre un
+// comprobante. Espejo exacto de public.fiscal_public_state en la base: el
+// servidor y la pantalla no pueden discrepar sobre qué pasó con una factura.
+export const FISCAL_PUBLIC_STATES = Object.freeze(['pending', 'processing', 'authorized', 'rejected', 'attention']);
+
+export const FISCAL_PUBLIC_STATE_LABELS = Object.freeze({
+  pending: 'Pendiente',
+  processing: 'Procesando',
+  authorized: 'Autorizado',
+  rejected: 'Rechazado',
+  attention: 'Requiere atención',
+});
+
+const FISCAL_PUBLIC_STATE_TONES = Object.freeze({
+  pending: 'warning',
+  processing: 'warning',
+  authorized: 'success',
+  rejected: 'danger',
+  attention: 'danger',
+});
+
+export function fiscalPublicState(state, cae) {
+  const value = String(state || '');
+  const authorization = String(cae || '');
+  if (['authorized', 'credited', 'observed'].includes(value)) {
+    // Sin CAE de catorce dígitos no hay autorización: hay un problema. Es la
+    // única regla que impide que la pantalla diga "autorizado" por su cuenta.
+    return /^\d{14}$/.test(authorization) ? 'authorized' : 'attention';
+  }
+  if (value === 'rejected') return 'rejected';
+  if (['failed', 'manual_review'].includes(value)) return 'attention';
+  if (['claiming', 'authenticating', 'authorizing', 'retry_wait', 'ambiguous'].includes(value)) return 'processing';
+  if (['draft', 'queued'].includes(value)) return 'pending';
+  return 'attention';
+}
+
+export function fiscalPublicStateTone(publicState) {
+  return FISCAL_PUBLIC_STATE_TONES[publicState] || 'danger';
+}
 
 export function validateFiscalActivation(profile, { operationalConfirmation = false } = {}) {
   const errors = [];

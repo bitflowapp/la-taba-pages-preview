@@ -9,7 +9,7 @@ export const ARCA_PRODUCTION_PHRASE = 'I_AUTHORIZE_ARCA_PRODUCTION';
 
 export const ARCA_STEPS = Object.freeze([
   'tax-data', 'accountant', 'certificate', 'delegation', 'point-of-sale',
-  'connection', 'invoice-test', 'credit-note-test', 'print-test', 'production-lock',
+  'connection', 'accounting-policy', 'invoice-test', 'credit-note-test', 'print-test', 'production-lock',
 ]);
 
 const STEP_COPY = Object.freeze({
@@ -22,8 +22,8 @@ const STEP_COPY = Object.freeze({
   accountant: {
     title: 'Visto bueno del contador',
     why: 'Alguien tiene que hacerse cargo de cómo se factura.',
-    todo: 'Pedile al contador que revise los datos. Su aprobación la registra soporte en el servidor; este paso se marca solo cuando existe esa evidencia.',
-    pending: 'El contador todavía no aprobó la configuración (se registra fuera del panel).',
+    todo: 'Pedile al contador que revise los datos fiscales y registrá su aprobación con la frase exacta. Queda asentado quién la aprobó y cuándo.',
+    pending: 'El contador todavía no aprobó los datos fiscales.',
   },
   certificate: {
     title: 'Certificado y clave',
@@ -48,6 +48,12 @@ const STEP_COPY = Object.freeze({
     why: 'Antes de facturar hay que ver que ARCA responda.',
     todo: 'La prueba la corre el servidor de facturación; cuando ARCA responde bien, este paso se marca solo. Desde esta pantalla no se dispara.',
     pending: 'El servidor de facturación todavía no registró una conexión exitosa con ARCA.',
+  },
+  'accounting-policy': {
+    title: 'Política contable aprobada',
+    why: 'Es donde se declara qué comprobante se emite, con qué alícuota y a qué condición frente al IVA. El sistema no lo deduce.',
+    todo: 'Declará la política con el contador y aprobala. Cada identificador se valida contra las tablas oficiales que el servidor baja de ARCA.',
+    pending: 'Falta una política contable aprobada (o las tablas oficiales están desactualizadas).',
   },
   'invoice-test': {
     title: 'Factura de prueba',
@@ -85,6 +91,7 @@ export function evaluateArcaActivation(snapshot = {}) {
     delegation: String(status.delegation_status || 'pending') === 'verified',
     'point-of-sale': Number.isSafeInteger(Number(status.point_of_sale)) && Number(status.point_of_sale) > 0,
     connection: Boolean(status.connection_ok_at),
+    'accounting-policy': status.accounting_policy_ready === true,
     'invoice-test': Number(status.homologated_invoices || 0) > 0,
     'credit-note-test': Number(status.homologated_credit_notes || 0) > 0,
     'print-test': Boolean(status.artifact_verified_at) && Boolean(status.print_verified_at),
@@ -106,12 +113,18 @@ export function evaluateArcaActivation(snapshot = {}) {
 
   const readyToHomologate = ['tax-data', 'accountant', 'certificate', 'delegation', 'point-of-sale']
     .every((id) => outcomes[id] === true);
+  // Autorizar homologación no alcanza para emitir: sin política aprobada y sin
+  // tablas oficiales frescas, el circuito se detiene en la primera solicitud.
+  const readyToEmit = readyToHomologate
+    && outcomes.connection === true
+    && outcomes['accounting-policy'] === true;
   const homologationComplete = ARCA_STEPS.every((id) => outcomes[id] === true);
 
   return Object.freeze({
     steps: Object.freeze(steps),
     currentStep: firstPending || 'production-lock',
     readyToHomologate,
+    readyToEmit,
     homologationComplete,
     homologationAuthorized: Boolean(status.homologation_authorized_at),
     productionEnabled: environment === 'production',

@@ -26,6 +26,24 @@ export function createSupabaseFiscalRepository({ client, businessId }) {
     }),
     regenerateArtifact: (fiscalDocumentId) => rpc('request_fiscal_artifact_regeneration', { p_fiscal_document_id: fiscalDocumentId }),
     getActivationStatus: () => rpc('get_arca_activation_status', { p_business_id: businessId }),
+    getPolicyStatus: () => rpc('get_fiscal_policy_status', { p_business_id: businessId }),
+    listAccountingPolicies: () => rpc('list_fiscal_accounting_policies', { p_business_id: businessId }),
+    listEmissionIntents: () => rpc('list_fiscal_emission_intents', { p_business_id: businessId }),
+    // La política contable la declara una persona. El cliente sólo transporta lo
+    // que esa persona escribió: el servidor valida cada identificador contra las
+    // tablas oficiales de ARCA antes de habilitar nada.
+    declareAccountingPolicy: (policy) => rpc('upsert_fiscal_accounting_policy', {
+      p_business_id: businessId, p_policy: policy,
+    }),
+    approveAccountingPolicy: ({ policyId, authorization, notes = '' }) => rpc('approve_fiscal_accounting_policy', {
+      p_policy_id: policyId, p_authorization: authorization, p_notes: notes,
+    }),
+    revokeAccountingPolicy: ({ policyId, reason }) => rpc('revoke_fiscal_accounting_policy', {
+      p_policy_id: policyId, p_reason: reason,
+    }),
+    recordAccountantReview: ({ decision, authorization, notes = '' }) => rpc('record_fiscal_accountant_review', {
+      p_business_id: businessId, p_decision: decision, p_authorization: authorization, p_notes: notes,
+    }),
     // La frase viaja tal cual la escribió el operador: el servidor es quien decide si vale.
     authorizeHomologation: (authorization) => rpc('authorize_arca_homologation', {
       p_business_id: businessId, p_authorization: authorization,

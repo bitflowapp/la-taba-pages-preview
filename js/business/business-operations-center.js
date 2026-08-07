@@ -767,13 +767,10 @@ async function refreshFiscal() {
   await refreshFiscalPrinters();
   // The snapshot remains fresh after navigation, but a late fiscal request must
   // never redraw another operational surface and erase an in-progress scan.
-  // El mostrador vacío sí se refresca: es lo que hace aparecer el checkbox
-  // fiscal cuando la facturación está habilitada, sin pisar una venta en curso.
-  if (
-    currentView === 'fiscal-status'
-    || currentView === 'fiscal-config'
-    || (currentView === 'pos' && !lastScan && !posItems.length)
-  ) context.onChange();
+  // El mostrador también se refresca: es lo que hace aparecer el checkbox
+  // fiscal cuando la facturación está habilitada. El borrador de venta y la
+  // última lectura viven en el estado del módulo, así que el redibujo no los pisa.
+  if (['fiscal-status', 'fiscal-config', 'pos'].includes(currentView)) context.onChange();
 }
 
 async function refreshFiscalPrinters() {

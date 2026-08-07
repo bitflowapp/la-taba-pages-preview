@@ -7,7 +7,12 @@ const SUPABASE_URL = 'https://taba-business-windows-e2e.supabase.co';
 
 test('panel Windows recorre las nueve herramientas, detecta GTIN y conserva la venta si falla fiscal', async ({ page }) => {
   const session = staffSession();
-  await installRuntime(page, session);
+  // El checkbox fiscal sólo existe con la facturación habilitada: este
+  // recorrido cubre "la venta se conserva aunque la solicitud fiscal falle",
+  // que exige poder pedirla. El caso deshabilitado tiene su propio test.
+  await installRuntime(page, session, {
+    profile: { environment: 'homologation', accountant_review_status: 'approved', production_gate_status: 'blocked', is_enabled: true },
+  });
   await page.goto('/#business');
 
   const workspace = page.locator('[data-production-workspace="business"]');
@@ -49,6 +54,29 @@ test('panel Windows recorre las nueve herramientas, detecta GTIN y conserva la v
   await workspace.locator('[name="requestFiscal"]').check();
   await workspace.locator('[data-pos-checkout]').click();
   await expect(workspace.locator('.business-ops-feedback')).toContainText('Venta confirmada; la solicitud fiscal requiere revisión.');
+});
+
+test('con la facturación deshabilitada el mostrador no ofrece un comprobante que el backend rechaza', async ({ page }) => {
+  const session = staffSession();
+  // Runtime por defecto: fiscal_profiles responde environment=disabled,
+  // is_enabled=false. Ofrecer el checkbox acá era prometer un comprobante
+  // que request_fiscal_document niega siempre.
+  await installRuntime(page, session);
+  await page.goto('/#business');
+
+  const workspace = page.locator('[data-production-workspace="business"]');
+  await expect(workspace).toBeVisible();
+  await workspace.locator('[data-business-ops-view="pos"]').first().click();
+  await expect(workspace.locator('[data-business-ops-center="pos"]')).toBeVisible();
+  await expect(workspace.locator('[data-business-ops-center="pos"]')).toContainText('Comprobante fiscal no disponible');
+  await expect(workspace.locator('input[name="requestFiscal"][type="checkbox"]')).toHaveCount(0);
+
+  // La venta en sí sigue funcionando sin promesa fiscal.
+  await workspace.locator('[data-barcode-input]').fill('7894900011517');
+  await workspace.locator('[data-business-scan-test]').click();
+  await expect(workspace.locator('.business-ops-cart')).toContainText('Producto E2E');
+  await workspace.locator('[data-pos-checkout]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('Venta confirmada por el servidor.');
 });
 
 test('panel fiscal usa artefactos privados, descarga, reimpresiÃ³n y nota de crÃ©dito fixture', async ({ page }) => {

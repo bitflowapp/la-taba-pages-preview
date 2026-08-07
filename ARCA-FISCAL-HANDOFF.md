@@ -5,8 +5,9 @@ Rama: `feature/taba2-arca-fiscal-automation` · Base: `c7c3bbd`
 
 | | |
 | --- | --- |
-| Fase anterior | circuito implementado y certificado localmente (`cb490bc`) |
-| Esta fase | certificación sintética completa: `c418333` rider · `0aa4aab` importes contra ARCA · `4896fb7` marca de ambiente · `ac0368c` reinicio del worker · `c6a8609` dígito verificador del CUIT · `ee92ad8` muestra del comprobante · `faa72c3` el mostrador perdía el pedido de comprobante |
+| Fase anterior | circuito sintético certificado (`d6995bf`) |
+| Esta fase | facturación automática configurable: `18701d9` la puerta única · `eab208f` seis pasos, tablero y bandeja · `6f10c16` E2E del onboarding |
+| Fase del circuito sintético | `c418333` rider · `0aa4aab` importes contra ARCA · `4896fb7` marca de ambiente · `ac0368c` reinicio del worker · `c6a8609` dígito verificador del CUIT · `ee92ad8` muestra del comprobante · `faa72c3` el mostrador perdía el pedido de comprobante |
 | Lock de staging | `taba2-staging-mutation.lock` **ocupado** (OWNER=TABA2_FIRST_PHYSICAL_E2E, HOLDING, `ARCA_SCOPE=EXCLUIDA`). No se tocó, no se borró, no se completó. **Todo el trabajo es local.** |
 | Staging / producción / ARCA real | **Intactos.** Ninguna migración aplicada a staging, ninguna Edge Function desplegada, ningún comprobante emitido en ningún ambiente. |
 | Ambiente ARCA usado | Ninguno: falta el certificado (§10). Producción sigue bloqueada por triple defensa. |
@@ -19,6 +20,11 @@ El circuito fiscal completo está **cerrado de punta a punta con fixtures
 sintéticos** y verde en todos los gates. Cada paso —desde un pedido pagado
 sintético hasta el documento fiscal en el Panel, incluida la recuperación
 después de una caída— tiene una prueba automática que corre en cada cambio.
+
+**Y ahora se configura una vez y factura solo.** Walter y su contador recorren
+seis pasos en el Panel; cuando los seis están completos, cada venta cobrada se
+factura sola y el operador sólo mira la pantalla si algo entra a la bandeja de
+excepciones. El runbook está en `ARCA-ONBOARDING-RUNBOOK.md`.
 
 Esta fase encontró y cerró **seis defectos que la fase anterior no había
 visto**. Tres habrían impedido facturar, uno filtraba datos fiscales al
@@ -169,6 +175,78 @@ worker mal configurado que devuelve el intento en vez de quemarlo.
 
 ---
 
+## 3bis. La facturación automática
+
+### El defecto que había: se encendía guardando un formulario
+
+`configure_fiscal_profile` aceptaba `invoice_policy='on_payment_confirmed'` e
+`is_enabled=true` **sin mirar nada más**, y el disparador de pedidos se
+conformaba con esos dos campos. Con el certificado sin cargar, la política
+contable sin aprobar o las tablas oficiales vencidas, cada pedido pagado
+encolaba una intención que no podía terminar en ningún lado: se acumulaban en
+`manual_review` y el operador se enteraba tarde y de a montones. Exactamente lo
+contrario de "Walter interviene sólo ante excepciones".
+
+### Cómo quedó
+
+**Un solo predicado de alistamiento**, `fiscal_automation_blockers()`, que
+devuelve **códigos** —no prosa— de todo lo que impide facturar solo: datos del
+negocio, situación fiscal, punto de venta, certificado (cargado, del CUIT
+correcto y sin vencer), delegación, conexión verificada, ambiente autorizado,
+política contable aprobada y tablas oficiales frescas.
+
+**Una sola puerta**, `set_fiscal_automation()`, que lo exige, pide una frase
+exacta y queda auditada en `fiscal_profile_events`. Apagarla no pide frase:
+frenar nunca es la operación peligrosa.
+
+**Y la automatización no sobrevive a un cambio que la invalide:**
+
+| Qué pasa | Qué hace el sistema |
+| --- | --- |
+| Se guarda el perfil con un dato fiscal distinto | Se apaga y anota `PROFILE_CHANGED` |
+| Se toca la política contable | Se apaga y anota `ACCOUNTING_POLICY_CHANGED` (aprobarla no apaga nada: la fila queda usable) |
+| Vence el certificado a mitad de camino | El disparador lo detecta antes de encolar y apaga con `READINESS_LOST` |
+
+El disparador **vuelve a verificar el alistamiento en cada pedido**: una marca
+vieja no alcanza para generar basura.
+
+### Las dos pantallas que Walter mira
+
+`get_fiscal_automation_overview()` — alistamiento y números del día: ventas
+elegibles, facturadas solas, en camino, rechazadas, requieren atención. Las
+pruebas de homologación se cuentan **aparte**, para que nadie lea un número de
+QA como facturación del negocio.
+
+`list_fiscal_exceptions()` — sólo excepciones reales: configuración incompleta,
+certificado, rechazo, importes que no cierran, respuesta ambigua, dato fiscal
+faltante, error no recuperable. La configuración aparece como **un** problema y
+no como cuarenta.
+
+**La bandeja devuelve códigos, nunca texto de ARCA.** No es que el SOAP se
+filtre y se limpie: es que no tiene camino hasta esa pantalla. La traducción a
+castellano —motivo y acción concreta— ocurre una sola vez, en
+`business-fiscal-assistant.js`.
+
+### El onboarding de seis pasos
+
+El asistente técnico tenía once pasos porque seguía el circuito de ARCA. Walter
+necesita seis, y saber cuál le toca. Los seis son una **proyección** sobre los
+mismos datos —no otra fuente de verdad— más el que el circuito técnico no tenía:
+encender la automatización.
+
+1. Datos del negocio · 2. Situación fiscal · 3. Punto de venta ·
+4. Certificado ARCA · 5. Verificación · 6. Facturación automática
+
+Cada uno dice **COMPLETO / PENDIENTE / ERROR**, y *falta cargarlo* no se muestra
+igual que *está mal*: un certificado vencido es un problema, no un dato que
+falte. El paso 6 no se puede tocar hasta que los cinco anteriores estén
+completos.
+
+**Ninguna tabla nueva.** Todo vive en `fiscal_profiles`, `fiscal_documents`,
+`fiscal_emission_intents` y `fiscal_profile_events`, que ya existían.
+
+---
+
 ## 4. Arquitectura
 
 ```
@@ -276,6 +354,10 @@ reproducible sin staging y sin ARCA.
 | Permisos y RLS | pgTAP (incluye rider) |
 | Caída de ARCA (503) | `arca-circuit` |
 | **Reinicio del worker** | `arca-circuit` (tres casos) · `config-wsaa` (TA persistente) |
+| Onboarding incompleto / completo | pgTAP §1bis y §11bis · `business-fiscal-onboarding` |
+| Activación y desactivación | pgTAP §11bis · unit · E2E |
+| Automatización suspendida por cambio | pgTAP §13 (política) y §18 (certificado vencido) |
+| **Venta que se factura sola, sin operador** | pgTAP §15bis |
 
 **Reinicio del worker**, los tres estados que deja una caída real:
 
@@ -284,6 +366,14 @@ reproducible sin staging y sin ARCA.
 2. ARCA nunca lo recibió → consulta, no encuentra nada y **conserva el mismo
    número reservado** en vez de quemar otro.
 3. El comprobante ya estaba resuelto → cierra el lease sin una sola llamada.
+
+**La venta se factura sola** (pgTAP §15bis): desde que el pedido queda pagado
+hasta el CAE no interviene ninguna persona. El disparador encola la intención,
+el promotor arma el comprobante, el worker reserva el número y ARCA autoriza; el
+Panel lo muestra autorizado con CAE y **no aparece en la bandeja de
+excepciones**, porque no hubo excepción. En el medio el trabajo pasa por un
+worker mal configurado que suelta el lease, y el worker correcto lo termina: la
+recuperación también es automática.
 
 **Dinero:** neto, IVA, exento (`ImpOpEx`), no gravado (`ImpTotConc`), otros
 tributos, total, redondeo, descuento prorrateado al centavo, envío como línea
@@ -369,13 +459,13 @@ parezca a un comprobante emitido.
 
 | Gate | Resultado |
 | --- | --- |
-| `npm test` | **1113/1113** (base 1111; +2 del borrador del mostrador) |
+| `npm test` | **1126/1126** (+13 del onboarding fiscal) |
 | `npm run fiscal:test` | **81/81** (base de la fase anterior: 50) |
-| `npm run fiscal:db:local` | **191 aserciones** sobre PostgreSQL **vacía**: 59 migraciones desde cero + 120 + 41 + 30 |
+| `npm run fiscal:db:local` | **222 aserciones** sobre PostgreSQL **vacía**: 60 migraciones desde cero + 151 + 41 + 30 |
 | `npm run migrations:validate` | aprobado |
 | `npm run check` | pasa |
 | `npm run secrets:scan` | limpio |
-| `npm run test:e2e` | **207/207** (Chromium + Firefox) |
+| `npm run test:e2e` | **209/209** (Chromium + Firefox) |
 | `git diff --check` | limpio |
 | Certificación en homologación oficial | **PENDIENTE — falta el certificado (§11)** |
 
@@ -455,11 +545,40 @@ números son ceros a propósito: los completa el titular o su contador. La
 evidencia que se escribe está saneada (permisos 600) y nunca contiene token,
 sign, PEM ni XML crudo.
 
-**HUMAN_CHECKPOINT_ARCA_2** queda abierto después: las decisiones fiscales del
-caso de homologación (tipo de comprobante, condición frente al IVA del receptor,
-alícuota, punto de venta). No se piden ahora porque sin certificado no se pueden
-validar contra las tablas oficiales de ARCA, que es justamente lo que impide
-inventarlas.
+### Exactamente qué hay que aportar, y quién
+
+Nada de esto se pide todavía: se pide **con el certificado en mano**, porque
+recién ahí cada identificador se puede validar contra las tablas oficiales que
+el puente baja de ARCA. Validarlo es justamente lo que impide inventarlo.
+
+**Walter** (paso 1, 3 y 4 del onboarding):
+
+| Dato | Dónde se carga |
+| --- | --- |
+| Razón social, tal como figura en ARCA | Datos fiscales |
+| CUIT de La Taba, once dígitos | Datos fiscales (se verifica el dígito verificador) |
+| Domicilio comercial | Datos fiscales |
+| Número de punto de venta, dado de alta en ARCA para factura electrónica | Datos fiscales |
+| El certificado X.509 de homologación, sacado de WSASS | Se lo entrega a soporte; se monta en el servidor |
+
+**El contador** (paso 2):
+
+| Decisión | Por qué no se puede inferir |
+| --- | --- |
+| Condición del negocio frente al IVA | Determina la clase de comprobante (A, B, C, M) |
+| Condición del receptor frente al IVA | Viaja en `CondicionIVAReceptorId`, tabla oficial |
+| Tipo de comprobante y tipo de nota de crédito | Se valida contra `FEParamGetTiposCbte` |
+| Tipo y número de documento del receptor | Se valida contra `FEParamGetTiposDoc` |
+| Alícuota de IVA y si va discriminado | Se valida contra `FEParamGetTiposIva` |
+| Si los precios de lista ya incluyen IVA | Cambia cómo se desagrega neto e IVA al centavo |
+| Concepto: productos, servicios o ambos | Determina si hay período y vencimiento de pago |
+| Tratamiento fiscal del envío | Sin esto, un pedido con envío va a revisión |
+
+**Soporte** monta el certificado y la clave privada fuera del repositorio y
+corre `credentials:check`. La clave privada nunca sale del servidor.
+
+Con eso cargado y aprobado, el paso 6 del onboarding se habilita solo y la
+facturación automática se puede encender.
 
 ---
 
@@ -521,6 +640,14 @@ contra la doble emisión, el rider fuera de todo dato fiscal, y un documento que
 no se puede confundir con un comprobante real.
 
 **TABA2_ARCA_SYNTHETIC_FISCAL_FLOW_CERTIFIED**
+
+Y sobre eso, la facturación automática configurable: seis pasos de onboarding
+con COMPLETO/PENDIENTE/ERROR, una sola puerta que exige el alistamiento completo
+para encenderla, un tablero que separa las pruebas de las ventas, y una bandeja
+que muestra sólo lo que necesita a una persona, en castellano y con una acción
+concreta. Una venta sintética pagada llega al CAE sin que nadie toque nada.
+
+**TABA2_ARCA_AUTOMATED_FISCAL_ONBOARDING_SYNTHETICALLY_CERTIFIED**
 
 La declaración `TABA2_ARCA_HOMOLOGATION_FISCAL_FLOW_CERTIFIED` **NO se emite**, y
 no se va a emitir contra mocks. Requiere una corrida contra los endpoints

@@ -22,8 +22,8 @@ const STEP_COPY = Object.freeze({
   accountant: {
     title: 'Visto bueno del contador',
     why: 'Alguien tiene que hacerse cargo de cómo se factura.',
-    todo: 'Pedile al contador que revise los datos y marcá su aprobación acá.',
-    pending: 'El contador todavía no aprobó la configuración.',
+    todo: 'Pedile al contador que revise los datos. Su aprobación la registra soporte en el servidor; este paso se marca solo cuando existe esa evidencia.',
+    pending: 'El contador todavía no aprobó la configuración (se registra fuera del panel).',
   },
   certificate: {
     title: 'Certificado y clave',
@@ -34,8 +34,8 @@ const STEP_COPY = Object.freeze({
   delegation: {
     title: 'Permiso para facturar',
     why: 'ARCA exige autorizar el servicio de facturación para este CUIT.',
-    todo: 'En ARCA, autorizá el servicio de facturación electrónica al certificado que cargaste.',
-    pending: 'La autorización en ARCA figura como pendiente.',
+    todo: 'En ARCA, autorizá el servicio de facturación electrónica al certificado que cargaste. El servidor registra la verificación; sin ese registro el paso sigue pendiente.',
+    pending: 'La autorización en ARCA figura como pendiente (la verifica el servidor de facturación).',
   },
   'point-of-sale': {
     title: 'Punto de venta',
@@ -46,8 +46,8 @@ const STEP_COPY = Object.freeze({
   connection: {
     title: 'Probar la conexión',
     why: 'Antes de facturar hay que ver que ARCA responda.',
-    todo: 'Ejecutá la prueba de conexión. Si falla, te decimos qué revisar.',
-    pending: 'La conexión con ARCA todavía no se probó con éxito.',
+    todo: 'La prueba la corre el servidor de facturación; cuando ARCA responde bien, este paso se marca solo. Desde esta pantalla no se dispara.',
+    pending: 'El servidor de facturación todavía no registró una conexión exitosa con ARCA.',
   },
   'invoice-test': {
     title: 'Factura de prueba',

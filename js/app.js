@@ -1367,7 +1367,16 @@ function bindEvents() {
       return;
     }
 
-    const productionResult = await Promise.resolve(handleProductionOperationsAction(target));
+    // Una excepción acá (IndexedDB bloqueada, storage en modo privado) no debe
+    // convertirse en un unhandledrejection que pinte el panel de recuperación
+    // de arranque encima de un panel sano: se degrada a un toast honesto.
+    let productionResult;
+    try {
+      productionResult = await Promise.resolve(handleProductionOperationsAction(target));
+    } catch (error) {
+      showToast(error?.message || 'La acción no se pudo completar. Reintentá.');
+      return;
+    }
     if (productionResult.handled) {
       if (productionResult.message) showToast(productionResult.message);
       return;

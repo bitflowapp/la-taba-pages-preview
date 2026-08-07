@@ -9,7 +9,21 @@ export function createSupabaseBusinessRepository({ client, businessId }) {
   }
 
   return Object.freeze({
-    snapshot: () => rpc('business_order_snapshot', { p_business_id: businessId }),
+    // El RPC `business_order_snapshot` NUNCA existió en ninguna migración:
+    // llamarlo devuelve PGRST202. El snapshot autoritativo de la bandeja es
+    // la consulta PostgREST de supabase_order_repository.fetchBusinessOrderSnapshot;
+    // este repositorio expone la misma consulta para no prometer un contrato roto.
+    async snapshot() {
+      const { data, error, status } = await client
+        .from('orders')
+        .select('*,order_items(*),order_events(*),order_combos(*)')
+        .eq('business_id', businessId)
+        .eq('origin', 'production')
+        .order('created_at', { ascending: true })
+        .limit(500);
+      if (error) return classifyRpcError(error, status);
+      return { ok: true, data: Array.isArray(data) ? data : [] };
+    },
     acknowledgeOrder: ({ orderId, expectedRevision, idempotencyKey }) => rpc('acknowledge_order', {
       p_order_id: orderId, p_expected_revision: expectedRevision, p_idempotency_key: idempotencyKey,
     }),

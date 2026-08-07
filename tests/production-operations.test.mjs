@@ -46,12 +46,16 @@ test('negocio asigna o reasigna rider solo antes del retiro', () => {
   assert.equal(canAssignBusinessRider({ workflowStatus: 'ready', deliveryMode: 'pickup' }), false);
 });
 
-test('rider reclama, avanza, llega y entrega sin simulaciones', () => {
-  assert.equal(nextRiderStatus({ workflowStatus: 'ready' }), 'on_the_way');
-  assert.equal(nextRiderStatus({ workflowStatus: 'assigned' }), 'on_the_way');
+test('rider sigue la cadena canónica del servidor sin saltear estados', () => {
+  // ready no ofrece avance: primero hay que reclamar (claim_delivery_order).
+  assert.equal(nextRiderStatus({ workflowStatus: 'ready' }), null);
+  // assigned → picked_up → on_the_way → arrived: exactamente los RPC
+  // mark_delivery_picked_up / start_rider_delivery / mark_rider_arrived.
+  assert.equal(nextRiderStatus({ workflowStatus: 'assigned' }), 'picked_up');
   assert.equal(nextRiderStatus({ workflowStatus: 'picked_up' }), 'on_the_way');
   assert.equal(nextRiderStatus({ workflowStatus: 'on_the_way' }), 'arrived');
-  assert.equal(nextRiderStatus({ workflowStatus: 'arrived' }), 'delivered');
+  // De arrived se sale sólo con el código del cliente (confirm_delivery_code).
+  assert.equal(nextRiderStatus({ workflowStatus: 'arrived' }), null);
   assert.equal(nextRiderStatus({ workflowStatus: 'delivered' }), null);
 });
 

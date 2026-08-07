@@ -234,6 +234,12 @@ export function activateBusinessOperations(view = currentView) {
   scanner ||= createBarcodeScannerService();
   unsubscribeScanner ||= scanner.subscribe((event) => { void processScan(event); });
   scanner.start(mode);
+  // El mostrador necesita saber si la facturación está habilitada para ofrecer
+  // (o no) el comprobante fiscal; una sola consulta por sesión.
+  if (view === 'pos' && !fiscalInitialRefreshStarted) {
+    fiscalInitialRefreshStarted = true;
+    void refreshFiscal();
+  }
   // Una sola consulta por sesión: volver a pedirla en cada render encadena re-renders sin fin.
   if (view === 'devices' && !devicePrintersLoadStarted) {
     devicePrintersLoadStarted = true;
@@ -761,7 +767,13 @@ async function refreshFiscal() {
   await refreshFiscalPrinters();
   // The snapshot remains fresh after navigation, but a late fiscal request must
   // never redraw another operational surface and erase an in-progress scan.
-  if (currentView === 'fiscal-status' || currentView === 'fiscal-config') context.onChange();
+  // El mostrador vacío sí se refresca: es lo que hace aparecer el checkbox
+  // fiscal cuando la facturación está habilitada, sin pisar una venta en curso.
+  if (
+    currentView === 'fiscal-status'
+    || currentView === 'fiscal-config'
+    || (currentView === 'pos' && !lastScan && !posItems.length)
+  ) context.onChange();
 }
 
 async function refreshFiscalPrinters() {
@@ -775,6 +787,10 @@ async function refreshFiscalPrinters() {
 
 async function saveFiscalConfiguration(target) {
   const root = target.closest('[data-business-ops-center]');
+  // El RPC upsertea TODAS las columnas: mandar is_enabled=false fijo apagaba
+  // en silencio una facturación ya autorizada al guardar un dato. Se preserva
+  // el estado vigente del perfil; habilitar/deshabilitar es otra acción.
+  const currentlyEnabled = fiscalProfile?.is_enabled === true;
   const profile = {
     legal_name: String(root?.querySelector('[name="legalName"]')?.value || '').trim(),
     cuit: String(root?.querySelector('[name="cuit"]')?.value || '').replace(/\D/g, ''),
@@ -783,16 +799,21 @@ async function saveFiscalConfiguration(target) {
     environment: 'homologation',
     point_of_sale: Number(root?.querySelector('[name="pointOfSale"]')?.value || 0),
     default_currency: 'PES',
-    default_concept: 1,
+    default_concept: [1, 2, 3].includes(Number(fiscalProfile?.default_concept)) ? Number(fiscalProfile.default_concept) : 1,
     invoice_policy: 'manual',
     default_recipient_condition: String(root?.querySelector('[name="defaultRecipientCondition"]')?.value || '').trim(),
-    is_enabled: false,
+    is_enabled: currentlyEnabled,
   };
   if (!/^\d{11}$/.test(profile.cuit) || !profile.legal_name || !profile.tax_condition || !profile.business_address || profile.point_of_sale < 1) {
     return result(false, 'Completá razón social, CUIT, condición, domicilio y punto de venta.');
   }
   const response = await context.configureFiscalProfile(profile);
-  feedback = response?.ok ? 'Perfil guardado en homologación; producción continúa bloqueada.' : response?.message || 'No se pudo guardar el perfil.';
+  feedback = response?.ok
+    ? currentlyEnabled
+      ? 'Perfil actualizado; la facturación de prueba sigue habilitada y producción bloqueada.'
+      : 'Perfil guardado en homologación; producción continúa bloqueada.'
+    : response?.message || 'No se pudo guardar el perfil.';
+  if (response?.ok) fiscalProfile = response.data || fiscalProfile;
   context.onChange();
   return result(Boolean(response?.ok), feedback);
 }
@@ -834,6 +855,9 @@ async function previewFiscalArtifact(button) {
   const access = await context.requestFiscalArtifactUrl({ artifactId: button.dataset.fiscalPreview, action: 'preview' });
   if (!access?.ok) return result(false, fiscalMessage(access, 'No se pudo abrir la vista previa privada.'));
   fiscalPreview = { artifactId: button.dataset.fiscalPreview, signedUrl: access.data.signedUrl, expiresAt: access.data.expiresAt || null };
+  // Evidencia real del paso "QR, PDF e impresión" del asistente: el operador
+  // abrió el PDF. Best-effort: si el rol no alcanza, el paso queda pendiente.
+  try { await context.recordFiscalVerification?.('artifact'); } catch (_) { /* sin evidencia, sin paso */ }
   feedback = 'Vista previa privada abierta. El enlace vence en breve.';
   context.onChange();
   return result(true, feedback);
@@ -920,6 +944,11 @@ async function printFiscalArtifact(button) {
       thermalContent: format === 'thermal' ? thermalContent(row) : '',
     });
     await context.updateFiscalPrintJob({ printJobId, status: outcome?.status || 'unknown', errorCode: outcome?.errorCode || null });
+    // Sólo una impresión VERIFICADA cuenta como evidencia del asistente; un
+    // trabajo aceptado por el spooler no prueba que salió el papel.
+    if (outcome?.status === 'completed_when_verifiable') {
+      try { await context.recordFiscalVerification?.('print'); } catch (_) { /* sin evidencia, sin paso */ }
+    }
     feedback = printOutcomeMessage(outcome?.status);
     context.onChange();
     return result(true, feedback);
@@ -1193,7 +1222,13 @@ function renderPacking() {
 }
 function renderPos() {
   const items = posItems.length ? posItems.map((item) => `<li><span>${item.quantity} × ${escapeHtml(item.name)}</span><button type="button" class="ghost-button compact" data-pos-remove="${escapeHtml(item.productId)}">Quitar</button></li>`).join('') : '<li class="empty-state">Escaneá productos para preparar la venta.</li>';
-  return panel('Venta de mostrador', 'El servidor revalora precios y stock; el cliente envía sólo IDs y cantidades.', `${scannerInput()}${renderScanResult()}<ul class="business-ops-cart">${items}</ul><div class="business-ops-form"><label>Medio de pago<select name="paymentMethod"><option value="cash">Efectivo</option><option value="debit_card">Débito</option><option value="credit_card">Crédito</option><option value="transfer">Transferencia</option><option value="qr">QR</option></select></label><label class="business-ops-check"><input name="requestFiscal" type="checkbox"> Solicitar comprobante fiscal</label><div class="button-row"><button class="primary-button" type="button" data-pos-checkout>Confirmar venta</button><button class="ghost-button" type="button" data-pos-clear>Vaciar borrador</button></div></div>`);
+  // El checkbox fiscal sólo se ofrece con la facturación habilitada de verdad:
+  // ofrecerlo antes era prometer un comprobante que el backend rechaza siempre.
+  const fiscalReady = fiscalProfile?.is_enabled === true;
+  const fiscalControl = fiscalReady
+    ? '<label class="business-ops-check"><input name="requestFiscal" type="checkbox"> Solicitar comprobante fiscal</label>'
+    : '<p class="form-hint">Comprobante fiscal no disponible: la facturación todavía no está habilitada (ver Facturación).</p><input name="requestFiscal" type="hidden" value="">';
+  return panel('Venta de mostrador', 'El servidor revalora precios y stock; el cliente envía sólo IDs y cantidades.', `${scannerInput()}${renderScanResult()}<ul class="business-ops-cart">${items}</ul><div class="business-ops-form"><label>Medio de pago<select name="paymentMethod"><option value="cash">Efectivo</option><option value="debit_card">Débito</option><option value="credit_card">Crédito</option><option value="transfer">Transferencia</option><option value="qr">QR</option></select></label>${fiscalControl}<div class="button-row"><button class="primary-button" type="button" data-pos-checkout>Confirmar venta</button><button class="ghost-button" type="button" data-pos-clear>Vaciar borrador</button></div></div>`);
 }
 function renderFiscalStatus() {
   const rows = fiscalDocuments.length ? fiscalDocuments.map((document) => renderFiscalDocument(document)).join('') : '<div class="empty-state"><strong>Sin comprobantes</strong><p>No se inventan autorizaciones ni CAE.</p></div>';
@@ -1756,6 +1791,7 @@ function defaultContext() {
     authorizeArcaHomologation: async () => ({ ok: false, message: 'La autorización fiscal no está disponible.' }),
     getOpeningStatus: async () => ({ ok: false, message: 'La revisión de apertura no está disponible.' }),
     setBusinessOpenState: async () => ({ ok: false, message: 'No se puede cambiar el estado del negocio.' }),
+    recordFiscalVerification: async () => ({ ok: false, message: 'La verificación fiscal no está disponible.' }),
     completeScannedProduct: async () => ({ ok: false, message: 'El alta de producto no está disponible.' }),
     getScannedProductReadiness: async () => ({ ok: false, message: 'El estado de publicación no está disponible.' }),
     businessId: '', operatorId: '', getOrders: () => [], lookupBarcode: async () => ({ ok: true, data: null }),

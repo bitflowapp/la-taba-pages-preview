@@ -28,23 +28,35 @@ export function createCommandOutbox({
     throw new Error('La outbox requiere almacenamiento durable.');
   }
   let draining = null;
+  let enqueueChain = Promise.resolve();
 
-  async function enqueue(input) {
-    const command = createBusinessCommand(input, { now });
-    const existing = await storage.findByIdempotencyKey(command.idempotencyKey);
-    if (existing) return existing;
-    await storage.put(command);
-    return command;
+  // El encolado se serializa: dos clicks en el mismo tick hac\u00edan dos
+  // read-then-write en paralelo y el segundo mor\u00eda contra el \u00edndice \u00fanico de
+  // IndexedDB con una excepci\u00f3n sin manejar. En cadena, el segundo encuentra
+  // el comando del primero y lo devuelve como replay.
+  function enqueue(input) {
+    const run = enqueueChain.then(async () => {
+      const command = createBusinessCommand(input, { now });
+      const existing = await storage.findByIdempotencyKey(command.idempotencyKey);
+      if (existing) return existing;
+      await storage.put(command);
+      return command;
+    });
+    enqueueChain = run.catch(() => {});
+    return run;
   }
 
-  async function recoverAbandoned() {
+  // `force` existe para el arranque: la p\u00e1gina reci\u00e9n carg\u00f3, as\u00ed que ning\u00fan
+  // `sending` puede estar realmente en vuelo EN ESTA pesta\u00f1a. Otra pesta\u00f1a
+  // enviando en paralelo queda cubierta por el receipt idempotente del servidor.
+  async function recoverAbandoned({ force = false } = {}) {
     const threshold = now().getTime() - sendingLeaseMs;
     const commands = await storage.list();
     const recovered = [];
     for (const command of commands) {
       if (command.state !== 'sending') continue;
       const started = Date.parse(command.sendingStartedAt || command.createdAt);
-      if (!Number.isFinite(started) || started > threshold) continue;
+      if (!force && Number.isFinite(started) && started > threshold) continue;
       const next = { ...command, state: 'pending', nextAttemptAt: now().toISOString(), sendingStartedAt: null, lastErrorCode: 'LEASE_EXPIRED', lastErrorMessage: 'Env\u00edo anterior interrumpido.' };
       await storage.put(next);
       recovered.push(next);
@@ -62,6 +74,19 @@ export function createCommandOutbox({
     if (typeof reconcile !== 'function' || typeof send !== 'function') throw new Error('El procesamiento requiere reconcile y send.');
     draining = processDue({ reconcile, send }).finally(() => { draining = null; });
     return draining;
+  }
+
+  // Cuándo hay que volver a intentar: el mínimo nextAttemptAt de los pendientes.
+  // Devuelve null sin pendientes. Es lo que permite que un reintento programado
+  // por backoff efectivamente ocurra en vez de esperar el próximo click.
+  async function nextDueAt() {
+    const commands = await storage.list();
+    const pending = commands.filter((command) => command.state === 'pending');
+    if (!pending.length) return null;
+    return pending.reduce(
+      (earliest, command) => Math.min(earliest, Date.parse(command.nextAttemptAt) || 0),
+      Number.POSITIVE_INFINITY,
+    );
   }
 
   async function processDue({ reconcile, send }) {
@@ -137,7 +162,7 @@ export function createCommandOutbox({
     return storage.deleteWhere((command) => command.state === 'confirmed' && Date.parse(command.confirmedAt) < cutoff);
   }
 
-  return Object.freeze({ enqueue, list, drain, recoverAbandoned, cancel, archiveConfirmed });
+  return Object.freeze({ enqueue, list, drain, recoverAbandoned, cancel, archiveConfirmed, nextDueAt });
 }
 
 export function createMemoryCommandStorage(seed = []) {

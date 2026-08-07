@@ -259,12 +259,15 @@ test('cambia estados sólo por RPC con compare-and-swap', async () => {
   assert.equal(result.ok, true);
   assert.equal(result.order.workflowStatus, 'accepted');
   const change = mock.calls.rpc.find((call) => call.name === 'transition_order');
+  // La clave viaja saneada al alfabeto del servidor (`^[A-Za-z0-9_-]{8,128}$`):
+  // con dos puntos, el RPC la rechaza con 22023 y el pedido nunca cambia.
   assert.deepEqual(change.args, {
     p_order_id: row.id,
     p_expected_revision: 1,
     p_new_status: 'accepted',
-    p_idempotency_key: 'transition:test-order:revision-1',
+    p_idempotency_key: 'transition-test-order-revision-1',
   });
+  assert.match(change.args.p_idempotency_key, /^[A-Za-z0-9_-]{8,128}$/);
   assert.equal(mock.calls.from.some((call) => call.action === 'update'), false);
 });
 
@@ -285,6 +288,49 @@ test('snapshot de Negocio exige business_id, revision e ítems completos sin esp
   assert.equal(partial.ok, false);
   assert.equal(partial.code, 'BUSINESS_ORDER_INCOMPLETE');
   assert.equal(getState().orders.length, 0);
+});
+
+test('la bandeja mapea combos y descuento del backend sin recalcular dinero', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'submitted',
+    revision: 1,
+    subtotal: 11700,
+    discount_total: 1200,
+    delivery_fee: 150,
+    total: 10650,
+    order_combos: [{
+      combo_id: 'cuatro-para-arrancar',
+      name: 'Cuatro para arrancar',
+      quantity: 1,
+      list_price: 11700,
+      promotional_price: 10500,
+      discount_amount: 1200,
+    }],
+  });
+  const repository = makeRepository(mock);
+
+  const snapshot = await repository.fetchBusinessOrderSnapshot();
+
+  assert.equal(snapshot.ok, true);
+  const order = snapshot.orders.find((candidate) => candidate.backendId === row.id);
+  // La invariante del backend: total = subtotal - discount_total + delivery_fee.
+  // El Panel muestra las mismas cuatro cifras, no un recálculo propio.
+  assert.equal(order.subtotal, 11700);
+  assert.equal(order.discountTotal, 1200);
+  assert.equal(order.deliveryFee, 150);
+  assert.equal(order.total, 10650);
+  assert.deepEqual(order.combos, [{
+    comboId: 'cuatro-para-arrancar',
+    name: 'Cuatro para arrancar',
+    quantity: 1,
+    listPrice: 11700,
+    promotionalPrice: 10500,
+    discountAmount: 1200,
+  }]);
+  // La consulta se lo pide al backend: order_combos viene en el select.
+  const query = mock.calls.from.filter((call) => call.table === 'orders').at(-1);
+  assert.match(String(query.columns || ''), /order_combos/);
 });
 
 test('la bandeja del Negocio deja los pedidos QA fuera de la operación real', async () => {
@@ -360,6 +406,18 @@ test('asigna rider con CAS y publica GPS sólo por las RPC autorizadas', async (
     source: 'simulation',
     timestamp: Date.now(),
   });
+  // El receipt canónico sólo acepta ubicación en camino o al llegar: publicar
+  // con el pedido recién asignado es rechazado por el servidor, no por la UI.
+  const early = await repository.updateRiderLocation(row.public_code, {
+    lat: -38.951,
+    lng: -68.061,
+    accuracy: 8,
+    heading: 91,
+    speed: 1.2,
+    source: 'gps',
+    timestamp: Date.now(),
+  });
+  row.status = 'on_the_way';
   const gps = await repository.updateRiderLocation(row.public_code, {
     lat: -38.951,
     lng: -68.061,
@@ -380,14 +438,18 @@ test('asigna rider con CAS y publica GPS sólo por las RPC autorizadas', async (
   });
   assert.equal(simulation.ok, false);
   assert.match(simulation.message, /GPS real/i);
+  assert.equal(early.ok, false);
+  assert.equal(early.code, 'not_active');
   assert.equal(gps.ok, true);
   assert.equal(mock.db.locations.length, 1);
   assert.equal(mock.db.locations[0].source, 'gps');
   assert.equal(mock.db.locations[0].rider_user_id, RIDER_ID);
   assert.equal(typeof mock.db.locations[0].created_at, 'string');
-  const gpsCall = mock.calls.rpc.find((call) => call.name === 'publish_rider_location');
+  const gpsCall = mock.calls.rpc.find((call) => call.name === 'publish_rider_location_receipt');
   assert.equal(gpsCall.args.p_order_id, row.id);
   assert.equal(gpsCall.args.p_accuracy, 8);
+  assert.match(gpsCall.args.p_idempotency_key, /^[A-Za-z0-9_-]{8,128}$/);
+  assert.equal(typeof gpsCall.args.p_expected_revision, 'number');
   assert.equal(mock.calls.from.some(
     (call) => call.table === 'rider_locations' && call.action === 'insert',
   ), false);
@@ -421,8 +483,17 @@ test('lista una cola minimizada y el claim concurrente tiene un solo ganador', a
   const repository = makeRepository(mock);
 
   const queue = await repository.listAvailableRiderOrders();
-  const first = await repository.claimRiderOrder(row.public_code);
-  const second = await repository.claimRiderOrder(row.public_code);
+  const queuedRevision = queue.orders?.[0]?.revision;
+  const first = await repository.claimRiderOrder(row.public_code, { expectedRevision: queuedRevision });
+  // Mismo rider, misma clave determinística: el segundo claim es un replay
+  // idempotente (no-op), exactamente lo certificado en el circuito vivo.
+  const second = await repository.claimRiderOrder(row.public_code, { expectedRevision: queuedRevision });
+  // Una revisión vieja de OTRO estado de la cola no asigna: el servidor
+  // contesta con la revisión fresca en vez de pisar la asignación.
+  const stale = await repository.claimRiderOrder(row.public_code, {
+    expectedRevision: queuedRevision,
+    idempotencyKey: `claim-otro-intento-${queuedRevision}`,
+  });
 
   assert.equal(queue.ok, true);
   assert.deepEqual(queue.orders, [{
@@ -434,17 +505,20 @@ test('lista una cola minimizada y el claim concurrente tiene un solo ganador', a
     collectionAmount: row.total,
     estimatedMinutes: null,
     operationalRestrictions: '',
+    revision: 1,
     expectedStatus: 'ready',
     expectedRiderId: null,
   }]);
   assert.equal(first.ok, true);
-  assert.equal(first.order.assignedRiderId, RIDER_ID);
-  assert.equal(second.ok, false);
-  assert.equal(second.errorCode, '40001');
-  assert.match(second.message, /otro dispositivo/i);
+  assert.equal(mock.db.orders[0].assigned_rider_user_id, RIDER_ID);
+  assert.equal(second.ok, true);
+  assert.equal(second.idempotentNoOp, true);
+  assert.equal(stale.ok, false);
+  assert.equal(stale.conflict, true);
+  assert.equal(stale.code, 'stale_revision');
   assert.equal(mock.calls.rpc.filter(
-    (call) => call.name === 'claim_available_rider_order',
-  ).length, 2);
+    (call) => call.name === 'claim_delivery_order',
+  ).length, 3);
 });
 
 test('reasigna rider comparando estado y rider actuales', async () => {
@@ -491,7 +565,8 @@ test('confirma la entrega con código sin devolver datos sensibles al rider', as
   const retried = await repository.confirmDelivery(row.public_code, '4821');
 
   assert.equal(mismatch.ok, false);
-  assert.equal(mismatch.code, 'MISMATCH');
+  assert.equal(mismatch.code, 'incorrect_code');
+  assert.match(mismatch.message, /incorrecto/i);
   assert.equal(confirmed.ok, true);
   assert.equal(confirmed.order, null);
   assert.equal(confirmed.publicCode, row.public_code);
@@ -499,9 +574,12 @@ test('confirma la entrega con código sin devolver datos sensibles al rider', as
   assert.equal(retried.ok, true);
   assert.equal(retried.status, 'delivered');
   assert.equal(mock.db.orders[0].status, 'delivered');
-  assert.equal(mock.calls.rpc.filter(
-    (call) => call.name === 'confirm_order_delivery',
-  ).length, 3);
+  const confirmCalls = mock.calls.rpc.filter((call) => call.name === 'confirm_delivery_code');
+  assert.equal(confirmCalls.length, 3);
+  for (const call of confirmCalls) {
+    assert.match(call.args.p_idempotency_key, /^[A-Za-z0-9_-]{8,128}$/);
+    assert.equal(typeof call.args.p_expected_revision, 'number');
+  }
 });
 
 test('carga catálogo remoto verificado con campos maestros de bebidas', async () => {
@@ -1819,6 +1897,9 @@ function createSupabaseClientMock({
     orders: [],
     locations: [],
     handoffs: new Map(),
+    // Replay idempotente de los RPC canónicos del rider, como
+    // rider_delivery_operations en el servidor: (orderId, op, key) → resultado.
+    riderOps: new Map(),
   };
   const calls = { from: [], rpc: [], removeChannel: 0 };
   const channels = [];
@@ -2036,6 +2117,7 @@ function createSupabaseClientMock({
               collection_amount: row.payment_method === 'cash' ? row.total : null,
               estimated_minutes: null,
               operational_restrictions: null,
+              revision: row.revision,
             })),
           error: null,
           status: 200,
@@ -2051,27 +2133,60 @@ function createSupabaseClientMock({
           status: 200,
         };
       }
-      if (name === 'claim_available_rider_order') {
+      if (name === 'claim_delivery_order') {
+        // Réplica del contrato canónico: jsonb {ok, code}, replay idempotente
+        // por clave y refusals con la revisión fresca — nunca un error crudo.
         const row = db.orders.find((candidate) => (
           candidate.business_id === args.p_business_id
           && candidate.public_code === args.p_public_code
         ));
-        if (
-          !row
-          || row.status !== args.p_expected_status
-          || (row.assigned_rider_user_id || null) !== (args.p_expected_rider_user_id || null)
-          || row.assigned_rider_user_id
-        ) {
-          return {
-            data: null,
-            error: { code: '40001', message: 'conflicto de asignacion' },
-            status: 409,
-          };
+        if (!row || row.origin === 'qa') {
+          return { data: { ok: false, code: 'not_available' }, error: null, status: 200 };
+        }
+        const opKey = `${row.id}:claim:${args.p_idempotency_key}`;
+        if (db.riderOps.has(opKey)) {
+          return { data: { ...db.riderOps.get(opKey), idempotent_no_op: true }, error: null, status: 200 };
+        }
+        if (row.revision !== args.p_expected_revision) {
+          return { data: { ok: false, code: 'stale_revision', revision: row.revision }, error: null, status: 200 };
+        }
+        if (row.delivery_mode !== 'delivery' || row.status !== 'ready' || row.assigned_rider_user_id) {
+          return { data: { ok: false, code: 'taken_by_other', revision: row.revision }, error: null, status: 200 };
         }
         row.status = 'assigned';
         row.assigned_rider_user_id = userId;
+        row.revision += 1;
         row.updated_at = new Date().toISOString();
-        return { data: withRelations(row, db), error: null, status: 200 };
+        const claimResult = { ok: true, outcome: 'claimed', idempotent_no_op: false };
+        db.riderOps.set(opKey, claimResult);
+        return { data: claimResult, error: null, status: 200 };
+      }
+      if (['mark_delivery_picked_up', 'start_rider_delivery', 'mark_rider_arrived'].includes(name)) {
+        const advance = {
+          mark_delivery_picked_up: { op: 'picked_up', from: 'assigned', to: 'picked_up', refusal: 'not_ready_for_pickup' },
+          start_rider_delivery: { op: 'start_route', from: 'picked_up', to: 'on_the_way', refusal: 'not_picked_up' },
+          mark_rider_arrived: { op: 'arrived', from: 'on_the_way', to: 'arrived', refusal: 'not_on_the_way' },
+        }[name];
+        const row = db.orders.find((candidate) => candidate.id === args.p_order_id);
+        if (!row || row.assigned_rider_user_id !== userId) {
+          return { data: { ok: false, code: 'not_assigned' }, error: null, status: 200 };
+        }
+        const opKey = `${row.id}:${advance.op}:${args.p_idempotency_key}`;
+        if (db.riderOps.has(opKey)) {
+          return { data: { ...db.riderOps.get(opKey), idempotent_no_op: true }, error: null, status: 200 };
+        }
+        if (row.revision !== args.p_expected_revision) {
+          return { data: { ok: false, code: 'stale_revision', revision: row.revision }, error: null, status: 200 };
+        }
+        if (row.status !== advance.from) {
+          return { data: { ok: false, code: advance.refusal, revision: row.revision }, error: null, status: 200 };
+        }
+        row.status = advance.to;
+        row.revision += 1;
+        row.updated_at = new Date().toISOString();
+        const advanceResult = { ok: true, outcome: advance.to, idempotent_no_op: false };
+        db.riderOps.set(opKey, advanceResult);
+        return { data: advanceResult, error: null, status: 200 };
       }
       if (name === 'assign_order_rider') {
         const row = db.orders.find((candidate) => candidate.id === args.p_order_id);
@@ -2091,52 +2206,41 @@ function createSupabaseClientMock({
         row.updated_at = new Date().toISOString();
         return { data: withRelations(row, db), error: null, status: 200 };
       }
-      if (name === 'confirm_order_delivery') {
+      if (name === 'confirm_delivery_code') {
         const row = db.orders.find((candidate) => candidate.id === args.p_order_id);
-        const handoff = row ? db.handoffs.get(row.id) : null;
-        if (
-          row?.status === 'delivered'
-          && row.assigned_rider_user_id === userId
-          && handoff?.confirmedAt
-        ) {
-          return {
-            data: {
-              ok: true,
-              already_confirmed: true,
-              public_code: row.public_code,
-              status: row.status,
-              confirmed_at: handoff.confirmedAt,
-            },
-            error: null,
-            status: 200,
-          };
+        if (!/^[0-9]{4}$/.test(String(args.p_delivery_code || '').replace(/\D/g, ''))) {
+          return { data: { ok: false, code: 'invalid_format' }, error: null, status: 200 };
         }
-        if (
-          !row
-          || row.assigned_rider_user_id !== userId
-          || row.status !== args.p_expected_status
-          || row.status !== 'arrived'
-        ) {
-          return {
-            data: null,
-            error: { code: '40001', message: 'estado concurrente o acceso denegado' },
-            status: 409,
-          };
+        if (!row || row.assigned_rider_user_id !== userId) {
+          return { data: { ok: false, code: 'not_assigned' }, error: null, status: 200 };
         }
-        if (!handoff) {
-          return {
-            data: { ok: false, code: 'CODE_UNAVAILABLE' },
-            error: null,
-            status: 200,
-          };
+        const opKey = `${row.id}:confirm_code:${args.p_idempotency_key}`;
+        if (db.riderOps.has(opKey)) {
+          return { data: { ...db.riderOps.get(opKey), idempotent_no_op: true }, error: null, status: 200 };
+        }
+        const handoff = db.handoffs.get(row.id);
+        if (row.status === 'delivered' && handoff?.confirmedAt) {
+          const replay = { ok: true, outcome: 'already_delivered', idempotent_no_op: true };
+          db.riderOps.set(opKey, replay);
+          return { data: replay, error: null, status: 200 };
+        }
+        if (row.revision !== args.p_expected_revision) {
+          return { data: { ok: false, code: 'stale_revision', revision: row.revision }, error: null, status: 200 };
+        }
+        if (row.status !== 'arrived') {
+          return { data: { ok: false, code: 'not_arrived', revision: row.revision }, error: null, status: 200 };
+        }
+        if (!handoff || (handoff.expiresAt && Date.parse(handoff.expiresAt) <= Date.now())) {
+          return { data: { ok: false, code: 'code_unavailable' }, error: null, status: 200 };
         }
         if (args.p_delivery_code !== handoff.code) {
           handoff.failedAttempts += 1;
           return {
             data: {
               ok: false,
-              code: handoff.failedAttempts >= 5 ? 'LOCKED' : 'MISMATCH',
+              code: handoff.failedAttempts >= 5 ? 'temporarily_locked' : 'incorrect_code',
               remaining_attempts: Math.max(0, 5 - handoff.failedAttempts),
+              retry_after_seconds: handoff.failedAttempts >= 5 ? 300 : null,
             },
             error: null,
             status: 200,
@@ -2145,31 +2249,29 @@ function createSupabaseClientMock({
         const confirmedAt = new Date().toISOString();
         handoff.confirmedAt = confirmedAt;
         row.status = 'delivered';
+        row.revision += 1;
         row.delivered_at = confirmedAt;
         row.updated_at = confirmedAt;
-        return {
-          data: {
-            ok: true,
-            public_code: row.public_code,
-            status: row.status,
-            confirmed_at: confirmedAt,
-          },
-          error: null,
-          status: 200,
-        };
+        const confirmResult = { ok: true, outcome: 'confirmed', idempotent_no_op: false };
+        db.riderOps.set(opKey, confirmResult);
+        return { data: confirmResult, error: null, status: 200 };
       }
-      if (name === 'publish_rider_location') {
+      if (name === 'publish_rider_location_receipt') {
         const row = db.orders.find((candidate) => candidate.id === args.p_order_id);
         if (
           !row
           || row.assigned_rider_user_id !== userId
-          || !['assigned', 'picked_up', 'on_the_way', 'arrived'].includes(row.status)
         ) {
-          return {
-            data: null,
-            error: { code: '42501', message: 'pedido no asignado a este rider' },
-            status: 403,
-          };
+          return { data: { ok: false, code: 'not_assigned' }, error: null, status: 200 };
+        }
+        if (!['on_the_way', 'arrived'].includes(row.status)) {
+          return { data: { ok: false, code: 'not_active' }, error: null, status: 200 };
+        }
+        if (row.revision !== args.p_expected_revision) {
+          return { data: { ok: false, code: 'stale', revision: row.revision }, error: null, status: 200 };
+        }
+        if (args.p_is_mock === true) {
+          return { data: { ok: false, code: 'mock_location_rejected' }, error: null, status: 200 };
         }
         const location = {
           id: `location-${db.locations.length + 1}`,
@@ -2182,10 +2284,16 @@ function createSupabaseClientMock({
           heading: args.p_heading,
           speed: args.p_speed,
           source: 'gps',
+          client_request_id: args.p_idempotency_key,
+          receipt_sequence: db.locations.length + 1,
           created_at: new Date().toISOString(),
         };
         db.locations.push(location);
-        return { data: location, error: null, status: 200 };
+        return {
+          data: { ok: true, code: 'accepted', idempotent_no_op: false, sequence: location.receipt_sequence, recorded_at: location.created_at },
+          error: null,
+          status: 200,
+        };
       }
       if (name === 'get_public_order_tracking') {
         const row = db.orders.find((candidate) => (

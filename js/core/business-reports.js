@@ -211,6 +211,9 @@ function orderAmounts(order) {
     0,
   ));
   const deliveryFee = moneyValue(order.deliveryFee ?? order.totals?.deliveryFee, 0);
+  // Con discountTotal mapeado desde el backend, el recálculo protector coincide
+  // con la invariante de la base (total = subtotal - discount_total + delivery_fee)
+  // también en pedidos con combo; antes el descuento llegaba en 0 e inflaba.
   const computedTotal = Math.max(0, subtotal - discountTotal) + deliveryFee;
   const total = canComputeTotal ? computedTotal : fallbackTotal ?? computedTotal;
   return { subtotal, discountTotal, deliveryFee, total };

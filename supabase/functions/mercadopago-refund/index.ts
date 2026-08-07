@@ -49,12 +49,18 @@ Deno.serve(async (request) => {
     if (prepared.reconciliation_required === true) return reconciling(request);
     const providerIdempotencyKey = requireUuid(prepared.idempotency_key, 'prepared.idempotency_key');
 
+    // Total vs. parcial lo decide la BASE (prepared.full_refund), no el dato
+    // que mandó el navegador: con un reembolso parcial previo, "importe vacío"
+    // del cliente y "total" del proveedor pueden no ser el mismo número, y lo
+    // que se asienta después es prepared.amount.
+    const fullRefund = prepared.full_refund === true
+      || (prepared.full_refund === undefined && amount === null);
     try {
       const result = await mercadoPagoRequest(
         `/v1/payments/${encodeURIComponent(String(prepared.provider_payment_id))}/refunds`,
         {
           method: 'POST',
-          body: amount === null ? undefined : JSON.stringify({ amount: Number(prepared.amount) }),
+          body: fullRefund ? undefined : JSON.stringify({ amount: Number(prepared.amount) }),
           idempotencyKey: providerIdempotencyKey,
         },
       );

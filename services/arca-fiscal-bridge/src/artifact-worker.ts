@@ -60,6 +60,9 @@ export class FiscalArtifactWorker {
         ...(document.recipient.documentNumber ? { recipientDocumentNumber: document.recipient.documentNumber } : {}),
       };
       const pdf = await createAuthorizedFiscalPdf({
+        environment: document.environment === 'production' ? 'production' : 'homologation',
+        documentState: document.state,
+        documentTypeId: document.documentType,
         businessName: document.issuer.legalName,
         legalName: document.issuer.legalName,
         cuit: document.issuer.cuit,
@@ -137,6 +140,11 @@ export function privateStoragePath(businessId: string, documentId: string, gener
 }
 
 function assertArtifactSource(document: LoadedFiscalArtifactDocument, job: FiscalArtifactJob): void {
+  // Sin ambiente declarado no se genera nada. El PDF se marca por esta fila, y
+  // adivinarla es exactamente lo que no se puede hacer con un comprobante.
+  if (!['homologation', 'production'].includes(document.environment)) {
+    throw Object.assign(new Error('El comprobante no declara su ambiente fiscal.'), { code: 'ARTIFACT_SOURCE_INCOMPLETE', retryable: false });
+  }
   if (!['authorized', 'credited'].includes(document.state)
     || !/^\d{14}$/.test(document.cae)
     || document.documentType < 1

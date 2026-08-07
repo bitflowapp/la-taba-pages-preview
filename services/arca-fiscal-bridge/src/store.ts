@@ -36,6 +36,8 @@ export interface FiscalArtifactItem {
 export interface LoadedFiscalArtifactDocument {
   fiscalDocumentId: string;
   businessId: string;
+  /** Del comprobante, no del worker: el PDF se marca por lo que dice la fila. */
+  environment: string;
   state: string;
   documentIntent: 'invoice' | 'credit_note';
   documentType: number;
@@ -244,6 +246,7 @@ export class SupabaseFiscalStore implements FiscalStore, FiscalArtifactStore {
     return {
       fiscalDocumentId: String(row.id),
       businessId: String(row.business_id),
+      environment: String(row.environment || ''),
       state: String(row.state || ''),
       documentIntent,
       documentType: numberValue(row.document_type),

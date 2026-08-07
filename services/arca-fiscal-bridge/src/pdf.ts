@@ -1,11 +1,34 @@
 import { createHash } from 'node:crypto';
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
+import { PDFDocument, StandardFonts, degrees, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import QRCode from 'qrcode';
 import { buildFiscalQrUrl, type FiscalQrData } from './qr.js';
 
-export const FISCAL_PDF_GENERATOR_VERSION = 'taba-fiscal-pdf-2026.08.02.1';
+export const FISCAL_PDF_GENERATOR_VERSION = 'taba-fiscal-pdf-2026.08.07.1';
 const A4: [number, number] = [595.28, 841.89];
 const PDF_EPOCH = new Date('2000-01-01T00:00:00.000Z');
+
+/**
+ * Un comprobante de homologación lleva CAE y QR reales emitidos por ARCA, y
+ * ARCA los emite contra un ambiente que no factura nada. Sin marca, el PDF es
+ * indistinguible de una factura de verdad para cualquiera que lo reciba.
+ *
+ * 'synthetic' es para los comprobantes que ni siquiera hablaron con ARCA:
+ * fixtures, muestras y pruebas locales.
+ */
+export type FiscalDocumentEnvironment = 'production' | 'homologation' | 'synthetic';
+
+const ENVIRONMENT_MARKS: Readonly<Record<Exclude<FiscalDocumentEnvironment, 'production'>, { banner: string; watermark: string; keyword: string }>> = Object.freeze({
+  homologation: {
+    banner: 'COMPROBANTE DE PRUEBA — HOMOLOGACIÓN ARCA — SIN VALIDEZ FISCAL',
+    watermark: 'HOMOLOGACIÓN',
+    keyword: 'HOMOLOGATION',
+  },
+  synthetic: {
+    banner: 'COMPROBANTE SINTÉTICO — DATOS DE PRUEBA — NO EMITIDO POR ARCA — SIN VALIDEZ FISCAL',
+    watermark: 'SINTÉTICO',
+    keyword: 'SYNTHETIC',
+  },
+});
 
 export interface ReceiptPdfItem {
   description: string;
@@ -18,6 +41,10 @@ export interface ReceiptPdfItem {
 }
 
 export interface ReceiptPdfInput {
+  /** De qué ambiente salió el comprobante. No tiene valor por omisión a propósito. */
+  environment: FiscalDocumentEnvironment;
+  /** Estado del comprobante tal como lo guarda el backend. */
+  documentState?: string;
   businessName: string;
   legalName?: string;
   cuit?: string;
@@ -27,6 +54,8 @@ export interface ReceiptPdfInput {
   recipientDocumentType?: number;
   recipientDocumentNumber?: string;
   documentLabel: string;
+  /** Tipo de comprobante según la tabla oficial FEParamGetTiposCbte. */
+  documentTypeId?: number;
   pointOfSale?: number;
   documentNumber?: number;
   issueDate: string;
@@ -80,17 +109,28 @@ async function renderReceipt(input: ReceiptPdfInput, requireAuthorization: boole
   const authorized = /^\d{14}$/.test(String(input.cae || '')) && Boolean(input.qr);
   if (requireAuthorization && !authorized) throw new Error('Autorización fiscal ausente.');
   if (input.items.length > 200) throw new Error('El comprobante excede el máximo de ítems permitido.');
+  if (!['production', 'homologation', 'synthetic'].includes(input.environment)) {
+    throw new Error('El comprobante fiscal debe declarar su ambiente.');
+  }
+  const mark = input.environment === 'production' ? null : ENVIRONMENT_MARKS[input.environment];
   const document = await PDFDocument.create();
-  document.setTitle(safePdfText(`${input.documentLabel} ${input.pointOfSale || 0}-${input.documentNumber || 0}`, 120));
+  const titlePrefix = mark ? `[${mark.keyword}] ` : '';
+  document.setTitle(safePdfText(`${titlePrefix}${input.documentLabel} ${input.pointOfSale || 0}-${input.documentNumber || 0}`, 120));
   document.setAuthor(safePdfText(input.legalName || input.businessName, 120));
   document.setCreator('TABA Negocio');
   document.setProducer('TABA Negocio Fiscal PDF');
+  document.setSubject(mark ? `${mark.keyword} — comprobante sin validez fiscal` : 'Comprobante fiscal');
+  document.setKeywords(mark ? [mark.keyword, 'NO_VALIDO_COMO_COMPROBANTE'] : ['PRODUCTION']);
   document.setCreationDate(PDF_EPOCH);
   document.setModificationDate(PDF_EPOCH);
   const regular = await document.embedFont(StandardFonts.Helvetica);
   const bold = await document.embedFont(StandardFonts.HelveticaBold);
   const renderer = new ReceiptRenderer(document, regular, bold);
 
+  if (mark) {
+    renderer.banner(mark.banner);
+    renderer.gap(4);
+  }
   renderer.text(input.businessName, 18, true);
   if (input.legalName && input.legalName !== input.businessName) renderer.text(`Razón social: ${input.legalName}`);
   if (input.cuit) renderer.text(`CUIT: ${input.cuit}`);
@@ -99,7 +139,10 @@ async function renderReceipt(input: ReceiptPdfInput, requireAuthorization: boole
   renderer.text(input.documentLabel, 14, true);
   renderer.text(`Fecha de emisión: ${formatIssueDate(input.issueDate)}`);
   renderer.text(`Comprobante: ${formatNumber(input.pointOfSale)}-${formatNumber(input.documentNumber, 8)}`);
+  renderer.text(`Tipo de comprobante ARCA: ${formatNumber(input.documentTypeId, 3)}`);
   renderer.text(`Moneda: ${safePdfText(input.currencyCode || 'PES', 10)}`);
+  if (input.documentState) renderer.text(`Estado: ${safePdfText(input.documentState, 40)}`);
+  renderer.text(`Ambiente: ${input.environment.toUpperCase()}`);
   renderer.gap(4);
 
   if (input.recipientName || input.recipientCondition || input.recipientDocumentType) {
@@ -155,10 +198,35 @@ async function renderReceipt(input: ReceiptPdfInput, requireAuthorization: boole
     const value = safePdfText(legend, 300);
     if (value) renderer.text(value, 8);
   }
+  if (mark) {
+    renderer.gap(6);
+    renderer.banner(mark.banner);
+  }
   renderer.text(`Generador: ${FISCAL_PDF_GENERATOR_VERSION}`, 7);
+  // La marca de agua va al final, sobre TODAS las páginas: recortar la primera
+  // o imprimir sólo la última no alcanza para perder el aviso.
+  if (mark) stampWatermark(document, bold, mark.watermark);
   const bytes = await document.save({ useObjectStreams: false, addDefaultPage: false, updateFieldAppearances: false });
   if (bytes.byteLength > 16_777_216) throw new Error('El PDF fiscal excede el límite de almacenamiento.');
   return bytes;
+}
+
+function stampWatermark(document: PDFDocument, font: PDFFont, text: string): void {
+  const size = 58;
+  const width = font.widthOfTextAtSize(text, size);
+  for (const page of document.getPages()) {
+    const { width: pageWidth, height: pageHeight } = page.getSize();
+    // Diagonal a 45°, centrada, en gris claro: se lee siempre y no tapa el detalle.
+    page.drawText(text, {
+      x: (pageWidth - width * Math.SQRT1_2) / 2,
+      y: (pageHeight - width * Math.SQRT1_2) / 2,
+      size,
+      font,
+      color: rgb(0.85, 0.32, 0.32),
+      opacity: 0.22,
+      rotate: degrees(45),
+    });
+  }
 }
 
 class ReceiptRenderer {
@@ -184,6 +252,24 @@ class ReceiptRenderer {
       this.#y -= size + 4;
     }
     this.#y -= 3;
+  }
+
+  /** Aviso de ambiente: caja roja de ancho completo, imposible de confundir con el detalle. */
+  banner(value: string): void {
+    const size = 11;
+    const lines = wrap(this.#bold, safePdfText(value, 200), size, 485);
+    const height = lines.length * (size + 4) + 12;
+    this.ensure(height + 6);
+    this.#page.drawRectangle({
+      x: 40, y: this.#y - height + size + 2, width: 515, height,
+      color: rgb(0.99, 0.93, 0.93), borderColor: rgb(0.78, 0.16, 0.16), borderWidth: 1.4,
+    });
+    this.#y -= 4;
+    for (const line of lines) {
+      this.#page.drawText(line, { x: 52, y: this.#y, size, font: this.#bold, color: rgb(0.6, 0.09, 0.09) });
+      this.#y -= size + 4;
+    }
+    this.#y -= 8;
   }
 
   gap(points: number): void {

@@ -22,7 +22,7 @@ test('QR versión 1 es determinista y sólo existe con CAE válido', () => {
 });
 
 test('PDF distingue comprobante autorizado de interno pendiente', async () => {
-  const base = { businessName: 'TABA', documentLabel: 'Factura C', issueDate: '2026-08-02', items: [{ description: 'Producto', quantity: 1, unitPrice: 121, amount: 121 }], totalAmount: 121 };
+  const base = { environment: 'synthetic' as const, businessName: 'TABA', documentLabel: 'Factura C', issueDate: '2026-08-02', items: [{ description: 'Producto', quantity: 1, unitPrice: 121, amount: 121 }], totalAmount: 121 };
   const pending = await createReceiptPdf(base);
   const authorized = await createReceiptPdf({ ...base, cae: qr.authorizationCode, caeExpiration: '2026-08-12', qr });
   assert.ok(pending.byteLength > 700);
@@ -31,6 +31,7 @@ test('PDF distingue comprobante autorizado de interno pendiente', async () => {
 
 test('PDF autorizado A4 es determinista, tiene CAE/QR y conserva referencia de nota', async () => {
   const input = {
+    environment: 'homologation' as const, documentState: 'authorized', documentTypeId: 13,
     businessName: 'TABA', legalName: 'TABA S.R.L.', cuit: qr.cuit, address: 'Dirección sintética',
     recipientCondition: 'consumidor_final', recipientDocumentType: 99, recipientDocumentNumber: '0',
     documentLabel: 'Nota de crédito fiscal', pointOfSale: 5, documentNumber: 43, issueDate: '2026-08-02', currencyCode: 'PES',
@@ -131,7 +132,8 @@ class ArtifactMemoryStore implements FiscalArtifactStore {
 
 test('worker de artefactos persiste un PDF con path privado, hash y versión', async () => {
   const document: LoadedFiscalArtifactDocument = {
-    fiscalDocumentId: '00000000-0000-4000-8000-000000000002', businessId: '00000000-0000-4000-8000-000000000003', state: 'authorized', documentIntent: 'credit_note',
+    fiscalDocumentId: '00000000-0000-4000-8000-000000000002', businessId: '00000000-0000-4000-8000-000000000003',
+    environment: 'homologation', state: 'authorized', documentIntent: 'credit_note',
     documentType: 13, pointOfSale: 5, documentNumber: 43, issueDate: '2026-08-02', currencyCode: 'PES', currencyRate: 1,
     totalAmount: 121, netAmount: 100, vatAmount: 21, exemptAmount: 0, nonTaxedAmount: 0, otherTaxesAmount: 0,
     cae: qr.authorizationCode, caeExpiration: '2026-08-12', issuer: { legalName: 'TABA S.R.L.', cuit: qr.cuit, address: 'Dirección sintética', legends: [] },

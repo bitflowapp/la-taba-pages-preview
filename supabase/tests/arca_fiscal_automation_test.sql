@@ -7,18 +7,21 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(95);
+select plan(115);
 
 -- ===== Fixture =====
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
 values
   ('51000000-0000-4000-8000-000000000001','authenticated','authenticated','arca-owner@example.invalid','',now(),'{}','{}',now(),now()),
-  ('51000000-0000-4000-8000-000000000002','authenticated','authenticated','arca-staff@example.invalid','',now(),'{}','{}',now(),now());
+  ('51000000-0000-4000-8000-000000000002','authenticated','authenticated','arca-staff@example.invalid','',now(),'{}','{}',now(),now()),
+  ('51000000-0000-4000-8000-000000000003','authenticated','authenticated','arca-rider@example.invalid','',now(),'{}','{}',now(),now());
 insert into public.businesses(id,name,status,slug,is_active)
 values ('52000000-0000-4000-8000-000000000001','TABA ARCA fixture','open','taba-arca-fixture',true);
 insert into public.business_members(business_id,user_id,role,is_active) values
   ('52000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000001','owner',true),
-  ('52000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000002','staff',true);
+  ('52000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000002','staff',true),
+  -- Miembro activo del negocio y, aun asi, sin nada que hacer con un comprobante.
+  ('52000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000003','rider',true);
 -- Igual que el resto de las suites POS: se relaja SOLO el vinculo de imagen
 -- comercial dentro de esta transaccion, que el ROLLBACK restaura. Todas las
 -- reglas fiscales siguen activas.
@@ -571,6 +574,66 @@ select is(
   (select state from public.fiscal_outbox where id=(select id from arca_release)),
   'retry_wait',
   'y el trabajo vuelve a la cola intacto'
+);
+
+-- ===== 16. El rider es miembro del negocio y no ve un solo dato fiscal =====
+-- is_business_member() era verdadero para el rider, asi que un repartidor leia
+-- CUIT, CAE, documento del receptor, importes y la ruta del PDF. El bucket
+-- siempre fue privado; todo lo demas no lo era.
+set local role postgres;
+insert into public.fiscal_document_artifacts(
+  business_id,fiscal_document_id,artifact_type,storage_provider,storage_path,mime_type,
+  size_bytes,sha256,document_number,generated_at,generated_by,generation_version,generation_token)
+select d.business_id, d.id, 'authorized_pdf', 'supabase_storage',
+  'fiscal/'||d.business_id||'/'||d.id||'/'||gen_random_uuid()||'.pdf', 'application/pdf',
+  1024, repeat('a',64), d.document_number, now(), 'pgtap-fixture', 'pgtap-1', gen_random_uuid()
+  from public.fiscal_documents d where d.state='authorized' limit 1;
+insert into public.fiscal_print_jobs(
+  business_id,fiscal_document_id,artifact_id,printer_name_hash,format,copies,requested_by,idempotency_key)
+select a.business_id, a.fiscal_document_id, a.id, repeat('b',64), 'a4', 1,
+  '51000000-0000-4000-8000-000000000001', 'pgtap-print-1'
+  from public.fiscal_document_artifacts a limit 1;
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000001","role":"authenticated"}';
+select ok(public.can_read_fiscal_documents('52000000-0000-4000-8000-000000000001'), 'el owner lee comprobantes');
+select is((select count(*)::int from public.fiscal_documents), 2, 'y los ve todos');
+select ok((select count(*) from public.fiscal_document_items) > 0, 'con sus lineas fiscales');
+select ok((select count(*) from public.fiscal_events) > 0, 'y su auditoria');
+select is((select count(*)::int from public.fiscal_profiles), 1, 'y el perfil fiscal');
+select is((select count(*)::int from public.fiscal_emission_intents), 2, 'y las intenciones');
+select ok((select count(*) from public.fiscal_profile_events) > 0, 'y los eventos del perfil');
+select is((select count(*)::int from public.fiscal_print_jobs), 1, 'y la impresion');
+-- La ruta de storage del PDF no la lee nadie con rol authenticated, ni el owner:
+-- el Panel la pide por RPC y el puente la escribe con service_role.
+select throws_ok(
+  $$select 1 from public.fiscal_document_artifacts$$,
+  '42501',
+  null,
+  'la ruta del PDF fiscal no es legible desde el navegador por ningun rol'
+);
+
+set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000002","role":"authenticated"}';
+select ok(public.can_read_fiscal_documents('52000000-0000-4000-8000-000000000001'), 'el staff del mostrador tambien');
+
+set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000003","role":"authenticated"}';
+select ok(not public.can_read_fiscal_documents('52000000-0000-4000-8000-000000000001'), 'el rider no');
+select ok(public.is_business_member('52000000-0000-4000-8000-000000000001'), 'aunque sea miembro activo del negocio');
+select is((select count(*)::int from public.fiscal_documents), 0, 'el rider no ve ningun comprobante');
+select is((select count(*)::int from public.fiscal_document_items), 0, 'ni una sola linea fiscal');
+select is((select count(*)::int from public.fiscal_events), 0, 'ni la auditoria fiscal');
+select is((select count(*)::int from public.fiscal_profiles), 0, 'ni el CUIT del perfil fiscal');
+select is((select count(*)::int from public.fiscal_profile_events), 0, 'ni la huella del certificado');
+select is((select count(*)::int from public.fiscal_emission_intents), 0, 'ni las intenciones de emision');
+select is((select count(*)::int from public.fiscal_print_jobs), 0, 'ni que se imprimio un comprobante');
+
+-- Y que no quede ninguna superficie fiscal con el predicado viejo.
+set local role postgres;
+select is(
+  (select count(*)::int from pg_policies
+    where schemaname='public' and tablename like 'fiscal\_%' and qual like '%is_business_member%'),
+  0,
+  'ninguna politica fiscal sigue leyendo con is_business_member'
 );
 
 select * from finish();

@@ -204,6 +204,16 @@ where o.origin = 'qa'
 -- ===== Aislamiento del Rider =====
 -- Un rider no puede recibir para reparto un pedido QA: la dirección es
 -- inventada y el cobro no existe.
+--
+-- El `drop` es obligatorio y no cambia nada de lo ya desplegado: esta versión
+-- agrega dos columnas de salida (`business_location`, `customer_location`) a la
+-- firma de 20260802100000, y `create or replace` no puede cambiar el tipo de
+-- retorno de una función `returns table`. Sin el drop, reconstruir el proyecto
+-- desde cero —el camino de recuperación ante desastre— aborta exactamente acá.
+-- Medido el 2026-08-07 replicando la cadena completa sobre Postgres 17.6
+-- limpio: 51 migraciones, un único punto de corte, éste.
+drop function if exists public.get_rider_queue(uuid);
+
 create or replace function public.get_rider_queue(p_business_id uuid)
 returns table (
   order_id uuid,
@@ -267,6 +277,15 @@ begin
   limit 50;
 end;
 $$;
+
+-- Recrear la función la devuelve al default de PostgreSQL: EXECUTE para PUBLIC.
+-- Se restituye exactamente la postura de 20260802100000 —sólo el rider
+-- autenticado— y el comentario que fijó 20260802103000 al volverla volatile.
+revoke all on function public.get_rider_queue(uuid) from public, anon;
+grant execute on function public.get_rider_queue(uuid) to authenticated;
+
+comment on function public.get_rider_queue(uuid) is
+  'Cola de retiro minimizada del rider activo autenticado; volatile para tomar el lock de lectura. Excluye pedidos QA.';
 
 create or replace function public.list_available_rider_orders(p_business_id uuid)
 returns table (

@@ -7,7 +7,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(120);
+select plan(145);
 
 -- ===== Fixture =====
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -38,7 +38,7 @@ select lives_ok(
   $$select public.configure_fiscal_profile('52000000-0000-4000-8000-000000000001', jsonb_build_object(
       'legal_name','TABA ARCA Fixture','cuit','20123456786','tax_condition','Responsable Inscripto',
       'business_address','Calle Falsa 123','environment','homologation','point_of_sale',3,
-      'default_currency','PES','default_concept',1,'invoice_policy','on_payment_confirmed',
+      'default_currency','PES','default_concept',1,
       'is_enabled',true,'default_recipient_condition','Consumidor Final'))$$,
   'el perfil fiscal de homologacion se configura sin autorizar nada'
 );
@@ -69,6 +69,41 @@ select throws_ok(
   $$select public.request_fiscal_document('52000000-0000-4000-8000-000000000001','pos_sale',
       (select id from public.pos_sales where idempotency_key='arca-sale-nopolicy-1'),'invoice','arca-doc-nopolicy-1')$$,
   'P0001','fiscal_policy_review_required','sin politica aprobada no se arma ningun comprobante'
+);
+
+-- ===== 1bis. La automatizacion no se enciende con la configuracion a medias =====
+select throws_ok(
+  $$select public.configure_fiscal_profile('52000000-0000-4000-8000-000000000001', jsonb_build_object(
+      'legal_name','TABA ARCA Fixture','cuit','20123456786','tax_condition','Responsable Inscripto',
+      'business_address','Calle Falsa 123','environment','homologation','point_of_sale',3,
+      'default_currency','PES','default_concept',1,'invoice_policy','on_payment_confirmed',
+      'is_enabled',true,'default_recipient_condition','Consumidor Final'))$$,
+  '22023','fiscal_automation_requires_activation',
+  'guardar el formulario no enciende la facturacion automatica'
+);
+select throws_ok(
+  $$select public.set_fiscal_automation('52000000-0000-4000-8000-000000000001','on_payment_confirmed','dale')$$,
+  '22023','fiscal_automation_confirmation_required',
+  'encenderla exige la frase exacta'
+);
+select throws_ok(
+  $$select public.set_fiscal_automation('52000000-0000-4000-8000-000000000001','on_payment_confirmed','I_ACTIVATE_AUTOMATIC_FISCAL_INVOICING')$$,
+  '22023','fiscal_automation_not_ready',
+  'y con la frase exacta pero sin certificado ni politica, tampoco'
+);
+select is(
+  (select invoice_policy from public.fiscal_profiles where business_id='52000000-0000-4000-8000-000000000001'),
+  'manual',
+  'despues de los tres intentos la facturacion sigue en manual'
+);
+select is(
+  ((select public.get_fiscal_automation_overview('52000000-0000-4000-8000-000000000001'))->>'ready')::boolean,
+  false,
+  'y el Panel dice que todavia no esta listo'
+);
+select ok(
+  (select public.get_fiscal_automation_overview('52000000-0000-4000-8000-000000000001'))->'blockers' ? 'CERTIFICATE_MISSING',
+  'nombrando lo que falta, en codigos que el Panel traduce'
 );
 
 -- ===== 2. La politica se declara, no se deduce =====
@@ -426,6 +461,35 @@ select throws_ok(
   '42501',null,'un usuario autenticado no puede saltear la puerta de autorizacion'
 );
 
+-- ===== 11bis. Con todo verificado, la automatizacion se enciende por una sola puerta =====
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000002","role":"authenticated"}';
+select throws_ok(
+  $$select public.set_fiscal_automation('52000000-0000-4000-8000-000000000001','manual','')$$,
+  '42501','owner/admin requerido','el equipo del mostrador no enciende ni apaga la facturacion automatica'
+);
+set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000001","role":"authenticated"}';
+select is(
+  ((select public.get_fiscal_automation_overview('52000000-0000-4000-8000-000000000001'))->>'ready')::boolean,
+  true,
+  'con certificado, revision contable, politica aprobada y tablas frescas el negocio esta listo'
+);
+select lives_ok(
+  $$select public.set_fiscal_automation('52000000-0000-4000-8000-000000000001','on_payment_confirmed','I_ACTIVATE_AUTOMATIC_FISCAL_INVOICING')$$,
+  'y recien ahi la facturacion automatica se enciende'
+);
+select is(
+  ((select public.get_fiscal_automation_overview('52000000-0000-4000-8000-000000000001'))->>'automation_active')::boolean,
+  true,
+  'el Panel la ve encendida'
+);
+select is(
+  (select count(*)::int from public.fiscal_profile_events
+    where business_id='52000000-0000-4000-8000-000000000001' and event_type='automation_activated'),
+  1,
+  'y queda auditado quien la encendio y cuando'
+);
+
 -- ===== 12. Pedido pagado online: el circuito arranca solo y verifica el pago =====
 set local role postgres;
 insert into public.checkout_sessions(id,business_id,customer_id,client_request_id,normalized_intent_hash,fulfillment_type,
@@ -532,6 +596,22 @@ select is(
   false,
   'cambiar un dato fiscal exige que alguien lo vuelva a aprobar'
 );
+select is(
+  ((select public.get_fiscal_automation_overview('52000000-0000-4000-8000-000000000001'))->>'automation_active')::boolean,
+  false,
+  'y tocar la politica apaga la facturacion automatica: lo que la justificaba dejo de ser cierto'
+);
+select is(
+  (select automation_suspended_reason from public.fiscal_profiles where business_id='52000000-0000-4000-8000-000000000001'),
+  'ACCOUNTING_POLICY_CHANGED',
+  'con el motivo anotado, no en silencio'
+);
+select is(
+  (select count(*)::int from public.fiscal_profile_events
+    where business_id='52000000-0000-4000-8000-000000000001' and event_type='automation_suspended'),
+  1,
+  'y auditado como cualquier otro cambio fiscal'
+);
 
 
 -- ===== 14. El Panel ve si se puede facturar, no solo si hay certificado =====
@@ -637,7 +717,7 @@ select throws_ok(
   $$select public.configure_fiscal_profile('52000000-0000-4000-8000-000000000001', jsonb_build_object(
       'legal_name','TABA ARCA Fixture','cuit','20123456789','tax_condition','Responsable Inscripto',
       'business_address','Calle Falsa 123','environment','homologation','point_of_sale',3,
-      'default_currency','PES','default_concept',1,'invoice_policy','on_payment_confirmed',
+      'default_currency','PES','default_concept',1,
       'is_enabled',true,'default_recipient_condition','Consumidor Final'))$$,
   '22023','fiscal_cuit_check_digit_invalid',
   'un perfil fiscal habilitado no acepta un CUIT mal tipeado'
@@ -655,6 +735,67 @@ select is(
     where schemaname='public' and tablename like 'fiscal\_%' and qual like '%is_business_member%'),
   0,
   'ninguna politica fiscal sigue leyendo con is_business_member'
+);
+
+-- ===== 18. Bandeja de excepciones y tablero: lo que Walter mira de verdad =====
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000001","role":"authenticated"}';
+select ok(
+  (select count(*) from public.list_fiscal_exceptions('52000000-0000-4000-8000-000000000001', 50)) > 0,
+  'la bandeja tiene algo concreto que mostrar'
+);
+select ok(
+  exists (select 1 from public.list_fiscal_exceptions('52000000-0000-4000-8000-000000000001', 50) e where e.kind = 'configuration'),
+  'la configuracion incompleta aparece como un problema, no como cuarenta'
+);
+select ok(
+  not exists (
+    select 1 from public.list_fiscal_exceptions('52000000-0000-4000-8000-000000000001', 50) e
+     where coalesce(e.code,'') ~ '[<>]|Envelope|soap|BEGIN|token'
+  ),
+  'y ni una linea de SOAP llega a la pantalla del operador'
+);
+select ok(
+  ((select public.get_fiscal_automation_overview('52000000-0000-4000-8000-000000000001'))->'today'->>'eligible')::int > 0,
+  'el tablero cuenta las ventas elegibles del dia'
+);
+select ok(
+  (select public.get_fiscal_automation_overview('52000000-0000-4000-8000-000000000001'))->'totals_by_environment' ? 'homologation',
+  'y separa homologacion de la operacion comercial'
+);
+
+-- Certificado vencido: el puente lo informa y todo se frena solo.
+set local role postgres;
+select lives_ok(
+  $$select public.record_fiscal_credential_health('52000000-0000-4000-8000-000000000001',
+      repeat('b',64), now() - interval '1 day','20123456786','verified',true,null)$$,
+  'el puente informa que el certificado vencio'
+);
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000001","role":"authenticated"}';
+select ok(
+  (select public.get_fiscal_automation_overview('52000000-0000-4000-8000-000000000001'))->'blockers' ? 'CERTIFICATE_EXPIRED',
+  'un certificado vencido bloquea la facturacion automatica'
+);
+select ok(
+  exists (select 1 from public.list_fiscal_exceptions('52000000-0000-4000-8000-000000000001', 50) e where e.kind = 'certificate'),
+  'y aparece en la bandeja como lo que es: un problema de certificado'
+);
+select throws_ok(
+  $$select public.set_fiscal_automation('52000000-0000-4000-8000-000000000001','on_payment_confirmed','I_ACTIVATE_AUTOMATIC_FISCAL_INVOICING')$$,
+  '22023','fiscal_automation_not_ready',
+  'y con el certificado vencido no se puede volver a encender'
+);
+
+-- El rider sigue afuera tambien de estas dos pantallas.
+set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000003","role":"authenticated"}';
+select throws_ok(
+  $$select public.get_fiscal_automation_overview('52000000-0000-4000-8000-000000000001')$$,
+  '42501','operador no autorizado','el rider no ve el tablero fiscal'
+);
+select throws_ok(
+  $$select public.list_fiscal_exceptions('52000000-0000-4000-8000-000000000001', 50)$$,
+  '42501','operador no autorizado','ni la bandeja de excepciones'
 );
 
 select * from finish();

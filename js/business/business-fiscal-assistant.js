@@ -338,3 +338,233 @@ function formatDate(date) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return 'fecha desconocida';
   return date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
+
+// ===== Onboarding en seis pasos =====
+//
+// El asistente de arriba tiene once pasos porque sigue el circuito técnico de
+// ARCA. Walter no necesita once: necesita seis, y saber cuál le toca. Esto es
+// una proyección sobre lo mismo —no otra fuente de verdad— más el paso que el
+// circuito técnico no tenía: encender la facturación automática.
+//
+// Los códigos vienen del backend (fiscal_automation_blockers). Se traducen acá
+// una sola vez, y no hay camino por el que un mensaje crudo de ARCA llegue a
+// esta pantalla: la bandeja y el tablero devuelven códigos, nunca texto.
+
+export const FISCAL_ONBOARDING_STEPS = Object.freeze([
+  'business-data', 'tax-situation', 'point-of-sale', 'certificate', 'verification', 'automation',
+]);
+
+const ONBOARDING_COPY = Object.freeze({
+  'business-data': {
+    title: 'Datos del negocio',
+    purpose: 'Son los datos que van impresos en cada comprobante.',
+    todo: 'Cargá razón social, CUIT y domicilio comercial en Datos fiscales.',
+  },
+  'tax-situation': {
+    title: 'Situación fiscal',
+    purpose: 'Define qué comprobante se emite y con qué IVA. El sistema no lo adivina.',
+    todo: 'Con el contador: condición frente al IVA, alícuota y tipo de comprobante. Después el contador lo aprueba.',
+  },
+  'point-of-sale': {
+    title: 'Punto de venta',
+    purpose: 'Cada comprobante se numera dentro de un punto de venta.',
+    todo: 'Dá de alta el punto de venta en ARCA y anotá el mismo número acá.',
+  },
+  certificate: {
+    title: 'Certificado ARCA',
+    purpose: 'Es lo que le prueba a ARCA que sos vos.',
+    todo: 'Sacá el certificado en ARCA y entregáselo a soporte. La clave privada nunca sale del servidor.',
+  },
+  verification: {
+    title: 'Verificación',
+    purpose: 'Antes de facturar solo, hay que ver que ARCA responda.',
+    todo: 'La verificación la corre el servidor. Cuando ARCA contesta bien, este paso se marca solo.',
+  },
+  automation: {
+    title: 'Facturación automática',
+    purpose: 'Cuando está encendida, cada venta cobrada se factura sola.',
+    todo: 'Encendela cuando los cinco pasos anteriores estén completos.',
+  },
+});
+
+// A qué paso pertenece cada código que devuelve el backend.
+const BLOCKER_STEP = Object.freeze({
+  PROFILE_MISSING: 'business-data',
+  PROFILE_NOT_ENABLED: 'business-data',
+  ENVIRONMENT_DISABLED: 'business-data',
+  LEGAL_NAME_MISSING: 'business-data',
+  CUIT_INVALID: 'business-data',
+  ADDRESS_MISSING: 'business-data',
+  TAX_CONDITION_MISSING: 'tax-situation',
+  RECIPIENT_CONDITION_MISSING: 'tax-situation',
+  CONCEPT_MISSING: 'tax-situation',
+  ACCOUNTANT_REVIEW_PENDING: 'tax-situation',
+  ACCOUNTING_POLICY_NOT_APPROVED: 'tax-situation',
+  POINT_OF_SALE_MISSING: 'point-of-sale',
+  CERTIFICATE_MISSING: 'certificate',
+  CERTIFICATE_EXPIRED: 'certificate',
+  CERTIFICATE_CUIT_MISMATCH: 'certificate',
+  DELEGATION_PENDING: 'certificate',
+  CONNECTION_NOT_VERIFIED: 'verification',
+  HOMOLOGATION_NOT_AUTHORIZED: 'verification',
+  PRODUCTION_GATE_BLOCKED: 'verification',
+  OFFICIAL_TABLES_STALE: 'verification',
+});
+
+// "Falta cargarlo" y "está mal" no son lo mismo para quien tiene que arreglarlo.
+const BLOCKER_IS_ERROR = Object.freeze(new Set([
+  'CUIT_INVALID', 'CERTIFICATE_EXPIRED', 'CERTIFICATE_CUIT_MISMATCH', 'PROFILE_NOT_ENABLED',
+]));
+
+const BLOCKER_COPY = Object.freeze({
+  PROFILE_MISSING: ['Todavía no hay datos fiscales cargados.', 'Completá el paso 1.'],
+  PROFILE_NOT_ENABLED: ['La facturación está apagada en los datos fiscales.', 'Marcá el negocio como habilitado para facturar.'],
+  ENVIRONMENT_DISABLED: ['No está elegido el modo de facturación.', 'Elegí el modo de pruebas en Datos fiscales.'],
+  LEGAL_NAME_MISSING: ['Falta la razón social.', 'Cargala en Datos fiscales.'],
+  CUIT_INVALID: ['El CUIT no es válido.', 'Revisá los once dígitos: el verificador no cierra.'],
+  ADDRESS_MISSING: ['Falta el domicilio comercial.', 'Cargalo en Datos fiscales.'],
+  TAX_CONDITION_MISSING: ['Falta la condición frente al IVA del negocio.', 'La define el contador.'],
+  RECIPIENT_CONDITION_MISSING: ['Falta la condición frente al IVA del cliente.', 'La define el contador.'],
+  CONCEPT_MISSING: ['Falta declarar qué se vende: productos, servicios o ambos.', 'Elegilo en Datos fiscales.'],
+  ACCOUNTANT_REVIEW_PENDING: ['El contador todavía no aprobó los datos fiscales.', 'Pedile que los revise y los apruebe.'],
+  ACCOUNTING_POLICY_NOT_APPROVED: ['Falta una política contable aprobada.', 'Declarala con el contador y que la apruebe.'],
+  POINT_OF_SALE_MISSING: ['Falta el punto de venta.', 'Dalo de alta en ARCA y anotá el número acá.'],
+  CERTIFICATE_MISSING: ['Falta el certificado de ARCA.', 'Sacalo en ARCA y entregáselo a soporte.'],
+  CERTIFICATE_EXPIRED: ['El certificado venció.', 'Sacá uno nuevo en ARCA: hasta entonces no se factura nada.'],
+  CERTIFICATE_CUIT_MISMATCH: ['El certificado es de otro CUIT.', 'Pedí el certificado del CUIT de este negocio.'],
+  DELEGATION_PENDING: ['Falta autorizar el servicio de facturación en ARCA.', 'Autorizalo para el certificado que cargaste.'],
+  CONNECTION_NOT_VERIFIED: ['El servidor todavía no pudo hablar con ARCA.', 'Se reintenta solo; si sigue así, avisá a soporte.'],
+  HOMOLOGATION_NOT_AUTHORIZED: ['Faltan habilitar las pruebas con ARCA.', 'Autorizalas con la frase exacta más abajo.'],
+  PRODUCTION_GATE_BLOCKED: ['La facturación real no está habilitada.', 'Se habilita aparte, con el contador.'],
+  OFFICIAL_TABLES_STALE: ['Las tablas oficiales de ARCA están desactualizadas.', 'Las baja el servidor solo; esperá unos minutos.'],
+});
+
+export function describeFiscalBlocker(code) {
+  const key = String(code || '').toUpperCase();
+  const copy = BLOCKER_COPY[key];
+  return Object.freeze({
+    code: key,
+    reason: copy ? copy[0] : 'Falta un dato fiscal.',
+    action: copy ? copy[1] : 'Revisalo con el contador o avisá a soporte.',
+    severity: BLOCKER_IS_ERROR.has(key) ? 'error' : 'pending',
+  });
+}
+
+/**
+ * Los seis pasos, con COMPLETO / PENDIENTE / ERROR y qué hacer en cada uno.
+ * `overview` es lo que devuelve get_fiscal_automation_overview.
+ */
+export function buildFiscalOnboarding(overview = {}) {
+  const data = overview && typeof overview === 'object' ? overview : {};
+  const blockers = Array.isArray(data.blockers) ? data.blockers.map((code) => describeFiscalBlocker(code)) : [];
+  const automationActive = data.automation_active === true;
+  const ready = data.ready === true;
+
+  const steps = FISCAL_ONBOARDING_STEPS.map((id, index) => {
+    const own = id === 'automation' ? [] : blockers.filter((blocker) => BLOCKER_STEP[blocker.code] === id);
+    const status = id === 'automation'
+      ? (automationActive ? 'complete' : 'pending')
+      : own.some((blocker) => blocker.severity === 'error')
+        ? 'error'
+        : own.length ? 'pending' : 'complete';
+    return Object.freeze({
+      id,
+      number: index + 1,
+      title: ONBOARDING_COPY[id].title,
+      purpose: ONBOARDING_COPY[id].purpose,
+      todo: ONBOARDING_COPY[id].todo,
+      status,
+      statusLabel: ({ complete: 'COMPLETO', pending: 'PENDIENTE', error: 'ERROR' })[status],
+      blockers: Object.freeze(own),
+    });
+  });
+
+  // El paso 6 no se puede tocar hasta que los cinco anteriores estén completos:
+  // encender la automatización antes sólo llena la bandeja de excepciones.
+  const firstPending = steps.find((step) => step.status !== 'complete');
+
+  return Object.freeze({
+    steps: Object.freeze(steps),
+    currentStep: firstPending ? firstPending.id : 'automation',
+    ready,
+    automationActive,
+    automationMode: String(data.automation_mode || 'manual'),
+    canActivate: ready && !automationActive,
+    suspended: Boolean(data.automation_suspended_at),
+    suspendedReason: data.automation_suspended_reason ? describeSuspension(data.automation_suspended_reason) : '',
+    headline: automationActive
+      ? 'La facturación automática está encendida'
+      : ready
+        ? 'Todo listo: falta encender la facturación automática'
+        : 'Falta configurar la facturación',
+    blockers: Object.freeze(blockers),
+  });
+}
+
+const SUSPENSION_COPY = Object.freeze({
+  PROFILE_CHANGED: 'Se apagó sola porque cambiaron los datos fiscales. Revisalos y volvé a encenderla.',
+  ACCOUNTING_POLICY_CHANGED: 'Se apagó sola porque cambió la política contable. Que el contador la apruebe y volvé a encenderla.',
+  READINESS_LOST: 'Se apagó sola porque dejó de estar todo en condiciones. Mirá qué falta más arriba.',
+  CONFIGURATION_CHANGED: 'Se apagó sola porque cambió la configuración fiscal.',
+});
+
+export function describeSuspension(reason) {
+  return SUSPENSION_COPY[String(reason || '').toUpperCase()] || SUSPENSION_COPY.CONFIGURATION_CHANGED;
+}
+
+// ===== Bandeja de excepciones =====
+
+const EXCEPTION_COPY = Object.freeze({
+  configuration: ['Falta configuración para poder facturar', 'Completá el paso que quedó pendiente.'],
+  certificate: ['Problema con el certificado de ARCA', 'Sin certificado vigente no se emite ningún comprobante.'],
+  rejected: ['ARCA rechazó el comprobante', 'Revisalo con el contador: hay que corregir y volver a emitir.'],
+  amount_mismatch: ['Los importes del comprobante no cierran', 'La venta está cobrada. Revisá el detalle con el contador.'],
+  ambiguous: ['No se sabe si ARCA lo autorizó', 'El sistema lo está consultando solo. No lo emitas de nuevo.'],
+  missing_fiscal_data: ['Falta un dato fiscal de esta venta', 'Completalo y el comprobante sigue solo.'],
+  unrecoverable: ['El comprobante no pudo emitirse', 'Avisá a soporte con el número de venta.'],
+});
+
+/**
+ * Traduce una fila de list_fiscal_exceptions. La fila trae códigos, nunca texto
+ * de ARCA, así que acá no hay nada crudo que filtrar: no puede haberlo.
+ */
+export function describeFiscalException(row = {}) {
+  const entry = row && typeof row === 'object' ? row : {};
+  const kind = String(entry.kind || 'unrecoverable');
+  const copy = EXCEPTION_COPY[kind] || EXCEPTION_COPY.unrecoverable;
+  const blocker = kind === 'configuration' || kind === 'certificate' ? describeFiscalBlocker(entry.code) : null;
+  return Object.freeze({
+    id: String(entry.exception_id || ''),
+    kind,
+    title: copy[0],
+    // Para configuración y certificado el código dice exactamente qué falta.
+    reason: blocker ? blocker.reason : copy[0],
+    action: blocker ? blocker.action : copy[1],
+    severity: String(entry.severity || 'blocking') === 'action_required' ? 'warning' : 'danger',
+    reference: entry.document_label ? String(entry.document_label) : '',
+    amount: Number.isFinite(Number(entry.total_amount)) && Number(entry.total_amount) > 0 ? Number(entry.total_amount) : null,
+    environment: String(entry.environment || 'disabled'),
+    occurredAt: entry.occurred_at || null,
+  });
+}
+
+/** Los números del día, ya con la palabra que le corresponde a cada uno. */
+export function buildFiscalDashboard(overview = {}) {
+  const source = overview && typeof overview === 'object' ? overview : {};
+  const today = source.today || {};
+  const totals = source.totals_by_environment || {};
+  const number = (value) => Math.max(0, Number(value || 0));
+  return Object.freeze({
+    date: today.date || null,
+    tiles: Object.freeze([
+      Object.freeze({ key: 'eligible', label: 'Ventas del día', value: number(today.eligible), tone: 'info' }),
+      Object.freeze({ key: 'automatic', label: 'Facturadas solas', value: number(today.automatic), tone: 'success' }),
+      Object.freeze({ key: 'pending', label: 'En camino', value: number(today.pending), tone: number(today.pending) ? 'warning' : 'success' }),
+      Object.freeze({ key: 'rejected', label: 'Rechazadas', value: number(today.rejected), tone: number(today.rejected) ? 'danger' : 'success' }),
+      Object.freeze({ key: 'attention', label: 'Requieren atención', value: number(today.attention), tone: number(today.attention) ? 'danger' : 'success' }),
+    ]),
+    // Las pruebas de homologación no son ventas del negocio y no se suman con ellas.
+    homologation: Object.freeze({ ...(totals.homologation || {}) }),
+    production: Object.freeze({ ...(totals.production || {}) }),
+  });
+}

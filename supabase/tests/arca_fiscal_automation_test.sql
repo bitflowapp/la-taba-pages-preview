@@ -7,7 +7,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(145);
+select plan(151);
 
 -- ===== Fixture =====
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -797,6 +797,54 @@ select throws_ok(
   $$select public.list_fiscal_exceptions('52000000-0000-4000-8000-000000000001', 50)$$,
   '42501','operador no autorizado','ni la bandeja de excepciones'
 );
+
+-- ===== 15bis. La venta se factura sola, de punta a punta y sin operador =====
+-- Desde que el pedido queda pagado hasta el CAE no interviene ninguna persona:
+-- todo lo que sigue lo hacen el disparador, el promotor y el worker.
+set local role postgres;
+-- El worker mal configurado solto el trabajo hace un rato; pasada la espera, el
+-- worker correcto lo toma y lo termina. Nadie apreto nada en el medio.
+update public.fiscal_outbox set next_attempt_at = now()
+  where fiscal_document_id = (select id from public.fiscal_documents where source_type='online_order');
+create temporary table arca_auto_claim on commit drop as
+  select * from public.claim_fiscal_outbox('taba-fiscal-auto',5,90,'homologation','20123456786');
+select is((select count(*)::int from arca_auto_claim), 1, 'el worker reclama solo el comprobante del pedido');
+select lives_ok(
+  format($$select public.reserve_fiscal_document_number(%L,'taba-fiscal-auto',
+     (select coalesce(max(document_number),0)+1 from public.fiscal_documents
+       where environment='homologation' and point_of_sale=3 and document_type=6))$$,
+    (select fiscal_document_id from arca_auto_claim)),
+  'reserva el numero que sigue sin que nadie lo elija'
+);
+select lives_ok(
+  format($$select public.complete_fiscal_attempt(%L,'taba-fiscal-auto', jsonb_build_object(
+      'classification','authorized','cae','75123456789013','cae_expiration','2026-08-20',
+      'issue_date','2026-08-07','document_number',
+      (select document_number from public.fiscal_documents where id=%L),
+      'request_hash',repeat('c',64),'response_hash',repeat('d',64),
+      'operation','FECAESolicitar','duration_ms',95))$$,
+    (select id from arca_auto_claim), (select fiscal_document_id from arca_auto_claim)),
+  'y ARCA autoriza'
+);
+select is(
+  (select state || ':' || cae from public.fiscal_documents where source_type='online_order'),
+  'authorized:75123456789013',
+  'el pedido pagado termino facturado sin que el operador tocara nada'
+);
+select is(
+  (select public.fiscal_public_state(state, cae) from public.fiscal_documents where source_type='online_order'),
+  'authorized',
+  'y el Panel lo muestra autorizado, con CAE'
+);
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000001","role":"authenticated"}';
+select is(
+  (select count(*)::int from public.list_fiscal_exceptions('52000000-0000-4000-8000-000000000001', 50) e
+    where e.fiscal_document_id = (select id from public.fiscal_documents where source_type='online_order')),
+  0,
+  'sin pasar por la bandeja de excepciones: no hubo excepcion'
+);
+
 
 select * from finish();
 rollback;

@@ -192,7 +192,10 @@ test('la facturación se habilita sólo con la frase exacta y nunca desde el equ
   await settle();
   const markup = renderBusinessOperations('fiscal-setup');
   assert.match(markup, /I_AUTHORIZE_ARCA_HOMOLOGATION/);
-  assert.match(markup, /La facturación real se mantiene apagada desde el panel/);
+  // La pantalla pasó a ser el onboarding de seis pasos; el detalle técnico -y con
+  // el, la frase de homologacion y el tablero de credenciales- sigue disponible.
+  assert.match(markup, /Detalle técnico de la conexión con ARCA/);
+  assert.match(markup, /Mientras esté apagada, ninguna venta se factura automáticamente/);
   assert.match(markup, /30-71234567-8/);
 
   const wrong = await handleBusinessOperationsAction(

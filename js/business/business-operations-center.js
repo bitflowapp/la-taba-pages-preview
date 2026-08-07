@@ -16,6 +16,7 @@ import {
 import { evaluateDailyClosure, validateClosureOverride } from './business-day-control.js';
 import { buildStorefrontPreview, describeDraft, planScanOutcome, validateProductDraft } from './business-product-onboarding.js';
 import {
+  FISCAL_AUTOMATION_PHRASE,
   renderDayCloseSurface, renderDayOpenSurface, renderDevicesSurface, renderFiscalSetupSurface,
   renderOperationCenterSurface, renderPaymentsSetupSurface, renderPaymentsSurface, renderProductOnboardingSurface,
 } from './business-panel-render.js';
@@ -110,6 +111,11 @@ let paymentsLoadStarted = false;
 let refundTarget = '';
 let arcaActivation = null;
 let arcaLoadStarted = false;
+let fiscalOverview = null;
+let fiscalExceptions = [];
+// Igual que la frase de homologación: un refresco de fondo no puede borrarla a
+// mitad de escribirla.
+let fiscalAutomationDraft = '';
 let arcaAuthorizationDraft = '';
 let openingSignals = null;
 let openingStatusRaw = null;
@@ -143,6 +149,9 @@ export function configureBusinessOperations(next = {}) {
   arcaActivation = null;
   arcaLoadStarted = false;
   arcaAuthorizationDraft = '';
+  fiscalOverview = null;
+  fiscalExceptions = [];
+  fiscalAutomationDraft = '';
   openingSignals = null;
   openingStatusRaw = null;
   openingLoadStarted = false;
@@ -173,6 +182,7 @@ export function renderBusinessOperations(view) {
     'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, role: context.role, busy }),
     'fiscal-setup': () => renderFiscalSetupSurface({
       activation: arcaActivation, role: context.role, busy, authorizationDraft: arcaAuthorizationDraft,
+      overview: fiscalOverview, exceptions: fiscalExceptions, automationDraft: fiscalAutomationDraft,
     }),
     devices: () => renderDevicesSurface({
       results: deviceResults, printers: deviceCheckPrinters, isNative: context.desktopPlatform?.isNative, busy,
@@ -317,6 +327,8 @@ export async function handleBusinessOperationsAction(target) {
     return result(true, 'Estado de facturación actualizado.');
   }
   if (target.closest('[data-arca-authorize]')) return authorizeArcaHomologation(target);
+  if (target.closest('[data-fiscal-automation-on]')) return setFiscalAutomation(true);
+  if (target.closest('[data-fiscal-automation-off]')) return setFiscalAutomation(false);
 
   if (target.closest('[data-opening-refresh]')) {
     await refreshOpeningStatus();
@@ -421,6 +433,10 @@ export function handleBusinessOperationsInput(target) {
   }
   // Igual que la frase: el pedido de comprobante y el medio de pago son parte
   // del borrador de venta, no del HTML que un refresco vuelve a dibujar.
+  if (target?.matches?.('[name="fiscalAutomation"]')) {
+    fiscalAutomationDraft = String(target.value || '').slice(0, 48);
+    return { handled: true };
+  }
   if (target?.matches?.('[name="requestFiscal"]')) {
     posRequestFiscal = target.checked === true;
     return { handled: true };
@@ -479,6 +495,9 @@ export function resetBusinessOperationsForTests() {
   arcaActivation = null;
   arcaLoadStarted = false;
   arcaAuthorizationDraft = '';
+  fiscalOverview = null;
+  fiscalExceptions = [];
+  fiscalAutomationDraft = '';
   openingSignals = null;
   openingStatusRaw = null;
   openingLoadStarted = false;
@@ -1525,11 +1544,50 @@ async function refreshArcaActivation() {
     policy = policyResponse?.ok && policyResponse.data && typeof policyResponse.data === 'object' ? policyResponse.data : null;
   }
   arcaActivation = activation ? { ...activation, ...(policy || {}) } : null;
+  // El alistamiento y la bandeja los calcula el backend: acá sólo se muestran.
+  if (typeof context.getFiscalAutomationOverview === 'function') {
+    const overview = await context.getFiscalAutomationOverview();
+    fiscalOverview = overview?.ok && overview.data && typeof overview.data === 'object' ? overview.data : null;
+  }
+  if (typeof context.listFiscalExceptions === 'function') {
+    const tray = await context.listFiscalExceptions();
+    fiscalExceptions = tray?.ok && Array.isArray(tray.data) ? tray.data : [];
+  }
   if (!response?.ok) {
     feedback = humanizeFailure(response?.message, 'No pudimos leer el estado de la facturación.');
   }
   context.onChange();
   return response;
+}
+
+// Encender la facturación automática es una decisión del dueño, no un efecto
+// de guardar un formulario: pide la frase exacta y el backend vuelve a
+// verificar que esté todo. Apagarla no pide nada; frenar nunca es lo peligroso.
+async function setFiscalAutomation(activate) {
+  const guard = requireCapability('fiscal.authorize');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  if (activate && fiscalAutomationDraft.trim() !== FISCAL_AUTOMATION_PHRASE) {
+    return result(false, `Para encender la facturación automática, escribí exactamente ${FISCAL_AUTOMATION_PHRASE}.`);
+  }
+  busy = true;
+  const response = await context.setFiscalAutomation({
+    mode: activate ? 'on_payment_confirmed' : 'manual',
+    confirmation: activate ? fiscalAutomationDraft.trim() : '',
+  });
+  busy = false;
+  if (response?.ok) {
+    fiscalAutomationDraft = '';
+    fiscalOverview = response.data && typeof response.data === 'object' ? response.data : fiscalOverview;
+    await refreshArcaActivation();
+  }
+  feedback = response?.ok
+    ? (activate
+      ? 'Facturación automática encendida. Cada venta cobrada se factura sola.'
+      : 'Facturación automática apagada. Las ventas se siguen cobrando igual.')
+    : humanizeFailure(response?.message, 'No pudimos cambiar la facturación automática.');
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
 }
 
 async function authorizeArcaHomologation(target) {
@@ -1846,6 +1904,9 @@ function defaultContext() {
     configureFiscalProfile: async () => ({ ok: false, message: 'Repositorio no disponible.' }), requestCreditNote: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     requestFiscalArtifactUrl: async () => ({ ok: false, message: 'Acceso privado no disponible.' }), regenerateFiscalArtifact: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     requestFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }), updateFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    getFiscalAutomationOverview: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    listFiscalExceptions: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    setFiscalAutomation: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     getOperationCenter: async () => ({ ok: false, message: 'Centro de operación no disponible.' }),
     acknowledgeOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }), resolveOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     prepareDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }), closeDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }),

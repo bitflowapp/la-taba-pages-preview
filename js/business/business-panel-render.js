@@ -9,7 +9,10 @@ import {
 import {
   classifyBusinessPayment, evaluateMercadoPagoSetup, paymentActionsFor, REFUND_CONFIRMATION_PHRASE,
 } from './business-payments-console.js';
-import { ARCA_HOMOLOGATION_PHRASE, evaluateArcaActivation } from './business-fiscal-assistant.js';
+import {
+  ARCA_HOMOLOGATION_PHRASE, buildFiscalDashboard, buildFiscalOnboarding,
+  describeFiscalException, evaluateArcaActivation,
+} from './business-fiscal-assistant.js';
 import { DEVICE_CHECKS, summarizeDeviceChecks } from './business-device-check.js';
 import {
   CLOSURE_CONFIRMATION_PHRASE, evaluateBusinessOpening, evaluateDailyClosure,
@@ -207,11 +210,18 @@ export function renderPaymentsSetupSurface({ activation, role, busy } = {}) {
     </div>`);
 }
 
-export function renderFiscalSetupSurface({ activation, role, busy, authorizationDraft } = {}) {
+export const FISCAL_AUTOMATION_PHRASE = 'I_ACTIVATE_AUTOMATIC_FISCAL_INVOICING';
+
+export function renderFiscalSetupSurface({
+  activation, role, busy, authorizationDraft, overview, exceptions, automationDraft,
+} = {}) {
   if (!can(role, 'fiscal.configure')) {
     return deniedPanel('Facturación', 'La configuración fiscal la define el dueño o el encargado con el contador.');
   }
   const arca = evaluateArcaActivation(activation || {});
+  const onboarding = buildFiscalOnboarding(overview || {});
+  const dashboard = buildFiscalDashboard(overview || {});
+  const tray = (Array.isArray(exceptions) ? exceptions : []).map((row) => describeFiscalException(row));
   const board = arca.board.map((row) => `
     <article class="fiscal-board-card tone-${escapeHtml(row.tone)}">
       <span>${escapeHtml(row.label)}</span>
@@ -229,20 +239,107 @@ export function renderFiscalSetupSurface({ activation, role, busy, authorization
         ${arca.readyToHomologate ? '' : '<p class="form-hint">Se habilita cuando los primeros cinco pasos estén completos.</p>'}
       </div>`;
 
-  return panel('Facturación', 'Diez pasos para dejar la facturación lista, sin tocar la facturación real.', `
-    <div class="operation-summary tone-${arca.homologationComplete ? 'calm' : 'attention'}" role="status">
-      <strong>${escapeHtml(arca.headline)}</strong>
-      <span>La facturación real se mantiene apagada desde el panel.</span>
+  return panel('Configuración fiscal', 'Se configura una vez. Después las ventas se facturan solas.', `
+    <div class="operation-summary tone-${onboarding.automationActive ? 'calm' : 'attention'}" role="status">
+      <strong>${escapeHtml(onboarding.headline)}</strong>
+      <span>${escapeHtml(onboarding.automationActive
+        ? 'Cada venta cobrada se factura sola. Sólo mirás esta pantalla si algo falla.'
+        : 'Mientras esté apagada, ninguna venta se factura automáticamente.')}</span>
     </div>
-    ${arca.blockers.map((blocker) => `<p class="production-intake-error">${escapeHtml(blocker)}</p>`).join('')}
-    <div class="fiscal-board" aria-label="Estado de la facturación">${board}</div>
-    <ol class="business-wizard">${arca.steps.map((step) => renderWizardStep(step)).join('')}</ol>
-    ${gate}
+    ${onboarding.suspended && !onboarding.automationActive
+      ? `<p class="production-intake-error" role="alert">${escapeHtml(onboarding.suspendedReason)}</p>`
+      : ''}
+    ${renderFiscalDashboard(dashboard)}
+    ${renderFiscalExceptionTray(tray)}
+    <h3 class="business-section-title">Los seis pasos</h3>
+    <ol class="business-wizard">${onboarding.steps.map((step) => renderOnboardingStep(step)).join('')}</ol>
+    ${renderAutomationSwitch(onboarding, { busy, draft: automationDraft })}
+    <details class="business-fiscal-detail">
+      <summary>Detalle técnico de la conexión con ARCA</summary>
+      <div class="fiscal-board" aria-label="Estado de la facturación">${board}</div>
+      <ol class="business-wizard">${arca.steps.map((step) => renderWizardStep(step)).join('')}</ol>
+      ${gate}
+    </details>
     <div class="button-row">
       <button class="secondary-button compact" type="button" data-arca-status-refresh ${busy ? 'disabled' : ''}>Volver a verificar</button>
       <button class="ghost-button compact" type="button" data-business-ops-view="fiscal-config">Editar datos fiscales</button>
       <button class="ghost-button compact" type="button" data-business-ops-view="fiscal-status">Ver comprobantes</button>
     </div>`);
+}
+
+function renderFiscalDashboard(dashboard) {
+  const tiles = dashboard.tiles.map((tile) => `
+    <article class="fiscal-board-card tone-${escapeHtml(tile.tone)}" data-fiscal-metric="${escapeHtml(tile.key)}">
+      <span>${escapeHtml(tile.label)}</span>
+      <strong>${escapeHtml(String(tile.value))}</strong>
+    </article>`).join('');
+  const homologated = Number(dashboard.homologation?.authorized || 0);
+  return `
+    <h3 class="business-section-title">Hoy</h3>
+    <div class="fiscal-board" aria-label="Facturación de hoy">${tiles}</div>
+    ${homologated > 0
+      ? `<p class="form-hint">${escapeHtml(String(homologated))} comprobante(s) de prueba en homologación. No son ventas del negocio y no se cuentan arriba.</p>`
+      : ''}`;
+}
+
+function renderFiscalExceptionTray(tray) {
+  if (!tray.length) {
+    return `
+      <h3 class="business-section-title">Qué necesita tu atención</h3>
+      <p class="form-hint" role="status">Nada. Si aparece algo acá, es porque hace falta que alguien lo mire.</p>`;
+  }
+  const rows = tray.map((item) => `
+    <article class="fiscal-exception tone-${escapeHtml(item.severity)}" data-fiscal-exception="${escapeHtml(item.id)}">
+      <header>
+        <strong>${escapeHtml(item.title)}</strong>
+        ${item.reference ? `<span class="status-pill">${escapeHtml(item.reference)}</span>` : ''}
+      </header>
+      <p>${escapeHtml(item.reason)}</p>
+      <p class="form-hint">${escapeHtml(item.action)}</p>
+    </article>`).join('');
+  return `
+    <h3 class="business-section-title">Qué necesita tu atención (${escapeHtml(String(tray.length))})</h3>
+    <div class="fiscal-exception-tray">${rows}</div>`;
+}
+
+function renderOnboardingStep(step) {
+  const detail = step.blockers.length
+    ? step.blockers.map((blocker) => `<small class="business-wizard-why">${escapeHtml(blocker.reason)} ${escapeHtml(blocker.action)}</small>`).join('')
+    : `<small class="business-wizard-why">${escapeHtml(step.purpose)}</small>`;
+  return `<li class="business-wizard-step is-${escapeHtml(step.status)}" data-onboarding-step="${escapeHtml(step.id)}">
+    <span class="business-wizard-index">${escapeHtml(String(step.number))}</span>
+    <div>
+      <strong>${escapeHtml(step.title)}</strong>
+      <span class="status-pill ${escapeHtml(step.status)}">${escapeHtml(step.statusLabel)}</span>
+      <p>${escapeHtml(step.todo)}</p>
+      ${detail}
+    </div>
+  </li>`;
+}
+
+function renderAutomationSwitch(onboarding, { busy, draft } = {}) {
+  if (onboarding.automationActive) {
+    return `
+      <div class="business-ops-form" data-fiscal-automation="on">
+        <p>La facturación automática está encendida. Cada venta cobrada se factura sola.</p>
+        <button class="ghost-button" type="button" data-fiscal-automation-off ${busy ? 'disabled' : ''}>Apagar facturación automática</button>
+      </div>`;
+  }
+  if (!onboarding.ready) {
+    return `
+      <div class="business-ops-form" data-fiscal-automation="blocked">
+        <p class="form-hint">La facturación automática se enciende cuando los cinco pasos anteriores estén completos. Falta resolver lo que figura arriba.</p>
+        <button class="primary-button" type="button" data-fiscal-automation-on disabled>Encender facturación automática</button>
+      </div>`;
+  }
+  return `
+    <div class="business-ops-form" data-fiscal-automation="ready">
+      <p>Todo verificado. Al encenderla, cada venta cobrada se factura sola y sólo vas a mirar esta pantalla si algo falla.</p>
+      <label>Escribí ${escapeHtml(FISCAL_AUTOMATION_PHRASE)}
+        <input name="fiscalAutomation" maxlength="48" autocomplete="off" value="${escapeHtml(String(draft || ''))}">
+      </label>
+      <button class="primary-button" type="button" data-fiscal-automation-on ${busy ? 'disabled' : ''}>Encender facturación automática</button>
+    </div>`;
 }
 
 export function renderDevicesSurface({ results, printers, isNative, busy } = {}) {

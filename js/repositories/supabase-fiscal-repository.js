@@ -27,6 +27,13 @@ export function createSupabaseFiscalRepository({ client, businessId }) {
     regenerateArtifact: (fiscalDocumentId) => rpc('request_fiscal_artifact_regeneration', { p_fiscal_document_id: fiscalDocumentId }),
     getActivationStatus: () => rpc('get_arca_activation_status', { p_business_id: businessId }),
     getPolicyStatus: () => rpc('get_fiscal_policy_status', { p_business_id: businessId }),
+    getAutomationOverview: () => rpc('get_fiscal_automation_overview', { p_business_id: businessId }),
+    listExceptions: (limit = 50) => rpc('list_fiscal_exceptions', { p_business_id: businessId, p_limit: limit }),
+    // El cliente no decide si se puede automatizar: manda el modo y la frase, y
+    // el servidor vuelve a verificar el alistamiento completo antes de encender.
+    setAutomation: ({ mode, confirmation = '' }) => rpc('set_fiscal_automation', {
+      p_business_id: businessId, p_mode: mode, p_confirmation: confirmation,
+    }),
     listAccountingPolicies: () => rpc('list_fiscal_accounting_policies', { p_business_id: businessId }),
     listEmissionIntents: () => rpc('list_fiscal_emission_intents', { p_business_id: businessId }),
     // La política contable la declara una persona. El cliente sólo transporta lo

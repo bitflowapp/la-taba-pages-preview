@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
 import { presentFiscalStatus } from '../js/pos/fiscal-status-presenter.js';
 import { FISCAL_DOCUMENT_STATES } from '../js/core/fiscal-domain.js';
@@ -201,4 +204,40 @@ test('con pendientes reales el chip sí informa el estado de conexión', () => {
   });
   assert.equal(viewModel.connectionLabel, 'Reconectando');
   assert.equal(viewModel.pendingCount, 1);
+});
+
+// ─── La migración de endurecimiento no pierde ninguna guarda al transcribir ──
+
+const HARDENING_MIGRATION = readFileSync(join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..', 'supabase', 'migrations', '20260807090000_business_panel_contract_hardening.sql',
+), 'utf8');
+
+test('las cuatro funciones de comando conservan sus guardas y sólo relajan el alfabeto de la clave', () => {
+  for (const fn of ['transition_order', 'cancel_order', 'acknowledge_order', 'set_preparation_estimate']) {
+    const start = HARDENING_MIGRATION.indexOf(`create or replace function public.${fn}(`);
+    assert.ok(start >= 0, `${fn} redefinida en la migración`);
+    const body = HARDENING_MIGRATION.slice(start, HARDENING_MIGRATION.indexOf('$;', start));
+    assert.match(body, /auth\.uid\(\) is null/, `${fn}: conserva la exigencia de autenticación`);
+    assert.match(body, /has_business_role\(v_order\.business_id, array\['owner', 'admin', 'staff'\]\)/, `${fn}: conserva la autorización por rol`);
+    assert.match(body, /business_command_receipts/, `${fn}: conserva el receipt idempotente`);
+    assert.match(body, /request_hash <> v_hash/, `${fn}: conserva la verificación de payload del replay`);
+    assert.match(body, /\^\[A-Za-z0-9:_-\]\{8,128\}\$/, `${fn}: acepta el mismo alfabeto de claves que packing y fiscal`);
+    assert.doesNotMatch(body, /!~ '\^\[A-Za-z0-9_-\]\{8,128\}\$'/, `${fn}: no queda el regex viejo sin ':'`);
+  }
+});
+
+test('la migración revoca los RPC de packing superseded y exige rol en artefactos fiscales', () => {
+  assert.match(HARDENING_MIGRATION, /revoke execute on function public\.confirm_packing_session\(uuid, text\) from public, anon, authenticated/);
+  assert.match(HARDENING_MIGRATION, /revoke execute on function public\.undo_last_packing_scan\(uuid\) from public, anon, authenticated/);
+  const artifactList = HARDENING_MIGRATION.slice(HARDENING_MIGRATION.indexOf('public.list_fiscal_document_artifacts'));
+  assert.match(artifactList, /has_business_role\(p_business_id, array\['owner', 'admin', 'staff'\]\)/);
+  const artifactAccess = HARDENING_MIGRATION.slice(HARDENING_MIGRATION.indexOf('public.authorize_fiscal_artifact_access'));
+  assert.match(artifactAccess, /has_business_role\(v_artifact\.business_id, array\['owner', 'admin', 'staff'\]\)/);
+});
+
+test('cerrar el negocio exige owner/admin y el concepto fiscal queda validado', () => {
+  assert.match(HARDENING_MIGRATION, /p_status = 'closed' and not public\.has_business_role\(p_business_id, array\['owner', 'admin'\]\)/);
+  assert.match(HARDENING_MIGRATION, /coalesce\(\(p_profile->>'default_concept'\)::integer, 1\) not in \(1, 2, 3\)/);
+  assert.match(HARDENING_MIGRATION, /coalesce\(p_package_type, ''\) not in \('unit', 'pack', 'case', 'internal'\)/);
 });

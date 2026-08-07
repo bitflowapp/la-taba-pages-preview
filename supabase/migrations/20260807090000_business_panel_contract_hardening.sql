@@ -17,6 +17,11 @@
 --    "Ya la vi": un reintento reatribuía el reconocimiento a otro operador.
 -- 6. `set_business_open_state` dejaba que `staff` marque el negocio `closed`;
 --    cerrar es una decisión comercial del mismo calibre que firmar el día.
+-- 7. Las cuatro funciones de comandos del negocio rechazaban claves con `:`
+--    mientras packing (20260802200000) y fiscal (20260802170000) las aceptan.
+--    El Panel web generaba claves con `:`: TODA transición, cancelación,
+--    reconocimiento y estimación de la UI moría en 22023. Se acepta el mismo
+--    alfabeto que el resto de los receipts; el cliente además sanea a guiones.
 
 -- ===== 1. Superseded packing: revocar ejecución =====
 
@@ -263,3 +268,166 @@ begin
   return jsonb_build_object('ok', true, 'status', v_business.status);
 end;
 $set_business_open_state$;
+
+-- ===== 7. Claves de comando: mismo alfabeto que packing y fiscal =====
+-- Fuente exacta de 20260802160000 (transition_order, cancel_order,
+-- acknowledge_order, set_preparation_estimate); el ÚNICO cambio en cada una es
+-- la clase de caracteres del regex de p_idempotency_key: se agrega ':'.
+
+create or replace function public.transition_order(
+  p_order_id uuid,
+  p_expected_revision bigint,
+  p_new_status text,
+  p_idempotency_key text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions, pg_temp
+as $transition_idempotent$
+declare
+  v_order public.orders%rowtype;
+  v_existing public.business_command_receipts%rowtype;
+  v_hash text;
+  v_result jsonb;
+begin
+  if auth.uid() is null then raise exception 'autenticacion requerida' using errcode = '42501'; end if;
+  if btrim(coalesce(p_idempotency_key, '')) !~ '^[A-Za-z0-9:_-]{8,128}$' then raise exception 'idempotency_key invalida' using errcode = '22023'; end if;
+  select o.* into v_order from public.orders o where o.id = p_order_id for update;
+  if not found then raise exception 'pedido inexistente' using errcode = 'P0002'; end if;
+  if not public.has_business_role(v_order.business_id, array['owner', 'admin', 'staff']) then raise exception 'operador no autorizado' using errcode = '42501'; end if;
+  v_hash := public.business_command_request_hash('transition_order', p_order_id, jsonb_build_object('expected_revision', p_expected_revision, 'new_status', public.normalize_order_status_vocabulary(p_new_status)));
+  select r.* into v_existing from public.business_command_receipts r where r.business_id = v_order.business_id and r.idempotency_key = p_idempotency_key;
+  if found then
+    if v_existing.request_hash <> v_hash then raise exception 'idempotency_key reutilizada con otro payload' using errcode = '23505'; end if;
+    return v_existing.result || jsonb_build_object('idempotent_replay', true);
+  end if;
+  v_result := public.transition_order(p_order_id, p_expected_revision, p_new_status);
+  insert into public.business_command_receipts(business_id, order_id, actor_user_id, command_type, idempotency_key, request_hash, result)
+  values (v_order.business_id, p_order_id, auth.uid(), 'transition_order', p_idempotency_key, v_hash, v_result);
+  return v_result || jsonb_build_object('idempotent_replay', false);
+end;
+$transition_idempotent$;
+
+create or replace function public.cancel_order(
+  p_order_id uuid,
+  p_expected_revision bigint,
+  p_reason text,
+  p_idempotency_key text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions, pg_temp
+as $cancel$
+declare
+  v_order public.orders%rowtype;
+  v_existing public.business_command_receipts%rowtype;
+  v_hash text;
+  v_result jsonb;
+begin
+  if auth.uid() is null then raise exception 'autenticacion requerida' using errcode = '42501'; end if;
+  if char_length(btrim(coalesce(p_reason, ''))) not between 3 and 300 then raise exception 'motivo de cancelacion requerido' using errcode = '22023'; end if;
+  if btrim(coalesce(p_idempotency_key, '')) !~ '^[A-Za-z0-9:_-]{8,128}$' then raise exception 'idempotency_key invalida' using errcode = '22023'; end if;
+  select o.* into v_order from public.orders o where o.id = p_order_id for update;
+  if not found then raise exception 'pedido inexistente' using errcode = 'P0002'; end if;
+  if not public.has_business_role(v_order.business_id, array['owner', 'admin', 'staff']) then raise exception 'operador no autorizado' using errcode = '42501'; end if;
+  v_hash := public.business_command_request_hash('cancel_order', p_order_id, jsonb_build_object('expected_revision', p_expected_revision, 'reason', btrim(p_reason)));
+  select r.* into v_existing from public.business_command_receipts r where r.business_id = v_order.business_id and r.idempotency_key = p_idempotency_key;
+  if found then
+    if v_existing.request_hash <> v_hash then raise exception 'idempotency_key reutilizada con otro payload' using errcode = '23505'; end if;
+    return v_existing.result || jsonb_build_object('idempotent_replay', true);
+  end if;
+  v_result := public.transition_order(p_order_id, p_expected_revision, 'canceled');
+  insert into public.order_events(order_id, business_id, actor_user_id, actor_role, event_type, message, metadata)
+  values (p_order_id, v_order.business_id, auth.uid(), 'business', 'business_cancel_reason', 'Cancelacion registrada.', jsonb_build_object('reason', btrim(p_reason)));
+  insert into public.business_command_receipts(business_id, order_id, actor_user_id, command_type, idempotency_key, request_hash, result)
+  values (v_order.business_id, p_order_id, auth.uid(), 'cancel_order', p_idempotency_key, v_hash, v_result);
+  return v_result || jsonb_build_object('idempotent_replay', false);
+end;
+$cancel$;
+
+create or replace function public.acknowledge_order(
+  p_order_id uuid,
+  p_expected_revision bigint,
+  p_idempotency_key text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions, pg_temp
+as $ack$
+declare
+  v_order public.orders%rowtype;
+  v_existing public.business_command_receipts%rowtype;
+  v_hash text;
+  v_result jsonb;
+begin
+  if auth.uid() is null then raise exception 'autenticacion requerida' using errcode = '42501'; end if;
+  if p_expected_revision is null or p_expected_revision < 1 then raise exception 'expected_revision requerido' using errcode = '22023'; end if;
+  if btrim(coalesce(p_idempotency_key, '')) !~ '^[A-Za-z0-9:_-]{8,128}$' then raise exception 'idempotency_key invalida' using errcode = '22023'; end if;
+
+  select o.* into v_order from public.orders o where o.id = p_order_id for update;
+  if not found then raise exception 'pedido inexistente' using errcode = 'P0002'; end if;
+  if not public.has_business_role(v_order.business_id, array['owner', 'admin', 'staff']) then raise exception 'operador no autorizado' using errcode = '42501'; end if;
+
+  v_hash := public.business_command_request_hash('acknowledge_order', p_order_id, jsonb_build_object('expected_revision', p_expected_revision));
+  select r.* into v_existing from public.business_command_receipts r
+   where r.business_id = v_order.business_id and r.idempotency_key = p_idempotency_key;
+  if found then
+    if v_existing.request_hash <> v_hash then raise exception 'idempotency_key reutilizada con otro payload' using errcode = '23505'; end if;
+    return v_existing.result || jsonb_build_object('idempotent_replay', true);
+  end if;
+  if v_order.revision <> p_expected_revision then raise exception 'revision desactualizada' using errcode = '40001'; end if;
+  if public.normalize_order_status_vocabulary(v_order.status) not in ('submitted', 'accepted', 'preparing') then raise exception 'pedido no reconocible en estado actual' using errcode = 'P0001'; end if;
+
+  update public.orders set acknowledged_at = coalesce(acknowledged_at, now()), acknowledged_by = coalesce(acknowledged_by, auth.uid()) where id = p_order_id;
+  insert into public.order_events(order_id, business_id, actor_user_id, actor_role, event_type, message, metadata)
+  values (p_order_id, v_order.business_id, auth.uid(), 'business', 'business_acknowledged', 'Pedido reconocido por el negocio.', '{}'::jsonb);
+  select to_jsonb(o) into v_result from public.orders o where o.id = p_order_id;
+  insert into public.business_command_receipts(business_id, order_id, actor_user_id, command_type, idempotency_key, request_hash, result)
+  values (v_order.business_id, p_order_id, auth.uid(), 'acknowledge_order', p_idempotency_key, v_hash, v_result);
+  return v_result || jsonb_build_object('idempotent_replay', false);
+end;
+$ack$;
+
+create or replace function public.set_preparation_estimate(
+  p_order_id uuid,
+  p_expected_revision bigint,
+  p_minutes integer,
+  p_idempotency_key text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions, pg_temp
+as $estimate$
+declare
+  v_order public.orders%rowtype;
+  v_existing public.business_command_receipts%rowtype;
+  v_hash text;
+  v_result jsonb;
+begin
+  if auth.uid() is null then raise exception 'autenticacion requerida' using errcode = '42501'; end if;
+  if p_minutes not between 1 and 240 then raise exception 'minutos fuera de rango' using errcode = '22023'; end if;
+  if btrim(coalesce(p_idempotency_key, '')) !~ '^[A-Za-z0-9:_-]{8,128}$' then raise exception 'idempotency_key invalida' using errcode = '22023'; end if;
+  select o.* into v_order from public.orders o where o.id = p_order_id for update;
+  if not found then raise exception 'pedido inexistente' using errcode = 'P0002'; end if;
+  if not public.has_business_role(v_order.business_id, array['owner', 'admin', 'staff']) then raise exception 'operador no autorizado' using errcode = '42501'; end if;
+  v_hash := public.business_command_request_hash('set_preparation_estimate', p_order_id, jsonb_build_object('expected_revision', p_expected_revision, 'minutes', p_minutes));
+  select r.* into v_existing from public.business_command_receipts r where r.business_id = v_order.business_id and r.idempotency_key = p_idempotency_key;
+  if found then
+    if v_existing.request_hash <> v_hash then raise exception 'idempotency_key reutilizada con otro payload' using errcode = '23505'; end if;
+    return v_existing.result || jsonb_build_object('idempotent_replay', true);
+  end if;
+  if v_order.revision <> p_expected_revision then raise exception 'revision desactualizada' using errcode = '40001'; end if;
+  if public.normalize_order_status_vocabulary(v_order.status) not in ('submitted', 'accepted', 'preparing') then raise exception 'estado no permite estimacion' using errcode = 'P0001'; end if;
+  update public.orders set preparation_estimate_minutes = p_minutes where id = p_order_id;
+  insert into public.order_events(order_id, business_id, actor_user_id, actor_role, event_type, message, metadata)
+  values (p_order_id, v_order.business_id, auth.uid(), 'business', 'preparation_estimate_set', 'Tiempo de preparacion actualizado.', jsonb_build_object('minutes', p_minutes));
+  select to_jsonb(o) into v_result from public.orders o where o.id = p_order_id;
+  insert into public.business_command_receipts(business_id, order_id, actor_user_id, command_type, idempotency_key, request_hash, result)
+  values (v_order.business_id, p_order_id, auth.uid(), 'set_preparation_estimate', p_idempotency_key, v_hash, v_result);
+  return v_result || jsonb_build_object('idempotent_replay', false);
+end;
+$estimate$;

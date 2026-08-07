@@ -393,7 +393,7 @@ export class SupabasePrivateArtifactStorage {
   }
 }
 
-function rowToRequest(row: Record<string, unknown>, associated?: { documentType: number; pointOfSale: number; documentNumber: number; issueDate?: string }): FiscalRequest {
+export function rowToRequest(row: Record<string, unknown>, associated?: { documentType: number; pointOfSale: number; documentNumber: number; issueDate?: string }): FiscalRequest {
   const items = asRows(row.fiscal_document_items);
   const issueDate = String(row.issue_date || dateInArgentina(new Date())).replace(/-/g, '');
   const documentIntent = String(row.document_intent) === 'credit_note' ? 'credit_note' : 'invoice';
@@ -415,13 +415,34 @@ function rowToRequest(row: Record<string, unknown>, associated?: { documentType:
     otherTaxesAmount: numberValue(row.other_taxes_amount),
     currencyCode: String(row.currency || 'PES'),
     currencyRate: numberValue(row.currency_rate, 1),
-    vatItems: items.filter((item) => item.tax_code != null).map((item) => ({
-      id: numberValue(item.tax_code), baseAmount: numberValue(item.net_amount), amount: numberValue(item.tax_amount),
-    })),
+    vatItems: totalizeVatByRate(items),
     documentIntent,
     ...(associated ? { associatedDocument: { ...associated, ...(associated.issueDate ? { issueDate: associated.issueDate.replace(/-/g, '') } : {}) } } : {}),
   };
   return request;
+}
+
+/**
+ * ARCA rechaza con 10022 un detalle de IVA que repita la alícuota: "El campo Id
+ * en AlicIVA no debe repetirse. Deberá totalizarse por alícuota". Se emitía una
+ * entrada por línea del comprobante, así que dos productos a la misma alícuota
+ * —o sea, casi cualquier comprobante real— mandaban dos AlicIva con el mismo Id.
+ */
+function totalizeVatByRate(items: Array<Record<string, unknown>>): Array<{ id: number; baseAmount: number; amount: number }> {
+  const byRate = new Map<number, { id: number; baseAmount: number; amount: number }>();
+  for (const item of items) {
+    if (item.tax_code == null) continue;
+    const id = numberValue(item.tax_code);
+    const current = byRate.get(id) || { id, baseAmount: 0, amount: 0 };
+    current.baseAmount = roundToCents(current.baseAmount + numberValue(item.net_amount));
+    current.amount = roundToCents(current.amount + numberValue(item.tax_amount));
+    byRate.set(id, current);
+  }
+  return [...byRate.values()].sort((left, right) => left.id - right.id);
+}
+
+function roundToCents(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 function toDatabaseResult(result: ArcaResult & Record<string, unknown>): Record<string, unknown> {

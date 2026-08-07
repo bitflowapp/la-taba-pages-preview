@@ -118,6 +118,23 @@ export class WsfeClient {
   }
 }
 
+// "11, 12, 13, 15, 211, 212, 213 para los clase C" (manual WSFEv1). ARCA valida
+// los importes de un comprobante C con reglas propias, no con las generales.
+export const CLASS_C_DOCUMENT_TYPES: ReadonlySet<number> = Object.freeze(new Set([11, 12, 13, 15, 211, 212, 213]));
+
+// Notas de débito y crédito A/B/M: BaseImp e Importe "puede ser cero o no ser
+// informado" (10020/10021). Para el resto, BaseImp debe ser mayor a cero.
+const OPTIONAL_VAT_BASE_DOCUMENT_TYPES: ReadonlySet<number> = Object.freeze(new Set([2, 3, 7, 8, 52, 53]));
+
+// El manual admite margen en todas las sumas: "Error relativo porcentual deberá
+// ser <= 0.01% o el error absoluto <= ...". Se replica tal cual, para no
+// rechazar de este lado un comprobante que ARCA habría aceptado.
+function withinArcaMargin(actual: number, expected: number, absoluteTolerance: number): boolean {
+  const difference = Math.abs(actual - expected);
+  if (difference <= absoluteTolerance + 1e-9) return true;
+  return expected !== 0 && (difference / Math.abs(expected)) * 100 <= 0.01;
+}
+
 export function validateFiscalRequest(request: FiscalRequest, configuredCuit: string): void {
   validateCuit(request.cuit);
   if (request.cuit !== configuredCuit) throw new Error('El CUIT del documento no coincide con el perfil del worker.');
@@ -130,9 +147,8 @@ export function validateFiscalRequest(request: FiscalRequest, configuredCuit: st
   if (!/^[A-Z]{3}$/.test(request.currencyCode) || !(request.currencyRate > 0)) throw new Error('Moneda o cotización inválida.');
   const amounts = [request.totalAmount, request.netAmount, request.vatAmount, request.exemptAmount, request.nonTaxedAmount, request.otherTaxesAmount];
   if (amounts.some((value) => !Number.isFinite(value) || value < 0)) throw new Error('Importe fiscal inválido.');
-  const components = request.netAmount + request.vatAmount + request.exemptAmount + request.nonTaxedAmount + request.otherTaxesAmount;
-  if (Math.abs(cents(components) - cents(request.totalAmount)) > 1) throw new Error('El total fiscal no coincide con sus componentes.');
-  if (request.vatItems.some((item) => !Number.isSafeInteger(item.id) || item.baseAmount < 0 || item.amount < 0)) throw new Error('Detalle IVA inválido.');
+  if (request.vatItems.some((item) => !Number.isSafeInteger(item.id) || item.id < 1 || item.baseAmount < 0 || item.amount < 0)) throw new Error('Detalle IVA inválido.');
+  validateAmountsAgainstDocumentClass(request);
   if ((request.concept === 2 || request.concept === 3) && (!request.serviceFrom || !request.serviceTo || !request.paymentDueDate)) throw new Error('Servicios requieren período y vencimiento.');
   if (request.documentIntent === 'credit_note' && !request.associatedDocument) throw new Error('La nota de crédito requiere comprobante asociado.');
   if (request.associatedDocument) {
@@ -141,6 +157,52 @@ export function validateFiscalRequest(request: FiscalRequest, configuredCuit: st
     assertPositiveInteger(request.associatedDocument.documentNumber, 'número asociado');
     if (request.associatedDocument.cuit && !/^\d{11}$/.test(request.associatedDocument.cuit)) throw new Error('CUIT asociado inválido.');
     if (request.associatedDocument.issueDate && !/^\d{8}$/.test(request.associatedDocument.issueDate)) throw new Error('Fecha asociada inválida.');
+  }
+}
+
+/**
+ * Las validaciones de importes que ARCA aplica sobre FECAESolicitar, con el
+ * código de error del manual en cada mensaje. Corren ANTES de reservar número:
+ * un comprobante que no cierra no puede consumir el siguiente número de ARCA ni
+ * quedar esperando un rechazo que ya se sabe seguro.
+ */
+function validateAmountsAgainstDocumentClass(request: FiscalRequest): void {
+  if (CLASS_C_DOCUMENT_TYPES.has(request.documentType)) {
+    if (cents(request.nonTaxedAmount) !== 0) throw new Error('Comprobante clase C: ImpTotConc debe ser cero (ARCA 1434).');
+    if (cents(request.exemptAmount) !== 0) throw new Error('Comprobante clase C: ImpOpEx debe ser cero (ARCA 1435).');
+    if (cents(request.vatAmount) !== 0) throw new Error('Comprobante clase C: ImpIVA debe ser cero (ARCA 1438).');
+    if (request.vatItems.length) throw new Error('Comprobante clase C: el array de IVA no debe informarse (ARCA 1443).');
+    if (!withinArcaMargin(request.netAmount + request.otherTaxesAmount, request.totalAmount, 0.01)) {
+      throw new Error('Comprobante clase C: el total debe ser ImpNeto + ImpTrib (ARCA 1439).');
+    }
+    return;
+  }
+
+  const components = request.netAmount + request.vatAmount + request.exemptAmount + request.nonTaxedAmount + request.otherTaxesAmount;
+  if (!withinArcaMargin(components, request.totalAmount, 0.01)) {
+    throw new Error('El total fiscal no coincide con sus componentes (ARCA 10048).');
+  }
+
+  const ids = request.vatItems.map((item) => item.id);
+  if (new Set(ids).size !== ids.length) {
+    throw new Error('El detalle IVA repite una alícuota; debe totalizarse por alícuota (ARCA 10022).');
+  }
+  if (cents(request.vatAmount) > 0 && !request.vatItems.length) {
+    throw new Error('Con ImpIVA mayor a cero el detalle IVA es obligatorio (ARCA 10018).');
+  }
+  // Con ImpIVA en cero el detalle sólo puede llevar la alícuota 0% (Id 3).
+  if (cents(request.vatAmount) === 0 && request.vatItems.some((item) => item.id !== 3)) {
+    throw new Error('Con ImpIVA en cero sólo puede informarse la alícuota 0% (ARCA 10018).');
+  }
+  if (!OPTIONAL_VAT_BASE_DOCUMENT_TYPES.has(request.documentType) && request.vatItems.some((item) => !(item.baseAmount > 0))) {
+    throw new Error('BaseImp del detalle IVA debe ser mayor a cero (ARCA 10020).');
+  }
+  if (request.vatItems.length) {
+    const declared = request.vatItems.reduce((sum, item) => sum + item.amount, 0);
+    // Margen propio de 10023: 0.01 por cada alícuota informada.
+    if (!withinArcaMargin(declared, request.vatAmount, 0.01 * request.vatItems.length)) {
+      throw new Error('La suma del detalle IVA no coincide con ImpIVA (ARCA 10023).');
+    }
   }
 }
 

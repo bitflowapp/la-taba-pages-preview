@@ -26,9 +26,12 @@ export const testTicket: LoginTicket = Object.freeze({
   service: 'wsfe',
 });
 
+// Factura B (tipo 6) con IVA discriminado al 21%: el mismo caso que declara la
+// política contable del fixture pgTAP. Antes era tipo 11 —Factura C— con IVA
+// distinto de cero y array de IVA informado, que ARCA rechaza por 1438 y 1443.
 export function testRequest(overrides: Partial<FiscalRequest> = {}): FiscalRequest {
   return {
-    cuit: '20123456789', pointOfSale: 5, documentType: 11, concept: 1,
+    cuit: '20123456789', pointOfSale: 5, documentType: 6, concept: 1,
     recipientDocumentType: 99, recipientDocumentNumber: '0', recipientVatConditionId: 5,
     documentNumber: 42, issueDate: '20260802',
     totalAmount: 121, netAmount: 100, vatAmount: 21,

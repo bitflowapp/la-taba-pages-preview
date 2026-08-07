@@ -1,6 +1,6 @@
 # INTEGRATION-HANDOFF — TABA2, RC única de piloto
 
-Worktree `D:\1212\la-taba2-pilot-integration`, rama `release/taba2-pilot-integration`.
+Worktree de integración aislado, rama `release/taba2-pilot-integration`.
 Todo local: sin push, sin `amend`, `reset`, `clean`, `stash` ni `git add .`.
 
 ## 1. HEADs
@@ -149,7 +149,8 @@ barata de perder una validación sin que ningún test lo note.
 
 ## 6. Deploy — sólo staging, con el lock compartido
 
-Lock tomado en `D:\1212\_claude-locks\taba2-pilot-integration-staging.txt`.
+Lock tomado en el directorio compartido de locks, como
+`taba2-pilot-integration-staging.txt`.
 
 | Superficie | Qué se hizo |
 | --- | --- |
@@ -170,30 +171,42 @@ se apuntó a `la-taba-demo`.
 Recorrido real, desde un contexto WebKit con forma de iPhone, contra
 `https://taba2-staging.pages.dev`.
 
+El recorrido certificado de punta a punta es **`LT-0079`**.
+
 1. **Cliente** — perfil y dirección propios (`QA Combo RC`, `Calle QA Combo 850, Neuquen`).
 2. **Combo** — la góndola publicó los 3 combos cobrables; la ficha ofreció
    **"Agregar combo · $ 10.500"**.
 3. **$ correcto** — carrito: subtotal $ 23.400 de lista → **combo $ 10.500** →
    resumen `Subtotal $ 11.700 · Combo del local −$ 1.200 · Envío $ 150 · **Total $ 10.650**`.
 4. **Pago fake** — Checkout Pro, tarjeta de prueba, **aprobado por $ 10.650
-   exactos**, operación `171546365859`. La pantalla de Mercado Pago mostró
+   exactos**, operación `172454685930`. La pantalla de Mercado Pago mostró
    *"Cuatro para arrancar"*, no cuatro latas sueltas.
-5. **Pedido único** — **`LT-0078`**, `received`, `payment_method mercadopago`,
+5. **Cierre automático** — la pantalla de retorno llegó sola a
+   **"Pedido confirmado"**, sin ningún paso manual y sin webhook: la finalización
+   la dispara `mercadopago-checkout-status`, que lee el pago del proveedor y lo
+   pasa por la misma verificación que usa el worker.
+6. **Pedido único** — **`LT-0079`**, `received`, `payment_method mercadopago`,
    `origin production`, dirección completa.
-6. **Panel** — lo vio en su bandeja y lo movió `accepted → preparing → ready`;
+7. **Panel** — lo vio en su bandeja y lo movió `accepted → preparing → ready`;
    una revisión atrasada fue rechazada.
-7. **Rider** — lo vio en la cola, lo tomó (segundo claim = no-op idempotente),
+8. **Rider** — lo vio en la cola, lo tomó (segundo claim = no-op idempotente),
    registró retiro, salida y llegada.
-8. **Entrega** — el cliente obtuvo su código; un código incorrecto **no** cerró el
+9. **Entrega** — el cliente obtuvo su código; un código incorrecto **no** cerró el
    pedido; el correcto lo dejó `delivered`.
+
+**`LT-0078`** es la compra anterior, con el mismo recorrido y el mismo total.
+Es la que destapó la invariante `orders_total_matches_parts`: su pago quedó
+aprobado y verificado mientras la finalización fallaba, y una vez corregida la
+invariante el mismo checkout finalizó sin duplicar nada. También llegó a
+`delivered` por el circuito completo.
 
 ### Verificación
 
 | | |
 | --- | --- |
 | Cero duplicados | 1 pedido por huella de intención |
-| Stock correcto | 4 unidades descontadas; reservas `converted` |
-| QA separado | `LT-0078` nace `origin=production`; LT-0033/34/35 siguen `qa` |
+| Stock correcto | 4 unidades descontadas; reservas `converted`; **0 reservas huérfanas** al cerrar |
+| QA separado | `LT-0079` nace `origin=production`; LT-0033/34/35 siguen `qa` |
 | `payment_method` válido | `mercadopago` con intent `completed` y `paid_amount = 10650` |
 | Outbox | sin pendientes |
 | Dirección completa | `Calle QA Combo 850, Neuquen` con columnas `delivery_*` |
@@ -202,13 +215,21 @@ Recorrido real, desde un contexto WebKit con forma de iPhone, contra
 | Dinero | subtotal 11.700 · descuento 1.200 · total 10.650, sin moverse en todo el circuito |
 
 **21 comprobaciones del pedido + 17 del circuito operativo, todas verdes.**
+Reproducibles con `npm run certify:circuit:staging -- LT-00XX`.
+
+`LT-0078` y `LT-0079` quedan `origin=production` y `delivered`. Es el mismo
+criterio que Operaciones ya había aplicado a sus tres pedidos terminales: **un
+pedido entregado no es operable**, así que llamarlo QA no protege nada y sí
+borra el hecho de que la clasificación automática **no** se disparó sobre
+catálogo comercial real —que es justamente lo que había que demostrar—. La
+bandeja del Panel quedó vacía al cerrar.
 
 ## 8. Pruebas
 
 | Gate | Resultado |
 | --- | --- |
 | `npm test` | **1086/1086** |
-| `npm run test:e2e` | ver §10 |
+| `npm run test:e2e` | **206/206** (Chromium + Firefox) |
 | `npm run test:webhook` | **12/12** |
 | `npm run check` | pasa |
 | `npm run secrets:scan` | limpio |
@@ -248,16 +269,25 @@ Recorrido real, desde un contexto WebKit con forma de iPhone, contra
    traducción está explícita en `IMPORT_CATEGORY` y falla ruidosamente ante un
    rubro sin equivalente, pero unificar las dos taxonomías sigue pendiente.
 
-6. **La automatización del formulario de tarjeta de Mercado Pago es frágil.**
-   De tres corridas, una completó la tarjeta y pagó; las otras se quedaron
-   reintentando "Continuar". Es la automatización, no el producto: el pago que sí
-   se completó fue aprobado y su recorrido quedó entero.
+6. **Mercado Pago sirve más de una variante del formulario de tarjeta.** La que
+   llega directo, sin el paso "¿Qué querés pagar?", no se llenaba por
+   emparejamiento de índice y dejaba la compra trabada en "Continuar". Se resolvió
+   llenando por etiqueta visible, que es lo único estable entre variantes; con eso
+   la corrida completa cerró. Es la automatización, no el producto, pero conviene
+   saberlo antes de armar el próximo E2E.
 
-7. **Los actores de certificación se acumulan.** Cada corrida crea un staff y un
+7. **Otra sesión corrió la certificación de Operaciones contra staging mientras
+   este trabajo tenía el lock tomado.** Se detectó por su pedido
+   `cert_real_…` apareciendo en la bandeja del Panel a mitad de la verificación.
+   No corrompió ninguna medición —los pedidos de esta RC se verifican por su
+   propio código— pero **el lock compartido sólo sirve si todos lo leen antes de
+   tocar la base**.
+
+8. **Los actores de certificación se acumulan.** Cada corrida crea un staff y un
    rider que quedan desactivados y baneados, no borrados: son sujeto de eventos de
    auditoría y borrarlos destruiría evidencia.
 
-8. **Al cliente del pedido se le asignaron credenciales.** Para pedirle el código
+9. **Al cliente del pedido se le asignaron credenciales.** Para pedirle el código
    de entrega como lo haría su app hizo falta autenticarse como él;
    `finalize_paid_checkout_session` guarda sólo el hash del token de seguimiento.
    Es un usuario anónimo de staging y el contrato usado —

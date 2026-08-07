@@ -587,6 +587,14 @@ test('showcase has no horizontal overflow and keeps every control touch-safe in 
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize(viewport);
     await expect(page.locator('[data-showcase-dialog]')).toBeVisible();
+    // Medir inmediatamente después del resize lee una caja a mitad del
+    // relayout: el mismo botón daba 43,34 px contra su `min-height: 44px` en
+    // una de cada tres corridas. Esperar dos frames deja que el navegador
+    // aplique el viewport nuevo antes de medir. La afirmación no se afloja
+    // —sigue exigiendo 44 px— ; lo que se corrige es cuándo se mira.
+    await page.evaluate(() => new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    }));
 
     const layout = await page.evaluate(() => {
       const overflow = document.documentElement.scrollWidth - document.documentElement.clientWidth;

@@ -166,6 +166,19 @@ se apuntó a `la-taba-demo`.
 > rama de producción del proyecto de staging se llama `staging`; el deploy se
 > repitió ahí y `taba2-staging.pages.dev` sirve la RC integrada.
 
+**Actualización 2026-08-07.** Otra RC (`0d7bfee`) desplegó después sobre el
+dominio principal; esta certificación pasó a usar la URL inmutable del deploy
+propio (`4202e4b9.taba2-staging.pages.dev`) para no pisarla. Dos configuraciones
+compartidas cambiaron, ambas registradas también en el lock:
+
+- `TABA_ALLOWED_ORIGINS` (secret de Edge) ahora incluye el origen del deploy
+  inmutable además del dominio principal. El valor previo era sólo el dominio
+  (verificado por digest, idéntico al de `TABA_CHECKOUT_BASE_URL`); sondado
+  antes/después: principal 204/204, deploy 403→204, origen hostil 403.
+  `TABA_CHECKOUT_BASE_URL` no se tocó.
+- Política de alcohol del negocio configurada (ver §7-bis y
+  `scripts/configure-staging-alcohol-policy.mjs`).
+
 ## 7. Compra Mercado Pago TEST desde el storefront integrado
 
 Recorrido real, desde un contexto WebKit con forma de iPhone, contra
@@ -224,6 +237,36 @@ borra el hecho de que la clasificación automática **no** se disparó sobre
 catálogo comercial real —que es justamente lo que había que demostrar—. La
 bandeja del Panel quedó vacía al cerrar.
 
+## 7-bis. Combo +18 certificado (2026-08-07)
+
+Con la política de alcohol configurada, el combo **Heineken x6** (+18, $ 23.400
+de lista → **$ 21.000**) quedó certificado en las dos capas:
+
+**Backend (sondas RPC, 11/11):** sin confirmación de edad el checkout se
+rechaza con *"politica o confirmacion de edad incompleta"*; con edad confirmada
+la sesión nace con `contains_alcohol = true`, `age_confirmed_at` fechado,
+`age_confirmation_policy = 18`, dinero exacto (23.400 − 2.400 + 150 = 21.150),
+snapshot del combo y las 6 latas reservadas; la sonda libera su reserva y el
+stock vuelve.
+
+**Compra real (WebKit iPhone, contra el deploy inmutable `4202e4b9…` para no
+tocar el dominio que otra RC tiene en uso):** góndola → ficha con
+**"Agregar combo · $ 21.000"** → checkbox *"Confirmo que soy mayor de 18
+años"* (sin marcarlo, el backend rechaza) → Checkout Pro → **pago aprobado por
+$ 21.150 exactos**, operación `171579991183` → **pedido único `LT-0086`**,
+`origin production` → 18 invariantes verdes (dinero, edad fechada, snapshot,
+reserva convertida, stock 99→93, outbox vacío, LT-0030 y ARCA intactos) →
+**circuito operativo completo 17/17** (Panel acepta/prepara/lista → rider toma,
+retira, sale, llega → entrega con el código del cliente, `delivered`).
+
+Nota de coexistencia que conviene conocer: `TABA_CHECKOUT_BASE_URL` apunta al
+dominio principal, así que el retorno de Mercado Pago cayó en el build de la
+otra RC, que sin el storage del origen de compra no pudo reconciliar. El cierre
+se disparó con el propio `mercadopago-checkout-status` —el endpoint que esa
+pantalla pollea— autenticado como el dueño real de la sesión (mismo contrato de
+credenciales que usa `certify:circuit:staging`): reconcilió y creó el pedido en
+el primer intento. En el dominio único del piloto este desvío no existe.
+
 ## 8. Pruebas
 
 | Gate | Resultado |
@@ -243,12 +286,14 @@ bandeja del Panel quedó vacía al cerrar.
 
 ## 9. Riesgos que quedan
 
-1. **El negocio no tiene habilitada la venta de alcohol en staging.**
-   `alcohol_sales_enabled = false` y sin política ni horario. Ningún producto ni
-   combo alcohólico se puede comprar hoy: el checkout responde *"politica o
-   confirmacion de edad incompleta"*. Es previo a esta integración y no se tocó,
-   porque es una decisión de negocio. **Dos de los tres combos cobrables de
-   staging son +18**, así que hay que resolverlo antes del piloto.
+1. **~~El negocio no tiene habilitada la venta de alcohol en staging~~ —
+   RESUELTO (2026-08-07).** La política se configuró completa con
+   `scripts/configure-staging-alcohol-policy.mjs`: habilitada, edad mínima 18,
+   ventana 20:00–06:00, `America/Argentina/Buenos_Aires`. El horario es una
+   configuración de staging para QA; **el horario del piloto real lo decide el
+   negocio** y se cambia con los flags del mismo script (`--start/--end`,
+   `--disable` para revertir). El combo +18 quedó certificado de punta a punta:
+   ver §7-bis.
 
 2. **Los combos se cobran sólo por Mercado Pago.** La ruta directa de pedidos
    (efectivo / a coordinar) no deriva el precio de un combo, así que rechaza un

@@ -78,6 +78,15 @@ let lookup = null;
 let feedback = '';
 let busy = false;
 let posItems = [];
+// El borrador de venta vive acá y no en el DOM. Un refresco de fondo vuelve a
+// dibujar el panel, y lo que sólo existía en el DOM se perdía en silencio: el
+// mostrador cobraba sin pedir el comprobante que el operador había tildado.
+let posRequestFiscal = false;
+let posPaymentMethod = 'cash';
+const POS_PAYMENT_METHODS = Object.freeze(['cash', 'debit_card', 'credit_card', 'transfer', 'qr']);
+const POS_PAYMENT_LABELS = Object.freeze({
+  cash: 'Efectivo', debit_card: 'Débito', credit_card: 'Crédito', transfer: 'Transferencia', qr: 'QR',
+});
 let fiscalProfile = null;
 let fiscalDocuments = [];
 let fiscalArtifacts = [];
@@ -333,10 +342,12 @@ export async function handleBusinessOperationsAction(target) {
   }
   if (target.closest('[data-pos-clear]')) {
     posItems = [];
+    posRequestFiscal = false;
+    posPaymentMethod = 'cash';
     context.onChange();
     return result(true, 'Borrador de venta vacío.');
   }
-  if (target.closest('[data-pos-checkout]')) return confirmPos(target);
+  if (target.closest('[data-pos-checkout]')) return confirmPos();
 
   if (target.closest('[data-packing-start]')) return startPacking(target);
   if (target.closest('[data-packing-undo]')) {
@@ -408,6 +419,16 @@ export function handleBusinessOperationsInput(target) {
     arcaAuthorizationDraft = String(target.value || '').slice(0, 40);
     return { handled: true };
   }
+  // Igual que la frase: el pedido de comprobante y el medio de pago son parte
+  // del borrador de venta, no del HTML que un refresco vuelve a dibujar.
+  if (target?.matches?.('[name="requestFiscal"]')) {
+    posRequestFiscal = target.checked === true;
+    return { handled: true };
+  }
+  if (target?.matches?.('[name="paymentMethod"]')) {
+    posPaymentMethod = POS_PAYMENT_METHODS.includes(String(target.value)) ? String(target.value) : 'cash';
+    return { handled: true };
+  }
   if (!target?.matches?.('[name="creditReason"], [name="creditKind"], [name="creditQuantity"], [name="creditNet"], [name="creditTax"]')) {
     return { handled: false };
   }
@@ -433,6 +454,8 @@ export function resetBusinessOperationsForTests() {
   feedback = '';
   busy = false;
   posItems = [];
+  posRequestFiscal = false;
+  posPaymentMethod = 'cash';
   fiscalProfile = null;
   fiscalDocuments = [];
   fiscalArtifacts = [];
@@ -602,14 +625,15 @@ async function confirmStockCount(target) {
   return result(Boolean(response?.ok), feedback);
 }
 
-async function confirmPos(target) {
+async function confirmPos() {
   if (!posItems.length) return result(false, 'Escaneá al menos un producto.');
   if (globalThis.navigator?.onLine === false) return result(false, 'Borrador guardado. Pendiente de sincronización; la venta no está confirmada.');
-  const root = target.closest('[data-business-ops-center]');
+  // Se lee el borrador, no el DOM: el DOM es lo que un refresco vuelve a
+  // dibujar, y leerlo era perder el pedido de comprobante sin avisar.
   const response = await context.checkoutPos({
     items: posItems.map(({ productId, quantity }) => ({ productId, quantity })),
-    paymentMethod: root?.querySelector('[name="paymentMethod"]')?.value || 'cash',
-    requestFiscal: root?.querySelector('[name="requestFiscal"]')?.checked === true,
+    paymentMethod: posPaymentMethod,
+    requestFiscal: posRequestFiscal === true && fiscalProfile?.is_enabled === true,
     idempotencyKey: createKey('pos-sale'),
   });
   feedback = response?.ok
@@ -617,7 +641,11 @@ async function confirmPos(target) {
       ? 'Venta confirmada; la solicitud fiscal requiere revisión.'
       : response.data?.fiscal_document_id ? 'Venta confirmada; comprobante fiscal pendiente.' : 'Venta confirmada por el servidor.')
     : response?.message || 'La venta no fue confirmada.';
-  if (response?.ok) posItems = [];
+  if (response?.ok) {
+    posItems = [];
+    posRequestFiscal = false;
+    posPaymentMethod = 'cash';
+  }
   context.onChange();
   return result(Boolean(response?.ok), feedback);
 }
@@ -1222,10 +1250,13 @@ function renderPos() {
   // El checkbox fiscal sólo se ofrece con la facturación habilitada de verdad:
   // ofrecerlo antes era prometer un comprobante que el backend rechaza siempre.
   const fiscalReady = fiscalProfile?.is_enabled === true;
+  // El estado tildado sale del borrador, no del HTML anterior: así el refresco
+  // vuelve a dibujar exactamente lo que el operador había elegido.
   const fiscalControl = fiscalReady
-    ? '<label class="business-ops-check"><input name="requestFiscal" type="checkbox"> Solicitar comprobante fiscal</label>'
+    ? `<label class="business-ops-check"><input name="requestFiscal" type="checkbox"${posRequestFiscal ? ' checked' : ''}> Solicitar comprobante fiscal</label>`
     : '<p class="form-hint">Comprobante fiscal no disponible: la facturación todavía no está habilitada (ver Facturación).</p><input name="requestFiscal" type="hidden" value="">';
-  return panel('Venta de mostrador', 'El servidor revalora precios y stock; el cliente envía sólo IDs y cantidades.', `${scannerInput()}${renderScanResult()}<ul class="business-ops-cart">${items}</ul><div class="business-ops-form"><label>Medio de pago<select name="paymentMethod"><option value="cash">Efectivo</option><option value="debit_card">Débito</option><option value="credit_card">Crédito</option><option value="transfer">Transferencia</option><option value="qr">QR</option></select></label>${fiscalControl}<div class="button-row"><button class="primary-button" type="button" data-pos-checkout>Confirmar venta</button><button class="ghost-button" type="button" data-pos-clear>Vaciar borrador</button></div></div>`);
+  const paymentOptions = POS_PAYMENT_METHODS.map((value) => `<option value="${value}"${value === posPaymentMethod ? ' selected' : ''}>${POS_PAYMENT_LABELS[value]}</option>`).join('');
+  return panel('Venta de mostrador', 'El servidor revalora precios y stock; el cliente envía sólo IDs y cantidades.', `${scannerInput()}${renderScanResult()}<ul class="business-ops-cart">${items}</ul><div class="business-ops-form"><label>Medio de pago<select name="paymentMethod">${paymentOptions}</select></label>${fiscalControl}<div class="button-row"><button class="primary-button" type="button" data-pos-checkout>Confirmar venta</button><button class="ghost-button" type="button" data-pos-clear>Vaciar borrador</button></div></div>`);
 }
 function renderFiscalStatus() {
   const rows = fiscalDocuments.length ? fiscalDocuments.map((document) => renderFiscalDocument(document)).join('') : '<div class="empty-state"><strong>Sin comprobantes</strong><p>No se inventan autorizaciones ni CAE.</p></div>';

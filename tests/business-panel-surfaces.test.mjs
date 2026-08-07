@@ -5,6 +5,7 @@ import {
   BUSINESS_OPERATION_VIEWS,
   configureBusinessOperations,
   handleBusinessOperationsAction,
+  handleBusinessOperationsInput,
   renderBusinessOperations,
   resetBusinessOperationsForTests,
 } from '../js/business/business-operations-center.js';
@@ -38,6 +39,10 @@ function fieldRoot(values) {
       return name && Object.hasOwn(values, name) ? values[name] : null;
     },
   };
+}
+
+function inputTarget(selector, properties) {
+  return { matches: (candidate) => candidate === selector, ...properties };
 }
 
 async function settle() {
@@ -489,5 +494,68 @@ test('ninguna pantalla del panel filtra el vocabulario interno', async () => {
     const text = renderBusinessOperations(view).replace(/<[^>]+>/g, ' ');
     assert.deepEqual(containsForbiddenVocabulary(text), [], `la pantalla ${view} filtró jerga`);
   }
+  resetBusinessOperationsForTests();
+});
+
+test('el pedido de comprobante sobrevive a un refresco del panel', async () => {
+  // Un refresco de fondo vuelve a dibujar el mostrador entero. El tilde de
+  // "Solicitar comprobante fiscal" vivia solo en el DOM: se perdia en silencio
+  // y la venta se cobraba sin pedir comprobante, sin avisar a nadie.
+  const checkouts = [];
+  configureBusinessOperations({
+    role: 'staff',
+    lookupBarcode: async () => ({ ok: true, data: { product_id: 'prod-1', unit_factor: 1, products: { id: 'prod-1', name: 'Gaseosa' } } }),
+    getFiscalProfile: async () => ({ ok: true, data: { is_enabled: true, environment: 'homologation' } }),
+    listFiscalDocuments: async () => ({ ok: true, data: [] }),
+    listFiscalArtifacts: async () => ({ ok: true, data: [] }),
+    checkoutPos: async (input) => {
+      checkouts.push(input);
+      return { ok: true, data: { sale_id: 's-1', fiscal_document_id: 'f-1', fiscal_status: 'queued' } };
+    },
+    onChange() {},
+  });
+  renderBusinessOperations('fiscal-status');
+  await settle();
+  renderBusinessOperations('pos');
+  const scanRoot = { querySelector: () => ({ value: '7790895000997' }) };
+  await handleBusinessOperationsAction(target('[data-business-scan-test]', {}, scanRoot));
+  await settle();
+
+  handleBusinessOperationsInput(inputTarget('[name="requestFiscal"]', { checked: true }));
+  handleBusinessOperationsInput(inputTarget('[name="paymentMethod"]', { value: 'transfer' }));
+
+  const refreshed = renderBusinessOperations('pos');
+  assert.match(refreshed, /name="requestFiscal" type="checkbox" checked/, 'el refresco vuelve a dibujar el tilde');
+  assert.match(refreshed, /<option value="transfer" selected>/, 'y el medio de pago elegido');
+
+  await handleBusinessOperationsAction(target('[data-pos-checkout]'));
+  assert.equal(checkouts.length, 1);
+  assert.equal(checkouts[0].requestFiscal, true, 'un refresco no puede borrar el pedido de comprobante');
+  assert.equal(checkouts[0].paymentMethod, 'transfer', 'ni cambiar el medio de pago cobrado');
+
+  // Cobrada la venta, el borrador vuelve a cero: el proximo cliente no hereda
+  // el pedido de comprobante del anterior.
+  const afterSale = renderBusinessOperations('pos');
+  assert.doesNotMatch(afterSale, /type="checkbox" checked/);
+  assert.match(afterSale, /<option value="cash" selected>/);
+  resetBusinessOperationsForTests();
+});
+
+test('sin facturacion habilitada el mostrador no pide comprobante aunque quede un tilde viejo', async () => {
+  const checkouts = [];
+  configureBusinessOperations({
+    role: 'staff',
+    lookupBarcode: async () => ({ ok: true, data: { product_id: 'prod-1', unit_factor: 1, products: { id: 'prod-1', name: 'Gaseosa' } } }),
+    checkoutPos: async (input) => { checkouts.push(input); return { ok: true, data: { sale_id: 's-1' } }; },
+    onChange() {},
+  });
+  renderBusinessOperations('pos');
+  const scanRoot = { querySelector: () => ({ value: '7790895000997' }) };
+  await handleBusinessOperationsAction(target('[data-business-scan-test]', {}, scanRoot));
+  await settle();
+  handleBusinessOperationsInput(inputTarget('[name="requestFiscal"]', { checked: true }));
+
+  await handleBusinessOperationsAction(target('[data-pos-checkout]'));
+  assert.equal(checkouts[0].requestFiscal, false, 'sin perfil habilitado no se promete un comprobante');
   resetBusinessOperationsForTests();
 });

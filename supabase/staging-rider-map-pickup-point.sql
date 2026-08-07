@@ -53,7 +53,17 @@ declare
   v_business_id constant uuid := '00000000-0000-4000-8000-000000000001';
   v_lat  constant numeric(9,6) := -38.951600;   -- js/config.js businessLocation
   v_lng  constant numeric(9,6) := -68.059100;
-  v_address constant text := 'Local TABA2 · Neuquén Capital (punto de retiro de staging)';
+  -- La dirección NO es libre: la app Rider trae la suya compilada
+  -- (`kTabaBusinessIdentity`, lib/core/config/business_config.dart) y
+  -- `matchesProjection` compara la proyectada con la configurada. Si no
+  -- concuerdan, el detalle del pedido muestra «Retiro no reconocido: este
+  -- pedido no corresponde a La Taba 2» y bloquea la operación. Falla cerrada a
+  -- propósito, y está bien que lo haga.
+  --
+  -- Medido en el Moto: con una etiqueta descriptiva («Local TABA2 · Neuquén
+  -- Capital…») el Rider quedó bloqueado sobre un pedido válido. Mientras la app
+  -- declare Mendoza 827, el backend tiene que decir Mendoza 827.
+  v_address constant text := 'Mendoza 827';
   v_existing_source text;
   v_existing_address text;
 begin

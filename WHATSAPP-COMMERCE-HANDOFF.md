@@ -237,8 +237,28 @@ npm run secrets:scan     # limpio
 npm run test:webhook     # 12/12 (Deno + Node)
 ```
 
+Números medidos al cerrar la rama: **1195/1195** en Node, **76/76** en el canal, **12/12** en el
+webhook de pagos, **85/85** en el E2E, `deno check` limpio sobre las dos funciones de borde.
+
 `check-syntax` ahora cubre `supabase/functions/**/*.js`: antes, un error de sintaxis en un módulo
 de servidor sólo aparecía al desplegar.
+
+### Una puerta que NO se corrió: `npm run test:e2e`
+
+El gate de Playwright (207 tests de la web) **no se ejecutó**. Al terminar esta rama había otras
+dos sesiones corriendo Playwright sobre el mismo host, y el propio `playwright.config.mjs`
+advierte que la concurrencia convierte saturación en timeouts no deterministas —se verificó de
+primera mano: el primer intento murió en «timeout while setting up page» compitiendo por el host.
+
+Lo que sí se puede afirmar sin correrlo: esta rama **no toca un solo archivo de la superficie
+web**. Verificable en una línea:
+
+```
+git diff --name-only 044344c..HEAD -- js/ index.html styles/ styles.css sw.js tests/e2e/   # vacío
+```
+
+Quien integre esta rama debería correr `npm run test:e2e` con el host libre, exportando
+`TABA_E2E_HTTP_PORT` y `TABA_E2E_RELAY_PORT` propios si hay otro worktree activo.
 
 ---
 

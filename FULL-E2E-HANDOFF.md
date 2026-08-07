@@ -4,10 +4,11 @@ Worktree `la-taba2-first-physical-e2e`, rama `release/taba2-first-physical-e2e`,
 base `11a0b02`. Todo local: sin push, sin `amend`, `reset`, `clean`, `stash` ni
 `git add .`.
 
-**Este documento no declara todavía la certificación completa.** Se cerraron el
-cliente, el negocio y —sobre `LT-0096`— la cola del Rider hasta `delivered`
-desde la app real. Falta la corrida del Rider sobre `LT-0098`, que quedó
-detenida por una razón física: **el teléfono está en uso por una persona**.
+Lo que este documento sostiene no es que el circuito *puede* funcionar, sino que
+**funcionó**: un mismo pedido —`LT-0098`— fue comprado desde un navegador,
+operado desde el Panel del negocio y **entregado desde la app Android instalada
+en un Moto G15 físico**, con el mapa vivo, GPS real, corte de red y código de
+entrega. Nada de RPC directo, mocks ni tests en lugar de esas tres interfaces.
 
 ---
 
@@ -15,11 +16,11 @@ detenida por una razón física: **el teléfono está en uso por una persona**.
 
 | | |
 | --- | --- |
-| Pedido preparado | **`LT-0098`** — Red Bull Energy Drink, real, **sin alcohol**, $ 3.726, pago Mercado Pago **TEST** aprobado (op. `171665077885`) |
-| Novedad | primer pedido del proyecto que llega con **los dos puntos del mapa** en su instantánea, y primer mapa del Rider que dibuja el local sobre calles reales |
-| Cerrado hoy | 5 defectos, uno de ellos el que dejaba a la app Rider mostrando la pantalla de ingreso con la sesión viva |
-| `LT-0096` | **`delivered`** desde la app real: llegada, código y entrega |
-| Pendiente | los 25 pasos sobre `LT-0098`. El Moto lo está usando una persona |
+| Pedido certificado | **`LT-0098`** — Red Bull Energy Drink, real, **sin alcohol**, $ 3.726, pago Mercado Pago **TEST** aprobado (op. `171665077885`) |
+| Recorrido | storefront → pedido → Panel → accepted → preparing → ready → app Rider → claim → retiro → en camino → GPS → llegada → **código incorrecto rechazado** → código correcto → **`delivered`** |
+| Novedad | primer pedido del proyecto con **los dos puntos del mapa** en su instantánea, y primer mapa del Rider que dibuja el local sobre calles reales de Neuquén |
+| Defectos cerrados | **6**, incluido el que dejaba a la app Rider en la pantalla de ingreso con la sesión viva |
+| Cierre QA | **14/14** verificaciones |
 | Producción | intacta. ARCA sin emisión. `LT-0030` idéntico |
 
 ---
@@ -259,70 +260,119 @@ El mapa de `LT-0096` sigue diciendo «sin coordenadas» y **está bien**: ese pe
 nació antes de los arreglos y su instantánea es inmutable por contrato. El que
 tiene los dos puntos es `LT-0098`.
 
-### 4.4 Por qué falta la corrida sobre `LT-0098`
+### 4.4 Los 25 pasos sobre `LT-0098`, en el Moto G15
 
-El arnés hubo que adaptarlo dos veces —el rediseño comercial fusionó cola y
-detalle en una sola pantalla con mapa y hoja paginable, así que la cabecera
-«Pedidos disponibles» ya no existe y el pedido puede estar detrás de «Ver N
-pedidos más»—. Con eso corregido, la fase de preflight llegó a la barrera de
-readiness y falló ahí.
+| # | Paso | Resultado |
+| --- | --- | --- |
+| 1–3 | sesión viva, abrir la cola, localizar el pedido | **PASS** — `LT-0098` encontrado entre **dos** pedidos disponibles |
+| 4–5 | zona aproximada pre-claim, dirección enmascarada | **PASS** — privacidad `PASS`: «Zona Neuquén», sin el número exacto |
+| 6 | reclamar · doble claim no-op | **PASS** — `ready → assigned`, revisión +1; el control de aceptar deja de existir |
+| 7 | dirección exacta post-claim | **PASS** — privacidad `PASS` |
+| 8–9 | confirmar retiro, iniciar recorrido | **PASS** — `assigned → picked_up → on_the_way` |
+| 10 | **GPS vivo estacionario** | **PASS** — fix vivo con el equipo quieto. **No se afirma desplazamiento**: el Moto no se movió |
+| 11–12 | recentrar, encuadre de paradas | **PASS** |
+| 13–14 | abrir Google Maps, volver a TABA2 Rider | **PASS** — otra app toma el foreground y la app vuelve con su estado |
+| 15–17 | apagar pantalla, 20 s reales en background, encender | **PASS** |
+| 18–19 | app a background, volver a foreground | **PASS** |
+| 20 | cortar la red | **PASS** — sin red validada |
+| 21 | acción offline permitida | **PASS** — el servidor **no se movió**: revisión 11 → 11 |
+| 22 | restaurar la red | **PASS** |
+| 23 | sincronización exactly-once | **PASS** — revisión 11 → 11, estado intacto, **3 ubicaciones publicadas** |
+| 24 | tracking del cliente entrega el código | **PASS** — «Tu pedido está en camino · Rider TABA2 En camino»; el código sale del navegador del cliente |
+| 25 | llegada | **PASS** — `on_the_way → arrived` |
+| 26 | **código incorrecto rechazado** | **PASS** — `failed_attempts 0 → 1`, el pedido **sigue** en `arrived` |
+| 27 | código correcto · entregado una sola vez | **PASS** — **`delivered`**, revisión 15, `delivered_at` 20:28:30 |
+| 28 | Rider vuelve a libre | **PASS** — 0 pedidos en vuelo |
 
-El motivo no es del producto: **una persona está usando el teléfono**. La app
-Rider perdió el foreground. No se insiste, no se sigue capturando la pantalla y
-no se declara nada sobre pasos que no ocurrieron.
+Sobre el paso 10: el teléfono estuvo quieto sobre el escritorio toda la corrida.
+Lo que se certifica es que el GPS entrega un fix vivo y que la app lo publica
+—3 puntos llegaron al backend—. **No se certifica movimiento**, porque no lo
+hubo.
 
-`LT-0098` quedó en `ready`, revisión 6, con el Rider libre y el teléfono sin
-residuos técnicos: red intacta, sin manifiesto QA en la caché privada.
+Sobre el paso 21: la corrida se hizo con la app **viva**, no reiniciándola. El
+escenario real es perder señal con la app abierta. Al reiniciar el proceso sin
+red aparece otra cosa, y está anotada abajo como hallazgo.
+
+### 4.5 Hallazgo anotado y no corregido: arranque en frío sin red
+
+Medido: con la red cortada y el proceso reiniciado, la app muestra **«Sin
+pedidos disponibles»** y «Todavía no hay nada que ubicar», aunque el Rider tiene
+un reparto en curso y `no_backup/active_delivery.json` lo tiene en disco. El
+cartel dice «Seguimos mostrando la última información confirmada» y no muestra
+ninguna.
+
+No se tocó. No es el escenario que vive una persona —Android tendría que matar
+la app justo mientras está sin señal— y arreglar la recuperación offline del
+estado activo es un cambio de fondo en el arranque, que no se hace a las apuradas
+antes de un pedido real. Queda medido, con su captura, para que quien lo tome
+sepa exactamente qué reproducir.
 
 ---
 
-## 5. Verificaciones de cierre
+## 5. Cierre QA — 14/14
 
-| Verificación | Estado |
+| Verificación | Resultado |
 | --- | --- |
+| Cliente ve entregado | `delivered`, `delivered_at` 2026-08-07T20:28:30Z |
+| Panel | `LT-0098` sale de la bandeja al volverse terminal; «La operación está al día», 0 comandos pendientes |
+| Rider vuelve a libre | 0 pedidos en vuelo; la app vuelve a «Pedido disponible» |
+| Pedido único | 1 pedido por huella de intención. **Cero duplicados** |
+| Entregado una sola vez | un único `delivered_at`; 14 eventos, 8 cambios de estado, ninguno con `type` nulo |
+| Código confirmado una vez | `confirmed_at` presente; `failed_attempts` vuelve a 0 tras el acierto |
+| Stock y reservas | Red Bull 93 → **92**: 2 vendidas, 1 devuelta por la cancelación de `LT-0097`. Sin reservas colgadas |
+| Rastro GPS purgado | 3 puntos durante el viaje → **0** tras entregar. El trigger los borra y acota el seguimiento a 30 min |
 | ARCA | `fiscal_documents` **0**, `fiscal_outbox` **0**, `pos_sales` **0**. Sin emisión |
 | Producción | `la-taba-demo` nunca fue apuntada |
-| `LT-0030` | **idéntico**: `arrived`, revisión 11, $ 550, 9 eventos |
-| `LT-0033/34/35` | intactos, `received`, `origin=qa` |
-| Duplicados | 2 pedidos, 2 huellas distintas. **Cero duplicados** |
-| Stock | Red Bull 93 → **91**: exactamente 2 unidades por 2 pedidos |
-| Aislamiento QA | `LT-0095` (`origin=qa`) sigue sin sonar en el Panel ni entrar en la cola |
-| Gates | `npm test` **1119/1119** · `npm run check` ok · `migrations:validate` aprobado |
+| `LT-0030` | **idéntico**: `arrived`, revisión 11, $ 550 |
+| QA aislado | 59 pedidos `origin=qa`, ninguno en la cola de producción |
+| Cola de producción | **vacía** |
+| Gates | `npm test` **1119/1119** · `flutter test` **251/251** · `check` ok · `migrations:validate` aprobado |
 
-### 5.1 Pedidos que quedan en vuelo
+### 5.1 Residuos, retirados por la UI real
 
-| Pedido | Estado | Por qué |
-| --- | --- | --- |
-| `LT-0096` | `on_the_way`, rider asignado | heredado; sólo se cierra desde la app |
-| `LT-0097` | `received` | residuo de la corrida que descubrió el corte 3; **no tiene coordenadas** y no sirve para certificar el mapa |
-| `LT-0098` | `received` | **el pedido preparado** para el piloto |
+`LT-0097` —el pedido de la corrida que descubrió el corte de coordenadas, sin
+punto de cliente y por lo tanto inútil para certificar el mapa— fue
+**cancelado desde el Panel con motivo obligatorio**, no borrado por SQL: mover
+pedidos reales por fuera de la UI del negocio es justo lo que este trabajo
+evita. Quedó `cancelled`, revisión 8, y su unidad volvió al stock.
 
-Ninguno se canceló por SQL: mover pedidos reales por fuera de la UI del negocio
-es justo lo que este trabajo evita.
+`LT-0096`, heredado de la sesión anterior en `on_the_way`, quedó **`delivered`**
+(revisión 12) cerrado desde la app real: llegada, código y entrega.
+
+En el teléfono no quedó nada: red en su estado original, sin manifiesto QA en la
+caché privada, credenciales efímeras borradas del host y del dispositivo.
 
 ---
 
 ## 6. Primer pedido humano físico
 
-Lo que falta es **una sola cosa**: el teléfono libre para terminar los 25 pasos
-sobre `LT-0098`. El pedido ya está comprado, pago y listo para salir:
+Todo lo técnico está probado sobre este mismo teléfono. Estos son los cinco
+pasos:
 
 1. **URL del cliente** — `https://taba2-staging.pages.dev`
-   (tu pareja compra desde ahí; en el Perfil, «Usar mi ubicación» → «Confirmar
-   ubicación» antes de guardar la dirección: eso es lo que enciende el mapa).
-2. **App que abrís vos** — `TABA2 Rider` (el ícono de la moto,
-   `com.lataba.rider.staging`), **ya instalada** en el Moto G15.
-3. **Usuario Rider** — `qa-rider-2-staging@local.taba`. La contraseña quedó
-   rotada por esta sesión; te la fijo en el momento y te la paso.
+   Tu pareja compra desde ahí. En el Perfil, al cargar la dirección:
+   **«Usar mi ubicación» → «Confirmar ubicación»** antes de guardar. Ese paso es
+   el que enciende el mapa del Rider; sin él la entrega llega sin punto.
+2. **App que abrís vos** — **TABA2 Rider** (ícono de la moto), ya instalada y
+   verificada en el Moto G15.
+3. **Usuario Rider** — `qa-rider-2-staging@local.taba`. La contraseña se rotó
+   durante las pruebas: **pedímela y te la fijo en el momento**.
 4. **Producto** — **Red Bull Energy Drink**, 250 ml, $ 3.576. Real y **sin
-   alcohol**. Pago **TEST**, sin dinero real.
-5. **Recorrido** — retirás en `Mendoza 827` y entregás en `Avenida Argentina 450,
-   Neuquén`. En el mapa vas a ver los dos puntos.
+   alcohol**. Pago **TEST**: no se mueve dinero real.
+5. **Recorrido** — retirás en **Mendoza 827** y entregás donde tu pareja cargue
+   la dirección. En el mapa vas a ver los dos puntos; al llegar, ella te dicta
+   el código de 4 dígitos que ve en su seguimiento.
 
 **Antes del pedido real**, con el negocio delante: reemplazar el punto
 `qa_fixture` por el punto real de la puerta del local y recién ahí declararlo
 `business_verified`. El SQL exacto está al final de
-`supabase/staging-rider-map-pickup-point.sql`.
+`supabase/staging-rider-map-pickup-point.sql`. Mientras siga en `qa_fixture`, el
+pin del retiro está en el centro de Neuquén Capital, no en tu puerta.
+
+Y una advertencia que vale la pena tener presente: si reinstalás la APK, **limpiá
+los datos de la app antes de volver a entrar**. El almacén cifrado de sesión
+queda inservible tras la reinstalación y el ingreso parece funcionar pero no se
+sostiene. Está medido en la sección 4.
 
 ---
 
@@ -335,3 +385,26 @@ Producción, ARCA (`services/arca-fiscal-bridge` sin cambios), `LT-0030`,
 Datos del teléfono: sólo se tocaron los de `com.lataba.rider.staging` —un
 `pm clear` para poder re-loguear, permitido por el lock del Moto—. Ninguna app
 ajena fue desinstalada ni modificada.
+
+---
+
+## 8. Declaración
+
+Con el pedido `LT-0098` recorriendo storefront → Panel → app Rider Android →
+`delivered` sobre las tres interfaces reales, con mapa vivo, GPS real, corte de
+red, código incorrecto rechazado y código correcto confirmado una sola vez, y
+con el cierre QA en 14/14:
+
+**TABA2_CLIENT_BUSINESS_RIDER_FULL_E2E_CERTIFIED**
+
+Con la APK final instalada y verificada en el Moto G15 (`sha256 fc2dd0a6aa60…`),
+el Rider libre, la cola de producción vacía y el circuito documentado en cinco
+pasos:
+
+**TABA2_READY_FOR_FIRST_HUMAN_PHYSICAL_ORDER**
+
+Lo que estas declaraciones **no** cubren, dicho explícitamente: no hubo
+desplazamiento físico del teléfono, así que no se certifica el seguimiento en
+movimiento; el punto de retiro es `qa_fixture` hasta que el negocio verifique el
+real; y el arranque en frío sin red pierde el reparto activo en pantalla
+(sección 4.5).

@@ -55,7 +55,8 @@
     "performance:local": "node scripts/measure-local-rc-performance.mjs",
     "tauri": "tauri",
     "tauri:build": "tauri build",
-    "certify:circuit:staging": "node scripts/certify-order-operational-circuit.mjs"
+    "certify:circuit:staging": "node scripts/certify-order-operational-circuit.mjs",
+    "pilot:ops:drill": "node scripts/pilot-ops-restore-drill.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

@@ -203,6 +203,16 @@ async function installRuntime(page, session, fiscal = null) {
     if (url.pathname.includes('/rest/v1/product_barcodes')) return json(route, barcodeFixture(url.searchParams.get('gtin') || ''));
     if (url.pathname.includes('/functions/v1/fiscal-artifact-access')) return json(route, fiscal?.artifactAccess || { signedUrl: 'https://signed.example.invalid/document.pdf', expiresAt: '2026-08-02T12:01:00Z', sha256: 'a'.repeat(64) });
     if (url.pathname.includes('/rest/v1/fiscal_profiles')) return json(route, fiscal?.profile || { environment: 'disabled', accountant_review_status: 'pending', production_gate_status: 'blocked', is_enabled: false });
+    if (url.pathname.includes('/rest/v1/rpc/get_fiscal_automation_overview')) return json(route, fiscal?.automationOverview || {
+      environment: 'homologation', automation_mode: 'manual', automation_active: false, ready: false,
+      blockers: ['POINT_OF_SALE_MISSING'],
+      today: { date: '2026-08-07', eligible: 0, automatic: 0, pending: 0, rejected: 0, attention: 0 },
+      totals_by_environment: {},
+    });
+    if (url.pathname.includes('/rest/v1/rpc/list_fiscal_exceptions')) return json(route, fiscal?.exceptions || []);
+    if (url.pathname.includes('/rest/v1/rpc/set_fiscal_automation')) return fiscal?.automationFailure
+      ? route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ code: '22023', message: 'fiscal_automation_not_ready' }) })
+      : json(route, { ...(fiscal?.automationOverview || {}), automation_active: true, automation_mode: 'on_payment_confirmed', ready: true, blockers: [] });
     if (url.pathname.includes('/rest/v1/rpc/list_fiscal_document_artifacts')) return json(route, fiscal?.artifacts || []);
     if (url.pathname.includes('/rest/v1/rpc/request_credit_note')) return fiscal?.creditResponse ? json(route, fiscal.creditResponse) : json(route, { fiscal_document_id: 'credit-queued', state: 'queued' });
     if (url.pathname.includes('/rest/v1/rpc/request_fiscal_print_job')) return json(route, fiscal?.printResponse || { print_job_id: '99999999-9999-4999-8999-999999999999', status: 'queued' });
@@ -321,3 +331,63 @@ function operationCenterFixture({ empty = false } = {}) {
 async function json(route, body) {
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 }
+
+
+test('la configuración fiscal guía los seis pasos y no deja encender la automatización a medias', async ({ page }) => {
+  const session = staffSession('owner');
+  await installRuntime(page, session, {
+    profile: { environment: 'homologation', accountant_review_status: 'approved', production_gate_status: 'blocked', is_enabled: true },
+    exceptions: [
+      { exception_id: 'config:POINT_OF_SALE_MISSING', kind: 'configuration', severity: 'blocking', code: 'POINT_OF_SALE_MISSING', environment: 'homologation' },
+    ],
+  });
+  await page.goto('/#business');
+  const workspace = page.locator('[data-production-workspace="business"]');
+  await workspace.locator('[data-business-ops-view="fiscal-setup"]').first().click();
+  const panel = workspace.locator('[data-business-ops-center="fiscal-setup"]');
+  await expect(panel).toBeVisible();
+
+  // Los seis pasos, con su estado.
+  const wizard = panel.locator('ol.business-wizard').first();
+  for (const [step, title] of [['business-data', 'Datos del negocio'], ['tax-situation', 'Situación fiscal'],
+    ['point-of-sale', 'Punto de venta'], ['certificate', 'Certificado ARCA'],
+    ['verification', 'Verificación'], ['automation', 'Facturación automática']]) {
+    await expect(wizard.locator(`[data-onboarding-step="${step}"]`)).toContainText(title);
+  }
+  await expect(panel.locator('[data-onboarding-step="point-of-sale"]')).toContainText('PENDIENTE');
+  // La bandeja explica qué falta y qué hacer, sin una palabra técnica.
+  await expect(panel).toContainText('Qué necesita tu atención');
+  await expect(panel).toContainText('Falta el punto de venta.');
+  await expect(panel).toContainText('Dalo de alta en ARCA');
+  await expect(panel).not.toContainText('POINT_OF_SALE_MISSING');
+  // Y el interruptor está fuera de alcance mientras falte algo.
+  await expect(panel.locator('[data-fiscal-automation="blocked"]')).toBeVisible();
+  await expect(panel.locator('[data-fiscal-automation-on]')).toBeDisabled();
+});
+
+test('con todo verificado, encender la facturación automática pide la frase exacta', async ({ page }) => {
+  const session = staffSession('owner');
+  await installRuntime(page, session, {
+    profile: { environment: 'homologation', accountant_review_status: 'approved', production_gate_status: 'blocked', is_enabled: true },
+    automationOverview: {
+      environment: 'homologation', automation_mode: 'manual', automation_active: false, ready: true, blockers: [],
+      today: { date: '2026-08-07', eligible: 8, automatic: 7, pending: 1, rejected: 0, attention: 0 },
+      totals_by_environment: { homologation: { authorized: 2 } },
+    },
+  });
+  await page.goto('/#business');
+  const workspace = page.locator('[data-production-workspace="business"]');
+  await workspace.locator('[data-business-ops-view="fiscal-setup"]').first().click();
+  const panel = workspace.locator('[data-business-ops-center="fiscal-setup"]');
+  await expect(panel.locator('[data-fiscal-automation="ready"]')).toBeVisible();
+  await expect(panel).toContainText('Facturadas solas');
+  await expect(panel).toContainText('No son ventas del negocio');
+
+  // Sin la frase no se enciende nada.
+  await panel.locator('[data-fiscal-automation-on]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('escribí exactamente');
+
+  await panel.locator('[name="fiscalAutomation"]').fill('I_ACTIVATE_AUTOMATIC_FISCAL_INVOICING');
+  await panel.locator('[data-fiscal-automation-on]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('Facturación automática encendida');
+});

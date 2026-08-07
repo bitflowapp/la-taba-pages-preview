@@ -1568,7 +1568,11 @@ async function setFiscalAutomation(activate) {
   if (!guard.ok) return guard.result;
   if (busy) return result(false, 'Ya hay algo en curso.');
   if (activate && fiscalAutomationDraft.trim() !== FISCAL_AUTOMATION_PHRASE) {
-    return result(false, `Para encender la facturación automática, escribí exactamente ${FISCAL_AUTOMATION_PHRASE}.`);
+    // El aviso se escribe en la pantalla: una negativa que no se ve es una
+    // negativa que el operador vive como "el botón no hace nada".
+    feedback = `Para encender la facturación automática, escribí exactamente ${FISCAL_AUTOMATION_PHRASE}.`;
+    context.onChange();
+    return result(false, feedback);
   }
   busy = true;
   const response = await context.setFiscalAutomation({

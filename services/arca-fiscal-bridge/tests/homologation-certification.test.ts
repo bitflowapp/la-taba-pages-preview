@@ -11,7 +11,7 @@ import { createSimulatedArca } from '../src/simulated-arca.js';
 // contra la ARCA simulada, de punta a punta. Si tiene un error, se descubre acá
 // y no con una persona esperando frente a la Clave Fiscal.
 
-const CUIT = '20123456789';
+const CUIT = '20123456786';
 const NOW = new Date('2026-08-07T12:00:00Z');
 
 function writeSyntheticCredentials(directory: string): { certificatePath: string; privateKeyPath: string } {

@@ -12,7 +12,7 @@ insert into public.fiscal_profiles(
   business_id,legal_name,cuit,tax_condition,business_address,environment,point_of_sale,default_currency,default_concept,
   invoice_policy,is_enabled,default_recipient_condition
 ) values (
-  '42000000-0000-4000-8000-000000000001','TABA Fiscal Fixture','20123456789','Responsable Inscripto','Direccion fiscal fixture',
+  '42000000-0000-4000-8000-000000000001','TABA Fiscal Fixture','20123456786','Responsable Inscripto','Direccion fiscal fixture',
   'homologation',1,'PES',1,'manual',true,'Consumidor Final'
 );
 insert into public.fiscal_parameter_snapshots(environment,parameter_type,version,values_json,synchronized_at) values
@@ -66,7 +66,7 @@ select throws_ok(
       state,idempotency_key,issuer_snapshot,recipient_snapshot,fiscal_policy_version
     ) values (
       '42000000-0000-4000-8000-000000000001','pos_sale','44000000-0000-4000-8000-000000000009','invoice',
-      'homologation','20123456789',1,11,1,'PES',1,'Consumidor Final',96,'0',100,21,0,0,0,121,
+      'homologation','20123456786',1,11,1,'PES',1,'Consumidor Final',96,'0',100,21,0,0,0,121,
       'queued','fixture-invoice-unauthorized-1','{}'::jsonb,'{}'::jsonb,'fixture-approved-v1'
     )$$,
   '42501','homologacion no autorizada','sin autorizacion registrada no se emite ningun comprobante'
@@ -87,7 +87,7 @@ set local request.jwt.claims = '{"sub":"41000000-0000-4000-8000-000000000001","r
 -- Guardar "Datos fiscales" con homologacion elegida es configuracion valida y no autoriza nada.
 select lives_ok(
   $$select public.configure_fiscal_profile('42000000-0000-4000-8000-000000000001', jsonb_build_object(
-      'legal_name','TABA Fiscal Fixture','cuit','20123456789','tax_condition','Responsable Inscripto',
+      'legal_name','TABA Fiscal Fixture','cuit','20123456786','tax_condition','Responsable Inscripto',
       'business_address','Direccion fiscal fixture','environment','homologation','point_of_sale',1,
       'default_currency','PES','default_concept',1,'invoice_policy','manual','is_enabled',true,
       'default_recipient_condition','Consumidor Final'
@@ -103,7 +103,7 @@ select ok(
 -- La produccion sigue sin ruta de activacion desde el panel.
 select throws_ok(
   $$select public.configure_fiscal_profile('42000000-0000-4000-8000-000000000001', jsonb_build_object(
-      'legal_name','TABA Fiscal Fixture','cuit','20123456789','tax_condition','Responsable Inscripto',
+      'legal_name','TABA Fiscal Fixture','cuit','20123456786','tax_condition','Responsable Inscripto',
       'environment','production','point_of_sale',1,'is_enabled',true,
       'default_recipient_condition','Consumidor Final'
     ))$$,
@@ -152,9 +152,9 @@ insert into public.fiscal_documents(
   state,idempotency_key,issuer_snapshot,recipient_snapshot,fiscal_policy_version
 ) values (
   '43000000-0000-4000-8000-000000000001','42000000-0000-4000-8000-000000000001','pos_sale','44000000-0000-4000-8000-000000000001','invoice',
-  'homologation','20123456789',1,11,1,'PES',1,'Consumidor Final',96,'0',100,21,0,0,0,121,
+  'homologation','20123456786',1,11,1,'PES',1,'Consumidor Final',96,'0',100,21,0,0,0,121,
   'queued','fixture-invoice-authorized-1',
-  '{"legal_name":"TABA Fiscal Fixture","cuit":"20123456789","address":"Direccion fiscal fixture","tax_condition":"Responsable Inscripto"}'::jsonb,
+  '{"legal_name":"TABA Fiscal Fixture","cuit":"20123456786","address":"Direccion fiscal fixture","tax_condition":"Responsable Inscripto"}'::jsonb,
   '{"condition":"Consumidor Final","document_type":96,"document_number":"0"}'::jsonb,'fixture-approved-v1'
 );
 insert into public.fiscal_document_items(

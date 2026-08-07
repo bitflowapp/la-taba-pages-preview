@@ -7,7 +7,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(115);
+select plan(120);
 
 -- ===== Fixture =====
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -36,7 +36,7 @@ set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000001","r
 
 select lives_ok(
   $$select public.configure_fiscal_profile('52000000-0000-4000-8000-000000000001', jsonb_build_object(
-      'legal_name','TABA ARCA Fixture','cuit','20123456789','tax_condition','Responsable Inscripto',
+      'legal_name','TABA ARCA Fixture','cuit','20123456786','tax_condition','Responsable Inscripto',
       'business_address','Calle Falsa 123','environment','homologation','point_of_sale',3,
       'default_currency','PES','default_concept',1,'invoice_policy','on_payment_confirmed',
       'is_enabled',true,'default_recipient_condition','Consumidor Final'))$$,
@@ -231,7 +231,7 @@ select is(
 -- homologacion era inalcanzable para siempre.
 select lives_ok(
   $$select public.record_fiscal_credential_health('52000000-0000-4000-8000-000000000001',
-      repeat('a',64), now() + interval '300 days','20123456789','verified',true,null)$$,
+      repeat('a',64), now() + interval '300 days','20123456786','verified',true,null)$$,
   'el puente publica huella, vencimiento y CUIT del certificado'
 );
 select is(
@@ -312,14 +312,14 @@ select is(
   'un worker con otro CUIT no reclama comprobantes ajenos'
 );
 select is(
-  (select count(*)::int from public.claim_fiscal_outbox('taba-produccion',5,90,'production','20123456789')),
+  (select count(*)::int from public.claim_fiscal_outbox('taba-produccion',5,90,'production','20123456786')),
   0,
   'un worker de produccion no reclama comprobantes de homologacion'
 );
 
 -- ===== 8. Numeracion, CAE y cierre del intento =====
 create temporary table arca_claim on commit drop as
-  select * from public.claim_fiscal_outbox('taba-fiscal-test',5,90,'homologation','20123456789');
+  select * from public.claim_fiscal_outbox('taba-fiscal-test',5,90,'homologation','20123456786');
 select is((select count(*)::int from arca_claim), 1, 'el worker correcto reclama el trabajo');
 
 select is(
@@ -417,7 +417,7 @@ select throws_ok(
   '42501',null,'un usuario autenticado no puede correr el promotor'
 );
 select throws_ok(
-  $$select public.claim_fiscal_outbox('taba-fiscal-test',5,90,'homologation','20123456789')$$,
+  $$select public.claim_fiscal_outbox('taba-fiscal-test',5,90,'homologation','20123456786')$$,
   '42501',null,'un usuario autenticado no puede reclamar la outbox fiscal'
 );
 select throws_ok(
@@ -562,7 +562,7 @@ select is(
 set local role postgres;
 -- El comprobante del pedido online quedo encolado y todavia nadie lo reclamo.
 create temporary table arca_release on commit drop as
-  select * from public.claim_fiscal_outbox('taba-mal-configurado',5,90,'homologation','20123456789');
+  select * from public.claim_fiscal_outbox('taba-mal-configurado',5,90,'homologation','20123456786');
 select is((select count(*)::int from arca_release), 1, 'el worker reclama el trabajo nuevo');
 select is((select attempt_count from arca_release), 1, 'reclamar cuenta como intento');
 select is(
@@ -626,6 +626,27 @@ select is((select count(*)::int from public.fiscal_profiles), 0, 'ni el CUIT del
 select is((select count(*)::int from public.fiscal_profile_events), 0, 'ni la huella del certificado');
 select is((select count(*)::int from public.fiscal_emission_intents), 0, 'ni las intenciones de emision');
 select is((select count(*)::int from public.fiscal_print_jobs), 0, 'ni que se imprimio un comprobante');
+
+-- ===== 17. Un CUIT habilitado tiene que cerrar su digito verificador =====
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"51000000-0000-4000-8000-000000000001","role":"authenticated"}';
+select ok(public.fiscal_cuit_is_valid('20123456786'), 'el CUIT del fixture cierra');
+select ok(not public.fiscal_cuit_is_valid('20123456789'), 'el que se usaba antes no cerraba');
+select ok(not public.fiscal_cuit_is_valid('123'), 'ni tres digitos');
+select throws_ok(
+  $$select public.configure_fiscal_profile('52000000-0000-4000-8000-000000000001', jsonb_build_object(
+      'legal_name','TABA ARCA Fixture','cuit','20123456789','tax_condition','Responsable Inscripto',
+      'business_address','Calle Falsa 123','environment','homologation','point_of_sale',3,
+      'default_currency','PES','default_concept',1,'invoice_policy','on_payment_confirmed',
+      'is_enabled',true,'default_recipient_condition','Consumidor Final'))$$,
+  '22023','fiscal_cuit_check_digit_invalid',
+  'un perfil fiscal habilitado no acepta un CUIT mal tipeado'
+);
+select is(
+  (select cuit from public.fiscal_profiles where business_id='52000000-0000-4000-8000-000000000001'),
+  '20123456786',
+  'y el CUIT que ya estaba configurado queda intacto'
+);
 
 -- Y que no quede ninguna superficie fiscal con el predicado viejo.
 set local role postgres;

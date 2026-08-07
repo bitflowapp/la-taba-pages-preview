@@ -39,7 +39,7 @@ function pdfText(bytes: Uint8Array): string {
 }
 
 const qr = {
-  issueDate: '2026-08-02', cuit: '20123456789', pointOfSale: 5, documentType: 6,
+  issueDate: '2026-08-02', cuit: '20123456786', pointOfSale: 5, documentType: 6,
   documentNumber: 42, totalAmount: 210, currencyCode: 'PES', currencyRate: 1,
   authorizationType: 'E' as const, authorizationCode: '12345678901234',
 };

@@ -7,6 +7,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { validateFiscalRequest } from '../src/wsfe.js';
+import { isValidCuit } from '../src/cuit.js';
+import { buildCertificateSubject } from '../src/create-csr.js';
+import { loadArcaConfig } from '../src/config.js';
 import { rowToRequest } from '../src/store.js';
 import { FiscalWorker } from '../src/worker.js';
 import { MemoryFiscalStore, testConfig, testRequest, testTicket } from './fixtures.js';
@@ -49,6 +52,41 @@ test('exento y no gravado entran en el total como cualquier otro componente', ()
 test('un importe negativo no es un importe fiscal', () => {
   assert.throws(() => validateFiscalRequest(testRequest({ exemptAmount: -1 }), cuit), /Importe fiscal inválido/);
   assert.throws(() => validateFiscalRequest(testRequest({ totalAmount: Number.NaN }), cuit), /Importe fiscal inválido/);
+});
+
+// ===== El CUIT: once dígitos no alcanzan =====
+
+test('el dígito verificador del CUIT se calcula, no se asume', () => {
+  // El fixture es sintético y su dígito cierra; el anterior no cerraba.
+  assert.ok(isValidCuit('20123456786'));
+  assert.ok(!isValidCuit('20123456789'), 'el CUIT viejo del fixture era inválido');
+  assert.ok(!isValidCuit('20123456780'), 'cambiar el dígito verificador lo invalida');
+  assert.ok(!isValidCuit('2012345678'), 'diez dígitos no son un CUIT');
+  assert.ok(!isValidCuit('2012345678a'));
+  // El dígito verificador es necesario, no suficiente: once ceros lo cumplen y
+  // no son el CUIT de nadie. Quien decide eso es el padrón de ARCA, no esta
+  // función, y por eso no se inventa acá una regla que ARCA no publicó.
+  assert.ok(isValidCuit('00000000000'), 'módulo 11 acepta once ceros');
+  // Formatos reales conocidos, para que el algoritmo no quede probado sólo
+  // contra sí mismo.
+  for (const valid of ['30500010912', '27230938607', '33693450239']) {
+    assert.ok(isValidCuit(valid), `${valid} tiene que ser válido`);
+  }
+});
+
+test('un CUIT que no cierra no llega a ARCA, ni al certificado, ni al worker', () => {
+  assert.throws(() => validateFiscalRequest(testRequest({ cuit: '20123456789' }), '20123456789'), /dígito verificador/);
+  assert.throws(
+    () => buildCertificateSubject({ cuit: '20123456789', organization: 'TABA', system: 'taba-fiscal' }),
+    /dígito verificador/,
+  );
+  assert.throws(
+    () => loadArcaConfig({
+      ARCA_ENVIRONMENT: 'homologation', ARCA_CUIT: '20123456789',
+      ARCA_CERTIFICATE_PATH: '/secrets/cert.pem', ARCA_PRIVATE_KEY_PATH: '/secrets/key.pem',
+    } as NodeJS.ProcessEnv),
+    /dígito verificador/,
+  );
 });
 
 // ===== 10023 / 10022 / 10018 / 10020: el detalle de IVA =====

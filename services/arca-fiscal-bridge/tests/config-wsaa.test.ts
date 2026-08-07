@@ -13,7 +13,7 @@ import { createSimulatedArca } from '../src/simulated-arca.js';
 
 const baseEnv = {
   ARCA_ENVIRONMENT: 'homologation',
-  ARCA_CUIT: '20123456789',
+  ARCA_CUIT: '20123456786',
   ARCA_CERTIFICATE_PATH: path.resolve('synthetic-secrets', 'certificate.pem'),
   ARCA_PRIVATE_KEY_PATH: path.resolve('synthetic-secrets', 'private-key.pem'),
   FISCAL_WORKER_ID: 'worker-01',

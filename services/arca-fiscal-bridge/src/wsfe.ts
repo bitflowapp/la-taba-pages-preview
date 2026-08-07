@@ -1,5 +1,6 @@
 import type { ArcaConfig, ArcaResult, FiscalParameterSnapshot, FiscalParameterType, FiscalRequest, LoginTicket } from './types.js';
 import { assertRemoteExecutionAllowed } from './config.js';
+import { assertValidCuit } from './cuit.js';
 import { asArray, escapeXml, findFirst, parseTrustedSoap, xmlText } from './xml.js';
 import { postSoap } from './transport.js';
 
@@ -267,7 +268,7 @@ function extractMessages(container: unknown, itemKey: string): Array<{ code: str
 }
 
 function authXml(ticket: LoginTicket, cuit: string): string { return `<ar:Auth><ar:Token>${escapeXml(ticket.token)}</ar:Token><ar:Sign>${escapeXml(ticket.sign)}</ar:Sign><ar:Cuit>${escapeXml(cuit)}</ar:Cuit></ar:Auth>`; }
-function validateCuit(value: string): void { if (!/^\d{11}$/.test(value)) throw new Error('CUIT inválido.'); }
+function validateCuit(value: string): void { assertValidCuit(value); }
 function assertPositiveInteger(value: number, label: string): void { if (!Number.isSafeInteger(value) || value < 1) throw new Error(`${label} inválido.`); }
 function cents(value: number): number { return Math.round((value + Number.EPSILON) * 100); }
 function money(value: number): string { return (Math.round((value + Number.EPSILON) * 100) / 100).toFixed(2); }

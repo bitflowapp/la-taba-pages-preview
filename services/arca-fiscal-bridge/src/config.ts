@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { X509Certificate, createPrivateKey, createPublicKey } from 'node:crypto';
 import path from 'node:path';
 import type { ArcaConfig, ArcaEndpoints, ArcaEnvironment } from './types.js';
+import { assertValidCuit } from './cuit.js';
 
 export const OFFICIAL_ENDPOINTS: Readonly<Record<Exclude<ArcaEnvironment, 'disabled'>, ArcaEndpoints>> = Object.freeze({
   homologation: Object.freeze({
@@ -22,7 +23,7 @@ export function loadArcaConfig(env: NodeJS.ProcessEnv = process.env): ArcaConfig
   const cuit = String(env.ARCA_CUIT || '').replace(/\D/g, '');
   const certificatePath = environment === 'disabled' ? optionalSecretPath(env.ARCA_CERTIFICATE_PATH) : absoluteSecretPath(env.ARCA_CERTIFICATE_PATH, 'ARCA_CERTIFICATE_PATH');
   const privateKeyPath = environment === 'disabled' ? optionalSecretPath(env.ARCA_PRIVATE_KEY_PATH) : absoluteSecretPath(env.ARCA_PRIVATE_KEY_PATH, 'ARCA_PRIVATE_KEY_PATH');
-  if (environment !== 'disabled' && !/^\d{11}$/.test(cuit)) throw new Error('ARCA_CUIT debe contener 11 dígitos.');
+  if (environment !== 'disabled') assertValidCuit(cuit, 'ARCA_CUIT');
   const endpoints = environment === 'production' ? OFFICIAL_ENDPOINTS.production : OFFICIAL_ENDPOINTS.homologation;
   assertOfficialEndpoint(endpoints.wsaa);
   assertOfficialEndpoint(endpoints.wsfe);

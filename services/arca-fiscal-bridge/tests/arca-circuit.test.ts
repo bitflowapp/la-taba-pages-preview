@@ -89,7 +89,7 @@ test('el circuito feliz obtiene CAE y respeta el orden de campos del WSDL', asyn
   assert.equal(completion.classification, 'authorized');
   assert.match(String(completion.cae), /^\d{14}$/);
   assert.equal(completion.documentNumber, 1, 'el número es el último autorizado más uno');
-  assert.deepEqual(store.lastScope, { environment: 'homologation', cuit: '20123456789' });
+  assert.deepEqual(store.lastScope, { environment: 'homologation', cuit: '20123456786' });
 
   const solicitar = arca.calls.filter((call) => call === 'FECAESolicitar');
   assert.equal(solicitar.length, 1);
@@ -371,11 +371,11 @@ test('la evidencia de homologación no puede arrastrar secretos', () => {
 
 test('el pedido de certificado usa el subject exacto que documenta WSASS', () => {
   assert.equal(
-    buildCertificateSubject({ cuit: '20123456789', organization: 'MiEmpresa', system: 'TestSystem' }),
-    '/C=AR/O=MiEmpresa/CN=TestSystem/serialNumber=CUIT 20123456789',
+    buildCertificateSubject({ cuit: '20123456786', organization: 'MiEmpresa', system: 'TestSystem' }),
+    '/C=AR/O=MiEmpresa/CN=TestSystem/serialNumber=CUIT 20123456786',
   );
   assert.throws(() => buildCertificateSubject({ cuit: '20-12345678-9', organization: 'X', system: 'S1' }), /once dígitos/);
-  assert.throws(() => buildCertificateSubject({ cuit: '20123456789', organization: '  ', system: 'S1' }), /empresa/);
+  assert.throws(() => buildCertificateSubject({ cuit: '20123456786', organization: '  ', system: 'S1' }), /empresa/);
 });
 
 test('la clave privada nunca se genera dentro del repositorio', () => {
@@ -383,7 +383,7 @@ test('la clave privada nunca se genera dentro del repositorio', () => {
   fs.mkdirSync(repositoryRoot, { recursive: true });
   try {
     assert.throws(
-      () => createArcaCsr({ cuit: '20123456789', organization: 'X', system: 'sistema', outputDirectory: path.join(repositoryRoot, 'secrets') }, { repositoryRoot }),
+      () => createArcaCsr({ cuit: '20123456786', organization: 'X', system: 'sistema', outputDirectory: path.join(repositoryRoot, 'secrets') }, { repositoryRoot }),
       /dentro del repositorio/,
     );
   } finally {
@@ -397,7 +397,7 @@ test('el CSR generado es válido, la clave queda a 600 y no se pisa', () => {
   fs.mkdirSync(repositoryRoot, { recursive: true });
   try {
     const result = createArcaCsr(
-      { cuit: '20123456789', organization: 'La Taba', system: 'taba-homologacion', outputDirectory, keyBits: 1024 },
+      { cuit: '20123456786', organization: 'La Taba', system: 'taba-homologacion', outputDirectory, keyBits: 1024 },
       { repositoryRoot },
     );
     assert.match(result.csrPem, /BEGIN CERTIFICATE REQUEST/);
@@ -406,7 +406,7 @@ test('el CSR generado es válido, la clave queda a 600 y no se pisa', () => {
       assert.equal(fs.statSync(result.privateKeyPath).mode & 0o077, 0);
     }
     assert.throws(
-      () => createArcaCsr({ cuit: '20123456789', organization: 'La Taba', system: 'taba-homologacion', outputDirectory, keyBits: 1024 }, { repositoryRoot }),
+      () => createArcaCsr({ cuit: '20123456786', organization: 'La Taba', system: 'taba-homologacion', outputDirectory, keyBits: 1024 }, { repositoryRoot }),
       /No se pisa/,
     );
   } finally {

@@ -4,7 +4,7 @@ import type { CredentialHealth, FiscalJob, FiscalScope, FiscalStore, LoadedFisca
 export function testConfig(overrides: Partial<ArcaConfig> = {}): ArcaConfig {
   return {
     environment: 'homologation',
-    cuit: '20123456789',
+    cuit: '20123456786',
     certificatePath: 'synthetic-certificate-path',
     privateKeyPath: 'synthetic-private-key-path',
     workerId: 'worker-01',
@@ -31,7 +31,7 @@ export const testTicket: LoginTicket = Object.freeze({
 // distinto de cero y array de IVA informado, que ARCA rechaza por 1438 y 1443.
 export function testRequest(overrides: Partial<FiscalRequest> = {}): FiscalRequest {
   return {
-    cuit: '20123456789', pointOfSale: 5, documentType: 6, concept: 1,
+    cuit: '20123456786', pointOfSale: 5, documentType: 6, concept: 1,
     recipientDocumentType: 99, recipientDocumentNumber: '0', recipientVatConditionId: 5,
     documentNumber: 42, issueDate: '20260802',
     totalAmount: 121, netAmount: 100, vatAmount: 21,

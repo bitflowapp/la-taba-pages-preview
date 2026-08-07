@@ -1,6 +1,6 @@
 // Genera la clave privada y el pedido de certificado (CSR) para WSASS.
 //
-//   node dist/src/create-csr.js --cuit 20123456789 --organization "La Taba SRL" \
+//   node dist/src/create-csr.js --cuit 20123456786 --organization "La Taba SRL" \
 //     --system taba-fiscal-homologacion --out /ruta/absoluta/fuera/del/repo
 //
 // El manual del usuario de WSASS documenta exactamente estos dos pasos:
@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import forge from 'node-forge';
+import { assertValidCuit } from './cuit.js';
 
 export interface CsrRequest {
   cuit: string;
@@ -34,7 +35,9 @@ export interface CsrResult {
 }
 
 export function buildCertificateSubject({ cuit, organization, system }: Pick<CsrRequest, 'cuit' | 'organization' | 'system'>): string {
-  if (!/^\d{11}$/.test(cuit)) throw new Error('El CUIT son once dígitos, sin guiones.');
+  // Un CUIT mal tipeado acá se descubre recién con el certificado ya emitido
+  // por ARCA para el CUIT equivocado, y ese viaje no se deshace.
+  assertValidCuit(cuit, 'El CUIT del certificado');
   const trimmedOrganization = organization.trim();
   const trimmedSystem = system.trim();
   if (!trimmedOrganization) throw new Error('Falta el nombre de la empresa (O).');

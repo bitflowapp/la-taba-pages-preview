@@ -214,7 +214,7 @@ async function measureFiscalPdf() {
   const { createAuthorizedFiscalPdf, sha256Pdf, FISCAL_PDF_GENERATOR_VERSION } = await import(pathToFileURL(modulePath));
   const qr = {
     issueDate: '2026-08-02',
-    cuit: '20123456789',
+    cuit: '20123456786',
     pointOfSale: 5,
     documentType: 13,
     documentNumber: 43,

@@ -9,7 +9,7 @@ import { SupabasePrivateArtifactStorage, type FiscalArtifactCompletion, type Fis
 import { MemoryFiscalStore, testConfig, testRequest } from './fixtures.js';
 
 const qr = {
-  issueDate: '2026-08-02', cuit: '20123456789', pointOfSale: 5,
+  issueDate: '2026-08-02', cuit: '20123456786', pointOfSale: 5,
   documentType: 11, documentNumber: 42, totalAmount: 121,
   currencyCode: 'PES', currencyRate: 1, authorizationType: 'E' as const,
   authorizationCode: '12345678901234',

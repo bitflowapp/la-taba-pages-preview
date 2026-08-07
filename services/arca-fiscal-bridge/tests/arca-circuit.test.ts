@@ -202,6 +202,102 @@ test('el FECAESolicitar enviado cumple el orden y los campos del contrato vigent
   assert.ok(request.indexOf('<ar:CondicionIVAReceptorId>') < request.indexOf('<ar:Iva>'), 'la condición IVA va antes del detalle Iva');
 });
 
+// ===== Reinicio del worker: el estado que deja una caída, no un final limpio =====
+
+test('un worker que muere después de enviar adopta el CAE en vez de pedir otro', async () => {
+  const arca = createSimulatedArca();
+  const store = new CircuitStore();
+  store.add('doc-1', testRequest({ documentNumber: 0 }));
+  await buildWorker(store, arca).runOnce();
+  const authorized = arca.authorizations()[0]!;
+
+  // Estado exacto que deja una caída del proceso justo después de que ARCA
+  // autorizó: el número quedó reservado, el comprobante quedó en 'authorizing'
+  // y la respuesta nunca llegó a persistirse. Del lado de ARCA el comprobante
+  // existe; del lado de acá, nadie lo sabe.
+  store.documents.get('doc-1')!.state = 'authorizing';
+  store.completions.length = 0;
+  store.pending.push({ outboxId: 'outbox-doc-1', fiscalDocumentId: 'doc-1', attemptCount: 1 });
+  const callsBefore = arca.calls.length;
+
+  // Otra instancia del worker: proceso nuevo, memoria vacía.
+  await buildWorker(store, arca).runOnce();
+
+  const afterRestart = arca.calls.slice(callsBefore);
+  assert.ok(afterRestart.includes('FECompConsultar'), 'lo primero que hace es consultar');
+  assert.ok(!afterRestart.includes('FECAESolicitar'), 'y no reenvía nunca');
+  assert.equal(store.completions[0]?.cae, authorized.cae, 'adopta el CAE que ya existía');
+  assert.equal(store.completions[0]?.documentNumber, authorized.documentNumber);
+  assert.deepEqual(store.reserved, [1], 'no consume un segundo número');
+  assert.equal(arca.authorizations().length, 1, 'ARCA sigue teniendo un solo comprobante');
+});
+
+test('si ARCA nunca recibió el comprobante, al reiniciar se conserva el mismo número', async () => {
+  const arca = createSimulatedArca();
+  const store = new CircuitStore();
+  // El proceso reservó el número 7 y murió antes de que ARCA recibiera nada.
+  store.add('doc-1', testRequest({ documentNumber: 7 }), 'authorizing');
+  store.reserved.push(7);
+
+  await buildWorker(store, arca).runOnce();
+
+  assert.equal(arca.calls.filter((call) => call === 'FECompConsultar').length, 1);
+  assert.equal(arca.calls.filter((call) => call === 'FECAESolicitar').length, 0, 'no se reenvía a ciegas');
+  assert.equal(store.completions[0]?.classification, 'ambiguous');
+  assert.equal(store.completions[0]?.documentNumber, 7, 'el número reservado se conserva');
+  assert.deepEqual(store.reserved, [7], 'y no se quema otro');
+  assert.equal(arca.authorizations().length, 0);
+});
+
+test('reiniciar sobre un comprobante ya resuelto cierra el trabajo sin tocar ARCA', async () => {
+  const arca = createSimulatedArca();
+  const store = new CircuitStore();
+  store.add('doc-1', testRequest({ documentNumber: 0 }));
+  await buildWorker(store, arca).runOnce();
+  const callsBefore = arca.calls.length;
+
+  store.pending.push({ outboxId: 'outbox-doc-1', fiscalDocumentId: 'doc-1', attemptCount: 1 });
+  const result = await buildWorker(store, arca).runOnce();
+
+  assert.deepEqual(result, { claimed: 1, completed: 0, settled: 1 });
+  assert.equal(arca.calls.length, callsBefore, 'ni una llamada más');
+  assert.deepEqual(store.settled, ['outbox-doc-1'], 'y el lease se cierra en vez de vencer');
+});
+
+// ===== Exento y no gravado, de punta a punta =====
+
+test('un comprobante con exento y no gravado llega a ARCA con cada importe en su lugar', async () => {
+  const arca = createSimulatedArca();
+  const bodies: string[] = [];
+  const recordingFetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    bodies.push(String(init?.body || ''));
+    return arca.fetch(url as string, init);
+  }) as unknown as typeof fetch;
+  const config = testConfig();
+  const store = new CircuitStore();
+  store.add('doc-1', testRequest({
+    documentNumber: 0,
+    netAmount: 100, vatAmount: 21, exemptAmount: 50, nonTaxedAmount: 30, otherTaxesAmount: 9,
+    totalAmount: 210,
+  }));
+  await new FiscalWorker({
+    config, store,
+    wsaa: { login: async () => testTicket },
+    wsfe: new WsfeClient(config, recordingFetch),
+    logger: silentLogger,
+  }).runOnce();
+
+  const request = bodies.find((body) => body.includes('FECAESolicitar'))!;
+  assert.match(request, /<ar:ImpTotal>210\.00<\/ar:ImpTotal>/);
+  assert.match(request, /<ar:ImpTotConc>30\.00<\/ar:ImpTotConc>/, 'no gravado');
+  assert.match(request, /<ar:ImpNeto>100\.00<\/ar:ImpNeto>/);
+  assert.match(request, /<ar:ImpOpEx>50\.00<\/ar:ImpOpEx>/, 'exento');
+  assert.match(request, /<ar:ImpTrib>9\.00<\/ar:ImpTrib>/);
+  assert.match(request, /<ar:ImpIVA>21\.00<\/ar:ImpIVA>/);
+  assert.equal(store.completions[0]?.classification, 'authorized');
+  assert.equal(arca.authorizations()[0]?.totalAmount, 210);
+});
+
 test('sin condición IVA del receptor el documento no llega a ARCA', async () => {
   const arca = createSimulatedArca();
   const store = new CircuitStore();

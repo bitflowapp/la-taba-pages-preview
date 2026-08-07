@@ -6,6 +6,10 @@ export interface SoapResponse {
   status: number;
   requestHash: string;
   responseHash: string;
+  // Hora declarada por el servidor de ARCA. Es la única referencia externa
+  // disponible para detectar que el reloj local se corrió, que es la causa
+  // documentada de los rechazos de TRA por generationTime/expirationTime.
+  serverDate?: string;
 }
 
 export async function postSoap({
@@ -38,13 +42,20 @@ export async function postSoap({
       redirect: 'error',
     });
     const text = await response.text();
-    const result = {
+    const serverDate = response.headers?.get?.('date') || undefined;
+    const result: SoapResponse = {
       body: text,
       status: response.status,
       requestHash: hash(body),
       responseHash: hash(text),
+      ...(serverDate ? { serverDate } : {}),
     };
-    if (!response.ok) {
+    // SOAP 1.1 manda los Fault con HTTP 500. Tratarlos como "ARCA caída" hacía
+    // dos daños: reintentaba a ciegas fallas permanentes (certificado invalido,
+    // ambiente equivocado) y escondía el único mensaje que WSAA da cuando el TA
+    // anterior sigue vigente. El cuerpo se devuelve para que lo lea el parser
+    // SOAP, que sí sabe distinguir.
+    if (!response.ok && !isSoapFault(text)) {
       const error = new Error(`ARCA respondió HTTP ${response.status}.`);
       Object.assign(error, { code: response.status >= 500 ? 'ARCA_UNAVAILABLE' : 'ARCA_HTTP_ERROR', retryable: response.status >= 500, ...result });
       throw error;
@@ -64,4 +75,8 @@ export async function postSoap({
 
 export function hash(value: string): string {
   return createHash('sha256').update(value).digest('hex');
+}
+
+export function isSoapFault(body: string): boolean {
+  return /<(?:[A-Za-z0-9_.-]+:)?Fault[\s>]/.test(body);
 }

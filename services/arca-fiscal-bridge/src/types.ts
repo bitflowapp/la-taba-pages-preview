@@ -15,6 +15,9 @@ export interface ArcaConfig {
   endpoints: ArcaEndpoints;
   homologationConsent: boolean;
   productionEnabled: boolean;
+  businessId: string;
+  ticketStatePath: string;
+  maxClockSkewSeconds: number;
 }
 
 export interface LoginTicket {
@@ -32,6 +35,9 @@ export interface FiscalRequest {
   concept: 1 | 2 | 3;
   recipientDocumentType: number;
   recipientDocumentNumber: string;
+  // CondicionIVAReceptorId del contrato vigente de WSFEv1. Lo declara la
+  // política contable aprobada; el puente no lo deduce ni lo completa.
+  recipientVatConditionId: number;
   documentNumber: number;
   issueDate: string;
   totalAmount: number;
@@ -80,7 +86,8 @@ export type FiscalParameterType =
   | 'vat_types'
   | 'currencies'
   | 'concepts'
-  | 'points_of_sale';
+  | 'points_of_sale'
+  | 'vat_receptor_conditions';
 
 export interface FiscalParameterSnapshot {
   environment: Exclude<ArcaEnvironment, 'disabled'>;

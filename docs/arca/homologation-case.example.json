@@ -1,0 +1,19 @@
+{
+  "_comment": "Caso fiscal de HOMOLOGACION. Cada valor lo declara el titular o su contador; la herramienta no completa ninguno. Los identificadores tienen que existir en las tablas oficiales que el puente sincroniza (FEParamGetTiposCbte, FEParamGetTiposDoc, FEParamGetTiposIva, FEParamGetCondicionIvaReceptor). Este archivo es una PLANTILLA: los numeros de abajo son de ejemplo y no constituyen una decision fiscal.",
+  "pointOfSale": 0,
+  "documentType": 0,
+  "concept": 1,
+  "recipientDocumentType": 0,
+  "recipientDocumentNumber": "0",
+  "recipientVatConditionId": 0,
+  "issueDate": "AAAAMMDD",
+  "currencyCode": "PES",
+  "currencyRate": 1,
+  "totalAmount": 0,
+  "netAmount": 0,
+  "vatAmount": 0,
+  "exemptAmount": 0,
+  "nonTaxedAmount": 0,
+  "otherTaxesAmount": 0,
+  "vatItems": []
+}

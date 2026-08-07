@@ -70,11 +70,33 @@ export interface FiscalArtifactCompletion {
   generationVersion: string;
 }
 
+export interface FiscalScope {
+  environment: 'homologation' | 'production';
+  cuit: string;
+}
+
+export interface CredentialHealth {
+  businessId: string;
+  fingerprint256: string | null;
+  expiresAt: string | null;
+  subjectCuit: string | null;
+  delegationStatus: 'pending' | 'verified' | 'rejected' | null;
+  connectionOk: boolean;
+  errorCode: string | null;
+}
+
 export interface FiscalStore {
-  claim(workerId: string, limit?: number): Promise<FiscalJob[]>;
+  claim(workerId: string, limit: number | undefined, scope: FiscalScope): Promise<FiscalJob[]>;
   load(documentId: string): Promise<LoadedFiscalDocument>;
   reserveNumber(documentId: string, workerId: string, expectedNumber: number): Promise<number>;
   complete(outboxId: string, workerId: string, result: ArcaResult & Record<string, unknown>): Promise<void>;
+  // Un trabajo cuyo comprobante ya está resuelto se cierra sin volver a hablar
+  // con ARCA. Sin esto el lease vencía, otro worker lo reclamaba, encontraba lo
+  // mismo y volvía a soltarlo: un bucle infinito sobre un documento terminado.
+  settle(outboxId: string, workerId: string): Promise<void>;
+  release(outboxId: string, workerId: string, errorCode: string): Promise<void>;
+  promoteIntents(workerId: string, limit?: number): Promise<{ claimed: number; promoted: number; manualReview: number; retry: number }>;
+  publishCredentialHealth(health: CredentialHealth): Promise<void>;
   saveParameterSnapshot(snapshot: FiscalParameterSnapshot): Promise<void>;
 }
 
@@ -111,11 +133,51 @@ export class SupabaseFiscalStore implements FiscalStore, FiscalArtifactStore {
     this.#fetchImpl = fetchImpl;
   }
 
-  async claim(workerId: string, limit = 5): Promise<FiscalJob[]> {
-    const rows = await this.#rpc('claim_fiscal_outbox', { p_worker_id: workerId, p_limit: limit, p_lease_seconds: 90 });
+  async claim(workerId: string, limit = 5, scope?: FiscalScope): Promise<FiscalJob[]> {
+    const rows = await this.#rpc('claim_fiscal_outbox', {
+      p_worker_id: workerId,
+      p_limit: limit,
+      p_lease_seconds: 90,
+      // El alcance no es opcional en la práctica: un worker de homologación con
+      // el certificado de un CUIT no debe poder tomar comprobantes de otro CUIT
+      // ni de producción, ni siquiera por accidente de despliegue.
+      p_environment: scope?.environment ?? null,
+      p_cuit: scope?.cuit ?? null,
+    });
     return asRows(rows).map((row) => ({
       outboxId: String(row.id), fiscalDocumentId: String(row.fiscal_document_id), attemptCount: Number(row.attempt_count || 0),
     }));
+  }
+
+  async settle(outboxId: string, workerId: string): Promise<void> {
+    await this.#rpc('settle_completed_fiscal_outbox', { p_outbox_id: outboxId, p_worker_id: workerId });
+  }
+
+  async release(outboxId: string, workerId: string, errorCode: string): Promise<void> {
+    await this.#rpc('release_fiscal_outbox_lease', { p_outbox_id: outboxId, p_worker_id: workerId, p_error_code: errorCode });
+  }
+
+  async promoteIntents(workerId: string, limit = 5): Promise<{ claimed: number; promoted: number; manualReview: number; retry: number }> {
+    const raw = await this.#rpc('promote_fiscal_emission_intents', { p_worker_id: workerId, p_limit: limit, p_lease_seconds: 90 });
+    const result = (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown> | null;
+    return {
+      claimed: Number(result?.claimed || 0),
+      promoted: Number(result?.promoted || 0),
+      manualReview: Number(result?.manual_review || 0),
+      retry: Number(result?.retry || 0),
+    };
+  }
+
+  async publishCredentialHealth(health: CredentialHealth): Promise<void> {
+    await this.#rpc('record_fiscal_credential_health', {
+      p_business_id: health.businessId,
+      p_certificate_fingerprint: health.fingerprint256,
+      p_certificate_expires_at: health.expiresAt,
+      p_certificate_subject_cuit: health.subjectCuit,
+      p_delegation_status: health.delegationStatus,
+      p_connection_ok: health.connectionOk,
+      p_error_code: health.errorCode,
+    });
   }
 
   async load(documentId: string): Promise<LoadedFiscalDocument> {
@@ -342,6 +404,7 @@ function rowToRequest(row: Record<string, unknown>, associated?: { documentType:
     concept: numberValue(row.concept, 1) as 1 | 2 | 3,
     recipientDocumentType: numberValue(row.recipient_document_type),
     recipientDocumentNumber: String(row.recipient_document_number || ''),
+    recipientVatConditionId: numberValue(row.recipient_vat_condition_id),
     documentNumber: numberValue(row.document_number),
     issueDate,
     totalAmount: numberValue(row.total_amount),

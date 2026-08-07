@@ -25,24 +25,38 @@ export class FiscalWorker {
     this.#logger = logger;
   }
 
-  async runOnce(limit = 5): Promise<{ claimed: number; completed: number }> {
-    const jobs = await this.#store.claim(this.#config.workerId, limit);
+  async runOnce(limit = 5): Promise<{ claimed: number; completed: number; settled: number }> {
+    if (this.#config.environment === 'disabled') return { claimed: 0, completed: 0, settled: 0 };
+    const jobs = await this.#store.claim(this.#config.workerId, limit, {
+      environment: this.#config.environment,
+      cuit: this.#config.cuit,
+    });
     let completed = 0;
+    let settled = 0;
     for (const job of jobs) {
-      await this.#process(job);
-      completed += 1;
+      if (await this.#process(job)) settled += 1;
+      else completed += 1;
     }
-    return { claimed: jobs.length, completed };
+    return { claimed: jobs.length, completed, settled };
   }
 
-  async #process(job: FiscalJob): Promise<void> {
+  // Devuelve true si el trabajo se cerró sin hablar con ARCA porque el
+  // comprobante ya estaba resuelto.
+  async #process(job: FiscalJob): Promise<boolean> {
     const requestId = randomUUID();
     const startedAt = Date.now();
     let result: ArcaResult;
     let reconciled = false;
     try {
       const loaded = await this.#store.load(job.fiscalDocumentId);
-      if (loaded.state === 'authorized' || loaded.state === 'credited') return;
+      if (loaded.state === 'authorized' || loaded.state === 'credited') {
+        // Antes esto era un `return` a secas: el lease quedaba tomado, vencía,
+        // otro worker reclamaba el mismo trabajo terminado y volvía a soltarlo.
+        // Un comprobante autorizado dejaba la cola girando para siempre.
+        await this.#store.settle(job.outboxId, this.#config.workerId);
+        this.#logger.info('fiscal_attempt_settled', { outboxId: job.outboxId, fiscalDocumentId: job.fiscalDocumentId, state: loaded.state });
+        return true;
+      }
       if (loaded.request.documentType < 1 || loaded.request.recipientDocumentType < 1) {
         throw Object.assign(new Error('Requiere datos fiscales o revisión.'), { code: 'REQUIRES_FISCAL_REVIEW', retryable: false });
       }
@@ -69,11 +83,19 @@ export class FiscalWorker {
         try {
           result = await this.#wsfe.authorize(ticket, loaded.request);
         } catch (error) {
-          result = classifyTransportFailure(error, loaded.request.documentNumber);
-          if (result.classification === 'ambiguous') {
-            reconciled = true;
-            result = await reconcileAmbiguousAuthorization({ client: this.#wsfe, ticket, request: loaded.request });
-          }
+          // Toda falla posterior al envío de un FECAESolicitar es ambigua: el
+          // timeout es la obvia, pero un 502 del borde o una conexión cortada
+          // dejan exactamente la misma duda —ARCA pudo haber autorizado— y
+          // reenviar a ciegas es la única forma de emitir dos veces. Se consulta
+          // siempre antes de decidir.
+          const failure = classifyTransportFailure(error, loaded.request.documentNumber);
+          reconciled = true;
+          const consulted = await reconcileAmbiguousAuthorization({ client: this.#wsfe, ticket, request: loaded.request });
+          // Si ARCA no tiene el comprobante, no se autorizó: se conserva el
+          // motivo original y el mismo número vuelve a intentarse más tarde.
+          result = consulted.classification === 'ambiguous'
+            ? { ...failure, classification: 'ambiguous', observations: consulted.observations, errors: [...failure.errors, ...consulted.errors] }
+            : consulted;
         }
       }
       if (['authorized', 'authorized_with_observations'].includes(result.classification) && !result.issueDate) {
@@ -92,6 +114,7 @@ export class FiscalWorker {
     const log = { requestId, outboxId: job.outboxId, fiscalDocumentId: job.fiscalDocumentId, classification: result.classification, durationMs: enriched.duration_ms };
     if (['authorized', 'authorized_with_observations'].includes(result.classification)) this.#logger.info('fiscal_attempt_completed', log);
     else this.#logger.warn('fiscal_attempt_completed', log);
+    return false;
   }
 }
 

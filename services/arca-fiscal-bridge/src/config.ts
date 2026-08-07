@@ -30,7 +30,25 @@ export function loadArcaConfig(env: NodeJS.ProcessEnv = process.env): ArcaConfig
   if (!Number.isSafeInteger(healthPort) || healthPort < 1024 || healthPort > 65535) throw new Error('FISCAL_HEALTH_PORT inválido.');
   const workerId = String(env.FISCAL_WORKER_ID || 'taba-fiscal-worker').trim();
   if (!/^[A-Za-z0-9._-]{3,80}$/.test(workerId)) throw new Error('FISCAL_WORKER_ID inválido.');
+  const businessId = String(env.FISCAL_BUSINESS_ID || '').trim();
+  if (environment !== 'disabled' && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(businessId)) {
+    throw new Error('FISCAL_BUSINESS_ID debe ser el UUID del negocio que el puente atiende.');
+  }
+  // El ticket de acceso sobrevive al reinicio del proceso. WSAA retiene el TA
+  // vigente y rechaza pedidos repetidos dentro de una ventana (10 minutos en
+  // homologación según el manual del desarrollador), así que perder la caché en
+  // memoria dejaba al worker bloqueado hasta que venciera esa ventana.
+  const ticketStatePath = environment === 'disabled'
+    ? optionalSecretPath(env.ARCA_TICKET_STATE_PATH)
+    : absoluteSecretPath(env.ARCA_TICKET_STATE_PATH, 'ARCA_TICKET_STATE_PATH');
+  const maxClockSkewSeconds = Number(env.ARCA_MAX_CLOCK_SKEW_SECONDS || 300);
+  if (!Number.isSafeInteger(maxClockSkewSeconds) || maxClockSkewSeconds < 30 || maxClockSkewSeconds > 3600) {
+    throw new Error('ARCA_MAX_CLOCK_SKEW_SECONDS inválido.');
+  }
   return Object.freeze({
+    businessId,
+    ticketStatePath,
+    maxClockSkewSeconds,
     environment,
     cuit,
     certificatePath,

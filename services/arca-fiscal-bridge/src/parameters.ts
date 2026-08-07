@@ -7,6 +7,10 @@ const REQUIRED_PARAMETER_TYPES: readonly FiscalParameterType[] = Object.freeze([
   'currencies',
   'concepts',
   'points_of_sale',
+  // La condición frente al IVA del receptor viaja en cada FECAESolicitar del
+  // contrato vigente: su tabla oficial se sincroniza como cualquier otra y es
+  // la que valida el identificador que declaró el contador.
+  'vat_receptor_conditions',
 ]);
 
 export async function syncOfficialParameterTables({

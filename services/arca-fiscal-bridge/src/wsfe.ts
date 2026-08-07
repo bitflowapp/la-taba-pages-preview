@@ -12,6 +12,14 @@ export const PARAMETER_OPERATIONS: Readonly<Record<FiscalParameterType, string>>
   currencies: 'FEParamGetTiposMonedas',
   concepts: 'FEParamGetTiposConcepto',
   points_of_sale: 'FEParamGetPtosVenta',
+  vat_receptor_conditions: 'FEParamGetCondicionIvaReceptor',
+});
+
+// FEParamGetCondicionIvaReceptor es la única tabla que además de Auth lleva un
+// filtro por clase de comprobante. Sin filtro devuelve la tabla completa, que es
+// justo lo que se quiere persistir para validar contra ella.
+const PARAMETER_EXTRA_BODY: Readonly<Partial<Record<FiscalParameterType, string>>> = Object.freeze({
+  vat_receptor_conditions: '<ar:ClaseCmp/>',
 });
 
 export class WsfeClient {
@@ -77,7 +85,7 @@ export class WsfeClient {
     const operation = PARAMETER_OPERATIONS[parameterType];
     if (!operation) throw new Error('Tipo de parámetro WSFEv1 no permitido.');
     if (this.#config.environment === 'disabled') throw new Error('ARCA_DISABLED');
-    const response = await this.#call(operation, `<ar:${operation}>${authXml(ticket, this.#config.cuit)}</ar:${operation}>`);
+    const response = await this.#call(operation, `<ar:${operation}>${authXml(ticket, this.#config.cuit)}${PARAMETER_EXTRA_BODY[parameterType] || ''}</ar:${operation}>`);
     const parsed = checkedSoap(response.body);
     const operationResult = findFirst(parsed, `${operation}Result`);
     const values = findFirst(operationResult, 'ResultGet');
@@ -116,6 +124,7 @@ export function validateFiscalRequest(request: FiscalRequest, configuredCuit: st
   assertPositiveInteger(request.pointOfSale, 'punto de venta');
   assertPositiveInteger(request.documentType, 'tipo de comprobante');
   assertPositiveInteger(request.documentNumber, 'número');
+  assertPositiveInteger(request.recipientVatConditionId, 'condición IVA del receptor');
   if (![1, 2, 3].includes(request.concept)) throw new Error('Concepto fiscal no soportado.');
   if (!/^\d{8}$/.test(request.issueDate)) throw new Error('Fecha fiscal inválida.');
   if (!/^[A-Z]{3}$/.test(request.currencyCode) || !(request.currencyRate > 0)) throw new Error('Moneda o cotización inválida.');
@@ -171,7 +180,11 @@ function caeRequestXml(request: FiscalRequest): string {
   const services = request.concept === 1 ? '' : `<ar:FchServDesde>${request.serviceFrom}</ar:FchServDesde><ar:FchServHasta>${request.serviceTo}</ar:FchServHasta><ar:FchVtoPago>${request.paymentDueDate}</ar:FchVtoPago>`;
   const vat = request.vatItems.length ? `<ar:Iva>${request.vatItems.map((item) => `<ar:AlicIva><ar:Id>${item.id}</ar:Id><ar:BaseImp>${money(item.baseAmount)}</ar:BaseImp><ar:Importe>${money(item.amount)}</ar:Importe></ar:AlicIva>`).join('')}</ar:Iva>` : '';
   const associated = request.associatedDocument ? `<ar:CbtesAsoc><ar:CbteAsoc><ar:Tipo>${request.associatedDocument.documentType}</ar:Tipo><ar:PtoVta>${request.associatedDocument.pointOfSale}</ar:PtoVta><ar:Nro>${request.associatedDocument.documentNumber}</ar:Nro>${request.associatedDocument.cuit ? `<ar:Cuit>${escapeXml(request.associatedDocument.cuit)}</ar:Cuit>` : ''}${request.associatedDocument.issueDate ? `<ar:CbteFch>${escapeXml(request.associatedDocument.issueDate)}</ar:CbteFch>` : ''}</ar:CbteAsoc></ar:CbtesAsoc>` : '';
-  return `<ar:FeCAEReq><ar:FeCabReq><ar:CantReg>1</ar:CantReg><ar:PtoVta>${request.pointOfSale}</ar:PtoVta><ar:CbteTipo>${request.documentType}</ar:CbteTipo></ar:FeCabReq><ar:FeDetReq><ar:FECAEDetRequest><ar:Concepto>${request.concept}</ar:Concepto><ar:DocTipo>${request.recipientDocumentType}</ar:DocTipo><ar:DocNro>${escapeXml(request.recipientDocumentNumber)}</ar:DocNro><ar:CbteDesde>${request.documentNumber}</ar:CbteDesde><ar:CbteHasta>${request.documentNumber}</ar:CbteHasta><ar:CbteFch>${request.issueDate}</ar:CbteFch><ar:ImpTotal>${money(request.totalAmount)}</ar:ImpTotal><ar:ImpTotConc>${money(request.nonTaxedAmount)}</ar:ImpTotConc><ar:ImpNeto>${money(request.netAmount)}</ar:ImpNeto><ar:ImpOpEx>${money(request.exemptAmount)}</ar:ImpOpEx><ar:ImpIVA>${money(request.vatAmount)}</ar:ImpIVA><ar:ImpTrib>${money(request.otherTaxesAmount)}</ar:ImpTrib>${services}<ar:MonId>${escapeXml(request.currencyCode)}</ar:MonId><ar:MonCotiz>${request.currencyRate.toFixed(6)}</ar:MonCotiz>${associated}${vat}</ar:FECAEDetRequest></ar:FeDetReq></ar:FeCAEReq>`;
+  // El orden de los elementos es el del WSDL vigente (xsd:sequence): ImpTrib va
+  // ANTES de ImpIVA, y CondicionIVAReceptorId entre MonCotiz y CbtesAsoc. Un
+  // .asmx lee la secuencia en orden y descarta lo que llega fuera de lugar: con
+  // ImpIVA e ImpTrib invertidos, ARCA recibía ceros y rechazaba por importes.
+  return `<ar:FeCAEReq><ar:FeCabReq><ar:CantReg>1</ar:CantReg><ar:PtoVta>${request.pointOfSale}</ar:PtoVta><ar:CbteTipo>${request.documentType}</ar:CbteTipo></ar:FeCabReq><ar:FeDetReq><ar:FECAEDetRequest><ar:Concepto>${request.concept}</ar:Concepto><ar:DocTipo>${request.recipientDocumentType}</ar:DocTipo><ar:DocNro>${escapeXml(request.recipientDocumentNumber)}</ar:DocNro><ar:CbteDesde>${request.documentNumber}</ar:CbteDesde><ar:CbteHasta>${request.documentNumber}</ar:CbteHasta><ar:CbteFch>${request.issueDate}</ar:CbteFch><ar:ImpTotal>${money(request.totalAmount)}</ar:ImpTotal><ar:ImpTotConc>${money(request.nonTaxedAmount)}</ar:ImpTotConc><ar:ImpNeto>${money(request.netAmount)}</ar:ImpNeto><ar:ImpOpEx>${money(request.exemptAmount)}</ar:ImpOpEx><ar:ImpTrib>${money(request.otherTaxesAmount)}</ar:ImpTrib><ar:ImpIVA>${money(request.vatAmount)}</ar:ImpIVA>${services}<ar:MonId>${escapeXml(request.currencyCode)}</ar:MonId><ar:MonCotiz>${request.currencyRate.toFixed(6)}</ar:MonCotiz><ar:CondicionIVAReceptorId>${request.recipientVatConditionId}</ar:CondicionIVAReceptorId>${associated}${vat}</ar:FECAEDetRequest></ar:FeDetReq></ar:FeCAEReq>`;
 }
 
 function checkedSoap(xml: string): unknown {

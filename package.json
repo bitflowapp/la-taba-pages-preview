@@ -56,7 +56,8 @@
     "tauri": "tauri",
     "tauri:build": "tauri build",
     "certify:circuit:staging": "node scripts/certify-order-operational-circuit.mjs",
-    "fiscal:db:local": "node scripts/run-arca-fiscal-local-db.mjs"
+    "fiscal:db:local": "node scripts/run-arca-fiscal-local-db.mjs",
+    "fiscal:certify:homologation": "npm --prefix services/arca-fiscal-bridge run certify:homologation --"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

@@ -5,7 +5,8 @@ import { buildFiscalQrPayload, buildFiscalQrUrl } from '../src/qr.js';
 import { createAuthorizedFiscalPdf, createReceiptPdf, sha256Pdf } from '../src/pdf.js';
 import { FiscalWorker } from '../src/worker.js';
 import { FiscalArtifactWorker, privateStoragePath } from '../src/artifact-worker.js';
-import { SupabasePrivateArtifactStorage, type FiscalArtifactCompletion, type FiscalArtifactJob, type FiscalArtifactStore, type FiscalJob, type FiscalStore, type LoadedFiscalArtifactDocument, type LoadedFiscalDocument } from '../src/store.js';
+import { SupabasePrivateArtifactStorage, type FiscalArtifactCompletion, type FiscalArtifactJob, type FiscalArtifactStore, type LoadedFiscalArtifactDocument } from '../src/store.js';
+import { MemoryFiscalStore, testConfig, testRequest } from './fixtures.js';
 
 const qr = {
   issueDate: '2026-08-02', cuit: '20123456789', pointOfSale: 5,
@@ -45,23 +46,12 @@ test('PDF autorizado A4 es determinista, tiene CAE/QR y conserva referencia de n
   await assert.rejects(() => createAuthorizedFiscalPdf({ ...input, cae: '' }), /sin CAE/);
 });
 
-class MemoryStore implements FiscalStore {
-  completed: Array<ArcaResult & Record<string, unknown>> = [];
-  reserveCalls = 0;
-  constructor(readonly loaded: LoadedFiscalDocument) {}
-  async claim(): Promise<FiscalJob[]> { return [{ outboxId: 'outbox-1', fiscalDocumentId: 'document-1', attemptCount: 1 }]; }
-  async load(): Promise<LoadedFiscalDocument> { return structuredClone(this.loaded); }
-  async reserveNumber(_documentId: string, _workerId: string, expected: number): Promise<number> { this.reserveCalls += 1; return expected; }
-  async complete(_outboxId: string, _workerId: string, result: ArcaResult & Record<string, unknown>): Promise<void> { this.completed.push(result); }
-  async saveParameterSnapshot(_snapshot: FiscalParameterSnapshot): Promise<void> {}
-}
-
-const config: ArcaConfig = { environment: 'homologation', cuit: '20123456789', certificatePath: 'synthetic-certificate-path', privateKeyPath: 'synthetic-private-key-path', workerId: 'worker-01', healthPort: 8787, endpoints: { wsaa: 'https://wsaahomo.afip.gov.ar/ws/services/LoginCms', wsfe: 'https://wswhomo.afip.gov.ar/wsfev1/service.asmx' }, homologationConsent: true, productionEnabled: false };
+const config = testConfig();
 const ticket: LoginTicket = { token: 't', sign: 's', generationTime: '', expirationTime: '2026-08-03T00:00:00Z', service: 'wsfe' };
-const fiscalRequest: FiscalRequest = { cuit: config.cuit, pointOfSale: 5, documentType: 11, concept: 1, recipientDocumentType: 99, recipientDocumentNumber: '0', documentNumber: 0, issueDate: '20260802', totalAmount: 121, netAmount: 100, vatAmount: 21, exemptAmount: 0, nonTaxedAmount: 0, otherTaxesAmount: 0, currencyCode: 'PES', currencyRate: 1, vatItems: [{ id: 5, baseAmount: 100, amount: 21 }] };
+const fiscalRequest = testRequest({ documentNumber: 0 });
 
 test('worker reserva último+1 y completa autorización exactly-once local', async () => {
-  const store = new MemoryStore({ request: fiscalRequest, state: 'queued' });
+  const store = new MemoryFiscalStore({ request: fiscalRequest, state: 'queued' });
   let requestedNumber = 0;
   const worker = new FiscalWorker({
     config, store,
@@ -73,14 +63,14 @@ test('worker reserva último+1 y completa autorización exactly-once local', asy
     },
     logger: { info() {}, warn() {} },
   });
-  assert.deepEqual(await worker.runOnce(), { claimed: 1, completed: 1 });
+  assert.deepEqual(await worker.runOnce(), { claimed: 1, completed: 1, settled: 0 });
   assert.equal(requestedNumber, 42);
   assert.equal(store.completed[0]?.classification, 'authorized');
   assert.equal(typeof store.completed[0]?.request_id, 'string');
 });
 
 test('worker bloquea tipo fiscal no revisado sin llamar ARCA', async () => {
-  const store = new MemoryStore({ request: { ...fiscalRequest, documentType: 0 }, state: 'queued' });
+  const store = new MemoryFiscalStore({ request: { ...fiscalRequest, documentType: 0 }, state: 'queued' });
   let called = false;
   const worker = new FiscalWorker({ config, store, wsaa: { login: async () => { called = true; return ticket; } }, wsfe: { lastAuthorized: async () => 0, authorize: async () => ({ classification: 'service_error', observations: [], errors: [] }), consult: async () => null }, logger: { info() {}, warn() {} } });
   await worker.runOnce();
@@ -89,7 +79,7 @@ test('worker bloquea tipo fiscal no revisado sin llamar ARCA', async () => {
 });
 
 test('snapshot fiscal inválido no reserva número ni llama ARCA', async () => {
-  const store = new MemoryStore({ request: { ...fiscalRequest, totalAmount: 999 }, state: 'queued' });
+  const store = new MemoryFiscalStore({ request: { ...fiscalRequest, totalAmount: 999 }, state: 'queued' });
   let loginCalls = 0;
   let lastCalls = 0;
   const worker = new FiscalWorker({
@@ -110,7 +100,7 @@ test('snapshot fiscal inválido no reserva número ni llama ARCA', async () => {
 });
 
 test('documento ambiguo consulta antes de cualquier nuevo FECAESolicitar', async () => {
-  const store = new MemoryStore({ request: { ...fiscalRequest, documentNumber: 42 }, state: 'ambiguous' });
+  const store = new MemoryFiscalStore({ request: { ...fiscalRequest, documentNumber: 42 }, state: 'ambiguous' });
   let authorized = 0;
   let consulted = 0;
   const worker = new FiscalWorker({

@@ -17,13 +17,18 @@ insert into public.fiscal_profiles(
 );
 insert into public.fiscal_parameter_snapshots(environment,parameter_type,version,values_json,synchronized_at) values
   ('homologation','document_types','fixture-v1','[{"Id":11},{"Id":13}]'::jsonb,now()),
-  ('homologation','recipient_document_types','fixture-v1','[{"Id":96}]'::jsonb,now());
+  ('homologation','recipient_document_types','fixture-v1','[{"Id":96}]'::jsonb,now()),
+  ('homologation','vat_types','fixture-v1','[{"Id":5}]'::jsonb,now()),
+  ('homologation','vat_receptor_conditions','fixture-v1','[{"Id":5}]'::jsonb,now());
+-- La condicion frente al IVA del receptor es parte del contrato vigente de WSFEv1:
+-- una politica habilitada sin declararla ya no puede existir.
 insert into public.fiscal_accounting_policies(
   business_id,environment,policy_version,valid_from,issuer_condition,recipient_condition,concept,invoice_type,credit_note_type,
-  recipient_document_type,recipient_document_number,enabled,accountant_review_status,approved_by,approved_at,notes
+  recipient_document_type,recipient_document_number,recipient_vat_condition_id,vat_computation,vat_rate_id,vat_rate_percent,
+  enabled,accountant_review_status,approved_by,approved_at,notes
 ) values (
   '42000000-0000-4000-8000-000000000001','homologation','fixture-approved-v1',current_date,'Responsable Inscripto','Consumidor Final',1,11,13,
-  96,'0',true,'approved','41000000-0000-4000-8000-000000000001',now(),'Fixture sintetico; no constituye aprobacion comercial.'
+  96,'0',5,'discriminated',5,21.000,true,'approved','41000000-0000-4000-8000-000000000001',now(),'Fixture sintetico; no constituye aprobacion comercial.'
 );
 
 select is(

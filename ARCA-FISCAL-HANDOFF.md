@@ -5,7 +5,7 @@ Rama: `feature/taba2-arca-fiscal-automation` · Base: `c7c3bbd`
 
 | | |
 | --- | --- |
-| Commits (locales, sin push) | `6c038fa` contrato de base · `353ffed` puente ARCA · `6062d16` proyección de estados y Panel |
+| Commits (locales, sin push) | `6c038fa` contrato de base · `353ffed` puente ARCA · `6062d16` proyección de estados y Panel · `4b26b4d` CSR y handoff · más el commit de cierre |
 | Alcance | 37 archivos, +3894/−140 |
 | Lock de staging | `taba2-staging-mutation.lock` estaba **ocupado** (OWNER=TABA2_PILOT_RC, HOLDING). No se tocó, no se borró, no se completó. **Todo el trabajo es local.** |
 | Staging / producción / ARCA real | **Intactos.** Ninguna migración aplicada a staging, ninguna Edge Function desplegada, ningún comprobante emitido en ningún ambiente. |
@@ -105,6 +105,7 @@ WSDL vigente y el Manual del Desarrollador de WSAA (Publicación 20.2.19).
 | D6 | Sólo el **timeout** se consideraba ambiguo | Un 502 del borde o una conexión cortada después de enviar un `FECAESolicitar` dejan exactamente la misma duda. Reenviar a ciegas es la única forma de emitir dos veces. |
 | D7 | El **claim de la outbox era multi-tenant y multi-ambiente** | Un worker de homologación con el certificado de un CUIT podía reclamar comprobantes de otro CUIT o de producción. |
 | D8 | El TRA se emitía en **UTC con `Z`** | El manual documenta el formato con desplazamiento de Argentina y advierte que el equipo debe estar en GMT-3. Se emite `-03:00`, y un reloj corrido frente a ARCA ahora falla cerrado en vez de producir rechazos inexplicables. |
+| D9 | Un **worker mal configurado mataba comprobantes sanos** | Sin la frase de consentimiento, con el reloj corrido o con el TA retenido por WSAA, cada ciclo de cinco segundos quemaba un intento: a los ocho, un comprobante perfectamente válido caía a dead-letter por culpa de una variable de entorno. Ahora esos casos sueltan el lease y **devuelven el intento**, y el trabajo vuelve a la cola intacto. |
 
 Todos corregidos, todos con prueba de regresión.
 
@@ -194,12 +195,12 @@ fiscal incompleto y nombra los campos que faltan.
 | Gate | Resultado |
 | --- | --- |
 | `npm test` | **1111/1111** (base 1102; +8 de la suite de estados fiscales, +1 del asistente) |
-| `npm run fiscal:test` | **43/43** (base 17) |
-| `npm run fiscal:db:local` | **162 aserciones** sobre una PostgreSQL **vacía**: 57 migraciones aplicadas desde cero + 91 + 41 + 30 |
+| `npm run fiscal:test` | **44/44** (base 17) |
+| `npm run fiscal:db:local` | **166 aserciones** sobre una PostgreSQL **vacía**: 57 migraciones aplicadas desde cero + 95 + 41 + 30 |
 | `npm run migrations:validate` | aprobado |
 | `npm run check` | pasa |
 | `npm run secrets:scan` | limpio |
-| `npm run test:e2e` | ver §12 |
+| `npm run test:e2e` | **207/207** (Chromium + Firefox), igual que la base |
 | Certificación en homologación oficial | **PENDIENTE — falta el certificado (§8)** |
 
 `npm run fiscal:db:local` levanta su propio contenedor, aplica las 57
@@ -349,7 +350,7 @@ motivos igualmente ajenos: `durable_offline_packing_test` inserta pedidos sin
 ## 12. Declaración
 
 El circuito fiscal de TABA2 quedó implementado de punta a punta, con los cuatro
-cortes de contrato cerrados, ocho defectos contra el contrato real de ARCA
+cortes de contrato cerrados, nueve defectos contra el contrato real de ARCA
 corregidos, cero decisiones fiscales inferidas, dos defensas independientes
 contra la doble emisión, y una UI que dice exactamente cinco cosas y nunca
 promete un CAE que no existe.

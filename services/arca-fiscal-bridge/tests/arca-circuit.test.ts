@@ -20,6 +20,7 @@ class CircuitStore implements FiscalStore {
   readonly pending: FiscalJob[] = [];
   readonly completions: Array<ArcaResult & Record<string, unknown>> = [];
   readonly settled: string[] = [];
+  readonly released: Array<{ outboxId: string; errorCode: string }> = [];
   reserved: number[] = [];
   lastScope: FiscalScope | undefined;
 
@@ -60,7 +61,9 @@ class CircuitStore implements FiscalStore {
   }
 
   async settle(outboxId: string): Promise<void> { this.settled.push(outboxId); }
-  async release(): Promise<void> {}
+  async release(outboxId: string, _workerId: string, errorCode: string): Promise<void> {
+    this.released.push({ outboxId, errorCode });
+  }
   async promoteIntents(): Promise<{ claimed: number; promoted: number; manualReview: number; retry: number }> {
     return { claimed: 0, promoted: 0, manualReview: 0, retry: 0 };
   }
@@ -314,4 +317,24 @@ test('el CSR generado es válido, la clave queda a 600 y no se pisa', () => {
     fs.rmSync(repositoryRoot, { recursive: true, force: true });
     fs.rmSync(outputDirectory, { recursive: true, force: true });
   }
+});
+
+test('un worker mal configurado suelta el trabajo en vez de matar el comprobante', async () => {
+  const arca = createSimulatedArca();
+  const store = new CircuitStore();
+  store.add('doc-1', testRequest({ documentNumber: 0 }));
+  const config = testConfig({ homologationConsent: false });
+  const worker = new FiscalWorker({
+    config,
+    store,
+    // Sin la frase de consentimiento, WSAA ni se intenta.
+    wsaa: { login: async () => { throw Object.assign(new Error('ARCA_HOMOLOGATION_BLOCKED'), { code: 'ARCA_HOMOLOGATION_BLOCKED' }); } },
+    wsfe: new WsfeClient(config, arca.fetch),
+    logger: silentLogger,
+  });
+  await worker.runOnce();
+  assert.deepEqual(store.released, [{ outboxId: 'outbox-doc-1', errorCode: 'ARCA_HOMOLOGATION_BLOCKED' }]);
+  assert.equal(store.completions.length, 0, 'no se escribe un intento contra ARCA que nunca ocurrió');
+  assert.deepEqual(store.reserved, [], 'no se consume un número fiscal');
+  assert.equal(arca.calls.length, 0);
 });

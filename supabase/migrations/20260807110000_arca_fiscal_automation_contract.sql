@@ -1156,8 +1156,11 @@ begin
 end;
 $claim_fiscal_scoped$;
 
--- Un lease abandonado por un worker que se murió antes de responder tiene que
--- poder soltarse sin esperar el vencimiento completo.
+-- Un lease abandonado, o tomado por un worker que ni siquiera pudo intentar,
+-- tiene que poder soltarse sin esperar el vencimiento completo. Y sin contar
+-- como intento: si el problema es la configuración del worker —falta la frase
+-- de consentimiento, el reloj está corrido, WSAA retiene el ticket— el
+-- comprobante está sano, y ocho ciclos de cinco segundos no pueden matarlo.
 create or replace function public.release_fiscal_outbox_lease(
   p_outbox_id uuid,
   p_worker_id text,
@@ -1179,9 +1182,10 @@ begin
   end if;
   update public.fiscal_outbox set
     state = 'retry_wait', lease_owner = null, lease_deadline = null,
+    attempt_count = greatest(0, v_outbox.attempt_count - 1),
     next_attempt_at = now() + interval '30 seconds', last_error_code = p_error_code
   where id = v_outbox.id;
-  return jsonb_build_object('outbox_id', v_outbox.id, 'state', 'retry_wait');
+  return jsonb_build_object('outbox_id', v_outbox.id, 'state', 'retry_wait', 'attempt_count', greatest(0, v_outbox.attempt_count - 1));
 end;
 $release_fiscal_outbox_lease$;
 

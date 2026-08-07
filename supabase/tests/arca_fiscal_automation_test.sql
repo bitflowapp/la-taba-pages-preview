@@ -7,7 +7,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(91);
+select plan(95);
 
 -- ===== Fixture =====
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -553,6 +553,24 @@ select is(
   ((select public.get_fiscal_policy_status('52000000-0000-4000-8000-000000000001'))->>'documents_requiring_attention')::int,
   0,
   'ningun comprobante de esta corrida quedo pidiendo atencion'
+);
+
+-- ===== 15. Soltar un lease no cuenta como intento contra ARCA =====
+set local role postgres;
+-- El comprobante del pedido online quedo encolado y todavia nadie lo reclamo.
+create temporary table arca_release on commit drop as
+  select * from public.claim_fiscal_outbox('taba-mal-configurado',5,90,'homologation','20123456789');
+select is((select count(*)::int from arca_release), 1, 'el worker reclama el trabajo nuevo');
+select is((select attempt_count from arca_release), 1, 'reclamar cuenta como intento');
+select is(
+  ((select public.release_fiscal_outbox_lease((select id from arca_release),'taba-mal-configurado','ARCA_HOMOLOGATION_BLOCKED'))->>'attempt_count')::int,
+  0,
+  'un trabajo que ni siquiera pudo intentar devuelve el intento en vez de quemarlo'
+);
+select is(
+  (select state from public.fiscal_outbox where id=(select id from arca_release)),
+  'retry_wait',
+  'y el trabajo vuelve a la cola intacto'
 );
 
 select * from finish();

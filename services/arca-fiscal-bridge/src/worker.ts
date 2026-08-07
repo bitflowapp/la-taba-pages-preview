@@ -40,6 +40,14 @@ export class FiscalWorker {
     return { claimed: jobs.length, completed, settled };
   }
 
+  // Problemas del worker, no del comprobante: falta la frase de consentimiento,
+  // el reloj está corrido, o WSAA retiene un ticket que este proceso no tiene.
+  // El documento está sano y no puede morir por culpa del entorno.
+  static readonly ENVIRONMENT_BLOCKERS = Object.freeze([
+    'ARCA_DISABLED', 'ARCA_HOMOLOGATION_BLOCKED', 'ARCA_PRODUCTION_DISABLED_BY_DESIGN',
+    'WSAA_TICKET_RETENTION', 'ARCA_CLOCK_SKEW',
+  ]);
+
   // Devuelve true si el trabajo se cerró sin hablar con ARCA porque el
   // comprobante ya estaba resuelto.
   async #process(job: FiscalJob): Promise<boolean> {
@@ -102,6 +110,14 @@ export class FiscalWorker {
         result = { ...result, issueDate: loaded.request.issueDate };
       }
     } catch (error) {
+      const code = String((error as { code?: string })?.code || '');
+      if (FiscalWorker.ENVIRONMENT_BLOCKERS.includes(code)) {
+        // Se suelta el lease y se devuelve el intento: el comprobante vuelve a
+        // la cola intacto cuando alguien arregle el worker.
+        await this.#store.release(job.outboxId, this.#config.workerId, code);
+        this.#logger.warn('fiscal_attempt_blocked_by_environment', { outboxId: job.outboxId, code });
+        return true;
+      }
       result = classifyTransportFailure(error);
     }
     const enriched = {

@@ -65,7 +65,11 @@ export async function runHomologationCertification({
   emit = false,
   now = new Date(),
   env = process.env,
-}: { casePath: string; emit?: boolean; now?: Date; env?: NodeJS.ProcessEnv }): Promise<{ ok: boolean; steps: CertificationStep[]; evidence: Record<string, unknown> }> {
+  // Inyectable sólo para que la propia herramienta tenga prueba automática
+  // contra la ARCA simulada. En la corrida real es el fetch del proceso, y los
+  // endpoints siguen restringidos por la allowlist oficial compilada.
+  fetchImpl = fetch,
+}: { casePath: string; emit?: boolean; now?: Date; env?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch }): Promise<{ ok: boolean; steps: CertificationStep[]; evidence: Record<string, unknown> }> {
   const steps: CertificationStep[] = [];
   const record = (step: string, ok: boolean, detail: Record<string, unknown> = {}) => {
     steps.push({ step, ok, detail });
@@ -90,10 +94,10 @@ export async function runHomologationCertification({
   const fiscalCase = readFiscalCase(casePath);
   const ticketStore = config.ticketStatePath ? new FileTicketStore(config.ticketStatePath) : new MemoryTicketStore();
   let clockSkewSeconds = 0;
-  const wsaa = new WsaaClient(config, credentials, fetch, ticketStore, {
+  const wsaa = new WsaaClient(config, credentials, fetchImpl, ticketStore, {
     onClockSkew: (detail) => { clockSkewSeconds = detail.skewSeconds; },
   });
-  const wsfe = new WsfeClient(config);
+  const wsfe = new WsfeClient(config, fetchImpl);
 
   const dummy = await wsfe.dummy();
   record('FEDummy', dummy.appServer === 'OK' && dummy.dbServer === 'OK' && dummy.authServer === 'OK', { ...dummy });

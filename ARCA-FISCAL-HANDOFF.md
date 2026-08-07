@@ -195,7 +195,7 @@ fiscal incompleto y nombra los campos que faltan.
 | Gate | Resultado |
 | --- | --- |
 | `npm test` | **1111/1111** (base 1102; +8 de la suite de estados fiscales, +1 del asistente) |
-| `npm run fiscal:test` | **44/44** (base 17) |
+| `npm run fiscal:test` | **48/48** (base 17) |
 | `npm run fiscal:db:local` | **166 aserciones** sobre una PostgreSQL **vacía**: 57 migraciones aplicadas desde cero + 95 + 41 + 30 |
 | `npm run migrations:validate` | aprobado |
 | `npm run check` | pasa |
@@ -216,6 +216,15 @@ montos y prorrateo de descuento al centavo · numeración correlativa · CAE de 
 y de 15 dígitos rechazados · inmutabilidad post-CAE · permisos (`authenticated`
 no puede reclamar la outbox, correr el promotor ni saltear la puerta de
 autorización) · y auditoría sin token, sign ni PEM.
+
+**La propia herramienta de certificación tiene prueba automática**: recorre
+credenciales → `FEDummy` → WSAA → tablas oficiales → último autorizado →
+`FECAESolicitar` → `FECompConsultar` contra la ARCA simulada, verifica que la
+consulta por número devuelva el mismo CAE, y comprueba que la evidencia no
+contenga token, sign, PEM ni XML crudo. También verifica que se niegue sin la
+frase de consentimiento, que se niegue contra producción, y que un rechazo de
+ARCA no se declare certificación exitosa. Si tiene un error, se descubre acá y
+no con una persona esperando frente a la Clave Fiscal.
 
 ---
 

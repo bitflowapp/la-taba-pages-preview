@@ -10,6 +10,12 @@ operado desde el Panel del negocio y **entregado desde la app Android instalada
 en un Moto G15 físico**, con el mapa vivo, GPS real, corte de red y código de
 entrega. Nada de RPC directo, mocks ni tests en lugar de esas tres interfaces.
 
+Una segunda jornada reemplazó el punto de retiro de prueba por el de **La Taba 2,
+Mendoza 827**, y lo volvió a recorrer entero sobre `LT-0099` para comprobar que
+el cambio no rompía nada. Ese punto es **provisional**, con su procedencia
+registrada en la base, y la sección 6 explica exactamente por qué todavía no
+puede llamarse verificado.
+
 ---
 
 ## 0. Resumen para leer primero
@@ -19,8 +25,9 @@ entrega. Nada de RPC directo, mocks ni tests en lugar de esas tres interfaces.
 | Pedido certificado | **`LT-0098`** — Red Bull Energy Drink, real, **sin alcohol**, $ 3.726, pago Mercado Pago **TEST** aprobado (op. `171665077885`) |
 | Recorrido | storefront → pedido → Panel → accepted → preparing → ready → app Rider → claim → retiro → en camino → GPS → llegada → **código incorrecto rechazado** → código correcto → **`delivered`** |
 | Novedad | primer pedido del proyecto con **los dos puntos del mapa** en su instantánea, y primer mapa del Rider que dibuja el local sobre calles reales de Neuquén |
-| Defectos cerrados | **6**, incluido el que dejaba a la app Rider en la pantalla de ingreso con la sesión viva |
-| Cierre QA | **14/14** verificaciones |
+| Defectos cerrados | **7**, incluidos el que dejaba a la app Rider en la pantalla de ingreso con la sesión viva y el que la dejaba sin destino al abrir Google Maps |
+| Cierre QA | **14/14** verificaciones, dos veces: `LT-0098` y `LT-0099` |
+| Punto de retiro | ya no es `qa_fixture`: `-38.946054, -68.053236`, origen `public_directory_cross_checked`, **provisional** hasta verificarlo por presencia (sección 6) |
 | Producción | intacta. ARCA sin emisión. `LT-0030` idéntico |
 
 ---
@@ -326,7 +333,7 @@ sepa exactamente qué reproducir.
 | `LT-0030` | **idéntico**: `arrived`, revisión 11, $ 550 |
 | QA aislado | 59 pedidos `origin=qa`, ninguno en la cola de producción |
 | Cola de producción | **vacía** |
-| Gates | `npm test` **1119/1119** · `flutter test` **251/251** · `check` ok · `migrations:validate` aprobado |
+| Gates | `npm test` **1119/1119** · `flutter test` **251/251** · `check` ok · `migrations:validate` aprobado. Tras el arreglo de navegación: `flutter test` **254/254** |
 
 ### 5.1 Residuos, retirados por la UI real
 
@@ -344,7 +351,121 @@ caché privada, credenciales efímeras borradas del host y del dispositivo.
 
 ---
 
-## 6. Primer pedido humano físico
+## 6. El punto de retiro: de `qa_fixture` a un punto con procedencia
+
+`LT-0098` se certificó con el retiro en `qa_fixture`, un punto de prueba en el
+centro de Neuquén Capital. Servía para probar el mapa; no servía para que alguien
+fuera a buscar el pedido. Esta sección cuenta cómo se reemplazó y —sobre todo—
+**qué no se puede afirmar todavía** de lo que quedó.
+
+### 6.1 Lo primero fue no inventar
+
+El punto no salió de un geocodificador. `Mendoza 827, Neuquén` devuelve, en OSM,
+**una casa en Zapala a 175 km**: el único «Mendoza 827» que la base tiene en toda
+la provincia. Un geocodificador que responde con seguridad algo que está a 175 km
+del local es exactamente la razón por la que no se acepta su respuesta.
+
+El punto aplicado —`-38.946054, -68.053236`— es el que aportó la persona a cargo,
+tomado de un **directorio público de comercios y contrastado con dos fuentes
+independientes** que coinciden en nombre y dirección. No es una medición sobre la
+puerta. Y como no lo es, **no se registró como verificado**.
+
+### 6.2 El registro dice lo que el punto es, no lo que uno quisiera
+
+La migración `20260807170000_pickup_point_provenance.sql` le agrega procedencia a
+`private.rider_map_business_locations` y pone la regla en la base, no en la
+costumbre:
+
+```sql
+check (human_verified = false or source = 'business_verified')
+```
+
+Sólo un punto confirmado sobre el local puede llamarse verificado. Lo aplicado
+hoy es:
+
+| Campo | Valor |
+| --- | --- |
+| `latitude`, `longitude` | `-38.946054`, `-68.053236` |
+| `source` | `public_directory_cross_checked` |
+| `confidence` | `medium` |
+| `human_verified` | **`false`** |
+| `accuracy_m` | `null` — no hay medición, y un número inventado sería peor que nada |
+| `presence_status` | sin verificar |
+
+Un detalle que casi rompe todo: el trigger que congela la instantánea del pedido
+**copia el `source` del negocio en el `INSERT`**. Extender el CHECK de
+`rider_map_order_location_snapshots` no era cosmético; sin eso, la primera compra
+con el punto nuevo habría abortado la creación del pedido.
+
+La herramienta `scripts/set-pickup-point.mjs` exige `--fuente` para este origen,
+exige `--confirmado-por-humano` para `business_verified`, rechaza cualquier
+coordenada fuera de Neuquén Capital y **imprime el comando de reversión** con el
+punto anterior antes de mutar.
+
+### 6.3 Las comprobaciones, con su resultado real
+
+| Comprobación | Resultado |
+| --- | --- |
+| Dentro de Neuquén Capital | **sí** — dentro de `defaultMapBounds` de `js/config.js` |
+| Contra la geometría real de calle Mendoza | **15 m** perpendiculares al eje de la calle (traza OSM, barrio Santa Genoveva) |
+| Contra el falso positivo de Zapala | **175 km** — descartado |
+| Contra el POI «Mercado La Taba» de Islas Malvinas 145 | **368 m** — es otro local, descartado |
+| Geocodificación inversa del punto | «Diagonal España», Santa Genoveva, Neuquén — es la esquina; los 15 m lo explican |
+| Altura 827 de Mendoza en OSM | **no existe** en Neuquén Capital: la comparación se apoya en la geometría de la calle, no en el número |
+| Google Maps | abre **la coordenada exacta**, con pin y ruta; pero **no la etiqueta «Mendoza 827» ni conoce «La Taba 2»**: muestra el plus code `3W3W+HPC` |
+
+Esa última fila es la que impide declarar el punto cerrado. El destino es
+coherente y navegable; la etiqueta no lo confirma.
+
+### 6.4 Google Maps no resolvía el texto — y por eso se navega por coordenada
+
+Al probar la salida a navegación apareció un defecto que el `qa_fixture` tapaba:
+la app le pasaba a Maps **el texto de la dirección**, y Maps abría la vista
+genérica de Neuquén **sin ningún resultado**. El Rider tocaba «navegar» y se
+quedaba sin destino.
+
+Arreglado en el repo del Rider (`a37bdd4`): se navega por **la coordenada que el
+mapa ya está dibujando** —la del negocio antes del retiro, la del cliente desde
+`pickedUp`—, con el texto sólo como respaldo. Verificado en el Moto G15: tocar
+navegar abre Maps con la coordenada, pin y «Cómo llegar», y volver conserva el
+reparto activo.
+
+### 6.5 `LT-0099`: la prueba focal, no un E2E repetido
+
+No se rehízo la certificación completa. Se corrió lo que el cambio de punto
+podía romper, sobre un pedido nuevo:
+
+| Tramo | Resultado |
+| --- | --- |
+| Cliente con dirección estructurada y GPS | pedido creado con los dos puntos en su instantánea |
+| Panel: recibido → aceptado → preparando → listo | **PASS**, con doble clic, recarga, offline y reconexión. 0 errores |
+| Rider: cola, privacidad pre-claim, claim, doble claim | **PASS** — el doble claim no mueve la revisión |
+| Retiro e inicio del recorrido | **PASS** |
+| Mapa: pin del negocio, pin del rider, pin del cliente, encuadre | **PASS** — «La Taba 2 · Mendoza 827 · 16 m aprox.» |
+| GPS real del teléfono contra el punto aplicado | `-38.9459199, -68.0533019`, precisión 11,5 m → **16,0 m** del punto |
+| Abrir Google Maps y volver sin perder estado | **PASS** |
+| Código incorrecto | **rechazado** (`failed_attempts` 0 → 1) |
+| Código correcto → `delivered` | **PASS**, revisión 12, un único `delivered_at` |
+| Cierre QA sobre `LT-0099` | **14/14** |
+
+Los 16 m entre el GPS del teléfono y el punto aplicado **no son un error medido
+del punto**: el teléfono estaba en otro lado. Es la distancia entre dos lugares
+distintos, y se anota como tal.
+
+### 6.6 Lo que queda pendiente y cómo se cierra
+
+Ningún pedido vivo arrastra `qa_fixture`: quedan 3 instantáneas terminales que lo
+llevan congelado por diseño —la instantánea es inmutable— y ninguna viva.
+
+El punto se cierra **en el primer retiro físico**, no antes: cuando el rider
+confirme el retiro parado en la puerta, se toma GPS fresco, se exige precisión
+**≤ 20 m** y se compara. A **≤ 30 m** se registra `verified_by_rider_presence`;
+por encima **no se sobrescribe nada** y queda marcado
+`PICKUP_LOCATION_DISCREPANCY` con la evidencia.
+
+---
+
+## 7. Primer pedido humano físico
 
 Todo lo técnico está probado sobre este mismo teléfono. Estos son los cinco
 pasos:
@@ -355,40 +476,58 @@ pasos:
    el que enciende el mapa del Rider; sin él la entrega llega sin punto.
 2. **App que abrís vos** — **TABA2 Rider** (ícono de la moto), ya instalada y
    verificada en el Moto G15.
-3. **Usuario Rider** — `qa-rider-2-staging@local.taba`. La contraseña se rotó
-   durante las pruebas: **pedímela y te la fijo en el momento**.
-4. **Producto** — **Red Bull Energy Drink**, 250 ml, $ 3.576. Real y **sin
-   alcohol**. Pago **TEST**: no se mueve dinero real.
+3. **Usuario Rider** — `qa-rider-2-staging@local.taba`, **ya con la sesión
+   abierta en el teléfono**: no hace falta volver a entrar. Es importante que sea
+   **ése** y no `qa-rider-staging`, que tiene `LT-0030` tomado y no se toca.
+4. **Producto** — **Red Bull Energy Drink**, 250 ml, **$ 3.576**, stock **91**.
+   Real y **sin alcohol**. Pago **TEST**: no se mueve dinero real.
 5. **Recorrido** — retirás en **Mendoza 827** y entregás donde tu pareja cargue
    la dirección. En el mapa vas a ver los dos puntos; al llegar, ella te dicta
    el código de 4 dígitos que ve en su seguimiento.
 
-**Antes del pedido real**, con el negocio delante: reemplazar el punto
-`qa_fixture` por el punto real de la puerta del local y recién ahí declararlo
-`business_verified`. El SQL exacto está al final de
-`supabase/staging-rider-map-pickup-point.sql`. Mientras siga en `qa_fixture`, el
-pin del retiro está en el centro de Neuquén Capital, no en tu puerta.
+**Estado del alistamiento, verificado hoy:** producto activo con stock; Rider
+libre (0 pedidos en vuelo) y con sesión viva; punto de retiro cargado y
+dibujándose; APK `81633242680905a0…` instalada y coincidente con la construida;
+mapa, GPS y código probados sobre `LT-0099`.
 
-Y una advertencia que vale la pena tener presente: si reinstalás la APK, **limpiá
-los datos de la app antes de volver a entrar**. El almacén cifrado de sesión
-queda inservible tras la reinstalación y el ingreso parece funcionar pero no se
-sostiene. Está medido en la sección 4.
+**Dos cosas para tener presentes.**
+
+La primera: el pin del retiro es **provisional** (sección 6). Está a 15 m del eje
+de calle Mendoza, así que te deja en la cuadra, pero no está medido sobre la
+puerta. **Cuando confirmes el retiro parado en el local, avisame**: ahí se toma
+el GPS bueno y el punto queda cerrado con evidencia.
+
+La segunda: en la cola del Panel hay **6 pedidos QA viejos** (`LT-0004`,
+`LT-0033`, `LT-0034`, `LT-0035`, `LT-0036`, `LT-0095`). No se cancelaron porque
+cancelar toca stock y el stock está fuera de alcance. **Buscá el pedido por su
+código**, que es el más reciente; no confíes en que sea el único de la lista.
+
+Sobre reinstalar la APK: la advertencia anterior de este documento —«limpiá los
+datos antes de volver a entrar»— **quedó desmentida y se corrige acá**. Se
+reinstaló con `adb install -r` durante esta sesión y la sesión sobrevivió, igual
+que el reparto activo en disco. Lo que rompía el ingreso no era la reinstalación
+sino el defecto de la sección 4.2, ya arreglado. **No hace falta borrar nada.**
 
 ---
 
-## 7. Lo que no se tocó
+## 8. Lo que no se tocó
 
 Producción, ARCA (`services/arca-fiscal-bridge` sin cambios), `LT-0030`,
 `LT-0033` / `LT-0034` / `LT-0035`, los locks ajenos, las ramas fuente del Rider
 (ninguna fue movida) y los artefactos de las otras sesiones.
 
 Datos del teléfono: sólo se tocaron los de `com.lataba.rider.staging` —un
-`pm clear` para poder re-loguear, permitido por el lock del Moto—. Ninguna app
-ajena fue desinstalada ni modificada.
+`pm clear` en la primera jornada para poder re-loguear, permitido por el lock del
+Moto—. En la jornada del punto de retiro **no se usó `pm clear`**: la APK nueva
+entró con `adb install -r` y la sesión y el reparto activo quedaron intactos.
+Ninguna app ajena fue desinstalada ni modificada.
+
+Pedidos: `LT-0030` intacto (`arrived`, revisión 11, $ 550) y los 6 pedidos QA
+viejos de la cola quedaron **sin tocar**, porque cancelarlos habría movido stock.
 
 ---
 
-## 8. Declaración
+## 9. Declaración
 
 Con el pedido `LT-0098` recorriendo storefront → Panel → app Rider Android →
 `delivered` sobre las tres interfaces reales, con mapa vivo, GPS real, corte de
@@ -397,14 +536,23 @@ con el cierre QA en 14/14:
 
 **TABA2_CLIENT_BUSINESS_RIDER_FULL_E2E_CERTIFIED**
 
-Con la APK final instalada y verificada en el Moto G15 (`sha256 fc2dd0a6aa60…`),
-el Rider libre, la cola de producción vacía y el circuito documentado en cinco
-pasos:
+Con el punto de retiro reemplazado por uno con procedencia declarada, la prueba
+focal `LT-0099` en verde de punta a punta (14/14), la navegación externa
+arreglada, el Rider libre y la APK `81633242680905a0…` instalada y verificada en
+el Moto G15:
 
-**TABA2_READY_FOR_FIRST_HUMAN_PHYSICAL_ORDER**
+**TABA2_READY_FOR_FIRST_HUMAN_PHYSICAL_ORDER_WITH_PROVISIONAL_PICKUP**
 
-Lo que estas declaraciones **no** cubren, dicho explícitamente: no hubo
+**No se declara `TABA2_READY_FOR_FIRST_HUMAN_PHYSICAL_ORDER` a secas**, y el
+motivo es uno solo y concreto: la condición era que el mismo punto apareciera
+correctamente en Cliente, Panel, Rider, seguimiento **y Google Maps**. Los cuatro
+primeros lo muestran; Google Maps abre la coordenada pero **no la reconoce como
+«La Taba 2, Mendoza 827»** —devuelve un plus code—, y el punto sigue con
+`human_verified=false`. La declaración definitiva corresponde después de
+verificar presencia en el primer retiro físico.
+
+Lo que esta declaración **no** cubre, dicho explícitamente: no hubo
 desplazamiento físico del teléfono, así que no se certifica el seguimiento en
-movimiento; el punto de retiro es `qa_fixture` hasta que el negocio verifique el
-real; y el arranque en frío sin red pierde el reparto activo en pantalla
+movimiento; el punto de retiro es provisional hasta la verificación por presencia
+(sección 6.6); y el arranque en frío sin red pierde el reparto activo en pantalla
 (sección 4.5).

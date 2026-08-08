@@ -7,70 +7,70 @@
   "steps": [
     {
       "name": "Levantando el clúster de origen",
-      "at": "2026-08-07T07:58:41.231Z",
+      "at": "2026-08-08T08:22:03.568Z",
       "detail": "public.ecr.aws/supabase/postgres:17.6.1.147"
     },
     {
       "name": "Reconstrucción desde cero",
-      "at": "2026-08-07T07:58:56.890Z",
-      "detail": "60 migraciones replicadas",
-      "migrations": 60,
-      "durationMs": 10023
+      "at": "2026-08-08T08:23:14.111Z",
+      "detail": "63 migraciones replicadas",
+      "migrations": 63,
+      "durationMs": 24329
     },
     {
       "name": "Escenario sintético cargado",
-      "at": "2026-08-07T07:58:57.056Z",
+      "at": "2026-08-08T08:23:14.465Z",
       "detail": "cero datos humanos"
     },
     {
       "name": "Contrato operativo verificado antes del backup",
-      "at": "2026-08-07T07:58:57.384Z"
+      "at": "2026-08-08T08:23:15.238Z"
     },
     {
       "name": "Backup tomado",
-      "at": "2026-08-07T07:58:57.866Z",
-      "detail": "0.05 MB · sha256 105d5fd994599a41…",
-      "bytes": 47255,
-      "dumpSha256": "105d5fd994599a41fc4daa45525dca8a17bb6284e22d2a7ddd5ac26a5c8d8539",
+      "at": "2026-08-08T08:23:21.430Z",
+      "detail": "0.05 MB · sha256 fda2f80848645ccd…",
+      "bytes": 47252,
+      "dumpSha256": "fda2f80848645ccd782b5eb834e4c75b1b063572d075b4cedcf2fdc0f256aa1c",
       "schemas": [
         "public",
         "auth",
         "storage"
       ],
-      "durationMs": 202
+      "durationMs": 1692
     },
     {
       "name": "Levantando el clúster de destino",
-      "at": "2026-08-07T07:58:57.867Z",
+      "at": "2026-08-08T08:23:21.431Z",
       "detail": "proyecto de recuperación"
     },
     {
       "name": "Esquema del destino reconstruido",
-      "at": "2026-08-07T07:59:12.921Z",
-      "detail": "60 migraciones",
-      "durationMs": 9332
+      "at": "2026-08-08T08:23:52.546Z",
+      "detail": "63 migraciones",
+      "durationMs": 12195
     },
     {
       "name": "Restauración completada",
-      "at": "2026-08-07T07:59:14.350Z",
-      "detail": "176 ms",
-      "durationMs": 176
+      "at": "2026-08-08T08:23:55.025Z",
+      "detail": "328 ms",
+      "durationMs": 328
     },
     {
       "name": "Contenido idéntico verificado",
-      "at": "2026-08-07T07:59:14.599Z",
+      "at": "2026-08-08T08:23:55.324Z",
       "detail": "69 tablas comparadas",
       "tables": 69,
-      "contentSha256": "665234adbc726dcecac58925281e26f476b356a122132c31788d9afd83d101d0"
+      "contentSha256": "7f8b5b12ae80afb39c6f35fddddad8f7920265b8f957a62904bf5c7f883f8d18"
     },
     {
       "name": "Contrato operativo verificado sobre el proyecto recuperado",
-      "at": "2026-08-07T07:59:14.941Z"
+      "at": "2026-08-08T08:23:55.794Z"
     }
   ],
   "rebuildFromMigrations": {
     "ok": true,
-    "migrations": 60
+    "migrations": 63
   },
   "contractBeforeBackup": {
     "ok": true
@@ -83,5 +83,5 @@
     "ok": true
   },
   "ok": true,
-  "durationMs": 33711
+  "durationMs": 112228
 }

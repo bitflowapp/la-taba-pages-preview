@@ -589,20 +589,47 @@ pasos:
 3. **Usuario Rider** — `qa-rider-2-staging@local.taba`, **ya con la sesión
    abierta en el teléfono**: no hace falta volver a entrar. Es importante que sea
    **ése** y no `qa-rider-staging`, que tiene `LT-0030` tomado y no se toca.
-4. **Producto** — **Red Bull Energy Drink**, 250 ml, **$ 3.576**, stock **91**.
-   Real y **sin alcohol**. Pago **TEST**: no se mueve dinero real.
-5. **Recorrido** — retirás en **Mendoza 827** y entregás donde tu pareja cargue
-   la dirección. En el mapa vas a ver los dos puntos; al llegar, ella te dicta
-   el código de 4 dígitos que ve en su seguimiento.
+4. **Producto** — **Red Bull Energy Drink**, 250 ml, **$ 3.576**, stock **87**.
+   Real y **sin alcohol**. Pago **TEST**: no se mueve dinero real. Total esperado
+   en pantalla: **$ 3.726** (producto + envío).
+5. **Retiro y cierre** — retirás en **Mendoza 827**. Confirmá el retiro
+   **parado en la puerta del local**: ese es el momento en que se mide el punto
+   real (sección 6.6). Al llegar al cliente tocás **«Llegué»** y ella te dicta el
+   **código de 4 dígitos** que ve en su seguimiento; lo escribís y confirmás. Un
+   código equivocado se rechaza y no rompe nada.
 
 **Requisito previo, sin excepción: el teléfono tiene que tener datos móviles**
 (sección 7.5). Hoy no los tiene y por eso este pedido está postergado.
 
-**Estado del alistamiento, verificado el 8/8:** producto activo con stock 91 a
+**Estado del alistamiento, verificado el 8/8:** producto activo con stock 87 a
 $ 3.576; Rider libre (0 pedidos en vuelo) y con sesión viva; punto de retiro
 cargado y dibujándose; APK `ee0032cf81d5…` instalada y coincidente con la
-construida; Panel operativo; storefront publicado; Mercado Pago en `test`,
-demostrado por digest sin leer el secreto; GPS vivo medido (sección 7.3).
+construida; Panel operativo con sesión guardada; storefront publicado; Mercado
+Pago en `test`, demostrado por digest sin leer el secreto; GPS vivo medido
+(secciones 7.3 y 7.4).
+
+### 8.1 Lo que queda preparado para el día del pedido
+
+En `scripts/primer-pedido-humano/`, con su propio README:
+
+| | |
+| --- | --- |
+| `monitor.mjs` | vigila el pedido en vivo cada 6 s: estado, revisión, stock, GPS (**EN VIVO** = fix de menos de 15 s), outbox, código. **Sólo lectura.** Grita si ARCA emite, si `LT-0030` se mueve, si el pedido se duplica, si hay ubicaciones repetidas, si el stock cae de más, o si al terminar quedan coordenadas, el Rider no queda libre o hay `delivered` sin código |
+| `rollback.mjs` | diagnostica el estado y dice **el camino exacto**; no ejecuta nada solo. `--verificar` comprueba que el rollback quedó limpio |
+| `panel-sesion.mjs` | abre el Panel y deja la sesión guardada, para no rotar la clave del dueño cada vez |
+| `negocio-cancelar.mjs` | retira un pedido desde la UI real del Panel, con motivo obligatorio |
+| `cliente-tracking.mjs` | recupera el código desde el navegador del cliente |
+| `llegada-y-codigo.ps1` · `entregar.ps1` | llegada, rechazo del código incorrecto y entrega, en el Moto |
+
+**Cómo se distingue el pedido humano de los QA viejos.** No es visual, es del
+dato: lo que entra por el storefront publicado queda con `origin='production'`;
+lo sembrado por QA queda con `origin='qa'`. `monitor.mjs` engancha solo el
+`production` vivo más reciente, y **si hubiera más de uno se planta y pide el
+código a mano**: no adivina.
+
+**El rollback, según el momento.** Antes de que lo tomes: el negocio lo retira
+desde el Panel con motivo, y la unidad vuelve al stock por el camino normal. Ya
+tomado: se termina desde la app como una entrega real. Nunca por SQL.
 
 **Dos cosas para tener presentes.**
 
@@ -614,7 +641,8 @@ el GPS bueno y el punto queda cerrado con evidencia.
 La segunda: en la cola del Panel hay **6 pedidos QA viejos** (`LT-0004`,
 `LT-0033`, `LT-0034`, `LT-0035`, `LT-0036`, `LT-0095`). No se cancelaron porque
 cancelar toca stock y el stock está fuera de alcance. **Buscá el pedido por su
-código**, que es el más reciente; no confíes en que sea el único de la lista.
+código**, que es el más reciente; no confíes en que sea el único de la lista. El
+monitor los distingue solo, por `origin` (sección 8.1).
 
 Sobre reinstalar la APK: la advertencia anterior de este documento —«limpiá los
 datos antes de volver a entrar»— **quedó desmentida y se corrige acá**. Se

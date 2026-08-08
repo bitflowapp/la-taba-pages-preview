@@ -10,6 +10,11 @@ import { createSupabasePackingRepository } from './repositories/supabase-packing
 import { createSupabaseOperationsRepository } from './repositories/supabase-operations-repository.js';
 import { createSupabasePaymentsRepository } from './repositories/supabase-payments-repository.js';
 import { getSupabaseClient } from './services/supabase-client.js';
+import {
+  deliveryDestinationSearchUrl,
+  deliveryLocationAccuracyLabel,
+  plottableDeliveryPoint,
+} from './core/delivery-location.js';
 import { resolveRuntimeConfig } from './core/runtime-config.js';
 import { createBusinessPlatform } from './platform/tauri-business-platform.js';
 import { createBusinessPanelController } from './business/business-panel-controller.js';
@@ -1412,6 +1417,7 @@ function businessOrderMarkup(order) {
       ${order.addressDetails?.reference
         ? `<p class="form-hint">Referencia: ${escapeHtml(order.addressDetails.reference)}</p>`
         : ''}
+      ${order.deliveryMode === 'pickup' ? '' : renderDeliveryPoint(order.addressDetails)}
       ${order.notes
         ? `<p class="production-order-notes"><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>`
         : ''}
@@ -1549,6 +1555,7 @@ function riderOrderMarkup(order) {
       ${showPrivateDelivery && order.addressDetails?.reference
         ? `<p class="form-hint">Referencia: ${escapeHtml(order.addressDetails.reference)}</p>`
         : ''}
+      ${showPrivateDelivery ? renderDeliveryPoint(order.addressDetails) : ''}
       <div class="button-row">
         ${next ? `
           <button
@@ -1741,6 +1748,33 @@ function roleLabel(role) {
   if (role === 'staff') return 'Equipo';
   if (role === 'rider') return 'Repartidor';
   return 'Cuenta';
+}
+
+// El punto de entrega en el Panel del negocio y en la vista del repartidor.
+//
+// Este es el Panel que el comercio usa de verdad: mostraba sólo el texto de la
+// dirección, así que la coordenada que el cliente confirmó quedaba guardada en
+// el pedido sin que nadie pudiera verla ni abrirla. El enlace va POR
+// COORDENADAS; mandarle el texto a Google es pedirle que adivine, y con
+// «Mendoza 827» ya resolvió una vez a 175 km.
+//
+// Un pedido anterior al contrato no tiene punto, y eso se dice.
+function renderDeliveryPoint(addressDetails) {
+  const point = plottableDeliveryPoint(addressDetails || {});
+  if (!point) {
+    return '<p class="production-order-point" data-delivery-point="missing">Punto de entrega: sin confirmar</p>';
+  }
+  const confirmado = Boolean(addressDetails?.locationConfirmedAt);
+  const precision = deliveryLocationAccuracyLabel({ accuracyMeters: addressDetails?.geolocationAccuracy });
+  const par = `${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`;
+  const detalle = [confirmado ? 'confirmado por el cliente' : 'sin confirmación del cliente', precision]
+    .filter(Boolean)
+    .join(' · ');
+  return `<p class="production-order-point" data-delivery-point="${confirmado ? 'confirmed' : 'unconfirmed'}">
+    Punto de entrega:
+    <a href="${escapeAttribute(deliveryDestinationSearchUrl(addressDetails))}" target="_blank" rel="noopener noreferrer" data-delivery-point-map>${escapeHtml(par)}</a>
+    <span class="form-hint">${escapeHtml(detalle)}</span>
+  </p>`;
 }
 
 function actionLabel(status, actor) {

@@ -2226,6 +2226,15 @@ function rowToDemoOrder(row = {}) {
       customerNeighborhood: row.delivery_city || row.customer_neighborhood,
       customerReference: row.delivery_reference ?? row.customer_reference,
       customerAddress: row.delivery_address_formatted || row.address_label,
+      // El punto de entrega tiene que VOLVER del pedido, no sólo escribirse.
+      // Sin estas cinco claves la fila traía la coordenada guardada y el mapeo
+      // la descartaba en silencio: el Panel, el Rider y el seguimiento veían
+      // texto y nada más, con el dato al lado en la base.
+      latitude: row.delivery_latitude,
+      longitude: row.delivery_longitude,
+      geolocationAccuracy: row.delivery_geolocation_accuracy,
+      locationSource: row.delivery_location_source,
+      locationConfirmedAt: row.delivery_location_confirmed_at,
     }),
     savedLabel: sanitizeText(row.delivery_address_label, { fallback: '', maxLength: 60 }),
     street: sanitizeText(row.delivery_street, { fallback: '', maxLength: 120 }),

@@ -287,6 +287,33 @@ test('el seguimiento dibuja el destino del pedido real, no sólo el de la sandbo
   assert.match(mapView, /order\.deliveryMode === 'pickup'\) return null/);
 });
 
+test('el punto VUELVE del pedido guardado, no sólo se escribe', async () => {
+  // Defecto medido en staging: la fila traía delivery_latitude y el mapeo de
+  // lectura armaba `addressDetails` a mano sin las coordenadas, así que el
+  // Panel, el Rider y el seguimiento veían texto y nada más con el dato al lado
+  // en la base. Se fija el camino de LECTURA, que es el que se había quedado.
+  const repositorio = fs.readFileSync(path.join(root, 'js', 'repositories', 'supabase_order_repository.js'), 'utf8');
+  const mapeo = repositorio.slice(
+    repositorio.indexOf('function rowToDemoOrder'),
+    repositorio.indexOf('function rowToDemoOrder') + 2600,
+  );
+  for (const clave of [
+    'latitude: row.delivery_latitude',
+    'longitude: row.delivery_longitude',
+    'geolocationAccuracy: row.delivery_geolocation_accuracy',
+    'locationSource: row.delivery_location_source',
+    'locationConfirmedAt: row.delivery_location_confirmed_at',
+  ]) {
+    assert.ok(mapeo.includes(clave), `el mapeo de lectura descarta ${clave}`);
+  }
+
+  // Y el Panel que el comercio usa de verdad lo muestra.
+  const panelProductivo = fs.readFileSync(path.join(root, 'js', 'production-operations.js'), 'utf8');
+  assert.match(panelProductivo, /function renderDeliveryPoint\(addressDetails\)/);
+  assert.match(panelProductivo, /deliveryDestinationSearchUrl\(addressDetails\)/);
+  assert.match(panelProductivo, /Punto de entrega: sin confirmar/);
+});
+
 test('el checkout no deja elegir una dirección sin punto confirmado', () => {
   assert.match(checkoutView, /data-profile-block="no-confirmed-location"/);
   assert.match(checkoutView, /hasConfirmedDeliveryLocation\(normalizeCustomerAddress\(address\)\)/);

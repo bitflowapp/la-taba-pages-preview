@@ -25,9 +25,11 @@ puede llamarse verificado.
 | Pedido certificado | **`LT-0098`** — Red Bull Energy Drink, real, **sin alcohol**, $ 3.726, pago Mercado Pago **TEST** aprobado (op. `171665077885`) |
 | Recorrido | storefront → pedido → Panel → accepted → preparing → ready → app Rider → claim → retiro → en camino → GPS → llegada → **código incorrecto rechazado** → código correcto → **`delivered`** |
 | Novedad | primer pedido del proyecto con **los dos puntos del mapa** en su instantánea, y primer mapa del Rider que dibuja el local sobre calles reales de Neuquén |
-| Defectos cerrados | **7**, incluidos el que dejaba a la app Rider en la pantalla de ingreso con la sesión viva y el que la dejaba sin destino al abrir Google Maps |
-| Cierre QA | **14/14** verificaciones, dos veces: `LT-0098` y `LT-0099` |
+| Defectos cerrados | **9**, incluidos el que dejaba a la app Rider en la pantalla de ingreso con la sesión viva, el que la dejaba sin destino al abrir Google Maps y los **dos** que hacían que el GPS publicara una sola posición por entrega (sección 7) |
+| Cierre QA | **14/14** verificaciones, cinco veces: `LT-0098`, `LT-0099`, `LT-0100`, `LT-0101` y `LT-0102` |
 | Punto de retiro | ya no es `qa_fixture`: `-38.946054, -68.053236`, origen `public_directory_cross_checked`, **provisional** hasta verificarlo por presencia (sección 6) |
+| GPS en vivo | **arreglado y medido**: cadencia 12,44 s, latencia Moto → backend 0,21 s, precisión 11,7 m. Con el equipo **quieto**: no se afirma desplazamiento (sección 7) |
+| Bloqueo abierto | el Moto G15 **no tiene SIM**. Sin datos móviles no hay reparto real con seguimiento en vivo (sección 7.4) |
 | Producción | intacta. ARCA sin emisión. `LT-0030` idéntico |
 
 ---
@@ -465,7 +467,95 @@ por encima **no se sobrescribe nada** y queda marcado
 
 ---
 
-## 7. Primer pedido humano físico
+## 7. El GPS en vivo: dos defectos que nadie había visto
+
+Todo lo anterior se certificó con el mapa dibujando pines. Ninguna de esas
+corridas miró lo que el proveedor de ubicación del sistema estaba haciendo de
+verdad, y ahí había un agujero grande: **la app publicaba una sola posición por
+entrega y después nada, para siempre**. El cliente veía al Rider congelado en la
+puerta del local todo el viaje. Eso explica, hacia atrás, los «3 puntos
+publicados» de `LT-0098` y `LT-0099`: no era una cadencia, era el arranque y dos
+rebotes de ciclo de vida.
+
+### 7.1 El muestreo se apagaba solo
+
+`LocationSampler` decía en su propio comentario que cambiaba de perfil *«only
+after a stable movement classification»*. Clasificaba con **la primera muestra**.
+Y un reparto empieza siempre con el Rider parado —acaba de retirar el pedido—,
+así que degradaba siempre, en todas las entregas.
+
+El perfil degradado pedía además **35 m de desplazamiento mínimo**.
+`minUpdateDistance` no filtra lo que llega: es una condición para que el
+proveedor entregue algo. Con el equipo quieto no entregaba nada. En
+`dumpsys location` se ve el alta a las `20:29:41.741` y la **baja 1,23 s
+después**, apenas llegó el primer fix.
+
+Arreglado en `2457d75`: hacen falta tres clasificaciones quietas seguidas para
+bajar de perfil, se sube al primer indicio de movimiento, y ningún perfil exige
+desplazamiento. El ahorro del perfil quieto pasó a ser la cadencia.
+
+### 7.2 La revisión congelada
+
+Con eso arreglado el seguimiento **seguía cortándose**. El último punto fue a las
+`00:39:38`; ocho segundos después, en el mismo pedido, hay un
+`order.tracking_access_recovered`.
+
+El disparador de `orders` sube la revisión ante **cualquier** cambio de la fila.
+El actor de seguimiento la llevaba congelada desde que arrancaba el recorrido, y
+desde el primer cambio el backend rechaza toda publicación con `code: 'stale'`,
+que el cliente mapea como reintentable y reintenta para siempre. Al Rider le
+muestra **«Sin conexión» con la red intacta**: en la misma corrida la
+confirmación de entrega pasó sin problemas por esa misma red.
+
+Lo que mueve la revisión durante un reparto no es una rareza. Es el propio
+**«Llegué»** del Rider, y es **el cliente abriendo su seguimiento**, que es justo
+lo que una persona hace mientras espera el pedido.
+
+El servidor ya devolvía la revisión vigente en el rechazo; el cliente la tiraba.
+Arreglado en `fd756dc`: se propaga, se distingue como `REVISION_MOVED` y el actor
+la adopta y reintenta en el acto. Sólo hacia adelante: una revisión que no avanza
+detiene el seguimiento en vez de hacerlo girar en el lugar.
+
+### 7.3 Lo medido, con el equipo QUIETO
+
+41 puntos seguidos sobre `LT-0102`, sin un solo hueco, mientras el cliente
+recuperaba su seguimiento dos veces:
+
+| | |
+| --- | --- |
+| Cadencia | mediana **12,44 s** (perfil activo 10 s, quieto 12 s) |
+| Latencia Moto → backend | mediana **0,21 s**, máximo 0,58 s |
+| Precisión | mediana **11,7 m** (8,5 a 20,0 m) |
+| Salto entre fixes | mediana 0,93 m — **ruido de GPS: el teléfono no se movió** |
+| Pantalla apagada | 8 publicaciones seguidas sin perder cadencia |
+| Tras `delivered` | 27 puntos → **0**, purgados por el trigger |
+| Revisiones en los puntos guardados | **8, 9 y 10** — el actor las adoptó en vivo |
+
+La cadencia quieta quedó en **12 s y no en 30** porque el seguimiento del cliente
+llama «vivo» a un fix de hasta 15 s (`GPS_LOCATION_FRESH_MS`). Medido con 30 s:
+la pantalla del cliente alternaba entre «última ubicación» y «ubicación
+temporalmente no disponible». Ese techo lo pone el consumidor, no una preferencia
+de batería, y quedó fijado en un test.
+
+**No se midió desplazamiento.** El teléfono estuvo quieto todo el tiempo y no se
+afirma movimiento. La prueba de movimiento queda pendiente en
+`HUMAN_CHECKPOINT_SAFE_GPS_MOVEMENT`.
+
+### 7.4 El bloqueo que no es de software
+
+**El Moto G15 no tiene SIM.** `slot 0: N/A`, `defaultDataSubId=-1`, y ninguna
+interfaz móvil registró tráfico nunca: el equipo siempre estuvo en el Wi‑Fi de la
+casa. Apenas sale a la calle se queda sin red. Sin datos móviles no hay
+seguimiento en vivo durante un reparto real, ni forma de confirmar el código en
+la puerta del cliente.
+
+Todo lo de esta sección está probado sobre Wi‑Fi. El primer pedido humano queda
+**postergado hasta que el teléfono tenga datos** —SIM propia o hotspot de otro
+equipo—, por decisión explícita.
+
+---
+
+## 8. Primer pedido humano físico
 
 Todo lo técnico está probado sobre este mismo teléfono. Estos son los cinco
 pasos:
@@ -485,10 +575,14 @@ pasos:
    la dirección. En el mapa vas a ver los dos puntos; al llegar, ella te dicta
    el código de 4 dígitos que ve en su seguimiento.
 
-**Estado del alistamiento, verificado hoy:** producto activo con stock; Rider
-libre (0 pedidos en vuelo) y con sesión viva; punto de retiro cargado y
-dibujándose; APK `81633242680905a0…` instalada y coincidente con la construida;
-mapa, GPS y código probados sobre `LT-0099`.
+**Requisito previo, sin excepción: el teléfono tiene que tener datos móviles**
+(sección 7.4). Hoy no los tiene y por eso este pedido está postergado.
+
+**Estado del alistamiento, verificado el 8/8:** producto activo con stock 91 a
+$ 3.576; Rider libre (0 pedidos en vuelo) y con sesión viva; punto de retiro
+cargado y dibujándose; APK `ee0032cf81d5…` instalada y coincidente con la
+construida; Panel operativo; storefront publicado; Mercado Pago en `test`,
+demostrado por digest sin leer el secreto; GPS vivo medido (sección 7.3).
 
 **Dos cosas para tener presentes.**
 
@@ -510,7 +604,7 @@ sino el defecto de la sección 4.2, ya arreglado. **No hace falta borrar nada.**
 
 ---
 
-## 8. Lo que no se tocó
+## 9. Lo que no se tocó
 
 Producción, ARCA (`services/arca-fiscal-bridge` sin cambios), `LT-0030`,
 `LT-0033` / `LT-0034` / `LT-0035`, los locks ajenos, las ramas fuente del Rider
@@ -527,7 +621,7 @@ viejos de la cola quedaron **sin tocar**, porque cancelarlos habría movido stoc
 
 ---
 
-## 9. Declaración
+## 10. Declaración
 
 Con el pedido `LT-0098` recorriendo storefront → Panel → app Rider Android →
 `delivered` sobre las tres interfaces reales, con mapa vivo, GPS real, corte de
@@ -551,8 +645,15 @@ primeros lo muestran; Google Maps abre la coordenada pero **no la reconoce como
 `human_verified=false`. La declaración definitiva corresponde después de
 verificar presencia en el primer retiro físico.
 
-Lo que esta declaración **no** cubre, dicho explícitamente: no hubo
+**Tampoco se declara `TABA2_READY_FOR_FIRST_HUMAN_PHYSICAL_ORDER_LIVE_GPS.**
+El seguimiento en vivo quedó arreglado y medido (sección 7.3), pero **sobre
+Wi‑Fi y con el teléfono quieto**. El Moto G15 no tiene SIM: en un reparto real se
+queda sin red apenas sale a la calle, y ahí no hay seguimiento en vivo ni forma
+de confirmar el código en la puerta. El primer pedido humano queda **postergado
+hasta que el teléfono tenga datos móviles**, por decisión explícita.
+
+Lo que estas declaraciones **no** cubren, dicho explícitamente: no hubo
 desplazamiento físico del teléfono, así que no se certifica el seguimiento en
-movimiento; el punto de retiro es provisional hasta la verificación por presencia
-(sección 6.6); y el arranque en frío sin red pierde el reparto activo en pantalla
-(sección 4.5).
+movimiento y queda pendiente `HUMAN_CHECKPOINT_SAFE_GPS_MOVEMENT`; el punto de
+retiro es provisional hasta la verificación por presencia (sección 6.6); y el
+arranque en frío sin red pierde el reparto activo en pantalla (sección 4.5).

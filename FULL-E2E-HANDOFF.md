@@ -26,9 +26,9 @@ puede llamarse verificado.
 | Recorrido | storefront → pedido → Panel → accepted → preparing → ready → app Rider → claim → retiro → en camino → GPS → llegada → **código incorrecto rechazado** → código correcto → **`delivered`** |
 | Novedad | primer pedido del proyecto con **los dos puntos del mapa** en su instantánea, y primer mapa del Rider que dibuja el local sobre calles reales de Neuquén |
 | Defectos cerrados | **9**, incluidos el que dejaba a la app Rider en la pantalla de ingreso con la sesión viva, el que la dejaba sin destino al abrir Google Maps y los **dos** que hacían que el GPS publicara una sola posición por entrega (sección 7) |
-| Cierre QA | **14/14** verificaciones, cinco veces: `LT-0098`, `LT-0099`, `LT-0100`, `LT-0101` y `LT-0102` |
+| Cierre QA | **14/14** verificaciones, seis veces: `LT-0098` a `LT-0103` |
 | Punto de retiro | ya no es `qa_fixture`: `-38.946054, -68.053236`, origen `public_directory_cross_checked`, **provisional** hasta verificarlo por presencia (sección 6) |
-| GPS en vivo | **arreglado y medido**: cadencia 12,44 s, latencia Moto → backend 0,21 s, precisión 11,7 m. Con el equipo **quieto**: no se afirma desplazamiento (sección 7) |
+| GPS en vivo | **arreglado y medido**: cadencia 12,44 s, latencia Moto → backend 0,21 s, precisión 11,7 m, cliente viendo **«Ubicación en vivo · hace 2–5 s»**, corte de red de 90 s recuperado con **exactly-once**. Con el equipo **quieto**: no se afirma desplazamiento (sección 7) |
 | Bloqueo abierto | el Moto G15 **no tiene SIM**. Sin datos móviles no hay reparto real con seguimiento en vivo (sección 7.4) |
 | Producción | intacta. ARCA sin emisión. `LT-0030` idéntico |
 
@@ -541,7 +541,27 @@ de batería, y quedó fijado en un test.
 afirma movimiento. La prueba de movimiento queda pendiente en
 `HUMAN_CHECKPOINT_SAFE_GPS_MOVEMENT`.
 
-### 7.4 El bloqueo que no es de software
+### 7.4 Lo que ve el cliente, y qué pasa cuando se cae la red
+
+Sobre `LT-0103`, con la APK ya corregida:
+
+| Verificación | Resultado |
+| --- | --- |
+| Seguimiento del cliente | **«Ubicación en vivo · hace 2–5 s»** en 7 de 10 lecturas seguidas; las otras 3 fueron fallos de lectura del arnés, no estados del producto |
+| Etiqueta «en vivo» vs «última ubicación» | la primera exige un fix de menos de 15 s. Con la cadencia vieja de 30 s **nunca** se alcanzaba |
+| Corte de red de 90 s | la app sigue muestreando y encola: «Sin conexión: 6 ubicaciones pendientes». El servidor no se mueve |
+| Recuperación | **sí**: al volver la red drena y el punto más nuevo vuelve a tener **1,6 a 5,4 s** |
+| Exactly-once | **PASS** sobre 59 puntos: 0 `client_request_id` repetidos, 0 secuencias repetidas, 0 capturas repetidas |
+| Background → foreground | `RESUME_AFTER_SCREEN_AND_BACKGROUND` **PASS** |
+| Recentrar / encuadre | el control está, es `clickable`, y responde. **Verificado a mano**: el arnés lo dio por no accionable (`MAP_CONTROL_NO_EFFECT`), que es fragilidad suya con la hoja rediseñada, no un defecto |
+| Abrir Google Maps y volver | abre por **coordenada** (`-38.953900, -68.059600`, la del cliente, correcta para la etapa) con «Cómo llegar · 5 min», y al volver el reparto sigue entero con el servicio en primer plano |
+| Cierre QA | **14/14** |
+
+El corte de red importa más de lo que parece: es el modelo de una cuadra sin
+señal. Antes de arreglar la revisión, un corte dejaba el seguimiento muerto para
+siempre; ahora se recupera solo y sin duplicar nada.
+
+### 7.5 El bloqueo que no es de software
 
 **El Moto G15 no tiene SIM.** `slot 0: N/A`, `defaultDataSubId=-1`, y ninguna
 interfaz móvil registró tráfico nunca: el equipo siempre estuvo en el Wi‑Fi de la
@@ -576,7 +596,7 @@ pasos:
    el código de 4 dígitos que ve en su seguimiento.
 
 **Requisito previo, sin excepción: el teléfono tiene que tener datos móviles**
-(sección 7.4). Hoy no los tiene y por eso este pedido está postergado.
+(sección 7.5). Hoy no los tiene y por eso este pedido está postergado.
 
 **Estado del alistamiento, verificado el 8/8:** producto activo con stock 91 a
 $ 3.576; Rider libre (0 pedidos en vuelo) y con sesión viva; punto de retiro

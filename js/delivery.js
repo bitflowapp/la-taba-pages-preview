@@ -33,6 +33,11 @@ import {
   normalizeDeliveryCode,
 } from './core/delivery-code.js';
 import { normalizeOrderAddressDetails } from './core/address.js';
+import {
+  deliveryDestinationDirectionsUrl,
+  deliveryLocationAccuracyLabel,
+  plottableDeliveryPoint,
+} from './core/delivery-location.js';
 import { dateTime, getState, money, statusClass, statusLabel } from './state.js';
 import { getDataMode, getOrderRepository, isPersistentOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { bagGlyph, escapeHtml, renderWithStableRealMap } from './ui.js';
@@ -151,6 +156,7 @@ export function renderDeliveryPanel() {
           <span class="rider-label">Dirección</span>
           <p>${escapeHtml(destinationLabel)}</p>
           ${address.reference ? `<p class="rider-reference">Referencia: ${escapeHtml(address.reference)}</p>` : ''}
+          ${renderRiderDeliveryPoint(address)}
           <div class="rider-copy-row">
             <button class="ghost-button compact" type="button" data-copy-address="${escapeHtml(addressText)}">Copiar dirección</button>
           </div>
@@ -259,6 +265,36 @@ function formatRealtimeTime(value) {
 // Accesos rápidos del rider (referencia visual de la maqueta): abrir la ruta en
 // el mapa nativo (búsqueda real por la dirección textual, sin ruta inventada
 // dentro de la app) y llamar al cliente.
+// El punto exacto se muestra DESPUÉS del claim, junto a la dirección: antes de
+// tomar la entrega el Rider ve sólo la zona general. Un pedido sin punto lo
+// declara en vez de dejar al Rider adivinando por qué no hay pin.
+function renderRiderDeliveryPoint(address) {
+  const point = plottableDeliveryPoint(address);
+  if (!point) {
+    return '<p class="rider-delivery-point is-missing" data-rider-delivery-point="missing">Sin punto de entrega confirmado: guiate por la dirección.</p>';
+  }
+  const accuracy = deliveryLocationAccuracyLabel({ accuracyMeters: address?.geolocationAccuracy });
+  return `<p class="rider-delivery-point" data-rider-delivery-point="${address?.locationConfirmedAt ? 'confirmed' : 'unconfirmed'}">
+    Punto de entrega ${escapeHtml(`${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`)}${accuracy ? ` · ${escapeHtml(accuracy)}` : ''}
+  </p>`;
+}
+
+/**
+ * Ruta del Rider.
+ *
+ * Con punto de entrega se navega POR COORDENADAS. Mandar el texto de la
+ * dirección obliga a Google a geocodificarlo, y ese mismo mecanismo ya mandó a
+ * alguien a Zapala —175 km— por una dirección de Neuquén Capital. El texto
+ * queda sólo como último recurso para pedidos anteriores al contrato, que no
+ * tienen punto: mejor una búsqueda imperfecta que ninguna.
+ */
+export function riderNavigationUrl(address, destinationLabel = '') {
+  const point = plottableDeliveryPoint(address);
+  if (point) return deliveryDestinationDirectionsUrl(address);
+  const query = encodeURIComponent([destinationLabel, address?.reference].filter(Boolean).join(' '));
+  return query ? `https://www.google.com/maps/dir/?api=1&destination=${query}` : '';
+}
+
 function renderRiderQuickActions(order, destinationLabel, address) {
   if (isShowcaseMode()) {
     return `
@@ -268,8 +304,7 @@ function renderRiderQuickActions(order, destinationLabel, address) {
       </div>`;
   }
 
-  const navQuery = encodeURIComponent([destinationLabel, address?.reference].filter(Boolean).join(' '));
-  const navUrl = navQuery ? `https://www.google.com/maps/dir/?api=1&destination=${navQuery}` : '';
+  const navUrl = riderNavigationUrl(address, destinationLabel);
   const phone = String(order.customerPhone || '').trim();
   if (!navUrl && !phone) return '';
   return `
@@ -672,13 +707,12 @@ function relativeAgeLabel(value) {
 
 // Escenario de mapa del rider. En producción sólo se monta con GPS real; en
 // sandbox también se habilita con el recorrido geográfico aislado. "Navegar"
-// abre el mapa nativo con la dirección textual del cliente.
+// abre el mapa nativo en el PUNTO de entrega confirmado.
 function renderRiderMapStage(order, { sandbox = false } = {}) {
   const showcase = isShowcaseMode();
   const address = normalizeOrderAddressDetails(order);
   const destination = displayDestinationLabel(address.label || order.address);
-  const navQuery = encodeURIComponent([destination, address.reference].filter(Boolean).join(' '));
-  const navUrl = navQuery ? `https://www.google.com/maps/dir/?api=1&destination=${navQuery}` : '';
+  const navUrl = riderNavigationUrl(address, destination);
   const supportDigits = onlyDigits(getBusinessConfig().whatsappNumber);
   const supportUrl = supportDigits ? `https://wa.me/${supportDigits}` : '';
 

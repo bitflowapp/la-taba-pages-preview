@@ -7,7 +7,7 @@ import { clearCustomerProfileForTests } from '../js/core/customer-profile.js';
 import { createOrderFromCheckout } from '../js/orders.js';
 import { resetRepositoryFactoryForTests } from '../js/repositories/repository_factory.js';
 import { setState } from '../js/state.js';
-import { resetState, state } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState, state } from './helpers.mjs';
 
 beforeEach(() => {
   installStorageMock();
@@ -96,6 +96,7 @@ test('reorder: el nuevo pedido queda marcado como pedido repetido real', () => {
 
 function createTestOrder(overrides = {}) {
   return createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente Reorder',
     customerPhone: '2995551212',
     customerStreetAddress: 'Roca 123',

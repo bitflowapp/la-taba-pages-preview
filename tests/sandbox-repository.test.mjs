@@ -8,7 +8,7 @@ import {
   SANDBOX_SCHEMA_VERSION,
 } from '../js/repositories/sandbox_order_repository.js';
 import { getState } from '../js/state.js';
-import { resetState } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState } from './helpers.mjs';
 
 beforeEach(() => resetState());
 
@@ -32,6 +32,7 @@ test('sandbox repository creates an order and rejects a second rider claim', asy
     customerAddress: 'Mendoza 851, Centro',
     customerStreetAddress: 'Mendoza 851',
     customerNeighborhood: 'Centro',
+    ...CONFIRMED_DELIVERY_POINT,
     deliveryMode: 'delivery',
     paymentMethod: 'cash',
   });

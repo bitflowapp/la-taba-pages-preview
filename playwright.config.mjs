@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 
 const httpPort = readPort('TABA_E2E_HTTP_PORT', 8080);
 const relayPort = readPort('TABA_E2E_RELAY_PORT', 18787);
@@ -24,6 +24,21 @@ export default defineConfig({
     serviceWorkers: 'block',
     trace: 'on-first-retry',
   },
+  // El grueso del gate corre en Chromium, como siempre. El paso de confirmación
+  // de ubicación corre ADEMÁS en WebKit móvil: los permisos de geolocalización y
+  // el mapa se comportan distinto en Safari, y ese es el navegador con el que
+  // una parte real de los clientes va a confirmar dónde vive.
+  projects: [
+    {
+      name: 'chromium',
+      use: { browserName: 'chromium' },
+    },
+    {
+      name: 'mobile-webkit',
+      testMatch: /delivery-location-confirmation\.spec\.mjs/,
+      use: { ...devices['iPhone 13'] },
+    },
+  ],
   webServer: [
     {
       // Reuse the native Node server to avoid the cold module-graph failures

@@ -9,6 +9,25 @@ const PROFILE_REGRESSION_PRODUCT_ID = '30000000-0000-4000-8000-000000000001';
 // volver lenta la prueba.
 const PROFILE_RELOAD_HOLD_MS = 750;
 
+// Una dirección de entrega usable tiene punto confirmado. Sin él el checkout la
+// bloquea, que es el contrato; estas pruebas miran OTRA cosa —hidratación,
+// selección, default— así que parten de direcciones ya confirmadas.
+const PUNTO_CONFIRMADO = Object.freeze({
+  latitude: -38.945584,
+  longitude: -68.040579,
+  geolocationAccuracy: 18,
+  locationSource: 'map_pin',
+  locationConfirmedAt: '2026-08-08T18:00:00.000Z',
+});
+
+function otroPuntoConfirmado(index) {
+  return {
+    ...PUNTO_CONFIRMADO,
+    latitude: Number((PUNTO_CONFIRMADO.latitude + index * 0.001).toFixed(6)),
+    longitude: Number((PUNTO_CONFIRMADO.longitude - index * 0.001).toFixed(6)),
+  };
+}
+
 test('checkout productivo recupera direcciones y solicita GPS sólo después del toque', async ({ page }) => {
   const consoleMessages = [];
   page.on('console', (message) => consoleMessages.push(message.text()));
@@ -29,8 +48,8 @@ test('checkout productivo recupera direcciones y solicita GPS sólo después del
         body: JSON.stringify({
           profile: { id: CUSTOMER_ID, name: 'Cliente QA', phone: '299 555 0000' },
           addresses: [
-            { id: '20000000-0000-4000-8000-000000000001', label: 'Casa', formattedAddress: 'Roca 123, Neuquén', street: 'Roca', streetNumber: '123', city: 'Neuquén', reference: 'Portón negro', isDefault: true, source: 'manual' },
-            { id: '20000000-0000-4000-8000-000000000002', label: 'Trabajo', formattedAddress: 'Mitre 456, Neuquén', street: 'Mitre', streetNumber: '456', city: 'Neuquén', isDefault: false, source: 'manual' },
+            { id: '20000000-0000-4000-8000-000000000001', label: 'Casa', formattedAddress: 'Roca 123, Neuquén', street: 'Roca', streetNumber: '123', city: 'Neuquén', reference: 'Portón negro', isDefault: true, ...PUNTO_CONFIRMADO },
+            { id: '20000000-0000-4000-8000-000000000002', label: 'Trabajo', formattedAddress: 'Mitre 456, Neuquén', street: 'Mitre', streetNumber: '456', city: 'Neuquén', isDefault: false, ...otroPuntoConfirmado(1) },
           ],
         }),
       });
@@ -131,7 +150,7 @@ test('checkout actualiza sólo el default automático y preserva una selección 
       streetNumber: '123',
       city: 'Neuquén',
       isDefault: true,
-      source: 'manual',
+      ...PUNTO_CONFIRMADO,
     },
     {
       id: '20000000-0000-4000-8000-000000000002',
@@ -141,7 +160,7 @@ test('checkout actualiza sólo el default automático y preserva una selección 
       streetNumber: '456',
       city: 'Neuquén',
       isDefault: false,
-      source: 'manual',
+      ...otroPuntoConfirmado(1),
     },
   ];
 

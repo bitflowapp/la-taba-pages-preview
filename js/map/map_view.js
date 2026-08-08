@@ -3,6 +3,8 @@ import { getActiveOrder } from '../orders.js';
 import { getOrderRepository, isSandboxOrderRepository } from '../repositories/repository_factory.js';
 import { getSandboxMapScenario, sandboxMarkerPointAtProgress } from '../sandbox/sandbox_map_scenario.js';
 import { RIDER_LOCATION_SOURCES } from './map_config.js';
+import { normalizeOrderAddressDetails } from '../core/address.js';
+import { plottableDeliveryPoint } from '../core/delivery-location.js';
 import {
   chooseRiderLocation,
   hasKnownSharedGpsLocation,
@@ -104,7 +106,10 @@ function readMapViewState(container) {
   const sandbox = isSandboxOrderRepository(getOrderRepository()) && container.dataset.mapSource === 'sandbox';
   const sandboxScenario = sandbox ? getSandboxMapScenario() : null;
   const riderLocation = order ? getRiderLocation(order, sim, sandbox) : null;
-  const destination = sandboxScenario?.destination || null;
+  // El destino real del pedido. Antes sólo existía en la sandbox, así que el
+  // seguimiento de un pedido de verdad no podía dibujar a dónde iba la entrega
+  // aunque el cliente hubiera confirmado el punto.
+  const destination = sandboxScenario?.destination || orderDestinationPoint(order);
   const store = sandboxScenario?.store || null;
   const points = sandboxScenario?.route || [];
   const preferredTheme = 'light';
@@ -131,6 +136,17 @@ function readMapViewState(container) {
     store,
     sandboxScenario,
   };
+}
+
+/**
+ * Punto de entrega del pedido en la forma que consume el mapa. Sólo se dibuja
+ * un punto que el pedido TRAE: acá no se geocodifica ni se estima nada.
+ */
+function orderDestinationPoint(order) {
+  if (!order || order.deliveryMode === 'pickup') return null;
+  const point = plottableDeliveryPoint(normalizeOrderAddressDetails(order));
+  if (!point) return null;
+  return { lat: point.latitude, lng: point.longitude, label: 'Destino de entrega' };
 }
 
 export function ensureTrackingMap(container, view) {
@@ -180,7 +196,9 @@ export function ensureTrackingMap(container, view) {
     sandboxGeometryVerified,
     route: showSandboxRoute ? view.points : null,
     store: sandboxGeometryVerified ? view.store : null,
-    destination: sandboxGeometryVerified ? view.destination : null,
+    // El destino se dibuja también fuera de la sandbox cuando el pedido trae su
+    // punto: es un dato del cliente, no geometría inventada.
+    destination: view.destination,
     center: view.riderLocation || (sandboxGeometryVerified ? view.store : null),
     zoom: view.sandbox ? 14.5 : 16,
     cooperativeGestures: view.role === 'tracking',

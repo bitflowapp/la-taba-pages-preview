@@ -16,7 +16,7 @@ import { createOrderFromCheckout } from '../js/orders.js';
 import { renderBusinessDashboard } from '../js/business.js';
 import { BUSINESS_CONFIG, STORAGE_KEYS } from '../js/config.js';
 import { getState, normalizeOrderForStorage, setState } from '../js/state.js';
-import { resetState, state } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState, state } from './helpers.mjs';
 
 beforeEach(() => {
   installStorageMock();
@@ -244,6 +244,7 @@ test('Supabase sigue opt-in: el modo default es preview local', () => {
 
 function createTestOrder(overrides = {}) {
   return createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente QA',
     customerPhone: '2995550000',
     customerStreetAddress: 'Roca 123',

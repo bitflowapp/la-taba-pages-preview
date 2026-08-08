@@ -6,7 +6,7 @@ import { setState, getState } from '../js/state.js';
 import { unlockAdmin, lockAdmin, handleBusinessAction, getActiveOrders, getLowStockProducts, confirmOrderCancellation } from '../js/business.js';
 import { createOrderFromCheckout } from '../js/orders.js';
 import { addToCart } from '../js/cart.js';
-import { resetState, makeTarget } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState, makeTarget } from './helpers.mjs';
 
 beforeEach(() => resetState());
 
@@ -264,6 +264,7 @@ test('business metrics avoid division by zero with no orders today', () => {
 test('un pedido confirmado entra como activo en el negocio, conserva sus datos y avanza de estado', () => {
   addToCart('qa-gaseosa-cola', 2);
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Walter Cliente',
     customerPhone: '2995551234',
     customerStreetAddress: 'Mendoza 851',

@@ -1,3 +1,4 @@
+import { normalizeDeliveryLocation } from './delivery-location.js';
 import { sanitizeText } from './validators.js';
 
 const ADDRESS_MAX = 180;
@@ -34,6 +35,34 @@ export function normalizeAddressDetails(input = {}) {
   for (const [key, value] of Object.entries(optionalFields)) {
     if (value) normalized[key] = value;
   }
+  // El punto de entrega viaja CON la dirección. Antes se quedaba en la fila del
+  // pedido y no llegaba al dominio, así que el Panel, el Rider y el seguimiento
+  // sólo veían texto aunque la coordenada estuviera guardada al lado.
+  const location = normalizeDeliveryLocation({
+    latitude: source.latitude ?? source.deliveryLatitude ?? source.delivery_latitude,
+    longitude: source.longitude ?? source.deliveryLongitude ?? source.delivery_longitude,
+    locationSource: source.locationSource ?? source.deliveryLocationSource ?? source.delivery_location_source,
+    accuracyMeters: source.geolocationAccuracy ?? source.deliveryGeolocationAccuracy ?? source.delivery_geolocation_accuracy,
+    confirmedAt: source.locationConfirmedAt ?? source.deliveryLocationConfirmedAt ?? source.delivery_location_confirmed_at,
+  });
+  if (location) {
+    normalized.latitude = location.latitude;
+    normalized.longitude = location.longitude;
+    normalized.locationSource = location.locationSource;
+    normalized.locationConfirmedAt = location.confirmedAt;
+    if (location.accuracyMeters != null) normalized.geolocationAccuracy = location.accuracyMeters;
+  } else {
+    // Un pedido anterior al contrato puede traer coordenadas sin confirmación.
+    // Se propagan igual —son el único destino que existe— pero sin afirmar que
+    // alguien las confirmó.
+    const latitude = Number(source.latitude ?? source.deliveryLatitude ?? source.delivery_latitude);
+    const longitude = Number(source.longitude ?? source.deliveryLongitude ?? source.delivery_longitude);
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)
+      && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180) {
+      normalized.latitude = latitude;
+      normalized.longitude = longitude;
+    }
+  }
   return normalized;
 }
 
@@ -45,6 +74,14 @@ export function normalizeOrderAddressDetails(order = {}) {
     neighborhood: order.addressDetails?.neighborhood ?? order.neighborhood ?? order.customerNeighborhood,
     reference: order.addressDetails?.reference ?? order.reference ?? order.customerReference ?? order.deliveryReference,
     label: order.addressDetails?.label ?? order.address ?? order.customerAddress,
+    latitude: order.addressDetails?.latitude ?? order.deliveryLatitude ?? order.delivery_latitude,
+    longitude: order.addressDetails?.longitude ?? order.deliveryLongitude ?? order.delivery_longitude,
+    geolocationAccuracy: order.addressDetails?.geolocationAccuracy
+      ?? order.deliveryGeolocationAccuracy ?? order.delivery_geolocation_accuracy,
+    locationSource: order.addressDetails?.locationSource
+      ?? order.deliveryLocationSource ?? order.delivery_location_source,
+    locationConfirmedAt: order.addressDetails?.locationConfirmedAt
+      ?? order.deliveryLocationConfirmedAt ?? order.delivery_location_confirmed_at,
   });
 }
 

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v50-ubicacion-real';
+const CACHE_NAME = 'la-taba-runtime-v51-ubicacion-confirmada';
 const ASSETS = [
   './',
   './index.html',
@@ -40,6 +40,8 @@ const ASSETS = [
   './js/core/customer-preferences.js',
   './js/core/customer-profile.js',
   './js/core/delivery-code.js',
+  './js/core/delivery-location.js',
+  './js/core/delivery-location-draft.js',
   './js/core/delivery-proof.js',
   './js/core/domain.js',
   './js/core/loyalty.js',
@@ -62,6 +64,7 @@ const ASSETS = [
   './js/sandbox/sandbox_map_scenario.js',
   './js/map/map_config.js',
   './js/map/maplibre_tracking_map.js',
+  './js/map/location_picker_map.js',
   './js/map/map_view.js',
   './js/map/rider_marker.js',
   './js/map/route_geometry.js',
@@ -76,6 +79,7 @@ const ASSETS = [
   './js/cart.js',
   './js/customer-delivery.js',
   './js/customer-profile-view.js',
+  './js/delivery-location-step.js',
   './js/orders.js',
   './js/repositories/demo_order_repository.js',
   './js/repositories/http_order_repository.js',

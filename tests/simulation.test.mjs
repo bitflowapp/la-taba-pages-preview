@@ -27,13 +27,14 @@ import {
   syncSimulationOnStatus,
 } from '../js/simulation.js';
 import { getState, hydrateState } from '../js/state.js';
-import { resetState } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState } from './helpers.mjs';
 
 beforeEach(() => resetState());
 
 function createReadyDeliveryOrder() {
   addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'GPS QA',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -130,6 +131,7 @@ test('hydrateState keeps a simulation only for an active delivery order', () => 
 test('GPS explains insecure contexts honestly (no live sharing without HTTPS)', () => {
   addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'GPS QA',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -386,6 +388,7 @@ test('GPS keeps watcher alive on transient errors before first fix', () => {
 test('GPS cannot start before the business marks the delivery ready', () => {
   addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'GPS QA',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -448,6 +451,7 @@ test('GPS geolocation options adapt to delivery phase', () => {
 test('GPS watchPosition is not duplicated when rider taps GPS twice', () => {
   addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'GPS QA',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',

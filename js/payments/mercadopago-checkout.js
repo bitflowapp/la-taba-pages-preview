@@ -40,6 +40,15 @@ export function buildMercadoPagoCheckoutPayload({
       province: text(values.deliveryProvince),
       postal_code: text(values.deliveryPostalCode),
       source: text(values.deliveryAddressSource || 'manual'),
+      // El punto de entrega viaja con la dirección. Faltaba: con dirección
+      // escrita a mano el pedido de Checkout Pro nacía sin coordenadas aunque
+      // la persona hubiera confirmado el pin, y la instantánea del Rider —que
+      // se toma al crear el pedido y es inmutable— quedaba vacía para siempre.
+      ...coordinate('latitude', values.deliveryLatitude),
+      ...coordinate('longitude', values.deliveryLongitude),
+      ...coordinate('geolocation_accuracy', values.deliveryGeolocationAccuracy),
+      location_source: text(values.deliveryLocationSource),
+      location_confirmed_at: text(values.deliveryLocationConfirmedAt),
     })
     : {};
 
@@ -121,6 +130,15 @@ export function paymentStatusPresentation(checkout = {}) {
 
 function compactObject(value) {
   return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== ''));
+}
+
+// El backend valida las coordenadas como texto con una expresión regular
+// estricta, así que se mandan como número serializado y sólo si son finitas.
+// Un `NaN` o una cadena vacía haría abortar el checkout entero.
+function coordinate(key, value) {
+  const numeric = Number(value);
+  if (value == null || String(value).trim() === '' || !Number.isFinite(numeric)) return {};
+  return { [key]: String(numeric) };
 }
 
 function text(value) {

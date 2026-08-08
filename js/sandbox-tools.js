@@ -1,5 +1,6 @@
 import { addToCart } from './cart.js';
 import { getBusinessConfig } from './core/business-config-store.js';
+import { DEMO_CUSTOMER_DESTINATION } from './core/business-location.js';
 import { isProductOrderable } from './core/catalog-store.js';
 import { getState, setState } from './state.js';
 import { enableGpsTracking, pauseSimulation, startSimulation } from './simulation.js';
@@ -80,6 +81,13 @@ async function createSandboxTestOrder() {
     customerStreetAddress: 'Calle de muestra 123',
     customerNeighborhood: 'Neuquén Capital',
     customerReference: 'Punto de entrega de muestra',
+    // Un delivery necesita punto confirmado, también en la sandbox. El punto es
+    // el destino demo del contrato de ubicación —una plaza, un espacio
+    // público—, así que la muestra nunca señala dónde vive nadie.
+    deliveryLatitude: DEMO_CUSTOMER_DESTINATION.lat,
+    deliveryLongitude: DEMO_CUSTOMER_DESTINATION.lng,
+    deliveryLocationSource: 'map_pin',
+    deliveryLocationConfirmedAt: '2026-08-08T18:00:00.000Z',
     deliveryMode: 'delivery',
     paymentMethod: 'cash',
     customerNotes: 'Pedido de prueba',

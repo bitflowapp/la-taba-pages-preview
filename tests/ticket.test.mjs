@@ -2,13 +2,14 @@ import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
 import { addToCart } from '../js/cart.js';
 import { buildKitchenTicket, createOrderFromCheckout } from '../js/orders.js';
-import { resetState } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState } from './helpers.mjs';
 
 beforeEach(() => resetState());
 
 test('buildKitchenTicket incluye los datos clave para preparar el pedido', () => {
   addToCart('qa-gaseosa-cola', 2);
   const { order } = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente QA',
     customerPhone: '2995550000',
     customerStreetAddress: 'Roca 321',
@@ -34,6 +35,7 @@ test('buildKitchenTicket incluye los datos clave para preparar el pedido', () =>
 test('buildKitchenTicket marca retiro en local sin dirección de envío', () => {
   addToCart('qa-agua-mineral', 1);
   const { order } = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Retiro QA',
     customerPhone: '2995551111',
     customerAddress: '',

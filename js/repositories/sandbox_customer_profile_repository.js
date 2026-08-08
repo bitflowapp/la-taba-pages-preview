@@ -1,4 +1,5 @@
 import { normalizeCustomerAddress } from '../core/customer-addresses.js';
+import { DEMO_CUSTOMER_DESTINATION } from '../core/business-location.js';
 import {
   PROFILE_CHECKOUT_DEFAULT_ADDRESS_COUNT,
   profileCheckoutAddressScenario,
@@ -45,6 +46,21 @@ const SYNTHETIC_ADDRESSES = Object.freeze([
   { label: 'Consultorio', street: 'Santa Fe', streetNumber: '145', city: 'Neuquén Capital', floor: '1', apartment: 'A' },
 ]);
 
+// Punto sintético y estable por posición en la lista. Separarlos ~110 m evita
+// que el detector de duplicados los tome por la misma puerta.
+const SYNTHETIC_POINT_STEP = 0.001;
+const SYNTHETIC_CONFIRMED_AT = '2026-08-08T18:00:00.000Z';
+
+function syntheticConfirmedPoint(index) {
+  return {
+    latitude: Number((DEMO_CUSTOMER_DESTINATION.lat + index * SYNTHETIC_POINT_STEP).toFixed(6)),
+    longitude: Number((DEMO_CUSTOMER_DESTINATION.lng - index * SYNTHETIC_POINT_STEP).toFixed(6)),
+    geolocationAccuracy: 18,
+    locationSource: 'map_pin',
+    locationConfirmedAt: SYNTHETIC_CONFIRMED_AT,
+  };
+}
+
 export function createSandboxCustomerProfileRepository({
   namespace = 'demo',
   storage = defaultStorage(),
@@ -63,7 +79,12 @@ export function createSandboxCustomerProfileRepository({
       ...address,
       id: `${namespace}-address-${String(index + 1).padStart(2, '0')}`,
       isDefault: index === 0,
-      source: 'manual',
+      // Una dirección de entrega necesita punto confirmado, también en la
+      // demostración: sin él el checkout la bloquea, que es justamente el
+      // comportamiento que hay que poder mostrar funcionando. Los puntos son
+      // sintéticos y derivan del destino demo —una plaza, un espacio público—,
+      // así que la demo nunca señala dónde vive nadie.
+      ...syntheticConfirmedPoint(index),
     }));
     return { profile: { ...base }, addresses };
   }

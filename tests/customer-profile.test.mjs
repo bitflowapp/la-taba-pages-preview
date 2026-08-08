@@ -12,7 +12,7 @@ import { createOrderFromCheckout } from '../js/orders.js';
 import { STORAGE_KEYS } from '../js/config.js';
 import { resetRepositoryFactoryForTests } from '../js/repositories/repository_factory.js';
 import { getState, normalizeOrderForStorage } from '../js/state.js';
-import { resetState } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState } from './helpers.mjs';
 
 beforeEach(() => {
   installStorageMock();
@@ -112,6 +112,7 @@ test('customer profile: normaliza pedidos viejos sin campos nuevos', () => {
 
 function createTestOrder(overrides = {}) {
   return createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente QA',
     customerPhone: '2995550000',
     customerStreetAddress: 'Roca 123',

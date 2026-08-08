@@ -11,7 +11,7 @@ import {
   verifyDeliveryCodeValue,
 } from '../js/core/delivery-code.js';
 import { getState, setState } from '../js/state.js';
-import { resetState } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState } from './helpers.mjs';
 
 beforeEach(() => resetState());
 
@@ -32,6 +32,7 @@ test('delivery code: pedidos nuevos nacen con codigo visible y confirmable', () 
   addToCart('qa-gaseosa-cola', 1);
 
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente Codigo',
     customerPhone: '2995550000',
     customerStreetAddress: 'Roca 321',
@@ -61,6 +62,7 @@ test('delivery code: retiro en local no crea codigo de rider', () => {
   addToCart('qa-gaseosa-cola', 1);
 
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente Retiro',
     customerPhone: '2995552222',
     deliveryMode: 'pickup',

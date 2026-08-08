@@ -13,7 +13,7 @@ import {
   subscribe,
   updateState,
 } from '../js/state.js';
-import { resetState } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState } from './helpers.mjs';
 
 const BUSINESS_ID = '11111111-1111-4111-8111-111111111111';
 const PRODUCT_ID = '22222222-2222-4222-8222-222222222222';
@@ -1806,6 +1806,9 @@ function trackingIdentityOrder({
 
 function checkoutDraft() {
   return {
+    // Un delivery sin punto confirmado no llega ni a la RPC: lo frena el
+    // repositorio. Ver `requireConfirmedDeliveryLocation`.
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente real',
     customerPhone: '2995550000',
     customerStreetAddress: 'Roca 321',

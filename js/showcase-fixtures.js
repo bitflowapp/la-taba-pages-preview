@@ -8,6 +8,7 @@ import {
   getOrderRepository,
   isSandboxOrderRepository,
 } from './repositories/repository_factory.js';
+import { DEMO_CUSTOMER_DESTINATION } from './core/business-location.js';
 
 // Producto que el recorrido guiado usa para mostrar el estado "precio
 // pendiente". Antes era el pack x4 de Red Bull; desde la publicación minorista
@@ -21,6 +22,13 @@ export const SHOWCASE_SYNTHETIC_CUSTOMER = Object.freeze({
   streetAddress: 'Calle Ficticia 100',
   neighborhood: 'Ciudad Demo',
   reference: 'Referencia de demostración',
+  // Un pedido de delivery necesita punto confirmado, también en la
+  // demostración. Se usa el destino demo del contrato de ubicación —una plaza,
+  // un espacio público— para que la demo nunca muestre dónde vive nadie.
+  latitude: DEMO_CUSTOMER_DESTINATION.lat,
+  longitude: DEMO_CUSTOMER_DESTINATION.lng,
+  locationSource: 'map_pin',
+  locationConfirmedAt: '2026-08-08T18:00:00.000Z',
 });
 
 const ORDER_SCENARIOS = Object.freeze({
@@ -116,6 +124,10 @@ async function createSyntheticOrder(repository) {
     customerStreetAddress: SHOWCASE_SYNTHETIC_CUSTOMER.streetAddress,
     customerNeighborhood: SHOWCASE_SYNTHETIC_CUSTOMER.neighborhood,
     customerReference: SHOWCASE_SYNTHETIC_CUSTOMER.reference,
+    deliveryLatitude: SHOWCASE_SYNTHETIC_CUSTOMER.latitude,
+    deliveryLongitude: SHOWCASE_SYNTHETIC_CUSTOMER.longitude,
+    deliveryLocationSource: SHOWCASE_SYNTHETIC_CUSTOMER.locationSource,
+    deliveryLocationConfirmedAt: SHOWCASE_SYNTHETIC_CUSTOMER.locationConfirmedAt,
     deliveryMode: 'delivery',
     paymentMethod: 'coordinate',
     customerNotes: 'Pedido sintético del modo demostración local',

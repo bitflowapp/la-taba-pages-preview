@@ -3,6 +3,25 @@ import {
   normalizeCustomerAddress,
 } from './core/customer-addresses.js';
 import {
+  confirmDeliveryLocationDraft,
+  draftAfterAddressEdit,
+  draftFromSavedAddress,
+  draftLocating,
+  draftOpenedOnMap,
+  draftToAddressFields,
+  draftWithLocationResult,
+  draftWithMapPin,
+  emptyDeliveryLocationDraft,
+  isDeliveryLocationDraftConfirmed,
+} from './core/delivery-location-draft.js';
+import {
+  DELIVERY_LOCATION_REQUIRED_MESSAGE,
+  hasConfirmedDeliveryLocation,
+} from './core/delivery-location.js';
+import { BUSINESS_POINT } from './core/business-location.js';
+import { nudgePoint, renderDeliveryLocationStep } from './delivery-location-step.js';
+import { createLocationPickerMap } from './map/location_picker_map.js';
+import {
   APP_MODE_DEMO,
   APP_MODE_PRODUCTION,
   getAppMode,
@@ -28,13 +47,9 @@ const state = {
   editorOpen: false,
   editingAddressId: '',
   pendingDuplicate: null,
-  // Ubicación recibida del dispositivo y todavía sin confirmar por la persona.
-  pendingLocation: null,
-  // Ubicación que la persona confirmó para esta dirección; es la única que se
-  // guarda. Sin confirmación explícita la dirección queda `manual`, como antes.
-  confirmedLocation: null,
-  locating: false,
-  locationError: '',
+  // El paso «Confirmá dónde te entregamos». Sin una confirmación explícita la
+  // dirección no se guarda con punto, y sin punto no hay pedido de delivery.
+  locationDraft: emptyDeliveryLocationDraft(),
   // Lo que la persona tiene escrito en el editor, para que un re-render no se
   // lo lleve puesto.
   addressDraft: null,
@@ -45,6 +60,11 @@ const state = {
 };
 
 const geolocationService = createCustomerGeolocationService();
+
+// El mapa del paso de confirmación. Se monta cuando el editor está abierto y se
+// desmonta al cerrarlo: dejarlo vivo detrás de una pantalla cerrada consume
+// batería y GPU por nada.
+let pickerMap = null;
 
 const PROFILE_RETURN_STORAGE_KEY = 'taba:profile-return';
 
@@ -121,11 +141,14 @@ export function resetCustomerProfileViewForTests() {
     editorOpen: false,
     editingAddressId: '',
     pendingDuplicate: null,
+    locationDraft: emptyDeliveryLocationDraft(),
+    addressDraft: null,
     status: '',
     statusTone: '',
     availability: 'ready',
     returnTo: '',
   });
+  destroyPickerMap();
 }
 
 function bindEvents() {
@@ -133,11 +156,20 @@ function bindEvents() {
   container?.addEventListener('click', async (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
-    const action = target.closest('[data-profile-action]')?.dataset.profileAction;
+    const trigger = target.closest('[data-profile-action]');
+    const action = trigger?.dataset.profileAction;
     if (!action) return;
     event.preventDefault();
     const addressId = target.closest('[data-profile-address-id]')?.dataset.profileAddressId || '';
-    await handleAction(action, addressId);
+    await handleAction(action, addressId, trigger.dataset.locationNudge || '');
+  });
+
+  // `change` y no `input`: se dispara al salir del campo, así que revisar la
+  // confirmación no le pelea el foco a quien está escribiendo la calle.
+  container?.addEventListener('change', (event) => {
+    if (!(event.target instanceof Element)) return;
+    if (!event.target.closest('[data-profile-address-form]')) return;
+    reviewAddressEdit();
   });
 
   window.addEventListener('taba:customer-profile-updated', (event) => {
@@ -157,7 +189,7 @@ function bindEvents() {
   window.addEventListener('offline', () => setStatus('Sin conexión. Conservamos esta pantalla; volvé a intentar cuando regreses online.', 'error'));
 }
 
-async function handleAction(action, addressId) {
+async function handleAction(action, addressId, nudgeDirection = '') {
   if (state.saving) return;
   if (action === 'retry') {
     await loadCustomerProfileView();
@@ -229,20 +261,34 @@ async function handleAction(action, addressId) {
     await requestLocation();
     return;
   }
-  if (action === 'confirm-location') {
-    if (!state.pendingLocation) return;
+  if (action === 'open-location-map') {
     captureEditorDraft();
-    state.confirmedLocation = state.pendingLocation;
-    state.pendingLocation = null;
-    state.locationError = '';
+    state.locationDraft = draftOpenedOnMap(state.locationDraft, mapStartPoint());
+    render();
+    return;
+  }
+  if (action === 'nudge-location') {
+    captureEditorDraft();
+    const moved = nudgePoint(state.locationDraft.point, nudgeDirection);
+    if (moved) {
+      state.locationDraft = draftWithMapPin(state.locationDraft, moved);
+      render();
+    }
+    return;
+  }
+  if (action === 'confirm-location') {
+    if (!state.locationDraft.point) return;
+    captureEditorDraft();
+    state.locationDraft = confirmDeliveryLocationDraft(state.locationDraft, {
+      address: currentAddressValues(),
+    });
     render();
     return;
   }
   if (action === 'discard-location') {
     captureEditorDraft();
-    state.pendingLocation = null;
-    state.confirmedLocation = null;
-    state.locationError = '';
+    state.locationDraft = emptyDeliveryLocationDraft();
+    destroyPickerMap();
     render();
     return;
   }
@@ -294,93 +340,115 @@ async function savePersonalData() {
 }
 
 function resetLocationDraft() {
-  state.pendingLocation = null;
-  state.confirmedLocation = null;
-  state.locationError = '';
-  state.locating = false;
+  state.locationDraft = emptyDeliveryLocationDraft();
   state.addressDraft = null;
+  destroyPickerMap();
 }
 
 function hydrateLocationDraft(address) {
   resetLocationDraft();
-  const normalized = address ? normalizeCustomerAddress(address) : null;
-  if (normalized?.latitude == null || normalized?.longitude == null) return;
-  state.confirmedLocation = {
-    latitude: normalized.latitude,
-    longitude: normalized.longitude,
-    accuracy: normalized.geolocationAccuracy,
-    source: normalized.source,
-  };
+  state.locationDraft = draftFromSavedAddress(normalizeCustomerAddress(address || {}));
 }
 
 async function requestLocation() {
-  if (state.locating) return;
-  state.locating = true;
-  state.locationError = '';
+  if (state.locationDraft.locating) return;
+  state.locationDraft = draftLocating(state.locationDraft);
   render();
+  // El permiso se pide ACÁ, después de que la persona tocó el botón. Pedirlo al
+  // abrir la pantalla es lo que hace que se rechace sin leerlo.
   const result = await geolocationService.requestCurrentLocation();
-  state.locating = false;
-  if (!result?.ok) {
-    // El mensaje del servicio ya distingue permiso, precisión y tiempo de
-    // espera. No se reemplaza por uno genérico: dice qué hacer.
-    state.locationError = result?.message || 'No pudimos obtener la ubicación.';
-    state.pendingLocation = null;
-    render();
-    return;
-  }
-  state.pendingLocation = result.location;
+  state.locationDraft = draftWithLocationResult(state.locationDraft, result);
   render();
 }
 
-// La ubicación es opcional y explícita: sin confirmar no viaja nada, y el aviso
-// dice para qué se usa. Sin este bloque el editor no tenía forma de capturar
-// coordenadas y toda dirección se guardaba `manual` con lat/lng nulas, que es
-// justo lo que dejaba al Rider sin punto de entrega en el mapa.
-function renderLocationCapture() {
-  if (state.pendingLocation) {
-    const accuracy = Number(state.pendingLocation.accuracy);
-    return `<aside class="profile-location is-pending" data-profile-location aria-live="polite">
-      <strong>Ubicación recibida</strong>
-      <p>La usamos para que quien reparte encuentre la puerta. No se guarda hasta que la confirmes.${Number.isFinite(accuracy) ? ` Precisión aproximada: ${Math.round(accuracy)} m.` : ''}</p>
-      <p class="profile-location-note">No hay un geocodificador configurado: revisá calle, número y localidad a mano.</p>
-      <div class="profile-card-actions"><button class="secondary-button compact" type="button" data-profile-action="confirm-location">Confirmar ubicación</button><button class="ghost-button compact" type="button" data-profile-action="discard-location">Descartar</button></div>
-    </aside>`;
+function currentAddressValues() {
+  const form = profileContainer()?.querySelector('[data-profile-address-form]');
+  if (!form) return state.addressDraft || {};
+  return {
+    street: form.elements?.profileAddressStreet?.value || '',
+    streetNumber: form.elements?.profileAddressNumber?.value || '',
+    city: form.elements?.profileAddressCity?.value || '',
+    province: form.elements?.profileAddressProvince?.value || '',
+    postalCode: form.elements?.profileAddressPostalCode?.value || '',
+  };
+}
+
+// Editar el texto de la dirección invalida la confirmación: el pin queda en
+// pantalla, pero hay que volver a apretar CONFIRMAR UBICACIÓN. El servidor
+// impone la misma regla, así que dejarla sólo acá no alcanzaría.
+function reviewAddressEdit() {
+  if (!state.editorOpen) return;
+  captureEditorDraft();
+  const next = draftAfterAddressEdit(state.locationDraft, currentAddressValues());
+  if (next === state.locationDraft) return;
+  state.locationDraft = next;
+  render();
+}
+
+function mapStartPoint() {
+  // El mapa arranca sobre el local cuando todavía no hay pin. No es una
+  // afirmación sobre dónde vive nadie: es el punto desde el cual mover.
+  return { latitude: BUSINESS_POINT.lat, longitude: BUSINESS_POINT.lng };
+}
+
+function syncPickerMap() {
+  const canvas = profileContainer()?.querySelector('[data-location-map]');
+  if (!canvas) {
+    destroyPickerMap();
+    return;
   }
-  if (state.confirmedLocation) {
-    return `<aside class="profile-location is-confirmed" data-profile-location aria-live="polite">
-      <strong>Ubicación confirmada para esta dirección</strong>
-      <p>Se guarda junto con la dirección postal. Revisá igual calle y número.</p>
-      <div class="profile-card-actions"><button class="ghost-button compact" type="button" data-profile-action="discard-location">Quitar ubicación</button></div>
-    </aside>`;
+  const point = state.locationDraft.point;
+  if (!point) return;
+  if (pickerMap?.mounted) {
+    pickerMap.setPoint(point);
+    pickerMap.resize();
+    return;
   }
-  return `<aside class="profile-location" data-profile-location>
-    <div class="profile-card-actions"><button class="secondary-button compact" type="button" data-profile-action="use-location" ${state.locating ? 'disabled aria-disabled="true"' : ''}>${state.locating ? 'Buscando…' : 'Usar mi ubicación'}</button></div>
-    <p>Opcional. Ayuda a que quien reparte llegue a la puerta correcta.</p>
-    ${state.locationError ? `<p class="profile-location-error" role="alert">${escapeHtml(state.locationError)}</p>` : ''}
-  </aside>`;
+  pickerMap = createLocationPickerMap();
+  const mounted = pickerMap.mount({
+    container: canvas,
+    point,
+    onPick: (next) => {
+      state.locationDraft = draftWithMapPin(state.locationDraft, next);
+      render();
+    },
+  });
+  if (!mounted) {
+    // Sin mapa el paso sigue en pie: quedan las coordenadas y los ajustes. Se
+    // dice en pantalla en vez de mostrar un rectángulo vacío.
+    canvas.dataset.locationMapUnavailable = pickerMap.unavailableReason || 'unavailable';
+    pickerMap = null;
+  }
+}
+
+function destroyPickerMap() {
+  pickerMap?.destroy?.();
+  pickerMap = null;
 }
 
 async function saveAddress(allowDuplicate) {
   if (!isEditableMode()) return;
   const form = profileContainer()?.querySelector('[data-profile-address-form]');
   if (!form) return;
-  const location = state.confirmedLocation;
-  const candidate = normalizeCustomerAddress({
-    id: state.editingAddressId,
-    label: form.elements?.profileAddressLabel?.value || 'Casa',
+  const written = {
     street: form.elements?.profileAddressStreet?.value || '',
     streetNumber: form.elements?.profileAddressNumber?.value || '',
-    floor: form.elements?.profileAddressFloor?.value || '',
-    apartment: form.elements?.profileAddressApartment?.value || '',
     city: form.elements?.profileAddressCity?.value || '',
     province: form.elements?.profileAddressProvince?.value || '',
     postalCode: form.elements?.profileAddressPostalCode?.value || '',
+  };
+  // Se revisa justo antes de guardar: si el texto cambió después de confirmar,
+  // el pin ya no describe esta puerta y hay que reconfirmarlo.
+  state.locationDraft = draftAfterAddressEdit(state.locationDraft, written);
+  const candidate = normalizeCustomerAddress({
+    id: state.editingAddressId,
+    label: form.elements?.profileAddressLabel?.value || 'Casa',
+    ...written,
+    floor: form.elements?.profileAddressFloor?.value || '',
+    apartment: form.elements?.profileAddressApartment?.value || '',
     reference: form.elements?.profileAddressReference?.value || '',
     isDefault: Boolean(form.elements?.profileAddressDefault?.checked),
-    latitude: location?.latitude ?? null,
-    longitude: location?.longitude ?? null,
-    geolocationAccuracy: location?.accuracy ?? null,
-    source: location?.source || 'manual',
+    ...draftToAddressFields(state.locationDraft),
   });
   const required = [
     ['profileAddressStreet', candidate.street, 'Ingresá la calle.'],
@@ -391,6 +459,14 @@ async function saveAddress(allowDuplicate) {
   const invalid = required.find(([, value]) => !value);
   if (invalid) {
     markInvalid(form.elements?.[invalid[0]], invalid[2]);
+    return;
+  }
+  // La dirección de entrega no se guarda sin punto confirmado. Guardarla igual
+  // sería devolverle a la persona una dirección que no sirve para pedir, y que
+  // el servidor va a rechazar recién al confirmar la compra.
+  if (!isDeliveryLocationDraftConfirmed(state.locationDraft)) {
+    setStatus(DELIVERY_LOCATION_REQUIRED_MESSAGE, 'warning');
+    queueFocus('[data-location-step]');
     return;
   }
   await persistAddress(candidate, allowDuplicate);
@@ -503,14 +579,17 @@ function render() {
       ? 'saving'
       : state.availability;
   if (state.loading) {
+    destroyPickerMap();
     container.innerHTML = renderSkeleton();
     return;
   }
   if (state.availability === 'preview') {
+    destroyPickerMap();
     container.innerHTML = renderPreviewState();
     return;
   }
   if (state.availability === 'unavailable') {
+    destroyPickerMap();
     container.innerHTML = renderUnavailableState();
     return;
   }
@@ -524,9 +603,11 @@ function render() {
       <span aria-hidden="true">${CHECK_ICON}</span>
       <div>
         <strong>TABA no necesita tu DNI.</strong>
-        <p>Solo guardamos los datos necesarios para identificar al destinatario y entregar tus pedidos.</p>
+        <p>Solo guardamos los datos necesarios para identificar al destinatario y entregar tus pedidos. Del punto de entrega guardamos uno por dirección, no un historial de dónde estuviste.</p>
       </div>
     </aside>`;
+  // El mapa se monta DESPUÉS de escribir el HTML: antes no existe el contenedor.
+  syncPickerMap();
 }
 
 function renderSkeleton() {
@@ -634,13 +715,21 @@ function renderAddressCard(rawAddress) {
   const useAction = address.isDefault
     ? `<span class="profile-address-inuse">${CHECK_ICON}En uso</span>`
     : `<button class="text-button" type="button" data-profile-action="make-default" ${disabledAttr()}>${CHECK_ICON}Usar esta</button>`;
-  return `<article class="profile-address ${address.isDefault ? 'is-default' : ''}" data-profile-address-id="${escapeAttr(address.id)}">
+  // El estado de la ubicación se DECLARA en la tarjeta. Una dirección sin punto
+  // confirmado no sirve para pedir delivery, y enterarse recién al confirmar la
+  // compra es enterarse tarde.
+  const confirmed = hasConfirmedDeliveryLocation(address);
+  const locationBadge = confirmed
+    ? `<span class="profile-address-location is-confirmed" data-address-location="confirmed">${CHECK_ICON}Ubicación confirmada</span>`
+    : `<button class="text-button profile-address-location is-missing" type="button" data-profile-action="edit-address" data-address-location="missing">${PIN_ICON}Confirmá dónde te entregamos</button>`;
+  return `<article class="profile-address ${address.isDefault ? 'is-default' : ''} ${confirmed ? '' : 'needs-location'}" data-profile-address-id="${escapeAttr(address.id)}">
     <div class="profile-address-main">
       <div class="profile-address-icon" aria-hidden="true">${PIN_ICON}</div>
       <div>
         <div class="profile-address-title"><strong>${escapeHtml(address.label)}</strong>${address.isDefault ? '<span>Predeterminada</span>' : ''}</div>
         <p>${escapeHtml(addressSummary(address))}</p>
         ${address.reference ? `<small>${escapeHtml(address.reference)}</small>` : ''}
+        ${locationBadge}
       </div>
     </div>
     <div class="profile-address-actions">
@@ -692,7 +781,10 @@ function renderAddressEditor() {
       <label><span>Código postal <em>opcional</em></span><input name="profileAddressPostalCode" maxlength="20" autocomplete="postal-code" value="${escapeAttr(address.postalCode || '')}" /></label>
       <label class="is-full"><span>Referencias <em>opcional</em></span><textarea name="profileAddressReference" maxlength="180" rows="3" placeholder="Ej. Portón negro, tocar timbre 2">${escapeHtml(address.reference || '')}</textarea></label>
     </div>
-    ${renderLocationCapture()}
+    ${renderDeliveryLocationStep(state.locationDraft, {
+    saving: state.saving,
+    mapAvailable: Boolean(globalThis.maplibregl?.Map),
+  })}
     <label class="profile-default-check"><input name="profileAddressDefault" type="checkbox" ${address.isDefault || (!address.id && !state.addresses.length) ? 'checked' : ''} /><span>Usar como dirección predeterminada</span></label>
     <p class="profile-field-error" data-profile-field-error role="alert"></p>
     <div class="profile-card-actions"><button class="primary-button compact" type="button" data-profile-action="save-address" ${disabledAttr()}>${state.saving ? 'Guardando…' : 'Guardar dirección'}</button><button class="ghost-button compact" type="button" data-profile-action="cancel-address">Cancelar</button></div>

@@ -14,7 +14,7 @@ import {
   resetRepositoryFactoryForTests,
 } from '../js/repositories/repository_factory.js';
 import { getState } from '../js/state.js';
-import { resetState } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState } from './helpers.mjs';
 
 beforeEach(() => {
   delete globalThis.__LA_TABA_RUNTIME_CONFIG__;
@@ -149,6 +149,7 @@ test('demo order repository creates orders through the current checkout flow', (
   const before = getState().orders.length;
 
   const result = repository.createOrder({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente Repo',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -168,6 +169,7 @@ test('demo repository updates status, rider and GPS location without bypassing s
   addToCart('qa-gaseosa-cola', 1);
   const repository = createDemoOrderRepository();
   const created = repository.createOrder({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Rider Repo',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -208,6 +210,7 @@ test('demo repository subscriptions publish business and order snapshots', () =>
   const stopBusiness = repository.subscribeToBusinessOrders((orders) => businessSnapshots.push(orders.length));
   addToCart('qa-gaseosa-cola', 1);
   const created = repository.createOrder({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Sub Repo',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -229,6 +232,7 @@ test('demo repository propagates the preparation estimate so the customer can se
   addToCart('qa-gaseosa-cola', 1);
   const repository = createDemoOrderRepository();
   const created = repository.createOrder({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Prep Repo',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -252,6 +256,7 @@ test('demo repository keeps the legacy two-argument updateOrderStatus working', 
   addToCart('qa-gaseosa-cola', 1);
   const repository = createDemoOrderRepository();
   const created = repository.createOrder({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Legacy Repo',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',

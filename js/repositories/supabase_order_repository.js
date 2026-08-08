@@ -7,6 +7,10 @@ import {
 } from '../core/domain.js';
 import { normalizeMoneyValue } from '../core/pricing.js';
 import { normalizeAddressDetails } from '../core/address.js';
+import {
+  DELIVERY_LOCATION_REQUIRED_MESSAGE,
+  requireConfirmedDeliveryLocation,
+} from '../core/delivery-location.js';
 import { buildDeliveryCode, normalizeDeliveryCodeValue } from '../core/delivery-code.js';
 import {
   getNextWorkflowStatus,
@@ -577,6 +581,22 @@ export function createSupabaseOrderRepository({
     if (values.deliveryMode === 'delivery' && values.addressDetails.usesStructured && !values.addressDetails.neighborhood) {
       return repositoryResult(false, { message: 'Ingresá el barrio o zona para el envío.' });
     }
+    // La compuerta del cliente. La autoritativa está en la base —esta no se
+    // puede saltear con las herramientas del navegador— pero rebotar acá evita
+    // gastar una reserva de stock y un intento de pago en un pedido imposible.
+    const locationCheck = requireConfirmedDeliveryLocation({
+      fulfillmentType: values.deliveryMode,
+      location: {
+        latitude: values.deliveryLatitude,
+        longitude: values.deliveryLongitude,
+        locationSource: values.deliveryLocationSource,
+        accuracyMeters: values.deliveryGeolocationAccuracy,
+        confirmedAt: values.deliveryLocationConfirmedAt,
+      },
+    });
+    if (!locationCheck.ok) {
+      return repositoryResult(false, { code: locationCheck.code, message: locationCheck.message });
+    }
 
     const items = cartItems.map((item) => ({
       product_id: String(item.product.id || ''),
@@ -646,6 +666,14 @@ export function createSupabaseOrderRepository({
                 ? { delivery_geolocation_accuracy: normalizedValues.deliveryGeolocationAccuracy }
                 : {}),
               delivery_address_source: normalizedValues.deliveryAddressSource,
+              // El origen del contrato y el momento de la confirmación viajan
+              // en claves propias: la columna histórica no puede recibirlos.
+              ...(normalizedValues.deliveryLocationSource
+                ? { delivery_location_source: normalizedValues.deliveryLocationSource }
+                : {}),
+              ...(normalizedValues.deliveryLocationConfirmedAt
+                ? { delivery_location_confirmed_at: normalizedValues.deliveryLocationConfirmedAt }
+                : {}),
             }
             : {}
         ),
@@ -797,6 +825,22 @@ export function createSupabaseOrderRepository({
     }
     if (values.deliveryMode === 'delivery' && !values.customerAddress) {
       return repositoryResult(false, { message: 'Ingresá calle y número para el envío.' });
+    }
+    // Igual que en el pedido directo: sin punto confirmado no se arma la sesión
+    // de pago. El servidor la rechazaría antes de reservar stock, pero llegar
+    // hasta Mercado Pago para volver con un error es un viaje al pedo.
+    const checkoutLocation = requireConfirmedDeliveryLocation({
+      fulfillmentType: values.deliveryMode,
+      location: {
+        latitude: values.deliveryLatitude,
+        longitude: values.deliveryLongitude,
+        locationSource: values.deliveryLocationSource,
+        accuracyMeters: values.deliveryGeolocationAccuracy,
+        confirmedAt: values.deliveryLocationConfirmedAt,
+      },
+    });
+    if (!checkoutLocation.ok) {
+      return repositoryResult(false, { code: checkoutLocation.code, message: checkoutLocation.message });
     }
     const items = cartItems.map((item) => ({
       product_id: String(item.product.id || ''),
@@ -2571,6 +2615,10 @@ function riderContractRefusal(data, messages, fallback) {
 
 function readableOrderCreationError(error) {
   const text = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
+  // El rechazo del contrato de ubicación se dice con el mismo mensaje que usa
+  // el checkout, no con el genérico: la persona tiene que saber que le falta
+  // confirmar el pin, y dónde hacerlo.
+  if (text.includes('delivery_location_required')) return DELIVERY_LOCATION_REQUIRED_MESSAGE;
   if (text.includes('stock') || text.includes('available')) {
     return 'Algunos productos ya no tienen stock. Actualizá el carrito y probá de nuevo.';
   }
@@ -2633,6 +2681,11 @@ function readableRiderAssignmentError(error) {
 }
 
 function readableSupabaseError(error, fallback = 'No pudimos comunicarnos con el backend.') {
+  // Vale para cualquier RPC, no sólo para el alta del pedido: la sesión de
+  // Checkout Pro devuelve el mismo código.
+  if (`${error?.message || ''} ${error?.details || ''}`.toLowerCase().includes('delivery_location_required')) {
+    return DELIVERY_LOCATION_REQUIRED_MESSAGE;
+  }
   if (Number(error?.status) === 401) return 'La sesión no es válida o venció.';
   if (Number(error?.status) === 403) return 'Tu cuenta no tiene permiso para realizar esta acción.';
   if (Number(error?.status) === 429) return 'Hay demasiadas solicitudes. Esperá un momento y probá de nuevo.';

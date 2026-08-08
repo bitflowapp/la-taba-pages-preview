@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { confirmDeliveryLocationInProfile } from './helpers.mjs';
 
 const BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
 const CUSTOMER_ID = '10000000-0000-4000-8000-000000000001';
@@ -124,6 +125,8 @@ test('Perfil permite editar datos y direcciones propias sin overflow ni PII en c
   await profile.locator('[name="profileAddressCity"]').fill('Neuquén');
   await profile.locator('[name="profileAddressProvince"]').fill('Neuquén');
   await profile.locator('[name="profileAddressReference"]').fill('Puerta lateral');
+  // Una dirección de entrega no se guarda sin punto confirmado.
+  await confirmDeliveryLocationInProfile(page);
   await profile.locator('[data-profile-action="save-address"]').click();
   await expect(profile).toContainText('San Martín S/N');
   const addressSave = rpcCalls.find((call) => call.rpc === 'upsert_current_customer_address');

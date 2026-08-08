@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMinimum, seedCheckoutProfile, selectCheckoutAddress, waitForToast } from './helpers.mjs';
+import { confirmDeliveryLocationInProfile, gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMinimum, seedCheckoutProfile, selectCheckoutAddress, waitForToast } from './helpers.mjs';
 
 const RELAY_PORT = Number.parseInt(process.env.TABA_E2E_RELAY_PORT || '18787', 10);
 const RELAY_BASE = `http://127.0.0.1:${RELAY_PORT}`;
@@ -66,6 +66,8 @@ test('demo-realtime toma Perfil local al confirmar y sincroniza solo el pedido p
     await addressForm.locator('[name="profileAddressCity"]').fill(CUSTOMER.city);
     await addressForm.locator('[name="profileAddressProvince"]').fill('Neuquen');
     await addressForm.locator('[name="profileAddressDefault"]').check();
+    // Una dirección de entrega no se guarda sin punto confirmado.
+    await confirmDeliveryLocationInProfile(client);
     await addressForm.locator('[data-profile-action="save-address"]').click();
     await expect(profile.locator('[data-profile-address-id]', { hasText: `${CUSTOMER.street} ${CUSTOMER.streetNumber}` })).toBeVisible();
 

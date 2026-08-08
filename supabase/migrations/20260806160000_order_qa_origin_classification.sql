@@ -204,6 +204,22 @@ where o.origin = 'qa'
 -- ===== Aislamiento del Rider =====
 -- Un rider no puede recibir para reparto un pedido QA: la dirección es
 -- inventada y el cobro no existe.
+--
+-- REPARACIÓN DE REPLAY (agregada después, sin cambiar el esquema resultante)
+-- ------------------------------------------------------------------------
+-- Las dos funciones de abajo AMPLÍAN su `returns table`. `create or replace`
+-- no puede cambiar el tipo de retorno: sobre una base vacía esta migración
+-- abortaba con «cannot change return type of existing function», y con ella
+-- toda la cadena posterior. Se midió al intentar aplicar las migraciones desde
+-- cero en una base local.
+--
+-- Se antepone el DROP y, después de crear, se restituyen los permisos que la
+-- función traía de su migración original —el DROP se los lleva puestos—, para
+-- que una base reconstruida desde cero termine idéntica a una que aplicó las
+-- migraciones una por una. En una base que ya aplicó esta migración no cambia
+-- nada: las migraciones no se vuelven a ejecutar.
+drop function if exists public.get_rider_queue(uuid);
+
 create or replace function public.get_rider_queue(p_business_id uuid)
 returns table (
   order_id uuid,
@@ -268,6 +284,11 @@ begin
 end;
 $$;
 
+revoke all on function public.get_rider_queue(uuid) from public, anon;
+grant execute on function public.get_rider_queue(uuid) to authenticated;
+
+drop function if exists public.list_available_rider_orders(uuid);
+
 create or replace function public.list_available_rider_orders(p_business_id uuid)
 returns table (
   public_code text,
@@ -325,6 +346,9 @@ as $$
   order by o.ready_at nulls last, o.created_at
   limit 50
 $$;
+
+revoke all on function public.list_available_rider_orders(uuid) from public, anon;
+grant execute on function public.list_available_rider_orders(uuid) to authenticated;
 
 -- Un rider tampoco puede tomar por código un pedido QA que nunca vio en la cola.
 create or replace function public.claim_available_rider_order(

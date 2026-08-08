@@ -30,7 +30,7 @@ import {
 import { isSandboxToolsEnabled } from '../js/sandbox-tools.js';
 import { pauseSimulation, startSimulation } from '../js/simulation.js';
 import { getState } from '../js/state.js';
-import { resetState } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState } from './helpers.mjs';
 
 const PRODUCTION_RUNTIME = {
   mode: 'production',
@@ -129,6 +129,7 @@ test('la simulación showcase conserva la marca de ruta sandbox', () => {
   setLocationSearch('?showcase=1');
   addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente Showcase',
     customerPhone: '2995550101',
     customerAddress: 'Calle de muestra 123',

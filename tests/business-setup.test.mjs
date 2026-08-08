@@ -20,7 +20,7 @@ import {
 import { addToCart, getCartSummary, validateCartForCheckout } from '../js/cart.js';
 import { createOrderFromCheckout } from '../js/orders.js';
 import { applyBusinessConfig } from '../js/ui.js';
-import { resetState } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState } from './helpers.mjs';
 
 function memoryStorage() {
   const values = new Map();
@@ -125,6 +125,7 @@ test('business setup acepta prefijos de seis caracteres y mantiene los codigos v
 
   addToCart(productId, 1);
   const firstOrder = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente Uno',
     customerPhone: '2995551000',
     customerStreetAddress: 'Roca 123',
@@ -138,6 +139,7 @@ test('business setup acepta prefijos de seis caracteres y mantiene los codigos v
   updateBusinessConfig({ orderPrefix: 'GHIJKL' });
   addToCart(productId, 1);
   const secondOrder = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente Dos',
     customerPhone: '2995552000',
     customerStreetAddress: 'Roca 456',
@@ -166,6 +168,7 @@ test('business setup restore demo requiere confirmacion y no borra estado operat
   assert.ok(productId, 'hay al menos un producto demo vendible');
   addToCart(productId, 1);
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente QA',
     customerPhone: '2995550000',
     customerStreetAddress: 'Roca 123',
@@ -219,6 +222,7 @@ test('business setup integra prefijo, delivery fee, minimo y render de UI', () =
 
   updateBusinessConfig({ minDeliveryOrder: 0 });
   const order = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente QA',
     customerPhone: '2995551234',
     customerStreetAddress: 'Roca 123',

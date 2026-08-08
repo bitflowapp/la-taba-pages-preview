@@ -3,6 +3,11 @@ import { relayStatusLabel } from './core/realtime-sync.js';
 import { getRealtimeStatus } from './realtime.js';
 import { formatAddressReference, normalizeOrderAddressDetails } from './core/address.js';
 import {
+  deliveryDestinationSearchUrl,
+  deliveryLocationAccuracyLabel,
+  plottableDeliveryPoint,
+} from './core/delivery-location.js';
+import {
   CATALOG_BADGE_OPTIONS,
   archiveCatalogProduct,
   getEditableCategories,
@@ -746,6 +751,7 @@ function inboxOrderCard(order, options = {}) {
               ${!isPickup && addressUnit ? `<p><span>Piso / departamento</span><strong>${escapeHtml(addressUnit)}</strong></p>` : ''}
               ${!isPickup && addressRegion ? `<p><span>Ciudad / provincia</span><strong>${escapeHtml(addressRegion)}</strong></p>` : ''}
               ${!isPickup && reference ? `<p><span>Referencia</span><strong>${escapeHtml(reference)}</strong></p>` : ''}
+              ${isPickup ? '' : renderDeliveryPointRow(address)}
               <p><span>Pago</span><strong>${escapeHtml(order.paymentMethod)}</strong></p>
               ${order.cashChange ? `<p><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></p>` : ''}
               ${Number(order.discountTotal || 0) > 0 ? `<p><span>Cupón</span><strong>${escapeHtml(order.coupon?.code || 'Promo')} · -${money(order.discountTotal)}</strong></p>` : ''}
@@ -817,6 +823,7 @@ function inboxOrderDetail(order) {
           ${!isPickup && addressUnit ? `<p><span>Piso / departamento</span><strong>${escapeHtml(addressUnit)}</strong></p>` : ''}
           ${!isPickup && addressRegion ? `<p><span>Ciudad / provincia</span><strong>${escapeHtml(addressRegion)}</strong></p>` : ''}
           ${!isPickup && reference ? `<p><span>Referencia</span><strong>${escapeHtml(reference)}</strong></p>` : ''}
+          ${isPickup ? '' : renderDeliveryPointRow(address)}
           <p><span>Pago</span><strong>${escapeHtml(order.paymentMethod)}</strong></p>
           ${order.cashChange ? `<p><span>Cambio efectivo</span><strong>${escapeHtml(order.cashChange)}</strong></p>` : ''}
           ${Number(order.discountTotal || 0) > 0 ? `<p><span>Cupón</span><strong>${escapeHtml(order.coupon?.code || 'Promo')} · -${money(order.discountTotal)}</strong></p>` : ''}
@@ -835,6 +842,34 @@ function inboxOrderDetail(order) {
       </div>
 
     </article>`;
+}
+
+// El Panel muestra el punto de entrega, no sólo el texto de la dirección. El
+// enlace abre Google Maps POR COORDENADAS: mandar el texto es pedirle a un
+// geocodificador que adivine, y con «Mendoza 827» ya resolvió una vez en otra
+// ciudad, a 175 km. Un pedido anterior al contrato no tiene punto y lo dice.
+function renderDeliveryPointRow(address) {
+  const point = plottableDeliveryPoint(address);
+  if (!point) {
+    return '<p data-delivery-point="missing"><span>Punto de entrega</span><strong>Sin punto confirmado</strong></p>';
+  }
+  const confirmed = Boolean(address?.locationConfirmedAt);
+  const accuracy = deliveryLocationAccuracyLabel({ accuracyMeters: address?.geolocationAccuracy });
+  const detail = [confirmed ? 'Confirmado por el cliente' : 'Sin confirmación del cliente', accuracy]
+    .filter(Boolean)
+    .join(' · ');
+  const coordenadas = escapeHtml(`${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`);
+  // La demostración no abre servicios externos: muestra el punto, sin enlace.
+  const destino = isShowcaseMode()
+    ? `<span data-delivery-point-map>${coordenadas}</span>`
+    : `<a href="${escapeHtml(deliveryDestinationSearchUrl(address))}" target="_blank" rel="noopener noreferrer" data-delivery-point-map>${coordenadas}</a>`;
+  return `<p data-delivery-point="${confirmed ? 'confirmed' : 'unconfirmed'}">
+    <span>Punto de entrega</span>
+    <strong>
+      ${destino}
+      <small>${escapeHtml(detail)}</small>
+    </strong>
+  </p>`;
 }
 
 // Acciones del pedido seleccionado. Viven en un único bloque: por debajo de

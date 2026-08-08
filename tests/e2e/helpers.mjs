@@ -243,6 +243,42 @@ const EXTRA_CHECKOUT_ADDRESSES = Object.freeze([
   { label: 'Consultorio', street: 'Santa Fe', streetNumber: '145', city: 'Neuquén Capital' },
 ]);
 
+// Una dirección de entrega usable tiene punto confirmado: sin él el checkout la
+// bloquea, que es el contrato. El arnés siembra ese punto por defecto y deja
+// pedir lo contrario cuando la prueba quiere justamente ver el bloqueo.
+export const SEEDED_CONFIRMED_AT = '2026-08-08T18:00:00.000Z';
+const SEEDED_POINT = Object.freeze({ latitude: -38.945584, longitude: -68.040579 });
+const SEEDED_POINT_STEP = 0.001;
+
+export function seededConfirmedPoint(index = 0) {
+  return {
+    latitude: Number((SEEDED_POINT.latitude + index * SEEDED_POINT_STEP).toFixed(6)),
+    longitude: Number((SEEDED_POINT.longitude - index * SEEDED_POINT_STEP).toFixed(6)),
+    geolocationAccuracy: 18,
+    locationSource: 'map_pin',
+    locationConfirmedAt: SEEDED_CONFIRMED_AT,
+  };
+}
+
+/**
+ * Completa el paso obligatorio «Confirmá dónde te entregamos» en el editor de
+ * direcciones del Perfil, por el camino que NO pide permiso de ubicación: se
+ * abre el mapa, se acepta el pin y se confirma. Es lo que hace una persona que
+ * no quiere compartir su GPS, y sirve para cualquier prueba que sólo necesite
+ * una dirección guardable.
+ */
+export async function confirmDeliveryLocationInProfile(page) {
+  const step = page.locator('[data-location-step]');
+  await expect(step).toBeVisible();
+  if ((await step.getAttribute('data-location-status')) !== 'confirmed') {
+    if ((await step.getAttribute('data-location-status')) === 'empty') {
+      await step.locator('[data-profile-action="open-location-map"]').click();
+    }
+    await step.locator('[data-profile-action="confirm-location"]').click();
+  }
+  await expect(step).toHaveAttribute('data-location-status', 'confirmed');
+}
+
 export function buildCheckoutAddresses(count, namespace = 'demo') {
   const base = [...DEFAULT_CHECKOUT_ADDRESSES, ...EXTRA_CHECKOUT_ADDRESSES];
   return base.slice(0, Math.max(0, count)).map((address, index) => ({
@@ -263,6 +299,7 @@ export async function seedCheckoutProfile(page, {
   addresses = DEFAULT_CHECKOUT_ADDRESSES,
   defaultAddressId = '',
   namespace = 'demo',
+  confirmedLocation = true,
 } = {}) {
   const list = addresses || [];
   // `namespace` mantiene IDs sintéticos únicos por escenario. La autoridad
@@ -280,10 +317,10 @@ export async function seedCheckoutProfile(page, {
     reference: address.reference || '',
     province: address.province || '',
     postalCode: address.postalCode || '',
-    source: 'manual',
     isDefault: defaultAddressId
       ? (address.id || `${namespace}-address-${String(index + 1).padStart(2, '0')}`) === defaultAddressId
       : hasExplicitDefault ? address.isDefault === true : index === 0,
+    ...(confirmedLocation ? seededConfirmedPoint(index) : { source: 'manual' }),
   }));
 
   await page.evaluate(async ({ key, snapshot }) => {

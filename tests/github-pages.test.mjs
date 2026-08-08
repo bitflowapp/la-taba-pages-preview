@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v49-borrador-direccion');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v51-ubicacion-confirmada');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -48,6 +48,13 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./js/core/app-mode.js'));
   assert.ok(assets.includes('./js/core/showcase-mode.js'));
   assert.ok(assets.includes('./js/core/customer-addresses.js'));
+  // El paso de confirmación de ubicación es parte del camino de compra: si sus
+  // módulos no están precacheados, offline el importador no evalúa y el Perfil
+  // se cae entero, no sólo el mapa.
+  assert.ok(assets.includes('./js/core/delivery-location.js'));
+  assert.ok(assets.includes('./js/core/delivery-location-draft.js'));
+  assert.ok(assets.includes('./js/delivery-location-step.js'));
+  assert.ok(assets.includes('./js/map/location_picker_map.js'));
   assert.ok(assets.includes('./js/core/storage.js'));
   assert.ok(assets.includes('./js/core/storefront-filters.js'));
   assert.ok(assets.includes('./js/core/cart-recommendations.js'));

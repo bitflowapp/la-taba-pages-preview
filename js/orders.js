@@ -31,6 +31,7 @@ import {
 import { buildAppliedCoupon, normalizeCouponCode } from './core/promotions.js';
 import { buildOrderReorderMetadata } from './core/reorder.js';
 import { normalizeDeliveryProof } from './core/delivery-proof.js';
+import { requireConfirmedDeliveryLocation } from './core/delivery-location.js';
 import {
   buildDeliveryCode,
   createDeliveryCode,
@@ -81,6 +82,14 @@ export function createOrderFromCheckout(formValues = {}) {
   if (values.deliveryMode === 'delivery' && values.addressDetails.usesStructured && !isValidDeliveryZone(values.addressDetails.neighborhood)) {
     return { ok: false, message: 'Seleccioná la localidad o zona para coordinar el envío.' };
   }
+  // Delivery exige un punto que el cliente haya confirmado. El servidor impone
+  // lo mismo; acá se dice antes, para no llevar a nadie hasta el pago para
+  // rebotarlo.
+  const locationCheck = requireConfirmedDeliveryLocation({
+    fulfillmentType: values.deliveryMode,
+    address: values.addressDetails,
+  });
+  if (!locationCheck.ok) return { ok: false, code: locationCheck.code, message: locationCheck.message };
 
   const now = new Date().toISOString();
   const cartItems = getCartItems();

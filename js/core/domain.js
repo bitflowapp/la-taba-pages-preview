@@ -2,6 +2,7 @@ import { getBusinessConfig } from './business-config-store.js';
 import { calculateTotals, normalizeDeliveryMode, normalizeMoneyValue } from './pricing.js';
 import { sanitizeNotes, sanitizeText } from './validators.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './address.js';
+import { normalizeDeliveryLocation } from './delivery-location.js';
 import {
   normalizeWorkflowStatus,
   toDemoOrderStatus,
@@ -110,6 +111,15 @@ export function normalizeOrderDraft(draft = {}) {
   const deliveryAddressSource = ['manual', 'gps', 'geocoder', 'previous_order'].includes(draft.deliveryAddressSource)
     ? draft.deliveryAddressSource
     : deliveryLatitude != null && deliveryLongitude != null ? 'gps' : 'manual';
+  // El punto confirmado viaja entero o no viaja: origen, momento y coordenadas
+  // son una sola pieza. Un borrador con la mitad no describe ninguna puerta.
+  const confirmedLocation = normalizeDeliveryLocation({
+    latitude: deliveryLatitude,
+    longitude: deliveryLongitude,
+    locationSource: draft.deliveryLocationSource ?? draft.delivery_location_source,
+    accuracyMeters: deliveryGeolocationAccuracy,
+    confirmedAt: draft.deliveryLocationConfirmedAt ?? draft.delivery_location_confirmed_at,
+  });
   return {
     customerName: sanitizeText(draft.customerName || draft.customer?.name, { maxLength: 80 }),
     customerPhone: sanitizeText(draft.customerPhone || draft.customer?.phone, { maxLength: 40 }),
@@ -131,6 +141,9 @@ export function normalizeOrderDraft(draft = {}) {
     deliveryLongitude,
     deliveryGeolocationAccuracy,
     deliveryAddressSource,
+    deliveryLocationSource: confirmedLocation?.locationSource || '',
+    deliveryLocationConfirmedAt: confirmedLocation?.confirmedAt || '',
+    deliveryLocationConfirmed: Boolean(confirmedLocation),
     deliveryMode: fulfillmentType,
     paymentMethod: sanitizeText(draft.paymentMethod, { fallback: 'cash', maxLength: 40 }),
     customerNotes: sanitizeNotes(draft.customerNotes || draft.notes, ''),

@@ -1112,3 +1112,30 @@
   font-size: 12.5px;
   line-height: 1.45;
 }
+
+/* Estado de la ubicación en la tarjeta de dirección del checkout.
+   Los colores son claros a propósito: la tarjeta vive sobre la sub-superficie
+   oscura de la góndola, donde un verde o un rojo oscuros rinden ~2,4:1 y el
+   estado se lee por color pero no se lee. Además del color, el texto lo dice. */
+.profile-address-card .profile-address-location {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.profile-address-card .profile-address-location.is-confirmed {
+  color: #7dc563;
+}
+
+.profile-address-card .profile-address-location.is-missing {
+  color: #ff8b82;
+}
+
+/* Una dirección sin punto confirmado no se puede elegir: el control queda
+   deshabilitado y la tarjeta lo muestra apagada, no sólo con el texto. */
+.profile-address-card.needs-location {
+  border-style: dashed;
+  cursor: not-allowed;
+  opacity: 0.72;
+}

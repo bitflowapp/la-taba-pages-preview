@@ -2687,6 +2687,8 @@ export function getCheckoutFormValues() {
     deliveryLongitude: optionalNumber(formData.get('deliveryLongitude')),
     deliveryGeolocationAccuracy: optionalNumber(formData.get('deliveryGeolocationAccuracy')),
     deliveryAddressSource: String(formData.get('deliveryAddressSource') || 'manual'),
+    deliveryLocationSource: String(formData.get('deliveryLocationSource') || ''),
+    deliveryLocationConfirmedAt: String(formData.get('deliveryLocationConfirmedAt') || ''),
     deliveryMode: String(formData.get('deliveryMode') || 'delivery'),
     paymentMethod: String(formData.get('paymentMethod') || 'cash'),
     customerNotes: String(formData.get('customerNotes') || ''),

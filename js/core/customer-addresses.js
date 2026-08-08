@@ -1,7 +1,23 @@
 import { formatAddressLabel } from './address.js';
+import {
+  deliveryLocationAddressFingerprint,
+  isDeliveryLocationSource,
+} from './delivery-location.js';
 import { sanitizeText } from './validators.js';
 
+// Vocabulario HISTÓRICO de la columna `source`. No se amplía: hay un trigger en
+// staging, fuera de este repositorio, que copia `delivery_address_source` a una
+// tabla con un CHECK sobre este mismo conjunto. Agregarle valores nuevos haría
+// abortar el alta del pedido. El origen del contrato nuevo —gps / map_pin /
+// geocoded_confirmed— viaja en `locationSource`, que es una columna propia.
 export const CUSTOMER_ADDRESS_SOURCES = Object.freeze(['manual', 'gps', 'geocoder', 'previous_order']);
+
+// Cómo se proyecta el origen del contrato sobre la columna histórica.
+const LEGACY_SOURCE_BY_LOCATION_SOURCE = Object.freeze({
+  gps: 'gps',
+  map_pin: 'manual',
+  geocoded_confirmed: 'geocoder',
+});
 
 const ADDRESS_LABEL_MAX = 60;
 const ADDRESS_TEXT_MAX = 180;
@@ -28,9 +44,18 @@ export function normalizeCustomerAddress(input = {}) {
     { fallback: '', maxLength: ADDRESS_TEXT_MAX },
   );
   const coordinates = normalizeCoordinates(source.latitude ?? source.lat, source.longitude ?? source.lng);
-  const sourceValue = CUSTOMER_ADDRESS_SOURCES.includes(source.source)
-    ? source.source
-    : coordinates ? 'gps' : 'manual';
+  // El origen del contrato manda sobre la columna histórica: si la persona
+  // confirmó un pin, `source` describe ESA confirmación y no lo que venga
+  // escrito en el payload.
+  const locationSource = normalizeLocationSource(source, coordinates);
+  const locationConfirmedAt = locationSource
+    ? sanitizeText(source.locationConfirmedAt ?? source.location_confirmed_at, { fallback: '', maxLength: 40 })
+    : '';
+  const sourceValue = locationSource && locationConfirmedAt
+    ? LEGACY_SOURCE_BY_LOCATION_SOURCE[locationSource]
+    : CUSTOMER_ADDRESS_SOURCES.includes(source.source)
+      ? source.source
+      : coordinates ? 'gps' : 'manual';
 
   return {
     id: sanitizeText(source.id, { fallback: '', maxLength: 80 }),
@@ -47,6 +72,15 @@ export function normalizeCustomerAddress(input = {}) {
     latitude: coordinates?.latitude ?? null,
     longitude: coordinates?.longitude ?? null,
     geolocationAccuracy: normalizeAccuracy(source.geolocationAccuracy ?? source.geolocation_accuracy),
+    locationSource,
+    locationConfirmedAt,
+    // La huella se CONSERVA tal como vino; nunca se recalcula acá. Recalcularla
+    // sobre el texto actual haría que siempre coincida, y entonces editar la
+    // calle jamás invalidaría el pin, que es justo lo que tiene que pasar.
+    locationConfirmedAddress: sanitizeText(
+      source.locationConfirmedAddress ?? source.location_confirmed_address,
+      { fallback: '', maxLength: 200 },
+    ),
     source: sourceValue,
     isDefault: source.isDefault === true || source.is_default === true,
     lastUsedAt: sanitizeText(source.lastUsedAt ?? source.last_used_at, { fallback: '', maxLength: 40 }),
@@ -140,6 +174,20 @@ function normalizeCoordinates(latitude, longitude) {
   if (!Number.isFinite(parsedLatitude) || !Number.isFinite(parsedLongitude)) return null;
   if (Math.abs(parsedLatitude) > 90 || Math.abs(parsedLongitude) > 180) return null;
   return { latitude: parsedLatitude, longitude: parsedLongitude };
+}
+
+function normalizeLocationSource(source, coordinates) {
+  if (!coordinates) return '';
+  const candidate = String(source.locationSource ?? source.location_source ?? '').trim();
+  return isDeliveryLocationSource(candidate) ? candidate : '';
+}
+
+/**
+ * Huella del texto de dirección de un candidato, para sellarla junto con la
+ * confirmación. Se usa al GUARDAR, no al leer.
+ */
+export function customerAddressLocationFingerprint(address = {}) {
+  return deliveryLocationAddressFingerprint(normalizeCustomerAddress(address));
 }
 
 function normalizeAccuracy(value) {

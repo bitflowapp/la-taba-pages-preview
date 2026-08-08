@@ -490,35 +490,38 @@
   background: var(--shelf-gold-wash);
 }
 
-/* Captura de ubicación dentro del editor de direcciones. Es opcional y por eso
-   se lee como un bloque aparte del formulario, no como un campo más. */
-.profile-location {
+/* Paso «Confirmá dónde te entregamos». Ya no es un bloque opcional al costado
+   del formulario: es un requisito de la dirección de entrega, y por eso ocupa
+   ancho completo y declara su estado con color y con texto —nunca sólo con
+   color, que dejaría afuera a quien no lo distingue—. */
+.location-step {
   display: grid;
-  gap: 8px;
-  padding: 13px 14px;
+  gap: 10px;
+  padding: 14px;
   border: 1px dashed #d8d2cc;
   border-radius: 15px;
   background: var(--shelf-raised);
 }
 
-.profile-location.is-pending {
+.location-step.is-pending {
   border-style: solid;
   border-color: #d6b26a;
   background: var(--shelf-gold-wash);
 }
 
-.profile-location.is-confirmed {
+.location-step.is-confirmed {
   border-style: solid;
   border-color: #7ba46b;
 }
 
-.profile-location strong {
+.location-step-head h3 {
+  margin: 0 0 4px;
   color: var(--profile-ink);
-  font-size: 14px;
-  font-weight: 780;
+  font-size: 15px;
+  font-weight: 800;
 }
 
-.profile-location p {
+.location-step p {
   margin: 0;
   color: var(--profile-muted);
   font-size: 13px;
@@ -526,17 +529,116 @@
   line-height: 1.5;
 }
 
-.profile-location .profile-location-note {
+.location-step-options,
+.location-step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.location-step-hint {
   font-size: 12px;
 }
 
-.profile-location .profile-location-error {
-  color: var(--taba-red);
+.location-step-error {
+  color: #ff8b82;
   font-weight: 750;
 }
 
-.profile-location .profile-card-actions {
-  margin: 0;
+.location-step-notice {
+  color: #e8c268;
+  font-weight: 750;
+}
+
+.location-step-canvas {
+  display: grid;
+  gap: 8px;
+}
+
+/* El mapa necesita alto propio: un contenedor de alto cero monta MapLibre y no
+   muestra nada, que es peor que no tener mapa. */
+.location-step-map {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  border-radius: 13px;
+  overflow: hidden;
+  background: #e9e5e0;
+}
+
+.location-step-nomap {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--shelf-gold-wash);
+  font-size: 12px;
+}
+
+.location-step-coords {
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  color: var(--profile-ink);
+}
+
+.location-step-meta {
+  font-size: 12px;
+}
+
+.location-step-nudge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--profile-muted);
+}
+
+.location-step-nudge .ghost-button {
+  text-transform: capitalize;
+  /* Objetivo táctil mínimo: estos controles se usan con el pulgar sobre un
+     mapa, donde errar significa mover el pin al lugar equivocado. */
+  min-height: 44px;
+  min-width: 56px;
+}
+
+.location-step-badge {
+  color: #7dc563;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.location-pin-marker {
+  display: block;
+  line-height: 0;
+  cursor: grab;
+  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.35));
+}
+
+.location-pin-marker:active {
+  cursor: grabbing;
+}
+
+/* Estado de la ubicación en la tarjeta de cada dirección guardada. */
+.profile-address-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.profile-address-location.is-confirmed {
+  color: #7dc563;
+}
+
+.profile-address-location.is-missing {
+  color: #ff8b82;
+  min-height: 44px;
+}
+
+.profile-address.needs-location {
+  border-color: rgb(224 57 47 / 0.45);
 }
 
 .profile-status {

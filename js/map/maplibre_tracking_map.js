@@ -176,15 +176,20 @@ export function createMapLibreTrackingMap({
     state.routeFeature = state.sandboxGeometryVerified ? sandboxRouteFeature(route) : null;
     state.routeVisible = Boolean(state.routeFeature);
     state.freshness = normalizeMapFreshness(freshness);
-    state.pendingSandboxPlaces = state.sandboxGeometryVerified
-      ? { store, destination }
-      : null;
+    // El destino ya no es exclusivo de la sandbox: un pedido real trae el punto
+    // que confirmó el cliente, y dibujarlo es justamente lo que faltaba para
+    // que el seguimiento mostrara a dónde va la entrega. El comercio, en
+    // cambio, sigue siendo geometría de la sandbox.
+    state.pendingSandboxPlaces = {
+      store: state.sandboxGeometryVerified ? store : null,
+      destination,
+    };
 
     const initialCenter = firstValidPoint(
       riderLocation,
       center,
       state.sandboxGeometryVerified ? store : null,
-      state.sandboxGeometryVerified ? destination : null,
+      destination,
       firstRoutePoint(state.routeFeature),
     );
     if (!initialCenter) return markUnavailable('missing-location');
@@ -526,8 +531,8 @@ export function createMapLibreTrackingMap({
   }
 
   function ensureSandboxPlaces(places) {
-    if (!state.sandbox || !state.sandboxGeometryVerified || !state.map || !places) return;
-    if (isValidMapPoint(places.store) && !state.storeMarker) {
+    if (!state.map || !places) return;
+    if (state.sandbox && state.sandboxGeometryVerified && isValidMapPoint(places.store) && !state.storeMarker) {
       state.storeMarker = createPlaceMarker({
         point: places.store,
         kind: 'store',

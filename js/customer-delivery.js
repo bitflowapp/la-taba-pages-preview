@@ -8,6 +8,10 @@ import {
   ADDRESS_SOURCE,
   resolveAddressHydration,
 } from './core/customer-delivery-address-hydration.js';
+import {
+  confirmedDeliveryLocationOf,
+  hasConfirmedDeliveryLocation,
+} from './core/delivery-location.js';
 import { splitStreetAndNumber } from './core/address.js';
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
 import { supportsProfileCheckout } from './core/profile-checkout.js';
@@ -322,6 +326,10 @@ function selectAddress(addressId, {
 } = {}) {
   const address = findAddress(addressId);
   if (!address) return;
+  // Defensa de fondo: el control ya viene deshabilitado, pero elegir por código
+  // una dirección sin punto confirmado dejaría el pedido a merced del rechazo
+  // del servidor.
+  if (!hasConfirmedDeliveryLocation(normalizeCustomerAddress(address))) return;
   if (userInitiated) state.addressInteractionVersion += 1;
   state.selectedAddressId = address.id;
   state.addressSource = source;
@@ -348,17 +356,17 @@ function applyAddressToForm(address) {
   setValue(form, 'deliveryCity', normalized.city);
   setValue(form, 'deliveryProvince', normalized.province);
   setValue(form, 'deliveryPostalCode', normalized.postalCode);
-  if (normalized.latitude != null && normalized.longitude != null) {
-    setValue(form, 'deliveryLatitude', normalized.latitude);
-    setValue(form, 'deliveryLongitude', normalized.longitude);
-    setValue(form, 'deliveryGeolocationAccuracy', normalized.geolocationAccuracy || '');
+  // Sólo viaja al pedido un punto CONFIRMADO. Una dirección con coordenadas
+  // viejas y sin confirmación se trata como lo que es: sin punto.
+  const confirmed = confirmedDeliveryLocationOf(normalized);
+  if (confirmed) {
+    setValue(form, 'deliveryLatitude', confirmed.latitude);
+    setValue(form, 'deliveryLongitude', confirmed.longitude);
+    setValue(form, 'deliveryGeolocationAccuracy', confirmed.accuracyMeters ?? '');
     setValue(form, 'deliveryAddressSource', normalized.source);
-    state.confirmedLocation = {
-      latitude: normalized.latitude,
-      longitude: normalized.longitude,
-      accuracy: normalized.geolocationAccuracy,
-      source: normalized.source,
-    };
+    setValue(form, 'deliveryLocationSource', confirmed.locationSource);
+    setValue(form, 'deliveryLocationConfirmedAt', confirmed.confirmedAt);
+    state.confirmedLocation = confirmed;
   } else {
     clearLocationFields();
   }
@@ -610,6 +618,8 @@ function clearLocationFields() {
   setValue(form, 'deliveryLongitude', '');
   setValue(form, 'deliveryGeolocationAccuracy', '');
   setValue(form, 'deliveryAddressSource', 'manual');
+  setValue(form, 'deliveryLocationSource', '');
+  setValue(form, 'deliveryLocationConfirmedAt', '');
 }
 
 function findAddress(addressId) {
@@ -691,6 +701,15 @@ function renderDeliveryAddressBlock() {
       <button class="primary-button compact" type="button" data-profile-checkout-action="add-address">Agregar dirección en Perfil</button>
     </div>`;
   }
+  // Tener direcciones no alcanza: para delivery hace falta al menos una con el
+  // punto confirmado. Si ninguna lo tiene, se dice acá y no al apretar pagar.
+  if (!state.addresses.some((address) => hasConfirmedDeliveryLocation(normalizeCustomerAddress(address)))) {
+    return `<div class="profile-checkout-block" data-profile-block="no-confirmed-location" role="status">
+      <strong>Confirmá dónde te entregamos</strong>
+      <span>Ninguna de tus direcciones tiene todavía el punto de entrega confirmado. Sin ese punto, quien reparte no sabe a qué puerta tocar.</span>
+      <button class="primary-button compact" type="button" data-profile-checkout-action="manage-addresses">Confirmar ubicación en Perfil</button>
+    </div>`;
+  }
   return `<div class="profile-checkout-addresses">
     <div class="profile-checkout-addresses-head">
       <span class="field-label" id="profile-addresses-title">¿Dónde lo llevamos?</span>
@@ -759,12 +778,16 @@ function renderAddressList() {
   const cards = visible.map((address) => {
     const selected = address.id === state.selectedAddressId;
     const reference = address.reference ? `<small>${escapeHtml(address.reference)}</small>` : '';
-    return `<label class="profile-address-card ${selected ? 'is-selected' : ''}" data-customer-address-id="${escapeAttr(address.id)}">
+    // Una dirección sin punto confirmado no se puede elegir para delivery: el
+    // backend la rechazaría igual, y el rechazo llegaría después del pago.
+    const confirmed = hasConfirmedDeliveryLocation(normalizeCustomerAddress(address));
+    return `<label class="profile-address-card ${selected ? 'is-selected' : ''} ${confirmed ? '' : 'needs-location'}" data-customer-address-id="${escapeAttr(address.id)}" data-address-location="${confirmed ? 'confirmed' : 'missing'}">
       <input
         type="radio"
         name="savedCustomerAddress"
         value="${escapeAttr(address.id)}"
         ${selected ? 'checked' : ''}
+        ${confirmed ? '' : 'disabled aria-disabled="true"'}
         data-customer-address-action="select"
       />
       <span class="profile-address-copy">
@@ -774,6 +797,9 @@ function renderAddressList() {
         </span>
         <span class="profile-address-line">${escapeHtml(addressSummary(address))}</span>
         ${reference}
+        ${confirmed
+    ? '<span class="profile-address-location is-confirmed">Ubicación confirmada</span>'
+    : '<span class="profile-address-location is-missing">Falta confirmar dónde te entregamos</span>'}
       </span>
     </label>`;
   }).join('');

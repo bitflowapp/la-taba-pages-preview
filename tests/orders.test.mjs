@@ -15,7 +15,7 @@ import {
   updateOrderStatus,
 } from '../js/orders.js';
 import { dateTime, getState, setState } from '../js/state.js';
-import { resetState, state } from './helpers.mjs';
+import { CONFIRMED_DELIVERY_POINT, resetState, state } from './helpers.mjs';
 
 beforeEach(() => {
   Object.defineProperty(globalThis, 'location', {
@@ -31,6 +31,7 @@ test('creates a valid delivery order and builds a complete WhatsApp message', ()
   const currentPrice = state().products.find((product) => product.id === 'qa-gaseosa-cola').price;
 
   const result = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'María López',
     customerPhone: '2995551234',
     customerAddress: 'Fotheringham 123',
@@ -65,6 +66,7 @@ test('pickup orders do not require a delivery address and do not charge shipping
   addToCart('qa-agua-mineral', 1);
 
   const result = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Carlos Pérez',
     customerPhone: '2991112233',
     customerAddress: '',
@@ -83,6 +85,7 @@ test('delivery orders store structured customer address and rider reference', ()
   addToCart('qa-gaseosa-cola', 1);
 
   const result = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Direccion QA',
     customerPhone: '2995551234',
     customerStreetAddress: 'Mitre 456',
@@ -95,12 +98,19 @@ test('delivery orders store structured customer address and rider reference', ()
 
   assert.equal(result.ok, true);
   assert.equal(result.order.address, 'Mitre 456, Area centro');
+  // El punto confirmado viaja DENTRO de la dirección del pedido: es lo que deja
+  // al Panel, al Rider y al seguimiento con un destino y no sólo con texto.
   assert.deepEqual(result.order.addressDetails, {
     streetLine: 'Mitre 456',
     neighborhood: 'Area centro',
     reference: 'Casa verde',
     label: 'Mitre 456, Area centro',
     usesStructured: true,
+    latitude: CONFIRMED_DELIVERY_POINT.deliveryLatitude,
+    longitude: CONFIRMED_DELIVERY_POINT.deliveryLongitude,
+    geolocationAccuracy: CONFIRMED_DELIVERY_POINT.deliveryGeolocationAccuracy,
+    locationSource: CONFIRMED_DELIVERY_POINT.deliveryLocationSource,
+    locationConfirmedAt: CONFIRMED_DELIVERY_POINT.deliveryLocationConfirmedAt,
   });
 
   const message = buildWhatsAppMessage(result.order);
@@ -113,6 +123,7 @@ test('delivery orders require a delivery address and a minimum subtotal', () => 
   addToCart('qa-gaseosa-cola', 1);
 
   const missingAddress = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Ana',
     customerPhone: '2993334444',
     customerAddress: '',
@@ -125,6 +136,7 @@ test('delivery orders require a delivery address and a minimum subtotal', () => 
   assert.match(missingAddress.message, /calle|número/i);
 
   const missingNeighborhood = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Ana',
     customerPhone: '2993334444',
     customerStreetAddress: 'Roca 321',
@@ -146,6 +158,7 @@ test('delivery orders require a delivery address and a minimum subtotal', () => 
   addToCart('qa-agua-mineral', 1);
 
   const belowMinimum = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Ana',
     customerPhone: '2993334444',
     customerAddress: 'Roca 321',
@@ -162,6 +175,7 @@ test('checkout sanitizes text and normalizes invalid payment methods', () => {
   addToCart('qa-gaseosa-cola', 1);
 
   const result = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: '  Ana\u0000 QA  ',
     customerPhone: ' 2995550000 ',
     customerAddress: '  Roca 321 ',
@@ -183,6 +197,7 @@ test('checkout sanitizes text and normalizes invalid payment methods', () => {
 test('kitchen ticket does not expose the delivery verification code', () => {
   addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente QA',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -233,6 +248,7 @@ test('double checkout confirmation cannot create a duplicate order', () => {
   const initialOrderCount = getState().orders.length;
 
   const first = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente QA',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -241,6 +257,7 @@ test('double checkout confirmation cannot create a duplicate order', () => {
     customerNotes: '',
   });
   const second = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente QA',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -259,6 +276,7 @@ test('double checkout confirmation cannot create a duplicate order', () => {
 test('secondary WhatsApp copy uses an existing order without creating another one', () => {
   addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Cliente WhatsApp',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -569,6 +587,7 @@ test('la supresión aislada en una prueba no afecta al resto del selector', () =
 test('status transitions no persisten ni activan la orden de forma automática', () => {
   addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Activo QA',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',
@@ -585,6 +604,7 @@ test('status transitions no persisten ni activan la orden de forma automática',
 test('order status transitions reject invalid jumps and preserve history', () => {
   addToCart('qa-gaseosa-cola', 1);
   const created = createOrderFromCheckout({
+    ...CONFIRMED_DELIVERY_POINT,
     customerName: 'Rider QA',
     customerPhone: '2995550000',
     customerAddress: 'Roca 321',

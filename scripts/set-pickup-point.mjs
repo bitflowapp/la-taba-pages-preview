@@ -84,8 +84,11 @@ if (origen === 'public_directory_cross_checked' && !fuente) {
 }
 const humanVerified = origen === 'business_verified';
 
+// El CLI de Supabase: el que esté en el PATH, salvo que se indique otro.
+const SUPABASE_CLI = process.env.SUPABASE_CLI || 'supabase';
+
 function serviceKey() {
-  const raw = execFileSync('C:/1212/scripts/supabase.exe',
+  const raw = execFileSync(SUPABASE_CLI,
     ['projects', 'api-keys', '--project-ref', REF, '--output', 'json'],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   const found = JSON.parse(raw).filter((e) => e.name === 'service_role');

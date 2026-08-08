@@ -2,11 +2,28 @@
 # navegacion por coordenada. Llegada (con rechazo del codigo equivocado) y
 # entrega terminal. No se cancela por SQL: el pedido se termina como lo
 # terminaria una persona.
-param([Parameter(Mandatory)][string]$DeliveryCode, [Parameter(Mandatory)][string]$OrderCode)
+param(
+    [Parameter(Mandatory)][string]$DeliveryCode,
+    [Parameter(Mandatory)][string]$OrderCode,
+    # El worktree del Rider, su arnes de QA y el serial del equipo. Se pasan o
+    # se toman del entorno: nada de rutas de una maquina en particular.
+    [string]$RiderWorktree = $env:TABA_RIDER_WORKTREE,
+    [string]$Serial = $(if ($env:TABA_MOTO_SERIAL) { $env:TABA_MOTO_SERIAL } else { 'ZY32LHS6PS' }),
+    [string]$SupabaseCli = $(if ($env:SUPABASE_CLI) { $env:SUPABASE_CLI } else { 'supabase' }),
+    [string]$ArtifactRoot = $env:TABA_EVIDENCIA
+)
 $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 
-$RiderWorktree = 'D:\1212\la-taba2-rider-first-physical-e2e'
+if (-not $RiderWorktree) {
+    # Por convencion, el repo del Rider es hermano de este.
+    $RiderWorktree = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'la-taba2-rider-first-physical-e2e'
+}
+if (-not (Test-Path $RiderWorktree)) {
+    throw "no encuentro el worktree del Rider. Pasalo con -RiderWorktree o TABA_RIDER_WORKTREE"
+}
+if (-not $ArtifactRoot) { $ArtifactRoot = Join-Path $PSScriptRoot '..\..\.taba-evidencia\pedido-humano' }
+
 $here = Join-Path $RiderWorktree 'scripts\qa'
 . (Join-Path $here 'lib\StagingGuard.ps1')
 . (Join-Path $here 'lib\QaCredential.ps1')
@@ -14,11 +31,7 @@ $here = Join-Path $RiderWorktree 'scripts\qa'
 . (Join-Path $here 'lib\DeviceSmoke.ps1')
 . (Join-Path $here 'lib\SmokeRun.ps1')
 
-$SupabaseCli = 'C:\1212\scripts\supabase.exe'
-$Serial = 'ZY32LHS6PS'
-$Apk = Join-Path $RiderWorktree 'build\app\outputs\apk\staging\debug\app-staging-debug.apk'
 $RunId = [guid]::NewGuid().ToString()
-$ArtifactRoot = 'D:\1212\artifacts\taba2-first-physical-e2e\focal-mendoza'
 New-Item -ItemType Directory -Path $ArtifactRoot -Force | Out-Null
 
 $guard = Assert-TabaStaging -RiderWorktree $RiderWorktree -SupabaseCli $SupabaseCli

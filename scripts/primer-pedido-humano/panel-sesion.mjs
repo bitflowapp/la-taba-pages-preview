@@ -3,25 +3,21 @@
 // mutacion sobre una cuenta real: se hace una vez y se reutiliza.
 //
 // Uso: node panel-sesion.mjs [--reusar]
-import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-const require = createRequire('file:///D:/1212/la-taba2-first-physical-e2e/');
-const { chromium } = require('@playwright/test');
+import { requireDelRepo, REF, URL_BASE, SITIO, SUPABASE_CLI, BUSINESS_ID, evidencia } from './entorno.mjs';
+const { chromium } = requireDelRepo('@playwright/test');
 
-const REF = 'ukxqbgswjlibmnjemrzd';
-const URL_BASE = `https://${REF}.supabase.co`;
-const SITE = 'https://taba2-staging.pages.dev';
-const EV = 'D:/1212/artifacts/taba2-first-physical-e2e/panel';
+const SITE = SITIO;
+const EV = evidencia('panel');
 const STORAGE = path.join(EV, 'negocio-storage.json');
-fs.mkdirSync(EV, { recursive: true });
 
 const reusar = process.argv.includes('--reusar') && fs.existsSync(STORAGE);
 
-const keys = JSON.parse(execFileSync('C:/1212/scripts/supabase.exe',
+const keys = JSON.parse(execFileSync(SUPABASE_CLI,
   ['projects', 'api-keys', '--project-ref', REF, '--output', 'json'],
   { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
 const SERVICE = keys.filter((k) => k.name === 'service_role')[0].api_key;
@@ -46,7 +42,7 @@ let t = await texto();
 const necesitaLogin = /Ingresar|Iniciar sesión|Correo|Contraseña/i.test(t) && !/Panel|pedidos|operación/i.test(t);
 
 if (!reusar || necesitaLogin) {
-  const [owner] = await rest('business_members?select=user_id&business_id=eq.00000000-0000-4000-8000-000000000001&role=eq.owner&is_active=eq.true');
+  const [owner] = await rest(`business_members?select=user_id&business_id=eq.${BUSINESS_ID}&role=eq.owner&is_active=eq.true`);
   const user = await (await fetch(`${URL_BASE}/auth/v1/admin/users/${owner.user_id}`, { headers: admin })).json();
   const PASSWORD = crypto.randomBytes(24).toString('base64url');
   await fetch(`${URL_BASE}/auth/v1/admin/users/${owner.user_id}`, {

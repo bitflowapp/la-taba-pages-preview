@@ -65,7 +65,25 @@ No ejecuta nada por su cuenta. Según el estado te da el camino:
 | `cliente-tracking.mjs` | recupera el código desde el navegador del cliente |
 | `llegada-y-codigo.ps1` | llegada + rechazo del código incorrecto, en el Moto |
 | `entregar.ps1` | confirma la entrega, en el Moto |
+| `entorno.mjs` | de dónde sale cada ruta, para no clavar la de ninguna máquina |
 
-Los dos `.ps1` corren contra el arnés del repo del Rider
-(`la-taba2-rider-first-physical-e2e/scripts/qa`) y **abortan si el proyecto no es
-el staging autorizado**.
+Los dos `.ps1` corren contra el arnés del repo del Rider y **abortan si el
+proyecto no es el staging autorizado**. Por convención lo buscan como repo
+hermano de éste; si está en otro lado, `-RiderWorktree <ruta>` o
+`TABA_RIDER_WORKTREE`.
+
+## Entorno
+
+Nada tiene rutas de una máquina en particular. Lo que se puede ajustar:
+
+| Variable | Para qué | Por defecto |
+| --- | --- | --- |
+| `SUPABASE_CLI` | binario del CLI de Supabase | `supabase` (el del `PATH`) |
+| `TABA_EVIDENCIA` | dónde dejar capturas y medidas | `.taba-evidencia/` en el repo, **ignorada por git** |
+| `TABA_RIDER_WORKTREE` | worktree del repo del Rider | repo hermano |
+| `TABA_MOTO_SERIAL` | serial ADB del teléfono | `ZY32LHS6PS` |
+| `TABA_STAGING_REF` | proyecto Supabase | `ukxqbgswjlibmnjemrzd` |
+| `TABA_SITIO` | storefront publicado | `https://taba2-staging.pages.dev` |
+
+La evidencia queda fuera de git a propósito: puede tener datos de una entrega
+real.

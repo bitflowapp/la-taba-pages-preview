@@ -14,16 +14,14 @@
 // adivina.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import { REF, URL_BASE, SUPABASE_CLI, evidencia } from './entorno.mjs';
 
-const REF = 'ukxqbgswjlibmnjemrzd';
-const URL_BASE = `https://${REF}.supabase.co`;
 const CODE = process.argv[2] || null;
 const MINUTOS = Number(process.env.MINUTOS || 90);
 const CADA_MS = Number(process.env.CADA_MS || 6000);
-const EV = 'D:/1212/artifacts/taba2-first-physical-e2e/pedido-humano';
-fs.mkdirSync(EV, { recursive: true });
+const EV = evidencia('pedido-humano');
 
-const keys = JSON.parse(execFileSync('C:/1212/scripts/supabase.exe',
+const keys = JSON.parse(execFileSync(SUPABASE_CLI,
   ['projects', 'api-keys', '--project-ref', REF, '--output', 'json'],
   { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
 const SERVICE = keys.filter((k) => k.name === 'service_role')[0].api_key;

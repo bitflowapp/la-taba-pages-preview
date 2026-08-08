@@ -3,28 +3,26 @@
 // Se usa para retirar de la cola el pedido residual que quedó de la corrida que
 // descubrió el corte de coordenadas. No se borra por SQL: mover pedidos reales
 // por fuera de la UI del negocio es justo lo que este trabajo evita.
-import { createRequire } from 'node:module';
+import { requireDelRepo, REF, URL_BASE, SITIO, SUPABASE_CLI, evidencia } from './entorno.mjs';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-const require = createRequire('file:///D:/1212/la-taba2-first-physical-e2e/');
-const { chromium } = require('@playwright/test');
 
-const SITE = 'https://taba2-staging.pages.dev/';
-const REF = 'ukxqbgswjlibmnjemrzd';
+const { chromium } = requireDelRepo('@playwright/test');
+
+const SITE = `${SITIO}/`;
 const CODE = process.env.QA_ORDER || 'LT-0097';
 const MOTIVO = process.env.QA_MOTIVO || 'Pedido de prueba tecnica: se retira de la cola antes del piloto humano';
-const EV = 'D:/1212/artifacts/taba2-first-physical-e2e/negocio';
+const EV = evidencia('negocio');
 fs.mkdirSync(EV, { recursive: true });
 
-const keys = JSON.parse(execFileSync('C:\\1212\\scripts\\supabase.exe',
+const keys = JSON.parse(execFileSync(SUPABASE_CLI,
   ['projects', 'api-keys', '--project-ref', REF, '--output', 'json'],
   { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
 const SERVICE = keys.filter((k) => k.name === 'service_role')[0].api_key;
 const admin = { apikey: SERVICE, Authorization: `Bearer ${SERVICE}`, 'Content-Type': 'application/json' };
-const URL_BASE = `https://${REF}.supabase.co`;
 const rest = async (p) => (await fetch(`${URL_BASE}/rest/v1/${p}`, { headers: admin })).json();
 
 const [owner] = await rest("business_members?select=user_id&business_id=eq.00000000-0000-4000-8000-000000000001&role=eq.owner&is_active=eq.true");

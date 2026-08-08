@@ -29,3 +29,7 @@ catalog/photo-intake/validation.json
 catalog/photo-intake/review.json
 catalog/photo-intake/ingest-report.json
 artifacts/taba2-commercial-audit/
+
+# Evidencia de las corridas del piloto: capturas, sesiones y medidas.
+# Es local y puede contener datos de una entrega real; nunca se versiona.
+.taba-evidencia/

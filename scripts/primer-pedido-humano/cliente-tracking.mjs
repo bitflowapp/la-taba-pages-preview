@@ -5,17 +5,16 @@
 // `recover_order_tracking_access`, que revoca el token viejo, emite uno nuevo y
 // REGENERA el código cifrado con él. Todo con la sesión del propio cliente,
 // desde su propio navegador: ni la service key puede descifrarlo.
-import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const require = createRequire('file:///D:/1212/la-taba2-first-physical-e2e/');
-const { chromium } = require('@playwright/test');
+import { requireDelRepo, SITIO, evidencia } from './entorno.mjs';
+const { chromium } = requireDelRepo('@playwright/test');
 
-const SITE = 'https://taba2-staging.pages.dev/';
+const SITE = `${SITIO}/`;
 const CODE = process.env.QA_ORDER;
 if (!CODE) throw new Error('falta QA_ORDER=LT-XXXX');
-const EV = 'D:/1212/artifacts/taba2-first-physical-e2e/e2e-final';
+const EV = evidencia('cliente');
 const STORAGE = path.join(EV, 'cliente-storage.json');
 
 const browser = await chromium.launch({ headless: false });

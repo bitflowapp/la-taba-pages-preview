@@ -8,9 +8,8 @@
 //   node rollback.mjs LT-0104            -> diagnostica y muestra el camino
 //   node rollback.mjs LT-0104 --verificar -> revisa que el rollback quedo limpio
 import { execFileSync } from 'node:child_process';
+import { REF, URL_BASE, SUPABASE_CLI } from './entorno.mjs';
 
-const REF = 'ukxqbgswjlibmnjemrzd';
-const URL_BASE = `https://${REF}.supabase.co`;
 const CODE = process.argv[2];
 const VERIFICAR = process.argv.includes('--verificar');
 if (!CODE) {
@@ -18,7 +17,7 @@ if (!CODE) {
   process.exit(1);
 }
 
-const keys = JSON.parse(execFileSync('C:/1212/scripts/supabase.exe',
+const keys = JSON.parse(execFileSync(SUPABASE_CLI,
   ['projects', 'api-keys', '--project-ref', REF, '--output', 'json'],
   { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
 const SERVICE = keys.filter((k) => k.name === 'service_role')[0].api_key;

@@ -175,7 +175,14 @@ const PROHIBIDOS = [
 ];
 for (const rel of VIGILADOS) {
   const ruta = join(RAIZ, rel);
-  if (!existsSync(ruta)) continue;
+  // Un vigilado que no existe se salteaba en silencio, y un archivo renombrado
+  // dejaba de mirarse sin que nada avisara: el chequeo seguía en verde mirando
+  // menos. Si desaparece, se dice y se falla; sacar uno de la lista es una
+  // decisión que se toma acá, a mano.
+  if (!existsSync(ruta)) {
+    fallar(`el archivo vigilado «${rel}» no existe: o se renombró, o hay que sacarlo de VIGILADOS`);
+    continue;
+  }
   const texto = soloCodigo(readFileSync(ruta, 'utf8'), rel.split('.').pop());
   for (const { patron, que } of PROHIBIDOS) {
     if (patron.test(texto)) fallar(`${rel} volvió a nombrar ${que} en código ejecutable`);

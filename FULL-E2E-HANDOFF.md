@@ -26,10 +26,10 @@ puede llamarse verificado.
 | Recorrido | storefront → pedido → Panel → accepted → preparing → ready → app Rider → claim → retiro → en camino → GPS → llegada → **código incorrecto rechazado** → código correcto → **`delivered`** |
 | Novedad | primer pedido del proyecto con **los dos puntos del mapa** en su instantánea, y primer mapa del Rider que dibuja el local sobre calles reales de Neuquén |
 | Defectos cerrados | **9**, incluidos el que dejaba a la app Rider en la pantalla de ingreso con la sesión viva, el que la dejaba sin destino al abrir Google Maps y los **dos** que hacían que el GPS publicara una sola posición por entrega (sección 7) |
-| Cierre QA | **14/14** verificaciones, seis veces: `LT-0098` a `LT-0103` |
+| Cierre QA | **14/14** verificaciones, ocho veces: `LT-0098` a `LT-0105` |
 | Punto de retiro | ya no es `qa_fixture`: `-38.946054, -68.053236`, origen `public_directory_cross_checked`, **provisional** hasta verificarlo por presencia (sección 6) |
 | GPS en vivo | **arreglado y medido**: cadencia 12,44 s, latencia Moto → backend 0,21 s, precisión 11,7 m, cliente viendo **«Ubicación en vivo · hace 2–5 s»**, corte de red de 90 s recuperado con **exactly-once**. Con el equipo **quieto**: no se afirma desplazamiento (sección 7) |
-| Bloqueo abierto | el Moto G15 **no tiene SIM**. Sin datos móviles no hay reparto real con seguimiento en vivo (sección 7.4) |
+| Bloqueo abierto | el Moto G15 **no tiene SIM**. Sin datos móviles no hay reparto real con seguimiento en vivo (sección 7.6) |
 | Producción | intacta. ARCA sin emisión. `LT-0030` idéntico |
 
 ---
@@ -561,7 +561,35 @@ El corte de red importa más de lo que parece: es el modelo de una cuadra sin
 señal. Antes de arreglar la revisión, un corte dejaba el seguimiento muerto para
 siempre; ahora se recupera solo y sin duplicar nada.
 
-### 7.5 El bloqueo que no es de software
+### 7.5 El arnés mentía en contra
+
+Cerrar cada pedido QA de esta jornada requirió meter mano. No porque la app
+fallara —no fallaba— sino porque el arnés daba por rotas cosas sanas. Un arnés
+que miente en contra es tan inservible como uno que miente a favor: obliga a
+verificar a mano lo que debería verificar solo, y en un pedido humano real eso no
+es una opción. Cuatro falsos negativos, corregidos y validados sobre pedidos
+reales:
+
+| Fase | Daba | Por qué |
+| --- | --- | --- |
+| `ARRIVAL_AND_CODE` | `DELIVERY_CODE_NOT_WRITTEN` **5 de 5** | al rechazar un código la app **repliega el campo** y vuelve a mostrar «Ingresar código»; el arnés escribía una sola vez contra un nodo que ya no aceptaba texto |
+| `PICKUP_AND_START` | `FINAL_STATE_MISMATCH` | al iniciar el recorrido la app pide un «Continuar» de permisos; es parte del camino y el arnés no lo contemplaba |
+| `MAP_CONTROLS_AND_EXTERNAL_NAV` | `MAP_CONTROL_NO_EFFECT` | `act` exige un cambio en el árbol de accesibilidad y recentrar mueve la **cámara**: el árbol queda idéntico |
+| Fases terminales | `FINAL_STATE_MISMATCH` | al terminar, la app sale de la pantalla y no queda ningún estado que mirar — que no es lo mismo que mostrar otro |
+
+Ninguna corrección afloja una aserción de seguridad: el código incorrecto se
+sigue rechazando y sigue quedando registrado (`failed_attempts` 0 → 1) en cada
+corrida, y la escritura sigue siendo únicamente `ACTION_SET_TEXT` —nunca
+`input text` ni portapapeles—.
+
+El caso del mapa merece una aclaración, porque es el único donde se cambió qué se
+afirma: el movimiento de cámara **no se puede observar** desde el árbol de
+accesibilidad, así que exigirlo era pedir una medición imposible. Ahora se
+afirman las dos cosas que sí son observables y que juntas sostienen el encuadre:
+que el control acepta la acción, y que hay tres paradas con distancia resuelta
+—es decir, algo que encuadrar—.
+
+### 7.6 El bloqueo que no es de software
 
 **El Moto G15 no tiene SIM.** `slot 0: N/A`, `defaultDataSubId=-1`, y ninguna
 interfaz móvil registró tráfico nunca: el equipo siempre estuvo en el Wi‑Fi de la
@@ -599,7 +627,7 @@ pasos:
    código equivocado se rechaza y no rompe nada.
 
 **Requisito previo, sin excepción: el teléfono tiene que tener datos móviles**
-(sección 7.5). Hoy no los tiene y por eso este pedido está postergado.
+(sección 7.6). Hoy no los tiene y por eso este pedido está postergado.
 
 **Estado del alistamiento, verificado el 8/8:** producto activo con stock 87 a
 $ 3.576; Rider libre (0 pedidos en vuelo) y con sesión viva; punto de retiro

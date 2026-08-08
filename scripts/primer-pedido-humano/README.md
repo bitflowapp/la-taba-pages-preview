@@ -6,7 +6,7 @@ y el Rider entrega desde su app, que es lo que haría una persona.
 
 **Requisito previo del reparto:** el teléfono tiene que tener **datos móviles**.
 Sin eso no hay seguimiento en vivo ni forma de confirmar el código en la puerta.
-Está explicado en `FULL-E2E-HANDOFF.md`, sección 7.5.
+Está explicado en `FULL-E2E-HANDOFF.md`, sección 7.6.
 
 ## Cómo se distingue el pedido humano de los QA viejos
 

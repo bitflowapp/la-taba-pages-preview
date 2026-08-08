@@ -42,12 +42,15 @@ const PRECISION_MAXIMA = Number(process.env.PRECISION_MAXIMA || 20);
 const DISTANCIA_MAXIMA = Number(process.env.DISTANCIA_MAXIMA || 30);
 const CANDIDATOS = Number(process.env.CANDIDATOS || 5);
 
-if (!CODE) {
-  console.log('uso: node verificar-presencia.mjs LT-XXXX');
-  console.log('     correlo con el Rider parado en el local, apenas confirma el retiro.');
-  process.exit(1);
-}
 const EV = evidencia('presencia');
+
+// `process.exit()` mata el proceso mientras todavia se estan cerrando los
+// handles de los hijos que se lanzaron con execFileSync, y Node 24 en Windows
+// aborta con `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)`. Eso
+// convierte una salida prevista en algo que parece un cuelgue, con un codigo de
+// salida sin sentido (-1073740791). Medido en este mismo equipo. Asi que se
+// declara el codigo y se deja que el proceso termine solo.
+function salir(codigo) { process.exitCode = codigo; return null; }
 
 // ---------------------------------------------------------------- lectura ---
 const keys = JSON.parse(execFileSync(SUPABASE_CLI,
@@ -60,14 +63,23 @@ const rest = async (p) => (await fetch(`${URL_BASE}/rest/v1/${p}`, { headers: H 
 // El punto vive en el esquema `private`, que PostgREST no expone. Se lee y se
 // escribe por la Management API, con el token del CLI de Supabase, igual que
 // `scripts/set-pickup-point.mjs`.
-const token = execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
+//
+// Se lee TARDE, a proposito: las guardas de arriba no necesitan token, y no
+// tiene sentido abrir el Administrador de credenciales para decir «ese pedido
+// no existe».
+let tokenCache = null;
+const token = () => {
+  if (tokenCache) return tokenCache;
+  tokenCache = execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
   'Add-Type -Namespace "" -Name TabaCredP -MemberDefinition \'[DllImport("advapi32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern bool CredRead(string t, uint y, uint f, out IntPtr c); [DllImport("advapi32.dll")] public static extern void CredFree(IntPtr b); [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)] public struct CREDENTIAL { public uint Flags; public uint Type; public string TargetName; public string Comment; public System.Runtime.InteropServices.ComTypes.FILETIME LastWritten; public uint CredentialBlobSize; public IntPtr CredentialBlob; public uint Persist; public uint AttributeCount; public IntPtr Attributes; public string TargetAlias; public string UserName; }\'; $p=[IntPtr]::Zero; [void][TabaCredP]::CredRead("Supabase CLI:supabase",1,0,[ref]$p); $c=[System.Runtime.InteropServices.Marshal]::PtrToStructure($p,[type][TabaCredP+CREDENTIAL]); $b=New-Object byte[] $c.CredentialBlobSize; [System.Runtime.InteropServices.Marshal]::Copy($c.CredentialBlob,$b,0,$c.CredentialBlobSize); [TabaCredP]::CredFree($p); [System.Text.Encoding]::UTF8.GetString($b).Trim([char]0)',
-], { encoding: 'utf8' }).trim();
+  ], { encoding: 'utf8' }).trim();
+  return tokenCache;
+};
 
 const sql = async (query) => {
   const r = await fetch(`https://api.supabase.com/v1/projects/${REF}/database/query`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ query }),
   });
   const t = await r.text();
@@ -83,12 +95,18 @@ const metros = (a, b) => {
 };
 
 // ----------------------------------------------------------------- pedido ---
+async function principal() {
+if (!CODE) {
+  console.log('uso: node verificar-presencia.mjs LT-XXXX');
+  console.log('     correlo con el Rider parado en el local, apenas confirma el retiro.');
+  return salir(1);
+}
 const [pedido] = await rest(`orders?code=eq.${CODE}&select=id,code,status,picked_up_at`);
-if (!pedido) { console.log(`no existe ${CODE}`); process.exit(1); }
+if (!pedido) { console.log(`no existe ${CODE}`); return salir(1); }
 if (!['picked_up', 'on_the_way', 'arrived'].includes(pedido.status)) {
   console.log(`${CODE} está en ${pedido.status}. Esta medición es del RETIRO: correla con el`);
   console.log('pedido ya retirado y el Rider todavía en el local.');
-  process.exit(1);
+  return salir(1);
 }
 
 const [punto] = await sql(
@@ -96,7 +114,7 @@ const [punto] = await sql(
           human_verified, verified_by_rider_presence, presence_status
      from private.rider_map_business_locations where business_id = '${BUSINESS_ID}';`,
 );
-if (!punto) { console.log('el negocio no tiene punto de retiro cargado'); process.exit(1); }
+if (!punto) { console.log('el negocio no tiene punto de retiro cargado'); return salir(1); }
 
 console.log(`\npunto configurado: ${punto.lat}, ${punto.lng}  source=${punto.source} `
   + `confianza=${punto.confidence} precisión declarada=${punto.accuracy_m} m`);
@@ -131,7 +149,7 @@ if (candidatos.length === 0) {
   console.log('El punto queda como estaba. Volvé a medir con el equipo quieto y cielo despejado.');
   fs.writeFileSync(path.join(EV, `presencia-${CODE}-sin-fix.json`),
     JSON.stringify({ code: CODE, punto, candidatos: [], veredicto: 'sin_fix' }, null, 2));
-  process.exit(3);
+  return salir(3);
 }
 
 // El mejor es el de menor incertidumbre, no el más cercano: elegir el más
@@ -176,4 +194,7 @@ if (confirmado) {
   console.log('Queda registrada la discrepancia para mirarla con alguien del comercio.');
 }
 console.log(`\nevidencia: ${path.join(EV, `presencia-${CODE}.json`)}`);
-process.exitCode = confirmado ? 0 : 4;
+return salir(confirmado ? 0 : 4);
+}
+
+await principal();

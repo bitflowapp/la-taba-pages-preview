@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v49-borrador-direccion';
+const CACHE_NAME = 'la-taba-runtime-v50-ubicacion-real';
 const ASSETS = [
   './',
   './index.html',
@@ -27,6 +27,7 @@ const ASSETS = [
   './js/core/address.js',
   './js/core/app-mode.js',
   './js/core/business-config-store.js',
+  './js/core/business-location.js',
   './js/core/business-metrics.js',
   './js/core/business-ops.js',
   './js/core/business-reports.js',

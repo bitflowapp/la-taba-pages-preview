@@ -2,6 +2,11 @@
 // Identidad única de TABA. La presentación comercial y el storefront comparten
 // marca para evitar que el cliente vea nombres de producto distintos.
 import { isShowcaseMode } from './core/showcase-mode.js';
+import {
+  BUSINESS_LOCATION,
+  BUSINESS_LOCATION_IS_PLOTTABLE,
+  BUSINESS_POINT,
+} from './core/business-location.js';
 
 export const BRAND = Object.freeze({
   productName: 'TABA2',
@@ -27,14 +32,15 @@ export const BUSINESS_CONFIG = Object.freeze({
   whatsappVerified: false,
   // Dirección postal confirmada por el comercio. Sigue siendo una semilla
   // editable: la superficie la lee de `businessConfig.address`, nunca la
-  // escribe a mano. La COORDENADA continúa sin verificar (ver más abajo), así
-  // que el mapa del cliente sigue sin plotear un marcador del local.
-  address: 'Mendoza 827, Neuquén',
-  // Dirección textual del local. NO hay una coordenada lat/lng verificada para
-  // esta dirección, así que el mapa del cliente NO plotea un marcador del local
-  // (no inventamos su ubicación). `businessLocation` queda sólo como referencia
-  // interna y no se muestra como ubicación real del comercio.
-  businessLocationVerified: false,
+  // escribe a mano. La coordenada ya NO se escribe acá: sale del contrato
+  // central `js/core/business-location.js`.
+  address: BUSINESS_LOCATION.address,
+  // La coordenada del local está contrastada contra la ficha comercial de
+  // Google Maps, la numeración catastral de OSM y el Plus Code, así que el mapa
+  // del cliente ya puede plotear el marcador del local. Sigue sin ser
+  // `human_verified`: nadie la confirmó todavía contra la puerta. Ver el
+  // contrato para la evidencia y para qué haría falta para elevarla.
+  businessLocationVerified: BUSINESS_LOCATION_IS_PLOTTABLE,
   deliveryZone: 'Cobertura a confirmar con el local',
   openingHoursLabel: 'Horarios a confirmar con el local',
   openingHours: 'Horarios a confirmar con el local',
@@ -48,17 +54,17 @@ export const BUSINESS_CONFIG = Object.freeze({
   adminPin: '1234',
   currency: 'ARS',
   orderPrefix: 'LT',
-  businessLocation: {
-    name: `${BRAND.demoBusinessName} · Neuquén Capital`,
-    lat: -38.9516,
-    lng: -68.0591,
-  },
+  businessLocation: BUSINESS_POINT,
   defaultMapBounds: [
     [-38.982, -68.105],
     [-38.904, -67.955],
   ],
   defaultDeliveryZones: [
-    { id: 'neuquen-capital', name: 'Neuquén Capital', center: { lat: -38.9516, lng: -68.0591 } },
+    {
+      id: 'neuquen-capital',
+      name: 'Neuquén Capital',
+      center: { lat: BUSINESS_POINT.lat, lng: BUSINESS_POINT.lng },
+    },
     { id: 'cipolletti', name: 'Cipolletti', center: { lat: -38.9339, lng: -67.9903 } },
   ],
   demoDestinations: {
@@ -103,8 +109,8 @@ export const BUSINESS_CONFIG = Object.freeze({
       label: 'Local TABA2 demo',
       addressLabel: 'Local demo · TABA2',
       city: 'Neuquén',
-      lat: -38.9516,
-      lng: -68.0591,
+      lat: BUSINESS_POINT.lat,
+      lng: BUSINESS_POINT.lng,
     },
   ],
   mapProvider: {

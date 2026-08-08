@@ -1,30 +1,48 @@
-// Coordenadas exclusivamente del escenario sandbox. No representan la
-// dirección real de TABA ni pueden ser usadas por los repositorios productivos.
+// Escenario del mapa en modo demo (?demo=1). Tiene dos mitades con reglas
+// distintas, y la distinción importa:
+//
+//   - el ORIGEN es la ubicación REAL del comercio, y sale del contrato central
+//     `js/core/business-location.js`. Antes había acá una copia a mano que caía
+//     sobre Avenida Argentina, junto a Parque Central, a 793 m de la puerta: es
+//     lo que la demo venía mostrando como «el local»;
+//   - el DESTINO es sintético y público a propósito. Una plaza no es el
+//     domicilio de nadie, así que la demo nunca expone dónde vive una persona.
+//
+// La ruta que los une no está dibujada a ojo: es el recorrido real por calles
+// que devuelve OSRM sobre la red de OpenStreetMap, simplificado a 12 vértices.
+import { BUSINESS_LOCATION, DEMO_CUSTOMER_DESTINATION } from '../core/business-location.js';
 
 const STORE = Object.freeze({
   id: 'taba-sandbox-store',
-  name: 'TABA',
-  label: 'Comercio TABA',
-  lat: -38.95172,
-  lng: -68.05942,
+  name: BUSINESS_LOCATION.name,
+  label: `${BUSINESS_LOCATION.name} · ${BUSINESS_LOCATION.address}`,
+  lat: BUSINESS_LOCATION.latitude,
+  lng: BUSINESS_LOCATION.longitude,
 });
 
 const DESTINATION = Object.freeze({
   id: 'taba-sandbox-destination',
-  name: 'Destino sandbox',
-  label: 'Zona segura · Neuquén Capital',
-  lat: -38.94688,
-  lng: -68.06678,
+  name: DEMO_CUSTOMER_DESTINATION.name,
+  label: DEMO_CUSTOMER_DESTINATION.label,
+  lat: DEMO_CUSTOMER_DESTINATION.lat,
+  lng: DEMO_CUSTOMER_DESTINATION.lng,
 });
 
-// Puntos aproximados sobre calles públicas del área. El escenario no usa
-// domicilios personales y los puntos se consumen únicamente con ?demo=1.
+// Recorrido real por calles públicas: Mendoza -> Diagonal España -> Basavilbaso
+// -> General Villegas -> Florentino Ameghino -> Basavilbaso -> La Fraternidad.
+// 1441 m, ~4 min en auto.
 const ROUTE_POINTS = Object.freeze([
   STORE,
-  Object.freeze({ lat: -38.95144, lng: -68.06118 }),
-  Object.freeze({ lat: -38.94992, lng: -68.06102 }),
-  Object.freeze({ lat: -38.94940, lng: -68.06472 }),
-  Object.freeze({ lat: -38.94788, lng: -68.06520 }),
+  Object.freeze({ lat: -38.946389, lng: -68.053414 }),
+  Object.freeze({ lat: -38.945561, lng: -68.052328 }),
+  Object.freeze({ lat: -38.945507, lng: -68.049228 }),
+  Object.freeze({ lat: -38.945300, lng: -68.048828 }),
+  Object.freeze({ lat: -38.944430, lng: -68.048825 }),
+  Object.freeze({ lat: -38.944424, lng: -68.046436 }),
+  Object.freeze({ lat: -38.944676, lng: -68.046098 }),
+  Object.freeze({ lat: -38.944686, lng: -68.041125 }),
+  Object.freeze({ lat: -38.945015, lng: -68.041068 }),
+  Object.freeze({ lat: -38.945208, lng: -68.040059 }),
   DESTINATION,
 ]);
 

@@ -645,7 +645,7 @@ primeros lo muestran; Google Maps abre la coordenada pero **no la reconoce como
 `human_verified=false`. La declaración definitiva corresponde después de
 verificar presencia en el primer retiro físico.
 
-**Tampoco se declara `TABA2_READY_FOR_FIRST_HUMAN_PHYSICAL_ORDER_LIVE_GPS.**
+**Tampoco se declara `TABA2_READY_FOR_FIRST_HUMAN_PHYSICAL_ORDER_LIVE_GPS`.**
 El seguimiento en vivo quedó arreglado y medido (sección 7.3), pero **sobre
 Wi‑Fi y con el teléfono quieto**. El Moto G15 no tiene SIM: en un reparto real se
 queda sin red apenas sale a la calle, y ahí no hay seguimiento en vivo ni forma

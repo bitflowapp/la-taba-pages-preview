@@ -896,6 +896,8 @@ async function configureBusinessRuntime(result) {
     role: result.membership?.role,
     operatorName: String(result.user?.email || '').split('@')[0],
     getOperationCenter: () => operationsRepository.getCenter(),
+    getPilotDashboard: (timezone) => operationsRepository.getPilotDashboard(timezone),
+    tracePilotOrder: (reference) => operationsRepository.tracePilotOrder(reference),
     acknowledgeOperationalAlert: (alertId) => operationsRepository.acknowledgeAlert(alertId),
     resolveOperationalAlert: (input) => operationsRepository.resolveAlert(input),
     prepareDailyReconciliation: (input) => operationsRepository.prepareDailyReconciliation(input),

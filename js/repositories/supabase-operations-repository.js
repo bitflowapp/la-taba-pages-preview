@@ -37,5 +37,26 @@ export function createSupabaseOperationsRepository({ client, businessId }) {
     }),
     getOpeningStatus: () => rpc('get_business_opening_status', { p_business_id: businessId }),
     setOpenState: (status) => rpc('set_business_open_state', { p_business_id: businessId, p_status: status }),
+    // Superficie operativa del piloto. El servidor es el único que decide;
+    // el Panel no recalcula ni completa nada que el servidor no haya medido.
+    getPilotDashboard: (timezone) => rpc('get_pilot_operations_dashboard', {
+      p_business_id: businessId,
+      p_timezone: timezone || 'America/Argentina/Buenos_Aires',
+    }),
+    getPilotServiceHealth: () => rpc('get_pilot_service_health', { p_business_id: businessId }),
+    tracePilotOrder: (reference) => rpc('trace_pilot_order', {
+      p_business_id: businessId,
+      p_reference: String(reference || ''),
+    }),
+    getPilotCommercialReport: ({ from, to, timezone } = {}) => rpc('get_pilot_commercial_report', {
+      p_business_id: businessId,
+      p_from: from,
+      p_to: to,
+      p_timezone: timezone || 'America/Argentina/Buenos_Aires',
+    }),
+    configurePilotThresholds: (thresholds) => rpc('configure_pilot_ops_thresholds', {
+      p_business_id: businessId,
+      p_thresholds: thresholds,
+    }),
   });
 }

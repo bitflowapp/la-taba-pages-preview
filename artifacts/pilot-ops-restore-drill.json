@@ -1,0 +1,87 @@
+{
+  "declaration": "TABA2_PILOT_RESTORE_DRILL",
+  "productionDataUsed": false,
+  "stagingTouched": false,
+  "syntheticFixture": "scripts/sql/pilot-ops-synthetic-fixture.sql",
+  "image": "public.ecr.aws/supabase/postgres:17.6.1.147",
+  "steps": [
+    {
+      "name": "Levantando el clúster de origen",
+      "at": "2026-08-07T07:58:41.231Z",
+      "detail": "public.ecr.aws/supabase/postgres:17.6.1.147"
+    },
+    {
+      "name": "Reconstrucción desde cero",
+      "at": "2026-08-07T07:58:56.890Z",
+      "detail": "60 migraciones replicadas",
+      "migrations": 60,
+      "durationMs": 10023
+    },
+    {
+      "name": "Escenario sintético cargado",
+      "at": "2026-08-07T07:58:57.056Z",
+      "detail": "cero datos humanos"
+    },
+    {
+      "name": "Contrato operativo verificado antes del backup",
+      "at": "2026-08-07T07:58:57.384Z"
+    },
+    {
+      "name": "Backup tomado",
+      "at": "2026-08-07T07:58:57.866Z",
+      "detail": "0.05 MB · sha256 105d5fd994599a41…",
+      "bytes": 47255,
+      "dumpSha256": "105d5fd994599a41fc4daa45525dca8a17bb6284e22d2a7ddd5ac26a5c8d8539",
+      "schemas": [
+        "public",
+        "auth",
+        "storage"
+      ],
+      "durationMs": 202
+    },
+    {
+      "name": "Levantando el clúster de destino",
+      "at": "2026-08-07T07:58:57.867Z",
+      "detail": "proyecto de recuperación"
+    },
+    {
+      "name": "Esquema del destino reconstruido",
+      "at": "2026-08-07T07:59:12.921Z",
+      "detail": "60 migraciones",
+      "durationMs": 9332
+    },
+    {
+      "name": "Restauración completada",
+      "at": "2026-08-07T07:59:14.350Z",
+      "detail": "176 ms",
+      "durationMs": 176
+    },
+    {
+      "name": "Contenido idéntico verificado",
+      "at": "2026-08-07T07:59:14.599Z",
+      "detail": "69 tablas comparadas",
+      "tables": 69,
+      "contentSha256": "665234adbc726dcecac58925281e26f476b356a122132c31788d9afd83d101d0"
+    },
+    {
+      "name": "Contrato operativo verificado sobre el proyecto recuperado",
+      "at": "2026-08-07T07:59:14.941Z"
+    }
+  ],
+  "rebuildFromMigrations": {
+    "ok": true,
+    "migrations": 60
+  },
+  "contractBeforeBackup": {
+    "ok": true
+  },
+  "restoreEquivalence": {
+    "ok": true,
+    "tables": 69
+  },
+  "contractAfterRestore": {
+    "ok": true
+  },
+  "ok": true,
+  "durationMs": 33711
+}

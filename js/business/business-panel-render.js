@@ -17,6 +17,11 @@ import {
 import {
   buildStorefrontPreview, CAPACITY_UNITS, describePublishReadiness, PACKAGE_TYPES, stepsForDraft,
 } from './business-product-onboarding.js';
+import {
+  describeAlerts, describeAttentionTiles, describeCommercialTiles, describeIncidentTrace,
+  describeLastActivity, describeOrderStates, describeQueues, describeServiceHealth,
+  healthState, summarizePilotDay,
+} from './pilot-operations-language.js';
 
 export function renderOperationCenterSurface({ snapshot, status, role, busy, support } = {}) {
   if (status?.phase === 'loading' && !snapshot) {
@@ -459,6 +464,188 @@ function renderWizardStep(step) {
 
 function deniedPanel(title, message) {
   return panel(title, 'Esta sección necesita otro permiso.', `<p class="form-hint">${escapeHtml(message)}</p>`);
+}
+
+// ===== Estado del piloto =====
+// Una pantalla que contesta en orden: ¿está sana?, ¿qué necesita una persona?,
+// ¿cómo viene el día?, ¿dónde se rompió este pedido?
+export function renderPilotOperationsSurface({
+  dashboard, status, trace, traceStatus, traceReference, role, busy,
+} = {}) {
+  if (status?.phase === 'loading' && !dashboard) {
+    return panel('Estado del piloto', 'Midiendo contra el servidor.', '<p class="form-hint" aria-live="polite">Un segundo…</p>');
+  }
+  if (status?.phase === 'error' && !dashboard) {
+    return panel('Estado del piloto', 'No afirmamos nada que no hayamos podido medir.', `
+      <p class="production-intake-error" role="alert">${escapeHtml(status.message || 'No pudimos leer el estado del piloto.')}</p>
+      <button class="primary-button" type="button" data-pilot-ops-refresh>Reintentar</button>`);
+  }
+  const summary = summarizePilotDay(dashboard);
+  const health = dashboard?.health || {};
+  const overall = healthState(health.overall);
+  const scope = dashboard?.commercial_scope || {};
+  const excluded = Number(dashboard?.today?.qa_orders_excluded || 0);
+
+  return panel('Estado del piloto', 'Lo que hay que saber en segundos, medido contra el servidor.', `
+    <div class="operation-summary tone-${escapeHtml(summary.tone)}" role="status">
+      <strong>${escapeHtml(summary.headline)}</strong>
+      <span>${escapeHtml(summary.detail)}</span>
+    </div>
+    <div class="operation-center-toolbar">
+      <span class="form-hint">Medido ${escapeHtml(formatTimestamp(dashboard?.generated_at))} · salud general: ${escapeHtml(overall.label.toLowerCase())}</span>
+      <button class="ghost-button compact" type="button" data-pilot-ops-refresh ${busy ? 'disabled' : ''}>Actualizar</button>
+    </div>
+
+    <section class="pilot-ops-section" aria-labelledby="pilot-attention-title">
+      <h3 id="pilot-attention-title">Qué necesita una persona</h3>
+      <div class="operation-metrics-grid">${tileGrid(describeAttentionTiles(dashboard))}</div>
+    </section>
+
+    <section class="pilot-ops-section" aria-labelledby="pilot-commercial-title">
+      <h3 id="pilot-commercial-title">Cómo viene el día</h3>
+      <div class="operation-metrics-grid">${tileGrid(describeCommercialTiles(dashboard))}</div>
+      <p class="form-hint">${escapeHtml(scope.note || 'Los pedidos de prueba quedan fuera de los números comerciales.')}${
+        excluded > 0 ? ` Hoy se excluyeron ${escapeHtml(String(excluded))} pedido(s) de prueba.` : ''
+      }</p>
+    </section>
+
+    ${renderPilotOrderStates(dashboard)}
+    ${renderPilotServiceHealth(health)}
+    ${renderPilotQueues(dashboard)}
+    ${renderPilotAlerts(dashboard, busy)}
+    ${renderPilotTrace({ trace, traceStatus, traceReference, busy })}
+    ${renderPilotActivity(dashboard)}
+    ${renderRoleFooter(role)}`);
+}
+
+function tileGrid(tiles) {
+  return tiles.map((tile) => `
+    <button class="operation-metric tone-${escapeHtml(tile.tone)}" type="button"
+      data-business-ops-view="${escapeHtml(tile.view)}" data-pilot-ops-metric="${escapeHtml(tile.key)}">
+      <strong>${escapeHtml(String(tile.value))}</strong>
+      <span>${escapeHtml(tile.label)}</span>
+      <small>${escapeHtml(tile.hint)}</small>
+    </button>`).join('');
+}
+
+function renderPilotOrderStates(dashboard) {
+  const states = describeOrderStates(dashboard);
+  if (!states.rows.length) {
+    return `<section class="pilot-ops-section"><h3>Pedidos por estado</h3>
+      <p class="form-hint">No hay pedidos abiertos ni checkouts en curso.</p></section>`;
+  }
+  return `<section class="pilot-ops-section" aria-labelledby="pilot-states-title">
+    <h3 id="pilot-states-title">Pedidos por estado</h3>
+    <p class="form-hint">${escapeHtml(String(states.openTotal))} pedido(s) abiertos ahora.</p>
+    <ul class="pilot-ops-states">
+      ${states.rows.map((row) => `<li data-pilot-ops-state="${escapeHtml(row.key)}">
+        <strong>${escapeHtml(String(row.value))}</strong><span>${escapeHtml(row.label)}</span></li>`).join('')}
+    </ul>
+  </section>`;
+}
+
+function renderPilotServiceHealth(health) {
+  const services = describeServiceHealth(health);
+  if (!services.length) {
+    return `<section class="pilot-ops-section"><h3>Salud de servicios</h3>
+      <p class="form-hint">Todavía no medimos ningún servicio.</p></section>`;
+  }
+  return `<section class="pilot-ops-section" aria-labelledby="pilot-health-title">
+    <h3 id="pilot-health-title">Salud de servicios</h3>
+    <p class="form-hint">Ninguno se declara funcionando sin evidencia; "sin señal" significa que nunca se lo vio andar.</p>
+    ${services.map((service) => `
+      <article class="pilot-ops-service tone-${escapeHtml(service.tone)}" data-pilot-ops-service="${escapeHtml(service.key)}">
+        <header>
+          <h4>${escapeHtml(service.label)}</h4>
+          <span class="pilot-ops-service-status">${escapeHtml(service.statusLabel)}</span>
+        </header>
+        <p>${escapeHtml(service.reason)}</p>
+        ${service.evidence.length
+          ? `<details><summary>Con qué se midió</summary><dl class="operation-alert-facts">${
+            service.evidence.map((item) => `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(item.value)}</dd></div>`).join('')
+          }</dl></details>`
+          : ''}
+      </article>`).join('')}
+  </section>`;
+}
+
+function renderPilotQueues(dashboard) {
+  const queues = describeQueues(dashboard);
+  if (!queues.length) return '';
+  return `<section class="pilot-ops-section" aria-labelledby="pilot-queues-title">
+    <h3 id="pilot-queues-title">Trabajo interno</h3>
+    <ul class="pilot-ops-queues">
+      ${queues.map((queue) => `<li class="tone-${escapeHtml(queue.tone)}" data-pilot-ops-queue="${escapeHtml(queue.key)}">
+        <strong>${escapeHtml(queue.label)}</strong><span>${escapeHtml(queue.summary)}</span></li>`).join('')}
+    </ul>
+  </section>`;
+}
+
+function renderPilotAlerts(dashboard, busy) {
+  const alerts = describeAlerts(dashboard);
+  if (!alerts.items.length) {
+    return `<section class="pilot-ops-section"><h3>Alertas</h3>
+      <p class="form-hint">No hay ninguna alerta abierta.</p></section>`;
+  }
+  return `<section class="pilot-ops-section operation-alerts" aria-labelledby="pilot-alerts-title">
+    <h3 id="pilot-alerts-title">Alertas</h3>
+    <p class="form-hint">${escapeHtml(String(alerts.open))} abierta(s) y ${escapeHtml(String(alerts.acknowledged))} ya vista(s).</p>
+    ${alerts.items.map((alert) => renderAlertCard(alert, { busy })).join('')}
+  </section>`;
+}
+
+function renderPilotTrace({ trace, traceStatus, traceReference, busy } = {}) {
+  const described = describeIncidentTrace(trace);
+  const body = traceStatus?.phase === 'loading'
+    ? '<p class="form-hint" aria-live="polite">Siguiendo el pedido…</p>'
+    : traceStatus?.phase === 'error'
+      ? `<p class="production-intake-error" role="alert">${escapeHtml(traceStatus.message || 'No pudimos seguir ese pedido.')}</p>`
+      : described
+        ? renderTraceResult(described)
+        : '<p class="form-hint">Escribí un código de pedido para ver en qué etapa quedó.</p>';
+
+  return `<section class="pilot-ops-section" aria-labelledby="pilot-trace-title">
+    <h3 id="pilot-trace-title">¿Dónde se rompió un pedido?</h3>
+    <p class="form-hint">No muestra nombre, teléfono, dirección ni códigos de entrega.</p>
+    <div class="button-row">
+      <label class="pilot-ops-trace-field">Código del pedido
+        <input name="pilotTraceReference" maxlength="128" placeholder="LT-0086"
+          value="${escapeHtml(String(traceReference || ''))}">
+      </label>
+      <button class="secondary-button compact" type="button" data-pilot-ops-trace ${busy ? 'disabled' : ''}>Seguir el pedido</button>
+    </div>
+    ${body}
+  </section>`;
+}
+
+function renderTraceResult(described) {
+  if (!described.found) {
+    return `<p class="production-intake-error" role="alert">${escapeHtml(described.headline)} ${escapeHtml(described.detail)}</p>`;
+  }
+  return `<div class="pilot-ops-trace-result" data-pilot-ops-trace-result="${escapeHtml(described.reference)}">
+    <p class="operation-summary tone-${escapeHtml(described.breakPoint ? 'critical' : 'calm')}">
+      <strong>${escapeHtml(described.headline)}</strong>
+      <span>${escapeHtml(described.detail)}</span>
+    </p>
+    <ol class="pilot-ops-trace-stages">
+      ${described.stages.map((stage) => `<li class="tone-${escapeHtml(stage.tone)}" data-pilot-ops-stage="${escapeHtml(stage.key)}">
+        <strong>${escapeHtml(stage.label)}</strong>
+        <span class="pilot-ops-stage-status">${escapeHtml(stage.statusLabel)}</span>
+        <small>${escapeHtml(stage.detail)}</small>
+      </li>`).join('')}
+    </ol>
+  </div>`;
+}
+
+function renderPilotActivity(dashboard) {
+  const activity = describeLastActivity(dashboard);
+  return `<section class="pilot-ops-section" aria-labelledby="pilot-activity-title">
+    <h3 id="pilot-activity-title">Última actividad</h3>
+    <ul class="pilot-ops-activity">
+      ${activity.map((entry) => `<li class="tone-${escapeHtml(entry.tone)}" data-pilot-ops-activity="${escapeHtml(entry.key)}">
+        <strong>${escapeHtml(entry.label)}</strong><span>${escapeHtml(entry.relative)}</span></li>`).join('')}
+    </ul>
+  </section>`;
 }
 
 function panel(title, subtitle, body) {

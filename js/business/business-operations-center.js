@@ -17,17 +17,19 @@ import { evaluateDailyClosure, validateClosureOverride } from './business-day-co
 import { buildStorefrontPreview, describeDraft, planScanOutcome, validateProductDraft } from './business-product-onboarding.js';
 import {
   renderDayCloseSurface, renderDayOpenSurface, renderDevicesSurface, renderFiscalSetupSurface,
-  renderOperationCenterSurface, renderPaymentsSetupSurface, renderPaymentsSurface, renderProductOnboardingSurface,
+  renderOperationCenterSurface, renderPaymentsSetupSurface, renderPaymentsSurface,
+  renderPilotOperationsSurface, renderProductOnboardingSurface,
 } from './business-panel-render.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
-  'operation-center', 'day-open', 'orders', 'payments', 'payments-setup', 'scanner', 'product-create',
+  'operation-center', 'pilot-ops', 'day-open', 'orders', 'payments', 'payments-setup', 'scanner', 'product-create',
   'inventory-receive', 'inventory-adjust', 'stock-count', 'packing', 'pos',
   'fiscal-status', 'fiscal-setup', 'fiscal-config', 'devices', 'day-close',
 ]);
 
 const VIEW_META = Object.freeze({
   'operation-center': ['Centro de operación', null],
+  'pilot-ops': ['Estado del piloto', null],
   'day-open': ['Abrir el negocio', null],
   orders: ['Pedidos', null],
   payments: ['Pagos', null],
@@ -50,6 +52,7 @@ const VIEW_META = Object.freeze({
 // así un rol ajeno al negocio (por ejemplo un repartidor) no recibe ninguna.
 const VIEW_CAPABILITY = Object.freeze({
   'operation-center': 'orders.view',
+  'pilot-ops': 'orders.view',
   'day-open': 'day.open',
   orders: 'orders.view',
   payments: 'payments.view',
@@ -93,6 +96,13 @@ let operationCenterSnapshot = null;
 let operationCenterStatus = { phase: 'idle', message: '' };
 let operationCenterRefreshStarted = false;
 let operationCenterRefreshTimer = null;
+let pilotDashboard = null;
+let pilotStatus = { phase: 'idle', message: '' };
+let pilotRefreshStarted = false;
+let pilotRefreshTimer = null;
+let pilotTrace = null;
+let pilotTraceStatus = { phase: 'idle', message: '' };
+let pilotTraceReference = '';
 let signedUpdateStatus = null;
 let paymentsActivation = null;
 let payments = [];
@@ -125,6 +135,7 @@ export function configureBusinessOperations(next = {}) {
   operationCenterSnapshot = null;
   operationCenterStatus = { phase: 'idle', message: '' };
   operationCenterRefreshStarted = false;
+  resetPilotOperations();
   signedUpdateStatus = null;
   paymentsActivation = null;
   payments = [];
@@ -154,6 +165,15 @@ export function renderBusinessOperations(view) {
       role: context.role,
       busy,
       support: { isNative: context.desktopPlatform?.isNative, signedUpdate: signedUpdateStatus },
+    }),
+    'pilot-ops': () => renderPilotOperationsSurface({
+      dashboard: pilotDashboard,
+      status: pilotStatus,
+      trace: pilotTrace,
+      traceStatus: pilotTraceStatus,
+      traceReference: pilotTraceReference,
+      role: context.role,
+      busy,
     }),
     'day-open': () => renderDayOpenSurface({
       opening: openingSignals, businessStatus: openingStatusRaw?.business_status, role: context.role, busy,
@@ -206,12 +226,17 @@ export function allowedBusinessOperationViews(role) {
 export function activateBusinessOperations(view = currentView) {
   const mode = VIEW_META[view]?.[1];
   if (view !== 'operation-center') stopOperationCenterRefresh();
+  if (view !== 'pilot-ops') stopPilotRefresh();
   if (view !== 'devices' && view !== 'product-create') productPreview = null;
   if (!mode) {
     scanner?.stop();
     if (view === 'operation-center' && !operationCenterRefreshStarted) {
       operationCenterRefreshStarted = true;
       void refreshOperationCenter();
+    }
+    if (view === 'pilot-ops' && !pilotRefreshStarted) {
+      pilotRefreshStarted = true;
+      void refreshPilotOperations();
     }
     if ((view === 'fiscal-status' || view === 'fiscal-config') && !fiscalInitialRefreshStarted) {
       fiscalInitialRefreshStarted = true;
@@ -382,6 +407,9 @@ export async function handleBusinessOperationsAction(target) {
   const creditNote = target.closest('[data-fiscal-credit-note]');
   if (creditNote) return requestCreditNote(creditNote);
   if (target.closest('[data-operation-center-refresh]')) return refreshOperationCenterAction();
+  if (target.closest('[data-pilot-ops-refresh]')) return refreshPilotOperationsAction();
+  const traceButton = target.closest('[data-pilot-ops-trace]');
+  if (traceButton) return tracePilotOrderAction(traceButton);
   if (target.closest('[data-local-backup-create]')) return createLocalBackup();
   if (target.closest('[data-support-diagnostic-export]')) return exportSupportDiagnostic();
   if (target.closest('[data-support-export-folder]')) return openSupportExportFolder();
@@ -447,6 +475,7 @@ export function resetBusinessOperationsForTests() {
   operationCenterSnapshot = null;
   operationCenterStatus = { phase: 'idle', message: '' };
   operationCenterRefreshStarted = false;
+  resetPilotOperations();
   signedUpdateStatus = null;
   paymentsActivation = null;
   payments = [];
@@ -953,6 +982,84 @@ async function printFiscalArtifact(button) {
     await context.updateFiscalPrintJob({ printJobId, status: 'failed', errorCode: 'LOCAL_SPOOL_FAILED' });
     return result(false, error?.message || 'La impresora no aceptó el trabajo.');
   }
+}
+
+// ===== Estado del piloto =====
+// El servidor mide y el Panel muestra. Si la lectura falla no queda una foto
+// vieja pasando por actual: se borra y se dice que no se pudo medir.
+async function refreshPilotOperations() {
+  if (pilotRefreshTimer !== null) globalThis.clearTimeout?.(pilotRefreshTimer);
+  pilotRefreshTimer = null;
+  pilotStatus = { phase: 'loading', message: '' };
+  if (currentView === 'pilot-ops') context.onChange();
+  const response = await context.getPilotDashboard(operationTimezone());
+  if (!response?.ok || !response.data || Array.isArray(response.data) || typeof response.data !== 'object') {
+    pilotDashboard = null;
+    pilotStatus = {
+      phase: 'error',
+      message: response?.message || 'No se pudo medir el estado del piloto.',
+    };
+  } else {
+    pilotDashboard = response.data;
+    pilotStatus = { phase: 'ready', message: '' };
+  }
+  if (currentView === 'pilot-ops') {
+    context.onChange();
+    pilotRefreshTimer = globalThis.setTimeout?.(() => { void refreshPilotOperations(); }, 30_000) || null;
+  }
+  return response;
+}
+
+function stopPilotRefresh() {
+  if (pilotRefreshTimer !== null) globalThis.clearTimeout?.(pilotRefreshTimer);
+  pilotRefreshTimer = null;
+  pilotRefreshStarted = false;
+}
+
+function resetPilotOperations() {
+  stopPilotRefresh();
+  pilotDashboard = null;
+  pilotStatus = { phase: 'idle', message: '' };
+  pilotTrace = null;
+  pilotTraceStatus = { phase: 'idle', message: '' };
+  pilotTraceReference = '';
+}
+
+async function refreshPilotOperationsAction() {
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  busy = true;
+  const response = await refreshPilotOperations();
+  busy = false;
+  feedback = response?.ok ? 'Estado del piloto medido contra el servidor.' : pilotStatus.message;
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function tracePilotOrderAction(button) {
+  if (busy) return result(false, 'Ya hay una acción en curso.');
+  const root = button.closest('[data-business-ops-center]') || button.ownerDocument;
+  const reference = String(root?.querySelector('[name="pilotTraceReference"]')?.value || '').trim();
+  if (!reference) {
+    feedback = 'Escribí el código del pedido, por ejemplo LT-0086.';
+    context.onChange();
+    return result(false, feedback);
+  }
+  pilotTraceReference = reference;
+  pilotTraceStatus = { phase: 'loading', message: '' };
+  busy = true;
+  context.onChange();
+  const response = await context.tracePilotOrder(reference);
+  busy = false;
+  if (!response?.ok || !response.data || typeof response.data !== 'object') {
+    pilotTrace = null;
+    pilotTraceStatus = { phase: 'error', message: response?.message || 'No pudimos seguir ese pedido.' };
+  } else {
+    pilotTrace = response.data;
+    pilotTraceStatus = { phase: 'ready', message: '' };
+  }
+  feedback = pilotTraceStatus.phase === 'error' ? pilotTraceStatus.message : '';
+  context.onChange();
+  return result(pilotTraceStatus.phase === 'ready', feedback);
 }
 
 async function refreshOperationCenter() {
@@ -1803,6 +1910,8 @@ function defaultContext() {
     requestFiscalArtifactUrl: async () => ({ ok: false, message: 'Acceso privado no disponible.' }), regenerateFiscalArtifact: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     requestFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }), updateFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     getOperationCenter: async () => ({ ok: false, message: 'Centro de operación no disponible.' }),
+    getPilotDashboard: async () => ({ ok: false, message: 'Estado del piloto no disponible.' }),
+    tracePilotOrder: async () => ({ ok: false, message: 'Seguimiento de pedido no disponible.' }),
     acknowledgeOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }), resolveOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     prepareDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }), closeDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     desktopPlatform: {

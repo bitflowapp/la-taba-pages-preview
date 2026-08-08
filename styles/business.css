@@ -1709,3 +1709,114 @@ button.operation-metric {
     flex-direction: column;
   }
 }
+
+/* ===== Estado del piloto ===== */
+/* Reusa la grilla y los tonos del centro de operación: una sola gramática
+   visual para todo el panel, y las secciones nuevas sólo agregan su ritmo. */
+
+.pilot-ops-section {
+  margin-top: 1.6rem;
+}
+
+.pilot-ops-section h3 {
+  margin-bottom: 0.35rem;
+}
+
+.pilot-ops-states,
+.pilot-ops-queues,
+.pilot-ops-activity {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+}
+
+.pilot-ops-states li,
+.pilot-ops-queues li,
+.pilot-ops-activity li {
+  background: var(--taba-surface, #fff);
+  border: 1px solid var(--taba-border, #dedbd5);
+  border-left-width: 5px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.65rem 0.8rem;
+}
+
+.pilot-ops-states li strong,
+.pilot-ops-queues li strong,
+.pilot-ops-activity li strong {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.pilot-ops-states li span,
+.pilot-ops-queues li span,
+.pilot-ops-activity li span {
+  color: var(--taba-muted, #5f5a52);
+  font-size: 0.9rem;
+}
+
+.pilot-ops-service {
+  background: var(--taba-surface, #fff);
+  border: 1px solid var(--taba-border, #dedbd5);
+  border-left-width: 5px;
+  border-radius: 14px;
+  margin-top: 0.6rem;
+  padding: 0.8rem 0.9rem;
+}
+
+.pilot-ops-service header {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  justify-content: space-between;
+}
+
+.pilot-ops-service header h4 {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.pilot-ops-service-status,
+.pilot-ops-stage-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.pilot-ops-trace-field {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.pilot-ops-trace-stages {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.8rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.pilot-ops-trace-stages li {
+  background: var(--taba-surface, #fff);
+  border: 1px solid var(--taba-border, #dedbd5);
+  border-left-width: 5px;
+  border-radius: 12px;
+  min-width: 0;
+  padding: 0.6rem 0.8rem;
+}
+
+.pilot-ops-trace-stages li small {
+  color: var(--taba-muted, #5f5a52);
+  display: block;
+  margin-top: 0.2rem;
+}

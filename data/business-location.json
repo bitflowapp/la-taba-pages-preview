@@ -1,0 +1,52 @@
+{
+  "_comentario": [
+    "CONTRATO CENTRAL DE UBICACIÓN DE TABA2. Es la única fuente de verdad geográfica",
+    "del comercio. Web, Panel, tracking, Rider Android, el sembrado de staging y el",
+    "compositor del video derivan de acá; ninguno vuelve a escribir la coordenada a mano.",
+    "",
+    "Quien cambie estos números tiene que correr `npm run location:check`, que verifica",
+    "que js/core/business-location.js, la app del Rider y el SQL de staging sigan diciendo",
+    "exactamente lo mismo. El chequeo está enganchado en `npm run check`.",
+    "",
+    "`human_verified` sólo puede pasar a true cuando una persona confirme el pin contra la",
+    "puerta del local; ahí el `source` pasa a business_verified. La base impone ese CHECK",
+    "(20260807170000_pickup_point_provenance.sql) y el CLI de staging lo exige por bandera."
+  ],
+  "business_id": "00000000-0000-4000-8000-000000000001",
+  "name": "La Taba 2",
+  "address": "Mendoza 827, Neuquén",
+  "address_full": "Mendoza 827, Neuquén Capital, Neuquén, Argentina",
+  "latitude": -38.9460616,
+  "longitude": -68.0533209,
+  "source": "public_directory_cross_checked",
+  "confidence": "high",
+  "verified_at": "2026-08-08T17:16:00Z",
+  "human_verified": false,
+  "accuracy_meters": 20,
+  "source_note": "Ficha comercial de Google Maps «La Taba 2» (nombre + «Mendoza 827, Q8300 Neuquén» + categoría Almacén + Plus Code 3W3W+HM, CID 0x960a33d98e978059:0x16953b61ac68be7), contrastada contra: geocodificación de la dirección sola en Google (7 m), interpolación catastral sobre alturas reales de OSM entre Mendoza 495 y 1200 (18 m), recomputación del Plus Code desde el pin (celda exacta), vista satélite (el pin cae sobre calle Mendoza, cuadra 800, vereda impar/este) y reverse geocoding, que devuelve calle Mendoza.",
+  "evidencia": {
+    "plus_code": "47HH3W3W+HM",
+    "google_maps_cid": "0x960a33d98e978059:0x16953b61ac68be7",
+    "google_maps_feature": "/g/11b70bmwft",
+    "vereda": "este (numeración impar)",
+    "cuadra": "800, entre Domingo Basavilbaso y el cruce con Diagonal España"
+  },
+  "descartados": [
+    { "que": "punto anterior del repositorio (businessLocation)", "lat": -38.9516, "lng": -68.0591, "distancia_m": 793, "por_que": "cae sobre Avenida Argentina junto a Parque Central; reverse geocoding lo ubica en el radar de Av. Argentina y Roca" },
+    { "que": "Parque Central", "lat": -38.952, "lng": -68.061, "distancia_m": 936, "por_que": "no es la dirección del comercio" },
+    { "que": "Mendoza 827 de Zapala", "lat": -38.8929996, "lng": -70.0750531, "distancia_m": 175002, "por_que": "es lo que devuelve Nominatim si no se acota a Neuquén Capital: otra ciudad a 175 km" },
+    { "que": "georef-ar / IGN para Mendoza 827", "lat": -38.9448788, "lng": -68.0534274, "distancia_m": 132, "por_que": "interpola sobre el tramo entero de la calle y se corre una cuadra" },
+    { "que": "POI «Mercado La Taba» de OSM", "lat": -38.9476282, "lng": -68.0569819, "distancia_m": 361, "por_que": "es otra sucursal, sobre otra calle" }
+  ],
+  "demo": {
+    "_comentario": "Punto del CLIENTE en la demo. Es sintético y público a propósito: nunca un domicilio. Verificado por reverse geocoding como leisure/playground.",
+    "destination_id": "plaza-de-la-vida",
+    "destination_label": "Destino demo · Plaza de la Vida",
+    "destination_kind": "espacio público (plaza)",
+    "destination_latitude": -38.945584,
+    "destination_longitude": -68.040579,
+    "route_distance_m": 1441,
+    "route_duration_s": 244,
+    "route_source": "OSRM sobre la red de calles de OpenStreetMap, 2026-08-08"
+  }
+}

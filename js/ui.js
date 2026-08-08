@@ -1,5 +1,6 @@
 import { getBusinessConfig } from './core/business-config-store.js';
 import { BRAND } from './config.js';
+import { businessMapsSearchUrl, mapsSearchUrl } from './core/business-location.js';
 import { categories } from './data.js';
 import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
 import { COMBO_MANIFEST } from './combos-data.js';
@@ -140,6 +141,32 @@ function restoreStableRealMap(container, shell) {
   if (replacement && replacement !== shell) replacement.replaceWith(shell);
 }
 
+// El enlace a Maps abre POR COORDENADAS, no por el texto de la dirección: la
+// cadena «Mendoza 827» resuelve en Zapala, a 175 km, si el geocodificador no
+// acota la ciudad. Sólo aparece si la ubicación está verificada; con una
+// coordenada sin verificar mandaríamos al cliente a cualquier lado.
+function applyBusinessMapsLink(config) {
+  const item = $('[data-business-maps-item]');
+  const link = $('[data-business-maps-link]');
+  if (!item || !link) return;
+  const verified = Boolean(config.businessLocationVerified);
+  const point = config.businessLocation;
+  const usable = verified
+    && Number.isFinite(Number(point?.lat))
+    && Number.isFinite(Number(point?.lng));
+  item.hidden = !usable;
+  if (!usable) {
+    link.removeAttribute('href');
+    return;
+  }
+  // El comercio puede editar su punto desde el Panel; si coincide con el del
+  // contrato usamos el enlace del contrato, y si no, el que el comercio guardó.
+  const contractUrl = businessMapsSearchUrl();
+  const currentUrl = mapsSearchUrl(point.lat, point.lng);
+  link.href = currentUrl === contractUrl ? contractUrl : currentUrl;
+  link.setAttribute('aria-label', `Abrir ${config.businessName} en Google Maps`);
+}
+
 export function applyBusinessConfig() {
   const demo = isDemoMode();
   const config = getBusinessConfig();
@@ -155,6 +182,7 @@ export function applyBusinessConfig() {
   setText('[data-business-profile-name]', config.businessName);
   setText('[data-business-whatsapp]', formatWhatsappDisplay(config.whatsappNumber) || 'A confirmar con el local');
   setText('[data-business-address]', config.address);
+  applyBusinessMapsLink(config);
   setText('[data-business-hours]', config.openingHoursLabel);
   applyHomeBrandHeader(config);
   setText('[data-business-zone]', config.deliveryZone);

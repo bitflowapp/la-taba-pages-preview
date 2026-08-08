@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { BUSINESS_CONFIG } from '../js/config.js';
+import { BUSINESS_LOCATION } from '../js/core/business-location.js';
 
 test('BUSINESS_CONFIG exposes the expected business settings', () => {
   // Nombre del COMERCIO. Es distinto del nombre de producto (BRAND.productName,
@@ -9,9 +10,17 @@ test('BUSINESS_CONFIG exposes the expected business settings', () => {
   assert.equal(BUSINESS_CONFIG.name, 'La Taba 2');
   assert.equal(BUSINESS_CONFIG.subtitle, 'Tienda de bebidas');
   assert.equal(BUSINESS_CONFIG.address, 'Mendoza 827, Neuquén');
-  // La dirección postal está confirmada; la COORDENADA no. El mapa del cliente
-  // sigue sin plotear un marcador del local.
-  assert.equal(BUSINESS_CONFIG.businessLocationVerified, false);
+  // La coordenada ya está contrastada (ficha de Google Maps + numeración
+  // catastral de OSM + Plus Code), así que el mapa del cliente SÍ plotea el
+  // marcador del local. No sale de acá: viene del contrato central.
+  assert.equal(BUSINESS_CONFIG.businessLocationVerified, true);
+  assert.equal(BUSINESS_CONFIG.businessLocation.lat, BUSINESS_LOCATION.latitude);
+  assert.equal(BUSINESS_CONFIG.businessLocation.lng, BUSINESS_LOCATION.longitude);
+  // El punto anterior caía a 793 m, sobre Av. Argentina junto a Parque Central.
+  assert.notEqual(BUSINESS_CONFIG.businessLocation.lat, -38.9516);
+  assert.notEqual(BUSINESS_CONFIG.businessLocation.lng, -68.0591);
+  // Sigue sin ser una verificación humana: nadie miró el pin contra la puerta.
+  assert.equal(BUSINESS_LOCATION.human_verified, false);
   assert.equal(BUSINESS_CONFIG.whatsappNumber, '');
   assert.equal(BUSINESS_CONFIG.whatsappVerified, false);
   assert.equal(BUSINESS_CONFIG.orderingDetailsVerified, false);

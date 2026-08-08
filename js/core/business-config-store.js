@@ -83,7 +83,13 @@ function sanitizeBool(value, fallback) {
   return typeof value === 'boolean' ? value : Boolean(fallback);
 }
 
+// `Number(null)`, `Number('')` y `Number([])` valen 0, y 0 es finito: sin este
+// descarte previo, una coordenada ausente se guardaba como 0, que es un punto
+// real en el Golfo de Guinea. Un valor que no es un número se ignora y queda el
+// que ya había; perder el punto conocido por un patch incompleto sería peor.
 function sanitizeCoordinate(value, fallback) {
+  if (typeof value !== 'number' && typeof value !== 'string') return fallback;
+  if (typeof value === 'string' && value.trim() === '') return fallback;
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : fallback;
 }

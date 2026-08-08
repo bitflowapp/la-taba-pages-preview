@@ -66,7 +66,29 @@ No ejecuta nada por su cuenta. Según el estado te da el camino:
 | `llegada-y-codigo.ps1` | llegada + rechazo del código incorrecto, en el Moto |
 | `entregar.ps1` | confirma la entrega, en el Moto |
 | `medir-movimiento.mjs` | la prueba de desplazamiento: mide qué pasa cuando el teléfono **se mueve de verdad** |
+| `verificar-presencia.mjs` | la verificación por presencia del punto de retiro, en el retiro real |
 | `entorno.mjs` | de dónde sale cada ruta, para no clavar la de ninguna máquina |
+
+## La verificación por presencia
+
+El punto de La Taba 2 que tiene la base viene de un directorio público
+contrastado, no de una medición sobre la puerta. En el primer retiro físico se
+mide, con el Rider parado en el local y apenas confirmado el retiro:
+
+```bash
+node verificar-presencia.mjs LT-0107
+```
+
+Escucha las ubicaciones que la app publica para ese pedido —las mismas que ve el
+cliente— y se queda con la de **mejor precisión**, no con la más cercana: elegir
+la más cercana sería elegir el resultado que uno quiere. Con precisión peor que
+20 m no concluye nada. A 30 m o menos escribe `verified_by_rider_presence=true`;
+más lejos deja `PICKUP_LOCATION_DISCREPANCY` y **no toca la coordenada**, porque
+que el Rider esté lejos no dice cuál es el punto bueno.
+
+Nunca toca `human_verified`: estar cerca del punto no es haber confirmado el pin
+contra la puerta. Eso lo afirma una persona, con `scripts/set-pickup-point.mjs
+--confirmado-por-humano`.
 
 ## La prueba de desplazamiento
 

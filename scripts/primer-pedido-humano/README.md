@@ -65,7 +65,27 @@ No ejecuta nada por su cuenta. Según el estado te da el camino:
 | `cliente-tracking.mjs` | recupera el código desde el navegador del cliente |
 | `llegada-y-codigo.ps1` | llegada + rechazo del código incorrecto, en el Moto |
 | `entregar.ps1` | confirma la entrega, en el Moto |
+| `medir-movimiento.mjs` | la prueba de desplazamiento: mide qué pasa cuando el teléfono **se mueve de verdad** |
 | `entorno.mjs` | de dónde sale cada ruta, para no clavar la de ninguna máquina |
+
+## La prueba de desplazamiento
+
+Todo lo demás se midió con el equipo **quieto**, y ahí los saltos entre fixes son
+ruido del GPS, no movimiento. Esta es la única que necesita a una persona:
+
+```bash
+node medir-movimiento.mjs LT-0104     # ventana de 4 min; MINUTOS=6 para más
+```
+
+Durante la ventana se camina una distancia corta en un lugar seguro. **Siempre
+detenido para tocar el teléfono, nunca conduciendo.** El script no pide tocar
+nada: sólo mira lo que llega al servidor.
+
+Distingue movimiento de ruido con un umbral que no es un gusto: por debajo de la
+precisión que el propio GPS reporta, un desplazamiento es indistinguible del
+ruido. Declara movimiento real sólo con al menos 3 saltos por encima de ese
+umbral y más de 20 m de desplazamiento neto. Si no, dice que **no** hay
+desplazamiento demostrado.
 
 Los dos `.ps1` corren contra el arnés del repo del Rider y **abortan si el
 proyecto no es el staging autorizado**. Por convención lo buscan como repo

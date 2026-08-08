@@ -103,9 +103,11 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await context.close();
 });
 
-// La dirección POSTAL está confirmada por el comercio y se publica desde la
-// config. La COORDENADA sigue sin verificar, así que lo que este test cuida es
-// lo que siempre cuidó: que el mapa del cliente no plotee un local inventado.
+// La dirección POSTAL y la COORDENADA salen las dos del contrato central
+// (data/business-location.json) desde el 2026-08-08; antes la coordenada estaba
+// escrita a mano en cuatro lugares y caía a 793 m de la puerta. Lo que este test
+// cuida sigue siendo lo mismo: que la ficha publique la dirección que declara la
+// config, y que la vista de perfil no dibuje un marcador de local por su cuenta.
 test('el local publica su dirección desde la config y no inventa su ubicación en el mapa', async ({ page }) => {
   await installBrowserStubs(page);
   const guards = installPageGuards(page);

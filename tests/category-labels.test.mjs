@@ -22,11 +22,23 @@ test('un nombre bueno del backend se respeta tal cual', () => {
 });
 
 test('si el id está en el diccionario que la app ya conoce, gana ese nombre', () => {
-  // Y ahí sí aparece la ortografía correcta, con acento, porque el nombre lo
-  // pone el diccionario y no una transformación del slug.
+  // El nombre lo pone el diccionario, no una transformación del slug, así que
+  // acá sí aparece la ortografía que el negocio declaró.
   assert.equal(nombreVisibleDeCategoria('energizantes', 'energizantes'), 'Energizantes');
   assert.equal(nombreVisibleDeCategoria('cervezas', 'cervezas'), 'Cervezas');
 });
+
+/*
+ * OJO al leer esta prueba: qué devuelve `nombreVisibleDeCategoria` para un id
+ * dado depende de QUÉ DICCIONARIO esté cargado, y en la suite completa alguna
+ * prueba anterior puede instalar un catálogo de test distinto del de
+ * producción. Por eso acá no se fija ninguna cadena para ids que puedan estar o
+ * no en el diccionario: se prueba el contrato.
+ *
+ * Verificado aparte en el navegador, contra el catálogo real: «energeticas»
+ * -que no está en el diccionario de la app, que conoce «energizantes»- queda
+ * «Energeticas», capitalizado y sin acento.
+ */
 
 test('los guiones del id se leen como palabras, no como guiones', () => {
   const visible = nombreVisibleDeCategoria('aguas-saborizadas', 'aguas-saborizadas');

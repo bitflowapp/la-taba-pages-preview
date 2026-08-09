@@ -128,7 +128,10 @@ test('P1-2: el contrato aplica a cualquier origen — historia con destino no co
   // Sólo sobrevive la editorial sin CTA: promete mirar, no comprar.
   const entrada = page.locator('.brand-hero [data-stories-slot]');
   await expect(entrada).toHaveAttribute('data-stories-state', 'unseen');
-  await expect(page.locator('.brand-hero [data-stories-cta-detail]')).toHaveText('1 historia nueva');
+  // Un solo círculo en la fila: la que apunta a un whisky sin precio no se
+  // publica, y la fila no puede mostrar más historias que las que existen.
+  await expect(page.locator('.brand-hero .brand-story-circle')).toHaveCount(1);
+  await expect(page.locator('.brand-hero .brand-story-circle[data-story-seen="false"]')).toHaveCount(1);
 
   await page.locator('.brand-hero .brand-logo-action').click();
   const modal = page.locator('[data-stories-modal]');

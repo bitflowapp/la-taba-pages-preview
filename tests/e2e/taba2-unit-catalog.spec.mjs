@@ -99,7 +99,12 @@ test('ningún pack de abastecimiento queda en la góndola ni se puede pedir', as
     has: page.locator('[data-add-product="coca-cola-original-pet-1500ml"]'),
   });
   await expect(unidad).toContainText('1,5 L');
-  await expect(unidad).toContainText('Unidad');
+  // La tarjeta declara el ENVASE, no la coletilla "Unidad". Con cero packs en
+  // góndola esa palabra aparecía en las ochenta tarjetas y no distinguía
+  // ninguna; lo que separa la unidad del pack sigue fijado arriba —el SKU del
+  // pack no tiene tarjeta y ninguna tarjeta comprable dice "pack x N"— y en el
+  // carrito, donde la línea del pedido sí nombra la presentación completa.
+  await expect(unidad).toContainText('Botella PET');
   await expect(unidad).toContainText('Precio próximamente');
   await expect(unidad.locator('[data-add-product]')).toBeDisabled();
   await guards.assertClean();

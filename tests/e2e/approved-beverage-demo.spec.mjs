@@ -40,7 +40,12 @@ test('demo aprobado muestra SKU publicables, unidades minoristas y assets locale
   });
   await expect(unidad).toContainText('Coca-Cola Original');
   await expect(unidad).toContainText('1,5 L');
-  await expect(unidad).toContainText('Unidad');
+  // La tarjeta declara el envase, no la coletilla "Unidad": con cero packs en
+  // góndola esa palabra estaba en las ochenta tarjetas sin distinguir ninguna.
+  // Que lo publicado sea la UNIDAD y no el pack lo fija `packProducts === 0`
+  // acá arriba y la ausencia de tarjeta para el SKU de abastecimiento.
+  await expect(unidad).toContainText('Botella PET');
+  await expect(page.locator('[data-add-product="coca-cola-original-pet-1500ml-pack-6"]')).toHaveCount(0);
   const unidadImagen = unidad.locator('img');
   await expect(unidadImagen).toHaveAttribute('loading', 'lazy');
   // La foto del pack muestra seis botellas: la unidad usa el marcador neutro
@@ -127,5 +132,6 @@ test('busqueda normaliza marca y capacidad con puntuacion local', async ({ page 
   await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(2);
   await expect(page.locator('[data-product-grid]')).toContainText('Coca-Cola Original');
   await expect(page.locator('[data-product-grid]')).toContainText('Coca-Cola Zero');
-  await expect(page.locator('[data-product-grid]')).toContainText('Unidad');
+  // Lo que devuelve la búsqueda es la presentación minorista, con su envase.
+  await expect(page.locator('[data-product-grid]')).toContainText('Botella PET · 1,5 L');
 });

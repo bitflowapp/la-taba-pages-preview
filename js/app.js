@@ -7,14 +7,17 @@ import {
   incrementCartItem,
   removeCartItem,
   repeatCustomerOrder,
+  setCartItemQuantity,
 } from './cart.js';
 import {
   applyBusinessConfig,
   closeCheckoutSuggestions,
   closeComboModal,
   closeProductModal,
+  clearAddedFlash,
   closeStoriesModal,
   copyDraftOrderToClipboard,
+  flashAddedProduct,
   getCheckoutFormValues,
   renderAdminVisibility,
   renderCart,
@@ -1090,7 +1093,11 @@ function bindEvents() {
     const storiesOpen = target.closest('[data-stories-open]');
     if (storiesOpen) {
       event.preventDefault();
-      showStoriesModal(0, storiesOpen);
+      // El emblema no declara índice y abre por la primera; cada círculo de la
+      // fila abre EXACTAMENTE la historia que muestra. Un valor que no es un
+      // número entero cae en 0 en vez de abrir un índice inventado.
+      const requested = Number.parseInt(storiesOpen.dataset.storiesOpen ?? '', 10);
+      showStoriesModal(Number.isInteger(requested) && requested >= 0 ? requested : 0, storiesOpen);
       return;
     }
 
@@ -1252,7 +1259,13 @@ function bindEvents() {
         ? Number(modal.querySelector('[data-product-quantity]')?.value || 1)
         : 1;
       const productNote = String(modal?.querySelector('[data-product-note]')?.value || '').trim();
+      // La marca se pone ANTES: `addToCart` repinta la tarjeta de forma
+      // síncrona y, si se marcara después, el repintado ya habría pasado sin
+      // la confirmación. Si la acción no prospera se retira, para que un
+      // repintado posterior no confirme algo que no ocurrió.
+      flashAddedProduct(selectedProductId);
       const result = runCartAction('add', selectedProductId, () => addToCart(selectedProductId, requestedQuantity));
+      if (!result.ok) clearAddedFlash(selectedProductId);
       if (!result.duplicate) showToast(result.message);
       if (result.ok) {
         if (productNote) appendProductObservation(selectedProductId, productNote);
@@ -1311,6 +1324,18 @@ function bindEvents() {
       const result = runCartAction('dec', decId, () => decrementCartItem(decId));
       if (result.ok) refreshOpenProductModal(decId);
       if (!result.ok && !result.duplicate) showToast(result.message);
+      return;
+    }
+
+    // Salida del aviso de la línea: quita el producto agotado o recorta la
+    // cantidad a lo que realmente queda. La cantidad viaja en el marcado, que
+    // la calculó el mismo criterio que pintó el aviso.
+    const fitControl = target.closest('[data-cart-fit]');
+    if (fitControl) {
+      const fitId = fitControl.dataset.cartFit;
+      const fitQuantity = Number.parseInt(fitControl.dataset.cartFitQuantity ?? '0', 10);
+      const result = setCartItemQuantity(fitId, Number.isInteger(fitQuantity) ? fitQuantity : 0);
+      showToast(result.message);
       return;
     }
 

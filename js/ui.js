@@ -31,6 +31,7 @@ import {
   defaultCatalogFilters,
 } from './state.js';
 import {
+  cartItemIssue,
   getCartCombos,
   getCartItems,
   getDeliveryMinimumProgress,
@@ -360,7 +361,6 @@ export function renderAdminVisibility() {
 }
 
 export function renderCatalog() {
-  renderOffers();
   renderCombos();
   renderCategories();
   renderCatalogFilters();
@@ -440,6 +440,43 @@ export function productPriceLabel(product) {
 
 function unitText(product) {
   return product.unitLabel || product.unit || '';
+}
+
+/**
+ * Renglón de marca — sólo cuando AGREGA algo.
+ *
+ * En una góndola de bebidas la marca suele ser la primera palabra del nombre:
+ * "HEINEKEN / Heineken", "RED BULL / Red Bull Energy Drink", "SPEED / Speed
+ * Unlimited Original". Ese renglón repetido ocupaba 15px en cada tarjeta y no
+ * decía nada que el nombre no dijera ya. Cuando la marca NO está en el nombre
+ * —"Villa del Sur" para "Levité Pomelo"— sigue apareciendo, porque ahí sí
+ * informa. No se recorta el nombre ni se inventa nada: sólo se deja de imprimir
+ * dos veces lo mismo.
+ */
+function brandLine(product, className = 'product-brand') {
+  const brand = String(product?.brand || '').trim();
+  if (!brand) return '';
+  const normalizedBrand = normalizeSearchText(brand);
+  const normalizedName = normalizeSearchText(product?.name || '');
+  if (!normalizedBrand || normalizedName.startsWith(normalizedBrand)) return '';
+  return `<span class="${className}">${escapeHtml(brand)}</span>`;
+}
+
+/**
+ * Presentación de la tarjeta: envase y capacidad, sin la coletilla de formato
+ * cuando el formato es "una unidad". "Lata · 473 ml · Unidad" decía tres cosas
+ * y sólo dos eran información: que viene en lata y cuánto trae. Un pack SÍ se
+ * nombra, porque cambia lo que se lleva y lo que se paga.
+ */
+function presentationText(value, product) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (Number(product?.unitsPerPack) > 1) return raw;
+  return raw
+    .split('·')
+    .map((part) => part.trim())
+    .filter((part) => part && normalizeSearchText(part) !== 'unidad')
+    .join(' · ');
 }
 
 function productImage(product) {
@@ -536,9 +573,45 @@ function removeGlyph() {
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 7.5h13M9.2 7.5V5.8h5.6v1.7m-7.8 0 .8 11.1h8.4L17 7.5M10 11v4.2m4-4.2v4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
+/*
+ * CONFIRMACIÓN EN EL LUGAR DONDE SE TOCÓ
+ *
+ * Al agregar, el botón "Agregar" se convierte en el selector de cantidad. El
+ * cambio es correcto pero es MUDO: en el mismo gesto desaparece la palabra que
+ * el cliente tocó y aparece un "1" que puede leerse como cualquier cosa. La
+ * confirmación existía sólo lejos —el aviso abajo, la barra de carrito, dos
+ * insignias—, o sea cuatro señales, ninguna donde estaba mirando el dedo.
+ *
+ * Esto marca el SKU recién agregado durante poco más de un segundo. No usa
+ * temporizadores para apagarse: la ventana se evalúa en cada render y la
+ * animación de CSS termina sola, así que no agenda trabajo ni fuerza un
+ * repintado extra sólo para limpiar una clase.
+ */
+const ADDED_FLASH_MS = 1100;
+const recentlyAdded = new Map();
+
+export function flashAddedProduct(productId) {
+  if (productId) recentlyAdded.set(String(productId), Date.now());
+}
+
+export function clearAddedFlash(productId) {
+  recentlyAdded.delete(String(productId));
+}
+
+function wasJustAdded(productId) {
+  const key = String(productId);
+  const at = recentlyAdded.get(key);
+  if (!at) return false;
+  if (Date.now() - at > ADDED_FLASH_MS) {
+    recentlyAdded.delete(key);
+    return false;
+  }
+  return true;
+}
+
 // El mismo control se comparte en catálogo, carruseles, recomendaciones y
 // carrito para que la cantidad sea una única verdad visual por SKU.
-function quantityControl(product, quantity, { className = 'qty-stepper' } = {}) {
+function quantityControl(product, quantity, { className = 'qty-stepper', justAdded = false } = {}) {
   const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
   const reachedStock = safeQuantity >= Number(product.stock || 0);
   const leftLabel = safeQuantity === 1
@@ -546,7 +619,7 @@ function quantityControl(product, quantity, { className = 'qty-stepper' } = {}) 
     : `Restar uno de ${product.name}`;
   const leftIcon = safeQuantity === 1 ? removeGlyph() : '<span aria-hidden="true">−</span>';
   return `
-    <div class="${className}" aria-label="Cantidad de ${escapeHtml(product.name)} en el pedido">
+    <div class="${className}${justAdded ? ' is-just-added' : ''}" aria-label="Cantidad de ${escapeHtml(product.name)} en el pedido"${justAdded ? ' data-added-flash' : ''}>
       <button class="icon-button compact qty-stepper-action qty-stepper-remove" type="button" data-cart-dec="${escapeHtml(product.id)}" aria-label="${escapeHtml(leftLabel)}">${leftIcon}</button>
       <strong aria-live="polite">${safeQuantity}</strong>
       <button class="icon-button compact qty-stepper-action" type="button" data-cart-inc="${escapeHtml(product.id)}" aria-label="Sumar uno de ${escapeHtml(product.name)}" ${reachedStock ? 'disabled' : ''}><span aria-hidden="true">+</span></button>
@@ -560,30 +633,13 @@ function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
   // incoherente, y es justo el que no puede terminar en un carrito.
   const pricePending = isPricePending(product);
   const outOfStock = !isCommerciallyPurchasable(product);
-  if (quantity > 0) return quantityControl(product, quantity);
+  if (quantity > 0) return quantityControl(product, quantity, { justAdded: wasJustAdded(product.id) });
   const actionLabel = pricePending
     ? `${product.name}: ${PRICE_PENDING_TITLE.toLowerCase()}; ${PRICE_PENDING_DETAIL.toLowerCase()}`
     : `Agregar ${product.name} al pedido`;
   return `<button class="${className}${pricePending ? ' is-price-pending' : ''}" type="button" data-add-product="${escapeHtml(product.id)}" aria-label="${escapeHtml(actionLabel)}" ${outOfStock ? 'disabled' : ''}>
     ${pricePending ? '' : '<span class="add-plus" aria-hidden="true">+</span>'}<span class="add-text">${pricePending ? 'Precio pendiente' : outOfStock ? 'No disponible' : 'Agregar'}</span>
   </button>`;
-}
-
-// "Destacados" del home: selección del local marcada en el catálogo. No es una
-// métrica de ventas y el copy no la presenta como tal.
-function homeOfferProducts() {
-  return getBeverageHomeSection(
-    'offers',
-    getState().products,
-    getState().promotions,
-    { limit: 6 },
-  )?.products || [];
-}
-
-function renderOffers() {
-  const container = $('[data-offers-rail]');
-  if (!container) return;
-  container.innerHTML = homeOfferProducts().map(railCard).join('');
 }
 
 // Orden comercial de la home: primero aquello por lo que este local es un
@@ -957,7 +1013,11 @@ export function getHomeStories() {
 function renderStoryEntry() {
   const slots = $$('[data-stories-slot]');
   if (!slots.length) return;
-  const entry = storyEntryState(getHomeStories(), readSeenStoryIds());
+  // Una sola lectura de la lista por render: `getHomeStories` normaliza,
+  // ordena y contrasta cada CTA contra el catálogo, y esto corre en cada
+  // cambio de estado (incluido cada toque del carrito).
+  const stories = getHomeStories();
+  const entry = storyEntryState(stories, readSeenStoryIds());
   const businessName = getBusinessConfig().businessName || BRAND.demoBusinessName;
   const actionLabel = entry.unseen
     ? `Ver ${entry.unseen === 1 ? 'la historia nueva' : `las ${entry.unseen} historias nuevas`} de ${businessName}`
@@ -974,20 +1034,51 @@ function renderStoryEntry() {
     }
   }
 
-  const cta = $('.brand-stories-cta');
-  if (cta) {
-    cta.hidden = !entry.available;
-    const detail = $('[data-stories-cta-detail]', cta);
-    // El estado no viaja sólo en el color del aro: el texto lo dice.
-    if (detail) {
-      detail.textContent = entry.unseen
-        ? `${entry.unseen} ${entry.unseen === 1 ? 'historia nueva' : 'historias nuevas'}`
-        : 'Ver historias';
-    }
-    const thumb = $('[data-stories-cta-thumb]', cta);
-    if (thumb) thumb.style.backgroundImage = entry.thumbnail ? `url("${encodeURI(entry.thumbnail)}")` : '';
-    cta.setAttribute('aria-label', `Novedades de hoy de ${businessName}. Ver historias.`);
+  renderStoryCircles(stories, entry, businessName);
+}
+
+// Cuántos círculos entran sin que la fila se vuelva un carrusel para leer: el
+// resto sigue a un toque, porque el visor avanza de una historia a la
+// siguiente. "Pocas visibles" es la regla, no un tope de publicación.
+const STORY_CIRCLE_LIMIT = 4;
+
+/**
+ * Fila de historias. Cada círculo es UNA historia publicada, con su miniatura
+ * real y el nombre de su destino debajo; el aro dice si ya se vio.
+ *
+ * El rótulo NO se inventa: cuando la historia lleva a una categoría se usa el
+ * nombre que publica el catálogo —corto y además describe a dónde va—, y si no
+ * hay CTA se usa su propio título recortado por CSS. El texto completo viaja
+ * siempre en el nombre accesible del botón.
+ */
+function renderStoryCircles(stories, entry, businessName) {
+  const items = $('[data-stories-items]');
+  if (!items) return;
+  // Sin historias se vacía la FILA, no el encabezado: el emblema de marca vive
+  // en el mismo contenedor y sigue siendo una imagen decorativa aunque no haya
+  // nada publicado. Ocultar el contenedor entero lo borraba de la home —lo
+  // encontraron dos specs del emblema— y eso no es fail-closed, es perder la
+  // identidad del comercio.
+  if (!entry.available) {
+    items.innerHTML = '';
+    return;
   }
+
+  const seen = readSeenStoryIds();
+  const categories = new Map(categoriesForCurrentCatalog().map((category) => [category.id, category.name]));
+  items.innerHTML = stories.slice(0, STORY_CIRCLE_LIMIT).map((story, index) => {
+    const isSeen = seen.has(story.id);
+    const label = (story.cta?.action === 'category' && categories.get(story.cta.target)) || story.title || 'Historia';
+    const spoken = story.title && story.title !== label ? `${story.title}. ${label}` : label;
+    return `
+      <button class="brand-story-circle" type="button" data-stories-open="${index}" data-story-seen="${isSeen}"
+        aria-label="${escapeHtml(`Ver la historia ${spoken} de ${businessName}${isSeen ? '' : '. Nueva'}`)}">
+        <span class="brand-story-ring" aria-hidden="true">
+          <span class="brand-story-face" style="background-image:url('${encodeURI(story.thumbnailUrl)}')"></span>
+        </span>
+        <span class="brand-story-label">${escapeHtml(label)}</span>
+      </button>`;
+  }).join('');
 }
 
 let storiesRestoreFocus = null;
@@ -1131,20 +1222,24 @@ function renderHomePromotions() {
       : '';
     const discount = discountPercent(product);
     const badge = discount > 0 ? `${discount}% OFF` : 'Promoción vigente';
-    const outOfStock = product.stock <= 0 || !product.available;
+    const outOfStock = !isCommerciallyPurchasable(product);
+    // Mismo criterio que la grilla y que el rail: se rotula lo que hay que
+    // avisar. "Disponible" en cada tarjeta era un renglón fijo que no informaba.
+    const stockState = cardAvailabilityLabel(product);
     return `
       <article class="home-promo-card ${outOfStock ? 'out-of-stock' : ''}">
-        <button class="home-promo-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+        <button class="home-promo-media" type="button" data-product-detail="${product.id}" aria-label="${escapeHtml(homeMediaLabel(product))}">
           <span class="home-promo-badge">${escapeHtml(badge)}</span>
           ${homeProductImage(product, 'home-promo-image')}
+          ${ageTag(product)}
         </button>
         <div class="home-promo-copy">
-          ${product.brand ? `<span class="home-promo-brand">${escapeHtml(product.brand)}</span>` : ''}
+          ${brandLine(product, 'home-promo-brand')}
           <strong>${escapeHtml(product.name)}</strong>
           <span class="home-product-price">${pricingLabel(pricing)}</span>
           ${old}
           <small>${escapeHtml(homeUnitText(product))}</small>
-          <small class="home-offer-availability">${outOfStock ? 'Agotado' : 'Disponible'}</small>
+          ${stockState ? `<small class="home-offer-availability">${escapeHtml(stockState)}</small>` : ''}
         </div>
         <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>
       </article>`;
@@ -1529,16 +1624,26 @@ function railCard(product) {
   const old = pricing.regularPrice && pricing.regularPrice > pricing.price
     ? `<s>${money(pricing.regularPrice)}</s>` : '';
   const quantity = getCartItems().find((item) => item.productId === product.id)?.quantity || 0;
+  // La misma compuerta que decide si se puede comprar decide si la tarjeta se
+  // ve apagada. Antes preguntaba por `stock` y `available` sueltos y un precio
+  // pendiente pasaba por "disponible".
+  const outOfStock = !isCommerciallyPurchasable(product);
+  // El estado sólo se rotula cuando hay algo que avisar, igual que en la
+  // grilla. Antes esta tarjeta imprimía "Disponible" SIEMPRE: una línea fija
+  // en cada tarjeta del rail que no distinguía nada de nada y le sacaba el
+  // renglón al precio. La misma regla, un solo lugar: `cardAvailabilityLabel`.
+  const stockState = cardAvailabilityLabel(product);
   return `
-    <article class="offer-card ${product.stock <= 0 || !product.available ? 'out-of-stock' : ''}">
-      <button class="offer-card-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+    <article class="offer-card ${outOfStock ? 'out-of-stock' : ''}">
+      <button class="offer-card-media" type="button" data-product-detail="${product.id}" aria-label="${escapeHtml(homeMediaLabel(product))}">
         ${productThumb(product, 'rail')}
         <span class="offer-badge-wrap">${topBadge(product)}</span>
+        ${ageTag(product)}
       </button>
       <div class="offer-card-body">
         <strong>${escapeHtml(product.name)}</strong>
         <small>${escapeHtml(unitText(product))}</small>
-        <small class="offer-availability">${product.stock > 0 && product.available ? 'Disponible' : 'Agotado'}</small>
+        ${stockState ? `<small class="offer-availability">${escapeHtml(stockState)}</small>` : ''}
         <div class="offer-price">
           <span>${pricingLabel(pricing)}</span>
           ${old}
@@ -2103,7 +2208,27 @@ function renderProducts() {
 
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
 
-  container.innerHTML = filteredProducts.map((product) => {
+  /*
+   * Una lista LLENA de productos que no se pueden comprar.
+   *
+   * Buscar "coca" devuelve seis resultados y los seis dicen "Precio
+   * próximamente": el contador lo avisa arriba, pero la pantalla entera queda
+   * sin una sola salida y el cliente tiene que deducir que no hay nada que
+   * hacer ahí. Esto no esconde ni reordena nada —los productos existen y el
+   * local los va a vender— sólo agrega la puerta a lo que hoy SÍ se puede
+   * pedir. Cuando el negocio publique esos precios, el aviso desaparece solo.
+   */
+  const nadaComprable = filteredProducts.every((product) => !isCommerciallyPurchasable(product));
+  const avisoSinComprables = nadaComprable
+    ? `<div class="catalog-none-buyable" role="status">
+        <strong>${filteredProducts.length === 1
+          ? 'Este producto todavía no tiene precio publicado.'
+          : `Ninguno de estos ${filteredProducts.length} tiene precio publicado todavía.`}</strong>
+        <button class="primary-button compact" type="button" data-clear-catalog-filters>Ver lo que sí se puede pedir</button>
+      </div>`
+    : '';
+
+  container.innerHTML = avisoSinComprables + filteredProducts.map((product) => {
     const outOfStock = !isCommerciallyPurchasable(product);
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
@@ -2135,9 +2260,9 @@ function renderProducts() {
           </button>
         </div>
         <div class="product-body">
-          ${product.brand ? `<span class="product-brand">${escapeHtml(product.brand)}</span>` : ''}
+          ${brandLine(product)}
           <h3>${escapeHtml(product.name)}</h3>
-          <p>${escapeHtml(presentation)}</p>
+          <p>${escapeHtml(presentationText(presentation, product))}</p>
           <div class="product-foot">
             ${priceBlock(product)}
             <div class="product-action">${control}</div>
@@ -2692,19 +2817,37 @@ function renderCartList() {
     </div>
   `).join('');
 
-  container.innerHTML = comboCards + items.map((item) => `
-    <div class="cart-item">
+  container.innerHTML = comboCards + items.map((item) => {
+    // Con una sola unidad el precio unitario y el total de la línea son el
+    // MISMO número, y estaban impresos los dos: "Unidad · $ 3.576" a la
+    // izquierda y "$ 3.576" a la derecha. El unitario aparece cuando empieza a
+    // informar algo, o sea cuando hay más de una.
+    const meta = [
+      unitText(item.product),
+      item.quantity > 1 ? `${money(item.product.price)} c/u` : '',
+    ].filter(Boolean).join(' · ');
+    // Lo que ya no se puede pedir se dice EN la línea y con la salida al lado,
+    // no recién al tocar "Confirmar pedido".
+    const issue = cartItemIssue(item);
+    return `
+    <div class="cart-item${issue ? ' has-issue' : ''}">
       ${productThumb(item.product, 'cart')}
       <div class="cart-item-info">
         <div class="cart-title">${escapeHtml(item.product.name)}</div>
-        <div class="cart-meta">${escapeHtml(unitText(item.product))} · ${money(item.product.price)}</div>
+        <div class="cart-meta">${escapeHtml(meta)}</div>
+        ${issue ? `
+        <p class="cart-item-issue" role="status">
+          <span>${escapeHtml(issue.message)}</span>
+          <button class="ghost-button compact" type="button" data-cart-fit="${escapeHtml(item.product.id)}" data-cart-fit-quantity="${issue.quantity}">${escapeHtml(issue.actionLabel)}</button>
+        </p>` : ''}
       </div>
       <div class="cart-item-side">
         ${quantityControl(item.product, item.quantity, { className: 'quantity-control' })}
         <div class="cart-line">${money(item.product.price * item.quantity)}</div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 export function renderOrderSummary() {

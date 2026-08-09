@@ -325,3 +325,50 @@ dialog[open]::backdrop {
   .home-catalog-card,
   .recommendation-card { transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
 }
+
+/* ============================================================================
+   CONFIRMACIÓN DE "AGREGADO" — en la tarjeta, no lejos de ella
+   ----------------------------------------------------------------------------
+   Al agregar, el botón que dice "Agregar" se convierte en el selector de
+   cantidad: el cambio es correcto pero silencioso, porque desaparece la
+   palabra que el cliente tocó y aparece un número. Las cuatro señales que ya
+   existían —aviso, barra de carrito y dos insignias— viven todas lejos del
+   dedo. Esto confirma en el mismo lugar del gesto y se apaga solo.
+   ========================================================================== */
+.qty-stepper.is-just-added {
+  position: relative;
+}
+
+.qty-stepper.is-just-added::after {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: grid;
+  border-radius: inherit;
+  background: var(--taba-red);
+  color: var(--taba-white);
+  content: "Agregado \2713";
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  place-items: center;
+  pointer-events: none;
+  animation: taba-added-flash 1100ms var(--motion-ease-standard) forwards;
+}
+
+@keyframes taba-added-flash {
+  0% { opacity: 0; transform: scale(0.97); }
+  12% { opacity: 1; transform: scale(1); }
+  68% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Sin movimiento el sello no puede apoyarse en una animación para apagarse:
+   tokens.css lleva toda duración a 0,001ms y saltaría directo al final. Acá
+   simplemente no se pinta y la confirmación queda a cargo del aviso, que es
+   texto y sí se lee. */
+@media (prefers-reduced-motion: reduce) {
+  .qty-stepper.is-just-added::after {
+    content: none;
+  }
+}

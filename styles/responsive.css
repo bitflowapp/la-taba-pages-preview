@@ -712,8 +712,9 @@ body[data-active-view="rider"] .floating-cart {
      largo ("Recomendados") ya no compite por 40px y deja de recortarse. El
      `select` cubre el control entero para conservar el objetivo táctil y el
      nombre accesible. */
-  .catalog-toolbar .sort-field {
+  .catalog-controls .sort-field {
     position: relative;
+    justify-content: flex-start;
     padding: 0 30px 0 12px;
   }
 
@@ -725,22 +726,23 @@ body[data-active-view="rider"] .floating-cart {
     display: inline;
   }
 
-  .catalog-toolbar .sort-select-wrap {
+  .catalog-controls .sort-select-wrap {
     position: absolute;
     inset: 0;
     overflow-x: clip;
     overflow-y: visible;
   }
 
-  .catalog-toolbar .sort-select-wrap::after {
+  .catalog-controls .sort-select-wrap::after {
     right: 12px;
   }
 
-  .catalog-toolbar .sort-field select {
+  .catalog-controls .sort-field select {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
+    max-width: none;
     opacity: 0;
   }
 

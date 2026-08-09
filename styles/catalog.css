@@ -3,7 +3,31 @@
 }
 
 .catalog-head {
-  margin-bottom: 4px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-bottom: 8px;
+}
+
+/* Filtrar y ordenar comparten fila: son la misma tarea. En teléfono el panel
+   de filtros es un bottom sheet, así que el disparador puede vivir en media
+   columna sin apretar nada. */
+.catalog-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* En escritorio los filtros NO son un sheet: se despliegan en el sitio, y ahí
+   necesitan el ancho entero para sus cuatro columnas. `display: contents`
+   devuelve los dos controles al flujo de la vista sin duplicar marcado. */
+@media (min-width: 821px) {
+  .catalog-controls {
+    display: contents;
+  }
 }
 
 .catalog-head .crumbs {
@@ -255,7 +279,7 @@
      mismos listeners y la misma lógica de filtrado. No hay un segundo control
      ni estado paralelo, así que no puede desincronizarse del catálogo. */
   .catalog-filters {
-    margin-bottom: 12px;
+    margin: 0;
     border: 0;
     background: none;
   }
@@ -368,19 +392,22 @@
 
 /* Fila del título: nombre del filtro + control de orden de 44px. La barra de
    orden dedicada desaparece; el contador queda debajo como caption. */
+/* El control de orden se mudó a la fila de controles: acá quedan el título y
+   la cantidad, que son una sola frase y van juntos, no separados a los
+   extremos de la fila. */
 .catalog-toolbar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: var(--tap);
-  margin: 0;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 2px 10px;
+  min-height: 0;
+  margin: 0 0 8px;
   padding-top: 0;
   border-top: 0;
 }
 
 .catalog-count {
-  margin: 0 0 12px;
+  margin: 0;
   color: var(--taba-muted);
   font-size: 12px;
   font-weight: 600;
@@ -388,11 +415,12 @@
 
 .sort-field {
   display: flex;
+  width: 100%;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   min-width: 0;
   min-height: var(--tap);
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   padding: 0 4px 0 10px;
   border: 1px solid var(--taba-border-medium);
   border-radius: var(--radius-pill);
@@ -431,7 +459,8 @@
 /* Ningún campo baja de 16px, ni siquiera en escritorio: es un solo
    componente para todas las superficies (y evita el zoom de iOS). */
 .sort-field select {
-  width: 148px;
+  width: 100%;
+  max-width: 148px;
   min-height: var(--tap);
   padding: 0 26px 0 8px;
   border: 0;
@@ -496,8 +525,14 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* Agotado se dice APAGANDO, no aclarando. El `#fafafa` venía de la época en
+   que la góndola era papel blanco: sobre grafito convertía al producto que NO
+   se puede comprar en la tarjeta más luminosa de la pantalla, o sea justo lo
+   contrario de lo que tiene que comunicar. La pastilla "Agotado" sobre la foto
+   sigue siendo la que lo dice con letras. */
 .product-card.out-of-stock {
-  background: #fafafa;
+  background: var(--shelf);
+  opacity: 0.66;
 }
 
 /* Marco del packshot: única caja a la que se ancla el favorito. Su alto lo
@@ -813,6 +848,52 @@
    en otra zona de la tarjeta. */
 .product-favorite {
   color: var(--taba-muted);
+}
+
+/* Aviso de "acá no hay nada comprable todavía", encima de la grilla. Ocupa la
+   fila entera para que no se lea como una tarjeta más. */
+.catalog-none-buyable {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--shelf-line-strong);
+  border-radius: var(--radius-md);
+  background: var(--shelf);
+  color: var(--shelf-ink);
+  font-size: 13px;
+}
+
+.catalog-none-buyable strong {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-weight: 750;
+}
+
+/* Aviso de la línea del carrito: lo que ya no se puede pedir, con la salida al
+   lado. Rojo de estado, no de acción: la acción es el botón. */
+.cart-item-issue {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 6px 0 0;
+  color: var(--shelf-red-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cart-item-issue button {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.cart-item.has-issue {
+  box-shadow: inset 2px 0 0 var(--shelf-red-ink);
 }
 
 .add-button,

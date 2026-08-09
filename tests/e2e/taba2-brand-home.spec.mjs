@@ -122,7 +122,10 @@ test('el encabezado presenta la identidad real del comercio, no una escrita a ma
   const guards = installPageGuards(page);
   await openHome(page);
 
-  await expect(page.locator('.brand-hero-welcome')).toHaveText('¡Bienvenido a');
+  // El "¡Bienvenido a" se retiró: era decoración de tres renglones encima del
+  // primer producto. Lo que se fija sigue siendo lo mismo que fijaba antes —que
+  // la identidad SALE de `businessConfig` y no está escrita a mano—, ahora
+  // sobre el encabezado compacto.
   await expect(page.getByRole('heading', { name: 'La Taba 2', level: 1 })).toBeVisible();
   // Rubro y dirección salen de `businessConfig`: la vista sólo los concatena.
   await expect(page.locator('[data-home-business-place]')).toHaveText('Tienda de bebidas · Mendoza 827, Neuquén');
@@ -149,7 +152,10 @@ test('sin historias publicadas el logo no se anuncia como botón', async ({ page
   }
   await expect(logoHome(page)).toBeHidden();
   await expect(page.locator(`${PERFIL_HEAD} .brand-logo-action`)).toBeHidden();
-  await expect(page.locator('.brand-stories-cta')).toBeHidden();
+  // La fila de círculos es la entrada nueva: sin historias queda vacía y no
+  // sobrevive ni un círculo prometiendo contenido. El emblema NO se va con
+  // ella: sigue siendo la identidad del comercio, sólo que sin aro ni botón.
+  await expect(page.locator('.brand-story-circle')).toHaveCount(0);
   await expect(logoEstaticoHome(page)).toBeVisible();
   // El aro no se pinta: nada promete contenido inexistente.
   const ringPainted = await page.locator(`${HERO} [data-stories-static] .brand-logo-ring`)
@@ -232,8 +238,11 @@ test('con historias vigentes el logo es botón, el aro se enciende y el acceso d
   const logo = logoHome(page);
   await expect(logo).toBeVisible();
   await expect(logo).toHaveAttribute('aria-label', /2 historias nuevas de La Taba 2/);
-  // El estado no viaja sólo en el color del aro.
-  await expect(page.locator('[data-stories-cta-detail]')).toHaveText('2 historias nuevas');
+  // El estado no viaja sólo en el color del aro: hay un círculo por historia y
+  // cada uno declara si ya se vio. Antes esto lo decía un rótulo suelto de una
+  // tarjeta ancha que no mostraba ninguna historia.
+  await expect(page.locator('.brand-story-circle')).toHaveCount(2);
+  await expect(page.locator('.brand-story-circle[data-story-seen="false"]')).toHaveCount(2);
 
   await logo.click();
   const modal = page.locator('[data-stories-modal]');
@@ -256,7 +265,9 @@ test('las historias vistas atenúan el aro en vez de desaparecer', async ({ page
   await page.locator('[data-close-stories]').click();
 
   await expect(entradaHome(page)).toHaveAttribute('data-stories-state', 'seen');
-  await expect(page.locator('[data-stories-cta-detail]')).toHaveText('Ver historias');
+  // Vistas las dos, los dos círculos quedan apagados —no desaparecen— igual
+  // que el aro del emblema.
+  await expect(page.locator('.brand-story-circle[data-story-seen="true"]')).toHaveCount(2);
   await expect(logoHome(page)).toBeVisible();
 });
 
@@ -569,10 +580,11 @@ test('el texto de la home cumple el contraste mínimo sobre la superficie oscura
   await openHome(page, { stories: STORY_FIXTURES });
 
   const probes = [
-    ['.brand-hero-welcome', 4.5],
     ['[data-home-business-place]', 4.5],
     ['[data-open-status]', 4.5],
-    ['[data-stories-cta-detail]', 4.5],
+    ['.brand-story-circle[data-story-seen="false"] .brand-story-label', 4.5],
+    ['.home-hero-promo-copy strong', 4.5],
+    ['.home-hero-promo-cta', 4.5],
     ['[data-view="home"] .taba-home-search input', 4.5],
     ['.home-section-head h2', 4.5],
     ['.home-section-head button', 4.5],
@@ -650,9 +662,9 @@ test('con movimiento reducido el aro deja de animarse y el estado sigue siendo l
   const ring = page.locator(`${HERO} .brand-logo-action .brand-logo-ring`);
   const duration = await ring.evaluate((node) => getComputedStyle(node).animationDuration);
   expect(parseFloat(duration)).toBeLessThanOrEqual(0.01);
-  // El aro sigue pintado y el texto sigue diciendo el estado.
+  // El aro sigue pintado y los círculos siguen declarando el estado.
   expect(await ring.evaluate((node) => getComputedStyle(node).backgroundImage)).not.toBe('none');
-  await expect(page.locator('[data-stories-cta-detail]')).toHaveText('2 historias nuevas');
+  await expect(page.locator('.brand-story-circle[data-story-seen="false"]')).toHaveCount(2);
 });
 
 test('la home no crece sin control en los anchos objetivo', async ({ page }) => {
@@ -789,13 +801,42 @@ test('el hero promocional invita sin afirmar precio y su CTA lleva a producto co
   expect(texto, 'el hero no puede afirmar importe ni descuento')
     .not.toMatch(/\$|%|\bdescuento\b|\boferta\b|\bpromo\b|\bantes\b/i);
 
-  // Va DESPUÉS del primer tramo comprable: el pliegue es del producto.
+  // El hero ABRE la vidriera: va antes de los chips y del primer carrusel.
+  // Antes vivía después de Destacados y de Combos —a ~1.900px del inicio— o
+  // sea que en la práctica no lo veía nadie.
   const [destacados, cajaHero] = await Promise.all([
     page.locator('.home-best-section').boundingBox(),
     hero.boundingBox(),
   ]);
-  expect(cajaHero.y, 'el hero no puede empujar al primer producto').toBeGreaterThan(destacados.y);
+  expect(cajaHero.y, 'el hero abre la vidriera, no la cierra').toBeLessThan(destacados.y);
 
+  // Y el precio lo paga ÉL, no el producto: subirlo no puede empujar el primer
+  // precio comprable fuera de la primera pantalla. Se mide contra el pliegue
+  // ÚTIL —el alto de la ventana menos la navegación inferior, que es opaca— en
+  // el teléfono de referencia. Es el contrato que reemplaza al anterior: no
+  // "el hero va último" sino "el hero no se come el precio".
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.waitForTimeout(300);
+  const pliegue = await page.evaluate(() => {
+    const nav = document.querySelector('.mobile-nav');
+    const alto = nav && getComputedStyle(nav).display !== 'none'
+      ? nav.getBoundingClientRect().height
+      : 0;
+    const precio = [...document.querySelectorAll('.home-best-copy span')]
+      .find((node) => /\$/.test(node.textContent || ''));
+    const cta = document.querySelector('[data-add-product]');
+    return {
+      util: Math.round(window.innerHeight - alto),
+      precio: precio ? Math.round(precio.getBoundingClientRect().bottom + window.scrollY) : null,
+      cta: cta ? Math.round(cta.getBoundingClientRect().bottom + window.scrollY) : null,
+    };
+  });
+  expect(pliegue.precio, 'no hay precio en la vidriera').not.toBeNull();
+  expect(pliegue.precio, 'el primer precio quedó abajo del pliegue').toBeLessThanOrEqual(pliegue.util);
+  expect(pliegue.cta, 'el primer "Agregar" quedó abajo del pliegue').toBeLessThanOrEqual(pliegue.util);
+
+  await page.setViewportSize(PHONE);
+  await page.waitForTimeout(200);
   await hero.click();
   await expect(page.locator('[data-view="catalog"]')).toBeVisible();
   await expect(page.locator('[data-product-grid] [data-add-product]:not([disabled])').first()).toBeVisible();

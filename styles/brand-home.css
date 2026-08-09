@@ -210,18 +210,118 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
    ========================================================================== */
 .brand-hero {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   padding: 2px 2px 0;
 }
 
-/* Fila 1: emblema + acceso a historias. El emblema baja de 100 a 72px porque ya
-   no comparte fila con el título —no tiene que sostener tres renglones de
-   copy— y el acceso ocupa el ancho que sobra en vez de un renglón propio. */
-.brand-hero-top {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+/* Fila 1 — IDENTIDAD, en dos renglones y no en cuatro.
+   El nombre comparte fila con el estado —los dos son cortos y juntos responden
+   "quién sos" y "¿estás vendiendo?"— y debajo queda el rubro con la dirección,
+   que es lo que orienta. El nombre ya vive en la barra superior, así que acá
+   deja de ser un titular de 40px y pasa a ser lo que es: el encabezado de la
+   vista. Los ~88px que devuelve son los que hacían que a 320px el primer
+   precio de la vidriera cayera abajo del pliegue. */
+.brand-hero-id {
+  display: flex;
+  min-width: 0;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+}
+
+.brand-hero-id h1 {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.brand-hero-place {
+  flex: 1 0 100%;
+}
+
+/* Fila 2 — HISTORIAS. Emblema + un círculo por historia, en fila. Se desplaza
+   sola si hay más de las que entran; sin historias no existe. */
+.brand-stories-strip {
+  display: flex;
+  align-items: flex-start;
   gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0 -2px;
+  padding: 0 2px 2px;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.brand-stories-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.brand-stories-items {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Círculo de historia: miniatura real dentro del aro y el destino debajo.
+   El aro usa el MISMO degradado de identidad que el emblema, así que la fila
+   se lee como una sola cosa y no como dos sistemas. */
+.brand-story-circle {
+  display: grid;
+  width: 62px;
+  flex: 0 0 auto;
+  justify-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand-ink-muted);
+  scroll-snap-align: start;
+}
+
+.brand-story-ring {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--brand-story-ring);
+}
+
+/* Ya vista: el aro no desaparece —la historia sigue estando— pero se apaga.
+   Mismo lenguaje que el emblema, que baja a 0,32 en `seen`. */
+.brand-story-circle[data-story-seen="true"] .brand-story-ring {
+  background: none;
+  box-shadow: inset 0 0 0 2px var(--brand-border-strong);
+}
+
+.brand-story-face {
+  display: block;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--brand-surface) center / cover no-repeat;
+  box-shadow: 0 0 0 2px var(--brand-bg);
+}
+
+.brand-story-circle[data-story-seen="true"] .brand-story-face {
+  opacity: 0.72;
+}
+
+/* Rótulo corto: una línea, recortada. El texto completo viaja en el nombre
+   accesible del botón, así que recortar acá no esconde información. */
+.brand-story-label {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand-story-circle[data-story-seen="false"] .brand-story-label {
+  color: var(--brand-ink);
 }
 
 /* Caja reservada: el estado de historias cambia el contenido, nunca el tamaño.
@@ -232,9 +332,12 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
    números y no de medidas repetidas: el lado de la caja y el del emblema. El
    hueco del aro se calcula solo a partir del segundo, que es lo que evita que
    un tamaño nuevo lo deje invadiendo el disco. */
+/* 56/47 y no 72/61: el emblema es el PRIMER círculo de la fila de historias,
+   así que su disco tiene que medir lo mismo que los demás o la fila se lee
+   torcida. Perfil sigue con su propio tamaño más abajo. */
 .brand-logo-slot {
-  --logo-size: 72px;
-  --logo-face: 61px;
+  --logo-size: 56px;
+  --logo-face: 47px;
 
   position: relative;
   display: grid;
@@ -352,48 +455,32 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .profile
   }
 }
 
-.brand-hero-copy {
-  display: grid;
-  min-width: 0;
-  gap: 2px;
-}
-
-.brand-hero-welcome {
-  margin: 0;
-  color: var(--brand-ink-muted);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.15;
-}
-
-/* Título grande y corto sobre el ancho completo. Ya no comparte fila con el
-   emblema, así que puede crecer sin partirse en dos renglones a 320px. */
+/* Nombre del comercio. Sigue siendo el h1 de la vista —el encabezado que
+   anuncia el lector de pantalla— pero deja de ser un titular de 40px: eso ya lo
+   dice la barra superior, y acá cada píxel se lo saca al primer precio. */
 body[data-active-view="home"] .taba-home-hero h1 {
   display: flex;
   align-items: baseline;
   margin: 0;
   color: var(--brand-ink);
-  font-size: clamp(30px, 9.4vw, 40px);
+  font-size: 19px;
   font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1.02;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   overflow-wrap: break-word;
 }
 
-.brand-hero-bang {
-  color: var(--taba-red-quiet);
-  font-size: 1em;
-}
-
-/* Rubro y dirección: el dorado como acento MODERADO, no como color de línea
-   completa. Antes toda la línea era dorada y competía con el título; ahora la
-   tinta es la secundaria del sistema y sólo el separador queda dorado. */
+/* Rubro y dirección: la línea que ORIENTA (qué vende y dónde está). Queda como
+   secundaria del sistema, a un renglón. */
 .brand-hero-place {
-  margin: 4px 0 0;
+  margin: 0;
+  overflow: hidden;
   color: var(--brand-ink-muted);
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 600;
   line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brand-hero-state {
@@ -401,7 +488,7 @@ body[data-active-view="home"] .taba-home-hero h1 {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px 10px;
-  margin: 6px 0 0;
+  margin: 0;
 }
 
 /* Estado de pedidos: punto + texto. El punto acompaña, no informa solo. */
@@ -444,80 +531,18 @@ body[data-active-view="home"] .taba-home-hero h1 {
 }
 
 /* Acceso a historias: tarjeta redondeada, segundo y último llamado. */
-/* 50px y no 62: el acceso es el segundo llamado del encabezado, y cada píxel
-   que ocupa acá se lo saca al primer producto. Sigue por encima del piso táctil
-   de 44 y conserva la miniatura, el título y el estado. */
-/* Acceso a historias: vive en la MISMA fila que el emblema, no en un renglón
-   propio. Los dos abren el visor; juntos forman el encabezado de la vidriera. */
-.brand-stories-cta {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 56px;
-  padding: 5px 12px 5px 7px;
-  border: 1px solid var(--brand-border);
-  border-radius: 18px;
-  background: var(--brand-bg-raised);
-  color: var(--brand-ink);
-  text-align: left;
-}
-
-.brand-stories-cta:hover {
-  border-color: var(--brand-border-strong);
-  background: var(--brand-surface);
-}
-
-.brand-stories-thumb {
-  display: block;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--brand-surface) center / cover no-repeat;
-  box-shadow: 0 0 0 2px var(--brand-gold);
-}
-
-.brand-stories-copy {
-  display: grid;
-  min-width: 0;
-  gap: 0;
-}
-
-.brand-stories-copy strong {
-  font-size: 13.5px;
-  font-weight: 850;
-  line-height: 1.25;
-}
-
-.brand-stories-copy small {
-  overflow: hidden;
-  color: var(--brand-gold);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.brand-stories-go {
-  color: var(--brand-ink-muted);
-  font-size: 20px;
-  line-height: 1;
-}
-
 /* ============================================================================
    3 · BUSCADOR
    Más alto y con más presencia. 16px de fuente: sin autozoom en iOS.
    ========================================================================== */
 body[data-active-view="home"] .taba-home-search {
   width: 100%;
-  height: 54px;
-  min-height: 54px;
+  height: 48px;
+  min-height: 48px;
   margin: 0;
-  padding: 0 20px;
+  padding: 0 16px;
   border-color: var(--brand-border);
-  border-radius: 18px;
+  border-radius: 16px;
   background: var(--brand-surface);
   box-shadow: none;
 }
@@ -527,14 +552,14 @@ body[data-active-view="home"] .taba-home-search:focus-within {
 }
 
 body[data-active-view="home"] .taba-home-search svg {
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
   color: var(--brand-ink-muted);
 }
 
 body[data-active-view="home"] .taba-home-search input {
-  min-height: 50px;
+  min-height: 46px;
   background: transparent;
   caret-color: var(--brand-ink);
   color: var(--brand-ink);
@@ -645,9 +670,12 @@ body[data-active-view="catalog"] .category-button .category-ico {
    en 469px. Con 15px el mismo contenido conserva la respiración pero el primer
    pantallazo llega hasta el banner editorial, que es la composición de la
    referencia. */
+/* 12 y no 15. Con el hero comercial arriba, cada separación que hay antes del
+   primer producto se paga en el pliegue: cuatro de ellas suman un renglón de
+   precio. Debajo del pliegue el aire sigue siendo el mismo. */
 body[data-active-view="home"] .taba-home-content {
   display: grid;
-  gap: 15px;
+  gap: 12px;
 }
 
 body[data-active-view="home"] .home-merch-section {
@@ -661,14 +689,26 @@ body[data-active-view="home"] .home-section-head {
 
 body[data-active-view="home"] .home-section-head h2 {
   color: var(--brand-ink);
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 950;
   letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+
+/* Título y procedencia en el MISMO renglón. Apilados gastaban 50px de alto
+   para decir dos cosas cortas, justo encima del primer producto. La
+   procedencia ("Selección del local") no se borra —es lo que hace honesto al
+   rótulo— pero deja de ocupar un renglón propio. */
+body[data-active-view="home"] .home-section-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
 }
 
 body[data-active-view="home"] .home-section-title small {
   color: var(--brand-ink-muted);
-  font-size: 12.5px;
+  font-size: 12px;
 }
 
 body[data-active-view="home"] .home-section-head button {
@@ -703,10 +743,10 @@ body[data-active-view="home"] .home-catalog-card {
 /* Rail de ofertas: misma tarjeta que Destacados. El ancho lo fija el bloque de
    más abajo, que reparte los dos rails con la misma fracción. */
 body[data-active-view="home"] .home-promo-card {
-  grid-template-rows: 150px 1fr auto;
+  grid-template-rows: 136px 1fr auto;
   height: auto;
-  min-height: 262px;
-  padding: 9px 10px 10px;
+  min-height: 244px;
+  padding: 8px 9px 9px;
 }
 
 /* Mismo plato blanco que en el catálogo: los packshots traen el fondo horneado,
@@ -722,11 +762,11 @@ body[data-active-view="home"] .home-catalog-media {
 }
 
 body[data-active-view="home"] .home-promo-media {
-  height: 150px;
+  height: 136px;
 }
 
 body[data-active-view="home"] .home-promo-image {
-  height: 148px;
+  height: 134px;
   padding: 0;
   scale: 1.06;
 }
@@ -830,13 +870,13 @@ body[data-active-view="home"] .home-promotions-rail {
 body[data-active-view="home"] .home-best-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 150px 1fr auto;
+  grid-template-rows: 136px 1fr auto;
   align-items: stretch;
   width: auto;
   height: auto;
-  min-height: 262px;
+  min-height: 244px;
   gap: 0;
-  padding: 9px 10px 10px;
+  padding: 8px 9px 9px;
 }
 
 /* Caja CUADRADA: el packshot es un cuadrado de 400×400 y `contain` lo escala al
@@ -845,7 +885,7 @@ body[data-active-view="home"] .home-best-card {
    12% sin recortar un solo píxel. */
 body[data-active-view="home"] .home-best-media {
   width: 100%;
-  height: 150px;
+  height: 136px;
   overflow: hidden;
 }
 
@@ -857,7 +897,7 @@ body[data-active-view="home"] .home-best-media {
    su etiqueta al agregar una lata nueva al catálogo. */
 body[data-active-view="home"] .home-best-image {
   width: 100%;
-  height: 150px;
+  height: 136px;
   padding: 0;
   scale: 1.06;
 }
@@ -1214,13 +1254,54 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-m
 }
 
 /* Los discos que flotan sobre el packshot (favorito, agregar rápido) eran
-   blancos puros: sobre crema se veían como parches. */
+   blancos puros: sobre crema se veían como parches.
+   Sobre el plato blanco de la góndola el disco grafito al 92% pasó a ser lo
+   CONTRARIO: una mancha oscura de 34px encima de la botella, tan pesada como
+   el propio envase y en el mismo lugar donde el ojo entra a la tarjeta. El
+   favorito es una acción secundaria —guardar, no comprar— así que baja a un
+   velo apenas perceptible y deja el packshot en paz. Sigue midiendo lo mismo:
+   el área táctil no cambia, sólo su peso visual. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
   .product-favorite,
   .home-favorite-button
 ) {
-  border-color: var(--shelf-line);
-  background: color-mix(in srgb, var(--shelf-raised) 92%, transparent);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--taba-graphite-soft);
+}
+
+/* Sin disco, el contorno necesita despegarse del envase, pero el halo de 2px
+   al 92% lo devolvió al problema anterior por el otro lado: el corazón pasó a
+   leerse como un trazo grueso encima del packshot, tan protagonista como el
+   disco gris que reemplazó. Un halo de 1px al 55% alcanza para que no se
+   pierda sobre una lata negra y lo deja donde tiene que estar: segundo.
+   El área táctil no cambia en ninguno de los dos casos. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
+  .product-favorite,
+  .home-favorite-button
+) svg {
+  filter: drop-shadow(0 0 1px rgb(255 255 255 / 55%));
+}
+
+/* El corazón de la tarjeta de la home viene con trazo de 1,7px pensado para
+   vivir dentro de un disco. Fuera de él, adelgaza y baja a la tinta
+   secundaria: guardar es una acción de después, no la de ahora. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .home-favorite-button path {
+  stroke: var(--taba-muted);
+  stroke-width: 1.4;
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .home-favorite-button.is-favorite path {
+  fill: var(--taba-red);
+  stroke: var(--taba-red);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
+  .product-favorite,
+  .home-favorite-button
+).is-favorite {
+  color: var(--taba-red);
 }
 
 /* Tinta del contenido: el gris frío del sistema estaba calibrado para papel
@@ -1507,17 +1588,24 @@ body[data-active-view="home"] .home-sections {
   padding: 0 2px;
 }
 
+/* En teléfono el hero es una BANDA, no un afiche.
+   El afiche medía 268px y vivía 1.900px más abajo, donde no lo veía nadie. Al
+   subirlo al lugar que le corresponde —lo primero que tiene que dar ganas— esa
+   altura se la sacaba entera al primer precio, que a 320px ya caía justo en el
+   pliegue. La banda conserva lo que vende (la fotografía, el título corto y la
+   puerta a una categoría real) y suelta lo que explica: el subtítulo, que es
+   la línea que describe en vez de provocar. */
 .home-hero-promo {
   position: relative;
   display: block;
   width: 100%;
-  min-height: 268px;
+  min-height: 112px;
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--brand-border);
-  border-radius: 24px;
+  border-radius: 20px;
   background: linear-gradient(160deg, #171a20 0%, #101318 100%);
-  box-shadow: var(--shadow-shelf);
+  box-shadow: var(--shadow-shelf-flat);
   color: var(--brand-ink);
   text-align: left;
 }
@@ -1530,7 +1618,7 @@ body[data-active-view="home"] .home-sections {
 .home-hero-promo-media {
   position: absolute;
   inset: 0;
-  background-position: center 62%;
+  background-position: 72% 58%;
   background-size: cover;
   background-repeat: no-repeat;
   pointer-events: none;
@@ -1538,15 +1626,18 @@ body[data-active-view="home"] .home-sections {
 
 /* Velo VERTICAL: la escena se ve entera arriba y el copy se apoya sobre negro
    abajo. Es el pie de foto de una portada, no un filtro sobre la imagen. */
+/* Velo HORIZONTAL en la banda: el copy se apoya sobre negro a la izquierda y
+   la escena queda entera a la derecha. En el afiche (escritorio) el velo
+   vuelve a ser vertical, que es como está compuesta la pieza. */
 .home-hero-promo-media::after {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    to top,
-    rgb(5 7 10 / 95%) 0%,
-    rgb(5 7 10 / 90%) 30%,
-    rgb(5 7 10 / 46%) 62%,
-    rgb(5 7 10 / 10%) 100%
+    to right,
+    rgb(5 7 10 / 94%) 0%,
+    rgb(5 7 10 / 86%) 42%,
+    rgb(5 7 10 / 34%) 74%,
+    rgb(5 7 10 / 8%) 100%
   );
   content: "";
 }
@@ -1555,10 +1646,10 @@ body[data-active-view="home"] .home-sections {
   position: relative;
   z-index: 1;
   display: grid;
-  align-content: end;
-  gap: 2px;
-  min-height: 268px;
-  padding: 20px;
+  align-content: center;
+  gap: 1px;
+  min-height: 112px;
+  padding: 14px 16px;
 }
 
 .home-hero-promo-copy small {
@@ -1573,40 +1664,216 @@ body[data-active-view="home"] .home-sections {
    14ch lo partía en "Bien fría, bien de / acá", dejando una palabra huérfana
    en el renglón de abajo. El ancho de la caja ya lo acota. */
 .home-hero-promo-copy strong {
-  margin-top: 4px;
-  font-size: clamp(26px, 7.6vw, 32px);
+  max-width: 15ch;
+  margin-top: 2px;
+  font-size: clamp(18px, 5.4vw, 21px);
   font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1.08;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
   text-wrap: balance;
 }
 
+/* El subtítulo EXPLICA; en la banda no entra y tampoco hace falta: el título y
+   la puerta ya dicen todo. Sigue en el marcado para el afiche de escritorio y
+   para el nombre accesible del botón, que lo lee completo. */
 .home-hero-promo-sub {
-  max-width: 30ch;
-  margin-top: 5px;
-  color: var(--brand-ink-muted);
-  font-size: 13.5px;
-  font-weight: 500;
-  line-height: 1.4;
+  display: none;
 }
 
+/* La puerta es un enlace con flecha, no un botón de 46px: la banda ENTERA es
+   el control —es un `<button>`— así que un segundo control adentro sólo
+   gastaría la altura que necesita el precio de abajo. */
 .home-hero-promo-cta {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: fit-content;
-  min-height: 46px;
-  margin-top: 14px;
-  padding: 0 20px;
-  border-radius: var(--radius-pill);
-  background: var(--taba-red);
-  color: var(--taba-white);
-  font-size: 14px;
+  margin-top: 6px;
+  color: var(--brand-red-ink);
+  font-size: 12.5px;
   font-weight: 800;
 }
 
 .home-hero-promo:hover .home-hero-promo-cta {
-  background: var(--taba-red-hover);
+  color: var(--taba-white);
+}
+
+/* PANTALLAS BAJAS — el pliegue es un problema de ALTO, no de ancho.
+   Un Moto G15 (360×~780) y un iPhone SE (320×568) tienen anchos muy distintos
+   y el mismo problema: entre la barra superior, el encabezado, el hero, el
+   buscador, los chips y el rótulo de la sección, el "Agregar" del primer
+   producto se cae abajo del pliegue. La condición se escribe por lo que
+   realmente aprieta —`max-height`— así que a 390×844 la vidriera respira y a
+   360×800 no se pierde la acción.
+   Medido con el borde INFERIOR de los controles, que es lo que decide si algo
+   se puede tocar: a 390×844 el "Agregar" terminaba en 803px con el pliegue
+   útil en 788, y a 360×800 en 754 contra 744. El corte va en 900px de alto
+   —cubre 320×720, 360×800, 390×844 y 393×852— y deja respirar a 412×915 y a
+   las tabletas, que tienen altura de sobra.
+   Va acotado a teléfono (`max-width`) para no apretar la vidriera de un
+   escritorio con la ventana baja, que tiene ancho de sobra. */
+@media (max-width: 699px) and (max-height: 900px) {
+  .home-hero-promo,
+  .home-hero-promo-copy {
+    min-height: 84px;
+  }
+
+  .home-hero-promo-copy {
+    padding: 9px 14px;
+  }
+
+  .brand-hero {
+    gap: 8px;
+  }
+
+  body[data-active-view="home"] .taba-home-content {
+    gap: 10px;
+  }
+
+  /* El buscador NO cede altura: su piso táctil de 48px es un contrato con
+     nombre y prueba propia (`el buscador ocupa el ancho útil, es táctil y no
+     dispara el zoom de iOS`). Bajarlo a 46 lo rompió en la corrida completa;
+     los píxeles del pliegue salen del packshot, que no es un control. */
+  .brand-story-circle {
+    width: 58px;
+  }
+
+  .brand-story-ring {
+    width: 52px;
+    height: 52px;
+  }
+
+  .brand-story-face {
+    width: 45px;
+    height: 45px;
+  }
+
+  .brand-hero .brand-logo-slot {
+    --logo-size: 52px;
+    --logo-face: 44px;
+  }
+
+  body[data-active-view="home"] .home-section-head h2 {
+    font-size: 18px;
+  }
+
+  body[data-active-view="home"] .home-best-card,
+  body[data-active-view="home"] .home-promo-card {
+    grid-template-rows: 116px 1fr auto;
+    min-height: 222px;
+  }
+
+  body[data-active-view="home"] .home-best-media,
+  body[data-active-view="home"] .home-best-image,
+  body[data-active-view="home"] .home-promo-media {
+    height: 116px;
+  }
+
+  body[data-active-view="home"] .home-promo-image {
+    height: 114px;
+  }
+}
+
+/* Un escalón más para el teléfono BAJO (360×800 y menos), donde el "Agregar"
+   todavía terminaba 10px por debajo de la barra. Es el último recorte que da
+   sin volver miniatura al packshot. */
+@media (max-width: 699px) and (max-height: 820px) {
+  .home-hero-promo,
+  .home-hero-promo-copy {
+    min-height: 80px;
+  }
+
+  body[data-active-view="home"] .home-best-card,
+  body[data-active-view="home"] .home-promo-card {
+    /* 104 y no 116. A 360×800 el borde inferior del "Agregar" caía en 745px
+       con la barra empezando en 744: un botón que termina UN píxel debajo de
+       una barra opaca no se puede tocar. Los píxeles NO salen del aire de
+       abajo —el padding inferior no participa de dónde termina el botón— ni
+       del buscador, que tiene un piso táctil fijado por prueba: salen de la
+       caja de la foto, que es lo único que empuja todo lo que viene después y
+       no es un control. */
+    grid-template-rows: 104px 1fr auto;
+    min-height: 210px;
+    padding: 7px 9px 8px;
+  }
+
+  body[data-active-view="home"] .home-best-media,
+  body[data-active-view="home"] .home-best-image,
+  body[data-active-view="home"] .home-promo-media {
+    height: 104px;
+  }
+
+  body[data-active-view="home"] .home-promo-image {
+    height: 102px;
+  }
+}
+
+/* Afiche: a partir de la tableta hay altura de sobra y la pieza vuelve a su
+   composición original, con subtítulo y botón. */
+@media (min-width: 700px) {
+  .home-hero-promo,
+  .home-hero-promo-copy {
+    min-height: 268px;
+  }
+
+  .home-hero-promo {
+    border-radius: 24px;
+    box-shadow: var(--shadow-shelf);
+  }
+
+  .home-hero-promo-media {
+    background-position: center 62%;
+  }
+
+  .home-hero-promo-media::after {
+    background: linear-gradient(
+      to top,
+      rgb(5 7 10 / 95%) 0%,
+      rgb(5 7 10 / 90%) 30%,
+      rgb(5 7 10 / 46%) 62%,
+      rgb(5 7 10 / 10%) 100%
+    );
+  }
+
+  .home-hero-promo-copy {
+    align-content: end;
+    gap: 2px;
+    padding: 20px;
+  }
+
+  .home-hero-promo-copy strong {
+    max-width: none;
+    margin-top: 4px;
+    font-size: clamp(26px, 4vw, 32px);
+    letter-spacing: -0.04em;
+    line-height: 1.08;
+  }
+
+  .home-hero-promo-sub {
+    display: block;
+    max-width: 30ch;
+    margin-top: 5px;
+    color: var(--brand-ink-muted);
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .home-hero-promo-cta {
+    min-height: 46px;
+    margin-top: 14px;
+    padding: 0 20px;
+    border-radius: var(--radius-pill);
+    background: var(--taba-red);
+    color: var(--taba-white);
+    font-size: 14px;
+    gap: 8px;
+  }
+
+  .home-hero-promo:hover .home-hero-promo-cta {
+    background: var(--taba-red-hover);
+    color: var(--taba-white);
+  }
 }
 
 /* ============================================================================
@@ -2027,21 +2294,37 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
     padding-block: 14px 4px;
   }
 
+  /* En escritorio el emblema puede crecer, pero NO puede desalinearse del
+     resto de la fila: los círculos de historia crecen con él. */
   .brand-hero .brand-logo-slot {
-    --logo-size: 104px;
-    --logo-face: 89px;
+    --logo-size: 72px;
+    --logo-face: 61px;
+  }
+
+  .brand-story-circle {
+    width: 78px;
+  }
+
+  .brand-story-ring {
+    width: 72px;
+    height: 72px;
+  }
+
+  .brand-story-face {
+    width: 62px;
+    height: 62px;
+  }
+
+  .brand-story-label {
+    font-size: 11.5px;
   }
 
   body[data-active-view="home"] .taba-home-hero h1 {
-    font-size: clamp(38px, 4.4vw, 52px);
-  }
-
-  .brand-hero-welcome {
-    font-size: 18px;
+    font-size: clamp(26px, 2.6vw, 32px);
   }
 
   .brand-hero-place {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .home-brand-banners:not(:empty) {
@@ -2083,36 +2366,47 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
 /* A 320px el encabezado no puede pelear por el ancho: el logo baja a 84px sin
    perder presencia y el título ajusta su escala. */
 @media (max-width: 359px) {
-  /* 64 y no 84. El 84 venía del encabezado anterior, donde el emblema medía
-     100px y ESTE breakpoint lo achicaba; con la fila nueva el emblema ya mide
-     72, así que la misma regla lo hacía CRECER justo en el ancho más apretado.
-     Ahora achica de verdad y le devuelve ~20px al acceso a historias, que
-     comparte la fila. La regla de `.brand-hero-identity` se retiró: ese nodo
-     dejó de existir cuando el encabezado se partió en dos filas. */
+  /* A 320px la fila de historias entra igual: el disco baja a 50px y el rótulo
+     a 10px. Es el ancho donde cada píxel del encabezado se lo saca al primer
+     precio, así que acá la fila se aprieta antes de empezar a desplazarse. */
   .brand-hero .brand-logo-slot {
-    --logo-size: 64px;
-    --logo-face: 54px;
+    --logo-size: 50px;
+    --logo-face: 42px;
   }
 
-  .brand-hero-welcome {
-    font-size: 13.5px;
+  .brand-stories-strip,
+  .brand-stories-items {
+    gap: 10px;
+  }
+
+  .brand-story-circle {
+    width: 56px;
+  }
+
+  .brand-story-ring {
+    width: 50px;
+    height: 50px;
+  }
+
+  .brand-story-face {
+    width: 43px;
+    height: 43px;
+  }
+
+  .brand-story-label {
+    font-size: 10px;
   }
 
   .brand-hero-place {
-    font-size: 12.5px;
+    font-size: 12px;
   }
 
-  .brand-stories-cta {
-    grid-template-columns: 40px minmax(0, 1fr) auto;
-    min-height: 58px;
-    padding-inline: 12px 10px;
-  }
-
-  .brand-stories-thumb {
-    width: 40px;
-    height: 40px;
-  }
-
+  /* A 320px el pliegue útil son 664px y ni antes ni ahora entra el "Agregar"
+     del primer producto: entre la barra superior, el encabezado, el buscador,
+     los chips y el rótulo de la sección no queda altura. Lo que se puede
+     recuperar sin volver miniatura al packshot ya lo aplica el escalón de
+     teléfono bajo. El buscador no entra en el recorte: su piso táctil de 48px
+     está fijado por prueba. */
   .home-brand-banner strong {
     font-size: 20px;
   }

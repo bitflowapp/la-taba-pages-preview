@@ -203,6 +203,25 @@ integridad se sostuvo en las dos.
 La imagen de PostgreSQL trae `max_connections = 100`. Con PostgREST de por medio
 no es uno a uno, pero es el número a mirar el día que el piloto crezca.
 
+### Lo que rompí en el camino, y cómo apareció
+
+Refactorizar el arranque tuvo costo, y conviene que quede escrito:
+
+- **Cinco specs rotos por dejar un objeto en `null`.** Al acotar el alcance a
+  diferir sólo el panel, dejé los envoltorios de reparto, producción y sandbox
+  leyendo el objeto que sólo se llena cuando el panel entra. Resultado: esas
+  tres superficies quedaban mudas para cualquiera que no abriera el negocio.
+  Lo encontró la suite completa —`ios-phantom-scroll`, `operational-hardening`
+  y `sandbox-flow`—, no yo.
+- **Comentarios que quedaron mintiendo** sobre el alcance después de acotarlo.
+- **Una prueba propia frágil**: fijaba «Energeticas» sin acento y pasaba
+  aislada, pero fallaba en la suite completa, porque qué diccionario de
+  categorías está cargado depende de si otra prueba instaló antes un catálogo de
+  test. Reescrita contra el contrato en vez de contra una cadena.
+
+Ninguno llegó a un commit sin corregir, pero los tres salieron de correr las
+suites enteras y no de mirar el diff. Es el argumento a favor de correrlas.
+
 ---
 
 ## 7. Lo que no entró, y por qué

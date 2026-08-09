@@ -91,7 +91,13 @@ Si esta alerta aparece seguido, el barrido automático no está corriendo: ver
 El pago se aprobó pero la finalización quedó bloqueada, casi siempre porque la
 reserva venció antes de que llegara el aviso. El dinero está adentro.
 1. Verificar en el Panel el importe y el detalle.
-2. **Reembolsar** si no se puede cumplir, o preparar el pedido a mano.
+2. Tocar **Armar el pedido de este cobro**. Vuelve a tomar el stock y crea el
+   pedido; a partir de ahí sigue el circuito normal.
+3. Si avisa que **no hay stock**, dice exactamente qué falta y cuánto. Ahí la
+   salida es **Reembolsar** y avisarle a la persona.
+
+No prepares el pedido por afuera del sistema: si no queda registrado, el Rider
+no lo ve y el cliente no tiene seguimiento.
 
 ### 🟠 STOCK RESERVADO Y TRABADO — `STOCK_RESERVATION_STUCK`
 Hay stock retenido por un checkout que ya venció. Ese stock **no se puede
@@ -160,11 +166,8 @@ No hace falta vigilarlo; está impuesto por la base de datos:
 
 Honestidad sobre los bordes:
 
-1. **Reembolsar por un cobro sin pedido** se puede hacer desde el Panel, pero
-   **materializar el pedido a mano** cuando la reserva ya venció no tiene botón:
-   hay que reponer el stock y crear el pedido. Es el hueco más caro que queda.
-2. **La salud de las tareas de fondo** (pg_cron, Vault, Edge Functions) no se ve
+1. **La salud de las tareas de fondo** (pg_cron, Vault, Edge Functions) no se ve
    en el Panel. Se infiere de las alertas, que es peor que verla.
-3. `list_webhook_signature_alerts()`, `list_stock_reservation_alerts()` y
+2. `list_webhook_signature_alerts()`, `list_stock_reservation_alerts()` y
    `list_unfinalized_paid_checkouts()` son consultas de servicio: no tienen
    superficie en la UI.

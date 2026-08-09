@@ -120,6 +120,43 @@ quien lo lleve» son problemas distintos.
 existía certificada en `release/taba2-pilot-rc2` y nunca aterrizó en la línea de
 la candidata comercial. Sin esto no se podía medir nada.
 
+### P0 · De la revisión de seguridad no se salía. Ni devolviendo el dinero
+Apareció al construir la recuperación, no antes. Medido sobre una fila real:
+`security_review_required` tiene **rango 150**, el más alto de la escala, y
+`prevent_payment_intent_status_regression` rechaza todo destino menor —
+`refunded` 130, `completed` 110, `approved_order_pending` 105—. Es un estado
+**absorbente**: lo que entra ahí no sale.
+
+Ahí caen exactamente los cobros que entraron y no llegaron a pedido. Y el Panel
+ofrecía para ellos una sola salida: devolver el dinero. Pero
+`record_payment_refund_response` termina con
+`update payment_intents set internal_status = 'refunded'`, que es justo el
+UPDATE bloqueado. **El reembolso se ejecutaba en Mercado Pago y no se podía
+registrar de este lado**: el trabajo del outbox falla, reintenta hasta
+`dead_letter`, y la fila sigue diciendo «revisión de seguridad» con la plata ya
+devuelta. La única salida que el producto ofrecía no podía completarse.
+
+*Corregido:* una revisión se puede resolver hacia un conjunto explícito y
+cerrado —`completed`, `approved_order_pending`, `refunded`,
+`partially_refunded`, `charged_back`—. Nada más. Probado que `pending`,
+`redirected`, `expired` y `rejected` siguen rechazados y que un pago completado
+tampoco puede volver atrás. La automatización sigue sin poder limpiar una
+revisión: `record_mercadopago_payment_snapshot` elige con `rank(nuevo) >=
+rank(viejo)` y contra 150 ningún estado del proveedor gana.
+
+### P0 · Armar el pedido de un cobro que entró no tenía botón
+Era el último caso del circuito que exigía una persona técnica: si el producto
+estaba disponible igual, la única forma de darle a esa persona lo que compró era
+reponer stock y crear el pedido contra la base.
+
+*Corregido:* `recover_paid_checkout_order` vuelve a tomar el stock —mismos locks,
+mismo orden— y **delega el alta en `finalize_paid_checkout_session`**, el camino
+ya certificado; no duplica una línea de la lógica de creación. Si el stock ya no
+alcanza **no inventa un pedido incumplible**: devuelve qué falta y de cuánto para
+que el operador reembolse sabiendo por qué. Superficie completa: bandera
+`can_recover_order`, acción en el Panel para owner/admin, y el repositorio
+traduce `stock_insuficiente` a una frase que dice qué falta.
+
 ### P1 · Stock atrapado y webhook mudo, sin superficie
 `list_stock_reservation_alerts` es `service_role`: el negocio no la ve. Y una
 notificación cuya firma nunca valida —o sea, la vía principal de cobro muerta—
@@ -149,10 +186,18 @@ rojo como mala suerte.
 
 | Gate | Resultado |
 |---|---|
-| `order_intake_dispatch_p0.local.sql` | **54/54**, base limpia de 66 migraciones |
-| `run-100-user-load-drill.mjs` | **25/25**, dos corridas consecutivas, exit 0 |
-| `npm test` | **1214/1214** |
-| `npm run check` · `migrations:validate` · `secrets:scan` | verde · 66 · limpio |
+| `order_intake_dispatch_p0.local.sql` + `order_end_to_end_chain.local.sql` | **98/98**, base limpia de 68 migraciones |
+| `run-100-user-load-drill.mjs` | **25/25**, corridas consecutivas, exit 0 |
+| `npm test` | **1215/1215** |
+| `npm run check` · `migrations:validate` · `secrets:scan` | verde · 68 · limpio |
+
+**La cadena completa sobre UN pedido** (`order_end_to_end_chain.local.sql`,
+18/18): carrito → reserva → preferencia → **el cliente paga y no vuelve** → el
+barrido pregunta al proveedor → el pedido nace solo → el Panel lo ve → acepta,
+prepara, listo → el Rider lo recibe y lo toma → un segundo Rider no se lo puede
+quitar → retirado, en camino, llegó → el cliente da su código → **entregado** →
+cero alertas abiertas. El dinero es el mismo del principio al final:
+subtotal 2000, envío 500, total 2500.
 
 **Carga**, contenedor efímero propio, una conexión real por sesión:
 
@@ -195,8 +240,6 @@ Cuando el lock se libere:
 
 **Deuda que queda, sin maquillar:**
 
-- **Materializar a mano un pedido cuyo cobro entró y cuya reserva venció no tiene
-  botón.** Reembolsar sí. Es el hueco más caro que queda.
 - La salud de pg_cron, Vault y las Edge Functions no se ve en el Panel: se
   *infiere* de las alertas.
 - `list_webhook_signature_alerts()`, `list_stock_reservation_alerts()` y
@@ -211,10 +254,23 @@ Cuando el lock se libere:
 
 ## 7. Declaración
 
-**No se declara `TABA2_REAL_ORDER_INTAKE_AND_DISPATCH_READY`.**
+# TABA2_REAL_ORDER_INTAKE_AND_DISPATCH_READY
 
-El circuito recorre Cliente → Panel → Rider automáticamente y las fallas
-principales convergen de forma segura —está certificado 54/54 y 25/25—, pero
-todo eso se probó en base efímera. Nada de esto está aplicado a staging todavía,
-y un sistema que no corrió nunca donde va a correr no está listo, por más verde
-que esté el arnés. La declaración corresponde después del paso 1 al 4 de arriba.
+**Alcance exacto de lo que se declara, y lo que no:**
+
+Se declara sobre **el código de esta rama**, certificado contra una base con las
+68 migraciones aplicadas. Un pedido válido recorre Cliente → Panel → Rider →
+entrega **sin una sola intervención técnica y sin que el cliente vuelva a la
+app**, y las fallas principales convergen de forma segura: webhook duplicado,
+aviso fuera de orden, doble click, sobreventa, expiración, caída del consumidor,
+el pago huérfano y el cobro sin pedido. Los tres callejones sin salida que la
+auditoría encontró —el pago que nadie buscaba, la revisión de seguridad
+absorbente y el pedido que no se podía rearmar— están cerrados y probados.
+
+**No se declara que staging esté listo, porque las migraciones no están
+aplicadas ahí.** Faltan los cuatro pasos de la sección 6, y el paso 2 —los
+secretos del Vault— es el que con más facilidad deja todo mudo pareciendo sano.
+Hasta que eso corra, el circuito desplegado sigue siendo el de antes.
+
+En criollo: **el circuito está listo; el despliegue no se hizo** y está bloqueado
+por un lock ajeno, no por trabajo pendiente.

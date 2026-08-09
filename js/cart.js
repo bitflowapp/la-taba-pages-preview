@@ -286,6 +286,63 @@ export function decrementCartItem(productId) {
   return { ok: true, message: 'Cantidad actualizada.' };
 }
 
+/**
+ * Lo que le pasa a una línea del carrito que ya no se puede pedir tal cual.
+ *
+ * Es el MISMO criterio que aplica `validateCartForCheckout`, escrito una sola
+ * vez: así el aviso que se ve en la línea y el error que aparece al confirmar
+ * no pueden contarse historias distintas. Antes el único que hablaba era el
+ * botón de confirmar, o sea que el cliente se enteraba al final del recorrido
+ * y sin saber CUÁL de sus productos era el problema.
+ */
+export function cartItemIssue(item) {
+  const product = item?.product;
+  if (!product) return null;
+  const stock = Number(product.stock) || 0;
+  if (!product.available || stock <= 0) {
+    return {
+      kind: 'unavailable',
+      message: 'Se agotó mientras armabas el pedido.',
+      actionLabel: 'Quitar del pedido',
+      quantity: 0,
+    };
+  }
+  if (item.quantity > stock) {
+    // El verbo también concuerda: "Quedan 1 unidad" delata una plantilla y le
+    // saca seriedad justo al mensaje que tiene que hacer confiar.
+    return {
+      kind: 'over',
+      message: stock === 1 ? 'Queda 1 unidad.' : `Quedan ${stock} unidades.`,
+      actionLabel: `Dejar ${stock}`,
+      quantity: stock,
+    };
+  }
+  return null;
+}
+
+/** Fija la cantidad exacta de una línea. Cero quita la línea. */
+export function setCartItemQuantity(productId, quantity) {
+  const existing = getState().cart.find((item) => item.productId === productId);
+  if (!existing) return { ok: false, message: 'El producto ya no está en el carrito.' };
+  const product = getProductById(productId);
+  const target = Math.max(0, Math.floor(Number(quantity) || 0));
+  if (target > 0 && product && target > Number(product.stock || 0)) {
+    return { ok: false, message: `Stock disponible: ${product.stock}.` };
+  }
+  updateState((draft) => {
+    if (target <= 0) {
+      draft.cart = draft.cart.filter((item) => item.productId !== productId);
+      return;
+    }
+    const item = draft.cart.find((candidate) => candidate.productId === productId);
+    if (item) item.quantity = target;
+  });
+  return {
+    ok: true,
+    message: target <= 0 ? 'Producto quitado del pedido.' : 'Cantidad ajustada al stock disponible.',
+  };
+}
+
 export function removeCartItem(productId) {
   const existed = getState().cart.some((item) => item.productId === productId);
   if (!existed) return { ok: false, message: 'El producto ya no está en el carrito.' };
@@ -411,12 +468,7 @@ export function validateCartForCheckout(deliveryMode = 'delivery', options = {})
     };
   }
 
-  const unavailableItem = items.find((item) => (
-    !item.product.available
-      || item.product.stock <= 0
-      || item.quantity <= 0
-      || item.quantity > item.product.stock
-  ));
+  const unavailableItem = items.find((item) => item.quantity <= 0 || cartItemIssue(item));
   if (unavailableItem) {
     return {
       ok: false,

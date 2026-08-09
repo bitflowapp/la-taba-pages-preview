@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
 import {
   addToCart,
+  cartItemIssue,
   clearCart,
   decrementCartItem,
   getCartItems,
@@ -11,6 +12,7 @@ import {
   getDeliveryFee,
   incrementCartItem,
   removeCartItem,
+  setCartItemQuantity,
 } from '../js/cart.js';
 import { BUSINESS_CONFIG } from '../js/config.js';
 import { resetState, state } from './helpers.mjs';
@@ -112,4 +114,50 @@ test('empty cart does not charge delivery in totals', () => {
   assert.equal(getCartSubtotal(), 0);
   assert.equal(getCartTotal('delivery'), 0);
   assert.equal(getCartTotal('pickup'), 0);
+});
+
+// El aviso que se ve EN la línea del carrito y el error que devuelve el botón
+// de confirmar salen del mismo criterio. Si se separan, el cliente ve una línea
+// tranquila y un botón que la rechaza, que es exactamente lo que pasaba cuando
+// el único que hablaba era el checkout.
+test('una línea que ya no se puede pedir se explica y ofrece la salida', () => {
+  addToCart('qa-jugo-naranja', 2);
+  const [linea] = getCartItems();
+  assert.equal(cartItemIssue(linea), null, 'con stock suficiente no hay nada que avisar');
+
+  const agotado = { ...linea, product: { ...linea.product, stock: 0 } };
+  const avisoAgotado = cartItemIssue(agotado);
+  assert.equal(avisoAgotado.kind, 'unavailable');
+  assert.equal(avisoAgotado.quantity, 0);
+  assert.match(avisoAgotado.message, /agot/i);
+
+  const pausado = { ...linea, product: { ...linea.product, available: false } };
+  assert.equal(cartItemIssue(pausado).kind, 'unavailable');
+
+  const excedido = { ...linea, quantity: 5, product: { ...linea.product, stock: 3 } };
+  const avisoExcedido = cartItemIssue(excedido);
+  assert.equal(avisoExcedido.kind, 'over');
+  assert.equal(avisoExcedido.quantity, 3);
+  assert.equal(avisoExcedido.actionLabel, 'Dejar 3');
+  assert.match(avisoExcedido.message, /Quedan 3 unidades/);
+
+  // Y una sola unidad se dice en singular: el aviso no puede sonar a plantilla.
+  const unaSola = { ...linea, quantity: 4, product: { ...linea.product, stock: 1 } };
+  assert.match(cartItemIssue(unaSola).message, /Queda 1 unidad\./);
+});
+
+test('ajustar la cantidad al stock recorta la línea, y en cero la quita', () => {
+  addToCart('qa-jugo-naranja', 3);
+  assert.equal(setCartItemQuantity('qa-jugo-naranja', 2).ok, true);
+  assert.equal(state().cart[0].quantity, 2);
+
+  // No sirve para pedir MÁS de lo que hay: el ajuste es una salida, no una
+  // puerta trasera al stock.
+  const excede = setCartItemQuantity('qa-jugo-naranja', 9_999);
+  assert.equal(excede.ok, false);
+  assert.equal(state().cart[0].quantity, 2);
+
+  assert.equal(setCartItemQuantity('qa-jugo-naranja', 0).ok, true);
+  assert.deepEqual(state().cart, []);
+  assert.equal(setCartItemQuantity('qa-jugo-naranja', 1).ok, false);
 });

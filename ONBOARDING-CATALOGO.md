@@ -1,6 +1,6 @@
 # Onboarding comercial del catálogo
 
-Cómo pasar de «91 registros y once cosas que se pueden comprar» a una góndola
+Cómo pasar de «92 registros y once cosas que se pueden comprar» a una góndola
 vendible, cuando el negocio entregue los datos. Sin inventar ni un precio.
 
 ---

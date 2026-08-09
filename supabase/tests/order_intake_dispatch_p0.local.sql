@@ -518,4 +518,38 @@ begin
     'y lo hace como critico');
 end $$;
 
+-- ============================================================
+-- Observabilidad: stock atrapado y webhook con firma rechazada
+do $$
+declare
+  f record; c uuid; s record; n integer; h text := encode(gen_random_bytes(32), 'hex');
+begin
+  raise notice '';
+  raise notice '===== OBSERVABILIDAD · STOCK ATRAPADO Y WEBHOOK MUDO =====';
+  select * into f from pg_temp.fixture(10);
+  c := pg_temp.nuevo_usuario('p0-atrap');
+  select * into s from pg_temp.hasta_preferencia(f.business_id, f.product_id, c, 'p0atr0001', 4);
+  -- La reserva vence y NADIE la libera: es el barrido caido.
+  perform pg_temp.envejecer(s.session_id, interval '40 minutes', interval '25 minutes');
+  perform set_config('request.jwt.claims', json_build_object('sub', f.owner_id::text, 'role', 'authenticated')::text, true);
+  perform public.refresh_operational_alerts(f.business_id);
+  select count(*)::integer into n from public.operational_alerts a
+   where a.business_id = f.business_id and a.alert_code = 'STOCK_RESERVATION_STUCK' and a.status = 'open';
+  perform pg_temp.ok(n = 1, 'el stock retenido por un checkout vencido se ve en el Panel', 'alertas=' || n);
+
+  -- Y al liberarlo, la alerta se cierra sola.
+  perform public.sweep_expired_checkout_sessions();
+  perform public.refresh_operational_alerts(f.business_id);
+  select count(*)::integer into n from public.operational_alerts a
+   where a.business_id = f.business_id and a.alert_code = 'STOCK_RESERVATION_STUCK' and a.status = 'open';
+  perform pg_temp.ok(n = 0, 'liberado el stock, la alerta se resuelve sola', 'abiertas=' || n);
+
+  -- Firma rechazada: la via principal de cobro esta muerta y tiene que verse.
+  perform public.record_mercadopago_webhook_receipt('test',
+    'evt-badsig-' || right(replace(gen_random_uuid()::text, '-', ''), 10),
+    'payment.updated', 'res-badsig', false, 'rq', h);
+  select count(*)::integer into n from public.list_webhook_signature_alerts();
+  perform pg_temp.ok(n >= 1, 'una notificacion con firma invalida queda visible', 'filas=' || n);
+end $$;
+
 do $$ begin raise notice ''; raise notice '===== TODOS LOS P0 VERDES ====='; end $$;

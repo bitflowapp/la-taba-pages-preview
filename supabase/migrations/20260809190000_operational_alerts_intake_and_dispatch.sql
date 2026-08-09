@@ -131,6 +131,28 @@ begin
 
       union all
 
+      -- ===== NUEVO =====
+      -- Reserva vencida que sigue reteniendo stock: el barrido de expiración no
+      -- está corriendo y el catálogo se vacía sin haber vendido. Existía como
+      -- `list_stock_reservation_alerts`, pero es service_role y el negocio no la
+      -- ve; acá entra al mismo tablero que mira todos los días.
+      select
+        'ACTION_REQUIRED', 'STOCK_RESERVATION_STUCK', 'checkout_session',
+        cs.id, cs.correlation_id,
+        'Hay stock reservado por un checkout vencido que no se liberó.',
+        'Verificar el barrido de expiración; el stock retenido no se puede vender.',
+        jsonb_build_object('checkout_session_id', cs.id, 'expired_for', clock_timestamp() - cs.expires_at)
+      from public.checkout_sessions cs
+      where cs.business_id = p_business_id
+        and exists (
+          select 1 from public.inventory_reservations r
+           where r.checkout_session_id = cs.id
+             and r.status = 'active'
+             and r.expires_at < clock_timestamp() - interval '5 minutes'
+        )
+
+      union all
+
       select
         'CRITICAL', 'FISCAL_AUTHORIZATION_AMBIGUOUS', 'fiscal_document',
         fd.id, fd.correlation_id,
@@ -303,6 +325,47 @@ begin
   return v_count;
 end;
 $refresh_operational_alerts$;
+
+-- ===== Salud del webhook, que no pertenece a ningún negocio =====
+-- `payment_webhook_receipts` no tiene business_id: es infraestructura. Si las
+-- notificaciones llegan y la firma nunca valida, la vía principal de cobro está
+-- muerta y el sistema se apoya entero en el barrido y en que el cliente vuelva.
+-- Eso tiene que poder mirarse sin abrir la base.
+create or replace function public.list_webhook_signature_alerts()
+returns table (
+  severity text,
+  environment text,
+  rejected_count bigint,
+  accepted_count bigint,
+  last_rejected_at timestamptz,
+  state text,
+  action text
+)
+language sql
+stable
+security definer
+set search_path = pg_catalog, public, pg_temp
+as $$
+  select
+    case when count(*) filter (where r.processing_status = 'rejected_signature') > 0
+      and count(*) filter (where r.signature_valid) = 0 then 'critical' else 'warning' end,
+    r.environment,
+    count(*) filter (where r.processing_status = 'rejected_signature'),
+    count(*) filter (where r.signature_valid),
+    max(r.received_at) filter (where r.processing_status = 'rejected_signature'),
+    'webhook_signature_rejected',
+    'verificar MERCADOPAGO_WEBHOOK_SECRET contra el panel del proveedor'
+  from public.payment_webhook_receipts r
+  where r.received_at > clock_timestamp() - interval '24 hours'
+  group by r.environment
+  having count(*) filter (where r.processing_status = 'rejected_signature') > 0;
+$$;
+
+revoke all on function public.list_webhook_signature_alerts() from public, anon, authenticated;
+grant execute on function public.list_webhook_signature_alerts() to service_role;
+
+comment on function public.list_webhook_signature_alerts() is
+  'Notificaciones cuya firma no valida en las ultimas 24 horas: la via principal de cobro puede estar muerta.';
 
 -- Se preservan los permisos originales de 20260802180000: la función valida el
 -- rol adentro y el Panel la alcanza a través de get_production_operation_center.

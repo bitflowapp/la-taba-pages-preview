@@ -1,5 +1,5 @@
 /*
- * El back office no viaja en la primera pantalla del cliente.
+ * El panel del negocio no viaja en la primera pantalla del cliente.
  *
  * QUÉ PROBLEMA CIERRA
  * -------------------

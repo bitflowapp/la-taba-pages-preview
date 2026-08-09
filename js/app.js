@@ -44,13 +44,12 @@ import { getState, subscribe } from './state.js';
 import { BRAND, STORAGE_KEYS } from './config.js';
 import { getBusinessConfig } from './core/business-config-store.js';
 import { relayStatusLabel } from './core/realtime-sync.js';
-// El back office —negocio, reparto, producción y sandbox— entra recién cuando
-// hace falta. Ver js/back-office.js: para un cliente eran 759 KB de descarga
-// que nunca se renderizaban.
+// El PANEL DEL NEGOCIO entra recién cuando hace falta; reparto, producción y
+// sandbox siguen entrando con el arranque. El porqué de esa mitad —y los 421 KB
+// que quedaron sobre la mesa— está en js/back-office.js.
 import {
   alEntrarBackOffice,
   backOfficePresente,
-
   handleBusinessAction,
   handleBusinessInput,
   handleDeliveryAction,
@@ -520,16 +519,11 @@ async function bootstrap() {
     if (resetRequested) {
       if (await maybeResetDemoSession()) return;
     }
-    // Cuando el back office entra hay que darle su primer pintado, porque sus
-    // superficies estuvieron vacías mientras no estaba. Se pintan SÓLO ellas:
-    // un renderAll() acá vuelve a dibujar la góndola y el carrito encima de lo
-    // que la persona esté haciendo en ese instante, y eso se ve —y se rompe—
-    // como un parpadeo que reordena la lista bajo el dedo.
-    // Si el back office entra tarde —vista operativa abierta por el operador—
-    // hay que darle su primer pintado. Se pintan SÓLO sus superficies: un
-    // renderAll() acá vuelve a dibujar la góndola y el carrito encima de lo que
-    // la persona esté haciendo, y eso se ve como un parpadeo que reordena la
-    // lista bajo el dedo.
+    // Cuando el panel entra —siempre tarde, porque se difiere— hay que darle su
+    // primer pintado: su superficie estuvo vacía mientras no estaba. Se pinta
+    // SÓLO ella. Un renderAll() acá vuelve a dibujar la góndola y el carrito
+    // encima de lo que la persona esté haciendo en ese instante, y eso se ve
+    // —y se rompe— como un parpadeo que reordena la lista bajo el dedo.
     alEntrarBackOffice(() => {
       if (isDemoMode()) renderBusinessDashboard();
     });

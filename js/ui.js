@@ -1369,7 +1369,7 @@ function comboCard(combo) {
     <article class="combo-card" data-combo-card="${escapeHtml(combo.comboId)}">
       <button class="combo-card-media" type="button" data-combo-detail="${escapeHtml(combo.comboId)}" aria-label="Ver el combo ${escapeHtml(combo.name)}">
         ${comboMedia(combo)}
-        <span class="combo-save-badge">Ahorrás ${money(combo.savings)}</span>
+        ${combo.hasRealSaving ? `<span class="combo-save-badge">Ahorrás ${money(combo.savings)}</span>` : ''}
       </button>
       <div class="combo-card-body">
         <div class="combo-card-copy">

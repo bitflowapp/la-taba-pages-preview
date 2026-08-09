@@ -118,6 +118,13 @@ export function resolveCombo(combo, products) {
     savingsPercentage: priced && individualPrice > 0
       ? Math.round((savings / individualPrice) * 1000) / 10
       : null,
+    // Un combo puede existir sin ahorrar un peso: alcanza con que el descuento
+    // declarado sea 0, o con que el redondeo a la centena no mueva el número.
+    // Sigue siendo un combo legítimo —resuelve la decisión de qué llevar— pero
+    // NO es una promoción, y presentarlo como tal sería anunciar «Ahorrás $ 0»
+    // con el precio de lista tachado al lado. Quien dibuja la tarjeta decide
+    // qué mostrar; acá se dice la verdad sobre si hay descuento.
+    hasRealSaving: priced && savings > 0,
     stock,
     limitingSku: limiting?.sku || null,
     ageRestricted,

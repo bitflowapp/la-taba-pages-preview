@@ -1,7 +1,9 @@
 # TABA2 frente a 100 clientes — qué se midió, qué cambió y qué falta
 
-Este documento no declara una transformación. Mide una, dice cuánto de ella se
-logró, y deja escrito con números por qué el resto no entró.
+Todo lo que sigue está medido, no estimado. El resumen en una línea: un cliente
+deja de descargar el 28% del JavaScript y ve algo que puede comprar 1,4 segundos
+antes; el backend demostró que aguanta 100 personas comprando a la vez; y
+aparecieron cinco defectos reales que sólo se ven mirando.
 
 ---
 
@@ -70,6 +72,7 @@ Eso no es software y no se toca acá: está en `ONBOARDING-CATALOGO.md`.
 ## 3. Los cuellos, por tamaño
 
 1. **La primera pantalla descarga toda la aplicación** — 759 KB de back office.
+   **Resuelto**: −562 KB y −38 módulos (§5).
 2. **La cadena de datos demo** — 170 KB (`taba2-commercial-pending-data.js` +
    `approved-beverage-demo-data.js`) que el cliente arrastra sólo porque
    `ui.js` y `state.js` piden `categories` a un barril que reexporta el catálogo
@@ -85,10 +88,10 @@ Eso no es software y no se toca acá: está en `ONBOARDING-CATALOGO.md`.
 
 | commit | qué |
 |---|---|
-| `js/back-office.js` | el panel del negocio entra recién cuando hace falta |
+| `js/back-office.js` | el back office entero entra recién cuando hace falta |
 | `js/customer-delivery.js` | avisar cuando las direcciones terminan de llegar |
 | `js/repositories/supabase_order_repository.js` | decir «se agotó» cuando se agotó |
-| `js/ui.js` | que un chip de categoría nunca muestre un slug |
+| `js/ui.js` | el chip de categoría no muestra slugs; el de dirección no miente |
 | `scripts/run-100-user-load-drill.mjs` | la prueba de 100 sesiones, que no existía |
 | `tests/order-error-messages.test.mjs` | red del mensaje de rechazo |
 | `tests/category-labels.test.mjs` | red del nombre de categoría |
@@ -101,17 +104,41 @@ Eso no es software y no se toca acá: está en `ONBOARDING-CATALOGO.md`.
 
 | | antes | después | |
 |---|---:|---:|---|
-| módulos | 128 | 124 | −4 |
-| JavaScript | 2.026 KB | 1.889 KB | **−137 KB** |
-| FCP | 1.472 ms | 1.480 ms | +8 ms (ruido) |
-| LCP | 6.228 ms | 5.896 ms | **−332 ms (−5%)** |
-| bloqueo de hilo | 757 ms | 772 ms | +15 ms (ruido) |
-| **1er producto comprable** | **6.774 ms** | **6.474 ms** | **−300 ms (−4%)** |
+| módulos | 128 | **90** | **−38** |
+| JavaScript | 2.026 KB | **1.464 KB** | **−562 KB (−28%)** |
+| FCP | 1.496 ms | 1.452 ms | −3% |
+| LCP | 6.156 ms | **4.784 ms** | **−1.372 ms (−22%)** |
+| bloqueo de hilo | 482 ms | **365 ms** | **−24%** |
+| **1er producto comprable** | **6.868 ms** | **5.470 ms** | **−1.398 ms (−20%)** |
 
-Es real y es medible. **No es una transformación**: 6,5 segundos hasta ver algo
-comprable sigue siendo malo. El porqué está en §7.
+Un cliente deja de descargar **el 28% del JavaScript** y ve algo que puede
+comprar **1,4 segundos antes**.
 
-### Dos defectos que la medición encontró
+### La trampa que casi me hace declarar esto imposible
+
+El primer intento de diferir los cuatro módulos rompió pruebas de extremo a
+extremo que no tenían nada que ver entre sí: el orden de la góndola, la búsqueda
+con puntuación local, la dirección del encabezado, el scroll fantasma, el
+sandbox. Pasé por tres teorías equivocadas —orden de evaluación del grafo,
+momento del arranque, latencia del import dinámico—, probé tres variantes,
+acoté el alcance a un cuarto del ahorro y **lo documenté como imposible**.
+
+La causa era mucho más tonta y estaba en mi propio código. Con el módulo sin
+cargar, los envoltorios devolvían `undefined`. Pero `app.js` hace
+`if (resultado.handled) return;` sin guardia, así que `undefined` **no era un
+no-op: era un TypeError** que abortaba el manejador de eventos entero y se
+llevaba puesto todo lo que venía después. Escribías en el buscador y la góndola
+no filtraba, sin un solo error visible en pantalla.
+
+Ahora cada handler devuelve `{ handled: false }`, que es exactamente lo que
+devuelve el módulo real cuando el evento no le corresponde —y es literalmente
+cierto: su pantalla no está en el documento—.
+
+La lección quedó escrita en `js/back-office.js`: **un no-op tiene que respetar la
+forma del contrato, no sólo existir**. Y tres teorías plausibles seguidas no
+valen una medición.
+
+### Los defectos que la medición encontró
 
 **El encabezado mentía sobre a dónde va el pedido.** Las direcciones del cliente
 llegan del backend *después* del primer pintado. Cuando llegaban, nadie se lo
@@ -232,28 +259,6 @@ suites enteras y no de mirar el diff. Es el argumento a favor de correrlas.
 
 ## 7. Lo que no entró, y por qué
 
-**Los 421 KB restantes del back office.** Diferir los cuatro módulos —panel,
-reparto, producción y sandbox— llevaba el ahorro a **556 KB y 38 módulos menos**,
-cuatro veces lo logrado. Está medido y funciona: el cliente baja 89 módulos y
-1.432 KB.
-
-No se pudo sostener. El modo demo depende de que ese grafo esté descargado y
-evaluado temprano, y al diferirlo empezaron a fallar de forma reproducible tres
-pruebas de extremo a extremo: el orden de la góndola, la búsqueda con puntuación
-local y la dirección del encabezado.
-
-Se probaron tres variantes —cargar al primer render, esperar dentro de
-`bootstrap()`, y esperar en el nivel superior del módulo para que termine de
-evaluarse antes que `app.js`—. Las tres arreglan el **orden** y ninguna arregla
-la última prueba, porque lo que queda no es orden sino **latencia**: el import
-dinámico agrega una vuelta de red antes de que arranque la app, y la hidratación
-de direcciones llega tarde a la primera lectura.
-
-La salida no es esconder módulos detrás de una compuerta en runtime: es **separar
-el documento de la demo del documento del cliente**, para que el cliente cargue
-un grafo que nunca tuvo esos módulos. Eso es un cambio de estructura, no un
-parche, y no entra en el mismo encargo en que se toca el resto.
-
 **Los 170 KB de datos demo.** `ui.js` y `state.js` importan `categories` de un
 barril que reexporta el catálogo entero. Separar `authorityCategories` (0,8 KB)
 de `pendingProducts` (111,4 KB) requiere tocar `scripts/taba2-catalog-authority.mjs`
@@ -300,7 +305,7 @@ La planilla que hay que completar y el importador seguro ya están hechos:
   poder mirarlo es exactamente el tipo de arreglo que queda prolijo en el diff y
   peor en pantalla.
 
-- Los 421 KB + 170 KB de §7.
+- Los 170 KB de datos demo de §7.
 - El smoke físico en el Moto G15: su lock estuvo ajeno y activo todo el encargo.
   No se desplazó.
 - `products.price` sigue siendo `not null`, con el 0 haciendo de «sin precio».

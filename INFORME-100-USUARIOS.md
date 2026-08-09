@@ -283,6 +283,23 @@ La planilla que hay que completar y el importador seguro ya están hechos:
 
 ## 9. Deuda que este encargo no cierra
 
+- **El chip `+18` de la góndola está blanco y colgado del nodo equivocado.**
+  La auditoría visual lo marca en 12 pantallas (`[superficie clara]
+  span.product-age-tag bg=rgba(255,255,255,0.92)`) sobre una identidad negra.
+  Es **preexistente** —está igual en `da56ce9`— y tiene dos causas concretas:
+  1. En el inicio el chip va DENTRO de `.home-best-media`, así que la auditoría
+     lo trata como parte del plato del packshot y no lo marca. En la góndola va
+     como hermano de `.product-media`, fuera del plato, y sí lo marca.
+  2. El comentario del propio código dice que el chip «tiene que decir en
+     dorado —el mismo lenguaje que el chip de los combos—», pero el CSS lo pinta
+     `rgb(255 255 255 / 92%)` con texto marrón.
+
+  No se tocó acá a propósito: el chip va encima de una foto de producto, así que
+  el blanco puede ser lo que lo hace legible sobre cualquier packshot, y eso hay
+  que verlo con los ojos antes de cambiarlo. Cambiar un color de legibilidad sin
+  poder mirarlo es exactamente el tipo de arreglo que queda prolijo en el diff y
+  peor en pantalla.
+
 - Los 421 KB + 170 KB de §7.
 - El smoke físico en el Moto G15: su lock estuvo ajeno y activo todo el encargo.
   No se desplazó.

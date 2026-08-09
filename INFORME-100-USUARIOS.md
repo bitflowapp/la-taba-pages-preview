@@ -87,6 +87,7 @@ Eso no es software y no se toca acá: está en `ONBOARDING-CATALOGO.md`.
 | `js/back-office.js` | el panel del negocio entra recién cuando hace falta |
 | `js/customer-delivery.js` | avisar cuando las direcciones terminan de llegar |
 | `js/repositories/supabase_order_repository.js` | decir «se agotó» cuando se agotó |
+| `js/ui.js` | que un chip de categoría nunca muestre un slug |
 | `scripts/run-100-user-load-drill.mjs` | la prueba de 100 sesiones, que no existía |
 | `tests/order-error-messages.test.mjs` | red del mensaje de rechazo |
 
@@ -116,6 +117,17 @@ decía al chip «Enviar a»: el aviso existía, pero sólo salía desde el check
 una pantalla más adelante. Resultado: la home decía «Elegí tu dirección» aunque
 la persona tuviera una predeterminada confirmada, hasta que algo más provocara
 un re-render. Ahora se avisa al hidratar, que es cuando el dato aparece.
+
+**Un chip de categoría mostraba un slug.** En staging, 2 de 12 productos llegan
+con `category_name` igual al id, así que la primera pantalla decía
+«energeticas» —en minúscula y sin acento— al lado de «Cervezas» y «Gaseosas».
+El dato lo arregla el negocio, pero la góndola no puede mostrar un slug crudo
+mientras tanto: el día que se carguen categorías nuevas vuelve a pasar, y es lo
+primero que ve una persona. Ahora, si el nombre viene igual al id, se resuelve
+contra el diccionario de categorías que la aplicación ya tiene; si el id no está
+ahí, se separan los guiones y se capitaliza. **No se inventa ortografía**: sin
+acento en el dato, sin acento en pantalla, porque cómo se llama una categoría lo
+decide el negocio.
 
 **El rechazo por agotado invitaba a reintentar para siempre.** Cuando el stock
 llega a cero, el contrato comercial apaga la disponibilidad y la RPC responde

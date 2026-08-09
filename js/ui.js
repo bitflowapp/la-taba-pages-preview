@@ -1903,11 +1903,36 @@ function activeCategoryName() {
   return categoriesForCurrentCatalog().find((category) => category.id === activeCategory)?.name || 'Todos';
 }
 
+/*
+ * El nombre que se muestra de una categoría, cuando el catálogo trae basura.
+ *
+ * Medido en staging: dos de doce productos llegan con `category_name` igual al
+ * id —«energeticas»—, así que el chip de la primera pantalla se leía en
+ * minúscula y sin acento al lado de «Cervezas» y «Gaseosas». El dato es del
+ * negocio y se arregla cargándolo bien, pero la góndola no puede mostrar un
+ * slug crudo mientras tanto: el día que Walter cargue categorías nuevas vuelve
+ * a pasar, y esto es lo primero que ve una persona.
+ *
+ * No se inventa ortografía. Si el id está en el diccionario de categorías que
+ * la app ya conoce, se usa ESE nombre. Si no, se separan los guiones y se pone
+ * la primera en mayúscula: «energeticas» queda «Energeticas», sin acento,
+ * porque agregarlo sería escribir por el negocio.
+ */
+export function nombreVisibleDeCategoria(id, nombreRemoto) {
+  const nombre = String(nombreRemoto || '').trim();
+  const pareceSlug = !nombre || nombre.toLowerCase() === String(id).toLowerCase();
+  if (!pareceSlug) return nombre;
+  const conocida = categories.find((entry) => entry.id === id);
+  if (conocida?.name) return conocida.name;
+  const palabras = String(id).replace(/[-_]+/g, ' ').trim();
+  return palabras ? palabras.charAt(0).toUpperCase() + palabras.slice(1) : nombre;
+}
+
 function categoriesForCurrentCatalog() {
   const remote = new Map();
   for (const product of getState().products) {
     const id = sanitizeCategoryId(product?.categoryId);
-    const name = String(product?.categoryName || '').trim();
+    const name = nombreVisibleDeCategoria(id, product?.categoryName);
     if (id && name && !remote.has(id)) remote.set(id, name);
   }
   if (!remote.size) return categories;

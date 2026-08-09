@@ -862,6 +862,20 @@ body[data-active-view="home"] .home-best-image {
   scale: 1.06;
 }
 
+/* La marca +18 vive DENTRO de la caja de la foto, no como hija de la tarjeta.
+   Colgarla de la tarjeta la convertía en un item más de una grilla de tres
+   filas fijas: el packshot se corría a la fila siguiente y la tarjeta crecía
+   150px. Adentro no puede desacomodar nada, y su nombre accesible viaja en el
+   `aria-label` del botón (ver `homeMediaLabel`). */
+body[data-active-view="home"] .home-best-media {
+  position: relative;
+}
+
+body[data-active-view="home"] .home-best-card .product-age-tag {
+  bottom: 4px;
+  left: 4px;
+}
+
 body[data-active-view="home"] .home-best-copy {
   align-content: start;
   gap: 0;

@@ -648,8 +648,11 @@ function checkoutModeCopy(mode) {
   if (mode === APP_MODE_DEMO) {
     return {
       submit: 'Confirmar pedido',
-      title: 'Tu pedido está protegido.',
-      copy: 'Revisá tus datos y el resumen antes de confirmar.',
+      // «Tu pedido está protegido» no decía nada verificable: no nombraba de
+      // qué, ni por quién. Lo que sí es cierto y además es lo que la persona
+      // necesita saber en esta pantalla es qué pasa al tocar el botón.
+      title: 'Revisá antes de confirmar.',
+      copy: 'Al confirmar, el pedido queda tomado y podés seguirlo desde Seguimiento.',
       note: 'El medio de pago se coordina con el local.',
     };
   }

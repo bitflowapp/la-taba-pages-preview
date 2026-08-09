@@ -1249,6 +1249,21 @@ function renderHomeSections() {
   }).join('');
 }
 
+// La vidriera no imprime el estado de stock: la tarjeta es chica y el botón ya
+// dice «No disponible» cuando corresponde. Pero quien navega con lector de
+// pantalla no ve ese botón hasta llegar a él, así que el estado —y el +18, que
+// acá va dentro del botón y por lo tanto no se anuncia solo— viajan en el
+// nombre del acceso a la ficha.
+function homeMediaLabel(product) {
+  const parts = [`Ver ${product.name}`];
+  const state = cardAvailabilityLabel(product);
+  if (state) parts.push(state);
+  if (product.alcoholic) {
+    parts.push(`Venta exclusiva a mayores de ${Number(product.minimumAge) > 0 ? Math.floor(Number(product.minimumAge)) : 18} años`);
+  }
+  return `${parts.join('. ')}`;
+}
+
 function homeSectionCard(product, cartQuantities) {
   const pricing = productPricePresentation(product);
   const outOfStock = product.stock <= 0 || !product.available;
@@ -1271,8 +1286,9 @@ function homeSectionCard(product, cartQuantities) {
           <path d="M20.8 4.8a5.3 5.3 0 0 0-7.5 0L12 6.1l-1.3-1.3a5.3 5.3 0 0 0-7.5 7.5L12 21l8.8-8.7a5.3 5.3 0 0 0 0-7.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
         </svg>
       </button>
-      <button class="home-best-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+      <button class="home-best-media" type="button" data-product-detail="${product.id}" aria-label="${escapeHtml(homeMediaLabel(product))}">
         ${homeProductImage(product, 'home-best-image')}
+        ${ageTag(product)}
       </button>
       <div class="home-best-copy">
         <strong>${escapeHtml(product.name)}</strong>
@@ -2026,12 +2042,20 @@ function renderProducts() {
       ? ''
       : rawPresentation;
     const control = quickAddControl(product, inCart);
+    // El estado de stock se dice UNA vez en pantalla —la pastilla sobre la
+    // foto, que es lo que se ve al escanear la grilla— y una vez en voz alta,
+    // en el nombre accesible del botón. Antes se imprimía dos veces visibles:
+    // «Últimas 3» sobre la imagen y «Últimas 3» otra vez debajo del envase.
+    const stockState = cardAvailabilityLabel(product);
+    const mediaLabel = stockState
+      ? `Ver ${product.name}. ${stockState}`
+      : `Ver ${product.name}`;
     return `
       <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
         <div class="product-media-frame">
-          <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+          <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="${escapeHtml(mediaLabel)}">
             ${productThumb(product, 'grid')}
-            <span class="product-stock-tag">${stockPill(product)}</span>
+            <span class="product-stock-tag" aria-hidden="true">${stockPill(product)}</span>
           </button>
           ${ageTag(product)}
           <button class="product-favorite ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos" aria-pressed="${favorite}">
@@ -2042,7 +2066,6 @@ function renderProducts() {
           ${product.brand ? `<span class="product-brand">${escapeHtml(product.brand)}</span>` : ''}
           <h3>${escapeHtml(product.name)}</h3>
           <p>${escapeHtml(presentation)}</p>
-          ${product.pricePending || !cardAvailabilityLabel(product) ? '' : `<small class="product-availability ${outOfStock ? 'is-unavailable' : ''}">${escapeHtml(cardAvailabilityLabel(product))}</small>`}
           <div class="product-foot">
             ${priceBlock(product)}
             <div class="product-action">${control}</div>
@@ -2053,8 +2076,6 @@ function renderProducts() {
   }).join('');
 }
 
-// Pill de disponibilidad: sólo aparece cuando hay algo que avisar (agotado,
-// pausado, últimas unidades). Lo normal —estar disponible— no se etiqueta.
 /**
  * Marca de producto con alcohol en la tarjeta.
  *
@@ -2077,6 +2098,8 @@ function ageTag(product) {
     + `<span class="sr-only">Venta exclusiva a mayores de ${age} años</span></span>`;
 }
 
+// Pill de disponibilidad: sólo aparece cuando hay algo que avisar (agotado,
+// pausado, últimas unidades). Lo normal —estar disponible— no se etiqueta.
 export function stockPill(product) {
   if (product.pricePending) return '';
   if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
@@ -2620,6 +2643,10 @@ export function renderOrderSummary() {
   renderCheckoutPaymentFields();
   renderCouponMessage(coupon);
 
+  // El resumen suma lo que se cobra y nada más. El pedido mínimo estaba acá,
+  // como una fila con un importe entre «Envío» y «Total»: no es un cargo, pero
+  // en esa posición se lee como uno. Ya lo dice, y mejor, la barra de progreso
+  // de arriba —«Te faltan $X para llegar al mínimo»—, que además es accionable.
   const coordinatedDelivery = deliveryMode === 'delivery'
     && !isDemoMode()
     && !getBusinessConfig().orderingDetailsVerified;
@@ -2635,7 +2662,6 @@ export function renderOrderSummary() {
     ${promotion.freeDelivery ? '<div class="summary-row discount"><span>Promoción de envío</span><strong>Envío sin cargo</strong></div>' : ''}
     ${pendingPromotions.map((entry) => `<div class="summary-row muted"><span>${escapeHtml(entry.title)}</span><strong>${escapeHtml(formatPromotionCondition(entry))}</strong></div>`).join('')}
     <div class="summary-row"><span>${deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio'}</span><strong>${coordinatedDelivery ? 'A coordinar' : money(deliveryFee)}</strong></div>
-    ${deliveryMode === 'delivery' && !coordinatedDelivery ? `<div class="summary-row muted"><span>Pedido mínimo delivery</span><strong>${money(getBusinessConfig().minDeliveryOrder)}</strong></div>` : ''}
     <div class="summary-row total"><span>${coordinatedDelivery ? 'Total estimado de productos' : 'Total'}</span><strong>${money(total)}</strong></div>
   `;
 

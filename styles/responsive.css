@@ -752,8 +752,7 @@ body[data-active-view="rider"] .floating-cart {
     font-size: 14px;
   }
 
-  .product-body p,
-  .product-availability {
+  .product-body p {
     font-size: 11px;
   }
 

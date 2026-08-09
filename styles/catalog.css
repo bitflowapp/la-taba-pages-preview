@@ -662,16 +662,6 @@
   font-size: 12px;
 }
 
-.product-availability {
-  color: var(--taba-success);
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.product-availability.is-unavailable {
-  color: var(--taba-muted);
-}
-
 /* Pie apilado: a ~171px de ancho un precio de 5 dígitos y un control de 44px
    no conviven en un renglón. `--inline` sólo en tarjetas anchas. */
 .product-foot {

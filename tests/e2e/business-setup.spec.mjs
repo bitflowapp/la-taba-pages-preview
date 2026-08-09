@@ -71,7 +71,12 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await seedCartAboveMinimum(page);
   await page.locator('[data-floating-cart]').click();
   await expect(page.locator('[data-order-summary]')).toContainText('$ 777');
-  await expect(page.locator('[data-order-summary]')).toContainText('$ 1.000');
+  // El pedido mínimo que configuró el asistente sigue llegando al cliente, pero
+  // ya no como una fila con importe dentro del resumen de pago: ahí sólo van
+  // los cargos, y una cifra que no se cobra en esa lista se lee como uno. Vive
+  // en la barra de progreso del carrito, que además dice cuánto falta.
+  await expect(page.locator('[data-order-summary]')).not.toContainText('$ 1.000');
+  await expect(page.locator('[data-cart-minimum-progress]')).toContainText('$ 1.000');
   await fillCheckout(page, {
     name: 'Cliente Wizard',
     phone: '2995550000',

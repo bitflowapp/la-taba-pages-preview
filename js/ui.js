@@ -1256,12 +1256,13 @@ function renderHomeSections() {
 // nombre del acceso a la ficha.
 function homeMediaLabel(product) {
   const parts = [`Ver ${product.name}`];
-  const state = cardAvailabilityLabel(product);
-  if (state) parts.push(state);
+  const stockState = cardAvailabilityLabel(product);
+  if (stockState) parts.push(stockState);
   if (product.alcoholic) {
-    parts.push(`Venta exclusiva a mayores de ${Number(product.minimumAge) > 0 ? Math.floor(Number(product.minimumAge)) : 18} años`);
+    const age = Number(product.minimumAge) > 0 ? Math.floor(Number(product.minimumAge)) : 18;
+    parts.push(`Venta exclusiva a mayores de ${age} años`);
   }
-  return `${parts.join('. ')}`;
+  return parts.join('. ');
 }
 
 function homeSectionCard(product, cartQuantities) {
@@ -1946,16 +1947,26 @@ function renderCatalogMeta() {
   // input y, sólo si no hay coincidencias, en el mensaje vacío. No se repite
   // como chip ni como encabezado entre comillas.
   setText('[data-catalog-title]', query ? 'Resultados' : activeCategoryName());
-  const count = getFilteredProducts(state).length;
+  const products = getFilteredProducts(state);
+  const count = products.length;
   const catalogLoading = isProductionCatalogLoading();
   // El contador lleva el contexto del filtro: "0 productos en Gaseosas" dice
   // por qué está vacío; "0 productos" a secas, no.
   const context = state.activeCategory === 'all' ? '' : ` en ${activeCategoryName()}`;
+  // Hay categorías enteras donde todavía no hay ni un precio publicado —hoy,
+  // Gaseosas con 17 productos—. Contarlas a secas es prometer una góndola que
+  // no se puede comprar: quien entra scrollea diecisiete tarjetas hasta
+  // entenderlo solo. Se dice de una vez, y sólo cuando pasa: si hay aunque sea
+  // uno comprable, el contador no agrega nada.
+  const buyable = products.filter((product) => (
+    !product.pricePending && product.available && Number(product.stock) > 0
+  )).length;
+  const pendingNote = count > 0 && buyable === 0 ? ' · todavía sin precio publicado' : '';
   setText(
     '[data-catalog-count]',
     catalogLoading
       ? 'Cargando catálogo…'
-      : `${count === 1 ? '1 producto' : `${count} productos`}${context}`,
+      : `${count === 1 ? '1 producto' : `${count} productos`}${context}${pendingNote}`,
   );
   // Con 0 resultados el control de orden no tiene nada que ordenar: se retira
   // del árbol de accesibilidad en lugar de quedar inerte.

@@ -92,6 +92,40 @@ test('las categorías del catálogo abren por las que tienen algo comprable', as
   await context.close();
 });
 
+test('una categoría sin un solo precio publicado lo dice arriba, no después de scrollear', async ({ browser }) => {
+  const { context, page, guards } = await abrir(browser, '/?demo=1#catalog');
+  const tira = page.locator('[data-view="catalog"] [data-category-strip]');
+  await expect(tira.locator('[data-category-id]').first()).toBeVisible();
+
+  const sinPrecio = await page.evaluate(async () => {
+    const { getState } = await import('/js/state.js');
+    const { getCustomerCatalogProducts } = await import('/js/core/catalog-store.js');
+    const productos = getCustomerCatalogProducts(getState().products);
+    const porCategoria = new Map();
+    for (const producto of productos) {
+      const entrada = porCategoria.get(producto.categoryId) || { total: 0, comprables: 0 };
+      entrada.total += 1;
+      if (!producto.pricePending && producto.available && Number(producto.stock) > 0) entrada.comprables += 1;
+      porCategoria.set(producto.categoryId, entrada);
+    }
+    for (const [id, entrada] of porCategoria) {
+      if (entrada.total > 0 && entrada.comprables === 0) return id;
+    }
+    return '';
+  });
+  test.skip(!sinPrecio, 'el fixture no tiene ninguna categoría sin precio publicado');
+
+  await tira.locator(`[data-category-id="${sinPrecio}"]`).click();
+  await expect(page.locator('[data-catalog-count]')).toContainText('todavía sin precio publicado');
+
+  // Y una categoría que sí vende NO lleva la aclaración: sólo se avisa lo que hay que avisar.
+  await tira.locator('[data-category-id="cervezas"]').click();
+  await expect(page.locator('[data-catalog-count]')).not.toContainText('todavía sin precio publicado');
+
+  await guards.assertClean();
+  await context.close();
+});
+
 test('los productos con alcohol se distinguen en la góndola, no recién en la ficha', async ({ browser }) => {
   const { context, page, guards } = await abrir(browser, '/?demo=1#catalog');
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();

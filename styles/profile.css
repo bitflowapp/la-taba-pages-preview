@@ -451,6 +451,16 @@
   background: var(--profile-soft);
 }
 
+/* «Abrir en Google Maps» es el único valor de la ficha del local que se toca.
+   Como texto en línea medía 155×23: por debajo del área táctil mínima en un
+   teléfono, y encima rodeado de texto que no es enlace. Se le da alto sin
+   cambiar cómo se lee la lista. */
+.profile-business-details .info-list a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+
 /* Reemplaza a los campos Ciudad y Provincia: informa la localidad que se va a
    guardar en vez de pedirla. Es texto, no control, así que no toma foco ni
    entra en el recorrido por teclado. */

@@ -1,7 +1,6 @@
 # Storefront comercial de TABA2 — qué está listo y qué falta de Walter
 
-Rama `feature/taba2-storefront-commercial-pilot`, worktree
-`D:\1212\worktrees\taba2-storefront-pilot`, base `66ba221`.
+Rama `feature/taba2-storefront-commercial-pilot`, base `66ba221`.
 
 Este documento tiene una sola función: separar lo que el **software** puede
 resolver de lo que sólo puede resolver el **negocio**. Todo lo que sigue está
@@ -45,15 +44,42 @@ que **hoy la tienda vende cerveza y energizantes, y nada más.**
 
 ### Qué hace falta
 
-Una sola cosa, repetida 69 veces: **precio de venta y stock por SKU.**
+Una sola cosa, repetida decenas de veces: **precio de venta y stock por SKU.**
 
-El repositorio ya tiene el camino armado para cargarlos sin tocar código:
+El repositorio ya lleva la cuenta. `catalog/catalog-pending.csv` tiene 96 filas
+—una por registro bloqueado— y dice de cada una qué le falta:
 
-```
-catalog/pending-unit-prices.csv     ← se completa la columna de precio
-npm run catalog:prices:check        ← valida el archivo
-npm run catalog:prices:verify       ← contrasta contra el catálogo
-```
+| Qué bloquea | Filas |
+|---|---:|
+| sólo el precio | 60 |
+| precio + derechos de la foto | 11 |
+| precio unitario + stock en unidades | 9 |
+| sólo derechos de la foto (packs de abastecimiento, no van a la góndola) | 9 |
+| componentes de un combo | 4 |
+| identidad + precio + foto | 2 |
+| estado de catálogo + precio + foto | 1 |
+
+O sea: **83 de las 96 esperan un precio.** Nada más.
+
+Dos caminos, según el caso:
+
+1. **Los nueve unitarios** (Coca-Cola, Sprite y compañía, donde el único precio
+   confirmado es el del pack de 12). No se pueden derivar dividiendo: el precio
+   unitario incluye el margen minorista que fija el local. Tienen su planilla
+   propia, ya armada, con todo lo demás lleno:
+
+   ```
+   catalog/pending-unit-prices.csv    ← completar price, stock e image_path
+   npm run catalog:prices:check       ← verifica que la planilla no envejeció
+   npm run catalog:prices:verify catalog/pending-unit-prices.csv
+   ```
+
+   La foto también hace falta: la del pack muestra doce botellas y no puede
+   hacer de unidad.
+
+2. **El resto**, con `data/catalog-template.csv` y `npm run catalog:import`.
+
+El precio va en pesos, sin separadores ni símbolo (`1750`, no `$ 1.750`).
 
 Prioridad comercial sugerida, por lo que más se vende con cerveza:
 
@@ -166,7 +192,31 @@ de pagar en vez de después.
 
 ---
 
-## 5. Ubicación del local
+## 5. Los fixtures de QA pueden volver a la góndola
+
+El 8 de agosto, en el primer intento de compra humana, la persona compró
+«QA TEST iPhone - compra de prueba» ×3 en efectivo. Los dos fixtures de staging
+estaban en la góndola publicada, mezclados con las gaseosas. La sesión que
+supervisaba ese pedido los apagó por id, así que hoy no están.
+
+**Lo que no cambió es por qué llegaron ahí.** El storefront pide al backend los
+productos con `is_active`, `available` e `is_verified` en verdadero, y muestra
+todo lo que vuelve. Un fixture con esas tres banderas entra en la góndola, y el
+cliente no tiene forma de distinguirlo.
+
+**Decisión tomada:** no se agregó un filtro por nombre en el cliente. El
+repositorio usa deliberadamente nombres con «QA» en sus propios fixtures de
+prueba, así que un filtro así pelearía con la suite y, sobre todo, taparía el
+síntoma en vez de cerrar el agujero.
+
+**Qué hace falta —del lado del servidor:** que la vista que publica el catálogo
+excluya `catalog_origin = 'staging_only'`. Es una línea en la migración que
+define esa vista y cierra la clase entera de una vez. No se hizo acá porque
+exige mutar staging y ese lock lo tiene otra sesión.
+
+---
+
+## 6. Ubicación del local
 
 La coordenada de La Taba 2 (`-38.9460616, -68.0533209`) está contrastada contra
 la ficha comercial pública, la numeración catastral y el Plus Code, pero está
@@ -178,7 +228,7 @@ geográfico del piloto.
 
 ---
 
-## 6. Lo que el software sí resolvió en esta rama
+## 7. Lo que el software sí resolvió en esta rama
 
 Está detallado en los mensajes de los commits. En una línea cada uno:
 

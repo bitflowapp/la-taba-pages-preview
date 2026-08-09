@@ -181,11 +181,28 @@ voltea la base a medio trabajo.
 
 Con la planilla completa —los 81 productos de góndola con precio y stock—:
 
-- **81 productos vendibles**, contra 11 hoy.
-- **10 de esos 81 no tienen archivo de foto**: entran al catálogo pero se ven
-  sin imagen. Necesitan una foto antes de publicarse.
+- **81 productos vendibles**, contra 11 hoy. Siete veces la góndola actual.
 - **71 quedarían publicables de inmediato**: tienen identidad, categoría,
-  alcohol declarado y foto en disco.
+  alcohol declarado y archivo de foto en disco.
+- **10 necesitan una foto antes de publicarse.** No tienen ninguna ruta
+  cargada, así que entrarían al catálogo pero se verían sin imagen:
+
+  | SKU | Categoría |
+  |---|---|
+  | `coca-cola-original-2250ml` | Gaseosas |
+  | `coca-cola-sin-azucar-2250ml` | Gaseosas |
+  | `schweppes-tonica-354ml` | Mixers |
+  | `levite-manzana-2250ml` | Aguas saborizadas |
+  | `aquarius-pera-2200ml` | Aguas saborizadas |
+  | `monster-ultra-473ml` | Energizantes |
+  | `brancamenta-450ml` | Fernet y amargos |
+  | `gancia-americano-950ml` | Aperitivos |
+  | `martini-bianco-1000ml` | Aperitivos |
+  | `smirnoff-700ml` | Destilados |
+
+  Son diez fotos, y tres de ellas —tónica, Gancia y Smirnoff— son componentes
+  de los combos que el encargo pide (Gin+tónica, Gancia+gaseosa,
+  Vodka+energizante).
 - Los **7 combos** aprobados se vuelven cobrables en cuanto sus componentes
   tengan precio. Hoy resuelven sobre cerveza y energizante; con gaseosas, fernet
   y hielo cargados se pueden armar los que pidió el encargo.

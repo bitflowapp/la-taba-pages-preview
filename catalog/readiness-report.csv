@@ -1,93 +1,93 @@
-sku,marca,nombre,presentacion,categoria,alcohol,precio,stock,foto,derechos_foto,combos,falta,estado
-7up-original-2000ml-local,7UP,7UP,Botella PET · 2 L · Unidad,gaseosas,no,,,si,pending_review,,precio stock,falta_precio
-alamos-malbec-750ml-local,Alamos,Alamos Malbec,Botella · 750 ml · Unidad,vinos,si,,,si,pending_review,,precio stock,falta_precio
-amstel-lager-473ml,Amstel,Amstel Lager,Lata · 473 ml · Unidad,cervezas,si,,,si,pending_review,,precio stock,falta_precio
-aperol-750ml,Aperol,Aperol,Botella · 750 ml · Unidad,aperitivos,si,,,si,pending_review,,precio stock,falta_precio
-aquarius-pera-2200ml,Aquarius,Aquarius,"Botella PET · 2,2 L · Unidad",aguas-saborizadas,no,,,no,pending_review,,precio foto stock,falta_precio
-bombay-sapphire-750ml,Bombay Sapphire,Bombay Sapphire,Botella · 750 ml · Unidad,destilados,si,,,si,pending_review,,precio stock,falta_precio
-bonaqua-sin-gas-2250ml-local,Bonaqua,Bonaqua,"Botella PET · 2,25 L · Unidad",aguas,no,,,si,pending_review,,precio stock,falta_precio
-bosque-nativo-500ml,Bosque,Bosque Nativo,Botella · 500 ml · Unidad,destilados,si,,,si,pending_review,,precio stock,falta_precio
-brahma-chopp-1000ml,Brahma,Brahma Chopp,Botella retornable · 1 L · Unidad,cervezas,si,,,si,pending_review,,precio stock,falta_precio
-brancamenta-450ml,Brancamenta,Brancamenta,Botella · 450 ml · Unidad,fernet,si,,,no,pending_review,,precio foto stock,falta_precio
-britvic-ginger-beer-200ml,Britvic,Britvic Ginger Beer,Botella · 200 ml · Unidad,mixers,no,,,si,pending_review,,precio stock,falta_precio
-budweiser-lata-473ml-pack-6-local,Budweiser,Budweiser,Lata · 473 ml · Pack x6,cervezas,si,,,si,pending_review,,precio stock,falta_precio
-buhero-negro-450ml,Buhero,Buhero Negro,Botella · 450 ml · Unidad,fernet,si,,,si,pending_review,,precio stock,falta_precio
-campari-bitter-750ml,Campari,Campari Bitter,Botella · 750 ml · Unidad,aperitivos,si,,,si,pending_review,,precio stock,falta_precio
-chandon-delice-750ml,Chandon,Chandon Délice,Botella · 750 ml · Unidad,espumantes,si,,,si,pending_review,,precio stock,falta_precio
-cinzano-rosso-950ml,Cinzano,Cinzano Rosso,Botella · 950 ml · Unidad,aperitivos,si,,,si,pending_review,,precio stock,falta_precio
-coca-cola-original-2250ml,Coca-Cola,Coca-Cola Sabor Original,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,no,pending_review,,precio foto stock,falta_precio
-coca-cola-original-2250ml-local,Coca-Cola,Coca-Cola Sabor Original,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,pending_review,,precio stock,falta_precio
-coca-cola-original-pet-1500ml-pack-6,Coca-Cola,Coca-Cola Original,Botella PET · 1500 ml · Pack x6,gaseosas,no,19999,,si,pending_review,,stock,no_vendible
-coca-cola-original-pet-500ml-pack-12,Coca-Cola,Coca-Cola Original,Botella PET · 500 ml · Pack x12,gaseosas,no,17100,,si,pending_review,,stock,no_vendible
-coca-cola-sin-azucar-2250ml,Coca-Cola,Coca-Cola Sin Azúcar,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,no,pending_review,,precio foto stock,falta_precio
-coca-cola-sin-azucar-2250ml-local,Coca-Cola,Coca-Cola Sin Azúcar,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,pending_review,,precio stock,falta_precio
-coca-cola-zero-pet-1500ml-pack-6,Coca-Cola,Coca-Cola Zero,Botella PET · 1500 ml · Pack x6,gaseosas,no,19999,,si,pending_review,,stock,no_vendible
-coca-cola-zero-pet-500ml-pack-12,Coca-Cola,Coca-Cola Zero,Botella PET · 500 ml · Pack x12,gaseosas,no,17100,,si,pending_review,,stock,no_vendible
-corona-extra-330ml,Corona,Corona Extra,Botella · 330 ml · Unidad,cervezas,si,,,si,pending_review,,precio stock,falta_precio
-corona-extra-botella-330ml,Corona,Corona Extra,Botella · 330 ml · Unidad,cervezas,si,3600,,si,pending_review,combo-corona-x6,stock,falta_stock
-eco-de-los-andes-sin-gas-2000ml,Eco de los Andes,Eco de los Andes,Botella PET · 2 L · Unidad,aguas,no,,,si,pending_review,,precio stock,falta_precio
-fanta-naranja-2250ml,Fanta,Fanta Naranja,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,pending_review,,precio stock,falta_precio
-fanta-naranja-pet-1500ml-pack-6,Fanta,Fanta Naranja,Botella PET · 1500 ml · Pack x6,gaseosas,no,19999,,si,pending_review,,stock,no_vendible
-fernet-branca-edicion-mundial-750ml,Fernet Branca,Fernet Branca Edición Mundial,Botella · 750 ml · Unidad,fernet,si,,,si,pending_review,,precio stock,falta_precio
-fernet-vittone-1000ml,Vittone,Fernet Vittone,Botella · 1 L · Unidad,fernet,si,,,si,pending_review,,precio stock,falta_precio
-fin-del-mundo-cabernet-franc-750ml,Fin del Mundo,Fin del Mundo,Botella · 750 ml · Unidad,vinos,si,,,si,pending_review,,precio stock,falta_precio
-gancia-americano-950ml,Gancia,Gancia,Botella · 950 ml · Unidad,aperitivos,si,,,no,pending_review,,precio foto stock,falta_precio
-gancia-americano-950ml-local,Gancia,Gancia,Botella · 950 ml · Unidad,aperitivos,si,,,si,pending_review,,precio stock,falta_precio
-gatorade-zero-fresa-kiwi-400ml,Gatorade,Gatorade Zero,Botella PET · 400 ml · Unidad,isotonicas,no,,,si,pending_review,,precio stock,falta_precio
-glaciar-con-gas-1500ml,Glaciar,Glaciar,"Botella PET · 1,5 L · Unidad",aguas,no,,,si,pending_review,,precio stock,falta_precio
-glaciar-sin-gas-1500ml,Glaciar,Glaciar,"Botella PET · 1,5 L · Unidad",aguas,no,,,si,pending_review,,precio stock,falta_precio
-h2oh-limon-1500ml,H2OH!,H2OH!,"Botella PET · 1,5 L · Unidad",aguas-saborizadas,no,,,si,pending_review,,precio stock,falta_precio
-heineken-710ml,Heineken,Heineken,Lata · 710 ml · Unidad,cervezas,si,,,si,pending_review,,precio stock,falta_precio
-heineken-original-lata-473ml,Heineken,Heineken,Lata · 473 ml · Unidad,cervezas,si,3900,,si,pending_review,combo-heineken-x6,stock,falta_stock
-heineken-original-lata-473ml-pack-6,Heineken,Heineken,Lata · 473 ml · Pack x6,cervezas,si,,,si,pending_review,,precio stock,no_vendible
-hielo-cristal-4kg,Cristal,Hielo Cristal,Bolsa · 4 kg · Unidad,hielo,no,,,si,pending_review,,precio stock,falta_precio
-imperial-apa-lata-473ml,Imperial,Imperial APA,Lata · 473 ml · Unidad,cervezas,si,3000,,si,pending_review,combo-previa-imperial-x6 combo-birra-y-energia,stock,falta_stock
-imperial-cream-stout-lata-473ml,Imperial,Imperial Cream Stout,Lata · 473 ml · Unidad,cervezas,si,3000,,si,pending_review,combo-previa-imperial-x6,stock,falta_stock
-imperial-extra-lager-lata-473ml,Imperial,Imperial Extra Lager,Lata · 473 ml · Unidad,cervezas,si,3000,,si,pending_review,combo-previa-imperial-x6 combo-birra-y-energia,stock,falta_stock
-imperial-golden-473ml,Imperial,Imperial Golden,Lata · 473 ml · Unidad,cervezas,si,,,si,pending_review,,precio stock,falta_precio
-imperial-golden-lata-473ml,Imperial,Imperial Golden,Lata · 473 ml · Unidad,cervezas,si,3000,,si,pending_review,combo-previa-imperial-x6 combo-birra-y-energia,stock,falta_stock
-johnnie-walker-red-label-750ml,Johnnie Walker,Johnnie Walker Red Label,Botella · 750 ml · Unidad,destilados,si,,,si,pending_review,,precio stock,falta_precio
-levite-manzana-2250ml,Levité,Levité,"Botella PET · 2,25 L · Unidad",aguas-saborizadas,no,,,no,pending_review,,precio foto stock,falta_precio
-levite-manzana-2250ml-local,Levité,Levité,"Botella PET · 2,25 L · Unidad",aguas-saborizadas,no,,,si,pending_review,,precio stock,falta_precio
-manaos-lima-limon-2250ml-local,Manaos,Manaos,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,pending_review,,precio stock,falta_precio
-manaos-naranja-2250ml-local,Manaos,Manaos,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,pending_review,,precio stock,falta_precio
-martini-bianco-1000ml,Martini,Martini Bianco,Botella · 1 L · Unidad,aperitivos,si,,,no,pending_review,,precio foto stock,falta_precio
-martini-bianco-1000ml-local,Martini,Martini Bianco,Botella · 1 L · Unidad,aperitivos,si,,,si,pending_review,,precio stock,falta_precio
-monster-mango-loco-473ml,Monster,Monster Mango Loco,Lata · 473 ml · Unidad,energizantes,no,,,si,pending_review,,precio stock,falta_precio
-monster-mango-loco-lata-473ml,Monster,Monster Mango Loco,Lata · 473 ml · Unidad,energizantes,no,3390,,si,pending_review,,stock,falta_stock
-monster-ultra-473ml,Monster,Monster Ultra,Lata · 473 ml · Unidad,energizantes,no,,,no,pending_review,,precio foto stock,falta_precio
-monster-ultra-473ml-local,Monster,Monster Ultra,Lata · 473 ml · Unidad,energizantes,no,,,si,pending_review,,precio stock,falta_precio
-norton-malbec-750ml-local,Norton,Norton Malbec,Botella · 750 ml · Unidad,vinos,si,,,si,pending_review,,precio stock,falta_precio
-paso-de-los-toros-pomelo-1500ml,Paso de los Toros,Paso de los Toros Pomelo,"Botella PET · 1,5 L · Unidad",mixers,no,,,si,pending_review,,precio stock,falta_precio
-paso-de-los-toros-tonica-1500ml,Paso de los Toros,Paso de los Toros Tónica,"Botella PET · 1,5 L · Unidad",mixers,no,,,si,pending_review,,precio stock,falta_precio
-patagonia-lager-del-sur-730ml,Patagonia,Patagonia Lager del Sur,Botella · 730 ml · Unidad,cervezas,si,,,si,pending_review,,precio stock,falta_precio
-pepsi-black-1500ml,Pepsi,Pepsi Black,"Botella PET · 1,5 L · Unidad",gaseosas,no,,,si,pending_review,,precio stock,falta_precio
-pepsi-black-2250ml-local,Pepsi,Pepsi Black,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,pending_review,,precio stock,falta_precio
-powerade-mountain-blast-995ml,Powerade,Powerade,Botella PET · 995 ml · Unidad,isotonicas,no,,,si,pending_review,,precio stock,falta_precio
-quilmes-clasica-710ml,Quilmes,Quilmes Clásica,Lata · 710 ml · Unidad,cervezas,si,,,si,pending_review,,precio stock,falta_precio
-red-bull-energy-drink-355ml,Red Bull,Red Bull Energy Drink,Lata · 355 ml · Unidad,energizantes,no,,,si,pending_review,,precio stock,falta_precio
-red-bull-original-lata-250ml,Red Bull,Red Bull Energy Drink,Lata · 250 ml · Unidad,energizantes,no,3576,,si,pending_review,,stock,falta_stock
-red-bull-original-lata-250ml-pack-4,Red Bull,Red Bull Energy Drink,Lata · 250 ml · Pack x4,energizantes,no,,,si,pending_review,,precio stock,no_vendible
-rutini-cabernet-malbec-750ml-local,Rutini,Rutini,Botella · 750 ml · Unidad,vinos,si,,,si,pending_review,,precio stock,falta_precio
-rutini-malbec-750ml,Rutini,Rutini Malbec,Botella · 750 ml · Unidad,vinos,si,,,si,pending_review,,precio stock,falta_precio
-schneider-rubia-lata-710ml,Schneider,Schneider Rubia,Lata · 710 ml · Unidad,cervezas,si,3500,,si,pending_review,,stock,falta_stock
-schweppes-citrus-pet-1500ml-pack-6,Schweppes,Schweppes Citrus,Botella PET · 1500 ml · Pack x6,mixers,no,19999,,si,pending_review,,stock,no_vendible
-schweppes-ginger-ale-310ml,Schweppes,Schweppes Ginger Ale,Lata · 310 ml · Unidad,mixers,no,,,si,pending_review,,precio stock,falta_precio
-schweppes-pomelo-sin-azucar-2250ml,Schweppes,Schweppes Pomelo,"Botella PET · 2,25 L · Unidad",mixers,no,,,si,pending_review,,precio stock,falta_precio
-schweppes-tonica-354ml,Schweppes,Schweppes Tónica,Lata · 354 ml · Unidad,mixers,no,,,no,pending_review,,precio foto stock,falta_precio
-schweppes-tonica-354ml-local,Schweppes,Schweppes Tónica,Lata · 354 ml · Unidad,mixers,no,,,si,pending_review,,precio stock,falta_precio
-schweppes-tonica-pet-1500ml-pack-6,Schweppes,Schweppes Tónica,Botella PET · 1500 ml · Pack x6,mixers,no,19999,,si,pending_review,,stock,no_vendible
-smirnoff-700ml,Smirnoff,Smirnoff,Botella · 700 ml · Unidad,destilados,si,,,no,pending_review,,precio foto stock,falta_precio
-soda-ivess-1500ml,Ivess,Soda Ivess,"Sifón · 1,5 L · Unidad",mixers,no,,,si,pending_review,,precio stock,falta_precio
-speed-original-lata-473ml,Speed,Speed Unlimited,Lata · 473 ml · Unidad,energizantes,no,2925,,si,pending_review,combo-cuatro-para-arrancar,stock,falta_stock
-speed-zero-473ml,Speed,Speed Zero,Lata · 473 ml · Unidad,energizantes,no,,,si,pending_review,,precio stock,falta_precio
-speed-zero-lata-473ml,Speed,Speed Unlimited,Lata · 473 ml · Unidad,energizantes,no,2925,,si,pending_review,combo-birra-y-energia combo-cuatro-para-arrancar,stock,falta_stock
-sprite-original-pet-1500ml-pack-6,Sprite,Sprite,Botella PET · 1500 ml · Pack x6,gaseosas,no,19999,,si,pending_review,,stock,no_vendible
-sprite-original-pet-500ml-pack-12,Sprite,Sprite,Botella PET · 500 ml · Pack x12,gaseosas,no,17100,,si,pending_review,,stock,no_vendible
-sprite-sin-azucar-2250ml-local,Sprite,Sprite,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,pending_review,,precio stock,falta_precio
-sprite-sin-azucar-600ml,Sprite,Sprite,Botella PET · 600 ml · Unidad,gaseosas,no,,,si,pending_review,,precio stock,falta_precio
-stella-artois-sin-alcohol-330ml,Stella Artois,Stella Artois,Botella · 330 ml · Unidad,cervezas,no,,,si,pending_review,,precio stock,falta_precio
-tanqueray-dry-700ml,Tanqueray,Tanqueray Dry,Botella · 700 ml · Unidad,destilados,si,,,si,pending_review,,precio stock,falta_precio
-trapiche-reserva-malbec-750ml,Trapiche,Trapiche Reserva Malbec,Botella · 750 ml · Unidad,vinos,si,,,si,pending_review,,precio stock,falta_precio
-trumpeter-malbec-750ml-local,Trumpeter,Trumpeter Malbec,Botella · 750 ml · Unidad,vinos,si,,,si,pending_review,,precio stock,falta_precio
-villavicencio-sin-gas-500ml,Villavicencio,Villavicencio,Botella PET · 500 ml · Unidad,aguas,no,,,si,pending_review,,precio stock,falta_precio
+sku,marca,nombre,presentacion,categoria,alcohol,precio,stock,foto,ruta_foto,derechos_foto,combos,falta,estado
+7up-original-2000ml-local,7UP,7UP,Botella PET · 2 L · Unidad,gaseosas,no,,,si,ok,pending_review,,precio stock,falta_precio
+alamos-malbec-750ml-local,Alamos,Alamos Malbec,Botella · 750 ml · Unidad,vinos,si,,,si,ok,pending_review,,precio stock,falta_precio
+amstel-lager-473ml,Amstel,Amstel Lager,Lata · 473 ml · Unidad,cervezas,si,,,si,ok,pending_review,,precio stock,falta_precio
+aperol-750ml,Aperol,Aperol,Botella · 750 ml · Unidad,aperitivos,si,,,si,ok,pending_review,,precio stock,falta_precio
+aquarius-pera-2200ml,Aquarius,Aquarius,"Botella PET · 2,2 L · Unidad",aguas-saborizadas,no,,,no,sin_ruta,pending_review,,precio foto stock,falta_precio
+bombay-sapphire-750ml,Bombay Sapphire,Bombay Sapphire,Botella · 750 ml · Unidad,destilados,si,,,si,ok,pending_review,,precio stock,falta_precio
+bonaqua-sin-gas-2250ml-local,Bonaqua,Bonaqua,"Botella PET · 2,25 L · Unidad",aguas,no,,,si,ok,pending_review,,precio stock,falta_precio
+bosque-nativo-500ml,Bosque,Bosque Nativo,Botella · 500 ml · Unidad,destilados,si,,,si,ok,pending_review,,precio stock,falta_precio
+brahma-chopp-1000ml,Brahma,Brahma Chopp,Botella retornable · 1 L · Unidad,cervezas,si,,,si,ok,pending_review,,precio stock,falta_precio
+brancamenta-450ml,Brancamenta,Brancamenta,Botella · 450 ml · Unidad,fernet,si,,,no,sin_ruta,pending_review,,precio foto stock,falta_precio
+britvic-ginger-beer-200ml,Britvic,Britvic Ginger Beer,Botella · 200 ml · Unidad,mixers,no,,,si,ok,pending_review,,precio stock,falta_precio
+budweiser-lata-473ml-pack-6-local,Budweiser,Budweiser,Lata · 473 ml · Pack x6,cervezas,si,,,si,ok,pending_review,,precio stock,falta_precio
+buhero-negro-450ml,Buhero,Buhero Negro,Botella · 450 ml · Unidad,fernet,si,,,si,ok,pending_review,,precio stock,falta_precio
+campari-bitter-750ml,Campari,Campari Bitter,Botella · 750 ml · Unidad,aperitivos,si,,,si,ok,pending_review,,precio stock,falta_precio
+chandon-delice-750ml,Chandon,Chandon Délice,Botella · 750 ml · Unidad,espumantes,si,,,si,ok,pending_review,,precio stock,falta_precio
+cinzano-rosso-950ml,Cinzano,Cinzano Rosso,Botella · 950 ml · Unidad,aperitivos,si,,,si,ok,pending_review,,precio stock,falta_precio
+coca-cola-original-2250ml,Coca-Cola,Coca-Cola Sabor Original,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,no,sin_ruta,pending_review,,precio foto stock,falta_precio
+coca-cola-original-2250ml-local,Coca-Cola,Coca-Cola Sabor Original,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,ok,pending_review,,precio stock,falta_precio
+coca-cola-original-pet-1500ml-pack-6,Coca-Cola,Coca-Cola Original,Botella PET · 1500 ml · Pack x6,gaseosas,no,19999,,si,ok,pending_review,,stock,no_vendible
+coca-cola-original-pet-500ml-pack-12,Coca-Cola,Coca-Cola Original,Botella PET · 500 ml · Pack x12,gaseosas,no,17100,,si,ok,pending_review,,stock,no_vendible
+coca-cola-sin-azucar-2250ml,Coca-Cola,Coca-Cola Sin Azúcar,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,no,sin_ruta,pending_review,,precio foto stock,falta_precio
+coca-cola-sin-azucar-2250ml-local,Coca-Cola,Coca-Cola Sin Azúcar,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,ok,pending_review,,precio stock,falta_precio
+coca-cola-zero-pet-1500ml-pack-6,Coca-Cola,Coca-Cola Zero,Botella PET · 1500 ml · Pack x6,gaseosas,no,19999,,si,ok,pending_review,,stock,no_vendible
+coca-cola-zero-pet-500ml-pack-12,Coca-Cola,Coca-Cola Zero,Botella PET · 500 ml · Pack x12,gaseosas,no,17100,,si,ok,pending_review,,stock,no_vendible
+corona-extra-330ml,Corona,Corona Extra,Botella · 330 ml · Unidad,cervezas,si,,,si,ok,pending_review,,precio stock,falta_precio
+corona-extra-botella-330ml,Corona,Corona Extra,Botella · 330 ml · Unidad,cervezas,si,3600,,si,ok,pending_review,combo-corona-x6,stock,falta_stock
+eco-de-los-andes-sin-gas-2000ml,Eco de los Andes,Eco de los Andes,Botella PET · 2 L · Unidad,aguas,no,,,si,ok,pending_review,,precio stock,falta_precio
+fanta-naranja-2250ml,Fanta,Fanta Naranja,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,ok,pending_review,,precio stock,falta_precio
+fanta-naranja-pet-1500ml-pack-6,Fanta,Fanta Naranja,Botella PET · 1500 ml · Pack x6,gaseosas,no,19999,,si,ok,pending_review,,stock,no_vendible
+fernet-branca-edicion-mundial-750ml,Fernet Branca,Fernet Branca Edición Mundial,Botella · 750 ml · Unidad,fernet,si,,,si,ok,pending_review,,precio stock,falta_precio
+fernet-vittone-1000ml,Vittone,Fernet Vittone,Botella · 1 L · Unidad,fernet,si,,,si,ok,pending_review,,precio stock,falta_precio
+fin-del-mundo-cabernet-franc-750ml,Fin del Mundo,Fin del Mundo,Botella · 750 ml · Unidad,vinos,si,,,si,ok,pending_review,,precio stock,falta_precio
+gancia-americano-950ml,Gancia,Gancia,Botella · 950 ml · Unidad,aperitivos,si,,,no,sin_ruta,pending_review,,precio foto stock,falta_precio
+gancia-americano-950ml-local,Gancia,Gancia,Botella · 950 ml · Unidad,aperitivos,si,,,si,ok,pending_review,,precio stock,falta_precio
+gatorade-zero-fresa-kiwi-400ml,Gatorade,Gatorade Zero,Botella PET · 400 ml · Unidad,isotonicas,no,,,si,ok,pending_review,,precio stock,falta_precio
+glaciar-con-gas-1500ml,Glaciar,Glaciar,"Botella PET · 1,5 L · Unidad",aguas,no,,,si,ok,pending_review,,precio stock,falta_precio
+glaciar-sin-gas-1500ml,Glaciar,Glaciar,"Botella PET · 1,5 L · Unidad",aguas,no,,,si,ok,pending_review,,precio stock,falta_precio
+h2oh-limon-1500ml,H2OH!,H2OH!,"Botella PET · 1,5 L · Unidad",aguas-saborizadas,no,,,si,ok,pending_review,,precio stock,falta_precio
+heineken-710ml,Heineken,Heineken,Lata · 710 ml · Unidad,cervezas,si,,,si,ok,pending_review,,precio stock,falta_precio
+heineken-original-lata-473ml,Heineken,Heineken,Lata · 473 ml · Unidad,cervezas,si,3900,,si,ok,pending_review,combo-heineken-x6,stock,falta_stock
+heineken-original-lata-473ml-pack-6,Heineken,Heineken,Lata · 473 ml · Pack x6,cervezas,si,,,si,ok,pending_review,,precio stock,no_vendible
+hielo-cristal-4kg,Cristal,Hielo Cristal,Bolsa · 4 kg · Unidad,hielo,no,,,si,ok,pending_review,,precio stock,falta_precio
+imperial-apa-lata-473ml,Imperial,Imperial APA,Lata · 473 ml · Unidad,cervezas,si,3000,,si,ok,pending_review,combo-previa-imperial-x6 combo-birra-y-energia,stock,falta_stock
+imperial-cream-stout-lata-473ml,Imperial,Imperial Cream Stout,Lata · 473 ml · Unidad,cervezas,si,3000,,si,ok,pending_review,combo-previa-imperial-x6,stock,falta_stock
+imperial-extra-lager-lata-473ml,Imperial,Imperial Extra Lager,Lata · 473 ml · Unidad,cervezas,si,3000,,si,ok,pending_review,combo-previa-imperial-x6 combo-birra-y-energia,stock,falta_stock
+imperial-golden-473ml,Imperial,Imperial Golden,Lata · 473 ml · Unidad,cervezas,si,,,si,ok,pending_review,,precio stock,falta_precio
+imperial-golden-lata-473ml,Imperial,Imperial Golden,Lata · 473 ml · Unidad,cervezas,si,3000,,si,ok,pending_review,combo-previa-imperial-x6 combo-birra-y-energia,stock,falta_stock
+johnnie-walker-red-label-750ml,Johnnie Walker,Johnnie Walker Red Label,Botella · 750 ml · Unidad,destilados,si,,,si,ok,pending_review,,precio stock,falta_precio
+levite-manzana-2250ml,Levité,Levité,"Botella PET · 2,25 L · Unidad",aguas-saborizadas,no,,,no,sin_ruta,pending_review,,precio foto stock,falta_precio
+levite-manzana-2250ml-local,Levité,Levité,"Botella PET · 2,25 L · Unidad",aguas-saborizadas,no,,,si,ok,pending_review,,precio stock,falta_precio
+manaos-lima-limon-2250ml-local,Manaos,Manaos,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,ok,pending_review,,precio stock,falta_precio
+manaos-naranja-2250ml-local,Manaos,Manaos,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,ok,pending_review,,precio stock,falta_precio
+martini-bianco-1000ml,Martini,Martini Bianco,Botella · 1 L · Unidad,aperitivos,si,,,no,sin_ruta,pending_review,,precio foto stock,falta_precio
+martini-bianco-1000ml-local,Martini,Martini Bianco,Botella · 1 L · Unidad,aperitivos,si,,,si,ok,pending_review,,precio stock,falta_precio
+monster-mango-loco-473ml,Monster,Monster Mango Loco,Lata · 473 ml · Unidad,energizantes,no,,,si,ok,pending_review,,precio stock,falta_precio
+monster-mango-loco-lata-473ml,Monster,Monster Mango Loco,Lata · 473 ml · Unidad,energizantes,no,3390,,si,ok,pending_review,,stock,falta_stock
+monster-ultra-473ml,Monster,Monster Ultra,Lata · 473 ml · Unidad,energizantes,no,,,no,sin_ruta,pending_review,,precio foto stock,falta_precio
+monster-ultra-473ml-local,Monster,Monster Ultra,Lata · 473 ml · Unidad,energizantes,no,,,si,ok,pending_review,,precio stock,falta_precio
+norton-malbec-750ml-local,Norton,Norton Malbec,Botella · 750 ml · Unidad,vinos,si,,,si,ok,pending_review,,precio stock,falta_precio
+paso-de-los-toros-pomelo-1500ml,Paso de los Toros,Paso de los Toros Pomelo,"Botella PET · 1,5 L · Unidad",mixers,no,,,si,ok,pending_review,,precio stock,falta_precio
+paso-de-los-toros-tonica-1500ml,Paso de los Toros,Paso de los Toros Tónica,"Botella PET · 1,5 L · Unidad",mixers,no,,,si,ok,pending_review,,precio stock,falta_precio
+patagonia-lager-del-sur-730ml,Patagonia,Patagonia Lager del Sur,Botella · 730 ml · Unidad,cervezas,si,,,si,ok,pending_review,,precio stock,falta_precio
+pepsi-black-1500ml,Pepsi,Pepsi Black,"Botella PET · 1,5 L · Unidad",gaseosas,no,,,si,ok,pending_review,,precio stock,falta_precio
+pepsi-black-2250ml-local,Pepsi,Pepsi Black,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,ok,pending_review,,precio stock,falta_precio
+powerade-mountain-blast-995ml,Powerade,Powerade,Botella PET · 995 ml · Unidad,isotonicas,no,,,si,ok,pending_review,,precio stock,falta_precio
+quilmes-clasica-710ml,Quilmes,Quilmes Clásica,Lata · 710 ml · Unidad,cervezas,si,,,si,ok,pending_review,,precio stock,falta_precio
+red-bull-energy-drink-355ml,Red Bull,Red Bull Energy Drink,Lata · 355 ml · Unidad,energizantes,no,,,si,ok,pending_review,,precio stock,falta_precio
+red-bull-original-lata-250ml,Red Bull,Red Bull Energy Drink,Lata · 250 ml · Unidad,energizantes,no,3576,,si,ok,pending_review,,stock,falta_stock
+red-bull-original-lata-250ml-pack-4,Red Bull,Red Bull Energy Drink,Lata · 250 ml · Pack x4,energizantes,no,,,si,ok,pending_review,,precio stock,no_vendible
+rutini-cabernet-malbec-750ml-local,Rutini,Rutini,Botella · 750 ml · Unidad,vinos,si,,,si,ok,pending_review,,precio stock,falta_precio
+rutini-malbec-750ml,Rutini,Rutini Malbec,Botella · 750 ml · Unidad,vinos,si,,,si,ok,pending_review,,precio stock,falta_precio
+schneider-rubia-lata-710ml,Schneider,Schneider Rubia,Lata · 710 ml · Unidad,cervezas,si,3500,,si,ok,pending_review,,stock,falta_stock
+schweppes-citrus-pet-1500ml-pack-6,Schweppes,Schweppes Citrus,Botella PET · 1500 ml · Pack x6,mixers,no,19999,,si,ok,pending_review,,stock,no_vendible
+schweppes-ginger-ale-310ml,Schweppes,Schweppes Ginger Ale,Lata · 310 ml · Unidad,mixers,no,,,si,ok,pending_review,,precio stock,falta_precio
+schweppes-pomelo-sin-azucar-2250ml,Schweppes,Schweppes Pomelo,"Botella PET · 2,25 L · Unidad",mixers,no,,,si,ok,pending_review,,precio stock,falta_precio
+schweppes-tonica-354ml,Schweppes,Schweppes Tónica,Lata · 354 ml · Unidad,mixers,no,,,no,sin_ruta,pending_review,,precio foto stock,falta_precio
+schweppes-tonica-354ml-local,Schweppes,Schweppes Tónica,Lata · 354 ml · Unidad,mixers,no,,,si,ok,pending_review,,precio stock,falta_precio
+schweppes-tonica-pet-1500ml-pack-6,Schweppes,Schweppes Tónica,Botella PET · 1500 ml · Pack x6,mixers,no,19999,,si,ok,pending_review,,stock,no_vendible
+smirnoff-700ml,Smirnoff,Smirnoff,Botella · 700 ml · Unidad,destilados,si,,,no,sin_ruta,pending_review,,precio foto stock,falta_precio
+soda-ivess-1500ml,Ivess,Soda Ivess,"Sifón · 1,5 L · Unidad",mixers,no,,,si,ok,pending_review,,precio stock,falta_precio
+speed-original-lata-473ml,Speed,Speed Unlimited,Lata · 473 ml · Unidad,energizantes,no,2925,,si,ok,pending_review,combo-cuatro-para-arrancar,stock,falta_stock
+speed-zero-473ml,Speed,Speed Zero,Lata · 473 ml · Unidad,energizantes,no,,,si,ok,pending_review,,precio stock,falta_precio
+speed-zero-lata-473ml,Speed,Speed Unlimited,Lata · 473 ml · Unidad,energizantes,no,2925,,si,ok,pending_review,combo-birra-y-energia combo-cuatro-para-arrancar,stock,falta_stock
+sprite-original-pet-1500ml-pack-6,Sprite,Sprite,Botella PET · 1500 ml · Pack x6,gaseosas,no,19999,,si,ok,pending_review,,stock,no_vendible
+sprite-original-pet-500ml-pack-12,Sprite,Sprite,Botella PET · 500 ml · Pack x12,gaseosas,no,17100,,si,ok,pending_review,,stock,no_vendible
+sprite-sin-azucar-2250ml-local,Sprite,Sprite,"Botella PET · 2,25 L · Unidad",gaseosas,no,,,si,ok,pending_review,,precio stock,falta_precio
+sprite-sin-azucar-600ml,Sprite,Sprite,Botella PET · 600 ml · Unidad,gaseosas,no,,,si,ok,pending_review,,precio stock,falta_precio
+stella-artois-sin-alcohol-330ml,Stella Artois,Stella Artois,Botella · 330 ml · Unidad,cervezas,no,,,si,ok,pending_review,,precio stock,falta_precio
+tanqueray-dry-700ml,Tanqueray,Tanqueray Dry,Botella · 700 ml · Unidad,destilados,si,,,si,ok,pending_review,,precio stock,falta_precio
+trapiche-reserva-malbec-750ml,Trapiche,Trapiche Reserva Malbec,Botella · 750 ml · Unidad,vinos,si,,,si,ok,pending_review,,precio stock,falta_precio
+trumpeter-malbec-750ml-local,Trumpeter,Trumpeter Malbec,Botella · 750 ml · Unidad,vinos,si,,,si,ok,pending_review,,precio stock,falta_precio
+villavicencio-sin-gas-500ml,Villavicencio,Villavicencio,Botella PET · 500 ml · Unidad,aguas,no,,,si,ok,pending_review,,precio stock,falta_precio

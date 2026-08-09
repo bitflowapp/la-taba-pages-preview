@@ -250,9 +250,13 @@ export function buildReadiness({
 }
 
 export function renderReportCsv(report) {
+  // `foto` responde «¿hay un archivo servible?», no «¿hay una ruta escrita?».
+  // La diferencia no es teórica: cuatro productos de góndola declaran una ruta
+  // que no existe en disco, y contarlos como «con foto» sería contar una
+  // imagen rota.
   const header = [
     'sku', 'marca', 'nombre', 'presentacion', 'categoria', 'alcohol',
-    'precio', 'stock', 'foto', 'derechos_foto', 'combos', 'falta', 'estado',
+    'precio', 'stock', 'foto', 'ruta_foto', 'derechos_foto', 'combos', 'falta', 'estado',
   ];
   const lines = [header.join(',')];
   for (const entry of [...report.entries].sort((a, b) => a.sku.localeCompare(b.sku, 'es'))) {
@@ -265,7 +269,8 @@ export function renderReportCsv(report) {
       entry.alcohol,
       entry.price === null ? '' : entry.price,
       entry.stock === null ? '' : entry.stock,
-      entry.imagePath ? 'si' : 'no',
+      entry.hasImageFile ? 'si' : 'no',
+      entry.imagePath ? (entry.hasImageFile ? 'ok' : 'rota') : 'sin_ruta',
       entry.imageRights,
       entry.combos.join(' '),
       entry.missing.join(' '),

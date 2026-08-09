@@ -2622,13 +2622,28 @@ function riderContractRefusal(data, messages, fallback) {
   });
 }
 
-function readableOrderCreationError(error) {
+// Se exporta para poder probarlo: es una función pura y es la última cosa que
+// una persona lee cuando su compra no entra.
+export function readableOrderCreationError(error) {
   const text = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
   // El rechazo del contrato de ubicación se dice con el mismo mensaje que usa
   // el checkout, no con el genérico: la persona tiene que saber que le falta
   // confirmar el pin, y dónde hacerlo.
   if (text.includes('delivery_location_required')) return DELIVERY_LOCATION_REQUIRED_MESSAGE;
-  if (text.includes('stock') || text.includes('available')) {
+  // El backend rechaza en castellano —«producto no disponible: <uuid>»— cuando
+  // el stock llegó a cero y el contrato comercial apagó la disponibilidad. Este
+  // humanizador sólo miraba las palabras en inglés, así que ese rechazo caía en
+  // el genérico de más abajo: «no pudimos confirmar el pedido, conservamos el
+  // intento para reintentar». O sea, invitaba a reintentar una compra que nunca
+  // va a entrar, y sin decir que el producto se agotó.
+  // Medido con 100 sesiones concurrentes sobre 40 unidades: es el rechazo que
+  // recibieron las 60 personas que llegaron tarde.
+  if (
+    text.includes('stock')
+    || text.includes('available')
+    || text.includes('no disponible')
+    || text.includes('agotad')
+  ) {
     return 'Algunos productos ya no tienen stock. Actualizá el carrito y probá de nuevo.';
   }
   if (text.includes('ordering') || text.includes('disabled') || text.includes('verified')) {

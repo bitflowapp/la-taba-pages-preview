@@ -152,6 +152,12 @@ async function loadCustomerDeliveryProfile() {
   applyProfileToEmptyFields(result.profile);
   reconcileHydratedAddress({ interactionVersionAtStart });
   render();
+  // Las direcciones llegan DESPUÉS del primer pintado, así que el chip «Enviar
+  // a» del inicio ya se dibujó sin ellas y dice «Elegí tu dirección» aunque la
+  // persona tenga una predeterminada confirmada. Hasta acá nadie le avisaba: el
+  // aviso sólo salía desde el checkout, una pantalla más adelante. Se avisa
+  // también al hidratar, que es cuando el dato realmente aparece.
+  notifyDeliveryAddressChanged();
   return result;
 }
 

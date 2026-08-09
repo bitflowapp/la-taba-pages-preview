@@ -44,8 +44,34 @@ import { getState, subscribe } from './state.js';
 import { BRAND, STORAGE_KEYS } from './config.js';
 import { getBusinessConfig } from './core/business-config-store.js';
 import { relayStatusLabel } from './core/realtime-sync.js';
-import { handleBusinessAction, handleBusinessInput, lockAdmin, renderBusinessDashboard, submitBusinessSetupForm, unlockAdmin } from './business.js';
-import { handleDeliveryAction, handleDeliveryChange, renderDeliveryPanel } from './delivery.js';
+// El back office —negocio, reparto, producción y sandbox— entra recién cuando
+// hace falta. Ver js/back-office.js: para un cliente eran 759 KB de descarga
+// que nunca se renderizaban.
+import {
+  alEntrarBackOffice,
+  backOfficePresente,
+
+  handleBusinessAction,
+  handleBusinessInput,
+  handleDeliveryAction,
+  handleDeliveryChange,
+  handleProductionAuthSubmit,
+  handleProductionOperationsAction,
+  handleProductionOperationsInput,
+  handleProductionOperationsPageHide,
+  handleProductionOperationsViewChange,
+  handleSandboxToolsAction,
+  handleSandboxToolsChange,
+  initProductionOperations,
+  lockAdmin,
+  renderBusinessDashboard,
+  renderDeliveryPanel,
+  renderProductionOperations,
+  renderSandboxTools,
+  sincronizarBackOffice,
+  submitBusinessSetupForm,
+  unlockAdmin,
+} from './back-office.js';
 import {
   disableGpsTracking,
   handleGpsVisibilityChange,
@@ -62,15 +88,6 @@ import {
   startOrderRepositorySync,
 } from './repositories/repository_factory.js';
 import {
-  handleProductionOperationsPageHide,
-  handleProductionOperationsViewChange,
-  handleProductionAuthSubmit,
-  handleProductionOperationsAction,
-  handleProductionOperationsInput,
-  initProductionOperations,
-  renderProductionOperations,
-} from './production-operations.js';
-import {
   APP_MODE_DEMO,
   APP_MODE_PRODUCTION,
   APP_MODE_PUBLIC,
@@ -81,7 +98,6 @@ import {
   isShowcaseMode,
 } from './core/app-mode.js';
 import { isProductionCatalogReady } from './core/runtime-config.js';
-import { handleSandboxToolsAction, handleSandboxToolsChange, renderSandboxTools } from './sandbox-tools.js';
 import {
   SHOWCASE_STEPS,
   configureShowcase,
@@ -504,6 +520,19 @@ async function bootstrap() {
     if (resetRequested) {
       if (await maybeResetDemoSession()) return;
     }
+    // Cuando el back office entra hay que darle su primer pintado, porque sus
+    // superficies estuvieron vacías mientras no estaba. Se pintan SÓLO ellas:
+    // un renderAll() acá vuelve a dibujar la góndola y el carrito encima de lo
+    // que la persona esté haciendo en ese instante, y eso se ve —y se rompe—
+    // como un parpadeo que reordena la lista bajo el dedo.
+    // Si el back office entra tarde —vista operativa abierta por el operador—
+    // hay que darle su primer pintado. Se pintan SÓLO sus superficies: un
+    // renderAll() acá vuelve a dibujar la góndola y el carrito encima de lo que
+    // la persona esté haciendo, y eso se ve como un parpadeo que reordena la
+    // lista bajo el dedo.
+    alEntrarBackOffice(() => {
+      if (isDemoMode()) renderBusinessDashboard();
+    });
     initProductionOperations({
       onChange: renderAll,
       onOrderAlert: (message) => showToast(message),
@@ -572,7 +601,33 @@ async function copyTextToClipboard(text) {
   throw new Error('clipboard unavailable');
 }
 
+/*
+ * ¿Hace falta el back office en esta pantalla? Sólo si la persona está en una
+ * vista operativa, o el modo es demo/showcase, o el repositorio es el de
+ * sandbox. Un cliente comprando en producción no cae en ninguno de los tres, y
+ * por eso no descarga esas pantallas.
+ */
+function asegurarBackOffice() {
+  if (backOfficePresente()) return true;
+  // Primero lo barato y sin efectos. `getOrderRepository()` inicializa el
+  // repositorio la primera vez que se lo pide, y este punto corre al principio
+  // de CADA render: preguntarle de entrada adelantaba esa inicialización a
+  // antes de que la demo terminara de sembrar su perfil, y la dirección
+  // predeterminada llegaba tarde al encabezado.
+  if (['business', 'rider'].includes(activeView) || isDemoMode() || isShowcaseMode()) {
+    return sincronizarBackOffice({ vistaOperativa: true });
+  }
+  let sandbox = false;
+  try {
+    sandbox = isSandboxOrderRepository(getOrderRepository());
+  } catch (_) {
+    sandbox = false;
+  }
+  return sincronizarBackOffice({ sandbox });
+}
+
 function renderAll() {
+  asegurarBackOffice();
   applyBusinessConfig();
   applyAppMode();
   renderActiveView();

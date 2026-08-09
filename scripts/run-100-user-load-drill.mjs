@@ -130,12 +130,19 @@ process.on('exit', cleanup);
 
 docker(['run', '-d', '--name', CONTAINER, '-e', 'POSTGRES_HOST_AUTH_METHOD=trust',
   '-e', 'POSTGRES_PASSWORD=postgres', IMAGE]);
-let listo = false;
-for (let i = 0; i < 90; i += 1) {
-  if (spawnSync(DOCKER, ['exec', CONTAINER, 'pg_isready', '-U', 'postgres'], { encoding: 'utf8' }).status === 0) { listo = true; break; }
-  sleepSync(1000);
+// La imagen levanta un Postgres TEMPORAL para initdb y después lo reinicia.
+// `pg_isready` dice que sí contra ese temporal, y el `createdb` siguiente se
+// estrella con «socket ... No such file or directory» porque el servidor se
+// está reiniciando justo ahí. Medido: el simulacro falló así en el arranque.
+// Por eso se exige una consulta REAL que funcione tres veces seguidas.
+let estables = 0;
+for (let i = 0; i < 120 && estables < 3; i += 1) {
+  const vivo = spawnSync(DOCKER, ['exec', CONTAINER, 'psql', '-U', 'postgres', '-d', 'postgres', '-tAc', 'select 1'],
+    { encoding: 'utf8' });
+  estables = vivo.status === 0 && vivo.stdout.trim() === '1' ? estables + 1 : 0;
+  if (estables < 3) sleepSync(1000);
 }
-if (!listo) throw new Error('el contenedor no llegó a estar listo');
+if (estables < 3) throw new Error('el contenedor no llegó a estar listo');
 
 docker(['exec', CONTAINER, 'bash', '-lc',
   `mkdir -p /etc/postgresql-custom/conf.d && printf "cron.database_name = '${DB}'\\n" > /etc/postgresql-custom/conf.d/pg_cron.conf`]);

@@ -31,6 +31,36 @@ export const DELIVERY_LOCATION_STATUS = Object.freeze({
 export const ADDRESS_CHANGED_NOTICE =
   'Cambiaste la dirección: revisá el pin y volvé a confirmar dónde te entregamos.';
 
+/**
+ * Una coordenada, o nada.
+ *
+ * `Number(null)`, `Number('')`, `Number([])` y `Number(false)` valen 0, y 0 es
+ * finito. Sin este descarte previo, una dirección guardada SIN punto —todas las
+ * de antes de la confirmación obligatoria— entraba con latitud y longitud 0, que
+ * es un lugar real en el Golfo de Guinea, a unos 10.000 km de Neuquén.
+ *
+ * Medido contra el sitio publicado: al editar una dirección sin ubicación, el
+ * paso abría en `pending` mostrando «0.000000, 0.000000» con «Confirmar
+ * ubicación» a la vista, y tocarlo guardaba ese punto con la bendición del
+ * servidor. Es el mismo error que 459a2dc cerró del lado del comercio; acá era
+ * alcanzable desde el producto.
+ */
+function coordenada(value) {
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+/** Un par de coordenadas dentro del planeta, o nada. */
+function punto(latitude, longitude) {
+  const lat = coordenada(latitude);
+  const lng = coordenada(longitude);
+  if (lat === null || lng === null) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { latitude: lat, longitude: lng };
+}
+
 export function emptyDeliveryLocationDraft() {
   return Object.freeze({
     status: DELIVERY_LOCATION_STATUS.EMPTY,
@@ -61,14 +91,13 @@ export function draftFromSavedAddress(address = {}) {
     // Una dirección vieja puede traer coordenadas sin confirmación. El pin se
     // conserva como punto de partida —ahorra trabajo— pero el paso queda
     // pendiente: nadie confirmó nunca ese punto.
-    const latitude = Number(address?.latitude);
-    const longitude = Number(address?.longitude);
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return emptyDeliveryLocationDraft();
+    const partida = punto(address?.latitude, address?.longitude);
+    if (!partida) return emptyDeliveryLocationDraft();
     return {
       ...emptyDeliveryLocationDraft(),
       status: DELIVERY_LOCATION_STATUS.PENDING,
       method: 'map_pin',
-      point: { latitude, longitude, accuracyMeters: null },
+      point: { ...partida, accuracyMeters: null },
       mapOpen: true,
     };
   }
@@ -105,21 +134,19 @@ export function draftWithLocationResult(draft, result = {}) {
       notice: '',
     };
   }
-  const latitude = Number(result.location?.latitude);
-  const longitude = Number(result.location?.longitude);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+  const medido = punto(result.location?.latitude, result.location?.longitude);
+  if (!medido) {
     return { ...draft, locating: false, error: 'La ubicación recibida no es válida.' };
   }
-  const accuracy = Number(result.location?.accuracy);
+  const accuracy = coordenada(result.location?.accuracy);
   return {
     ...draft,
     locating: false,
     status: DELIVERY_LOCATION_STATUS.PENDING,
     method: 'gps',
     point: {
-      latitude,
-      longitude,
-      accuracyMeters: Number.isFinite(accuracy) && accuracy >= 0 ? accuracy : null,
+      ...medido,
+      accuracyMeters: accuracy !== null && accuracy >= 0 ? accuracy : null,
     },
     confirmedAt: '',
     fingerprint: '',
@@ -136,16 +163,15 @@ export function draftWithLocationResult(draft, result = {}) {
  */
 export function draftOpenedOnMap(draft, startPoint = null) {
   if (draft.point) return { ...draft, mapOpen: true, error: '', notice: '' };
-  const latitude = Number(startPoint?.latitude ?? startPoint?.lat);
-  const longitude = Number(startPoint?.longitude ?? startPoint?.lng);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+  const partida = punto(startPoint?.latitude ?? startPoint?.lat, startPoint?.longitude ?? startPoint?.lng);
+  if (!partida) {
     return { ...draft, mapOpen: true, error: '', notice: '' };
   }
   return {
     ...draft,
     status: DELIVERY_LOCATION_STATUS.PENDING,
     method: 'map_pin',
-    point: { latitude, longitude, accuracyMeters: null },
+    point: { ...partida, accuracyMeters: null },
     confirmedAt: '',
     fingerprint: '',
     mapOpen: true,
@@ -160,15 +186,13 @@ export function draftOpenedOnMap(draft, startPoint = null) {
  * dejar el paso pendiente de confirmación.
  */
 export function draftWithMapPin(draft, point = {}) {
-  const latitude = Number(point?.latitude ?? point?.lat);
-  const longitude = Number(point?.longitude ?? point?.lng);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return draft;
-  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return draft;
+  const marcado = punto(point?.latitude ?? point?.lat, point?.longitude ?? point?.lng);
+  if (!marcado) return draft;
   return {
     ...draft,
     status: DELIVERY_LOCATION_STATUS.PENDING,
     method: 'map_pin',
-    point: { latitude, longitude, accuracyMeters: null },
+    point: { ...marcado, accuracyMeters: null },
     confirmedAt: '',
     fingerprint: '',
     mapOpen: true,

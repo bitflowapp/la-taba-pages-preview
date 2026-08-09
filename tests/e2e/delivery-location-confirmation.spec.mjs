@@ -148,8 +148,8 @@ test.describe('Perfil · confirmación del punto de entrega', () => {
     for (const [campo, valor] of [
       ['profileAddressStreet', 'Antártida Argentina'],
       ['profileAddressNumber', '1450'],
-      ['profileAddressCity', 'Neuquén'],
-      ['profileAddressProvince', 'Neuquén'],
+      ['profileAddressFloor', '2'],
+      ['profileAddressReference', 'Portón negro'],
     ]) {
       await profile.locator(`[name="${campo}"]`).fill(valor);
       await profile.locator(`[name="${campo}"]`).blur();
@@ -165,9 +165,12 @@ test.describe('Perfil · confirmación del punto de entrega', () => {
     const guardado = remote.calls.find((call) => call.rpc === 'upsert_current_customer_address');
     expect(guardado.payload.p_address.locationSource).toBe('gps');
     expect(guardado.payload.p_address.locationConfirmedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-    // La huella es la del texto FINAL, no la del formulario vacío.
+    // La huella es la del texto FINAL, no la del formulario vacío. Incluye la
+    // localidad y la provincia que completa el área de operación: la pregunta
+    // se quitó de la pantalla, el dato sigue formando parte de la dirección y
+    // por lo tanto de su huella.
     expect(guardado.payload.p_address.locationConfirmedAddress)
-      .toBe('antartida argentina 1450 neuquen neuquen');
+      .toBe('antartida argentina 1450 neuquen capital neuquen');
 
     // Y el eslabón que la certificación anterior nunca probó: recargar. Si la
     // relectura descartara la confirmación, la persona volvería a quedar
@@ -323,12 +326,13 @@ test('el punto confirmado llega al pedido, al Panel y al Rider, y Maps abre por 
 
 // ── arnés ────────────────────────────────────────────────────────────────────
 
+// Calle y número es TODO lo que pide el formulario. La localidad y la provincia
+// las completa el área de operación, así que llenarlas acá probaría un
+// formulario que ya no existe.
 async function llenarDireccion(profile, { street, number }) {
   await expect(profile.locator('[data-profile-address-form]')).toBeVisible();
   await profile.locator('[name="profileAddressStreet"]').fill(street);
   await profile.locator('[name="profileAddressNumber"]').fill(number);
-  await profile.locator('[name="profileAddressCity"]').fill('Neuquén');
-  await profile.locator('[name="profileAddressProvince"]').fill('Neuquén');
 }
 
 function createRemoteProfile({ conDireccionConfirmada = false } = {}) {

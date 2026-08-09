@@ -18,7 +18,7 @@ import {
   DELIVERY_LOCATION_REQUIRED_MESSAGE,
   hasConfirmedDeliveryLocation,
 } from './core/delivery-location.js';
-import { BUSINESS_POINT } from './core/business-location.js';
+import { BUSINESS_POINT, OPERATING_AREA } from './core/business-location.js';
 import { nudgePoint, renderDeliveryLocationStep } from './delivery-location-step.js';
 import { createLocationPickerMap } from './map/location_picker_map.js';
 import {
@@ -361,15 +361,41 @@ async function requestLocation() {
   render();
 }
 
+// Ciudad, provincia y código postal dejaron de preguntarse en pantalla: La Taba
+// reparte en Neuquén Capital y eran dos campos obligatorios cuya única
+// respuesta posible ya la sabíamos. El dato NO desaparece —el pedido, el Panel,
+// el Rider y el payer de Mercado Pago lo siguen recibiendo—; lo que se quitó es
+// la pregunta. Se resuelve en este orden:
+//   1. el campo, si alguna vista todavía lo muestra;
+//   2. lo que la persona tiene escrito en este editor;
+//   3. lo que dice la dirección guardada que se está editando, para que una
+//      dirección vieja que diga otra localidad no se reescriba sola;
+//   4. el área de operación declarada en el contrato del negocio.
+// El código postal no tiene valor canónico: si nadie lo cargó queda vacío, que
+// es exactamente lo que era antes. Inventarle uno sería afirmar algo que no
+// sabemos, y la entrega se guía por el punto confirmado, no por el CP.
+function resolveAreaFields(form) {
+  const saved = findAddress(state.editingAddressId) || {};
+  const draft = state.addressDraft || {};
+  const pick = (fieldName, key, canonical) => {
+    const field = form?.elements?.[fieldName];
+    if (field) return field.value || '';
+    return draft[key] || saved[key] || canonical;
+  };
+  return {
+    city: pick('profileAddressCity', 'city', OPERATING_AREA.city),
+    province: pick('profileAddressProvince', 'province', OPERATING_AREA.province),
+    postalCode: pick('profileAddressPostalCode', 'postalCode', ''),
+  };
+}
+
 function currentAddressValues() {
   const form = profileContainer()?.querySelector('[data-profile-address-form]');
   if (!form) return state.addressDraft || {};
   return {
     street: form.elements?.profileAddressStreet?.value || '',
     streetNumber: form.elements?.profileAddressNumber?.value || '',
-    city: form.elements?.profileAddressCity?.value || '',
-    province: form.elements?.profileAddressProvince?.value || '',
-    postalCode: form.elements?.profileAddressPostalCode?.value || '',
+    ...resolveAreaFields(form),
   };
 }
 
@@ -433,9 +459,7 @@ async function saveAddress(allowDuplicate) {
   const written = {
     street: form.elements?.profileAddressStreet?.value || '',
     streetNumber: form.elements?.profileAddressNumber?.value || '',
-    city: form.elements?.profileAddressCity?.value || '',
-    province: form.elements?.profileAddressProvince?.value || '',
-    postalCode: form.elements?.profileAddressPostalCode?.value || '',
+    ...resolveAreaFields(form),
   };
   // Se revisa justo antes de guardar: si el texto cambió después de confirmar,
   // el pin ya no describe esta puerta y hay que reconfirmarlo.
@@ -452,11 +476,13 @@ async function saveAddress(allowDuplicate) {
     // había cuando se tocó «Confirmar ubicación».
     ...draftToAddressFields(state.locationDraft, written),
   });
+  // Sólo se exige lo que la pantalla pide. Ciudad y provincia salen del área de
+  // operación y no pueden faltar, así que pedirlas acá sería marcar un error
+  // sobre un campo que ya no existe: la persona vería «Ingresá la ciudad» sin
+  // ninguna ciudad para ingresar.
   const required = [
     ['profileAddressStreet', candidate.street, 'Ingresá la calle.'],
     ['profileAddressNumber', candidate.streetNumber, 'Ingresá el número.'],
-    ['profileAddressCity', candidate.city, 'Ingresá la ciudad.'],
-    ['profileAddressProvince', candidate.province, 'Ingresá la provincia.'],
   ];
   const invalid = required.find(([, value]) => !value);
   if (invalid) {
@@ -755,9 +781,7 @@ function captureEditorDraft() {
     streetNumber: form.elements?.profileAddressNumber?.value || '',
     floor: form.elements?.profileAddressFloor?.value || '',
     apartment: form.elements?.profileAddressApartment?.value || '',
-    city: form.elements?.profileAddressCity?.value || '',
-    province: form.elements?.profileAddressProvince?.value || '',
-    postalCode: form.elements?.profileAddressPostalCode?.value || '',
+    ...resolveAreaFields(form),
     reference: form.elements?.profileAddressReference?.value || '',
     isDefault: Boolean(form.elements?.profileAddressDefault?.checked),
   };
@@ -768,8 +792,10 @@ function renderAddressEditor() {
   const saved = findAddress(state.editingAddressId) || {};
   // El borrador manda sobre lo guardado: es lo que la persona tiene escrito.
   const address = state.addressDraft ? { ...saved, ...state.addressDraft } : saved;
-  const province = address.province || (getAppMode() === APP_MODE_DEMO ? 'Neuquén' : '');
-  const city = address.city || (getAppMode() === APP_MODE_DEMO ? 'Neuquén' : '');
+  // La localidad que se va a guardar, para decirla en vez de preguntarla. Una
+  // dirección vieja que traiga otra se muestra tal como está: el formulario
+  // informa lo que va a quedar guardado, no lo que nos gustaría que dijera.
+  const area = address.city || OPERATING_AREA.city;
   return `<form class="profile-address-editor" data-profile-address-form novalidate>
     <div class="profile-card-heading"><div><span class="profile-card-kicker">${address.id ? 'Editar' : 'Nueva dirección'}</span><h3>${address.id ? address.label : 'Datos de entrega'}</h3></div><button class="text-button" type="button" data-profile-action="cancel-address">Cerrar</button></div>
     <div class="profile-form-grid">
@@ -778,10 +804,8 @@ function renderAddressEditor() {
       <label><span>Número</span><input name="profileAddressNumber" maxlength="24" inputmode="text" required value="${escapeAttr(address.streetNumber || '')}" placeholder="1234, 1234 A o S/N" /></label>
       <label><span>Piso <em>opcional</em></span><input name="profileAddressFloor" maxlength="24" autocomplete="address-line2" value="${escapeAttr(address.floor || '')}" /></label>
       <label><span>Departamento <em>opcional</em></span><input name="profileAddressApartment" maxlength="24" autocomplete="address-line2" value="${escapeAttr(address.apartment || '')}" /></label>
-      <label><span>Ciudad</span><input name="profileAddressCity" maxlength="100" autocomplete="address-level2" required value="${escapeAttr(city)}" /></label>
-      <label><span>Provincia</span><input name="profileAddressProvince" maxlength="100" autocomplete="address-level1" required value="${escapeAttr(province)}" /></label>
-      <label><span>Código postal <em>opcional</em></span><input name="profileAddressPostalCode" maxlength="20" autocomplete="postal-code" value="${escapeAttr(address.postalCode || '')}" /></label>
       <label class="is-full"><span>Referencias <em>opcional</em></span><textarea name="profileAddressReference" maxlength="180" rows="3" placeholder="Ej. Portón negro, tocar timbre 2">${escapeHtml(address.reference || '')}</textarea></label>
+      <p class="profile-form-area is-full" data-profile-address-area>Guardamos la localidad como <strong>${escapeHtml(area)}</strong>. Lo que usa quien reparte es el punto que confirmás acá abajo.</p>
     </div>
     ${renderDeliveryLocationStep(state.locationDraft, {
     saving: state.saving,

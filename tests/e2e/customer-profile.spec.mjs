@@ -122,8 +122,10 @@ test('Perfil permite editar datos y direcciones propias sin overflow ni PII en c
   await profile.locator('[name="profileAddressLabel"]').selectOption('Otra');
   await profile.locator('[name="profileAddressStreet"]').fill('San Martín');
   await profile.locator('[name="profileAddressNumber"]').fill('S/N');
-  await profile.locator('[name="profileAddressCity"]').fill('Neuquén');
-  await profile.locator('[name="profileAddressProvince"]').fill('Neuquén');
+  // Ciudad y provincia ya no se preguntan: salen del área de operación. El
+  // formulario no puede volver a mostrarlas sin que esto falle.
+  await expect(profile.locator('[name="profileAddressCity"]')).toHaveCount(0);
+  await expect(profile.locator('[name="profileAddressProvince"]')).toHaveCount(0);
   await profile.locator('[name="profileAddressReference"]').fill('Puerta lateral');
   // Una dirección de entrega no se guarda sin punto confirmado.
   await confirmDeliveryLocationInProfile(page);
@@ -133,6 +135,10 @@ test('Perfil permite editar datos y direcciones propias sin overflow ni PII en c
   expect(addressSave.payload.p_address).not.toHaveProperty('customer_id');
   expect(addressSave.payload.p_address).not.toHaveProperty('user_id');
   expect(addressSave.payload.p_address.streetNumber).toBe('S/N');
+  // Se quitó la pregunta, no la columna: el backend sigue recibiendo localidad
+  // y provincia, completadas desde el área de operación.
+  expect(addressSave.payload.p_address.city).toBe('Neuquén Capital');
+  expect(addressSave.payload.p_address.province).toBe('Neuquén');
 
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });

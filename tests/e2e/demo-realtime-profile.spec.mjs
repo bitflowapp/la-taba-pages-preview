@@ -63,8 +63,6 @@ test('demo-realtime toma Perfil local al confirmar y sincroniza solo el pedido p
     await addressForm.locator('[name="profileAddressLabel"]').selectOption('Otra');
     await addressForm.locator('[name="profileAddressStreet"]').fill(CUSTOMER.street);
     await addressForm.locator('[name="profileAddressNumber"]').fill(CUSTOMER.streetNumber);
-    await addressForm.locator('[name="profileAddressCity"]').fill(CUSTOMER.city);
-    await addressForm.locator('[name="profileAddressProvince"]').fill('Neuquen');
     await addressForm.locator('[name="profileAddressDefault"]').check();
     // Una dirección de entrega no se guarda sin punto confirmado.
     await confirmDeliveryLocationInProfile(client);

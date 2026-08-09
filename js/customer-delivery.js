@@ -69,6 +69,38 @@ export async function refreshCustomerDeliveryCheckout() {
   return loadCustomerDeliveryProfile();
 }
 
+/**
+ * Dirección a la que iría el pedido AHORA: la elegida en el checkout o, si
+ * todavía no se eligió ninguna, la predeterminada del Perfil. Sólo se devuelve
+ * si tiene el punto confirmado: una dirección sin punto no es un destino al que
+ * podamos llevar nada, y el checkout tampoco la deja elegir.
+ *
+ * La expone el checkout porque es quien ya carga y reconcilia el listado. El
+ * chip «Enviar a» del encabezado la lee para dejar de contradecirlo: decía
+ * «Elegí tu dirección» teniendo al lado una dirección predeterminada con su
+ * punto confirmado, y en producción lo decía SIEMPRE, porque su única fuente
+ * era la copia local del perfil, que producción no usa por diseño.
+ */
+export function getActiveDeliveryAddress() {
+  const selected = findAddress(state.selectedAddressId) || defaultAddress();
+  if (!selected) return null;
+  const normalized = normalizeCustomerAddress(selected);
+  return hasConfirmedDeliveryLocation(normalized) ? normalized : null;
+}
+
+// Se avisa sólo cuando el destino CAMBIA. `render()` corre en cada tecla del
+// checkout y un evento por pulsación volvería a pintar la home sin motivo.
+let notifiedDeliveryAddressKey = null;
+function notifyDeliveryAddressChanged() {
+  const address = getActiveDeliveryAddress();
+  const key = address ? `${address.id}|${address.formattedAddress}` : '';
+  if (key === notifiedDeliveryAddressKey) return;
+  notifiedDeliveryAddressKey = key;
+  try {
+    window.dispatchEvent(new CustomEvent('taba:delivery-address-changed', { detail: { address } }));
+  } catch (_) { /* sin CustomEvent el chip se queda como estaba: no rompe el checkout */ }
+}
+
 // Confirmar un pedido nunca escribe el Perfil. La administración de datos vive
 // exclusivamente en Perfil; esta función se conserva para no romper el contrato
 // de llamada, pero es deliberadamente inerte.
@@ -98,6 +130,7 @@ export function resetCustomerDeliveryForTests() {
     suggestionShown: false,
   });
   locationService = null;
+  notifiedDeliveryAddressKey = null;
 }
 
 async function loadCustomerDeliveryProfile() {
@@ -648,6 +681,9 @@ function clearVisibleAddressFields() {
 // crea, edita ni elimina datos del cliente.
 function render(message = '') {
   syncAddressContractToForm();
+  // Antes del contenedor: el destino cambió aunque esta vista no esté montada,
+  // y el encabezado sí lo está.
+  notifyDeliveryAddressChanged();
   const container = document.querySelector('[data-customer-addresses]');
   if (!container) return;
   container.hidden = false;

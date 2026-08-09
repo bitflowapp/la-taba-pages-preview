@@ -33,6 +33,25 @@ export const BUSINESS_LOCATION = Object.freeze({
   accuracy_meters: 20,
 });
 
+// ÁREA DE OPERACIÓN. La Taba 2 reparte en Neuquén Capital y sólo ahí, así que
+// la ciudad y la provincia no son un dato que la persona tenga que aportar:
+// son una constante del negocio. Dejaron de pedirse en pantalla —eran dos
+// campos obligatorios cuya única respuesta posible ya la sabíamos— y se
+// completan desde acá al guardar una dirección nueva.
+//
+// El campo NO desaparece del dato: el pedido, el Panel, el Rider y el payer de
+// Mercado Pago siguen recibiendo ciudad y provincia como siempre. Lo que se
+// quitó es la pregunta, no la columna.
+//
+// `city` dice «Neuquén Capital» y no «Neuquén» a propósito: es el nombre con el
+// que ya venían las direcciones guardadas y el de la zona de reparto declarada
+// en `defaultDeliveryZones`, así que la etiqueta que ve el Rider —«Mendoza 827,
+// Neuquén Capital»— no cambia de forma.
+export const OPERATING_AREA = Object.freeze({
+  city: 'Neuquén Capital',
+  province: 'Neuquén',
+});
+
 // La forma { lat, lng } que consume el código de mapas del storefront.
 export const BUSINESS_POINT = Object.freeze({
   name: `${BUSINESS_LOCATION.name} · Neuquén Capital`,

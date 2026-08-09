@@ -583,6 +583,28 @@
   left: 10px;
 }
 
+/* Marca de alcohol. Abajo a la izquierda: arriba a la izquierda vive el estado
+   de stock y arriba a la derecha, favoritos. No recibe eventos —es rótulo, no
+   control— así que no le roba el toque a la foto. */
+.product-age-tag {
+  position: absolute;
+  z-index: 2;
+  bottom: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid rgb(201 149 62 / 55%);
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+  color: #7c4a00;
+  font-size: 11px;
+  font-weight: 900;
+  pointer-events: none;
+}
+
 .stock-pill {
   display: inline-flex;
   align-items: center;

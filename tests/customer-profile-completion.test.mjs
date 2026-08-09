@@ -71,8 +71,14 @@ test('la pantalla pide sólo datos de entrega y Perfil es la única fuente edita
   assert.match(profileView, /Teléfono/);
   assert.match(profileView, /Calle/);
   assert.match(profileView, /Número/);
-  assert.match(profileView, /Provincia/);
   assert.match(profileView, /Referencias/);
+  // Ciudad y provincia dejaron de preguntarse: La Taba reparte en Neuquén
+  // Capital, así que eran dos campos obligatorios cuya única respuesta posible
+  // ya sabíamos. Se completan desde `OPERATING_AREA` al guardar. Que el
+  // formulario vuelva a pedirlas es lo que este test tiene que frenar.
+  assert.doesNotMatch(profileView, /name="profileAddressCity"/);
+  assert.doesNotMatch(profileView, /name="profileAddressProvince"/);
+  assert.match(profileView, /OPERATING_AREA/);
   assert.doesNotMatch(
     `${index}\n${profileView}`,
     /name="[^"]*(?:dni|documento|birth|nacimiento|genero|género|estadoCivil|tarjeta|biometric)[^"]*"/i,

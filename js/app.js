@@ -937,6 +937,10 @@ function bindEvents() {
     const returnTo = normalizeView(requestedReturn) || 'cart';
     setActiveView(returnTo);
   });
+  // El destino de la entrega lo resuelve el checkout de forma asíncrona. El chip
+  // «Enviar a» del encabezado se entera acá, para no quedar diciendo «Elegí tu
+  // dirección» sobre una dirección que el checkout ya eligió.
+  window.addEventListener('taba:delivery-address-changed', () => renderCustomerHome());
   window.addEventListener('pagehide', () => {
     // Al ir a segundo plano Chrome puede descartar la pestaña del rider. Se
     // corta el watcher por privacidad, pero se conserva sólo el último fix

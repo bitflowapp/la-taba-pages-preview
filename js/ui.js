@@ -6,6 +6,7 @@ import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/c
 import { COMBO_MANIFEST } from './combos-data.js';
 import { purchasableCombos } from './core/combos.js';
 import { getCustomerOrderHistory, getLatestCustomerOrder } from './core/customer-history.js';
+import { getActiveDeliveryAddress } from './customer-delivery.js';
 import {
   getCustomerProfile,
   getRememberedCheckoutValues,
@@ -1608,13 +1609,27 @@ function renderCategories() {
     catalogCategories[0],
     { id: 'favorites', name: 'Favoritos' },
     ...catalogCategories.slice(1),
-  ];
-  const homeList = catalogCategories.filter((category) => category.id !== 'all');
-  const catalogTopIds = ['all', 'favorites', 'gaseosas', 'mixers', 'energizantes', 'cervezas'];
-  const catalogTopList = catalogTopIds
+  ].filter(Boolean);
+  // El orden fijo abría con Gaseosas y Mixers, que hoy no publican un solo
+  // precio: los dos primeros toques del catálogo caían en una pared de «Precio
+  // próximamente». Ahora manda el dato. Primero las categorías donde HAY algo
+  // para comprar hoy —en el mismo orden de preferencia de siempre— y detrás las
+  // que todavía esperan precio. Ninguna se esconde: son productos reales que el
+  // local va a vender, y siguen a un toque. Cuando el negocio cargue precios,
+  // el orden se corrige solo.
+  const purchasable = purchasableCategoryIds(state);
+  const pinnedIds = ['all', 'favorites'];
+  const pinnedList = pinnedIds
     .map((id) => fullList.find((category) => category.id === id))
     .filter(Boolean);
-  const remainingCatalogList = fullList.filter((category) => !catalogTopIds.includes(category.id));
+  const selectable = fullList.filter((category) => !pinnedIds.includes(category.id));
+  const byAvailability = [
+    ...selectable.filter((category) => purchasable.has(category.id)),
+    ...selectable.filter((category) => !purchasable.has(category.id)),
+  ];
+  const VISIBLE_CATALOG_CHIPS = 4;
+  const catalogTopList = [...pinnedList, ...byAvailability.slice(0, VISIBLE_CATALOG_CHIPS)];
+  const remainingCatalogList = byAvailability.slice(VISIBLE_CATALOG_CHIPS);
 
   const markupFor = (list) => list.map((category) => `
     <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}" aria-pressed="${activeCategory === category.id}">
@@ -1630,10 +1645,13 @@ function renderCategories() {
     </button>`;
 
   strips.forEach((strip) => {
-    const isHome = strip.dataset.categoryStrip === 'home';
-    strip.innerHTML = isHome
-      ? markupFor(homeList)
-      : `${markupFor(catalogTopList)}${remainingCatalogList.length ? moreButton : ''}${markupFor(remainingCatalogList)}`;
+    // La fila de la home la escribe `renderHomeCategories`, que muestra sólo
+    // las categorías con algo comprable. Las dos funciones apuntaban al MISMO
+    // nodo y ganaba la última en correr: pintar acá una lista distinta era
+    // trabajo tirado, y bastaba invertir el orden de las llamadas para que la
+    // home volviera a ofrecer categorías sin un solo precio publicado.
+    if (strip.dataset.categoryStrip === 'home') return;
+    strip.innerHTML = `${markupFor(catalogTopList)}${remainingCatalogList.length ? moreButton : ''}${markupFor(remainingCatalogList)}`;
     strip.querySelector('[data-category-more]')?.addEventListener('click', () => {
       strip.scrollBy({ left: Math.max(220, Math.round(strip.clientWidth * 0.85)), behavior: 'smooth' });
     });
@@ -1773,7 +1791,12 @@ function normalizeSearchText(value) {
   return millilitres.replace(/(\d+)\s*ml\b/g, '$1ml').replace(/\s+/g, ' ').trim();
 }
 
+// Un producto sin precio publicado no se puede comprar, así que ningún otro
+// atributo puede levantarlo por encima de algo que sí está a la venta. Devolver
+// un puntaje negativo lo manda al final de cualquier orden, sin sacarlo del
+// catálogo: sigue visible y buscable, que es la decisión de siempre.
 function recommendedScore(product) {
+  if (product.pricePending) return -1;
   let score = 0;
   if (product.available && product.stock > 0) score += 4;
   if (product.featured) score += 2;
@@ -1783,6 +1806,7 @@ function recommendedScore(product) {
 }
 
 function popularScore(product) {
+  if (product.pricePending) return -1;
   let score = 0;
   if (product.popular) score += 3;
   if (product.available && product.stock > 0) score += 2;
@@ -1790,9 +1814,30 @@ function popularScore(product) {
   return score;
 }
 
+// Un precio PENDIENTE no es un precio bajo. `a.price - b.price` sobre un
+// producto sin precio compara contra 0 —`Number(null)` vale 0— y eso ponía a
+// los 69 productos que todavía esperan precio ARRIBA de todo: elegir «Precio:
+// menor a mayor» tapaba el catálogo comprable con una pared de «Precio
+// próximamente». Ahora van al final. Los empates devuelven 0 a propósito: el
+// orden de `sort` es estable, así que conservan el orden comercial con el que
+// venía el catálogo en vez de reordenarse por un criterio inventado acá.
+function comparePricedAscending(left, right) {
+  const leftPrice = pricedAmount(left);
+  const rightPrice = pricedAmount(right);
+  if ((leftPrice == null) !== (rightPrice == null)) return leftPrice == null ? 1 : -1;
+  if (leftPrice == null) return 0;
+  return leftPrice - rightPrice;
+}
+
+function pricedAmount(product) {
+  if (product?.pricePending) return null;
+  const amount = Number(product?.price);
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
 function sortProducts(list, sortBy) {
   const arr = [...list];
-  if (sortBy === 'price_asc') return arr.sort((a, b) => a.price - b.price);
+  if (sortBy === 'price_asc') return arr.sort(comparePricedAscending);
   if (sortBy === 'popular') return arr.sort((a, b) => popularScore(b) - popularScore(a));
   return arr.sort((a, b) => recommendedScore(b) - recommendedScore(a));
 }
@@ -1988,6 +2033,7 @@ function renderProducts() {
             ${productThumb(product, 'grid')}
             <span class="product-stock-tag">${stockPill(product)}</span>
           </button>
+          ${ageTag(product)}
           <button class="product-favorite ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos" aria-pressed="${favorite}">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
           </button>
@@ -2009,6 +2055,28 @@ function renderProducts() {
 
 // Pill de disponibilidad: sólo aparece cuando hay algo que avisar (agotado,
 // pausado, últimas unidades). Lo normal —estar disponible— no se etiqueta.
+/**
+ * Marca de producto con alcohol en la tarjeta.
+ *
+ * Antes el alcohol sólo se nombraba dentro del detalle del producto: en la
+ * góndola no había forma de distinguir una cerveza de una gaseosa hasta abrirla,
+ * y el +18 aparecía recién en el checkout, cuando el carrito ya estaba armado.
+ *
+ * Es deliberadamente chica. En una tienda de bebidas casi la mitad del catálogo
+ * lleva alcohol, así que una cinta grande sería ruido en media góndola: dice lo
+ * que tiene que decir en dorado —el mismo lenguaje que el chip de los combos— y
+ * no compite con el precio ni con el botón de agregar.
+ *
+ * No es un control de edad: la restricción la impone el pedido, y el servidor
+ * detrás. Esto es señalización.
+ */
+function ageTag(product) {
+  if (!product?.alcoholic) return '';
+  const age = Number(product.minimumAge) > 0 ? Math.floor(Number(product.minimumAge)) : 18;
+  return `<span class="product-age-tag"><span aria-hidden="true">+${age}</span>`
+    + `<span class="sr-only">Venta exclusiva a mayores de ${age} años</span></span>`;
+}
+
 export function stockPill(product) {
   if (product.pricePending) return '';
   if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
@@ -2067,24 +2135,49 @@ export function renderCustomerHome() {
   renderCustomerHistory();
 }
 
-// Chip "Enviar a" del home (referencia visual de la maqueta). Es honesto:
-// muestra la dirección recordada del cliente si existe; si no, invita a
-// cargarla al confirmar. Nunca inventa una dirección.
+// Chip "Enviar a" del encabezado. Nunca inventa una dirección: nombra la que el
+// checkout va a usar de verdad.
+//
+// Antes su única fuente era la copia local del perfil (`rememberCustomer`), y
+// eso lo dejaba mintiendo en los dos modos que importan: en demo decía «Elegí tu
+// dirección» teniendo al lado una dirección predeterminada con el punto
+// confirmado, y en producción lo decía SIEMPRE, porque esa copia local no
+// existe ahí por diseño. El encabezado es la señal de entrega más visible del
+// storefront; contradecir al checkout es exactamente lo que no puede hacer.
+//
+// Ahora pregunta primero por la dirección activa del checkout —elegida o
+// predeterminada, y sólo si tiene punto confirmado— y deja la copia local como
+// respaldo para el modo demo, donde puede no haber repositorio de perfiles.
 function renderHomeAddressChip() {
   const label = $('[data-home-address-label]');
   if (!label) return;
-  const remembered = getRememberedCheckoutValues();
-  const street = remembered?.customerStreetAddress?.trim();
   const control = label.closest('[data-home-address]');
-  if (street) {
-    const neighborhood = remembered?.customerNeighborhood?.trim();
-    label.textContent = neighborhood ? `${street} · ${neighborhood}` : street;
+  const text = activeDeliveryAddressLine() || rememberedAddressLine();
+  if (text) {
+    label.textContent = text;
     control?.classList.remove('is-missing');
   } else {
     // Sin dirección el valor pasa a tono de advertencia y nombra la acción.
     label.textContent = 'Elegí tu dirección';
     control?.classList.add('is-missing');
   }
+}
+
+function activeDeliveryAddressLine() {
+  const address = getActiveDeliveryAddress();
+  if (!address) return '';
+  // Calle y número alcanzan para reconocerla, y entran en el chip. La localidad
+  // es la misma para todas, así que ocuparía lugar sin distinguir nada.
+  const streetLine = [address.street, address.streetNumber].filter(Boolean).join(' ').trim();
+  return streetLine || address.formattedAddress || '';
+}
+
+function rememberedAddressLine() {
+  const remembered = getRememberedCheckoutValues();
+  const street = remembered?.customerStreetAddress?.trim();
+  if (!street) return '';
+  const neighborhood = remembered?.customerNeighborhood?.trim();
+  return neighborhood ? `${street} · ${neighborhood}` : street;
 }
 
 // Banner de promo: sólo representa una entidad activa, vigente y aprobada por

@@ -9,10 +9,12 @@ despliega el día que haya ventana exclusiva.
 
 ```
 rama      release/taba2-commercial-candidate
-HEAD      90a28a1
+HEAD      7406de3  (90a28a1 + el verificador de invariantes y este handoff)
 base      66ba221  (test/taba2-first-human-physical-order)
-worktree  D:\1212\worktrees\taba2-commercial-candidate
 ```
+
+El contenido de producto termina en `90a28a1`; `7406de3` sólo agrega
+`scripts/verify-commercial-candidate.mjs` y este documento.
 
 **No hubo merge.** Las tres declaraciones que componen esta candidata se
 produjeron secuencialmente sobre la misma rama, así que ya estaban integradas
@@ -150,11 +152,11 @@ se modificó para obtener verde: el verde vino solo.
 Precondición: `taba2-staging-mutation.lock` libre y tomado por quien despliega.
 
 ```bash
-# 0 · tomar el lock y confirmar que nadie más está mutando staging
-#     (editar D:\1212\_claude-locks\taba2-staging-mutation.lock)
+# 0 · tomar taba2-staging-mutation.lock en el directorio de locks compartido y
+#     confirmar que ninguna otra sesión está mutando staging
 
-cd D:\1212\worktrees\taba2-commercial-candidate
-$env:TEMP='D:\1212\_claude-tmp\candidate'; $env:TMP=$env:TEMP
+cd <worktree de la candidata>
+$env:TEMP='<temp propio, fuera del disco personal>'; $env:TMP=$env:TEMP
 
 # 1 · repetir el gate sobre el árbol exacto que se va a desplegar
 npm ci

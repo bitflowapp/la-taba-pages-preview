@@ -22,8 +22,10 @@ test('un nombre bueno del backend se respeta tal cual', () => {
 });
 
 test('si el id está en el diccionario que la app ya conoce, gana ese nombre', () => {
-  // `energizantes` sí existe en el catálogo de categorías de la aplicación.
+  // Y ahí sí aparece la ortografía correcta, con acento, porque el nombre lo
+  // pone el diccionario y no una transformación del slug.
   assert.equal(nombreVisibleDeCategoria('energizantes', 'energizantes'), 'Energizantes');
+  assert.equal(nombreVisibleDeCategoria('cervezas', 'cervezas'), 'Cervezas');
 });
 
 test('los guiones del id se leen como palabras, no como guiones', () => {
@@ -32,11 +34,12 @@ test('los guiones del id se leen como palabras, no como guiones', () => {
   assert.match(visible, /^Aguas saborizadas$/);
 });
 
-test('no se inventa ortografía: sin acento en el dato, sin acento en pantalla', () => {
-  // «energeticas» no está en el diccionario —la app conoce «energizantes»—, así
-  // que se capitaliza y nada más. Ponerle el acento sería escribir por el
-  // negocio, y el negocio es el que decide cómo se llama su categoría.
-  assert.equal(nombreVisibleDeCategoria('energeticas', 'energeticas'), 'Energeticas');
+test('con un id que nadie conoce, se capitaliza y nada más: no se inventa ortografía', () => {
+  // Una categoría que el negocio invente mañana y que no esté en ningún
+  // diccionario. Se la deja legible, pero no se le agregan acentos ni se le
+  // cambian palabras: cómo se llama lo decide el negocio, no el storefront.
+  assert.equal(nombreVisibleDeCategoria('sidras-artesanales', 'sidras-artesanales'), 'Sidras artesanales');
+  assert.equal(nombreVisibleDeCategoria('bebida-rara', 'bebida-rara'), 'Bebida rara');
 });
 
 test('un nombre vacío tampoco deja el chip mudo', () => {

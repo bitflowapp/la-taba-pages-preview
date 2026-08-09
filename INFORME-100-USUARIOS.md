@@ -126,10 +126,12 @@ con `category_name` igual al id, así que la primera pantalla decía
 El dato lo arregla el negocio, pero la góndola no puede mostrar un slug crudo
 mientras tanto: el día que se carguen categorías nuevas vuelve a pasar, y es lo
 primero que ve una persona. Ahora, si el nombre viene igual al id, se resuelve
-contra el diccionario de categorías que la aplicación ya tiene; si el id no está
-ahí, se separan los guiones y se capitaliza. **No se inventa ortografía**: sin
-acento en el dato, sin acento en pantalla, porque cómo se llama una categoría lo
-decide el negocio.
+contra el diccionario de categorías que la aplicación ya tiene —y ahí
+«energeticas» resulta ser una categoría conocida, así que el chip pasa a leer
+**«Energéticas»**, bien escrita—. Si el id no está en el diccionario, se separan
+los guiones y se capitaliza, y nada más: «sidras-artesanales» queda «Sidras
+artesanales». **No se inventa ortografía**, porque cómo se llama una categoría
+lo decide el negocio y no el storefront.
 
 **El rechazo por agotado invitaba a reintentar para siempre.** Cuando el stock
 llega a cero, el contrato comercial apaga la disponibilidad y la RPC responde

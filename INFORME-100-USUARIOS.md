@@ -76,7 +76,8 @@ Eso no es software y no se toca acá: está en `ONBOARDING-CATALOGO.md`.
    entero. `authorityCategories` pesa 0,8 KB; `pendingProducts`, 111,4 KB.
 3. **El chip «Enviar a» no se enteraba de las direcciones** (corregido, §5).
 4. **El rechazo por agotado no se entendía** (corregido, §5).
-5. El catálogo sin precios ni stock — de Walter, §8.
+5. **Un chip de categoría mostraba un slug** (corregido, §5).
+6. El catálogo sin precios ni stock — de Walter, §8.
 
 ---
 
@@ -90,6 +91,7 @@ Eso no es software y no se toca acá: está en `ONBOARDING-CATALOGO.md`.
 | `js/ui.js` | que un chip de categoría nunca muestre un slug |
 | `scripts/run-100-user-load-drill.mjs` | la prueba de 100 sesiones, que no existía |
 | `tests/order-error-messages.test.mjs` | red del mensaje de rechazo |
+| `tests/category-labels.test.mjs` | red del nombre de categoría |
 
 ---
 

@@ -195,6 +195,36 @@ si el frente nuevo llegara antes, no pasaría nada malo —falla cerrado en los 
 sentidos— pero la constancia de remediación es la única foto de qué había mal
 antes de arreglarlo, y conviene leerla con la góndola vieja todavía en pantalla.
 
+### Qué esperar de la remediación, y cuándo frenar
+
+Lo más probable es que **no apague nada**. `price_status` nació en
+`20260802090000` con `default 'confirmed'` y con un backfill que puso
+`'confirmed'` en todas las filas que ya existían, así que un producto sólo queda
+en `'pending'` si alguien lo puso ahí a propósito. La condición que remedia pide
+`available = true` junto con precio no confirmado o precio en cero: es un estado
+que hay que provocar.
+
+Aun así hay que medirlo **antes** de aplicar, no después, porque la migración
+remedia y endurece en la misma transacción. La misma condición, en lectura:
+
+```sql
+select count(*) from public.products
+ where available and (price_status is distinct from 'confirmed' or coalesce(price, 0) <= 0);
+```
+
+Y sobre todo, cuántos quedarían comprables **después**:
+
+```sql
+select count(*) from public.products
+ where available and is_active and is_verified
+   and price_status = 'confirmed' and coalesce(price, 0) > 0
+   and stock is not null and stock > 0;
+```
+
+Si ese segundo número da cero, la góndola queda vacía: **no desplegar**. Es la
+única condición de freno de este runbook, y existe porque el entorno de staging
+puede tener a la vez una prueba humana pendiente corriendo sobre la misma base.
+
 ### Rollback
 
 Las tres migraciones son aditivas y no borran datos. Para volver atrás alcanza

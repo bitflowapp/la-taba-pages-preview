@@ -107,7 +107,18 @@ begin
         and pi.provider_payment_id is null
         and pi.internal_status in ('expired','redirected','pending','in_process','preference_created')
         and cs.expires_at < clock_timestamp() - interval '20 minutes'
-        and cs.created_at > clock_timestamp() - interval '7 days'
+        -- La misma ventana que el barrido de 20260809180000, a proposito: si la
+        -- alerta abarcara mas que la sonda, habria checkouts que gritan para
+        -- siempre porque nadie los va a consultar nunca.
+        and cs.created_at > clock_timestamp() - interval '48 hours'
+        -- Y si el proveedor YA dijo que no hay pago, no hay nada que ignorar.
+        -- Esto es lo que hace que la alerta se apague sola a medida que el
+        -- barrido avanza, en vez de acumularse.
+        and not exists (
+          select 1 from public.payment_events pe
+           where pe.payment_intent_id = pi.id
+             and pe.event_type = 'payment.provider_probe_empty'
+        )
 
       union all
 

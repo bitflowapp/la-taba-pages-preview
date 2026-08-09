@@ -516,6 +516,36 @@ begin
     (select severity from public.operational_alerts a
       where a.business_id = f.business_id and a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED') = 'CRITICAL',
     'y lo hace como critico');
+
+  -- Cuando el barrido pregunta y el proveedor dice que no hay pago, la duda se
+  -- termina y la alerta tiene que apagarse sola. Sin esto se acumularian: la
+  -- medicion de staging encontro 47 checkouts en esa situacion de una sola vez.
+  perform public.record_provider_probe_empty(s.intent_id);
+  perform public.refresh_operational_alerts(f.business_id);
+  select count(*)::integer into n from public.operational_alerts a
+   where a.business_id = f.business_id and a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.status = 'open';
+  perform pg_temp.ok(n = 0, 'contestada por el proveedor, la alerta se apaga sola', 'abiertas=' || n);
+
+  -- Y un checkout mas viejo que la ventana de la sonda no puede gritar: nadie
+  -- lo va a consultar nunca, asi que seria ruido permanente.
+  declare v_viejo record; c2 uuid; s2 record;
+  begin
+    c2 := pg_temp.nuevo_usuario('p0-viejo');
+    select * into s2 from pg_temp.hasta_preferencia(f.business_id, f.product_id, c2, 'p0vjo0001', 1);
+    update public.checkout_sessions set status = 'redirected' where id = s2.session_id;
+    perform pg_temp.envejecer(s2.session_id, interval '5 days', interval '5 days' - interval '15 minutes');
+    perform public.sweep_expired_checkout_sessions();
+    perform public.refresh_operational_alerts(f.business_id);
+    select count(*)::integer into n from public.operational_alerts a
+     where a.business_id = f.business_id and a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.status = 'open';
+    perform pg_temp.ok(n = 0, 'un checkout viejo fuera de la ventana no genera ruido', 'abiertas=' || n);
+    -- El barrido es global, asi que se comprueba sobre ESTA sesion: otras
+    -- sesiones del drill si son consultables y contarlas seria medir otra cosa.
+    perform public.enqueue_checkout_provider_probes(200);
+    select count(*)::integer into n from public.payment_outbox po
+     where po.payment_intent_id = s2.intent_id and po.topic = 'payment_reconcile';
+    perform pg_temp.ok(n = 0, 'y tampoco se lo consulta: las dos ventanas coinciden', 'sondas=' || n);
+  end;
 end $$;
 
 -- ============================================================

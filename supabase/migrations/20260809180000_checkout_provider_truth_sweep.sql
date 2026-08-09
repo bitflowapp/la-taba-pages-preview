@@ -85,7 +85,10 @@ begin
          'completed', 'refunded', 'partially_refunded', 'charged_back',
          'security_review_required'
        )
-       and cs.created_at > clock_timestamp() - interval '24 hours'
+       -- 48 horas, igual que la alerta CHECKOUT_PROVIDER_UNVERIFIED. Las dos
+       -- ventanas tienen que coincidir: si la alerta abarcara mas que la sonda,
+       -- habria checkouts marcados como «no sabemos» que nadie va a consultar.
+       and cs.created_at > clock_timestamp() - interval '48 hours'
        and cs.created_at < clock_timestamp() - interval '90 seconds'
        and not exists (
          select 1 from public.payment_outbox po

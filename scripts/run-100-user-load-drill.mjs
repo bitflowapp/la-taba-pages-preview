@@ -41,8 +41,7 @@ const SESIONES = Number(process.env.TABA_LOAD_SESSIONS || 100);
 const CONCURRENCIA = Number(process.env.TABA_LOAD_CONCURRENCY || 40);
 const STOCK_ESCASO = Number(process.env.TABA_LOAD_STOCK || 40);
 
-const RECONCILIATION_REF = process.env.TABA_RECONCILIATION_REF || 'release/taba2-pilot-rc2';
-const RECONCILIATION_FILE = '20260807155000_rider_map_location_contract_reconciliation.sql';
+const PAGOS = Number(process.env.TABA_LOAD_PAYMENTS || 60);
 
 const checks = [];
 const check = (name, ok, detail = '') => {
@@ -165,17 +164,12 @@ psql(`
 `);
 check('esquemas de plataforma copiados (lectura del stack ajeno)', true);
 
+// El contrato del mapa del Rider (20260807155000) se pedía prestado a otra rama
+// porque no existía acá y sin él la cadena aborta. Ya está en el árbol, así que
+// el simulacro dejó de depender de que esa rama exista.
 const dir = path.join(ROOT, 'supabase', 'migrations');
 const archivos = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
-const prestada = execFileSync('git', ['show', `${RECONCILIATION_REF}:supabase/migrations/${RECONCILIATION_FILE}`],
-  { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-const cadena = [];
-for (const f of archivos) {
-  if (f > RECONCILIATION_FILE && !cadena.some((m) => m.nombre === RECONCILIATION_FILE)) {
-    cadena.push({ nombre: RECONCILIATION_FILE, sql: prestada });
-  }
-  cadena.push({ nombre: f, sql: fs.readFileSync(path.join(dir, f), 'utf8') });
-}
+const cadena = archivos.map((f) => ({ nombre: f, sql: fs.readFileSync(path.join(dir, f), 'utf8') }));
 for (const m of cadena) {
   const r = psql(m.sql, { expectFailure: true });
   if (r.status !== 0 && !/already exists|does not exist/i.test(r.stderr)) {
@@ -356,6 +350,164 @@ console.log(`   latencia p50 ${pct(latC, 50).toFixed(0)} ms · p95 ${pct(latC, 9
 check('C · todas las sesiones terminaron sin error', okC === SESIONES, `${okC}/${SESIONES}`);
 check('C · un pedido por sesión, sin duplicados', pedidosC === SESIONES, `${pedidosC} pedidos`);
 
+// ── D · el camino del pago, en paralelo y con avisos repetidos ──────────────
+// A/B/C miden la RPC de compra directa. El circuito real de un cliente que paga
+// con Mercado Pago es otro: reserva, preferencia, verificación del pago y
+// finalización. Es donde vive el exactly-once del dinero.
+psql(`
+  insert into public.business_payment_settings
+    (business_id, enabled, environment, checkout_mode, currency, reserve_stock,
+     collector_id, application_id, configured_at, verified_at)
+  values ('${BUSINESS_ID}', true, 'test', 'checkout_pro', 'ARS', true,
+     'collector-carga', 'app-carga', now(), now())
+  on conflict (business_id, provider) do update set enabled = true;
+  -- El límite antiabuso de checkouts por persona es correcto en producción y
+  -- acá mediría otra cosa: cada sesión del simulacro usa un cliente distinto.
+  update public.businesses set order_rate_limit_per_10_minutes = null where id = '${BUSINESS_ID}';
+`);
+
+/** Un cliente completo: reserva, va al proveedor, paga y su pedido se materializa. */
+const pagar = ({ cliente, rid, productId, cantidad = 1 }) => `
+do $carga$
+declare
+  v_customer uuid := ('10000000-0000-4000-8000-' || lpad('${cliente}', 12, '0'))::uuid;
+  v_session uuid; v_prepare jsonb; v_intent uuid; v_res jsonb;
+begin
+  v_session := (public.create_checkout_session(v_customer, jsonb_build_object(
+    'business_id', '${BUSINESS_ID}'::uuid, 'client_request_id', '${rid}',
+    'items', jsonb_build_array(jsonb_build_object('product_id', '${productId}'::uuid, 'quantity', ${cantidad})),
+    'fulfillment_type', 'pickup',
+    'contact', jsonb_build_object('name', 'Carga ${cliente}', 'phone', '5492990000000'),
+    'address', '{}'::jsonb, 'age_confirmed', false, 'payment_method', 'mercadopago'
+  )) ->> 'checkout_session_id')::uuid;
+
+  -- Si el gemelo de este mismo envío ya lo finalizó, no hay nada que hacer.
+  if exists (select 1 from public.checkout_sessions s
+              where s.id = v_session and s.completed_order_id is not null) then
+    return;
+  end if;
+
+  select id into v_intent from public.payment_intents where checkout_session_id = v_session;
+  if v_intent is null then
+    v_prepare := public.prepare_mercadopago_preference(v_session, v_customer, false);
+    perform public.record_mercadopago_preference_created(
+      (v_prepare ->> 'payment_attempt_id')::uuid,
+      'PREF-' || right(replace(v_session::text, '-', ''), 16),
+      'https://www.mercadopago.com/r/${rid}', 'https://sandbox.mercadopago.com/r/${rid}',
+      encode(gen_random_bytes(32), 'hex'), 'req-' || right(replace(v_session::text, '-', ''), 12)
+    );
+    select id into v_intent from public.payment_intents where checkout_session_id = v_session;
+  end if;
+
+  v_res := public.record_mercadopago_payment_snapshot(v_intent, (
+    select jsonb_build_object(
+      'provider_payment_id', 'PAY-' || right(replace(v_session::text, '-', ''), 12),
+      'external_reference', 'taba2:checkout:' || v_session::text,
+      'preference_id', pi.preference_id,
+      'merchant_order_id', 'MO-' || right(replace(v_session::text, '-', ''), 8),
+      'collector_id', 'collector-carga', 'currency', 'ARS',
+      'transaction_amount', cs.total::text, 'status', 'approved',
+      'status_detail', 'accredited', 'payment_method', 'visa', 'live_mode', false,
+      'provider_occurred_at', clock_timestamp()::text, 'refunded_amount', '0.00',
+      'payer_email_hash', encode(gen_random_bytes(32), 'hex'),
+      'raw_response_hash', encode(gen_random_bytes(32), 'hex'))
+    from public.payment_intents pi join public.checkout_sessions cs on cs.id = pi.checkout_session_id
+    where pi.id = v_intent), 'webhook', null);
+
+  if v_res ->> 'finalize_required' = 'true' then
+    perform public.finalize_paid_checkout_session(v_session);
+  end if;
+end
+$carga$;`;
+
+console.log(`\n── D · ${PAGOS} pagos concurrentes, cada aviso entregado DOS veces ──`);
+const stockPagoAntes = Number(psql(`select stock from public.products where sku='${CATALOGO[2].sku}';`).stdout);
+const tareasD = [];
+for (let i = 0; i < PAGOS; i += 1) {
+  const sql = pagar({ cliente: i + 1, rid: `carga-d-${String(i + 1).padStart(4, '0')}`, productId: ids[CATALOGO[2].sku] });
+  tareasD.push(() => psqlAsync(sql), () => psqlAsync(sql));
+}
+const inicioD = Date.now();
+const resD = await enOlas(tareasD, CONCURRENCIA);
+const duracionD = (Date.now() - inicioD) / 1000;
+const latD = resD.filter((r) => r.status === 0).map((r) => r.ms);
+const pedidosD = Number(psql(`select count(*) from public.orders o
+  join public.checkout_sessions cs on cs.completed_order_id = o.id
+  where cs.client_request_id like 'carga-d-%';`).stdout);
+const sesionesD = Number(psql(`select count(*) from public.checkout_sessions where client_request_id like 'carga-d-%';`).stdout);
+const stockPagoDespues = Number(psql(`select stock from public.products where sku='${CATALOGO[2].sku}';`).stdout);
+const reservasVivasD = Number(psql(`select count(*) from public.inventory_reservations r
+  join public.checkout_sessions cs on cs.id = r.checkout_session_id
+  where cs.client_request_id like 'carga-d-%' and r.status = 'active';`).stdout);
+console.log(`   ${resD.length} envíos (${PAGOS} × 2) · ${duracionD.toFixed(1)} s`);
+console.log(`   sesiones ${sesionesD} · pedidos ${pedidosD} · stock ${stockPagoAntes} → ${stockPagoDespues}`);
+console.log(`   latencia p50 ${pct(latD, 50).toFixed(0)} ms · p95 ${pct(latD, 95).toFixed(0)} ms`);
+check('D · el aviso repetido no crea una segunda sesión', sesionesD === PAGOS, `${sesionesD} sesiones de ${PAGOS}`);
+check('D · un pago aprobado produce exactamente un pedido', pedidosD === PAGOS, `${pedidosD} pedidos`);
+check('D · el stock se descuenta una sola vez por pago',
+  stockPagoAntes - stockPagoDespues === PAGOS, `${stockPagoAntes}-${stockPagoDespues} vs ${PAGOS}`);
+check('D · no queda ninguna reserva viva tras finalizar', reservasVivasD === 0, `${reservasVivasD} activas`);
+
+// ── E · el aviso que llega tarde y desordenado ──────────────────────────────
+console.log('\n── E · avisos viejos llegando después del pago aprobado ──');
+const tareasE = Array.from({ length: PAGOS }, (_, i) => () => psqlAsync(`
+do $tardio$
+declare v_intent uuid; v_session uuid;
+begin
+  select cs.id, pi.id into v_session, v_intent
+    from public.checkout_sessions cs join public.payment_intents pi on pi.checkout_session_id = cs.id
+   where cs.client_request_id = 'carga-d-${String(i + 1).padStart(4, '0')}';
+  if v_intent is null then return; end if;
+  perform public.record_mercadopago_payment_snapshot(v_intent, (
+    select jsonb_build_object(
+      'provider_payment_id', 'PAY-' || right(replace(v_session::text, '-', ''), 12),
+      'external_reference', 'taba2:checkout:' || v_session::text,
+      'preference_id', pi.preference_id,
+      'merchant_order_id', 'MO-' || right(replace(v_session::text, '-', ''), 8),
+      'collector_id', 'collector-carga', 'currency', 'ARS',
+      'transaction_amount', cs.total::text, 'status', 'pending',
+      'status_detail', 'pending_waiting_payment', 'payment_method', 'visa', 'live_mode', false,
+      'provider_occurred_at', (clock_timestamp() - interval '20 minutes')::text, 'refunded_amount', '0.00',
+      'payer_email_hash', encode(gen_random_bytes(32), 'hex'),
+      'raw_response_hash', encode(gen_random_bytes(32), 'hex'))
+    from public.payment_intents pi join public.checkout_sessions cs on cs.id = pi.checkout_session_id
+    where pi.id = v_intent), 'webhook', null);
+end
+$tardio$;`));
+await enOlas(tareasE, CONCURRENCIA);
+const pedidosE = Number(psql(`select count(*) from public.orders o
+  join public.checkout_sessions cs on cs.completed_order_id = o.id
+  where cs.client_request_id like 'carga-d-%';`).stdout);
+const retrocedidos = Number(psql(`select count(*) from public.payment_intents pi
+  join public.checkout_sessions cs on cs.id = pi.checkout_session_id
+  where cs.client_request_id like 'carga-d-%' and pi.internal_status <> 'completed';`).stdout);
+console.log(`   pedidos ${pedidosE} · pagos que retrocedieron de estado ${retrocedidos}`);
+check('E · un aviso viejo no crea pedidos nuevos', pedidosE === pedidosD, `${pedidosE} vs ${pedidosD}`);
+check('E · ningún pago retrocede de estado', retrocedidos === 0, `${retrocedidos} retrocedidos`);
+
+// ── F · se cae el consumidor a mitad de camino ──────────────────────────────
+console.log('\n── F · el worker muere con trabajo tomado ──');
+psql(`
+  insert into public.payment_webhook_receipts
+    (provider, environment, webhook_event_id, event_type, resource_id, signature_valid, payload_hash, processing_status)
+  select 'mercadopago', 'test', 'carga-f-' || g, 'payment.updated', 'res-carga-f-' || g, true,
+         encode(sha256(('carga-f-' || g)::bytea), 'hex'), 'queued'
+    from generate_series(1, 30) g;
+  insert into public.payment_outbox (webhook_receipt_id, topic, resource_id)
+  select r.id, 'payment', r.resource_id from public.payment_webhook_receipts r
+   where r.webhook_event_id like 'carga-f-%';
+`);
+const encolados = Number(psql(`select count(*) from public.payment_outbox where resource_id like 'res-carga-f-%';`).stdout);
+const tomados = Number(psql(`select count(*) from public.claim_payment_outbox('worker-caido', 30, 90);`).stdout);
+psql(`update public.payment_outbox set lease_expires_at = clock_timestamp() - interval '1 second'
+       where resource_id like 'res-carga-f-%' and status in ('claimed','processing');`);
+const retomados = Number(psql(`select count(*) from public.claim_payment_outbox('worker-nuevo', 30, 90);`).stdout);
+const perdidos = Number(psql(`select count(*) from public.payment_outbox
+  where resource_id like 'res-carga-f-%' and status not in ('claimed','processing');`).stdout);
+console.log(`   encolados ${encolados} · tomados ${tomados} · retomados tras la caída ${retomados}`);
+check('F · el worker nuevo retoma todo lo que el caído dejó', retomados === encolados, `${retomados}/${encolados}`);
+check('F · ningún trabajo se pierde en la caída', perdidos === 0, `${perdidos} fuera de la cola`);
+
 // ── integridad final ────────────────────────────────────────────────────────
 const negativos = Number(psql(`select count(*) from public.products where stock < 0;`).stdout);
 const huerfanos = Number(psql(`select count(*) from public.order_items oi
@@ -377,6 +529,13 @@ if (salida) {
     A: { ok: okA, sinStock, otros: otrosA, stockAntes, stockDespues, vendidas: vendidasA, segundos: duracionA },
     B: { envios: resB.length, pedidos: pedidosB, unidades: unidadesB },
     C: { ok: okC, pedidos: pedidosC, segundos: duracionC, p50: pct(latC, 50), p95: pct(latC, 95), max: Math.max(0, ...latC) },
+    D: {
+      pagos: PAGOS, envios: resD.length, sesiones: sesionesD, pedidos: pedidosD,
+      stockAntes: stockPagoAntes, stockDespues: stockPagoDespues, reservasVivas: reservasVivasD,
+      segundos: duracionD, p50: pct(latD, 50), p95: pct(latD, 95),
+    },
+    E: { pedidos: pedidosE, retrocedidos },
+    F: { encolados, tomados, retomados, perdidos },
     integridad: { negativos, huerfanos, sinItems, duplicados },
     checks,
   }, null, 2));

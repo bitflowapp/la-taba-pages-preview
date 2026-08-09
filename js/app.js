@@ -44,9 +44,9 @@ import { getState, subscribe } from './state.js';
 import { BRAND, STORAGE_KEYS } from './config.js';
 import { getBusinessConfig } from './core/business-config-store.js';
 import { relayStatusLabel } from './core/realtime-sync.js';
-// El PANEL DEL NEGOCIO entra recién cuando hace falta; reparto, producción y
-// sandbox siguen entrando con el arranque. El porqué de esa mitad —y los 421 KB
-// que quedaron sobre la mesa— está en js/back-office.js.
+// El back office —negocio, reparto, producción y sandbox— entra recién cuando
+// hace falta. Para un cliente eran 759 KB de descarga que nunca se renderizaban.
+// La trampa que costó encontrar está explicada en js/back-office.js.
 import {
   alEntrarBackOffice,
   backOfficePresente,
@@ -525,7 +525,13 @@ async function bootstrap() {
     // encima de lo que la persona esté haciendo en ese instante, y eso se ve
     // —y se rompe— como un parpadeo que reordena la lista bajo el dedo.
     alEntrarBackOffice(() => {
-      if (isDemoMode()) renderBusinessDashboard();
+      if (isDemoMode()) {
+        renderBusinessDashboard();
+        renderDeliveryPanel();
+      }
+      renderProductionOperations();
+      renderSandboxTools();
+      renderMapViews();
     });
     initProductionOperations({
       onChange: renderAll,

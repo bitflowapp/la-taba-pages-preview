@@ -40,6 +40,10 @@ const state = {
   suggestionShown: false,
   blockedReason: '',
   addressListExpanded: false,
+  // ¿Ya sabemos si esta persona tiene direcciones? Arranca en false porque las
+  // direcciones llegan DESPUÉS del primer pintado. Mientras sea false, ninguna
+  // pantalla puede afirmar «no tenés dirección»: todavía no lo sabe.
+  addressesKnown: false,
 };
 
 // A partir de esta cantidad el listado se muestra compacto y expandible, para
@@ -58,10 +62,27 @@ export async function initializeCustomerDeliveryCheckout() {
   // muestra ningún formulario alternativo: el pedido queda bloqueado.
   if (!supportsProfileCheckout()) {
     state.blockedReason = 'unsupported';
+    // Sin autoridad de datos no va a llegar ninguna dirección nunca. Eso TAMBIÉN
+    // es saber: el chip puede decir la verdad enseguida en vez de quedarse mudo.
+    state.addressesKnown = true;
     render();
+    notifyDeliveryAddressChanged();
     return;
   }
   await loadCustomerDeliveryProfile();
+}
+
+/*
+ * ¿Se puede afirmar algo sobre las direcciones de esta persona?
+ *
+ * Las direcciones llegan del backend después del primer pintado. Hasta que
+ * llegan —o hasta que se sabe que no van a llegar— el inicio no puede decir
+ * «Elegí tu dirección», porque se lo diría también a quien tiene una
+ * predeterminada confirmada. Eso es información falsa que invita a una acción
+ * que no hace falta.
+ */
+export function deliveryAddressesKnown() {
+  return state.addressesKnown === true;
 }
 
 export async function refreshCustomerDeliveryCheckout() {
@@ -143,8 +164,12 @@ async function loadCustomerDeliveryProfile() {
   const result = await repository.load();
   if (hydrationVersion !== state.profileHydrationVersion) return result;
   state.loading = false;
+  // Terminó de intentar: haya traído direcciones o haya fallado, a partir de acá
+  // ya se sabe lo que se puede saber.
+  state.addressesKnown = true;
   if (!result.ok) {
     render(result.message);
+    notifyDeliveryAddressChanged();
     return result;
   }
   state.profile = result.profile;

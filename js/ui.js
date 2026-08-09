@@ -6,7 +6,7 @@ import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/c
 import { COMBO_MANIFEST } from './combos-data.js';
 import { purchasableCombos } from './core/combos.js';
 import { getCustomerOrderHistory, getLatestCustomerOrder } from './core/customer-history.js';
-import { getActiveDeliveryAddress } from './customer-delivery.js';
+import { deliveryAddressesKnown, getActiveDeliveryAddress } from './customer-delivery.js';
 import {
   getCustomerProfile,
   getRememberedCheckoutValues,
@@ -2249,13 +2249,26 @@ function renderHomeAddressChip() {
   const control = label.closest('[data-home-address]');
   const text = activeDeliveryAddressLine() || rememberedAddressLine();
   if (text) {
+    label.hidden = false;
     label.textContent = text;
     control?.classList.remove('is-missing');
-  } else {
-    // Sin dirección el valor pasa a tono de advertencia y nombra la acción.
-    label.textContent = 'Elegí tu dirección';
-    control?.classList.add('is-missing');
+    return;
   }
+  if (!deliveryAddressesKnown()) {
+    // Todavía no llegaron las direcciones. Decir «Elegí tu dirección» acá es
+    // mentirle a quien SÍ tiene una predeterminada confirmada —y mandarlo a
+    // elegir algo que ya eligió—. Se calla hasta saber: un instante en blanco
+    // es neutro, un dato equivocado no.
+    label.hidden = true;
+    label.textContent = '';
+    control?.classList.remove('is-missing');
+    return;
+  }
+  // Ahora sí: no tiene dirección. El valor pasa a tono de advertencia y nombra
+  // la acción.
+  label.hidden = false;
+  label.textContent = 'Elegí tu dirección';
+  control?.classList.add('is-missing');
 }
 
 function activeDeliveryAddressLine() {

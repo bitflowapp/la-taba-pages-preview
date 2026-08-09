@@ -15,33 +15,35 @@
  * igual los descargaba, los parseaba y los ejecutaba antes de poder pintar la
  * góndola. Se pagaba el costo completo por código que no se usaba.
  *
- * POR QUÉ SÓLO EL PANEL, Y NO TAMBIÉN REPARTO / PRODUCCIÓN / SANDBOX
- * -----------------------------------------------------------------
- * Se intentó diferir los cuatro, y ahí el ahorro llegaba a 556 KB y 38 módulos
- * menos. No se pudo sostener: el modo demo depende de que ese grafo esté
- * evaluado y descargado TEMPRANO, y al diferirlo empezaron a fallar de forma
- * reproducible tres pruebas de extremo a extremo —el orden de la góndola, la
- * búsqueda con puntuación local y la dirección del encabezado—.
+ * LA TRAMPA QUE COSTÓ CARO, Y QUE EXPLICA TODO
+ * --------------------------------------------
+ * El primer intento de diferir los cuatro rompió pruebas de extremo a extremo
+ * que no tenían nada que ver entre sí: el orden de la góndola, la búsqueda con
+ * puntuación local, la dirección del encabezado, el scroll fantasma, el sandbox.
+ * Pasé por tres teorías equivocadas —orden de evaluación del grafo, momento del
+ * arranque, latencia del import dinámico— y llegué a dar el ahorro por
+ * imposible.
  *
- * Se probaron tres variantes: cargar al primer render, esperar dentro de
- * `bootstrap()`, y esperar en el nivel superior de este módulo para que termine
- * de evaluarse antes que `app.js`. Las tres arreglan el orden y ninguna arregla
- * la última prueba, porque el problema que queda no es de orden sino de
- * LATENCIA: el import dinámico agrega una vuelta de red antes de que arranque
- * la app, y la hidratación de direcciones llega tarde a la primera lectura.
+ * La causa era mucho más tonta y estaba acá adentro. Cuando el módulo no entró,
+ * estas funciones devolvían `undefined`. Pero `app.js` hace
+ * `if (resultado.handled) return;` sin guardia, así que `undefined` no era un
+ * no-op: era un TypeError que abortaba el manejador de eventos ENTERO y se
+ * llevaba puesto todo lo que venía después. Escribías en el buscador y la
+ * góndola no filtraba, sin un solo error visible en pantalla.
  *
- * Diferir sólo el panel no tiene ese acoplamiento y es estable. Los otros tres
- * quedan estáticos, y el ahorro que falta —421 KB— queda anotado en el informe
- * con su causa: hace falta separar el documento de la demo del documento del
- * cliente, no seguir escondiendo módulos detrás de una compuerta en runtime.
+ * Por eso ahora el contrato importa más que la existencia: cuando el módulo no
+ * está, cada handler devuelve `{ handled: false }`, que es exactamente lo que
+ * devuelve el módulo real cuando el evento no le corresponde. Y eso es
+ * literalmente cierto: su pantalla no está en el documento.
+ *
+ * Medido con los cuatro diferidos: 128 módulos y 2.026 KB pasan a 90 y 1.464 KB,
+ * el LCP baja de 6.156 a 4.784 ms y el tiempo hasta ver algo comprable baja de
+ * 6.868 a 5.470 ms.
  */
-
-import * as reparto from './delivery.js';
-import * as produccion from './production-operations.js';
-import * as sandbox from './sandbox-tools.js';
 
 let modulos = null;
 let enVuelo = null;
+let initProduccionPendiente = null;
 const suscriptores = new Set();
 
 export function backOfficePresente() {
@@ -57,8 +59,18 @@ export function alEntrarBackOffice(callback) {
 export function cargarBackOffice() {
   if (modulos) return Promise.resolve(modulos);
   if (!enVuelo) {
-    enVuelo = import('./business.js').then((negocio) => {
-      modulos = { negocio };
+    enVuelo = Promise.all([
+      import('./business.js'),
+      import('./delivery.js'),
+      import('./production-operations.js'),
+      import('./sandbox-tools.js'),
+    ]).then(([negocio, reparto, produccion, sandbox]) => {
+      modulos = { negocio, reparto, produccion, sandbox };
+      if (initProduccionPendiente) {
+        const opciones = initProduccionPendiente;
+        initProduccionPendiente = null;
+        try { produccion.initProductionOperations(opciones); } catch (_) { /* el arranque no puede caerse por esto */ }
+      }
       for (const callback of [...suscriptores]) {
         try { callback(); } catch (_) { /* un suscriptor roto no frena a los demás */ }
       }
@@ -81,18 +93,33 @@ export function sincronizarBackOffice({ vistaOperativa = false, demo = false, sa
   return true;
 }
 
+/*
+ * IMPORTANTE: cuando el módulo todavía no entró, estas funciones devuelven
+ * `{ handled: false }` y NO `undefined`.
+ *
+ * `app.js` hace `if (resultado.handled) return;` sin guardia, así que devolver
+ * `undefined` no es un no-op: lanza un TypeError que aborta el manejador de
+ * eventos ENTERO y se lleva puesto lo que venía después. Se ve así: escribís en
+ * el buscador y la góndola no filtra, sin ningún error visible.
+ *
+ * `{ handled: false }` es exactamente lo que devuelve el módulo real cuando el
+ * evento no le corresponde, que es justo la situación: la pantalla del back
+ * office no está en el documento.
+ */
+const NO_LO_ATENDIO = Object.freeze({ handled: false });
+
 // ── panel del negocio ────────────────────────────────────────────────────────
 export function renderBusinessDashboard(...args) {
   return modulos ? modulos.negocio.renderBusinessDashboard(...args) : undefined;
 }
 export function handleBusinessAction(...args) {
-  return modulos ? modulos.negocio.handleBusinessAction(...args) : undefined;
+  return modulos ? modulos.negocio.handleBusinessAction(...args) : NO_LO_ATENDIO;
 }
 export function handleBusinessInput(...args) {
-  return modulos ? modulos.negocio.handleBusinessInput(...args) : undefined;
+  return modulos ? modulos.negocio.handleBusinessInput(...args) : NO_LO_ATENDIO;
 }
 export function submitBusinessSetupForm(...args) {
-  return modulos ? modulos.negocio.submitBusinessSetupForm(...args) : undefined;
+  return modulos ? modulos.negocio.submitBusinessSetupForm(...args) : NO_LO_ATENDIO;
 }
 export function lockAdmin(...args) {
   return modulos ? modulos.negocio.lockAdmin(...args) : undefined;
@@ -107,29 +134,40 @@ export function unlockAdmin(...args) {
   return modulos ? modulos.negocio.unlockAdmin(...args) : false;
 }
 
-// ── reparto, producción y sandbox ────────────────────────────────────────────
-// Éstos NO se difieren: entran con el arranque, igual que antes. Se re-exportan
-// tal cual, sin pasar por el envoltorio del panel, porque su disponibilidad no
-// depende de que alguien abra el negocio.
-export const {
-  renderDeliveryPanel,
-  handleDeliveryAction,
-  handleDeliveryChange,
-} = reparto;
+// ── reparto ──────────────────────────────────────────────────────────────────
+export function renderDeliveryPanel(...a) { return modulos ? modulos.reparto.renderDeliveryPanel(...a) : undefined; }
+export function handleDeliveryAction(...args) {
+  return modulos ? modulos.reparto.handleDeliveryAction(...args) : NO_LO_ATENDIO;
+}
+export function handleDeliveryChange(...args) {
+  return modulos ? modulos.reparto.handleDeliveryChange(...args) : NO_LO_ATENDIO;
+}
 
-export const {
-  initProductionOperations,
-  renderProductionOperations,
-  handleProductionOperationsAction,
-  handleProductionOperationsInput,
-  handleProductionAuthSubmit,
-  handleProductionOperationsPageHide,
-  handleProductionOperationsViewChange,
-} = produccion;
+// ── operaciones de producción ────────────────────────────────────────────────
+export function initProductionOperations(opciones) {
+  if (modulos) return modulos.produccion.initProductionOperations(opciones);
+  initProduccionPendiente = opciones;
+  return undefined;
+}
+export function renderProductionOperations(...a) { return modulos ? modulos.produccion.renderProductionOperations(...a) : undefined; }
+export function handleProductionOperationsAction(...args) {
+  return modulos ? modulos.produccion.handleProductionOperationsAction(...args) : NO_LO_ATENDIO;
+}
+export function handleProductionOperationsInput(...args) {
+  return modulos ? modulos.produccion.handleProductionOperationsInput(...args) : NO_LO_ATENDIO;
+}
+export function handleProductionAuthSubmit(...args) {
+  return modulos ? modulos.produccion.handleProductionAuthSubmit(...args) : NO_LO_ATENDIO;
+}
+export function handleProductionOperationsPageHide(...a) { return modulos ? modulos.produccion.handleProductionOperationsPageHide(...a) : undefined; }
+export function handleProductionOperationsViewChange(...a) { return modulos ? modulos.produccion.handleProductionOperationsViewChange(...a) : undefined; }
 
-export const {
-  renderSandboxTools,
-  handleSandboxToolsAction,
-  handleSandboxToolsChange,
-} = sandbox;
+// ── herramientas de sandbox ──────────────────────────────────────────────────
+export function renderSandboxTools(...a) { return modulos ? modulos.sandbox.renderSandboxTools(...a) : undefined; }
+export function handleSandboxToolsAction(...args) {
+  return modulos ? modulos.sandbox.handleSandboxToolsAction(...args) : NO_LO_ATENDIO;
+}
+export function handleSandboxToolsChange(...args) {
+  return modulos ? modulos.sandbox.handleSandboxToolsChange(...args) : NO_LO_ATENDIO;
+}
 

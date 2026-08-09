@@ -448,7 +448,9 @@ async function saveAddress(allowDuplicate) {
     apartment: form.elements?.profileAddressApartment?.value || '',
     reference: form.elements?.profileAddressReference?.value || '',
     isDefault: Boolean(form.elements?.profileAddressDefault?.checked),
-    ...draftToAddressFields(state.locationDraft),
+    // La huella se sella con el texto que se está guardando, no con el que
+    // había cuando se tocó «Confirmar ubicación».
+    ...draftToAddressFields(state.locationDraft, written),
   });
   const required = [
     ['profileAddressStreet', candidate.street, 'Ingresá la calle.'],

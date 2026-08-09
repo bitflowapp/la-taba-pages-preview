@@ -137,12 +137,22 @@ test('confirmar sella coordenadas, origen, momento y huella del texto', () => {
   assert.equal(fields.locationConfirmedAddress, 'antartida argentina 1450 neuquen neuquen');
 });
 
-test('cambiar el texto de la dirección invalida la confirmación hasta reconfirmar', () => {
-  let draft = draftWithLocationResult(emptyDeliveryLocationDraft(), {
-    ok: true,
-    location: { latitude: -38.9539, longitude: -68.0596, accuracy: 12 },
-  });
-  draft = confirmDeliveryLocationDraft(draft, { address: DIRECCION, now: AHORA });
+test('editar una dirección YA GUARDADA invalida su confirmación hasta reconfirmar', () => {
+  // La confirmación viene de una dirección guardada: ese pin ya estaba atado a
+  // un texto. Cambiar la calle tiene que obligar a volver a confirmarlo, o el
+  // punto de «Mendoza 850» viajaría callado como destino de otra dirección.
+  const guardada = {
+    ...DIRECCION,
+    latitude: -38.9539,
+    longitude: -68.0596,
+    geolocationAccuracy: 12,
+    locationSource: 'gps',
+    locationConfirmedAt: AHORA.toISOString(),
+    locationConfirmedAddress: 'antartida argentina 1450 neuquen neuquen',
+  };
+  const draft = draftFromSavedAddress(guardada);
+  assert.equal(draft.origin, 'saved');
+  assert.equal(isDeliveryLocationDraftConfirmed(draft), true);
 
   // Piso y departamento nombran una unidad del mismo edificio: no mueven el pin.
   const mismoPunto = draftAfterAddressEdit(draft, { ...DIRECCION, floor: '3', apartment: 'B' });
@@ -156,6 +166,61 @@ test('cambiar el texto de la dirección invalida la confirmación hasta reconfir
   assert.match(otroPunto.notice, /volvé a confirmar/i);
 });
 
+// ── REGRESIÓN DEL FALLO HUMANO ───────────────────────────────────────────────
+// La primera compra humana quedó bloqueada acá. El paso de ubicación está
+// DEBAJO de los campos, así que la persona marcó el pin y después terminó de
+// escribir la dirección; cada tecla posterior tiraba abajo la confirmación
+// recién hecha y no podía guardar nunca. Reproducido en la URL pública con tres
+// órdenes distintos, dos de ellos fallando en silencio.
+test('confirmar el pin y DESPUÉS terminar de escribir la dirección no lo invalida', () => {
+  // Se confirma con el formulario todavía vacío, que es lo que pasa cuando
+  // alguien ve el botón antes de terminar de tipear.
+  let draft = draftWithLocationResult(emptyDeliveryLocationDraft(), {
+    ok: true,
+    location: { latitude: -38.9539, longitude: -68.0596, accuracy: 12 },
+  });
+  draft = confirmDeliveryLocationDraft(draft, { address: {}, now: AHORA });
+  assert.equal(draft.origin, 'fresh');
+  assert.equal(isDeliveryLocationDraftConfirmed(draft), true);
+
+  // Y ahora se escribe la dirección, campo por campo, como una persona.
+  for (const parcial of [
+    { street: 'Antártida Argentina' },
+    { street: 'Antártida Argentina', streetNumber: '1450' },
+    { street: 'Antártida Argentina', streetNumber: '1450', city: 'Neuquén' },
+    { street: 'Antártida Argentina', streetNumber: '1450', city: 'Neuquén', province: 'Neuquén' },
+  ]) {
+    draft = draftAfterAddressEdit(draft, parcial);
+    assert.equal(
+      isDeliveryLocationDraftConfirmed(draft),
+      true,
+      `escribir ${JSON.stringify(parcial)} no puede tirar abajo un pin recién confirmado`,
+    );
+  }
+
+  // Y la huella que se persiste es la del texto FINAL, no la del formulario
+  // vacío que había cuando se tocó el botón.
+  const campos = draftToAddressFields(draft, DIRECCION);
+  assert.equal(campos.locationConfirmedAddress, 'antartida argentina 1450 neuquen neuquen');
+  assert.equal(campos.locationSource, 'gps');
+  assert.equal(campos.latitude, -38.9539);
+});
+
+test('retocar un campo después de confirmar tampoco bloquea el guardado', () => {
+  let draft = draftWithLocationResult(emptyDeliveryLocationDraft(), {
+    ok: true,
+    location: { latitude: -38.9539, longitude: -68.0596, accuracy: 12 },
+  });
+  draft = confirmDeliveryLocationDraft(draft, { address: DIRECCION, now: AHORA });
+  const retocada = { ...DIRECCION, province: 'Neuquén Capital' };
+  draft = draftAfterAddressEdit(draft, retocada);
+  assert.equal(isDeliveryLocationDraftConfirmed(draft), true);
+  assert.equal(
+    draftToAddressFields(draft, retocada).locationConfirmedAddress,
+    'antartida argentina 1450 neuquen neuquen capital',
+  );
+});
+
 test('el guardado exige la confirmación y persiste el contrato completo', () => {
   const save = profileView.slice(
     profileView.indexOf('async function saveAddress('),
@@ -165,7 +230,9 @@ test('el guardado exige la confirmación y persiste el contrato completo', () =>
   assert.match(save, /draftAfterAddressEdit\(/, 'antes de guardar se revisa si el texto cambió');
   assert.match(save, /isDeliveryLocationDraftConfirmed\(state\.locationDraft\)/);
   assert.match(save, /DELIVERY_LOCATION_REQUIRED_MESSAGE/);
-  assert.match(save, /\.\.\.draftToAddressFields\(state\.locationDraft\)/);
+  // La huella se sella con el texto que se guarda, no con el que había al
+  // tocar «Confirmar ubicación».
+  assert.match(save, /\.\.\.draftToAddressFields\(state\.locationDraft, written\)/);
 });
 
 test('el borrador no sobrevive al guardado ni salta entre direcciones', () => {

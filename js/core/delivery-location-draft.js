@@ -38,6 +38,11 @@ export function emptyDeliveryLocationDraft() {
     point: null,
     confirmedAt: '',
     fingerprint: '',
+    // De dónde viene la confirmación: `saved` si se rehidrató de una dirección
+    // ya guardada, `fresh` si la persona acaba de marcar el pin en esta misma
+    // edición. La regla de invalidación depende de esto y la explicación está
+    // en `draftAfterAddressEdit`.
+    origin: '',
     mapOpen: false,
     locating: false,
     error: '',
@@ -78,6 +83,7 @@ export function draftFromSavedAddress(address = {}) {
     },
     confirmedAt: confirmed.confirmedAt,
     fingerprint: confirmed.addressFingerprint,
+    origin: 'saved',
   };
 }
 
@@ -179,7 +185,11 @@ export function confirmDeliveryLocationDraft(draft, { address = {}, now = new Da
     status: DELIVERY_LOCATION_STATUS.CONFIRMED,
     method,
     confirmedAt: new Date(now).toISOString(),
+    // La huella se sella con el texto que haya en ese momento, pero para una
+    // confirmación FRESCA es provisoria: la definitiva se sella al guardar,
+    // sobre el texto que la persona termine escribiendo. Ver `draftToAddressFields`.
     fingerprint: deliveryLocationAddressFingerprint(address),
+    origin: 'fresh',
     error: '',
     notice: '',
   };
@@ -190,12 +200,33 @@ export function discardDeliveryLocationDraft() {
 }
 
 /**
- * La regla de invalidación. Si el texto que determina el punto cambió, la
- * confirmación deja de valer: el pin sigue en pantalla —no se pierde el
- * trabajo— pero hay que volver a apretar CONFIRMAR UBICACIÓN.
+ * La regla de invalidación, y por qué mira de dónde viene la confirmación.
+ *
+ * DEFECTO MEDIDO CONTRA LA URL PÚBLICA
+ * ------------------------------------
+ * Antes esta regla invalidaba CUALQUIER confirmación en cuanto cambiaba el
+ * texto. El paso de ubicación está debajo de los campos, así que es normalísimo
+ * marcar el pin y después terminar de escribir la dirección: en ese orden, cada
+ * tecla posterior tiraba abajo la confirmación recién hecha y la persona no
+ * podía guardar nunca. Se reprodujo en el sitio publicado con tres órdenes
+ * humanos distintos, y dos de ellos fallaban EN SILENCIO —el re-render se
+ * comía el toque sobre «Guardar dirección»—. Esa es la compra que quedó
+ * bloqueada.
+ *
+ * Lo que la regla tiene que proteger es otra cosa: que un pin confirmado para
+ * «Mendoza 850» no viaje callado como destino de «Rivadavia 200». Eso sólo
+ * puede pasar con una confirmación que YA ESTABA GUARDADA y que se está
+ * reutilizando mientras se edita el texto. Una confirmación fresca no arrastra
+ * ninguna dirección anterior: la persona acaba de señalar el punto, y el texto
+ * que termine escribiendo es el que se sella con él al guardar.
+ *
+ * Es la misma regla que impone la base —`upsert_current_customer_address`
+ * invalida cuando el cliente reenvía LA MISMA confirmación de antes con otro
+ * texto— así que las dos capas dicen lo mismo en vez de contradecirse.
  */
 export function draftAfterAddressEdit(draft, address = {}) {
   if (draft?.status !== DELIVERY_LOCATION_STATUS.CONFIRMED) return draft;
+  if (draft.origin !== 'saved') return draft;
   const current = deliveryLocationAddressFingerprint(address);
   if (!current || current === draft.fingerprint) return draft;
   return {
@@ -203,6 +234,7 @@ export function draftAfterAddressEdit(draft, address = {}) {
     status: DELIVERY_LOCATION_STATUS.PENDING,
     confirmedAt: '',
     fingerprint: '',
+    origin: '',
     notice: ADDRESS_CHANGED_NOTICE,
   };
 }
@@ -216,8 +248,13 @@ export function isDeliveryLocationDraftConfirmed(draft) {
 /**
  * Los campos que se persisten. Sin confirmación viajan en null: una dirección a
  * medio confirmar se guarda como lo que es, sin punto.
+ *
+ * La huella se sella ACÁ, con el texto que realmente se está guardando. Sellarla
+ * al confirmar ataba el pin a un formulario a medio llenar; el pin pertenece a
+ * la dirección que la persona termina escribiendo, no a la que había escrito
+ * cuando tocó el botón.
  */
-export function draftToAddressFields(draft) {
+export function draftToAddressFields(draft, address = null) {
   if (!isDeliveryLocationDraftConfirmed(draft)) {
     return {
       latitude: null,
@@ -234,6 +271,8 @@ export function draftToAddressFields(draft) {
     geolocationAccuracy: draft.point.accuracyMeters ?? null,
     locationSource: draft.method,
     locationConfirmedAt: draft.confirmedAt,
-    locationConfirmedAddress: draft.fingerprint,
+    locationConfirmedAddress: address
+      ? deliveryLocationAddressFingerprint(address)
+      : draft.fingerprint,
   };
 }

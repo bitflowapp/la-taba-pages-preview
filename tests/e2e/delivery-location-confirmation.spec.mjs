@@ -119,6 +119,65 @@ test.describe('Perfil · confirmación del punto de entrega', () => {
     expect(guardado.payload.p_address.geolocationAccuracy ?? null).toBeNull();
   });
 
+  // REGRESIÓN DEL FALLO HUMANO. La primera compra quedó bloqueada acá: el paso
+  // de ubicación está debajo de los campos, la persona marcó el pin y después
+  // terminó de escribir la dirección, y cada tecla posterior tiraba abajo la
+  // confirmación. No podía guardar nunca, y dos de los tres órdenes fallaban en
+  // silencio porque el re-render se comía el toque sobre «Guardar dirección».
+  test('confirmar el pin ANTES de terminar de escribir la dirección igual guarda', async ({ page, context }) => {
+    const remote = createRemoteProfile();
+    await installRuntime(page);
+    await routeSupabase(page, remote);
+    await context.grantPermissions(['geolocation']);
+    await context.setGeolocation({ ...PUNTO_GPS, accuracy: 12 });
+
+    await page.goto('/#profile');
+    const profile = page.locator('[data-customer-profile]');
+    await expect(profile).toHaveAttribute('data-customer-profile-state', 'ready');
+    await profile.locator('[data-profile-action="add-address"]').click();
+    await expect(profile.locator('[data-profile-address-form]')).toBeVisible();
+
+    // Primero el pin, con el formulario todavía vacío.
+    const paso = profile.locator('[data-location-step]');
+    await paso.locator('[data-profile-action="use-location"]').click();
+    await expect(paso).toHaveAttribute('data-location-status', 'pending');
+    await paso.locator('[data-profile-action="confirm-location"]').click();
+    await expect(paso).toHaveAttribute('data-location-status', 'confirmed');
+
+    // Y recién ahora la dirección, campo por campo, saliendo de cada uno.
+    for (const [campo, valor] of [
+      ['profileAddressStreet', 'Antártida Argentina'],
+      ['profileAddressNumber', '1450'],
+      ['profileAddressCity', 'Neuquén'],
+      ['profileAddressProvince', 'Neuquén'],
+    ]) {
+      await profile.locator(`[name="${campo}"]`).fill(valor);
+      await profile.locator(`[name="${campo}"]`).blur();
+      await expect(
+        paso,
+        `escribir ${campo} no puede tirar abajo un pin recién confirmado`,
+      ).toHaveAttribute('data-location-status', 'confirmed');
+    }
+
+    await profile.locator('[data-profile-action="save-address"]').click();
+    await expect(profile.locator('.profile-status')).toContainText('Dirección guardada');
+
+    const guardado = remote.calls.find((call) => call.rpc === 'upsert_current_customer_address');
+    expect(guardado.payload.p_address.locationSource).toBe('gps');
+    expect(guardado.payload.p_address.locationConfirmedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    // La huella es la del texto FINAL, no la del formulario vacío.
+    expect(guardado.payload.p_address.locationConfirmedAddress)
+      .toBe('antartida argentina 1450 neuquen neuquen');
+
+    // Y el eslabón que la certificación anterior nunca probó: recargar. Si la
+    // relectura descartara la confirmación, la persona volvería a quedar
+    // trabada sin entender por qué.
+    await page.reload();
+    await expect(profile).toHaveAttribute('data-customer-profile-state', 'ready');
+    await expect(profile.locator('[data-address-location="confirmed"]').first())
+      .toContainText('Ubicación confirmada');
+  });
+
   test('cambiar la calle invalida la confirmación hasta volver a confirmar el pin', async ({ page, context }) => {
     const remote = createRemoteProfile({ conDireccionConfirmada: true });
     await installRuntime(page);

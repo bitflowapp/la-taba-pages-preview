@@ -982,6 +982,38 @@ export function createSupabaseOrderRepository({
     });
   }
 
+  /**
+   * Rearma el pedido de un cobro aprobado que se quedó sin reserva.
+   *
+   * El servidor decide: si el stock no alcanza devuelve `stock_insuficiente`
+   * con el detalle, y ahí la salida es devolver el dinero. No se le ofrece al
+   * operador un pedido que el negocio no puede cumplir.
+   */
+  async function recoverPaidCheckoutOrder(checkoutSessionId) {
+    if (!isUuid(checkoutSessionId)) return repositoryResult(false, { message: 'El checkout no es válido.' });
+    const { data, error } = await client.rpc('recover_paid_checkout_order', {
+      p_checkout_session_id: checkoutSessionId,
+    });
+    if (error) return repositoryResult(false, { message: 'No pudimos armar el pedido de este cobro.' });
+    if (data?.reason === 'stock_insuficiente') {
+      const faltantes = Array.isArray(data.missing) ? data.missing : [];
+      const detalle = faltantes
+        .map((f) => `${f.name} (hay ${f.disponibles}, hacen falta ${f.necesarias})`)
+        .join('; ');
+      return repositoryResult(false, {
+        ...data,
+        message: `No hay stock para armarlo: ${detalle}. Devolvé el dinero desde el Panel.`,
+      });
+    }
+    if (!data?.ok) return repositoryResult(false, { message: 'No pudimos armar el pedido de este cobro.' });
+    return repositoryResult(true, {
+      ...data,
+      message: data.idempotent
+        ? 'El pedido de este cobro ya estaba armado.'
+        : `Pedido ${data.order_code || ''} armado.`.trim(),
+    });
+  }
+
   async function requestMercadoPagoRefund({ paymentIntentId, amount = null, reason = '', confirmation = '' } = {}) {
     if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
     let idempotencyKey;
@@ -1177,6 +1209,9 @@ export function createSupabaseOrderRepository({
     },
     async reconcileMercadoPagoPayment(paymentIntentId) {
       return reconcileMercadoPagoPayment(paymentIntentId);
+    },
+    async recoverPaidCheckoutOrder(checkoutSessionId) {
+      return recoverPaidCheckoutOrder(checkoutSessionId);
     },
     async requestMercadoPagoRefund(payload = {}) {
       return requestMercadoPagoRefund(payload);

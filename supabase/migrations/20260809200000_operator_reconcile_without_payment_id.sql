@@ -69,6 +69,36 @@ exception when unique_violation then
 end;
 $$;
 
+-- Un cobro aprobado que nunca llegó a ser pedido se puede rearmar desde el
+-- Panel (`recover_paid_checkout_order`, 20260809210000). Esta es la bandera que
+-- decide si el botón se ofrece; vive acá para que la consulta de pagos tenga una
+-- sola definición.
+create or replace function public.can_recover_paid_checkout(p_payment_intent_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = pg_catalog, public, pg_temp
+as $$
+  select exists (
+    select 1
+      from public.payment_intents pi
+      join public.checkout_sessions cs on cs.id = pi.checkout_session_id
+     where pi.id = p_payment_intent_id
+       and pi.order_id is null
+       and cs.completed_order_id is null
+       and pi.provider_status = 'approved'
+       and pi.paid_amount is not distinct from cs.total
+       and pi.internal_status not in ('refunded', 'partially_refunded', 'charged_back', 'completed')
+  );
+$$;
+
+revoke all on function public.can_recover_paid_checkout(uuid) from public, anon;
+grant execute on function public.can_recover_paid_checkout(uuid) to authenticated, service_role;
+
+comment on function public.can_recover_paid_checkout(uuid) is
+  'Verdadero cuando hay un cobro aprobado sin pedido que se puede rearmar desde el Panel.';
+
 create or replace function public.list_business_payments(p_business_id uuid)
 returns setof jsonb
 language plpgsql
@@ -150,7 +180,10 @@ begin
       (pi.order_id is not null and pi.internal_status in ('completed', 'partially_refunded'))
       or (pi.order_id is null and pi.internal_status = 'security_review_required' and pi.security_review_reason in ('approved_after_reservation_expired', 'finalization_without_active_reservation'))
     ) and dispute.id is null,
-    'can_cancel', v_can_operate and pi.provider_payment_id is not null and pi.internal_status in ('pending', 'in_process')
+    'can_cancel', v_can_operate and pi.provider_payment_id is not null and pi.internal_status in ('pending', 'in_process'),
+    -- Rearmar el pedido de un cobro que entró: la salida que faltaba cuando la
+    -- reserva venció y la única alternativa era devolver el dinero.
+    'can_recover_order', v_can_operate and public.can_recover_paid_checkout(pi.id)
   )
   from public.payment_intents pi
   left join public.checkout_sessions cs on cs.id = pi.checkout_session_id

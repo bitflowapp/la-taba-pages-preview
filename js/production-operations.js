@@ -268,6 +268,38 @@ export async function handleProductionOperationsAction(target) {
     return preparePaymentSupport(paymentSupport.dataset.productionPaymentSupport);
   }
 
+  // Rearmar el pedido de un cobro que entró y se quedó sin reserva. Es la
+  // salida que faltaba: hasta acá la única alternativa era devolver el dinero.
+  const paymentRecover = target.closest('[data-production-payment-recover]');
+  if (paymentRecover) {
+    const guard = requirePaymentAdminAccess();
+    if (!guard.ok) return { handled: true, ...guard };
+    const checkoutSessionId = paymentRecover.dataset.productionPaymentRecover;
+    const payment = businessPayments.find((row) => (
+      String(row.checkout_session_id) === String(checkoutSessionId)
+    ));
+    const paymentIntentId = String(payment?.payment_intent_id || checkoutSessionId);
+    if (paymentActionsInFlight.has(paymentIntentId)) {
+      return { handled: true, ok: false, message: 'Ya estamos procesando este pago.' };
+    }
+    paymentActionsInFlight.add(paymentIntentId);
+    notify();
+    try {
+      const result = await repository.recoverPaidCheckoutOrder(checkoutSessionId);
+      await refreshBusinessPayments();
+      paymentActionMessages.set(paymentIntentId, result.message || PAYMENT_ACTION_OUTCOMES.AUTOMATION_FAILED);
+      notify();
+      return { handled: true, ...result };
+    } catch (_) {
+      paymentActionMessages.set(paymentIntentId, PAYMENT_ACTION_OUTCOMES.AUTOMATION_FAILED);
+      notify();
+      return { handled: true, ok: false, message: PAYMENT_ACTION_OUTCOMES.AUTOMATION_FAILED };
+    } finally {
+      paymentActionsInFlight.delete(paymentIntentId);
+      notify();
+    }
+  }
+
   const paymentReconcile = target.closest('[data-production-payment-reconcile], [data-production-payment-reactivate]');
   if (paymentReconcile) {
     const guard = requirePaymentAdminAccess();

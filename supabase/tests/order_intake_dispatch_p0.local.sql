@@ -582,4 +582,144 @@ begin
   perform pg_temp.ok(n >= 1, 'una notificacion con firma invalida queda visible', 'filas=' || n);
 end $$;
 
+-- ============================================================
+-- La revision de seguridad se puede RESOLVER, y nada mas se afloja
+do $$
+declare
+  v_owner uuid; v_business uuid := gen_random_uuid(); v_session uuid := gen_random_uuid();
+  v_intent uuid := gen_random_uuid(); v_destino text; v_ok boolean;
+begin
+  raise notice '';
+  raise notice '===== GUARDIAN · SALIR DE LA REVISION DE SEGURIDAD =====';
+  v_owner := pg_temp.nuevo_usuario('p0-guard');
+  insert into public.businesses (id, name, slug, status, is_active, ordering_enabled, ordering_verified,
+    ordering_verified_at, ordering_verified_by, currency_code, pickup_enabled, delivery_enabled, delivery_fee, minimum_delivery_subtotal)
+  values (v_business, 'Guardian', 'guardian-' || right(replace(v_business::text,'-',''),8), 'open', true, true, true,
+    clock_timestamp(), v_owner, 'ARS', true, true, 500.00, 0.00);
+  insert into public.checkout_sessions (id, business_id, customer_id, client_request_id, normalized_intent_hash,
+    fulfillment_type, address_snapshot, contact_snapshot, currency, subtotal, discount_total, delivery_fee, total,
+    status, expires_at)
+  values (v_session, v_business, v_owner, 'guard0001', repeat('a', 64), 'pickup', '{}'::jsonb,
+    jsonb_build_object('name','Guardian'), 'ARS', 1000, 0, 0, 1000, 'manual_review_required', clock_timestamp() + interval '1 hour');
+  insert into public.payment_intents (id, business_id, checkout_session_id, environment, currency,
+    expected_amount, paid_amount, external_reference, internal_status, provider_status, security_review_reason)
+  values (v_intent, v_business, v_session, 'test', 'ARS', 1000, 1000,
+    'taba2:checkout:' || v_session::text, 'security_review_required', 'approved', 'approved_after_reservation_expired');
+
+  -- Las cinco resoluciones tienen que estar permitidas.
+  foreach v_destino in array array['refunded','partially_refunded','completed','approved_order_pending','charged_back'] loop
+    v_ok := true;
+    begin
+      update public.payment_intents set internal_status = v_destino where id = v_intent;
+      update public.payment_intents set internal_status = 'security_review_required' where id = v_intent;
+    exception when others then v_ok := false;
+    end;
+    perform pg_temp.ok(v_ok, 'una revision se puede resolver hacia ' || v_destino);
+  end loop;
+
+  -- Y nada mas. Un destino cualquiera de rango menor sigue bloqueado.
+  foreach v_destino in array array['pending','redirected','expired','rejected'] loop
+    v_ok := false;
+    begin
+      update public.payment_intents set internal_status = v_destino where id = v_intent;
+    exception when others then v_ok := true;
+    end;
+    perform pg_temp.ok(v_ok, 'sigue bloqueado retroceder a ' || v_destino);
+  end loop;
+
+  -- El resto de la escala no se aflojo: un pago normal no puede retroceder.
+  update public.payment_intents set internal_status = 'security_review_required' where id = v_intent;
+  update public.payment_intents set internal_status = 'completed' where id = v_intent;
+  v_ok := false;
+  begin
+    update public.payment_intents set internal_status = 'pending' where id = v_intent;
+  exception when others then v_ok := true;
+  end;
+  perform pg_temp.ok(v_ok, 'un pago completado tampoco puede retroceder a pending');
+end $$;
+
+-- ============================================================
+-- El cobro que entró y se quedó sin reserva: rearmarlo desde el Panel
+do $$
+declare
+  f record; c uuid; s record; r jsonb; n integer; st integer;
+  fila record; encontrada boolean := false;
+begin
+  raise notice '';
+  raise notice '===== RECUPERACION · ARMAR EL PEDIDO DE UN COBRO QUE ENTRO =====';
+  select * into f from pg_temp.fixture(10);
+  c := pg_temp.nuevo_usuario('p0-recup');
+  select * into s from pg_temp.hasta_preferencia(f.business_id, f.product_id, c, 'p0rec0001', 3);
+  perform pg_temp.envejecer(s.session_id, interval '20 minutes', interval '5 minutes');
+  perform public.sweep_expired_checkout_sessions();
+  select stock into st from public.products where id = f.product_id;
+  perform pg_temp.ok(st = 10, 'el barrido devolvio el stock antes del cobro tardio', 'stock=' || st);
+
+  r := public.record_mercadopago_payment_snapshot(s.intent_id, pg_temp.snapshot(s.session_id, 3000.00, clock_timestamp()), 'reconciliation', null);
+  perform pg_temp.ok(r ->> 'manual_review_required' = 'true', 'queda en revision manual: dinero adentro, sin pedido');
+
+  -- El Panel tiene que ofrecer la accion.
+  perform set_config('request.jwt.claims', json_build_object('sub', f.owner_id::text, 'role', 'authenticated')::text, true);
+  for fila in select value from public.list_business_payments(f.business_id) value loop
+    if (fila.value ->> 'payment_intent_id')::uuid = s.intent_id then
+      encontrada := true;
+      perform pg_temp.ok((fila.value ->> 'can_recover_order')::boolean,
+        'el Panel ofrece armar el pedido de este cobro');
+    end if;
+  end loop;
+  perform pg_temp.ok(encontrada, 'el cobro figura en la consulta del Panel');
+
+  -- Y armarlo tiene que funcionar de verdad.
+  r := public.recover_paid_checkout_order(s.session_id);
+  perform pg_temp.ok(r ->> 'ok' = 'true', 'el pedido se arma', coalesce(r ->> 'reason', r ->> 'order_code'));
+  select count(*)::integer into n from public.orders where business_id = f.business_id;
+  perform pg_temp.ok(n = 1, 'existe exactamente un pedido', 'pedidos=' || n);
+  select stock into st from public.products where id = f.product_id;
+  perform pg_temp.ok(st = 7, 'el stock se descuenta una sola vez al rearmar', 'stock=' || st);
+  select count(*)::integer into n from public.inventory_reservations
+   where checkout_session_id = s.session_id and status = 'converted';
+  perform pg_temp.ok(n = 1, 'la reserva nueva queda convertida', 'convertidas=' || n);
+
+  -- Tocarlo dos veces no puede crear un segundo pedido.
+  r := public.recover_paid_checkout_order(s.session_id);
+  select count(*)::integer into n from public.orders where business_id = f.business_id;
+  perform pg_temp.ok(r ->> 'idempotent' = 'true' and n = 1, 'rearmarlo de nuevo es idempotente', 'pedidos=' || n);
+end $$;
+
+do $$
+declare
+  f record; c uuid; c2 uuid; s record; s2 record; r jsonb; n integer; st integer;
+begin
+  raise notice '';
+  raise notice '===== RECUPERACION · CUANDO YA NO HAY STOCK, NO SE INVENTA =====';
+  select * into f from pg_temp.fixture(4);
+  c := pg_temp.nuevo_usuario('p0-sinstock');
+  select * into s from pg_temp.hasta_preferencia(f.business_id, f.product_id, c, 'p0sst0001', 4);
+  perform pg_temp.envejecer(s.session_id, interval '20 minutes', interval '5 minutes');
+  perform public.sweep_expired_checkout_sessions();
+  -- Mientras tanto, otra persona se lleva todo el stock.
+  c2 := pg_temp.nuevo_usuario('p0-otro');
+  select * into s2 from pg_temp.hasta_preferencia(f.business_id, f.product_id, c2, 'p0sst0002', 4);
+  select stock into st from public.products where id = f.product_id;
+  perform pg_temp.ok(st = 0, 'otro cliente se llevo el stock', 'stock=' || st);
+
+  r := public.record_mercadopago_payment_snapshot(s.intent_id, pg_temp.snapshot(s.session_id, 4000.00, clock_timestamp()), 'reconciliation', null);
+  perform pg_temp.ok(r ->> 'manual_review_required' = 'true', 'el cobro tardio queda en revision');
+
+  perform set_config('request.jwt.claims', json_build_object('sub', f.owner_id::text, 'role', 'authenticated')::text, true);
+  r := public.recover_paid_checkout_order(s.session_id);
+  perform pg_temp.ok(r ->> 'ok' = 'false' and r ->> 'reason' = 'stock_insuficiente',
+    'se niega a armar un pedido que no se puede cumplir', r ->> 'reason');
+  perform pg_temp.ok(jsonb_array_length(r -> 'missing') = 1, 'y dice exactamente que falta',
+    (r -> 'missing' -> 0 ->> 'name') || ': hay ' || (r -> 'missing' -> 0 ->> 'disponibles'));
+  select count(*)::integer into n from public.orders where business_id = f.business_id;
+  perform pg_temp.ok(n = 0, 'no se creo ningun pedido', 'pedidos=' || n);
+  select stock into st from public.products where id = f.product_id;
+  perform pg_temp.ok(st = 0, 'y el stock del otro cliente quedo intacto', 'stock=' || st);
+  perform pg_temp.ok(
+    (select (value ->> 'can_refund')::boolean from public.list_business_payments(f.business_id) value
+      where (value ->> 'payment_intent_id')::uuid = s.intent_id),
+    'la salida que queda -devolver el dinero- esta disponible');
+end $$;
+
 do $$ begin raise notice ''; raise notice '===== TODOS LOS P0 VERDES ====='; end $$;

@@ -37,12 +37,15 @@ Auditoría de las planillas del repositorio, medida y no estimada:
 | **stock** | **NO** | **no existe la columna** |
 
 Y un tercero que no está en las planillas sino en la base: **`products.price` es
-`not null check (price >= 0)`**. La base **no puede** representar «todavía no
-tiene precio»: lo termina guardando como **0**. O sea que el peligro de «precio
-NULL convertido a cero» no es hipotético, está horneado en el esquema. La única
-defensa posible es que nada publique ni venda con precio 0, y eso es lo que
-imponen el importador y el RPC, y lo que verifica el simulacro contra una base
-real.
+`not null check (price >= 0)`**, así que el NÚMERO de un producto sin precio se
+guarda como **0**.
+
+> **Corregido el 9 de agosto.** Este párrafo decía que la base «no puede
+> representar todavía no tiene precio», y era incompleto: el estado explícito sí
+> existe, en la columna `price_status`, desde el 2 de agosto. Lo que faltaba de
+> verdad era que la TABLA lo impusiera —una fila podía quedar `available` con
+> precio pendiente— y que la puerta comercial lo moviera al cargar un precio.
+> Las dos cosas están cerradas y documentadas en `CONTRATO-PRECIO-STOCK.md`.
 
 Dos huecos en las planillas, y sólo dos:
 

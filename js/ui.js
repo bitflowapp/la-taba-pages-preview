@@ -12,6 +12,12 @@ import {
   getRememberedCheckoutValues,
 } from './core/customer-profile.js';
 import { getFavoriteProductIds, isFavoriteProduct } from './core/customer-preferences.js';
+import {
+  PRICE_PENDING_DETAIL,
+  PRICE_PENDING_TITLE,
+  isCommerciallyPurchasable,
+  isPricePending,
+} from './core/pricing.js';
 import { buildReorderPreview } from './core/reorder.js';
 import {
   deliveryModeLabel,
@@ -373,16 +379,29 @@ export function discountPercent(product) {
 
 function activePromotionForProduct(product) {
   if (!isDemoMode() || !product?.id) return null;
+  // Un producto sin precio confirmado no puede tener promoción: no hay sobre
+  // qué descontar, y una promo sobre un precio ausente compararía contra cero.
+  if (isPricePending(product)) return null;
   const promotion = getProductPromotion(product.id, getState().promotions);
   if (!promotion || promotion.regularPrice !== Number(product.price)) return null;
   return promotion;
 }
 
+/**
+ * Presentación del precio. `pricePending` viaja SIEMPRE en el resultado: es la
+ * única forma de que quien lo dibuje no pueda olvidarse, y `productPriceLabel`
+ * es el camino que hay que usar para escribirlo.
+ *
+ * `price` sigue siendo un número —cero cuando está pendiente— a propósito: hay
+ * consumidores que hacen aritmética con él (`discountPercent`, `topBadge`) y un
+ * null los volvería NaN. El número nunca se imprime sin pasar por la etiqueta.
+ */
 export function productPricePresentation(product) {
-  const basePrice = Number(product?.price || 0);
+  const pricePending = isPricePending(product);
+  const basePrice = pricePending ? 0 : Number(product?.price || 0);
   const promotion = activePromotionForProduct(product);
   if (!promotion) {
-    return { price: basePrice, regularPrice: null, promotion: null, condition: '' };
+    return { price: basePrice, regularPrice: null, promotion: null, condition: '', pricePending };
   }
 
   let promotionalPrice = null;
@@ -399,7 +418,24 @@ export function productPricePresentation(product) {
     regularPrice: Number.isFinite(promotionalPrice) ? basePrice : null,
     promotion,
     condition: formatPromotionCondition(promotion),
+    pricePending,
   };
+}
+
+/**
+ * El ÚNICO camino para escribir el precio de un producto en pantalla.
+ *
+ * Antes cada superficie hacía `money(pricing.price)` por su cuenta y quedaba a
+ * salvo sólo si su fuente ya filtraba los pendientes. Eso funcionaba por suerte,
+ * no por construcción: bastaba una vidriera nueva alimentada por otra consulta
+ * para publicar un «$ 0».
+ */
+export function pricingLabel(pricing) {
+  return pricing?.pricePending ? PRICE_PENDING_TITLE : money(pricing?.price);
+}
+
+export function productPriceLabel(product) {
+  return pricingLabel(productPricePresentation(product));
 }
 
 function unitText(product) {
@@ -479,11 +515,8 @@ function offerBadges(product) {
   return badge ? `<div class="product-badges">${badge}</div>` : '';
 }
 
-const PRICE_PENDING_TITLE = 'Precio próximamente';
-const PRICE_PENDING_DETAIL = 'Este producto todavía no está disponible para compra.';
-
 function priceBlock(product) {
-  if (product.pricePending) {
+  if (isPricePending(product)) {
     return `<div class="price" data-price-pending-message>
       <div class="price-amounts"><strong>${PRICE_PENDING_TITLE}</strong></div>
       <small class="price-condition">${PRICE_PENDING_DETAIL}</small>
@@ -521,13 +554,18 @@ function quantityControl(product, quantity, { className = 'qty-stepper' } = {}) 
 }
 
 function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
-  const outOfStock = product.stock <= 0 || !product.available || product.pricePending;
+  // La compuerta pregunta por el CONTRATO, no por una bandera suelta: un
+  // producto con `pricePending` sin setear pero precio 0 tiene que quedar
+  // bloqueado igual. Es el caso que aparece si el backend manda una fila
+  // incoherente, y es justo el que no puede terminar en un carrito.
+  const pricePending = isPricePending(product);
+  const outOfStock = !isCommerciallyPurchasable(product);
   if (quantity > 0) return quantityControl(product, quantity);
-  const actionLabel = product.pricePending
+  const actionLabel = pricePending
     ? `${product.name}: ${PRICE_PENDING_TITLE.toLowerCase()}; ${PRICE_PENDING_DETAIL.toLowerCase()}`
     : `Agregar ${product.name} al pedido`;
-  return `<button class="${className}${product.pricePending ? ' is-price-pending' : ''}" type="button" data-add-product="${escapeHtml(product.id)}" aria-label="${escapeHtml(actionLabel)}" ${outOfStock ? 'disabled' : ''}>
-    ${product.pricePending ? '' : '<span class="add-plus" aria-hidden="true">+</span>'}<span class="add-text">${product.pricePending ? 'Precio pendiente' : outOfStock ? 'No disponible' : 'Agregar'}</span>
+  return `<button class="${className}${pricePending ? ' is-price-pending' : ''}" type="button" data-add-product="${escapeHtml(product.id)}" aria-label="${escapeHtml(actionLabel)}" ${outOfStock ? 'disabled' : ''}>
+    ${pricePending ? '' : '<span class="add-plus" aria-hidden="true">+</span>'}<span class="add-text">${pricePending ? 'Precio pendiente' : outOfStock ? 'No disponible' : 'Agregar'}</span>
   </button>`;
 }
 
@@ -1103,7 +1141,7 @@ function renderHomePromotions() {
         <div class="home-promo-copy">
           ${product.brand ? `<span class="home-promo-brand">${escapeHtml(product.brand)}</span>` : ''}
           <strong>${escapeHtml(product.name)}</strong>
-          <span class="home-product-price">${money(pricing.price)}</span>
+          <span class="home-product-price">${pricingLabel(pricing)}</span>
           ${old}
           <small>${escapeHtml(homeUnitText(product))}</small>
           <small class="home-offer-availability">${outOfStock ? 'Agotado' : 'Disponible'}</small>
@@ -1274,10 +1312,10 @@ function homeSectionCard(product, cartQuantities) {
   // que el local nunca ofreció. Y la acción deja de ser un "Agregar" apagado
   // para ser lo único que sí se puede hacer con ese producto hoy: abrir la
   // ficha y leer el detalle.
-  const price = product.pricePending
+  const price = isPricePending(product)
     ? `<span class="home-price-pending">${escapeHtml(PRICE_PENDING_TITLE)}</span>`
     : `<span>${money(pricing.price)}</span>`;
-  const control = product.pricePending
+  const control = isPricePending(product)
     ? `<button class="home-add-button is-price-pending" type="button" data-product-detail="${escapeHtml(product.id)}" aria-label="${escapeHtml(`Ver la ficha de ${product.name}. ${PRICE_PENDING_DETAIL}`)}"><span class="add-text">Ver detalle</span></button>`
     : quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' });
   return `
@@ -1502,7 +1540,7 @@ function railCard(product) {
         <small>${escapeHtml(unitText(product))}</small>
         <small class="offer-availability">${product.stock > 0 && product.available ? 'Disponible' : 'Agotado'}</small>
         <div class="offer-price">
-          <span>${money(pricing.price)}</span>
+          <span>${pricingLabel(pricing)}</span>
           ${old}
         </div>
       </div>
@@ -1958,9 +1996,7 @@ function renderCatalogMeta() {
   // no se puede comprar: quien entra scrollea diecisiete tarjetas hasta
   // entenderlo solo. Se dice de una vez, y sólo cuando pasa: si hay aunque sea
   // uno comprable, el contador no agrega nada.
-  const buyable = products.filter((product) => (
-    !product.pricePending && product.available && Number(product.stock) > 0
-  )).length;
+  const buyable = products.filter(isCommerciallyPurchasable).length;
   const pendingNote = count > 0 && buyable === 0 ? ' · todavía sin precio publicado' : '';
   setText(
     '[data-catalog-count]',
@@ -2043,7 +2079,7 @@ function renderProducts() {
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
 
   container.innerHTML = filteredProducts.map((product) => {
-    const outOfStock = product.stock <= 0 || !product.available || product.pricePending;
+    const outOfStock = !isCommerciallyPurchasable(product);
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
     const favorite = isFavoriteProduct(product.id);
@@ -2494,7 +2530,7 @@ function recommendationCard(product) {
       <div class="recommendation-copy">
         <strong>${escapeHtml(product.name)}</strong>
         <small>${escapeHtml(unitText(product))}</small>
-        <span>${money(productPricePresentation(product).price)}</span>
+        <span>${productPriceLabel(product)}</span>
       </div>
       <div class="recommendation-control">${quickAddControl(product, 0, { className: 'recommendation-add' })}</div>
     </article>`;
@@ -3539,11 +3575,11 @@ export function showProductModal(productId, restoreTrigger = null) {
         ${product.description ? `<p>${escapeHtml(product.description)}</p>` : ''}
         <div class="modal-commerce-row">
           <div class="modal-price">
-            ${product.pricePending
+            ${isPricePending(product)
               ? `<div data-price-pending-message><strong>${PRICE_PENDING_TITLE}</strong><small>${PRICE_PENDING_DETAIL}</small></div>`
               : `${pricing.regularPrice && pricing.regularPrice > pricing.price ? `<s>${money(pricing.regularPrice)}</s>` : ''}<strong>${money(pricing.price)}</strong>${pricing.condition ? `<small>${escapeHtml(pricing.condition)}</small>` : ''}`}
           </div>
-          ${product.pricePending ? '' : `<span class="modal-availability ${product.stock <= 0 || !product.available ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>`}
+          ${isPricePending(product) ? '' : `<span class="modal-availability ${product.stock <= 0 || !product.available ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>`}
         </div>
         ${variants.length > 1 ? `
           <fieldset class="modal-variant-field">
@@ -3556,7 +3592,7 @@ export function showProductModal(productId, restoreTrigger = null) {
                 return `<label class="modal-variant-card ${selected ? 'is-selected' : ''} ${unavailable ? 'is-unavailable' : ''}">
                   <input type="radio" name="productVariant" data-product-variant value="${escapeHtml(item.id)}" ${selected ? 'checked' : ''} ${unavailable ? 'disabled' : ''} />
                   <span><strong>${escapeHtml(unitText(item) || item.name)}</strong><small>${escapeHtml(item.name)}</small></span>
-                  <b>${money(itemPricing.price)}</b>
+                  <b>${pricingLabel(itemPricing)}</b>
                   ${itemPricing.regularPrice && itemPricing.regularPrice > itemPricing.price ? `<s>${money(itemPricing.regularPrice)}</s>` : ''}
                   ${unavailable ? '<em>Sin stock</em>' : ''}
                 </label>`;

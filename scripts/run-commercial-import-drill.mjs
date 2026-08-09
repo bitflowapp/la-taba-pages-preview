@@ -115,6 +115,20 @@ function productState(sku) {
   return row;
 }
 
+/** El estado según el contrato, en una palabra. */
+function commercialState(sku) {
+  return psql(
+    `select public.product_commercial_state(price_status, price, stock, is_active, is_verified, available)
+       from public.products where business_id='${BUSINESS_ID}' and sku='${sku}';`,
+  ).stdout;
+}
+
+function priceStatus(sku) {
+  return psql(
+    `select price_status from public.products where business_id='${BUSINESS_ID}' and sku='${sku}';`,
+  ).stdout;
+}
+
 function cleanup() {
   try { docker(['rm', '-f', CONTAINER]); } catch { /* ya no está */ }
 }
@@ -292,12 +306,19 @@ try {
   // como 0. O sea que el peligro que este simulacro persigue no es hipotético:
   // está horneado en el esquema. La única defensa posible es que nada publique
   // ni venda con precio 0, y eso es lo que se prueba abajo.
-  psql(`update public.products set price = 0 where business_id='${BUSINESS_ID}';`);
+  psql(`update public.products
+           set price = 0, price_status = 'pending'
+         where business_id='${BUSINESS_ID}';`);
   const conPrecioCero = psql(
     `select count(*) from public.products where business_id='${BUSINESS_ID}' and price = 0;`,
   ).stdout;
   check('la base guarda «sin precio» como 0, no como NULL',
     Number(conPrecioCero) === seedRows.length, `${conPrecioCero} filas en 0`);
+  const estadoInicial = psql(
+    `select distinct public.product_commercial_state(price_status, price, stock, is_active, is_verified, available)
+       from public.products where business_id='${BUSINESS_ID}';`,
+  ).stdout;
+  check('el contrato nombra ese estado «precio_pendiente»', estadoInicial === 'precio_pendiente', estadoInicial);
   const seeded = psql(`select count(*) from public.products where business_id='${BUSINESS_ID}';`).stdout;
   check('catálogo sembrado en la base efímera', Number(seeded) === seedRows.length, `${seeded} productos`);
 
@@ -386,7 +407,88 @@ try {
   check('publicar con imagen que no coincide con el registro aprobado rechazado',
     sinAsset.status !== 0, sinAsset.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
 
-  // ── 12. el plan del importador coincide con lo que acepta el servidor ─────
+  // ── 12. LAS SIETE TRANSICIONES DEL CONTRATO ───────────────────────────────
+  const t = resto[1] || tres;
+  psql(`update public.products
+           set price = 0, price_status = 'pending', stock = null,
+               available = false, is_verified = false, verified_at = null, verified_by = null
+         where business_id='${BUSINESS_ID}' and sku='${t}';`);
+
+  // (1) pendiente → confirmado: cargar el precio ES confirmarlo.
+  check('T1 · el punto de partida es precio_pendiente', commercialState(t) === 'precio_pendiente', commercialState(t));
+  applyBatch([{ sku: t, price: '1500' }]);
+  check('T1 · pendiente → confirmado, y el estado del precio acompaña',
+    priceStatus(t) === 'confirmed' && commercialState(t) === 'stock_pendiente',
+    `price_status=${priceStatus(t)} estado=${commercialState(t)}`);
+
+  // (2) confirmado → nuevo precio.
+  applyBatch([{ sku: t, price: '1750' }]);
+  check('T2 · confirmado → nuevo precio', productState(t).startsWith('1750.00|∅|'), productState(t));
+
+  // (3) stock pendiente → 10.
+  applyBatch([{ sku: t, stock: 10 }]);
+  // Deja de ser `stock_pendiente`, pero todavía no es publicable: este producto
+  // nunca se verificó, así que el contrato lo llama `no_publicado`.
+  check('T3 · stock pendiente → 10, y deja de ser stock_pendiente',
+    productState(t).startsWith('1750.00|10|') && commercialState(t) === 'no_publicado',
+    `${productState(t)} · ${commercialState(t)}`);
+
+  applyBatch([{ sku: t, publish: true }]);
+  check('T3b · con precio y stock, publicar funciona', commercialState(t) === 'comprable', commercialState(t));
+
+  // (4) 10 → 0: se agota y deja de poder comprarse, sin perder el precio.
+  applyBatch([{ sku: t, stock: 0 }]);
+  // `available` cae y el estado pasa a `agotado`. `is_verified` NO se toca:
+  // quedarse sin stock no invalida la revisión de identidad ni de imagen, y
+  // exigir una nueva verificación para reponer sería trabajo inventado.
+  check('T4 · 10 → 0 bloquea la compra y conserva el precio',
+    productState(t) === '1750.00|0|false|true' && commercialState(t) === 'agotado',
+    `${productState(t)} · ${commercialState(t)}`);
+
+  // (5) 0 → 10: repone. No se republica solo, porque al agotarse dejó de estar
+  // publicado; hay que volver a decirlo.
+  applyBatch([{ sku: t, stock: 10 }]);
+  check('T5 · 0 → 10 vuelve a ser publicable pero no se publica solo',
+    commercialState(t) === 'publicable_no_publicado', commercialState(t));
+  applyBatch([{ sku: t, publish: true }]);
+  check('T5b · y al publicarlo vuelve a ser comprable', commercialState(t) === 'comprable', commercialState(t));
+
+  // (6) lote mixto con una fila inválida: nada se aplica.
+  const antesMixto = productState(t);
+  const mixto = applyBatch([
+    { sku: t, price: '9999' },
+    { sku: uno, price: '8888' },
+    { sku: dos, stock: -1 },
+  ], { expectFailure: true });
+  check('T6 · un lote mixto con una fila inválida se rechaza entero', mixto.status !== 0,
+    mixto.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  // (7) rollback total: ninguna de las dos filas buenas quedó escrita.
+  check('T7 · rollback total: ninguna fila buena del lote quedó aplicada',
+    productState(t) === antesMixto && !productState(uno).startsWith('8888'),
+    `${t}=${productState(t)} · ${uno}=${productState(uno)}`);
+
+  // ── 13. la tabla impide un comprable sin precio confirmado ────────────────
+  // Aunque alguien escriba `available` directo, que el grant lo permite.
+  const forzado = psql(
+    `update public.products set price_status='pending' where business_id='${BUSINESS_ID}' and sku='${t}';`,
+    { expectFailure: true },
+  );
+  check('la tabla impide dejar comprable un producto con precio pendiente',
+    forzado.status !== 0,
+    forzado.stderr.split('\n').find((l) => l.includes('ERROR') || l.includes('constraint')) || '');
+
+  // Y devolverlo a pendiente por la puerta comercial sí funciona, porque apaga
+  // la venta en el mismo movimiento.
+  applyBatch([{ sku: t, price_pending: true }]);
+  // Apaga la venta —`available` en falso— sin des-verificar: el producto sigue
+  // siendo el mismo, lo que dejó de estar confirmado es cuánto sale.
+  const trasPendiente = productState(t);
+  check('volver a «precio pendiente» por la puerta comercial apaga la venta',
+    commercialState(t) === 'precio_pendiente' && trasPendiente.split('|')[2] === 'false',
+    `${commercialState(t)} · ${trasPendiente}`);
+
+  // ── 14. el plan del importador coincide con lo que acepta el servidor ─────
   const sheet = [
     'sku,producto,categoria,alcohol,precio,stock,publicar,notas',
     `${uno},Producto uno,Gaseosas,no,4100,30,si,`,

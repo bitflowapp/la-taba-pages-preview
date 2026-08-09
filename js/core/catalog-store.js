@@ -1,5 +1,5 @@
 import { categories, products as demoProducts } from '../data.js';
-import { normalizeMoneyValue, normalizeStock } from './pricing.js';
+import { isCommerciallyPurchasable, normalizeMoneyValue, normalizeStock } from './pricing.js';
 import { sanitizeText } from './validators.js';
 import { applyRetailNaming, linkProcurementPacks, publishRetailUnits } from './retail-packaging.js';
 
@@ -128,8 +128,17 @@ export function isProductVisibleToCustomer(product) {
   return Boolean(product && product.archived !== true && product.procurementOnly !== true);
 }
 
+/**
+ * La compuerta que decide si algo puede entrar a un carrito.
+ *
+ * Pregunta por el CONTRATO —`isCommerciallyPurchasable`— y no por la bandera
+ * `pricePending` sola. La diferencia importa cuando el backend manda una fila
+ * incoherente: `pricePending` en falso con `price` en 0 pasaba esta compuerta y
+ * terminaba en una línea de carrito a cero pesos. Ahora un precio que no es un
+ * número mayor a cero es pendiente, diga lo que diga la bandera.
+ */
 export function isProductOrderable(product) {
-  return Boolean(isProductVisibleToCustomer(product) && product.available && !product.pricePending && Number(product.stock) > 0);
+  return Boolean(isProductVisibleToCustomer(product) && isCommerciallyPurchasable(product));
 }
 
 export function validateCatalogProductInput(input = {}) {

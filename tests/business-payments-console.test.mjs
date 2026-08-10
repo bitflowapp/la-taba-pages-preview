@@ -126,6 +126,28 @@ test('las acciones sensibles no se le ofrecen al equipo', () => {
   assert.equal(paymentActionsFor(payment, { elevated: true }).find((action) => action.id === 'refund').requiresConfirmation, true);
 });
 
+test('armar el pedido de un cobro que entró sólo aparece cuando el servidor lo habilita', () => {
+  // Un cobro que entró y se quedó sin reserva: antes la única salida ofrecida
+  // era devolver el dinero, aunque el producto estuviera disponible.
+  const cobrado = {
+    can_refund: true,
+    can_recover_order: true,
+    internal_status: 'security_review_required',
+    order_public_code: null,
+  };
+  const owner = paymentActionsFor(cobrado, { elevated: true }).map((action) => action.id);
+  assert.deepEqual(owner, ['refresh', 'recover-order', 'diagnostic', 'refund']);
+
+  // Es una acción sensible: al equipo no se le ofrece.
+  const staff = paymentActionsFor(cobrado, { elevated: false }).map((action) => action.id);
+  assert.deepEqual(staff, ['refresh', 'diagnostic']);
+
+  // Y no se ofrece cuando el servidor no la habilita, aunque el rol alcance.
+  const normal = paymentActionsFor({ can_reconcile: true, internal_status: 'in_process' }, { elevated: true })
+    .map((action) => action.id);
+  assert.equal(normal.includes('recover-order'), false);
+});
+
 test('actualizar la lista y consultar al proveedor son dos acciones distintas', () => {
   const actions = paymentActionsFor({ can_reconcile: true, internal_status: 'in_process' }, { elevated: true });
   const refresh = actions.find((action) => action.id === 'refresh');

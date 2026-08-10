@@ -156,6 +156,16 @@ export function paymentActionsFor(payment = {}, { elevated = false } = {}) {
       hint: 'Pregunta el resultado, compara importe y referencia, y acomoda el pedido.',
     },
     {
+      // El cobro entró y el pedido nunca se armó. Rearmarlo es preferible a
+      // devolver el dinero cuando el producto está: la persona quiere lo que
+      // compró. Si el stock no alcanza, el servidor lo dice y no inventa nada.
+      id: 'recover-order',
+      label: 'Armar el pedido de este cobro',
+      kind: 'elevated',
+      available: Boolean(payment.can_recover_order),
+      hint: 'Vuelve a tomar el stock y crea el pedido. Si ya no hay stock, te avisa qué falta.',
+    },
+    {
       id: 'diagnostic',
       label: 'Preparar diagnóstico',
       kind: 'safe',

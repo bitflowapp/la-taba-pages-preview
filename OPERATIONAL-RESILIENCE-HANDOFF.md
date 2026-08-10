@@ -263,6 +263,66 @@ la base abajo de los pies.
 
 ---
 
+## 6.bis Quién vigila al vigilante
+
+El barrido detecta todo lo demás pero no puede denunciar su propia ausencia.
+Ahora hay tres capas que lo miran, y **ninguna depende de pg_cron**:
+
+| capa | qué es | estado hoy | detección máxima |
+| --- | --- | --- | --- |
+| **Tráfico real** | trigger de sentencia sobre `orders`: cada pedido que entra comprueba el reloj del barrido | **vivo en staging**, verificado | el primer pedido tras 10 min de silencio |
+| **Sonda pública** | `scheduler_heartbeat()`, anónima, sin un solo dato de negocio | **viva en staging**, verificada | inmediata para quien la consulte |
+| **Reloj de afuera** | `check_scheduler_watchdog()` llamado por un reloj externo | ver abajo | 600 s de umbral + la cadencia del reloj |
+
+`check_scheduler_watchdog()` mide la condición **contra la base**; no confía en
+quien llama. Por eso puede ser anónima sin riesgo: un extraño no puede inventar
+una alerta ni silenciarla, sólo pedirle al servidor que mire su propio reloj, y
+eso está acotado a una escritura por minuto (lock consultivo + ventana de 60 s).
+La recuperación llega por dos caminos independientes: la sonda cierra la alerta
+en cuanto el barrido vuelve a estar fresco, y el barrido —al revivir— también,
+porque la condición desaparece de sus hallazgos.
+
+**Los dos relojes de afuera, y por qué ninguno está corriendo todavía:**
+
+* **Cloudflare Worker** (`services/scheduler-watchdog/`, cron cada 5 min). El
+  script quedó **subido**; el disparador **no**. Cloudflare lo rechaza:
+  *«You need a workers.dev subdomain in order to proceed… Opening the Workers
+  landing page for the first time will create a workers.dev subdomain
+  automatically» (error 10063)*. Es un clic humano en el panel de Cloudflare, una
+  sola vez. Después, `npx wrangler deploy` desde `services/scheduler-watchdog/`
+  y queda andando. **Detección: ≤ 15 min.**
+* **GitHub Actions** (`.github/workflows/scheduler-watchdog.yml`, cada 10 min).
+  Corre sobre la misma infraestructura que ya ejecuta el CI y tiene algo que
+  ninguna otra capa tiene: **cuando falla, GitHub manda un correo**. Necesita un
+  `push` —que este encargo no hace— y un secreto de repositorio.
+  **Detección: ≤ 20 min.**
+
+Lo que hoy funciona sin que nadie haga nada: la capa de tráfico y la sonda
+pública. Lo que falta para cerrar el círculo del todo son dos acciones humanas
+de un minuto cada una, documentadas arriba.
+
+## 6.ter La migración 20260807155000
+
+**Por qué existía sin aplicarse.** Staging recibió el contrato `private` del mapa
+del Rider desde el repositorio del Rider, registrado con la versión
+`20260804090000` —número que ESTE repositorio usa para otra cosa—. La migración
+`20260807155000` existe para cerrar ese hueco *hacia adelante*: una base creada
+sólo desde este árbol no tiene el contrato y `20260807170000` aborta sin él.
+
+**Qué se midió antes de decidir.** `pg_dump` del esquema `private` y del `public`
+de staging: las dos tablas, las dos funciones y el trigger sobre `orders` están
+los cinco presentes. La propia migración declara ese caso como **no-op**: valida
+y no toca nada; con el contrato a medias, aborta antes de mutar.
+
+**Cómo se resolvió: (A), aplicándola.** No por comodidad —es exactamente su
+propósito— y con la prueba de que no cambia nada. `supabase db push --include-all`
+la aplicó como el no-op que es y escribió su fila en el ledger.
+
+**Resultado:** ledger **72/72**, sin migraciones locales pendientes.
+`supabase db push` responde `Remote database is up to date`. **Ya no hace falta
+sacar el archivo de la carpeta ni pasar `--include-all` nunca más.** No se
+reescribió ninguna migración aplicada ni se tocó la fila de `20260804090000`.
+
 ## 7. Gates
 
 | Gate | Resultado |
@@ -278,23 +338,23 @@ la base abajo de los pies.
 
 ## 8. Deuda que queda
 
-1. **Quién vigila al vigilante.** Si pg_cron se muere entero, el barrido tampoco
-   corre, y esta rama no puede avisarlo desde adentro. La salud operativa lo hace
-   visible en un solo dato (antigüedad de la última evaluación), pero **un aviso
-   fuera de la base —que llegue al teléfono— sigue faltando**. Es el paso
-   siguiente natural y no está hecho.
-2. **`ORDER_READY_WITHOUT_RIDER` y las alertas anteriores no excluyen `origin =
+1. **Los dos relojes de afuera están escritos y NO están corriendo.** Cada uno
+   necesita una acción humana de un minuto: registrar el subdominio `workers.dev`
+   en el panel de Cloudflare (para el Worker) y hacer `push` + cargar un secreto
+   de repositorio (para GitHub Actions). Hasta entonces, la detección de una
+   muerte total del planificador depende de que entre un pedido —la capa de
+   tráfico— o de que alguien mire. Está medido y dicho, no supuesto.
+2. **Un aviso que llegue al teléfono sigue faltando.** De las tres capas, la
+   única que notifica hacia afuera por sí sola es la de GitHub Actions, por
+   correo. No hay canal de push ni WhatsApp (prohibido por encargo).
+3. **`ORDER_READY_WITHOUT_RIDER` y las alertas anteriores no excluyen `origin =
    qa`.** Las cinco nuevas sí. No se tocaron las existentes para no cambiar
    comportamiento certificado; queda anotado.
-3. **`20260807155000` sigue sin aplicar en staging.** No es de este encargo. Hay
-   que decidirla explícitamente: mientras esté en el árbol y no en el ledger,
-   cualquier `supabase db push` futuro la va a querer aplicar de arrastre.
-4. **El frente de esta rama no está publicado.** El backend ya vigila; la
-   sección «Cómo viene el sistema» se ve recién cuando se publique.
-5. **Un fallo del planificador entero sigue siendo invisible desde adentro**
-   (ver punto 1). Hoy la única forma de enterarse es mirar la antigüedad de la
-   última evaluación en el Panel.
 4. **La firma del webhook no valida en TEST.** Sin cambios: es del proveedor.
 5. **El handler de `production-operations.js` para
    `[data-production-payment-recover]` sigue inalcanzable** (deuda heredada de la
    sesión del Panel de recuperación).
+6. **La certificación del Panel usó un operador sintético**, creado y borrado en
+   el mismo acto. No hay una cuenta de operador persistente para QA en esta
+   sesión: la anterior quedó rotada y su clave sólo en un archivo local que ya no
+   está.

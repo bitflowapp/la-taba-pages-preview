@@ -54,6 +54,31 @@ recalcular **al abrir el Panel**».
 cuatro rutas de disco local y `check-release-hygiene` las prohíbe. Corregido sin
 perder la información.
 
+### El barrido se denunciaba a sí mismo (lo encontró el despliegue)
+
+En la **primera corrida** después de aplicar la migración en staging
+(`2026-08-10T18:04:00Z`), `taba-operational-alerts-sweep` abrió una alerta
+**CRÍTICA** contra sí mismo:
+
+```
+alert_code ....... SCHEDULER_JOB_STALLED
+job .............. taba-operational-alerts-sweep
+last_start ....... 18:04:00.033Z   <- la corrida que se estaba ejecutando
+last_success_at .. sin ninguno todavía
+resuelta ......... 18:05:00Z, sola, por la corrida siguiente
+```
+
+Una tarea recién programada no tiene ningún éxito, y el guardián de «el
+planificador sigue vivo» se cumplía porque las otras tres sí habían corrido.
+Dura un minuto, pero aparecería en cada despliegue y en cada restauración: es
+exactamente la alarma que enseña a ignorar el tablero.
+
+**El arnés local no podía verlo**: el fixture siembra historial de corridas antes
+de medir, justamente para no medir el reloj del fixture. Corregido en
+`20260810140000` —«detenida» exige haber estado en marcha alguna vez— y agregado
+al arnés, junto con el caso contrario (una tarea colgada media hora sin terminar
+sí se detecta).
+
 ### Otros hallazgos, anotados y no maquillados
 
 * Ocho códigos de alerta que ya se emitían **no tenían traducción** para el
@@ -170,10 +195,62 @@ dice a una persona exactamente qué mirar.
 
 ---
 
-## 5. Cómo reproducir
+## 5. Aplicado y verificado en staging
+
+Las tres migraciones están **aplicadas en `la-taba-staging`**. El ledger remoto
+pasó de 67 a 70 con exactamente estas tres y ninguna más:
+
+```
+20260810120000_autonomous_operational_alert_evaluation
+20260810130000_operational_health_surface
+20260810140000_scheduler_stalled_needs_history
+```
+
+`supabase db push` habría arrastrado además `20260807155000` (ajena a este
+encargo, presente en el árbol y ausente en staging). Se la sacó de la carpeta
+durante cada push y se la devolvió inmediatamente: **sigue sin aplicar**, y el
+árbol quedó limpio.
+
+**La prueba que no se puede dar localmente** —que pg_cron alojado ejecuta el
+barrido por su cuenta— quedó medida:
+
+| corrida | estado | hallazgos | críticas | duración |
+| --- | --- | --- | --- | --- |
+| 18:04:00 | ok | 3 | 1 | 422 ms |
+| 18:05:00 | ok | 2 | 0 | 121 ms |
+| 18:06:00 … 18:11:00 | ok | 2 | 0 | 109–215 ms |
+
+Ocho corridas seguidas, **una por minuto, sin que nadie las pidiera**, a ~120 ms
+cada una. La crítica de la primera es el defecto de la sección 1, ya corregido.
+
+Lo demás verificado sobre el entorno alojado: la salud operativa responde con las
+cuatro tareas «al día», informa los dos secretos como cargados **sin devolver
+ningún valor** (2.332 caracteres revisados, ni la credencial usada ni ninguna
+cadena con pinta de secreto), y sin sesión contesta **401**.
+
+**Estado de la base, antes y después:**
+
+| | antes (17:58Z) | después (18:11Z) |
+| --- | --- | --- |
+| negocios · pedidos · checkouts · cobros | 1 · 97 · 83 · 83 | idénticos |
+| reservas activas | 0 | 0 |
+| alertas abiertas | 2 (`RIDER_SIGNAL_STALE`) | 2 (las mismas) |
+| cola de cobros | 12, todas completadas | idéntica |
+| LT-0030 | `arrived` $550, `updated_at` 2026-08-06T19:31:47Z | **sin tocar** |
+
+Ni una fila de negocio se escribió. Cero Edge Functions redesplegadas, cero
+publicación a Pages, cero producción, cero ARCA, cero WhatsApp, cero dinero real.
+
+**El frente todavía no está publicado.** «Cómo viene el sistema» vive en esta
+rama; Pages sigue sirviendo la RC1. El backend ya responde `health` dentro de
+`get_production_operation_center` y la RC1 publicada **ignora esa clave sin
+romperse** (lee `metrics`, `alerts` y `recent_closures`). Publicar el frente es un
+paso aparte, con su propio lock.
+
+## 6. Cómo reproducir
 
 ```bash
-# Ensayos contra PostgreSQL real y descartable (contenedor propio, 70 migraciones)
+# Ensayos contra PostgreSQL real y descartable (contenedor propio, 71 migraciones)
 TABA_LOCAL_OPS_DB=1 node scripts/run-operational-resilience-drills.mjs
 
 # El aviso de actualización contra un Service Worker real
@@ -186,7 +263,20 @@ la base abajo de los pies.
 
 ---
 
-## 6. Deuda que queda
+## 7. Gates
+
+| Gate | Resultado |
+| --- | --- |
+| `npm run check` | verde (**estaba rojo en `f4588f9`**) |
+| `npm test` | **1289/1289** (base 1268 · +21 nuevas) |
+| Playwright | **243/243** en 11,7 min (base 238 · +5 nuevas) |
+| `npm run migrations:validate` | 71 en orden, revisión estática aprobada |
+| `npm run secrets:scan` | limpio |
+| Ensayos de resiliencia | **11 ensayos · 58 afirmaciones**, verdes desde cero |
+| Idempotencia y concurrencia | cuatro barridos → una fila; dos simultáneos → el segundo se retira |
+| Árbol de trabajo | limpio · sin `push` |
+
+## 8. Deuda que queda
 
 1. **Quién vigila al vigilante.** Si pg_cron se muere entero, el barrido tampoco
    corre, y esta rama no puede avisarlo desde adentro. La salud operativa lo hace
@@ -196,7 +286,14 @@ la base abajo de los pies.
 2. **`ORDER_READY_WITHOUT_RIDER` y las alertas anteriores no excluyen `origin =
    qa`.** Las cinco nuevas sí. No se tocaron las existentes para no cambiar
    comportamiento certificado; queda anotado.
-3. **`20260807155000` sigue sin aplicar en staging.** No es de este encargo.
+3. **`20260807155000` sigue sin aplicar en staging.** No es de este encargo. Hay
+   que decidirla explícitamente: mientras esté en el árbol y no en el ledger,
+   cualquier `supabase db push` futuro la va a querer aplicar de arrastre.
+4. **El frente de esta rama no está publicado.** El backend ya vigila; la
+   sección «Cómo viene el sistema» se ve recién cuando se publique.
+5. **Un fallo del planificador entero sigue siendo invisible desde adentro**
+   (ver punto 1). Hoy la única forma de enterarse es mirar la antigüedad de la
+   última evaluación en el Panel.
 4. **La firma del webhook no valida en TEST.** Sin cambios: es del proveedor.
 5. **El handler de `production-operations.js` para
    `[data-production-payment-recover]` sigue inalcanzable** (deuda heredada de la

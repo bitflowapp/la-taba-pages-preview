@@ -1414,6 +1414,27 @@ async function runPaymentAction(button) {
   }
   if (action === 'diagnostic') return exportPaymentDiagnostic(paymentIntentId);
   if (action === 'refresh') return refreshPaymentsAction();
+  // Armar el pedido de un cobro que entró NO es reconciliar: reconciliar le
+  // pregunta a Mercado Pago, y acá ya sabemos que el dinero está. Sin esta
+  // rama la acción caía en el reconcile de abajo y el botón mentía.
+  if (action === 'recover-order') {
+    const guard = requireCapability('payments.reconcile');
+    if (!guard.ok) return guard.result;
+    if (busy) return result(false, 'Ya hay algo en curso.');
+    const payment = payments.find((row) => String(row.payment_intent_id) === paymentIntentId);
+    const checkoutSessionId = String(payment?.checkout_session_id || '');
+    if (!checkoutSessionId) return result(false, 'Este cobro no tiene un checkout que se pueda rearmar.');
+    busy = true;
+    const response = await context.recoverPaidCheckoutOrder(checkoutSessionId);
+    busy = false;
+    // El servidor puede negarse por stock: ese mensaje ya dice qué falta y hay
+    // que mostrarlo tal cual, no reemplazarlo por un error genérico.
+    feedback = response?.message
+      || (response?.ok ? 'Pedido armado.' : 'No pudimos armar el pedido de este cobro.');
+    if (response?.ok) await refreshPayments();
+    else context.onChange();
+    return result(Boolean(response?.ok), feedback);
+  }
   const guard = requireCapability('payments.reconcile');
   if (!guard.ok) return guard.result;
   if (busy) return result(false, 'Ya hay algo en curso.');
@@ -1783,6 +1804,7 @@ function defaultContext() {
     getPaymentsActivation: async () => ({ ok: false, message: 'El estado de cobros no está disponible.' }),
     configurePaymentSettings: async () => ({ ok: false, message: 'La configuración de cobros no está disponible.' }),
     reconcilePayment: async () => ({ ok: false, message: 'La consulta de pagos no está disponible.' }),
+    recoverPaidCheckoutOrder: async () => ({ ok: false, message: 'Armar el pedido de un cobro no está disponible.' }),
     refundPayment: async () => ({ ok: false, message: 'Las devoluciones no están disponibles.' }),
     getArcaActivation: async () => ({ ok: false, message: 'El estado de facturación no está disponible.' }),
     authorizeArcaHomologation: async () => ({ ok: false, message: 'La autorización fiscal no está disponible.' }),

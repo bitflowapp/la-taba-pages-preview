@@ -949,6 +949,7 @@ async function configureBusinessRuntime(result) {
     getPaymentsActivation: () => paymentsRepository.getActivationStatus(),
     configurePaymentSettings: (settings) => paymentsRepository.configureSettings(settings),
     reconcilePayment: (paymentIntentId) => repository.reconcileMercadoPagoPayment(paymentIntentId),
+    recoverOrder: (checkoutSessionId) => repository.recoverPaidCheckoutOrder(checkoutSessionId),
     refundPayment: (input) => repository.requestMercadoPagoRefund(input),
     getArcaActivation: () => fiscalRepository.getActivationStatus(),
     authorizeArcaHomologation: (phrase) => fiscalRepository.authorizeHomologation(phrase),

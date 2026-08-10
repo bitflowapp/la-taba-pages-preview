@@ -70,6 +70,9 @@ const PUBLIC_TRACKING_GPS_MAX_ACCURACY_METERS = 250;
 const TRUSTED_ETA_MAX_AGE_MS = 15 * 60 * 1000;
 const TRUSTED_ETA_SOURCES = new Set(['business', 'routing']);
 const MAX_BUSINESS_INBOX_ORDERS = 500;
+// Presupuesto para enumerar faltantes de stock. Deja aire bajo los 240 caracteres
+// que humanizeFailure() tolera antes de reemplazar el mensaje por un genérico.
+const MISSING_STOCK_BUDGET = 200;
 const BUSINESS_INBOX_ORIGIN = 'production';
 let channelSequence = 0;
 
@@ -983,6 +986,28 @@ export function createSupabaseOrderRepository({
   }
 
   /**
+   * Enumera lo que falta SIN pasarse del presupuesto de caracteres.
+   *
+   * humanizeFailure() descarta entero cualquier mensaje de más de 240 caracteres
+   * y lo cambia por un genérico. Con cuatro faltantes la frase ya medía 261 y el
+   * operador perdía justo el dato accionable —qué falta y cuánto—. Se nombran
+   * los que entran y se dice cuántos quedan: vale más "tres nombres y 2 más" que
+   * un "no pudimos" sin información. Siempre entra al menos uno.
+   */
+  function describeMissingStock(missing) {
+    const parts = missing.map((f) => `${f.name} (hay ${f.disponibles}, hacen falta ${f.necesarias})`);
+    const shown = [];
+    let used = 0;
+    for (const part of parts) {
+      if (shown.length && used + part.length + 2 > MISSING_STOCK_BUDGET) break;
+      shown.push(part);
+      used += part.length + 2;
+    }
+    const rest = parts.length - shown.length;
+    return rest > 0 ? `${shown.join('; ')} y ${rest} más` : shown.join('; ');
+  }
+
+  /**
    * Rearma el pedido de un cobro aprobado que se quedó sin reserva.
    *
    * El servidor decide: si el stock no alcanza devuelve `stock_insuficiente`
@@ -997,12 +1022,9 @@ export function createSupabaseOrderRepository({
     if (error) return repositoryResult(false, { message: 'No pudimos armar el pedido de este cobro.' });
     if (data?.reason === 'stock_insuficiente') {
       const faltantes = Array.isArray(data.missing) ? data.missing : [];
-      const detalle = faltantes
-        .map((f) => `${f.name} (hay ${f.disponibles}, hacen falta ${f.necesarias})`)
-        .join('; ');
       return repositoryResult(false, {
         ...data,
-        message: `No hay stock para armarlo: ${detalle}. Devolvé el dinero desde el Panel.`,
+        message: `No hay stock para armarlo: ${describeMissingStock(faltantes)}. Devolvé el dinero desde el Panel.`,
       });
     }
     if (!data?.ok) return repositoryResult(false, { message: 'No pudimos armar el pedido de este cobro.' });

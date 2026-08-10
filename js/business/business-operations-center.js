@@ -1414,6 +1414,10 @@ async function runPaymentAction(button) {
   }
   if (action === 'diagnostic') return exportPaymentDiagnostic(paymentIntentId);
   if (action === 'refresh') return refreshPaymentsAction();
+  // Rearmar el pedido NO es reconciliar: toma stock y crea el pedido. Sin esta
+  // rama el click caía en el reconcile de abajo, que consulta a Mercado Pago y
+  // contesta "en unos segundos se actualiza solo" sin haber armado nada.
+  if (action === 'recover-order') return recoverPaymentOrder(paymentIntentId);
   const guard = requireCapability('payments.reconcile');
   if (!guard.ok) return guard.result;
   if (busy) return result(false, 'Ya hay algo en curso.');
@@ -1423,6 +1427,40 @@ async function runPaymentAction(button) {
   feedback = response?.ok
     ? 'Le pedimos el resultado a Mercado Pago. En unos segundos se actualiza solo.'
     : humanizeFailure(response?.message, 'No pudimos consultar el pago ahora.');
+  if (response?.ok) await refreshPayments();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+/**
+ * Rearma el pedido de un cobro que entró y se quedó sin reserva.
+ *
+ * El botón se ofrece sólo si el servidor levantó `can_recover_order`, pero el
+ * permiso se vuelve a exigir acá: el markup se puede falsificar y esta acción
+ * toma stock. Es la misma capacidad elevada que la reconciliación, así que el
+ * equipo no la ejecuta aunque llegue a disparar el evento.
+ *
+ * Duplicar no depende de esta guarda: `recover_paid_checkout_order` es
+ * idempotente y sobre un pedido ya armado contesta que ya estaba. `busy` sólo
+ * evita el doble click mientras la primera llamada está en vuelo.
+ */
+async function recoverPaymentOrder(paymentIntentId) {
+  const guard = requireCapability('payments.reconcile');
+  if (!guard.ok) return guard.result;
+  const payment = payments.find((candidate) => String(candidate.payment_intent_id) === paymentIntentId);
+  const checkoutSessionId = String(payment?.checkout_session_id || '');
+  if (!checkoutSessionId) {
+    return result(false, 'Este cobro no tiene una compra asociada para rearmar. Prepará el diagnóstico y pasalo a soporte.');
+  }
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  busy = true;
+  const response = await context.recoverOrder(checkoutSessionId);
+  busy = false;
+  // El mensaje del servidor es el que importa: cuando falta stock dice qué falta
+  // y cuánto, y eso es lo que deja al operador decidir si devuelve el dinero.
+  feedback = response?.ok
+    ? humanizeFailure(response?.message, 'Listo: el pedido de este cobro quedó armado.')
+    : humanizeFailure(response?.message, 'No pudimos armar el pedido de este cobro.');
   if (response?.ok) await refreshPayments();
   else context.onChange();
   return result(Boolean(response?.ok), feedback);
@@ -1783,6 +1821,7 @@ function defaultContext() {
     getPaymentsActivation: async () => ({ ok: false, message: 'El estado de cobros no está disponible.' }),
     configurePaymentSettings: async () => ({ ok: false, message: 'La configuración de cobros no está disponible.' }),
     reconcilePayment: async () => ({ ok: false, message: 'La consulta de pagos no está disponible.' }),
+    recoverOrder: async () => ({ ok: false, message: 'Rearmar el pedido no está disponible.' }),
     refundPayment: async () => ({ ok: false, message: 'Las devoluciones no están disponibles.' }),
     getArcaActivation: async () => ({ ok: false, message: 'El estado de facturación no está disponible.' }),
     authorizeArcaHomologation: async () => ({ ok: false, message: 'La autorización fiscal no está disponible.' }),

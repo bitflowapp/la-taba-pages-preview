@@ -310,6 +310,36 @@ begin
     and not pg_temp.abierta(f.business_id, 'SCHEDULER_JOB_STALLED'),
     'con el planificador sano no se inventa ninguna alerta');
 
+  -- ENCONTRADO EN STAGING, no acá: en la primera corrida después de aplicar la
+  -- migración, el propio barrido se denunció como detenido —arrancado hace un
+  -- segundo, sin ningún éxito todavía— y abrió una alerta CRÍTICA que se cerró
+  -- sola al minuto siguiente. El fixture de arriba siembra historial, así que
+  -- este ensayo no podía verlo. Ahora sí: una tarea recién programada, con el
+  -- planificador vivo alrededor.
+  delete from cron.job_run_details
+   where jobid = (select jobid from cron.job where jobname = 'taba-operational-alerts-sweep');
+  insert into cron.job_run_details (jobid, runid, job_pid, database, username, command, status, return_message, start_time, end_time)
+  select j.jobid, coalesce((select max(runid) from cron.job_run_details), 0) + 1, 0,
+         current_database(), current_user, 'ensayo', 'running', 'en curso',
+         clock_timestamp(), null
+    from cron.job j where j.jobname = 'taba-operational-alerts-sweep';
+  r := pg_temp.barrer();
+  perform pg_temp.ok(
+    not pg_temp.abierta_job(f.business_id, 'SCHEDULER_JOB_STALLED', 'taba-operational-alerts-sweep'),
+    'una tarea en su PRIMERA corrida no se denuncia a sí misma como detenida',
+    'defecto encontrado en staging 2026-08-10T18:04Z');
+
+  -- Pero una que lleva un cuarto de hora arrancada y nunca terminó, sí.
+  update cron.job_run_details
+     set start_time = clock_timestamp() - interval '30 minutes'
+   where jobid = (select jobid from cron.job where jobname = 'taba-operational-alerts-sweep');
+  r := pg_temp.barrer();
+  perform pg_temp.ok(
+    pg_temp.abierta_job(f.business_id, 'SCHEDULER_JOB_STALLED', 'taba-operational-alerts-sweep'),
+    'una tarea colgada media hora sin terminar sí se detecta');
+  perform pg_temp.corrida_de_cron('taba-operational-alerts-sweep', 'succeeded', clock_timestamp() - interval '4 minutes');
+  r := pg_temp.barrer();
+
   -- Una tarea empieza a fallar.
   perform pg_temp.corrida_de_cron('taba-checkout-expiry-sweep', 'failed', clock_timestamp() - interval '3 minutes');
   perform pg_temp.corrida_de_cron('taba-checkout-expiry-sweep', 'failed', clock_timestamp() - interval '2 minutes');

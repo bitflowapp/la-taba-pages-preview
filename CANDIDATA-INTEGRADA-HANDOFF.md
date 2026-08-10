@@ -1,7 +1,9 @@
 # Candidata integrada — la vidriera y el mapa en un solo cliente
 
-Rama `integration/taba2-customer-experience`, HEAD **`34e7b5f`**, en su propio
-worktree bajo el directorio de worktrees del proyecto.
+Rama `integration/taba2-customer-experience`, en su propio worktree bajo el
+directorio de worktrees del proyecto. La punta exacta al cerrar queda anotada
+en el lock (`_claude-locks/taba2-customer-experience-integration.txt`): un
+documento no puede nombrar su propio commit sin mentir.
 
 Junta dos encargos cerrados y certificados por separado:
 

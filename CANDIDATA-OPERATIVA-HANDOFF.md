@@ -141,3 +141,49 @@ le cobraría el panel entero a cada cliente que sólo viene a comprar.
 
 **Sigue abierto, sin tocar:** el bloqueante `GITHUB_PAGES_MODULE_GRAPH_SIN_VERSION`
 heredado de la candidata anterior. Es de cabeceras HTTP, no de esta integración.
+
+## Gates, medidos sobre `d3c1426`
+
+| gate | resultado |
+|---|---|
+| `npm run check` | verde — 4 gates, contrato de ubicación incluido |
+| `npm test` | **1268/1268** · 39,6 s (base 1258 + 1 traído + 9 nuevos) |
+| Playwright | **238/238** · 8,5 min · Chromium + WebKit móvil |
+| Playwright sobre el árbol previo al spec focal | 230/230 · 8,3 min — **idéntico a la base**: la integración no movió el gate |
+
+El Panel focal corre **en los dos motores**, 4 pruebas cada uno, en 320/360/390/432,
+con cero desborde horizontal, cero errores de página y cero respuestas ≥400.
+
+Tracking focal (`tracking-arriving`, `tracking-follow-mode`, `tracking-terminal-expiry`)
+y catálogo focal (`taba2-unit-catalog`, `taba2-brand-home`, `taba2-commercial-p1-closure`)
+siguen verdes sin tocarlos, incluida «la vuelta al rider entra en las cuatro
+anchuras sin desbordar».
+
+### Lo que la regresión demuestra
+
+- el Panel **ve los cobros** — los tres, con importe y código de pedido;
+- el rearmado **aparece sólo cuando corresponde**: una sola vez, en el cobro que
+  el servidor habilitó. El tercer pago está en revisión de seguridad igual, pero
+  sin la bandera y no la ofrece — prueba que no aparece por el *estado* sino por
+  el permiso del servidor. El equipo no la ve, y si falsifica el evento tampoco
+  la ejecuta;
+- **no duplica**: la segunda vez contesta que ya estaba armado, y el doble click
+  en vuelo manda una sola orden. La idempotencia real es del servidor; `busy`
+  sólo cubre el doble click;
+- **stock insuficiente da mensaje accionable**: qué falta y cuánto, en pantalla,
+  con la devolución disponible como la salida que queda;
+- **catálogo y tracking intactos**, por diff y por suite.
+
+Las pruebas **tienen dientes**: desactivando el desvío de `recover-order`,
+5 de las 9 unitarias fallan. Se comprobó, no se supone.
+
+## Lo que NO se hizo
+
+Sin staging, sin migraciones, sin redeploy de Edge, sin push, sin producción,
+sin LT-0030. El árbol quedó limpio y ninguna base fue tocada: todo lo que se
+midió acá corre contra un contexto de prueba en el navegador y contra el árbol.
+
+**Queda pendiente**, y esta declaración no lo cubre: el circuito con base viva.
+Lo que se certifica es que el Panel ahora **puede** operar el backend certificado
+—que el botón existe, despacha la operación correcta, respeta el permiso y dice
+la verdad cuando no puede—, no que se haya vuelto a recorrer punta a punta.

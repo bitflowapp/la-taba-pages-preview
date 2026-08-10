@@ -210,19 +210,75 @@ Sin push.
 
 ---
 
-## 9. Lo que NO se hizo
+## 9. Desplegado a staging
 
-**La prueba física no se hizo.** El Moto G15 no aparece en `adb devices` —lista
-vacía, sólo el daemon de adb vivo—, así que no hay recorrido de ≥300 m, ni ≥20
-fixes en movimiento, ni pantalla apagada, ni background, ni offline de 60 s con
-reconexión. Nada de eso se afirma.
+`deployment 5f29f3c3`, proyecto `taba2-staging`, rama `staging`. 10 archivos
+subidos, 340 ya presentes.
 
-**No se desplegó a staging.** No hacía falta sin prueba física, y
-`taba2-staging-mutation.lock` figura ACTIVO a nombre de
-`TABA2_RIDER_HUMAN_PHYSICAL_CERTIFICATION_DF44DAF` desde las 17:10 Z. Ese proceso
-parece huérfano —cinco horas sin una sola escritura en su worktree y sin proceso
-propietario vivo—, pero desplazar un lock ajeno para una tarea que no lo
-necesitaba habría sido gratuito. Queda anotado para quien vaya a desplegar.
+| | antes | ahora |
+|---|---|---|
+| `CACHE_NAME` | `v55-gondola-comercial` | `v56-seguimiento-en-vivo` |
+| hojas | `?v=45` | `?v=46` |
+| `app.js` | `?v=38` | `?v=39` |
+
+Verificado en la URL pública: `js/map/rider_motion.js` y
+`js/map/tracking_status.js` responden 200 con `Content-Type:
+application/javascript` — se sirven de verdad, no caen en el fallback HTML de
+Pages.
+
+`runtime-config.js` **preservado byte a byte**: se bajó el vivo antes de subir y
+se comparó por sha256 local contra remoto (idénticos). El del repo es una
+plantilla vacía que habría dejado al storefront sin backend. **Cero migraciones**
+—la rama no trae ninguna— y **ni una fila escrita** en la base.
+
+Rollback: redesplegar el árbol de `da56ce9`. El cambio es front puro.
+
+---
+
+## 10. La prueba física sigue sin poder correr
+
+**El teléfono ya no es el problema.** El Moto G15 está conectado y autorizado,
+con la APK de staging instalada, permisos `FINE`/`COARSE`/`POST_NOTIFICATIONS`
+concedidos, `location_mode=3` y Wi-Fi doméstica.
+
+Lo que falta son **credenciales**, y no se pueden reponer desde acá:
+
+- El **PAT de management de Supabase fue borrado** el 2026-08-10 a pedido de la
+  persona a cargo. Sin él no hay camino de admin.
+- **Los dos logins del Rider están rotados.** Medido en vivo contra
+  `/auth/v1/token`: `400 invalid_credentials` en ambos.
+- **El teléfono ya no tiene sesión guardada**: `no_backup/` está vacío, o sea
+  `rider_session.enc` no existe. La app tiene que volver a entrar y no tiene con
+  qué.
+- Sin login de staff tampoco se puede llevar un pedido a `on_the_way` desde el
+  Panel.
+
+Queda vivo únicamente `rider-map-qa`, que es un actor de mapa.
+
+No se forzó ningún estado por SQL y no se tocó ningún pedido: hacerlo habría
+fabricado la evidencia que esta prueba existe para producir.
+
+### La declaración NO se emite
+
+**`TABA2_CUSTOMER_LIVE_TRACKING_PRODUCTION_UX_CERTIFIED` queda sin emitir.**
+
+Su condición es que un cliente pueda seguir un Rider **físico** con movimiento
+comprensible. El código está desplegado y verificable en staging, el movimiento
+visual está medido y el estado de la señal está probado en el navegador — pero
+sin un Rider que pueda publicar GPS no hay recorrido que seguir, y afirmarlo
+sobre trazas grabadas sería exactamente la clase de evidencia inventada que este
+encargo prohíbe.
+
+### Lo único que falta para desbloquearla
+
+1. Un **PAT nuevo** de `supabase.com/dashboard/account/tokens`, guardado donde el
+   proyecto guarda sus credenciales — con eso se rota el login del Rider y se
+   puede preparar el pedido.
+2. El Moto sale por el **hotspot del iPhone** (ya decidido) y el iPhone mira el
+   tracking por sus propios datos móviles.
+3. Recorrido de ≥300 m con ≥20 fixes, cubriendo pan y pinch de dos dedos,
+   «Volver al Rider», pantalla apagada, background, offline de ≥60 s y
+   reconexión.
 
 ### La declaración NO se emite
 

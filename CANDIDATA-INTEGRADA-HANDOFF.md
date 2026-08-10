@@ -1,14 +1,23 @@
 # Candidata integrada — la vidriera y el mapa en un solo cliente
 
-Rama `integration/taba2-customer-experience`, HEAD **`9eef076`**, en
-`D:\1212\worktrees\taba2-customer-experience`.
+Rama `integration/taba2-customer-experience`, HEAD **`34e7b5f`**, en su propio
+worktree bajo el directorio de worktrees del proyecto.
 
 Junta dos encargos cerrados y certificados por separado:
 
-| | rama | HEAD | base |
+| | rama | HEAD integrado | base |
 |---|---|---|---|
 | catálogo | `feature/taba2-catalog-premium-purchase` | `280213d` | `e59ac1c` |
-| seguimiento | `feature/taba2-live-tracking-production-ux` | `5941279` | `da56ce9` |
+| seguimiento | `feature/taba2-live-tracking-production-ux` | `73fdb4c` | `da56ce9` |
+
+> **Nota de la punta del seguimiento.** El encargo nombraba `5941279`, y ése fue
+> el merge inicial. Durante la integración esa rama avanzó a `73fdb4c` con dos
+> commits que tocan ÚNICAMENTE `INFORME-TRACKING-EN-VIVO.md` (cero código de
+> producto: verificado con `git diff --stat`). Se trajeron igual, para que la
+> candidata quede sobre la punta real y no sobre una foto vieja.
+> En el mismo período **el seguimiento se desplegó a staging**: lo que
+> `taba2-staging.pages.dev` sirve hoy ya no es `da56ce9`/v55 sino v56. La
+> auditoría de caché de la sección 3 se rehízo contra esa realidad.
 
 ---
 
@@ -78,7 +87,11 @@ e `index.html`, y nunca contra lo que `styles.css` pide de verdad.
 
 Arnés en `artifacts/.../upgrade-sw.mjs`: un servidor que cambia su raíz de
 documentos a mitad de la corrida, que es lo que le pasa a un cliente cuando se
-publica. Del v55 que sirve staging hoy al v57 de esta candidata.
+publica. **Del v56 que sirve staging hoy** al v57 de esta candidata.
+
+De paso, el paso 1 de esa corrida confirma que el defecto de las hojas **está
+vivo en staging ahora mismo**: el shell publicado va en `styles.css?v=46` y sus
+trece `@import` piden `?v=45`.
 
 **La cabecera del servidor decide el resultado**, así que se midieron las dos
 reales el 2026-08-10:

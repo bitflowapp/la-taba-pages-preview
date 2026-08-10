@@ -81,7 +81,7 @@ test('a rejected IndexedDB still leaves a usable in-memory sandbox without block
 });
 
 test('a failed application module leaves an actionable recovery shell instead of a blank main', async ({ page }) => {
-  await page.route('**/js/app.js?v=39', (route) => route.fulfill({
+  await page.route('**/js/app.js?v=40', (route) => route.fulfill({
     status: 503,
     contentType: 'text/javascript',
     body: '/* unavailable for recovery test */',

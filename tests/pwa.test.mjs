@@ -30,8 +30,8 @@ test('index.html loads the module entry point and avoids root-absolute asset pat
 
   assert.ok(indexHtml.includes('<script src="js/pwa-update.js?v=2"></script>'));
   assert.ok(indexHtml.includes('<script src="js/startup-recovery.js?v=1"></script>'));
-  assert.match(indexHtml, /<link rel="stylesheet" href="styles\.css\?v=46"\s*\/?>/);
-  assert.ok(indexHtml.includes('<script type="module" src="js/app.js?v=39"></script>'));
+  assert.match(indexHtml, /<link rel="stylesheet" href="styles\.css\?v=47"\s*\/?>/);
+  assert.ok(indexHtml.includes('<script type="module" src="js/app.js?v=40"></script>'));
   assert.ok(!indexHtml.includes('src="/js/'));
   assert.ok(!indexHtml.includes('href="/js/'));
   assert.ok(!indexHtml.includes('src="/assets/'));
@@ -41,14 +41,55 @@ test('service worker precaches the versioned showcase graph', () => {
   const worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 
   for (const asset of [
-    './styles.css?v=46',
-    './styles/showcase.css?v=46',
-    './js/app.js?v=39',
+    './styles.css?v=47',
+    './styles/showcase.css?v=47',
+    './js/app.js?v=40',
     './js/core/showcase-mode.js',
     './js/showcase-fixtures.js',
     './js/showcase.js',
   ]) {
     assert.ok(worker.includes(`'${asset}'`), `${asset} should be precached`);
+  }
+});
+
+/*
+ * El `?v` de `styles.css` no protege a las hojas que ese archivo importa: cada
+ * `@import` es su propia URL y su propio `?v`. Si el shell rota y los imports
+ * no, el navegador sirve las hojas VIEJAS —misma URL— contra el HTML nuevo, y
+ * el SW precachea una versión que nadie pide nunca.
+ *
+ * Pasó de verdad: la rotación a v46 movió index.html y sw.js y dejó los trece
+ * `@import` en v45. Online no se nota, porque network-first siempre trae la
+ * hoja fresca. Se ve cuando el cliente vuelve con caché encima, que es el caso
+ * que importa. Estas dos afirmaciones lo cierran de las dos puntas.
+ */
+test('la cadena de CSS versionado cierra: shell, @imports y precache dicen lo mismo', () => {
+  const worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  const stylesheet = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+  const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+
+  const shellVersion = indexHtml.match(/href="styles\.css\?v=(\d+)"/)?.[1];
+  assert.ok(shellVersion, 'index.html debería cargar styles.css con un ?v');
+  assert.ok(
+    worker.includes(`'./styles.css?v=${shellVersion}'`),
+    `sw.js precachea styles.css en otra versión que la que pide index.html (?v=${shellVersion})`,
+  );
+
+  const imports = [...stylesheet.matchAll(/@import url\("\.\/(styles\/[^"?]+\.css)\?v=(\d+)"\)/g)];
+  assert.ok(imports.length > 0, 'styles.css debería importar hojas versionadas');
+
+  for (const [, file, version] of imports) {
+    assert.equal(
+      version,
+      shellVersion,
+      `styles.css importa ${file} en ?v=${version} y el shell va en ?v=${shellVersion}: ` +
+        'el navegador serviría esa hoja desde la caché vieja',
+    );
+    assert.ok(
+      worker.includes(`'./${file}?v=${version}'`),
+      `${file} lo importa styles.css y falta en el precache de sw.js en ?v=${version}: ` +
+        'sin red el importador se queda sin esa hoja',
+    );
   }
 });
 

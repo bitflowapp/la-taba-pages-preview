@@ -11,7 +11,7 @@ test('static recovery shell is loaded before the application module', () => {
   const index = read('index.html');
   assert.match(index, /data-app-recovery/);
   assert.match(index, /startup-recovery\.js\?v=1/);
-  assert.match(index, /startup-recovery\.js\?v=1[\s\S]*app\.js\?v=39/);
+  assert.match(index, /startup-recovery\.js\?v=1[\s\S]*app\.js\?v=40/);
 });
 
 test('bootstrap renders before sandbox synchronization and resets after that first paint', () => {

@@ -7,13 +7,17 @@ import {
   renderMapViews,
 } from '../js/map/map_view.js';
 import {
+  MAPLIBRE_ACCURACY_FILL_LAYER_ID,
+  MAPLIBRE_ACCURACY_LINE_LAYER_ID,
+  MAPLIBRE_ACCURACY_SOURCE_ID,
   MAPLIBRE_FALLBACK_COPY,
+  MAPLIBRE_FOLLOW_ZOOM,
   MAPLIBRE_PUBLIC_STYLE_URL,
   MAPLIBRE_SANDBOX_ROUTE_CASING_LAYER_ID,
   MAPLIBRE_SANDBOX_ROUTE_LAYER_ID,
   MAPLIBRE_SANDBOX_ROUTE_SOURCE_ID,
+  accuracyCircleFeature,
   createMapLibreTrackingMap,
-  shouldAnimateRiderMove,
 } from '../js/map/maplibre_tracking_map.js';
 import {
   createRiderMarkerElement,
@@ -343,11 +347,12 @@ test('shouldRenderGpsFix throttles noisy marker updates', () => {
   assert.equal(shouldRenderGpsFix(previous, tiny, { now }), false);
   assert.equal(shouldRenderGpsFix({ ...previous, renderedAt: now - 1_300 }, oldEnough, { now: now + 1_300 }), true);
   assert.equal(shouldRenderGpsFix(previous, far, { now }), true);
-  assert.equal(shouldAnimateRiderMove(previous, far, { freshness: 'fresh' }), true);
-  assert.equal(shouldAnimateRiderMove(previous, far, { freshness: 'delayed' }), false);
-  assert.equal(shouldAnimateRiderMove(previous, far, { freshness: 'lost' }), false);
-  assert.equal(shouldAnimateRiderMove(previous, far, { freshness: 'fresh', reducedMotion: true }), false);
 });
+
+// El movimiento visual ya no depende de que el fix esté 'fresh'. Un fix que
+// llega demorado sigue siendo una coordenada real y su tramo se recorre igual:
+// cortar la animación por frescura era justamente lo que producía el tirón.
+// La regla vive ahora en js/map/rider_motion.js y se prueba en rider-motion.test.mjs.
 
 test('MapLibre keeps one map and one rider Marker node across GPS updates', async () => {
   const now = Date.now();
@@ -373,6 +378,8 @@ test('MapLibre keeps one map and one rider Marker node across GPS updates', asyn
     environment.calls.maps[0].emit('load');
     await waitForMapFrame();
     assert.equal(environment.calls.maps.length, 1);
+    // Se explora con dos dedos, y eso se sostiene: sin esta opción el lienzo se
+    // queda con el arrastre vertical y el cliente no puede scrollear su pedido.
     assert.equal(environment.calls.mapOptions[0].cooperativeGestures, true);
     // Mapa honesto: SÓLO el marcador del rider real. Sin marcador de local (LT),
     // sin marcador de cliente (CL) y sin polyline de ruta.
@@ -407,7 +414,10 @@ test('MapLibre keeps one map and one rider Marker node across GPS updates', asyn
     assert.equal(recenterMapViews({ querySelectorAll: () => [shell] }), true);
     const cameraUpdate = environment.calls.jumpTo.at(-1);
     assert.deepEqual(cameraUpdate.center, [-68.0613, -38.9513]);
-    assert.equal(Object.hasOwn(cameraUpdate, 'zoom'), false);
+    // Volver al rider devuelve además un zoom en el que se entiende la cuadra:
+    // recentrar sin acercar deja al cliente mirando la ciudad entera.
+    assert.equal(cameraUpdate.zoom, MAPLIBRE_FOLLOW_ZOOM);
+    // Lo que sigue sin tocarse es la rotación: el norte siempre arriba.
     assert.equal(Object.hasOwn(cameraUpdate, 'bearing'), false);
 
     const map = environment.calls.maps[0];
@@ -421,6 +431,227 @@ test('MapLibre keeps one map and one rider Marker node across GPS updates', asyn
     assert.equal(environment.document.listenerCount(), 0);
   } finally {
     disposeMapViews({ querySelectorAll: () => [shell] });
+    environment.restore();
+  }
+});
+
+/*
+ * Un evento de cámara nacido de un dedo. MapLibre le adjunta el evento del
+ * navegador que lo originó; los movimientos que hace el propio mapa llegan sin
+ * él, y esa es justamente la diferencia que el seguimiento tiene que mirar.
+ */
+function gesto() {
+  return { originalEvent: { type: 'pointerdown' } };
+}
+
+// Un fix real, en la forma en que llega desde el backend.
+function gpsFix({ lat = -38.9459, lng = -68.0533, accuracy = 12, at = Date.now() } = {}) {
+  return {
+    lat,
+    lng,
+    accuracy,
+    source: 'gps',
+    timestamp: at,
+    lastFixAt: new Date(at).toISOString(),
+  };
+}
+
+test('el gesto del cliente suspende el seguimiento y el mapa deja de mover la cámara', () => {
+  const environment = installMapLibreStub();
+  const { shell, canvas, fallback } = createMapShell('LT-CAM-1', {
+    documentRef: environment.document,
+  });
+  const modes = [];
+  const controller = createMapLibreTrackingMap({ onCameraModeChange: (mode) => modes.push(mode) });
+  try {
+    controller.mount({
+      container: canvas,
+      shell,
+      fallback,
+      riderLocation: gpsFix(),
+      freshness: 'fresh',
+      status: 'on_the_way',
+      source: 'gps',
+    });
+    const map = environment.calls.maps[0];
+    map.emit('load');
+    assert.equal(controller.getCameraMode(), 'follow');
+
+    // Mientras sigue, la cámara acompaña al rider.
+    const centrosAntes = environment.calls.setCenter.length;
+    controller.updateRiderLocation(gpsFix({ lat: -38.9455, at: Date.now() + 12_000 }), {
+      freshness: 'fresh',
+      status: 'on_the_way',
+    });
+    assert.ok(environment.calls.setCenter.length > centrosAntes, 'la cámara acompaña');
+
+    // El cliente arrastra el mapa: se suspende el auto-seguimiento en el acto.
+    map.emit('dragstart', gesto());
+    assert.equal(controller.getCameraMode(), 'explore');
+    assert.deepEqual(modes, ['explore']);
+    assert.equal(shell.dataset.mapCamera, 'explore');
+
+    // Y desde ahí el mapa NO le pelea el encuadre: llegan fixes y no recentra.
+    const centrosExplorando = environment.calls.setCenter.length;
+    controller.updateRiderLocation(gpsFix({ lat: -38.9451, at: Date.now() + 24_000 }), {
+      freshness: 'fresh',
+      status: 'on_the_way',
+    });
+    assert.equal(
+      environment.calls.setCenter.length,
+      centrosExplorando,
+      'explorando, el mapa no toca la cámara',
+    );
+  } finally {
+    controller.destroy();
+    environment.restore();
+  }
+});
+
+test('volver al rider recupera cámara, zoom útil y seguimiento', () => {
+  const environment = installMapLibreStub();
+  const { shell, canvas, fallback } = createMapShell('LT-CAM-2', {
+    documentRef: environment.document,
+  });
+  const modes = [];
+  const controller = createMapLibreTrackingMap({ onCameraModeChange: (mode) => modes.push(mode) });
+  try {
+    controller.mount({
+      container: canvas,
+      shell,
+      fallback,
+      riderLocation: gpsFix(),
+      freshness: 'fresh',
+      status: 'on_the_way',
+      source: 'gps',
+    });
+    const map = environment.calls.maps[0];
+    map.emit('load');
+    map.emit('zoomstart', gesto());
+    assert.equal(controller.getCameraMode(), 'explore');
+
+    assert.equal(controller.recenter(), true);
+    // El entorno de prueba declara prefers-reduced-motion, así que la vuelta es
+    // instantánea. Lo que se verifica es el destino, no la animación.
+    const vuelta = environment.calls.jumpTo.at(-1);
+    assert.deepEqual(vuelta.center, [-68.0533, -38.9459]);
+    assert.equal(vuelta.zoom, MAPLIBRE_FOLLOW_ZOOM);
+    assert.equal(controller.getCameraMode(), 'follow');
+    assert.deepEqual(modes, ['explore', 'follow']);
+    assert.equal(shell.dataset.mapCamera, 'follow');
+
+    // El vuelo de vuelta emite sus propios zoomstart, sin evento de navegador
+    // detrás: no puede leerse como que el cliente tocó el mapa.
+    map.emit('zoomstart', {});
+    map.emit('dragstart', {});
+    assert.equal(controller.getCameraMode(), 'follow', 'el vuelo no se auto-cancela');
+    // Un dedo de verdad, en cambio, sigue suspendiendo el seguimiento.
+    map.emit('dragstart', gesto());
+    assert.equal(controller.getCameraMode(), 'explore');
+  } finally {
+    controller.destroy();
+    environment.restore();
+  }
+});
+
+test('el halo de precisión dibuja los metros que informa el fix', () => {
+  const environment = installMapLibreStub();
+  const { shell, canvas, fallback } = createMapShell('LT-CAM-3', {
+    documentRef: environment.document,
+  });
+  const controller = createMapLibreTrackingMap();
+  try {
+    controller.mount({
+      container: canvas,
+      shell,
+      fallback,
+      riderLocation: gpsFix({ accuracy: 120 }),
+      freshness: 'fresh',
+      status: 'on_the_way',
+      source: 'gps',
+    });
+    environment.calls.maps[0].emit('load');
+
+    const halo = environment.calls.addSource.find(
+      (entry) => entry.id === MAPLIBRE_ACCURACY_SOURCE_ID,
+    );
+    assert.ok(halo, 'el halo se agrega cuando el fix trae precisión');
+    const capas = environment.calls.addLayer.map((layer) => layer.id);
+    assert.ok(capas.includes(MAPLIBRE_ACCURACY_FILL_LAYER_ID));
+    assert.ok(capas.includes(MAPLIBRE_ACCURACY_LINE_LAYER_ID));
+    assert.equal(controller.getLifecycleState().accuracyMeters, 120);
+  } finally {
+    controller.destroy();
+    environment.restore();
+  }
+});
+
+test('sin precisión informada no se dibuja ningún halo', () => {
+  const environment = installMapLibreStub();
+  const { shell, canvas, fallback } = createMapShell('LT-CAM-4', {
+    documentRef: environment.document,
+  });
+  const controller = createMapLibreTrackingMap();
+  try {
+    controller.mount({
+      container: canvas,
+      shell,
+      fallback,
+      riderLocation: { lat: -38.9459, lng: -68.0533, source: 'gps', timestamp: Date.now() },
+      freshness: 'fresh',
+      status: 'on_the_way',
+      source: 'gps',
+    });
+    environment.calls.maps[0].emit('load');
+    assert.equal(
+      environment.calls.addSource.some((entry) => entry.id === MAPLIBRE_ACCURACY_SOURCE_ID),
+      false,
+      'no se inventa un radio de precisión que el fix no trae',
+    );
+  } finally {
+    controller.destroy();
+    environment.restore();
+  }
+});
+
+test('el círculo de precisión mide en metros reales, no en píxeles', () => {
+  const feature = accuracyCircleFeature({ lat: -38.9459, lng: -68.0533 }, 100);
+  const ring = feature.geometry.coordinates[0];
+  assert.equal(feature.geometry.type, 'Polygon');
+  assert.equal(ring.at(0)[0], ring.at(-1)[0], 'el anillo cierra');
+  // 100 m al norte son 100/111320 grados de latitud.
+  const norte = ring.reduce((a, b) => (b[1] > a[1] ? b : a));
+  assert.ok(Math.abs((norte[1] - -38.9459) - (100 / 111_320)) < 1e-6);
+  assert.equal(accuracyCircleFeature({ lat: -38.9459, lng: -68.0533 }, 0), null);
+  assert.equal(accuracyCircleFeature(null, 50), null);
+});
+
+test('perder frescura conserva al rider en su última posición conocida', () => {
+  const environment = installMapLibreStub();
+  const { shell, canvas, fallback } = createMapShell('LT-CAM-5', {
+    documentRef: environment.document,
+  });
+  const controller = createMapLibreTrackingMap();
+  try {
+    controller.mount({
+      container: canvas,
+      shell,
+      fallback,
+      riderLocation: gpsFix(),
+      freshness: 'fresh',
+      status: 'on_the_way',
+      source: 'gps',
+    });
+    environment.calls.maps[0].emit('load');
+
+    controller.updateFreshness('lost');
+    const estado = controller.getLifecycleState();
+    assert.equal(estado.freshness, 'lost');
+    assert.equal(estado.hasRiderMarker, true, 'el marcador no se borra');
+    assert.deepEqual(estado.measuredLocation.lat, -38.9459);
+    assert.equal(shell.dataset.mapFreshness, 'lost');
+  } finally {
+    controller.destroy();
     environment.restore();
   }
 });
@@ -656,6 +887,8 @@ function installMapLibreStub({ webgl = true, constructorError = false } = {}) {
     setLayoutProperty: [],
     jumpTo: [],
     easeTo: [],
+    setCenter: [],
+    setZoom: [],
     mapRemove: 0,
     markerRemove: 0,
     resize: 0,
@@ -731,6 +964,12 @@ function installMapLibreStub({ webgl = true, constructorError = false } = {}) {
     }
     easeTo(options) {
       calls.easeTo.push(options);
+    }
+    setCenter(center) {
+      calls.setCenter.push([...center]);
+    }
+    setZoom(zoom) {
+      calls.setZoom.push(zoom);
     }
     getCanvas() {
       return this.canvas;

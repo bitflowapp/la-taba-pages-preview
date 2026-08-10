@@ -1,28 +1,28 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v55-gondola-comercial';
+const CACHE_NAME = 'la-taba-runtime-v56-seguimiento-en-vivo';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=45',
-  './styles/tokens.css?v=45',
-  './styles/common.css?v=45',
-  './styles/storefront.css?v=45',
-  './styles/catalog.css?v=45',
-  './styles/checkout.css?v=45',
-  './styles/profile.css?v=45',
-  './styles/showcase.css?v=45',
-  './styles/tracking.css?v=45',
-  './styles/business.css?v=45',
-  './styles/rider.css?v=45',
-  './styles/responsive.css?v=45',
-  './styles/brand-home.css?v=45',
+  './styles.css?v=46',
+  './styles/tokens.css?v=46',
+  './styles/common.css?v=46',
+  './styles/storefront.css?v=46',
+  './styles/catalog.css?v=46',
+  './styles/checkout.css?v=46',
+  './styles/profile.css?v=46',
+  './styles/showcase.css?v=46',
+  './styles/tracking.css?v=46',
+  './styles/business.css?v=46',
+  './styles/rider.css?v=46',
+  './styles/responsive.css?v=46',
+  './styles/brand-home.css?v=46',
   './manifest.webmanifest',
   './runtime-config.js',
   './assets/icon.svg',
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=2',
   './js/startup-recovery.js?v=1',
-  './js/app.js?v=38',
+  './js/app.js?v=39',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -67,7 +67,11 @@ const ASSETS = [
   './js/map/location_picker_map.js',
   './js/map/map_view.js',
   './js/map/rider_marker.js',
+  // El motor de movimiento visual también es import estático del mapa: sin él
+  // en la caché, offline el rider se queda sin marcador.
+  './js/map/rider_motion.js',
   './js/map/route_geometry.js',
+  './js/map/tracking_status.js',
   // El tema nocturno es un import ESTÁTICO de maplibre_tracking_map.js. Sin él
   // acá, offline el importador no evalúa —`Response.error()`— y el cliente
   // pierde el mapa entero, no sólo el color.

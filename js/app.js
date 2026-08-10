@@ -1677,7 +1677,9 @@ function bindEvents() {
       renderLiveSurfaces();
       return;
     }
-    if (target.closest('[data-map-recenter]')) {
+    // Dos controles, la misma acción: el botón de recentrar que está siempre, y
+    // el «Volver al Rider» que aparece sólo cuando el cliente exploró el mapa.
+    if (target.closest('[data-map-recenter], [data-map-follow-cta]')) {
       recenterMapViews();
       return;
     }

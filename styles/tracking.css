@@ -1205,6 +1205,41 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row > strong
   height: 24px;
 }
 
+/* «Volver al Rider»: sólo existe mientras el cliente explora el mapa. Va
+   centrado y APILADO SOBRE la atribución de MapLibre, no encima de ella: la
+   atribución ocupa toda la franja inferior con su propio z-index y se comía el
+   toque —medido: el click aterrizaba en el contenedor y el botón no hacía
+   nada—. La geometría vive acá; el color lo pone la sección del lienzo
+   nocturno, más abajo. */
+.tracking-map-follow-cta {
+  position: absolute;
+  z-index: 701;
+  bottom: calc(34px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  display: inline-flex;
+  min-height: 40px;
+  max-width: calc(100% - 118px);
+  align-items: center;
+  padding: 0 15px 0 12px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 650;
+  gap: 7px;
+  letter-spacing: 0.01em;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tracking-map-follow-cta[hidden] {
+  display: none;
+}
+
+.tracking-map-follow-cta svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
 .tracking-map-eta {
   right: auto;
   bottom: 15px;
@@ -3119,6 +3154,32 @@ body[data-active-view="tracking"]:has(
 }
 
 .tracking-map-recenter:focus-visible {
+  outline: 2px solid var(--shelf-gold);
+  outline-offset: 2px;
+}
+
+/* El CTA de volver comparte la superficie del recentrado —misma tinta, mismo
+   vidrio, misma sombra— porque hacen lo mismo: devolver la cámara al rider.
+   El pin va en rojo legible sobre grafito, que es el único acento del control. */
+.tracking-map-follow-cta {
+  border: 1px solid var(--shelf-line);
+  background: rgb(22 26 32 / 94%);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
+}
+
+.tracking-map-follow-cta svg {
+  color: var(--shelf-red-ink);
+}
+
+.tracking-map-follow-cta:hover,
+.tracking-map-follow-cta:focus-visible {
+  background: rgb(30 35 42 / 96%);
+}
+
+.tracking-map-follow-cta:focus-visible {
   outline: 2px solid var(--shelf-gold);
   outline-offset: 2px;
 }

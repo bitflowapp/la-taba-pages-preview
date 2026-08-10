@@ -235,7 +235,38 @@ Rollback: redesplegar el árbol de `da56ce9`. El cambio es front puro.
 
 ---
 
-## 10. La prueba física sigue sin poder correr
+## 10. Medición con GPS real del Moto G15
+
+Con el teléfono conectado se midió la cadena `fix Android → accuracy → filtro →
+render` por una vía que **no depende de las credenciales caídas ni toca ninguna
+app del contrato**: una página propia servida por `adb reverse` sobre `localhost`
+—que es lo que da contexto seguro para la geolocalización— corriendo el motor
+`js/map/rider_motion.js` exacto del árbol, alimentado por `navigator.geolocation`
+en alta precisión.
+
+**20 fixes reales:**
+
+| | |
+|---|---|
+| precisión mediana | **3,5 m** (mejor 3,0 · peor 14,9, el fix inicial antes de fijar satélites) |
+| cadencia mediana | 5,1 s |
+| fixes rechazados por el filtro | **0 de 20** |
+| marcador en movimiento | **19,6 %** del tiempo, con el equipo quieto |
+
+Dos cosas quedan probadas con datos frescos y no grabados: el filtro **no descarta
+ni un fix real**, y el motor **interpola el jitter en lugar de dar tirones** —con
+el equipo igualmente quieto, la implementación anterior movía el marcador el
+3,1 % del tiempo.
+
+**Lo que no prueba**: recorrido acumulado 2,0 m, desplazamiento neto 0,9 m. El
+teléfono no se movió del escritorio. No se afirma desplazamiento.
+
+Evidencia en `artifacts/taba2-live-tracking-ux/fisica/`: cinco capturas del
+recorrido de pantalla y el JSON con los 20 fixes.
+
+---
+
+## 11. La prueba física sigue sin poder correr
 
 **El teléfono ya no es el problema.** El Moto G15 está conectado y autorizado,
 con la APK de staging instalada, permisos `FINE`/`COARSE`/`POST_NOTIFICATIONS`
@@ -271,14 +302,24 @@ encargo prohíbe.
 
 ### Lo único que falta para desbloquearla
 
-1. Un **PAT nuevo** de `supabase.com/dashboard/account/tokens`, guardado donde el
-   proyecto guarda sus credenciales — con eso se rota el login del Rider y se
-   puede preparar el pedido.
-2. El Moto sale por el **hotspot del iPhone** (ya decidido) y el iPhone mira el
-   tracking por sus propios datos móviles.
-3. Recorrido de ≥300 m con ≥20 fixes, cubriendo pan y pinch de dos dedos,
+La caminata quedó pospuesta a pedido de la persona a cargo. Para retomarla:
+
+1. **El recorrido de ≥300 m.** El banco de medición queda armado en
+   `_claude-tmp/medicion-gps/` (página + servidor). Se levanta el servidor, se
+   hace `adb reverse tcp:8099 tcp:8099`, se abre `http://localhost:8099` en el
+   Moto y se toca «Empezar a medir»; el permiso de ubicación ya está concedido.
+   El motor se sirve del árbol real, así que siempre se mide el código vigente.
+   Esto certifica la cadena GPS → filtro → render con movimiento auténtico.
+2. **Un PAT nuevo** de `supabase.com/dashboard/account/tokens`, guardado donde el
+   proyecto guarda sus credenciales — con eso se rota el login del Rider, se
+   prepara el pedido y se prueba el tramo `backend → tracking web` en vivo.
+3. El Moto sale por el **hotspot del iPhone** (ya decidido) y el iPhone mira el
+   tracking por sus propios datos móviles, cubriendo pan y pinch de dos dedos,
    «Volver al Rider», pantalla apagada, background, offline de ≥60 s y
    reconexión.
+
+Los dos locks quedaron **cerrados y libres**: retenerlos toda la noche sin usarlos
+sólo estorbaría a quien los necesite.
 
 ### La declaración NO se emite
 

@@ -330,10 +330,14 @@ reescribió ninguna migración aplicada ni se tocó la fila de `20260804090000`.
 | `npm run check` | verde (**estaba rojo en `f4588f9`**) |
 | `npm test` | **1289/1289** (base 1268 · +21 nuevas) |
 | Playwright | **243/243** en 11,7 min (base 238 · +5 nuevas) |
-| `npm run migrations:validate` | 71 en orden, revisión estática aprobada |
+| `npm run migrations:validate` | 72 en orden, revisión estática aprobada |
 | `npm run secrets:scan` | limpio |
-| Ensayos de resiliencia | **11 ensayos · 58 afirmaciones**, verdes desde cero |
+| Ensayos de resiliencia | **13 ensayos · 74 afirmaciones**, verdes desde cero |
 | Idempotencia y concurrencia | cuatro barridos → una fila; dos simultáneos → el segundo se retira |
+| Salud en la URL pública | **13/13** con sesión de operador real |
+| Service worker en la URL pública | **8/8** (instalación limpia y perfil que venía de la anterior) |
+| Conjunto publicado | **351/351** con bytes idénticos y content-type correcto |
+| Barridos autónomos tras el deploy | **8 consecutivos**, uno por minuto, todos `ok` |
 | Árbol de trabajo | limpio · sin `push` |
 
 ## 8. Deuda que queda

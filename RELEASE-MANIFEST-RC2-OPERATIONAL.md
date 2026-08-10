@@ -76,7 +76,21 @@ manuales: `supabase db push` responde `Remote database is up to date`.
 Barridos autónomos después del deploy: **ocho corridas consecutivas**, una por
 minuto, todas `ok`, cero críticas.
 
-## 5. Rollback
+## 5. Gates
+
+| Gate | Resultado |
+| --- | --- |
+| `npm run check` | verde |
+| `npm test` | **1289/1289** |
+| Playwright (Chromium + mobile WebKit) | **243/243** en 9,2 min |
+| `npm run migrations:validate` | 72 en orden |
+| `npm run secrets:scan` | limpio |
+| Ensayos de resiliencia (PostgreSQL real) | **13 ensayos · 74 afirmaciones** |
+| Salud en la URL pública | **13/13** |
+| Service worker en la URL pública | **8/8** |
+| Conjunto publicado | **351/351** bytes idénticos |
+
+## 6. Rollback
 
 * **Frontend:** volver a publicar el árbol de `f4588f9` conservando el
   `runtime-config.js` vivo, o restituir el deployment `aee2e619` desde el panel

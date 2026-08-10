@@ -767,12 +767,30 @@ function renderHomeShowcase() {
 // composición que pide el hero. La pieza además tiene el fondo negro a la
 // izquierda, que es donde se apoya el copy, así que la escena no se pelea con
 // el texto ni hay que apagarla para leerlo.
-const HOME_HERO_PROMO = Object.freeze({
+/*
+ * La fotografía del hero es una CONSTANTE de la vidriera, no un dato por
+ * producto, así que las dos rutas viven en tres lugares que tienen que decir
+ * lo mismo: este manifiesto, el `background-image` de la banda en
+ * `styles/brand-home.css` y el `<link rel="preload">` del shell.
+ *
+ * Se intentó pasar las rutas desde acá como custom properties para tener una
+ * sola fuente, y no funciona: un `url()` dentro de una custom property se
+ * resuelve relativo a la HOJA que la consume, no al documento, así que
+ * `assets/promos/...` terminaba pedido como `/styles/assets/promos/...` y
+ * devolvía 404. Por eso cada archivo declara su ruta en sus propios términos
+ * y `tests/home-hero-preload.test.mjs` verifica que los tres coincidan.
+ */
+export const HOME_HERO_PROMO = Object.freeze({
   categoryId: 'cervezas',
   eyebrow: 'La vidriera',
   title: 'Bien fría, como tiene que ser',
   subtitle: 'La selección de cervezas del local, lista para llevar.',
+  // El afiche de escritorio: la pieza completa, tal como se curó.
   image: 'assets/promos/cervezas-heineken.jpg',
+  // La MISMA fotografía recortada al tamaño que usa la banda del teléfono
+  // (scripts/build-hero-band.mjs). 35 KB contra 249: en el primer pantallazo
+  // esos 214 KB compiten con el CSS y los módulos por el mismo ancho de banda.
+  bandImage: 'assets/promos/cervezas-heineken-band.webp',
 });
 
 function renderHomeHeroPromo() {
@@ -788,7 +806,7 @@ function renderHomeHeroPromo() {
   slot.hidden = false;
   slot.innerHTML = `
     <button class="home-hero-promo" type="button" data-category-id="${escapeHtml(hero.categoryId)}" aria-label="${escapeHtml(`${hero.title}. ${hero.subtitle} Ver ${category.name.toLowerCase()}`)}">
-      <span class="home-hero-promo-media" aria-hidden="true" style="background-image:url('${encodeURI(hero.image)}')"></span>
+      <span class="home-hero-promo-media" aria-hidden="true"></span>
       <span class="home-hero-promo-copy">
         <small>${escapeHtml(hero.eyebrow)}</small>
         <strong>${escapeHtml(hero.title)}</strong>

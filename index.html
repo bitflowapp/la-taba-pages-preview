@@ -18,6 +18,21 @@
       integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK"
       crossorigin="anonymous"
     />
+    <!--
+      La fotografía del hero comercial es, desde que la banda subió al primer
+      pantallazo, el elemento más grande de esa pantalla: o sea el LCP. La
+      inyecta `renderHomeHeroPromo` como `background-image`, así que el
+      navegador recién se entera de que existe cuando el JS arrancó y corrió.
+      Medido en el A/B contra la base: eso costaba 1.052 ms de LCP. Y
+      precargar la pieza de 249 KB tal cual arreglaba el LCP pero le robaba el
+      ancho de banda al resto: FCP +352 ms y primer producto comprable +529 ms.
+      Por eso el teléfono recibe la derivada de 35 KB —la MISMA fotografía al
+      tamaño que la banda usa de verdad— y sólo el teléfono, porque en
+      escritorio el hero cae fuera del primer pantallazo.
+      El archivo tiene que ser EL MISMO que declara `HOME_HERO_PROMO.bandImage`;
+      lo verifica tests/home-hero-preload.test.mjs.
+    -->
+    <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
     <link rel="stylesheet" href="styles.css?v=45" />
   </head>
   <!--

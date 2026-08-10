@@ -13,6 +13,20 @@
                        "uso":  "banner editorial de categoria"
                    },
                    {
+                       "path":  "assets/promos/cervezas-heineken-band.webp",
+                       "origen":  "catalog-assets/promos/home/home-001",
+                       "marca":  "Heineken",
+                       "producto":  "Heineken botella",
+                       "categoria":  "cervezas",
+                       "url_fuente":  "https://www.otaphotography.com/beverage",
+                       "dominio_fuente":  "otaphotography.com",
+                       "ancho":  1000,
+                       "alto":  300,
+                       "uso":  "banda del hero comercial en telefono",
+                       "normalizacion":  "derivada de assets/promos/cervezas-heineken.jpg con scripts/build-hero-band.mjs: recorte 10:3 alrededor del punto focal 72%/58% -el mismo que usa el CSS- y WebP q72. No es una pieza nueva del lote curado: es la misma fotografia al tamano que la banda usa de verdad.",
+                       "nota_origen":  "existe por performance: al subir el hero al primer pantallazo, el afiche de 249 KB paso a ser el LCP, y precargarlo tal cual costaba 352 ms de FCP y 529 ms de primer producto comprable. La derivada pesa 35 KB."
+                   },
+                   {
                        "path":  "assets/promos/energizantes-red-bull.jpg",
                        "origen":  "catalog-assets/promos/home/home-002",
                        "marca":  "Red Bull",

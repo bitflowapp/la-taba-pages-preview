@@ -1615,9 +1615,15 @@ body[data-active-view="home"] .home-sections {
    170px de alto, y centrarlo dejaba afuera justamente las botellas. Con el
    anclaje en el 62% del alto entran el producto y la línea de montañas, que es
    lo que hace reconocible la escena. */
+/* La banda usa la derivada de teléfono (35 KB) y el afiche de escritorio la
+   pieza completa (249 KB). El archivo se elige acá, que es donde vive el
+   breakpoint; el JS no sabe de anchos. Las rutas son relativas a ESTA hoja
+   —vive un directorio adentro— y `tests/home-hero-preload.test.mjs` verifica
+   que sean las mismas que declara `HOME_HERO_PROMO` y que precarga el shell. */
 .home-hero-promo-media {
   position: absolute;
   inset: 0;
+  background-image: url("../assets/promos/cervezas-heineken-band.webp");
   background-position: 72% 58%;
   background-size: cover;
   background-repeat: no-repeat;
@@ -1822,6 +1828,7 @@ body[data-active-view="home"] .home-sections {
   }
 
   .home-hero-promo-media {
+    background-image: url("../assets/promos/cervezas-heineken.jpg");
     background-position: center 62%;
   }
 

@@ -11,6 +11,7 @@ import {
   fetchChargeback,
   fetchClaim,
   fetchPayment,
+  findPaymentByExternalReference,
   paymentSnapshot,
 } from '../_shared/mercadopago.ts';
 
@@ -73,8 +74,21 @@ Deno.serve(async (request) => {
 
 async function processJob(service: ReturnType<typeof createServiceClient>, job: OutboxJob): Promise<void> {
   if (job.topic === 'payment' || job.topic === 'payment_reconcile') {
-    const paymentId = await paymentIdForJob(service, job);
-    const payment = await fetchPayment(paymentId);
+    // Una sonda del barrido de verdad del proveedor llega sin identificador de
+    // pago: el comprador se fue a Mercado Pago y nunca volvimos a saber de él.
+    // Se resuelve por la referencia externa, que es lo único que tenemos.
+    const payment = await paymentForJob(service, job);
+    if (!payment) {
+      // El proveedor no tiene ningún pago para esa referencia: el checkout se
+      // abandonó de verdad. Se deja constancia para que la sonda termine.
+      if (job.payment_intent_id) {
+        const marked = await service.rpc('record_provider_probe_empty', {
+          p_payment_intent_id: job.payment_intent_id,
+        });
+        if (marked.error) throw new Error('Unable to record an empty provider probe');
+      }
+      return;
+    }
     const intent = await findIntent(service, String(payment.external_reference || ''));
     const { data, error } = await service.rpc('record_mercadopago_payment_snapshot', {
       p_payment_intent_id: intent.payment_intent_id,
@@ -138,6 +152,33 @@ async function paymentIdForJob(service: ReturnType<typeof createServiceClient>, 
     .maybeSingle();
   if (error || !data?.provider_payment_id) throw new Error('Payment is not reconcilable yet');
   return String(data.provider_payment_id);
+}
+
+/**
+ * Resuelve el pago del proveedor para un trabajo de la cola.
+ *
+ * Devuelve `null` sólo cuando Mercado Pago responde que no existe ningún pago
+ * para esa referencia externa —un checkout genuinamente abandonado—. Un fallo
+ * de red o del proveedor propaga la excepción para que el trabajo reintente:
+ * confundir «no hay pago» con «no pude preguntar» daría por abandonado un
+ * checkout que sí se cobró, que es exactamente lo que esto viene a evitar.
+ */
+async function paymentForJob(
+  service: ReturnType<typeof createServiceClient>,
+  job: OutboxJob,
+): Promise<Record<string, unknown> | null> {
+  if (job.resource_id) return await fetchPayment(job.resource_id);
+  if (!job.payment_intent_id) throw new Error('Missing payment intent reference');
+  const { data, error } = await service
+    .from('payment_intents')
+    .select('provider_payment_id, external_reference')
+    .eq('id', job.payment_intent_id)
+    .maybeSingle();
+  if (error || !data) throw new Error('Payment intent not found');
+  if (data.provider_payment_id) return await fetchPayment(String(data.provider_payment_id));
+  const externalReference = String(data.external_reference || '').trim();
+  if (!externalReference) throw new Error('Payment is not reconcilable yet');
+  return await findPaymentByExternalReference(externalReference);
 }
 
 async function findIntent(

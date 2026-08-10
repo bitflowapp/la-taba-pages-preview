@@ -250,7 +250,7 @@ do $$
 declare
   f record; c uuid; s record; r jsonb; n integer; a public.operational_alerts;
   v_health jsonb; v_orden uuid; v_rider uuid; v_stock integer; v_antes integer;
-  v_eventos integer; v_ocurrencias integer; v_secreto text;
+  v_eventos integer; v_ocurrencias integer; v_secreto text; v_beat jsonb;
 begin
   raise notice '';
   raise notice '===== ENSAYO 1 · EL PROCESADOR DE COBROS SE CAE =====';
@@ -593,6 +593,95 @@ begin
     (r #>> '{health,autonomous_evaluation,expected_every_seconds}') = '60',
     'y declara cada cuánto se espera que corra la evaluación');
   perform set_config('request.jwt.claims', '', true);
+
+  commit;
+  raise notice '';
+  raise notice '===== ENSAYO 12 · QUIÉN VIGILA AL VIGILANTE =====';
+  -- El barrido no puede denunciar su propia ausencia. Esto prueba que otro sí.
+  r := pg_temp.barrer();
+  v_beat := public.scheduler_heartbeat();
+  perform pg_temp.ok((v_beat ->> 'healthy')::boolean,
+    'con el barrido fresco, la sonda dice que está sano',
+    (v_beat ->> 'age_seconds') || ' s');
+  perform pg_temp.ok(
+    (select array_agg(k order by k) from jsonb_object_keys(v_beat) k)
+      = array['age_seconds','checked_at','expected_every_seconds','healthy','last_run_at','service','stale_after_seconds'],
+    'la sonda pública no publica NI UN dato de negocio',
+    (select string_agg(k, ',' order by k) from jsonb_object_keys(v_beat) k));
+
+  r := public.check_scheduler_watchdog('ensayo');
+  perform pg_temp.ok(r ->> 'action' = 'ninguna' and not pg_temp.abierta(f.business_id, 'SCHEDULER_WATCHDOG_STALE'),
+    'sano de verdad: la sonda no inventa nada', r ->> 'action');
+
+  -- El planificador se muere: nadie vuelve a escribir una corrida.
+  update public.operational_sweep_runs
+     set started_at = started_at - interval '30 minutes',
+         finished_at = finished_at - interval '30 minutes';
+  v_beat := public.scheduler_heartbeat();
+  perform pg_temp.ok(not (v_beat ->> 'healthy')::boolean,
+    'treinta minutos sin correr y la sonda lo dice', (v_beat ->> 'age_seconds') || ' s');
+
+  r := public.check_scheduler_watchdog('ensayo');
+  perform pg_temp.ok(pg_temp.abierta(f.business_id, 'SCHEDULER_WATCHDOG_STALE'),
+    'la muerte del planificador se detecta SIN el planificador', r ->> 'action');
+  a := pg_temp.alerta(f.business_id, 'SCHEDULER_WATCHDOG_STALE');
+  perform pg_temp.ok(a.severity = 'CRITICAL' and (a.evidence ->> 'observed_by') = 'ensayo',
+    'y queda dicho quién lo vio y hace cuánto',
+    'edad=' || (a.evidence ->> 'age_seconds') || ' s');
+
+  -- Mil llamadas no son mil escrituras.
+  select count(*)::integer into v_eventos from public.operational_alert_events e where e.alert_id = a.id;
+  for n in 1..5 loop r := public.check_scheduler_watchdog('ensayo'); end loop;
+  select count(*)::integer into n from public.operational_alerts
+   where business_id = f.business_id and alert_code = 'SCHEDULER_WATCHDOG_STALE';
+  perform pg_temp.ok(n = 1, 'seis comprobaciones dejan UNA alerta', 'filas=' || n);
+  select count(*)::integer into n from public.operational_alert_events e where e.alert_id = a.id;
+  perform pg_temp.ok(n = v_eventos, 'y un evento por episodio, no por comprobación', v_eventos || ' -> ' || n);
+
+  -- La salud operativa lo dice sin que nadie pregunte por la alerta.
+  v_health := public.build_operational_health(f.business_id);
+  perform pg_temp.ok(v_health #>> '{autonomous_evaluation,state}' = 'detenido',
+    'la salud operativa deja de decir que está al día');
+
+  -- El planificador vuelve. La sonda lo cierra sola, sin esperar al barrido.
+  insert into public.operational_sweep_runs(scope, status, started_at, finished_at, businesses_evaluated)
+  values ('operational_alerts', 'ok', clock_timestamp(), clock_timestamp(), 1);
+  r := public.check_scheduler_watchdog('ensayo');
+  perform pg_temp.ok(r ->> 'action' = 'resuelta' and not pg_temp.abierta(f.business_id, 'SCHEDULER_WATCHDOG_STALE'),
+    'cuando vuelve, la sonda cierra la alerta sola', r ->> 'action');
+
+  -- Y el propio barrido también la cierra, por el otro camino.
+  update public.operational_sweep_runs
+     set started_at = started_at - interval '30 minutes',
+         finished_at = finished_at - interval '30 minutes';
+  r := public.check_scheduler_watchdog('ensayo');
+  perform pg_temp.ok(pg_temp.abierta(f.business_id, 'SCHEDULER_WATCHDOG_STALE'), 'se vuelve a abrir');
+  r := pg_temp.barrer();
+  perform pg_temp.ok(not pg_temp.abierta(f.business_id, 'SCHEDULER_WATCHDOG_STALE'),
+    'y el barrido, al revivir, también la cierra: dos caminos de recuperación');
+
+  commit;
+  raise notice '';
+  raise notice '===== ENSAYO 13 · EL TRÁFICO REAL TAMBIÉN VIGILA =====';
+  -- Sin nada afuera: si el local vende, el pedido que entra descubre la muerte
+  -- del planificador. Cubre justo las horas en las que importa.
+  update public.operational_sweep_runs
+     set started_at = started_at - interval '30 minutes',
+         finished_at = finished_at - interval '30 minutes';
+  update public.operational_alerts set status = 'resolved', resolved_at = clock_timestamp()
+   where business_id = f.business_id and alert_code = 'SCHEDULER_WATCHDOG_STALE' and status <> 'resolved';
+  perform pg_temp.ok(not pg_temp.abierta(f.business_id, 'SCHEDULER_WATCHDOG_STALE'),
+    'punto de partida: la alerta está cerrada y el planificador muerto');
+
+  select * into s from pg_temp.hasta_preferencia(f.business_id, f.product_id, c, 'opsrid0013', 1);
+  r := public.record_mercadopago_payment_snapshot(s.intent_id, pg_temp.snapshot(s.session_id, 1000.00, clock_timestamp()), 'webhook', null);
+  r := public.finalize_paid_checkout_session(s.session_id);
+  perform pg_temp.ok(r ->> 'ok' = 'true', 'entra un pedido de verdad por el camino de siempre');
+  perform pg_temp.ok(pg_temp.abierta(f.business_id, 'SCHEDULER_WATCHDOG_STALE'),
+    'y ese pedido descubre que la vigilancia estaba muerta, sin nada afuera');
+  a := pg_temp.alerta(f.business_id, 'SCHEDULER_WATCHDOG_STALE');
+  perform pg_temp.ok((a.evidence ->> 'observed_by') = 'order_traffic',
+    'queda registrado que lo vio el tráfico', a.evidence ->> 'observed_by');
 end $$;
 
 -- ============================================================================

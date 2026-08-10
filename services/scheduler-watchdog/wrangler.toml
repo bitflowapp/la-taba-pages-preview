@@ -1,0 +1,28 @@
+name = "taba2-scheduler-watchdog"
+main = "worker.js"
+compatibility_date = "2026-08-01"
+
+# Sin URL pública. La cuenta no tiene un subdominio `workers.dev` registrado y
+# registrarlo es una decisión de la persona dueña de la cuenta, no de un
+# despliegue automático. Un Worker con disparador de cron NO necesita ruta: el
+# reloj corre igual. El estado legible ya existe sin este Worker, en la sonda
+# `scheduler_heartbeat` del propio proyecto, que cualquier monitor externo puede
+# consultar con la clave anónima. Para publicar además la URL de este Worker:
+# registrar el subdominio en el panel de Cloudflare y poner `workers_dev = true`.
+workers_dev = false
+
+# El reloj de afuera. Cada cinco minutos: con el umbral de 600 s del servidor,
+# la muerte del planificador se descubre en 15 minutos como máximo.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+# La URL del proyecto es pública: la misma que sirve el sitio.
+SUPABASE_URL = "https://ukxqbgswjlibmnjemrzd.supabase.co"
+
+# SUPABASE_ANON_KEY no vive acá. Es pública —el navegador la recibe igual— pero
+# no se versiona una credencial en el repositorio ni por costumbre:
+#
+#   npx wrangler secret put SUPABASE_ANON_KEY --config services/scheduler-watchdog/wrangler.toml
+#
+# La clave sale de `supabase projects api-keys --project-ref <ref>`.

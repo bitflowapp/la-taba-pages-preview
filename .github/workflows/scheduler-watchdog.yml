@@ -1,0 +1,75 @@
+# Sonda externa del planificador de TABA2.
+#
+# El barrido de alertas detecta todo lo demás, pero no puede denunciar su propia
+# ausencia: si pg_cron deja de ejecutarlo, no queda nadie adentro para decirlo.
+# Este flujo es un reloj de afuera, en una infraestructura que este repositorio
+# ya usa, y con algo que ninguna de las otras capas tiene: cuando falla, GitHub
+# le manda un correo a quien es dueño del repositorio.
+#
+# QUÉ HACE FALTA PARA QUE CORRA (una sola vez):
+#   1. que este archivo esté en la rama por defecto del repositorio remoto;
+#   2. un secreto de repositorio `SUPABASE_ANON_KEY` con la clave anónima del
+#      proyecto —la misma que el navegador ya recibe—, y `SUPABASE_URL` como
+#      variable de repositorio.
+#
+# LÍMITES, dichos de frente: GitHub no garantiza el minuto exacto de una tarea
+# programada (puede atrasarse en horas de carga) y desactiva las tareas
+# programadas de un repositorio sin actividad durante 60 días. Por eso esta capa
+# acompaña a las otras dos —la sonda de Cloudflare y la comprobación que dispara
+# el tráfico real— en vez de reemplazarlas.
+
+name: Scheduler watchdog
+
+on:
+  schedule:
+    # Cada diez minutos. Con el umbral de 600 s del servidor, la muerte del
+    # planificador se descubre en 20 minutos como máximo por esta vía.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduler-watchdog
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    name: ¿El barrido de alertas sigue corriendo?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Preguntarle al servidor por su propio reloj
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
+            echo "Falta configurar SUPABASE_URL (variable) o SUPABASE_ANON_KEY (secreto)." >&2
+            exit 1
+          fi
+
+          # La condición la mide el servidor contra su base: este flujo no puede
+          # inventar una alerta ni silenciarla, sólo pedir que se mire el reloj.
+          respuesta="$(curl --silent --show-error --fail --max-time 20 \
+            -X POST "${SUPABASE_URL}/rest/v1/rpc/check_scheduler_watchdog" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H 'Content-Type: application/json' \
+            -d '{"p_source":"github_actions"}')"
+
+          echo "${respuesta}" | python3 -c '
+import json, sys
+estado = json.load(sys.stdin)
+print(f"servicio        {estado.get(\"service\")}")
+print(f"última corrida  {estado.get(\"last_run_at\")}")
+print(f"antigüedad      {estado.get(\"age_seconds\")} s")
+print(f"atrasado desde  {estado.get(\"stale_after_seconds\")} s")
+print(f"acción          {estado.get(\"action\")}")
+if not estado.get("healthy"):
+    print("::error::El barrido de alertas dejó de correr: el sistema ya no se revisa solo.")
+    sys.exit(1)
+print("El barrido corre al día.")
+'

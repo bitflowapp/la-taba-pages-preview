@@ -117,6 +117,14 @@ const ALERT_LIBRARY = Object.freeze({
     recommendation: 'Preparás un diagnóstico y se lo pasás a soporte con la referencia de abajo.',
     action: { label: 'Ir al centro de operación', view: 'operation-center' },
   },
+  SCHEDULER_WATCHDOG_STALE: {
+    support: 'TABA-SIST-03',
+    happened: 'La vigilancia automática dejó de correr: el sistema ya no se está revisando solo.',
+    preserved: 'Todo lo que ya está registrado sigue guardado. No se borra ni se pierde nada por esto.',
+    risk: 'Que el tablero esté vacío deja de significar que no pasa nada: puede haber cobros o pedidos esperando sin que nadie avise.',
+    recommendation: 'Mirá el Panel cada tanto hasta que vuelva, y avisá a soporte con la referencia de abajo.',
+    action: { label: 'Ir al centro de operación', view: 'operation-center' },
+  },
   ORDER_NOT_ACCEPTED: {
     support: 'TABA-PED-01',
     happened: 'Entró un pedido y todavía nadie lo aceptó.',

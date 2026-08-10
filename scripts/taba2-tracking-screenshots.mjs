@@ -137,6 +137,14 @@ async function createOrder(page) {
       deliveryMode: 'delivery',
       paymentMethod: 'cash',
       ageConfirmed: true,
+      // Un delivery sin punto confirmado ya no existe: la aplicación y la base
+      // lo rechazan desde el contrato de ubicación. Este arnés quedó viejo
+      // frente a esa regla y armaba pedidos que el producto real no acepta.
+      deliveryLatitude: -38.9539,
+      deliveryLongitude: -68.0596,
+      deliveryGeolocationAccuracy: 12,
+      deliveryLocationSource: 'gps',
+      deliveryLocationConfirmedAt: new Date().toISOString(),
     });
     if (!result.ok) throw new Error(`No se pudo crear el pedido: ${result.message}`);
   });

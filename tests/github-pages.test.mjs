@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v58-panel-operativo');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v59-aviso-de-actualizacion');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -37,7 +37,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
     false,
     'legacy food or unverified catalog imagery must not be precached',
   );
-  assert.ok(assets.includes('./js/pwa-update.js?v=2'));
+  assert.ok(assets.includes('./js/pwa-update.js?v=3'));
   assert.ok(assets.includes('./js/startup-recovery.js?v=1'));
   assert.ok(assets.includes('./styles.css?v=47'));
   assert.ok(assets.includes('./styles/storefront.css?v=47'));
@@ -138,14 +138,19 @@ test('a published update waits for an explicit customer refresh instead of inter
   assert.doesNotMatch(installBlock[0], /skipWaiting\(\)/);
   assert.match(worker, /event\.data === 'skip-waiting'/);
   assert.match(update, /data-app-update-banner/);
-  assert.match(update, /pendingUpdate\.waiting\.postMessage\('skip-waiting'\)/);
+  assert.match(update, /waiting\.postMessage\('skip-waiting'\)/);
   assert.match(update, /register\('\.\/sw\.js', \{ updateViaCache: 'none' \}\)/);
   assert.match(update, /controllerchange/);
-  assert.match(update, /registration\.update\(\)\.then\(\(\) => announceWaitingUpdate\(registration\)\)/);
+  assert.match(update, /registration\.update\(\)\.then\(\(\) => syncUpdate\(registration\)\)/);
   assert.match(update, /const UPDATE_CHECK_DELAYS = \[0, 250, 1000, 4000, 12000, 30000, 60000\]/);
   assert.match(update, /scheduleWaitingUpdateChecks\(registration\)/);
   assert.match(update, /window\.addEventListener\('focus', recheckUpdate\)/);
   assert.match(update, /window\.addEventListener\('pageshow', recheckUpdate\)/);
+  // El aviso tiene que poder RETIRARSE, no sólo mostrarse: sin esto vuelve el
+  // defecto que dejaba la banda fija comiéndose el toque de «Agregar».
+  assert.match(update, /const syncUpdate = \(registration\) => \{/);
+  assert.match(update, /data-app-update-dismiss/);
+  assert.match(read('index.html'), /data-app-update-dismiss/);
 });
 
 test('MapLibre GL remoto está fijado con SRI y CORS anónimo', () => {

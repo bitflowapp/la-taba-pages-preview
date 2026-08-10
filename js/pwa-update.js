@@ -1,65 +1,153 @@
 (() => {
   if (!('serviceWorker' in navigator)) return;
+  // El módulo se enlaza UNA vez por documento. Si el shell llegara a incluir el
+  // script dos veces, la segunda pasada duplicaría cada escucha del ciclo de
+  // vida y con ella las recargas.
+  if (window.__tabaPwaUpdateBound) return;
+  window.__tabaPwaUpdateBound = true;
 
   const updateBanner = document.querySelector('[data-app-update-banner]');
   const updateButton = document.querySelector('[data-app-update-now]');
+  const dismissButton = document.querySelector('[data-app-update-dismiss]');
   const UPDATE_CHECK_DELAYS = [0, 250, 1000, 4000, 12000, 30000, 60000];
+  // Si pedimos la activación y el control no cambia, el aviso no puede quedar
+  // escondido con una actualización todavía pendiente.
+  const ACTIVATION_TIMEOUT = 10000;
+
   let pendingUpdate = null;
   let refreshing = false;
+  let reloaded = false;
+  // Qué worker descartó la persona en esta pantalla. Se guarda la referencia al
+  // worker, no un booleano: la próxima publicación vuelve a avisar.
+  let dismissedWorker = null;
+  // Un worker puede llegar por `updatefound`, por el registro inicial y por
+  // cualquiera de las revisiones espaciadas. Sin esto, el mismo worker acumula
+  // una escucha `statechange` por camino.
+  const observedWorkers = new WeakSet();
 
   const hideUpdate = () => {
     if (updateBanner) updateBanner.hidden = true;
   };
-  const showUpdate = (registration) => {
-    if (!registration?.waiting || !navigator.serviceWorker.controller) return;
-    pendingUpdate = registration;
+  const showUpdate = () => {
     if (updateBanner) updateBanner.hidden = false;
   };
-  const announceWaitingUpdate = (registration) => {
-    showUpdate(registration);
+
+  /**
+   * El aviso dice UNA cosa: «hay un worker en espera que puedo activar ahora».
+   *
+   * Es una sincronización en los dos sentidos, y esa es la corrección. Antes
+   * sólo existía el camino que MUESTRA: cuando el worker en espera desaparecía
+   * —porque activó solo, porque lo activó otra pestaña, o porque una publicación
+   * más nueva lo dejó obsoleto— nadie retiraba el aviso. Quedaba fijo, sin botón
+   * de descarte, 115 px de alto sobre el contenido, comiéndose el toque de lo
+   * que hubiera debajo; y «Actualizar ahora» no hacía nada, porque
+   * `registration.waiting` ya era null.
+   */
+  const syncUpdate = (registration) => {
+    const waiting = registration?.waiting || null;
+    if (!waiting || !navigator.serviceWorker.controller || waiting === dismissedWorker) {
+      pendingUpdate = null;
+      hideUpdate();
+      return;
+    }
+    pendingUpdate = registration;
+    observeWorker(registration, waiting);
+    showUpdate();
   };
+
+  // Un worker puede volverse `redundant` sin que cambie el control (lo desplaza
+  // una instalación más nueva). Escuchar su estado es lo que permite retirar el
+  // aviso en ese caso, que desde afuera no dispara ningún otro evento.
+  const observeWorker = (registration, worker) => {
+    if (!worker || observedWorkers.has(worker)) return;
+    observedWorkers.add(worker);
+    worker.addEventListener('statechange', () => syncUpdate(registration));
+  };
+
+  const observeInstallingWorker = (registration, installing) => {
+    observeWorker(registration, installing);
+  };
+
   const scheduleWaitingUpdateChecks = (registration) => {
     // Un precache completo puede demorar en una conexión móvil. Las revisiones
     // espaciadas cubren ese período sin crear un bucle de timers por pestaña.
     UPDATE_CHECK_DELAYS.forEach((delay) => {
-      window.setTimeout(() => announceWaitingUpdate(registration), delay);
+      window.setTimeout(() => syncUpdate(registration), delay);
     });
   };
-  const observeInstallingWorker = (registration, installing) => {
-    if (!installing) return;
-    installing.addEventListener('statechange', () => {
-      if (installing.state === 'installed') announceWaitingUpdate(registration);
-    });
-  };
+
   const recheckUpdate = () => {
     if (document.visibilityState === 'hidden') return;
     navigator.serviceWorker.getRegistration()
-      .then((registration) => announceWaitingUpdate(registration))
+      .then((registration) => syncUpdate(registration))
       .catch(() => undefined);
   };
 
-  updateButton?.addEventListener('click', () => {
-    if (!pendingUpdate?.waiting) return;
+  const requestActivation = (registration) => {
+    const waiting = registration?.waiting;
+    if (!waiting) return false;
     refreshing = true;
     hideUpdate();
-    pendingUpdate.waiting.postMessage('skip-waiting');
+    waiting.postMessage('skip-waiting');
+    // Red de seguridad: si la activación no llega, se vuelve al estado real en
+    // vez de dejar una actualización pendiente sin forma de pedirla.
+    window.setTimeout(() => {
+      if (!refreshing) return;
+      refreshing = false;
+      recheckUpdate();
+    }, ACTIVATION_TIMEOUT);
+    return true;
+  };
+
+  updateButton?.addEventListener('click', () => {
+    if (requestActivation(pendingUpdate)) return;
+    // No hay nada en espera: la actualización se activó sola entre que se
+    // dibujó el aviso y el toque. El aviso se retira igual —nunca se queda
+    // pegado por haberlo tocado— y se vuelve a leer el estado real por si
+    // apareció otra publicación mientras tanto.
+    hideUpdate();
+    navigator.serviceWorker.getRegistration()
+      .then((registration) => {
+        if (!requestActivation(registration)) syncUpdate(registration);
+      })
+      .catch(() => undefined);
+  });
+
+  dismissButton?.addEventListener('click', () => {
+    dismissedWorker = pendingUpdate?.waiting || null;
+    pendingUpdate = null;
+    hideUpdate();
   });
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) return;
+    // El control cambió: la actualización YA ocurrió, la haya pedido esta
+    // pestaña o cualquier otra. En los dos casos el aviso deja de tener sentido.
+    pendingUpdate = null;
+    hideUpdate();
+    if (!refreshing) {
+      // La pidió otra pestaña. No se recarga esta: puede haber un checkout a
+      // medio completar, y el worker sirve red primero, así que lo que se pinte
+      // a partir de acá ya es la versión nueva.
+      recheckUpdate();
+      return;
+    }
     refreshing = false;
+    if (reloaded) return;
+    reloaded = true;
     window.location.reload();
   });
 
   navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((registration) => {
     scheduleWaitingUpdateChecks(registration);
     observeInstallingWorker(registration, registration.installing);
+    observeWorker(registration, registration.waiting);
     registration.addEventListener('updatefound', () => {
       observeInstallingWorker(registration, registration.installing);
+      syncUpdate(registration);
     });
     // GitHub Pages puede mantener una respuesta HTTP anterior: comprobamos la
     // publicación actual sin forzar una recarga ni borrar el pedido persistido.
-    registration.update().then(() => announceWaitingUpdate(registration)).catch(() => undefined);
+    registration.update().then(() => syncUpdate(registration)).catch(() => undefined);
   }).catch(() => {
     // La app sigue funcionando cuando el navegador no admite service workers.
   });

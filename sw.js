@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v58-panel-operativo';
+const CACHE_NAME = 'la-taba-runtime-v59-aviso-de-actualizacion';
 const ASSETS = [
   './',
   './index.html',
@@ -24,7 +24,7 @@ const ASSETS = [
   './runtime-config.js',
   './assets/icon.svg',
   './assets/products/beverage-placeholder.svg',
-  './js/pwa-update.js?v=2',
+  './js/pwa-update.js?v=3',
   './js/startup-recovery.js?v=1',
   './js/app.js?v=40',
   './js/config.js',

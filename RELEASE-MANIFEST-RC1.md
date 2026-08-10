@@ -186,8 +186,8 @@ El cambio es frontend puro. Para volver atrás:
 git -C <repo> checkout 0efe1dc
 
 # 2 · publicar ese árbol conservando el runtime-config vivo
-#     (copiar D:\1212\artifacts\taba2-pilot-rc1\preserva\runtime-config.live.js
-#      sobre runtime-config.js ANTES de subir)
+#     (copiar preserva/runtime-config.live.js —de la carpeta de evidencia de la
+#      sesión, sección 13— sobre runtime-config.js ANTES de subir)
 npx wrangler pages deploy <dir> --project-name=taba2-staging --branch=staging
 ```
 
@@ -407,13 +407,15 @@ marcador interpola en vez de dar tirones. **Desplazamiento: no medido** (2,0 m a
 
 **Para retomar:** reponer un login de Rider, `adb reverse tcp:8099 tcp:8099`, abrir
 `http://localhost:8099` en el Moto y tocar «Empezar a medir». El servidor vive en
-`D:\1212\_claude-tmp\medicion-gps\`. `moto-g15.lock` está **libre**.
+la carpeta temporal de la sesión (`_claude-tmp/medicion-gps/`). `moto-g15.lock`
+está **libre**.
 
 ---
 
 ## 13. Evidencia
 
-`D:\1212\artifacts\taba2-pilot-rc1\`
+Carpeta de artefactos de la sesión: `artifacts/taba2-pilot-rc1/` (fuera del repo,
+en el disco de trabajo).
 
 | archivo | qué prueba |
 |---|---|
@@ -423,7 +425,7 @@ marcador interpola en vez de dar tirones. **Desplazamiento: no medido** (2,0 m a
 | `preserva/runtime-config.live.js` | el `runtime-config.js` vivo, byte a byte |
 | `preserva/taba2-staging-mutation.lock.respaldo` | el lock tal como estaba antes de tomarlo |
 
-El arnés vive en `D:\1212\worktrees\taba2-pilot-rc1\artifacts\ci\rc1\` (ignorado por git).
+El arnés vive en `artifacts/ci/rc1/` dentro del worktree de la release (ignorado por git).
 
 ---
 

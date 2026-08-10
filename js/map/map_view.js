@@ -15,6 +15,7 @@ import {
   canUseMapLibre as supportsMapLibre,
   createMapLibreTrackingMap,
 } from './maplibre_tracking_map.js';
+import { trackingStatus } from './tracking_status.js';
 
 const mountedMaps = new Set();
 
@@ -75,6 +76,25 @@ export function recenterMapViews(root = document) {
     recentered = entry.adapter?.recenter?.() || recentered;
   });
   return recentered;
+}
+
+/*
+ * El estado de la cámara se publica en el contenedor y el CSS decide el resto.
+ * Mientras el cliente explora, el CTA de vuelta aparece; en cuanto vuelve a
+ * seguir, se va. Nada de esto toca la posición del rider.
+ */
+function applyCameraMode(container, mode) {
+  const camera = mode === 'explore' ? 'explore' : 'follow';
+  if (!container) return camera;
+  if (container.dataset) container.dataset.mapCamera = camera;
+  const stage = container.closest?.('[data-map-shell]') || container.parentElement;
+  if (stage?.dataset) stage.dataset.mapCamera = camera;
+  const cta = stage?.querySelector?.('[data-map-follow-cta]');
+  if (cta) {
+    cta.hidden = camera !== 'explore';
+    cta.setAttribute('aria-hidden', camera === 'explore' ? 'false' : 'true');
+  }
+  return camera;
 }
 
 function renderMapView(container) {
@@ -166,7 +186,11 @@ export function ensureTrackingMap(container, view) {
     return existing;
   }
 
-  const adapter = createMapLibreTrackingMap();
+  const adapter = createMapLibreTrackingMap({
+    // El CTA de volver al rider vive en el DOM de la vista, no en el mapa: el
+    // adaptador sólo avisa cuándo el cliente pasó a explorar y cuándo volvió.
+    onCameraModeChange: (mode) => applyCameraMode(container, mode),
+  });
   const entry = {
     container,
     adapter,
@@ -177,6 +201,7 @@ export function ensureTrackingMap(container, view) {
     lastSource: null,
   };
   mountedMaps.add(entry);
+  applyCameraMode(container, 'follow');
 
   container.dataset.mapEngine = 'maplibre';
   if (showSandboxRoute) container.dataset.routeSource = 'simulation';
@@ -201,6 +226,19 @@ export function ensureTrackingMap(container, view) {
     destination: view.destination,
     center: view.riderLocation || (sandboxGeometryVerified ? view.store : null),
     zoom: view.sandbox ? 14.5 : 16,
+    /*
+     * El seguimiento del cliente monta con `cooperativeGestures`, y se queda
+     * así a propósito. Se probó sacarlo —para que arrastrar con un dedo moviera
+     * el mapa— y rompe algo más importante: la vista de seguimiento es una
+     * página larga, el mapa ocupa media pantalla, y sin esta opción MapLibre le
+     * pone `touch-action: none` al lienzo y se queda con el arrastre vertical.
+     * El cliente deja de poder scrollear su propio pedido con el dedo sobre el
+     * mapa. Ese contrato está fijado en tracking-arriving.spec.mjs.
+     *
+     * O sea que explorar el mapa se hace con DOS dedos —arrastrar y pellizcar—,
+     * que es la convención de cualquier mapa embebido en una página. El gesto
+     * de dos dedos sí suspende el seguimiento y ofrece la vuelta.
+     */
     cooperativeGestures: view.role === 'tracking',
   });
   return entry;
@@ -329,18 +367,22 @@ function renderMapMeta(container, order, location, destination) {
     : 'fresh';
   container.dataset.mapFreshness = freshness;
   if (container.dataset.mapRole === 'tracking') {
+    // Llegar y estar en un recorrido de muestra siguen mandando sobre el estado
+    // de la señal: en la puerta el rider ya frenó, y una demo no es seguimiento.
     if (['arrived', 'arriving'].includes(order.status)) {
       container.dataset.mapPresentation = 'last-location';
       copy.textContent = `Última ubicación · ${age === 'ahora' ? 'hace 0 s' : age}`;
-    } else if (location.origin === 'sandbox_route' || location.source === 'simulation') {
-      copy.textContent = `Recorrido de muestra · ${age}`;
-    } else if (freshness === 'lost') {
-      copy.textContent = 'Ubicación temporalmente no disponible';
-    } else if (freshness === 'delayed') {
-      copy.textContent = `Última ubicación · ${age}`;
-    } else {
-      copy.textContent = `Ubicación en vivo · ${age}`;
+      return;
     }
+    if (location.origin === 'sandbox_route' || location.source === 'simulation') {
+      copy.textContent = `Recorrido de muestra · ${age}`;
+      return;
+    }
+    // Y en camino, los cuatro estados que el cliente necesita distinguir, con
+    // la antigüedad a la vista para que pueda decidir si esperar.
+    const status = trackingStatus(location, { online: navigatorIsOnline() });
+    container.dataset.mapSignal = status.state;
+    copy.textContent = status.label;
     return;
   }
 
@@ -362,6 +404,12 @@ function renderMapMeta(container, order, location, destination) {
   copy.textContent = gpsStale
     ? `${prefix} ${age}${accuracy}`
     : `${prefix} · última actualización: ${age}${accuracy}`;
+}
+
+/* Un runtime sin `navigator` (los tests, el SSR de nadie) se asume conectado. */
+function navigatorIsOnline() {
+  const online = globalThis.navigator?.onLine;
+  return online === undefined ? true : online !== false;
 }
 
 function relativeAgeLabel(value) {

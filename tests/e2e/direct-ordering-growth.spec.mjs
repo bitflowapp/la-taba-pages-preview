@@ -134,8 +134,10 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   const delayedIdentity = await setLatestTrackingFixAge(page, 20_000);
   expect(delayedIdentity).toEqual({ sameShell: true, sameMarker: true });
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toBeVisible();
+  // Un fix de 20 s no es «en vivo» pero tampoco es una pérdida: se dice que el
+  // dato se actualizó hace tanto y se deja al cliente decidir si espera.
   await expect(page.locator('[data-tracking-panel] [data-map-meta-text]')).toHaveText(
-    /^Última ubicación · hace \d+ s$/,
+    /^Actualizado hace \d+ s$/,
   );
   await expect(page.locator('[data-tracking-panel] [data-tracking-arrival]')).toHaveText('Calculando llegada');
   await expect(page.locator('[data-tracking-panel] [data-tracking-arrival]')).toHaveAttribute('data-eta-active', 'false');
@@ -143,7 +145,12 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   const lostIdentity = await setLatestTrackingFixAge(page, 50_000);
   expect(lostIdentity).toEqual({ sameShell: true, sameMarker: true });
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toBeVisible();
-  await expect(page.locator('[data-tracking-panel] [data-map-meta-text]')).toHaveText('Ubicación temporalmente no disponible');
+  // Perder la señal ya no borra el dato ni lo deja sin fecha: se nombra la
+  // pérdida Y se conserva la última ubicación conocida con su antigüedad, que
+  // es lo único que le permite al cliente saber si vale la pena esperar.
+  await expect(page.locator('[data-tracking-panel] [data-map-meta-text]')).toHaveText(
+    /^Sin conexión · última ubicación hace \d+ s$/,
+  );
   await expect(page.locator('[data-tracking-panel] [data-tracking-freshness="lost"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel] [data-rider-message]')).toHaveText('La ubicación no está disponible por el momento.');
   await expect(page.locator('[data-tracking-panel] [data-tracking-arrival]')).toHaveAttribute('data-eta-active', 'false');

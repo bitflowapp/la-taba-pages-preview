@@ -3082,6 +3082,23 @@ function trackingRecenterButton() {
         <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"></circle>
         <path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
       </svg>
+    </button>
+    ${trackingFollowCta()}`;
+}
+
+/*
+ * Aparece sólo cuando el cliente movió el mapa con la mano. Mientras el
+ * seguimiento está activo no hay nada que ofrecer, así que no ocupa lugar: es
+ * la única pieza que se suma a la pantalla y se va sola.
+ */
+function trackingFollowCta() {
+  return `
+    <button class="tracking-map-follow-cta" type="button" data-map-follow-cta hidden aria-hidden="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"></path>
+        <circle cx="12" cy="10" r="2.6" fill="currentColor"></circle>
+      </svg>
+      <span>Volver al Rider</span>
     </button>`;
 }
 

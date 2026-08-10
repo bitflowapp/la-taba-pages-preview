@@ -210,19 +210,116 @@ Sin push.
 
 ---
 
-## 9. Lo que NO se hizo
+## 9. Desplegado a staging
 
-**La prueba física no se hizo.** El Moto G15 no aparece en `adb devices` —lista
-vacía, sólo el daemon de adb vivo—, así que no hay recorrido de ≥300 m, ni ≥20
-fixes en movimiento, ni pantalla apagada, ni background, ni offline de 60 s con
-reconexión. Nada de eso se afirma.
+`deployment 5f29f3c3`, proyecto `taba2-staging`, rama `staging`. 10 archivos
+subidos, 340 ya presentes.
 
-**No se desplegó a staging.** No hacía falta sin prueba física, y
-`taba2-staging-mutation.lock` figura ACTIVO a nombre de
-`TABA2_RIDER_HUMAN_PHYSICAL_CERTIFICATION_DF44DAF` desde las 17:10 Z. Ese proceso
-parece huérfano —cinco horas sin una sola escritura en su worktree y sin proceso
-propietario vivo—, pero desplazar un lock ajeno para una tarea que no lo
-necesitaba habría sido gratuito. Queda anotado para quien vaya a desplegar.
+| | antes | ahora |
+|---|---|---|
+| `CACHE_NAME` | `v55-gondola-comercial` | `v56-seguimiento-en-vivo` |
+| hojas | `?v=45` | `?v=46` |
+| `app.js` | `?v=38` | `?v=39` |
+
+Verificado en la URL pública: `js/map/rider_motion.js` y
+`js/map/tracking_status.js` responden 200 con `Content-Type:
+application/javascript` — se sirven de verdad, no caen en el fallback HTML de
+Pages.
+
+`runtime-config.js` **preservado byte a byte**: se bajó el vivo antes de subir y
+se comparó por sha256 local contra remoto (idénticos). El del repo es una
+plantilla vacía que habría dejado al storefront sin backend. **Cero migraciones**
+—la rama no trae ninguna— y **ni una fila escrita** en la base.
+
+Rollback: redesplegar el árbol de `da56ce9`. El cambio es front puro.
+
+---
+
+## 10. Medición con GPS real del Moto G15
+
+Con el teléfono conectado se midió la cadena `fix Android → accuracy → filtro →
+render` por una vía que **no depende de las credenciales caídas ni toca ninguna
+app del contrato**: una página propia servida por `adb reverse` sobre `localhost`
+—que es lo que da contexto seguro para la geolocalización— corriendo el motor
+`js/map/rider_motion.js` exacto del árbol, alimentado por `navigator.geolocation`
+en alta precisión.
+
+**20 fixes reales:**
+
+| | |
+|---|---|
+| precisión mediana | **3,5 m** (mejor 3,0 · peor 14,9, el fix inicial antes de fijar satélites) |
+| cadencia mediana | 5,1 s |
+| fixes rechazados por el filtro | **0 de 20** |
+| marcador en movimiento | **19,6 %** del tiempo, con el equipo quieto |
+
+Dos cosas quedan probadas con datos frescos y no grabados: el filtro **no descarta
+ni un fix real**, y el motor **interpola el jitter en lugar de dar tirones** —con
+el equipo igualmente quieto, la implementación anterior movía el marcador el
+3,1 % del tiempo.
+
+**Lo que no prueba**: recorrido acumulado 2,0 m, desplazamiento neto 0,9 m. El
+teléfono no se movió del escritorio. No se afirma desplazamiento.
+
+Evidencia en `artifacts/taba2-live-tracking-ux/fisica/`: cinco capturas del
+recorrido de pantalla y el JSON con los 20 fixes.
+
+---
+
+## 11. La prueba física sigue sin poder correr
+
+**El teléfono ya no es el problema.** El Moto G15 está conectado y autorizado,
+con la APK de staging instalada, permisos `FINE`/`COARSE`/`POST_NOTIFICATIONS`
+concedidos, `location_mode=3` y Wi-Fi doméstica.
+
+Lo que falta son **credenciales**, y no se pueden reponer desde acá:
+
+- El **PAT de management de Supabase fue borrado** el 2026-08-10 a pedido de la
+  persona a cargo. Sin él no hay camino de admin.
+- **Los dos logins del Rider están rotados.** Medido en vivo contra
+  `/auth/v1/token`: `400 invalid_credentials` en ambos.
+- **El teléfono ya no tiene sesión guardada**: `no_backup/` está vacío, o sea
+  `rider_session.enc` no existe. La app tiene que volver a entrar y no tiene con
+  qué.
+- Sin login de staff tampoco se puede llevar un pedido a `on_the_way` desde el
+  Panel.
+
+Queda vivo únicamente `rider-map-qa`, que es un actor de mapa.
+
+No se forzó ningún estado por SQL y no se tocó ningún pedido: hacerlo habría
+fabricado la evidencia que esta prueba existe para producir.
+
+### La declaración NO se emite
+
+**`TABA2_CUSTOMER_LIVE_TRACKING_PRODUCTION_UX_CERTIFIED` queda sin emitir.**
+
+Su condición es que un cliente pueda seguir un Rider **físico** con movimiento
+comprensible. El código está desplegado y verificable en staging, el movimiento
+visual está medido y el estado de la señal está probado en el navegador — pero
+sin un Rider que pueda publicar GPS no hay recorrido que seguir, y afirmarlo
+sobre trazas grabadas sería exactamente la clase de evidencia inventada que este
+encargo prohíbe.
+
+### Lo único que falta para desbloquearla
+
+La caminata quedó pospuesta a pedido de la persona a cargo. Para retomarla:
+
+1. **El recorrido de ≥300 m.** El banco de medición queda armado en
+   `_claude-tmp/medicion-gps/` (página + servidor). Se levanta el servidor, se
+   hace `adb reverse tcp:8099 tcp:8099`, se abre `http://localhost:8099` en el
+   Moto y se toca «Empezar a medir»; el permiso de ubicación ya está concedido.
+   El motor se sirve del árbol real, así que siempre se mide el código vigente.
+   Esto certifica la cadena GPS → filtro → render con movimiento auténtico.
+2. **Un PAT nuevo** de `supabase.com/dashboard/account/tokens`, guardado donde el
+   proyecto guarda sus credenciales — con eso se rota el login del Rider, se
+   prepara el pedido y se prueba el tramo `backend → tracking web` en vivo.
+3. El Moto sale por el **hotspot del iPhone** (ya decidido) y el iPhone mira el
+   tracking por sus propios datos móviles, cubriendo pan y pinch de dos dedos,
+   «Volver al Rider», pantalla apagada, background, offline de ≥60 s y
+   reconexión.
+
+Los dos locks quedaron **cerrados y libres**: retenerlos toda la noche sin usarlos
+sólo estorbaría a quien los necesite.
 
 ### La declaración NO se emite
 

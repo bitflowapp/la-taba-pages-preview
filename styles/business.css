@@ -1497,6 +1497,69 @@
   color: var(--taba-muted, #6d675f);
 }
 
+/* ==========================================================================
+   Cómo viene el sistema.
+   Contesta lo que el tablero vacío no contesta: si esto se está mirando solo.
+   ========================================================================== */
+.operation-health {
+  margin-top: 1.4rem;
+}
+
+.operation-health-headline {
+  align-items: center;
+  background: var(--taba-surface, #fff);
+  border: 1px solid var(--taba-border, #dedbd5);
+  border-left-width: 5px;
+  border-radius: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  margin: 0.6rem 0 0.9rem;
+  padding: 0.75rem 0.9rem;
+}
+
+.operation-health-headline span {
+  color: var(--taba-muted, #6d675f);
+}
+
+.operation-health.tone-critical .operation-health-headline { border-left-color: #9f1d20; }
+.operation-health.tone-attention .operation-health-headline { border-left-color: #b66b16; }
+.operation-health.tone-calm .operation-health-headline { border-left-color: #2f7a4f; }
+
+.operation-health-grid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  margin: 0;
+}
+
+.operation-health-row {
+  background: var(--taba-surface, #fff);
+  border: 1px solid var(--taba-border, #dedbd5);
+  border-left-width: 5px;
+  border-radius: 14px;
+  padding: 0.7rem 0.85rem;
+}
+
+.operation-health-row dt {
+  color: var(--taba-muted, #6d675f);
+  font-size: 0.85rem;
+}
+
+.operation-health-row dd {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.2rem 0 0;
+}
+
+.operation-health-row dd strong {
+  font-size: 1.02rem;
+}
+
+.operation-health-row dd small {
+  color: var(--taba-muted, #6d675f);
+}
+
 .tone-critical { border-left-color: #9f1d20; }
 .tone-attention { border-left-color: #b66b16; }
 .tone-calm { border-left-color: #2f7a4f; }

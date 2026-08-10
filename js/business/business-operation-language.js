@@ -84,6 +84,71 @@ const ALERT_LIBRARY = Object.freeze({
     recommendation: 'Llamá al repartidor y confirmá dónde está; no inventes una posición en el seguimiento.',
     action: { label: 'Ir a Pedidos', view: 'orders' },
   },
+  // ===== Condiciones que el sistema ahora detecta sin que nadie abra el Panel =====
+  PAYMENT_WORKER_IDLE: {
+    support: 'TABA-PAGO-04',
+    happened: 'El cobro automático dejó de procesarse: hay trabajo vencido y nadie lo está tomando.',
+    preserved: 'Los pagos que ya entraron quedan guardados con su importe y su referencia. No se pierde ninguno.',
+    risk: 'Puede haber gente que pagó y todavía no tiene pedido, sin que nada avise.',
+    recommendation: 'Antes de entregar, confirmá cada pago en Mercado Pago; y avisá a soporte con la referencia de abajo.',
+    action: { label: 'Ir a Pagos', view: 'payments' },
+  },
+  CHECKOUT_PROVIDER_UNVERIFIED: {
+    support: 'TABA-PAGO-05',
+    happened: 'Alguien fue a pagar a Mercado Pago y de este lado nunca llegó la respuesta.',
+    preserved: 'La referencia de esa compra queda guardada para poder buscarla en Mercado Pago.',
+    risk: 'Si el pago existe y nadie lo mira, esa persona pagó y no va a recibir nada.',
+    recommendation: 'Buscá esa referencia en Mercado Pago; si el pago está, armá el pedido o devolvé el dinero.',
+    action: { label: 'Ir a Pagos', view: 'payments' },
+  },
+  SCHEDULER_JOB_FAILING: {
+    support: 'TABA-SIST-01',
+    happened: 'Una tarea automática del sistema viene fallando.',
+    preserved: 'Nada se borra ni se cobra dos veces por esto. Lo que ya está registrado sigue igual.',
+    risk: 'Mientras falle, cobros y stock dependen de que alguien mire el Panel a mano.',
+    recommendation: 'Preparás un diagnóstico y se lo pasás a soporte con la referencia de abajo.',
+    action: { label: 'Ir al centro de operación', view: 'operation-center' },
+  },
+  SCHEDULER_JOB_STALLED: {
+    support: 'TABA-SIST-02',
+    happened: 'Una tarea automática del sistema dejó de ejecutarse.',
+    preserved: 'Nada se borra por esto. Los pedidos y los cobros siguen como estaban.',
+    risk: 'El stock reservado y los cobros pendientes no se están destrabando solos.',
+    recommendation: 'Preparás un diagnóstico y se lo pasás a soporte con la referencia de abajo.',
+    action: { label: 'Ir al centro de operación', view: 'operation-center' },
+  },
+  ORDER_NOT_ACCEPTED: {
+    support: 'TABA-PED-01',
+    happened: 'Entró un pedido y todavía nadie lo aceptó.',
+    preserved: 'El pedido, su contacto y su detalle quedan guardados tal como llegaron.',
+    risk: 'La persona está esperando una respuesta y no sabe si le vas a preparar lo que compró.',
+    recommendation: 'Abrí Pedidos y aceptalo o cancelalo; cualquiera de las dos es mejor que el silencio.',
+    action: { label: 'Ir a Pedidos', view: 'orders' },
+  },
+  ORDER_STALLED: {
+    support: 'TABA-PED-02',
+    happened: 'Un pedido aceptado dejó de avanzar bastante después del tiempo que prometiste.',
+    preserved: 'El pedido y lo que ya preparaste quedan como están.',
+    risk: 'El cliente calcula su espera con el tiempo que le diste; pasado eso, llama o cancela.',
+    recommendation: 'Movelo en Pedidos o avisale al cliente cuánto va a demorar de verdad.',
+    action: { label: 'Ir a Pedidos', view: 'orders' },
+  },
+  ORDER_READY_WITHOUT_RIDER: {
+    support: 'TABA-ENVIO-02',
+    happened: 'Hay un pedido listo para salir y todavía no tiene repartidor.',
+    preserved: 'El pedido está armado y su preparación no se pierde.',
+    risk: 'Lo preparado se enfría o se vence mientras espera a alguien que lo lleve.',
+    recommendation: 'Asigná un repartidor desde Pedidos, o avisale al cliente que la entrega se demora.',
+    action: { label: 'Ir a Pedidos', view: 'orders' },
+  },
+  STOCK_RESERVATION_STUCK: {
+    support: 'TABA-STOCK-01',
+    happened: 'Quedó mercadería apartada por una compra que venció y nunca se liberó.',
+    preserved: 'La mercadería está física en el local: sólo figura apartada, no se perdió.',
+    risk: 'Mientras siga apartada no se puede vender, y la góndola se vacía sin haber vendido.',
+    recommendation: 'Si no se libera sola en unos minutos, preparás un diagnóstico y avisás a soporte.',
+    action: { label: 'Ir al centro de operación', view: 'operation-center' },
+  },
 });
 
 const SERVICE_HEALTH_FALLBACK = Object.freeze({
@@ -193,6 +258,159 @@ export function summarizeOperation(snapshot = {}) {
     headline: 'La operación está al día',
     detail: 'No hay nada pendiente que necesite una persona ahora mismo.',
   });
+}
+
+// Las tareas automáticas tienen nombre técnico en el planificador. Acá se
+// nombran por lo que hacen; lo técnico queda sólo en el detalle para soporte.
+const SCHEDULED_TASK_NAMES = Object.freeze({
+  'taba-payment-outbox-worker': 'Procesar los cobros que entran',
+  'taba-checkout-expiry-sweep': 'Liberar la mercadería apartada que venció',
+  'taba-checkout-provider-truth-sweep': 'Preguntarle a Mercado Pago por las compras sin respuesta',
+  'taba-operational-alerts-sweep': 'Vigilar la operación',
+});
+
+export function scheduledTaskName(job) {
+  return SCHEDULED_TASK_NAMES[String(job || '')] || 'Una tarea automática del sistema';
+}
+
+/**
+ * Traduce la salud operativa medida a algo que se pueda leer en el mostrador.
+ *
+ * La regla del archivo también vale acá: nada se afirma sin dato. Si el
+ * servidor no devolvió la salud —una versión anterior, una lectura que falló—,
+ * se dice que no se pudo leer. Nunca se pinta de verde por defecto.
+ */
+export function describeOperationalHealth(health) {
+  if (!health || typeof health !== 'object' || Array.isArray(health)) {
+    return Object.freeze({
+      available: false,
+      tone: 'attention',
+      headline: 'Todavía no podemos decirte cómo viene el sistema',
+      detail: 'Actualizá el centro de operación; si sigue igual, preparás un diagnóstico para soporte.',
+      rows: Object.freeze([]),
+    });
+  }
+
+  const watch = health.autonomous_evaluation || {};
+  const tasks = Array.isArray(health.scheduler) ? health.scheduler : [];
+  const queue = health.payments?.outbox || {};
+  const worker = health.payments?.worker || {};
+  const reconciliation = health.payments?.reconciliation || {};
+  const orders = health.orders_needing_attention || {};
+  const reservations = health.reservations || {};
+  const secrets = Array.isArray(health.secrets) ? health.secrets : [];
+
+  const brokenTasks = tasks.filter((task) => ['detenido', 'fallando', 'apagado', 'sin ninguna corrida exitosa']
+    .includes(String(task?.state || '')));
+  const watchState = String(watch.state || 'desconocido');
+  const paidWithoutOrder = safeCount(reconciliation.paid_without_order);
+  const deadLetter = safeCount(queue.dead_letter);
+  const needAPerson = safeCount(orders.not_accepted) + safeCount(orders.stalled) + safeCount(orders.ready_without_rider);
+  const heldStock = safeCount(reservations.expired_still_held);
+  const missingSecrets = secrets.filter((secret) => secret?.configured !== true).length;
+  const workerState = String(worker.state || '');
+
+  const rows = [
+    {
+      key: 'watch',
+      label: 'Vigilancia automática',
+      value: watchState === 'al día' ? 'Al día'
+        : watchState === 'detenido' ? 'Detenida'
+          : watchState === 'fallando' ? 'Con fallas'
+            : watchState === 'degradado' ? 'A medias' : 'Sin datos',
+      detail: watch.last_run_at
+        ? `Revisó toda la operación ${sinceLabel(watch.seconds_since_last_run)}, sin que nadie abriera el Panel.`
+        : 'Todavía no hay ninguna revisión registrada.',
+      tone: watchState === 'al día' ? 'calm' : 'critical',
+    },
+    {
+      key: 'tasks',
+      label: 'Tareas automáticas',
+      value: tasks.length ? `${tasks.length - brokenTasks.length} de ${tasks.length} al día` : 'Sin datos',
+      detail: brokenTasks.length
+        ? brokenTasks.map((task) => `${scheduledTaskName(task.job)}: ${task.state}`).join(' · ')
+        : 'Cobros, mercadería apartada y vigilancia corren solos.',
+      tone: !tasks.length ? 'attention' : brokenTasks.length ? 'critical' : 'calm',
+    },
+    {
+      key: 'payments',
+      label: 'Cobros automáticos',
+      value: workerState === 'al día' ? 'Al día'
+        : workerState === 'no está tomando trabajo' ? 'Frenados'
+          : workerState === 'con trabajos abandonados' ? 'Con cobros abandonados'
+            : workerState === 'sin trabajo procesado todavía' ? 'Todavía sin movimiento' : 'Sin datos',
+      detail: `${safeCount(queue.pending)} esperando · ${safeCount(queue.retry_wait)} reintentando · ${deadLetter} abandonados`,
+      tone: workerState === 'no está tomando trabajo' || deadLetter > 0 ? 'critical'
+        : workerState === 'al día' ? 'calm' : 'attention',
+    },
+    {
+      key: 'paid-without-order',
+      label: 'Dinero cobrado sin pedido',
+      value: String(paidWithoutOrder),
+      detail: paidWithoutOrder
+        ? 'Hay gente que pagó y todavía no tiene su pedido armado.'
+        : 'Cada cobro que entró tiene su pedido.',
+      tone: paidWithoutOrder ? 'critical' : 'calm',
+    },
+    {
+      key: 'orders',
+      label: 'Pedidos que necesitan una persona',
+      value: String(needAPerson),
+      detail: needAPerson
+        ? `${safeCount(orders.not_accepted)} sin aceptar · ${safeCount(orders.stalled)} sin avanzar · ${safeCount(orders.ready_without_rider)} listos sin repartidor`
+        : 'Ninguno esperando una decisión tuya.',
+      tone: needAPerson ? 'attention' : 'calm',
+    },
+    {
+      key: 'stock',
+      label: 'Mercadería apartada de más',
+      value: String(heldStock),
+      detail: heldStock
+        ? 'Compras vencidas que todavía retienen mercadería que podrías vender.'
+        : 'Nada apartado de compras que no se completaron.',
+      tone: heldStock ? 'attention' : 'calm',
+    },
+    {
+      key: 'secrets',
+      label: 'Configuración de cobros',
+      value: secrets.length ? `${secrets.length - missingSecrets} de ${secrets.length} cargada${secrets.length === 1 ? '' : 's'}` : 'Sin datos',
+      // Existencia y estado. Nunca el contenido: acá no se muestra ningún valor.
+      detail: missingSecrets
+        ? secrets.filter((secret) => secret?.configured !== true).map((secret) => String(secret?.detail || 'falta cargarla')).join(' · ')
+        : 'Lo que el cobro automático necesita para funcionar está cargado.',
+      tone: !secrets.length ? 'attention' : missingSecrets ? 'critical' : 'calm',
+    },
+  ].map((row) => Object.freeze(row));
+
+  const critical = rows.filter((row) => row.tone === 'critical');
+  const attention = rows.filter((row) => row.tone === 'attention');
+  const tone = critical.length ? 'critical' : attention.length ? 'attention' : 'calm';
+
+  return Object.freeze({
+    available: true,
+    tone,
+    headline: critical.length
+      ? 'El sistema NO se está cuidando solo'
+      : attention.length
+        ? 'El sistema se está cuidando solo, con cosas para mirar'
+        : 'El sistema se está cuidando solo',
+    detail: critical.length
+      ? 'Mientras esto siga así, que el tablero esté vacío no significa que no pase nada.'
+      : watch.last_run_at
+        ? `Última revisión automática ${sinceLabel(watch.seconds_since_last_run)}.`
+        : 'Todavía no hay ninguna revisión automática registrada.',
+    rows: Object.freeze(rows),
+  });
+}
+
+function sinceLabel(seconds) {
+  const value = Number(seconds);
+  if (!Number.isFinite(value) || value < 0) return 'hace un rato';
+  if (value < 90) return `hace ${Math.round(value)} segundos`;
+  const minutes = Math.round(value / 60);
+  if (minutes < 90) return `hace ${minutes} minutos`;
+  const hours = Math.round(minutes / 60);
+  return hours < 36 ? `hace ${hours} horas` : `hace ${Math.round(hours / 24)} días`;
 }
 
 // Convierte cualquier mensaje de error en algo que se pueda leer en el mostrador.

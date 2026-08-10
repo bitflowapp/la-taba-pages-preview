@@ -4,7 +4,8 @@
 import { escapeHtml } from '../ui.js';
 import { can, describeRoleScope, isElevated, roleLabel } from './business-capabilities.js';
 import {
-  describeMetrics, describeOperationalAlert, sortAlertsByUrgency, summarizeOperation,
+  describeMetrics, describeOperationalAlert, describeOperationalHealth,
+  sortAlertsByUrgency, summarizeOperation,
 } from './business-operation-language.js';
 import {
   classifyBusinessPayment, evaluateMercadoPagoSetup, paymentActionsFor, REFUND_CONFIRMATION_PHRASE,
@@ -54,8 +55,37 @@ export function renderOperationCenterSurface({ snapshot, status, role, busy, sup
     <section class="operation-alerts" aria-labelledby="operation-alerts-title">
       <h3 id="operation-alerts-title">Qué resolver</h3>${alertMarkup}
     </section>
+    ${renderOperationalHealth(data.health)}
     ${renderSupportSection(support, busy)}
     ${renderRoleFooter(role)}`);
+}
+
+/**
+ * «Qué resolver» vacío puede querer decir dos cosas muy distintas: que no pasa
+ * nada, o que hace seis horas que nadie mira. Esta sección es la que las separa,
+ * y todo lo que dice sale de datos medidos en el servidor.
+ */
+function renderOperationalHealth(health) {
+  const described = describeOperationalHealth(health);
+  const rows = described.rows.map((row) => `
+    <div class="operation-health-row tone-${escapeHtml(row.tone)}" data-operation-health="${escapeHtml(row.key)}">
+      <dt>${escapeHtml(row.label)}</dt>
+      <dd>
+        <strong data-operation-health-value>${escapeHtml(row.value)}</strong>
+        <small>${escapeHtml(row.detail)}</small>
+      </dd>
+    </div>`).join('');
+
+  return `<section class="operation-health tone-${escapeHtml(described.tone)}"
+    data-operation-health-section="${described.available ? 'medido' : 'sin-datos'}"
+    aria-labelledby="operation-health-title">
+    <h3 id="operation-health-title">Cómo viene el sistema</h3>
+    <p class="operation-health-headline" role="status">
+      <strong>${escapeHtml(described.headline)}</strong>
+      <span>${escapeHtml(described.detail)}</span>
+    </p>
+    ${rows ? `<dl class="operation-health-grid">${rows}</dl>` : ''}
+  </section>`;
 }
 
 function renderSupportSection(support, busy) {

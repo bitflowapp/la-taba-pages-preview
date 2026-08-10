@@ -32,11 +32,36 @@ para traducirla cuando alguien escribe pidiendo ayuda:
 | `TABA-ARCA-03` | `FISCAL_ARTIFACT_STALLED` |
 | `TABA-IMP-01` | `PRINT_JOB_FAILED` |
 | `TABA-ENVIO-01` | `RIDER_SIGNAL_STALE` |
+| `TABA-PAGO-04` | `PAYMENT_WORKER_IDLE` |
+| `TABA-PAGO-05` | `CHECKOUT_PROVIDER_UNVERIFIED` |
+| `TABA-SIST-01` | `SCHEDULER_JOB_FAILING` |
+| `TABA-SIST-02` | `SCHEDULER_JOB_STALLED` |
+| `TABA-PED-01` | `ORDER_NOT_ACCEPTED` |
+| `TABA-PED-02` | `ORDER_STALLED` |
+| `TABA-ENVIO-02` | `ORDER_READY_WITHOUT_RIDER` |
+| `TABA-STOCK-01` | `STOCK_RESERVATION_STUCK` |
 | `TABA-SERV-01` | señal de salud de un servicio degradado |
 | `TABA-GEN-01` | cualquier condición todavía sin traducción propia |
 
 Junto a la referencia se muestra un **rastro** de ocho caracteres: es el prefijo del
 identificador de correlación y alcanza para encontrar el caso en los registros del servidor.
+
+## Cómo viene el sistema
+
+Debajo de «Qué resolver» hay una sección que contesta lo que un tablero vacío no contesta:
+si esto se está mirando solo. **Las alertas ya no se calculan sólo cuando alguien abre el
+Panel**: una tarea automática las revisa cada minuto, y esa sección dice cuándo fue la
+última revisión, si las tareas automáticas están corriendo, cómo viene la cola de cobros,
+si hay dinero cobrado sin pedido, cuántos pedidos necesitan una persona y si la
+configuración de cobros está cargada.
+
+Dos cosas que conviene saber leer:
+
+* **«Vigilancia automática: Detenida»** significa que el tablero puede estar vacío porque
+  nadie está mirando, no porque no pase nada. Es la única línea que hay que mirar antes de
+  confiar en un tablero limpio.
+* De la configuración de cobros se muestra **si está cargada**, nunca su contenido. Ningún
+  valor de la bóveda llega al navegador.
 
 ## Quién puede hacer qué
 

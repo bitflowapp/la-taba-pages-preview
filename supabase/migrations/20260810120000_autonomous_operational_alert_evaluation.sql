@@ -485,6 +485,11 @@ begin
         and coalesce(o.origin, 'production') <> 'qa'
         and o.acknowledged_at is null
         and o.created_at < clock_timestamp() - interval '10 minutes'
+        -- Un pedido de anteayer que nadie aceptó es historia, no una acción de
+        -- hoy. Sin este techo, el primer barrido sobre una base con meses de
+        -- pedidos abriría una avalancha de alertas que nadie va a resolver, y
+        -- un tablero con cuarenta cosas viejas se ignora entero.
+        and o.created_at > clock_timestamp() - interval '24 hours'
 
       -- ======================================================================
       --  NUEVO 5 · El pedido se aceptó y se quedó ahí.
@@ -514,6 +519,8 @@ begin
         and coalesce(o.acknowledged_at, o.created_at)
             + make_interval(mins => coalesce(o.preparation_estimate_minutes, 30) + 30)
             < clock_timestamp()
+        -- Mismo techo que arriba, y por lo mismo.
+        and o.created_at > clock_timestamp() - interval '24 hours'
     ) findings
   loop
     v_fingerprint := encode(digest(

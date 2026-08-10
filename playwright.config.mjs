@@ -28,6 +28,14 @@ export default defineConfig({
   // de ubicación corre ADEMÁS en WebKit móvil: los permisos de geolocalización y
   // el mapa se comportan distinto en Safari, y ese es el navegador con el que
   // una parte real de los clientes va a confirmar dónde vive.
+  //
+  // El Panel de recuperación se suma a WebKit por la misma razón, invertida: el
+  // negocio atiende desde el teléfono que tiene, y buena parte son iPhone. La
+  // salida de rearmado decide si una persona recibe lo que pagó o si le
+  // devuelven el dinero; que el botón se dibuje y despache igual en los dos
+  // motores no es un detalle estético. No se amplió el resto del gate a WebKit:
+  // esa sigue siendo una decisión tomada, y ampliarla a ciegas cambia el costo y
+  // la estabilidad del gate sin que nadie lo haya medido.
   projects: [
     {
       name: 'chromium',
@@ -35,7 +43,7 @@ export default defineConfig({
     },
     {
       name: 'mobile-webkit',
-      testMatch: /delivery-location-confirmation\.spec\.mjs/,
+      testMatch: /(delivery-location-confirmation|panel-order-recovery)\.spec\.mjs/,
       use: { ...devices['iPhone 13'] },
     },
   ],

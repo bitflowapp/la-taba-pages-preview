@@ -1,6 +1,9 @@
 # TABA2 Pilot RC1 — Release Manifest
 
-**Rama:** `release/taba2-pilot-rc1` · **HEAD:** `f61e84f` · **URL:** https://taba2-staging.pages.dev
+**Rama:** `release/taba2-pilot-rc1` · **URL:** https://taba2-staging.pages.dev
+**Frontend publicado:** `f61e84f` (deployment `aee2e619`). La punta de la rama agrega
+encima **sólo este documento**, que no forma parte del conjunto de 351 archivos publicados:
+el bundle servido corresponde exactamente a `f61e84f`.
 **Fecha:** 2026-08-10 · **Entorno:** staging (`ukxqbgswjlibmnjemrzd`) · **Producción:** no tocada
 
 Este documento describe UNA release. Todo lo que dice está medido en esta sesión, o

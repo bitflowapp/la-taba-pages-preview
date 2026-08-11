@@ -256,13 +256,34 @@ En Rider se puede tocar la composicion `rider_home_page.dart` por dependencia es
 
 ## 15. Gates antes de staging
 
-- tests de funciones/migrations y DB local descartable;
-- carrera PostgreSQL real con dos sesiones y barrera (A, B +20 ms);
-- state machines, idempotencia, expiry/reject/cancel/reconnect/end-shift;
-- ledger exactly-once e inmutabilidad;
-- simulador determinista 1/2/5/10 Riders, bursts, stale, rechazo, capacidad y reconnect, con hash repetible;
-- Flutter/Kotlin unit/widget tests y contrato pre-claim sin PII;
-- Panel tests y gates existentes sin bajar ninguno;
-- lock staging libre, fixtures propios, rollback y cero datos humanos.
+Estado medido el 2026-08-11 sobre `feature/taba2-automated-rider-dispatch`
+(web) y `feature/taba2-rider-shifts-dispatch` (Rider).
 
-Hasta que esos gates esten verdes no corresponde declarar `TABA2_AUTOMATED_RIDER_DISPATCH_READY_FOR_STAGING`.
+| Gate | Estado | Evidencia |
+| --- | --- | --- |
+| Migraciones aplican en DB descartable | verde | 76/76 sobre PostgreSQL 17.6 limpio |
+| Contrato de runtime | verde | 13 escenarios en `supabase/tests/rider_dispatch_runtime.local.sql` |
+| Carrera PostgreSQL real, dos sesiones con barrera | verde | 4 carreras en `scripts/run-rider-dispatch-db.mjs` |
+| State machines, idempotencia, expiry/reject/pause/end-shift | verde | escenarios 6 a 11 del contrato |
+| Ledger exactly-once e inmutable | verde | escenario 10 |
+| Simulador determinista 1/2/5/10 Riders | verde | 44 escenarios, SHA-256 `9d87db73…3998c406` |
+| Autorizacion adversaria | verde | 12 intentos hostiles rechazados |
+| Superficie: bypass legado, worker, `private` | verde | seccion S del contrato |
+| Nombres de argumento del contrato Rider/Panel | verde | seccion C del contrato |
+| Flutter/Kotlin unit y widget tests | verde | 289 Flutter + 90 Kotlin |
+| Suite web sin bajar gates previos | verde | 1318/1318 |
+| Reconnect | parcial | cubierto por simulador; falta el ciclo real de app |
+| Lock de staging, fixtures propios y rollback | pendiente | no se ejecuto nada contra staging |
+
+Reproducir el gate de base de datos:
+
+```bash
+TABA_LOCAL_DISPATCH_DB=1 npm run test:dispatch:db
+```
+
+Levanta su propio contenedor PostgreSQL efimero. No usa ni modifica el
+contenedor Supabase compartido de otro worktree: solo lee de el los esquemas de
+plataforma `auth` y `storage`.
+
+Hasta que los gates pendientes esten verdes no corresponde declarar
+`TABA2_AUTOMATED_RIDER_DISPATCH_READY_FOR_STAGING`.

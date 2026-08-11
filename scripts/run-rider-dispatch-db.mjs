@@ -373,11 +373,16 @@ async function raceAcceptVersusSweep() {
            lease_expires_at = clock_timestamp() + interval '2500 milliseconds'
      where id='${offer.id}';
   `);
+  // Envejecer el lease bumpea la version de la oferta. Si el accept viajara con
+  // la version previa, la carrera se degradaria a un simple `stale_version` y
+  // dejaria de medir el cruce contra el sweep.
+  const armed = liveOffer(ids.order);
+  if (!armed) throw new Error('la carrera 4 perdio la oferta al armar el lease');
 
   const barrier = await barrierAt(2400);
   const results = await Promise.all([
-    racer('accept', offer.rider, barrier,
-      `public.accept_rider_dispatch_offer('${offer.id}','${offer.version}','race-sw-accept-01') ->> 'code'`),
+    racer('accept', armed.rider, barrier,
+      `public.accept_rider_dispatch_offer('${armed.id}','${armed.version}','race-sw-accept-01') ->> 'code'`),
     racer('sweep', null, barrier,
       `public.run_rider_dispatch_cycle(10,'test') ->> 'expired_offers'`),
   ]);

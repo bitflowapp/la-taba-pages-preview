@@ -813,10 +813,12 @@ begin
 end;
 $accept$;
 
+-- El motivo es un codigo cerrado, no texto libre: asi el Rider no puede
+-- escribir PII dentro de la auditoria y el Panel puede agrupar por causa.
 create or replace function public.reject_rider_dispatch_offer(
   p_offer_id uuid,
   p_expected_version bigint,
-  p_reason text,
+  p_reason_code text,
   p_idempotency_key text
 )
 returns jsonb
@@ -833,10 +835,13 @@ declare
   v_now timestamptz := clock_timestamp();
   v_result jsonb;
   v_job_id uuid;
-  v_reason text := left(btrim(coalesce(p_reason, 'RIDER_REJECTED')), 120);
+  v_reason text := lower(btrim(coalesce(p_reason_code, 'rider_declined')));
 begin
   if p_offer_id is null or p_expected_version is null then
     raise exception 'reject invalido' using errcode = '22023';
+  end if;
+  if v_reason not in ('rider_declined','too_far','vehicle_issue','unsafe_route','other') then
+    raise exception 'motivo de rechazo invalido' using errcode = '22023';
   end if;
   v_replay := public.dispatch_begin_command('reject_rider_dispatch_offer', v_key, v_fingerprint);
   if v_replay is not null then return v_replay; end if;

@@ -235,7 +235,13 @@ begin
   -- 6. Rechazo: pasa al siguiente y no re-ofrece al que rechazo
   -- ─────────────────────────────────────────────────────────────────────────
   perform pg_temp.actuar_como(v_rider_a);
-  v_res := public.reject_rider_dispatch_offer(v_offer, v_offer_version, 'muy lejos', 'cert-reject-00001');
+  -- Texto libre no: el motivo es un codigo cerrado.
+  begin
+    perform public.reject_rider_dispatch_offer(v_offer, v_offer_version, 'muy lejos', 'cert-reject-00000');
+    raise exception '6 · un motivo fuera del conjunto cerrado deberia ser rechazado';
+  exception when sqlstate '22023' then null;
+  end;
+  v_res := public.reject_rider_dispatch_offer(v_offer, v_offer_version, 'too_far', 'cert-reject-00001');
   if v_res ->> 'code' <> 'offer_rejected' then
     raise exception '6 · rechazo fallo: %', v_res;
   end if;
@@ -459,8 +465,196 @@ begin
   end if;
   raise notice '13 · OK  control del Panel con metricas y sin PII ni GPS';
 
+  -- ─────────────────────────────────────────────────────────────────────────
+  -- 14. Una politica nueva no reescribe la historia
+  -- ─────────────────────────────────────────────────────────────────────────
+  declare
+    v_amount_before numeric;
+    v_version_before integer;
+    v_snapshot_before jsonb;
+  begin
+    select amount, policy_version, snapshot
+      into v_amount_before, v_version_before, v_snapshot_before
+      from public.rider_reward_ledger
+     where order_id=v_order2 and entry_type='earned';
+
+    insert into public.rider_dispatch_policies(
+      business_id, version, reward_currency, reward_base, reward_per_km, created_by
+    ) values (v_business, 2, 'ARS', 999, 555, v_owner);
+
+    if exists (
+      select 1 from public.rider_reward_ledger
+       where order_id=v_order2 and entry_type='earned'
+         and (amount is distinct from v_amount_before
+              or policy_version is distinct from v_version_before
+              or snapshot is distinct from v_snapshot_before)
+    ) then
+      raise exception '14 · una politica nueva modifico un asiento cerrado';
+    end if;
+    if (select count(*)::integer from public.rider_reward_ledger
+         where order_id=v_order2 and entry_type='earned') <> 1 then
+      raise exception '14 · una politica nueva duplico el asiento de una entrega cerrada';
+    end if;
+    raise notice '14 · OK  politica v2 no toca importes, snapshots ni entregas cerradas';
+  end;
+
   raise notice '';
   raise notice '########## TODAS LAS VERIFICACIONES PASARON ##########';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Autorizacion adversaria: cada RPC alcanzable por `authenticated` recibe
+-- argumentos hostiles de un actor que no deberia poder usarla. PostgREST deja
+-- que cualquier sesion llame cualquier funcion con cualquier argumento, asi
+-- que la unica defensa real es la que esta adentro de la funcion.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_biz_a uuid := gen_random_uuid();
+  v_biz_b uuid := gen_random_uuid();
+  v_owner_a uuid; v_owner_b uuid; v_rider_a uuid; v_rider_b uuid; v_outsider uuid;
+  v_order uuid; v_offer uuid; v_offer_version bigint; v_shift_a uuid; v_shift_b uuid;
+  v_job_rev bigint; v_res jsonb; v_blocked integer := 0;
+begin
+  raise notice '';
+  raise notice '########## AUTORIZACION ADVERSARIA ##########';
+
+  v_owner_a  := pg_temp.nuevo_usuario('adv-owner-a');
+  v_owner_b  := pg_temp.nuevo_usuario('adv-owner-b');
+  v_rider_a  := pg_temp.nuevo_usuario('adv-rider-a');
+  v_rider_b  := pg_temp.nuevo_usuario('adv-rider-b');
+  v_outsider := pg_temp.nuevo_usuario('adv-outsider');
+
+  insert into public.businesses(id,name,status,slug,is_active,address,currency_code)
+  values (v_biz_a,'TABA adv A','open','taba-adv-a-'||left(replace(v_biz_a::text,'-',''),10),true,'Av A 1','ARS'),
+         (v_biz_b,'TABA adv B','open','taba-adv-b-'||left(replace(v_biz_b::text,'-',''),10),true,'Av B 2','ARS');
+  insert into public.business_members(business_id,user_id,role,is_active) values
+    (v_biz_a,v_owner_a,'owner',true),(v_biz_a,v_rider_a,'rider',true),(v_biz_a,v_rider_b,'rider',true),
+    (v_biz_b,v_owner_b,'owner',true);
+  insert into private.rider_map_business_locations(business_id,latitude,longitude,source)
+  values (v_biz_a,-38.951,-68.059,'qa_fixture');
+  perform public.ensure_rider_dispatch_policy(v_biz_a);
+  perform public.ensure_rider_dispatch_policy(v_biz_b);
+
+  perform pg_temp.actuar_como(v_owner_a);
+  perform public.configure_business_auto_dispatch(v_biz_a,true,true,
+    'certificacion adversaria local','adv-enable-000001');
+
+  v_order := pg_temp.nuevo_pedido(v_biz_a,'TABA-ADV1','centro',-38.955,-68.070);
+  v_shift_a := pg_temp.turno_listo(v_rider_a,-38.9515,-68.0595,'adva');
+  perform pg_temp.actuar_como(null);
+  update public.orders set status='ready', ready_at=clock_timestamp() where id=v_order;
+  perform public.run_rider_dispatch_cycle(10,'test');
+  select o.id, o.version into v_offer, v_offer_version
+    from public.dispatch_offers o join public.dispatch_jobs j on j.id=o.job_id
+   where j.order_id=v_order and o.status='offered';
+  if v_offer is null then raise exception 'ADV · el fixture no produjo oferta'; end if;
+
+  -- A1 · un tercero sin membresia no lee el control del negocio
+  perform pg_temp.actuar_como(v_outsider);
+  begin
+    perform public.get_business_dispatch_control(v_biz_a);
+    raise exception 'ADV · un tercero leyo el control de dispatch';
+  exception when sqlstate '42501' then v_blocked := v_blocked + 1;
+  end;
+
+  -- A2 · el owner de otro negocio tampoco
+  perform pg_temp.actuar_como(v_owner_b);
+  begin
+    perform public.get_business_dispatch_control(v_biz_a);
+    raise exception 'ADV · el owner de otro negocio leyo el control ajeno';
+  exception when sqlstate '42501' then v_blocked := v_blocked + 1;
+  end;
+
+  -- A3 · el owner de otro negocio no puede forzar una asignacion ajena
+  select revision into v_job_rev from public.dispatch_jobs where order_id=v_order;
+  begin
+    perform public.manual_override_dispatch(v_biz_a,v_order,v_rider_a,
+      'intento de override cruzado','adv-override-00001',v_job_rev);
+    raise exception 'ADV · override cruzado entre negocios permitido';
+  exception when sqlstate '42501' then v_blocked := v_blocked + 1;
+  end;
+
+  -- A4 · un Rider no puede aceptar la oferta de otro Rider
+  perform pg_temp.actuar_como(v_rider_b);
+  begin
+    perform public.accept_rider_dispatch_offer(v_offer,v_offer_version,'adv-accept-000001');
+    raise exception 'ADV · un Rider acepto la oferta de otro';
+  exception when sqlstate 'P0002' then v_blocked := v_blocked + 1;
+  end;
+
+  -- A5 · ni rechazarla
+  begin
+    perform public.reject_rider_dispatch_offer(v_offer,v_offer_version,'too_far','adv-reject-000001');
+    raise exception 'ADV · un Rider rechazo la oferta de otro';
+  exception when sqlstate 'P0002' then v_blocked := v_blocked + 1;
+  end;
+
+  -- A6 · un Rider no puede operar el turno de otro
+  begin
+    perform public.rider_pause_shift(v_shift_a,
+      (select version from public.rider_shifts where id=v_shift_a),'adv-pause-000001');
+    raise exception 'ADV · un Rider pauso el turno de otro';
+  exception when sqlstate 'P0002' then v_blocked := v_blocked + 1;
+  end;
+
+  -- A7 · ni latir por el
+  begin
+    perform public.rider_shift_heartbeat(v_shift_a,
+      (select version from public.rider_shifts where id=v_shift_a),
+      clock_timestamp(), -38.9515, -68.0595, 12.0, false);
+    raise exception 'ADV · un Rider latio por el turno de otro';
+  exception when sqlstate 'P0002' then v_blocked := v_blocked + 1;
+  end;
+
+  -- A8 · un Rider no tiene poderes de negocio
+  begin
+    perform public.configure_business_auto_dispatch(v_biz_a,true,false,
+      'un Rider intenta abrir produccion','adv-switch-000001');
+    raise exception 'ADV · un Rider cambio el switch de auto-dispatch';
+  exception when sqlstate '42501' then v_blocked := v_blocked + 1;
+  end;
+  begin
+    perform public.schedule_rider_shift(v_biz_a,v_rider_b,
+      clock_timestamp()+interval '1 hour', clock_timestamp()+interval '5 hours',
+      'centro',1,'adv-schedule-00001');
+    raise exception 'ADV · un Rider programo un turno';
+  exception when sqlstate '42501' then v_blocked := v_blocked + 1;
+  end;
+  begin
+    perform public.configure_rider_dispatch_profile(v_biz_a,v_rider_a,false,null,
+      'centro',1,'adv-profile-000001');
+    raise exception 'ADV · un Rider configuro un perfil de dispatch';
+  exception when sqlstate '42501' then v_blocked := v_blocked + 1;
+  end;
+  begin
+    perform public.manual_override_dispatch(v_biz_a,v_order,v_rider_b,
+      'un Rider se autoasigna el pedido','adv-selfassign-0001',v_job_rev);
+    raise exception 'ADV · un Rider se autoasigno por override';
+  exception when sqlstate '42501' then v_blocked := v_blocked + 1;
+  end;
+
+  -- A9 · un tercero sin membresia Rider no abre turno
+  perform pg_temp.actuar_como(v_outsider);
+  begin
+    perform public.rider_work_now('adv-worknow-000001');
+    raise exception 'ADV · un tercero abrio un turno de Rider';
+  exception when sqlstate '42501' then v_blocked := v_blocked + 1;
+  end;
+
+  -- El worker no se prueba aca: este bloque corre con el rol dueño de la base,
+  -- asi que lo que importa es el grant, y eso lo verifica la seccion S.
+
+  -- El pedido sigue sin dueño despues de todos los intentos.
+  if exists (select 1 from public.orders o where o.id=v_order
+             and o.assigned_rider_user_id is not null) then
+    raise exception 'ADV · algun intento hostil termino asignando el pedido';
+  end if;
+
+  if v_blocked <> 12 then
+    raise exception 'ADV · se esperaban 12 intentos bloqueados, hubo %', v_blocked;
+  end if;
+  raise notice 'ADV · OK  12 intentos hostiles rechazados y el pedido sigue sin dueño';
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -492,4 +686,55 @@ begin
     raise exception 'S · el esquema private es alcanzable desde authenticated';
   end if;
   raise notice 'S · OK  bypass legado cerrado, worker fuera del navegador, private aislado';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Los nombres de argumento son el contrato con el cliente Rider (Kotlin invoca
+-- por argumento nombrado). Renombrar uno rompe la app en runtime, no al aplicar
+-- la migracion, asi que se fija aca.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_expected constant jsonb := jsonb_build_object(
+    'get_rider_operational_state', '{}',
+    'rider_work_now', 'p_idempotency_key',
+    'rider_start_shift', 'p_shift_id,p_expected_version,p_idempotency_key',
+    'rider_pause_shift', 'p_shift_id,p_expected_version,p_idempotency_key',
+    'rider_resume_shift', 'p_shift_id,p_expected_version,p_idempotency_key',
+    'rider_end_shift', 'p_shift_id,p_expected_version,p_idempotency_key',
+    'rider_shift_heartbeat',
+      'p_shift_id,p_expected_version,p_captured_at,p_lat,p_lng,p_accuracy,p_is_mock',
+    'accept_rider_dispatch_offer', 'p_offer_id,p_expected_version,p_idempotency_key',
+    'reject_rider_dispatch_offer', 'p_offer_id,p_expected_version,p_reason_code,p_idempotency_key',
+    'manual_override_dispatch',
+      'p_business_id,p_order_id,p_rider_user_id,p_reason,p_idempotency_key,p_expected_job_revision',
+    'get_business_dispatch_control', 'p_business_id'
+  );
+  v_name text; v_actual text;
+begin
+  for v_name in select jsonb_object_keys(v_expected) loop
+    select coalesce(array_to_string(p.proargnames, ','), '')
+      into v_actual
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and p.proname = v_name;
+    if v_actual is null then
+      raise exception 'C · falta la funcion %', v_name;
+    end if;
+    if v_name = 'rider_shift_heartbeat' then
+      -- El heartbeat no lleva idempotency_key: el servidor la deriva de
+      -- (shift_id, captured_at) para que un reintento converja solo.
+      if v_actual <> v_expected ->> v_name then
+        raise exception 'C · % cambio de argumentos: % (esperado %)',
+          v_name, v_actual, v_expected ->> v_name;
+      end if;
+    elsif v_name = 'get_rider_operational_state' then
+      if coalesce(v_actual, '') <> '' then
+        raise exception 'C · get_rider_operational_state no puede recibir argumentos: %', v_actual;
+      end if;
+    elsif v_actual <> v_expected ->> v_name then
+      raise exception 'C · % cambio de argumentos: % (esperado %)',
+        v_name, v_actual, v_expected ->> v_name;
+    end if;
+  end loop;
+  raise notice 'C · OK  nombres de argumento estables para el cliente Rider y el Panel';
 end $$;

@@ -57,7 +57,9 @@ test('Delivery proof photo: rider adjunta foto y negocio ve comprobante local/de
   await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(
     'El rider está en camino. La ubicación aparecerá cuando esté disponible.',
   );
-  await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
+  // El mapa acompaña al aviso en vez de ser reemplazado por él; sin ubicación
+  // del rider no hay marcador que dibujar, y eso es lo que se mide.
+  await expect(tracking.locator('[data-real-map]')).toHaveCount(1);
   await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
 
   await page.goto('/?demo=1#rider');

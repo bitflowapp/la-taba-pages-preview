@@ -3294,3 +3294,92 @@ body[data-active-view="tracking"]:has(
     padding-inline: max(18px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
   }
 }
+
+/* --- «Seguir» sin pedido: el mapa como sección, no como hueco -------------
+   Este estado usa EXACTAMENTE la misma pila que el seguimiento en vivo —misma
+   sheet, mismo encuadre, mismo lienzo nocturno— y sólo cambia lo que hay
+   encima. Por eso no lleva estilos de vacío: nada acá debe leerse como un
+   error ni como una demo, porque no lo es. */
+
+.tracking-premium.is-idle .tracking-sheet {
+  gap: 16px;
+}
+
+/* La tarjeta se apoya sobre el mapa y lo deja respirar: el mapa es la
+   superficie y el texto es lo que aparece encima. El margen negativo es lo
+   que produce ese solape sin sacar el mapa de la columna. */
+.tracking-idle-card {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-top: -26px;
+  margin-inline: 4px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--shelf-line);
+  border-radius: 20px;
+  background: var(--shelf-raised);
+  box-shadow: 0 10px 28px rgb(22 24 28 / 10%);
+}
+
+.tracking-idle-title {
+  margin: 0;
+  color: var(--taba-ink);
+  font-size: 19px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.tracking-idle-lead {
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.tracking-idle-cta {
+  margin-top: 4px;
+}
+
+/* Sin pedido no hay nada que recentrar ni frescura que informar: el mapa habla
+   del comercio y de su zona, y ésa es toda la píldora que corresponde. */
+.tracking-premium .real-map-shell[data-map-mode="idle"] .real-map-meta-indicator {
+  display: none;
+}
+
+/* La atribución de MapLibre se sube por encima del solape de la tarjeta. Su
+   botón mide 44px de alto dentro de una caja de 20 y sobresale por abajo; sin
+   este desplazamiento quedaba cortado a la mitad detrás de «Seguí tu pedido»,
+   que es justo el control que la licencia del mapa base exige poder tocar. */
+.tracking-premium .real-map-shell[data-map-mode="idle"] .maplibregl-ctrl-bottom-left {
+  bottom: 30px;
+  left: 6px;
+  max-width: calc(100% - 86px);
+}
+
+.tracking-premium .real-map-shell[data-map-mode="idle"] .maplibregl-ctrl-attrib.maplibregl-compact {
+  min-height: 20px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 1px 4px rgb(20 21 24 / 6%);
+}
+
+.tracking-premium .real-map-shell[data-map-mode="idle"] .maplibregl-ctrl-attrib-button {
+  opacity: 0.62;
+}
+
+/* En pantallas angostas la tarjeta pierde el solape para no comerse el mapa. */
+@media (max-width: 360px) {
+  .tracking-idle-card {
+    margin-top: -18px;
+    margin-inline: 0;
+    padding: 16px 16px 18px;
+  }
+
+  .tracking-idle-title {
+    font-size: 18px;
+  }
+}

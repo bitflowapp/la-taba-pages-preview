@@ -7,8 +7,15 @@ const OUT_FOR_DELIVERY_GPS_NOTE = 'El rider está en camino. La ubicación apare
 // Garantiza que sin GPS real el mapa no muestra geografía inventada
 // (ni ruta, ni marcadores LT/CL, ni "En vivo", ni Map/km/ETA falsos) y que el
 // negocio expone su dirección textual real.
+//
+// QUÉ CAMBIÓ Y QUÉ NO. «Seguir» es ahora una sección de mapa permanente, así
+// que la ausencia de mapa dejó de ser el mecanismo de la honestidad: el mapa
+// está siempre. Lo que se sostiene —y este test lo mide más fuerte que antes—
+// es que ese mapa sólo puede contener geografía PUBLICADA: el pin del comercio
+// que sale del contrato central y el punto de entrega que confirmó el cliente.
+// Sin GPS real no hay rider, no hay ruta y no hay recorrido de muestra.
 
-test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', async ({ browser }) => {
+test('sin GPS real: el tracking es honesto (mapa sin rider, ruta ni puntos falsos)', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const guards = installPageGuards(page);
@@ -44,8 +51,11 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(TRACKING_GPS_NOTE);
   await expect(tracking).not.toContainText('En vivo');
 
-  // No hay mapa montado, fallback en inglés, manija, marcadores falsos (LT/CL) ni ruta sin GPS real.
-  await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
+  // El mapa está —es la superficie de la sección— pero sin GPS real no lleva
+  // rider, ni ruta, ni geometría de muestra: sólo lugares publicados.
+  await expect(tracking.locator('[data-real-map]')).toHaveCount(1);
+  await expect(tracking.locator('[data-real-map][data-map-source="sandbox"]')).toHaveCount(0);
+  await expect(tracking.locator('[data-real-map][data-route-source]')).toHaveCount(0);
   await expect(tracking.locator('.map-marker')).toHaveCount(0);
   await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
   await expect(tracking.locator('.map-route')).toHaveCount(0);
@@ -91,7 +101,11 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await expect(tracking.locator('.customer-progress')).toContainText('Entregado');
   await expect(tracking.locator('[data-tracking-gps-note]')).toHaveCount(1);
   await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText(OUT_FOR_DELIVERY_GPS_NOTE);
-  await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
+  // En camino y sin una sola coordenada del rider: el mapa sigue estando y el
+  // aviso explica por qué no hay a quién seguir todavía. Lo que no puede haber,
+  // y es lo que se mide, es un marcador de rider sin fix que lo respalde.
+  await expect(tracking.locator('[data-real-map]')).toHaveCount(1);
+  await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
   await expect(tracking.locator('[data-delivery-code-card]')).toHaveCount(0);
   await expect(tracking.locator('.sheet-handle')).toHaveCount(0);
 

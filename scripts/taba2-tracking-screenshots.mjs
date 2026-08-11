@@ -286,9 +286,12 @@ for (const width of WIDTHS) {
   });
   const page = await context.newPage();
 
-  // 1 · tracking vacío
+  // 1 · «Seguir» sin pedido: mapa de la zona operativa, no una pantalla vacía.
+  // Se aceptan los DOS nombres del estado —`idle` es el actual, `empty` el que
+  // usaba el modelo anterior— para que este mismo arnés pueda capturar el antes
+  // y el después contra dos servidores distintos y la comparación sea válida.
   await gotoDemo(page, '/?reset=1&demo=1#tracking');
-  await page.waitForSelector('[data-tracking-status="empty"]');
+  await page.waitForSelector('[data-tracking-status="idle"], [data-tracking-status="empty"]');
   await settleAndShot(page, width, '1-tracking-vacio');
 
   // 2 · esperando rider (pedido recién recibido, sin repartidor)
@@ -402,6 +405,17 @@ for (const width of WIDTHS) {
   await openTracking(page);
   await injectFix(page, orderId, 0, 'active');
   await settleAndShot(page, width, '6-llego');
+
+  // 7 · entregado. Es el estado que cierra el ciclo y el que hay que poder
+  // mirar: el mapa sigue siendo el mismo y lo que se va es el rider.
+  await gotoDemo(page, '/?demo=1#tracking');
+  await page.evaluate(async (id) => {
+    const orders = await import(new URL('js/orders.js', location.href).href);
+    orders.updateOrderStatus?.(id, 'delivered');
+  }, orderId);
+  await page.waitForTimeout(600);
+  await openTracking(page);
+  await settleAndShot(page, width, '7-entregado');
 
   await context.close();
 }

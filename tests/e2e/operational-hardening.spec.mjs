@@ -53,9 +53,12 @@ test('?reset=1 limpia el pedido previo y deja el tracking vacío', async ({ brow
   await gotoDemoReset(page, '/?reset=1&demo=1');
   await page.goto('/?demo=1#tracking');
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking).toContainText('Todavía no hay un pedido en curso');
+  await expect(tracking).toContainText('Seguí tu pedido');
   await expect(tracking).not.toContainText('LT-0002');
-  await expect(tracking.locator('[data-real-map], .lt-rider-marker')).toHaveCount(0);
+  // Un reset borra el pedido, no la sección: el mapa sigue estando, en su
+  // estado sin pedido y sin un solo rastro del pedido anterior.
+  await expect(tracking.locator('[data-real-map][data-map-mode="idle"]')).toHaveCount(1);
+  await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
   await guards.assertClean();
   await context.close();
 });

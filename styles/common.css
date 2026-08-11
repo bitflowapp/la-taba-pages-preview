@@ -571,7 +571,20 @@ main {
   min-height: calc(100dvh - var(--topbar));
 }
 
-.app-recovery {
+/* Esta tarjeta se pinta cuando la aplicación NO arrancó: no puede depender de
+   ninguna clase que agregue el runtime ni del remapeo de tokens del shell del
+   cliente, que se aplica dentro de `.app-view` y acá no llega. Por eso declara
+   su superficie Y su tinta con valores explícitos.
+
+   Antes traía fondo casi blanco (#fff9f9) con la tinta del shell oscuro
+   heredada: el título quedaba en gris clarísimo sobre blanco y "Reiniciar
+   prueba" directamente no se leía. La única pantalla que puede quedar entre un
+   cliente y la tienda era la menos legible de todas.
+
+   El selector nombra las DOS clases a propósito: `.card` está declarada más
+   abajo en esta misma hoja y con un solo nombre le ganaba el fondo. Ese es el
+   motivo real por el que el panel nunca fue del color que decía su regla. */
+.card.app-recovery {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -579,9 +592,11 @@ main {
   width: min(calc(100% - 40px), var(--content));
   margin: 20px auto 0;
   padding: 16px 18px;
-  border-color: #f0c8cc;
-  background: #fff9f9;
-  box-shadow: 0 8px 24px rgb(24 24 27 / 7%);
+  border-color: transparent;
+  border-radius: 20px;
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf-flat), inset 0 0 0 1px var(--shelf-line);
+  color: var(--shelf-ink);
 }
 
 .app-recovery-mark {
@@ -602,18 +617,12 @@ main {
 }
 
 .app-recovery-copy strong {
-  color: var(--taba-ink);
+  color: var(--shelf-ink);
 }
 
-.app-recovery-copy p,
-.app-recovery-copy small {
+.app-recovery-copy p {
   margin: 0;
-  color: var(--taba-muted);
-}
-
-.app-recovery-copy small {
-  font-size: 11px;
-  letter-spacing: .04em;
+  color: var(--shelf-muted);
 }
 
 .app-recovery-actions {
@@ -621,6 +630,23 @@ main {
   flex-wrap: wrap;
   justify-content: end;
   gap: 8px;
+}
+
+/* El botón secundario de papel es blanco con tinta `--taba-ink`, y en el shell
+   del cliente `--taba-ink` ya es la tinta CLARA: dentro de esta tarjeta salía
+   blanco sobre blanco, o sea invisible. La corrección equivalente ya existe en
+   `brand-home.css`, pero acotada a `.app-view`/`.modal-card`, y este panel no
+   es ninguno de los dos. Se declara acá para que el panel siga siendo legible
+   por sí solo. */
+.app-recovery .secondary-button {
+  border-color: var(--shelf-line-strong);
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+}
+
+.app-recovery .secondary-button:hover {
+  border-color: var(--taba-white);
+  background: var(--shelf-sunken);
 }
 
 .section {

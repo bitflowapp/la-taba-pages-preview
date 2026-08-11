@@ -730,9 +730,14 @@ function render(message = '') {
 
 function renderProfileSummary() {
   if (state.blockedReason === 'unsupported') {
+    // "Esta vista no tiene una sesión de cliente disponible" describía el
+    // motivo TÉCNICO —el despliegue no declara autoridad de datos— a alguien
+    // que sólo quiere comprar. El hecho comercial es el mismo y se puede decir
+    // sin jerga; el detalle técnico vive en la consola y en el diagnóstico del
+    // repositorio, donde sirve.
     return `<div class="profile-checkout-block" data-profile-block="unsupported" role="status">
-      <strong>No podemos tomar tu pedido en este momento.</strong>
-      <span>Esta vista no tiene una sesión de cliente disponible.</span>
+      <strong>Todavía no podemos tomar pedidos online</strong>
+      <span>Esta tienda aún no tiene habilitados los pedidos por la app. Podés seguir mirando el catálogo.</span>
     </div>`;
   }
   const profile = state.profile || {};

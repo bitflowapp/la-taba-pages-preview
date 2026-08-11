@@ -10,8 +10,14 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 test('static recovery shell is loaded before the application module', () => {
   const index = read('index.html');
   assert.match(index, /data-app-recovery/);
-  assert.match(index, /startup-recovery\.js\?v=1/);
-  assert.match(index, /startup-recovery\.js\?v=1[\s\S]*app\.js\?v=40/);
+  assert.match(index, /startup-recovery\.js\?v=2/);
+  assert.match(index, /startup-recovery\.js\?v=2[\s\S]*app\.js\?v=41/);
+  // El panel nace OCULTO en el shell servido. Si vuelve a nacer visible, la
+  // primera pantalla de una carga lenta es otra vez un cartel de error.
+  assert.match(index, /<section class="card app-recovery"[^>]*\shidden>/);
+  // El código interno viaja en el atributo, no en el texto que se pinta.
+  assert.match(index, /data-app-recovery-code="TABA2-BOOT-01"/);
+  assert.doesNotMatch(index, /<small data-app-recovery-code>/);
 });
 
 test('bootstrap renders before sandbox synchronization and resets after that first paint', () => {

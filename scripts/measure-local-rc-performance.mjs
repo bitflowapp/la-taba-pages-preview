@@ -15,6 +15,12 @@ const iterations = boundedInteger(process.env.TABA_PERFORMANCE_ITERATIONS, 7, 3,
 const port = boundedInteger(process.env.TABA_PERFORMANCE_PORT, 18082, 1024, 65535);
 const baseUrl = `http://127.0.0.1:${port}`;
 const startedAt = new Date().toISOString();
+// Alcance «storefront»: mide y gatea SOLO las superficies del cliente. El PDF
+// fiscal sigue midiéndose si el bridge está compilado, pero su ausencia deja de
+// tumbar la corrida —comparar el antes y el después de la tienda no puede
+// depender de un servicio que este trabajo tiene prohibido tocar—. La corrida
+// completa del RC sigue siendo la de siempre: sin la variable, nada cambia.
+const STOREFRONT_SCOPE = process.env.TABA_PERFORMANCE_SCOPE === 'storefront';
 const localRegressionBudgetMs = Object.freeze({
   initial_load: 1500,
   catalog_render: 750,
@@ -47,11 +53,19 @@ try {
   const pdf = await measureFiscalPdf();
   const budgetEvaluation = evaluateLocalBudget(profiles, pdf);
   if (!budgetEvaluation.passed) {
-    throw new Error(`Presupuesto local excedido: ${budgetEvaluation.failures.join(', ')}`);
+    // En alcance «storefront» la corrida SIEMPRE escribe su medición y el
+    // veredicto queda en el archivo. Es una comparación antes/después: perder
+    // los números porque el host estaba cargado obliga a repetir todo y, peor,
+    // invita a quedarse con la corrida que dio linda. La corrida completa del
+    // RC sigue cortando, que es su trabajo.
+    if (!STOREFRONT_SCOPE) throw new Error(`Presupuesto local excedido: ${budgetEvaluation.failures.join(', ')}`);
+    process.stderr.write(`presupuesto local excedido: ${budgetEvaluation.failures.join(', ')}\n`);
   }
   const payload = {
     schemaVersion: 1,
-    scope: 'local_synthetic_release_candidate_measurement',
+    scope: STOREFRONT_SCOPE
+      ? 'local_synthetic_storefront_measurement'
+      : 'local_synthetic_release_candidate_measurement',
     startedAt,
     completedAt: new Date().toISOString(),
     gitHead: gitValue(['rev-parse', 'HEAD']),
@@ -139,7 +153,10 @@ async function measureBrowserProfile(browserInstance, profile) {
       await page.waitForURL((url) => !url.searchParams.has('reset'), { waitUntil: 'load' });
       await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
       await page.locator('[data-view="home"]').waitFor({ state: 'visible' });
-      await page.locator('[data-home-catalog-preview] .home-catalog-card').first().waitFor({ state: 'visible' });
+      // Primera superficie de producto del inicio. La vidriera de marca
+      // reemplazó al `[data-home-catalog-preview]` que esperaba esta medición,
+      // y el selector viejo dejaba la corrida en timeout sin medir nada.
+      await page.locator('[data-view="home"] .home-best-card').first().waitFor({ state: 'visible' });
     }));
 
     samples.catalog_render.push(await duration(async () => {
@@ -344,6 +361,7 @@ function evaluateLocalBudget(profiles, pdf) {
     }
   }
   const pdfP95 = pdf.status === 'MEASURED_LOCAL_SYNTHETIC' ? pdf.duration?.p95 : undefined;
+  if (STOREFRONT_SCOPE && !Number.isFinite(pdfP95)) return { passed: failures.length === 0, failures };
   if (!Number.isFinite(pdfP95) || pdfP95 > localRegressionBudgetMs.fiscal_pdf_generation) {
     failures.push(`fiscal_pdf_generation:${pdfP95 ?? 'missing'}>${localRegressionBudgetMs.fiscal_pdf_generation}`);
   }

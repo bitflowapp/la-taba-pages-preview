@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "scope": "local_synthetic_storefront_measurement",
+  "startedAt": "2026-08-11T18:02:19.144Z",
+  "completedAt": "2026-08-11T18:02:47.103Z",
+  "gitHead": "eda13f833bfc54f52a838ac1f76459b7ae276a5b",
+  "gitBranch": "feature/taba2-commercial-production-hardening",
+  "iterations": 7,
+  "host": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "architecture": "x64",
+    "cpuModel": "AMD Ryzen 5 5600X 6-Core Processor             ",
+    "logicalCpuCount": 12,
+    "totalMemoryBytes": 17101365248,
+    "node": "v24.8.0",
+    "browser": "148.0.7778.96"
+  },
+  "profiles": [
+    {
+      "id": "windows-host-chromium-1280x900",
+      "environment": "loopback_static_server_headless_chromium",
+      "physicalDevice": false,
+      "realNetwork": false,
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "unit": "milliseconds",
+      "metrics": {
+        "initial_load": {
+          "samples": 7,
+          "min": 986.49,
+          "p50": 1061.34,
+          "p95": 1174.52,
+          "max": 1174.52
+        },
+        "catalog_render": {
+          "samples": 7,
+          "min": 89.11,
+          "p50": 124.37,
+          "p95": 137.56,
+          "max": 137.56
+        },
+        "catalog_search": {
+          "samples": 7,
+          "min": 56.9,
+          "p50": 69.31,
+          "p95": 87.67,
+          "max": 87.67
+        },
+        "cart_update": {
+          "samples": 7,
+          "min": 302.62,
+          "p50": 315.79,
+          "p95": 321.96,
+          "max": 321.96
+        },
+        "cart_render": {
+          "samples": 7,
+          "min": 49.17,
+          "p50": 63.81,
+          "p95": 88.95,
+          "max": 88.95
+        },
+        "tracking_render": {
+          "samples": 7,
+          "min": 26.11,
+          "p50": 33.91,
+          "p95": 40.52,
+          "max": 40.52
+        },
+        "business_panel_unlock_and_render": {
+          "samples": 7,
+          "min": 116.97,
+          "p50": 141.41,
+          "p95": 151.02,
+          "max": 151.02
+        }
+      }
+    },
+    {
+      "id": "mobile-viewport-emulation-390x844",
+      "environment": "loopback_static_server_headless_chromium",
+      "physicalDevice": false,
+      "realNetwork": false,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "unit": "milliseconds",
+      "metrics": {
+        "initial_load": {
+          "samples": 7,
+          "min": 920.89,
+          "p50": 1081.71,
+          "p95": 1328.87,
+          "max": 1328.87
+        },
+        "catalog_render": {
+          "samples": 7,
+          "min": 96.91,
+          "p50": 133.67,
+          "p95": 161.87,
+          "max": 161.87
+        },
+        "catalog_search": {
+          "samples": 7,
+          "min": 50.09,
+          "p50": 71.55,
+          "p95": 91.77,
+          "max": 91.77
+        },
+        "cart_update": {
+          "samples": 7,
+          "min": 302.9,
+          "p50": 316.23,
+          "p95": 367.36,
+          "max": 367.36
+        },
+        "cart_render": {
+          "samples": 7,
+          "min": 53.36,
+          "p50": 59.51,
+          "p95": 80.4,
+          "max": 80.4
+        },
+        "tracking_render": {
+          "samples": 7,
+          "min": 24.95,
+          "p50": 32.14,
+          "p95": 49.34,
+          "max": 49.34
+        },
+        "business_panel_unlock_and_render": {
+          "samples": 7,
+          "min": 117.5,
+          "p50": 142.56,
+          "p95": 220.68,
+          "max": 220.68
+        }
+      }
+    }
+  ],
+  "fiscalPdf": {
+    "metric": "fiscal_pdf_generation",
+    "status": "NOT_RUN",
+    "reason": "El bridge TypeScript compilado no existe; ejecutar npm run fiscal:build antes de medir."
+  },
+  "localRegressionBudget": {
+    "scope": "same_windows_host_loopback_only",
+    "statistic": "p95",
+    "unit": "milliseconds",
+    "thresholds": {
+      "initial_load": 1500,
+      "catalog_render": 750,
+      "catalog_search": 150,
+      "cart_update": 650,
+      "cart_render": 200,
+      "tracking_render": 150,
+      "business_panel_unlock_and_render": 600,
+      "fiscal_pdf_generation": 200
+    },
+    "passed": true,
+    "failures": []
+  },
+  "notRun": [
+    {
+      "metric": "checkout_preference",
+      "status": "NOT_RUN",
+      "reason": "Requiere API Mercado Pago de prueba y backend desplegado; esta medicion no usa credenciales ni llama proveedores."
+    },
+    {
+      "metric": "webhook_payment_order",
+      "status": "NOT_RUN",
+      "reason": "Requiere PostgreSQL/Supabase aislado y webhook firmado; Docker local no estaba disponible al preparar el RC."
+    },
+    {
+      "metric": "packing_server_cas",
+      "status": "NOT_RUN",
+      "reason": "Requiere PostgreSQL con las migraciones del RC; las pruebas estaticas no son una medicion de latencia."
+    },
+    {
+      "metric": "daily_close_server",
+      "status": "NOT_RUN",
+      "reason": "Requiere PostgreSQL con datos sinteticos y roles reales en un entorno aislado."
+    },
+    {
+      "metric": "private_pdf_storage_download",
+      "status": "NOT_RUN",
+      "reason": "Requiere Supabase Storage privado aislado y URL firmada; no se consulto staging."
+    },
+    {
+      "metric": "print_spool_and_physical_output",
+      "status": "NOT_RUN",
+      "reason": "Requiere impresora, driver y observacion fisica del resultado."
+    },
+    {
+      "metric": "moto_g15",
+      "status": "NOT_RUN",
+      "reason": "Requiere el dispositivo fisico y la matriz de conectividad solicitada."
+    },
+    {
+      "metric": "iphone",
+      "status": "NOT_RUN",
+      "reason": "Requiere un iPhone fisico; el viewport emulado no lo sustituye."
+    },
+    {
+      "metric": "wifi_mobile_and_degraded_networks",
+      "status": "NOT_RUN",
+      "reason": "Requiere redes y dispositivos reales; no se fabrican cifras con shaping sintetico."
+    }
+  ]
+}

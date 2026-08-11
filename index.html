@@ -33,7 +33,7 @@
       lo verifica tests/home-hero-preload.test.mjs.
     -->
     <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
-    <link rel="stylesheet" href="styles.css?v=48" />
+    <link rel="stylesheet" href="styles.css?v=49" />
   </head>
   <!--
     La vista activa se declara ya en el shell servido. `renderNavigation` la
@@ -194,17 +194,25 @@
 
       <main data-app-main inert aria-busy="true">
         <!--
-          This panel is intentionally visible in the server-rendered shell.
-          The module bootstrap hides it only after the first complete render.
-          That keeps a failed import, a blocked storage API, or a stale worker
-          recoverable instead of leaving the header over an empty main area.
+          El panel vive en el shell servido para que un import fallido, un
+          storage bloqueado o un worker viejo tengan salida en vez de dejar el
+          encabezado sobre un main vacío.
+
+          Nace OCULTO. Antes nacía visible y lo escondía el bootstrap: en un
+          teléfono lento eso significaba que la primera pantalla de la tienda
+          era un cartel de error que después desaparecía solo. Ahora lo muestra
+          `startup-recovery.js` cuando el arranque falla de verdad —el módulo no
+          baja, el módulo revienta, o pasan los segundos del plazo sin que la
+          aplicación llegue a pintar—.
+
+          El código técnico no se muestra: viaja en el atributo y en la consola
+          para diagnóstico, y lo que lee el cliente es qué puede hacer ahora.
         -->
-        <section class="card app-recovery" data-app-recovery role="alert" aria-live="assertive">
+        <section class="card app-recovery" data-app-recovery data-app-recovery-code="TABA2-BOOT-01" role="alert" aria-live="assertive" hidden>
           <div class="app-recovery-mark" aria-hidden="true">!</div>
           <div class="app-recovery-copy">
-            <strong>No pudimos cargar TABA2</strong>
-            <p data-app-recovery-message>Podés reintentar ahora. Tus datos de prueba no se borraron.</p>
-            <small data-app-recovery-code>TABA2-BOOT-01</small>
+            <strong>No pudimos abrir la tienda</strong>
+            <p data-app-recovery-message>Puede ser tu conexión. Probá de nuevo: tu pedido no se perdió.</p>
           </div>
           <div class="app-recovery-actions">
             <button class="primary-button compact" type="button" data-app-recovery-retry>Reintentar</button>
@@ -987,7 +995,7 @@
     <div class="toast hidden" data-toast role="status" aria-live="polite"></div>
 
     <script src="runtime-config.js"></script>
-    <script src="js/startup-recovery.js?v=1"></script>
+    <script src="js/startup-recovery.js?v=2"></script>
     <script
       src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"
       integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp"
@@ -995,6 +1003,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=3"></script>
-    <script type="module" src="js/app.js?v=40"></script>
+    <script type="module" src="js/app.js?v=41"></script>
   </body>
 </html>

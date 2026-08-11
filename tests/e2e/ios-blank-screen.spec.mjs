@@ -81,18 +81,24 @@ test('a rejected IndexedDB still leaves a usable in-memory sandbox without block
 });
 
 test('a failed application module leaves an actionable recovery shell instead of a blank main', async ({ page }) => {
-  await page.route('**/js/app.js?v=40', (route) => route.fulfill({
+  await page.route('**/js/app.js?v=41', (route) => route.fulfill({
     status: 503,
     contentType: 'text/javascript',
     body: '/* unavailable for recovery test */',
   }));
   await page.goto('/?demo=1#home');
 
-  await expect(page.locator('[data-app-recovery]')).toBeVisible();
-  await expect(page.locator('[data-app-recovery]')).toContainText('No pudimos cargar TABA');
+  const recovery = page.locator('[data-app-recovery]');
+  await expect(recovery).toBeVisible();
+  await expect(recovery).toContainText('No pudimos abrir la tienda');
   await expect(page.locator('[data-app-recovery-retry]')).toBeVisible();
   await expect(page.locator('[data-app-recovery-reset]')).toBeVisible();
   await expect(page.locator('[data-view="home"] [data-search-jump]')).toBeHidden();
+
+  // El código técnico existe para diagnóstico, en el atributo y en la consola.
+  // Lo que se PINTA no lo incluye: a quien quiere comprar no le dice nada.
+  await expect(recovery).toHaveAttribute('data-app-recovery-code', 'TABA2-BOOT-01');
+  await expect(recovery).not.toContainText(/TABA2?-BOOT-\d+/);
 });
 
 test('production without demo remains fail-closed and never selects the sandbox repository', async ({ page }) => {

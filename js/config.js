@@ -141,6 +141,7 @@ export const BUSINESS_CONFIG = Object.freeze({
 
 export const DEFAULT_STORAGE_KEYS = Object.freeze({
   state: 'la_taba_mvp_v4_state',
+  productionCart: 'la_taba_production_cart_v1',
   adminUnlocked: 'la_taba_mvp_v4_admin_unlocked',
   customerFavorites: 'la_taba_customer_favorites_v1',
   customerHistory: 'la_taba_customer_history_v1',
@@ -150,6 +151,7 @@ export const DEFAULT_STORAGE_KEYS = Object.freeze({
 
 export const SHOWCASE_STORAGE_KEYS = Object.freeze({
   state: 'la_taba_showcase_mvp_v4_state',
+  productionCart: 'la_taba_showcase_production_cart_v1',
   adminUnlocked: 'la_taba_showcase_mvp_v4_admin_unlocked',
   customerFavorites: 'la_taba_showcase_customer_favorites_v1',
   customerHistory: 'la_taba_showcase_customer_history_v1',

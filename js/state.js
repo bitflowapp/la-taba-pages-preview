@@ -1,6 +1,6 @@
 import { BUSINESS_CONFIG, STORAGE_KEYS } from './config.js';
 import { categories, PREVIEW_CATALOG_VERSION, seedOrders } from './data.js';
-import { buildDemoCatalog, isProductVisibleToCustomer, mergeCatalogProducts } from './core/catalog-store.js';
+import { buildDemoCatalog, isProductOrderable, mergeCatalogProducts } from './core/catalog-store.js';
 import { chargeableCombos } from './core/combos.js';
 import { COMBO_MANIFEST } from './combos-data.js';
 import { normalizeDeliveryProof } from './core/delivery-proof.js';
@@ -45,6 +45,11 @@ import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/vali
 import { clampProgress } from './core/simulation.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 import { normalizePendingReorder } from './core/reorder.js';
+import {
+  readProductionCart,
+  sanitizeProductionCartSnapshot,
+  writeProductionCart,
+} from './core/production-cart-storage.js';
 
 // v5: incorpora versión de catálogo para actualizar identidades/packshots demo
 // sin borrar pedidos, carrito ni preferencias locales compatibles.
@@ -103,10 +108,16 @@ function loadState() {
   const base = defaultState();
   const localStorage = getStorageArea('localStorage');
   if ([APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(getAppMode())) {
-    // Pedidos, carrito y catálogo productivos sólo viven en memoria y se
-    // reconstruyen desde Supabase. Nunca renderizar PII operativa cacheada.
+    // Pedidos, catálogo y PII productiva siguen viviendo sólo en memoria. El
+    // carrito usa una clave separada que admite exclusivamente ids y cantidades.
+    const savedCart = readProductionCart(localStorage, STORAGE_KEYS.productionCart);
     resetIncompatiblePersistence(localStorage, getStorageArea('sessionStorage'));
-    return { ...base, adminUnlocked: false };
+    return {
+      ...base,
+      cart: savedCart.cart,
+      comboSelections: savedCart.comboSelections,
+      adminUnlocked: false,
+    };
   }
   const raw = safeStorageGet(localStorage, STORAGE_KEYS.state);
   const parsed = safeJsonParse(raw, null);
@@ -180,6 +191,16 @@ export function sanitizeState(nextState, baseState = defaultState(), { refreshBa
   const productMap = new Map(mergedProducts.map((product) => [product.id, product]));
   const orders = sanitizeOrders(Array.isArray(source.orders) ? source.orders : baseState.orders);
   const lastOrderId = normalizeLastOrderId(source.lastOrderId, orders);
+  // Antes de que llegue el catálogo remoto sólo podemos sanear la forma del
+  // carrito. La carga exitosa del catálogo valida ids, disponibilidad y stock.
+  const defersProductionCartValidation = [APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(baseState.appMode)
+    && mergedProducts.length === 0;
+  const deferredCart = defersProductionCartValidation
+    ? sanitizeProductionCartSnapshot({
+      cart: source.cart,
+      comboSelections: source.comboSelections,
+    })
+    : null;
 
   return {
     schemaVersion: STATE_SCHEMA_VERSION,
@@ -190,8 +211,8 @@ export function sanitizeState(nextState, baseState = defaultState(), { refreshBa
     searchQuery: sanitizeText(source.searchQuery, { fallback: '', maxLength: 80 }),
     sortBy: normalizeSortBy(source.sortBy),
     catalogFilters: normalizeCatalogFilters(source.catalogFilters),
-    cart: sanitizeCart(source.cart, productMap),
-    comboSelections: sanitizeComboSelections(source.comboSelections, mergedProducts),
+    cart: deferredCart?.cart || sanitizeCart(source.cart, productMap),
+    comboSelections: deferredCart?.comboSelections || sanitizeComboSelections(source.comboSelections, mergedProducts),
     orders,
     products: mergedProducts,
     lastOrderId,
@@ -335,7 +356,12 @@ function sanitizeCart(rawCart, productMap) {
     // Un carrito guardado antes de que el pack dejara la góndola no se
     // corrompe: esa línea se descarta al hidratar, igual que la de un producto
     // archivado o sin stock, y el resto del carrito se conserva.
-    if (!product || !isProductVisibleToCustomer(product) || !product.available || product.stock <= 0) continue;
+    //
+    // La compuerta es la MISMA que usa `addToCart` (`isProductOrderable`), no
+    // una parecida. Con la anterior, un producto que perdió el precio mientras
+    // el carrito estaba guardado volvía a la línea al recargar: no se podía
+    // agregar, pero sí reaparecer, y el checkout lo cobraba a cero.
+    if (!isProductOrderable(product) || !product.available || product.stock <= 0) continue;
 
     const quantity = normalizeCartQuantity(item.quantity);
     if (quantity <= 0) continue;
@@ -671,9 +697,13 @@ function buildBaseBusinessConfig() {
 
 function persist() {
   if ([APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(getAppMode())) {
-    safeStorageRemove(getStorageArea('localStorage'), STORAGE_KEYS.state);
+    const localStorage = getStorageArea('localStorage');
+    safeStorageRemove(localStorage, STORAGE_KEYS.state);
     safeStorageRemove(getStorageArea('sessionStorage'), STORAGE_KEYS.adminUnlocked);
-    return true;
+    return writeProductionCart(localStorage, STORAGE_KEYS.productionCart, {
+      cart: state.cart,
+      comboSelections: state.comboSelections,
+    });
   }
   const serializable = { ...state, adminUnlocked: undefined };
   let encoded = '';

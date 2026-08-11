@@ -727,7 +727,10 @@ function renderNoAddresses() {
   return `<div class="profile-no-addresses">
     <span aria-hidden="true">${PIN_ICON}</span>
     <strong>Todavía no tenés direcciones guardadas</strong>
-    <p>Podés agregarlas ahora o completar una dirección manualmente durante el checkout.</p>
+    <!-- El checkout SÓLO elige entre direcciones guardadas: no tiene —ni tuvo
+         nunca— un formulario para escribir una dirección al pasar. Prometerlo
+         mandaba a la gente a descubrirlo con el carrito lleno. -->
+    <p>Agregá una acá y después la elegís al hacer el pedido.</p>
   </div>`;
 }
 

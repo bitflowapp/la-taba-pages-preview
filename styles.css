@@ -1,19 +1,19 @@
-@import url("./styles/tokens.css?v=48");
-@import url("./styles/common.css?v=48");
-@import url("./styles/storefront.css?v=48");
-@import url("./styles/catalog.css?v=48");
-@import url("./styles/checkout.css?v=48");
-@import url("./styles/profile.css?v=48");
-@import url("./styles/showcase.css?v=48");
-@import url("./styles/tracking.css?v=48");
-@import url("./styles/business.css?v=48");
-@import url("./styles/rider.css?v=48");
-@import url("./styles/responsive.css?v=48");
+@import url("./styles/tokens.css?v=49");
+@import url("./styles/common.css?v=49");
+@import url("./styles/storefront.css?v=49");
+@import url("./styles/catalog.css?v=49");
+@import url("./styles/checkout.css?v=49");
+@import url("./styles/profile.css?v=49");
+@import url("./styles/showcase.css?v=49");
+@import url("./styles/tracking.css?v=49");
+@import url("./styles/business.css?v=49");
+@import url("./styles/rider.css?v=49");
+@import url("./styles/responsive.css?v=49");
 /* Después de responsive.css a propósito: la superficie de marca de la home es
    la última palabra sobre esa vista (incluido el fondo claro que responsive
    fija por debajo de 820px). Antes de motion.css, que sigue cerrando. */
-@import url("./styles/brand-home.css?v=48");
-@import url("./styles/motion.css?v=48");
+@import url("./styles/brand-home.css?v=49");
+@import url("./styles/motion.css?v=49");
 
 /* Sandbox local: mapa y controles de prueba, aislados por data attributes. */
 .sandbox-tools-panel { position: fixed; z-index: var(--z-sheet); right: 16px; bottom: 16px; width: min(420px, calc(100vw - 32px)); max-height: min(82vh, 620px); overflow: auto; padding: 16px; border: 1px solid rgba(31,35,40,.16); border-radius: 18px; background: rgba(255,255,255,.97); box-shadow: 0 18px 50px rgba(20,25,30,.22); }

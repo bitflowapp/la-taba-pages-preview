@@ -42,8 +42,14 @@ export default defineConfig({
       use: { browserName: 'chromium' },
     },
     {
+      // `arranque-sin-jerga` y `production-cart-persistence` se suman a WebKit
+      // por el mismo criterio, aplicado al cliente: el panel de recuperación es
+      // la defensa contra la pantalla en blanco de iOS —el motor donde apareció
+      // ese defecto— y el carrito que sobrevive a la recarga depende de un
+      // localStorage que Safari desaloja con reglas propias. Las dos cosas se
+      // rompen distinto en WebKit, así que se miden en WebKit.
       name: 'mobile-webkit',
-      testMatch: /(delivery-location-confirmation|panel-order-recovery)\.spec\.mjs/,
+      testMatch: /(delivery-location-confirmation|panel-order-recovery|arranque-sin-jerga|production-cart-persistence)\.spec\.mjs/,
       use: { ...devices['iPhone 13'] },
     },
   ],

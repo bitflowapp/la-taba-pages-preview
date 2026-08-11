@@ -409,7 +409,6 @@ export function createSupabaseOrderRepository({
         message: 'No pudimos verificar que el comercio acepte pedidos.',
       };
       reconcileProductionReadiness();
-      replaceProductionCatalog([]);
       return failedQuery(error, status, 'No pudimos cargar la configuración del comercio.');
     }
 
@@ -518,7 +517,6 @@ export function createSupabaseOrderRepository({
         state: 'error',
         message: readableSupabaseError(error, 'No pudimos cargar el catálogo verificado.'),
       };
-      replaceProductionCatalog([]);
       return failedQuery(error, status, catalogStatus.message);
     }
 
@@ -1837,6 +1835,7 @@ function replaceProductionCatalog(products) {
     const ids = new Set(products.map((product) => product.id));
     draft.products = products;
     draft.cart = (draft.cart || []).filter((item) => ids.has(item.productId));
+    if (!products.length) draft.comboSelections = [];
     if (!products.some((product) => product.categoryId === draft.activeCategory)) {
       draft.activeCategory = 'all';
     }

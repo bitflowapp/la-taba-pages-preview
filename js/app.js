@@ -157,7 +157,12 @@ const VIEW_ALIASES = {
   profile: 'profile',
 };
 
-let activeView = viewFromHash();
+// La ruta con la que se abrió la pestaña, con su motivo. Se guarda acá porque
+// el arranque necesita saber si el inicio es el que se pidió o el que quedó
+// después de no poder servir el link, y para cuando pueda avisarlo la vista ya
+// está resuelta.
+const initialRoute = resolveRoute(window.location.hash.slice(1));
+let activeView = initialRoute.view;
 let lastLivenessSignature = '';
 let freshnessTimer = null;
 // Pedido pendiente de confirmación al repetir con carrito no vacío.
@@ -522,6 +527,9 @@ async function bootstrap() {
     if (resetRequested) {
       if (await maybeResetDemoSession()) return;
     }
+    // Recién acá: la tienda ya está pintada, así que el aviso llega sobre algo
+    // usable y no sobre una pantalla a medio armar.
+    recoverFromUnservedRoute(initialRoute.status);
     // Cuando el panel entra —siempre tarde, porque se difiere— hay que darle su
     // primer pintado: su superficie estuvo vacía mientras no estaba. Se pinta
     // SÓLO ella. Un renderAll() acá vuelve a dibujar la góndola y el carrito
@@ -547,8 +555,12 @@ async function bootstrap() {
     try {
       await startOrderRepositorySync();
     } catch (error) {
-      window.TABA_STARTUP_RECOVERY?.show({ reason: 'storage', resetAvailable: false });
-      showToast('La sesion local esta temporalmente limitada. Podes continuar.');
+      // La tienda YA pintó y se puede usar. Abrir acá el panel de recuperación
+      // ponía "No pudimos abrir la tienda" encima de una tienda abierta, y al
+      // mismo tiempo un aviso que decía que se podía seguir. Se avisa por el
+      // canal que corresponde y se deja seguir comprando.
+      console.warn('[TABA] sincronización de pedidos no disponible en el arranque', error);
+      showToast('No pudimos recuperar tus pedidos anteriores. Podés seguir comprando.');
     }
     await refreshMercadoPagoCheckoutAvailability();
     await initializeCustomerDeliveryCheckout();
@@ -1830,14 +1842,51 @@ function openAdminArea(targetArea) {
 }
 
 function normalizeView(view) {
-  const key = String(view || '').replace(/^#/, '').trim().toLowerCase();
+  return resolveRoute(view).view;
+}
+
+/*
+ * Qué vista corresponde a un hash, y POR QUÉ.
+ *
+ * `normalizeView` devolvía 'home' para tres casos distintos —hash vacío, hash
+ * de una vista operativa bloqueada por el modo, y hash que no existe— y quien
+ * llamaba no podía distinguirlos. El resultado: alguien abría un link viejo o
+ * mal copiado, aterrizaba en el inicio sin ninguna explicación y la barra de
+ * direcciones seguía mostrando la ruta rota. Parecía que la app había ignorado
+ * el link.
+ *
+ *   ok       la ruta se resolvió tal cual se pidió
+ *   blocked  la vista existe pero este modo no la sirve (panel, rider)
+ *   unknown  no hay ninguna vista con ese nombre
+ */
+function resolveRoute(rawView) {
+  const key = String(rawView || '').replace(/^#/, '').trim().toLowerCase();
+  if (!key) return { view: 'home', status: 'ok' };
   const normalized = VIEW_ALIASES[key] || key;
-  const safe = VIEWS.includes(normalized) ? normalized : 'home';
-  return isOperationalView(safe) ? 'home' : safe;
+  if (!VIEWS.includes(normalized)) return { view: 'home', status: 'unknown' };
+  if (isOperationalView(normalized)) return { view: 'home', status: 'blocked' };
+  return { view: normalized, status: 'ok' };
 }
 
 function viewFromHash() {
   return normalizeView(window.location.hash.slice(1));
+}
+
+/*
+ * Una ruta que no se pudo servir no se tapa: se corrige la barra de
+ * direcciones —para que recargar o volver atrás no repita el error— y se dice
+ * en criollo qué pasó. Sin códigos, sin "404", sin dejar a la persona
+ * preguntándose si tocó mal.
+ *
+ * Una vista operativa bloqueada por el modo NO se anuncia: no es un error de
+ * quien navega y nombrarla sólo publicita una puerta que no le corresponde. Se
+ * corrige la URL y listo.
+ */
+function recoverFromUnservedRoute(status) {
+  if (status === 'ok') return;
+  writeViewHash('home', true);
+  if (status !== 'unknown') return;
+  showToast('No encontramos esa página. Te dejamos en el inicio.');
 }
 
 function configureViewScrollRestoration() {
@@ -1885,7 +1934,12 @@ function setActiveView(view, options = {}) {
 }
 
 function syncViewFromLocation() {
-  const nextView = viewFromHash();
+  const route = resolveRoute(window.location.hash.slice(1));
+  const nextView = route.view;
+  // La corrección va ANTES del corte por "no cambió la vista": escribir
+  // `#no-existe` estando ya en el inicio no cambia de vista y aun así hay que
+  // arreglar la URL y avisar.
+  recoverFromUnservedRoute(route.status);
   if (nextView === activeView) return;
   activeView = nextView;
   syncGpsSharingWithView(nextView);

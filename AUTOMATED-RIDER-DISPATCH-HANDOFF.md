@@ -6,8 +6,11 @@ Fecha: 2026-08-11. Trabajo local. No hay push, ni staging, ni produccion.
 
 | Repo | Worktree | Rama | HEAD |
 | --- | --- | --- | --- |
-| Web | `D:/1212/worktrees/taba2-automated-rider-dispatch` | `feature/taba2-automated-rider-dispatch` | `a92247a` |
-| Rider | `D:/1212/worktrees/taba2-rider-auto-dispatch` | `feature/taba2-rider-shifts-dispatch` | `b9b881d` |
+| Web | `taba2-automated-rider-dispatch` | `feature/taba2-automated-rider-dispatch` | `a92247a` |
+| Rider | `taba2-rider-auto-dispatch` | `feature/taba2-rider-shifts-dispatch` | `b9b881d` |
+
+Los worktrees se resuelven con `git worktree list` en cada repo; este informe no
+fija rutas locales.
 
 Ambos worktrees quedan limpios. Base web `eda13f8`, base Rider `471f79e`.
 
@@ -98,11 +101,11 @@ Detalle completo en `docs/AUTOMATED-RIDER-DISPATCH-SECURITY-REVIEW.md`.
 
 | Suite | Resultado |
 | --- | --- |
-| Web (`npm test`) | 1318 / 1318 |
+| Web (`npm test`) | 1319 / 1319 |
 | Contrato DB + carreras (`npm run test:dispatch:db`) | PASS |
 | Simulador | 44 escenarios, hash estable |
 | Rider Flutter | 289 / 289 |
-| Rider Kotlin unit | 90 / 90 |
+| Rider Kotlin unit | 92 / 92, 2 skipped |
 | `flutter analyze` | sin issues |
 
 Las cuatro carreras usan dos sesiones PostgreSQL reales con barrera temporal:
@@ -132,6 +135,9 @@ toca sus GUC de cluster.
    migrar.
 5. Tres tests de cadencia del Rider fallaban por temporizadores pendientes.
 6. Los cuatro hallazgos del security review.
+7. Este mismo informe rompio el gate de higiene de release al fijar rutas
+   locales con letra de unidad en la tabla de HEAD. Se detecto corriendo la
+   suite despues de commitearlo, no antes.
 
 ## 9. Deuda abierta
 

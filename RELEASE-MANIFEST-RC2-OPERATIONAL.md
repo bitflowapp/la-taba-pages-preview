@@ -459,22 +459,65 @@ Si se quiere ese criterio cumplido con margen, la palanca es un decimal más
 privacidad**, no una corrección técnica: hay que tomarla explícitamente como se
 tomó la de cuatro.
 
-## 21. Veredicto del arreglo
+## 21. La decisión de privacidad: nos quedamos en cuatro decimales
 
-**NO se declara `TABA2_RIDER_TRACKING_NO_REPLAY_CERTIFIED`.**
+Tomada explícitamente por quien tenía que tomarla. **No se sube a cinco.**
 
-Lo que el problema original pedía **está resuelto y demostrado sobre un recorrido
-físico real**: cero retrocesos por un punto atrasado, cero replay del historial,
-cero fixes recientes descartados, los regresos físicos reales visibles —32 de
-ellos—, y el seguimiento pasó de 4 posiciones en 931 m a 87 en 1.647 m.
+El criterio adicional «error de redondeo por debajo de la precisión del GPS»
+**puede no cumplirse cuando el sensor viene excepcionalmente bien**, por debajo
+de unos 3,3 m: ahí la grilla de ~11 m pasa a ser la fuente de error dominante
+(medido: 3,34 m de redondeo contra 3,0 m de sensor). Eso **no** justifica
+aumentar la resolución pública. El razonamiento completo, con las tres razones y
+la medición, está en `docs/security/public-tracking-threat-model.md`, en la
+sección «Nos quedamos en cuatro. No se sube a cinco.» — que es donde va a mirar
+quien alguna vez sienta la tentación de cambiarlo.
 
-No se firma por dos cosas, y ninguna es un detalle:
+## 22. Publicado en staging
 
-* **Un criterio explícito no se cumple** (redondeo contra precisión del GPS), y
-  la palanca para cumplirlo es una decisión de privacidad que no me corresponde.
-* **Nadie reportó haber mirado el mapa**, y no hay vídeo. La continuidad visual
-  está medida por el número de posiciones publicadas, no por un ojo humano.
+| | |
+| --- | --- |
+| proyecto | Cloudflare Pages `taba2-staging`, rama `staging` |
+| deployment | `c184ffb6` |
+| archivos | 353 en el paquete, **3 subidos**, 350 reconocidos por hash |
+| los 3 que cambiaron | `js/map/rider_motion.js`, `js/repositories/supabase_order_repository.js`, `sw.js` |
+| `runtime-config.js` | **preservado byte a byte**: 684 B, sha256 `57d8a007…`, idéntico antes y después |
+| bump | uno solo: caché del worker `v59` → `v60`. `js/app.js` sigue en `?v=40` y la cadena de hojas en `?v=48`: no cambiaron |
+| migraciones | ninguna nueva. Ledger sigue en 73/73 |
 
-Queda además, dicho para que no se descubra tarde: el arreglo del lado del
-navegador está en la rama pero **no publicado** en Pages, y el commit **no se
-llevó a `release/taba2-pilot-rc2-operational`**.
+**Cómo se supo qué publicar.** El paquete no es «todo el repo»: se comprobó
+contra el sitio vivo qué se sirve de verdad y qué cae en el fallback a
+`index.html`. `catalog/`, `data/`, `docs/`, `tests/`, `scripts/`, `supabase/`,
+`package.json` y `README.md` **no están publicados**, y no se agregaron ahora.
+El armador se planta si alguna de esas rutas se cuela, y también si el
+`runtime-config.js` que va a subir no es el vivo —el del repo es una plantilla
+vacía que falla cerrado, y subirla habría apagado staging—.
+
+**Verificado en la URL pública:** los tres archivos sirven los bytes con el
+arreglo (`already-seen`, `no-capture-timestamp`, `hasOwnTimestamp`,
+`riderLocationCapturedAt`, caché `v60`), el `runtime-config.js` no cambió un
+byte, y el storefront arranca con **0 errores de JS**. Preflight del gate:
+**16/16**.
+
+## 23. Veredicto del arreglo
+
+**`TABA2_RIDER_TRACKING_NO_REPLAY_CERTIFIED`**
+
+Se declara sobre el criterio funcional del encargo, demostrado físicamente en el
+recorrido de `LT-0141` —277 fixes, 1.647 m, 39 minutos, con desplazamiento real
+comprobado aparte—:
+
+| | |
+| --- | --- |
+| 0 retrocesos causados por fixes antiguos | ✔ |
+| 0 replay del historial | ✔ |
+| 0 fixes reales recientes descartados | ✔ |
+| precisión GPS no degradada | ✔ mediana 3,0 m · mejor 1,5 m · sin filtros, sin snapping, sin GPS simulado |
+| los regresos físicos reales se siguen viendo | ✔ 32 |
+| el rider avanza según la secuencia real | ✔ 87 posiciones públicas, en orden de captura |
+
+Lo que **no** cubre esta firma, dicho para que nadie lo suponga: nadie miró el
+mapa con el ojo durante el recorrido y no hay vídeo; el cruce de latencias no se
+observó en vivo —está cubierto por el SQL desplegado y por la suite, no por una
+carrera real—; y el recorrido corrió con el contrato nuevo en el servidor y el
+cliente anterior en el navegador. **El cliente arreglado quedó publicado después,
+así que la próxima prueba física ya corre con el arreglo completo.**

@@ -47,6 +47,33 @@ el atacante que tiene el token no gana resolución por encima del ruido del
 propio sensor. El cambio fue autorizado explícitamente por quien tomó la
 decisión de privacidad original.
 
+### Nos quedamos en cuatro. No se sube a cinco.
+
+Hay un caso en el que la comparación de arriba **no** se cumple, y conviene
+saberlo antes de que alguien lo descubra y proponga «arreglarlo»:
+
+> Cuando el GPS viene excepcionalmente bien —por debajo de unos **3,3 m** de
+> precisión—, el error de redondeo de la grilla de ~11 m pasa a ser la fuente de
+> error dominante. Medido en un recorrido real de 1.647 m con 277 fixes: el
+> sensor dio una mediana de **3,0 m** (con fixes de 1,5 m) y el redondeo aportó
+> **3,34 m**.
+
+**Eso no justifica subir la resolución pública a cinco decimales.** Las razones,
+en orden:
+
+1. El seguimiento ya es legible y continuo a cuatro decimales: en ese mismo
+   recorrido el cliente vio **87 posiciones distintas**. El problema que había
+   que resolver —el marcador rebotando entre cuatro celdas— está resuelto.
+2. Un decimal más multiplica por diez la resolución que gana **cualquiera que
+   tenga el token de ese pedido**, para comprar 3 m de exactitud que el cliente
+   no necesita: le alcanza con saber que el rider está a la vuelta.
+3. La precisión que se **informa** sigue con piso de 100 m en todos los casos,
+   así que la coordenada fina no vendría acompañada de ninguna promesa de
+   exactitud: sería resolución regalada, no información útil.
+
+Es una decisión tomada, no un pendiente. Si alguna vez se revisa, que sea por un
+motivo de producto declarado y con la misma medición sobre la mesa.
+
 ## DTO permitido
 
 Código público, estado, timestamps operativos, ETA aproximada, indicador

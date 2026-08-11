@@ -414,24 +414,67 @@ un fix capturado *antes* que el último ya aceptado. Con ese criterio: 0
 retrocesos y 4 regresos físicos reales preservados, entre ellos uno de 174 m que
 es el cierre de la vuelta.
 
-## 20. Lo que todavía falta para firmar
+## 20. El recorrido con el arreglo puesto · `LT-0141`
+
+Ya con la migración aplicada, el rider salió a caminar con `LT-0141`. Esta es la
+primera traza que existe bajo el contrato nuevo, y es la que decide.
+
+**Que el desplazamiento es real, y no ruido acumulado con el equipo quieto:**
+
+| | |
+| --- | --- |
+| fixes | **277** en 39,0 min |
+| recorrido acumulado | **1.647 m** |
+| separación máxima entre dos puntos | **252 m** |
+| caja que ocupa | 175 m × 244 m |
+| saltos sobre el ruido típico (>10 m) | 81 de 276 |
+| velocidad media | 2,5 km/h |
+| precisión reportada | mediana **3,0 m** (mejor 1,5 · peor 33,8) |
+
+Un teléfono quieto no produce 81 saltos de más de 10 m ni una caja de 244 m de
+ancho. Se movió.
+
+**Los criterios, medidos sobre esa traza: 7 de 8.**
+
+| | |
+| --- | --- |
+| recorrido ≥ 300 m | ✔ 1.647 m |
+| ≥ 20 fixes | ✔ 277 |
+| 0 replay por posiciones históricas | ✔ |
+| 0 retroceso por llegada tardía | ✔ |
+| el regreso físico real se ve | ✔ **32 revisitas reales**, y la sonda mueve 243 m |
+| 0 fixes recientes descartados | ✔ |
+| tracking visualmente continuo | ✔ **87 posiciones públicas** |
+| error de redondeo < precisión del GPS | ✘ **3,34 m contra 3,0 m** |
+
+**El único que falla, y por qué es honesto que falle.** En esta caminata el GPS
+estuvo excepcional —mediana de 3,0 m, con fixes de 1,5 m—, y a esa altura la
+grilla de ~11 m pasa a ser la fuente de error dominante: el redondeo aporta 3,34 m
+de mediana. No es un error del arreglo; es el arreglo topándose con su propio
+límite cuando el sensor es mejor que la grilla. Para referencia, en la traza
+anterior el GPS daba 11,8 m y el redondeo 2,36 m: ahí el margen sobraba.
+
+Si se quiere ese criterio cumplido con margen, la palanca es un decimal más
+—cinco decimales, ~1,1 m de grilla, ~0,35 m de error—, y **es otra decisión de
+privacidad**, no una corrección técnica: hay que tomarla explícitamente como se
+tomó la de cuatro.
+
+## 21. Veredicto del arreglo
 
 **NO se declara `TABA2_RIDER_TRACKING_NO_REPLAY_CERTIFIED`.**
 
-Lo medido arriba es fuerte pero no es todo. Lo que **no** cubre:
+Lo que el problema original pedía **está resuelto y demostrado sobre un recorrido
+físico real**: cero retrocesos por un punto atrasado, cero replay del historial,
+cero fixes recientes descartados, los regresos físicos reales visibles —32 de
+ellos—, y el seguimiento pasó de 4 posiciones en 931 m a 87 en 1.647 m.
 
-* **Nadie miró el mapa después del arreglo.** «Tracking visualmente continuo» se
-  juzga con el ojo, en el teléfono, mientras el rider se mueve. Eso sigue
-  pendiente, y es lo que el gate pide.
-* **No hay vídeo** del recorrido con el contrato nuevo.
-* **El cruce de latencias no se ejercitó en vivo.** En esta traza los dos órdenes
-  coincidían; la causa B está cubierta por el SQL desplegado (certificado
-  estructuralmente, 22/22) y por la suite, no por una carrera real observada.
-* **El arreglo del lado del navegador está en la rama pero no publicado** en
-  Pages. Lo que se certifique en vivo será el sistema tal como está desplegado
-  —contrato nuevo en el servidor, cliente anterior—, que es también lo que
-  viviría hoy una persona real.
+No se firma por dos cosas, y ninguna es un detalle:
 
-Para cerrarlo: un pedido desde el teléfono que va a mirar el mapa, el rider lo
-retira, una vuelta de manzana de 300 m, y `scripts/certify-no-replay-physical.mjs
-<CODIGO>` sobre esa traza.
+* **Un criterio explícito no se cumple** (redondeo contra precisión del GPS), y
+  la palanca para cumplirlo es una decisión de privacidad que no me corresponde.
+* **Nadie reportó haber mirado el mapa**, y no hay vídeo. La continuidad visual
+  está medida por el número de posiciones publicadas, no por un ojo humano.
+
+Queda además, dicho para que no se descubra tarde: el arreglo del lado del
+navegador está en la rama pero **no publicado** en Pages, y el commit **no se
+llevó a `release/taba2-pilot-rc2-operational`**.

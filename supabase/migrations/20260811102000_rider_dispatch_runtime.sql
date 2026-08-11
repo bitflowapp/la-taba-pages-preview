@@ -1013,6 +1013,12 @@ begin
   if char_length(v_reason) not between 8 and 500 then
     raise exception 'motivo operativo requerido' using errcode = '22023';
   end if;
+  -- El CAS es obligatorio. Aceptar NULL como "saltear la comparacion" convierte
+  -- un override en un last-write-wins sobre un job que pudo moverse entre que
+  -- el Panel lo leyo y el operador apreto.
+  if p_expected_job_revision is null or p_expected_job_revision < 1 then
+    raise exception 'revision esperada del job requerida' using errcode = '22023';
+  end if;
   v_fingerprint := digest(jsonb_build_object(
     'business_id', p_business_id, 'order_id', p_order_id,
     'rider_user_id', p_rider_user_id, 'reason', v_reason,
@@ -1032,7 +1038,7 @@ begin
   select j.* into v_job from public.dispatch_jobs j where j.id = v_job_id for update;
   select o.* into v_order from public.orders o where o.id = p_order_id for update;
 
-  if p_expected_job_revision is not null and v_job.revision <> p_expected_job_revision then
+  if v_job.revision <> p_expected_job_revision then
     v_result := jsonb_build_object('ok', false, 'code', 'stale_revision',
       'idempotent_no_op', false, 'job_revision', v_job.revision);
     return public.dispatch_store_receipt(

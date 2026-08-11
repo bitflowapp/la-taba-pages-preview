@@ -1117,3 +1117,41 @@ begin
   return public.dispatch_store_receipt(p_business_id,'configure_business_auto_dispatch',v_key,v_fingerprint,v_result);
 end;
 $switch$;
+
+-- ---------------------------------------------------------------------------
+-- Revocaciones de esta migracion
+-- ---------------------------------------------------------------------------
+-- Supabase aplica cada archivo por separado y `create function` nace con
+-- EXECUTE para PUBLIC. Dejar las revocaciones para la migracion siguiente abre
+-- una ventana —entre archivo y archivo, o si el deploy se corta en el medio—
+-- en la que estos helpers internos quedan invocables por `authenticated`.
+-- Cada migracion cierra lo que abre.
+
+revoke all on function private.dispatch_lock_job(uuid) from public, anon, authenticated;
+revoke all on function private.dispatch_try_lock_job(uuid) from public, anon, authenticated;
+revoke all on function private.rider_dispatch_origin_allowed(uuid, text) from public, anon, authenticated;
+
+revoke all on function public.dispatch_validate_idempotency_key(text) from public, anon, authenticated;
+revoke all on function public.dispatch_normalize_zone(text) from public, anon, authenticated;
+revoke all on function public.dispatch_current_rider_business() from public, anon, authenticated;
+revoke all on function public.dispatch_lock_shift(uuid) from public, anon, authenticated;
+revoke all on function public.dispatch_lock_rider(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.ensure_rider_dispatch_policy(uuid) from public, anon, authenticated;
+revoke all on function public.dispatch_begin_command(text, text, bytea) from public, anon, authenticated;
+revoke all on function public.dispatch_store_receipt(uuid, text, text, bytea, jsonb) from public, anon, authenticated;
+revoke all on function public.enqueue_rider_dispatch_job(uuid) from public, anon, authenticated;
+revoke all on function public.reconcile_rider_shift(uuid) from public, anon, authenticated;
+revoke all on function public.lock_and_revoke_shift_offers(uuid, text) from public, anon, authenticated;
+revoke all on function public.rider_operational_state_payload(uuid, uuid) from public, anon, authenticated;
+
+-- Superficie autenticada de esta migracion: Rider y Panel, nada mas.
+revoke all on function public.get_rider_operational_state() from public, anon;
+revoke all on function public.rider_work_now(text) from public, anon;
+revoke all on function public.rider_start_shift(uuid, bigint, text) from public, anon;
+revoke all on function public.rider_pause_shift(uuid, bigint, text) from public, anon;
+revoke all on function public.rider_resume_shift(uuid, bigint, text) from public, anon;
+revoke all on function public.rider_end_shift(uuid, bigint, text) from public, anon;
+revoke all on function public.rider_shift_heartbeat(uuid, bigint, timestamptz, double precision, double precision, double precision, boolean) from public, anon;
+revoke all on function public.schedule_rider_shift(uuid, uuid, timestamptz, timestamptz, text, integer, text) from public, anon;
+revoke all on function public.configure_rider_dispatch_profile(uuid, uuid, boolean, text, text, integer, text) from public, anon;
+revoke all on function public.configure_business_auto_dispatch(uuid, boolean, boolean, text, text) from public, anon;

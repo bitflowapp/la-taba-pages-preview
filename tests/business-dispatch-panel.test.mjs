@@ -85,6 +85,50 @@ test('panel no infiere elegibilidad a partir de turno, señal o capacidad', () =
   assert.match(markup, /data-dispatch-metric="backlog"><strong>—<\/strong>/);
 });
 
+test('códigos con nombre de Object.prototype caen a la copia neutral y no imprimen la función', () => {
+  const markup = renderBusinessDispatchPanel({
+    role: 'staff',
+    status: { phase: 'ready' },
+    snapshot: {
+      server_now: '2026-08-11T12:00:00Z',
+      riders: [{
+        rider_user_id: RIDER_ID,
+        shift_status: 'constructor',
+        availability: 'valueOf',
+        heartbeat_status: 'hasOwnProperty',
+        exclusion_codes: ['toString'],
+      }],
+      jobs: [{
+        job_id: JOB_ID,
+        order_id: ORDER_ID,
+        state: 'constructor',
+        revision: 3,
+        blocking_reasons: ['__proto__'],
+        timeline: [{
+          event_type: 'toString',
+          occurred_at: '2026-08-11T11:55:00Z',
+          reason_code: 'constructor',
+        }],
+      }],
+      alerts: [{
+        code: 'constructor',
+        severity: 'warning',
+        last_seen_at: '2026-08-11T11:55:02Z',
+      }],
+    },
+  });
+
+  assert.match(markup, /Turno sin informar/);
+  assert.match(markup, /Disponibilidad sin informar/);
+  assert.match(markup, /Señal sin informar/);
+  assert.match(markup, /Estado confirmado por servidor/);
+  assert.match(markup, /Actualización registrada por el servidor/);
+  assert.match(markup, /El servidor registró un bloqueo operativo/);
+  assert.match(markup, /El servidor registró una alerta de asignación/);
+  assert.doesNotMatch(markup, /native code|function \w+\(/);
+  assert.doesNotMatch(markup, /\[object /);
+});
+
 test('repositorio dispatch usa sólo los dos RPC autoritativos y argumentos allowlist', async () => {
   const calls = [];
   const client = {

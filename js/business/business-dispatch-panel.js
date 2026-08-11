@@ -277,7 +277,9 @@ function renderTimeline(job) {
     ? job.timeline
     : [{ code: job.state, at: job.createdAt || job.readyAt, reasonCodes: job.blockingCodes }];
   return `<ol class="business-dispatch-timeline" aria-label="Historial de asignación">${entries.map((entry) => {
-    const label = EVENT_LABELS[entry.code] || JOB_STATE_LABELS[entry.code] || 'Actualización registrada por el servidor.';
+    const label = labelFor(EVENT_LABELS, entry.code)
+      || labelFor(JOB_STATE_LABELS, entry.code)
+      || 'Actualización registrada por el servidor.';
     const reason = entry.reasonCodes.length ? ` ${entry.reasonCodes.map(blockReasonText).join(' ')}` : '';
     return `<li><span aria-hidden="true"></span><div><strong>${escapeHtml(label)}</strong><small>${escapeHtml(formatTimestamp(entry.at))}${escapeHtml(reason)}</small></div></li>`;
   }).join('')}</ol>`;
@@ -306,7 +308,7 @@ function renderManualOverride(control, job, { role, busy, overrideDrafts }) {
 
 function renderDispatchAlerts(alerts) {
   if (!alerts.length) return '';
-  return `<section class="business-dispatch-section" aria-labelledby="business-dispatch-alerts-title"><header><h3 id="business-dispatch-alerts-title">Alertas de dispatch</h3><span>${alerts.length}</span></header><div class="business-dispatch-alerts">${alerts.map((alert) => `<article class="business-dispatch-alert severity-${escapeHtml(alert.severity || 'warning')}"><strong>${escapeHtml(ALERT_LABELS[alert.code] || 'El servidor registró una alerta de asignación.')}</strong><small>${escapeHtml(formatTimestamp(alert.occurredAt))}${alert.occurrenceCount && alert.occurrenceCount > 1 ? ` · ${escapeHtml(String(alert.occurrenceCount))} veces` : ''}</small></article>`).join('')}</div></section>`;
+  return `<section class="business-dispatch-section" aria-labelledby="business-dispatch-alerts-title"><header><h3 id="business-dispatch-alerts-title">Alertas de dispatch</h3><span>${alerts.length}</span></header><div class="business-dispatch-alerts">${alerts.map((alert) => `<article class="business-dispatch-alert severity-${escapeHtml(alert.severity || 'warning')}"><strong>${escapeHtml(labelFor(ALERT_LABELS, alert.code) || 'El servidor registró una alerta de asignación.')}</strong><small>${escapeHtml(formatTimestamp(alert.occurredAt))}${alert.occurrenceCount && alert.occurrenceCount > 1 ? ` · ${escapeHtml(String(alert.occurrenceCount))} veces` : ''}</small></article>`).join('')}</div></section>`;
 }
 
 function explicitEligibility(source) {
@@ -322,7 +324,14 @@ function reasonCodes(value) {
 }
 
 function blockReasonText(code) {
-  return BLOCK_REASON_LABELS[code] || 'El servidor registró un bloqueo operativo.';
+  return labelFor(BLOCK_REASON_LABELS, code) || 'El servidor registró un bloqueo operativo.';
+}
+
+// Los códigos del servidor son claves de diccionario. Sin comprobar propiedad
+// propia, un código llamado `constructor` o `toString` devuelve una función en
+// vez de una etiqueta y termina impresa como texto.
+function labelFor(dictionary, code) {
+  return Object.hasOwn(dictionary, code) ? dictionary[code] : '';
 }
 
 function riderReference(id, index = null) {
@@ -386,7 +395,7 @@ function safeInteger(value) {
   return Number.isSafeInteger(number) && number >= 0 ? number : null;
 }
 function safeTimestamp(value) { const text = String(value || ''); return text && Number.isFinite(Date.parse(text)) ? text : ''; }
-function codeLabel(library, code, fallback) { return library[code] || fallback; }
+function codeLabel(library, code, fallback) { return labelFor(library, code) || fallback; }
 function formatTimestamp(value) {
   if (!value) return 'sin hora confirmada';
   const date = new Date(value);

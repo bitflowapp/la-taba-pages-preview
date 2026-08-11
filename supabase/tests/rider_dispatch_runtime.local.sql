@@ -427,6 +427,13 @@ begin
     raise exception '12 · un motivo corto deberia ser rechazado';
   exception when sqlstate '22023' then null;
   end;
+  -- Sin CAS: el override no puede degradarse a last-write-wins.
+  begin
+    perform public.manual_override_dispatch(v_business, v_order3, v_rider_b,
+      'cobertura confirmada por operacion', 'cert-override-0001b', null);
+    raise exception '12 · un override sin revision esperada deberia ser rechazado';
+  exception when sqlstate '22023' then null;
+  end;
   -- CAS invalido.
   v_res := public.manual_override_dispatch(v_business, v_order3, v_rider_b,
     'cobertura confirmada por operacion', 'cert-override-0002', v_job_rev + 50);
@@ -661,6 +668,7 @@ end $$;
 -- Superficie: el bypass legado queda cerrado y el worker no es alcanzable
 -- ---------------------------------------------------------------------------
 do $$
+declare v_helper text;
 begin
   if has_function_privilege('authenticated','public.change_order_status(uuid,text,text)','execute') then
     raise exception 'S · change_order_status sigue ejecutable por authenticated';
@@ -685,6 +693,21 @@ begin
   if has_schema_privilege('authenticated','private','usage') then
     raise exception 'S · el esquema private es alcanzable desde authenticated';
   end if;
+  -- Los helpers internos no son superficie. Cada migracion revoca lo que crea,
+  -- asi que esto tiene que valer incluso entre archivo y archivo.
+  for v_helper in select unnest(array[
+    'public.dispatch_store_receipt(uuid,text,text,bytea,jsonb)',
+    'public.dispatch_begin_command(text,text,bytea)',
+    'public.enqueue_rider_dispatch_job(uuid)',
+    'public.reconcile_rider_shift(uuid)',
+    'public.rider_operational_state_payload(uuid,uuid)',
+    'public.lock_and_revoke_shift_offers(uuid,text)',
+    'public.ensure_rider_dispatch_policy(uuid)'
+  ]) loop
+    if has_function_privilege('authenticated', v_helper, 'execute') then
+      raise exception 'S · el helper interno % quedo ejecutable por authenticated', v_helper;
+    end if;
+  end loop;
   raise notice 'S · OK  bypass legado cerrado, worker fuera del navegador, private aislado';
 end $$;
 

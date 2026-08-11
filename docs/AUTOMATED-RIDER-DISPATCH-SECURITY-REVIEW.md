@@ -138,7 +138,31 @@ Los invariantes se sostenian porque PostgreSQL aborta un lado, pero el orden
 divergente era un bug. Hay ahora un unico orden de locks, con advisory por job
 antes de cualquier fila, y la carrera devuelve un resultado limpio.
 
-## 7. Riesgos aceptados y deuda
+## 7. Hallazgos corregidos durante la revision
+
+Ninguno alcanzo severidad alta o media, pero cuatro se corrigieron igual porque
+el costo era bajo y el riesgo real:
+
+1. **Ventana de deploy entre migraciones.** Las revocaciones de los helpers
+   internos del motor vivian todas en la migracion siguiente. Supabase aplica
+   un archivo por vez y `create function` nace con EXECUTE para PUBLIC, asi que
+   entre archivo y archivo —o si el deploy se cortaba en el medio— trece
+   helpers internos quedaban invocables por `authenticated`. Ahora cada
+   migracion revoca lo que crea, y el contrato lo verifica.
+2. **CAS opcional en el override manual.** `p_expected_job_revision = NULL`
+   salteaba la comparacion y convertia el override en last-write-wins sobre un
+   job que pudo moverse entre la lectura del Panel y el clic. Ahora es
+   obligatorio.
+3. **`p_is_mock` fijo en `false`.** El cliente Rider rechaza localmente una
+   ubicacion mockeada y mandaba el literal. Era equivalente hoy, pero dejaba al
+   servidor sin poder registrar nunca un mock si esa guarda cambiaba. Ahora
+   viaja el valor validado.
+4. **Etiquetas por clave de diccionario en el Panel.** Un codigo del servidor
+   llamado `constructor` o `toString` devolvia una funcion en vez de una
+   etiqueta. Salia escapada, asi que no era XSS, pero se cierra con
+   `Object.hasOwn`.
+
+## 8. Riesgos aceptados y deuda
 
 - **Deadlock cruzado con mutaciones externas del pedido.** Una cancelacion del
   Panel sostiene la fila de `orders` y dispara el trigger de ciclo de vida,
@@ -146,12 +170,11 @@ antes de cualquier fila, y la carrera devuelve un resultado limpio.
   detecta y revierte un lado; ningun invariante se rompe, pero el Rider ve un
   error en vez de un receipt. Cerrarlo requiere que cada RPC de estado de
   pedido tome primero el advisory del job.
-- **`is_mock` del cliente.** El Rider Android rechaza localmente una ubicacion
-  mockeada y por eso siempre manda `p_is_mock = false`. Un cliente modificado
-  podria mandar coordenadas falsas con `is_mock = false`. El servidor no puede
-  distinguirlas: valida precision, antiguedad y ventana temporal, no
-  autenticidad del GPS. Es una limitacion conocida del modelo, no de esta
-  implementacion.
+- **Autenticidad del GPS.** Un cliente modificado puede mandar coordenadas
+  falsas con `is_mock = false`. El servidor no puede distinguirlas: valida
+  precision, antiguedad y ventana temporal, no autenticidad. Es una limitacion
+  del modelo, no de esta implementacion; el efecto maximo es que un Rider se
+  haga ver mas cerca del retiro de lo que esta.
 - **Auto-dispatch sigue apagado.** `auto_dispatch_enabled = false` y
   `qa_fixture_only = true` son el estado inicial y el rollback. Habilitar
   produccion es una decision operativa explicita, con motivo auditado.
@@ -160,7 +183,7 @@ antes de cualquier fila, y la carrera devuelve un resultado limpio.
   ya no se puede borrar fisicamente. En produccion los pedidos se cancelan, no
   se borran, pero conviene saberlo antes de escribir cualquier limpieza.
 
-## 8. Conclusion
+## 9. Conclusion
 
 No quedan hallazgos abiertos de severidad alta o media dentro del alcance. La
 superficie expuesta es la minima, la autorizacion esta medida contra actores

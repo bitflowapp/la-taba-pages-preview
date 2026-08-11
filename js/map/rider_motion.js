@@ -64,7 +64,26 @@ export const MOTION_REJECTIONS = Object.freeze({
   BACKWARDS: 'timestamp-not-newer',
   ACCURACY: 'accuracy-out-of-range',
   IMPOSSIBLE: 'implausible-jump',
+  UNDATED: 'no-capture-timestamp',
+  DUPLICATE: 'already-seen',
 });
+
+/**
+ * ¿El fix trae su propia hora de captura?
+ *
+ * `normalizeRiderLocation` le pone `Date.now()` a un fix sin fecha, que es una
+ * conveniencia razonable para dibujar algo, y un agujero para la guardia de
+ * retroceso: un fix viejo sin fecha entra sellado como «ahora» y por lo tanto
+ * como el más nuevo de todos. Acá se exige la fecha antes de normalizar, así el
+ * cursor canónico se apoya siempre en un dato del dispositivo y nunca en el
+ * reloj de quien está mirando.
+ */
+function hasOwnTimestamp(raw) {
+  if (!raw || typeof raw !== 'object') return false;
+  const numeric = Number(raw.timestamp ?? raw.lastFixAt);
+  if (Number.isFinite(numeric) && numeric > 0) return true;
+  return !Number.isNaN(Date.parse(raw.timestamp || raw.lastFixAt || ''));
+}
 
 /**
  * ¿Este fix medido es objetivamente inadmisible? Filtra lo que no puede ser
@@ -75,6 +94,7 @@ export const MOTION_REJECTIONS = Object.freeze({
 export function classifyFix(previousRaw, nextRaw, { now = Date.now() } = {}) {
   const next = normalizeRiderLocation(nextRaw, { source: 'gps' });
   if (!next) return { accepted: false, reason: MOTION_REJECTIONS.INVALID };
+  if (!hasOwnTimestamp(nextRaw)) return { accepted: false, reason: MOTION_REJECTIONS.UNDATED };
 
   const timestamp = locationTimestamp(next);
   if (!timestamp || timestamp > now + 10_000) {
@@ -89,7 +109,15 @@ export function classifyFix(previousRaw, nextRaw, { now = Date.now() } = {}) {
   if (!previous) return { accepted: true, reason: '', fix: next };
 
   const previousTime = locationTimestamp(previous);
-  if (previousTime && timestamp <= previousTime) {
+  // El contrato: una vez aceptado un fix F, ninguno capturado antes que F puede
+  // volver a ser la posición actual. Un fix con la MISMA captura es el mismo
+  // hecho entregado dos veces —realtime y poll cuentan lo mismo— y se ignora sin
+  // reiniciar la animación. Se separan los dos casos porque son problemas
+  // distintos: uno es un dato tarde, el otro es un dato repetido.
+  if (previousTime && timestamp === previousTime) {
+    return { accepted: false, reason: MOTION_REJECTIONS.DUPLICATE };
+  }
+  if (previousTime && timestamp < previousTime) {
     return { accepted: false, reason: MOTION_REJECTIONS.BACKWARDS };
   }
   if (isImplausibleJump(previous, next, previousTime, timestamp)) {

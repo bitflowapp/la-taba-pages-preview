@@ -19,16 +19,44 @@ referer, logs, fuerza bruta, enumeración y reutilización posterior a la entreg
 - Polling: el token no entra en canales Realtime, query strings ni logs. La
   vista Tracking mantiene una única solicitud abortable y un ciclo de cinco
   segundos sólo durante reparto; al salir, vencer/revocar o entregar se corta.
-- Ubicación redondeada (~100 m) sólo durante entrega activa; no hay historial.
+- Ubicación redondeada a cuatro decimales (~11 m) sólo durante entrega activa;
+  no hay historial. La precisión informada nunca se presenta mejor que 100 m.
+- Sólo se entrega el **último** punto, elegido por hora de captura del
+  dispositivo. El contador interno de recibos ordena del lado del servidor y no
+  viaja: diría cuántos fixes publica el negocio.
+
+### Por qué ~11 m y no ~100 m
+
+El redondeo original era de tres decimales (~111 m). Medido sobre un recorrido
+físico real de 931 m con 85 fixes: el cliente veía **cuatro posiciones
+distintas** en toda la caminata, el marcador saltaba de a 86–141 m donde el
+rider había caminado 7–177 m, y volvía a una celda ya abandonada 80 veces. El
+motor de movimiento anima cada uno de esos rebotes, de modo que el seguimiento
+se leía como un rider que vuelve al principio y repite calles.
+
+| decimales | posiciones visibles | error mediano | error máximo |
+| --- | --- | --- | --- |
+| 3 | 4 | 28,0 m | 66,0 m |
+| **4** | **17** | **2,4 m** | **6,2 m** |
+| 5 | 50 | 0,4 m | 0,7 m |
+
+Cuatro decimales dejan el error de redondeo (2,4 m) **por debajo de la precisión
+real del GPS** medida en ese mismo recorrido (mediana 12,1 m). Es decir: la
+coordenada publicada no afirma nada que el círculo de precisión no afirme ya, y
+el atacante que tiene el token no gana resolución por encima del ruido del
+propio sensor. El cambio fue autorizado explícitamente por quien tomó la
+decisión de privacidad original.
 
 ## DTO permitido
 
 Código público, estado, timestamps operativos, ETA aproximada, indicador
-entregado y última ubicación aproximada sólo cuando hace falta. Actualmente se
-omite el alias del rider porque no existe una fuente aprobada y minimizada.
+entregado y última ubicación aproximada sólo cuando hace falta —con su hora de
+captura—. Actualmente se omite el alias del rider porque no existe una fuente
+aprobada y minimizada.
 
 Quedan expresamente fuera: teléfono, email, dirección, notas, UUID internos,
-Auth IDs, membresías, ítems, totales, hashes, tokens y coordenadas históricas.
+Auth IDs, membresías, ítems, totales, hashes, tokens, coordenadas históricas,
+coordenada sin redondear y el número de recibo de la ubicación.
 
 ## Pruebas necesarias en staging
 

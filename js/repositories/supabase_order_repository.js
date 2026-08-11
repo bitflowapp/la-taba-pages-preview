@@ -2490,12 +2490,31 @@ function latestPublicRiderLocation(location, now = Date.now()) {
   return normalized;
 }
 
+/**
+ * El orden canónico de los fixes es el de CAPTURA en el dispositivo, no el de
+ * llegada al servidor.
+ *
+ * Medido sobre un recorrido físico real (85 fixes, 931 m): la latencia de
+ * publicación tuvo mediana 390 ms y máxima 26.683 ms, contra un hueco mínimo de
+ * 5.044 ms entre capturas. Con esos números alcanza una publicación demorada
+ * para que el fix ANTERIOR llegue después, gane un orden por `created_at`, y se
+ * entregue como «el más nuevo» con un timestamp más nuevo — que la guardia de
+ * retroceso de `rider_motion` acepta, porque ese timestamp de verdad es más
+ * nuevo. El marcador se va caminando hacia atrás, a una posición donde el rider
+ * ya no está. Ordenar y sellar por captura cierra esa puerta en el origen.
+ */
+export function riderLocationCapturedAt(location) {
+  return Date.parse(location?.captured_at || location?.created_at || '');
+}
+
 function latestRiderLocation(locations) {
   if (!Array.isArray(locations) || !locations.length) return null;
-  const gpsLocations = locations.filter((location) => location?.source === 'gps');
+  const gpsLocations = locations.filter((location) => (
+    location?.source === 'gps' && Number.isFinite(riderLocationCapturedAt(location))
+  ));
   if (!gpsLocations.length) return null;
   const latest = [...gpsLocations].sort((a, b) => (
-    Date.parse(b.created_at || '') - Date.parse(a.created_at || '')
+    riderLocationCapturedAt(b) - riderLocationCapturedAt(a)
   ))[0];
   return normalizeTrackingLocation({
     lat: latest.lat,
@@ -2504,7 +2523,7 @@ function latestRiderLocation(locations) {
     heading: latest.heading,
     speed: latest.speed,
     source: 'gps',
-    timestamp: latest.created_at,
+    timestamp: latest.captured_at || latest.created_at,
   });
 }
 

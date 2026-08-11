@@ -34,11 +34,24 @@ El mapa público sólo se habilita si el fix:
 - contiene coordenadas válidas;
 - declara fuente GPS;
 - tiene precisión entre 0 y 250 m;
-- tiene menos de tres minutos;
+- **fue capturado** hace menos de tres minutos —no «llegó» hace menos de tres
+  minutos: un fix viejo que aparece tarde no es una ubicación actual—;
 - corresponde a `picked_up`, `on_the_way` o `arrived`.
 
-Las coordenadas públicas se redondean a tres decimales y la precisión nunca se
-presenta mejor que 100 m. Los estados terminales purgan la ubicación exacta.
+Las coordenadas públicas se redondean a **cuatro decimales (~11 m)** y la
+precisión nunca se presenta mejor que 100 m. Los estados terminales purgan la
+ubicación exacta.
+
+El redondeo era de tres decimales (~111 m) hasta el 2026-08-11. Se abrió a
+cuatro con autorización expresa, porque a esa granularidad el seguimiento era
+ilegible: sobre un recorrido real de 931 m el cliente veía cuatro posiciones y
+el marcador rebotaba 86–141 m hacia atrás. A cuatro decimales el error de
+redondeo (mediana 2,4 m) queda por debajo de la precisión real del GPS (mediana
+12,1 m). El detalle y la tabla comparativa están en
+`docs/security/public-tracking-threat-model.md`.
+
+El «último» fix se elige por **hora de captura del dispositivo**, con el número
+de recibo como desempate del lado del servidor. Ese número no viaja en el DTO.
 
 ## ETA y ruta
 

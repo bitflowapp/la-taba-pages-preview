@@ -54,6 +54,23 @@ No ejecuta nada por su cuenta. Según el estado te da el camino:
   entrega real. El código lo tiene el cliente en su seguimiento
   (`cliente-tracking.mjs`), y después `llegada-y-codigo.ps1` y `entregar.ps1`.
 
+## Cuando el Panel se maneja a mano
+
+El Panel **re-dibuja la cola y reemplaza la tarjeta a los ~520 ms**. El campo de
+motivo es un input suelto que no vive en el estado, así que en cada re-dibujo se
+vacía; y la fila de botones se corre, porque la etiqueta del botón primario
+cambia de ancho. Entre escribir el motivo y hacer click hay una ventana en la que
+el motivo ya no está y el puntero ya no apunta donde apuntaba.
+
+No es teoría. Una corrida escribió el motivo, el re-dibujo lo borró, y el click
+de «Cancelar con motivo» terminó cayendo sobre «Aceptar pedido»: el pedido
+avanzó tres estados sin que nadie lo pidiera. Por eso `panel-operar.mjs` pone el
+motivo y dispara el click en el **mismo turno de JS**. Es la UI real del negocio
+y su mismo comando; lo único que se evita es la carrera.
+
+**Si lo operás a mano, la trampa es la misma:** escribí el motivo y tocá el botón
+enseguida, y si dudás, re-escribilo justo antes.
+
 ## Los archivos
 
 | | |
@@ -62,6 +79,15 @@ No ejecuta nada por su cuenta. Según el estado te da el camino:
 | `rollback.mjs` | diagnóstico y verificación del rollback |
 | `panel-sesion.mjs` | abre el Panel del negocio y deja la sesión guardada |
 | `negocio-cancelar.mjs` | cancela desde la UI real del Panel, con motivo |
+| `panel-operar.mjs` | retira pedidos con motivo y/o lleva uno hasta «listo» |
+| `panel-abierto.mjs` | deja el Panel **abierto y con sesión** para que lo maneje una persona |
+| `preflight-gate.mjs` | 16 chequeos antes de tocar un teléfono: sitio, catálogo, rider, Moto, alertas |
+| `esperar-pedido.mjs` | espera el pedido que hace la persona y avisa su código |
+| `ensayo-storefront.mjs` | recorre el camino del cliente **sin crear el pedido** |
+| `snapshot.mjs` | foto de staging antes/después de una mutación |
+| `cola-rider.mjs` | qué ve el rider en su cola, preguntado con SU sesión |
+| `gps-vivo.mjs` | ¿está publicando GPS real este pedido, ahora? |
+| `timeline-fixes.mjs` | timeline de fixes: captura contra llegada, y desorden |
 | `cliente-tracking.mjs` | recupera el código desde el navegador del cliente |
 | `llegada-y-codigo.ps1` | llegada + rechazo del código incorrecto, en el Moto |
 | `entregar.ps1` | confirma la entrega, en el Moto |
@@ -126,6 +152,11 @@ Nada tiene rutas de una máquina en particular. Lo que se puede ajustar:
 | `TABA_MOTO_SERIAL` | serial ADB del teléfono | `ZY32LHS6PS` |
 | `TABA_STAGING_REF` | proyecto Supabase | `ukxqbgswjlibmnjemrzd` |
 | `TABA_SITIO` | storefront publicado | `https://taba2-staging.pages.dev` |
+| `TABA_SECRETS` | carpeta de credenciales de la máquina | **sin valor por defecto** |
+
+`TABA_SECRETS` no tiene default a propósito: una ruta de credenciales no se
+adivina ni se versiona. Los scripts que necesitan un login se plantan con un
+mensaje claro si la variable no está.
 
 La evidencia queda fuera de git a propósito: puede tener datos de una entrega
 real.

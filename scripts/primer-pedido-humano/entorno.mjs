@@ -32,3 +32,18 @@ export const SITIO = process.env.TABA_SITIO || 'https://taba2-staging.pages.dev'
 
 /** Negocio La Taba 2 en staging. */
 export const BUSINESS_ID = process.env.TABA_BUSINESS_ID || '00000000-0000-4000-8000-000000000001';
+
+/**
+ * Carpeta de credenciales de la máquina que opera. NO tiene valor por defecto y
+ * NUNCA va en el repo: si falta, el script se planta en vez de buscar a ciegas.
+ * Se apunta con `TABA_SECRETS`.
+ */
+export function secreto(archivo) {
+  const base = process.env.TABA_SECRETS;
+  if (!base) {
+    throw new Error('Falta TABA_SECRETS: apuntá esa variable a la carpeta de credenciales de esta máquina.');
+  }
+  const ruta = path.join(base, archivo);
+  if (!fs.existsSync(ruta)) throw new Error(`No existe ${archivo} en la carpeta de credenciales.`);
+  return ruta;
+}

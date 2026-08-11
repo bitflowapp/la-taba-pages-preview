@@ -1,5 +1,6 @@
 import { getState } from '../state.js';
 import { getActiveOrder } from '../orders.js';
+import { getBusinessConfig } from '../core/business-config-store.js';
 import { getOrderRepository, isSandboxOrderRepository } from '../repositories/repository_factory.js';
 import { getSandboxMapScenario, sandboxMarkerPointAtProgress } from '../sandbox/sandbox_map_scenario.js';
 import { RIDER_LOCATION_SOURCES } from './map_config.js';
@@ -12,6 +13,8 @@ import {
   trackingLocationFreshness,
 } from './route_geometry.js';
 import {
+  MAPLIBRE_IDLE_ZOOM,
+  areaCenterPoint,
   canUseMapLibre as supportsMapLibre,
   createMapLibreTrackingMap,
 } from './maplibre_tracking_map.js';
@@ -116,21 +119,39 @@ function isMapInActiveView(container) {
   return view.hidden !== true && view.getAttribute?.('aria-hidden') !== 'true';
 }
 
+/*
+ * Estados en los que el rider ya salió del local. A partir de acá el
+ * protagonista del mapa es él, y el pin del comercio deja de aportar: la
+ * entrega ya no depende de dónde está la tienda.
+ */
+const OUT_FOR_DELIVERY_STATUSES = new Set(['picked_up', 'on_the_way', 'arrived', 'arriving']);
+const TERMINAL_STATUSES = new Set(['delivered', 'cancelled']);
+
 function readMapViewState(container) {
   const fallback = container.querySelector('[data-map-fallback]');
   const canvas = container.querySelector('[data-map-canvas]');
-  const emptyMap = container.dataset.mapRole === 'tracking-empty' || container.dataset.mapRole === 'rider-empty';
+  // «Seguir» sin pedido es un estado válido del producto, no una vista rota:
+  // el mapa se monta igual y muestra la zona operativa con el pin del local.
+  // `idle` lo declara la vista; sin esa marca `findOrder` volvería a caer en
+  // el último pedido del navegador y el mapa mostraría algo que ya terminó.
+  const idle = container.dataset.mapMode === 'idle';
+  const emptyMap = idle
+    || container.dataset.mapRole === 'tracking-empty'
+    || container.dataset.mapRole === 'rider-empty';
   const order = emptyMap ? null : findOrder(container.dataset.orderId);
   const sim = order ? getOrderSimulation(order.id) : null;
   const role = container.dataset.mapRole?.startsWith('rider') ? 'rider' : 'tracking';
   const sandbox = isSandboxOrderRepository(getOrderRepository()) && container.dataset.mapSource === 'sandbox';
   const sandboxScenario = sandbox ? getSandboxMapScenario() : null;
-  const riderLocation = order ? getRiderLocation(order, sim, sandbox) : null;
+  const riderLocation = order && !TERMINAL_STATUSES.has(order.status)
+    ? getRiderLocation(order, sim, sandbox)
+    : null;
   // El destino real del pedido. Antes sólo existía en la sandbox, así que el
   // seguimiento de un pedido de verdad no podía dibujar a dónde iba la entrega
   // aunque el cliente hubiera confirmado el punto.
   const destination = sandboxScenario?.destination || orderDestinationPoint(order);
-  const store = sandboxScenario?.store || null;
+  const store = sandboxScenario?.store || businessStorePoint(order);
+  const area = sandboxScenario ? null : operatingAreaBounds();
   const points = sandboxScenario?.route || [];
   const preferredTheme = 'light';
   const theme = 'light';
@@ -143,6 +164,7 @@ function readMapViewState(container) {
     fallback,
     canvas,
     emptyMap,
+    idle,
     role,
     order,
     sim,
@@ -154,8 +176,63 @@ function readMapViewState(container) {
     freshness,
     sandbox,
     store,
+    area,
     sandboxScenario,
   };
+}
+
+/**
+ * Pin del comercio con la coordenada PUBLICADA del contrato. Nunca se estima:
+ * si el contrato no la declara ploteable, no hay pin.
+ */
+function businessStorePoint(order) {
+  const config = getBusinessConfig();
+  if (config.businessLocationVerified !== true) return null;
+  const point = config.businessLocation;
+  const lat = Number(point?.lat);
+  const lng = Number(point?.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  // En retiro por el local el comercio ES el punto de entrega, así que se
+  // queda en pantalla todo el recorrido del pedido.
+  const isPickup = order?.deliveryMode === 'pickup';
+  if (order && !isPickup && OUT_FOR_DELIVERY_STATUSES.has(order.status)) return null;
+  return { lat, lng, label: config.businessName || 'Comercio' };
+}
+
+/** Área de reparto declarada por el comercio, para el encuadre sin pedido. */
+function operatingAreaBounds() {
+  const bounds = getBusinessConfig().defaultMapBounds;
+  return Array.isArray(bounds) && bounds.length === 2 ? bounds : null;
+}
+
+/*
+ * ENCUADRE CUANDO NO HAY RIDER. Mientras el pedido se prepara, lo que el
+ * cliente necesita ver es de dónde sale y a dónde va. Centrar en el local a
+ * zoom fijo dejaba el destino fuera de pantalla —medido: 1 km entre los dos
+ * puntos, contra unos 500 m de ancho visible—, así que el pin existía y no se
+ * veía. Con los dos puntos se arma un encuadre que los contiene a ambos.
+ *
+ * Con un solo punto no hay área que armar y manda el centro; el `maxZoom` más
+ * alto que el del área operativa evita que una entrega a la vuelta de la
+ * esquina se muestre desde demasiado lejos.
+ */
+function placesArea(store, destination) {
+  const points = [store, destination].filter((point) => (
+    Number.isFinite(Number(point?.lat)) && Number.isFinite(Number(point?.lng))
+  ));
+  if (points.length < 2) return null;
+  return [
+    [Number(points[0].lat), Number(points[0].lng)],
+    [Number(points[1].lat), Number(points[1].lng)],
+  ];
+}
+
+/** Identidad del encuadre sin rider: si cambia, hay que volver a encuadrar. */
+function framingKey(view) {
+  return JSON.stringify([
+    view.store ? [view.store.lat, view.store.lng] : null,
+    view.destination ? [view.destination.lat, view.destination.lng] : null,
+  ]);
 }
 
 /**
@@ -164,6 +241,9 @@ function readMapViewState(container) {
  */
 function orderDestinationPoint(order) {
   if (!order || order.deliveryMode === 'pickup') return null;
+  // Un pedido cancelado no tiene entrega, así que tampoco tiene a dónde
+  // apuntar: dejar el pin dibujado sería afirmar una entrega que no va a pasar.
+  if (order.status === 'cancelled') return null;
   const point = plottableDeliveryPoint(normalizeOrderAddressDetails(order));
   if (!point) return null;
   return { lat: point.latitude, lng: point.longitude, label: 'Destino de entrega' };
@@ -179,6 +259,41 @@ export function ensureTrackingMap(container, view) {
     if (showSandboxRoute) container.dataset.routeSource = 'simulation';
     else delete container.dataset.routeSource;
     existing.adapter.setSandboxRouteVisible?.(showSandboxRoute);
+    /*
+     * El pedido avanza y el mapa NO se vuelve a construir: se le cambian las
+     * capas. Sin pedido hay sólo local; cuando el cliente compra aparece su
+     * punto de entrega confirmado; cuando el rider sale, el local se va y el
+     * rider toma la escena. Un mapa que se desmonta y se rearma pierde el
+     * encuadre, parpadea y vuelve a pedir tiles que ya tenía.
+     */
+    existing.adapter.updatePlaces?.({ store: view.store, destination: view.destination });
+    // Sin rider que seguir —no hay pedido, o el pedido terminó— el marcador y
+    // su halo se retiran. Dejarlos sería dibujar un reparto que no existe.
+    const hadRider = Boolean(existing.adapter.getLifecycleState?.()?.hasRiderMarker);
+    if (!view.riderLocation && hadRider) {
+      existing.adapter.clearRider?.();
+      existing.lastRenderedLocation = null;
+      existing.lastStatus = null;
+      existing.lastSource = null;
+    }
+    /*
+     * Mientras no hay rider, la cámara la manda el encuadre de los lugares. Se
+     * reaplica sólo cuando ese conjunto CAMBIA —aparece el destino, se va el
+     * local, termina el pedido—; hacerlo en cada render pisaría el gesto del
+     * cliente cada pocos segundos.
+     */
+    const nextFraming = view.riderLocation ? null : framingKey(view);
+    if (nextFraming && (nextFraming !== existing.lastFraming || hadRider)) {
+      existing.lastFraming = nextFraming;
+      const framed = existing.adapter.frameArea?.(
+        placesArea(view.store, view.destination),
+        { maxZoom: 15.4 },
+      );
+      if (!framed && !existing.adapter.focusOn?.({ point: view.store })) {
+        existing.adapter.frameArea?.(view.area);
+      }
+    }
+    if (view.riderLocation) existing.lastFraming = null;
     if (!showSandboxRoute && view.order?.status === 'arriving') {
       existing.adapter.recenter?.({ animate: false });
     }
@@ -199,6 +314,8 @@ export function ensureTrackingMap(container, view) {
     lastRenderedLocation: null,
     lastStatus: null,
     lastSource: null,
+    // Qué lugares encuadró la cámara la última vez que no había rider.
+    lastFraming: view.riderLocation ? null : framingKey(view),
   };
   mountedMaps.add(entry);
   applyCameraMode(container, 'follow');
@@ -220,12 +337,28 @@ export function ensureTrackingMap(container, view) {
     sandbox: view.sandbox,
     sandboxGeometryVerified,
     route: showSandboxRoute ? view.points : null,
-    store: sandboxGeometryVerified ? view.store : null,
+    // El pin del local sale del contrato de ubicación publicado, así que ya no
+    // depende de estar en la sandbox: es lo único que el mapa puede mostrar
+    // con honestidad cuando todavía no hay ningún pedido.
+    store: view.store,
     // El destino se dibuja también fuera de la sandbox cuando el pedido trae su
     // punto: es un dato del cliente, no geometría inventada.
     destination: view.destination,
-    center: view.riderLocation || (sandboxGeometryVerified ? view.store : null),
-    zoom: view.sandbox ? 14.5 : 16,
+    /*
+     * Sin pedido no hay a quién seguir. Si el local se puede plotear, la
+     * cámara abre sobre él: es el punto que le da sentido al mapa y el barrio
+     * se reconoce. El encuadre del área completa queda como respaldo para
+     * cuando NO hay pin del local, porque ahí sí conviene mostrar la cobertura
+     * entera antes que un centro sin nada que lo justifique.
+     */
+    area: placesArea(view.store, view.destination)
+      || (view.store ? null : view.area),
+    areaMaxZoom: placesArea(view.store, view.destination) ? 15.4 : 14.2,
+    center: view.riderLocation
+      || view.store
+      || view.destination
+      || (view.idle ? areaCenterPoint(view.area) : null),
+    zoom: view.idle ? MAPLIBRE_IDLE_ZOOM : view.sandbox ? 14.5 : 16,
     /*
      * El seguimiento del cliente monta con `cooperativeGestures`, y se queda
      * así a propósito. Se probó sacarlo —para que arrastrar con un dedo moviera
@@ -299,7 +432,7 @@ export function updateRiderMarkerPosition(entry, location, options = {}) {
 }
 
 export function updateTrackingStatusText(container, view) {
-  renderMapMeta(container, view.order, view.riderLocation, view.destination);
+  renderMapMeta(container, view.order, view.riderLocation, view.destination, view);
 }
 
 function requestFrame(callback) {
@@ -350,13 +483,37 @@ function getRiderLocation(order, sim, sandbox = false) {
   return null;
 }
 
-function renderMapMeta(container, order, location, destination) {
+function renderMapMeta(container, order, location, destination, view = null) {
   const meta = container.querySelector('[data-map-meta]');
   if (!meta) return;
   const copy = meta.querySelector?.('[data-map-meta-text]') || meta;
   delete container.dataset.mapPresentation;
+  /*
+   * Sin pedido no falta ninguna ubicación: no hay ninguna que buscar. La
+   * píldora dice de qué es este mapa —la zona en la que reparte el local— en
+   * vez de anunciar una falla que no ocurrió.
+   */
+  if (view?.idle) {
+    container.dataset.mapFreshness = 'none';
+    container.dataset.mapPresentation = 'idle';
+    copy.textContent = idleMapMetaLabel();
+    return;
+  }
   if (!order || !location) {
     container.dataset.mapFreshness = 'none';
+    /*
+     * En el seguimiento del cliente, «no hay ubicación del rider» casi nunca es
+     * una falla: el pedido se está preparando, o ya se entregó. Anunciar
+     * «Ubicación temporalmente no disponible» sobre un pedido ENTREGADO es
+     * inventar un problema encima de un final feliz. La píldora dice entonces
+     * qué es este mapa, y el porqué —cuando hace falta decirlo— lo explica la
+     * tarjeta de espera, que es su lugar. La vista del Rider conserva su copy.
+     */
+    if (container.dataset.mapRole === 'tracking') {
+      container.dataset.mapPresentation = 'places-only';
+      copy.textContent = idleMapMetaLabel();
+      return;
+    }
     copy.textContent = 'Ubicación temporalmente no disponible';
     return;
   }
@@ -404,6 +561,20 @@ function renderMapMeta(container, order, location, destination) {
   copy.textContent = gpsStale
     ? `${prefix} ${age}${accuracy}`
     : `${prefix} · última actualización: ${age}${accuracy}`;
+}
+
+/*
+ * Etiqueta del mapa sin pedido. Habla del comercio, que es lo único cierto en
+ * ese momento; si el comercio todavía no publicó su zona, se dice el nombre y
+ * nada más, en vez de inventar una cobertura.
+ */
+function idleMapMetaLabel() {
+  const config = getBusinessConfig();
+  const name = String(config.businessName || '').trim();
+  const zone = String(config.deliveryZone || '').trim();
+  const declaredZone = zone && !/a confirmar/i.test(zone) ? zone : '';
+  if (name && declaredZone) return `${name} · ${declaredZone}`;
+  return name || 'Zona de reparto';
 }
 
 /* Un runtime sin `navigator` (los tests, el SSR de nadie) se asume conectado. */

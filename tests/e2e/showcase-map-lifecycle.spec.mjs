@@ -74,15 +74,24 @@ test('showcase mounts only the active MapLibre view and cleans it on terminal or
   expect(await mapLifecycle(page)).toEqual({ constructs: 1, removes: 0 });
   await expect(page.locator('.maplibregl-canvas')).toHaveCount(1);
 
+  /*
+   * Entregado ya NO desmonta el mapa: «Seguir» sigue siendo una sección de
+   * mapa. Lo que cambia es el ORIGEN de los datos —el recorrido de muestra de
+   * la sandbox deja de aplicar— y un lienzo sandbox no se monta igual que uno
+   * real, así que ahí sí corresponde uno nuevo. Lo que este test protege se
+   * mantiene entero: hay UN SOLO mapa vivo a la vez, y el rider desaparece.
+   */
   await selectShowcaseStep(page, 'delivered');
-  await expect(page.locator('[data-real-map], .maplibregl-canvas')).toHaveCount(0);
-  expect(await mapLifecycle(page)).toEqual({ constructs: 1, removes: 1 });
+  await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(1);
+  await expect(page.locator('.maplibregl-canvas')).toHaveCount(1);
+  await expect(page.locator('.lt-rider-marker')).toHaveCount(0);
+  expect(await mapLifecycle(page)).toEqual({ constructs: 2, removes: 1 });
 
   await selectShowcaseStep(page, 'tracking-map');
   await expect(trackingMap).toHaveCount(1, { timeout: 15_000 });
   await expect(trackingMap).toBeVisible();
   await expect(page.locator('.maplibregl-canvas')).toHaveCount(1);
-  expect(await mapLifecycle(page)).toEqual({ constructs: 2, removes: 1 });
+  expect(await mapLifecycle(page)).toEqual({ constructs: 3, removes: 2 });
 
   await page.locator('.brand[data-nav-view="home"]').click();
   await expect(page.locator('[data-view="home"]')).toBeVisible();
@@ -91,7 +100,7 @@ test('showcase mounts only the active MapLibre view and cleans it on terminal or
     '[data-tracking-panel] [data-map-engine="maplibre"], '
       + '[data-delivery-panel] [data-map-engine="maplibre"]',
   )).toHaveCount(0);
-  expect(await mapLifecycle(page)).toEqual({ constructs: 2, removes: 2 });
+  expect(await mapLifecycle(page)).toEqual({ constructs: 3, removes: 3 });
 
   const progressAfterHide = await page.evaluate(async () => (
     (await import('/js/state.js')).getState().simulation?.progress
@@ -100,7 +109,7 @@ test('showcase mounts only the active MapLibre view and cleans it on terminal or
     () => page.evaluate(async () => (await import('/js/state.js')).getState().simulation?.progress),
     { message: 'hidden-view renders must not recreate either map' },
   ).not.toBe(progressAfterHide);
-  expect(await mapLifecycle(page)).toEqual({ constructs: 2, removes: 2 });
+  expect(await mapLifecycle(page)).toEqual({ constructs: 3, removes: 3 });
   await expect(page.locator('.maplibregl-canvas')).toHaveCount(0);
   await guards.assertClean();
 });

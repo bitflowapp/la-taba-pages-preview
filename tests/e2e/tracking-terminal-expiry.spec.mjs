@@ -195,8 +195,15 @@ async function expectTerminalOrder(page) {
   const tracking = page.locator('[data-tracking-panel]');
   await expect(tracking.locator('[data-tracking-title]')).toHaveText('Pedido entregado');
   await expect(tracking.locator('[data-tracking-status="delivered"]')).toBeVisible();
-  await expect(tracking.locator('[data-map-shell="tracking"]')).toHaveCount(0);
-  await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
+  /*
+   * El mapa YA NO desaparece al entregar: «Seguir» es una sección de mapa
+   * permanente y la pantalla final vuelve al mismo lienzo. Lo que sí tiene que
+   * desaparecer —y es lo que este cierre P1 protegía de verdad— es todo lo que
+   * afirme un reparto en curso: el rider y el código de entrega.
+   */
+  await expect(tracking.locator('[data-map-shell="tracking"]')).toHaveCount(1);
+  await expect(tracking.locator('[data-real-map]')).toHaveCount(1);
+  await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
   await expect(tracking.locator('[data-delivery-code]')).toHaveCount(0);
 
   const snapshot = await browserSnapshot(page);
@@ -228,12 +235,16 @@ async function expectTerminalOrder(page) {
 
 async function expectFailClosedCleanup(page) {
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking.getByRole('heading', {
-    name: 'Todavía no hay un pedido en curso',
-  })).toBeVisible();
-  await expect(tracking.locator('[data-tracking-status="empty"]')).toBeVisible();
-  await expect(tracking.locator('[data-map-shell="tracking"]')).toHaveCount(0);
-  await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
+  await expect(tracking.getByRole('heading', { name: 'Seguí tu pedido' })).toBeVisible();
+  await expect(tracking.locator('[data-tracking-status="idle"]')).toBeVisible();
+  /*
+   * Cerrar en falso ya no significa quedarse sin mapa. El acceso se limpió, el
+   * pedido se fue del estado y lo que queda es el mapa de la zona operativa:
+   * una sección válida del producto, sin un solo dato del pedido anterior.
+   */
+  await expect(tracking.locator('[data-real-map][data-map-mode="idle"]')).toHaveCount(1);
+  await expect(tracking.locator('[data-real-map][data-order-id]')).toHaveCount(0);
+  await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
   await expect(tracking.locator('[data-delivery-code]')).toHaveCount(0);
 
   const snapshot = await browserSnapshot(page);

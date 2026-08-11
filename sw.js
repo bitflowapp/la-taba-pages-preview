@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v61-endurecimiento-comercial';
+const CACHE_NAME = 'la-taba-runtime-v61-cliente-comercial-mapa-permanente';
 const ASSETS = [
   './',
   './index.html',
@@ -113,6 +113,35 @@ const ASSETS = [
   './js/showcase-fixtures.js',
   './js/showcase.js',
   './js/ui.js',
+  /*
+   * Los diecisiete de abajo son imports ESTÁTICOS del grafo del cliente que
+   * nunca habían entrado a esta lista. Sin red, el navegador no puede resolver
+   * un import estático que no está en la caché y la aplicación no arranca: no
+   * se degrada, no arranca. Que nadie lo notara sólo quiere decir que la
+   * mayoría de las visitas tienen red.
+   *
+   * Los descubrió el guard nuevo (`scripts/check-precache-graph.mjs`), que
+   * recorre el grafo desde las tres entradas y compara contra esta lista. La
+   * lista se mantiene sola de ahora en más: si aparece un import estático
+   * nuevo sin su entrada acá, `npm run check` corta.
+   */
+  './js/back-office.js',
+  './js/motion.js',
+  './js/combos-data.js',
+  './js/preview-promotions-data.js',
+  './js/preview-stories-data.js',
+  './js/core/beverage-home-sections.js',
+  './js/core/business-order-intake.js',
+  './js/core/combos.js',
+  './js/core/customer-delivery-address-hydration.js',
+  './js/core/profile-checkout.js',
+  './js/core/purchasable-destination.js',
+  './js/core/retail-packaging.js',
+  './js/core/sandbox-tracking-presentation.js',
+  './js/payments/mercadopago-checkout.js',
+  './js/repositories/sandbox_customer_profile_repository.js',
+  './js/repositories/sandbox_order_repository.js',
+  './js/tracking/customer_tracking_poll.js',
 ];
 
 self.addEventListener('install', (event) => {

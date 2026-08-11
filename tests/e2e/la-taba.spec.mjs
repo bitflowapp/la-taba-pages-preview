@@ -147,7 +147,9 @@ test('pedido demo no muestra rider falso, GPS, mapa ni ETA', async ({ page }) =>
   await expect(tracking).not.toContainText('Juli');
   await expect(tracking).not.toContainText('2991112233');
   await expect(tracking.locator('[data-delivery-code-card]')).toHaveCount(0);
-  await expect(tracking.locator('[data-real-map], .lt-rider-marker')).toHaveCount(0);
+  // El mapa está desde el primer estado; el rider falso es lo que no puede estar.
+  await expect(tracking.locator('[data-real-map]')).toHaveCount(1);
+  await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
   await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText('El pedido sigue en el local. La ubicación aparecerá cuando comience el reparto.');
 
   await page.evaluate(() => { window.location.hash = '#business'; });
@@ -522,9 +524,16 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-  await expect(page.locator('.mobile-nav')).toBeHidden();
+  /*
+   * «Seguir» conserva la barra. Antes se ocultaba, y como el hamburguesa de la
+   * cabecera está colapsado a 0x0 en este layout, la única salida en el
+   * teléfono era el wordmark del comercio en el topbar: cualquier otro destino
+   * obligaba a pasar por el inicio. Ahora es una sección más y se sale de ella
+   * como de cualquier otra — que es justo lo que prueba el paso siguiente.
+   */
+  await expect(page.locator('.mobile-nav')).toBeVisible();
 
-  await page.goto('/?demo=1#profile');
+  await page.locator('.mobile-nav [data-nav-view="profile"]').click();
   await expect(page.locator('[data-view="profile"]')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 
@@ -661,7 +670,25 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
 
     await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
     await expect(page.locator('.tracking-premium')).toBeVisible();
-    await expect(page.locator('.mobile-nav')).toBeHidden();
+    /*
+     * La barra se queda también acá. La reserva no la pone `main` —que sigue
+     * en 0 para esta vista— sino la propia sección, con el mismo token que usan
+     * las demás. Lo que importa es el efecto: que la barra no tape el final del
+     * contenido, y eso es lo que se mide abajo en píxeles reales.
+     */
+    await expect(page.locator('.mobile-nav')).toBeVisible();
+    const trackingClearance = await page.evaluate(() => {
+      const nav = document.querySelector('.mobile-nav').getBoundingClientRect();
+      const view = document.querySelector('[data-view="tracking"]');
+      const last = view.querySelector('.tracking-sheet > *:last-child');
+      return {
+        gap: nav.top - last.getBoundingClientRect().bottom,
+        viewPaddingBottom: Number.parseFloat(getComputedStyle(view).paddingBottom),
+        navHeight: nav.height,
+      };
+    });
+    expect(trackingClearance.viewPaddingBottom).toBeGreaterThanOrEqual(trackingClearance.navHeight);
+    expect(trackingClearance.gap).toBeGreaterThanOrEqual(0);
     const measureMain = () => page.evaluate(() => {
       const main = document.querySelector('main[data-app-main]');
       const style = getComputedStyle(main);

@@ -90,7 +90,10 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();
   await waitForToast(page, 'Pedido confirmado');
   await expect(page.locator('[data-tracking-panel]')).toContainText('QA-0001');
-  await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(0);
+  // Un pedido recién recibido ya tiene mapa —«Seguir» es una sección de mapa
+  // permanente—, pero todavía no tiene rider: nadie salió a repartir.
+  await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(1);
+  await expect(page.locator('[data-tracking-panel] .lt-rider-marker')).toHaveCount(0);
 
   await page.reload();
   await expect(page.locator('.topbar .brand')).toContainText('QA Store');

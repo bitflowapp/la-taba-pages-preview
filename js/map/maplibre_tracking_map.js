@@ -13,6 +13,13 @@ export const MAPLIBRE_ACCURACY_LINE_LAYER_ID = 'taba-rider-accuracy-line';
 
 /** Zoom al que se vuelve cuando el cliente toca «Volver al Rider». */
 export const MAPLIBRE_FOLLOW_ZOOM = 16.5;
+/*
+ * Zoom del mapa SIN pedido. Es deliberadamente más cerrado que el área de
+ * reparto completa: encuadrar toda la cobertura mete dos ciudades en 344 px y
+ * el pin del local queda del tamaño de un alfiler. A este zoom se reconoce el
+ * barrio del comercio, que es lo que hace útil la vista.
+ */
+export const MAPLIBRE_IDLE_ZOOM = 13.4;
 /** Debajo de esta precisión el halo queda tapado por el marcador, y está bien. */
 export const ACCURACY_CIRCLE_SIDES = 64;
 export const MAPLIBRE_FALLBACK_COPY = 'Mapa no disponible. Seguimos actualizando el estado de tu pedido.';
@@ -152,7 +159,12 @@ export function createMapLibreTrackingMap({
     destinationMarker: null,
     routeFeature: null,
     routeVisible: false,
-    pendingSandboxPlaces: null,
+    pendingPlaces: null,
+    // Encuadre a aplicar cuando no hay rider a quien seguir: la zona operativa
+    // del comercio, o el par local–destino cuando el pedido ya trae su punto.
+    // Se guarda hasta que el estilo carga, igual que los pines.
+    pendingArea: null,
+    pendingAreaMaxZoom: 14.2,
     sandbox: false,
     sandboxGeometryVerified: false,
     freshness: 'none',
@@ -184,6 +196,8 @@ export function createMapLibreTrackingMap({
     store = null,
     destination = null,
     center = null,
+    area = null,
+    areaMaxZoom = 14.2,
     zoom = 16,
     cooperativeGestures = false,
   } = {}) {
@@ -205,19 +219,18 @@ export function createMapLibreTrackingMap({
     state.routeFeature = state.sandboxGeometryVerified ? sandboxRouteFeature(route) : null;
     state.routeVisible = Boolean(state.routeFeature);
     state.freshness = normalizeMapFreshness(freshness);
-    // El destino ya no es exclusivo de la sandbox: un pedido real trae el punto
-    // que confirmó el cliente, y dibujarlo es justamente lo que faltaba para
-    // que el seguimiento mostrara a dónde va la entrega. El comercio, en
-    // cambio, sigue siendo geometría de la sandbox.
-    state.pendingSandboxPlaces = {
-      store: state.sandboxGeometryVerified ? store : null,
-      destination,
-    };
+    // Ni el destino ni el local son ya geometría exclusiva de la sandbox. El
+    // destino es el punto que confirmó el cliente; el local es la coordenada
+    // publicada del comercio, y es lo único que el mapa puede mostrar con
+    // honestidad mientras todavía no hay ningún pedido.
+    state.pendingPlaces = { store, destination };
+    state.pendingArea = area;
+    state.pendingAreaMaxZoom = areaMaxZoom;
 
     const initialCenter = firstValidPoint(
       riderLocation,
       center,
-      state.sandboxGeometryVerified ? store : null,
+      store,
       destination,
       firstRoutePoint(state.routeFeature),
     );
@@ -523,12 +536,18 @@ export function createMapLibreTrackingMap({
       // original: un mapa legible, nunca uno roto.
       applyTabaMapTheme(state.map);
       ensureSandboxRoute();
-      ensureSandboxPlaces(state.pendingSandboxPlaces);
+      ensurePlaces(state.pendingPlaces);
       // El halo de precisión necesita el estilo cargado para poder agregar su
       // source: antes de `load` no hay dónde ponerlo.
       renderAccuracyHalo();
       fitSandboxGeometry();
-      state.pendingSandboxPlaces = null;
+      // El encuadre de un área sólo manda cuando no hay nada más concreto que
+      // mirar: una ruta de muestra o un rider real ganan siempre.
+      if (!state.routeFeature && !state.riderLocation) {
+        frameArea(state.pendingArea, { maxZoom: state.pendingAreaMaxZoom });
+      }
+      state.pendingPlaces = null;
+      state.pendingArea = null;
       state.shell?.classList?.add?.('is-ready');
       state.shell?.classList?.remove?.('map-unavailable');
       if (state.shell?.dataset) state.shell.dataset.mapStatus = 'ready';
@@ -673,22 +692,124 @@ export function createMapLibreTrackingMap({
     return nextVisible;
   }
 
-  function ensureSandboxPlaces(places) {
+  /*
+   * Los pines del mapa son CAPAS, no una decoración que se fija al montar. El
+   * seguimiento arranca sin pedido —sólo el local—, y a medida que el pedido
+   * avanza aparecen el destino confirmado y después el rider. Nada de eso
+   * justifica tirar el mapa y construir otro: acá se agrega y se quita lo que
+   * corresponde sobre el mismo lienzo.
+   *
+   * Un pin que deja de estar en `places` se retira. Eso es lo que permite
+   * volver al estado idle cuando el pedido termina, sin dejar el destino de
+   * una entrega ya cerrada dibujado sobre el mapa.
+   */
+  function ensurePlaces(places) {
     if (!state.map || !places) return;
-    if (state.sandbox && state.sandboxGeometryVerified && isValidMapPoint(places.store) && !state.storeMarker) {
-      state.storeMarker = createPlaceMarker({
-        point: places.store,
-        kind: 'store',
-        label: places.store.label || 'Comercio',
-      });
+    syncPlaceMarker('storeMarker', places.store, 'store', 'Comercio');
+    syncPlaceMarker('destinationMarker', places.destination, 'destination', 'Destino de entrega');
+  }
+
+  function syncPlaceMarker(slot, point, kind, fallbackLabel) {
+    const valid = isValidMapPoint(point);
+    const existing = state[slot];
+    if (!valid) {
+      if (existing) {
+        existing.remove?.();
+        state[slot] = null;
+      }
+      return;
     }
-    if (isValidMapPoint(places.destination) && !state.destinationMarker) {
-      state.destinationMarker = createPlaceMarker({
-        point: places.destination,
-        kind: 'destination',
-        label: places.destination.label || 'Destino de entrega',
-      });
+    if (existing) {
+      // Mover un pin existente cuesta una coordenada; recrearlo hace parpadear
+      // el marcador en pantalla.
+      existing.setLngLat?.(toLngLat(point));
+      return;
     }
+    state[slot] = createPlaceMarker({
+      point,
+      kind,
+      label: point.label || fallbackLabel,
+    });
+  }
+
+  /**
+   * Actualiza las capas de lugares con el mapa ya montado. Antes de que el
+   * estilo cargue no hay dónde colgar un marcador, así que queda pendiente y lo
+   * aplica el `load`.
+   */
+  function updatePlaces({ store = null, destination = null } = {}) {
+    if (state.destroyed || state.unavailable) return false;
+    if (!state.map || !state.ready) {
+      state.pendingPlaces = { store, destination };
+      return false;
+    }
+    ensurePlaces({ store, destination });
+    return true;
+  }
+
+  /*
+   * El pedido terminó y el mapa vuelve a ser el mapa de siempre. Se retira el
+   * marcador del rider, su halo de precisión y el motor de movimiento: dejar
+   * cualquiera de los tres es mostrar un rider que ya no está repartiendo.
+   */
+  function clearRider() {
+    if (state.destroyed) return false;
+    cancelMovement();
+    state.riderMarker?.remove?.();
+    state.riderMarker = null;
+    state.riderElement = null;
+    state.riderLocation = null;
+    state.accuracyMeters = null;
+    state.motion?.reset?.();
+    state.motion = null;
+    if (state.map && state.ready) {
+      const source = state.map.getSource?.(MAPLIBRE_ACCURACY_SOURCE_ID);
+      source?.setData?.({ type: 'FeatureCollection', features: [] });
+    }
+    setCameraMode('follow', { force: true });
+    return true;
+  }
+
+  /*
+   * Encuadre de la zona operativa: la vista con la que abre «Seguir» cuando no
+   * hay ningún pedido. No es una posición inventada de nadie —es el área en la
+   * que el comercio reparte— y por eso puede mostrarse siempre.
+   */
+  /*
+   * Lleva la cámara a un punto concreto sin tocar el seguimiento del rider.
+   * Se usa para volver al local cuando el pedido termina: `recenter` no sirve
+   * ahí, porque su objetivo es siempre el rider y en ese momento ya no hay.
+   */
+  function focusOn({ point, zoom = MAPLIBRE_IDLE_ZOOM } = {}) {
+    if (!state.map || state.unavailable || state.destroyed) return false;
+    if (!isValidMapPoint(point)) return false;
+    state.programmaticMove = true;
+    try {
+      state.map.jumpTo?.({ center: toLngLat(point), zoom: finiteZoom(zoom) });
+    } finally {
+      setTimer(() => {
+        state.programmaticMove = false;
+      }, 0);
+    }
+    return true;
+  }
+
+  function frameArea(area, { maxZoom = 14.2 } = {}) {
+    const bounds = normalizeAreaBounds(area);
+    if (!bounds || !state.map?.fitBounds) return false;
+    state.programmaticMove = true;
+    try {
+      state.map.fitBounds(bounds, {
+        padding: sandboxFitPadding(),
+        maxZoom,
+        duration: 0,
+      });
+    } finally {
+      setTimer(() => {
+        state.programmaticMove = false;
+      }, 0);
+    }
+    return true;
   }
 
   // Los pines de origen y destino se anclan por su punta y crecen hacia arriba,
@@ -837,6 +958,8 @@ export function createMapLibreTrackingMap({
       failureReason: state.failureReason,
       freshness: state.freshness,
       hasRiderMarker: Boolean(state.riderMarker),
+      hasStoreMarker: Boolean(state.storeMarker),
+      hasDestinationMarker: Boolean(state.destinationMarker),
       hasSandboxRoute: Boolean(state.routeFeature),
       sandboxRouteVisible: state.routeVisible,
       userInteracted: state.userInteracted,
@@ -853,6 +976,10 @@ export function createMapLibreTrackingMap({
     mount,
     updateRiderLocation,
     updateFreshness,
+    updatePlaces,
+    clearRider,
+    frameArea,
+    focusOn,
     setSandboxRouteVisible,
     recenter,
     resize,
@@ -882,10 +1009,17 @@ export function isTileLoadError(event) {
   return /(?:failed|error|unable).*(?:tile|source)|(?:tile|source).*(?:failed|error|unavailable)/i.test(message);
 }
 
+/*
+ * Cuando el mapa no puede dibujarse, la vista puede haber declarado qué decir
+ * en ESE estado: sin pedido, prometer que «seguimos actualizando el estado de
+ * tu pedido» es una frase prestada de otro momento y suena a error donde no lo
+ * hay. Si la vista no declara nada, sigue mandando la copia por defecto.
+ */
 function presentFallback(fallback) {
   if (!fallback) return;
   const copy = fallback.querySelector?.('[data-map-fallback-message], .map-fallback-note, p') || fallback;
-  copy.textContent = MAPLIBRE_FALLBACK_COPY;
+  const declared = fallback.dataset?.mapFallbackCopy;
+  copy.textContent = declared || MAPLIBRE_FALLBACK_COPY;
   fallback.removeAttribute?.('hidden');
 }
 
@@ -924,6 +1058,40 @@ function firstRoutePoint(feature) {
 
 function firstValidPoint(...points) {
   return points.find((point) => isValidMapPoint(point)) || null;
+}
+
+/**
+ * Normaliza el área operativa al par de esquinas que espera `fitBounds`.
+ * Acepta la forma del contrato (`[[lat, lng], [lat, lng]]`, que es como está
+ * escrito `defaultMapBounds`) y devuelve `[[lng, lat], [lng, lat]]`. Un área
+ * degenerada —esquinas iguales— no es un encuadre: devuelve null y el mapa se
+ * queda con su centro y su zoom.
+ */
+export function normalizeAreaBounds(area) {
+  if (!Array.isArray(area) || area.length !== 2) return null;
+  const corners = area.map((corner) => {
+    if (!Array.isArray(corner) || corner.length !== 2) return null;
+    const lat = Number(corner[0]);
+    const lng = Number(corner[1]);
+    return isValidMapPoint({ lat, lng }) ? { lat, lng } : null;
+  });
+  if (corners.some((corner) => corner === null)) return null;
+  const lats = corners.map((corner) => corner.lat);
+  const lngs = corners.map((corner) => corner.lng);
+  const south = Math.min(...lats);
+  const north = Math.max(...lats);
+  const west = Math.min(...lngs);
+  const east = Math.max(...lngs);
+  if (south === north || west === east) return null;
+  return [[west, south], [east, north]];
+}
+
+/** Centro geométrico del área operativa, para montar antes de poder encuadrar. */
+export function areaCenterPoint(area) {
+  const bounds = normalizeAreaBounds(area);
+  if (!bounds) return null;
+  const [[west, south], [east, north]] = bounds;
+  return { lat: (south + north) / 2, lng: (west + east) / 2 };
 }
 
 function normalizedPoint(point) {

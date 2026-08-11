@@ -37,7 +37,9 @@ test('cliente, negocio y rider completan el recorrido en el mismo dispositivo si
   await expect(tracking.locator('.track-steps.public')).toContainText('En camino');
   await expect(tracking.locator('.track-steps.public')).toContainText('Entregado');
   await expect(tracking.locator('[data-tracking-gps-note]')).toHaveText('El pedido sigue en el local. La ubicación aparecerá cuando comience el reparto.');
-  await expect(tracking.locator('[data-real-map]')).toHaveCount(0);
+  // Sin GPS el mapa existe igual, pero no dibuja a nadie.
+  await expect(tracking.locator('[data-real-map]')).toHaveCount(1);
+  await expect(tracking.locator('.lt-rider-marker')).toHaveCount(0);
   await expect(page.locator('[data-delivery-code]')).toHaveCount(0);
 
   await page.locator('.topbar .brand').click();

@@ -31,6 +31,7 @@ const pollingPath = new URL(
   import.meta.url,
 );
 const uiPath = new URL('../js/ui.js', import.meta.url);
+const mapViewPath = new URL('../js/map/map_view.js', import.meta.url);
 const timelinePath = new URL('../js/core/order-timeline.js', import.meta.url);
 const recoverySql = readFileSync(recoveryPath, 'utf8');
 const handoffSql = readFileSync(handoffPath, 'utf8');
@@ -40,6 +41,7 @@ const fixSql = existsSync(fixPath) ? readFileSync(fixPath, 'utf8') : '';
 const repositorySource = readFileSync(repositoryPath, 'utf8');
 const pollingSource = readFileSync(pollingPath, 'utf8');
 const uiSource = readFileSync(uiPath, 'utf8');
+const mapViewSource = readFileSync(mapViewPath, 'utf8');
 const timelineSource = readFileSync(timelinePath, 'utf8');
 
 function sqlFunction(source, name) {
@@ -249,12 +251,33 @@ test('delivered reemplaza polling frecuente por un timer terminal desmontable', 
   );
 });
 
-test('la pantalla final usa copy entregado, timeline de cuatro pasos y oculta código/mapa', () => {
+test('la pantalla final usa copy entregado, timeline de cuatro pasos y oculta el código', () => {
   assert.match(uiSource, /if \(order\.status === 'delivered'\)[\s\S]*title: 'Pedido entregado'/i);
   assert.match(
     timelineSource,
     /PUBLIC_ORDER_TIMELINE_STEPS[\s\S]*'Confirmado'[\s\S]*'Preparando'[\s\S]*'En camino'[\s\S]*'Entregado'/i,
   );
   assert.match(uiSource, /if \(!\['arrived', 'arriving'\]\.includes\(order\.status\)\) return ''/i);
-  assert.match(uiSource, /!\['delivered', 'cancelled'\]\.includes\(order\.status\)/i);
+});
+
+/*
+ * El mapa dejó de esconderse al terminar el pedido: «Seguir» es una sección de
+ * mapa permanente y la pantalla final vuelve al mismo lienzo en su estado sin
+ * pedido. Lo que este test protege es lo que SÍ tiene que desaparecer, que era
+ * el motivo real del cierre P1: el rider. Un marcador que sobreviva al
+ * `delivered` está afirmando un reparto que ya no existe.
+ */
+test('al terminar el pedido desaparece el rider, no el mapa', () => {
+  const terminal = /const isTerminal = \['delivered', 'cancelled'\]\.includes\(order\.status\);/;
+  assert.match(uiSource, terminal);
+  assert.match(uiSource, /const riderOnMap = isDelivery\s*\n\s*&& !isTerminal/);
+  // La capa de datos tampoco entrega una ubicación de rider en estado terminal,
+  // así que el marcador no puede reaparecer por otro camino.
+  assert.match(mapViewSource, /const TERMINAL_STATUSES = new Set\(\['delivered', 'cancelled'\]\);/);
+  assert.match(
+    mapViewSource,
+    /const riderLocation = order && !TERMINAL_STATUSES\.has\(order\.status\)\s*\n\s*\? getRiderLocation/,
+  );
+  // Y si el marcador ya estaba dibujado cuando llega el estado final, se retira.
+  assert.match(mapViewSource, /existing\.adapter\.clearRider\?\.\(\)/);
 });

@@ -42,7 +42,10 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/pedido de muestra|no se envió|presentación/i);
   await expect(page.locator('[data-tracking-panel] [data-delivery-code]')).toHaveCount(0);
   await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveText('El pedido sigue en el local. La ubicación aparecerá cuando comience el reparto.');
-  await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(0);
+  // Pedido recién confirmado: hay mapa —la sección es un mapa— pero no hay
+  // rider, porque todavía no salió nadie a repartir.
+  await expect(page.locator('[data-tracking-panel] [data-real-map]')).toHaveCount(1);
+  await expect(page.locator('[data-tracking-panel] .lt-rider-marker')).toHaveCount(0);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\bETA\b/i);
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
   const orderSummary = page.locator('[data-tracking-panel] [data-order-summary-details]');

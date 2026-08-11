@@ -121,32 +121,62 @@ if (typeof document !== 'undefined') {
   document.addEventListener('error', handleProductImageError, true);
 }
 
-export function renderWithStableRealMap(container, html, { rolePrefix = '', orderId = '' } = {}) {
-  const stableMap = captureStableRealMap(container, rolePrefix, orderId);
+/*
+ * `acrossOrders` es lo que convierte a «Seguir» en UNA superficie de mapa en
+ * vez de en varias. Con la identidad atada al pedido, pasar de «sin pedido» a
+ * «preparando» tiraba el mapa y montaba otro: parpadeo, encuadre perdido y
+ * tiles pedidos de nuevo. Ignorando el pedido —pero NUNCA el origen de los
+ * datos, porque un mapa sandbox se monta con otra geometría— el mismo lienzo
+ * sobrevive a todo el ciclo de vida y sólo le cambian las capas.
+ */
+export function renderWithStableRealMap(container, html, {
+  rolePrefix = '',
+  orderId = '',
+  acrossOrders = false,
+} = {}) {
+  const stableMap = captureStableRealMap(container, rolePrefix, orderId, acrossOrders);
   container.innerHTML = html;
-  restoreStableRealMap(container, stableMap);
+  restoreStableRealMap(container, stableMap, acrossOrders);
 }
 
-function captureStableRealMap(container, rolePrefix, orderId) {
+function captureStableRealMap(container, rolePrefix, orderId, acrossOrders = false) {
   if (!container || !rolePrefix) return null;
   const shell = container.querySelector('[data-real-map]');
   if (!shell) return null;
   const role = shell.dataset.mapRole || '';
+  if (!role.startsWith(rolePrefix)) return null;
+  if (acrossOrders) return shell;
   const shellOrderId = shell.dataset.orderId || '';
-  if (!role.startsWith(rolePrefix) || shellOrderId !== String(orderId || '')) return null;
+  if (shellOrderId !== String(orderId || '')) return null;
   return shell;
 }
 
-function restoreStableRealMap(container, shell) {
+function restoreStableRealMap(container, shell, acrossOrders = false) {
   if (!container || !shell) return;
   const role = shell.dataset.mapRole || '';
   const orderId = shell.dataset.orderId || '';
+  const source = shell.dataset.mapSource || '';
   const replacement = [...container.querySelectorAll('[data-real-map]')]
     .find((candidate) => (
       (candidate.dataset.mapRole || '') === role
-      && (candidate.dataset.orderId || '') === orderId
+      && (acrossOrders
+        ? (candidate.dataset.mapSource || '') === source
+        : (candidate.dataset.orderId || '') === orderId)
     ));
-  if (replacement && replacement !== shell) replacement.replaceWith(shell);
+  if (!replacement || replacement === shell) return;
+  // El lienzo se conserva; lo que identifica al render de ahora —qué pedido y
+  // si hay pedido— se copia encima, porque de esos atributos sale el estado
+  // que el mapa lee en el frame siguiente.
+  if (acrossOrders) syncStableRealMapIdentity(shell, replacement);
+  replacement.replaceWith(shell);
+}
+
+function syncStableRealMapIdentity(shell, replacement) {
+  for (const key of ['orderId', 'mapMode', 'mapFreshness']) {
+    const next = replacement.dataset[key];
+    if (next === undefined) delete shell.dataset[key];
+    else shell.dataset[key] = next;
+  }
 }
 
 // El enlace a Maps abre POR COORDENADAS, no por el texto de la dirección: la
@@ -3222,14 +3252,27 @@ function realMapShell({
   role = 'tracking',
   mapSource = '',
   freshness = 'none',
+  idle = false,
 }) {
   const orderAttr = order?.id ? ` data-order-id="${escapeHtml(order.id)}"` : '';
   const sourceAttr = mapSource ? ` data-map-source="${escapeHtml(mapSource)}"` : '';
+  // `idle` es lo que impide que el mapa sin pedido caiga en el último pedido
+  // guardado del navegador y muestre un reparto que ya terminó.
+  const modeAttr = idle ? ' data-map-mode="idle"' : '';
+  const canvasLabel = idle
+    ? 'Mapa de la zona de reparto'
+    : 'Mapa de seguimiento de tu pedido';
+  // Si el mapa no puede dibujarse, lo que se dice depende de si hay algo que
+  // seguir: prometer que «seguimos actualizando tu pedido» sin pedido es una
+  // frase de error prestada de otro estado.
+  const fallbackNote = idle
+    ? 'Mapa no disponible por ahora. Vas a poder seguir tu pedido igual desde acá.'
+    : 'Mapa no disponible. Seguimos actualizando el estado de tu pedido.';
   return `
-    <div class="real-map-shell" data-real-map data-map-role="${escapeHtml(role)}" data-map-freshness="${escapeHtml(freshness)}"${sourceAttr}${orderAttr}>
-      <div class="real-map-canvas" data-map-canvas role="region" aria-label="Mapa de seguimiento de tu pedido"></div>
-      <div class="real-map-fallback" data-map-fallback role="status" aria-live="polite">
-        <p class="map-fallback-note">Mapa no disponible. Seguimos actualizando el estado de tu pedido.</p>
+    <div class="real-map-shell" data-real-map data-map-role="${escapeHtml(role)}" data-map-freshness="${escapeHtml(freshness)}"${sourceAttr}${modeAttr}${orderAttr}>
+      <div class="real-map-canvas" data-map-canvas role="region" aria-label="${escapeHtml(canvasLabel)}"></div>
+      <div class="real-map-fallback" data-map-fallback data-map-fallback-copy="${escapeHtml(fallbackNote)}" role="status" aria-live="polite">
+        <p class="map-fallback-note">${escapeHtml(fallbackNote)}</p>
       </div>
       <span class="real-map-tile-error" data-map-tile-error hidden>Mapa base no disponible</span>
       <div class="real-map-meta" data-map-meta role="status" aria-live="polite">
@@ -3261,16 +3304,28 @@ function sandboxTrackingStage(order, simulation) {
     </div>`;
 }
 
-function trackingMapStage({ order = null, sandbox = false, freshness = 'none' }) {
+function trackingMapStage({
+  order = null,
+  sandbox = false,
+  freshness = 'none',
+  idle = false,
+  // Recentrar y «Volver al Rider» sólo tienen sentido cuando hay un rider
+  // dibujado. Sin él son dos controles que no hacen nada: el de recentrar no
+  // tiene objetivo —`recenter()` sale por `isValidMapPoint` y devuelve false— y
+  // el de volver nunca se muestra. Ofrecerlos igual es prometer un seguimiento
+  // que en ese estado no existe.
+  showRecenter = false,
+}) {
   return `
-    <div class="delivery-map-stage tracking-map-stage" data-map-shell="tracking" data-tracking-map-freshness="${escapeHtml(freshness)}">
+    <div class="delivery-map-stage tracking-map-stage${idle ? ' is-idle' : ''}" data-map-shell="tracking" data-tracking-map-freshness="${escapeHtml(freshness)}"${idle ? ' data-tracking-map-idle' : ''}>
       ${realMapShell({
         order,
         role: 'tracking',
         mapSource: sandbox ? 'sandbox' : '',
         freshness,
+        idle,
       })}
-      ${trackingRecenterButton()}
+      ${showRecenter ? trackingRecenterButton() : ''}
     </div>`;
 }
 
@@ -3590,20 +3645,27 @@ export function renderTracking() {
   if (!container) return;
   const order = getActiveOrder();
 
+  /*
+   * SIN PEDIDO «Seguir» sigue siendo un mapa. Es la misma superficie que va a
+   * usarse durante el reparto, abierta sobre la zona en la que el comercio
+   * reparte y con su pin: un estado válido del producto, no un hueco. Acá NO
+   * hay rider, ni cliente, ni progreso —no existen todavía— y por eso la
+   * tarjeta cuenta qué va a pasar en vez de simular que ya está pasando.
+   */
   if (!order) {
     renderWithStableRealMap(container, `
-      <div class="track-layout tracking-premium tracking-map-experience is-empty no-map" data-tracking-status="empty">
-        <section class="delivery-bottom-sheet tracking-sheet track-progress-card" data-bottom-sheet>
+      <div class="track-layout tracking-premium tracking-map-experience is-idle" data-tracking-status="idle">
+        <section class="delivery-bottom-sheet tracking-sheet track-progress-card is-idle" data-bottom-sheet>
           ${trackingHeader()}
-          <div class="empty-state sheet-empty">
-            <h1 class="empty-title">Todavía no hay un pedido en curso</h1>
-            <p class="empty-state-copy">Cuando armes tu pedido, acá vas a ver cada avance hasta la entrega.</p>
-            <div class="empty-actions">
-              <button class="primary-button compact" type="button" data-nav-view="catalog">Ver el catálogo</button>
-            </div>
+          ${trackingMapStage({ idle: true })}
+          <div class="tracking-idle-card" data-tracking-idle-card>
+            <h1 class="tracking-idle-title">Seguí tu pedido</h1>
+            <p class="tracking-idle-lead">Cuando hagas una compra, vas a poder seguir el recorrido del Rider desde acá.</p>
+            <button class="primary-button compact tracking-idle-cta" type="button" data-nav-view="catalog">Ver el catálogo</button>
           </div>
+          ${trackingHelpCard()}
         </section>
-      </div>`, { rolePrefix: 'tracking' });
+      </div>`, { rolePrefix: 'tracking', acrossOrders: true });
     return;
   }
 
@@ -3624,8 +3686,19 @@ export function renderTracking() {
       || (sandboxSimulation?.source === 'gps' && hasFreshSharedGpsLocation(sandboxSimulation)));
   const hasUsableLastLocation = trackableStatus
     && ['fresh', 'delayed', 'lost'].includes(locationFreshness);
-  const showMap = isDelivery
-    && !['delivered', 'cancelled'].includes(order.status)
+  /*
+   * EL MAPA YA NO ES CONDICIONAL. Antes sólo existía cuando había una posición
+   * del rider que dibujar, así que preparando, retiro y entregado caían en una
+   * pantalla sin mapa y «Seguir» dejaba de ser una sección para volverse un
+   * cartel. Ahora el mapa es la superficie en todos los estados y lo que
+   * cambia son sus capas: local, después destino confirmado, después rider.
+   *
+   * Lo que NO cambia: el rider se dibuja únicamente con una ubicación real y
+   * autorizada, y desaparece en cuanto el pedido termina.
+   */
+  const isTerminal = ['delivered', 'cancelled'].includes(order.status);
+  const riderOnMap = isDelivery
+    && !isTerminal
     && (hasUsableLastLocation || sandboxMapActive);
   const latestUpdate = latestTrackingTimestamp(order, riderLocation);
   const timelineStatus = order.status === 'arriving' ? 'arrived' : order.status;
@@ -3633,8 +3706,8 @@ export function renderTracking() {
     && !isCancelled
     && order.status !== 'delivered';
   renderWithStableRealMap(container, `
-    <div class="track-layout tracking-premium tracking-map-experience status-${escapeHtml(order.status)} ${showMap ? '' : 'no-map'}" data-tracking-status="${escapeHtml(order.status)}" data-tracking-freshness="${escapeHtml(locationFreshness)}">
-      <section class="delivery-bottom-sheet tracking-sheet track-progress-card ${showMap ? 'is-live' : 'is-offline'}" data-bottom-sheet>
+    <div class="track-layout tracking-premium tracking-map-experience status-${escapeHtml(order.status)} ${riderOnMap ? 'has-rider' : 'no-rider'}" data-tracking-status="${escapeHtml(order.status)}" data-tracking-freshness="${escapeHtml(locationFreshness)}">
+      <section class="delivery-bottom-sheet tracking-sheet track-progress-card ${riderOnMap ? 'is-live' : 'is-offline'}" data-bottom-sheet>
         ${trackingHeader()}
         <div class="tracking-hero" data-tracking-hero>
           <h1 data-tracking-title>${escapeHtml(head.title)}</h1>
@@ -3644,11 +3717,10 @@ export function renderTracking() {
           <p class="tracking-updated" data-tracking-updated>Última actualización ${escapeHtml(relativeAgeLabel(latestUpdate))}</p>
         </div>
         ${renderPublicOrderTimeline(timelineStatus, { className: 'customer-progress' })}
-        ${showMap
-          ? (sandboxMapActive
-            ? sandboxTrackingStage(order, sandboxSimulation)
-            : trackingMapStage({ order, freshness: locationFreshness }))
-          : trackingWaitingStage(order, locationFreshness)}
+        ${sandboxMapActive
+          ? sandboxTrackingStage(order, sandboxSimulation)
+          : trackingMapStage({ order, freshness: locationFreshness, showRecenter: riderOnMap })}
+        ${riderOnMap ? '' : trackingWaitingStage(order, locationFreshness)}
         ${showRiderCard
           ? riderTrackingCard(order, riderLocation, sandboxPresentation)
           : ''}
@@ -3657,7 +3729,7 @@ export function renderTracking() {
         ${trackingHelpCard()}
       </section>
     </div>
-  `, { rolePrefix: 'tracking', orderId: showMap ? order.id : '' });
+  `, { rolePrefix: 'tracking', orderId: order.id, acrossOrders: true });
 }
 
 // Estado de la conexión con la sala, en el seguimiento sin mapa (sólo con

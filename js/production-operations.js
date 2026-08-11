@@ -8,6 +8,7 @@ import { createSupabasePosRepository } from './repositories/supabase-pos-reposit
 import { createSupabaseFiscalRepository } from './repositories/supabase-fiscal-repository.js';
 import { createSupabasePackingRepository } from './repositories/supabase-packing-repository.js';
 import { createSupabaseOperationsRepository } from './repositories/supabase-operations-repository.js';
+import { createSupabaseDispatchRepository } from './repositories/supabase-dispatch-repository.js';
 import { createSupabasePaymentsRepository } from './repositories/supabase-payments-repository.js';
 import { getSupabaseClient } from './services/supabase-client.js';
 import {
@@ -69,6 +70,7 @@ let posRepository = null;
 let fiscalRepository = null;
 let packingRepository = null;
 let operationsRepository = null;
+let dispatchRepository = null;
 let paymentsRepository = null;
 let businessPayments = [];
 let businessPaymentsStatus = { phase: 'idle', message: '' };
@@ -879,6 +881,7 @@ async function configureBusinessRuntime(result) {
   fiscalRepository = createSupabaseFiscalRepository({ client, businessId });
   packingRepository = createSupabasePackingRepository({ client });
   operationsRepository = createSupabaseOperationsRepository({ client, businessId });
+  dispatchRepository = createSupabaseDispatchRepository({ client, businessId });
   const desktopPlatform = createBusinessPlatform();
   configureBusinessOperations({
     businessId,
@@ -933,6 +936,8 @@ async function configureBusinessRuntime(result) {
     role: result.membership?.role,
     operatorName: String(result.user?.email || '').split('@')[0],
     getOperationCenter: () => operationsRepository.getCenter(),
+    getDispatchControl: () => dispatchRepository.getControl(),
+    manualOverrideDispatch: (input) => dispatchRepository.manualOverride(input),
     acknowledgeOperationalAlert: (alertId) => operationsRepository.acknowledgeAlert(alertId),
     resolveOperationalAlert: (input) => operationsRepository.resolveAlert(input),
     prepareDailyReconciliation: (input) => operationsRepository.prepareDailyReconciliation(input),
@@ -1002,6 +1007,7 @@ function stopBusinessCommandRuntime() {
   fiscalRepository = null;
   packingRepository = null;
   operationsRepository = null;
+  dispatchRepository = null;
 }
 
 async function reconcileBusinessCommand(command) {
@@ -1196,13 +1202,14 @@ function renderAccessSurface(view) {
 
 // El orden del día: abrir, mirar, atender, preparar, cobrar, cerrar.
 const BUSINESS_VIEW_ORDER = Object.freeze([
-  'day-open', 'operation-center', 'orders', 'payments', 'packing', 'pos', 'scanner',
+  'day-open', 'operation-center', 'orders', 'dispatch', 'payments', 'packing', 'pos', 'scanner',
   'product-create', 'inventory-receive', 'inventory-adjust', 'stock-count',
   'fiscal-status', 'fiscal-setup', 'fiscal-config', 'payments-setup', 'devices', 'day-close',
 ]);
 
 const BUSINESS_VIEW_SHORT_LABELS = Object.freeze({
   'day-open': 'Abrir', 'operation-center': 'Qué pasa', orders: 'Pedidos', payments: 'Pagos',
+  dispatch: 'Riders',
   'product-create': 'Alta', 'inventory-receive': 'Recepción', 'day-close': 'Cerrar',
 });
 

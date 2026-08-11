@@ -1,0 +1,2603 @@
+{
+  "schemaVersion": 1,
+  "simulationEpoch": "2026-08-11T00:00:00.000Z",
+  "policy": {
+    "version": 1,
+    "baseScore": 100000,
+    "maxDistanceMeters": 20000,
+    "distanceDivisor": 50,
+    "loadPenalty": 250,
+    "maxIdleSeconds": 10800,
+    "idleDivisor": 40,
+    "recentAssignmentPenalty": 60,
+    "heartbeatTtlSeconds": 90,
+    "gpsTtlSeconds": 120,
+    "maxGpsAccuracyMeters": 150
+  },
+  "offerTtlMs": 25000,
+  "scenarios": [
+    {
+      "id": "01-riders-single-order",
+      "riderCount": 1,
+      "orderCount": 1,
+      "description": "single-order",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 1,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "a074adf45e85f2556794bcfa45da8285c971470044ba1da813f8cbf47050f7ae"
+    },
+    {
+      "id": "01-riders-simultaneous-burst",
+      "riderCount": 1,
+      "orderCount": 3,
+      "description": "simultaneous-burst",
+      "metrics": {
+        "jobs": 3,
+        "offers": 3,
+        "claims": 3,
+        "completed": 3,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 181200,
+        "p95ReadyToFirstOfferMs": 362400,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 3
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "00838dcde08135cfa355dff22d2da1b1f3d0af7d591e24e3d444e392a66c4ef1"
+    },
+    {
+      "id": "01-riders-distributed-zones",
+      "riderCount": 1,
+      "orderCount": 2,
+      "description": "distributed-zones",
+      "metrics": {
+        "jobs": 2,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 1,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 0.5,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "no_rider_available",
+          "offers": 0,
+          "failure": "ZONE_NO_COVERAGE"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "823c29e58f47580f88bff624d1759b22674357fe0d0f960c86747672d17da2a0"
+    },
+    {
+      "id": "01-riders-closest-always-rejects",
+      "riderCount": 1,
+      "orderCount": 2,
+      "description": "closest-always-rejects",
+      "metrics": {
+        "jobs": 2,
+        "offers": 2,
+        "claims": 0,
+        "completed": 0,
+        "unassigned": 2,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 2,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": null,
+        "p95OfferToClaimMs": null,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "no_rider_available",
+          "offers": 1,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-002": {
+          "state": "no_rider_available",
+          "offers": 1,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "75038d934c0661d0e5ce5f5f7ab96969023f08f6c0ac440fdfdc774f7c3d59ad"
+    },
+    {
+      "id": "01-riders-first-offer-times-out",
+      "riderCount": 1,
+      "orderCount": 2,
+      "description": "first-offer-times-out",
+      "metrics": {
+        "jobs": 2,
+        "offers": 1,
+        "claims": 0,
+        "completed": 0,
+        "unassigned": 2,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 1,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": null,
+        "p95OfferToClaimMs": null,
+        "offersPerOrder": 0.5,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "no_rider_available",
+          "offers": 1,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-002": {
+          "state": "no_rider_available",
+          "offers": 0,
+          "failure": "NO_ACTIVE_RIDERS"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "bd446c486933176cdedb85f6876c1a661647fb358866606b022809d5cfead0e7"
+    },
+    {
+      "id": "01-riders-all-reject",
+      "riderCount": 1,
+      "orderCount": 2,
+      "description": "all-reject",
+      "metrics": {
+        "jobs": 2,
+        "offers": 2,
+        "claims": 0,
+        "completed": 0,
+        "unassigned": 2,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 2,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": null,
+        "p95OfferToClaimMs": null,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "no_rider_available",
+          "offers": 1,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-002": {
+          "state": "no_rider_available",
+          "offers": 1,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "75038d934c0661d0e5ce5f5f7ab96969023f08f6c0ac440fdfdc774f7c3d59ad"
+    },
+    {
+      "id": "01-riders-one-stale",
+      "riderCount": 1,
+      "orderCount": 2,
+      "description": "one-stale",
+      "metrics": {
+        "jobs": 2,
+        "offers": 1,
+        "claims": 0,
+        "completed": 0,
+        "unassigned": 2,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": null,
+        "p95OfferToClaimMs": null,
+        "offersPerOrder": 0.5,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "no_rider_available",
+          "offers": 1,
+          "failure": "ALL_RIDERS_STALE"
+        },
+        "ORDER-002": {
+          "state": "no_rider_available",
+          "offers": 0,
+          "failure": "ALL_RIDERS_STALE"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "8c20d1707eb2225250afbe8c1b1d55908b57b57ca4040c44ffe9d55fcd484915"
+    },
+    {
+      "id": "01-riders-all-at-capacity",
+      "riderCount": 1,
+      "orderCount": 1,
+      "description": "all-at-capacity",
+      "metrics": {
+        "jobs": 1,
+        "offers": 0,
+        "claims": 0,
+        "completed": 0,
+        "unassigned": 1,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": null,
+        "p95ReadyToFirstOfferMs": null,
+        "meanOfferToClaimMs": null,
+        "p95OfferToClaimMs": null,
+        "offersPerOrder": 0,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "no_rider_available",
+          "offers": 0,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "49747908d15a7665df4547485e8cff394242acf4eacf6dd8fd73a29611e31b17"
+    },
+    {
+      "id": "01-riders-reconnect",
+      "riderCount": 1,
+      "orderCount": 1,
+      "description": "reconnect",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 15000,
+        "p95ReadyToFirstOfferMs": 15000,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "18732bcae42e8aa422648f7f3680f85d8bca072e1fc8681cb84d92bfb292b653"
+    },
+    {
+      "id": "01-riders-duplicate-ready-event",
+      "riderCount": 1,
+      "orderCount": 1,
+      "description": "duplicate-ready-event",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 1,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 1,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "c70682e87efcd658fc1bf98dfa7df3c36347dc4f832818a35d1e3356593cbf92"
+    },
+    {
+      "id": "01-riders-shift-ends-during-delivery",
+      "riderCount": 1,
+      "orderCount": 1,
+      "description": "shift-ends-during-delivery",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "3ef819b14d9b5860ebfba1d1d4261a625532d00d0d7fe160ab72649bc326cc2f"
+    },
+    {
+      "id": "02-riders-single-order",
+      "riderCount": 2,
+      "orderCount": 1,
+      "description": "single-order",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 1,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.5,
+        "gini": 0.5,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "a074adf45e85f2556794bcfa45da8285c971470044ba1da813f8cbf47050f7ae"
+    },
+    {
+      "id": "02-riders-simultaneous-burst",
+      "riderCount": 2,
+      "orderCount": 6,
+      "description": "simultaneous-burst",
+      "metrics": {
+        "jobs": 6,
+        "offers": 6,
+        "claims": 6,
+        "completed": 6,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 181250,
+        "p95ReadyToFirstOfferMs": 362600,
+        "meanOfferToClaimMs": 1250,
+        "p95OfferToClaimMs": 1300,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 3,
+          "RIDER-02": 3
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-005": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        },
+        "ORDER-006": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "1ecc157f576c5c5c16f119ac2261cd1be9e332ee08482b23dfe34911f2ad0742"
+    },
+    {
+      "id": "02-riders-distributed-zones",
+      "riderCount": 2,
+      "orderCount": 4,
+      "description": "distributed-zones",
+      "metrics": {
+        "jobs": 4,
+        "offers": 4,
+        "claims": 4,
+        "completed": 4,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 85625,
+        "p95ReadyToFirstOfferMs": 171300,
+        "meanOfferToClaimMs": 1250,
+        "p95OfferToClaimMs": 1300,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 2,
+          "RIDER-02": 2
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "d7e80de6b3fbe83d5585d2b485bcff998b22dcc3bad3f3051fbb01a62567a29e"
+    },
+    {
+      "id": "02-riders-closest-always-rejects",
+      "riderCount": 2,
+      "orderCount": 2,
+      "description": "closest-always-rejects",
+      "metrics": {
+        "jobs": 2,
+        "offers": 4,
+        "claims": 2,
+        "completed": 2,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 2,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 90650,
+        "p95OfferToClaimMs": 178800,
+        "offersPerOrder": 2,
+        "jainFairness": 0.5,
+        "gini": 0.5,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 2
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 2,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "2c9ef891d336c252ad6ce363281464fa584b375614403c43276798e685a880cc"
+    },
+    {
+      "id": "02-riders-first-offer-times-out",
+      "riderCount": 2,
+      "orderCount": 2,
+      "description": "first-offer-times-out",
+      "metrics": {
+        "jobs": 2,
+        "offers": 3,
+        "claims": 2,
+        "completed": 2,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 1,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 94450,
+        "p95OfferToClaimMs": 187600,
+        "offersPerOrder": 1.5,
+        "jainFairness": 0.5,
+        "gini": 0.5,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 2
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 2,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "f5d53ba29adaed68d6f3df96f2785b262de9fc538c832c126f2c30231cd3e2c0"
+    },
+    {
+      "id": "02-riders-all-reject",
+      "riderCount": 2,
+      "orderCount": 2,
+      "description": "all-reject",
+      "metrics": {
+        "jobs": 2,
+        "offers": 4,
+        "claims": 0,
+        "completed": 0,
+        "unassigned": 2,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 4,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": null,
+        "p95OfferToClaimMs": null,
+        "offersPerOrder": 2,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "no_rider_available",
+          "offers": 2,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-002": {
+          "state": "no_rider_available",
+          "offers": 2,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "619d81ff31c0dd93b9724d560eded5d78609a5907ad1c342c154d75bc3feb978"
+    },
+    {
+      "id": "02-riders-one-stale",
+      "riderCount": 2,
+      "orderCount": 2,
+      "description": "one-stale",
+      "metrics": {
+        "jobs": 2,
+        "offers": 2,
+        "claims": 2,
+        "completed": 2,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 88150,
+        "p95ReadyToFirstOfferMs": 176300,
+        "meanOfferToClaimMs": 1300,
+        "p95OfferToClaimMs": 1300,
+        "offersPerOrder": 1,
+        "jainFairness": 0.5,
+        "gini": 0.5,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 2
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_RIDERS_STALE"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "523164ff25d3eb136eb1732553757dcfc58a7037b972ceb87922b9bef993e79a"
+    },
+    {
+      "id": "02-riders-all-at-capacity",
+      "riderCount": 2,
+      "orderCount": 1,
+      "description": "all-at-capacity",
+      "metrics": {
+        "jobs": 1,
+        "offers": 0,
+        "claims": 0,
+        "completed": 0,
+        "unassigned": 1,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": null,
+        "p95ReadyToFirstOfferMs": null,
+        "meanOfferToClaimMs": null,
+        "p95OfferToClaimMs": null,
+        "offersPerOrder": 0,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "no_rider_available",
+          "offers": 0,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "49747908d15a7665df4547485e8cff394242acf4eacf6dd8fd73a29611e31b17"
+    },
+    {
+      "id": "02-riders-reconnect",
+      "riderCount": 2,
+      "orderCount": 1,
+      "description": "reconnect",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 15000,
+        "p95ReadyToFirstOfferMs": 15000,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.5,
+        "gini": 0.5,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "18732bcae42e8aa422648f7f3680f85d8bca072e1fc8681cb84d92bfb292b653"
+    },
+    {
+      "id": "02-riders-duplicate-ready-event",
+      "riderCount": 2,
+      "orderCount": 1,
+      "description": "duplicate-ready-event",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 1,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 1,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.5,
+        "gini": 0.5,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "c70682e87efcd658fc1bf98dfa7df3c36347dc4f832818a35d1e3356593cbf92"
+    },
+    {
+      "id": "02-riders-shift-ends-during-delivery",
+      "riderCount": 2,
+      "orderCount": 1,
+      "description": "shift-ends-during-delivery",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.5,
+        "gini": 0.5,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "3ef819b14d9b5860ebfba1d1d4261a625532d00d0d7fe160ab72649bc326cc2f"
+    },
+    {
+      "id": "05-riders-single-order",
+      "riderCount": 5,
+      "orderCount": 1,
+      "description": "single-order",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 1,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.2,
+        "gini": 0.8,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "a074adf45e85f2556794bcfa45da8285c971470044ba1da813f8cbf47050f7ae"
+    },
+    {
+      "id": "05-riders-simultaneous-burst",
+      "riderCount": 5,
+      "orderCount": 15,
+      "description": "simultaneous-burst",
+      "metrics": {
+        "jobs": 15,
+        "offers": 15,
+        "claims": 15,
+        "completed": 15,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 181400,
+        "p95ReadyToFirstOfferMs": 363200,
+        "meanOfferToClaimMs": 1400,
+        "p95OfferToClaimMs": 1600,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 3,
+          "RIDER-02": 3,
+          "RIDER-03": 3,
+          "RIDER-04": 3,
+          "RIDER-05": 3
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-005": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-006": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        },
+        "ORDER-007": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-008": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-009": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-010": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-011": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        },
+        "ORDER-012": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-013": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-014": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-015": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "24a40d6d157705ab6592363f58383bccc19e4a5c3867e7502691f2a2aa2affe0"
+    },
+    {
+      "id": "05-riders-distributed-zones",
+      "riderCount": 5,
+      "orderCount": 10,
+      "description": "distributed-zones",
+      "metrics": {
+        "jobs": 10,
+        "offers": 10,
+        "claims": 10,
+        "completed": 10,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 94800,
+        "p95ReadyToFirstOfferMs": 322600,
+        "meanOfferToClaimMs": 1370,
+        "p95OfferToClaimMs": 1600,
+        "offersPerOrder": 1,
+        "jainFairness": 0.909091,
+        "gini": 0.16,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 2,
+          "RIDER-02": 3,
+          "RIDER-03": 2,
+          "RIDER-04": 2,
+          "RIDER-05": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-005": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-006": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-007": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-008": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-009": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-010": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "9fe745a205de1ac10604a2d432a759519c1db4622dffc444b8fb19ca6c5d2ce8"
+    },
+    {
+      "id": "05-riders-closest-always-rejects",
+      "riderCount": 5,
+      "orderCount": 5,
+      "description": "closest-always-rejects",
+      "metrics": {
+        "jobs": 5,
+        "offers": 10,
+        "claims": 5,
+        "completed": 5,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 5,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 34880,
+        "p95OfferToClaimMs": 163800,
+        "offersPerOrder": 2,
+        "jainFairness": 0.714286,
+        "gini": 0.32,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 2,
+          "RIDER-03": 1,
+          "RIDER-04": 1,
+          "RIDER-05": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-005": {
+          "state": "completed",
+          "offers": 2,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "8e87f6a4b95ce61e11c16ed59082da78bc7a6f0cdd14049494b1f47878c6557f"
+    },
+    {
+      "id": "05-riders-first-offer-times-out",
+      "riderCount": 5,
+      "orderCount": 5,
+      "description": "first-offer-times-out",
+      "metrics": {
+        "jobs": 5,
+        "offers": 6,
+        "claims": 5,
+        "completed": 5,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 1,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 38680,
+        "p95OfferToClaimMs": 187600,
+        "offersPerOrder": 1.2,
+        "jainFairness": 0.714286,
+        "gini": 0.32,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 2,
+          "RIDER-03": 1,
+          "RIDER-04": 1,
+          "RIDER-05": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 2,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-005": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "6107032e110469268ca79f78da89c5360b1a6c28c87abaf77d08c6d7b032ba7a"
+    },
+    {
+      "id": "05-riders-all-reject",
+      "riderCount": 5,
+      "orderCount": 5,
+      "description": "all-reject",
+      "metrics": {
+        "jobs": 5,
+        "offers": 25,
+        "claims": 0,
+        "completed": 0,
+        "unassigned": 5,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 25,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": null,
+        "p95OfferToClaimMs": null,
+        "offersPerOrder": 5,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "no_rider_available",
+          "offers": 5,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-002": {
+          "state": "no_rider_available",
+          "offers": 5,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-003": {
+          "state": "no_rider_available",
+          "offers": 5,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-004": {
+          "state": "no_rider_available",
+          "offers": 5,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-005": {
+          "state": "no_rider_available",
+          "offers": 5,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "8cbf25e462b44d4fa9a10cb7b98873e3075dbf3b3b3eae1436c342a2f516e46b"
+    },
+    {
+      "id": "05-riders-one-stale",
+      "riderCount": 5,
+      "orderCount": 5,
+      "description": "one-stale",
+      "metrics": {
+        "jobs": 5,
+        "offers": 5,
+        "claims": 5,
+        "completed": 5,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 32260,
+        "p95ReadyToFirstOfferMs": 161300,
+        "meanOfferToClaimMs": 1420,
+        "p95OfferToClaimMs": 1600,
+        "offersPerOrder": 1,
+        "jainFairness": 0.714286,
+        "gini": 0.32,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 2,
+          "RIDER-03": 1,
+          "RIDER-04": 1,
+          "RIDER-05": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-005": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_RIDERS_STALE"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "8d0f18c99ab4ed6aa9716811317ac48ad30126d2720311fcd835b58529995c46"
+    },
+    {
+      "id": "05-riders-all-at-capacity",
+      "riderCount": 5,
+      "orderCount": 1,
+      "description": "all-at-capacity",
+      "metrics": {
+        "jobs": 1,
+        "offers": 0,
+        "claims": 0,
+        "completed": 0,
+        "unassigned": 1,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": null,
+        "p95ReadyToFirstOfferMs": null,
+        "meanOfferToClaimMs": null,
+        "p95OfferToClaimMs": null,
+        "offersPerOrder": 0,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "no_rider_available",
+          "offers": 0,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "49747908d15a7665df4547485e8cff394242acf4eacf6dd8fd73a29611e31b17"
+    },
+    {
+      "id": "05-riders-reconnect",
+      "riderCount": 5,
+      "orderCount": 1,
+      "description": "reconnect",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 15000,
+        "p95ReadyToFirstOfferMs": 15000,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.2,
+        "gini": 0.8,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "18732bcae42e8aa422648f7f3680f85d8bca072e1fc8681cb84d92bfb292b653"
+    },
+    {
+      "id": "05-riders-duplicate-ready-event",
+      "riderCount": 5,
+      "orderCount": 1,
+      "description": "duplicate-ready-event",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 1,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 1,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.2,
+        "gini": 0.8,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "c70682e87efcd658fc1bf98dfa7df3c36347dc4f832818a35d1e3356593cbf92"
+    },
+    {
+      "id": "05-riders-shift-ends-during-delivery",
+      "riderCount": 5,
+      "orderCount": 1,
+      "description": "shift-ends-during-delivery",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.2,
+        "gini": 0.8,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "3ef819b14d9b5860ebfba1d1d4261a625532d00d0d7fe160ab72649bc326cc2f"
+    },
+    {
+      "id": "10-riders-single-order",
+      "riderCount": 10,
+      "orderCount": 1,
+      "description": "single-order",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 1,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.1,
+        "gini": 0.9,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0,
+          "RIDER-06": 0,
+          "RIDER-07": 0,
+          "RIDER-08": 0,
+          "RIDER-09": 0,
+          "RIDER-10": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "a074adf45e85f2556794bcfa45da8285c971470044ba1da813f8cbf47050f7ae"
+    },
+    {
+      "id": "10-riders-simultaneous-burst",
+      "riderCount": 10,
+      "orderCount": 30,
+      "description": "simultaneous-burst",
+      "metrics": {
+        "jobs": 30,
+        "offers": 30,
+        "claims": 30,
+        "completed": 30,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 181650,
+        "p95ReadyToFirstOfferMs": 364000,
+        "meanOfferToClaimMs": 1650,
+        "p95OfferToClaimMs": 2100,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 3,
+          "RIDER-02": 3,
+          "RIDER-03": 3,
+          "RIDER-04": 3,
+          "RIDER-05": 3,
+          "RIDER-06": 3,
+          "RIDER-07": 3,
+          "RIDER-08": 3,
+          "RIDER-09": 3,
+          "RIDER-10": 3
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-005": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-006": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-007": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-008": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-009": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-010": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-011": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        },
+        "ORDER-012": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-013": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-014": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-015": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-016": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-017": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-018": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-019": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-020": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-021": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        },
+        "ORDER-022": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-023": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-024": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-025": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-026": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-027": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-028": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-029": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-030": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "f1d5324f0e2b56a217ac9b5db8e3318e0ec94fa98b009863403538b7e73f9e38"
+    },
+    {
+      "id": "10-riders-distributed-zones",
+      "riderCount": 10,
+      "orderCount": 20,
+      "description": "distributed-zones",
+      "metrics": {
+        "jobs": 20,
+        "offers": 20,
+        "claims": 20,
+        "completed": 20,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 65825,
+        "p95ReadyToFirstOfferMs": 132000,
+        "meanOfferToClaimMs": 1650,
+        "p95OfferToClaimMs": 2100,
+        "offersPerOrder": 1,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 2,
+          "RIDER-02": 2,
+          "RIDER-03": 2,
+          "RIDER-04": 2,
+          "RIDER-05": 2,
+          "RIDER-06": 2,
+          "RIDER-07": 2,
+          "RIDER-08": 2,
+          "RIDER-09": 2,
+          "RIDER-10": 2
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-005": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-006": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-007": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-008": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-009": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-010": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-011": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-012": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-013": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-014": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-015": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-016": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-017": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-018": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-019": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-020": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "49144568a0957e124406297c4233e8241dc2f1a493fe7bfb9346ef2efc02a9e4"
+    },
+    {
+      "id": "10-riders-closest-always-rejects",
+      "riderCount": 10,
+      "orderCount": 10,
+      "description": "closest-always-rejects",
+      "metrics": {
+        "jobs": 10,
+        "offers": 20,
+        "claims": 10,
+        "completed": 10,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 10,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 16490,
+        "p95OfferToClaimMs": 138800,
+        "offersPerOrder": 2,
+        "jainFairness": 0.833333,
+        "gini": 0.18,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 2,
+          "RIDER-03": 1,
+          "RIDER-04": 1,
+          "RIDER-05": 1,
+          "RIDER-06": 1,
+          "RIDER-07": 1,
+          "RIDER-08": 1,
+          "RIDER-09": 1,
+          "RIDER-10": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-005": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-006": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-007": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-008": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-009": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-010": {
+          "state": "completed",
+          "offers": 2,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "fd1f71a255f53dbeb53b40bc9ddfcaf7bc229dad63c90a7322f1b8df5ef48525"
+    },
+    {
+      "id": "10-riders-first-offer-times-out",
+      "riderCount": 10,
+      "orderCount": 10,
+      "description": "first-offer-times-out",
+      "metrics": {
+        "jobs": 10,
+        "offers": 12,
+        "claims": 10,
+        "completed": 10,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 2,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 20290,
+        "p95OfferToClaimMs": 162600,
+        "offersPerOrder": 1.2,
+        "jainFairness": 0.833333,
+        "gini": 0.18,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 2,
+          "RIDER-03": 1,
+          "RIDER-04": 1,
+          "RIDER-05": 1,
+          "RIDER-06": 1,
+          "RIDER-07": 1,
+          "RIDER-08": 1,
+          "RIDER-09": 1,
+          "RIDER-10": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 2,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-005": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-006": {
+          "state": "completed",
+          "offers": 2,
+          "failure": "ALL_AT_CAPACITY"
+        },
+        "ORDER-007": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-008": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-009": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-010": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "dd66087fb64c9044e675462fbebdb5c24c694a715157c4d0e224dc8f1887b725"
+    },
+    {
+      "id": "10-riders-all-reject",
+      "riderCount": 10,
+      "orderCount": 10,
+      "description": "all-reject",
+      "metrics": {
+        "jobs": 10,
+        "offers": 100,
+        "claims": 0,
+        "completed": 0,
+        "unassigned": 10,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 100,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": null,
+        "p95OfferToClaimMs": null,
+        "offersPerOrder": 10,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0,
+          "RIDER-06": 0,
+          "RIDER-07": 0,
+          "RIDER-08": 0,
+          "RIDER-09": 0,
+          "RIDER-10": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "no_rider_available",
+          "offers": 10,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-002": {
+          "state": "no_rider_available",
+          "offers": 10,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-003": {
+          "state": "no_rider_available",
+          "offers": 10,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-004": {
+          "state": "no_rider_available",
+          "offers": 10,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-005": {
+          "state": "no_rider_available",
+          "offers": 10,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-006": {
+          "state": "no_rider_available",
+          "offers": 10,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-007": {
+          "state": "no_rider_available",
+          "offers": 10,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-008": {
+          "state": "no_rider_available",
+          "offers": 10,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-009": {
+          "state": "no_rider_available",
+          "offers": 10,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        },
+        "ORDER-010": {
+          "state": "no_rider_available",
+          "offers": 10,
+          "failure": "ALL_OFFERS_EXHAUSTED"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "a8a15dd2eab8a6192010310d07f0d4bb06eb0283201091c61740f610b0cc31a8"
+    },
+    {
+      "id": "10-riders-one-stale",
+      "riderCount": 10,
+      "orderCount": 10,
+      "description": "one-stale",
+      "metrics": {
+        "jobs": 10,
+        "offers": 10,
+        "claims": 10,
+        "completed": 10,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 13630,
+        "p95ReadyToFirstOfferMs": 136300,
+        "meanOfferToClaimMs": 1660,
+        "p95OfferToClaimMs": 2100,
+        "offersPerOrder": 1,
+        "jainFairness": 0.833333,
+        "gini": 0.18,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 2,
+          "RIDER-03": 1,
+          "RIDER-04": 1,
+          "RIDER-05": 1,
+          "RIDER-06": 1,
+          "RIDER-07": 1,
+          "RIDER-08": 1,
+          "RIDER-09": 1,
+          "RIDER-10": 1
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-002": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-003": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-004": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-005": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-006": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-007": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-008": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-009": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        },
+        "ORDER-010": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "ALL_RIDERS_STALE"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "492ba15fde54de58ee63789f18625b8b9de7ec04dfbdae7bcb4e84b7780dd27d"
+    },
+    {
+      "id": "10-riders-all-at-capacity",
+      "riderCount": 10,
+      "orderCount": 1,
+      "description": "all-at-capacity",
+      "metrics": {
+        "jobs": 1,
+        "offers": 0,
+        "claims": 0,
+        "completed": 0,
+        "unassigned": 1,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": null,
+        "p95ReadyToFirstOfferMs": null,
+        "meanOfferToClaimMs": null,
+        "p95OfferToClaimMs": null,
+        "offersPerOrder": 0,
+        "jainFairness": 1,
+        "gini": 0,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 0,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0,
+          "RIDER-06": 0,
+          "RIDER-07": 0,
+          "RIDER-08": 0,
+          "RIDER-09": 0,
+          "RIDER-10": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "no_rider_available",
+          "offers": 0,
+          "failure": "ALL_AT_CAPACITY"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "49747908d15a7665df4547485e8cff394242acf4eacf6dd8fd73a29611e31b17"
+    },
+    {
+      "id": "10-riders-reconnect",
+      "riderCount": 10,
+      "orderCount": 1,
+      "description": "reconnect",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 15000,
+        "p95ReadyToFirstOfferMs": 15000,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.1,
+        "gini": 0.9,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0,
+          "RIDER-06": 0,
+          "RIDER-07": 0,
+          "RIDER-08": 0,
+          "RIDER-09": 0,
+          "RIDER-10": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": "NO_ACTIVE_RIDERS"
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "18732bcae42e8aa422648f7f3680f85d8bca072e1fc8681cb84d92bfb292b653"
+    },
+    {
+      "id": "10-riders-duplicate-ready-event",
+      "riderCount": 10,
+      "orderCount": 1,
+      "description": "duplicate-ready-event",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 1,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 1,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.1,
+        "gini": 0.9,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0,
+          "RIDER-06": 0,
+          "RIDER-07": 0,
+          "RIDER-08": 0,
+          "RIDER-09": 0,
+          "RIDER-10": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "c70682e87efcd658fc1bf98dfa7df3c36347dc4f832818a35d1e3356593cbf92"
+    },
+    {
+      "id": "10-riders-shift-ends-during-delivery",
+      "riderCount": 10,
+      "orderCount": 1,
+      "description": "shift-ends-during-delivery",
+      "metrics": {
+        "jobs": 1,
+        "offers": 1,
+        "claims": 1,
+        "completed": 1,
+        "unassigned": 0,
+        "duplicateJobAttempts": 0,
+        "duplicateClaims": 0,
+        "duplicateClaimAttempts": 0,
+        "duplicateRewards": 0,
+        "rejectedOffers": 0,
+        "expiredOffers": 0,
+        "meanReadyToFirstOfferMs": 0,
+        "p95ReadyToFirstOfferMs": 0,
+        "meanOfferToClaimMs": 1200,
+        "p95OfferToClaimMs": 1200,
+        "offersPerOrder": 1,
+        "jainFairness": 0.1,
+        "gini": 0.9,
+        "starvedRiders": [],
+        "assignmentDistribution": {
+          "RIDER-01": 1,
+          "RIDER-02": 0,
+          "RIDER-03": 0,
+          "RIDER-04": 0,
+          "RIDER-05": 0,
+          "RIDER-06": 0,
+          "RIDER-07": 0,
+          "RIDER-08": 0,
+          "RIDER-09": 0,
+          "RIDER-10": 0
+        }
+      },
+      "finalJobs": {
+        "ORDER-001": {
+          "state": "completed",
+          "offers": 1,
+          "failure": null
+        }
+      },
+      "invariantFailures": [],
+      "traceSha256": "3ef819b14d9b5860ebfba1d1d4261a625532d00d0d7fe160ab72649bc326cc2f"
+    }
+  ],
+  "deterministicSha256": "9d87db73b4ce5d08a125df810ff0bb7589f62e0f566b819e359edd2a3998c406",
+  "passed": true,
+  "invariantFailures": []
+}

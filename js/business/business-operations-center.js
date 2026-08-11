@@ -15,13 +15,14 @@ import {
 } from './business-device-check.js';
 import { evaluateDailyClosure, validateClosureOverride } from './business-day-control.js';
 import { buildStorefrontPreview, describeDraft, planScanOutcome, validateProductDraft } from './business-product-onboarding.js';
+import { renderBusinessDispatchPanel } from './business-dispatch-panel.js';
 import {
   renderDayCloseSurface, renderDayOpenSurface, renderDevicesSurface, renderFiscalSetupSurface,
   renderOperationCenterSurface, renderPaymentsSetupSurface, renderPaymentsSurface, renderProductOnboardingSurface,
 } from './business-panel-render.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
-  'operation-center', 'day-open', 'orders', 'payments', 'payments-setup', 'scanner', 'product-create',
+  'operation-center', 'day-open', 'orders', 'dispatch', 'payments', 'payments-setup', 'scanner', 'product-create',
   'inventory-receive', 'inventory-adjust', 'stock-count', 'packing', 'pos',
   'fiscal-status', 'fiscal-setup', 'fiscal-config', 'devices', 'day-close',
 ]);
@@ -30,6 +31,7 @@ const VIEW_META = Object.freeze({
   'operation-center': ['Centro de operación', null],
   'day-open': ['Abrir el negocio', null],
   orders: ['Pedidos', null],
+  dispatch: ['Riders ahora', null],
   payments: ['Pagos', null],
   'payments-setup': ['Conectar Mercado Pago', null],
   scanner: ['Escáner rápido', 'product_lookup'],
@@ -52,6 +54,7 @@ const VIEW_CAPABILITY = Object.freeze({
   'operation-center': 'orders.view',
   'day-open': 'day.open',
   orders: 'orders.view',
+  dispatch: 'orders.view',
   payments: 'payments.view',
   'payments-setup': 'payments.reconcile',
   scanner: 'scanner.use',
@@ -93,6 +96,11 @@ let operationCenterSnapshot = null;
 let operationCenterStatus = { phase: 'idle', message: '' };
 let operationCenterRefreshStarted = false;
 let operationCenterRefreshTimer = null;
+let dispatchSnapshot = null;
+let dispatchStatus = { phase: 'idle', message: '' };
+let dispatchRefreshStarted = false;
+let dispatchRefreshTimer = null;
+let dispatchOverrideDrafts = new Map();
 let signedUpdateStatus = null;
 let paymentsActivation = null;
 let payments = [];
@@ -118,6 +126,7 @@ let dailyRun = null;
 
 export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
+  stopDispatchRefresh();
   context = { ...defaultContext(), ...next };
   packingSession = null;
   packingRestoreStarted = false;
@@ -125,6 +134,10 @@ export function configureBusinessOperations(next = {}) {
   operationCenterSnapshot = null;
   operationCenterStatus = { phase: 'idle', message: '' };
   operationCenterRefreshStarted = false;
+  dispatchSnapshot = null;
+  dispatchStatus = { phase: 'idle', message: '' };
+  dispatchRefreshStarted = false;
+  dispatchOverrideDrafts = new Map();
   signedUpdateStatus = null;
   paymentsActivation = null;
   payments = [];
@@ -154,6 +167,13 @@ export function renderBusinessOperations(view) {
       role: context.role,
       busy,
       support: { isNative: context.desktopPlatform?.isNative, signedUpdate: signedUpdateStatus },
+    }),
+    dispatch: () => renderBusinessDispatchPanel({
+      snapshot: dispatchSnapshot,
+      status: dispatchStatus,
+      role: context.role,
+      busy,
+      overrideDrafts: dispatchOverrideDrafts,
     }),
     'day-open': () => renderDayOpenSurface({
       opening: openingSignals, businessStatus: openingStatusRaw?.business_status, role: context.role, busy,
@@ -206,12 +226,17 @@ export function allowedBusinessOperationViews(role) {
 export function activateBusinessOperations(view = currentView) {
   const mode = VIEW_META[view]?.[1];
   if (view !== 'operation-center') stopOperationCenterRefresh();
+  if (view !== 'dispatch') stopDispatchRefresh();
   if (view !== 'devices' && view !== 'product-create') productPreview = null;
   if (!mode) {
     scanner?.stop();
     if (view === 'operation-center' && !operationCenterRefreshStarted) {
       operationCenterRefreshStarted = true;
       void refreshOperationCenter();
+    }
+    if (view === 'dispatch' && !dispatchRefreshStarted) {
+      dispatchRefreshStarted = true;
+      void refreshDispatchControl();
     }
     if ((view === 'fiscal-status' || view === 'fiscal-config') && !fiscalInitialRefreshStarted) {
       fiscalInitialRefreshStarted = true;
@@ -255,6 +280,10 @@ export async function handleBusinessOperationsAction(target) {
   if (!target?.closest) return { handled: false };
   const viewButton = target.closest('[data-business-ops-view]');
   if (viewButton) return { handled: true, view: viewButton.dataset.businessOpsView };
+
+  if (target.closest('[data-dispatch-refresh]')) return refreshDispatchControlAction();
+  const dispatchOverride = target.closest('[data-dispatch-manual-override]');
+  if (dispatchOverride) return manualOverrideDispatch(dispatchOverride);
 
   if (target.closest('[data-business-scan-test]')) {
     const input = target.closest('[data-business-ops-center]')?.querySelector('[data-barcode-input]');
@@ -408,6 +437,16 @@ export function handleBusinessOperationsInput(target) {
     arcaAuthorizationDraft = String(target.value || '').slice(0, 40);
     return { handled: true };
   }
+  if (target?.matches?.('[name="dispatchOverrideRider"], [name="dispatchOverrideReason"]')) {
+    const form = target.closest('[data-dispatch-override-form]');
+    const orderId = String(form?.dataset?.dispatchOverrideForm || '');
+    if (!orderId) return { handled: false };
+    dispatchOverrideDrafts.set(orderId, {
+      riderUserId: String(form.querySelector('[name="dispatchOverrideRider"]')?.value || '').slice(0, 128),
+      reason: String(form.querySelector('[name="dispatchOverrideReason"]')?.value || '').slice(0, 500),
+    });
+    return { handled: true };
+  }
   if (!target?.matches?.('[name="creditReason"], [name="creditKind"], [name="creditQuantity"], [name="creditNet"], [name="creditTax"]')) {
     return { handled: false };
   }
@@ -421,6 +460,7 @@ export function handleBusinessOperationsInput(target) {
 
 export function resetBusinessOperationsForTests() {
   stopOperationCenterRefresh();
+  stopDispatchRefresh();
   unsubscribeScanner?.();
   scanner?.stop();
   scanner = null;
@@ -447,6 +487,10 @@ export function resetBusinessOperationsForTests() {
   operationCenterSnapshot = null;
   operationCenterStatus = { phase: 'idle', message: '' };
   operationCenterRefreshStarted = false;
+  dispatchSnapshot = null;
+  dispatchStatus = { phase: 'idle', message: '' };
+  dispatchRefreshStarted = false;
+  dispatchOverrideDrafts = new Map();
   signedUpdateStatus = null;
   paymentsActivation = null;
   payments = [];
@@ -982,6 +1026,87 @@ function stopOperationCenterRefresh() {
   if (operationCenterRefreshTimer !== null) globalThis.clearTimeout?.(operationCenterRefreshTimer);
   operationCenterRefreshTimer = null;
   operationCenterRefreshStarted = false;
+}
+
+async function refreshDispatchControl() {
+  if (dispatchRefreshTimer !== null) globalThis.clearTimeout?.(dispatchRefreshTimer);
+  dispatchRefreshTimer = null;
+  dispatchStatus = { phase: 'loading', message: '' };
+  if (currentView === 'dispatch') context.onChange();
+  const response = await context.getDispatchControl();
+  if (!response?.ok || !response.data || Array.isArray(response.data) || typeof response.data !== 'object') {
+    dispatchStatus = {
+      phase: 'error',
+      message: response?.message || 'No se pudo obtener el estado autoritativo de dispatch.',
+    };
+  } else {
+    dispatchSnapshot = response.data;
+    dispatchStatus = { phase: 'ready', message: '' };
+  }
+  if (currentView === 'dispatch') context.onChange();
+  if (currentView === 'dispatch') {
+    dispatchRefreshTimer = globalThis.setTimeout?.(() => { void refreshDispatchControl(); }, 30_000) || null;
+  }
+  return response;
+}
+
+function stopDispatchRefresh() {
+  if (dispatchRefreshTimer !== null) globalThis.clearTimeout?.(dispatchRefreshTimer);
+  dispatchRefreshTimer = null;
+  dispatchRefreshStarted = false;
+}
+
+async function refreshDispatchControlAction() {
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  busy = true;
+  const response = await refreshDispatchControl();
+  busy = false;
+  feedback = response?.ok
+    ? 'Control de Riders reconciliado con PostgreSQL.'
+    : humanizeFailure(response?.message, dispatchStatus.message || 'No se pudo actualizar el control de Riders.');
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function manualOverrideDispatch(button) {
+  const guard = requireCapability('orders.advance');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay una asignación en curso.');
+  const form = button.closest('[data-dispatch-override-form]');
+  const orderId = String(button.dataset.dispatchManualOverride || form?.dataset?.dispatchOverrideForm || '');
+  const riderUserId = String(form?.querySelector('[name="dispatchOverrideRider"]')?.value || '');
+  const reason = String(form?.querySelector('[name="dispatchOverrideReason"]')?.value || '').trim();
+  const expectedJobRevision = Number(button.dataset.dispatchJobRevision);
+  if (!isUuid(orderId) || !isUuid(riderUserId)) {
+    return result(false, 'Elegí un pedido y un Rider válidos antes de asignar.');
+  }
+  if (!Number.isSafeInteger(expectedJobRevision) || expectedJobRevision < 0) {
+    return result(false, 'La asignación cambió; actualizá la pantalla antes de intervenir.');
+  }
+  if (reason.length < 8 || reason.length > 500) {
+    return result(false, 'Escribí un motivo de entre 8 y 500 caracteres para auditar el override.');
+  }
+  const idempotencyKey = `dispatch-override-${orderId}-${expectedJobRevision}-${riderUserId}-${shortTextFingerprint(reason)}`;
+  busy = true;
+  const response = await context.manualOverrideDispatch({
+    orderId,
+    riderUserId,
+    reason,
+    idempotencyKey,
+    expectedJobRevision,
+  });
+  busy = false;
+  if (response?.ok) {
+    dispatchOverrideDrafts.delete(orderId);
+    feedback = 'Override confirmado y auditado por el servidor.';
+    await refreshDispatchControl();
+  } else {
+    feedback = response?.conflict
+      ? 'La asignación cambió mientras intervenías. Actualizá y revisá el estado antes de reintentar.'
+      : humanizeFailure(response?.message, 'El servidor no confirmó el override manual.');
+    context.onChange();
+  }
+  return result(Boolean(response?.ok), feedback);
 }
 
 async function refreshOperationCenterAction() {
@@ -1843,6 +1968,8 @@ function defaultContext() {
     requestFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }), updateFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     getOperationCenter: async () => ({ ok: false, message: 'Centro de operación no disponible.' }),
     acknowledgeOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }), resolveOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    getDispatchControl: async () => ({ ok: false, message: 'Control de Riders no disponible.' }),
+    manualOverrideDispatch: async () => ({ ok: false, message: 'Override de Rider no disponible.' }),
     prepareDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }), closeDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     desktopPlatform: {
       isNative: false,

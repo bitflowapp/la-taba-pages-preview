@@ -6,19 +6,22 @@ Fecha: 2026-08-11. Trabajo local. No hay push, ni staging, ni produccion.
 
 | Repo | Worktree | Rama | HEAD |
 | --- | --- | --- | --- |
-| Web | `taba2-automated-rider-dispatch` | `feature/taba2-automated-rider-dispatch` | `a92247a` |
+| Web | `taba2-automated-rider-dispatch` | `feature/taba2-automated-rider-dispatch` | tip de la rama |
 | Rider | `taba2-rider-auto-dispatch` | `feature/taba2-rider-shifts-dispatch` | `b9b881d` |
 
 Los worktrees se resuelven con `git worktree list` en cada repo; este informe no
-fija rutas locales.
+fija rutas locales. El HEAD web no se fija porque este mismo documento es uno de
+sus commits: `git rev-parse HEAD`.
 
 Ambos worktrees quedan limpios. Base web `eda13f8`, base Rider `471f79e`.
 
-Commits web (3, sobre `eda13f8`):
+Commits web, sobre `eda13f8`:
 
 - `2f6dd95` motor completo, ranking, ofertas, accept, worker, override, Panel, ledger, cierre del bypass legado
 - `86df2fe` autorizacion adversaria, contrato de nombres de argumento, politica versionada
 - `a92247a` correcciones del security review
+- `b638f80` este informe
+- `1de7a92` rutas locales fuera del informe y numeros de suite corregidos
 
 Commits Rider (2, sobre `471f79e`):
 

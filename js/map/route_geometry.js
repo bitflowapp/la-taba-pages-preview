@@ -4,6 +4,7 @@ import {
   DEMO_STREET_TEST_DESTINATIONS,
   STORE_LOCATION,
 } from './map_config.js';
+import { coordinatePair, isGeoPoint } from '../core/geo-point.js';
 
 const BASE_ROUTES = Object.freeze({
   neuquen: {
@@ -200,11 +201,12 @@ export function pointOnRoute(routeId, progress) {
 }
 
 export function normalizeRiderLocation(raw = {}, fallback = {}) {
-  const lat = Number(raw.lat);
-  const lng = Number(raw.lng);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-    return null;
-  }
+  // Ver js/core/geo-point.js: acá `{lat: null, lng: null, source: 'gps'}`
+  // devolvía un fix en 0,0 que `isUsableGpsFix` daba por bueno y
+  // `chooseRiderLocation` elegía para DIBUJAR al rider.
+  const point = coordinatePair(raw?.lat, raw?.lng);
+  if (!point) return null;
+  const { lat, lng } = point;
   const rawTimestamp = Number(raw.timestamp);
   const rawFixTimestamp = Number(raw.lastFixAt);
   const parsedTimestamp = Date.parse(raw.timestamp || raw.lastFixAt || '');
@@ -236,14 +238,7 @@ export function normalizeRiderLocation(raw = {}, fallback = {}) {
 //  - coordenadas inválidas se descartan (normalizeRiderLocation devuelve null).
 // Devuelve un TrackingLocation normalizado o null.
 export function isValidLocation(location) {
-  const lat = Number(location?.lat);
-  const lng = Number(location?.lng);
-  return Number.isFinite(lat)
-    && Number.isFinite(lng)
-    && lat >= -90
-    && lat <= 90
-    && lng >= -180
-    && lng <= 180;
+  return isGeoPoint(location);
 }
 
 export function locationTimestamp(location) {
@@ -489,8 +484,12 @@ function hasSignificantHeadingChange(previousHeading, nextHeading) {
   return diff >= GPS_HEADING_CHANGE_DEGREES;
 }
 
+// Usado por `distanceKm` y `bearingDegrees`. Con la comprobación anterior,
+// medir contra `{lat: null, lng: null}` desde el local informaba 8.128,5 km —la
+// distancia de Neuquén al Golfo de Guinea— en vez de reconocer que no había
+// nada que medir.
 function isLatLng(value) {
-  return value && Number.isFinite(Number(value.lat)) && Number.isFinite(Number(value.lng));
+  return isGeoPoint(value);
 }
 
 function toRad(value) {

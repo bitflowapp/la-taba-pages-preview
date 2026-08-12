@@ -1,4 +1,5 @@
 import { getBusinessConfig } from './business-config-store.js';
+import { coordinatePair } from './geo-point.js';
 import { calculateTotals, normalizeDeliveryMode, normalizeMoneyValue } from './pricing.js';
 import { sanitizeNotes, sanitizeText } from './validators.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './address.js';
@@ -21,9 +22,12 @@ export function normalizeTrackingSource(source) {
 }
 
 export function normalizeTrackingLocation(location = {}) {
-  const lat = Number(location.lat);
-  const lng = Number(location.lng);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  // `coordinatePair` y no `Number()` a secas: ver js/core/geo-point.js. Acá
+  // `{lat: null, lng: null}` devolvía un fix completo en 0,0 con `source` y
+  // `timestamp` puestos, es decir una posición inventada con aspecto de medida.
+  const point = coordinatePair(location?.lat, location?.lng);
+  if (!point) return null;
+  const { lat, lng } = point;
   const timestamp = normalizeTimestamp(location.timestamp || location.lastFixAt || Date.now(), new Date().toISOString());
   const source = normalizeTrackingSource(location.source);
   return {

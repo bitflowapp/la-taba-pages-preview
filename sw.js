@@ -48,6 +48,7 @@ const ASSETS = [
   './js/core/delivery-location-draft.js',
   './js/core/delivery-proof.js',
   './js/core/domain.js',
+  './js/core/geo-point.js',
   './js/core/loyalty.js',
   './js/core/order-status.js',
   './js/core/order-timeline.js',

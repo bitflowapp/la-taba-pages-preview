@@ -24,6 +24,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { mapsDirectionsUrl, mapsSearchUrl } from './business-location.js';
+// La definición de «esto es una coordenada» vive en un solo lugar. Este módulo
+// tenía la suya, correcta para null y para la cadena vacía pero no para los
+// booleanos: `Number(false)` es 0 y pasaba como latitud.
+import { finiteCoordinate } from './geo-point.js';
 
 // Los tres orígenes del contrato. `gps` y `map_pin` tienen productor hoy; el
 // tercero queda declarado para cuando exista un geocodificador configurado, y
@@ -197,13 +201,6 @@ export function plottableDeliveryPoint(location = {}) {
   const longitude = finiteCoordinate(location?.longitude ?? location?.lng, 180);
   if (latitude == null || longitude == null) return null;
   return { latitude, longitude };
-}
-
-function finiteCoordinate(value, limit) {
-  if (value == null || String(value).trim() === '') return null;
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric) || Math.abs(numeric) > limit) return null;
-  return numeric;
 }
 
 function nonNegativeNumber(value) {

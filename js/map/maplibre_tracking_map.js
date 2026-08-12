@@ -5,6 +5,7 @@ import {
 } from './rider_marker.js';
 import { applyTabaMapTheme } from './taba_map_theme.js';
 import { createRiderMotion } from './rider_motion.js';
+import { isGeoPoint } from '../core/geo-point.js';
 
 export const MAPLIBRE_PUBLIC_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
 export const MAPLIBRE_ACCURACY_SOURCE_ID = 'taba-rider-accuracy';
@@ -101,14 +102,7 @@ export function normalizeMapFreshness(value) {
 }
 
 export function isValidMapPoint(point) {
-  const lat = Number(point?.lat);
-  const lng = Number(point?.lng);
-  return Number.isFinite(lat)
-    && Number.isFinite(lng)
-    && lat >= -90
-    && lat <= 90
-    && lng >= -180
-    && lng <= 180;
+  return isGeoPoint(point);
 }
 
 export function sandboxRouteFeature(points = []) {

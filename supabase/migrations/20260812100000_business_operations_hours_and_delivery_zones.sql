@@ -290,16 +290,46 @@ comment on table public.business_config_audit is
 -- permiso explícito. `has_business_role(id, {owner, admin})` ya cubre lo
 -- primero; esto hace representable lo segundo, sin inventar un rol nuevo y sin
 -- que nadie quede habilitado por defecto.
-alter table public.business_members
-  add column if not exists can_manage_commercial_settings boolean not null default false;
+-- La delegación vive en una tabla PROPIA, no en una columna de
+-- `business_members`. La capa de identidad declaró que esa tabla se administra
+-- exclusivamente por sus RPC —revoca el grant de escritura a `authenticated` y
+-- pone un trigger que rechaza cualquier otro camino—, y tiene razón: una
+-- membresía es identidad, no configuración comercial. Escribir ahí desde acá
+-- obligaría a esta migración a hacerse pasar por una RPC de identidad.
+--
+-- Medido antes de decidirlo: con la capa de identidad puesta, un UPDATE a
+-- `business_members` desde una conexión real de PostgREST muere con
+-- «identity: las membresias se administran por RPC de identidad».
+create table if not exists public.business_commercial_managers (
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  granted_by uuid references auth.users(id) on delete set null,
+  granted_at timestamptz not null default clock_timestamp(),
+  primary key (business_id, user_id)
+);
 
-comment on column public.business_members.can_manage_commercial_settings is
-  'Delegación explícita, apagada por defecto: deja que un staff edite horarios, zonas y tarifas. Sólo un owner/admin puede encenderla, y queda auditada.';
+comment on table public.business_commercial_managers is
+  'Delegación explícita de la configuración comercial a un miembro que no es owner ni admin. Estar en esta tabla no alcanza: el miembro tiene que seguir siendo miembro vigente para la capa de autorización.';
 
 -- Autoridad única para toda la configuración comercial. Nunca devuelve NULL:
 -- una función de autorización que puede contestar NULL falla ABIERTA en la forma
 -- `if not autorizado then raise`, porque `not null` no es verdadero y la
 -- excepción no se levanta.
+--
+-- SE APOYA EN `has_business_role`, Y ESO ES LO IMPORTANTE
+-- ------------------------------------------------------
+-- Leer `business_members` por su cuenta parecía equivalente y no lo es: la capa
+-- de autorización vigente puede tener motivos para decir que alguien YA NO es
+-- del equipo —deshabilitado, sesión revocada, token anterior al corte— sin que
+-- la fila de membresía cambie. Una función que mira la tabla directamente se
+-- salta todo eso.
+--
+-- Medido: con un owner deshabilitado por la capa de identidad,
+-- `has_business_role` devolvía false y la primera versión de esta función
+-- devolvía TRUE. Es decir: alguien a quien le revocaron el acceso seguía
+-- pudiendo cambiar tarifas, zonas y banderas. Preguntarle a `has_business_role`
+-- hereda la compuerta sin depender de sus detalles, y funciona igual en un árbol
+-- que no tenga esa capa.
 create or replace function public.can_manage_commercial_settings(p_business_id uuid)
 returns boolean
 language sql
@@ -307,20 +337,23 @@ stable
 security definer
 set search_path = pg_catalog, public, pg_temp
 as $$
-  select coalesce((
-    select bool_or(
-      bm.role in ('owner', 'admin')
-      or coalesce(bm.can_manage_commercial_settings, false)
-    )
-    from public.business_members bm
-    where bm.business_id = p_business_id
-      and bm.user_id = auth.uid()
-      and bm.is_active = true
-  ), false);
+  select coalesce(
+    public.has_business_role(p_business_id, array['owner', 'admin'])
+    or (
+      public.has_business_role(p_business_id, array['staff'])
+      and exists (
+        select 1
+          from public.business_commercial_managers m
+         where m.business_id = p_business_id
+           and m.user_id = auth.uid()
+      )
+    ),
+    false
+  );
 $$;
 
 comment on function public.can_manage_commercial_settings(uuid) is
-  'Autoridad para editar configuración comercial: owner, admin, o un miembro activo con la delegación explícita encendida. Devuelve false, nunca NULL.';
+  'Autoridad para editar configuración comercial: owner, admin, o un miembro vigente con delegación explícita. Pasa por has_business_role, así que hereda cualquier revocación que imponga la capa de autorización. Devuelve false, nunca NULL.';
 
 -- ── El trigger que audita el envío y el mínimo pasen por donde pasen ─────────
 
@@ -457,52 +490,17 @@ revoke all on function public.time_in_window(time, time, time) from public, anon
 revoke all on function public.normalize_zone_name(text) from public, anon, authenticated;
 revoke all on function public.haversine_meters(double precision, double precision, double precision, double precision) from public, anon, authenticated;
 
--- La delegación se puede escribir por el mismo camino que el resto de la
--- membresía —`authenticated` tiene UPDATE sobre `business_members` y las
--- policies dejan que un admin edite a un staff—, así que en vez de recortar
--- grants ajenos se pone una compuerta en la tabla: encender o apagar la
--- delegación exige autoridad comercial, y queda auditado venga de donde venga.
-create or replace function public.guard_commercial_settings_delegation()
-returns trigger
-language plpgsql
-security definer
-set search_path = pg_catalog, public, pg_temp
-as $$
-declare
-  v_actor uuid := auth.uid();
-begin
-  if new.can_manage_commercial_settings is not distinct from old.can_manage_commercial_settings then
-    return new;
-  end if;
-  -- auth.uid() nulo es el camino servidor (seed, migración, service_role). No se
-  -- le inventa un dueño: se registra como servicio. Un anónimo no llega hasta
-  -- acá porque ninguna policy de business_members lo deja escribir.
-  if v_actor is not null and not public.has_business_role(new.business_id, array['owner', 'admin']) then
-    raise exception 'solo owner o admin delegan la configuracion comercial' using errcode = '42501';
-  end if;
-  insert into public.business_config_audit (business_id, scope, action, actor_kind, actor_id, before, after)
-  values (
-    new.business_id, 'permission',
-    case when new.can_manage_commercial_settings then 'enabled' else 'disabled' end,
-    case when v_actor is null then 'service' else 'user' end, v_actor,
-    jsonb_build_object('member_id', old.id, 'user_id', old.user_id, 'role', old.role,
-      'can_manage_commercial_settings', old.can_manage_commercial_settings),
-    jsonb_build_object('member_id', new.id, 'user_id', new.user_id, 'role', new.role,
-      'can_manage_commercial_settings', new.can_manage_commercial_settings)
-  );
-  return new;
-end;
-$$;
+-- La tabla de delegación se lee, no se escribe: la única puerta es
+-- `set_commercial_settings_delegation`, que exige owner o admin y audita.
+alter table public.business_commercial_managers enable row level security;
+alter table public.business_commercial_managers force row level security;
+revoke all privileges on table public.business_commercial_managers from public, anon, authenticated;
+grant select on table public.business_commercial_managers to authenticated;
 
-drop trigger if exists business_members_guard_commercial_delegation on public.business_members;
-create trigger business_members_guard_commercial_delegation
-before update on public.business_members
-for each row execute function public.guard_commercial_settings_delegation();
-
-revoke all on function public.guard_commercial_settings_delegation() from public, anon, authenticated;
-
-comment on function public.guard_commercial_settings_delegation() is
-  'Un staff no se auto-delega la configuración comercial: sólo owner o admin encienden la bandera, y cada cambio queda en business_config_audit.';
+drop policy if exists "commercial managers read delegation" on public.business_commercial_managers;
+create policy "commercial managers read delegation"
+on public.business_commercial_managers for select to authenticated
+using (public.has_business_role(business_id, array['owner', 'admin']));
 
 -- ── Rastro de la zona en el pedido ───────────────────────────────────────────
 --

@@ -604,16 +604,39 @@ begin
   if not public.has_business_role(p_business_id, array['owner', 'admin']) then
     raise exception 'solo owner o admin delegan la configuracion comercial' using errcode = '42501';
   end if;
-  update public.business_members
-     set can_manage_commercial_settings = coalesce(p_can_manage, false)
-   where business_id = p_business_id and user_id = p_user_id
-  returning * into v_row;
+  -- Tiene que ser miembro del comercio, y eso se pregunta sin escribir su fila:
+  -- `business_members` la administra la capa de identidad.
+  select * into v_row
+    from public.business_members
+   where business_id = p_business_id and user_id = p_user_id and is_active;
   if not found then
     raise exception 'miembro inexistente' using errcode = 'P0002';
   end if;
-  -- La fila de auditoría la escribe el trigger de `business_members`.
-  return jsonb_build_object('ok', true, 'user_id', v_row.user_id,
-                            'can_manage_commercial_settings', v_row.can_manage_commercial_settings);
+  if v_row.role not in ('staff', 'admin', 'owner') then
+    raise exception 'ese rol no administra configuracion comercial' using errcode = '22023';
+  end if;
+
+  if coalesce(p_can_manage, false) then
+    insert into public.business_commercial_managers (business_id, user_id, granted_by)
+    values (p_business_id, p_user_id, auth.uid())
+    on conflict (business_id, user_id) do update
+      set granted_by = excluded.granted_by, granted_at = clock_timestamp();
+  else
+    delete from public.business_commercial_managers
+     where business_id = p_business_id and user_id = p_user_id;
+  end if;
+
+  insert into public.business_config_audit (business_id, scope, action, actor_kind, actor_id, before, after)
+  values (p_business_id, 'permission',
+          case when coalesce(p_can_manage, false) then 'enabled' else 'disabled' end,
+          case when auth.uid() is null then 'service' else 'user' end, auth.uid(),
+          jsonb_build_object('user_id', p_user_id, 'role', v_row.role,
+            'can_manage_commercial_settings', not coalesce(p_can_manage, false)),
+          jsonb_build_object('user_id', p_user_id, 'role', v_row.role,
+            'can_manage_commercial_settings', coalesce(p_can_manage, false)));
+
+  return jsonb_build_object('ok', true, 'user_id', p_user_id,
+                            'can_manage_commercial_settings', coalesce(p_can_manage, false));
 end;
 $$;
 

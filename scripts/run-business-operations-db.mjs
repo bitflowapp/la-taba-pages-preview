@@ -56,6 +56,12 @@ const CHAINS = [
   path.join('supabase', 'tests', 'business_operations_order_chain.local.sql'),
 ];
 
+// Sonda con el ROL DE SESIÓN REAL. Va por separado porque necesita otra
+// conexión: entra como `authenticator` —el rol de PostgREST— en vez de
+// `postgres`. Sin esto, `session_user` es `postgres` y las guardas que
+// distinguen una migración de una llamada del navegador dejan pasar todo.
+const AUTHENTICATOR_PROBE = path.join('supabase', 'tests', 'business_operations_authenticator_probe.sql');
+
 function docker(args, options = {}) {
   return execFileSync(dockerCommand, args, {
     cwd: root,
@@ -138,6 +144,44 @@ function runChain(relativePath) {
   return ran;
 }
 
+// El fixture y la sonda van en dos conexiones distintas a propósito: el fixture
+// necesita poder escribir `business_members` (lo hace como postgres, que es lo
+// que hace una migración o una semilla) y la sonda necesita NO poder hacerlo.
+function runAuthenticatorProbe() {
+  psql(`
+    insert into auth.users(id, aud, role, email, encrypted_password, email_confirmed_at,
+                           raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+    values
+      ('e1000000-0000-4000-8000-000000000001','authenticated','authenticated','probe-owner@example.invalid','',now(),'{}','{}',now(),now()),
+      ('e1000000-0000-4000-8000-000000000002','authenticated','authenticated','probe-staff@example.invalid','',now(),'{}','{}',now(),now()),
+      ('e1000000-0000-4000-8000-000000000003','authenticated','authenticated','probe-outsider@example.invalid','',now(),'{}','{}',now(),now());
+    insert into public.businesses(id,name,slug,status,is_active,delivery_enabled,pickup_enabled,currency_code,delivery_fee)
+    values ('e2000000-0000-4000-8000-000000000001','Sonda authenticator','sonda-authenticator','open',true,true,true,'ARS',1000);
+    insert into public.business_members(business_id,user_id,role,is_active) values
+      ('e2000000-0000-4000-8000-000000000001','e1000000-0000-4000-8000-000000000001','owner',true),
+      ('e2000000-0000-4000-8000-000000000001','e1000000-0000-4000-8000-000000000002','staff',true);
+    grant usage on schema public to authenticator;
+  `);
+  // Por TCP y no por socket: el socket usa autenticación `peer`, que exige un
+  // usuario del sistema con ese nombre. El contenedor arranca con
+  // POSTGRES_HOST_AUTH_METHOD=trust, así que por TCP no hace falta contraseña —y
+  // no se le puede poner una: en esta imagen `postgres` no es superusuario y
+  // `authenticator` es un rol reservado.
+  const run = spawnSync(dockerCommand, [
+    'exec', '-i', container,
+    'psql', '-U', 'authenticator', '-h', '127.0.0.1', '-d', database, '-v', 'ON_ERROR_STOP=1', '-q', '-X',
+  ], {
+    cwd: root, encoding: 'utf8',
+    input: fs.readFileSync(path.join(root, AUTHENTICATOR_PROBE), 'utf8'),
+  });
+  const combined = `${run.stdout || ''}${run.stderr || ''}`;
+  process.stdout.write(combined);
+  if (run.status !== 0) throw new Error(`the authenticator probe failed: ${AUTHENTICATOR_PROBE}`);
+  const ran = (combined.match(/^NOTICE:\s+OK\s/gm) || []).length;
+  if (ran === 0) throw new Error('the authenticator probe produced no assertions');
+  return ran;
+}
+
 let assertions = 0;
 const started = performance.now();
 try {
@@ -171,6 +215,7 @@ try {
 
   for (const suite of SUITES) assertions += runPgTap(suite);
   for (const chain of CHAINS) assertions += runChain(chain);
+  assertions += runAuthenticatorProbe();
 
   const contract = JSON.parse(psqlCapture(`
     select json_build_object(

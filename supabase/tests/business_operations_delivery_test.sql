@@ -15,7 +15,7 @@
 -- ============================================================================
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(107);
+select plan(112);
 
 -- ── El contrato existe ───────────────────────────────────────────────────────
 select has_table('public', 'business_service_hours', 'la tabla de horarios existe');
@@ -93,9 +93,13 @@ select throws_ok(
 select throws_ok(
   $sql$select public.set_commercial_settings_delegation('a2000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000002', true)$sql$,
   '42501', 'solo owner o admin delegan la configuracion comercial', 'un staff no se delega el permiso a si mismo');
-select is((select can_manage_commercial_settings from public.business_members
-            where user_id = 'a1000000-0000-4000-8000-000000000002'), false,
+select is((select count(*)::int from public.business_commercial_managers
+            where user_id = 'a1000000-0000-4000-8000-000000000002'), 0,
   'el intento del staff no dejo el permiso encendido');
+-- La delegacion NO vive en business_members: esa tabla la administra la capa de
+-- identidad y rechaza cualquier escritura que no venga de sus RPC.
+select hasnt_column('public', 'business_members', 'can_manage_commercial_settings',
+  'este paquete no le agrega columnas a la tabla de membresias');
 
 -- Un ajeno al comercio no lee ni la configuracion.
 set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000003","role":"authenticated"}';
@@ -436,6 +440,35 @@ select lives_ok(
 select ok((select count(*) from public.business_config_audit
             where scope = 'permission' and action = 'enabled') = 1,
   'la delegacion misma quedo auditada');
+
+-- ── 13 · LA AUTORIDAD COMERCIAL HEREDA LA REVOCACIÓN ─────────────────────────
+--
+-- La primera version de `can_manage_commercial_settings` leia `business_members`
+-- por su cuenta. Parecia equivalente y no lo era: con un owner deshabilitado por
+-- la capa de autorizacion, `has_business_role` devolvia false y esta funcion
+-- devolvia TRUE. Alguien con el acceso revocado seguia pudiendo cambiar tarifas,
+-- zonas y banderas. Ahora pregunta por `has_business_role` y hereda la
+-- compuerta, sea cual sea.
+set local role postgres;
+reset request.jwt.claims;
+insert into public.identity_user_security (business_id, user_id, disabled_at)
+values ('a2000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000001', now())
+on conflict (business_id, user_id) do update set disabled_at = excluded.disabled_at;
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"a1000000-0000-4000-8000-000000000001","role":"authenticated"}';
+select is(public.has_business_role('a2000000-0000-4000-8000-000000000001', array['owner', 'admin']), false,
+  'la capa de autorizacion ya no reconoce al owner deshabilitado');
+select is(public.can_manage_commercial_settings('a2000000-0000-4000-8000-000000000001'), false,
+  'y por lo tanto pierde la autoridad comercial: no hay puerta de atras');
+select throws_ok(
+  $sql$select public.set_delivery_pricing('a2000000-0000-4000-8000-000000000001', 100, 100)$sql$,
+  '42501', 'sin autorizacion para configurar precios de envio',
+  'un owner revocado no puede cambiar el costo de envio');
+select throws_ok(
+  $sql$select public.set_service_enforcement('a2000000-0000-4000-8000-000000000001', false, false)$sql$,
+  '42501', 'sin autorizacion para cambiar la exigencia',
+  'ni apagar la exigencia');
 
 select * from finish();
 rollback;

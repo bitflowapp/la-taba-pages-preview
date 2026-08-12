@@ -15,10 +15,26 @@ import {
 import { evaluatePromotions, previewCouponDiscount } from './core/promotions.js';
 import { buildPendingReorder, buildReorderPreview } from './core/reorder.js';
 import { isDemoMode } from './core/app-mode.js';
+import {
+  commerceCheckoutBlock,
+  hasResolvedDelivery,
+  serverMinimumSubtotal,
+} from './core/commerce-availability-store.js';
 import { getProductById, getState, money, setState, updateState } from './state.js';
 
 function productIsOrderable(product) {
   return isProductOrderable(product);
+}
+
+// Un mínimo nulo resuelto por el servidor es «esta zona no tiene mínimo», que en
+// progreso se lee como cero. Sólo si el servidor todavía no habló se cae a la
+// semilla del comercio.
+function resolvedDeliveryMinimum() {
+  if (hasResolvedDelivery()) {
+    const minimum = serverMinimumSubtotal('delivery');
+    return minimum === null ? 0 : minimum;
+  }
+  return getBusinessConfig().minDeliveryOrder;
 }
 
 function normalizeRequestedQuantity(quantity) {
@@ -120,9 +136,13 @@ export function getCartSubtotal() {
   return getCartSummary().subtotal;
 }
 
+// El mínimo que se muestra es el que el backend resolvió para ESTA dirección
+// cuando ya contestó; la semilla del comercio sólo cubre el rato en que todavía
+// no contestó. `null` del servidor significa «esta zona no tiene mínimo», y por
+// eso se distingue de `undefined` antes de caer al valor local.
 export function getDeliveryMinimumProgress(
   subtotal = getCartSubtotal(),
-  minimumOrder = getBusinessConfig().minDeliveryOrder,
+  minimumOrder = resolvedDeliveryMinimum(),
 ) {
   const safeSubtotal = Math.max(0, Number(subtotal) || 0);
   const minimum = Math.max(0, Number(minimumOrder) || 0);
@@ -476,9 +496,24 @@ export function validateCartForCheckout(deliveryMode = 'delivery', options = {})
     };
   }
 
+  // ── LO QUE DIJO EL BACKEND ─────────────────────────────────────────────────
+  // Cerrado, o esta dirección fuera de cobertura: se frena el paso siguiente y
+  // se explica por qué. El carrito NO se toca: lo que la persona eligió sigue
+  // ahí, y con retiro en el local o con otra dirección vuelve a avanzar.
+  const commerceBlock = commerceCheckoutBlock(normalizedDeliveryMode);
+  if (commerceBlock) {
+    return {
+      ok: false,
+      reason: commerceBlock.reason,
+      message: commerceBlock.reason === 'out_of_coverage'
+        ? `${commerceBlock.message} Podés elegir retiro en el local o cambiar la dirección.`
+        : commerceBlock.message,
+    };
+  }
+
   const config = getBusinessConfig();
-  const enforceMinimum = isDemoMode() || config.orderingDetailsVerified;
-  const minimumProgress = getDeliveryMinimumProgress(subtotal, config.minDeliveryOrder);
+  const enforceMinimum = isDemoMode() || config.orderingDetailsVerified || hasResolvedDelivery();
+  const minimumProgress = getDeliveryMinimumProgress(subtotal, resolvedDeliveryMinimum());
   if (normalizedDeliveryMode === 'delivery' && enforceMinimum && !minimumProgress.reached) {
     const { missing } = minimumProgress;
     return {

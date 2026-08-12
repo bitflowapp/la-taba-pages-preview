@@ -37,6 +37,44 @@ export function createSupabaseBusinessRepository({ client, businessId }) {
       p_order_id: orderId, p_expected_revision: expectedRevision, p_reason: reason, p_idempotency_key: idempotencyKey,
     }),
     listActiveRiders: () => rpc('list_active_business_riders', { p_business_id: businessId }),
+
+    // ── Configuración operativa: horarios, zonas, envío y mínimo ─────────────
+    // El Panel no escribe estas tablas: no tiene permiso de tabla. Cada cambio
+    // pasa por una RPC que autoriza, valida y audita en la misma transacción.
+    // Un staff sin delegación recibe 42501 y `classifyRpcError` lo traduce a
+    // FORBIDDEN sin filtrar el mensaje crudo de PostgreSQL.
+    operationsConfig: () => rpc('get_business_operations_config', { p_business_id: businessId }),
+    setServiceHours: ({ channel, hours }) => rpc('set_business_service_hours', {
+      p_business_id: businessId, p_channel: channel, p_hours: hours,
+    }),
+    setServiceException: ({ channel, onDate, isClosed, opensAt = null, closesAt = null, note = null }) => rpc('set_business_service_exception', {
+      p_business_id: businessId, p_channel: channel, p_on_date: onDate,
+      p_is_closed: isClosed, p_opens_at: opensAt, p_closes_at: closesAt, p_note: note,
+    }),
+    deleteServiceException: ({ exceptionId }) => rpc('delete_business_service_exception', {
+      p_business_id: businessId, p_exception_id: exceptionId,
+    }),
+    upsertDeliveryZone: ({ zone }) => rpc('upsert_delivery_zone', {
+      p_business_id: businessId, p_zone: zone,
+    }),
+    setDeliveryZoneActive: ({ zoneId, active }) => rpc('set_delivery_zone_active', {
+      p_business_id: businessId, p_zone_id: zoneId, p_active: active,
+    }),
+    deleteDeliveryZone: ({ zoneId }) => rpc('delete_delivery_zone', {
+      p_business_id: businessId, p_zone_id: zoneId,
+    }),
+    setDeliveryPricing: ({ deliveryFee = null, minimumSubtotal = null, maxRadiusMeters = null }) => rpc('set_delivery_pricing', {
+      p_business_id: businessId, p_delivery_fee: deliveryFee,
+      p_minimum_subtotal: minimumSubtotal, p_max_radius_meters: maxRadiusMeters,
+    }),
+    setServiceEnforcement: ({ hoursEnforced, coverageEnforced, alcoholHoursEnforced = null, timezone = null }) => rpc('set_service_enforcement', {
+      p_business_id: businessId, p_hours_enforced: hoursEnforced,
+      p_delivery_zone_enforced: coverageEnforced,
+      p_alcohol_hours_enforced: alcoholHoursEnforced, p_timezone: timezone,
+    }),
+    setCommercialSettingsDelegation: ({ userId, canManage }) => rpc('set_commercial_settings_delegation', {
+      p_business_id: businessId, p_user_id: userId, p_can_manage: canManage,
+    }),
   });
 }
 

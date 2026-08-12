@@ -31,6 +31,7 @@ const ASSETS = [
   './js/core/address.js',
   './js/core/app-mode.js',
   './js/core/business-config-store.js',
+  './js/core/commerce-availability-store.js',
   './js/core/business-location.js',
   './js/core/business-metrics.js',
   './js/core/business-ops.js',

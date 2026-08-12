@@ -13,6 +13,7 @@ import {
   hasConfirmedDeliveryLocation,
 } from './core/delivery-location.js';
 import { splitStreetAndNumber } from './core/address.js';
+import { getCommerceAvailability } from './core/commerce-availability-store.js';
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
 import { supportsProfileCheckout } from './core/profile-checkout.js';
 import { formatArgentinePhone, validateRequiredStreetNumber } from './core/validators.js';
@@ -418,6 +419,9 @@ function applyAddressToForm(address) {
   setValue(form, 'deliveryFloor', normalized.floor);
   setValue(form, 'deliveryApartment', normalized.apartment);
   setValue(form, 'deliveryCity', normalized.city);
+  // El barrio declarado va por su propio campo. Es lo que el backend usa para
+  // resolver la cobertura, así que no puede salir de la localidad.
+  setValue(form, 'deliveryNeighborhood', normalized.neighborhood);
   setValue(form, 'deliveryProvince', normalized.province);
   setValue(form, 'deliveryPostalCode', normalized.postalCode);
   // Sólo viaja al pedido un punto CONFIRMADO. Una dirección con coordenadas
@@ -552,6 +556,7 @@ async function saveAddress() {
     street: streetParts.street,
     streetNumber: streetParts.streetNumber,
     city: form.elements?.customerNeighborhood?.value || '',
+    neighborhood: form.elements?.customerAddressNeighborhood?.value || '',
     reference: form.elements?.customerReference?.value || '',
     floor: form.elements?.customerAddressFloor?.value || '',
     apartment: form.elements?.customerAddressApartment?.value || '',
@@ -932,10 +937,30 @@ function renderDuplicatePanel() {
   return `<aside class="address-duplicate" aria-live="assertive"><strong>Ya tenés una dirección parecida guardada como ${escapeHtml(duplicate.label)}.</strong><div><button class="text-button" type="button" data-customer-address-action="duplicate-use">Usar ${escapeHtml(duplicate.label)}</button><button class="text-button" type="button" data-customer-address-action="duplicate-save">Guardar igualmente</button><button class="text-button" type="button" data-customer-address-action="duplicate-cancel">Cancelar</button></div></aside>`;
 }
 
+// El barrio NO es texto libre: sale de la lista que publica el propio comercio.
+// Si el comercio todavía no exige cobertura, la lista viene vacía y el campo no
+// aparece: no se le pide a nadie que elija de una lista que no existe.
+function renderNeighborhoodField(address) {
+  const { areas } = getCommerceAvailability();
+  if (!areas.length) return '';
+  const current = String(address.neighborhood || '').trim();
+  // Una dirección vieja puede tener un barrio que ya no está en la lista. Se
+  // conserva como opción para no borrárselo en silencio al abrir el editor, pero
+  // el backend igual va a decir que no llegamos, y el checkout lo va a explicar.
+  const known = areas.some((area) => area.name === current);
+  const options = [
+    '<option value="">Elegí tu barrio</option>',
+    ...areas.map((area) => `<option value="${escapeAttr(area.name)}"${area.name === current ? ' selected' : ''}>${escapeHtml(area.name)}</option>`),
+    ...(current && !known ? [`<option value="${escapeAttr(current)}" selected>${escapeHtml(current)} (fuera de cobertura)</option>`] : []),
+  ].join('');
+  return `<label>Barrio<select name="customerAddressNeighborhood">${options}</select></label>`;
+}
+
 function renderAddressEditor(editing) {
   if (!state.editorOpen) return '';
   const address = editing || {};
   return `<div class="address-editor" data-address-editor>
+    ${renderNeighborhoodField(address)}
     <div class="saved-addresses-heading"><strong>${editing ? 'Editar dirección' : 'Nueva dirección'}</strong><button class="text-button" type="button" data-customer-address-action="close-editor">Cerrar</button></div>
     <label>Etiqueta<input name="customerAddressLabel" maxlength="60" value="${escapeAttr(address.label || 'Casa')}" placeholder="Casa, Trabajo u Otro" /></label>
     <div class="field-grid compact-grid">

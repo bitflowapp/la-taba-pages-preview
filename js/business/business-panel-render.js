@@ -18,6 +18,9 @@ import {
 import {
   buildStorefrontPreview, CAPACITY_UNITS, describePublishReadiness, PACKAGE_TYPES, stepsForDraft,
 } from './business-product-onboarding.js';
+import {
+  auditLines, enforcementBlockers, MAX_SLOTS_PER_DAY, weeklyGrid,
+} from './business-operations-config.js';
 
 export function renderOperationCenterSurface({ snapshot, status, role, busy, support } = {}) {
   if (status?.phase === 'loading' && !snapshot) {
@@ -467,6 +470,116 @@ function renderReadiness(readiness, { role, busy }) {
       ? `<button class="primary-button" type="button" data-product-publish ${busy ? 'disabled' : ''}>Publicar en la web</button>`
       : ''}
   </section>`;
+}
+
+// ── Configuración operativa: horarios, zonas, envío y mínimo ────────────────
+//
+// La superficie donde el dueño carga lo que hasta ahora no tenía dónde vivir. Lo
+// que se ve acá es SIEMPRE lo que dice el servidor: la pantalla no calcula si
+// está abierto ni si se llega a una dirección, lo pregunta. Y no habilita un
+// control por su cuenta: si `canManage` no viene en true, todo va deshabilitado
+// aunque el rol parezca suficiente, porque quien decide eso es la base.
+export function renderOperationsConfigSurface({ config, status, busy, draft } = {}) {
+  if (!config) {
+    if (status?.phase === 'error') {
+      return panel('Horarios y cobertura', 'No confirmamos nada que no hayamos podido leer.', `
+        <p class="production-intake-error" role="alert">${escapeHtml(status.message || 'No pudimos leer la configuración operativa.')}</p>
+        <button class="primary-button" type="button" data-operations-config-refresh>Reintentar</button>`);
+    }
+    return panel('Horarios y cobertura', 'Leyendo la configuración del comercio.', '<p class="form-hint" aria-live="polite">Un segundo…</p>');
+  }
+
+  const readOnly = !config.canManage || busy;
+  const blockers = enforcementBlockers(config);
+  const grid = weeklyGrid(config, 'delivery');
+  const lines = auditLines(config);
+
+  return panel('Horarios y cobertura', 'Lo que el comercio decide, y el cliente obedece.', `
+    ${config.canManage ? '' : '<p class="form-hint" role="status">Estás viendo la configuración, pero no podés cambiarla. La habilita el dueño o el encargado.</p>'}
+
+    <div class="operation-summary tone-${config.isOpenDelivery ? 'calm' : 'attention'}">
+      <strong>${config.isOpenDelivery ? 'Ahora estás recibiendo pedidos de delivery.' : 'Ahora el delivery está cerrado.'}</strong>
+      ${config.nextOpenAt && !config.isOpenDelivery ? `<span>Abre ${escapeHtml(formatTimestamp(config.nextOpenAt))}.</span>` : ''}
+    </div>
+
+    <section class="business-config-block" data-operations-hours>
+      <h3>Horario de atención</h3>
+      <p class="form-hint">Hasta ${MAX_SLOTS_PER_DAY} tramos por día. Un tramo que termina antes de empezar cruza la medianoche.</p>
+      <table class="business-hours-grid">
+        <tbody>
+          ${grid.map((day) => `<tr data-weekday="${day.value}">
+            <th scope="row">${escapeHtml(day.label)}</th>
+            <td>${day.slots.length
+              ? day.slots.map((slot) => `<span class="business-hours-slot">${escapeHtml(slot.opensAt)}–${escapeHtml(slot.closesAt)}</span>`).join('')
+              : '<span class="business-hours-slot is-empty">cerrado</span>'}</td>
+            <td class="business-hours-edit">
+              <input type="time" name="opensAt-${day.value}" aria-label="Apertura ${escapeHtml(day.label)}" ${readOnly ? 'disabled' : ''} />
+              <input type="time" name="closesAt-${day.value}" aria-label="Cierre ${escapeHtml(day.label)}" ${readOnly ? 'disabled' : ''} />
+              <button class="text-button" type="button" data-operations-hours-add="${day.value}" ${readOnly ? 'disabled' : ''}>Agregar tramo</button>
+              ${day.slots.length ? `<button class="text-button" type="button" data-operations-hours-clear="${day.value}" ${readOnly ? 'disabled' : ''}>Vaciar</button>` : ''}
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      ${draft?.hoursErrors?.length
+        ? `<ul class="production-intake-error" role="alert">${draft.hoursErrors.map((error) => `<li>${escapeHtml(error)}</li>`).join('')}</ul>`
+        : ''}
+      <button class="primary-button compact" type="button" data-operations-hours-save ${readOnly ? 'disabled' : ''}>Guardar horarios</button>
+    </section>
+
+    <section class="business-config-block" data-operations-zones>
+      <h3>Zonas de entrega</h3>
+      <p class="form-hint">Una dirección entra sólo si cae en una zona activa. No hay cobertura por distancia: lo que no está en esta lista, no se entrega.</p>
+      <ul class="business-zone-list">
+        ${config.zones.length ? config.zones.map((zone) => `<li class="business-zone ${zone.isActive ? 'is-active' : 'is-off'}" data-zone-id="${escapeHtml(zone.id)}">
+          <div>
+            <strong>${escapeHtml(zone.name)}</strong>
+            <small>${zone.matchKind === 'polygon' ? `polígono de ${zone.boundaryPoints} vértices` : 'barrio declarado'}</small>
+            <small>${zone.deliveryFee === null ? 'usa el envío del comercio' : `envío ${formatMoney(zone.deliveryFee)}`} · ${zone.minimumSubtotal === null ? 'usa el mínimo del comercio' : `mínimo ${formatMoney(zone.minimumSubtotal)}`}</small>
+          </div>
+          <button class="text-button" type="button" data-operations-zone-toggle="${escapeHtml(zone.id)}" ${readOnly ? 'disabled' : ''}>${zone.isActive ? 'Desactivar' : 'Activar'}</button>
+        </li>`).join('') : '<li class="form-hint">Todavía no hay ninguna zona cargada.</li>'}
+      </ul>
+      <div class="business-zone-form">
+        <label>Nombre de la zona<input type="text" name="zoneName" maxlength="80" ${readOnly ? 'disabled' : ''} /></label>
+        <label>Envío<input type="number" name="zoneFee" min="0" step="1" inputmode="numeric" placeholder="usa el del comercio" ${readOnly ? 'disabled' : ''} /></label>
+        <label>Pedido mínimo<input type="number" name="zoneMinimum" min="0" step="1" inputmode="numeric" placeholder="usa el del comercio" ${readOnly ? 'disabled' : ''} /></label>
+        <button class="secondary-button compact" type="button" data-operations-zone-add ${readOnly ? 'disabled' : ''}>Agregar zona</button>
+      </div>
+      ${draft?.zoneErrors?.length
+        ? `<ul class="production-intake-error" role="alert">${draft.zoneErrors.map((error) => `<li>${escapeHtml(error)}</li>`).join('')}</ul>`
+        : ''}
+    </section>
+
+    <section class="business-config-block" data-operations-pricing>
+      <h3>Envío y pedido mínimo del comercio</h3>
+      <p class="form-hint">Son los valores por defecto: una zona que define los suyos manda sobre estos. Dejar el mínimo vacío significa que no hay mínimo.</p>
+      <div class="catalog-form-grid">
+        <label>Costo de envío<input type="number" name="businessFee" min="0" step="1" inputmode="numeric" value="${config.deliveryFee === null ? '' : escapeHtml(String(config.deliveryFee))}" ${readOnly ? 'disabled' : ''} /></label>
+        <label>Pedido mínimo<input type="number" name="businessMinimum" min="0" step="1" inputmode="numeric" value="${config.minimumSubtotal === null ? '' : escapeHtml(String(config.minimumSubtotal))}" ${readOnly ? 'disabled' : ''} /></label>
+      </div>
+      <button class="primary-button compact" type="button" data-operations-pricing-save ${readOnly ? 'disabled' : ''}>Guardar envío y mínimo</button>
+    </section>
+
+    <section class="business-config-block" data-operations-enforcement>
+      <h3>Empezar a exigir</h3>
+      <p class="form-hint">Mientras esto esté apagado, el comercio se comporta como antes: siempre abierto y sin límite de cobertura. Encenderlo es lo que hace que el horario y la lista de zonas manden de verdad.</p>
+      ${blockers.length ? `<ul class="form-hint">${blockers.map((blocker) => `<li>${escapeHtml(blocker)}</li>`).join('')}</ul>` : ''}
+      <label class="address-default-toggle"><input type="checkbox" name="hoursEnforced" ${config.hoursEnforced ? 'checked' : ''} ${readOnly ? 'disabled' : ''} /> Exigir el horario de atención</label>
+      <label class="address-default-toggle"><input type="checkbox" name="coverageEnforced" ${config.coverageEnforced ? 'checked' : ''} ${readOnly ? 'disabled' : ''} /> Exigir la lista de zonas</label>
+      <label>Huso horario<input type="text" name="operatingTimezone" maxlength="64" value="${escapeHtml(config.operatingTimezone)}" placeholder="America/Argentina/Buenos_Aires" ${readOnly ? 'disabled' : ''} /></label>
+      ${draft?.enforcementError ? `<p class="production-intake-error" role="alert">${escapeHtml(draft.enforcementError)}</p>` : ''}
+      <button class="primary-button compact" type="button" data-operations-enforcement-save ${readOnly ? 'disabled' : ''}>Guardar exigencia</button>
+    </section>
+
+    <section class="business-config-block" data-operations-audit>
+      <h3>Qué se cambió</h3>
+      ${config.canManage
+        ? (lines.length
+          ? `<ul class="business-audit-list">${lines.map((line) => `<li><strong>${escapeHtml(line.text)}</strong> <small>${escapeHtml(formatTimestamp(line.createdAt))}</small>${line.detail ? `<small>${escapeHtml(line.detail)}</small>` : ''}</li>`).join('')}</ul>`
+          : '<p class="form-hint">Todavía no hay cambios registrados.</p>')
+        : '<p class="form-hint">El registro de cambios lo ve quien puede cambiar la configuración.</p>'}
+    </section>`);
 }
 
 export function renderRoleFooter(role) {

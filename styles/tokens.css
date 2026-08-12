@@ -119,6 +119,31 @@
   --radius-md: 14px;
   --radius-lg: 18px;
   --radius-pill: 999px;
+
+  /* --------------------------------------------------------------------------
+     GEOMETRÍA DE LA VITRINA — tres medidas que antes se escribían sueltas en
+     cada hoja y nunca coincidieron entre sí.
+     --------------------------------------------------------------------------
+     Lo que se veía: el buscador de la home tenía 48px de alto y 16px de radio,
+     el del catálogo 46 y 10; "Filtros" era una píldora y "Ordenar" un
+     rectángulo de 10px; el plato del packshot arrancaba 3px a la izquierda del
+     título de su propia tarjeta. Ninguna de esas diferencias decidía nada: eran
+     el residuo de haber escrito el mismo control en cuatro lugares.
+
+     `--control-h` / `--radius-control`: TODO control de una fila del cliente
+     (buscador, "Filtros", "Ordenar"). 48px porque el buscador de la home ya lo
+     tenía por contrato de prueba, y bajar el resto habría sido igualar hacia
+     abajo el único que estaba medido.
+     `--radius-plate`: el plato blanco del packshot, el mismo en la góndola del
+     catálogo y en los rails de la home.
+     `--card-pad`: el aire interior de la tarjeta de producto. Es UN número
+     porque el plato y la columna de texto tienen que compartir el borde
+     izquierdo; con dos números no lo compartían.
+     ----------------------------------------------------------------------- */
+  --control-h: 48px;
+  --radius-control: 14px;
+  --radius-plate: 13px;
+  --card-pad: 10px;
   /* El borde hace el trabajo; la sombra es soporte. */
   --shadow-xs: 0 1px 2px rgb(20 22 26 / 6%);
   --shadow-sm: 0 4px 12px rgb(20 22 26 / 8%);

@@ -147,6 +147,9 @@ body[data-active-view="rider"] .floating-cart {
     bottom: calc(var(--bottom-reserve) + 8px);
   }
 
+  /* 4 y no 2. El icono y su etiqueta se tocaban y las cinco ranuras se leían
+     como cinco manchas; el alto de la barra no cambia porque la fila usaba 38
+     de los 44px disponibles. */
   .mobile-nav button {
     position: relative;
     display: grid;
@@ -154,7 +157,7 @@ body[data-active-view="rider"] .floating-cart {
     min-height: var(--tap);
     place-items: center;
     align-content: center;
-    gap: 2px;
+    gap: 4px;
     padding: 2px;
     border: 0;
     border-radius: var(--radius-xs);
@@ -733,8 +736,9 @@ body[data-active-view="rider"] .floating-cart {
     overflow-y: visible;
   }
 
+  /* La misma distancia al borde que la flecha de "Filtros". */
   .catalog-controls .sort-select-wrap::after {
-    right: 12px;
+    right: 14px;
   }
 
   .catalog-controls .sort-field select {
@@ -746,8 +750,10 @@ body[data-active-view="rider"] .floating-cart {
     opacity: 0;
   }
 
+  /* El aire lateral lo fija `--card-pad`, que es el mismo del plato: acá sólo
+     se ajusta el vertical, que en teléfono se recorta. */
   .product-body {
-    padding: 10px 10px 10px;
+    padding: 9px var(--card-pad) var(--card-pad);
   }
 
   .product-body h3 {
@@ -758,13 +764,17 @@ body[data-active-view="rider"] .floating-cart {
     font-size: 11px;
   }
 
+  /* 18 y no 17. En teléfono la tarjeta es lo único que se ve, y el precio es
+     lo que decide: a 17px quedaba a un punto del nombre del producto y las dos
+     líneas competían. Un punto de diferencia no cambia el alto de la caja —la
+     interlínea del pie ya reservaba más— y sí cambia qué se lee primero. */
   .price strong,
   .price-amounts strong {
-    font-size: 17px;
+    font-size: 18px;
   }
 
   .add-text {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .cart-card,

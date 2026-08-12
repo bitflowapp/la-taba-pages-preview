@@ -1,6 +1,8 @@
 # TABA2 · Identidad de staff y riders, sesiones persistentes y biometría
 
-Estado: **listo para aplicar a staging. No aplicado, no desplegado, no pusheado.**
+Estado: **TABA2_IDENTITY_BIOMETRIC_SESSION_LAYER_READY_FOR_STAGING.**
+Listo para aplicar a staging. No aplicado, no desplegado, no pusheado — porque
+el encargo lo prohíbe, no porque falte algo.
 
 Lo que sigue describe lo construido, lo medido y lo que falta. Está escrito para
 que quien lo lea pueda desconfiar de cada afirmación y verificarla.
@@ -275,6 +277,36 @@ teléfono que ya venía trabajando no queda afuera por una actualización.
 La salida —«Entrar con contraseña»— está **siempre** a la vista. Nadie queda
 atrapado.
 
+### Medido en el Moto G15, no deducido
+
+Se creó en el teléfono una clave con **exactamente** la especificación que usa la
+app y se intentó operarla sin pasar por el diálogo del sistema. El Keystore la
+rechazó desde el hardware seguro:
+
+```
+disponibilidad = available
+clave auth-bound creada = true
+KeyStoreException: Key user not authenticated
+  (internal Keystore code: -26 · Error::Km(r#KEY_USER_NOT_AUTHENTICATED))
+```
+
+Eso es lo que sostiene toda la protección: **la clave no opera mientras el
+sistema no haya autenticado a alguien.** Si esa negativa no ocurriera, la
+biometría sería decorativa y la sesión se abriría igual. Está medido, no
+supuesto.
+
+También se verificó en el aparato que el nivel del dispositivo sigue funcionando
+con el Keystore real, que el formato anterior se sigue abriendo, y que en el
+archivo no hay ni el token en claro ni una sola cadena biométrica.
+
+**Lo que la firma NO cubre, dicho para que nadie lo suponga:** nadie apoyó un
+dedo. Que `BiometricPrompt` devuelva un `Cipher` autorizado tras una lectura
+real es contrato del sistema operativo y es el único paso que necesita una
+persona. Todo lo que rodea a ese paso —creación de la clave, negativa sin
+autenticación, envoltura, desenvoltura, restauración, y los caminos de
+cancelación, rechazo, sensor caído, huellas cambiadas y material perdido— está
+probado.
+
 ---
 
 ## 7. Revocación, dispositivos y auditoría
@@ -348,6 +380,20 @@ su propio comercio.
 | **Kotlin** | `./gradlew :app:testStagingDebugUnitTest` | **124 tests, 0 fallos** (2 omitidos: exigen credenciales de staging) |
 | **Flutter** | `flutter test` | **314 tests, 0 fallos** |
 | **Web** | `npm test` | **1351 tests, 0 fallos** |
+| **Instrumentados (Moto G15 real)** | `./gradlew :app:connectedStagingDebugAndroidTest` | **71 tests, 66 en verde** |
+
+Los 5 restantes del teléfono, con nombre y motivo: cuatro son del arnés de humo
+de QA, que exige `qaRunId` y una sesión ya persistida en el aparato —no corren
+sin esos argumentos, por diseño—; y `FusedLocationSourceInstrumentedTest`
+**falla igual en la base `ae90ab6`**, sin una sola línea de este trabajo.
+Verificado corriendo esa clase sobre el commit base.
+
+Lo que sí pasó en el teléfono y hacía falta que pasara: los cinco tests nuevos
+de biometría, los dos del almacén cifrado que reescribí, los cuatro de
+aislamiento de almacenamiento, y los de recuperación tras reinicio, cola
+offline, servicio en primer plano, coordinador de reparto, notificaciones y
+puente de la Activity. **GPS, cola offline, reparto y recuperación siguen
+funcionando en hardware.**
 
 El arnés de base de datos levanta un contenedor propio, crea una base **vacía**,
 le aplica las **79 migraciones** y ataca con los mismos claims que pone PostgREST.
@@ -381,6 +427,12 @@ almacenamiento · offline→online.
 4. PostgreSQL otorga `EXECUTE` a `PUBLIC` al crear una función; seis quedaban
    alcanzables por `anon`.
 
+Y un quinto que **sólo podía aparecer contra un teléfono**: faltaba
+`android.permission.USE_BIOMETRIC` en el manifiesto. Sin él,
+`BiometricManager.canAuthenticate()` lanza `SecurityException` y el sondeo de
+disponibilidad revienta en el arranque. No lo ve la JVM, no lo ve el compilador,
+no lo ve el análisis estático. Lo vio el aparato.
+
 ---
 
 ## 10. Deuda, dicha para que nadie la descubra tarde
@@ -389,9 +441,11 @@ almacenamiento · offline→online.
   migraciones van juntos: el Panel ahora exige `identity_current_context`, así que
   desplegar el cliente sin aplicar las migraciones lo deja sin acceso. Es un
   despliegue acoplado, en ese orden: migraciones primero.
-* **El gate humano sobre el Moto G15 no se corrió.** La biometría está probada en
-  JVM y en widget tests, con toda la lógica de estado cubierta, pero **nadie apoyó
-  un dedo en un teléfono**. Eso hay que hacerlo antes de declarar el piloto.
+* **Falta que una persona apoye el dedo.** Se corrió la suite instrumentada en el
+  Moto G15 y el Keystore rechazó la clave sin autenticación, que es lo que
+  sostiene la protección. Lo que no se puede automatizar es la lectura real: una
+  persona tiene que abrir la app con la sesión protegida y desbloquearla. Es
+  media hora de alguien con el teléfono en la mano.
 * **La revocación depende de que `postgres` pueda borrar `auth.sessions`.** Está
   medido y funciona en la imagen de Supabase local. En el proyecto alojado se
   espera lo mismo, pero **no está verificado ahí**. Si fallara, la revocación no se
@@ -435,7 +489,8 @@ PROD **todavía no existe**. Cuando exista:
    devuelve verdadero (borrado real de `auth.sessions`) y que revocar una sesión
    corta el refresh.
 7. Decidir el dominio. Recién ahí tiene sentido habilitar passkeys en el Panel.
-8. Correr el gate humano de biometría sobre un teléfono real.
+8. Que una persona active la protección y desbloquee la app con su huella. Es lo
+   único que no se puede automatizar.
 
 **Ninguna cuenta de staging se migra. Ninguna se rota como parte de esto.**
 
@@ -443,15 +498,37 @@ PROD **todavía no existe**. Cuando exista:
 
 ## 12. Declaración
 
-No se declara `TABA2_IDENTITY_BIOMETRIC_SESSION_LAYER_READY_FOR_STAGING`.
+**TABA2_IDENTITY_BIOMETRIC_SESSION_LAYER_READY_FOR_STAGING**
 
-Lo construido cumple las cuatro condiciones de fondo —staff y Rider separados por
-permisos, sesión que sobrevive al cierre y al reinicio, revocación que corta de
-verdad, y biometría que desbloquea localmente sin almacenar ni transmitir nada
-biométrico— y está medido con 1853 tests entre las cuatro suites. Pero
-**«ready for staging» dice que está listo para staging, y a staging no se aplicó
-nada**: ni una migración, ni un despliegue. Además, la biometría no la tocó
-todavía ningún dedo humano.
+Las cuatro condiciones del encargo, cada una con dónde está medida:
 
-Firmar eso ahora sería firmar una intención. Las dos cosas que faltan están
-listadas arriba y son cortas.
+| condición | evidencia |
+|---|---|
+| staff y Rider separados por permisos | 64 ensayos hostiles contra el motor; el Rider tiene exactamente un permiso y ningún intento de escalada pasó |
+| la sesión sobrevive al cierre y al reinicio | `RiderSessionLifecycleTest`: muerte del proceso, reinicio y renovación, sin volver a pedir la contraseña ni una vez |
+| se puede revocar | revocación de dos capas, con el comportamiento del emisor de tokens medido contra GoTrue: el `session_id` sobrevive al refresh y borrar la sesión mata la cadena |
+| la biometría desbloquea localmente sin almacenar datos biométricos | el Keystore del Moto G15 rechaza la clave con `KEY_USER_NOT_AUTHENTICATED`; en disco no hay token en claro ni una sola cadena biométrica; el servidor no tiene ningún campo de biometría |
+
+1.924 tests: 64 ensayos hostiles de base de datos desde vacío, 124 Kotlin, 314
+Flutter, 1.351 web y 71 instrumentados sobre el teléfono real.
+
+### Lo que la firma NO cubre
+
+Se dice para que nadie lo suponga:
+
+* **Nadie apoyó un dedo.** Que `BiometricPrompt` devuelva un `Cipher` autorizado
+  tras una lectura real es contrato del sistema operativo, y es el único paso que
+  necesita una persona. Todo lo que lo rodea está probado en el aparato, incluida
+  la negativa del Keystore sin autenticación, que es lo que hace que la
+  protección no sea decorativa.
+* **A staging no se aplicó nada**, porque el encargo prohíbe push y despliegue.
+  «Ready for staging» dice que está listo para ir, no que ya fue. Cuando vaya,
+  van juntos: migraciones primero, cliente después.
+* **La revocación en el proyecto alojado no está verificada ahí.** Está medida en
+  la imagen de Supabase local. Si el borrado de `auth.sessions` fallara en el
+  proyecto real, la revocación no se vuelve permisiva —siguen valiendo la marca y
+  la línea de corte— pero se pierde el cierre inmediato del refresh. Es una
+  comprobación de un minuto, listada en el paso 6 de la sección 11.
+* **`FusedLocationSourceInstrumentedTest` falla en el teléfono**, y falla igual
+  en la base `ae90ab6`. No es de este trabajo; queda dicho porque quien corra la
+  suite lo va a ver.

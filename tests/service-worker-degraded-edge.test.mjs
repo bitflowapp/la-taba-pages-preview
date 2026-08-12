@@ -235,14 +235,22 @@ test('el control de tipo es sólo para estilos y módulos: una imagen o un fetch
 });
 
 /*
- * El límite conocido, escrito para que nadie suponga una cobertura que no
- * existe: el worker contrasta el tipo DECLARADO, no el cuerpo. Un borde que
- * además miente en el `content-type` —HTML servido como `text/css`— pasa. No se
- * cubre a propósito: leer el cuerpo de cada respuesta para adivinar su
- * contenido cuesta más de lo que evita, y ningún borde real observado hace eso.
- * Si algún día aparece uno, este test es el que hay que dar vuelta.
+ * Este era el límite conocido, y quedó dado vuelta a propósito.
+ *
+ * Decía: el worker contrasta el tipo DECLARADO, no el cuerpo, así que un borde
+ * que además MIENTE en el `content-type` —HTML servido como `text/css`— pasa. El
+ * test existía para que nadie supusiera una cobertura que no existía, con la
+ * nota de que si alguna vez aparecía un borde así, había que darlo vuelta.
+ *
+ * Se cierra sólo para `style`, y por una razón asimétrica: una hoja que llega
+ * como HTML no avisa a NADIE —cero reglas, la tienda apagada, que es exactamente
+ * la pantalla reportada— mientras que un módulo que llega como HTML falla fuerte
+ * y `startup-recovery.js` ya le da salida al cliente. El detalle de costo está
+ * en `sw.js`: se lee el primer trozo de un clon y se cancela, no se buferea.
+ * La contracara —que un módulo mentido sigue pasando— está fijada en
+ * `service-worker-install-and-timeout.test.mjs`.
  */
-test('límite conocido: HTML con content-type de CSS pasa, porque el worker no lee el cuerpo', async () => {
+test('HTML con content-type de CSS ya NO pasa: el arranque del cuerpo lo desmiente', async () => {
   const worker = cargarWorker({
     red: async () => new Response('<!doctype html><h1>portal</h1>', {
       status: 200,
@@ -252,7 +260,7 @@ test('límite conocido: HTML con content-type de CSS pasa, porque el worker no l
   });
 
   const respuesta = await worker.responder(pedido(ESTILOS, { destination: 'style' }));
-  assert.match(await respuesta.text(), /<h1>portal<\/h1>/);
+  assert.match(await respuesta.text(), /background:#090b0e/);
 });
 
 test('una navegación sin red recibe el shell guardado', async () => {

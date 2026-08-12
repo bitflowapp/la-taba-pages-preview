@@ -701,7 +701,7 @@ function applyAppMode() {
 
   const checkoutCopy = checkoutModeCopy(mode);
   const submit = document.querySelector('[data-checkout-submit]');
-  if (submit) submit.textContent = checkoutCopy.submit;
+  if (submit && !hayHandoffDePagoEnCurso()) submit.textContent = checkoutCopy.submit;
   const trustTitle = document.querySelector('[data-checkout-trust-title]');
   if (trustTitle) trustTitle.textContent = checkoutCopy.title;
   const trustCopy = document.querySelector('[data-checkout-trust-copy]');
@@ -770,7 +770,25 @@ function applyProductionCatalogGate(mode = getAppMode()) {
   });
 
   const submit = document.querySelector('[data-checkout-submit]');
-  if (submit) submit.disabled = blocked;
+  if (submit && !hayHandoffDePagoEnCurso()) submit.disabled = blocked;
+}
+
+/*
+ * Mientras el checkout está entregado a Mercado Pago, NINGÚN re-render puede
+ * devolver el botón a «Confirmar pedido» habilitado.
+ *
+ * Se descubrió en WebKit: el guardián de la closure aguantaba —no se creaba una
+ * segunda sesión de pago— pero a los ~3,3 s un re-render de modo pasaba por acá
+ * y devolvía el botón a su estado normal. Funcionalmente estaba protegido y
+ * visualmente decía lo contrario: la persona ve un botón disponible, lo toca, y
+ * no pasa nada. Es la peor de las dos, porque invita al toque que el guardián
+ * después ignora en silencio.
+ *
+ * El estado vive en el DOM justamente para que lo vea cualquier camino de
+ * dibujado, no sólo el que lo puso.
+ */
+function hayHandoffDePagoEnCurso() {
+  return document.querySelector('[data-checkout-form]')?.dataset.checkoutHandoff === 'mercadopago';
 }
 
 function isProductionOrderingBlocked(mode = getAppMode()) {
@@ -1598,6 +1616,51 @@ function bindEvents() {
 
   // CTA principal: confirma el pedido interno y lleva a Tracking. NO abre WhatsApp.
   let confirming = false;
+  /*
+   * El handoff a Mercado Pago no termina este script.
+   *
+   * `window.location.assign()` PIDE la navegación y sigue: el documento vive
+   * hasta que la nueva página compromete, y en un teléfono con red mala eso son
+   * segundos. En ese hueco corría el `finally`, que devolvía el botón a
+   * «Confirmar pedido» habilitado. Quien no ve reacción vuelve a tocar —es el
+   * reflejo, no un error de la persona— y ese segundo toque creaba una SEGUNDA
+   * sesión de pago: `createCheckoutClientRequestId()` devuelve un UUID nuevo en
+   * cada llamada, así que la deduplicación por `client_request_id` del backend
+   * no la ve. El dedo en `mercadoPagoCheckoutInFlight` tampoco: para cuando
+   * llega el segundo toque, el primero YA terminó.
+   *
+   * Lo que dejaba atrás: otra fila en `checkout_sessions`, otra reserva en
+   * `inventory_reservations` descontando stock, y —lo peor—
+   * `writeMercadoPagoCheckoutRecord` pisando el registro local de recuperación,
+   * que deja a la PRIMERA sesión huérfana: con el stock tomado y sin nada del
+   * lado del cliente que sepa volver a buscarla.
+   *
+   * Mientras el checkout está entregado, el botón queda tomado. Se re-arma al
+   * volver, con los mismos tres eventos que ya usa `pwa-update.js`: `pageshow`
+   * cubre la vuelta con «atrás» —con y sin back-forward cache—, y `focus` y
+   * `visibilitychange` cubren la vuelta desde otra aplicación, incluido el
+   * navegador embebido que iOS abre encima de la PWA sin ocultar el documento.
+   */
+  let entregadoAMercadoPago = false;
+
+  const rearmarCheckoutAlVolver = () => {
+    if (!entregadoAMercadoPago) return;
+    if (document.visibilityState === 'hidden') return;
+    entregadoAMercadoPago = false;
+    confirming = false;
+    const form = $('[data-checkout-form]');
+    if (form) delete form.dataset.checkoutHandoff;
+    const button = form?.querySelector('[type="submit"]');
+    if (button) {
+      button.disabled = isProductionOrderingBlocked();
+      button.textContent = checkoutModeCopy(getAppMode()).submit;
+    }
+    if (form) delete form.dataset.motionBusy;
+  };
+  window.addEventListener('pageshow', rearmarCheckoutAlVolver);
+  window.addEventListener('focus', rearmarCheckoutAlVolver);
+  document.addEventListener('visibilitychange', rearmarCheckoutAlVolver);
+
   $('[data-checkout-form]')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -1641,6 +1704,8 @@ function bindEvents() {
         }
         if (button) button.textContent = 'Te llevamos a Mercado Pago…';
         showToast('Te llevamos a Mercado Pago para completar el pago de forma segura.');
+        entregadoAMercadoPago = true;
+        form.dataset.checkoutHandoff = 'mercadopago';
         window.location.assign(result.initPoint);
         return;
       }
@@ -1669,12 +1734,18 @@ function bindEvents() {
       showCheckoutInlineError(form, message);
       showToast(message);
     } finally {
-      confirming = false;
-      if (button) {
-        button.disabled = isProductionOrderingBlocked();
-        button.textContent = originalLabel || checkoutModeCopy(getAppMode()).submit;
+      if (entregadoAMercadoPago) {
+        // Entregado: el checkout queda tomado hasta que la persona vuelva.
+        // Re-armarlo acá es abrirle la puerta al segundo toque.
+        form.dataset.motionBusy = 'true';
+      } else {
+        confirming = false;
+        if (button) {
+          button.disabled = isProductionOrderingBlocked();
+          button.textContent = originalLabel || checkoutModeCopy(getAppMode()).submit;
+        }
+        delete form.dataset.motionBusy;
       }
-      delete form.dataset.motionBusy;
     }
   });
 

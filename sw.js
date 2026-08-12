@@ -145,28 +145,70 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    // La instalación de un worker nuevo puede ejecutarse mientras el anterior
-    // todavía controla la pestaña. `reload` evita precachear módulos viejos
-    // desde la caché HTTP y permite que “Actualizar ahora” entregue el bundle
-    // que acaba de publicarse.
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(
-      ASSETS.map((asset) => new Request(asset, { cache: 'reload' })),
-    )),
-  );
+  event.waitUntil(precargar());
 });
 
+/*
+ * Acá vivía la otra mitad del defecto, del lado de la ESCRITURA.
+ *
+ * `cache.addAll` guarda cualquier respuesta con estado 200 y NO mira el tipo. El
+ * portal cautivo de un bar contesta 200 con SU página, así que un cliente que
+ * abría la tienda por primera vez sobre esa red guardaba esa página como
+ * `styles.css` y como cada uno de los 88 módulos. A partir de ahí la defensa de
+ * lectura —la que cerró el P1 del retorno desde Mercado Pago— ya no defiende
+ * nada: la copia buena que iba a rescatar al documento ES la página del portal.
+ *
+ * Y `addAll` es además TODO O NADA: un solo 404 de un despliegue a medio
+ * publicar dejaba al cliente sin precache entero, o sea sin tienda offline.
+ *
+ * Se guarda de a uno y sólo lo que sirve, con el mismo contrato que usa `fetch`.
+ * Lo que no bajó no se guarda y no tumba al resto: la primera visita sana
+ * completa los huecos, porque `networkFirst` guarda todo lo que le llega bien.
+ *
+ * `reload` se conserva: la instalación de un worker nuevo puede ejecutarse
+ * mientras el anterior todavía controla la pestaña, y sin eso “Actualizar ahora”
+ * precachearía módulos viejos desde la caché HTTP.
+ */
+async function precargar() {
+  const cache = await caches.open(CACHE_NAME);
+  await Promise.all(ASSETS.map(async (asset) => {
+    const request = new Request(asset, { cache: 'reload' });
+    try {
+      const response = await fetch(request);
+      // `destination` de un Request construido a mano SIEMPRE viene vacío, así
+      // que el tipo que se exige sale de la extensión: es lo único que hace que
+      // el control valga también acá.
+      if (!(await sirve({ destination: destinoEsperado(asset), mode: 'no-cors' }, response))) return;
+      await cache.put(request, response);
+    } catch (_) {
+      // Un asset que no bajó no puede llevarse puesto al precache entero.
+    }
+  }));
+}
+
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(
-        keys
-          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
-          .map((key) => caches.delete(key)),
-      ))
-      .then(() => self.clients.claim()),
-  );
+  event.waitUntil(limpiarCachesViejas().then(() => self.clients.claim()));
 });
+
+/*
+ * Borrar la caché anterior con el precache nuevo a medias deja al cliente PEOR
+ * que antes de actualizar: pierde las 167 entradas buenas que tenía y se queda
+ * con las pocas que pudo bajar. `caches.match` recorre todas las cachés del
+ * origen, así que conservar la anterior alcanza para que el documento se siga
+ * rescatando hasta que una visita sana complete la nueva.
+ *
+ * Con el precache completo se borran todas, como siempre. Incompleto se conserva
+ * SÓLO la más reciente —`caches.keys()` viene en orden de creación—, para que
+ * una publicación rota no vaya acumulando cachés versión tras versión.
+ */
+async function limpiarCachesViejas() {
+  const cache = await caches.open(CACHE_NAME);
+  const completa = (await cache.keys()).length >= ASSETS.length;
+  const viejas = (await caches.keys())
+    .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME);
+  const aBorrar = completa ? viejas : viejas.slice(0, -1);
+  await Promise.all(aBorrar.map((key) => caches.delete(key)));
+}
 
 // Permite forzar la activación inmediata de un SW nuevo desde la página.
 self.addEventListener('message', (event) => {
@@ -210,25 +252,84 @@ self.addEventListener('fetch', (event) => {
  * ofrecer, el cliente recibe exactamente lo que recibía antes. Esta función no
  * puede devolver algo peor que la versión que reemplaza.
  */
+/*
+ * Cuánto se espera a una red que ni contesta ni rechaza.
+ *
+ * Es el tercer estado, y el que no tenía salida: el `catch` cubre la red que
+ * RECHAZA y el control de tipo cubre la que contesta MAL, pero una radio que
+ * reengancha —justo lo que hace el teléfono al volver de Mercado Pago— deja el
+ * `fetch` colgado sin error, y el documento esperaba para siempre teniendo la
+ * copia buena al lado.
+ *
+ * Cuatro segundos: bien por debajo de los ocho que espera `startup-recovery.js`
+ * antes de dar el arranque por perdido, y muy por encima de cualquier respuesta
+ * sana. El costo de equivocarse es casi nulo: el precache está versionado
+ * (`?v=49`), así que una copia guardada es el MISMO contenido que iba a traer la
+ * red, no una versión vieja.
+ */
+const PLAZO_DE_RED_MS = 4000;
+
 async function networkFirst(request) {
-  try {
-    const response = await fetch(request);
-    if (isUsable(request, response)) {
-      const copy = response.clone();
-      caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => undefined);
-      return response;
+  const red = fetch(request).then(
+    (response) => ({ response }),
+    (error) => ({ error }),
+  );
+
+  const aTiempo = await conPlazo(red, PLAZO_DE_RED_MS);
+  if (!aTiempo) {
+    const guardada = await cachedFallback(request);
+    if (guardada) {
+      // La red sigue viva: cuando conteste, actualiza la caché para la próxima.
+      red.then(({ response }) => guardarSiSirve(request, response)).catch(() => undefined);
+      return guardada;
     }
-    return (await cachedFallback(request)) || response;
-  } catch (_) {
-    return (await cachedFallback(request)) || Response.error();
+    // Sin nada mejor que ofrecer, esperar es lo correcto. Cortar acá rompería
+    // una carga lenta que iba a terminar bien.
   }
+
+  const { response, error } = await red;
+  if (error || !response) return (await cachedFallback(request)) || Response.error();
+  if (await sirve(request, response)) {
+    guardar(request, response.clone());
+    return response;
+  }
+  return (await cachedFallback(request)) || response;
 }
 
 async function cachedFallback(request) {
   const cached = await caches.match(request);
-  if (cached) return cached;
+  // Una copia guardada tampoco se cree por estar guardada. Hasta esta versión
+  // `install` aceptaba cualquier 200, así que cualquier cliente que instaló la
+  // PWA sobre una red con portal cautivo tiene esa página metida en la caché.
+  // Como el nombre de la caché no cambia, ese envenenamiento se HEREDA: revisarlo
+  // en la lectura es lo que lo desactiva sin obligar a nadie a bajar todo de nuevo.
+  if (cached && (await sirve(request, cached))) return cached;
   if (request.mode === 'navigate') return (await caches.match('./index.html')) || null;
   return null;
+}
+
+function guardar(request, respuesta) {
+  caches.open(CACHE_NAME).then((cache) => cache.put(request, respuesta)).catch(() => undefined);
+}
+
+async function guardarSiSirve(request, response) {
+  if (response && await sirve(request, response)) guardar(request, response.clone());
+}
+
+function conPlazo(promesa, ms) {
+  let temporizador;
+  const vencimiento = new Promise((resolve) => { temporizador = setTimeout(() => resolve(null), ms); });
+  return Promise.race([
+    promesa.then((valor) => { clearTimeout(temporizador); return valor; }),
+    vencimiento,
+  ]);
+}
+
+function destinoEsperado(url) {
+  const ruta = String(url).split('?')[0].toLowerCase();
+  if (ruta.endsWith('.css')) return 'style';
+  if (ruta.endsWith('.js') || ruta.endsWith('.mjs')) return 'script';
+  return '';
 }
 
 /*
@@ -246,4 +347,48 @@ function isUsable(request, response) {
   if (request.destination === 'style') return type.includes('text/css');
   if (request.destination === 'script') return type.includes('javascript') || type.includes('ecmascript');
   return true;
+}
+
+/*
+ * El tipo declarado más, para las hojas de estilo, el arranque del cuerpo.
+ *
+ * Hasta acá el worker contrastaba el tipo DECLARADO y nada más, y estaba escrito
+ * como límite conocido: un borde que además MIENTE en el `content-type` pasaba.
+ * Se cierra sólo para `style` y por una razón asimétrica, no por prolijidad:
+ *
+ *   - `styles.css` es una cadena de trece `@import`. Si llega HTML, el navegador
+ *     no avisa a nadie: la hoja queda con cero reglas y la tienda se apaga
+ *     entera. Es EXACTAMENTE la pantalla que reportó la persona.
+ *   - Un módulo que llega como HTML falla fuerte, y ese fallo ya tiene salida:
+ *     `startup-recovery.js` lo escucha en fase de captura y le da al cliente un
+ *     botón. Leer el cuerpo de los ~90 módulos del grafo para cubrir un caso que
+ *     ya está cubierto cuesta más de lo que evita.
+ *
+ * Sólo se lee el PRIMER trozo del cuerpo, sobre un clon, y se cancela enseguida:
+ * no se buferea la respuesta ni se pierde el streaming. Cualquier tropiezo del
+ * stream se resuelve a favor de la respuesta —ante la duda, el contrato viejo—.
+ */
+async function sirve(request, response) {
+  if (!isUsable(request, response)) return false;
+  if (request.destination !== 'style') return true;
+  return !(await pareceDocumentoHtml(response));
+}
+
+async function pareceDocumentoHtml(response) {
+  if (!response || !response.body) return false;
+  try {
+    const lector = response.clone().body.getReader();
+    const { value } = await lector.read();
+    lector.cancel().catch(() => undefined);
+    if (!value || !value.byteLength) return false;
+    const inicio = new TextDecoder('utf-8', { fatal: false })
+      .decode(value.subarray(0, 96))
+      .trimStart()
+      .toLowerCase();
+    // Un CSS de verdad puede empezar con comentarios, `@charset`, `@import` o
+    // espacios. Ninguna de esas formas puede confundirse con un documento.
+    return inicio.startsWith('<!doctype html') || inicio.startsWith('<html');
+  } catch (_) {
+    return false;
+  }
 }

@@ -20,6 +20,18 @@ Worktrees aislados en `D:\1212\worktrees\taba2-identity-session-biometrics` y
 `D:\1212\worktrees\taba2-rider-identity-biometrics`. Ningún otro frente fue
 tocado.
 
+**HEADs al cerrar:**
+
+* web · `feature/taba2-identity-session-biometrics` = `0be5b23`, tres commits
+  sobre `5a7d4e5`;
+* Rider · `feature/taba2-rider-identity-biometrics` = `4796a7c`, un commit sobre
+  `ae90ab6`.
+
+Mientras esto se escribía, otra sesión avanzó la punta web de `5a7d4e5` a
+`0a5f6d0` con el retorno desde Mercado Pago. **No hay un solo archivo en común
+entre los dos trabajos**, verificado por intersección de los dos diffs, así que
+la integración es un merge limpio. Ninguna de las dos ramas fue empujada.
+
 **El modelo de identidad completo era una tabla:**
 `business_members(business_id, user_id, role, is_active)`, con el rol restringido
 por CHECK a `('owner','staff','rider')`.

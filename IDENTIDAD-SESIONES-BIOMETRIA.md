@@ -585,7 +585,7 @@ APK `app-staging-debug` de `acc253a`, instalado en el aparato real.
 | 6-7 · reiniciar el teléfono | **OK** — archivos intactos; tras reiniciar, huella real y sesión restaurada |
 | 8 · refresh sin contraseña | **OK** — nunca se volvió a pedir contraseña en todo el gate |
 | 9 · offline → online | **parcial** — la app conservó su sesión y el último estado del servidor sin red; el corte se hizo por wifi, no por avión |
-| 10 · revocar sesión | **PARCIAL — ver el hallazgo** |
+| 10 · revocar sesión | **OK tras el arreglo** — el Rider deja de operar de inmediato |
 | 11 · deshabilitar cuenta | **OK** — fail-closed inmediato en todo |
 | 12 · logout / descartar | **OK** — desaparecen `rider_session.enc` y `rider_session_key.enc`; sin material, la huella ya no abre nada |
 
@@ -604,9 +604,9 @@ No hay otro camino para descifrar esa sesión. Cuando la app volvió a mostrar e
 rol `rider` con el archivo en nivel BIOMETRIC, la única explicación posible es
 que hubo autenticación biométrica real.
 
-## El hallazgo que bloquea la certificación
+## El hallazgo del gate físico, y su cierre
 
-**Revocar una sesión NO detiene al Rider de inmediato en todas sus RPC.**
+**Revocar una sesión NO detenía al Rider de inmediato en todas sus RPC.**
 
 Medido con un token revocado todavía vigente:
 
@@ -632,10 +632,49 @@ sobre esas RPC concretas, **hasta que vence: como máximo una hora**
 cuenta.** Con la cuenta dada de baja, la misma llamada devuelve `403 42501` al
 instante, porque el predicado en línea sí lee `is_active`.
 
-El arreglo correcto es que esas diez llamadas consulten la compuerta. Son 18
-RPC de Rider en total; no se tocaron en esta corrida porque hacerlo a las
-apuradas sobre funciones `SECURITY DEFINER` que mueven entregas es peor que
-dejar el hueco documentado y acotado.
+### Cómo se cerró
+
+Midiendo en vez de suponer, el arreglo resultó chico. De las doce RPC del Rider,
+**nueve pasan por un mismo ayudante**, `rider_require_active_membership`; una
+—`claim_available_rider_order`— ya usaba `has_business_role` y por lo tanto ya
+estaba cubierta; y de las que resolvían la membresía por su cuenta, las pesadas
+(`publish_rider_location`, `confirm_order_delivery`, la firma vieja de
+`start_rider_delivery`) **ya estaban revocadas de `authenticated`** por las
+migraciones de revocación legado: no son alcanzables por un cliente. Verificado
+con `has_function_privilege` antes de tocar nada.
+
+Así que se tocaron dos funciones, no dieciocho:
+
+| migración | qué |
+|---|---|
+| `20260812090000` | el ayudante compartido consulta la compuerta — cierra nueve RPC de una vez |
+| `20260812100000` | la entrega activa decide la autorización **antes** que los datos |
+
+La segunda salió de volver a medir después de la primera: `get_rider_queue`
+quedó cerrado (403) pero `get_active_rider_delivery` devolvía 200, porque
+buscaba el pedido antes de exigir el rol y sin entrega devolvía `null` sin
+llegar al guard. No era un agujero —un Rider revocado **con** entrega sí quedaba
+bloqueado— pero una RPC que responde 200 o 403 según el estado de los datos no
+se puede auditar de un vistazo.
+
+### Medido después, contra staging alojado, con el mismo access token vigente
+
+```
+get_rider_queue ............... 403 42501   CERRADO
+get_active_rider_delivery ..... 403 42501   CERRADO
+identity_touch_session ........ not_authorized
+refresh ....................... 400         CERRADO
+```
+
+Y en el teléfono: se revocó la sesión desde el backend y el Moto G15 pasó a
+«Sin conexión · Conservamos el último estado del servidor», sin una sola llamada
+autenticada exitosa. La sesión quedó marcada `owner_revoked`.
+
+**Lo que sigue abierto y queda como deuda anotada:** `assign_order_rider`
+resuelve el rol de **quien llama** en línea (`bm.role in ('owner','admin','staff')`),
+así que una sesión de **staff** revocada puede seguir asignando riders hasta que
+venza su token. Son 116 líneas de una función que mueve pedidos; no se tocó al
+pasar. La palanca inmediata sigue siendo dar de baja la cuenta.
 
 ## Limpieza
 
@@ -647,11 +686,30 @@ que no robara el foco durante el gate, quedó **reactivado**.
 
 ## Declaración
 
-**NO se declara `TABA2_IDENTITY_BIOMETRIC_SESSION_CERTIFIED_ON_STAGING`.**
+**TABA2_IDENTITY_BIOMETRIC_SESSION_CERTIFIED_ON_STAGING**
 
-RBAC, persistencia y biometría física pasaron contra staging alojado y contra el
-Moto G15 real. La revocación pasa su requisito literal —el refresh queda
-rechazado— pero no el operativo: el Rider sigue leyendo su cola hasta una hora
-con un token revocado. Mientras eso siga así, la palanca inmediata es
-deshabilitar la cuenta, no revocar la sesión, y eso hay que decirlo antes de
-firmar, no después.
+| condición | dónde está medida |
+|---|---|
+| RBAC | 70/70 ataques hostiles contra el alojado · 26/26 matriz de cuatro roles con tokens reales |
+| persistencia | Moto G15: muerte del proceso y reinicio del teléfono, sesión restaurada sin pedir contraseña |
+| revocación | mismo access token vigente: toda la superficie del Rider cierra al instante y el refresh es rechazado |
+| biometría física | huella humana real; el envoltorio pasó a nivel BIOMETRIC y el Keystore rechaza la clave sin autenticación |
+| sin degradar Rider/Panel | MP-back P1 sin fallas en 4 anchos · 118/118 precache byte a byte · 1355 tests web · los 6 miembros activos conservaron su acceso |
+
+**Estado final de staging:** ledger 88 (73 previas + mis 10 + 5 que aplicó otra
+sesión mientras esto corría). Los 70 ataques se volvieron a correr **sobre ese
+estado**, con las migraciones ajenas adentro: 70/70. La certificación es del
+staging que hay, no de una foto.
+
+### Lo que la firma NO cubre
+
+* **`assign_order_rider`**: una sesión de staff revocada puede seguir asignando
+  riders hasta que venza su token. Es la misma clase de defecto que se cerró
+  para el Rider, en la superficie del Panel, y quedó sin tocar.
+* **Paso 9 (offline → online)**: la app conservó sesión y último estado sin red,
+  pero el corte se hizo por wifi, no por modo avión. No es una prueba completa
+  de la cola offline.
+* **Regresión E**: se midió que hay un solo proceso y ningún servicio duplicado,
+  pero no se corrió una entrega real con GPS, así que «no doble publicación de
+  ubicación» no está medido bajo carga.
+* Nada de esto se empujó a ningún remoto.

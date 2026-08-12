@@ -642,6 +642,59 @@ begin
     (v_res ->> 'result')::jsonb ->> 'code' = 'not_authorized',
     coalesce((v_res ->> 'result')::jsonb ->> 'code', v_res ->> 'message'));
 
+  -- 29 bis. Las RPC del Rider tambien tienen que cerrar. Es lo que el gate
+  -- fisico encontro abierto: la compuerta vive dentro de has_business_role,
+  -- pero las RPC del Rider resuelven la membresia por su propio ayudante
+  -- compartido. Si ese ayudante no consulta la compuerta, una sesion revocada
+  -- sigue leyendo la cola hasta que vence el token: hasta una hora.
+  declare
+    -- Sesion propia de este ensayo: revocar la del bloque siguiente lo dejaria
+    -- midiendo otra cosa.
+    v_sesion_efimera uuid := gen_random_uuid();
+    v_rider_claims jsonb := identity_drill.claims(
+      identity_drill.get('rider')::uuid, v_sesion_efimera,
+      now(), identity_drill.get('rider_email'));
+    v_rider jsonb;
+  begin
+    -- La sesion tiene que existir para poder revocarla: si no esta registrada,
+    -- identity_revoke_session devuelve not_found y el ensayo mediria una
+    -- revocacion que nunca ocurrio. Ya paso una vez.
+    perform identity_drill.q(v_rider_claims,
+      format('select public.identity_register_session(%L, %L, null, null, null)::text', v_b, 'rider_android'));
+
+    v_rider := identity_drill.q(v_rider_claims,
+      format('select count(*)::text from public.get_rider_queue(%L)', v_b));
+    perform identity_drill.check(
+      'antes de revocar, el Rider lee su cola',
+      (v_rider ->> 'ok')::boolean,
+      coalesce(v_rider ->> 'sqlstate', '') || ' ' || coalesce(v_rider ->> 'message', 'linea de base'));
+
+    perform identity_drill.q(v_owner_claims,
+      format('select public.identity_revoke_session(%L)::text', v_sesion_efimera));
+
+    v_rider := identity_drill.q(v_rider_claims,
+      'select coalesce(public.get_active_rider_delivery()::text, ''(sin entrega)'')');
+    perform identity_drill.check(
+      'revocada la sesion, la entrega activa tampoco responde',
+      not (v_rider ->> 'ok')::boolean and v_rider ->> 'sqlstate' = '42501',
+      'la autorizacion se decide antes que los datos: SQLSTATE ' || coalesce(v_rider ->> 'sqlstate', '-'));
+
+    v_rider := identity_drill.q(v_rider_claims,
+      format('select count(*)::text from public.get_rider_queue(%L)', v_b));
+    perform identity_drill.check(
+      'revocada la sesion, el Rider deja de leer su cola de inmediato',
+      not (v_rider ->> 'ok')::boolean and v_rider ->> 'sqlstate' = '42501',
+      'SQLSTATE ' || coalesce(v_rider ->> 'sqlstate', '-'));
+
+    v_rider := identity_drill.q(
+      identity_drill.claims(identity_drill.get('rider')::uuid, gen_random_uuid(), now(), identity_drill.get('rider_email')),
+      format('select count(*)::text from public.get_rider_queue(%L)', v_b));
+    perform identity_drill.check(
+      'con una sesion nueva el Rider vuelve a leer su cola',
+      (v_rider ->> 'ok')::boolean,
+      'se revoco la sesion, no la persona');
+  end;
+
   -- 30. Con una sesion nueva la persona vuelve a trabajar: se revoco la
   -- sesion, no a la persona.
   v_res := identity_drill.q(

@@ -104,7 +104,7 @@ const portalCautivo = () => new Response('<!doctype html><h1>Iniciá sesión en 
   headers: { 'content-type': 'text/html; charset=utf-8' },
 });
 
-const ESTILOS = `${ORIGEN}/styles.css?v=49`;
+const ESTILOS = `${ORIGEN}/styles.css?v=50`;
 
 for (const status of [503, 404, 500, 403]) {
   test(`un ${status} del borde no reemplaza a la hoja de estilos guardada`, async () => {

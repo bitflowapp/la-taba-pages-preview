@@ -188,7 +188,7 @@ function redSana(transformar = null) {
   };
 }
 
-const ESTILOS = './styles.css?v=49';
+const ESTILOS = './styles.css?v=50';
 
 /*
  * Tope de seguridad de la propia prueba. Contra un worker SIN plazo, esperar la
@@ -253,7 +253,7 @@ test('un asset que contesta mal no se lleva puesto al resto del precache', async
     'un solo asset caído dejaba al cliente sin NADA precacheado: cache.addAll es todo o nada',
   );
   assert.ok(worker.guardada(ESTILOS), 'la hoja principal tenía que quedar guardada igual');
-  assert.equal(worker.guardada('./styles/tracking.css?v=49'), undefined);
+  assert.equal(worker.guardada('./styles/tracking.css?v=50'), undefined);
 });
 
 test('la instalación no explota cuando la red rechaza entera', async () => {

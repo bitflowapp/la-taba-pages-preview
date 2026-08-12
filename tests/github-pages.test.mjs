@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v61-cliente-comercial-mapa-permanente');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v62-endurecimiento-comercial');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -39,10 +39,10 @@ test('service worker caches only existing GitHub Pages assets', () => {
   );
   assert.ok(assets.includes('./js/pwa-update.js?v=3'));
   assert.ok(assets.includes('./js/startup-recovery.js?v=2'));
-  assert.ok(assets.includes('./styles.css?v=49'));
-  assert.ok(assets.includes('./styles/storefront.css?v=49'));
-  assert.ok(assets.includes('./styles/responsive.css?v=49'));
-  assert.ok(assets.includes('./styles/showcase.css?v=49'));
+  assert.ok(assets.includes('./styles.css?v=50'));
+  assert.ok(assets.includes('./styles/storefront.css?v=50'));
+  assert.ok(assets.includes('./styles/responsive.css?v=50'));
+  assert.ok(assets.includes('./styles/showcase.css?v=50'));
   assert.ok(assets.includes('./js/app.js?v=41'));
   assert.ok(assets.includes('./js/core/address.js'));
   assert.ok(assets.includes('./js/core/app-mode.js'));

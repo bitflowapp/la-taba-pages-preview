@@ -332,7 +332,7 @@ for (const width of WIDTHS) {
   }));
   anota(`   controlado por worker=${estadoSW.controlado} · cachés=${JSON.stringify(estadoSW.caches)} · ${estadoSW.versionApp}`);
   if (!estadoSW.versionApp.includes('?v=41')) falla(`cliente recurrente: sigue cargando ${estadoSW.versionApp}`);
-  const viejas = estadoSW.caches.filter((k) => k.startsWith('la-taba-runtime-') && k !== 'la-taba-runtime-v61-cliente-comercial-mapa-permanente');
+  const viejas = estadoSW.caches.filter((k) => k.startsWith('la-taba-runtime-') && k !== 'la-taba-runtime-v62-endurecimiento-comercial');
   if (estadoSW.controlado && viejas.length) falla(`cliente recurrente: quedaron cachés viejas ${JSON.stringify(viejas)}`);
 
   await page.evaluate(() => { window.location.hash = '#tracking'; });

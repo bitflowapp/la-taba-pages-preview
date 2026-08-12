@@ -26,7 +26,7 @@ import { esperarExperienciaComercial, medirExperienciaComercial } from './helper
 test.use({ serviceWorkers: 'allow', viewport: { width: 390, height: 844 } });
 test.describe.configure({ timeout: 120_000 });
 
-const ESTILOS = 'styles.css?v=49';
+const ESTILOS = 'styles.css?v=50';
 
 async function degradarBorde(request, modo) {
   const respuesta = await request.get(`/__edge-fault?mode=${modo}`);

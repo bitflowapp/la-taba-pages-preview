@@ -60,7 +60,7 @@ export default defineConfig({
       // pedir la navegación, si la página entra al back-forward cache, cuándo
       // llega `pageshow`—, y el defecto que cierran se vio en un iPhone.
       name: 'mobile-webkit',
-      testMatch: /(delivery-location-confirmation|panel-order-recovery|arranque-sin-jerga|production-cart-persistence|mp-back-navigation-ui|checkout-payment-handoff|service-worker-degraded-recovery)\.spec\.mjs/,
+      testMatch: /(delivery-location-confirmation|panel-order-recovery|arranque-sin-jerga|production-cart-persistence|mp-back-navigation-ui|checkout-payment-handoff|service-worker-degraded-recovery|storefront-stress-responsive)\.spec\.mjs/,
       use: { ...devices['iPhone 13'] },
     },
   ],

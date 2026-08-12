@@ -1640,6 +1640,14 @@ function bindEvents() {
    * cubre la vuelta con «atrás» —con y sin back-forward cache—, y `focus` y
    * `visibilitychange` cubren la vuelta desde otra aplicación, incluido el
    * navegador embebido que iOS abre encima de la PWA sin ocultar el documento.
+   *
+   * Y `hashchange`, que cubre la salida que ninguno de los tres ve: si la
+   * navegación externa NUNCA salió —el teléfono perdió la red en el peor
+   * momento— la persona sigue en el mismo documento, y lo primero que hace es
+   * tocar la barra de abajo. Ahí el handoff evidentemente no ocurrió, así que el
+   * checkout tiene que volver a estar disponible en vez de quedarse tomado para
+   * siempre. Durante un handoff de verdad este evento no puede llegar: el
+   * documento ya se fue.
    */
   let entregadoAMercadoPago = false;
 
@@ -1649,16 +1657,19 @@ function bindEvents() {
     entregadoAMercadoPago = false;
     confirming = false;
     const form = $('[data-checkout-form]');
-    if (form) delete form.dataset.checkoutHandoff;
+    if (form) {
+      delete form.dataset.checkoutHandoff;
+      delete form.dataset.motionBusy;
+    }
     const button = form?.querySelector('[type="submit"]');
     if (button) {
       button.disabled = isProductionOrderingBlocked();
       button.textContent = checkoutModeCopy(getAppMode()).submit;
     }
-    if (form) delete form.dataset.motionBusy;
   };
   window.addEventListener('pageshow', rearmarCheckoutAlVolver);
   window.addEventListener('focus', rearmarCheckoutAlVolver);
+  window.addEventListener('hashchange', rearmarCheckoutAlVolver);
   document.addEventListener('visibilitychange', rearmarCheckoutAlVolver);
 
   $('[data-checkout-form]')?.addEventListener('submit', async (event) => {

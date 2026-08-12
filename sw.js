@@ -243,30 +243,6 @@ self.addEventListener('fetch', (event) => {
 });
 
 /*
- * Acá vivía la mitad del problema: el respaldo estaba dentro de un `catch`, y un
- * `catch` sólo corre cuando la red RECHAZA.
- * Un borde que contesta 503, un despliegue a medio publicar que contesta 404 y
- * un portal cautivo que contesta 200 con su propio HTML son promesas
- * RESUELTAS: el worker las devolvía tal cual —una página de error donde el
- * documento esperaba una hoja de estilos— teniendo la copia buena en la caché,
- * al lado.
- *
- * Dónde se veía: al volver de Mercado Pago con el botón atrás. Medido en
- * WebKit, esa vuelta es `back_forward` con `persisted=false` —la página tiene
- * realtime abierto, así que no entra al back-forward cache—, o sea que el
- * documento se rearma entero y vuelve a pedir sus ~120 subrecursos de golpe,
- * justo en el instante en que el teléfono retoma la red desde otra aplicación.
- * `styles.css` volvía con el cuerpo del error: el `<link>` seguía en su lugar y
- * `link.sheet` existía, pero con CERO reglas y CERO `@import`. El HTML quedaba
- * entero y sin estilos —fondo blanco, iconos de 55 px, la barra inferior sin
- * fijar, 424 px de ancho sobre una pantalla de 390— con el carrito intacto
- * detrás. Ningún test lo veía porque el gate corre con `serviceWorkers: 'block'`.
- *
- * Cada rama nueva termina en `|| response`: cuando no hay nada mejor que
- * ofrecer, el cliente recibe exactamente lo que recibía antes. Esta función no
- * puede devolver algo peor que la versión que reemplaza.
- */
-/*
  * Cuánto se espera a una red que ni contesta ni rechaza.
  *
  * Es el tercer estado, y el que no tenía salida: el `catch` cubre la red que
@@ -303,6 +279,30 @@ const CORTE_MS = 10_000;
 let plazosSeguidos = 0;
 let cortadoHasta = 0;
 
+/*
+ * Acá vivía la mitad del problema: el respaldo estaba dentro de un `catch`, y un
+ * `catch` sólo corre cuando la red RECHAZA.
+ * Un borde que contesta 503, un despliegue a medio publicar que contesta 404 y
+ * un portal cautivo que contesta 200 con su propio HTML son promesas
+ * RESUELTAS: el worker las devolvía tal cual —una página de error donde el
+ * documento esperaba una hoja de estilos— teniendo la copia buena en la caché,
+ * al lado.
+ *
+ * Dónde se veía: al volver de Mercado Pago con el botón atrás. Medido en
+ * WebKit, esa vuelta es `back_forward` con `persisted=false` —la página tiene
+ * realtime abierto, así que no entra al back-forward cache—, o sea que el
+ * documento se rearma entero y vuelve a pedir sus ~120 subrecursos de golpe,
+ * justo en el instante en que el teléfono retoma la red desde otra aplicación.
+ * `styles.css` volvía con el cuerpo del error: el `<link>` seguía en su lugar y
+ * `link.sheet` existía, pero con CERO reglas y CERO `@import`. El HTML quedaba
+ * entero y sin estilos —fondo blanco, iconos de 55 px, la barra inferior sin
+ * fijar, 424 px de ancho sobre una pantalla de 390— con el carrito intacto
+ * detrás. Ningún test lo veía porque el gate corre con `serviceWorkers: 'block'`.
+ *
+ * Cada rama nueva termina en `|| response`: cuando no hay nada mejor que
+ * ofrecer, el cliente recibe exactamente lo que recibía antes. Esta función no
+ * puede devolver algo peor que la versión que reemplaza.
+ */
 async function networkFirst(request) {
   if (Date.now() < cortadoHasta) {
     const guardada = await cachedFallback(request);
@@ -321,8 +321,6 @@ async function networkFirst(request) {
   } else {
     plazosSeguidos += 1;
     if (plazosSeguidos >= PLAZOS_PARA_CORTAR) cortadoHasta = Date.now() + CORTE_MS;
-  }
-  if (!aTiempo) {
     const guardada = await cachedFallback(request);
     if (guardada) {
       // La red sigue viva: cuando conteste, actualiza la caché para la próxima.
@@ -344,12 +342,21 @@ async function networkFirst(request) {
 
 async function cachedFallback(request) {
   const cached = await caches.match(request);
-  // Una copia guardada tampoco se cree por estar guardada. Hasta esta versión
-  // `install` aceptaba cualquier 200, así que cualquier cliente que instaló la
-  // PWA sobre una red con portal cautivo tiene esa página metida en la caché.
-  // Como el nombre de la caché no cambia, ese envenenamiento se HEREDA: revisarlo
-  // en la lectura es lo que lo desactiva sin obligar a nadie a bajar todo de nuevo.
-  if (cached && isUsable(request, cached) && !(await pareceDocumentoHtml(cached))) return cached;
+  /*
+   * Una copia guardada tampoco se cree por estar guardada. Hasta esta versión
+   * `install` aceptaba cualquier 200, así que cualquier cliente que instaló la
+   * PWA sobre un borde que contesta HTML a todo tiene esa página metida en la
+   * caché. Como el nombre de la caché no cambia, ese envenenamiento se HEREDA, y
+   * revisarlo en la lectura es lo que lo desactiva sin obligar a nadie a bajar
+   * todo de nuevo.
+   *
+   * El tipo declarado alcanza para el caso realista —el borde contesta
+   * `text/html`— así que el cuerpo sólo se mira para las hojas de estilo, que es
+   * donde la mentira no avisa. Mirarlo para todo destino agregaría una lectura
+   * por cada respaldo, incluidas las imágenes.
+   */
+  const desmentida = cached && request.destination === 'style' && await pareceDocumentoHtml(cached);
+  if (cached && isUsable(request, cached) && !desmentida) return cached;
   if (request.mode === 'navigate') return (await caches.match('./index.html')) || null;
   return null;
 }

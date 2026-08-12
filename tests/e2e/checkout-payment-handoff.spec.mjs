@@ -86,7 +86,7 @@ const COMERCIO = {
  * `demoraDeLaFuncion` permite estirar la creación de la sesión: es el escenario
  * real —el checkout tarda, la persona toca de nuevo—.
  */
-async function instalarBackend(page, { demoraDeLaFuncion = 0, demoraDelPedido = 0 } = {}) {
+async function instalarBackend(page, { demoraDeLaFuncion = 0, demoraDelPedido = 0, rechazoDelPedido = null } = {}) {
   const llamadas = {
     sesiones: 0, preferencias: 0, pedidos: 0, requestIds: [], pedidoRequestIds: [],
   };
@@ -122,6 +122,13 @@ async function instalarBackend(page, { demoraDeLaFuncion = 0, demoraDelPedido = 
       const enviadoPedido = JSON.parse(route.request().postData() || '{}');
       llamadas.pedidoRequestIds.push(String(enviadoPedido?.payload?.client_request_id || ''));
       if (demoraDelPedido) await new Promise((resolve) => { setTimeout(resolve, demoraDelPedido); });
+      if (rechazoDelPedido) {
+        return route.fulfill({
+          status: rechazoDelPedido.status,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: rechazoDelPedido.message, code: rechazoDelPedido.code || 'P0001' }),
+        });
+      }
       return json({ order_id: '5f000000-0000-4000-8000-000000000001', code: 'LT-9001' });
     }
     if (url.pathname.includes('/rest/v1/rpc/get_mercadopago_checkout_availability')) {
@@ -301,6 +308,92 @@ test.describe('handoff a Mercado Pago', () => {
       const { getState } = await import('/js/state.js');
       return getState().cart.map((i) => `${i.productId}:${i.quantity}`);
     })).toEqual([`${PRODUCTO.id}:2`]);
+  });
+
+  /*
+   * Los tres rechazos que el backend puede mandar en el último segundo, y que
+   * son los que deciden si la persona entiende qué pasó o se queda mirando.
+   *
+   * En los tres, lo que NO puede pasar es lo mismo: perder el carrito. Un
+   * rechazo del servidor no es «la persona vació su carrito», y quedarse sin
+   * nada después de tocar Confirmar es la forma más rápida de perder la venta.
+   * El botón además tiene que volver: un rechazo por stock se resuelve sacando
+   * un producto y confirmando otra vez.
+   */
+  for (const caso of [
+    {
+      nombre: 'stock insuficiente',
+      rechazo: { status: 400, message: 'producto no disponible: 30000000-0000-4000-8000-000000000001' },
+      espera: /stock/i,
+    },
+    {
+      nombre: 'el pedido cambió durante el envío',
+      rechazo: { status: 409, message: 'client_request_id fingerprint mismatch' },
+      espera: /cambió durante el envío/i,
+    },
+    {
+      nombre: 'sesión vencida',
+      rechazo: { status: 401, message: 'JWT expired' },
+      espera: /sesión segura venció/i,
+    },
+  ]) {
+    test(`el rechazo por ${caso.nombre} se dice, no se pierde el carrito y se puede reintentar`, async ({ page }) => {
+      const llamadas = await instalarBackend(page, { rechazoDelPedido: caso.rechazo });
+      await abrirCheckoutConCarrito(page);
+      await page.getByLabel('Retiro en local').check();
+      await page.evaluate(() => {
+        const form = document.querySelector('[data-checkout-form]');
+        form.querySelector('[name="customerName"]').value = 'Cliente QA';
+        form.querySelector('[name="customerPhone"]').value = '2995550000';
+      });
+      await page.getByLabel('Forma de pago').selectOption('cash');
+      const boton = page.locator('[data-checkout-form] [type="submit"]');
+
+      await boton.click({ noWaitAfter: true });
+      await expect.poll(() => llamadas.pedidos, { timeout: 15_000 }).toBeGreaterThanOrEqual(1);
+      await page.waitForTimeout(1_200);
+
+      // Se dice lo que pasó, en alguna superficie que la persona ve.
+      const textoVisible = await page.evaluate(() => document.body.innerText);
+      expect(textoVisible, `no se dijo nada sobre «${caso.nombre}»`).toMatch(caso.espera);
+
+      // El carrito sobrevive.
+      expect(await page.evaluate(async () => {
+        const { getState } = await import('/js/state.js');
+        return getState().cart.map((i) => `${i.productId}:${i.quantity}`);
+      })).toEqual([`${PRODUCTO.id}:2`]);
+
+      // Y se puede volver a intentar: el botón vuelve, habilitado y con su texto.
+      await expect(boton).toBeEnabled({ timeout: 10_000 });
+      await expect(boton).toHaveText(/Confirmar pedido/);
+    });
+  }
+
+  test('si la navegación externa nunca salió, moverse por la tienda devuelve el checkout', async ({ page }) => {
+    /*
+     * El caso sin salida: se toca «Pagar», la navegación no llega a comprometer
+     * y la persona sigue en el mismo documento. No hay `pageshow`, no hay
+     * `focus` y no hay `visibilitychange` —nunca se fue a ningún lado—, así que
+     * sin esto el checkout quedaba tomado para siempre y la venta muerta.
+     * Lo primero que hace alguien en esa situación es tocar la barra de abajo.
+     */
+    const llamadas = await instalarBackend(page);
+    await elDestinoExternoNoLlega(page);
+    await abrirCheckoutConCarrito(page);
+    const boton = await prepararPagoConMercadoPago(page);
+
+    await boton.click();
+    await expect.poll(() => llamadas.sesiones, { timeout: 15_000 }).toBe(1);
+    await expect(boton).toBeDisabled();
+
+    await page.evaluate(() => { window.location.hash = '#home'; });
+    await page.waitForTimeout(600);
+    await page.evaluate(() => { window.location.hash = '#cart'; });
+    await page.waitForTimeout(600);
+
+    await expect(boton).toBeEnabled({ timeout: 10_000 });
+    await expect(boton).toHaveText(/Confirmar pedido/);
+    expect(llamadas.sesiones, 'moverse por la tienda no puede crear otra sesión').toBe(1);
   });
 
   test('el doble toque sobre un backend lento tampoco duplica el pedido en efectivo', async ({ page }) => {

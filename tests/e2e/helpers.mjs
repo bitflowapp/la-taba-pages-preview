@@ -417,7 +417,19 @@ export async function fillCheckout(page, {
   const paymentField = page.getByLabel('Forma de pago');
   if (await paymentField.count()) {
     const requestedPaymentExists = await paymentField.locator(`option[value="${payment}"]`).count();
-    await paymentField.selectOption(requestedPaymentExists ? payment : 'coordinate');
+    // El repliegue a 'coordinate' era MUDO, y eso escondía una divergencia real:
+    // cinco specs pedían 'transfer' —un valor que el CHECK de la base no acepta
+    // y que el checkout ya no ofrece— y seguían en verde ejercitando otra forma
+    // de pago, con el nombre equivocado escrito al lado. Un test que dice que
+    // prueba una cosa y prueba otra es peor que uno que falla.
+    if (!requestedPaymentExists) {
+      throw new Error(
+        `El checkout no ofrece la forma de pago "${payment}". Las válidas salen del CHECK `
+        + 'orders_payment_method_valid (ver tests/payment-methods-contract.test.mjs): '
+        + 'elegí una que exista en vez de dejar que el helper la reemplace en silencio.',
+      );
+    }
+    await paymentField.selectOption(payment);
   }
 
   const instructions = page.locator('.checkout-instructions');

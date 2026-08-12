@@ -440,7 +440,7 @@ test('checkout con 10 direcciones inicia compactado y puede seleccionar una dire
     name: 'Cliente 10',
     phone: '2995551010',
     addresses,
-    payment: 'transfer',
+    payment: 'cash',
     deliveryMode: 'delivery',
   });
 

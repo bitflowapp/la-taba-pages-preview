@@ -85,7 +85,7 @@ async function comprarYSeguir(page) {
     street: 'Roca 222',
     neighborhood: 'Neuquen centro',
     reference: 'Porton negro',
-    payment: 'transfer',
+    payment: 'cash',
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();

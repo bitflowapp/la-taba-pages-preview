@@ -24,7 +24,7 @@ test('negocio ve reportes/caja de la simulacion y cancelaciones', async ({ brows
     neighborhood: 'Neuquen centro',
     reference: 'Casa gris',
     notes: 'Reporte de muestra',
-    payment: 'transfer',
+    payment: 'cash',
     deliveryMode: 'delivery',
   });
   await page.getByRole('button', { name: /Confirmar pedido/i }).click();

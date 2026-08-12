@@ -23,12 +23,12 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
     neighborhood: 'Neuquen centro',
     reference: 'Porton azul',
     notes: 'Cortar fino',
-    payment: 'transfer',
+    payment: 'cash',
     deliveryMode: 'delivery',
   });
   const paymentMethod = page.getByLabel('Forma de pago');
   await expect(paymentMethod).toBeVisible();
-  await expect(paymentMethod).toHaveValue('transfer');
+  await expect(paymentMethod).toHaveValue('cash');
   await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
   await expect(page.locator('[data-profile-summary]')).toBeVisible();
   await expect(page.locator('[data-profile-name]')).toHaveText('Cliente Growth');

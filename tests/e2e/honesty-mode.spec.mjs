@@ -129,7 +129,7 @@ test('checkout del preview valida contrato de Perfil y mantiene copy comercial',
     name: '',
     phone: '',
     addresses: [],
-    payment: 'transfer',
+    payment: 'cash',
     deliveryMode: 'delivery',
   });
   await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
@@ -141,7 +141,7 @@ test('checkout del preview valida contrato de Perfil y mantiene copy comercial',
     name: 'Cliente prueba',
     phone: '2995551234',
     addresses: [],
-    payment: 'transfer',
+    payment: 'cash',
     deliveryMode: 'delivery',
   });
   await expect(page.locator('[data-profile-block="no-address"]')).toBeVisible();
@@ -156,15 +156,15 @@ test('checkout del preview valida contrato de Perfil y mantiene copy comercial',
     neighborhood: 'Neuquen Capital',
     reference: 'Porton gris',
     notes: '',
-    payment: 'transfer',
+    payment: 'cash',
     deliveryMode: 'delivery',
   });
   const paymentMethod = page.getByLabel('Forma de pago');
   await expect(paymentMethod).toBeVisible();
-  await expect(paymentMethod.locator('option')).toHaveCount(3);
+  await expect(paymentMethod.locator('option')).toHaveCount(2);
   await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
-  await paymentMethod.selectOption('transfer');
-  await expect(paymentMethod).toHaveValue('transfer');
+  await paymentMethod.selectOption('cash');
+  await expect(paymentMethod).toHaveValue('cash');
   await page.locator('[data-checkout-submit]').click();
   await waitForToast(page, 'Pedido confirmado');
 

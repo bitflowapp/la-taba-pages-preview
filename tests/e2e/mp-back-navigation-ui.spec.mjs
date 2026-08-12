@@ -22,6 +22,9 @@
  * de nodos: un `<link>` presente con la hoja vacía pasa cualquier `toBeVisible`.
  */
 import { expect, test } from '@playwright/test';
+// El contrato visual vive en `helpers.mjs`: lo afirman esta suite y la de
+// recuperación del worker, y tienen que exigir exactamente lo mismo.
+import { esperarExperienciaComercial, medirExperienciaComercial } from './helpers.mjs';
 
 /*
  * El worker es el sujeto de la prueba: sin él no hay nada que medir, y el resto
@@ -37,91 +40,6 @@ test.use({ serviceWorkers: 'allow', viewport: { width: 390, height: 844 } });
 
 const ORIGEN_EXTERNO = 'https://www.mercadopago.com.ar';
 const URL_EXTERNA = `${ORIGEN_EXTERNO}/checkout/v1/redirect?pref_id=E2E-SIN-PAGO`;
-
-// La superficie de marca de la home. Vive en tokens.css (--brand-bg) y la
-// impone brand-home.css, que gana por orden de cadena al fondo claro que
-// responsive.css fija por debajo de 820 px.
-const FONDO_COMERCIAL = 'rgb(9, 11, 14)';
-
-/*
- * Medición de la experiencia comercial. Los umbrales no son de gusto: son la
- * distancia entre lo sano y lo roto tal como se midió en WebKit.
- *   fondo       rgb(9,11,14)  ->  rgba(0,0,0,0)
- *   .mobile-nav fixed         ->  static
- *   icono       21 px         ->  55 px
- *   .brand      90 px         ->  154 px
- *   scrollWidth 390           ->  424 sobre una pantalla de 390
- */
-async function medirExperienciaComercial(page) {
-  return page.evaluate(() => {
-    const el = (s) => document.querySelector(s);
-    const ancho = (s) => { const n = el(s); return n ? Math.round(n.getBoundingClientRect().width) : -1; };
-    const link = el('link[href^="styles.css"]');
-
-    let reglas = -1;
-    let importsVivos = -1;
-    let importsTotales = -1;
-    const importsPerdidos = [];
-    try {
-      reglas = link.sheet.cssRules.length;
-      const imports = [...link.sheet.cssRules].filter((r) => r.type === CSSRule.IMPORT_RULE);
-      importsTotales = imports.length;
-      importsVivos = 0;
-      imports.forEach((r) => {
-        let vivo = false;
-        try { vivo = !!(r.styleSheet && r.styleSheet.cssRules.length > 0); } catch (_) { vivo = false; }
-        if (vivo) importsVivos += 1;
-        else importsPerdidos.push(String(r.href || '').split('/').pop().split('?')[0]);
-      });
-    } catch (_) { /* la hoja no está disponible: queda en -1 y la prueba lo dice */ }
-
-    const icono = el('.mobile-nav svg');
-    return {
-      fondo: getComputedStyle(document.body).backgroundColor,
-      navPosicion: el('.mobile-nav') ? getComputedStyle(el('.mobile-nav')).position : 'SIN-NODO',
-      navAncho: ancho('.mobile-nav'),
-      iconoAncho: icono ? Math.round(parseFloat(getComputedStyle(icono).width)) : -1,
-      marcaAncho: ancho('.brand'),
-      barraSuperiorPosicion: el('.topbar') ? getComputedStyle(el('.topbar')).position : 'SIN-NODO',
-      reglas,
-      importsVivos,
-      importsTotales,
-      importsPerdidos,
-      scrollWidth: document.documentElement.scrollWidth,
-      innerWidth: window.innerWidth,
-      productos: document.querySelectorAll('[data-product-grid] [data-add-product]').length,
-      arranque: document.documentElement.dataset.tabaStartup || null,
-      vistaActiva: document.body.dataset.activeView || null,
-      workerControlando: !!navigator.serviceWorker.controller,
-    };
-  });
-}
-
-function esperarExperienciaComercial(medida, contexto) {
-  const detalle = `${contexto}\n${JSON.stringify(medida, null, 2)}`;
-
-  // La cadena de estilos entera, viva. Un `<link>` presente con la hoja en cero
-  // reglas era exactamente el estado roto que nadie detectaba.
-  expect(medida.reglas, `la hoja principal quedó sin reglas · ${detalle}`).toBeGreaterThan(0);
-  expect(medida.importsPerdidos, `hojas perdidas de la cadena · ${detalle}`).toEqual([]);
-  expect(medida.importsVivos, `cadena de @import incompleta · ${detalle}`).toBe(medida.importsTotales);
-  expect(medida.importsTotales, `la cadena de @import desapareció · ${detalle}`).toBeGreaterThan(0);
-
-  // La identidad comercial.
-  expect(medida.fondo, `se perdió la superficie de marca · ${detalle}`).toBe(FONDO_COMERCIAL);
-
-  // El layout comercial: la barra inferior fijada al borde y el chrome a escala.
-  expect(medida.navPosicion, `la barra inferior se despegó del borde · ${detalle}`).toBe('fixed');
-  expect(medida.barraSuperiorPosicion, `la barra superior perdió su anclaje · ${detalle}`).toBe('sticky');
-  expect(medida.iconoAncho, `iconos sobredimensionados · ${detalle}`).toBeGreaterThan(0);
-  expect(medida.iconoAncho, `iconos sobredimensionados · ${detalle}`).toBeLessThanOrEqual(28);
-  expect(medida.marcaAncho, `la marca quedó sobredimensionada · ${detalle}`).toBeLessThanOrEqual(120);
-
-  // Sin desborde horizontal: el estado roto medía 424 sobre 390.
-  expect(medida.scrollWidth, `apareció desborde horizontal · ${detalle}`).toBeLessThanOrEqual(medida.innerWidth);
-
-  expect(medida.arranque, `la aplicación no llegó a arrancar · ${detalle}`).toBe('ready');
-}
 
 /*
  * Se pide desde el proceso de la prueba y NO desde la página: en el momento en

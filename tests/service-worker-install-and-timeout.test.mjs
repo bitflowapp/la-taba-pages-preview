@@ -443,23 +443,66 @@ test('una hoja de estilos de verdad que empieza con un comentario pasa sin probl
   }
 });
 
-test('el módulo que empieza con HTML y miente en el tipo NO se inspecciona: falla fuerte y el panel de arranque lo levanta', async () => {
-  // Decisión explícita, no un olvido. Un módulo que llega roto tira un error de
-  // carga que `startup-recovery.js` ya convierte en una salida para el cliente;
-  // una hoja de estilos que llega rota no avisa a nadie y apaga la tienda
-  // entera. Inspeccionar el cuerpo de los ~90 módulos del grafo para cubrir un
-  // caso que ya tiene salida cuesta más de lo que evita.
+test('un módulo con el tipo mentido se desmiente CUANDO hay copia guardada', async () => {
+  /*
+   * `startup-recovery.js` —el que le da al cliente el cartel con el botón— es un
+   * script clásico. Un borde que miente el `content-type` de los `.js` lo rompe
+   * A ÉL también, así que el cliente no se queda con una tienda muerta: se queda
+   * con una tienda muerta Y SIN SALIDA. Por eso, en el cliente que tiene algo
+   * guardado, el módulo también se contrasta contra su cuerpo.
+   */
   const modulo = './js/app.js?v=41';
   const worker = cargarWorker({
     red: async () => new Response('<!doctype html><h1>portal</h1>', {
       status: 200,
       headers: { 'content-type': 'text/javascript; charset=utf-8' },
     }),
-    cachesPrevias: { [NOMBRE_CACHE]: [[modulo, js()]] },
+    cachesPrevias: { [NOMBRE_CACHE]: [[modulo, js('export const ok = 1;')]] },
+  });
+
+  const respuesta = await worker.responder(pedido(modulo, { destination: 'script' }));
+  assert.match(await respuesta.text(), /export const ok/);
+});
+
+test('sin copia guardada, el módulo mentido NO se inspecciona: mirarlo no cambiaría nada y se paga en cada visita fría', async () => {
+  /*
+   * La otra mitad de la decisión, y tiene número: sin copia en la caché no hay
+   * con qué reemplazar la respuesta, así que leer el cuerpo es puro costo. Se
+   * midió con el worker activo: inspeccionar siempre llevaba la primera visita
+   * de 167 a 182 pedidos y de 1993 a 2576 KB transferidos, justo en la visita
+   * donde la inspección no puede servir para nada.
+   */
+  const modulo = './js/app.js?v=41';
+  const worker = cargarWorker({
+    red: async () => new Response('<!doctype html><h1>portal</h1>', {
+      status: 200,
+      headers: { 'content-type': 'text/javascript; charset=utf-8' },
+    }),
   });
 
   const respuesta = await worker.responder(pedido(modulo, { destination: 'script' }));
   assert.match(await respuesta.text(), /<h1>portal<\/h1>/);
+});
+
+test('instalar SÍ mira el cuerpo de los módulos: es una sola vez y es cuando se envenena la caché', async () => {
+  const worker = cargarWorker({
+    red: async (solicitud) => {
+      const ruta = absoluta(solicitud).split('?')[0];
+      if (ruta.endsWith('.js') || ruta.endsWith('.mjs')) {
+        return new Response('<!doctype html><h1>portal</h1>', {
+          status: 200,
+          headers: { 'content-type': 'text/javascript; charset=utf-8' },
+        });
+      }
+      return ruta.endsWith('.css') ? css() : html();
+    },
+  });
+
+  await worker.instalar();
+
+  assert.equal(worker.guardada('./js/app.js?v=41'), undefined);
+  assert.equal(worker.guardada('./js/state.js'), undefined);
+  assert.ok(worker.guardada(ESTILOS), 'las hojas sanas tenían que guardarse igual');
 });
 
 // ---------------------------------------------------------------------------

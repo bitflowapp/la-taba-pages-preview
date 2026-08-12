@@ -461,3 +461,88 @@ export async function seedCartAboveMinimum(page, selector = '[data-product-grid]
   await page.locator(`[data-cart-inc="${productId}"] >> visible=true`).first().click();
   return productId;
 }
+
+/*
+ * El contrato visual de la tienda comercial, medido y no mirado.
+ *
+ * Nació con el P1 del retorno desde Mercado Pago y vive acá porque ahora lo
+ * afirman dos suites —el retorno desde el pago y la recuperación del worker
+ * ante un borde degradado— y tienen que exigir exactamente lo mismo. Si una
+ * afloja, afloja la otra: el defecto que las dos cierran es el mismo.
+ *
+ * Se miden geometría y color COMPUTADOS, no presencia de nodos: el estado roto
+ * conservaba el `<link>` y hasta `link.sheet`; lo que no había eran reglas, así
+ * que cualquier `toBeVisible` pasaba sobre una tienda apagada.
+ */
+export const FONDO_COMERCIAL = 'rgb(9, 11, 14)';
+
+export async function medirExperienciaComercial(page) {
+  return page.evaluate(() => {
+    const el = (s) => document.querySelector(s);
+    const ancho = (s) => { const n = el(s); return n ? Math.round(n.getBoundingClientRect().width) : -1; };
+    const link = el('link[href^="styles.css"]');
+
+    let reglas = -1;
+    let importsVivos = -1;
+    let importsTotales = -1;
+    const importsPerdidos = [];
+    try {
+      reglas = link.sheet.cssRules.length;
+      const imports = [...link.sheet.cssRules].filter((r) => r.type === CSSRule.IMPORT_RULE);
+      importsTotales = imports.length;
+      importsVivos = 0;
+      imports.forEach((r) => {
+        let vivo = false;
+        try { vivo = !!(r.styleSheet && r.styleSheet.cssRules.length > 0); } catch (_) { vivo = false; }
+        if (vivo) importsVivos += 1;
+        else importsPerdidos.push(String(r.href || '').split('/').pop().split('?')[0]);
+      });
+    } catch (_) { /* la hoja no está disponible: queda en -1 y la prueba lo dice */ }
+
+    const icono = el('.mobile-nav svg');
+    return {
+      fondo: getComputedStyle(document.body).backgroundColor,
+      navPosicion: el('.mobile-nav') ? getComputedStyle(el('.mobile-nav')).position : 'SIN-NODO',
+      navAncho: ancho('.mobile-nav'),
+      iconoAncho: icono ? Math.round(parseFloat(getComputedStyle(icono).width)) : -1,
+      marcaAncho: ancho('.brand'),
+      barraSuperiorPosicion: el('.topbar') ? getComputedStyle(el('.topbar')).position : 'SIN-NODO',
+      reglas,
+      importsVivos,
+      importsTotales,
+      importsPerdidos,
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+      productos: document.querySelectorAll('[data-product-grid] [data-add-product]').length,
+      arranque: document.documentElement.dataset.tabaStartup || null,
+      vistaActiva: document.body.dataset.activeView || null,
+      workerControlando: !!navigator.serviceWorker.controller,
+    };
+  });
+}
+
+export function esperarExperienciaComercial(medida, contexto) {
+  const detalle = `${contexto}\n${JSON.stringify(medida, null, 2)}`;
+
+  // La cadena de estilos entera, viva. Un `<link>` presente con la hoja en cero
+  // reglas era exactamente el estado roto que nadie detectaba.
+  expect(medida.reglas, `la hoja principal quedó sin reglas · ${detalle}`).toBeGreaterThan(0);
+  expect(medida.importsPerdidos, `hojas perdidas de la cadena · ${detalle}`).toEqual([]);
+  expect(medida.importsVivos, `cadena de @import incompleta · ${detalle}`).toBe(medida.importsTotales);
+  expect(medida.importsTotales, `la cadena de @import desapareció · ${detalle}`).toBeGreaterThan(0);
+
+  // La identidad comercial.
+  expect(medida.fondo, `se perdió la superficie de marca · ${detalle}`).toBe(FONDO_COMERCIAL);
+
+  // El layout comercial: la barra inferior fijada al borde y el chrome a escala.
+  expect(medida.navPosicion, `la barra inferior se despegó del borde · ${detalle}`).toBe('fixed');
+  expect(medida.barraSuperiorPosicion, `la barra superior perdió su anclaje · ${detalle}`).toBe('sticky');
+  expect(medida.iconoAncho, `iconos sobredimensionados · ${detalle}`).toBeGreaterThan(0);
+  expect(medida.iconoAncho, `iconos sobredimensionados · ${detalle}`).toBeLessThanOrEqual(28);
+  expect(medida.marcaAncho, `la marca quedó sobredimensionada · ${detalle}`).toBeLessThanOrEqual(120);
+
+  // Sin desborde horizontal: el estado roto medía 424 sobre 390.
+  expect(medida.scrollWidth, `apareció desborde horizontal · ${detalle}`).toBeLessThanOrEqual(medida.innerWidth);
+
+  expect(medida.arranque, `la aplicación no llegó a arrancar · ${detalle}`).toBe('ready');
+}

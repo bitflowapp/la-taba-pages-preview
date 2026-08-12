@@ -141,6 +141,9 @@ async function handleRequest(request, response) {
    */
   if (url.pathname === '/__edge-fault' && request.method === 'GET') {
     edgeFault = EDGE_FAULTS.has(url.searchParams.get('mode')) ? url.searchParams.get('mode') : 'off';
+    // Un modo `hang` deja sockets abiertos a propósito. Al apagar la falla hay
+    // que soltarlos, o la prueba siguiente arranca con el servidor tomado.
+    if (edgeFault === 'off') soltarRespuestasColgadas();
     sendJson(response, 200, { ok: true, mode: edgeFault });
     return;
   }
@@ -268,27 +271,89 @@ function setCorsHeaders(response) {
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-// Las tres formas en que un borde contesta MAL sin dejar de contestar. Ninguna
-// rechaza la promesa de `fetch`, que es justamente lo que las hacía invisibles.
-const EDGE_FAULTS = new Set(['off', 'css-503', 'css-404', 'css-captive']);
+/*
+ * Las formas en que un borde contesta MAL sin dejar de contestar. Ninguna
+ * rechaza la promesa de `fetch`, que es justamente lo que las hacía invisibles:
+ * el respaldo del worker vivía en un `catch` y un `catch` sólo corre cuando la
+ * red RECHAZA.
+ *
+ *   *-503 / *-404 / *-429   el borde contesta un error
+ *   *-captive               200 con la página del portal cautivo (HTML)
+ *   *-mime-lie              200 con HTML pero DECLARANDO el tipo correcto
+ *   css-truncated           200, tipo correcto, y el cuerpo se corta a la mitad
+ *   *-hang                  ni contesta ni corta: el caso sin `catch` ni estado
+ *
+ * Vive en el relay de pruebas, no en el cliente ni en la lista de precache. Hace
+ * falta acá porque los `fetch` de un service worker NO pasan por `page.route()`.
+ */
+const EDGE_FAULTS = new Set([
+  'off',
+  'css-503', 'css-404', 'css-429', 'css-captive', 'css-mime-lie', 'css-truncated', 'css-hang',
+  'js-503', 'js-404', 'js-captive', 'js-mime-lie', 'js-hang',
+  'all-503', 'all-hang',
+]);
 let edgeFault = 'off';
+const respuestasColgadas = new Set();
+
+function soltarRespuestasColgadas() {
+  respuestasColgadas.forEach((response) => { try { response.destroy(); } catch (_) { /* ya cerrada */ } });
+  respuestasColgadas.clear();
+}
+
+function fallaAplicable(fault, extension) {
+  if (fault === 'off') return null;
+  const esCss = extension === '.css';
+  const esJs = extension === '.js' || extension === '.mjs';
+  if (fault.startsWith('all-')) return fault.slice(4);
+  if (fault.startsWith('css-') && esCss) return fault.slice(4);
+  if (fault.startsWith('js-') && esJs) return fault.slice(3);
+  return null;
+}
+
+function responderDegradado(response, modo, tipoReal) {
+  if (modo === 'hang') {
+    // Ni cabecera ni cierre. El socket queda abierto y el cliente esperando.
+    respuestasColgadas.add(response);
+    response.on('close', () => respuestasColgadas.delete(response));
+    return;
+  }
+  if (modo === 'captive') {
+    // Un portal cautivo contesta 200 con SU página. El estado dice que salió
+    // bien; el cuerpo es HTML donde se esperaba CSS o un módulo.
+    response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    response.end('<!doctype html><title>Red</title><h1>Iniciá sesión en la red</h1>');
+    return;
+  }
+  if (modo === 'mime-lie') {
+    // El borde miente dos veces: cuerpo de HTML y tipo declarado correcto. Es el
+    // único caso que el contraste de `content-type` no puede ver.
+    response.writeHead(200, { 'Content-Type': tipoReal });
+    response.end('<!doctype html><title>Red</title><h1>Iniciá sesión en la red</h1>');
+    return;
+  }
+  if (modo === 'truncated') {
+    // Estado, tipo y longitud correctos; el cuerpo se corta a la mitad. El
+    // `fetch` RESUELVE y el error aparece recién al leer el cuerpo.
+    const cuerpo = 'body{background:#090b0e}.brand{width:90px}';
+    response.writeHead(200, { 'Content-Type': tipoReal, 'Content-Length': String(cuerpo.length * 4) });
+    response.write(cuerpo.slice(0, 12));
+    setTimeout(() => { try { response.destroy(); } catch (_) { /* ya cerrada */ } }, 30);
+    return;
+  }
+  const status = Number(modo) || 503;
+  response.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8' });
+  response.end(`<!doctype html><title>${status}</title><h1>${status}</h1>`);
+}
 
 function serveStatic(response, rawPathname) {
   let pathname = '/';
   try { pathname = decodeURIComponent(rawPathname || '/'); } catch (_) { /* invalid path */ }
   const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
 
-  if (edgeFault !== 'off' && path.extname(relative).toLowerCase() === '.css') {
-    if (edgeFault === 'css-captive') {
-      // Un portal cautivo contesta 200 con SU página. El estado dice que salió
-      // bien; el cuerpo es HTML donde se esperaba CSS.
-      response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      response.end('<!doctype html><title>Red</title><h1>Iniciá sesión en la red</h1>');
-      return;
-    }
-    const status = edgeFault === 'css-404' ? 404 : 503;
-    response.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8' });
-    response.end(`<!doctype html><title>${status}</title><h1>${status}</h1>`);
+  const extension = path.extname(relative).toLowerCase();
+  const modo = fallaAplicable(edgeFault, extension);
+  if (modo) {
+    responderDegradado(response, modo, contentType(relative));
     return;
   }
 

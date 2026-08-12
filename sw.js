@@ -86,6 +86,15 @@ const ASSETS = [
   './js/data.js',
   './js/beverage-demo-data.js',
   './js/approved-beverage-demo-data.js',
+  /*
+   * Faltaba, y no era una omisión menor: es el catálogo comercial entero
+   * (115 KB) y entra al arranque por una cadena de re-exports —`data.js` es una
+   * sola línea `export … from`—, que es justo la forma que el guard del grafo no
+   * miraba. Con la caché caliente y el borde contestando 503 a los módulos, la
+   * tienda NO ARRANCA: el módulo se pide por red, la red contesta mal, no hay
+   * copia guardada y el grafo se cae entero. Medido con el worker activo.
+   */
+  './js/taba2-commercial-pending-data.js',
   './js/state.js',
   './js/cart.js',
   './js/customer-delivery.js',
@@ -178,7 +187,12 @@ async function precargar() {
       // `destination` de un Request construido a mano SIEMPRE viene vacío, así
       // que el tipo que se exige sale de la extensión: es lo único que hace que
       // el control valga también acá.
-      if (!(await sirve({ destination: destinoEsperado(asset), mode: 'no-cors' }, response))) return;
+      const destination = destinoEsperado(asset);
+      if (!isUsable({ destination }, response)) return;
+      // En la ESCRITURA se mira el cuerpo de hojas Y módulos, siempre: es una
+      // sola vez por publicación y es el momento en que un borde mentiroso
+      // envenena la caché para todas las visitas que vengan después.
+      if ((destination === 'style' || destination === 'script') && await pareceDocumentoHtml(response)) return;
       await cache.put(request, response);
     } catch (_) {
       // Un asset que no bajó no puede llevarse puesto al precache entero.
@@ -269,13 +283,45 @@ self.addEventListener('fetch', (event) => {
  */
 const PLAZO_DE_RED_MS = 4000;
 
+/*
+ * El plazo solo no alcanza, y esto se midió con el worker activo.
+ *
+ * El navegador abre unas seis conexiones por origen. Con el borde colgado, los
+ * ~120 subrecursos de la tienda no esperan cuatro segundos en paralelo: esperan
+ * cuatro segundos DE A SEIS. Veinte rondas, más de un minuto de pantalla vacía
+ * para algo que estaba entero en la caché, y muy por encima de los ocho
+ * segundos tras los cuales `startup-recovery.js` da el arranque por perdido.
+ *
+ * Después de tres plazos vencidos se deja de molestar a la red por unos
+ * segundos y se sirve directo lo guardado. Como los primeros pedidos vencen
+ * todos juntos —van en paralelo—, el corte se abre a los ~4 s y el resto de la
+ * pantalla llega de la caché sin esperar. La primera respuesta que llega lo
+ * cierra. Nunca se responde peor: sin copia guardada se va a la red igual.
+ */
+const PLAZOS_PARA_CORTAR = 3;
+const CORTE_MS = 10_000;
+let plazosSeguidos = 0;
+let cortadoHasta = 0;
+
 async function networkFirst(request) {
+  if (Date.now() < cortadoHasta) {
+    const guardada = await cachedFallback(request);
+    if (guardada) return guardada;
+  }
+
   const red = fetch(request).then(
     (response) => ({ response }),
     (error) => ({ error }),
   );
 
   const aTiempo = await conPlazo(red, PLAZO_DE_RED_MS);
+  if (aTiempo) {
+    plazosSeguidos = 0;
+    cortadoHasta = 0;
+  } else {
+    plazosSeguidos += 1;
+    if (plazosSeguidos >= PLAZOS_PARA_CORTAR) cortadoHasta = Date.now() + CORTE_MS;
+  }
   if (!aTiempo) {
     const guardada = await cachedFallback(request);
     if (guardada) {
@@ -289,7 +335,7 @@ async function networkFirst(request) {
 
   const { response, error } = await red;
   if (error || !response) return (await cachedFallback(request)) || Response.error();
-  if (await sirve(request, response)) {
+  if (isUsable(request, response) && !(await elCuerpoDesmienteAlTipo(request, response))) {
     guardar(request, response.clone());
     return response;
   }
@@ -303,7 +349,7 @@ async function cachedFallback(request) {
   // PWA sobre una red con portal cautivo tiene esa página metida en la caché.
   // Como el nombre de la caché no cambia, ese envenenamiento se HEREDA: revisarlo
   // en la lectura es lo que lo desactiva sin obligar a nadie a bajar todo de nuevo.
-  if (cached && (await sirve(request, cached))) return cached;
+  if (cached && isUsable(request, cached) && !(await pareceDocumentoHtml(cached))) return cached;
   if (request.mode === 'navigate') return (await caches.match('./index.html')) || null;
   return null;
 }
@@ -313,7 +359,9 @@ function guardar(request, respuesta) {
 }
 
 async function guardarSiSirve(request, response) {
-  if (response && await sirve(request, response)) guardar(request, response.clone());
+  if (!response || !isUsable(request, response)) return;
+  if (await elCuerpoDesmienteAlTipo(request, response)) return;
+  guardar(request, response.clone());
 }
 
 function conPlazo(promesa, ms) {
@@ -368,10 +416,27 @@ function isUsable(request, response) {
  * no se buferea la respuesta ni se pierde el streaming. Cualquier tropiezo del
  * stream se resuelve a favor de la respuesta —ante la duda, el contrato viejo—.
  */
-async function sirve(request, response) {
-  if (!isUsable(request, response)) return false;
-  if (request.destination !== 'style') return true;
-  return !(await pareceDocumentoHtml(response));
+async function elCuerpoDesmienteAlTipo(request, response) {
+  if (request.destination === 'style') return pareceDocumentoHtml(response);
+  if (request.destination !== 'script') return false;
+  /*
+   * Para los módulos la inspección se hace SÓLO si hay algo mejor guardado.
+   *
+   * Sin copia en la caché, mirar el cuerpo no cambia nada —la respuesta se
+   * entrega igual porque no hay con qué reemplazarla— y es puro costo. Y ese
+   * costo se paga entero en la visita FRÍA, que es exactamente cuando la caché
+   * está vacía: medido con el worker activo, inspeccionar siempre llevaba la
+   * primera visita de 167 a 182 pedidos y de 1993 a 2576 KB transferidos.
+   *
+   * Con copia guardada —el cliente recurrente, que es quien tiene algo que
+   * perder— sí se mira, y por una razón concreta: `startup-recovery.js` es un
+   * script clásico, así que un borde que miente el tipo de los `.js` también lo
+   * rompe A ÉL. Sin esto, ese cliente se queda con la tienda muerta y sin el
+   * cartel que le daría una salida.
+   */
+  const guardada = await caches.match(request);
+  if (!guardada) return false;
+  return pareceDocumentoHtml(response);
 }
 
 async function pareceDocumentoHtml(response) {

@@ -121,7 +121,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel] .lt-rider-marker.source-gps')).toBeVisible();
-  await expect(page.locator('[data-tracking-panel] .lt-rider-marker .lt-rider-helmet-icon[role="img"][aria-label="Casco del rider TABA"]')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel] .lt-rider-marker .lt-rider-helmet-icon[role="img"][aria-label="Moto del repartidor TABA"]')).toBeVisible();
   await setTrustedEtaForActiveOrder(page);
   await expect(page.locator('[data-tracking-panel] [data-tracking-gps-note]')).toHaveCount(0);
   await expect(page.locator('[data-tracking-panel] .tracking-hero h1')).toHaveText('Tu pedido está en camino');

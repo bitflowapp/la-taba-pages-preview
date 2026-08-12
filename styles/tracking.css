@@ -1841,9 +1841,13 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row {
   height: 48px;
 }
 
+/* El rider es el único marcador rojo pleno del mapa: disco rojo intenso, aro
+   blanco y la moto en blanco. Es el mismo rojo del pulso de GPS fresco, así
+   que el halo y el marcador no discuten. El local es bordó y el destino dorado
+   —los tres se distinguen por color ADEMÁS de por forma y glifo—. */
 .taba-map-helmet {
-  --delivery-helmet-contrast: var(--taba-white);
-  color: var(--taba-red-quiet);
+  --map-rider-disc: #e8273a;
+  color: var(--taba-white);
   overflow: visible;
   filter: none;
 }
@@ -2792,14 +2796,10 @@ body[data-active-view="tracking"]:has(
   filter: drop-shadow(0 2px 4px rgb(24 26 30 / 14%));
 }
 
-/* El destino comparte el rojo tokenizado del resto de la superficie en lugar de
-   sumar un cuarto rojo al encuadre. */
-.tracking-premium:is(.status-on_the_way, .status-picked_up)
-  .lt-place-marker.is-destination
-  svg
-  path:first-of-type {
-  fill: var(--taba-red-quiet);
-}
+/* El destino ya no repinta su relleno mientras el rider viaja: era rojo y con
+   el rider en escena había dos rojos discutiendo, así que se lo bajaba al rojo
+   tokenizado. Ahora el destino es dorado y el único rojo del encuadre es el
+   rider —que es exactamente la jerarquía que esa regla buscaba—. */
 
 /* El local ya quedó atrás en el viaje: sigue legible, pero cede la jerarquía al
    rider y al domicilio. Se atenúa el contenido y no el marcador, porque

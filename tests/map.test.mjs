@@ -20,10 +20,13 @@ import {
   createMapLibreTrackingMap,
 } from '../js/map/maplibre_tracking_map.js';
 import {
+  PLACE_PIN_OUTLINE_PATH,
+  PLACE_PIN_VIEWBOX,
+  createPlaceMarkerElement,
   createRiderMarkerElement,
   riderAvatarHelmetSvg,
-  riderHelmetSvg,
   riderMarkerClass,
+  riderScooterSvg,
 } from '../js/map/rider_marker.js';
 import {
   chooseRiderLocation,
@@ -221,18 +224,125 @@ test('rider marker class reflects status and source', () => {
   assert.match(marker.innerHTML, /lt-rider-helmet-core/);
   assert.match(marker.innerHTML, /<svg[^>]*class="[^"]*\blt-rider-helmet-icon\b[^"]*"/);
   assert.match(marker.innerHTML, /\btaba-map-helmet\b/);
-  assert.match(marker.innerHTML, /data-map-rider-helmet/);
+  assert.match(marker.innerHTML, /data-map-rider-scooter/);
   assert.doesNotMatch(marker.innerHTML, /taba-delivery-helmet/);
   assert.match(marker.innerHTML, /role="img"/);
-  assert.match(marker.innerHTML, /aria-label="Casco del rider TABA"/);
-  assert.match(marker.innerHTML, /<circle[^>]*fill="var\(--taba-white\)"[^>]*stroke="currentColor"[^>]*stroke-width="3\.2"/);
-  assert.match(marker.innerHTML, /<g transform="translate\(4\.4 4\.8\) scale\(\.72\)">/);
-  assert.match(marker.innerHTML, /fill="var\(--delivery-helmet-contrast\)"/);
+  assert.match(marker.innerHTML, /aria-label="Moto del repartidor TABA"/);
   assert.doesNotMatch(marker.innerHTML, />R</);
   assert.doesNotMatch(marker.innerHTML, /<text/);
-  assert.doesNotMatch(marker.innerHTML, /(?:moto|scooter|emoji|<image\b|(?:src|href)=|https?:\/\/)/i);
+  assert.doesNotMatch(marker.innerHTML, /(?:emoji|<image\b|(?:src|href)=|https?:\/\/)/i);
   assert.doesNotMatch(marker.innerHTML, /[\u{1F300}-\u{1FAFF}]/u);
   assert.doesNotMatch(marker.innerHTML, /--heading/);
+});
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────────
+ * IDENTIDAD DE LOS TRES ACTORES DEL MAPA
+ *
+ * El defecto que estos tests cierran: local y destino se dibujaban con dos
+ * variantes del mismo rectángulo —uno con tapa, otro con una línea encima—, así
+ * que los dos se leían como una caja o una valija y ninguno decía qué era. Lo
+ * que se protege no es «este path exacto», sino que cada actor tenga un glifo
+ * PROPIO y reconocible, y que nunca vuelvan a compartir uno.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+// Un glifo de comercio tiene toldo (una franja ancha arriba del cuerpo) y una
+// puerta; uno residencial tiene techo a dos aguas (dos diagonales que se juntan
+// en un vértice). Se compara la forma, no el color.
+function glyphOf(kind) {
+  const element = createPlaceMarkerElement(createFakeDocument(), { kind });
+  const glyph = element.innerHTML.match(/<g class="lt-place-marker-glyph"[^>]*>([\s\S]*)<\/g>/);
+  assert.ok(glyph, `el pin ${kind} debe encapsular su glifo en un grupo propio`);
+  return glyph[1];
+}
+
+test('el pin del local dice COMERCIO: bordó, aro dorado y una vitrina blanca', () => {
+  const element = createPlaceMarkerElement(createFakeDocument(), { kind: 'store', label: 'La Taba 2' });
+  assert.match(element.className, /\blt-place-marker\b/);
+  assert.match(element.className, /\bis-store\b/);
+  assert.doesNotMatch(element.className, /\bis-destination\b/);
+
+  // El label del comercio llega al lector de pantalla y no tapa nada del pin.
+  assert.match(element.innerHTML, /role="img"/);
+  assert.match(element.innerHTML, /aria-label="La Taba 2"/);
+
+  // Bordó con el dorado de marca como aro, y el glifo en blanco.
+  assert.match(element.innerHTML, /fill="#8b1020" stroke="#c9953e"/);
+  assert.match(element.innerHTML, /<g class="lt-place-marker-glyph" fill="#fff">/);
+
+  // El toldo es una franja más ancha que el cuerpo, y hay una puerta calada.
+  const glyph = glyphOf('store');
+  assert.match(glyph, /M13\.3 10h17\.4/, 'falta el toldo del local');
+  assert.match(glyph, /fill-rule="evenodd"/, 'la puerta se cala sobre el cuerpo');
+  assert.doesNotMatch(glyph, /<image\b|href=|https?:\/\//i);
+});
+
+test('el pin del destino dice CASA: dorado, aro blanco y techo a dos aguas', () => {
+  const element = createPlaceMarkerElement(createFakeDocument(), { kind: 'destination' });
+  assert.match(element.className, /\blt-place-marker\b/);
+  assert.match(element.className, /\bis-destination\b/);
+  assert.doesNotMatch(element.className, /\bis-store\b/);
+  assert.match(element.innerHTML, /aria-label="Destino de entrega"/);
+
+  assert.match(element.innerHTML, /fill="#a9752b" stroke="#fff"/);
+  assert.match(element.innerHTML, /<g class="lt-place-marker-glyph" fill="#fff">/);
+
+  // El vértice del techo: dos diagonales que se encuentran arriba del centro.
+  const glyph = glyphOf('destination');
+  assert.match(glyph, /M22\.9 9\.9a1\.4 1\.4 0 0 0-1\.8 0L10\.6 18\.8/, 'falta el techo a dos aguas');
+  assert.doesNotMatch(glyph, /<image\b|href=|https?:\/\//i);
+});
+
+test('local, destino y rider no comparten ni glifo ni color: se distinguen sin leer', () => {
+  const store = glyphOf('store');
+  const destination = glyphOf('destination');
+  const rider = riderScooterSvg();
+
+  // El defecto original era exactamente éste: el mismo dibujo dos veces.
+  assert.notEqual(store, destination, 'local y destino no pueden compartir el glifo');
+
+  const storeMarkup = createPlaceMarkerElement(createFakeDocument(), { kind: 'store' }).innerHTML;
+  const destinationMarkup = createPlaceMarkerElement(createFakeDocument(), { kind: 'destination' }).innerHTML;
+  const fillOf = (markup) => markup.match(/<path d="[^"]+" fill="(#[0-9a-f]{6})"/i)?.[1];
+  assert.equal(fillOf(storeMarkup), '#8b1020');
+  assert.equal(fillOf(destinationMarkup), '#a9752b');
+  assert.notEqual(fillOf(storeMarkup), fillOf(destinationMarkup));
+
+  // Y el rider además cambia de FORMA: es un disco, no un pin. Un marcador que
+  // se mueve no puede parecer que señala un domicilio fijo.
+  assert.match(rider, /<circle cx="28" cy="28" r="24\.5"/);
+  assert.doesNotMatch(rider, new RegExp(PLACE_PIN_OUTLINE_PATH.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(rider, /viewBox="0 0 56 56"/);
+});
+
+/*
+ * ANCLAJE. El marcador se cuelga por `anchor: 'bottom'`, así que la punta del
+ * pin ES el punto geográfico: el contorno y el alto del lienzo son geometría de
+ * ubicación, no decoración. Este test existe para que un cambio de iconografía
+ * —como el que lo motivó— no pueda mover el punto que el cliente lee como su
+ * casa o como el local.
+ */
+test('cambiar el glifo no mueve el punto: los dos pines conservan silueta y lienzo', () => {
+  assert.equal(PLACE_PIN_VIEWBOX, '0 0 44 54');
+  assert.equal(
+    PLACE_PIN_OUTLINE_PATH,
+    'M22 2C11 2 3 10 3 21c0 13 19 30 19 30s19-17 19-30C41 10 33 2 22 2Z',
+  );
+
+  for (const kind of ['store', 'destination']) {
+    const markup = createPlaceMarkerElement(createFakeDocument(), { kind }).innerHTML;
+    assert.match(markup, /viewBox="0 0 44 54"/, `${kind} cambió el lienzo del pin`);
+    assert.equal(
+      markup.includes(`d="${PLACE_PIN_OUTLINE_PATH}"`),
+      true,
+      `${kind} cambió la silueta del pin y con ella la punta que señala`,
+    );
+    // Un solo contorno por pin: dos siluetas superpuestas dan dos puntas.
+    assert.equal(markup.split(PLACE_PIN_OUTLINE_PATH).length - 1, 1);
+    // Sin transformaciones sobre el SVG: desplazar el lienzo desplaza la punta.
+    assert.doesNotMatch(markup, /<svg[^>]*\btransform=/);
+  }
 });
 
 test('rider avatar keeps a profile helmet separate from the map marker', () => {

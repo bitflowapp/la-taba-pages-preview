@@ -335,6 +335,101 @@ test('el encuadre local–destino contiene a los dos y admite su propio zoom', (
   }
 });
 
+// ── Quién se dibuja, y en qué coordenada ─────────────────────────────────────
+//
+// La iconografía de los pines cambió (local = vitrina, destino = casa, rider =
+// moto) y estos tests fijan lo que ese cambio NO puede tocar: quién aparece en
+// el mapa, y sobre qué punto se cuelga.
+
+test('sin ubicación válida no hay marcador de rider, aunque el pedido tenga uno asignado', () => {
+  const env = installMapLibreStub();
+  const { shell, canvas, fallback } = createMapShell({ documentRef: env.document });
+  const controller = createMapLibreTrackingMap({ root: env.root, documentRef: env.document });
+  try {
+    controller.mount({ container: canvas, shell, fallback, store: STORE_POINT, center: STORE_POINT });
+    env.calls.maps[0].emit('load');
+    const pinesDeLugar = env.calls.markers.length;
+
+    // Un rider asignado que todavía no publicó un fix —o cuyo fix no es
+    // ploteable— no tiene posición: inventarle una es lo único que el mapa no
+    // puede hacer.
+    for (const sinPunto of [null, undefined, {}, { lat: -38.94 }, { lng: -68.05 }, { lat: 'x', lng: 'y' }, { lat: 91, lng: -68.05 }, { lat: -38.94, lng: 181 }]) {
+      assert.equal(controller.updateRiderLocation(sinPunto, { freshness: 'fresh', status: 'on_the_way' }), null);
+    }
+
+    const estado = controller.getLifecycleState();
+    assert.equal(estado.hasRiderMarker, false, 'un rider sin ubicación no se dibuja');
+    assert.equal(estado.measuredLocation, null);
+    assert.equal(env.calls.markers.length, pinesDeLugar, 'no se creó ningún marcador nuevo');
+    // Y el local sigue en pantalla: la ausencia del rider no se lleva el mapa.
+    assert.equal(estado.hasStoreMarker, true);
+  } finally {
+    controller.destroy();
+    env.restore();
+  }
+});
+
+test('con rider asignado y fix válido aparece la moto, y desasignarlo se la lleva entera', () => {
+  const env = installMapLibreStub();
+  const { shell, canvas, fallback } = createMapShell({ documentRef: env.document });
+  const controller = createMapLibreTrackingMap({ root: env.root, documentRef: env.document });
+  try {
+    controller.mount({ container: canvas, shell, fallback, destination: DESTINATION_POINT, center: DESTINATION_POINT });
+    env.calls.maps[0].emit('load');
+
+    assert.ok(controller.updateRiderLocation(RIDER_FIX, { freshness: 'fresh', status: 'on_the_way' }));
+    assert.equal(controller.getLifecycleState().hasRiderMarker, true);
+
+    // El marcador del rider es un disco centrado en su posición, no un pin: no
+    // señala un domicilio, ES el repartidor.
+    const marcador = env.calls.markers.at(-1);
+    assert.equal(marcador.options.anchor, 'center');
+    assert.match(marcador.options.element.className, /\blt-rider-marker\b/);
+    assert.match(marcador.options.element.innerHTML, /data-map-rider-scooter/);
+    assert.match(marcador.options.element.innerHTML, /aria-label="Moto del repartidor TABA"/);
+
+    controller.clearRider();
+    assert.equal(controller.getLifecycleState().hasRiderMarker, false);
+  } finally {
+    controller.destroy();
+    env.restore();
+  }
+});
+
+test('los pines se cuelgan por su punta y en la coordenada exacta que reciben', () => {
+  const env = installMapLibreStub();
+  const { shell, canvas, fallback } = createMapShell({ documentRef: env.document });
+  const controller = createMapLibreTrackingMap({ root: env.root, documentRef: env.document });
+  try {
+    controller.mount({ container: canvas, shell, fallback, center: STORE_POINT });
+    env.calls.maps[0].emit('load');
+    controller.updatePlaces({ store: STORE_POINT, destination: DESTINATION_POINT });
+
+    const [local, destino] = env.calls.markers;
+    for (const [marcador, punto, clase] of [
+      [local, STORE_POINT, 'is-store'],
+      [destino, DESTINATION_POINT, 'is-destination'],
+    ]) {
+      // `bottom`: MapLibre apoya el BORDE INFERIOR del elemento sobre el punto,
+      // que es donde termina la punta del pin. Con `center` el pin señalaría
+      // medio pin más arriba de la dirección real.
+      assert.equal(marcador.options.anchor, 'bottom');
+      // [lng, lat] y sin redondeos: el dibujo cambió, la coordenada no.
+      assert.deepEqual(marcador.lngLat, [punto.lng, punto.lat]);
+      assert.match(marcador.options.element.className, new RegExp(`\\b${clase}\\b`));
+    }
+
+    // Mover el destino mueve la coordenada del MISMO marcador, sin recrearlo.
+    const creados = env.calls.markers.length;
+    controller.updatePlaces({ store: STORE_POINT, destination: { ...DESTINATION_POINT, lat: -38.9411 } });
+    assert.equal(env.calls.markers.length, creados);
+    assert.deepEqual(destino.lngLat, [DESTINATION_POINT.lng, -38.9411]);
+  } finally {
+    controller.destroy();
+    env.restore();
+  }
+});
+
 test('frameArea no hace nada con un área que no delimita', () => {
   const env = installMapLibreStub();
   const { shell, canvas, fallback } = createMapShell({ documentRef: env.document });

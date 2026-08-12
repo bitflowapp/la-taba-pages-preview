@@ -138,7 +138,7 @@ test('la primera visita sobre un portal cautivo no deja su página guardada como
   await degradarBorde(request, 'css-captive');
   await page.goto('/?demo=1#home', { waitUntil: 'load' });
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 30_000 });
-  // Se le da tiempo al `install` a terminar de recorrer los 167 assets.
+  // Se le da tiempo al `install` a terminar de recorrer la lista entera.
   await page.waitForTimeout(4_000);
 
   const guardado = await loGuardado(page, ESTILOS);

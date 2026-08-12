@@ -7,7 +7,7 @@
  * guardada la escribe `install`, y `cache.addAll` guarda cualquier respuesta con
  * estado 200: el portal cautivo de un bar contesta 200 con SU página, así que un
  * cliente que abre la tienda por primera vez sobre esa red guardaba esa página
- * como `styles.css` y como cada uno de los 88 módulos. A partir de ahí la
+ * como `styles.css` y como cada uno de los módulos del arranque. A partir de ahí la
  * defensa de lectura ya no defiende nada: la copia buena que iba a rescatar al
  * documento es la página del portal.
  *

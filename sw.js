@@ -163,7 +163,7 @@ self.addEventListener('install', (event) => {
  * `cache.addAll` guarda cualquier respuesta con estado 200 y NO mira el tipo. El
  * portal cautivo de un bar contesta 200 con SU página, así que un cliente que
  * abría la tienda por primera vez sobre esa red guardaba esa página como
- * `styles.css` y como cada uno de los 88 módulos. A partir de ahí la defensa de
+ * `styles.css` y como cada uno de los módulos del arranque. A partir de ahí la defensa de
  * lectura —la que cerró el P1 del retorno desde Mercado Pago— ya no defiende
  * nada: la copia buena que iba a rescatar al documento ES la página del portal.
  *
@@ -206,7 +206,7 @@ self.addEventListener('activate', (event) => {
 
 /*
  * Borrar la caché anterior con el precache nuevo a medias deja al cliente PEOR
- * que antes de actualizar: pierde las 167 entradas buenas que tenía y se queda
+ * que antes de actualizar: pierde todas las entradas buenas que tenía y se queda
  * con las pocas que pudo bajar. `caches.match` recorre todas las cachés del
  * origen, así que conservar la anterior alcanza para que el documento se siga
  * rescatando hasta que una visita sana complete la nueva.

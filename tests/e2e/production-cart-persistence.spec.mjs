@@ -233,6 +233,80 @@ test('lo que vuelve del disco se reconcilia con el catálogo verificado', async 
     .toBe(1);
 });
 
+// H-08, la mitad de PRODUCCIÓN. El test de arriba cubre la hidratación —lo que
+// vuelve del disco—; éste cubre el carrito YA en pantalla.
+//
+// `loadCatalog()` consulta con `.eq('available', true)` y `available` en la base
+// es `stock > 0`, así que un producto agotado no vuelve en la respuesta. Cada
+// pedido de cualquier persona descuenta stock y dispara el realtime de
+// `products`. Antes del arreglo la línea desaparecía del carrito de alguien que
+// estaba mirando la pantalla, y el total bajaba solo.
+test('un producto que se agota con el carrito abierto se avisa, no se borra', async ({ page }) => {
+  let agotado = false;
+  await installProductionBackend(page, () => (agotado
+    // Segunda consulta: `SE_QUEDA_SIN_STOCK` ya no vuelve, exactamente como hace
+    // el backend cuando otra persona compra la última unidad.
+    ? [VIGENTE, PIERDE_EL_PRECIO]
+    : [VIGENTE, SE_QUEDA_SIN_STOCK, PIERDE_EL_PRECIO]));
+
+  await page.goto('/#catalog');
+  await esperarCatalogoProductivo(page);
+  await page.evaluate(async (ids) => {
+    const { addToCart } = await import('/js/cart.js');
+    ids.forEach((id) => addToCart(id, 2));
+  }, [VIGENTE.id, SE_QUEDA_SIN_STOCK.id]);
+  expect(await lineasDelCarrito(page)).toEqual(
+    [`${VIGENTE.id}:2`, `${SE_QUEDA_SIN_STOCK.id}:2`].sort(),
+  );
+
+  // Se agota y el catálogo se refresca, que es lo que dispara el realtime.
+  agotado = true;
+  await page.evaluate(async () => {
+    const { getOrderRepository } = await import('/js/repositories/repository_factory.js');
+    await getOrderRepository().loadCatalog();
+  });
+
+  // 1. La línea sigue, con la cantidad que la persona eligió.
+  await expect.poll(() => lineasDelCarrito(page)).toEqual(
+    [`${VIGENTE.id}:2`, `${SE_QUEDA_SIN_STOCK.id}:2`].sort(),
+  );
+
+  // 2. Y viene marcada, con su salida al lado.
+  const aviso = await page.evaluate(async (id) => {
+    const { cartItemIssue, getCartItems, validateCartForCheckout } = await import('/js/cart.js');
+    const linea = getCartItems().find((item) => item.productId === id);
+    const issue = linea ? cartItemIssue(linea) : null;
+    return {
+      hayLinea: Boolean(linea),
+      kind: issue?.kind || null,
+      mensaje: issue?.message || '',
+      accion: issue?.actionLabel || '',
+      checkout: validateCartForCheckout('delivery').ok,
+    };
+  }, SE_QUEDA_SIN_STOCK.id);
+
+  expect(aviso.hayLinea).toBe(true);
+  expect(aviso.kind).toBe('unavailable');
+  expect(aviso.mensaje).toMatch(/Se agotó/);
+  expect(aviso.accion).toBe('Quitar del pedido');
+  expect(aviso.checkout).toBe(false);
+
+  // 3. Pero NO vuelve a la góndola: se retiene sólo para poder explicarlo.
+  const enGondola = await page.evaluate(async (id) => {
+    const { getCustomerCatalogProducts } = await import('/js/core/catalog-store.js');
+    const { getState } = await import('/js/state.js');
+    return getCustomerCatalogProducts(getState().products).some((product) => product.id === id);
+  }, SE_QUEDA_SIN_STOCK.id);
+  expect(enGondola).toBe(false);
+
+  // 4. Y la persona puede sacarlo.
+  await page.evaluate(async (id) => {
+    const { removeCartItem } = await import('/js/cart.js');
+    removeCartItem(id);
+  }, SE_QUEDA_SIN_STOCK.id);
+  await expect.poll(() => lineasDelCarrito(page)).toEqual([`${VIGENTE.id}:2`]);
+});
+
 test('un catálogo que no carga conserva el carrito en vez de vaciarlo', async ({ page }) => {
   let caido = false;
   await page.route(`${SUPABASE_URL}/**`, async (route) => {

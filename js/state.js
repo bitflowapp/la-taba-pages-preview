@@ -1,6 +1,12 @@
 import { BUSINESS_CONFIG, STORAGE_KEYS } from './config.js';
 import { categories, PREVIEW_CATALOG_VERSION, seedOrders } from './data.js';
-import { buildDemoCatalog, isProductOrderable, mergeCatalogProducts } from './core/catalog-store.js';
+import {
+  buildDemoCatalog,
+  isProductOrderable,
+  isProductVisibleToCustomer,
+  mergeCatalogProducts,
+} from './core/catalog-store.js';
+import { isPricePending } from './core/pricing.js';
 import { chargeableCombos } from './core/combos.js';
 import { COMBO_MANIFEST } from './combos-data.js';
 import { normalizeDeliveryProof } from './core/delivery-proof.js';
@@ -180,7 +186,13 @@ export function hydrateState(savedState, baseState = defaultState(), { refreshBa
   );
 }
 
-export function sanitizeState(nextState, baseState = defaultState(), { refreshBaseCatalog = false } = {}) {
+export function sanitizeState(nextState, baseState = defaultState(), {
+  refreshBaseCatalog = false,
+  // `hydrate` es el valor por defecto a propósito: es el más restrictivo, así
+  // que un llamador nuevo que se olvide de declararlo limpia de más, no de
+  // menos. Sólo `commitState` pide `live`.
+  reconcile = 'hydrate',
+} = {}) {
   const source = isPlainObject(nextState) ? nextState : {};
   const baseProducts = buildBaseProducts();
   const mergedProducts = mergeProducts(
@@ -211,7 +223,7 @@ export function sanitizeState(nextState, baseState = defaultState(), { refreshBa
     searchQuery: sanitizeText(source.searchQuery, { fallback: '', maxLength: 80 }),
     sortBy: normalizeSortBy(source.sortBy),
     catalogFilters: normalizeCatalogFilters(source.catalogFilters),
-    cart: deferredCart?.cart || sanitizeCart(source.cart, productMap),
+    cart: deferredCart?.cart || sanitizeCart(source.cart, productMap, { reconcile }),
     comboSelections: deferredCart?.comboSelections || sanitizeComboSelections(source.comboSelections, mergedProducts),
     orders,
     products: mergedProducts,
@@ -346,28 +358,60 @@ function sanitizeOrders(rawOrders) {
   return result;
 }
 
-function sanitizeCart(rawCart, productMap) {
+/*
+ * HIDRATAR NO ES RECONCILIAR
+ *
+ * Esta función hacía dos trabajos con las mismas reglas, y no son el mismo:
+ *
+ *   HIDRATAR  — el carrito viene del disco al arrancar. Puede ser de otra
+ *               versión, de otro catálogo, de hace una semana. Nadie está
+ *               mirando. Descartar y recortar es lo correcto.
+ *   RECONCILIAR — el catálogo vivo cambió mientras la persona mira su carrito.
+ *               Descartar acá es editarle el pedido a alguien que lo está
+ *               viendo, y sin decírselo.
+ *
+ * Como `sanitizeCart` corre en CADA `commitState`, el segundo caso heredaba las
+ * reglas del primero. En producción el catálogo se recarga por realtime cada vez
+ * que alguien compra —la RPC descuenta stock—, así que una línea de 5 unidades
+ * pasaba a 2 y el total bajaba de $17.880 a $7.152 sin una palabra; con stock 0
+ * el carrito quedaba vacío.
+ *
+ * Y el daño mayor era silencioso: como después de cada commit siempre se cumplía
+ * `quantity <= stock` y el producto estaba disponible, `cartItemIssue` devolvía
+ * `null` SIEMPRE. Eso dejaba inalcanzables el aviso «Se agotó mientras armabas
+ * el pedido», el botón «Quitar del pedido» y la rama de `validateCartForCheckout`
+ * que los respalda —todo ya construido, todo muerto—.
+ *
+ * Lo que se descarta SIEMPRE, mire alguien o no, es lo que se COBRARÍA MAL: un
+ * producto que ya no está en el catálogo, uno archivado o de abastecimiento, y
+ * uno cuyo precio dejó de ser un número mayor a cero. Perder plata en silencio
+ * es peor que perder una línea en silencio.
+ */
+function sanitizeCart(rawCart, productMap, { reconcile = 'hydrate' } = {}) {
   if (!Array.isArray(rawCart)) return [];
+  const enVivo = reconcile === 'live';
   const byProduct = new Map();
 
   for (const item of rawCart) {
     if (!item || typeof item.productId !== 'string') continue;
     const product = productMap.get(item.productId);
-    // Un carrito guardado antes de que el pack dejara la góndola no se
-    // corrompe: esa línea se descarta al hidratar, igual que la de un producto
-    // archivado o sin stock, y el resto del carrito se conserva.
-    //
-    // La compuerta es la MISMA que usa `addToCart` (`isProductOrderable`), no
-    // una parecida. Con la anterior, un producto que perdió el precio mientras
-    // el carrito estaba guardado volvía a la línea al recargar: no se podía
-    // agregar, pero sí reaparecer, y el checkout lo cobraba a cero.
-    if (!isProductOrderable(product) || !product.available || product.stock <= 0) continue;
+    if (!product) continue;
+
+    // La compuerta del contrato: precio vendible y producto que existe para el
+    // cliente. Es la MISMA que usa `addToCart`, no una parecida.
+    if (!isProductVisibleToCustomer(product) || isPricePending(product)) continue;
+
+    // Y sólo al hidratar, además, lo que hoy no se puede servir.
+    if (!enVivo && (!isProductOrderable(product) || !product.available || product.stock <= 0)) continue;
 
     const quantity = normalizeCartQuantity(item.quantity);
     if (quantity <= 0) continue;
 
     const current = byProduct.get(item.productId) || 0;
-    byProduct.set(item.productId, Math.min(product.stock, current + quantity));
+    const total = current + quantity;
+    // En vivo la cantidad elegida no se toca: `cartItemIssue` la explica y
+    // `validateCartForCheckout` impide confirmarla.
+    byProduct.set(item.productId, enVivo ? total : Math.min(product.stock, total));
   }
 
   return [...byProduct.entries()].map(([productId, quantity]) => ({ productId, quantity }));
@@ -723,8 +767,9 @@ function notify() {
   listeners.forEach((listener) => listener(state));
 }
 
-function commitState(nextState) {
-  state = sanitizeState(nextState, defaultState());
+function commitState(nextState, { reconcile = 'live' } = {}) {
+  // `live` por defecto: acá el carrito ya está en pantalla. Ver `sanitizeCart`.
+  state = sanitizeState(nextState, defaultState(), { reconcile });
   // El holder del config-store refleja siempre la config ya saneada del estado.
   setRuntimeBusinessConfig(state.businessConfig);
   const persisted = persist();
@@ -763,10 +808,19 @@ export function updateBusinessConfig(patch) {
   return getBusinessConfig();
 }
 
-export function updateState(mutator) {
+/**
+ * `reconcile` existe por un solo caso, y conviene decirlo acá: en producción la
+ * hidratación del carrito está DIFERIDA. Al arrancar todavía no hay catálogo,
+ * así que `sanitizeState` no puede validar nada y se limita a la forma; la
+ * validación real ocurre cuando llega el primer catálogo verificado, y ese
+ * camino entra por acá. Sin poder pedir `hydrate` en ese commit, un carrito
+ * guardado en disco con productos agotados volvería a la pantalla como si
+ * fueran válidos.
+ */
+export function updateState(mutator, { reconcile = 'live' } = {}) {
   const draft = structuredCloneSafe(state);
   mutator(draft);
-  return commitState(draft);
+  return commitState(draft, { reconcile });
 }
 
 export function subscribe(listener) {

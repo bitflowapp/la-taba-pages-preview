@@ -118,7 +118,12 @@ export function mergeCatalogProducts(baseProducts = demoProducts, savedProducts 
 }
 
 export function getCustomerCatalogProducts(products = []) {
-  return (Array.isArray(products) ? products : []).filter((product) => isProductVisibleToCustomer(product));
+  return (Array.isArray(products) ? products : [])
+    // `outOfCatalog` se retiene SÓLO para que el carrito pueda explicar una
+    // línea que se quedó sin producto publicado. La góndola no lo muestra: si
+    // lo hiciera, un producto agotado aparecería en la vitrina únicamente
+    // porque alguien lo tenía en el carrito, que es peor que no mostrarlo.
+    .filter((product) => isProductVisibleToCustomer(product) && product?.outOfCatalog !== true);
 }
 
 export function isProductVisibleToCustomer(product) {
@@ -283,6 +288,13 @@ export function normalizeCatalogProduct(raw, fallback = null) {
     stock,
     available: source.available !== false && !archived,
     archived,
+    // El producto ya no está en el catálogo publicado, pero alguien lo tiene en
+    // el carrito y se conserva para poder DECÍRSELO. No va a la góndola —lo
+    // filtra `getCustomerCatalogProducts`— y llega siempre con `available:false`
+    // y `stock:0`, así que `cartItemIssue` lo explica y `addToCart` lo rechaza.
+    // Tiene que sobrevivir a esta normalización: si se pierde acá, la línea
+    // vuelve a desaparecer sin aviso.
+    ...(source.outOfCatalog === true ? { outOfCatalog: true } : {}),
     isActive: source.isActive ?? source.is_active ?? (!archived && source.available !== false),
     isVerified: Boolean(source.isVerified ?? source.is_verified),
     featured: Boolean(source.featured),

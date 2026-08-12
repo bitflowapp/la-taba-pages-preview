@@ -577,7 +577,7 @@ export function createSupabaseOrderRepository({
       ? { state: 'ready', message: `${products.length} productos verificados.` }
       : { state: 'empty', message: 'El comercio todavía no publicó productos verificados.' };
     reconcileProductionReadiness();
-    replaceProductionCatalog(products);
+    replaceProductionCatalog(products, { hydrating: esPrimeraCarga });
     return repositoryResult(true, { products, catalogStatus: { ...catalogStatus } });
   }
 
@@ -1897,16 +1897,50 @@ async function prepareIdempotentRequest({
   return request;
 }
 
-function replaceProductionCatalog(products) {
+function replaceProductionCatalog(products, { hydrating = false } = {}) {
   updateState((draft) => {
     const ids = new Set(products.map((product) => product.id));
-    draft.products = products;
-    draft.cart = (draft.cart || []).filter((item) => ids.has(item.productId));
+    if (hydrating) {
+      // PRIMERA carga del catálogo tras abrir o recargar. Acá se completa la
+      // hidratación diferida: en producción el arranque no tiene catálogo, así
+      // que el carrito guardado en disco recién ahora se puede validar de
+      // verdad. Lo que no está publicado no vuelve a la pantalla, y el commit
+      // se hace en modo `hydrate` para que además se descarte lo agotado y se
+      // recorte lo que exceda el stock. Nadie está mirando todavía: limpiar es
+      // lo correcto.
+      draft.products = products;
+      draft.cart = (draft.cart || []).filter((item) => ids.has(item.productId));
+      if (!products.length) draft.comboSelections = [];
+      if (!products.some((product) => product.categoryId === draft.activeCategory)) {
+        draft.activeCategory = 'all';
+      }
+      return;
+    }
+    // Acá moría la línea del carrito en PRODUCCIÓN, antes todavía que en
+    // `sanitizeCart`.
+    //
+    // `loadCatalog()` consulta con `.eq('available', true)`, y `available` en la
+    // base es `stock > 0`: un producto que se agota no vuelve en la respuesta.
+    // Con `draft.cart = filter(ids.has(...))` la línea desaparecía del carrito
+    // de alguien que estaba mirando la pantalla y el total bajaba solo. En una
+    // tienda con movimiento eso ocurre cada vez que otra persona compra la
+    // última unidad, porque cada pedido descuenta stock y dispara el realtime.
+    //
+    // Ahora el producto se CONSERVA —fuera de la góndola, sin stock y no
+    // disponible— para que la línea siga existiendo y la persona pueda leer qué
+    // pasó y sacarla: `cartItemIssue` la marca «Se agotó mientras armabas el
+    // pedido» y `validateCartForCheckout` impide confirmarla. Si el comercio
+    // repone, el producto vuelve en la consulta y pisa a esta copia retenida.
+    const enElCarrito = new Set((draft.cart || []).map((item) => item.productId));
+    const retenidos = (draft.products || [])
+      .filter((product) => enElCarrito.has(product.id) && !ids.has(product.id))
+      .map((product) => ({ ...product, available: false, stock: 0, outOfCatalog: true }));
+    draft.products = retenidos.length ? [...products, ...retenidos] : products;
     if (!products.length) draft.comboSelections = [];
     if (!products.some((product) => product.categoryId === draft.activeCategory)) {
       draft.activeCategory = 'all';
     }
-  });
+  }, { reconcile: hydrating ? 'hydrate' : 'live' });
 }
 
 function rowToCatalogProduct(row = {}) {

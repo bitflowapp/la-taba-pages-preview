@@ -13,6 +13,7 @@ import {
   incrementCartItem,
   removeCartItem,
   setCartItemQuantity,
+  validateCartForCheckout,
 } from '../js/cart.js';
 import { BUSINESS_CONFIG } from '../js/config.js';
 import { resetState, state } from './helpers.mjs';
@@ -64,7 +65,7 @@ test('cart rejects exhausted products and never exceeds stock', () => {
   assert.equal(state().cart[0].quantity, 4);
 });
 
-test('cart rejects invalid quantities and prunes disabled products from state', () => {
+test('cart rejects invalid quantities, y un producto deshabilitado se avisa en vez de borrarse', () => {
   assert.equal(addToCart('qa-agua-mineral', 0).ok, false);
   assert.equal(addToCart('qa-agua-mineral', -2).ok, false);
   assert.deepEqual(state().cart, []);
@@ -77,8 +78,19 @@ test('cart rejects invalid quantities and prunes disabled products from state', 
     cart: [{ productId: 'qa-agua-mineral', quantity: 2 }],
   });
 
-  assert.deepEqual(state().cart, []);
-  assert.deepEqual(getCartItems(), []);
+  // Este test afirmaba `state().cart === []`: un producto deshabilitado se
+  // borraba del carrito en cada commit. La INTENCIÓN era buena —que no se pueda
+  // comprar algo deshabilitado— pero el mecanismo era borrar en silencio, y eso
+  // le edita el pedido a alguien que lo está mirando (H-08). La intención se
+  // conserva entera; lo que cambia es cómo se cumple.
+  const linea = getCartItems().find((item) => item.productId === 'qa-agua-mineral');
+  assert.ok(linea, 'la línea sigue, para poder explicarla');
+  assert.equal(cartItemIssue(linea)?.kind, 'unavailable', 'y viene marcada como no disponible');
+  assert.equal(
+    validateCartForCheckout('delivery').ok,
+    false,
+    'que es lo que de verdad protegía el borrado: no se puede confirmar',
+  );
 });
 
 test('cart calculates subtotal, delivery fee, and totals correctly', () => {

@@ -163,8 +163,21 @@ test('hasLiveRiderLocation: solo GPS real y reciente cuenta como en vivo', () =>
   assert.equal(hasLiveRiderLocation(null, { now }), false);
 });
 
-// ===== 4. Guard anti regresión: casco inline, sin moto, persona ni recursos externos =====
-test('el marker del rider usa un casco local accesible y no una moto, inicial o persona', () => {
+/*
+ * ===== 4. Guard anti regresión: un vector inline, sin persona ni recursos externos ====
+ *
+ * Este guard nació cuando el marcador del rider era un contraption de divs
+ * (`lt-rider-box`, `lt-rider-wheel`, `lt-rider-frame`, `lt-rider-light`) con un
+ * avatar humano encima, y por eso prohibía también las PALABRAS «moto» y
+ * «scooter»: eran los nombres de aquellas piezas.
+ *
+ * Lo que protegía era el principio —un solo SVG inline, accesible, sin persona,
+ * sin emoji, sin raster y sin pedirle nada a la red—, no el vehículo dibujado.
+ * El marcador hoy ES una moto de perfil, en un único vector geométrico, porque
+ * a 43–48 px el casco dejaba de leerse. El principio sigue medido entero; lo
+ * único que se retiró es la prohibición del motivo.
+ */
+test('el marker del rider es un vector inline accesible, sin persona, emoji ni recursos externos', () => {
   const documentRef = { createElement: () => ({ className: '', innerHTML: '' }) };
   const marker = createRiderMarkerElement(documentRef, { status: 'on_the_way', source: 'gps' });
   assert.match(marker.innerHTML, /lt-rider-helmet-core/);
@@ -172,12 +185,15 @@ test('el marker del rider usa un casco local accesible y no una moto, inicial o 
   assert.match(marker.innerHTML, /\btaba-map-helmet\b/);
   assert.doesNotMatch(marker.innerHTML, /taba-delivery-helmet/);
   assert.match(marker.innerHTML, /role="img"/);
-  assert.match(marker.innerHTML, /aria-label="Casco del rider TABA"/);
-  assert.match(marker.innerHTML, /<circle[^>]*fill="var\(--taba-white\)"[^>]*stroke="currentColor"[^>]*stroke-width="3\.2"/);
+  assert.match(marker.innerHTML, /aria-label="Moto del repartidor TABA"/);
+  // Disco rojo intenso con aro blanco: el único marcador rojo pleno del mapa.
+  assert.match(marker.innerHTML, /<circle[^>]*fill="var\(--map-rider-disc\)"[^>]*stroke="var\(--taba-white\)"[^>]*stroke-width="3\.2"/);
+  // Un solo SVG: si vuelven a aparecer piezas sueltas, esto lo delata.
+  assert.equal(marker.innerHTML.match(/<svg\b/g).length, 1);
   assert.doesNotMatch(marker.innerHTML, />R</);
   assert.doesNotMatch(marker.innerHTML, /<text/);
   assert.doesNotMatch(marker.innerHTML, /[\u{1F300}-\u{1FAFF}]/u);
-  for (const banned of ['moto', 'scooter', 'emoji', '<image', 'href=', 'src=', 'http://', 'https://', 'avatar', 'face', 'rider-human', 'rider-person', '#b64c34']) {
+  for (const banned of ['emoji', '<image', 'href=', 'src=', 'http://', 'https://', 'avatar', 'face', 'rider-human', 'rider-person', '#b64c34']) {
     assert.equal(marker.innerHTML.includes(banned), false, `marker no debe contener "${banned}"`);
   }
   assert.match(marker.className, /lt-rider-marker on-the-way source-gps/);

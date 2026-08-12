@@ -72,7 +72,7 @@ test('tracking público arriving reproduce la composición y conserva datos real
   await expect(onTheWayMap).toHaveAttribute('data-route-source', 'simulation');
   const onTheWayMarker = onTheWayMap.locator('.lt-rider-helmet-icon.taba-map-helmet');
   await expect(onTheWayMarker).toBeVisible();
-  await expect(onTheWayMarker).toHaveAttribute('data-map-rider-helmet', '');
+  await expect(onTheWayMarker).toHaveAttribute('data-map-rider-scooter', '');
   await expect(onTheWayMap.locator('.taba-delivery-helmet')).toHaveCount(0);
   if (process.env.TABA_CAPTURE_ON_THE_WAY === '1') {
     await expect(onTheWayMap).toHaveAttribute('data-map-status', 'ready', { timeout: 15_000 });

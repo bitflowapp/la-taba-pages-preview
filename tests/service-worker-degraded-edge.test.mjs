@@ -188,11 +188,71 @@ test('una respuesta sana gana y se guarda: la publicación nueva se sigue viendo
   assert.match(await guardada.text(), /background:#000/);
 });
 
-test('sin copia guardada, el error del borde se entrega tal cual: nunca se devuelve algo peor que antes', async () => {
-  const worker = cargarWorker({ red: async () => errorDelBorde(503) });
+for (const status of [404, 503]) {
+  test(`sin copia guardada, el ${status} se entrega tal cual y no se guarda nada`, async () => {
+    const worker = cargarWorker({ red: async () => errorDelBorde(status) });
+
+    const respuesta = await worker.responder(pedido(ESTILOS, { destination: 'style' }));
+    assert.equal(respuesta.status, status);
+
+    // La otra mitad del contrato: no tener respaldo NO es excusa para guardar
+    // basura. Nunca se devuelve algo peor que antes, y tampoco se empeora
+    // lo que venga después.
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(await worker.cache.match(ESTILOS), undefined);
+  });
+}
+
+test('sin copia guardada, el portal cautivo se entrega pero NO envenena la caché', async () => {
+  const worker = cargarWorker({ red: async () => portalCautivo() });
 
   const respuesta = await worker.responder(pedido(ESTILOS, { destination: 'style' }));
-  assert.equal(respuesta.status, 503);
+  assert.equal(respuesta.status, 200);
+
+  // Este es el caso que `response.ok` solo no cubre: la respuesta dice 200 y
+  // sin el control de tipo se habría guardado. Guardarla dejaba al cliente con
+  // la página del portal como hoja de estilos hasta la próxima publicación.
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(await worker.cache.match(ESTILOS), undefined);
+});
+
+test('el control de tipo es sólo para estilos y módulos: una imagen o un fetch de la app no se filtran', async () => {
+  const imagen = `${ORIGEN}/assets/icon.svg`;
+  const worker = cargarWorker({
+    red: async () => new Response('<svg xmlns="http://www.w3.org/2000/svg"/>', {
+      status: 200,
+      headers: { 'content-type': 'image/svg+xml' },
+    }),
+  });
+
+  // `destination` vacío es lo que trae un `fetch()` del propio cliente. Ahí no
+  // hay nada que contrastar y el contrato sigue siendo el de siempre: un 200
+  // pasa y se guarda.
+  const respuesta = await worker.responder(pedido(imagen, { destination: '' }));
+  assert.equal(respuesta.status, 200);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.ok(await worker.cache.match(imagen));
+});
+
+/*
+ * El límite conocido, escrito para que nadie suponga una cobertura que no
+ * existe: el worker contrasta el tipo DECLARADO, no el cuerpo. Un borde que
+ * además miente en el `content-type` —HTML servido como `text/css`— pasa. No se
+ * cubre a propósito: leer el cuerpo de cada respuesta para adivinar su
+ * contenido cuesta más de lo que evita, y ningún borde real observado hace eso.
+ * Si algún día aparece uno, este test es el que hay que dar vuelta.
+ */
+test('límite conocido: HTML con content-type de CSS pasa, porque el worker no lee el cuerpo', async () => {
+  const worker = cargarWorker({
+    red: async () => new Response('<!doctype html><h1>portal</h1>', {
+      status: 200,
+      headers: { 'content-type': 'text/css; charset=utf-8' },
+    }),
+    enCache: [[ESTILOS, hojaBuena()]],
+  });
+
+  const respuesta = await worker.responder(pedido(ESTILOS, { destination: 'style' }));
+  assert.match(await respuesta.text(), /<h1>portal<\/h1>/);
 });
 
 test('una navegación sin red recibe el shell guardado', async () => {

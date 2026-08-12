@@ -590,9 +590,19 @@
               <label class="checkout-payment-field">
                 Forma de pago
                 <select name="paymentMethod" aria-label="Forma de pago">
+                  <!-- Las opciones tienen que estar en el CHECK
+                       `orders_payment_method_valid` de la base
+                       (20260806170000_order_payment_modality_integrity.sql).
+                       «Transferencia al confirmar» estaba acá y NO estaba en el
+                       CHECK: el pedido se rechazaba al insertarse y la persona
+                       veía un error genérico después de completar todo el
+                       checkout. Volver a ofrecer transferencia exige primero el
+                       flujo real (datos bancarios, comprobante, quién
+                       confirma) y su migración; agregar la opción sola
+                       reabre el mismo pozo.
+                       El test `payment-methods-contract` sostiene esta lista. -->
                   <option value="coordinate">A coordinar con el local</option>
                   <option value="cash">Efectivo al recibir</option>
-                  <option value="transfer">Transferencia al confirmar</option>
                 </select>
                 <small>El medio se confirma antes de preparar el pedido.</small>
               </label>

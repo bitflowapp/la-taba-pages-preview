@@ -220,6 +220,13 @@ body:is([data-active-view="business"], [data-active-view="rider"]) {
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
+    /* Acortar la duración NO detiene una animación `infinite`: la hace correr
+       mil veces por segundo. Visualmente no se nota —cada vuelta termina al
+       instante— pero el compositor sigue trabajando para siempre, que es
+       justamente lo que la preferencia pide evitar. Lo encontró la auditoría de
+       accesibilidad: con la preferencia puesta, el aro del logo seguía vivo en
+       `document.getAnimations()`. */
+    animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }

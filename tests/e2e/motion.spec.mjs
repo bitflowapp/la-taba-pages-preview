@@ -2,6 +2,31 @@ import { expect, test } from '@playwright/test';
 import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
 
 test.describe('TABA2 motion system', () => {
+  test('con movimiento reducido no queda NADA animándose para siempre', async ({ page }) => {
+    /*
+     * El reset de `prefers-reduced-motion` acortaba la duración a 0,001 ms y no
+     * tocaba las iteraciones. Una animación `infinite` con duración cero no se
+     * detiene: corre mil veces por segundo. No se ve —cada vuelta termina al
+     * instante— pero el compositor no para nunca, que es exactamente lo que la
+     * preferencia pide evitar, y en un teléfono se paga en batería.
+     * Lo encontró la auditoría de accesibilidad mirando `getAnimations()`.
+     */
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await installBrowserStubs(page);
+    await gotoDemoReset(page, '/?reset=1&demo=1#home');
+    await page.waitForTimeout(1_500);
+
+    const infinitas = await page.evaluate(() => [...document.getAnimations()]
+      .filter((a) => a.playState === 'running' && a.effect?.getTiming?.().iterations === Infinity)
+      .map((a) => {
+        const objetivo = a.effect?.target;
+        const clase = typeof objetivo?.className === 'string' ? objetivo.className.trim().split(/\s+/)[0] : '';
+        return `${objetivo?.tagName?.toLowerCase() || '?'}${clase ? `.${clase}` : ''}`;
+      }));
+
+    expect(infinitas, `quedaron animaciones infinitas vivas: ${infinitas.join(', ')}`).toEqual([]);
+  });
+
   test('desktop motion is progressive, scroll-safe and tactile', async ({ page }) => {
     const guards = installPageGuards(page);
     await installBrowserStubs(page);

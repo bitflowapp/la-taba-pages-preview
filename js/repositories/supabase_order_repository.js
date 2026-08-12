@@ -481,12 +481,33 @@ export function createSupabaseOrderRepository({
   }
 
   async function loadCatalog() {
-    setProductionCatalogReady(false);
-    catalogProductCount = 0;
-    catalogStatus = {
-      state: 'loading',
-      message: 'Cargando catálogo productivo.',
-    };
+    // Un refresco en segundo plano NO puede dejar la tienda sin catálogo.
+    //
+    // Esta función corre en CADA evento realtime de `products`, y cada pedido
+    // escribe esa tabla: la RPC descuenta stock con
+    // `update public.products set stock = stock - v_item.quantity`. Al declarar
+    // la tienda «no lista» apenas empezaba, el pedido de una persona apagaba el
+    // checkout de TODAS las demás durante el viaje de red: `isProductionOrderingBlocked()`
+    // pasaba a verdadero, el botón «Confirmar pedido» se deshabilitaba y el
+    // submit contestaba «Los pedidos online todavía no están disponibles», que
+    // es falso —el comercio está abierto y el catálogo, cargado—. En una tienda
+    // con movimiento eso no es un parpadeo aislado: es continuo.
+    //
+    // El segundo defecto era peor y silencioso: `catalogProductCount = 0` se
+    // ejecutaba antes de la consulta y la rama de error no lo restauraba, así
+    // que UN refresco fallido dejaba la tienda bloqueada hasta el próximo
+    // evento que saliera bien. Un catálogo que ya servía se perdía por un error
+    // de red ajeno a él.
+    //
+    // Sólo la PRIMERA carga puede declarar que todavía no hay nada que vender.
+    const esPrimeraCarga = catalogProductCount === 0;
+    if (esPrimeraCarga) {
+      setProductionCatalogReady(false);
+      catalogStatus = {
+        state: 'loading',
+        message: 'Cargando catálogo productivo.',
+      };
+    }
     const { data, error, status } = await client
       .from('products')
       .select([
@@ -531,6 +552,16 @@ export function createSupabaseOrderRepository({
       .order('name', { ascending: true });
 
     if (error) {
+      // Un refresco fallido no degrada un catálogo que ya estaba sirviendo: el
+      // anterior sigue siendo el mejor dato disponible y la tienda sigue
+      // vendiendo. El error se informa igual a quien llamó.
+      if (!esPrimeraCarga) {
+        return failedQuery(
+          error,
+          status,
+          readableSupabaseError(error, 'No pudimos actualizar el catálogo verificado.'),
+        );
+      }
       catalogStatus = {
         state: 'error',
         message: readableSupabaseError(error, 'No pudimos cargar el catálogo verificado.'),

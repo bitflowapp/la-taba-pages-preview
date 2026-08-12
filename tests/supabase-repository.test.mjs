@@ -1904,6 +1904,92 @@ function checkoutDraft() {
   };
 }
 
+// Deja controlar SÓLO la consulta del catálogo, para poder mirar la tienda
+// mientras se refresca y para hacer fallar un refresco sin tocar el resto.
+function clienteConCatalogoControlado(mock) {
+  const control = { modo: 'normal', compuerta: null, respuesta: null };
+  const desdeElMock = mock.client.from.bind(mock.client);
+  const client = {
+    ...mock.client,
+    from(table) {
+      if (table !== 'products' || control.modo === 'normal') return desdeElMock(table);
+      const stub = {
+        select: () => stub,
+        eq: () => stub,
+        order: () => stub,
+        limit: () => stub,
+        then(resolve, reject) {
+          const entregar = async () => {
+            if (control.modo === 'falla') {
+              return { data: null, error: { message: 'la red se cayó' }, status: 503 };
+            }
+            if (control.compuerta) await control.compuerta;
+            return control.respuesta;
+          };
+          return entregar().then(resolve, reject);
+        },
+      };
+      return stub;
+    },
+  };
+  return { client, control };
+}
+
+// Cada pedido escribe `products` —la RPC descuenta stock—, así que el evento
+// realtime de esa tabla dispara `loadCatalog()` constantemente en una tienda con
+// movimiento. Ese refresco NO puede apagarle el checkout a los demás clientes.
+test('mientras se refresca el catálogo la tienda sigue vendiendo', async () => {
+  const mock = createSupabaseClientMock();
+  const { client, control } = clienteConCatalogoControlado(mock);
+  const repository = makeRepository(mock, { client });
+
+  await repository.loadBusinessConfiguration();
+  await repository.loadCatalog();
+  assert.equal(isProductionCatalogReady(), true, 'la primera carga deja la tienda lista');
+
+  // Segundo refresco, el que dispara cualquier pedido de cualquier persona.
+  let abrir;
+  control.modo = 'controlado';
+  control.compuerta = new Promise((resolve) => { abrir = resolve; });
+  control.respuesta = { data: mock.db.products, error: null, status: 200 };
+
+  const refresco = repository.loadCatalog();
+  // Acá vivía el defecto: la tienda quedaba «no lista» durante todo el viaje de
+  // red, el botón «Confirmar pedido» se deshabilitaba y el submit contestaba
+  // «Los pedidos online todavía no están disponibles», que es falso.
+  assert.equal(
+    isProductionCatalogReady(),
+    true,
+    'el pedido de una persona no puede apagar el checkout de las demás',
+  );
+  abrir();
+  await refresco;
+  assert.equal(isProductionCatalogReady(), true);
+});
+
+test('un refresco fallido no deja la tienda sin el catálogo que ya tenía', async () => {
+  const mock = createSupabaseClientMock();
+  const { client, control } = clienteConCatalogoControlado(mock);
+  const repository = makeRepository(mock, { client });
+
+  await repository.loadBusinessConfiguration();
+  await repository.loadCatalog();
+  assert.equal(isProductionCatalogReady(), true);
+
+  control.modo = 'falla';
+  const resultado = await repository.loadCatalog();
+
+  assert.equal(resultado.ok, false, 'el error se sigue informando a quien llamó');
+  // Antes, `catalogProductCount = 0` corría antes de la consulta y la rama de
+  // error no lo restauraba: un solo refresco fallido dejaba la tienda bloqueada
+  // hasta el próximo evento que saliera bien.
+  assert.equal(
+    isProductionCatalogReady(),
+    true,
+    'un error de red ajeno al catálogo no puede tirar abajo un catálogo que ya servía',
+  );
+});
+
 function createSupabaseClientMock({
   failFirstCreate = false,
   missingCreateRpc = false,

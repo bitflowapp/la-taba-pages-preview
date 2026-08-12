@@ -234,6 +234,82 @@ test('reintenta una falla con la misma clave y usa otra después de un éxito', 
   );
 });
 
+// El caso que faltaba: el de arriba reintenta DENTRO de la misma pestaña, donde
+// la clave sobrevive en memoria. Acá muere la pestaña.
+//
+// El carrito vive en localStorage y la clave de idempotencia vivía en
+// sessionStorage. Un pedido que SÍ se creó en el servidor y cuya respuesta se
+// perdió —radio que reengancha, iOS que descarta la pestaña de fondo, la persona
+// que cierra la app y vuelve— dejaba al cliente con el mismo carrito y sin la
+// clave: el segundo intento nacía con un client_request_id nuevo, el índice
+// único (business_id, client_request_id) no veía nada repetido y el negocio
+// recibía DOS pedidos reales.
+test('la clave sobrevive a que muera la pestaña: el mismo carrito no crea dos pedidos', async () => {
+  const mock = createSupabaseClientMock({ failFirstCreate: true });
+  const duradero = createStorage(); // localStorage: sobrevive a la pestaña
+  const pestañaUno = createStorage(); // sessionStorage de la primera pestaña
+  const repositorioUno = makeRepository(mock, {
+    storage: pestañaUno,
+    durableStorage: duradero,
+  });
+  addToCart(PRODUCT_ID, 1);
+
+  // La respuesta se pierde. Para el cliente es indistinguible de un fallo.
+  const sinRespuesta = await repositorioUno.createOrder(checkoutDraft());
+  assert.equal(sinRespuesta.ok, false);
+
+  // Muere la pestaña: se va sessionStorage y se va la memoria del repositorio.
+  // Quedan el carrito y localStorage, que es exactamente lo que tiene una
+  // persona que vuelve a abrir la tienda.
+  const pestañaDos = createStorage();
+  const repositorioDos = makeRepository(mock, {
+    storage: pestañaDos,
+    durableStorage: duradero,
+  });
+  const segundoIntento = await repositorioDos.createOrder(checkoutDraft());
+  assert.equal(segundoIntento.ok, true);
+
+  const intentos = mock.calls.rpc.filter((call) => call.name === 'create_order_with_items');
+  assert.equal(intentos.length, 2);
+  assert.equal(
+    intentos[0].args.payload.client_request_id,
+    intentos[1].args.payload.client_request_id,
+    'la segunda pestaña tiene que reclamar el MISMO pedido, no crear otro',
+  );
+  // El token también: la RPC exige que coincida el hash para devolver el pedido
+  // existente en vez de rechazar la clave por pertenecer a otro pedido.
+  assert.equal(
+    intentos[0].args.payload.tracking_token,
+    intentos[1].args.payload.tracking_token,
+  );
+});
+
+test('sin almacenamiento duradero la pestaña que muere duplicaba el pedido', async () => {
+  // El control negativo del test anterior: describe el comportamiento ANTERIOR
+  // al arreglo. Si algún día alguien vuelve a apoyar la idempotencia sólo en la
+  // pestaña, esto sigue pasando y el de arriba falla, que es la señal correcta.
+  const mock = createSupabaseClientMock({ failFirstCreate: true });
+  const repositorioUno = makeRepository(mock, {
+    storage: createStorage(),
+    durableStorage: null,
+  });
+  addToCart(PRODUCT_ID, 1);
+  await repositorioUno.createOrder(checkoutDraft());
+
+  const repositorioDos = makeRepository(mock, {
+    storage: createStorage(),
+    durableStorage: null,
+  });
+  await repositorioDos.createOrder(checkoutDraft());
+
+  const intentos = mock.calls.rpc.filter((call) => call.name === 'create_order_with_items');
+  assert.equal(intentos.length, 2);
+  assert.notEqual(
+    intentos[0].args.payload.client_request_id,
+    intentos[1].args.payload.client_request_id,
+  );
+});
+
 test('una RPC productiva ausente no crea un pedido local falso', async () => {
   const mock = createSupabaseClientMock({ missingCreateRpc: true });
   const repository = makeRepository(mock);

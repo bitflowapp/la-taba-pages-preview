@@ -83,6 +83,24 @@ export function createSupabaseOrderRepository({
   businessId,
   pollMs = 5000,
   storage = safeSessionStorage(),
+  // La clave de idempotencia del pedido vive acá y NO en `storage`, y la
+  // diferencia es la vida de la pestaña.
+  //
+  // El carrito se guarda en localStorage: sobrevive a que la pestaña muera. La
+  // clave estaba en sessionStorage: no. Con esa combinación, un pedido que SÍ se
+  // creó en el servidor y cuya respuesta se perdió —radio que reengancha, iOS
+  // que descarta la pestaña de fondo, la persona que cierra y vuelve— dejaba al
+  // cliente con el mismo carrito y sin la clave. El segundo intento generaba un
+  // `client_request_id` nuevo, el índice único (business_id, client_request_id)
+  // no veía nada repetido, y el negocio recibía DOS pedidos reales.
+  //
+  // La RPC ya estaba escrita para el reintento: toma un advisory lock por
+  // (comercio, clave), busca el pedido existente y, si el hash del token de
+  // seguimiento y la huella del payload coinciden, DEVUELVE ese pedido en vez de
+  // crear otro. Esa recuperación era inalcanzable porque el navegador tiraba la
+  // llave. El camino de Mercado Pago ya usaba localStorage; el pedido directo
+  // era el único que no.
+  durableStorage = safeLocalStorage(),
   cryptoImpl = globalThis.crypto,
 } = {}) {
   if (!client || typeof client.from !== 'function' || typeof client.rpc !== 'function') {
@@ -622,7 +640,8 @@ export function createSupabaseOrderRepository({
       request = await prepareIdempotentRequest({
         values: normalizedValues,
         items,
-        storage,
+        storage: durableStorage,
+        legacyStorage: storage,
         pendingStorageKey,
         cryptoImpl,
         memoryRequest: pendingRequest,
@@ -736,6 +755,10 @@ export function createSupabaseOrderRepository({
     // "pending" haría que un pedido nuevo e idéntico reutilice el pedido
     // anterior. Los errores conservan la clave; los éxitos la descartan.
     pendingRequest = null;
+    removeStoredAccess(durableStorage, pendingStorageKey);
+    // También de donde vivía antes: una pestaña abierta durante la
+    // actualización puede tener la copia vieja, y dejarla ahí haría que un
+    // pedido nuevo e idéntico reutilizara la clave ya consumida.
     removeStoredAccess(storage, pendingStorageKey);
 
     const order = mirrorCreatedOrder(row);
@@ -1791,6 +1814,7 @@ async function prepareIdempotentRequest({
   values,
   items,
   storage,
+  legacyStorage = null,
   pendingStorageKey,
   cryptoImpl,
   memoryRequest,
@@ -1814,12 +1838,24 @@ async function prepareIdempotentRequest({
   });
   const fingerprint = await secureDigest(input, cryptoImpl);
   const stored = readStoredAccess(storage, pendingStorageKey);
-  const reusable = [memoryRequest, stored].find((candidate) => (
+  // La copia de sessionStorage sólo se lee: es la que dejó una pestaña que ya
+  // estaba abierta cuando se publicó este cambio. Sin esto, esa pestaña
+  // duplicaría el pedido una única vez, justo durante la actualización.
+  const legacy = legacyStorage && legacyStorage !== storage
+    ? readStoredAccess(legacyStorage, pendingStorageKey)
+    : null;
+  const reusable = [memoryRequest, stored, legacy].find((candidate) => (
     candidate?.fingerprint === fingerprint
     && isSafeRequestId(candidate.clientRequestId)
     && isSafeTrackingToken(candidate.trackingToken)
   ));
-  if (reusable) return reusable;
+  if (reusable) {
+    // Si la que servía era la copia vieja de sessionStorage, se asciende: de lo
+    // contrario la próxima muerte de la pestaña vuelve a perder la clave y el
+    // agujero sigue abierto para ese cliente.
+    if (reusable === legacy) persistOrderAccess({ storage, key: pendingStorageKey, access: reusable });
+    return reusable;
+  }
 
   const request = {
     fingerprint,

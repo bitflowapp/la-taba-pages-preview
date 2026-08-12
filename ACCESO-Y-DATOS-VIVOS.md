@@ -151,7 +151,52 @@ existe» a funciones que sí existen y sólo requerían parámetros
 
 ---
 
-## 8 · Lo que no se tocó
+## 8 · Configuración comercial VIVA — qué está y qué falta
+
+Leída de la base, no supuesta.
+
+| Dato | Valor vivo | Estado |
+|---|---|---|
+| Dirección | `Mendoza 827` | configurado |
+| Pedidos online | `ordering_enabled=true`, `ordering_verified=true` (30-jul, por el owner) | configurado |
+| Delivery | habilitado · **envío $150** · **mínimo $350** | configurado, **falta que Walter lo confirme** |
+| Retiro en local | habilitado | configurado |
+| Moneda | `ARS` | configurado |
+| Alcohol | habilitado, 18+, **20:00–06:00**, `America/Argentina/Buenos_Aires` | configurado |
+| **Teléfono** | **NULL** | **FALTA** |
+| **WhatsApp** | **NULL**, `whatsapp_verified=false` | **FALTA** |
+| **Horarios de atención** | **no existe columna alguna** | **NO MODELADO** |
+| **Zona / radio de entrega** | **no existe columna alguna** | **NO MODELADO** |
+
+Los dos últimos son más serios que un dato faltante: **el esquema no tiene dónde
+guardarlos.** No es que Walter no los cargó; es que hoy el sistema no los
+representa. Si el piloto necesita horarios y zona, eso es trabajo de producto,
+no de configuración.
+
+### Catálogo vivo vs catálogo del repositorio
+
+| | |
+|---|---|
+| productos en la base | **10** (8 activos, 2 con alcohol) |
+| precio confirmado | 10 · precio pendiente **0** · sin stock **0** |
+| **comprables hoy** | **8** |
+| filas en el catálogo comercial del repo | **92** |
+
+O sea: **está vivo menos del 11 % del catálogo.** Las «9 unidades bloqueadas por
+precio unitario» que reporta `catalog:prices:check` son de la planilla, no de la
+base: en la base no hay ni un precio pendiente porque esos productos **todavía no
+se importaron**.
+
+Para abrir de verdad hay que decidir qué se vende e importarlo con precios
+confirmados. Eso es una **decisión de Walter**, no algo que se pueda inferir.
+
+### Pago
+
+`mercadopago` · `enabled=true` · **`environment=test`** · `checkout_pro` · `ARS`.
+
+---
+
+## 9 · Lo que no se tocó
 
 Producción. Backend mutable. Migraciones. ARCA. Dinero. `LT-0030`. `LT-0142` ni
 ningún otro pedido. Contraseñas. Cuentas. El `runtime-config` LIVE. Sin push.

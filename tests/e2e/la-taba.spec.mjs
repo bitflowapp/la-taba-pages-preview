@@ -236,12 +236,25 @@ test('flujo cliente con delivery', async ({ page }) => {
     neighborhood: 'Neuquen centro',
     reference: 'Porton negro',
     notes: 'Sin hueso',
-    payment: 'transfer',
+    payment: 'cash',
     deliveryMode: 'delivery',
   });
+  // Este caso pedía 'transfer' hasta que se descubrió que esa opción no existía
+  // para la base: el CHECK `orders_payment_method_valid` acepta mercadopago,
+  // cash, coordinate y qa_no_charge, y el pedido se rechazaba al insertarse.
+  //
+  // Estos specs corren en modo DEMO, donde el repositorio no toca ese CHECK, así
+  // que el gate venía en verde sobre una forma de pago que en producción no
+  // podía crear un pedido. Por eso el defecto sobrevivió: el único lugar donde
+  // `transfer` funcionaba era el lugar donde se lo probaba.
+  //
+  // Se cambió por una que sí existe; lo que el test comprueba —que la elección
+  // se conserva de punta a punta— no cambió. El contrato en sí lo sostiene ahora
+  // tests/payment-methods-contract.test.mjs, que compara lo ofrecido en el
+  // markup contra lo aceptado por el CHECK.
   const paymentMethod = page.getByLabel('Forma de pago');
   await expect(paymentMethod).toBeVisible();
-  await expect(paymentMethod).toHaveValue('transfer');
+  await expect(paymentMethod).toHaveValue('cash');
   await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
   await expect(page.locator('[data-order-summary]')).toContainText('Envío a domicilio');
   await expect(page.locator('[data-order-summary]')).toContainText('Total');
@@ -267,7 +280,7 @@ test('flujo cliente con delivery', async ({ page }) => {
   expect(confirmedOrder).toEqual({
     id: 'LT-0002',
     status: 'received',
-    paymentMethodCode: 'transfer',
+    paymentMethodCode: 'cash',
   });
   const autoOpened = await page.evaluate(() => window.__openedUrls.length);
   expect(autoOpened).toBe(0);
@@ -295,12 +308,12 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
     neighborhood: 'Neuquen centro',
     reference: 'Porton negro',
     notes: 'Entregar bien frio',
-    payment: 'transfer',
+    payment: 'cash',
     deliveryMode: 'delivery',
   });
   const paymentMethod = page.getByLabel('Forma de pago');
   await expect(paymentMethod).toBeVisible();
-  await expect(paymentMethod).toHaveValue('transfer');
+  await expect(paymentMethod).toHaveValue('cash');
   await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
   await expect(page.locator('[data-checkout-mode-note]')).toContainText('El medio de pago se coordina con el local.');
   await expect(page.locator('[name="couponCode"]')).toHaveCount(0);
@@ -313,7 +326,7 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
   await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido fue confirmado');
   await expect(tracking).not.toContainText(/pedido de muestra|no se envió|presentación/i);
   await tracking.locator('[data-order-summary-details] > summary').click();
-  await expect(tracking.locator('.summary-row').filter({ hasText: 'Pago' })).toContainText('Transferencia');
+  await expect(tracking.locator('.summary-row').filter({ hasText: 'Pago' })).toContainText('Efectivo');
   await expect(tracking).not.toContainText('Cupón');
   await expect(tracking).toContainText('Entregar bien frio');
 
@@ -321,7 +334,7 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
   await page.locator('[data-open-pin][data-admin-target="business"]').click();
   await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
   await page.locator('[data-pin-form]').press('Enter');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Transferencia');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Efectivo');
   await expect(page.locator('[data-business-dashboard]')).not.toContainText('TABA10');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Entregar bien frio');
 

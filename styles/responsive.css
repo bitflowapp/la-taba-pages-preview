@@ -711,21 +711,34 @@ body[data-active-view="rider"] .floating-cart {
     width: 100%;
   }
 
-  /* En móvil el control dice "Ordenar" y abre las opciones nativas: el valor
-     largo ("Recomendados") ya no compite por 40px y deja de recortarse. El
-     `select` cubre el control entero para conservar el objetivo táctil y el
-     nombre accesible. */
+  /* En móvil el `select` está en `opacity: 0` (más abajo) para conservar el
+     objetivo táctil y el nombre accesible, así que el texto visible es LO ÚNICO
+     que puede decir qué orden está aplicado. Antes decía siempre «Ordenar»:
+     elegir «Menor precio» no cambiaba nada en pantalla y el control quedaba sin
+     declarar su propio estado.
+
+     Ahora muestra la opción elegida. El valor largo se recortaba porque las dos
+     columnas eran 1fr y 1fr: «Filtros» es una palabra corta y no necesita la
+     mitad de la fila, así que el reparto se corre hacia el orden y
+     «Recomendados» entra sin recorte desde 360px. Por debajo se recorta con
+     puntos suspensivos, que se sigue leyendo; lo que no puede pasar es que
+     desborde. El glifo y la flecha siguen diciendo que es un control. */
+  .catalog-controls {
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  }
+
   .catalog-controls .sort-field {
     position: relative;
     justify-content: flex-start;
     padding: 0 30px 0 12px;
   }
 
-  .sort-label-full {
+  .sort-label-full,
+  .sort-label-short {
     display: none;
   }
 
-  .sort-label-short {
+  .sort-value {
     display: inline;
   }
 

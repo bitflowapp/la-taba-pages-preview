@@ -2188,6 +2188,16 @@ function renderCatalogMeta() {
   if (sortField) sortField.hidden = !catalogLoading && count === 0;
   const select = $('[data-sort-select]');
   if (select && select.value !== state.sortBy) select.value = state.sortBy;
+  // En teléfono el `select` está en `opacity: 0`, así que este texto es lo
+  // único que declara qué orden está aplicado. Sale de la propia `<option>`
+  // para que no existan dos listas de etiquetas que se puedan separar.
+  const sortValue = $('[data-sort-value]');
+  if (sortValue && select) {
+    const chosen = Array.from(select.options || [])
+      .find((option) => option.value === select.value);
+    const label = chosen?.textContent?.trim() || '';
+    if (sortValue.textContent !== label) sortValue.textContent = label;
+  }
 }
 
 function isProductionCatalogLoading() {

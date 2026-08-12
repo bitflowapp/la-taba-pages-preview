@@ -482,6 +482,18 @@
   display: none;
 }
 
+/* El orden aplicado, escrito. En escritorio no hace falta —el propio `select`
+   se ve y muestra su valor—, así que sólo aparece en teléfono, donde el
+   `select` está en `opacity: 0`. Puede encogerse y recortarse antes que
+   desbordar: un recorte se lee igual y un desborde rompe la fila. */
+.sort-value {
+  display: none;
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sort-field-label svg {
   width: 17px;
   height: 17px;

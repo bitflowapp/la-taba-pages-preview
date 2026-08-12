@@ -359,6 +359,37 @@ como hoy.
 
 ---
 
+## 12 bis · Estado real: aplicado, y el ledger cierra
+
+**El paquete está aplicado en staging.** Ledger **83 → 88**, cinco migraciones y
+sólo esas, renumeradas a `20260812200000`…`240000` después de una colisión de
+versión con otra rama. Las tres banderas quedaron en `false` y no se cargó un
+solo dato comercial.
+
+No se aplicó con `db push`: el CLI se negaba porque en el ledger remoto había dos
+migraciones sin archivo local, y su única salida era declararlas revertidas —una
+mentira sobre migraciones aplicadas—. Se usó la Management API, escribiendo
+exclusivamente las cinco filas propias.
+
+**Esas dos migraciones ya están versionadas** por su autor (`89fff62`), y el
+árbol vuelve a contener todo lo que el ledger dice que está aplicado:
+
+| | |
+|---|---|
+| Migraciones en Git | **88** |
+| Filas en el ledger de staging | **88** |
+| Conjuntos | **idénticos** — nada aplicado que Git no tenga, nada en Git sin aplicar |
+
+Verificado además contra el estado alojado: 84 tablas, 1145 columnas, 678
+constraints, 69 policies y 259 funciones **idénticas** a las que produce una base
+construida desde cero sólo con Git. La única diferencia es un trigger de
+`realtime.subscription`, que instala el servicio Realtime de Supabase y que
+ninguna migración declara.
+
+La prueba completa —incluida la comparación contra el SQL literal que guarda
+`schema_migrations.statements`— está en
+`artifacts/taba2-business-operations-delivery/staging-preflight/LEDGER-REPRODUCIBLE.md`.
+
 ## 13 · Lo que no se tocó
 
 staging · producción (no existe, y este encargo no la crea) · LT-0142 ·

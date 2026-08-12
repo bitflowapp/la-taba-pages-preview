@@ -103,9 +103,9 @@ solos: la autoridad del pago sigue siendo el backend.
 
 ## Cobertura nueva
 
-- `tests/service-worker-degraded-edge.test.mjs` — 13 pruebas de comportamiento
+- `tests/service-worker-degraded-edge.test.mjs` — 17 pruebas de comportamiento
   del handler, no de la forma del fuente. Contra el `sw.js` anterior fallan 7 y
-  pasan 6 (las que fijan lo que no debía cambiar).
+  pasan las que fijan lo que no debía cambiar.
 - `tests/e2e/mp-back-navigation-ui.spec.mjs` — 9 pruebas del recorrido humano
   con service workers habilitados, en **Chromium y WebKit**, midiendo geometría
   y color computados. Contra el `sw.js` anterior fallan las 3 centrales.
@@ -117,16 +117,38 @@ solos: la autoridad del pago sigue siendo el backend.
 
 | | resultado |
 |---|---|
-| `npm run check` | 4 de 5 en verde; falla `check-release-hygiene` |
-| `npm test` | **1336 / 1337** |
-| Playwright Chromium | ver corrida completa |
+| `npm run check` | **5 / 5** |
+| `npm test` | **1341 / 1341** |
+| Playwright Chromium | **255 / 255** |
 | Playwright mobile-webkit | **28 / 28** |
 
-La falla de higiene es **anterior a este trabajo**: son 19 hallazgos
-`local-drive-path` en documentos que llegaron con los commits de documentación
-entre `1d26c4b` y el HEAD actual. Contados sobre el HEAD sin ninguno de estos
-cambios dan los mismos 19, y ninguno cae en un archivo tocado acá. No se tocaron:
-son de otro frente.
+`check-release-hygiene` marcaba 19 hallazgos `local-drive-path` que eran
+**anteriores a este trabajo**: reproducidos sobre `e2890be` en un worktree
+aparte dan los mismos 19, y el diff contra la lista del HEAD del P1 es vacío.
+Se limpiaron en un commit de higiene **separado** (`5a7d4e5`), reemplazando las
+rutas de una máquina por los marcadores que el repo ya usaba. Sólo
+documentación: los siete archivos son `.md` y no se tocó una línea de producto.
+
+## El contrato del service worker, caso por caso
+
+| lo que devuelve el borde | con copia guardada | sin copia guardada |
+|---|---|---|
+| **404** | la copia guardada | ese 404, y no se guarda nada |
+| **5xx** (500, 503, 403…) | la copia guardada | ese error, y no se guarda nada |
+| **la red RECHAZA** | la copia guardada | `Response.error()`; sólo una navegación recibe `index.html` |
+| **200 con tipo incompatible** (HTML por CSS o por JS) | la copia guardada | esa respuesta, y **no se guarda** |
+| **200 sano** | gana la red y se guarda | gana la red y se guarda |
+
+`response.ok` no alcanza para el portal cautivo: contesta **200**, así que sin
+el control de tipo se habría cacheado y el cliente arrastraría esa página como
+hoja de estilos hasta la próxima publicación. El control alcanza a `style` y
+`script`; una imagen o un `fetch()` del propio cliente —`destination` vacío—
+siguen con el contrato de siempre.
+
+**Límite conocido:** se contrasta el tipo **declarado**, no el cuerpo. Un borde
+que además mienta en el `content-type` —HTML servido como `text/css`— pasa. Está
+fijado con un test que lo dice, para que nadie suponga una cobertura que no
+existe.
 
 ## Lo que esto NO prueba
 

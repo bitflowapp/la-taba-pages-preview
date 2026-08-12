@@ -300,27 +300,44 @@ Las dos salidas están construidas y ninguna se activó sola:
 **Nada de esto se hizo.** Requiere autorización explícita.
 
 ```bash
-# 0 · tomar el lock exclusivo, y no antes
-#     D:\1212\_claude-locks\taba2-staging-mutation.lock
+# 0 · tomar el lock exclusivo de mutación de staging, y no antes.
+#     SUPABASE_CLI apunta al binario del CLI de esta máquina; la ruta concreta
+#     no se publica en un documento.
 
 # 1 · el worktree necesita el ref: el CLI 2.110 mira este archivo
 echo ukxqbgswjlibmnjemrzd > supabase/.temp/project-ref
 
 # 2 · medir el ledger ANTES de empujar nada
-C:/1212/scripts/supabase.exe migration list --linked
+"$SUPABASE_CLI" migration list --linked
 
 # 3 · empujar. Las cinco migraciones son aditivas y las banderas arrancan
 #     apagadas: aplicarlas NO cambia el comportamiento de staging.
-C:/1212/scripts/supabase.exe db push
+"$SUPABASE_CLI" db push
 
-# 4 · verificar que el ledger quedó en 78 y que db push dice "up to date"
-C:/1212/scripts/supabase.exe migration list --linked
+# 4 · verificar el ledger y que db push diga "up to date"
+"$SUPABASE_CLI" migration list --linked
 ```
 
-**Advertencia del ledger:** el remoto y el árbol no coinciden en la punta —hay
-migraciones de otras ramas que `db push` aplicaría de arrastre—. Antes de
-empujar hay que comparar `migration list --linked` contra
-`ls supabase/migrations/` y decidir explícitamente qué entra.
+**El ledger, medido el 12-ago-2026 a las 05:15Z** (lectura, sin mutar nada):
+
+| | |
+|---|---|
+| Aplicadas en staging | **81** — las 73 compartidas + 8 de la capa de identidad (`20260812010000`–`080000`), de otra rama |
+| Pendientes | **5, y son exactamente las mías** (`20260812100000`–`140000`) |
+| Pendientes ajenas a este paquete | **ninguna** |
+| Sólo en el remoto | las 8 de identidad: están aplicadas y **no existen en este árbol** |
+
+La divergencia es al revés de lo que se temía: no hay nada ajeno que `db push`
+pudiera arrastrar, porque lo ajeno **ya está aplicado**. Y el orden acompaña —
+la primera mía (`20260812100000`) es posterior a la última aplicada
+(`20260812080000`)—, así que las cinco se agregan a la cola del ledger sin
+intercalarse.
+
+**Lo que sí bloquea:** el lock exclusivo de mutación de staging estaba **tomado
+y activo** por la sesión de identidad, que durante esa misma ventana pasó de 6 a
+8 migraciones. Aplicar en paralelo con una sesión que sigue agregando
+migraciones es la forma de conseguir un ledger fuera de orden. Se espera a que
+libere el lock.
 
 **Después de las migraciones, y sólo entonces:**
 

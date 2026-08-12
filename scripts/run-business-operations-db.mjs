@@ -148,10 +148,17 @@ try {
   // `auth` y `storage` los crean gotrue y storage-api, no la imagen de Postgres.
   // Se copian SÓLO el esquema (sin datos) desde un stack vivo: es una lectura,
   // no lo muta.
-  const platformSchemas = execFileSync(dockerCommand, [
-    'exec', platformSource, 'pg_dump', '-U', 'postgres', '-d', 'postgres', '--schema-only',
-    '--schema=auth', '--schema=storage', '--no-owner', '--no-privileges',
-  ], { maxBuffer: 256 * 1024 * 1024 });
+  //
+  // Con `TABA_PLATFORM_SCHEMA_FILE` se usa una copia ya guardada en vez de leer
+  // el stack de otra sesión. Importa: ese stack puede estar apagado, y
+  // encenderlo para leerlo sería tocar algo ajeno para una prueba propia.
+  const cachedPlatform = String(process.env.TABA_PLATFORM_SCHEMA_FILE || '').trim();
+  const platformSchemas = cachedPlatform
+    ? fs.readFileSync(path.resolve(cachedPlatform))
+    : execFileSync(dockerCommand, [
+      'exec', platformSource, 'pg_dump', '-U', 'postgres', '-d', 'postgres', '--schema-only',
+      '--schema=auth', '--schema=storage', '--no-owner', '--no-privileges',
+    ], { maxBuffer: 256 * 1024 * 1024 });
   psql(platformSchemas);
   psql(`
     create schema if not exists extensions;

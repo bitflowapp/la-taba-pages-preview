@@ -16,11 +16,10 @@ que quien lo lea pueda desconfiar de cada afirmación y verificarla.
 | | repo | punta canónica | base de este trabajo |
 |---|---|---|---|
 | Web/Panel | `bitflowapp/la-taba-pages-preview` | `feature/taba2-commercial-production-hardening` · `5a7d4e5` | rama `feature/taba2-identity-session-biometrics` |
-| Rider | `D:\1212\la-taba-rider-android\.git` (sin remoto) | `feature/taba2-rider-shifts-dispatch` · `ae90ab6` | rama `feature/taba2-rider-identity-biometrics` |
+| Rider | repositorio propio del Rider, sin remoto | `feature/taba2-rider-shifts-dispatch` · `ae90ab6` | rama `feature/taba2-rider-identity-biometrics` |
 
-Worktrees aislados en `D:\1212\worktrees\taba2-identity-session-biometrics` y
-`D:\1212\worktrees\taba2-rider-identity-biometrics`. Ningún otro frente fue
-tocado.
+Worktrees aislados, uno por rama, bajo el directorio de worktrees del proyecto.
+Ningún otro frente fue tocado.
 
 **HEADs al cerrar:**
 

@@ -531,3 +531,127 @@ Se dice para que nadie lo suponga:
 * **`FusedLocationSourceInstrumentedTest` falla en el teléfono**, y falla igual
   en la base `ae90ab6`. No es de este trabajo; queda dicho porque quien corra la
   suite lo va a ver.
+
+---
+
+# ANEXO · Integración y certificación en STAGING (2026-08-12)
+
+## Lo aplicado
+
+**Base de datos** — proyecto alojado `ukxqbgswjlibmnjemrzd`. Ledger **73 → 81**.
+Las seis migraciones de identidad más dos correcciones que aparecieron
+aplicando, cada una registrada en `supabase_migrations.schema_migrations` para
+que un `db push` futuro no las arrastre:
+
+| versión | qué |
+|---|---|
+| `20260812010000` … `20260812060000` | la capa de identidad |
+| `20260812070000` | la auditoría sobrevive al borrado de lo que audita |
+| `20260812080000` | el guard de membresías ve al que llama de verdad |
+
+Antes de tocar: ledger remoto verificado como **prefijo exacto** del árbol, sin
+deriva ajena; snapshot de las tres funciones que se redefinen; y la comprobación
+que decidía si era seguro aplicar — **0 miembros activos anónimos**, así que la
+regla nueva «un anónimo nunca es equipo» no dejaba a nadie afuera. Después:
+los 6 miembros activos resolvieron su rol real por la compuerta.
+
+**Frontend** — Cloudflare Pages `taba2-staging`, deployment
+**`9ce3f6f8-195d-4f03-bad8-361af566a6e4`** (Production / rama staging, source
+`2646b53`). **2 archivos subidos, 348 ya conocidos por hash**: el radio exacto
+esperado (`supabase-auth.js` y `identity-admin.js`). `runtime-config.js`
+**preservado byte a byte** — 684 B, sha256 `57d8a007…`, idéntico antes y
+después. Rollback: `6873fa07-79ae-4b83-8d4c-85aa69aba63c` (`693af40`).
+
+## Lo medido contra el alojado
+
+* **66/66 ataques hostiles**, con los mismos claims que pone PostgREST.
+* **26/26 matriz de roles** con cuatro cuentas reales y tokens reales: owner 20
+  permisos, admin 17, staff 6, rider 1. Ningún rol escribió membresías por
+  PostgREST; ningún rol fabricó un owner salvo el owner.
+* **19/19 identidad y revocación** por HTTP real contra GoTrue y PostgREST.
+* **MP-back P1 recertificado**: 4 anchos, service worker vivo, sin fallas.
+* **118/118 entradas del precache** servidas byte a byte contra el paquete.
+
+## El gate físico en el Moto G15
+
+APK `app-staging-debug` de `acc253a`, instalado en el aparato real.
+
+| paso | resultado |
+|---|---|
+| 1 · login | **OK** — por el formulario real, contra staging alojado |
+| 2 · activar biometría | **OK con huella humana real** |
+| 3-4 · cerrar y matar el proceso | **OK** — 0 procesos vivos |
+| 5 · abrir → biometría → sesión | **OK** — muestra el bloqueo, no el formulario; huella real; sesión restaurada |
+| 6-7 · reiniciar el teléfono | **OK** — archivos intactos; tras reiniciar, huella real y sesión restaurada |
+| 8 · refresh sin contraseña | **OK** — nunca se volvió a pedir contraseña en todo el gate |
+| 9 · offline → online | **parcial** — la app conservó su sesión y el último estado del servidor sin red; el corte se hizo por wifi, no por avión |
+| 10 · revocar sesión | **PARCIAL — ver el hallazgo** |
+| 11 · deshabilitar cuenta | **OK** — fail-closed inmediato en todo |
+| 12 · logout / descartar | **OK** — desaparecen `rider_session.enc` y `rider_session_key.enc`; sin material, la huella ya no abre nada |
+
+**La prueba de que la biometría es real y no decorativa**, medida en el aparato:
+el byte de nivel del envoltorio pasó de `0` (DEVICE) a `1` (BIOMETRIC) y
+apareció `rider_session_key.enc`, la clave de sobre envuelta. Esa escritura
+exige un `Cipher` autorizado por el sistema. Y en el mismo teléfono se midió que
+la clave **se niega a operar sin autenticación**:
+
+```
+KeyStoreException: Key user not authenticated
+  (internal Keystore code: -26 · Error::Km(r#KEY_USER_NOT_AUTHENTICATED))
+```
+
+No hay otro camino para descifrar esa sesión. Cuando la app volvió a mostrar el
+rol `rider` con el archivo en nivel BIOMETRIC, la única explicación posible es
+que hubo autenticación biométrica real.
+
+## El hallazgo que bloquea la certificación
+
+**Revocar una sesión NO detiene al Rider de inmediato en todas sus RPC.**
+
+Medido con un token revocado todavía vigente:
+
+```
+get_rider_queue ................. 200  SIGUE ABIERTO   ← el hueco
+identity_touch_session .......... not_authorized
+identity_current_context ........ rol null
+refresh del token ............... 400  RECHAZADO
+```
+
+La causa: **diez llamadas de las RPC del Rider consultan `business_members` en
+línea** —`bm.user_id = auth.uid() and bm.role = 'rider'`— en vez de pasar por
+`has_business_role`, que es donde vive la compuerta. Esas consultas leen
+`is_active`, pero no saben nada de sesiones revocadas.
+
+Radio exacto: **la cadena de renovación muere al instante** (el refresh es
+rechazado, la fila de `auth.sessions` se borra) y toda la superficie de
+identidad cierra al instante. Lo que sobrevive es el access token ya emitido,
+sobre esas RPC concretas, **hasta que vence: como máximo una hora**
+(`jwt_expiry = 3600`).
+
+**La alternativa fail-closed inmediata existe y está medida: deshabilitar la
+cuenta.** Con la cuenta dada de baja, la misma llamada devuelve `403 42501` al
+instante, porque el predicado en línea sí lee `is_active`.
+
+El arreglo correcto es que esas diez llamadas consulten la compuerta. Son 18
+RPC de Rider en total; no se tocaron en esta corrida porque hacerlo a las
+apuradas sobre funciones `SECURITY DEFINER` que mueven entregas es peor que
+dejar el hueco documentado y acotado.
+
+## Limpieza
+
+Staging quedó como estaba: 1 comercio, 107 pedidos, 90 miembros (6 activos),
+0 cuentas de ensayo, 0 membresías huérfanas, 0 sesiones de identidad de prueba.
+Los 4 usuarios anónimos nuevos los creó el propio certificador de MP-back al
+abrir la tienda. El perfil `com.lataba.rider.review`, que se deshabilitó para
+que no robara el foco durante el gate, quedó **reactivado**.
+
+## Declaración
+
+**NO se declara `TABA2_IDENTITY_BIOMETRIC_SESSION_CERTIFIED_ON_STAGING`.**
+
+RBAC, persistencia y biometría física pasaron contra staging alojado y contra el
+Moto G15 real. La revocación pasa su requisito literal —el refresh queda
+rechazado— pero no el operativo: el Rider sigue leyendo su cola hasta una hora
+con un token revocado. Mientras eso siga así, la palanca inmediata es
+deshabilitar la cuenta, no revocar la sesión, y eso hay que decirlo antes de
+firmar, no después.

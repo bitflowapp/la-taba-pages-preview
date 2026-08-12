@@ -670,11 +670,51 @@ Y en el teléfono: se revocó la sesión desde el backend y el Moto G15 pasó a
 «Sin conexión · Conservamos el último estado del servidor», sin una sola llamada
 autenticada exitosa. La sesión quedó marcada `owner_revoked`.
 
-**Lo que sigue abierto y queda como deuda anotada:** `assign_order_rider`
-resuelve el rol de **quien llama** en línea (`bm.role in ('owner','admin','staff')`),
-así que una sesión de **staff** revocada puede seguir asignando riders hasta que
-venza su token. Son 116 líneas de una función que mueve pedidos; no se tocó al
-pasar. La palanca inmediata sigue siendo dar de baja la cuenta.
+### El último: `assign_order_rider`
+
+Era el mismo defecto, en la superficie del Panel. Reproducido contra staging
+alojado con un token real por PostgREST y **sin mutar ningún pedido**:
+
+```
+staff ACTIVO ................. AUTORIZACION PASO
+staff REVOCADO, token vigente  AUTORIZACION PASO   ← el hueco
+```
+
+La forma de la prueba es lo que garantiza que no escribe: el destinatario de la
+asignación es una cuenta que existe y **no es rider**, así que los dos caminos
+posibles terminan en `42501` antes de llegar a un solo `UPDATE`, y lo que los
+distingue es el mensaje. El CAS no sirve como señal: un `40001` hace que
+PostgREST **reintente** la transacción hasta que el gateway corta con 504, y un
+504 no dice nada. Se midió al escribirlo.
+
+`20260812110000` hace dos cambios y ninguno más:
+
+1. la autorización del llamador pasa por `has_business_role`, con los mismos
+   tres roles, el mismo `42501` y el mismo mensaje: el Panel no ve nada distinto;
+2. la autorización ocurre **antes** de leer y bloquear el pedido. Antes la
+   función hacía `select … for update` y recién después miraba quién llamaba:
+   cualquiera con un token podía tomar un lock de fila sobre un pedido ajeno.
+
+No se tocó la validación del **destinatario** —lo que importa de quien recibe la
+asignación es que sea un rider activo del comercio, no en qué estado está su
+sesión— ni el CAS, ni los eventos, ni el payload, ni los grants, ni
+`SECURITY DEFINER`, ni el `search_path`. Verificado sobre la función viva:
+`definer=true`, `search_path=pg_catalog, public, extensions, pg_temp`,
+`anon=false`, `authenticated=true`.
+
+Medido después, con el mismo token:
+
+```
+staff ACTIVO ................. PASO        (no se rompió nada)
+staff REVOCADO, token vigente  BLOQUEADA   ('rol de negocio requerido')
+el pedido de la sonda ........ intacto
+```
+
+**Y una invariante para que no vuelva.** Dos veces en esta tanda pasó lo mismo,
+así que el ensayo ahora falla si *cualquier* función alcanzable por
+`authenticated` resuelve el rol de quien llama por su cuenta
+(`bm.user_id = auth.uid()` junto a `bm.role`) sin consultar además la compuerta.
+Resolver el **comercio** así es legítimo; **autorizar** así, no.
 
 ## Limpieza
 

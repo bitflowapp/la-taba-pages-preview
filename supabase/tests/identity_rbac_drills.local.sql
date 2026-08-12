@@ -978,6 +978,41 @@ begin
     coalesce(array_length(v_bad, 1), 0) = 0,
     coalesce('tablas abiertas: ' || array_to_string(v_bad, ', '), 'todas cerradas'));
 
+  -- 48 bis. La invariante que impide que el defecto vuelva.
+  --
+  -- Dos veces en esta tanda paso lo mismo: una funcion alcanzable por un
+  -- cliente resolvia el rol de QUIEN LLAMA leyendo business_members en linea,
+  -- en vez de preguntarle a la compuerta. Esa lectura ve `is_active`, asi que
+  -- una baja de cuenta la cerraba, pero no sabe nada de sesiones revocadas.
+  -- Paso en las RPC del Rider y despues en assign_order_rider.
+  --
+  -- La regla: si una funcion ejecutable por `authenticated` resuelve el rol del
+  -- llamador por su cuenta (bm.user_id = auth.uid() junto a bm.role), tiene que
+  -- consultar ademas la compuerta. Resolver el comercio asi es legitimo;
+  -- autorizar asi, no.
+  select array_agg(p.proname order by p.proname) into v_bad
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and has_function_privilege('authenticated', p.oid, 'execute')
+     and p.prosrc like '%bm.user_id = auth.uid()%'
+     and p.prosrc like '%bm.role%'
+     and p.prosrc not like '%has_business_role%'
+     and p.prosrc not like '%identity_member_role%'
+     and p.prosrc not like '%rider_require_active_membership%';
+  perform identity_drill.check(
+    'ninguna funcion alcanzable autoriza al llamador sin la compuerta',
+    coalesce(array_length(v_bad, 1), 0) = 0,
+    coalesce('resuelven el rol solas: ' || array_to_string(v_bad, ', '), 'ninguna'));
+
+  -- 48 ter. Y la que se acaba de arreglar, por nombre.
+  perform identity_drill.check(
+    'assign_order_rider autoriza por la compuerta',
+    (select p.prosrc like '%has_business_role%' from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and p.proname = 'assign_order_rider'),
+    'antes resolvia el rol del llamador leyendo business_members');
+
   -- 49. Las funciones definer que ya existian y consultan la compuerta
   -- siguen siendo definer (si alguna dejara de serlo, la compuerta no se
   -- podria consultar y todo fallaria abierto o cerrado sin aviso).

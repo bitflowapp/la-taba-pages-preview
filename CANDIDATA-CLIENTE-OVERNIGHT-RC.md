@@ -13,13 +13,13 @@ líneas de código de producto** en tres archivos, y 57 pruebas nuevas.
 
 | | |
 |---|---|
-| **Repositorio** | `C:\Users\marco\dev\la-taba-pages-preview` |
-| **Worktree** | `D:\1212\worktrees\taba2-customer-overnight-rc` (nuevo) |
+| **Repositorio** | `…\dev\la-taba-pages-preview` |
+| **Worktree** | `…Q2\worktrees	aba2-customer-overnight-rc` (nuevo) |
 | **Rama** | `feature/taba2-customer-overnight-rc` (nueva) |
 | **HEAD inicial** | `0a5f6d0` |
 | **HEAD final** | `c4cfa4d` — último commit de código. Encima queda un noveno, sólo con este informe |
-| **Lock** | `D:\1212\_claude-locks\taba2-customer-overnight-rc.txt` |
-| **Evidencia** | `D:\1212\artifacts\taba2-customer-overnight-rc\` |
+| **Lock** | `…Q2\_claude-locks	aba2-customer-overnight-rc.txt` |
+| **Evidencia** | `…Q2rtifacts	aba2-customer-overnight-rc\` |
 
 ### Por qué esta base, verificado y no supuesto
 
@@ -44,13 +44,13 @@ base. **No hubo cherry-pick**: se ramificó de la punta, que ya los tenía.
 
 ### Aislamiento
 
-Se leyeron los 23 locks de `D:\1212\_claude-locks\` antes de tocar nada. Ninguna
+Se leyeron los 23 locks de `…Q2\_claude-locks\` antes de tocar nada. Ninguna
 sesión tenía tomado el storefront del cliente: los dos locks recientes
 —`taba2-rider-commercial-ux` y `taba2-business-operations-delivery`— estaban
 CERRADOS, y el worktree de la línea del cliente estaba limpio y quieto desde
 hacía casi cuatro horas. Aun así se creó **worktree y rama nuevos**: la línea
 histórica no se movió ni un commit. Recursos propios: `TEMP` en
-`D:\1212\_claude-tmp\customer-overnight-rc` y puertos 8123–8168 en vez de los
+`…Q2\_claude-tmp\customer-overnight-rc` y puertos 8123–8168 en vez de los
 8080/18787 por defecto, para no pisar a otra sesión.
 
 Al terminar, los dos worktrees vecinos que se leyeron

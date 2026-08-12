@@ -48,29 +48,29 @@
   white-space: nowrap;
 }
 
-/* Campo de 46px con input de 44 a 16px (sin zoom en iOS) y borde que porta
-   información. */
+/* Campo del alto único de los controles, con input a 16px (sin zoom en iOS) y
+   borde que porta información. */
 .catalog-search {
-  min-height: 46px;
+  min-height: var(--control-h);
   margin-bottom: 10px;
-  padding-inline: 12px;
+  padding-inline: 14px;
   border-color: var(--taba-line-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   box-shadow: none;
 }
 
 .catalog-search .catalog-search-icon {
   display: grid;
-  width: 20px;
-  height: 20px;
-  flex: 0 0 20px;
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
   place-items: center;
   color: var(--taba-muted);
 }
 
 .catalog-search .catalog-search-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 21px;
+  height: 21px;
 }
 
 .catalog-search input {
@@ -132,14 +132,17 @@
   }
 }
 
+/* La misma píldora que la home: 46px, icono de 20 y etiqueta de 13. Antes el
+   catálogo usaba 44/18/13 y la home 48/22/12,5, así que cruzar de una pantalla
+   a la otra reacomodaba una fila que dice exactamente lo mismo. */
 [data-view="catalog"] .category-button {
   display: inline-flex;
   min-width: 0;
-  min-height: var(--tap);
+  min-height: 46px;
   align-items: center;
   flex-direction: row;
-  gap: 6px;
-  padding: 0 14px;
+  gap: 7px;
+  padding: 0 16px;
   border-color: var(--taba-border-medium);
   border-radius: var(--radius-pill);
   background: var(--shelf-raised);
@@ -164,20 +167,21 @@
 
 [data-view="catalog"] .category-ico,
 [data-view="catalog"] .category-button.active .category-ico {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   background: transparent;
 }
 
 [data-view="catalog"] .category-ico svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 [data-view="catalog"] .category-label {
   max-width: none;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.005em;
   white-space: nowrap;
 }
 
@@ -194,7 +198,7 @@
 
 .catalog-filters summary {
   display: flex;
-  min-height: var(--tap);
+  min-height: var(--control-h);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -208,6 +212,25 @@
 
 .catalog-filters summary::-webkit-details-marker {
   display: none;
+}
+
+/* El chevron de "Filtros" era el glifo "⌄" de la tipografía y el de "Ordenar"
+   un triángulo dibujado con dos bordes: dos flechas distintas en dos controles
+   hermanos de la misma fila. Acá el glifo se apaga y se dibuja la MISMA flecha,
+   con la misma tinta y el mismo tamaño. */
+.catalog-filters summary > span[aria-hidden="true"] {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-right: 2px solid var(--taba-muted);
+  border-bottom: 2px solid var(--taba-muted);
+  font-size: 0;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--ease);
+}
+
+.catalog-filters[open] summary > span[aria-hidden="true"] {
+  transform: translateY(2px) rotate(-135deg);
 }
 
 .catalog-filters[open] summary {
@@ -284,25 +307,38 @@
     background: none;
   }
 
-  /* Sin fondo propio: el disparador se apoya en la superficie de la vista, igual
-     que los chips de categoría que tiene al lado. Pintarlo de blanco cálido lo
-     dejaba con el texto del tema oscuro encima y no se leía. */
+  /* El <details> ya trae la superficie del control (una sola, la misma que
+     "Ordenar"). El disparador NO dibuja una segunda: antes llevaba borde de
+     `currentcolor` y radio de píldora DENTRO de la caja de 10px del details, y
+     lo que se veía eran dos contornos concéntricos —uno blanco brillante y uno
+     apagado— alrededor de la palabra "Filtros". Al lado, "Ordenar" tenía un
+     solo contorno. Esa es la diferencia que hacía ver la fila improvisada. */
   .catalog-filters summary {
-    min-height: var(--tap);
-    border: 1px solid currentcolor;
-    border-radius: var(--radius-pill);
+    min-height: var(--control-h);
+    border: 0;
     background: transparent;
-    opacity: 88%;
+    opacity: 1;
   }
 
   /* Con el sheet abierto el disparador tiene que quedar POR ENCIMA del fondo.
      Si no, el fondo a pantalla completa lo tapa y se come el toque: el panel
      queda abierto sin forma de cerrarlo, porque un ::before no puede escuchar
      clics. Elevarlo devuelve el gesto de "toco Filtros y se cierra". */
+  /* Y por ENCIMA del panel, con su propia superficie. Compartiendo `--z-modal`
+     con el sheet, el desempate lo decidía el orden del DOM: el panel se pintaba
+     después y le cortaba el disparador por la mitad, con la palabra "Filtros"
+     partida por el canto del sheet. El toque igual funcionaba —de ahí que nadie
+     lo viera como un defecto— pero el control se veía roto. Un escalón más
+     arriba y `background: inherit` (el mismo color que ya pinta el <details>,
+     en los dos temas) lo dejan flotando entero sobre el panel, que es lo que
+     de verdad hace: es el botón que lo cierra. */
   .catalog-filters[open] summary {
     position: relative;
-    z-index: var(--z-modal);
-    border-bottom: 1px solid currentcolor;
+    z-index: calc(var(--z-modal) + 1);
+    border-bottom: 0;
+    border-radius: var(--radius-control);
+    background: inherit;
+    box-shadow: 0 10px 26px rgb(0 0 0 / 52%);
   }
 
   /* Escala de tokens: la nav inferior vive en --z-bottomnav (300) y la barra de
@@ -413,17 +449,19 @@
   font-weight: 600;
 }
 
+/* Hermano de "Filtros": mismo alto, mismo radio, misma tipografía y la misma
+   flecha. Los dos hacen la misma tarea sobre la misma grilla. */
 .sort-field {
   display: flex;
   width: 100%;
   align-items: center;
   justify-content: space-between;
   min-width: 0;
-  min-height: var(--tap);
+  min-height: var(--control-h);
   flex: 1 1 auto;
-  padding: 0 4px 0 10px;
+  padding: 0 4px 0 14px;
   border: 1px solid var(--taba-border-medium);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   background: var(--shelf-raised);
   box-shadow: none;
   color: var(--taba-ink);
@@ -433,10 +471,10 @@
   display: inline-flex;
   min-width: 0;
   align-items: center;
-  gap: 5px;
-  color: var(--taba-muted);
-  font-size: 12px;
-  font-weight: 750;
+  gap: 7px;
+  color: var(--taba-ink);
+  font-size: 13px;
+  font-weight: 800;
   white-space: nowrap;
 }
 
@@ -445,8 +483,9 @@
 }
 
 .sort-field-label svg {
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
   color: var(--taba-muted);
 }
 
@@ -620,23 +659,32 @@
 
 /* Marca de alcohol. Abajo a la izquierda: arriba a la izquierda vive el estado
    de stock y arriba a la derecha, favoritos. No recibe eventos —es rótulo, no
-   control— así que no le roba el toque a la foto. */
+   control— así que no le roba el toque a la foto.
+
+   La pastilla era blanca al 92% SOBRE EL PLATO BLANCO: de la etiqueta sólo
+   quedaba el hilo dorado y el "+18" flotando encima del envase, y donde el
+   plato curva su esquina se veía el grafito de la tarjeta por debajo, como si
+   la marca estuviera medio afuera de la foto. Grafito con tinta dorada: se lee
+   sobre cualquier packshot, es la misma pareja que usa `.combo-chip.is-age`, y
+   la esquina deja de ser un accidente porque la pastilla se apoya en la parte
+   recta del canto. */
 .product-age-tag {
   position: absolute;
   z-index: 2;
-  bottom: 10px;
-  left: 10px;
+  bottom: 9px;
+  left: 9px;
   display: inline-flex;
   align-items: center;
   min-height: 22px;
-  padding: 0 8px;
-  border: 1px solid rgb(201 149 62 / 55%);
+  padding: 0 9px;
+  border: 1px solid rgb(201 149 62 / 46%);
   border-radius: var(--radius-pill);
-  background: rgb(255 255 255 / 92%);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
-  color: #7c4a00;
+  background: rgb(17 20 25 / 92%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 22%);
+  color: var(--shelf-gold-soft);
   font-size: 11px;
   font-weight: 900;
+  letter-spacing: 0.01em;
   pointer-events: none;
 }
 
@@ -659,13 +707,18 @@
 
 /* Jerarquía fija: producto → presentación → precio → acción. Sin `min-height`
    encadenados: el pie se ancla con `margin-top: auto` y los precios de una
-   misma fila comparten línea de base. */
+   misma fila comparten línea de base.
+
+   El padding sale del MISMO token que el marco del packshot. Con 12 acá y 9
+   allá, el plato blanco arrancaba tres píxeles a la izquierda del título de su
+   propia tarjeta: en una grilla de dos columnas eso se ve como una foto
+   descentrada, no como un detalle. */
 .product-body {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 3px;
-  padding: 10px 12px 12px;
+  gap: 2px;
+  padding: 9px var(--card-pad) var(--card-pad);
 }
 
 .product-brand {
@@ -679,20 +732,26 @@
   white-space: nowrap;
 }
 
+/* Dos renglones RESERVADOS, no "hasta dos". La caja del nombre medía lo que
+   midiera el nombre, así que en una fila de dos tarjetas el "473 ml" de la
+   izquierda quedaba un renglón más arriba que el de la derecha y la grilla se
+   leía desalineada aunque los precios sí estuvieran a la misma altura. */
 .product-body h3 {
   display: -webkit-box;
+  min-height: 2.5em;
   margin: 0;
   overflow: hidden;
   color: var(--taba-ink);
   font-size: 15px;
   font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1.25;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
 .product-body p {
-  margin: 0;
+  margin: 1px 0 0;
   color: var(--taba-muted);
   font-size: 12px;
 }
@@ -702,16 +761,19 @@
 .product-foot {
   display: grid;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   margin-top: auto;
-  padding: 8px 0 0;
+  padding: 10px 0 0;
 }
 
 .product-action {
   display: grid;
 }
 
-/* La acción va EN FLUJO: por construcción no puede solaparse con el título. */
+/* La acción va EN FLUJO: por construcción no puede solaparse con el título.
+   Píldora, no rectángulo: es el mismo botón "Agregar" que la home dibuja
+   redondo en su rail, y tenerlo cuadrado acá era la diferencia más visible
+   entre las dos vitrinas del mismo producto. */
 .product-action .add-button {
   width: 100%;
   min-width: 0;
@@ -719,7 +781,7 @@
   flex: 1 1 auto;
   padding-inline: 12px;
   border: 1px solid var(--taba-red);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: var(--taba-red);
   box-shadow: none;
   color: #fff;
@@ -766,7 +828,7 @@
   min-width: 0;
   height: 46px;
   border-color: var(--taba-red-border-soft);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: var(--taba-red-soft);
   box-shadow: none;
 }
@@ -816,20 +878,25 @@
   gap: 7px;
 }
 
-/* El precio es tinta, no rojo: el rojo queda para la acción y la marca. */
+/* El precio es tinta, no rojo: el rojo queda para la acción y la marca. Es la
+   cifra que decide la compra, así que se jerarquiza por tamaño y ajuste óptico
+   —19px con el tracking cerrado— y no por color. */
 .price strong,
 .price-amounts strong {
   color: var(--taba-ink);
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 19px;
+  font-weight: 850;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
 }
 
 .price s,
 .price-amounts s {
   color: var(--taba-muted);
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-decoration-thickness: 1px;
 }
 
 /* "Precio a confirmar" no usa la tipografía de precio: no es un importe. */
@@ -851,26 +918,69 @@
 }
 
 /* Aviso de "acá no hay nada comprable todavía", encima de la grilla. Ocupa la
-   fila entera para que no se lea como una tarjeta más. */
+   fila entera para que no se lea como una tarjeta más.
+
+   Antes era una caja de 12px con una frase apretada contra un botón rojo a
+   sangre, y el rojo terminaba siendo lo más brillante de una pantalla cuya
+   noticia es justamente que NO hay nada que comprar. Acá el bloque toma el
+   lenguaje que la app ya reserva para "pendiente" —hairline dorado, la misma
+   pareja del botón `is-price-pending` que tiene debajo— y la salida queda como
+   una acción de tamaño normal, no como una franja. El filete dorado es
+   decorativo: no dice nada que el texto no diga, así que no entra en el árbol
+   de accesibilidad. */
 .catalog-none-buyable {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  display: grid;
   grid-column: 1 / -1;
-  justify-content: space-between;
-  gap: 10px 14px;
-  padding: 12px 14px;
-  border: 1px solid var(--shelf-line-strong);
-  border-radius: var(--radius-md);
+  justify-items: start;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgb(201 149 62 / 32%);
+  border-radius: 18px;
   background: var(--shelf);
+  box-shadow: var(--shadow-shelf-flat);
   color: var(--shelf-ink);
   font-size: 13px;
 }
 
+.catalog-none-buyable::before {
+  width: 26px;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--shelf-gold);
+  content: "";
+}
+
 .catalog-none-buyable strong {
   min-width: 0;
-  flex: 1 1 auto;
-  font-weight: 750;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.catalog-none-buyable .primary-button {
+  min-height: var(--tap);
+  margin-top: 2px;
+  padding-inline: 20px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+}
+
+/* Con ancho, la frase y la salida comparten renglón y el filete los encabeza. */
+@media (min-width: 620px) {
+  .catalog-none-buyable {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px 16px;
+  }
+
+  .catalog-none-buyable::before {
+    grid-column: 1 / -1;
+  }
+
+  .catalog-none-buyable .primary-button {
+    margin-top: 0;
+  }
 }
 
 /* Aviso de la línea del carrito: lo que ya no se puede pedir, con la salida al

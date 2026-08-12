@@ -273,12 +273,18 @@
 
 /* La activa se marca con borde rojo Y con el badge "Predeterminada": el estado
    no viaja sólo en el color, que es lo que exige el contraste y lo que necesita
-   quien no distingue el rojo. */
+   quien no distingue el rojo.
+
+   Lo que cambia es el PESO. Con 2px de rojo pleno más un halo de 22px, la
+   dirección elegida se leía como un error de formulario: era el único elemento
+   de Perfil con resplandor y el ojo iba ahí antes que al nombre de la persona.
+   Un borde de 1,5px al 72% y un anillo interior sin difuminar dicen lo mismo
+   —"esta es"— con el volumen que corresponde a un estado, no a una alarma. */
 .profile-address.is-default {
-  border-color: var(--taba-red);
-  border-width: 2px;
-  padding: 14px;
-  box-shadow: 0 0 0 1px rgb(191 31 46 / 30%), 0 6px 22px rgb(191 31 46 / 22%);
+  border-color: rgb(208 0 13 / 72%);
+  border-width: 1.5px;
+  padding: 14.5px;
+  box-shadow: inset 0 0 0 1px rgb(208 0 13 / 22%), var(--shadow-shelf-flat);
 }
 
 .profile-address-main {
@@ -341,26 +347,55 @@
   line-height: 1.4;
 }
 
+/* Con píldoras, el aire lo da el propio control: 14px entre bordes ya no es
+   separación sino un hueco. */
 .profile-address-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px 14px;
+  gap: 8px;
   padding-left: 51px;
 }
 
-.profile-address-actions .text-button {
+/* Los controles de texto de Perfil eran enlaces subrayados en rojo dentro de
+   tarjetas de góndola: "Editar", "Eliminar", "Cerrar". Tres subrayados rojos
+   apilados junto a los datos de la persona se leen como una página vieja, no
+   como los controles de una tarjeta, y encima competían en color con el único
+   rojo que importa, que es el de comprar.
+
+   Pasan a píldora de hairline —el mismo lenguaje que el botón secundario del
+   resto de la app— y conservan el subrayado en `:hover`/`:focus`, así que el
+   estado nunca depende sólo del color. El objetivo táctil de 44px no se toca.
+   El rojo queda en el ícono, que es donde informa sin gritar. */
+[data-view="profile"] .text-button {
   display: inline-flex;
-  flex: 0 1 auto;
   align-items: center;
-  gap: 6px;
-  min-width: 44px;
-  min-height: 44px;
-  max-width: 100%;
-  padding: 8px 3px;
-  color: var(--taba-red-quiet);
+  gap: 7px;
+  min-height: var(--tap);
+  padding: 0 14px;
+  border: 1px solid var(--shelf-line-strong);
+  border-radius: var(--radius-pill);
+  color: var(--shelf-ink);
   font-size: 12.5px;
-  font-weight: 750;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+[data-view="profile"] .text-button:hover,
+[data-view="profile"] .text-button:focus-visible {
+  border-color: var(--taba-white);
+  background: var(--shelf-raised);
+  text-decoration: underline;
+}
+
+[data-view="profile"] .text-button svg {
+  color: var(--shelf-red-ink);
+}
+
+.profile-address-actions .text-button {
+  flex: 0 1 auto;
+  min-width: 44px;
+  max-width: 100%;
   line-height: 1.2;
   overflow-wrap: anywhere;
   white-space: normal;
@@ -653,8 +688,13 @@
   font-weight: 750;
 }
 
+/* El verde era un literal suelto: la identidad comercial no lo tiene, y el
+   sistema ya decidió que sobre la góndola la confirmación se dice en dorado
+   (ver `--taba-success` en el remapeo del cliente). Pedirle el token en vez de
+   escribir el color hace además que Negocio y Repartidor conserven su verde de
+   papel, que sí está calibrado contra blanco. */
 .profile-address-location.is-confirmed {
-  color: #7dc563;
+  color: var(--taba-success);
 }
 
 .profile-address-location.is-missing {

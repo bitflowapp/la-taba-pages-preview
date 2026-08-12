@@ -112,10 +112,19 @@
   color: var(--taba-ink);
 }
 
+/* El filete rojo sale del FLUJO. Estando dentro, la caja del wordmark medía
+   27,5px (20 de letra + 5 de aire + 2,5 de filete) y la barra —que centra a sus
+   tres columnas— alineaba esa caja, no la palabra: "La Taba" quedaba unos
+   píxeles más alta que el bloque de dirección que tiene al lado y la fila se
+   veía torcida sin que se pudiera decir por qué. Absoluto, el filete sigue
+   dibujándose exactamente donde estaba y la palabra centra con sus vecinas. */
 .brand-text::after {
+  position: absolute;
+  top: 100%;
+  left: 0;
   width: 34px;
   height: 2.5px;
-  margin-top: 5px;
+  margin-top: 4px;
   border-radius: var(--radius-pill);
   background: var(--taba-red);
   content: "";
@@ -376,7 +385,9 @@
   gap: 9px;
   padding: 0;
   border: 1px solid var(--taba-border);
-  border-radius: var(--radius-sm);
+  /* El mismo radio que el buscador y los controles del catálogo: es el otro
+     control de la barra y no tiene por qué tener una esquina propia. */
+  border-radius: var(--radius-control);
   background: var(--taba-white);
   box-shadow: none;
   color: var(--taba-ink);
@@ -958,32 +969,174 @@ dialog::backdrop {
   appearance: none;
 }
 
+/* ============================================================================
+   AVISOS DEL SHELL — instalar · guía de iOS · sin conexión · actualización
+   ----------------------------------------------------------------------------
+   Estos cuatro avisos viven FUERA de `.app-view`, y ahí está el defecto que se
+   cierra acá: el remapeo de la paleta del cliente los alcanza por la TINTA —que
+   se hereda del `body`— pero no por la SUPERFICIE, que estaba escrita como
+   `white` literal. Sobre la app oscura eso daba texto casi blanco sobre un
+   rectángulo blanco: el título "Hay una actualización disponible" no se leía, y
+   la ✕ tampoco. Superficie y tinta se declaran juntas, igual que en la góndola;
+   la variante oscura del cliente vive en `brand-home.css`, junto al resto de su
+   scope.
+
+   La composición también cambia. Con `flex` en una sola fila, el botón y la ✕
+   se quedaban con ~200 de los 358px disponibles y el título caía en tres
+   renglones partidos a mitad de palabra ("actualizació / n disponible"). Acá el
+   aviso es una tarjeta: mensaje arriba, acción ancha abajo, cierre en la
+   esquina. A partir de 520px hay ancho para la fila y vuelve a ella.
+   ========================================================================== */
 .pwa-banner {
   position: fixed;
   z-index: var(--z-toast);
   right: 16px;
   bottom: 16px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--tap);
+  grid-template-areas:
+    "copy close"
+    "action action";
   align-items: center;
   gap: 12px;
-  width: min(calc(100vw - 32px), 440px);
-  padding: 14px;
+  width: min(calc(100vw - 32px), 420px);
+  padding: 16px;
   border: 1px solid var(--taba-border);
-  border-radius: var(--radius-md);
-  background: white;
+  border-radius: 20px;
+  background: var(--taba-white);
   box-shadow: var(--shadow-md);
+  color: #14161a;
+}
+
+/* Los avisos con emblema suman una columna; la ✕ y la acción no se mueven. */
+.pwa-banner-install {
+  grid-template-columns: auto minmax(0, 1fr) var(--tap);
+  grid-template-areas:
+    "icon copy close"
+    "action action action";
+}
+
+/* La guía de iOS no tiene acción —el gesto lo hace la persona en su navegador—
+   así que no declara la fila: una fila vacía cobra el `gap` igual. */
+.pwa-banner-ios {
+  grid-template-columns: auto minmax(0, 1fr) var(--tap);
+  grid-template-areas: "icon copy close";
+}
+
+/* "Sin conexión" no tiene controles ni envoltorio: es una sola columna de
+   texto que se apila sola. */
+.pwa-banner-offline {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: none;
+  gap: 3px;
+}
+
+.pwa-banner-icon {
+  display: grid;
+  grid-area: icon;
+  width: 38px;
+  height: 38px;
+  align-self: start;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--taba-red-soft);
+  color: var(--taba-red-quiet);
 }
 
 .pwa-banner-copy {
   display: grid;
-  flex: 1;
+  grid-area: copy;
+  gap: 3px;
+  min-width: 0;
 }
 
+.pwa-banner strong,
+.pwa-banner-copy strong {
+  color: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.pwa-banner small,
+.pwa-banner-copy small {
+  color: var(--taba-muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+/* La acción ocupa el ancho: es la única razón por la que el aviso existe. */
+.pwa-banner .primary-button {
+  width: 100%;
+  grid-area: action;
+  min-height: var(--tap);
+  border-radius: var(--radius-pill);
+}
+
+/* La ✕ era un rectángulo transparente sin ningún borde: se veía como un
+   carácter suelto flotando al lado del botón. Es un control y se dibuja como
+   tal, en la esquina y en segundo plano. */
 .pwa-banner-dismiss {
+  display: grid;
+  grid-area: close;
   width: var(--tap);
   height: var(--tap);
-  border: 0;
+  align-self: start;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--taba-border);
+  border-radius: 50%;
   background: transparent;
+  color: var(--taba-muted);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.pwa-banner-dismiss:hover {
+  border-color: var(--taba-border-medium);
+  background: var(--taba-subtle);
+  color: var(--taba-ink);
+}
+
+.pwa-ios-steps {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: var(--taba-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.pwa-ios-steps strong {
+  font-size: inherit;
+}
+
+/* Con ancho para la fila, el aviso vuelve a una sola línea. */
+@media (min-width: 520px) {
+  .pwa-banner {
+    grid-template-columns: minmax(0, 1fr) auto var(--tap);
+    grid-template-areas: "copy action close";
+  }
+
+  .pwa-banner-install {
+    grid-template-columns: auto minmax(0, 1fr) auto var(--tap);
+    grid-template-areas: "icon copy action close";
+  }
+
+  .pwa-banner-offline {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
+  }
+
+  .pwa-banner .primary-button {
+    width: auto;
+    padding-inline: 18px;
+  }
+
+  .pwa-banner-dismiss,
+  .pwa-banner-icon {
+    align-self: center;
+  }
 }
 
 .pwa-banner-update {

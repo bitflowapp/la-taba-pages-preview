@@ -537,12 +537,12 @@ body[data-active-view="home"] .taba-home-hero h1 {
    ========================================================================== */
 body[data-active-view="home"] .taba-home-search {
   width: 100%;
-  height: 48px;
-  min-height: 48px;
+  height: var(--control-h);
+  min-height: var(--control-h);
   margin: 0;
-  padding: 0 16px;
+  padding: 0 14px;
   border-color: var(--brand-border);
-  border-radius: 16px;
+  border-radius: var(--radius-control);
   background: var(--brand-surface);
   box-shadow: none;
 }
@@ -552,9 +552,9 @@ body[data-active-view="home"] .taba-home-search:focus-within {
 }
 
 body[data-active-view="home"] .taba-home-search svg {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
   color: var(--brand-ink-muted);
 }
 
@@ -571,11 +571,21 @@ body[data-active-view="home"] .taba-home-search input::placeholder {
   opacity: 1;
 }
 
-/* Buscador del catálogo: mismo lenguaje, para que el shell no se corte. */
+/* Buscador del catálogo: el MISMO control, no "el mismo lenguaje". Antes medía
+   46px con 10px de radio contra los 48 y 16 de la home: dos buscadores que
+   hacen lo mismo y se ven distinto según de qué pantalla venís. */
 body[data-active-view="catalog"] .catalog-search {
+  height: var(--control-h);
+  min-height: var(--control-h);
+  padding-inline: 14px;
   border-color: var(--brand-border);
+  border-radius: var(--radius-control);
   background: var(--brand-surface);
   box-shadow: none;
+}
+
+body[data-active-view="catalog"] .catalog-search:focus-within {
+  border-color: var(--brand-border-strong);
 }
 
 body[data-active-view="catalog"] .catalog-search input {
@@ -595,27 +605,48 @@ body[data-active-view="catalog"] .search-clear {
    Píldoras grandes: icono de 26px y etiqueta de 13px. La activa se marca con
    relleno rojo Y `aria-current`, nunca sólo con color.
    ========================================================================== */
+/* La misma máscara que el catálogo. La fila de la home cortaba el último chip
+   con un canto duro contra el borde de la pantalla y se leía como un chip roto;
+   el desvanecido dice "hay más a la derecha", que es lo que pasa de verdad.
+   El `padding` derecho evita que la máscara apague al último chip cuando la
+   fila SÍ entera. */
 body[data-active-view="home"] .home-category-strip {
   gap: 9px;
   padding: 0 2px 2px;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+}
+
+body[data-active-view="home"] .home-category-card {
+  scroll-snap-align: start;
+}
+
+@media (min-width: 900px) {
+  body[data-active-view="home"] .home-category-strip {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
 }
 
 body[data-active-view="home"] .home-category-card {
   display: flex;
   min-width: 0;
-  min-height: 48px;
+  min-height: 46px;
   flex: 0 0 auto;
   align-items: center;
   justify-content: flex-start;
   gap: 7px;
-  padding: 0 14px 0 11px;
+  padding: 0 16px;
   border-color: var(--brand-border);
   border-radius: var(--radius-pill);
   background: var(--brand-surface);
   box-shadow: none;
   color: var(--brand-ink);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 800;
+  letter-spacing: -0.005em;
   white-space: nowrap;
 }
 
@@ -631,16 +662,16 @@ body[data-active-view="home"] .home-category-card.active {
    `background: white` con más especificidad. */
 body[data-active-view="home"] .home-category-card.active .home-category-icon,
 body[data-active-view="home"] .home-category-icon {
-  width: 23px;
-  height: 23px;
+  width: 20px;
+  height: 20px;
   border-radius: 0;
   background: transparent;
   color: currentColor;
 }
 
 body[data-active-view="home"] .home-category-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 /* Fila de categorías del catálogo, con el mismo lenguaje. */
@@ -684,7 +715,7 @@ body[data-active-view="home"] .home-merch-section {
 }
 
 body[data-active-view="home"] .home-section-head {
-  margin: 0 2px;
+  margin: 0;
 }
 
 body[data-active-view="home"] .home-section-head h2 {
@@ -718,7 +749,7 @@ body[data-active-view="home"] .home-section-head button {
 }
 
 body[data-active-view="home"] .home-catalog-preview-section {
-  padding: 0 2px;
+  padding: 0;
 }
 
 /* ============================================================================
@@ -911,9 +942,11 @@ body[data-active-view="home"] .home-best-media {
   position: relative;
 }
 
+/* Dentro del plato de la home la esquina redondeada es la misma: 7px la deja
+   apoyada sobre el canto recto y no sobre la curva. */
 body[data-active-view="home"] .home-best-card .product-age-tag {
-  bottom: 4px;
-  left: 4px;
+  bottom: 7px;
+  left: 7px;
 }
 
 body[data-active-view="home"] .home-best-copy {
@@ -1230,18 +1263,26 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(.app
    apoya el producto. El plato es #fff exacto para que no se vea el borde entre
    la caja y el fondo del propio archivo. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .product-media-frame {
-  padding: 9px 9px 0;
+  padding: var(--card-pad) var(--card-pad) 0;
   background: transparent;
 }
 
+/* El anillo interior no es una sombra: es el canto del plato. Sin él el bitmap
+   —que trae su propio blanco horneado— se derrama hasta el borde y la caja deja
+   de leerse como una superficie apoyada sobre la tarjeta. Va POR DENTRO y a un
+   6%, así que no toca el packshot ni introduce un segundo blanco. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
   .product-media,
   .thumb
 ) {
   overflow: hidden;
   border-color: transparent;
-  border-radius: 14px;
+  border-radius: var(--radius-plate);
   background: var(--taba-white);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .product-media {
+  box-shadow: inset 0 0 0 1px rgb(20 22 26 / 7%);
 }
 
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-media {
@@ -1261,6 +1302,12 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-m
    favorito es una acción secundaria —guardar, no comprar— así que baja a un
    velo apenas perceptible y deja el packshot en paz. Sigue midiendo lo mismo:
    el área táctil no cambia, sólo su peso visual. */
+/* La tinta NO puede salir del remapeo de la góndola: este control es el único
+   que vive sobre el PLATO BLANCO, no sobre el grafito. `--taba-graphite-soft`
+   se remapea a `--shelf-muted` (#aab0b9), que está medido contra la tarjeta y
+   sobre blanco da 2,06:1: el corazón se veía lavado, como si fuera un resto del
+   render y no un control. Este gris está medido contra el plato (4,0:1) y sigue
+   siendo secundario respecto del packshot. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
   .product-favorite,
   .home-favorite-button
@@ -1268,7 +1315,7 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
   border-color: transparent;
   background: transparent;
   box-shadow: none;
-  color: var(--taba-graphite-soft);
+  color: #6f7480;
 }
 
 /* Sin disco, el contorno necesita despegarse del envase, pero el halo de 2px
@@ -1288,8 +1335,8 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
    vivir dentro de un disco. Fuera de él, adelgaza y baja a la tinta
    secundaria: guardar es una acción de después, no la de ahora. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .home-favorite-button path {
-  stroke: var(--taba-muted);
-  stroke-width: 1.4;
+  stroke: #6f7480;
+  stroke-width: 1.5;
 }
 
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view .home-favorite-button.is-favorite path {
@@ -1329,12 +1376,21 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
    sobre grafito es BLANCO sobre grafito. No se pasa a rojo porque el rojo
    sigue siendo la acción de compra y una fila de ocho chips rojos convierte la
    navegación en ocho botones de "Agregar". */
+/* La sombra no es decoración: sin ella la píldora blanca queda a ras del fondo
+   y se lee como un hueco recortado en la fila, no como el chip elegido. */
 body[data-active-view="catalog"] [data-view="catalog"] .category-button.active,
 body[data-active-view="home"] .home-category-card.active {
   border-color: var(--taba-white);
   background: var(--taba-white);
-  box-shadow: none;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 45%);
   color: #14161a;
+}
+
+/* Y el hairline del resto sube de 12% a 16%: a 12% la píldora sin elegir se
+   perdía contra el shell y la fila parecía tener un solo chip. */
+body[data-active-view="catalog"] [data-view="catalog"] .category-button:not(.active),
+body[data-active-view="home"] .home-category-card:not(.active) {
+  border-color: rgb(255 255 255 / 16%);
 }
 
 body[data-active-view="catalog"] [data-view="catalog"] .category-button.active .category-ico,
@@ -1348,6 +1404,57 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .toast {
   background: var(--taba-white);
   box-shadow: 0 14px 38px rgb(0 0 0 / 62%);
   color: #14161a;
+}
+
+/* Avisos del shell (instalar, iOS, sin conexión, actualización). El cuarto es
+   el que se veía roto: superficie `white` literal con la tinta ya remapeada a
+   la del cliente, o sea blanco sobre blanco. A diferencia del toast —que es
+   efímero y por eso invierte— estos avisos conviven con el contenido y se
+   quedan hasta que alguien los cierra, así que toman la MISMA góndola que la
+   tarjeta que tienen debajo. Es una superficie más de la app, no un parche. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-banner {
+  border-color: transparent;
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf), inset 0 0 0 1px var(--shelf-line);
+  color: var(--shelf-ink);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-banner :is(small, .pwa-ios-steps) {
+  color: var(--shelf-muted);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-banner-icon {
+  background: var(--shelf-red-wash);
+  color: var(--shelf-red-ink);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-banner-dismiss {
+  border-color: var(--shelf-line-strong);
+  color: var(--shelf-muted);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-banner-dismiss:hover {
+  border-color: var(--taba-white);
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+}
+
+/* ── El campo de búsqueda no es un campo de formulario ───────────────────────
+   La regla que da superficie a `input/select/textarea` dentro del cliente
+   (§6b) los enumera por ELEMENTO, a propósito, para que ningún campo nuevo
+   nazca blanco. El efecto colateral estaba a la vista en las dos vistas con
+   buscador: el `<input>` recibía `--shelf-raised` DENTRO de una caja que ya
+   tenía su propia superficie, y se dibujaba un segundo rectángulo más claro
+   que arrancaba después de la lupa y terminaba antes del borde. La caja
+   completa es el campo; el input es sólo el texto. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(.app-view, .modal-card) :is(
+  .search-box,
+  .taba-home-search,
+  .catalog-search
+) input:not([type="checkbox"]):not([type="radio"]) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 /* Barra de carrito. Sobre papel se pintaba en grafito para no gritar; sobre
@@ -1427,14 +1534,31 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
   background: rgb(201 149 62 / 22%);
 }
 
+/* "Precio próximamente" tenía que salir en dorado —lo dice `--taba-warning`—
+   pero la regla que devuelve los títulos de la góndola a `--shelf-ink` alcanza
+   a cualquier `strong` de la tarjeta y es más específica: el aviso se dibujaba
+   blanco, con el mismo peso que un importe real, y el ÚNICO indicio de que el
+   producto no se podía comprar quedaba en el botón. Acá el dorado vuelve, y con
+   él la tarjeta pendiente se lee de un vistazo. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
+  .product-card,
+  .modal-card
+) [data-price-pending-message] strong {
+  color: var(--shelf-gold-soft);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
 /* ============================================================================
    7 · BANNER EDITORIAL PREMIUM
    No afirma un descuento: invita a recorrer una categoría que existe.
    ========================================================================== */
+/* Misma columna que el resto de la vitrina: ver la nota del hero. */
 .home-brand-banners:not(:empty) {
   display: grid;
   gap: 12px;
-  padding: 0 2px;
+  padding: 0;
 }
 
 /* Los carruseles se apilaban sin separación: el rail de un rubro terminaba y el
@@ -1584,8 +1708,12 @@ body[data-active-view="home"] .home-sections {
    NO afirma precio ni descuento: eso vive en el bloque de promociones, que sale
    del contrato validado.
    ========================================================================== */
+/* Sin sangría propia. Los 2px alcanzaban para que el hero arrancara en 18 y el
+   buscador, los chips y las tarjetas en 16: una columna que se corre dos
+   píxeles a mitad de la vitrina. El anillo de foco cabe igual, porque la
+   sección ya reserva 16px a cada lado. */
 .home-hero-promo-slot:not([hidden]) {
-  padding: 0 2px;
+  padding: 0;
 }
 
 /* En teléfono el hero es una BANDA, no un afiche.
@@ -1648,6 +1776,11 @@ body[data-active-view="home"] .home-sections {
   content: "";
 }
 
+/* `gap: 1px` y no 3. Se probó abrir el aire entre rótulo, título y puerta, y
+   sale caro donde importa: a 360x800 el borde inferior del primer "Agregar"
+   pasó de 743 a 745 con el pliegue útil en 744, o sea que el botón dejó de ser
+   tocable por dos píxeles de aire en un banner. La separación de la puerta ya
+   la da su propio `margin-top`. */
 .home-hero-promo-copy {
   position: relative;
   z-index: 1;
@@ -1689,15 +1822,23 @@ body[data-active-view="home"] .home-sections {
 /* La puerta es un enlace con flecha, no un botón de 46px: la banda ENTERA es
    el control —es un `<button>`— así que un segundo control adentro sólo
    gastaría la altura que necesita el precio de abajo. */
+/* La puerta sigue siendo un enlace y no un botón —la banda entera es el
+   control, y un segundo control de 46px se come el precio de abajo—, pero
+   estaba escrita como texto suelto sobre una fotografía: 12,5px sin ninguna
+   defensa de contraste. Sube medio punto, cierra el tracking y lleva su propia
+   sombra, que es lo que hace que el rojo no se apague sobre los reflejos claros
+   de la escena. No cambia un píxel de alto. */
 .home-hero-promo-cta {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   width: fit-content;
   margin-top: 6px;
   color: var(--brand-red-ink);
-  font-size: 12.5px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 6px rgb(5 7 10 / 72%);
 }
 
 .home-hero-promo:hover .home-hero-promo-cta {
@@ -2037,10 +2178,16 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .reorder
    panel es contenido y por lo tanto crema, igual que en el bottom sheet. */
 body[data-active-view="catalog"] .catalog-filters,
 body[data-active-view="catalog"] .sort-field {
+  min-height: var(--control-h);
   border: 1px solid var(--brand-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: var(--brand-surface);
   color: var(--brand-ink);
+}
+
+body[data-active-view="catalog"] .catalog-filters:hover,
+body[data-active-view="catalog"] .sort-field:hover {
+  border-color: var(--brand-border-strong);
 }
 
 body[data-active-view="catalog"] .catalog-filters summary,
@@ -2076,9 +2223,17 @@ body[data-active-view="catalog"] .catalog-filters-actions .ghost-button:hover:no
    Cinco ranuras con el ancla de marca al centro. Mismas rutas, mismo alto por
    token; sólo cambia la superficie y la composición.
    ========================================================================== */
+/* Opaca de verdad, y sin desenfoque. Al 97% el título del producto que quedaba
+   debajo se leía a través de la barra —en el catálogo se veían dos nombres
+   fantasma detrás de "Seguir" y "Carrito"— y el `blur(18px)` a pantalla
+   completa se pagaba en frames del Moto G15 para tapar un 3% de nada. La barra
+   es el piso del pliegue útil: todo el sistema de reservas de abajo asume que
+   es opaca, así que lo es. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .mobile-nav {
   border-top-color: var(--brand-border);
-  background: rgb(9 11 14 / 97%);
+  background: var(--brand-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .mobile-nav button {
@@ -2467,12 +2622,15 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   scroll-snap-align: start;
 }
 
+/* El marco reserva el MISMO aire lateral que el cuerpo de la tarjeta: con 9
+   arriba y 14 abajo, la bandeja del combo arrancaba cinco píxeles a la
+   izquierda del nombre que la describe. */
 .combo-card-media {
   position: relative;
   display: block;
   width: 100%;
   height: 132px;
-  padding: 9px 9px 0;
+  padding: 14px 14px 0;
   overflow: hidden;
   border: 0;
   background: transparent;
@@ -2490,8 +2648,9 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   height: 100%;
   padding: 6px 10px;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: var(--radius-plate);
   background: var(--taba-white);
+  box-shadow: inset 0 0 0 1px rgb(20 22 26 / 7%);
 }
 
 .combo-media-item {
@@ -2536,25 +2695,36 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
 }
 
 /* El sello de ahorro se apoya sobre la foto y NO sobre un degradado: una banda
-   oscura al pie de cada foto convertía el rail en cinco rectángulos iguales. */
+   oscura al pie de cada foto convertía el rail en cinco rectángulos iguales.
+
+   Estaba anclado al MARCO (que tiene 9px de padding) y no al plato, así que a
+   `left: 10px` la píldora arrancaba UN píxel adentro del plato, justo donde la
+   esquina redondeada todavía está curvando: por debajo del dorado asomaba el
+   grafito de la tarjeta y el sello parecía despegado. 17/14 lo apoya sobre el
+   canto recto. La sombra lo despega del blanco, que es lo único que le faltaba
+   para leerse como un sello y no como un rótulo pegado. */
 .combo-save-badge {
   position: absolute;
-  left: 10px;
-  bottom: 10px;
+  left: 19px;
+  bottom: 14px;
   padding: 5px 11px;
   border-radius: var(--radius-pill);
   background: var(--brand-gold);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 26%);
   color: #17120a;
   font-size: 12px;
   font-weight: 900;
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
+/* El aire lateral es el del plato (`--card-pad` + los 9px del marco), así que
+   el nombre del combo arranca en la misma vertical que la bandeja de arriba. */
 .combo-card-body {
   display: grid;
   align-content: start;
   gap: 9px;
-  padding: 13px 14px 15px;
+  padding: 12px 15px 15px;
 }
 
 .combo-card-copy {
@@ -2586,6 +2756,10 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   -webkit-line-clamp: 2;
 }
 
+/* El orden de lectura es precio nuevo → precio viejo → porcentaje, y así se
+   ordena visualmente: la cifra que se paga manda por tamaño, la tachada baja de
+   peso y el porcentaje queda como sello. Escritos los tres al mismo nivel —21,
+   13 y 12, todos en negrita— la fila se leía como tres datos en disputa. */
 .combo-card-price {
   display: flex;
   align-items: baseline;
@@ -2595,24 +2769,30 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
 
 .combo-card-price s {
   color: var(--shelf-muted);
-  font-size: 13px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-decoration-thickness: 1px;
 }
 
 .combo-card-price strong {
   color: var(--shelf-ink);
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 900;
-  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
 }
 
 .combo-card-price em {
-  padding: 2px 8px;
+  padding: 3px 9px;
+  border: 1px solid rgb(201 149 62 / 34%);
   border-radius: var(--radius-pill);
   background: var(--shelf-gold-wash);
   color: var(--brand-gold-soft);
-  font-size: 12px;
+  font-size: 11.5px;
   font-style: normal;
-  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
 }
 
 .combo-card-meta {

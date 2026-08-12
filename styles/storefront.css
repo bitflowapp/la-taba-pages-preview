@@ -362,12 +362,18 @@
   font-size: 24px;
 }
 
+/* `--ink-soft` no existe en ningún lado: la declaración era inválida en tiempo
+   de cómputo y el color caía a `inherit`, o sea la tinta del título. En el
+   cliente no se notaba porque una regla de la góndola pinta los `small` de la
+   tarjeta, pero en Negocio y Repartidor la condición del precio se leía con el
+   mismo peso que el precio. */
 .price-condition {
   display: block;
   margin-top: 3px;
-  color: var(--ink-soft);
+  color: var(--taba-muted);
   font-size: 11px;
   font-weight: 750;
+  line-height: 1.35;
 }
 
 .promo-save {

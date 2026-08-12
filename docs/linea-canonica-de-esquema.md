@@ -69,7 +69,7 @@ va a negar.
 
 Base creada **vacía**, cadena completa de migraciones en orden:
 
-- **141 afirmaciones** — 112 pgTAP, 24 de la cadena real (crea sesiones de
+- **89/89 de paridad de ledger**, y **141 afirmaciones** — 112 pgTAP, 24 de la cadena real (crea sesiones de
   checkout y un pedido de verdad) y 5 de la sonda que entra como `authenticator`,
   el rol con el que PostgREST entra de verdad.
 - `migrations:validate`, `npm test` (1374/1374), `npm run check` y

@@ -14,9 +14,9 @@ limpio · **sin push** · sin deploy · sin mutar staging · sin secretos impres
 
 El PAT no hacía falta. El token del CLI **ya estaba** en el Windows Credential
 Manager (`Supabase CLI:supabase`); lo que faltaba era el binario. Instalado el
-CLI oficial **2.113.0** en `C:\Users\marco\.local\bin`, tomó la sesión solo.
+CLI oficial **2.113.0** en `<CLI_BIN>`, tomó la sesión solo.
 
-- `TABA_SECRETS` = `C:\Users\marco\.taba-secrets` (User + sesión), ACL restrictiva
+- `TABA_SECRETS` = `<TABA_SECRETS>` (User + sesión), ACL restrictiva
 - `rider-map-qa-login.txt` recuperado y **validado vivo** (HTTP 200, user `aab5bc54`)
 - Credenciales creadas o rotadas: **ninguna**
 
@@ -45,7 +45,7 @@ cerrada. Tracking público no enumerable por código.
 `RUNBOOK-PRIMER-PEDIDO-REAL.md` · `RUNBOOK-INCIDENTE.md` ·
 `RESILIENCIA-MATRIZ.md` · `FISCAL-PILOTO-MANUAL.md` ·
 `AUTO-DISPATCH-PLAN-INTEGRACION.md` · `ACCIONES-PENDIENTES.md`
-Snapshot con hashes: `D:\1212\artifacts\taba2-go-live\`
+Snapshot con hashes: `<ARTIFACTS_ROOT>/taba2-go-live/`
 
 ---
 
@@ -101,12 +101,12 @@ Snapshot con hashes: `D:\1212\artifacts\taba2-go-live\`
 
 ### Requieren estar en la PC
 
-5. **B2 · Panel** — escribir `C:\Users\marco\.taba-secrets\la-taba-staging-business-login.txt`
+5. **B2 · Panel** — escribir `<TABA_SECRETS>/la-taba-staging-business-login.txt`
    con la contraseña vigente del owner, en formato:
    `SUPABASE_STAFF_EMAIL=…` y `SUPABASE_STAFF_PASSWORD=…` (una por línea).
    Validar sin imprimir nada:
    ```powershell
-   node C:\Users\marco\.taba-secrets\validar-credenciales.mjs C:\Users\marco\.taba-secrets
+   node $env:TABA_SECRETS\validar-credenciales.mjs $env:TABA_SECRETS
    ```
 6. **B3 · `LT-0142`** — decidir qué es. Si es un ensayo, cancelarlo desde el Panel
    libera al Rider QA. Yo no lo toqué porque no puedo distinguirlo de un pedido
@@ -120,19 +120,23 @@ Snapshot con hashes: `D:\1212\artifacts\taba2-go-live\`
 
 ## 5 · Comando exacto para reanudar
 
+Los marcadores entre ángulos son de esta máquina y no se escriben en el repo:
+`<TABA_SECRETS>` es la carpeta de credenciales, `<CLI_BIN>` la del binario de
+Supabase y `<REPO_ROOT>` este worktree.
+
 ```powershell
 # el entorno ya quedó persistido; esto sólo lo activa en una consola nueva
-$env:TABA_SECRETS = 'C:\Users\marco\.taba-secrets'
-$env:Path += ';C:\Users\marco\.local\bin'
+$env:TABA_SECRETS = '<TABA_SECRETS>'
+$env:Path += ';<CLI_BIN>'
 
-cd D:\1212\worktrees\taba2-commercial-production-hardening
+cd <REPO_ROOT>
 
 # 1 · ¿sigue todo donde lo dejé?
 supabase projects list
 node scripts\primer-pedido-humano\preflight-gate.mjs
 
 # 2 · si ya cargaste el login del Panel, esto lo valida
-node C:\Users\marco\.taba-secrets\validar-credenciales.mjs C:\Users\marco\.taba-secrets
+node $env:TABA_SECRETS\validar-credenciales.mjs $env:TABA_SECRETS
 ```
 
 Y para retomarme el hilo, alcanza con decirme **«seguí con PROD»** (si autorizás

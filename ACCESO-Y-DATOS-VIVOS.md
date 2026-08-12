@@ -11,7 +11,7 @@ El token del CLI de Supabase **ya estaba** en el Windows Credential Manager, baj
 `LegacyGeneric:target=Supabase CLI:supabase`. Lo que faltaba era el binario: se
 había usado antes (queda `~/.supabase/telemetry.json`) pero no estaba instalado.
 
-Se instaló el CLI oficial **v2.113.0** en `C:\Users\marco\.local\bin\supabase.exe`
+Se instaló el CLI oficial **v2.113.0** en `<CLI_BIN>/supabase.exe`
 y tomó la sesión guardada sin pedir nada:
 
 ```
@@ -19,7 +19,7 @@ la-taba-staging  ukxqbgswjlibmnjemrzd  ACTIVE_HEALTHY  us-east-1  Postgres 17.6.
 la-taba-demo     yakhtrkukqlgzvxuvhzs  INACTIVE
 ```
 
-`TABA_SECRETS` quedó en `C:\Users\marco\.taba-secrets` (User + sesión) y el `bin`
+`TABA_SECRETS` quedó en `<TABA_SECRETS>` (User + sesión) y el `bin`
 en el PATH de usuario.
 
 **No se creó, rotó ni renovó ninguna credencial.**

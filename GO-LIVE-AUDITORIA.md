@@ -196,4 +196,4 @@ Producción, backend, migraciones, ARCA, dinero real, `LT-0030`, pedidos humanos
 
 Documentos hermanos: `RUNBOOK-PRIMER-PEDIDO-REAL.md`, `RUNBOOK-INCIDENTE.md`,
 `FISCAL-PILOTO-MANUAL.md`, `AUTO-DISPATCH-PLAN-INTEGRACION.md`.
-Snapshot con hashes: `D:\1212\artifacts\taba2-go-live\snapshot-20260811T2318Z\`.
+Snapshot con hashes: `<ARTIFACTS_ROOT>/taba2-go-live/snapshot-20260811T2318Z/`.

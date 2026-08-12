@@ -150,4 +150,4 @@ técnico que se puede hacer sin él.
 
 No se cambió un precio, un stock, un estado ni una publicación. No se activó ni
 desactivó ningún producto. No se importó nada. Detalle fila por fila en
-`D:\Work\tmp\catalogo-clasificado.json`.
+`<TMP>/catalogo-clasificado.json`.

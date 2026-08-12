@@ -121,7 +121,7 @@ vacía; si se copiara, el primer pedido real nacería contaminado.
 # 1 · crear el proyecto (misma organización, misma región que staging)
 supabase projects create la-taba-produccion \
   --org-id qdhfqytbvgpvhxbbcomv --region us-east-1 --db-password '<nueva, fuerte>'
-#    guardar esa password en C:\Users\marco\.taba-secrets\, nunca en el repo
+#    guardar esa password en $TABA_SECRETS, nunca en el repo
 
 # 2 · enlazar el worktree al proyecto nuevo
 supabase link --project-ref <REF_NUEVO>

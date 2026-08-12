@@ -29,7 +29,7 @@ supabase projects list   # tiene que listar ukxqbgswjlibmnjemrzd
 ### A3 · Con eso ya corriendo, el preflight completo
 
 ```bash
-cd D:\1212\worktrees\taba2-commercial-production-hardening\scripts\primer-pedido-humano
+cd <REPO_ROOT>/scripts/primer-pedido-humano
 node preflight-gate.mjs      # 12 chequeos duros + contexto; exit 0 = todo en su lugar
 ```
 

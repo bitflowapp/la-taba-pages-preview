@@ -16,11 +16,11 @@ cambia con dinero real están marcados **[DINERO REAL]**.
 export TABA_SECRETS=<carpeta de credenciales>      # sin esto todo se planta, a propósito
 
 # 2 · tomar el lock del entorno compartido
-#     D:\1212\_claude-locks\taba2-staging-mutation.lock  → STATUS=HOLDING
+#     <LOCKS_ROOT>/taba2-staging-mutation.lock  → STATUS=HOLDING
 #     y, si se usa la Moto,  moto-g15.lock
 
 # 3 · los 16 chequeos previos (sólo lectura, no toca nada)
-cd D:\1212\worktrees\taba2-commercial-production-hardening\scripts\primer-pedido-humano
+cd <REPO_ROOT>/scripts/primer-pedido-humano
 node preflight-gate.mjs
 
 # 4 · foto del estado antes de mutar

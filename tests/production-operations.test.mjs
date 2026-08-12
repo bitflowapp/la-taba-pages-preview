@@ -251,7 +251,30 @@ test('dos activaciones de acceso concurrentes no matan el intake del ganador', a
       };
       return query;
     },
-    rpc: async () => ({ data: [], error: null, status: 200 }),
+    rpc: async (name) => {
+      if (name === 'identity_current_context') {
+        return {
+          data: membership
+            ? {
+              user_id: membership.user_id,
+              business_id: membership.business_id,
+              role: membership.role,
+              session_id: 'session-doble',
+              permissions: ['orders.read', 'orders.operate', 'orders.dispatch'],
+            }
+            : { role: null, permissions: [] },
+          error: null,
+          status: 200,
+        };
+      }
+      if (name === 'identity_register_session') {
+        return { data: { ok: true, code: 'registered', role: membership?.role || null }, error: null, status: 200 };
+      }
+      if (name === 'identity_close_own_session') {
+        return { data: { ok: true, code: 'closed' }, error: null, status: 200 };
+      }
+      return { data: [], error: null, status: 200 };
+    },
     channel() {
       return {
         on() { return this; },
@@ -347,7 +370,30 @@ function createLifecycleClient({ businessId, riderId, order, membership }) {
       };
       return query;
     },
-    rpc: async () => ({ data: null, error: null, status: 200 }),
+    rpc: async (name) => {
+      if (name === 'identity_current_context') {
+        return {
+          data: membership
+            ? {
+              user_id: membership.user_id,
+              business_id: membership.business_id,
+              role: membership.role,
+              session_id: 'session-doble',
+              permissions: ['orders.read', 'orders.operate', 'orders.dispatch'],
+            }
+            : { role: null, permissions: [] },
+          error: null,
+          status: 200,
+        };
+      }
+      if (name === 'identity_register_session') {
+        return { data: { ok: true, code: 'registered', role: membership?.role || null }, error: null, status: 200 };
+      }
+      if (name === 'identity_close_own_session') {
+        return { data: { ok: true, code: 'closed' }, error: null, status: 200 };
+      }
+      return { data: null, error: null, status: 200 };
+    },
     channel() {
       return {
         on() { return this; },

@@ -49,6 +49,7 @@ test('una sesión anónima de cliente no se confunde con acceso fallido del equi
   assert.equal(result.customerSession, true);
   assert.equal(result.user.id, 'anonymous-1');
   assert.equal(client.calls.filters.length, 0);
+  assert.equal(client.calls.rpc.length, 0);
 });
 
 test('autoriza owner/admin/staff/rider sólo con membresía activa del comercio', async () => {
@@ -70,11 +71,13 @@ test('autoriza owner/admin/staff/rider sólo con membresía activa del comercio'
 
   assert.equal(result.ok, true);
   assert.equal(result.membership.role, 'staff');
-  assert.deepEqual(client.calls.filters, [
-    ['business_id', BUSINESS_ID],
-    ['user_id', 'team-1'],
-    ['is_active', true],
-  ]);
+  // El rol lo resuelve la compuerta del backend, no una lectura de la tabla de
+  // membresías: leerla decía si la fila existía, y nada más.
+  assert.deepEqual(
+    client.calls.rpc.map(([name]) => name),
+    ['identity_current_context', 'identity_register_session'],
+  );
+  assert.equal(client.calls.filters.length, 0);
   assert.equal(client.calls.signOut, 0);
 });
 
@@ -177,6 +180,7 @@ function createAuthMock({
   const calls = {
     anonymous: 0,
     filters: [],
+    rpc: [],
     signOut: 0,
     signOutOptions: null,
     unsubscribe: 0,
@@ -239,9 +243,121 @@ function createAuthMock({
     emitAuth(event, nextSession) {
       authCallback(event, nextSession);
     },
+    async rpc(name, params) {
+      calls.rpc.push([name, params]);
+      if (name === 'identity_current_context') {
+        // La compuerta del backend: devuelve el rol vigente o null. Un null acá
+        // es lo que produce una baja, una revocación o un corte de sesiones.
+        if (!membership) return { data: { role: null, permissions: [] }, error: null };
+        return {
+          data: {
+            user_id: membership.user_id,
+            business_id: membership.business_id,
+            role: membership.role,
+            session_id: 'session-1',
+            permissions: ['orders.read'],
+          },
+          error: null,
+        };
+      }
+      if (name === 'identity_register_session') {
+        return { data: { ok: true, code: 'registered', role: membership?.role || null }, error: null };
+      }
+      if (name === 'identity_close_own_session') {
+        return { data: { ok: true, code: 'closed' }, error: null };
+      }
+      return { data: null, error: { code: '42883' } };
+    },
     from(table) {
       assert.equal(table, 'business_members');
       return query;
     },
   };
 }
+
+test('cerrar sesión termina la cadena de refresh en el servidor, no sólo en el navegador', async () => {
+  const client = createAuthMock();
+  const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
+
+  const result = await auth.signOut();
+
+  assert.equal(result.ok, true);
+  // El orden importa: primero el cierre remoto, mientras el token todavía
+  // existe; después el vaciado local.
+  assert.deepEqual(client.calls.rpc, [
+    ['identity_close_own_session', { p_business_id: BUSINESS_ID }],
+  ]);
+  assert.equal(client.calls.signOut, 1);
+});
+
+test('si el cierre remoto falla igual se vacía el navegador', async () => {
+  const client = createAuthMock();
+  client.rpc = async () => {
+    throw new Error('sin red');
+  };
+  const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
+
+  const result = await auth.signOut();
+
+  // Nunca se deja a alguien adentro porque falló una llamada.
+  assert.equal(result.ok, true);
+  assert.equal(client.calls.signOut, 1);
+});
+
+test('una sesión revocada deja de autorizar el Panel con el mismo token', async () => {
+  const client = createAuthMock();
+  // La compuerta responde con rol nulo: es lo que devuelve tras revocar la
+  // sesión, dar de baja a la persona o cerrar todas sus sesiones.
+  client.rpc = async (name) => {
+    if (name === 'identity_current_context') {
+      return { data: { role: null, permissions: [] }, error: null };
+    }
+    return { data: null, error: null };
+  };
+  const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
+
+  const result = await auth.getTeamAccess();
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /membresía activa/i);
+});
+
+test('el ingreso del equipo registra la sesión de este navegador', async () => {
+  const client = createAuthMock({
+    membership: {
+      business_id: BUSINESS_ID,
+      user_id: 'team-1',
+      role: 'owner',
+      is_active: true,
+    },
+  });
+  const auth = createSupabaseAuthService({
+    client,
+    businessId: BUSINESS_ID,
+    deviceLabel: 'Chrome · Windows',
+    appVersion: 'v61',
+  });
+
+  const result = await auth.signInTeam({
+    email: 'duenia@lataba.test',
+    password: 'not-logged',
+  });
+
+  assert.equal(result.ok, true);
+  const [, params] = client.calls.rpc.find(([name]) => name === 'identity_register_session');
+  assert.equal(params.p_client, 'panel_web');
+  assert.equal(params.p_device_label, 'Chrome · Windows');
+  assert.equal(params.p_app_version, 'v61');
+  // Y no viaja nada del navegador que no haga falta.
+  assert.equal(params.p_device_key_hash, null);
+});
+
+test('los permisos los declara el backend, no la vista', async () => {
+  const client = createAuthMock();
+  const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
+
+  const result = await auth.getTeamAccess();
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.permissions, ['orders.read']);
+});

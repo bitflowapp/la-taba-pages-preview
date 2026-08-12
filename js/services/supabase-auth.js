@@ -1,6 +1,7 @@
 const TEAM_ROLES = new Set(['owner', 'admin', 'staff', 'rider']);
+const PANEL_CLIENT = 'panel_web';
 
-export function createSupabaseAuthService({ client, businessId }) {
+export function createSupabaseAuthService({ client, businessId, deviceLabel = '', appVersion = '' }) {
   if (!client?.auth || typeof client.from !== 'function') {
     throw new Error('Auth requiere un cliente Supabase válido.');
   }
@@ -70,6 +71,11 @@ export function createSupabaseAuthService({ client, businessId }) {
       });
     }
 
+    // Alta de la sesión de este navegador. Es lo que le permite a quien manda
+    // ver desde dónde está abierto el Panel y cerrar una sesión puntual sin
+    // echar a todo el equipo.
+    await registerSession();
+
     return authResult(true, {
       session: data.session || null,
       user: data.user,
@@ -77,29 +83,60 @@ export function createSupabaseAuthService({ client, businessId }) {
     });
   }
 
+  async function registerSession() {
+    const { data, error } = await client.rpc('identity_register_session', {
+      p_business_id: businessId,
+      p_client: PANEL_CLIENT,
+      p_device_label: deviceLabel || null,
+      p_device_key_hash: null,
+      p_app_version: appVersion || null,
+    });
+    if (error || data?.ok !== true) {
+      return authResult(false, { message: 'No pudimos registrar esta sesión.' });
+    }
+    return authResult(true, { sessionId: data.session_id || null, role: data.role || null });
+  }
+
+  /**
+   * La autoridad del rol es la compuerta de identidad del backend, no una
+   * lectura de la tabla de membresías.
+   *
+   * Leer `business_members` decía si la fila existía y estaba activa, y nada
+   * más: una sesión revocada desde el Panel seguía pasando esa comprobación
+   * hasta que el token venciera, y una cuenta dada de baja también, porque la
+   * baja no borra la fila. La RPC aplica las cuatro reglas a la vez —membresía
+   * activa, persona habilitada, sesión no revocada, token posterior al corte—
+   * y devuelve además los permisos, para que la vista no los adivine.
+   */
   async function getMembership(userId) {
     if (!userId) return authResult(false, { message: 'No hay una sesión autenticada.' });
 
-    const { data, error } = await client
-      .from('business_members')
-      .select('business_id,user_id,role,is_active')
-      .eq('business_id', businessId)
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .maybeSingle();
+    const { data, error } = await client.rpc('identity_current_context', {
+      p_business_id: businessId,
+    });
 
     if (error) {
       return authResult(false, {
         message: 'No pudimos verificar el acceso al comercio.',
       });
     }
-    if (!data || !TEAM_ROLES.has(data.role)) {
+    const role = data?.role || '';
+    if (!TEAM_ROLES.has(role)) {
       return authResult(false, {
         message: 'La cuenta no tiene una membresía activa en este comercio.',
       });
     }
 
-    return authResult(true, { membership: data });
+    return authResult(true, {
+      membership: {
+        business_id: businessId,
+        user_id: data?.user_id || userId,
+        role,
+        is_active: true,
+      },
+      permissions: Array.isArray(data?.permissions) ? data.permissions : [],
+      sessionId: data?.session_id || null,
+    });
   }
 
   async function getTeamAccess() {
@@ -123,10 +160,24 @@ export function createSupabaseAuthService({ client, businessId }) {
       session: current.session,
       user: current.user,
       membership: membership.membership,
+      permissions: membership.permissions || [],
+      sessionId: membership.sessionId || null,
     });
   }
 
   async function signOut() {
+    // Primero se cierra en el servidor, mientras el token todavía existe: eso
+    // borra la sesión del emisor y mata el refresh token. Sin esto, cerrar
+    // sesión sólo vaciaba el almacenamiento del navegador y la cadena de
+    // renovación seguía viva del otro lado.
+    //
+    // Si el cierre remoto no llega —sin red, RPC caída— se limpia igual: nunca
+    // se deja a alguien adentro porque falló una llamada.
+    try {
+      await client.rpc('identity_close_own_session', { p_business_id: businessId });
+    } catch (_) {
+      // Intencional: el cierre local no depende del remoto.
+    }
     const { error } = await client.auth.signOut({ scope: 'local' });
     if (error) return authResult(false, { message: readableAuthError(error) });
     return authResult(true);
@@ -147,6 +198,7 @@ export function createSupabaseAuthService({ client, businessId }) {
     getSession,
     getTeamAccess,
     onAuthStateChange,
+    registerSession,
     signInTeam,
     signOut,
   };

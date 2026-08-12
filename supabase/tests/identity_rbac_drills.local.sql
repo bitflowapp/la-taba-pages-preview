@@ -464,6 +464,40 @@ begin
     v_res ->> 'result' = 'false',
     'devolvio: ' || coalesce(v_res ->> 'result', v_res ->> 'message'));
 
+  -- 19 ter. La clave de servicio SI tiene que poder escribir membresias.
+  --
+  -- Es la unica via habilitada fuera de las RPC de identidad y existe para el
+  -- arranque de un entorno nuevo: el primer owner no puede nacer de una
+  -- invitacion porque todavia no hay nadie que pueda emitirla. El guard estuvo
+  -- roto exactamente aca —era `security definer`, asi que `current_user` era el
+  -- duenio de la funcion y nunca `service_role`— y eso dejaba sin arranque a
+  -- PROD. Se mide el camino, no la intencion.
+  declare
+    v_alta_ok boolean := false;
+    v_detalle text := '';
+    -- Se resuelve ANTES de cambiar de rol: service_role no tiene permiso sobre
+    -- el esquema del ensayo, y leerlo ahi adentro falsearia el resultado.
+    v_ajeno uuid := identity_drill.get('outsider')::uuid;
+  begin
+    begin
+      execute 'set local role service_role';
+      insert into public.business_members (business_id, user_id, role, is_active)
+      values (v_b, v_ajeno, 'staff', true);
+      execute 'reset role';
+      v_alta_ok := true;
+    exception when others then
+      begin execute 'reset role'; exception when others then null; end;
+      v_detalle := sqlstate || ' ' || sqlerrm;
+    end;
+    perform identity_drill.check(
+      'la clave de servicio puede crear membresias (arranque de un entorno)',
+      v_alta_ok,
+      case when v_alta_ok then 'sin esto no hay forma de crear el primer owner' else v_detalle end);
+    perform set_config('taba.identity_write', 'on', true);
+    delete from public.business_members where business_id = v_b and user_id = v_ajeno;
+    perform set_config('taba.identity_write', 'off', true);
+  end;
+
   -- 20. El rider intenta subirse el rol escribiendo su propia fila.
   v_res := identity_drill.x(
     identity_drill.claims(identity_drill.get('rider')::uuid, identity_drill.get('rider_session')::uuid, now(), identity_drill.get('rider_email')),
@@ -789,6 +823,41 @@ begin
     'la auditoria registro alta, baja, revocacion y sesiones',
     v_types @> array['member_invited', 'invitation_accepted', 'member_disabled', 'member_activated', 'session_opened', 'session_revoked', 'sessions_revoked_all'],
     'tipos: ' || array_to_string(v_types, ', '));
+
+  -- 44 bis. La auditoria sobrevive al borrado de lo que audita.
+  --
+  -- El defecto aparecio en staging alojado: las claves foraneas de la
+  -- auditoria declaraban `on delete set null`, y el UPDATE que dispara esa
+  -- cascada lo rechazaba el propio trigger de solo-agregado. Neto: una vez
+  -- auditado, un comercio o una cuenta ya no se podian borrar nunca.
+  declare
+    v_efimero uuid := gen_random_uuid();
+    v_usuario uuid;
+    v_error text := '';
+  begin
+    v_usuario := identity_drill.new_user('efimero-' || identity_drill.get('slug') || '@taba.test');
+    insert into public.businesses (id, name, slug, status, is_active, currency_code)
+    values (v_efimero, 'Efimero', identity_drill.get('slug') || '-efimero', 'open', true, 'ARS');
+    perform public.identity_record_audit_event(
+      p_event_type => 'session_opened',
+      p_business_id => v_efimero,
+      p_actor_user_id => v_usuario,
+      p_subject_user_id => v_usuario);
+    begin
+      delete from public.businesses where id = v_efimero;
+      delete from auth.users where id = v_usuario;
+    exception when others then
+      v_error := sqlstate || ' ' || sqlerrm;
+    end;
+    perform identity_drill.check(
+      'borrar un comercio auditado no lo bloquea la auditoria',
+      v_error = '' and not exists (select 1 from public.businesses where id = v_efimero),
+      case when v_error = '' then 'borrado, y el evento sigue en la auditoria' else v_error end);
+    perform identity_drill.check(
+      'el evento sobrevive al borrado, con su identificador intacto',
+      exists (select 1 from public.identity_audit_events where business_id = v_efimero),
+      'una auditoria que pierde el id de lo que audita no sirve para nada');
+  end;
 
   -- 45. Y no guardo ningun secreto.
   perform identity_drill.check(

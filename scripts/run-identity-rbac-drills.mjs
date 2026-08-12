@@ -152,6 +152,19 @@ try {
     grant usage on schema extensions to anon, authenticated, service_role;
     create extension if not exists pgcrypto with schema extensions;
     create schema if not exists vault;
+
+    -- Privilegios por defecto, como los deja Supabase al crear un proyecto.
+    --
+    -- Sin esto, en la base efímera nadie salvo el dueño tenía permisos sobre
+    -- las tablas nuevas, y eso ocultó un defecto real: el guard de membresías
+    -- bloqueaba a service_role, que es la única vía para crear el primer owner
+    -- de un entorno. El ensayo daba verde porque acá service_role tampoco tenía
+    -- el grant, así que fallaba por el motivo equivocado. Una base de pruebas
+    -- que no reproduce los permisos del entorno real no prueba los permisos.
+    grant usage on schema public to anon, authenticated, service_role;
+    alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+    alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+    alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
   `);
 
   loadPlatformSchemas();

@@ -173,8 +173,9 @@ self.addEventListener('message', (event) => {
   if (event.data === 'skip-waiting') self.skipWaiting();
 });
 
-// Network-first: el contenido fresco gana; el cache es solo respaldo offline.
-// Así una nueva versión publicada en GitHub Pages se ve sin trucos de "borrar caché".
+// Network-first: el contenido fresco gana, así una versión recién publicada se
+// ve sin trucos de "borrar caché". El cache respalda dos casos, no uno: la red
+// que no contesta y la red que contesta mal (ver `networkFirst`).
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
@@ -182,19 +183,67 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response && response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => undefined);
-        }
-        return response;
-      })
-      .catch(() => caches.match(request).then((cached) => {
-        if (cached) return cached;
-        if (request.mode === 'navigate') return caches.match('./index.html');
-        return Response.error();
-      })),
-  );
+  event.respondWith(networkFirst(request));
 });
+
+/*
+ * Acá vivía la mitad del problema: el respaldo estaba dentro de un `catch`, y un
+ * `catch` sólo corre cuando la red RECHAZA.
+ * Un borde que contesta 503, un despliegue a medio publicar que contesta 404 y
+ * un portal cautivo que contesta 200 con su propio HTML son promesas
+ * RESUELTAS: el worker las devolvía tal cual —una página de error donde el
+ * documento esperaba una hoja de estilos— teniendo la copia buena en la caché,
+ * al lado.
+ *
+ * Dónde se veía: al volver de Mercado Pago con el botón atrás. Medido en
+ * WebKit, esa vuelta es `back_forward` con `persisted=false` —la página tiene
+ * realtime abierto, así que no entra al back-forward cache—, o sea que el
+ * documento se rearma entero y vuelve a pedir sus ~120 subrecursos de golpe,
+ * justo en el instante en que el teléfono retoma la red desde otra aplicación.
+ * `styles.css` volvía con el cuerpo del error: el `<link>` seguía en su lugar y
+ * `link.sheet` existía, pero con CERO reglas y CERO `@import`. El HTML quedaba
+ * entero y sin estilos —fondo blanco, iconos de 55 px, la barra inferior sin
+ * fijar, 424 px de ancho sobre una pantalla de 390— con el carrito intacto
+ * detrás. Ningún test lo veía porque el gate corre con `serviceWorkers: 'block'`.
+ *
+ * Cada rama nueva termina en `|| response`: cuando no hay nada mejor que
+ * ofrecer, el cliente recibe exactamente lo que recibía antes. Esta función no
+ * puede devolver algo peor que la versión que reemplaza.
+ */
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    if (isUsable(request, response)) {
+      const copy = response.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => undefined);
+      return response;
+    }
+    return (await cachedFallback(request)) || response;
+  } catch (_) {
+    return (await cachedFallback(request)) || Response.error();
+  }
+}
+
+async function cachedFallback(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  if (request.mode === 'navigate') return (await caches.match('./index.html')) || null;
+  return null;
+}
+
+/*
+ * Un 200 no alcanza para decir que la respuesta sirve. El portal cautivo de una
+ * red pública contesta 200 con SU página: el navegador la rechaza —«non CSS
+ * MIME types are not allowed in strict mode»— y la hoja queda vacía. Y si se
+ * cacheara, el cliente arrastraría esa página como hoja de estilos hasta la
+ * próxima publicación. Por eso el tipo declarado tiene que coincidir con lo que
+ * el documento pidió. Un navegador sin `request.destination` no pierde nada:
+ * cae en el `return true` y se comporta como antes.
+ */
+function isUsable(request, response) {
+  if (!response || !response.ok) return false;
+  const type = (response.headers.get('content-type') || '').toLowerCase();
+  if (request.destination === 'style') return type.includes('text/css');
+  if (request.destination === 'script') return type.includes('javascript') || type.includes('ecmascript');
+  return true;
+}

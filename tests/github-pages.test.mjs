@@ -115,9 +115,13 @@ test('commercial app defaults to light premium theme, not dark fallback', () => 
 
 test('service worker fallback is guarded to navigation requests only', () => {
   const source = read('sw.js');
+  // El respaldo a `index.html` sigue siendo exclusivo de las navegaciones: un
+  // subrecurso que no está en la caché NO puede recibir el shell de la tienda
+  // disfrazado de módulo o de hoja de estilos. El comportamiento —y no sólo la
+  // forma del fuente— lo fija tests/service-worker-degraded-edge.test.mjs.
   assert.match(source, /request\.mode === 'navigate'/);
-  assert.match(source, /return caches\.match\('\.\/index\.html'\);/);
-  assert.match(source, /return Response\.error\(\);/);
+  assert.match(source, /caches\.match\('\.\/index\.html'\)/);
+  assert.match(source, /Response\.error\(\)/);
 });
 
 test('service worker sólo elimina caches anteriores de TABA y exige precache completo', () => {

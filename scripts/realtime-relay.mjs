@@ -131,6 +131,20 @@ async function handleRequest(request, response) {
     return;
   }
 
+  /*
+   * Sólo para el gate: deja que una prueba degrade el borde como se degrada de
+   * verdad. Hace falta porque el service worker es el que decide qué recibe el
+   * documento, y los `fetch` de un worker NO pasan por `page.route()`: sin un
+   * servidor que pueda contestar mal, el defecto del retorno desde Mercado Pago
+   * no se puede reproducir de forma automática. Vive en el relay de pruebas, no
+   * en el cliente ni en la lista de precache.
+   */
+  if (url.pathname === '/__edge-fault' && request.method === 'GET') {
+    edgeFault = EDGE_FAULTS.has(url.searchParams.get('mode')) ? url.searchParams.get('mode') : 'off';
+    sendJson(response, 200, { ok: true, mode: edgeFault });
+    return;
+  }
+
   if (url.pathname.startsWith('/events')
     || url.pathname.startsWith('/publish')
     || url.pathname.startsWith('/snapshot')
@@ -254,10 +268,30 @@ function setCorsHeaders(response) {
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
+// Las tres formas en que un borde contesta MAL sin dejar de contestar. Ninguna
+// rechaza la promesa de `fetch`, que es justamente lo que las hacía invisibles.
+const EDGE_FAULTS = new Set(['off', 'css-503', 'css-404', 'css-captive']);
+let edgeFault = 'off';
+
 function serveStatic(response, rawPathname) {
   let pathname = '/';
   try { pathname = decodeURIComponent(rawPathname || '/'); } catch (_) { /* invalid path */ }
   const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
+
+  if (edgeFault !== 'off' && path.extname(relative).toLowerCase() === '.css') {
+    if (edgeFault === 'css-captive') {
+      // Un portal cautivo contesta 200 con SU página. El estado dice que salió
+      // bien; el cuerpo es HTML donde se esperaba CSS.
+      response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      response.end('<!doctype html><title>Red</title><h1>Iniciá sesión en la red</h1>');
+      return;
+    }
+    const status = edgeFault === 'css-404' ? 404 : 503;
+    response.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8' });
+    response.end(`<!doctype html><title>${status}</title><h1>${status}</h1>`);
+    return;
+  }
+
   let target = path.resolve(ROOT, relative);
   if (!target.startsWith(`${ROOT}${path.sep}`) && target !== ROOT) {
     response.writeHead(403);

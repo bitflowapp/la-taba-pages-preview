@@ -48,8 +48,14 @@ export default defineConfig({
       // ese defecto— y el carrito que sobrevive a la recarga depende de un
       // localStorage que Safari desaloja con reglas propias. Las dos cosas se
       // rompen distinto en WebKit, así que se miden en WebKit.
+      // `mp-back-navigation-ui` se suma por el mismo criterio, en su forma más
+      // literal: el defecto se vio en un iPhone real y es el motor el que decide
+      // el ciclo de vida del retorno —WebKit no guarda esta página en el
+      // back-forward cache, así que la rearma entera y vuelve a pedir todo—.
+      // Declararlo cerrado con Chromium sería declararlo sobre el navegador
+      // donde no ocurrió.
       name: 'mobile-webkit',
-      testMatch: /(delivery-location-confirmation|panel-order-recovery|arranque-sin-jerga|production-cart-persistence)\.spec\.mjs/,
+      testMatch: /(delivery-location-confirmation|panel-order-recovery|arranque-sin-jerga|production-cart-persistence|mp-back-navigation-ui)\.spec\.mjs/,
       use: { ...devices['iPhone 13'] },
     },
   ],

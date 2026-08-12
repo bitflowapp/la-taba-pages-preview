@@ -26,6 +26,7 @@
     "certify:orders:staging": "node scripts/certify-real-order-pipeline.mjs",
     "config:check": "node scripts/check-runtime-config.mjs",
     "migrations:validate": "node scripts/validate-supabase-migrations.mjs",
+    "migrations:parity": "node scripts/check-migration-ledger-parity.mjs --explain",
     "catalog:pending": "node scripts/build-catalog-pending.mjs",
     "catalog:readiness": "node scripts/catalog-readiness.mjs",
     "catalog:readiness:check": "node scripts/catalog-readiness.mjs --check",

@@ -32,6 +32,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { assertLedgerParity } from './check-migration-ledger-parity.mjs';
 
 const PROJECT_REF = 'ukxqbgswjlibmnjemrzd';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -76,6 +77,11 @@ async function query(sql) {
   }
   try { return JSON.parse(text); } catch { return text; }
 }
+
+// COMPUERTA. Antes de mirar nada más: si el árbol local no es exactamente el
+// ledger remoto, no se muta staging. Falla cerrado, y también falla cuando no
+// puede comprobarlo.
+await assertLedgerParity({ explain: true });
 
 const ledgerBefore = await query(
   'select version from supabase_migrations.schema_migrations order by version',

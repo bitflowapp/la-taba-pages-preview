@@ -120,7 +120,7 @@ test('un RPC colgado libera la publicación y permite enviar el fix siguiente', 
   assert.equal(controller.getSnapshot().lastAcceptedFix.lat, -38.9521);
 });
 
-test('un permiso denegado corta el watcher y no deja captura activa', () => {
+test('un permiso denegado corta el watcher y conserva una explicación visible', () => {
   const cleared = [];
   let denied;
   const controller = createProductionRiderGpsController({
@@ -137,7 +137,10 @@ test('un permiso denegado corta el watcher y no deja captura activa', () => {
   controller.start('LT-GPS-1');
   denied({ code: 1 });
   assert.deepEqual(cleared, [42]);
-  assert.equal(controller.getSnapshot().orderId, '');
+  assert.equal(controller.getSnapshot().watchId, null);
+  assert.equal(controller.getSnapshot().orderId, 'LT-GPS-1');
+  assert.equal(controller.getSnapshot().state, 'error');
+  assert.match(controller.getSnapshot().message, /Permiso de ubicación denegado/);
 });
 
 function tick() {

@@ -154,7 +154,7 @@ export function createProductionRiderGpsController({
       const message = result?.message || 'No pudimos publicar la ubicación. Verificá tu conexión.';
       share = { ...share, publishing: false, state: 'error', message };
       if (AUTHORITY_ERRORS.test(message)) {
-        stop();
+        haltWithError(message);
         return;
       }
     }
@@ -192,9 +192,30 @@ export function createProductionRiderGpsController({
   function handlePositionError(error) {
     const message = gpsErrorMessage(error);
     const denied = Number(error?.code) === 1;
+    if (denied) {
+      haltWithError(message);
+      return;
+    }
     share = { ...share, state: 'error', message };
     emit();
-    if (denied) stop();
+  }
+
+  function haltWithError(message) {
+    const watchId = share.watchId;
+    if (watchId !== null && navigatorRef?.geolocation?.clearWatch) {
+      try { navigatorRef.geolocation.clearWatch(watchId); } catch (_) { /* no-op */ }
+    }
+    // Se corta la captura, pero se conserva el pedido que estaba intentando
+    // compartir: la vista usa ese id para mantener visible la causa y ofrecer
+    // un nuevo intento. `stop()` sigue siendo el apagado explícito y limpio.
+    share = {
+      ...share,
+      watchId: null,
+      publishing: false,
+      state: 'error',
+      message,
+    };
+    emit();
   }
 
   function emit() {

@@ -152,6 +152,8 @@ try {
   runPgTap(path.join('supabase', 'tests', 'fiscal_document_closure_test.sql'));
   runPgTap(path.join('supabase', 'tests', 'production_operations_control_plane_test.sql'));
   runPgTap(path.join('supabase', 'tests', 'durable_offline_packing_test.sql'));
+  runPgTap(path.join('supabase', 'tests', 'public_tracking_gps_quality_test.sql'));
+  runPgTap(path.join('supabase', 'tests', 'business_timezone_windows_test.sql'));
   psql(`
     create schema restore_drill;
     create table restore_drill.evidence(id integer primary key, marker text not null);

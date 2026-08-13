@@ -134,7 +134,7 @@ jobs:
       - name: Start isolated Supabase stack
         run: supabase start
 
-      - name: Apply every migration, run 116 pgTAP assertions and restore drill
+      - name: Apply every migration, run 162 pgTAP assertions and restore drill
         env:
           TABA_LOCAL_PAYMENT_DB: '1'
           TABA_SUPABASE_DB_CONTAINER: supabase_db_la-taba-real-orders-staging

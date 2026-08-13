@@ -64,6 +64,17 @@ export function buildMercadoPagoCheckoutPayload({
     address,
     age_confirmed: values.ageConfirmed === true,
     payment_method: 'mercadopago',
+    // Las observaciones del pedido —«tocar timbre», «dejar en portería», «sin
+    // hielo»— faltaban acá, así que el negocio preparaba y el rider salía sin
+    // la indicación que la persona escribió. El camino directo sí las manda
+    // (`customer_notes`); éste no.
+    //
+    // La clave sólo viaja cuando hay algo que decir: `create_checkout_session`
+    // valida el payload contra una LISTA BLANCA y levanta «campo no permitido»
+    // ante lo que no conoce, así que esta línea depende de la migración que
+    // agrega `notes` a esa lista (20260812235000). Las dos mitades van juntas o
+    // el checkout entero se cae.
+    ...(text(values.customerNotes) ? { notes: text(values.customerNotes) } : {}),
   };
 }
 

@@ -26,6 +26,8 @@ const SUPABASE_URL = env('SUPABASE_URL');
 const SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY');
 const ANON_KEY = env('SUPABASE_ANON_KEY');
 const BUSINESS_ID = env('TABA_BUSINESS_ID');
+const STAGING_PROJECT_REF = 'ukxqbgswjlibmnjemrzd';
+const STAGING_URL = `https://${STAGING_PROJECT_REF}.supabase.co`;
 
 if (env('TABA_CERTIFY_CONFIRM') !== CONFIRMATION) {
   console.error(`Definí TABA_CERTIFY_CONFIRM=${CONFIRMATION} para correr la certificación.`);
@@ -37,8 +39,8 @@ for (const [name, value] of Object.entries({ SUPABASE_URL, SERVICE_ROLE_KEY, ANO
     process.exit(2);
   }
 }
-if (/(^|\.)la-taba-demo\./.test(SUPABASE_URL)) {
-  console.error('La certificación nunca corre contra la-taba-demo.');
+if (SUPABASE_URL !== STAGING_URL) {
+  console.error(`La certificación sólo corre contra el staging ${STAGING_PROJECT_REF}.`);
   process.exit(2);
 }
 
@@ -97,16 +99,42 @@ async function createActor(role) {
   });
   const { error: signInError } = await client.auth.signInWithPassword({ email, password });
   if (signInError) throw new Error(`No se pudo iniciar sesión ${role}: ${signInError.message}`);
+  if (role !== 'customer') {
+    const { data: registration, error: registrationError } = await client.rpc('identity_register_session', {
+      p_business_id: BUSINESS_ID,
+      p_client: role === 'rider' ? 'rider_android' : 'panel_web',
+      p_device_label: 'certificacion-demo-walter',
+      p_device_key_hash: null,
+      p_app_version: 'overnight-demo-certifier',
+    });
+    if (registrationError || registration?.ok !== true || !registration?.session_id) {
+      throw new Error(
+        `No se pudo registrar la sesión ${role}: ${registrationError?.message || registration?.code || 'sin session_id'}`,
+      );
+    }
+    cleanup.push(async () => {
+      await client.rpc('identity_close_own_session', { p_business_id: BUSINESS_ID });
+      await client.auth.signOut({ scope: 'local' });
+    });
+  }
   return { role, userId, client };
+}
+
+function createTrackingClient(trackingToken) {
+  return createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { 'x-order-token': trackingToken } },
+  });
 }
 
 /**
  * Deja el pedido de certificación fuera de la operación real sin borrarlo: si
  * todavía no terminó se lo cancela — lo que devuelve el stock cuando el pedido
  * no salió a la calle — y después se lo marca QA. Un pedido entregado se
- * conserva entregado: el stock consumido es correcto.
+ * conserva entregado. Cuando la certificación llegó a entrega, repone la
+ * unidad con un movimiento auditable para no degradar el catálogo de staging.
  */
-async function retireCertificationOrder(orderId, staff, reason) {
+async function retireCertificationOrder(orderId, staff, reason, { productId = null, quantity = 0 } = {}) {
   const current = await orderRow(orderId, 'id,status,revision,origin');
   if (!current) return;
   if (!['delivered', 'cancelled', 'canceled', 'rejected'].includes(current.status)) {
@@ -118,6 +146,26 @@ async function retireCertificationOrder(orderId, staff, reason) {
     });
   }
   await service.rpc('classify_order_as_qa', { p_order_id: orderId, p_reason: reason });
+  if (current.status === 'delivered' && productId && quantity > 0) {
+    const { data: movement, error } = await staff.client.rpc('apply_inventory_movement', {
+      p_business_id: BUSINESS_ID,
+      p_product_id: productId,
+      p_barcode_id: null,
+      p_movement_type: 'manual_adjustment',
+      p_package_quantity: quantity,
+      p_direction: 1,
+      p_reference_type: 'qa_certification_order',
+      p_reference_id: orderId,
+      p_reason: 'Reposición posterior a certificación integral de staging',
+      p_idempotency_key: `cert_restore_${String(orderId).replaceAll('-', '')}`,
+    });
+    if (error) throw new Error(`No se pudo reponer el stock QA: ${error.message}`);
+    check(
+      'la limpieza repone el stock consumido con ledger auditable',
+      Number(movement?.quantity_delta) === quantity,
+      `delta=${movement?.quantity_delta ?? 'sin_movimiento'}`,
+    );
+  }
 }
 
 async function orderRow(orderId, columns = '*') {
@@ -148,6 +196,12 @@ function orderPayload({ productId, quantity, paymentMethod, clientRequestId, nam
     delivery_street_number: '1234',
     delivery_city: 'Neuquen',
     delivery_province: 'Neuquen',
+    delivery_latitude: -38.9516,
+    delivery_longitude: -68.0591,
+    delivery_geolocation_accuracy: 18,
+    delivery_address_source: 'manual',
+    delivery_location_source: 'map_pin',
+    delivery_location_confirmed_at: new Date().toISOString(),
   };
 }
 
@@ -191,13 +245,14 @@ async function main() {
     .limit(1)
     .maybeSingle();
 
-  if (!realProduct || !qaProduct) throw new Error('El catálogo de staging no tiene los productos necesarios.');
+  if (!realProduct) throw new Error('El catálogo de staging no tiene un producto comercial verificable.');
 
   // ============================================================ GATE 1: real
   console.log('\n--- Gate 1: pedido real recorre el circuito completo ---');
   const stockBefore = (await productRow(realProduct.id)).stock;
   const realRequestId = requestId('cert_real');
   const realTrackingToken = token();
+  const trackingClient = createTrackingClient(realTrackingToken);
   const { data: created, error: createError } = await customer.client.rpc('create_order_with_items', {
     payload: orderPayload({
       productId: realProduct.id,
@@ -211,7 +266,12 @@ async function main() {
   if (createError) throw new Error(`No se pudo crear el pedido real: ${createError.message}`);
   const realOrderId = created?.id || created?.order?.id;
   check('el checkout crea exactamente un pedido', Boolean(realOrderId), `id=${realOrderId}`);
-  cleanup.push(() => retireCertificationOrder(realOrderId, staff, 'pipeline_certification_run'));
+  cleanup.push(() => retireCertificationOrder(
+    realOrderId,
+    staff,
+    'pipeline_certification_run',
+    { productId: realProduct.id, quantity: 1 },
+  ));
 
   let real = await orderRow(realOrderId);
   check('el pedido nace en operación real', real.origin === 'production', `origin=${real.origin}`);
@@ -221,6 +281,20 @@ async function main() {
     Boolean(real.customer_phone) && Boolean(real.delivery_street) && Boolean(real.delivery_street_number)
       && Number(real.delivery_fee) > 0 && Number(real.total) === Number(real.subtotal) + Number(real.delivery_fee),
     `tel=${real.customer_phone} calle=${real.delivery_street} ${real.delivery_street_number} envio=${real.delivery_fee} total=${real.total}`,
+  );
+
+  const { data: trackingBeforeAssignment, error: trackingBeforeError } = await trackingClient.rpc(
+    'get_public_order_tracking',
+    { p_public_id: realOrderId },
+  );
+  check(
+    'el cliente ve el pedido sin inventar rider antes de la asignación',
+    !trackingBeforeError
+      && trackingBeforeAssignment?.status === 'received'
+      && trackingBeforeAssignment?.location_quality === 'unavailable'
+      && !trackingBeforeAssignment?.rider_location,
+    trackingBeforeError?.message
+      || `status=${trackingBeforeAssignment?.status} quality=${trackingBeforeAssignment?.location_quality}`,
   );
 
   const stockAfter = (await productRow(realProduct.id)).stock;
@@ -340,6 +414,62 @@ async function main() {
     started?.ok === true && real.status === 'on_the_way',
     `status=${real.status} code=${started?.code || 'ok'}`);
 
+  const { data: gpsReceipt, error: gpsError } = await rider.client.rpc('publish_rider_location_receipt', {
+    p_order_id: realOrderId,
+    p_expected_revision: real.revision,
+    p_lat: -38.9516,
+    p_lng: -68.0591,
+    p_accuracy: 18,
+    p_heading: 90,
+    p_speed: 8,
+    p_captured_at: new Date().toISOString(),
+    p_idempotency_key: requestId('cert_gps'),
+    p_is_mock: false,
+  });
+  check(
+    'el backend acepta el fix GPS y devuelve recibo explícito',
+    !gpsError && gpsReceipt?.ok === true && gpsReceipt?.code === 'accepted',
+    gpsError?.message || `ok=${gpsReceipt?.ok} code=${gpsReceipt?.code || 'sin_codigo'}`,
+  );
+
+  const { data: throttledReceipt, error: throttledError } = await rider.client.rpc(
+    'publish_rider_location_receipt',
+    {
+      p_order_id: realOrderId,
+      p_expected_revision: real.revision,
+      p_lat: -38.9516,
+      p_lng: -68.0591,
+      p_accuracy: 18,
+      p_heading: 90,
+      p_speed: 8,
+      p_captured_at: new Date().toISOString(),
+      p_idempotency_key: requestId('cert_gps_throttle'),
+      p_is_mock: false,
+    },
+  );
+  check(
+    'el servidor respeta el throttle GPS de cinco segundos',
+    !throttledError && throttledReceipt?.ok === false && throttledReceipt?.code === 'throttled',
+    throttledError?.message || `ok=${throttledReceipt?.ok} code=${throttledReceipt?.code || 'sin_codigo'}`,
+  );
+
+  const { data: liveTracking, error: liveTrackingError } = await trackingClient.rpc(
+    'get_public_order_tracking',
+    { p_public_id: realOrderId },
+  );
+  check(
+    'Customer recibe tracking válido sin Null Island',
+    !liveTrackingError
+      && liveTracking?.status === 'on_the_way'
+      && liveTracking?.location_quality === 'valid'
+      && Number.isFinite(Number(liveTracking?.rider_location?.lat))
+      && Number.isFinite(Number(liveTracking?.rider_location?.lng))
+      && Number(liveTracking.rider_location.lat) !== 0
+      && Number(liveTracking.rider_location.lng) !== 0,
+    liveTrackingError?.message
+      || `status=${liveTracking?.status} quality=${liveTracking?.location_quality}`,
+  );
+
   const { data: arrived } = await rider.client.rpc('mark_rider_arrived', {
     p_order_id: realOrderId,
     p_expected_revision: real.revision,
@@ -386,8 +516,40 @@ async function main() {
   check('el circuito termina en el estado canónico delivered',
     finalState === 'delivered' && Boolean(real.delivered_at), `estado=${finalState} entregado=${real.delivered_at}`);
 
+  const { data: terminalTracking, error: terminalTrackingError } = await trackingClient.rpc(
+    'get_public_order_tracking',
+    { p_public_id: realOrderId },
+  );
+  check(
+    'Customer conserva la ventana terminal y el GPS queda purgado al entregar',
+    !terminalTrackingError
+      && terminalTracking?.status === 'delivered'
+      && Date.parse(terminalTracking?.terminal_visible_until || '') > Date.now()
+      && terminalTracking?.location_quality === 'unavailable'
+      && !terminalTracking?.rider_location,
+    terminalTrackingError?.message
+      || `status=${terminalTracking?.status} quality=${terminalTracking?.location_quality}`,
+  );
+  console.log(`DEMO_ORDER_EVIDENCE ${JSON.stringify({
+    publicCode: real.public_code,
+    createdAt: real.created_at,
+    acceptedAt: real.accepted_at,
+    readyAt: real.ready_at,
+    dispatchedAt: real.dispatched_at || real.picked_up_at,
+    arrivedAt: real.arrived_at,
+    deliveredAt: real.delivered_at,
+    status: real.status,
+  })}`);
+
   // ======================================================== GATE 2: QA aparte
   console.log('\n--- Gate 2: el pedido QA queda fuera de la operación real ---');
+  if (!qaProduct) {
+    check(
+      'staging mantiene los fixtures QA fuera del catálogo comprable',
+      true,
+      'sin fixture QA disponible; no se mutó el catálogo',
+    );
+  } else {
   const { data: qaCreated, error: qaError } = await customer.client.rpc('create_order_with_items', {
     payload: orderPayload({
       productId: qaProduct.id,
@@ -463,6 +625,7 @@ async function main() {
   });
   check('la evidencia QA sigue siendo consultable a pedido',
     (pipelineWithQa || []).map((row) => row.reference_id).includes(qaOrderId));
+  }
 
   // =============================================== GATE 3: pago no falsificable
   console.log('\n--- Gate 3: nadie declara un pago que no ocurrió ---');
@@ -511,12 +674,20 @@ async function main() {
         city: 'Neuquen',
         province: 'Neuquen',
         source: 'manual',
+        latitude: -38.9516,
+        longitude: -68.0591,
+        geolocation_accuracy: 18,
+        location_source: 'map_pin',
+        location_confirmed_at: new Date().toISOString(),
       },
       age_confirmed: false,
     },
   });
   check('el checkout de Mercado Pago se crea en el backend', !sessionError && Boolean(session),
     sessionError?.message || '');
+  if (sessionError || !session) {
+    throw new Error(`El checkout de Mercado Pago no quedó disponible: ${sessionError?.message || 'respuesta vacía'}`);
+  }
   const sessionId = session?.checkout_session_id || session?.id;
 
   const mpStockReserved = (await productRow(realProduct.id)).stock;
@@ -623,7 +794,12 @@ main()
   })
   .finally(async () => {
     for (const task of cleanup.reverse()) {
-      try { await task(); } catch (error) { console.error(`limpieza: ${error.message}`); }
+      try {
+        await task();
+      } catch (error) {
+        failures += 1;
+        console.error(`limpieza: ${error.message}`);
+      }
     }
     const passed = results.filter((r) => r.ok).length;
     console.log(`\n=== ${passed}/${results.length} comprobaciones verdes, ${failures} fallas ===`);

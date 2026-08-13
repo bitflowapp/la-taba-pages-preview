@@ -63,7 +63,24 @@ export function trackingStatus(location, {
   const ageSeconds = Math.max(0, (now - timestamp) / 1000);
   const age = relativeAge(ageSeconds);
   const accuracy = Number(location?.accuracy);
-  const weak = Number.isFinite(accuracy) && accuracy > WEAK_SIGNAL_ACCURACY_METERS;
+  /*
+   * La calidad la decide el SERVIDOR, sobre la accuracy original.
+   *
+   * El número que llega acá lleva piso de 100 m por privacidad —el servidor
+   * publica `greatest(100, ceil(accuracy))`—, así que compararlo contra los
+   * 80 m de «buena señal» daba WEAK siempre y «Ubicación en vivo» era
+   * inalcanzable para cualquier cliente real. La suite no lo veía porque todos
+   * los fixtures siembran accuracy 12, un valor que el contrato público no
+   * puede emitir.
+   *
+   * Si el servidor no manda la calidad (respuesta vieja), no se inventa: se
+   * cae al umbral de antes, que falla cerrado —nunca promete «en vivo»—.
+   */
+  const quality = location?.quality;
+  let weak;
+  if (quality === 'valid') weak = false;
+  else if (quality === 'low_accuracy' || quality === 'stale') weak = true;
+  else weak = Number.isFinite(accuracy) && accuracy > WEAK_SIGNAL_ACCURACY_METERS;
 
   // Que el cliente se quede sin red y que el rider deje de publicar se ven
   // igual desde acá —no llega nada— y se dicen igual. Lo que no se hace es

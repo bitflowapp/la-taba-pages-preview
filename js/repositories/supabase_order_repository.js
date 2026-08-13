@@ -67,6 +67,13 @@ const BUSINESS_ORDER_SELECT = '*,order_items(*),order_events(*),order_combos(*)'
 const PUBLIC_TRACKING_GPS_MAX_AGE_MS = 3 * 60 * 1000;
 const PUBLIC_TRACKING_GPS_FUTURE_TOLERANCE_MS = 30 * 1000;
 const PUBLIC_TRACKING_GPS_MAX_ACCURACY_METERS = 250;
+/*
+ * Calidad del fix, decidida por el servidor sobre la accuracy ORIGINAL. El
+ * número público lleva piso de 100 m por privacidad, así que no sirve para
+ * juzgar la señal: quien sabe si el fix era bueno es quien lo recibió sin
+ * degradar. Ver 20260814010000_public_tracking_publishes_gps_quality.sql.
+ */
+const PUBLIC_TRACKING_QUALITY_STATES = new Set(['valid', 'low_accuracy', 'stale', 'unavailable']);
 const TRUSTED_ETA_MAX_AGE_MS = 15 * 60 * 1000;
 const TRUSTED_ETA_SOURCES = new Set(['business', 'routing']);
 const MAX_BUSINESS_INBOX_ORDERS = 500;
@@ -2204,7 +2211,14 @@ function normalizePublicTrackingDto(dto = {}) {
     acceptedAt,
     createdAt,
   ]) || createdAt;
-  const location = latestPublicRiderLocation(dto.rider_location);
+  // El servidor ya no obliga a deducir la calidad del número degradado. Si no
+  // la manda (servidor viejo), no se inventa ninguna: queda null y la vista
+  // degrada sola, que es lo único honesto que se puede hacer sin el dato.
+  const locationQuality = PUBLIC_TRACKING_QUALITY_STATES.has(dto.location_quality)
+    ? dto.location_quality
+    : null;
+  const publicLocation = latestPublicRiderLocation(dto.rider_location);
+  const location = publicLocation ? { ...publicLocation, quality: locationQuality } : publicLocation;
   const statusHistory = statusHistoryFromRow({
     accepted_at: acceptedAt,
     preparing_at: preparingAt,
@@ -2246,6 +2260,9 @@ function normalizePublicTrackingDto(dto = {}) {
         confirmedBy: deliveryCodeConfirmedAt ? 'rider' : '',
       })
       : null,
+    // Viaja aunque no haya punto: es lo que separa «no hay rider todavía» de
+    // «el fix envejeció», que antes llegaban al cliente como el mismo silencio.
+    locationQuality,
     tracking: location ? {
       lastLocation: location,
       source: 'gps',

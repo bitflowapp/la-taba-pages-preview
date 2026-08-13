@@ -22,10 +22,13 @@ values
   ('51000000-0000-4000-8000-000000000001','authenticated','authenticated','operations-owner@example.invalid','',now(),'{}','{}',now(),now()),
   ('51000000-0000-4000-8000-000000000002','authenticated','authenticated','operations-staff@example.invalid','',now(),'{}','{}',now(),now()),
   ('51000000-0000-4000-8000-000000000003','authenticated','authenticated','operations-outsider@example.invalid','',now(),'{}','{}',now(),now());
-insert into public.businesses(id,name,status,slug,is_active)
+-- El huso es obligatorio desde 20260814020000: el dia comercial lo define el
+-- negocio y no el aparato que abre el Panel, asi que un negocio sin huso ya no
+-- puede preparar un cierre. El fixture lo declara como lo hace el negocio real.
+insert into public.businesses(id,name,status,slug,is_active,operating_timezone)
 values
-  ('52000000-0000-4000-8000-000000000001','TABA operaciones fixture','open','taba-operations-fixture',true),
-  ('52000000-0000-4000-8000-000000000002','TABA operaciones ajeno','open','taba-operations-other',true);
+  ('52000000-0000-4000-8000-000000000001','TABA operaciones fixture','open','taba-operations-fixture',true,'America/Argentina/Buenos_Aires'),
+  ('52000000-0000-4000-8000-000000000002','TABA operaciones ajeno','open','taba-operations-other',true,'America/Argentina/Buenos_Aires');
 insert into public.business_members(business_id,user_id,role,is_active)
 values
   ('52000000-0000-4000-8000-000000000001','51000000-0000-4000-8000-000000000001','owner',true),

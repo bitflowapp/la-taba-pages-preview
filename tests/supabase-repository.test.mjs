@@ -2072,6 +2072,9 @@ function createSupabaseClientMock({
   publicTrackingOverrides = {},
   publicContactRpcError = false,
 } = {}) {
+  // Cada consulta comercial que hace el repositorio queda registrada: hay
+  // pruebas que necesitan comprobar con qué contexto se preguntó.
+  const commerceAvailabilityCalls = [];
   const db = {
     businesses: [{
       id: BUSINESS_ID,
@@ -2547,6 +2550,38 @@ function createSupabaseClientMock({
           status: 200,
         };
       }
+      // El arnés contesta lo que contestaría `commerce_availability` con la
+      // exigencia APAGADA, que es el estado en que vive el comercio del fixture:
+      // abierto, sin lista de barrios, y con la tarifa de la columna del
+      // negocio. Así estas pruebas siguen midiendo lo que medían.
+      if (name === 'commerce_availability') {
+        const row = db.businesses.find((candidate) => candidate.id === args.p_business_id) || null;
+        if (!row) return { data: null, error: { message: 'sin comercio' }, status: 404 };
+        commerceAvailabilityCalls.push(args);
+        return {
+          data: {
+            business_id: row.id,
+            channel: args.p_channel || 'delivery',
+            ordering_ready: row.ordering_enabled === true && row.ordering_verified === true,
+            is_open: true,
+            hours_enforced: false,
+            coverage_enforced: false,
+            next_open_at: null,
+            hours: [],
+            areas: [],
+            delivery: args.p_channel === 'pickup'
+              ? { eligible: false, reason: 'pickup', message: 'Retiro en el local.' }
+              : {
+                eligible: true,
+                reason: 'ok',
+                delivery_fee: row.delivery_fee,
+                minimum_subtotal: row.minimum_delivery_subtotal,
+              },
+          },
+          error: null,
+          status: 200,
+        };
+      }
       throw new Error(`Unexpected RPC: ${name}`);
     },
     channel(name) {
@@ -2584,6 +2619,7 @@ function createSupabaseClientMock({
     channels,
     client,
     db,
+    commerceAvailabilityCalls,
     seedOrder(overrides = {}) {
       const row = {
         ...buildOrderRow({

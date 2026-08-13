@@ -8,6 +8,7 @@ import { createSupabasePosRepository } from './repositories/supabase-pos-reposit
 import { createSupabaseFiscalRepository } from './repositories/supabase-fiscal-repository.js';
 import { createSupabasePackingRepository } from './repositories/supabase-packing-repository.js';
 import { createSupabaseOperationsRepository } from './repositories/supabase-operations-repository.js';
+import { createSupabaseBusinessRepository } from './repositories/supabase-business-repository.js';
 import { createSupabasePaymentsRepository } from './repositories/supabase-payments-repository.js';
 import { getSupabaseClient } from './services/supabase-client.js';
 import {
@@ -72,6 +73,7 @@ let posRepository = null;
 let fiscalRepository = null;
 let packingRepository = null;
 let operationsRepository = null;
+let businessConfigRepository = null;
 let paymentsRepository = null;
 let businessPayments = [];
 let businessPaymentsStatus = { phase: 'idle', message: '' };
@@ -923,6 +925,7 @@ async function configureBusinessRuntime(result) {
   fiscalRepository = createSupabaseFiscalRepository({ client, businessId });
   packingRepository = createSupabasePackingRepository({ client });
   operationsRepository = createSupabaseOperationsRepository({ client, businessId });
+  businessConfigRepository = createSupabaseBusinessRepository({ client, businessId });
   const desktopPlatform = createBusinessPlatform();
   configureBusinessOperations({
     businessId,
@@ -976,6 +979,15 @@ async function configureBusinessRuntime(result) {
     }),
     role: result.membership?.role,
     operatorName: String(result.user?.email || '').split('@')[0],
+    // Configuracion operativa. El Panel no escribe estas tablas: no tiene
+    // permiso de tabla. Cada cambio pasa por una RPC que autoriza, valida y
+    // audita en la misma transaccion, y contesta 42501 a quien no corresponde.
+    getOperationsConfig: () => businessConfigRepository.operationsConfig(),
+    setServiceHours: (input) => businessConfigRepository.setServiceHours(input),
+    upsertDeliveryZone: (input) => businessConfigRepository.upsertDeliveryZone(input),
+    setDeliveryZoneActive: (input) => businessConfigRepository.setDeliveryZoneActive(input),
+    setDeliveryPricing: (input) => businessConfigRepository.setDeliveryPricing(input),
+    setServiceEnforcement: (input) => businessConfigRepository.setServiceEnforcement(input),
     getOperationCenter: () => operationsRepository.getCenter(),
     acknowledgeOperationalAlert: (alertId) => operationsRepository.acknowledgeAlert(alertId),
     resolveOperationalAlert: (input) => operationsRepository.resolveAlert(input),

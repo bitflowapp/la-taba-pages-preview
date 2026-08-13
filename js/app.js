@@ -1042,7 +1042,25 @@ function bindEvents() {
   // El destino de la entrega lo resuelve el checkout de forma asíncrona. El chip
   // «Enviar a» del encabezado se entera acá, para no quedar diciendo «Elegí tu
   // dirección» sobre una dirección que el checkout ya eligió.
-  window.addEventListener('taba:delivery-address-changed', () => renderCustomerHome());
+  window.addEventListener('taba:delivery-address-changed', (event) => {
+    renderCustomerHome();
+    // Y con el destino nuevo se vuelve a preguntar al backend si llegamos ahí y
+    // con qué envío. No se calcula acá: se pregunta. Si la consulta falla, el
+    // repositorio deja el estado en «no sé» y la tienda no afirma nada; quien
+    // decide de verdad es el alta del pedido.
+    const address = event?.detail?.address || null;
+    const repository = getOrderRepository();
+    if (typeof repository?.refreshCommerceAvailability !== 'function') return;
+    repository.refreshCommerceAvailability({
+      channel: 'delivery',
+      latitude: address?.latitude ?? null,
+      longitude: address?.longitude ?? null,
+      neighborhood: address?.neighborhood || '',
+    }).then(() => {
+      renderCustomerHome();
+      renderCart();
+    }).catch(() => { /* el estado ya volvió a «no sé»: no hay nada que deshacer */ });
+  });
   window.addEventListener('pagehide', () => {
     // Al ir a segundo plano Chrome puede descartar la pestaña del rider. Se
     // corta el watcher por privacidad, pero se conserva sólo el último fix

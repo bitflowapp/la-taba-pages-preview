@@ -18,11 +18,15 @@ import { buildStorefrontPreview, describeDraft, planScanOutcome, validateProduct
 import {
   PANEL_TIMEZONE,
   renderDayCloseSurface, renderDayOpenSurface, renderDevicesSurface, renderFiscalSetupSurface,
-  renderOperationCenterSurface, renderPaymentsSetupSurface, renderPaymentsSurface, renderProductOnboardingSurface,
+  renderOperationCenterSurface, renderOperationsConfigSurface,
+  renderPaymentsSetupSurface, renderPaymentsSurface, renderProductOnboardingSurface,
 } from './business-panel-render.js';
+import {
+  normalizeOperationsConfig, validateWeeklyHours, validateZoneDraft,
+} from './business-operations-config.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
-  'operation-center', 'day-open', 'orders', 'payments', 'payments-setup', 'scanner', 'product-create',
+  'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-setup', 'scanner', 'product-create',
   'inventory-receive', 'inventory-adjust', 'stock-count', 'packing', 'pos',
   'fiscal-status', 'fiscal-setup', 'fiscal-config', 'devices', 'day-close',
 ]);
@@ -31,6 +35,7 @@ const VIEW_META = Object.freeze({
   'operation-center': ['Centro de operación', null],
   'day-open': ['Abrir el negocio', null],
   orders: ['Pedidos', null],
+  'operations-config': ['Horarios y cobertura', null],
   payments: ['Pagos', null],
   'payments-setup': ['Conectar Mercado Pago', null],
   scanner: ['Escáner rápido', 'product_lookup'],
@@ -53,6 +58,9 @@ const VIEW_CAPABILITY = Object.freeze({
   'operation-center': 'orders.view',
   'day-open': 'day.open',
   orders: 'orders.view',
+  // La pantalla la ve todo el equipo; editar lo autoriza la RPC mediante
+  // `can_manage_commercial_settings`, incluida la delegación explícita.
+  'operations-config': 'orders.view',
   payments: 'payments.view',
   'payments-setup': 'payments.reconcile',
   scanner: 'scanner.use',
@@ -100,6 +108,10 @@ let payments = [];
 let paymentsStatus = { phase: 'idle', message: '' };
 let paymentsLoadStarted = false;
 let refundTarget = '';
+let operationsConfig = null;
+let operationsConfigStatus = { phase: 'idle', message: '' };
+let operationsConfigLoadStarted = false;
+let operationsConfigDraft = { slots: null, hoursErrors: [], zoneErrors: [], enforcementError: '' };
 let arcaActivation = null;
 let arcaLoadStarted = false;
 let arcaAuthorizationDraft = '';
@@ -159,6 +171,9 @@ export function renderBusinessOperations(view) {
     'day-open': () => renderDayOpenSurface({
       opening: openingSignals, businessStatus: openingStatusRaw?.business_status, role: context.role, busy,
     }),
+    'operations-config': () => renderOperationsConfigSurface({
+      config: operationsConfig, status: operationsConfigStatus, busy, draft: operationsConfigDraft,
+    }),
     payments: () => renderPaymentsSurface({
       payments, status: paymentsStatus, role: context.role, activation: paymentsActivation, busy, refundTarget,
     }),
@@ -217,6 +232,10 @@ export function activateBusinessOperations(view = currentView) {
     if ((view === 'fiscal-status' || view === 'fiscal-config') && !fiscalInitialRefreshStarted) {
       fiscalInitialRefreshStarted = true;
       void refreshFiscal();
+    }
+    if (view === 'operations-config' && !operationsConfigLoadStarted) {
+      operationsConfigLoadStarted = true;
+      void refreshOperationsConfig();
     }
     if ((view === 'payments' || view === 'payments-setup') && !paymentsLoadStarted) {
       paymentsLoadStarted = true;
@@ -383,6 +402,17 @@ export async function handleBusinessOperationsAction(target) {
   const creditNote = target.closest('[data-fiscal-credit-note]');
   if (creditNote) return requestCreditNote(creditNote);
   if (target.closest('[data-operation-center-refresh]')) return refreshOperationCenterAction();
+  if (target.closest('[data-operations-config-refresh]')) return refreshOperationsConfigAction();
+  const addSlot = target.closest('[data-operations-hours-add]');
+  if (addSlot) return addOperationsHoursSlot(addSlot);
+  const clearDay = target.closest('[data-operations-hours-clear]');
+  if (clearDay) return clearOperationsHoursDay(clearDay);
+  if (target.closest('[data-operations-hours-save]')) return saveOperationsHours();
+  const toggleZone = target.closest('[data-operations-zone-toggle]');
+  if (toggleZone) return toggleOperationsZone(toggleZone);
+  if (target.closest('[data-operations-zone-add]')) return addOperationsZone(target);
+  if (target.closest('[data-operations-pricing-save]')) return saveOperationsPricing(target);
+  if (target.closest('[data-operations-enforcement-save]')) return saveOperationsEnforcement(target);
   if (target.closest('[data-local-backup-create]')) return createLocalBackup();
   if (target.closest('[data-support-diagnostic-export]')) return exportSupportDiagnostic();
   if (target.closest('[data-support-export-folder]')) return openSupportExportFolder();
@@ -1276,6 +1306,187 @@ function renderScanResult() {
 function normalizedProduct(binding) { const product = Array.isArray(binding.products) ? binding.products[0] : binding.products || {}; return { id: String(binding.product_id || product.id || ''), name: String(product.name || 'Producto'), presentation: String(product.presentation || binding.package_type || ''), stock: Number.isInteger(product.stock) ? product.stock : Number(product.stock || 0) }; }
 function panel(title, subtitle, body) { return `<section class="business-ops-panel"><header><div><p class="eyebrow">Centro operativo</p><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div></header>${body}</section>`; }
 function result(ok, message) { return { handled: true, ok, message }; }
+// -- Configuracion operativa: horarios, zonas, envio y minimo ----------------
+//
+// Ninguna de estas funciones decide nada. Validan temprano para no mandar algo
+// que el servidor va a rechazar, y muestran lo que el servidor contesto. La
+// autorizacion la hace la RPC -owner, admin, o staff con delegacion explicita-,
+// y si dice que no, aca se muestra el motivo y no se cambia el estado local.
+
+async function refreshOperationsConfig() {
+  operationsConfigStatus = { phase: 'loading', message: '' };
+  context.onChange();
+  const response = await context.getOperationsConfig();
+  if (response?.ok && response.data) {
+    operationsConfig = normalizeOperationsConfig(response.data);
+    operationsConfigDraft = { slots: null, hoursErrors: [], zoneErrors: [], enforcementError: '' };
+    operationsConfigStatus = { phase: 'ready', message: '' };
+  } else {
+    operationsConfigStatus = {
+      phase: 'error',
+      message: humanizeFailure(response?.message, 'No pudimos leer la configuracion operativa.'),
+    };
+  }
+  context.onChange();
+  return response;
+}
+
+async function refreshOperationsConfigAction() {
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  busy = true;
+  const response = await refreshOperationsConfig();
+  busy = false;
+  feedback = response?.ok ? 'Configuracion actualizada.' : operationsConfigStatus.message;
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+// La grilla que se esta editando: la del servidor, mas lo que el operador toco
+// en esta pantalla y todavia no guardo.
+function currentHourSlots() {
+  if (operationsConfigDraft.slots) return operationsConfigDraft.slots;
+  return (operationsConfig?.hours || [])
+    .filter((row) => row.channel === 'delivery')
+    .map((row) => ({ weekday: row.weekday, opensAt: row.opensAt, closesAt: row.closesAt }));
+}
+
+function addOperationsHoursSlot(button) {
+  const weekday = Number(button.dataset.operationsHoursAdd);
+  const row = button.closest('[data-weekday]');
+  const opensAt = String(row?.querySelector('[name="opensAt-' + weekday + '"]')?.value || '');
+  const closesAt = String(row?.querySelector('[name="closesAt-' + weekday + '"]')?.value || '');
+  const slots = [...currentHourSlots(), { weekday, opensAt, closesAt }];
+  const validation = validateWeeklyHours(slots);
+  operationsConfigDraft = { ...operationsConfigDraft, slots, hoursErrors: validation.errors };
+  context.onChange();
+  return result(validation.ok, validation.ok ? 'Tramo agregado. Falta guardar.' : validation.errors[0]);
+}
+
+function clearOperationsHoursDay(button) {
+  const weekday = Number(button.dataset.operationsHoursClear);
+  const slots = currentHourSlots().filter((slot) => slot.weekday !== weekday);
+  operationsConfigDraft = { ...operationsConfigDraft, slots, hoursErrors: [] };
+  context.onChange();
+  return result(true, 'Dia vaciado. Falta guardar.');
+}
+
+async function saveOperationsHours() {
+  const validation = validateWeeklyHours(currentHourSlots());
+  if (!validation.ok) {
+    operationsConfigDraft = { ...operationsConfigDraft, hoursErrors: validation.errors };
+    context.onChange();
+    return result(false, validation.errors[0]);
+  }
+  busy = true;
+  const response = await context.setServiceHours({
+    channel: 'delivery',
+    hours: validation.slots.map((slot) => ({
+      weekday: slot.weekday, opens_at: slot.opensAt, closes_at: slot.closesAt,
+    })),
+  });
+  busy = false;
+  if (response?.ok) {
+    operationsConfigDraft = { slots: null, hoursErrors: [], zoneErrors: [], enforcementError: '' };
+    await refreshOperationsConfig();
+    feedback = 'Horarios guardados.';
+  } else {
+    feedback = humanizeFailure(response?.message, 'El servidor no acepto los horarios.');
+    operationsConfigDraft = { ...operationsConfigDraft, hoursErrors: [feedback] };
+  }
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function toggleOperationsZone(button) {
+  const zoneId = String(button.dataset.operationsZoneToggle || '');
+  const zone = (operationsConfig?.zones || []).find((row) => row.id === zoneId);
+  if (!zone) return result(false, 'No encontramos esa zona.');
+  busy = true;
+  const response = await context.setDeliveryZoneActive({ zoneId, active: !zone.isActive });
+  busy = false;
+  if (response?.ok) await refreshOperationsConfig();
+  feedback = response?.ok
+    ? (zone.isActive ? 'Zona desactivada. Deja de recibir pedidos ahora mismo.' : 'Zona activada.')
+    : humanizeFailure(response?.message, 'El servidor no acepto el cambio de zona.');
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function addOperationsZone(target) {
+  const root = target.closest('[data-business-ops-center]');
+  const validation = validateZoneDraft({
+    name: String(root?.querySelector('[name="zoneName"]')?.value || ''),
+    matchKind: 'declared_area',
+    deliveryFee: String(root?.querySelector('[name="zoneFee"]')?.value || ''),
+    minimumSubtotal: String(root?.querySelector('[name="zoneMinimum"]')?.value || ''),
+  });
+  if (!validation.ok) {
+    operationsConfigDraft = { ...operationsConfigDraft, zoneErrors: validation.errors };
+    context.onChange();
+    return result(false, validation.errors[0]);
+  }
+  busy = true;
+  const response = await context.upsertDeliveryZone({ zone: validation.zone });
+  busy = false;
+  if (response?.ok) {
+    operationsConfigDraft = { ...operationsConfigDraft, zoneErrors: [] };
+    await refreshOperationsConfig();
+    feedback = 'Zona agregada.';
+  } else {
+    feedback = humanizeFailure(response?.message, 'El servidor no acepto la zona.');
+    operationsConfigDraft = { ...operationsConfigDraft, zoneErrors: [feedback] };
+  }
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+// Un campo vacio es NULL, no cero. <<Sin minimo>> y <<minimo de cero pesos>> se
+// escriben distinto porque significan cosas distintas, y Number('') vale 0.
+function optionalAmount(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return null;
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) && numeric >= 0 ? Math.round(numeric) : null;
+}
+
+async function saveOperationsPricing(target) {
+  const root = target.closest('[data-business-ops-center]');
+  busy = true;
+  const response = await context.setDeliveryPricing({
+    deliveryFee: optionalAmount(root?.querySelector('[name="businessFee"]')?.value),
+    minimumSubtotal: optionalAmount(root?.querySelector('[name="businessMinimum"]')?.value),
+    maxRadiusMeters: operationsConfig?.maxRadiusMeters ?? null,
+  });
+  busy = false;
+  if (response?.ok) await refreshOperationsConfig();
+  feedback = response?.ok
+    ? 'Envio y minimo guardados.'
+    : humanizeFailure(response?.message, 'El servidor no acepto el envio y el minimo.');
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function saveOperationsEnforcement(target) {
+  const root = target.closest('[data-business-ops-center]');
+  const hoursEnforced = Boolean(root?.querySelector('[name="hoursEnforced"]')?.checked);
+  const coverageEnforced = Boolean(root?.querySelector('[name="coverageEnforced"]')?.checked);
+  const timezone = String(root?.querySelector('[name="operatingTimezone"]')?.value || '').trim();
+  busy = true;
+  const response = await context.setServiceEnforcement({
+    hoursEnforced, coverageEnforced, timezone: timezone || null,
+  });
+  busy = false;
+  if (response?.ok) {
+    operationsConfigDraft = { ...operationsConfigDraft, enforcementError: '' };
+    await refreshOperationsConfig();
+    feedback = 'Exigencia guardada.';
+  } else {
+    feedback = humanizeFailure(response?.message, 'El servidor no acepto el cambio de exigencia.');
+    operationsConfigDraft = { ...operationsConfigDraft, enforcementError: feedback };
+  }
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
 function positiveInteger(value, fallback) { const number = Number(value); return Number.isSafeInteger(number) && number > 0 ? number : fallback; }
 function createKey(prefix) { return `${prefix}:${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`; }
 function artifactLabel(state) { return ({ artifact_pending: 'PDF pendiente', artifact_generating: 'Generando PDF', artifact_ready: 'PDF disponible', artifact_failed: 'PDF fallido', artifact_superseded: 'PDF reemplazado' })[state] || 'PDF pendiente'; }
@@ -1830,6 +2041,12 @@ function defaultContext() {
   return {
     role: 'staff',
     operatorName: '',
+    getOperationsConfig: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
+    setServiceHours: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
+    upsertDeliveryZone: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
+    setDeliveryZoneActive: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
+    setDeliveryPricing: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
+    setServiceEnforcement: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
     listPayments: async () => ({ ok: false, message: 'Los pagos no están disponibles.' }),
     getPaymentsActivation: async () => ({ ok: false, message: 'El estado de cobros no está disponible.' }),
     configurePaymentSettings: async () => ({ ok: false, message: 'La configuración de cobros no está disponible.' }),

@@ -3086,6 +3086,10 @@ export function getCheckoutFormValues() {
     deliveryFloor: String(formData.get('deliveryFloor') || ''),
     deliveryApartment: String(formData.get('deliveryApartment') || ''),
     deliveryCity: String(formData.get('deliveryCity') || addressDetails.neighborhood),
+    // El barrio declarado NO cae al que se deduce del texto de la dirección: o
+    // la persona lo eligió de la lista del comercio, o no hay barrio declarado.
+    // Deducirlo sería inventarle a alguien una zona que no eligió.
+    deliveryNeighborhood: String(formData.get('deliveryNeighborhood') || ''),
     deliveryProvince: String(formData.get('deliveryProvince') || ''),
     deliveryPostalCode: String(formData.get('deliveryPostalCode') || ''),
     deliveryLatitude: optionalNumber(formData.get('deliveryLatitude')),

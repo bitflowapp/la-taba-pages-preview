@@ -37,6 +37,10 @@ export function buildMercadoPagoCheckoutPayload({
       apartment: text(values.deliveryApartment),
       reference: text(values.customerReference || values.addressDetails?.reference),
       city: text(values.deliveryCity || values.customerNeighborhood || values.addressDetails?.neighborhood),
+      // El barrio declarado va aparte de la localidad: es una de las dos
+      // entradas con las que el backend resuelve la cobertura, y confundirlo con
+      // la ciudad haría que «Neuquén» pareciera un barrio de la lista.
+      neighborhood: text(values.deliveryNeighborhood || values.customerNeighborhood),
       province: text(values.deliveryProvince),
       postal_code: text(values.deliveryPostalCode),
       source: text(values.deliveryAddressSource || 'manual'),

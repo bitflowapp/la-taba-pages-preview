@@ -26,6 +26,10 @@ import {
 } from '../core/validators.js';
 import { setProductionCatalogReady } from '../core/runtime-config.js';
 import {
+  clearCommerceAvailability,
+  setCommerceAvailability,
+} from '../core/commerce-availability-store.js';
+import {
   getState,
   paymentLabel,
   statusLabel,
@@ -401,6 +405,40 @@ export function createSupabaseOrderRepository({
     return access;
   }
 
+  // ── LO QUE DECIDE EL BACKEND ───────────────────────────────────────────────
+  // Horario, cobertura, tarifa y mínimo salen de `commerce_availability`, que es
+  // la misma función que consulta el checkout al crear la sesión. La tienda no
+  // los calcula: los pregunta. El contexto viaja con lo mínimo necesario —punto
+  // confirmado y barrio declarado— y ninguna tarifa: mandarla sería ofrecerle al
+  // servidor un número que no va a mirar.
+  async function refreshCommerceAvailability({
+    channel = 'delivery', latitude = null, longitude = null, neighborhood = '',
+  } = {}) {
+    const context = {};
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (latitude !== null && longitude !== null && Number.isFinite(lat) && Number.isFinite(lng)) {
+      context.latitude = lat;
+      context.longitude = lng;
+    }
+    const area = sanitizeText(neighborhood, { maxLength: 100 });
+    if (area) context.neighborhood = area;
+
+    const { data, error } = await client.rpc('commerce_availability', {
+      p_business_id: businessId,
+      p_channel: channel === 'pickup' ? 'pickup' : 'delivery',
+      p_context: context,
+    });
+    if (error || !data) {
+      // Sin respuesta no se inventa una: el estado vuelve a «no sé» y la tienda
+      // deja de afirmar nada sobre horario o cobertura. Quien decide de verdad
+      // es el alta del pedido, que rechaza igual.
+      clearCommerceAvailability();
+      return repositoryResult(false, { availability: null });
+    }
+    return repositoryResult(true, { availability: setCommerceAvailability(data) });
+  }
+
   async function loadBusinessConfiguration() {
     const { data, error, status } = await client
       .from('businesses')
@@ -484,6 +522,10 @@ export function createSupabaseOrderRepository({
       currency: sanitizeText(data.currency_code, { fallback: 'ARS', maxLength: 3 }).toUpperCase(),
       businessLocationVerified: false,
     });
+    // Primera pregunta, sin dirección todavía: alcanza para saber si el comercio
+    // está abierto y qué barrios se pueden elegir. La cobertura concreta se
+    // vuelve a preguntar cuando hay una dirección activa.
+    await refreshCommerceAvailability();
     return repositoryResult(true, { business: data });
   }
 
@@ -704,7 +746,12 @@ export function createSupabaseOrderRepository({
       ...(normalizedValues.deliveryMode === 'delivery' ? {
         customer_street_address: normalizedValues.addressDetails.streetLine || normalizedValues.customerAddress,
         address_label: normalizedValues.customerAddress,
-        customer_neighborhood: normalizedValues.addressDetails.neighborhood || undefined,
+        // El barrio DECLARADO manda sobre el que se deduce del texto de la
+        // dirección: es el que la persona eligió de la lista del comercio y el
+        // que el backend usa para resolver la cobertura.
+        customer_neighborhood: normalizedValues.deliveryNeighborhood
+          || normalizedValues.addressDetails.neighborhood
+          || undefined,
         customer_reference: normalizedValues.addressDetails.reference || undefined,
         customer_address_label: normalizedValues.customerAddressLabel || undefined,
         delivery_street: normalizedValues.deliveryStreet || undefined,
@@ -1194,6 +1241,9 @@ export function createSupabaseOrderRepository({
     },
     async loadBusinessConfiguration() {
       return loadBusinessConfiguration();
+    },
+    async refreshCommerceAvailability(context) {
+      return refreshCommerceAvailability(context);
     },
     getCatalogStatus() {
       return { ...catalogStatus };

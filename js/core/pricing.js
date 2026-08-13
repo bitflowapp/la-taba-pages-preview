@@ -1,5 +1,6 @@
 import { getBusinessConfig } from './business-config-store.js';
 import { isDemoMode } from './app-mode.js';
+import { serverDeliveryFee } from './commerce-availability-store.js';
 
 export function normalizeDeliveryMode(value) {
   return value === 'pickup' ? 'pickup' : 'delivery';
@@ -100,6 +101,12 @@ export function isCommerciallyPurchasable(product) {
 
 export function getDeliveryFeeForMode(deliveryMode = 'delivery') {
   if (normalizeDeliveryMode(deliveryMode) === 'pickup') return 0;
+  // Si el backend ya resolvió la zona de ESTA dirección, ese número manda. La
+  // columna del negocio es el valor por defecto de las zonas que no definen el
+  // suyo; mostrarla cuando la zona ya dijo otra cosa sería anunciar un precio y
+  // cobrar otro. Quien cobra es el backend en las dos rutas de alta.
+  const resolved = serverDeliveryFee('delivery');
+  if (resolved !== null) return resolved;
   const config = getBusinessConfig();
   if (!isDemoMode() && !config.orderingDetailsVerified) return 0;
   return normalizeMoneyValue(config.deliveryFee);

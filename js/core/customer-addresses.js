@@ -67,6 +67,14 @@ export function normalizeCustomerAddress(input = {}) {
     apartment,
     reference,
     city,
+    // El barrio declarado, aparte de la localidad. Es la entrada con la que el
+    // backend resuelve la cobertura: la persona lo elige de la lista que el
+    // propio comercio publica, así que no es texto libre aunque se guarde como
+    // tal. Vacío es un valor legítimo: una dirección vieja no lo tiene y no deja
+    // de funcionar por eso.
+    neighborhood: sanitizeText(source.neighborhood ?? source.customerNeighborhood, {
+      fallback: '', maxLength: 100,
+    }),
     province: sanitizeText(source.province, { fallback: '', maxLength: 100 }),
     postalCode: sanitizeText(source.postalCode ?? source.postal_code, { fallback: '', maxLength: 20 }),
     latitude: coordinates?.latitude ?? null,

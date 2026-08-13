@@ -80,7 +80,13 @@ import {
   handleViewChangeForSimulation,
   resumeSimulationIfNeeded,
 } from './simulation.js';
-import { getRealtimeStatus, initRealtime, onRealtimeStatusChange, retryRelayConnection } from './realtime.js';
+import {
+  getRealtimeStatus,
+  initRealtime,
+  onRealtimeStatusChange,
+  resolveRelayBase,
+  retryRelayConnection,
+} from './realtime.js';
 import { recenterMapViews, renderMapViews } from './map/map_view.js';
 import { activeTrackingLiveness } from './map/route_geometry.js';
 import {
@@ -255,7 +261,12 @@ async function maybeResetDemoSession() {
 }
 
 async function clearRelayRoomOnReset(params) {
-  const relay = params.get('relay');
+  // El valor CRUDO de la URL no se toca: esta función hacía `fetch` contra
+  // `params.get('relay')` sin pasar por ninguna compuerta, así que un enlace
+  // preparado conseguía por acá lo mismo que por el canal del relay. Ahora usa
+  // la misma resolución que el transporte —mismo origen, o loopback sólo en
+  // desarrollo— y si el valor no la pasa, no se llama a nadie.
+  const relay = resolveRelayBase(params.get('relay'));
   const key = params.get('key');
   if (!relay || !key || typeof fetch !== 'function') return;
   const room = sanitizeResetRoom(params.get('room') || safeStorageGet(RELAY_ROOM_STORAGE_KEY) || 'demo');

@@ -659,6 +659,8 @@ decide.
   el propio antes de crear nada.
 - `node_modules` es una **unión** al worktree de la candidata nocturna: no se
   instala ni se actualiza nada ahí.
-- `TMP`/`TEMP` redirigidos a `D:\1212\_claude-tmp\commercial-hardening` y
-  puertos 8210/18810, porque `E:` tiene 0,6 GB libres y los puertos por defecto
-  son de otras sesiones.
+- `TMP`/`TEMP` redirigidos a `…\_claude-tmp\commercial-hardening` y puertos
+  8210/18810, porque el disco del temporal por defecto tenía 0,6 GB libres y los
+  puertos por defecto son de otras sesiones. (La ruta va con elipsis a
+  propósito: el gate de higiene rechaza rutas con letra de unidad en archivos
+  versionados, y este documento no es la excepción.)

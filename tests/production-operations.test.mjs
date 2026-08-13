@@ -251,7 +251,22 @@ test('dos activaciones de acceso concurrentes no matan el intake del ganador', a
       };
       return query;
     },
-    rpc: async () => ({ data: [], error: null, status: 200 }),
+    rpc: async (name) => {
+      if (name === 'identity_current_context') {
+        return {
+          data: {
+            user_id: membership.user_id,
+            business_id: membership.business_id,
+            role: membership.role,
+            session_id: 'session-concurrent-access',
+            permissions: ['orders.read', 'orders.operate', 'orders.dispatch'],
+          },
+          error: null,
+          status: 200,
+        };
+      }
+      return { data: [], error: null, status: 200 };
+    },
     channel() {
       return {
         on() { return this; },
@@ -347,7 +362,22 @@ function createLifecycleClient({ businessId, riderId, order, membership }) {
       };
       return query;
     },
-    rpc: async () => ({ data: null, error: null, status: 200 }),
+    rpc: async (name) => {
+      if (name === 'identity_current_context') {
+        return {
+          data: {
+            user_id: membership.user_id,
+            business_id: membership.business_id,
+            role: membership.role,
+            session_id: 'session-rider-lifecycle',
+            permissions: ['orders.read', 'deliveries.claim', 'deliveries.operate'],
+          },
+          error: null,
+          status: 200,
+        };
+      }
+      return { data: null, error: null, status: 200 };
+    },
     channel() {
       return {
         on() { return this; },
@@ -393,7 +423,7 @@ test('las señales de auth que no cambian de persona no reinician el Panel', asy
   const session = { user: { id: staffId, is_anonymous: false } };
   const authCallbacks = [];
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  // Cada `getTeamAccess()` consulta la membresía. Contarlas es la forma directa
+  // Cada `getTeamAccess()` consulta la compuerta de identidad. Contarlas es la forma directa
   // de ver si el Panel revalidó de más.
   let consultasDeMembresia = 0;
   const client = {
@@ -430,7 +460,23 @@ test('las señales de auth que no cambian de persona no reinician el Panel', asy
       };
       return query;
     },
-    rpc: async () => ({ data: [], error: null, status: 200 }),
+    rpc: async (name) => {
+      if (name === 'identity_current_context') {
+        consultasDeMembresia += 1;
+        return {
+          data: {
+            user_id: membership.user_id,
+            business_id: membership.business_id,
+            role: membership.role,
+            session_id: 'session-auth-noise',
+            permissions: ['orders.read', 'orders.operate', 'orders.dispatch'],
+          },
+          error: null,
+          status: 200,
+        };
+      }
+      return { data: [], error: null, status: 200 };
+    },
     channel() {
       return {
         on() { return this; },

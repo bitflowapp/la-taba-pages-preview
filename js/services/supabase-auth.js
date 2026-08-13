@@ -1,6 +1,7 @@
 const TEAM_ROLES = new Set(['owner', 'admin', 'staff', 'rider']);
+const PANEL_CLIENT = 'panel_web';
 
-export function createSupabaseAuthService({ client, businessId }) {
+export function createSupabaseAuthService({ client, businessId, deviceLabel = '', appVersion = '' }) {
   if (!client?.auth || typeof client.from !== 'function') {
     throw new Error('Auth requiere un cliente Supabase válido.');
   }
@@ -70,6 +71,10 @@ export function createSupabaseAuthService({ client, businessId }) {
       });
     }
 
+    // Registra esta sesión del navegador para que pueda revocarse de forma
+    // puntual sin cerrar las del resto del equipo.
+    await registerSession();
+
     return authResult(true, {
       session: data.session || null,
       user: data.user,
@@ -77,29 +82,51 @@ export function createSupabaseAuthService({ client, businessId }) {
     });
   }
 
+  async function registerSession() {
+    const { data, error } = await client.rpc('identity_register_session', {
+      p_business_id: businessId,
+      p_client: PANEL_CLIENT,
+      p_device_label: deviceLabel || null,
+      p_device_key_hash: null,
+      p_app_version: appVersion || null,
+    });
+    if (error || data?.ok !== true) {
+      return authResult(false, { message: 'No pudimos registrar esta sesión.' });
+    }
+    return authResult(true, { sessionId: data.session_id || null, role: data.role || null });
+  }
+
   async function getMembership(userId) {
     if (!userId) return authResult(false, { message: 'No hay una sesión autenticada.' });
 
-    const { data, error } = await client
-      .from('business_members')
-      .select('business_id,user_id,role,is_active')
-      .eq('business_id', businessId)
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .maybeSingle();
+    // La autoridad es la compuerta del backend. Además de la membresía activa,
+    // aplica bajas, revocaciones de sesión y cortes de tokens.
+    const { data, error } = await client.rpc('identity_current_context', {
+      p_business_id: businessId,
+    });
 
     if (error) {
       return authResult(false, {
         message: 'No pudimos verificar el acceso al comercio.',
       });
     }
-    if (!data || !TEAM_ROLES.has(data.role)) {
+    const role = data?.role || '';
+    if (!TEAM_ROLES.has(role)) {
       return authResult(false, {
         message: 'La cuenta no tiene una membresía activa en este comercio.',
       });
     }
 
-    return authResult(true, { membership: data });
+    return authResult(true, {
+      membership: {
+        business_id: businessId,
+        user_id: data?.user_id || userId,
+        role,
+        is_active: true,
+      },
+      permissions: Array.isArray(data?.permissions) ? data.permissions : [],
+      sessionId: data?.session_id || null,
+    });
   }
 
   async function getTeamAccess() {
@@ -123,10 +150,19 @@ export function createSupabaseAuthService({ client, businessId }) {
       session: current.session,
       user: current.user,
       membership: membership.membership,
+      permissions: membership.permissions || [],
+      sessionId: membership.sessionId || null,
     });
   }
 
   async function signOut() {
+    // Primero se cierra la sesión remota mientras el token todavía existe. Si
+    // la red falla, el cierre local debe ejecutarse de todos modos.
+    try {
+      await client.rpc('identity_close_own_session', { p_business_id: businessId });
+    } catch (_) {
+      // Intencional: el cierre local no depende del remoto.
+    }
     const { error } = await client.auth.signOut({ scope: 'local' });
     if (error) return authResult(false, { message: readableAuthError(error) });
     return authResult(true);
@@ -147,6 +183,7 @@ export function createSupabaseAuthService({ client, businessId }) {
     getSession,
     getTeamAccess,
     onAuthStateChange,
+    registerSession,
     signInTeam,
     signOut,
   };

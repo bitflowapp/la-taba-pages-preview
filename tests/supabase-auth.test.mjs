@@ -49,6 +49,7 @@ test('una sesión anónima de cliente no se confunde con acceso fallido del equi
   assert.equal(result.customerSession, true);
   assert.equal(result.user.id, 'anonymous-1');
   assert.equal(client.calls.filters.length, 0);
+  assert.equal(client.calls.rpc.length, 0);
 });
 
 test('autoriza owner/admin/staff/rider sólo con membresía activa del comercio', async () => {
@@ -70,11 +71,11 @@ test('autoriza owner/admin/staff/rider sólo con membresía activa del comercio'
 
   assert.equal(result.ok, true);
   assert.equal(result.membership.role, 'staff');
-  assert.deepEqual(client.calls.filters, [
-    ['business_id', BUSINESS_ID],
-    ['user_id', 'team-1'],
-    ['is_active', true],
-  ]);
+  assert.deepEqual(
+    client.calls.rpc.map(([name]) => name),
+    ['identity_current_context', 'identity_register_session'],
+  );
+  assert.equal(client.calls.filters.length, 0);
   assert.equal(client.calls.signOut, 0);
 });
 
@@ -177,6 +178,7 @@ function createAuthMock({
   const calls = {
     anonymous: 0,
     filters: [],
+    rpc: [],
     signOut: 0,
     signOutOptions: null,
     unsubscribe: 0,
@@ -239,9 +241,111 @@ function createAuthMock({
     emitAuth(event, nextSession) {
       authCallback(event, nextSession);
     },
+    async rpc(name, params) {
+      calls.rpc.push([name, params]);
+      if (name === 'identity_current_context') {
+        if (!membership) return { data: { role: null, permissions: [] }, error: null };
+        return {
+          data: {
+            user_id: membership.user_id,
+            business_id: membership.business_id,
+            role: membership.role,
+            session_id: 'session-1',
+            permissions: ['orders.read'],
+          },
+          error: null,
+        };
+      }
+      if (name === 'identity_register_session') {
+        return { data: { ok: true, code: 'registered', role: membership?.role || null }, error: null };
+      }
+      if (name === 'identity_close_own_session') {
+        return { data: { ok: true, code: 'closed' }, error: null };
+      }
+      return { data: null, error: { code: '42883' } };
+    },
     from(table) {
       assert.equal(table, 'business_members');
       return query;
     },
   };
 }
+
+test('cerrar sesión termina la cadena de refresh antes de vaciar el navegador', async () => {
+  const client = createAuthMock();
+  const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
+
+  const result = await auth.signOut();
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(client.calls.rpc, [
+    ['identity_close_own_session', { p_business_id: BUSINESS_ID }],
+  ]);
+  assert.equal(client.calls.signOut, 1);
+});
+
+test('si el cierre remoto falla igual se vacía el navegador', async () => {
+  const client = createAuthMock();
+  client.rpc = async () => { throw new Error('sin red'); };
+  const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
+
+  const result = await auth.signOut();
+
+  assert.equal(result.ok, true);
+  assert.equal(client.calls.signOut, 1);
+});
+
+test('una sesión revocada deja de autorizar el Panel con el mismo token', async () => {
+  const client = createAuthMock();
+  client.rpc = async (name) => {
+    if (name === 'identity_current_context') {
+      return { data: { role: null, permissions: [] }, error: null };
+    }
+    return { data: null, error: null };
+  };
+  const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
+
+  const result = await auth.getTeamAccess();
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /membresía activa/i);
+});
+
+test('el ingreso del equipo registra la sesión de este navegador', async () => {
+  const client = createAuthMock({
+    membership: {
+      business_id: BUSINESS_ID,
+      user_id: 'team-1',
+      role: 'owner',
+      is_active: true,
+    },
+  });
+  const auth = createSupabaseAuthService({
+    client,
+    businessId: BUSINESS_ID,
+    deviceLabel: 'Chrome · Windows',
+    appVersion: 'v62',
+  });
+
+  const result = await auth.signInTeam({
+    email: 'duenia@lataba.test',
+    password: 'not-logged',
+  });
+
+  assert.equal(result.ok, true);
+  const [, params] = client.calls.rpc.find(([name]) => name === 'identity_register_session');
+  assert.equal(params.p_client, 'panel_web');
+  assert.equal(params.p_device_label, 'Chrome · Windows');
+  assert.equal(params.p_app_version, 'v62');
+  assert.equal(params.p_device_key_hash, null);
+});
+
+test('los permisos los declara el backend, no la vista', async () => {
+  const client = createAuthMock();
+  const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
+
+  const result = await auth.getTeamAccess();
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.permissions, ['orders.read']);
+});

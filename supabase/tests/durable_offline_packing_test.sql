@@ -29,8 +29,11 @@ insert into public.product_barcodes(id,business_id,product_id,gtin,barcode_type,
 values
   ('64000000-0000-4000-8000-000000000001','62000000-0000-4000-8000-000000000001','63000000-0000-4000-8000-000000000001','4006381333931','EAN-13','unit',1,true,'manual',now(),'61000000-0000-4000-8000-000000000001'),
   ('64000000-0000-4000-8000-000000000002','62000000-0000-4000-8000-000000000001','63000000-0000-4000-8000-000000000001','5901234123457','EAN-13','unit',1,false,'manual',now(),'61000000-0000-4000-8000-000000000001');
-insert into public.orders(id,business_id,code,public_code,status,fulfillment_type,delivery_mode,client_request_id,customer_name,subtotal,delivery_fee,total)
-values('65000000-0000-4000-8000-000000000001','62000000-0000-4000-8000-000000000001','PACKING-FIXTURE-1','PACKING-FIXTURE-1','accepted','pickup','pickup','packing-fixture-request-1','CLIENTE_SINTETICO_NO_CACHEAR',100,0,100);
+-- payment_method es NOT NULL desde 20260806170000, con CHECK a un vocabulario
+-- fijo; 'cash' es el valor real para un retiro pagado en el mostrador y no
+-- activa la restriccion de origin='qa' que exige 'qa_no_charge'.
+insert into public.orders(id,business_id,code,public_code,status,fulfillment_type,delivery_mode,client_request_id,customer_name,payment_method,subtotal,delivery_fee,total)
+values('65000000-0000-4000-8000-000000000001','62000000-0000-4000-8000-000000000001','PACKING-FIXTURE-1','PACKING-FIXTURE-1','accepted','pickup','pickup','packing-fixture-request-1','CLIENTE_SINTETICO_NO_CACHEAR','cash',100,0,100);
 insert into public.order_items(id,order_id,product_id,product_uuid,name,quantity,unit,unit_price,subtotal)
 values('66000000-0000-4000-8000-000000000001','65000000-0000-4000-8000-000000000001','packing-product','63000000-0000-4000-8000-000000000001','Producto packing sintético',1,'unidad',100,100);
 

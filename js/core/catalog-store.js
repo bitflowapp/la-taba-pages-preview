@@ -17,8 +17,37 @@ const CATEGORY_ID_ALIASES = Object.freeze({
   'picadas-deli': 'picadas-y-deli',
   'hielo-extras': 'hielo-y-extras',
 });
+/*
+ * QUÉ CATEGORÍAS LLEVAN ALCOHOL.
+ *
+ * Esta lista es la ÚNICA fuente de verdad cuando la fila del catálogo no trae
+ * bandera `alcoholic`, y estaba desfasada del vocabulario real: decía
+ * `vinos-y-espumantes`, `gins-y-vodkas` y `whisky-y-destilados`, tres ids que NO
+ * EXISTEN en la autoridad del catálogo. De las categorías con alcohol que el
+ * comercio usa de verdad —cervezas, fernet, aperitivos, vinos, espumantes,
+ * destilados— la lista sólo acertaba `cervezas`.
+ *
+ * Consecuencia: un fernet, un vino o un aperitivo sin bandera explícita se
+ * inferían SIN alcohol, y con eso perdían el +18 y la edad mínima. La compuerta
+ * existía y no se aplicaba a la mayor parte de la góndola con alcohol.
+ *
+ * Los cuatro ids viejos se conservan a propósito: hay datos guardados y
+ * catálogos importados que todavía los usan, y clasificarlos de más nunca
+ * quita una restricción, sólo la agrega.
+ *
+ * `tests/alcohol-category-inference.test.mjs` cruza esta lista contra
+ * `authorityCategories`: si mañana aparece una categoría nueva y nadie la
+ * clasifica, el test falla en vez de dejarla pasar como sin alcohol.
+ */
 const ALCOHOLIC_CATEGORY_IDS = new Set([
+  // Vocabulario vigente de la autoridad del catálogo.
   'cervezas',
+  'fernet',
+  'aperitivos',
+  'vinos',
+  'espumantes',
+  'destilados',
+  // Vocabulario anterior, conservado para datos ya guardados.
   'vinos-y-espumantes',
   'gins-y-vodkas',
   'whisky-y-destilados',

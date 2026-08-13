@@ -137,9 +137,18 @@ test('el cliente nuevo sobre un borde que miente el tipo de los módulos no guar
 test('la primera visita sobre un portal cautivo no deja su página guardada como hoja de estilos', async ({ page, request }) => {
   await degradarBorde(request, 'css-captive');
   await page.goto('/?demo=1#home', { waitUntil: 'load' });
-  await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 30_000 });
-  // Se le da tiempo al `install` a terminar de recorrer la lista entera.
+  // Se le da tiempo al `install` a recorrer la lista y fallar. Un primer
+  // precache contaminado NO se activa ni deja una caché parcial: el worker
+  // anterior seguiría controlando si existiera; en este contexto nuevo no hay
+  // ninguno y eso es exactamente lo seguro.
   await page.waitForTimeout(4_000);
+
+  const fallida = await page.evaluate(async () => ({
+    controlado: Boolean(navigator.serviceWorker.controller),
+    cachesTaba: (await caches.keys()).filter((key) => key.startsWith('la-taba-runtime-')),
+  }));
+  expect(fallida.controlado).toBe(false);
+  expect(fallida.cachesTaba).toEqual([]);
 
   const guardado = await loGuardado(page, ESTILOS);
   expect(
@@ -147,14 +156,16 @@ test('la primera visita sobre un portal cautivo no deja su página guardada como
     `quedó guardada la página del portal como styles.css: ${JSON.stringify(guardado)}`,
   ).toBeFalsy();
 
-  // Y una visita sana después la completa: el precache se cura solo, sin que
-  // nadie tenga que borrar nada.
+  // Una visita sana posterior vuelve a registrar, instala el lote entero y
+  // recién entonces toma control. No "cura" bytes parciales: construye una
+  // caché nueva y atómica.
   await degradarBorde(request, 'off');
   await page.reload({ waitUntil: 'load' });
   await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 30_000 });
   await expect.poll(async () => (await loGuardado(page, ESTILOS))?.tipo || '', { timeout: 20_000 })
     .toContain('text/css');
-  esperarExperienciaComercial(await medirExperienciaComercial(page), 'tras curarse el precache');
+  esperarExperienciaComercial(await medirExperienciaComercial(page), 'tras instalar el precache atómico');
 });
 
 test('un módulo servido como HTML tampoco entra a la caché', async ({ page, request }) => {

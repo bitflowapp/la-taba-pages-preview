@@ -214,7 +214,24 @@ export function createCustomerTrackingPollController({
     changedAccess,
   }) {
     if (!terminalVisibleUntil) {
-      onUnavailable({ orderId });
+      // Acá se le borraba la pantalla al cliente EN EL MOMENTO DE LA ENTREGA.
+      //
+      // `onUnavailable` significa una sola cosa —el token fue revocado o
+      // venció, que es `result.kind === 'unavailable'`— y dispara
+      // `markTrackingUnavailable`: borra el acceso de sessionStorage, saca el
+      // pedido del estado si venía por enlace público y suprime el fallback, así
+      // que Seguir cae al estado vacío «Cuando hagas una compra vas a poder
+      // seguir el recorrido». Justo cuando la persona iba a ver su confirmación.
+      //
+      // Y no se recuperaba: `recoverCustomerTrackingAccess` descarta los pedidos
+      // terminales y `unavailableTrackingOrderId` bloquea el reintento. Ni
+      // recargando volvía.
+      //
+      // Que falte `terminal_visible_until` NO es un token revocado: hoy es que
+      // la RPC vigente dejó de emitir la clave. Ante la duda se hace lo mismo
+      // que con el resto de los estados terminales veinte líneas más arriba
+      // —`stop()` y nada más—: se deja de consultar y el pedido entregado se
+      // queda a la vista. Degradar es correcto; borrar no.
       stop();
       return;
     }

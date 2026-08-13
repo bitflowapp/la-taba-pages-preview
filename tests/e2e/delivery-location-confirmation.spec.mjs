@@ -119,6 +119,29 @@ test.describe('Perfil · confirmación del punto de entrega', () => {
     expect(guardado.payload.p_address.geolocationAccuracy ?? null).toBeNull();
   });
 
+  test('si MapLibre no inicia, explica el fallback y no confirma el punto del local por accidente', async ({ page }) => {
+    const remote = createRemoteProfile();
+    await page.route('https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js', (route) => route.abort());
+    await installRuntime(page);
+    await routeSupabase(page, remote);
+
+    await page.goto('/#profile');
+    const profile = page.locator('[data-customer-profile]');
+    await expect(profile).toHaveAttribute('data-customer-profile-state', 'ready');
+    await profile.locator('[data-profile-action="add-address"]').click();
+    await llenarDireccion(profile, { street: 'Río Limay', number: '64' });
+
+    const paso = profile.locator('[data-location-step]');
+    await paso.locator('[data-profile-action="open-location-map"]').click();
+    await expect(paso.locator('[data-location-nomap]')).toContainText('Ajustá el punto');
+    await expect(paso.locator('[data-profile-action="confirm-location"]')).toBeDisabled();
+
+    await paso.locator('[data-location-nudge="norte"]').click();
+    await expect(paso.locator('[data-profile-action="confirm-location"]')).toBeEnabled();
+    await paso.locator('[data-profile-action="confirm-location"]').click();
+    await expect(paso).toHaveAttribute('data-location-status', 'confirmed');
+  });
+
   // REGRESIÓN DEL FALLO HUMANO. La primera compra quedó bloqueada acá: el paso
   // de ubicación está debajo de los campos, la persona marcó el pin y después
   // terminó de escribir la dirección, y cada tecla posterior tiraba abajo la

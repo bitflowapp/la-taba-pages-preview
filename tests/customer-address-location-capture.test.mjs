@@ -9,6 +9,7 @@ import {
   confirmDeliveryLocationDraft,
   draftAfterAddressEdit,
   draftFromSavedAddress,
+  draftOpenedOnMap,
   draftToAddressFields,
   draftWithLocationResult,
   draftWithMapPin,
@@ -16,6 +17,7 @@ import {
   isDeliveryLocationDraftConfirmed,
 } from '../js/core/delivery-location-draft.js';
 import { hasConfirmedDeliveryLocation } from '../js/core/delivery-location.js';
+import { renderDeliveryLocationStep } from '../js/delivery-location-step.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const profileView = fs.readFileSync(path.join(root, 'js', 'customer-profile-view.js'), 'utf8');
@@ -53,6 +55,29 @@ test('el editor ofrece los dos caminos del contrato y un único acto de confirma
   );
   assert.ok(editor.length > 0, 'no encontré el editor de direcciones');
   assert.match(editor, /renderDeliveryLocationStep\(/);
+});
+
+test('si el mapa falla, el punto inicial no se puede confirmar sin ajustarlo', () => {
+  const initial = draftOpenedOnMap(emptyDeliveryLocationDraft(), {
+    latitude: -38.9460616,
+    longitude: -68.0533209,
+  });
+  const failedMap = renderDeliveryLocationStep(initial, {
+    mapAvailable: false,
+    confirmationBlocked: true,
+  });
+  assert.match(failedMap, /No pudimos abrir el mapa/);
+  assert.match(failedMap, /data-profile-action="confirm-location"[^>]*disabled/);
+  assert.match(failedMap, /ajust/i);
+
+  const adjusted = renderDeliveryLocationStep(draftWithMapPin(initial, {
+    latitude: -38.9462,
+    longitude: -68.0533,
+  }), {
+    mapAvailable: false,
+    confirmationBlocked: false,
+  });
+  assert.doesNotMatch(adjusted, /data-profile-action="confirm-location"[^>]*disabled/);
 });
 
 test('el permiso de ubicación se pide sólo después de una acción explícita', () => {

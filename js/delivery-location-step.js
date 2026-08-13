@@ -23,7 +23,11 @@ export const LOCATION_NUDGE_METERS = 15;
 
 const METERS_PER_DEGREE_LATITUDE = 111320;
 
-export function renderDeliveryLocationStep(draft, { mapAvailable = true, saving = false } = {}) {
+export function renderDeliveryLocationStep(draft, {
+  mapAvailable = true,
+  saving = false,
+  confirmationBlocked = false,
+} = {}) {
   const confirmed = isDeliveryLocationDraftConfirmed(draft);
   const status = confirmed
     ? 'confirmed'
@@ -36,11 +40,15 @@ export function renderDeliveryLocationStep(draft, { mapAvailable = true, saving 
         ? 'Guardamos este punto con tu dirección. Podés cambiarlo cuando quieras.'
         : 'Sin un punto confirmado no podemos llevarte el pedido: el texto de la dirección no le alcanza a quien reparte.'}</p>
     </div>
-    ${confirmed ? renderConfirmed(draft) : renderChoices(draft, { mapAvailable, saving })}
+    ${confirmed ? renderConfirmed(draft) : renderChoices(draft, {
+    mapAvailable,
+    saving,
+    confirmationBlocked,
+  })}
   </section>`;
 }
 
-function renderChoices(draft, { mapAvailable, saving }) {
+function renderChoices(draft, { mapAvailable, saving, confirmationBlocked }) {
   const pending = draft?.status === DELIVERY_LOCATION_STATUS.PENDING && draft?.point;
   return `
     <div class="location-step-options">
@@ -54,9 +62,9 @@ function renderChoices(draft, { mapAvailable, saving }) {
     <p class="location-step-hint">Te pedimos permiso de ubicación sólo si tocás «Usar mi ubicación». Con «Elegir en el mapa» no compartís GPS.</p>
     ${draft?.error ? `<p class="location-step-error" role="alert" data-location-error>${escapeHtml(draft.error)}</p>` : ''}
     ${draft?.notice ? `<p class="location-step-notice" role="status" data-location-notice>${escapeHtml(draft.notice)}</p>` : ''}
-    ${draft?.mapOpen || pending ? renderCanvas(draft, { mapAvailable }) : ''}
+    ${draft?.mapOpen || pending ? renderCanvas(draft, { mapAvailable, confirmationBlocked }) : ''}
     ${pending ? `<div class="location-step-actions">
-      <button class="primary-button compact" type="button" data-profile-action="confirm-location" ${saving ? 'disabled aria-disabled="true"' : ''}>Confirmar ubicación</button>
+      <button class="primary-button compact" type="button" data-profile-action="confirm-location" ${saving || confirmationBlocked ? 'disabled aria-disabled="true"' : ''}>Confirmar ubicación</button>
       <button class="ghost-button compact" type="button" data-profile-action="discard-location">Descartar</button>
     </div>` : ''}`;
 }
@@ -75,14 +83,16 @@ function renderConfirmed(draft) {
     </div>`;
 }
 
-function renderCanvas(draft, { mapAvailable }) {
+function renderCanvas(draft, { mapAvailable, confirmationBlocked }) {
   const point = draft?.point;
   const accuracy = deliveryLocationAccuracyLabel({ accuracyMeters: point?.accuracyMeters });
   return `
     <div class="location-step-canvas">
       ${mapAvailable
     ? '<div class="location-step-map" data-location-map role="application" aria-label="Mapa para ubicar el punto de entrega"></div>'
-    : '<p class="location-step-nomap" data-location-nomap>No pudimos abrir el mapa en este dispositivo. Podés ajustar el punto con los controles y confirmarlo igual.</p>'}
+    : `<p class="location-step-nomap" data-location-nomap role="status">${confirmationBlocked
+      ? 'No pudimos abrir el mapa. Ajustá el punto con los controles antes de confirmarlo.'
+      : 'No pudimos abrir el mapa en este dispositivo. Podés seguir ajustando el punto con los controles.'}</p>`}
       <p class="location-step-coords" data-location-coords>${escapeHtml(formatCoordinatePair(point))}</p>
       ${accuracy ? `<p class="location-step-meta" data-location-accuracy>${escapeHtml(accuracy)}</p>` : ''}
       <div class="location-step-nudge" role="group" aria-label="Ajustar el punto">

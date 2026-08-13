@@ -26,6 +26,7 @@ export function createLocationPickerMap({
     unavailable: '',
     styleTimer: null,
     onPick: null,
+    onUnavailable: null,
   };
 
   function libraryAvailable() {
@@ -33,7 +34,7 @@ export function createLocationPickerMap({
     return Boolean(maplibregl?.Map && maplibregl?.Marker && documentRef?.createElement);
   }
 
-  function mount({ container, point, onPick } = {}) {
+  function mount({ container, point, onPick, onUnavailable } = {}) {
     if (state.map || !container) return false;
     if (!libraryAvailable()) {
       state.unavailable = 'library';
@@ -45,6 +46,7 @@ export function createLocationPickerMap({
     }
     const maplibregl = root.maplibregl;
     state.onPick = typeof onPick === 'function' ? onPick : null;
+    state.onUnavailable = typeof onUnavailable === 'function' ? onUnavailable : null;
     try {
       state.map = new maplibregl.Map({
         container,
@@ -69,10 +71,19 @@ export function createLocationPickerMap({
       return false;
     }
 
-    state.element = buildPinElement(documentRef);
-    state.marker = new maplibregl.Marker({ element: state.element, draggable: true, anchor: 'bottom' })
-      .setLngLat([Number(point.longitude), Number(point.latitude)])
-      .addTo(state.map);
+    try {
+      state.element = buildPinElement(documentRef);
+      state.marker = new maplibregl.Marker({ element: state.element, draggable: true, anchor: 'bottom' })
+        .setLngLat([Number(point.longitude), Number(point.latitude)])
+        .addTo(state.map);
+    } catch (_) {
+      try { state.map?.remove?.(); } catch (_) { /* no-op */ }
+      state.map = null;
+      state.marker = null;
+      state.element = null;
+      state.unavailable = 'marker';
+      return false;
+    }
 
     state.marker.on?.('dragend', () => {
       const next = state.marker.getLngLat?.();
@@ -88,13 +99,10 @@ export function createLocationPickerMap({
       clearStyleTimer();
       container.dataset.locationMapReady = 'true';
     });
-    state.map.on?.('error', () => {
-      state.unavailable = state.unavailable || 'style';
-      container.dataset.locationMapError = 'true';
-    });
+    state.map.on?.('error', () => markUnavailable('style', container));
     state.styleTimer = setTimeout(() => {
       state.styleTimer = null;
-      if (container.dataset.locationMapReady !== 'true') container.dataset.locationMapError = 'true';
+      if (container.dataset.locationMapReady !== 'true') markUnavailable('timeout', container);
     }, STYLE_TIMEOUT_MS);
     return true;
   }
@@ -130,6 +138,15 @@ export function createLocationPickerMap({
     state.marker = null;
     state.element = null;
     state.onPick = null;
+    state.onUnavailable = null;
+  }
+
+  function markUnavailable(reason, container) {
+    if (state.unavailable) return;
+    state.unavailable = reason;
+    if (container?.dataset) container.dataset.locationMapError = 'true';
+    clearStyleTimer();
+    state.onUnavailable?.(reason);
   }
 
   function clearStyleTimer() {

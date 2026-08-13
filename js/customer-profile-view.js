@@ -50,6 +50,8 @@ const state = {
   // El paso «Confirmá dónde te entregamos». Sin una confirmación explícita la
   // dirección no se guarda con punto, y sin punto no hay pedido de delivery.
   locationDraft: emptyDeliveryLocationDraft(),
+  locationMapUnavailable: false,
+  locationPointChosen: false,
   // Lo que la persona tiene escrito en el editor, para que un re-render no se
   // lo lleve puesto.
   addressDraft: null,
@@ -142,6 +144,8 @@ export function resetCustomerProfileViewForTests() {
     editingAddressId: '',
     pendingDuplicate: null,
     locationDraft: emptyDeliveryLocationDraft(),
+    locationMapUnavailable: false,
+    locationPointChosen: false,
     addressDraft: null,
     status: '',
     statusTone: '',
@@ -263,7 +267,10 @@ async function handleAction(action, addressId, nudgeDirection = '') {
   }
   if (action === 'open-location-map') {
     captureEditorDraft();
+    const hadPoint = Boolean(state.locationDraft.point);
+    state.locationMapUnavailable = false;
     state.locationDraft = draftOpenedOnMap(state.locationDraft, mapStartPoint());
+    if (!hadPoint) state.locationPointChosen = false;
     render();
     return;
   }
@@ -272,12 +279,21 @@ async function handleAction(action, addressId, nudgeDirection = '') {
     const moved = nudgePoint(state.locationDraft.point, nudgeDirection);
     if (moved) {
       state.locationDraft = draftWithMapPin(state.locationDraft, moved);
+      state.locationPointChosen = true;
       render();
     }
     return;
   }
   if (action === 'confirm-location') {
     if (!state.locationDraft.point) return;
+    if (state.locationMapUnavailable && !state.locationPointChosen) {
+      state.locationDraft = {
+        ...state.locationDraft,
+        error: 'Ajustá el punto antes de confirmar: el mapa no pudo mostrar la ubicación inicial.',
+      };
+      render();
+      return;
+    }
     captureEditorDraft();
     state.locationDraft = confirmDeliveryLocationDraft(state.locationDraft, {
       address: currentAddressValues(),
@@ -341,6 +357,8 @@ async function savePersonalData() {
 
 function resetLocationDraft() {
   state.locationDraft = emptyDeliveryLocationDraft();
+  state.locationMapUnavailable = false;
+  state.locationPointChosen = false;
   state.addressDraft = null;
   destroyPickerMap();
 }
@@ -348,6 +366,7 @@ function resetLocationDraft() {
 function hydrateLocationDraft(address) {
   resetLocationDraft();
   state.locationDraft = draftFromSavedAddress(normalizeCustomerAddress(address || {}));
+  state.locationPointChosen = Boolean(state.locationDraft.point);
 }
 
 async function requestLocation() {
@@ -358,6 +377,7 @@ async function requestLocation() {
   // abrir la pantalla es lo que hace que se rechace sin leerlo.
   const result = await geolocationService.requestCurrentLocation();
   state.locationDraft = draftWithLocationResult(state.locationDraft, result);
+  if (result?.ok && state.locationDraft.point) state.locationPointChosen = true;
   render();
 }
 
@@ -417,6 +437,10 @@ function mapStartPoint() {
   return { latitude: BUSINESS_POINT.lat, longitude: BUSINESS_POINT.lng };
 }
 
+function mapLibraryAvailable() {
+  return Boolean(globalThis.maplibregl?.Map && globalThis.maplibregl?.Marker);
+}
+
 function syncPickerMap() {
   const canvas = profileContainer()?.querySelector('[data-location-map]');
   if (!canvas) {
@@ -436,14 +460,23 @@ function syncPickerMap() {
     point,
     onPick: (next) => {
       state.locationDraft = draftWithMapPin(state.locationDraft, next);
+      state.locationPointChosen = true;
+      render();
+    },
+    onUnavailable: () => {
+      destroyPickerMap();
+      state.locationMapUnavailable = true;
       render();
     },
   });
   if (!mounted) {
     // Sin mapa el paso sigue en pie: quedan las coordenadas y los ajustes. Se
     // dice en pantalla en vez de mostrar un rectángulo vacío.
-    canvas.dataset.locationMapUnavailable = pickerMap.unavailableReason || 'unavailable';
+    const unavailableReason = pickerMap?.unavailableReason || 'unavailable';
+    canvas.dataset.locationMapUnavailable = unavailableReason;
     pickerMap = null;
+    state.locationMapUnavailable = true;
+    render();
   }
 }
 
@@ -812,7 +845,9 @@ function renderAddressEditor() {
     </div>
     ${renderDeliveryLocationStep(state.locationDraft, {
     saving: state.saving,
-    mapAvailable: Boolean(globalThis.maplibregl?.Map),
+    mapAvailable: !state.locationMapUnavailable && mapLibraryAvailable(),
+    confirmationBlocked: (state.locationMapUnavailable || !mapLibraryAvailable())
+      && !state.locationPointChosen,
   })}
     <label class="profile-default-check"><input name="profileAddressDefault" type="checkbox" ${address.isDefault || (!address.id && !state.addresses.length) ? 'checked' : ''} /><span>Usar como dirección predeterminada</span></label>
     <p class="profile-field-error" data-profile-field-error role="alert"></p>

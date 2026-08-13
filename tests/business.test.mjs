@@ -194,6 +194,26 @@ test('cancelación segura: confirmar sin motivo no cambia el estado', () => {
   assert.equal(getState().orders[0].status, 'preparing');
 });
 
+test('un pedido cobrado por Mercado Pago no se cancela sin gestionar el reembolso', () => {
+  const order = {
+    ...cancelTestOrder('LT-MP', 'preparing'),
+    paymentMethod: 'Mercado Pago',
+    paymentMethodCode: 'mercadopago',
+  };
+  setState({ ...getState(), orders: [order], lastOrderId: order.id });
+
+  const requested = handleBusinessAction(makeTarget({
+    '[data-order-cancel]': { orderCancel: order.id },
+  }));
+  assert.equal(requested.ok, false);
+  assert.match(requested.message, /Pagos.*reembolso/i);
+
+  const confirmed = confirmOrderCancellation(order.id, 'Sin stock');
+  assert.equal(confirmed.ok, false);
+  assert.match(confirmed.message, /Pagos.*reembolso/i);
+  assert.equal(getState().orders[0].status, 'preparing');
+});
+
 test('low-stock detection includes scarce concrete products and excludes high inventory', () => {
   const lowStock = getLowStockProducts();
   assert.ok(lowStock.some((product) => product.id === 'qa-jugo-naranja'));

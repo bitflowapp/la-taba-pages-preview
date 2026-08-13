@@ -33,6 +33,7 @@ import {
   getBusinessOrderFilterCounts,
   getBusinessOrderPrimaryAction,
   getBusinessStatusMeta,
+  isMercadoPagoOrder,
   normalizeBusinessOrderFilter,
   normalizePreparationMinutes,
 } from './core/business-ops.js';
@@ -2314,6 +2315,13 @@ function cancelBusinessOrder(orderId, reason = '') {
 function requestOrderCancellation(orderId) {
   const order = getState().orders.find((candidate) => candidate.id === orderId);
   if (!order) return { handled: true, ok: false, message: 'Pedido no encontrado.' };
+  if (isMercadoPagoOrder(order)) {
+    return {
+      handled: true,
+      ok: false,
+      message: 'Este pedido ya fue cobrado por Mercado Pago. Abrí Pagos y gestioná el reembolso antes de cancelar.',
+    };
+  }
   if (isTerminalOrderStatus(order.status)) {
     return {
       handled: true,
@@ -2333,6 +2341,13 @@ function requestOrderCancellation(orderId) {
 export function confirmOrderCancellation(orderId, reason) {
   const order = getState().orders.find((candidate) => candidate.id === orderId);
   if (!order) return { handled: true, ok: false, message: 'Pedido no encontrado.' };
+  if (isMercadoPagoOrder(order)) {
+    return {
+      handled: true,
+      ok: false,
+      message: 'Este pedido ya fue cobrado por Mercado Pago. Abrí Pagos y gestioná el reembolso antes de cancelar.',
+    };
+  }
   if (isTerminalOrderStatus(order.status)) {
     return { handled: true, ok: false, message: 'Este pedido ya está cerrado; no se puede cancelar.' };
   }

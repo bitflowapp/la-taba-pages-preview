@@ -133,7 +133,13 @@ export function getBusinessOrderPrimaryAction(order) {
 }
 
 export function canBusinessCancelOrder(order) {
-  return Boolean(order && !isTerminalOrderStatus(order.status));
+  return Boolean(order && !isTerminalOrderStatus(order.status) && !isMercadoPagoOrder(order));
+}
+
+export function isMercadoPagoOrder(order) {
+  const code = String(order?.paymentMethodCode || '').trim().toLowerCase();
+  const label = String(order?.paymentMethod || '').trim().toLowerCase();
+  return code === 'mercadopago' || /mercado\s*pago/.test(label);
 }
 
 export function getBusinessOrderFilterCounts(orders = []) {

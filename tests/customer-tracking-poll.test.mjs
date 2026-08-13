@@ -419,6 +419,42 @@ test('un DTO terminal vencido devuelto por el servidor no crea un timer de demor
   controller.stop();
 });
 
+test('si la revalidación al vencer falla por red, reintenta y finalmente retira el tracking', async () => {
+  const documentRef = eventTarget();
+  const windowRef = eventTarget();
+  const timers = fakeTimers();
+  const clock = Date.parse('2026-07-29T20:00:00.000Z');
+  let calls = 0;
+  const controller = createCustomerTrackingPollController({
+    documentRef,
+    windowRef,
+    now: () => clock,
+    setTimeoutImpl: timers.set,
+    clearTimeoutImpl: timers.clear,
+    fetchSnapshot: async () => {
+      calls += 1;
+      return calls === 1 ? { kind: 'network-error' } : { kind: 'unavailable' };
+    },
+  });
+
+  controller.update({
+    orderId: 'LT-100',
+    trackingToken: 'r'.repeat(32),
+    status: 'delivered',
+    terminalVisibleUntil: new Date(clock).toISOString(),
+  });
+  await tick();
+  assert.equal(calls, 1);
+  assert.equal(controller.getSnapshot().terminal, true);
+  assert.equal(timers.size(), 1, 'el error de red debe dejar un reintento positivo');
+  assert.equal(timers.nextDelay(), 5_000);
+
+  timers.runNext();
+  await tick();
+  assert.equal(calls, 2);
+  assert.equal(controller.getSnapshot().terminal, false);
+});
+
 test('detener o reemplazar tracking cancela timers, requests y listeners terminales', async () => {
   const documentRef = eventTarget();
   const windowRef = eventTarget();

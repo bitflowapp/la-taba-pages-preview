@@ -274,6 +274,16 @@ export function createCustomerTrackingPollController({
     }, delay);
   }
 
+  function scheduleTerminalRetry() {
+    clearTimer();
+    if (!session.terminal) return;
+    terminalExpiryRevalidationStarted = false;
+    timerId = setTimeoutImpl(() => {
+      timerId = null;
+      void revalidateTerminal();
+    }, normalPollMs);
+  }
+
   function revalidateTerminal() {
     if (!session.terminal || requestController) return;
     const revalidatingAtExpiry = terminalExpiresAt() <= now();
@@ -320,13 +330,13 @@ export function createCustomerTrackingPollController({
           return;
         }
         onError({ orderId: current.orderId, error: result?.error || null });
-        scheduleTerminalRevalidation();
+        scheduleTerminalRetry();
       })
       .catch((error) => {
         if (!isCurrentTerminalRequest(current) || isAbortError(error)) return;
         requestController = null;
         onError({ orderId: current.orderId, error });
-        scheduleTerminalRevalidation();
+        scheduleTerminalRetry();
       });
   }
 

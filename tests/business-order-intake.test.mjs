@@ -256,6 +256,7 @@ test('un pedido que deja la bandeja activa se elimina y no reaparece con la mism
 
 function createHarness({
   orders = [],
+  knownOrderIds = null,
   fetchSnapshot = null,
   subscribeImmediately = true,
   lifecycleTarget = createEventTarget(),
@@ -283,6 +284,7 @@ function createHarness({
   });
   harness.coordinator = createBusinessOrderIntakeCoordinator({
     businessId: BUSINESS_ID,
+    knownOrderIds,
     fetchSnapshot: snapshot,
     subscribeRealtime: (handlers) => {
       harness.realtime = handlers;
@@ -415,3 +417,44 @@ async function settleTasks(rounds = 1) {
     await new Promise((resolve) => setImmediate(resolve));
   }
 }
+
+// F21: un pedido que entraba mientras el coordinador se reconstruía no sonaba.
+//
+// La supresión de alertas era «primera sincronización», no «lo que ya
+// sabíamos»: cada coordinador nuevo sembraba `seenOrderIds` con TODO el
+// snapshot y recién después empezaba a avisar. Y `seenOrderIds` es por
+// instancia, así que cada reconstrucción —volver a la pestaña, recuperar la
+// sesión, reconectar— volvía a silenciar todo lo que hubiera llegado en el
+// medio. El pedido aparecía en la bandeja sin que nada lo anunciara: en un
+// turno con movimiento, es un pedido que nadie mira.
+test('un pedido llegado durante la reconstrucción del coordinador sí alerta', async () => {
+  // El Panel ya tenía en pantalla el pedido viejo cuando se rearma el
+  // coordinador; el nuevo llegó mientras tanto.
+  // La semilla usa la MISMA identidad que el coordinador (`businessOrderIdentity`:
+  // backendId primero), que es la que arma el Panel al reconstruir.
+  const yaEstaba = order('ya-estaba', 1);
+  const harness = createHarness({
+    orders: [yaEstaba, order('llego-mientras-se-rearmaba', 1)],
+    knownOrderIds: [yaEstaba.backendId],
+  });
+
+  await harness.startAndSettle();
+
+  assert.deepEqual(
+    harness.alerts,
+    ['llego-mientras-se-rearmaba'],
+    'el pedido nuevo tiene que anunciarse; el que ya estaba, no',
+  );
+  harness.stop();
+});
+
+test('sin semilla se conserva el comportamiento de arranque limpio', () => {
+  // Un coordinador que arranca sin saber nada NO puede alertar por todo el
+  // snapshot: sería un turno entero de alarmas al abrir el Panel.
+  return (async () => {
+    const harness = createHarness({ orders: [order('a', 1), order('b', 1)] });
+    await harness.startAndSettle();
+    assert.deepEqual(harness.alerts, [], 'el primer snapshot no alerta de nada');
+    harness.stop();
+  })();
+});

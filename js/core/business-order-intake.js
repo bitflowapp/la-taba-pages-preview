@@ -134,6 +134,13 @@ export function createBusinessOrderIntakeCoordinator({
   applyOrders,
   onStatusChange = () => {},
   onOrderAlert = () => {},
+  // Los pedidos que el Panel YA tenía en pantalla antes de armar este
+  // coordinador. Sin esto, la supresión de alertas es «primera sincronización»
+  // en vez de «lo que ya sabíamos»: un coordinador nuevo siembra `seenOrderIds`
+  // con TODO el snapshot sin avisar de nada, así que un pedido que entra justo
+  // mientras el coordinador se reconstruye —al volver a la pestaña, al
+  // recuperar la sesión, al reconectar— entra a la bandeja MUDO.
+  knownOrderIds = null,
   pollMs = 5000,
   lifecycleTarget = defaultLifecycleTarget(),
   visibilityTarget = defaultVisibilityTarget(),
@@ -157,7 +164,13 @@ export function createBusinessOrderIntakeCoordinator({
   const storageAlertKey = `${channelName}:alerts`;
   const revisionWatermarks = new Map();
   const inactiveOrderIds = new Set();
-  const seenOrderIds = new Set();
+  // Si el llamador sabe qué pedidos ya estaban en pantalla, la línea de base es
+  // exactamente esa y no «lo que venga en el primer snapshot»: así un pedido
+  // llegado durante la reconstrucción sí se anuncia.
+  const seedOrderIds = Array.isArray(knownOrderIds)
+    ? knownOrderIds.map((id) => String(id || '')).filter(Boolean)
+    : null;
+  const seenOrderIds = new Set(seedOrderIds || []);
   const lifecycleStops = [];
   const normalizedPollMs = Math.max(1000, Number(pollMs) || 5000);
   let running = false;
@@ -167,7 +180,9 @@ export function createBusinessOrderIntakeCoordinator({
   let pollTimer = null;
   let syncPromise = null;
   let syncQueued = false;
-  let baselineEstablished = false;
+  // Con una semilla explícita, la línea de base ya está establecida antes del
+  // primer snapshot: lo que no venga en esa semilla es nuevo y se anuncia.
+  let baselineEstablished = Boolean(seedOrderIds);
   let status = freezeStatus({
     phase: 'idle',
     realtime: 'idle',

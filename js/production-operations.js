@@ -874,6 +874,13 @@ async function startBusinessIntake(businessId) {
   }
   businessIntake = createBusinessOrderIntakeCoordinator({
     businessId,
+    // Lo que el Panel YA tenía en pantalla. Si el coordinador se reconstruye
+    // —al volver a la pestaña, al recuperar la sesión, al reconectar— la línea
+    // de base es esto y no «todo lo que traiga el primer snapshot», así que un
+    // pedido que entró durante la reconstrucción se anuncia en vez de aparecer
+    // mudo en la bandeja. La identidad es la misma que usa el coordinador
+    // (`businessOrderIdentity`): backendId primero, id después.
+    knownOrderIds: getState().orders.map((order) => order.backendId || order.id).filter(Boolean),
     fetchSnapshot: () => repository.fetchBusinessOrderSnapshot(),
     subscribeRealtime: (handlers) => repository.watchBusinessOrderInvalidations(handlers),
     getCurrentOrders: () => getState().orders,

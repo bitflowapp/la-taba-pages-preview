@@ -112,7 +112,29 @@ export function initProductionOperations({
     return;
   }
 
-  authStop = auth.onAuthStateChange(() => {
+  // EL EVENTO IMPORTA, Y ACÁ SE DESCARTABA.
+  //
+  // Este callback ignoraba `event`, `session` y `user`, así que CUALQUIER señal
+  // de Auth reiniciaba el acceso del Panel. Dos de esas señales son rutina y no
+  // cambian a nadie:
+  //
+  //   · TOKEN_REFRESHED — el cliente se crea con `autoRefreshToken: true`, así
+  //     que el token se renueva solo cada tanto;
+  //   · SIGNED_IN — al volver a la pestaña, supabase-js corre
+  //     `_recoverAndRefresh()` por `visibilitychange` y, si la sesión guardada
+  //     sigue válida, emite SIGNED_IN. O sea: mirar otra pestaña y volver.
+  //
+  // Con `refreshProductionAccessNow()` blanqueando el acceso a «Verificando
+  // sesión…» ANTES de preguntar, cada una de esas señales le mostraba al
+  // operador el formulario de login y le vaciaba la bandeja durante el viaje de
+  // red, y de paso reconstruía la suscripción realtime. En un turno con pedidos
+  // entrando, eso es perder de vista la cola cada vez que se cambia de pestaña.
+  //
+  // Si la identidad no cambió, no hay nada que revalidar.
+  authStop = auth.onAuthStateChange(({ event, user } = {}) => {
+    const mismaPersona = Boolean(user?.id) && user.id === access.user?.id;
+    const eventoDeRutina = event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'SIGNED_IN';
+    if (access.status === 'authenticated' && mismaPersona && eventoDeRutina) return;
     refreshProductionAccess();
   });
   refreshProductionAccess();
@@ -733,13 +755,24 @@ function refreshProductionAccess() {
 async function refreshProductionAccessNow() {
   if (!auth) return;
   const sequence = ++refreshSequence;
-  access = {
-    status: 'checking',
-    user: null,
-    membership: null,
-    message: 'Verificando sesión…',
-  };
-  notify();
+  // Revalidar en SILENCIO cuando ya hay una sesión de equipo.
+  //
+  // Esto blanqueaba el acceso siempre, así que la pantalla pasaba por
+  // «Verificando sesión…» —o sea, el formulario de login y la bandeja vacía—
+  // durante todo el viaje de red, incluso cuando la respuesta iba a ser la
+  // misma persona con el mismo rol. El operador veía parpadear su turno.
+  //
+  // Si todavía no hay sesión, el estado de comprobación es correcto y se
+  // conserva: ahí sí no hay nada que mostrar todavía.
+  if (access.status !== 'authenticated') {
+    access = {
+      status: 'checking',
+      user: null,
+      membership: null,
+      message: 'Verificando sesión…',
+    };
+    notify();
+  }
 
   const result = await auth.getTeamAccess();
   if (sequence !== refreshSequence) return;

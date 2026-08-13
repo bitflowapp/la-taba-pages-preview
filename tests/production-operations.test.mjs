@@ -361,3 +361,135 @@ function createLifecycleClient({ businessId, riderId, order, membership }) {
     removeChannel: async () => {},
   };
 }
+
+// F19 + F24: el Panel se caía al login por señales de Auth que no cambian a
+// nadie.
+//
+// Son el mismo defecto disparado por dos eventos distintos:
+//   · TOKEN_REFRESHED — el cliente usa `autoRefreshToken: true`, así que el
+//     token se renueva solo cada tanto (F19);
+//   · SIGNED_IN — al volver a la pestaña, supabase-js corre `_recoverAndRefresh()`
+//     por `visibilitychange` y, si la sesión guardada sigue válida, emite
+//     SIGNED_IN. O sea: mirar otra pestaña y volver (F24).
+//
+// El suscriptor ignoraba `event` y `user`, y `refreshProductionAccessNow()`
+// blanqueaba el acceso a «Verificando sesión…» ANTES de preguntar. Resultado:
+// el operador veía el formulario de login y la bandeja vacía en medio del
+// turno, y de paso se reconstruía la suscripción realtime.
+test('las señales de auth que no cambian de persona no reinician el Panel', async () => {
+  const businessId = '11111111-1111-4111-8111-111111111111';
+  const staffId = '44444444-4444-4444-8444-444444444444';
+  const runtime = {
+    mode: 'production',
+    repository: {
+      provider: 'supabase',
+      supabaseUrl: 'https://project.supabase.co',
+      publishableKey: 'sb_publishable_auth-noise-test',
+      businessId,
+      pollMs: 60_000,
+    },
+  };
+  const membership = { business_id: businessId, user_id: staffId, role: 'staff', is_active: true };
+  const session = { user: { id: staffId, is_anonymous: false } };
+  const authCallbacks = [];
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  // Cada `getTeamAccess()` consulta la membresía. Contarlas es la forma directa
+  // de ver si el Panel revalidó de más.
+  let consultasDeMembresia = 0;
+  const client = {
+    auth: {
+      getSession: async () => { await delay(2); return { data: { session }, error: null }; },
+      getUser: async () => ({ data: { user: session.user }, error: null }),
+      onAuthStateChange: (callback) => {
+        authCallbacks.push(callback);
+        return { data: { subscription: { unsubscribe() {} } } };
+      },
+      signOut: async () => ({ error: null }),
+    },
+    from(table) {
+      const query = {
+        select() { return query; },
+        eq() { return query; },
+        in() { return query; },
+        gte() { return query; },
+        order() { return query; },
+        limit() { return query; },
+        insert() { return query; },
+        async maybeSingle() {
+          await delay(2);
+          if (table === 'business_members') {
+            consultasDeMembresia += 1;
+            return { data: membership, error: null, status: 200 };
+          }
+          return { data: null, error: null, status: 200 };
+        },
+        async single() { return { data: null, error: null, status: 200 }; },
+        then(resolve, reject) {
+          return delay(2).then(() => ({ data: [], error: null, status: 200 })).then(resolve, reject);
+        },
+      };
+      return query;
+    },
+    rpc: async () => ({ data: [], error: null, status: 200 }),
+    channel() {
+      return {
+        on() { return this; },
+        subscribe(callback) { callback('SUBSCRIBED'); return this; },
+        unsubscribe() {},
+      };
+    },
+    removeChannel: async () => {},
+  };
+
+  const originalLocation = Object.getOwnPropertyDescriptor(globalThis, 'location');
+  const originalRuntime = globalThis.__LA_TABA_RUNTIME_CONFIG__;
+  Object.defineProperty(globalThis, 'location', {
+    configurable: true,
+    value: new URL('https://app.example.test/#business'),
+  });
+  globalThis.__LA_TABA_RUNTIME_CONFIG__ = runtime;
+
+  try {
+    resetProductionOperationsForTests();
+    resetRepositoryFactoryForTests();
+    resetSupabaseClientForTests();
+    getSupabaseClient(runtime.repository, { storage: null, createClientImpl: () => client });
+    initProductionOperations();
+    for (let round = 0; round < 30; round += 1) await delay(3);
+
+    const consultasTrasArrancar = consultasDeMembresia;
+    assert.ok(consultasTrasArrancar > 0, 'el arranque tiene que validar la sesión una vez');
+    assert.equal(getBusinessIntakeStatus().phase, 'connected');
+
+    // El token se renueva solo, y la persona vuelve a la pestaña. Ninguna de
+    // las dos cosas cambia quién está operando.
+    for (const callback of [...authCallbacks]) callback('TOKEN_REFRESHED', { user: session.user });
+    for (const callback of [...authCallbacks]) callback('SIGNED_IN', { user: session.user });
+    for (let round = 0; round < 30; round += 1) await delay(3);
+
+    assert.equal(
+      consultasDeMembresia,
+      consultasTrasArrancar,
+      'el Panel revalidó la sesión por señales que no cambian de persona',
+    );
+    assert.equal(
+      getBusinessIntakeStatus().phase,
+      'connected',
+      'la bandeja tiene que seguir viva: no puede reiniciarse por volver a la pestaña',
+    );
+
+    // Y lo que SÍ cambia de persona tiene que seguir revalidando.
+    for (const callback of [...authCallbacks]) callback('SIGNED_OUT', { user: null });
+    for (let round = 0; round < 30; round += 1) await delay(3);
+    assert.ok(
+      consultasDeMembresia > consultasTrasArrancar,
+      'un cierre de sesión real sí tiene que revalidar el acceso',
+    );
+  } finally {
+    resetProductionOperationsForTests();
+    resetRepositoryFactoryForTests();
+    resetSupabaseClientForTests();
+    if (originalLocation) Object.defineProperty(globalThis, 'location', originalLocation);
+    globalThis.__LA_TABA_RUNTIME_CONFIG__ = originalRuntime;
+  }
+});

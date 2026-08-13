@@ -1462,17 +1462,23 @@ async function addOperationsZone(target) {
 // escriben distinto porque significan cosas distintas, y Number('') vale 0.
 function optionalAmount(value) {
   const raw = String(value ?? '').trim();
-  if (!raw) return null;
+  if (!raw) return { ok: true, value: null };
   const numeric = Number(raw);
-  return Number.isFinite(numeric) && numeric >= 0 ? Math.round(numeric) : null;
+  if (!Number.isFinite(numeric) || numeric < 0) return { ok: false, value: null };
+  return { ok: true, value: Math.round(numeric) };
 }
 
 async function saveOperationsPricing(target) {
   const root = target.closest('[data-business-ops-center]');
+  const deliveryFee = optionalAmount(root?.querySelector('[name="businessFee"]')?.value);
+  const minimumSubtotal = optionalAmount(root?.querySelector('[name="businessMinimum"]')?.value);
+  if (!deliveryFee.ok || !minimumSubtotal.ok) {
+    return result(false, 'El costo de envío y el pedido mínimo deben estar vacíos o ser números no negativos.');
+  }
   busy = true;
   const response = await context.setDeliveryPricing({
-    deliveryFee: optionalAmount(root?.querySelector('[name="businessFee"]')?.value),
-    minimumSubtotal: optionalAmount(root?.querySelector('[name="businessMinimum"]')?.value),
+    deliveryFee: deliveryFee.value,
+    minimumSubtotal: minimumSubtotal.value,
     maxRadiusMeters: operationsConfig?.maxRadiusMeters ?? null,
   });
   busy = false;

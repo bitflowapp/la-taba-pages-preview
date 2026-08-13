@@ -473,6 +473,38 @@ test('un precio pendiente deja el producto visible pero no comprable', async () 
   resetBusinessOperationsForTests();
 });
 
+test('un importe inválido no borra silenciosamente la tarifa ni el mínimo', async () => {
+  const saved = [];
+  configureBusinessOperations({
+    role: 'owner',
+    setDeliveryPricing: async (input) => { saved.push(input); return { ok: true }; },
+    getOperationsConfig: async () => ({ ok: true, data: { can_manage: true } }),
+    onChange() {},
+  });
+
+  const invalid = fieldRoot({
+    businessFee: { value: '-1' },
+    businessMinimum: { value: '5000' },
+  });
+  const rejected = await handleBusinessOperationsAction(
+    target('[data-operations-pricing-save]', {}, invalid),
+  );
+  assert.equal(rejected.ok, false);
+  assert.match(rejected.message, /no negativos/);
+  assert.equal(saved.length, 0);
+
+  const valid = fieldRoot({
+    businessFee: { value: '' },
+    businessMinimum: { value: '5000' },
+  });
+  const accepted = await handleBusinessOperationsAction(
+    target('[data-operations-pricing-save]', {}, valid),
+  );
+  assert.equal(accepted.ok, true);
+  assert.deepEqual(saved[0], { deliveryFee: null, minimumSubtotal: 5000, maxRadiusMeters: null });
+  resetBusinessOperationsForTests();
+});
+
 test('ninguna pantalla del panel filtra el vocabulario interno', async () => {
   configureBusinessOperations({
     role: 'owner',

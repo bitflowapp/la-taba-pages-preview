@@ -112,6 +112,7 @@ let operationsConfig = null;
 let operationsConfigStatus = { phase: 'idle', message: '' };
 let operationsConfigLoadStarted = false;
 let operationsConfigDraft = { slots: null, hoursErrors: [], zoneErrors: [], enforcementError: '' };
+let operationsConfigGeneration = 0;
 let arcaActivation = null;
 let arcaLoadStarted = false;
 let arcaAuthorizationDraft = '';
@@ -132,6 +133,7 @@ let dailyRun = null;
 export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
   context = { ...defaultContext(), ...next };
+  resetOperationsConfigState();
   packingSession = null;
   packingRestoreStarted = false;
   packingCacheStatus = '';
@@ -484,6 +486,7 @@ export function resetBusinessOperationsForTests() {
   paymentsStatus = { phase: 'idle', message: '' };
   paymentsLoadStarted = false;
   refundTarget = '';
+  resetOperationsConfigState();
   arcaActivation = null;
   arcaLoadStarted = false;
   arcaAuthorizationDraft = '';
@@ -1314,9 +1317,16 @@ function result(ok, message) { return { handled: true, ok, message }; }
 // y si dice que no, aca se muestra el motivo y no se cambia el estado local.
 
 async function refreshOperationsConfig() {
+  const generation = operationsConfigGeneration;
+  const load = context.getOperationsConfig;
   operationsConfigStatus = { phase: 'loading', message: '' };
   context.onChange();
-  const response = await context.getOperationsConfig();
+  const response = await load();
+  // Si cambió la sesión o el comercio mientras la RPC estaba en vuelo, la
+  // respuesta pertenece al contexto anterior y no puede repoblar el nuevo.
+  if (generation !== operationsConfigGeneration) {
+    return { ok: false, staleContext: true, message: '' };
+  }
   if (response?.ok && response.data) {
     operationsConfig = normalizeOperationsConfig(response.data);
     operationsConfigDraft = { slots: null, hoursErrors: [], zoneErrors: [], enforcementError: '' };
@@ -1329,6 +1339,14 @@ async function refreshOperationsConfig() {
   }
   context.onChange();
   return response;
+}
+
+function resetOperationsConfigState() {
+  operationsConfigGeneration += 1;
+  operationsConfig = null;
+  operationsConfigStatus = { phase: 'idle', message: '' };
+  operationsConfigLoadStarted = false;
+  operationsConfigDraft = { slots: null, hoursErrors: [], zoneErrors: [], enforcementError: '' };
 }
 
 async function refreshOperationsConfigAction() {

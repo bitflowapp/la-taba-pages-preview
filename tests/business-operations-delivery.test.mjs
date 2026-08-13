@@ -25,6 +25,11 @@ import {
   validateZoneDraft,
   weeklyGrid,
 } from '../js/business/business-operations-config.js';
+import {
+  configureBusinessOperations,
+  renderBusinessOperations,
+  resetBusinessOperationsForTests,
+} from '../js/business/business-operations-center.js';
 
 const OPEN_AND_COVERED = Object.freeze({
   business_id: 'b-1',
@@ -288,3 +293,88 @@ test('la auditoría se lee como frases, y un cambio del servidor lo dice', () =>
   assert.match(lines[1].text, /^Alguien del equipo desactivó zona de entrega$/);
   assert.equal(lines[1].detail, 'Santa Genoveva');
 });
+
+test('cambiar de negocio descarta la configuración anterior y consulta el contexto nuevo', async (t) => {
+  t.after(() => resetBusinessOperationsForTests());
+  let consultasA = 0;
+  let consultasB = 0;
+  const respuesta = (businessId, zoneName) => ({
+    ok: true,
+    data: {
+      business_id: businessId,
+      can_manage: true,
+      operating_timezone: 'America/Argentina/Buenos_Aires',
+      zones: [{ id: `zone-${businessId}`, name: zoneName, is_active: true }],
+    },
+  });
+
+  configureBusinessOperations({
+    role: 'owner',
+    onChange() {},
+    async getOperationsConfig() {
+      consultasA += 1;
+      return respuesta('business-a', 'Zona del comercio A');
+    },
+  });
+  renderBusinessOperations('operations-config');
+  await settleOperationsConfig();
+  assert.match(renderBusinessOperations('operations-config'), /Zona del comercio A/);
+  assert.equal(consultasA, 1);
+
+  configureBusinessOperations({
+    role: 'owner',
+    onChange() {},
+    async getOperationsConfig() {
+      consultasB += 1;
+      return respuesta('business-b', 'Zona del comercio B');
+    },
+  });
+  renderBusinessOperations('operations-config');
+  await settleOperationsConfig();
+  const secondMarkup = renderBusinessOperations('operations-config');
+
+  assert.equal(consultasB, 1);
+  assert.match(secondMarkup, /Zona del comercio B/);
+  assert.doesNotMatch(secondMarkup, /Zona del comercio A/);
+});
+
+test('una respuesta tardía del negocio anterior no repuebla el contexto nuevo', async (t) => {
+  t.after(() => resetBusinessOperationsForTests());
+  let resolveOldRequest;
+  const oldRequest = new Promise((resolve) => { resolveOldRequest = resolve; });
+  const response = (businessId, zoneName) => ({
+    ok: true,
+    data: {
+      business_id: businessId,
+      can_manage: true,
+      zones: [{ id: `zone-${businessId}`, name: zoneName, is_active: true }],
+    },
+  });
+
+  configureBusinessOperations({
+    role: 'owner',
+    onChange() {},
+    getOperationsConfig: () => oldRequest,
+  });
+  renderBusinessOperations('operations-config');
+  await settleOperationsConfig();
+
+  configureBusinessOperations({
+    role: 'owner',
+    onChange() {},
+    getOperationsConfig: async () => response('business-b', 'Zona vigente B'),
+  });
+  renderBusinessOperations('operations-config');
+  await settleOperationsConfig();
+  resolveOldRequest(response('business-a', 'Zona tardía A'));
+  await settleOperationsConfig();
+
+  const markup = renderBusinessOperations('operations-config');
+  assert.match(markup, /Zona vigente B/);
+  assert.doesNotMatch(markup, /Zona tardía A/);
+});
+
+async function settleOperationsConfig() {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}

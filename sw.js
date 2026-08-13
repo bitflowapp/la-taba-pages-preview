@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v62-endurecimiento-comercial';
+const CACHE_NAME = 'la-taba-runtime-v63-rc-final';
 const ASSETS = [
   './',
   './index.html',
@@ -169,37 +169,45 @@ self.addEventListener('install', (event) => {
  * lectura —la que cerró el P1 del retorno desde Mercado Pago— ya no defiende
  * nada: la copia buena que iba a rescatar al documento ES la página del portal.
  *
- * Y `addAll` es además TODO O NADA: un solo 404 de un despliegue a medio
- * publicar dejaba al cliente sin precache entero, o sea sin tienda offline.
- *
- * Se guarda de a uno y sólo lo que sirve, con el mismo contrato que usa `fetch`.
- * Lo que no bajó no se guarda y no tumba al resto: la primera visita sana
- * completa los huecos, porque `networkFirst` guarda todo lo que le llega bien.
+ * La atomicidad sí es necesaria para un upgrade: activar un worker con algunos
+ * módulos nuevos y rescatar el resto desde la caché anterior produce una app
+ * que nunca existió. Por eso primero se validan todas las respuestas fuera de
+ * CacheStorage y sólo después se escribe el lote. Si falta una, install falla y
+ * el worker anterior continúa controlando con su caché intacta.
  *
  * `reload` se conserva: la instalación de un worker nuevo puede ejecutarse
  * mientras el anterior todavía controla la pestaña, y sin eso “Actualizar ahora”
  * precachearía módulos viejos desde la caché HTTP.
  */
 async function precargar() {
-  const cache = await caches.open(CACHE_NAME);
-  await Promise.all(ASSETS.map(async (asset) => {
+  const staged = await Promise.all(ASSETS.map(async (asset) => {
     const request = new Request(asset, { cache: 'reload' });
-    try {
-      const response = await fetch(request);
-      // `destination` de un Request construido a mano SIEMPRE viene vacío, así
-      // que el tipo que se exige sale de la extensión: es lo único que hace que
-      // el control valga también acá.
-      const destination = destinoEsperado(asset);
-      if (!isUsable({ destination }, response)) return;
-      // En la ESCRITURA se mira el cuerpo de hojas Y módulos, siempre: es una
-      // sola vez por publicación y es el momento en que un borde mentiroso
-      // envenena la caché para todas las visitas que vengan después.
-      if ((destination === 'style' || destination === 'script') && await pareceDocumentoHtml(response)) return;
-      await cache.put(request, response);
-    } catch (_) {
-      // Un asset que no bajó no puede llevarse puesto al precache entero.
+    const response = await fetch(request);
+    // `destination` de un Request construido a mano SIEMPRE viene vacío, así
+    // que el tipo que se exige sale de la extensión: es lo único que hace que
+    // el control valga también acá.
+    const destination = destinoEsperado(asset);
+    if (!isUsable({ destination }, response)) throw new Error(`precache_unusable:${asset}`);
+    // En la ESCRITURA se mira el cuerpo de hojas Y módulos, siempre: es una
+    // sola vez por publicación y es el momento en que un borde mentiroso
+    // envenena la caché para todas las visitas que vengan después.
+    if ((destination === 'style' || destination === 'script') && await pareceDocumentoHtml(response)) {
+      throw new Error(`precache_html:${asset}`);
     }
+    return [request, response];
   }));
+
+  // Ningún byte se escribe hasta que TODOS los assets pasaron. Con un nombre
+  // nuevo por publicación esto deja al worker anterior activo y su caché intacta
+  // si el borde está incompleto, en vez de activar una mezcla de módulos.
+  await caches.delete(CACHE_NAME);
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    for (const [request, response] of staged) await cache.put(request, response);
+  } catch (error) {
+    await caches.delete(CACHE_NAME);
+    throw error;
+  }
 }
 
 self.addEventListener('activate', (event) => {
@@ -207,22 +215,18 @@ self.addEventListener('activate', (event) => {
 });
 
 /*
- * Borrar la caché anterior con el precache nuevo a medias deja al cliente PEOR
- * que antes de actualizar: pierde todas las entradas buenas que tenía y se queda
- * con las pocas que pudo bajar. `caches.match` recorre todas las cachés del
- * origen, así que conservar la anterior alcanza para que el documento se siga
- * rescatando hasta que una visita sana complete la nueva.
- *
- * Con el precache completo se borran todas, como siempre. Incompleto se conserva
- * SÓLO la más reciente —`caches.keys()` viene en orden de creación—, para que
- * una publicación rota no vaya acumulando cachés versión tras versión.
+ * Un install normal sólo llega hasta activate con todas las entradas. La
+ * comprobación exacta queda como segunda defensa: contar claves era incorrecto,
+ * porque una imagen dinámica podía compensar un módulo ausente. Si por una
+ * implementación anómala llegara incompleto, no se borra ninguna caché vieja.
  */
 async function limpiarCachesViejas() {
   const cache = await caches.open(CACHE_NAME);
-  const completa = (await cache.keys()).length >= ASSETS.length;
+  const presentes = new Set((await cache.keys()).map((request) => request.url));
+  const completa = ASSETS.every((asset) => presentes.has(new URL(asset, self.location).href));
   const viejas = (await caches.keys())
     .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME);
-  const aBorrar = completa ? viejas : viejas.slice(0, -1);
+  const aBorrar = completa ? viejas : [];
   await Promise.all(aBorrar.map((key) => caches.delete(key)));
 }
 
@@ -348,9 +352,8 @@ async function cachedFallback(request) {
    * Una copia guardada tampoco se cree por estar guardada. Hasta esta versión
    * `install` aceptaba cualquier 200, así que cualquier cliente que instaló la
    * PWA sobre un borde que contesta HTML a todo tiene esa página metida en la
-   * caché. Como el nombre de la caché no cambia, ese envenenamiento se HEREDA, y
-   * revisarlo en la lectura es lo que lo desactiva sin obligar a nadie a bajar
-   * todo de nuevo.
+   * caché. Aunque las publicaciones nuevas rotan el nombre, revisar al leer
+   * sigue protegiendo clientes que aún están controlados por un worker previo.
    *
    * El tipo declarado alcanza para el caso realista —el borde contesta
    * `text/html`— así que el cuerpo sólo se mira para las hojas de estilo, que es

@@ -190,6 +190,25 @@ function redSana(transformar = null) {
 
 const ESTILOS = './styles.css?v=50';
 
+test('un manifiesto nuevo rota la caché y nunca instala un precache mezclado', async () => {
+  const cacheAnterior = 'la-taba-runtime-v62-endurecimiento-comercial';
+  assert.notEqual(
+    NOMBRE_CACHE,
+    cacheAnterior,
+    'agregar assets con el mismo CACHE_NAME mezcla bytes de dos publicaciones',
+  );
+  const worker = cargarWorker({
+    red: redSana((ruta) => (ruta.endsWith('/js/state.js')
+      ? new Response('caído', { status: 503, headers: { 'content-type': 'text/plain' } })
+      : null)),
+    cachesPrevias: { [cacheAnterior]: [[ESTILOS, css('body{background:#anterior}')]] },
+  });
+
+  await assert.rejects(worker.instalar());
+  assert.deepEqual(worker.nombresDeCache(), [cacheAnterior]);
+  assert.match(await worker.guardada(ESTILOS, cacheAnterior).clone().text(), /anterior/);
+});
+
 /*
  * Tope de seguridad de la propia prueba. Contra un worker SIN plazo, esperar la
  * respuesta es esperar para siempre: la suite entera se colgaría en vez de
@@ -209,7 +228,7 @@ function conTope(promesa, ms = 8_000) {
 test('instalar sobre un portal cautivo NO guarda su página como hoja de estilos', async () => {
   const worker = cargarWorker({ red: async () => portalCautivo() });
 
-  await worker.instalar();
+  await assert.rejects(worker.instalar());
 
   assert.equal(
     worker.guardada(ESTILOS),
@@ -221,7 +240,7 @@ test('instalar sobre un portal cautivo NO guarda su página como hoja de estilos
 test('instalar sobre un portal cautivo tampoco guarda su página como módulo', async () => {
   const worker = cargarWorker({ red: async () => portalCautivo() });
 
-  await worker.instalar();
+  await assert.rejects(worker.instalar());
 
   assert.equal(worker.guardada('./js/app.js?v=41'), undefined);
   assert.equal(worker.guardada('./js/state.js'), undefined);
@@ -236,7 +255,7 @@ test('con la red sana el precache queda completo, como siempre', async () => {
   assert.match(await worker.guardada(ESTILOS).clone().text(), /background:#090b0e/);
 });
 
-test('un asset que contesta mal no se lleva puesto al resto del precache', async () => {
+test('un asset que contesta mal aborta el worker nuevo sin dejar caché parcial', async () => {
   // Un despliegue a medio publicar: una hoja de la cadena todavía no está.
   const worker = cargarWorker({
     red: redSana((ruta) => (ruta.endsWith('/styles/tracking.css')
@@ -244,22 +263,17 @@ test('un asset que contesta mal no se lleva puesto al resto del precache', async
       : null)),
   });
 
-  await worker.instalar();
+  await assert.rejects(worker.instalar());
 
-  const total = assetsDeclarados().length;
-  assert.equal(
-    worker.entradas().length,
-    total - 1,
-    'un solo asset caído dejaba al cliente sin NADA precacheado: cache.addAll es todo o nada',
-  );
-  assert.ok(worker.guardada(ESTILOS), 'la hoja principal tenía que quedar guardada igual');
+  assert.equal(worker.entradas().length, 0);
+  assert.equal(worker.guardada(ESTILOS), undefined);
   assert.equal(worker.guardada('./styles/tracking.css?v=50'), undefined);
 });
 
-test('la instalación no explota cuando la red rechaza entera', async () => {
+test('la instalación falla limpia cuando la red rechaza entera', async () => {
   const worker = cargarWorker({ red: async () => { throw new TypeError('Load failed'); } });
 
-  await worker.instalar();
+  await assert.rejects(worker.instalar());
 
   assert.equal(worker.entradas().length, 0);
 });
@@ -281,7 +295,7 @@ test('activate borra las cachés viejas cuando el precache nuevo quedó completo
   assert.ok(worker.reclamado(), 'clients.claim() sigue siendo parte del contrato');
 });
 
-test('activate CONSERVA la caché vieja si el precache nuevo quedó incompleto', async () => {
+test('un precache incompleto no llega a activate y conserva la caché vieja', async () => {
   const vieja = `${PREFIJO_CACHE}v60-vieja`;
   const worker = cargarWorker({
     red: redSana((ruta) => (ruta.endsWith('.css')
@@ -290,17 +304,14 @@ test('activate CONSERVA la caché vieja si el precache nuevo quedó incompleto',
     cachesPrevias: { [vieja]: [[ESTILOS, css('body{background:#111}')]] },
   });
 
-  await worker.instalar();
-  await worker.activar();
+  await assert.rejects(worker.instalar());
 
   assert.ok(
     worker.nombresDeCache().includes(vieja),
     'se borró la copia vieja teniendo un precache nuevo incompleto: el cliente queda peor que antes de actualizar',
   );
 
-  // Y esa copia vieja tiene que seguir rescatando al documento.
-  const respuesta = await worker.responder(pedido(ESTILOS, { destination: 'style' }));
-  assert.match(await respuesta.text(), /background:#111/);
+  assert.deepEqual(worker.nombresDeCache(), [vieja]);
 });
 
 // ---------------------------------------------------------------------------
@@ -484,7 +495,7 @@ test('sin copia guardada, el módulo mentido NO se inspecciona: mirarlo no cambi
   assert.match(await respuesta.text(), /<h1>portal<\/h1>/);
 });
 
-test('instalar SÍ mira el cuerpo de los módulos: es una sola vez y es cuando se envenena la caché', async () => {
+test('instalar SÍ mira el cuerpo de los módulos y aborta el worker entero ante HTML', async () => {
   const worker = cargarWorker({
     red: async (solicitud) => {
       const ruta = absoluta(solicitud).split('?')[0];
@@ -498,11 +509,11 @@ test('instalar SÍ mira el cuerpo de los módulos: es una sola vez y es cuando s
     },
   });
 
-  await worker.instalar();
+  await assert.rejects(worker.instalar());
 
   assert.equal(worker.guardada('./js/app.js?v=41'), undefined);
   assert.equal(worker.guardada('./js/state.js'), undefined);
-  assert.ok(worker.guardada(ESTILOS), 'las hojas sanas tenían que guardarse igual');
+  assert.equal(worker.guardada(ESTILOS), undefined);
 });
 
 // ---------------------------------------------------------------------------

@@ -32,6 +32,7 @@ import {
 } from './state.js';
 import {
   cartItemIssue,
+  cartComboIssue,
   getCartCombos,
   getCartItems,
   getDeliveryMinimumProgress,
@@ -2857,12 +2858,18 @@ function renderCartList() {
    * Desarmarlo en la vista escondería de dónde sale el descuento y dejaría al
    * cliente sin forma de sacarlo entero.
    */
-  const comboCards = comboLines.map((line) => `
-    <div class="cart-item cart-item-combo" data-cart-combo="${escapeHtml(line.combo.comboId)}">
+  const comboCards = comboLines.map((line) => {
+    const issue = cartComboIssue(line);
+    return `
+    <div class="cart-item cart-item-combo${issue ? ' has-issue' : ''}" data-cart-combo="${escapeHtml(line.combo.comboId)}">
       <div class="cart-item-info">
         <div class="cart-title">${escapeHtml(line.combo.name)}<span class="cart-combo-tag">Combo</span></div>
         <div class="cart-meta">${line.combo.components.map((component) => `${component.quantity}× ${escapeHtml(component.product.name)}`).join(' · ')}</div>
-        <div class="cart-meta cart-combo-saving">Ahorrás ${money(line.listPrice - line.price)}</div>
+        ${issue ? `
+        <p class="cart-item-issue" role="status">
+          <span>${escapeHtml(issue.message)}</span>
+          <button class="ghost-button compact" type="button" data-combo-remove="${escapeHtml(line.combo.comboId)}">${escapeHtml(issue.actionLabel)}</button>
+        </p>` : `<div class="cart-meta cart-combo-saving">Ahorrás ${money(line.listPrice - line.price)}</div>`}
       </div>
       <div class="cart-item-side">
         <div class="quantity-control" role="group" aria-label="Cantidad de ${escapeHtml(line.combo.name)}">
@@ -2870,10 +2877,11 @@ function renderCartList() {
           <span data-combo-quantity="${escapeHtml(line.combo.comboId)}">${line.quantity}</span>
           <button type="button" data-combo-increment="${escapeHtml(line.combo.comboId)}" aria-label="Sumar un ${escapeHtml(line.combo.name)}">+</button>
         </div>
-        <div class="cart-line"><s>${money(line.listPrice)}</s> ${money(line.price)}</div>
+        <div class="cart-line">${issue ? 'No disponible' : `<s>${money(line.listPrice)}</s> ${money(line.price)}`}</div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   container.innerHTML = comboCards + items.map((item) => {
     // Con una sola unidad el precio unitario y el total de la línea son el

@@ -12,6 +12,7 @@ import {
   removeComboItem,
   validateCartForCheckout,
 } from '../js/cart.js';
+import { getState, hydrateState, updateState } from '../js/state.js';
 import { resetState, state } from './helpers.mjs';
 
 /*
@@ -179,12 +180,29 @@ test('un combo guardado que dejó de ser cobrable no se rehidrata', () => {
   });
   assert.equal(getCartCombos().length, 1);
 
-  resetState({
+  const rehydrated = hydrateState({
+    ...getState(),
     products: catalogoDeCombos({ [HEINEKEN]: { stock: 0 } }),
     comboSelections: [{ comboId: 'combo-heineken-x6', quantity: 1 }],
   });
-  assert.deepEqual(state().comboSelections, []);
-  assert.deepEqual(getCartCombos(), []);
+  assert.deepEqual(rehydrated.comboSelections, []);
+});
+
+test('un combo que se agota en vivo sigue visible y bloquea el checkout', () => {
+  assert.equal(addComboToCart('combo-heineken-x6').ok, true);
+
+  updateState((draft) => {
+    draft.products = draft.products.map((product) => (
+      product.id === HEINEKEN ? { ...product, stock: 0, available: false } : product
+    ));
+  });
+
+  assert.deepEqual(state().comboSelections, [{ comboId: 'combo-heineken-x6', quantity: 1 }]);
+  assert.equal(getCartCombos().length, 1, 'la línea elegida no desaparece');
+  assert.equal(getCartCombos()[0].combo.chargeable, false);
+  const validation = validateCartForCheckout('pickup', { paymentMethod: 'mercadopago' });
+  assert.equal(validation.ok, false);
+  assert.match(validation.message, /ya no está disponible/i);
 });
 
 test('el +18 de un componente alcanza al combo entero', () => {

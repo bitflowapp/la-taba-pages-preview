@@ -7,7 +7,7 @@ import {
   mergeCatalogProducts,
 } from './core/catalog-store.js';
 import { isPricePending } from './core/pricing.js';
-import { chargeableCombos } from './core/combos.js';
+import { resolveCombos } from './core/combos.js';
 import { COMBO_MANIFEST } from './combos-data.js';
 import { normalizeDeliveryProof } from './core/delivery-proof.js';
 import { normalizeDeliveryCode } from './core/delivery-code.js';
@@ -52,6 +52,7 @@ import { clampProgress } from './core/simulation.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
 import { normalizePendingReorder } from './core/reorder.js';
 import {
+  mergeProductionCartMutation,
   readProductionCart,
   sanitizeProductionCartSnapshot,
   writeProductionCart,
@@ -100,6 +101,7 @@ const defaultState = () => {
   };
 };
 
+let productionCartBase = sanitizeProductionCartSnapshot(null);
 let state = loadState();
 setRuntimeBusinessConfig(state.businessConfig);
 // Persistir también el arranque limpio: así una migración incompatible no deja
@@ -117,6 +119,7 @@ function loadState() {
     // Pedidos, catálogo y PII productiva siguen viviendo sólo en memoria. El
     // carrito usa una clave separada que admite exclusivamente ids y cantidades.
     const savedCart = readProductionCart(localStorage, STORAGE_KEYS.productionCart);
+    productionCartBase = savedCart;
     // Acá se le borraban los favoritos al cliente EN CADA CARGA DE PÁGINA.
     //
     // `loadState()` es efecto de módulo: corre al importar `state.js`. En la
@@ -267,7 +270,11 @@ export function sanitizeState(nextState, baseState = defaultState(), {
     sortBy: normalizeSortBy(source.sortBy),
     catalogFilters: normalizeCatalogFilters(source.catalogFilters),
     cart: deferredCart?.cart || sanitizeCart(source.cart, productMap, { reconcile }),
-    comboSelections: deferredCart?.comboSelections || sanitizeComboSelections(source.comboSelections, mergedProducts),
+    comboSelections: deferredCart?.comboSelections || sanitizeComboSelections(
+      source.comboSelections,
+      mergedProducts,
+      { reconcile },
+    ),
     orders,
     products: mergedProducts,
     lastOrderId,
@@ -469,21 +476,22 @@ function sanitizeCart(rawCart, productMap, { reconcile = 'hydrate' } = {}) {
  * carrito se conserva. Rearmar el combo con menos componentes sería cobrar un
  * combo que el mostrador no puede armar.
  */
-function sanitizeComboSelections(rawSelections, products) {
+function sanitizeComboSelections(rawSelections, products, { reconcile = 'hydrate' } = {}) {
   if (!Array.isArray(rawSelections) || !rawSelections.length) return [];
   const byCombo = new Map();
-  const chargeable = new Map(
-    chargeableCombos(COMBO_MANIFEST, products).map((combo) => [combo.comboId, combo]),
+  const resolved = new Map(
+    resolveCombos(COMBO_MANIFEST, products).map((combo) => [combo.comboId, combo]),
   );
+  const live = reconcile === 'live';
 
   for (const selection of rawSelections) {
     const comboId = typeof selection?.comboId === 'string' ? selection.comboId : '';
-    const combo = chargeable.get(comboId);
-    if (!combo) continue;
+    const combo = resolved.get(comboId);
+    if (!combo || (!live && !combo.chargeable)) continue;
     const quantity = normalizeCartQuantity(selection.quantity);
     if (quantity <= 0) continue;
     const current = byCombo.get(comboId) || 0;
-    byCombo.set(comboId, Math.min(combo.stock, current + quantity));
+    byCombo.set(comboId, live ? current + quantity : Math.min(combo.stock, current + quantity));
   }
 
   return [...byCombo.entries()]
@@ -787,10 +795,18 @@ function persist() {
     const localStorage = getStorageArea('localStorage');
     safeStorageRemove(localStorage, STORAGE_KEYS.state);
     safeStorageRemove(getStorageArea('sessionStorage'), STORAGE_KEYS.adminUnlocked);
-    return writeProductionCart(localStorage, STORAGE_KEYS.productionCart, {
+    const merged = mergeProductionCartMutation(productionCartBase, {
       cart: state.cart,
       comboSelections: state.comboSelections,
-    });
+    }, readProductionCart(localStorage, STORAGE_KEYS.productionCart));
+    state = {
+      ...state,
+      cart: merged.cart,
+      comboSelections: merged.comboSelections,
+    };
+    const persisted = writeProductionCart(localStorage, STORAGE_KEYS.productionCart, merged);
+    productionCartBase = merged;
+    return persisted;
   }
   const serializable = { ...state, adminUnlocked: undefined };
   let encoded = '';

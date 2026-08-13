@@ -175,10 +175,15 @@ export function comboSelectionTotals(selections, manifest, products) {
   for (const selection of Array.isArray(selections) ? selections : []) {
     const combo = resolved.get(selection?.comboId);
     const quantity = Math.max(0, Math.floor(Number(selection?.quantity) || 0));
-    if (!combo || !combo.chargeable || quantity <= 0) continue;
-    listTotal += combo.individualPrice * quantity;
-    discountTotal += (combo.individualPrice - combo.promotionalPrice) * quantity;
-    lines.push({ combo, quantity, listPrice: combo.individualPrice * quantity, price: combo.promotionalPrice * quantity });
+    if (!combo || quantity <= 0) continue;
+    const listPrice = combo.chargeable ? combo.individualPrice * quantity : 0;
+    const price = combo.chargeable ? combo.promotionalPrice * quantity : 0;
+    listTotal += listPrice;
+    discountTotal += listPrice - price;
+    // La selección sigue siendo una línea aunque el catálogo vivo la haya
+    // bloqueado. Quien dibuja el carrito puede así explicar el problema y
+    // ofrecer quitarla; checkout la rechaza antes de calcular/cobrar.
+    lines.push({ combo, quantity, listPrice, price });
   }
   return { lines, listTotal, discountTotal };
 }

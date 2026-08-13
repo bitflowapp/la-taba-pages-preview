@@ -199,4 +199,29 @@ test.describe('carrito con dos pestañas', () => {
     expect(await lineas(primera), 'al recargar, la primera pestaña perdió su propia línea').toContain(`${UNO.id}:1`);
     await segunda.close();
   });
+
+  test('dos pestañas ya abiertas conservan las dos líneas al escribir desde snapshots viejos', async ({ context }) => {
+    await instalarBackend(context);
+    const primera = await context.newPage();
+    const segunda = await context.newPage();
+    await abrirTienda(primera);
+    await abrirTienda(segunda);
+    expect(await lineas(primera)).toEqual([]);
+    expect(await lineas(segunda)).toEqual([]);
+
+    await agregar(primera, UNO.id, 2);
+    await agregar(segunda, DOS.id, 3);
+
+    await expect.poll(() => enDisco(segunda)).toEqual([
+      `${UNO.id}:2`,
+      `${DOS.id}:3`,
+    ]);
+    await primera.reload();
+    await abrirTienda(primera);
+    expect(await lineas(primera)).toEqual([
+      `${UNO.id}:2`,
+      `${DOS.id}:3`,
+    ]);
+    await segunda.close();
+  });
 });

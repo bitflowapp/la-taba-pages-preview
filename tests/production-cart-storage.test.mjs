@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { DEFAULT_STORAGE_KEYS, SHOWCASE_STORAGE_KEYS } from '../js/config.js';
 import {
+  mergeProductionCartMutation,
   PRODUCTION_CART_MAX_AGE_MS,
   PRODUCTION_CART_SCHEMA_VERSION,
   readProductionCart,
@@ -177,4 +178,28 @@ test('un storage que lanza no rompe la lectura ni el guardado', () => {
   assert.equal(writeProductionCart(hostile, KEY, {
     cart: [{ productId: 'safe-product', quantity: 1 }],
   }, { now: T0 }), false);
+});
+
+test('dos pestañas fusionan sus cambios sin borrar líneas ajenas', () => {
+  const empty = sanitizeProductionCartSnapshot(null);
+  const firstWrite = mergeProductionCartMutation(empty, {
+    cart: [{ productId: 'product-a', quantity: 2 }],
+  }, empty);
+  const secondWrite = mergeProductionCartMutation(empty, {
+    cart: [{ productId: 'product-b', quantity: 3 }],
+  }, firstWrite);
+
+  assert.deepEqual(secondWrite.cart, [
+    { productId: 'product-a', quantity: 2 },
+    { productId: 'product-b', quantity: 3 },
+  ]);
+
+  const firstRemovesItsOwnLine = mergeProductionCartMutation(
+    firstWrite,
+    { cart: [] },
+    secondWrite,
+  );
+  assert.deepEqual(firstRemovesItsOwnLine.cart, [
+    { productId: 'product-b', quantity: 3 },
+  ]);
 });

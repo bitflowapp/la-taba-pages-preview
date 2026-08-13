@@ -78,6 +78,25 @@ export function getCartCombos() {
   return lines;
 }
 
+export function cartComboIssue(line) {
+  if (!line?.combo) return null;
+  if (!line.combo.chargeable) {
+    return {
+      kind: 'unavailable',
+      message: `${line.combo.name} ya no está disponible como combo.`,
+      actionLabel: 'Quitar del pedido',
+    };
+  }
+  if (line.quantity > line.combo.stock) {
+    return {
+      kind: 'over',
+      message: `Quedan ${line.combo.stock} ${line.combo.stock === 1 ? 'combo' : 'combos'} disponibles.`,
+      actionLabel: 'Quitar del pedido',
+    };
+  }
+  return null;
+}
+
 /** Unidades de un producto ya comprometidas, sueltas y dentro de combos. */
 export function committedProductQuantity(productId) {
   const loose = getState().cart.find((item) => item.productId === productId)?.quantity || 0;
@@ -470,7 +489,7 @@ export function validateCartForCheckout(deliveryMode = 'delivery', options = {})
     };
   }
 
-  const unavailableCombo = combos.find((line) => !line.combo.chargeable || line.quantity > line.combo.stock);
+  const unavailableCombo = combos.find((line) => cartComboIssue(line));
   if (unavailableCombo) {
     return {
       ok: false,

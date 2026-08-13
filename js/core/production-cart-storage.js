@@ -43,6 +43,31 @@ export function sanitizeProductionCartSnapshot(value) {
   };
 }
 
+/**
+ * Aplica solamente la mutación hecha por esta pestaña sobre la última
+ * instantánea del disco. `local - base` es el delta propio; `remote` contiene
+ * lo que otras pestañas alcanzaron a guardar desde que esta pestaña abrió.
+ *
+ * localStorage es sincrónico: leer, fusionar y escribir no deja un `await` en
+ * el medio. No convierte al navegador en una base de datos, pero evita el
+ * last-write-wins que borraba una línea ajena con una instantánea vieja.
+ */
+export function mergeProductionCartMutation(baseValue, localValue, remoteValue) {
+  const base = sanitizeProductionCartSnapshot(baseValue);
+  const local = sanitizeProductionCartSnapshot(localValue);
+  const remote = sanitizeProductionCartSnapshot(remoteValue);
+  return {
+    schemaVersion: PRODUCTION_CART_SCHEMA_VERSION,
+    cart: mergeLineMutation(base.cart, local.cart, remote.cart, 'productId'),
+    comboSelections: mergeLineMutation(
+      base.comboSelections,
+      local.comboSelections,
+      remote.comboSelections,
+      'comboId',
+    ),
+  };
+}
+
 export function readProductionCart(storage, key, { now = Date.now() } = {}) {
   const raw = safeStorageGet(storage, key);
   if (!raw) return sanitizeProductionCartSnapshot(null);
@@ -111,4 +136,29 @@ function sanitizeLines(lines, idField) {
   }
 
   return [...quantities.entries()].map(([id, quantity]) => ({ [idField]: id, quantity }));
+}
+
+function mergeLineMutation(baseLines, localLines, remoteLines, idField) {
+  const quantities = (lines) => new Map(lines.map((line) => [line[idField], line.quantity]));
+  const base = quantities(baseLines);
+  const local = quantities(localLines);
+  const remote = quantities(remoteLines);
+  const orderedIds = [...new Set([
+    ...remote.keys(),
+    ...local.keys(),
+    ...base.keys(),
+  ])];
+  const merged = [];
+
+  for (const id of orderedIds) {
+    const before = base.get(id) || 0;
+    const mine = local.get(id) || 0;
+    const theirs = remote.get(id) || 0;
+    const quantity = mine === before
+      ? theirs
+      : Math.max(0, Math.min(MAX_QUANTITY_PER_LINE, theirs + mine - before));
+    if (quantity > 0) merged.push({ [idField]: id, quantity });
+    if (merged.length >= MAX_LINES) break;
+  }
+  return merged;
 }

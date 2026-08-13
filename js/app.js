@@ -6,6 +6,7 @@ import {
   decrementComboItem,
   incrementCartItem,
   removeCartItem,
+  removeComboItem,
   repeatCustomerOrder,
   setCartItemQuantity,
 } from './cart.js';
@@ -1364,6 +1365,13 @@ function bindEvents() {
     if (comboDecId) {
       const result = runCartAction('dec-combo', comboDecId, () => decrementComboItem(comboDecId));
       if (!result.ok && !result.duplicate) showToast(result.message);
+      return;
+    }
+
+    const comboRemoveId = target.closest('[data-combo-remove]')?.dataset.comboRemove;
+    if (comboRemoveId) {
+      const result = removeComboItem(comboRemoveId);
+      if (!result.duplicate) showToast(result.message);
       return;
     }
 

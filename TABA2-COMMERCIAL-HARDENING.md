@@ -604,6 +604,68 @@ exactamente el pecado que este trabajo persigue.
 | Observabilidad | — | **sin puntuar**: no se auditó |
 | Listo para release | 45 | árbol limpio y candidata con identidad propia, pero sin desplegar ni certificar |
 
+## FASE DB — DETENIDA EN EL PREFLIGHT
+
+**No se aplicó ninguna migración. Staging quedó intacto.** Todo lo que se hizo
+contra el proyecto fue de lectura: `projects list`, `link` (escribe sólo
+`supabase/.temp`, que está en `.gitignore`) y `migration list --linked`.
+
+### El entorno, verificado contra la API y no contra archivos
+
+| | |
+|---|---|
+| Proyecto | `la-taba-staging` · ref `ukxqbgswjlibmnjemrzd` · `ACTIVE_HEALTHY` |
+| Región / Postgres | us-east-1 · 17.6.1.147 |
+| Otro proyecto de la organización | `la-taba-demo` (`yakhtrkukqlgzvxuvhzs`), **INACTIVE** |
+| Producción | **no existe**: la organización tiene esos dos proyectos y ninguno es productivo |
+
+Que no sea producción está probado por enumeración: no hay un tercer proyecto.
+Lo que sí conviene no perder de vista es que **este staging es el piloto**, así
+que mutarlo no es gratis.
+
+### Lo que el preflight encontró, y por qué obliga a frenar
+
+`supabase migration list --linked` contra la base real:
+
+- **16 migraciones aplicadas en staging que NO existen en esta rama**:
+  `20260812010000` … `20260812110000` (identidad, sesiones y compuertas de rol)
+  y `20260812200000` … `20260812240000` (horarios, zonas de envío y RPCs del
+  Panel).
+- Mis tres migraciones figuran como `local` sin `remote`, o sea sin aplicar.
+- Y `20260812240000` queda **intercalada por timestamp entre las mías**
+  (`…235000` < `…240000` < `20260813000000`).
+
+**La colisión concreta.**
+`20260812220000_business_operations_checkout_enforcement.sql` —ya aplicada— hace
+`create or replace` de `create_checkout_session` y de
+`finalize_paid_checkout_session`. Mi migración de F05 reproduce **esas mismas dos
+funciones** tomando como base la definición vieja de `20260808191000`, porque es
+la única que existe en esta rama.
+
+Aplicarla habría **revertido en silencio** el trabajo de esa otra sesión: la
+verificación de horarios y zonas de envío en el checkout. No es un conflicto que
+falle ruidosamente: `create or replace` pisa y sigue. Es exactamente la pérdida
+silenciosa que el preflight existe para encontrar.
+
+Las otras dos no colisionan por este análisis: ninguna de las 16 toca
+`checkout_pos_sale` (F01) ni `get_public_order_tracking` (F25). Pero eso no las
+vuelve seguras por sí solo: esta rama **no representa el esquema vivo**, y
+`supabase db push` empuja todas las locales pendientes de una vez, no de a una.
+
+### Lo que hace falta antes de reintentar
+
+1. Traer a esta rama las 16 migraciones que ya viven en staging (existen en
+   otras ramas del repo; ninguna se perdió).
+2. **Rehacer la migración de F05 sobre la definición VIGENTE** de
+   `create_checkout_session` y `finalize_paid_checkout_session`, la de
+   `20260812220000`, no la de `20260808191000`.
+3. Recién ahí aplicar de a una, verificando entre cada una.
+
+`supabase db dump` no está disponible en este host: la CLI lo resuelve con
+Docker y el demonio no está corriendo. La comparación se hizo contra el ledger
+real y contra el contenido de las migraciones aplicadas, que alcanza para
+sostener lo anterior.
+
 ## Gates físicos — checklist
 
 **Ninguno de los dos se ejecutó. Los dos quedan `PENDING` y no se inventa un

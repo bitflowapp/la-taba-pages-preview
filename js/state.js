@@ -117,7 +117,24 @@ function loadState() {
     // Pedidos, catálogo y PII productiva siguen viviendo sólo en memoria. El
     // carrito usa una clave separada que admite exclusivamente ids y cantidades.
     const savedCart = readProductionCart(localStorage, STORAGE_KEYS.productionCart);
-    resetIncompatiblePersistence(localStorage, getStorageArea('sessionStorage'));
+    // Acá se le borraban los favoritos al cliente EN CADA CARGA DE PÁGINA.
+    //
+    // `loadState()` es efecto de módulo: corre al importar `state.js`. En la
+    // rama de producción llamaba a `resetIncompatiblePersistence()` SIN
+    // condición —comparar con la rama demo, donde el mismo reset sólo corre si
+    // el estado guardado es incompatible—, y ese reset borra
+    // `STORAGE_KEYS.customerFavorites` junto con el resto.
+    //
+    // Los favoritos SÍ se escriben en producción: `persistFavorites`
+    // (js/core/customer-preferences.js:61) los guarda en esa misma clave de
+    // localStorage. O sea que se guardaban y se borraban en el próximo arranque.
+    //
+    // Las dos cosas que este reset mezclaba son distintas: «no cachear PII
+    // productiva» (correcto y obligatorio) y «tirar restos de un esquema
+    // incompatible» (que en producción no aplica, porque acá no se hidrata
+    // estado). Se conserva lo primero y se deja de hacer lo segundo: los
+    // favoritos son ids de producto elegidos por la persona, no PII.
+    clearProductionSensitivePersistence(localStorage, getStorageArea('sessionStorage'));
     return {
       ...base,
       cart: savedCart.cart,
@@ -167,6 +184,11 @@ export function requiresCatalogRefresh(savedState, baseState = defaultState()) {
   return String(savedState.catalogVersion || '') !== PREVIEW_CATALOG_VERSION;
 }
 
+/**
+ * Restos de un esquema que ya no se puede leer. Se usa SÓLO cuando el estado
+ * guardado es incompatible o no migrable: ahí tirar todo es lo correcto porque
+ * no se puede confiar en nada de lo que hay.
+ */
 function resetIncompatiblePersistence(localStorage, sessionStorage) {
   [
     STORAGE_KEYS.state,
@@ -174,6 +196,27 @@ function resetIncompatiblePersistence(localStorage, sessionStorage) {
     STORAGE_KEYS.customerHistory,
     STORAGE_KEYS.customerProfile,
     STORAGE_KEYS.cashboxClosures,
+  ].forEach((key) => safeStorageRemove(localStorage, key));
+  safeStorageRemove(sessionStorage, STORAGE_KEYS.adminUnlocked);
+}
+
+/**
+ * Lo que NO puede quedar cacheado en un arranque productivo.
+ *
+ * En producción, pedidos, catálogo y datos personales viven sólo en memoria y
+ * se reconstruyen desde Supabase: ese contrato se mantiene entero. Lo que se
+ * saca de la lista son los FAVORITOS, que son ids de producto elegidos por la
+ * persona —no son datos de nadie— y que antes se borraban en cada carga por
+ * compartir función con la limpieza de esquemas incompatibles.
+ *
+ * `cashboxClosures` tampoco se toca acá: es del Panel, no del cliente, y en la
+ * rama productiva del cliente no hay motivo para borrarlo.
+ */
+function clearProductionSensitivePersistence(localStorage, sessionStorage) {
+  [
+    STORAGE_KEYS.state,
+    STORAGE_KEYS.customerHistory,
+    STORAGE_KEYS.customerProfile,
   ].forEach((key) => safeStorageRemove(localStorage, key));
   safeStorageRemove(sessionStorage, STORAGE_KEYS.adminUnlocked);
 }

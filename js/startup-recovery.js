@@ -51,6 +51,16 @@
     const detail = REASONS[reason] || REASONS.startup;
     settled = true;
     clearTimeout(timer);
+    // El panel vive DENTRO de `<main data-app-main inert aria-busy="true">`, y
+    // el único que quita ese `inert` es `js/app.js` cuando la aplicación
+    // arranca —o sea, exactamente el código que acá ya sabemos que no corrió—.
+    // Sin esto, «Reintentar» se dibujaba pero no se podía tocar ni enfocar: la
+    // salida de emergencia quedaba cerrada justo en la emergencia.
+    const main = panel.closest('[data-app-main]') || document.querySelector('[data-app-main]');
+    if (main) {
+      main.removeAttribute('inert');
+      main.removeAttribute('aria-busy');
+    }
     panel.hidden = false;
     panel.dataset.appRecoveryCode = detail.code;
     panel.dataset.appRecoveryReason = reason;

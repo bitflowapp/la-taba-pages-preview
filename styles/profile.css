@@ -532,7 +532,13 @@
 .profile-field-error {
   min-height: 18px;
   margin: -4px 0 0;
-  color: #a11c2a;
+  /* Era el literal `#a11c2a`, que sobre la góndola grafito da 2,19:1 —muy por
+     debajo del 4,5:1 de AA— justo en el ÚNICO texto que dice por qué no se pudo
+     guardar. El literal se salteaba el remapeo de la paleta; el token existe
+     para esto y este mismo archivo ya lo usa en otras dos reglas (:392 y :739).
+     `--shelf-red-ink` mide 5,19:1 sobre `--shelf` y 4,61:1 sobre
+     `--shelf-raised`: pasa AA en las dos superficies donde vive el campo. */
+  color: var(--shelf-red-ink);
   font-size: 12px;
   font-weight: 700;
 }

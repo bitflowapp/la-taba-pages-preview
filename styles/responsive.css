@@ -763,6 +763,17 @@ body[data-active-view="rider"] .floating-cart {
     opacity: 0;
   }
 
+  /* El anillo de foco lo recibe el `<select>`, que acá está en `opacity: 0`,
+     así que quien navega con teclado no veía NADA al llegar al control de
+     orden. Se lo presta al contenedor visible, que es el que sí se dibuja.
+     `:focus-within` y no `:focus` porque el que toma el foco es el hijo, y el
+     mismo anillo que define la regla global de `:focus-visible` en tokens.css
+     para no inventar un segundo estilo de foco. */
+  .catalog-controls .sort-field:has(select:focus-visible) {
+    outline: 3px solid color-mix(in srgb, var(--taba-focus) 70%, white);
+    outline-offset: 2px;
+  }
+
   /* El aire lateral lo fija `--card-pad`, que es el mismo del plato: acá sólo
      se ajusta el vertical, que en teléfono se recorta. */
   .product-body {

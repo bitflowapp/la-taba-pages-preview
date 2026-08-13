@@ -2064,6 +2064,67 @@ test('un refresco fallido no deja la tienda sin el catálogo que ya tenía', asy
   );
 });
 
+test('una respuesta vieja de disponibilidad no pisa la dirección más nueva', async () => {
+  const mock = createSupabaseClientMock();
+  const originalRpc = mock.client.rpc.bind(mock.client);
+  const pending = [];
+  const client = {
+    ...mock.client,
+    rpc(name, args) {
+      if (name !== 'commerce_availability') return originalRpc(name, args);
+      return new Promise((resolve) => pending.push({ args, resolve }));
+    },
+  };
+  const repository = makeRepository(mock, { client });
+
+  const oldRequest = repository.refreshCommerceAvailability({ neighborhood: 'A' });
+  const newRequest = repository.refreshCommerceAvailability({ neighborhood: 'B' });
+  pending[1].resolve({ data: {
+    business_id: BUSINESS_ID, channel: 'delivery', ordering_ready: true, is_open: true,
+    delivery: { eligible: true, reason: 'ok', delivery_fee: 2000 },
+  }, error: null });
+  await newRequest;
+  pending[0].resolve({ data: {
+    business_id: BUSINESS_ID, channel: 'delivery', ordering_ready: true, is_open: true,
+    delivery: { eligible: false, reason: 'out_of_coverage' },
+  }, error: null });
+  const stale = await oldRequest;
+
+  assert.equal(stale.stale, true);
+  assert.equal((await import('../js/core/commerce-availability-store.js')).getCommerceAvailability().delivery.deliveryFee, 2000);
+});
+
+test('una consulta vieja de catálogo no revive stock después de una nueva', async () => {
+  const mock = createSupabaseClientMock();
+  const originalFrom = mock.client.from.bind(mock.client);
+  const pending = [];
+  const client = {
+    ...mock.client,
+    from(table) {
+      if (table !== 'products') return originalFrom(table);
+      const stub = {
+        select: () => stub, eq: () => stub, order: () => stub, limit: () => stub,
+        then(resolve, reject) {
+          return new Promise((release) => pending.push(release)).then(resolve, reject);
+        },
+      };
+      return stub;
+    },
+  };
+  const repository = makeRepository(mock, { client });
+
+  const oldRequest = repository.loadCatalog();
+  const newRequest = repository.loadCatalog();
+  await Promise.resolve();
+  pending[1]({ data: [{ ...mock.db.products[0], stock: 8 }], error: null, status: 200 });
+  await newRequest;
+  pending[0]({ data: [{ ...mock.db.products[0], stock: 9 }], error: null, status: 200 });
+  const stale = await oldRequest;
+
+  assert.equal(stale.stale, true);
+  assert.equal(getState().products.find((product) => product.id === PRODUCT_ID).stock, 8);
+});
+
 function createSupabaseClientMock({
   failFirstCreate = false,
   missingCreateRpc = false,

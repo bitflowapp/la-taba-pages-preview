@@ -136,6 +136,8 @@ export function createSupabaseOrderRepository({
   const mercadoPagoStorage = safeLocalStorage();
   let syncStop = null;
   let catalogProductCount = 0;
+  let catalogLoadGeneration = 0;
+  let availabilityLoadGeneration = 0;
   let businessStatus = {
     state: 'idle',
     orderingReady: false,
@@ -414,6 +416,7 @@ export function createSupabaseOrderRepository({
   async function refreshCommerceAvailability({
     channel = 'delivery', latitude = null, longitude = null, neighborhood = '',
   } = {}) {
+    const generation = ++availabilityLoadGeneration;
     const context = {};
     const lat = Number(latitude);
     const lng = Number(longitude);
@@ -429,6 +432,9 @@ export function createSupabaseOrderRepository({
       p_channel: channel === 'pickup' ? 'pickup' : 'delivery',
       p_context: context,
     });
+    if (generation !== availabilityLoadGeneration) {
+      return repositoryResult(true, { availability: null, stale: true });
+    }
     if (error || !data) {
       // Sin respuesta no se inventa una: el estado vuelve a «no sé» y la tienda
       // deja de afirmar nada sobre horario o cobertura. Quien decide de verdad
@@ -530,6 +536,7 @@ export function createSupabaseOrderRepository({
   }
 
   async function loadCatalog() {
+    const generation = ++catalogLoadGeneration;
     // Un refresco en segundo plano NO puede dejar la tienda sin catálogo.
     //
     // Esta función corre en CADA evento realtime de `products`, y cada pedido
@@ -599,6 +606,10 @@ export function createSupabaseOrderRepository({
       .eq('is_verified', true)
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
+
+    if (generation !== catalogLoadGeneration) {
+      return repositoryResult(true, { products: [], catalogStatus: { ...catalogStatus }, stale: true });
+    }
 
     if (error) {
       // Un refresco fallido no degrada un catálogo que ya estaba sirviendo: el

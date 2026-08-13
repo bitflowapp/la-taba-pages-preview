@@ -244,6 +244,80 @@ test('reintenta una falla con la misma clave y usa otra después de un éxito', 
 // clave: el segundo intento nacía con un client_request_id nuevo, el índice
 // único (business_id, client_request_id) no veía nada repetido y el negocio
 // recibía DOS pedidos reales.
+// F02: el segundo pedido de la misma pestaña caía sobre el seguimiento del
+// primero.
+//
+// El caso es cotidiano —«me faltó el hielo», y se pide de nuevo sin cerrar la
+// pestaña—. `createOrderInternal` prefería el acceso YA guardado
+// (`protectedTrackingAccess || createdOrderAccess`) y además llamaba a
+// `selectTrackingOrder(protected…)`, así que:
+//
+//   · el `trackingToken` del pedido NUEVO se generaba, viajaba al backend y se
+//     tiraba: ese pedido quedaba sin llave de seguimiento en el cliente, ni
+//     siquiera recargando;
+//   · `lastOrderId` seguía apuntando al pedido viejo, y como `app.js` navega a
+//     Seguimiento apenas confirma, la persona veía el pedido anterior —a veces
+//     ya entregado— como si fuera el que acababa de hacer.
+//
+// Lo que NUNCA estuvo mal, y por eso esto es P1 y no P0: el backend. Las dos
+// filas se crean, con importes correctos, claves de idempotencia distintas y
+// tokens distintos. No hay mezcla de order_id ni cruce entre clientes: el
+// acceso vive en sessionStorage (por pestaña) y el cliente es una sesión
+// anónima sin login ni logout en la tienda, así que no existe camino para que
+// aparezca la identidad de otra persona. Lo que se veía era el pedido anterior
+// DE UNO MISMO.
+test('el segundo pedido de la misma pestaña no cae sobre el seguimiento del primero', async () => {
+  const mock = createSupabaseClientMock();
+  const storage = createStorage();
+  const repository = makeRepository(mock, { storage });
+  const claveDeAcceso = `taba-order-access-v1:${BUSINESS_ID}:last`;
+  const accesoGuardado = () => JSON.parse(storage.getItem(claveDeAcceso) || 'null');
+
+  addToCart(PRODUCT_ID, 1);
+  const primero = await repository.createOrder(checkoutDraft());
+  assert.equal(primero.ok, true);
+  assert.equal(getState().lastOrderId, primero.order.id);
+  const tokenDelPrimero = accesoGuardado()?.trackingToken;
+
+  addToCart(PRODUCT_ID, 2);
+  const segundo = await repository.createOrder({ ...checkoutDraft(), customerNotes: 'me faltó el hielo' });
+  assert.equal(segundo.ok, true);
+  assert.notEqual(segundo.order.id, primero.order.id, 'son dos pedidos distintos');
+
+  // 1. La pantalla de confirmación muestra el pedido que se acaba de hacer.
+  assert.equal(
+    getState().lastOrderId,
+    segundo.order.id,
+    'Seguimiento tiene que abrir en el pedido nuevo, no en el anterior',
+  );
+
+  // 2. Y el pedido nuevo conserva SU llave de seguimiento: sin esto queda
+  //    imposible de seguir desde esta pestaña para siempre.
+  const acceso = accesoGuardado();
+  assert.equal(acceso?.orderId, segundo.order.backendId);
+  assert.notEqual(acceso?.trackingToken, tokenDelPrimero);
+
+  // 3. El backend nunca estuvo mal y tiene que seguir así: dos filas, dos
+  //    claves de idempotencia y dos tokens distintos.
+  assert.equal(mock.db.orders.length, 2);
+  const intentos = mock.calls.rpc.filter((call) => call.name === 'create_order_with_items');
+  assert.equal(intentos.length, 2);
+  assert.notEqual(
+    intentos[0].args.payload.client_request_id,
+    intentos[1].args.payload.client_request_id,
+  );
+  assert.notEqual(
+    intentos[0].args.payload.tracking_token,
+    intentos[1].args.payload.tracking_token,
+  );
+
+  // 4. Y el pedido anterior no desaparece: sigue en el historial local.
+  assert.ok(
+    getState().orders.some((order) => order.id === primero.order.id),
+    'el pedido anterior se conserva, sólo deja de ser el seleccionado',
+  );
+});
+
 test('la clave sobrevive a que muera la pestaña: el mismo carrito no crea dos pedidos', async () => {
   const mock = createSupabaseClientMock({ failFirstCreate: true });
   const duradero = createStorage(); // localStorage: sobrevive a la pestaña

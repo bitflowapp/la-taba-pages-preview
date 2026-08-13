@@ -776,7 +776,37 @@ export function createSupabaseOrderRepository({
       clientRequestId: request.clientRequestId,
       trackingToken: request.trackingToken,
     };
-    lastOrderAccess = protectedTrackingAccess || createdOrderAccess;
+    // QUÉ ACCESO DE SEGUIMIENTO QUEDA, Y POR QUÉ NO ES SIEMPRE EL MISMO.
+    //
+    // Decía `protectedTrackingAccess || createdOrderAccess`: el acceso ya
+    // guardado ganaba SIEMPRE. Eso protege un caso legítimo —un handoff
+    // tokenizado, o sea el seguimiento de otro dispositivo abierto por enlace:
+    // ahí la persona está mirando el Pedido A a propósito y un Pedido B nuevo no
+    // debe robarle la pantalla— pero se llevaba puesto otro que no tiene nada
+    // que ver: el segundo pedido de la MISMA pestaña, el clásico «me faltó el
+    // hielo». En ese caso:
+    //
+    //   1. el `trackingToken` del pedido nuevo se generaba, viajaba al backend
+    //      dentro del payload y después se TIRABA —no quedaba en
+    //      `lastAccessStorageKey`, y el `pendingStorageKey` se borra al tener
+    //      éxito—, así que ese pedido quedaba sin llave de seguimiento del lado
+    //      del cliente. Ni recargando se recuperaba;
+    //   2. `selectTrackingOrder` dejaba `lastOrderId` en el pedido ANTERIOR, y
+    //      como `js/app.js` navega a Seguimiento apenas confirma, la persona
+    //      aterrizaba en su pedido viejo —a veces ya entregado— creyendo que era
+    //      el que acababa de hacer.
+    //
+    // La diferencia entre los dos casos ya estaba escrita en el propio acceso:
+    // el que nace de un checkout lleva `clientRequestId`, y el que llega por
+    // handoff o por recuperación no (lleva `transferredAt` o `recoveredAt`).
+    // Así que sólo se conserva el que NO nació de un checkout de esta pestaña.
+    //
+    // Medido con dos pedidos seguidos: las dos filas se crean bien, con claves
+    // de idempotencia y tokens distintos —el backend nunca estuvo mal—, pero
+    // `lastOrderId` y el acceso persistido se quedaban en el primero.
+    const accesoDeOtroCheckout = Boolean(protectedTrackingAccess?.clientRequestId);
+    const conservarSeguimientoExterno = Boolean(protectedTrackingAccess) && !accesoDeOtroCheckout;
+    lastOrderAccess = conservarSeguimientoExterno ? protectedTrackingAccess : createdOrderAccess;
     persistOrderAccess({
       storage,
       key: lastAccessStorageKey,
@@ -792,8 +822,12 @@ export function createSupabaseOrderRepository({
     // pedido nuevo e idéntico reutilizara la clave ya consumida.
     removeStoredAccess(storage, pendingStorageKey);
 
+    // `mirrorCreatedOrder` deja `lastOrderId` en el pedido recién creado, que es
+    // lo que la pantalla de confirmación necesita. Sólo se lo pisa cuando de
+    // verdad se conservó un seguimiento externo (handoff); antes se pisaba
+    // también con el acceso del checkout anterior. Ver arriba.
     const order = mirrorCreatedOrder(row);
-    if (protectedTrackingAccess) {
+    if (conservarSeguimientoExterno) {
       selectTrackingOrder(protectedTrackingAccess.orderId || protectedTrackingAccess.publicCode);
     }
     await loadCatalog().catch(() => null);

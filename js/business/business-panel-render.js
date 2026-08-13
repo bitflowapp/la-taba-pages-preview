@@ -502,9 +502,38 @@ function businessStateLabel(status) {
   return ({ open: 'abierto', paused: 'con pedidos pausados', closed: 'cerrado' })[String(status || '')] || 'sin estado confirmado';
 }
 
+// La hora del Panel se lee para conciliar plata, así que no puede ser ambigua.
+//
+// `toLocaleString('es-AR')` sin opciones imprime las 21:30 como «09:30:00»: el
+// patrón por defecto de ese locale es de 12 horas y NO agrega marca de a.m. o
+// p.m. O sea que las 21:30 y las 09:30 salían idénticas en pantalla, y el
+// operador conciliaba pagos de Mercado Pago contra una hora que podía ser
+// cualquiera de las dos.
+//
+// Se fija el reloj de 24 horas y la zona del negocio. La zona va explícita y no
+// la del navegador: el Panel se abre desde el teléfono que haya, y la hora de un
+// pedido no puede cambiar según qué aparato lo mire.
+const PANEL_TIMEZONE = 'America/Argentina/Buenos_Aires';
+const PANEL_TIMESTAMP_FORMAT = Object.freeze({
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: PANEL_TIMEZONE,
+});
+
 function formatTimestamp(value) {
   const date = new Date(value || 0);
-  return Number.isNaN(date.getTime()) || !value ? 'sin hora confirmada' : date.toLocaleString('es-AR');
+  if (Number.isNaN(date.getTime()) || !value) return 'sin hora confirmada';
+  try {
+    return date.toLocaleString('es-AR', PANEL_TIMESTAMP_FORMAT);
+  } catch (_) {
+    // Un runtime sin esa base de zonas horarias no puede dejar al Panel sin
+    // fecha; el reloj de 24 horas es lo que de verdad quita la ambigüedad.
+    return date.toLocaleString('es-AR', { hourCycle: 'h23' });
+  }
 }
 
 function formatMoney(value, currency = 'ARS') {

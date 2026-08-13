@@ -2856,6 +2856,26 @@ export function readableOrderCreationError(error) {
   ) {
     return 'Algunos productos ya no tienen stock. Actualizá el carrito y probá de nuevo.';
   }
+  // Los rechazos de la política de alcohol llegan en castellano y ninguno
+  // coincidía con las ramas de abajo, así que los cuatro caían en el genérico
+  // «conservamos el intento para reintentar sin duplicarlo»: se invitaba a
+  // reintentar una compra que NUNCA va a entrar, y sin decir por qué. Van antes
+  // de la rama de `verified`, que si no se come el de «edad minima configurada».
+  if (text.includes('alcohol') || text.includes('mayoria de edad') || text.includes('mayoría de edad')) {
+    if (text.includes('fuera de horario')) {
+      return 'La venta de bebidas con alcohol está fuera del horario permitido. Probá más tarde o quitá esos productos del carrito.';
+    }
+    if (text.includes('confirmacion') || text.includes('confirmación')) {
+      return 'Confirmá que sos mayor de 18 años para pedir bebidas con alcohol.';
+    }
+    // «politica de alcohol no configurada» y «producto alcoholico sin edad
+    // minima configurada»: los dos son configuración del comercio, no algo que
+    // la persona pueda resolver reintentando.
+    return 'Este comercio todavía no tiene habilitada la venta de bebidas con alcohol. Quitá esos productos para continuar.';
+  }
+  if (text.includes('minimo de delivery') || text.includes('mínimo de delivery')) {
+    return 'El pedido no llega al mínimo para envío a domicilio. Agregá productos o elegí retiro en el local.';
+  }
   if (text.includes('ordering') || text.includes('disabled') || text.includes('verified')) {
     return 'El comercio todavía no habilitó los pedidos online.';
   }

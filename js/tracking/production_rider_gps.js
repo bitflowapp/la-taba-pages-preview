@@ -9,6 +9,7 @@ import {
 // presentation alias used by some clients while an order is approaching.
 const ACTIVE_RIDER_STATUSES = new Set(['on_the_way', 'arriving', 'arrived']);
 const AUTHORITY_ERRORS = /asignad|autentic|permiso|denegad|sesión/i;
+const DEFAULT_PUBLISH_TIMEOUT_MS = 12_000;
 
 export function canShareProductionRiderGps({ order, userId, role } = {}) {
   const status = normalizeWorkflowStatus(order?.workflowStatus || order?.status, '');
@@ -29,6 +30,7 @@ export function createProductionRiderGpsController({
   onChange = () => {},
   navigatorRef = globalThis.navigator,
   now = () => Date.now(),
+  publishTimeoutMs = DEFAULT_PUBLISH_TIMEOUT_MS,
 } = {}) {
   let share = emptyShare();
 
@@ -116,14 +118,15 @@ export function createProductionRiderGpsController({
     emit();
     let result;
     try {
-      result = await repository?.updateRiderLocation?.(orderId, {
+      result = await withTimeout(repository?.updateRiderLocation?.(orderId, {
         lat: candidate.lat,
         lng: candidate.lng,
         accuracy: candidate.accuracy,
         heading: candidate.heading,
         speed: candidate.speed,
+        timestamp: candidate.timestamp,
         source: 'gps',
-      });
+      }), publishTimeoutMs);
     } catch (_) {
       result = { ok: false, message: 'No pudimos publicar la ubicación. Verificá tu conexión.' };
     }
@@ -205,6 +208,22 @@ export function createProductionRiderGpsController({
     start,
     stop,
   };
+}
+
+function withTimeout(value, timeoutMs) {
+  const milliseconds = Math.max(1, Number(timeoutMs) || DEFAULT_PUBLISH_TIMEOUT_MS);
+  let timeoutId;
+  return Promise.race([
+    Promise.resolve(value),
+    new Promise((_, reject) => {
+      timeoutId = globalThis.setTimeout?.(
+        () => reject(new Error('gps_publish_timeout')),
+        milliseconds,
+      );
+    }),
+  ]).finally(() => {
+    if (timeoutId !== undefined) globalThis.clearTimeout?.(timeoutId);
+  });
 }
 
 function emptyShare() {

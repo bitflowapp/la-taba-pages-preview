@@ -73,24 +73,35 @@ export function createSupabaseAuthService({ client, businessId, deviceLabel = ''
 
     // Registra esta sesión del navegador para que pueda revocarse de forma
     // puntual sin cerrar las del resto del equipo.
-    await registerSession();
+    const registration = await registerSession();
+    if (!registration.ok || !registration.sessionId) {
+      await client.auth.signOut({ scope: 'local' });
+      return authResult(false, { message: registration.message || 'No pudimos registrar esta sesión.' });
+    }
 
     return authResult(true, {
       session: data.session || null,
       user: data.user,
       membership: membership.membership,
+      sessionId: registration.sessionId,
     });
   }
 
   async function registerSession() {
-    const { data, error } = await client.rpc('identity_register_session', {
-      p_business_id: businessId,
-      p_client: PANEL_CLIENT,
-      p_device_label: deviceLabel || null,
-      p_device_key_hash: null,
-      p_app_version: appVersion || null,
-    });
-    if (error || data?.ok !== true) {
+    let response;
+    try {
+      response = await client.rpc('identity_register_session', {
+        p_business_id: businessId,
+        p_client: PANEL_CLIENT,
+        p_device_label: deviceLabel || null,
+        p_device_key_hash: null,
+        p_app_version: appVersion || null,
+      });
+    } catch (_) {
+      return authResult(false, { message: 'No pudimos registrar esta sesión.' });
+    }
+    const { data, error } = response || {};
+    if (error || data?.ok !== true || !data?.session_id) {
       return authResult(false, { message: 'No pudimos registrar esta sesión.' });
     }
     return authResult(true, { sessionId: data.session_id || null, role: data.role || null });

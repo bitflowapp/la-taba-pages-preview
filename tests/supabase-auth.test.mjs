@@ -257,7 +257,7 @@ function createAuthMock({
         };
       }
       if (name === 'identity_register_session') {
-        return { data: { ok: true, code: 'registered', role: membership?.role || null }, error: null };
+        return { data: { ok: true, code: 'registered', session_id: 'session-1', role: membership?.role || null }, error: null };
       }
       if (name === 'identity_close_own_session') {
         return { data: { ok: true, code: 'closed' }, error: null };
@@ -338,6 +338,33 @@ test('el ingreso del equipo registra la sesión de este navegador', async () => 
   assert.equal(params.p_device_label, 'Chrome · Windows');
   assert.equal(params.p_app_version, 'v62');
   assert.equal(params.p_device_key_hash, null);
+});
+
+test('el Panel falla cerrado si la sesión no queda registrada y revocable', async (t) => {
+  for (const registration of [
+    { data: null, error: { message: 'sin red' } },
+    { data: { ok: true, code: 'no_session_claim', session_id: null }, error: null },
+    { data: { ok: false, code: 'not_authorized' }, error: null },
+  ]) {
+    await t.test(registration.data?.code || 'rpc error', async () => {
+      const client = createAuthMock();
+      const originalRpc = client.rpc.bind(client);
+      client.rpc = async (name, params) => (
+        name === 'identity_register_session' ? registration : originalRpc(name, params)
+      );
+      const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
+
+      const result = await auth.signInTeam({
+        email: 'duenia@lataba.test',
+        password: 'not-logged',
+      });
+
+      assert.equal(result.ok, false);
+      assert.match(result.message, /registrar esta sesión/i);
+      assert.equal(client.calls.signOut, 1);
+      assert.deepEqual(client.calls.signOutOptions, { scope: 'local' });
+    });
+  }
 });
 
 test('los permisos los declara el backend, no la vista', async () => {

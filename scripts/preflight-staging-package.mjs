@@ -22,7 +22,7 @@ import crypto from 'node:crypto';
 const [dir = 'dist_release', vivo = 'artifacts/ci/staging-v61/preserva/runtime-config.live.js'] = process.argv.slice(2);
 const RAIZ = path.resolve(dir);
 const PROHIBIDAS = ['catalog', 'data', 'docs', 'tests', 'scripts', 'supabase', 'package.json', 'package-lock.json', 'README.md', '.env', 'node_modules'];
-const ESPERADO = { app: '?v=41', css: '?v=50', recovery: '?v=2', cache: 'la-taba-runtime-v63-rc-final' };
+const ESPERADO = { app: '?v=41', css: '?v=50', recovery: '?v=2', cache: 'la-taba-runtime-v64-payment-returns' };
 
 const fallas = [];
 const ok = [];
@@ -64,20 +64,46 @@ else ok.push(`precache completo: ${precache.length} entradas, todas presentes`);
 // 4 · versiones del candidato, sin mezcla
 const index = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8');
 const hoja = fs.readFileSync(path.join(RAIZ, 'styles.css'), 'utf8');
+const paymentPages = ['resultado', 'pendiente', 'error'].map((state) => ({
+  state,
+  path: path.join(RAIZ, 'pago', state, 'index.html'),
+}));
 const comprobar = (nombre, condicion, detalle) => (condicion ? ok.push(detalle) : fallas.push(`${nombre}: ${detalle}`));
 comprobar('index/app', index.includes(`js/app.js${ESPERADO.app}`), `index.html carga app.js${ESPERADO.app}`);
 comprobar('index/recovery', index.includes(`js/startup-recovery.js${ESPERADO.recovery}`), `index.html carga startup-recovery.js${ESPERADO.recovery}`);
 comprobar('index/css', index.includes(`styles.css${ESPERADO.css}`), `index.html carga styles.css${ESPERADO.css}`);
 comprobar('sw/cache', worker.includes(ESPERADO.cache), `sw.js declara ${ESPERADO.cache}`);
+for (const page of paymentPages) {
+  if (!fs.existsSync(page.path)) {
+    fallas.push(`pago/${page.state}: falta index.html`);
+    continue;
+  }
+  const source = fs.readFileSync(page.path, 'utf8');
+  comprobar(
+    `pago/${page.state}/css`,
+    source.includes(`../../styles.css${ESPERADO.css}`),
+    `retorno carga styles.css${ESPERADO.css}`,
+  );
+  comprobar(
+    `pago/${page.state}/script`,
+    source.includes('../../js/payments/mercadopago-return.js'),
+    'retorno carga mercadopago-return.js',
+  );
+}
 
 const versionesSueltas = new Set([
   ...[...index.matchAll(/\?v=(\d+)/g)].map((m) => m[1]),
   ...[...hoja.matchAll(/\?v=(\d+)/g)].map((m) => m[1]),
   ...[...worker.matchAll(/\?v=(\d+)/g)].map((m) => m[1]),
+  ...paymentPages.flatMap((page) => (
+    fs.existsSync(page.path)
+      ? [...fs.readFileSync(page.path, 'utf8').matchAll(/\?v=(\d+)/g)].map((m) => m[1])
+      : []
+  )),
 ]);
-// 49 (cadena CSS), 41 (app), 3 (pwa-update) y 2 (startup-recovery) son las
+// 50 (cadena CSS), 41 (app), 3 (pwa-update) y 2 (startup-recovery) son las
 // cuatro del candidato. Cualquier otra es una mezcla con un artefacto anterior.
-const permitidas = new Set(['49', '41', '3', '2']);
+const permitidas = new Set(['50', '41', '3', '2']);
 const intrusas = [...versionesSueltas].filter((v) => !permitidas.has(v));
 if (intrusas.length) fallas.push(`mezcla de versiones: aparecen ?v=${intrusas.join(', ?v=')} además de las del candidato`);
 else ok.push(`sin mezcla de versiones: sólo ${[...versionesSueltas].sort().map((v) => `?v=${v}`).join(' ')}`);

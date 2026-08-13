@@ -15,6 +15,7 @@ const entries = [
   '.nojekyll',
   'assets',
   'js',
+  'pago',
 ];
 
 const sources = await Promise.all(entries.map(async (entry) => {

@@ -191,7 +191,7 @@ function redSana(transformar = null) {
 const ESTILOS = './styles.css?v=50';
 
 test('un manifiesto nuevo rota la caché y nunca instala un precache mezclado', async () => {
-  const cacheAnterior = 'la-taba-runtime-v62-endurecimiento-comercial';
+  const cacheAnterior = 'la-taba-runtime-v63-rc-final';
   assert.notEqual(
     NOMBRE_CACHE,
     cacheAnterior,

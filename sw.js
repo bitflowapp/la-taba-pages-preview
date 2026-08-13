@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v63-rc-final';
+const CACHE_NAME = 'la-taba-runtime-v64-payment-returns';
 const ASSETS = [
   './',
   './index.html',
@@ -22,6 +22,9 @@ const ASSETS = [
   './styles/motion.css?v=50',
   './manifest.webmanifest',
   './runtime-config.js',
+  './pago/resultado/index.html',
+  './pago/pendiente/index.html',
+  './pago/error/index.html',
   './assets/icon.svg',
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=3',
@@ -150,6 +153,7 @@ const ASSETS = [
   './js/core/retail-packaging.js',
   './js/core/sandbox-tracking-presentation.js',
   './js/payments/mercadopago-checkout.js',
+  './js/payments/mercadopago-return.js',
   './js/repositories/sandbox_customer_profile_repository.js',
   './js/repositories/sandbox_order_repository.js',
   './js/tracking/customer_tracking_poll.js',
@@ -362,11 +366,31 @@ async function cachedFallback(request) {
    */
   const desmentida = cached && request.destination === 'style' && await pareceDocumentoHtml(cached);
   if (cached && isUsable(request, cached) && !desmentida) return cached;
-  if (request.mode === 'navigate') return (await caches.match('./index.html')) || null;
+  if (request.mode === 'navigate') {
+    const paymentReturn = await paymentReturnFallback(request);
+    if (paymentReturn) return paymentReturn;
+    return (await caches.match('./index.html')) || null;
+  }
   return null;
 }
 
+async function paymentReturnFallback(request) {
+  const state = paymentReturnState(request);
+  return state ? (await caches.match(`./pago/${state}/index.html`)) || null : null;
+}
+
+function paymentReturnState(request) {
+  try {
+    return new URL(request.url).pathname.match(/\/pago\/(resultado|pendiente|error)\/?$/)?.[1] || '';
+  } catch (_) {
+    return '';
+  }
+}
+
 function guardar(request, respuesta) {
+  // Mercado Pago vuelve con ids en la query. La página está precacheada por
+  // ruta y no necesita retener una clave distinta por pago en CacheStorage.
+  if (paymentReturnState(request)) return;
   caches.open(CACHE_NAME).then((cache) => cache.put(request, respuesta)).catch(() => undefined);
 }
 

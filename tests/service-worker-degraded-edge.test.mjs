@@ -276,6 +276,46 @@ test('una navegación sin red recibe el shell guardado', async () => {
   assert.match(await respuesta.text(), /TABA2/);
 });
 
+test('una vuelta de pago sin red recibe su página dedicada, no el shell bajo /pago', async () => {
+  const worker = cargarWorker({
+    red: async () => { throw new TypeError('Load failed'); },
+    enCache: [
+      [`${ORIGEN}/index.html`, new Response('<!doctype html><title>TABA2</title>', {
+        status: 200,
+        headers: { 'content-type': 'text/html; charset=utf-8' },
+      })],
+      [`${ORIGEN}/pago/pendiente/index.html`, new Response('<!doctype html><title>Pago pendiente</title>', {
+        status: 200,
+        headers: { 'content-type': 'text/html; charset=utf-8' },
+      })],
+    ],
+  });
+
+  const respuesta = await worker.responder(pedido(`${ORIGEN}/pago/pendiente`, {
+    mode: 'navigate',
+    destination: 'document',
+  }));
+  assert.match(await respuesta.text(), /Pago pendiente/);
+});
+
+test('el worker no guarda identificadores de retorno de pago en claves de CacheStorage', async () => {
+  const url = `${ORIGEN}/pago/resultado?payment_id=provider-123&collection_id=456`;
+  const worker = cargarWorker({
+    red: async () => new Response('<!doctype html><title>Pago</title>', {
+      status: 200,
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+    }),
+  });
+
+  const respuesta = await worker.responder(pedido(url, {
+    mode: 'navigate',
+    destination: 'document',
+  }));
+  assert.equal(respuesta.status, 200);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(await worker.cache.match(url), undefined);
+});
+
 test('un subrecurso que no está en la caché NUNCA recibe el shell disfrazado', async () => {
   const worker = cargarWorker({
     red: async () => errorDelBorde(503),

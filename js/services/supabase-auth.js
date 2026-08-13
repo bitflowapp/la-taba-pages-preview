@@ -61,22 +61,25 @@ export function createSupabaseAuthService({ client, businessId, deviceLabel = ''
       });
     }
 
+    // La compuerta autoritativa sólo reconoce sesiones ya registradas. Por eso
+    // el alta es el primer RPC posterior a Auth y valida la membresía por su
+    // propio camino cerrado; recién después se pide el contexto operativo.
+    const registration = await registerSession();
+    if (!registration.ok || !registration.sessionId) {
+      await client.auth.signOut({ scope: 'local' });
+      return authResult(false, { message: registration.message || 'No pudimos registrar esta sesión.' });
+    }
+
     const membership = await getMembership(data.user.id);
     if (!membership.ok || (expectedRole && membership.membership?.role !== expectedRole)) {
-      await client.auth.signOut({ scope: 'local' });
+      // Ya existe una fila revocable: cerrarla remotamente antes de vaciar el
+      // navegador evita dejar una sesión huérfana si la vista no corresponde.
+      await signOut();
       return authResult(false, {
         message: membership.ok
           ? 'Tu cuenta no tiene el rol requerido para esta vista.'
           : membership.message,
       });
-    }
-
-    // Registra esta sesión del navegador para que pueda revocarse de forma
-    // puntual sin cerrar las del resto del equipo.
-    const registration = await registerSession();
-    if (!registration.ok || !registration.sessionId) {
-      await client.auth.signOut({ scope: 'local' });
-      return authResult(false, { message: registration.message || 'No pudimos registrar esta sesión.' });
     }
 
     return authResult(true, {
@@ -122,7 +125,8 @@ export function createSupabaseAuthService({ client, businessId, deviceLabel = ''
       });
     }
     const role = data?.role || '';
-    if (!TEAM_ROLES.has(role)) {
+    const sessionId = data?.session_id || null;
+    if (!TEAM_ROLES.has(role) || !sessionId) {
       return authResult(false, {
         message: 'La cuenta no tiene una membresía activa en este comercio.',
       });
@@ -136,7 +140,7 @@ export function createSupabaseAuthService({ client, businessId, deviceLabel = ''
         is_active: true,
       },
       permissions: Array.isArray(data?.permissions) ? data.permissions : [],
-      sessionId: data?.session_id || null,
+      sessionId,
     });
   }
 

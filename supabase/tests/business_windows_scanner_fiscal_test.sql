@@ -15,6 +15,8 @@ insert into public.businesses(id,name,status,slug,is_active)
 values('20000000-0000-4000-8000-000000000001','TABA integración','open','taba-integration',true);
 insert into public.business_members(business_id,user_id,role,is_active)
 values('20000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','staff',true);
+insert into public.identity_sessions(session_id,user_id,business_id,role_at_login,client)
+values('11000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','staff','panel_web');
 -- El test aísla POS/inventario: relaja sólo el vínculo de imagen comercial dentro
 -- de esta transacción y lo restaura con ROLLBACK. El resto de las reglas maestras sigue activo.
 alter table public.products drop constraint products_verified_publication_authority;
@@ -22,7 +24,7 @@ insert into public.products(id,business_id,name,description,category,price,image
 values('30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','Producto integración','Fixture transaccional','Gaseosas',100,'https://example.invalid/product.webp',true,'Marca integración','Cola','Botella','1 l','botella',10,true,false,'{}',true,now(),'10000000-0000-4000-8000-000000000001','integration-product','Botella',1,'l','test_only',1);
 
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"11000000-0000-4000-8000-000000000001"}';
 
 select lives_ok(
   $$select public.checkout_pos_sale('20000000-0000-4000-8000-000000000001','[{"productId":"30000000-0000-4000-8000-000000000001","quantity":2}]'::jsonb,'cash','integration-checkout-1',true)$$,

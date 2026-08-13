@@ -2038,7 +2038,10 @@ function replaceProductionCatalog(products, { hydrating = false } = {}) {
       .filter((product) => enElCarrito.has(product.id) && !ids.has(product.id))
       .map((product) => ({ ...product, available: false, stock: 0, outOfCatalog: true }));
     draft.products = retenidos.length ? [...products, ...retenidos] : products;
-    if (!products.length) draft.comboSelections = [];
+    // Un catálogo vivo vacío puede ser el estado real tras agotarse el último
+    // producto. `reconcile: live` conserva la selección del combo y la resuelve
+    // como no disponible para que la UI explique y bloquee; borrarla acá haría
+    // desaparecer la línea antes de que ese contrato pueda ejecutarse.
     if (!products.some((product) => product.categoryId === draft.activeCategory)) {
       draft.activeCategory = 'all';
     }

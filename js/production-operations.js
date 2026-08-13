@@ -1,6 +1,7 @@
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
 import { createBusinessOrderIntakeCoordinator } from './core/business-order-intake.js';
 import { normalizeWorkflowStatus } from './core/order-workflow.js';
+import { isMercadoPagoOrder } from './core/business-ops.js';
 import { createProductionRiderGpsController } from './tracking/production_rider_gps.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
 import { createSupabaseInventoryRepository } from './repositories/supabase-inventory-repository.js';
@@ -479,8 +480,23 @@ export async function handleProductionOperationsAction(target) {
   if (businessNext) {
     const guard = requireViewAccess('business');
     if (!guard.ok) return { handled: true, ...guard };
+    const orderId = businessNext.dataset.productionBusinessNext;
+    const order = getState().orders.find((candidate) => (
+      candidate.id === orderId
+      || candidate.backendId === orderId
+      || candidate.code === orderId
+    ));
+    if (!canAdvanceProductionBusinessOrder(order, businessPayments)) {
+      return {
+        handled: true,
+        ok: false,
+        message: isProductionOrderPaymentReversed(order, businessPayments)
+          ? 'El pago fue revertido. Cancelá el pedido para cerrarlo sin preparar mercadería.'
+          : 'Este pedido ya no admite ese avance.',
+      };
+    }
     return updateOrderFromAction(
-      businessNext.dataset.productionBusinessNext,
+      orderId,
       businessNext.dataset.nextStatus,
     );
   }
@@ -496,7 +512,7 @@ export async function handleProductionOperationsAction(target) {
       || candidate.code === orderId
     ));
     const current = workflowStatus(order);
-    if (!canAssignBusinessRider(order)) {
+    if (!canAssignBusinessRider(order, businessPayments)) {
       return {
         handled: true,
         ok: false,
@@ -526,11 +542,26 @@ export async function handleProductionOperationsAction(target) {
   if (businessCancel) {
     const guard = requireViewAccess('business');
     if (!guard.ok) return { handled: true, ...guard };
+    const orderId = businessCancel.dataset.productionBusinessCancel;
+    const order = getState().orders.find((candidate) => (
+      candidate.id === orderId
+      || candidate.backendId === orderId
+      || candidate.code === orderId
+    ));
+    if (!canCancelProductionBusinessOrder(order, businessPayments)) {
+      return {
+        handled: true,
+        ok: false,
+        message: isMercadoPagoOrder(order)
+          ? 'Este pedido ya fue cobrado por Mercado Pago. Abrí Pagos y gestioná el reembolso antes de cancelar.'
+          : 'Este pedido ya no admite cancelación.',
+      };
+    }
     const card = businessCancel.closest('.production-order-card');
     const reason = String(card?.querySelector('[data-production-cancel-reason]')?.value || '').trim();
     if (!reason) return { handled: true, ok: false, message: 'Ingresá un motivo antes de cancelar.' };
     return updateOrderFromAction(
-      businessCancel.dataset.productionBusinessCancel,
+      orderId,
       'canceled',
       { commandType: 'cancel_order', reason },
     );
@@ -683,9 +714,50 @@ export function nextRiderStatus(order = {}) {
   return null;
 }
 
-export function canAssignBusinessRider(order = {}) {
+export function canAssignBusinessRider(order = {}, payments = []) {
   return order.deliveryMode === 'delivery'
-    && ['ready', 'assigned'].includes(workflowStatus(order));
+    && ['ready', 'assigned'].includes(workflowStatus(order))
+    && !isProductionOrderPaymentReversed(order, payments);
+}
+
+export function isProductionOrderPaymentReversed(order, payments = []) {
+  const orderIds = new Set([
+    order?.id,
+    order?.backendId,
+    order?.code,
+  ].filter(Boolean).map(String));
+  if (!orderIds.size) return false;
+  const linked = payments.filter((payment) => orderIds.has(String(payment?.order_id || '')));
+  const isFullRefund = (payment) => (
+    String(payment?.internal_status || '').toLowerCase() === 'refunded'
+    && Number(payment?.refunded_amount || 0) >= Number(payment?.amount || 0)
+    && Number(payment?.amount || 0) > 0
+  );
+  const isReversed = (payment) => (
+    isFullRefund(payment)
+    || String(payment?.internal_status || '').toLowerCase() === 'charged_back'
+  );
+  const safelyClosed = new Set(['rejected', 'cancelled', 'canceled', 'expired', 'failed']);
+  return linked.some(isReversed) && linked.every((payment) => (
+    isReversed(payment)
+    || safelyClosed.has(String(payment?.internal_status || '').toLowerCase())
+  ));
+}
+
+export function canCancelProductionBusinessOrder(order, payments = []) {
+  return Boolean(
+    order
+    && !TERMINAL_STATUSES.has(workflowStatus(order))
+    && (!isMercadoPagoOrder(order) || isProductionOrderPaymentReversed(order, payments))
+  );
+}
+
+export function canAdvanceProductionBusinessOrder(order, payments = []) {
+  return Boolean(
+    order
+    && nextBusinessStatus(order)
+    && !isProductionOrderPaymentReversed(order, payments)
+  );
 }
 
 export function getBusinessIntakeStatus() {
@@ -1548,9 +1620,12 @@ function businessIntakeStatusMarkup() {
 }
 
 function businessOrderMarkup(order) {
-  const next = nextBusinessStatus(order);
+  const next = canAdvanceProductionBusinessOrder(order, businessPayments)
+    ? nextBusinessStatus(order)
+    : null;
   const current = workflowStatus(order);
   const terminal = TERMINAL_STATUSES.has(current);
+  const canCancel = canCancelProductionBusinessOrder(order, businessPayments);
   const itemCount = (order.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
   const items = (order.items || []).map((item) => `
     <li>
@@ -1558,7 +1633,7 @@ function businessOrderMarkup(order) {
       ${item.unit ? `<span>${escapeHtml(item.unit)}</span>` : ''}
     </li>
   `).join('');
-  const canAssignRider = canAssignBusinessRider(order);
+  const canAssignRider = canAssignBusinessRider(order, businessPayments);
   const riderOptions = activeBusinessRiders.map((rider) => `
     <option
       value="${escapeAttribute(rider.id)}"
@@ -1614,7 +1689,7 @@ function businessOrderMarkup(order) {
             ${orderActionsInFlight.has(order.id) ? 'disabled aria-disabled="true"' : ''}
           >${orderActionsInFlight.has(order.id) ? 'Confirmando…' : escapeHtml(actionLabel(next, 'business'))}</button>
         ` : ''}
-        ${!terminal ? `
+        ${canCancel ? `
           <label class="production-cancel-control">
             <span class="sr-only">Motivo de cancelación</span>
             <input type="text" maxlength="160" placeholder="Motivo obligatorio" data-production-cancel-reason>
@@ -1624,7 +1699,9 @@ function businessOrderMarkup(order) {
             type="button"
             data-production-business-cancel="${escapeAttribute(order.id)}"
           >Cancelar con motivo</button>
-        ` : ''}
+        ` : (!terminal && isMercadoPagoOrder(order)
+          ? '<p class="form-hint">Pedido cobrado por Mercado Pago: completá la devolución total desde Pagos para habilitar la cancelación.</p>'
+          : '')}
       </div>
       ${canAssignRider ? `
         <div class="production-rider-assignment">

@@ -73,7 +73,7 @@ test('autoriza owner/admin/staff/rider sólo con membresía activa del comercio'
   assert.equal(result.membership.role, 'staff');
   assert.deepEqual(
     client.calls.rpc.map(([name]) => name),
-    ['identity_current_context', 'identity_register_session'],
+    ['identity_register_session', 'identity_current_context'],
   );
   assert.equal(client.calls.filters.length, 0);
   assert.equal(client.calls.signOut, 0);
@@ -133,7 +133,7 @@ test('no autoriza una cuenta sin membresía activa', async () => {
   });
 
   assert.equal(result.ok, false);
-  assert.match(result.message, /membresía activa/i);
+  assert.match(result.message, /registrar esta sesión/i);
   assert.equal(client.calls.signOut, 1);
 });
 
@@ -257,7 +257,9 @@ function createAuthMock({
         };
       }
       if (name === 'identity_register_session') {
-        return { data: { ok: true, code: 'registered', session_id: 'session-1', role: membership?.role || null }, error: null };
+        return membership
+          ? { data: { ok: true, code: 'registered', session_id: 'session-1', role: membership.role }, error: null }
+          : { data: { ok: false, code: 'not_authorized' }, error: null };
       }
       if (name === 'identity_close_own_session') {
         return { data: { ok: true, code: 'closed' }, error: null };
@@ -300,6 +302,25 @@ test('una sesión revocada deja de autorizar el Panel con el mismo token', async
   client.rpc = async (name) => {
     if (name === 'identity_current_context') {
       return { data: { role: null, permissions: [] }, error: null };
+    }
+    return { data: null, error: null };
+  };
+  const auth = createSupabaseAuthService({ client, businessId: BUSINESS_ID });
+
+  const result = await auth.getTeamAccess();
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /membresía activa/i);
+});
+
+test('el Panel no acepta un contexto de equipo sin session_id revocable', async () => {
+  const client = createAuthMock();
+  client.rpc = async (name) => {
+    if (name === 'identity_current_context') {
+      return {
+        data: { user_id: 'team-1', role: 'owner', session_id: null, permissions: ['orders.read'] },
+        error: null,
+      };
     }
     return { data: null, error: null };
   };

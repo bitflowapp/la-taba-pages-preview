@@ -2,12 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  canAdvanceProductionBusinessOrder,
   canAssignBusinessRider,
+  canCancelProductionBusinessOrder,
   getBusinessIntakeStatus,
   handleProductionOperationsAction,
   handleProductionOperationsPageHide,
   handleProductionOperationsViewChange,
   initProductionOperations,
+  isProductionOrderPaymentReversed,
   isRoleAuthorizedForView,
   nextBusinessStatus,
   nextRiderStatus,
@@ -45,6 +48,53 @@ test('negocio asigna o reasigna rider solo antes del retiro', () => {
   assert.equal(canAssignBusinessRider({ workflowStatus: 'assigned', deliveryMode: 'delivery' }), true);
   assert.equal(canAssignBusinessRider({ workflowStatus: 'picked_up', deliveryMode: 'delivery' }), false);
   assert.equal(canAssignBusinessRider({ workflowStatus: 'ready', deliveryMode: 'pickup' }), false);
+});
+
+test('el panel productivo no ofrece cancelación genérica a un pedido cobrado por Mercado Pago', () => {
+  const mercadoPagoOrder = {
+    id: '55000000-0000-4000-8000-000000000001',
+    workflowStatus: 'submitted',
+    paymentMethodCode: 'mercadopago',
+    paymentMethod: 'Mercado Pago',
+  };
+  assert.equal(canCancelProductionBusinessOrder(mercadoPagoOrder), false);
+  const fullRefund = [{
+    order_id: mercadoPagoOrder.id,
+    internal_status: 'refunded',
+    amount: 100,
+    refunded_amount: 100,
+  }];
+  assert.equal(isProductionOrderPaymentReversed(mercadoPagoOrder, fullRefund), true);
+  assert.equal(canCancelProductionBusinessOrder(mercadoPagoOrder, fullRefund), true);
+  assert.equal(canAdvanceProductionBusinessOrder(mercadoPagoOrder, fullRefund), false);
+  assert.equal(canCancelProductionBusinessOrder(mercadoPagoOrder, [{
+    ...fullRefund[0],
+    internal_status: 'partially_refunded',
+    refunded_amount: 50,
+  }]), false);
+  assert.equal(canCancelProductionBusinessOrder(mercadoPagoOrder, [
+    ...fullRefund,
+    { ...fullRefund[0], internal_status: 'pending', refunded_amount: 0 },
+  ]), false);
+  assert.equal(canAssignBusinessRider({
+    ...mercadoPagoOrder,
+    workflowStatus: 'ready',
+    deliveryMode: 'delivery',
+  }, fullRefund), false);
+  const chargeback = [{ ...fullRefund[0], internal_status: 'charged_back', refunded_amount: 0 }];
+  assert.equal(isProductionOrderPaymentReversed(mercadoPagoOrder, chargeback), true);
+  assert.equal(canCancelProductionBusinessOrder(mercadoPagoOrder, chargeback), true);
+  assert.equal(canAdvanceProductionBusinessOrder(mercadoPagoOrder, chargeback), false);
+  assert.equal(canCancelProductionBusinessOrder({
+    workflowStatus: 'preparing',
+    paymentMethodCode: 'cash',
+    paymentMethod: 'Efectivo',
+  }), true);
+  assert.equal(canCancelProductionBusinessOrder({
+    workflowStatus: 'delivered',
+    paymentMethodCode: 'cash',
+    paymentMethod: 'Efectivo',
+  }), false);
 });
 
 test('rider sigue la cadena canónica del servidor sin saltear estados', () => {

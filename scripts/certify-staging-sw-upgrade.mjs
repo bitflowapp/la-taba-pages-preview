@@ -3,13 +3,13 @@
  * anterior.
  *
  * Es el caso de todos los clientes que hoy usan staging: tienen el worker de
- * `1d26c4b` instalado y su caché llena. El candidato cambia `sw.js` y NO cambia
- * `CACHE_NAME` —los assets son los mismos—, así que el `activate` del worker
- * nuevo no debe borrar nada. Lo que se demuestra acá:
+ * `1d26c4b` instalado y su caché llena. El candidato cambia `sw.js`, rota
+ * `CACHE_NAME` y publica un grafo nuevo; el worker anterior debe conservar su
+ * caché hasta que el lote nuevo esté completo. Lo que se demuestra acá:
  *
  *   · el navegador detecta el `sw.js` nuevo y lo instala;
  *   · la caché existente NO queda vacía en ningún momento;
- *   · no quedan dos cachés conviviendo (mezcla);
+ *   · al activar no quedan dos cachés conviviendo (mezcla);
  *   · el cliente actualizado hace el recorrido de vuelta desde el origen
  *     externo con la tienda intacta.
  *

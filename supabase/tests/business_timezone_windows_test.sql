@@ -29,8 +29,14 @@ values ('82000000-0000-4000-8000-000000000003','TABA F32 sin huso','open','taba-
 insert into public.business_members(business_id,user_id,role,is_active)
 values ('82000000-0000-4000-8000-000000000003','81000000-0000-4000-8000-000000000001','owner',true);
 
+insert into public.identity_sessions(session_id,user_id,business_id,role_at_login,client)
+values
+  ('81100000-0000-4000-8000-000000000001','81000000-0000-4000-8000-000000000001','82000000-0000-4000-8000-000000000001','owner','panel_web'),
+  ('81100000-0000-4000-8000-000000000002','81000000-0000-4000-8000-000000000001','82000000-0000-4000-8000-000000000002','owner','panel_web'),
+  ('81100000-0000-4000-8000-000000000003','81000000-0000-4000-8000-000000000001','82000000-0000-4000-8000-000000000003','owner','panel_web');
+
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"81000000-0000-4000-8000-000000000001","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"81000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"81100000-0000-4000-8000-000000000001"}';
 
 -- ── La ventana sale del negocio, no del parámetro ──────────────────────────
 -- Se pasa 'UTC' a propósito: es exactamente lo que mandaría un teléfono mal
@@ -79,6 +85,7 @@ select ok(
   '09:30 y 21:30 son momentos distintos y ambos del mismo dia comercial');
 
 -- ── Otro huso, otro dia ────────────────────────────────────────────────────
+set local request.jwt.claims = '{"sub":"81000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"81100000-0000-4000-8000-000000000002"}';
 select lives_ok(
   $$select public.prepare_daily_reconciliation(
       '82000000-0000-4000-8000-000000000002','2026-08-13','America/Argentina/Buenos_Aires',0,null,'f32-jp-window-1')$$,
@@ -94,6 +101,7 @@ select is(
   'Asia/Tokyo','y su fila lo declara');
 
 -- ── Sin huso configurado: se niega, no adivina ────────────────────────────
+set local request.jwt.claims = '{"sub":"81000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"81100000-0000-4000-8000-000000000003"}';
 select throws_ok(
   $$select public.prepare_daily_reconciliation(
       '82000000-0000-4000-8000-000000000003','2026-08-13','America/Argentina/Buenos_Aires',0,null,'f32-nohuso-1')$$,

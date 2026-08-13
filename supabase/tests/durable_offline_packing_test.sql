@@ -20,6 +20,10 @@ insert into public.business_members(business_id,user_id,role,is_active)
 values
   ('62000000-0000-4000-8000-000000000001','61000000-0000-4000-8000-000000000001','staff',true),
   ('62000000-0000-4000-8000-000000000002','61000000-0000-4000-8000-000000000002','staff',true);
+insert into public.identity_sessions(session_id,user_id,business_id,role_at_login,client)
+values
+  ('61100000-0000-4000-8000-000000000001','61000000-0000-4000-8000-000000000001','62000000-0000-4000-8000-000000000001','staff','panel_web'),
+  ('61100000-0000-4000-8000-000000000002','61000000-0000-4000-8000-000000000002','62000000-0000-4000-8000-000000000002','staff','panel_web');
 
 -- Fixture sintético: no representa aprobación ni datos comerciales reales.
 alter table public.products drop constraint products_verified_publication_authority;
@@ -54,7 +58,7 @@ select ok(
 );
 
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"61000000-0000-4000-8000-000000000001","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"61000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"61100000-0000-4000-8000-000000000001"}';
 
 select lives_ok(
   $$select public.start_packing_session('65000000-0000-4000-8000-000000000001',1,'packing:fixture:revision:1')$$,
@@ -125,7 +129,7 @@ select is((select count(*)::integer from public.business_command_receipts where 
 create temporary table packing_fixture_session on commit drop as
 select id from public.order_packing_sessions where order_id='65000000-0000-4000-8000-000000000001';
 
-set local request.jwt.claims = '{"sub":"61000000-0000-4000-8000-000000000002","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"61000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"61100000-0000-4000-8000-000000000002"}';
 select throws_ok(
   format($sql$select public.get_packing_manifest(%L::uuid)$sql$,(select id from packing_fixture_session)),
   '42501','operador no autorizado','otro negocio no obtiene el manifiesto'

@@ -25,6 +25,7 @@
 //
 // Este archivo fija los dos comportamientos por separado.
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import test, { beforeEach } from 'node:test';
 
 import {
@@ -38,6 +39,19 @@ import { getState, hydrateState, setState, updateState } from '../js/state.js';
 import { resetState, state } from './helpers.mjs';
 
 const SKU = 'qa-jugo-naranja';
+
+test('un refresco vivo con catálogo vacío no borra combos antes de reconciliarlos', () => {
+  const repositorySource = fs.readFileSync(new URL(
+    '../js/repositories/supabase_order_repository.js',
+    import.meta.url,
+  ), 'utf8');
+  const liveBranch = repositorySource.slice(
+    repositorySource.indexOf('const enElCarrito = new Set'),
+    repositorySource.indexOf("}, { reconcile: hydrating ? 'hydrate' : 'live' })"),
+  );
+  assert.doesNotMatch(liveBranch, /draft\.comboSelections\s*=\s*\[\]/);
+  assert.match(liveBranch, /draft\.products = retenidos\.length/);
+});
 
 beforeEach(() => {
   Object.defineProperty(globalThis, 'location', {

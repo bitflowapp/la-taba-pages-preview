@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v64-payment-returns';
+const CACHE_NAME = 'la-taba-runtime-v65-authoritative-gates';
 const ASSETS = [
   './',
   './index.html',
@@ -26,6 +26,7 @@ const ASSETS = [
   './pago/pendiente/index.html',
   './pago/error/index.html',
   './assets/icon.svg',
+  './assets/brand/taba2-emblem.svg',
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=3',
   './js/startup-recovery.js?v=2',

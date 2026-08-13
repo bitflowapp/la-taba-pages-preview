@@ -8,6 +8,8 @@ insert into public.businesses(id,name,status,slug,is_active)
 values ('42000000-0000-4000-8000-000000000001','TABA fiscal fixture','open','taba-fiscal-fixture',true);
 insert into public.business_members(business_id,user_id,role,is_active)
 values ('42000000-0000-4000-8000-000000000001','41000000-0000-4000-8000-000000000001','owner',true);
+insert into public.identity_sessions(session_id,user_id,business_id,role_at_login,client)
+values ('43000000-0000-4000-8000-000000000001','41000000-0000-4000-8000-000000000001','42000000-0000-4000-8000-000000000001','owner','panel_web');
 insert into public.fiscal_profiles(
   business_id,legal_name,cuit,tax_condition,business_address,environment,point_of_sale,default_currency,default_concept,
   invoice_policy,is_enabled,default_recipient_condition
@@ -77,7 +79,7 @@ select throws_ok(
 );
 
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"41000000-0000-4000-8000-000000000001","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"41000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"43000000-0000-4000-8000-000000000001"}';
 
 -- Guardar "Datos fiscales" con homologacion elegida es configuracion valida y no autoriza nada.
 select lives_ok(
@@ -122,7 +124,7 @@ update public.fiscal_profiles set
 where business_id='42000000-0000-4000-8000-000000000001';
 
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"41000000-0000-4000-8000-000000000001","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"41000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"43000000-0000-4000-8000-000000000001"}';
 select lives_ok(
   $$select public.authorize_arca_homologation('42000000-0000-4000-8000-000000000001','I_AUTHORIZE_ARCA_HOMOLOGATION')$$,
   'la frase exacta con revision contable aprobada autoriza la homologacion'
@@ -166,7 +168,7 @@ select is((select artifact_state from public.fiscal_documents where id='43000000
 select is((select state from public.fiscal_artifact_outbox where fiscal_document_id='43000000-0000-4000-8000-000000000001'), 'pending', 'autorizacion encola el artefacto privado');
 
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"41000000-0000-4000-8000-000000000001","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"41000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"43000000-0000-4000-8000-000000000001"}';
 
 select throws_ok(
   $$select public.request_credit_note('43000000-0000-4000-8000-000000000001','Lineas nulas fixture','total',null,'fixture-credit-null-lines-1')$$,
@@ -223,7 +225,7 @@ select is((select artifact_state from public.fiscal_documents where id='43000000
 select is((select sha256 from public.fiscal_document_artifacts where fiscal_document_id='43000000-0000-4000-8000-000000000001' and is_current), repeat('a',64), 'el hash SHA-256 queda persistido');
 
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"41000000-0000-4000-8000-000000000001","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"41000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"43000000-0000-4000-8000-000000000001"}';
 select is(
   (select public.authorize_fiscal_artifact_access((select artifact_id from public.list_fiscal_document_artifacts('42000000-0000-4000-8000-000000000001') where fiscal_document_id='43000000-0000-4000-8000-000000000001'),'preview') ? 'storage_path'),
   false,

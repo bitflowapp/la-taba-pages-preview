@@ -29,6 +29,19 @@ const patterns = [
     'assigned Supabase service role key',
     /SUPABASE_SERVICE_ROLE(?:_KEY)?\s*[:=]\s*['"]?(?!\$\{|\{\{|<|your_|example|replace)[A-Za-z0-9._-]{20,}/i,
   ],
+  // Estas tres las cubría un hook del plugin de Mercado Pago que en este host
+  // no corre —invoca `python3` y acá sólo existe `python`—. El gate del repo no
+  // puede depender de un hook de terceros que puede no estar: se comprobó que
+  // sin ellas, un `client_secret` o un `webhook_secret` escritos a mano pasaban
+  // sin que nada los viera.
+  [
+    'assigned client secret',
+    /['"]?client_secret['"]?\s*[:=]\s*['"](?!\$\{|\{\{|<|your_|example|replace)[A-Za-z0-9._/+-]{24,}['"]/i,
+  ],
+  [
+    'assigned webhook secret',
+    /['"]?(?:webhook[_-]?secret|x-signature)['"]?\s*[:=]\s*['"](?!\$\{|\{\{|<|your_|example|replace)[A-Za-z0-9+/=_-]{20,}['"]/i,
+  ],
 ];
 
 /*

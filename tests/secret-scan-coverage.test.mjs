@@ -47,14 +47,44 @@ test('el PAT de Supabase y los tokens de GitHub se ven', () => {
   assert.deepEqual(scanText(`github_pat_${'A1b2C3d4E5_'.repeat(6)}`), ['GitHub fine-grained token']);
 });
 
+// Las muestras se COMPONEN en tiempo de ejecución y nunca aparecen enteras como
+// literal en este archivo. No es un capricho: la primera versión las escribía
+// tal cual y el propio `npm run secrets:scan` marcaba este archivo. Un test de
+// un detector de secretos no puede parecer un secreto.
+//
+// Y algo que conviene dejar dicho: `secrets:scan` NO forma parte de
+// `npm run check`, sólo corre en CI, así que esa rotura no la veía ninguno de
+// los dos gates locales.
+const muestra = (nombre, valor) => `${nombre}=${valor}`;
+
 test('los tokens de Cloudflare y service_role asignados a mano se ven', () => {
   assert.deepEqual(
-    scanText("CLOUDFLARE_API_TOKEN = 'Zx9_kQm3PvT8sLdR2nB7hY4wE6uJ1aF0cG5iO'"),
+    scanText(muestra('CLOUDFLARE_API_TOKEN', `Zx9${'kQm3PvT8sLdR2nB7hY4wE6uJ1aF0cG5iO'}`)),
     ['assigned Cloudflare API token'],
   );
   assert.deepEqual(
-    scanText('SUPABASE_SERVICE_ROLE_KEY: "abcd1234efgh5678ijkl"'),
+    scanText(muestra('SUPABASE_SERVICE_ROLE_KEY', `abcd${'1234efgh5678ijklmnop'}`)),
     ['assigned Supabase service role key'],
+  );
+});
+
+test('el secreto de cliente y el de webhook también se ven', () => {
+  // Los cubría un hook del plugin de Mercado Pago que en este host no corre
+  // (invoca `python3` y acá sólo hay `python`). El gate del repo no puede
+  // depender de un hook de terceros.
+  const comilla = String.fromCharCode(39);
+  const asignar = (clave, valor) => `${comilla}${clave}${comilla}: ${comilla}${valor}${comilla}`;
+  assert.deepEqual(
+    scanText(asignar('client_secret', 'c'.repeat(40))),
+    ['assigned client secret'],
+  );
+  assert.deepEqual(
+    scanText(asignar('webhook_secret', `AbCdEf${'0123456789'}xyzw`)),
+    ['assigned webhook secret'],
+  );
+  assert.deepEqual(
+    scanText(asignar('x-signature', `AbCdEf${'0123456789'}xyzw`)),
+    ['assigned webhook secret'],
   );
 });
 
@@ -66,13 +96,17 @@ test('las referencias a secretos de CI no son secretos', () => {
     'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
     'MERCADOPAGO_ACCESS_TOKEN=your_token_here',
     'SUPABASE_SERVICE_ROLE_KEY=<replace-me>',
+    'client_secret: ${{ secrets.MP_CLIENT_SECRET }}',
   ]) {
     assert.deepEqual(scanText(linea), [], `falso positivo con: ${linea}`);
   }
 });
 
 test('lo que ya detectaba se sigue detectando', () => {
+  // Compuestas, por lo mismo que arriba: escritas enteras, este archivo se
+  // denunciaba a sí mismo.
+  const guiones = '-'.repeat(5);
   assert.deepEqual(scanText(`APP_USR-${'1234567890'.repeat(3)}`), ['Mercado Pago access token']);
-  assert.deepEqual(scanText('-----BEGIN PRIVATE KEY-----'), ['private key']);
-  assert.deepEqual(scanText('AKIAIOSFODNN7EXAMPLE'), ['AWS access key']);
+  assert.deepEqual(scanText(`${guiones}BEGIN PRIVATE KEY${guiones}`), ['private key']);
+  assert.deepEqual(scanText(`AKIA${'IOSFODNN7EXAMPLE'}`), ['AWS access key']);
 });

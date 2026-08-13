@@ -513,7 +513,7 @@ function businessStateLabel(status) {
 // Se fija el reloj de 24 horas y la zona del negocio. La zona va explícita y no
 // la del navegador: el Panel se abre desde el teléfono que haya, y la hora de un
 // pedido no puede cambiar según qué aparato lo mire.
-const PANEL_TIMEZONE = 'America/Argentina/Buenos_Aires';
+export const PANEL_TIMEZONE = 'America/Argentina/Buenos_Aires';
 const PANEL_TIMESTAMP_FORMAT = Object.freeze({
   day: '2-digit',
   month: '2-digit',

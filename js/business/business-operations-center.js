@@ -16,6 +16,7 @@ import {
 import { evaluateDailyClosure, validateClosureOverride } from './business-day-control.js';
 import { buildStorefrontPreview, describeDraft, planScanOutcome, validateProductDraft } from './business-product-onboarding.js';
 import {
+  PANEL_TIMEZONE,
   renderDayCloseSurface, renderDayOpenSurface, renderDevicesSurface, renderFiscalSetupSurface,
   renderOperationCenterSurface, renderPaymentsSetupSurface, renderPaymentsSurface, renderProductOnboardingSurface,
 } from './business-panel-render.js';
@@ -1307,12 +1308,24 @@ function thermalContent(row) {
   const items = (document.fiscal_document_items || []).map((item) => `${item.quantity} x ${item.description} ${Number(item.net_amount || 0) + Number(item.tax_amount || 0)}`).join('\n');
   return ['TABA - COMPROBANTE FISCAL', `${document.document_intent === 'credit_note' ? 'NOTA DE CREDITO' : 'FACTURA'} ${document.document_type || ''} ${document.document_number || ''}`, `CAE ${document.cae || ''}`, `VTO CAE ${document.cae_expiration || ''}`, items, `TOTAL ${document.currency || 'PES'} ${Number(document.total_amount || 0).toFixed(2)}`].filter(Boolean).join('\n');
 }
+/*
+ * El día comercial NO lo define el aparato que abre el Panel.
+ *
+ * Esto devolvía `Intl.DateTimeFormat().resolvedOptions().timeZone`, es decir la
+ * zona del teléfono, y ese valor terminaba recortando la ventana del cierre de
+ * caja: el único registro que este sistema congela para siempre. Un dispositivo
+ * en UTC corría el día tres horas y dejaba la noche entera del día anterior
+ * fuera de su propio cierre, firmada en un SHA-256 imposible de corregir.
+ *
+ * Desde 20260814020000 la ventana la decide el servidor con
+ * `businesses.operating_timezone` y este valor ya no interviene en el cálculo.
+ * Se sigue usando para PREFORMATEAR la fecha visible, y por eso también tiene
+ * que ser la del negocio: si no, el formulario propone el día equivocado.
+ * Se reusa la constante que el Panel ya declaraba para mostrar horas, en vez de
+ * sumar una cuarta copia de la zona.
+ */
 function operationTimezone() {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Argentina/Buenos_Aires';
-  } catch (_) {
-    return 'America/Argentina/Buenos_Aires';
-  }
+  return PANEL_TIMEZONE;
 }
 function operationBusinessDate(date = new Date()) {
   try {

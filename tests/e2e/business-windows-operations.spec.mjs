@@ -198,6 +198,15 @@ async function installRuntime(page, session, fiscal = null) {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/auth/v1/user')) return json(route, session.user);
     if (url.pathname.includes('/auth/v1/token')) return json(route, session);
+    if (url.pathname.includes('/rest/v1/rpc/identity_current_context')) {
+      return json(route, {
+        business_id: BUSINESS_ID,
+        user_id: STAFF_ID,
+        role: session.fixtureRole || 'staff',
+        session_id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+        permissions: ['orders.read', 'orders.operate', 'orders.dispatch'],
+      });
+    }
     if (url.pathname.includes('/rest/v1/business_members')) return json(route, { business_id: BUSINESS_ID, user_id: STAFF_ID, role: session.fixtureRole || 'staff', is_active: true });
     if (url.pathname.includes('/rest/v1/businesses')) return json(route, businessFixture());
     if (url.pathname.includes('/rest/v1/product_barcodes')) return json(route, barcodeFixture(url.searchParams.get('gtin') || ''));

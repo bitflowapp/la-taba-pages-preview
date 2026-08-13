@@ -113,6 +113,16 @@ test('el panel Negocio real muestra estado honesto y conserva tarjetas ante fall
       await json(route, session.user);
       return;
     }
+    if (url.pathname.includes('/rest/v1/rpc/identity_current_context')) {
+      await json(route, {
+        business_id: BUSINESS_ID,
+        user_id: STAFF_ID,
+        role: 'staff',
+        session_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        permissions: ['orders.read', 'orders.operate', 'orders.dispatch'],
+      });
+      return;
+    }
     if (url.pathname.includes('/rest/v1/business_members')) {
       await json(route, {
         business_id: BUSINESS_ID,
@@ -390,6 +400,15 @@ test('el Panel no le borra al operador lo que está escribiendo', async ({ page 
     const url = new URL(route.request().url());
     if (url.pathname.includes('/auth/v1/token')) return json(route, session);
     if (url.pathname.endsWith('/auth/v1/user')) return json(route, session.user);
+    if (url.pathname.includes('/rest/v1/rpc/identity_current_context')) {
+      return json(route, {
+        business_id: BUSINESS_ID,
+        user_id: STAFF_ID,
+        role: 'staff',
+        session_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        permissions: ['orders.read', 'orders.operate', 'orders.dispatch'],
+      });
+    }
     if (url.pathname.includes('/rest/v1/business_members')) {
       return json(route, { business_id: BUSINESS_ID, user_id: STAFF_ID, role: 'staff', is_active: true });
     }

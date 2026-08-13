@@ -1,50 +1,51 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- LAS OBSERVACIONES DEL CLIENTE LLEGAN AL PANEL TAMBIÉN CUANDO PAGA CON MP
 --
--- ESTADO: PREPARADA, NO APLICADA. No se ejecutó contra ningún entorno.
+-- ESTADO: PREPARADA, NO APLICADA.
+--
+-- RECONSTRUIDA SOBRE LA DEFINICIÓN VIGENTE. La primera versión de esta
+-- migración partía de 20260808191000 y habría REVERTIDO en silencio el trabajo
+-- de 20260812220000_business_operations_checkout_enforcement, que ya está
+-- aplicado en staging y redefine estas dos mismas funciones. `create or replace`
+-- pisa y sigue: no falla, no avisa. Lo encontró el preflight comparando el
+-- ledger real contra los archivos locales.
+--
+-- Esta versión toma como base el cuerpo de 20260812220000 y le agrega ÚNICAMENTE
+-- la intención de F05. Verificado con diff contra esa base: cinco cambios y
+-- ninguno más. Queda intacto todo lo que aquella migración incorporó:
+--   · verificación de HORARIO de atención (`business_is_open`);
+--   · resolución de ZONA de entrega y su cobertura (`resolve_delivery_zone`);
+--   · envío y mínimo congelados en la sesión;
+--   · `delivery_zone_id`, `delivery_zone_name` y `neighborhood` en el pedido.
 --
 -- QUÉ ESTABA MAL
 -- --------------
--- El campo «Observaciones del pedido» —«tocar timbre», «dejar en portería»,
--- «sin hielo»— se escribe, se valida y se pierde cuando el medio de pago es
--- Mercado Pago. El camino DIRECTO sí lo manda (`customer_notes` en el payload
--- de `create_order_with_items`); el de Checkout Pro no:
--- `buildMercadoPagoCheckoutPayload` nunca incluyó las notas, y
--- `finalize_paid_checkout_session` nunca insertó `customer_notes` en el pedido.
--- El negocio prepara y el rider sale sin la indicación que la persona escribió.
+-- El campo «Observaciones del pedido» —«tocar timbre», «dejar en portería»— se
+-- escribe, se valida y se pierde cuando el medio de pago es Mercado Pago. El
+-- camino DIRECTO sí lo manda: `create_order_with_items_core` lo lee del payload
+-- (`customer_notes`/`notes`) desde 20260812220000. El de Checkout Pro no.
 --
 -- POR QUÉ NO ALCANZABA CON TOCAR EL CLIENTE
 -- -----------------------------------------
 -- `create_checkout_session` valida el payload contra una LISTA BLANCA y levanta
 -- «campo no permitido en checkout» ante cualquier clave que no conozca. Agregar
--- `notes` sólo del lado del navegador habría hecho que el checkout entero
--- fallara: un P1 convertido en P0. Por eso las dos mitades viajan juntas.
+-- `notes` sólo del lado del navegador habría hecho fallar el checkout entero.
 --
--- QUÉ CAMBIA (cinco puntos, verificados con diff contra la definición anterior)
--- ---------------------------------------------------------------------------
+-- LOS CINCO CAMBIOS
+-- -----------------
 --   1. `notes` entra a la lista blanca del payload;
 --   2. se declara `v_notes`;
 --   3. se sanea —sin caracteres de control, recortado a 280— y se guarda dentro
 --      de `contact_snapshot`, para NO agregar una columna a `checkout_sessions`;
 --   4. el INSERT del pedido suma la columna `customer_notes`;
---   5. y su valor sale del snapshot de la sesión.
---
--- No se toca: el cálculo de importes, la reserva de stock, la validación de
--- contacto y dirección, el punto de entrega confirmado, la idempotencia, ni
--- ninguna de las dos firmas. `orders.customer_notes` ya existía desde
--- 20260601205707: no hay cambio de esquema.
+--   5. su valor sale del snapshot de la sesión.
 --
 -- CÓMO SE REVIERTE
 -- ----------------
--- Volver a aplicar las dos funciones de
--- 20260808191000_checkout_pro_delivery_location_confirmation.sql y quitar
--- `notes` del payload en js/payments/mercadopago-checkout.js. Los pedidos ya
--- creados conservan lo que se les haya escrito; no hay dato que migrar.
---
--- CÓMO SE COMPRUEBA QUE SIRVIÓ
--- ----------------------------
--- Un pedido con Mercado Pago y una observación escrita tiene que llegar al
--- Panel con esa observación visible. Antes llegaba con el campo vacío.
+-- Volver a aplicar las dos funciones tal como están en
+-- 20260812220000_business_operations_checkout_enforcement.sql, y quitar `notes`
+-- del payload en js/payments/mercadopago-checkout.js. No hay cambio de esquema:
+-- `orders.customer_notes` existe desde 20260601205707.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION public.create_checkout_session(p_customer_id uuid, p_payload jsonb)
@@ -75,6 +76,9 @@ declare
   v_reference text;
   v_city text;
   v_province text;
+  v_neighborhood text;
+  v_zone jsonb;
+  v_minimum numeric(12, 2);
   v_postal_code text;
   v_address_label text;
   v_address_source text;
@@ -174,6 +178,7 @@ begin
      where key not in (
        'customer_address_id', 'label', 'street', 'street_number', 'floor',
        'apartment', 'reference', 'city', 'province', 'postal_code',
+       'neighborhood',
        'latitude', 'longitude', 'geolocation_accuracy', 'source',
        'location_source', 'location_confirmed_at'
      )
@@ -247,6 +252,7 @@ begin
     v_reference := v_saved_address.reference;
     v_city := v_saved_address.city;
     v_province := v_saved_address.province;
+    v_neighborhood := v_saved_address.neighborhood;
     v_postal_code := v_saved_address.postal_code;
     v_address_source := v_saved_address.source;
     v_latitude := v_saved_address.latitude;
@@ -273,6 +279,7 @@ begin
     v_reference := nullif(btrim(coalesce(v_address ->> 'reference', '')), '');
     v_city := nullif(btrim(coalesce(v_address ->> 'city', '')), '');
     v_province := nullif(btrim(coalesce(v_address ->> 'province', '')), '');
+    v_neighborhood := nullif(btrim(coalesce(v_address ->> 'neighborhood', '')), '');
     v_postal_code := nullif(btrim(coalesce(v_address ->> 'postal_code', '')), '');
     v_address_source := nullif(btrim(coalesce(v_address ->> 'source', 'manual')), '');
     v_location_source := lower(nullif(btrim(coalesce(v_address ->> 'location_source', '')), ''));
@@ -312,6 +319,7 @@ begin
     or char_length(coalesce(v_city, '')) > 100
     or char_length(coalesce(v_province, '')) > 100
     or char_length(coalesce(v_postal_code, '')) > 20
+    or char_length(coalesce(v_neighborhood, '')) > 100
     or v_address_source not in ('manual', 'gps', 'geocoder', 'previous_order') then
     raise exception 'direccion invalida' using errcode = '22023';
   end if;
@@ -365,9 +373,9 @@ begin
   end if;
 
   -- Las observaciones del cliente («tocar timbre», «dejar en portería») se
-  -- sanean acá con el mismo criterio que el resto del texto libre: sin
-  -- caracteres de control y con tope de largo. Viajan dentro del snapshot de
-  -- contacto para no agregar una columna a `checkout_sessions`.
+  -- sanean con el mismo criterio que el resto del texto libre: sin caracteres
+  -- de control y con tope de largo. Viajan dentro del snapshot de contacto para
+  -- no agregar una columna a `checkout_sessions`.
   v_notes := nullif(btrim(regexp_replace(coalesce(p_payload ->> 'notes', ''), '[[:cntrl:]]', ' ', 'g')), '');
   if v_notes is not null and char_length(v_notes) > 280 then
     v_notes := substr(v_notes, 1, 280);
@@ -385,6 +393,7 @@ begin
     'city', v_city,
     'province', v_province,
     'postal_code', v_postal_code,
+    'neighborhood', v_neighborhood,
     'source', v_address_source,
     'latitude', v_latitude,
     'longitude', v_longitude,
@@ -721,10 +730,44 @@ begin
     end if;
   end if;
 
+  -- ── HORARIO, COBERTURA, ENVÍO Y MÍNIMO ─────────────────────────────────────
+  -- Se pregunta DESPUÉS de bloquear los productos y ANTES de dejar la sesión
+  -- pagable: acá todavía se puede abortar y la transacción devuelve el stock
+  -- sola. Un `raise` después del pago sería lo peor posible, y por eso ninguna
+  -- de estas comprobaciones vive en la finalización.
+  if not public.business_is_open(v_business_id, v_fulfillment_type, clock_timestamp()) then
+    raise exception 'BUSINESS_CLOSED'
+      using errcode = '55000',
+            detail = 'el comercio no esta abierto para este canal',
+            hint = 'reintentar dentro del horario de atencion';
+  end if;
+  if v_contains_alcohol and coalesce(v_business.alcohol_hours_enforced, false)
+    and not public.business_is_open(v_business_id, 'alcohol', clock_timestamp()) then
+    raise exception 'ALCOHOL_WINDOW_CLOSED'
+      using errcode = '55000',
+            detail = 'la venta de alcohol esta fuera de la ventana configurada';
+  end if;
+
   if v_fulfillment_type = 'delivery' then
-    v_delivery_fee := v_business.delivery_fee;
-    if v_delivery_fee is null or v_business.minimum_delivery_subtotal is null
-      or (v_subtotal - v_discount_total) < v_business.minimum_delivery_subtotal then
+    -- La cobertura se resuelve con el MISMO punto confirmado que ya pasó la
+    -- compuerta de arriba y que viaja en la instantánea de la sesión.
+    v_zone := public.resolve_delivery_zone(
+      v_business_id, v_latitude::double precision, v_longitude::double precision, v_neighborhood);
+    if not coalesce((v_zone ->> 'eligible')::boolean, false) then
+      raise exception 'OUT_OF_DELIVERY_ZONE'
+        using errcode = '55000',
+              detail = 'la direccion no esta dentro de la cobertura declarada',
+              hint = 'ofrecer retiro en el local';
+    end if;
+    v_delivery_fee := (v_zone ->> 'delivery_fee')::numeric(12, 2);
+    v_minimum := nullif(v_zone ->> 'minimum_subtotal', '')::numeric(12, 2);
+    if v_delivery_fee is null then
+      raise exception 'configuracion o minimo de delivery no valido' using errcode = '23514';
+    end if;
+    if not coalesce((v_zone ->> 'enforced')::boolean, false) and v_minimum is null then
+      raise exception 'configuracion o minimo de delivery no valido' using errcode = '23514';
+    end if;
+    if v_minimum is not null and (v_subtotal - v_discount_total) < v_minimum then
       raise exception 'configuracion o minimo de delivery no valido' using errcode = '23514';
     end if;
   end if;
@@ -734,6 +777,9 @@ begin
      set subtotal = v_subtotal,
          discount_total = v_discount_total,
          delivery_fee = v_delivery_fee,
+         delivery_zone_id = nullif(v_zone ->> 'zone_id', '')::uuid,
+         delivery_zone_name = nullif(v_zone ->> 'zone_name', ''),
+         delivery_minimum_subtotal = v_minimum,
          total = v_total,
          contains_alcohol = v_contains_alcohol,
          age_confirmed_at = case when v_contains_alcohol then clock_timestamp() else null end,
@@ -824,6 +870,7 @@ begin
     delivery_postal_code, delivery_address_label, delivery_address_source, delivery_snapshot_created_at,
     delivery_latitude, delivery_longitude, delivery_geolocation_accuracy,
     delivery_location_source, delivery_location_confirmed_at,
+    delivery_zone_id, delivery_zone_name, delivery_area_declared,
     payment_method, subtotal, discount_total, delivery_fee, total,
     customer_notes
   ) values (
@@ -856,6 +903,9 @@ begin
       then nullif(v_session.address_snapshot ->> 'location_source', '') end,
     case when v_session.fulfillment_type = 'delivery'
       then nullif(v_session.address_snapshot ->> 'location_confirmed_at', '')::timestamptz end,
+    v_session.delivery_zone_id, v_session.delivery_zone_name,
+    case when v_session.fulfillment_type = 'delivery'
+      then nullif(v_session.address_snapshot ->> 'neighborhood', '') end,
     'mercadopago', v_session.subtotal, v_session.discount_total, v_session.delivery_fee, v_session.total,
     -- Lo que el cliente escribió llega al Panel y al rider. Antes se perdía acá.
     nullif(v_session.contact_snapshot ->> 'notes', '')
@@ -892,5 +942,9 @@ begin
 end;
 $function$;
 
+comment on function public.create_order_with_items_core(jsonb) is
+  'Alta autoritativa del pedido directo. Horario, cobertura, envío y mínimo salen del backend; el cliente no manda ninguno de los cuatro.';
 comment on function public.create_checkout_session(uuid, jsonb) is
-  'Checkout Pro: valida contacto, direccion y punto de entrega confirmado antes de reservar stock.';
+  'Sesión de Checkout Pro. Verifica horario y cobertura antes de dejarla pagable, y congela zona, envío y mínimo en la sesión.';
+comment on function public.finalize_paid_checkout_session(uuid) is
+  'Cierra la sesión pagada. No vuelve a evaluar horario ni cobertura: corre despues del dinero. Copia al pedido la zona que decidio la sesion.';

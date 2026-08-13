@@ -25,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { buildMercadoPagoCheckoutPayload } from '../js/payments/mercadopago-checkout.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const MIGRACION = 'supabase/migrations/20260812235000_checkout_pro_carries_customer_notes.sql';
+const MIGRACION = 'supabase/migrations/20260813020000_checkout_pro_carries_customer_notes.sql';
 const leer = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 const BASE = {
@@ -102,4 +102,36 @@ test('no se tocó nada del dinero ni del stock', () => {
   assert.doesNotMatch(sql, /alter table public\.orders/i);
   assert.doesNotMatch(sql, /alter table public\.checkout_sessions/i);
   assert.doesNotMatch(sql, /drop /i);
+});
+
+// La reconstrucción sobre la definición VIGENTE no puede perder lo que esa
+// definición trajo.
+//
+// La primera versión de esta migración partía de 20260808191000 y habría
+// revertido en silencio `20260812220000_business_operations_checkout_enforcement`,
+// que ya vive en staging y redefine estas dos mismas funciones. `create or
+// replace` pisa y sigue: no falla, no avisa. Lo destapó el preflight comparando
+// el ledger real contra los archivos locales.
+//
+// Este test es la prueba de que la versión nueva conserva aquel trabajo.
+test('la migración de notas conserva horario y cobertura del enforcement', () => {
+  const sql = leer(MIGRACION);
+
+  // Horario de atención.
+  assert.match(sql, /business_is_open/, 'se perdió la verificación de horario');
+  // Zona de entrega y su cobertura.
+  assert.match(sql, /resolve_delivery_zone/, 'se perdió la resolución de zona');
+  // La zona decidida viaja al pedido.
+  assert.match(sql, /v_session\.delivery_zone_id, v_session\.delivery_zone_name/);
+  // Y el barrio declarado, que agregó 20260812240000.
+  assert.match(sql, /address_snapshot ->> 'neighborhood'/);
+});
+
+test('parte de la definición vigente y no de la vieja', () => {
+  const sql = leer(MIGRACION);
+  // Marca inequívoca del cuerpo moderno: el pedido guarda la zona resuelta.
+  assert.match(sql, /delivery_zone_id/);
+  // Y la sesión congela envío y mínimo, que es lo que agregó el enforcement.
+  assert.match(sql, /create or replace function public\.create_checkout_session/i);
+  assert.match(sql, /create or replace function public\.finalize_paid_checkout_session/i);
 });

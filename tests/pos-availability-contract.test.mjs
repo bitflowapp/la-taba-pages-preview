@@ -32,7 +32,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const migraciones = path.join(root, 'supabase', 'migrations');
 const leer = (archivo) => fs.readFileSync(path.join(migraciones, archivo), 'utf8');
 
-const CORRECCION = '20260812234000_pos_last_unit_keeps_availability_contract.sql';
+const CORRECCION = '20260813010000_pos_last_unit_keeps_availability_contract.sql';
 const CONTRATO = '20260809060000_commercial_price_and_stock_contract.sql';
 const ORIGEN = '20260802160000_business_windows_scanner_fiscal.sql';
 

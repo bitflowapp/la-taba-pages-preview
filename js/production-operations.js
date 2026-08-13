@@ -53,6 +53,9 @@ let initialized = false;
 let repository = null;
 let auth = null;
 let authStop = null;
+// El último markup pintado por vista, para no reemplazar el DOM cuando el
+// contenido es idéntico. Se limpia en `resetProductionOperationsForTests`.
+const lastWorkspaceMarkup = new Map();
 let notify = () => {};
 let notifyOrderAlert = () => {};
 let refreshSequence = 0;
@@ -709,6 +712,7 @@ export function resetProductionOperationsForTests() {
   authStop?.();
   authStop = null;
   accessRefreshChain = Promise.resolve();
+  lastWorkspaceMarkup.clear();
   initialized = false;
   repository = null;
   auth = null;
@@ -1222,9 +1226,103 @@ function renderAccessSurface(view) {
     workspace.replaceChildren();
     return;
   }
-  workspace.innerHTML = view === 'business'
-    ? businessWorkspaceMarkup()
-    : riderWorkspaceMarkup();
+  const markup = view === 'business' ? businessWorkspaceMarkup() : riderWorkspaceMarkup();
+  // Si no cambió nada, no se toca el DOM. El ciclo de sondeo repinta el Panel
+  // varias veces por vuelta y muchas de esas veces el contenido es idéntico.
+  if (lastWorkspaceMarkup.get(view) === markup) return;
+
+  // Lo que el operador está escribiendo o eligiendo no le pertenece al render:
+  // se rescata antes de reemplazar el DOM y se devuelve después.
+  //
+  // El motivo de cancelación se tipea en un `<input>` SIN atributo `value`, así
+  // que el `innerHTML` lo borraba. Y el rider elegido vivía sólo en el `select`:
+  // el único `selected` del markup sale de `order.assignedRiderId`, que en una
+  // asignación inicial está vacío, así que el navegador volvía a la primera
+  // opción de la lista. Con pedidos entrando cada pocos segundos, elegir un
+  // rider o escribir un motivo era una carrera contra el repintado.
+  const borradores = capturarBorradoresDelOperador(workspace);
+  const foco = describirFoco(workspace);
+
+  lastWorkspaceMarkup.set(view, markup);
+  workspace.innerHTML = markup;
+
+  restaurarBorradoresDelOperador(workspace, borradores);
+  restaurarFoco(workspace, foco);
+}
+
+/** El id del pedido de una tarjeta, tomado de sus propias acciones. */
+function idDeLaTarjeta(card) {
+  return card.querySelector('[data-production-business-cancel]')?.dataset.productionBusinessCancel
+    || card.querySelector('[data-production-business-assign]')?.dataset.productionBusinessAssign
+    || '';
+}
+
+function capturarBorradoresDelOperador(workspace) {
+  const borradores = new Map();
+  workspace.querySelectorAll('.production-order-card').forEach((card) => {
+    const id = idDeLaTarjeta(card);
+    if (!id) return;
+    const motivo = card.querySelector('[data-production-cancel-reason]')?.value || '';
+    const rider = card.querySelector('[data-production-rider-select]')?.value || '';
+    if (motivo || rider) borradores.set(id, { motivo, rider });
+  });
+  return borradores;
+}
+
+function restaurarBorradoresDelOperador(workspace, borradores) {
+  if (!borradores.size) return;
+  workspace.querySelectorAll('.production-order-card').forEach((card) => {
+    const guardado = borradores.get(idDeLaTarjeta(card));
+    if (!guardado) return;
+    const motivo = card.querySelector('[data-production-cancel-reason]');
+    if (motivo && guardado.motivo) motivo.value = guardado.motivo;
+    const rider = card.querySelector('[data-production-rider-select]');
+    // Sólo si la opción sigue existiendo: un rider que salió de turno no puede
+    // quedar seleccionado de forma fantasma.
+    if (rider && guardado.rider
+      && Array.from(rider.options || []).some((option) => option.value === guardado.rider)) {
+      rider.value = guardado.rider;
+    }
+  });
+}
+
+/**
+ * Dónde estaba el cursor. Perder el foco a mitad de una palabra es peor que
+ * perder el texto: la persona sigue tecleando y las letras no van a ningún lado.
+ */
+function describirFoco(workspace) {
+  const activo = document.activeElement;
+  if (!activo || !workspace.contains(activo)) return null;
+  const card = activo.closest?.('.production-order-card');
+  const campo = activo.matches?.('[data-production-cancel-reason]')
+    ? 'motivo'
+    : activo.matches?.('[data-production-rider-select]') ? 'rider' : '';
+  if (!card || !campo) return null;
+  return {
+    id: idDeLaTarjeta(card),
+    campo,
+    inicio: activo.selectionStart ?? null,
+    fin: activo.selectionEnd ?? null,
+  };
+}
+
+function restaurarFoco(workspace, foco) {
+  if (!foco?.id) return;
+  const card = Array.from(workspace.querySelectorAll('.production-order-card'))
+    .find((candidate) => idDeLaTarjeta(candidate) === foco.id);
+  const selector = foco.campo === 'motivo'
+    ? '[data-production-cancel-reason]'
+    : '[data-production-rider-select]';
+  const destino = card?.querySelector(selector);
+  if (!destino) return;
+  destino.focus();
+  if (foco.campo === 'motivo' && foco.inicio != null && typeof destino.setSelectionRange === 'function') {
+    try {
+      destino.setSelectionRange(foco.inicio, foco.fin ?? foco.inicio);
+    } catch (_) {
+      // Un input que no admite selección no puede romper el render.
+    }
+  }
 }
 
 // El orden del día: abrir, mirar, atender, preparar, cobrar, cerrar.

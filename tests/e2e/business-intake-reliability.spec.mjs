@@ -373,3 +373,76 @@ async function captureEvidence(page, filename) {
     fullPage: true,
   });
 }
+
+// F23: el Panel reescribía todo su DOM en cada pase de render, y con eso se
+// llevaba puesto lo que el operador estaba escribiendo.
+//
+// El motivo de cancelación se tipea en un <input> SIN atributo `value`, así que
+// el `innerHTML` lo borraba; y el rider elegido vivía sólo en el `select`, cuyo
+// único `selected` sale de `order.assignedRiderId` —vacío en una asignación
+// inicial—, así que el navegador volvía a la primera opción. Con pedidos
+// entrando cada pocos segundos, escribir un motivo era una carrera contra el
+// repintado.
+test('el Panel no le borra al operador lo que está escribiendo', async ({ page }) => {
+  const rows = [syntheticDatabaseOrder(1)];
+  const session = staffSession();
+  await page.route(`${SUPABASE_URL}/**`, async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.includes('/auth/v1/token')) return json(route, session);
+    if (url.pathname.endsWith('/auth/v1/user')) return json(route, session.user);
+    if (url.pathname.includes('/rest/v1/business_members')) {
+      return json(route, { business_id: BUSINESS_ID, user_id: STAFF_ID, role: 'staff', is_active: true });
+    }
+    if (url.pathname.includes('/rest/v1/orders')) {
+      return json(route, rows, { 'content-range': `0-${Math.max(0, rows.length - 1)}/${rows.length}` });
+    }
+    if (url.pathname.includes('/rest/v1/businesses')) return json(route, businessFixture());
+    if (url.pathname.includes('/rest/v1/products')) return json(route, [], { 'content-range': '0-0/0' });
+    return json(route, []);
+  });
+  await page.addInitScript(({ businessId, session: persistedSession, supabaseUrl }) => {
+    globalThis.__LA_TABA_RUNTIME_CONFIG__ = {
+      mode: 'production',
+      repository: {
+        provider: 'supabase',
+        deploymentEnvironment: 'staging',
+        supabaseUrl,
+        publishableKey: 'sb_publishable_business_intake_e2e',
+        businessId,
+        pollMs: 60_000,
+      },
+    };
+    localStorage.setItem('sb-taba-business-intake-e2e-auth-token', JSON.stringify(persistedSession));
+  }, { businessId: BUSINESS_ID, session, supabaseUrl: SUPABASE_URL });
+
+  await page.goto('/#business');
+  const workspace = page.locator('[data-production-workspace="business"]');
+  await expect(workspace).toBeVisible();
+  await workspace.locator('[data-production-orders-view]').click();
+  await expect(workspace.locator('.production-order-card')).toHaveCount(1);
+
+  // El operador empieza a escribir el motivo de cancelación.
+  const motivo = workspace.locator('[data-production-cancel-reason]').first();
+  await motivo.click();
+  await motivo.fill('El cliente no atiende el portero');
+  await expect(motivo).toBeFocused();
+
+  // Y mientras tanto entra otro pedido: el Panel repinta.
+  rows.push(syntheticDatabaseOrder(2));
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('pageshow'));
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(workspace.locator('.production-order-card')).toHaveCount(2);
+
+  // Lo escrito sigue ahí, en SU tarjeta, y el cursor no se fue.
+  const motivoDespues = workspace.locator('[data-production-cancel-reason]').first();
+  await expect(motivoDespues).toHaveValue('El cliente no atiende el portero');
+  await expect(motivoDespues).toBeFocused();
+
+  // Y la otra tarjeta no heredó el texto: los borradores son por pedido.
+  const motivos = await workspace.locator('[data-production-cancel-reason]').evaluateAll(
+    (nodes) => nodes.map((node) => node.value),
+  );
+  expect(motivos.filter((valor) => valor).length).toBe(1);
+});

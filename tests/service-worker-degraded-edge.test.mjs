@@ -104,7 +104,7 @@ const portalCautivo = () => new Response('<!doctype html><h1>Iniciá sesión en 
   headers: { 'content-type': 'text/html; charset=utf-8' },
 });
 
-const ESTILOS = `${ORIGEN}/styles.css?v=50`;
+const ESTILOS = `${ORIGEN}/styles.css?v=51`;
 
 for (const status of [503, 404, 500, 403]) {
   test(`un ${status} del borde no reemplaza a la hoja de estilos guardada`, async () => {
@@ -147,7 +147,7 @@ test('la página del portal cautivo NO se guarda: envenenaría la caché hasta l
 });
 
 test('un módulo servido como HTML tampoco pasa', async () => {
-  const modulo = `${ORIGEN}/js/app.js?v=41`;
+  const modulo = `${ORIGEN}/js/app.js?v=42`;
   const worker = cargarWorker({
     red: async () => portalCautivo(),
     enCache: [[modulo, new Response('export const ok = 1;', {

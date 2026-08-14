@@ -49,7 +49,11 @@ export const GROWTH_CAMPAIGNS = Object.freeze([
     enabled: true,
     kind: 'combo',
     placements: ['hero'],
-    categoryIds: ['cervezas', 'energizantes'],
+    // SOLO cervezas, la categoría comercial del combo en su manifiesto. El
+    // combo trae Red Bull, pero la afinidad por energizantes no puede empujar
+    // una pieza con alcohol al tope para alguien que sólo miró energizantes:
+    // esa persona tiene su propio hero sin alcohol.
+    categoryIds: ['cervezas'],
     comboId: 'combo-noche-larga',
     priority: 50,
     contexts: ['evening', 'night', 'friday', 'weekend'],

@@ -188,7 +188,7 @@ function redSana(transformar = null) {
   };
 }
 
-const ESTILOS = './styles.css?v=50';
+const ESTILOS = './styles.css?v=51';
 
 test('un manifiesto nuevo rota la caché y nunca instala un precache mezclado', async () => {
   const cacheAnterior = 'la-taba-runtime-v63-rc-final';
@@ -242,7 +242,7 @@ test('instalar sobre un portal cautivo tampoco guarda su página como módulo', 
 
   await assert.rejects(worker.instalar());
 
-  assert.equal(worker.guardada('./js/app.js?v=41'), undefined);
+  assert.equal(worker.guardada('./js/app.js?v=42'), undefined);
   assert.equal(worker.guardada('./js/state.js'), undefined);
 });
 
@@ -267,7 +267,7 @@ test('un asset que contesta mal aborta el worker nuevo sin dejar caché parcial'
 
   assert.equal(worker.entradas().length, 0);
   assert.equal(worker.guardada(ESTILOS), undefined);
-  assert.equal(worker.guardada('./styles/tracking.css?v=50'), undefined);
+  assert.equal(worker.guardada('./styles/tracking.css?v=51'), undefined);
 });
 
 test('la instalación falla limpia cuando la red rechaza entera', async () => {
@@ -462,7 +462,7 @@ test('un módulo con el tipo mentido se desmiente CUANDO hay copia guardada', as
    * con una tienda muerta Y SIN SALIDA. Por eso, en el cliente que tiene algo
    * guardado, el módulo también se contrasta contra su cuerpo.
    */
-  const modulo = './js/app.js?v=41';
+  const modulo = './js/app.js?v=42';
   const worker = cargarWorker({
     red: async () => new Response('<!doctype html><h1>portal</h1>', {
       status: 200,
@@ -483,7 +483,7 @@ test('sin copia guardada, el módulo mentido NO se inspecciona: mirarlo no cambi
    * de 167 a 182 pedidos y de 1993 a 2576 KB transferidos, justo en la visita
    * donde la inspección no puede servir para nada.
    */
-  const modulo = './js/app.js?v=41';
+  const modulo = './js/app.js?v=42';
   const worker = cargarWorker({
     red: async () => new Response('<!doctype html><h1>portal</h1>', {
       status: 200,
@@ -511,7 +511,7 @@ test('instalar SÍ mira el cuerpo de los módulos y aborta el worker entero ante
 
   await assert.rejects(worker.instalar());
 
-  assert.equal(worker.guardada('./js/app.js?v=41'), undefined);
+  assert.equal(worker.guardada('./js/app.js?v=42'), undefined);
   assert.equal(worker.guardada('./js/state.js'), undefined);
   assert.equal(worker.guardada(ESTILOS), undefined);
 });

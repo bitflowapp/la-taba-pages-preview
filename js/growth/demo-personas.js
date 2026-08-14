@@ -46,6 +46,14 @@ const PERSONAS = Object.freeze({
     { type: 'product_view', categoryId: 'fernet', brand: 'branca' },
     { type: 'add_to_cart', categoryId: 'fernet', brand: 'branca' },
   ]),
+  // Extra para demostraciones: intención SIN alcohol, el contraste más claro
+  // contra B cuando el catálogo demo sólo publica cervezas y energizantes.
+  E: Object.freeze([
+    { type: 'category_view', categoryId: 'energizantes' },
+    { type: 'product_view', categoryId: 'energizantes', brand: 'speed' },
+    { type: 'product_view', categoryId: 'energizantes', brand: 'monster' },
+    { type: 'add_to_cart', categoryId: 'energizantes', brand: 'speed' },
+  ]),
 });
 
 function repaint() {

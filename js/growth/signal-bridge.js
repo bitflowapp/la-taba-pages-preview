@@ -21,7 +21,7 @@
 // Épocas de render: entrar a una vista o cambiar de categoría abre una época
 // nueva (la vidriera puede reacomodarse); dentro de una época las selecciones
 // están memoizadas y ningún re-render mueve piezas bajo el dedo.
-import { getState, subscribe } from '../state.js';
+import { getState, subscribe, updateState } from '../state.js';
 import {
   SEARCH_MAX_MATCHED_KEYS,
   SEARCH_MIN_QUERY_LENGTH,
@@ -294,6 +294,13 @@ function watchViewChanges(documentRef, windowRef) {
     if (view !== lastView) {
       lastView = view;
       bumpGrowthRenderEpoch();
+      // El observer corre DESPUÉS del pintado de la navegación, así que la
+      // época nueva necesita su repintado: un commit vacío notifica a los
+      // suscriptores y la vidriera se recalcula con la intención acumulada.
+      // Sin bucle: si la vista no cambió, este callback no vuelve a entrar.
+      try {
+        updateState(() => {});
+      } catch (_) { /* sin repintado extra, la próxima interacción lo trae */ }
     }
   });
   observer.observe(documentRef.body, { attributes: true, attributeFilter: ['data-active-view'] });

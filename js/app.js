@@ -529,11 +529,15 @@ async function bootstrap() {
     // parte de contratos de negocio ni cambia el estado del catálogo.
     window.TABA2_MOTION = motionController;
     bindEvents();
-    subscribe(renderAll);
     // El puente de señales del growth engine observa estado y DOM sin tocar
     // ningún handler existente; si falla, la tienda queda como está hoy. El
     // harness de personas sólo existe con ?growthDebug=1.
+    // Se registra ANTES que renderAll a propósito: los listeners de estado
+    // corren en orden de suscripción, y la época de vidriera tiene que abrirse
+    // antes de que el render lea las selecciones (si no, el primer pintado de
+    // una categoría nueva reusa el memo de la anterior).
     initGrowthBridge();
+    subscribe(renderAll);
     initGrowthDemoHarness();
     maybeOpenPitchFromUrl();
     // El primer render no puede depender de IndexedDB: Chrome móvil puede

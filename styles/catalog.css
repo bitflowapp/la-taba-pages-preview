@@ -1483,6 +1483,14 @@
   padding-right: calc(var(--growth-inline-media-width) + 16px);
 }
 
+/* El copy es una columna: sin esto, eyebrow, título y bajada fluyen en un
+   mismo renglón (defecto visto en la primera tanda de capturas). */
+.growth-inline-copy {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+
 .growth-inline-media {
   position: absolute;
   top: 0;

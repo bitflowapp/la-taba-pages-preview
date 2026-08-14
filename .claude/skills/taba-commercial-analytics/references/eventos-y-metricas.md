@@ -2,7 +2,9 @@
 
 ## Lo que ya está implementado
 
-`js/growth/analytics.js` define la cola first-party del motor de merchandising.
+js/growth/analytics.js —en `feature/taba2-commerce-growth-engine`, no integrado
+en la candidata de producción— define la cola first-party del motor de
+merchandising.
 
 Tipos de evento que el módulo acepta hoy:
 

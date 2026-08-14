@@ -51,7 +51,9 @@ en un solo semáforo pierde exactamente la información que sirve para desbloque
 
 ## Estados de la matriz de autoridad
 
-`catalog/CATALOG-COMMERCIAL-AUTHORITY.csv` resume el bloqueo en `estado`:
+El corte de autoridad comercial —catalog/CATALOG-COMMERCIAL-AUTHORITY.csv, que
+vive en la rama del catálogo y no en la candidata— resume el bloqueo en
+`estado`:
 
 | Estado | Significa |
 |---|---|

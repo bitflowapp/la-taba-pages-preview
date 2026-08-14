@@ -20,7 +20,9 @@ completa esa compra —hielo—, y nunca en lugar de lo que pidió.
 
 Cerveza → cerveza → hielo. **No** cerveza → energizante porque "combina".
 
-El grafo de complementos es por categoría y está en `js/growth/complements.js`:
+El grafo de complementos es por categoría y está en el motor de crecimiento
+(js/growth/complements.js, en `feature/taba2-commerce-growth-engine`; **no está
+integrado en la candidata de producción**):
 `fernet → gaseosas, mixers, hielo` · `destilados → mixers, hielo, energizantes`
 · `cervezas → hielo`. Una categoría que ya está en el carrito deja de ser
 complemento: si ya hay hielo, el hielo no es un faltante.

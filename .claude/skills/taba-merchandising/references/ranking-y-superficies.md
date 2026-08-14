@@ -1,8 +1,10 @@
 # Ranking, señales y superficies
 
-Implementación: `js/growth/` (13 módulos). Documento del motor:
-`docs/commerce-personalization.md`. **Todos los números ajustables viven en
-`js/growth/growth-config.js`** — leerlos de ahí, no de acá, y no copiarlos a
+Implementación: js/growth/ (13 módulos), en `feature/taba2-commerce-growth-engine`.
+**No está integrado en la candidata de producción**: verificar en qué rama se está
+trabajando antes de citar cualquiera de estos módulos. Documento del motor:
+docs/commerce-personalization.md. **Todos los números ajustables viven en
+js/growth/growth-config.js** — leerlos de ahí, no de acá, y no copiarlos a
 ninguna skill.
 
 ## Señales

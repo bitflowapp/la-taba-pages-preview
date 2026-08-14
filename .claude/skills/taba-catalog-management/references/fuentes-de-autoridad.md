@@ -9,9 +9,9 @@ promociones ni conteos**: se leen de acá, en el momento, porque envejecen.
 | Pregunta | Fuente | Nota |
 |---|---|---|
 | ¿Qué productos existen y con qué identidad? | `catalog/products.csv` | dato crudo por SKU |
-| ¿En qué estado comercial está cada SKU? | `catalog/CATALOG-COMMERCIAL-AUTHORITY.csv` | corte auditado; incluye `estado`, `bloqueo`, `ahorro_calculado` |
-| ¿Cuál es la lectura ejecutiva de ese corte? | `docs/CATALOG-COMMERCIAL-AUTHORITY.md` | resumen por rubro; **tiene fecha de corte** |
-| ¿Qué falta para completar la góndola? | `docs/catalog-merchandising.md`, `docs/CATALOG-WALTER-PENDING.md` | gaps y prioridad |
+| ¿En qué estado comercial está cada SKU? | catalog/CATALOG-COMMERCIAL-AUTHORITY.csv (otra rama, ver abajo) | corte auditado; incluye `estado`, `bloqueo`, `ahorro_calculado` |
+| ¿Cuál es la lectura ejecutiva de ese corte? | docs/CATALOG-COMMERCIAL-AUTHORITY.md (otra rama, ver abajo) | resumen por rubro; **tiene fecha de corte** |
+| ¿Qué falta para completar la góndola? | docs/catalog-merchandising.md, docs/CATALOG-WALTER-PENDING.md (otra rama, ver abajo) | gaps y prioridad |
 | ¿Qué precios faltan? | `catalog/pending-prices.csv`, `catalog/pending-unit-prices.csv` | |
 | ¿Qué imágenes faltan o están rechazadas? | `catalog/pending-images.csv`, `catalog/rejected-assets.csv` | |
 | ¿Una imagen está aprobada y con derechos? | `docs/catalog/image-manifest.json`, `catalog/image-rights.csv`, `docs/catalog/image-source-audit.csv` | un WebP no manifestado invalida el pipeline |
@@ -22,7 +22,7 @@ promociones ni conteos**: se leen de acá, en el momento, porque envejecen.
 | ¿Qué valida una promoción? | `js/core/promotions.js` | aprobación humana + vigencia + precios verificables |
 | ¿Cómo se importa y publica? | `docs/catalog/taba-product-import-guide.md` | |
 | ¿Qué exige el alcohol? | `docs/legal/alcohol-operational-requirements.md` | |
-| ¿Cómo se decide qué pieza se muestra? | `docs/commerce-personalization.md` + `js/growth/` | |
+| ¿Cómo se decide qué pieza se muestra? | docs/commerce-personalization.md + js/growth/ (otra rama, ver abajo) | |
 
 ## Comandos que devuelven estado actual
 

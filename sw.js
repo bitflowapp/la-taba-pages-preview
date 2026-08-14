@@ -146,6 +146,7 @@ const ASSETS = [
   './js/preview-promotions-data.js',
   './js/preview-stories-data.js',
   './js/core/beverage-home-sections.js',
+  './js/core/browser-resume.js',
   './js/core/business-order-intake.js',
   './js/core/combos.js',
   './js/core/customer-delivery-address-hydration.js',

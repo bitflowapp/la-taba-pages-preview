@@ -33,3 +33,6 @@ artifacts/taba2-commercial-audit/
 # Evidencia de las corridas del piloto: capturas, sesiones y medidas.
 # Es local y puede contener datos de una entrega real; nunca se versiona.
 .taba-evidencia/
+# Capturas del pulido de lanzamiento: se generan con scripts/launch-ux-captures.mjs
+# y viven fuera de Git, como el resto de la revisión visual humana.
+artifacts/launch-ux-polish/**/*.png

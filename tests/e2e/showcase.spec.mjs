@@ -51,6 +51,57 @@ const VIEWPORTS = [
   { width: 1280, height: 900 },
 ];
 
+/*
+ * B4 · LA PRESENTACIÓN NO SE PIDE POR URL EN PRODUCCIÓN.
+ *
+ * Antes esta prueba medía la presentación contra una configuración productiva y
+ * esperaba que la bandera ganara igual. Eso ERA el contrato, y era el agujero:
+ * un enlace preparado convertía la tienda real en una simulación que igual dice
+ * «pedido confirmado». `0fb94e8` lo cerró, así que la prueba se parte en dos y
+ * ninguna de las dos afloja nada:
+ *
+ *   · acá abajo se afirma el RECHAZO, que es la protección nueva;
+ *   · en la que sigue se conserva ENTERA la garantía original —presentación
+ *     aislada de Supabase, sin sandbox técnico— medida contra un despliegue que
+ *     declara ser staging, que es donde la presentación tiene que seguir
+ *     existiendo.
+ *
+ * El backend de mentira existe para que el arranque productivo no dependa de la
+ * red: sin él la página no llega a decir en qué modo quedó, que es justo lo que
+ * hay que medir.
+ */
+test('production ignores ?showcase=1: a crafted link cannot turn the real store into a demo', async ({ browser }) => {
+  for (const [caso, deploymentEnvironment] of [
+    ['declarada', 'production'],
+    // Sin `deploymentEnvironment` el normalizador la deduce productiva. Es la
+    // configuración exacta con la que esta prueba pasaba antes del gate.
+    ['deducida', null],
+  ]) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    const guards = installPageGuards(page);
+
+    await installProductionBackend(page, deploymentEnvironment);
+    await page.goto('/?showcase=1&tools=1&relay=https%3A%2F%2Frelay.invalid#home');
+
+    await expect(page.locator('body'), caso).toHaveAttribute('data-app-mode', 'production');
+    await expect(page.locator('[data-showcase-root]'), caso).toHaveCount(0);
+    await expect(page.locator('[data-sandbox-tools]'), caso).toHaveCount(0);
+
+    // Y el repositorio que quedó elegido es el real, no la caja de arena: si el
+    // modo se rechazara sólo en el rótulo, acá se vería.
+    const repository = await page.evaluate(async () => {
+      const { getDataMode, getOrderRepository } = await import('/js/repositories/repository_factory.js');
+      return { dataMode: getDataMode(), mode: getOrderRepository().mode };
+    });
+    expect(repository.dataMode, caso).not.toBe('showcase');
+    expect(repository.mode, caso).not.toBe('sandbox');
+
+    await guards.assertClean();
+    await context.close();
+  }
+});
+
 test('showcase is explicit, isolated from Supabase and hides the technical sandbox', async ({ browser }) => {
   const ordinaryContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const ordinary = await ordinaryContext.newPage();
@@ -79,6 +130,9 @@ test('showcase is explicit, isolated from Supabase and hides the technical sandb
     if (url.hostname.endsWith('.supabase.co')) supabaseRequests.push(request.url());
     if (url.hostname === 'relay.invalid') relayRequests.push(request.url());
   });
+  // Un staging QUE DICE QUE ES STAGING conserva su presentación. La
+  // configuración es la misma de antes salvo por esa declaración, y es
+  // exactamente esa declaración la que distingue los dos casos.
   await safe.addInitScript(() => {
     globalThis.__LA_TABA_RUNTIME_CONFIG__ = {
       mode: 'production',
@@ -87,6 +141,7 @@ test('showcase is explicit, isolated from Supabase and hides the technical sandb
         supabaseUrl: 'https://taba-showcase-test.supabase.co',
         publishableKey: 'sb_publishable_test_key',
         businessId: '00000000-0000-4000-8000-000000000001',
+        deploymentEnvironment: 'staging',
       },
     };
   });
@@ -626,6 +681,65 @@ test('showcase has no horizontal overflow and keeps every control touch-safe in 
 
   await guards.assertClean();
 });
+
+/*
+ * Un despliegue productivo de mentira: responde lo mínimo que el repositorio
+ * mira al arrancar. No se usa para afirmar nada del backend —para eso están las
+ * pruebas del repositorio—, sino para que la página llegue a decidir su modo sin
+ * depender de la red. `deploymentEnvironment` en `null` no declara el entorno, y
+ * entonces el normalizador lo deduce productivo.
+ */
+async function installProductionBackend(page, deploymentEnvironment) {
+  const SUPABASE_URL = 'https://taba-showcase-test.supabase.co';
+
+  // El modo productivo abre además el canal de realtime, y `page.route` no
+  // alcanza a un WebSocket: sin esto la prueba mide un ERR_NAME_NOT_RESOLVED
+  // contra un host inventado en vez de medir el modo. Se acepta la conexión y no
+  // se contesta nada; el cliente cae solo a su respaldo por poll, que es lo que
+  // hace en la vida real cuando el canal no está.
+  await page.routeWebSocket(`wss://taba-showcase-test.supabase.co/**`, () => {});
+
+  await page.route(`${SUPABASE_URL}/**`, async (route) => {
+    const url = new URL(route.request().url());
+    const json = (body, headers = {}) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (url.pathname.includes('/rest/v1/rpc/get_public_business_contact')) {
+      return json([{ whatsapp_number: '', whatsapp_verified: false }]);
+    }
+    if (url.pathname.includes('/rest/v1/rpc/get_mercadopago_checkout_availability')) {
+      return json({ available: false });
+    }
+    if (url.pathname.includes('/auth/v1/')) {
+      return json({
+        access_token: 'test-access-token',
+        refresh_token: 'test-refresh-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        user: { id: '10000000-0000-4000-8000-000000000001', is_anonymous: true, aud: 'authenticated' },
+      });
+    }
+    return json([], { 'content-range': '0-0/0' });
+  });
+
+  await page.addInitScript(({ supabaseUrl, environment }) => {
+    globalThis.__LA_TABA_RUNTIME_CONFIG__ = {
+      mode: 'production',
+      repository: {
+        provider: 'supabase',
+        supabaseUrl,
+        publishableKey: 'sb_publishable_test_key',
+        businessId: '00000000-0000-4000-8000-000000000001',
+        ...(environment ? { deploymentEnvironment: environment } : {}),
+      },
+    };
+  }, { supabaseUrl: SUPABASE_URL, environment: deploymentEnvironment });
+}
 
 async function gotoShowcase(page) {
   await page.goto(SHOWCASE_PATH);

@@ -45,8 +45,19 @@ jobs:
       - name: Install fiscal bridge dependencies
         run: npm --prefix services/arca-fiscal-bridge ci --no-audit --no-fund
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      # Los dos motores que declara playwright.config.mjs, y por eso los dos se
+      # instalan. El gate corre `npm run test:e2e` sin filtro de proyecto, así que
+      # el proyecto `mobile-webkit` se ejecuta igual: con Chromium solamente,
+      # Playwright aborta con «Executable doesn't exist» y el paso falla por el
+      # navegador que falta, no por el producto.
+      #
+      # Instalar sólo Chromium NO es una opción disponible: `mobile-webkit` cubre
+      # el retorno desde Mercado Pago por back/forward cache, el arranque en
+      # blanco de iOS, el service worker degradado y la confirmación de ubicación
+      # —defectos que aparecieron en un iPhone real—. Declararlos cerrados con
+      # Chromium sería declararlos sobre el navegador donde no ocurrieron.
+      - name: Install Playwright browsers (chromium + webkit)
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Build browser vendor bundle
         run: npm run vendor:build

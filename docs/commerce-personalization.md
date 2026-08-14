@@ -169,6 +169,34 @@ existen desde el primer `innerHTML`.
 - Estado corrupto → se descarta el registro y el motor arranca frío; la tienda
   ni se entera (test + e2e).
 
+## Catálogo, packs y misiones comerciales
+
+El catálogo de demo se construye desde `js/approved-beverage-demo-data.js` y pasa
+por `applyRetailCatalogModel` antes de llegar al storefront. Un registro pendiente
+puede ser visible y encontrable para documentar surtido, pero no entra a
+recomendaciones ni al carrito hasta tener precio, stock, disponibilidad y asset
+aprobados. Un pack de abastecimiento no es un SKU minorista: no se publica por
+inferir una división de stock o un precio.
+
+La distinción comercial es explícita:
+
+- **Pack**: varias unidades del mismo SKU, con `unitsPerPack` y una imagen de
+  pack real o composición honesta de unidades reales.
+- **Combo**: dos o más componentes/SKUs distintos, o una entidad comercial del
+  manifiesto con precio y ahorro derivados del catálogo vivo.
+
+Los combos existentes salen de `data/combos.csv`/`js/combos-data.js`; el ahorro se
+calcula contra los precios vigentes de sus componentes y desaparece si el combo
+no se puede armar entero. La home no crea una sección `Packs` cuando no hay un
+pack minorista aprobado suficiente para llenarla.
+
+El grafo de complementos es genérico por categoría y tags: `fernet` apunta a
+`gaseosas`, `mixers` y `hielo`; `destilados` a mixers/hielo/energizantes;
+`cervezas` a hielo. La recomendación del carrito nunca agrega alcohol a un
+carrito alcohólico. Las misiones editoriales sólo se habilitan cuando tienen
+contenido comprable válido: cerveza primero para beer intent, fernet primero
+para fernet intent y los acompañamientos después.
+
 ## Alcohol / +18
 
 El motor no amplía la exposición de alcohol: sólo muestra destinos que la

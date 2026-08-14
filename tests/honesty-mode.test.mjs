@@ -35,7 +35,19 @@ test('demo exige demo=1, producción exige runtime completo y preview no abre vi
   assert.equal(getAppMode(''), APP_MODE_PUBLIC);
   assert.equal(getAppMode('?demo=1'), APP_MODE_DEMO);
   assert.equal(getAppMode('', PRODUCTION_RUNTIME), APP_MODE_PRODUCTION);
-  assert.equal(getAppMode('?demo=1', PRODUCTION_RUNTIME), APP_MODE_DEMO);
+  // B4: en un despliegue productivo la bandera de la URL se ignora. Antes acá
+  // decía APP_MODE_DEMO, y eso era el defecto: un enlace convertía la tienda
+  // real en una simulación que igual dice «pedido confirmado».
+  assert.equal(getAppMode('?demo=1', PRODUCTION_RUNTIME), APP_MODE_PRODUCTION);
+  // Y la garantía original —que ?demo=1 abre la demo— se conserva donde sigue
+  // valiendo: sin configuración, y en un despliegue declarado como staging.
+  assert.equal(
+    getAppMode('?demo=1', {
+      ...PRODUCTION_RUNTIME,
+      repository: { ...PRODUCTION_RUNTIME.repository, deploymentEnvironment: 'staging' },
+    }),
+    APP_MODE_DEMO,
+  );
   assert.equal(getAppMode('', { mode: 'production', repository: {} }), APP_MODE_UNAVAILABLE);
   assert.equal(isOperationalView('business', ''), true);
   assert.equal(isOperationalView('rider', ''), true);

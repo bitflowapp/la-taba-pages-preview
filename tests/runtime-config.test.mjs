@@ -54,6 +54,11 @@ test('runtime config productiva normaliza Supabase y prefiere publishableKey', (
     publishableKey: 'publishable-key',
     businessId: BUSINESS_ID,
     pollMs: 4000,
+    // El entorno viaja siempre, esté declarado o deducido. Acá no se declaró y
+    // el host es remoto, así que la deducción es «producción». Antes el campo
+    // desaparecía cuando no venía escrito, y eso dejaba a quien preguntara
+    // «¿esto es producción?» sin poder distinguir «no lo es» de «no lo dijo».
+    deploymentEnvironment: 'production',
   });
   assert.equal(readRuntimeConfigSource(), globalThis[RUNTIME_CONFIG_GLOBAL_KEY]);
 });

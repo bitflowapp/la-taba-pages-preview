@@ -87,6 +87,50 @@ export function isProductionRuntimeReady(source = readRuntimeConfigSource()) {
   return resolveRuntimeConfig(source).isProductionReady;
 }
 
+/**
+ * ¿Este artefacto está publicado como PRODUCCIÓN?
+ *
+ * Existe para una sola pregunta, y conviene que se lea entera: si la respuesta
+ * es sí, las banderas de simulación que viajan por la URL —`?demo=1`,
+ * `?showcase=1`— dejan de obedecerse. Un enlace no puede convertir la tienda
+ * real en una simulación que igual dice «pedido confirmado».
+ *
+ * Las tres respuestas, y por qué:
+ *
+ *  · SIN configuración → NO es producción. Ése es el artefacto de
+ *    previsualización, donde la demostración es la razón de existir y no hay
+ *    ningún backend real que confundir.
+ *  · Con `deploymentEnvironment` declarado → manda lo declarado. Un staging que
+ *    dice que es staging conserva su demo aunque el resto de la configuración
+ *    esté rota.
+ *  · Sin declararlo y sin resolver → SÍ es producción. Se falla cerrado a
+ *    propósito: un despliegue que no puede decir dónde está no está en
+ *    condiciones de pedir que se le crea que no es el de verdad.
+ */
+export function isProductionDeployment(source = readRuntimeConfigSource()) {
+  if (source === null || source === undefined) return false;
+
+  const declared = declaredDeploymentEnvironment(source);
+  if (declared === 'local' || declared === 'staging') return false;
+  if (declared === RUNTIME_MODE_PRODUCTION) return true;
+
+  const resolved = resolveRuntimeConfig(source);
+  if (resolved.status === 'ready') {
+    return resolved.repository.deploymentEnvironment === RUNTIME_MODE_PRODUCTION;
+  }
+  return true;
+}
+
+function declaredDeploymentEnvironment(source) {
+  try {
+    if (!isRecord(source) || !isRecord(source.repository)) return '';
+    const declared = normalizeToken(source.repository.deploymentEnvironment);
+    return DEPLOYMENT_ENVIRONMENTS.has(declared) ? declared : '';
+  } catch (_) {
+    return '';
+  }
+}
+
 // Hook fail-closed para el futuro adapter de catálogo. Debe activarse recién
 // después de guardar en estado productos remotos verificados; la configuración
 // de transporte por sí sola nunca habilita el catálogo estático de la demo.
@@ -138,7 +182,10 @@ function normalizeSupabaseRepository(repository, errors, requestedMode = RUNTIME
     publishableKey,
     businessId,
     pollMs: pollMs ?? DEFAULT_POLL_MS,
-    ...(requestedEnvironment ? { deploymentEnvironment } : {}),
+    // El entorno viaja SIEMPRE, esté declarado o deducido. Antes sólo aparecía
+    // cuando la configuración lo escribía, y eso dejaba a quien preguntara
+    // «¿esto es producción?» sin poder distinguir «no lo es» de «no lo dijo».
+    deploymentEnvironment,
   };
 }
 

@@ -9,6 +9,7 @@ import {
 } from '../js/config.js';
 import {
   APP_MODE_DEMO,
+  APP_MODE_PRODUCTION,
   getAppMode,
   isDemoMode,
   isOperationalView,
@@ -42,6 +43,15 @@ const PRODUCTION_RUNTIME = {
   },
 };
 
+// B4 · La presentación es legítima en staging y está prohibida en producción.
+// Las garantías de aislamiento que este archivo protege —claves de storage
+// propias, sandbox forzada, relay ignorado— siguen midiéndose donde la
+// presentación existe de verdad.
+const STAGING_RUNTIME = {
+  ...PRODUCTION_RUNTIME,
+  repository: { ...PRODUCTION_RUNTIME.repository, deploymentEnvironment: 'staging' },
+};
+
 beforeEach(() => {
   delete globalThis.__LA_TABA_RUNTIME_CONFIG__;
   setLocationSearch('');
@@ -65,9 +75,15 @@ test('showcase requiere showcase=1 y conserva el contrato demo existente', () =>
 
   assert.equal(isDemoMode('?demo=1'), true);
   assert.equal(isDemoMode('?showcase=1'), true);
-  assert.equal(getAppMode('?showcase=1', PRODUCTION_RUNTIME), APP_MODE_DEMO);
-  assert.equal(isOperationalView('business', '?showcase=1', PRODUCTION_RUNTIME), false);
-  assert.equal(isOperationalView('rider', '?showcase=1', PRODUCTION_RUNTIME), false);
+  assert.equal(getAppMode('?showcase=1', STAGING_RUNTIME), APP_MODE_DEMO);
+  assert.equal(isOperationalView('business', '?showcase=1', STAGING_RUNTIME), false);
+  assert.equal(isOperationalView('rider', '?showcase=1', STAGING_RUNTIME), false);
+});
+
+test('B4: en producción la presentación no se puede pedir por URL', () => {
+  assert.equal(isShowcaseMode('?showcase=1', PRODUCTION_RUNTIME), false);
+  assert.equal(isDemoMode('?showcase=1', PRODUCTION_RUNTIME), false);
+  assert.equal(getAppMode('?showcase=1', PRODUCTION_RUNTIME), APP_MODE_PRODUCTION);
 });
 
 test('showcase usa claves propias y demo/tests conservan las claves históricas', () => {
@@ -83,7 +99,7 @@ test('showcase usa claves propias y demo/tests conservan las claves históricas'
 });
 
 test('factory showcase ignora relay y runtime Supabase y fuerza sandbox aislada', () => {
-  globalThis.__LA_TABA_RUNTIME_CONFIG__ = PRODUCTION_RUNTIME;
+  globalThis.__LA_TABA_RUNTIME_CONFIG__ = STAGING_RUNTIME;
   setLocationSearch('?showcase=1&relay=https://attacker.example&room=remote');
   resetRepositoryFactoryForTests();
 
@@ -93,6 +109,19 @@ test('factory showcase ignora relay y runtime Supabase y fuerza sandbox aislada'
   assert.equal(repository.mode, 'sandbox');
   assert.equal(repository.sandboxNamespace, SANDBOX_NAMESPACE_SHOWCASE);
   assert.equal('getTransportStatus' in repository, false);
+});
+
+test('B4: en producción, ?showcase=1 NO cambia el repositorio por la sandbox', () => {
+  globalThis.__LA_TABA_RUNTIME_CONFIG__ = PRODUCTION_RUNTIME;
+  setLocationSearch('?showcase=1&relay=https://attacker.example&room=remote');
+  resetRepositoryFactoryForTests();
+
+  // Éste es el corazón del defecto: con una configuración productiva cargada, un
+  // enlace preparado hacía que la tienda hablara con una sandbox local y
+  // confirmara pedidos que nunca existieron.
+  const repository = getOrderRepository();
+  assert.notEqual(getDataMode(), 'showcase');
+  assert.equal(isSandboxOrderRepository(repository), false);
 });
 
 test('IndexedDB, canal, tick, rider y memoria usan namespaces separados', () => {

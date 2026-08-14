@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v66-production-blockers';
+const CACHE_NAME = 'la-taba-runtime-v67-launch-ux-polish';
 const ASSETS = [
   './',
   './index.html',
@@ -47,6 +47,7 @@ const ASSETS = [
   './js/core/customer-addresses.js',
   './js/core/customer-history.js',
   './js/core/customer-preferences.js',
+  './js/core/haptics.js',
   './js/core/customer-profile.js',
   './js/core/delivery-code.js',
   './js/core/delivery-location.js',

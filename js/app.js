@@ -119,6 +119,7 @@ import {
   prepareShowcaseScenario,
 } from './showcase-fixtures.js';
 import { toggleFavoriteProduct } from './core/customer-preferences.js';
+import { hapticFeedback } from './core/haptics.js';
 import {
   initializeCustomerDeliveryCheckout,
   persistCustomerProfileAfterOrder,
@@ -1348,6 +1349,9 @@ function bindEvents() {
       if (!result.ok) clearAddedFlash(selectedProductId);
       if (!result.duplicate) showToast(result.message);
       if (result.ok) {
+        // Dentro del gesto: fuera de la activación del usuario el navegador
+        // descarta la vibración. Donde no hay háptica no pasa nada.
+        hapticFeedback('add');
         if (productNote) appendProductObservation(selectedProductId, productNote);
         closeProductModal();
         pulseCartFeedback();
@@ -1399,6 +1403,7 @@ function bindEvents() {
     if (incId) {
       const result = runCartAction('inc', incId, () => incrementCartItem(incId));
       if (result.ok) {
+        hapticFeedback('add');
         pulseCartFeedback();
         refreshOpenProductModal(incId);
       }
@@ -1409,7 +1414,10 @@ function bindEvents() {
     const decId = target.closest('[data-cart-dec]')?.dataset.cartDec;
     if (decId) {
       const result = runCartAction('dec', decId, () => decrementCartItem(decId));
-      if (result.ok) refreshOpenProductModal(decId);
+      if (result.ok) {
+        hapticFeedback('remove');
+        refreshOpenProductModal(decId);
+      }
       if (!result.ok && !result.duplicate) showToast(result.message);
       return;
     }

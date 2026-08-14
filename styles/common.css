@@ -827,7 +827,9 @@ summary {
   bottom: calc(88px + env(safe-area-inset-bottom));
   width: min(calc(100vw - 32px), 460px);
   padding: 13px 18px;
-  border-radius: var(--radius-pill);
+  /* Un aviso es una lámina, no un chip: entra en la familia de la acción y
+     deja la píldora para lo que efectivamente es una etiqueta. */
+  border-radius: var(--radius-action-lg);
   background: var(--taba-ink);
   box-shadow: var(--shadow-md);
   color: white;

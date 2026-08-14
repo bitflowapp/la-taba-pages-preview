@@ -793,7 +793,9 @@
   flex: 1 1 auto;
   padding-inline: 12px;
   border: 1px solid var(--taba-red);
-  border-radius: var(--radius-pill);
+  /* La acción de comprar tiene forma de acción, no de chip. Ver
+     `--radius-action` en tokens.css. */
+  border-radius: var(--radius-action);
   background: var(--taba-red);
   box-shadow: none;
   color: #fff;
@@ -840,7 +842,10 @@
   min-width: 0;
   height: 46px;
   border-color: var(--taba-red-border-soft);
-  border-radius: var(--radius-pill);
+  /* El stepper OCUPA el lugar exacto que dejó "Agregar": mismo alto, mismo
+     ancho y ahora también el mismo radio. Si la forma cambiara en el cambio,
+     el reemplazo se leería como un salto en vez de como una continuación. */
+  border-radius: var(--radius-action);
   background: var(--taba-red-soft);
   box-shadow: none;
 }
@@ -1021,7 +1026,7 @@
 .add-button,
 .qty-stepper {
   min-height: 46px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-action);
 }
 
 .add-button {
@@ -1055,7 +1060,7 @@
   min-width: 82px;
   flex-basis: auto;
   padding-inline: 10px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-action);
   box-shadow: none;
 }
 
@@ -1337,7 +1342,7 @@
   min-width: 0;
   min-height: 52px;
   border-color: var(--taba-red);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-action-lg);
   background: var(--taba-red);
   color: var(--taba-white);
   font-size: 15px;
@@ -1370,7 +1375,7 @@
 .qty-stepper.modal-cart-control {
   width: 100%;
   min-height: 52px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-action-lg);
 }
 
 .modal-note-field span {

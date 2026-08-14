@@ -536,7 +536,7 @@
 .confirm-button {
   width: 100%;
   min-height: 52px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-action-lg);
 }
 
 .checkout-form > .form-hint {

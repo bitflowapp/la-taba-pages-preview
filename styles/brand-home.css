@@ -1014,7 +1014,9 @@ body[data-active-view="home"] .home-best-card .home-add-button {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: var(--radius-pill);
+  /* Misma geometría de acción que en la góndola del catálogo: cruzar de la
+     home al catálogo no puede cambiar la forma del mismo botón. */
+  border-radius: var(--radius-action);
   border-color: var(--taba-red);
   background: var(--taba-red);
   box-shadow: none;
@@ -2323,8 +2325,13 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .mobile-
    la acción principal, así que toma el rojo de marca: se separa por color y
    por jerarquía, no sólo por el hueco de 12px. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .floating-cart {
-  border-radius: 18px;
+  /* 14 y no 18: la barra entra en el mismo sistema que "Agregar" y que
+     "Confirmar", un escalón arriba porque es una superficie de 52px de alto.
+     El hairline interior es lo que la vuelve un objeto apoyado sobre la
+     pantalla en vez de una mancha roja pegada al borde. */
+  border-radius: var(--radius-action-lg);
   background: var(--taba-red);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 46%), inset 0 0 0 1px rgb(255 255 255 / 16%);
   color: var(--taba-white);
 }
 

@@ -618,7 +618,12 @@ function removeGlyph() {
  * animación de CSS termina sola, así que no agenda trabajo ni fuerza un
  * repintado extra sólo para limpiar una clase.
  */
-const ADDED_FLASH_MS = 1100;
+// Espejo exacto de `--motion-duration-added-flash` (styles/tokens.css). Las dos
+// mitades del sello —la ventana en la que el marcado lo pinta y la animación que
+// lo apaga— tienen que durar lo mismo: si el JS aguanta más que el CSS, la
+// tarjeta queda con un sello invisible que igual ocupa el lugar del "+".
+// `tests/launch-ux-microinteractions.test.mjs` falla si divergen.
+const ADDED_FLASH_MS = 520;
 const recentlyAdded = new Map();
 
 export function flashAddedProduct(productId) {

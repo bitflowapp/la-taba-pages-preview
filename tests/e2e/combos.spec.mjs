@@ -30,6 +30,29 @@ test('la góndola publica los combos del manifiesto que se pueden armar enteros'
   await guards.assertClean();
 });
 
+test('los combos de un solo SKU comunican el multipack con unidades reales', async ({ page }) => {
+  await abrirHome(page);
+
+  for (const comboId of [
+    'combo-previa-imperial-x6',
+    'combo-heineken-x6',
+    'combo-corona-x6',
+    'combo-cuatro-para-arrancar',
+  ]) {
+    const media = page.locator(`[data-combo-card="${comboId}"] .combo-media-plate`);
+    await expect(media).toHaveAttribute('data-pack-visual', 'true');
+    await expect(media).toHaveAttribute('data-pack-count', /^(6|4)$/);
+    await expect(media.locator('[data-pack-visual-unit]')).toHaveCount(3);
+    await expect(media.locator('img')).toHaveCount(3);
+  }
+
+  // Un combo de componentes distintos sigue mostrando cada componente una
+  // sola vez con su cantidad: no se convierte artificialmente en un pack.
+  const mixed = page.locator('[data-combo-card="combo-birra-y-energia"] .combo-media-plate');
+  await expect(mixed).toHaveAttribute('data-pack-visual', 'false');
+  await expect(mixed.locator('.combo-media-item')).toHaveCount(2);
+});
+
 test('el precio tachado es la suma real de los componentes y el ahorro cierra', async ({ page }) => {
   await abrirHome(page);
 

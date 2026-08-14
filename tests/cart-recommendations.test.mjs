@@ -63,3 +63,27 @@ test('ordena las sugerencias por precio ascendente', () => {
   assert.deepEqual(prices, [...prices].sort((left, right) => left - right));
   assert.deepEqual(result.products.map((product) => product.id), ['ice', 'candy', 'cola']);
 });
+
+test('fernet usa la taxonomía actual y ofrece cola/hielo como secundarios', () => {
+  const currentTaxonomy = [
+    { id: 'fernet', name: 'Fernet', categoryId: 'fernet', alcoholic: true, available: true, stock: 4, price: 9000 },
+    { id: 'coca', name: 'Coca-Cola', categoryId: 'gaseosas', tags: ['gaseosa', 'cola'], available: true, stock: 6, price: 1800 },
+    { id: 'current-ice', name: 'Hielo', categoryId: 'hielo', tags: ['hielo'], available: true, stock: 6, price: 900 },
+    { id: 'vodka', name: 'Vodka', categoryId: 'destilados', alcoholic: true, available: true, stock: 3, price: 7000 },
+  ];
+  const result = getCartRecommendations({ products: currentTaxonomy, cart: [{ productId: 'fernet', quantity: 1 }] });
+  assert.deepEqual(result.products.map((product) => product.id), ['current-ice', 'coca']);
+  assert.ok(!result.products.some((product) => product.id === 'vodka'));
+  assert.equal(cartNeedsComplementPrompt({ products: currentTaxonomy, cart: [{ productId: 'fernet', quantity: 1 }] }), true);
+});
+
+test('un energizante de la taxonomía actual activa sólo acompañamientos válidos', () => {
+  const currentTaxonomy = [
+    { id: 'energy', name: 'Energizante', categoryId: 'energizantes', available: true, stock: 4, price: 2000 },
+    { id: 'snack', name: 'Snack', categoryId: 'picadas-y-deli', tags: ['snack'], available: true, stock: 4, price: 700 },
+    { id: 'beer-2', name: 'Cerveza', categoryId: 'cervezas', alcoholic: true, available: true, stock: 4, price: 1500 },
+  ];
+  const result = getCartRecommendations({ products: currentTaxonomy, cart: [{ productId: 'energy', quantity: 1 }] });
+  assert.deepEqual(result.products.map((product) => product.id), ['snack']);
+  assert.ok(!result.products.some((product) => product.id === 'beer-2'));
+});

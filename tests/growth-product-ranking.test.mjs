@@ -43,6 +43,29 @@ test('beer intent ordena el shelf por categoría y mantiene variedad dentro de l
   assert.equal(varied[2].brand, 'Marca A');
 });
 
+test('fernet intent prioriza fernet y deja cola/hielo para el nivel secundario', () => {
+  const ranked = rankProductsByIntent([
+    product('cola', 'gaseosas', 'Coca-Cola'),
+    product('fernet', 'fernet', 'Fernet Branca'),
+    product('ice', 'hielo', 'Hielo Cristal'),
+  ], {
+    affinity: { categories: { fernet: 14 }, brands: {}, products: {} },
+  });
+  assert.equal(ranked[0].id, 'fernet');
+  assert.deepEqual(new Set(ranked.slice(1).map((item) => item.id)), new Set(['cola', 'ice']));
+});
+
+test('diversity within a category also distinguishes presentation', () => {
+  const ranked = rankProductsByIntent([
+    product('beer-can-a', 'cervezas', 'Marca A', { packageType: 'lata', capacityValue: 473, capacityUnit: 'ml' }),
+    product('beer-can-b', 'cervezas', 'Marca B', { packageType: 'lata', capacityValue: 473, capacityUnit: 'ml' }),
+    product('beer-bottle', 'cervezas', 'Marca C', { packageType: 'botella', capacityValue: 710, capacityUnit: 'ml' }),
+  ], {
+    affinity: { categories: { cervezas: 12 }, brands: {}, products: {} },
+  });
+  assert.deepEqual(ranked.map((item) => item.id), ['beer-can-a', 'beer-bottle', 'beer-can-b']);
+});
+
 test('la intención cambia de cerveza a vino sin quedar pegada', () => {
   const products = [
     product('beer', 'cervezas', 'Imperial'),
@@ -77,4 +100,3 @@ test('stock se filtra antes del ranking: agotado nunca queda recomendado', () =>
   assert.equal(ranked[1].score, Number.NEGATIVE_INFINITY);
   assert.match(explainProductRanking(ranked)[0].factors.join(' '), /availability \+/);
 });
-

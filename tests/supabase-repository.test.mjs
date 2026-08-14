@@ -987,6 +987,292 @@ test('un DTO delivered detiene el sync global y no reactiva polling GPS', async 
   }
 });
 
+/*
+ * ─── RESTAURACIÓN AUTORITATIVA ────────────────────────────────────────────────
+ *
+ * `postgres_changes` no tiene replay. Un teléfono suspendido no recibe los
+ * eventos que ocurrieron mientras dormía, y al volver el socket se reconecta y
+ * vuelve a decir SUBSCRIBED como si nada hubiera pasado. Sin una reconciliación
+ * explícita contra el servidor en cada vuelta, el cliente se queda mostrando el
+ * último estado que alcanzó a ver: «Aceptado» sobre un pedido que ya salió.
+ *
+ * Estas pruebas fijan que la convergencia NO depende de haber recibido los
+ * eventos intermedios. El intervalo de polling se pone deliberadamente enorme:
+ * si el pedido converge, converge por la señal de reanudación y por nada más.
+ */
+test('volver de segundo plano converge al estado del servidor sin haber recibido los eventos intermedios', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({
+    status: 'accepted',
+    accepted_at: minutesAgoIso(6),
+  });
+  const storage = createStorage();
+  storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'R'.repeat(43),
+  }));
+  const windowRef = browserLifecycleTarget();
+  const documentRef = browserLifecycleTarget();
+  const repository = makeRepository(mock, {
+    storage,
+    pollMs: 600_000,
+    createTrackingClient: () => mock.client,
+    windowRef,
+    documentRef,
+  });
+
+  const stop = repository.startSync();
+  try {
+    await flushTasks();
+    assert.equal(
+      getState().orders.find((order) => order.id === row.public_code)?.workflowStatus,
+      'accepted',
+    );
+    const before = mock.calls.rpc.filter(
+      (call) => call.name === 'get_public_order_tracking',
+    ).length;
+
+    // El teléfono queda suspendido. El pedido avanza DOS estados en el servidor
+    // y ni un solo evento realtime llega a esta pestaña.
+    row.status = 'on_the_way';
+    row.preparing_at = minutesAgoIso(4);
+    row.dispatched_at = minutesAgoIso(1);
+    row.assigned_rider_user_id = RIDER_ID;
+
+    windowRef.emit('pageshow');
+    await flushTasks();
+    await flushTasks();
+
+    assert.equal(
+      getState().orders.find((order) => order.id === row.public_code)?.workflowStatus,
+      'on_the_way',
+      'al volver hay que ver on_the_way, no el accepted que quedó congelado',
+    );
+    assert.ok(
+      mock.calls.rpc.filter((call) => call.name === 'get_public_order_tracking').length > before,
+      'la vuelta tiene que preguntarle al servidor, no confiar en lo que ya tenía',
+    );
+  } finally {
+    stop();
+  }
+});
+
+test('volver visible reconcilia igual que pageshow: ningún navegador emite todas las señales', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({ status: 'accepted', accepted_at: minutesAgoIso(6) });
+  const storage = createStorage();
+  storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'V'.repeat(43),
+  }));
+  const windowRef = browserLifecycleTarget();
+  const documentRef = browserLifecycleTarget({ hidden: true });
+  const repository = makeRepository(mock, {
+    storage,
+    pollMs: 600_000,
+    createTrackingClient: () => mock.client,
+    windowRef,
+    documentRef,
+  });
+
+  const stop = repository.startSync();
+  try {
+    await flushTasks();
+    row.status = 'preparing';
+    row.preparing_at = minutesAgoIso(1);
+
+    documentRef.hidden = false;
+    documentRef.emit('visibilitychange');
+    await flushTasks();
+    await flushTasks();
+
+    assert.equal(
+      getState().orders.find((order) => order.id === row.public_code)?.workflowStatus,
+      'preparing',
+    );
+  } finally {
+    stop();
+  }
+});
+
+test('un canal que vuelve a suscribirse recupera lo que se perdió mientras estuvo caído', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({ status: 'accepted', accepted_at: minutesAgoIso(6) });
+  const storage = createStorage();
+  storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'C'.repeat(43),
+  }));
+  const windowRef = browserLifecycleTarget();
+  const documentRef = browserLifecycleTarget();
+  const repository = makeRepository(mock, {
+    storage,
+    pollMs: 600_000,
+    createTrackingClient: () => mock.client,
+    windowRef,
+    documentRef,
+  });
+
+  const stop = repository.startSync();
+  try {
+    await flushTasks();
+    const channel = mock.channels.at(-1);
+
+    // El socket se cae. Recién DESPUÉS de la caída el pedido avanza, así que
+    // nada de lo que reconcilie el corte puede explicar la convergencia.
+    channel.statusCallback('CLOSED');
+    await flushTasks();
+    row.status = 'on_the_way';
+    row.dispatched_at = minutesAgoIso(1);
+    row.assigned_rider_user_id = RIDER_ID;
+
+    channel.statusCallback('SUBSCRIBED');
+    await flushTasks();
+    await flushTasks();
+
+    assert.equal(
+      getState().orders.find((order) => order.id === row.public_code)?.workflowStatus,
+      'on_the_way',
+      'reconectar sin reconciliar deja al cliente atrasado para siempre',
+    );
+  } finally {
+    stop();
+  }
+});
+
+test('perder el canal consulta de inmediato, no un intervalo después', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({ status: 'accepted', accepted_at: minutesAgoIso(6) });
+  const windowRef = browserLifecycleTarget();
+  const documentRef = browserLifecycleTarget();
+  const repository = makeRepository(mock, {
+    storage: createStorage(),
+    pollMs: 600_000,
+    createTrackingClient: () => mock.client,
+    windowRef,
+    documentRef,
+  });
+
+  const stop = repository.startSync();
+  try {
+    await flushTasks();
+    row.status = 'preparing';
+    row.preparing_at = minutesAgoIso(1);
+
+    mock.channels.at(-1).statusCallback('CHANNEL_ERROR');
+    await flushTasks();
+    await flushTasks();
+
+    assert.equal(
+      getState().orders.find((order) => order.id === row.public_code)?.workflowStatus,
+      'preparing',
+    );
+  } finally {
+    stop();
+  }
+});
+
+/*
+ * F26/F36: la calidad la declara el servidor sobre la accuracy ORIGINAL. Acá se
+ * fija que converger el marcador no la vuelve a inferir sobre el número público
+ * —que lleva piso de 100 m por privacidad— ni pierde el punto más reciente.
+ */
+test('una posición más reciente mueve el marcador y conserva la calidad declarada por el servidor', async () => {
+  const mock = createSupabaseClientMock({
+    publicTrackingOverrides: { location_quality: 'valid' },
+  });
+  const row = mock.seedOrder({
+    status: 'on_the_way',
+    assigned_rider_user_id: RIDER_ID,
+    dispatched_at: minutesAgoIso(3),
+  });
+  mock.db.locations.push({
+    id: 'location-resume-a',
+    order_id: row.id,
+    rider_user_id: RIDER_ID,
+    lat: -38.9510,
+    lng: -68.0610,
+    accuracy: 40,
+    source: 'gps',
+    created_at: minutesAgoIso(2),
+  });
+  const storage = createStorage();
+  storage.setItem(`taba-order-access-v1:${BUSINESS_ID}:last`, JSON.stringify({
+    orderId: row.id,
+    publicCode: row.public_code,
+    trackingToken: 'M'.repeat(43),
+  }));
+  const windowRef = browserLifecycleTarget();
+  const documentRef = browserLifecycleTarget();
+  const repository = makeRepository(mock, {
+    storage,
+    pollMs: 600_000,
+    createTrackingClient: () => mock.client,
+    windowRef,
+    documentRef,
+  });
+
+  const stop = repository.startSync();
+  try {
+    await flushTasks();
+    const first = getState().orders.find(
+      (order) => order.id === row.public_code,
+    )?.tracking?.lastLocation;
+    assert.equal(first?.lat, -38.9510);
+    assert.equal(first?.quality, 'valid');
+
+    // El rider avanza mientras la pestaña dormía: B es más nuevo que A.
+    mock.db.locations.push({
+      id: 'location-resume-b',
+      order_id: row.id,
+      rider_user_id: RIDER_ID,
+      lat: -38.9600,
+      lng: -68.0700,
+      accuracy: 35,
+      source: 'gps',
+      created_at: new Date().toISOString(),
+    });
+
+    windowRef.emit('focus');
+    await flushTasks();
+    await flushTasks();
+
+    const moved = getState().orders.find(
+      (order) => order.id === row.public_code,
+    )?.tracking?.lastLocation;
+    assert.equal(moved?.lat, -38.9600, 'el marcador tiene que converger de A a B');
+    assert.equal(moved?.lng, -68.0700);
+    assert.equal(moved?.quality, 'valid', 'la calidad la sigue diciendo el servidor');
+    assert.equal(moved?.accuracy, 100, 'el piso de privacidad de la accuracy pública no se toca');
+  } finally {
+    stop();
+  }
+});
+
+test('detener el sync desarma los listeners de reanudación', async () => {
+  const mock = createSupabaseClientMock();
+  mock.seedOrder({ status: 'accepted' });
+  const windowRef = browserLifecycleTarget();
+  const documentRef = browserLifecycleTarget();
+  const repository = makeRepository(mock, {
+    storage: createStorage(),
+    pollMs: 600_000,
+    createTrackingClient: () => mock.client,
+    windowRef,
+    documentRef,
+  });
+
+  const stop = repository.startSync();
+  await flushTasks();
+  assert.ok(windowRef.totalListeners() > 0);
+  stop();
+  assert.equal(windowRef.totalListeners(), 0);
+  assert.equal(documentRef.totalListeners(), 0);
+});
+
 test('activar tracking es idempotente cuando un render reingresa al seleccionar el pedido', async () => {
   const mock = createSupabaseClientMock();
   const row = mock.seedOrder({
@@ -2936,6 +3222,31 @@ function normalizeDbStatus(value) {
   if (value === 'received') return 'submitted';
   if (value === 'canceled') return 'cancelled';
   return value;
+}
+
+// Un `window`/`document` de mentira para poder despachar las señales con las
+// que un navegador dice «esta pestaña volvió», sin depender de ninguna.
+function browserLifecycleTarget({ hidden = false } = {}) {
+  const listeners = new Map();
+  return {
+    hidden,
+    get visibilityState() { return this.hidden ? 'hidden' : 'visible'; },
+    addEventListener(type, callback) {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type).add(callback);
+    },
+    removeEventListener(type, callback) {
+      listeners.get(type)?.delete(callback);
+    },
+    emit(type) {
+      listeners.get(type)?.forEach((callback) => callback());
+    },
+    totalListeners() {
+      let total = 0;
+      for (const set of listeners.values()) total += set.size;
+      return total;
+    },
+  };
 }
 
 function createStorage() {

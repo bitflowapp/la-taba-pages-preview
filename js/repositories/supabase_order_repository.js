@@ -52,6 +52,7 @@ import {
   suppressActiveOrderFallback,
 } from '../orders.js';
 import { createCustomerTrackingPollController } from '../tracking/customer_tracking_poll.js';
+import { onBrowserResume } from '../core/browser-resume.js';
 import {
   BUSINESS_INBOX_DATABASE_STATUSES,
   BUSINESS_INBOX_STATUSES,
@@ -113,6 +114,10 @@ export function createSupabaseOrderRepository({
   // era el único que no.
   durableStorage = safeLocalStorage(),
   cryptoImpl = globalThis.crypto,
+  // Las señales con las que el navegador dice «esta pestaña volvió». Inyectables
+  // para poder despacharlas en las pruebas sin depender de ninguna en concreto.
+  windowRef = globalThis.window,
+  documentRef = globalThis.document,
 } = {}) {
   if (!client || typeof client.from !== 'function' || typeof client.rpc !== 'function') {
     throw new Error('Supabase repository requiere un cliente oficial configurado.');
@@ -1311,12 +1316,29 @@ export function createSupabaseOrderRepository({
         }
         const access = getTrackingAccess();
         const trackingPollState = customerTrackingPoll.getSnapshot();
-        const terminalTrackingIsBeingRevalidated = trackingPollState.terminal
-          && trackingPollState.orderId === (access?.orderId || access?.publicCode || '');
+        /*
+         * UN SOLO DUEÑO POR PEDIDO A LA VEZ.
+         *
+         * Mientras el cliente está en «Seguir», el controlador tokenizado tiene
+         * la sesión de ese pedido y escucha por su cuenta las mismas señales de
+         * reanudación que este sync. Consultar los dos duplica la consulta en
+         * cada vuelta a la pantalla, y sobre un pedido ENTREGADO rompe algo más
+         * que el caudal: la revalidación terminal es deliberadamente única —una
+         * sola por vencimiento, con su propio single-flight— y un segundo
+         * solicitante la convierte en dos.
+         *
+         * Así que si el controlador tiene la sesión (activa o terminal), él es
+         * la autoridad de ese pedido y acá no se vuelve a preguntar. Cuando el
+         * cliente NO está en la pantalla de seguimiento el controlador está
+         * detenido, y entonces sí es este sync el que tiene que converger.
+         */
+        const trackedId = access?.orderId || access?.publicCode || '';
+        const pollOwnsTracking = (trackingPollState.active || trackingPollState.terminal)
+          && trackingPollState.orderId === trackedId;
         if (
           access
           && !stopped
-          && !terminalTrackingIsBeingRevalidated
+          && !pollOwnsTracking
           && !hasTerminalTrackingState(access)
         ) {
           const result = await fetchPublicTrackingSnapshot(
@@ -1334,6 +1356,8 @@ export function createSupabaseOrderRepository({
         client,
         pollMs: pollingInterval,
         name: `taba-sync-${businessId}`,
+        windowRef,
+        documentRef,
         changes: [
           tableChange('orders', `business_id=eq.${businessId}`, refresh),
           tableChange('products', `business_id=eq.${businessId}`, () => loadCatalog()),
@@ -1343,8 +1367,11 @@ export function createSupabaseOrderRepository({
           }),
         ],
         fallbackTask: refresh,
+        // La reconciliación de arranque viaja acá, y no como una llamada suelta
+        // después de montar, para que comparta el single-flight con la que
+        // dispara perder el canal: en el arranque las dos llegan juntas.
+        initialTask: refresh,
       });
-      refresh();
       syncStop = () => {
         stopped = true;
         stopRealtime();
@@ -1818,6 +1845,8 @@ export function createSupabaseOrderRepository({
         client,
         pollMs: pollingInterval,
         name: `taba-order-${orderId}`,
+        windowRef,
+        documentRef,
         changes: [
           tableChange('orders', `${isUuid(orderId) ? 'id' : 'public_code'}=eq.${orderId}`, refresh),
         ],
@@ -1837,6 +1866,8 @@ export function createSupabaseOrderRepository({
         client,
         pollMs: pollingInterval,
         name: `taba-business-${businessId}`,
+        windowRef,
+        documentRef,
         changes: [
           tableChange('orders', `business_id=eq.${businessId}`, refresh),
         ],
@@ -1897,10 +1928,15 @@ function createRealtimeWatch({
   fallbackTask,
   initialTask = null,
   pollingOnly = false,
+  windowRef = globalThis.window,
+  documentRef = globalThis.document,
 }) {
   let stopped = false;
   let pollingStop = null;
   let channel = null;
+  // Una suscripción que YA estuvo caída no puede volver como si nada: mientras
+  // estuvo caída pasaron cosas que este cliente no vio.
+  let hasBeenDisconnected = false;
   const safeTask = async (task) => {
     if (stopped || typeof task !== 'function') return;
     try {
@@ -1909,9 +1945,38 @@ function createRealtimeWatch({
       // El último estado confirmado se conserva hasta poder reconectar.
     }
   };
+  /*
+   * PONERSE AL DÍA ES UNA SOLA COSA A LA VEZ.
+   *
+   * Tres disparadores distintos piden lo mismo —el estado actual— y pueden
+   * llegar juntos: el arranque, la pérdida del canal y la vuelta del navegador
+   * al frente. Dejarlos correr en paralelo no trae nada más nuevo (los tres
+   * consultan lo mismo) y sobre un pedido ENTREGADO rompe un contrato: la
+   * revalidación de la ventana terminal es deliberadamente única, y dos
+   * solicitantes concurrentes la convierten en dos.
+   *
+   * Así que el que llega mientras ya hay uno en vuelo se cuelga de ese, en vez
+   * de abrir otro. No es un debounce: nadie espera y nadie se pierde el dato.
+   */
+  //
+  // El `task` explícito existe sólo para el arranque, y vale porque hoy los tres
+  // llamadores pasan el MISMO `refresh` como `initialTask` y como `fallbackTask`.
+  // Si alguna vez difieren, el que llegue segundo se cuelga del primero y no se
+  // ejecuta: ahí hay que separar los dos vuelos, no ampliar este.
+  let catchUpInFlight = null;
+  const catchUp = (task = fallbackTask) => {
+    if (catchUpInFlight) return catchUpInFlight;
+    catchUpInFlight = Promise.resolve(safeTask(task))
+      .finally(() => { catchUpInFlight = null; });
+    return catchUpInFlight;
+  };
   const startFallback = () => {
     if (pollingStop || stopped) return;
-    pollingStop = startPolling(() => safeTask(fallbackTask), pollMs);
+    // La primera consulta va AHORA. `setInterval` recién llama al intervalo
+    // siguiente: perder el canal dejaba al cliente atrasado justo durante los
+    // segundos en los que ya se sabía que no iba a llegar ningún evento.
+    void catchUp();
+    pollingStop = startPolling(() => catchUp(), pollMs);
   };
   const stopFallback = () => {
     pollingStop?.();
@@ -1926,14 +1991,43 @@ function createRealtimeWatch({
       channel.on('postgres_changes', change.config, () => safeTask(change.handler));
     }
     channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') stopFallback();
-      if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) startFallback();
+      if (status === 'SUBSCRIBED') {
+        stopFallback();
+        /*
+         * `postgres_changes` no tiene replay. Reconectar recupera el CAUDAL de
+         * eventos futuros, no los que ocurrieron durante el corte: sin esta
+         * consulta el cliente se queda con el último estado que alcanzó a ver y
+         * no hay nada que lo despierte, porque justamente lo que le falta son
+         * los eventos que ya no van a volver a pasar.
+         */
+        if (hasBeenDisconnected) {
+          hasBeenDisconnected = false;
+          void catchUp();
+        }
+        return;
+      }
+      if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) {
+        hasBeenDisconnected = true;
+        startFallback();
+      }
     });
   }
 
-  if (initialTask) safeTask(initialTask);
+  /*
+   * Y la reconciliación que no depende de la salud del canal. Un teléfono
+   * suspendido no recibe eventos ni corre timers; al volver, el socket se
+   * reconecta y vuelve a decir SUBSCRIBED sin que nadie note el hueco. La única
+   * verdad disponible es la del servidor, así que se le pregunta en cada vuelta.
+   */
+  const stopResumeWatch = onBrowserResume(() => catchUp(), {
+    windowRef,
+    documentRef,
+  });
+
+  if (initialTask) void catchUp(initialTask);
   return () => {
     stopped = true;
+    stopResumeWatch();
     stopFallback();
     if (channel && typeof client.removeChannel === 'function') {
       Promise.resolve(client.removeChannel(channel)).catch(() => null);

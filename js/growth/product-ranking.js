@@ -17,6 +17,17 @@ function key(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+function presentationKey(product) {
+  const units = Number(product?.unitsPerPack);
+  const count = Number.isFinite(units) && units > 1 ? `pack-${units}` : 'single';
+  const packageType = key(product?.packageType || product?.unitLabel || '');
+  const capacity = [product?.capacityValue, product?.capacityUnit]
+    .map((value) => key(value))
+    .filter(Boolean)
+    .join('-');
+  return [count, packageType, capacity].filter(Boolean).join(':');
+}
+
 function affinityValue(bucket, value) {
   return Number(bucket?.[key(value)]) || 0;
 }
@@ -106,16 +117,20 @@ export function rankProductCandidates(products = [], { affinity = null } = {}) {
   const remaining = [...available];
   const pickedBrands = new Set();
   const pickedCategories = new Set();
+  const pickedPresentations = new Set();
 
   while (remaining.length) {
     const adjusted = remaining.map((entry) => {
       const brandKey = key(entry.product?.brand);
       const categoryKey = key(entry.product?.categoryId);
+      const productPresentationKey = presentationKey(entry.product);
       const repeatBrand = brandKey && pickedBrands.has(brandKey);
       const repeatCategory = categoryKey && pickedCategories.has(categoryKey);
+      const repeatPresentation = productPresentationKey && pickedPresentations.has(productPresentationKey);
       const diversityPenalty = (
         (repeatBrand ? PRODUCT_RANKING_WEIGHTS.diversityRepeatBrand : 0)
         + (repeatCategory && !repeatBrand ? PRODUCT_RANKING_WEIGHTS.diversityRepeatCategory : 0)
+        + (repeatPresentation ? PRODUCT_RANKING_WEIGHTS.diversityRepeatPresentation : 0)
       );
       return {
         ...entry,
@@ -134,6 +149,8 @@ export function rankProductCandidates(products = [], { affinity = null } = {}) {
     const category = key(winner.product?.categoryId);
     if (brand) pickedBrands.add(brand);
     if (category) pickedCategories.add(category);
+    const productPresentationKey = presentationKey(winner.product);
+    if (productPresentationKey) pickedPresentations.add(productPresentationKey);
     remaining.splice(remaining.findIndex((entry) => entry.index === winner.index), 1);
   }
 

@@ -123,6 +123,9 @@ export const PRODUCT_RANKING_WEIGHTS = Object.freeze({
   availability: 8,
   diversityRepeatBrand: 8,
   diversityRepeatCategory: 4,
+  // Evita que dos presentaciones equivalentes ocupen los primeros lugares
+  // seguidos, sin romper la coherencia de la categoria dominante.
+  diversityRepeatPresentation: 3,
 });
 
 // Ventana de rotación determinista para desempates exactos en cold start: el

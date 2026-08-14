@@ -2668,6 +2668,34 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   object-fit: contain;
 }
 
+/* Un pack de un solo producto se comunica con una pequena composicion de
+   unidades reales. No fabrica packaging ni duplica el precio: el sello sigue
+   diciendo la cantidad comercial completa. */
+.combo-media-plate.is-pack {
+  gap: 0;
+  padding-inline: 18px;
+}
+
+.combo-media-plate.is-pack .combo-media-item {
+  flex: 0 1 31%;
+  margin-inline: -4px;
+  z-index: 1;
+}
+
+.combo-media-plate.is-pack .combo-media-item:nth-child(2) {
+  transform: translateY(-3px);
+  z-index: 2;
+}
+
+.combo-media-plate.is-pack .combo-media-item:nth-child(3) {
+  transform: translateY(3px);
+}
+
+.combo-media-plate.is-pack .combo-media-item img {
+  width: 100%;
+  max-width: none;
+}
+
 /* La cantidad va SOBRE el packshot: seis latas iguales no se pintan seis veces
    —no entran y además la fila deja de leerse—, se pinta una y se dice cuántas. */
 .combo-media-item em {

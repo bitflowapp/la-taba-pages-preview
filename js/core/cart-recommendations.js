@@ -5,15 +5,28 @@ const DRINK_CATEGORIES = new Set([
   'aguas',
   'jugos',
   'energeticas',
+  'energizantes',
   'isotonicas',
   'cervezas',
+  'fernet',
+  'aperitivos',
+  'vinos',
+  'espumantes',
+  'destilados',
   'vinos-y-espumantes',
   'gins-y-vodkas',
   'whisky-y-destilados',
+  'mixers',
+  'hielo',
 ]);
 
 const ALCOHOL_CATEGORIES = new Set([
   'cervezas',
+  'fernet',
+  'aperitivos',
+  'vinos',
+  'espumantes',
+  'destilados',
   'vinos-y-espumantes',
   'gins-y-vodkas',
   'whisky-y-destilados',
@@ -25,8 +38,8 @@ export const CART_RECOMMENDATION_RULES = Object.freeze([
   Object.freeze({
     id: 'alcohol-accompaniments',
     when: 'alcohol',
-    targetCategories: ['hielo-y-extras', 'picadas-y-deli', 'gaseosas'],
-    targetTags: ['hielo', 'ice', 'snack', 'snacks', 'golosina', 'golosinas', 'candy', 'mixer'],
+    targetCategories: ['gaseosas', 'mixers', 'hielo', 'hielo-y-extras', 'picadas-y-deli'],
+    targetTags: ['hielo', 'ice', 'snack', 'snacks', 'golosina', 'golosinas', 'candy', 'mixer', 'cola', 'coca-cola', 'gaseosa', 'tonica'],
     priority: 100,
     title: 'Completá tu pedido',
     copy: 'Elegimos acompañamientos sin alcohol disponibles para tu compra.',
@@ -53,7 +66,11 @@ export const CART_RECOMMENDATION_RULES = Object.freeze([
 
 function normalizedTags(product = {}) {
   return new Set((Array.isArray(product.tags) ? product.tags : [])
-    .map((tag) => String(tag || '').trim().toLocaleLowerCase('es-AR'))
+    .map((tag) => String(tag || '')
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('es-AR'))
     .filter(Boolean));
 }
 
@@ -84,7 +101,7 @@ function matchesRule(rule, cartProducts) {
     return cartProducts.some((product) => product.categoryId === 'gaseosas');
   }
   if (rule.when === 'energy') {
-    return cartProducts.some((product) => product.categoryId === 'energeticas');
+    return cartProducts.some((product) => ['energeticas', 'energizantes'].includes(product.categoryId));
   }
   return false;
 }
@@ -149,6 +166,8 @@ export function cartContainsComplementaryProducts({ products = [], cart = [] } =
     .some((product) => (
       product.categoryId === 'hielo-y-extras'
       || product.categoryId === 'picadas-y-deli'
+      || product.categoryId === 'hielo'
+      || product.categoryId === 'mixers'
       || normalizedTags(product).has('hielo')
       || normalizedTags(product).has('ice')
     ));

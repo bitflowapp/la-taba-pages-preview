@@ -1570,16 +1570,25 @@ function renderCombos() {
  * blanco que el resto de la góndola y el combo se lee por lo que trae.
  */
 function comboMedia(combo) {
+  const isSingleComponentPack = combo.components.length === 1 && combo.components[0].quantity > 1;
+  const packComponent = isSingleComponentPack ? combo.components[0] : null;
+  const packVisualUnits = packComponent ? Math.min(3, packComponent.quantity) : 0;
   const shown = combo.components.slice(0, 4);
   const extra = combo.components.length - shown.length;
   return `
-    <span class="combo-media-plate">
-      ${shown.map((component) => `
+    <span class="combo-media-plate${isSingleComponentPack ? ' is-pack' : ''}" data-pack-visual="${isSingleComponentPack ? 'true' : 'false'}"${packComponent ? ` data-pack-count="${packComponent.quantity}"` : ''}>
+      ${isSingleComponentPack
+        ? Array.from({ length: packVisualUnits }, (_, index) => `
+        <span class="combo-media-item is-pack-unit" data-pack-visual-unit="${index + 1}">
+          <img src="${escapeHtml(packComponent.product.imageThumbnail || packComponent.product.image)}" alt="" width="120" height="120" loading="lazy" decoding="async" />
+          ${index === 0 ? `<em>×${packComponent.quantity}</em>` : ''}
+        </span>`).join('')
+        : shown.map((component) => `
         <span class="combo-media-item">
           <img src="${escapeHtml(component.product.imageThumbnail || component.product.image)}" alt="" width="120" height="120" loading="lazy" decoding="async" />
           ${component.quantity > 1 ? `<em>×${component.quantity}</em>` : ''}
         </span>`).join('')}
-      ${extra > 0 ? `<span class="combo-media-more">+${extra}</span>` : ''}
+      ${!isSingleComponentPack && extra > 0 ? `<span class="combo-media-more">+${extra}</span>` : ''}
     </span>`;
 }
 
@@ -2022,9 +2031,13 @@ function getFilteredProducts(state) {
     );
     return matchesCategory && matchesQuery && matchesFilters;
   });
-  return growthProductOrder(sortProducts(filtered, state.sortBy));
+  const ordered = growthProductOrder(sortProducts(filtered, state.sortBy));
+  if (!query) return ordered;
+  return ordered
+    .map((product, index) => ({ product, index, relevance: searchRelevanceScore(product, query) }))
+    .sort((left, right) => right.relevance - left.relevance || left.index - right.index)
+    .map(({ product }) => product);
 }
-
 function normalizeSearchText(value) {
   const normalized = String(value || '')
     .normalize('NFD')
@@ -2036,6 +2049,29 @@ function normalizeSearchText(value) {
     `${Math.round(Number(String(value).replace(',', '.')) * 1000)}ml`
   ));
   return millilitres.replace(/(\d+)\s*ml\b/g, '$1ml').replace(/\s+/g, ' ').trim();
+}
+
+// La consulta es una señal de intención inmediata: dentro de sus coincidencias
+// el nombre/brand exacto debe ganar a un producto que sólo coincide por la
+// categoría. Esto mantiene la búsqueda útil para familias nuevas sin conocer
+// marcas concretas ni alterar el ranking contextual del storefront.
+function searchRelevanceScore(product, query) {
+  const terms = normalizeSearchText(query).split(' ').filter(Boolean);
+  if (!terms.length) return 0;
+  const name = normalizeSearchText(product?.name);
+  const brand = normalizeSearchText(product?.brand);
+  const category = normalizeSearchText(`${product?.categoryId || ''} ${product?.categoryName || ''}`);
+  const tags = normalizeSearchText(Array.isArray(product?.tags) ? product.tags.join(' ') : '');
+  const presentation = normalizeSearchText(`${product?.presentation || ''} ${product?.unitLabel || ''} ${product?.capacity || ''}`);
+  return terms.reduce((score, term) => {
+    if (name === term) return score + 70;
+    if (name.startsWith(`${term} `) || name.startsWith(`${term}-`)) return score + 55;
+    if (name.includes(term)) return score + 45;
+    if (brand.includes(term)) return score + 35;
+    if (category.includes(term) || tags.includes(term)) return score + 20;
+    if (presentation.includes(term)) return score + 10;
+    return score;
+  }, 0);
 }
 
 // Un producto sin precio publicado no se puede comprar, así que ningún otro
@@ -2920,7 +2956,7 @@ function renderCartList() {
     return `
     <div class="cart-item cart-item-combo${issue ? ' has-issue' : ''}" data-cart-combo="${escapeHtml(line.combo.comboId)}">
       <div class="cart-item-info">
-        <div class="cart-title">${escapeHtml(line.combo.name)}<span class="cart-combo-tag">Combo</span></div>
+        <div class="cart-title">${escapeHtml(line.combo.name)} <span class="cart-combo-tag">Combo</span></div>
         <div class="cart-meta">${line.combo.components.map((component) => `${component.quantity}× ${escapeHtml(component.product.name)}`).join(' · ')}</div>
         ${issue ? `
         <p class="cart-item-issue" role="status">

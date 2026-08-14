@@ -41,7 +41,7 @@
      El rojo NO se duplica: la acción usa `--taba-red`, el mismo del sistema.
      Sobre negro ese rojo da 3,4:1, suficiente para superficie y borde pero no
      para texto chico; por eso existe `--brand-red-ink`, la única variante
-     pensada para TEXTO sobre oscuro (6,0:1).
+     pensada para TEXTO sobre oscuro (6,3:1).
      ====================================================================== */
   /* --------------------------------------------------------------------------
      ESCALA DE GRAFITO — seis escalones, una sola familia.
@@ -72,7 +72,12 @@
   --brand-border-strong: rgb(255 255 255 / 26%);
   --brand-ink: #f5f5f5;             /* 17,0:1 sobre --brand-bg */
   --brand-ink-muted: #a8abb2;       /*  8,1:1 sobre --brand-bg */
-  --brand-red-ink: #ff4d55;         /*  5,7:1 sobre --brand-bg (texto/enlace) */
+  /* #ff5f66 y no #ff4d55. El rojo legible tuvo que subir un escalón cuando lo
+     hizo la superficie: sobre `--shelf-raised` levantado, el anterior daba
+     4,31:1 y dejaba el error de campo del Perfil por debajo de AA. Lo detectó
+     `tests/a11y-recovery-and-contrast.test.mjs`, no el ojo. La diferencia entre
+     los dos rojos es imperceptible; la de contraste, no. */
+  --brand-red-ink: #ff5f66;         /*  6,3:1 sobre --brand-bg (texto/enlace) */
   --brand-gold: #c9953e;            /*  6,9:1 sobre --brand-bg (acento premium) */
   --brand-gold-soft: #e4b45f;
   --brand-focus: #8ab4ff;           /* foco visible sobre oscuro */
@@ -122,7 +127,7 @@
   --shelf-gold-wash: rgb(201 149 62 / 14%);
   /* Rojo que se puede LEER sobre la góndola. El rojo de acción (--taba-red) es
      una superficie, no una tinta: sobre grafito da 2,3:1. */
-  --shelf-red-ink: #ff4d55;         /*  5,0:1 sobre --shelf */
+  --shelf-red-ink: #ff5f66;         /*  5,4:1 sobre --shelf · 4,7:1 sobre --shelf-raised */
   --shelf-red-wash: rgb(208 0 13 / 16%);
   /* UNA sombra por superficie. Sobre grafito la sombra despega poco, así que
      el hairline interno es el que dibuja el borde de la tarjeta; la sombra

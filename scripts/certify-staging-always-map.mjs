@@ -331,8 +331,8 @@ for (const width of WIDTHS) {
     versionApp: [...document.querySelectorAll('script[src]')].map((s) => s.getAttribute('src')).find((s) => s.includes('app.js')) || '',
   }));
   anota(`   controlado por worker=${estadoSW.controlado} · cachés=${JSON.stringify(estadoSW.caches)} · ${estadoSW.versionApp}`);
-  if (!estadoSW.versionApp.includes('?v=41')) falla(`cliente recurrente: sigue cargando ${estadoSW.versionApp}`);
-  const viejas = estadoSW.caches.filter((k) => k.startsWith('la-taba-runtime-') && k !== 'la-taba-runtime-v65-authoritative-gates');
+  if (!estadoSW.versionApp.includes('?v=42')) falla(`cliente recurrente: sigue cargando ${estadoSW.versionApp}`);
+  const viejas = estadoSW.caches.filter((k) => k.startsWith('la-taba-runtime-') && k !== 'la-taba-runtime-v66-production-blockers');
   if (estadoSW.controlado && viejas.length) falla(`cliente recurrente: quedaron cachés viejas ${JSON.stringify(viejas)}`);
 
   await page.evaluate(() => { window.location.hash = '#tracking'; });

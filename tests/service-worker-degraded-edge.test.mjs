@@ -147,7 +147,7 @@ test('la página del portal cautivo NO se guarda: envenenaría la caché hasta l
 });
 
 test('un módulo servido como HTML tampoco pasa', async () => {
-  const modulo = `${ORIGEN}/js/app.js?v=41`;
+  const modulo = `${ORIGEN}/js/app.js?v=42`;
   const worker = cargarWorker({
     red: async () => portalCautivo(),
     enCache: [[modulo, new Response('export const ok = 1;', {

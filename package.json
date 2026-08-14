@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/check-syntax.mjs && node scripts/check-static-assets.mjs && node scripts/check-precache-graph.mjs && node scripts/check-release-hygiene.mjs && node scripts/check-location-contract.mjs && node scripts/scan-secrets.mjs",
+    "check": "node scripts/check-syntax.mjs && node scripts/check-static-assets.mjs && node scripts/check-precache-graph.mjs && node scripts/check-release-hygiene.mjs && node scripts/check-release-identity.mjs && node scripts/check-location-contract.mjs && node scripts/scan-secrets.mjs",
     "location:check": "node scripts/check-location-contract.mjs",
     "location:delivery:db": "node scripts/verify-delivery-location-db.mjs",
     "vendor:build": "node scripts/build-supabase-vendor.mjs",
@@ -63,7 +63,8 @@
     "performance:local": "node scripts/measure-local-rc-performance.mjs",
     "tauri": "tauri",
     "tauri:build": "tauri build",
-    "certify:circuit:staging": "node scripts/certify-order-operational-circuit.mjs"
+    "certify:circuit:staging": "node scripts/certify-order-operational-circuit.mjs",
+    "release:identity": "node scripts/check-release-identity.mjs --write"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

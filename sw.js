@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v65-authoritative-gates';
+const CACHE_NAME = 'la-taba-runtime-v66-production-blockers';
 const ASSETS = [
   './',
   './index.html',
@@ -30,7 +30,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=3',
   './js/startup-recovery.js?v=2',
-  './js/app.js?v=41',
+  './js/app.js?v=42',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',

@@ -1,7 +1,7 @@
 # TABA2 — Endurecimiento del Cliente después de la demo
 
 Rama: `fix/taba2-customer-postdemo-hardening` · base congelada `bc9af92`
-Worktree: `D:\1212\worktrees\taba2-customer-postdemo`
+Worktree: `…\1212\worktrees\taba2-customer-postdemo`
 
 **`release/taba2-commercial-rc` no se tocó.** Nada de lo de acá está integrado ni
 publicado. La demo de Walter sigue ejecutando exactamente la RC congelada.

@@ -341,6 +341,21 @@
               puede prometer un ahorro que dejó de existir. Una sección sin
               combos armables queda oculta: nunca aparece un rail vacío.
             -->
+            <!--
+              VOLVER A PEDIR va acá y no al final.
+              Estaba como último bloque de la home, a 2411px de una página de
+              2775: quien ya compró tenía que recorrer casi tres pantallas para
+              encontrar el único atajo pensado para él. Y no va más arriba
+              porque "Destacados" es el primer tramo comprable y tiene que caer
+              sobre el pliegue: la recompra no puede desplazar a la vidriera
+              comercial, que es lo que ve quien entra por primera vez.
+              Acá queda inmediatamente después del primer carrusel: a un scroll
+              corto, sin haber corrido nada de lo que estaba arriba.
+              El bloque sólo existe con un pedido anterior real; sin historial
+              el contenedor queda vacío y no ocupa lugar.
+            -->
+            <div class="home-reorder-slot" data-customer-actions></div>
+
             <section class="home-merch-section home-combos-section" data-home-combos-section aria-labelledby="home-combos-title" hidden>
               <div class="home-section-head">
                 <div class="home-section-title">
@@ -412,7 +427,6 @@
               <div class="home-best-sellers offers-rail" data-home-editorial-rail></div>
             </section>
 
-            <div class="home-reorder-slot" data-customer-actions></div>
             <button class="order-now-cta" type="button" data-nav-view="catalog">
               <span>Ver catálogo completo</span>
               <span aria-hidden="true">›</span>

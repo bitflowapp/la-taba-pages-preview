@@ -754,6 +754,84 @@
   font-weight: 700;
 }
 
+/* ============================================================================
+   RESUMEN DEL CLIENTE QUE VUELVE
+   ----------------------------------------------------------------------------
+   Tres renglones —entrega, contacto, pago— con la misma anatomía: bajada,
+   dato, salida. Comparten UNA superficie con separadores internos en vez de ser
+   tres tarjetas sueltas: tres tarjetas volverían a sumar la altura que este
+   bloque existe para sacar.
+   ========================================================================== */
+.checkout-summary {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: var(--shelf-raised);
+}
+
+.checkout-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 62px;
+  padding: 11px 14px;
+}
+
+.checkout-summary-row + .checkout-summary-row {
+  border-top: 1px solid var(--taba-border);
+}
+
+.checkout-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.checkout-summary-kicker {
+  color: var(--taba-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.checkout-summary-copy strong {
+  overflow: hidden;
+  color: var(--taba-ink);
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkout-summary-copy > span:not(.checkout-summary-kicker) {
+  overflow: hidden;
+  color: var(--taba-muted);
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkout-summary-change {
+  display: inline-flex;
+  min-height: var(--tap);
+  align-items: center;
+  flex: 0 0 auto;
+  padding-inline: 4px;
+  color: var(--taba-red-quiet);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* Los controles que el resumen reemplaza siguen en el árbol con su valor
+   elegido; sólo dejan de ocupar lugar. Ver `applyCheckoutSummaryMode`. */
+[data-checkout-summary="compact"] .delivery-mode,
+[data-checkout-summary="compact"] .checkout-payment-field {
+  display: none;
+}
+
 .profile-checkout-summary {
   display: flex;
   align-items: center;

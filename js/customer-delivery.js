@@ -16,6 +16,7 @@ import { splitStreetAndNumber } from './core/address.js';
 import { getCommerceAvailability } from './core/commerce-availability-store.js';
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
 import { supportsProfileCheckout } from './core/profile-checkout.js';
+import { getCustomerOrderHistory } from './core/customer-history.js';
 import { formatArgentinePhone, validateRequiredStreetNumber } from './core/validators.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
 import { createCustomerGeolocationService } from './services/customer-geolocation.js';
@@ -41,6 +42,15 @@ const state = {
   suggestionShown: false,
   blockedReason: '',
   addressListExpanded: false,
+  // Resumen compacto del cliente que vuelve. Arranca plegado y sólo se despliega
+  // si la persona toca "Cambiar": desplegarlo por su cuenta anularía el ahorro
+  // de pasos que es toda la razón de que exista.
+  checkoutSummaryExpanded: false,
+  // La preferencia de pago se copia del último pedido UNA sola vez por sesión de
+  // checkout. Repetirlo en cada render pisaría la elección que la persona acaba
+  // de hacer, que es la forma más rápida de convertir una comodidad en un error
+  // de cobro.
+  paymentPreferenceApplied: false,
   // ¿Ya sabemos si esta persona tiene direcciones? Arranca en false porque las
   // direcciones llegan DESPUÉS del primer pintado. Mientras sea false, ninguna
   // pantalla puede afirmar «no tenés dirección»: todavía no lo sabe.
@@ -724,13 +734,161 @@ function render(message = '') {
   if (!container) return;
   container.hidden = false;
   const status = message || (state.loading ? 'Cargando tus datos guardados…' : '');
+  // Antes de resolver el resumen: el renglón "Pago" tiene que leer el valor ya
+  // preseleccionado, y el formulario extendido también se beneficia de tenerlo.
+  applyRememberedPaymentPreference();
+  const compact = compactCheckoutSummary();
+  applyCheckoutSummaryMode(compact);
   container.innerHTML = `
-    <section class="profile-checkout" data-profile-checkout aria-labelledby="profile-checkout-title">
-      <h4 class="profile-checkout-title" id="profile-checkout-title">Tus datos</h4>
+    <section class="profile-checkout" data-profile-checkout aria-labelledby="profile-checkout-title"${compact ? ' data-checkout-summary="compact"' : ''}>
+      <h4 class="profile-checkout-title" id="profile-checkout-title">${compact ? 'Revisá y confirmá' : 'Tus datos'}</h4>
       <div class="saved-address-status" aria-live="polite">${escapeHtml(status)}</div>
-      ${renderProfileSummary()}
-      ${renderDeliveryAddressBlock()}
+      ${compact ? renderCompactCheckoutSummary(compact) : `${renderProfileSummary()}
+      ${renderDeliveryAddressBlock()}`}
     </section>`;
+}
+
+/* ============================================================================
+   EL CLIENTE QUE VUELVE — resumen en vez de formulario
+   ----------------------------------------------------------------------------
+   Quien ya compró acá vio este mismo formulario entero la vez anterior y no
+   cambió nada: eligió la misma dirección, con el mismo teléfono y el mismo
+   medio de pago. Volvérselo a pedir campo por campo no agrega ninguna decisión;
+   agrega scroll. Acá esos datos se muestran resumidos, con una salida a
+   "Cambiar" en cada renglón, y el formulario completo sigue existiendo intacto
+   detrás de ese botón.
+
+   LA COMPUERTA ES UN PEDIDO ANTERIOR, NO UN PERFIL GUARDADO. La diferencia no
+   es cosmética: tener una dirección guardada sólo prueba que alguien la
+   escribió; tener un pedido en el historial prueba que ya se completó una
+   compra con estos datos. Un perfil a medio llenar no es un cliente recurrente,
+   y presentarle un resumen sería esconderle justamente los campos que todavía
+   no llenó.
+
+   LO QUE EL RESUMEN NO HACE: no confirma nada. Recordar un dato no autoriza a
+   usarlo — la dirección, el stock, el precio, la zona y el horario los
+   revalida el envío del pedido, exactamente igual que para alguien que compra
+   por primera vez. El resumen ahorra tipeo, no controles.
+   ========================================================================== */
+function compactCheckoutSummary() {
+  if (state.checkoutSummaryExpanded) return null;
+  if (state.blockedReason) return null;
+  if (state.loading) return null;
+  const profile = state.profile || {};
+  const name = String(profile.name || '').trim();
+  const phone = String(profile.phone || '').trim();
+  if (!name || !phone) return null;
+  // Sin un pedido anterior no hay nada que "recordar": es la primera compra.
+  if (!getCustomerOrderHistory().length) return null;
+
+  const pickup = currentDeliveryModeIsPickup();
+  let address = null;
+  if (!pickup) {
+    const active = getActiveDeliveryAddress();
+    // La dirección tiene que seguir siendo entregable HOY. Una dirección
+    // guardada sin punto confirmado no se puede resumir como si estuviera
+    // lista: el backend la rechazaría igual, después de cobrar.
+    if (!active) return null;
+    address = active;
+  }
+
+  return { pickup, address, name, phone, payment: currentPaymentChoice() };
+}
+
+function renderCompactCheckoutSummary(summary) {
+  const entrega = summary.pickup
+    ? { titulo: 'Retirás en el local', detalle: 'Te esperamos en el mostrador' }
+    : {
+      titulo: summary.address.label || 'Dirección de entrega',
+      detalle: addressSummary(summary.address),
+    };
+  return `
+    <div class="checkout-summary" data-checkout-summary-rows>
+      ${summaryRow('Entrega', entrega.titulo, entrega.detalle, 'delivery')}
+      ${summaryRow('Contacto', summary.name, maskPhone(summary.phone), 'contact')}
+      ${summaryRow('Pago', summary.payment.label, '', 'payment')}
+    </div>`;
+}
+
+function summaryRow(kicker, titulo, detalle, target) {
+  return `
+    <div class="checkout-summary-row" data-checkout-summary-row="${escapeHtml(target)}">
+      <div class="checkout-summary-copy">
+        <span class="checkout-summary-kicker">${escapeHtml(kicker)}</span>
+        <strong>${escapeHtml(titulo)}</strong>
+        ${detalle ? `<span>${escapeHtml(detalle)}</span>` : ''}
+      </div>
+      <button
+        class="text-button checkout-summary-change"
+        type="button"
+        data-profile-checkout-action="expand-summary"
+        aria-label="Cambiar ${escapeHtml(kicker.toLowerCase())}"
+      >Cambiar</button>
+    </div>`;
+}
+
+/*
+ * El teléfono es el de esta persona en su propio teléfono, así que ocultarlo no
+ * la protege de nadie: lo que hace es que el renglón se lea de un vistazo y que
+ * una captura de pantalla del checkout no lleve el número entero. Se conservan
+ * los últimos tres dígitos, que son los que alcanzan para reconocer cuál de los
+ * números propios es.
+ */
+function maskPhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length <= 3) return digits;
+  return `•••${digits.slice(-3)}`;
+}
+
+function currentPaymentChoice() {
+  const select = checkoutForm()?.elements?.paymentMethod;
+  const value = String(select?.value || '');
+  const label = select?.selectedOptions?.[0]?.textContent?.trim();
+  return { value, label: label || 'A coordinar con el local' };
+}
+
+/*
+ * La preferencia de pago del último pedido, revalidada contra lo que el
+ * checkout ofrece HOY. Un método que ya no está en la lista —porque el comercio
+ * lo dio de baja o porque el CHECK de la base nunca lo aceptó— se descarta en
+ * silencio y queda el valor por defecto del formulario.
+ *
+ * Prellenar NO es saltear: el medio elegido se muestra en el resumen, con su
+ * propio "Cambiar". `taba-reorder-retention` prohíbe saltear la elección del
+ * medio de pago, no proponer el que se usó la vez anterior a la vista de todos.
+ */
+function applyRememberedPaymentPreference() {
+  if (state.paymentPreferenceApplied) return;
+  if (state.blockedReason) return;
+  const select = checkoutForm()?.elements?.paymentMethod;
+  if (!select) return;
+  state.paymentPreferenceApplied = true;
+  const remembered = String(getCustomerOrderHistory()[0]?.paymentMethodCode || '');
+  if (!remembered || remembered === select.value) return;
+  const offered = [...select.options].some((option) => option.value === remembered);
+  if (!offered) return;
+  select.value = remembered;
+}
+
+/*
+ * Los controles que el resumen reemplaza NO viven en este contenedor: la
+ * modalidad y el medio de pago son hermanos del formulario, escritos en el
+ * HTML. Se los pliega con un atributo en el `<form>` y una regla de CSS, no
+ * quitándolos del árbol: quitarlos perdería el valor elegido y volvería a
+ * pedirlo, que es exactamente lo contrario de lo que esto hace.
+ */
+function applyCheckoutSummaryMode(compact) {
+  const form = checkoutForm();
+  if (!form) return;
+  if (compact) form.dataset.checkoutSummary = 'compact';
+  else delete form.dataset.checkoutSummary;
+  const heading = form.querySelector('.checkout-heading > span');
+  if (heading) {
+    // "Finalizá en pocos pasos" es una promesa sobre la longitud del
+    // formulario, y en la primera compra el formulario NO es corto. El renglón
+    // pasa a decir para qué sirve lo que viene, que es verificable.
+    heading.textContent = compact ? 'Ya tenemos tus datos' : 'Para entregarte el pedido';
+  }
 }
 
 function renderProfileSummary() {
@@ -804,6 +962,14 @@ function currentDeliveryModeIsPickup() {
 // Navegar a Perfil no puede costar el carrito ni la selección ya hecha: se deja
 // una marca de retorno y el estado del checkout permanece intacto en memoria.
 function handleProfileCheckoutAction(action) {
+  if (action === 'expand-summary') {
+    // Se despliega el checkout ENTERO, no el renglón que se tocó. Un resumen
+    // que se abre por partes deja a la persona sin saber qué queda plegado, y
+    // en un formulario de compra eso se paga confirmando algo que no se vio.
+    state.checkoutSummaryExpanded = true;
+    render();
+    return;
+  }
   if (action === 'toggle-addresses') {
     state.addressListExpanded = !state.addressListExpanded;
     render();

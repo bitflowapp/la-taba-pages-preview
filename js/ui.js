@@ -94,6 +94,7 @@ import {
   growthHeroSelection,
   growthHomeSectionOrder,
   growthInlineMarkup,
+  growthProductOrder,
 } from './growth/placements.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
@@ -741,13 +742,13 @@ function homePopularSection() {
 
 function homeBestSellerProducts() {
   const popular = homePopularSection()?.products || [];
-  if (popular.length) return popular.filter((product) => !product.pricePending);
+  if (popular.length) return growthProductOrder(popular.filter(isPurchasableBeverageProduct));
   // La selección heredada se mantiene como "Destacados" cuando todavía no
   // existe una marca popular real. Nunca se presenta como "Lo más pedido".
   // Sale del mismo orden comercial que las secciones de abajo —y con una marca
   // por tarjeta— en vez del orden de carga del catálogo, que abría con tres
   // variantes seguidas de Coca-Cola.
-  return featuredBeverageProducts(getState().products, { limit: HOME_BEST_SELLERS_LIMIT });
+  return growthProductOrder(featuredBeverageProducts(getState().products, { limit: HOME_BEST_SELLERS_LIMIT }));
 }
 
 function homeProductImage(product, className) {
@@ -1405,9 +1406,9 @@ function renderHomeSections() {
     .filter((section) => section.kind === 'category')
     .map((section) => ({
       ...section,
-      products: section.products
-        .filter(isPurchasableBeverageProduct)
-        .slice(0, HOME_SECTION_PRODUCT_LIMIT),
+      products: growthProductOrder(
+        section.products.filter(isPurchasableBeverageProduct),
+      ).slice(0, HOME_SECTION_PRODUCT_LIMIT),
     }))
     .filter((section) => section.products.length > 0);
   // Con intención real, el rubro que la persona busca sube ANTES del corte de
@@ -2021,7 +2022,7 @@ function getFilteredProducts(state) {
     );
     return matchesCategory && matchesQuery && matchesFilters;
   });
-  return sortProducts(filtered, state.sortBy);
+  return growthProductOrder(sortProducts(filtered, state.sortBy));
 }
 
 function normalizeSearchText(value) {

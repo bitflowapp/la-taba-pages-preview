@@ -106,6 +106,23 @@ export const RANKING_WEIGHTS = Object.freeze({
   // Penalización por repetir categoría dentro de una misma selección
   // multi-slot (diversidad). Se aplica a partir del segundo slot.
   diversityRepeatPenalty: 30,
+  // Toda campaña que llega a ranking ya pasó elegibilidad de catálogo vivo.
+  // Se deja explícito en el desglose para que disponibilidad no sea una
+  // inferencia silenciosa del destino.
+  availability: 4,
+});
+
+// Pesos del primer nivel de merchandising de producto. La afinidad de
+// categoría pesa más que marca/SKU para que una intención dominante ordene la
+// góndola completa sin convertirla en una recomendación de un solo producto.
+export const PRODUCT_RANKING_WEIGHTS = Object.freeze({
+  categoryIntent: 45,
+  brandIntent: 22,
+  productIntent: 30,
+  merchandising: 6,
+  availability: 8,
+  diversityRepeatBrand: 8,
+  diversityRepeatCategory: 4,
 });
 
 // Ventana de rotación determinista para desempates exactos en cold start: el

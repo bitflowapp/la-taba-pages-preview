@@ -31,6 +31,7 @@ import {
 } from './engine.js';
 import { normalizedAffinity } from './intent-model.js';
 import { CATEGORY_INTENT_THRESHOLD } from './growth-config.js';
+import { rankProductCandidates, rankProductsByIntent } from './product-ranking.js';
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -89,6 +90,19 @@ function findCampaignById(campaignId) {
 }
 
 export { findCampaignById as growthCampaignById };
+
+/**
+ * Orden contextual del primer nivel de producto. En cold start devuelve el
+ * orden comercial existente; con afinidad real prioriza la categoría/marca/SKU
+ * relevante y conserva diversidad de marcas dentro de esa intención.
+ */
+export function growthProductOrder(products = []) {
+  return rankProductsByIntent(products, { affinity: getGrowthAffinity() });
+}
+
+export function growthProductRankingExplain(products = []) {
+  return rankProductCandidates(products, { affinity: getGrowthAffinity() });
+}
 
 // ── Marcado ──────────────────────────────────────────────────────────────────
 

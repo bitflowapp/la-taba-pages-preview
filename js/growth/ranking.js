@@ -52,6 +52,12 @@ function scoreCampaign(campaign, {
   const priority = (campaign.priority / 100) * RANKING_WEIGHTS.priority;
   explain.push({ factor: 'priority', value: round2(priority) });
 
+  // La elegibilidad ya comprobó que el destino tiene una compra real ahora.
+  // Es un factor constante dentro del pool, pero dejarlo en explain evita que
+  // disponibilidad quede escondida como una condición previa al ranking.
+  const availability = RANKING_WEIGHTS.availability;
+  explain.push({ factor: 'availability', value: round2(availability) });
+
   const complement = complementBoost(campaign.categoryIds, cartCategoryIds)
     * RANKING_WEIGHTS.complement;
   if (complement) explain.push({ factor: 'complement', value: round2(complement) });
@@ -67,7 +73,7 @@ function scoreCampaign(campaign, {
 
   return {
     campaign,
-    score: intent + priority + complement + promotion + context - frequency,
+    score: intent + priority + availability + complement + promotion + context - frequency,
     intentScore: intent,
     explain,
   };
@@ -173,6 +179,7 @@ export function explainRanking(ranked = []) {
   return (Array.isArray(ranked) ? ranked : []).map((entry) => ({
     campaignId: entry.campaign?.id || '',
     score: entry.score,
+    final: entry.score,
     factors: (entry.explain || []).map(({ factor, value }) => `${factor} ${value >= 0 ? '+' : ''}${value}`),
   }));
 }

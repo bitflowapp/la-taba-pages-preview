@@ -18,18 +18,27 @@
 //   TABA2_GROWTH.affinity()
 //   TABA2_GROWTH.funnel()
 //   TABA2_GROWTH.reset()
-import { updateState } from '../state.js';
+import { getState, updateState } from '../state.js';
+import { getCustomerCatalogProducts } from '../core/catalog-store.js';
+import { GROWTH_CAMPAIGNS } from './campaigns-data.js';
+import { eligibleCampaigns } from './campaign-eligibility.js';
 import {
   getGrowthAffinity,
+  getGrowthExposureSnapshot,
+  growthNow,
   resetGrowthEngineForTests,
   seedGrowthIntentForDemo,
 } from './engine.js';
 import {
+  buildGrowthCatalogView,
   growthCatalogInlineSelection,
   growthDoorSelection,
+  growthCartCategoryIds,
   growthHeroSelection,
+  growthProductRankingExplain,
 } from './placements.js';
-import { explainRanking } from './ranking.js';
+import { explainProductRanking } from './product-ranking.js';
+import { explainRanking, rankCampaigns } from './ranking.js';
 import { getGrowthEvents, getGrowthFunnel } from './analytics.js';
 
 const PERSONAS = Object.freeze({
@@ -75,6 +84,35 @@ function selectionTable(placement) {
   return [];
 }
 
+function candidateTable(placement) {
+  const state = getState();
+  const now = growthNow();
+  const eligible = eligibleCampaigns({
+    campaigns: GROWTH_CAMPAIGNS,
+    placement,
+    catalogView: buildGrowthCatalogView(state),
+    promotions: state.promotions,
+    now,
+  });
+  const common = {
+    affinity: getGrowthAffinity(),
+    cartCategoryIds: growthCartCategoryIds(state),
+    exposure: getGrowthExposureSnapshot(),
+    now,
+  };
+  return explainRanking(eligible
+    .map((campaign) => rankOneCampaign(campaign, common))
+    .filter(Boolean)
+    .sort((left, right) => right.score - left.score));
+}
+
+function rankOneCampaign(campaign, common) {
+  // Cada pieza se rankea sola para que esta tabla muestre el score bruto de
+  // candidato, sin aplicar diversidad entre slots. La selección real sigue
+  // usando el ranking greedy de producción.
+  return rankCampaigns({ campaigns: [campaign], ...common, slots: 1 })[0] || null;
+}
+
 export function isGrowthDebugEnabled(search = safeSearch()) {
   try {
     return new URLSearchParams(String(search || '')).get('growthDebug') === '1';
@@ -103,6 +141,10 @@ export function initGrowthDemoHarness({ windowRef = globalThis.window } = {}) {
       return `Persona ${String(name).toUpperCase()} aplicada (${seeds.length} señales).`;
     },
     explain: (placement = 'hero') => selectionTable(placement),
+    candidates: (placement = 'hero') => candidateTable(placement),
+    products: () => explainProductRanking(
+      growthProductRankingExplain(getCustomerCatalogProducts(getState().products)),
+    ),
     affinity: () => getGrowthAffinity(),
     funnel: () => getGrowthFunnel(),
     events: () => getGrowthEvents(),

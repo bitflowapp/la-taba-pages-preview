@@ -32,12 +32,16 @@ export const GROWTH_CAMPAIGNS = Object.freeze([
     kind: 'editorial',
     placements: ['hero'],
     categoryIds: ['cervezas'],
-    priority: 60,
+    // La categoría primaria tiene precedencia sobre un combo accesorio del
+    // mismo rubro. El combo sigue siendo elegible y puede rotar por frequency
+    // cap, pero un intento dominante no recibe una pieza mixta por contexto
+    // horario solamente.
+    priority: 75,
     contexts: [],
     creative: {
       eyebrow: 'La vidriera',
-      title: 'Bien fría, como tiene que ser',
-      subtitle: 'La selección de cervezas del local, lista para llevar.',
+      title: 'Bien frías, como tienen que estar',
+      subtitle: 'Cervezas frías, listas para pedir ahora.',
       // Sin image/bandImage: usa la fotografía por defecto del CSS y conserva
       // el preload del shell (tests/home-hero-preload.test.mjs).
       ctaLabel: 'Ver cervezas',

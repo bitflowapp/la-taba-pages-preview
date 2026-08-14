@@ -171,6 +171,7 @@ const ASSETS = [
   './js/growth/growth-config.js',
   './js/growth/intent-model.js',
   './js/growth/placements.js',
+  './js/growth/product-ranking.js',
   './js/growth/ranking.js',
   './js/growth/signal-bridge.js',
 ];

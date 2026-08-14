@@ -158,6 +158,21 @@ const ASSETS = [
   './js/repositories/sandbox_customer_profile_repository.js',
   './js/repositories/sandbox_order_repository.js',
   './js/tracking/customer_tracking_poll.js',
+  // Growth engine (merchandising/personalización). Todo el grafo estático:
+  // ui.js importa placements y app.js el bridge + harness.
+  './js/growth/analytics.js',
+  './js/growth/campaign-eligibility.js',
+  './js/growth/campaigns-data.js',
+  './js/growth/complements.js',
+  './js/growth/context.js',
+  './js/growth/demo-personas.js',
+  './js/growth/engine.js',
+  './js/growth/exposure-store.js',
+  './js/growth/growth-config.js',
+  './js/growth/intent-model.js',
+  './js/growth/placements.js',
+  './js/growth/ranking.js',
+  './js/growth/signal-bridge.js',
 ];
 
 self.addEventListener('install', (event) => {

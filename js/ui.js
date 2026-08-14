@@ -86,6 +86,15 @@ import {
   storyEntryState,
 } from './core/stories.js';
 import { PREVIEW_STORY_SEED } from './preview-stories-data.js';
+import {
+  growthCatalogInlineSelection,
+  growthDoorMarkup,
+  growthDoorSelection,
+  growthHeroMarkup,
+  growthHeroSelection,
+  growthHomeSectionOrder,
+  growthInlineMarkup,
+} from './growth/placements.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -827,6 +836,19 @@ export const HOME_HERO_PROMO = Object.freeze({
 function renderHomeHeroPromo() {
   const slot = $('[data-home-hero-promo]');
   if (!slot) return;
+  // Motor de merchandising primero: elige entre las campañas de hero según
+  // intención, contexto y frecuencia, con la MISMA regla fail-closed (destino
+  // comprable). En cold start la ganadora es la pieza editorial por defecto,
+  // así que la primera visita se ve exactamente como la vidriera auditada; y
+  // si el motor no responde (sin elegibles o error), decide el camino de
+  // siempre de abajo. La pieza por defecto no lleva imagen inline: conserva
+  // la banda del CSS y el preload del shell (tests/home-hero-preload).
+  const growthHero = growthHeroSelection();
+  if (growthHero) {
+    slot.hidden = false;
+    slot.innerHTML = growthHeroMarkup(growthHero.campaign);
+    return;
+  }
   const hero = HOME_HERO_PROMO;
   const category = categoriesForCurrentCatalog().find((entry) => entry.id === hero.categoryId);
   if (!category || !purchasableCategoryIds().has(hero.categoryId)) {
@@ -1375,7 +1397,7 @@ const HOME_MAX_SECTIONS = 6;
 function renderHomeSections() {
   const container = $('[data-home-sections]');
   if (!container) return;
-  const sections = buildBeverageHomeSections(
+  const allSections = buildBeverageHomeSections(
     getState().products,
     getState().promotions,
     { limit: Number.POSITIVE_INFINITY },
@@ -1387,7 +1409,13 @@ function renderHomeSections() {
         .filter(isPurchasableBeverageProduct)
         .slice(0, HOME_SECTION_PRODUCT_LIMIT),
     }))
-    .filter((section) => section.products.length > 0)
+    .filter((section) => section.products.length > 0);
+  // Con intención real, el rubro que la persona busca sube ANTES del corte de
+  // HOME_MAX_SECTIONS (que su carrusel no quede afuera de la home justo
+  // cuando más lo busca). En cold start devuelve null y manda el orden
+  // comercial de siempre. El orden es estable por época de vista: tocar el
+  // carrito re-renderiza pero no reordena secciones bajo el dedo.
+  const sections = (growthHomeSectionOrder(allSections) || allSections)
     .slice(0, HOME_MAX_SECTIONS);
 
   // Vidriera intercalada. Los rubros premium del local —whisky, fernet, vinos—
@@ -1402,9 +1430,18 @@ function renderHomeSections() {
   // construcción, entonces, los banners cubren exactamente lo que las secciones
   // no pueden cubrir.
   const sectionCategoryIds = new Set(sections.flatMap((section) => section.categoryIds));
+  // Las puertas intercaladas las elige el motor (ranking con intención,
+  // frecuencia y diversidad) sobre el MISMO material curado. Si el motor no
+  // responde, la lista fija de siempre sigue siendo el plan B; en los dos
+  // casos, jamás un rubro que ya tiene carrusel en pantalla.
+  const growthDoors = growthDoorSelection([...sectionCategoryIds], undefined, 3)
+    .map((entry) => growthDoorMarkup(entry.campaign));
   const usedByHeader = new Set(bannerEligibleCategoryIds().slice(0, HOME_BANNER_LIMIT));
-  const interleaved = bannerEligibleCategoryIds()
-    .filter((id) => !usedByHeader.has(id) && !sectionCategoryIds.has(id));
+  const interleaved = growthDoors.length
+    ? growthDoors
+    : bannerEligibleCategoryIds()
+      .filter((id) => !usedByHeader.has(id) && !sectionCategoryIds.has(id))
+      .map(homeBannerMarkup);
 
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
   container.innerHTML = sections.map((section, index) => {
@@ -1416,7 +1453,7 @@ function renderHomeSections() {
     // El primer tramo va limpio: arriba ya hay un banner y encadenarlos deja al
     // cliente con dos vidrieras seguidas antes del segundo producto.
     const banner = index > 0 && interleaved.length
-      ? `<div class="home-brand-banners home-brand-banners-inline">${homeBannerMarkup(interleaved.shift())}</div>`
+      ? `<div class="home-brand-banners home-brand-banners-inline">${interleaved.shift()}</div>`
       : '';
     return `
       <section class="home-merch-section home-category-section" aria-labelledby="${headingId}">
@@ -2287,7 +2324,7 @@ function renderProducts() {
       </div>`
     : '';
 
-  container.innerHTML = avisoSinComprables + filteredProducts.map((product) => {
+  const productCards = filteredProducts.map((product) => {
     const outOfStock = !isCommerciallyPurchasable(product);
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
@@ -2329,7 +2366,26 @@ function renderProducts() {
         </div>
       </article>
     `;
-  }).join('');
+  });
+
+  // Pieza comercial ÚNICA dentro de la grilla, elegida por el motor según la
+  // categoría navegada, el carrito y la intención (combos con ahorro real,
+  // complementos, o el rubro favorito de la persona). Reglas de contexto en
+  // growth/placements.js: nunca durante una búsqueda, nunca con la grilla
+  // corta, nunca la misma categoría que ya se mira salvo un combo. Ocupa una
+  // fila completa con altura reservada: no empuja el layout al cargar.
+  if (!nadaComprable && productCards.length >= 4) {
+    const inlinePick = growthCatalogInlineSelection(state);
+    if (inlinePick) {
+      productCards.splice(
+        Math.min(4, productCards.length),
+        0,
+        growthInlineMarkup(inlinePick.campaign, { resolvedCombo: inlinePick.resolvedCombo }),
+      );
+    }
+  }
+
+  container.innerHTML = avisoSinComprables + productCards.join('');
 }
 
 /**

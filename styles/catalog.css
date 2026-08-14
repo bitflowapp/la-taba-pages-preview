@@ -1450,3 +1450,115 @@
 .modal-actions.is-price-pending .modal-pending-note {
   order: -1;
 }
+
+/* ─── Growth engine · pieza comercial dentro de la grilla ────────────────────
+   Una sola por vista, elegida por el motor (combo con ahorro real, complemento
+   de lo que se navega, o el rubro con afinidad). Ocupa la fila completa con
+   altura RESERVADA: existe desde el primer pintado del innerHTML, así que no
+   empuja el catálogo al cargar (sin CLS). Composición hermana del banner de la
+   home: copy a la izquierda, columna de foto enmascarada a la derecha. */
+.growth-inline-card {
+  --growth-inline-media-width: 38%;
+
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  align-content: center;
+  justify-items: start;
+  width: 100%;
+  min-height: 132px;
+  padding: 16px 18px;
+  border: 1px solid var(--shelf-line);
+  border-radius: 18px;
+  background: linear-gradient(160deg, #171a20, #101318);
+  box-shadow: var(--shadow-shelf-flat);
+  color: var(--shelf-ink);
+  text-align: left;
+  cursor: pointer;
+  grid-column: 1 / -1;
+  gap: 4px;
+}
+
+.growth-inline-card.has-media {
+  padding-right: calc(var(--growth-inline-media-width) + 16px);
+}
+
+.growth-inline-media {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--growth-inline-media-width);
+  background-position: center;
+  background-size: cover;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 26%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 26%);
+}
+
+.growth-inline-card small {
+  color: var(--shelf-gold);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.growth-inline-card strong {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.growth-inline-sub {
+  color: var(--shelf-muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.growth-inline-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  margin-top: 6px;
+  gap: 10px;
+}
+
+.growth-inline-price {
+  font-size: 17px;
+  font-weight: 900;
+}
+
+/* El ahorro del combo es un número DERIVADO del catálogo vivo (core/combos):
+   la única plata que esta superficie puede afirmar. */
+.growth-inline-saving {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.growth-inline-cta {
+  color: var(--shelf-red-ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+@media (max-width: 560px) {
+  .growth-inline-card {
+    min-height: 120px;
+    padding: 14px 15px;
+    border-radius: var(--radius-md);
+  }
+
+  .growth-inline-card.has-media {
+    padding-right: calc(var(--growth-inline-media-width) + 12px);
+  }
+
+  .growth-inline-card strong {
+    font-size: 17px;
+  }
+}

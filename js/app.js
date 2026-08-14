@@ -134,6 +134,8 @@ import {
   shouldShowIOSInstallGuide,
 } from './core/pwa-install.js';
 import { initMotion } from './motion.js';
+import { initGrowthBridge } from './growth/signal-bridge.js';
+import { initGrowthDemoHarness } from './growth/demo-personas.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
@@ -528,6 +530,11 @@ async function bootstrap() {
     window.TABA2_MOTION = motionController;
     bindEvents();
     subscribe(renderAll);
+    // El puente de señales del growth engine observa estado y DOM sin tocar
+    // ningún handler existente; si falla, la tienda queda como está hoy. El
+    // harness de personas sólo existe con ?growthDebug=1.
+    initGrowthBridge();
+    initGrowthDemoHarness();
     maybeOpenPitchFromUrl();
     // El primer render no puede depender de IndexedDB: Chrome móvil puede
     // demorar la apertura mientras reanuda una pestaña o actualiza el worker.

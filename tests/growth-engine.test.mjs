@@ -67,9 +67,9 @@ test('cold start: el hero elegido es la pieza editorial por defecto (la tienda d
   assert.ok(ranked.length >= 1);
   assert.equal(isGrowthColdStart(), true);
   // Sin señales ni contexto que empuje otra cosa, gana la prioridad
-  // comercial: hero-cervezas (60), la vidriera actual.
-  // (El contexto puede sumar hasta 6 puntos a otra pieza; la diferencia de
-  // prioridad 60 vs 50 lo cubre.)
+  // comercial: hero-cervezas (75), la vidriera primaria actual.
+  // (El contexto puede sumar hasta 6 puntos a otra pieza; la prioridad de la
+  // categoría primaria mantiene el primer viewport coherente.)
   assert.equal(ranked[0].campaign.id, 'hero-cervezas');
 });
 
@@ -99,6 +99,24 @@ test('BEER TEST §20: navegar cervezas + buscar + agregar → el hero sigue sien
   assert.ok(ranked[0].campaign.categoryIds.includes('cervezas'));
   const intentFactor = ranked[0].explain.find((f) => f.factor === 'intent');
   assert.ok(intentFactor.value > 20, `la intención tiene que dominar el score: ${JSON.stringify(ranked[0].explain)}`);
+});
+
+test('beer intent dominante: el contexto nocturno no reemplaza el hero primario por un combo mixto', () => {
+  const evening = new Date(T0);
+  evening.setHours(20, 0, 0, 0);
+  clock = evening.getTime();
+  recordGrowthSignal({ type: 'category_view', categoryId: 'cervezas' });
+  recordGrowthSignal({ type: 'product_view', categoryId: 'cervezas', brand: 'heineken' });
+  recordGrowthSignal({ type: 'search_match', categoryId: 'cervezas', brand: 'heineken' });
+
+  const ranked = selectGrowthCampaigns({
+    placement: 'hero',
+    campaigns: GROWTH_CAMPAIGNS,
+    catalogView: makeCatalogView(),
+    cartCategoryIds: ['cervezas'],
+  });
+  assert.equal(ranked[0].campaign.id, 'hero-cervezas');
+  assert.equal(ranked[0].campaign.creative.ctaLabel, 'Ver cervezas');
 });
 
 test('cambio de intención: si después navega gaseosas con fuerza, la vidriera la sigue', () => {

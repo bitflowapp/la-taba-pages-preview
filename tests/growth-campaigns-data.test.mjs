@@ -128,3 +128,7 @@ test('fernet pide gaseosas y hielo; lo que ya está en el carrito no se repite',
   assert.deepEqual(complementCategories(['fernet', 'hielo']), ['gaseosas']);
   assert.deepEqual(complementCategories([]), []);
 });
+
+test('cerveza sólo abre cross-sell de complemento real, no energizantes por defecto', () => {
+  assert.deepEqual(complementCategories(['cervezas']), ['hielo']);
+});

@@ -72,6 +72,16 @@ for (const engine of ['chromium', 'webkit']) {
     await shot(page, out, '04-combo-desde-inline');
     await page.keyboard.press('Escape');
 
+    // Beer intent + carrito: el hero sigue siendo de cerveza y el segundo
+    // nivel puede mostrar asistencia de compra sin convertir el hero en una
+    // lista de complementos.
+    await page.locator('[data-nav-view="home"] >> visible=true').first().click();
+    await page.locator('[data-home-category-strip] [data-category-id="cervezas"]').click();
+    await page.locator('[data-product-grid] [data-add-product]:not([disabled]) >> visible=true').first().click();
+    await page.locator('[data-nav-view="home"] >> visible=true').first().click();
+    await page.waitForTimeout(2500);
+    await shot(page, out, '05-persona-b-cart-home');
+
     // ── Persona E: energizantes (contraste sin alcohol) ─────────────────────
     await page.locator('[data-nav-view="home"] >> visible=true').first().click();
     await page.evaluate(() => window.TABA2_GROWTH.persona('E'));
@@ -84,7 +94,7 @@ for (const engine of ['chromium', 'webkit']) {
     await page.waitForTimeout(300);
     await page.locator('[data-nav-view="cart"] >> visible=true').first().click();
     await page.waitForTimeout(600);
-    await shot(page, out, '05-carrito');
+    await shot(page, out, '06-carrito');
 
     await context.close();
   }

@@ -99,6 +99,22 @@ test('BEER TEST §20: navegar cervezas + fichas + búsqueda + carrito → hero y
     page.locator('[data-home-sections] .home-category-section h2').first(),
   ).toHaveText('Cervezas');
 
+  // El primer shelf acompaña la misma intención: diversidad entre cervezas,
+  // nunca una lata de energizante intercalada por la prioridad comercial fija.
+  const firstShelfIds = await page.locator(
+    '[data-home-sections] .home-category-section:first-of-type [data-product-detail]',
+  ).evaluateAll((nodes) => [...new Set(nodes.map((node) => node.getAttribute('data-product-detail')))]);
+  expect(firstShelfIds.length).toBeGreaterThan(0);
+  expect(firstShelfIds.join(' ')).not.toMatch(/red-bull|speed|monster/i);
+  expect(firstShelfIds.join(' ')).toMatch(/heineken|imperial|schneider|corona|patagonia|andes|quilmes|brahma/i);
+
+  const featuredIds = await page.locator(
+    '[data-home-best-sellers] [data-product-detail]',
+  ).evaluateAll((nodes) => [...new Set(nodes.map((node) => node.getAttribute('data-product-detail')))]);
+  expect(featuredIds.length).toBeGreaterThan(0);
+  expect(featuredIds.slice(0, 4).join(' ')).not.toMatch(/red-bull|speed|monster/i);
+  expect(featuredIds.slice(0, 4).join(' ')).toMatch(/heineken|imperial|schneider|corona|patagonia|andes|quilmes|brahma/i);
+
   // 3) En otra categoría, la pieza de la grilla prioriza cerveza: el combo
   // Heineken con su ahorro REAL derivado del catálogo. (Energizantes es la
   // otra categoría con unidad comprable en el catálogo demo publicado.)
@@ -178,6 +194,13 @@ test('harness de personas (?growthDebug=1): B ve cerveza, A vuelve al cold start
   const explain = await page.evaluate(() => window.TABA2_GROWTH.explain('hero'));
   expect(explain.length).toBeGreaterThan(0);
   expect(explain[0].factors.join(' ')).toMatch(/intent \+/);
+  expect(explain[0].factors.join(' ')).toMatch(/availability \+/);
+  const candidates = await page.evaluate(() => window.TABA2_GROWTH.candidates('hero'));
+  expect(candidates.map((entry) => entry.campaignId)).toContain('hero-cervezas');
+  expect(candidates[0].campaignId).toBe('hero-cervezas');
+  const productExplain = await page.evaluate(() => window.TABA2_GROWTH.products());
+  expect(productExplain.length).toBeGreaterThan(0);
+  expect(productExplain.slice(0, 4).map((entry) => entry.productId).join(' ')).not.toMatch(/red-bull|speed|monster/i);
 
   await page.evaluate(() => window.TABA2_GROWTH.reset());
   const heroA = await page.locator('[data-home-hero-promo] .home-hero-promo').getAttribute('data-growth-campaign');

@@ -47,6 +47,7 @@ import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, getA
 import { getState, subscribe } from './state.js';
 import { BRAND, STORAGE_KEYS } from './config.js';
 import { getBusinessConfig } from './core/business-config-store.js';
+import { onBrowserResume } from './core/browser-resume.js';
 import { relayStatusLabel } from './core/realtime-sync.js';
 // El back office —negocio, reparto, producción y sandbox— entra recién cuando
 // hace falta. Para un cliente eran 759 KB de descarga que nunca se renderizaban.
@@ -1067,11 +1068,30 @@ function bindEvents() {
     // corta el watcher por privacidad, pero se conserva sólo el último fix
     // fresco como "Última ubicación" para que otra pestaña del mismo navegador
     // no pierda el contexto de golpe.
+    //
+    // El seguimiento del CLIENTE ya NO se apaga acá, y esa línea de menos es el
+    // defecto que se veía como «Chrome en iPhone no actualiza».
+    //
+    // `setCustomerTrackingView({ active: false })` no pausa: destruye la sesión
+    // de seguimiento y, de paso, desarma los propios listeners de reanudación
+    // del controlador. Lo único que la volvía a armar era `pageshow`. En el
+    // navegador que emite `pagehide` al suspenderse pero NO emite `pageshow` al
+    // volver —porque no restaura desde la caché de retroceso, sino que sigue
+    // con la misma página viva— quedaba apagado sin nada que lo encendiera. Y
+    // como lo apagado era justamente lo que traía novedades, tampoco había un
+    // cambio de estado que redibujara: se apagaba solo y no se prendía más.
+    //
+    // El controlador YA sabe estar en segundo plano: con el documento oculto
+    // aborta la consulta en vuelo y deja de consultar. No hacía falta destruirlo.
     disableGpsTracking({ silent: true, preserveLastFix: true });
     handleProductionOperationsPageHide();
-    syncCustomerTrackingWithView('');
   });
-  window.addEventListener('pageshow', () => syncCustomerTrackingWithView(activeView));
+  /*
+   * Y la vuelta se escucha con TODAS las señales, no sólo con `pageshow`. Cuál
+   * emite cada navegador es exactamente lo que no se puede asumir; ver
+   * js/core/browser-resume.js.
+   */
+  onBrowserResume(() => syncCustomerTrackingWithView(activeView));
   document.addEventListener('visibilitychange', () => {
     const result = handleGpsVisibilityChange();
     if (result?.changed && !document.hidden) renderLiveSurfaces();

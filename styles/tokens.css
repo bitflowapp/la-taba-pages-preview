@@ -129,6 +129,20 @@
      una superficie, no una tinta: sobre grafito da 2,3:1. */
   --shelf-red-ink: #ff5f66;         /*  5,4:1 sobre --shelf · 4,7:1 sobre --shelf-raised */
   --shelf-red-wash: rgb(208 0 13 / 16%);
+  /* --------------------------------------------------------------------------
+     BRILLO DE LA GÓNDOLA — multiplicador 0…1, no un color.
+     --------------------------------------------------------------------------
+     Las tarjetas de producto del catálogo llevan, además de su sombra oscura,
+     una capa roja muy tenue que las despega del grafito en la zona alta de la
+     góndola y se apaga al bajar. `js/motion.js` modula ESTE número con el
+     scroll; el color, los desenfoques y el reparto viven en el CSS, que es
+     donde se pueden ajustar sin tocar JS.
+     El valor declarado acá es el que se ve **sin JavaScript**: un brillo fijo y
+     discreto. Así la degradación no es "no hay efecto" sino "el efecto no
+     responde al scroll", que es lo que corresponde a un adorno.
+     ----------------------------------------------------------------------- */
+  --card-glow: 0.55;
+
   /* UNA sombra por superficie. Sobre grafito la sombra despega poco, así que
      el hairline interno es el que dibuja el borde de la tarjeta; la sombra
      sólo aporta la profundidad. */

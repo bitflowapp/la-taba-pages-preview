@@ -54,6 +54,11 @@ export default defineConfig({
       // back-forward cache, así que la rearma entera y vuelve a pedir todo—.
       // Declararlo cerrado con Chromium sería declararlo sobre el navegador
       // donde no ocurrió.
+      // `catalog-card-glow` se suma porque el brillo depende de dos cosas que
+      // decide el MOTOR: si `calc()` dentro de la barra de alfa de `rgb()` está
+      // soportado —si no lo estuviera, el token tendría el número correcto y la
+      // tarjeta no tendría brillo— y cómo se comporta el scroll del documento
+      // en iOS, que es donde se modula.
       // `launch-ux-checkout-reorder` se suma porque lo que mide es TÁCTIL y de
       // formulario: el acuse del toque, el sello que descubre el "+" y el
       // resumen que reemplaza al checkout completo. WebKit decide `:active`, el
@@ -66,7 +71,7 @@ export default defineConfig({
       // pedir la navegación, si la página entra al back-forward cache, cuándo
       // llega `pageshow`—, y el defecto que cierran se vio en un iPhone.
       name: 'mobile-webkit',
-      testMatch: /(delivery-location-confirmation|panel-order-recovery|arranque-sin-jerga|production-cart-persistence|mp-back-navigation-ui|checkout-payment-handoff|service-worker-degraded-recovery|storefront-stress-responsive|launch-ux-checkout-reorder)\.spec\.mjs/,
+      testMatch: /(delivery-location-confirmation|panel-order-recovery|arranque-sin-jerga|production-cart-persistence|mp-back-navigation-ui|checkout-payment-handoff|service-worker-degraded-recovery|storefront-stress-responsive|launch-ux-checkout-reorder|catalog-card-glow)\.spec\.mjs/,
       use: { ...devices['iPhone 13'] },
     },
   ],

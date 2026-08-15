@@ -1167,6 +1167,75 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(
   color: var(--shelf-ink);
 }
 
+/* ============================================================================
+   BRILLO ROJO DE LA GÓNDOLA — sólo en el catálogo, sólo arriba
+   ----------------------------------------------------------------------------
+   Dos capas rojas encima de la sombra de tarjeta: una corta y cerrada que
+   define el borde inferior, y una ancha y muy abierta que hace el halo. Las dos
+   con `spread` negativo, para que el brillo ABRACE la tarjeta en vez de
+   derramarse sobre la vecina: derramado es lo que convierte un acento en un
+   neón. Ninguna toca el color del borde ni el fondo, así que el contraste del
+   texto es exactamente el mismo con brillo y sin brillo.
+
+   La intensidad la lleva `--card-glow` (0…1), que `js/motion.js` baja a medida
+   que la góndola sale por arriba. Sin JavaScript queda el valor por defecto del
+   token: un brillo fijo y discreto, nunca cero.
+
+   El selector es largo por una razón medida: la regla compartida de tarjetas usa
+   `:is(.app-view .product-card, …)`, y `:is()` toma la especificidad de su
+   argumento más fuerte, así que vale (0,4,1). Una regla más corta —aun estando
+   después en el archivo— PERDÍA en silencio: el brillo no llegaba a pintarse y
+   el estilo computado seguía siendo el de siempre. Además de ganar, el selector
+   dice lo que corresponde: tarjetas de producto DENTRO de la grilla del
+   catálogo, y sólo mientras el catálogo es la vista activa; las que viven en la
+   ficha o en los rails de la home no llevan brillo.
+
+   Las dos primeras capas REPITEN la sombra de tarjeta compartida —`box-shadow`
+   no es aditivo en CSS: para agregar una capa hay que volver a declarar todas—.
+   Que sigan siendo las mismas lo sostiene una prueba
+   (`tests/catalog-card-glow.test.mjs`), no un comentario.
+   ========================================================================== */
+body[data-active-view="catalog"] .app-view[data-view="catalog"] [data-product-grid] .product-card {
+  box-shadow:
+    var(--shadow-shelf-flat),
+    inset 0 0 0 1px var(--shelf-line),
+    0 1px 6px -2px rgb(208 0 13 / calc(var(--card-glow, 0) * 11%)),
+    0 4px 26px -10px rgb(208 0 13 / calc(var(--card-glow, 0) * 26%));
+}
+
+/* Lo que no se puede comprar no se destaca. El brillo es una invitación, y
+   ponérsela a un producto agotado invita a un callejón sin salida; la tarjeta
+   conserva su sombra oscura y su opacidad reducida, que es lo que ya la
+   apagaba. */
+body[data-active-view="catalog"] .app-view[data-view="catalog"] [data-product-grid] .product-card.out-of-stock {
+  --card-glow: 0;
+}
+
+/* Un escalón, no un salto: al apuntar o enfocar sube el mismo brillo que ya
+   está puesto, no aparece uno nuevo. Se repone además el hairline, que la regla
+   genérica de `:hover` del catálogo pisaba dejando la tarjeta sin borde justo
+   cuando se la está mirando. */
+@media (hover: hover) and (pointer: fine) {
+  body[data-active-view="catalog"] .app-view[data-view="catalog"] [data-product-grid] .product-card:hover {
+    border-color: transparent;
+    box-shadow:
+      var(--shadow-shelf-flat),
+      inset 0 0 0 1px var(--shelf-line-strong),
+      0 1px 6px -2px rgb(208 0 13 / calc(var(--card-glow, 0) * 16%)),
+      0 6px 30px -10px rgb(208 0 13 / calc(var(--card-glow, 0) * 38%));
+  }
+}
+
+/* El teclado no tiene hover. Este es el mismo escalón para quien tabula, y
+   convive con el anillo de foco del sistema sin reemplazarlo. */
+body[data-active-view="catalog"] .app-view[data-view="catalog"] [data-product-grid] .product-card:focus-within {
+  box-shadow:
+    var(--shadow-shelf-flat),
+    inset 0 0 0 1px var(--shelf-line-strong),
+    0 1px 6px -2px rgb(208 0 13 / calc(var(--card-glow, 0) * 16%)),
+    0 6px 30px -10px rgb(208 0 13 / calc(var(--card-glow, 0) * 38%));
+}
+
 /* Títulos y cifras dentro de la góndola. `h1…h4` y `strong` heredan del bloque
    de arriba, pero muchas reglas de catálogo/checkout fijan su propia tinta de
    papel; acá se las devuelve a la tinta de la superficie que las contiene. */

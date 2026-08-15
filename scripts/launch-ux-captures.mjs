@@ -152,6 +152,12 @@ async function recorridoRecurrente(browser) {
   await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
   await asentar(page);
   await shot(page, 'm07-home-recurrente.png');
+  const tarjeta = page.locator('[data-customer-actions] .reorder-card');
+  if (await tarjeta.count()) {
+    await tarjeta.scrollIntoViewIfNeeded();
+    await asentar(page);
+    await shot(page, 'm10-volver-a-pedir.png');
+  }
   medidas.reorder = await page.evaluate(() => {
     const card = document.querySelector('[data-customer-actions] .reorder-card');
     if (!card) return { presente: false };

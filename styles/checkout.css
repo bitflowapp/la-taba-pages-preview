@@ -816,7 +816,14 @@
 
 .checkout-summary-change {
   display: inline-flex;
-  min-height: var(--tap);
+  /* 45 y no `--tap` (44). El bloque entra con transformaciones que lo promueven
+     a capa de composición, y mientras esa capa vive `getBoundingClientRect`
+     devuelve el alto en float32: un 44 exacto se lee como 43,99997. El botón
+     medía bien y el piso táctil igual dependía del redondeo del compositor.
+     Un píxel de headroom lo vuelve incondicional. Es el mismo defecto —y la
+     misma solución— que el botón "Agregar" de la home; lo encontró la prueba de
+     accesibilidad de `launch-ux-checkout-reorder`, no el ojo. */
+  min-height: 45px;
   align-items: center;
   flex: 0 0 auto;
   padding-inline: 4px;

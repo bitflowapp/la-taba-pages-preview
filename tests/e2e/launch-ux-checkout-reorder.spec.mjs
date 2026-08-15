@@ -155,6 +155,42 @@ test('Persona B · con un pedido anterior el checkout resume lo conocido y deja 
   await guards.assertClean();
 });
 
+test('ACCESIBILIDAD · el resumen se puede usar con teclado y con el dedo', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await installBrowserStubs(page);
+  await gotoDemoReset(page, '/?reset=1&demo=1');
+  await sembrarPedidoAnterior(page);
+  await recargarConHistorial(page);
+  await seedCheckoutProfile(page, { addresses: DEFAULT_CHECKOUT_ADDRESSES });
+
+  await page.locator('[data-customer-actions] .reorder-card [data-repeat-order]').click();
+  await irACarrito(page);
+
+  const salidas = page.locator('[data-checkout-summary-row] [data-profile-checkout-action="expand-summary"]');
+  await expect(salidas).toHaveCount(3);
+
+  // Objetivo táctil: 44px es el piso, y un "Cambiar" de 13,5px de texto no lo
+  // alcanza por su contenido. Lo tiene que poner el componente.
+  const alturas = await salidas.evaluateAll((nodos) => nodos.map((n) => n.getBoundingClientRect().height));
+  alturas.forEach((alto) => expect(alto).toBeGreaterThanOrEqual(44));
+
+  // Nombre accesible propio: tres botones que dicen "Cambiar" y nada más son
+  // tres botones indistinguibles para quien no ve la fila.
+  const nombres = await salidas.evaluateAll((nodos) => nodos.map((n) => n.getAttribute('aria-label')));
+  expect(new Set(nombres).size).toBe(3);
+  nombres.forEach((nombre) => expect(nombre).toMatch(/^Cambiar /));
+
+  // Botones de verdad: alcanzables por teclado y accionables con Enter.
+  const esBoton = await salidas.evaluateAll((nodos) => nodos.every((n) => n.tagName === 'BUTTON'));
+  expect(esBoton).toBe(true);
+  await salidas.first().focus();
+  await expect(salidas.first()).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-checkout-summary-rows]')).toHaveCount(0);
+
+  await guards.assertClean();
+});
+
 test('Persona B · el resumen es corto de verdad: mide menos que el formulario completo', async ({ page }) => {
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1');
@@ -330,12 +366,17 @@ test('ADD · el sello de confirmacion nunca tapa el "+"', async ({ page }) => {
   const productId = await agregar.getAttribute('data-add-product');
   await agregar.click();
 
-  // Medido DURANTE el sello: es el único momento en que el defecto existía.
+  // El sello se pinta y se apaga SOLO, en 520 ms. Medirlo "mientras dure" hace
+  // que la prueba dependa de cuánto tardó el navegador en llegar hasta acá, y
+  // eso convierte un contrato de geometría en una carrera: pasa sola y falla en
+  // la corrida completa. Acá se fuerza la clase, que es el estado que se quiere
+  // medir, y la duración la fija la prueba unitaria contra el token.
   const medida = await page.evaluate((id) => {
     const inc = [...document.querySelectorAll(`[data-cart-inc="${id}"]`)]
       .find((node) => node.getBoundingClientRect().width > 0);
     if (!inc) return null;
     const stepper = inc.closest('.qty-stepper');
+    stepper.classList.add('is-just-added');
     const sello = getComputedStyle(stepper, '::after');
     const caja = inc.getBoundingClientRect();
     const centro = document.elementFromPoint(caja.left + caja.width / 2, caja.top + caja.height / 2);
@@ -350,6 +391,7 @@ test('ADD · el sello de confirmacion nunca tapa el "+"', async ({ page }) => {
   expect(medida.selloVivo).toBe(true);
   // 44px es el ancho declarado de la columna del "+": el sello se detiene ahí.
   expect(medida.derecha).toBe('44px');
+  // Y el "+" sigue siendo lo que hay bajo el dedo en su propio centro.
   expect(medida.alcanzable).toBe(true);
 });
 

@@ -832,6 +832,100 @@
   font-weight: 700;
 }
 
+/* ============================================================================
+   BANDA DE AVISO DEL PEDIDO
+   ----------------------------------------------------------------------------
+   Reserva su alto SIEMPRE que la vista del carrito esté activa con productos
+   —que es exactamente cuando puede haber un aviso—, así que aparecer y
+   desaparecer no desplaza nada. Vacía no pinta superficie: queda un hueco de
+   aire, no una caja gris esperando.
+   Una sola línea con recorte: un nombre de producto largo la haría crecer y ese
+   crecimiento sería el salto que esto viene a eliminar. El texto completo vive
+   igual en la región viva, que es lo que lee un lector de pantalla, y el
+   producto está nombrado en la línea del carrito que hay justo abajo.
+   ========================================================================== */
+.cart-notice {
+  display: none;
+}
+
+body[data-active-view="cart"] .cart-notice:not([hidden]) {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  margin-bottom: 12px;
+  padding: 0 14px;
+  overflow: hidden;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-action-lg);
+  background: var(--shelf-raised);
+  color: var(--taba-ink);
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body[data-active-view="cart"] .cart-notice:not([hidden]):empty {
+  border-color: transparent;
+  background: transparent;
+}
+
+/* ----------------------------------------------------------------------------
+   MIENTRAS NO SE SABE — geometría reservada, no un spinner
+   ----------------------------------------------------------------------------
+   Comparte `.checkout-summary` con el resumen de verdad, así que hereda su
+   superficie, su radio, sus hairlines y el alto de sus tres filas. Cuando el
+   perfil llega, lo único que cambia es el CONTENIDO de las filas: la caja
+   exterior mide lo mismo antes y después, que es la definición operativa de
+   "sin salto".
+   Sin animación a propósito: una superficie quieta no necesita excepción de
+   movimiento reducido y no deja al compositor trabajando mientras se espera la
+   red. Las barras son un poco más claras que la fila y nada más.
+   -------------------------------------------------------------------------- */
+.checkout-summary .is-ghost {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radius-xs);
+  background: var(--shelf-line-strong);
+  color: transparent;
+  opacity: 0.22;
+}
+
+.checkout-summary .is-ghost-kicker {
+  width: 68px;
+}
+
+.checkout-summary .is-ghost-title {
+  width: 148px;
+}
+
+.checkout-summary .is-ghost-detail {
+  width: 212px;
+}
+
+/* La salida "Cambiar" tambien se reserva. Sin ella la fila del placeholder
+   medía 62px (su `min-height`) y la real 67 (los 45px del botón más el aire),
+   y esos 5px por fila eran un salto al resolver. Reservarla es además lo que
+   corresponde: ahí va a haber algo. */
+.checkout-summary .is-ghost-action {
+  width: 54px;
+}
+
+/* El renglón de estado se anuncia pero no ocupa lugar mientras se espera: la
+   superficie reservada YA dice visualmente que se está cargando, y dejar el
+   texto visible sumaba una línea que desaparecía al resolver —otro salto, de
+   20px—. Sigue siendo una región viva y el lector de pantalla lo lee igual.
+   Es la técnica estándar de "visualmente oculto": nada de `display:none`, que
+   lo sacaría del árbol de accesibilidad. */
+[data-checkout-phase="unresolved"] .saved-address-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Los controles que el resumen reemplaza siguen en el árbol con su valor
    elegido; sólo dejan de ocupar lugar. Ver `applyCheckoutSummaryMode`. */
 [data-checkout-summary="compact"] .delivery-mode,

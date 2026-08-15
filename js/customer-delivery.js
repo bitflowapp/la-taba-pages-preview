@@ -160,10 +160,38 @@ export function resetCustomerDeliveryForTests() {
     suggestion: null,
     suggestionDismissed: false,
     suggestionShown: false,
+    // Estos cuatro faltaban y el hueco no era inocuo: `addressesKnown` es lo
+    // que separa "todavía no sé" de "sé que no hay nada", así que dejarlo en
+    // true después de un reset hacía imposible reproducir el arranque —una
+    // prueba de la fase sin resolver medía siempre la fase ya resuelta—. Los
+    // otros tres arrastraban decisiones de la corrida anterior.
+    addressesKnown: false,
+    blockedReason: '',
+    addressListExpanded: false,
+    checkoutSummaryExpanded: false,
+    paymentPreferenceApplied: false,
   });
   locationService = null;
   notifiedDeliveryAddressKey = null;
 }
+
+/*
+ * PLAZO DE RESOLUCIÓN — la red puede fallar; también puede no contestar nunca.
+ *
+ * `customer_profile_repository.load()` traduce a `{ok:false}` la sesión vencida,
+ * el error de RPC y la caída de red, así que esos tres casos resuelven solos.
+ * Lo que NO resuelve es una petición COLGADA: `client.rpc` no tiene tiempo
+ * límite propio, y una promesa que nunca se asienta dejaría el checkout
+ * esperando para siempre.
+ *
+ * Esto no es una espera cosmética ni una pausa para tapar el problema: no
+ * demora nada en el camino feliz —cuando el perfil llega, llega—, y sólo actúa
+ * si a los 5 segundos todavía no hay respuesta, resolviendo hacia el estado
+ * USABLE: el formulario completo, con el aviso de que los datos guardados no se
+ * pudieron traer. La carga real sigue viva; si aterriza después, hidrata los
+ * campos pero ya no vuelve a plegar el formulario (ver el pestillo de abajo).
+ */
+const PROFILE_RESOLUTION_DEADLINE_MS = 5000;
 
 async function loadCustomerDeliveryProfile() {
   const repository = profileRepository();
@@ -172,7 +200,9 @@ async function loadCustomerDeliveryProfile() {
   const interactionVersionAtStart = state.addressInteractionVersion;
   state.loading = true;
   render();
+  const deadline = armProfileResolutionDeadline(hydrationVersion);
   const result = await repository.load();
+  clearTimeout(deadline);
   if (hydrationVersion !== state.profileHydrationVersion) return result;
   state.loading = false;
   // Terminó de intentar: haya traído direcciones o haya fallado, a partir de acá
@@ -195,6 +225,23 @@ async function loadCustomerDeliveryProfile() {
   // también al hidratar, que es cuando el dato realmente aparece.
   notifyDeliveryAddressChanged();
   return result;
+}
+
+/*
+ * Vencido el plazo, el checkout pasa a ser el completo y SE QUEDA ahí. El
+ * pestillo es el mismo que usa "Cambiar": una vez que la persona tiene delante
+ * el formulario entero —y puede haber empezado a tocarlo— replegarlo porque el
+ * perfil llegó tarde sería el salto que todo esto viene a evitar, sólo que peor,
+ * porque ahora ocurre con el dedo apoyado.
+ */
+function armProfileResolutionDeadline(hydrationVersion) {
+  return setTimeout(() => {
+    if (hydrationVersion !== state.profileHydrationVersion) return;
+    if (state.addressesKnown) return;
+    state.addressesKnown = true;
+    state.checkoutSummaryExpanded = true;
+    render('No pudimos traer tus datos guardados. Podés completar el pedido acá.');
+  }, PROFILE_RESOLUTION_DEADLINE_MS);
 }
 
 function bindCheckoutEvents() {
@@ -737,15 +784,103 @@ function render(message = '') {
   // Antes de resolver el resumen: el renglón "Pago" tiene que leer el valor ya
   // preseleccionado, y el formulario extendido también se beneficia de tenerlo.
   applyRememberedPaymentPreference();
-  const compact = compactCheckoutSummary();
-  applyCheckoutSummaryMode(compact);
+  const fase = checkoutProfilePhase();
+  const compact = fase === 'compact' ? compactCheckoutSummary() : null;
+  applyCheckoutSummaryMode(fase);
   container.innerHTML = `
-    <section class="profile-checkout" data-profile-checkout aria-labelledby="profile-checkout-title"${compact ? ' data-checkout-summary="compact"' : ''}>
-      <h4 class="profile-checkout-title" id="profile-checkout-title">${compact ? 'Revisá y confirmá' : 'Tus datos'}</h4>
+    <section class="profile-checkout" data-profile-checkout aria-labelledby="profile-checkout-title" data-checkout-phase="${fase}"${compact ? ' data-checkout-summary="compact"' : ''}>
+      <h4 class="profile-checkout-title" id="profile-checkout-title">${CHECKOUT_PHASE_TITLE[fase]}</h4>
       <div class="saved-address-status" aria-live="polite">${escapeHtml(status)}</div>
-      ${compact ? renderCompactCheckoutSummary(compact) : `${renderProfileSummary()}
-      ${renderDeliveryAddressBlock()}`}
+      ${renderCheckoutPhase(fase, compact)}
     </section>`;
+}
+
+/* ============================================================================
+   TRES FASES, NO DOS — el checkout no adivina mientras no sabe
+   ----------------------------------------------------------------------------
+   El defecto: `compactCheckoutSummary()` devolvía null mientras el perfil
+   cargaba, y "null" significaba "formulario completo". O sea que a un cliente
+   recurrente se le pintaba el formulario entero —siete campos, 1272 px— y
+   cuando el perfil llegaba se derrumbaba al resumen de 788. En demo no se veía
+   porque el perfil sale de localStorage; contra Supabase es un viaje de red.
+
+   La causa real es que "todavía no sé" y "sé que no hay nada" estaban
+   representados con el MISMO valor. Son estados distintos y ahora se llaman
+   distinto:
+
+     blocked     · esta tienda no puede tomar pedidos
+     unresolved  · hay indicios de cliente recurrente y el perfil no llegó
+     compact     · hay perfil reutilizable: resumen
+     full        · no hay nada que recordar: formulario completo
+
+   `unresolved` NO se le muestra a cualquiera: sólo a quien tiene un pedido en
+   el historial LOCAL, que se lee sin red y de forma sincrónica. Para todos los
+   demás la respuesta ya se conoce en el primer pintado —no hay nada que
+   recordar— y el formulario completo aparece de una, sin esperar nada. Esa es
+   la razón de que esto no agregue ni un milisegundo de espera al usuario nuevo,
+   que es el caso más frecuente.
+   ========================================================================== */
+const CHECKOUT_PHASE_TITLE = Object.freeze({
+  blocked: 'Tus datos',
+  unresolved: 'Tus datos',
+  compact: 'Revisá y confirmá',
+  full: 'Tus datos',
+});
+
+function checkoutProfilePhase() {
+  if (state.blockedReason) return 'blocked';
+  if (!state.addressesKnown && hasLocalOrderHistory()) return 'unresolved';
+  return compactCheckoutSummary() ? 'compact' : 'full';
+}
+
+function renderCheckoutPhase(fase, compact) {
+  if (fase === 'unresolved') return renderCheckoutSummaryPlaceholder();
+  if (fase === 'compact') return renderCompactCheckoutSummary(compact);
+  return `${renderProfileSummary()}
+      ${renderDeliveryAddressBlock()}`;
+}
+
+/*
+ * Señal sincrónica y local de que esta persona ya compró acá. Es la MISMA que
+ * abre el resumen compacto (ver `compactCheckoutSummary`), leída sin red: por
+ * eso se puede consultar en el primer pintado, antes de que exista respuesta
+ * del servidor. No prueba que el perfil vaya a estar completo —eso lo decide la
+ * fase `compact` cuando llega—, prueba que vale la pena esperarlo.
+ */
+function hasLocalOrderHistory() {
+  return getCustomerOrderHistory().length > 0;
+}
+
+/*
+ * Geometría reservada, no un spinner. Ocupa exactamente el alto del resumen que
+ * viene —tres renglones sobre la misma superficie y con los mismos hairlines—,
+ * así que cuando el perfil llega lo único que cambia es el contenido de las
+ * filas: cero desplazamiento.
+ * `aria-hidden` porque no hay nada que anunciar acá: el estado se dice UNA vez
+ * en la región viva de arriba ("Cargando tus datos guardados…"), y anunciar
+ * además una estructura vacía sería describir un formulario que no existe.
+ * Sin animación: una superficie quieta no necesita excepción de movimiento
+ * reducido y no gasta compositor mientras se espera la red.
+ */
+function renderCheckoutSummaryPlaceholder() {
+  // Las barras usan LAS MISMAS etiquetas y clases que el resumen real, con la
+  // tinta en transparente y un `&nbsp;` adentro. Así el alto de cada renglón lo
+  // decide la tipografía —no un `height` inventado que hay que mantener a mano
+  // cada vez que alguien toca un `font-size`— y las dos cajas miden igual por
+  // construcción. Las dos primeras filas llevan detalle y la tercera no,
+  // exactamente como Entrega, Contacto y Pago.
+  const fila = (conDetalle) => `
+      <div class="checkout-summary-row">
+        <div class="checkout-summary-copy">
+          <span class="checkout-summary-kicker is-ghost is-ghost-kicker">&nbsp;</span>
+          <strong class="is-ghost is-ghost-title">&nbsp;</strong>
+          ${conDetalle ? '<span class="is-ghost is-ghost-detail">&nbsp;</span>' : ''}
+        </div>
+        <span class="checkout-summary-change is-ghost is-ghost-action">&nbsp;</span>
+      </div>`;
+  return `
+    <div class="checkout-summary is-unresolved" data-checkout-summary-placeholder aria-hidden="true">${fila(true)}${fila(true)}${fila(false)}
+    </div>`;
 }
 
 /* ============================================================================
@@ -773,6 +908,8 @@ function render(message = '') {
 function compactCheckoutSummary() {
   if (state.checkoutSummaryExpanded) return null;
   if (state.blockedReason) return null;
+  // Sigue sin resumir mientras carga, pero eso YA NO significa "formulario
+  // completo": `checkoutProfilePhase` decide antes si corresponde esperar.
   if (state.loading) return null;
   const profile = state.profile || {};
   const name = String(profile.name || '').trim();
@@ -877,17 +1014,24 @@ function applyRememberedPaymentPreference() {
  * quitándolos del árbol: quitarlos perdería el valor elegido y volvería a
  * pedirlo, que es exactamente lo contrario de lo que esto hace.
  */
-function applyCheckoutSummaryMode(compact) {
+function applyCheckoutSummaryMode(fase) {
   const form = checkoutForm();
   if (!form) return;
-  if (compact) form.dataset.checkoutSummary = 'compact';
+  // La modalidad y el medio de pago se pliegan en las dos fases donde la
+  // decisión todavía no le corresponde a la persona: cuando el resumen los
+  // reemplaza, y cuando no se sabe si van a hacer falta. Desplegarlos mientras
+  // se espera sería pintar justamente el formulario que se quiere evitar.
+  if (fase === 'compact' || fase === 'unresolved') form.dataset.checkoutSummary = 'compact';
   else delete form.dataset.checkoutSummary;
   const heading = form.querySelector('.checkout-heading > span');
   if (heading) {
     // "Finalizá en pocos pasos" es una promesa sobre la longitud del
     // formulario, y en la primera compra el formulario NO es corto. El renglón
-    // pasa a decir para qué sirve lo que viene, que es verificable.
-    heading.textContent = compact ? 'Ya tenemos tus datos' : 'Para entregarte el pedido';
+    // pasa a decir para qué sirve lo que viene, que es verificable. Mientras no
+    // se sabe, no se promete ninguna de las dos cosas.
+    heading.textContent = fase === 'compact'
+      ? 'Ya tenemos tus datos'
+      : fase === 'unresolved' ? 'Buscando tus datos' : 'Para entregarte el pedido';
   }
 }
 

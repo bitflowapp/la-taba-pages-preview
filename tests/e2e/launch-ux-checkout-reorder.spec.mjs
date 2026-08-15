@@ -463,3 +463,272 @@ test('PACKS · la cantidad del carrito sigue contando packs, no unidades sueltas
   expect(linea.cantidad).toBe(2);
   await expect(page.locator('[data-floating-cart]')).toContainText('2 productos');
 });
+
+// ============================================================================
+// Resolución del perfil — el checkout no adivina mientras no sabe
+// ============================================================================
+
+/*
+ * Instala un perfil sandbox y un pedido anterior ANTES de la recarga, que es la
+ * única forma de que el arranque real los vea.
+ */
+async function sembrarClienteRecurrente(page) {
+  const pedido = await sembrarPedidoAnterior(page);
+  await page.addInitScript((perfil) => {
+    localStorage.setItem('la-taba-sandbox-profile:demo', JSON.stringify(perfil));
+  }, {
+    profile: { id: 'demo-customer', name: 'Marco', phone: '2990000123', updatedAt: '' },
+    addresses: [{
+      id: 'demo-address-01',
+      label: 'Casa',
+      street: 'Avenida Argentina',
+      streetNumber: '450',
+      city: 'Neuquén Capital',
+      reference: 'Portón negro',
+      isDefault: true,
+      latitude: -38.945584,
+      longitude: -68.040579,
+      geolocationAccuracy: 18,
+      locationSource: 'map_pin',
+      locationConfirmedAt: '2026-08-08T18:00:00.000Z',
+    }],
+  });
+  await recargarConHistorial(page);
+  return pedido;
+}
+
+async function armarCarrito(page) {
+  await page.locator('[data-nav-view="catalog"] >> visible=true').first().click();
+  const agregar = page.locator('[data-product-grid] [data-add-product]:not([disabled]) >> visible=true').first();
+  const productId = await agregar.getAttribute('data-add-product');
+  await agregar.click();
+  await page.locator(`[data-cart-inc="${productId}"] >> visible=true`).first().click();
+  return productId;
+}
+
+/*
+ * Reemplaza `load()` del repositorio de perfil y reinicia la máquina de estados
+ * del checkout por su propia API. No toca el DOM ni fuerza ninguna fase: lo que
+ * se observa después es el estado real del módulo.
+ *   'lento'   → tarda y después responde bien
+ *   'falla'   → responde {ok:false}, como una sesión vencida o un RPC caído
+ *   'colgado' → nunca se asienta, que es lo único que `load()` no sabe manejar
+ */
+async function instalarPerfil(page, modo, ms = 1200) {
+  await page.evaluate(async ({ modo: m, ms: espera }) => {
+    const fabrica = await import(new URL('js/repositories/repository_factory.js', location.href).href);
+    const repo = fabrica.getOrderRepository();
+    const original = repo.customerProfiles.load.bind(repo.customerProfiles);
+    repo.customerProfiles.load = async (...args) => {
+      if (m === 'colgado') return new Promise(() => {});
+      await new Promise((r) => setTimeout(r, espera));
+      if (m === 'falla') {
+        return { ok: false, message: 'No pudimos recuperar tus datos guardados. Podés completar el pedido manualmente.' };
+      }
+      return original(...args);
+    };
+    const checkout = await import(new URL('js/customer-delivery.js', location.href).href);
+    checkout.resetCustomerDeliveryForTests();
+    checkout.refreshCustomerDeliveryCheckout();
+  }, { modo, ms });
+}
+
+const faseActual = (page) => page.evaluate(() => (
+  document.querySelector('[data-profile-checkout]')?.dataset.checkoutPhase || 'sin-seccion'
+));
+
+const geometriaCheckout = (page) => page.locator('[data-profile-checkout]').evaluate((nodo) => ({
+  alto: Math.round(nodo.getBoundingClientRect().height),
+  campos: [...document.querySelectorAll('[data-checkout-form] input, [data-checkout-form] select, [data-checkout-form] textarea')]
+    .filter((n) => n.type !== 'hidden' && n.getBoundingClientRect().height > 0).length,
+}));
+
+test('PROFILE SLOW · nunca se pinta el formulario completo para despues plegarlo', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await installBrowserStubs(page);
+  await gotoDemoReset(page, '/?reset=1&demo=1');
+  await sembrarClienteRecurrente(page);
+  await armarCarrito(page);
+  await irACarrito(page);
+  await expect(page.locator('[data-checkout-summary-rows]')).toHaveCount(1);
+
+  await instalarPerfil(page, 'lento', 1200);
+
+  // Se muestrea la fase Y la geometría durante toda la espera. El defecto que
+  // esto cierra no es "termina mal": es que en el medio aparecía el formulario
+  // entero. Un assert al final no lo habría visto nunca.
+  const muestras = [];
+  for (let i = 0; i < 12; i += 1) {
+    muestras.push({ fase: await faseActual(page), ...(await geometriaCheckout(page)) });
+    await page.waitForTimeout(160);
+  }
+
+  const fases = [...new Set(muestras.map((m) => m.fase))];
+  expect(fases[0]).toBe('unresolved');
+  expect(fases.at(-1)).toBe('compact');
+  expect(fases).not.toContain('full');
+
+  // Y la caja mide lo mismo en las dos fases: la reserva es geometría, no un
+  // cartel de "cargando" que después empuja todo hacia abajo.
+  expect([...new Set(muestras.map((m) => m.alto))]).toHaveLength(1);
+  expect([...new Set(muestras.map((m) => m.campos))]).toEqual([1]);
+
+  await guards.assertClean();
+});
+
+test('PROFILE FOUND · con el perfil disponible el resumen aparece sin pasar por el formulario', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await installBrowserStubs(page);
+  await gotoDemoReset(page, '/?reset=1&demo=1');
+  await sembrarClienteRecurrente(page);
+  await armarCarrito(page);
+  await irACarrito(page);
+
+  expect(await faseActual(page)).toBe('compact');
+  await expect(page.locator('[data-checkout-summary-row]')).toHaveCount(3);
+  await expect(page.locator('[data-checkout-summary-placeholder]')).toHaveCount(0);
+
+  await guards.assertClean();
+});
+
+test('PROFILE EMPTY · sin nada que recordar el formulario completo aparece de una, sin esperar', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await installBrowserStubs(page);
+  await gotoDemoReset(page, '/?reset=1&demo=1');
+  await armarCarrito(page);
+  await irACarrito(page);
+
+  // Sin historial local la respuesta se sabe en el primer pintado: no hay fase
+  // de espera para quien compra por primera vez, que es el caso más frecuente.
+  expect(await faseActual(page)).toBe('full');
+  await expect(page.locator('[data-checkout-summary-placeholder]')).toHaveCount(0);
+  await expect(page.locator('[data-profile-checkout] .profile-address-list')).toBeVisible();
+
+  await instalarPerfil(page, 'lento', 900);
+  expect(await faseActual(page)).toBe('full');
+
+  await guards.assertClean();
+});
+
+test('PROFILE FAILURE · si la consulta falla el checkout queda usable, no suspendido', async ({ page }) => {
+  await installBrowserStubs(page);
+  await gotoDemoReset(page, '/?reset=1&demo=1');
+  await sembrarClienteRecurrente(page);
+  await armarCarrito(page);
+  await irACarrito(page);
+
+  await instalarPerfil(page, 'falla', 300);
+  await expect(page.locator('[data-profile-checkout][data-checkout-phase="full"]')).toBeVisible({ timeout: 5_000 });
+
+  // Usable de verdad: se puede elegir modalidad y medio de pago a mano.
+  await expect(page.getByLabel('Delivery')).toBeVisible();
+  await expect(page.getByLabel('Forma de pago')).toBeVisible();
+  await expect(page.locator('[data-checkout-submit]')).toBeVisible();
+  // Y se dice lo que pasó, en vez de dejar la pantalla muda.
+  await expect(page.locator('.saved-address-status')).not.toBeEmpty();
+});
+
+test('PROFILE HUNG · una consulta que nunca contesta no deja el checkout esperando para siempre', async ({ page }) => {
+  await installBrowserStubs(page);
+  await gotoDemoReset(page, '/?reset=1&demo=1');
+  await sembrarClienteRecurrente(page);
+  await armarCarrito(page);
+  await irACarrito(page);
+
+  await instalarPerfil(page, 'colgado');
+  expect(await faseActual(page)).toBe('unresolved');
+
+  // `load()` traduce sesión vencida, RPC caído y red caída a {ok:false}, pero no
+  // tiene tiempo límite propio: una promesa que jamás se asienta dejaría esto
+  // colgado. El plazo resuelve hacia el estado USABLE y lo dice.
+  await expect(page.locator('[data-profile-checkout][data-checkout-phase="full"]')).toBeVisible({ timeout: 9_000 });
+  await expect(page.locator('.saved-address-status')).toContainText('No pudimos traer tus datos guardados');
+  await expect(page.locator('[data-checkout-submit]')).toBeVisible();
+});
+
+// ============================================================================
+// Aviso del pedido
+// ============================================================================
+
+test('CART NOTICE · el aviso vive en el layout y no cruza encabezado, CTA ni barra', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await installBrowserStubs(page);
+  await gotoDemoReset(page, '/?reset=1&demo=1');
+  await armarCarrito(page);
+  await irACarrito(page);
+
+  // La pastilla flotante no existe en esta vista: la reemplaza la banda.
+  await expect(page.locator('[data-toast]')).toHaveCSS('display', 'none');
+  const banda = page.locator('[data-cart-notice]');
+  await expect(banda).toBeVisible();
+
+  const medir = () => page.evaluate(() => {
+    const caja = (n) => {
+      if (!n) return null;
+      const r = n.getBoundingClientRect();
+      return { t: r.top, b: r.bottom, l: r.left, r: r.right, h: Math.round(r.height) };
+    };
+    const objetivos = {
+      encabezado: document.querySelector('[data-view="cart"] .view-title'),
+      accionesVista: document.querySelector('[data-view="cart"] .view-actions'),
+      primeraLinea: document.querySelector('[data-cart-list] .cart-item'),
+      ctaConfirmar: document.querySelector('[data-checkout-submit]'),
+      barraCarrito: document.querySelector('[data-floating-cart]'),
+    };
+    const aviso = caja(document.querySelector('[data-cart-notice]'));
+    const origen = document.querySelector('[data-view="cart"]').getBoundingClientRect().top;
+    const cruza = (a, c) => !!(a && c) && !(a.b <= c.t || c.b <= a.t || a.r <= c.l || c.r <= a.l);
+    const tapa = [];
+    for (const [nombre, nodo] of Object.entries(objetivos)) {
+      const c = caja(nodo);
+      const visible = nodo && !nodo.hidden && getComputedStyle(nodo).display !== 'none'
+        && c && c.b > 0 && c.t < window.innerHeight;
+      if (visible && cruza(aviso, c)) tapa.push(nombre);
+    }
+    return {
+      aviso,
+      tapa,
+      // Offsets RELATIVOS a la vista del carrito, no coordenadas de viewport ni
+      // de documento. Playwright desplaza la página antes de tocar un control y
+      // esta aplicación no siempre desplaza el `window` —hay un contenedor
+      // propio—, así que ni `top` ni `top + scrollY` son estables entre dos
+      // momentos. Lo que este test afirma es que la banda no EMPUJA nada, y eso
+      // se mide contra el origen de la vista, que el scroll no mueve.
+      posiciones: Object.fromEntries(Object.entries(objetivos)
+        .map(([k, n]) => [k, caja(n) ? Math.round(caja(n).t - origen) : null])),
+    };
+  });
+
+  // Con las transiciones asentadas. La tarjeta del carrito tiene animación de
+  // entrada propia —`.cart-card` es un objetivo de reveal— y al re-renderizarse
+  // vuelve a entrar desde `translateY(16px)`. Medir a mitad de ese recorrido
+  // atribuiría a la banda un desplazamiento que es de otro componente y que ya
+  // existía antes de este trabajo.
+  const asentar = async () => {
+    await page.evaluate(async () => {
+      await Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined)));
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    });
+  };
+
+  await asentar();
+  const reposo = await medir();
+  await page.locator('[data-cart-inc] >> visible=true').first().click();
+  await asentar();
+  const conAviso = await medir();
+
+  await expect(banda).toContainText('agregado al pedido');
+  expect(conAviso.tapa).toEqual([]);
+  // La banda reserva su alto SIEMPRE, así que nada se mueve al encenderse ni al
+  // apagarse: es la diferencia entre estar en el layout y flotar por encima.
+  expect(conAviso.aviso.h).toBe(reposo.aviso.h);
+  expect(conAviso.posiciones).toEqual(reposo.posiciones);
+
+  await page.waitForTimeout(2400);
+  await asentar();
+  const apagado = await medir();
+  await expect(banda).toBeEmpty();
+  expect(apagado.posiciones).toEqual(reposo.posiciones);
+
+  await guards.assertClean();
+});

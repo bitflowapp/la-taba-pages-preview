@@ -544,6 +544,22 @@
             </div>
           </div>
 
+          <!--
+            AVISO DEL PEDIDO — en el layout, no encima de él.
+            El aviso flotante se anclaba a `top: 76px` en esta vista y tapaba el
+            encabezado "Tu pedido" durante los 2,2 s que dura. Medido: cruzaba
+            con el título en 390x844 y en WebKit/iPhone. Anclarlo abajo no
+            arregla nada —ahí tapa las líneas del carrito, también medido—.
+            Acá el aviso es una banda REAL del layout: reserva su alto mientras
+            el carrito tiene productos, así que aparecer y desaparecer no mueve
+            nada, y por definición no puede tapar nada. La banda vive ARRIBA de
+            las líneas, así que tampoco se mueve nada bajo el dedo que acaba de
+            tocar "+".
+            Es la región viva de esta vista: mientras el carrito está activo, el
+            aviso flotante queda fuera del árbol y éste es el único que anuncia.
+          -->
+          <div class="cart-notice" data-cart-notice role="status" aria-live="polite"></div>
+
           <div class="checkout-layout">
             <div class="card cart-card">
               <h3>Productos</h3>

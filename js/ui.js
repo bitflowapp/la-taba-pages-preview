@@ -2699,6 +2699,13 @@ function renderCheckoutVisibility() {
     }
   }
   $$('[data-clear-cart]').forEach((button) => { button.hidden = isEmpty; });
+  // La banda de aviso reserva su alto exactamente cuando puede haber un aviso:
+  // con productos en el pedido. NO se puede usar `body[data-cart="filled"]`
+  // para esto —ese atributo significa "corresponde mostrar la barra flotante", y
+  // en la vista del carrito la barra no corresponde nunca, así que ahí vale
+  // "empty" aunque haya diez productos—. Acá se reusa la misma decisión que ya
+  // gobierna el formulario, que es la que de verdad dice si hay pedido.
+  $$('[data-cart-notice]').forEach((node) => { node.hidden = isEmpty; });
   // El +18 de cualquier componente alcanza al combo entero.
   const requiresAgeConfirmation = cartItems.some((item) => item.product.alcoholic)
     || comboLines.some((line) => line.combo.ageRestricted);
@@ -3998,13 +4005,36 @@ export async function copyDraftOrderToClipboard() {
   await navigator.clipboard.writeText(message);
 }
 
+/*
+ * El mismo mensaje, dos superficies, UNA sola región viva por vez.
+ *
+ * `[data-toast]` es la pastilla flotante de siempre y sigue siendo la región
+ * viva en todas las vistas. En el carrito queda fuera del árbol —`display:none`
+ * por CSS— y el que anuncia es `[data-cart-notice]`, la banda que vive dentro
+ * del layout de esa vista. Nunca las dos a la vez: cuando el carrito no está
+ * activo su banda está dentro de una sección con `hidden`, o sea también fuera
+ * del árbol. Por eso se puede escribir en las dos sin duplicar anuncios.
+ *
+ * Se escribe en ambas incondicionalmente: preguntar por la vista activa acá
+ * ataría el aviso al estado de navegación en el momento del mensaje, y el
+ * cambio de vista puede ocurrir después.
+ */
 export function showToast(message) {
   const toast = $('[data-toast]');
-  if (!toast) return;
-  toast.textContent = message;
-  toast.classList.remove('hidden');
+  const cartNotice = $('[data-cart-notice]');
+  if (!toast && !cartNotice) return;
+  if (cartNotice) cartNotice.textContent = message;
+  if (toast) {
+    toast.textContent = message;
+    toast.classList.remove('hidden');
+  }
   clearTimeout(showToast.timeoutId);
-  showToast.timeoutId = setTimeout(() => toast.classList.add('hidden'), 2200);
+  showToast.timeoutId = setTimeout(() => {
+    toast?.classList.add('hidden');
+    // Vaciarla la deja `:empty`, que es lo que apaga su superficie sin devolver
+    // el alto: la banda sigue reservada y no hay salto al apagarse.
+    if (cartNotice) cartNotice.textContent = '';
+  }, 2200);
 }
 
 export function escapeHtml(value) {

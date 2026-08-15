@@ -36,3 +36,4 @@ artifacts/taba2-commercial-audit/
 # Capturas del pulido de lanzamiento: se generan con scripts/launch-ux-captures.mjs
 # y viven fuera de Git, como el resto de la revisión visual humana.
 artifacts/launch-ux-polish/**/*.png
+artifacts/launch-ux-microfix/**/*.png

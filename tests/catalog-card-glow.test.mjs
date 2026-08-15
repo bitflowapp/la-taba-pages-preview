@@ -119,6 +119,82 @@ test('cada capa roja tiene respaldo: un token ausente no puede tumbar la sombra 
   }
 });
 
+/*
+ * La FORMA del brillo, no su intensidad.
+ *
+ * En CSS el desenfoque de una sombra se comporta como una gaussiana de sigma =
+ * radio/2, así que la sombra deja de verse a unos 2·sigma = un radio de su
+ * caja. Y la caja de la sombra es la de la tarjeta metida `spread` y bajada
+ * `offset-y`. Con eso, cuánto asoma cada capa por cada lado es aritmética:
+ *
+ *    abajo   = offsetY - |spread| + blur
+ *    costado =         - |spread| + blur
+ *    arriba  = -(offsetY + |spread|) + blur
+ *
+ * Verificado contra píxeles: restando la captura con el brillo apagado, la
+ * capa ancha anterior (0 4px 26px -10px) daba alcance lateral ~16px, que es
+ * exactamente `-10 + 26`.
+ *
+ * Esto NO congela los valores: fija que el rojo caiga DEBAJO. La versión
+ * anterior repartía lo mismo por todo el perímetro —arriba daba `-14 + 26` =
+ * 12px— y a ×10 se veía un aro rojo alrededor de la tarjeta.
+ */
+function geometria(capa) {
+  // Las longitudes son lo que va ANTES del color; `0` puede venir sin unidad.
+  const n = capa.slice(0, capa.indexOf('rgb(')).trim().split(/\s+/).map((t) => Number(t.replace('px', '')));
+  assert.equal(n.length, 4, `la capa "${capa}" no declara offset-x, offset-y, blur y spread`);
+  assert.ok(n.every(Number.isFinite), `la capa "${capa}" tiene una longitud que no es un número`);
+  const [, offsetY, blur, spread] = n;
+  return {
+    abajo: offsetY - Math.abs(spread) + blur,
+    costado: -Math.abs(spread) + blur,
+    arriba: -(offsetY + Math.abs(spread)) + blur,
+  };
+}
+
+test('el rojo cae debajo de la tarjeta y no la rodea', () => {
+  const reglas = [SELECTOR_GLOW, `${SELECTOR_GLOW}:focus-within`];
+  for (const regla of reglas) {
+    const rojas = capas(declaracion(BRAND, regla)).slice(2);
+    assert.equal(rojas.length, 2, `${regla}: el brillo son exactamente dos capas rojas`);
+    const formas = rojas.map(geometria);
+
+    for (const [i, forma] of formas.entries()) {
+      assert.ok(
+        forma.arriba <= 4,
+        `la capa ${i + 1} asoma ${forma.arriba}px por ARRIBA de la tarjeta: eso es un aro rojo, `
+        + 'no una sombra. Una tarjeta apoyada sobre una superficie oscura no se ilumina por arriba.',
+      );
+    }
+    // La capa ancha es la que hace el poso: tiene que ser claramente más
+    // profunda que ancha, o el brillo vuelve a ser un halo simétrico.
+    const ancha = formas.reduce((a, b) => (b.abajo > a.abajo ? b : a));
+    assert.ok(
+      ancha.abajo >= ancha.costado * 1.5,
+      `el brillo llega ${ancha.abajo}px abajo y ${ancha.costado}px al costado: dejó de ser direccional`,
+    );
+    assert.ok(
+      ancha.abajo >= 8,
+      `el brillo sólo llega ${ancha.abajo}px abajo: sin recorrido no hay degradado, hay una línea roja`,
+    );
+  }
+});
+
+test('el rail de Destacados le deja lugar a la sombra que él mismo recorta', () => {
+  // `overflow-x: auto` hace que `overflow-y` compute `auto`, y el recorte cae
+  // en la caja de relleno: el `padding` del rail ES el lienzo de la sombra. Con
+  // los 4px originales, las capas rojas —que llegan a ~12px— morían a los 4 y
+  // el efecto NO EXISTÍA en la primera góndola que ve un cliente, con las
+  // mismas reglas que sí se veían en el catálogo.
+  const bloque = declaracion(BRAND, 'body[data-active-view="home"] .home-best-sellers');
+  const abajo = /padding-bottom:\s*(\d+)px/.exec(bloque);
+  assert.ok(abajo, 'el rail de Destacados dejó de reservar aire para la sombra');
+  assert.ok(
+    Number(abajo[1]) >= 12,
+    `el rail recorta la sombra a ${abajo[1]}px: volvió a cortar el brillo de Destacados`,
+  );
+});
+
 test('el brillo nunca sube tanto como para competir con el rojo de la acción', () => {
   const porcentajes = [...BRAND.matchAll(/var\(--card-glow, 0\) \* (\d+)%/g)].map((m) => Number(m[1]));
   assert.ok(porcentajes.length >= 4, 'faltan capas de brillo (reposo y estado activo)');

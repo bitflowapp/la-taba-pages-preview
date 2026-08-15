@@ -38,3 +38,10 @@ artifacts/taba2-commercial-audit/
 artifacts/launch-ux-polish/**/*.png
 artifacts/launch-ux-microfix/**/*.png
 artifacts/catalog-glow/**/*.png
+# Fases del laboratorio del brillo: las medidas de una comparación concreta
+# (A/B/C, antes/después de un pulido) sirven mientras se está mirando y después
+# quedan viejas. La evidencia que SÍ se versiona es
+# `artifacts/catalog-glow/after/MEDIDAS.json`, porque la genera un guion del
+# repo y por lo tanto se puede volver a sacar.
+artifacts/catalog-glow/polish-*/
+artifacts/catalog-glow/abc/

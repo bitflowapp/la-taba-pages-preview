@@ -875,6 +875,24 @@ body[data-active-view="home"] .home-promotions-rail {
   padding: 1px 2px 4px;
 }
 
+/* EL RAIL ES QUIEN RECORTA LA SOMBRA, y por eso se le da aire abajo.
+   `overflow-x: auto` hace que `overflow-y` compute `auto`: el rail recorta en
+   su caja de relleno, así que su `padding` ES el lienzo de la sombra. Con 4px
+   abajo, la sombra negra de la tarjeta —que llega a 15px— y las capas rojas
+   —que llegan a 12— quedaban cortadas en una tira de 4px. Medido restando la
+   misma pantalla con el brillo apagado: el rojo moría a los 6px en Destacados
+   y a los 13 en el catálogo, con las MISMAS reglas. Eso no se arregla subiendo
+   el alfa; se arregla dándole lugar. Con 14px las dos góndolas se ven iguales,
+   que es lo que hace que parezcan el mismo sistema.
+   Los 2px de los costados se quedan como están: sólo recortan el borde
+   exterior de la primera y la última tarjeta —los huecos ENTRE tarjetas son
+   interiores al recorte y nunca estuvieron cortados—, y ampliarlos exige un
+   margen negativo que el ajuste de desplazamiento vuelve a comer. El rail de
+   promociones no lleva brillo, así que conserva su caja. */
+body[data-active-view="home"] .home-best-sellers {
+  padding-bottom: 14px;
+}
+
 /* El rail de ofertas es el único cuyo cupo lo decide el comercio: puede tener
    una promoción o seis. Se probó estirarlas a `1fr` cuando hay menos de tres,
    para que llenaran la fila, y sale peor: el plato del packshot pasa a ser una
@@ -1170,12 +1188,38 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(
 /* ============================================================================
    BRILLO ROJO DE LA GÓNDOLA — en las primeras tarjetas que ve el cliente
    ----------------------------------------------------------------------------
-   Dos capas rojas encima de la sombra de tarjeta: una corta y cerrada que
-   define el borde inferior, y una ancha y muy abierta que hace el halo. Las dos
-   con `spread` negativo, para que el brillo ABRACE la tarjeta en vez de
-   derramarse sobre la vecina: derramado es lo que convierte un acento en un
-   neón. Ninguna toca el color del borde ni el fondo, así que el contraste del
-   texto es exactamente el mismo con brillo y sin brillo.
+   Dos capas rojas encima de la sombra de tarjeta: una corta que define el
+   borde inferior, y una ancha que hace el poso. Las dos con `spread` negativo,
+   para que el brillo ABRACE la tarjeta en vez de derramarse sobre la vecina:
+   derramado es lo que convierte un acento en un neón. Ninguna toca el color del
+   borde ni el fondo, así que el contraste del texto es exactamente el mismo con
+   brillo y sin brillo.
+
+   DÓNDE VA EL ROJO. Debajo, un poco a los costados bajos, nada arriba. La
+   versión anterior repartía la misma cantidad de rojo por TODO el perímetro:
+   restando la pantalla con el brillo apagado, el contorno superior daba tanto
+   como el inferior, y el resultado —a ×10— era un aro rojo alrededor de la
+   tarjeta, que es justo lo que un borde rojo no debe ser. Una tarjeta apoyada
+   sobre una superficie oscura no se ilumina por arriba.
+
+   Con `spread` y desplazamiento iguales (8 y 8) la caja de la sombra queda
+   metida 8px y bajada 8: su borde inferior cae EXACTAMENTE sobre el de la
+   tarjeta y el superior 16px adentro, así que el desenfoque de 18 —que alcanza
+   unos 2σ ≈ 18px— derrama hacia abajo y no llega a asomar arriba. Los costados,
+   metidos 8, dejan pasar un resto que se ve sólo en la mitad baja.
+
+   No es más rojo que antes: los alfas BAJARON (11/26 → 10/22) y el rojo que se
+   sacó de arriba y de los costados es el que aparece abajo. Medido restando la
+   captura con el brillo apagado, en unidades de pantalla sobre el grafito:
+
+     ANTES  abajo 15 14 11 10 9 9 7 8 · costado 8,2 · arriba 6,0 (a 0,5…10px)
+     AHORA  abajo 17 16 14 11 10 9 5 4 · costado 4,7 · arriba 0,0
+
+   El "arriba 6,0" de antes no era de esta tarjeta sino de la de arriba: con 10px
+   de alcance y 11px de canaleta, el hueco entre filas del catálogo no llegaba a
+   apagarse nunca y la grilla entera quedaba sobre un lavado cálido. Ahora la
+   canaleta vuelve a negro entre tarjeta y tarjeta, que es lo que hace que se
+   lean como tarjetas apoyadas y no como un fondo rojizo.
 
    QUÉ LO ENCIENDE. No la vista, sino la POSICIÓN del estante en la pantalla.
    La primera versión de esto se ató a `body[data-active-view="catalog"]`, y así
@@ -1205,8 +1249,8 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
   box-shadow:
     var(--shadow-shelf-flat),
     inset 0 0 0 1px var(--shelf-line),
-    0 1px 6px -2px rgb(208 0 13 / calc(var(--card-glow, 0) * 11%)),
-    0 4px 26px -10px rgb(208 0 13 / calc(var(--card-glow, 0) * 26%));
+    0 2px 5px -3px rgb(208 0 13 / calc(var(--card-glow, 0) * 10%)),
+    0 8px 18px -8px rgb(208 0 13 / calc(var(--card-glow, 0) * 22%));
 }
 
 /* Lo que no se puede comprar no se destaca. El brillo es una invitación, y
@@ -1218,17 +1262,20 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
 }
 
 /* Un escalón, no un salto: al apuntar o enfocar sube el mismo brillo que ya
-   está puesto, no aparece uno nuevo. Se repone además el hairline, que la regla
-   genérica de `:hover` del catálogo pisaba dejando la tarjeta sin borde justo
-   cuando se la está mirando. */
+   está puesto, no aparece uno nuevo. La geometría es la MISMA que en reposo
+   —sólo cambia el alfa—, así que la tarjeta no se mueve ni cambia de forma al
+   pasarle por encima; el escalón bajó de ×1,45 a ×1,3 porque con el rojo puesto
+   donde corresponde se nota igual con menos. Se repone además el hairline, que
+   la regla genérica de `:hover` del catálogo pisaba dejando la tarjeta sin borde
+   justo cuando se la está mirando. */
 @media (hover: hover) and (pointer: fine) {
   body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view [data-glow-shelf] :is(.product-card, .home-best-card):hover {
     border-color: transparent;
     box-shadow:
       var(--shadow-shelf-flat),
       inset 0 0 0 1px var(--shelf-line-strong),
-      0 1px 6px -2px rgb(208 0 13 / calc(var(--card-glow, 0) * 16%)),
-      0 6px 30px -10px rgb(208 0 13 / calc(var(--card-glow, 0) * 38%));
+      0 2px 5px -3px rgb(208 0 13 / calc(var(--card-glow, 0) * 13%)),
+      0 8px 18px -8px rgb(208 0 13 / calc(var(--card-glow, 0) * 28%));
   }
 }
 
@@ -1238,8 +1285,8 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
   box-shadow:
     var(--shadow-shelf-flat),
     inset 0 0 0 1px var(--shelf-line-strong),
-    0 1px 6px -2px rgb(208 0 13 / calc(var(--card-glow, 0) * 16%)),
-    0 6px 30px -10px rgb(208 0 13 / calc(var(--card-glow, 0) * 38%));
+    0 2px 5px -3px rgb(208 0 13 / calc(var(--card-glow, 0) * 13%)),
+    0 8px 18px -8px rgb(208 0 13 / calc(var(--card-glow, 0) * 28%));
 }
 
 /* Títulos y cifras dentro de la góndola. `h1…h4` y `strong` heredan del bloque

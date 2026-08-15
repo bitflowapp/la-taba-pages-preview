@@ -4,45 +4,33 @@
       {
         "scrollY": 0,
         "hayTarjeta": true,
-        "glow": "0.88",
-        "alfas": [
-          "0.098",
-          "0.227"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       },
       {
         "scrollY": 400,
         "hayTarjeta": true,
-        "glow": "1",
-        "alfas": [
-          "0.11",
-          "0.26"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       },
       {
         "scrollY": 900,
         "hayTarjeta": true,
-        "glow": "0",
-        "alfas": [
-          "0",
-          "0"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       },
       {
         "scrollY": 1600,
         "hayTarjeta": true,
-        "glow": "0",
-        "alfas": [
-          "0",
-          "0"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       }
     ],
     "catalogo": [
       {
         "scrollY": 0,
         "hayTarjeta": true,
-        "glow": "1",
+        "glow": "(sin fijar)",
         "alfas": [
           "0.11",
           "0.26"
@@ -51,7 +39,7 @@
       {
         "scrollY": 600,
         "hayTarjeta": true,
-        "glow": "0.64",
+        "glow": "(sin fijar)",
         "alfas": [
           "0.07",
           "0.165"
@@ -60,7 +48,7 @@
       {
         "scrollY": 1300,
         "hayTarjeta": true,
-        "glow": "0",
+        "glow": "(sin fijar)",
         "alfas": [
           "0",
           "0"
@@ -78,45 +66,33 @@
       {
         "scrollY": 0,
         "hayTarjeta": true,
-        "glow": "0.6",
-        "alfas": [
-          "0.067",
-          "0.157"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       },
       {
         "scrollY": 400,
         "hayTarjeta": true,
-        "glow": "1",
-        "alfas": [
-          "0.11",
-          "0.26"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       },
       {
         "scrollY": 900,
         "hayTarjeta": true,
-        "glow": "0",
-        "alfas": [
-          "0",
-          "0"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       },
       {
         "scrollY": 1600,
         "hayTarjeta": true,
-        "glow": "0",
-        "alfas": [
-          "0",
-          "0"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       }
     ],
     "catalogo": [
       {
         "scrollY": 0,
         "hayTarjeta": true,
-        "glow": "1",
+        "glow": "(sin fijar)",
         "alfas": [
           "0.11",
           "0.26"
@@ -125,7 +101,7 @@
       {
         "scrollY": 600,
         "hayTarjeta": true,
-        "glow": "0.52",
+        "glow": "(sin fijar)",
         "alfas": [
           "0.06",
           "0.133"
@@ -134,7 +110,7 @@
       {
         "scrollY": 1300,
         "hayTarjeta": true,
-        "glow": "0",
+        "glow": "(sin fijar)",
         "alfas": [
           "0",
           "0"
@@ -152,45 +128,33 @@
       {
         "scrollY": 0,
         "hayTarjeta": true,
-        "glow": "0.64",
-        "alfas": [
-          "0.07",
-          "0.165"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       },
       {
         "scrollY": 400,
         "hayTarjeta": true,
-        "glow": "1",
-        "alfas": [
-          "0.11",
-          "0.26"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       },
       {
         "scrollY": 900,
         "hayTarjeta": true,
-        "glow": "0.68",
-        "alfas": [
-          "0.075",
-          "0.176"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       },
       {
         "scrollY": 1600,
         "hayTarjeta": true,
-        "glow": "0",
-        "alfas": [
-          "0",
-          "0"
-        ]
+        "glow": "(sin fijar)",
+        "alfas": []
       }
     ],
     "catalogo": [
       {
         "scrollY": 0,
         "hayTarjeta": true,
-        "glow": "1",
+        "glow": "(sin fijar)",
         "alfas": [
           "0.11",
           "0.26"
@@ -199,7 +163,7 @@
       {
         "scrollY": 600,
         "hayTarjeta": true,
-        "glow": "0.72",
+        "glow": "(sin fijar)",
         "alfas": [
           "0.08",
           "0.19"
@@ -208,7 +172,7 @@
       {
         "scrollY": 1300,
         "hayTarjeta": true,
-        "glow": "0",
+        "glow": "(sin fijar)",
         "alfas": [
           "0",
           "0"

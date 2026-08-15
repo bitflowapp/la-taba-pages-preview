@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v68-catalog-glow';
+const CACHE_NAME = 'la-taba-runtime-v69-shelf-glow';
 const ASSETS = [
   './',
   './index.html',

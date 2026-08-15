@@ -32,39 +32,63 @@ async function recorrido(nombre, motor, opciones) {
     const context = await browser.newContext({ ...opciones, serviceWorkers: 'block' });
     const page = await context.newPage();
     await abrir(page);
+
+    // HOME primero: es la pantalla donde se detecto que el rail "Destacados"
+    // quedaba sin brillo, asi que es la que manda en la comparacion.
+    const home = [];
+    for (const y of [0, 400, 900, 1600]) {
+      await page.evaluate((v) => window.scrollTo(0, v), y);
+      await asentar(page);
+      home.push(await medir(page, y, '.home-best-card:not(.out-of-stock)'));
+      if ([0, 900].includes(y)) await page.screenshot({ path: path.join(OUT, `${nombre}-home-scroll-${y}.png`) });
+    }
+    // Recorte del rail, que es donde se mira el efecto de cerca.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await asentar(page);
+    const rail = await page.locator('.home-best-card').first().boundingBox();
+    if (rail) {
+      await page.screenshot({
+        path: path.join(OUT, `${nombre}-home-destacados.png`),
+        clip: {
+          x: Math.max(0, rail.x - 12),
+          y: Math.max(0, rail.y - 34),
+          width: Math.min(opciones.viewport?.width || 390, rail.width * 2 + 40),
+          height: Math.min(240, rail.height + 60),
+        },
+      });
+    }
+
     await page.locator('[data-nav-view="catalog"] >> visible=true').first().click();
     await page.locator('body[data-active-view="catalog"]').waitFor({ state: 'attached' });
     await asentar(page);
-
-    const puntos = [];
-    for (const y of [0, 300, 600, 900, 1300, 2000]) {
+    const catalogo = [];
+    for (const y of [0, 600, 1300]) {
       await page.evaluate((v) => window.scrollTo(0, v), y);
       await asentar(page);
-      puntos.push(await medir(page, y));
-      if ([0, 600, 1300].includes(y)) {
-        await page.screenshot({ path: path.join(OUT, `${nombre}-scroll-${y}.png`) });
-      }
+      catalogo.push(await medir(page, y, '[data-product-grid] .product-card:not(.out-of-stock)'));
+      if (y === 0) await page.screenshot({ path: path.join(OUT, `${nombre}-catalogo-scroll-0.png`) });
     }
-    medidas[nombre] = { puntos, overflow: await overflow(page) };
+
+    medidas[nombre] = { home, catalogo, overflow: await overflow(page) };
     await context.close();
   } finally { await browser.close(); }
 }
 
-function medir(page, y) {
-  return page.evaluate((scrollY) => {
-    const host = document.querySelector('[data-view="catalog"]');
-    const card = document.querySelector('[data-product-grid] .product-card');
+function medir(page, y, selector) {
+  return page.evaluate(({ scrollY, sel }) => {
+    const card = document.querySelector(sel);
+    const shelf = card?.closest('[data-glow-shelf]');
     const cs = card ? getComputedStyle(card) : null;
-    const capasRojas = cs ? (cs.boxShadow.match(/rgba?\(2\d\d,\s*0,\s*1?\d/g) || []).length : -1;
-    const alfas = cs ? (cs.boxShadow.match(/rgba\(208,\s*0,\s*13,\s*([0-9.]+)\)/g) || []).map((s) => s.match(/([0-9.]+)\)$/)[1]) : [];
+    const alfas = cs
+      ? (cs.boxShadow.match(/rgba\(208,\s*0,\s*13,\s*([0-9.]+)\)/g) || []).map((s2) => s2.match(/([0-9.]+)\)$/)[1])
+      : [];
     return {
       scrollY,
-      glow: host?.style.getPropertyValue('--card-glow') || '(sin fijar)',
-      capasRojas,
+      hayTarjeta: Boolean(card),
+      glow: shelf?.style.getPropertyValue('--card-glow') || '(sin fijar)',
       alfas,
-      boxShadow: cs ? cs.boxShadow.slice(0, 210) : null,
     };
-  }, y);
+  }, { scrollY: y, sel: selector });
 }
 
 function overflow(page) {

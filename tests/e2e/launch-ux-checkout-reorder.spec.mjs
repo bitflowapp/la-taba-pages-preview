@@ -371,6 +371,16 @@ test('ADD · el sello de confirmacion nunca tapa el "+"', async ({ page }) => {
   // eso convierte un contrato de geometría en una carrera: pasa sola y falla en
   // la corrida completa. Acá se fuerza la clase, que es el estado que se quiere
   // medir, y la duración la fija la prueba unitaria contra el token.
+  // El "+" se lleva al centro del viewport ANTES de medir. La prueba afirma que
+  // el SELLO no tapa el "+", y `elementFromPoint` no distingue quién tapa: en
+  // WebKit/iPhone el viewport util son 664px y la barra de carrito —que existe
+  // recien despues de agregar— se apoya en el borde inferior, asi que si la
+  // tarjeta quedaba abajo el punto caia sobre la barra y la prueba fallaba
+  // culpando al sello. Falló asi dos veces, sólo en la corrida completa, y pasó
+  // siempre aislada: la diferencia era dónde terminaba la tarjeta.
+  await page.locator(`[data-cart-inc="${productId}"] >> visible=true`).first().scrollIntoViewIfNeeded();
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+
   const medida = await page.evaluate((id) => {
     const inc = [...document.querySelectorAll(`[data-cart-inc="${id}"]`)]
       .find((node) => node.getBoundingClientRect().width > 0);
@@ -384,6 +394,9 @@ test('ADD · el sello de confirmacion nunca tapa el "+"', async ({ page }) => {
       selloVivo: sello.content !== 'none',
       derecha: sello.right,
       alcanzable: Boolean(centro && centro.closest(`[data-cart-inc="${id}"]`)),
+      // Quién estaba encima, para que un fallo futuro se lea solo en vez de
+      // obligar a reproducirlo.
+      encima: centro ? `${centro.tagName}${centro.className ? `.${String(centro.className).split(' ')[0]}` : ''}` : 'nada',
     };
   }, productId);
 
@@ -392,7 +405,7 @@ test('ADD · el sello de confirmacion nunca tapa el "+"', async ({ page }) => {
   // 44px es el ancho declarado de la columna del "+": el sello se detiene ahí.
   expect(medida.derecha).toBe('44px');
   // Y el "+" sigue siendo lo que hay bajo el dedo en su propio centro.
-  expect(medida.alcanzable).toBe(true);
+  expect(medida.alcanzable, `bajo el centro del "+" hay: ${medida.encima}`).toBe(true);
 });
 
 test('REDUCED MOTION · sin movimiento la compra funciona igual y el sello no queda congelado', async ({ page }) => {

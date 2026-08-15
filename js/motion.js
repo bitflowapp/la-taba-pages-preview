@@ -96,47 +96,65 @@ function releasePressed(target) {
 }
 
 /* ============================================================================
-   BRILLO DE LA GÓNDOLA — un número, calculado donde ya se escuchaba el scroll
+   BRILLO DE LA GÓNDOLA — un número por estante, donde ya se escuchaba el scroll
    ----------------------------------------------------------------------------
-   Las tarjetas del catálogo llevan una capa roja tenue que está encendida
-   mientras se mira la zona alta de la góndola y se apaga al bajar. Todo el
-   color vive en CSS; acá sólo se calcula CUÁNTO, y se escribe en una sola
-   propiedad personalizada sobre la sección del catálogo.
+   Los estantes de producto llevan una capa roja tenue que está encendida
+   mientras el estante ocupa la zona alta de la pantalla y se apaga cuando pasa
+   de largo. Todo el color vive en CSS; acá sólo se calcula CUÁNTO, y se escribe
+   en una propiedad personalizada sobre CADA estante.
+
+   POR QUÉ POR ESTANTE Y NO POR VISTA. La primera versión ató el efecto a
+   `body[data-active-view="catalog"]`, y así el rail "Destacados" de la home
+   —que es la primera góndola que ve un cliente— se quedaba sin brillo. Quién
+   brilla lo declara el marcado con `data-glow-shelf`; cuánto, la geometría.
+   Un estante que todavía no entró no brilla, y uno que ya salió por arriba
+   tampoco, sin que nadie tenga que preguntar en qué pantalla estamos.
 
    Tres decisiones que hacen que esto no cueste nada:
 
    1 · No agrega ningún listener. Se cuelga del `scroll` que este módulo ya
        tenía, que ya está limitado a un cuadro por `requestAnimationFrame`.
    2 · Escribe CUANTIZADO. El valor se redondea a 1/25, así que un scroll
-       continuo produce como mucho 25 escrituras en todo el desvanecido en vez
-       de una por cuadro. Cambiar una propiedad heredada invalida el estilo del
-       subárbol: hacerlo 60 veces por segundo para mover un alfa que nadie
-       distingue es exactamente el gasto que se quiere evitar.
-   3 · Se escribe en la SECCIÓN del catálogo, no en `body`. La invalidación
-       queda contenida en el subárbol que de verdad usa el valor.
+       continuo produce como mucho 25 escrituras por estante en todo el
+       recorrido en vez de una por cuadro. Cambiar una propiedad heredada
+       invalida el estilo del subárbol: hacerlo 60 veces por segundo para mover
+       un alfa que nadie distingue es exactamente el gasto que se quiere evitar.
+   3 · Se escribe en el ESTANTE, no en `body`. La invalidación queda contenida
+       en el subárbol que de verdad usa el valor.
 
    Y si nada de esto corre —JavaScript apagado, módulo caído— el token conserva
    su valor por defecto y las tarjetas se ven con un brillo fijo y discreto.
    ========================================================================== */
-const GLOW_HOST = '[data-view="catalog"]';
-const GLOW_ANCHOR = '[data-product-grid]';
+const GLOW_SHELF = '[data-glow-shelf]';
 const GLOW_STEPS = 25;
 
 /*
- * 1 mientras el arranque de la góndola sigue a la vista; después baja a 0 a lo
- * largo de una pantalla. Se mide contra la altura del viewport y no contra un
- * número de píxeles para que el recorrido dure lo mismo en un teléfono chico
- * que en un escritorio.
+ * Sube mientras el estante entra desde abajo, satura cuando ya ocupa la mitad
+ * alta de la pantalla, y baja a 0 a lo largo de una pantalla mientras sale por
+ * arriba. Todo medido contra la altura del viewport y no contra un número de
+ * píxeles, para que el recorrido dure lo mismo en un teléfono que en un
+ * escritorio.
+ *
+ * POR QUÉ SATURA A MEDIA PANTALLA Y NO EN EL BORDE SUPERIOR. La primera versión
+ * usaba una rampa lineal desde el borde inferior: matemáticamente prolija y
+ * visualmente inútil. En la home el rail "Destacados" arranca a 522px de 844,
+ * así que daba 0,38 —alfas de 0,047— y eso es INVISIBLE. El efecto existía en
+ * el estilo computado y en las pruebas, y no en la pantalla, que es donde tenía
+ * que existir. Saturando a media pantalla, ese mismo rail arranca en 0,76 y el
+ * catálogo —que empieza más arriba— vuelve a su intensidad de siempre.
+ *
+ * Devuelve `null` para un estante que no está renderizado —una vista oculta
+ * tiene rect en cero— para distinguir "no corresponde" de "cero brillo".
  */
-function readCatalogGlow(documentRef, windowRef) {
-  const anchor = documentRef.querySelector(`${GLOW_HOST} ${GLOW_ANCHOR}`);
-  if (!anchor) return null;
-  const viewport = windowRef?.innerHeight || 0;
-  if (!viewport) return null;
-  // `top` es positivo mientras la góndola no llegó al borde superior y se
-  // vuelve negativo cuando empieza a salir: ese negativo ES el recorrido.
-  const recorrido = Math.max(0, -anchor.getBoundingClientRect().top);
-  return Math.max(0, 1 - recorrido / viewport);
+function readShelfGlow(shelf, viewport) {
+  const rect = shelf.getBoundingClientRect();
+  if (!viewport || (rect.width === 0 && rect.height === 0)) return null;
+  if (rect.top >= viewport) return 0;          // todavía no entró
+  if (rect.bottom <= 0) return 0;              // ya salió del todo
+  const progreso = rect.top >= 0
+    ? (viewport - rect.top) / (viewport * 0.5) // entrando: satura a media pantalla
+    : 1 - (-rect.top) / viewport;              // saliendo por arriba
+  return Math.min(1, Math.max(0, progreso));
 }
 
 export function initMotion(documentRef = globalThis.document, windowRef = globalThis.window) {
@@ -149,7 +167,7 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
   let pressTimer = 0;
   let targets = [];
   let observedCount = 0;
-  let lastGlow = null;
+  const lastGlow = new WeakMap();
   let glowPending = false;
   let destroyed = false;
 
@@ -169,7 +187,7 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
     // La góndola se repinta al entrar a la vista, al filtrar y al buscar. Ese
     // es también el momento en que su geometría cambia, así que el brillo se
     // recalcula acá y no hace falta escuchar el cambio de vista por separado.
-    scheduleCatalogGlow();
+    scheduleShelfGlow();
   };
 
   /*
@@ -178,35 +196,25 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
    * scrollea es justo lo que esa preferencia pide no hacer, y apagarlo del todo
    * sería quitarle a esa persona una superficie que el resto sí ve.
    */
-  const applyCatalogGlow = () => {
+  const applyShelfGlow = () => {
     if (destroyed || preference.reduced) return;
-    const host = documentRef.querySelector(GLOW_HOST);
-    if (!host) return;
-    const glow = readCatalogGlow(documentRef, windowRef);
-    if (glow === null) return;
-    const quantized = Math.round(glow * GLOW_STEPS) / GLOW_STEPS;
-    if (quantized === lastGlow) return;
-    lastGlow = quantized;
-    host.style.setProperty('--card-glow', String(quantized));
+    const viewport = windowRef?.innerHeight || 0;
+    documentRef.querySelectorAll(GLOW_SHELF).forEach((shelf) => {
+      const glow = readShelfGlow(shelf, viewport);
+      if (glow === null) return;
+      const quantized = Math.round(glow * GLOW_STEPS) / GLOW_STEPS;
+      if (quantized === lastGlow.get(shelf)) return;
+      lastGlow.set(shelf, quantized);
+      shelf.style.setProperty('--card-glow', String(quantized));
+    });
   };
 
-  /*
-   * Desde el observador de mutaciones el cálculo NO puede ser inmediato:
-   * `applyCatalogGlow` lee geometría, y leer geometría dentro del callback de un
-   * MutationObserver fuerza un layout sincrónico en medio del repintado. La
-   * góndola muta en lote —ochenta tarjetas al filtrar o buscar—, así que sería
-   * un layout forzado por lote y encima repetido.
-   * Aplazarlo al próximo cuadro resuelve las dos cosas: se lee cuando el layout
-   * ya está limpio, y varias mutaciones seguidas colapsan en un solo cálculo.
-   * El camino del scroll no necesita esto: `setScrolled` YA corre dentro de un
-   * `requestAnimationFrame`.
-   */
-  const scheduleCatalogGlow = () => {
+  const scheduleShelfGlow = () => {
     if (glowPending || destroyed) return;
     glowPending = true;
     const correr = () => {
       glowPending = false;
-      applyCatalogGlow();
+      applyShelfGlow();
     };
     if (windowRef?.requestAnimationFrame) windowRef.requestAnimationFrame(correr);
     else correr();
@@ -215,7 +223,7 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
   const setScrolled = () => {
     scrollPending = false;
     documentRef.body.dataset.motionScrolled = String((windowRef?.scrollY || 0) > 8);
-    applyCatalogGlow();
+    applyShelfGlow();
   };
 
   const onScroll = () => {
@@ -277,8 +285,7 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
       windowRef?.removeEventListener?.('scroll', onScroll);
       if (rafId) (windowRef?.cancelAnimationFrame ? windowRef.cancelAnimationFrame(rafId) : clearTimeout(rafId));
       clearTimeout(pressTimer);
-      documentRef.querySelector(GLOW_HOST)?.style.removeProperty('--card-glow');
-      lastGlow = null;
+      documentRef.querySelectorAll(GLOW_SHELF).forEach((shelf) => shelf.style.removeProperty('--card-glow'));
       documentRef.body.classList.remove('motion-ready');
       delete documentRef.body.dataset.motionReduced;
       delete documentRef.body.dataset.motionLite;
@@ -295,7 +302,7 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
         active: true,
         reducedMotion: preference.reduced,
         liteMode: preference.lite,
-        catalogGlow: lastGlow,
+        glowShelves: documentRef.querySelectorAll(GLOW_SHELF).length,
         observerCount: observer ? 1 : 0,
         mutationObserverCount: mutationObserver ? 1 : 0,
         revealTargets: targets.length,

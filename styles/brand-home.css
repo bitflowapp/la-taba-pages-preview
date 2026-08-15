@@ -1168,7 +1168,7 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(
 }
 
 /* ============================================================================
-   BRILLO ROJO DE LA GÓNDOLA — sólo en el catálogo, sólo arriba
+   BRILLO ROJO DE LA GÓNDOLA — en las primeras tarjetas que ve el cliente
    ----------------------------------------------------------------------------
    Dos capas rojas encima de la sombra de tarjeta: una corta y cerrada que
    define el borde inferior, y una ancha y muy abierta que hace el halo. Las dos
@@ -1177,25 +1177,31 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) :is(
    neón. Ninguna toca el color del borde ni el fondo, así que el contraste del
    texto es exactamente el mismo con brillo y sin brillo.
 
-   La intensidad la lleva `--card-glow` (0…1), que `js/motion.js` baja a medida
-   que la góndola sale por arriba. Sin JavaScript queda el valor por defecto del
-   token: un brillo fijo y discreto, nunca cero.
+   QUÉ LO ENCIENDE. No la vista, sino la POSICIÓN del estante en la pantalla.
+   La primera versión de esto se ató a `body[data-active-view="catalog"]`, y así
+   la primera góndola que ve un cliente —el rail "Destacados" de la home— se
+   quedaba sin brillo: el efecto existía justo donde nadie lo estaba mirando.
+   Ahora el marcado declara qué bloques son estantes con `data-glow-shelf`, y
+   `js/motion.js` le da a cada uno su propia intensidad según dónde esté ese
+   estante respecto del viewport. Un estante que todavía no llegó no brilla; uno
+   que ya pasó de largo, tampoco.
 
-   El selector es largo por una razón medida: la regla compartida de tarjetas usa
-   `:is(.app-view .product-card, …)`, y `:is()` toma la especificidad de su
+   La intensidad la lleva `--card-glow` (0…1), que se escribe en el estante y
+   heredan sus tarjetas. Sin JavaScript queda el valor por defecto del token: un
+   brillo fijo y discreto, nunca cero.
+
+   El selector es largo por una razón medida: la regla compartida de tarjetas
+   usa `:is(.app-view .product-card, …)`, y `:is()` toma la especificidad de su
    argumento más fuerte, así que vale (0,4,1). Una regla más corta —aun estando
    después en el archivo— PERDÍA en silencio: el brillo no llegaba a pintarse y
-   el estilo computado seguía siendo el de siempre. Además de ganar, el selector
-   dice lo que corresponde: tarjetas de producto DENTRO de la grilla del
-   catálogo, y sólo mientras el catálogo es la vista activa; las que viven en la
-   ficha o en los rails de la home no llevan brillo.
+   el estilo computado seguía siendo el de siempre.
 
    Las dos primeras capas REPITEN la sombra de tarjeta compartida —`box-shadow`
    no es aditivo en CSS: para agregar una capa hay que volver a declarar todas—.
    Que sigan siendo las mismas lo sostiene una prueba
    (`tests/catalog-card-glow.test.mjs`), no un comentario.
    ========================================================================== */
-body[data-active-view="catalog"] .app-view[data-view="catalog"] [data-product-grid] .product-card {
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view [data-glow-shelf] :is(.product-card, .home-best-card) {
   box-shadow:
     var(--shadow-shelf-flat),
     inset 0 0 0 1px var(--shelf-line),
@@ -1207,7 +1213,7 @@ body[data-active-view="catalog"] .app-view[data-view="catalog"] [data-product-gr
    ponérsela a un producto agotado invita a un callejón sin salida; la tarjeta
    conserva su sombra oscura y su opacidad reducida, que es lo que ya la
    apagaba. */
-body[data-active-view="catalog"] .app-view[data-view="catalog"] [data-product-grid] .product-card.out-of-stock {
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view [data-glow-shelf] :is(.product-card, .home-best-card).out-of-stock {
   --card-glow: 0;
 }
 
@@ -1216,7 +1222,7 @@ body[data-active-view="catalog"] .app-view[data-view="catalog"] [data-product-gr
    genérica de `:hover` del catálogo pisaba dejando la tarjeta sin borde justo
    cuando se la está mirando. */
 @media (hover: hover) and (pointer: fine) {
-  body[data-active-view="catalog"] .app-view[data-view="catalog"] [data-product-grid] .product-card:hover {
+  body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view [data-glow-shelf] :is(.product-card, .home-best-card):hover {
     border-color: transparent;
     box-shadow:
       var(--shadow-shelf-flat),
@@ -1228,7 +1234,7 @@ body[data-active-view="catalog"] .app-view[data-view="catalog"] [data-product-gr
 
 /* El teclado no tiene hover. Este es el mismo escalón para quien tabula, y
    convive con el anillo de foco del sistema sin reemplazarlo. */
-body[data-active-view="catalog"] .app-view[data-view="catalog"] [data-product-grid] .product-card:focus-within {
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view [data-glow-shelf] :is(.product-card, .home-best-card):focus-within {
   box-shadow:
     var(--shadow-shelf-flat),
     inset 0 0 0 1px var(--shelf-line-strong),

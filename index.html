@@ -308,7 +308,13 @@
               que sin una promoción vigente queda `hidden` pero igual reservaba
               el lugar de arriba para un bloque que casi nunca existe.
             -->
-            <section class="home-merch-section home-best-section" aria-labelledby="home-best-title">
+            <!--
+              `data-glow-shelf`: este rail es la PRIMERA gondola que ve un cliente,
+              asi que es uno de los dos estantes que llevan el brillo rojo. La
+              intensidad la calcula js/motion.js con la posicion de ESTE bloque
+              respecto del viewport, no con la vista activa.
+            -->
+            <section class="home-merch-section home-best-section" data-glow-shelf aria-labelledby="home-best-title">
               <div class="home-section-head">
                 <!--
                   Copy honesto: "Destacados" es una selección del local, no una
@@ -523,7 +529,8 @@
           </div>
 
           <div class="grid-block">
-            <div class="product-grid" data-product-grid></div>
+            <!-- El otro estante con brillo: la grilla principal del catalogo. -->
+            <div class="product-grid" data-product-grid data-glow-shelf></div>
           </div>
           </div>
         </section>

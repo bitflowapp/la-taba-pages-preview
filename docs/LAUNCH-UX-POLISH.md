@@ -100,18 +100,28 @@ fondo habría aplanado más las tarjetas, que es el error obvio de este ajuste.
 Recién ahora existe un hueco **real** por debajo del fondo: antes era imposible
 porque el fondo ya estaba contra el piso.
 
+### El rojo tuvo que subir con la superficie
+
+Al levantar `--shelf-raised` de #22272f a #262c35, `#ff4d55` cayó a **4,31:1**
+sobre esa superficie y dejó el error de campo del Perfil por debajo de AA. Lo
+detectó `tests/a11y-recovery-and-contrast.test.mjs`, que ya medía las dos
+superficies donde vive ese campo; a ojo la diferencia no se ve, y ese es
+exactamente el punto de tener la medición. Los dos rojos legibles
+—`--shelf-red-ink` y `--brand-red-ink`— pasan a **#ff5f66**.
+
 Contraste, todo por encima de 4,5:1 y verificado por prueba:
 
 | Tinta | Sobre | Antes | Ahora |
 |---|---|---|---|
 | `--brand-ink` | fondo | 17,9:1 | 17,0:1 |
 | `--brand-ink-muted` | fondo | 8,5:1 | 8,1:1 |
-| `--brand-red-ink` | fondo | 6,0:1 | 5,7:1 |
+| `--brand-red-ink` | fondo | 6,0:1 | 6,3:1 |
 | `--brand-gold` | fondo | 7,3:1 | 6,9:1 |
 | `--shelf-ink` | tarjeta | 16,9:1 | 14,9:1 |
 | `--shelf-muted` | tarjeta | 7,7:1 | 7,4:1 |
 | `--shelf-gold` | tarjeta | 6,3:1 | 6,0:1 |
-| `--shelf-red-ink` | tarjeta | — | 5,0:1 |
+| `--shelf-red-ink` | tarjeta | — | 5,4:1 |
+| `--shelf-red-ink` | superficie elevada | 4,57:1 | 4,7:1 |
 
 ### El literal que dejó de ser literal
 
@@ -180,7 +190,9 @@ animación acompaña.
 4. **Se retira con un barrido opaco, no con un desvanecido.** Un desvanecido
    sobre un control vivo mezcla dos textos —el sello y el número de abajo— y
    durante esos milisegundos la tarjeta parece rota. Se ve en cualquier captura
-   tomada a mitad de la transición; de hecho así se descubrió.
+   tomada a mitad de la transición; de hecho así se descubrió, comparando el
+   BEFORE con el primer AFTER. El barrido (`translateX(-101%)` con el stepper
+   recortado) descubre el control en vez de disolverse encima de él.
 
 `ADDED_FLASH_MS` en `js/ui.js` y `--motion-duration-added-flash` en
 `styles/tokens.css` son el mismo número, y una prueba falla si divergen: si el

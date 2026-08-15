@@ -339,3 +339,116 @@ de asientos ni descuentos por puntos en esta rama.
 No entra nada de esto: Taba Puntos, Google Login, catálogo nuevo, promociones
 nuevas, growth engine, auto-dispatch, wallet del Rider, funciones nuevas del
 panel del negocio, cambios de Mercado Pago, cambios fiscales ni migraciones.
+
+
+---
+
+## 9 · Microfix previo al preview
+
+Dos detalles que quedaron abiertos en la revisión anterior y se cerraron sin
+tocar nada más.
+
+### 9.1 · El checkout ya no adivina mientras no sabe
+
+**Causa.** `compactCheckoutSummary()` devolvía `null` mientras cargaba el perfil,
+y "null" significaba "formulario completo". "Todavía no sé" y "sé que no hay
+nada" estaban representados con el **mismo valor**, así que a un cliente
+recurrente se le pintaba el formulario entero y se derrumbaba al llegar el
+perfil. En demo no se veía —el perfil sale de `localStorage`—; contra Supabase
+es un viaje de red.
+
+**Medido sobre el árbol anterior**, con el perfil demorado:
+
+| | cargando | resuelto |
+|---|---|---|
+| sección | **376 px** | 269 px |
+| formulario | **1081 px** | 788 px |
+| campos visibles | **4** | 1 |
+
+**Solución.** Cuatro fases explícitas, observables desde afuera por
+`data-checkout-phase`:
+
+| Fase | Cuándo | Qué se ve |
+|---|---|---|
+| `blocked` | la tienda no puede tomar pedidos | el bloqueo de siempre |
+| `unresolved` | hay pedido anterior local y el perfil no llegó | geometría reservada |
+| `compact` | hay perfil reutilizable | el resumen |
+| `full` | no hay nada que recordar | el formulario completo |
+
+`unresolved` **no se le muestra a cualquiera**: sólo a quien tiene un pedido en
+el historial local, que se lee sincrónicamente y sin red. Para todos los demás
+la respuesta ya se conoce en el primer pintado y el formulario completo aparece
+de una. Por eso esto **no agrega espera al usuario nuevo**, que es el caso más
+frecuente.
+
+La espera es geometría reservada, no un spinner: el placeholder usa las mismas
+etiquetas y clases que el resumen real con la tinta en transparente, así que el
+alto lo decide la tipografía y las dos cajas miden igual **por construcción**.
+Sin animación: una superficie quieta no necesita excepción de movimiento
+reducido.
+
+**Medido después** (Chromium 390×844 y WebKit/iPhone 13): sección **269 px** y
+**1 campo** en las dos fases. Cero desplazamiento.
+
+Dos detalles que explican la geometría y que no se ven leyendo el CSS: la fila
+real mide 67 px y no 62 porque el botón "Cambiar" (45 px) manda sobre el
+`min-height` —el placeholder reserva también esa salida—; y el renglón de estado
+sumaba una línea que desaparecía al resolver, otros 20 px, así que ahora se
+anuncia pero no ocupa lugar mientras se espera.
+
+**Fallback.** `load()` traduce sesión vencida, RPC caído y red caída a
+`{ok:false}`, y esos tres resuelven solos hacia el formulario completo con su
+aviso. Lo que no resuelve es una petición **colgada**: `client.rpc` no tiene
+tiempo límite propio. El plazo de 5 s no demora nada en el camino feliz y sólo
+actúa si no hubo respuesta, resolviendo hacia el estado usable y diciéndolo. La
+carga real sigue viva; si aterriza después hidrata los campos pero ya no
+repliega el formulario —replegarlo con el dedo apoyado sería el mismo salto,
+peor—.
+
+**Costo real de la máquina de fases**, con el perfil local y sin demora
+inyectada: **4,1 ms de mediana, 4,5 ms máximo** en ocho corridas. No hay espera
+artificial: la interfaz reacciona al estado.
+
+### 9.2 · El aviso del pedido dejó de tapar el encabezado
+
+**Antes.** Se anclaba a `top: 76px` en la vista del carrito y cruzaba el
+encabezado "Tu pedido" durante los 2,2 s que dura. Medido en 390×844 y en
+WebKit/iPhone: `tapaElEncabezado: true` en los dos.
+
+Anclarlo abajo tampoco servía, y también se midió: ahí cruza las líneas del
+carrito.
+
+**Ahora.** Deja de flotar y es una banda del layout, entre el encabezado y la
+tarjeta de productos.
+
+| | antes | ahora |
+|---|---|---|
+| naturaleza | flotante `position: fixed` | banda en flujo |
+| geometría | `top: 76px`, 48 px de alto | reservada, 48 px de alto |
+| cruza el encabezado | **sí** | **no** |
+| cruza acciones, línea, CTA o barra | — | **no** |
+| desplaza algo al encender o apagar | — | **no** |
+
+Reserva su alto siempre que haya pedido, así que encender y apagar no mueve
+nada; vacía no pinta superficie. Una sola línea con recorte: un nombre largo la
+haría crecer y ese crecimiento sería el salto que esto elimina. Vive **arriba**
+de las líneas, así que tampoco se mueve nada bajo el dedo que acaba de tocar
+"+".
+
+Una sola región viva por vez: en el carrito la pastilla flotante queda fuera del
+árbol con `display: none` y anuncia la banda; en el resto anuncia la pastilla, y
+la banda está dentro de una sección con `hidden`.
+
+### 9.3 · Lo que apareció de paso
+
+- `resetCustomerDeliveryForTests` no limpiaba `addressesKnown`,
+  `blockedReason`, `addressListExpanded`, `checkoutSummaryExpanded` ni
+  `paymentPreferenceApplied`. El hueco no era inocuo: sin resetear
+  `addressesKnown` es imposible reproducir el arranque, y una prueba de la fase
+  sin resolver mediría siempre la fase ya resuelta.
+- `body[data-cart="filled"]` **no** sirve para saber si hay pedido: significa
+  "corresponde mostrar la barra flotante", y en la vista del carrito la barra no
+  corresponde nunca, así que ahí vale `"empty"` con diez productos adentro.
+- El helper de asentado del guion de capturas se colgaba: `getAnimations()`
+  incluye animaciones **infinitas** —el aro del logo— cuyo `finished` no
+  resuelve nunca. Va con tope.

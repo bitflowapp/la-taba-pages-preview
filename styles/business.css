@@ -552,6 +552,49 @@
   background: var(--taba-subtle);
 }
 
+/* El paso que antes no existía: entre ofrecer y salir a la calle hay una
+   respuesta del rider, y el operador tiene que verla sin abrir nada. El borde
+   izquierdo es lo que distingue los cuatro estados de un vistazo. */
+.production-rider-offer {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--taba-border);
+  border-left-width: 4px;
+  border-radius: var(--radius-xs);
+  background: var(--taba-subtle);
+  font-size: 13px;
+}
+
+.production-rider-offer p {
+  margin: 0;
+}
+
+.production-rider-offer button {
+  justify-self: start;
+}
+
+.production-rider-offer.is-pending {
+  border-left-color: var(--taba-warning, #b26a00);
+}
+
+.production-rider-offer.is-rejected {
+  border-left-color: var(--taba-danger, #b3261e);
+}
+
+.production-rider-offer.is-accepted {
+  border-left-color: var(--taba-success, #1b7f4b);
+}
+
+.production-rider-offer.is-withdrawn {
+  border-left-color: var(--taba-border-strong);
+}
+
+.production-rider-assignment select option:disabled {
+  color: var(--taba-muted);
+}
+
 .production-rider-assignment label {
   display: grid;
   flex: 1 1 220px;

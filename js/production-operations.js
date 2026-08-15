@@ -63,6 +63,9 @@ let notifyOrderAlert = () => {};
 let refreshSequence = 0;
 let availableRiderOrders = [];
 let activeBusinessRiders = [];
+// Estado de las ofertas a riders. El Panel lo dibuja; la autoridad sigue siendo
+// el servidor, que recuenta la capacidad en cada aceptación.
+let riderOrderOffers = [];
 let gpsController = null;
 let businessIntake = null;
 let businessIntakeStatus = emptyBusinessIntakeStatus();
@@ -521,21 +524,41 @@ export async function handleProductionOperationsAction(target) {
     }
     const card = businessAssign.closest('.production-order-card');
     const riderId = card?.querySelector('[data-production-rider-select]')?.value || '';
-    const result = await repository.assignRider(
-      order.backendId || order.id,
-      riderId,
-      {
+    // Con el contrato de oferta el Panel propone y el rider decide. Sin él
+    // (demo, sandbox) sigue asignando directo, como siempre.
+    const useOffer = supportsRiderOffers() && current === 'ready';
+    const result = useOffer
+      ? await repository.offerOrderToRider(order.backendId || order.id, riderId, {
         expectedStatus: current,
         expectedRiderId: order.assignedRiderId || null,
-      },
-    );
-    if (result.ok) await businessIntake?.invalidate?.('rider-assigned');
+      })
+      : await repository.assignRider(order.backendId || order.id, riderId, {
+        expectedStatus: current,
+        expectedRiderId: order.assignedRiderId || null,
+      });
+    if (result.ok) {
+      await businessIntake?.invalidate?.(useOffer ? 'rider-offered' : 'rider-assigned');
+      await Promise.all([refreshRiderOrderOffers(), refreshActiveBusinessRiders()]);
+    }
     notify();
     return {
       handled: true,
       ok: result.ok,
       message: result.message,
     };
+  }
+
+  const offerWithdraw = target.closest('[data-production-offer-withdraw]');
+  if (offerWithdraw) {
+    const guard = requireViewAccess('business');
+    if (!guard.ok) return { handled: true, ...guard };
+    if (!supportsRiderOffers()) {
+      return { handled: true, ok: false, message: 'Este entorno no maneja ofertas a riders.' };
+    }
+    const result = await repository.withdrawRiderOffer(offerWithdraw.dataset.productionOfferWithdraw);
+    if (result.ok) await Promise.all([refreshRiderOrderOffers(), refreshActiveBusinessRiders()]);
+    notify();
+    return { handled: true, ok: result.ok, message: result.message };
   }
 
   const businessCancel = target.closest('[data-production-business-cancel]');
@@ -896,12 +919,14 @@ async function activateAuthorizedAccess(result, expectedSequence = null) {
   if (result.membership?.role === 'rider') {
     repository?.startSync?.();
     activeBusinessRiders = [];
+    riderOrderOffers = [];
     await refreshRiderOrders();
   } else {
     availableRiderOrders = [];
     const [intakeResult, ridersResult] = await Promise.all([
       startBusinessIntake(result.membership?.business_id),
       repository.listActiveRiders(),
+      refreshRiderOrderOffers(),
     ]);
     if (!intakeResult?.ok && businessIntakeStatus.phase === 'idle') {
       businessIntakeStatus = {
@@ -964,6 +989,14 @@ async function startBusinessIntake(businessId) {
         draft.lastOrderId = null;
         draft.simulation = null;
       });
+      // La respuesta del rider llega por fuera del Panel, así que el estado de
+      // la oferta y la capacidad se releen con cada foto de pedidos. Sin esto,
+      // «Esperando respuesta» se quedaba puesto hasta el próximo click.
+      if (supportsRiderOffers()) {
+        Promise.all([refreshRiderOrderOffers(), refreshActiveBusinessRiders()])
+          .then(notify)
+          .catch(() => {});
+      }
     },
     onStatusChange: (nextStatus) => {
       businessIntakeStatus = nextStatus;
@@ -1619,6 +1652,80 @@ function businessIntakeStatusMarkup() {
   `;
 }
 
+/** «Marco · 2/3». La capacidad se dice al lado del nombre, donde se elige. */
+function riderOptionLabel(rider) {
+  if (!Number.isFinite(rider?.activeOrders) || !Number.isFinite(rider?.maxActiveOrders)) {
+    return rider?.displayName || 'Rider';
+  }
+  const capacity = `${rider.activeOrders}/${rider.maxActiveOrders}`;
+  return rider.atCapacity
+    ? `${rider.displayName} · ${capacity} (sin cupo)`
+    : `${rider.displayName} · ${capacity}`;
+}
+
+function riderAssignmentLabel(current) {
+  if (!supportsRiderOffers()) return current === 'assigned' ? 'Reasignar rider' : 'Asignar rider';
+  return current === 'assigned' ? 'Reasignar rider' : 'Ofrecer a un rider';
+}
+
+function riderAssignmentAction(current) {
+  if (!supportsRiderOffers()) return current === 'assigned' ? 'Reasignar' : 'Asignar';
+  return current === 'assigned' ? 'Reasignar' : 'Ofrecer';
+}
+
+const RIDER_OFFER_REASONS = Object.freeze({
+  too_far: 'queda lejos',
+  vehicle_problem: 'problema con el vehículo',
+  load_too_big: 'la carga no le entra',
+  ending_shift: 'está terminando',
+  other: 'otro motivo',
+});
+
+/**
+ * El paso que antes no existía: entre «asignado» y «en camino» ahora hay una
+ * respuesta del rider, y el Panel tiene que poder verla sin adivinarla.
+ */
+function riderOfferMarkup(offer) {
+  if (!offer) return '';
+  if (offer.status === 'pending') {
+    return `
+      <div class="production-rider-offer is-pending" role="status">
+        <p><strong>Esperando respuesta del rider</strong> · ${escapeHtml(offer.riderDisplayName)}</p>
+        <p class="form-hint">Ofrecido ${escapeHtml(dateTime(offer.offeredAt))}. El pedido sigue disponible hasta que acepte.</p>
+        <button
+          class="ghost-button compact"
+          type="button"
+          data-production-offer-withdraw="${escapeAttribute(offer.offerId)}"
+        >Retirar oferta</button>
+      </div>
+    `;
+  }
+  if (offer.status === 'rejected') {
+    const reason = RIDER_OFFER_REASONS[offer.reasonCode];
+    return `
+      <div class="production-rider-offer is-rejected" role="status">
+        <p><strong>Rechazado por el rider</strong> · ${escapeHtml(offer.riderDisplayName)}${reason ? ` (${escapeHtml(reason)})` : ''}</p>
+        <p class="form-hint">Elegí otro rider: a éste ya no se le puede volver a ofrecer este pedido.</p>
+      </div>
+    `;
+  }
+  if (offer.status === 'accepted') {
+    return `
+      <div class="production-rider-offer is-accepted" role="status">
+        <p><strong>Aceptado</strong> · ${escapeHtml(offer.riderDisplayName)}</p>
+      </div>
+    `;
+  }
+  if (offer.status === 'withdrawn') {
+    return `
+      <div class="production-rider-offer is-withdrawn" role="status">
+        <p><strong>Oferta retirada</strong> · ${escapeHtml(offer.riderDisplayName)}</p>
+      </div>
+    `;
+  }
+  return '';
+}
+
 function businessOrderMarkup(order) {
   const next = canAdvanceProductionBusinessOrder(order, businessPayments)
     ? nextBusinessStatus(order)
@@ -1634,11 +1741,15 @@ function businessOrderMarkup(order) {
     </li>
   `).join('');
   const canAssignRider = canAssignBusinessRider(order, businessPayments);
+  const offer = riderOfferForOrder(order);
+  // Con una oferta viva el pedido no se vuelve a ofrecer: primero se retira.
+  const offerPending = offer?.status === 'pending';
   const riderOptions = activeBusinessRiders.map((rider) => `
     <option
       value="${escapeAttribute(rider.id)}"
       ${rider.id === order.assignedRiderId ? 'selected' : ''}
-    >${escapeHtml(rider.displayName)}</option>
+      ${rider.atCapacity ? 'disabled' : ''}
+    >${escapeHtml(riderOptionLabel(rider))}</option>
   `).join('');
   return `
     <article class="production-order-card">
@@ -1703,11 +1814,12 @@ function businessOrderMarkup(order) {
           ? '<p class="form-hint">Pedido cobrado por Mercado Pago: completá la devolución total desde Pagos para habilitar la cancelación.</p>'
           : '')}
       </div>
-      ${canAssignRider ? `
+      ${riderOfferMarkup(offer)}
+      ${canAssignRider && !offerPending ? `
         <div class="production-rider-assignment">
           ${riderOptions ? `
             <label>
-              <span>${current === 'assigned' ? 'Reasignar rider' : 'Asignar rider'}</span>
+              <span>${riderAssignmentLabel(current)}</span>
               <select data-production-rider-select>
                 ${riderOptions}
               </select>
@@ -1716,8 +1828,11 @@ function businessOrderMarkup(order) {
               class="secondary-button compact"
               type="button"
               data-production-business-assign="${escapeAttribute(order.id)}"
-            >${current === 'assigned' ? 'Reasignar' : 'Asignar'}</button>
+            >${riderAssignmentAction(current)}</button>
           ` : '<p class="form-hint">No hay riders activos habilitados para asignar.</p>'}
+          ${activeBusinessRiders.length && activeBusinessRiders.every((rider) => rider.atCapacity)
+            ? '<p class="form-hint">Todos los riders están con 3 entregas activas. Esperá a que liberen una.</p>'
+            : ''}
         </div>
       ` : ''}
     </article>
@@ -1864,6 +1979,42 @@ function riderOrderMarkup(order) {
         : ''}
     </article>
   `;
+}
+
+// El contrato de oferta es opcional a propósito: los repositorios de demo y de
+// sandbox no lo tienen, y el Panel tiene que seguir funcionando ahí con la
+// asignación directa de siempre.
+function supportsRiderOffers() {
+  return typeof repository?.offerOrderToRider === 'function'
+    && typeof repository?.listRiderOrderOffers === 'function';
+}
+
+async function refreshActiveBusinessRiders() {
+  if (typeof repository?.listActiveRiders !== 'function') return;
+  const result = await repository.listActiveRiders();
+  activeBusinessRiders = result?.ok && Array.isArray(result.riders) ? result.riders : activeBusinessRiders;
+}
+
+async function refreshRiderOrderOffers() {
+  if (!supportsRiderOffers()) {
+    riderOrderOffers = [];
+    return;
+  }
+  const result = await repository.listRiderOrderOffers();
+  riderOrderOffers = result?.ok && Array.isArray(result.offers) ? result.offers : [];
+}
+
+/** Oferta vigente de un pedido: la pendiente si la hay, si no la última resuelta. */
+function riderOfferForOrder(order) {
+  if (!order) return null;
+  const matches = riderOrderOffers.filter((offer) => (
+    offer.orderId === order.backendId
+    || offer.orderId === order.id
+    || offer.publicCode === order.code
+    || offer.publicCode === order.id
+  ));
+  if (!matches.length) return null;
+  return matches.find((offer) => offer.status === 'pending') || matches[0];
 }
 
 async function refreshRiderOrders() {

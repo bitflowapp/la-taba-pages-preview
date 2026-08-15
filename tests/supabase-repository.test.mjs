@@ -612,9 +612,27 @@ test('lista un directorio minimo de riders activos para asignacion de negocio', 
   const result = await repository.listActiveRiders();
 
   assert.equal(result.ok, true);
+  // El directorio ahora carga capacidad. Sigue siendo mínimo: nombre visible y
+  // cuántas entregas tiene encima, nada de contacto. Con un backend que todavía
+  // no publica las columnas, la capacidad llega en `null` y el Panel no la
+  // dibuja, en vez de inventar un número.
   assert.deepEqual(result.riders, [
-    { id: RIDER_ID, displayName: 'Rider Norte' },
-    { id: SECOND_RIDER_ID, displayName: 'Rider Sur' },
+    {
+      id: RIDER_ID,
+      displayName: 'Rider Norte',
+      activeOrders: null,
+      maxActiveOrders: null,
+      pendingOffers: 0,
+      atCapacity: false,
+    },
+    {
+      id: SECOND_RIDER_ID,
+      displayName: 'Rider Sur',
+      activeOrders: null,
+      maxActiveOrders: null,
+      pendingOffers: 0,
+      atCapacity: false,
+    },
   ]);
   assert.deepEqual(
     mock.calls.rpc.find((call) => call.name === 'list_active_business_riders').args,
@@ -622,6 +640,70 @@ test('lista un directorio minimo de riders activos para asignacion de negocio', 
   );
   assert.equal(Object.hasOwn(result.riders[0], 'email'), false);
   assert.equal(Object.hasOwn(result.riders[0], 'phone'), false);
+});
+
+test('el Panel ofrece el pedido en vez de asignarlo, y el pedido no se mueve hasta que el rider acepte', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({ status: 'ready', assigned_rider_user_id: null });
+  const repository = makeRepository(mock);
+
+  const offered = await repository.offerOrderToRider(row.id, RIDER_ID, { expectedStatus: 'ready' });
+
+  assert.equal(offered.ok, true);
+  assert.match(offered.message, /Esperando la respuesta/i);
+  // La propiedad que sostiene la privacidad previa: ofrecer no escribe el rider
+  // en el pedido, así que el rider todavía no pasa can_access_order.
+  assert.equal(row.assigned_rider_user_id, null);
+  assert.equal(row.status, 'ready');
+  assert.deepEqual(
+    mock.calls.rpc.find((call) => call.name === 'offer_order_to_rider').args,
+    {
+      p_order_id: row.id,
+      p_expected_status: 'ready',
+      p_expected_rider_user_id: null,
+      p_new_rider_user_id: RIDER_ID,
+    },
+  );
+
+  const offers = await repository.listRiderOrderOffers();
+  assert.equal(offers.ok, true);
+  assert.equal(offers.offers.length, 1);
+  assert.equal(offers.offers[0].status, 'pending');
+  assert.equal(offers.offers[0].orderId, row.id);
+});
+
+test('dos operadores no pueden ofrecer el mismo pedido, y retirar la oferta lo libera', async () => {
+  const mock = createSupabaseClientMock();
+  const row = mock.seedOrder({ status: 'ready', assigned_rider_user_id: null });
+  const repository = makeRepository(mock);
+
+  const first = await repository.offerOrderToRider(row.id, RIDER_ID, { expectedStatus: 'ready' });
+  const second = await repository.offerOrderToRider(row.id, SECOND_RIDER_ID, { expectedStatus: 'ready' });
+
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, false);
+  assert.match(second.message, /Otro operador/i);
+
+  const withdrawn = await repository.withdrawRiderOffer(first.offerId);
+  assert.equal(withdrawn.ok, true);
+
+  const third = await repository.offerOrderToRider(row.id, SECOND_RIDER_ID, { expectedStatus: 'ready' });
+  assert.equal(third.ok, true);
+});
+
+test('un rider con tres entregas activas no admite una cuarta oferta', async () => {
+  const mock = createSupabaseClientMock();
+  for (let index = 0; index < 3; index += 1) {
+    mock.seedOrder({ status: 'assigned', assigned_rider_user_id: RIDER_ID });
+  }
+  const fourth = mock.seedOrder({ status: 'ready', assigned_rider_user_id: null });
+  const repository = makeRepository(mock);
+
+  const result = await repository.offerOrderToRider(fourth.id, RIDER_ID, { expectedStatus: 'ready' });
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /3 entregas activas/i);
+  assert.equal(fourth.assigned_rider_user_id, null);
 });
 
 test('lista una cola minimizada y el claim concurrente tiene un solo ganador', async () => {
@@ -2489,6 +2571,7 @@ function createSupabaseClientMock({
     // Replay idempotente de los RPC canónicos del rider, como
     // rider_delivery_operations en el servidor: (orderId, op, key) → resultado.
     riderOps: new Map(),
+    riderOffers: [],
   };
   const calls = { from: [], rpc: [], removeChannel: 0 };
   const channels = [];
@@ -2721,6 +2804,81 @@ function createSupabaseClientMock({
           error: null,
           status: 200,
         };
+      }
+      // ── Contrato de oferta multi-pedido ──────────────────────────────────
+      // Réplica del servidor en lo que el Panel puede observar: una oferta viva
+      // por pedido, rechazo terminal por rider, y capacidad de 3 derivada de los
+      // pedidos, no de un contador.
+      if (name === 'offer_order_to_rider') {
+        const row = db.orders.find((candidate) => candidate.id === args.p_order_id);
+        if (!row) return { data: null, error: { code: 'P0002', message: 'pedido inexistente' }, status: 400 };
+        const live = db.riderOffers.find((offer) => offer.order_id === row.id && offer.status === 'pending');
+        if (live) {
+          return {
+            data: {
+              ok: false,
+              code: live.rider_user_id === args.p_new_rider_user_id ? 'already_offered' : 'offer_in_flight',
+            },
+            error: null,
+            status: 200,
+          };
+        }
+        const rejected = db.riderOffers.some((offer) => (
+          offer.order_id === row.id
+          && offer.rider_user_id === args.p_new_rider_user_id
+          && offer.status === 'rejected'
+        ));
+        if (rejected) {
+          return { data: { ok: false, code: 'already_rejected_by_rider' }, error: null, status: 200 };
+        }
+        const active = db.orders.filter((candidate) => (
+          candidate.assigned_rider_user_id === args.p_new_rider_user_id
+          && ['assigned', 'picked_up', 'on_the_way', 'arrived'].includes(candidate.status)
+        )).length;
+        if (active >= 3) {
+          return {
+            data: { ok: false, code: 'rider_at_capacity', active_orders: active, max_active_orders: 3 },
+            error: null,
+            status: 200,
+          };
+        }
+        const offer = {
+          offer_id: `00000000-0000-4000-8000-${String(db.riderOffers.length + 1).padStart(12, '0')}`,
+          order_id: row.id,
+          public_code: row.public_code,
+          rider_user_id: args.p_new_rider_user_id,
+          rider_display_name: 'Rider Norte',
+          status: 'pending',
+          version: 1,
+          offered_at: new Date().toISOString(),
+          responded_at: null,
+          response_reason: null,
+        };
+        db.riderOffers.push(offer);
+        return {
+          data: {
+            ok: true,
+            code: 'offered',
+            offer_id: offer.offer_id,
+            rider_active_orders: active,
+            rider_max_active_orders: 3,
+          },
+          error: null,
+          status: 200,
+        };
+      }
+      if (name === 'withdraw_rider_order_offer') {
+        const offer = db.riderOffers.find((candidate) => candidate.offer_id === args.p_offer_id);
+        if (!offer || offer.status !== 'pending') {
+          return { data: { ok: false, code: 'offer_not_pending' }, error: null, status: 200 };
+        }
+        offer.status = 'withdrawn';
+        offer.responded_at = new Date().toISOString();
+        offer.version += 1;
+        return { data: { ok: true, code: 'withdrawn', offer_id: offer.offer_id }, error: null, status: 200 };
+      }
+      if (name === 'list_rider_order_offers') {
+        return { data: db.riderOffers.map((offer) => ({ ...offer })), error: null, status: 200 };
       }
       if (name === 'claim_delivery_order') {
         // Réplica del contrato canónico: jsonb {ok, code}, replay idempotente

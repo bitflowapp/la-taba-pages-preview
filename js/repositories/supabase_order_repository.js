@@ -1586,7 +1586,10 @@ export function createSupabaseOrderRepository({
       if (!data?.ok) {
         return riderContractRefusal(data, {
           not_available: 'El pedido ya no está disponible para reparto.',
+          // `active_delivery_exists` es el código anterior al contrato
+          // multi-pedido. Se conserva mapeado para no romper una app instalada.
           active_delivery_exists: 'Ya tenés una entrega activa. Terminala antes de tomar otra.',
+          at_capacity: 'Ya tenés 3 entregas activas. Completá una antes de tomar otra.',
           stale_revision: 'La cola cambió; actualizá los pedidos listos antes de tomar uno.',
           taken_by_other: 'Otro rider tomó este pedido primero.',
         }, 'No pudimos asignarte el pedido.');
@@ -1691,6 +1694,77 @@ export function createSupabaseOrderRepository({
     },
     async reassignRider(orderId, riderId, options = {}) {
       return repository.assignRider(orderId, riderId, options);
+    },
+    // El Panel OFRECE. No escribe el rider en el pedido: eso lo hace la
+    // aceptación del Rider, y hasta entonces el pedido sigue `ready` y sin
+    // dueño, así que puede ofrecerse a otro sin revertir nada.
+    async offerOrderToRider(orderId, riderId, {
+      expectedStatus = null,
+      expectedRiderId = undefined,
+    } = {}) {
+      if (!isUuid(riderId)) {
+        return repositoryResult(false, { message: 'Seleccioná un rider autenticado válido.' });
+      }
+      const row = await fetchOrderByPublicId(orderId);
+      if (!row) {
+        return repositoryResult(false, { message: 'Pedido no encontrado o acceso denegado.' });
+      }
+      const currentRiderId = isUuid(row.assigned_rider_user_id) ? row.assigned_rider_user_id : null;
+      const cleanExpectedRiderId = expectedRiderId === undefined
+        ? currentRiderId
+        : isUuid(expectedRiderId) ? expectedRiderId : null;
+      const { data, error, status } = await client.rpc('offer_order_to_rider', {
+        p_order_id: row.id,
+        p_expected_status: normalizeWorkflowStatus(expectedStatus || row.status),
+        p_expected_rider_user_id: cleanExpectedRiderId,
+        p_new_rider_user_id: riderId,
+      });
+      if (error) {
+        return failedQuery(error, status, readableRiderAssignmentError(error));
+      }
+      if (!data?.ok) {
+        return riderContractRefusal(data, {
+          rider_at_capacity: 'Ese rider ya tiene 3 entregas activas. Elegí otro o esperá a que libere una.',
+          already_offered: 'Ya le ofreciste este pedido a ese rider. Está esperando su respuesta.',
+          offer_in_flight: 'Otro operador ya le ofreció este pedido a un rider. Retirá esa oferta antes de cambiarla.',
+          already_rejected_by_rider: 'Ese rider ya rechazó este pedido. Elegí otro.',
+        }, 'No pudimos ofrecer el pedido.');
+      }
+      return repositoryResult(true, {
+        offerId: sanitizeText(data.offer_id, { maxLength: 80 }),
+        riderActiveOrders: Number(data.rider_active_orders ?? 0),
+        riderMaxActiveOrders: Number(data.rider_max_active_orders ?? 0),
+        message: 'Pedido ofrecido. Esperando la respuesta del rider.',
+      });
+    },
+    async withdrawRiderOffer(offerId) {
+      if (!isUuid(offerId)) {
+        return repositoryResult(false, { message: 'Oferta inválida.' });
+      }
+      const { data, error, status } = await client.rpc('withdraw_rider_order_offer', {
+        p_offer_id: offerId,
+      });
+      if (error) {
+        return failedQuery(error, status, readableRiderAssignmentError(error));
+      }
+      if (!data?.ok) {
+        return riderContractRefusal(data, {
+          offer_not_pending: 'Esa oferta ya se resolvió.',
+        }, 'No pudimos retirar la oferta.');
+      }
+      return repositoryResult(true, { message: 'Oferta retirada. Podés ofrecérsela a otro rider.' });
+    },
+    async listRiderOrderOffers() {
+      const { data, error, status } = await client.rpc('list_rider_order_offers', {
+        p_business_id: businessId,
+      });
+      if (error) {
+        return failedQuery(error, status, 'No pudimos cargar el estado de las ofertas a riders.');
+      }
+      const offers = (Array.isArray(data) ? data : [])
+        .map(normalizeRiderOrderOffer)
+        .filter(Boolean);
+      return repositoryResult(true, { offers });
     },
     // confirm_order_delivery quedó con execute revocado por migración; el
     // contrato vivo es confirm_delivery_code, que exige revisión y clave.
@@ -2752,9 +2826,42 @@ function normalizeActiveRider(row = {}) {
   const id = sanitizeText(row.rider_user_id || row.id, { maxLength: 80 });
   if (!isUuid(id)) return null;
   const fallback = `Rider ${id.slice(-8).toUpperCase()}`;
+  // La capacidad la calcula el servidor en cada lectura. Acá se copia para
+  // dibujarla, y para nada más: quien decide si entra un pedido más es el
+  // backend, en el momento de la aceptación.
+  const maxActive = Number.isFinite(Number(row.max_active_orders))
+    ? Number(row.max_active_orders)
+    : null;
+  const active = Number.isFinite(Number(row.active_orders))
+    ? Number(row.active_orders)
+    : null;
   return {
     id,
     displayName: sanitizeText(row.display_name, { fallback, maxLength: 80 }),
+    activeOrders: active,
+    maxActiveOrders: maxActive,
+    pendingOffers: Number.isFinite(Number(row.pending_offers)) ? Number(row.pending_offers) : 0,
+    atCapacity: active !== null && maxActive !== null && active >= maxActive,
+  };
+}
+
+function normalizeRiderOrderOffer(row = {}) {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) return null;
+  const offerId = sanitizeText(row.offer_id, { maxLength: 80 });
+  const orderId = sanitizeText(row.order_id, { maxLength: 80 });
+  if (!isUuid(offerId) || !isUuid(orderId)) return null;
+  const riderId = sanitizeText(row.rider_user_id, { maxLength: 80 });
+  return {
+    offerId,
+    orderId,
+    publicCode: sanitizeText(row.public_code, { maxLength: 80 }),
+    riderId: isUuid(riderId) ? riderId : null,
+    riderDisplayName: sanitizeText(row.rider_display_name, { fallback: 'Rider', maxLength: 80 }),
+    status: sanitizeText(row.status, { maxLength: 24 }),
+    version: normalizeOrderRevision(row.version),
+    offeredAt: sanitizeText(row.offered_at, { maxLength: 40 }),
+    respondedAt: sanitizeText(row.responded_at, { maxLength: 40 }),
+    reasonCode: sanitizeText(row.response_reason, { maxLength: 40 }),
   };
 }
 

@@ -1,0 +1,119 @@
+TABA2 · PRODUCTION BACKEND REMEDIATION · APPLY LOG (sanitizado)
+================================================================
+
+Sin secretos. No aparecen tokens, contrasenas, claves ni cadenas de conexion.
+La CLI se autentica con su token guardado en el Credential Manager de Windows y
+crea un rol de login temporal por operacion; en ningun momento se leyo,
+imprimio ni exporto ese secreto.
+
+--- CONFIRMACION DE DESTINO -------------------------------------------------
+TARGET NAME = la-taba-production
+TARGET REF  = wwcpogltfgzgkrlilbcd
+TARGET HOST = wwcpogltfgzgkrlilbcd.supabase.co
+STAGING REF = ukxqbgswjlibmnjemrzd (DIFFERENT)
+
+--- TARGET GUARD ------------------------------------------------------------
+$ node scripts/assert-production-supabase-target.mjs \
+    --ref wwcpogltfgzgkrlilbcd \
+    --url https://wwcpogltfgzgkrlilbcd.supabase.co \
+    --category "db push"
+--- TARGET GUARD ---
+  TARGET NAME     : la-taba-production
+  TARGET REF      : wwcpogltfgzgkrlilbcd
+  TARGET HOST     : db.wwcpogltfgzgkrlilbcd.supabase.co
+  COMMAND CATEGORY: db push
+  LINKED REF      : wwcpogltfgzgkrlilbcd
+  RESULTADO       : PASS (A, B, C, D, E)
+GUARD EXIT=0
+
+--- LEDGER REMOTO ANTES -----------------------------------------------------
+$ supabase migration list --linked
+remote count: 100
+remote first: 20260531030000
+remote last : 20260815020000
+
+LOCAL BASE MIGRATIONS = 100
+LOCAL NEW MIGRATIONS  = 3 -> 20260816120000, 20260816121000, 20260816122000
+base missing in remote: []
+remote not in base    : []
+BASE == REMOTE EXACT  = true
+
+--- DRY RUN -----------------------------------------------------------------
+$ supabase db push --linked --dry-run
+Initialising login role...
+DRY RUN: migrations will *not* be pushed to the database.
+Connecting to remote database...
+Would push these migrations:
+ - 20260816120000_production_qa_surface_remediation.sql
+ - 20260816121000_fiscal_profile_events_least_privilege.sql
+ - 20260816122000_security_definer_anon_least_privilege.sql
+{"upToDate":false,"dryRun":true,
+ "migrations":["20260816120000_production_qa_surface_remediation.sql",
+               "20260816121000_fiscal_profile_events_least_privilege.sql",
+               "20260816122000_security_definer_anon_least_privilege.sql"],
+ "seeds":[],"roles":[],"message":"Finished supabase db push."}
+
+  seeds = []   roles = []   -> no seed, no roles, no reaplicacion de las 100.
+
+--- APPLY -------------------------------------------------------------------
+start=2026-08-16T15:43:03Z
+$ supabase db push --linked --yes
+Initialising login role...
+Connecting to remote database...
+Do you want to push these migrations to the remote database?
+ - 20260816120000_production_qa_surface_remediation.sql
+ - 20260816121000_fiscal_profile_events_least_privilege.sql
+ - 20260816122000_security_definer_anon_least_privilege.sql
+ [Y/n] y
+Applying migration 20260816120000_production_qa_surface_remediation.sql...
+Applying migration 20260816121000_fiscal_profile_events_least_privilege.sql...
+Applying migration 20260816122000_security_definer_anon_least_privilege.sql...
+end=2026-08-16T15:53:04Z
+
+NOTA HONESTA SOBRE ESTE LOG
+---------------------------
+El proceso quedo abierto y lo corto un `timeout 600` del invocador despues de
+que las tres migraciones ya se habian aplicado, asi que el log NO contiene la
+linea final "Finished supabase db push." y el codigo de salida quedo enmascarado
+por la tuberia. Por eso el resultado no se dio por bueno con el log: se verifico
+contra la base. Ver la seccion siguiente.
+
+--- VERIFICACION CONTRA LA BASE (no contra el log) --------------------------
+$ supabase db query --linked \
+    "select count(*)::int as ledger, max(version) as last from supabase_migrations.schema_migrations;"
+  ledger = 103
+  last   = 20260816122000
+
+Efectos verificados uno por uno (retrato completo en
+PRODUCTION-PORTRAIT-AFTER.json):
+
+  SECURITY DEFINER total          222 -> 220   (las 2 RPC QA borradas)
+  SECURITY DEFINER anon           18  -> 8
+  SECURITY DEFINER sin search_path 0  -> 0
+  funciones QA vivas              3   -> 1     (queda product_is_qa_fixture)
+  comentarios "STAGING ONLY"      2   -> 0
+  grants de escritura a cliente   8   -> 0
+  fiscal_profile_events anon      DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE -> (ninguno)
+  fiscal_profile_events auth      DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE -> SELECT
+  tablas / sin RLS                85 / 0 -> 85 / 0
+  policies                        66  -> 66
+  cron jobs activos               4   -> 4     (sin cambios, deliberado)
+  vault secrets                   0   -> 0
+  CREATE en public (anon/auth)    denegado -> denegado
+
+--- LEDGER REMOTO DESPUES ---------------------------------------------------
+LOCAL  : 103
+REMOTE : 103
+MISSING IN REMOTE: 0
+EXTRA IN REMOTE  : 0
+IDENTICAL ORDERED SET = true
+
+--- LO QUE NO SE HIZO -------------------------------------------------------
+migration repair            : NO
+db reset contra hosted      : NO
+insert manual en el ledger  : NO
+SQL copiado a mano          : NO
+seed                        : NO
+Edge Functions              : NO
+auth config                 : NO
+mutaciones sobre staging    : NO

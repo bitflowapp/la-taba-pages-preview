@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "target": "la-taba-production",
+  "ref": "wwcpogltfgzgkrlilbcd",
+  "question": "Cuales de las funciones SECURITY DEFINER ejecutables por anon tienen una razon funcional escrita, y cuales solo heredaron el privilegio.",
+  "method": [
+    "Se leyo el cuerpo real de las 18 desde el schema final, no el nombre.",
+    "Se busco cada nombre en todo el repositorio y en todas las ramas locales.",
+    "Se separo por evidencia documental: quienes tienen un `grant execute ... to anon` escrito en una migracion y quienes no tienen NINGUNA linea de grant.",
+    "Las que no tienen linea de grant llegaron a anon por el `GRANT EXECUTE ... TO PUBLIC` que PostgreSQL aplica por defecto a toda funcion nueva."
+  ],
+  "totals": {
+    "securityDefinerBefore": 222,
+    "securityDefinerAfter": 220,
+    "anonExecutableBefore": 18,
+    "anonExecutableAfter": 8,
+    "withoutFixedSearchPathBefore": 0,
+    "withoutFixedSearchPathAfter": 0
+  },
+  "classification": {
+    "A_PUBLIC_ANON_CONTRACT_REQUIRED": [
+      {
+        "function": "can_access_order(uuid)",
+        "purpose": "Decide si el llamador puede ver un pedido.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "anon, authenticated (grant explicito)",
+        "caller": "PRODUCTION RUNTIME - se evalua DENTRO de las policies 'production orders readable by owner' y 'production order items readable with order', ambas para {anon, authenticated}",
+        "needsAnon": true,
+        "risk": "Quitarle anon rompe el seguimiento publico de pedidos: una policy se evalua con el rol que consulta.",
+        "action": "SIN CAMBIOS"
+      },
+      {
+        "function": "get_public_order_tracking(text)",
+        "purpose": "Seguimiento publico por token, sin sesion.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "anon, authenticated (grant explicito, reafirmado en 8 migraciones)",
+        "caller": "PRODUCTION RUNTIME - pagina de seguimiento del cliente",
+        "needsAnon": true,
+        "risk": "Contrato publico deliberado; el token es la autorizacion.",
+        "action": "SIN CAMBIOS"
+      },
+      {
+        "function": "get_public_business_contact(uuid)",
+        "purpose": "Contacto publico del comercio.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "anon, authenticated (grant explicito)",
+        "caller": "PRODUCTION RUNTIME - vidriera publica",
+        "needsAnon": true,
+        "risk": "Bajo: expone solo lo que el comercio publica.",
+        "action": "SIN CAMBIOS"
+      },
+      {
+        "function": "commerce_availability(uuid, text, jsonb)",
+        "purpose": "Si el comercio acepta pedidos ahora.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "anon, authenticated (grant explicito)",
+        "caller": "PRODUCTION RUNTIME - vidriera publica",
+        "needsAnon": true,
+        "risk": "Bajo.",
+        "action": "SIN CAMBIOS"
+      },
+      {
+        "function": "list_business_combos(uuid)",
+        "purpose": "Combos publicados del catalogo.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "anon, authenticated (grant explicito)",
+        "caller": "PRODUCTION RUNTIME - catalogo publico",
+        "needsAnon": true,
+        "risk": "Bajo.",
+        "action": "SIN CAMBIOS"
+      },
+      {
+        "function": "resolve_business_combo(uuid, text, integer)",
+        "purpose": "Resuelve un combo para el carrito.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "anon, authenticated (grant explicito)",
+        "caller": "PRODUCTION RUNTIME - carrito publico",
+        "needsAnon": true,
+        "risk": "Bajo.",
+        "action": "SIN CAMBIOS"
+      },
+      {
+        "function": "scheduler_heartbeat()",
+        "purpose": "Reloj del barrido de alertas. Sin ningun dato de negocio.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "anon, authenticated, service_role (grant explicito con justificacion escrita en 20260810150000)",
+        "caller": "PRODUCTION RUNTIME - sonda externa sin credenciales",
+        "needsAnon": true,
+        "risk": "Deliberadamente anonima para que un monitor externo la vigile sin repartir secretos.",
+        "action": "SIN CAMBIOS"
+      },
+      {
+        "function": "check_scheduler_watchdog(text)",
+        "purpose": "Mide el atraso del barrido y abre/cierra la alerta.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "anon, authenticated, service_role (grant explicito con justificacion escrita)",
+        "caller": "PRODUCTION RUNTIME - sonda externa + trigger de trafico real",
+        "needsAnon": true,
+        "risk": "Mide contra la base y no confia en el llamador; escribe como mucho una vez por minuto. Un extrano no puede inventar ni silenciar una alerta.",
+        "action": "SIN CAMBIOS"
+      }
+    ],
+    "B_AUTHENTICATED_ONLY": [
+      {
+        "function": "authorize_fiscal_artifact_access(uuid, text)",
+        "purpose": "Autoriza ver/descargar/imprimir un artefacto fiscal.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "sin linea de grant; anon por GRANT TO PUBLIC por defecto",
+        "caller": "ADMIN TOOL - supabase/functions/fiscal-artifact-access reenvia el Authorization del usuario; js/repositories/supabase-fiscal-repository.js",
+        "needsAnon": false,
+        "risk": "Ya validaba has_business_role adentro, asi que anon recibia 42501. Pero distinguia 'artefacto inexistente' (P0002) de 'no autorizado' (42501): oraculo de existencia para un anonimo.",
+        "action": "REVOKE anon; GRANT authenticated"
+      },
+      {
+        "function": "list_fiscal_document_artifacts(uuid)",
+        "purpose": "Lista los artefactos fiscales del comercio.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "sin linea de grant; anon por defecto",
+        "caller": "ADMIN TOOL - Panel autenticado",
+        "needsAnon": false,
+        "risk": "Valida has_business_role adentro; el privilegio nunca hizo falta.",
+        "action": "REVOKE anon; GRANT authenticated"
+      },
+      {
+        "function": "request_fiscal_artifact_regeneration(uuid)",
+        "purpose": "Vuelve a encolar la generacion de un PDF fiscal.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "sin linea de grant; anon por defecto",
+        "caller": "ADMIN TOOL - Panel autenticado",
+        "needsAnon": false,
+        "risk": "Toma `for update` sobre fiscal_documents ANTES de comprobar el rol: un anonimo que adivinara un uuid podia retener un lock.",
+        "action": "REVOKE anon; GRANT authenticated"
+      },
+      {
+        "function": "request_fiscal_print_job(uuid, uuid, text, text, integer, text)",
+        "purpose": "Encola una impresion fiscal.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "sin linea de grant; anon por defecto",
+        "caller": "ADMIN TOOL - Panel autenticado",
+        "needsAnon": false,
+        "risk": "Valida has_business_role adentro.",
+        "action": "REVOKE anon; GRANT authenticated"
+      },
+      {
+        "function": "update_fiscal_print_job(uuid, text, text)",
+        "purpose": "Actualiza el estado de una impresion fiscal.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "sin linea de grant; anon por defecto",
+        "caller": "ADMIN TOOL - Panel autenticado",
+        "needsAnon": false,
+        "risk": "Valida has_business_role adentro.",
+        "action": "REVOKE anon; GRANT authenticated"
+      }
+    ],
+    "C_INTERNAL_SERVER_ONLY": [
+      {
+        "function": "assert_fiscal_execution_authorized()",
+        "purpose": "Trigger: impide ejecutar fiscalizacion sin autorizacion.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "sin linea de grant; anon/authenticated por defecto",
+        "caller": "PRODUCTION RUNTIME - 1 trigger",
+        "needsAnon": false,
+        "risk": "No invocable: PostgreSQL responde 'trigger functions can only be called as triggers' (medido como anon). El EXECUTE es residuo.",
+        "action": "REVOKE public, anon, authenticated"
+      },
+      {
+        "function": "assert_order_payment_modality()",
+        "purpose": "Trigger: valida la modalidad de pago del pedido.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "sin linea de grant",
+        "caller": "PRODUCTION RUNTIME - 1 trigger",
+        "needsAnon": false,
+        "risk": "No invocable.",
+        "action": "REVOKE public, anon, authenticated"
+      },
+      {
+        "function": "enqueue_authorized_fiscal_artifact()",
+        "purpose": "Trigger: encola el artefacto fiscal autorizado.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "sin linea de grant",
+        "caller": "PRODUCTION RUNTIME - 1 trigger",
+        "needsAnon": false,
+        "risk": "No invocable.",
+        "action": "REVOKE public, anon, authenticated"
+      },
+      {
+        "function": "enqueue_new_order_notification()",
+        "purpose": "Trigger: encola la notificacion de pedido nuevo.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "sin linea de grant",
+        "caller": "PRODUCTION RUNTIME - 1 trigger",
+        "needsAnon": false,
+        "risk": "No invocable.",
+        "action": "REVOKE public, anon, authenticated"
+      },
+      {
+        "function": "prevent_unverified_delivery()",
+        "purpose": "Trigger: impide entregar sin verificacion.",
+        "owner": "postgres",
+        "searchPath": "fijado",
+        "grantsBefore": "sin linea de grant",
+        "caller": "PRODUCTION RUNTIME - 1 trigger",
+        "needsAnon": false,
+        "risk": "No invocable.",
+        "action": "REVOKE public, anon, authenticated"
+      }
+    ],
+    "D_OBSOLETE": [],
+    "E_UNKNOWN_STOP": []
+  },
+  "note": "Revocar EXECUTE sobre una funcion de trigger no desconecta el trigger: PostgreSQL comprueba el privilegio al CREATE TRIGGER, no cuando dispara. Se certifica con una prueba que cuenta que las 5 siguen atadas a su trigger despues del revoke.",
+  "anonExecutableAfterList": [
+    "can_access_order",
+    "check_scheduler_watchdog",
+    "commerce_availability",
+    "get_public_business_contact",
+    "get_public_order_tracking",
+    "list_business_combos",
+    "resolve_business_combo",
+    "scheduler_heartbeat"
+  ]
+}

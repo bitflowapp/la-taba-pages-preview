@@ -1,0 +1,613 @@
+{
+  "schemaVersion": 1,
+  "scope": "base",
+  "description": "Las 100 migraciones historicas. Inmutables.",
+  "migrationCount": 100,
+  "expectedDigest": "e45f69cdb9c939e29620278450984cd2f4e42ad52cf79295470437c35f5cf2a9",
+  "migrationDigest": "e45f69cdb9c939e29620278450984cd2f4e42ad52cf79295470437c35f5cf2a9",
+  "digestMatchesProvisioning": true,
+  "first": "20260531030000_la_taba_phase1_orders.sql",
+  "last": "20260815020000_rider_order_offers.sql",
+  "migrations": [
+    {
+      "version": "20260531030000",
+      "filename": "20260531030000_la_taba_phase1_orders.sql",
+      "sha256": "729ee9d1f97fe1a83ff4e82a6448649503fb67cd79f7cdd11738250824f4c652",
+      "bytes": 8805
+    },
+    {
+      "version": "20260531040000",
+      "filename": "20260531040000_la_taba_phase1_hardening.sql",
+      "sha256": "d87fc0f0264976e532f8ead72a1386b9b8d035511e60aeba1e5fbba2d8ed97df",
+      "bytes": 5855
+    },
+    {
+      "version": "20260601205707",
+      "filename": "20260601205707_operational_orders_v1.sql",
+      "sha256": "a1d6a5b2f4c398847ad441d63d22a3c40b8d5c9a01cc44816cf986e98c50e383",
+      "bytes": 22480
+    },
+    {
+      "version": "20260725030000",
+      "filename": "20260725030000_taba_production_orders.sql",
+      "sha256": "1824f10cfd75ae3cd96396f2db2c7e7225882d4e0fb8831d0840af66e1b9a0b0",
+      "bytes": 53017
+    },
+    {
+      "version": "20260725050000",
+      "filename": "20260725050000_tracking_rider_privacy.sql",
+      "sha256": "3d8c67c668f37bffef379cfa87f581d9541be50efb848d6d6eb46cb471e2c322",
+      "bytes": 6065
+    },
+    {
+      "version": "20260725060000",
+      "filename": "20260725060000_alcohol_reservations_abuse.sql",
+      "sha256": "1cb8d19b9ceefe67a8463c45f0890cfe27be8a8a844e5805769e7ec3b175b8d6",
+      "bytes": 6055
+    },
+    {
+      "version": "20260725070000",
+      "filename": "20260725070000_catalog_category_authority.sql",
+      "sha256": "5a1e158c6d0907ce091483b2109e2a1e7e878b2d3ffebf429b181e040042cba6",
+      "bytes": 4036
+    },
+    {
+      "version": "20260725080000",
+      "filename": "20260725080000_rider_assignment_tracking_gate.sql",
+      "sha256": "e390266fcae4a9c21fb69cc301ceb95cb9f11095c62d6f846112e0270cbabfb6",
+      "bytes": 24593
+    },
+    {
+      "version": "20260725090000",
+      "filename": "20260725090000_delivery_handoff_code.sql",
+      "sha256": "b85566aa8f09d6700cb376125d76f26ad458f3f90269479d0cdada03af4ef0a0",
+      "bytes": 13602
+    },
+    {
+      "version": "20260725100000",
+      "filename": "20260725100000_tracking_handoff_recovery.sql",
+      "sha256": "4f3038da041f5ecabb5f17275a93936514408345b6fe6880bc2e878fa4703530",
+      "bytes": 16570
+    },
+    {
+      "version": "20260725110000",
+      "filename": "20260725110000_catalog_publication_authority.sql",
+      "sha256": "4cd1d1c52ca388fbac6b9752f99f1633045478940bca86c38f79cd753368e375",
+      "bytes": 37791
+    },
+    {
+      "version": "20260725120000",
+      "filename": "20260725120000_business_contact_authority.sql",
+      "sha256": "4d93bfbdaadebcf95673a2750278ac7c246202ba99b601c65a93ede4859bab9b",
+      "bytes": 7034
+    },
+    {
+      "version": "20260725130000",
+      "filename": "20260725130000_fix_tracking_token_regex.sql",
+      "sha256": "8372747f0253643eef0eb28ff38eb8d69c0e5fcd3bd0807da871d26852c644b2",
+      "bytes": 729
+    },
+    {
+      "version": "20260728090000",
+      "filename": "20260728090000_customer_profiles_addresses.sql",
+      "sha256": "3cdc2b9cf227bdf08a33326d2917df7c438ec87aeada356d2d298b7f2f9ea78d",
+      "bytes": 28887
+    },
+    {
+      "version": "20260729150000",
+      "filename": "20260729150000_customer_profile_completion.sql",
+      "sha256": "afaabc09c679072589a8488df7818b2f3ea02ecc22bfebd55ea07f2f93232d2e",
+      "bytes": 10602
+    },
+    {
+      "version": "20260729190000",
+      "filename": "20260729190000_customer_address_street_number_required.sql",
+      "sha256": "a9038f30e1873ed8708f19500d7eb63287b7a93fe4e61f7efecba35bf96de11e",
+      "bytes": 756
+    },
+    {
+      "version": "20260729203000",
+      "filename": "20260729203000_public_tracking_terminal_visibility.sql",
+      "sha256": "b38c4d7a20aa71f0ec0a5f82ed0c40a9804baf3f5d2f78922dde88594cab64be",
+      "bytes": 7407
+    },
+    {
+      "version": "20260731230000",
+      "filename": "20260731230000_staging_qa_fixture_catalog.sql",
+      "sha256": "5395bd730be61896156933026d346930e1f609db245f904d6b51afaf2af87562",
+      "bytes": 18255
+    },
+    {
+      "version": "20260731231000",
+      "filename": "20260731231000_staging_qa_product_verification.sql",
+      "sha256": "64d9d93d4b9f706b7c509ca5e7cafc29c8faeb7fc44c579a62b8b676bb788b3d",
+      "bytes": 1978
+    },
+    {
+      "version": "20260801020000",
+      "filename": "20260801020000_order_revision_and_event_sequence.sql",
+      "sha256": "28a442710d4a9b7abdae89d2bb102ac98cd798c5539bab04d6a8ca98f19f3652",
+      "bytes": 8860
+    },
+    {
+      "version": "20260801040000",
+      "filename": "20260801040000_rider_gps_tracking_gate2.sql",
+      "sha256": "397f2785c4d0a9ac8dcde09418cdf87a55fc88018d639fb701c4e7f580e65470",
+      "bytes": 28258
+    },
+    {
+      "version": "20260802090000",
+      "filename": "20260802090000_mercadopago_checkout_pro_foundation.sql",
+      "sha256": "02fdf8bca9db1fe494e649227a23967e870baa5f2194973fd1b5ac678644f8ea",
+      "bytes": 53763
+    },
+    {
+      "version": "20260802093000",
+      "filename": "20260802093000_mercadopago_checkout_pro_lifecycle.sql",
+      "sha256": "8ca962e693f02ce8f552e72cbbd85b94c84dd9aaac5612c72df0bb4f15a71a07",
+      "bytes": 62485
+    },
+    {
+      "version": "20260802094000",
+      "filename": "20260802094000_mercadopago_rate_limits.sql",
+      "sha256": "25662f1f3543a3a8011eaf79f5cf0a60bf137bb1f95ea29fb2e951f81ef15ea2",
+      "bytes": 2472
+    },
+    {
+      "version": "20260802100000",
+      "filename": "20260802100000_rider_delivery_server_contracts.sql",
+      "sha256": "6b7deccb96bdf3a61f1aa49c35aaeeb3f374818c00a5ac3a92954f84e5e4a3a2",
+      "bytes": 43175
+    },
+    {
+      "version": "20260802101000",
+      "filename": "20260802101000_rider_delivery_legacy_start_revocation.sql",
+      "sha256": "2a3d50dfc52277bc1ddc6796ac5496c2e4f200f985af4de927e3629fb63259c1",
+      "bytes": 627
+    },
+    {
+      "version": "20260802102000",
+      "filename": "20260802102000_rider_delivery_legacy_claim_gps_revocation.sql",
+      "sha256": "32ea3845c1249d6c1cb498a1a77f1c6fda7ded813ad87639146c087e00e9e767",
+      "bytes": 1437
+    },
+    {
+      "version": "20260802103000",
+      "filename": "20260802103000_rider_queue_read_lock_mode.sql",
+      "sha256": "03b6a0f243e61dca8dd181b910df5888defcd49cb282da82d1dda6a7f9f690cb",
+      "bytes": 541
+    },
+    {
+      "version": "20260802104000",
+      "filename": "20260802104000_rider_location_receipt_revision.sql",
+      "sha256": "e50d060a08afad930924a8c5459c881b9e5440e2b9b2abe077156b5fc4e40604",
+      "bytes": 5112
+    },
+    {
+      "version": "20260802160000",
+      "filename": "20260802160000_business_windows_scanner_fiscal.sql",
+      "sha256": "bc3ba44d64faeeafc117cbe3e3dfca5d0c58e28e17703cd8c64ac5458ed724af",
+      "bytes": 78977
+    },
+    {
+      "version": "20260802170000",
+      "filename": "20260802170000_fiscal_document_closure.sql",
+      "sha256": "40997629df153117c6dfae2900b5ec16a1703d2d3281fe6b044e622005954308",
+      "bytes": 68162
+    },
+    {
+      "version": "20260802171000",
+      "filename": "20260802171000_fiscal_document_closure_hardening.sql",
+      "sha256": "f22cffe9b1fe8d3c358993058f235affb5172ce38501126addabbae11bb460b7",
+      "bytes": 2500
+    },
+    {
+      "version": "20260802180000",
+      "filename": "20260802180000_production_operations_control_plane.sql",
+      "sha256": "3288635af3f52fb7c6bbdbc9bf00b19dc9f9ef70ab10118f7432eb306dc1b898",
+      "bytes": 51355
+    },
+    {
+      "version": "20260802200000",
+      "filename": "20260802200000_durable_offline_packing.sql",
+      "sha256": "89b8cc751e332dc82bf9433722f1a4abc1819bc3cbf15b9ed52f22e8a91b00cb",
+      "bytes": 12125
+    },
+    {
+      "version": "20260803120000",
+      "filename": "20260803120000_mercadopago_staging_worker_scheduler.sql",
+      "sha256": "bac3981d2c88c09b7f82eef30db5cb537d17bc9d52aa169f6180ac15afe5ac6e",
+      "bytes": 6313
+    },
+    {
+      "version": "20260803140000",
+      "filename": "20260803140000_payment_recovery_p0.sql",
+      "sha256": "44586f6885d86ae7b73f0447bf58269a2b7f67182e3377ede3825b05df32a072",
+      "bytes": 15669
+    },
+    {
+      "version": "20260804090000",
+      "filename": "20260804090000_business_operations_panel.sql",
+      "sha256": "9b24c60952b44cc18ba25e9ca18503fc057749b81d414e125a4823123d6a5f48",
+      "bytes": 35204
+    },
+    {
+      "version": "20260804093000",
+      "filename": "20260804093000_reconcile_business_operations_panel_version_collision.sql",
+      "sha256": "96b1f3c78b0ed62539002738c16037665fa1a1889a58679f9e713dbddca3eab5",
+      "bytes": 51439
+    },
+    {
+      "version": "20260805120000",
+      "filename": "20260805120000_fiscal_homologation_authorization_split.sql",
+      "sha256": "18b307b8b30865f6647669187ab65586b1ff4b5e587a60818d2aac329a704db2",
+      "bytes": 8485
+    },
+    {
+      "version": "20260806140000",
+      "filename": "20260806140000_mercadopago_provider_snapshot_contract.sql",
+      "sha256": "66c42d17880ce889758b980784583e3035deddf0f4b1ad49da928f617e7d9bc6",
+      "bytes": 10528
+    },
+    {
+      "version": "20260806150000",
+      "filename": "20260806150000_mercadopago_order_delivery_address_snapshot.sql",
+      "sha256": "115d3d0af5eb1d035374bea85bf0761de2a300346b360c71ca2c7edae05de70d",
+      "bytes": 7489
+    },
+    {
+      "version": "20260806160000",
+      "filename": "20260806160000_order_qa_origin_classification.sql",
+      "sha256": "c9eb5007818945da250b07d47d77ab16d71cfaa19edb185ee30d6118d1c0a56d",
+      "bytes": 17660
+    },
+    {
+      "version": "20260806170000",
+      "filename": "20260806170000_order_payment_modality_integrity.sql",
+      "sha256": "9d07af52189a77338ac1879e3e11ffb01307a6fa18cc1daca2ae06a883ea843a",
+      "bytes": 2981
+    },
+    {
+      "version": "20260806180000",
+      "filename": "20260806180000_checkout_expiry_stock_recovery.sql",
+      "sha256": "0d00cb63a6fe266339df73ec7169371a0b4c3de59f32a3de0bd7197ee1e0259b",
+      "bytes": 3135
+    },
+    {
+      "version": "20260806190000",
+      "filename": "20260806190000_operational_pipeline_projection.sql",
+      "sha256": "4e2c6bcc416c64456b4aceb85dadc1013a3ba2bb22e863fd46a084199b95d319",
+      "bytes": 7582
+    },
+    {
+      "version": "20260806200000",
+      "filename": "20260806200000_qa_orders_do_not_ring_the_panel.sql",
+      "sha256": "1740a801bf6d3868b6323d85ebb4763c540ac800b398179a256f1a0eb6aaaef4",
+      "bytes": 2608
+    },
+    {
+      "version": "20260806210000",
+      "filename": "20260806210000_manual_qa_reclassification.sql",
+      "sha256": "db75d01d858a7f14cc7762077ad71ce7f1ed720d4e2d8e7fff216c0932dcc705",
+      "bytes": 3846
+    },
+    {
+      "version": "20260806220000",
+      "filename": "20260806220000_rider_canonical_claim_excludes_qa.sql",
+      "sha256": "63a54c1db1def1f3688cb003da4d56758e3fcb870681b6c2c03993a33f7443c9",
+      "bytes": 3482
+    },
+    {
+      "version": "20260806230000",
+      "filename": "20260806230000_lock_down_classification_triggers.sql",
+      "sha256": "b1cffceec145ceeb9af1e278e1f2676dd8a89953778b27215aa753a9050815ba",
+      "bytes": 855
+    },
+    {
+      "version": "20260806240000",
+      "filename": "20260806240000_taba2_combo_catalog_contract.sql",
+      "sha256": "55f4d876a2948ee8858201a0b5e9980386372d42fa036dfcb097f048bd63ee30",
+      "bytes": 16326
+    },
+    {
+      "version": "20260806250000",
+      "filename": "20260806250000_taba2_combo_checkout_pricing.sql",
+      "sha256": "6e28c75b1403a496224745d189c9fc53f310ed62d09829451ba93140b49ff444",
+      "bytes": 39785
+    },
+    {
+      "version": "20260806260000",
+      "filename": "20260806260000_taba2_combo_preference_lines.sql",
+      "sha256": "ffd1858ccc97ec47f721a6a14564e4240dd4d00faf872c18a6eafb4fa82604dd",
+      "bytes": 8563
+    },
+    {
+      "version": "20260806270000",
+      "filename": "20260806270000_taba2_order_total_with_discount.sql",
+      "sha256": "d410a9bda184d559afcc9d87b1b64e05330c854839f4a6275f3096c4b0cd3235",
+      "bytes": 1440
+    },
+    {
+      "version": "20260807090000",
+      "filename": "20260807090000_business_panel_contract_hardening.sql",
+      "sha256": "dcc5673fe77e2482a7cfe0aa95924d41a6cf37a1b511ca6f93328bf7376402ec",
+      "bytes": 25203
+    },
+    {
+      "version": "20260807100000",
+      "filename": "20260807100000_order_events_type_in_business_commands.sql",
+      "sha256": "042d7bb6cb0f9216bc1325bd6ba54a3900c4cf373cc9a50b8d412cf93fab66d5",
+      "bytes": 9006
+    },
+    {
+      "version": "20260807155000",
+      "filename": "20260807155000_rider_map_location_contract_reconciliation.sql",
+      "sha256": "2f1e725101a49f3cff1be563f1b309eceb596d0fb610ff64cafb72d116e16a52",
+      "bytes": 19713
+    },
+    {
+      "version": "20260807160000",
+      "filename": "20260807160000_checkout_pro_delivery_coordinates.sql",
+      "sha256": "6f7f731fd5227d1d33707b9860b409545c2cf7d7dfee381c9dad5529653888d7",
+      "bytes": 39005
+    },
+    {
+      "version": "20260807170000",
+      "filename": "20260807170000_pickup_point_provenance.sql",
+      "sha256": "50b56efdbdcf110107124f5ed45f8798ca7a528a36975d9cdb888150c893fded",
+      "bytes": 5439
+    },
+    {
+      "version": "20260808190000",
+      "filename": "20260808190000_delivery_location_confirmation.sql",
+      "sha256": "55cc19b678c9fb1570ec64029688a668b6adda0599bdd829edec6ba0059831e5",
+      "bytes": 34412
+    },
+    {
+      "version": "20260808191000",
+      "filename": "20260808191000_checkout_pro_delivery_location_confirmation.sql",
+      "sha256": "0e9e2b367b32096e76b06bba89ad185ce8cff70e78e455c02fe7985734d5b31c",
+      "bytes": 41736
+    },
+    {
+      "version": "20260809050000",
+      "filename": "20260809050000_commercial_catalog_price_and_stock_batch.sql",
+      "sha256": "362996a53e0c040d501503f47e04016d0d00967069e548e94cf1e321d633057a",
+      "bytes": 12163
+    },
+    {
+      "version": "20260809060000",
+      "filename": "20260809060000_commercial_price_and_stock_contract.sql",
+      "sha256": "103e1c41d6369ba5b95765123bb24044564209711afbff3815d75e1b579f73a1",
+      "bytes": 7288
+    },
+    {
+      "version": "20260809070000",
+      "filename": "20260809070000_commercial_batch_price_status.sql",
+      "sha256": "054f2ba117437df78ed9babe395293e81b8ac93f06a01723b1f5e68cae411cfe",
+      "bytes": 12075
+    },
+    {
+      "version": "20260809180000",
+      "filename": "20260809180000_checkout_provider_truth_sweep.sql",
+      "sha256": "797fec21f66e74359844d29ada4f82606a324a1d3d60d362f9f4a4b06a1d18a8",
+      "bytes": 10264
+    },
+    {
+      "version": "20260809190000",
+      "filename": "20260809190000_operational_alerts_intake_and_dispatch.sql",
+      "sha256": "d08199b72951eac582b9fa76aeaf15f7ffe7bceb5901ea06390bad6820fe9747",
+      "bytes": 18653
+    },
+    {
+      "version": "20260809200000",
+      "filename": "20260809200000_operator_reconcile_without_payment_id.sql",
+      "sha256": "1ca8f9293a319645b9a4e77cfe691864e787f9816d730ee4925cd02e8e95f3d6",
+      "bytes": 11261
+    },
+    {
+      "version": "20260809210000",
+      "filename": "20260809210000_recover_paid_checkout_order.sql",
+      "sha256": "adc8365e825cb7b48fd03d705a96286d05bb11c128b76a5b6112108c6b2d359b",
+      "bytes": 7801
+    },
+    {
+      "version": "20260809220000",
+      "filename": "20260809220000_resolve_security_review.sql",
+      "sha256": "78bd1634f7f23a925086b905b4d3387ab0e1f864b7f61b4ff13e60cc910648f8",
+      "bytes": 3957
+    },
+    {
+      "version": "20260810120000",
+      "filename": "20260810120000_autonomous_operational_alert_evaluation.sql",
+      "sha256": "2262fe3e1b30ca42ad1de0e289b91d8348377c30ba4a30eb270cbc8584d21b5e",
+      "bytes": 33316
+    },
+    {
+      "version": "20260810130000",
+      "filename": "20260810130000_operational_health_surface.sql",
+      "sha256": "8f43fa2a1c868a5c656ff8ea4475b24c63d487ac11541d0d398fc61475bd986b",
+      "bytes": 21317
+    },
+    {
+      "version": "20260810140000",
+      "filename": "20260810140000_scheduler_stalled_needs_history.sql",
+      "sha256": "8f0556f1ba36def3ddb3fe513fc2c1a3cf5ea4a75e0ff257b4caa2027258ecd7",
+      "bytes": 20614
+    },
+    {
+      "version": "20260810150000",
+      "filename": "20260810150000_scheduler_watchdog.sql",
+      "sha256": "2dfb14da62168272387f060205699fb5c78b5dc1d87b60f4f1a313d8a1c13195",
+      "bytes": 11125
+    },
+    {
+      "version": "20260811020000",
+      "filename": "20260811020000_public_tracking_canonical_capture_order.sql",
+      "sha256": "49fb2c9a16325cb315d6b1c94e283de6087ede22865ee3cd6d53be3fdda00a44",
+      "bytes": 6769
+    },
+    {
+      "version": "20260812010000",
+      "filename": "20260812010000_identity_core_model.sql",
+      "sha256": "d64fa1662c950059139807cf9ce719aa3f8cb08f5aba9b85073155f4cf372883",
+      "bytes": 13286
+    },
+    {
+      "version": "20260812020000",
+      "filename": "20260812020000_identity_sessions_and_audit.sql",
+      "sha256": "cf71a79a076c0a6b7a438f79b3dc8e819c829148f9c98e90ee3db759d3fef926",
+      "bytes": 7965
+    },
+    {
+      "version": "20260812030000",
+      "filename": "20260812030000_identity_authorization_gate.sql",
+      "sha256": "15d92d3aa3ddf83a685d55fc853baf6e5f11f5739dd066f29aaa51474e5afec0",
+      "bytes": 10513
+    },
+    {
+      "version": "20260812040000",
+      "filename": "20260812040000_identity_session_lifecycle.sql",
+      "sha256": "20844f409b518cf9245e0b3c6d69f3c01c66ce07c7688b24720b7784c0066bf7",
+      "bytes": 10462
+    },
+    {
+      "version": "20260812050000",
+      "filename": "20260812050000_identity_invitations.sql",
+      "sha256": "53f23848cd049c4ea1f1b05575de11993de5f67732d2a17155596f8f3706a715",
+      "bytes": 13274
+    },
+    {
+      "version": "20260812060000",
+      "filename": "20260812060000_identity_admin_surface.sql",
+      "sha256": "54c6436cbccf3596f84b1734087774f4c25e5444cec2a5037398443b255752d8",
+      "bytes": 19400
+    },
+    {
+      "version": "20260812070000",
+      "filename": "20260812070000_identity_audit_survives_deletion.sql",
+      "sha256": "76a26bfba9e2cc7461f2f20931778e821235e3de76c32e8cebaa237685c847d6",
+      "bytes": 2579
+    },
+    {
+      "version": "20260812080000",
+      "filename": "20260812080000_identity_membership_guard_sees_the_real_caller.sql",
+      "sha256": "d00e0e37b04355df540a0b40544b52531b3daf93f55fed5de916aca05aa4ec89",
+      "bytes": 3229
+    },
+    {
+      "version": "20260812090000",
+      "filename": "20260812090000_rider_rpcs_consult_the_gate.sql",
+      "sha256": "751d377a1dc0b93a9e7367afc81af4956891fa4fdf1b79f8235353f322380fe9",
+      "bytes": 5327
+    },
+    {
+      "version": "20260812100000",
+      "filename": "20260812100000_active_delivery_checks_the_session_first.sql",
+      "sha256": "2b3297810b01f2278566341f7c2bd5e638f23f6bafef695e615ed41b4bffd6a1",
+      "bytes": 2468
+    },
+    {
+      "version": "20260812110000",
+      "filename": "20260812110000_assign_order_rider_uses_the_gate.sql",
+      "sha256": "7add638ca623a59021c49a5d49897270ff9bed28396a1d7079109f24c963c6a5",
+      "bytes": 6255
+    },
+    {
+      "version": "20260812200000",
+      "filename": "20260812200000_business_operations_hours_and_delivery_zones.sql",
+      "sha256": "1889cf72409062ea70d068853aecced41819103e9b4fb97afafe56e2cca5eff7",
+      "bytes": 30235
+    },
+    {
+      "version": "20260812210000",
+      "filename": "20260812210000_business_operations_resolution.sql",
+      "sha256": "06ebfb9837363852912cd64d334ee0bc165ec20f9411dd333f11d3105450ace8",
+      "bytes": 21127
+    },
+    {
+      "version": "20260812220000",
+      "filename": "20260812220000_business_operations_checkout_enforcement.sql",
+      "sha256": "a8464744c54651a4e6a48269b2e5b1d82028035a99abbccc6afb73f46e5d7339",
+      "bytes": 67362
+    },
+    {
+      "version": "20260812230000",
+      "filename": "20260812230000_business_operations_panel_rpcs.sql",
+      "sha256": "d2e9b24d3831a34d3b74ff384a44c44dc243b0504add3ebd75a362ce79b32b0a",
+      "bytes": 34709
+    },
+    {
+      "version": "20260812240000",
+      "filename": "20260812240000_customer_address_declared_neighborhood.sql",
+      "sha256": "6e39ce488eed17b031928984d51d9899ae65627717d0aad3b120042301f15422",
+      "bytes": 12998
+    },
+    {
+      "version": "20260813010000",
+      "filename": "20260813010000_pos_last_unit_keeps_availability_contract.sql",
+      "sha256": "4bcf37c90eb0e4bba4c01c271a0fb60eca2ccbe0b6f0a915876989ee2f040a72",
+      "bytes": 7579
+    },
+    {
+      "version": "20260813020000",
+      "filename": "20260813020000_checkout_pro_carries_customer_notes.sql",
+      "sha256": "b19f6e0301f0e1ac956095b833a58cb7dbaa7ef7d4152571c1f04ffdadada93b",
+      "bytes": 46984
+    },
+    {
+      "version": "20260813030000",
+      "filename": "20260813030000_public_tracking_restores_terminal_window.sql",
+      "sha256": "4c96d23cb9f0475b858212a97661056c88ac1a90014fd9a8111bf6e1d84d1e3f",
+      "bytes": 7943
+    },
+    {
+      "version": "20260814010000",
+      "filename": "20260814010000_public_tracking_publishes_gps_quality.sql",
+      "sha256": "24794c6d4ba8794081f9d7cee5b9f7d1875bba1efe47c627da091dd8a5114ed6",
+      "bytes": 11688
+    },
+    {
+      "version": "20260814020000",
+      "filename": "20260814020000_daily_reconciliation_uses_business_timezone.sql",
+      "sha256": "98c68184037ccce478287aab7c6bf3421f8eaae69548a8944cef8301ea1a6278",
+      "bytes": 12641
+    },
+    {
+      "version": "20260814030000",
+      "filename": "20260814030000_identity_requires_registered_session.sql",
+      "sha256": "d2a7471e0baf5f5454a0b8b658fcbc2cf49bf3fd168c14175979a610d27d9ee6",
+      "bytes": 5931
+    },
+    {
+      "version": "20260814040000",
+      "filename": "20260814040000_paid_orders_require_payment_refund.sql",
+      "sha256": "aa09ba0b5c5cfc50d4da4baaf07fe8cb1d52256e6b9747af9dc13dd7ee4ed940",
+      "bytes": 6745
+    },
+    {
+      "version": "20260814050000",
+      "filename": "20260814050000_back_office_reads_exclude_riders.sql",
+      "sha256": "28c2824d9f869ef5c5d590cbc6e9b2fea8b85c1d63b9a624c7eab738c5b3a564",
+      "bytes": 13734
+    },
+    {
+      "version": "20260814060000",
+      "filename": "20260814060000_commercial_contract_remediation_is_private.sql",
+      "sha256": "c408aa851523a86ae386d6174116ade56d3a0fbadab0a192a2dc7dd0a8334339",
+      "bytes": 3293
+    },
+    {
+      "version": "20260815010000",
+      "filename": "20260815010000_rider_active_order_capacity.sql",
+      "sha256": "5db4fe475e4de9734e36fda05fc10c37e430a7976a183bc979f1794563691b71",
+      "bytes": 17733
+    },
+    {
+      "version": "20260815020000",
+      "filename": "20260815020000_rider_order_offers.sql",
+      "sha256": "a19f2cdf37ef7a811197e55d4b28c8b5550e68ab837ba2415725012cd54b048d",
+      "bytes": 38455
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "client_write_grants": [
+    {
+      "grantee": "anon",
+      "privilege": "DELETE",
+      "table": "fiscal_profile_events"
+    },
+    {
+      "grantee": "anon",
+      "privilege": "INSERT",
+      "table": "fiscal_profile_events"
+    },
+    {
+      "grantee": "anon",
+      "privilege": "TRUNCATE",
+      "table": "fiscal_profile_events"
+    },
+    {
+      "grantee": "anon",
+      "privilege": "UPDATE",
+      "table": "fiscal_profile_events"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege": "DELETE",
+      "table": "fiscal_profile_events"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege": "INSERT",
+      "table": "fiscal_profile_events"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege": "TRUNCATE",
+      "table": "fiscal_profile_events"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege": "UPDATE",
+      "table": "fiscal_profile_events"
+    }
+  ],
+  "counts": {
+    "rls_enabled": 85,
+    "rls_missing": 0,
+    "tables": 85
+  },
+  "cron_jobs": [
+    {
+      "active": true,
+      "command": "select public.dispatch_payment_outbox_worker('cron');",
+      "jobname": "taba-payment-outbox-worker",
+      "schedule": "30 seconds"
+    },
+    {
+      "active": true,
+      "command": "select public.sweep_expired_checkout_sessions();",
+      "jobname": "taba-checkout-expiry-sweep",
+      "schedule": "* * * * *"
+    },
+    {
+      "active": true,
+      "command": "select public.enqueue_checkout_provider_probes();",
+      "jobname": "taba-checkout-provider-truth-sweep",
+      "schedule": "* * * * *"
+    },
+    {
+      "active": true,
+      "command": "select public.evaluate_operational_alerts_sweep();",
+      "jobname": "taba-operational-alerts-sweep",
+      "schedule": "* * * * *"
+    }
+  ],
+  "data_counts": {
+    "auth_users": 0,
+    "businesses": 1,
+    "catalog_assets": 0,
+    "customers": 0,
+    "fiscal_profile_events": 0,
+    "operational_sweep_runs": 537,
+    "order_items": 0,
+    "orders": 0,
+    "payment_intents": 0,
+    "products": 0,
+    "rider_locations": 0,
+    "rider_order_offers": 0,
+    "riders": 0,
+    "storage_objects": 0
+  },
+  "fiscal_profile_events_grants": {
+    "anon": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE",
+    "authenticated": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE",
+    "service_role": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+  },
+  "ledger": 100,
+  "ledger_last": "20260815020000",
+  "policies": 66,
+  "qa_surface": [
+    {
+      "anon": false,
+      "authenticated": true,
+      "name": "import_qa_fixture_catalog"
+    },
+    {
+      "anon": false,
+      "authenticated": true,
+      "name": "product_is_qa_fixture"
+    },
+    {
+      "anon": false,
+      "authenticated": true,
+      "name": "publish_qa_fixture_product"
+    }
+  ],
+  "schema_create": {
+    "anon_public": false,
+    "authenticated_public": false
+  },
+  "security_definer": {
+    "anon_execute": 18,
+    "total": 222,
+    "without_search_path": 0
+  },
+  "security_definer_anon_list": [
+    "assert_fiscal_execution_authorized",
+    "assert_order_payment_modality",
+    "authorize_fiscal_artifact_access",
+    "can_access_order",
+    "check_scheduler_watchdog",
+    "commerce_availability",
+    "enqueue_authorized_fiscal_artifact",
+    "enqueue_new_order_notification",
+    "get_public_business_contact",
+    "get_public_order_tracking",
+    "list_business_combos",
+    "list_fiscal_document_artifacts",
+    "prevent_unverified_delivery",
+    "request_fiscal_artifact_regeneration",
+    "request_fiscal_print_job",
+    "resolve_business_combo",
+    "scheduler_heartbeat",
+    "update_fiscal_print_job"
+  ],
+  "staging_only_comments": 2,
+  "vault": {
+    "anon_usage": false,
+    "authenticated_usage": false,
+    "secrets": 0
+  }
+}

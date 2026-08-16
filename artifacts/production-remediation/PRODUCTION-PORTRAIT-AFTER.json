@@ -1,0 +1,89 @@
+{
+  "client_write_grants": [],
+  "counts": {
+    "rls_enabled": 85,
+    "rls_missing": 0,
+    "tables": 85
+  },
+  "cron_jobs": [
+    {
+      "active": true,
+      "command": "select public.dispatch_payment_outbox_worker('cron');",
+      "jobname": "taba-payment-outbox-worker",
+      "schedule": "30 seconds"
+    },
+    {
+      "active": true,
+      "command": "select public.sweep_expired_checkout_sessions();",
+      "jobname": "taba-checkout-expiry-sweep",
+      "schedule": "* * * * *"
+    },
+    {
+      "active": true,
+      "command": "select public.enqueue_checkout_provider_probes();",
+      "jobname": "taba-checkout-provider-truth-sweep",
+      "schedule": "* * * * *"
+    },
+    {
+      "active": true,
+      "command": "select public.evaluate_operational_alerts_sweep();",
+      "jobname": "taba-operational-alerts-sweep",
+      "schedule": "* * * * *"
+    }
+  ],
+  "data_counts": {
+    "auth_users": 0,
+    "businesses": 1,
+    "catalog_assets": 0,
+    "customers": 0,
+    "fiscal_profile_events": 0,
+    "operational_sweep_runs": 549,
+    "order_items": 0,
+    "orders": 0,
+    "payment_intents": 0,
+    "products": 0,
+    "rider_locations": 0,
+    "rider_order_offers": 0,
+    "riders": 0,
+    "storage_objects": 0
+  },
+  "fiscal_profile_events_grants": {
+    "authenticated": "SELECT",
+    "service_role": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+  },
+  "ledger": 103,
+  "ledger_last": "20260816122000",
+  "policies": 66,
+  "qa_surface": [
+    {
+      "anon": false,
+      "authenticated": true,
+      "name": "product_is_qa_fixture"
+    }
+  ],
+  "schema_create": {
+    "anon_public": false,
+    "authenticated_public": false
+  },
+  "security_definer": {
+    "anon_execute": 8,
+    "total": 220,
+    "without_search_path": 0
+  },
+  "security_definer_anon_list": [
+    "can_access_order",
+    "check_scheduler_watchdog",
+    "commerce_availability",
+    "get_public_business_contact",
+    "get_public_order_tracking",
+    "list_business_combos",
+    "resolve_business_combo",
+    "scheduler_heartbeat"
+  ],
+  "staging_only_comments": 0,
+  "vault": {
+    "anon_usage": false,
+    "authenticated_usage": false,
+    "secrets": 0
+  }
+}

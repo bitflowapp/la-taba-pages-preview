@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "target": "la-taba-production",
+  "ref": "wwcpogltfgzgkrlilbcd",
+  "method": "select count(*) exacto sobre cada tabla via Management API (supabase db query --linked). Solo lectura. Ninguna prueba hosted escribio una fila: la verificacion remota fue integramente de catalogo y privilegios.",
+  "before": {
+    "capturedAt": "2026-08-16T15:2xZ (inmediatamente antes del push)",
+    "auth_users": 0,
+    "storage_objects": 0,
+    "businesses": 1,
+    "customers": 0,
+    "orders": 0,
+    "order_items": 0,
+    "riders": 0,
+    "rider_order_offers": 0,
+    "rider_locations": 0,
+    "payment_intents": 0,
+    "products": 0,
+    "catalog_assets": 0,
+    "fiscal_profile_events": 0,
+    "operational_sweep_runs": 537
+  },
+  "after": {
+    "capturedAt": "2026-08-16T15:5xZ (inmediatamente despues del push)",
+    "auth_users": 0,
+    "storage_objects": 0,
+    "businesses": 1,
+    "customers": 0,
+    "orders": 0,
+    "order_items": 0,
+    "riders": 0,
+    "rider_order_offers": 0,
+    "rider_locations": 0,
+    "payment_intents": 0,
+    "products": 0,
+    "catalog_assets": 0,
+    "fiscal_profile_events": 0,
+    "operational_sweep_runs": 549
+  },
+  "delta": {
+    "humanOrCommercialData": 0,
+    "operational_sweep_runs": "+12, que es el heartbeat del planificador a 1 fila/minuto durante los ~12 minutos transcurridos. Ver CRON-AUDIT.json.",
+    "testDataLeftBehind": 0
+  },
+  "businessIdentity": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "name": "La Taba",
+    "address": "(vacio)",
+    "phone": "(vacio)",
+    "currency_code": "(vacio)",
+    "status": "open",
+    "is_active": true,
+    "ordering_enabled": false,
+    "ordering_verified": false,
+    "delivery_enabled": false,
+    "pickup_enabled": false,
+    "origin": "Fila tecnica canonica creada por la migracion 20260531030000. seed.sql esta deliberadamente vacio.",
+    "note": "Con ordering_verified = false y ordering_enabled = false, la policy 'production verified products are public' no publica NINGUN producto. Produccion falla cerrado: la vidriera no muestra nada hasta que el negocio se configure. Es el estado correcto prelaunch, y a la vez un requisito de cutover."
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "target": "la-taba-production",
+  "ref": "wwcpogltfgzgkrlilbcd",
+  "verdict": "LOS 4 JOBS SIGUEN PROGRAMADOS. NINGUNO SE TOCO, Y ESA ES LA CONCLUSION, NO UNA OMISION.",
+  "jobs": [
+    {
+      "jobid": 1,
+      "jobname": "taba-payment-outbox-worker",
+      "schedule": "30 seconds",
+      "command": "select public.dispatch_payment_outbox_worker('cron');",
+      "active": true,
+      "purpose": "Despierta al worker de Mercado Pago cuando hay trabajo durable en payment_outbox.",
+      "sideEffects": "Ninguno prelaunch.",
+      "requiredConfiguration": "Vault: taba_payment_worker_url y taba_payment_worker_hmac_secret. Produccion tiene 0 secretos.",
+      "writesWhenUnconfigured": "NINGUNA",
+      "inertProof": "Primer guard: `if not v_due then return null; end if;` sobre payment_outbox, que tiene 0 filas. Sale ANTES de leer el vault y ANTES de cualquier llamada externa. Segundo guard: si faltara la config del vault, tambien `return null`. No hace pg_net, no reintenta, no registra.",
+      "externalCalls": "NO (no llega a net.http_post)",
+      "errorsOrRetries": "NO - 11 corridas medidas en el shadow, todas 'succeeded'",
+      "action": "SIN CAMBIOS"
+    },
+    {
+      "jobid": 2,
+      "jobname": "taba-checkout-expiry-sweep",
+      "schedule": "* * * * *",
+      "command": "select public.sweep_expired_checkout_sessions();",
+      "active": true,
+      "purpose": "Devuelve el stock que retiene un checkout abandonado.",
+      "sideEffects": "Ninguno prelaunch.",
+      "requiredConfiguration": "Ninguna.",
+      "writesWhenUnconfigured": "NINGUNA",
+      "inertProof": "Llama a expire_checkout_sessions(200) sobre checkout_sessions vacia: devuelve 0 y no escribe ninguna fila.",
+      "externalCalls": "NO",
+      "errorsOrRetries": "NO - 6 corridas medidas, todas 'succeeded'",
+      "action": "SIN CAMBIOS"
+    },
+    {
+      "jobid": 3,
+      "jobname": "taba-checkout-provider-truth-sweep",
+      "schedule": "* * * * *",
+      "command": "select public.enqueue_checkout_provider_probes();",
+      "active": true,
+      "purpose": "Encola sondas al proveedor para checkouts sin verdad de pago.",
+      "sideEffects": "Ninguno prelaunch.",
+      "requiredConfiguration": "Ninguna.",
+      "writesWhenUnconfigured": "NINGUNA",
+      "inertProof": "Un `insert into payment_outbox ... select from candidatos` donde candidatos sale de checkout_sessions/payment_intents vacios: 0 filas insertadas.",
+      "externalCalls": "NO",
+      "errorsOrRetries": "NO - 6 corridas medidas, todas 'succeeded'",
+      "action": "SIN CAMBIOS"
+    },
+    {
+      "jobid": 4,
+      "jobname": "taba-operational-alerts-sweep",
+      "schedule": "* * * * *",
+      "command": "select public.evaluate_operational_alerts_sweep();",
+      "active": true,
+      "purpose": "Evalua las alertas operativas de todos los negocios activos.",
+      "sideEffects": "Inserta UNA fila por minuto en operational_sweep_runs. Es el unico job que escribe prelaunch.",
+      "requiredConfiguration": "Ninguna.",
+      "writesWhenUnconfigured": "1 fila/minuto en operational_sweep_runs, podada a 7 dias por la propia funcion.",
+      "inertProof": "No aplica: este job SI trabaja, y debe hacerlo.",
+      "externalCalls": "NO",
+      "errorsOrRetries": "NO",
+      "action": "SIN CAMBIOS - DELIBERADO"
+    }
+  ],
+  "operationalSweepRuns": {
+    "question": "Por que crece ~1 fila/minuto si produccion todavia no opera, y corresponde que se registre sin trabajo real.",
+    "measurement": {
+      "atProvisioning_2026-08-16T06:56Z": 12,
+      "beforePush_2026-08-16T15:2xZ": 537,
+      "afterPush_2026-08-16T15:5xZ": 549,
+      "rate": "~1 fila por minuto, consistente con el schedule '* * * * *'",
+      "steadyState": "~10080 filas (7 dias de poda), acotado y estable"
+    },
+    "finding": "NO ES BASURA OPERACIONAL. Es la prueba de vida del planificador.",
+    "evidence": [
+      "scheduler_heartbeat() calcula max(started_at) sobre operational_sweep_runs where scope='operational_alerts' y declara healthy = started_at > now() - 600 segundos.",
+      "check_scheduler_watchdog() usa ese heartbeat y ABRE una alerta CRITICAL 'SCHEDULER_WATCHDOG_STALE' en cada negocio cuando no esta sano.",
+      "Las dos son ejecutables por anon a proposito, para que un monitor externo vigile sin credenciales.",
+      "Un trigger de sentencia sobre orders (kick_scheduler_watchdog) hace la misma comprobacion con el trafico real."
+    ],
+    "whyNotChanged": "La opcion 'early return antes de registrar la corrida cuando no hubo trabajo' habria dejado de escribir la fila, el heartbeat habria envejecido mas de 600 segundos y el watchdog habria abierto una alerta CRITICAL en produccion cada minuto. Sería fabricar un incidente para borrar una fila. La consigna admite corregirlo solo 'si la arquitectura permite hacerlo sin introducir riesgo': no lo permite.",
+    "conclusion": "Se deja como esta. La fila por minuto ES el trabajo: es la unica forma que tiene el barrido de demostrar que sigue vivo, porque una alerta sobre 'el barrido no corre' escrita POR el barrido seria una contradiccion."
+  },
+  "coldStartTransient": {
+    "observed": "En el shadow, la primera corrida del barrido abrio una alerta CRITICAL SCHEDULER_JOB_STALLED sobre taba-payment-outbox-worker con last_start = null, y la resolvio sola un minuto despues (event 'resolved', resolution 'automatic_condition_cleared').",
+    "assessment": "Artefacto de arranque en frio, auto-resuelto. No se corrige: enmascararlo pediria relajar la deteccion de un job realmente detenido.",
+    "severity": "informativo"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "scope": "remediation",
+  "description": "Migraciones forward-only 101+ de la remediacion de produccion.",
+  "baseCount": 100,
+  "baseDigest": "e45f69cdb9c939e29620278450984cd2f4e42ad52cf79295470437c35f5cf2a9",
+  "baseDigestMatchesProvisioning": true,
+  "newMigrationCount": 3,
+  "totalMigrationCount": 103,
+  "fullLedgerDigest": "b2af10478c4effc5451f26b5a38b1242a519b1b34248ad5a883444673a4eab76",
+  "migrations": [
+    {
+      "ordinal": 101,
+      "version": "20260816120000",
+      "filename": "20260816120000_production_qa_surface_remediation.sql",
+      "sha256": "37fcdb6bd89739fb8b570a76de14e662f89c53fda60532edeaa3d74a3fe7b72a",
+      "bytes": 3767
+    },
+    {
+      "ordinal": 102,
+      "version": "20260816121000",
+      "filename": "20260816121000_fiscal_profile_events_least_privilege.sql",
+      "sha256": "a6020e343e16157f2371468fa44dcdf4620a1c251ccc48aac991789615e968ff",
+      "bytes": 2719
+    },
+    {
+      "ordinal": 103,
+      "version": "20260816122000",
+      "filename": "20260816122000_security_definer_anon_least_privilege.sql",
+      "sha256": "14f58362f30e4320e0f742a43c369224b3413de3510c7d03edba4f36e6e0c97b",
+      "bytes": 5651
+    }
+  ]
+}

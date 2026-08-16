@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "guard": "scripts/assert-production-supabase-target.mjs",
+  "guardProvenance": "ops/taba2-production-supabase-provisioning @ 00fc029 'ops(taba): add production Supabase target guard' - copiado archivo por archivo, sin mergear la rama",
+  "target": {
+    "TARGET_NAME": "la-taba-production",
+    "TARGET_REF": "wwcpogltfgzgkrlilbcd",
+    "TARGET_HOST": "wwcpogltfgzgkrlilbcd.supabase.co",
+    "TARGET_DB_HOST": "db.wwcpogltfgzgkrlilbcd.supabase.co",
+    "region": "sa-east-1",
+    "status": "ACTIVE_HEALTHY"
+  },
+  "staging": {
+    "STAGING_REF": "ukxqbgswjlibmnjemrzd",
+    "name": "la-taba-staging",
+    "region": "us-east-1",
+    "distinctFromTarget": true,
+    "mutations": 0,
+    "note": "No se ejecuto ninguna operacion contra staging. Ni SQL, ni push, ni migration, ni auth, ni secrets, ni storage, ni functions."
+  },
+  "otherKnownProjects": [
+    { "ref": "yakhtrkukqlgzvxuvhzs", "name": "la-taba-demo", "status": "INACTIVE", "touched": false }
+  ],
+  "guardRuns": [
+    {
+      "when": "antes de linkear",
+      "category": "db push (remediation 101-103)",
+      "linkedRef": "(sin vincular)",
+      "result": "PASS (A, B, C, D, E)"
+    },
+    {
+      "when": "despues de linkear, inmediatamente antes del push",
+      "category": "db push",
+      "linkedRef": "wwcpogltfgzgkrlilbcd",
+      "result": "PASS (A, B, C, D, E)"
+    }
+  ],
+  "configTomlWarning": "supabase/config.toml declara project_id = 'la-taba-real-orders-staging'. Es un nombre de proyecto LOCAL de docker, no un project ref hosted, pero confirma por que la guardia no puede confiar en config.toml: el destino hosted se decide por --ref y por supabase/.temp/project-ref, que es lo que la guardia comprueba en el CHECK D.",
+  "prePushGate": {
+    "LOCAL_BASE_MIGRATIONS": 100,
+    "LOCAL_NEW_MIGRATIONS": 3,
+    "REMOTE_LEDGER_BEFORE": 100,
+    "REMOTE_LAST_BEFORE": "20260815020000",
+    "EXPECTED_MIGRATION_100": "20260815020000",
+    "baseEqualsRemoteExact": true,
+    "REMOTE_TARGET": "wwcpogltfgzgkrlilbcd",
+    "STAGING_TARGET_DIFFERENT": true,
+    "LOCAL_TESTS": "PASS 376/376",
+    "TARGET_GUARD": "PASS",
+    "allGreen": true
+  }
+}

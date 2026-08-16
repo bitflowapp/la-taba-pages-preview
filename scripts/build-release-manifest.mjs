@@ -154,11 +154,94 @@ const release = {
     web: webScan ? { clean: webScan.clean, findings: webScan.findings.length, info: webScan.info?.length ?? 0, digest: webScan.contentDigest } : null,
     rider: riderRelease?.packageScan ?? null,
   },
+  // Estado de cada gate, medido. `ready` sólo es true cuando lo que el gate
+  // exige está efectivamente en su lugar; nada dice READY apoyado en una
+  // condición falsa.
+  gates: {
+    androidSigning: {
+      ready: riderRelease?.distributable === true,
+      status: 'EXTERNAL SECURE GATE',
+      measured: riderRelease?.artifacts?.map((a) => ({
+        artifact: a.name,
+        signed: a.signing?.signed ?? false,
+        debugKey: a.signing?.debugKey ?? null,
+        subject: a.signing?.subject ?? null,
+        certificateSha256: a.signing?.certificateSha256 ?? null,
+      })) ?? null,
+      blockers: riderRelease?.distributableBlockers ?? ['no hay evidencia del Rider'],
+      needs: 'alias, contrasena y la decision sobre Play App Signing. Ver EXTERNAL-GATES.md §3',
+    },
+    authDomain: {
+      ready: false,
+      status: 'EXTERNAL GATE',
+      measured: {
+        siteUrl: 'http://localhost:3000',
+        uriAllowList: '',
+        failsClosed: true,
+        why: 'con la allow-list vacia GoTrue rechaza cualquier redirect_to que no sea el site_url',
+      },
+      needs: 'el hostname productivo. Ver EXTERNAL-GATES.md §1',
+    },
+    payments: {
+      ready: false,
+      status: 'EXTERNAL GATE',
+      measured: {
+        edgeFunctionsDeployed: 0,
+        secretsLoaded: 0,
+        productionReviewStatusPresent: false,
+        failsClosed: true,
+        why: 'providerEnvironment() tira si el entorno es production sin el review status',
+      },
+      needs: 'credenciales productivas y aprobacion para cobrar. Ver EXTERNAL-GATES.md §4',
+    },
+    dnsCutover: {
+      ready: false,
+      status: 'EXTERNAL GATE',
+      measured: { currentProductionHost: null, plan: 'DNS-CUTOVER.md' },
+      needs: 'depende del dominio; ademas, donde se administra su DNS',
+    },
+    pitr: {
+      ready: false,
+      status: 'DECISION DE GASTO',
+      measured: {
+        pitrEnabled: false,
+        walgEnabled: true,
+        physicalBackups: 2,
+        orgPlan: 'pro',
+        addonAvailable: 'pitr_7 = USD 100/mes',
+      },
+      needs: 'contratar el addon antes del primer pedido real. Ver EXTERNAL-GATES.md §5',
+    },
+    schedulerWatchdog: {
+      ready: true,
+      status: 'CERRADO',
+      measured: {
+        stagingTarget: STAGING_REF,
+        productionTarget: PRODUCTION_REF,
+        separateWorkers: true,
+        why: 'apuntaba a staging en el unico Worker que habia; ahora el entorno se elige al desplegar',
+      },
+    },
+    productionAuthAnonymous: {
+      ready: true,
+      status: 'CERRADO',
+      measured: {
+        anonymousEnabled: true,
+        wasBroken: true,
+        note: 'estaba en false y el Customer usa signInAnonymously: el camino del cliente estaba roto',
+        signupOpen: true,
+        signupWhy: 'en GoTrue el ingreso anonimo pasa por el mismo /signup; cerrarlo apaga el Customer',
+        inertBecause: 'sin fila en business_members no hay rol, y sin rol las policies devuelven vacio',
+        smoke: 'production-security-smoke: 16 tablas cerradas, 0 filas; auto-membresia 403; insert en orders 400',
+      },
+    },
+  },
   openGates: [
     'ANDROID PRODUCTION SIGNING = EXTERNAL SECURE GATE',
-    'AUTH SITE URL / REDIRECT ALLOW-LIST = EXTERNAL GATE (no hay hostname productivo definido)',
+    'AUTH DOMAIN = EXTERNAL GATE (no hay hostname productivo definido)',
     'MERCADO PAGO PRODUCTION CREDENTIALS = EXTERNAL GATE',
     'DNS CUTOVER = EXTERNAL GATE',
+    'PITR = DECISION DE GASTO (USD 100/mes)',
   ],
 };
 
@@ -333,6 +416,14 @@ const copies = [
   [path.join(root, 'artifacts', 'production-supabase', 'SECURITY-PORTRAIT-production.json'), 'security/SECURITY-PORTRAIT-production.json'],
   [path.join(root, 'artifacts', 'production-remediation', 'REMEDIATION-MIGRATIONS.json'), 'MIGRATION-LEDGER.json'],
 ];
+
+// El Rider no vive en este repositorio, así que su evidencia se copia entera.
+if (riderEvidence) {
+  for (const name of ['RELEASE.json', 'SHA256SUMS', 'package-scan.json', 'sbom.cdx.json']) {
+    const from = path.join(riderEvidence, name);
+    if (!fs.existsSync(from)) missing.push(`evidencia del Rider: ${from}`);
+  }
+}
 for (const [from, to] of copies) {
   if (!fs.existsSync(from)) { missing.push(`evidencia: ${from}`); continue; }
   const dest = path.join(outDir, to);

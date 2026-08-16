@@ -186,9 +186,18 @@ const salida = {
   healthy: findings.length === 0,
 };
 
-const out = path.join(root, 'artifacts', 'production-rc2', 'DAY1-HEALTH-CHECK.json');
-fs.mkdirSync(path.dirname(out), { recursive: true });
-fs.writeFileSync(out, `${JSON.stringify(salida, null, 2)}\n`);
+// El informe se escribe SOLO si se pide.
+//
+// Escribirlo siempre dejaba el arbol sucio en cada corrida -el JSON lleva la
+// hora- y `npm run production:verify`, que empieza exigiendo un arbol limpio y
+// despues corre esta sonda, se envenenaba a si mismo: la corrida N ensuciaba lo
+// que la corrida N+1 exigia limpio. Una verificacion que muta no es una
+// verificacion.
+const out = arg('report');
+if (out) {
+  fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+  fs.writeFileSync(out, `${JSON.stringify(salida, null, 2)}\n`);
+}
 
 console.log(`--- SALUD DE PRODUCCION (${ref}) ---`);
 console.log(`  ledger            : ${report.ledger.total} - ultima ${report.ledger.last}`);
@@ -198,7 +207,7 @@ console.log(`  alertas abiertas  : ${alerts.abiertas} (criticas ${alerts.critica
 console.log(`  tablas con filas  : ${salida.nonEmpty.length ? salida.nonEmpty.join(' ') : 'ninguna'}`);
 console.log(`  negocio canonico  : ${negocio ? `${negocio.name} status=${negocio.status}` : 'AUSENTE'}`);
 console.log(`  ordering          : enabled=${negocio?.ordering_enabled} verified=${negocio?.ordering_verified}`);
-console.log(`  reporte           : ${out}`);
+console.log(`  reporte           : ${out ?? '(no se pidio; --report <archivo> para escribirlo)'}`);
 
 if (findings.length) {
   console.error('\n  A MIRAR:');

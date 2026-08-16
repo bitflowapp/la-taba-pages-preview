@@ -39,6 +39,46 @@ const expirySweep = setInterval(() => {
 }, 60 * 60 * 1000);
 expirySweep.unref?.();
 
+// Apagado ordenado.
+//
+// El proceso no manejaba ninguna senal. Playwright levanta este relay como su
+// `webServer`, y al terminar la corrida le pide que pare: el servidor se quedaba
+// con las conexiones SSE abiertas -que por definicion no terminan- y con las
+// keep-alive del navegador, asi que no salia nunca. A los 300 s Playwright lo
+// mataba a la fuerza y escribia
+//
+//   Error: worker-1 process did not exit within 300000ms after stop, force-killed it
+//
+// Eso no es un test que falla: es ruido de apagado. Pero sale por el codigo de
+// salida, y `npm run test:e2e` -que ci.yml corre tal cual- devolvia 1 con las
+// 404 pruebas en verde. Un gate que da rojo cuando todo paso se termina
+// ignorando, que es peor que no tenerlo.
+//
+// Se cierra el servidor, se cortan los flujos que se estaban sosteniendo a
+// proposito, y se sale. El plazo es la red por si algo queda colgado: mas vale
+// salir en dos segundos que quedarse cinco minutos.
+let shuttingDown = false;
+function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  clearInterval(heartbeat);
+  clearInterval(expirySweep);
+  for (const clients of clientsByRoom.values()) {
+    for (const response of clients) {
+      try { response.end(); } catch { /* ya desconectado */ }
+    }
+  }
+  clientsByRoom.clear();
+  const plazo = setTimeout(() => process.exit(0), 2000);
+  plazo.unref?.();
+  server.closeAllConnections?.();
+  server.close(() => process.exit(0));
+}
+
+for (const senal of ['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGBREAK']) {
+  try { process.on(senal, shutdown); } catch { /* la plataforma no la tiene */ }
+}
+
 async function handleRequest(request, response) {
   setCorsHeaders(response);
   if (request.method === 'OPTIONS') {

@@ -1,4 +1,4 @@
-name = "taba2-scheduler-watchdog"
+name = "taba2-scheduler-watchdog-staging"
 main = "worker.js"
 compatibility_date = "2026-08-01"
 
@@ -11,6 +11,32 @@ compatibility_date = "2026-08-01"
 # registrar el subdominio en el panel de Cloudflare y poner `workers_dev = true`.
 workers_dev = false
 
+# ---------------------------------------------------------------------------
+# DOS RELOJES, UNO POR ENTORNO.
+#
+# Este archivo declaraba un solo Worker apuntando a staging. Desplegarlo era la
+# única opción, así que el reloj de producción —si alguien lo desplegaba— iba a
+# vigilar el proyecto de QA: habría informado "todo bien" mientras el barrido de
+# producción estaba muerto. Un vigía que mira la ventana equivocada es peor que
+# no tener vigía, porque ocupa su lugar y nadie busca otro.
+#
+# Ahora el entorno se elige al desplegar, y cada uno lleva su URL:
+#
+#   npx wrangler deploy --config services/scheduler-watchdog/wrangler.toml
+#   npx wrangler deploy --config services/scheduler-watchdog/wrangler.toml --env production
+#
+# El secreto va por separado, uno por entorno, y nunca al repositorio:
+#
+#   npx wrangler secret put SUPABASE_ANON_KEY --config <este archivo>
+#   npx wrangler secret put SUPABASE_ANON_KEY --config <este archivo> --env production
+#
+# La clave sale de `supabase projects api-keys --project-ref <ref>`; es la
+# publicable/anónima, la misma que el navegador ya recibe.
+#
+# `tests/scheduler-watchdog-targets.test.mjs` falla si un entorno apunta al
+# proyecto del otro.
+# ---------------------------------------------------------------------------
+
 # El reloj de afuera. Cada cinco minutos: con el umbral de 600 s del servidor,
 # la muerte del planificador se descubre en 15 minutos como máximo.
 [triggers]
@@ -20,9 +46,15 @@ crons = ["*/5 * * * *"]
 # La URL del proyecto es pública: la misma que sirve el sitio.
 SUPABASE_URL = "https://ukxqbgswjlibmnjemrzd.supabase.co"
 
-# SUPABASE_ANON_KEY no vive acá. Es pública —el navegador la recibe igual— pero
-# no se versiona una credencial en el repositorio ni por costumbre:
-#
-#   npx wrangler secret put SUPABASE_ANON_KEY --config services/scheduler-watchdog/wrangler.toml
-#
-# La clave sale de `supabase projects api-keys --project-ref <ref>`.
+# Un entorno con nombre NO hereda `triggers` del nivel superior. Sin repetirlo
+# acá, el Worker de producción se despliega y no corre nunca: falla en silencio,
+# que es la peor forma de fallar para un vigía.
+[env.production]
+name = "taba2-scheduler-watchdog-production"
+workers_dev = false
+
+[env.production.triggers]
+crons = ["*/5 * * * *"]
+
+[env.production.vars]
+SUPABASE_URL = "https://wwcpogltfgzgkrlilbcd.supabase.co"

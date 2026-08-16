@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "project_name": "la-taba-production",
+  "project_ref": "wwcpogltfgzgkrlilbcd",
+  "project_url": "https://wwcpogltfgzgkrlilbcd.supabase.co",
+  "database_host": "db.wwcpogltfgzgkrlilbcd.supabase.co",
+  "region": "sa-east-1",
+  "region_name": "South America (Sao Paulo)",
+  "region_rationale": "la mas cercana a Neuquen entre las 18 que ofrece hoy el CLI; us-east-1 (donde vive staging) suma ~5500 km de ida y vuelta por request",
+  "organization_id": "qdhfqytbvgpvhxbbcomv",
+  "organization_name": "Luna Systems",
+  "organization_plan": "pro",
+  "postgres_version": "17.6.1.155",
+  "status": "ACTIVE_HEALTHY",
+  "created_at": "2026-08-16T06:28:58.610081Z",
+
+  "schema_authority_repo": "C:/Users/marco/dev/la-taba-pages-preview",
+  "schema_authority_branch": "feature/taba2-rider-multi-order-backend",
+  "schema_authority_head": "f4d5bc82a3e99eab2ed81f8de7ed8c8b95cf61eb",
+  "provisioning_branch": "ops/taba2-production-supabase-provisioning",
+
+  "migration_count": 100,
+  "migration_first": "20260531030000_la_taba_phase1_orders.sql",
+  "migration_last": "20260815020000_rider_order_offers.sql",
+  "migration_digest": "e45f69cdb9c939e29620278450984cd2f4e42ad52cf79295470437c35f5cf2a9",
+  "migration_digest_algorithm": "sha256 sobre 'filename:sha256(contenido)' de cada migracion, en orden",
+  "applied_at_utc": {
+    "started": "2026-08-16T06:42:32.691Z",
+    "ended": "2026-08-16T06:45:43.578Z"
+  },
+
+  "staging_ref": "ukxqbgswjlibmnjemrzd",
+  "staging_name": "la-taba-staging",
+  "staging_mutations": 0,
+
+  "clients_connected": 0,
+  "edge_functions_deployed": 0,
+  "edge_function_secrets": 0,
+  "vault_secrets": 0,
+  "mercadopago_production": false,
+
+  "db_password_custody": {
+    "location": "%USERPROFILE%\\.taba-secrets\\taba2-production-supabase-db-password.dpapi",
+    "method": "Windows DPAPI (CurrentUser) + ACL exclusiva del usuario",
+    "in_repository": false,
+    "note": "40 caracteres de un alfabeto URL-seguro de 66 simbolos. El valor nunca se imprimio ni se escribio en texto plano."
+  }
+}

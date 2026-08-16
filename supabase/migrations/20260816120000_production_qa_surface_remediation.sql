@@ -1,0 +1,63 @@
+-- ============================================================================
+--  La superficie QA deja de existir en el cliente.
+-- ============================================================================
+--
+--  QUE SE MIDIO (2026-08-16, sobre el schema final de la-taba-production
+--  wwcpogltfgzgkrlilbcd y sobre una base local reconstruida desde cero):
+--
+--    import_qa_fixture_catalog(uuid, text, jsonb, jsonb)   EXECUTE -> authenticated
+--    publish_qa_fixture_product(uuid, text, boolean)       EXECUTE -> authenticated
+--
+--  Las dos son SECURITY DEFINER y las dos dicen «STAGING ONLY» en su comentario,
+--  pero el comentario no es un permiso: cualquier owner/admin autenticado de
+--  cualquier negocio podia ejecutarlas contra produccion.
+--
+--  LO QUE HABILITABAN, en cadena y hasta la vidriera publica:
+--
+--    1. import_qa_fixture_catalog inserta catalog_assets con
+--       rights_status = 'UNAPPROVED_QA', approved_at = null y approved_by = null,
+--       es decir SIN la aprobacion comercial de derechos que exige
+--       20260725110000_catalog_publication_authority.sql.
+--    2. publish_qa_fixture_product pone is_verified = true y available = true
+--       sobre ese producto, salteando los requisitos comerciales de
+--       products_verified_publication_authority y products_verified_master_data
+--       (verified_at/verified_by, formato de imagen, SKU, capacidad, presentacion).
+--    3. La policy «production verified products are public» solo pide
+--       is_active and is_verified and available and stock > 0: el fixture sin
+--       derechos aprobados queda visible y ordenable para anon.
+--
+--  POR QUE SE BORRAN Y NO SE LES BAJA EL GRANT:
+--
+--    a. No las llama nadie. Se buscaron los dos nombres en todo el repositorio y
+--       en todas las ramas locales: fuera de la migracion que las crea, los
+--       unicos aciertos son artefactos de auditoria y documentacion. Cero
+--       runtime, cero script, cero test, cero tooling de staging.
+--    b. No hay ningun rol que pueda usarlas. Las dos empiezan exigiendo
+--       auth.uid() is not null y has_business_role(owner/admin). service_role no
+--       tiene auth.uid(), asi que un GRANT a service_role seria decorativo: se
+--       midio y devuelve «Only an active owner/admin can import staging QA
+--       fixtures.». El unico rol capaz de ejecutarlas es exactamente el que hay
+--       que cerrar.
+--
+--  Un REVOKE dejaria dos funciones vivas, con nombre publicable por PostgREST,
+--  que ningun rol puede usar y que dependen de que nadie vuelva a otorgar el
+--  permiso. Borrarlas convierte el contrato en estructural: la RPC no existe.
+--
+--  LO QUE NO SE TOCA, A PROPOSITO:
+--
+--    * product_is_qa_fixture(uuid) SIGUE VIVA. No es superficie QA: es la red de
+--      seguridad de 20260806160000 que marca origin='qa' en el pedido para que
+--      un rider NUNCA salga a repartir a una direccion inventada. Borrarla
+--      reabriria ese incidente.
+--    * catalog_origin y las ramas QA de los CHECK siguen igual. Son el
+--      vocabulario del que depende product_is_qa_fixture, y staging tiene filas
+--      reales con esos valores. Lo que se cierra es el camino de ESCRITURA, que
+--      es donde estaba la vulnerabilidad: anon y authenticated no tienen
+--      INSERT/UPDATE sobre catalog_assets ni products (products solo expone
+--      UPDATE por columna sobre available, is_active, sort_order y stock), asi
+--      que sin estas dos RPC no queda ninguna via de cliente para introducir
+--      UNAPPROVED_QA.
+-- ============================================================================
+
+drop function if exists public.import_qa_fixture_catalog(uuid, text, jsonb, jsonb);
+drop function if exists public.publish_qa_fixture_product(uuid, text, boolean);

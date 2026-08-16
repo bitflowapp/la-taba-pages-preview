@@ -204,6 +204,8 @@ const buildMatrix = {
         : 'sin firma; el gate de release lo rechaza para production, que es el comportamiento correcto',
     })),
   ],
+  // Un gate que nadie demostro rechazando es una intencion, no un control.
+  // Estos se corrieron y estos son los mensajes con que se negaron.
   refusedByDesign: [
     {
       command: 'flutter build apk --release --flavor production',
@@ -212,6 +214,32 @@ const buildMatrix = {
     {
       command: 'flutter build apk --release --flavor production (con TABA_ALLOW_UNSIGNED_RELEASE=1)',
       result: 'Production Rider build blocked: an approved upload keystore is required',
+    },
+    {
+      command: 'node scripts/build-windows-signed-release.mjs',
+      result: 'TAURI_SIGNING_PRIVATE_KEY is required for a signed Windows release',
+      note: 'la comprobacion de rama release/* SI paso; lo que falta son los cinco secretos de firma',
+    },
+    {
+      command: 'production con TABA_PRODUCTION_BACKEND_PROJECT_REF = ref de staging',
+      result: 'Production Rider build blocked: the staging project is not a production backend',
+    },
+    {
+      command: 'production con una URL que no deriva del ref',
+      result: 'Production Rider build blocked: backend URL and project ref do not match',
+    },
+    {
+      command: 'production con una clave service_role o sb_secret_',
+      result: 'Production Rider build blocked: only a publishable client key is accepted',
+    },
+    {
+      command: 'production con businessId 00000000-0000-4000-8000-000000000000',
+      result: 'Production Rider build blocked: business scope is invalid',
+      note: 'el uuid de plantilla no tiene version ni variante validas: es estructuralmente imposible de empaquetar',
+    },
+    {
+      command: 'production con un ref que no tiene forma de project ref',
+      result: 'Production Rider build blocked: backend project ref is invalid',
     },
   ],
 };

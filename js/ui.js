@@ -618,7 +618,12 @@ function removeGlyph() {
  * animación de CSS termina sola, así que no agenda trabajo ni fuerza un
  * repintado extra sólo para limpiar una clase.
  */
-const ADDED_FLASH_MS = 1100;
+// Espejo exacto de `--motion-duration-added-flash` (styles/tokens.css). Las dos
+// mitades del sello —la ventana en la que el marcado lo pinta y la animación que
+// lo apaga— tienen que durar lo mismo: si el JS aguanta más que el CSS, la
+// tarjeta queda con un sello invisible que igual ocupa el lugar del "+".
+// `tests/launch-ux-microinteractions.test.mjs` falla si divergen.
+const ADDED_FLASH_MS = 520;
 const recentlyAdded = new Map();
 
 export function flashAddedProduct(productId) {
@@ -2525,7 +2530,7 @@ function renderCustomerActions() {
   container.innerHTML = `
     <section class="customer-action-panel" aria-label="Acciones del cliente">
       <div>
-        <strong>Tu pedido de siempre</strong>
+        <strong>Tu último pedido</strong>
         <span>${escapeHtml(latest.id)} · ${latest.items.length} ${latest.items.length === 1 ? 'producto' : 'productos'} · ${money(latest.total)}</span>
       </div>
       <button class="primary-button compact" type="button" data-repeat-order="${escapeHtml(latest.id)}">Repetir último pedido</button>
@@ -2561,10 +2566,7 @@ function renderDirectOrderingCustomerActions() {
   const summary = itemNames.length
     ? `${itemNames.join(' · ')}${extra ? ` · +${extra}` : ''}`
     : 'Los productos del pedido anterior ya no están disponibles';
-  const notice = [
-    preview.priceChanged ? 'Total actualizado con precios actuales.' : '',
-    preview.skipped.length ? `${preview.skipped.length} producto(s) no disponible(s).` : '',
-  ].filter(Boolean).join(' ');
+  const notices = reorderNotices(preview);
 
   container.innerHTML = `
     <section class="customer-action-panel reorder-card" aria-label="Volver a pedir">
@@ -2577,13 +2579,54 @@ function renderDirectOrderingCustomerActions() {
       <div class="reorder-card-copy">
         <span class="reorder-kicker">Volver a pedir</span>
         <strong>${escapeHtml(summary)}</strong>
-        <small>${notice ? escapeHtml(notice) : 'Revisá el pedido antes de confirmar.'}</small>
+        ${notices.length
+    ? `<ul class="reorder-notices" data-reorder-notices>${notices.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`
+    : '<small>Revisá el pedido antes de confirmar.</small>'}
       </div>
       <div class="reorder-card-side">
+        ${preview.priceChanged && preview.previousTotal > 0
+    ? `<span class="reorder-previous-total" data-reorder-previous-total>Antes ${money(preview.previousTotal)}</span>`
+    : ''}
         <strong>${money(preview.totals.total)}</strong>
         <button class="primary-button compact" type="button" data-repeat-order="${escapeHtml(latest.id)}" ${preview.canRepeat ? '' : 'disabled'}>Agregar de nuevo</button>
       </div>
     </section>`;
+}
+
+/*
+ * QUÉ CAMBIÓ DESDE EL PEDIDO ANTERIOR, PRODUCTO POR PRODUCTO
+ *
+ * El aviso decía "1 producto(s) no disponible(s)": la voz de un sistema, y —lo
+ * que importa— no decía CUÁL. Quien lee eso tiene que abrir el carrito y
+ * comparar de memoria contra un pedido de la semana pasada.
+ *
+ * `taba-reorder-retention` pide exactamente lo contrario: qué no se pudo
+ * repetir, con el motivo POR ÍTEM y en el idioma del cliente.
+ * `buildReorderPreview` ya devuelve ese motivo por ítem —el contrato lo
+ * obliga—; lo único que faltaba era mostrarlo.
+ *
+ * Se listan hasta tres. Con más, el resto se cuenta: una tarjeta de la home no
+ * es el lugar para un inventario de diez renglones, y el detalle completo
+ * aparece igual en el carrito al tocar "Agregar de nuevo".
+ */
+const REORDER_NOTICE_LIMIT = 3;
+
+function reorderNotices(preview) {
+  const lines = preview.skipped.slice(0, REORDER_NOTICE_LIMIT).map((item) => {
+    const name = String(item.name || 'Un producto');
+    // Los tres motivos que `buildReorderPreview` sabe emitir, dichos como los
+    // diría alguien del mostrador. El motivo de stock trae el número adentro.
+    if (item.reason === 'ya no existe en el catalogo') return `${name}: ya no se vende`;
+    if (item.reason === 'no disponible') return `${name}: ahora no lo tenemos`;
+    const stock = /(\d+)/.exec(String(item.reason || ''))?.[1];
+    if (stock !== undefined) return `${name}: quedan ${stock}`;
+    return `${name}: ${item.reason}`;
+  });
+  const restantes = Math.max(0, preview.skipped.length - REORDER_NOTICE_LIMIT);
+  if (restantes) lines.push(`Y ${restantes} más que hoy no podemos repetir`);
+  // El precio va último: primero lo que falta, después lo que cuesta.
+  if (preview.priceChanged) lines.push('Cambió algún precio: el total es el de hoy');
+  return lines;
 }
 
 function renderCustomerHistory() {
@@ -2656,6 +2699,13 @@ function renderCheckoutVisibility() {
     }
   }
   $$('[data-clear-cart]').forEach((button) => { button.hidden = isEmpty; });
+  // La banda de aviso reserva su alto exactamente cuando puede haber un aviso:
+  // con productos en el pedido. NO se puede usar `body[data-cart="filled"]`
+  // para esto —ese atributo significa "corresponde mostrar la barra flotante", y
+  // en la vista del carrito la barra no corresponde nunca, así que ahí vale
+  // "empty" aunque haya diez productos—. Acá se reusa la misma decisión que ya
+  // gobierna el formulario, que es la que de verdad dice si hay pedido.
+  $$('[data-cart-notice]').forEach((node) => { node.hidden = isEmpty; });
   // El +18 de cualquier componente alcanza al combo entero.
   const requiresAgeConfirmation = cartItems.some((item) => item.product.alcoholic)
     || comboLines.some((line) => line.combo.ageRestricted);
@@ -3955,13 +4005,36 @@ export async function copyDraftOrderToClipboard() {
   await navigator.clipboard.writeText(message);
 }
 
+/*
+ * El mismo mensaje, dos superficies, UNA sola región viva por vez.
+ *
+ * `[data-toast]` es la pastilla flotante de siempre y sigue siendo la región
+ * viva en todas las vistas. En el carrito queda fuera del árbol —`display:none`
+ * por CSS— y el que anuncia es `[data-cart-notice]`, la banda que vive dentro
+ * del layout de esa vista. Nunca las dos a la vez: cuando el carrito no está
+ * activo su banda está dentro de una sección con `hidden`, o sea también fuera
+ * del árbol. Por eso se puede escribir en las dos sin duplicar anuncios.
+ *
+ * Se escribe en ambas incondicionalmente: preguntar por la vista activa acá
+ * ataría el aviso al estado de navegación en el momento del mensaje, y el
+ * cambio de vista puede ocurrir después.
+ */
 export function showToast(message) {
   const toast = $('[data-toast]');
-  if (!toast) return;
-  toast.textContent = message;
-  toast.classList.remove('hidden');
+  const cartNotice = $('[data-cart-notice]');
+  if (!toast && !cartNotice) return;
+  if (cartNotice) cartNotice.textContent = message;
+  if (toast) {
+    toast.textContent = message;
+    toast.classList.remove('hidden');
+  }
   clearTimeout(showToast.timeoutId);
-  showToast.timeoutId = setTimeout(() => toast.classList.add('hidden'), 2200);
+  showToast.timeoutId = setTimeout(() => {
+    toast?.classList.add('hidden');
+    // Vaciarla la deja `:empty`, que es lo que apaga su superficie sin devolver
+    // el alto: la banda sigue reservada y no hay salto al apagarse.
+    if (cartNotice) cartNotice.textContent = '';
+  }, 2200);
 }
 
 export function escapeHtml(value) {

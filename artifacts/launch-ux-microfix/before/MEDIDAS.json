@@ -1,0 +1,54 @@
+{
+  "chromium-390-aviso": {
+    "flotanteVisible": true,
+    "flotante": {
+      "top": 76,
+      "alto": 48
+    },
+    "bandaVisible": false,
+    "banda": null,
+    "encabezado": {
+      "top": 76,
+      "alto": 29
+    },
+    "tapaElEncabezado": true
+  },
+  "chromium-390-cargando": {
+    "fase": "sin-fase",
+    "altoSeccion": 376,
+    "altoFormulario": 1081,
+    "camposVisibles": 4
+  },
+  "chromium-390-resuelto": {
+    "fase": "sin-fase",
+    "altoSeccion": 269,
+    "altoFormulario": 788,
+    "camposVisibles": 1
+  },
+  "webkit-iphone-aviso": {
+    "flotanteVisible": true,
+    "flotante": {
+      "top": 76,
+      "alto": 48
+    },
+    "bandaVisible": false,
+    "banda": null,
+    "encabezado": {
+      "top": 58,
+      "alto": 29
+    },
+    "tapaElEncabezado": true
+  },
+  "webkit-iphone-cargando": {
+    "fase": "sin-fase",
+    "altoSeccion": 376,
+    "altoFormulario": 1089,
+    "camposVisibles": 4
+  },
+  "webkit-iphone-resuelto": {
+    "fase": "sin-fase",
+    "altoSeccion": 269,
+    "altoFormulario": 788,
+    "camposVisibles": 1
+  }
+}

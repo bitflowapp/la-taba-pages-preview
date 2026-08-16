@@ -10,6 +10,7 @@
 // Las capturas reales se generan como artefacto fuera de Git para la revisión
 // humana; acá vive lo que puede fallar automáticamente.
 import { expect, test } from '@playwright/test';
+import { brandSurfaceRgb, shelfSurfaceRgb } from '../../scripts/brand-surface.mjs';
 import { gotoDemoReset, installBrowserStubs, installPageGuards, seedCartAboveMinimum } from './helpers.mjs';
 
 const PHONE = { width: 390, height: 844 };
@@ -22,7 +23,10 @@ const PHONE = { width: 390, height: 844 };
 // negro/grafito, blanco, rojo intenso y dorado, y el beige no está en esa
 // paleta. Lo que el contrato protege NO cambió: sigue habiendo UNA superficie
 // para todas las vistas del cliente, y el test la fija en su valor pintado.
-const GONDOLA = 'rgb(25, 29, 35)';
+// El valor se deriva de `--shelf` en styles/tokens.css: el contrato es "una
+// sola superficie de góndola, y es la que el sistema de diseño declara", no
+// "la góndola es este gris en particular". Ver scripts/brand-surface.mjs.
+const GONDOLA = shelfSurfaceRgb();
 
 const STORY_FIXTURES = [
   {
@@ -383,7 +387,7 @@ test('el shell de marca es continuo entre las vistas del cliente', async ({ page
   // origen del salto "home premium → formulario blanco genérico", porque cada
   // hoja elegía su propio blanco. Ahora hay una sola superficie de contenido y
   // este test la fija en su valor resuelto, no en un token.
-  expect(home.body).toBe('rgb(9, 11, 14)');
+  expect(home.body).toBe(brandSurfaceRgb());
   expect(await page.locator('.home-best-card').first().evaluate((n) => getComputedStyle(n).backgroundColor))
     .toBe(GONDOLA);
 

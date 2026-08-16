@@ -1,0 +1,85 @@
+{
+  "tokens": {
+    "--brand-bg": "#090b0e",
+    "--brand-bg-raised": "#111419",
+    "--brand-surface": "#171a20",
+    "--brand-surface-hover": "#1e222a",
+    "--brand-border": "rgb(255 255 255 / 12%)",
+    "--brand-border-strong": "rgb(255 255 255 / 24%)",
+    "--brand-ink": "#f5f5f5",
+    "--brand-ink-muted": "#a8abb2",
+    "--shelf": "#191d23",
+    "--shelf-raised": "#22272f",
+    "--shelf-sunken": "#101317",
+    "--shelf-line": "rgb(255 255 255 / 10%)",
+    "--shelf-line-strong": "rgb(255 255 255 / 38%)",
+    "--radius-sm": "10px",
+    "--radius-md": "14px",
+    "--radius-lg": "18px",
+    "--radius-control": "14px",
+    "--radius-pill": "999px",
+    "bodyBackground": "rgb(9, 11, 14)"
+  },
+  "home": {
+    "scrollWidth": 390,
+    "innerWidth": 390,
+    "precios": 8,
+    "reorder": false
+  },
+  "tarjeta": {
+    "background": "rgb(25, 29, 35)",
+    "borderRadius": "20px",
+    "border": "1px rgba(0, 0, 0, 0)",
+    "boxShadow": "rgba(0, 0, 0, 0.38) 0px 6px 18px 0px, rgba(255, 255, 255, 0.1) 0px 0px 0px 1px i"
+  },
+  "cta": {
+    "radius": "999px",
+    "height": 46,
+    "width": 155.5,
+    "background": "rgb(208, 0, 13)",
+    "color": "rgb(255, 255, 255)",
+    "fontWeight": "800",
+    "transition": "background-color, border-color, color, box-shadow, transform 0.16s, 0.16s, 0.16s, 0.16s, 0.1s"
+  },
+  "cantidad": {
+    "presente": true,
+    "radius": "10px",
+    "height": 44,
+    "width": 44,
+    "background": "rgba(0, 0, 0, 0)",
+    "cajaAntes": {
+      "width": 177.5,
+      "height": 332.3
+    },
+    "cajaDespues": {
+      "width": 177.5,
+      "height": 332.3
+    }
+  },
+  "barraCarrito": {
+    "presente": true,
+    "hidden": false,
+    "radius": "18px",
+    "height": 52,
+    "background": "rgb(208, 0, 13)",
+    "bottom": 68
+  },
+  "checkout": {
+    "presente": true,
+    "camposVisibles": 7,
+    "etiquetas": [
+      "Delivery",
+      "Retiro en local",
+      "Casa\n          Principal\n        \n        Avenida Argentina 450, Neuquén Capital\n        Portón negro, timbre 2\n        Ubicación confirmada",
+      "Trabajo\n          \n        \n        Julio Argentino Roca 1220, Neuquén Capital\n        Oficina 4B\n        Ubicación confirmada",
+      "Casa de mamá\n          \n        \n        Diagonal 9 de Julio 87, Neuquén Capital\n        \n        Ubicación confirmada",
+      "Forma de pago\n                \n                  \n                  A coordinar con el local\n                  Efectivo al recibir\n                \n                El medio se confirma antes de preparar el pedido.",
+      "Observaciones del pedido"
+    ],
+    "alturaFormulario": 1272,
+    "submit": {
+      "radius": "999px",
+      "background": "rgb(208, 0, 13)"
+    }
+  }
+}

@@ -534,6 +534,35 @@
   color: var(--taba-muted);
 }
 
+/* Lo que cambió desde el pedido anterior, un renglón por producto. Lista y no
+   párrafo: cada motivo pertenece a un producto distinto y unirlos con espacios
+   los volvía una sola frase larga que nadie termina de leer. */
+.reorder-notices {
+  display: grid;
+  gap: 1px;
+  margin: 2px 0 0;
+  padding: 0;
+  color: var(--taba-muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+  list-style: none;
+}
+
+.reorder-notices li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* El total anterior, tachado y arriba del vigente. Nunca solo: sin el de hoy al
+   lado sería un precio que ya no se puede pagar. */
+.reorder-previous-total {
+  color: var(--taba-muted);
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: line-through;
+}
+
 .reorder-kicker {
   color: var(--taba-red-quiet);
   font-size: 12px;

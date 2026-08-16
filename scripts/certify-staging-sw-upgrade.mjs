@@ -22,6 +22,7 @@
  */
 import { chromium, webkit } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
+import { brandSurfaceRgb } from './brand-surface.mjs';
 
 const BASE = (process.env.BASE || 'https://taba2-staging.pages.dev').replace(/\/$/, '');
 const ENGINE_NAME = process.env.ENGINE === 'webkit' ? 'webkit' : 'chromium';
@@ -204,7 +205,7 @@ const carritoDespues = await pagina.evaluate(async () => {
   return getState().cart.map((i) => `${i.productId}:${i.quantity}`).sort();
 });
 console.log(`   recorrido con el worker actualizado · fondo=${vuelta.fondo} imports=${vuelta.vivos}/${vuelta.totales} nav=${vuelta.nav} carrito=${carritoDespues.length}`);
-anota(vuelta.fondo === 'rgb(9, 11, 14)', `al volver se perdió la superficie de marca: ${vuelta.fondo}`);
+anota(vuelta.fondo === brandSurfaceRgb(), `al volver se perdió la superficie de marca: ${vuelta.fondo}`);
 anota(vuelta.vivos === vuelta.totales && vuelta.totales > 0, `cadena de @import incompleta al volver: ${vuelta.vivos}/${vuelta.totales}`);
 anota(vuelta.nav === 'fixed', `la barra inferior quedó ${vuelta.nav}`);
 anota(JSON.stringify(carritoDespues) === JSON.stringify(carritoAntes), 'el carrito cambió al volver');

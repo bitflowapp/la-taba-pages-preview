@@ -51,14 +51,16 @@ test('la calculadora de contraste está calibrada', () => {
   // negro sobre blanco es 21:1 exacto y un color contra sí mismo es 1:1.
   assert.equal(Math.round(contraste('#000000', '#ffffff') * 100) / 100, 21);
   assert.equal(Math.round(contraste('#191d23', '#191d23') * 100) / 100, 1);
-  // Y contra un valor que la propia paleta declara: `--shelf-muted` dice 7,7:1
-  // sobre `--shelf`, y mide 7,75.
-  assert.ok(Math.abs(contraste(token('--shelf-muted'), token('--shelf')) - 7.7) < 0.1);
-  // NOTA: el comentario de `--shelf-ink` dice 16,9:1 y la medición da 15,80:1.
-  // La diferencia es del comentario, no de la fórmula —que es la de WCAG 2.1 y
-  // acierta los otros tres controles—. No es un defecto: 15,8 pasa AAA de
-  // sobra. Queda anotado para que nadie use ese 16,9 como referencia exacta.
-  assert.ok(contraste(token('--shelf-ink'), token('--shelf')) > 15);
+  // Y contra un valor que la propia paleta declara: `--shelf-muted` dice 7,4:1
+  // sobre `--shelf`. El número bajó de 7,7 con la escala de grafito nueva —la
+  // tarjeta subió y la tinta apagada se quedó donde estaba—, y el comentario
+  // del token se movió con él. Sigue muy por encima de AA.
+  assert.ok(Math.abs(contraste(token('--shelf-muted'), token('--shelf')) - 7.4) < 0.1);
+  // `--shelf-ink` sobre `--shelf` mide 14,89:1 con la escala de grafito nueva
+  // (antes 15,80). El comentario del token dice 14,9 y ya no promete 16,9, que
+  // era un número que nunca midió nadie. Pasa AAA de sobra: el umbral acá es un
+  // piso de cordura para la fórmula, no el requisito de accesibilidad.
+  assert.ok(contraste(token('--shelf-ink'), token('--shelf')) > 14);
 });
 
 test('el error de campo del Perfil se puede leer sobre la góndola', () => {

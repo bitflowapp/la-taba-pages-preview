@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { confirmDeliveryLocationInProfile } from './helpers.mjs';
+import { shelfSurfaceRgb } from '../../scripts/brand-surface.mjs';
 
 const BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
 const CUSTOMER_ID = '10000000-0000-4000-8000-000000000001';
@@ -227,7 +228,7 @@ test('Perfil ofrece UNA acción principal y la dirección en uso no repite la ac
   const superficies = await profile.locator('.personal-card, .profile-address').evaluateAll(
     (nodes) => [...new Set(nodes.map((node) => getComputedStyle(node).backgroundColor))],
   );
-  expect(superficies).toEqual(['rgb(25, 29, 35)']);
+  expect(superficies).toEqual([shelfSurfaceRgb()]);
 
   // Eliminar no puede ser un toque suelto: pide confirmación.
   const antes = await profile.locator('.profile-address').count();

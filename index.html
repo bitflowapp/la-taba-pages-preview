@@ -308,7 +308,13 @@
               que sin una promoción vigente queda `hidden` pero igual reservaba
               el lugar de arriba para un bloque que casi nunca existe.
             -->
-            <section class="home-merch-section home-best-section" aria-labelledby="home-best-title">
+            <!--
+              `data-glow-shelf`: este rail es la PRIMERA gondola que ve un cliente,
+              asi que es uno de los dos estantes que llevan el brillo rojo. La
+              intensidad la calcula js/motion.js con la posicion de ESTE bloque
+              respecto del viewport, no con la vista activa.
+            -->
+            <section class="home-merch-section home-best-section" data-glow-shelf aria-labelledby="home-best-title">
               <div class="home-section-head">
                 <!--
                   Copy honesto: "Destacados" es una selección del local, no una
@@ -341,6 +347,21 @@
               puede prometer un ahorro que dejó de existir. Una sección sin
               combos armables queda oculta: nunca aparece un rail vacío.
             -->
+            <!--
+              VOLVER A PEDIR va acá y no al final.
+              Estaba como último bloque de la home, a 2411px de una página de
+              2775: quien ya compró tenía que recorrer casi tres pantallas para
+              encontrar el único atajo pensado para él. Y no va más arriba
+              porque "Destacados" es el primer tramo comprable y tiene que caer
+              sobre el pliegue: la recompra no puede desplazar a la vidriera
+              comercial, que es lo que ve quien entra por primera vez.
+              Acá queda inmediatamente después del primer carrusel: a un scroll
+              corto, sin haber corrido nada de lo que estaba arriba.
+              El bloque sólo existe con un pedido anterior real; sin historial
+              el contenedor queda vacío y no ocupa lugar.
+            -->
+            <div class="home-reorder-slot" data-customer-actions></div>
+
             <section class="home-merch-section home-combos-section" data-home-combos-section aria-labelledby="home-combos-title" hidden>
               <div class="home-section-head">
                 <div class="home-section-title">
@@ -412,7 +433,6 @@
               <div class="home-best-sellers offers-rail" data-home-editorial-rail></div>
             </section>
 
-            <div class="home-reorder-slot" data-customer-actions></div>
             <button class="order-now-cta" type="button" data-nav-view="catalog">
               <span>Ver catálogo completo</span>
               <span aria-hidden="true">›</span>
@@ -509,7 +529,8 @@
           </div>
 
           <div class="grid-block">
-            <div class="product-grid" data-product-grid></div>
+            <!-- El otro estante con brillo: la grilla principal del catalogo. -->
+            <div class="product-grid" data-product-grid data-glow-shelf></div>
           </div>
           </div>
         </section>
@@ -529,6 +550,22 @@
               <button class="ghost-button compact" type="button" data-clear-cart>Vaciar carrito</button>
             </div>
           </div>
+
+          <!--
+            AVISO DEL PEDIDO — en el layout, no encima de él.
+            El aviso flotante se anclaba a `top: 76px` en esta vista y tapaba el
+            encabezado "Tu pedido" durante los 2,2 s que dura. Medido: cruzaba
+            con el título en 390x844 y en WebKit/iPhone. Anclarlo abajo no
+            arregla nada —ahí tapa las líneas del carrito, también medido—.
+            Acá el aviso es una banda REAL del layout: reserva su alto mientras
+            el carrito tiene productos, así que aparecer y desaparecer no mueve
+            nada, y por definición no puede tapar nada. La banda vive ARRIBA de
+            las líneas, así que tampoco se mueve nada bajo el dedo que acaba de
+            tocar "+".
+            Es la región viva de esta vista: mientras el carrito está activo, el
+            aviso flotante queda fuera del árbol y éste es el único que anuncia.
+          -->
+          <div class="cart-notice" data-cart-notice role="status" aria-live="polite"></div>
 
           <div class="checkout-layout">
             <div class="card cart-card">

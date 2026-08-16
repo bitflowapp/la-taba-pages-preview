@@ -8,6 +8,18 @@
 //
 // `ci.yml:97` corre ese mismo comando, así que el gate daba rojo con todo bien.
 // Un gate que da rojo cuando todo pasó se termina ignorando.
+//
+// UN MATIZ QUE CONVIENE SABER ANTES DE VOLVER A PERSEGUIRLO. El síntoma también
+// depende de la carga de la máquina. Medido, en este orden:
+//
+//   sin manejo de señales, máquina cargada    404 passed · 2 errores · exit 1
+//   con manejo de señales, máquina cargada    404 passed · 2 errores · exit 1
+//   con manejo de señales, máquina libre      404 passed · 0 errores · exit 0  (17.4 min)
+//
+// O sea: el apagado ordenado hacía falta —sin él el relay no salía nunca— pero
+// no es lo único en juego. Bajo contención los workers de Playwright tampoco
+// alcanzan a parar dentro de su ventana. Si el síntoma reaparece en un runner
+// apretado, no es este archivo: es la ventana de teardown de Playwright.
 
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';

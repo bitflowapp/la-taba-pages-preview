@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "targets": [
+    "E:\\DevCache\\Temp\\claude\\D--1212-worktrees-taba2-production-backend-remediation\\6c564680-fbed-449f-a9f7-b2517fc2d40c\\scratchpad\\apk-extract"
+  ],
+  "files": 186,
+  "bytesScanned": 82465454,
+  "contentDigest": "9e37da8c10dc9b1baa5911da4509d5614e543ed26c0bd4e2faab5b54d33ba2aa",
+  "backendHosts": [
+    "wwcpogltfgzgkrlilbcd.supabase.co"
+  ],
+  "businessIds": {
+    "00000000-0000-4000-8000-000000000001": 2
+  },
+  "expectedHost": "wwcpogltfgzgkrlilbcd.supabase.co",
+  "expectedBusinessId": "00000000-0000-4000-8000-000000000001",
+  "findings": [],
+  "info": [],
+  "clean": true
+}

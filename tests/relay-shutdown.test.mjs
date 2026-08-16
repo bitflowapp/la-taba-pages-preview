@@ -15,11 +15,17 @@
 //   sin manejo de señales, máquina cargada    404 passed · 2 errores · exit 1
 //   con manejo de señales, máquina cargada    404 passed · 2 errores · exit 1
 //   con manejo de señales, máquina libre      404 passed · 0 errores · exit 0  (17.4 min)
+//   con manejo de señales, máquina a medias   403 passed · 1 FALLO · 2 errores  (24.7 min)
+//   con manejo de señales, máquina libre      404 passed · 0 errores · exit 0  (17.0 min)
 //
 // O sea: el apagado ordenado hacía falta —sin él el relay no salía nunca— pero
-// no es lo único en juego. Bajo contención los workers de Playwright tampoco
-// alcanzan a parar dentro de su ventana. Si el síntoma reaparece en un runner
-// apretado, no es este archivo: es la ventana de teardown de Playwright.
+// no es lo único en juego. La suite entera es sensible al tiempo: con la máquina
+// ocupada tarda un 45% más, aparece un fallo que en aislamiento pasa 5/5, y los
+// workers de Playwright tampoco alcanzan a parar dentro de su ventana de 300 s.
+//
+// Conclusión, con cuatro corridas: verde y exit 0 las dos veces que la máquina
+// estuvo libre; frágil las dos que no. Si el síntoma reaparece en un runner
+// apretado, no es este archivo: es el presupuesto de tiempo del runner.
 
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';

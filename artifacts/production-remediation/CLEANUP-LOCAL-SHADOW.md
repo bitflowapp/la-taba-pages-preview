@@ -41,7 +41,7 @@ Recuperar el daemon primero (Docker Desktop → Restart, o reiniciar el servicio
 Despues, la via limpia y acotada:
 
 ```bash
-cd "E:/DevCache/Temp/claude/D--1212-worktrees-taba2-production-backend-remediation/6c564680-fbed-449f-a9f7-b2517fc2d40c/scratchpad/shadow"
+cd "<SCRATCHPAD>/shadow"   # el scratchpad de la sesion, fuera del repositorio
 supabase stop --no-backup
 ```
 
@@ -75,7 +75,7 @@ Todo el material de trabajo vive fuera del repositorio, en el scratchpad de la
 sesion, y se puede borrar entero sin consecuencias:
 
 ```
-E:/DevCache/Temp/claude/D--1212-worktrees-taba2-production-backend-remediation/6c564680-fbed-449f-a9f7-b2517fc2d40c/scratchpad/
+<SCRATCHPAD>/
   shadow/         stack local (config.toml, migrations, tests)
   remote-probe/   directorio aislado usado para las consultas de solo lectura
   *.json *.sh     retratos y helpers

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "targets": [
-    "E:\\DevCache\\Temp\\claude\\D--1212-worktrees-taba2-production-backend-remediation\\6c564680-fbed-449f-a9f7-b2517fc2d40c\\scratchpad\\apk-extract"
+    "<externo>/apk-extract"
   ],
   "files": 186,
   "bytesScanned": 82465454,

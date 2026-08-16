@@ -162,6 +162,22 @@ test('business-identity exige el declarado y niega el de plantilla', () => {
   assert.ok(falta.report.findings.some((f) => /falta el businessId esperado/.test(f.detail || '')));
 });
 
+test('el informe no lleva la ruta de la máquina que lo corrió', () => {
+  // El informe se versiona, y `check-release-hygiene` rechaza una ruta con
+  // letra de unidad porque describe la máquina y no el sistema. El escaneo
+  // cruzado del APK se hace sobre un directorio fuera del repositorio, así que
+  // sin esto el propio informe rompe el gate — que fue exactamente lo que pasó.
+  const { report } = scan({ 'a.js': 'export const x = 1;\n' });
+  assert.equal(report.targets.length, 1);
+  assert.ok(
+    !/^[A-Za-z]:[\\/]/.test(report.targets[0]),
+    `el objetivo conserva la unidad: ${report.targets[0]}`,
+  );
+  assert.match(report.targets[0], /^<externo>\//);
+  const texto = JSON.stringify(report);
+  assert.ok(!/[A-Za-z]:[\\/]/.test(texto), 'quedó una ruta local en el informe');
+});
+
 test('stripComments borra comentarios sin mover las líneas', () => {
   const src = 'const a = 1; // ${STAGING}\n/* bloque\n   dos lineas */\nconst b = 2;\n';
   const out = stripComments(src);

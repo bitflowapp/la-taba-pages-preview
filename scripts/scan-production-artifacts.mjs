@@ -245,9 +245,22 @@ for (const target of targets) {
   for (const file of walk(target)) digest.update(fs.readFileSync(file));
 }
 
+// Las rutas del informe no llevan letra de unidad ni perfil de usuario.
+//
+// El informe se versiona, y `check-release-hygiene` rechaza una ruta local
+// porque describe la maquina del que la corrio y no el sistema. Un objetivo
+// fuera del repositorio se nombra por su ultimo tramo: alcanza para saber que
+// se miro, sin decir donde vive.
+const sanitizeTarget = (t) => {
+  const rel = path.relative(process.cwd(), path.resolve(t));
+  return !rel.startsWith('..') && !path.isAbsolute(rel)
+    ? rel.replaceAll('\\', '/')
+    : `<externo>/${path.basename(path.resolve(t))}`;
+};
+
 const report = {
   schemaVersion: 1,
-  targets,
+  targets: targets.map(sanitizeTarget),
   files,
   bytesScanned: bytes,
   contentDigest: digest.digest('hex'),

@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
   "ref": "wwcpogltfgzgkrlilbcd",
-  "checkedAt": "2026-08-16T17:29:30.589Z",
+  "checkedAt": "2026-08-16T18:42:24.623Z",
   "ledger": {
     "total": 103,
     "last": "20260816122000",
     "server": "PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit"
   },
   "heartbeat": {
-    "last_run_at": "2026-08-16 17:29:00.031268+00",
-    "age_seconds": 35,
+    "last_run_at": "2026-08-16 18:42:00.02933+00",
+    "age_seconds": 29,
     "stale_after_seconds": 600,
     "healthy": true,
     "anonProbeGranted": true,
@@ -21,28 +21,28 @@
       "schedule": "* * * * *",
       "active": true,
       "last_status": "succeeded",
-      "last_start": "2026-08-16 17:29:00.025296+00"
+      "last_start": "2026-08-16 18:42:00.031613+00"
     },
     {
       "jobname": "taba-checkout-provider-truth-sweep",
       "schedule": "* * * * *",
       "active": true,
       "last_status": "succeeded",
-      "last_start": "2026-08-16 17:29:00.031527+00"
+      "last_start": "2026-08-16 18:42:00.032841+00"
     },
     {
       "jobname": "taba-operational-alerts-sweep",
       "schedule": "* * * * *",
       "active": true,
       "last_status": "succeeded",
-      "last_start": "2026-08-16 17:29:00.028387+00"
+      "last_start": "2026-08-16 18:42:00.027643+00"
     },
     {
       "jobname": "taba-payment-outbox-worker",
       "schedule": "30 seconds",
       "active": true,
       "last_status": "succeeded",
-      "last_start": "2026-08-16 17:29:30.660909+00"
+      "last_start": "2026-08-16 18:42:32.917394+00"
     }
   ],
   "alerts": {

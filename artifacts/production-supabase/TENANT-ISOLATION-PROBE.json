@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "probedAt": "2026-08-16T06:55:59.444Z",
+  "connection": "authenticator over TCP (session_user real)",
+  "target": "taba2-prod-shadow",
+  "note": "esquema demostrado identico a produccion por compare-production-drift.mjs",
+  "casos": [
+    {
+      "nombre": "anon no lee orders de nadie",
+      "rol": "anon",
+      "sub": null,
+      "sql": "select count(*) from public.orders;",
+      "esperado": "cero o error",
+      "veredicto": "BLOQUEADO (0 filas)",
+      "salida": "BEGIN\nSET\n\n0\nROLLBACK"
+    },
+    {
+      "nombre": "anon no lee el telefono del negocio",
+      "rol": "anon",
+      "sub": null,
+      "sql": "select phone from public.businesses;",
+      "esperado": "error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  permission denied for table businesses HINT:  Grant the required privileges to the current role with: GRANT SELECT ON public.businesses TO anon;"
+    },
+    {
+      "nombre": "anon no lee la config fiscal del negocio",
+      "rol": "anon",
+      "sub": null,
+      "sql": "select alcohol_sales_enabled from public.businesses;",
+      "esperado": "error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  permission denied for table businesses HINT:  Grant the required privileges to the current role with: GRANT SELECT ON public.businesses TO anon;"
+    },
+    {
+      "nombre": "anon no escribe en businesses",
+      "rol": "anon",
+      "sub": null,
+      "sql": "update public.businesses set name='x';",
+      "esperado": "error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  UPDATE requires a WHERE clause"
+    },
+    {
+      "nombre": "anon no lee rider_locations",
+      "rol": "anon",
+      "sub": null,
+      "sql": "select count(*) from public.rider_locations;",
+      "esperado": "cero o error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  permission denied for table rider_locations HINT:  Grant the required privileges to the current role with: GRANT SELECT ON public.rider_locations TO anon;"
+    },
+    {
+      "nombre": "anon no lee ofertas de rider",
+      "rol": "anon",
+      "sub": null,
+      "sql": "select count(*) from public.rider_order_offers;",
+      "esperado": "cero o error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  permission denied for table rider_order_offers HINT:  Grant the required privileges to the current role with: GRANT SELECT ON public.rider_order_offers TO anon;"
+    },
+    {
+      "nombre": "anon no lee identity_sessions",
+      "rol": "anon",
+      "sub": null,
+      "sql": "select count(*) from public.identity_sessions;",
+      "esperado": "cero o error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  permission denied for table identity_sessions HINT:  Grant the required privileges to the current role with: GRANT SELECT ON public.identity_sessions TO anon;"
+    },
+    {
+      "nombre": "anon no escribe en orders",
+      "rol": "anon",
+      "sub": null,
+      "sql": "insert into public.orders(id) values (gen_random_uuid());",
+      "esperado": "error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  permission denied for table orders HINT:  Grant the required privileges to the current role with: GRANT INSERT ON public.orders TO anon;"
+    },
+    {
+      "nombre": "anon no escribe en fiscal_profile_events",
+      "rol": "anon",
+      "sub": null,
+      "sql": "insert into public.fiscal_profile_events(business_id) values ('11111111-1111-4111-8111-111111111111');",
+      "esperado": "error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  new row violates row-level security policy for table \"fiscal_profile_events\""
+    },
+    {
+      "nombre": "autenticado ajeno no ve orders de otro negocio",
+      "rol": "authenticated",
+      "sub": "22222222-2222-4222-8222-222222222222",
+      "sql": "select count(*) from public.orders;",
+      "esperado": "cero",
+      "veredicto": "BLOQUEADO (0 filas)",
+      "salida": "BEGIN\nSET\n{\"sub\":\"22222222-2222-4222-8222-222222222222\",\"role\":\"authenticated\"}\n0\nROLLBACK"
+    },
+    {
+      "nombre": "autenticado ajeno no ve business_members",
+      "rol": "authenticated",
+      "sub": "22222222-2222-4222-8222-222222222222",
+      "sql": "select count(*) from public.business_members;",
+      "esperado": "cero o error",
+      "veredicto": "BLOQUEADO (0 filas)",
+      "salida": "BEGIN\nSET\n{\"sub\":\"22222222-2222-4222-8222-222222222222\",\"role\":\"authenticated\"}\n0\nROLLBACK"
+    },
+    {
+      "nombre": "autenticado ajeno no ve customers",
+      "rol": "authenticated",
+      "sub": "22222222-2222-4222-8222-222222222222",
+      "sql": "select count(*) from public.customers;",
+      "esperado": "cero o error",
+      "veredicto": "BLOQUEADO (0 filas)",
+      "salida": "BEGIN\nSET\n{\"sub\":\"22222222-2222-4222-8222-222222222222\",\"role\":\"authenticated\"}\n0\nROLLBACK"
+    },
+    {
+      "nombre": "autenticado ajeno no ve customer_addresses",
+      "rol": "authenticated",
+      "sub": "22222222-2222-4222-8222-222222222222",
+      "sql": "select count(*) from public.customer_addresses;",
+      "esperado": "cero o error",
+      "veredicto": "BLOQUEADO (0 filas)",
+      "salida": "BEGIN\nSET\n{\"sub\":\"22222222-2222-4222-8222-222222222222\",\"role\":\"authenticated\"}\n0\nROLLBACK"
+    },
+    {
+      "nombre": "autenticado ajeno no ve payment_intents",
+      "rol": "authenticated",
+      "sub": "22222222-2222-4222-8222-222222222222",
+      "sql": "select count(*) from public.payment_intents;",
+      "esperado": "cero o error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  permission denied for table payment_intents HINT:  Grant the required privileges to the current role with: GRANT SELECT ON public.payment_intents TO authenticated;"
+    },
+    {
+      "nombre": "autenticado ajeno no ve fiscal_documents",
+      "rol": "authenticated",
+      "sub": "22222222-2222-4222-8222-222222222222",
+      "sql": "select count(*) from public.fiscal_documents;",
+      "esperado": "cero o error",
+      "veredicto": "BLOQUEADO (0 filas)",
+      "salida": "BEGIN\nSET\n{\"sub\":\"22222222-2222-4222-8222-222222222222\",\"role\":\"authenticated\"}\n0\nROLLBACK"
+    },
+    {
+      "nombre": "autenticado ajeno no asigna un rider",
+      "rol": "authenticated",
+      "sub": "22222222-2222-4222-8222-222222222222",
+      "sql": "select public.assign_order_rider('11111111-1111-4111-8111-111111111111'::uuid, 'ready'::text, null::uuid, '22222222-2222-4222-8222-222222222222'::uuid);",
+      "esperado": "error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  pedido inexistente CONTEXT:  PL/pgSQL function assign_order_rider(uuid,text,uuid,uuid) line 23 at RAISE"
+    },
+    {
+      "nombre": "autenticado ajeno no ofrece un pedido",
+      "rol": "authenticated",
+      "sub": "22222222-2222-4222-8222-222222222222",
+      "sql": "select public.offer_order_to_rider('11111111-1111-4111-8111-111111111111'::uuid, 'ready'::text, null::uuid, '22222222-2222-4222-8222-222222222222'::uuid);",
+      "esperado": "error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  pedido inexistente CONTEXT:  PL/pgSQL function offer_order_to_rider(uuid,text,uuid,uuid) line 20 at RAISE"
+    },
+    {
+      "nombre": "autenticado ajeno no acepta una oferta",
+      "rol": "authenticated",
+      "sub": "22222222-2222-4222-8222-222222222222",
+      "sql": "select public.accept_rider_order_offer('11111111-1111-4111-8111-111111111111'::uuid, 1::bigint, 'probe'::text);",
+      "esperado": "error",
+      "veredicto": "BLOQUEADO (error)",
+      "salida": "ERROR:  idempotency_key invalida CONTEXT:  PL/pgSQL function rider_validate_idempotency_key(text) line 6 at RAISE"
+    }
+  ],
+  "fallas": 0
+}

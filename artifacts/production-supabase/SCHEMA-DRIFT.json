@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "comparedAt": "2026-08-16T06:56:37.464Z",
+  "shadow": {
+    "source": "taba2-prod-shadow",
+    "capturedAt": "2026-08-16T06:56:11.048Z"
+  },
+  "production": {
+    "source": "wwcpogltfgzgkrlilbcd",
+    "capturedAt": "2026-08-16T06:56:15.349Z"
+  },
+  "unexplainedDriftCount": 0,
+  "drift": [],
+  "explainedDifferences": [
+    {
+      "area": "extensions",
+      "item": "pgtap",
+      "shadow": "presente",
+      "production": "AUSENTE",
+      "reason": "extension de test: solo el shadow la instala, produccion no debe tenerla"
+    }
+  ]
+}

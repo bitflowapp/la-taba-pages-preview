@@ -17,6 +17,13 @@ import { gotoDemoReset, installPageGuards } from './helpers.mjs';
  * decisión entren en 390, 430 y 1440 sin desbordar, y que todo lo que hay que
  * apretar mida al menos 44px de alto. La bandeja es la que importa más: el dueño
  * aprueba desde el teléfono, y un control de 30px es un control que se falla.
+ *
+ * UNA PÁGINA, TRES ANCHOS. La primera versión abría un contexto de navegador por
+ * ancho: seis contextos y seis cargas para dos pruebas. La suite completa pasó de
+ * 358/358 a fallar tres specs distintos en cada corrida —todos verdes en
+ * aislamiento— porque ese churn de recursos corría el reloj de los demás. Acá se
+ * carga una vez y se cambia el viewport, que es lo que de verdad hace falta para
+ * que las media queries reevalúen.
  */
 
 const ANCHOS = [
@@ -56,19 +63,25 @@ const SOLICITUDES = [
   },
 ];
 
+const PASOS = [
+  ['sign_in', {}],
+  ['sign_up', {}],
+  ['request', { request: { fullName: 'Pedro Panel', contactPhone: '2996000010' } }],
+  ['pending', { request: { status: 'pending', requestedAccess: 'panel', requestedAt: '2026-08-17T10:00:00Z' } }],
+  ['rejected', { request: { status: 'rejected', decidedAt: '2026-08-17T12:00:00Z', retryAt: '2999-01-01T00:00:00Z' } }],
+];
+
 const SALIDA = path.join('artifacts', 'taba2-registration-identity', 'screenshots');
 
 async function montar(page) {
   await page.evaluate(async ({ SOLICITUDES }) => {
     const alta = await import('/js/business/business-access-registration.js');
     const bandeja = await import('/js/business/business-access-inbox.js');
-    window.__alta = alta;
-    window.__bandeja = bandeja;
 
     // El Panel siempre corre con esta vista activa, y varias reglas de la hoja
-    // estan escritas como `body:not([data-active-view="business"])`. Montar
+    // están escritas como `body:not([data-active-view="business"])`. Montar
     // sobre la vista de inicio dejaba entrar colores pensados para el
-    // storefront: el texto de las etiquetas y de los botones secundarios salia
+    // storefront: el texto de las etiquetas y de los botones secundarios salía
     // lavado en las capturas. Medir en la vista equivocada es medir otra cosa.
     document.body.dataset.activeView = 'business';
 
@@ -94,6 +107,10 @@ async function montar(page) {
         requests: SOLICITUDES, role, filter: 'pending',
       });
     };
+    // Cada prueba mide una sola región: la otra se vacía para que su alto no
+    // participe del desborde de la página.
+    window.__soloAlta = () => { inbox.innerHTML = ''; };
+    window.__soloBandeja = () => { host.innerHTML = ''; };
   }, { SOLICITUDES });
 }
 
@@ -119,24 +136,17 @@ async function altosTactiles(page, selector) {
   }, selector);
 }
 
-test('las cinco pantallas del alta entran y se pueden apretar', async ({ browser }) => {
+test('las cinco pantallas del alta entran y se pueden apretar', async ({ page }) => {
   fs.mkdirSync(SALIDA, { recursive: true });
+  const guards = installPageGuards(page);
+  await gotoDemoReset(page, '/?reset=1&demo=1');
+  await montar(page);
+  await page.evaluate(() => window.__soloBandeja());
+
   for (const ancho of ANCHOS) {
-    const context = await browser.newContext({ viewport: { width: ancho.width, height: ancho.height } });
-    const page = await context.newPage();
-    const guards = installPageGuards(page);
-    await gotoDemoReset(page, '/?reset=1&demo=1');
-    await montar(page);
+    await page.setViewportSize({ width: ancho.width, height: ancho.height });
 
-    const pasos = [
-      ['sign_in', {}],
-      ['sign_up', {}],
-      ['request', { request: { fullName: 'Pedro Panel', contactPhone: '2996000010' } }],
-      ['pending', { request: { status: 'pending', requestedAccess: 'panel', requestedAt: '2026-08-17T10:00:00Z' } }],
-      ['rejected', { request: { status: 'rejected', decidedAt: '2026-08-17T12:00:00Z', retryAt: '2999-01-01T00:00:00Z' } }],
-    ];
-
-    for (const [step, extra] of pasos) {
+    for (const [step, extra] of PASOS) {
       await page.evaluate(({ step, extra }) => window.__pintarAlta(step, extra), { step, extra });
       const host = page.locator('[data-focal-alta]');
       await expect(host).toBeVisible();
@@ -152,40 +162,41 @@ test('las cinco pantallas del alta entran y se pueden apretar', async ({ browser
         ).toBeGreaterThanOrEqual(MINIMO_TACTIL);
       }
 
-      await page.locator('[data-focal-alta]').screenshot({
-        path: path.join(SALIDA, `${ancho.nombre}-alta-${step}.png`),
-      });
+      await host.screenshot({ path: path.join(SALIDA, `${ancho.nombre}-alta-${step}.png`) });
     }
-
-    // La pantalla de espera no puede ofrecer nada operativo.
-    await page.evaluate(() => window.__pintarAlta('pending', {
-      request: { status: 'pending', requestedAccess: 'rider' },
-    }));
-    const espera = page.locator('[data-focal-alta]');
-    await expect(espera).toContainText('Solicitud enviada');
-    await expect(espera.locator('[data-panel-access-refresh]')).toHaveCount(1);
-    await expect(espera.locator('[data-panel-signup-form]')).toHaveCount(0);
-    await expect(espera.locator('[data-panel-request-form]')).toHaveCount(0);
-
-    await guards.assertClean();
-    await context.close();
   }
+
+  // La pantalla de espera no puede ofrecer nada operativo.
+  await page.evaluate(() => window.__pintarAlta('pending', {
+    request: { status: 'pending', requestedAccess: 'rider' },
+  }));
+  const espera = page.locator('[data-focal-alta]');
+  await expect(espera).toContainText('Solicitud enviada');
+  await expect(espera.locator('[data-panel-access-refresh]')).toHaveCount(1);
+  await expect(espera.locator('[data-panel-signup-form]')).toHaveCount(0);
+  await expect(espera.locator('[data-panel-request-form]')).toHaveCount(0);
+
+  await guards.assertClean();
 });
 
-test('la bandeja de decisión se usa con el dedo y respeta el rol', async ({ browser }) => {
+test('la bandeja de decisión se usa con el dedo y respeta el rol', async ({ page }) => {
   fs.mkdirSync(SALIDA, { recursive: true });
-  for (const ancho of ANCHOS) {
-    const context = await browser.newContext({ viewport: { width: ancho.width, height: ancho.height } });
-    const page = await context.newPage();
-    const guards = installPageGuards(page);
-    await gotoDemoReset(page, '/?reset=1&demo=1');
-    await montar(page);
+  const guards = installPageGuards(page);
+  await gotoDemoReset(page, '/?reset=1&demo=1');
+  await montar(page);
+  await page.evaluate(() => window.__soloAlta());
 
+  const bandeja = page.locator('[data-focal-bandeja]');
+
+  for (const ancho of ANCHOS) {
+    await page.setViewportSize({ width: ancho.width, height: ancho.height });
     await page.evaluate(() => window.__pintarBandeja('owner'));
-    const bandeja = page.locator('[data-focal-bandeja]');
+
     await expect(bandeja).toContainText('Solicitudes de acceso');
     await expect(bandeja).toContainText('Pedro Panel');
     await expect(bandeja).toContainText('Ramiro Rider');
+    // El intento repetido se ve: es la señal de que alguien está insistiendo.
+    await expect(bandeja).toContainText('Intentos');
 
     // Tarjetas, no una tabla de escritorio comprimida.
     await expect(bandeja.locator('table')).toHaveCount(0);
@@ -202,23 +213,15 @@ test('la bandeja de decisión se usa con el dedo y respeta el rol', async ({ bro
       ).toBeGreaterThanOrEqual(MINIMO_TACTIL);
     }
 
-    // El intento repetido se ve: es la señal de que alguien está insistiendo.
-    await expect(bandeja).toContainText('Intentos');
-
-    await page.locator('[data-focal-bandeja]').screenshot({
-      path: path.join(SALIDA, `${ancho.nombre}-bandeja-owner.png`),
-    });
+    await bandeja.screenshot({ path: path.join(SALIDA, `${ancho.nombre}-bandeja-owner.png`) });
 
     // El mismo estado, visto por un empleado: la decisión no se le ofrece.
     await page.evaluate(() => window.__pintarBandeja('staff'));
     await expect(bandeja.locator('[data-access-request-approve]')).toHaveCount(0);
     await expect(bandeja.locator('[data-access-request-reject]')).toHaveCount(0);
     await expect(bandeja).toContainText('dueño o el encargado');
-    await page.locator('[data-focal-bandeja]').screenshot({
-      path: path.join(SALIDA, `${ancho.nombre}-bandeja-staff.png`),
-    });
-
-    await guards.assertClean();
-    await context.close();
+    await bandeja.screenshot({ path: path.join(SALIDA, `${ancho.nombre}-bandeja-staff.png`) });
   }
+
+  await guards.assertClean();
 });

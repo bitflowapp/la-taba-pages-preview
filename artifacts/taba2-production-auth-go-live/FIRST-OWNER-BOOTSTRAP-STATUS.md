@@ -1,10 +1,22 @@
 # Primer owner · estado
 
-**Estado: SIN OWNER. Ejecutado y REVERTIDO el 2026-08-17, a pedido de Marco.**
+**Estado: RESUELTO el 2026-08-17.** El comercio tiene dueño, y la cuenta la creó
+Marco con su propia contraseña.
 
-La herramienta quedó cambiada: ahora **promueve** una identidad que ya existe en
-vez de crearla. El primer dueño va a crear su propia cuenta desde la pantalla
-pública, con su contraseña.
+| | |
+|---|---|
+| `user_id` | `61f238ad-fc2b-446a-9f17-257f4622cd86` |
+| email | `jariel1970@gmail.com` · **confirmado** |
+| rol | **`owner`** activo en `00000000-0000-4000-8000-000000000001` («La Taba») |
+| perfil | `Marco Luna` |
+| contraseña | **la eligió él, en su terminal. Nadie más la conoce ni la vio** |
+| enlaces de recuperación emitidos | **0** |
+| auditoría | `member_activated` · `actor_role=system` · `metadata.bootstrap=true` |
+
+Cómo se llegó: primero se hizo mal —una herramienta fabricó la identidad—, se
+revirtió, y se rehizo con la persona escribiendo su contraseña. El detalle de
+las dos vueltas está más abajo, porque lo que se aprendió en la primera es lo
+que hizo bien a la segunda.
 
 ---
 
@@ -62,34 +74,97 @@ POST /auth/v1/verify {"type":"recovery","token_hash":"294ef…"}
 → 403 {"error_code":"otp_expired","msg":"Email link is invalid or has expired"}
 ```
 
-## 3. Estado de producción al cerrar
+## 3. La segunda vuelta: la cuenta la creó él
+
+Sin SMTP no había forma de que Marco se registrara por la pantalla pública —el
+alta necesita el correo de confirmación—, así que se hizo una **excepción
+administrativa one-shot**: un guion que corre **en su terminal**, no en la
+sesión de Claude.
+
+La distinción no es formal. Las herramientas de Claude corren sin terminal
+interactiva: un `Read-Host` ahí lee vacío. Que el guion lo corriera él es
+exactamente lo que hace que su contraseña no haya pasado por ningún lugar que
+Claude pueda leer.
+
+Qué hace el guion, en orden:
+
+1. preflight: `auth.users=0`, `business_members=0`, `pedidos=0`, comercio activo,
+   `ordering=false`;
+2. **prueba la credencial administrativa con una llamada de sólo lectura ANTES
+   de pedir la contraseña**: si eso falla, no la pide;
+3. pide la contraseña dos veces, oculta (`Read-Host -AsSecureString`);
+4. la valida: 12 caracteres y **contra brechas conocidas**;
+5. crea la identidad con `email_confirm=true`;
+6. prueba el ingreso por el camino público y **cierra esa sesión**;
+7. borra la contraseña de la memoria: el BSTR en cero, referencias sueltas, GC.
+
+Si la creación fallaba, abortaba sin reintentar. La contraseña nunca se imprimió,
+ni se escribió a disco, ni pasó por una variable de entorno o un argumento.
+
+### Dos defectos que aparecieron ahí, y lo que enseñaron
+
+**1. `Forbidden use of secret API key in browser`.** Las claves `sb_secret_*`
+nuevas rechazan lo que parece un navegador, y PowerShell 5.1 se presenta como
+`Mozilla/5.0 (compatible; MSIE 9.0; …)` si nadie le dice otra cosa. Aislado con
+la misma credencial y el mismo endpoint de sólo lectura:
+
+```
+GET /auth/v1/admin/users?page=1&per_page=1
+  sin User-Agent explícito  ->  HTTP 401
+  con taba2-production-owner-bootstrap/1.0  ->  HTTP 200
+```
+
+La corrección fue **declarar quién llama**, no degradar la credencial. Los
+guiones en Node nunca lo vieron porque no mandan ese User-Agent.
+
+**2. La política de contraseñas no vive en el camino administrativo.** Medido con
+tres identidades de QA creadas y borradas en el acto:
+
+| contraseña en `POST /admin/users` | resultado |
+|---|---|
+| `Password123456` (filtrada, 14 caracteres) | **aceptada**, HTTP 200 |
+| 8 caracteres | **aceptada**, HTTP 200 |
+
+El camino público rechaza las dos con `422 weak_password`. O sea que una cuenta
+creada por vía administrativa puede quedar **por debajo** de la política del
+proyecto. Por eso el guion valida largo y brechas él mismo, con k-anonimato: el
+SHA-1 se calcula en la máquina y sólo salen los 5 primeros caracteres del hash.
+
+## 4. La promoción
+
+Con la identidad ya existente y confirmada, se corrió la herramienta **sin**
+`--create-identity`:
+
+```
+Identidad: ya existe (61f238ad-fc2b-446a-9f17-257f4622cd86) — se PROMUEVE
+Listo.  rol: owner  ·  auditoría: member_activated (bootstrap)
+```
+
+**No tocó credenciales, y hay prueba:** `auth.users.updated_at` quedó en
+`21:26:49.965`, el mismo instante en que el guion creó la cuenta y probó el
+ingreso. La promoción corrió minutos después y no escribió una sola vez en
+`auth.users`. Y `auth.one_time_tokens = 0`: no se emitió ningún enlace.
+
+## 5. Estado de producción al cerrar
 
 | | |
 |---|---|
-| `auth.users` | **0** (humanos 0 · anónimos 0) |
-| `business_members` | **0** |
-| `business_access_requests` | **0** |
-| `staff_profiles` / `rider_profiles` | **0** / **0** |
-| `identity_user_security` / `identity_sessions` | **0** / **0** |
-| `customers` / `customer_addresses` | **0** / **0** |
-| `orders` | **0** |
-| `auth.sessions` / `auth.identities` / `auth.one_time_tokens` | **0** / **0** / **0** |
-| `identity_audit_events` | **72** — intacta, a propósito |
+| `auth.users` | **1** — el owner, confirmado, no anónimo |
+| `business_members` | **1** — `owner`, activo, comercio canónico |
+| `staff_profiles` / `identity_user_security` | **1** / **1** |
+| `business_access_requests` / `rider_profiles` | **0** / **0** |
+| `customers` / `customer_addresses` / `orders` | **0** / **0** / **0** |
+| `auth.sessions` | **0** — la sesión de prueba se cerró |
+| `auth.one_time_tokens` | **0** — ningún enlace vivo |
+| `identity_audit_events` | **73** (72 + el de la promoción) |
 | `ordering_enabled` | **false** |
 | ledger | **107** — sin migración nueva |
 
-## 4. El flujo acordado, de acá en adelante
+Panel productivo: `https://la-taba.pages.dev/` responde **200**, con
+`mode: production`, host `wwcpogltfgzgkrlilbcd.supabase.co` y el comercio
+canónico. La vista `#negocio` existe en el shell servido.
 
-1. **Configurar SMTP.** Sin correo no hay confirmación, y sin confirmación el
-   alta pública no termina. Es la única compuerta que queda:
-   `SMTP-PRODUCTION-STATUS.md`.
-2. Marco entra a `https://la-taba.pages.dev/#negocio`.
-3. Crea su cuenta: **su** nombre, **su** correo, **su** contraseña.
-4. Confirma el correo desde el enlace que le llega.
-5. Recién entonces se promueve **esa identidad ya existente** a primer owner,
-   sin tocar su contraseña ni ninguna credencial.
-
-## 5. La herramienta, cambiada para ese flujo
+## 6. La herramienta, como quedó
 
 `scripts/bootstrap-first-business-owner.mjs` **por defecto promueve**. Crear es
 la excepción y hay que pedirla con `--create-identity`.
@@ -99,37 +174,21 @@ la excepción y hay que pedirla con `--create-identity`.
 | identidad inexistente | **aborta** y explica que la cuenta la crea la persona |
 | identidad sin correo confirmado | **aborta**: confirmar es la única prueba de que ese correo es suyo |
 | `--create-identity` con la cuenta ya existente | **aborta**: no crea una segunda |
-| credenciales al promover | **no se tocan**. No emite ningún enlace de recuperación: esa persona ya tiene su contraseña |
+| credenciales al promover | **no se tocan**, y no emite ningún enlace |
 | rollback al promover | deshace **sólo las filas que escribió**. Nunca borra la cuenta de alguien que se registró solo |
-| rollback al crear | sí borra la cuenta recién creada, que es suya y de nadie más |
-| ensayo por defecto | sí, sigue |
+| rollback al crear | sí borra la cuenta recién creada |
+| no repetible | si el comercio ya tiene equipo, se niega |
+| ensayo por defecto | sí |
 
-Verificado en seco contra producción después de la reversión: aborta con
-«No existe ninguna cuenta con jariel1970@gmail.com», sin escribir nada.
+Un detalle chico y real: al promover, el guion seguía imprimiendo «la contraseña
+la elige la persona desde el enlace» y «se emitió el enlace». Las dos cosas eran
+falsas en ese modo. Corregido: ahora dice «la de esa persona, sin tocar. No se
+emitió ningún enlace». Un informe que afirma algo que no pasó es peor que uno
+que no dice nada.
 
-El resto de los controles auditados antes siguen igual: guardia de destino
-reutilizada, ref explícito sin default, comercio validado, no repetible si el
-comercio ya tiene equipo, y evento de auditoría (`member_activated` con
-`metadata.bootstrap=true`, después de que dos CHECK rebotaran el intento
-original).
+## 7. Lo que sigue
 
-## 6. Lo que hace falta cuando llegue el momento
-
-| dato | quién |
-|---|---|
-| cuenta creada y **correo confirmado** | Marco, por la pantalla pública |
-| `TABA_OWNER_EMAIL` / `TABA_OWNER_NAME` | los mismos con los que se registró |
-| `SUPABASE_SERVICE_ROLE_KEY` | del panel de Supabase |
-
-```powershell
-# 1. Ensayo. No escribe nada.
-node scripts/bootstrap-first-business-owner.mjs `
-  --ref wwcpogltfgzgkrlilbcd `
-  --business 00000000-0000-4000-8000-000000000001
-
-# 2. De verdad.
-node scripts/bootstrap-first-business-owner.mjs `
-  --ref wwcpogltfgzgkrlilbcd `
-  --business 00000000-0000-4000-8000-000000000001 `
-  --confirm
-```
+El owner ya puede entrar a `https://la-taba.pages.dev/#negocio` con su correo y
+su contraseña. La compuerta que queda es **SMTP**, y ahora es la del alta del
+resto del equipo: sin correo, nadie más puede registrarse ni recuperar su
+contraseña. Ver `SMTP-PRODUCTION-STATUS.md`.

@@ -315,16 +315,26 @@ async function main() {
   console.log(`  user_id : ${ownerId}`);
   console.log('  rol     : owner');
   console.log(`  auditoría: ${auditError ? `NO se pudo registrar (${auditError.message})` : 'member_activated (bootstrap)'}`);
-  console.log('  contraseña: la elige la persona desde el enlace de recuperación.');
-  if (linkError) {
-    console.log('\nNo se pudo emitir el enlace acá. Con SMTP configurado, la persona puede');
-    console.log('usar "Olvidé mi contraseña" en el Panel y completar el alta por ese camino.');
-  } else if (enlaceUtil) {
-    console.log('\nEnlace para elegir contraseña (entregalo por un canal seguro; vence en una hora):');
-    console.log(`  ${enlaceUtil}`);
+
+  // Los mensajes de abajo salían siempre, también al promover, y decían dos
+  // cosas falsas: que la persona tenía que elegir su contraseña desde un enlace,
+  // y que "se emitió el enlace". Al promover no se emite ninguno y la persona ya
+  // tiene su contraseña. Un informe que dice algo que no pasó es peor que uno
+  // que no dice nada.
+  if (existente) {
+    console.log('  contraseña: la de esa persona, sin tocar. No se emitió ningún enlace.');
   } else {
-    console.log('\nSe emitió el enlace pero falta saber el host canónico para armarlo.');
-    console.log('Volvé a correrlo con --site-url https://<host> o usá "Olvidé mi contraseña".');
+    console.log('  contraseña: la elige la persona desde el enlace de recuperación.');
+    if (linkError) {
+      console.log('\nNo se pudo emitir el enlace acá. Con SMTP configurado, la persona puede');
+      console.log('usar "Olvidé mi contraseña" en el Panel y completar el alta por ese camino.');
+    } else if (enlaceUtil) {
+      console.log('\nEnlace para elegir contraseña (entregalo por un canal seguro; vence en una hora):');
+      console.log(`  ${enlaceUtil}`);
+    } else {
+      console.log('\nSe emitió el enlace pero falta saber el host canónico para armarlo.');
+      console.log('Volvé a correrlo con --site-url https://<host> o usá "Olvidé mi contraseña".');
+    }
   }
   console.log('\nDe acá en adelante las altas salen del Panel: por invitación, o aprobando');
   console.log('una solicitud. Este script ya no vuelve a correr sobre este comercio.');

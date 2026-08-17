@@ -36,7 +36,7 @@ Los pedidos siguen **cerrados**, antes y después.
 | `PRODUCTION-AUTH-RUNBOOK.md` | cómo se cambia, se rota, se publica y se contiene |
 | `REGISTRATION-OPERATIONS.md` | cómo se da de alta a la gente, en castellano de comercio |
 | `DAY1-AUTH-HEALTH.md` / `.json` | el comando de todos los días, y qué vigila |
-| `FIRST-OWNER-BOOTSTRAP-STATUS.md` | qué se creó, qué se revirtió fila por fila, y el flujo acordado para el owner real |
+| `FIRST-OWNER-BOOTSTRAP-STATUS.md` | el owner real, las dos vueltas, y los dos defectos que aparecieron al crearlo de verdad |
 | `RIDER-RECOVERY-CONTRACT.md` | el Rider ya puede recuperar su contraseña; falta el cartel que lo diga, con el contrato exacto |
 
 ## La compuerta que queda: una
@@ -45,11 +45,11 @@ Los pedidos siguen **cerrados**, antes y después.
 no puede completarse: GoTrue genera el token, falla el envío y la transacción se
 revierte. Todo lo demás está hecho; aplicar es un comando.
 
-**Producción no tiene owner, y así queda a propósito.** El bootstrap se ejecutó
-y se revirtió el mismo día a pedido de Marco: quien va a ser dueño quiere crear
-su cuenta él, por la pantalla pública, con su contraseña. La herramienta ahora
-**promueve** una identidad existente en vez de crearla. El orden acordado es:
-SMTP → él se registra y confirma → recién ahí se lo promueve.
+**El comercio ya tiene dueño, y la cuenta la creó él.** `jariel1970@gmail.com`
+(«Marco Luna»), `owner` activo, con una contraseña que eligió en su terminal y
+que nadie más conoce. Se llegó ahí en dos vueltas: la primera fabricó la
+identidad —y se revirtió—, la segunda la creó la persona. La herramienta ahora
+**promueve** una identidad existente; crear quedó detrás de `--create-identity`.
 Ver `FIRST-OWNER-BOOTSTRAP-STATUS.md`.
 
 ## Lo que se encontró midiendo, y no estaba en ningún informe
@@ -67,5 +67,12 @@ Ver `FIRST-OWNER-BOOTSTRAP-STATUS.md`.
 * Y al ejecutarlo de verdad se vio lo que ninguna prueba dice: **fabricar la
   identidad del dueño es la decisión equivocada** aunque funcione. Ahora la
   herramienta promueve, no crea.
+* Las claves `sb_secret_*` **rechazan lo que parece un navegador**, y PowerShell
+  se presenta como MSIE 9. Mismo endpoint y misma credencial: sin User-Agent
+  propio **401**, con `taba2-production-owner-bootstrap/1.0` **200**.
+* **La política de contraseñas no vive en el camino administrativo**: `POST
+  /admin/users` acepta una contraseña filtrada y una de 8 caracteres que el
+  camino público rechaza con `422`. Quien cree cuentas por ahí tiene que validar
+  él mismo.
 * Turnstile **no es una compuerta externa**: la cuenta de Cloudflare ya tiene el
   permiso para crear el widget. Lo que falta es integrarlo en los tres clientes.

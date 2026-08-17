@@ -1,3 +1,266 @@
+/* ============================================================================
+   PANEL DEL NEGOCIO — superficie de trabajo, grafito neutro.
+   ============================================================================
+   El Panel no es una vidriera: es la pantalla que alguien mira ocho horas
+   seguidas mientras entran pedidos. Hasta acá heredaba la superficie clara del
+   cliente —blanco #fff sobre gris #f5f7f9— y encima traía 113 literales de
+   color repartidos por esta hoja, 58 distintos, la mayoría grises que no
+   pertenecían a ninguna escala. Dos problemas separados: el blanco cansa, y sin
+   sistema cada bloque elegía su propio gris.
+
+   Esta escala los resuelve juntos. Cinco escalones de una sola familia, medidos
+   en luminancia relativa, y ninguna tinta por debajo de 4,5:1 sobre la
+   superficie donde se usa.
+
+   ## Por qué no son los mismos valores del storefront
+
+   El cliente ya vive sobre grafito (`--brand-bg` … `--shelf-raised`), pero ese
+   grafito tira a azul y lleva dorado, brillo de góndola y sombras largas: es
+   una vitrina, y tiene que sentirse así. El Panel usa la MISMA idea con una
+   familia más neutra y un escalón más alta, porque acá lo que se mira es texto
+   denso, no packshots, y porque el brillo de la góndola no puede cruzar
+   (B26: Customer = comprar, Business = operar).
+
+   ## Los cinco escalones
+
+     hueco     #16181b   cabecera de tabla, canaleta, pista de progreso
+     fondo     #1b1e22   fondo de página
+     superficie#222529   panel, sección, barra
+     tarjeta   #282c31   la tarjeta de pedido
+     elevada   #31353b   campo, chip, fila activa, hover
+
+   Cada paso es un escalón apenas perceptible (1,06 · 1,09 · 1,10 · 1,14) y ésa
+   es la intención: la jerarquía la dibuja el hairline, no un salto de luz.
+
+   ## La tinta, medida
+
+                    hueco   fondo  superf.  tarjeta  elevada
+     ink   #eceef1  15,30   14,39   13,24    12,09    10,61
+     ink-2 #b6bcc4   9,30    8,75    8,05     7,34     6,45
+     muted #9aa0a9   6,76    6,35    5,84     5,34     4,68
+
+   `--panel-ink` es blanco roto y no #fff: sobre grafito el blanco puro vibra, y
+   la diferencia de contraste (12,09 contra 13,3) no compra nada.
+
+   `--panel-ink-muted` es #9aa0a9 y no #8f959e, que era el candidato obvio: ese
+   daba 4,09:1 sobre la superficie elevada y ahí es donde se usa para las
+   etiquetas dentro de un campo. Lo mismo con el rojo legible, #ff7d84 y no
+   #ff6b73 (4,46:1 sobre elevada).
+
+   ## El rojo
+
+   `--taba-red` (#d0000d) es una SUPERFICIE, no una tinta: sobre la tarjeta da
+   2,47:1. Como fondo de botón con texto blanco da 5,69:1 y ahí sí sirve. Para
+   texto rojo sobre grafito existe `--panel-red-ink`. Es la misma regla que ya
+   rige en la góndola del cliente, y por eso el rojo del Panel queda reservado a
+   la acción principal, al pedido que espera y al error crítico — no a la
+   decoración (B4).
+   ========================================================================== */
+body[data-active-view="business"] {
+  --panel-sunken: #16181b;
+  --panel-bg: #1b1e22;
+  --panel-surface: #222529;
+  --panel-card: #282c31;
+  --panel-raised: #31353b;
+
+  /* Hairline de 1px: 1,46:1 sobre la tarjeta. Sutil pero presente; es lo que
+     separa una fila de la siguiente sin dibujar una reja. */
+  --panel-line: rgb(255 255 255 / 12%);
+  /* Borde que PORTA información (campo, selector, chip activo): 3,16:1 sobre
+     la tarjeta, por encima del mínimo de WCAG 1.4.11 para componentes. */
+  --panel-line-strong: rgb(255 255 255 / 36%);
+
+  --panel-ink: #eceef1;
+  --panel-ink-2: #b6bcc4;
+  --panel-ink-muted: #9aa0a9;
+
+  --panel-success: #5fd08a;
+  --panel-warning: #f2b544;
+  --panel-danger: #ff7d84;
+  --panel-red-ink: #ff7d84;
+  --panel-info: #8ab4ff;
+
+  /* Lavados: el color del estado como FONDO, siempre por debajo del hairline.
+     Un chip de estado no puede competir con el botón de acción. */
+  --panel-success-wash: rgb(95 208 138 / 14%);
+  --panel-warning-wash: rgb(242 181 68 / 15%);
+  --panel-danger-wash: rgb(255 125 132 / 15%);
+  --panel-red-wash: rgb(208 0 13 / 20%);
+  --panel-info-wash: rgb(138 180 255 / 14%);
+
+  /* Sobre grafito la sombra casi no despega: el borde hace el trabajo y la
+     sombra sólo aporta profundidad. Una sola por clase de superficie. */
+  --panel-shadow: 0 10px 28px rgb(0 0 0 / 34%);
+  --panel-shadow-sheet: 0 -12px 40px rgb(0 0 0 / 46%);
+
+  /* --------------------------------------------------------------------------
+     Los tokens genéricos que esta hoja YA consumía, reapuntados a la escala.
+     --------------------------------------------------------------------------
+     Son los que se usan como TINTA o como línea, nunca como texto sobre un
+     fondo de color: reapuntarlos arregla de una vez las decenas de
+     `var(--taba-muted, #6d675f)` repartidas por el archivo, en lugar de
+     reescribir cada una.
+
+     `--taba-white` y `--taba-red` quedan AFUERA a propósito. El primero es
+     además la tinta del botón primario; el segundo es la superficie de acción,
+     y los dos tienen que seguir significando lo mismo acá que en el resto de la
+     aplicación.
+     ----------------------------------------------------------------------- */
+  --taba-ink: var(--panel-ink);
+  --taba-graphite: var(--panel-ink);
+  --taba-graphite-soft: var(--panel-ink-2);
+  --taba-muted: var(--panel-ink-2);
+  --taba-muted-soft: var(--panel-ink-muted);
+  --taba-surface: var(--panel-card);
+  --taba-subtle: var(--panel-surface);
+  --taba-border: var(--panel-line);
+  --taba-border-soft: var(--panel-line);
+  --taba-border-medium: var(--panel-line-strong);
+  --taba-line-strong: var(--panel-line-strong);
+  --taba-success: var(--panel-success);
+  --taba-warning: var(--panel-warning);
+  --taba-danger: var(--panel-danger);
+  --taba-red-quiet: var(--panel-red-ink);
+  --taba-red-soft: var(--panel-red-wash);
+  --taba-red-border-soft: color-mix(in srgb, var(--taba-red) 44%, transparent);
+  --taba-focus: var(--panel-info);
+  /* Acá la tinta es CLARA, así que lo que va encima de ella es el fondo. */
+  --ink-contrast: var(--panel-bg);
+  /* La barra de acción pegada al pie: translúcida, pero sobre grafito. */
+  --panel-sticky: color-mix(in srgb, var(--panel-surface) 94%, transparent);
+
+  background: var(--panel-bg);
+  color: var(--panel-ink);
+}
+
+/* --------------------------------------------------------------------------
+   Los componentes compartidos, retematizados en el ámbito del Panel.
+   --------------------------------------------------------------------------
+   `common.css` los pinta con la paleta clara y así tiene que seguir para el
+   cliente. Acá se los vuelve a pintar UNA vez, en un bloque, en vez de repetir
+   colores en cada regla de esta hoja.
+
+   `--taba-white` NO se reasigna a propósito: además de superficie es la TINTA
+   del botón primario (`.primary-button { color: var(--taba-white) }`).
+   Reapuntarlo dejaría el texto grafito sobre rojo, que es justamente la clase
+   de efecto colateral por la que un tema no se hace remapeando tokens de uso
+   mixto.
+   ----------------------------------------------------------------------- */
+body[data-active-view="business"] [data-view="business"] {
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] .section.soft {
+  background: var(--panel-surface);
+}
+
+body[data-active-view="business"] :is(h1, h2, h3, strong, dt, dd, legend) {
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] .card {
+  border-color: var(--panel-line);
+  background: var(--panel-card);
+  box-shadow: var(--panel-shadow);
+}
+
+body[data-active-view="business"] .eyebrow {
+  color: var(--panel-ink-muted);
+}
+
+body[data-active-view="business"] :is(.form-hint, small, .muted, p) {
+  color: var(--panel-ink-2);
+}
+
+body[data-active-view="business"] label {
+  color: var(--panel-ink-2);
+}
+
+body[data-active-view="business"] :is(input, select, textarea) {
+  border-color: var(--panel-line-strong);
+  background: var(--panel-raised);
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] :is(input, textarea)::placeholder {
+  color: var(--panel-ink-muted);
+}
+
+body[data-active-view="business"] .secondary-button {
+  border-color: var(--panel-line-strong);
+  background: var(--panel-raised);
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] .secondary-button:hover {
+  border-color: var(--panel-line-strong);
+  background: color-mix(in srgb, var(--panel-raised) 82%, white);
+}
+
+body[data-active-view="business"] :is(.ghost-button, .icon-button) {
+  color: var(--panel-ink-2);
+}
+
+body[data-active-view="business"] :is(.ghost-button, .icon-button):hover {
+  background: var(--panel-raised);
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] .danger-button {
+  border-color: color-mix(in srgb, var(--panel-danger) 46%, transparent);
+  background: var(--panel-danger-wash);
+  color: var(--panel-danger);
+}
+
+body[data-active-view="business"] .empty-state {
+  color: var(--panel-ink-2);
+}
+
+body[data-active-view="business"] .empty-state strong {
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] :is(.warning-box, .notice-box) {
+  border-color: color-mix(in srgb, var(--panel-warning) 40%, transparent);
+  background: var(--panel-warning-wash);
+  color: var(--panel-warning);
+}
+
+body[data-active-view="business"] :focus-visible {
+  outline-color: var(--panel-info);
+}
+
+/* --------------------------------------------------------------------------
+   La barra superior, sobre grafito.
+   --------------------------------------------------------------------------
+   `.topbar` es papel translúcido: `rgb(255 253 251 / 92%)` con desenfoque
+   detrás. Sobre el fondo claro del cliente eso es correcto; sobre el Panel
+   dejaba una franja pálida encima de la superficie de trabajo —lo primero que
+   ve el ojo al entrar es un rectángulo blanco— y el wordmark, que hereda la
+   tinta del sistema, quedaba ilegible contra ella.
+   ----------------------------------------------------------------------- */
+body[data-active-view="business"] .topbar {
+  border-bottom-color: var(--panel-line);
+  background: color-mix(in srgb, var(--panel-surface) 92%, transparent);
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] .topbar-ops-sound {
+  border-color: var(--panel-line-strong);
+  background: var(--panel-raised);
+  color: var(--panel-ink-2);
+}
+
+body[data-active-view="business"] .topbar-ops-sound.on {
+  border-color: var(--taba-red);
+  color: var(--panel-ink);
+}
+
+/* La insignia del contador se recorta contra la barra, no contra el papel. */
+body[data-active-view="business"] .topbar-ops-sound-count {
+  border-color: var(--panel-surface);
+}
+
 .admin-section {
   max-width: var(--content);
 }
@@ -5,50 +268,55 @@
 /* Centro operativo: scanner, inventario, packing, POS y estado fiscal. */
 .business-ops-center { display: grid; gap: 18px; min-width: 0; }
 .business-ops-nav { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; scrollbar-width: thin; }
-.business-ops-nav-button { min-height: 44px; flex: 0 0 auto; border: 1px solid var(--border, #d9dde3); border-radius: 999px; background: #fff; color: #252a30; padding: 0 16px; font: inherit; font-weight: 750; cursor: pointer; }
-.business-ops-nav-button.active { border-color: #b20e18; box-shadow: inset 0 0 0 1px #b20e18; color: #9c0c15; }
-.business-ops-feedback { margin: 0; border-left: 4px solid #b20e18; border-radius: 10px; background: #fff2f3; padding: 12px 14px; color: #591015; font-weight: 700; }
-.business-ops-panel { display: grid; gap: 18px; border: 1px solid var(--border, #d9dde3); border-radius: 18px; background: #fff; padding: clamp(16px, 2.5vw, 28px); box-shadow: 0 10px 30px rgb(28 33 39 / 7%); }
-.business-ops-panel > header h2 { margin: 3px 0 6px; color: #20242a; }
-.business-ops-panel > header p:last-child { margin: 0; color: #5d6570; }
+.business-ops-nav-button { min-height: var(--tap); flex: 0 0 auto; border: 1px solid var(--panel-line-strong); border-radius: 999px; background: var(--panel-raised); color: var(--panel-ink); padding: 0 16px; font: inherit; font-weight: 750; cursor: pointer; }
+/* El destino activo se marca con el rojo de la marca como SUPERFICIE, no como
+   tinta: sobre grafito el rojo no se lee, pero como fondo con texto blanco da
+   5,69:1 y además es la única cosa roja de la barra, que es lo que hace que se
+   encuentre de un vistazo. */
+.business-ops-nav-button.active { border-color: var(--taba-red); background: var(--taba-red); color: var(--taba-white); }
+.business-ops-feedback { margin: 0; border-left: 4px solid var(--taba-red); border-radius: 10px; background: var(--panel-red-wash); padding: 12px 14px; color: var(--panel-red-ink); font-weight: 700; }
+.business-ops-panel { display: grid; gap: 18px; border: 1px solid var(--panel-line); border-radius: 18px; background: var(--panel-card); padding: clamp(16px, 2.5vw, 28px); box-shadow: var(--panel-shadow); }
+.business-ops-panel > header h2 { margin: 3px 0 6px; color: var(--panel-ink); }
+.business-ops-panel > header p:last-child { margin: 0; color: var(--panel-ink-2); }
 .business-scanner-input, .business-ops-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: end; }
-.business-scanner-input label, .business-ops-form label, .business-fiscal-row label { display: grid; gap: 7px; color: #363c44; font-weight: 700; }
-.business-scanner-input input, .business-ops-form input, .business-ops-form select, .business-fiscal-row input { min-height: 48px; width: 100%; border: 1px solid #b9c0c9; border-radius: 11px; background: #fff; padding: 9px 12px; color: #20242a; font: inherit; }
+.business-scanner-input label, .business-ops-form label, .business-fiscal-row label { display: grid; gap: 7px; color: var(--panel-ink-2); font-weight: 700; }
+.business-scanner-input input, .business-ops-form input, .business-ops-form select, .business-fiscal-row input { min-height: 48px; width: 100%; border: 1px solid var(--panel-line-strong); border-radius: 11px; background: var(--panel-raised); padding: 9px 12px; color: var(--panel-ink); font: inherit; }
 .business-ops-check { display: flex !important; grid-template-columns: auto 1fr; align-items: center; }
 .business-ops-check input { min-height: auto; width: 20px; height: 20px; }
-.business-scan-result { border: 1px dashed #bbc1c9; border-radius: 14px; background: #f7f8fa; padding: 16px; }
-.business-scan-result.is-valid { border-style: solid; border-color: #79ad87; background: #f0faf3; }
-.business-scan-result.is-invalid { border-style: solid; border-color: #d4656b; background: #fff2f3; }
-.business-scan-result > span { display: block; margin-top: 4px; color: #626a74; }
+.business-scan-result { border: 1px dashed var(--panel-line-strong); border-radius: 14px; background: var(--panel-surface); padding: 16px; }
+.business-scan-result.is-valid { border-style: solid; border-color: color-mix(in srgb, var(--panel-success) 52%, transparent); background: var(--panel-success-wash); }
+.business-scan-result.is-invalid { border-style: solid; border-color: color-mix(in srgb, var(--panel-danger) 52%, transparent); background: var(--panel-danger-wash); }
+.business-scan-result > span { display: block; margin-top: 4px; color: var(--panel-ink-2); }
 .business-scan-result dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
 .business-scan-result dl div { min-width: 0; }
-.business-scan-result dt { color: #68717c; font-size: .78rem; font-weight: 700; text-transform: uppercase; }
-.business-scan-result dd { margin: 4px 0 0; overflow-wrap: anywhere; color: #242930; font-weight: 750; }
+.business-scan-result dt { color: var(--panel-ink-muted); font-size: .78rem; font-weight: 700; text-transform: uppercase; }
+.business-scan-result dd { margin: 4px 0 0; overflow-wrap: anywhere; color: var(--panel-ink); font-weight: 750; }
 .business-ops-cart, .business-ops-progress { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.business-ops-cart li, .business-ops-progress li { display: flex; justify-content: space-between; gap: 12px; align-items: center; min-height: 48px; border-bottom: 1px solid #e6e9ed; padding: 8px 0; }
-.business-fiscal-lock { display: flex; flex-wrap: wrap; gap: 8px 18px; border: 1px solid #e4b64f; border-radius: 12px; background: #fff9e9; padding: 14px; color: #654a0c; }
-.business-fiscal-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto; gap: 10px 14px; align-items: center; border-top: 1px solid #e7e9ec; padding: 15px 0; }
+.business-ops-cart li, .business-ops-progress li { display: flex; justify-content: space-between; gap: 12px; align-items: center; min-height: 48px; border-bottom: 1px solid var(--panel-line); padding: 8px 0; }
+.business-fiscal-lock { display: flex; flex-wrap: wrap; gap: 8px 18px; border: 1px solid color-mix(in srgb, var(--panel-warning) 44%, transparent); border-radius: 12px; background: var(--panel-warning-wash); padding: 14px; color: var(--panel-warning); }
+.business-fiscal-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto; gap: 10px 14px; align-items: center; border-top: 1px solid var(--panel-line); padding: 15px 0; }
 .business-fiscal-row > div { display: grid; gap: 3px; }
-.business-fiscal-row small { color: #69717b; }
-.business-status { border-radius: 999px; padding: 5px 9px; background: #eceff2; font-size: .78rem; font-weight: 800; }
-.business-status.success { background: #e4f6e9; color: #175f2c; }
-.business-status.warning { background: #fff0c8; color: #6d4c00; }
-.business-status.danger { background: #ffe2e4; color: #8b151d; }
+.business-fiscal-row small { color: var(--panel-ink-muted); }
+.business-status { border-radius: 999px; padding: 5px 9px; background: var(--panel-raised); color: var(--panel-ink-2); font-size: .78rem; font-weight: 800; }
+.business-status.success { background: var(--panel-success-wash); color: var(--panel-success); }
+.business-status.warning { background: var(--panel-warning-wash); color: var(--panel-warning); }
+.business-status.danger { background: var(--panel-danger-wash); color: var(--panel-danger); }
 .business-fiscal-actions, .business-fiscal-credit, .business-fiscal-preview { display: grid; gap: 10px; grid-column: 1 / -1; }
 .business-fiscal-print { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-column: 1 / -1; }
-.business-fiscal-credit { border: 1px solid #e7e9ec; border-radius: 10px; padding: 10px; }
+.business-fiscal-credit { border: 1px solid var(--panel-line); border-radius: 10px; padding: 10px; }
 .business-fiscal-credit-line { display: grid; grid-template-columns: minmax(180px, 1fr) repeat(3, minmax(100px, 1fr)); gap: 8px; align-items: end; }
 .business-fiscal-credit-line label { display: grid; gap: 4px; font-size: .8rem; }
-.business-fiscal-hash { color: #53606c; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .78rem; }
-.business-fiscal-error { color: #8b151d !important; grid-column: 1 / -1; }
-.business-fiscal-preview { border: 1px solid #d6dde5; border-radius: 12px; padding: 12px; margin: 14px 0; }
-.business-fiscal-preview iframe { width: 100%; min-height: 540px; border: 1px solid #d6dde5; border-radius: 8px; background: #fff; }
-.production-operations-shortcuts { display: flex; gap: 8px; overflow-x: auto; margin: 4px 0 18px; padding-bottom: 8px; }
-.production-command-status { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: #5a626d; font-size: .86rem; }
-.production-command-status strong { color: #262b31; }
-.production-command-status.is-offline strong, .production-command-status.is-server_unavailable strong, .production-command-status.is-session_expired strong { color: #a20f19; }
+.business-fiscal-hash { color: var(--panel-ink-muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .78rem; }
+.business-fiscal-error { color: var(--panel-danger) !important; grid-column: 1 / -1; }
+.business-fiscal-preview { border: 1px solid var(--panel-line); border-radius: 12px; padding: 12px; margin: 14px 0; }
+/* El visor del comprobante conserva fondo blanco: adentro va un PDF pensado
+   para papel, y teñirlo de grafito mentiría sobre lo que se va a imprimir. */
+.business-fiscal-preview iframe { width: 100%; min-height: 540px; border: 1px solid var(--panel-line-strong); border-radius: 8px; background: var(--taba-white); }
+.production-command-status { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: var(--panel-ink-2); font-size: .86rem; }
+.production-command-status strong { color: var(--panel-ink); }
+.production-command-status.is-offline strong, .production-command-status.is-server_unavailable strong, .production-command-status.is-session_expired strong { color: var(--panel-danger); }
 .production-cancel-control { flex: 1 1 190px; }
-.production-cancel-control input { min-height: 42px; width: 100%; border: 1px solid #bdc3cb; border-radius: 9px; padding: 8px 10px; font: inherit; }
+.production-cancel-control input { min-height: var(--tap); width: 100%; border: 1px solid var(--panel-line-strong); border-radius: 9px; background: var(--panel-raised); padding: 8px 10px; color: var(--panel-ink); font: inherit; }
 @media (max-width: 720px) {
   .business-scanner-input, .business-ops-form, .business-fiscal-print, .business-scan-result dl, .business-fiscal-credit-line { grid-template-columns: 1fr; }
   .business-fiscal-row { grid-template-columns: 1fr; }
@@ -177,7 +445,7 @@
   padding: 0 6px;
   border-radius: var(--radius-pill);
   background: var(--taba-red);
-  color: white;
+  color: var(--taba-white);
   font-size: 11px;
   line-height: 1;
 }
@@ -186,7 +454,7 @@
   padding: 18px 20px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-md);
-  background: white;
+  background: var(--taba-surface, #fff);
 }
 
 .business-inbox-main {
@@ -222,7 +490,7 @@
 .report-period-tab.active {
   background: var(--taba-ink);
   box-shadow: none;
-  color: #fff;
+  color: var(--ink-contrast);
 }
 
 /* ==========================================================================
@@ -305,9 +573,9 @@
   gap: 10px;
   min-height: var(--tap);
   padding: 6px 12px;
-  border: 1px solid #f0d9ae;
+  border-color: color-mix(in srgb, var(--taba-warning) 44%, transparent);
   border-radius: var(--radius-sm);
-  background: #fff4e0;
+  background: color-mix(in srgb, var(--taba-warning) 15%, transparent);
   color: var(--taba-warning);
   font-size: 13px;
   font-weight: 700;
@@ -330,7 +598,7 @@
 .inbox-feed .main-order-action {
   border-color: var(--taba-ink);
   background: var(--taba-ink);
-  color: #fff;
+  color: var(--ink-contrast);
 }
 
 .inbox-feed .main-order-action:hover {
@@ -365,7 +633,7 @@
   padding: 14px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-sm);
-  background: white;
+  background: var(--taba-surface, #fff);
 }
 
 .stat-tile small,
@@ -414,21 +682,21 @@
 }
 
 .status-chip.preparing {
-  border-color: #f0d9ae;
-  background: #fff4e0;
+  border-color: color-mix(in srgb, var(--taba-warning) 44%, transparent);
+  background: color-mix(in srgb, var(--taba-warning) 15%, transparent);
   color: var(--taba-warning);
 }
 
 .status-chip.ready {
-  border-color: #b7ddc6;
-  background: #e8f5ed;
+  border-color: color-mix(in srgb, var(--taba-success) 44%, transparent);
+  background: color-mix(in srgb, var(--taba-success) 14%, transparent);
   color: var(--taba-success);
 }
 
 .status-chip.way {
-  border-color: #bcd0f2;
-  background: #eaf1fd;
-  color: #1a5fd0;
+  border-color: color-mix(in srgb, var(--panel-info, #1a5fd0) 44%, transparent);
+  background: color-mix(in srgb, var(--panel-info, #1a5fd0) 14%, transparent);
+  color: var(--panel-info, #1a5fd0);
 }
 
 .status-chip.cancelled {
@@ -487,7 +755,7 @@
   padding: 16px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-sm);
-  background: white;
+  background: var(--taba-surface, #fff);
   box-shadow: var(--shadow-xs);
 }
 
@@ -609,7 +877,7 @@
   min-height: 44px;
   border: 1px solid var(--taba-border-strong);
   border-radius: var(--radius-xs);
-  background: white;
+  background: var(--taba-surface, #fff);
   color: var(--taba-ink);
 }
 
@@ -721,7 +989,7 @@
   padding: 20px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-md);
-  background: white;
+  background: var(--taba-surface, #fff);
 }
 
 .business-collapsible {
@@ -768,7 +1036,7 @@
   padding: 13px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-sm);
-  background: white;
+  background: var(--taba-surface, #fff);
 }
 
 .catalog-stock-actions,
@@ -888,7 +1156,7 @@
     overflow: auto;
     border: 1px solid var(--taba-border);
     border-radius: var(--radius-md);
-    background: white;
+    background: var(--taba-surface, #fff);
   }
 
   /* Fila de la cola: selecciona, no actúa. */
@@ -899,13 +1167,13 @@
     border: 1px solid var(--taba-border);
     border-left: 3px solid var(--taba-border-medium);
     border-radius: var(--radius-sm);
-    background: white;
+    background: var(--taba-surface, #fff);
   }
 
   .inbox-order.is-compact.accent-received { border-left-color: var(--taba-red); }
   .inbox-order.is-compact.accent-preparing { border-left-color: var(--taba-warning); }
   .inbox-order.is-compact.accent-ready { border-left-color: var(--taba-success); }
-  .inbox-order.is-compact.accent-way { border-left-color: #1a5fd0; }
+  .inbox-order.is-compact.accent-way { border-left-color: var(--panel-info, #1a5fd0); }
 
   .inbox-order.is-compact.is-selected {
     border-color: var(--taba-ink);
@@ -984,7 +1252,7 @@
     gap: 10px;
     padding: 14px 18px;
     border-bottom: 1px solid var(--taba-border);
-    background: white;
+    background: var(--taba-surface, #fff);
   }
 
   .d-detail-head .inbox-time {
@@ -1011,7 +1279,7 @@
     padding: 12px 16px;
     border: 1px solid var(--taba-border);
     border-radius: var(--radius-md);
-    background: white;
+    background: var(--taba-surface, #fff);
   }
 
   .d-rail .primary-action-block {
@@ -1239,7 +1507,7 @@
     height: var(--b-nav-block);
     padding: 3px 8px calc(9px + var(--safe-b));
     border-top: 1px solid var(--taba-border);
-    background: rgb(255 253 251 / 97%);
+    background: var(--panel-sticky, rgb(255 253 251 / 97%));
     -webkit-backdrop-filter: blur(18px);
     backdrop-filter: blur(18px);
   }
@@ -1324,7 +1592,7 @@
   overflow: hidden;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-md);
-  background: white;
+  background: var(--taba-surface, #fff);
 }
 
 .b-row {
@@ -1473,7 +1741,7 @@
 
 .operation-metric.requires-attention,
 .daily-reconciliation-row.has-difference {
-  border-color: #b66b16;
+  border-color: var(--taba-warning);
 }
 
 .operation-alerts,
@@ -1486,15 +1754,15 @@
 }
 
 .operation-alert.severity-critical {
-  border-left: 5px solid #9f1d20;
+  border-left: 5px solid var(--taba-danger);
 }
 
 .operation-alert.severity-action_required {
-  border-left: 5px solid #b66b16;
+  border-left: 5px solid var(--taba-warning);
 }
 
 .operation-alert.severity-warning {
-  border-left: 5px solid #d3a125;
+  border-left: 5px solid var(--taba-warning);
 }
 
 .daily-reconciliation-list {
@@ -1565,9 +1833,9 @@
   color: var(--taba-muted, #6d675f);
 }
 
-.operation-health.tone-critical .operation-health-headline { border-left-color: #9f1d20; }
-.operation-health.tone-attention .operation-health-headline { border-left-color: #b66b16; }
-.operation-health.tone-calm .operation-health-headline { border-left-color: #2f7a4f; }
+.operation-health.tone-critical .operation-health-headline { border-left-color: var(--taba-danger); }
+.operation-health.tone-attention .operation-health-headline { border-left-color: var(--taba-warning); }
+.operation-health.tone-calm .operation-health-headline { border-left-color: var(--taba-success); }
 
 .operation-health-grid {
   display: grid;
@@ -1603,10 +1871,10 @@
   color: var(--taba-muted, #6d675f);
 }
 
-.tone-critical { border-left-color: #9f1d20; }
-.tone-attention { border-left-color: #b66b16; }
-.tone-calm { border-left-color: #2f7a4f; }
-.tone-info { border-left-color: #2f5f8a; }
+.tone-critical { border-left-color: var(--taba-danger); }
+.tone-attention { border-left-color: var(--taba-warning); }
+.tone-calm { border-left-color: var(--taba-success); }
+.tone-info { border-left-color: var(--panel-info, #2f5f8a); }
 .tone-muted { border-left-color: var(--taba-border, #dedbd5); }
 
 button.operation-metric {
@@ -1673,9 +1941,9 @@ button.operation-metric {
   padding: 0.8rem 1rem;
 }
 
-.business-wizard-step.is-done { border-left-color: #2f7a4f; }
-.business-wizard-step.is-current { border-left-color: #b66b16; }
-.business-wizard-step.is-blocked { border-left-color: #9f1d20; }
+.business-wizard-step.is-done { border-left-color: var(--taba-success); }
+.business-wizard-step.is-current { border-left-color: var(--taba-warning); }
+.business-wizard-step.is-blocked { border-left-color: var(--taba-danger); }
 
 .business-wizard-step p,
 .business-wizard-step small {
@@ -1704,8 +1972,8 @@ button.operation-metric {
 }
 
 .business-wizard-step.is-done .business-wizard-index {
-  background: #2f7a4f;
-  color: #fff;
+  background: var(--taba-success);
+  color: var(--ink-contrast);
 }
 
 /* Tableros de estado: facturación, dispositivos, apertura y cierre. */
@@ -1796,7 +2064,7 @@ button.operation-metric {
 }
 
 .payment-refund-form {
-  border: 1px solid #9f1d20;
+  border: 1px solid var(--taba-danger);
   border-radius: 12px;
   margin-top: 0.75rem;
   padding: 0.85rem;

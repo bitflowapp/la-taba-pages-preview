@@ -193,14 +193,29 @@ async function main() {
   // Es la única alta de identidad que no pasa por una RPC, así que es también
   // la única que no deja evento sola. Sin esto, el primer owner sería el único
   // integrante del comercio cuya alta no figura en ningún lado.
+  //
+  // Dos detalles que costaron el evento del PRIMER arranque real, y que la
+  // tabla impone con CHECK:
+  //
+  //   · `actor_role` sólo acepta los roles del comercio y 'system'. Un
+  //     bootstrap es 'system'; 'service_role' rebota.
+  //   · `event_type` es una lista cerrada. No existe -ni hace falta- un tipo
+  //     propio: lo que este arranque hace es activar al primer integrante, o
+  //     sea 'member_activated'. Que fue un bootstrap lo dice la metadata.
   const { error: auditError } = await admin.rpc('identity_record_audit_event', {
-    p_event_type: 'business_owner_bootstrapped',
+    p_event_type: 'member_activated',
     p_business_id: businessId,
     p_actor_user_id: null,
-    p_actor_role: 'service_role',
+    p_actor_role: 'system',
     p_subject_user_id: ownerId,
     p_session_id: null,
-    p_metadata: { tool: 'bootstrap-first-business-owner', ref, email: ownerEmail },
+    p_metadata: {
+      tool: 'bootstrap-first-business-owner',
+      bootstrap: true,
+      role: 'owner',
+      ref,
+      email: ownerEmail,
+    },
   });
 
   // ── 7. La contraseña la elige la persona ─────────────────────────────────
@@ -225,7 +240,7 @@ async function main() {
   console.log('\nListo.');
   console.log(`  user_id : ${ownerId}`);
   console.log('  rol     : owner');
-  console.log(`  auditoría: ${auditError ? `NO se pudo registrar (${auditError.message})` : 'business_owner_bootstrapped'}`);
+  console.log(`  auditoría: ${auditError ? `NO se pudo registrar (${auditError.message})` : 'member_activated (bootstrap)'}`);
   console.log('  contraseña: la elige la persona desde el enlace de recuperación.');
   if (linkError) {
     console.log('\nNo se pudo emitir el enlace acá. Con SMTP configurado, la persona puede');

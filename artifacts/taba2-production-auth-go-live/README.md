@@ -28,7 +28,6 @@ Los pedidos siguen **cerrados**, antes y después.
 | `AUTH-PRODUCTION-BEFORE.json` | la postura de Auth antes de tocar nada |
 | `AUTH-PRODUCTION-AFTER.json` | la postura al cerrar, medida por dos caminos |
 | `SMTP-PRODUCTION-STATUS.md` | **la compuerta**: qué falta, qué opciones hay, y el comando exacto para cerrarla |
-| `FIRST-OWNER-BOOTSTRAP-STATUS.md` | **la otra compuerta**: la herramienta está lista, falta decir quién es el dueño |
 | `AUTH-SMOKE-REPORT.md` / `.json` | alta → pendiente → aprobación → rol, contra la base viva. 34/34 |
 | `CUSTOMER-MEMORY-SMOKE.md` / `.json` | perfil, direcciones, aislamiento del Cliente. 25/25 |
 | `SECURITY-RECHECK.md` | RLS, definers, redirects, enumeración, escalada, y los P2 con su condición exacta |
@@ -37,15 +36,19 @@ Los pedidos siguen **cerrados**, antes y después.
 | `PRODUCTION-AUTH-RUNBOOK.md` | cómo se cambia, se rota, se publica y se contiene |
 | `REGISTRATION-OPERATIONS.md` | cómo se da de alta a la gente, en castellano de comercio |
 | `DAY1-AUTH-HEALTH.md` / `.json` | el comando de todos los días, y qué vigila |
+| `FIRST-OWNER-BOOTSTRAP-STATUS.md` (ejecutado) | quién es el dueño, cómo se ejecutó y los dos CHECK que rebotaron la auditoría |
 | `RIDER-RECOVERY-CONTRACT.md` | el Rider ya puede recuperar su contraseña; falta el cartel que lo diga, con el contrato exacto |
 
-## Las dos compuertas humanas
+## La compuerta que queda: una
 
-1. **SMTP.** Proveedor + credencial + dirección remitente. Sin eso, el alta
-   pública no puede completarse: GoTrue genera el token, falla el envío y la
-   transacción se revierte. Todo lo demás está hecho; aplicar es un comando.
-2. **Primer owner.** Nombre y correo de una persona real, explícitamente
-   autorizada. No se infiere de ningún lado.
+**SMTP.** Proveedor + credencial + dirección remitente. Sin eso, el alta pública
+no puede completarse: GoTrue genera el token, falla el envío y la transacción se
+revierte. Todo lo demás está hecho; aplicar es un comando.
+
+El **primer owner ya está**: `jariel1970@gmail.com` («Marco Luna»), con
+autorización explícita en la sesión, ejecutado el 2026-08-17. Falta que esa
+persona elija su contraseña desde el enlace que se entregó —un solo uso, una
+hora—. Ver `FIRST-OWNER-BOOTSTRAP-STATUS.md`.
 
 ## Lo que se encontró midiendo, y no estaba en ningún informe
 

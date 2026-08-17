@@ -7,10 +7,14 @@
 #
 # GitHub Pages ignora este archivo; sólo lo lee Cloudflare Pages.
 
+# Referrer-Policy no está acá a propósito: el default de los navegadores ya es
+# `strict-origin-when-cross-origin`, y declararlo dos veces —una global y otra
+# para /cuenta/— deja dos cabeceras en la misma respuesta. Gana la última por
+# especificación, pero depender de ese orden para una protección de token es
+# exactamente la clase de cosa que se rompe sin avisar.
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
-  Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin
 

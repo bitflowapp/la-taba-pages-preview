@@ -1,20 +1,26 @@
 {
   "target": "production",
   "ref": "wwcpogltfgzgkrlilbcd",
-  "capturedAt": "2026-08-16T17:27:04.701Z",
+  "capturedAt": "2026-08-17T18:53:35.164Z",
   "counts": [
     {
-      "tables": 85,
+      "tables": 86,
       "views": 0,
-      "functions": 274,
+      "functions": 279,
       "policies": 66,
-      "indexes": 249,
-      "triggers": 65,
+      "indexes": 253,
+      "triggers": 66,
       "enums": 0,
-      "constraints": 689
+      "constraints": 705
     }
   ],
   "rls": [
+    {
+      "table_name": "business_access_requests",
+      "rls_enabled": true,
+      "rls_forced": false,
+      "policies": 0
+    },
     {
       "table_name": "business_command_receipts",
       "rls_enabled": true,
@@ -1438,6 +1444,14 @@
       "authenticated_execute": true
     },
     {
+      "name": "get_my_business_access_request",
+      "args": "p_business_id uuid",
+      "owner": "postgres",
+      "config": "search_path=pg_catalog, public, pg_temp",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
       "name": "get_operational_health",
       "args": "p_business_id uuid",
       "owner": "postgres",
@@ -1590,6 +1604,14 @@
       "authenticated_execute": false
     },
     {
+      "name": "identity_list_access_requests",
+      "args": "p_business_id uuid, p_status text",
+      "owner": "postgres",
+      "config": "search_path=pg_catalog, public, pg_temp",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
       "name": "identity_list_audit_events",
       "args": "p_business_id uuid, p_limit integer",
       "owner": "postgres",
@@ -1652,6 +1674,14 @@
       "config": "search_path=pg_catalog, public, pg_temp",
       "anon_execute": false,
       "authenticated_execute": false
+    },
+    {
+      "name": "identity_review_access_request",
+      "args": "p_request_id uuid, p_decision text, p_role text, p_reason text",
+      "owner": "postgres",
+      "config": "search_path=pg_catalog, public, pg_temp",
+      "anon_execute": false,
+      "authenticated_execute": true
     },
     {
       "name": "identity_revoke_all_sessions",
@@ -2230,6 +2260,14 @@
       "authenticated_execute": true
     },
     {
+      "name": "request_business_access",
+      "args": "p_business_id uuid, p_access text, p_full_name text, p_contact_phone text",
+      "owner": "postgres",
+      "config": "search_path=pg_catalog, public, pg_temp",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
       "name": "request_credit_note",
       "args": "p_original_document_id uuid, p_reason text, p_credit_kind text, p_lines jsonb, p_idempotency_key text",
       "owner": "postgres",
@@ -2511,19 +2549,19 @@
     },
     {
       "name": "transition_order",
-      "args": "p_order_id uuid, p_expected_revision bigint, p_new_status text, p_idempotency_key text",
-      "owner": "postgres",
-      "config": "search_path=pg_catalog, public, extensions, pg_temp",
-      "anon_execute": false,
-      "authenticated_execute": true
-    },
-    {
-      "name": "transition_order",
       "args": "p_order_id uuid, p_expected_revision bigint, p_new_status text",
       "owner": "postgres",
       "config": "search_path=pg_catalog, public, extensions, pg_temp",
       "anon_execute": false,
       "authenticated_execute": false
+    },
+    {
+      "name": "transition_order",
+      "args": "p_order_id uuid, p_expected_revision bigint, p_new_status text, p_idempotency_key text",
+      "owner": "postgres",
+      "config": "search_path=pg_catalog, public, extensions, pg_temp",
+      "anon_execute": false,
+      "authenticated_execute": true
     },
     {
       "name": "undo_last_packing_scan",
@@ -2937,7 +2975,11 @@
   "nonEmptyTables": [
     {
       "table_name": "operational_sweep_runs",
-      "approx_rows": 643
+      "approx_rows": 2170
+    },
+    {
+      "table_name": "identity_audit_events",
+      "approx_rows": 62
     },
     {
       "table_name": "identity_role_permissions",

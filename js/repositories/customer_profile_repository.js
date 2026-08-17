@@ -16,14 +16,15 @@ export function createSupabaseCustomerProfileRepository({ client, authService } 
     throw new Error('El repositorio de perfil requiere una sesión de cliente.');
   }
 
-  async function withSession(callback) {
-    const session = await authService.ensureCustomerSession();
+  async function withSession(callback, { createIfMissing = true } = {}) {
+    const session = await authService.ensureCustomerSession({ createIfMissing });
     if (!session.ok) {
       return failure(
         session.message || 'No pudimos validar tu sesión.',
         isOffline() ? 'offline' : 'session_expired',
       );
     }
+    if (session.absent) return { ok: true, absent: true };
     try {
       return await callback();
     } catch (_) {
@@ -34,8 +35,14 @@ export function createSupabaseCustomerProfileRepository({ client, authService } 
     }
   }
 
+  /**
+   * Traer lo guardado NO crea identidad. Quien nunca guardó nada no tiene nada
+   * que traer —la RLS mira `auth.uid()`, así que sin sesión la respuesta sería
+   * vacía igual— y crearle una identidad anónima sólo para confirmar que está
+   * vacía deja una fila permanente por cada visita, robots incluidos.
+   */
   async function load() {
-    return withSession(async () => {
+    const resultado = await withSession(async () => {
       const { data, error } = await client.rpc('get_current_customer_profile');
       if (error) {
         return queryFailure(
@@ -45,7 +52,15 @@ export function createSupabaseCustomerProfileRepository({ client, authService } 
       }
       const profile = normalizeProfilePayload(data);
       return { ok: true, profile, addresses: profile.addresses };
-    });
+    }, { createIfMissing: false });
+
+    // Sin sesión previa la respuesta honesta es «no hay nada guardado», que es
+    // exactamente lo mismo que contestaría el servidor.
+    if (resultado.absent) {
+      const profile = normalizeProfilePayload(null);
+      return { ok: true, profile, addresses: profile.addresses };
+    }
+    return resultado;
   }
 
   async function saveProfile({ name, phone } = {}) {

@@ -46,10 +46,28 @@ export function createSupabaseAuthService({ client, businessId, deviceLabel = ''
     });
   }
 
-  async function ensureCustomerSession() {
+  /**
+   * La sesión del Customer.
+   *
+   * `createIfMissing: false` existe por una razón medida: la app pedía el
+   * perfil guardado al ARRANCAR, y pedirlo creaba una identidad anónima. O sea
+   * que cada visita —incluida la de un robot que ejecuta JavaScript— dejaba una
+   * fila permanente en `auth.users` antes de que nadie tocara nada. Se vio en
+   * producción: dos identidades anónimas aparecidas con un segundo de
+   * diferencia, sin perfil, sin dirección y sin pedido.
+   *
+   * Leer el perfil sin sesión previa no puede devolver nada igual —la RLS mira
+   * `auth.uid()`—, así que la lectura del arranque no necesita crear ninguna.
+   * La identidad se crea cuando la persona guarda algo, que es cuando empieza a
+   * haber algo que recordar.
+   */
+  async function ensureCustomerSession({ createIfMissing = true } = {}) {
     const current = await getSession();
     if (!current.ok) return current;
     if (current.session?.user) return current;
+    if (!createIfMissing) {
+      return authResult(true, { session: null, user: null, anonymous: false, absent: true });
+    }
 
     const { data, error } = await client.auth.signInAnonymously({
       options: {

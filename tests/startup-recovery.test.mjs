@@ -11,7 +11,10 @@ test('static recovery shell is loaded before the application module', () => {
   const index = read('index.html');
   assert.match(index, /data-app-recovery/);
   assert.match(index, /startup-recovery\.js\?v=2/);
-  assert.match(index, /startup-recovery\.js\?v=2[\s\S]*app\.js\?v=42/);
+  // El orden es el contrato; el número de versión de `app.js` no. Fijarlo acá
+  // convertía cada bump de caché —que el gate de identidad de release ya
+  // vigila— en una prueba roja que no dice nada sobre el arranque.
+  assert.match(index, /startup-recovery\.js\?v=2[\s\S]*app\.js\?v=\d+/);
   // El panel nace OCULTO en el shell servido. Si vuelve a nacer visible, la
   // primera pantalla de una carga lenta es otra vez un cartel de error.
   assert.match(index, /<section class="card app-recovery"[^>]*\shidden>/);

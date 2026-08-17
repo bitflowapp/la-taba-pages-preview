@@ -232,6 +232,46 @@ try {
   }, jwt);
   paso('no puede aprobar su propia solicitud', solo.body?.ok !== true, `code=${solo.body?.code || solo.status}`);
 
+  // La politica de contrasenas, por el camino real. Vale la pena medirlo desde
+  // una sesion normal: `security_update_password_require_reauthentication` esta
+  // en true, y GoTrue exime a las sesiones de menos de 24 h y a las que vienen
+  // de un enlace de recuperacion. Lo que se mide aca es la primera exencion; la
+  // segunda es la que hace que recuperar la contrasena pueda funcionar.
+  console.log('\n3.5 · la politica de contrasenas, medida desde una sesion viva');
+  const filtrada = await pedir('/auth/v1/user', {
+    token: jwt, method: 'PUT', body: JSON.stringify({ password: 'Password123456' }),
+  });
+  paso('una contrasena filtrada se rechaza (HIBP)',
+    filtrada.status >= 400 && /pwned|weak|leaked/i.test(JSON.stringify(filtrada.body || '')),
+    `HTTP ${filtrada.status} ${String(filtrada.body?.error_code || '').slice(0, 40)}`);
+
+  const corta = await pedir('/auth/v1/user', {
+    token: jwt, method: 'PUT', body: JSON.stringify({ password: 'Taba-corta1' }),
+  });
+  paso('una contrasena mas corta que el minimo se rechaza', corta.status >= 400,
+    `HTTP ${corta.status} ${String(corta.body?.error_code || '').slice(0, 40)}`);
+
+  const claveNueva = `Taba-${crypto.randomBytes(12).toString('base64url')}-Qa2!`;
+  const cambio = await pedir('/auth/v1/user', {
+    token: jwt, method: 'PUT', body: JSON.stringify({ password: claveNueva }),
+  });
+  reporte.cambioDeClaveSesionFresca = { status: cambio.status, code: String(cambio.body?.error_code || '').slice(0, 60) };
+  paso('una contrasena valida se acepta', cambio.status === 200,
+    `HTTP ${cambio.status} ${String(cambio.body?.error_code || '').slice(0, 40)}`);
+  const viejaClave = await entrar(negocio.email, CLAVE);
+  paso('la contrasena anterior deja de servir', viejaClave.status >= 400, `HTTP ${viejaClave.status}`);
+  const conNueva = await entrar(negocio.email, claveNueva);
+  paso('la nueva sirve', conNueva.status === 200 && Boolean(conNueva.body?.access_token), `HTTP ${conNueva.status}`);
+  if (cambio.status === 200) {
+    reporte.seguridad = [
+      ...(reporte.seguridad || []),
+      'con `security_update_password_require_reauthentication=true`, GoTrue igual permite cambiar la contrasena '
+      + 'sin pedir la anterior desde cualquier sesion de menos de 24 h. Es su contrato -la misma exencion es la que '
+      + 'hace posible recuperar la contrasena por enlace-, pero significa que un token de sesion robado alcanza '
+      + 'para quedarse con la cuenta. Medido, no supuesto.',
+    ];
+  }
+
   // ----------------------------------------------------------- 4. aprobar
   console.log('\n4 · un owner aprueba, y recien ahi hay membresia');
   const dueno = await crearIdentidad('owner');

@@ -1,0 +1,21 @@
+--- TARGET GUARD ---
+  TARGET NAME     : la-taba-production
+  TARGET REF      : wwcpogltfgzgkrlilbcd
+  TARGET HOST     : db.wwcpogltfgzgkrlilbcd.supabase.co
+  COMMAND CATEGORY: db push
+  LINKED REF      : wwcpogltfgzgkrlilbcd
+  RESULTADO       : PASS (A, B, C, D, E)
+--- TARGET GUARD ---
+  TARGET NAME     : la-taba-production
+  TARGET REF      : wwcpogltfgzgkrlilbcd
+  TARGET HOST     : db.wwcpogltfgzgkrlilbcd.supabase.co
+  COMMAND CATEGORY: db push
+  LINKED REF      : wwcpogltfgzgkrlilbcd
+  RESULTADO       : PASS (A, B, C, D, E)
+--- TARGET GUARD ---
+  TARGET NAME     : la-taba-production
+  TARGET REF      : wwcpogltfgzgkrlilbcd
+  TARGET HOST     : db.wwcpogltfgzgkrlilbcd.supabase.co
+  COMMAND CATEGORY: db push
+  LINKED REF      : wwcpogltfgzgkrlilbcd
+  RESULTADO       : PASS (A, B, C, D, E)

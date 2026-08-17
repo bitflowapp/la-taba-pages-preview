@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "scope": "registration-identity",
+  "description": "Migraciones forward-only 104+ del alta autogestionada.",
+  "historicalCount": 100,
+  "historicalDigest": "e45f69cdb9c939e29620278450984cd2f4e42ad52cf79295470437c35f5cf2a9",
+  "historicalDigestMatchesProvisioning": true,
+  "appliedCount": 103,
+  "appliedDigest": "b2af10478c4effc5451f26b5a38b1242a519b1b34248ad5a883444673a4eab76",
+  "appliedDigestMatchesRemediation": true,
+  "newMigrationCount": 4,
+  "totalMigrationCount": 107,
+  "fullLedgerDigest": "f03e3f170adbda32171c9b75c2e95f1a1a39b7f6f123e65d6ec635095480e0a6",
+  "migrations": [
+    {
+      "ordinal": 104,
+      "version": "20260817010000",
+      "filename": "20260817010000_business_access_requests.sql",
+      "sha256": "4d2f74af5c765a3b0aef719e513a8fefa6fd29da5c12e569749b915bba5697d3",
+      "bytes": 17377
+    },
+    {
+      "ordinal": 105,
+      "version": "20260817020000",
+      "filename": "20260817020000_access_request_review_contract.sql",
+      "sha256": "cee62788d37de795d4150a7230a72212d7a71b83f5ef8a8112e45127f2c2261c",
+      "bytes": 11396
+    },
+    {
+      "ordinal": 106,
+      "version": "20260817030000",
+      "filename": "20260817030000_reviewer_identity_can_be_deleted.sql",
+      "sha256": "f5789da6bade7d988f4f3a1bb48c46d8dd50e575df4815886b305fefd10641ae",
+      "bytes": 2456
+    },
+    {
+      "ordinal": 107,
+      "version": "20260817040000",
+      "filename": "20260817040000_membership_guard_allows_account_deletion.sql",
+      "sha256": "d8bb9a4234714c4e7d0535be2f3a60ce6a8be392693989da47ed3c2f4a1de034",
+      "bytes": 4376
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+== Linea base ==
+OK   | baseline registration | rompio la garantia -> la suite dice Result: PASS
+OK   | baseline customer | rompio la garantia -> la suite dice Result: PASS
+== 1. self approval permitida ==
+OK   | 1 self approval | rompio la garantia -> la suite dice Result: FAIL
+OK   | 1 revertido | rompio la garantia -> la suite dice Result: PASS
+== 2. granted_role acepta owner ==
+OK   | 2 owner otorgable | rompio la garantia -> la suite dice Result: FAIL
+OK   | 2 revertido | rompio la garantia -> la suite dice Result: PASS
+== 3. el perfil acepta un user_id del cliente ==
+OK   | 3 user_id del cliente | rompio la garantia -> la suite dice Result: FAIL
+OK   | 3 revertido | rompio la garantia -> la suite dice Result: PASS
+== 4. dos predeterminadas ==
+OK   | 4 dos predeterminadas | rompio la garantia -> la suite dice Result: FAIL
+OK   | 4 revertido | rompio la garantia -> la suite dice Result: PASS
+== 5. anon puede pedir acceso ==
+OK   | 5 anon con execute (registro) | rompio la garantia -> la suite dice Result: FAIL
+OK   | 5 anon con execute (menor privilegio) | rompio la garantia -> la suite dice Result: FAIL
+OK   | 5 revertido (registro) | rompio la garantia -> la suite dice Result: PASS
+OK   | 5 revertido (menor privilegio) | rompio la garantia -> la suite dice Result: PASS
+== 6. INSERT directo sobre business_members ==
+OK   | 6 grant de escritura | rompio la garantia -> la suite dice Result: FAIL
+OK   | 6 revertido | rompio la garantia -> la suite dice Result: PASS
+== Fin ==

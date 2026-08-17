@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "target": "la-taba-production",
+  "ref": "wwcpogltfgzgkrlilbcd",
+  "capturedAt": "before push",
+  "remoteAppliedCount": 103,
+  "remoteFirst": "20260531030000",
+  "remoteLast": "20260816122000",
+  "pendingLocal": [
+    "20260817010000",
+    "20260817020000"
+  ],
+  "remoteNotInLocal": [],
+  "baseMatchesExactly": true
+}

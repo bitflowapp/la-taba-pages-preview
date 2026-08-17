@@ -1,0 +1,168 @@
+{
+  "client_write_grants": [],
+  "counts": {
+    "rls_enabled": 86,
+    "rls_missing": 0,
+    "tables": 86
+  },
+  "cron_jobs": [
+    {
+      "active": true,
+      "command": "select public.dispatch_payment_outbox_worker('cron');",
+      "jobname": "taba-payment-outbox-worker",
+      "schedule": "30 seconds"
+    },
+    {
+      "active": true,
+      "command": "select public.sweep_expired_checkout_sessions();",
+      "jobname": "taba-checkout-expiry-sweep",
+      "schedule": "* * * * *"
+    },
+    {
+      "active": true,
+      "command": "select public.enqueue_checkout_provider_probes();",
+      "jobname": "taba-checkout-provider-truth-sweep",
+      "schedule": "* * * * *"
+    },
+    {
+      "active": true,
+      "command": "select public.evaluate_operational_alerts_sweep();",
+      "jobname": "taba-operational-alerts-sweep",
+      "schedule": "* * * * *"
+    }
+  ],
+  "data_counts": {
+    "auth_users": 0,
+    "businesses": 1,
+    "catalog_assets": 0,
+    "customers": 0,
+    "fiscal_profile_events": 0,
+    "operational_sweep_runs": 1455,
+    "order_items": 0,
+    "orders": 0,
+    "payment_intents": 0,
+    "products": 0,
+    "rider_locations": 0,
+    "rider_order_offers": 0,
+    "riders": 0,
+    "storage_objects": 0
+  },
+  "fiscal_profile_events_grants": {
+    "authenticated": "SELECT",
+    "service_role": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+  },
+  "ledger": 107,
+  "ledger_last": "20260817040000",
+  "policies": 66,
+  "qa_surface": [
+    {
+      "anon": false,
+      "authenticated": true,
+      "name": "product_is_qa_fixture"
+    }
+  ],
+  "registration": {
+    "audit_event_type_check": "CHECK ((event_type = ANY (ARRAY['session_opened'::text, 'session_closed'::text, 'session_revoked'::text, 'sessions_revoked_all'::text, 'session_rejected'::text, 'member_invited'::text, 'invitation_accepted'::text, 'invitation_revoked'::text, 'member_activated'::text, 'member_disabled'::text, 'member_role_changed'::text, 'profile_updated'::text, 'authorization_denied'::text, 'access_requested'::text, 'access_request_approved'::text, 'access_request_rejected'::text])))",
+    "constraints": [
+      "business_access_requests_attempt_count_check",
+      "business_access_requests_business_id_fkey",
+      "business_access_requests_contact_phone_check",
+      "business_access_requests_decided_by_fkey",
+      "business_access_requests_decision_is_complete",
+      "business_access_requests_decision_reason_check",
+      "business_access_requests_full_name_check",
+      "business_access_requests_granted_role_check",
+      "business_access_requests_one_per_person",
+      "business_access_requests_pkey",
+      "business_access_requests_requested_access_check",
+      "business_access_requests_reviewer_follows_decision",
+      "business_access_requests_role_follows_approval",
+      "business_access_requests_role_matches_request",
+      "business_access_requests_status_check",
+      "business_access_requests_user_id_fkey"
+    ],
+    "counts": {
+      "business_access_requests": 0,
+      "business_members": 0,
+      "customer_addresses": 0,
+      "identity_audit_events": 21,
+      "identity_sessions": 0,
+      "rider_profiles": 0,
+      "staff_profiles": 0
+    },
+    "functions": {
+      "business_access_request_retry_delay": {
+        "anon": false,
+        "authenticated": false,
+        "definer": false,
+        "public": false,
+        "search_path": true
+      },
+      "get_my_business_access_request": {
+        "anon": false,
+        "authenticated": true,
+        "definer": true,
+        "public": false,
+        "search_path": true
+      },
+      "identity_list_access_requests": {
+        "anon": false,
+        "authenticated": true,
+        "definer": true,
+        "public": false,
+        "search_path": true
+      },
+      "identity_review_access_request": {
+        "anon": false,
+        "authenticated": true,
+        "definer": true,
+        "public": false,
+        "search_path": true
+      },
+      "request_business_access": {
+        "anon": false,
+        "authenticated": true,
+        "definer": true,
+        "public": false,
+        "search_path": true
+      }
+    },
+    "indexes": [
+      "business_access_requests_inbox_idx",
+      "business_access_requests_one_per_person",
+      "business_access_requests_pkey",
+      "business_access_requests_user_idx"
+    ],
+    "table": {
+      "exists": true,
+      "policies": 0,
+      "rls_enabled": true
+    },
+    "table_grants": []
+  },
+  "schema_create": {
+    "anon_public": false,
+    "authenticated_public": false
+  },
+  "security_definer": {
+    "anon_execute": 8,
+    "total": 224,
+    "without_search_path": 0
+  },
+  "security_definer_anon_list": [
+    "can_access_order",
+    "check_scheduler_watchdog",
+    "commerce_availability",
+    "get_public_business_contact",
+    "get_public_order_tracking",
+    "list_business_combos",
+    "resolve_business_combo",
+    "scheduler_heartbeat"
+  ],
+  "staging_only_comments": 0,
+  "vault": {
+    "anon_usage": false,
+    "authenticated_usage": false,
+    "secrets": 0
+  }
+}

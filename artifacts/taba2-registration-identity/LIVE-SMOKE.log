@@ -1,0 +1,267 @@
+--- TARGET GUARD ---
+  TARGET NAME     : la-taba-production
+  TARGET REF      : wwcpogltfgzgkrlilbcd
+  TARGET HOST     : db.wwcpogltfgzgkrlilbcd.supabase.co
+  COMMAND CATEGORY: live synthetic smoke
+  LINKED REF      : wwcpogltfgzgkrlilbcd
+  RESULTADO       : PASS (A, B, C, D, E)
+
+--- SMOKE SINTETICO EN VIVO ---
+  destino  : wwcpogltfgzgkrlilbcd
+  negocio  : 00000000-0000-4000-8000-000000000001
+  etiqueta : taba2qa81720
+
+  OK   | el alta publica esta habilitada en Auth | disable_signup=false
+  OK   | la identidad anonima del cliente sigue habilitada | anonymous=true
+  NOTA | confirmacion de correo ACTIVADA -> el alta publica depende de SMTP propio (compuerta de lanzamiento)
+  OK   | el harness crea tres identidades QA con correo confirmado | 3 usuarios
+  OK   | la cuenta recien creada puede entrar a Auth
+  OK   | y la compuerta le contesta que no tiene rol | role=null
+  OK   | el owner QA registra su sesion y la compuerta lo reconoce | code=registered
+  OK   | pedir acceso al Panel entra como pendiente | code=pending
+  OK   | insistir devuelve la misma solicitud, no crea otra | code=already_pending
+  OK   | un Rider sin telefono no entra | code=phone_required
+  OK   | pedir ser Rider entra como pendiente | code=pending
+  OK   | un Rider pendiente no puede pedir el tablero | status=403
+  OK   | ni la cola del comercio | status=403
+  OK   | ni publicar GPS operativo | status=403
+  OK   | la tabla de solicitudes no se lee desde el cliente | status=403
+  OK   | ni se puede insertar una membresia directa | status=403
+  OK   | el solicitante no ve la bandeja | status=403
+  OK   | el owner ve las dos solicitudes | 2 pendientes
+  OK   | la solicitud de Rider solo ofrece el rol rider | ["rider"]
+  OK   | nadie puede otorgar owner por esta via | code=invalid_role
+  OK   | el owner aprueba el acceso al Panel como staff | code=approved
+  OK   | aprobar de nuevo no sube el rol | code=already_decided
+  OK   | el owner aprueba al Rider | code=approved
+  OK   | el aprobado ya registra su sesion como staff | role=staff
+  OK   | y el Rider aprobado recibe su tablero, vacio pero suyo | orders=[]
+  OK   | el cliente entra con identidad anonima real | status=200
+  OK   | el cliente A guarda su perfil | status=200
+  OK   | y su direccion queda predeterminada | status=200
+  OK   | el cliente A vuelve y TABA lo recuerda | addresses=1
+  OK   | el cliente B no ve nada del cliente A | profile=null
+  OK   | y no puede tocar su direccion | status=403
+  OK   | la tabla de clientes solo devuelve lo propio | rows=0
+
+  OK   | todas las identidades QA se borraron | 5/5
+  OK   | no queda ninguna solicitud | rows=0
+  OK   | no queda ninguna membresia | rows=0
+  OK   | no queda ningun perfil de cliente | rows=0
+  OK   | y no se creo ni un pedido | rows=0
+
+--- AUDITORIA QUE QUEDA, POR DISENIO ---
+  eventos totales                : 21
+  con actor y sujeto ya en null  : 0
+  identity_audit_events es append-only por trigger: no se puede
+  borrar ni desde una funcion definer. Los FK pusieron sus
+  actor/subject en null al borrar los usuarios QA.
+    - session_opened
+    - access_requested
+    - access_requested
+    - access_request_approved
+    - access_request_approved
+    - session_opened
+    - session_opened
+    - session_opened
+    - access_requested
+    - access_requested
+    - access_request_approved
+    - access_request_approved
+    - session_opened
+    - session_opened
+    - session_opened
+    - access_requested
+    - access_requested
+    - access_request_approved
+    - access_request_approved
+    - session_opened
+    - session_opened
+
+--- RESULTADO: PASS ---
+{
+  "tag": "taba2qa81720",
+  "checks": [
+    {
+      "name": "el alta publica esta habilitada en Auth",
+      "ok": true,
+      "detail": "disable_signup=false"
+    },
+    {
+      "name": "la identidad anonima del cliente sigue habilitada",
+      "ok": true,
+      "detail": "anonymous=true"
+    },
+    {
+      "name": "el harness crea tres identidades QA con correo confirmado",
+      "ok": true,
+      "detail": "3 usuarios"
+    },
+    {
+      "name": "la cuenta recien creada puede entrar a Auth",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "y la compuerta le contesta que no tiene rol",
+      "ok": true,
+      "detail": "role=null"
+    },
+    {
+      "name": "el owner QA registra su sesion y la compuerta lo reconoce",
+      "ok": true,
+      "detail": "code=registered"
+    },
+    {
+      "name": "pedir acceso al Panel entra como pendiente",
+      "ok": true,
+      "detail": "code=pending"
+    },
+    {
+      "name": "insistir devuelve la misma solicitud, no crea otra",
+      "ok": true,
+      "detail": "code=already_pending"
+    },
+    {
+      "name": "un Rider sin telefono no entra",
+      "ok": true,
+      "detail": "code=phone_required"
+    },
+    {
+      "name": "pedir ser Rider entra como pendiente",
+      "ok": true,
+      "detail": "code=pending"
+    },
+    {
+      "name": "un Rider pendiente no puede pedir el tablero",
+      "ok": true,
+      "detail": "status=403"
+    },
+    {
+      "name": "ni la cola del comercio",
+      "ok": true,
+      "detail": "status=403"
+    },
+    {
+      "name": "ni publicar GPS operativo",
+      "ok": true,
+      "detail": "status=403"
+    },
+    {
+      "name": "la tabla de solicitudes no se lee desde el cliente",
+      "ok": true,
+      "detail": "status=403"
+    },
+    {
+      "name": "ni se puede insertar una membresia directa",
+      "ok": true,
+      "detail": "status=403"
+    },
+    {
+      "name": "el solicitante no ve la bandeja",
+      "ok": true,
+      "detail": "status=403"
+    },
+    {
+      "name": "el owner ve las dos solicitudes",
+      "ok": true,
+      "detail": "2 pendientes"
+    },
+    {
+      "name": "la solicitud de Rider solo ofrece el rol rider",
+      "ok": true,
+      "detail": "[\"rider\"]"
+    },
+    {
+      "name": "nadie puede otorgar owner por esta via",
+      "ok": true,
+      "detail": "code=invalid_role"
+    },
+    {
+      "name": "el owner aprueba el acceso al Panel como staff",
+      "ok": true,
+      "detail": "code=approved"
+    },
+    {
+      "name": "aprobar de nuevo no sube el rol",
+      "ok": true,
+      "detail": "code=already_decided"
+    },
+    {
+      "name": "el owner aprueba al Rider",
+      "ok": true,
+      "detail": "code=approved"
+    },
+    {
+      "name": "el aprobado ya registra su sesion como staff",
+      "ok": true,
+      "detail": "role=staff"
+    },
+    {
+      "name": "y el Rider aprobado recibe su tablero, vacio pero suyo",
+      "ok": true,
+      "detail": "orders=[]"
+    },
+    {
+      "name": "el cliente entra con identidad anonima real",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "el cliente A guarda su perfil",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "y su direccion queda predeterminada",
+      "ok": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "el cliente A vuelve y TABA lo recuerda",
+      "ok": true,
+      "detail": "addresses=1"
+    },
+    {
+      "name": "el cliente B no ve nada del cliente A",
+      "ok": true,
+      "detail": "profile=null"
+    },
+    {
+      "name": "y no puede tocar su direccion",
+      "ok": true,
+      "detail": "status=403"
+    },
+    {
+      "name": "la tabla de clientes solo devuelve lo propio",
+      "ok": true,
+      "detail": "rows=0"
+    },
+    {
+      "name": "todas las identidades QA se borraron",
+      "ok": true,
+      "detail": "5/5"
+    },
+    {
+      "name": "no queda ninguna solicitud",
+      "ok": true,
+      "detail": "rows=0"
+    },
+    {
+      "name": "no queda ninguna membresia",
+      "ok": true,
+      "detail": "rows=0"
+    },
+    {
+      "name": "no queda ningun perfil de cliente",
+      "ok": true,
+      "detail": "rows=0"
+    },
+    {
+      "name": "y no se creo ni un pedido",
+      "ok": true,
+      "detail": "rows=0"
+    }
+  ],
+  "auditRowsLeft": 21
+}

@@ -38,6 +38,8 @@
     "production:security": "node scripts/audit-production-security.mjs",
     "production:drift": "node scripts/compare-production-drift.mjs",
     "production:isolation": "node scripts/probe-tenant-isolation.mjs",
+    "production:auth": "node scripts/production-auth-posture.mjs",
+    "production:auth:harden": "node scripts/harden-production-auth.mjs",
     "catalog:pending": "node scripts/build-catalog-pending.mjs",
     "catalog:readiness": "node scripts/catalog-readiness.mjs",
     "catalog:readiness:check": "node scripts/catalog-readiness.mjs --check",

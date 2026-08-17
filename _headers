@@ -1,0 +1,21 @@
+# Cabeceras del despliegue de Cloudflare Pages.
+#
+# No hay CSP todavía a propósito: escribirla a ciegas sobre una app que ya está
+# publicada es la forma más rápida de romperla, y la política real hay que
+# medirla contra el sitio corriendo. Lo que sí entra acá es lo que no puede
+# romper nada y protege las pantallas de identidad.
+#
+# GitHub Pages ignora este archivo; sólo lo lee Cloudflare Pages.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+
+# La URL de esta pantalla lleva el hash del enlace del correo. Ningún pedido que
+# salga de acá debe llevarlo en el Referer, ni siquiera al mismo origen.
+/cuenta/*
+  Referrer-Policy: no-referrer
+  Cache-Control: no-store

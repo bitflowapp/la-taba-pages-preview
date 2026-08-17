@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#090b0e" />
+    <meta name="robots" content="noindex" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Tu cuenta · La Taba</title>
+    <link rel="stylesheet" href="../styles.css?v=50" />
+  </head>
+  <body>
+    <!--
+      Cierra los enlaces que Auth manda por correo: confirmar la cuenta y
+      cambiar una contraseña olvidada.
+
+      La página no decide nada por su cuenta: `js/account-action.js` resuelve el
+      estado a partir de lo que vino en la query y de lo que contestó Auth, y lo
+      escribe adentro de `[data-account-action]`. El `meta name="referrer"` está
+      puesto porque la URL lleva el hash del enlace: ningún pedido que salga de
+      esta pantalla debe llevarlo en la cabecera Referer.
+    -->
+    <main class="payment-return-page" aria-live="polite">
+      <article class="card payment-return-card panel-access">
+        <p class="payment-return-brand">
+          <img src="../assets/brand/taba2-emblem.svg" alt="" width="40" height="40" />
+          <span><strong>La Taba</strong><small>Tu cuenta</small></span>
+        </p>
+
+        <div data-account-action>
+          <div class="panel-access-head">
+            <h1>Un segundo</h1>
+            <p>Estamos revisando tu enlace.</p>
+          </div>
+        </div>
+
+        <p class="payment-return-foot">
+          Los enlaces del correo sirven una sola vez y vencen en una hora. Si el
+          tuyo ya no funciona, pedí uno nuevo desde esta misma pantalla.
+        </p>
+      </article>
+    </main>
+    <script src="../runtime-config.js"></script>
+    <script type="module" src="../js/account-action-page.js"></script>
+  </body>
+</html>

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v71-production-rc2';
+const CACHE_NAME = 'la-taba-runtime-v72-production-auth';
 const ASSETS = [
   './',
   './index.html',
@@ -30,7 +30,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=3',
   './js/startup-recovery.js?v=2',
-  './js/app.js?v=42',
+  './js/app.js?v=43',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -390,10 +390,21 @@ function paymentReturnState(request) {
   }
 }
 
+function esAccionDeCuenta(request) {
+  try {
+    return /\/cuenta\/?$/.test(new URL(request.url).pathname);
+  } catch (_) {
+    return false;
+  }
+}
+
 function guardar(request, respuesta) {
   // Mercado Pago vuelve con ids en la query. La página está precacheada por
   // ruta y no necesita retener una clave distinta por pago en CacheStorage.
   if (paymentReturnState(request)) return;
+  // /cuenta/ llega con el hash del enlace del correo en la query. Guardarla
+  // dejaría ese hash escrito en CacheStorage, que sobrevive a la pestaña.
+  if (esAccionDeCuenta(request)) return;
   caches.open(CACHE_NAME).then((cache) => cache.put(request, respuesta)).catch(() => undefined);
 }
 

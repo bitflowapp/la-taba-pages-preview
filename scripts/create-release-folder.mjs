@@ -13,9 +13,15 @@ const entries = [
   'runtime-config.js',
   'sw.js',
   '.nojekyll',
+  // Cabeceras del borde. Cloudflare Pages las lee de la raíz del paquete; si el
+  // archivo no viaja, el despliegue queda sin ellas y nadie se entera.
+  '_headers',
   'assets',
   'js',
   'pago',
+  // La pantalla que cierra los enlaces de correo de Auth. Sin ella, confirmar
+  // una cuenta o cambiar una contraseña olvidada no tiene dónde aterrizar.
+  'cuenta',
 ];
 
 const sources = await Promise.all(entries.map(async (entry) => {

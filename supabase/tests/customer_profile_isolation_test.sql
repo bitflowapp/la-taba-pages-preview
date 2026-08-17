@@ -19,7 +19,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(44);
+select plan(47);
 
 -- ── Fixture: tres identidades ──────────────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -71,6 +71,25 @@ select is(
   public.upsert_current_customer_profile('Marco Perez', '+54 299 600 0001') ->> 'name',
   'Marco Perez',
   'A guarda su nombre');
+
+-- El telefono se guarda normalizado a digitos. Vale la pena fijarlo aparte: el
+-- CHECK de la tabla exige 10 a 13 digitos y la persona escribe con prefijo y
+-- espacios, asi que todo el resto de esta suite depende en silencio de que la
+-- RPC normalice. Si algun dia deja de hacerlo, que se sepa aca.
+select is(
+  (select phone from public.customers where id = 'c1000000-0000-4000-8000-0000000000a1'),
+  '542996000001',
+  'el telefono se guarda en digitos, no como lo tipeo la persona');
+select throws_ok(
+  $$ select public.upsert_current_customer_profile('Marco Perez','299') $$,
+  '22023',
+  null,
+  'un telefono que no llega a 10 digitos no entra');
+select throws_ok(
+  $$ select public.upsert_current_customer_profile('123','2996000001') $$,
+  '22023',
+  null,
+  'ni un nombre sin una sola letra');
 
 -- La identidad no se elige: la fila nace con el uid del token, y no hay ningun
 -- parametro por donde pedir otra.

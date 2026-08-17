@@ -172,6 +172,7 @@ export async function handleProductionAuthSubmit(form) {
   }
   if (form.matches('[data-panel-signup-form]')) return submitPanelSignUp(form);
   if (form.matches('[data-panel-request-form]')) return submitPanelAccessRequest(form);
+  if (form.matches('[data-panel-recovery-form]')) return submitPanelRecovery(form);
   if (!form.matches('[data-production-auth-form]')) return { handled: false };
   if (!auth?.signInTeam) {
     const message = 'La autenticación productiva no está disponible.';
@@ -288,6 +289,35 @@ async function submitPanelSignUp(form) {
   return { handled: true, ok: true, message: 'Cuenta creada. Ahora pedí acceso al comercio.' };
 }
 
+// Pedir el correo de recuperación. La pantalla vuelve al ingreso con la MISMA
+// frase exista o no la cuenta: la única forma de que este formulario no sirva
+// para averiguar qué correos están registrados.
+async function submitPanelRecovery(form) {
+  if (!auth?.requestPasswordRecovery) {
+    return { handled: true, ok: false, message: 'La recuperación de contraseña no está disponible.' };
+  }
+  const email = String(form.elements?.email?.value || '').trim();
+
+  accessRegistration = { ...accessRegistration, busy: true, message: '', email };
+  notify();
+
+  const result = await auth.requestPasswordRecovery({ email });
+  if (!result.ok) {
+    accessRegistration = { ...accessRegistration, busy: false, message: result.message, email };
+    notify();
+    return { handled: true, ok: false, message: '' };
+  }
+
+  accessRegistration = {
+    ...emptyAccessRegistration(),
+    step: ACCESS_STEP.SIGN_IN,
+    message: result.message,
+    email,
+  };
+  notify();
+  return { handled: true, ok: true, message: result.message };
+}
+
 async function submitPanelAccessRequest(form) {
   if (!auth?.requestTeamAccess) {
     return { handled: true, ok: false, message: 'Las solicitudes no están disponibles.' };
@@ -368,7 +398,7 @@ export async function handleProductionOperationsAction(target) {
     accessRegistration = {
       ...accessRegistration,
       step: gotoStep === ACCESS_STEP.SIGN_UP || gotoStep === ACCESS_STEP.SIGN_IN
-        || gotoStep === ACCESS_STEP.REQUEST
+        || gotoStep === ACCESS_STEP.REQUEST || gotoStep === ACCESS_STEP.RECOVER
         ? gotoStep
         : ACCESS_STEP.SIGN_IN,
       message: '',

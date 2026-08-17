@@ -1,4 +1,5 @@
 import { escapeHtml } from '../ui.js';
+import { TEAM_PASSWORD_MIN_LENGTH } from '../services/supabase-auth.js';
 
 // Alta autogestionada del Panel: la máquina de estados y su pantalla.
 //
@@ -17,6 +18,7 @@ export const ACCESS_STEP = Object.freeze({
   REQUEST: 'request',
   PENDING: 'pending',
   REJECTED: 'rejected',
+  RECOVER: 'recover',
 });
 
 const STEPS = new Set(Object.values(ACCESS_STEP));
@@ -56,6 +58,12 @@ export function canRequestAgain(request, now = new Date()) {
 
 export function accessRegistrationCopy(step, request = null) {
   switch (step) {
+    case ACCESS_STEP.RECOVER:
+      return {
+        title: 'Recuperá tu contraseña',
+        lead: 'Te mandamos un enlace al correo de tu cuenta. El enlace sirve una '
+          + 'sola vez y vence en una hora.',
+      };
     case ACCESS_STEP.SIGN_UP:
       return {
         title: 'Creá tu cuenta',
@@ -123,12 +131,16 @@ export function renderAccessRegistration({
     : '';
 
   if (current === ACCESS_STEP.SIGN_IN) {
-    // El ingreso sigue viviendo en su formulario de siempre. Acá abajo va sólo
-    // la puerta de entrada de quien todavía no tiene cuenta.
+    // El ingreso sigue viviendo en su formulario de siempre. Acá abajo van sólo
+    // las dos puertas que ese formulario no tiene: la de quien todavía no tiene
+    // cuenta y la de quien la tiene y no se acuerda de la contraseña.
     return `<div class="panel-access" data-panel-access-step="sign_in">
       ${note}
       <p class="panel-access-switch">¿Todavía no tenés cuenta?
         <button class="link-button" type="button" data-panel-access-goto="sign_up">Creá tu cuenta</button>
+      </p>
+      <p class="panel-access-switch">
+        <button class="link-button" type="button" data-panel-access-goto="recover">Olvidé mi contraseña</button>
       </p>
     </div>`;
   }
@@ -150,13 +162,33 @@ export function renderAccessRegistration({
         </label>
         <label>
           Contraseña
-          <input name="password" type="password" autocomplete="new-password" minlength="8" required />
+          <input name="password" type="password" autocomplete="new-password"
+            minlength="${TEAM_PASSWORD_MIN_LENGTH}" required />
         </label>
-        <p class="form-hint">Usá al menos 8 caracteres.</p>
+        <p class="form-hint">Usá al menos ${TEAM_PASSWORD_MIN_LENGTH} caracteres. No se aceptan
+          contraseñas que ya aparecieron en filtraciones conocidas.</p>
         ${note}
         <div class="button-row">
           <button class="primary-button" type="submit" ${busy ? 'disabled' : ''}>Crear cuenta</button>
           <button class="secondary-button" type="button" data-panel-access-goto="sign_in">Ya tengo cuenta</button>
+        </div>
+      </form>
+    </div>`;
+  }
+
+  if (current === ACCESS_STEP.RECOVER) {
+    return `<div class="panel-access" data-panel-access-step="recover">
+      ${head}
+      <form class="production-auth-form" data-panel-recovery-form novalidate>
+        <label>
+          Email de tu cuenta
+          <input name="email" type="email" autocomplete="username" inputmode="email"
+            value="${escapeHtml(email)}" required />
+        </label>
+        ${note}
+        <div class="button-row">
+          <button class="primary-button" type="submit" ${busy ? 'disabled' : ''}>Mandarme el enlace</button>
+          <button class="secondary-button" type="button" data-panel-access-goto="sign_in">Volver</button>
         </div>
       </form>
     </div>`;

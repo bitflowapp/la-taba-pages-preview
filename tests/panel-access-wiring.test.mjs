@@ -192,6 +192,66 @@ test('cerrar sesión desde la espera limpia la pantalla', async () => {
 
 // ── Arnés ──────────────────────────────────────────────────────────────────
 
+test('pedir el enlace de recuperación vuelve al ingreso con la frase neutra', async () => {
+  await withPanel({}, async ({ client }) => {
+    const result = await handleProductionAuthSubmit(recoveryForm('duena@lataba.test'));
+
+    assert.equal(result.ok, true);
+    const state = getAccessRegistrationStateForTests();
+    assert.equal(state.step, 'sign_in');
+    assert.match(state.message, /Si ese correo tiene una cuenta/i);
+    assert.equal(client.calls.recovery.length, 1);
+    // Sin `redirectTo`: el enlace sale de la plantilla y del site_url, así que
+    // no hay destino que la allow-list tenga que permitir.
+    assert.deepEqual(client.calls.recovery[0], ['duena@lataba.test']);
+  });
+});
+
+test('un correo sin cuenta se contesta igual que uno con cuenta', async () => {
+  // FASE 20: el formulario de recuperación no puede ser un buscador de cuentas.
+  const conCuenta = await mensajeDeRecuperacion({});
+  const sinCuenta = await mensajeDeRecuperacion({
+    recoveryError: { message: 'User not found', status: 400 },
+  });
+
+  assert.equal(conCuenta, sinCuenta);
+  assert.doesNotMatch(conCuenta, /no existe|not found|sin cuenta/i);
+});
+
+test('el límite de correos se dice, y no se disfraza de éxito', async () => {
+  await withPanel({ recoveryError: { message: 'over_email_send_rate_limit', status: 429 } }, async () => {
+    await handleProductionOperationsAction(
+      target('[data-panel-access-goto]', { panelAccessGoto: 'recover' }),
+    );
+    const result = await handleProductionAuthSubmit(recoveryForm('duena@lataba.test'));
+
+    assert.equal(result.ok, false);
+    const state = getAccessRegistrationStateForTests();
+    assert.equal(state.step, 'recover');
+    assert.match(state.message, /Esperá unos minutos/i);
+  });
+});
+
+test('la pantalla de recuperación se abre desde el ingreso', async () => {
+  await withPanel({}, async () => {
+    const result = await handleProductionOperationsAction(
+      target('[data-panel-access-goto]', { panelAccessGoto: 'recover' }),
+    );
+
+    assert.equal(result.ok, true);
+    assert.equal(getAccessRegistrationStateForTests().step, 'recover');
+  });
+});
+
+async function mensajeDeRecuperacion(options) {
+  let mensaje = '';
+  await withPanel(options, async () => {
+    await handleProductionAuthSubmit(recoveryForm('quien@lataba.test'));
+    mensaje = getAccessRegistrationStateForTests().message;
+  });
+  return mensaje;
+}
+
 async function withPanel(options, body) {
   const client = createPanelClient(options);
   const originalLocation = Object.getOwnPropertyDescriptor(globalThis, 'location');
@@ -242,6 +302,7 @@ function fakeForm(selector, values, dataset = {}) {
 }
 
 const signUpForm = (email, password) => fakeForm('[data-panel-signup-form]', { email, password });
+const recoveryForm = (email) => fakeForm('[data-panel-recovery-form]', { email });
 const requestForm = (fullName, phone) => fakeForm('[data-panel-request-form]', { fullName, phone });
 const signInForm = (email, password) => fakeForm(
   '[data-production-auth-form]',
@@ -264,8 +325,9 @@ function createPanelClient({
   },
   accessRequest = { ok: true, code: 'none', status: null, is_member: false },
   requestResponse = null,
+  recoveryError = null,
 } = {}) {
-  const calls = { rpc: [], signOut: 0 };
+  const calls = { rpc: [], signOut: 0, recovery: [] };
   let currentAccessRequest = accessRequest;
   let session = null;
 
@@ -283,6 +345,10 @@ function createPanelClient({
         return { data: { session, user: session.user }, error: null };
       },
       async signOut() { calls.signOut += 1; session = null; return { error: null }; },
+      async resetPasswordForEmail(...args) {
+        calls.recovery.push(args);
+        return recoveryError ? { data: null, error: recoveryError } : { data: {}, error: null };
+      },
       onAuthStateChange() { return { data: { subscription: { unsubscribe() {} } } }; },
     },
     async rpc(name, params) {

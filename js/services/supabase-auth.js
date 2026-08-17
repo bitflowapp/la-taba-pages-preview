@@ -1,6 +1,21 @@
 const TEAM_ROLES = new Set(['owner', 'admin', 'staff', 'rider']);
 const PANEL_CLIENT = 'panel_web';
 
+/**
+ * El mínimo lo fija el proyecto de Auth (`password_min_length`), no esta
+ * pantalla. Está acá para que el formulario y el mensaje digan lo mismo que el
+ * servidor va a exigir: prometer 8 y que el alta falle a los 8 es peor que
+ * pedir 12 de entrada.
+ */
+export const TEAM_PASSWORD_MIN_LENGTH = 12;
+
+/**
+ * Una sola frase para "pedí el correo de recuperación", usada por el Panel y
+ * por la página de la cuenta. No dice si el correo existe.
+ */
+export const RECOVERY_SENT_COPY = 'Si ese correo tiene una cuenta, te mandamos un enlace para '
+  + 'cambiar la contraseña. Revisá tu casilla y también el spam.';
+
 // Estado de una persona frente al comercio, visto desde el cliente. La
 // autoridad sigue siendo el backend; esto es sólo cómo se llama acá a lo que el
 // backend contestó, para que la vista no tenga que interpretar códigos.
@@ -93,6 +108,42 @@ export function createSupabaseAuthService({ client, businessId, deviceLabel = ''
     }
 
     return authResult(true, { session: data.session, user: data.session.user });
+  }
+
+  // Pedir el correo de recuperación.
+  //
+  // Dos reglas, y las dos son de seguridad:
+  //
+  //   1. La respuesta es la MISMA exista o no la cuenta. GoTrue ya contesta 200
+  //      para un correo que no existe; acá no se agrega ninguna diferencia que
+  //      convierta el formulario en un buscador de cuentas registradas.
+  //   2. No se manda `redirectTo`. El enlace del correo sale de la plantilla, y
+  //      la plantilla apunta al `site_url` con un `token_hash`. Sin `redirect_to`
+  //      no hay destino que la allow-list tenga que permitir, y por lo tanto
+  //      tampoco hay uno que un enlace preparado pueda torcer.
+  async function requestPasswordRecovery({ email } = {}) {
+    const normalizedEmail = String(email || '').trim();
+    if (!normalizedEmail) {
+      return authResult(false, { message: 'Escribí tu email.' });
+    }
+
+    let response;
+    try {
+      response = await client.auth.resetPasswordForEmail(normalizedEmail);
+    } catch (_) {
+      return authResult(false, { message: 'No pudimos enviar el correo. Probá de nuevo.' });
+    }
+
+    const error = response?.error;
+    if (error && Number(error.status || 0) === 429) {
+      return authResult(false, {
+        message: 'Pediste el correo hace poco. Esperá unos minutos y probá de nuevo.',
+      });
+    }
+
+    // Cualquier otro rechazo se informa igual que el éxito. `sent` existe para
+    // las pruebas y para el log, no para la pantalla.
+    return authResult(true, { sent: !error, message: RECOVERY_SENT_COPY });
   }
 
   // Pedir acceso. El backend deriva la identidad del token: acá no se manda ni
@@ -355,6 +406,7 @@ export function createSupabaseAuthService({ client, businessId, deviceLabel = ''
     onAuthStateChange,
     readTeamAccessState,
     registerSession,
+    requestPasswordRecovery,
     requestTeamAccess,
     signInTeam,
     signUpTeam,
@@ -416,9 +468,24 @@ function authResult(ok, payload = {}) {
   return { ok: Boolean(ok), ...payload };
 }
 
-function readableAuthError(error, fallback = 'No pudimos validar la sesión.') {
+export function readableAuthError(error, fallback = 'No pudimos validar la sesión.') {
   const status = Number(error?.status || 0);
   if (status === 429) return 'Demasiados intentos. Esperá un momento y probá de nuevo.';
+  // Una contraseña rechazada por política tiene que decir POR QUÉ, o la persona
+  // prueba variantes de la misma contraseña hasta rendirse. Las dos razones que
+  // el proyecto puede devolver son largo y filtrada; se distinguen.
+  if (String(error?.code || '') === 'weak_password' || status === 422) {
+    const reasons = Array.isArray(error?.reasons)
+      ? error.reasons
+      : (error?.weak_password?.reasons || []);
+    if (reasons.includes('pwned')) {
+      return 'Esa contraseña apareció en filtraciones conocidas. Elegí otra distinta.';
+    }
+    if (reasons.includes('length') || /at least|caracteres/i.test(String(error?.message || ''))) {
+      return `La contraseña necesita al menos ${TEAM_PASSWORD_MIN_LENGTH} caracteres.`;
+    }
+    return 'Esa contraseña no cumple la política. Probá con otra más larga.';
+  }
   if (status === 400 || status === 401) return fallback;
   return fallback;
 }

@@ -22,7 +22,7 @@ import crypto from 'node:crypto';
 const [dir = 'dist_release', vivo = 'artifacts/ci/staging-v61/preserva/runtime-config.live.js'] = process.argv.slice(2);
 const RAIZ = path.resolve(dir);
 const PROHIBIDAS = ['catalog', 'data', 'docs', 'tests', 'scripts', 'supabase', 'package.json', 'package-lock.json', 'README.md', '.env', 'node_modules'];
-const ESPERADO = { app: '?v=42', css: '?v=50', recovery: '?v=2', cache: 'la-taba-runtime-v67-rider-multi-order' };
+const ESPERADO = { app: '?v=42', css: '?v=50', recovery: '?v=2', cache: 'la-taba-runtime-v71-production-rc2' };
 
 const fallas = [];
 const ok = [];
@@ -91,6 +91,26 @@ for (const page of paymentPages) {
   );
 }
 
+/*
+ * Las versiones permitidas se DERIVAN de lo que el preflight ya exige.
+ *
+ * Antes eran una lista escrita a mano —`['50', '41', '3', '2']`— al lado de un
+ * `ESPERADO` que pedía `app.js?v=42`. O sea que el mismo guion exigía una
+ * versión doce líneas antes de prohibirla: el control de "index carga app.js?v=42"
+ * daba verde y el de "sin mezcla de versiones" detenía el paquete por ese mismo
+ * 42. Ninguna de las dos listas estaba mal por separado; el defecto era que
+ * fueran dos.
+ *
+ * Derivándolas, cambiar `ESPERADO.app` alcanza: la contradicción deja de ser
+ * algo que hay que acordarse de no cometer y pasa a ser imposible de escribir.
+ * `tests/preflight-staging-package.test.mjs` lo fija.
+ */
+const VERSIONES_EXTRA = ['3']; // pwa-update.js: no tiene comprobación propia arriba, así que se nombra acá.
+const permitidas = new Set([
+  ...Object.values(ESPERADO).flatMap((valor) => [...String(valor).matchAll(/\?v=(\d+)/g)].map((m) => m[1])),
+  ...VERSIONES_EXTRA,
+]);
+
 const versionesSueltas = new Set([
   ...[...index.matchAll(/\?v=(\d+)/g)].map((m) => m[1]),
   ...[...hoja.matchAll(/\?v=(\d+)/g)].map((m) => m[1]),
@@ -101,9 +121,6 @@ const versionesSueltas = new Set([
       : []
   )),
 ]);
-// 50 (cadena CSS), 41 (app), 3 (pwa-update) y 2 (startup-recovery) son las
-// cuatro del candidato. Cualquier otra es una mezcla con un artefacto anterior.
-const permitidas = new Set(['50', '41', '3', '2']);
 const intrusas = [...versionesSueltas].filter((v) => !permitidas.has(v));
 if (intrusas.length) fallas.push(`mezcla de versiones: aparecen ?v=${intrusas.join(', ?v=')} además de las del candidato`);
 else ok.push(`sin mezcla de versiones: sólo ${[...versionesSueltas].sort().map((v) => `?v=${v}`).join(' ')}`);

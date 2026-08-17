@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "targets": [
+    "dist_release",
+    "dist-desktop"
+  ],
+  "files": 710,
+  "bytesScanned": 18204339,
+  "contentDigest": "5e710939bb6044b40b6870811360491a6f75ccf1e8e3421ba7b5af003593e26e",
+  "backendHosts": [],
+  "businessIds": {
+    "00000000-0000-4000-8000-000000000001": 4
+  },
+  "expectedHost": null,
+  "expectedBusinessId": "00000000-0000-4000-8000-000000000001",
+  "findings": [],
+  "info": [
+    {
+      "rule": "template-business-id",
+      "entry": "dist_release/js/core/runtime-config.js",
+      "hits": 1,
+      "why": "solo en comentarios: documenta la forma, no configura"
+    },
+    {
+      "rule": "developer-endpoint",
+      "entry": "dist_release/js/realtime.js",
+      "hits": 1,
+      "why": "solo en comentarios: documenta la forma, no configura"
+    },
+    {
+      "rule": "developer-endpoint",
+      "entry": "dist_release/js/vendor/supabase.js",
+      "hits": 1,
+      "why": "dependencia de terceros: su valor por omision lo reemplaza el cliente; el destino lo fija endpoint-identity"
+    },
+    {
+      "rule": "template-business-id",
+      "entry": "dist_release/runtime-config.js",
+      "hits": 1,
+      "why": "solo en comentarios: documenta la forma, no configura"
+    },
+    {
+      "rule": "template-business-id",
+      "entry": "dist-desktop/js/core/runtime-config.js",
+      "hits": 1,
+      "why": "solo en comentarios: documenta la forma, no configura"
+    },
+    {
+      "rule": "developer-endpoint",
+      "entry": "dist-desktop/js/realtime.js",
+      "hits": 1,
+      "why": "solo en comentarios: documenta la forma, no configura"
+    },
+    {
+      "rule": "developer-endpoint",
+      "entry": "dist-desktop/js/vendor/supabase.js",
+      "hits": 1,
+      "why": "dependencia de terceros: su valor por omision lo reemplaza el cliente; el destino lo fija endpoint-identity"
+    },
+    {
+      "rule": "template-business-id",
+      "entry": "dist-desktop/runtime-config.js",
+      "hits": 1,
+      "why": "solo en comentarios: documenta la forma, no configura"
+    }
+  ],
+  "clean": true
+}

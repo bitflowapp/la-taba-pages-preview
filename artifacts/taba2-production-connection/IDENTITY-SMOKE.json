@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "ref": "wwcpogltfgzgkrlilbcd",
+  "checkedAt": "2026-08-17T01:37:16.036Z",
+  "identities": 2,
+  "identityClass": "email + contrasena, la misma que usan el Panel y el Rider",
+  "createdVia": "SQL (no /signup): no consume el presupuesto de correo ni toca la configuracion de Auth",
+  "closedTablesProbed": 16,
+  "checks": [
+    "login con contrasena",
+    "JWT authenticated y no anonimo",
+    "sin rol sin membresia",
+    "tablas cerradas",
+    "auto-membresia rechazada",
+    "aislamiento entre identidades vivas",
+    "refresh rota el token",
+    "sesion restaurada usable",
+    "logout revoca el refresh",
+    "el logout no tumba la otra sesion",
+    "insert en orders rechazado"
+  ],
+  "authUsersBefore": 0,
+  "findings": [],
+  "healthy": true
+}

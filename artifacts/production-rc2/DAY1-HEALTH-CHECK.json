@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "ref": "wwcpogltfgzgkrlilbcd",
+  "checkedAt": "2026-08-16T18:50:47.342Z",
+  "ledger": {
+    "total": 103,
+    "last": "20260816122000",
+    "server": "PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit"
+  },
+  "heartbeat": {
+    "last_run_at": "2026-08-16 18:50:00.033365+00",
+    "age_seconds": 52,
+    "stale_after_seconds": 600,
+    "healthy": true,
+    "anonProbeGranted": true,
+    "anonWatchdogGranted": true
+  },
+  "cron": [
+    {
+      "jobname": "taba-checkout-expiry-sweep",
+      "schedule": "* * * * *",
+      "active": true,
+      "last_status": "succeeded",
+      "last_start": "2026-08-16 18:50:00.035093+00"
+    },
+    {
+      "jobname": "taba-checkout-provider-truth-sweep",
+      "schedule": "* * * * *",
+      "active": true,
+      "last_status": "succeeded",
+      "last_start": "2026-08-16 18:50:00.037913+00"
+    },
+    {
+      "jobname": "taba-operational-alerts-sweep",
+      "schedule": "* * * * *",
+      "active": true,
+      "last_status": "succeeded",
+      "last_start": "2026-08-16 18:50:00.031661+00"
+    },
+    {
+      "jobname": "taba-payment-outbox-worker",
+      "schedule": "30 seconds",
+      "active": true,
+      "last_status": "succeeded",
+      "last_start": "2026-08-16 18:50:33.16503+00"
+    }
+  ],
+  "alerts": {
+    "abiertas": 0,
+    "criticas": 0
+  },
+  "dataCounts": {
+    "auth_users": 0,
+    "catalog_assets": 0,
+    "checkout_sessions": 0,
+    "customers": 0,
+    "fiscal_documents": 0,
+    "order_events": 0,
+    "order_items": 0,
+    "orders": 0,
+    "payment_attempts": 0,
+    "payment_outbox": 0,
+    "products": 0,
+    "rider_locations": 0,
+    "rider_order_offers": 0,
+    "rider_profiles": 0
+  },
+  "nonEmpty": [],
+  "business": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "name": "La Taba",
+    "ordering_enabled": false,
+    "ordering_verified": false,
+    "delivery_enabled": false,
+    "pickup_enabled": false,
+    "status": "open"
+  },
+  "prelaunchOrderingClosed": true,
+  "findings": [],
+  "healthy": true
+}

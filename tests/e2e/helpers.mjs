@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test';
+import { brandSurfaceRgb } from '../../scripts/brand-surface.mjs';
 
 export async function installBrowserStubs(page) {
   await page.addInitScript(() => {
@@ -486,7 +487,7 @@ export async function seedCartAboveMinimum(page, selector = '[data-product-grid]
  * conservaba el `<link>` y hasta `link.sheet`; lo que no había eran reglas, así
  * que cualquier `toBeVisible` pasaba sobre una tienda apagada.
  */
-export const FONDO_COMERCIAL = 'rgb(9, 11, 14)';
+export const FONDO_COMERCIAL = brandSurfaceRgb();
 
 export async function medirExperienciaComercial(page) {
   return page.evaluate(() => {

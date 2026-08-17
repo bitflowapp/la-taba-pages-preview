@@ -827,7 +827,9 @@ summary {
   bottom: calc(88px + env(safe-area-inset-bottom));
   width: min(calc(100vw - 32px), 460px);
   padding: 13px 18px;
-  border-radius: var(--radius-pill);
+  /* Un aviso es una lámina, no un chip: entra en la familia de la acción y
+     deja la píldora para lo que efectivamente es una etiqueta. */
+  border-radius: var(--radius-action-lg);
   background: var(--taba-ink);
   box-shadow: var(--shadow-md);
   color: white;
@@ -837,9 +839,16 @@ summary {
   transform: translateX(-50%);
 }
 
+/* En el carrito el aviso NO flota: lo reemplaza `.cart-notice`, que vive dentro
+   del layout de esa vista (ver checkout.css). Antes se anclaba a 76px del borde
+   superior y ahí tapaba el encabezado "Tu pedido" durante los 2,2 s del aviso,
+   medido en 390x844 y en WebKit. Anclarlo abajo tampoco servía: ahí cruza las
+   líneas del carrito.
+   `display: none` y no una ocultación visual: así queda fuera del árbol de
+   accesibilidad y la banda del carrito puede ser la única región viva de esta
+   vista, sin anuncios duplicados. */
 body[data-active-view="cart"] .toast {
-  top: calc(76px + env(safe-area-inset-top));
-  bottom: auto;
+  display: none;
 }
 
 body:has(dialog[open]) .toast {

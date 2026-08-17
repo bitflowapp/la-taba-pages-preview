@@ -41,18 +41,44 @@
      El rojo NO se duplica: la acción usa `--taba-red`, el mismo del sistema.
      Sobre negro ese rojo da 3,4:1, suficiente para superficie y borde pero no
      para texto chico; por eso existe `--brand-red-ink`, la única variante
-     pensada para TEXTO sobre oscuro (6,0:1).
+     pensada para TEXTO sobre oscuro (6,3:1).
      ====================================================================== */
-  --brand-bg: #090b0e;              /* 17,9:1 con --brand-ink */
-  --brand-bg-raised: #111419;
-  --brand-surface: #171a20;
-  --brand-surface-hover: #1e222a;
-  --brand-border: rgb(255 255 255 / 12%);
-  --brand-border-strong: rgb(255 255 255 / 24%);
-  --brand-ink: #f5f5f5;             /* 17,9:1 sobre --brand-bg */
-  --brand-ink-muted: #a8abb2;       /*  8,5:1 sobre --brand-bg */
-  --brand-red-ink: #ff4d55;         /*  6,0:1 sobre --brand-bg (texto/enlace) */
-  --brand-gold: #c9953e;            /*  7,3:1 sobre --brand-bg (acento premium) */
+  /* --------------------------------------------------------------------------
+     ESCALA DE GRAFITO — seis escalones, una sola familia.
+     --------------------------------------------------------------------------
+     Antes el fondo era #090b0e: a tres puntos del negro absoluto. Sobre esa
+     base la página entera se leía como UNA lámina —barra superior, hueco entre
+     secciones y fondo de la nav eran el mismo tono— y la tarjeta despegaba sólo
+     por su hairline, nunca por un escalón de luz. Eso es lo que se veía como
+     "negro plano".
+     Acá el fondo sube a #101317 y la tarjeta sube CON él, así que el escalón
+     fondo→tarjeta se conserva (1,16:1 antes · 1,16:1 ahora) sobre una base que
+     ya no es un pozo. Subir sólo el fondo habría aplanado más las tarjetas: es
+     el error obvio de esta clase de ajuste.
+     Y recién ahora existe un hueco REAL debajo del fondo (`--shelf-sunken`
+     #0a0d10), que antes era imposible porque el fondo ya estaba en el piso.
+     Los seis escalones, medidos en luminancia relativa:
+       hueco #0a0d10 · fondo #101317 · superficie #161a1f · tarjeta #1d222a
+       · elevada #262c35 · borde: hairline sobre cualquiera de ellos.
+     Toda la tinta se remidió contra la superficie donde se usa (ver cada
+     comentario); ninguna baja de 4,5:1. ----------------------------------- */
+  --brand-bg: #101317;              /* 17,0:1 con --brand-ink */
+  --brand-bg-raised: #161a1f;
+  --brand-surface: #1d222a;
+  --brand-surface-hover: #262c35;
+  /* El hairline sube un punto: sobre un fondo levantado, el 10% anterior se
+     perdía justo donde tenía que dibujar el borde de la tarjeta. */
+  --brand-border: rgb(255 255 255 / 13%);
+  --brand-border-strong: rgb(255 255 255 / 26%);
+  --brand-ink: #f5f5f5;             /* 17,0:1 sobre --brand-bg */
+  --brand-ink-muted: #a8abb2;       /*  8,1:1 sobre --brand-bg */
+  /* #ff5f66 y no #ff4d55. El rojo legible tuvo que subir un escalón cuando lo
+     hizo la superficie: sobre `--shelf-raised` levantado, el anterior daba
+     4,31:1 y dejaba el error de campo del Perfil por debajo de AA. Lo detectó
+     `tests/a11y-recovery-and-contrast.test.mjs`, no el ojo. La diferencia entre
+     los dos rojos es imperceptible; la de contraste, no. */
+  --brand-red-ink: #ff5f66;         /*  6,3:1 sobre --brand-bg (texto/enlace) */
+  --brand-gold: #c9953e;            /*  6,9:1 sobre --brand-bg (acento premium) */
   --brand-gold-soft: #e4b45f;
   --brand-focus: #8ab4ff;           /* foco visible sobre oscuro */
 
@@ -79,24 +105,44 @@
      contra el fondo de página: una tarjeta sobre `--brand-bg` es más clara que
      la página, y la tinta se calibra sobre la TARJETA.
      --------------------------------------------------------------------- */
-  --shelf: #191d23;                 /* superficie base (tarjeta, formulario) */
-  --shelf-raised: #22272f;          /* sub-superficie: campo, fila, chip */
-  --shelf-sunken: #101317;          /* hueco: barra de progreso, separador */
-  --shelf-line: rgb(255 255 255 / 10%);        /* hairline de 1px */
+  /* Los cuatro escalones de la góndola son los MISMOS que los de la marca: una
+     tarjeta y una superficie elevada no pueden ser dos grises distintos según
+     qué hoja las pinte. `--shelf` == `--brand-surface` y `--shelf-raised` ==
+     `--brand-surface-hover` no es una casualidad: antes eran cuatro nombres
+     para dos grises que diferían en menos de un punto de luminancia, o sea
+     ruido con nombre propio. */
+  --shelf: #1d222a;                 /* superficie base (tarjeta, formulario) */
+  --shelf-raised: #262c35;          /* sub-superficie: campo, fila, chip */
+  --shelf-sunken: #0a0d10;          /* hueco: barra de progreso, separador */
+  --shelf-line: rgb(255 255 255 / 11%);        /* hairline de 1px */
   /* Borde que PORTA información (campo, radio, selector activo): 3,7:1 sobre
      `--shelf`, por encima del mínimo de WCAG 1.4.11 para componentes. */
   --shelf-line-strong: rgb(255 255 255 / 38%);
-  --shelf-ink: #f7f7f8;             /* 16,9:1 sobre --shelf */
-  --shelf-muted: #aab0b9;           /*  7,7:1 sobre --shelf */
+  --shelf-ink: #f7f7f8;             /* 14,9:1 sobre --shelf */
+  --shelf-muted: #aab0b9;           /*  7,4:1 sobre --shelf */
   /* Acento premium sobre la góndola: ahorro, +18, sello de confirmado.
-     6,3:1 sobre --shelf, así que también sirve para texto chico. */
+     6,0:1 sobre --shelf, así que también sirve para texto chico. */
   --shelf-gold: #c9953e;
   --shelf-gold-soft: #e4b45f;
   --shelf-gold-wash: rgb(201 149 62 / 14%);
   /* Rojo que se puede LEER sobre la góndola. El rojo de acción (--taba-red) es
      una superficie, no una tinta: sobre grafito da 2,3:1. */
-  --shelf-red-ink: #ff4d55;
+  --shelf-red-ink: #ff5f66;         /*  5,4:1 sobre --shelf · 4,7:1 sobre --shelf-raised */
   --shelf-red-wash: rgb(208 0 13 / 16%);
+  /* --------------------------------------------------------------------------
+     BRILLO DE LA GÓNDOLA — multiplicador 0…1, no un color.
+     --------------------------------------------------------------------------
+     Las tarjetas de producto del catálogo llevan, además de su sombra oscura,
+     una capa roja muy tenue que las despega del grafito en la zona alta de la
+     góndola y se apaga al bajar. `js/motion.js` modula ESTE número con el
+     scroll; el color, los desenfoques y el reparto viven en el CSS, que es
+     donde se pueden ajustar sin tocar JS.
+     El valor declarado acá es el que se ve **sin JavaScript**: un brillo fijo y
+     discreto. Así la degradación no es "no hay efecto" sino "el efecto no
+     responde al scroll", que es lo que corresponde a un adorno.
+     ----------------------------------------------------------------------- */
+  --card-glow: 0.55;
+
   /* UNA sombra por superficie. Sobre grafito la sombra despega poco, así que
      el hairline interno es el que dibuja el borde de la tarjeta; la sombra
      sólo aporta la profundidad. */
@@ -119,6 +165,25 @@
   --radius-md: 14px;
   --radius-lg: 18px;
   --radius-pill: 999px;
+
+  /* --------------------------------------------------------------------------
+     GEOMETRÍA DE LA ACCIÓN — el radio de un botón dice qué clase de cosa es.
+     --------------------------------------------------------------------------
+     La píldora (999px) es la forma del CHIP: una categoría, una etiqueta, un
+     estado. Es blanda a propósito porque no compromete a nada. "Agregar",
+     "Ver carrito" y "Confirmar" venían con esa misma forma, y ahí la píldora
+     deja de comunicar: la acción más comprometida de la pantalla tenía la
+     geometría de un filtro.
+     `--radius-action` (12px) es la forma de la ACCIÓN: firme, con esquina
+     reconocible, todavía amable. `--radius-action-lg` (14px) es la misma
+     familia un escalón arriba, para superficies de acción grandes —la barra
+     de carrito— donde 12px sobre 52px de alto se lee apretado.
+     La píldora NO desaparece: sigue siendo la forma de los chips, las
+     insignias, los aros y los avatares. Lo que cambia es que deja de ser
+     también la forma de las acciones primarias.
+     ----------------------------------------------------------------------- */
+  --radius-action: 12px;
+  --radius-action-lg: 14px;
 
   /* --------------------------------------------------------------------------
      GEOMETRÍA DE LA VITRINA — tres medidas que antes se escribían sueltas en
@@ -208,6 +273,15 @@
      de una hoja completa, y acortarla la vuelve un salto. */
   --motion-duration-slow: 240ms;
   --motion-duration-modal: 360ms;
+  /* El sello "Agregado ✓" sobre el selector de cantidad. 520 y no 1100: es una
+     confirmación, no una espera. La respuesta autoritativa —el número del
+     stepper, la insignia, la barra de carrito— ya cambió en el mismo cuadro; el
+     sello sólo la acompaña, y mientras vive tapa parte del control. Un
+     acompañamiento que dura más que el gesto deja de acompañar.
+     `ADDED_FLASH_MS` en `js/ui.js` es el espejo de este número —es la ventana
+     durante la cual el marcado sigue emitiendo el sello— y una prueba falla si
+     los dos dejan de coincidir. */
+  --motion-duration-added-flash: 520ms;
   --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --motion-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-ease-exit: cubic-bezier(0.7, 0, 0.84, 0);

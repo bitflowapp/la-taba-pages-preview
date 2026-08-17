@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "note": "Inventario A1 de la conexion productiva. Ningun valor de credencial aparece aca: solo nombres, refs publicos, identidades y huellas.",
+  "production": {
+    "supabaseProjectRef": "wwcpogltfgzgkrlilbcd",
+    "supabaseUrl": "https://wwcpogltfgzgkrlilbcd.supabase.co",
+    "region": "sa-east-1",
+    "status": "ACTIVE_HEALTHY",
+    "canonicalBusinessId": "00000000-0000-4000-8000-000000000001",
+    "migrationLedger": 103,
+    "lastMigration": "20260816122000"
+  },
+  "staging": {
+    "supabaseProjectRef": "ukxqbgswjlibmnjemrzd",
+    "supabaseUrl": "https://ukxqbgswjlibmnjemrzd.supabase.co",
+    "separateFromProduction": true,
+    "note": "Proyecto distinto, region distinta, datos distintos. Ningun cliente productivo tiene por donde heredarlo."
+  },
+  "credentialClasses": {
+    "acceptedInClients": ["sb_publishable_*"],
+    "rejectedInClients": ["sb_secret_*", "sbp_* (management/PAT)", "JWT con role=service_role", "password de la base"],
+    "productionPublishableKeyFingerprint": "sb_publishable_Du5Gd…S8SK (len=46)",
+    "whereRejectionIsEnforced": [
+      "js/core/runtime-config.js · normalizeBrowserSupabaseKey (navegador, runtime)",
+      "scripts/build-production-runtime-config.mjs (emision del config, con pruebas por clase)",
+      "android/app/build.gradle.kts · gate de packaging (build del Rider)",
+      "android/.../auth/NativeAuthConfig.kt · rejection en runtime (aparato)"
+    ]
+  },
+  "components": [
+    {
+      "component": "Customer (web)",
+      "repository": "la-taba-pages-preview",
+      "entrypoint": "index.html + js/app.js",
+      "configSource": "runtime-config.js, propiedad del despliegue",
+      "configKind": "runtime (se carga antes de app.js; no hay config de build)",
+      "resolver": "js/core/runtime-config.js · resolveRuntimeConfig",
+      "endpoint": "derivado del project ref productivo",
+      "projectRef": "wwcpogltfgzgkrlilbcd",
+      "businessId": "00000000-0000-4000-8000-000000000001",
+      "credentialClass": "publishable",
+      "authMode": "anonimo (signInAnonymously); no hay alta manual de cliente",
+      "fallback": "ninguno. El repositorio versiona una plantilla vacia que NO define el global, asi que sin config el artefacto no habla con ningun backend.",
+      "stagingDefaults": "ninguno en el arbol. El unico ref de staging escrito en el repo esta en herramientas y en pruebas, nunca en un camino de cliente.",
+      "queryStringCanOverride": false,
+      "queryStringNote": "isProductionDeployment() apaga ?demo=1 y ?showcase=1 cuando el artefacto es productivo. Un enlace no puede convertir la tienda real en simulacion.",
+      "verifiedBy": [
+        "scripts/check-runtime-config.mjs (forma + centinelas de plantilla)",
+        "scripts/build-production-runtime-config.mjs (emision derivada)",
+        "tests/production-runtime-config.test.mjs (15 pruebas, cada rechazo)",
+        "tests/runtime-config-sentinels.test.mjs"
+      ]
+    },
+    {
+      "component": "Business (Panel web)",
+      "repository": "la-taba-pages-preview",
+      "entrypoint": "index.html, vista [data-view=business] · js/production-operations.js",
+      "configSource": "el MISMO runtime-config.js que el Customer",
+      "configKind": "runtime",
+      "endpoint": "derivado del project ref productivo",
+      "projectRef": "wwcpogltfgzgkrlilbcd",
+      "businessId": "el de la membresia del usuario, resuelto por el servidor",
+      "businessIdNote": "El config trae el negocio canonico, pero el alcance real lo decide identity_current_context(p_business_id) en el backend: sin fila activa en business_members no hay rol y las policies devuelven vacio.",
+      "credentialClass": "publishable",
+      "authMode": "email + contrasena; cuentas creadas por admin; sesion revocable",
+      "usesServiceRole": false,
+      "fallback": "ninguno",
+      "stagingDefaults": "ninguno",
+      "verifiedBy": [
+        "scripts/production-auth-identity-smoke.mjs (login, aislamiento, refresh, logout contra produccion)",
+        "scripts/production-security-smoke.mjs (identidad sin membresia no obtiene rol)"
+      ]
+    },
+    {
+      "component": "Business (Panel escritorio, Tauri)",
+      "repository": "la-taba-pages-preview · src-tauri",
+      "entrypoint": "dist-desktop (mismo frontend) dentro de TABA Negocio",
+      "configSource": "runtime-config.js copiado a dist-desktop por scripts/build-desktop-assets.mjs",
+      "configKind": "runtime",
+      "credentialClass": "publishable",
+      "authMode": "el mismo que la web",
+      "cspAllowsOnly": "self + https://*.supabase.co",
+      "windowMinWidth": 1100,
+      "windowMinWidthNote": "Por encima del corte movil del Panel (1020px) con margen. Antes eran 1024, cuatro pixeles, medidos sobre la VENTANA y no sobre el webview.",
+      "verifiedBy": ["tests/desktop-shell-contract.test.mjs"]
+    },
+    {
+      "component": "Rider (Android)",
+      "repository": "la-taba-rider-android",
+      "branch": "release/taba2-rider-production-external-enablement",
+      "applicationId": "com.lataba.rider",
+      "flavor": "production",
+      "entrypoint": "lib/main_production.dart",
+      "configSource": "buildConfigField, desde variables de entorno en el build",
+      "configKind": "build-time (no hay config de runtime editable en el aparato)",
+      "configFields": [
+        "TABA_PRODUCTION_BACKEND_PROJECT_REF",
+        "TABA_PRODUCTION_SUPABASE_URL",
+        "TABA_PRODUCTION_PUBLISHABLE_KEY",
+        "TABA_PRODUCTION_BUSINESS_ID"
+      ],
+      "gatedBy": "TABA2_CONTROLLED_PRODUCTION_PILOT_APPROVAL; sin la autorizacion los cuatro campos quedan VACIOS y la build sale cerrada",
+      "runtimeValidator": "android/app/src/main/kotlin/com/lataba/rider/auth/NativeAuthConfig.kt",
+      "fallback": "ninguno. Cada flavor trae sus propios buildConfigField y production no tiene de donde heredar; el flavor por si solo ya no habilita la red en ninguna direccion.",
+      "stagingDefaults": "staging tiene los suyos; production no los ve. Ademas el ref de staging se niega explicitamente, comparado por digest para no escribir el literal en el paquete.",
+      "failClosedReasons": [
+        "UNKNOWN_FLAVOR", "REVIEW_BUILD", "MISSING_ENDPOINT", "INSECURE_ENDPOINT",
+        "MALFORMED_ENDPOINT", "MISSING_PROJECT_REF", "MALFORMED_PROJECT_REF",
+        "PROJECT_REF_MISMATCH", "STAGING_ENDPOINT_IN_PRODUCTION", "MISSING_KEY",
+        "SERVER_SECRET_KEY", "UNSUPPORTED_KEY_CLASS", "MISSING_BUSINESS_SCOPE",
+        "MALFORMED_BUSINESS_SCOPE"
+      ],
+      "commercialReviewNetworking": "negado por contrato (REVIEW_BUILD)",
+      "distributable": false,
+      "distributableWhy": "no existe keystore productivo; el gate de release rechaza la firma de depuracion"
+    },
+    {
+      "component": "Backend (Supabase produccion)",
+      "projectRef": "wwcpogltfgzgkrlilbcd",
+      "migrationLedger": 103,
+      "orderingEnabled": false,
+      "orderingVerified": false,
+      "humanRows": 0,
+      "schedulerHealthy": true,
+      "cronJobsActive": 4,
+      "openAlerts": 0,
+      "verifiedBy": ["scripts/production-health-check.mjs (solo SELECT)"]
+    }
+  ],
+  "hostedAuth": {
+    "siteUrl": "http://localhost:3000",
+    "redirectAllowList": [],
+    "failsClosedForRemoteHosts": true,
+    "loopbackAlwaysAllowed": true,
+    "loopbackNote": "GoTrue admite cualquier destino http de loopback sin importar site_url ni allow-list, y no se apaga desde ahi. Medido, no supuesto.",
+    "signupOpen": true,
+    "signupWhy": "el ingreso anonimo del Customer pasa por el mismo /signup",
+    "signupInertBecause": "crear identidad no reparte rol; RLS sigue siendo la autoridad",
+    "captchaEnabled": false,
+    "captchaWhy": "exige cuenta de hCaptcha o Turnstile que no existe: gate externo",
+    "leakedPasswordProtection": false,
+    "leakedPasswordNote": "unico endurecimiento posible sin dominio ni proveedor. scripts/harden-production-auth.mjs lo aplica con autorizacion explicita; NO se aplico en esta corrida.",
+    "customSmtp": false,
+    "verifiedBy": ["scripts/production-auth-posture.mjs (Management API + GoTrue publico, dos fuentes)"]
+  },
+  "canonicalUrl": {
+    "status": "EXTERNAL GATE",
+    "measured": {
+      "cloudflarePagesProjects": ["taba2-staging"],
+      "cloudflarePagesDomains": ["taba2-staging.pages.dev"],
+      "productionPagesProject": null,
+      "customDomains": [],
+      "githubPages": "bitflowapp.github.io/la-taba-pages-preview (artefacto de previsualizacion, no es produccion)"
+    },
+    "why": "El unico proyecto de Cloudflare Pages que existe es el de STAGING. No hay ninguna *.pages.dev estable que pueda funcionar como canonical de produccion, y crear una seria elegir el dominio productivo, que es justo lo que no se inventa."
+  }
+}

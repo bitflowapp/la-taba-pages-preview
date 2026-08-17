@@ -149,6 +149,38 @@ body[data-motion-scrolled="true"] .topbar {
   transform: scale(0.97) !important;
 }
 
+/* ----------------------------------------------------------------------------
+   ESTADO PRESIONADO EN PANTALLA TÁCTIL
+   ----------------------------------------------------------------------------
+   `:hover` no existe con un dedo, así que en teléfono la única respuesta al
+   toque era el 3% de escala: se nota en el borde de una tarjeta y es casi nula
+   en un botón que ya ocupa el ancho de la columna. El acuse tiene que ser
+   también de COLOR, y tiene que llegar en el `pointerdown` —no al soltar—, que
+   es lo que `.motion-pressing` ya garantiza desde `js/motion.js`.
+   `transition: none` es deliberado: heredar `--motion-duration-fast` haría
+   llegar el color 160 ms tarde, que es exactamente lo que se quiere evitar. La
+   vuelta al reposo sí es suave, porque la clase se quita y la regla de arriba
+   vuelve a aplicar su transición.
+   -------------------------------------------------------------------------- */
+.primary-button.motion-pressing:not(:disabled),
+.add-button.motion-pressing:not(:disabled),
+.confirm-button.motion-pressing:not(:disabled),
+.home-add-button.motion-pressing:not(:disabled),
+.floating-cart.motion-pressing:not(:disabled) {
+  border-color: var(--taba-red-hover);
+  background: var(--taba-red-hover);
+  transition: none;
+}
+
+/* El stepper responde en la MITAD que se tocó, no entero: quien toca "+" tiene
+   que ver que tocó "+", no que la fila parpadeó. */
+.qty-stepper .icon-button.motion-pressing:not(:disabled),
+.quantity-control .icon-button.motion-pressing:not(:disabled) {
+  background: var(--shelf-red-wash);
+  color: var(--taba-red-quiet);
+  transition: none;
+}
+
 .category-button.active,
 .desktop-nav button.active,
 .mobile-nav button.active {
@@ -335,16 +367,30 @@ dialog[open]::backdrop {
    existían —aviso, barra de carrito y dos insignias— viven todas lejos del
    dedo. Esto confirma en el mismo lugar del gesto y se apaga solo.
    ========================================================================== */
+/* DOS CAMBIOS SOBRE EL SELLO ORIGINAL, POR EL MISMO MOTIVO.
+   ----------------------------------------------------------------------------
+   1 · Deja libre la columna del "+". Antes cubría el control entero durante
+       1100 ms. Nunca bloqueó el toque —siempre fue `pointer-events: none`— pero
+       sí lo dejaba a ciegas: quien quería dos unidades tocaba "Agregar" y
+       después tenía que apuntar a un "+" invisible durante más de un segundo.
+       El sello confirmaba una acción impidiendo ver la siguiente.
+   2 · Se retira con un BARRIDO opaco, no con un desvanecido. Un desvanecido
+       sobre un control vivo mezcla dos textos —el sello y el número que hay
+       debajo— y durante esos milisegundos la tarjeta parece rota; se ve en
+       cualquier captura tomada a mitad de la transición. Opaco de punta a
+       punta, el sello descubre el control en vez de disolverse encima de él.
+   `overflow: hidden` en el contenedor es lo que hace posible el barrido: sin
+   eso el sello sale del stepper y se pasea por encima del precio de al lado. */
 .qty-stepper.is-just-added {
   position: relative;
+  overflow: hidden;
 }
 
 .qty-stepper.is-just-added::after {
   position: absolute;
   z-index: 3;
-  inset: 0;
+  inset: 0 44px 0 0;
   display: grid;
-  border-radius: inherit;
   background: var(--taba-red);
   color: var(--taba-white);
   content: "Agregado \2713";
@@ -353,14 +399,14 @@ dialog[open]::backdrop {
   letter-spacing: -0.01em;
   place-items: center;
   pointer-events: none;
-  animation: taba-added-flash 1100ms var(--motion-ease-standard) forwards;
+  animation: taba-added-flash var(--motion-duration-added-flash) var(--motion-ease-standard) forwards;
 }
 
 @keyframes taba-added-flash {
-  0% { opacity: 0; transform: scale(0.97); }
-  12% { opacity: 1; transform: scale(1); }
-  68% { opacity: 1; }
-  100% { opacity: 0; }
+  0% { opacity: 0; transform: translateX(0) scale(0.97); }
+  16% { opacity: 1; transform: translateX(0) scale(1); }
+  70% { opacity: 1; transform: translateX(0) scale(1); }
+  100% { opacity: 1; transform: translateX(-101%) scale(1); }
 }
 
 /* Sin movimiento el sello no puede apoyarse en una animación para apagarse:

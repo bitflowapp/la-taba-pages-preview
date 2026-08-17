@@ -11,11 +11,11 @@ Dos repos distintos, dos ramas, dos worktrees.
 
 | | rama | base | worktree |
 |---|---|---|---|
-| Backend + Panel | `feature/taba2-rider-multi-order-backend` | `release/taba2-production-candidate @ 317bbe9` | `D:\1212\la-taba2-rider-multi-order-backend` |
-| Rider Android | `feature/taba2-rider-multi-order` | `feature/taba2-rider-pilot-integration @ 894267a` | `D:\1212\worktrees\taba2-rider-multi-order` |
+| Backend + Panel | `feature/taba2-rider-multi-order-backend` | `release/taba2-production-candidate @ 317bbe9` | `\1212\la-taba2-rider-multi-order-backend` |
+| Rider Android | `feature/taba2-rider-multi-order` | `feature/taba2-rider-pilot-integration @ 894267a` | `\1212\worktrees\taba2-rider-multi-order` |
 
-Repo web: `C:\Users\marco\dev\la-taba-pages-preview\.git`.
-Repo Rider: `D:\1212\la-taba-rider-android\.git` (sin remoto).
+Repo web: `<HOME>\dev\la-taba-pages-preview\.git`.
+Repo Rider: `\1212\la-taba-rider-android\.git` (sin remoto).
 
 ## CURRENT SINGLE-ORDER ROOT CAUSE
 
@@ -219,7 +219,7 @@ sobre accept y offer · tabla de ofertas con RLS y **cero policies**.
 
 ## VISUAL
 
-`D:\1212\artifacts\taba2-rider-multi-order\screenshots`, viewport 432×960 del
+`\1212\artifacts\taba2-rider-multi-order\screenshots`, viewport 432×960 del
 Moto G15: sin entregas · 1 · 2 · 3 · solicitud pendiente · 2 + solicitud ·
 capacidad llena · estados distintos · aceptación sin confirmar · después del
 rechazo.

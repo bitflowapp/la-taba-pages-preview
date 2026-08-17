@@ -1,0 +1,188 @@
+{
+  "chromium-390": {
+    "home": [
+      {
+        "scrollY": 0,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      },
+      {
+        "scrollY": 400,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      },
+      {
+        "scrollY": 900,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      },
+      {
+        "scrollY": 1600,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      }
+    ],
+    "catalogo": [
+      {
+        "scrollY": 0,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": [
+          "0.11",
+          "0.26"
+        ]
+      },
+      {
+        "scrollY": 600,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": [
+          "0.07",
+          "0.165"
+        ]
+      },
+      {
+        "scrollY": 1300,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": [
+          "0",
+          "0"
+        ]
+      }
+    ],
+    "overflow": {
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "desborda": false
+    }
+  },
+  "webkit-iphone": {
+    "home": [
+      {
+        "scrollY": 0,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      },
+      {
+        "scrollY": 400,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      },
+      {
+        "scrollY": 900,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      },
+      {
+        "scrollY": 1600,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      }
+    ],
+    "catalogo": [
+      {
+        "scrollY": 0,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": [
+          "0.11",
+          "0.26"
+        ]
+      },
+      {
+        "scrollY": 600,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": [
+          "0.06",
+          "0.133"
+        ]
+      },
+      {
+        "scrollY": 1300,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": [
+          "0",
+          "0"
+        ]
+      }
+    ],
+    "overflow": {
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "desborda": false
+    }
+  },
+  "chromium-1280": {
+    "home": [
+      {
+        "scrollY": 0,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      },
+      {
+        "scrollY": 400,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      },
+      {
+        "scrollY": 900,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      },
+      {
+        "scrollY": 1600,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": []
+      }
+    ],
+    "catalogo": [
+      {
+        "scrollY": 0,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": [
+          "0.11",
+          "0.26"
+        ]
+      },
+      {
+        "scrollY": 600,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": [
+          "0.08",
+          "0.19"
+        ]
+      },
+      {
+        "scrollY": 1300,
+        "hayTarjeta": true,
+        "glow": "(sin fijar)",
+        "alfas": [
+          "0",
+          "0"
+        ]
+      }
+    ],
+    "overflow": {
+      "scrollWidth": 1280,
+      "innerWidth": 1280,
+      "desborda": false
+    }
+  }
+}

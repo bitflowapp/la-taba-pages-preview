@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "note": "Evidencia A5/A11 del Rider contra la configuracion productiva real. Ninguna credencial aparece aca.",
+  "repository": "la-taba-rider-android",
+  "branch": "release/taba2-rider-production-external-enablement",
+  "head": "a23b6e41fb2b76c6e4a814cce95d182cbfe0bb9c",
+  "cleanTree": true,
+  "toolchain": {
+    "flutter": "c:/src/flutter",
+    "pubCache": "el del mismo disco que el arbol",
+    "pubCacheNote": "Con el pub cache en otra unidad, Gradle no puede relativizar la ruta del plugin url_launcher_android contra el build dir y la configuracion del proyecto falla: 'this and base files have different roots'. Es un problema de la maquina, no del codigo, y por eso existe el cache en disco."
+  },
+  "checks": [
+    {
+      "check": "flutter analyze",
+      "result": "No issues found",
+      "durationSeconds": 65
+    },
+    {
+      "check": "flutter test (Dart)",
+      "tests": 621,
+      "failures": 0
+    },
+    {
+      "check": "gradlew :app:testProductionDebugUnitTest (Kotlin)",
+      "classes": 25,
+      "tests": 183,
+      "failures": 0,
+      "errors": 0,
+      "covers": "NativeAuthConfig, ProductionNetworkGate, SessionManager, SupabaseAuthClient, RiderRpcDataSource"
+    }
+  ],
+  "positiveControl": {
+    "command": "flutter build apk --profile --flavor production -t lib/main_production.dart",
+    "environment": [
+      "TABA2_CONTROLLED_PRODUCTION_PILOT_APPROVAL",
+      "TABA_PRODUCTION_BACKEND_PROJECT_REF=wwcpogltfgzgkrlilbcd",
+      "TABA_PRODUCTION_SUPABASE_URL=https://wwcpogltfgzgkrlilbcd.supabase.co",
+      "TABA_PRODUCTION_PUBLISHABLE_KEY (clase publicable; el valor no se registra)",
+      "TABA_PRODUCTION_BUSINESS_ID=00000000-0000-4000-8000-000000000001"
+    ],
+    "result": "construido",
+    "artifact": "app-production-profile.apk",
+    "sizeBytes": 73757901,
+    "sha256": "bad1dadd1db3c6bdf15832adb65ed9ccb1173c5c7ea63ec108618dfc26d758db",
+    "packageScan": {
+      "command": "dart run tool/package_scan.dart --artifact <apk> --channel production --expect-host wwcpogltfgzgkrlilbcd.supabase.co",
+      "entries": 186,
+      "bytesScanned": 82465454,
+      "backendHosts": ["wwcpogltfgzgkrlilbcd.supabase.co"],
+      "result": "package-scan OK",
+      "findings": 0
+    }
+  },
+  "negativeControl": {
+    "command": "flutter build apk --release --flavor production -t lib/main_production.dart",
+    "environment": "la MISMA configuracion productiva valida, sin keystore",
+    "result": "BUILD FAILED",
+    "message": "Rider release build blocked: no signing configuration. Set TABA_ANDROID_KEYSTORE_PATH, TABA_ANDROID_KEYSTORE_PASSWORD, TABA_ANDROID_KEY_ALIAS and TABA_ANDROID_KEY_PASSWORD, or set TABA_ALLOW_UNSIGNED_RELEASE=1 for a scan-only artifact that must never be distributed.",
+    "why": "Es el comportamiento correcto y es lo que mantiene el gate de firma honesto: con la configuracion productiva entera y valida, la ausencia de keystore igual cierra la build."
+  },
+  "notMeasuredHere": {
+    "otherRefusals": "Los otros siete rechazos del contrato -ref de staging, URL que no deriva del ref, clave service_role, uuid de plantilla, ref mal formado- ocurren DESPUES de la comprobacion de keystore en el gate de packaging, asi que no se pueden ejercitar sin un keystore. La capa de runtime que los niega esta cubierta por las 183 pruebas de Kotlin, y los ocho quedaron registrados con su mensaje exacto en el manifiesto de RC2.",
+    "distributable": false,
+    "distributableWhy": "No existe keystore productivo. El artefacto de este informe es un PROFILE build, no una release: sirve para comprobar que la configuracion productiva produce un binario coherente y para escanearlo, y no se distribuye."
+  },
+  "verdict": "UNSIGNED / PROFILE — NOT DISTRIBUTABLE"
+}

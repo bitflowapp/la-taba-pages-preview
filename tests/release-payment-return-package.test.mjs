@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,6 +31,30 @@ test('el worker conserva una página y el módulo del retorno para cada vuelta o
 test('el preflight acepta la versión CSS que exige el candidato', () => {
   const preflight = read('scripts/preflight-staging-package.mjs');
   assert.match(preflight, /css:\s*'\?v=50'/);
-  const allowed = preflight.match(/const permitidas = new Set\(\[([^\]]+)\]\)/)?.[1] || '';
-  assert.match(allowed, /'50'/);
+
+  // Antes esto miraba la FORMA: buscaba el literal '50' dentro de una lista
+  // escrita a mano. Esa lista dejó de existir —las versiones permitidas ahora se
+  // derivan de `ESPERADO`, justamente para que no pueda volver a exigirse una
+  // versión y prohibirse la misma— así que buscar el literal medía el andamio y
+  // no la propiedad. Acá se ejecutan las declaraciones reales del guion y se
+  // comprueba lo que el test siempre quiso decir: que la versión que el
+  // candidato exige sea una de las que el paquete puede servir.
+  // La invariante general vive en `tests/preflight-staging-package.test.mjs`.
+  const bloques = [
+    /const ESPERADO = \{[\s\S]*?\};/,
+    /const VERSIONES_EXTRA = \[[\s\S]*?\];/,
+    /const permitidas = new Set\(\[[\s\S]*?\]\);/,
+  ].map((patron) => {
+    const encontrado = patron.exec(preflight);
+    assert.ok(encontrado, `el preflight ya no declara ${patron}`);
+    return encontrado[0];
+  });
+  const sandbox = {};
+  const fuenteVm = bloques.join('\n') + '\nvar permitidasFinal = [...permitidas];';
+  vm.runInNewContext(fuenteVm, sandbox, { timeout: 1000 });
+
+  assert.ok(
+    sandbox.permitidasFinal.includes('50'),
+    `el preflight exige styles.css?v=50 y no lo permite (permitidas: ${sandbox.permitidasFinal.join(', ')})`,
+  );
 });

@@ -40,6 +40,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      # El informe vive en el repositorio, no incrustado en este YAML. Estaba
+      # escrito como `python3 -c '…'` con comillas escapadas dentro de un bloque
+      # de shell: funcionaba, pero era la unica pieza del camino de release que
+      # no corre con el runtime del repositorio y no habia forma de probarla.
+      # Un error de parseo se habria descubierto el dia que el reloj externo
+      # fallara, que es exactamente cuando tiene que andar.
+      - name: Traer el informe
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/scheduler-watchdog-report.mjs
+          sparse-checkout-cone-mode: false
+
       - name: Preguntarle al servidor por su propio reloj
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
@@ -60,16 +73,4 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"p_source":"github_actions"}')"
 
-          echo "${respuesta}" | python3 -c '
-import json, sys
-estado = json.load(sys.stdin)
-print(f"servicio        {estado.get(\"service\")}")
-print(f"última corrida  {estado.get(\"last_run_at\")}")
-print(f"antigüedad      {estado.get(\"age_seconds\")} s")
-print(f"atrasado desde  {estado.get(\"stale_after_seconds\")} s")
-print(f"acción          {estado.get(\"action\")}")
-if not estado.get("healthy"):
-    print("::error::El barrido de alertas dejó de correr: el sistema ya no se revisa solo.")
-    sys.exit(1)
-print("El barrido corre al día.")
-'
+          echo "${respuesta}" | node scripts/scheduler-watchdog-report.mjs

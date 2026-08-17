@@ -25,6 +25,7 @@
 import { chromium, webkit } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { brandSurfaceRgb } from './brand-surface.mjs';
 
 const BASE = (process.env.BASE || 'https://taba2-staging.pages.dev').replace(/\/$/, '');
 const OUT = path.resolve(process.env.OUT || 'artifacts/ci/staging-mp-back/recorrido');
@@ -33,7 +34,9 @@ const ENGINE_NAME = process.env.ENGINE === 'webkit' ? 'webkit' : 'chromium';
 const ENGINE = ENGINE_NAME === 'webkit' ? webkit : chromium;
 const HEIGHTS = { 320: 720, 360: 800, 390: 844, 432: 960 };
 const EXTERNO = 'https://www.mercadopago.com.ar/';
-const FONDO_COMERCIAL = 'rgb(9, 11, 14)';
+// Derivado del token de ESTA rama, no copiado: si staging todavía sirve la
+// superficie anterior, la certificación tiene que fallar. Es el punto.
+const FONDO_COMERCIAL = brandSurfaceRgb();
 
 const fallas = [];
 const anota = (etiqueta, condicion, detalle) => {

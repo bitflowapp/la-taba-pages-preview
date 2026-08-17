@@ -1,0 +1,26 @@
+{
+  "$comment": [
+    "Hook anti-fuga de credenciales de Mercado Pago, propiedad de este repositorio.",
+    "El plugin de Mercado Pago declara el mismo control como `python3 …validate_mp_credentials.py`.",
+    "En un host sin `python3` ese hook aborta antes de leer su entrada, y un control que",
+    "aborta no protege: no bloquea, no avisa, y el ruido se aprende a ignorar.",
+    "Este lo corre Node, que es el runtime del repositorio y existe en todos los hosts",
+    "donde se construye, asi que la proteccion viaja con el RC en vez de depender de la",
+    "maquina. Contrato identico: exit 0 permite, exit 2 bloquea con el motivo en stderr.",
+    "Pruebas: tests/mp-credential-hook.test.mjs (16 casos, positivos y negativos)."
+  ],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/scripts/hooks/validate-mp-credentials.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

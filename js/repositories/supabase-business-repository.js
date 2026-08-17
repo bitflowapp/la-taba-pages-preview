@@ -38,6 +38,25 @@ export function createSupabaseBusinessRepository({ client, businessId }) {
     }),
     listActiveRiders: () => rpc('list_active_business_riders', { p_business_id: businessId }),
 
+    // ── Solicitudes de alta ─────────────────────────────────────────────────
+    // La bandeja y la decisión pasan por RPC porque la tabla no tiene un solo
+    // grant para el cliente. `identity_review_access_request` crea la
+    // membresía, la seguridad y el perfil en la misma transacción que el sello
+    // de aprobada: el Panel hace UNA llamada, no tres escrituras que puedan
+    // quedar a mitad de camino.
+    listAccessRequests: (status = 'pending') => rpc('identity_list_access_requests', {
+      p_business_id: businessId, p_status: status,
+    }),
+    reviewAccessRequest: ({ requestId, decision, role = null, reason = null }) => rpc(
+      'identity_review_access_request',
+      {
+        p_request_id: requestId,
+        p_decision: decision,
+        p_role: role,
+        p_reason: reason,
+      },
+    ),
+
     // ── Configuración operativa: horarios, zonas, envío y mínimo ─────────────
     // El Panel no escribe estas tablas: no tiene permiso de tabla. Cada cambio
     // pasa por una RPC que autoriza, valida y audita en la misma transacción.

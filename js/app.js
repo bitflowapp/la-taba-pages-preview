@@ -1656,7 +1656,7 @@ function bindEvents() {
   document.addEventListener('submit', async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLFormElement)) return;
-    if (target.matches('[data-production-auth-form]')) {
+    if (target.matches('[data-production-auth-form], [data-panel-signup-form], [data-panel-request-form]')) {
       event.preventDefault();
       const result = await handleProductionAuthSubmit(target);
       if (result.message) showToast(result.message);

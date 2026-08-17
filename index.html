@@ -719,7 +719,7 @@
           </div>
 
           <div class="card admin-lock-card production-auth-card" data-production-only data-production-auth-card="business" hidden>
-            <div>
+            <div data-production-auth-intro>
               <p class="eyebrow">Negocio</p>
               <h1>Acceso seguro requerido</h1>
               <p>Ingresá con una cuenta owner o empleado vinculada a este comercio.</p>
@@ -739,6 +739,10 @@
                 <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
               </div>
             </form>
+            <!-- Alta autogestionada: crear la cuenta, pedir acceso y esperar.
+                 Lo dibuja production-operations.js según lo que contestó el
+                 backend; el HTML sólo reserva el lugar. -->
+            <div class="panel-access-region" data-panel-access-registration hidden></div>
           </div>
 
           <div class="production-workspace" data-production-only data-production-workspace="business" hidden aria-hidden="true"></div>

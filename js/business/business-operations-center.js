@@ -14,6 +14,7 @@ import {
   classifyPrinterProbe, classifyPrintSubmission, classifyQrCheck, classifyScannerCheck, classifySpoolerCheck,
 } from './business-device-check.js';
 import { evaluateDailyClosure, validateClosureOverride } from './business-day-control.js';
+import { normalizeAccessFilter, renderAccessInboxSurface } from './business-access-inbox.js';
 import { buildStorefrontPreview, describeDraft, planScanOutcome, validateProductDraft } from './business-product-onboarding.js';
 import {
   PANEL_TIMEZONE,
@@ -28,7 +29,7 @@ import {
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
   'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-setup', 'scanner', 'product-create',
   'inventory-receive', 'inventory-adjust', 'stock-count', 'packing', 'pos',
-  'fiscal-status', 'fiscal-setup', 'fiscal-config', 'devices', 'day-close',
+  'fiscal-status', 'fiscal-setup', 'fiscal-config', 'devices', 'team-access', 'day-close',
 ]);
 
 const VIEW_META = Object.freeze({
@@ -49,6 +50,7 @@ const VIEW_META = Object.freeze({
   'fiscal-setup': ['Facturación', null],
   'fiscal-config': ['Datos fiscales', null],
   devices: ['Dispositivos', 'product_lookup'],
+  'team-access': ['Solicitudes de acceso', null],
   'day-close': ['Cerrar el día', null],
 });
 
@@ -74,6 +76,10 @@ const VIEW_CAPABILITY = Object.freeze({
   'fiscal-setup': 'fiscal.configure',
   'fiscal-config': 'fiscal.configure',
   devices: 'devices.test',
+  // Decidir quién entra al comercio es un acto de conducción, no de mostrador.
+  // El servidor lo revalida con identity.members.write; esto sólo evita
+  // ofrecerle la pantalla a quien no puede usarla.
+  'team-access': 'team.manage',
   'day-close': 'day.close',
 });
 
@@ -129,6 +135,10 @@ let productErrors = [];
 let productReadiness = null;
 let productId = '';
 let dailyRun = null;
+let accessRequests = [];
+let accessRequestsStatus = { phase: 'idle', message: '' };
+let accessRequestsFilter = 'pending';
+let accessRequestsLoadStarted = false;
 
 export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
@@ -157,6 +167,10 @@ export function configureBusinessOperations(next = {}) {
   devicePrintersLoadStarted = false;
   resetProductOnboarding();
   dailyRun = null;
+  accessRequests = [];
+  accessRequestsStatus = { phase: 'idle', message: '' };
+  accessRequestsFilter = 'pending';
+  accessRequestsLoadStarted = false;
   return context;
 }
 
@@ -185,6 +199,10 @@ export function renderBusinessOperations(view) {
     }),
     devices: () => renderDevicesSurface({
       results: deviceResults, printers: deviceCheckPrinters, isNative: context.desktopPlatform?.isNative, busy,
+    }),
+    'team-access': () => renderAccessInboxSurface({
+      requests: accessRequests, status: accessRequestsStatus.message,
+      role: context.role, busy, filter: accessRequestsFilter,
     }),
     'day-close': () => renderDayCloseSurface({
       run: dailyRun,
@@ -251,6 +269,10 @@ export function activateBusinessOperations(view = currentView) {
       openingLoadStarted = true;
       void refreshOpeningStatus();
     }
+    if (view === 'team-access' && !accessRequestsLoadStarted) {
+      accessRequestsLoadStarted = true;
+      void refreshAccessRequests();
+    }
     return;
   }
   scanner ||= createBarcodeScannerService();
@@ -277,6 +299,31 @@ export async function handleBusinessOperationsAction(target) {
   if (!target?.closest) return { handled: false };
   const viewButton = target.closest('[data-business-ops-view]');
   if (viewButton) return { handled: true, view: viewButton.dataset.businessOpsView };
+
+  const accessFilter = target.closest('[data-access-inbox-filter]')?.dataset.accessInboxFilter;
+  if (accessFilter) {
+    accessRequestsFilter = normalizeAccessFilter(accessFilter);
+    await refreshAccessRequests();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-access-inbox-refresh]')) {
+    if (busy) return result(false, 'Ya hay algo en curso.');
+    await refreshAccessRequests();
+    return { handled: true, ok: accessRequestsStatus.phase !== 'error', message: '' };
+  }
+
+  const approveId = target.closest('[data-access-request-approve]')?.dataset.accessRequestApprove;
+  if (approveId) {
+    // El rol sale del selector de ESA tarjeta. El servidor igual lo revalida
+    // contra lo que se pidió y contra lo que quien decide puede otorgar.
+    const select = target.closest('[data-business-ops-center]')
+      ?.querySelector(`[data-access-request-role="${CSS.escape(approveId)}"]`);
+    return reviewAccessRequestAction(approveId, 'approve', select?.value || null);
+  }
+
+  const rejectId = target.closest('[data-access-request-reject]')?.dataset.accessRequestReject;
+  if (rejectId) return reviewAccessRequestAction(rejectId, 'reject');
 
   if (target.closest('[data-business-scan-test]')) {
     const input = target.closest('[data-business-ops-center]')?.querySelector('[data-barcode-input]');
@@ -1341,6 +1388,81 @@ async function refreshOperationsConfig() {
   return response;
 }
 
+// ── Solicitudes de acceso ──────────────────────────────────────────────────
+// Quien decide es el servidor: la RPC exige identity.members.write sobre ESTE
+// comercio y se niega a que alguien decida sobre su propia solicitud. Acá abajo
+// no hay ninguna regla de autorización, sólo el estado de la pantalla.
+
+async function refreshAccessRequests() {
+  accessRequestsStatus = { phase: 'loading', message: '' };
+  context.onChange();
+  const response = await context.listAccessRequests(accessRequestsFilter);
+  if (response?.ok) {
+    accessRequests = Array.isArray(response.data) ? response.data : [];
+    accessRequestsStatus = { phase: 'ready', message: '' };
+  } else {
+    accessRequests = [];
+    accessRequestsStatus = {
+      phase: 'error',
+      message: humanizeFailure(response?.message, 'No pudimos leer las solicitudes de acceso.'),
+    };
+  }
+  context.onChange();
+  return response;
+}
+
+async function reviewAccessRequestAction(requestId, decision, role = null) {
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  if (!requestId) return result(false, 'No encontramos esa solicitud.');
+  busy = true;
+  const response = await context.reviewAccessRequest({ requestId, decision, role });
+  busy = false;
+
+  if (!response?.ok) {
+    accessRequestsStatus = {
+      phase: 'error',
+      message: humanizeFailure(response?.message, 'No pudimos registrar la decisión.'),
+    };
+    await refreshAccessRequests();
+    return result(false, accessRequestsStatus.message);
+  }
+
+  const code = String(response.data?.code || '');
+  const message = accessDecisionMessage(code, response.data);
+  accessRequestsStatus = { phase: 'ready', message };
+  // Se relee siempre, incluso cuando la decisión no fue la esperada: la lista
+  // que se está mirando ya no describe el estado real del comercio.
+  await refreshAccessRequests();
+  return result(code === 'approved' || code === 'rejected', message);
+}
+
+function accessDecisionMessage(code, data) {
+  switch (code) {
+    case 'approved':
+      return `Acceso aprobado como ${accessRoleLabel(data?.granted_role)}.`;
+    case 'rejected':
+      return 'Solicitud rechazada.';
+    case 'already_decided':
+      return 'Esa solicitud ya estaba decidida.';
+    case 'already_member':
+      return 'Esa persona ya pertenece al equipo.';
+    case 'self_review':
+      return 'No podés decidir sobre tu propia solicitud.';
+    case 'role_above_actor':
+      return 'Ese rol lo otorga el dueño.';
+    case 'invalid_role':
+      return 'Ese rol no corresponde a lo que se pidió.';
+    case 'not_found':
+      return 'No encontramos esa solicitud.';
+    default:
+      return 'No pudimos registrar la decisión.';
+  }
+}
+
+function accessRoleLabel(role) {
+  return ({ admin: 'encargado', staff: 'equipo', rider: 'repartidor' })[String(role || '')] || 'miembro';
+}
+
 function resetOperationsConfigState() {
   operationsConfigGeneration += 1;
   operationsConfig = null;
@@ -2080,6 +2202,8 @@ function defaultContext() {
     getArcaActivation: async () => ({ ok: false, message: 'El estado de facturación no está disponible.' }),
     authorizeArcaHomologation: async () => ({ ok: false, message: 'La autorización fiscal no está disponible.' }),
     getOpeningStatus: async () => ({ ok: false, message: 'La revisión de apertura no está disponible.' }),
+    listAccessRequests: async () => ({ ok: false, message: 'Las solicitudes de acceso no están disponibles.' }),
+    reviewAccessRequest: async () => ({ ok: false, message: 'Las solicitudes de acceso no están disponibles.' }),
     setBusinessOpenState: async () => ({ ok: false, message: 'No se puede cambiar el estado del negocio.' }),
     recordFiscalVerification: async () => ({ ok: false, message: 'La verificación fiscal no está disponible.' }),
     completeScannedProduct: async () => ({ ok: false, message: 'El alta de producto no está disponible.' }),

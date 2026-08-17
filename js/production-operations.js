@@ -31,6 +31,11 @@ import {
   resetBusinessOperationsForTests,
 } from './business/business-operations-center.js';
 import {
+  ACCESS_STEP,
+  accessRegistrationView,
+  stepForAccessState,
+} from './business/business-access-registration.js';
+import {
   PAYMENT_ACTION_OUTCOMES,
   PAYMENT_RECOVERY_STATES,
   buildPaymentSupportDiagnostic,
@@ -96,6 +101,11 @@ let access = {
   membership: null,
   message: '',
 };
+// El alta autogestionada del Panel. Vive fuera de `access` a propósito: `access`
+// contesta "¿esta persona puede operar?", y la respuesta para quien está
+// esperando aprobación es NO. Lo que falta es la otra mitad —"¿y entonces qué
+// ve?"— y esa mitad tiene su propio estado.
+let accessRegistration = emptyAccessRegistration();
 let gpsShare = emptyGpsShare();
 
 export function initProductionOperations({
@@ -157,12 +167,12 @@ export function renderProductionOperations() {
 }
 
 export async function handleProductionAuthSubmit(form) {
-  if (
-    getAppMode() !== APP_MODE_PRODUCTION
-    || !form?.matches?.('[data-production-auth-form]')
-  ) {
+  if (getAppMode() !== APP_MODE_PRODUCTION || typeof form?.matches !== 'function') {
     return { handled: false };
   }
+  if (form.matches('[data-panel-signup-form]')) return submitPanelSignUp(form);
+  if (form.matches('[data-panel-request-form]')) return submitPanelAccessRequest(form);
+  if (!form.matches('[data-production-auth-form]')) return { handled: false };
   if (!auth?.signInTeam) {
     const message = 'La autenticación productiva no está disponible.';
     access = {
@@ -189,6 +199,21 @@ export async function handleProductionAuthSubmit(form) {
 
   const result = await auth.signInTeam({ email, password });
   if (!result.ok) {
+    // Las credenciales estaban BIEN; lo que falta es la aprobación. Tratarlo
+    // como error de acceso sería mentirle a la persona y, peor, cerrarle la
+    // sesión que necesita para ver su estado.
+    if (result.awaitingAccess) {
+      applyAwaitingAccess(result);
+      form.reset();
+      access = {
+        status: 'signed_out',
+        user: null,
+        membership: null,
+        message: '',
+      };
+      notify();
+      return { handled: true, ok: false, awaitingAccess: true, message: '' };
+    }
     access = {
       status: 'signed_out',
       user: null,
@@ -215,10 +240,119 @@ export async function handleProductionAuthSubmit(form) {
   }
 
   form.reset();
+  accessRegistration = emptyAccessRegistration();
   // La activación va por la MISMA cola que el evento SIGNED_IN: un solo camino
   // serializado. Activar directo acá era la mitad de la carrera.
   await refreshProductionAccess();
   return { handled: true, ok: true, message: 'Acceso seguro iniciado.' };
+}
+
+// Crear la cuenta. No pide rol, no toca membresías, y deja a la persona
+// exactamente donde tiene que quedar: con identidad y sin permisos, frente al
+// formulario para pedir acceso.
+async function submitPanelSignUp(form) {
+  if (!auth?.signUpTeam) {
+    return { handled: true, ok: false, message: 'La creación de cuentas no está disponible.' };
+  }
+  const data = new FormData(form);
+  const email = String(data.get('email') || '').trim();
+  const password = String(data.get('password') || '');
+
+  accessRegistration = { ...accessRegistration, busy: true, message: '', email };
+  notify();
+
+  const result = await auth.signUpTeam({ email, password });
+  if (!result.ok) {
+    accessRegistration = { ...accessRegistration, busy: false, message: result.message, email };
+    notify();
+    return { handled: true, ok: false, message: '' };
+  }
+
+  if (result.needsEmailConfirmation) {
+    accessRegistration = {
+      ...emptyAccessRegistration(),
+      step: ACCESS_STEP.SIGN_IN,
+      message: result.message,
+      email,
+    };
+    notify();
+    return { handled: true, ok: true, message: result.message };
+  }
+
+  accessRegistration = { ...emptyAccessRegistration(), step: ACCESS_STEP.REQUEST, email };
+  notify();
+  return { handled: true, ok: true, message: 'Cuenta creada. Ahora pedí acceso al comercio.' };
+}
+
+async function submitPanelAccessRequest(form) {
+  if (!auth?.requestTeamAccess) {
+    return { handled: true, ok: false, message: 'Las solicitudes no están disponibles.' };
+  }
+  const data = new FormData(form);
+  const fullName = String(data.get('fullName') || '').trim();
+  const phone = String(data.get('phone') || '').trim();
+
+  accessRegistration = { ...accessRegistration, busy: true, message: '' };
+  notify();
+
+  const result = await auth.requestTeamAccess({ access: 'panel', fullName, phone });
+  if (!result.ok) {
+    accessRegistration = {
+      ...accessRegistration,
+      busy: false,
+      message: result.message,
+      request: { ...(accessRegistration.request || {}), fullName, contactPhone: phone },
+    };
+    notify();
+    return { handled: true, ok: false, message: '' };
+  }
+
+  accessRegistration = {
+    ...emptyAccessRegistration(),
+    step: ACCESS_STEP.PENDING,
+    request: result.request,
+    email: accessRegistration.email,
+  };
+  notify();
+  return { handled: true, ok: true, message: 'Solicitud enviada.' };
+}
+
+// Refrescar es un acto de la persona, no un sondeo. Una pantalla de espera que
+// consulta sola cada pocos segundos, multiplicada por cada cuenta nueva, es
+// tráfico contra producción a cambio de nada: la aprobación tarda lo que tarda
+// una persona en mirar el Panel.
+async function refreshPanelAccessState() {
+  if (!auth?.readTeamAccessState) return { handled: true, ok: false, message: '' };
+  accessRegistration = { ...accessRegistration, busy: true, message: '' };
+  notify();
+
+  const state = await auth.readTeamAccessState();
+  if (state.state === 'member') {
+    accessRegistration = emptyAccessRegistration();
+    await refreshProductionAccess();
+    return { handled: true, ok: true, message: 'Tu acceso fue aprobado.' };
+  }
+  if (state.state === 'unknown') {
+    accessRegistration = {
+      ...accessRegistration,
+      busy: false,
+      message: 'No pudimos consultar el estado. Probá de nuevo.',
+    };
+    notify();
+    return { handled: true, ok: false, message: '' };
+  }
+
+  const nextStep = stepForAccessState(state.state);
+  const changed = nextStep !== accessRegistration.step;
+  accessRegistration = {
+    ...accessRegistration,
+    busy: false,
+    step: nextStep,
+    request: state.request,
+    message: changed ? '' : 'Tu solicitud sigue esperando.',
+  };
+  notify();
+  return { handled: true, ok: true, message: '' };
 }
 
 export async function handleProductionOperationsAction(target) {
@@ -226,13 +360,33 @@ export async function handleProductionOperationsAction(target) {
     return { handled: false };
   }
 
-  if (target.closest('[data-production-sign-out]')) {
+  const gotoStep = target.closest('[data-panel-access-goto]')?.dataset.panelAccessGoto;
+  if (gotoStep) {
+    accessRegistration = {
+      ...accessRegistration,
+      step: gotoStep === ACCESS_STEP.SIGN_UP || gotoStep === ACCESS_STEP.SIGN_IN
+        || gotoStep === ACCESS_STEP.REQUEST
+        ? gotoStep
+        : ACCESS_STEP.SIGN_IN,
+      message: '',
+      busy: false,
+    };
+    notify();
+    return { handled: true, ok: true, message: '' };
+  }
+
+  if (target.closest('[data-panel-access-refresh]')) {
+    return refreshPanelAccessState();
+  }
+
+  if (target.closest('[data-panel-access-signout]') || target.closest('[data-production-sign-out]')) {
     stopGpsShare();
     stopBusinessIntake();
     stopBusinessCommandRuntime();
     repository?.stopSync?.();
     const result = await auth.signOut();
     clearProductionOrders();
+    accessRegistration = emptyAccessRegistration();
     access = {
       status: 'signed_out',
       user: null,
@@ -884,6 +1038,11 @@ async function refreshProductionAccessNow() {
     // de su pedido. Ese evento no es un cierre de sesión del equipo y no debe
     // borrar el pedido recién espejado en memoria.
     if (!result.customerSession) clearProductionOrders();
+    // Volver a abrir el Panel esperando aprobación tiene que devolver la misma
+    // pantalla de espera, no el formulario de ingreso. Es lo que hace que
+    // cerrar y reabrir no se sienta como que la solicitud se perdió.
+    if (result.awaitingAccess) applyAwaitingAccess(result);
+    else if (!result.customerSession) accessRegistration = emptyAccessRegistration();
     access = {
       status: 'signed_out',
       user: null,
@@ -893,6 +1052,7 @@ async function refreshProductionAccessNow() {
     notify();
     return;
   }
+  accessRegistration = emptyAccessRegistration();
   await activateAuthorizedAccess(result, sequence);
 }
 
@@ -1100,6 +1260,8 @@ async function configureBusinessRuntime(result) {
     closeDailyReconciliation: (input) => operationsRepository.closeDailyReconciliation(input),
     getOpeningStatus: () => operationsRepository.getOpeningStatus(),
     setBusinessOpenState: (status) => operationsRepository.setOpenState(status),
+    listAccessRequests: (status) => businessConfigRepository.listAccessRequests(status),
+    reviewAccessRequest: (input) => businessConfigRepository.reviewAccessRequest(input),
     // Los pagos siguen pasando por el repositorio existente: acá sólo se los presenta.
     listPayments: async () => {
       const response = await repository.listMercadoPagoBusinessPayments();
@@ -1322,6 +1484,32 @@ function emptyBusinessIntakeStatus() {
   };
 }
 
+function emptyAccessRegistration() {
+  return {
+    step: ACCESS_STEP.SIGN_IN,
+    message: '',
+    busy: false,
+    request: null,
+    email: '',
+  };
+}
+
+// Traduce lo que contestó el backend a la pantalla que corresponde. Se llama
+// desde los dos caminos por los que se puede llegar a estar esperando: entrar,
+// y volver a abrir el Panel con la sesión ya guardada.
+function applyAwaitingAccess(result) {
+  accessRegistration = {
+    ...emptyAccessRegistration(),
+    step: stepForAccessState(result?.accessState),
+    request: result?.accessRequest || null,
+    email: String(result?.user?.email || ''),
+  };
+}
+
+export function getAccessRegistrationStateForTests() {
+  return { ...accessRegistration };
+}
+
 function renderAccessSurface(view) {
   const card = document.querySelector(`[data-production-auth-card="${view}"]`);
   const workspace = document.querySelector(`[data-production-workspace="${view}"]`);
@@ -1345,6 +1533,8 @@ function renderAccessSurface(view) {
       : access.message;
     message.hidden = !message.textContent;
   }
+
+  renderAccessRegistrationRegion(card, form, view);
 
   if (!authorized) {
     workspace.replaceChildren();
@@ -1372,6 +1562,43 @@ function renderAccessSurface(view) {
 
   restaurarBorradoresDelOperador(workspace, borradores);
   restaurarFoco(workspace, foco);
+}
+
+// El alta autogestionada sólo existe en el Panel del negocio. La vista Rider de
+// la web es una superficie operativa para alguien YA aprobado; quien quiere ser
+// Rider se da de alta desde la app, que es donde después va a trabajar.
+function renderAccessRegistrationRegion(card, form, view) {
+  const region = card.querySelector('[data-panel-access-registration]');
+  if (!region) return;
+  if (view !== 'business') {
+    region.replaceChildren();
+    region.hidden = true;
+    return;
+  }
+
+  const rendered = accessRegistrationView(accessRegistration);
+  region.hidden = false;
+  // Un formulario a medio escribir no se repinta encima. El markup de este
+  // bloque depende sólo del paso, así que comparar el paso alcanza y evita
+  // borrar lo que la persona está tipeando cuando el Panel repinta por otra
+  // razón.
+  if (region.dataset.renderedStep !== rendered.step || region.dataset.renderedMessage !== accessRegistration.message) {
+    region.innerHTML = rendered.markup;
+    region.dataset.renderedStep = rendered.step;
+    region.dataset.renderedMessage = accessRegistration.message;
+  }
+
+  // Ingresar y pedir el alta son dos cosas distintas y no comparten pantalla:
+  // el formulario de siempre se esconde en cuanto la persona entra al alta.
+  if (form) {
+    form.hidden = rendered.hidesSignIn;
+    form.setAttribute('aria-hidden', String(rendered.hidesSignIn));
+  }
+  const intro = card.querySelector('[data-production-auth-intro]');
+  if (intro) {
+    intro.hidden = rendered.hidesSignIn;
+    intro.setAttribute('aria-hidden', String(rendered.hidesSignIn));
+  }
 }
 
 /** El id del pedido de una tarjeta, tomado de sus propias acciones. */

@@ -1815,3 +1815,182 @@ button.operation-metric {
     flex-direction: column;
   }
 }
+
+/* ── Alta autogestionada del Panel ──────────────────────────────────────────
+   Dos pantallas del mismo asunto: la de quien pide (dentro de la tarjeta de
+   acceso) y la de quien decide (una vista más del centro de operación).
+   Las dos se diseñan para el teléfono primero: el dueño aprueba parado, con una
+   mano, y quien se registra lo hace desde donde esté. */
+
+.panel-access-region {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.panel-access {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.panel-access-head h2 {
+  margin: 0 0 6px;
+  color: #20242a;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.panel-access-head p {
+  margin: 0;
+  color: var(--taba-muted, #5b6270);
+}
+
+.panel-access-switch {
+  margin: 0;
+  color: var(--taba-muted, #5b6270);
+}
+
+/* El botón que lleva al alta es un botón de verdad —foco, teclado, rol— y no
+   un enlace decorado. Sólo se ve como texto. */
+.link-button {
+  min-height: 44px;
+  border: 0;
+  background: none;
+  padding: 0 4px;
+  color: #9c0c15;
+  font: inherit;
+  font-weight: 750;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.panel-access-detail,
+.access-request-facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+}
+
+.panel-access-detail > div,
+.access-request-facts > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  justify-content: space-between;
+}
+
+.panel-access-detail dt,
+.access-request-facts dt {
+  color: var(--taba-muted, #5b6270);
+  font-weight: 700;
+}
+
+.panel-access-detail dd,
+.access-request-facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+  color: #20242a;
+}
+
+.access-inbox-list {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.access-request-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--taba-border, #dedbd5);
+  border-left-width: 5px;
+  border-radius: 14px;
+  background: var(--taba-surface, #fff);
+  padding: 14px 16px;
+  min-width: 0;
+}
+
+.access-request-card.tone-warning { border-left-color: #b66b16; }
+.access-request-card.tone-success { border-left-color: #2f7a4f; }
+.access-request-card.tone-danger { border-left-color: #9f1d20; }
+
+.access-request-card > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.access-request-card > header strong {
+  display: block;
+  min-width: 0;
+  overflow-wrap: break-word;
+  font-size: 16px;
+}
+
+.access-request-kind {
+  display: block;
+  color: var(--taba-muted, #5b6270);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.access-request-status {
+  border-radius: 999px;
+  border: 1px solid currentcolor;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.access-request-status.tone-warning { color: #8a5300; }
+.access-request-status.tone-success { color: #0f7a3d; }
+.access-request-status.tone-danger { color: #b3121b; }
+
+/* Decidir se hace con el dedo: los controles ocupan el ancho y ninguno baja de
+   44px de alto. En pantalla ancha vuelven a una fila. */
+.access-request-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.access-request-role {
+  display: grid;
+  gap: 6px;
+  color: #363c44;
+  font-weight: 700;
+}
+
+.access-request-role select {
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid #b9c0c9;
+  border-radius: 11px;
+  background: #fff;
+  padding: 9px 12px;
+  color: #20242a;
+  font: inherit;
+}
+
+.access-request-actions .primary-button,
+.access-request-actions .ghost-button {
+  min-height: 48px;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .access-request-actions {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: end;
+  }
+
+  .access-request-actions .primary-button,
+  .access-request-actions .ghost-button {
+    width: auto;
+    padding-inline: 20px;
+  }
+}

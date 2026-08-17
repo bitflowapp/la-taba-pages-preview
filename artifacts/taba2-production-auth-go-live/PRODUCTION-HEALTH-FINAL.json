@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "ref": "wwcpogltfgzgkrlilbcd",
+  "checkedAt": "2026-08-17T19:09:56.588Z",
+  "ledger": {
+    "total": 107,
+    "last": "20260817040000",
+    "server": "PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit"
+  },
+  "heartbeat": {
+    "last_run_at": "2026-08-17 19:10:00.033648+00",
+    "age_seconds": 0,
+    "stale_after_seconds": 600,
+    "healthy": true,
+    "anonProbeGranted": true,
+    "anonWatchdogGranted": true
+  },
+  "cron": [
+    {
+      "jobname": "taba-checkout-expiry-sweep",
+      "schedule": "* * * * *",
+      "active": true,
+      "last_status": "succeeded",
+      "last_start": "2026-08-17 19:10:00.033519+00"
+    },
+    {
+      "jobname": "taba-checkout-provider-truth-sweep",
+      "schedule": "* * * * *",
+      "active": true,
+      "last_status": "succeeded",
+      "last_start": "2026-08-17 19:10:00.037607+00"
+    },
+    {
+      "jobname": "taba-operational-alerts-sweep",
+      "schedule": "* * * * *",
+      "active": true,
+      "last_status": "succeeded",
+      "last_start": "2026-08-17 19:10:00.032307+00"
+    },
+    {
+      "jobname": "taba-payment-outbox-worker",
+      "schedule": "30 seconds",
+      "active": true,
+      "last_status": "succeeded",
+      "last_start": "2026-08-17 19:09:48.333318+00"
+    }
+  ],
+  "alerts": {
+    "abiertas": 0,
+    "criticas": 0
+  },
+  "dataCounts": {
+    "auth_users": 1,
+    "catalog_assets": 0,
+    "checkout_sessions": 0,
+    "customers": 0,
+    "fiscal_documents": 0,
+    "order_events": 0,
+    "order_items": 0,
+    "orders": 0,
+    "payment_attempts": 0,
+    "payment_outbox": 0,
+    "products": 0,
+    "rider_locations": 0,
+    "rider_order_offers": 0,
+    "rider_profiles": 0
+  },
+  "nonEmpty": [
+    "auth_users=1"
+  ],
+  "business": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "name": "La Taba",
+    "ordering_enabled": false,
+    "ordering_verified": false,
+    "delivery_enabled": false,
+    "pickup_enabled": false,
+    "status": "open"
+  },
+  "prelaunchOrderingClosed": true,
+  "findings": [
+    "ledger 107, esperado 103",
+    "ultima migration 20260817040000, esperada 20260816122000"
+  ],
+  "healthy": false
+}

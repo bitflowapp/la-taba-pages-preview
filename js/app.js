@@ -576,10 +576,16 @@ async function bootstrap() {
       console.warn('[TABA] sincronización de pedidos no disponible en el arranque', error);
       showToast('No pudimos recuperar tus pedidos anteriores. Podés seguir comprando.');
     }
-    await refreshMercadoPagoCheckoutAvailability();
+    // Antes se preguntaba acá si Mercado Pago está disponible, y esa pregunta
+    // pide una sesión: o sea que abrir la home creaba una identidad anónima.
+    // Ahora se pregunta al entrar al carrito, que es cuando la respuesta se usa.
     await initializeCustomerDeliveryCheckout();
     await initializeCustomerProfileView();
     initializeShowcase();
+    // Si la pestaña se abrió DIRECTO en el carrito, `setActiveView` no llegó a
+    // correr y la pregunta no se hizo. Es el único caso donde el arranque sí
+    // tiene que hacerla: ahí ya hay alguien mirando su pedido.
+    if (activeView === 'cart') await refreshMercadoPagoCheckoutAvailability();
     renderAll();
     playViewEnter(activeView);
     resumeSimulationIfNeeded();
@@ -2070,6 +2076,11 @@ function setActiveView(view, options = {}) {
   }
 
   syncGpsSharingWithView(nextView);
+  // Entrar al carrito es el primer momento en que importa si Mercado Pago está
+  // disponible, y también el primero en que hay una persona decidiendo algo. En
+  // el arranque no se pregunta: preguntarlo creaba una identidad anónima por
+  // cada visita, robots incluidos.
+  if (nextView === 'cart') refreshMercadoPagoCheckoutAvailability();
   renderAll();
   window.dispatchEvent(new CustomEvent('taba:realtime-view-enter', { detail: { view: nextView } }));
   if (changed) playViewEnter(nextView);
@@ -2090,6 +2101,11 @@ function syncViewFromLocation() {
   if (nextView === activeView) return;
   activeView = nextView;
   syncGpsSharingWithView(nextView);
+  // Entrar al carrito es el primer momento en que importa si Mercado Pago está
+  // disponible, y también el primero en que hay una persona decidiendo algo. En
+  // el arranque no se pregunta: preguntarlo creaba una identidad anónima por
+  // cada visita, robots incluidos.
+  if (nextView === 'cart') refreshMercadoPagoCheckoutAvailability();
   renderAll();
   window.dispatchEvent(new CustomEvent('taba:realtime-view-enter', { detail: { view: nextView } }));
   playViewEnter(nextView);

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "ref": "wwcpogltfgzgkrlilbcd",
-  "checkedAt": "2026-08-17T18:51:29.957Z",
+  "checkedAt": "2026-08-17T19:20:37.320Z",
   "servicio": {
     "status": 200,
     "ok": true
@@ -40,8 +40,8 @@
     "ordering": false
   },
   "auditoria": {
-    "total": 62,
-    "ultimo_dia": 62
+    "total": 71,
+    "ultimo_dia": 71
   },
   "avisos": [
     "sin SMTP propio: el alta publica no puede entregar el correo de confirmacion",

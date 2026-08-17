@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v72-production-auth';
+const CACHE_NAME = 'la-taba-runtime-v73-production-auth';
 const ASSETS = [
   './',
   './index.html',
@@ -30,7 +30,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=3',
   './js/startup-recovery.js?v=2',
-  './js/app.js?v=43',
+  './js/app.js?v=44',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',

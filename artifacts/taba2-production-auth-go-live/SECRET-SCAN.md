@@ -40,7 +40,12 @@ largo=44`. Alcanza para saber que está y para qué sirve; no alcanza para usarl
 
 ## 5. Lo que quedó en el directorio temporal, y no en el repo
 
-`E:\DevCache\…\scratchpad\` tiene el envoltorio del token, las consultas de
-sólo lectura y la clave publicable. Nada de eso está versionado ni viaja en
-ningún artefacto. El único archivo con valor sensible sería `prod-publishable.key`,
-que contiene una clave **pública** por diseño.
+El directorio de trabajo de la sesión —fuera del repositorio— tiene el
+envoltorio del token, las consultas de sólo lectura y la clave publicable. Nada
+de eso está versionado ni viaja en ningún artefacto. El único archivo con
+apariencia de credencial es el de la clave publicable, que es **pública** por
+diseño: viaja en el navegador de cualquiera que abra el sitio.
+
+(El gate de higiene de release no deja escribir una ruta local en un archivo
+versionado, y tiene razón: una ruta de máquina en un artefacto no sirve para
+nadie más y filtra cómo está armado el entorno de quien lo corrió.)

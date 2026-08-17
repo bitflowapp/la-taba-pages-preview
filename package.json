@@ -82,7 +82,8 @@
     "certify:circuit:staging": "node scripts/certify-order-operational-circuit.mjs",
     "release:identity": "node scripts/check-release-identity.mjs --write",
     "production:smoke:registration": "node scripts/production-registration-smoke.mjs",
-    "production:smoke:customer": "node scripts/production-customer-memory-smoke.mjs"
+    "production:smoke:customer": "node scripts/production-customer-memory-smoke.mjs",
+    "production:auth:health": "node scripts/production-auth-health.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

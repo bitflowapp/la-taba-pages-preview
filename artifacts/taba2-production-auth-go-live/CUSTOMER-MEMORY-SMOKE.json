@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "ref": "wwcpogltfgzgkrlilbcd",
+  "checkedAt": "2026-08-17T18:25:48.135Z",
+  "pasos": [
+    {
+      "nombre": "el ingreso anonimo funciona",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "el JWT dice anonimo y authenticated",
+      "ok": true,
+      "detalle": "is_anonymous=true role=authenticated"
+    },
+    {
+      "nombre": "guarda nombre y telefono",
+      "ok": true,
+      "detalle": "HTTP 200 name=Cliente QA"
+    },
+    {
+      "nombre": "el telefono se normaliza en el servidor",
+      "ok": true,
+      "detalle": "phone=2995551234"
+    },
+    {
+      "nombre": "guarda la primera direccion",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "la sesion se restaura con el refresh token",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "y sigue siendo la misma persona",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "nombre": "el perfil vuelve con el nombre guardado",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "y con la direccion guardada",
+      "ok": true,
+      "detalle": "1 direccion(es)"
+    },
+    {
+      "nombre": "la primera direccion queda como predeterminada",
+      "ok": true,
+      "detalle": "true"
+    },
+    {
+      "nombre": "guarda la segunda direccion",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "cambiar la predeterminada funciona",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "nunca hay mas de una predeterminada",
+      "ok": true,
+      "detalle": "1"
+    },
+    {
+      "nombre": "y es la que se eligio",
+      "ok": true,
+      "detalle": "la segunda"
+    },
+    {
+      "nombre": "borrar una direccion es borrado logico",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "la direccion vieja sigue existiendo para la historia de entregas",
+      "ok": true,
+      "detalle": "vivas=1 historicas=2"
+    },
+    {
+      "nombre": "B no ve el perfil de A",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "B no lee la fila de A en customers",
+      "ok": true,
+      "detalle": "HTTP 200 filas=0"
+    },
+    {
+      "nombre": "ni ninguna direccion de A",
+      "ok": true,
+      "detalle": "HTTP 200 filas=0"
+    },
+    {
+      "nombre": "B no puede tocar una direccion de A",
+      "ok": true,
+      "detalle": "code=42501"
+    },
+    {
+      "nombre": "nadie escribe customers por tabla, ni su propia fila",
+      "ok": true,
+      "detalle": "HTTP 403"
+    },
+    {
+      "nombre": "una identidad anonima no obtiene rol",
+      "ok": true,
+      "detalle": "role=null"
+    },
+    {
+      "nombre": "y no puede pedir acceso de equipo siendo anonima",
+      "ok": true,
+      "detalle": "code=not_authenticated"
+    },
+    {
+      "nombre": "produccion queda sin rastro de la corrida",
+      "ok": true,
+      "detalle": "{\"usuarios\":0,\"clientes\":0,\"direcciones\":0,\"pedidos\":0}"
+    },
+    {
+      "nombre": "los pedidos siguen cerrados",
+      "ok": true,
+      "detalle": "ordering_enabled=false"
+    }
+  ],
+  "hallazgos": [],
+  "despuesDeLimpiar": {
+    "usuarios": 0,
+    "clientes": 0,
+    "direcciones": 0,
+    "pedidos": 0
+  },
+  "orderingEnabled": false
+}

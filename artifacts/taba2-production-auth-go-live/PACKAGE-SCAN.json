@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "targets": [
+    "dist_release"
+  ],
+  "files": 363,
+  "bytesScanned": 9176911,
+  "contentDigest": "41d9e369f370f43c05a4c025675ac48b0b863203626649e72e80b9ba46f3c0f9",
+  "backendHosts": [
+    "wwcpogltfgzgkrlilbcd.supabase.co"
+  ],
+  "businessIds": {
+    "00000000-0000-4000-8000-000000000001": 4
+  },
+  "expectedHost": "wwcpogltfgzgkrlilbcd.supabase.co",
+  "expectedBusinessId": "00000000-0000-4000-8000-000000000001",
+  "findings": [],
+  "info": [
+    {
+      "rule": "template-business-id",
+      "entry": "dist_release/js/core/runtime-config.js",
+      "hits": 1,
+      "why": "solo en comentarios: documenta la forma, no configura"
+    },
+    {
+      "rule": "developer-endpoint",
+      "entry": "dist_release/js/realtime.js",
+      "hits": 1,
+      "why": "solo en comentarios: documenta la forma, no configura"
+    },
+    {
+      "rule": "developer-endpoint",
+      "entry": "dist_release/js/vendor/supabase.js",
+      "hits": 1,
+      "why": "dependencia de terceros: su valor por omision lo reemplaza el cliente; el destino lo fija endpoint-identity"
+    }
+  ],
+  "clean": true
+}

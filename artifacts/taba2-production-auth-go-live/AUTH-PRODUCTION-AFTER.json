@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "ref": "wwcpogltfgzgkrlilbcd",
+  "checkedAt": "2026-08-17T18:52:51.698Z",
+  "keyFingerprint": "sb_publishable_Du5Gd…S8SK (len=46)",
+  "siteUrl": "https://la-taba.pages.dev",
+  "siteUrlIsLocalhost": false,
+  "redirectAllowList": [],
+  "redirectProbe": [
+    {
+      "candidate": "https://la-taba.pages.dev",
+      "status": 303,
+      "resolvedTo": "https://la-taba.pages.dev",
+      "allowed": true
+    },
+    {
+      "candidate": "https://taba2-staging.pages.dev/",
+      "status": 303,
+      "resolvedTo": "https://la-taba.pages.dev",
+      "allowed": false
+    },
+    {
+      "candidate": "https://bitflowapp.github.io/la-taba-pages-preview/",
+      "status": 303,
+      "resolvedTo": "https://la-taba.pages.dev",
+      "allowed": false
+    },
+    {
+      "candidate": "http://localhost:9999/otro-puerto",
+      "status": 303,
+      "resolvedTo": "https://la-taba.pages.dev",
+      "allowed": false
+    },
+    {
+      "candidate": "http://127.0.0.1:9999/",
+      "status": 303,
+      "resolvedTo": "http://127.0.0.1:9999/",
+      "allowed": true
+    },
+    {
+      "candidate": "http://[::1]:9999/",
+      "status": 303,
+      "resolvedTo": "http://[::1]:9999/",
+      "allowed": true
+    },
+    {
+      "candidate": "http://localhost.example-que-nadie-autorizo/",
+      "status": 303,
+      "resolvedTo": "https://la-taba.pages.dev",
+      "allowed": false
+    },
+    {
+      "candidate": "http://sub.localhost:9999/",
+      "status": 303,
+      "resolvedTo": "https://la-taba.pages.dev",
+      "allowed": false
+    },
+    {
+      "candidate": "https://redirect-que-nadie-autorizo.example/",
+      "status": 303,
+      "resolvedTo": "https://la-taba.pages.dev",
+      "allowed": false
+    }
+  ],
+  "failsClosedForRemoteHosts": true,
+  "loopbackAlwaysAllowed": true,
+  "loopbackAllowed": [
+    "http://127.0.0.1:9999/",
+    "http://[::1]:9999/"
+  ],
+  "signup": {
+    "open": true,
+    "anonymousEnabled": true,
+    "emailEnabled": true,
+    "autoconfirm": false,
+    "why": "el ingreso anonimo del Customer pasa por el mismo /signup; cerrarlo apaga el cliente",
+    "inertBecause": "crear identidad no reparte rol: sin fila en business_members las policies devuelven vacio"
+  },
+  "captcha": {
+    "enabled": false,
+    "provider": "hcaptcha",
+    "secretConfigured": false
+  },
+  "rateLimits": {
+    "anonimos_por_hora_ip": 30,
+    "signin_signup_por_5min_ip": 30,
+    "verificaciones_otp_por_5min_ip": 30,
+    "refresh_por_5min_ip": 150,
+    "emails_por_hora": 2
+  },
+  "password": {
+    "minimo": 12,
+    "filtradas_rechazadas": true,
+    "requiere_reautenticacion": true
+  },
+  "sessions": {
+    "rotacion_refresh": true,
+    "reuso_segundos": 10,
+    "jwt_segundos": 3600,
+    "timebox_segundos": 0,
+    "inactividad_segundos": 0
+  },
+  "smtp": {
+    "custom": false,
+    "host": null
+  },
+  "findings": [],
+  "notes": [
+    "GoTrue exime siempre las IP de loopback literales sobre http (medido: http://127.0.0.1:9999/, http://[::1]:9999/), en cualquier puerto y cualquier ruta, sin importar el site_url ni la allow-list, y no se puede apagar desde ahi. Un host con nombre como localhost NO entra desde que el site_url dejo de ser local. Entra en el modelo de amenaza, no en el gate: para aprovecharlo hace falta una cuenta, que esa persona abra un enlace preparado, y un proceso escuchando en su propia maquina que ademas sirva HTML. Ademas ningun correo de TABA manda redirect_to.",
+    "sin captcha. Requiere una cuenta de proveedor (hCaptcha o Turnstile) que hoy no existe, asi que es un gate externo, no una decision pendiente de codigo.",
+    "las sesiones no caducan por tiempo ni por inactividad. Para el Panel en un aparato compartido del local es una decision de producto, no un default que convenga heredar.",
+    "sin SMTP propio: recuperar la contrasena de una cuenta del Panel depende del servicio integrado, que esta limitado a 2 correos por hora y no tiene garantia de entrega."
+  ],
+  "healthy": true
+}

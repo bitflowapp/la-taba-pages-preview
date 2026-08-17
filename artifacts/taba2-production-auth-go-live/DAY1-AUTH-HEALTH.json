@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "ref": "wwcpogltfgzgkrlilbcd",
+  "checkedAt": "2026-08-17T18:51:29.957Z",
+  "servicio": {
+    "status": 200,
+    "ok": true
+  },
+  "correo": {
+    "smtpPropio": false,
+    "host": null,
+    "remitente": null,
+    "nombreRemitente": null,
+    "correosPorHora": 2,
+    "confirmacionExigida": true,
+    "siteUrl": "https://la-taba.pages.dev"
+  },
+  "identidades": {
+    "total": 0,
+    "anonimas": 0,
+    "con_correo": 0,
+    "ultima_hora": 0,
+    "ultimo_dia": 0,
+    "anonimas_hora": 0,
+    "correo_hora": 0,
+    "sin_confirmar": 0,
+    "sin_confirmar_viejas": 0
+  },
+  "solicitudes": {
+    "pendientes": 0,
+    "pendientes_rider": 0,
+    "espera_maxima_horas": 0,
+    "aprobadas": 0,
+    "rechazadas": 0
+  },
+  "equipo": {
+    "equipo": 0,
+    "owners": 0,
+    "sesiones_vivas": 0,
+    "ordering": false
+  },
+  "auditoria": {
+    "total": 62,
+    "ultimo_dia": 62
+  },
+  "avisos": [
+    "sin SMTP propio: el alta publica no puede entregar el correo de confirmacion",
+    "el comercio no tiene owner: nadie puede aprobar una solicitud"
+  ]
+}

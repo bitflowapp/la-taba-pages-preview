@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "ref": "wwcpogltfgzgkrlilbcd",
+  "corrida": "e288a0fa",
+  "checkedAt": "2026-08-17T18:59:23.853Z",
+  "business": "00000000-0000-4000-8000-000000000001",
+  "pasos": [
+    {
+      "nombre": "el alta publica no se completa con una direccion de QA",
+      "ok": true,
+      "detalle": "HTTP 429 over_email_send_rate_limit",
+      "informativo": true
+    },
+    {
+      "nombre": "identidades en produccion despues del intento publico",
+      "ok": true,
+      "detalle": "0",
+      "informativo": true
+    },
+    {
+      "nombre": "entra con contrasena",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "el JWT dice authenticated y no dice anonimo",
+      "ok": true,
+      "detalle": "role=authenticated"
+    },
+    {
+      "nombre": "tener cuenta NO otorga rol",
+      "ok": true,
+      "detalle": "role=null"
+    },
+    {
+      "nombre": "la solicitud se registra",
+      "ok": true,
+      "detalle": "code=pending"
+    },
+    {
+      "nombre": "la persona ve su solicitud pendiente y no es miembro",
+      "ok": true,
+      "detalle": "status=pending miembro=false"
+    },
+    {
+      "nombre": "no puede registrar sesion operativa",
+      "ok": true,
+      "detalle": "ok=false"
+    },
+    {
+      "nombre": "no lee ninguna de las tablas cerradas",
+      "ok": true,
+      "detalle": "6 tablas, 0 filas"
+    },
+    {
+      "nombre": "no puede darse un rol a si misma",
+      "ok": true,
+      "detalle": "HTTP 403"
+    },
+    {
+      "nombre": "no puede aprobar su propia solicitud",
+      "ok": true,
+      "detalle": "code=42501"
+    },
+    {
+      "nombre": "una contrasena filtrada se rechaza (HIBP)",
+      "ok": true,
+      "detalle": "HTTP 422 weak_password"
+    },
+    {
+      "nombre": "una contrasena mas corta que el minimo se rechaza",
+      "ok": true,
+      "detalle": "HTTP 422 weak_password"
+    },
+    {
+      "nombre": "una contrasena valida se acepta",
+      "ok": true,
+      "detalle": "HTTP 200 "
+    },
+    {
+      "nombre": "la contrasena anterior deja de servir",
+      "ok": true,
+      "detalle": "HTTP 400"
+    },
+    {
+      "nombre": "la nueva sirve",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "el owner de prueba entra",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "el owner registra su sesion, como hace el Panel",
+      "ok": true,
+      "detalle": "code=registered"
+    },
+    {
+      "nombre": "la solicitud aparece en la bandeja del owner",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "el owner aprueba en un solo acto",
+      "ok": true,
+      "detalle": "code=approved"
+    },
+    {
+      "nombre": "ahora si puede registrar su sesion del Panel",
+      "ok": true,
+      "detalle": "code=registered"
+    },
+    {
+      "nombre": "la persona aprobada obtiene el rol que decidio el owner",
+      "ok": true,
+      "detalle": "role=\"staff\""
+    },
+    {
+      "nombre": "un staff aprobado tampoco puede promoverse a owner",
+      "ok": true,
+      "detalle": "code=42501"
+    },
+    {
+      "nombre": "el Rider entra",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "el Rider pide acceso",
+      "ok": true,
+      "detalle": "code=pending"
+    },
+    {
+      "nombre": "un Rider pendiente no ve ninguna oferta",
+      "ok": true,
+      "detalle": "HTTP 403"
+    },
+    {
+      "nombre": "ni ningun perfil de repartidor",
+      "ok": true,
+      "detalle": "HTTP 200"
+    },
+    {
+      "nombre": "el owner aprueba al Rider",
+      "ok": true,
+      "detalle": "code=approved"
+    },
+    {
+      "nombre": "el Rider aprobado registra su sesion",
+      "ok": true,
+      "detalle": "code=registered"
+    },
+    {
+      "nombre": "el Rider aprobado obtiene rol rider",
+      "ok": true,
+      "detalle": "role=\"rider\""
+    },
+    {
+      "nombre": "el owner puede rechazar",
+      "ok": true,
+      "detalle": "code=rejected"
+    },
+    {
+      "nombre": "la persona rechazada ve su estado, no un error",
+      "ok": true,
+      "detalle": "status=rejected"
+    },
+    {
+      "nombre": "y sigue sin rol",
+      "ok": true,
+      "detalle": "role=null"
+    },
+    {
+      "nombre": "una contrasena mala y un correo inexistente contestan igual",
+      "ok": true,
+      "detalle": "400/invalid_credentials vs 400/invalid_credentials"
+    },
+    {
+      "nombre": "recuperacion: cuenta existente vs inexistente",
+      "ok": true,
+      "detalle": "429/over_email_send_rate_limit vs 200/",
+      "informativo": true
+    },
+    {
+      "nombre": "alta con un correo que ya existe",
+      "ok": true,
+      "detalle": "HTTP 200 ",
+      "informativo": true
+    },
+    {
+      "nombre": "la corrida no deja rastro propio",
+      "ok": true,
+      "detalle": "{\"propias\":0,\"usuarios\":0,\"miembros\":0,\"solicitudes\":0,\"staff\":0,\"riders\":0,\"sesiones\":0,\"clientes\":0,\"auditoria\":71}"
+    },
+    {
+      "nombre": "los pedidos siguen cerrados",
+      "ok": true,
+      "detalle": "ordering_enabled=false"
+    }
+  ],
+  "hallazgos": [],
+  "signupPublico": {
+    "status": 429,
+    "code": "over_email_send_rate_limit"
+  },
+  "smtpEntrega": "rechazada antes de mandar: HTTP 429 over_email_send_rate_limit",
+  "usuariosTrasAltaPublica": 0,
+  "cambioDeClaveSesionFresca": {
+    "status": 200,
+    "code": ""
+  },
+  "seguridad": [
+    "con `security_update_password_require_reauthentication=true`, GoTrue igual permite cambiar la contrasena sin pedir la anterior desde cualquier sesion de menos de 24 h. Es su contrato -la misma exencion es la que hace posible recuperar la contrasena por enlace-, pero significa que un token de sesion robado alcanza para quedarse con la cuenta. Medido, no supuesto.",
+    "/auth/v1/recover contesta distinto segun exista la cuenta cuando la direccion no es enviable: existente 429 (over_email_send_rate_limit), inexistente 200. Para una cuenta inexistente GoTrue contesta antes de validar la direccion; para una existente intenta mandar y ahi falla. Con SMTP propio hay que volver a medirlo con una direccion real que rebote."
+  ],
+  "recoverPublico": {
+    "existente": {
+      "status": 429,
+      "code": "over_email_send_rate_limit"
+    },
+    "inexistente": {
+      "status": 200,
+      "code": ""
+    }
+  },
+  "altaRepetida": {
+    "status": 200,
+    "code": ""
+  },
+  "despuesDeLimpiar": {
+    "propias": 0,
+    "usuarios": 0,
+    "miembros": 0,
+    "solicitudes": 0,
+    "staff": 0,
+    "riders": 0,
+    "sesiones": 0,
+    "clientes": 0,
+    "auditoria": 71
+  },
+  "orderingEnabled": false
+}

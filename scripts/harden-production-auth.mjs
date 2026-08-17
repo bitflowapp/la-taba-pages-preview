@@ -152,6 +152,69 @@ if (process.argv.includes('--templates')) {
   }
 }
 
+/*
+ * --smtp: el proveedor de correo, cuando exista.
+ *
+ * Es la unica compuerta externa que le falta al Auth productivo, y esta escrita
+ * de forma que cerrarla sea UN comando. Los valores entran por entorno, no por
+ * bandera, para que la contrasena no quede en el historial de la consola; y la
+ * contrasena esta marcada como secreta, asi que no se imprime ni siquiera en el
+ * ensayo.
+ *
+ *   $env:TABA_SMTP_HOST         = "smtp.proveedor.com"
+ *   $env:TABA_SMTP_PORT         = "587"
+ *   $env:TABA_SMTP_USER         = "<usuario>"
+ *   $env:TABA_SMTP_PASS         = "<clave del proveedor>"
+ *   $env:TABA_SMTP_SENDER_EMAIL = "no-responder@<dominio verificado>"
+ *   $env:TABA_SMTP_SENDER_NAME  = "La Taba"
+ *
+ * Ver artifacts/taba2-production-auth-go-live/SMTP-PRODUCTION-STATUS.md.
+ */
+if (process.argv.includes('--smtp')) {
+  const smtp = {
+    smtp_host: process.env.TABA_SMTP_HOST,
+    smtp_port: process.env.TABA_SMTP_PORT,
+    smtp_user: process.env.TABA_SMTP_USER,
+    smtp_pass: process.env.TABA_SMTP_PASS,
+    smtp_admin_email: process.env.TABA_SMTP_SENDER_EMAIL,
+    smtp_sender_name: process.env.TABA_SMTP_SENDER_NAME,
+  };
+  const faltan = Object.entries(smtp).filter(([, v]) => !String(v || '').trim()).map(([k]) => k);
+  if (faltan.length) {
+    console.error(`--smtp exige el proveedor completo; falta(n): ${faltan.join(', ')}`);
+    console.error('Ver SMTP-PRODUCTION-STATUS.md: un remitente a medias no manda nada.');
+    process.exit(2);
+  }
+  const puerto = Number(smtp.smtp_port);
+  if (!Number.isInteger(puerto) || ![25, 465, 587, 2465, 2525, 2587].includes(puerto)) {
+    console.error(`TABA_SMTP_PORT=${smtp.smtp_port} no es un puerto de SMTP conocido`);
+    process.exit(2);
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(smtp.smtp_admin_email))) {
+    console.error('TABA_SMTP_SENDER_EMAIL no es un correo valido');
+    process.exit(2);
+  }
+  CAMBIOS.smtp_host = { deseado: String(smtp.smtp_host).trim(), porque: 'servidor de correo del proveedor' };
+  CAMBIOS.smtp_port = { deseado: String(puerto), porque: 'puerto del proveedor' };
+  CAMBIOS.smtp_user = { deseado: String(smtp.smtp_user).trim(), porque: 'usuario del proveedor', secreto: true };
+  CAMBIOS.smtp_pass = { deseado: String(smtp.smtp_pass), porque: 'credencial del proveedor', secreto: true };
+  CAMBIOS.smtp_admin_email = { deseado: String(smtp.smtp_admin_email).trim().toLowerCase(), porque: 'direccion remitente verificada' };
+  CAMBIOS.smtp_sender_name = { deseado: String(smtp.smtp_sender_name).trim(), porque: 'nombre que ve la persona' };
+
+  // Con remitente propio, dos correos por hora deja de ser el techo: es el
+  // limite del remitente integrado, y con el puesto una tarde de altas queda a
+  // medias sin que nadie entienda por que.
+  const porHora = Number(arg('emails-hora') || 30);
+  if (!Number.isInteger(porHora) || porHora < 2 || porHora > 500) {
+    console.error('--emails-hora tiene que estar entre 2 y 500');
+    process.exit(2);
+  }
+  CAMBIOS.rate_limit_email_sent = {
+    deseado: porHora,
+    porque: 'techo de correos por hora con remitente propio; 2 es el del integrado',
+  };
+}
+
 // Un campo que se va a cambiar a proposito no puede estar ademas vigilado: si
 // no, el control de deriva reportaria como accidente lo que se pidio.
 const vigilados = VIGILADOS.filter((clave) => !(clave in CAMBIOS));
@@ -178,10 +241,14 @@ function resumir(valor) {
 }
 
 console.log(`--- ENDURECIMIENTO DE AUTH (${ref}) ---`);
-for (const [clave, { deseado, porque }] of Object.entries(CAMBIOS)) {
+for (const [clave, { deseado, porque, secreto }] of Object.entries(CAMBIOS)) {
   const actual = antes[clave];
-  const estado = actual === deseado ? 'ya esta' : `${resumir(actual)} -> ${resumir(deseado)}`;
-  console.log(`  ${clave.padEnd(38)} ${estado.padEnd(26)} ${porque}`);
+  // Una credencial no se imprime ni siquiera para decir que cambia: el ensayo
+  // corre en la misma consola que despues queda en el historial.
+  const estado = actual === deseado ? 'ya esta'
+    : secreto ? '«se escribe, no se muestra»'
+      : `${resumir(actual)} -> ${resumir(deseado)}`;
+  console.log(`  ${clave.padEnd(38)} ${estado.padEnd(30)} ${porque}`);
 }
 
 // `process.exitCode` en vez de `process.exit()`: en Windows, salir con una

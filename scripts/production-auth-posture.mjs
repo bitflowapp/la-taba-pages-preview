@@ -173,20 +173,26 @@ const candidatos = [
   'https://bitflowapp.github.io/la-taba-pages-preview/',
   'http://localhost:9999/otro-puerto',
   'http://127.0.0.1:9999/',
+  'http://[::1]:9999/',
   'http://localhost.example-que-nadie-autorizo/',
   'http://sub.localhost:9999/',
   'https://redirect-que-nadie-autorizo.example/',
 ];
 
 /**
- * GoTrue admite SIEMPRE los destinos de loopback.
+ * GoTrue admite SIEMPRE los destinos de loopback POR IP.
  *
- * Medido: con `site_url = http://localhost:3000` y la allow-list vacia,
- * `http://localhost:9999/robado`, `http://127.0.0.1:9999/` y `http://[::1]:9999/`
- * vuelven a si mismos; `https://localhost:9999/`, `http://sub.localhost:9999/` y
- * `http://localhost.evil.example/` NO. O sea que es una excepcion acotada a
- * http + host de loopback exacto, cualquier puerto y cualquier ruta, y no se
- * apaga desde la allow-list.
+ * La exencion es mas chica de lo que se creia, y se vio al mover el site_url a
+ * un host productivo:
+ *
+ *   site_url = http://localhost:3000   localhost:9999 PERMITIDO · 127.0.0.1 PERMITIDO
+ *   site_url = https://la-taba…dev     localhost:9999 RECHAZADO · 127.0.0.1 PERMITIDO
+ *
+ * O sea que `localhost` entraba por parecerse al host del site_url, no por ser
+ * loopback. Lo que GoTrue exime siempre son las IP de loopback literales
+ * (`127.0.0.1`, `[::1]`) sobre http, en cualquier puerto y cualquier ruta. Un
+ * host con nombre —`localhost`, `sub.localhost`, `localhost.evil.example`— no
+ * entra, y https tampoco. No se apaga desde la allow-list.
  *
  * Se distingue de un permitido inesperado a proposito: es comportamiento del
  * servidor, no configuracion de este proyecto, y contarlo como falla haria que
@@ -239,9 +245,12 @@ exigir(
 if (loopbackPermitido.length) {
   console.log(`  loopback          : GoTrue lo exime siempre (${loopbackPermitido.length} destino(s) medidos)`);
   notas.push(
-    'GoTrue admite cualquier destino http de loopback (localhost / 127.0.0.1 / [::1], cualquier '
-    + 'puerto y ruta) sin importar el site_url ni la allow-list, y no se puede apagar desde ahi. '
-    + 'Vale hoy y seguira valiendo con dominio propio: entra en el modelo de amenaza, no en el gate.',
+    `GoTrue exime siempre las IP de loopback literales sobre http (medido: ${loopbackPermitido.join(', ')}), `
+    + 'en cualquier puerto y cualquier ruta, sin importar el site_url ni la allow-list, y no se puede '
+    + 'apagar desde ahi. Un host con nombre como localhost NO entra desde que el site_url dejo de ser '
+    + 'local. Entra en el modelo de amenaza, no en el gate: para aprovecharlo hace falta una cuenta, '
+    + 'que esa persona abra un enlace preparado, y un proceso escuchando en su propia maquina que '
+    + 'ademas sirva HTML. Ademas ningun correo de TABA manda redirect_to.',
   );
 }
 

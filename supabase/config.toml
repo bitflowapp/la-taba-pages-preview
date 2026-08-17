@@ -179,7 +179,14 @@ enable_anonymous_sign_ins = true
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+#
+# 12 porque es lo que exige el proyecto PRODUCTIVO (`password_min_length`,
+# medido). Mientras esto decia 6, una prueba local pasaba con una contrasena
+# que produccion rechaza, y el arnes daba verde sobre un contrato distinto al
+# real. El resto de la politica de produccion que no tiene equivalente acá
+# —contrasenas filtradas (HIBP)— se aplica con
+# `scripts/harden-production-auth.mjs`.
+minimum_password_length = 12
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
@@ -225,7 +232,12 @@ double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
-secure_password_change = false
+#
+# true, como produccion. Ojo con lo que "recently" quiere decir: GoTrue exime a
+# toda sesion de menos de 24 h, y tambien a las que vienen de un enlace de
+# recuperacion —esa segunda exencion es la que hace posible recuperar la
+# contrasena—. O sea que esto NO pide la contrasena anterior.
+secure_password_change = true
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1m0s"
 # Number of characters used in the email OTP.
@@ -243,10 +255,33 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Los seis correos de TABA, en castellano y apuntando a /cuenta/. Son los mismos
+# archivos que `scripts/harden-production-auth.mjs` aplica al proyecto
+# productivo: una sola fuente, para que lo que se prueba local sea lo que la
+# gente recibe. Ver supabase/templates/README.md.
+[auth.email.template.confirmation]
+subject = "Confirmá tu cuenta de La Taba"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Cambiá tu contraseña de La Taba"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.email_change]
+subject = "Confirmá tu correo nuevo en La Taba"
+content_path = "./supabase/templates/email_change.html"
+
+[auth.email.template.magic_link]
+subject = "Tu enlace para entrar a La Taba"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.invite]
+subject = "Te invitaron a trabajar en La Taba"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.reauthentication]
+subject = "Tu código de verificación de La Taba"
+content_path = "./supabase/templates/reauthentication.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

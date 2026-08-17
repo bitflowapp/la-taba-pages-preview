@@ -189,22 +189,53 @@ async function main() {
     .insert({ business_id: businessId, user_id: ownerId, full_name: ownerName });
   if (profileError) await rollback(`No pudimos crear el perfil: ${profileError.message}.`);
 
-  // ── 6. La contraseña la elige la persona ─────────────────────────────────
+  // ── 6. El rastro de auditoría ────────────────────────────────────────────
+  // Es la única alta de identidad que no pasa por una RPC, así que es también
+  // la única que no deja evento sola. Sin esto, el primer owner sería el único
+  // integrante del comercio cuya alta no figura en ningún lado.
+  const { error: auditError } = await admin.rpc('identity_record_audit_event', {
+    p_event_type: 'business_owner_bootstrapped',
+    p_business_id: businessId,
+    p_actor_user_id: null,
+    p_actor_role: 'service_role',
+    p_subject_user_id: ownerId,
+    p_session_id: null,
+    p_metadata: { tool: 'bootstrap-first-business-owner', ref, email: ownerEmail },
+  });
+
+  // ── 7. La contraseña la elige la persona ─────────────────────────────────
   const { data: link, error: linkError } = await admin.auth.admin.generateLink({
     type: 'recovery',
     email: ownerEmail,
   });
 
+  /*
+   * El `action_link` que devuelve Supabase apunta a `/auth/v1/verify` y termina
+   * redirigiendo al site_url con la sesión escrita en el fragmento. Esta app no
+   * lee sesiones de la URL —`detectSessionInUrl: false`, a propósito—, así que
+   * ese enlace aterrizaría en la home sin hacer nada.
+   *
+   * El enlace bueno es el mismo que arma la plantilla del correo: la pantalla
+   * /cuenta/ con el `token_hash`, que se canjea por POST.
+   */
+  const siteUrl = (arg('site-url') || link?.properties?.redirect_to || '').replace(/\/+$/, '');
+  const hash = link?.properties?.hashed_token || '';
+  const enlaceUtil = siteUrl && hash ? `${siteUrl}/cuenta/?token_hash=${hash}&type=recovery` : '';
+
   console.log('\nListo.');
   console.log(`  user_id : ${ownerId}`);
   console.log('  rol     : owner');
+  console.log(`  auditoría: ${auditError ? `NO se pudo registrar (${auditError.message})` : 'business_owner_bootstrapped'}`);
   console.log('  contraseña: la elige la persona desde el enlace de recuperación.');
   if (linkError) {
     console.log('\nNo se pudo emitir el enlace acá. Con SMTP configurado, la persona puede');
     console.log('usar "Olvidé mi contraseña" en el Panel y completar el alta por ese camino.');
-  } else if (link?.properties?.action_link) {
-    console.log('\nEnlace para elegir contraseña (entregalo por un canal seguro; vence):');
-    console.log(`  ${link.properties.action_link}`);
+  } else if (enlaceUtil) {
+    console.log('\nEnlace para elegir contraseña (entregalo por un canal seguro; vence en una hora):');
+    console.log(`  ${enlaceUtil}`);
+  } else {
+    console.log('\nSe emitió el enlace pero falta saber el host canónico para armarlo.');
+    console.log('Volvé a correrlo con --site-url https://<host> o usá "Olvidé mi contraseña".');
   }
   console.log('\nDe acá en adelante las altas salen del Panel: por invitación, o aprobando');
   console.log('una solicitud. Este script ya no vuelve a correr sobre este comercio.');

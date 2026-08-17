@@ -20,11 +20,21 @@
 // transaccion se revierte, asi que el token nunca llega a existir. El paso 1 lo
 // deja medido en vez de suponerlo.
 //
-// Ese tramo se certifica aparte, contra un GoTrue real con casilla real, en
-// `npm run auth:local:gate`. Escribir a mano un token de confirmacion o de
-// recuperacion en `auth.users` seria la otra forma de hacerlo, y no se hace: un
-// guion que fabrica enlaces de recuperacion para una cuenta ajena es
-// exactamente la herramienta que no queremos que exista en este repo.
+// Ese tramo NO esta certificado, y no se disimula. Se certifica el dia que haya
+// proveedor, con una casilla real: los siete pasos estan escritos en
+// artifacts/taba2-production-auth-go-live/SMTP-PRODUCTION-STATUS.md §7.
+//
+// La otra forma de hacerlo seria escribir a mano el token de confirmacion o de
+// recuperacion en `auth.users` -GoTrue guarda `sha224(correo || codigo)`, y
+// Postgres lo calcula- y despues canjearlo por el endpoint publico. No se hace:
+// un guion que fabrica enlaces de recuperacion para una cuenta ajena es
+// exactamente la herramienta con la que se roba una cuenta, y no entra a este
+// repositorio ni con un dominio de QA en la guardia.
+//
+// Mientras tanto, `supabase/config.toml` quedo alineado con la politica
+// productiva (minimo 12, secure_password_change, las seis plantillas), asi que
+// un `supabase start` local sirve de banco de pruebas fiel: su Inbucket recibe
+// los correos de verdad.
 //
 // Las identidades de prueba se crean por SQL, ya confirmadas -el mismo patron
 // que ya usa la sonda de sesion-, porque con `mailer_autoconfirm=false` un alta
@@ -447,7 +457,8 @@ try {
   `, false);
 
   const [resto] = await sql(`
-    select (select count(*) from auth.users)::int as usuarios,
+    select (select count(*) from auth.users where email like '%@${DOMINIO_QA}')::int as propias,
+           (select count(*) from auth.users)::int as usuarios,
            (select count(*) from public.business_members)::int as miembros,
            (select count(*) from public.business_access_requests)::int as solicitudes,
            (select count(*) from public.staff_profiles)::int as staff,
@@ -457,9 +468,16 @@ try {
            (select count(*) from public.identity_audit_events)::int as auditoria;
   `);
   reporte.despuesDeLimpiar = resto;
-  const limpio = resto.usuarios === 0 && resto.miembros === 0 && resto.solicitudes === 0
+  // Lo que esta sonda tiene que garantizar es que no queda NADA SUYO. El total
+  // de identidades se informa aparte: una identidad anonima de una visita real
+  // no es residuo de esta corrida, y confundir las dos cosas hace que el gate
+  // de limpieza mienta en los dos sentidos.
+  const limpio = resto.propias === 0 && resto.miembros === 0 && resto.solicitudes === 0
     && resto.staff === 0 && resto.riders === 0 && resto.sesiones === 0 && resto.clientes === 0;
-  paso('produccion queda sin rastro de la corrida', limpio, JSON.stringify(resto));
+  paso('la corrida no deja rastro propio', limpio, JSON.stringify(resto));
+  if (resto.usuarios > 0) {
+    nota('hay identidades que no son de esta corrida', `${resto.usuarios} en auth.users — mirar con production:auth:health`);
+  }
 
   const [{ ordering }] = await sql(
     `select ordering_enabled as ordering from public.businesses where id = ${lit(CANONICAL_BUSINESS)};`,

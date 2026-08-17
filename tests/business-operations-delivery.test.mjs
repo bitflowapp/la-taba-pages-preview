@@ -119,8 +119,26 @@ test('cerrado bloquea los dos canales y dice cuándo abre', () => {
   setCommerceAvailability({ ...OPEN_AND_COVERED, is_open: false, next_open_at: nextOpen });
   const block = commerceCheckoutBlock('delivery');
   assert.equal(block.reason, 'closed');
-  assert.match(block.message, /Abrimos a las \d{2}:\d{2}\./);
+  // La HORA siempre está; el DÍA aparece sólo cuando la apertura cae en otra
+  // fecha. Antes esto exigía `/Abrimos a las HH:MM\./` a secas, y por eso se
+  // ponía en rojo todas las noches entre las 23 y las 00: «dentro de una hora»
+  // cruzaba la medianoche y el mensaje pasaba a «Abrimos el lunes a las 00:27».
+  // El producto estaba bien —decir el día es MÁS información, no menos— y la
+  // prueba medía una de las dos frases en vez de la propiedad. Un gate que se
+  // enciende solo la mitad de la noche se termina ignorando.
+  assert.match(block.message, /Abrimos (el \p{L}+ )?a las \d{2}:\d{2}\./u);
   assert.equal(commerceCheckoutBlock('pickup').reason, 'closed');
+});
+
+test('si abre otro día, el mensaje dice qué día', () => {
+  // La otra mitad del contrato, forzada en vez de esperada: a dos días de
+  // distancia la apertura cae siempre en otra fecha, corra la prueba a la hora
+  // que corra.
+  const enDosDias = new Date(Date.now() + 48 * 3600000).toISOString();
+  setCommerceAvailability({ ...OPEN_AND_COVERED, is_open: false, next_open_at: enDosDias });
+  const block = commerceCheckoutBlock('delivery');
+  assert.equal(block.reason, 'closed');
+  assert.match(block.message, /Abrimos el \p{L}+ a las \d{2}:\d{2}\./u);
 });
 
 test('un payload roto vuelve al estado «no sé» en vez de inventar una respuesta', () => {

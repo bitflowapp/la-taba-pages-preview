@@ -37,6 +37,7 @@ Los pedidos siguen **cerrados**, antes y después.
 | `PRODUCTION-AUTH-RUNBOOK.md` | cómo se cambia, se rota, se publica y se contiene |
 | `REGISTRATION-OPERATIONS.md` | cómo se da de alta a la gente, en castellano de comercio |
 | `DAY1-AUTH-HEALTH.md` / `.json` | el comando de todos los días, y qué vigila |
+| `RIDER-RECOVERY-CONTRACT.md` | el Rider ya puede recuperar su contraseña; falta el cartel que lo diga, con el contrato exacto |
 
 ## Las dos compuertas humanas
 

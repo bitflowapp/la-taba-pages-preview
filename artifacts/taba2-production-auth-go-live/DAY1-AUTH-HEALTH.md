@@ -7,27 +7,29 @@ Herramienta nueva: `npm run production:auth:health`
 No es una plataforma de analítica: son siete preguntas contra la base y contra
 la configuración, en un comando.
 
-## Última corrida — 2026-08-17, después del arranque del primer owner
+## Última corrida — 2026-08-17, después de revertir el arranque del owner
 
 ```
 servicio de Auth   : contesta
 correo             : remitente integrado · 2/hora
 site_url           : https://la-taba.pages.dev
-identidades        : 1 (anonimas 0 · con correo 1)
-altas ultima hora  : 1 · ultimo dia: 1
+identidades        : 0 (anonimas 0 · con correo 0)
+altas ultima hora  : 0 · ultimo dia: 0
 sin confirmar      : 0 (mas de un dia: 0)
 solicitudes        : 0 esperando (rider 0) · aprobadas 0 · rechazadas 0
-equipo activo      : 1 (owners 1) · sesiones vivas 0
+equipo activo      : 0 (owners 0) · sesiones vivas 0
 pedidos            : cerrados
 eventos de identidad: 72 (ultimo dia 72)
 
 A MIRAR:
   · sin SMTP propio: el alta publica no puede entregar el correo de confirmacion
+  · el comercio no tiene owner: nadie puede aprobar una solicitud
 ```
 
-**Queda un solo aviso, y es la única compuerta que queda.** El aviso «el
-comercio no tiene owner» desapareció al arrancar al primer dueño; `sesiones
-vivas 0` es correcto: todavía no entró.
+Los dos avisos son correctos y están en ese orden a propósito: **el owner llega
+después del SMTP**, porque va a crear su cuenta por la pantalla pública y eso
+necesita el correo de confirmación. Los 72 eventos de identidad siguen ahí: la
+auditoría del arranque revertido no se borra.
 
 ## Qué vigila, y con qué umbral
 

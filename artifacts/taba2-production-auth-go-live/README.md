@@ -36,7 +36,7 @@ Los pedidos siguen **cerrados**, antes y después.
 | `PRODUCTION-AUTH-RUNBOOK.md` | cómo se cambia, se rota, se publica y se contiene |
 | `REGISTRATION-OPERATIONS.md` | cómo se da de alta a la gente, en castellano de comercio |
 | `DAY1-AUTH-HEALTH.md` / `.json` | el comando de todos los días, y qué vigila |
-| `FIRST-OWNER-BOOTSTRAP-STATUS.md` (ejecutado) | quién es el dueño, cómo se ejecutó y los dos CHECK que rebotaron la auditoría |
+| `FIRST-OWNER-BOOTSTRAP-STATUS.md` | qué se creó, qué se revirtió fila por fila, y el flujo acordado para el owner real |
 | `RIDER-RECOVERY-CONTRACT.md` | el Rider ya puede recuperar su contraseña; falta el cartel que lo diga, con el contrato exacto |
 
 ## La compuerta que queda: una
@@ -45,10 +45,12 @@ Los pedidos siguen **cerrados**, antes y después.
 no puede completarse: GoTrue genera el token, falla el envío y la transacción se
 revierte. Todo lo demás está hecho; aplicar es un comando.
 
-El **primer owner ya está**: `jariel1970@gmail.com` («Marco Luna»), con
-autorización explícita en la sesión, ejecutado el 2026-08-17. Falta que esa
-persona elija su contraseña desde el enlace que se entregó —un solo uso, una
-hora—. Ver `FIRST-OWNER-BOOTSTRAP-STATUS.md`.
+**Producción no tiene owner, y así queda a propósito.** El bootstrap se ejecutó
+y se revirtió el mismo día a pedido de Marco: quien va a ser dueño quiere crear
+su cuenta él, por la pantalla pública, con su contraseña. La herramienta ahora
+**promueve** una identidad existente en vez de crearla. El orden acordado es:
+SMTP → él se registra y confirma → recién ahí se lo promueve.
+Ver `FIRST-OWNER-BOOTSTRAP-STATUS.md`.
 
 ## Lo que se encontró midiendo, y no estaba en ningún informe
 
@@ -62,5 +64,8 @@ hora—. Ver `FIRST-OWNER-BOOTSTRAP-STATUS.md`.
   contraseña anterior**: exime a toda sesión de menos de 24 h.
 * El bootstrap del primer owner emitía un enlace que **esta app no puede usar**,
   y no dejaba evento de auditoría. Las dos cosas, arregladas.
+* Y al ejecutarlo de verdad se vio lo que ninguna prueba dice: **fabricar la
+  identidad del dueño es la decisión equivocada** aunque funcione. Ahora la
+  herramienta promueve, no crea.
 * Turnstile **no es una compuerta externa**: la cuenta de Cloudflare ya tiene el
   permiso para crear el widget. Lo que falta es integrarlo en los tres clientes.

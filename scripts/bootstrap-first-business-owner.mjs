@@ -16,6 +16,13 @@
  *   · No se puede repetir. Si el comercio ya tiene gente, se niega. Un
  *     bootstrap repetible es una puerta trasera.
  *
+ * ## Lo que hace, y lo que NO
+ *
+ * PROMUEVE una identidad que ya existe. No la crea: la persona se da de alta
+ * sola por la pantalla pública del Panel —su nombre, su correo, su contraseña—,
+ * confirma el correo, y recién ahí este guion le da el rol que nadie más puede
+ * darle. **No toca su contraseña ni ninguna de sus credenciales.**
+ *
  * Uso:
  *
  *   SUPABASE_URL=https://<ref>.supabase.co \
@@ -30,9 +37,11 @@
  * Sin --confirm hace un ensayo: comprueba todo, no escribe nada, e imprime lo
  * que haría. Es el modo por defecto a propósito.
  *
- * La contraseña no se pasa nunca. Se crea la cuenta sin contraseña y se emite
- * un enlace de recuperación para que la persona elija la suya: así no queda en
- * el historial de la consola, ni en un archivo, ni en la memoria de nadie.
+ * Con `--create-identity` vuelve al comportamiento viejo: crea la cuenta sin
+ * contraseña y emite un enlace para que la persona elija la suya. Es para un
+ * entorno donde nadie pueda darse de alta —sin SMTP, por ejemplo—. Se usó una
+ * vez en producción y se revirtió a pedido: quien va a ser dueño quiere estrenar
+ * su cuenta creándola él, no recibiéndola hecha.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -57,6 +66,22 @@ const ownerName = String(process.env.TABA_OWNER_NAME || '').trim();
 const ref = arg('ref');
 const businessId = arg('business');
 const confirmed = process.argv.includes('--confirm');
+/*
+ * Por defecto este guion PROMUEVE una identidad que ya existe. Crearla es la
+ * excepcion y hay que pedirla con `--create-identity`.
+ *
+ * El orden importa, y se aprendio ejecutandolo. La primera vez creo la cuenta y
+ * emitio un enlace para que la persona eligiera su contrasena. Funciono, y aun
+ * asi estaba mal: el dueno de un comercio no deberia estrenar su cuenta con una
+ * identidad que le fabrico una herramienta. La cuenta la crea la persona, por
+ * la pantalla publica, con su nombre, su correo y su contrasena. Lo unico que no
+ * puede hacer sola es darse el rol de owner, porque no hay nadie que se lo de:
+ * eso, y solo eso, es lo que hace este guion.
+ *
+ * `--create-identity` queda para un entorno donde nadie pueda darse de alta
+ * -sin SMTP, por ejemplo- y haya que arrancar igual.
+ */
+const crearIdentidad = process.argv.includes('--create-identity');
 
 function fail(message) {
   console.error(`\nABORTADO. ${message}`);
@@ -148,30 +173,77 @@ async function main() {
   console.log(`  Dueño    : ${ownerName} <${ownerEmail}>`);
   console.log(`  Equipo   : 0 integrantes (correcto para un bootstrap)`);
 
+  // La identidad se BUSCA. Sólo se crea si se pidió explícitamente.
+  const { data: lista } = await admin.auth.admin
+    .listUsers({ page: 1, perPage: 200 })
+    .catch(() => ({ data: null }));
+  const existente = (lista?.users || [])
+    .find((u) => String(u.email || '').toLowerCase() === ownerEmail);
+
+  if (!crearIdentidad) {
+    if (!existente) {
+      fail(
+        `No existe ninguna cuenta con ${ownerEmail}.\n`
+        + 'Este guion PROMUEVE una identidad que ya existe: la persona crea su cuenta\n'
+        + 'desde la pantalla pública del Panel, con su contraseña, y confirma su correo.\n'
+        + 'Recién después se la promueve acá.\n\n'
+        + 'Si el entorno no permite que nadie se dé de alta —sin SMTP, por ejemplo— y\n'
+        + 'hay que arrancar igual, está `--create-identity`.',
+      );
+    }
+    if (!existente.email_confirmed_at && !existente.confirmed_at) {
+      fail(
+        `La cuenta de ${ownerEmail} existe pero NO confirmó su correo.\n`
+        + 'Confirmar es la única prueba de que ese correo es suyo, y el comercio no se\n'
+        + 'le da a una identidad sin confirmar.',
+      );
+    }
+  } else if (existente) {
+    fail(
+      `Ya existe una cuenta con ${ownerEmail}. No se crea otra.\n`
+      + 'Corré este guion SIN `--create-identity` para promover la que ya está.',
+    );
+  }
+
+  console.log(`  Identidad: ${existente ? `ya existe (${existente.id}) — se PROMUEVE` : 'no existe — se va a CREAR'}`);
+
   if (!confirmed) {
     console.log('\nENSAYO. No se escribió nada.');
-    console.log('Volvé a correrlo con --confirm para crear la cuenta de verdad.');
+    console.log(`Volvé a correrlo con --confirm para ${existente ? 'promoverla' : 'crearla'} de verdad.`);
     process.exit(2);
   }
 
   // ── 4. La cuenta, sin contraseña ─────────────────────────────────────────
-  const { data: created, error: createError } = await admin.auth.admin.createUser({
-    email: ownerEmail,
-    email_confirm: true,
-    user_metadata: { taba_actor: 'owner' },
-  });
-  if (createError || !created?.user?.id) {
-    fail(`No pudimos crear la cuenta: ${createError?.message || 'respuesta vacía'}`);
+  let ownerId = existente?.id || '';
+  if (!existente) {
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+      email: ownerEmail,
+      email_confirm: true,
+      user_metadata: { taba_actor: 'owner' },
+    });
+    if (createError || !created?.user?.id) {
+      fail(`No pudimos crear la cuenta: ${createError?.message || 'respuesta vacía'}`);
+    }
+    ownerId = created.user.id;
   }
-  const ownerId = created.user.id;
 
   // ── 5. La membresía, con credencial de servicio ──────────────────────────
   // El guard de membresías tiene una vía explícita para service_role. Es la
   // única escritura de identidad que ocurre fuera de una RPC, y existe
   // justamente para este arranque.
+  // El rollback distingue los dos modos, y la diferencia no es cosmética:
+  // borrar la cuenta está bien si la acabamos de crear nosotros, y está MAL si
+  // es de una persona que se registró sola. Al promover se deshacen sólo las
+  // filas que este guion escribió.
   const rollback = async (why) => {
-    await admin.auth.admin.deleteUser(ownerId).catch(() => {});
-    fail(`${why} La cuenta recién creada se borró para no dejar una identidad huérfana.`);
+    await admin.from('staff_profiles').delete().eq('business_id', businessId).eq('user_id', ownerId);
+    await admin.from('identity_user_security').delete().eq('business_id', businessId).eq('user_id', ownerId);
+    await admin.from('business_members').delete().eq('business_id', businessId).eq('user_id', ownerId);
+    if (!existente) {
+      await admin.auth.admin.deleteUser(ownerId).catch(() => {});
+      fail(`${why} La cuenta recién creada se borró para no dejar una identidad huérfana.`);
+    }
+    fail(`${why} Se deshicieron las filas de esta corrida; la cuenta de la persona NO se tocó.`);
   };
 
   const { error: memberError } = await admin
@@ -219,10 +291,12 @@ async function main() {
   });
 
   // ── 7. La contraseña la elige la persona ─────────────────────────────────
-  const { data: link, error: linkError } = await admin.auth.admin.generateLink({
-    type: 'recovery',
-    email: ownerEmail,
-  });
+  // Al PROMOVER no se emite ningun enlace: esa persona ya tiene su contrasena y
+  // este guion no toca sus credenciales. El enlace existe solo para la cuenta
+  // que acabamos de crear, que nace sin contrasena.
+  const { data: link, error: linkError } = existente
+    ? { data: null, error: null }
+    : await admin.auth.admin.generateLink({ type: 'recovery', email: ownerEmail });
 
   /*
    * El `action_link` que devuelve Supabase apunta a `/auth/v1/verify` y termina

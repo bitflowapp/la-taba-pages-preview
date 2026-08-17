@@ -186,9 +186,12 @@ export async function handleProductionAuthSubmit(form) {
   }
 
   const view = form.dataset.productionAuthForm;
-  const formData = new FormData(form);
-  const email = String(formData.get('email') || '').trim();
-  const password = String(formData.get('password') || '');
+  // Los mismos dos campos, leídos por `form.elements` como el resto del panel.
+  // Antes esto usaba `new FormData(form)`, que exige un formulario del DOM de
+  // verdad: la lectura es idéntica, pero ataba el único camino de ingreso del
+  // Panel a un navegador y lo dejaba fuera de las pruebas de cableado.
+  const email = String(form.elements?.email?.value || '').trim();
+  const password = String(form.elements?.password?.value || '');
   access = {
     status: 'checking',
     user: null,
@@ -254,9 +257,10 @@ async function submitPanelSignUp(form) {
   if (!auth?.signUpTeam) {
     return { handled: true, ok: false, message: 'La creación de cuentas no está disponible.' };
   }
-  const data = new FormData(form);
-  const email = String(data.get('email') || '').trim();
-  const password = String(data.get('password') || '');
+  // Se leen los campos por `form.elements`, como el resto del panel, y no con
+  // FormData: es la misma lectura y además deja probar el cableado sin un DOM.
+  const email = String(form.elements?.email?.value || '').trim();
+  const password = String(form.elements?.password?.value || '');
 
   accessRegistration = { ...accessRegistration, busy: true, message: '', email };
   notify();
@@ -288,9 +292,8 @@ async function submitPanelAccessRequest(form) {
   if (!auth?.requestTeamAccess) {
     return { handled: true, ok: false, message: 'Las solicitudes no están disponibles.' };
   }
-  const data = new FormData(form);
-  const fullName = String(data.get('fullName') || '').trim();
-  const phone = String(data.get('phone') || '').trim();
+  const fullName = String(form.elements?.fullName?.value || '').trim();
+  const phone = String(form.elements?.phone?.value || '').trim();
 
   accessRegistration = { ...accessRegistration, busy: true, message: '' };
   notify();

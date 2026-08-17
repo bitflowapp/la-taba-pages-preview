@@ -1,25 +1,25 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v71-production-rc2';
+const CACHE_NAME = 'la-taba-runtime-v72-business-commercial-mobile';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=50',
-  './styles/tokens.css?v=50',
-  './styles/common.css?v=50',
-  './styles/storefront.css?v=50',
-  './styles/catalog.css?v=50',
-  './styles/checkout.css?v=50',
-  './styles/profile.css?v=50',
-  './styles/showcase.css?v=50',
-  './styles/tracking.css?v=50',
-  './styles/business.css?v=50',
-  './styles/rider.css?v=50',
-  './styles/responsive.css?v=50',
-  './styles/brand-home.css?v=50',
+  './styles.css?v=51',
+  './styles/tokens.css?v=51',
+  './styles/common.css?v=51',
+  './styles/storefront.css?v=51',
+  './styles/catalog.css?v=51',
+  './styles/checkout.css?v=51',
+  './styles/profile.css?v=51',
+  './styles/showcase.css?v=51',
+  './styles/tracking.css?v=51',
+  './styles/business.css?v=51',
+  './styles/rider.css?v=51',
+  './styles/responsive.css?v=51',
+  './styles/brand-home.css?v=51',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/motion.css?v=50',
+  './styles/motion.css?v=51',
   './manifest.webmanifest',
   './runtime-config.js',
   './pago/resultado/index.html',
@@ -267,7 +267,7 @@ self.addEventListener('fetch', (event) => {
  * Cuatro segundos: bien por debajo de los ocho que espera `startup-recovery.js`
  * antes de dar el arranque por perdido, y muy por encima de cualquier respuesta
  * sana. El costo de equivocarse es casi nulo: el precache está versionado
- * (`?v=50`), así que una copia guardada es el MISMO contenido que iba a traer la
+ * (`?v=51`), así que una copia guardada es el MISMO contenido que iba a traer la
  * red, no una versión vieja.
  */
 const PLAZO_DE_RED_MS = 4000;

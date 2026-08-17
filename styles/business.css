@@ -241,7 +241,13 @@ body[data-active-view="business"] :focus-visible {
    ----------------------------------------------------------------------- */
 body[data-active-view="business"] .topbar {
   border-bottom-color: var(--panel-line);
-  background: color-mix(in srgb, var(--panel-surface) 92%, transparent);
+  /* Opaca, no translúcida. El papel esmerilado del cliente deja ver la vitrina
+     pasando por debajo y ahí suma; sobre una cola de pedidos deja pasar texto
+     denso a media opacidad y el wordmark se lee sobre un fondo que cambia con
+     el scroll. Una barra de herramienta tiene que estar quieta. */
+  background: var(--panel-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   color: var(--panel-ink);
 }
 
@@ -2081,5 +2087,247 @@ button.operation-metric {
   .business-wizard-step {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+/* ============================================================================
+   NAVEGACIÓN DEL PANEL EN TELÉFONO
+   ============================================================================
+   En escritorio los diecisiete destinos entran en una fila que se desplaza y
+   funciona. En 390px la misma fila se envolvía en SEIS renglones de píldoras:
+   medido, 290px de navegación, con la primera tarjeta de pedido empezando en
+   y≈715 de 844. Quien atiende desde el mostrador tenía que pasar una pantalla
+   entera de botones para ver que entró un pedido.
+
+   Debajo de 1020px la fila desaparece y la navegación baja: cuatro destinos
+   fijos —lo que se toca durante el turno— más «Más», que abre una hoja con el
+   resto. Cuatro y no nueve: una barra con nueve destinos no es una barra, es la
+   misma pared acostada.
+
+   La reserva de espacio ya existía. `responsive.css` deja
+   `calc(var(--nav-h) + var(--safe-b) + var(--stack-gap))` de padding inferior
+   en la sección del panel por debajo de 1020px, así que esta barra usa
+   exactamente `--nav-h` y no inventa una segunda medida que después se
+   desincroniza.
+   ========================================================================== */
+
+.panel-bottom-nav,
+.panel-more-sheet,
+.panel-more-backdrop {
+  display: none;
+}
+
+@media (max-width: 1020px) {
+  /* La fila de píldoras se va; sus destinos siguen alcanzables, abajo. */
+  body[data-active-view="business"] .production-operations-shortcuts {
+    display: none;
+  }
+
+  /* --------------------------------------------------------------------------
+     La cabecera deja de ser un cartel.
+     --------------------------------------------------------------------------
+     «Tu día, en un solo lugar» a 42px ocupaba dos renglones y ~110px. Es una
+     frase de bienvenida en una herramienta que se abre veinte veces por turno:
+     el contexto lo da la barra, no un titular.
+     ----------------------------------------------------------------------- */
+  body[data-active-view="business"] .production-ops-head {
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  body[data-active-view="business"] .production-ops-head .eyebrow {
+    display: none;
+  }
+
+  body[data-active-view="business"] .production-ops-head h1 {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  body[data-active-view="business"] .production-ops-role {
+    margin: 2px 0 0;
+    color: var(--panel-ink-muted);
+    font-size: 12px;
+  }
+
+  body[data-active-view="business"] .production-ops-signout {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* --------------------------------------------------------------------------
+     El estado de la conexión: UNA línea, no tres bloques.
+     --------------------------------------------------------------------------
+     Antes se apilaban el estado de la bandeja y el de la cola de comandos, cada
+     uno con su párrafo. En un teléfono son 120px que dicen «todo bien» y
+     empujan el trabajo hacia abajo. Se comprimen a una fila que se desplaza; lo
+     que sí cambia de color cuando hay un problema sigue cambiando (B20).
+     ----------------------------------------------------------------------- */
+  body[data-active-view="business"] .production-ops-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-bottom: 12px;
+  }
+
+  body[data-active-view="business"] .production-ops-status > * {
+    margin: 0;
+    font-size: 11.5px;
+  }
+
+  /* --------------------------------------------------------------------------
+     Cuando todo está bien, el estado es UNA palabra.
+     --------------------------------------------------------------------------
+     «Conectado · Última sincronización: 16/8, 09:54 p. m.» y «Sin comandos
+     pendientes · Última reconciliación: … · 0 comandos pendientes» son cinco
+     datos para decir que no pasa nada. En 390px ocupaban dos renglones enteros
+     encima del trabajo.
+
+     La marca de tiempo y el recuento siguen en el DOM —una prueba que los busca
+     los encuentra, y el lector de pantalla los lee— pero dejan de ocupar la
+     pantalla mientras la respuesta sea «todo bien». En cuanto el estado deja de
+     ser el bueno vuelven a mostrarse, que es cuando aportan (B20).
+     ----------------------------------------------------------------------- */
+  body[data-active-view="business"] .production-intake-status.is-quiet > span,
+  body[data-active-view="business"] .production-command-status.is-quiet > span {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* --------------------------------------------------------------------------
+     La barra inferior.
+     -------------------------------------------------------------------------- */
+  body[data-active-view="business"] .panel-bottom-nav {
+    position: fixed;
+    z-index: var(--z-bottomnav);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    align-items: stretch;
+    height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    border-top: 1px solid var(--panel-line);
+    background: var(--panel-surface);
+  }
+
+  body[data-active-view="business"] .panel-nav-item {
+    display: grid;
+    min-width: 0;
+    /* 48px de alto útil: por encima del mínimo de 44 y cómodo con el pulgar. */
+    min-height: 48px;
+    align-content: center;
+    justify-items: center;
+    gap: 2px;
+    padding: 4px 2px;
+    border: 0;
+    background: transparent;
+    color: var(--panel-ink-muted);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  body[data-active-view="business"] .panel-nav-ico {
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  body[data-active-view="business"] .panel-nav-label {
+    overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* El destino activo se marca con la tinta, no con un fondo rojo: cinco
+     botones y uno rojo permanente convertiría el rojo en decoración, y el rojo
+     de esta pantalla tiene que seguir queriendo decir «acción» (B4). */
+  body[data-active-view="business"] .panel-nav-item.is-active {
+    color: var(--panel-ink);
+  }
+
+  body[data-active-view="business"] .panel-nav-item.is-active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 26px;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--taba-red);
+  }
+
+  body[data-active-view="business"] .panel-nav-item {
+    position: relative;
+  }
+
+  /* --------------------------------------------------------------------------
+     La hoja de «Más».
+     -------------------------------------------------------------------------- */
+  body[data-active-view="business"] .panel-more-backdrop:not([hidden]) {
+    position: fixed;
+    z-index: var(--z-backdrop);
+    inset: 0;
+    display: block;
+    border: 0;
+    background: rgb(0 0 0 / 52%);
+  }
+
+  body[data-active-view="business"] .panel-more-sheet:not([hidden]) {
+    position: fixed;
+    z-index: var(--z-sheet);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    gap: 12px;
+    max-height: min(72dvh, 560px);
+    overflow-y: auto;
+    padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--panel-line);
+    border-radius: 16px 16px 0 0;
+    background: var(--panel-surface);
+    box-shadow: var(--panel-shadow-sheet);
+    overscroll-behavior: contain;
+  }
+
+  body[data-active-view="business"] .panel-more-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  body[data-active-view="business"] .panel-more-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+  }
+
+  body[data-active-view="business"] .panel-more-item {
+    min-height: 48px;
+    padding: 0 14px;
+    border: 1px solid var(--panel-line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--panel-raised);
+    color: var(--panel-ink);
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  body[data-active-view="business"] .panel-more-item.is-active {
+    border-color: var(--taba-red);
+    color: var(--panel-ink);
   }
 }

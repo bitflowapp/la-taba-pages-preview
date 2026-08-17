@@ -109,6 +109,10 @@ try {
       const hoja = pantalla.vista === null ? paginaLogin : page;
       try {
         await abrir(hoja, pantalla);
+        // Volver arriba: navegar conserva el scroll de la vista anterior y la
+        // captura saldria del medio de la pagina, que no es lo que ve alguien
+        // que entra a esa pantalla.
+        await hoja.evaluate(() => globalThis.scrollTo(0, 0));
         await hoja.waitForTimeout(220);
         const archivo = path.join(OUT, `${LABEL}-${viewport.name}-${pantalla.id}.png`);
         await hoja.screenshot({ path: archivo, fullPage: false });
@@ -215,16 +219,31 @@ async function abrir(page, pantalla) {
     await page.goto(`${BASE}/#business`, { waitUntil: 'domcontentloaded' });
   }
   await page.locator('[data-production-workspace="business"]').waitFor({ state: 'visible', timeout: 30_000 });
-  if (pantalla.vista === 'orders') {
-    const boton = page.locator('[data-production-orders-view]').first();
-    if (await boton.count()) await boton.click();
-    await page.locator('.production-order-list').waitFor({ state: 'visible', timeout: 15_000 });
-    return;
+
+  // El mismo destino existe en DOS navegaciones -la fila de escritorio y la
+  // barra inferior del telefono- y solo una esta visible a la vez. Se navega por
+  // la que se VE, que es la que tiene una persona delante; si el destino no esta
+  // en ninguna de las dos, en telefono vive en la hoja de «Mas».
+  const selector = pantalla.vista === 'orders'
+    ? '[data-production-orders-view]'
+    : `[data-business-ops-view="${pantalla.vista}"]`;
+
+  const visible = page.locator(`${selector}:visible`).first();
+  if (await visible.count()) {
+    await visible.click();
+  } else {
+    const mas = page.locator('[data-panel-more-toggle]:visible').first();
+    if (!(await mas.count())) throw new Error(`el destino ${pantalla.vista} no es alcanzable en este ancho`);
+    await mas.click();
+    const enLaHoja = page.locator(`[data-panel-more-sheet] ${selector}`).first();
+    await enLaHoja.waitFor({ state: 'visible', timeout: 10_000 });
+    await enLaHoja.click();
   }
-  const boton = page.locator(`[data-business-ops-view="${pantalla.vista}"]`).first();
-  await boton.waitFor({ state: 'visible', timeout: 15_000 });
-  await boton.click();
-  await page.locator(`[data-business-ops-center="${pantalla.vista}"]`).waitFor({ state: 'visible', timeout: 15_000 });
+
+  const destino = pantalla.vista === 'orders'
+    ? '.production-order-list'
+    : `[data-business-ops-center="${pantalla.vista}"]`;
+  await page.locator(destino).waitFor({ state: 'visible', timeout: 15_000 });
 }
 
 // ---------- medición ----------

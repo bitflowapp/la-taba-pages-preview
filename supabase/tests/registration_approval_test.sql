@@ -19,7 +19,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(87);
+select plan(98);
 
 -- ── Fixture: dos comercios y su gente ──────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -629,6 +629,86 @@ select ok(has_function_privilege('authenticated','public.request_business_access
   'authenticated si puede pedir: la autoridad esta adentro, no en el grant');
 select ok(has_function_privilege('authenticated','public.identity_review_access_request(uuid,text,text,text)','EXECUTE'),
   'y puede llamar a la de decidir, que es la que comprueba el permiso real');
+
+-- ══ 24. QUE PASA CUANDO SE BORRA UNA CUENTA ════════════════════════════════
+-- FASE 39. Cada FK de esta tabla tiene una decision detras, y las tres se
+-- prueban borrando de verdad.
+--
+-- La tercera es la que costo un defecto en produccion: `decided_by` es
+-- `on delete set null`, y el CHECK original exigia que decided_at y decided_by
+-- fueran ambos nulos o ambos no nulos. Juntos hacian que quien aprobaba una
+-- sola solicitud ya no pudiera borrar su cuenta nunca. Ver la migracion
+-- 20260817030000.
+select pg_temp.as_member('e1000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001');
+
+-- 1. Se borra el SOLICITANTE: su solicitud no significa nada sin el.
+select is(
+  (select count(*) from public.business_access_requests
+    where user_id = 'e1000000-0000-4000-8000-00000000000f'),
+  1::bigint,
+  'antes de borrar, la solicitud de la persona rechazada esta ahi');
+delete from auth.users where id = 'e1000000-0000-4000-8000-00000000000f';
+select is(
+  (select count(*) from public.business_access_requests
+    where user_id = 'e1000000-0000-4000-8000-00000000000f'),
+  0::bigint,
+  'borrar al solicitante se lleva su solicitud: no queda un pendiente huerfano');
+
+-- 2. Se borra el REVISOR. Esto es lo que fallaba.
+select lives_ok(
+  $$ delete from auth.users where id = 'e1000000-0000-4000-8000-000000000002' $$,
+  'se puede borrar la cuenta de un admin que ya habia aprobado solicitudes');
+select is(
+  (select decided_by from public.business_access_requests
+    where user_id = 'e1000000-0000-4000-8000-00000000000b'),
+  null,
+  'su solicitud aprobada pierde el revisor');
+select is(
+  (select status from public.business_access_requests
+    where user_id = 'e1000000-0000-4000-8000-00000000000b'),
+  'approved',
+  'pero sigue aprobada: la decision no se deshace porque se fue quien la tomo');
+select ok(
+  (select decided_at is not null from public.business_access_requests
+    where user_id = 'e1000000-0000-4000-8000-00000000000b'),
+  'y conserva cuando se decidio, que es lo que de verdad la sella');
+select is(
+  (select granted_role from public.business_access_requests
+    where user_id = 'e1000000-0000-4000-8000-00000000000b'),
+  'staff',
+  'y con que rol');
+
+-- 3. Se borra el COMERCIO: cae todo lo suyo.
+select lives_ok(
+  $$ delete from public.businesses where id = 'e2000000-0000-4000-8000-000000000002' $$,
+  'se puede borrar un comercio');
+
+-- 4. La auditoria sobrevive a todo lo anterior, que es para lo que existe.
+select ok(
+  (select count(*) from public.identity_audit_events
+    where event_type in ('access_requested', 'access_request_approved', 'access_request_rejected')) > 0,
+  'y la auditoria del alta sigue en pie despues de borrar personas y comercios');
+
+-- 5. La via de limpieza del guard de membresias.
+--
+-- Los dos DELETE de arriba pasan por el guard de business_members, pero desde
+-- esta suite pasarian igual sin el arreglo: `session_user` aca es postgres, que
+-- es una via de escape deliberada. Lo que de verdad estaba roto —GoTrue
+-- borrando con su propio rol— solo se puede ejercitar contra un stack alojado, y
+-- por eso su prueba de regresion es el smoke sintetico en vivo
+-- (scripts/live-registration-smoke.mjs), no este archivo.
+--
+-- Lo que si sirve aca es un alambre de tropiezo: si alguien reescribe el guard y
+-- se lleva la via de limpieza, que se note antes de volver a descubrirlo en
+-- produccion.
+select ok(
+  pg_get_functiondef(to_regprocedure('public.identity_guard_membership_write()'))
+    like '%from auth.users u where u.id = old.user_id%',
+  'el guard conserva la via de limpieza de una membresia cuya persona ya no existe');
+select ok(
+  pg_get_functiondef(to_regprocedure('public.identity_guard_membership_write()'))
+    like '%insufficient_privilege%',
+  'y sigue terminando en un rechazo para todo lo demas');
 
 select * from finish();
 rollback;

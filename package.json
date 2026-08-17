@@ -31,6 +31,7 @@
     "production:manifest:release": "node scripts/build-release-manifest.mjs",
     "production:health": "node scripts/production-health-check.mjs",
     "production:smoke": "node scripts/production-security-smoke.mjs",
+    "production:smoke:identity": "node scripts/production-auth-identity-smoke.mjs",
     "production:target": "node scripts/assert-production-supabase-target.mjs",
     "production:shadow": "node scripts/provision-production-shadow.mjs",
     "production:manifest": "node scripts/audit-production-migrations.mjs",

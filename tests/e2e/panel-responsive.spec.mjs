@@ -299,6 +299,25 @@ test('el foco se ve y recorre la navegación con teclado', async ({ browser }) =
     ));
     expect(sigueEnLaNav).toBe(true);
 
+    // Y sobrevive al repintado. Esta prueba se puso intermitente antes de que
+    // existiera esta comprobación: pasaba sola y fallaba dentro de la suite,
+    // porque el markup del workspace incluye la marca de la última
+    // sincronización y cambia por su cuenta. Cuando cambiaba entre el `focus()`
+    // y el `Tab`, el foco se había ido al `body`.
+    //
+    // El flake era el sintoma: quien recorre el Panel con teclado perdía el
+    // lugar cada vez que el reloj avanzaba. Acá se fuerza el repintado en vez
+    // de esperar a que ocurra solo.
+    const destino = page.locator('.production-operations-shortcuts [data-business-ops-view="payments"]');
+    await destino.focus();
+    await page.evaluate(() => {
+      globalThis.dispatchEvent(new Event('online'));
+      globalThis.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForTimeout(400);
+    await expect(destino).toBeFocused();
+
     // Y el destino se puede elegir con el teclado, sin puntero.
     await page.locator('.production-operations-shortcuts [data-production-orders-view]').focus();
     await page.keyboard.press('Enter');

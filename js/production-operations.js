@@ -1448,16 +1448,63 @@ function describirFoco(workspace) {
   const campo = activo.matches?.('[data-production-cancel-reason]')
     ? 'motivo'
     : activo.matches?.('[data-production-rider-select]') ? 'rider' : '';
-  if (!card || !campo) return null;
-  return {
-    id: idDeLaTarjeta(card),
-    campo,
-    inicio: activo.selectionStart ?? null,
-    fin: activo.selectionEnd ?? null,
-  };
+  if (card && campo) {
+    return {
+      id: idDeLaTarjeta(card),
+      campo,
+      inicio: activo.selectionStart ?? null,
+      fin: activo.selectionEnd ?? null,
+    };
+  }
+  // Todo lo DEMÁS del panel también pierde el foco cuando el repintado
+  // reemplaza el DOM, y hasta acá no se rescataba nada: sólo el motivo de
+  // cancelación y el selector de rider.
+  //
+  // Lo encontró una prueba que se puso intermitente. «El foco recorre la
+  // navegación con teclado» pasaba sola y fallaba dentro de la suite, y la
+  // diferencia era el tiempo: el markup del workspace incluye la marca de la
+  // última sincronización, así que cambia por su cuenta, y cuando cambiaba
+  // entre el `focus()` y el `Tab` el foco se había ido al `body`.
+  //
+  // O sea que quien recorre el Panel con teclado pierde el lugar cada vez que
+  // el reloj avanza. No es un problema de la prueba.
+  const selector = selectorEstable(activo);
+  return selector ? { selector } : null;
+}
+
+/**
+ * Un selector con el que volver a encontrar este control después del repintado.
+ *
+ * Se arma con los `data-*` del propio elemento porque son los que el marcado
+ * vuelve a escribir igual: `data-business-ops-view="payments"` identifica al
+ * mismo destino antes y después. Si el control desapareció —una acción que ya
+ * no corresponde, un pedido que avanzó— el selector no encuentra nada y el foco
+ * NO se restaura, que es lo correcto: devolverlo a otro botón sería peor que
+ * perderlo.
+ */
+function selectorEstable(nodo) {
+  if (nodo.id) return `[id="${nodo.id}"]`;
+  const atributos = Array.from(nodo.attributes || [])
+    .filter((atributo) => atributo.name.startsWith('data-'))
+    // Un valor con comillas o barras rompería el selector; ninguno de los que
+    // usa el Panel las tiene, y si algún día las tuviera es mejor no restaurar
+    // el foco que construir un selector inválido.
+    .filter((atributo) => !/["\\]/.test(atributo.value))
+    .map((atributo) => (atributo.value ? `[${atributo.name}="${atributo.value}"]` : `[${atributo.name}]`));
+  if (!atributos.length) return '';
+  return `${nodo.tagName.toLowerCase()}${atributos.join('')}`;
 }
 
 function restaurarFoco(workspace, foco) {
+  if (foco?.selector) {
+    const candidato = workspace.querySelector(foco.selector);
+    // `preventScroll` sólo en este camino. El campo de texto se restaura sin
+    // él a propósito -quien está escribiendo quiere verlo- pero un botón que
+    // recupera el foco por un repintado del reloj no tiene por qué arrastrar
+    // la página adonde estaba hace un minuto.
+    if (candidato) candidato.focus({ preventScroll: true });
+    return;
+  }
   if (!foco?.id) return;
   const card = Array.from(workspace.querySelectorAll('.production-order-card'))
     .find((candidate) => idDeLaTarjeta(candidate) === foco.id);

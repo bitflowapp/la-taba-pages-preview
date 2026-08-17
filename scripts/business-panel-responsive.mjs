@@ -121,7 +121,14 @@ try {
           height: viewport.height,
           screen: pantalla.id,
           title: pantalla.titulo,
-          shot: path.relative(process.cwd(), archivo).replaceAll('\\', '/'),
+          // Relativo al DIRECTORIO DE SALIDA y no al cwd: con `--out` apuntando
+          // a otra unidad, `path.relative` desde el cwd devuelve una ruta
+          // absoluta con la letra de disco de esta máquina, y eso viaja al
+          // repositorio. El gate de higiene lo marcó -122 hallazgos
+          // `local-drive-path`- y tenía razón: el nombre del archivo, al lado
+          // de su reporte, identifica la captura igual y no dice en qué
+          // computadora se corrió.
+          shot: path.relative(OUT, archivo).replaceAll('\\', '/'),
           ...(await medir(hoja)),
         });
       } catch (error) {

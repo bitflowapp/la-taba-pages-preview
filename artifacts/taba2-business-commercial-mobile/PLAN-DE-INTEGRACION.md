@@ -9,7 +9,6 @@ de producción avanza sin esto.
 | | |
 |---|---|
 | rama | `feature/taba2-business-commercial-mobile` |
-| worktree | `D:/1212/worktrees/taba2-business-commercial-mobile` |
 | base | `dae5a21` — `release/taba2-production-external-enablement`, la autoridad de la línea RC2 en el momento de abrir la rama |
 | destino previsto | la misma línea, cuando avance |
 

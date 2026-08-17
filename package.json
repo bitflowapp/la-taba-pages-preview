@@ -40,6 +40,7 @@
     "production:isolation": "node scripts/probe-tenant-isolation.mjs",
     "production:auth": "node scripts/production-auth-posture.mjs",
     "production:auth:harden": "node scripts/harden-production-auth.mjs",
+    "production:runtime": "node scripts/build-production-runtime-config.mjs",
     "catalog:pending": "node scripts/build-catalog-pending.mjs",
     "catalog:readiness": "node scripts/catalog-readiness.mjs",
     "catalog:readiness:check": "node scripts/catalog-readiness.mjs --check",

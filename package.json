@@ -80,7 +80,9 @@
     "tauri": "tauri",
     "tauri:build": "tauri build",
     "certify:circuit:staging": "node scripts/certify-order-operational-circuit.mjs",
-    "release:identity": "node scripts/check-release-identity.mjs --write"
+    "release:identity": "node scripts/check-release-identity.mjs --write",
+    "production:smoke:registration": "node scripts/production-registration-smoke.mjs",
+    "production:smoke:customer": "node scripts/production-customer-memory-smoke.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

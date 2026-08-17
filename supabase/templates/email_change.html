@@ -1,0 +1,10 @@
+<div style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.5;color:#111;max-width:520px">
+  <h2 style="font-size:20px;margin:0 0 12px">Confirmá tu correo nuevo</h2>
+  <p style="margin:0 0 12px">Pediste cambiar el correo de tu cuenta de <strong>La Taba</strong> a {{ .NewEmail }}.</p>
+  <p style="margin:0 0 20px">
+    <a href="{{ .SiteURL }}/cuenta/?token_hash={{ .TokenHash }}&type=email_change"
+       style="display:inline-block;padding:12px 20px;background:#d71920;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">Confirmar el correo nuevo</a>
+  </p>
+  <p style="margin:0 0 12px;color:#555">El cambio necesita que confirmes desde las dos casillas, la vieja y la nueva. El enlace vence en una hora.</p>
+  <p style="margin:0;color:#555">Si no lo pediste vos, no hagas nada: el correo de la cuenta no cambia.</p>
+</div>

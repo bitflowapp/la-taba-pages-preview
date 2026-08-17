@@ -317,8 +317,13 @@ export async function handleBusinessOperationsAction(target) {
   if (approveId) {
     // El rol sale del selector de ESA tarjeta. El servidor igual lo revalida
     // contra lo que se pidió y contra lo que quien decide puede otorgar.
+    //
+    // `CSS.escape` no está en todas partes —falta en Node y en WebViews viejas—
+    // y este módulo tiene que poder correr sin DOM en las pruebas. El
+    // identificador viene del servidor como uuid, así que escapar comillas y
+    // barras alcanza y no depende de una API opcional.
     const select = target.closest('[data-business-ops-center]')
-      ?.querySelector(`[data-access-request-role="${CSS.escape(approveId)}"]`);
+      ?.querySelector(`[data-access-request-role="${cssAttributeValue(approveId)}"]`);
     return reviewAccessRequestAction(approveId, 'approve', select?.value || null);
   }
 
@@ -1461,6 +1466,12 @@ function accessDecisionMessage(code, data) {
 
 function accessRoleLabel(role) {
   return ({ admin: 'encargado', staff: 'equipo', rider: 'repartidor' })[String(role || '')] || 'miembro';
+}
+
+function cssAttributeValue(value) {
+  const raw = String(value || '');
+  const escape = globalThis.CSS?.escape;
+  return typeof escape === 'function' ? escape.call(globalThis.CSS, raw) : raw.replace(/["\\]/g, '\\$&');
 }
 
 function resetOperationsConfigState() {

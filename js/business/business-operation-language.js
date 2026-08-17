@@ -8,6 +8,11 @@ export const FORBIDDEN_OPERATOR_VOCABULARY = Object.freeze([
   'null', 'undefined', 'exception', 'errcode',
 ]);
 
+// La misma familia de patrones que ya usa el repositorio en `safeMessage`. Vive
+// también acá porque ésta es la última línea antes de la pantalla: si algún día
+// un mensaje crudo llega por otro camino, no lo muestra.
+const RAW_DATABASE_FAILURE = /violates .*constraint|new row for relation|null value in column|duplicate key value|permission denied for|\bpg_[a-z_]+\b|invalid input syntax/i;
+
 const SEVERITY_ORDER = Object.freeze({ CRITICAL: 0, ACTION_REQUIRED: 1, WARNING: 2, INFO: 3 });
 
 export const SEVERITY_LABELS = Object.freeze({
@@ -427,6 +432,13 @@ export function humanizeFailure(message, fallback = 'No se pudo completar la acc
   if (!raw) return fallback;
   if (raw.length > 240) return fallback;
   if (/\b(?:at\s+\w+[.:]|:\d+:\d+|\bfunction\b|\bselect\b|\binsert\b|\bupdate\b)/i.test(raw)) return fallback;
+  // Errores crudos del motor. Hasta acá se colaban por accidente o no se
+  // colaban por accidente: `permission denied for function rpc_x` caía en el
+  // genérico sólo porque «rpc» está en el vocabulario prohibido, y
+  // `permission denied for table X` pasaba entero. Un mensaje que nombra una
+  // tabla y un privilegio no le dice nada al mostrador y sí le dice bastante a
+  // cualquiera que lo lea por encima del hombro.
+  if (RAW_DATABASE_FAILURE.test(raw)) return fallback;
   const lower = raw.toLowerCase();
   if (FORBIDDEN_OPERATOR_VOCABULARY.some((term) => lower.includes(term))) return fallback;
   return raw;

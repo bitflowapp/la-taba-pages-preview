@@ -6,7 +6,7 @@
   "head": "a23b6e41fb2b76c6e4a814cce95d182cbfe0bb9c",
   "cleanTree": true,
   "toolchain": {
-    "flutter": "c:/src/flutter",
+    "flutter": "el SDK del sistema, en la misma unidad que el arbol",
     "pubCache": "el del mismo disco que el arbol",
     "pubCacheNote": "Con el pub cache en otra unidad, Gradle no puede relativizar la ruta del plugin url_launcher_android contra el build dir y la configuracion del proyecto falla: 'this and base files have different roots'. Es un problema de la maquina, no del codigo, y por eso existe el cache en disco."
   },

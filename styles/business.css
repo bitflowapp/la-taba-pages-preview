@@ -2331,3 +2331,181 @@ button.operation-metric {
     color: var(--panel-ink);
   }
 }
+
+/* ============================================================================
+   EL TABLERO DE PEDIDOS EN TELÉFONO
+   ============================================================================
+   Medido a 390×844 con el tema grafito y la barra inferior ya puestos: la
+   primera tarjeta empezaba en y≈200 —eso ya estaba resuelto— pero medía 590px
+   de alto. Un pedido por pantalla. Quien atiende no puede ver que entraron dos
+   sin scrollear, y "¿cuántos me quedan?" es la pregunta que se hace cada dos
+   minutos durante un turno.
+
+   Lo que ocupaba el alto no era el trabajo: eran cuatro cajas de metadatos de
+   64px cada una (HORA · ENTREGA · PRODUCTOS · TOTAL) apiladas de a dos, más el
+   contacto en formato ficha con etiqueta arriba y valor abajo.
+
+   Acá esos bloques se comprimen. **No se esconde nada** (B9): el teléfono, el
+   pago, la dirección, las observaciones, los productos y la asignación de rider
+   siguen todos en la tarjeta y siguen todos en el DOM. Lo que cambia es que
+   dejan de ocupar el lugar de un formulario para ocupar el de una fila.
+
+   La jerarquía que queda es la de B10: pedido, estado, cliente, dirección,
+   total, pago, rider, acción siguiente.
+   ========================================================================== */
+
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .production-order-list {
+    gap: 10px;
+  }
+
+  body[data-active-view="business"] .production-order-card {
+    gap: 10px;
+    padding: 14px;
+  }
+
+  /* El código y el cliente mandan; el estado va arriba a la derecha y no
+     empuja al título a una segunda línea. */
+  body[data-active-view="business"] .production-order-head {
+    align-items: start;
+    gap: 10px;
+  }
+
+  body[data-active-view="business"] .production-order-code {
+    font-size: 16px;
+  }
+
+  /* --------------------------------------------------------------------------
+     Los metadatos dejan de ser cajas y pasan a ser una línea.
+     --------------------------------------------------------------------------
+     Cuatro recuadros de 64px con etiqueta en versalita y valor en negrita
+     ocupaban 128px para decir cuatro cosas de una palabra. Como fila con
+     separadores ocupan 20px y se leen igual de rápido, porque lo que hace
+     legible un dato corto es el orden, no el marco.
+     ----------------------------------------------------------------------- */
+  /* Dos columnas y sin separadores. Con `flex-wrap` y un «·» entre datos, el
+     separador quedaba huérfano al principio del renglón cada vez que la línea
+     se partía —medido: «· Total $ 8.600,00» abriendo la segunda fila—, y eso no
+     se puede corregir desde CSS porque la hoja de estilo no sabe dónde cortó el
+     texto. La rejilla parte donde uno decide, no donde alcanza el ancho. */
+  body[data-active-view="business"] .production-order-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3px 12px;
+    font-size: 12.5px;
+  }
+
+  body[data-active-view="business"] .production-order-meta > div {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 5px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  body[data-active-view="business"] .production-order-meta dt {
+    color: var(--panel-ink-muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-transform: none;
+  }
+
+  body[data-active-view="business"] .production-order-meta dd {
+    font-size: 12.5px;
+    font-weight: 750;
+  }
+
+  /* El total es el único metadato que decide algo de plata: se queda con el
+     peso visual que los otros tres pierden. */
+  body[data-active-view="business"] .production-order-meta > div:last-child dd {
+    color: var(--panel-ink);
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  /* Contacto: de ficha de dos líneas por dato a una sola fila. */
+  body[data-active-view="business"] .production-order-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    margin: 0;
+    font-size: 12.5px;
+  }
+
+  body[data-active-view="business"] .production-order-contact > div {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+
+  body[data-active-view="business"] .production-order-contact dt {
+    color: var(--panel-ink-muted);
+    font-weight: 600;
+  }
+
+  body[data-active-view="business"] .production-order-contact dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  body[data-active-view="business"] .production-order-items {
+    gap: 2px;
+    font-size: 13px;
+  }
+
+  body[data-active-view="business"] .production-order-address {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  /* --------------------------------------------------------------------------
+     La acción, al alcance del pulgar.
+     --------------------------------------------------------------------------
+     La acción siguiente es lo que una persona viene a hacer a esta tarjeta, así
+     que ocupa el ancho completo y va última. «Cancelar con motivo» NO comparte
+     fila con ella: son la decisión opuesta y a 390px terminaban pegadas, con el
+     campo de motivo exprimido entre las dos.
+     ----------------------------------------------------------------------- */
+  body[data-active-view="business"] .production-order-card .button-row {
+    display: grid;
+    gap: 8px;
+  }
+
+  body[data-active-view="business"] .production-order-card .button-row > .primary-button {
+    width: 100%;
+    min-height: 50px;
+    font-size: 15px;
+  }
+
+  body[data-active-view="business"] .production-cancel-control {
+    flex: 1 1 auto;
+  }
+
+  body[data-active-view="business"] .production-order-card .button-row > .ghost-button {
+    justify-self: start;
+  }
+
+  /* La asignación de rider se apila: el selector necesita el ancho completo
+     para que quepa el nombre y la capacidad. */
+  body[data-active-view="business"] .production-rider-assignment {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  body[data-active-view="business"] .production-rider-assignment label {
+    display: grid;
+    gap: 4px;
+  }
+
+  body[data-active-view="business"] .production-rider-assignment select {
+    min-height: 48px;
+  }
+
+  body[data-active-view="business"] .production-rider-assignment .secondary-button {
+    width: 100%;
+    min-height: 48px;
+  }
+}

@@ -1870,6 +1870,24 @@ function riderOfferMarkup(offer) {
   return '';
 }
 
+/**
+ * ¿El cliente escribió algo, o es el relleno del saneador?
+ *
+ * `sanitizeNotes()` devuelve 'Sin notas' cuando el campo viene vacío, así que
+ * `order.notes` SIEMPRE es verdadero y la tarjeta imprimía «Observaciones: Sin
+ * notas» en todos los pedidos que no tenían ninguna. Un renglón por tarjeta que
+ * no dice nada, multiplicado por la cola entera.
+ *
+ * El relleno se compara acá y no se cambia en el saneador: hay superficies del
+ * cliente —el historial, el perfil— donde «Sin notas» es la respuesta correcta
+ * a «¿qué aclaró?». Lo que no corresponde es ocupar una línea del tablero para
+ * decirlo.
+ */
+function hasCustomerNotes(order) {
+  const notes = String(order?.notes || '').trim();
+  return notes.length > 0 && notes.toLowerCase() !== 'sin notas';
+}
+
 function businessOrderMarkup(order) {
   const next = canAdvanceProductionBusinessOrder(order, businessPayments)
     ? nextBusinessStatus(order)
@@ -1931,7 +1949,7 @@ function businessOrderMarkup(order) {
         ? `<p class="form-hint">Referencia: ${escapeHtml(order.addressDetails.reference)}</p>`
         : ''}
       ${order.deliveryMode === 'pickup' ? '' : renderDeliveryPoint(order.addressDetails)}
-      ${order.notes
+      ${hasCustomerNotes(order)
         ? `<p class="production-order-notes"><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>`
         : ''}
       <div class="button-row">

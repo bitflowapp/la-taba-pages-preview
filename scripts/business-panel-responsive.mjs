@@ -161,6 +161,7 @@ const reporte = {
     smallTouchTargets: conTactilChico.length,
     lowContrastPairs: conContrasteBajo.length,
     errors: conError.length,
+    density: densidadResumen(medidas),
   },
   measurements: medidas,
 };
@@ -177,6 +178,21 @@ const lineas = [
   `- errores de navegación: **${conError.length}**`,
   '',
 ];
+const densidad = reporte.summary.density;
+if (densidad.length) {
+  lineas.push('## Densidad del tablero de pedidos', '',
+    '| ancho | chrome antes del 1er pedido | alto de tarjeta | pedidos enteros a la vista |',
+    '|---|---|---|---|');
+  for (const d of densidad) {
+    lineas.push([
+      '| `' + d.viewport + '` ',
+      '| ' + d.chromeBeforeFirstOrder + 'px ',
+      '| ' + d.orderCardHeight + 'px ',
+      '| ' + d.ordersFullyVisible + ' |',
+    ].join(''));
+  }
+  lineas.push('');
+}
 if (conDesborde.length) {
   lineas.push('## Desborde horizontal', '');
   for (const m of conDesborde) {
@@ -340,14 +356,47 @@ async function medir(page) {
       }
     }
 
+    // 4 · densidad del tablero. Es la medida que decide si el rediseno sirvio:
+    //     cuanto chrome hay antes del primer pedido, cuanto mide una tarjeta, y
+    //     cuantos pedidos entran ENTEROS en la pantalla. Sin esto, «ahora entran
+    //     dos» seria una opinion sobre una captura.
+    const tarjetas = [...raiz.querySelectorAll(".production-order-card")];
+    const alto = window.innerHeight;
+    let densidad = null;
+    if (tarjetas.length) {
+      const primera = tarjetas[0].getBoundingClientRect();
+      const barra = raiz.querySelector("[data-panel-bottom-nav]");
+      const estorbo = barra && getComputedStyle(barra).display !== "none"
+        ? barra.getBoundingClientRect().height
+        : 0;
+      const utiles = alto - estorbo;
+      densidad = {
+        chromeBeforeFirstOrder: Math.round(primera.top + window.scrollY),
+        orderCardHeight: Math.round(primera.height),
+        ordersFullyVisible: tarjetas.filter((t) => {
+          const r = t.getBoundingClientRect();
+          return r.top >= 0 && r.bottom <= utiles;
+        }).length,
+        bottomNavHeight: Math.round(estorbo),
+      };
+    }
+
     return {
       scrollWidth,
       horizontalOverflow: scrollWidth > ancho + 1,
       overflowCulprits: culpables,
       smallTargets: chicos,
       lowContrast: bajos,
+      ...(densidad ? { density: densidad } : {}),
     };
   });
+}
+
+/** La densidad del tablero, por ancho, para poder comparar antes y despues. */
+function densidadResumen(todas) {
+  return todas
+    .filter((m) => m.screen === 'orders' && m.density)
+    .map((m) => ({ viewport: m.viewport, ...m.density }));
 }
 
 // ---------- servidor ----------

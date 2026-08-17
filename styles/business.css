@@ -2570,3 +2570,133 @@ button.operation-metric {
     font-weight: 700;
   }
 }
+
+/* ============================================================================
+   LA CABECERA DEL PANEL, TAMBIÉN EN ESCRITORIO
+   ============================================================================
+   La compactación de la cabecera se había hecho sólo por debajo de 1020px, y la
+   medida mostró por qué eso no alcanzaba: a 1366×768 —una notebook de trabajo,
+   no un caso raro— quedaban 420px de chrome antes del primer pedido sobre 768px
+   de alto. Más de la mitad de la pantalla para llegar a la cola.
+
+   `.section-head h1` mide `clamp(28px, 4vw, 42px)` porque es el titular de una
+   vista de tienda. «Tu día, en un solo lugar» a 42px, con su rótulo arriba y su
+   línea de rol abajo, son 100px que dicen dónde estás cuando la barra ya lo
+   dice.
+
+   El titular no desaparece: baja a 22px y pasa a ser el nombre de la pantalla,
+   que es lo que es. Lo mismo que ya se había hecho en teléfono, por la misma
+   razón, con el número que lo justifica.
+   ========================================================================== */
+
+@media (min-width: 1021px) {
+  body[data-active-view="business"] .production-ops-head {
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+
+  body[data-active-view="business"] .production-ops-head .eyebrow {
+    margin-bottom: 2px;
+    font-size: 11px;
+  }
+
+  body[data-active-view="business"] .production-ops-head h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  body[data-active-view="business"] .production-ops-role {
+    margin: 2px 0 0;
+    color: var(--panel-ink-muted);
+    font-size: 12.5px;
+  }
+
+  /* El estado va en UNA fila, al lado de la cabecera y no debajo de ella. */
+  body[data-active-view="business"] .production-ops-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+
+  body[data-active-view="business"] .production-ops-status > * {
+    margin: 0;
+  }
+
+  body[data-active-view="business"] :is(.production-intake-status, .production-command-status) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    align-items: baseline;
+  }
+
+  /* Los diecisiete destinos en UNA fila que se desplaza, no en dos que se
+     envuelven: dos renglones de píldoras son 100px, y la segunda fila cambia de
+     contenido según el ancho, así que la posición de un destino deja de ser
+     estable. Una fila que se corre mantiene el orden. */
+  body[data-active-view="business"] .production-operations-shortcuts {
+    flex-wrap: nowrap;
+    margin: 2px 0 14px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+}
+
+/* ============================================================================
+   LOS METADATOS DEL PEDIDO, EN UNA LÍNEA A CUALQUIER ANCHO
+   ============================================================================
+   La compactación de HORA · ENTREGA · PRODUCTOS · TOTAL se había hecho sólo por
+   debajo de 1020px. El argumento no dependía del ancho: cuatro recuadros de
+   64px con etiqueta en versalita para cuatro valores de una palabra son cuatro
+   marcos alrededor de nada, y en un tablero de dos columnas el alto vale igual
+   que en un teléfono.
+
+   Medido a 1366×768 —la notebook más chica que el proyecto soporta— con los
+   recuadros: 380px de chrome más una tarjeta de 437px son 817px sobre 768. La
+   primera tarjeta de la cola no entraba entera en la pantalla.
+   ========================================================================== */
+
+@media (min-width: 1021px) {
+  body[data-active-view="business"] .production-order-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    font-size: 13px;
+  }
+
+  body[data-active-view="business"] .production-order-meta > div {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  body[data-active-view="business"] .production-order-meta dt {
+    color: var(--panel-ink-muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: none;
+  }
+
+  body[data-active-view="business"] .production-order-meta dd {
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  body[data-active-view="business"] .production-order-meta > div:last-child dd {
+    font-size: 15px;
+    font-weight: 850;
+  }
+
+  /* El aire de arriba de la sección: 32px de respiro tienen sentido en una
+     vista de tienda que empieza con un titular. Acá arriba hay una barra y
+     abajo hay trabajo. */
+  body[data-active-view="business"] .section {
+    padding-top: 16px;
+  }
+}

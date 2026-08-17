@@ -65,3 +65,28 @@ test('backup y diagnóstico nativos son verificables y no exponen rutas o payloa
   assert.doesNotMatch(shell, /database_path:\s*String|log_directory:\s*String/);
   assert.doesNotMatch(supportRuntime, /printer_name|payload_json|last_error_message/);
 });
+
+test('la ventana mínima del escritorio queda por encima del corte móvil del Panel', () => {
+  // El Panel cambia a navegación de teléfono por debajo de 1020px. La ventana
+  // de escritorio declaraba `minWidth: 1024`: cuatro píxeles de margen sobre el
+  // corte, medidos sobre el ancho de la VENTANA, no del webview. En Windows el
+  // área de cliente descuenta bordes y la barra de desplazamiento, así que una
+  // ventana de 1024 deja un viewport de ~1000 y la aplicación de escritorio
+  // habría mostrado la barra inferior de teléfono dentro de un monitor.
+  //
+  // No es hipotético: es la misma clase de desajuste que aparece cada vez que
+  // dos números que tienen que estar relacionados viven en archivos distintos.
+  // Acá se relacionan.
+  const [ventana] = config.app.windows;
+  const panel = read('styles/business.css');
+  const cortes = [...panel.matchAll(/@media \(max-width: (\d+)px\)/g)].map((m) => Number(m[1]));
+  const corteMovil = Math.max(...cortes);
+
+  assert.ok(Number.isFinite(corteMovil), 'el Panel ya no declara un corte móvil');
+  assert.ok(
+    ventana.minWidth >= corteMovil + 64,
+    `minWidth ${ventana.minWidth} deja el escritorio a ${ventana.minWidth - corteMovil}px del corte móvil `
+    + `(${corteMovil}px); hacen falta al menos 64 para que el webview no caiga del otro lado`,
+  );
+  assert.ok(ventana.width >= ventana.minWidth, 'la ventana por defecto no puede ser menor que su mínimo');
+});

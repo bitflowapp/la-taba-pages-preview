@@ -2509,3 +2509,64 @@ button.operation-metric {
     min-height: 48px;
   }
 }
+
+/* ============================================================================
+   EL PANEL EN ESCRITORIO — usar el ancho, no estirarlo
+   ============================================================================
+   El teléfono era el problema urgente, pero arreglarlo dejó al escritorio como
+   lo que B6 pide no hacer: un teléfono grande. Medido a 1440×900, una tarjeta
+   de pedido ocupaba los 1140px del contenido para mostrar UN pedido, con el
+   teléfono y el medio de pago apilados en formato ficha —etiqueta arriba, valor
+   abajo— usando 140px de alto para dos datos de una línea.
+
+   Acá el ancho se usa para lo que sirve: ver más de un pedido a la vez.
+   ========================================================================== */
+
+@media (min-width: 1200px) {
+  /* Un tablero de dos columnas a partir de 1200px, tres a partir de 1700.
+     `auto-fill` con un mínimo de 440px hace las dos cosas sin un segundo
+     breakpoint: el mínimo es el ancho en el que una tarjeta de pedido sigue
+     siendo cómoda, no un número redondo. */
+  body[data-active-view="business"] .production-order-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+    align-items: start;
+    gap: 14px;
+  }
+
+  /* La cola de pagos comparte el criterio: son tarjetas del mismo tamaño. */
+  body[data-active-view="business"] .production-payment-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    align-items: start;
+    gap: 14px;
+  }
+}
+
+@media (min-width: 1021px) {
+  /* El contacto en una línea también en escritorio. La ficha con etiqueta
+     arriba y valor abajo no aporta nada cuando el dato entra al lado, y en una
+     tarjeta que ahora comparte fila con otra el alto vale. */
+  body[data-active-view="business"] .production-order-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 0;
+  }
+
+  body[data-active-view="business"] .production-order-contact > div {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  body[data-active-view="business"] .production-order-contact dt {
+    color: var(--panel-ink-muted);
+    font-weight: 600;
+  }
+
+  body[data-active-view="business"] .production-order-contact dd {
+    margin: 0;
+    font-weight: 700;
+  }
+}

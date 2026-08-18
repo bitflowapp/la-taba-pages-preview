@@ -28,6 +28,16 @@ import { expect, test } from '@playwright/test';
  */
 test.describe.configure({ timeout: 90_000 });
 
+/*
+ * El único archivo que arranca SIN la decisión sembrada.
+ *
+ * `playwright.config.mjs` le pone a todo el gate un `TABA_INSTALL_PROMPT_V1`
+ * con "declined", para que la invitación no le robe toques a suites que miden
+ * otra cosa. Acá la invitación ES lo que se mide, así que el estado se vacía y
+ * cada test empieza como una primera visita de verdad.
+ */
+test.use({ storageState: { cookies: [], origins: [] } });
+
 const PHONE = { width: 390, height: 844 };
 const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 15; moto g15) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36';
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1';

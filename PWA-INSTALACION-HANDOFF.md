@@ -1,9 +1,12 @@
 # La Taba, instalable — handoff
 
-Rama `feature/taba2-pwa-installable`, worktree `D:\1212\worktrees\taba2-pwa-install`,
-desde `feature/taba2-production-auth-go-live @ 34c6ee3` (que quedó **intacta**).
+Rama `feature/taba2-pwa-installable`, en su propio worktree, desde
+`feature/taba2-production-auth-go-live @ 34c6ee3` (que quedó **intacta**).
 Sin push, sin deploy, 0 migraciones, 0 archivos bajo `catalog/`, `data/` o
-`supabase/`. Lock en `_claude-locks/taba2-pwa-installable.txt`.
+`supabase/`. El lock (`_claude-locks/taba2-pwa-installable.txt`) y las capturas
+(`artifacts/taba2-pwa-install/`) viven al lado de los worktrees, fuera del
+repositorio. Las rutas absolutas no entran en este archivo y está bien que así
+sea: `check-release-hygiene` las rechaza porque esto se publica.
 
 ## Qué había antes
 
@@ -234,10 +237,20 @@ por qué aparecer. O sea que **la red de seguridad del arranque llevaba dos
 publicaciones sin probarse**. Ahora la ruta se declara por expresión regular y
 el próximo bump no la vuelve a apagar.
 
-`installBrowserStubs` siembra la decisión como `declined`, y dos specs que no lo
-usan la siembran a mano (`skipInstallInvitation`). No es un interruptor de
-prueba: es el estado exacto de alguien que tocó "Ahora no". Sin eso, cada suite
-de `mobile-webkit` competía contra una hoja modal.
+**El arnés corre como quien ya respondió.** `playwright.config.mjs` siembra
+`TABA_INSTALL_PROMPT_V1` con `declined` en el `storageState` de TODO el gate, y
+`pwa-install.spec.mjs` lo vacía para medir una primera visita de verdad.
+`installBrowserStubs` —que limpia el almacenamiento en cada navegación— lo
+vuelve a sembrar con `skipInstallInvitation`.
+
+No empezó así: primero se parchearon los dos specs que fallaban. Fue
+insuficiente y el segundo síntoma lo demostró: `service-worker-degraded-recovery`
+perdió UN toque de los dos que daba —"agregué 2, llegó 1"— en una corrida y pasó
+en la siguiente. **Diez archivos de WebKit son candidatos y el que se olvide va a
+fallar una vez cada tantas corridas**, que es la peor forma de fallar. El
+`storageState` cierra la clase entera de una vez. No es un interruptor de
+prueba: es el estado exacto que deja alguien que tocó "Ahora no", con la entrada
+del Perfil visible igual que para esa persona.
 
 Identidad de release rotada: `la-taba-runtime-v78-pwa-instalable`, `?v=52` para
 el CSS y `?v=45` para `app.js`, firmada con 130 archivos. `preflight-staging-package.mjs`

@@ -49,10 +49,28 @@ let browser = null;
 try {
   if (!baseRemoto) server = await startServer();
   browser = await chromium.launch();
-  await verificarManifest();
-  await verificarIconos();
-  await verificarDocumento();
-  await verificarInvitacion();
+  /*
+   * Cada bloque se corre por separado y su excepción se convierte en una falla
+   * del informe, en vez de tumbar el proceso.
+   *
+   * No es cosmético: el informe se imprime AL FINAL, así que una excepción a
+   * mitad de camino se llevaba puestas todas las comprobaciones ya hechas y
+   * dejaba una traza de pila donde tenía que haber un diagnóstico. Lo destapó
+   * el control negativo del manifest roto: fallaba —bien—, pero sin decir qué.
+   * Y un manifest roto es justamente el caso en que hace falta leer el informe.
+   */
+  for (const [nombre, comprobar] of [
+    ['el manifest', verificarManifest],
+    ['los iconos', verificarIconos],
+    ['el documento', verificarDocumento],
+    ['la invitación', verificarInvitacion],
+  ]) {
+    try {
+      await comprobar();
+    } catch (error) {
+      mal(`${nombre}: la comprobación no pudo completarse — ${error?.message || error}`);
+    }
+  }
 } finally {
   if (browser) await browser.close();
   if (server) server.kill();

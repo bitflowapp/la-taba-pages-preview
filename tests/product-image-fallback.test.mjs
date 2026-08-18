@@ -30,13 +30,28 @@ test('approved catalog products use existing local product and thumbnail routes'
   }
 });
 
-test('approved products provide responsive thumbnail/master source pairs', () => {
+test('el par responsive aparece cuando, y sólo cuando, hay derechos para publicar', () => {
+  // Esta prueba antes recorría los 82 productos de demostración y exigía que
+  // TODOS se dibujaran con su fotografía. Esa expectativa era el defecto: los 82
+  // declaran `PENDING_REVIEW` o `RETAILER_SOLO_REFERENCIA`, es decir, conseguimos
+  // la imagen pero no el permiso para mostrarla. Tener el archivo y los hashes no
+  // es tener el derecho.
   for (const product of products) {
     const html = productThumb(product);
-    assert.match(html, / srcset="/);
-    assert.match(html, new RegExp(`${product.imageThumbnail} 400w`));
-    assert.match(html, new RegExp(`${product.image} 1000w`));
+    assert.doesNotMatch(
+      html,
+      / srcset="/,
+      `${product.id} declara ${product.rightsStatus}: no se publica su foto`,
+    );
+    assert.match(html, /beverage-placeholder\.svg/);
   }
+
+  // Y cuando el permiso está, el par responsive vuelve intacto.
+  const conDerechos = { ...products[0], rightsStatus: 'LICENCIA_COMERCIAL' };
+  const html = productThumb(conDerechos);
+  assert.match(html, / srcset="/);
+  assert.match(html, new RegExp(`${conDerechos.imageThumbnail} 400w`));
+  assert.match(html, new RegExp(`${conDerechos.image} 1000w`));
 });
 
 test('broken approved image switches to the neutral accessible fallback', () => {

@@ -2,8 +2,19 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { auditProductImageRights, decorativeImages } from './lib/publishable-image-rights.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const releaseDir = path.join(root, 'dist_release');
+
+// Una foto de producto sin derechos para publicarla no viaja en el paquete.
+//
+// No alcanza con que ningún producto la referencie: un archivo que se sube queda
+// servido en la web, con URL propia, alcanzable por cualquiera. Publicar es
+// subirlo, no enlazarlo.
+const rights = auditProductImageRights(root);
+const blocked = new Set(rights.filter((image) => !image.publishable).map((image) => image.path));
+const asRelative = (absolute) => path.relative(root, absolute).replaceAll('\\', '/');
 
 const entries = [
   'index.html',
@@ -38,8 +49,12 @@ try {
     await fs.mkdir(path.dirname(target), { recursive: true });
 
     if (stat.isDirectory()) {
-      await fs.cp(source, target, { recursive: true });
+      await fs.cp(source, target, {
+        recursive: true,
+        filter: (from) => !blocked.has(asRelative(from)),
+      });
     } else {
+      if (blocked.has(entry)) continue;
       await fs.copyFile(source, target);
     }
   }
@@ -67,3 +82,16 @@ try {
 }
 
 console.log(`Release folder created: ${releaseDir}`);
+
+// Nada de recortes silenciosos: lo que quedó afuera se dice, y con su motivo.
+const porMotivo = new Map();
+for (const image of rights) {
+  if (image.publishable) continue;
+  porMotivo.set(image.rights, (porMotivo.get(image.rights) || 0) + 1);
+}
+if (blocked.size > 0) {
+  const detalle = [...porMotivo].map(([motivo, cuantas]) => `${cuantas} ${motivo}`).join(', ');
+  console.log(`Fotos de producto excluidas por derechos: ${blocked.size} (${detalle})`);
+}
+console.log(`Fotos de producto publicadas: ${rights.length - blocked.size} de ${rights.length}`);
+console.log(`Imágenes decorativas del sitio, fuera de este control: ${decorativeImages(root).length}`);

@@ -75,6 +75,27 @@ export function readMultiplierHint(source = {}) {
 }
 
 /**
+ * ¿El bulto es lo que se vende?
+ *
+ * `unitsPerPack > 1` dice cuántas unidades trae: es un hecho del producto. No
+ * dice qué hace el comercio con él, que es una decisión. Hay locales que compran
+ * el pack para vender botellas sueltas y locales que venden el pack entero.
+ * Durante un tiempo las dos cosas viajaron en el mismo campo, y por eso un
+ * comercio que abría vendiendo packs no podía vender nada: la góndola le ocultaba
+ * los cuatro productos que tenía y ofrecía en su lugar unidades sin precio.
+ *
+ * Ésta es la mitad que se declara. Por omisión es «no»: un producto que no dice
+ * nada sigue siendo abastecimiento, igual que siempre.
+ */
+export function isSoldAsPack(source = {}) {
+  if ((source?.soldAsPack ?? source?.sold_as_pack) !== true) return false;
+  // Un «pack» de una sola unidad no es un pack. La base impone lo mismo en
+  // `products_sold_as_pack_requires_pack`; se repite acá porque el cliente
+  // también recibe productos de otras fuentes.
+  return (positiveInteger(source.unitsPerPack ?? source.units_per_pack) || 1) > 1;
+}
+
+/**
  * Separa la evidencia de empaque de un producto.
  *
  * `unitsPerPack` es el dato estructurado del catálogo; el texto y el catálogo
@@ -390,6 +411,9 @@ export function deriveRetailUnitFromPack(pack, { unitId = '' } = {}) {
  * queda como referencia de abastecimiento. Si su unidad ya existe, sólo se
  * vincula; si no existe, se publica la unidad derivada. Un pack con empaque
  * ambiguo NO se toca: sin multiplicador confiable no hay unidad que derivar.
+ *
+ * Y un pack que el comercio declaró como su producto de venta tampoco se toca:
+ * ahí no hay nada que derivar, porque el bulto YA es lo que se vende.
  */
 export function publishRetailUnits(products = []) {
   const list = Array.isArray(products) ? products : [];
@@ -398,6 +422,8 @@ export function publishRetailUnits(products = []) {
 
   const result = list.map((product) => {
     if (!product) return product;
+    // El local decidió vender el bulto entero. Se queda en góndola con su precio.
+    if (isSoldAsPack(product)) return product;
     const packaging = detectPurchasePackaging(product);
     if (packaging.ambiguous || packaging.isPack !== true) return product;
 

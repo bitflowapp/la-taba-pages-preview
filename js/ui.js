@@ -514,8 +514,24 @@ function productImage(product) {
   return product?.image || '';
 }
 
-// Una fotografía sólo se considera oficial si llega con la cadena de hashes y
-// thumbnail del catálogo productivo. Todo lo demás usa el mismo placeholder.
+// Los únicos estados de derechos que habilitan a PUBLICAR una fotografía. Son
+// exactamente los tres que exige `catalog_assets_rights_valid` en la base: acá y
+// allá tiene que regir la misma lista, o la vitrina termina mostrando lo que la
+// base nunca habría aceptado.
+//
+// Cualquier otro estado —`pending_review`, `UNAPPROVED_QA`,
+// `RETAILER_SOLO_REFERENCIA`— significa que la imagen se consiguió, no que se
+// tenga derecho a mostrarla. La ausencia de estado también: un producto que no
+// declara derechos no los tiene.
+const PUBLISHABLE_IMAGE_RIGHTS = new Set(['PROPIO', 'LICENCIA_COMERCIAL', 'PERMISO_DOCUMENTADO']);
+
+export function productImageRightsCleared(product) {
+  return PUBLISHABLE_IMAGE_RIGHTS.has(String(product?.rightsStatus || '').toUpperCase());
+}
+
+// Una fotografía se considera oficial sólo si llega con la cadena de hashes y
+// thumbnail del catálogo productivo Y con derechos para publicarla. Todo lo demás
+// usa el mismo placeholder, que es propio de TABA.
 export function productThumb(product, variant = 'grid') {
   const tone = product.tone || (product.alcoholic ? 'alcoholic' : 'drink');
   const category = sanitizeCategoryId(product.categoryId) || 'bebidas';
@@ -531,7 +547,8 @@ export function productThumb(product, variant = 'grid') {
     && thumbnail
     && (!product.qaFixture || product.previewCatalogApproved === true)
     && product.imageShowsMultipack !== true
-    && hasAuthoritativeHashes,
+    && hasAuthoritativeHashes
+    && productImageRightsCleared(product),
   );
   const loading = variant === 'modal' ? 'eager' : 'lazy';
   const source = official ? thumbnail : PRODUCT_PLACEHOLDER_IMAGE;

@@ -588,6 +588,7 @@ export function createSupabaseOrderRepository({
         'capacity',
         'packaging_type',
         'units_per_pack',
+        'sold_as_pack',
         'price',
         'price_status',
         'stock',
@@ -2223,9 +2224,31 @@ function rowToCatalogProduct(row = {}) {
   const price = pricePending ? null : normalizeMoneyValue(row.price, 0);
   const externalId = sanitizeText(row.external_id, { maxLength: 120 });
   const sku = sanitizeText(row.sku, { maxLength: 120 });
-  const image = sanitizeText(row.image_url, { maxLength: 500 });
-  const imageThumbnail = sanitizeText(row.image_thumbnail_url, { maxLength: 500 });
-  if (!name || (!pricePending && price <= 0) || !externalId || !sku || !image || !imageThumbnail) return null;
+  if (!name || (!pricePending && price <= 0) || !externalId || !sku) return null;
+
+  // La foto no decide si el producto se vende.
+  //
+  // Hasta la migración 108 esta línea incluía `|| !image || !imageThumbnail`: un
+  // producto real, con precio y stock, desaparecía de la tienda por no tener una
+  // fotografía. La base ya dejó de exigirla; si el cliente la sigue exigiendo por
+  // su cuenta, el desacople no existe.
+  //
+  // Lo que sí se sostiene es que la imagen esté ENTERA. Si llega a medias se
+  // descarta LA IMAGEN, no el producto: el producto se sigue vendiendo con el
+  // recurso propio de TABA. Descartar el producto entero repetiría el defecto que
+  // vinimos a arreglar.
+  const hash = (valor) => {
+    const limpio = sanitizeText(valor, { maxLength: 64 });
+    return /^[a-f0-9]{64}$/i.test(limpio) ? limpio : '';
+  };
+  const rutaMaster = sanitizeText(row.image_url, { maxLength: 500 });
+  const rutaThumb = sanitizeText(row.image_thumbnail_url, { maxLength: 500 });
+  const imagenCompleta = Boolean(
+    rutaMaster && rutaThumb && rutaMaster !== rutaThumb
+    && hash(row.image_sha256) && hash(row.image_thumbnail_sha256) && hash(row.source_image_sha256),
+  );
+  const image = imagenCompleta ? rutaMaster : '';
+  const imageThumbnail = imagenCompleta ? rutaThumb : '';
 
   const categoryName = sanitizeText(row.category, { fallback: 'Otros', maxLength: 80 });
   const variant = sanitizeText(row.variant, { maxLength: 100 });
@@ -2270,13 +2293,21 @@ function rowToCatalogProduct(row = {}) {
     capacity,
     packagingType,
     unitsPerPack,
+    // Cuántas unidades trae es un hecho del producto; si el bulto es lo que se
+    // vende es una decisión del comercio, y viaja en su propio campo.
+    soldAsPack: row.sold_as_pack === true && unitsPerPack > 1,
     chilled: Boolean(row.chilled),
     tone: row.is_alcoholic ? 'alcoholic' : 'drink',
     image,
     imageThumbnail,
-    imageSha256: sanitizeText(row.image_sha256, { maxLength: 64 }),
-    imageThumbnailSha256: sanitizeText(row.image_thumbnail_sha256, { maxLength: 64 }),
-    sourceImageSha256: sanitizeText(row.source_image_sha256, { maxLength: 64 }),
+    imageSha256: imagenCompleta ? hash(row.image_sha256) : '',
+    imageThumbnailSha256: imagenCompleta ? hash(row.image_thumbnail_sha256) : '',
+    sourceImageSha256: imagenCompleta ? hash(row.source_image_sha256) : '',
+    // Un producto comercial sólo puede apuntar a un asset con derechos de
+    // publicación: lo impone `products_assert_asset_origin` desde la 108. Que la
+    // cadena de imagen esté completa ES, en producción, la constancia de esos
+    // derechos. Se declara explícito para que la vitrina no tenga que suponerlo.
+    rightsStatus: imagenCompleta ? 'PERMISO_DOCUMENTADO' : '',
     price,
     stock,
     available: Boolean(row.available) && stock > 0 && !pricePending,

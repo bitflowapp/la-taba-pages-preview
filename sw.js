@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v74-panel-movil-y-alta';
+const CACHE_NAME = 'la-taba-runtime-v77-pack-vendible';
 const ASSETS = [
   './',
   './index.html',

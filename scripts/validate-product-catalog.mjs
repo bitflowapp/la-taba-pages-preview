@@ -6,14 +6,44 @@ import {
   validateFinalImageManifest,
 } from './catalog-images/lib.mjs';
 
-export const CATEGORY_NAMES = Object.freeze([
-  'Promos',
+/*
+ * Vocabulario de categorías, en dos bloques y por una razón.
+ *
+ * Los TRECE primeros son los de la góndola: cada uno slugifica a un id que la
+ * vitrina conoce (`gaseosas`, `mixers`, `fernet`, `destilados`, …), así que un
+ * producto guardado con uno de ellos aparece en su sección, con su chip de
+ * filtro y con el nombre de categoría bien escrito.
+ *
+ * Los OCHO siguientes son el vocabulario anterior que no tiene equivalente en
+ * la góndola. Se conservan porque hay filas guardadas y catálogos importados
+ * que los usan, pero **ninguno tiene sección en la vitrina**: `Vinos y
+ * espumantes` cae en el id `vinos-y-espumantes`, que no existe en
+ * `js/approved-beverage-demo-data.js`, y el producto termina publicado fuera de
+ * toda categoría, con el slug crudo de nombre. No usarlos para altas nuevas.
+ *
+ * La base acepta exactamente esta misma lista desde la migración
+ * 20260818040000_gondola_beverage_taxonomy.
+ */
+export const GONDOLA_CATEGORY_NAMES = Object.freeze([
   'Gaseosas',
+  'Mixers',
+  'Energizantes',
   'Aguas',
+  'Aguas saborizadas',
+  'Isotónicas',
+  'Hielo',
+  'Cervezas',
+  'Fernet',
+  'Aperitivos',
+  'Vinos',
+  'Espumantes',
+  'Destilados',
+]);
+
+export const LEGACY_CATEGORY_NAMES = Object.freeze([
+  'Promos',
   'Jugos',
   'Energéticas',
-  'Isotónicas',
-  'Cervezas',
   'Vinos y espumantes',
   'Gins y vodkas',
   'Whisky y destilados',
@@ -21,21 +51,35 @@ export const CATEGORY_NAMES = Object.freeze([
   'Hielo y extras',
 ]);
 
+export const CATEGORY_NAMES = Object.freeze([
+  ...GONDOLA_CATEGORY_NAMES,
+  ...LEGACY_CATEGORY_NAMES,
+]);
+
 export const CATEGORIES = new Set(CATEGORY_NAMES);
 export const POSTGRES_INTEGER_MAX = 2_147_483_647;
 export const PRODUCT_PRICE_MAX = 9_999_999_999.99;
 export const ALCOHOL_REQUIRED_CATEGORIES = new Set([
   'Cervezas',
+  'Fernet',
+  'Aperitivos',
+  'Vinos',
+  'Espumantes',
+  'Destilados',
   'Vinos y espumantes',
   'Gins y vodkas',
   'Whisky y destilados',
 ]);
 export const ALCOHOL_FORBIDDEN_CATEGORIES = new Set([
   'Gaseosas',
+  'Mixers',
+  'Energizantes',
   'Aguas',
+  'Aguas saborizadas',
+  'Isotónicas',
+  'Hielo',
   'Jugos',
   'Energéticas',
-  'Isotónicas',
   'Picadas y deli',
   'Hielo y extras',
 ]);

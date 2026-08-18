@@ -498,11 +498,28 @@ function brandLine(product, className = 'product-brand') {
  * cuando el formato es "una unidad". "Lata · 473 ml · Unidad" decía tres cosas
  * y sólo dos eran información: que viene en lata y cuánto trae. Un pack SÍ se
  * nombra, porque cambia lo que se lleva y lo que se paga.
+ *
+ * Y ESE NOMBRE HAY QUE PONERLO, no sólo dejarlo pasar.
+ *
+ * La versión anterior devolvía el texto crudo cuando el producto era un pack,
+ * confiando en que dijera «Pack x6» por su cuenta. En el catálogo productivo no
+ * lo dice nunca: la base exige `presentation = variant`, así que lo que llega
+ * es «Lager», «Original» o «Sin azúcar» —la variedad, no el formato—.
+ *
+ * Con eso, un pack y su unidad suelta quedaban indistinguibles en la grilla:
+ * dos tarjetas «Quilmes Clásica / Lager», una a $2.050 y otra a $11.400, sin
+ * nada que explicara la diferencia. La home ya lo resolvía por su lado
+ * (`homeUnitText`); el catálogo completo se había quedado atrás.
  */
 function presentationText(value, product) {
   const raw = String(value || '').trim();
+  const porPack = Number(product?.unitsPerPack);
+  if (Number.isFinite(porPack) && porPack > 1) {
+    const marca = `Pack x${porPack}`;
+    if (normalizeSearchText(raw).includes(normalizeSearchText(marca))) return raw;
+    return raw ? `${marca} · ${raw}` : marca;
+  }
   if (!raw) return '';
-  if (Number(product?.unitsPerPack) > 1) return raw;
   return raw
     .split('·')
     .map((part) => part.trim())
@@ -529,12 +546,21 @@ export function productImageRightsCleared(product) {
   return PUBLISHABLE_IMAGE_RIGHTS.has(String(product?.rightsStatus || '').toUpperCase());
 }
 
-// Una fotografía se considera oficial sólo si llega con la cadena de hashes y
-// thumbnail del catálogo productivo Y con derechos para publicarla. Todo lo demás
-// usa el mismo placeholder, que es propio de TABA.
-export function productThumb(product, variant = 'grid') {
-  const tone = product.tone || (product.alcoholic ? 'alcoholic' : 'drink');
-  const category = sanitizeCategoryId(product.categoryId) || 'bebidas';
+/**
+ * ¿Podemos publicar la fotografía de este producto?
+ *
+ * Una fotografía se considera oficial sólo si llega con la cadena de hashes y
+ * thumbnail del catálogo productivo Y con derechos para publicarla. Todo lo
+ * demás usa el mismo placeholder, que es propio de TABA.
+ *
+ * Es UNA decisión y tiene que valer igual en TODAS las superficies que dibujan
+ * un producto. Vivía adentro de `productThumb` —la tarjeta y la ficha— y la
+ * vidriera tenía la suya, sin derechos y sin hashes: `imageThumbnail || image`.
+ * Con eso la home publicaba fotos que el catálogo, dos toques después, se
+ * negaba a mostrar. Un modelo de derechos que una superficie ignora no es un
+ * modelo de derechos.
+ */
+export function productPhotoIsOfficial(product = {}) {
   const image = productImage(product);
   const thumbnail = product.imageThumbnail || product.thumbnail || '';
   const hasAuthoritativeHashes = [
@@ -542,7 +568,7 @@ export function productThumb(product, variant = 'grid') {
     product.imageThumbnailSha256,
     product.sourceImageSha256,
   ].every((hash) => /^[a-f0-9]{64}$/i.test(String(hash || '')));
-  const official = Boolean(
+  return Boolean(
     image
     && thumbnail
     && (!product.qaFixture || product.previewCatalogApproved === true)
@@ -550,6 +576,14 @@ export function productThumb(product, variant = 'grid') {
     && hasAuthoritativeHashes
     && productImageRightsCleared(product),
   );
+}
+
+export function productThumb(product, variant = 'grid') {
+  const tone = product.tone || (product.alcoholic ? 'alcoholic' : 'drink');
+  const category = sanitizeCategoryId(product.categoryId) || 'bebidas';
+  const image = productImage(product);
+  const thumbnail = product.imageThumbnail || product.thumbnail || '';
+  const official = productPhotoIsOfficial(product);
   const loading = variant === 'modal' ? 'eager' : 'lazy';
   const source = official ? thumbnail : PRODUCT_PLACEHOLDER_IMAGE;
   const width = official ? Number(product.thumbnailWidth || 400) : 400;
@@ -763,12 +797,29 @@ function homeBestSellerProducts() {
   return featuredBeverageProducts(getState().products, { limit: HOME_BEST_SELLERS_LIMIT });
 }
 
+/*
+ * La foto de la card de la vidriera, con el MISMO criterio que la tarjeta.
+ *
+ * Antes decidía sola —`imageThumbnail || image`— sin mirar derechos ni hashes,
+ * y con eso la home publicaba fotografías que el catálogo se negaba a mostrar
+ * dos toques después. Medido: en el catálogo de demostración las 82 fichas
+ * llegan con `RETAILER_SOLO_REFERENCIA`, así que la ficha y la grilla ponían el
+ * recurso propio de TABA y la vidriera ponía la foto del retailer.
+ *
+ * Que las tres superficies pregunten lo mismo es lo que hace que el modelo de
+ * derechos sea real y no decorativo.
+ */
 function homeProductImage(product, className) {
-  const source = product.imageThumbnail || product.image || PRODUCT_PLACEHOLDER_IMAGE;
-  const responsive = product.image && product.imageThumbnail
+  const official = productPhotoIsOfficial(product);
+  const source = official
+    ? (product.imageThumbnail || product.image)
+    : PRODUCT_PLACEHOLDER_IMAGE;
+  const responsive = official
     ? ` srcset="${escapeHtml(product.imageThumbnail)} 400w, ${escapeHtml(product.image)} 1000w" sizes="(max-width: 700px) 44vw, 260px"`
     : '';
-  return `<img class="${className} thumb-img" src="${escapeHtml(source)}"${responsive} width="${Number(product.thumbnailWidth || 400)}" height="${Number(product.thumbnailHeight || 400)}" alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" loading="lazy" decoding="async" />`;
+  const width = official ? Number(product.thumbnailWidth || 400) : 400;
+  const height = official ? Number(product.thumbnailHeight || 400) : 400;
+  return `<img class="${className} thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}"${responsive} width="${width}" height="${height}" alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" loading="lazy" decoding="async" />`;
 }
 
 function homeCapacityText(product) {
@@ -1517,8 +1568,39 @@ function homeSectionCard(product, cartQuantities) {
  * el catálogo vivo. Uno que no se puede armar entero —falta un componente, no
  * tiene precio confirmado o se quedó sin stock— NO se muestra: la góndola no
  * ofrece un combo que el mostrador no puede armar.
+ *
+ * Y TAMPOCO ofrece uno que no se pueda COBRAR.
+ *
+ * Como el manifiesto se resuelve contra el catálogo vivo, alcanza con que el
+ * comercio cargue los componentes para que el combo aparezca solo. Pero en
+ * producción la ruta directa de pedidos rechaza cualquier carrito con combos
+ * —«Los combos se cobran con Mercado Pago»— porque el precio de un combo lo
+ * calcula Checkout Pro y el backend no lo deriva. Si Mercado Pago no está
+ * configurado, esas dos verdades juntas dejan al cliente en un callejón:
+ * agrega el combo, llega al checkout y no hay ninguna opción que lo acepte.
+ *
+ * Medido el 2026-08-18 al preparar la góndola de Neuquén: cargar
+ * `corona-extra-botella-330ml` encendió «Corona Extra x6», y en producción
+ * `business_payment_settings` tiene cero filas, así que Mercado Pago ni
+ * siquiera aparece en el selector.
+ *
+ * Quién puede cobrar un combo no lo sabe esta hoja: lo declara `app.js`, que es
+ * donde viven el modo de la aplicación y la respuesta del proveedor.
  */
+let combosSePuedenCobrar = true;
+
+export function setComboCheckoutAvailability({ available = true } = {}) {
+  const habilitado = available !== false;
+  if (habilitado === combosSePuedenCobrar) return;
+  combosSePuedenCobrar = habilitado;
+  // La declaración llega después del primer render, así que hay que repintar el
+  // riel. Fuera del navegador —pruebas unitarias— no hay nada que repintar y la
+  // declaración vale igual.
+  if (typeof document !== 'undefined') renderCombos();
+}
+
 export function customerCombos() {
+  if (!combosSePuedenCobrar) return [];
   return purchasableCombos(COMBO_MANIFEST, getCustomerCatalogProducts(getState().products));
 }
 
@@ -1552,17 +1634,28 @@ function renderCombos() {
  * Los packshots de los componentes ya están verificados uno por uno y vienen
  * con fondo blanco horneado, así que la fila se apoya sobre el mismo plato
  * blanco que el resto de la góndola y el combo se lee por lo que trae.
+ *
+ * Un componente SIN foto usa el mismo recurso propio de TABA que la tarjeta de
+ * producto. Antes escribía `src=""`, y `src=""` no significa «sin imagen»: es
+ * una petición a la URL de la propia página, que el servidor contesta con el
+ * HTML del sitio y el navegador dibuja como ícono roto. Desde la migración 108
+ * un producto sin foto es un producto legítimo y vendible, así que ese camino
+ * dejó de ser hipotético: la góndola de Neuquén abre entera sin fotografías.
  */
-function comboMedia(combo) {
+export function comboMedia(combo) {
   const shown = combo.components.slice(0, 4);
   const extra = combo.components.length - shown.length;
   return `
     <span class="combo-media-plate">
-      ${shown.map((component) => `
-        <span class="combo-media-item">
-          <img src="${escapeHtml(component.product.imageThumbnail || component.product.image)}" alt="" width="120" height="120" loading="lazy" decoding="async" />
+      ${shown.map((component) => {
+    const foto = component.product.imageThumbnail || component.product.image || PRODUCT_PLACEHOLDER_IMAGE;
+    const sinFoto = foto === PRODUCT_PLACEHOLDER_IMAGE;
+    return `
+        <span class="combo-media-item${sinFoto ? ' uses-placeholder' : ''}">
+          <img${sinFoto ? ' class="is-placeholder"' : ''} src="${escapeHtml(foto)}" alt="" width="120" height="120" loading="lazy" decoding="async" />
           ${component.quantity > 1 ? `<em>×${component.quantity}</em>` : ''}
-        </span>`).join('')}
+        </span>`;
+  }).join('')}
       ${extra > 0 ? `<span class="combo-media-more">+${extra}</span>` : ''}
     </span>`;
 }

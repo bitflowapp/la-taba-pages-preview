@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "que_es": "Contrato central de la política de alcohol de TABA. Es la fuente de verdad de lo que hay que escribir en `businesses` cuando la habilitación comercial esté acreditada. Vive acá y no en un informe para que nadie tenga que reconstruirla de memoria: son cinco campos que el CHECK `businesses_alcohol_policy_complete` exige juntos.",
+  "estado": "DECLARADA, NO APLICADA",
+  "bloqueante": "LICENSE GATE — la habilitación comercial del local para venta/expendio de bebidas alcohólicas no está acreditada. Ver artifacts/taba2-gondola-neuquen/LICENSE-GATE.md.",
+  "declarada_por": "titular del comercio",
+  "declarada_el": "2026-08-18",
+  "politica": {
+    "alcohol_sales_enabled": true,
+    "alcohol_minimum_age": 18,
+    "alcohol_sales_start": "09:00",
+    "alcohol_sales_end": "23:00",
+    "alcohol_timezone": "America/Argentina/Buenos_Aires"
+  },
+  "reglas_declaradas": [
+    "Prohibida la venta a menores de 18 años.",
+    "Confirmación de mayoría de edad obligatoria en el checkout.",
+    "Fuera de la ventana 09:00–23:00 los productos con alcohol pueden seguir visibles, pero no agregables ni comprables.",
+    "El checkout tiene que decir POR QUÉ se rechaza, no fallar en silencio.",
+    "Verificación de edad al momento de la entrega.",
+    "El Rider puede rechazar la entrega de alcohol si no se acredita la mayoría de edad.",
+    "Una compra iniciada antes de las 23:00 no puede burlar la ventana: la regla se evalúa al momento de la venta.",
+    "Todo se valida del lado del servidor, no sólo en el frontend."
+  ],
+  "que_ya_impone_el_servidor": {
+    "medido_el": "2026-08-18",
+    "donde": "20260812220000_business_operations_checkout_enforcement.sql, en las dos rutas de creación de pedido (directa y Checkout Pro)",
+    "politica_completa": "sin alcohol_sales_enabled, edad, inicio, fin y huso, aborta con «politica de alcohol no configurada» (55000)",
+    "confirmacion_de_edad": "sin `age_confirmed` aborta con «confirmacion de mayoria de edad requerida» (22023)",
+    "ventana_horaria": "compara `clock_timestamp() at time zone <huso del comercio>` contra la ventana, y soporta ventanas que cruzan la medianoche",
+    "momento_de_la_venta": "usa `clock_timestamp()`, no el inicio de la transacción ni la hora del navegador: un carrito armado a las 22:59 que confirma a las 23:01 es rechazado",
+    "edad_en_el_pedido": "`orders_age_confirmation_complete` exige que `age_confirmed_at` y `age_confirmation_policy` viajen juntos, con la edad entre 18 y 99",
+    "no_verificado_todavia": "la verificación de edad en la entrega y el rechazo del Rider viven en la app del Rider, en otro repositorio, y no se midieron en esta misión"
+  },
+  "verificaciones_pendientes_antes_de_activar": [
+    "Que no exista una modificación municipal posterior del horario 09:00–23:00 para Neuquén Capital. No se pudo confirmar contra fuente oficial: el digesto municipal publica PDF escaneados sin texto y cdnqn.gov.ar no responde por HTTPS.",
+    "Que la habilitación comercial concreta de La Taba incluya venta/expendio de bebidas alcohólicas. No hay ningún registro de habilitación ni en el esquema de la base ni en el repositorio."
+  ]
+}

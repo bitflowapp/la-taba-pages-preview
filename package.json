@@ -47,6 +47,8 @@
     "catalog:readiness:check": "node scripts/catalog-readiness.mjs --check",
     "catalog:sheet": "node scripts/catalog-commercial-sheet.mjs",
     "catalog:sheet:check": "node scripts/catalog-commercial-sheet.mjs --check",
+    "gondola:plan": "node scripts/gondola-neuquen-plan.mjs",
+    "gondola:sql": "node scripts/gondola-neuquen-plan.mjs --sql",
     "catalog:commercial:import": "node scripts/import-commercial-catalog.mjs",
     "catalog:commercial:drill": "node scripts/run-commercial-import-drill.mjs",
     "catalog:prices:pending": "node scripts/build-pending-unit-prices.mjs",

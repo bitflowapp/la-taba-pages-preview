@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "que_es": "Registro de las autoridades comerciales bajo las cuales TABA puede publicar marcas e imágenes de producto. Una autorización declara un MARCO; no convierte por sí sola ningún archivo en publicable. Cada foto sigue necesitando su fila en catalog_assets con rights_status, rights_reference, approved_at y approved_by, que es lo único que la base acepta (catalog_assets_rights_valid).",
+  "autorizaciones": [
+    {
+      "id": "TABA-AUT-2026-08-001",
+      "estado": "declarada",
+      "declarada_por": "titular del comercio",
+      "owner_user_id": "61f238ad-fc2b-446a-9f17-257f4622cd86",
+      "declarada_el": "2026-08-18",
+      "canal": "instrucción escrita del titular en la sesión de trabajo del 2026-08-18",
+      "alcance": {
+        "uso": ["marca", "imagen de producto"],
+        "contrapartes": "múltiples empresas proveedoras de las marcas que TABA comercializa",
+        "formato_acordado": "imágenes de producto con fondo blanco (packshot)",
+        "territorio": "Neuquén Capital, Argentina",
+        "canal_de_uso": "tienda online propia de TABA"
+      },
+      "habilita_rights_status": "LICENCIA_COMERCIAL",
+      "cubre": [
+        "packshots provistos por la marca o su embotellador/importador, con fondo blanco",
+        "uso del nombre y el logotipo de esas marcas en la ficha del producto"
+      ],
+      "no_cubre": [
+        "fotografías descargadas del sitio o del CDN de una cadena minorista ajena — son un asset de esa cadena, no de la marca, y no forman parte de ningún acuerdo entre TABA y el proveedor",
+        "imágenes de multipack usadas en la ficha de una unidad suelta: muestran una cosa y se entrega otra",
+        "material editorial, ambientación o piezas de campaña de terceros"
+      ],
+      "evidencia_documental": {
+        "tipo": "declaración del titular",
+        "archivo": null,
+        "pendiente": true,
+        "que_falta": "el documento del acuerdo (o el paquete de packshots provisto por cada marca, que lo acredita en los hechos). Con eso, `rights_evidence_file` deja de estar vacío y cada asset se registra citando este id."
+      },
+      "assets_cubiertos": [],
+      "nota": "Al 2026-08-18 ningún archivo del repositorio entra en este marco: las 60 fuentes del manifiesto vienen de jumboargentina.vtexassets.com y la tienda oficial de Coca-Cola Andina sólo publica packshots de pack, no de unidad. La góndola se publica sin fotografías, que la migración 108 permite, con el recurso propio de TABA en su lugar."
+    }
+  ],
+  "invariante": "Una autorización declarada NO reetiqueta assets existentes. Los que están en pending_review o RETAILER_SOLO_REFERENCIA se quedan donde están mientras su metadata contradiga el alcance: el origen de un archivo es un hecho y no cambia porque aparezca un permiso nuevo."
+}

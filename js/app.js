@@ -30,6 +30,7 @@ import {
   renderOrderSummary,
   renderTracking,
   setMercadoPagoCheckoutAvailability,
+  setComboCheckoutAvailability,
   setCategory,
   setCatalogFilter,
   setSearchQuery,
@@ -610,21 +611,38 @@ async function bootstrap() {
   }
 }
 
+/*
+ * Mercado Pago decide dos cosas, no una.
+ *
+ * La primera es la opción del selector de pago. La segunda es si se pueden
+ * OFRECER combos: en producción el precio de un combo lo calcula Checkout Pro y
+ * la ruta directa de pedidos rechaza el carrito que trae uno, así que sin
+ * Mercado Pago un combo en góndola es un camino sin salida.
+ *
+ * Fuera de producción no aplica: el repositorio de demostración arma y cobra el
+ * combo por su cuenta, y los combos siguen funcionando como siempre.
+ */
 async function refreshMercadoPagoCheckoutAvailability() {
+  const declarar = (disponible) => {
+    setMercadoPagoCheckoutAvailability({ available: disponible });
+    setComboCheckoutAvailability({
+      available: getAppMode() !== APP_MODE_PRODUCTION || disponible,
+    });
+  };
   if (getAppMode() !== APP_MODE_PRODUCTION) {
-    setMercadoPagoCheckoutAvailability({ available: false });
+    declarar(false);
     return;
   }
   const repository = getOrderRepository();
   if (typeof repository?.getMercadoPagoCheckoutAvailability !== 'function') {
-    setMercadoPagoCheckoutAvailability({ available: false });
+    declarar(false);
     return;
   }
   try {
     const result = await repository.getMercadoPagoCheckoutAvailability();
-    setMercadoPagoCheckoutAvailability({ available: result?.ok && result.available === true });
+    declarar(Boolean(result?.ok && result.available === true));
   } catch (_) {
-    setMercadoPagoCheckoutAvailability({ available: false });
+    declarar(false);
   }
 }
 
@@ -731,6 +749,10 @@ function applyAppMode() {
 
   applyProductionCatalogGate(mode);
   if (!production) setMercadoPagoCheckoutAvailability({ available: false });
+  // Falla cerrada: en producción los combos arrancan apagados y sólo los
+  // enciende la respuesta del proveedor. Al revés, entre el primer render y esa
+  // respuesta la góndola ofrecería un combo que todavía no sabe si puede cobrar.
+  setComboCheckoutAvailability({ available: !production });
   applyWhatsappAvailability();
 }
 

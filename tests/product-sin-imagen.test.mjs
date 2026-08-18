@@ -4,7 +4,19 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { productThumb, productImageRightsCleared } from '../js/ui.js';
+import {
+  productThumb,
+  productImageRightsCleared,
+  comboMedia,
+  productPhotoIsOfficial,
+  customerCombos,
+  setComboCheckoutAvailability,
+} from '../js/ui.js';
+import {
+  buildBeverageHomeSections,
+  isPurchasableBeverageProduct,
+  isVisibleBeverageProduct,
+} from '../js/core/beverage-home-sections.js';
 import { auditProductImageRights, unpublishableProductImages } from '../scripts/lib/publishable-image-rights.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -173,4 +185,105 @@ test('el cliente ya no descarta un producto por no tener foto', async () => {
     /imagenCompleta/,
     'la imagen tiene que evaluarse como todo-o-nada, igual que en la base',
   );
+});
+
+test('la vidriera tampoco descarta un producto por no tener foto', () => {
+  // El MISMO acople, un piso más arriba y sobreviviendo a la 108:
+  // `isVisibleBeverageProduct` exigía `image || imageThumbnail`, y de esa
+  // función parten las once secciones de la home —carruseles, «lo más pedido»,
+  // banners y destinos editoriales—. Medido el 2026-08-18 con un catálogo real
+  // sin fotografías: 52 productos cargados, la vista de catálogo dibujándolos
+  // con su precio, y la home ENTERA vacía.
+  const sinFoto = {
+    id: 'quilmes-clasica-lata-473ml',
+    sku: 'quilmes-clasica-lata-473ml',
+    name: 'Quilmes Clásica',
+    categoryId: 'cervezas',
+    price: 2050,
+    stock: 24,
+    available: true,
+    pricePending: false,
+    alcoholic: true,
+  };
+
+  assert.equal(isVisibleBeverageProduct(sinFoto), true, 'sin foto no puede significar sin producto');
+  assert.equal(isPurchasableBeverageProduct(sinFoto), true);
+
+  // Lo que sí sigue afuera de la góndola: el bulto de abastecimiento.
+  assert.equal(isVisibleBeverageProduct({ ...sinFoto, procurementOnly: true }), false);
+  assert.equal(isVisibleBeverageProduct({ ...sinFoto, archived: true }), false);
+  // Y lo que no se puede comprar sigue sin poder comprarse.
+  assert.equal(isPurchasableBeverageProduct({ ...sinFoto, stock: 0 }), false);
+  assert.equal(isPurchasableBeverageProduct({ ...sinFoto, pricePending: true }), false);
+});
+
+test('las once secciones de la home siguen en pie con un catálogo sin fotos', () => {
+  const catalogo = [
+    { id: 'a', sku: 'a', name: 'Quilmes Clásica', categoryId: 'cervezas', price: 2050, stock: 24, available: true, pricePending: false },
+    { id: 'b', sku: 'b', name: 'Coca-Cola', categoryId: 'gaseosas', price: 5900, stock: 24, available: true, pricePending: false },
+    { id: 'c', sku: 'c', name: 'Fernet Branca', categoryId: 'fernet', price: 26250, stock: 6, available: true, pricePending: false },
+  ];
+  const secciones = buildBeverageHomeSections(catalogo, [], { limit: 10 })
+    .filter((seccion) => seccion.kind === 'category' && seccion.products.length > 0);
+
+  assert.deepEqual(
+    secciones.map((seccion) => seccion.id).sort(),
+    ['cervezas', 'fernet-y-aperitivos', 'gaseosas'],
+    'una home vacía con productos cargados es una tienda que se lee como cerrada',
+  );
+});
+
+test('un combo con un componente sin foto no dibuja una imagen rota', () => {
+  // `src=""` no significa «sin imagen»: es una petición a la URL de la propia
+  // página, que el servidor contesta con el HTML del sitio. El navegador la
+  // resuelve con naturalWidth 0 y dibuja el ícono de imagen rota.
+  const html = comboMedia({
+    id: 'combo-previa',
+    name: 'Previa',
+    components: [
+      { quantity: 6, product: { id: 'a', name: 'Quilmes Clásica', image: '', imageThumbnail: '' } },
+    ],
+  });
+
+  assert.doesNotMatch(html, /<img[^>]*src=""/, 'volvió el src vacío');
+  assert.match(html, /assets\/products\/beverage-placeholder\.svg/);
+  assert.match(html, /combo-media-item uses-placeholder/);
+});
+
+test('un combo que nadie puede cobrar no se ofrece', () => {
+  // El manifiesto de combos se resuelve contra el catálogo vivo, así que un
+  // comercio que carga los componentes enciende el combo sin pedirlo. En
+  // producción, sin Mercado Pago, ese combo llega al checkout y lo rechazan.
+  // `app.js` es quien sabe si se puede cobrar; acá se prueba que la góndola
+  // obedezca esa declaración en las dos direcciones.
+  setComboCheckoutAvailability({ available: false });
+  assert.deepEqual(customerCombos(), [], 'se ofrece un combo que el checkout va a rechazar');
+
+  setComboCheckoutAvailability({ available: true });
+  assert.ok(Array.isArray(customerCombos()), 'apagar y encender tiene que ser reversible');
+});
+
+test('la vidriera publica una foto sólo si el catálogo también la publicaría', () => {
+  // El modelo de derechos vale si TODAS las superficies preguntan lo mismo. La
+  // home tenía su propia regla —`imageThumbnail || image`, sin derechos y sin
+  // hashes— y publicaba fotos que la ficha, dos toques después, reemplazaba por
+  // el placeholder. Medido en el catálogo de demostración: las 82 llegan con
+  // RETAILER_SOLO_REFERENCIA.
+  const hash = 'a'.repeat(64);
+  const conDerechos = {
+    id: 'x', name: 'Quilmes Clásica', categoryId: 'cervezas', price: 2050,
+    image: 'assets/products/x.webp', imageThumbnail: 'assets/products/x-thumb.webp',
+    imageSha256: hash, imageThumbnailSha256: hash, sourceImageSha256: hash,
+    rightsStatus: 'LICENCIA_COMERCIAL',
+  };
+  const sinDerechos = { ...conDerechos, rightsStatus: 'RETAILER_SOLO_REFERENCIA' };
+
+  assert.equal(productPhotoIsOfficial(conDerechos), true);
+  assert.equal(productPhotoIsOfficial(sinDerechos), false, 'una foto de retailer no se publica');
+  assert.equal(productPhotoIsOfficial({ ...conDerechos, imageSha256: '' }), false, 'sin la cadena de hashes no es oficial');
+  assert.equal(productPhotoIsOfficial({ ...conDerechos, imageShowsMultipack: true }), false, 'un pack no ilustra una unidad');
+
+  // Y la tarjeta obedece la misma respuesta.
+  assert.match(productThumb(conDerechos), /assets\/products\/x-thumb\.webp/);
+  assert.match(productThumb(sinDerechos), /beverage-placeholder\.svg/);
 });

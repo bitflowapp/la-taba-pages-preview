@@ -77,12 +77,31 @@ const PRODUCT_PRIORITY = new Map(REQUESTED_PRODUCT_PRIORITY.map((term, index) =>
 // producto de góndola, así que ninguna superficie del cliente puede mostrarlo
 // ni ofrecerlo: dejarlo afuera acá alcanza para las tres —vidriera, carrusel y
 // destino de una pieza editorial— porque todas parten de esta definición.
+//
+// LA FOTO NO DECIDE SI UN PRODUCTO EXISTE, y hasta hoy acá decidía.
+//
+// Esta función exigía `image || imageThumbnail`, que es el MISMO acople que la
+// migración 108 vino a romper —sin foto no se vende— sobreviviendo en la
+// vidriera. La base dejó de exigir imagen, `rowToCatalogProduct` dejó de
+// exigirla y `productThumb` aprendió a dibujar el recurso propio de TABA; esta
+// línea se quedó atrás y nadie lo vio, porque el catálogo con el que se probó
+// siempre tuvo fotos.
+//
+// Medido el 2026-08-18 con un catálogo real sin fotografías: las 52 filas
+// entraban, la vista de catálogo las dibujaba con su precio, y la HOME quedaba
+// vacía entera —cero carruseles, cero «lo más pedido», cero banners, cero
+// destinos editoriales— porque las once secciones parten de acá. La tienda se
+// leía como si no vendiera nada.
+//
+// Una tarjeta sin foto no es una tarjeta rota: `productThumb` le pone el
+// placeholder propio de TABA, con el mismo alto y su etiqueta accesible. Lo que
+// decide si un producto se puede mostrar es que exista y esté en góndola; lo
+// que decide si se puede comprar sigue estando en `isPurchasableBeverageProduct`.
 export function isVisibleBeverageProduct(product) {
   return Boolean(
     product
       && product.archived !== true
-      && product.procurementOnly !== true
-      && (String(product.image || '').trim() || String(product.imageThumbnail || '').trim()),
+      && product.procurementOnly !== true,
   );
 }
 

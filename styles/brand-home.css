@@ -1530,12 +1530,12 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .toast {
   color: #14161a;
 }
 
-/* Avisos del shell (instalar, iOS, sin conexión, actualización). El cuarto es
-   el que se veía roto: superficie `white` literal con la tinta ya remapeada a
-   la del cliente, o sea blanco sobre blanco. A diferencia del toast —que es
-   efímero y por eso invierte— estos avisos conviven con el contenido y se
-   quedan hasta que alguien los cierra, así que toman la MISMA góndola que la
-   tarjeta que tienen debajo. Es una superficie más de la app, no un parche. */
+/* Avisos del shell (sin conexión, actualización). El segundo es el que se veía
+   roto: superficie `white` literal con la tinta ya remapeada a la del cliente,
+   o sea blanco sobre blanco. A diferencia del toast —que es efímero y por eso
+   invierte— estos avisos conviven con el contenido y se quedan hasta que
+   alguien los cierra, así que toman la MISMA góndola que la tarjeta que tienen
+   debajo. Es una superficie más de la app, no un parche. */
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-banner {
   border-color: transparent;
   background: var(--shelf);
@@ -1543,13 +1543,8 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-ban
   color: var(--shelf-ink);
 }
 
-body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-banner :is(small, .pwa-ios-steps) {
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-banner small {
   color: var(--shelf-muted);
-}
-
-body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-banner-icon {
-  background: var(--shelf-red-wash);
-  color: var(--shelf-red-ink);
 }
 
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-banner-dismiss {
@@ -1562,6 +1557,49 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .pwa-ban
   background: var(--shelf-raised);
   color: var(--shelf-ink);
 }
+
+/* ── Invitación a instalar ────────────────────────────────────────────────
+   Vive fuera de `.app-view` —es hija directa del `body`—, así que ni el
+   remapeo de `.card` ni el de `.modal-card` la alcanzan: si no se declarara
+   acá, la hoja saldría con la superficie clara literal y la tinta ya remapeada,
+   que es exactamente el defecto que este archivo cerró para el aviso de
+   actualización. Toma la misma góndola que cualquier tarjeta del cliente.
+   Los números de los pasos conservan el ROJO PLENO con tinta blanca: es la
+   superficie más chica de la hoja y `--shelf-red-ink` está calibrado para
+   texto SOBRE grafito, no para una píldora sólida. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .install-sheet {
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf), inset 0 0 0 1px var(--shelf-line);
+  color: var(--shelf-ink);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .install-sheet-copy,
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .install-step-body small,
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .install-sheet-later {
+  color: var(--shelf-muted);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .install-step-icon,
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .install-steps-lead {
+  background: var(--shelf-red-wash);
+  color: var(--shelf-red-ink);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .install-sheet-close {
+  border-color: var(--shelf-line-strong);
+  color: var(--shelf-muted);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .install-sheet-close:hover {
+  border-color: var(--taba-white);
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+}
+
+/* La tarjeta del Perfil no necesita nada propio: vive dentro de `.app-view`, así
+   que el remapeo de `.card` le da la góndola y el de `.secondary-button` le da
+   el botón elevado. Se deja anotado porque la simetría con la hoja de arriba
+   invita a duplicarlas, y duplicar acá es crear una segunda verdad. */
 
 /* ── El campo de búsqueda no es un campo de formulario ───────────────────────
    La regla que da superficie a `input/select/textarea` dentro del cliente

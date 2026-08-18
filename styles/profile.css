@@ -834,6 +834,82 @@
   padding: 0 20px 20px;
 }
 
+/* ── Instalar La Taba ──────────────────────────────────────────────────────
+   La puerta de atrás de la instalación, para quien tocó "Ahora no" y cambió de
+   idea. Vive acá y no en `common.css` por la misma razón que la tarjeta de
+   privacidad: comparte material con su vecina "Información del local" —misma
+   superficie, mismo hairline, mismo radio— y ese material lo declara ESTA
+   pantalla en sus propios tokens.
+
+   `.card` global no trae relleno —lo pone cada tarjeta—, y esa es justamente la
+   omisión que se vio en la primera captura: el icono quedaba pegado a la
+   esquina, como si la tarjeta estuviera rota. */
+.profile-install-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px 14px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 17px 19px;
+  border: 1px solid var(--profile-line);
+  border-radius: 20px;
+  background: var(--profile-soft);
+  box-shadow: none;
+}
+
+/* `display: grid` gana sobre el `[hidden]` del navegador, así que la tarjeta
+   tiene que saber esconderse ella misma. Nace oculta. */
+.profile-install-card[hidden] {
+  display: none;
+}
+
+.profile-install-mark img {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+}
+
+.profile-install-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.profile-install-copy strong {
+  color: var(--profile-ink);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.profile-install-copy small {
+  color: var(--profile-muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+/* En el teléfono la acción baja a su propio renglón y ocupa el ancho: al lado
+   del texto se quedaba con 90px y "Ver cómo" partía en dos renglones. */
+.profile-install-action {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: var(--tap);
+  border-radius: var(--radius-pill);
+}
+
+@media (min-width: 520px) {
+  .profile-install-card {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .profile-install-action {
+    grid-column: auto;
+    width: auto;
+    padding-inline: 20px;
+  }
+}
+
 @keyframes profile-spin {
   to { transform: rotate(360deg); }
 }

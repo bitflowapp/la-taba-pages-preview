@@ -8,10 +8,23 @@
     <title>TABA2 · Tienda de bebidas</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="assets/icon.svg" />
+    <!--
+      El `apple-touch-icon` TIENE que ser PNG. iOS no rasteriza SVG acá: cuando
+      no encuentra un mapa de bits usable se guarda una CAPTURA de la página
+      como icono, y así estuvo hasta esta versión —apuntaba a `assets/icon.svg`—.
+      El archivo va a sangre, opaco y sin esquinas redondeadas: la máscara la
+      pone iOS, y un alfa vacío en los bordes se pinta de negro.
+    -->
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/brand/taba-app-icon-apple-180.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="TABA2" />
+    <!--
+      Es la etiqueta que se lee DEBAJO del icono en la pantalla de inicio de
+      iOS. Dice lo mismo que `short_name` del manifest —lo que Android usa en el
+      mismo lugar— para que la app no se llame distinto según el teléfono.
+    -->
+    <meta name="apple-mobile-web-app-title" content="La Taba" />
     <link
       rel="stylesheet"
       href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css"
@@ -33,7 +46,7 @@
       lo verifica tests/home-hero-preload.test.mjs.
     -->
     <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
-    <link rel="stylesheet" href="styles.css?v=51" />
+    <link rel="stylesheet" href="styles.css?v=52" />
   </head>
   <!--
     La vista activa se declara ya en el shell servido. `renderNavigation` la
@@ -144,39 +157,14 @@
         </div>
       </header>
 
-      <div class="pwa-banner pwa-banner-install" data-pwa-install-banner hidden>
-        <span class="pwa-banner-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-            <path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            <path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </span>
-        <span class="pwa-banner-copy">
-          <strong>Instalar TABA2</strong>
-          <small>Acceso directo desde tu pantalla de inicio.</small>
-        </span>
-        <button class="primary-button compact" type="button" data-pwa-install-action>Instalar</button>
-        <button class="pwa-banner-dismiss" type="button" data-pwa-install-dismiss aria-label="Cerrar aviso de instalación">✕</button>
-      </div>
-
-      <div class="pwa-banner pwa-banner-ios" data-pwa-ios-banner hidden>
-        <span class="pwa-banner-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-            <path d="M12 3v11" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            <path d="m8.5 6.5 3.5-3.5 3.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            <path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </span>
-        <span class="pwa-banner-copy">
-          <strong>Para instalar TABA2:</strong>
-          <ol class="pwa-ios-steps">
-            <li>Tocá <strong>Compartir</strong></li>
-            <li>Elegí <strong>“Agregar a pantalla de inicio”</strong></li>
-            <li>Confirmá <strong>Agregar</strong></li>
-          </ol>
-        </span>
-        <button class="pwa-banner-dismiss" type="button" data-pwa-ios-dismiss aria-label="Cerrar guía de instalación">✕</button>
-      </div>
+      <!--
+        Los dos avisos finos de instalación —uno para Android y otro para iOS—
+        vivían acá y se fueron a `<dialog data-install-sheet>`, al final del
+        shell. No fue un cambio de estilo: eran una tira de 16 px de alto
+        anclada abajo a la derecha, que en un teléfono se superponía con la
+        barra flotante del carrito y competía con ella por el mismo pulgar. La
+        invitación es UNA sola y ahora es una hoja inferior.
+      -->
 
       <div class="pwa-banner pwa-banner-offline" data-pwa-offline-banner hidden role="status">
         <strong>Sin conexión</strong>
@@ -723,6 +711,28 @@
           </div>
           <div data-customer-profile></div>
 
+          <!--
+            La puerta de atrás de la instalación, y por eso está acá y no en un
+            aviso: quien tocó "Ahora no" no vuelve a ver la invitación
+            automática nunca más, así que si esta entrada no existiera la
+            decisión sería irreversible. Nace oculta y la muestra
+            `js/pwa-install-ui.js` sólo cuando hay una instalación REAL que
+            ofrecer: con la app ya instalada, o en un navegador que no puede
+            instalarla, la tarjeta no se dibuja.
+          -->
+          <section class="card profile-install-card" data-install-entry hidden>
+            <span class="profile-install-mark" aria-hidden="true">
+              <img src="assets/brand/taba-app-icon-192.png" width="44" height="44" alt="" decoding="async" />
+            </span>
+            <div class="profile-install-copy">
+              <strong data-install-entry-title>Instalar La Taba</strong>
+              <small data-install-entry-copy>Abrila como una app, sin buscar la página cada vez.</small>
+            </div>
+            <button class="secondary-button profile-install-action" type="button" data-install-entry-action>
+              <span data-install-entry-action-label>Instalar</span>
+            </button>
+          </section>
+
           <details class="card profile-business-details">
             <summary>Información del local</summary>
             <div class="profile-business-details-body">
@@ -960,6 +970,124 @@
       </div>
     </dialog>
 
+    <!--
+      LA INVITACIÓN A INSTALAR. Una sola hoja, tres caras.
+
+      Las tres viven en el shell servido y se muestran/ocultan con `hidden`: el
+      texto de la invitación es contenido de la tienda, no una plantilla armada
+      en JavaScript, así que se puede leer y auditar sin ejecutar nada.
+
+        · `android`   — la única cara con instalación de verdad: se abre sólo
+                        cuando el navegador ya nos entregó `beforeinstallprompt`.
+        · `ios`       — en iPhone no existe ningún prompt. Se ofrece explicar el
+                        gesto, y nada más: no se dice "instalada" hasta que una
+                        apertura POSTERIOR se detecte en standalone.
+        · `ios-steps` — el gesto, en tres pasos.
+
+      Quién la abre y cuándo lo decide `js/core/pwa-install.js`.
+    -->
+    <dialog class="install-sheet" data-install-sheet aria-label="Instalar La Taba">
+      <!--
+        `autofocus` sobre la tarjeta y no sobre un botón, a propósito.
+
+        Un `<dialog>` enfoca al abrirse el primer elemento focalizable que
+        encuentra: acá era la ✕, y el navegador le dibujaba su anillo de foco.
+        La hoja se abría con el botón de CERRAR resaltado, que es exactamente la
+        jerarquía al revés. Enfocando el contenedor —`tabindex="-1"`, no entra
+        en el orden de tabulación— el lector de pantalla anuncia igual el
+        diálogo por su `aria-label`, la primera tabulación sigue cayendo en la ✕
+        y no se resalta nada que la persona no haya pedido.
+      -->
+      <div class="install-sheet-card" tabindex="-1" autofocus>
+        <button class="install-sheet-close" type="button" data-install-close aria-label="Cerrar">✕</button>
+
+        <div class="install-sheet-view" data-install-view="android" hidden>
+          <span class="install-sheet-mark" aria-hidden="true">
+            <img src="assets/brand/taba-app-icon-192.png" width="60" height="60" alt="" decoding="async" />
+          </span>
+          <h2 class="install-sheet-title">Llevá La Taba con vos</h2>
+          <p class="install-sheet-copy">Agregá La Taba a tu celular para entrar más rápido a tus pedidos.</p>
+          <div class="install-sheet-actions">
+            <button class="primary-button install-sheet-cta" type="button" data-install-accept>Instalar La Taba</button>
+            <button class="ghost-button install-sheet-later" type="button" data-install-decline>Ahora no</button>
+          </div>
+        </div>
+
+        <div class="install-sheet-view" data-install-view="ios" hidden>
+          <span class="install-sheet-mark" aria-hidden="true">
+            <img src="assets/brand/taba-app-icon-192.png" width="60" height="60" alt="" decoding="async" />
+          </span>
+          <h2 class="install-sheet-title">Agregá La Taba a tu inicio</h2>
+          <p class="install-sheet-copy">Tené La Taba como una app en tu iPhone.</p>
+          <div class="install-sheet-actions">
+            <button class="primary-button install-sheet-cta" type="button" data-install-ios-how>Ver cómo</button>
+            <button class="ghost-button install-sheet-later" type="button" data-install-decline>Ahora no</button>
+          </div>
+        </div>
+
+        <div class="install-sheet-view" data-install-view="ios-steps" hidden>
+          <h2 class="install-sheet-title">Agregá La Taba a tu inicio</h2>
+          <!--
+            Sólo se muestra dentro del navegador embebido de otra app
+            (Instagram, WhatsApp, Facebook): ahí el menú Compartir del sistema
+            no ofrece "Agregar a pantalla de inicio", así que el primer paso
+            real es salir a Safari. Decirlo es la diferencia entre una guía y
+            mandar a alguien a buscar un botón que no existe.
+          -->
+          <p class="install-sheet-copy install-steps-lead" data-install-steps-lead hidden>
+            Estás dentro de otra aplicación. Abrí primero La Taba en <strong>Safari</strong> y seguí estos pasos.
+          </p>
+          <!--
+            El número de cada paso lo pone CSS con un contador, así que el orden
+            que ve la persona es el orden del documento y no hay dos fuentes de
+            verdad. El dibujo de al lado no es decoración: es el MISMO glifo que
+            va a tener que buscar en su teléfono.
+          -->
+          <ol class="install-steps">
+            <li>
+              <span class="install-step-body">
+                Tocá el botón <strong>Compartir</strong>
+                <span class="install-step-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                    <path d="M12 3v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <path d="m8.5 6.5 3.5-3.5 3.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M5 13v5a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <small data-install-steps-where>en la barra de abajo de Safari.</small>
+              </span>
+            </li>
+            <li>
+              <span class="install-step-body">
+                Elegí <strong>Agregar a pantalla de inicio</strong>
+                <span class="install-step-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                    <rect x="3.5" y="3.5" width="17" height="17" rx="4.5" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 8.5v7M8.5 12h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <small>Puede estar más abajo en la lista.</small>
+              </span>
+            </li>
+            <li>
+              <span class="install-step-body">
+                Confirmá <strong>Agregar</strong>
+                <span class="install-step-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                    <path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <small>Arriba a la derecha. El icono de La Taba queda en tu inicio.</small>
+              </span>
+            </li>
+          </ol>
+          <div class="install-sheet-actions">
+            <button class="primary-button install-sheet-cta" type="button" data-install-done>Entendido</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
     <dialog class="pitch-modal" data-pitch-modal aria-labelledby="pitch-title">
       <div class="pitch-card">
         <p class="eyebrow"><span data-product-name>TABA2</span> · canal directo</p>
@@ -1055,6 +1183,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=3"></script>
-    <script type="module" src="js/app.js?v=45"></script>
+    <script type="module" src="js/app.js?v=46"></script>
   </body>
 </html>

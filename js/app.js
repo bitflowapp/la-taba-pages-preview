@@ -127,15 +127,8 @@ import {
   consumeProfileReturnTarget,
 } from './customer-delivery.js';
 import { initializeCustomerProfileView } from './customer-profile-view.js';
-import {
-  dismissIOSGuide,
-  dismissInstallBanner,
-  isInstallBannerDismissed,
-  isIOSGuideDismissed,
-  isStandaloneDisplay,
-  shouldShowAndroidInstallCta,
-  shouldShowIOSInstallGuide,
-} from './core/pwa-install.js';
+import { isStandaloneDisplay } from './core/pwa-install.js';
+import { initPwaInstall } from './pwa-install-ui.js';
 import { initMotion } from './motion.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
@@ -175,6 +168,10 @@ const initialRoute = resolveRoute(window.location.hash.slice(1));
 let activeView = initialRoute.view;
 let lastLivenessSignature = '';
 let freshnessTimer = null;
+// El controlador de la invitación a instalar. Vive fuera de `bootstrap()`
+// porque se cablea temprano —para no perderse `beforeinstallprompt`— y recién
+// se le avisa que puede invitar cuando la tienda terminó de armarse.
+let pwaInstall = null;
 // Pedido pendiente de confirmación al repetir con carrito no vacío.
 let pendingRepeatOrderId = null;
 const CHECKOUT_SUGGESTIONS_DISMISSED_KEY = 'la_taba_checkout_suggestions_dismissed';
@@ -538,7 +535,15 @@ async function bootstrap() {
     // hidratar la sesión persistida.
     renderAll();
     window.TABA_STARTUP_RECOVERY?.hide();
-    initPwaInstall();
+    markDisplayMode();
+    initConnectivityNotice();
+    // Se cablea acá, con la tienda recién pintada, porque `beforeinstallprompt`
+    // llega temprano y perdérselo es perder la instalación de esa visita. La
+    // invitación en sí no se abre todavía: espera a `notifyAppReady()`.
+    pwaInstall = initPwaInstall({ showToast });
+    // Diagnóstico local para QA, igual que `TABA2_MOTION`: no forma parte de
+    // ningún contrato ni cambia el estado de la tienda.
+    window.TABA_PWA_INSTALL = pwaInstall;
     if (resetRequested) {
       if (await maybeResetDemoSession()) return;
     }
@@ -601,6 +606,10 @@ async function bootstrap() {
       setTimeout(() => showToast(message), 600);
     }
     setAppBootstrapState('ready');
+    // Recién ahora: la tienda está armada y usable. Si el arranque hubiera
+    // fallado, esta línea no se alcanza y nadie recibe una invitación encima de
+    // una pantalla rota.
+    pwaInstall?.notifyAppReady();
   } catch (error) {
     setAppBootstrapState('error');
     window.TABA_STARTUP_RECOVERY?.show({
@@ -2262,78 +2271,31 @@ function closePinModal() {
   if (modal?.open) modal.close();
 }
 
-// Onboarding de instalación PWA. No dispara ningún prompt automático: sólo
-// reacciona a beforeinstallprompt (que ya decide el navegador si ofrecer) y
-// muestra guías propias. Nunca se muestra si la app ya corre en standalone.
-function initPwaInstall() {
-  let deferredPrompt = null;
-  const installBanner = $('[data-pwa-install-banner]');
-  const iosBanner = $('[data-pwa-ios-banner]');
+// Aviso honesto de conexión: no promete que pedidos/tracking/GPS sigan
+// funcionando sin internet, sólo informa el estado real de la red.
+function initConnectivityNotice() {
   const offlineBanner = $('[data-pwa-offline-banner]');
+  if (!offlineBanner) return;
+  const updateOfflineBanner = () => { offlineBanner.hidden = navigator.onLine; };
+  updateOfflineBanner();
+  window.addEventListener('online', updateOfflineBanner);
+  window.addEventListener('offline', updateOfflineBanner);
+}
 
-  const showInstallBanner = () => {
-    if (!installBanner || isInstallBannerDismissed()) return;
-    if (!shouldShowAndroidInstallCta({ hasDeferredPrompt: deferredPrompt })) return;
-    installBanner.hidden = false;
-  };
-  const hideInstallBanner = () => { if (installBanner) installBanner.hidden = true; };
-
-  window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
-    deferredPrompt = event;
-  });
-
-  // No interrumpimos el primer recorrido con un modal de instalación. Queda
-  // disponible para una acción explícita de la interfaz si se incorpora luego.
-  window.addEventListener('taba:request-install', showInstallBanner);
-
-  window.addEventListener('appinstalled', () => {
-    deferredPrompt = null;
-    hideInstallBanner();
-  });
-
-  $('[data-pwa-install-action]')?.addEventListener('click', async () => {
-    if (!deferredPrompt) { hideInstallBanner(); return; }
-    hideInstallBanner();
-    try {
-      await deferredPrompt.prompt();
-    } catch (_) {
-      // El usuario cerró el prompt nativo o el navegador lo bloqueó: no pasa nada.
-    }
-    deferredPrompt = null;
-  });
-
-  $('[data-pwa-install-dismiss]')?.addEventListener('click', () => {
-    dismissInstallBanner();
-    hideInstallBanner();
-  });
-
-  // iPhone/iPad Safari: no hay beforeinstallprompt, así que mostramos una
-  // guía propia sólo cuando corresponde (Safari en iOS, no instalada ya).
-  window.addEventListener('taba:request-ios-install-guide', () => {
-    if (iosBanner && !isIOSGuideDismissed() && shouldShowIOSInstallGuide()) {
-      iosBanner.hidden = false;
-    }
-  });
-  $('[data-pwa-ios-dismiss]')?.addEventListener('click', () => {
-    dismissIOSGuide();
-    if (iosBanner) iosBanner.hidden = true;
-  });
-
-  // Aviso honesto de conexión: no promete que pedidos/tracking/GPS sigan
-  // funcionando sin internet, sólo informa el estado real de la red.
-  if (offlineBanner) {
-    const updateOfflineBanner = () => { offlineBanner.hidden = navigator.onLine; };
-    updateOfflineBanner();
-    window.addEventListener('online', updateOfflineBanner);
-    window.addEventListener('offline', updateOfflineBanner);
-  }
-
-  // Si ya está instalada (standalone), no mostramos ningún banner de instalación.
-  if (isStandaloneDisplay()) {
-    hideInstallBanner();
-    if (iosBanner) iosBanner.hidden = true;
-  }
+/*
+ * Abierta desde el icono: la tienda se comporta igual, pero deja de ser una
+ * pestaña y hay que decírselo a la hoja de estilos.
+ *
+ * El único ajuste real es el borde superior. Con `viewport-fit=cover` y la barra
+ * de estado translúcida de iOS, el contenido sube hasta el borde físico de la
+ * pantalla: en una pestaña de Safari eso no se nota porque la barra del
+ * navegador ocupa esa franja, pero instalada la app queda con el reloj y la
+ * batería encima del nombre del comercio. `styles/common.css` le suma
+ * `env(safe-area-inset-top)` a la barra SÓLO en este modo, así que la pestaña
+ * conserva exactamente la geometría que ya estaba certificada.
+ */
+function markDisplayMode() {
+  document.documentElement.dataset.tabaDisplayMode = isStandaloneDisplay() ? 'standalone' : 'browser';
 }
 
 bootstrap();

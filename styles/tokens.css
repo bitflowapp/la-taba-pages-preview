@@ -251,6 +251,11 @@
      ====================================================================== */
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-b: var(--safe-area-bottom);
+  /* El borde de ARRIBA sólo tiene valor con la app instalada: en una pestaña de
+     Safari la barra del navegador ya ocupa esa franja y `env()` devuelve 0. Lo
+     consume `.topbar` bajo `html[data-taba-display-mode="standalone"]`. */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-t: var(--safe-area-top);
   --nav-h: 56px;                                   /* contenido de la nav */
   --cta-h: 52px;                                   /* barra de carrito */
   --stack-gap: 12px;                               /* separación del stack */

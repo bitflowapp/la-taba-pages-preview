@@ -42,6 +42,10 @@ const PHONE = { width: 390, height: 844 };
 const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 15; moto g15) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36';
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1';
 const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+// Chrome para iOS: mismo motor que Safari, pero el Compartir vive en SU menú.
+const IOS_CHROME_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/125.0.0.0 Mobile/15E148 Safari/604.1';
+// El navegador embebido de Instagram: no tiene "Agregar a pantalla de inicio".
+const IOS_WEBVIEW_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 300.0.0.26.111 (iPhone14,3; iOS 17_4; es_AR)';
 const DECISION_KEY = 'TABA_INSTALL_PROMPT_V1';
 
 const sheet = (page) => page.locator('[data-install-sheet]');
@@ -319,6 +323,63 @@ test.describe('iPhone', () => {
     await page.locator('[data-install-entry-action]').click();
     await expect(sheet(page)).toBeVisible();
     await expect(view(page, 'ios')).toBeVisible();
+  });
+});
+
+test.describe('iPhone · Chrome', () => {
+  test.use({ userAgent: IOS_CHROME_UA, viewport: PHONE, hasTouch: true });
+
+  /*
+   * El pedido lo dice con todas las letras: no decirle "tocá Compartir de
+   * Safari" a quien no está en Safari. Es el mismo motor, así que la guía
+   * sirve igual; lo que cambia es DÓNDE está el botón, y esa frase es lo
+   * único que separa una guía de una pista falsa.
+   */
+  test('la guía manda al menú de SU navegador, no a la barra de Safari', async ({ page }) => {
+    await abrir(page);
+    await expect(sheet(page)).toBeVisible({ timeout: 10_000 });
+    await expect(view(page, 'ios')).toBeVisible();
+
+    await page.locator('[data-install-ios-how]').click();
+    await expect(view(page, 'ios-steps')).toBeVisible();
+    await expect(page.locator('[data-install-steps-where]')).toHaveText('en el menú de tu navegador.');
+    await expect(view(page, 'ios-steps')).not.toContainText('barra de abajo de Safari');
+    // Está EN un navegador, así que no se le dice que salga a otro.
+    await expect(page.locator('[data-install-steps-lead]')).toBeHidden();
+    // Y sigue sin haber un botón que prometa instalar: en iOS no existe la API.
+    await expect(page.locator('[data-install-accept]')).toBeHidden();
+  });
+});
+
+test.describe('iPhone · dentro de otra app (WebView)', () => {
+  test.use({ userAgent: IOS_WEBVIEW_UA, viewport: PHONE, hasTouch: true });
+
+  /*
+   * Acá la opción NO EXISTE: el Compartir del navegador embebido de Instagram
+   * no ofrece "Agregar a pantalla de inicio". Abrir una guía sola sería mandar
+   * a alguien a buscar un botón que no está, así que no se invita; y si la
+   * persona la pide desde el Perfil, lo primero que lee es que tiene que salir
+   * a Safari.
+   */
+  test('no se auto-invita, y la guía pedida arranca mandando a Safari', async ({ page }) => {
+    await abrir(page);
+    await page.waitForTimeout(VENTANA_SIN_INVITACION);
+    await expect(sheet(page)).toBeHidden();
+
+    await page.evaluate(() => { window.location.hash = 'perfil'; });
+    await expect(entry(page)).toBeVisible();
+    await expect(entry(page)).toContainText('Agregá La Taba al inicio');
+
+    await page.locator('[data-install-entry-action]').click();
+    await expect(sheet(page)).toBeVisible();
+    await expect(view(page, 'ios')).toBeVisible();
+    await page.locator('[data-install-ios-how]').click();
+
+    const lead = page.locator('[data-install-steps-lead]');
+    await expect(lead).toBeVisible();
+    await expect(lead).toContainText('Safari');
+    // No se promete una instalación que dentro del WebView no puede ocurrir.
+    await expect(page.locator('[data-install-accept]')).toBeHidden();
   });
 });
 

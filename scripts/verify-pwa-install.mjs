@@ -18,13 +18,23 @@
  * iOS agregue el icono al inicio (no hay API). Eso es prueba física.
  *
  * Uso:  node scripts/verify-pwa-install.mjs [--port 8199]
+ *       node scripts/verify-pwa-install.mjs --base https://la-taba.pages.dev
+ *
+ * Con `--base` no se levanta nada: se mide el sitio PUBLICADO, que es el único
+ * que tiene el borde de Cloudflare delante —el `Content-Type` del manifest sale
+ * de `_headers`, y eso un servidor de archivos local no lo reproduce—. Ahí
+ * tampoco se pide `?demo=1`: se mide la tienda real, con su catálogo real.
  */
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
 const port = Number(readArg('--port', '8199'));
-const BASE = `http://127.0.0.1:${port}`;
+const baseRemoto = readArg('--base', '').replace(/\/$/, '');
+const BASE = baseRemoto || `http://127.0.0.1:${port}`;
+// La tienda local no tiene Supabase detrás y necesita el modo demo; la
+// publicada tiene el suyo y hay que mirarla como la mira un cliente.
+const ENTRADA = `${BASE}/${baseRemoto ? '' : '?demo=1'}`;
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1';
 const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 15; moto g15) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36';
 
@@ -37,7 +47,7 @@ const dato = (texto) => lineas.push(`        ${texto}`);
 let server = null;
 let browser = null;
 try {
-  server = await startServer();
+  if (!baseRemoto) server = await startServer();
   browser = await chromium.launch();
   await verificarManifest();
   await verificarIconos();
@@ -58,7 +68,7 @@ process.exit(fallas ? 1 : 0);
 async function verificarManifest() {
   lineas.push('MANIFEST (leído por Chrome, no por nosotros)');
   const page = await (await browser.newContext()).newPage();
-  await page.goto(`${BASE}/?demo=1`, { waitUntil: 'load' });
+  await page.goto(`${ENTRADA}`, { waitUntil: 'load' });
   const cdp = await page.context().newCDPSession(page);
   const respuesta = await cdp.send('Page.getAppManifest');
   const errores = respuesta.errors || [];
@@ -89,7 +99,7 @@ async function verificarIconos() {
   lineas.push('');
   lineas.push('ICONOS');
   const page = await (await browser.newContext()).newPage();
-  await page.goto(`${BASE}/?demo=1`, { waitUntil: 'load' });
+  await page.goto(`${ENTRADA}`, { waitUntil: 'load' });
   const manifest = await (await page.request.get(`${BASE}/manifest.webmanifest`)).json();
 
   for (const icon of manifest.icons) {
@@ -129,7 +139,7 @@ async function verificarDocumento() {
   page.on('console', (mensaje) => {
     if (mensaje.type() === 'error') errores.push(mensaje.text());
   });
-  await page.goto(`${BASE}/?demo=1`, { waitUntil: 'load' });
+  await page.goto(`${ENTRADA}`, { waitUntil: 'load' });
   await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached', timeout: 60_000 });
 
   /*
@@ -204,7 +214,7 @@ async function verificarInvitacion() {
       window.dispatchEvent(evento);
     };
   });
-  await pageAndroid.goto(`${BASE}/?demo=1`, { waitUntil: 'load' });
+  await pageAndroid.goto(`${ENTRADA}`, { waitUntil: 'load' });
   await pageAndroid.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached', timeout: 60_000 });
   await pageAndroid.evaluate(() => window.__fire());
   const hojaAndroid = pageAndroid.locator('[data-install-sheet]');
@@ -218,7 +228,7 @@ async function verificarInvitacion() {
   // iPhone sin instalar.
   const ios = await browser.newContext({ userAgent: IPHONE_UA, viewport: { width: 390, height: 844 }, hasTouch: true });
   const pageIos = await ios.newPage();
-  await pageIos.goto(`${BASE}/?demo=1`, { waitUntil: 'load' });
+  await pageIos.goto(`${ENTRADA}`, { waitUntil: 'load' });
   await pageIos.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached', timeout: 60_000 });
   const hojaIos = pageIos.locator('[data-install-view="ios"]');
   await hojaIos.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => undefined);
@@ -232,7 +242,7 @@ async function verificarInvitacion() {
   // Escritorio.
   const escritorio = await browser.newContext();
   const pageDesktop = await escritorio.newPage();
-  await pageDesktop.goto(`${BASE}/?demo=1`, { waitUntil: 'load' });
+  await pageDesktop.goto(`${ENTRADA}`, { waitUntil: 'load' });
   await pageDesktop.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached', timeout: 60_000 });
   await pageDesktop.waitForTimeout(4000);
   if (!(await pageDesktop.locator('[data-install-sheet]').isVisible())) ok('Escritorio: no aparece ninguna invitación');

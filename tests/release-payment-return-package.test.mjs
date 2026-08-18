@@ -14,7 +14,7 @@ test('el paquete de release incluye las tres rutas de retorno de Mercado Pago', 
 
   for (const state of ['resultado', 'pendiente', 'error']) {
     const page = read(`pago/${state}/index.html`);
-    assert.match(page, /href="\.\.\/\.\.\/styles\.css\?v=51"/);
+    assert.match(page, /href="\.\.\/\.\.\/styles\.css\?v=52"/);
     assert.match(page, /src="\.\.\/\.\.\/js\/payments\/mercadopago-return\.js"/);
   }
 });
@@ -30,7 +30,7 @@ test('el worker conserva una página y el módulo del retorno para cada vuelta o
 
 test('el preflight acepta la versión CSS que exige el candidato', () => {
   const preflight = read('scripts/preflight-staging-package.mjs');
-  assert.match(preflight, /css:\s*'\?v=51'/);
+  assert.match(preflight, /css:\s*'\?v=52'/);
 
   // Antes esto miraba la FORMA: buscaba el literal '50' dentro de una lista
   // escrita a mano. Esa lista dejó de existir —las versiones permitidas ahora se

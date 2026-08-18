@@ -1,25 +1,25 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v78-gondola-neuquen';
+const CACHE_NAME = 'la-taba-runtime-v79-gondola-instalable';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=51',
-  './styles/tokens.css?v=51',
-  './styles/common.css?v=51',
-  './styles/storefront.css?v=51',
-  './styles/catalog.css?v=51',
-  './styles/checkout.css?v=51',
-  './styles/profile.css?v=51',
-  './styles/showcase.css?v=51',
-  './styles/tracking.css?v=51',
-  './styles/business.css?v=51',
-  './styles/rider.css?v=51',
-  './styles/responsive.css?v=51',
-  './styles/brand-home.css?v=51',
+  './styles.css?v=52',
+  './styles/tokens.css?v=52',
+  './styles/common.css?v=52',
+  './styles/storefront.css?v=52',
+  './styles/catalog.css?v=52',
+  './styles/checkout.css?v=52',
+  './styles/profile.css?v=52',
+  './styles/showcase.css?v=52',
+  './styles/tracking.css?v=52',
+  './styles/business.css?v=52',
+  './styles/rider.css?v=52',
+  './styles/responsive.css?v=52',
+  './styles/brand-home.css?v=52',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/motion.css?v=51',
+  './styles/motion.css?v=52',
   './manifest.webmanifest',
   './runtime-config.js',
   './pago/resultado/index.html',
@@ -27,10 +27,19 @@ const ASSETS = [
   './pago/error/index.html',
   './assets/icon.svg',
   './assets/brand/taba2-emblem.svg',
+  /*
+   * El icono de la app entra al precache porque la INTERFAZ lo pinta: la hoja
+   * de instalación y la tarjeta del Perfil lo muestran a 60 y 44 px. Los otros
+   * cinco archivos del juego (512, maskables y el de Apple) no están acá a
+   * propósito: los pide el sistema operativo al instalar, no el documento, y
+   * precachear lo que nadie va a leer desde la página es peso muerto en la
+   * primera visita.
+   */
+  './assets/brand/taba-app-icon-192.png',
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=3',
   './js/startup-recovery.js?v=2',
-  './js/app.js?v=45',
+  './js/app.js?v=46',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -65,6 +74,7 @@ const ASSETS = [
   './js/core/production-cart-storage.js',
   './js/core/promotions.js',
   './js/core/pwa-install.js',
+  './js/pwa-install-ui.js',
   './js/core/realtime-sync.js',
   './js/core/reorder.js',
   './js/core/rider.js',
@@ -267,7 +277,7 @@ self.addEventListener('fetch', (event) => {
  * Cuatro segundos: bien por debajo de los ocho que espera `startup-recovery.js`
  * antes de dar el arranque por perdido, y muy por encima de cualquier respuesta
  * sana. El costo de equivocarse es casi nulo: el precache está versionado
- * (`?v=51`), así que una copia guardada es el MISMO contenido que iba a traer la
+ * (`?v=52`), así que una copia guardada es el MISMO contenido que iba a traer la
  * red, no una versión vieja.
  */
 const PLAZO_DE_RED_MS = 4000;

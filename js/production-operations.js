@@ -77,6 +77,15 @@ let businessIntakeStatus = emptyBusinessIntakeStatus();
 let businessCommandController = null;
 let businessCommandStatus = null;
 let businessOperationsView = 'operation-center';
+/**
+ * ¿Está abierta la hoja de «Más»?
+ *
+ * Vive en el módulo y no en el DOM a propósito. El workspace se vuelve a pintar
+ * cada vez que llega un pedido por realtime, y un estado guardado en el marcado
+ * se perdería en ese repintado: la hoja se cerraría sola en la mano de quien la
+ * acababa de abrir, justo cuando entra trabajo. Ver B19.
+ */
+let panelMoreSheetOpen = false;
 let inventoryRepository = null;
 let posRepository = null;
 let fiscalRepository = null;
@@ -431,6 +440,19 @@ export async function handleProductionOperationsAction(target) {
     return { handled: true, ok: result.ok, message: access.message };
   }
 
+  // La hoja de «Más» se abre y se cierra antes que nada: es chrome, no una
+  // acción del negocio, y no puede quedar tapada por otro `closest`.
+  if (target.closest('[data-panel-more-toggle]')) {
+    panelMoreSheetOpen = !panelMoreSheetOpen;
+    notify();
+    return { handled: true, ok: true, message: '' };
+  }
+  if (target.closest('[data-panel-more-close]')) {
+    panelMoreSheetOpen = false;
+    notify();
+    return { handled: true, ok: true, message: '' };
+  }
+
   const operationsResult = await handleBusinessOperationsAction(target);
   if (operationsResult.handled) {
     if (operationsResult.view) {
@@ -445,6 +467,9 @@ export async function handleProductionOperationsAction(target) {
         return { handled: true, ok: false, message: 'Esa pantalla la abre el dueño o el encargado.' };
       }
       businessOperationsView = nextView;
+      // Elegir un destino cierra la hoja: dejarla abierta encima de la pantalla
+      // que se acaba de pedir obliga a un segundo gesto para ver lo que se pidió.
+      panelMoreSheetOpen = false;
       notify();
       return { handled: true, ok: true, message: '' };
     }
@@ -456,6 +481,7 @@ export async function handleProductionOperationsAction(target) {
     const guard = requireViewAccess('business');
     if (!guard.ok) return { handled: true, ...guard };
     businessOperationsView = 'orders';
+    panelMoreSheetOpen = false;
     notify();
     return { handled: true, ok: true, message: '' };
   }
@@ -1006,6 +1032,7 @@ export function resetProductionOperationsForTests() {
   availableRiderOrders = [];
   activeBusinessRiders = [];
   businessOperationsView = 'operation-center';
+  panelMoreSheetOpen = false;
   inventoryRepository = null;
   posRepository = null;
   fiscalRepository = null;
@@ -1681,16 +1708,63 @@ function describirFoco(workspace) {
   const campo = activo.matches?.('[data-production-cancel-reason]')
     ? 'motivo'
     : activo.matches?.('[data-production-rider-select]') ? 'rider' : '';
-  if (!card || !campo) return null;
-  return {
-    id: idDeLaTarjeta(card),
-    campo,
-    inicio: activo.selectionStart ?? null,
-    fin: activo.selectionEnd ?? null,
-  };
+  if (card && campo) {
+    return {
+      id: idDeLaTarjeta(card),
+      campo,
+      inicio: activo.selectionStart ?? null,
+      fin: activo.selectionEnd ?? null,
+    };
+  }
+  // Todo lo DEMÁS del panel también pierde el foco cuando el repintado
+  // reemplaza el DOM, y hasta acá no se rescataba nada: sólo el motivo de
+  // cancelación y el selector de rider.
+  //
+  // Lo encontró una prueba que se puso intermitente. «El foco recorre la
+  // navegación con teclado» pasaba sola y fallaba dentro de la suite, y la
+  // diferencia era el tiempo: el markup del workspace incluye la marca de la
+  // última sincronización, así que cambia por su cuenta, y cuando cambiaba
+  // entre el `focus()` y el `Tab` el foco se había ido al `body`.
+  //
+  // O sea que quien recorre el Panel con teclado pierde el lugar cada vez que
+  // el reloj avanza. No es un problema de la prueba.
+  const selector = selectorEstable(activo);
+  return selector ? { selector } : null;
+}
+
+/**
+ * Un selector con el que volver a encontrar este control después del repintado.
+ *
+ * Se arma con los `data-*` del propio elemento porque son los que el marcado
+ * vuelve a escribir igual: `data-business-ops-view="payments"` identifica al
+ * mismo destino antes y después. Si el control desapareció —una acción que ya
+ * no corresponde, un pedido que avanzó— el selector no encuentra nada y el foco
+ * NO se restaura, que es lo correcto: devolverlo a otro botón sería peor que
+ * perderlo.
+ */
+function selectorEstable(nodo) {
+  if (nodo.id) return `[id="${nodo.id}"]`;
+  const atributos = Array.from(nodo.attributes || [])
+    .filter((atributo) => atributo.name.startsWith('data-'))
+    // Un valor con comillas o barras rompería el selector; ninguno de los que
+    // usa el Panel las tiene, y si algún día las tuviera es mejor no restaurar
+    // el foco que construir un selector inválido.
+    .filter((atributo) => !/["\\]/.test(atributo.value))
+    .map((atributo) => (atributo.value ? `[${atributo.name}="${atributo.value}"]` : `[${atributo.name}]`));
+  if (!atributos.length) return '';
+  return `${nodo.tagName.toLowerCase()}${atributos.join('')}`;
 }
 
 function restaurarFoco(workspace, foco) {
+  if (foco?.selector) {
+    const candidato = workspace.querySelector(foco.selector);
+    // `preventScroll` sólo en este camino. El campo de texto se restaura sin
+    // él a propósito -quien está escribiendo quiere verlo- pero un botón que
+    // recupera el foco por un repintado del reloj no tiene por qué arrastrar
+    // la página adonde estaba hace un minuto.
+    if (candidato) candidato.focus({ preventScroll: true });
+    return;
+  }
   if (!foco?.id) return;
   const card = Array.from(workspace.querySelectorAll('.production-order-card'))
     .find((candidate) => idDeLaTarjeta(candidate) === foco.id);
@@ -1710,20 +1784,92 @@ function restaurarFoco(workspace, foco) {
 }
 
 // El orden del día: abrir, mirar, atender, preparar, cobrar, cerrar.
-const BUSINESS_VIEW_ORDER = Object.freeze([
-  'day-open', 'operation-center', 'orders', 'payments', 'packing', 'pos', 'scanner',
+/*
+ * El orden en que se dibujan los destinos. Es la lista que la persona VE, y
+ * tiene que contener a todas las superficies que existen: una superficie que no
+ * esta aca no tiene ningun boton que lleve a ella, aunque se pueda abrir, aunque
+ * tenga permiso y aunque su RPC funcione.
+ *
+ * Paso: `team-access` y `operations-config` se agregaron a
+ * BUSINESS_OPERATION_VIEWS -con su etiqueta, su permiso y su despacho- y nadie
+ * las agrego aca. Quedaron invisibles en produccion. Las pruebas no lo vieron
+ * porque llaman a las funciones de render directamente, sin pasar por la
+ * navegacion. `tests/panel-navigation-completa.test.mjs` ata las dos listas para
+ * que la proxima superficie nazca alcanzable.
+ *
+ * `team-access` va temprano a proposito: es el unico destino donde hay una
+ * persona esperando una decision.
+ */
+export const BUSINESS_VIEW_ORDER = Object.freeze([
+  'day-open', 'operation-center', 'orders', 'team-access', 'payments', 'packing', 'pos', 'scanner',
   'product-create', 'inventory-receive', 'inventory-adjust', 'stock-count',
-  'fiscal-status', 'fiscal-setup', 'fiscal-config', 'payments-setup', 'devices', 'day-close',
+  'fiscal-status', 'fiscal-setup', 'fiscal-config', 'operations-config', 'payments-setup',
+  'devices', 'day-close',
 ]);
 
+/*
+ * `product-create` decia «Alta». En un Panel que ahora tambien da de alta
+ * PERSONAS -«Solicitudes de acceso»- ese boton decia lo que no es: se lee como
+ * alta de alguien del equipo y abre el formulario de un producto. Dice lo que
+ * hace.
+ */
 const BUSINESS_VIEW_SHORT_LABELS = Object.freeze({
   'day-open': 'Abrir', 'operation-center': 'Qué pasa', orders: 'Pedidos', payments: 'Pagos',
-  'product-create': 'Alta', 'inventory-receive': 'Recepción', 'day-close': 'Cerrar',
+  'product-create': 'Nuevo producto', 'inventory-receive': 'Recepción',
+  'team-access': 'Solicitudes', 'day-close': 'Cerrar',
 });
+
+/**
+ * Los cuatro destinos que van abajo en un teléfono, por orden de preferencia.
+ *
+ * En escritorio los diecisiete destinos entran en una fila que se desplaza y
+ * eso funciona. En 390px la misma fila se envolvía en SEIS renglones de
+ * píldoras: medido, 290px de navegación antes del primer pedido, con la primera
+ * tarjeta empezando en y≈715 de 844. Quien atiende desde el mostrador tenía que
+ * pasar una pantalla entera de botones para ver que entró un pedido.
+ *
+ * Cuatro y no nueve. La barra inferior es para lo que se toca durante el turno
+ * —lo que entra, lo que hay que mirar, lo que se cobra, lo que se vende en el
+ * mostrador—; todo lo demás es configuración o cierre y vive en la hoja de
+ * «Más», que se abre desde la misma barra.
+ *
+ * Es una preferencia, no una lista fija: se filtra por lo que el rol tiene
+ * permitido, así que un `staff` sin acceso a pagos recibe el siguiente de la
+ * lista en vez de un botón que no puede usar.
+ */
+const BUSINESS_PRIMARY_MOBILE_VIEWS = Object.freeze([
+  'orders', 'operation-center', 'payments', 'pos', 'packing', 'day-open',
+]);
+const BUSINESS_MOBILE_NAV_SLOTS = 4;
+
+/** Los destinos de la barra inferior y los que quedan en la hoja de «Más». */
+export function splitBusinessMobileNavigation(allowedViews, {
+  slots = BUSINESS_MOBILE_NAV_SLOTS,
+  preferred = BUSINESS_PRIMARY_MOBILE_VIEWS,
+  order = BUSINESS_VIEW_ORDER,
+} = {}) {
+  const allowed = new Set(allowedViews);
+  const primary = preferred.filter((view) => allowed.has(view)).slice(0, slots);
+  const primarySet = new Set(primary);
+  const rest = order.filter((view) => allowed.has(view) && !primarySet.has(view));
+  return { primary, rest };
+}
+
+function businessViewLabel(view) {
+  return BUSINESS_VIEW_SHORT_LABELS[view] || businessOperationViewLabel(view);
+}
+
+/** El atributo con el que cada destino se despacha. `orders` tiene el suyo. */
+function businessViewTrigger(view) {
+  return view === 'orders'
+    ? 'data-production-orders-view'
+    : `data-business-ops-view="${escapeAttribute(view)}"`;
+}
 
 function businessWorkspaceMarkup() {
   const role = access.membership?.role;
-  const allowed = new Set(allowedBusinessOperationViews(role));
+  const allowedList = allowedBusinessOperationViews(role);
+  const allowed = new Set(allowedList);
   const paymentMonitor = BUSINESS_ROLES.has(access.membership?.role)
     ? businessPaymentsMarkup()
     : '';
@@ -1740,33 +1886,100 @@ function businessWorkspaceMarkup() {
     .map((view) => `
       <button type="button" class="business-ops-nav-button ${businessOperationsView === view ? 'active' : ''}"
         aria-pressed="${businessOperationsView === view}"
-        ${view === 'orders' ? 'data-production-orders-view' : `data-business-ops-view="${escapeAttribute(view)}"`}>${escapeHtml(BUSINESS_VIEW_SHORT_LABELS[view] || businessOperationViewLabel(view))}</button>`)
+        ${businessViewTrigger(view)}>${escapeHtml(businessViewLabel(view))}</button>`)
     .join('');
+
+  const { primary, rest } = splitBusinessMobileNavigation(allowedList);
+  const enLaHoja = rest.includes(businessOperationsView);
+  const bottomNav = primary.map((view) => `
+      <button type="button" class="panel-nav-item ${businessOperationsView === view ? 'is-active' : ''}"
+        aria-pressed="${businessOperationsView === view}"
+        ${businessViewTrigger(view)}>
+        <span class="panel-nav-ico" aria-hidden="true">${BUSINESS_VIEW_ICONS[view] || BUSINESS_VIEW_ICONS.default}</span>
+        <span class="panel-nav-label">${escapeHtml(businessViewLabel(view))}</span>
+      </button>`).join('');
+  const restLinks = rest.map((view) => `
+      <button type="button" class="panel-more-item ${businessOperationsView === view ? 'is-active' : ''}"
+        aria-pressed="${businessOperationsView === view}"
+        ${businessViewTrigger(view)}>${escapeHtml(businessViewLabel(view))}</button>`).join('');
+
   return `
     <div class="production-ops-head">
-      <div>
+      <div class="production-ops-identity">
         <p class="eyebrow">Panel del negocio</p>
         <h1>Tu día, en un solo lugar</h1>
-        <p>${escapeHtml(roleLabel(role))} · sesión verificada</p>
-        ${businessIntakeStatusMarkup()}
-        ${businessCommandStatusMarkup()}
+        <p class="production-ops-role">${escapeHtml(roleLabel(role))} · sesión verificada</p>
       </div>
-      <button class="ghost-button compact" type="button" data-production-sign-out>Cerrar sesión</button>
+      <button class="ghost-button compact production-ops-signout" type="button" data-production-sign-out>Cerrar sesión</button>
+    </div>
+    <div class="production-ops-status">
+      ${businessIntakeStatusMarkup()}
+      ${businessCommandStatusMarkup()}
     </div>
     <nav class="production-operations-shortcuts" aria-label="Atajos del día">${shortcuts}</nav>
     ${operations}
+    <nav class="panel-bottom-nav" aria-label="Secciones del panel" data-panel-bottom-nav>
+      ${bottomNav}
+      <button type="button" class="panel-nav-item panel-nav-more ${enLaHoja ? 'is-active' : ''}"
+        aria-expanded="${panelMoreSheetOpen}" aria-controls="panel-more-sheet" data-panel-more-toggle>
+        <span class="panel-nav-ico" aria-hidden="true">${BUSINESS_VIEW_ICONS.more}</span>
+        <span class="panel-nav-label">Más</span>
+      </button>
+    </nav>
+    <div class="panel-more-backdrop" data-panel-more-close ${panelMoreSheetOpen ? '' : 'hidden'}></div>
+    <section class="panel-more-sheet" id="panel-more-sheet" data-panel-more-sheet
+      role="dialog" aria-label="Más secciones del panel" ${panelMoreSheetOpen ? '' : 'hidden'}>
+      <div class="panel-more-head">
+        <strong>Más secciones</strong>
+        <button class="ghost-button compact" type="button" data-panel-more-close>Cerrar</button>
+      </div>
+      <div class="panel-more-grid">${restLinks}</div>
+    </section>
   `;
 }
+
+/**
+ * Un glifo por destino. Son caracteres, no un set de iconos: el proyecto no
+ * sirve ninguna fuente que no sea del sistema y agregar una por la barra
+ * inferior sería pagar una descarga por decoración. Cada uno va con
+ * `aria-hidden` y su etiqueta de texto al lado, así que no cargan significado.
+ */
+const BUSINESS_VIEW_ICONS = Object.freeze({
+  orders: '▦',
+  'operation-center': '◎',
+  payments: '$',
+  pos: '▤',
+  packing: '▣',
+  'day-open': '▲',
+  more: '⋯',
+  default: '•',
+});
 
 function businessCommandStatusMarkup() {
   const status = businessCommandStatus;
   if (!status) return '<p class="production-command-status">Persistencia local iniciando…</p>';
   const attention = Number(status.attentionRequired || 0);
   const lastSync = status.lastReconciledAt ? dateTime(status.lastReconciledAt) : 'sin reconciliación confirmada';
-  return `<div class="production-command-status is-${escapeAttribute(status.connectionState)}" data-business-command-status>
+  // `is-quiet` = no hay nada que hacer: conectado, sin comandos esperando y sin
+  // nada que requiera intervención. Es lo que le permite al teléfono mostrar
+  // una palabra en vez de tres datos; el marcado no cambia, sólo deja de ocupar
+  // la pantalla mientras la respuesta sea «todo bien». Se calcula acá y no en
+  // CSS porque la hoja de estilo no puede saber si el contador está en cero.
+  const quiet = status.connectionState === 'connected'
+    && Number(status.pendingCount || 0) === 0
+    && attention === 0;
+  const pending = Number(status.pendingCount || 0);
+  // El recuento en cero no se escribe: la etiqueta de al lado ya dice «Sin
+  // comandos pendientes», así que «0 comandos pendientes» es la misma frase dos
+  // veces. Con uno o más, el número es el dato y se muestra siempre —también en
+  // escritorio—, porque ahí sí hay algo esperando.
+  const pendingSpan = pending > 0
+    ? `<span>${pending} comando${pending === 1 ? '' : 's'} pendiente${pending === 1 ? '' : 's'}</span>`
+    : '';
+  return `<div class="production-command-status is-${escapeAttribute(status.connectionState)}${quiet ? ' is-quiet' : ''}" data-business-command-status>
     <strong>${escapeHtml(status.connectionLabel)}</strong>
     <span>Última reconciliación: ${escapeHtml(lastSync)}</span>
-    <span>${status.pendingCount} comando${status.pendingCount === 1 ? '' : 's'} pendiente${status.pendingCount === 1 ? '' : 's'}</span>
+    ${pendingSpan}
     ${attention ? `<span class="production-intake-error">${attention} requiere${attention === 1 ? '' : 'n'} intervención</span>` : ''}
   </div>`;
 }
@@ -1903,8 +2116,10 @@ function businessIntakeStatusMarkup() {
   const error = businessIntakeStatus.phase === 'error' && businessIntakeStatus.error
     ? `<span class="production-intake-error">${escapeHtml(businessIntakeStatus.error)}</span>`
     : '';
+  // Ver `businessCommandStatusMarkup`: `is-quiet` es «no hay nada que mirar».
+  const quiet = businessIntakeStatus.phase === 'connected' && hasRecentSnapshot;
   return `
-    <div class="production-intake-status is-${escapeAttribute(businessIntakeStatus.phase)}" data-business-intake-status>
+    <div class="production-intake-status is-${escapeAttribute(businessIntakeStatus.phase)}${quiet ? ' is-quiet' : ''}" data-business-intake-status>
       <strong>${escapeHtml(label)}</strong>
       <span>${escapeHtml(lastSync)}</span>
       ${error}
@@ -1986,6 +2201,24 @@ function riderOfferMarkup(offer) {
   return '';
 }
 
+/**
+ * ¿El cliente escribió algo, o es el relleno del saneador?
+ *
+ * `sanitizeNotes()` devuelve 'Sin notas' cuando el campo viene vacío, así que
+ * `order.notes` SIEMPRE es verdadero y la tarjeta imprimía «Observaciones: Sin
+ * notas» en todos los pedidos que no tenían ninguna. Un renglón por tarjeta que
+ * no dice nada, multiplicado por la cola entera.
+ *
+ * El relleno se compara acá y no se cambia en el saneador: hay superficies del
+ * cliente —el historial, el perfil— donde «Sin notas» es la respuesta correcta
+ * a «¿qué aclaró?». Lo que no corresponde es ocupar una línea del tablero para
+ * decirlo.
+ */
+function hasCustomerNotes(order) {
+  const notes = String(order?.notes || '').trim();
+  return notes.length > 0 && notes.toLowerCase() !== 'sin notas';
+}
+
 function businessOrderMarkup(order) {
   const next = canAdvanceProductionBusinessOrder(order, businessPayments)
     ? nextBusinessStatus(order)
@@ -2047,7 +2280,7 @@ function businessOrderMarkup(order) {
         ? `<p class="form-hint">Referencia: ${escapeHtml(order.addressDetails.reference)}</p>`
         : ''}
       ${order.deliveryMode === 'pickup' ? '' : renderDeliveryPoint(order.addressDetails)}
-      ${order.notes
+      ${hasCustomerNotes(order)
         ? `<p class="production-order-notes"><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>`
         : ''}
       <div class="button-row">

@@ -25,6 +25,13 @@
   --taba-line-strong: #878f9d;
   --taba-warm-white: #fffdfb;
   --taba-white: #fff;
+  /* La tinta que va ENCIMA de `--taba-ink` cuando la tinta se usa como
+     superficie (chip activo, botón de acción secundaria fuerte). En la
+     superficie clara la tinta es oscura y el texto va blanco; en el Panel del
+     negocio la tinta es clara y el texto tiene que ser el fondo. Sin este par,
+     `background: var(--taba-ink); color: #fff` queda blanco sobre blanco al
+     retematizar, que es exactamente lo que pasaba. */
+  --ink-contrast: var(--taba-white);
   --taba-success: #0f7a3d;
   --taba-warning: #8a5300;
   --taba-danger: #b3121b;

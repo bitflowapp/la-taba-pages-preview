@@ -1,3 +1,272 @@
+/* ============================================================================
+   PANEL DEL NEGOCIO — superficie de trabajo, grafito neutro.
+   ============================================================================
+   El Panel no es una vidriera: es la pantalla que alguien mira ocho horas
+   seguidas mientras entran pedidos. Hasta acá heredaba la superficie clara del
+   cliente —blanco #fff sobre gris #f5f7f9— y encima traía 113 literales de
+   color repartidos por esta hoja, 58 distintos, la mayoría grises que no
+   pertenecían a ninguna escala. Dos problemas separados: el blanco cansa, y sin
+   sistema cada bloque elegía su propio gris.
+
+   Esta escala los resuelve juntos. Cinco escalones de una sola familia, medidos
+   en luminancia relativa, y ninguna tinta por debajo de 4,5:1 sobre la
+   superficie donde se usa.
+
+   ## Por qué no son los mismos valores del storefront
+
+   El cliente ya vive sobre grafito (`--brand-bg` … `--shelf-raised`), pero ese
+   grafito tira a azul y lleva dorado, brillo de góndola y sombras largas: es
+   una vitrina, y tiene que sentirse así. El Panel usa la MISMA idea con una
+   familia más neutra y un escalón más alta, porque acá lo que se mira es texto
+   denso, no packshots, y porque el brillo de la góndola no puede cruzar
+   (B26: Customer = comprar, Business = operar).
+
+   ## Los cinco escalones
+
+     hueco     #16181b   cabecera de tabla, canaleta, pista de progreso
+     fondo     #1b1e22   fondo de página
+     superficie#222529   panel, sección, barra
+     tarjeta   #282c31   la tarjeta de pedido
+     elevada   #31353b   campo, chip, fila activa, hover
+
+   Cada paso es un escalón apenas perceptible (1,06 · 1,09 · 1,10 · 1,14) y ésa
+   es la intención: la jerarquía la dibuja el hairline, no un salto de luz.
+
+   ## La tinta, medida
+
+                    hueco   fondo  superf.  tarjeta  elevada
+     ink   #eceef1  15,30   14,39   13,24    12,09    10,61
+     ink-2 #b6bcc4   9,30    8,75    8,05     7,34     6,45
+     muted #9aa0a9   6,76    6,35    5,84     5,34     4,68
+
+   `--panel-ink` es blanco roto y no #fff: sobre grafito el blanco puro vibra, y
+   la diferencia de contraste (12,09 contra 13,3) no compra nada.
+
+   `--panel-ink-muted` es #9aa0a9 y no #8f959e, que era el candidato obvio: ese
+   daba 4,09:1 sobre la superficie elevada y ahí es donde se usa para las
+   etiquetas dentro de un campo. Lo mismo con el rojo legible, #ff7d84 y no
+   #ff6b73 (4,46:1 sobre elevada).
+
+   ## El rojo
+
+   `--taba-red` (#d0000d) es una SUPERFICIE, no una tinta: sobre la tarjeta da
+   2,47:1. Como fondo de botón con texto blanco da 5,69:1 y ahí sí sirve. Para
+   texto rojo sobre grafito existe `--panel-red-ink`. Es la misma regla que ya
+   rige en la góndola del cliente, y por eso el rojo del Panel queda reservado a
+   la acción principal, al pedido que espera y al error crítico — no a la
+   decoración (B4).
+   ========================================================================== */
+body[data-active-view="business"] {
+  --panel-sunken: #16181b;
+  --panel-bg: #1b1e22;
+  --panel-surface: #222529;
+  --panel-card: #282c31;
+  --panel-raised: #31353b;
+
+  /* Hairline de 1px: 1,46:1 sobre la tarjeta. Sutil pero presente; es lo que
+     separa una fila de la siguiente sin dibujar una reja. */
+  --panel-line: rgb(255 255 255 / 12%);
+  /* Borde que PORTA información (campo, selector, chip activo): 3,16:1 sobre
+     la tarjeta, por encima del mínimo de WCAG 1.4.11 para componentes. */
+  --panel-line-strong: rgb(255 255 255 / 36%);
+
+  --panel-ink: #eceef1;
+  --panel-ink-2: #b6bcc4;
+  --panel-ink-muted: #9aa0a9;
+
+  --panel-success: #5fd08a;
+  --panel-warning: #f2b544;
+  --panel-danger: #ff7d84;
+  --panel-red-ink: #ff7d84;
+  --panel-info: #8ab4ff;
+
+  /* Lavados: el color del estado como FONDO, siempre por debajo del hairline.
+     Un chip de estado no puede competir con el botón de acción. */
+  --panel-success-wash: rgb(95 208 138 / 14%);
+  --panel-warning-wash: rgb(242 181 68 / 15%);
+  --panel-danger-wash: rgb(255 125 132 / 15%);
+  --panel-red-wash: rgb(208 0 13 / 20%);
+  --panel-info-wash: rgb(138 180 255 / 14%);
+
+  /* Sobre grafito la sombra casi no despega: el borde hace el trabajo y la
+     sombra sólo aporta profundidad. Una sola por clase de superficie. */
+  --panel-shadow: 0 10px 28px rgb(0 0 0 / 34%);
+  --panel-shadow-sheet: 0 -12px 40px rgb(0 0 0 / 46%);
+
+  /* --------------------------------------------------------------------------
+     Los tokens genéricos que esta hoja YA consumía, reapuntados a la escala.
+     --------------------------------------------------------------------------
+     Son los que se usan como TINTA o como línea, nunca como texto sobre un
+     fondo de color: reapuntarlos arregla de una vez las decenas de
+     `var(--taba-muted, #6d675f)` repartidas por el archivo, en lugar de
+     reescribir cada una.
+
+     `--taba-white` y `--taba-red` quedan AFUERA a propósito. El primero es
+     además la tinta del botón primario; el segundo es la superficie de acción,
+     y los dos tienen que seguir significando lo mismo acá que en el resto de la
+     aplicación.
+     ----------------------------------------------------------------------- */
+  --taba-ink: var(--panel-ink);
+  --taba-graphite: var(--panel-ink);
+  --taba-graphite-soft: var(--panel-ink-2);
+  --taba-muted: var(--panel-ink-2);
+  --taba-muted-soft: var(--panel-ink-muted);
+  --taba-surface: var(--panel-card);
+  --taba-subtle: var(--panel-surface);
+  --taba-border: var(--panel-line);
+  --taba-border-soft: var(--panel-line);
+  --taba-border-medium: var(--panel-line-strong);
+  --taba-line-strong: var(--panel-line-strong);
+  --taba-success: var(--panel-success);
+  --taba-warning: var(--panel-warning);
+  --taba-danger: var(--panel-danger);
+  --taba-red-quiet: var(--panel-red-ink);
+  --taba-red-soft: var(--panel-red-wash);
+  --taba-red-border-soft: color-mix(in srgb, var(--taba-red) 44%, transparent);
+  --taba-focus: var(--panel-info);
+  /* Acá la tinta es CLARA, así que lo que va encima de ella es el fondo. */
+  --ink-contrast: var(--panel-bg);
+  /* La barra de acción pegada al pie: translúcida, pero sobre grafito. */
+  --panel-sticky: color-mix(in srgb, var(--panel-surface) 94%, transparent);
+
+  background: var(--panel-bg);
+  color: var(--panel-ink);
+}
+
+/* --------------------------------------------------------------------------
+   Los componentes compartidos, retematizados en el ámbito del Panel.
+   --------------------------------------------------------------------------
+   `common.css` los pinta con la paleta clara y así tiene que seguir para el
+   cliente. Acá se los vuelve a pintar UNA vez, en un bloque, en vez de repetir
+   colores en cada regla de esta hoja.
+
+   `--taba-white` NO se reasigna a propósito: además de superficie es la TINTA
+   del botón primario (`.primary-button { color: var(--taba-white) }`).
+   Reapuntarlo dejaría el texto grafito sobre rojo, que es justamente la clase
+   de efecto colateral por la que un tema no se hace remapeando tokens de uso
+   mixto.
+   ----------------------------------------------------------------------- */
+body[data-active-view="business"] [data-view="business"] {
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] .section.soft {
+  background: var(--panel-surface);
+}
+
+body[data-active-view="business"] :is(h1, h2, h3, strong, dt, dd, legend) {
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] .card {
+  border-color: var(--panel-line);
+  background: var(--panel-card);
+  box-shadow: var(--panel-shadow);
+}
+
+body[data-active-view="business"] .eyebrow {
+  color: var(--panel-ink-muted);
+}
+
+body[data-active-view="business"] :is(.form-hint, small, .muted, p) {
+  color: var(--panel-ink-2);
+}
+
+body[data-active-view="business"] label {
+  color: var(--panel-ink-2);
+}
+
+body[data-active-view="business"] :is(input, select, textarea) {
+  border-color: var(--panel-line-strong);
+  background: var(--panel-raised);
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] :is(input, textarea)::placeholder {
+  color: var(--panel-ink-muted);
+}
+
+body[data-active-view="business"] .secondary-button {
+  border-color: var(--panel-line-strong);
+  background: var(--panel-raised);
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] .secondary-button:hover {
+  border-color: var(--panel-line-strong);
+  background: color-mix(in srgb, var(--panel-raised) 82%, white);
+}
+
+body[data-active-view="business"] :is(.ghost-button, .icon-button) {
+  color: var(--panel-ink-2);
+}
+
+body[data-active-view="business"] :is(.ghost-button, .icon-button):hover {
+  background: var(--panel-raised);
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] .danger-button {
+  border-color: color-mix(in srgb, var(--panel-danger) 46%, transparent);
+  background: var(--panel-danger-wash);
+  color: var(--panel-danger);
+}
+
+body[data-active-view="business"] .empty-state {
+  color: var(--panel-ink-2);
+}
+
+body[data-active-view="business"] .empty-state strong {
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] :is(.warning-box, .notice-box) {
+  border-color: color-mix(in srgb, var(--panel-warning) 40%, transparent);
+  background: var(--panel-warning-wash);
+  color: var(--panel-warning);
+}
+
+body[data-active-view="business"] :focus-visible {
+  outline-color: var(--panel-info);
+}
+
+/* --------------------------------------------------------------------------
+   La barra superior, sobre grafito.
+   --------------------------------------------------------------------------
+   `.topbar` es papel translúcido: `rgb(255 253 251 / 92%)` con desenfoque
+   detrás. Sobre el fondo claro del cliente eso es correcto; sobre el Panel
+   dejaba una franja pálida encima de la superficie de trabajo —lo primero que
+   ve el ojo al entrar es un rectángulo blanco— y el wordmark, que hereda la
+   tinta del sistema, quedaba ilegible contra ella.
+   ----------------------------------------------------------------------- */
+body[data-active-view="business"] .topbar {
+  border-bottom-color: var(--panel-line);
+  /* Opaca, no translúcida. El papel esmerilado del cliente deja ver la vitrina
+     pasando por debajo y ahí suma; sobre una cola de pedidos deja pasar texto
+     denso a media opacidad y el wordmark se lee sobre un fondo que cambia con
+     el scroll. Una barra de herramienta tiene que estar quieta. */
+  background: var(--panel-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--panel-ink);
+}
+
+body[data-active-view="business"] .topbar-ops-sound {
+  border-color: var(--panel-line-strong);
+  background: var(--panel-raised);
+  color: var(--panel-ink-2);
+}
+
+body[data-active-view="business"] .topbar-ops-sound.on {
+  border-color: var(--taba-red);
+  color: var(--panel-ink);
+}
+
+/* La insignia del contador se recorta contra la barra, no contra el papel. */
+body[data-active-view="business"] .topbar-ops-sound-count {
+  border-color: var(--panel-surface);
+}
+
 .admin-section {
   max-width: var(--content);
 }
@@ -5,50 +274,55 @@
 /* Centro operativo: scanner, inventario, packing, POS y estado fiscal. */
 .business-ops-center { display: grid; gap: 18px; min-width: 0; }
 .business-ops-nav { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; scrollbar-width: thin; }
-.business-ops-nav-button { min-height: 44px; flex: 0 0 auto; border: 1px solid var(--border, #d9dde3); border-radius: 999px; background: #fff; color: #252a30; padding: 0 16px; font: inherit; font-weight: 750; cursor: pointer; }
-.business-ops-nav-button.active { border-color: #b20e18; box-shadow: inset 0 0 0 1px #b20e18; color: #9c0c15; }
-.business-ops-feedback { margin: 0; border-left: 4px solid #b20e18; border-radius: 10px; background: #fff2f3; padding: 12px 14px; color: #591015; font-weight: 700; }
-.business-ops-panel { display: grid; gap: 18px; border: 1px solid var(--border, #d9dde3); border-radius: 18px; background: #fff; padding: clamp(16px, 2.5vw, 28px); box-shadow: 0 10px 30px rgb(28 33 39 / 7%); }
-.business-ops-panel > header h2 { margin: 3px 0 6px; color: #20242a; }
-.business-ops-panel > header p:last-child { margin: 0; color: #5d6570; }
+.business-ops-nav-button { min-height: var(--tap); flex: 0 0 auto; border: 1px solid var(--panel-line-strong); border-radius: 999px; background: var(--panel-raised); color: var(--panel-ink); padding: 0 16px; font: inherit; font-weight: 750; cursor: pointer; }
+/* El destino activo se marca con el rojo de la marca como SUPERFICIE, no como
+   tinta: sobre grafito el rojo no se lee, pero como fondo con texto blanco da
+   5,69:1 y además es la única cosa roja de la barra, que es lo que hace que se
+   encuentre de un vistazo. */
+.business-ops-nav-button.active { border-color: var(--taba-red); background: var(--taba-red); color: var(--taba-white); }
+.business-ops-feedback { margin: 0; border-left: 4px solid var(--taba-red); border-radius: 10px; background: var(--panel-red-wash); padding: 12px 14px; color: var(--panel-red-ink); font-weight: 700; }
+.business-ops-panel { display: grid; gap: 18px; border: 1px solid var(--panel-line); border-radius: 18px; background: var(--panel-card); padding: clamp(16px, 2.5vw, 28px); box-shadow: var(--panel-shadow); }
+.business-ops-panel > header h2 { margin: 3px 0 6px; color: var(--panel-ink); }
+.business-ops-panel > header p:last-child { margin: 0; color: var(--panel-ink-2); }
 .business-scanner-input, .business-ops-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: end; }
-.business-scanner-input label, .business-ops-form label, .business-fiscal-row label { display: grid; gap: 7px; color: #363c44; font-weight: 700; }
-.business-scanner-input input, .business-ops-form input, .business-ops-form select, .business-fiscal-row input { min-height: 48px; width: 100%; border: 1px solid #b9c0c9; border-radius: 11px; background: #fff; padding: 9px 12px; color: #20242a; font: inherit; }
+.business-scanner-input label, .business-ops-form label, .business-fiscal-row label { display: grid; gap: 7px; color: var(--panel-ink-2); font-weight: 700; }
+.business-scanner-input input, .business-ops-form input, .business-ops-form select, .business-fiscal-row input { min-height: 48px; width: 100%; border: 1px solid var(--panel-line-strong); border-radius: 11px; background: var(--panel-raised); padding: 9px 12px; color: var(--panel-ink); font: inherit; }
 .business-ops-check { display: flex !important; grid-template-columns: auto 1fr; align-items: center; }
 .business-ops-check input { min-height: auto; width: 20px; height: 20px; }
-.business-scan-result { border: 1px dashed #bbc1c9; border-radius: 14px; background: #f7f8fa; padding: 16px; }
-.business-scan-result.is-valid { border-style: solid; border-color: #79ad87; background: #f0faf3; }
-.business-scan-result.is-invalid { border-style: solid; border-color: #d4656b; background: #fff2f3; }
-.business-scan-result > span { display: block; margin-top: 4px; color: #626a74; }
+.business-scan-result { border: 1px dashed var(--panel-line-strong); border-radius: 14px; background: var(--panel-surface); padding: 16px; }
+.business-scan-result.is-valid { border-style: solid; border-color: color-mix(in srgb, var(--panel-success) 52%, transparent); background: var(--panel-success-wash); }
+.business-scan-result.is-invalid { border-style: solid; border-color: color-mix(in srgb, var(--panel-danger) 52%, transparent); background: var(--panel-danger-wash); }
+.business-scan-result > span { display: block; margin-top: 4px; color: var(--panel-ink-2); }
 .business-scan-result dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
 .business-scan-result dl div { min-width: 0; }
-.business-scan-result dt { color: #68717c; font-size: .78rem; font-weight: 700; text-transform: uppercase; }
-.business-scan-result dd { margin: 4px 0 0; overflow-wrap: anywhere; color: #242930; font-weight: 750; }
+.business-scan-result dt { color: var(--panel-ink-muted); font-size: .78rem; font-weight: 700; text-transform: uppercase; }
+.business-scan-result dd { margin: 4px 0 0; overflow-wrap: anywhere; color: var(--panel-ink); font-weight: 750; }
 .business-ops-cart, .business-ops-progress { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.business-ops-cart li, .business-ops-progress li { display: flex; justify-content: space-between; gap: 12px; align-items: center; min-height: 48px; border-bottom: 1px solid #e6e9ed; padding: 8px 0; }
-.business-fiscal-lock { display: flex; flex-wrap: wrap; gap: 8px 18px; border: 1px solid #e4b64f; border-radius: 12px; background: #fff9e9; padding: 14px; color: #654a0c; }
-.business-fiscal-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto; gap: 10px 14px; align-items: center; border-top: 1px solid #e7e9ec; padding: 15px 0; }
+.business-ops-cart li, .business-ops-progress li { display: flex; justify-content: space-between; gap: 12px; align-items: center; min-height: 48px; border-bottom: 1px solid var(--panel-line); padding: 8px 0; }
+.business-fiscal-lock { display: flex; flex-wrap: wrap; gap: 8px 18px; border: 1px solid color-mix(in srgb, var(--panel-warning) 44%, transparent); border-radius: 12px; background: var(--panel-warning-wash); padding: 14px; color: var(--panel-warning); }
+.business-fiscal-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto; gap: 10px 14px; align-items: center; border-top: 1px solid var(--panel-line); padding: 15px 0; }
 .business-fiscal-row > div { display: grid; gap: 3px; }
-.business-fiscal-row small { color: #69717b; }
-.business-status { border-radius: 999px; padding: 5px 9px; background: #eceff2; font-size: .78rem; font-weight: 800; }
-.business-status.success { background: #e4f6e9; color: #175f2c; }
-.business-status.warning { background: #fff0c8; color: #6d4c00; }
-.business-status.danger { background: #ffe2e4; color: #8b151d; }
+.business-fiscal-row small { color: var(--panel-ink-muted); }
+.business-status { border-radius: 999px; padding: 5px 9px; background: var(--panel-raised); color: var(--panel-ink-2); font-size: .78rem; font-weight: 800; }
+.business-status.success { background: var(--panel-success-wash); color: var(--panel-success); }
+.business-status.warning { background: var(--panel-warning-wash); color: var(--panel-warning); }
+.business-status.danger { background: var(--panel-danger-wash); color: var(--panel-danger); }
 .business-fiscal-actions, .business-fiscal-credit, .business-fiscal-preview { display: grid; gap: 10px; grid-column: 1 / -1; }
 .business-fiscal-print { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-column: 1 / -1; }
-.business-fiscal-credit { border: 1px solid #e7e9ec; border-radius: 10px; padding: 10px; }
+.business-fiscal-credit { border: 1px solid var(--panel-line); border-radius: 10px; padding: 10px; }
 .business-fiscal-credit-line { display: grid; grid-template-columns: minmax(180px, 1fr) repeat(3, minmax(100px, 1fr)); gap: 8px; align-items: end; }
 .business-fiscal-credit-line label { display: grid; gap: 4px; font-size: .8rem; }
-.business-fiscal-hash { color: #53606c; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .78rem; }
-.business-fiscal-error { color: #8b151d !important; grid-column: 1 / -1; }
-.business-fiscal-preview { border: 1px solid #d6dde5; border-radius: 12px; padding: 12px; margin: 14px 0; }
-.business-fiscal-preview iframe { width: 100%; min-height: 540px; border: 1px solid #d6dde5; border-radius: 8px; background: #fff; }
-.production-operations-shortcuts { display: flex; gap: 8px; overflow-x: auto; margin: 4px 0 18px; padding-bottom: 8px; }
-.production-command-status { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: #5a626d; font-size: .86rem; }
-.production-command-status strong { color: #262b31; }
-.production-command-status.is-offline strong, .production-command-status.is-server_unavailable strong, .production-command-status.is-session_expired strong { color: #a20f19; }
+.business-fiscal-hash { color: var(--panel-ink-muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .78rem; }
+.business-fiscal-error { color: var(--panel-danger) !important; grid-column: 1 / -1; }
+.business-fiscal-preview { border: 1px solid var(--panel-line); border-radius: 12px; padding: 12px; margin: 14px 0; }
+/* El visor del comprobante conserva fondo blanco: adentro va un PDF pensado
+   para papel, y teñirlo de grafito mentiría sobre lo que se va a imprimir. */
+.business-fiscal-preview iframe { width: 100%; min-height: 540px; border: 1px solid var(--panel-line-strong); border-radius: 8px; background: var(--taba-white); }
+.production-command-status { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: var(--panel-ink-2); font-size: .86rem; }
+.production-command-status strong { color: var(--panel-ink); }
+.production-command-status.is-offline strong, .production-command-status.is-server_unavailable strong, .production-command-status.is-session_expired strong { color: var(--panel-danger); }
 .production-cancel-control { flex: 1 1 190px; }
-.production-cancel-control input { min-height: 42px; width: 100%; border: 1px solid #bdc3cb; border-radius: 9px; padding: 8px 10px; font: inherit; }
+.production-cancel-control input { min-height: var(--tap); width: 100%; border: 1px solid var(--panel-line-strong); border-radius: 9px; background: var(--panel-raised); padding: 8px 10px; color: var(--panel-ink); font: inherit; }
 @media (max-width: 720px) {
   .business-scanner-input, .business-ops-form, .business-fiscal-print, .business-scan-result dl, .business-fiscal-credit-line { grid-template-columns: 1fr; }
   .business-fiscal-row { grid-template-columns: 1fr; }
@@ -177,7 +451,7 @@
   padding: 0 6px;
   border-radius: var(--radius-pill);
   background: var(--taba-red);
-  color: white;
+  color: var(--taba-white);
   font-size: 11px;
   line-height: 1;
 }
@@ -186,7 +460,7 @@
   padding: 18px 20px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-md);
-  background: white;
+  background: var(--taba-surface, #fff);
 }
 
 .business-inbox-main {
@@ -222,7 +496,7 @@
 .report-period-tab.active {
   background: var(--taba-ink);
   box-shadow: none;
-  color: #fff;
+  color: var(--ink-contrast);
 }
 
 /* ==========================================================================
@@ -305,9 +579,9 @@
   gap: 10px;
   min-height: var(--tap);
   padding: 6px 12px;
-  border: 1px solid #f0d9ae;
+  border-color: color-mix(in srgb, var(--taba-warning) 44%, transparent);
   border-radius: var(--radius-sm);
-  background: #fff4e0;
+  background: color-mix(in srgb, var(--taba-warning) 15%, transparent);
   color: var(--taba-warning);
   font-size: 13px;
   font-weight: 700;
@@ -330,7 +604,7 @@
 .inbox-feed .main-order-action {
   border-color: var(--taba-ink);
   background: var(--taba-ink);
-  color: #fff;
+  color: var(--ink-contrast);
 }
 
 .inbox-feed .main-order-action:hover {
@@ -365,7 +639,7 @@
   padding: 14px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-sm);
-  background: white;
+  background: var(--taba-surface, #fff);
 }
 
 .stat-tile small,
@@ -414,21 +688,21 @@
 }
 
 .status-chip.preparing {
-  border-color: #f0d9ae;
-  background: #fff4e0;
+  border-color: color-mix(in srgb, var(--taba-warning) 44%, transparent);
+  background: color-mix(in srgb, var(--taba-warning) 15%, transparent);
   color: var(--taba-warning);
 }
 
 .status-chip.ready {
-  border-color: #b7ddc6;
-  background: #e8f5ed;
+  border-color: color-mix(in srgb, var(--taba-success) 44%, transparent);
+  background: color-mix(in srgb, var(--taba-success) 14%, transparent);
   color: var(--taba-success);
 }
 
 .status-chip.way {
-  border-color: #bcd0f2;
-  background: #eaf1fd;
-  color: #1a5fd0;
+  border-color: color-mix(in srgb, var(--panel-info, #1a5fd0) 44%, transparent);
+  background: color-mix(in srgb, var(--panel-info, #1a5fd0) 14%, transparent);
+  color: var(--panel-info, #1a5fd0);
 }
 
 .status-chip.cancelled {
@@ -487,7 +761,7 @@
   padding: 16px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-sm);
-  background: white;
+  background: var(--taba-surface, #fff);
   box-shadow: var(--shadow-xs);
 }
 
@@ -609,7 +883,7 @@
   min-height: 44px;
   border: 1px solid var(--taba-border-strong);
   border-radius: var(--radius-xs);
-  background: white;
+  background: var(--taba-surface, #fff);
   color: var(--taba-ink);
 }
 
@@ -721,7 +995,7 @@
   padding: 20px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-md);
-  background: white;
+  background: var(--taba-surface, #fff);
 }
 
 .business-collapsible {
@@ -768,7 +1042,7 @@
   padding: 13px;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-sm);
-  background: white;
+  background: var(--taba-surface, #fff);
 }
 
 .catalog-stock-actions,
@@ -888,7 +1162,7 @@
     overflow: auto;
     border: 1px solid var(--taba-border);
     border-radius: var(--radius-md);
-    background: white;
+    background: var(--taba-surface, #fff);
   }
 
   /* Fila de la cola: selecciona, no actúa. */
@@ -899,13 +1173,13 @@
     border: 1px solid var(--taba-border);
     border-left: 3px solid var(--taba-border-medium);
     border-radius: var(--radius-sm);
-    background: white;
+    background: var(--taba-surface, #fff);
   }
 
   .inbox-order.is-compact.accent-received { border-left-color: var(--taba-red); }
   .inbox-order.is-compact.accent-preparing { border-left-color: var(--taba-warning); }
   .inbox-order.is-compact.accent-ready { border-left-color: var(--taba-success); }
-  .inbox-order.is-compact.accent-way { border-left-color: #1a5fd0; }
+  .inbox-order.is-compact.accent-way { border-left-color: var(--panel-info, #1a5fd0); }
 
   .inbox-order.is-compact.is-selected {
     border-color: var(--taba-ink);
@@ -984,7 +1258,7 @@
     gap: 10px;
     padding: 14px 18px;
     border-bottom: 1px solid var(--taba-border);
-    background: white;
+    background: var(--taba-surface, #fff);
   }
 
   .d-detail-head .inbox-time {
@@ -1011,7 +1285,7 @@
     padding: 12px 16px;
     border: 1px solid var(--taba-border);
     border-radius: var(--radius-md);
-    background: white;
+    background: var(--taba-surface, #fff);
   }
 
   .d-rail .primary-action-block {
@@ -1239,7 +1513,7 @@
     height: var(--b-nav-block);
     padding: 3px 8px calc(9px + var(--safe-b));
     border-top: 1px solid var(--taba-border);
-    background: rgb(255 253 251 / 97%);
+    background: var(--panel-sticky, rgb(255 253 251 / 97%));
     -webkit-backdrop-filter: blur(18px);
     backdrop-filter: blur(18px);
   }
@@ -1324,7 +1598,7 @@
   overflow: hidden;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-md);
-  background: white;
+  background: var(--taba-surface, #fff);
 }
 
 .b-row {
@@ -1473,7 +1747,7 @@
 
 .operation-metric.requires-attention,
 .daily-reconciliation-row.has-difference {
-  border-color: #b66b16;
+  border-color: var(--taba-warning);
 }
 
 .operation-alerts,
@@ -1486,15 +1760,15 @@
 }
 
 .operation-alert.severity-critical {
-  border-left: 5px solid #9f1d20;
+  border-left: 5px solid var(--taba-danger);
 }
 
 .operation-alert.severity-action_required {
-  border-left: 5px solid #b66b16;
+  border-left: 5px solid var(--taba-warning);
 }
 
 .operation-alert.severity-warning {
-  border-left: 5px solid #d3a125;
+  border-left: 5px solid var(--taba-warning);
 }
 
 .daily-reconciliation-list {
@@ -1565,9 +1839,9 @@
   color: var(--taba-muted, #6d675f);
 }
 
-.operation-health.tone-critical .operation-health-headline { border-left-color: #9f1d20; }
-.operation-health.tone-attention .operation-health-headline { border-left-color: #b66b16; }
-.operation-health.tone-calm .operation-health-headline { border-left-color: #2f7a4f; }
+.operation-health.tone-critical .operation-health-headline { border-left-color: var(--taba-danger); }
+.operation-health.tone-attention .operation-health-headline { border-left-color: var(--taba-warning); }
+.operation-health.tone-calm .operation-health-headline { border-left-color: var(--taba-success); }
 
 .operation-health-grid {
   display: grid;
@@ -1603,10 +1877,10 @@
   color: var(--taba-muted, #6d675f);
 }
 
-.tone-critical { border-left-color: #9f1d20; }
-.tone-attention { border-left-color: #b66b16; }
-.tone-calm { border-left-color: #2f7a4f; }
-.tone-info { border-left-color: #2f5f8a; }
+.tone-critical { border-left-color: var(--taba-danger); }
+.tone-attention { border-left-color: var(--taba-warning); }
+.tone-calm { border-left-color: var(--taba-success); }
+.tone-info { border-left-color: var(--panel-info, #2f5f8a); }
 .tone-muted { border-left-color: var(--taba-border, #dedbd5); }
 
 button.operation-metric {
@@ -1673,9 +1947,9 @@ button.operation-metric {
   padding: 0.8rem 1rem;
 }
 
-.business-wizard-step.is-done { border-left-color: #2f7a4f; }
-.business-wizard-step.is-current { border-left-color: #b66b16; }
-.business-wizard-step.is-blocked { border-left-color: #9f1d20; }
+.business-wizard-step.is-done { border-left-color: var(--taba-success); }
+.business-wizard-step.is-current { border-left-color: var(--taba-warning); }
+.business-wizard-step.is-blocked { border-left-color: var(--taba-danger); }
 
 .business-wizard-step p,
 .business-wizard-step small {
@@ -1704,8 +1978,8 @@ button.operation-metric {
 }
 
 .business-wizard-step.is-done .business-wizard-index {
-  background: #2f7a4f;
-  color: #fff;
+  background: var(--taba-success);
+  color: var(--ink-contrast);
 }
 
 /* Tableros de estado: facturación, dispositivos, apertura y cierre. */
@@ -1796,7 +2070,7 @@ button.operation-metric {
 }
 
 .payment-refund-form {
-  border: 1px solid #9f1d20;
+  border: 1px solid var(--taba-danger);
   border-radius: 12px;
   margin-top: 0.75rem;
   padding: 0.85rem;
@@ -1992,5 +2266,616 @@ button.operation-metric {
   .access-request-actions .ghost-button {
     width: auto;
     padding-inline: 20px;
+  }
+}
+
+/* ============================================================================
+   NAVEGACIÓN DEL PANEL EN TELÉFONO
+   ============================================================================
+   En escritorio los diecisiete destinos entran en una fila que se desplaza y
+   funciona. En 390px la misma fila se envolvía en SEIS renglones de píldoras:
+   medido, 290px de navegación, con la primera tarjeta de pedido empezando en
+   y≈715 de 844. Quien atiende desde el mostrador tenía que pasar una pantalla
+   entera de botones para ver que entró un pedido.
+
+   Debajo de 1020px la fila desaparece y la navegación baja: cuatro destinos
+   fijos —lo que se toca durante el turno— más «Más», que abre una hoja con el
+   resto. Cuatro y no nueve: una barra con nueve destinos no es una barra, es la
+   misma pared acostada.
+
+   La reserva de espacio ya existía. `responsive.css` deja
+   `calc(var(--nav-h) + var(--safe-b) + var(--stack-gap))` de padding inferior
+   en la sección del panel por debajo de 1020px, así que esta barra usa
+   exactamente `--nav-h` y no inventa una segunda medida que después se
+   desincroniza.
+   ========================================================================== */
+
+.panel-bottom-nav,
+.panel-more-sheet,
+.panel-more-backdrop {
+  display: none;
+}
+
+@media (max-width: 1020px) {
+  /* La fila de píldoras se va; sus destinos siguen alcanzables, abajo. */
+  body[data-active-view="business"] .production-operations-shortcuts {
+    display: none;
+  }
+
+  /* --------------------------------------------------------------------------
+     La cabecera deja de ser un cartel.
+     --------------------------------------------------------------------------
+     «Tu día, en un solo lugar» a 42px ocupaba dos renglones y ~110px. Es una
+     frase de bienvenida en una herramienta que se abre veinte veces por turno:
+     el contexto lo da la barra, no un titular.
+     ----------------------------------------------------------------------- */
+  body[data-active-view="business"] .production-ops-head {
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  body[data-active-view="business"] .production-ops-head .eyebrow {
+    display: none;
+  }
+
+  body[data-active-view="business"] .production-ops-head h1 {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  body[data-active-view="business"] .production-ops-role {
+    margin: 2px 0 0;
+    color: var(--panel-ink-muted);
+    font-size: 12px;
+  }
+
+  body[data-active-view="business"] .production-ops-signout {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* --------------------------------------------------------------------------
+     El estado de la conexión: UNA línea, no tres bloques.
+     --------------------------------------------------------------------------
+     Antes se apilaban el estado de la bandeja y el de la cola de comandos, cada
+     uno con su párrafo. En un teléfono son 120px que dicen «todo bien» y
+     empujan el trabajo hacia abajo. Se comprimen a una fila que se desplaza; lo
+     que sí cambia de color cuando hay un problema sigue cambiando (B20).
+     ----------------------------------------------------------------------- */
+  body[data-active-view="business"] .production-ops-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-bottom: 12px;
+  }
+
+  body[data-active-view="business"] .production-ops-status > * {
+    margin: 0;
+    font-size: 11.5px;
+  }
+
+  /* --------------------------------------------------------------------------
+     Cuando todo está bien, el estado es UNA palabra.
+     --------------------------------------------------------------------------
+     «Conectado · Última sincronización: 16/8, 09:54 p. m.» y «Sin comandos
+     pendientes · Última reconciliación: … · 0 comandos pendientes» son cinco
+     datos para decir que no pasa nada. En 390px ocupaban dos renglones enteros
+     encima del trabajo.
+
+     La marca de tiempo y el recuento siguen en el DOM —una prueba que los busca
+     los encuentra, y el lector de pantalla los lee— pero dejan de ocupar la
+     pantalla mientras la respuesta sea «todo bien». En cuanto el estado deja de
+     ser el bueno vuelven a mostrarse, que es cuando aportan (B20).
+     ----------------------------------------------------------------------- */
+  body[data-active-view="business"] .production-intake-status.is-quiet > span,
+  body[data-active-view="business"] .production-command-status.is-quiet > span {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* --------------------------------------------------------------------------
+     La barra inferior.
+     -------------------------------------------------------------------------- */
+  body[data-active-view="business"] .panel-bottom-nav {
+    position: fixed;
+    z-index: var(--z-bottomnav);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    align-items: stretch;
+    height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    border-top: 1px solid var(--panel-line);
+    background: var(--panel-surface);
+  }
+
+  body[data-active-view="business"] .panel-nav-item {
+    display: grid;
+    min-width: 0;
+    /* 48px de alto útil: por encima del mínimo de 44 y cómodo con el pulgar. */
+    min-height: 48px;
+    align-content: center;
+    justify-items: center;
+    gap: 2px;
+    padding: 4px 2px;
+    border: 0;
+    background: transparent;
+    color: var(--panel-ink-muted);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  body[data-active-view="business"] .panel-nav-ico {
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  body[data-active-view="business"] .panel-nav-label {
+    overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* El destino activo se marca con la tinta, no con un fondo rojo: cinco
+     botones y uno rojo permanente convertiría el rojo en decoración, y el rojo
+     de esta pantalla tiene que seguir queriendo decir «acción» (B4). */
+  body[data-active-view="business"] .panel-nav-item.is-active {
+    color: var(--panel-ink);
+  }
+
+  body[data-active-view="business"] .panel-nav-item.is-active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    width: 26px;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--taba-red);
+  }
+
+  body[data-active-view="business"] .panel-nav-item {
+    position: relative;
+  }
+
+  /* --------------------------------------------------------------------------
+     La hoja de «Más».
+     -------------------------------------------------------------------------- */
+  body[data-active-view="business"] .panel-more-backdrop:not([hidden]) {
+    position: fixed;
+    z-index: var(--z-backdrop);
+    inset: 0;
+    display: block;
+    border: 0;
+    background: rgb(0 0 0 / 52%);
+  }
+
+  body[data-active-view="business"] .panel-more-sheet:not([hidden]) {
+    position: fixed;
+    z-index: var(--z-sheet);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    gap: 12px;
+    max-height: min(72dvh, 560px);
+    overflow-y: auto;
+    padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--panel-line);
+    border-radius: 16px 16px 0 0;
+    background: var(--panel-surface);
+    box-shadow: var(--panel-shadow-sheet);
+    overscroll-behavior: contain;
+  }
+
+  body[data-active-view="business"] .panel-more-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  body[data-active-view="business"] .panel-more-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+  }
+
+  body[data-active-view="business"] .panel-more-item {
+    min-height: 48px;
+    padding: 0 14px;
+    border: 1px solid var(--panel-line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--panel-raised);
+    color: var(--panel-ink);
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  body[data-active-view="business"] .panel-more-item.is-active {
+    border-color: var(--taba-red);
+    color: var(--panel-ink);
+  }
+}
+
+/* ============================================================================
+   EL TABLERO DE PEDIDOS EN TELÉFONO
+   ============================================================================
+   Medido a 390×844 con el tema grafito y la barra inferior ya puestos: la
+   primera tarjeta empezaba en y≈200 —eso ya estaba resuelto— pero medía 590px
+   de alto. Un pedido por pantalla. Quien atiende no puede ver que entraron dos
+   sin scrollear, y "¿cuántos me quedan?" es la pregunta que se hace cada dos
+   minutos durante un turno.
+
+   Lo que ocupaba el alto no era el trabajo: eran cuatro cajas de metadatos de
+   64px cada una (HORA · ENTREGA · PRODUCTOS · TOTAL) apiladas de a dos, más el
+   contacto en formato ficha con etiqueta arriba y valor abajo.
+
+   Acá esos bloques se comprimen. **No se esconde nada** (B9): el teléfono, el
+   pago, la dirección, las observaciones, los productos y la asignación de rider
+   siguen todos en la tarjeta y siguen todos en el DOM. Lo que cambia es que
+   dejan de ocupar el lugar de un formulario para ocupar el de una fila.
+
+   La jerarquía que queda es la de B10: pedido, estado, cliente, dirección,
+   total, pago, rider, acción siguiente.
+   ========================================================================== */
+
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .production-order-list {
+    gap: 10px;
+  }
+
+  body[data-active-view="business"] .production-order-card {
+    gap: 10px;
+    padding: 14px;
+  }
+
+  /* El código y el cliente mandan; el estado va arriba a la derecha y no
+     empuja al título a una segunda línea. */
+  body[data-active-view="business"] .production-order-head {
+    align-items: start;
+    gap: 10px;
+  }
+
+  body[data-active-view="business"] .production-order-code {
+    font-size: 16px;
+  }
+
+  /* --------------------------------------------------------------------------
+     Los metadatos dejan de ser cajas y pasan a ser una línea.
+     --------------------------------------------------------------------------
+     Cuatro recuadros de 64px con etiqueta en versalita y valor en negrita
+     ocupaban 128px para decir cuatro cosas de una palabra. Como fila con
+     separadores ocupan 20px y se leen igual de rápido, porque lo que hace
+     legible un dato corto es el orden, no el marco.
+     ----------------------------------------------------------------------- */
+  /* Dos columnas y sin separadores. Con `flex-wrap` y un «·» entre datos, el
+     separador quedaba huérfano al principio del renglón cada vez que la línea
+     se partía —medido: «· Total $ 8.600,00» abriendo la segunda fila—, y eso no
+     se puede corregir desde CSS porque la hoja de estilo no sabe dónde cortó el
+     texto. La rejilla parte donde uno decide, no donde alcanza el ancho. */
+  body[data-active-view="business"] .production-order-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3px 12px;
+    font-size: 12.5px;
+  }
+
+  body[data-active-view="business"] .production-order-meta > div {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 5px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  body[data-active-view="business"] .production-order-meta dt {
+    color: var(--panel-ink-muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-transform: none;
+  }
+
+  body[data-active-view="business"] .production-order-meta dd {
+    font-size: 12.5px;
+    font-weight: 750;
+  }
+
+  /* El total es el único metadato que decide algo de plata: se queda con el
+     peso visual que los otros tres pierden. */
+  body[data-active-view="business"] .production-order-meta > div:last-child dd {
+    color: var(--panel-ink);
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  /* Contacto: de ficha de dos líneas por dato a una sola fila. */
+  body[data-active-view="business"] .production-order-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    margin: 0;
+    font-size: 12.5px;
+  }
+
+  body[data-active-view="business"] .production-order-contact > div {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+
+  body[data-active-view="business"] .production-order-contact dt {
+    color: var(--panel-ink-muted);
+    font-weight: 600;
+  }
+
+  body[data-active-view="business"] .production-order-contact dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  body[data-active-view="business"] .production-order-items {
+    gap: 2px;
+    font-size: 13px;
+  }
+
+  body[data-active-view="business"] .production-order-address {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  /* --------------------------------------------------------------------------
+     La acción, al alcance del pulgar.
+     --------------------------------------------------------------------------
+     La acción siguiente es lo que una persona viene a hacer a esta tarjeta, así
+     que ocupa el ancho completo y va última. «Cancelar con motivo» NO comparte
+     fila con ella: son la decisión opuesta y a 390px terminaban pegadas, con el
+     campo de motivo exprimido entre las dos.
+     ----------------------------------------------------------------------- */
+  body[data-active-view="business"] .production-order-card .button-row {
+    display: grid;
+    gap: 8px;
+  }
+
+  body[data-active-view="business"] .production-order-card .button-row > .primary-button {
+    width: 100%;
+    min-height: 50px;
+    font-size: 15px;
+  }
+
+  body[data-active-view="business"] .production-cancel-control {
+    flex: 1 1 auto;
+  }
+
+  body[data-active-view="business"] .production-order-card .button-row > .ghost-button {
+    justify-self: start;
+  }
+
+  /* La asignación de rider se apila: el selector necesita el ancho completo
+     para que quepa el nombre y la capacidad. */
+  body[data-active-view="business"] .production-rider-assignment {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  body[data-active-view="business"] .production-rider-assignment label {
+    display: grid;
+    gap: 4px;
+  }
+
+  body[data-active-view="business"] .production-rider-assignment select {
+    min-height: 48px;
+  }
+
+  body[data-active-view="business"] .production-rider-assignment .secondary-button {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+/* ============================================================================
+   EL PANEL EN ESCRITORIO — usar el ancho, no estirarlo
+   ============================================================================
+   El teléfono era el problema urgente, pero arreglarlo dejó al escritorio como
+   lo que B6 pide no hacer: un teléfono grande. Medido a 1440×900, una tarjeta
+   de pedido ocupaba los 1140px del contenido para mostrar UN pedido, con el
+   teléfono y el medio de pago apilados en formato ficha —etiqueta arriba, valor
+   abajo— usando 140px de alto para dos datos de una línea.
+
+   Acá el ancho se usa para lo que sirve: ver más de un pedido a la vez.
+   ========================================================================== */
+
+@media (min-width: 1200px) {
+  /* Un tablero de dos columnas a partir de 1200px, tres a partir de 1700.
+     `auto-fill` con un mínimo de 440px hace las dos cosas sin un segundo
+     breakpoint: el mínimo es el ancho en el que una tarjeta de pedido sigue
+     siendo cómoda, no un número redondo. */
+  body[data-active-view="business"] .production-order-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+    align-items: start;
+    gap: 14px;
+  }
+
+  /* La cola de pagos comparte el criterio: son tarjetas del mismo tamaño. */
+  body[data-active-view="business"] .production-payment-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    align-items: start;
+    gap: 14px;
+  }
+}
+
+@media (min-width: 1021px) {
+  /* El contacto en una línea también en escritorio. La ficha con etiqueta
+     arriba y valor abajo no aporta nada cuando el dato entra al lado, y en una
+     tarjeta que ahora comparte fila con otra el alto vale. */
+  body[data-active-view="business"] .production-order-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 0;
+  }
+
+  body[data-active-view="business"] .production-order-contact > div {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  body[data-active-view="business"] .production-order-contact dt {
+    color: var(--panel-ink-muted);
+    font-weight: 600;
+  }
+
+  body[data-active-view="business"] .production-order-contact dd {
+    margin: 0;
+    font-weight: 700;
+  }
+}
+
+/* ============================================================================
+   LA CABECERA DEL PANEL, TAMBIÉN EN ESCRITORIO
+   ============================================================================
+   La compactación de la cabecera se había hecho sólo por debajo de 1020px, y la
+   medida mostró por qué eso no alcanzaba: a 1366×768 —una notebook de trabajo,
+   no un caso raro— quedaban 420px de chrome antes del primer pedido sobre 768px
+   de alto. Más de la mitad de la pantalla para llegar a la cola.
+
+   `.section-head h1` mide `clamp(28px, 4vw, 42px)` porque es el titular de una
+   vista de tienda. «Tu día, en un solo lugar» a 42px, con su rótulo arriba y su
+   línea de rol abajo, son 100px que dicen dónde estás cuando la barra ya lo
+   dice.
+
+   El titular no desaparece: baja a 22px y pasa a ser el nombre de la pantalla,
+   que es lo que es. Lo mismo que ya se había hecho en teléfono, por la misma
+   razón, con el número que lo justifica.
+   ========================================================================== */
+
+@media (min-width: 1021px) {
+  body[data-active-view="business"] .production-ops-head {
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+
+  body[data-active-view="business"] .production-ops-head .eyebrow {
+    margin-bottom: 2px;
+    font-size: 11px;
+  }
+
+  body[data-active-view="business"] .production-ops-head h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  body[data-active-view="business"] .production-ops-role {
+    margin: 2px 0 0;
+    color: var(--panel-ink-muted);
+    font-size: 12.5px;
+  }
+
+  /* El estado va en UNA fila, al lado de la cabecera y no debajo de ella. */
+  body[data-active-view="business"] .production-ops-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+
+  body[data-active-view="business"] .production-ops-status > * {
+    margin: 0;
+  }
+
+  body[data-active-view="business"] :is(.production-intake-status, .production-command-status) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    align-items: baseline;
+  }
+
+  /* Los diecisiete destinos en UNA fila que se desplaza, no en dos que se
+     envuelven: dos renglones de píldoras son 100px, y la segunda fila cambia de
+     contenido según el ancho, así que la posición de un destino deja de ser
+     estable. Una fila que se corre mantiene el orden. */
+  body[data-active-view="business"] .production-operations-shortcuts {
+    flex-wrap: nowrap;
+    margin: 2px 0 14px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+}
+
+/* ============================================================================
+   LOS METADATOS DEL PEDIDO, EN UNA LÍNEA A CUALQUIER ANCHO
+   ============================================================================
+   La compactación de HORA · ENTREGA · PRODUCTOS · TOTAL se había hecho sólo por
+   debajo de 1020px. El argumento no dependía del ancho: cuatro recuadros de
+   64px con etiqueta en versalita para cuatro valores de una palabra son cuatro
+   marcos alrededor de nada, y en un tablero de dos columnas el alto vale igual
+   que en un teléfono.
+
+   Medido a 1366×768 —la notebook más chica que el proyecto soporta— con los
+   recuadros: 380px de chrome más una tarjeta de 437px son 817px sobre 768. La
+   primera tarjeta de la cola no entraba entera en la pantalla.
+   ========================================================================== */
+
+@media (min-width: 1021px) {
+  body[data-active-view="business"] .production-order-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    font-size: 13px;
+  }
+
+  body[data-active-view="business"] .production-order-meta > div {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  body[data-active-view="business"] .production-order-meta dt {
+    color: var(--panel-ink-muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: none;
+  }
+
+  body[data-active-view="business"] .production-order-meta dd {
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  body[data-active-view="business"] .production-order-meta > div:last-child dd {
+    font-size: 15px;
+    font-weight: 850;
+  }
+
+  /* El aire de arriba de la sección: 32px de respiro tienen sentido en una
+     vista de tienda que empieza con un titular. Acá arriba hay una barra y
+     abajo hay trabajo. */
+  body[data-active-view="business"] .section {
+    padding-top: 16px;
   }
 }

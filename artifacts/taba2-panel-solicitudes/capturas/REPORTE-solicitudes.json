@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "label": "solicitudes",
+  "generatedAtUtc": "2026-08-17T23:04:08.646Z",
+  "viewports": 11,
+  "screens": 1,
+  "combinations": 11,
+  "summary": {
+    "horizontalOverflow": 0,
+    "smallTouchTargets": 9,
+    "lowContrastPairs": 9,
+    "errors": 2,
+    "density": []
+  },
+  "measurements": [
+    {
+      "label": "solicitudes",
+      "viewport": "360x740",
+      "viewportClass": "movil",
+      "screen": "team-access",
+      "error": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:8152/#business\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    },
+    {
+      "label": "solicitudes",
+      "viewport": "375x812",
+      "viewportClass": "movil",
+      "screen": "team-access",
+      "error": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:8152/#business\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    },
+    {
+      "label": "solicitudes",
+      "viewport": "390x844",
+      "viewportClass": "movil",
+      "width": 390,
+      "height": 844,
+      "screen": "team-access",
+      "title": "Solicitudes de acceso",
+      "shot": "solicitudes-390x844-team-access.png",
+      "scrollWidth": 390,
+      "horizontalOverflow": false,
+      "overflowCulprits": [],
+      "smallTargets": [
+        "▦\n        Pedidos 89×29",
+        "◎\n        Qué pasa 100×29",
+        "$\n        Pagos 71×29",
+        "▤\n        Mostrador 107×29",
+        "⋯\n        Más 64×29"
+      ],
+      "lowContrast": [
+        "\"Esperando\" 2.22:1",
+        "\"▦\" 1.02:1",
+        "\"Pedidos\" 1.02:1",
+        "\"◎\" 1.02:1",
+        "\"Qué pasa\" 1.02:1",
+        "\"$\" 1.02:1",
+        "\"Pagos\" 1.02:1",
+        "\"▤\" 1.02:1"
+      ]
+    },
+    {
+      "label": "solicitudes",
+      "viewport": "393x851",
+      "viewportClass": "movil",
+      "width": 393,
+      "height": 851,
+      "screen": "team-access",
+      "title": "Solicitudes de acceso",
+      "shot": "solicitudes-393x851-team-access.png",
+      "scrollWidth": 393,
+      "horizontalOverflow": false,
+      "overflowCulprits": [],
+      "smallTargets": [
+        "▦\n        Pedidos 89×29",
+        "◎\n        Qué pasa 100×29",
+        "$\n        Pagos 71×29",
+        "▤\n        Mostrador 107×29",
+        "⋯\n        Más 64×29"
+      ],
+      "lowContrast": [
+        "\"Esperando\" 2.22:1",
+        "\"▦\" 1.02:1",
+        "\"Pedidos\" 1.02:1",
+        "\"◎\" 1.02:1",
+        "\"Qué pasa\" 1.02:1",
+        "\"$\" 1.02:1",
+        "\"Pagos\" 1.02:1",
+        "\"▤\" 1.02:1"
+      ]
+    },
+    {
+      "label": "solicitudes",
+      "viewport": "412x915",
+      "viewportClass": "movil",
+      "width": 412,
+      "height": 915,
+      "screen": "team-access",
+      "title": "Solicitudes de acceso",
+      "shot": "solicitudes-412x915-team-access.png",
+      "scrollWidth": 412,
+      "horizontalOverflow": false,
+      "overflowCulprits": [],
+      "smallTargets": [
+        "▦\n        Pedidos 89×29",
+        "◎\n        Qué pasa 100×29",
+        "$\n        Pagos 71×29",
+        "▤\n        Mostrador 107×29",
+        "⋯\n        Más 64×29"
+      ],
+      "lowContrast": [
+        "\"Esperando\" 2.22:1",
+        "\"▦\" 1.02:1",
+        "\"Pedidos\" 1.02:1",
+        "\"◎\" 1.02:1",
+        "\"Qué pasa\" 1.02:1",
+        "\"$\" 1.02:1",
+        "\"Pagos\" 1.02:1",
+        "\"▤\" 1.02:1"
+      ]
+    },
+    {
+      "label": "solicitudes",
+      "viewport": "430x932",
+      "viewportClass": "movil",
+      "width": 430,
+      "height": 932,
+      "screen": "team-access",
+      "title": "Solicitudes de acceso",
+      "shot": "solicitudes-430x932-team-access.png",
+      "scrollWidth": 430,
+      "horizontalOverflow": false,
+      "overflowCulprits": [],
+      "smallTargets": [
+        "▦\n        Pedidos 89×29",
+        "◎\n        Qué pasa 100×29",
+        "$\n        Pagos 71×29",
+        "▤\n        Mostrador 107×29",
+        "⋯\n        Más 64×29"
+      ],
+      "lowContrast": [
+        "\"Esperando\" 2.22:1",
+        "\"▦\" 1.02:1",
+        "\"Pedidos\" 1.02:1",
+        "\"◎\" 1.02:1",
+        "\"Qué pasa\" 1.02:1",
+        "\"$\" 1.02:1",
+        "\"Pagos\" 1.02:1",
+        "\"▤\" 1.02:1"
+      ]
+    },
+    {
+      "label": "solicitudes",
+      "viewport": "844x390-landscape",
+      "viewportClass": "movil-apaisado",
+      "width": 844,
+      "height": 390,
+      "screen": "team-access",
+      "title": "Solicitudes de acceso",
+      "shot": "solicitudes-844x390-landscape-team-access.png",
+      "scrollWidth": 844,
+      "horizontalOverflow": false,
+      "overflowCulprits": [],
+      "smallTargets": [
+        "▦\n        Pedidos 89×29",
+        "◎\n        Qué pasa 100×29",
+        "$\n        Pagos 71×29",
+        "▤\n        Mostrador 107×29",
+        "⋯\n        Más 64×29"
+      ],
+      "lowContrast": [
+        "\"Esperando\" 2.22:1",
+        "\"▦\" 1.02:1",
+        "\"Pedidos\" 1.02:1",
+        "\"◎\" 1.02:1",
+        "\"Qué pasa\" 1.02:1",
+        "\"$\" 1.02:1",
+        "\"Pagos\" 1.02:1",
+        "\"▤\" 1.02:1"
+      ]
+    },
+    {
+      "label": "solicitudes",
+      "viewport": "768x1024",
+      "viewportClass": "tablet",
+      "width": 768,
+      "height": 1024,
+      "screen": "team-access",
+      "title": "Solicitudes de acceso",
+      "shot": "solicitudes-768x1024-team-access.png",
+      "scrollWidth": 768,
+      "horizontalOverflow": false,
+      "overflowCulprits": [],
+      "smallTargets": [
+        "▦\n        Pedidos 89×29",
+        "◎\n        Qué pasa 100×29",
+        "$\n        Pagos 71×29",
+        "▤\n        Mostrador 107×29",
+        "⋯\n        Más 64×29"
+      ],
+      "lowContrast": [
+        "\"Esperando\" 2.22:1",
+        "\"▦\" 1.02:1",
+        "\"Pedidos\" 1.02:1",
+        "\"◎\" 1.02:1",
+        "\"Qué pasa\" 1.02:1",
+        "\"$\" 1.02:1",
+        "\"Pagos\" 1.02:1",
+        "\"▤\" 1.02:1"
+      ]
+    },
+    {
+      "label": "solicitudes",
+      "viewport": "1366x768",
+      "viewportClass": "escritorio",
+      "width": 1366,
+      "height": 768,
+      "screen": "team-access",
+      "title": "Solicitudes de acceso",
+      "shot": "solicitudes-1366x768-team-access.png",
+      "scrollWidth": 1366,
+      "horizontalOverflow": false,
+      "overflowCulprits": [],
+      "smallTargets": [
+        "▦\n        Pedidos 89×29",
+        "◎\n        Qué pasa 100×29",
+        "$\n        Pagos 71×29",
+        "▤\n        Mostrador 107×29",
+        "⋯\n        Más 64×29"
+      ],
+      "lowContrast": [
+        "\"Esperando\" 2.22:1",
+        "\"▦\" 1.02:1",
+        "\"Pedidos\" 1.02:1",
+        "\"◎\" 1.02:1",
+        "\"Qué pasa\" 1.02:1",
+        "\"$\" 1.02:1",
+        "\"Pagos\" 1.02:1",
+        "\"▤\" 1.02:1"
+      ]
+    },
+    {
+      "label": "solicitudes",
+      "viewport": "1440x900",
+      "viewportClass": "escritorio",
+      "width": 1440,
+      "height": 900,
+      "screen": "team-access",
+      "title": "Solicitudes de acceso",
+      "shot": "solicitudes-1440x900-team-access.png",
+      "scrollWidth": 1440,
+      "horizontalOverflow": false,
+      "overflowCulprits": [],
+      "smallTargets": [
+        "▦\n        Pedidos 89×29",
+        "◎\n        Qué pasa 100×29",
+        "$\n        Pagos 71×29",
+        "▤\n        Mostrador 107×29",
+        "⋯\n        Más 64×29"
+      ],
+      "lowContrast": [
+        "\"Esperando\" 2.22:1",
+        "\"▦\" 1.02:1",
+        "\"Pedidos\" 1.02:1",
+        "\"◎\" 1.02:1",
+        "\"Qué pasa\" 1.02:1",
+        "\"$\" 1.02:1",
+        "\"Pagos\" 1.02:1",
+        "\"▤\" 1.02:1"
+      ]
+    },
+    {
+      "label": "solicitudes",
+      "viewport": "1920x1080",
+      "viewportClass": "escritorio",
+      "width": 1920,
+      "height": 1080,
+      "screen": "team-access",
+      "title": "Solicitudes de acceso",
+      "shot": "solicitudes-1920x1080-team-access.png",
+      "scrollWidth": 1920,
+      "horizontalOverflow": false,
+      "overflowCulprits": [],
+      "smallTargets": [
+        "▦\n        Pedidos 89×29",
+        "◎\n        Qué pasa 100×29",
+        "$\n        Pagos 71×29",
+        "▤\n        Mostrador 107×29",
+        "⋯\n        Más 64×29"
+      ],
+      "lowContrast": [
+        "\"Esperando\" 2.22:1",
+        "\"▦\" 1.02:1",
+        "\"Pedidos\" 1.02:1",
+        "\"◎\" 1.02:1",
+        "\"Qué pasa\" 1.02:1",
+        "\"$\" 1.02:1",
+        "\"Pagos\" 1.02:1",
+        "\"▤\" 1.02:1"
+      ]
+    }
+  ]
+}

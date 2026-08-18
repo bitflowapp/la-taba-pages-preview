@@ -71,9 +71,9 @@ test('una publicación nueva y bien formada sólo pide refrescar la firma', () =
 
 test('los cuatro tokens tienen que coincidir entre index.html y sw.js', () => {
   const coherente = {
-    indexHtml: '<link href="styles.css?v=50"><script src="js/app.js?v=42"></script>'
+    indexHtml: '<link href="styles.css?v=51"><script src="js/app.js?v=42"></script>'
       + '<script src="js/pwa-update.js?v=3"></script><script src="js/startup-recovery.js?v=2"></script>',
-    worker: "'./styles.css?v=50','./js/app.js?v=42','./js/pwa-update.js?v=3','./js/startup-recovery.js?v=2'",
+    worker: "'./styles.css?v=51','./js/app.js?v=42','./js/pwa-update.js?v=3','./js/startup-recovery.js?v=2'",
   };
   assert.deepEqual(verificarTokens(coherente), []);
 

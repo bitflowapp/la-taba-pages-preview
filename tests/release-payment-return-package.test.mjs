@@ -14,7 +14,7 @@ test('el paquete de release incluye las tres rutas de retorno de Mercado Pago', 
 
   for (const state of ['resultado', 'pendiente', 'error']) {
     const page = read(`pago/${state}/index.html`);
-    assert.match(page, /href="\.\.\/\.\.\/styles\.css\?v=50"/);
+    assert.match(page, /href="\.\.\/\.\.\/styles\.css\?v=51"/);
     assert.match(page, /src="\.\.\/\.\.\/js\/payments\/mercadopago-return\.js"/);
   }
 });
@@ -30,7 +30,7 @@ test('el worker conserva una página y el módulo del retorno para cada vuelta o
 
 test('el preflight acepta la versión CSS que exige el candidato', () => {
   const preflight = read('scripts/preflight-staging-package.mjs');
-  assert.match(preflight, /css:\s*'\?v=50'/);
+  assert.match(preflight, /css:\s*'\?v=51'/);
 
   // Antes esto miraba la FORMA: buscaba el literal '50' dentro de una lista
   // escrita a mano. Esa lista dejó de existir —las versiones permitidas ahora se
@@ -50,11 +50,18 @@ test('el preflight acepta la versión CSS que exige el candidato', () => {
     return encontrado[0];
   });
   const sandbox = {};
-  const fuenteVm = bloques.join('\n') + '\nvar permitidasFinal = [...permitidas];';
+  const fuenteVm = bloques.join('\n')
+    + '\nvar permitidasFinal = [...permitidas];'
+    + "\nvar cssExigida = String(ESPERADO.css).replace('?v=', '');";
   vm.runInNewContext(fuenteVm, sandbox, { timeout: 1000 });
 
+  // La versión exigida se LEE del propio preflight, no se escribe acá. Escrita
+  // a mano decía '50', y siguió diciéndolo cuando el candidato pasó a 51: el
+  // assert dejó de medir la propiedad y pasó a medir un número viejo. Ahora
+  // sale del mismo `ESPERADO` que gobierna al guion, así que el próximo bump no
+  // necesita tocar este archivo y el test no puede quedarse atrás en silencio.
   assert.ok(
-    sandbox.permitidasFinal.includes('50'),
-    `el preflight exige styles.css?v=50 y no lo permite (permitidas: ${sandbox.permitidasFinal.join(', ')})`,
+    sandbox.permitidasFinal.includes(sandbox.cssExigida),
+    `el preflight exige styles.css?v=${sandbox.cssExigida} y no lo permite (permitidas: ${sandbox.permitidasFinal.join(', ')})`,
   );
 });

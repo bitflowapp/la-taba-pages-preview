@@ -919,6 +919,15 @@ export function paymentLabel(value) {
     coordinate: 'Pago a coordinar con el local',
     cash: 'Efectivo',
     transfer: 'Transferencia',
+    // `mercadopago` es el código que el backend guarda de verdad: es el mismo
+    // que compara `isMercadoPagoOrder()` para decidir si un pedido se puede
+    // cancelar sin devolver la plata primero. Faltaba en esta tabla, así que el
+    // Panel le mostraba al operador el enum crudo —«mercadopago», sin espacio y
+    // en minúscula— en el renglón «Pago» de cada pedido cobrado por tarjeta.
+    // `mercado_pago_future` es el código del cliente para el pago que todavía
+    // no se cobró; los dos nombran el mismo medio y se leen igual.
+    mercadopago: 'Mercado Pago',
+    mercado_pago: 'Mercado Pago',
     mercado_pago_future: 'Mercado Pago',
     unknown: 'Sin especificar',
   };

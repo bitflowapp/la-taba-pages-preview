@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v79-gondola-instalable';
+const CACHE_NAME = 'la-taba-runtime-v80-instalacion-temprana';
 const ASSETS = [
   './',
   './index.html',
@@ -37,7 +37,7 @@ const ASSETS = [
    */
   './assets/brand/taba-app-icon-192.png',
   './assets/products/beverage-placeholder.svg',
-  './js/pwa-update.js?v=3',
+  './js/pwa-update.js?v=4',
   './js/startup-recovery.js?v=2',
   './js/app.js?v=46',
   './js/config.js',

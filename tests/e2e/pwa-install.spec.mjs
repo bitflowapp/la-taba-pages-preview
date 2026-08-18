@@ -138,6 +138,62 @@ test.describe('Android', () => {
     expect(await storedDecision(page)).toBe(null);
   });
 
+  /*
+   * EL EVENTO QUE LLEGA MIENTRAS LA TIENDA TODAVÍA SE ESTÁ ARMANDO.
+   *
+   * `beforeinstallprompt` es de UN SOLO USO y no se repite: perdérselo es
+   * perder la instalación de esa visita entera —ni hoja, ni tarjeta en el
+   * Perfil, o sea NINGÚN camino, ni el automático ni el manual—.
+   *
+   * Y había una ventana real para perderlo. `js/app.js` es un módulo, o sea
+   * diferido, y cablea la invitación al FINAL de `bootstrap()`, después de
+   * traer el catálogo por red. Entre que el documento termina de parsearse y
+   * que se llega a esa línea puede haber segundos, y Chrome dispara el evento
+   * justo ahí: pide interacción previa para ofrecer instalar, así que suele
+   * llegar en la SEGUNDA visita, con el worker ya activo y todo caliente.
+   *
+   * Acá esa ventana se abre a propósito: se demora el módulo de la interfaz
+   * tres segundos y el evento se dispara a los 300 ms. Los scripts CLÁSICOS del
+   * shell —entre ellos `js/pwa-update.js`, que es quien lo captura— ya
+   * corrieron; el módulo todavía no. Si alguien vuelve a cablear la captura
+   * dentro del módulo, este test se pone rojo.
+   */
+  test('el evento que llega mientras la tienda se arma no se pierde', async ({ page }) => {
+    await page.route('**/js/pwa-install-ui.js*', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await route.continue();
+    });
+    await page.addInitScript(() => {
+      window.__install = { prompts: 0, outcome: 'accepted' };
+      setTimeout(() => {
+        const event = new Event('beforeinstallprompt');
+        event.prompt = async () => {
+          window.__install.prompts += 1;
+          return { outcome: window.__install.outcome, platform: 'web' };
+        };
+        event.userChoice = Promise.resolve({ outcome: window.__install.outcome });
+        window.dispatchEvent(event);
+        window.__disparado = true;
+      }, 300);
+    });
+    await abrir(page);
+
+    // El evento salió antes de que existiera el módulo que antes lo escuchaba.
+    expect(await page.evaluate(() => window.__disparado)).toBe(true);
+    /*
+     * Presupuesto ancho a propósito: este test le suma 3 s de demora al módulo
+     * ENCIMA del arranque, y si le toca ser la primera navegación de la corrida
+     * paga además el grafo frío (50 s medidos contra 1-8 s de las siguientes).
+     * Con 20 s se ponía rojo en frío y verde en caliente, que es la peor clase
+     * de prueba: la que depende de en qué orden la corras.
+     */
+    await expect(sheet(page)).toBeVisible({ timeout: 60_000 });
+    await expect(view(page, 'android')).toBeVisible();
+    // Y el prompt capturado por el shell sigue sirviendo para instalar.
+    await page.locator('[data-install-accept]').click();
+    await expect.poll(() => page.evaluate(() => window.__install.prompts)).toBe(1);
+  });
+
   test('sin el evento disponible no aparece nada, y no se finge un botón', async ({ page }) => {
     await abrir(page);
     await page.waitForTimeout(VENTANA_SIN_INVITACION);

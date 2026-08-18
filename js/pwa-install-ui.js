@@ -63,7 +63,13 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
   const sheet = $('[data-install-sheet]');
   const entry = $('[data-install-entry]');
 
-  let deferredPrompt = null;
+  /*
+   * El evento pudo llegar ANTES de que existiera este módulo: lo captura
+   * `js/pwa-update.js`, que es un script clásico y corre durante el parseo,
+   * mientras que esto es un módulo cableado al final de `bootstrap()`. Acá se
+   * recoge lo que haya quedado guardado. Ver el comentario largo de allá.
+   */
+  let deferredPrompt = globalThis.__TABA_DEFERRED_INSTALL_PROMPT__ || null;
   // Mientras se resuelve el prompt nativo, el cierre de la hoja NO significa
   // "no quiero": lo cerramos nosotros para dejar ver el diálogo del sistema.
   let resolvingNative = false;
@@ -222,8 +228,10 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
       refreshEntry();
       return '';
     }
-    // Se suelta ANTES de esperar: el evento es de un solo uso.
+    // Se suelta ANTES de esperar, y en los dos lados: es de un solo uso, y el
+    // que quedó guardado en el shell es el MISMO objeto.
     deferredPrompt = null;
+    globalThis.__TABA_DEFERRED_INSTALL_PROMPT__ = null;
     resolvingNative = true;
     closeSheet();
     let outcome = '';
@@ -247,6 +255,7 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
     deferredPrompt = event;
+    globalThis.__TABA_DEFERRED_INSTALL_PROMPT__ = event;
     refreshEntry();
     // Puede llegar después del respiro inicial: si todavía no invitamos y el
     // momento está libre, esta es la primera oportunidad real de hacerlo.
@@ -255,6 +264,7 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
 
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
+    globalThis.__TABA_DEFERRED_INSTALL_PROMPT__ = null;
     resolvingNative = false;
     invited = true;
     remember(INSTALL_DECISION.INSTALLED);

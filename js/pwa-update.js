@@ -1,3 +1,39 @@
+/*
+ * `beforeinstallprompt` SE CAPTURA ACÁ, y no en el módulo de la invitación.
+ *
+ * El evento es de UN SOLO USO y no se repite: perdérselo es perder la
+ * instalación de esa visita entera —ni hoja, ni entrada en el Perfil—. Y se
+ * perdía, medido contra el sitio publicado: disparado antes de que corriera una
+ * línea de la app, la hoja no se abría y la tarjeta del Perfil quedaba oculta.
+ *
+ * El motivo es el orden del shell. Este archivo es un script CLÁSICO, así que
+ * corre durante el parseo; `js/app.js` es un MÓDULO, o sea diferido, y encima
+ * cablea la invitación al final de `bootstrap()`, después de traer el catálogo.
+ * Entre un punto y el otro hay toda la red de por medio.
+ *
+ * Y el hueco se abre justo cuando más importa: Chrome pide interacción previa
+ * para ofrecer instalar, así que el evento suele llegar en la SEGUNDA visita
+ * —con el worker ya activo y todo caliente—, que es exactamente el caso en que
+ * la app tarda menos en pintar y el evento llega más temprano.
+ *
+ * Acá sólo se guarda. Quién decide si corresponde invitar, cuándo y con qué
+ * texto sigue siendo `js/core/pwa-install.js`; quién lo consume, la interfaz.
+ */
+(() => {
+  if (window.__tabaInstallPromptBound) return;
+  window.__tabaInstallPromptBound = true;
+  window.__TABA_DEFERRED_INSTALL_PROMPT__ = window.__TABA_DEFERRED_INSTALL_PROMPT__ || null;
+  window.addEventListener('beforeinstallprompt', (event) => {
+    // Sin esto Chrome muestra su propio aviso y la invitación de la tienda
+    // pasa a competir con él por el mismo pulgar.
+    event.preventDefault();
+    window.__TABA_DEFERRED_INSTALL_PROMPT__ = event;
+  });
+  window.addEventListener('appinstalled', () => {
+    window.__TABA_DEFERRED_INSTALL_PROMPT__ = null;
+  });
+})();
+
 (() => {
   if (!('serviceWorker' in navigator)) return;
   // El módulo se enlaza UNA vez por documento. Si el shell llegara a incluir el

@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v79-gondola-instalable');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v80-instalacion-temprana');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);
@@ -38,7 +38,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
     false,
     'legacy food or unverified catalog imagery must not be precached',
   );
-  assert.ok(assets.includes('./js/pwa-update.js?v=3'));
+  assert.ok(assets.includes('./js/pwa-update.js?v=4'));
   assert.ok(assets.includes('./js/startup-recovery.js?v=2'));
   assert.ok(assets.includes('./styles.css?v=52'));
   assert.ok(assets.includes('./styles/storefront.css?v=52'));

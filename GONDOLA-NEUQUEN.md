@@ -2,11 +2,32 @@
 
 **Rama** `feature/taba2-gondola-comercial-neuquen`, desde `34c6ee3`.
 **Worktree** `D:\1212\la-taba2-gondola-neuquen`.
-**Estado: LISTO PARA REVISIÓN — la carga a producción no está aplicada.**
 
-Producción no se tocó: `wwcpogltfgzgkrlilbcd` sigue con sus 4 packs de gaseosa,
-ledger 109 y 0 pedidos. Lo que hay acá es el surtido armado, medido y verificado
-con navegador, más el lote SQL que lo aplica en una sola transacción.
+**Estado: APLICADO EN PRODUCCIÓN Y VERIFICADO CON NAVEGADOR.**
+**El alcohol quedó cargado y NO comprable: ver LICENSE GATE (§10, R-2).**
+
+## Estado en producción, medido después de aplicar
+
+| | antes | ahora |
+|---|---|---|
+| ledger | `20260818030000` | **`20260818040000`** |
+| productos en la base | 4 | **56** |
+| comprables | 4 | **33** |
+| con alcohol cargados | 0 | **23** |
+| con alcohol comprables | 0 | **0** — LICENSE GATE |
+| `alcohol_sales_enabled` | false | **false**, sin tocar |
+| `ordering_enabled` / `ordering_verified` | true / true | **true / true** |
+| pedidos | 1 | **1**, sin tocar |
+| `catalog_assets` | 0 | **0** |
+| Mercado Pago | sin configurar | **sin configurar**, sin tocar |
+| staging | — | **cero mutaciones** |
+
+El sitio se republicó: `CACHE_NAME` `la-taba-runtime-v78-gondola-neuquen`,
+`js/app.js?v=45`, despliegue `22bc5af0`. **Reversión**: el despliegue anterior es
+`207972b4-6b88-46c9-9d94-b74fffa4ed2d`.
+
+Republicar era necesario, no cosmético: el paquete que estaba en el aire tenía el
+defecto §6.1 y dejaba la home **vacía**.
 
 ---
 
@@ -392,15 +413,46 @@ que en producción.
 | combos sin Mercado Pago | **0** ofrecidos, sección oculta |
 | stock y pricing intactos | los 4 productos previos no se tocan; el lote sólo inserta o actualiza los 52 declarados |
 
+### En el sitio PUBLICADO, con navegador real
+
+`node scripts/verify-gondola-produccion.mjs` contra `https://la-taba.pages.dev`:
+**29/29 en verde.**
+
+| medición | resultado |
+|---|---|
+| el cliente recibe el surtido comprable | **33/33** |
+| la compuerta del alcohol está cerrada | **0** con alcohol llegan al cliente |
+| categorías sin slug crudo | **0** huérfanas · 6 estantes: Gaseosas, Aguas, Aguas saborizadas, Isotónicas, Energizantes, Mixers |
+| Cervezas, Fernet, Vinos, Destilados, Aperitivos | **no se publican** mientras la compuerta esté cerrada |
+| la home dibuja carruseles con producto | Gaseosas 8 · Aguas 7 · Energizantes 5 · Mixers 3 |
+| el pack se distingue de la unidad | «Pack x12 · 500 ml» visible en la card |
+| agregar al carrito | funciona · el carrito muestra la línea |
+| pedidos habilitados | **sí** |
+| combos ofrecidos sin Mercado Pago | **0** |
+| imágenes rotas · errores de red · excepciones | **0 · 0 · 0** |
+
+Y `node scripts/verify-production-storefront.mjs`: **VITRINA PRODUCTIVA: VERDE**
+(33 tarjetas, 33 con el recurso propio de TABA, 0 con foto de tercero).
+
+Capturas del sitio en vivo: `artifacts/taba2-gondola-neuquen/vivo-*.png`.
+
 ### Suites
 
 | suite | resultado |
 |---|---|
-| `npm test` (unitarias) | **1816/1816** antes de los arreglos · vuelto a correr después |
-| `npm run check` (7 gates) | ver abajo |
-| E2E góndola (chromium) | **10/10** |
-| E2E combos (chromium, regresión) | **10/10** |
-| E2E completo | ver abajo |
+| `npm test` (unitarias) | **1827/1827** |
+| `npm run check` (7 gates) | **7/7** |
+| E2E completo (chromium + mobile-webkit) | **428/428**, 0 fallas |
+| ensayo de la migración contra el esquema real de producción | **13/13** positivos · **5/5** negativos · abortado con rollback |
+
+Las dos fallas que aparecían al empezar estaban **rotas desde antes** y se
+verificaron contra el commit base una por una: `beverage-storefront:352` —la
+vidriera publicaba fotos que el catálogo rechazaba— y `ios-blank-screen:83` —el
+patrón de la ruta clavaba `?v=42` y desde el primer bump no interceptaba nada,
+así que la prueba medía una pantalla que nunca se rompía—. Las dos quedaron
+arregladas. Otras dos que aparecieron en una corrida intermedia
+(`panel-responsive:283`, `launch-ux PROFILE SLOW`) eran contención de la máquina:
+pasan en aislamiento y pasan en la corrida limpia.
 
 Capturas para revisión humana, tomadas a 390×844 —el ancho del Moto G15— en
 `artifacts/taba2-gondola-neuquen/`: home, catálogo completo, cervezas, fernet y
@@ -446,12 +498,33 @@ ven en la home (los banners «DE LA PATAGONIA» y «PARA MEZCLAR»).
 
 ## 11. Veredicto
 
-**LISTO PARA REVISIÓN.** El surtido está armado, medido y verificado con
-navegador; el lote está escrito y es idempotente; los tests están verdes.
+**APLICADO Y VERIFICADO.** La góndola sin alcohol está vendiendo: 33 productos
+comprables en producción, home con carruseles, carrito funcionando y pedidos
+habilitados. Los 23 con alcohol están cargados, verificados y en su categoría
+correcta, esperando una sola cosa.
 
-Lo que falta para producción son tres cosas, y ninguna es técnica:
+**Lo que falta no es técnico, y es uno solo:** acreditar que la habilitación
+comercial del local incluye venta/expendio de bebidas alcohólicas. Con ese
+documento en la mano:
 
-1. que Marco mire el surtido y los precios y diga que sí —es plata de un
-   comercio real—;
-2. que firme `--verificado-por` con su uuid, o que se cargue sin publicar;
-3. que decida la política de alcohol, con el horario legal confirmado.
+```powershell
+# 1 · la política de alcohol (los cinco campos que exige el CHECK)
+#     los valores están en data/alcohol-policy.json
+
+# 2 · encender los 23
+$env:TABA2_GONDOLA_APPLY = "I_AUTHORIZE_TABA2_GONDOLA_LOAD"
+node scripts/aplicar-gondola-neuquen.mjs --ref=wwcpogltfgzgkrlilbcd --aplicar `
+  --verificado-por=<uuid> --confirmado-por-humano `
+  --alcohol-comprable --habilitacion-comercial-acreditada
+
+# 3 · medir
+node scripts/verify-gondola-produccion.mjs
+```
+
+El guion se planta si `alcohol_sales_enabled` sigue en false, así que no hay
+forma de publicar alcohol que el checkout después rechace.
+
+**Y una decisión que sigue siendo del comercio:** los precios son de un negocio
+real. Están derivados de costos medidos y son coherentes entre sí, pero
+conviene que Marco los mire producto por producto. Se ajustan desde el Panel sin
+tocar nada de esto.

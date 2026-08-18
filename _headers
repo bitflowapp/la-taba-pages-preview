@@ -18,6 +18,16 @@
   Permissions-Policy: camera=(), microphone=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin
 
+# El manifest decide la identidad de la app instalada, así que se declara su
+# tipo en vez de confiar en el mapa de extensiones del borde: un
+# `text/plain` deja a Chrome sin instalación y el aviso queda enterrado en la
+# consola. `no-cache` no es "no guardar": es revalidar. Sin eso, cambiar el
+# nombre o un icono no llega nunca a quien ya visitó el sitio, porque el
+# manifest se lee una vez y se guarda con el resto de los estáticos.
+/manifest.webmanifest
+  Content-Type: application/manifest+json; charset=utf-8
+  Cache-Control: no-cache
+
 # La URL de esta pantalla lleva el hash del enlace del correo. Ningún pedido que
 # salga de acá debe llevarlo en el Referer, ni siquiera al mismo origen.
 /cuenta/*

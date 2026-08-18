@@ -81,14 +81,20 @@ test('a rejected IndexedDB still leaves a usable in-memory sandbox without block
 });
 
 test('a failed application module leaves an actionable recovery shell instead of a blank main', async ({ page }) => {
-  // El patrón NO clava la versión del entry point. La clavaba —`?v=42`— y se
-  // quedó atrás en el primer bump: desde entonces la ruta no interceptaba nada,
-  // el módulo cargaba bien y la prueba medía una pantalla que nunca se rompía.
-  // Una red de seguridad que no atrapa nada es peor que no tenerla, porque se
-  // cuenta como cobertura. `*` cubre cualquier `?v=`, que es lo que la prueba
-  // quiere decir: si el módulo de arranque no llega, tiene que aparecer el
-  // rescate en vez de una pantalla en blanco.
-  await page.route('**/js/app.js*', (route) => route.fulfill({
+  /*
+   * La ruta se declara por expresión regular y no por el token exacto.
+   *
+   * Estaba clavada en `?v=42` y el shell ya iba por `?v=44`: la intercepción no
+   * matcheaba nada, el módulo cargaba bien y la prueba medía una pantalla que
+   * nunca se rompía. O sea que la red de seguridad más importante del arranque
+   * —la salida cuando un módulo no carga— llevaba dos publicaciones sin
+   * probarse, y contaba como cobertura. Lo encontraron por separado la góndola
+   * y la instalación, cada una en su rama; acá queda una sola vez.
+   *
+   * La expresión pide `?v=` seguido de dígitos y termina ahí: cubre cualquier
+   * bump futuro sin tragarse un `app.js.map` ni un `app.js?debug`.
+   */
+  await page.route(/\/js\/app\.js\?v=\d+$/, (route) => route.fulfill({
     status: 503,
     contentType: 'text/javascript',
     body: '/* unavailable for recovery test */',

@@ -6,6 +6,7 @@ import {
   seedCartAboveMinimum,
   seedCheckoutProfile,
   selectCheckoutAddress,
+  skipInstallInvitation,
   waitForToast,
 } from './helpers.mjs';
 
@@ -432,6 +433,11 @@ async function routeSupabase(page, remote) {
 }
 
 async function installRuntime(page) {
+  // Este arnés no pasa por `installBrowserStubs`, así que la invitación a
+  // instalar se calla acá: el archivo corre en WebKit móvil, o sea con user
+  // agent de iPhone, y sin esto la hoja modal aparecía sobre "Confirmar
+  // ubicación" y se quedaba con el toque.
+  await skipInstallInvitation(page);
   const session = authSession();
   await page.addInitScript(({ businessId, persistedSession, host }) => {
     globalThis.__LA_TABA_RUNTIME_CONFIG__ = {

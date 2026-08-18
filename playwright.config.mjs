@@ -23,6 +23,36 @@ export default defineConfig({
     viewport: { width: 1280, height: 900 },
     serviceWorkers: 'block',
     trace: 'on-first-retry',
+    /*
+     * TODA prueba corre como quien YA respondió a la invitación de instalar.
+     *
+     * Desde que la tienda se ofrece a instalarse, un teléfono sin decidir recibe
+     * una hoja MODAL a los pocos segundos de arrancar. Para `pwa-install.spec`
+     * eso es el objeto de estudio; para cualquier otra suite es una variable
+     * ajena que roba toques: en `mobile-webkit` —que corre con user agent de
+     * iPhone— apareció encima de "Confirmar ubicación" y se comió un tap del
+     * "+" de la góndola, y el segundo caso fue INTERMITENTE, que es peor.
+     *
+     * Se siembra acá y no spec por spec justamente por eso: los diez archivos
+     * de WebKit son candidatos y el que se olvide va a fallar una vez cada
+     * tantas corridas. `TABA_INSTALL_PROMPT_V1` no es un interruptor de prueba:
+     * es el estado exacto que deja alguien que tocó "Ahora no", y con él la
+     * entrada del Perfil sigue visible igual que para esa persona.
+     *
+     * `tests/e2e/pwa-install.spec.mjs` lo desactiva con un `storageState` vacío,
+     * y `installBrowserStubs` —que limpia el almacenamiento en cada navegación—
+     * lo vuelve a sembrar con `skipInstallInvitation`.
+     */
+    storageState: {
+      cookies: [],
+      origins: [{
+        origin: `http://127.0.0.1:${httpPort}`,
+        localStorage: [{
+          name: 'TABA_INSTALL_PROMPT_V1',
+          value: JSON.stringify({ v: 1, decision: 'declined', at: '2026-01-01T00:00:00.000Z', platform: 'e2e' }),
+        }],
+      }],
+    },
   },
   // El grueso del gate corre en Chromium, como siempre. El paso de confirmación
   // de ubicación corre ADEMÁS en WebKit móvil: los permisos de geolocalización y
@@ -71,7 +101,14 @@ export default defineConfig({
       // pedir la navegación, si la página entra al back-forward cache, cuándo
       // llega `pageshow`—, y el defecto que cierran se vio en un iPhone.
       name: 'mobile-webkit',
-      testMatch: /(delivery-location-confirmation|panel-order-recovery|arranque-sin-jerga|production-cart-persistence|mp-back-navigation-ui|checkout-payment-handoff|service-worker-degraded-recovery|storefront-stress-responsive|launch-ux-checkout-reorder|catalog-card-glow)\.spec\.mjs/,
+      // `pwa-install` se suma por el motivo más directo de todos: la mitad de lo
+      // que prueba ES iOS —la guía de "Agregar a pantalla de inicio",
+      // `navigator.standalone`, el `<dialog>` modal— y WebKit es el motor de
+      // Safari. Declararlo cerrado sólo en Chromium sería cerrarlo en el
+      // navegador donde ese camino no existe. Sus tres bloques declaran su
+      // propio user agent, así que "Android" y "Escritorio" siguen siendo eso
+      // aunque el proyecto traiga un iPhone por defecto.
+      testMatch: /(delivery-location-confirmation|panel-order-recovery|arranque-sin-jerga|production-cart-persistence|mp-back-navigation-ui|checkout-payment-handoff|service-worker-degraded-recovery|storefront-stress-responsive|launch-ux-checkout-reorder|catalog-card-glow|pwa-install)\.spec\.mjs/,
       use: { ...devices['iPhone 13'] },
     },
   ],

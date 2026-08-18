@@ -85,25 +85,44 @@ async function capture() {
     if (banner) banner.hidden = true;
   });
 
-  // Los otros tres avisos del shell comparten la superficie y la grilla que
-  // corrige el de actualización, así que se miran también: cambiar el `.pwa-banner`
-  // base sin ver la guía de iOS —la única con lista numerada— es cambiar a ciegas.
-  for (const [name, selector] of [
-    ['04b-aviso-instalar.png', '[data-pwa-install-banner]'],
-    ['04c-aviso-ios.png', '[data-pwa-ios-banner]'],
-    ['04d-aviso-sin-conexion.png', '[data-pwa-offline-banner]'],
+  // El aviso de conexión comparte la superficie y la grilla que corrige el de
+  // actualización, así que se mira también: cambiar el `.pwa-banner` base sin
+  // ver la otra variante es cambiar a ciegas.
+  await page.evaluate(() => {
+    const node = document.querySelector('[data-pwa-offline-banner]');
+    if (node) node.hidden = false;
+  });
+  await settle(page);
+  await shot(page, '04d-aviso-sin-conexion.png');
+  await page.evaluate(() => {
+    const node = document.querySelector('[data-pwa-offline-banner]');
+    if (node) node.hidden = true;
+  });
+
+  // La invitación a instalar, en sus dos caras. Se abren a mano porque en un
+  // navegador de escritorio o en WebKit no hay `beforeinstallprompt` que las
+  // dispare, y lo que se está mirando acá es la HOJA, no la decisión de cuándo
+  // mostrarla —eso lo miden los tests—.
+  for (const [name, view] of [
+    ['04b-instalar-android.png', 'android'],
+    ['04c-instalar-ios.png', 'ios'],
+    ['04e-instalar-ios-pasos.png', 'ios-steps'],
   ]) {
-    await page.evaluate((sel) => {
-      const node = document.querySelector(sel);
-      if (node) node.hidden = false;
-    }, selector);
+    await page.evaluate((cara) => {
+      const sheet = document.querySelector('[data-install-sheet]');
+      if (!sheet) return;
+      for (const node of sheet.querySelectorAll('[data-install-view]')) {
+        node.hidden = node.dataset.installView !== cara;
+      }
+      if (!sheet.open) sheet.showModal();
+    }, view);
     await settle(page);
     await shot(page, name);
-    await page.evaluate((sel) => {
-      const node = document.querySelector(sel);
-      if (node) node.hidden = true;
-    }, selector);
   }
+  await page.evaluate(() => {
+    const sheet = document.querySelector('[data-install-sheet]');
+    if (sheet?.open) sheet.close();
+  });
 
   await goCatalog(page);
   await shot(page, '05-catalogo-todas.png');

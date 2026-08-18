@@ -53,10 +53,21 @@ test('versioned catalog evidence and normalized price handoff are present', () =
 
 test('public storefront shell separates the product name from the business name', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const manifest = fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8');
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8'));
   // Producto/plataforma: TABA2. No cambia con el comercio.
   assert.match(html, /<title>TABA2 · Tienda de bebidas<\/title>/);
-  assert.match(manifest, /"short_name": "TABA2"/);
+  /*
+   * EL MANIFEST ES LA EXCEPCIÓN, Y ES DELIBERADA.
+   *
+   * Hasta la versión anterior declaraba el nombre del PRODUCTO ("TABA2"), por
+   * la misma regla que gobierna el resto del shell. Pero el manifest no nombra
+   * una pantalla: nombra el ICONO que queda en el teléfono de un cliente, y ahí
+   * "TABA2" no le dice nada a nadie —es el nombre interno de la plataforma—.
+   * Lo que la persona instaló es el comercio. Por eso la identidad de
+   * instalación es "La Taba" —el nombre del comercio— y sólo ella cambia de lado.
+   */
+  assert.equal(manifest.name, 'La Taba');
+  assert.equal(manifest.short_name, 'La Taba');
   // Comercio: el fallback de primer pintado dice el nombre del local y luego
   // `applyBusinessConfig` lo reemplaza con el valor real de la config.
   assert.match(html, /data-business-name>La Taba 2</);

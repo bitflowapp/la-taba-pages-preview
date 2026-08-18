@@ -1,7 +1,7 @@
 # Góndola comercial de TABA · Neuquén Capital
 
 **Rama** `feature/taba2-gondola-comercial-neuquen`, desde `34c6ee3`.
-**Worktree** `D:\1212\la-taba2-gondola-neuquen`.
+**Worktree** `la-taba2-gondola-neuquen`, en su propio directorio local.
 
 **Estado: APLICADO EN PRODUCCIÓN Y VERIFICADO CON NAVEGADOR.**
 **El alcohol quedó cargado y NO comprable: ver LICENSE GATE (§10, R-2).**

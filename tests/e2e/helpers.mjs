@@ -1,6 +1,34 @@
 import { expect } from '@playwright/test';
 import { brandSurfaceRgb } from '../../scripts/brand-surface.mjs';
 
+/*
+ * LA INVITACIÓN A INSTALAR, CALLADA.
+ *
+ * En un teléfono sin decidir, la tienda ofrece instalarse a los pocos segundos
+ * de arrancar: es el comportamiento pedido y `pwa-install.spec.mjs` lo prueba
+ * entero. Para cualquier OTRA prueba es una variable ajena —y en `mobile-webkit`
+ * era una hoja modal que aparecía a mitad de un checkout—, así que el arnés
+ * corre como quien YA respondió.
+ *
+ * No es un interruptor de prueba: `TABA_INSTALL_PROMPT_V1` es exactamente el
+ * estado que deja alguien que tocó "Ahora no". La entrada del Perfil sigue
+ * visible, igual que para esa persona.
+ */
+export async function skipInstallInvitation(page) {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('TABA_INSTALL_PROMPT_V1', JSON.stringify({
+        v: 1,
+        decision: 'declined',
+        at: '2026-01-01T00:00:00.000Z',
+        platform: 'e2e',
+      }));
+    } catch (_) {
+      // Sin almacenamiento no hay nada que sembrar y tampoco nada que romper.
+    }
+  });
+}
+
 export async function installBrowserStubs(page) {
   await page.addInitScript(() => {
     window.__openedUrls = [];
@@ -32,6 +60,10 @@ export async function installBrowserStubs(page) {
     localStorage.clear();
     sessionStorage.clear();
   });
+  // DESPUÉS del bloque de arriba, no antes: `addInitScript` corre en orden de
+  // registro y ese bloque termina vaciando el almacenamiento. Sembrar primero
+  // sería sembrar en algo que se borra un renglón más abajo.
+  await skipInstallInvitation(page);
 }
 
 // El panel del negocio usa cuatro destinos fijos en móvil (Pedidos · Métricas

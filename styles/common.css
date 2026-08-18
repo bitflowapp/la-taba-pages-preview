@@ -52,6 +52,25 @@
   }
 }
 
+/* ── Abierta desde el icono ────────────────────────────────────────────────
+   Con `viewport-fit=cover` y la barra de estado translúcida de iOS, el
+   documento empieza en el borde FÍSICO de la pantalla. En una pestaña de Safari
+   eso no se ve porque la barra del navegador ocupa esa franja; instalada, el
+   reloj y la batería quedan encima del nombre del comercio.
+
+   El ajuste se aplica SÓLO en este modo —`js/app.js` marca el atributo al
+   arrancar— para que la pestaña conserve exactamente la geometría certificada.
+   La barra crece lo que mide el borde y su contenido baja lo mismo, así que el
+   alto útil (56px) no cambia y todo lo que se deriva de `--topbar` sigue
+   cuadrando. */
+html[data-taba-display-mode="standalone"] {
+  --topbar: calc(56px + var(--safe-t));
+}
+
+html[data-taba-display-mode="standalone"] .topbar {
+  padding-top: var(--safe-t);
+}
+
 .topbar-search {
   display: inline-flex;
   min-width: 0;
@@ -979,9 +998,14 @@ dialog::backdrop {
 }
 
 /* ============================================================================
-   AVISOS DEL SHELL — instalar · guía de iOS · sin conexión · actualización
+   AVISOS DEL SHELL — sin conexión · actualización
    ----------------------------------------------------------------------------
-   Estos cuatro avisos viven FUERA de `.app-view`, y ahí está el defecto que se
+   Eran cuatro. Los dos de instalación —el de Android y la guía de iPhone— se
+   fueron a `.install-sheet`, más abajo: una tira fina anclada abajo a la
+   derecha se le superponía a la barra flotante del carrito, y una invitación
+   que compite con el botón de comprar no es una invitación.
+
+   Estos dos avisos viven FUERA de `.app-view`, y ahí está el defecto que se
    cierra acá: el remapeo de la paleta del cliente los alcanza por la TINTA —que
    se hereda del `body`— pero no por la SUPERFICIE, que estaba escrita como
    `white` literal. Sobre la app oscura eso daba texto casi blanco sobre un
@@ -1017,39 +1041,12 @@ dialog::backdrop {
   color: #14161a;
 }
 
-/* Los avisos con emblema suman una columna; la ✕ y la acción no se mueven. */
-.pwa-banner-install {
-  grid-template-columns: auto minmax(0, 1fr) var(--tap);
-  grid-template-areas:
-    "icon copy close"
-    "action action action";
-}
-
-/* La guía de iOS no tiene acción —el gesto lo hace la persona en su navegador—
-   así que no declara la fila: una fila vacía cobra el `gap` igual. */
-.pwa-banner-ios {
-  grid-template-columns: auto minmax(0, 1fr) var(--tap);
-  grid-template-areas: "icon copy close";
-}
-
 /* "Sin conexión" no tiene controles ni envoltorio: es una sola columna de
    texto que se apila sola. */
 .pwa-banner-offline {
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: none;
   gap: 3px;
-}
-
-.pwa-banner-icon {
-  display: grid;
-  grid-area: icon;
-  width: 38px;
-  height: 38px;
-  align-self: start;
-  place-items: center;
-  border-radius: 12px;
-  background: var(--taba-red-soft);
-  color: var(--taba-red-quiet);
 }
 
 .pwa-banner-copy {
@@ -1108,28 +1105,11 @@ dialog::backdrop {
   color: var(--taba-ink);
 }
 
-.pwa-ios-steps {
-  margin: 4px 0 0;
-  padding-left: 18px;
-  color: var(--taba-muted);
-  font-size: 12.5px;
-  line-height: 1.5;
-}
-
-.pwa-ios-steps strong {
-  font-size: inherit;
-}
-
 /* Con ancho para la fila, el aviso vuelve a una sola línea. */
 @media (min-width: 520px) {
   .pwa-banner {
     grid-template-columns: minmax(0, 1fr) auto var(--tap);
     grid-template-areas: "copy action close";
-  }
-
-  .pwa-banner-install {
-    grid-template-columns: auto minmax(0, 1fr) auto var(--tap);
-    grid-template-areas: "icon copy action close";
   }
 
   .pwa-banner-offline {
@@ -1142,8 +1122,7 @@ dialog::backdrop {
     padding-inline: 18px;
   }
 
-  .pwa-banner-dismiss,
-  .pwa-banner-icon {
+  .pwa-banner-dismiss {
     align-self: center;
   }
 }
@@ -1151,6 +1130,211 @@ dialog::backdrop {
 .pwa-banner-update {
   bottom: calc(66px + 18px + env(safe-area-inset-bottom));
 }
+
+/* ============================================================================
+   INVITACIÓN A INSTALAR — hoja inferior
+   ----------------------------------------------------------------------------
+   Es un `<dialog>` de verdad y no un `div` fijo, y eso resuelve tres cosas de
+   golpe que un cartel no resuelve: el foco queda adentro mientras está abierta,
+   Escape la cierra, y el navegador la pone por encima de todo sin pelear con la
+   pila de z-index de la barra inferior y el carrito flotante.
+
+   Se ancla abajo porque ahí está el pulgar, y se separa del borde con
+   `env(safe-area-inset-bottom)`: en un iPhone con indicador de inicio, 12px
+   pelados dejan la acción principal debajo de la franja del gesto.
+
+   La superficie es la CLARA del sistema. La app del cliente es oscura y el
+   remapeo vive en `brand-home.css`, junto al resto de su alcance: acá se
+   declara la base, igual que con los avisos del shell.
+   ========================================================================== */
+.install-sheet {
+  width: min(calc(100vw - 24px), 460px);
+  max-width: min(calc(100vw - 24px), 460px);
+  max-height: min(720px, calc(100dvh - 32px));
+  margin: auto auto calc(12px + env(safe-area-inset-bottom, 0px));
+  padding: 0;
+  border: 0;
+  border-radius: 26px;
+  background: var(--taba-white);
+  box-shadow: 0 24px 64px rgb(12 14 18 / 38%);
+  color: var(--taba-ink);
+  overflow: hidden;
+}
+
+.install-sheet::backdrop {
+  background: rgb(10 12 15 / 58%);
+}
+
+.install-sheet-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 26px 20px 20px;
+}
+
+/* La ✕ es el primer control del documento a propósito: quien navega con
+   teclado o lector de pantalla recibe la salida antes que la oferta. */
+.install-sheet-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: var(--tap);
+  height: var(--tap);
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--taba-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--taba-muted);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.install-sheet-close:hover {
+  border-color: var(--taba-border-medium);
+  background: var(--taba-subtle);
+  color: var(--taba-ink);
+}
+
+.install-sheet-view {
+  display: grid;
+  gap: 12px;
+}
+
+.install-sheet-view[hidden] {
+  display: none;
+}
+
+.install-sheet-mark img {
+  display: block;
+  width: 60px;
+  height: 60px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgb(208 0 13 / 28%);
+}
+
+.install-sheet-title {
+  margin: 0;
+  /* Deja libre la esquina de la ✕ —12px de borde más el objetivo táctil— sin
+     recurrir a un padding que también recortaría el texto largo de los pasos. */
+  padding-right: calc(12px + var(--tap));
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.install-sheet-copy {
+  margin: -2px 0 0;
+  color: var(--taba-muted);
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.install-sheet-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.install-sheet-cta {
+  width: 100%;
+  min-height: 52px;
+  border-radius: var(--radius-pill);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+/* "Ahora no" es una salida, no una alternativa: se dibuja liviana para que la
+   jerarquía sea evidente, pero conserva el área táctil completa. */
+.install-sheet-later {
+  width: 100%;
+  min-height: var(--tap);
+  border-radius: var(--radius-pill);
+  color: var(--taba-muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.install-steps {
+  display: grid;
+  gap: 14px;
+  margin: 4px 0 2px;
+  padding: 0;
+  counter-reset: install-step;
+  list-style: none;
+}
+
+.install-steps li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.install-steps li::before {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  content: counter(install-step);
+  counter-increment: install-step;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--taba-red);
+  color: var(--taba-white);
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.install-step-body {
+  display: block;
+  padding-top: 3px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.install-step-body strong {
+  font-weight: 800;
+}
+
+.install-step-body small {
+  display: block;
+  margin-top: 3px;
+  color: var(--taba-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+/* El glifo va dentro del renglón, alineado con la línea de base del texto: es
+   el mismo dibujo que la persona tiene que buscar en su teléfono, así que vale
+   más al lado de la palabra que en una columna aparte. */
+.install-step-icon {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  vertical-align: -7px;
+  border-radius: 8px;
+  background: var(--taba-red-soft);
+  color: var(--taba-red-quiet);
+}
+
+.install-steps-lead {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--taba-red-soft);
+  color: var(--taba-red-quiet);
+  font-size: 13.5px;
+}
+
+.install-steps-lead[hidden] {
+  display: none;
+}
+
+
 
 .profile-grid {
   display: grid;

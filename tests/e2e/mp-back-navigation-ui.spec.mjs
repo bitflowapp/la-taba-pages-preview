@@ -24,7 +24,7 @@
 import { expect, test } from '@playwright/test';
 // El contrato visual vive en `helpers.mjs`: lo afirman esta suite y la de
 // recuperación del worker, y tienen que exigir exactamente lo mismo.
-import { esperarExperienciaComercial, medirExperienciaComercial } from './helpers.mjs';
+import { esperarExperienciaComercial, medirExperienciaComercial, skipInstallInvitation } from './helpers.mjs';
 
 /*
  * El worker es el sujeto de la prueba: sin él no hay nada que medir, y el resto
@@ -54,6 +54,10 @@ async function degradarBorde(request, modo) {
 
 /** Cliente recurrente de verdad: worker instalado y precache terminado. */
 async function abrirTiendaConWorkerCaliente(page) {
+  // Este archivo no usa `installBrowserStubs`, así que la invitación a instalar
+  // se calla a mano: corre con user agent de iPhone y sin ella la hoja modal se
+  // abría a mitad del checkout. Ver `skipInstallInvitation` en helpers.
+  await skipInstallInvitation(page);
   await page.goto('/?demo=1#home', { waitUntil: 'load' });
   await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 30_000 });

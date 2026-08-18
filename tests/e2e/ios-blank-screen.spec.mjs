@@ -81,7 +81,17 @@ test('a rejected IndexedDB still leaves a usable in-memory sandbox without block
 });
 
 test('a failed application module leaves an actionable recovery shell instead of a blank main', async ({ page }) => {
-  await page.route('**/js/app.js?v=42', (route) => route.fulfill({
+  /*
+   * La ruta se declara por expresión regular y no por el token exacto.
+   *
+   * Estaba clavada en `?v=42` y el shell ya iba por `?v=44`: la intercepción no
+   * matcheaba nada, la aplicación cargaba bien y el test fallaba pidiendo un
+   * panel de recuperación que no tenía por qué aparecer. O sea que la red de
+   * seguridad más importante del arranque —la salida cuando un módulo no
+   * carga— llevaba dos publicaciones sin probarse. Con la expresión, el próximo
+   * bump del token no vuelve a apagar este guard.
+   */
+  await page.route(/\/js\/app\.js\?v=\d+$/, (route) => route.fulfill({
     status: 503,
     contentType: 'text/javascript',
     body: '/* unavailable for recovery test */',

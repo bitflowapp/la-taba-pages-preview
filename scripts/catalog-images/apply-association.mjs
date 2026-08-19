@@ -47,6 +47,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { stableJson } from './lib.mjs';
+import { autorizaCatalogo, ROLES_CATALOGO } from './owner-authority.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const MANIFIESTO = path.join(ROOT, 'docs/catalog/image-manifest.json');
@@ -55,7 +56,10 @@ const INFORME = path.join(ROOT, 'artifacts/taba2-catalog-images/ASSOCIATION-READ
 const REF = 'wwcpogltfgzgkrlilbcd';
 const BASE = `https://${REF}.supabase.co`;
 const BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
-const EMAIL_ESPERADO = 'jariel1970@gmail.com';
+// Confirmación opcional de que se está operando con la cuenta prevista. NO es la
+// autorización —esa la da el rol que devuelve la base— y por eso no vive escrita
+// en el repositorio: es un dato personal y ataría el guion a una persona.
+const EMAIL_ESPERADO = String(process.env.TABA_EXPECTED_OWNER_EMAIL || '').trim().toLowerCase();
 const AUTORIDAD = 'TABA-AUT-2026-08-001';
 const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || 'https://la-taba.pages.dev';
 
@@ -195,27 +199,77 @@ if (archivosLock === null) {
 }
 
 // ── 2. Identidad ─────────────────────────────────────────────────────────────
+let sesionId = null;
 if (!seco) {
   paso('SESIÓN');
   const usuario = await pedir('/auth/v1/user');
-  if (String(usuario?.email || '').toLowerCase() !== EMAIL_ESPERADO) {
-    abortar(`la sesión es de otra cuenta (${usuario?.email}). Se esperaba ${EMAIL_ESPERADO}.`);
-  }
   ok(`${usuario.email} · uid ${usuario.id}`);
-  // Los nombres de los parámetros son los de la función, no los del resto del
-  // esquema: PostgREST resuelve por nombre y devuelve 404 si no coinciden.
-  const esOwner = await rpc('has_business_role', { roles: ['owner'], target_business_id: BUSINESS_ID });
-  if (esOwner !== true) abortar('la cuenta no tiene rol owner ACTIVO en este negocio.');
-  ok('rol owner activo, confirmado por la base');
-  // Segunda lectura, por otra vía: la fila de membresía. Si las dos no dicen lo
-  // mismo, algo raro pasa y no es momento de escribir.
-  const membresias = await pedir(
-    `/rest/v1/business_members?select=role,is_active&business_id=eq.${BUSINESS_ID}&user_id=eq.${usuario.id}`,
-  );
-  const owner = membresias.find((m) => m.role === 'owner');
-  if (!owner) abortar('no hay fila de membresía owner para esta cuenta en este negocio.');
-  if (owner.is_active === false) abortar('la membresía owner existe pero está inactiva.');
-  ok(`membresía owner ${owner.is_active === false ? 'INACTIVA' : 'activa'} en business_members`);
+  if (EMAIL_ESPERADO && String(usuario?.email || '').toLowerCase() !== EMAIL_ESPERADO) {
+    abortar(`la sesión es de ${usuario?.email} y se esperaba ${EMAIL_ESPERADO}.`);
+  }
+
+  /*
+   * REGISTRAR LA SESIÓN. No es un trámite: es la condición de autorización.
+   *
+   * `identity_member_role` —de la que cuelga `has_business_role`, y de la que
+   * cuelgan las cinco RPC de catálogo— exige desde la migración
+   * `20260814030000_identity_requires_registered_session` que el `session_id`
+   * del token exista como fila en `identity_sessions` para ESE usuario y ESE
+   * negocio. Su propio comentario lo dice: «Missing, foreign, unregistered and
+   * revoked sessions all have the same authorization result: no role.»
+   *
+   * Un login por `grant_type=password` contra la API crea la sesión en GoTrue
+   * pero NO la registra. El Panel la registra: `supabase-auth.js` llama a
+   * `identity_register_session` inmediatamente después de entrar. Una
+   * herramienta que no lo hace nunca va a estar autorizada, por más owner que
+   * sea la cuenta.
+   *
+   * Se usa la misma RPC que usa el Panel, con el mismo contrato. La sesión queda
+   * auditada (`session_opened`) y revocable, y se revoca al terminar.
+   */
+  const registro = await rpc('identity_register_session', {
+    p_app_version: 'catalog-image-pipeline',
+    p_business_id: BUSINESS_ID,
+    // El vocabulario admitido es rider_android | panel_web | unknown. Esto no es
+    // el Panel: decir que lo es sería mentirle al registro de auditoría.
+    p_client: 'unknown',
+    p_device_key_hash: null,
+    p_device_label: 'apply-association (herramienta de catálogo)',
+  });
+  if (registro?.ok !== true || !registro?.session_id) {
+    abortar(
+      `no se pudo registrar la sesión (${registro?.code || 'sin código'}). `
+      + 'Sin sesión registrada la base no reconoce ningún rol, y ninguna RPC de catálogo va a autorizar.',
+    );
+  }
+  sesionId = registro.session_id;
+  ok(`sesión registrada · ${registro.new_session ? 'nueva' : 'ya existía'} · ${sesionId}`);
+
+  /*
+   * El rol, preguntado a la autoridad. Dos veces y por dos caminos: el que
+   * devolvió el registro y el que devuelve `identity_member_role` ahora. Si no
+   * coinciden, algo cambió entre una llamada y la otra y no es momento de
+   * escribir.
+   */
+  const rolAhora = await rpc('identity_member_role', { target_business_id: BUSINESS_ID });
+  if (String(rolAhora || '') !== String(registro.role || '')) {
+    abortar(`el rol cambió entre el registro (${registro.role}) y la comprobación (${rolAhora}).`);
+  }
+  const veredicto = autorizaCatalogo(rolAhora);
+  if (!veredicto.autorizado) abortar(veredicto.motivo);
+  ok(`autorizado: ${veredicto.motivo}`);
+
+  // Y la comprobación que hace la base misma, con la pareja exacta de roles que
+  // exigen las RPC. Si esto diera false con un rol autorizado, el desacuerdo
+  // sería entre nuestra lectura del contrato y el contrato.
+  const segunLaBase = await rpc('has_business_role', {
+    roles: [...ROLES_CATALOGO],
+    target_business_id: BUSINESS_ID,
+  });
+  if (segunLaBase !== true) {
+    abortar(`has_business_role(${ROLES_CATALOGO.join(',')}) dio ${segunLaBase} con rol ${veredicto.rol}. Contradicción: no se escribe.`);
+  }
+  ok(`has_business_role(${ROLES_CATALOGO.join(', ')}) confirma`);
 }
 
 // ── 3. Estado previo ─────────────────────────────────────────────────────────
@@ -524,6 +578,18 @@ await fs.writeFile(INFORME, stableJson({
   totalProductos: despues.length,
   veredicto: rotas.length === 0 && fallos.length === 0 ? 'ASOCIACION APLICADA Y VERIFICADA' : 'REVISAR',
 }), 'utf8');
+
+if (sesionId) {
+  // La sesión se abrió para esta operación y se cierra con ella. Dejarla viva
+  // sería dejar una llave puesta.
+  try {
+    const cierre = await rpc('identity_revoke_session', { p_session_id: sesionId });
+    ok(`sesión revocada (${cierre?.code || 'sin código'})`);
+  } catch (error) {
+    console.error(`  OJO   no se pudo revocar la sesión: ${error.message}`);
+    console.error('        revocarla desde el Panel, o esperar a que caduque.');
+  }
+}
 
 paso('RESULTADO');
 console.log(`  informe: ${path.relative(ROOT, INFORME).replaceAll('\\', '/')}`);

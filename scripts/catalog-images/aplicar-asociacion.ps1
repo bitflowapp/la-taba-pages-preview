@@ -168,7 +168,11 @@ try {
 try {
   Push-Location $repo
   try {
-    if (-not [string]::IsNullOrWhiteSpace($LocksDir)) { $env:TABA_LOCKS_DIR = $LocksDir }
+    # El email que acabás de escribir viaja como confirmación de que se está
+    # operando con la cuenta prevista. NO es la autorización —esa la da el rol
+    # que devuelve la base— y por eso no está escrito en ningún archivo del
+    # repositorio.
+    $env:TABA_EXPECTED_OWNER_EMAIL = $email
     Write-Host ''
     $token | node scripts/catalog-images/apply-association.mjs
     $salida = $LASTEXITCODE

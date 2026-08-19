@@ -5,9 +5,9 @@
   "baseCount": 100,
   "baseDigest": "e45f69cdb9c939e29620278450984cd2f4e42ad52cf79295470437c35f5cf2a9",
   "baseDigestMatchesProvisioning": true,
-  "newMigrationCount": 3,
-  "totalMigrationCount": 103,
-  "fullLedgerDigest": "b2af10478c4effc5451f26b5a38b1242a519b1b34248ad5a883444673a4eab76",
+  "newMigrationCount": 10,
+  "totalMigrationCount": 110,
+  "fullLedgerDigest": "449305a26899d5e5022495adac6a3397124fe258b7510be4424b9b4cda73301c",
   "migrations": [
     {
       "ordinal": 101,
@@ -29,6 +29,55 @@
       "filename": "20260816122000_security_definer_anon_least_privilege.sql",
       "sha256": "14f58362f30e4320e0f742a43c369224b3413de3510c7d03edba4f36e6e0c97b",
       "bytes": 5651
+    },
+    {
+      "ordinal": 104,
+      "version": "20260817010000",
+      "filename": "20260817010000_business_access_requests.sql",
+      "sha256": "4d2f74af5c765a3b0aef719e513a8fefa6fd29da5c12e569749b915bba5697d3",
+      "bytes": 17377
+    },
+    {
+      "ordinal": 105,
+      "version": "20260817020000",
+      "filename": "20260817020000_access_request_review_contract.sql",
+      "sha256": "cee62788d37de795d4150a7230a72212d7a71b83f5ef8a8112e45127f2c2261c",
+      "bytes": 11396
+    },
+    {
+      "ordinal": 106,
+      "version": "20260817030000",
+      "filename": "20260817030000_reviewer_identity_can_be_deleted.sql",
+      "sha256": "f5789da6bade7d988f4f3a1bb48c46d8dd50e575df4815886b305fefd10641ae",
+      "bytes": 2456
+    },
+    {
+      "ordinal": 107,
+      "version": "20260817040000",
+      "filename": "20260817040000_membership_guard_allows_account_deletion.sql",
+      "sha256": "d8bb9a4234714c4e7d0535be2f3a60ce6a8be392693989da47ed3c2f4a1de034",
+      "bytes": 4376
+    },
+    {
+      "ordinal": 108,
+      "version": "20260818020000",
+      "filename": "20260818020000_optional_verified_product_assets.sql",
+      "sha256": "1ecd34e6fc0dd4602f506ab0687acbe2cc9614095a0fae1781c44056193c9d42",
+      "bytes": 9989
+    },
+    {
+      "ordinal": 109,
+      "version": "20260818030000",
+      "filename": "20260818030000_products_sold_as_pack.sql",
+      "sha256": "8dc346ae65893183fc575f78088d70f271fa7779b975efdb37dff6d81f77d6c2",
+      "bytes": 2479
+    },
+    {
+      "ordinal": 110,
+      "version": "20260818040000",
+      "filename": "20260818040000_gondola_beverage_taxonomy.sql",
+      "sha256": "64193f4cf8d0c6bb45109c29e940d337556ca886f5de245811a9e8f309a239c6",
+      "bytes": 8217
     }
   ]
 }

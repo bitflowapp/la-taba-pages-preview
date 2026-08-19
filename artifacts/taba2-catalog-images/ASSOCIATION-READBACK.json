@@ -1,0 +1,743 @@
+{
+  "assetsRegistrados": [
+    {
+      "rights_reference": "TABA-AUT-2026-08-001",
+      "rights_status": "LICENCIA_COMERCIAL",
+      "sku": "coca-cola-original-botella-pet-500-ml-pack-x12",
+      "source_url": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156458/100116.jpg?v=639063398326300000"
+    },
+    {
+      "rights_reference": "TABA-AUT-2026-08-001",
+      "rights_status": "LICENCIA_COMERCIAL",
+      "sku": "coca-cola-zero-botella-pet-500-ml-pack-x12",
+      "source_url": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156461/101816.jpg?v=639063400798100000"
+    },
+    {
+      "rights_reference": "TABA-AUT-2026-08-001",
+      "rights_status": "LICENCIA_COMERCIAL",
+      "sku": "fanta-naranja-botella-pet-1500-ml-pack-x6",
+      "source_url": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156347/101113.jpg?v=638857652534800000"
+    },
+    {
+      "rights_reference": "TABA-AUT-2026-08-001",
+      "rights_status": "LICENCIA_COMERCIAL",
+      "sku": "sprite-botella-pet-500-ml-pack-x12",
+      "source_url": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155757/7790895000829.jpg?v=638748141213370000"
+    }
+  ],
+  "comprobaciones": [
+    {
+      "mensaje": "el catálogo sigue teniendo 56 productos (hay 56)",
+      "ok": true
+    },
+    {
+      "mensaje": "4 objetivos con imagen productiva (hay 4)",
+      "ok": true
+    },
+    {
+      "mensaje": "52 productos con el recurso propio de TABA",
+      "ok": true
+    },
+    {
+      "mensaje": "los 52 productos fuera del lote quedaron intactos",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: la imagen corresponde a un asset del manifiesto",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: master ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: thumbnail ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: SHA-256 del master",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: SHA-256 del thumbnail",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: SHA-256 de la fuente",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: ligado a su catalog_asset",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: verificado y de vuelta en venta",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: no es una imagen de retailer",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: la imagen corresponde a un asset del manifiesto",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: master ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: thumbnail ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: SHA-256 del master",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: SHA-256 del thumbnail",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: SHA-256 de la fuente",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: ligado a su catalog_asset",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: verificado y de vuelta en venta",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: no es una imagen de retailer",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: la imagen corresponde a un asset del manifiesto",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: master ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: thumbnail ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: SHA-256 del master",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: SHA-256 del thumbnail",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: SHA-256 de la fuente",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: ligado a su catalog_asset",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: verificado y de vuelta en venta",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: no es una imagen de retailer",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: la imagen corresponde a un asset del manifiesto",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: master ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: thumbnail ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: SHA-256 del master",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: SHA-256 del thumbnail",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: SHA-256 de la fuente",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: ligado a su catalog_asset",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: verificado y de vuelta en venta",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: no es una imagen de retailer",
+      "ok": true
+    },
+    {
+      "mensaje": "0 productos con metadata a medias (hay 0)",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: el precio no cambió ($17100)",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: el stock no cambió (7)",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: sold_as_pack intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: is_active intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: quedó DISPONIBLE",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: el precio no cambió ($17100)",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: el stock no cambió (8)",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: sold_as_pack intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: is_active intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: quedó DISPONIBLE",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: el precio no cambió ($19999)",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: el stock no cambió (8)",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: sold_as_pack intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: is_active intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: quedó DISPONIBLE",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: el precio no cambió ($17100)",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: el stock no cambió (8)",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: sold_as_pack intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: is_active intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: quedó DISPONIBLE",
+      "ok": true
+    },
+    {
+      "mensaje": "4 catalog_assets registrados (hay 4)",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: rights_status LICENCIA_COMERCIAL",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-original-botella-pet-500-ml-pack-x12: cita TABA-AUT-2026-08-001",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: rights_status LICENCIA_COMERCIAL",
+      "ok": true
+    },
+    {
+      "mensaje": "coca-cola-zero-botella-pet-500-ml-pack-x12: cita TABA-AUT-2026-08-001",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: rights_status LICENCIA_COMERCIAL",
+      "ok": true
+    },
+    {
+      "mensaje": "fanta-naranja-botella-pet-1500-ml-pack-x6: cita TABA-AUT-2026-08-001",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: rights_status LICENCIA_COMERCIAL",
+      "ok": true
+    },
+    {
+      "mensaje": "sprite-botella-pet-500-ml-pack-x12: cita TABA-AUT-2026-08-001",
+      "ok": true
+    }
+  ],
+  "conImagen": 4,
+  "fallos": [],
+  "productos": [
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "andes-origen-roja-lata-473ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "andes-origen-rubia-lata-473ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "aquarius-manzana-1500ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "aquarius-pera-1500ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "aquarius-pomelo-2250ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "benedictino-sin-gas-2250ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "brahma-chopp-lata-710ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "budweiser-lata-473ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "cafayate-torrontes-750ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "coca-cola-original-2250ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": "presente",
+      "imageUrl": "assets/products/coca-cola-original-botella-pet-500-ml-pack-x12-da9d9f1d872c1e49-75b52ee33dad073c.webp",
+      "isVerified": true,
+      "sku": "coca-cola-original-botella-pet-500-ml-pack-x12"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "coca-cola-original-lata-354ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "coca-cola-zero-2250ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": "presente",
+      "imageUrl": "assets/products/coca-cola-zero-botella-pet-500-ml-pack-x12-ab4d9e31abe096e0-7a626dec1b48f442.webp",
+      "isVerified": true,
+      "sku": "coca-cola-zero-botella-pet-500-ml-pack-x12"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "coca-cola-zero-lata-354ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "corona-extra-botella-330ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "dada-caramel-750ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "dr-lemon-vodka-pomelo-lata-473ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "fanta-naranja-2250ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": "presente",
+      "imageUrl": "assets/products/fanta-naranja-botella-pet-1500-ml-pack-x6-ddcfc29d89d6d01d-e41698f0e9b8788b.webp",
+      "isVerified": true,
+      "sku": "fanta-naranja-botella-pet-1500-ml-pack-x6"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "fernet-1882-750ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "fernet-branca-1000ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "gancia-americano-450ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "gancia-lima-limon-lata-473ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "gatorade-cool-blue-500ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "gatorade-manzana-1250ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "gin-gordons-700ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "monster-green-zero-473ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "paso-de-los-toros-pomelo-1500ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "paso-de-los-toros-tonica-1500ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "patagonia-amber-lager-botella-730ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "pepsi-black-1500ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "pepsi-original-2000ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "powerade-mountain-blast-500ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "quilmes-clasica-botella-710ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "quilmes-clasica-lata-473ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "quilmes-clasica-lata-473ml-pack-6"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "quilmes-stout-lata-473ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "red-bull-original-250ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "red-bull-sin-azucar-250ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "seven-up-original-2000ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "soda-manaos-sifon-2000ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "speed-original-473ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "speed-zero-473ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": "presente",
+      "imageUrl": "assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-09a508b8102bd8a5.webp",
+      "isVerified": true,
+      "sku": "sprite-botella-pet-500-ml-pack-x12"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "sprite-original-2250ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "sprite-original-lata-354ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "sprite-zero-2250ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "stella-artois-lata-473ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "toro-tinto-1000ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "toro-viejo-clasico-tinto-750ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "trapiche-origen-malbec-750ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "villa-del-sur-sin-gas-600ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "villavicencio-con-gas-500ml"
+    },
+    {
+      "available": true,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "villavicencio-sin-gas-1500ml"
+    },
+    {
+      "available": false,
+      "catalogAssetId": null,
+      "imageUrl": null,
+      "isVerified": true,
+      "sku": "vodka-skyy-700ml"
+    }
+  ],
+  "republicados": [
+    {
+      "product_id": "e3a974c3-9e4e-42a2-a1c4-a047cd93bf6a",
+      "published_at": "2026-08-19T05:56:35.153619+00:00",
+      "published_available": true,
+      "published_external_id": "coca-cola-original-botella-pet-500-ml-pack-x12",
+      "published_is_verified": true,
+      "published_sku": "coca-cola-original-botella-pet-500-ml-pack-x12"
+    },
+    {
+      "product_id": "5cd082fa-35db-413e-983e-10b12255fdb9",
+      "published_at": "2026-08-19T05:56:35.285418+00:00",
+      "published_available": true,
+      "published_external_id": "coca-cola-zero-botella-pet-500-ml-pack-x12",
+      "published_is_verified": true,
+      "published_sku": "coca-cola-zero-botella-pet-500-ml-pack-x12"
+    },
+    {
+      "product_id": "69298b9a-1359-470a-b496-77986880cb9e",
+      "published_at": "2026-08-19T05:56:35.41777+00:00",
+      "published_available": true,
+      "published_external_id": "fanta-naranja-botella-pet-1500-ml-pack-x6",
+      "published_is_verified": true,
+      "published_sku": "fanta-naranja-botella-pet-1500-ml-pack-x6"
+    },
+    {
+      "product_id": "e2a28c6b-3db8-4eed-9ac9-e85c42b1bd3e",
+      "published_at": "2026-08-19T05:56:35.541377+00:00",
+      "published_available": true,
+      "published_external_id": "sprite-botella-pet-500-ml-pack-x12",
+      "published_is_verified": true,
+      "published_sku": "sprite-botella-pet-500-ml-pack-x12"
+    }
+  ],
+  "schemaVersion": 1,
+  "totalProductos": 56,
+  "veredicto": "ASOCIACION APLICADA Y VERIFICADA"
+}

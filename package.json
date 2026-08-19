@@ -83,6 +83,8 @@
     "catalog:images:sheet": "node scripts/catalog-images/contact-sheet.mjs",
     "catalog:images:package-scan": "node scripts/catalog-images/package-scan.mjs",
     "catalog:images:sql": "node scripts/catalog-images/build-association-sql.mjs",
+    "catalog:images:preflight": "node scripts/catalog-images/preflight-association.mjs",
+    "catalog:images:live": "node scripts/catalog-images/verify-live-packshots.mjs",
     "catalog:release:validate": "node scripts/validate-release-catalog.mjs",
     "staging:validate": "node scripts/validate-staging-readiness.mjs",
     "realtime:demo": "node scripts/realtime-relay.mjs",

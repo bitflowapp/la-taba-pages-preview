@@ -9,16 +9,16 @@ brahma-chopp-lata-710ml,brahma-chopp-lata-710ml,gondola-neuquen,Brahma,Brahma Ch
 budweiser-lata-473ml,budweiser-lata-473ml,gondola-neuquen,Budweiser,Budweiser,Lager,473,lata,1,false,true,false,2350,SIN_IMAGEN,SIN_FUENTE,,,,
 cafayate-torrontes-750ml,cafayate-torrontes-750ml,gondola-neuquen,Cafayate,Cafayate Torrontés,Torrontés,750,botella,1,false,true,false,5400,SIN_IMAGEN,SIN_CANDIDATO,,,,
 coca-cola-original-2250ml,coca-cola-original-2250ml,produccion,Coca-Cola,Coca-Cola,Original,2250,botella-pet,1,false,false,true,5900,SIN_IMAGEN,SIN_CANDIDATO,,,,
-coca-cola-original-botella-pet-500-ml-pack-x12,coca-cola-original-botella-pet-500-ml-pack-x12,produccion,Coca-Cola,Coca-Cola Original,Botella PET · 500 ml · Pack x12,500,botella-pet,12,true,false,true,17100,MASTER_LISTO_SIN_ASOCIAR,HIGH,HIGH,fabricante,Coca–Cola Original 500ml x12,https://tienda.coca-cola.com.ar/coca-cola-original-500ml-12-100116/p
+coca-cola-original-botella-pet-500-ml-pack-x12,coca-cola-original-botella-pet-500-ml-pack-x12,produccion,Coca-Cola,Coca-Cola Original,Botella PET · 500 ml · Pack x12,500,botella-pet,12,true,false,true,17100,PUBLICADA,HIGH,HIGH,fabricante,Coca–Cola Original 500ml x12,https://tienda.coca-cola.com.ar/coca-cola-original-500ml-12-100116/p
 coca-cola-original-lata-354ml,coca-cola-original-lata-354ml,produccion,Coca-Cola,Coca-Cola,Original,354,lata,1,false,false,true,1800,SIN_IMAGEN,SIN_CANDIDATO,,,,
 coca-cola-zero-2250ml,coca-cola-zero-2250ml,produccion,Coca-Cola,Coca-Cola Zero,Sin azúcar,2250,botella-pet,1,false,false,true,5900,SIN_IMAGEN,SIN_CANDIDATO,,,,
-coca-cola-zero-botella-pet-500-ml-pack-x12,coca-cola-zero-botella-pet-500-ml-pack-x12,produccion,Coca-Cola,Coca-Cola Zero,Botella PET · 500 ml · Pack x12,500,botella-pet,12,true,false,true,17100,MASTER_LISTO_SIN_ASOCIAR,HIGH,HIGH,fabricante,Coca–Cola Zero 500ml x12,https://tienda.coca-cola.com.ar/coca-cola-zero-500ml-12-101816/p
+coca-cola-zero-botella-pet-500-ml-pack-x12,coca-cola-zero-botella-pet-500-ml-pack-x12,produccion,Coca-Cola,Coca-Cola Zero,Botella PET · 500 ml · Pack x12,500,botella-pet,12,true,false,true,17100,PUBLICADA,HIGH,HIGH,fabricante,Coca–Cola Zero 500ml x12,https://tienda.coca-cola.com.ar/coca-cola-zero-500ml-12-101816/p
 coca-cola-zero-lata-354ml,coca-cola-zero-lata-354ml,produccion,Coca-Cola,Coca-Cola Zero,Sin azúcar,354,lata,1,false,false,true,1800,SIN_IMAGEN,SIN_CANDIDATO,,,,
 corona-extra-botella-330ml,corona-extra-botella-330ml,gondola-neuquen,Corona,Corona Extra,Lager,330,botella,1,false,true,false,3400,SIN_IMAGEN,SIN_FUENTE,,,,
 dada-caramel-750ml,dada-caramel-750ml,gondola-neuquen,Dada,Dada Caramel,Caramel,750,botella,1,false,true,false,5900,SIN_IMAGEN,MANUAL_REVIEW,MEDIUM,,,
 dr-lemon-vodka-pomelo-lata-473ml,dr-lemon-vodka-pomelo-lata-473ml,gondola-neuquen,Dr. Lemon,Dr. Lemon Vodka Pomelo,Vodka pomelo,473,lata,1,false,true,false,2200,SIN_IMAGEN,SIN_FUENTE,,,,
 fanta-naranja-2250ml,fanta-naranja-2250ml,produccion,Fanta,Fanta Naranja,Naranja,2250,botella-pet,1,false,false,true,5900,SIN_IMAGEN,SIN_CANDIDATO,,,,
-fanta-naranja-botella-pet-1500-ml-pack-x6,fanta-naranja-botella-pet-1500-ml-pack-x6,produccion,Fanta,Fanta Naranja,Botella PET · 1500 ml · Pack x6,1500,botella-pet,6,true,false,true,19999,MASTER_LISTO_SIN_ASOCIAR,HIGH,HIGH,fabricante,"Fanta Naranja 1,5L x6",https://tienda.coca-cola.com.ar/fanta-naranja-1-5l-6-7790895000454/p
+fanta-naranja-botella-pet-1500-ml-pack-x6,fanta-naranja-botella-pet-1500-ml-pack-x6,produccion,Fanta,Fanta Naranja,Botella PET · 1500 ml · Pack x6,1500,botella-pet,6,true,false,true,19999,PUBLICADA,HIGH,HIGH,fabricante,"Fanta Naranja 1,5L x6",https://tienda.coca-cola.com.ar/fanta-naranja-1-5l-6-7790895000454/p
 fernet-1882-750ml,fernet-1882-750ml,gondola-neuquen,1882,Fernet 1882,Original,750,botella,1,false,true,false,8950,SIN_IMAGEN,SIN_FUENTE,,,,
 fernet-branca-1000ml,fernet-branca-1000ml,gondola-neuquen,Fernet Branca,Fernet Branca,Original,1000,botella,1,false,true,false,26250,SIN_IMAGEN,SIN_FUENTE,,,,
 gancia-americano-450ml,gancia-americano-450ml,gondola-neuquen,Gancia,Gancia Americano,Americano,450,botella,1,false,true,false,4350,SIN_IMAGEN,SIN_FUENTE,,,,
@@ -43,7 +43,7 @@ seven-up-original-2000ml,seven-up-original-2000ml,produccion,7UP,7UP,Original,20
 soda-manaos-sifon-2000ml,soda-manaos-sifon-2000ml,produccion,Manaos,Soda Manaos,Soda,2000,sifon,1,false,false,true,1750,SIN_IMAGEN,SIN_FUENTE,,,,
 speed-original-473ml,speed-original-473ml,produccion,Speed,Speed,Original,473,lata,1,false,false,true,2850,SIN_IMAGEN,SIN_FUENTE,,,,
 speed-zero-473ml,speed-zero-473ml,produccion,Speed,Speed Zero,Sin azúcar,473,lata,1,false,false,true,2850,SIN_IMAGEN,SIN_FUENTE,,,,
-sprite-botella-pet-500-ml-pack-x12,sprite-botella-pet-500-ml-pack-x12,produccion,Sprite,Sprite,Botella PET · 500 ml · Pack x12,500,botella-pet,12,true,false,true,17100,MASTER_LISTO_SIN_ASOCIAR,HIGH,HIGH,fabricante,Sprite 500ml x12,https://tienda.coca-cola.com.ar/sprite-500ml-12-7790895000829/p
+sprite-botella-pet-500-ml-pack-x12,sprite-botella-pet-500-ml-pack-x12,produccion,Sprite,Sprite,Botella PET · 500 ml · Pack x12,500,botella-pet,12,true,false,true,17100,PUBLICADA,HIGH,HIGH,fabricante,Sprite 500ml x12,https://tienda.coca-cola.com.ar/sprite-500ml-12-7790895000829/p
 sprite-original-2250ml,sprite-original-2250ml,produccion,Sprite,Sprite,Original,2250,botella-pet,1,false,false,true,5900,SIN_IMAGEN,SIN_CANDIDATO,,,,
 sprite-original-lata-354ml,sprite-original-lata-354ml,produccion,Sprite,Sprite,Original,354,lata,1,false,false,true,1800,SIN_IMAGEN,SIN_CANDIDATO,,,,
 sprite-zero-2250ml,sprite-zero-2250ml,produccion,Sprite,Sprite Zero,Sin azúcar,2250,botella-pet,1,false,false,true,5900,SIN_IMAGEN,SIN_CANDIDATO,,,,

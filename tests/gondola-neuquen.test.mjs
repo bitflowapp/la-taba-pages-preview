@@ -321,9 +321,27 @@ test('la autorización no reetiqueta ningún asset por sí sola', () => {
   // El origen de un archivo es un hecho y no cambia porque aparezca un permiso
   // nuevo: una foto del CDN de una cadena minorista sigue siendo de esa cadena.
   const [autorizacion] = autorizaciones.autorizaciones;
-  assert.deepEqual(autorizacion.assets_cubiertos, [],
-    'si esta lista crece, cada asset tiene que estar además en catalog_assets con su rights_reference');
   assert.match(autorizaciones.invariante, /no reetiqueta/i);
+
+  // La lista arrancó vacía y creció el 2026-08-18 con los cuatro packs, que sí
+  // vienen del embotellador. Lo que se comprueba no es que esté vacía —eso era
+  // el estado de ese día, no una regla— sino la condición que la hace legítima:
+  // cada SKU que la autorización dice cubrir tiene que existir en el manifiesto
+  // del pipeline, con derechos publicables y citando este mismo id. Una lista
+  // que crece sin respaldo es exactamente el reetiquetado que el invariante
+  // prohíbe.
+  const pipeline = JSON.parse(fs.readFileSync(path.join(root, 'docs/catalog/image-manifest.json'), 'utf8'));
+  const porSku = new Map((pipeline.sources || []).map((fuente) => [fuente.sku, fuente]));
+  for (const sku of autorizacion.assets_cubiertos) {
+    const fuente = porSku.get(sku);
+    assert.ok(fuente, `${sku} está declarado como cubierto y no tiene asset en el manifiesto`);
+    assert.equal(fuente.rightsStatus, autorizacion.habilita_rights_status,
+      `${sku} tiene que declarar el estado que esta autorización habilita`);
+    assert.equal(fuente.rightsReference, autorizacion.id,
+      `${sku} tiene que citar la autorización que lo cubre`);
+    assert.equal(['marca', 'fabricante', 'propio'].includes(fuente.sourceType), true,
+      `${sku} viene de ${fuente.sourceType}, y la autorización cubre marca, embotellador o importador`);
+  }
 
   const manifiesto = JSON.parse(fs.readFileSync(path.join(root, 'catalog/image-manifest.json'), 'utf8'));
   const reetiquetados = (manifiesto.sources || []).filter(

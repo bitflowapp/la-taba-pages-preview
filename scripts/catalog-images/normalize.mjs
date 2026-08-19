@@ -23,8 +23,8 @@ try {
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const RAW = path.join(ROOT, 'scripts/catalog-images/.raw');
 const OUTPUTS = {
-  master: path.join(ROOT, 'assets/catalog/products'),
-  thumbnail: path.join(ROOT, 'assets/catalog/thumbnails'),
+  master: path.join(ROOT, 'assets/products'),
+  thumbnail: path.join(ROOT, 'assets/products'),
 };
 const RAW_MANIFEST = path.join(RAW, 'manifest.json');
 const OUTPUT_MANIFEST = path.join(ROOT, 'docs/catalog/image-manifest.json');

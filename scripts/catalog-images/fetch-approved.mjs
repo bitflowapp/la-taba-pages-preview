@@ -3,6 +3,7 @@ import path from 'node:path';
 import { parseCsv } from '../validate-product-catalog.mjs';
 import {
   catalogImageIdentitySha256,
+  hostOf,
   rawSourceFileName,
   recordsFromCsvRows,
   sha256,
@@ -12,13 +13,18 @@ import {
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const AUDIT = path.join(ROOT, 'docs/catalog/image-source-audit.csv');
+const ALLOWLIST = path.join(ROOT, 'catalog/image-source-allowlist.json');
 const RAW = path.join(ROOT, 'scripts/catalog-images/.raw');
 const RAW_MANIFEST = path.join(RAW, 'manifest.json');
 const allowEmpty = process.argv.includes('--allow-empty');
 
+// La allowlist manda acá, no como sugerencia: sin ella no se descarga nada.
+const allowlist = JSON.parse(await fs.readFile(ALLOWLIST, 'utf8'));
+const allowedHosts = new Set(allowlist.groups.flatMap((group) => group.cdnHosts));
+
 const rows = parseCsv(await fs.readFile(AUDIT, 'utf8'));
 const { header, records } = recordsFromCsvRows(rows);
-const { errors, approved } = validateImageSourceAudit(header, records);
+const { errors, approved } = validateImageSourceAudit(header, records, { allowedHosts });
 for (const error of errors) console.error(`ERROR ${error}`);
 if (errors.length) process.exit(1);
 if (!approved.length) {
@@ -41,6 +47,13 @@ for (const source of approved) {
   });
   if (!response.ok) throw new Error(`${source.sku}: descarga HTTP ${response.status}.`);
   if (!/^https:\/\//i.test(response.url)) throw new Error(`${source.sku}: redirección final insegura.`);
+  // La allowlist se vuelve a mirar DESPUÉS de seguir los redirects. Validar sólo
+  // la URL escrita en la auditoría deja abierto que un 302 mande el descargador
+  // a otro dominio y el archivo entre igual.
+  const hostFinal = hostOf(response.url);
+  if (!hostFinal || !allowedHosts.has(hostFinal)) {
+    throw new Error(`${source.sku}: la descarga terminó en ${hostFinal || 'un host ilegible'}, que no está en la allowlist.`);
+  }
   const type = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
   if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/tiff'].includes(type)) {
     throw new Error(`${source.sku}: formato fuente no permitido (${type || 'sin content-type'}).`);

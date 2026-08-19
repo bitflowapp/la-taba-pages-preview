@@ -98,5 +98,15 @@ test('commercial image audit and manifest are explicit and traceable', () => {
     'utf8',
   ));
   assert.equal(manifest.schemaVersion, 1);
-  assert.equal(manifest.sources.length, 0);
+
+  // Esto exigía `sources.length === 0`. Era el estado del repositorio el día que
+  // se escribió, no una garantía: la primera imagen comercial lo ponía rojo sin
+  // que nada se hubiera roto. Lo que sí es una garantía —y lo que este test
+  // quería decir— es que cada entrada sea rastreable hasta su origen.
+  for (const source of manifest.sources) {
+    for (const field of ['sourceUrl', 'sourceSha256', 'rightsStatus', 'rightsReference', 'checkedAt']) {
+      assert.ok(String(source[field] || '').trim(), `${source.sku}: ${field} vacío en el manifiesto`);
+    }
+    assert.match(source.sourceUrl, /^https:\/\//, `${source.sku}: la fuente tiene que ser HTTPS`);
+  }
 });

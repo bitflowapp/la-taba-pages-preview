@@ -24,10 +24,17 @@ const SOURCE_TYPES = new Set([
   'proveedor_aprobado',
   'propio',
 ]);
+/*
+ * Los ÚNICOS tres estados que habilitan publicar. Son los mismos que exige
+ * `catalog_assets_rights_valid` en la base y los mismos que usa el guard del
+ * paquete: que rija una sola lista en los tres lugares es el punto entero.
+ *
+ * Antes esta lista también aceptaba `PENDIENTE_DERECHOS` y `NO_AUTORIZADOS`.
+ * Como se la usa para validar filas ya APROBADAS, una fuente podía declararse
+ * aprobada diciendo al mismo tiempo que no tenía derechos. El vocabulario más
+ * ancho no era permisivo: era una contradicción que el validador dejaba pasar.
+ */
 const RIGHTS_STATUSES = new Set([
-  'APROBADOS',
-  'PENDIENTE_DERECHOS',
-  'NO_AUTORIZADOS',
   'PROPIO',
   'LICENCIA_COMERCIAL',
   'PERMISO_DOCUMENTADO',
@@ -56,14 +63,32 @@ export function recordsFromCsvRows(rows = []) {
   };
 }
 
-export function validateImageSourceAudit(header = [], records = []) {
+/**
+ * El host de una URL, o null si no es una URL. Se usa para decidir procedencia,
+ * así que un valor que no parsea nunca puede pasar por permitido.
+ */
+export function hostOf(url) {
+  try { return new URL(String(url)).hostname.toLowerCase(); } catch { return null; }
+}
+
+/**
+ * `allowedHosts` viene de `catalog/image-source-allowlist.json`. Si se pasa, una
+ * fuente aprobada cuyo host no esté en la lista es un error, no una advertencia:
+ * el CDN de un retailer que se cuela igual está publicado, aunque el título del
+ * producto calce perfecto. La procedencia es parte de la identidad del activo.
+ *
+ * Si NO se pasa, no se valida procedencia. Eso deja el llamador a cargo de
+ * cargar la lista, y hace explícito en cada llamador si el control corre o no.
+ */
+export function validateImageSourceAudit(header = [], records = [], { allowedHosts = null } = {}) {
   const errors = [];
+  const permitidos = allowedHosts ? new Set([...allowedHosts].map((host) => String(host).toLowerCase())) : null;
   const duplicateColumns = header.filter((column, index) => header.indexOf(column) !== index);
   for (const column of new Set(duplicateColumns)) {
-    errors.push(`La columna ${column || '(vacÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a)'} estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ repetida en la auditorÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a de imÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡genes.`);
+    errors.push(`La columna ${column || '(vacía)'} está repetida en la auditoría de imágenes.`);
   }
   for (const column of IMAGE_AUDIT_COLUMNS) {
-    if (!header.includes(column)) errors.push(`Falta la columna ${column} en la auditorÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a de imÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡genes.`);
+    if (!header.includes(column)) errors.push(`Falta la columna ${column} en la auditoría de imágenes.`);
   }
 
   const seenExternalIds = new Set();
@@ -74,7 +99,7 @@ export function validateImageSourceAudit(header = [], records = []) {
   records.forEach((source, index) => {
     const line = index + 2;
     if (!REVIEW_STATUSES.has(source.status)) {
-      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: status de revisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido.`);
+      errors.push(`Línea ${line}: status de revisión inválido.`);
       return;
     }
     if (source.status !== 'APROBADA') return;
@@ -89,22 +114,30 @@ export function validateImageSourceAudit(header = [], records = []) {
       'expected_sha256',
       'checked_at',
     ]) {
-      if (!source[field]) errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: ${field} estÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ vacÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o para una fuente APROBADA.`);
+      if (!source[field]) errors.push(`Línea ${line}: ${field} está vacío para una fuente APROBADA.`);
     }
     if (!/^https:\/\//i.test(source.source_url)) {
-      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: source_url debe usar HTTPS.`);
+      errors.push(`Línea ${line}: source_url debe usar HTTPS.`);
+    }
+    if (permitidos) {
+      const host = hostOf(source.source_url);
+      if (!host) {
+        errors.push(`Línea ${line}: source_url no es una URL que se pueda leer.`);
+      } else if (!permitidos.has(host)) {
+        errors.push(`Línea ${line}: ${host} no está en la allowlist de fuentes.`);
+      }
     }
     if (!SOURCE_TYPES.has(source.source_type)) {
-      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: source_type no autorizado.`);
+      errors.push(`Línea ${line}: source_type no autorizado.`);
     }
     if (!RIGHTS_STATUSES.has(source.rights_status)) {
-      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: rights_status no acredita uso comercial.`);
+      errors.push(`Línea ${line}: rights_status no acredita uso comercial.`);
     }
     if (!isSha256(source.expected_sha256)) {
-      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: expected_sha256 debe contener 64 caracteres hexadecimales.`);
+      errors.push(`Línea ${line}: expected_sha256 debe contener 64 caracteres hexadecimales.`);
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(source.checked_at)) {
-      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: checked_at debe usar YYYY-MM-DD.`);
+      errors.push(`Línea ${line}: checked_at debe usar YYYY-MM-DD.`);
     }
     for (const flag of [
       'variant_verified',
@@ -113,16 +146,16 @@ export function validateImageSourceAudit(header = [], records = []) {
       'pack_verified',
     ]) {
       if (source[flag] !== 'true') {
-        errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: ${flag} debe ser true para una fuente APROBADA.`);
+        errors.push(`Línea ${line}: ${flag} debe ser true para una fuente APROBADA.`);
       }
     }
 
     const safeSku = normalizeSku(source.sku);
-    if (!safeSku) errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: SKU no apto para nombre de archivo.`);
-    if (seenExternalIds.has(source.external_id)) errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: external_id duplicado.`);
-    if (seenSkus.has(source.sku)) errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: SKU duplicado.`);
+    if (!safeSku) errors.push(`Línea ${line}: SKU no apto para nombre de archivo.`);
+    if (seenExternalIds.has(source.external_id)) errors.push(`Línea ${line}: external_id duplicado.`);
+    if (seenSkus.has(source.sku)) errors.push(`Línea ${line}: SKU duplicado.`);
     if (safeSku && seenSafeSkus.has(safeSku)) {
-      errors.push(`LÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­nea ${line}: el SKU colisiona al normalizarse (${safeSku}).`);
+      errors.push(`Línea ${line}: el SKU colisiona al normalizarse (${safeSku}).`);
     }
     seenExternalIds.add(source.external_id);
     seenSkus.add(source.sku);
@@ -151,7 +184,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
 
   const sources = manifest.sources;
   if (!sources.length && !allowEmpty) {
-    errors.push('El manifiesto final no contiene imÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡genes aprobadas.');
+    errors.push('El manifiesto final no contiene imágenes aprobadas.');
   }
 
   const externalIds = new Set();
@@ -160,7 +193,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
   sources.forEach((source, index) => {
     const label = source?.sku || `entrada ${index + 1}`;
     if (!source || typeof source !== 'object') {
-      errors.push(`Manifiesto ${label}: entrada invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lida.`);
+      errors.push(`Manifiesto ${label}: entrada inválida.`);
       return;
     }
     for (const field of [
@@ -174,7 +207,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
       'rightsReference',
     ]) {
       if (!String(source[field] || '').trim()) {
-        errors.push(`Manifiesto ${label}: ${field} vacÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­o.`);
+        errors.push(`Manifiesto ${label}: ${field} vacío.`);
       }
     }
     if (externalIds.has(source.externalId)) {
@@ -185,7 +218,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
     skus.add(source.sku);
 
     if (!isSha256(source.sourceSha256)) {
-      errors.push(`Manifiesto ${label}: sourceSha256 invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido.`);
+      errors.push(`Manifiesto ${label}: sourceSha256 inválido.`);
     }
     const expectedIdentitySha256 = catalogImageIdentitySha256(source);
     if (
@@ -224,7 +257,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
         assetPaths.add(asset.path);
       }
       if (!isSha256(asset.sha256)) {
-        errors.push(`Manifiesto ${label}: SHA-256 ${kind} invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido.`);
+        errors.push(`Manifiesto ${label}: SHA-256 ${kind} inválido.`);
       }
       if (asset.width !== expectedSize || asset.height !== expectedSize) {
         errors.push(`Manifiesto ${label}: ${kind} debe medir ${expectedSize}x${expectedSize}.`);
@@ -238,7 +271,7 @@ export function validateFinalImageManifest(manifest, { allowEmpty = false } = {}
         !isSha256(asset.bindingSha256)
         || asset.bindingSha256 !== expectedBindingSha256
       ) {
-        errors.push(`Manifiesto ${label}: bindingSha256 ${kind} invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido.`);
+        errors.push(`Manifiesto ${label}: bindingSha256 ${kind} inválido.`);
       }
     }
     if (
@@ -284,6 +317,24 @@ export function catalogImageIdentitySha256({
   ].join('\n'), 'utf8'));
 }
 
+/*
+ * DÓNDE VIVE UNA FOTO DE PRODUCTO, y por qué acá y no en otro lado.
+ *
+ * `assets/products/`, plano, master y thumbnail en la misma carpeta. No es una
+ * preferencia: es lo único que la base acepta. La restricción
+ * `products_verified_publication_authority` exige
+ *
+ *     image_url ~ '^assets/products/[a-z0-9_-]+[.]webp$'
+ *
+ * para las DOS rutas, y además que sean distintas entre sí. Este pipeline
+ * escribía en `assets/catalog/products/` y `assets/catalog/thumbnails/`, que
+ * ninguna de las dos entra en ese patrón: todo lo que producía era, por
+ * contrato, imposible de asociar a un producto. Nada fallaba ruidosamente
+ * porque nadie había llegado todavía a intentar la asociación.
+ *
+ * Los nombres siguen siendo distintos entre master y thumbnail —marcador
+ * `thumb-` más el hash del contenido—, así que compartir carpeta no los colisiona.
+ */
 export function catalogAssetPath(source = {}, kind, assetSha256) {
   if (!ASSET_KINDS.has(kind)) return '';
   const safeSku = normalizeSku(source.sku);
@@ -291,9 +342,11 @@ export function catalogAssetPath(source = {}, kind, assetSha256) {
   const assetHash = String(assetSha256 || '').toLowerCase();
   if (!safeSku || !isSha256(identitySha256) || !isSha256(assetHash)) return '';
   const marker = kind === 'thumbnail' ? 'thumb-' : '';
-  const directory = kind === 'thumbnail' ? 'assets/catalog/thumbnails' : 'assets/catalog/products';
-  return `${directory}/${safeSku}-${identitySha256.slice(0, 16)}-${marker}${assetHash.slice(0, 16)}.webp`;
+  return `assets/products/${safeSku}-${identitySha256.slice(0, 16)}-${marker}${assetHash.slice(0, 16)}.webp`;
 }
+
+/** El patrón que la base exige, para poder comprobarlo del lado del repositorio. */
+export const DB_PRODUCT_ASSET_PATTERN = /^assets\/products\/[a-z0-9_-]+\.webp$/;
 
 export function catalogAssetBindingSha256(source = {}, kind, asset = {}) {
   if (!ASSET_KINDS.has(kind)) return '';

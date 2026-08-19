@@ -18,9 +18,11 @@ try {
 }
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
+// Master y thumbnail viven juntos en `assets/products/`, plano, porque es la
+// única forma de ruta que `products_verified_publication_authority` acepta.
+// Ver el comentario de `catalogAssetPath` en lib.mjs.
 const DIRS = [
-  path.join(ROOT, 'assets/catalog/products'),
-  path.join(ROOT, 'assets/catalog/thumbnails'),
+  path.join(ROOT, 'assets/products'),
 ];
 const MANIFEST = path.join(ROOT, 'docs/catalog/image-manifest.json');
 const AUDIT = path.join(ROOT, 'docs/catalog/image-source-audit.csv');

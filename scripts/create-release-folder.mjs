@@ -2,7 +2,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { auditProductImageRights, decorativeImages } from './lib/publishable-image-rights.mjs';
+import {
+  auditProductImageRights,
+  decorativeImages,
+  PRODUCT_IMAGE_NAMESPACES,
+} from './lib/publishable-image-rights.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const releaseDir = path.join(root, 'dist_release');
@@ -12,9 +16,29 @@ const releaseDir = path.join(root, 'dist_release');
 // No alcanza con que ningún producto la referencie: un archivo que se sube queda
 // servido en la web, con URL propia, alcanzable por cualquiera. Publicar es
 // subirlo, no enlazarlo.
+//
+// La decisión se toma EN POSITIVO. Antes se copiaba `assets/` entero y se le
+// restaba una lista de bloqueados; eso alcanza mientras el auditor conozca cada
+// archivo, y deja de alcanzar el día que aparece uno nuevo. Ahora una foto de
+// producto viaja sólo si está en la lista de publicables. Lo que no está, no
+// viaja, sin que nadie haya tenido que preverlo.
 const rights = auditProductImageRights(root);
+const publishable = new Set(rights.filter((image) => image.publishable).map((image) => image.path));
 const blocked = new Set(rights.filter((image) => !image.publishable).map((image) => image.path));
 const asRelative = (absolute) => path.relative(root, absolute).replaceAll('\\', '/');
+const isProductImagePath = (relative) => PRODUCT_IMAGE_NAMESPACES.some((ns) => relative.startsWith(ns));
+
+/**
+ * `fs.cp` consulta también los directorios: negarle uno le corta el subárbol
+ * entero, así que un directorio siempre pasa y la decisión se toma por archivo.
+ */
+async function puedeViajar(absolute) {
+  const relative = asRelative(absolute);
+  if (!isProductImagePath(relative)) return true;
+  const stat = await fs.stat(absolute).catch(() => null);
+  if (stat?.isDirectory()) return true;
+  return publishable.has(relative);
+}
 
 const entries = [
   'index.html',
@@ -51,10 +75,10 @@ try {
     if (stat.isDirectory()) {
       await fs.cp(source, target, {
         recursive: true,
-        filter: (from) => !blocked.has(asRelative(from)),
+        filter: puedeViajar,
       });
     } else {
-      if (blocked.has(entry)) continue;
+      if (!await puedeViajar(source)) continue;
       await fs.copyFile(source, target);
     }
   }

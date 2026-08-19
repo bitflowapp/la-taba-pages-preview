@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-08-18",
+  "doc": "Pares de SKU cuyas fotografías se parecen por debajo del umbral y que aun así son correctas. Cada par necesita una explicación escrita: un parecido sin explicar es indistinguible de una foto asociada al producto equivocado, que es el error que este pipeline existe para evitar. Sin entrada acá, la hoja de contactos falla.",
+  "medido": {
+    "detector": "firma de color 8x8 RGB, diferencia media por canal sobre 255",
+    "porQueNoSirveMasResolucion": "Se midió a 8, 16, 32 y 64 px. El par Coca-Cola Original / Zero queda en 0,6 · 0,7 · 1,0 · 1,2: subir la resolución no lo separa. Las dos fotos son la misma botella, con la misma etiqueta roja y el mismo líquido oscuro; lo que cambia es la tapa y un 'ZERO' chico. Ninguna firma automática los distingue, y por eso la decisión es humana y queda escrita."
+  },
+  "pares": [
+    {
+      "skuA": "coca-cola-original-botella-pet-500-ml-pack-x12",
+      "skuB": "coca-cola-zero-botella-pet-500-ml-pack-x12",
+      "distanciaMedida": 0.6,
+      "explicacion": "Son dos archivos distintos (SHA-256 distintos) y dos packshots oficiales distintos del embotellador. Coinciden porque Coca-Cola Zero en Argentina usa la misma etiqueta roja y la misma botella de 500 ml que la Original: sólo cambian la tapa (negra contra roja) y la leyenda ZERO. Verificado mirando las dos a tamaño completo el 2026-08-18.",
+      "verificadoPor": "TABA2_CATALOG_IMAGE_PIPELINE (Opus 5)",
+      "verificadoEl": "2026-08-18"
+    }
+  ]
+}

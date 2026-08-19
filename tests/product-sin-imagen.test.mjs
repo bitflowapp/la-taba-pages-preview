@@ -141,15 +141,45 @@ test('caso 10 · ninguna foto sin derechos viaja en el paquete productivo', () =
   );
 });
 
-test('caso 10 · la única foto de producto publicable es la propia de TABA', () => {
+test('caso 10 · toda foto publicable está declarada en el manifiesto, no en el código', () => {
+  // Esto pedía que la lista tuviera exactamente un elemento, el recurso propio
+  // de TABA, y avisaba en su propio mensaje qué hacer cuando creciera: «que
+  // quede declarado en el manifiesto, no en el código». Creció el 2026-08-18 con
+  // los cuatro packs del embotellador, y quedó declarado. Lo que se comprueba
+  // ahora es la regla, no el número: nada es publicable por estar escrito en un
+  // archivo .mjs.
   const publicables = auditProductImageRights(root).filter((imagen) => imagen.publishable);
+  const manifiesto = JSON.parse(fs.readFileSync(path.join(root, 'docs/catalog/image-manifest.json'), 'utf8'));
+  const declarados = new Map();
+  for (const fuente of manifiesto.sources || []) {
+    for (const asset of [fuente.assets?.master, fuente.assets?.thumbnail]) {
+      if (asset?.path) declarados.set(asset.path, fuente);
+    }
+  }
 
-  assert.deepEqual(
-    publicables.map((imagen) => imagen.path),
-    ['assets/products/beverage-placeholder.svg'],
-    'si esta lista crece, alguien consiguió derechos: que quede declarado en el manifiesto, '
-    + 'no en el código.',
-  );
+  assert.ok(publicables.length > 0);
+  for (const imagen of publicables) {
+    if (imagen.path === 'assets/products/beverage-placeholder.svg') continue;
+    const fuente = declarados.get(imagen.path);
+    assert.ok(fuente, `${imagen.path} se considera publicable y no está en el manifiesto`);
+    assert.ok(String(fuente.rightsReference || '').trim(), `${imagen.path} no cita ninguna autoridad de derechos`);
+    assert.match(fuente.sourceUrl, /^https:\/\//);
+  }
+});
+
+test('caso 10 bis · ninguna foto de un CDN de retailer se volvió publicable', () => {
+  const historico = JSON.parse(fs.readFileSync(path.join(root, 'catalog/image-manifest.json'), 'utf8'));
+  const deRetailer = new Set();
+  for (const fuente of historico.sources || []) {
+    for (const asset of [fuente.master, fuente.thumbnail]) {
+      if (asset?.path) deRetailer.add(asset.path);
+    }
+  }
+  assert.ok(deRetailer.size >= 120, 'los 60 activos históricos son master y thumbnail');
+  for (const imagen of auditProductImageRights(root)) {
+    if (!deRetailer.has(imagen.path)) continue;
+    assert.equal(imagen.publishable, false, `${imagen.path} viene de un retailer y no puede publicarse`);
+  }
 });
 
 test('el criterio de derechos falla cerrado: lo no declarado no se publica', () => {

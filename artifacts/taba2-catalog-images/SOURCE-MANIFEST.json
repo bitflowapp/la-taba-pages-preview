@@ -1,0 +1,1476 @@
+{
+  "allowlistActualizadaEl": "2026-08-18",
+  "cosechadoEl": "2026-08-18",
+  "decisiones": [
+    {
+      "alcoholic": true,
+      "brand": "Andes Origen",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "andes-origen-roja-lata-473ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "andes origen",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "andes origen roja",
+        "packCount": 1,
+        "sku": "andes-origen-roja-lata-473ml",
+        "variant": "roja"
+      },
+      "sku": "andes-origen-roja-lata-473ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Andes Origen",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "andes-origen-rubia-lata-473ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "andes origen",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "andes origen rubia",
+        "packCount": 1,
+        "sku": "andes-origen-rubia-lata-473ml",
+        "variant": "rubia"
+      },
+      "sku": "andes-origen-rubia-lata-473ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Aquarius",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "aquarius-manzana-1500ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "aquarius",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "aquarius manzana",
+        "packCount": 1,
+        "sku": "aquarius-manzana-1500ml",
+        "variant": "manzana"
+      },
+      "sku": "aquarius-manzana-1500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Aquarius",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "aquarius-pera-1500ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "aquarius",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "aquarius pera",
+        "packCount": 1,
+        "sku": "aquarius-pera-1500ml",
+        "variant": "pera"
+      },
+      "sku": "aquarius-pera-1500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Aquarius",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "aquarius-pomelo-2250ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "aquarius",
+        "capacityMl": 2250,
+        "envase": "botella-pet",
+        "name": "aquarius pomelo",
+        "packCount": 1,
+        "sku": "aquarius-pomelo-2250ml",
+        "variant": "pomelo"
+      },
+      "sku": "aquarius-pomelo-2250ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Benedictino",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "benedictino-sin-gas-2250ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "benedictino",
+        "capacityMl": 2250,
+        "envase": "botella-pet",
+        "name": "benedictino",
+        "packCount": 1,
+        "sku": "benedictino-sin-gas-2250ml",
+        "variant": "sin gas"
+      },
+      "sku": "benedictino-sin-gas-2250ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Brahma",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "brahma-chopp-lata-710ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "brahma",
+        "capacityMl": 710,
+        "envase": "lata",
+        "name": "brahma chopp",
+        "packCount": 1,
+        "sku": "brahma-chopp-lata-710ml",
+        "variant": "rubia"
+      },
+      "sku": "brahma-chopp-lata-710ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Budweiser",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "budweiser-lata-473ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "budweiser",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "budweiser",
+        "packCount": 1,
+        "sku": "budweiser-lata-473ml",
+        "variant": "lager"
+      },
+      "sku": "budweiser-lata-473ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Cafayate",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "cafayate-torrontes-750ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "cafayate",
+        "capacityMl": 750,
+        "envase": "botella",
+        "name": "cafayate torrontes",
+        "packCount": 1,
+        "sku": "cafayate-torrontes-750ml",
+        "variant": "torrontes"
+      },
+      "sku": "cafayate-torrontes-750ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Coca-Cola",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "coca-cola-original-2250ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "coca-cola",
+        "capacityMl": 2250,
+        "envase": "botella-pet",
+        "name": "coca-cola",
+        "packCount": 1,
+        "sku": "coca-cola-original-2250ml",
+        "variant": "original"
+      },
+      "sku": "coca-cola-original-2250ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Coca-Cola",
+      "candidatos": [
+        {
+          "confidence": "HIGH",
+          "grupo": "coca-cola-andina-ar",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156458/100116.jpg?v=639063398326300000",
+          "parsed": {
+            "capacityMl": 500,
+            "envase": "botella-pet",
+            "envaseDeclarado": false,
+            "packCount": 12
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/coca-cola-original-500ml-12-100116/p",
+          "reasons": [],
+          "sourceType": "fabricante",
+          "title": "Coca–Cola Original 500ml x12"
+        }
+      ],
+      "elegido": {
+        "grupo": "coca-cola-andina-ar",
+        "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156458/100116.jpg?v=639063398326300000",
+        "productUrl": "https://tienda.coca-cola.com.ar/coca-cola-original-500ml-12-100116/p",
+        "sourceType": "fabricante",
+        "title": "Coca–Cola Original 500ml x12"
+      },
+      "estado": "HIGH",
+      "externalId": "coca-cola-original-botella-pet-500-ml-pack-x12",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "coca-cola",
+        "capacityMl": 500,
+        "envase": "botella-pet",
+        "name": "coca-cola original",
+        "packCount": 12,
+        "sku": "coca-cola-original-botella-pet-500-ml-pack-x12",
+        "variant": "botella pet · 500 ml · pack x12"
+      },
+      "sku": "coca-cola-original-botella-pet-500-ml-pack-x12"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Coca-Cola",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "coca-cola-original-lata-354ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "coca-cola",
+        "capacityMl": 354,
+        "envase": "lata",
+        "name": "coca-cola",
+        "packCount": 1,
+        "sku": "coca-cola-original-lata-354ml",
+        "variant": "original"
+      },
+      "sku": "coca-cola-original-lata-354ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Coca-Cola",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "coca-cola-zero-2250ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "coca-cola",
+        "capacityMl": 2250,
+        "envase": "botella-pet",
+        "name": "coca-cola zero",
+        "packCount": 1,
+        "sku": "coca-cola-zero-2250ml",
+        "variant": "sin azucar"
+      },
+      "sku": "coca-cola-zero-2250ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Coca-Cola",
+      "candidatos": [
+        {
+          "confidence": "HIGH",
+          "grupo": "coca-cola-andina-ar",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156461/101816.jpg?v=639063400798100000",
+          "parsed": {
+            "capacityMl": 500,
+            "envase": "botella-pet",
+            "envaseDeclarado": false,
+            "packCount": 12
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/coca-cola-zero-500ml-12-101816/p",
+          "reasons": [],
+          "sourceType": "fabricante",
+          "title": "Coca–Cola Zero 500ml x12"
+        }
+      ],
+      "elegido": {
+        "grupo": "coca-cola-andina-ar",
+        "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156461/101816.jpg?v=639063400798100000",
+        "productUrl": "https://tienda.coca-cola.com.ar/coca-cola-zero-500ml-12-101816/p",
+        "sourceType": "fabricante",
+        "title": "Coca–Cola Zero 500ml x12"
+      },
+      "estado": "HIGH",
+      "externalId": "coca-cola-zero-botella-pet-500-ml-pack-x12",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "coca-cola",
+        "capacityMl": 500,
+        "envase": "botella-pet",
+        "name": "coca-cola zero",
+        "packCount": 12,
+        "sku": "coca-cola-zero-botella-pet-500-ml-pack-x12",
+        "variant": "botella pet · 500 ml · pack x12"
+      },
+      "sku": "coca-cola-zero-botella-pet-500-ml-pack-x12"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Coca-Cola",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "coca-cola-zero-lata-354ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "coca-cola",
+        "capacityMl": 354,
+        "envase": "lata",
+        "name": "coca-cola zero",
+        "packCount": 1,
+        "sku": "coca-cola-zero-lata-354ml",
+        "variant": "sin azucar"
+      },
+      "sku": "coca-cola-zero-lata-354ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Corona",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "corona-extra-botella-330ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "corona",
+        "capacityMl": 330,
+        "envase": "botella",
+        "name": "corona extra",
+        "packCount": 1,
+        "sku": "corona-extra-botella-330ml",
+        "variant": "lager"
+      },
+      "sku": "corona-extra-botella-330ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Dada",
+      "candidatos": [
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156051/106105.png?v=638463892035970000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/dada-incrediblends-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «caramel» y la fuente «incrediblends»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "DADA INCREDIBLENDS 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155958/106018.png?v=638457824749400000",
+          "parsed": {
+            "capacityMl": null,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/dada-n6-honey-1x750/p",
+          "reasons": [
+            "REVISAR la fuente no declara capacidad",
+            "REVISAR la línea no es idéntica (el SKU dice «caramel» y la fuente «honey»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "DADA N°6 HONEY 1X750"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155957/106017.png?v=638457809165970000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/dada-n8-chocolate-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «caramel» y la fuente «n8 chocolate»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "DADA N8 CHOCOLATE 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155954/106014.png?v=638455315953770000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/dada-finca-las-moras-n2-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «caramel» y la fuente «finca moras n2»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "DADA FINCA LAS MORAS N2 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155953/106013.png?v=638455311699900000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/dada-finca-las-moras-n3-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «caramel» y la fuente «finca moras n3»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "DADA FINCA LAS MORAS N3 - 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155952/106012.png?v=638455309230470000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/dada-finca-las-moras-n1-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «caramel» y la fuente «finca moras n1»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "DADA FINCA LAS MORAS N1 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155901/106303.png?v=638454260303300000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/dada-espumante-cassi-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «caramel» y la fuente «espumante cassi»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "DADA ESPUMANTE CASSI 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155900/106302.png?v=638454257801870000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/dada-espumante-maracuya-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «caramel» y la fuente «espumante maracuya»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "DADA ESPUMANTE MARACUYA 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155899/106301.png?v=638454255109970000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/dada-7-espumante-rose-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «caramel» y la fuente «espumante rose»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "DADA 7 ESPUMANTE ROSE 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155898/106300.png?v=638454248321570000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/dada-espumante-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «caramel» y la fuente «espumante»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "DADA ESPUMANTE 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156480/106321.png?v=639070435387530000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/dada-sidra-1x750ml-106321/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «caramel» y la fuente «sidra»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "DADA SIDRA 1X750ml"
+        }
+      ],
+      "elegido": null,
+      "estado": "MANUAL_REVIEW",
+      "externalId": "dada-caramel-750ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "dada",
+        "capacityMl": 750,
+        "envase": "botella",
+        "name": "dada caramel",
+        "packCount": 1,
+        "sku": "dada-caramel-750ml",
+        "variant": "caramel"
+      },
+      "sku": "dada-caramel-750ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Dr. Lemon",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "dr-lemon-vodka-pomelo-lata-473ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "dr. lemon",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "dr. lemon vodka pomelo",
+        "packCount": 1,
+        "sku": "dr-lemon-vodka-pomelo-lata-473ml",
+        "variant": "vodka pomelo"
+      },
+      "sku": "dr-lemon-vodka-pomelo-lata-473ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Fanta",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "fanta-naranja-2250ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "fanta",
+        "capacityMl": 2250,
+        "envase": "botella-pet",
+        "name": "fanta naranja",
+        "packCount": 1,
+        "sku": "fanta-naranja-2250ml",
+        "variant": "naranja"
+      },
+      "sku": "fanta-naranja-2250ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Fanta",
+      "candidatos": [
+        {
+          "confidence": "HIGH",
+          "grupo": "coca-cola-andina-ar",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156347/101113.jpg?v=638857652534800000",
+          "parsed": {
+            "capacityMl": 1500,
+            "envase": "botella-pet",
+            "envaseDeclarado": false,
+            "packCount": 6
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/fanta-naranja-1-5l-6-7790895000454/p",
+          "reasons": [],
+          "sourceType": "fabricante",
+          "title": "Fanta Naranja 1,5L x6"
+        }
+      ],
+      "elegido": {
+        "grupo": "coca-cola-andina-ar",
+        "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156347/101113.jpg?v=638857652534800000",
+        "productUrl": "https://tienda.coca-cola.com.ar/fanta-naranja-1-5l-6-7790895000454/p",
+        "sourceType": "fabricante",
+        "title": "Fanta Naranja 1,5L x6"
+      },
+      "estado": "HIGH",
+      "externalId": "fanta-naranja-botella-pet-1500-ml-pack-x6",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "fanta",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "fanta naranja",
+        "packCount": 6,
+        "sku": "fanta-naranja-botella-pet-1500-ml-pack-x6",
+        "variant": "botella pet · 1500 ml · pack x6"
+      },
+      "sku": "fanta-naranja-botella-pet-1500-ml-pack-x6"
+    },
+    {
+      "alcoholic": true,
+      "brand": "1882",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "fernet-1882-750ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "1882",
+        "capacityMl": 750,
+        "envase": "botella",
+        "name": "fernet 1882",
+        "packCount": 1,
+        "sku": "fernet-1882-750ml",
+        "variant": "original"
+      },
+      "sku": "fernet-1882-750ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Fernet Branca",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "fernet-branca-1000ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "fernet branca",
+        "capacityMl": 1000,
+        "envase": "botella",
+        "name": "fernet branca",
+        "packCount": 1,
+        "sku": "fernet-branca-1000ml",
+        "variant": "original"
+      },
+      "sku": "fernet-branca-1000ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Gancia",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "gancia-americano-450ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "gancia",
+        "capacityMl": 450,
+        "envase": "botella",
+        "name": "gancia americano",
+        "packCount": 1,
+        "sku": "gancia-americano-450ml",
+        "variant": "americano"
+      },
+      "sku": "gancia-americano-450ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Gancia",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "gancia-lima-limon-lata-473ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "gancia",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "gancia lima limon",
+        "packCount": 1,
+        "sku": "gancia-lima-limon-lata-473ml",
+        "variant": "lima limon"
+      },
+      "sku": "gancia-lima-limon-lata-473ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Gatorade",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "gatorade-cool-blue-500ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "gatorade",
+        "capacityMl": 500,
+        "envase": "botella-pet",
+        "name": "gatorade cool blue",
+        "packCount": 1,
+        "sku": "gatorade-cool-blue-500ml",
+        "variant": "cool blue"
+      },
+      "sku": "gatorade-cool-blue-500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Gatorade",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "gatorade-manzana-1250ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "gatorade",
+        "capacityMl": 1250,
+        "envase": "botella-pet",
+        "name": "gatorade manzana",
+        "packCount": 1,
+        "sku": "gatorade-manzana-1250ml",
+        "variant": "manzana"
+      },
+      "sku": "gatorade-manzana-1250ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Gordon's",
+      "candidatos": [
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155887/106400.png?v=638451820323500000",
+          "parsed": {
+            "capacityMl": 700,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/gordons-gin-1x700ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «london dry» y la fuente «gin»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "GORDON´S GIN 1X700ml"
+        }
+      ],
+      "elegido": null,
+      "estado": "MANUAL_REVIEW",
+      "externalId": "gin-gordons-700ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "gordon's",
+        "capacityMl": 700,
+        "envase": "botella",
+        "name": "gordon's london dry",
+        "packCount": 1,
+        "sku": "gin-gordons-700ml",
+        "variant": "london dry"
+      },
+      "sku": "gin-gordons-700ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Monster",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "monster-green-zero-473ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "monster",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "monster green zero",
+        "packCount": 1,
+        "sku": "monster-green-zero-473ml",
+        "variant": "sin azucar"
+      },
+      "sku": "monster-green-zero-473ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Paso de los Toros",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "paso-de-los-toros-pomelo-1500ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "paso de los toros",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "paso de los toros pomelo",
+        "packCount": 1,
+        "sku": "paso-de-los-toros-pomelo-1500ml",
+        "variant": "pomelo"
+      },
+      "sku": "paso-de-los-toros-pomelo-1500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Paso de los Toros",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "paso-de-los-toros-tonica-1500ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "paso de los toros",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "paso de los toros tonica",
+        "packCount": 1,
+        "sku": "paso-de-los-toros-tonica-1500ml",
+        "variant": "tonica"
+      },
+      "sku": "paso-de-los-toros-tonica-1500ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Patagonia",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "patagonia-amber-lager-botella-730ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "patagonia",
+        "capacityMl": 730,
+        "envase": "botella",
+        "name": "patagonia amber lager",
+        "packCount": 1,
+        "sku": "patagonia-amber-lager-botella-730ml",
+        "variant": "amber lager"
+      },
+      "sku": "patagonia-amber-lager-botella-730ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Pepsi",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "pepsi-black-1500ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "pepsi",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "pepsi black",
+        "packCount": 1,
+        "sku": "pepsi-black-1500ml",
+        "variant": "sin azucar"
+      },
+      "sku": "pepsi-black-1500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Pepsi",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "pepsi-original-2000ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "pepsi",
+        "capacityMl": 2000,
+        "envase": "botella-pet",
+        "name": "pepsi",
+        "packCount": 1,
+        "sku": "pepsi-original-2000ml",
+        "variant": "original"
+      },
+      "sku": "pepsi-original-2000ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Powerade",
+      "candidatos": [
+        {
+          "confidence": "MEDIUM",
+          "grupo": "coca-cola-andina-ar",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156400/Producto-web-1080x1080-PW-Sour.jpg?v=638941528552070000",
+          "parsed": {
+            "capacityMl": null,
+            "envase": "botella-pet",
+            "envaseDeclarado": false,
+            "packCount": null
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/powerade-sour-500x6-100968/p",
+          "reasons": [
+            "REVISAR la fuente no declara cuántas unidades trae",
+            "REVISAR la fuente no declara capacidad",
+            "REVISAR la línea no es idéntica (el SKU dice «mountain blast» y la fuente «sour»)"
+          ],
+          "sourceType": "fabricante",
+          "title": "POWERADE SOUR 500x6"
+        }
+      ],
+      "elegido": null,
+      "estado": "MANUAL_REVIEW",
+      "externalId": "powerade-mountain-blast-500ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "powerade",
+        "capacityMl": 500,
+        "envase": "botella-pet",
+        "name": "powerade mountain blast",
+        "packCount": 1,
+        "sku": "powerade-mountain-blast-500ml",
+        "variant": "mountain blast"
+      },
+      "sku": "powerade-mountain-blast-500ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Quilmes",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "quilmes-clasica-botella-710ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "quilmes",
+        "capacityMl": 710,
+        "envase": "botella",
+        "name": "quilmes clasica",
+        "packCount": 1,
+        "sku": "quilmes-clasica-botella-710ml",
+        "variant": "lager"
+      },
+      "sku": "quilmes-clasica-botella-710ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Quilmes",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "quilmes-clasica-lata-473ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "quilmes",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "quilmes clasica",
+        "packCount": 1,
+        "sku": "quilmes-clasica-lata-473ml",
+        "variant": "lager"
+      },
+      "sku": "quilmes-clasica-lata-473ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Quilmes",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "quilmes-clasica-lata-473ml-pack-6",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "quilmes",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "quilmes clasica",
+        "packCount": 6,
+        "sku": "quilmes-clasica-lata-473ml-pack-6",
+        "variant": "lager"
+      },
+      "sku": "quilmes-clasica-lata-473ml-pack-6"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Quilmes",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "quilmes-stout-lata-473ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "quilmes",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "quilmes stout",
+        "packCount": 1,
+        "sku": "quilmes-stout-lata-473ml",
+        "variant": "stout"
+      },
+      "sku": "quilmes-stout-lata-473ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Red Bull",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "red-bull-original-250ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "red bull",
+        "capacityMl": 250,
+        "envase": "lata",
+        "name": "red bull",
+        "packCount": 1,
+        "sku": "red-bull-original-250ml",
+        "variant": "original"
+      },
+      "sku": "red-bull-original-250ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Red Bull",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "red-bull-sin-azucar-250ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "red bull",
+        "capacityMl": 250,
+        "envase": "lata",
+        "name": "red bull sugarfree",
+        "packCount": 1,
+        "sku": "red-bull-sin-azucar-250ml",
+        "variant": "sin azucar"
+      },
+      "sku": "red-bull-sin-azucar-250ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "7UP",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "seven-up-original-2000ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "7up",
+        "capacityMl": 2000,
+        "envase": "botella-pet",
+        "name": "7up",
+        "packCount": 1,
+        "sku": "seven-up-original-2000ml",
+        "variant": "original"
+      },
+      "sku": "seven-up-original-2000ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Manaos",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "soda-manaos-sifon-2000ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "manaos",
+        "capacityMl": 2000,
+        "envase": "sifon",
+        "name": "soda manaos",
+        "packCount": 1,
+        "sku": "soda-manaos-sifon-2000ml",
+        "variant": "soda"
+      },
+      "sku": "soda-manaos-sifon-2000ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Speed",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "speed-original-473ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "speed",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "speed",
+        "packCount": 1,
+        "sku": "speed-original-473ml",
+        "variant": "original"
+      },
+      "sku": "speed-original-473ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Speed",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "speed-zero-473ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "speed",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "speed zero",
+        "packCount": 1,
+        "sku": "speed-zero-473ml",
+        "variant": "sin azucar"
+      },
+      "sku": "speed-zero-473ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Sprite",
+      "candidatos": [
+        {
+          "confidence": "HIGH",
+          "grupo": "coca-cola-andina-ar",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155757/7790895000829.jpg?v=638748141213370000",
+          "parsed": {
+            "capacityMl": 500,
+            "envase": "botella-pet",
+            "envaseDeclarado": false,
+            "packCount": 12
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/sprite-500ml-12-7790895000829/p",
+          "reasons": [],
+          "sourceType": "fabricante",
+          "title": "Sprite 500ml x12"
+        }
+      ],
+      "elegido": {
+        "grupo": "coca-cola-andina-ar",
+        "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155757/7790895000829.jpg?v=638748141213370000",
+        "productUrl": "https://tienda.coca-cola.com.ar/sprite-500ml-12-7790895000829/p",
+        "sourceType": "fabricante",
+        "title": "Sprite 500ml x12"
+      },
+      "estado": "HIGH",
+      "externalId": "sprite-botella-pet-500-ml-pack-x12",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "sprite",
+        "capacityMl": 500,
+        "envase": "botella-pet",
+        "name": "sprite",
+        "packCount": 12,
+        "sku": "sprite-botella-pet-500-ml-pack-x12",
+        "variant": "botella pet · 500 ml · pack x12"
+      },
+      "sku": "sprite-botella-pet-500-ml-pack-x12"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Sprite",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "sprite-original-2250ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "sprite",
+        "capacityMl": 2250,
+        "envase": "botella-pet",
+        "name": "sprite",
+        "packCount": 1,
+        "sku": "sprite-original-2250ml",
+        "variant": "original"
+      },
+      "sku": "sprite-original-2250ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Sprite",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "sprite-original-lata-354ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "sprite",
+        "capacityMl": 354,
+        "envase": "lata",
+        "name": "sprite",
+        "packCount": 1,
+        "sku": "sprite-original-lata-354ml",
+        "variant": "original"
+      },
+      "sku": "sprite-original-lata-354ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Sprite",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "sprite-zero-2250ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "sprite",
+        "capacityMl": 2250,
+        "envase": "botella-pet",
+        "name": "sprite zero",
+        "packCount": 1,
+        "sku": "sprite-zero-2250ml",
+        "variant": "sin azucar"
+      },
+      "sku": "sprite-zero-2250ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Stella Artois",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "stella-artois-lata-473ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "stella artois",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "stella artois",
+        "packCount": 1,
+        "sku": "stella-artois-lata-473ml",
+        "variant": "lager"
+      },
+      "sku": "stella-artois-lata-473ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Toro",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "toro-tinto-1000ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "toro",
+        "capacityMl": 1000,
+        "envase": "botella",
+        "name": "toro",
+        "packCount": 1,
+        "sku": "toro-tinto-1000ml",
+        "variant": "tinto"
+      },
+      "sku": "toro-tinto-1000ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Toro Viejo",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "toro-viejo-clasico-tinto-750ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "toro viejo",
+        "capacityMl": 750,
+        "envase": "botella",
+        "name": "toro viejo clasico",
+        "packCount": 1,
+        "sku": "toro-viejo-clasico-tinto-750ml",
+        "variant": "tinto"
+      },
+      "sku": "toro-viejo-clasico-tinto-750ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Trapiche",
+      "candidatos": [
+        {
+          "confidence": "HIGH",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156062/106117.png?v=638463931481900000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/origen-by-trapiche-malbec-1x750ml/p",
+          "reasons": [],
+          "sourceType": "distribuidor_oficial",
+          "title": "ORIGEN BY TRAPICHE MALBEC 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156043/106098.png?v=638463832253970000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/trapiche-impuro-malbec-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «origen malbec» y la fuente «impuro malbec»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "TRAPICHE IMPURO MALBEC 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156042/106097.png?v=638463830158100000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/trapiche-puro-malbec-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «origen malbec» y la fuente «puro malbec»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "TRAPICHE PURO MALBEC 1X750ml"
+        },
+        {
+          "confidence": "MEDIUM",
+          "grupo": "penaflor-por-andina",
+          "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156024/106079.png?v=638460451275770000",
+          "parsed": {
+            "capacityMl": 750,
+            "envase": "botella",
+            "envaseDeclarado": false,
+            "packCount": 1
+          },
+          "productUrl": "https://tienda.coca-cola.com.ar/trapiche-reserva-malbec-1x750ml/p",
+          "reasons": [
+            "REVISAR la línea no es idéntica (el SKU dice «origen malbec» y la fuente «malbec»)"
+          ],
+          "sourceType": "distribuidor_oficial",
+          "title": "TRAPICHE RESERVA MALBEC 1X750ml"
+        }
+      ],
+      "elegido": {
+        "grupo": "penaflor-por-andina",
+        "imageUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156062/106117.png?v=638463931481900000",
+        "productUrl": "https://tienda.coca-cola.com.ar/origen-by-trapiche-malbec-1x750ml/p",
+        "sourceType": "distribuidor_oficial",
+        "title": "ORIGEN BY TRAPICHE MALBEC 1X750ml"
+      },
+      "estado": "HIGH",
+      "externalId": "trapiche-origen-malbec-750ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "trapiche",
+        "capacityMl": 750,
+        "envase": "botella",
+        "name": "trapiche origen malbec",
+        "packCount": 1,
+        "sku": "trapiche-origen-malbec-750ml",
+        "variant": "malbec"
+      },
+      "sku": "trapiche-origen-malbec-750ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Villa del Sur",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "villa-del-sur-sin-gas-600ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "villa del sur",
+        "capacityMl": 600,
+        "envase": "botella-pet",
+        "name": "villa del sur",
+        "packCount": 1,
+        "sku": "villa-del-sur-sin-gas-600ml",
+        "variant": "sin gas"
+      },
+      "sku": "villa-del-sur-sin-gas-600ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Villavicencio",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "villavicencio-con-gas-500ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "villavicencio",
+        "capacityMl": 500,
+        "envase": "botella-pet",
+        "name": "villavicencio",
+        "packCount": 1,
+        "sku": "villavicencio-con-gas-500ml",
+        "variant": "con gas"
+      },
+      "sku": "villavicencio-con-gas-500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Villavicencio",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "villavicencio-sin-gas-1500ml",
+      "origen": "produccion",
+      "presentacion": {
+        "brand": "villavicencio",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "villavicencio",
+        "packCount": 1,
+        "sku": "villavicencio-sin-gas-1500ml",
+        "variant": "sin gas"
+      },
+      "sku": "villavicencio-sin-gas-1500ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Skyy",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "vodka-skyy-700ml",
+      "origen": "gondola-neuquen",
+      "presentacion": {
+        "brand": "skyy",
+        "capacityMl": 700,
+        "envase": "botella",
+        "name": "skyy vodka",
+        "packCount": 1,
+        "sku": "vodka-skyy-700ml",
+        "variant": "original"
+      },
+      "sku": "vodka-skyy-700ml"
+    }
+  ],
+  "reconciliacion": {
+    "esperadoVisible": 33,
+    "gondola": 52,
+    "gondolaAlcoholica": 23,
+    "gondolaNoAlcoholica": 29,
+    "ocultosAgregados": 23,
+    "packsPrevios": 4,
+    "total": 56,
+    "visibles": 33
+  },
+  "resumen": {
+    "HIGH": 5,
+    "MANUAL_REVIEW": 3,
+    "SIN_CANDIDATO": 17,
+    "SIN_FUENTE": 31
+  },
+  "schemaVersion": 1,
+  "totalSku": 56
+}

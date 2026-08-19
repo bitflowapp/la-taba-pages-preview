@@ -1,0 +1,70 @@
+{
+  "bloqueadas": 164,
+  "bloqueadasPorMotivo": {
+    "pending_review": 120,
+    "sin declarar": 44
+  },
+  "decorativas": {
+    "cantidad": 27,
+    "doc": "Imágenes de sitio, no de producto. Viajan por su propia decisión y no las gobierna este manifiesto."
+  },
+  "doc": "Las ÚNICAS fotos de producto que el empaquetado puede copiar. Generado por scripts/catalog-images/build-public-asset-manifest.mjs; no editar a mano.",
+  "fotosDeProductoAuditadas": 173,
+  "publicables": [
+    {
+      "bytes": 1074,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/beverage-placeholder.svg",
+      "sha256": "7962fa5a02e4acf148c845e876500c6bcb2851f1e6f9c90d76b2b80e3fe8f6c8"
+    },
+    {
+      "bytes": 20326,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-original-botella-pet-500-ml-pack-x12-da9d9f1d872c1e49-75b52ee33dad073c.webp",
+      "sha256": "75b52ee33dad073cedd2ae3babd87c319f3aa1cc22dc0f8623738701965b4235"
+    },
+    {
+      "bytes": 5848,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-original-botella-pet-500-ml-pack-x12-da9d9f1d872c1e49-thumb-2b779c394ec67eb4.webp",
+      "sha256": "2b779c394ec67eb41c4197ac7016f1bf1991fbfcb313b0feaaceafe2022079dc"
+    },
+    {
+      "bytes": 18742,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-zero-botella-pet-500-ml-pack-x12-ab4d9e31abe096e0-7a626dec1b48f442.webp",
+      "sha256": "7a626dec1b48f44272ba58d6f9240d4e4c9c673f96e38d636dd4cd64a19fa2c4"
+    },
+    {
+      "bytes": 5418,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-zero-botella-pet-500-ml-pack-x12-ab4d9e31abe096e0-thumb-390944099fdb5e22.webp",
+      "sha256": "390944099fdb5e227be5b9db4a4c6f3549c3e6355a52e7b8290ad421ec741cd9"
+    },
+    {
+      "bytes": 22050,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/fanta-naranja-botella-pet-1500-ml-pack-x6-ddcfc29d89d6d01d-e41698f0e9b8788b.webp",
+      "sha256": "e41698f0e9b8788b7472ecd777ddeab4791cc6166770630d079f52b3062e08ea"
+    },
+    {
+      "bytes": 6700,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/fanta-naranja-botella-pet-1500-ml-pack-x6-ddcfc29d89d6d01d-thumb-6f5544d252c1151c.webp",
+      "sha256": "6f5544d252c1151c4b4b8aa477d706fc2f9014c0c801f446e589366f5a66c8a7"
+    },
+    {
+      "bytes": 14520,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-09a508b8102bd8a5.webp",
+      "sha256": "09a508b8102bd8a5bd01c7ca752caeb312cffc577d752eb34b59993caa7e5c1a"
+    },
+    {
+      "bytes": 3792,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-thumb-49fb5075276d3ebb.webp",
+      "sha256": "49fb5075276d3ebb3e01c5f36f2a440ea289c88e8d09fca04047681b4d978211"
+    }
+  ],
+  "schemaVersion": 1
+}

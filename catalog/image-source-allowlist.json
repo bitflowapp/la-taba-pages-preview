@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-08-18",
+  "rightsAuthority": "TABA-AUT-2026-08-001",
+  "doc": "Qué dominios pueden aportar una foto de producto, y con qué tipo de fuente entra cada marca. Falla cerrado: una marca sin grupo no descubre, y un host que no esté acá no se descarga. Cambiar este archivo es una decisión comercial, no técnica.",
+  "convencionEnvase": {
+    "doc": "Cuando el título no nombra el envase, vale la convención de SU categoría. No es una adivinanza del matcher: es un hecho revisado sobre esa fuente, verificado mirando packshots, y queda versionado acá para que se pueda discutir. Un token explícito en el título («Lata», «Vidrio») siempre gana sobre la convención.",
+    "verificadoEl": "2026-08-18",
+    "verificadoCon": "6 packshots descargados de producto/gaseosas: los que no nombran envase son botella PET; los que dicen Lata o Vidrio lo nombran."
+  },
+  "rejectedHosts": {
+    "doc": "Retailers y marketplaces. Se listan explícitamente para que el rechazo sea una decisión escrita y no un descuido del matcher. La lista no es exhaustiva: lo que no está permitido se rechaza igual.",
+    "hosts": [
+      "jumboargentina.vtexassets.com",
+      "jumboargentina.vteximg.com.br",
+      "www.jumbo.com.ar",
+      "www.carrefour.com.ar",
+      "www.disco.com.ar",
+      "www.vea.com.ar",
+      "diaonline.supermercadosdia.com.ar",
+      "www.cotodigital3.com.ar",
+      "http2.mlstatic.com",
+      "articulo.mercadolibre.com.ar"
+    ]
+  },
+  "groups": [
+    {
+      "id": "coca-cola-andina-ar",
+      "label": "Sistema Coca-Cola Argentina · embotellador Coca-Cola Andina",
+      "sourceType": "fabricante",
+      "adapter": "vtex",
+      "storeHost": "tienda.coca-cola.com.ar",
+      "cdnHosts": ["andinacocacolaar.vtexassets.com", "andinacocacolaar.vteximg.com.br"],
+      "categories": [
+        { "path": "producto/gaseosas", "envasePorDefecto": "botella-pet" },
+        { "path": "producto/agua", "envasePorDefecto": "botella-pet" },
+        { "path": "producto/aguas-saborizadas", "envasePorDefecto": "botella-pet" },
+        { "path": "producto/energizantes", "envasePorDefecto": "lata" },
+        { "path": "producto/isotonicos", "envasePorDefecto": "botella-pet" },
+        { "path": "producto/jugos", "envasePorDefecto": null },
+        { "path": "producto/bebidas-con-alcohol/cerveza", "envasePorDefecto": null }
+      ],
+      "brands": [
+        "Coca-Cola",
+        "Sprite",
+        "Fanta",
+        "Aquarius",
+        "Powerade",
+        "Schweppes",
+        "Benedictino",
+        "Bonaqua",
+        "Monster"
+      ],
+      "justificacion": "Coca-Cola Andina embotella y comercializa estas marcas en Argentina, y distribuye Monster. Es la tienda oficial del embotellador, no un retailer."
+    },
+    {
+      "id": "penaflor-por-andina",
+      "label": "Portafolio Peñaflor y Diageo distribuido por Coca-Cola Andina",
+      "sourceType": "distribuidor_oficial",
+      "adapter": "vtex",
+      "storeHost": "tienda.coca-cola.com.ar",
+      "cdnHosts": ["andinacocacolaar.vtexassets.com", "andinacocacolaar.vteximg.com.br"],
+      "categories": [
+        { "path": "penaflor/vinos", "envasePorDefecto": "botella" },
+        { "path": "penaflor/espumantes", "envasePorDefecto": "botella" },
+        { "path": "penaflor/vodka", "envasePorDefecto": "botella" },
+        { "path": "penaflor/gin", "envasePorDefecto": "botella" },
+        { "path": "penaflor/whisky", "envasePorDefecto": "botella" },
+        { "path": "penaflor/licores", "envasePorDefecto": "botella" },
+        { "path": "penaflor/sidra", "envasePorDefecto": "botella" },
+        { "path": "penaflor/cerveza", "envasePorDefecto": null }
+      ],
+      "brands": [
+        "Trapiche",
+        "Dada",
+        "Cafayate",
+        "Toro",
+        "Toro Viejo",
+        "Gordon's",
+        "Skyy"
+      ],
+      "justificacion": "Andina distribuye el portafolio Peñaflor en Argentina y lo publica bajo su propio árbol de categorías. Es distribuidor autorizado, un escalón por debajo del embotellador: alcanza para descubrir, y la revisión visual sigue siendo obligatoria."
+    }
+  ],
+  "sinFuente": {
+    "doc": "Marcas del catálogo sin fuente oficial programática encontrada al 2026-08-18. No se inventa una: quedan en fallback, y esto es la lista de trabajo del próximo round.",
+    "brands": [
+      "Pepsi", "7UP", "Paso de los Toros", "Gatorade",
+      "Manaos", "Villa del Sur", "Villavicencio",
+      "Red Bull", "Speed",
+      "Quilmes", "Brahma", "Budweiser", "Stella Artois", "Corona",
+      "Andes Origen", "Patagonia",
+      "Fernet Branca", "1882", "Gancia", "Dr. Lemon"
+    ],
+    "medido": {
+      "tiendaquilmes.com.ar": "no resuelve",
+      "www.pepsi.com.ar": "no resuelve",
+      "www.villadelsur.com.ar": "sitio de marca; responde 200 a cualquier ruta y no expone catálogo programático",
+      "www.villavicencio.com.ar": "idem",
+      "www.redbull.com": "403 al agente automático",
+      "www.monsterenergy.com": "403 al agente automático; la marca entra igual por el distribuidor",
+      "www.speed.com.ar": "404 en la API de catálogo",
+      "www.trapiche.com.ar": "404 en la API de catálogo; la marca entra por el distribuidor"
+    }
+  }
+}

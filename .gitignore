@@ -45,3 +45,8 @@ artifacts/catalog-glow/**/*.png
 # repo y por lo tanto se puede volver a sacar.
 artifacts/catalog-glow/polish-*/
 artifacts/catalog-glow/abc/
+
+# Las imágenes fuente que se bajan para MIRARLAS antes de aprobar. Son material
+# de revisión, no del producto: el repositorio versiona los WebP normalizados y
+# sus hashes, no los originales del CDN de la marca.
+artifacts/taba2-catalog-images/revision/

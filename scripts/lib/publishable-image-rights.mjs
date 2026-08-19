@@ -33,13 +33,34 @@ function readJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
 }
 
+/*
+ * Los dos manifiestos hablan idiomas distintos, y hay que entender los dos.
+ *
+ *   catalog/image-manifest.json        (schema_version 3, el histórico)
+ *       source.master.path · source.rights_status
+ *   docs/catalog/image-manifest.json   (schemaVersion 1, el del pipeline)
+ *       source.assets.master.path · source.rightsStatus
+ *
+ * Leer sólo la forma vieja no fallaba ruidosamente: dejaba TODO lo que produce
+ * el pipeline nuevo como «sin declarar», o sea bloqueado. Falla cerrado, así
+ * que nunca publicó de más —pero tampoco publicó nunca nada, y el motivo no
+ * aparecía en ningún error. Un guard que ignora al productor de sus datos es un
+ * guard que dice que no a todo, y eso se confunde con que no haya material.
+ */
 function declaredRights(root) {
   const declared = new Map();
   for (const file of ['catalog/image-manifest.json', 'docs/catalog/image-manifest.json']) {
     const manifest = readJson(path.join(root, file));
     for (const source of manifest?.sources || []) {
-      for (const asset of [source.master, source.thumbnail]) {
-        if (asset?.path) declared.set(normalize(asset.path), source.rights_status || 'sin declarar');
+      const rights = source.rights_status || source.rightsStatus || 'sin declarar';
+      const assets = [
+        source.master,
+        source.thumbnail,
+        source.assets?.master,
+        source.assets?.thumbnail,
+      ];
+      for (const asset of assets) {
+        if (asset?.path) declared.set(normalize(asset.path), rights);
       }
     }
   }

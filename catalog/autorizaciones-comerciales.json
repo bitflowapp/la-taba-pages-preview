@@ -32,8 +32,20 @@
         "pendiente": true,
         "que_falta": "el documento del acuerdo (o el paquete de packshots provisto por cada marca, que lo acredita en los hechos). Con eso, `rights_evidence_file` deja de estar vacío y cada asset se registra citando este id."
       },
-      "assets_cubiertos": [],
-      "nota": "Al 2026-08-18 ningún archivo del repositorio entra en este marco: las 60 fuentes del manifiesto vienen de jumboargentina.vtexassets.com y la tienda oficial de Coca-Cola Andina sólo publica packshots de pack, no de unidad. La góndola se publica sin fotografías, que la migración 108 permite, con el recurso propio de TABA en su lugar."
+      "assets_cubiertos": [
+        "coca-cola-original-botella-pet-500-ml-pack-x12",
+        "coca-cola-zero-botella-pet-500-ml-pack-x12",
+        "fanta-naranja-botella-pet-1500-ml-pack-x6",
+        "sprite-botella-pet-500-ml-pack-x12"
+      ],
+      "nota": "Al 2026-08-18, cuatro SKU entran en este marco: los cuatro packs, con el packshot oficial del embotellador Coca-Cola Andina, fondo blanco, capacidad y cantidad exactas. Eran justamente los que la tienda oficial sí publica, porque publica packs y no unidades — el mismo hecho que antes dejaba este marco vacío. Las 60 fuentes históricas del manifiesto siguen viniendo de jumboargentina.vtexassets.com, siguen en pending_review y NO entran. Las 52 unidades siguen sin fotografía, que la migración 108 permite, con el recurso propio de TABA en su lugar.",
+      "fuera_de_alcance_detectado": [
+        {
+          "sku": "trapiche-origen-malbec-750ml",
+          "motivo": "El packshot es correcto y exacto, pero lo publica Coca-Cola Andina como DISTRIBUIDOR del portafolio Peñaflor, y este marco cubre «la marca o su embotellador/importador». Un distribuidor no está en esa frase. Queda descargado y sin publicar hasta que el titular amplíe el alcance.",
+          "medidoEl": "2026-08-18"
+        }
+      ]
     }
   ],
   "invariante": "Una autorización declarada NO reetiqueta assets existentes. Los que están en pending_review o RETAILER_SOLO_REFERENCIA se quedan donde están mientras su metadata contradiga el alcance: el origen de un archivo es un hecho y no cambia porque aparezca un permiso nuevo."

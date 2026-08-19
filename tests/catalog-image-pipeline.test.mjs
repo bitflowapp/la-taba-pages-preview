@@ -106,7 +106,15 @@ test('complete master and thumbnail swap between SKUs breaks deterministic ident
   assert.ok(report.errors.some((error) => /bindingSha256 master/.test(error)));
 });
 
-test('image verification accepts the approved demo and keeps the commercial template fail-closed', () => {
+/*
+ * Esta prueba comprobaba el fail-closed corriendo `verify.mjs` contra el
+ * manifiesto REAL y esperando que fallara «porque está vacío». Eso ataba la
+ * garantía a un estado pasajero del repositorio: el día que el catálogo tuviera
+ * su primera imagen comercial —hoy— la prueba se ponía roja sin que nada se
+ * hubiera roto. La garantía es la misma y ahora se comprueba donde vive: un
+ * manifiesto sin imágenes no valida si nadie pidió explícitamente el template.
+ */
+test('image verification accepts the approved demo and the real commercial manifest', () => {
   const approvedDemo = spawnSync(
     process.execPath,
     ['scripts/catalog-images/verify-approved-demo.mjs'],
@@ -115,14 +123,26 @@ test('image verification accepts the approved demo and keeps the commercial temp
   assert.equal(approvedDemo.status, 0, `${approvedDemo.stdout}\n${approvedDemo.stderr}`);
 
   const commercialArgs = ['scripts/catalog-images/verify.mjs'];
-  const commercialWithoutApproval = spawnSync(process.execPath, commercialArgs, {
+  const conImagenesReales = spawnSync(process.execPath, commercialArgs, {
     cwd: root,
     encoding: 'utf8',
   });
-  assert.notEqual(commercialWithoutApproval.status, 0);
-  assert.match(
-    `${commercialWithoutApproval.stdout}\n${commercialWithoutApproval.stderr}`,
-    /no contiene im[aá]genes|allow-empty/i,
+  assert.equal(
+    conImagenesReales.status,
+    0,
+    `${conImagenesReales.stdout}\n${conImagenesReales.stderr}`,
+  );
+  assert.match(conImagenesReales.stdout, /verificadas con fuente, derechos y SHA-256/);
+
+  const vacio = validateFinalImageManifest({ schemaVersion: 1, sources: [] });
+  assert.ok(
+    vacio.errors.some((error) => /no contiene im[aá]genes/i.test(error)),
+    'un manifiesto vacío sigue sin validar por su cuenta',
+  );
+  assert.deepEqual(
+    validateFinalImageManifest({ schemaVersion: 1, sources: [] }, { allowEmpty: true }).errors,
+    [],
+    'y sólo pasa cuando alguien pide explícitamente el template',
   );
 
   const templateOnly = spawnSync(process.execPath, [...commercialArgs, '--allow-empty'], {

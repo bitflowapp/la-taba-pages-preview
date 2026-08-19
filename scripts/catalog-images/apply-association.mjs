@@ -48,6 +48,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { stableJson } from './lib.mjs';
 import { autorizaCatalogo, ROLES_CATALOGO } from './owner-authority.mjs';
+import { fueraDelLote, OBJETIVOS, SKUS_OBJETIVO, validarLoteObjetivo } from './lote-objetivo.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const MANIFIESTO = path.join(ROOT, 'docs/catalog/image-manifest.json');
@@ -63,12 +64,7 @@ const EMAIL_ESPERADO = String(process.env.TABA_EXPECTED_OWNER_EMAIL || '').trim(
 const AUTORIDAD = 'TABA-AUT-2026-08-001';
 const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || 'https://la-taba.pages.dev';
 
-const ESPERADOS = new Map([
-  ['coca-cola-original-botella-pet-500-ml-pack-x12', 'Coca-Cola Original Pack x12'],
-  ['coca-cola-zero-botella-pet-500-ml-pack-x12', 'Coca-Cola Zero Pack x12'],
-  ['fanta-naranja-botella-pet-1500-ml-pack-x6', 'Fanta Naranja Pack x6'],
-  ['sprite-botella-pet-500-ml-pack-x12', 'Sprite Pack x12'],
-]);
+const etiqueta = (sku) => OBJETIVOS.get(sku)?.nombre || sku;
 
 /** Los campos que `stage_catalog_products` lee del payload y vuelve a escribir. */
 const CAMPOS_ECO = [
@@ -277,7 +273,7 @@ paso('ESTADO PREVIO');
 const manifiesto = JSON.parse(await fs.readFile(MANIFIESTO, 'utf8'));
 if (manifiesto.sources.length !== 4) abortar(`el manifiesto tiene ${manifiesto.sources.length} assets y se esperaban 4.`);
 for (const f of manifiesto.sources) {
-  if (!ESPERADOS.has(f.sku)) abortar(`el manifiesto trae un SKU inesperado: ${f.sku}`);
+  if (!OBJETIVOS.has(f.sku)) abortar(`el manifiesto trae un SKU inesperado: ${f.sku}`);
   if (f.rightsReference !== AUTORIDAD) abortar(`${f.sku} no cita ${AUTORIDAD}.`);
   if (!['fabricante', 'marca', 'propio'].includes(f.sourceType)) {
     abortar(`${f.sku} viene de ${f.sourceType}, fuera del alcance de ${AUTORIDAD}.`);
@@ -341,9 +337,24 @@ const columnas = CAMPOS_ECO.concat([
   'image_url', 'sold_as_pack', 'catalog_origin',
 ]).join(',');
 const productos = await pedir(
-  `/rest/v1/products?select=${columnas}&business_id=eq.${BUSINESS_ID}&sold_as_pack=eq.true&order=sku.asc`,
+  `/rest/v1/products?select=${columnas}&business_id=eq.${BUSINESS_ID}`
+  + `&sku=in.(${SKUS_OBJETIVO.join(',')})&order=sku.asc`,
 );
-if (productos.length !== 4) abortar(`se esperaban 4 productos con sold_as_pack y hay ${productos.length}.`);
+/*
+ * El lote se valida contra la LISTA de objetivos, no contra un conteo.
+ *
+ * La versión anterior pedía «exactamente 4 productos con sold_as_pack» y se
+ * rompió cuando una sesión de owner reveló el quinto pack legítimo del catálogo
+ * —`quilmes-clasica-lata-473ml-pack-6`, que la clave publicable no ve porque el
+ * alcohol está cerrado—. El catálogo puede tener 5, 20 o 200 packs y ninguno
+ * tiene que ver con estas cuatro fotografías.
+ */
+const lote = validarLoteObjetivo({ assets: manifiesto.sources, productos });
+if (!lote.ok) {
+  for (const error of lote.errores) console.error(`  FALLA ${error}`);
+  abortar('el lote no es el declarado.');
+}
+ok(`los ${SKUS_OBJETIVO.length} objetivos existen, son pack y traen la cantidad esperada`);
 
 const porSkuManifiestoPrevio = new Map(manifiesto.sources.map((f) => [f.sku, f]));
 const sinImagen = productos.filter((p) => p.catalog_asset_id === null && p.image_url === null);
@@ -353,7 +364,7 @@ const conImagenCorrecta = productos.filter((p) => {
 });
 
 for (const p of productos) {
-  if (!ESPERADOS.has(p.sku)) abortar(`producto inesperado: ${p.sku}`);
+  if (!OBJETIVOS.has(p.sku)) abortar(`producto inesperado: ${p.sku}`);
   if (p.catalog_origin !== 'commercial') abortar(`${p.sku} no es comercial (${p.catalog_origin}).`);
   if (!p.is_active) abortar(`${p.sku} no está activo.`);
   if (!(p.stock > 0)) abortar(`${p.sku} tiene stock 0: al republicar quedaría NO disponible.`);
@@ -375,7 +386,7 @@ let modo;
 if (sinImagen.length === 4) {
   for (const p of productos) {
     if (!p.available || !p.is_verified) abortar(`${p.sku} no está hoy disponible y verificado; el estado previo no es el esperado.`);
-    ok(`${ESPERADOS.get(p.sku)} · stock ${p.stock} · $${p.price} · disponible · sin imagen`);
+    ok(`${etiqueta(p.sku)} · stock ${p.stock} · $${p.price} · disponible · sin imagen`);
   }
   modo = 'PRIMERA_CARGA';
 } else if (conImagenCorrecta.length === 4 && (assetsIdenticos || seco)) {
@@ -385,7 +396,7 @@ if (sinImagen.length === 4) {
   // llegaría a pedir la contraseña, y justo la reparación es el momento en que
   // más falta hace poder correrlo.
   for (const p of productos) {
-    ok(`${ESPERADOS.get(p.sku)} · stock ${p.stock} · $${p.price} · imagen ya puesta · ${p.available ? 'disponible' : 'FUERA DE VENTA'}`);
+    ok(`${etiqueta(p.sku)} · stock ${p.stock} · $${p.price} · imagen ya puesta · ${p.available ? 'disponible' : 'FUERA DE VENTA'}`);
   }
   if (seco) info('en seco no se puede confirmar catalog_assets; la sesión de owner sí lo hace');
   modo = 'REPARACION';
@@ -397,6 +408,21 @@ if (sinImagen.length === 4) {
 }
 info(`modo: ${modo}`);
 const estadoPrevio = Object.fromEntries(productos.map((p) => [p.sku, { ...p }]));
+
+/*
+ * Censo del catálogo ENTERO antes de escribir. No se usa para decidir nada: se
+ * usa para poder demostrar después que lo que está fuera del lote quedó igual.
+ * Sin una foto del antes, «no se movió nada» es una afirmación sin respaldo.
+ */
+const censoPrevio = await pedir(
+  `/rest/v1/products?select=sku,price,stock,available,is_verified,is_active,sold_as_pack,units_per_pack,image_url,catalog_asset_id`
+  + `&business_id=eq.${BUSINESS_ID}&order=sku.asc`,
+);
+const packsDelCatalogo = censoPrevio.filter((p) => p.sold_as_pack === true);
+info(`catálogo: ${censoPrevio.length} productos · ${packsDelCatalogo.length} se venden como pack`);
+for (const p of fueraDelLote(packsDelCatalogo)) {
+  info(`  pack legítimo AJENO a este lote, no se toca: ${p.sku} (x${p.units_per_pack})`);
+}
 
 // ── 4. Payloads ──────────────────────────────────────────────────────────────
 paso('LOTE A APLICAR');
@@ -489,7 +515,7 @@ if (importado) {
         p_external_id: sku,
       });
       republicados.push(publicado);
-      ok(`${ESPERADOS.get(sku)}: verificado y ${publicado.published_available ? 'DISPONIBLE' : 'NO disponible'}`);
+      ok(`${etiqueta(sku)}: verificado y ${publicado.published_available ? 'DISPONIBLE' : 'NO disponible'}`);
     } catch (error) {
       fallos.push(`publish ${sku}: ${error.message}`);
       console.error(`  FALLA republicando ${sku}: ${error.message}`);
@@ -503,16 +529,42 @@ const despues = await pedir(
   `/rest/v1/products?select=sku,image_url,image_sha256,image_thumbnail_url,image_thumbnail_sha256,source_image_sha256,catalog_asset_id,available,is_verified,price,stock,sold_as_pack,is_active`
   + `&business_id=eq.${BUSINESS_ID}&order=sku.asc`,
 );
-const conImagen = despues.filter((p) => p.image_url);
+const objetivosDespues = despues.filter((p) => OBJETIVOS.has(p.sku));
+const conImagen = objetivosDespues.filter((p) => p.image_url);
 const comprobaciones = [];
 const exigir = (condicion, mensaje) => {
   comprobaciones.push({ ok: Boolean(condicion), mensaje });
   console.log(`  ${condicion ? 'OK   ' : 'FALLA'} ${mensaje}`);
 };
 
-exigir(despues.length === 56, `56 productos en el negocio (hay ${despues.length})`);
-exigir(conImagen.length === 4, `4 con imagen productiva (hay ${conImagen.length})`);
-exigir(despues.length - conImagen.length === 52, `${despues.length - conImagen.length} con fallback propio de TABA`);
+// El total no se compara contra un número escrito a mano —que envejece con el
+// catálogo— sino contra lo que había antes de escribir.
+exigir(despues.length === censoPrevio.length, `el catálogo sigue teniendo ${censoPrevio.length} productos (hay ${despues.length})`);
+exigir(conImagen.length === SKUS_OBJETIVO.length, `${SKUS_OBJETIVO.length} objetivos con imagen productiva (hay ${conImagen.length})`);
+exigir(
+  despues.length - conImagen.length === censoPrevio.length - SKUS_OBJETIVO.length,
+  `${despues.length - conImagen.length} productos con el recurso propio de TABA`,
+);
+
+/*
+ * Nada fuera del lote se movió. Es la comprobación que le da sentido a elegir el
+ * conjunto por lista: si tocar cuatro productos moviera un quinto, la lista sería
+ * decorativa. Incluye al pack de Quilmes, que es un pack legítimo y no es de este
+ * lote.
+ */
+const censoPrevioPorSku = new Map(censoPrevio.map((p) => [p.sku, p]));
+const ajenosMovidos = [];
+for (const p of fueraDelLote(despues)) {
+  const antes = censoPrevioPorSku.get(p.sku);
+  if (!antes) { ajenosMovidos.push(`${p.sku}: apareció un producto que antes no estaba`); continue; }
+  for (const campo of ['price', 'stock', 'available', 'is_verified', 'is_active', 'sold_as_pack', 'image_url', 'catalog_asset_id']) {
+    if (JSON.stringify(p[campo]) !== JSON.stringify(antes[campo])) {
+      ajenosMovidos.push(`${p.sku}.${campo}: ${JSON.stringify(antes[campo])} -> ${JSON.stringify(p[campo])}`);
+    }
+  }
+}
+exigir(ajenosMovidos.length === 0, `los ${censoPrevio.length - SKUS_OBJETIVO.length} productos fuera del lote quedaron intactos`);
+for (const movido of ajenosMovidos) console.error(`        ${movido}`);
 
 const porSkuManifiesto = new Map(manifiesto.sources.map((f) => [f.sku, f]));
 for (const p of conImagen) {

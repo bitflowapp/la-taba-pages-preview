@@ -1,0 +1,164 @@
+{
+  "base": "https://la-taba.pages.dev",
+  "cacheName": "la-taba-runtime-v80-instalacion-temprana",
+  "comprobaciones": [
+    {
+      "ok": true,
+      "t": "Coca-Cola Original Pack x12 · master · 200 · 19.8 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Coca-Cola Original Pack x12 · thumbnail · 200 · 5.7 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Coca-Cola Zero Pack x12 · master · 200 · 18.3 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Coca-Cola Zero Pack x12 · thumbnail · 200 · 5.3 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Fanta Naranja Pack x6 · master · 200 · 21.5 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Fanta Naranja Pack x6 · thumbnail · 200 · 6.5 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Sprite Pack x12 · master · 200 · 14.2 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Sprite Pack x12 · thumbnail · 200 · 3.7 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "el sitio arranca"
+    },
+    {
+      "ok": true,
+      "t": "catálogo visible · 33 productos"
+    },
+    {
+      "ok": true,
+      "t": "4 tarjetas con fotografía propia"
+    },
+    {
+      "ok": true,
+      "t": "29 tarjetas siguen con el recurso propio de TABA"
+    },
+    {
+      "ok": true,
+      "t": "cada tarjeta con foto dibuja el thumbnail de SU producto"
+    },
+    {
+      "ok": true,
+      "t": "la ficha de Coca-Cola Original Pack x12 muestra su fotografía"
+    },
+    {
+      "ok": true,
+      "t": "el carrito guarda el producto (en el navegador, sin crear pedido)"
+    },
+    {
+      "ok": true,
+      "t": "manifest intacto · La Taba · standalone"
+    },
+    {
+      "ok": true,
+      "t": "service worker intacto · la-taba-runtime-v80-instalacion-temprana"
+    },
+    {
+      "ok": true,
+      "t": "ninguna de las 8 imágenes pedidas viene de un retailer"
+    },
+    {
+      "ok": true,
+      "t": "consola limpia"
+    }
+  ],
+  "imagenes": [
+    {
+      "bytes": 20326,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "75b52ee33dad073cedd2ae3babd87c319f3aa1cc22dc0f8623738701965b4235",
+      "sku": "coca-cola-original-botella-pet-500-ml-pack-x12",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-original-botella-pet-500-ml-pack-x12-da9d9f1d872c1e49-75b52ee33dad073c.webp"
+    },
+    {
+      "bytes": 5848,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "2b779c394ec67eb41c4197ac7016f1bf1991fbfcb313b0feaaceafe2022079dc",
+      "sku": "coca-cola-original-botella-pet-500-ml-pack-x12",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-original-botella-pet-500-ml-pack-x12-da9d9f1d872c1e49-thumb-2b779c394ec67eb4.webp"
+    },
+    {
+      "bytes": 18742,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "7a626dec1b48f44272ba58d6f9240d4e4c9c673f96e38d636dd4cd64a19fa2c4",
+      "sku": "coca-cola-zero-botella-pet-500-ml-pack-x12",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-zero-botella-pet-500-ml-pack-x12-ab4d9e31abe096e0-7a626dec1b48f442.webp"
+    },
+    {
+      "bytes": 5418,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "390944099fdb5e227be5b9db4a4c6f3549c3e6355a52e7b8290ad421ec741cd9",
+      "sku": "coca-cola-zero-botella-pet-500-ml-pack-x12",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-zero-botella-pet-500-ml-pack-x12-ab4d9e31abe096e0-thumb-390944099fdb5e22.webp"
+    },
+    {
+      "bytes": 22050,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "e41698f0e9b8788b7472ecd777ddeab4791cc6166770630d079f52b3062e08ea",
+      "sku": "fanta-naranja-botella-pet-1500-ml-pack-x6",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/fanta-naranja-botella-pet-1500-ml-pack-x6-ddcfc29d89d6d01d-e41698f0e9b8788b.webp"
+    },
+    {
+      "bytes": 6700,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "6f5544d252c1151c4b4b8aa477d706fc2f9014c0c801f446e589366f5a66c8a7",
+      "sku": "fanta-naranja-botella-pet-1500-ml-pack-x6",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/fanta-naranja-botella-pet-1500-ml-pack-x6-ddcfc29d89d6d01d-thumb-6f5544d252c1151c.webp"
+    },
+    {
+      "bytes": 14520,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "09a508b8102bd8a5bd01c7ca752caeb312cffc577d752eb34b59993caa7e5c1a",
+      "sku": "sprite-botella-pet-500-ml-pack-x12",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-09a508b8102bd8a5.webp"
+    },
+    {
+      "bytes": 3792,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "49fb5075276d3ebb3e01c5f36f2a440ea289c88e8d09fca04047681b4d978211",
+      "sku": "sprite-botella-pet-500-ml-pack-x12",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-thumb-49fb5075276d3ebb.webp"
+    }
+  ],
+  "resumen": {
+    "conFoto": 4,
+    "conPlaceholder": 29,
+    "tarjetas": 33
+  },
+  "rotas": 0,
+  "schemaVersion": 1,
+  "veredicto": "4 OFFICIAL PACKSHOTS LIVE"
+}

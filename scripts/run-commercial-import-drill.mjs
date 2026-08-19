@@ -91,10 +91,20 @@ function psql(sql, { db = DB, expectFailure = false } = {}) {
   return { status: result.status, stdout: (result.stdout || '').trim(), stderr: (result.stderr || '').trim() };
 }
 
-/** Ejecuta como owner autenticado: `auth.uid()` lee `request.jwt.claims`. */
+// 20260814030000 (identity_requires_registered_session) le sumó una segunda
+// exigencia a has_business_role/identity_member_role: no alcanza con `sub` en
+// el JWT, la sesión tiene que estar en identity_sessions (identity_register_
+// session, lo mismo que hace el Panel al entrar). Sin esto, CUALQUIER RPC
+// detrás de has_business_role —incluida apply_commercial_catalog_batch—
+// rechaza con "Only an active owner/admin..." aunque business_members diga
+// owner. SESSION_ID es fija y sintética: sólo tiene que coincidir entre el
+// alta (más abajo) y cada conexión nueva que abre `asOwner`.
+const SESSION_ID = '00000000-0000-4000-8000-0000000000bb';
+
+/** Ejecuta como owner autenticado: `auth.uid()` y la sesión registrada leen `request.jwt.claims`. */
 function asOwner(sql, options = {}) {
   return psql(
-    `select set_config('request.jwt.claims', '{"sub":"${OWNER_ID}"}', false);\n${sql}`,
+    `select set_config('request.jwt.claims', '{"sub":"${OWNER_ID}","session_id":"${SESSION_ID}"}', false);\n${sql}`,
     options,
   );
 }
@@ -234,6 +244,12 @@ try {
     values ('${BUSINESS_ID}', '${OWNER_ID}', 'owner', true)
     on conflict do nothing;
   `);
+
+  // Sin esto, has_business_role rechaza a partir de 20260814030000: la
+  // membresía sola ya no alcanza, la sesión tiene que estar registrada.
+  const registro = asOwner(`select public.identity_register_session('${BUSINESS_ID}'::uuid, 'panel_web');`);
+  check('sesión de owner registrada (identity_register_session)',
+    /"ok"\s*:\s*true/.test(registro.stdout), registro.stdout);
 
   // Los sha de identidad, las rutas y los bindings los calcula la BASE con sus
   // propias funciones: un `catalog_assets` tiene un CHECK que exige exactamente
@@ -497,6 +513,167 @@ try {
   const plan = buildCommercialPlan(sheet, { catalog, imageExists: () => true });
   check('el importador valida la misma planilla sin errores', plan.errors.length === 0,
     plan.errors.join(' | ') || `${plan.rows.length} filas`);
+
+  // ── 15. product_commercial_image_valid — la autoridad de la 108, invocada ──
+  // Migración 20260819050000. Todo lo de arriba (T1..T7, publicar/republicar)
+  // ya prueba que la puerta sigue exigiendo precio+stock+imagen COMPLETA
+  // cuando hay imagen — corrió contra la función NUEVA sin que se le tocara
+  // una sola línea a esos casos. Acá se agrega lo que la 108 sumó y la puerta
+  // vieja no sabía: que la ausencia de imagen es un estado válido, no un
+  // motivo de rechazo.
+  const imageValid = (sku) => psql(
+    `select public.product_commercial_image_valid(p)
+       from public.products p where p.business_id='${BUSINESS_ID}' and p.sku='${sku}';`,
+  ).stdout;
+
+  const asset2 = seedRows[1].assetId; // el activo REAL de "dos", para el préstamo ajeno.
+
+  // 15.1 · CASO A — sin imagen, producto por lo demás válido → PASS.
+  psql(`
+    insert into public.products
+      (business_id, external_id, sku, name, brand, category, subcategory,
+       variant, presentation, capacity_value, capacity_unit, capacity, packaging_type,
+       units_per_pack, sold_as_pack, price, stock, is_active, available, is_verified,
+       is_alcoholic, minimum_age, catalog_origin, sort_order)
+    values
+      ('${BUSINESS_ID}', 'taba-image-gate-caso-a', 'taba-image-gate-caso-a',
+       'Producto sin imagen', 'Marca', 'Gaseosas', 'cola', '500 ml', '500 ml',
+       500, 'ml', '500 ml', 'Botella PET', 1, false, 2290, 0, true, false, false,
+       false, null, 'commercial', 0);
+  `);
+  check('15.1 · CASO A (6 columnas de imagen en null) → product_commercial_image_valid = true',
+    imageValid('taba-image-gate-caso-a') === 't', imageValid('taba-image-gate-caso-a'));
+  applyBatch([{ sku: 'taba-image-gate-caso-a', stock: 24, publish: true }]);
+  check('15.1b · publicar SIN imagen, con precio y stock reales, funciona (era el bloqueo real)',
+    productState('taba-image-gate-caso-a') === '2290.00|24|true|true',
+    productState('taba-image-gate-caso-a'));
+
+  // 15.2 · CASO B — imagen completa y aprobada → PASS. Usa el asset REAL que
+  // ya quedó ligado a "uno" al sembrar el catálogo (packshot legítimo).
+  check('15.2 · CASO B (imagen completa, asset real ligado) → product_commercial_image_valid = true',
+    imageValid(uno) === 't', imageValid(uno));
+
+  // 15.3 · 1 de 6 columnas de imagen pobladas → FAIL. Sólo se puede insertar
+  // así con is_verified=false (con true, products_verified_publication_authority
+  // ya lo rechazaría antes de llegar a esta prueba — la tabla protege lo mismo
+  // por su lado, y esto prueba que la función dice lo mismo que la tabla).
+  psql(`
+    insert into public.products
+      (business_id, external_id, sku, name, brand, category, subcategory,
+       variant, presentation, capacity_value, capacity_unit, capacity, packaging_type,
+       units_per_pack, sold_as_pack, price, stock, is_active, available, is_verified,
+       is_alcoholic, minimum_age, catalog_origin, sort_order, image_url)
+    values
+      ('${BUSINESS_ID}', 'taba-image-gate-parcial', 'taba-image-gate-parcial',
+       'Producto con imagen a medias', 'Marca', 'Gaseosas', 'cola', '500 ml', '500 ml',
+       500, 'ml', '500 ml', 'Botella PET', 1, false, 2290, 10, true, false, false,
+       false, null, 'commercial', 0, 'assets/products/huerfano-deadbeef-deadbeef.webp');
+  `);
+  check('15.3 · 1 de 6 columnas (sólo image_url) → product_commercial_image_valid = false',
+    imageValid('taba-image-gate-parcial') === 'f', imageValid('taba-image-gate-parcial'));
+  const parcial = applyBatch([{ sku: 'taba-image-gate-parcial', publish: true }], { expectFailure: true });
+  check('15.3b · publicar con imagen a medias rechazado', parcial.status !== 0,
+    parcial.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  // 15.4 · asset ajeno — imagen con el formato perfecto, pero el catalog_asset_id
+  // (real, existente) y los hashes son los de OTRO producto (los de "dos").
+  // Es la versión alcanzable de "asset inexistente": la FK
+  // products_catalog_asset_id_fkey ya hace estructuralmente imposible apuntar a
+  // un id que no existe en catalog_assets, así que el peligro real —y el que
+  // esta prueba mide— es apuntar a uno que SÍ existe pero no es el propio: el
+  // mismo riesgo que "una imagen de pack usada como unidad".
+  psql(`
+    insert into public.products
+      (business_id, external_id, sku, name, brand, category, subcategory,
+       variant, presentation, capacity_value, capacity_unit, capacity, packaging_type,
+       units_per_pack, sold_as_pack, price, stock, is_active, available, is_verified,
+       is_alcoholic, minimum_age, catalog_origin, sort_order,
+       image_url, image_sha256, image_thumbnail_url, image_thumbnail_sha256,
+       source_image_sha256, catalog_asset_id)
+    select '${BUSINESS_ID}', 'taba-image-gate-ajeno', 'taba-image-gate-ajeno',
+           'Producto con foto prestada', 'Marca', 'Gaseosas', 'cola', '500 ml', '500 ml',
+           500, 'ml', '500 ml', 'Botella PET', 1, false, 2290, 10, true, false, false,
+           false, null, 'commercial', 0,
+           ca.master_path, ca.master_sha256, ca.thumbnail_path, ca.thumbnail_sha256,
+           ca.source_sha256, ca.id
+      from public.catalog_assets ca where ca.id = '${asset2}';
+  `);
+  check('15.4 · asset real pero de OTRO sku/producto → product_commercial_image_valid = false',
+    imageValid('taba-image-gate-ajeno') === 'f', imageValid('taba-image-gate-ajeno'));
+  const ajeno = applyBatch([{ sku: 'taba-image-gate-ajeno', publish: true }], { expectFailure: true });
+  check('15.4b · publicar con la foto de otro producto rechazado', ajeno.status !== 0,
+    ajeno.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+  const fkAsset = psql(
+    `update public.products set catalog_asset_id = gen_random_uuid()
+       where business_id='${BUSINESS_ID}' and sku='taba-image-gate-ajeno';`,
+    { expectFailure: true },
+  );
+  check('15.4c · un catalog_asset_id que no existe en absoluto ya lo bloquea la FK, antes de llegar a esta función',
+    fkAsset.status !== 0, fkAsset.stderr.split('\n').find((l) => l.includes('ERROR') || l.includes('violat')) || '');
+
+  // 15.5 · alcohol — el gate de imagen y el de alcohol son ortogonales. Un
+  // producto CON alcohol y SIN imagen (la forma real de los 23 con alcohol que
+  // ya viven en producción) tiene que poder publicarse igual, sin que la
+  // categoría/edad mínima interfieran con la pregunta de imagen ni al revés.
+  psql(`
+    insert into public.products
+      (business_id, external_id, sku, name, brand, category, subcategory,
+       variant, presentation, capacity_value, capacity_unit, capacity, packaging_type,
+       units_per_pack, sold_as_pack, price, stock, is_active, available, is_verified,
+       is_alcoholic, minimum_age, catalog_origin, sort_order)
+    values
+      ('${BUSINESS_ID}', 'taba-image-gate-alcohol', 'taba-image-gate-alcohol',
+       'Cerveza sin foto', 'Marca', 'Cervezas', 'lager', 'Lata 473 ml', 'Lata 473 ml',
+       473, 'ml', '473 ml', 'lata', 1, false, 2650, 0, true, false, false,
+       true, 18, 'commercial', 0);
+  `);
+  check('15.5 · con alcohol y sin imagen → product_commercial_image_valid sigue siendo true',
+    imageValid('taba-image-gate-alcohol') === 't', imageValid('taba-image-gate-alcohol'));
+  applyBatch([{ sku: 'taba-image-gate-alcohol', stock: 12, publish: true }]);
+  check('15.5b · publicar cerveza sin imagen funciona; el gate de alcohol (edad/categoría) sigue exigido aparte',
+    productState('taba-image-gate-alcohol') === '2650.00|12|true|true',
+    productState('taba-image-gate-alcohol'));
+
+  // ── 16. CONTROL NEGATIVO ESPECÍFICO — los 4 SKU minoristas reales ──────────
+  // No usa los SKU reales ni sus GTIN: reproduce la MISMA forma que hoy tienen
+  // en producción (catalog_origin=commercial, sold_as_pack=false,
+  // units_per_pack=1, is_verified=true YA, stock=0, available=false, las 6
+  // columnas de imagen en null) y demuestra que pueden pasar a stock>0 y
+  // available=true por la puerta comercial, sin tocar ni una columna de
+  // imagen.
+  psql(`
+    insert into public.products
+      (business_id, external_id, sku, name, brand, category, subcategory,
+       variant, presentation, capacity_value, capacity_unit, capacity, packaging_type,
+       units_per_pack, sold_as_pack, price, price_status, stock, chilled, is_alcoholic,
+       minimum_age, sort_order, tags, catalog_origin, is_active,
+       is_verified, verified_at, verified_by, available, updated_at)
+    values
+      ('${BUSINESS_ID}', 'espejo-coca-cola-original-pet-500ml', 'espejo-coca-cola-original-pet-500ml',
+       'Coca-Cola Original', 'Coca-Cola', 'Gaseosas', 'Cola', '500 ml', '500 ml',
+       500, 'ml', '500 ml', 'Botella PET', 1, false,
+       2290, 'confirmed', 0, false, false, null, 0, array[]::text[], 'commercial', true,
+       true, now(), '${OWNER_ID}', false, now());
+  `);
+  const espejoAntes = productState('espejo-coca-cola-original-pet-500ml');
+  check('16.1 · el espejo arranca IDÉNTICO al estado real de los 4 SKU: stock 0, no disponible, ya verificado',
+    espejoAntes === '2290.00|0|false|true', espejoAntes);
+  const imagenAntes = psql(
+    `select coalesce(image_url,'∅')||'|'||coalesce(catalog_asset_id::text,'∅')
+       from public.products where business_id='${BUSINESS_ID}' and sku='espejo-coca-cola-original-pet-500ml';`,
+  ).stdout;
+
+  // Recepción de mercadería real: sólo stock, ninguna columna de imagen.
+  applyBatch([{ sku: 'espejo-coca-cola-original-pet-500ml', stock: 24, publish: true }]);
+  const espejoDespues = productState('espejo-coca-cola-original-pet-500ml');
+  const imagenDespues = psql(
+    `select coalesce(image_url,'∅')||'|'||coalesce(catalog_asset_id::text,'∅')
+       from public.products where business_id='${BUSINESS_ID}' and sku='espejo-coca-cola-original-pet-500ml';`,
+  ).stdout;
+  check('16.2 · CONTROL NEGATIVO: stock 0/no-disponible → stock 24/disponible, SIN foto',
+    espejoDespues === '2290.00|24|true|true', `${espejoAntes} → ${espejoDespues}`);
+  check('16.3 · y las columnas de imagen no se tocaron: siguen las 6 en null (∅|∅)',
+    imagenAntes === '∅|∅' && imagenDespues === '∅|∅', `${imagenAntes} → ${imagenDespues}`);
 } catch (error) {
   check('el simulacro completó sin excepciones', false, String(error.message || error).split('\n')[0]);
 } finally {

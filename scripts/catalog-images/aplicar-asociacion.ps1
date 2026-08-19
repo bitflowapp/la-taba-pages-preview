@@ -30,7 +30,14 @@
 #>
 
 [CmdletBinding()]
-param()
+param(
+  # Carpeta de candados compartidos entre sesiones de trabajo. Vive fuera del
+  # repositorio y depende de la máquina, así que se pasa por parámetro: escribir
+  # una ruta de disco acá adentro ataría el repositorio a una computadora.
+  # Sin este parámetro, la comprobación de concurrencia entre sesiones no corre
+  # y el guion lo dice en voz alta.
+  [string]$LocksDir = ''
+)
 
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -47,6 +54,16 @@ Write-Host "  repo    : $repo"
 Write-Host ''
 
 if (-not (Test-Path $aplicar)) { throw "No encuentro $aplicar" }
+
+# Se define antes del preflight para que la comprobación de concurrencia corra
+# también en seco, y no recién en la pasada que escribe.
+if (-not [string]::IsNullOrWhiteSpace($LocksDir)) {
+  if (-not (Test-Path $LocksDir)) { throw "No encuentro la carpeta de candados: $LocksDir" }
+  $env:TABA_LOCKS_DIR = $LocksDir
+  Write-Host "  candados : $LocksDir"
+} else {
+  Write-Host '  candados : (sin -LocksDir) la concurrencia entre sesiones NO se comprueba' -ForegroundColor Yellow
+}
 
 # ── Preflight sin credenciales ───────────────────────────────────────────────
 Write-Host 'Preflight (sin credenciales)...' -ForegroundColor Cyan
@@ -151,8 +168,7 @@ try {
 try {
   Push-Location $repo
   try {
-    $env:TMP = 'D:\1212\_catalog-images-tmp'
-    $env:TEMP = 'D:\1212\_catalog-images-tmp'
+    if (-not [string]::IsNullOrWhiteSpace($LocksDir)) { $env:TABA_LOCKS_DIR = $LocksDir }
     Write-Host ''
     $token | node scripts/catalog-images/apply-association.mjs
     $salida = $LASTEXITCODE

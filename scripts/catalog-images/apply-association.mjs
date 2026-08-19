@@ -41,7 +41,9 @@
  *   node scripts/catalog-images/apply-association.mjs --dry-run
  *   <token> | node scripts/catalog-images/apply-association.mjs
  */
+import { unlinkSync } from 'node:fs';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { stableJson } from './lib.mjs';
@@ -134,6 +136,64 @@ ok(`${BASE} · ref ${REF}`);
 ok(`negocio ${BUSINESS_ID}`);
 if (seco) info('MODO SECO: no se autentica ni se escribe nada.');
 
+// ── 1b. Concurrencia ─────────────────────────────────────────────────────────
+/*
+ * Dos guardas distintas, contra dos problemas distintos.
+ *
+ * La primera es contra NOSOTROS MISMOS: dos copias de este guion corriendo a la
+ * vez podrían intercalar el import de una con el republicado de la otra y dejar
+ * productos fuera de venta sin que ninguna de las dos se entere. Un archivo
+ * creado con `wx` es un candado barato y suficiente.
+ *
+ * La segunda es contra OTRA sesión de trabajo. El proyecto coordina con archivos
+ * de candado compartidos, y la regla es releerlos JUSTO ANTES de mutar, no al
+ * arrancar: entre que un proceso empieza y llega a escribir puede pasar media
+ * hora. Si otra misión declara estar mutando producción, esto se para.
+ */
+const CANDADO = path.join(os.tmpdir(), 'taba-apply-association.lock');
+if (!seco) {
+  try {
+    await fs.writeFile(CANDADO, `${process.pid} ${new Date().toISOString()}\n`, { flag: 'wx' });
+  } catch (error) {
+    if (error?.code === 'EEXIST') {
+      const quien = await fs.readFile(CANDADO, 'utf8').catch(() => '(ilegible)');
+      abortar(`ya hay otra corrida de este guion: ${quien.trim()}. Si sobró de una corrida muerta, borrar ${CANDADO}.`);
+    }
+    throw error;
+  }
+  process.on('exit', () => {
+    try { unlinkSync(CANDADO); } catch { /* ya no está */ }
+  });
+  ok('candado propio tomado');
+}
+
+// La carpeta de candados compartidos vive fuera del repositorio y depende de la
+// máquina, así que se pasa por entorno. Escribirla acá adentro sería atar el
+// repositorio a un disco de alguien —y el guard de higiene lo rechaza, con razón.
+const LOCKS_COMPARTIDOS = process.env.TABA_LOCKS_DIR || '';
+const MIO = 'taba2-catalog-image-pipeline.txt';
+const archivosLock = LOCKS_COMPARTIDOS
+  ? await fs.readdir(LOCKS_COMPARTIDOS).catch(() => null)
+  : null;
+if (archivosLock === null) {
+  info(LOCKS_COMPARTIDOS
+    ? `no pude leer ${LOCKS_COMPARTIDOS}: la concurrencia entre sesiones NO se comprobó`
+    : 'TABA_LOCKS_DIR sin definir: la concurrencia entre sesiones NO se comprobó');
+} else {
+  const enConflicto = [];
+  for (const archivo of archivosLock) {
+    if (archivo === MIO || !/\.(txt|lock)$/.test(archivo)) continue;
+    const texto = await fs.readFile(path.join(LOCKS_COMPARTIDOS, archivo), 'utf8').catch(() => '');
+    const activo = /STATUS=ACTIVO/i.test(texto);
+    const tocaProduccion = /mutaci[oó]n(es)? de (datos de )?produc|aplicando a produc|APLICANDO EN wwcpogltfgzgkrlilbcd/i.test(texto);
+    if (activo && tocaProduccion) enConflicto.push(archivo);
+  }
+  if (enConflicto.length) {
+    abortar(`otra sesión declara estar mutando producción: ${enConflicto.join(', ')}. Coordinar antes de escribir.`);
+  }
+  ok(`${archivosLock.length} candados compartidos leídos, ninguno mutando producción`);
+}
+
 // ── 2. Identidad ─────────────────────────────────────────────────────────────
 if (!seco) {
   paso('SESIÓN');
@@ -176,16 +236,50 @@ for (const f of manifiesto.sources) {
 }
 ok('4 assets, del embotellador, citando la autoridad');
 
+/*
+ * Assets ya registrados. Importa la diferencia entre «no existe» y «existe
+ * igual»: `register_catalog_assets` sólo DESACTIVA los productos de un asset
+ * cuando el asset existe y CAMBIÓ. Uno idéntico se reescribe sin consecuencias.
+ * Distinguirlo es lo que permite volver a correr esto sin miedo.
+ */
+let assetsIdenticos = false;
 if (!seco) {
   const previos = await pedir(
-    `/rest/v1/catalog_assets?select=id,sku&business_id=eq.${BUSINESS_ID}`,
+    `/rest/v1/catalog_assets?select=external_id,sku,master_path,master_sha256,thumbnail_path,thumbnail_sha256,source_sha256,rights_status,rights_reference`
+    + `&business_id=eq.${BUSINESS_ID}&order=sku.asc`,
   );
-  if (previos.length) {
-    // Registrar un asset que ya existe y cambió DESACTIVA los productos que lo
-    // usan. Si aparece uno, se para: esto dejó de ser una primera carga.
-    abortar(`ya hay ${previos.length} catalog_assets en este negocio. Este guion es sólo para la primera carga.`);
+  const nuestros = new Set(manifiesto.sources.map((f) => f.externalId));
+  const ajenos = previos.filter((a) => !nuestros.has(a.external_id));
+  if (ajenos.length) {
+    abortar(`hay ${ajenos.length} catalog_assets de otros productos. Este guion no sabe qué hacer con ellos.`);
   }
-  ok('catalog_assets vacío: es una primera carga, sin efectos sobre productos existentes');
+  if (previos.length === 0) {
+    ok('catalog_assets vacío: primera carga, sin efectos sobre productos existentes');
+  } else if (previos.length === manifiesto.sources.length) {
+    const porExternal = new Map(previos.map((a) => [a.external_id, a]));
+    const distintos = manifiesto.sources.filter((f) => {
+      const a = porExternal.get(f.externalId);
+      return !a
+        || a.master_path !== f.assets.master.path
+        || a.master_sha256 !== f.assets.master.sha256
+        || a.thumbnail_path !== f.assets.thumbnail.path
+        || a.thumbnail_sha256 !== f.assets.thumbnail.sha256
+        || a.source_sha256 !== f.sourceSha256
+        || a.rights_status !== f.rightsStatus
+        || a.rights_reference !== f.rightsReference;
+    });
+    if (distintos.length) {
+      abortar(
+        `los ${distintos.length} asset(s) ya registrados NO coinciden con el manifiesto `
+        + `(${distintos.map((f) => f.sku).join(', ')}). Registrarlos de nuevo sacaría de venta esos productos. `
+        + 'Revisar a mano antes de seguir.',
+      );
+    }
+    assetsIdenticos = true;
+    ok('los 4 assets ya están registrados y son IDÉNTICOS al manifiesto: reintento seguro');
+  } else {
+    abortar(`hay ${previos.length} catalog_assets y el manifiesto tiene ${manifiesto.sources.length}. Estado a medias: revisar a mano.`);
+  }
 }
 
 const columnas = CAMPOS_ECO.concat([
@@ -196,15 +290,58 @@ const productos = await pedir(
   `/rest/v1/products?select=${columnas}&business_id=eq.${BUSINESS_ID}&sold_as_pack=eq.true&order=sku.asc`,
 );
 if (productos.length !== 4) abortar(`se esperaban 4 productos con sold_as_pack y hay ${productos.length}.`);
+
+const porSkuManifiestoPrevio = new Map(manifiesto.sources.map((f) => [f.sku, f]));
+const sinImagen = productos.filter((p) => p.catalog_asset_id === null && p.image_url === null);
+const conImagenCorrecta = productos.filter((p) => {
+  const f = porSkuManifiestoPrevio.get(p.sku);
+  return Boolean(f) && p.image_url === f.assets.master.path && Boolean(p.catalog_asset_id);
+});
+
 for (const p of productos) {
   if (!ESPERADOS.has(p.sku)) abortar(`producto inesperado: ${p.sku}`);
-  if (p.catalog_asset_id !== null || p.image_url !== null) abortar(`${p.sku} ya tiene imagen asociada.`);
   if (p.catalog_origin !== 'commercial') abortar(`${p.sku} no es comercial (${p.catalog_origin}).`);
   if (!p.is_active) abortar(`${p.sku} no está activo.`);
   if (!(p.stock > 0)) abortar(`${p.sku} tiene stock 0: al republicar quedaría NO disponible.`);
-  if (!p.available || !p.is_verified) abortar(`${p.sku} no está hoy disponible y verificado.`);
-  ok(`${ESPERADOS.get(p.sku)} · stock ${p.stock} · $${p.price} · disponible`);
 }
+
+/*
+ * Dos estados de partida son legítimos, y ninguno más:
+ *
+ *   PRIMERA_CARGA  los 4 sin imagen, disponibles y verificados. El camino normal.
+ *   REPARACION     los 4 ya con SU imagen correcta. Pasa si un intento anterior
+ *                  importó bien y falló al republicar: los productos quedan con
+ *                  la foto puesta y FUERA DE VENTA. Reimportar no haría falta y
+ *                  además los volvería a desverificar; lo único que falta es
+ *                  republicarlos.
+ *
+ * Cualquier mezcla se para. Un catálogo a medias no se arregla adivinando.
+ */
+let modo;
+if (sinImagen.length === 4) {
+  for (const p of productos) {
+    if (!p.available || !p.is_verified) abortar(`${p.sku} no está hoy disponible y verificado; el estado previo no es el esperado.`);
+    ok(`${ESPERADOS.get(p.sku)} · stock ${p.stock} · $${p.price} · disponible · sin imagen`);
+  }
+  modo = 'PRIMERA_CARGA';
+} else if (conImagenCorrecta.length === 4 && (assetsIdenticos || seco)) {
+  // En seco no se puede confirmar el estado de `catalog_assets`: la clave
+  // publicable no lo lee, y está bien que no lo lea. Se dice y se sigue, en vez
+  // de abortar: si el dry-run se plantara acá, el envoltorio de PowerShell nunca
+  // llegaría a pedir la contraseña, y justo la reparación es el momento en que
+  // más falta hace poder correrlo.
+  for (const p of productos) {
+    ok(`${ESPERADOS.get(p.sku)} · stock ${p.stock} · $${p.price} · imagen ya puesta · ${p.available ? 'disponible' : 'FUERA DE VENTA'}`);
+  }
+  if (seco) info('en seco no se puede confirmar catalog_assets; la sesión de owner sí lo hace');
+  modo = 'REPARACION';
+} else {
+  abortar(
+    `estado a medias: ${sinImagen.length} sin imagen y ${conImagenCorrecta.length} con la imagen correcta, de 4. `
+    + 'Revisar a mano antes de escribir nada.',
+  );
+}
+info(`modo: ${modo}`);
 const estadoPrevio = Object.fromEntries(productos.map((p) => [p.sku, { ...p }]));
 
 // ── 4. Payloads ──────────────────────────────────────────────────────────────
@@ -265,21 +402,26 @@ if (seco) {
 
 // ── 5. Escritura ─────────────────────────────────────────────────────────────
 paso('APLICANDO');
-let importado = false;
+let importado = modo === 'REPARACION';
 const republicados = [];
 const fallos = [];
-try {
-  await rpc('import_catalog_batch', {
-    p_assets: assets,
-    p_business_id: BUSINESS_ID,
-    p_products: productosPayload,
-  });
-  importado = true;
-  ok('import_catalog_batch: 4 assets registrados y 4 productos con su imagen');
-  info('los 4 quedaron desverificados y fuera de venta, como manda el disparador');
-} catch (error) {
-  fallos.push(`import_catalog_batch: ${error.message}`);
-  console.error(`  FALLA ${error.message}`);
+if (modo === 'REPARACION') {
+  info('modo REPARACIÓN: los assets y las imágenes ya están puestos.');
+  info('NO se reimporta —eso los desverificaría de nuevo—; sólo se republica.');
+} else {
+  try {
+    await rpc('import_catalog_batch', {
+      p_assets: assets,
+      p_business_id: BUSINESS_ID,
+      p_products: productosPayload,
+    });
+    importado = true;
+    ok('import_catalog_batch: 4 assets registrados y 4 productos con su imagen');
+    info('los 4 quedaron desverificados y fuera de venta, como manda el disparador');
+  } catch (error) {
+    fallos.push(`import_catalog_batch: ${error.message}`);
+    console.error(`  FALLA ${error.message}`);
+  }
 }
 
 // Republicar SIEMPRE que el import haya entrado. Si esto no corre, los packs
@@ -348,7 +490,12 @@ for (const p of despues) {
   exigir(Number(p.price) === Number(previo.price), `${p.sku}: el precio no cambió ($${p.price})`);
   exigir(p.stock === previo.stock, `${p.sku}: el stock no cambió (${p.stock})`);
   exigir(p.sold_as_pack === previo.sold_as_pack, `${p.sku}: sold_as_pack intacto`);
-  exigir(p.available === previo.available, `${p.sku}: disponibilidad igual que antes`);
+  exigir(p.is_active === previo.is_active, `${p.sku}: is_active intacto`);
+  // La disponibilidad se compara contra el estado que ESTA operación debe dejar,
+  // no contra el de antes: en modo REPARACIÓN el producto venía fuera de venta
+  // justamente porque un intento anterior se cortó, y devolverlo a la venta es
+  // el objetivo, no una desviación.
+  exigir(p.available === true, `${p.sku}: quedó DISPONIBLE`);
 }
 
 const assetsRegistrados = await pedir(`/rest/v1/catalog_assets?select=sku,rights_status,rights_reference,source_url&business_id=eq.${BUSINESS_ID}&order=sku.asc`);

@@ -1,0 +1,3385 @@
+[data-view="tracking"] > .section-head {
+  margin-bottom: 18px;
+}
+
+.track-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  align-items: stretch;
+  min-height: 580px;
+  overflow: hidden;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-lg);
+  background: var(--taba-subtle);
+}
+
+.track-layout.no-map {
+  display: block;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+}
+
+.tracking-map-stage {
+  position: relative;
+  top: auto;
+  height: 100%;
+  min-height: 620px;
+  overflow: hidden;
+  background: var(--shelf-sunken);
+}
+
+.real-map-shell,
+.real-map-canvas,
+.real-map-fallback {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+}
+
+.real-map-shell {
+  position: relative;
+}
+
+.real-map-fallback {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--taba-muted);
+  text-align: center;
+}
+
+.real-map-shell.is-ready .real-map-fallback {
+  display: none;
+}
+
+.real-map-meta {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  padding: 5px 8px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 88%);
+  color: var(--taba-muted);
+  font-size: 11px;
+}
+
+.real-map-canvas {
+  min-height: 300px;
+  overflow: hidden;
+  background: var(--shelf-sunken);
+}
+
+.real-map-shell[data-map-source="sandbox"] {
+  min-height: 360px;
+}
+
+.real-map-shell[data-map-source="sandbox"] .real-map-canvas {
+  min-height: 360px;
+}
+
+.real-map-tile-error {
+  position: absolute;
+  z-index: 500;
+  right: 12px;
+  bottom: 42px;
+  padding: 6px 9px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 92%);
+  color: var(--taba-muted);
+  font-size: 11px;
+  box-shadow: var(--shadow-sm);
+}
+
+.lt-place-marker {
+  background: transparent;
+  border: 0;
+}
+
+.lt-place-marker-pin {
+  display: block;
+  width: 44px;
+  height: 54px;
+  filter: drop-shadow(0 3px 5px rgb(20 20 22 / 24%));
+}
+
+.lt-place-marker-pin svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lt-rider-marker {
+  width: 56px;
+  height: 56px;
+}
+
+.lt-rider-helmet-core {
+  width: 56px;
+  height: 56px;
+}
+
+.lt-rider-helmet-icon {
+  width: 56px;
+  height: 56px;
+}
+
+.taba-sandbox-route {
+  stroke-dasharray: 7 7;
+}
+
+@media (max-width: 767px) {
+  .tracking-map-stage,
+  .rider-map-stage {
+    min-height: 360px;
+  }
+
+  .real-map-shell[data-map-source="sandbox"],
+  .real-map-shell[data-map-source="sandbox"] .real-map-canvas {
+    min-height: 320px;
+  }
+
+  .real-map-meta {
+    right: 8px;
+    bottom: 8px;
+    max-width: calc(100% - 16px);
+  }
+}
+
+.map-floating-top {
+  position: absolute;
+  z-index: 500;
+  right: 14px;
+  left: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.map-floating-top {
+  top: 14px;
+}
+
+.map-status-pill,
+.map-connection-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 7px 12px;
+  border: 1px solid rgb(255 255 255 / 70%);
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 94%);
+  box-shadow: var(--shadow-sm);
+}
+
+.map-status-pill {
+  display: grid;
+  gap: 0;
+}
+
+.map-status-pill small {
+  color: var(--taba-muted);
+  font-size: 10px;
+}
+
+.tracking-sheet {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  padding: 28px;
+  border-radius: 0;
+  background: white;
+}
+
+.track-layout.no-map .tracking-sheet {
+  width: min(100%, 760px);
+  margin-inline: auto;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-lg);
+}
+
+.tracking-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--taba-border);
+}
+
+.tracking-brand-row > strong {
+  color: var(--taba-red-quiet);
+  font-size: 25px;
+  font-style: italic;
+  font-weight: 950;
+  letter-spacing: -0.05em;
+}
+
+.tracking-brand-row > span:nth-child(2) {
+  color: var(--taba-muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.sheet-connection-pill {
+  margin-left: auto;
+}
+
+.rt-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: var(--radius-pill);
+  background: var(--taba-subtle);
+  color: var(--taba-muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.rt-chip.live,
+.rt-chip.done {
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+}
+
+.rt-chip.warn {
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+}
+
+.tracking-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 20px;
+}
+
+.tracking-hero small {
+  color: var(--taba-red-quiet);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.tracking-hero h1 {
+  margin: 5px 0 7px;
+  font-size: clamp(27px, 4vw, 40px);
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+}
+
+.tracking-sheet .empty-title {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 34px);
+  letter-spacing: -0.035em;
+}
+
+.tracking-hero p {
+  max-width: 48ch;
+  margin: 0;
+  color: var(--taba-muted);
+}
+
+.tracking-eta {
+  display: grid;
+  min-width: 120px;
+  gap: 2px;
+  padding: 13px;
+  border-radius: var(--radius-sm);
+  background: var(--taba-red-soft);
+  text-align: right;
+}
+
+.tracking-eta span {
+  color: var(--taba-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.tracking-eta strong {
+  color: var(--taba-red-quiet);
+  font-size: 18px;
+}
+
+.track-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 6px 0;
+}
+
+.track-steps.operational {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.track-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: var(--taba-muted);
+  text-align: center;
+}
+
+.track-step::before {
+  position: absolute;
+  z-index: 0;
+  top: 10px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--taba-border);
+  content: "";
+}
+
+.track-step:first-child::before {
+  display: none;
+}
+
+.track-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 2px solid #d0d0d5;
+  border-radius: 50%;
+  background: white;
+}
+
+.track-step.done::before,
+.track-step.current::before {
+  background: var(--taba-red);
+}
+
+.track-step.done .track-dot,
+.track-step.current .track-dot {
+  border-color: var(--taba-red);
+  background: var(--taba-red);
+}
+
+.track-step.done .track-dot::after {
+  color: white;
+  content: "✓";
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.track-step.current .track-dot {
+  box-shadow: 0 0 0 5px var(--taba-red-soft);
+}
+
+.track-step.current small {
+  color: var(--taba-red-quiet);
+  font-weight: 850;
+}
+
+.track-step small {
+  min-height: 34px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.delivery-status-card,
+.tracking-map-waiting,
+.tracking-help-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: white;
+}
+
+.delivery-status-card > div,
+.tracking-map-waiting > div,
+.tracking-help-card > div {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.delivery-status-card span:not(.delivery-status-icon),
+.tracking-map-waiting p {
+  margin: 0;
+  color: var(--taba-muted);
+  font-size: 13px;
+}
+
+.delivery-status-icon,
+.tracking-map-waiting > span,
+.tracking-help-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--taba-red-soft);
+  color: var(--taba-red-quiet);
+}
+
+.tracking-map-waiting {
+  width: min(100%, 760px);
+  margin: 0 auto 16px;
+  background: var(--taba-subtle);
+}
+
+.tracking-order-summary {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--taba-subtle);
+}
+
+.tracking-summary-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tracking-summary-head > span {
+  display: grid;
+}
+
+.tracking-summary-total {
+  font-size: 18px;
+}
+
+.tracking-order-summary ul {
+  display: grid;
+  gap: 5px;
+  padding: 0;
+  margin: 0;
+  color: var(--taba-muted);
+  font-size: 13px;
+  list-style: none;
+}
+
+.delivery-code-card {
+  padding: 16px;
+  border: 1px solid #ffc0c6;
+  border-radius: var(--radius-sm);
+  background: var(--taba-red-soft);
+}
+
+.delivery-code-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.delivery-code-copy strong {
+  color: var(--taba-red-quiet);
+  font-size: 28px;
+  letter-spacing: 0.12em;
+}
+
+.delivery-code-copy .delivery-code-success {
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.tracking-help-card .secondary-button {
+  flex: 0 0 auto;
+}
+
+.tracking-order-detail {
+  padding: 0 14px;
+  border: 1px solid var(--taba-border);
+}
+
+.tracking-order-detail summary {
+  display: flex;
+  align-items: center;
+}
+
+.order-detail-body {
+  display: grid;
+  gap: 10px;
+  padding: 4px 0 16px;
+  color: var(--taba-muted);
+  font-size: 14px;
+}
+
+.order-line.head {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--taba-border);
+}
+
+.lt-rider-marker {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.lt-rider-helmet-core {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+}
+
+.lt-rider-helmet-icon {
+  display: block;
+  width: 56px;
+  height: 56px;
+  filter: drop-shadow(0 5px 8px rgb(20 20 22 / 20%));
+}
+
+.lt-rider-marker-halo {
+  display: none;
+}
+
+/* Customer tracking: compact, white and deliberately calm so the delivery
+ * status, ETA and map read in that order on a phone. */
+.tracking-premium.track-layout,
+.tracking-premium.track-layout.no-map {
+  display: block;
+  width: min(100%, 760px);
+  min-height: 0;
+  margin-inline: auto;
+  overflow: visible;
+  border: 1px solid var(--shelf-line);
+  border-radius: 24px;
+  background: var(--shelf-raised);
+  box-shadow: 0 14px 34px rgb(25 25 28 / 7%);
+}
+
+.tracking-premium .tracking-sheet {
+  gap: 22px;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--shelf-raised);
+}
+
+.tracking-premium .tracking-brand-row {
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+}
+
+.tracking-premium .tracking-brand-row > strong {
+  color: var(--taba-red-quiet);
+  font-size: 30px;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: -0.08em;
+}
+
+.tracking-premium .tracking-context {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.tracking-menu-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--shelf-ink);
+}
+
+.tracking-menu-button:hover,
+.tracking-menu-button:focus-visible {
+  background: var(--shelf-raised);
+}
+
+.tracking-menu-button svg {
+  width: 25px;
+  height: 25px;
+}
+
+.tracking-premium .tracking-hero {
+  display: block;
+}
+
+.tracking-premium .tracking-hero h1 {
+  max-width: 15ch;
+  margin: 0;
+  color: var(--shelf-ink);
+  font-size: clamp(30px, 8.1vw, 42px);
+  font-weight: 850;
+  letter-spacing: -0.055em;
+  line-height: 1.04;
+}
+
+.tracking-arrival {
+  margin: 10px 0 0;
+  color: var(--shelf-ink);
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.tracking-arrival.is-arrived {
+  color: var(--taba-red-quiet);
+}
+
+.tracking-compat-copy {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.tracking-premium .customer-progress {
+  margin: 2px 0 0;
+}
+
+.tracking-premium .track-step {
+  gap: 7px;
+}
+
+.tracking-premium .track-step::before {
+  top: 15px;
+  height: 2px;
+  background: var(--shelf-sunken);
+}
+
+.tracking-premium .track-dot {
+  width: 30px;
+  height: 30px;
+  border-width: 2px;
+  border-color: var(--shelf-line-strong);
+}
+
+.tracking-premium .track-step.done .track-dot,
+.tracking-premium .track-step.current .track-dot {
+  border-color: var(--taba-red);
+  background: var(--taba-red);
+}
+
+.tracking-premium .track-step.current .track-dot {
+  box-shadow: 0 0 0 4px rgb(227 6 19 / 12%);
+}
+
+.tracking-premium .track-step small {
+  min-height: 30px;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.15;
+}
+
+.tracking-premium .tracking-map-stage {
+  min-height: 340px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--shelf-line);
+  border-radius: 20px;
+  background: var(--shelf-raised);
+}
+
+.tracking-premium .real-map-shell,
+.tracking-premium .real-map-canvas {
+  min-height: 340px;
+}
+
+.tracking-premium .real-map-meta {
+  display: none;
+}
+
+.tracking-map-eta {
+  position: absolute;
+  z-index: 500;
+  right: 14px;
+  bottom: 22px;
+  min-height: 34px;
+  padding: 8px 11px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 4px 14px rgb(24 24 26 / 12%);
+  color: var(--taba-red-quiet);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.tracking-rider-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.tracking-rider-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--taba-red-soft);
+  color: var(--taba-red-quiet);
+}
+
+.tracking-rider-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.tracking-rider-copy small {
+  color: var(--taba-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tracking-rider-copy strong {
+  color: var(--shelf-ink);
+  font-size: 17px;
+}
+
+.tracking-rider-copy > span {
+  color: var(--taba-muted);
+  font-size: 13px;
+  line-height: 1.32;
+}
+
+.tracking-rider-contact {
+  margin-left: auto;
+}
+
+.tracking-rider-contact .secondary-button {
+  min-height: 44px;
+  padding-inline: 14px;
+  border-color: var(--taba-red);
+  color: var(--taba-red-quiet);
+}
+
+.tracking-premium .tracking-order-summary {
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 13px;
+  border: 1px solid #e6e6e9;
+  border-radius: 18px;
+  background: var(--shelf-raised);
+}
+
+.tracking-summary-media,
+.tracking-summary-media .thumb {
+  width: 74px;
+  height: 74px;
+  min-height: 74px;
+}
+
+.tracking-summary-media .thumb {
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--shelf-raised);
+}
+
+.tracking-summary-media .thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tracking-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.tracking-premium .tracking-summary-head {
+  align-items: start;
+  gap: 10px;
+}
+
+.tracking-summary-head > span small {
+  color: var(--taba-muted);
+  font-size: 12px;
+}
+
+.tracking-summary-head > span strong {
+  overflow: hidden;
+  color: var(--shelf-ink);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tracking-premium .tracking-summary-total {
+  color: var(--shelf-ink);
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.tracking-premium .tracking-order-summary ul {
+  gap: 3px;
+  font-size: 12px;
+}
+
+.tracking-premium .tracking-order-detail {
+  border-inline: 0;
+  border-bottom: 0;
+  border-radius: 0;
+}
+
+.tracking-premium .tracking-order-detail summary {
+  min-height: 44px;
+  color: var(--taba-red-quiet);
+  font-weight: 800;
+}
+
+.tracking-premium .tracking-help-card {
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid #ededf0;
+  border-radius: 0;
+}
+
+.tracking-premium .tracking-help-card .secondary-button {
+  min-height: 44px;
+  border-color: var(--taba-red);
+  color: var(--taba-red-quiet);
+}
+
+.lt-rider-marker {
+  width: 56px;
+  height: 56px;
+}
+
+.lt-rider-helmet-core,
+.lt-rider-helmet-icon {
+  width: 56px;
+  height: 56px;
+}
+
+/* Tracking conserva la navegación de la aplicación, pero la convierte en una
+   cabecera blanca y silenciosa para que el estado y el mapa sean protagonistas. */
+body[data-active-view="tracking"] .topbar {
+  border-bottom: 1px solid var(--shelf-line);
+  background: var(--shelf-raised);
+  box-shadow: none;
+  color: var(--shelf-ink);
+}
+
+body[data-active-view="tracking"] .topbar .brand-word {
+  color: var(--taba-red-quiet);
+}
+
+body[data-active-view="tracking"] .topbar .desktop-nav button {
+  color: var(--shelf-muted);
+}
+
+body[data-active-view="tracking"] .topbar .desktop-nav button.active,
+body[data-active-view="tracking"] .topbar .desktop-nav button:hover {
+  background: var(--shelf-red-wash);
+  color: var(--taba-red-quiet);
+}
+
+body[data-active-view="tracking"] .topbar-actions {
+  display: none;
+}
+
+body[data-active-view="tracking"] .tracking-premium .tracking-brand-row > strong {
+  display: none;
+}
+
+body[data-active-view="tracking"] .tracking-premium .tracking-brand-row {
+  min-height: 24px;
+  justify-content: flex-end;
+}
+
+/* Tracking exacto: composición móvil de una sola columna basada en la
+   referencia y los datos reales existentes. */
+body[data-active-view="tracking"] {
+  /* El topbar de Seguimiento mide 64px, no los 56px por defecto: se redefine
+     el token acá para que `main` (regla general en common.css) derive la
+     resta correcta sin repetir el número en dos lugares. */
+  --topbar: 64px;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--shelf);
+  color: var(--shelf-ink);
+}
+
+body[data-active-view="tracking"] .floating-cart {
+  display: none !important;
+}
+
+body[data-active-view="tracking"] .topbar {
+  padding: 6px max(18px, calc((100vw - 720px) / 2 + 24px));
+  border: 0;
+  background: var(--shelf);
+}
+
+body[data-active-view="tracking"] .topbar .brand-text::after {
+  display: none;
+}
+
+body[data-active-view="tracking"] .topbar .brand-word {
+  color: var(--taba-red-quiet);
+  font-size: 26px;
+  font-style: normal;
+  letter-spacing: -0.045em;
+}
+
+/* Causa raíz del scroll fantasma en Seguimiento: esta regla forzaba `main` a
+   ser 100vh COMPLETO, sin restar el topbar que está arriba en el mismo
+   `app-shell`. El resultado era `topbar + 100vh`, es decir, la página excedía
+   el viewport en exactamente la altura del topbar (~64px) en TODAS las
+   pantallas de seguimiento, con contenido corto o largo.
+   Se alinea con la regla general de `main` (common.css) y además prefiere
+   `100dvh` (viewport dinámico, que sigue a la barra de Safari) sobre `100vh`
+   (que en iOS Safari es el viewport más grande posible, con la barra
+   colapsada): la segunda declaración gana sólo en navegadores que entienden
+   `dvh`; los demás conservan el cálculo con `vh` como respaldo. */
+body[data-active-view="tracking"] main {
+  min-height: calc(100vh - var(--topbar));
+  min-height: calc(100dvh - var(--topbar));
+}
+
+[data-view="tracking"] {
+  width: 100%;
+  max-width: none;
+  padding: 0 0 max(28px, env(safe-area-inset-bottom));
+  background: var(--shelf);
+}
+
+[data-tracking-panel] {
+  width: 100%;
+}
+
+.tracking-premium.track-layout,
+.tracking-premium.track-layout.no-map {
+  display: block;
+  width: min(100%, 720px);
+  min-height: 0;
+  margin-inline: auto;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tracking-premium .tracking-sheet,
+.tracking-premium.track-layout.no-map .tracking-sheet {
+  display: grid;
+  width: 100%;
+  gap: 16px;
+  margin: 0;
+  padding: 0 22px 32px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.tracking-premium .tracking-brand-row,
+body[data-active-view="tracking"] .tracking-premium .tracking-brand-row {
+  display: contents;
+}
+
+body[data-active-view="tracking"] .tracking-premium .tracking-brand-row > strong {
+  display: none;
+}
+
+.tracking-menu-button {
+  display: grid;
+  position: fixed;
+  z-index: 1100;
+  top: calc(10px + env(safe-area-inset-top));
+  right: max(18px, calc((100vw - 720px) / 2 + 24px));
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--shelf-ink);
+}
+
+.tracking-menu-button:hover,
+.tracking-menu-button:focus-visible {
+  background: var(--shelf-raised);
+}
+
+.tracking-menu-button svg {
+  width: 27px;
+  height: 27px;
+}
+
+.tracking-premium .tracking-hero {
+  display: grid;
+  gap: 3px;
+  margin: 4px 0 0;
+}
+
+.tracking-premium .tracking-hero h1 {
+  max-width: none;
+  margin: 0;
+  color: var(--shelf-ink);
+  font-size: clamp(32px, 5vw, 40px);
+  font-weight: 850;
+  letter-spacing: -0.05em;
+  line-height: 1.04;
+}
+
+.tracking-premium .tracking-subtitle,
+.tracking-premium .tracking-updated {
+  max-width: none;
+  margin: 0;
+  color: var(--shelf-muted);
+}
+
+.tracking-premium .tracking-subtitle {
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.tracking-premium .tracking-updated {
+  margin-top: 1px;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.tracking-premium .customer-progress {
+  margin: 4px 0 2px;
+}
+
+.tracking-premium .track-step {
+  min-width: 0;
+  gap: 7px;
+}
+
+.tracking-premium .track-step::before {
+  top: 11px;
+  height: 1.5px;
+  background: var(--shelf-sunken);
+}
+
+.tracking-premium .track-dot {
+  width: 23px;
+  height: 23px;
+  border: 1.5px solid #b9bbc0;
+  background: var(--shelf-raised);
+}
+
+.tracking-premium .track-step.done::before,
+.tracking-premium .track-step.current::before,
+.tracking-premium .track-step.done .track-dot,
+.tracking-premium .track-step.current .track-dot {
+  border-color: var(--taba-red);
+  background: var(--taba-red);
+}
+
+.tracking-premium .track-step.done .track-dot::after,
+.tracking-premium .track-step.current .track-dot::after {
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  content: "";
+  transform: translateY(-1px) rotate(45deg);
+}
+
+.tracking-premium .track-step.current .track-dot {
+  box-shadow: none;
+}
+
+.tracking-premium .track-step.current small {
+  color: var(--shelf-ink);
+  font-weight: 650;
+}
+
+.tracking-premium .track-step small {
+  min-height: 0;
+  color: var(--shelf-ink);
+  font-size: 11.5px;
+  font-weight: 550;
+  line-height: 1.15;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.tracking-premium .tracking-map-stage {
+  position: relative;
+  height: 340px;
+  min-height: 340px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #e4e3e1;
+  border-radius: 22px;
+  background: var(--shelf-sunken);
+  box-shadow: 0 5px 15px rgb(24 24 26 / 6%);
+}
+
+.tracking-premium .real-map-shell,
+.tracking-premium .real-map-canvas,
+.tracking-premium .real-map-fallback {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.tracking-premium .real-map-fallback {
+  padding: 24px;
+  background: var(--shelf-raised);
+}
+
+.tracking-premium .real-map-meta {
+  position: absolute;
+  z-index: 650;
+  top: 14px;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  display: inline-flex;
+  width: max-content;
+  max-width: calc(100% - 28px);
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border: 1px solid rgb(28 29 32 / 10%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 4px 12px rgb(22 23 26 / 10%);
+  color: var(--shelf-ink);
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1;
+  pointer-events: none;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tracking-premium .real-map-meta svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.tracking-map-recenter {
+  position: absolute;
+  z-index: 700;
+  right: 15px;
+  bottom: 15px;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgb(28 29 32 / 9%);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 97%);
+  box-shadow: 0 5px 13px rgb(20 21 24 / 14%);
+  color: var(--shelf-ink);
+}
+
+.tracking-map-recenter:hover,
+.tracking-map-recenter:focus-visible {
+  background: var(--shelf-raised);
+  color: var(--taba-red-quiet);
+}
+
+.tracking-map-recenter svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* «Volver al Rider»: sólo existe mientras el cliente explora el mapa. Va
+   centrado y APILADO SOBRE la atribución de MapLibre, no encima de ella: la
+   atribución ocupa toda la franja inferior con su propio z-index y se comía el
+   toque —medido: el click aterrizaba en el contenedor y el botón no hacía
+   nada—. La geometría vive acá; el color lo pone la sección del lienzo
+   nocturno, más abajo. */
+.tracking-map-follow-cta {
+  position: absolute;
+  z-index: 701;
+  bottom: calc(34px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  display: inline-flex;
+  min-height: 40px;
+  max-width: calc(100% - 118px);
+  align-items: center;
+  padding: 0 15px 0 12px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 650;
+  gap: 7px;
+  letter-spacing: 0.01em;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tracking-map-follow-cta[hidden] {
+  display: none;
+}
+
+.tracking-map-follow-cta svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.tracking-map-eta {
+  right: auto;
+  bottom: 15px;
+  left: 15px;
+  min-height: 36px;
+  color: var(--taba-red-quiet);
+}
+
+.tracking-map-waiting {
+  display: flex;
+  width: 100%;
+  min-height: 82px;
+  align-items: center;
+  gap: 13px;
+  margin: 0;
+  padding: 15px;
+  border: 1px solid var(--shelf-line);
+  border-radius: 20px;
+  background: var(--shelf-raised);
+}
+
+.tracking-map-waiting > span {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--shelf-red-wash);
+  color: var(--taba-red-quiet);
+}
+
+.tracking-map-waiting > span svg {
+  width: 27px;
+  height: 27px;
+}
+
+.tracking-map-waiting > div {
+  gap: 3px;
+}
+
+.tracking-map-waiting p {
+  color: var(--shelf-muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.tracking-rider-card {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 84px;
+  align-items: center;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid #e7e5e3;
+  border-radius: 20px;
+  background: var(--shelf-raised);
+  box-shadow: 0 4px 13px rgb(25 25 27 / 5%);
+}
+
+.tracking-rider-icon {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--shelf-raised);
+}
+
+.tracking-rider-helmet {
+  display: block;
+  width: 48px;
+  height: 48px;
+}
+
+.tracking-rider-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.tracking-rider-copy small {
+  color: var(--shelf-muted);
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.tracking-rider-copy strong {
+  color: var(--shelf-ink);
+  font-size: 17px;
+  line-height: 1.15;
+}
+
+.tracking-rider-copy > span {
+  color: var(--shelf-muted);
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+
+.tracking-rider-contact {
+  margin-left: 0;
+}
+
+.tracking-rider-contact .secondary-button {
+  min-height: 44px;
+  padding-inline: 10px;
+  border: 1px solid #c8101e;
+  background: var(--shelf-raised);
+  color: var(--taba-red-quiet);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.delivery-code-card {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #d92a36;
+  border-radius: 20px;
+  background: var(--shelf-red-wash);
+}
+
+.delivery-code-icon {
+  display: grid;
+  width: 50px;
+  height: 54px;
+  place-items: center;
+  color: var(--taba-red-quiet);
+}
+
+.delivery-code-icon svg {
+  width: 43px;
+  height: 47px;
+}
+
+.delivery-code-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.delivery-code-copy > span {
+  color: var(--taba-red-quiet);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.delivery-code-copy strong,
+.delivery-code-copy .delivery-code-success {
+  color: var(--taba-red-quiet);
+  font-size: clamp(34px, 7.5vw, 37px);
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  line-height: 1.05;
+}
+
+.delivery-code-copy small {
+  max-width: 34ch;
+  color: var(--shelf-muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.tracking-premium .tracking-order-summary {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #e7e5e3;
+  border-radius: 20px;
+  background: var(--shelf-raised);
+  box-shadow: 0 3px 10px rgb(25 25 27 / 4%);
+}
+
+.tracking-premium .tracking-order-summary > summary {
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 17px;
+  color: inherit;
+  cursor: pointer;
+  list-style: none;
+}
+
+.tracking-premium .tracking-order-summary > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tracking-premium .tracking-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.tracking-premium .tracking-summary-copy > strong {
+  overflow: hidden;
+  color: var(--shelf-ink);
+  font-size: 16px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* El resumen del pedido se lee entero: con "6 productos · Total $20.752" no
+   entra en un renglón a 390px y el recorte ocultaba el importe. Envuelve a dos
+   líneas en vez de truncar. */
+.tracking-premium .tracking-summary-copy > small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--shelf-muted);
+  font-size: 12.5px;
+  line-height: 1.25;
+  text-overflow: clip;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.tracking-summary-action {
+  display: inline-flex;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  color: var(--taba-red-quiet);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tracking-summary-action svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 160ms ease;
+}
+
+.tracking-order-summary[open] .tracking-summary-action svg {
+  transform: rotate(90deg);
+}
+
+.tracking-premium .tracking-order-detail {
+  padding: 0;
+  border: 1px solid #e7e5e3;
+  border-radius: 20px;
+}
+
+.tracking-premium .tracking-order-detail .order-detail-body {
+  gap: 9px;
+  padding: 15px 17px 17px;
+  border-top: 1px solid #efedeb;
+  color: var(--shelf-muted);
+  font-size: 13px;
+}
+
+.tracking-premium .tracking-order-detail .order-detail-body > p {
+  margin: 0;
+}
+
+.tracking-premium .tracking-help-card {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: -11px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--taba-red-quiet);
+  font-size: 12.5px;
+}
+
+.tracking-premium .tracking-help-icon {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0;
+  background: transparent;
+  color: currentColor;
+}
+
+.tracking-premium .tracking-help-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.tracking-help-contact {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--taba-red-quiet);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 4px;
+}
+
+.tracking-premium.is-empty .sheet-empty {
+  width: min(100%, 520px);
+  margin: 44px auto 0;
+  padding: 24px;
+  border: 1px solid #e7e5e3;
+  border-radius: 20px;
+  background: var(--shelf-raised);
+}
+
+.tracking-premium.is-empty .empty-title {
+  color: var(--shelf-ink);
+}
+
+.tracking-premium.status-cancelled .track-step small {
+  color: var(--shelf-muted);
+}
+
+/* MapLibre premium tracking: the customer surface remains a single warm-white
+   column while the live map owns the strongest visual weight. */
+body[data-active-view="tracking"] {
+  background: var(--shelf-raised);
+}
+
+body[data-active-view="tracking"] .topbar {
+  min-height: calc(64px + env(safe-area-inset-top, 0px));
+  padding:
+    env(safe-area-inset-top, 0px)
+    max(20px, calc((100vw - 720px) / 2 + 24px))
+    0;
+  border-bottom: 0;
+  background: var(--shelf-raised);
+}
+
+body[data-active-view="tracking"] .topbar .brand {
+  min-height: 54px;
+  padding: 0;
+}
+
+body[data-active-view="tracking"] .topbar .brand-word {
+  font-size: 27px;
+  font-weight: 950;
+}
+
+body[data-active-view="tracking"] .topbar .desktop-nav,
+body[data-active-view="tracking"] .topbar-actions {
+  display: none !important;
+}
+
+[data-view="tracking"] {
+  background: var(--shelf-raised);
+}
+
+.tracking-premium .tracking-sheet,
+.tracking-premium.track-layout.no-map .tracking-sheet {
+  gap: 16px;
+  padding: 7px 22px max(30px, env(safe-area-inset-bottom, 0px));
+}
+
+.tracking-premium .tracking-brand-row,
+body[data-active-view="tracking"] .tracking-premium .tracking-brand-row {
+  position: absolute;
+  display: block;
+  width: 0;
+  height: 0;
+}
+
+.tracking-menu-button {
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  right: max(18px, calc((100vw - 720px) / 2 + 20px));
+}
+
+.tracking-menu-button svg {
+  width: 29px;
+  height: 29px;
+}
+
+.tracking-premium .tracking-hero {
+  gap: 5px;
+  margin: 0;
+}
+
+.tracking-premium .tracking-hero h1 {
+  max-width: 100%;
+  font-size: clamp(27px, 7vw, 38px);
+  line-height: 1.08;
+}
+
+.tracking-premium .tracking-subtitle {
+  color: var(--shelf-muted);
+  font-size: 18px;
+  line-height: 1.34;
+}
+
+.tracking-premium .tracking-subtitle strong {
+  color: var(--shelf-ink);
+  font-weight: 780;
+}
+
+.tracking-premium .tracking-updated {
+  margin-top: 2px;
+  color: var(--shelf-muted);
+  font-size: 13.5px;
+}
+
+.tracking-premium .customer-progress {
+  margin: 6px 1px 3px;
+}
+
+.tracking-premium .track-step {
+  gap: 9px;
+}
+
+.tracking-premium .track-step::before {
+  top: 12px;
+  height: 2px;
+}
+
+.tracking-premium .track-dot {
+  width: 22px;
+  height: 22px;
+  border-width: 1.5px;
+}
+
+.tracking-premium .track-step small {
+  color: var(--shelf-muted);
+  font-size: 11.5px;
+  line-height: 1;
+}
+
+.tracking-premium .track-step.done small,
+.tracking-premium .track-step.current small {
+  color: var(--shelf-ink);
+}
+
+.tracking-premium .tracking-map-stage {
+  height: 380px;
+  min-height: 380px;
+  border-color: var(--shelf-line);
+  border-radius: 24px;
+  background: var(--shelf-sunken);
+  box-shadow: 0 8px 22px rgb(25 27 31 / 8%);
+}
+
+.tracking-premium .real-map-shell,
+.tracking-premium .real-map-canvas,
+.tracking-premium .real-map-fallback,
+.tracking-premium .maplibregl-map,
+.tracking-premium .maplibregl-canvas-container {
+  height: 100%;
+  min-height: 0;
+}
+
+.tracking-premium .maplibregl-canvas {
+  outline: 0;
+}
+
+.tracking-premium .real-map-shell[data-map-status="ready"] .real-map-fallback {
+  display: none;
+}
+
+.tracking-premium .real-map-shell[data-map-status="unavailable"] .real-map-canvas,
+.tracking-premium .real-map-shell.map-unavailable .real-map-canvas {
+  visibility: hidden;
+}
+
+.tracking-premium .real-map-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  padding: 34px;
+  place-items: center;
+  background: var(--shelf-raised);
+  color: var(--shelf-muted);
+  text-align: center;
+}
+
+.tracking-premium .real-map-fallback p {
+  max-width: 29ch;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.tracking-premium .real-map-meta {
+  z-index: 5;
+  top: 13px;
+  min-height: 32px;
+  gap: 6px;
+  padding: 5px 10px;
+  border-color: rgb(30 32 36 / 9%);
+  box-shadow: 0 5px 16px rgb(22 24 28 / 11%);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.tracking-premium .real-map-live-dot {
+  display: none;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--taba-red);
+  box-shadow: 0 0 0 3px rgb(220 24 39 / 9%);
+}
+
+.tracking-premium .real-map-meta-indicator {
+  display: grid;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+.tracking-premium .real-map-meta-indicator svg {
+  grid-area: 1 / 1;
+  width: 15px;
+  height: 15px;
+}
+
+.tracking-premium .real-map-shell[data-map-freshness="fresh"] .real-map-live-dot {
+  display: block;
+}
+
+.tracking-premium .real-map-shell[data-map-freshness="fresh"] .real-map-meta-indicator > svg {
+  display: none;
+}
+
+.tracking-premium .real-map-shell[data-map-freshness="lost"] .real-map-meta {
+  white-space: normal;
+}
+
+.tracking-premium .real-map-shell[data-map-status="unavailable"] .real-map-meta {
+  display: none;
+}
+
+.tracking-premium .maplibregl-ctrl-bottom-left {
+  max-width: calc(100% - 78px);
+}
+
+.tracking-premium .maplibregl-ctrl-attrib:not(.maplibregl-compact) {
+  padding: 1px 3px;
+  background: rgb(255 255 255 / 82%);
+  color: var(--shelf-muted);
+  font-size: 9px;
+  line-height: 1.3;
+  opacity: 0.88;
+}
+
+.tracking-premium .maplibregl-ctrl-attrib-button {
+  width: 44px;
+  height: 44px;
+  background-position: center;
+  background-size: 24px 24px;
+}
+
+.tracking-premium .maplibregl-ctrl-logo {
+  transform: scale(0.78);
+  transform-origin: bottom left;
+}
+
+.tracking-map-recenter {
+  z-index: 6;
+  right: 14px;
+  bottom: 14px;
+  width: 46px;
+  height: 46px;
+}
+
+.tracking-premium .real-map-shell[data-map-status="unavailable"] + .tracking-map-recenter,
+.tracking-premium .real-map-shell.map-unavailable + .tracking-map-recenter {
+  display: none;
+}
+
+.lt-rider-marker {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  filter: drop-shadow(0 6px 8px rgb(23 25 29 / 24%));
+  will-change: transform;
+}
+
+.lt-rider-marker.is-motion-enabled {
+  transition: transform 520ms cubic-bezier(.22, .72, .3, 1);
+}
+
+.lt-rider-helmet-core,
+.lt-rider-helmet-icon {
+  display: block;
+  width: 48px;
+  height: 48px;
+}
+
+/* El rider es el único marcador rojo pleno del mapa: disco rojo intenso, aro
+   blanco y la moto en blanco. Es el mismo rojo del pulso de GPS fresco, así
+   que el halo y el marcador no discuten. El local es bordó y el destino dorado
+   —los tres se distinguen por color ADEMÁS de por forma y glifo—. */
+.taba-map-helmet {
+  --map-rider-disc: #e8273a;
+  color: var(--taba-white);
+  overflow: visible;
+  filter: none;
+}
+
+.lt-place-marker {
+  display: block;
+  width: 44px;
+  height: 54px;
+  filter: drop-shadow(0 4px 7px rgb(24 26 30 / 20%));
+}
+
+.tracking-rider-card {
+  grid-template-columns: 62px minmax(0, 1fr) auto;
+  min-height: 82px;
+  gap: 13px;
+  padding: 10px 14px;
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgb(25 27 31 / 6%);
+}
+
+.tracking-rider-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--shelf-red-wash);
+}
+
+.tracking-rider-helmet {
+  width: 50px;
+  height: 50px;
+}
+
+.taba-delivery-helmet {
+  --delivery-helmet-contrast: var(--taba-white);
+  color: var(--taba-red-quiet);
+  overflow: visible;
+  transform: translate(0.35px, 0.5px);
+}
+
+.tracking-rider-copy {
+  gap: 3px;
+}
+
+.tracking-rider-copy small {
+  font-size: 13px;
+}
+
+.tracking-rider-copy strong {
+  font-size: 19px;
+}
+
+.tracking-rider-copy > span {
+  font-size: 13.5px;
+}
+
+.tracking-rider-contact .secondary-button {
+  padding-inline: 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 720;
+}
+
+.delivery-code-card {
+  min-height: 132px;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: var(--shelf-red-wash);
+}
+
+.delivery-code-icon {
+  width: 58px;
+  height: 62px;
+}
+
+.delivery-code-icon svg {
+  width: 50px;
+  height: 55px;
+}
+
+.delivery-code-copy {
+  gap: 3px;
+}
+
+.delivery-code-copy > span {
+  font-size: 14px;
+}
+
+.delivery-code-copy strong,
+.delivery-code-copy .delivery-code-success {
+  font-size: clamp(38px, 10vw, 45px);
+}
+
+.delivery-code-copy small {
+  font-size: 13px;
+}
+
+.tracking-premium .tracking-order-summary {
+  border-radius: 22px;
+  box-shadow: 0 5px 16px rgb(25 27 31 / 5%);
+}
+
+.tracking-premium .tracking-order-summary > summary {
+  min-height: 92px;
+  padding: 12px 16px;
+}
+
+.tracking-summary-content {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.tracking-premium .tracking-summary-copy {
+  gap: 5px;
+}
+
+.tracking-premium .tracking-summary-copy > strong {
+  font-size: 17px;
+}
+
+.tracking-premium .tracking-summary-copy > small {
+  font-size: 13.5px;
+}
+
+.tracking-summary-action {
+  min-height: 0;
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.tracking-summary-thumbnails {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.tracking-summary-thumbnail,
+.tracking-summary-thumbnail-more {
+  display: grid;
+  width: 40px;
+  height: 46px;
+  flex: 0 0 40px;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid #efeeec;
+  border-radius: 11px;
+  background: var(--shelf-raised);
+}
+
+.tracking-summary-thumbnail img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tracking-summary-thumbnail-more {
+  color: var(--shelf-ink);
+  font-size: 15px;
+  font-weight: 780;
+}
+
+.tracking-premium .tracking-help-card {
+  margin-top: -7px;
+  color: var(--shelf-muted);
+  font-size: 13.5px;
+}
+
+.tracking-premium .tracking-help-icon {
+  color: var(--shelf-muted);
+}
+
+.tracking-help-contact {
+  color: var(--taba-red-quiet);
+  text-decoration-style: solid;
+}
+
+/* Estado público canónico `arriving`: composición equivalente a la referencia
+   sin alterar el flujo, los datos ni el comportamiento del mapa. */
+body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar {
+  min-height: calc(57px + env(safe-area-inset-top, 0px));
+  padding-inline: max(18px, calc((100vw - 720px) / 2 + 18px));
+}
+
+body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar .brand {
+  min-height: 45px;
+}
+
+body[data-active-view="tracking"]:has(.tracking-premium.status-arriving) .topbar .brand-word {
+  font-size: 27px;
+  font-weight: 750;
+  letter-spacing: -0.08em;
+}
+
+.tracking-premium.status-arriving .tracking-menu-button {
+  top: calc(3px + env(safe-area-inset-top, 0px));
+  right: max(6px, calc((100vw - 720px) / 2 + 6px));
+}
+
+.tracking-premium.status-arriving .tracking-menu-button svg {
+  width: 26px;
+  height: 26px;
+}
+
+.tracking-premium.status-arriving .tracking-menu-button path {
+  stroke-width: 1.8px;
+}
+
+.tracking-premium.status-arriving .tracking-sheet {
+  gap: 0;
+  padding: 4px 18px max(0px, env(safe-area-inset-bottom, 0px));
+}
+
+.tracking-premium.status-arriving .tracking-hero {
+  gap: 2px;
+  margin: 0 3px;
+}
+
+.tracking-premium.status-arriving .tracking-hero h1 {
+  color: var(--taba-graphite);
+  font-size: 29px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.tracking-premium.status-arriving .tracking-subtitle {
+  margin-top: 3px;
+  color: var(--taba-graphite-soft);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.32;
+}
+
+.tracking-premium.status-arriving .tracking-updated {
+  margin-top: 5px;
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.tracking-premium.status-arriving .customer-progress {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin: 17px 6px 14px;
+}
+
+.tracking-premium.status-arriving .customer-progress::before,
+.tracking-premium.status-arriving .customer-progress::after {
+  position: absolute;
+  z-index: 0;
+  top: 8.25px;
+  left: 28px;
+  height: 1.5px;
+  content: "";
+}
+
+.tracking-premium.status-arriving .customer-progress::before {
+  right: 27px;
+  background: var(--taba-border-medium);
+}
+
+.tracking-premium.status-arriving .customer-progress::after {
+  width: 57%;
+  background: var(--taba-red-quiet);
+}
+
+.tracking-premium.status-arriving .track-step {
+  width: max-content;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.tracking-premium.status-arriving .track-step::before {
+  display: none;
+}
+
+.tracking-premium.status-arriving .track-dot {
+  width: 18px;
+  height: 18px;
+  border-width: 1px;
+}
+
+.tracking-premium.status-arriving .track-step.done::before,
+.tracking-premium.status-arriving .track-step.current::before,
+.tracking-premium.status-arriving .track-step.done .track-dot,
+.tracking-premium.status-arriving .track-step.current .track-dot {
+  border-color: var(--taba-red-quiet);
+  background: var(--taba-red-quiet);
+}
+
+.tracking-premium.status-arriving .track-step.done .track-dot::after,
+.tracking-premium.status-arriving .track-step.current .track-dot::after {
+  width: 4px;
+  height: 7px;
+  border-width: 0 1.5px 1.5px 0;
+}
+
+.tracking-premium.status-arriving .track-step.pending .track-dot {
+  border-color: var(--taba-border-medium);
+  background: var(--taba-warm-white);
+}
+
+.tracking-premium.status-arriving .track-step small {
+  color: var(--taba-graphite);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.tracking-premium.status-arriving .tracking-map-stage {
+  width: 100%;
+  height: clamp(260px, 71.8vw, 300px);
+  min-height: clamp(260px, 71.8vw, 300px);
+  border-color: var(--taba-border-soft);
+  border-radius: 22px;
+  box-shadow: 0 2px 8px rgb(25 27 31 / 4%);
+}
+
+.tracking-premium.status-arriving .maplibregl-canvas {
+  filter: saturate(0.78) contrast(0.94) brightness(1.025);
+}
+
+.tracking-premium.status-arriving .real-map-meta {
+  top: 12px;
+  min-height: 29px;
+  gap: 4px;
+  padding: 4px 9px;
+  border-color: var(--shelf-line);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.tracking-premium.status-arriving .real-map-meta-indicator,
+.tracking-premium.status-arriving .real-map-meta-indicator svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tracking-premium.status-arriving
+  .real-map-shell[data-map-presentation="last-location"]
+  .real-map-live-dot {
+  display: none;
+}
+
+.tracking-premium.status-arriving
+  .real-map-shell[data-map-presentation="last-location"]
+  .real-map-meta-indicator
+  > svg {
+  display: block;
+}
+
+.tracking-premium.status-arriving .tracking-map-recenter {
+  right: 15px;
+  bottom: 15px;
+  width: 46px;
+  height: 46px;
+  border-color: var(--shelf-line);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
+}
+
+.tracking-premium.status-arriving .tracking-map-recenter:hover,
+.tracking-premium.status-arriving .tracking-map-recenter:focus-visible {
+  background: rgb(30 35 42 / 96%);
+  color: #ff6473;
+}
+
+.tracking-premium.status-arriving .tracking-map-eta,
+.tracking-premium.status-arriving .lt-place-marker {
+  display: none;
+}
+
+.tracking-premium.status-arriving .lt-rider-marker,
+.tracking-premium.status-arriving .lt-rider-helmet-core,
+.tracking-premium.status-arriving .lt-rider-helmet-icon {
+  width: 43px;
+  height: 43px;
+}
+
+.tracking-premium.status-arriving .lt-rider-marker {
+  filter: drop-shadow(0 2px 4px rgb(23 25 29 / 12%));
+}
+
+.tracking-premium.status-arriving .maplibregl-ctrl-bottom-left {
+  bottom: 5px;
+  left: 6px;
+  max-width: calc(100% - 86px);
+}
+
+.tracking-premium.status-arriving .maplibregl-ctrl-bottom-left .maplibregl-ctrl {
+  margin: 0 4px 0 0;
+}
+
+.tracking-premium.status-arriving .maplibregl-ctrl-attrib.maplibregl-compact {
+  min-height: 20px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 1px 4px rgb(20 21 24 / 6%);
+}
+
+.tracking-premium.status-arriving .maplibregl-ctrl-attrib-button {
+  width: 44px;
+  height: 44px;
+  opacity: 0.62;
+}
+
+.tracking-premium.status-arriving .maplibregl-ctrl-logo {
+  margin: 0;
+  opacity: 0.56;
+  transform: scale(0.66);
+}
+
+.tracking-premium.status-arriving .tracking-rider-card {
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  min-height: 80px;
+  align-items: center;
+  gap: 13px;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border-color: var(--taba-border-soft);
+  border-radius: 20px;
+  background: var(--taba-warm-white);
+  box-shadow: var(--shadow-xs);
+}
+
+.tracking-premium.status-arriving .tracking-rider-icon {
+  width: 50px;
+  height: 50px;
+  background: var(--taba-subtle);
+}
+
+.tracking-premium.status-arriving .tracking-rider-helmet {
+  width: 58px;
+  height: 58px;
+}
+
+.tracking-premium.status-arriving .tracking-rider-copy {
+  gap: 2px;
+}
+
+.tracking-premium.status-arriving .tracking-rider-copy small {
+  color: var(--taba-muted-soft);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.tracking-premium.status-arriving .tracking-rider-copy strong {
+  color: var(--taba-graphite);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.tracking-premium.status-arriving .tracking-rider-copy > span {
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.tracking-premium.status-arriving .tracking-rider-contact {
+  width: auto;
+  margin: 0;
+}
+
+.tracking-premium.status-arriving .tracking-rider-contact .secondary-button {
+  position: relative;
+  isolation: isolate;
+  min-height: 44px;
+  min-width: 82px;
+  border-color: transparent;
+  padding-inline: 10px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--taba-red-quiet);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tracking-premium.status-arriving .tracking-rider-contact .secondary-button::before {
+  position: absolute;
+  z-index: -1;
+  inset: 2px 0;
+  border: 1px solid var(--taba-red-quiet);
+  border-radius: 11px;
+  background: var(--taba-white);
+  content: "";
+  pointer-events: none;
+}
+
+.tracking-premium.status-arriving .tracking-rider-contact .secondary-button:hover,
+.tracking-premium.status-arriving .tracking-rider-contact .secondary-button:focus-visible {
+  background: transparent;
+}
+
+.tracking-premium.status-arriving .delivery-code-card {
+  min-height: 113px;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 15px;
+  padding: 10px 13px;
+  border-color: var(--taba-red-border-soft);
+  border-radius: 20px;
+  background: var(--taba-red-wash);
+  box-shadow: none;
+}
+
+.tracking-premium.status-arriving .delivery-code-icon {
+  width: 48px;
+  height: 52px;
+  color: var(--taba-red-quiet);
+}
+
+.tracking-premium.status-arriving .delivery-code-icon svg {
+  width: 39px;
+  height: 43px;
+}
+
+.tracking-premium.status-arriving .delivery-code-icon :is(path, rect) {
+  stroke-width: 1.9px;
+}
+
+.tracking-premium.status-arriving .delivery-code-copy {
+  gap: 1px;
+}
+
+.tracking-premium.status-arriving .delivery-code-copy > span {
+  color: var(--taba-red-quiet);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.tracking-premium.status-arriving .delivery-code-copy strong {
+  color: var(--taba-red-quiet);
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.06;
+  word-spacing: 0.12em;
+}
+
+.tracking-premium.status-arriving .delivery-code-copy small {
+  max-width: 30ch;
+  color: var(--taba-graphite-soft);
+  font-size: 12.25px;
+  font-weight: 400;
+  line-height: 1.32;
+}
+
+.tracking-premium.status-arriving .tracking-order-summary {
+  margin-top: 13px;
+  border-color: var(--taba-border-soft);
+  border-radius: 19px;
+  box-shadow: var(--shadow-xs);
+}
+
+.tracking-premium.status-arriving .tracking-order-summary > summary {
+  min-height: 68px;
+  padding: 11px 15px;
+}
+
+.tracking-premium.status-arriving .tracking-summary-content {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.tracking-premium.status-arriving .tracking-summary-copy {
+  gap: 3px;
+}
+
+.tracking-premium.status-arriving .tracking-summary-copy > strong {
+  color: var(--taba-graphite);
+  font-size: 15.5px;
+  font-weight: 550;
+}
+
+.tracking-premium.status-arriving .tracking-summary-copy > small {
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.tracking-premium.status-arriving .tracking-summary-action {
+  color: var(--taba-red-quiet);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tracking-premium.status-arriving .tracking-summary-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tracking-premium.status-arriving .tracking-help-card {
+  min-height: 44px;
+  gap: 3px;
+  margin: 0;
+  color: var(--taba-red-quiet);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.tracking-premium.status-arriving .tracking-help-icon {
+  display: none;
+}
+
+.tracking-premium.status-arriving .tracking-help-contact {
+  color: var(--taba-red-quiet);
+  font-weight: 400;
+  text-decoration-style: dotted;
+}
+
+/* Estado público `on_the_way` (y su equivalente interno `picked_up`, que el
+   cliente lee con el mismo título y el mismo paso de progreso): adopta el
+   lenguaje visual ya certificado en `arriving` y reparte el presupuesto
+   vertical que libera la ausencia de la tarjeta de código en un mapa más alto
+   y en un ritmo más aireado. Sólo composición y estilo: ni los datos, ni los
+   estados, ni el comportamiento del mapa cambian. */
+body[data-active-view="tracking"]:has(
+  .tracking-premium:is(.status-on_the_way, .status-picked_up)
+) .topbar {
+  min-height: calc(57px + env(safe-area-inset-top, 0px));
+  padding-inline: max(18px, calc((100vw - 720px) / 2 + 18px));
+}
+
+body[data-active-view="tracking"]:has(
+  .tracking-premium:is(.status-on_the_way, .status-picked_up)
+) .topbar .brand {
+  min-height: 45px;
+}
+
+body[data-active-view="tracking"]:has(
+  .tracking-premium:is(.status-on_the_way, .status-picked_up)
+) .topbar .brand-word {
+  font-size: 27px;
+  font-weight: 750;
+  letter-spacing: -0.08em;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-menu-button {
+  top: calc(3px + env(safe-area-inset-top, 0px));
+  right: max(6px, calc((100vw - 720px) / 2 + 6px));
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-menu-button svg {
+  width: 26px;
+  height: 26px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-menu-button path {
+  stroke-width: 1.8px;
+}
+
+/* La segunda variante cubre el mismo estado sin ubicación disponible, donde el
+   aviso reemplaza al mapa: el ritmo de la hoja no debe cambiar por eso. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-sheet,
+.tracking-premium:is(.status-on_the_way, .status-picked_up).track-layout.no-map .tracking-sheet {
+  gap: 0;
+  padding: 4px 18px max(10px, env(safe-area-inset-bottom, 0px));
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-hero {
+  gap: 2px;
+  margin: 0 3px;
+}
+
+/* El titular es más largo que el de `arriving`, así que escala con el ancho
+   para sostener una sola línea desde 320px sin bajar de tamaño de lectura. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-hero h1 {
+  color: var(--taba-graphite);
+  font-size: clamp(25.5px, 7.35vw, 29px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-subtitle {
+  margin-top: 3px;
+  color: var(--taba-graphite-soft);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.32;
+}
+
+/* Sin ETA confiable la línea es una espera, no un dato: baja de jerarquía en
+   vez de competir con el titular. Con ETA, el número es el ancla de la vista. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .tracking-subtitle[data-eta-active="false"] {
+  color: var(--taba-muted-soft);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-subtitle strong {
+  color: var(--taba-graphite);
+  font-size: 18.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-updated {
+  margin-top: 5px;
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .customer-progress {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin: 17px 6px 14px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .customer-progress::before,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .customer-progress::after {
+  position: absolute;
+  z-index: 0;
+  top: 8.25px;
+  left: 28px;
+  height: 1.5px;
+  content: "";
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .customer-progress::before {
+  right: 27px;
+  background: var(--taba-border-medium);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .customer-progress::after {
+  width: 57%;
+  background: var(--taba-red-quiet);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step {
+  width: max-content;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step::before {
+  display: none;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-dot {
+  width: 18px;
+  height: 18px;
+  border-width: 1px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step.done .track-dot,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step.current .track-dot {
+  border-color: var(--taba-red-quiet);
+  background: var(--taba-red-quiet);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step.done .track-dot::after,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step.current .track-dot::after {
+  width: 4px;
+  height: 7px;
+  border-width: 0 1.5px 1.5px 0;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step.pending .track-dot {
+  border-color: var(--taba-border-medium);
+  background: var(--taba-warm-white);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .track-step small {
+  color: var(--taba-graphite);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+/* El mapa es la razón de ser de este estado: se queda con el espacio que en
+   `arriving` ocupa la tarjeta de código, sin llegar a empujar el pie fuera de
+   pantalla en el dispositivo de referencia. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-stage,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-shell,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-canvas,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-map,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-canvas-container {
+  height: clamp(300px, 87vw, 356px);
+  min-height: clamp(300px, 87vw, 356px);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-stage {
+  width: 100%;
+  border-color: var(--taba-border-soft);
+  border-radius: 22px;
+  box-shadow: 0 2px 8px rgb(25 27 31 / 4%);
+}
+
+/* Base calmada: el recorrido rojo, el casco y los pines quedan como única
+   información saturada del encuadre. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-canvas {
+  filter: saturate(0.78) contrast(0.94) brightness(1.025);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-meta {
+  top: 12px;
+  min-height: 29px;
+  gap: 5px;
+  padding: 4px 9px;
+  border-color: var(--taba-border-soft);
+  box-shadow: 0 2px 7px rgb(22 24 28 / 7%);
+  color: var(--taba-graphite-soft);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-meta-indicator,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-meta-indicator svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-live-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--taba-red-quiet);
+  box-shadow: 0 0 0 0 rgb(197 22 36 / 24%);
+}
+
+/* Sólo late cuando la ubicación es realmente fresca: el latido es el estado,
+   no un adorno permanente. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .real-map-shell[data-map-freshness="fresh"]
+  .real-map-live-dot {
+  animation: taba-tracking-live-halo 2400ms ease-out infinite;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-recenter {
+  right: 15px;
+  bottom: 15px;
+  width: 46px;
+  height: 46px;
+  border-color: var(--shelf-line);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-recenter:hover,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-recenter:focus-visible {
+  background: rgb(30 35 42 / 96%);
+  color: #ff6473;
+}
+
+/* La estimación de la sandbox se apila sobre la atribución en vez de taparla,
+   y baja de peso para no disputarle la lectura al titular. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-eta {
+  right: auto;
+  bottom: 34px;
+  left: 13px;
+  min-height: 27px;
+  padding: 5px 10px;
+  border: 1px solid var(--shelf-line);
+  background: rgb(18 21 26 / 92%);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-ctrl-bottom-left {
+  bottom: 5px;
+  left: 6px;
+  max-width: calc(100% - 86px);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .maplibregl-ctrl-bottom-left
+  .maplibregl-ctrl {
+  margin: 0 4px 0 0;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .maplibregl-ctrl-attrib.maplibregl-compact {
+  min-height: 20px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 1px 4px rgb(20 21 24 / 6%);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-ctrl-attrib-button {
+  width: 44px;
+  height: 44px;
+  opacity: 0.62;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .maplibregl-ctrl-logo {
+  margin: 0;
+  opacity: 0.56;
+  transform: scale(0.66);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-rider-marker,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-rider-helmet-core,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-rider-helmet-icon {
+  width: 43px;
+  height: 43px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-rider-marker {
+  filter: drop-shadow(0 2px 5px rgb(23 25 29 / 16%));
+}
+
+/* Origen y destino son contexto, no protagonistas: bajan de escala y quedan
+   por debajo del casco para que el rider siga siendo el único foco del
+   encuadre incluso cuando acaba de salir del local y los tres puntos coinciden. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-rider-marker {
+  z-index: 3;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-place-marker {
+  z-index: 2;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-place-marker,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-place-marker-pin,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-place-marker-pin svg {
+  width: 34px;
+  height: 42px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .lt-place-marker {
+  filter: drop-shadow(0 2px 4px rgb(24 26 30 / 14%));
+}
+
+/* El destino ya no repinta su relleno mientras el rider viaja: era rojo y con
+   el rider en escena había dos rojos discutiendo, así que se lo bajaba al rojo
+   tokenizado. Ahora el destino es dorado y el único rojo del encuadre es el
+   rider —que es exactamente la jerarquía que esa regla buscaba—. */
+
+/* El local ya quedó atrás en el viaje: sigue legible, pero cede la jerarquía al
+   rider y al domicilio. Se atenúa el contenido y no el marcador, porque
+   MapLibre administra la opacidad del propio elemento del marcador. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .lt-place-marker.is-store
+  .lt-place-marker-pin {
+  opacity: 0.72;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-card {
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  min-height: 80px;
+  align-items: center;
+  gap: 13px;
+  margin-top: 16px;
+  padding: 8px 14px;
+  border-color: var(--taba-border-soft);
+  border-radius: 20px;
+  background: var(--taba-warm-white);
+  box-shadow: var(--shadow-xs);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-icon {
+  width: 50px;
+  height: 50px;
+  background: var(--taba-subtle);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-helmet {
+  width: 58px;
+  height: 58px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-copy {
+  gap: 2px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-copy small {
+  color: var(--taba-muted-soft);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-copy strong {
+  color: var(--taba-graphite);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-copy > span {
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-contact {
+  width: auto;
+  margin: 0;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .tracking-rider-contact
+  .secondary-button {
+  position: relative;
+  isolation: isolate;
+  min-width: 82px;
+  min-height: 44px;
+  border-color: transparent;
+  padding-inline: 10px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--taba-red-quiet);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .tracking-rider-contact
+  .secondary-button::before {
+  position: absolute;
+  z-index: -1;
+  inset: 2px 0;
+  border: 1px solid var(--taba-red-quiet);
+  border-radius: 11px;
+  background: var(--taba-white);
+  content: "";
+  pointer-events: none;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .tracking-rider-contact
+  .secondary-button:hover,
+.tracking-premium:is(.status-on_the_way, .status-picked_up)
+  .tracking-rider-contact
+  .secondary-button:focus-visible {
+  background: transparent;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-order-summary {
+  margin-top: 14px;
+  border-color: var(--taba-border-soft);
+  border-radius: 19px;
+  box-shadow: var(--shadow-xs);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-order-summary > summary {
+  min-height: 68px;
+  padding: 11px 15px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-content {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-copy {
+  gap: 3px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-copy > strong {
+  color: var(--taba-graphite);
+  font-size: 15.5px;
+  font-weight: 550;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-copy > small {
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-action {
+  color: var(--taba-red-quiet);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-thumbnail,
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-thumbnail-more {
+  width: 38px;
+  height: 42px;
+  flex: 0 0 38px;
+  border-color: var(--taba-border-soft);
+  border-radius: 10px;
+  background: var(--taba-subtle);
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-thumbnail-more {
+  color: var(--taba-graphite);
+  font-size: 13.5px;
+  font-weight: 550;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-help-card {
+  min-height: 44px;
+  gap: 3px;
+  margin: 16px 0 0;
+  color: var(--taba-red-quiet);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-help-icon {
+  display: none;
+}
+
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-help-contact {
+  color: var(--taba-red-quiet);
+  font-weight: 400;
+  text-decoration-style: dotted;
+}
+
+/* Sin mapa el estado conserva el mismo ritmo, con el aviso de ubicación
+   ocupando el lugar del encuadre. */
+.tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-waiting {
+  margin-top: 2px;
+  border-color: var(--taba-border-soft);
+  border-radius: 20px;
+  background: var(--taba-warm-white);
+}
+
+@keyframes taba-tracking-live-halo {
+  0% {
+    box-shadow: 0 0 0 0 rgb(197 22 36 / 26%);
+  }
+
+  70% {
+    box-shadow: 0 0 0 7px rgb(197 22 36 / 0%);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgb(197 22 36 / 0%);
+  }
+}
+
+.tracking-premium.status-cancelled .track-step::before {
+  background: var(--shelf-sunken);
+}
+
+.tracking-premium.status-cancelled .track-dot {
+  border-color: var(--shelf-line-strong);
+  background: var(--shelf-raised);
+}
+
+.tracking-premium :where(
+  .tracking-menu-button,
+  .tracking-map-recenter,
+  .tracking-rider-contact a,
+  .tracking-summary-action,
+  .tracking-help-contact
+):focus-visible {
+  outline: 3px solid rgb(200 16 30 / 28%);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lt-rider-marker,
+  .lt-rider-marker.is-motion-enabled,
+  .tracking-summary-action svg {
+    transition: none !important;
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up)
+    .real-map-shell[data-map-freshness="fresh"]
+    .real-map-live-dot {
+    animation: none !important;
+  }
+}
+
+/* ============================================================================
+   Mapa nocturno TABA2 — la superficie sobre el lienzo grafito.
+
+   El tema del LIENZO vive en js/map/taba_map_theme.js (post-proceso de las
+   capas MapLibre). Este bloque integra todo lo que flota SOBRE ese lienzo:
+   píldoras de estado, ETA, recentrado, atribución, carga, GPS demorado o
+   perdido. Regla dura de la sección: ningún overlay decorativo captura
+   gestos — pointer-events: none en todo lo que no sea un control — y acá no
+   se declara touch-action: la superficie táctil del mapa es de MapLibre.
+   ========================================================================== */
+
+/* --- Carga: shimmer grafito hasta que el estilo está listo ---------------- */
+
+.tracking-premium .real-map-shell::before {
+  position: absolute;
+  z-index: 4;
+  background:
+    linear-gradient(100deg, transparent 32%, rgb(255 255 255 / 4%) 46%, rgb(255 255 255 / 7%) 50%, rgb(255 255 255 / 4%) 54%, transparent 68%) no-repeat,
+    var(--shelf-sunken);
+  background-size: 220% 100%;
+  content: "";
+  inset: 0;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+
+.tracking-premium .real-map-shell.is-ready::before {
+  animation: none;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tracking-premium .real-map-shell:not(.is-ready)::before {
+    animation: taba-map-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes taba-map-shimmer {
+  from { background-position: 130% 0; }
+  to { background-position: -30% 0; }
+}
+
+/* --- Píldora de estado de la ubicación ------------------------------------ */
+
+.tracking-premium .real-map-meta {
+  border-color: var(--shelf-line);
+  background: rgb(18 21 26 / 90%);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
+}
+
+/* Demorado: el reloj y el borde toman el dorado sutil de la marca. */
+.tracking-premium .real-map-shell[data-map-freshness="delayed"] .real-map-meta {
+  border-color: rgb(201 149 62 / 55%);
+  color: var(--shelf-gold);
+}
+
+/* Perdido: honestidad primero — la píldora avisa en el rojo de la marca. */
+.tracking-premium .real-map-shell[data-map-freshness="lost"] .real-map-meta {
+  border-color: rgb(232 39 58 / 45%);
+  color: #ff8b96;
+}
+
+/* El velo del GPS perdido atenúa el lienzo sin capturar un solo gesto. */
+.tracking-premium .real-map-shell::after {
+  position: absolute;
+  z-index: 3;
+  background: rgb(13 15 18 / 45%);
+  content: "";
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+.tracking-premium .real-map-shell.is-ready[data-map-freshness="lost"]::after {
+  opacity: 1;
+}
+
+.tracking-premium .real-map-shell.is-ready[data-map-freshness="lost"] .lt-rider-marker {
+  filter: grayscale(0.45) opacity(0.82);
+}
+
+/* --- ETA: el número que el cliente vino a buscar -------------------------- */
+
+.tracking-map-eta {
+  border: 1px solid var(--shelf-line);
+  background: rgb(18 21 26 / 92%);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
+}
+
+/* --- Recentrar: un control de verdad, no una pastilla flotante ------------ */
+
+.tracking-map-recenter {
+  border: 1px solid var(--shelf-line);
+  background: rgb(22 26 32 / 94%);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
+}
+
+.tracking-map-recenter:hover,
+.tracking-map-recenter:focus-visible {
+  background: rgb(30 35 42 / 96%);
+  color: #ff6473;
+}
+
+.tracking-map-recenter:focus-visible {
+  outline: 2px solid var(--shelf-gold);
+  outline-offset: 2px;
+}
+
+/* El CTA de volver comparte la superficie del recentrado —misma tinta, mismo
+   vidrio, misma sombra— porque hacen lo mismo: devolver la cámara al rider.
+   El pin va en rojo legible sobre grafito, que es el único acento del control. */
+.tracking-map-follow-cta {
+  border: 1px solid var(--shelf-line);
+  background: rgb(22 26 32 / 94%);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+  color: var(--shelf-ink);
+}
+
+.tracking-map-follow-cta svg {
+  color: var(--shelf-red-ink);
+}
+
+.tracking-map-follow-cta:hover,
+.tracking-map-follow-cta:focus-visible {
+  background: rgb(30 35 42 / 96%);
+}
+
+.tracking-map-follow-cta:focus-visible {
+  outline: 2px solid var(--shelf-gold);
+  outline-offset: 2px;
+}
+
+/* --- Controles nativos de MapLibre (zoom en escritorio, atribución) ------- */
+
+.tracking-premium .maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid var(--shelf-line);
+  border-radius: 13px;
+  background: rgb(22 26 32 / 94%);
+  box-shadow: 0 6px 18px rgb(8 9 11 / 45%);
+}
+
+.tracking-premium .maplibregl-ctrl-group button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+}
+
+.tracking-premium .maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--shelf-line);
+}
+
+.tracking-premium .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  /* Los glifos de zoom del sprite nativo son tinta oscura: en negativo quedan
+     blancos sobre el control grafito, sin tocar el SVG del vendor. */
+  filter: invert(0.92);
+}
+
+.tracking-premium .maplibregl-ctrl-group button:hover {
+  background: rgb(255 255 255 / 8%);
+}
+
+/* En táctil chico mandan los gestos: el zoom de botones es ruido que tapa
+   mapa. Se conserva desde tablet/escritorio, donde sí es el control natural. */
+@media (max-width: 767px) {
+  .tracking-premium .maplibregl-ctrl-top-right {
+    display: none;
+  }
+}
+
+.tracking-premium .maplibregl-ctrl-attrib:not(.maplibregl-compact) {
+  background: rgb(18 21 26 / 82%);
+  color: var(--shelf-muted);
+}
+
+.tracking-premium .maplibregl-ctrl-attrib a {
+  color: var(--shelf-muted);
+}
+
+.tracking-premium .maplibregl-ctrl-attrib.maplibregl-compact {
+  border: 1px solid var(--shelf-line);
+  background: rgb(18 21 26 / 88%);
+  color: var(--shelf-muted);
+}
+
+.tracking-premium .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
+  color: var(--shelf-muted);
+}
+
+.tracking-premium .maplibregl-ctrl-attrib-button {
+  filter: invert(0.85);
+}
+
+/* --- Marcador del rider: pulso sólo con GPS fresco y en camino ------------ */
+
+.tracking-premium .lt-rider-marker::before {
+  position: absolute;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  content: "";
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tracking-premium .real-map-shell.is-location-fresh .lt-rider-marker.on-the-way::before {
+    animation: taba-rider-pulse 2.4s ease-out infinite;
+    background: rgb(232 39 58 / 35%);
+  }
+}
+
+@keyframes taba-rider-pulse {
+  0% { opacity: 0.75; transform: scale(0.62); }
+  70% { opacity: 0; transform: scale(1.55); }
+  100% { opacity: 0; transform: scale(1.55); }
+}
+
+/* Sobre lienzo oscuro el casco necesita despegue, no más borde. */
+.tracking-premium .lt-rider-helmet-icon {
+  filter: drop-shadow(0 4px 10px rgb(6 7 9 / 55%));
+}
+
+.tracking-premium .lt-place-marker-pin {
+  filter: drop-shadow(0 4px 9px rgb(6 7 9 / 55%));
+}
+
+/* --- Safe areas: notch lateral y mentón en móvil -------------------------- */
+
+.tracking-premium .tracking-sheet {
+  padding-inline: max(24px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 767px) {
+  .tracking-premium .tracking-sheet {
+    padding-inline: max(18px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  }
+}
+
+/* --- «Seguir» sin pedido: el mapa como sección, no como hueco -------------
+   Este estado usa EXACTAMENTE la misma pila que el seguimiento en vivo —misma
+   sheet, mismo encuadre, mismo lienzo nocturno— y sólo cambia lo que hay
+   encima. Por eso no lleva estilos de vacío: nada acá debe leerse como un
+   error ni como una demo, porque no lo es. */
+
+.tracking-premium.is-idle .tracking-sheet {
+  gap: 16px;
+}
+
+/* La tarjeta se apoya sobre el mapa y lo deja respirar: el mapa es la
+   superficie y el texto es lo que aparece encima. El margen negativo es lo
+   que produce ese solape sin sacar el mapa de la columna. */
+.tracking-idle-card {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-top: -26px;
+  margin-inline: 4px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--shelf-line);
+  border-radius: 20px;
+  background: var(--shelf-raised);
+  box-shadow: 0 10px 28px rgb(22 24 28 / 10%);
+}
+
+.tracking-idle-title {
+  margin: 0;
+  color: var(--taba-ink);
+  font-size: 19px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.tracking-idle-lead {
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.tracking-idle-cta {
+  margin-top: 4px;
+}
+
+/* Sin pedido no hay nada que recentrar ni frescura que informar: el mapa habla
+   del comercio y de su zona, y ésa es toda la píldora que corresponde. */
+.tracking-premium .real-map-shell[data-map-mode="idle"] .real-map-meta-indicator {
+  display: none;
+}
+
+/* La atribución de MapLibre se sube por encima del solape de la tarjeta. Su
+   botón mide 44px de alto dentro de una caja de 20 y sobresale por abajo; sin
+   este desplazamiento quedaba cortado a la mitad detrás de «Seguí tu pedido»,
+   que es justo el control que la licencia del mapa base exige poder tocar. */
+.tracking-premium .real-map-shell[data-map-mode="idle"] .maplibregl-ctrl-bottom-left {
+  bottom: 30px;
+  left: 6px;
+  max-width: calc(100% - 86px);
+}
+
+.tracking-premium .real-map-shell[data-map-mode="idle"] .maplibregl-ctrl-attrib.maplibregl-compact {
+  min-height: 20px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 82%);
+  box-shadow: 0 1px 4px rgb(20 21 24 / 6%);
+}
+
+.tracking-premium .real-map-shell[data-map-mode="idle"] .maplibregl-ctrl-attrib-button {
+  opacity: 0.62;
+}
+
+/* En pantallas angostas la tarjeta pierde el solape para no comerse el mapa. */
+@media (max-width: 360px) {
+  .tracking-idle-card {
+    margin-top: -18px;
+    margin-inline: 0;
+    padding: 16px 16px 18px;
+  }
+
+  .tracking-idle-title {
+    font-size: 18px;
+  }
+}

@@ -1,0 +1,34 @@
+--- SONDA REST anon (SÓLO GET) contra producción ---
+· tablas que deben estar CERRADAS:
+  ok    orders                     HTTP 200 filas=0 
+  ok    order_items                HTTP 200 filas=0 
+  ok    order_events               HTTP 401 filas=- 42501 permission denied for table order_events
+  ok    customers                  HTTP 401 filas=- 42501 permission denied for table customers
+  ok    customer_addresses         HTTP 401 filas=- 42501 permission denied for table customer_addresses
+  ok    rider_profiles             HTTP 401 filas=- 42501 permission denied for table rider_profiles
+  ok    rider_locations            HTTP 401 filas=- 42501 permission denied for table rider_locations
+  ok    rider_order_offers         HTTP 401 filas=- 42501 permission denied for table rider_order_offers
+  ok    payment_attempts           HTTP 401 filas=- 42501 permission denied for table payment_attempts
+  ok    payment_outbox             HTTP 401 filas=- 42501 permission denied for table payment_outbox
+  ok    checkout_sessions          HTTP 401 filas=- 42501 permission denied for table checkout_sessions
+  ok    fiscal_documents           HTTP 401 filas=- 42501 permission denied for table fiscal_documents
+  ok    business_members           HTTP 401 filas=- 42501 permission denied for table business_members
+  ok    staff_profiles             HTTP 401 filas=- 42501 permission denied for table staff_profiles
+  ok    identity_sessions          HTTP 401 filas=- 42501 permission denied for table identity_sessions
+  ok    operational_alerts         HTTP 401 filas=- 42501 permission denied for table operational_alerts
+  ok    operational_sweep_runs     HTTP 401 filas=- 42501 permission denied for table operational_sweep_runs
+  ok    identity_audit_events      HTTP 401 filas=- 42501 permission denied for table identity_audit_events
+  ok    business_config_audit      HTTP 401 filas=- 42501 permission denied for table business_config_audit
+  ok    business_command_receipts  HTTP 401 filas=- 42501 permission denied for table business_command_receipts
+  ok    order_public_tokens        HTTP 401 filas=- 42501 permission denied for table order_public_tokens
+  ok    identity_user_security     HTTP 401 filas=- 42501 permission denied for table identity_user_security
+  ok    payment_webhook_receipts   HTTP 401 filas=- 42501 permission denied for table payment_webhook_receipts
+  ok    delivery_outbox            HTTP 401 filas=- 42501 permission denied for table delivery_outbox
+  ok    notification_outbox        HTTP 401 filas=- 42501 permission denied for table notification_outbox
+· vitrina pública (informativo):
+        products                   HTTP 200 filas=1 
+        businesses                 HTTP 401 filas=- 42501 permission denied for table businesses
+        catalog_assets             HTTP 401 filas=- 42501 permission denied for table catalog_assets
+        product_combos             HTTP 200 filas=0 
+        product_barcodes           HTTP 401 filas=- 42501 permission denied for table product_barcodes
+RESULTADO: ninguna tabla cerrada devolvió filas a anon

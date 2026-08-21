@@ -1,0 +1,1 @@
+{"ok":false,"code":"METHOD_NOT_ALLOWED","message":"Método no permitido."}

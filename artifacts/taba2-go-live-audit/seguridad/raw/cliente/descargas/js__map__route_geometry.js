@@ -1,0 +1,501 @@
+import {
+  DEFAULT_STREET_TEST_DESTINATION_ID,
+  DEMO_DESTINATIONS,
+  DEMO_STREET_TEST_DESTINATIONS,
+  STORE_LOCATION,
+} from './map_config.js';
+import { coordinatePair, isGeoPoint } from '../core/geo-point.js';
+
+const BASE_ROUTES = Object.freeze({
+  neuquen: {
+    id: 'neuquen',
+    name: 'Ruta demo · Neuquén Capital',
+    destination: DEMO_DESTINATIONS.neuquen,
+    points: [
+      { lat: STORE_LOCATION.lat, lng: STORE_LOCATION.lng },
+      { lat: -38.9498, lng: -68.0648 },
+      { lat: -38.9467, lng: -68.0691 },
+      { lat: -38.9431, lng: -68.0718 },
+      { lat: DEMO_DESTINATIONS.neuquen.lat, lng: DEMO_DESTINATIONS.neuquen.lng },
+    ],
+  },
+  cipolletti: {
+    id: 'cipolletti',
+    name: 'Ruta demo · Neuquén a Cipolletti',
+    destination: DEMO_DESTINATIONS.cipolletti,
+    points: [
+      { lat: STORE_LOCATION.lat, lng: STORE_LOCATION.lng },
+      { lat: -38.9482, lng: -68.0436 },
+      { lat: -38.9438, lng: -68.0258 },
+      { lat: -38.9395, lng: -68.0074 },
+      { lat: DEMO_DESTINATIONS.cipolletti.lat, lng: DEMO_DESTINATIONS.cipolletti.lng },
+    ],
+  },
+});
+
+const STREET_ROUTES = Object.freeze(Object.fromEntries(
+  DEMO_STREET_TEST_DESTINATIONS.map((destination, index) => [
+    destination.id,
+    buildStreetRoute(destination, index),
+  ]),
+));
+
+const ROUTES = Object.freeze({
+  ...BASE_ROUTES,
+  ...STREET_ROUTES,
+});
+
+export const GPS_LOCATION_FRESH_MS = 15_000;
+export const GPS_LOCATION_DELAYED_MS = 45_000;
+// Compatibility default for acceptance and rendering policies. Product UI uses
+// `trackingLocationFreshness` to distinguish fresh, delayed and lost fixes.
+export const GPS_FIX_STALE_MS = GPS_LOCATION_DELAYED_MS;
+export const GPS_MAX_ACCURACY_METERS = 250;
+export const GPS_BAD_ACCURACY_METERS = 150;
+export const GPS_GOOD_ACCURACY_METERS = 80;
+export const GPS_MAX_REASONABLE_SPEED_MPS = 45;
+export const GPS_HARD_MAX_SPEED_MPS = 80;
+export const TRACKING_RENDER_MIN_MS = 800;
+export const TRACKING_RENDER_MIN_METERS = 5;
+export const GPS_PUBLISH_MIN_MS = 7_500;
+export const GPS_PUBLISH_MIN_METERS = 20;
+export const GPS_PUBLISH_MAX_MS = 15_000;
+export const GPS_NEAR_CUSTOMER_PUBLISH_MIN_MS = 2_500;
+export const GPS_NEAR_CUSTOMER_PUBLISH_MIN_METERS = 6;
+export const GPS_NEAR_CUSTOMER_PUBLISH_MAX_MS = 8_000;
+export const GPS_RENDER_MIN_MS = 1_200;
+export const GPS_RENDER_MIN_METERS = 6;
+export const GPS_HEADING_CHANGE_DEGREES = 45;
+
+export function getDemoRoutes() {
+  return ROUTES;
+}
+
+export function getStreetTestDestinations() {
+  return DEMO_STREET_TEST_DESTINATIONS;
+}
+
+export function getStreetTestDestination(destinationId = DEFAULT_STREET_TEST_DESTINATION_ID) {
+  const candidate = DEMO_STREET_TEST_DESTINATIONS.find((destination) => destination.id === destinationId);
+  return candidate || DEMO_STREET_TEST_DESTINATIONS[0] || DEMO_DESTINATIONS.neuquen;
+}
+
+export function isStreetTestDestinationId(destinationId) {
+  return DEMO_STREET_TEST_DESTINATIONS.some((destination) => destination.id === destinationId);
+}
+
+export function selectRouteForOrder(order = {}, preferredRouteId = null) {
+  const explicitRoute = preferredRouteId || order?.delivery?.demoDestinationId;
+  if (explicitRoute && ROUTES[explicitRoute]) return ROUTES[explicitRoute];
+  const address = String(order.address || '').toLowerCase();
+  if (address.includes('cipolletti') || address.includes('cipo')) return ROUTES.cipolletti;
+  return ROUTES.neuquen;
+}
+
+export function getRoute(routeId = 'neuquen') {
+  return ROUTES[routeId] || ROUTES.neuquen;
+}
+
+function buildStreetRoute(destination, index) {
+  const offset = index % 2 === 0 ? 0.0028 : -0.0028;
+  const closeToStore = distanceKm(STORE_LOCATION, destination) < 0.12;
+  const points = closeToStore
+    ? [
+        { lat: STORE_LOCATION.lat, lng: STORE_LOCATION.lng },
+        { lat: STORE_LOCATION.lat + 0.0018, lng: STORE_LOCATION.lng - 0.0014 },
+        { lat: destination.lat, lng: destination.lng },
+      ]
+    : [
+        { lat: STORE_LOCATION.lat, lng: STORE_LOCATION.lng },
+        {
+          lat: STORE_LOCATION.lat + (destination.lat - STORE_LOCATION.lat) * 0.35 + offset,
+          lng: STORE_LOCATION.lng + (destination.lng - STORE_LOCATION.lng) * 0.35 - offset,
+        },
+        {
+          lat: STORE_LOCATION.lat + (destination.lat - STORE_LOCATION.lat) * 0.7 - offset,
+          lng: STORE_LOCATION.lng + (destination.lng - STORE_LOCATION.lng) * 0.7 + offset,
+        },
+        { lat: destination.lat, lng: destination.lng },
+      ];
+
+  return {
+    id: destination.id,
+    name: `Ruta calle demo · ${destination.label}`,
+    destination: {
+      id: destination.id,
+      name: destination.addressLabel || destination.label,
+      label: destination.label,
+      addressLabel: destination.addressLabel,
+      city: destination.city,
+      lat: destination.lat,
+      lng: destination.lng,
+    },
+    points,
+  };
+}
+
+export function clampProgress(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(1, numeric));
+}
+
+export function distanceKm(a, b) {
+  if (!isLatLng(a) || !isLatLng(b)) return 0;
+  const r = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * r * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+export function routeDistanceKm(points = []) {
+  let total = 0;
+  for (let i = 1; i < points.length; i += 1) {
+    total += distanceKm(points[i - 1], points[i]);
+  }
+  return total;
+}
+
+export function bearingDegrees(a, b) {
+  if (!isLatLng(a) || !isLatLng(b)) return null;
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2)
+    - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+export function pointOnRoute(routeId, progress) {
+  const route = getRoute(routeId);
+  const points = route.points;
+  if (points.length <= 1) return { ...points[0], heading: 0 };
+
+  const total = routeDistanceKm(points);
+  const target = total * clampProgress(progress);
+  let travelled = 0;
+
+  for (let i = 1; i < points.length; i += 1) {
+    const from = points[i - 1];
+    const to = points[i];
+    const segment = distanceKm(from, to);
+    if (travelled + segment >= target) {
+      const local = segment > 0 ? (target - travelled) / segment : 0;
+      return {
+        lat: from.lat + (to.lat - from.lat) * local,
+        lng: from.lng + (to.lng - from.lng) * local,
+        heading: bearingDegrees(from, to) ?? 0,
+      };
+    }
+    travelled += segment;
+  }
+
+  const last = points.at(-1);
+  const before = points.at(-2);
+  return { ...last, heading: bearingDegrees(before, last) ?? 0 };
+}
+
+export function normalizeRiderLocation(raw = {}, fallback = {}) {
+  // Ver js/core/geo-point.js: acá `{lat: null, lng: null, source: 'gps'}`
+  // devolvía un fix en 0,0 que `isUsableGpsFix` daba por bueno y
+  // `chooseRiderLocation` elegía para DIBUJAR al rider.
+  const point = coordinatePair(raw?.lat, raw?.lng);
+  if (!point) return null;
+  const { lat, lng } = point;
+  const rawTimestamp = Number(raw.timestamp);
+  const rawFixTimestamp = Number(raw.lastFixAt);
+  const parsedTimestamp = Date.parse(raw.timestamp || raw.lastFixAt || '');
+  const timestamp = Number.isFinite(rawTimestamp) && rawTimestamp > 0
+    ? rawTimestamp
+    : Number.isFinite(rawFixTimestamp) && rawFixTimestamp > 0
+      ? rawFixTimestamp
+      : Number.isNaN(parsedTimestamp) ? Date.now() : parsedTimestamp;
+  const source = raw.source === 'gps' ? 'gps' : raw.source === 'simulation' ? 'simulation' : (fallback.source || 'simulation');
+  return {
+    lat,
+    lng,
+    source,
+    timestamp,
+    lastFixAt: new Date(timestamp).toISOString(),
+    ...(Number.isFinite(Number(raw.accuracy)) ? { accuracy: Math.max(0, Number(raw.accuracy)) } : {}),
+    ...(Number.isFinite(Number(raw.heading)) ? { heading: ((Number(raw.heading) % 360) + 360) % 360 } : {}),
+    ...(Number.isFinite(Number(raw.speed)) ? { speed: Math.max(0, Number(raw.speed)) } : {}),
+    ...(typeof raw.gpsStatus === 'string' ? { gpsStatus: raw.gpsStatus } : {}),
+    ...(raw.origin === 'local_gps' || raw.origin === 'sandbox_route' ? { origin: raw.origin } : {}),
+  };
+}
+
+// Elige la ubicación del rider a mostrar, dadas la simulación local y la
+// ubicación persistida del pedido (que en modo Supabase llega por polling
+// desde el dispositivo del rider real). Reglas:
+//  - el GPS real (source==='gps') tiene prioridad sobre la simulación;
+//  - a igual jerarquía de fuente, gana el fix más reciente;
+//  - coordenadas inválidas se descartan (normalizeRiderLocation devuelve null).
+// Devuelve un TrackingLocation normalizado o null.
+export function isValidLocation(location) {
+  return isGeoPoint(location);
+}
+
+export function locationTimestamp(location) {
+  if (!location) return 0;
+  const numeric = Number(location.timestamp);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  const parsed = Date.parse(location.lastFixAt || location.createdAt || '');
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+export function isUsableGpsFix(location, {
+  now = Date.now(),
+  maxAgeMs = GPS_FIX_STALE_MS,
+  maxAccuracyMeters = GPS_MAX_ACCURACY_METERS,
+} = {}) {
+  const normalized = normalizeRiderLocation(location, { source: 'gps' });
+  if (!normalized || normalized.source !== 'gps') return false;
+  const timestamp = locationTimestamp(normalized);
+  if (!timestamp || timestamp > now + 10_000) return false;
+  if (now - timestamp > maxAgeMs) return false;
+  if (Number.isFinite(normalized.accuracy) && normalized.accuracy > maxAccuracyMeters) return false;
+  return true;
+}
+
+export function shouldAcceptLocationUpdate(previousRaw, nextRaw, {
+  now = Date.now(),
+  staleMs = GPS_FIX_STALE_MS,
+} = {}) {
+  const next = normalizeRiderLocation(nextRaw);
+  if (!next) return false;
+
+  const previous = previousRaw ? normalizeRiderLocation(previousRaw) : null;
+  if (!previous) {
+    return next.source !== 'gps' || isUsableGpsFix(next, { now, maxAgeMs: staleMs });
+  }
+
+  const nextGps = next.source === 'gps';
+  const previousGps = previous.source === 'gps';
+  if (nextGps && !isUsableGpsFix(next, { now, maxAgeMs: staleMs })) return false;
+  if (previousGps && !nextGps && !isLocationStale(previous, staleMs, now)) return false;
+  if (nextGps && !previousGps) return !isImpossibleJump(previous, next);
+  if (!nextGps && previousGps && isLocationStale(previous, staleMs, now)) return true;
+
+  const previousTime = locationTimestamp(previous);
+  const nextTime = locationTimestamp(next);
+  if (previousTime && nextTime && nextTime < previousTime) return false;
+  if (isImpossibleJump(previous, next)) return false;
+
+  const previousFresh = !isLocationStale(previous, staleMs, now);
+  const previousAccuracy = Number(previous.accuracy);
+  const nextAccuracy = Number(next.accuracy);
+  if (
+    previousFresh
+    && Number.isFinite(previousAccuracy)
+    && Number.isFinite(nextAccuracy)
+    && previousAccuracy <= GPS_GOOD_ACCURACY_METERS
+    && nextAccuracy >= GPS_BAD_ACCURACY_METERS
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+export function shouldAcceptGpsFix(previousRaw, nextRaw, options = {}) {
+  return shouldAcceptLocationUpdate(previousRaw, nextRaw, options);
+}
+
+export function shouldPublishGpsFix(previousPublishedRaw, nextRaw, {
+  now = Date.now(),
+  orderStatus = '',
+  previousOrderStatus = '',
+  nearCustomer = false,
+  force = false,
+  minMs = nearCustomer ? GPS_NEAR_CUSTOMER_PUBLISH_MIN_MS : GPS_PUBLISH_MIN_MS,
+  minMeters = nearCustomer ? GPS_NEAR_CUSTOMER_PUBLISH_MIN_METERS : GPS_PUBLISH_MIN_METERS,
+  maxMs = nearCustomer ? GPS_NEAR_CUSTOMER_PUBLISH_MAX_MS : GPS_PUBLISH_MAX_MS,
+} = {}) {
+  const status = String(orderStatus || '').toLowerCase();
+  if (status === 'delivered' || status === 'cancelled') return false;
+  if (!nextRaw) return false;
+
+  const next = normalizeRiderLocation(nextRaw, { source: 'gps' });
+  if (!next || next.source !== 'gps') return false;
+  if (!isUsableGpsFix(next, { now })) return false;
+
+  const previous = previousPublishedRaw
+    ? normalizeRiderLocation(previousPublishedRaw, { source: 'gps' })
+    : null;
+  if (!previous) return true;
+  if (force) return true;
+  if (previousOrderStatus && orderStatus && previousOrderStatus !== orderStatus) return true;
+
+  const previousPublishedAt = Number(previousPublishedRaw.at || previousPublishedRaw.publishedAt || 0)
+    || locationTimestamp(previous);
+  const elapsedMs = previousPublishedAt ? now - previousPublishedAt : 0;
+  if (elapsedMs < 0) return false;
+
+  const meters = distanceKm(previous, next) * 1000;
+  if (elapsedMs >= minMs && meters >= minMeters) return true;
+  if (elapsedMs >= maxMs) return true;
+
+  return elapsedMs >= minMs
+    && meters >= Math.min(3, minMeters)
+    && hasSignificantHeadingChange(previous.heading, next.heading);
+}
+
+export function shouldRenderLocationUpdate(previousRenderedRaw, nextRaw, {
+  now = Date.now(),
+  minMs = TRACKING_RENDER_MIN_MS,
+  minMeters = TRACKING_RENDER_MIN_METERS,
+} = {}) {
+  if (!nextRaw) return false;
+  const next = normalizeRiderLocation(nextRaw);
+  if (!next) return false;
+  const previous = previousRenderedRaw ? normalizeRiderLocation(previousRenderedRaw) : null;
+  if (!previous) return true;
+  if (previous.source !== next.source) return true;
+
+  const meters = distanceKm(previous, next) * 1000;
+  if (meters >= minMeters) return true;
+
+  const previousRenderAt = Number(previousRenderedRaw.renderedAt || previousRenderedRaw.renderedAtMs || 0);
+  if (previousRenderAt && now - previousRenderAt >= minMs) return true;
+
+  const previousTime = locationTimestamp(previous);
+  const nextTime = locationTimestamp(next);
+  return Boolean(previousTime && nextTime && nextTime - previousTime >= minMs);
+}
+
+export function shouldRenderGpsFix(previousRenderedRaw, nextRaw, {
+  now = Date.now(),
+  minMs = GPS_RENDER_MIN_MS,
+  minMeters = GPS_RENDER_MIN_METERS,
+} = {}) {
+  if (!nextRaw) return false;
+  const next = normalizeRiderLocation(nextRaw);
+  if (!next) return false;
+  return shouldRenderLocationUpdate(previousRenderedRaw, next, { now, minMs, minMeters });
+}
+
+export function chooseRiderLocation(simRaw, trackedRaw, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {
+  const sim = simRaw ? normalizeRiderLocation(simRaw) : null;
+  const tracked = trackedRaw ? normalizeRiderLocation(trackedRaw) : null;
+  if (sim && tracked) {
+    const simGps = sim.source === 'gps';
+    const trackedGps = tracked.source === 'gps';
+    if (trackedGps && !simGps) return isLocationStale(tracked, staleMs, now) ? sim : tracked;
+    if (simGps && !trackedGps) return isLocationStale(sim, staleMs, now) ? tracked : sim;
+    return tracked.timestamp > sim.timestamp ? tracked : sim;
+  }
+  return sim || tracked || null;
+}
+
+// ¿Hay una posición GPS real, reciente y apta para compartir? A diferencia de
+// `hasLiveRiderLocation`, también admite un último fix fresco que el rider dejó
+// al pasar su pestaña a segundo plano. El cliente lo puede ver como “Última
+// ubicación”, nunca como seguimiento activo.
+export function hasFreshSharedGpsLocation(location, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {
+  const normalized = location ? normalizeRiderLocation(location) : null;
+  if (!normalized || normalized.source !== 'gps') return false;
+  if (['inactive', 'denied', 'unavailable', 'requires_secure_context'].includes(normalized.gpsStatus)) return false;
+  return !isLocationStale(normalized, staleMs, now);
+}
+
+export function trackingLocationFreshness(location, { now = Date.now() } = {}) {
+  const normalized = location ? normalizeRiderLocation(location, { source: 'gps' }) : null;
+  if (!normalized || normalized.source !== 'gps') return 'none';
+  if (['inactive', 'denied', 'unavailable', 'requires_secure_context'].includes(normalized.gpsStatus)) {
+    return 'none';
+  }
+  const timestamp = locationTimestamp(normalized);
+  if (!timestamp || timestamp > now + 10_000) return 'none';
+  const age = Math.max(0, now - timestamp);
+  if (age <= GPS_LOCATION_FRESH_MS) return 'fresh';
+  if (age <= GPS_LOCATION_DELAYED_MS) return 'delayed';
+  return 'lost';
+}
+
+export function hasKnownSharedGpsLocation(location, options = {}) {
+  return trackingLocationFreshness(location, options) !== 'none';
+}
+
+// ¿Hay un repartidor "en vivo" para este pedido? Sólo cuenta una ubicación GPS
+// REAL, reciente y con un watcher actualmente activo. La simulación / recorrido
+// de apoyo y un último fix pausado NO se presentan como un rider en vivo.
+export function hasLiveRiderLocation(location, options = {}) {
+  const normalized = location ? normalizeRiderLocation(location) : null;
+  if (!normalized || normalized.gpsStatus === 'last_fix') return false;
+  return trackingLocationFreshness(normalized, options) === 'fresh';
+}
+
+// Estado de "vivacidad" del seguimiento de un pedido. Sirve para que la UI
+// vuelva a un fallback honesto cuando el GPS real se enfría, SIN depender de que
+// llegue un nuevo evento de estado (p. ej. el rider pierde señal o cierra la
+// pestaña y deja de publicar). Es puro (sin DOM ni timers) para poder testearlo.
+//   - 'none'     : no hay pedido.
+//   - 'terminal' : pedido entregado/cancelado (no se sigue).
+//   - 'fresh'    : hay un fix GPS real con menos de 15 s.
+//   - 'delayed'  : el último fix tiene entre 16 y 45 s.
+//   - 'lost'     : existe una última ubicación, pero supera 45 s.
+//   - 'idle'     : hay pedido activo pero sin ubicación GPS válida.
+export function activeTrackingLiveness(order, sim = null, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {
+  if (!order || !order.id) return 'none';
+  if (order.status === 'delivered' || order.status === 'cancelled') return 'terminal';
+  const simForOrder = sim && sim.orderId === order.id ? sim : null;
+  const location = chooseRiderLocation(simForOrder, order?.tracking?.lastLocation, { now, staleMs });
+  const freshness = trackingLocationFreshness(location, { now, staleMs });
+  return freshness === 'none' ? 'idle' : freshness;
+}
+
+// Indica si un fix quedó "viejo" según un umbral (default 45s).
+export function isLocationStale(location, maxAgeMs = GPS_FIX_STALE_MS, now = Date.now()) {
+  if (!location) return true;
+  const ts = locationTimestamp(location);
+  if (!ts) return true;
+  return now - ts > maxAgeMs;
+}
+
+function isImpossibleJump(previous, next) {
+  if (!previous || !next) return false;
+  const previousTime = locationTimestamp(previous);
+  const nextTime = locationTimestamp(next);
+  if (!previousTime || !nextTime || nextTime <= previousTime) return false;
+  const seconds = (nextTime - previousTime) / 1000;
+  if (seconds <= 0) return false;
+
+  const meters = distanceKm(previous, next) * 1000;
+  const inferredSpeed = meters / seconds;
+  if (inferredSpeed >= GPS_HARD_MAX_SPEED_MPS) return true;
+
+  const nextAccuracy = Number(next.accuracy);
+  return inferredSpeed >= GPS_MAX_REASONABLE_SPEED_MPS
+    && Number.isFinite(nextAccuracy)
+    && nextAccuracy >= GPS_GOOD_ACCURACY_METERS;
+}
+
+function hasSignificantHeadingChange(previousHeading, nextHeading) {
+  const previous = Number(previousHeading);
+  const next = Number(nextHeading);
+  if (!Number.isFinite(previous) || !Number.isFinite(next)) return false;
+  const diff = Math.abs(((next - previous + 540) % 360) - 180);
+  return diff >= GPS_HEADING_CHANGE_DEGREES;
+}
+
+// Usado por `distanceKm` y `bearingDegrees`. Con la comprobación anterior,
+// medir contra `{lat: null, lng: null}` desde el local informaba 8.128,5 km —la
+// distancia de Neuquén al Golfo de Guinea— en vez de reconocer que no había
+// nada que medir.
+function isLatLng(value) {
+  return isGeoPoint(value);
+}
+
+function toRad(value) {
+  return (Number(value) * Math.PI) / 180;
+}
+
+function toDeg(value) {
+  return (Number(value) * 180) / Math.PI;
+}

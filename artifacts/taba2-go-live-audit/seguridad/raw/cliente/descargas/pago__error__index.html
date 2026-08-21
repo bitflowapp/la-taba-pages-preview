@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#090b0e" />
+    <meta name="robots" content="noindex" />
+    <title>TABA2 · Estado de pago</title>
+    <link rel="stylesheet" href="../../styles.css?v=52" />
+  </head>
+  <body>
+    <!--
+      Retorno de Mercado Pago. La página no decide nada: refleja el estado que
+      `mercadopago-return.js` resuelve contra el repositorio y escribe en los
+      cuatro `data-payment-return-*`. El marcado no agrega ni un dato que el
+      script no haya confirmado, y por eso el sello de estado se deriva por CSS
+      del `data-state` que el script ya publica, en vez de pintarse acá.
+    -->
+    <main class="payment-return-page" aria-live="polite">
+      <article class="card payment-return-card">
+        <p class="payment-return-brand">
+          <img src="../../assets/brand/taba2-emblem.svg" alt="" width="40" height="40" />
+          <span><strong>La Taba 2</strong><small>Tienda de bebidas</small></span>
+        </p>
+
+        <span class="payment-return-seal" aria-hidden="true"></span>
+
+        <p class="eyebrow">Pago con Mercado Pago</p>
+        <h1 data-payment-return-title>Estado del pago</h1>
+        <p class="payment-return-detail" data-payment-return-detail>Verificando tu pago…</p>
+        <p class="payment-return-status" data-payment-return-status></p>
+
+        <a class="primary-button payment-return-action" data-payment-return-action href="../../#cart">Volver al carrito</a>
+
+        <p class="payment-return-foot">
+          Podés cerrar esta pantalla. Conservamos tu carrito hasta que el pago y
+          el pedido queden confirmados.
+        </p>
+      </article>
+    </main>
+    <script src="../../runtime-config.js"></script>
+    <script type="module" src="../../js/payments/mercadopago-return.js"></script>
+  </body>
+</html>

@@ -1,0 +1,60 @@
+--- RETRATO: production (wwcpogltfgzgkrlilbcd) ---
+  tablas 86  vistas 0  funciones 282  policies 66
+  indices 253  triggers 67  enums 0  constraints 706
+
+  RLS
+    tablas sin RLS            : 0
+    con RLS y sin policy      : 30 -> business_access_requests, commercial_contract_remediation, delivery_confirmation_attempts, delivery_outbox, fiscal_artifact_outbox, fiscal_outbox, fiscal_parameter_snapshots, fiscal_request_attempts, identity_audit_events, identity_invitations, identity_permissions, identity_role_permissions, identity_sessions, identity_user_security, inventory_reservations, operational_sweep_runs, order_delivery_handoffs, order_public_tokens, payment_attempts, payment_events, payment_outbox, payment_rate_limit_buckets, payment_webhook_receipts, rider_delivery_issues, rider_delivery_operations, rider_locations, rider_order_offers, rider_profiles, service_health_signals, staff_profiles
+
+  SECURITY DEFINER
+    total                     : 225
+    sin search_path fijado    : 0
+    ejecutables por anon      : 8
+
+  PRIVILEGIOS
+    anon con escritura        : 0
+    por columna               : anon -> businesses (12 grants de columna)
+    por columna               : authenticated -> businesses (33 grants de columna)
+    por columna               : authenticated -> products (4 grants de columna)
+    grants a PUBLIC           : 0
+    CREATE en schema public   : ninguno
+
+  STORAGE
+    buckets                   : 1 [fiscal-documents public=false]
+    policies en storage       : 1
+
+  DATOS
+    tablas con filas          : 31
+      operational_sweep_runs: 7972
+      rider_locations: 790
+      identity_audit_events: 81
+      products: 60
+      identity_role_permissions: 44
+      identity_permissions: 20
+      order_events: 11
+      identity_sessions: 5
+      catalog_assets: 4
+      product_barcodes: 4
+      rider_delivery_operations: 4
+      operational_alert_events: 3
+      business_command_receipts: 3
+      operational_alerts: 2
+      customers: 2
+      business_config_audit: 2
+      business_members: 2
+      identity_user_security: 2
+      business_access_requests: 1
+      orders: 1
+      order_items: 1
+      order_public_tokens: 1
+      order_delivery_handoffs: 1
+      customer_addresses: 1
+      rider_delivery_issues: 1
+      delivery_outbox: 1
+      notification_outbox: 1
+      staff_profiles: 1
+      rider_profiles: 1
+      rider_order_offers: 1
+      businesses: 1
+
+  retrato: D:\1212\la-taba2-gondola-retail-final\artifacts\production-supabase\SECURITY-PORTRAIT-production.json

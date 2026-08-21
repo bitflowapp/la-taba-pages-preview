@@ -1,0 +1,1320 @@
+.checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
+  align-items: start;
+  gap: 22px;
+}
+
+.cart-card,
+.checkout-form {
+  padding: 22px;
+}
+
+.cart-card h3 {
+  margin-bottom: 16px;
+}
+
+.cart-item {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--taba-border);
+}
+
+.cart-item .thumb {
+  width: 72px;
+  height: 72px;
+  min-height: 72px;
+  border-radius: var(--radius-xs);
+}
+
+.cart-item-info {
+  min-width: 0;
+}
+
+.cart-title {
+  font-weight: 850;
+}
+
+.cart-meta {
+  margin-top: 3px;
+  color: var(--taba-muted);
+  font-size: 13px;
+}
+
+.cart-item-side {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.cart-line,
+.summary-row > strong {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+.quantity-control {
+  width: 140px;
+  min-height: var(--tap);
+  border-radius: var(--radius-pill);
+}
+
+.cart-remove {
+  min-height: var(--tap);
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--taba-muted);
+  font-size: 12px;
+}
+
+.cart-active-order {
+  display: grid;
+  gap: 6px;
+  width: min(100%, 440px);
+  padding: 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: var(--shelf-raised);
+}
+
+.minimum-order-progress {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #f0d5d8;
+  border-radius: var(--radius-sm);
+  background: var(--shelf-red-wash);
+}
+
+.minimum-order-progress > div {
+  display: grid;
+  gap: 3px;
+}
+
+.minimum-order-progress strong {
+  color: var(--taba-ink);
+  font-size: 14px;
+}
+
+.minimum-order-progress small {
+  color: var(--taba-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.minimum-order-track {
+  display: block;
+  height: 7px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--shelf-sunken);
+}
+
+.minimum-order-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--taba-red);
+  transition: width 180ms ease;
+}
+
+/* Mínimo alcanzado. En papel era un verde pálido; sobre la góndola el estado
+   positivo es dorado, que es el acento que la identidad ya reserva para lo
+   confirmado y no compite con el rojo de la acción. */
+.minimum-order-progress.is-complete {
+  border-color: rgb(201 149 62 / 46%);
+  background: var(--shelf-gold-wash);
+}
+
+.minimum-order-progress.is-complete .minimum-order-track > span {
+  background: var(--taba-success);
+}
+
+.cart-recommendations {
+  display: grid;
+  gap: 13px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--taba-border);
+}
+
+.cart-recommendations-heading {
+  display: grid;
+  gap: 5px;
+}
+
+.cart-recommendations-heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.cart-recommendations-heading p,
+.checkout-suggestions-card .eyebrow {
+  margin: 0;
+  color: var(--taba-red-quiet);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.cart-recommendations-heading h3 {
+  margin: 0;
+  color: var(--taba-ink);
+  font-size: 21px;
+  letter-spacing: -.025em;
+}
+
+.cart-recommendations-heading > small {
+  color: var(--taba-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.recommendations-rail,
+.checkout-suggestions-list {
+  display: grid;
+  grid-auto-columns: minmax(148px, 46%);
+  grid-auto-flow: column;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px 1px 7px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.recommendation-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: 108px minmax(88px, auto);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--taba-border);
+  border-radius: 16px;
+  background: var(--shelf-raised);
+  scroll-snap-align: start;
+}
+
+.recommendation-media {
+  min-height: 108px;
+  padding: 0;
+  border: 0;
+  background: var(--taba-subtle);
+}
+
+.recommendation-media .thumb {
+  min-height: 108px;
+}
+
+.recommendation-copy {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: 10px 10px 12px;
+  padding-right: 48px;
+}
+
+.recommendation-copy strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--taba-ink);
+  font-size: 13px;
+  line-height: 1.22;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.recommendation-copy small {
+  color: var(--taba-muted);
+  font-size: 11px;
+}
+
+.recommendation-copy span {
+  color: var(--taba-ink);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.recommendation-control {
+  position: absolute;
+  right: 9px;
+  bottom: 10px;
+}
+
+.recommendation-add {
+  display: grid;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #e4e4e8;
+  border-radius: 50%;
+  background: var(--shelf-raised);
+  box-shadow: 0 5px 12px rgb(24 28 35 / 14%);
+  color: var(--taba-red-quiet);
+}
+
+.checkout-suggestions-modal {
+  width: min(calc(100vw - 24px), 560px);
+  max-height: min(720px, calc(100dvh - 28px));
+  margin: auto 12px 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  box-shadow: 0 18px 48px rgb(24 28 35 / 28%);
+}
+
+.checkout-suggestions-modal::backdrop {
+  background: rgb(24 28 35 / 42%);
+}
+
+.checkout-suggestions-card {
+  position: relative;
+  display: grid;
+  gap: 13px;
+  padding: 28px 18px calc(18px + env(safe-area-inset-bottom));
+  background: var(--shelf-raised);
+}
+
+.checkout-suggestions-card h2 {
+  margin: 0;
+  color: var(--taba-ink);
+  font-size: 26px;
+  letter-spacing: -.04em;
+}
+
+.checkout-suggestions-card > p:not(.eyebrow) {
+  margin: -6px 0 0;
+  color: var(--taba-muted);
+  line-height: 1.4;
+}
+
+.checkout-suggestions-list {
+  grid-auto-columns: minmax(148px, 58%);
+  margin: 0 -2px;
+}
+
+.checkout-suggestions-continue {
+  width: 100%;
+  min-height: 50px;
+  border-radius: var(--radius-pill);
+}
+
+.modal-variant-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--taba-ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.modal-variant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.modal-variant-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 8px;
+  min-height: 78px;
+  padding: 11px;
+  border: 1px solid var(--taba-border);
+  border-radius: 13px;
+  background: var(--shelf-raised);
+  cursor: pointer;
+}
+
+.modal-variant-card:has(input:focus-visible) {
+  outline: 3px solid var(--taba-red-soft);
+  outline-offset: 2px;
+}
+
+.modal-variant-card.is-selected {
+  border-color: var(--taba-red);
+  box-shadow: 0 0 0 2px var(--taba-red-soft);
+}
+
+.modal-variant-card input {
+  position: absolute;
+  opacity: 0;
+}
+
+.modal-variant-card > span {
+  display: grid;
+  gap: 2px;
+}
+
+.modal-variant-card small,
+.modal-variant-card s,
+.modal-variant-card em {
+  color: var(--taba-muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.modal-variant-card > b {
+  color: var(--taba-ink);
+  font-size: 13px;
+}
+
+.modal-variant-card.is-unavailable {
+  opacity: .58;
+}
+
+.checkout-form {
+  display: grid;
+  gap: 18px;
+}
+
+.checkout-form [aria-invalid="true"] {
+  border-color: var(--taba-red);
+  box-shadow: 0 0 0 3px var(--taba-red-soft);
+}
+
+.checkout-form [data-checkout-warning]:focus {
+  outline: 3px solid color-mix(in srgb, var(--taba-red) 28%, transparent);
+  outline-offset: 3px;
+}
+
+.checkout-heading span {
+  color: var(--taba-red-quiet);
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.checkout-heading h3 {
+  margin: 3px 0 0;
+  font-size: 26px;
+  letter-spacing: -0.03em;
+}
+
+.delivery-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 5px;
+  border-radius: var(--radius-sm);
+  background: var(--taba-subtle);
+}
+
+.delivery-mode label {
+  position: relative;
+  display: grid;
+  min-height: var(--tap);
+  place-items: center;
+  cursor: pointer;
+}
+
+.delivery-mode input {
+  position: absolute;
+  opacity: 0;
+}
+
+.delivery-mode span {
+  display: grid;
+  width: 100%;
+  height: var(--tap);
+  place-items: center;
+  border-radius: var(--radius-xs);
+}
+
+.delivery-mode input:checked + span {
+  background: var(--shelf-raised);
+  box-shadow: var(--shadow-xs);
+  color: var(--taba-red-quiet);
+}
+
+.remember-customer-row,
+.age-confirmation {
+  display: flex;
+  align-items: start;
+  gap: 11px;
+  min-height: var(--tap);
+  padding: 13px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: var(--shelf-raised);
+}
+
+/* 24px y no 20: por debajo de 24 el cuadrado nativo queda más chico que
+   cualquier otro objetivo táctil de la pantalla y en el teléfono hay que
+   apuntar. La fila entera sigue siendo clickeable a través del <label>. */
+.remember-customer-row input {
+  width: 24px;
+  min-height: 24px;
+  margin-top: 2px;
+  accent-color: var(--taba-red);
+}
+
+.remember-customer-row span {
+  display: grid;
+  gap: 2px;
+}
+
+/* +18: el único bloque legal del checkout. Dorado, no ámbar de sistema: es el
+   sello premium de la identidad y se distingue del rojo de la acción. */
+.age-confirmation {
+  border-color: rgb(201 149 62 / 55%);
+  background: var(--shelf-gold-wash);
+}
+
+.checkout-payment-field small {
+  font-weight: 500;
+}
+
+.checkout-instructions {
+  padding: 0 13px;
+  border: 1px solid var(--taba-border);
+}
+
+.checkout-instructions summary {
+  display: flex;
+  align-items: center;
+}
+
+.checkout-instructions-fields {
+  display: grid;
+  gap: 14px;
+  padding: 2px 0 14px;
+}
+
+.summary-box {
+  display: grid;
+  gap: 9px;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--taba-subtle);
+}
+
+.summary-row,
+.order-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.summary-row.discount {
+  color: var(--taba-success);
+}
+
+.summary-row.total {
+  padding-top: 10px;
+  border-top: 1px solid var(--taba-border);
+  color: var(--taba-ink);
+  font-size: 18px;
+}
+
+.trust-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--taba-muted);
+}
+
+.trust-text {
+  display: grid;
+}
+
+.trust-text strong {
+  color: var(--taba-graphite);
+}
+
+.confirm-button {
+  width: 100%;
+  min-height: 52px;
+  border-radius: var(--radius-action-lg);
+}
+
+.checkout-form > .form-hint {
+  margin: -8px 0 0;
+  text-align: center;
+}
+
+.saved-addresses-panel {
+  display: grid;
+  gap: 11px;
+  padding: 13px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: var(--taba-subtle);
+}
+
+.saved-addresses-heading,
+.saved-addresses-heading > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.saved-addresses-heading > div {
+  display: grid;
+  justify-content: start;
+}
+
+.saved-addresses-heading small,
+.location-helper small,
+.location-review span,
+.location-review small,
+.saved-address-empty,
+.saved-address-status {
+  color: var(--taba-muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.saved-address-status:empty {
+  display: none;
+}
+
+.saved-address-order-note {
+  margin: 0;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: var(--shelf-raised);
+  color: var(--taba-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.saved-address-list {
+  display: grid;
+  gap: 8px;
+}
+
+.saved-address-card {
+  display: grid;
+  gap: 8px;
+  padding: 11px;
+  border: 1px solid var(--taba-border);
+  border-radius: 12px;
+  background: var(--shelf-raised);
+}
+
+.saved-address-card.is-selected {
+  border-color: var(--taba-red);
+  box-shadow: 0 0 0 2px var(--taba-red-soft);
+}
+
+.saved-address-select {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.saved-address-select input {
+  width: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--taba-red);
+}
+
+.saved-address-select span {
+  display: grid;
+  gap: 2px;
+}
+
+.saved-address-select strong {
+  color: var(--taba-graphite);
+}
+
+.saved-address-select small {
+  color: var(--taba-muted);
+}
+
+.saved-address-actions,
+.location-helper,
+.address-suggestion > div,
+.address-duplicate > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.text-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 9px;
+  border: 0;
+  background: transparent;
+  /* Tinta, no superficie: `--taba-red` está calibrado para PINTAR un botón
+     lleno; como texto da 2,97:1 sobre la góndola. `--taba-red-quiet` es la
+     variante de texto y se remapea junto con la superficie. */
+  color: var(--taba-red-quiet);
+  font: inherit;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.text-button.danger {
+  color: var(--taba-danger);
+}
+
+.location-helper {
+  align-items: flex-start;
+}
+
+.location-review,
+.address-suggestion,
+.address-duplicate {
+  display: grid;
+  gap: 7px;
+  padding: 11px;
+  border: 1px solid rgb(201 149 62 / 55%);
+  border-radius: 12px;
+  background: var(--shelf-gold-wash);
+}
+
+.location-review.is-confirmed {
+  border-color: rgb(201 149 62 / 40%);
+  background: rgb(201 149 62 / 9%);
+}
+
+.address-suggestion {
+  border-color: #bfc7db;
+  background: #f7f8fc;
+}
+
+.address-duplicate {
+  border-color: #d9b3b3;
+  background: var(--shelf-red-wash);
+}
+
+.address-editor {
+  display: grid;
+  gap: 11px;
+  padding-top: 11px;
+  border-top: 1px solid var(--taba-border);
+}
+
+.address-editor label {
+  display: grid;
+  gap: 5px;
+  color: var(--taba-graphite);
+  font-weight: 700;
+}
+
+.compact-grid {
+  gap: 10px;
+}
+
+.address-default-toggle {
+  display: flex !important;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+}
+
+.address-default-toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--taba-red);
+}
+
+@media (max-width: 480px) {
+  .saved-addresses-heading {
+    align-items: flex-start;
+  }
+
+  .saved-addresses-heading .secondary-button {
+    flex: 0 0 auto;
+  }
+}
+
+/* Checkout basado en Perfil: el cliente sólo lee y elige. La administración de
+   datos vive en Perfil, así que acá no hay formularios ni acciones destructivas. */
+.profile-checkout {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-checkout-title {
+  margin: 0;
+  color: var(--taba-ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ============================================================================
+   RESUMEN DEL CLIENTE QUE VUELVE
+   ----------------------------------------------------------------------------
+   Tres renglones —entrega, contacto, pago— con la misma anatomía: bajada,
+   dato, salida. Comparten UNA superficie con separadores internos en vez de ser
+   tres tarjetas sueltas: tres tarjetas volverían a sumar la altura que este
+   bloque existe para sacar.
+   ========================================================================== */
+.checkout-summary {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: var(--shelf-raised);
+}
+
+.checkout-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 62px;
+  padding: 11px 14px;
+}
+
+.checkout-summary-row + .checkout-summary-row {
+  border-top: 1px solid var(--taba-border);
+}
+
+.checkout-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.checkout-summary-kicker {
+  color: var(--taba-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.checkout-summary-copy strong {
+  overflow: hidden;
+  color: var(--taba-ink);
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkout-summary-copy > span:not(.checkout-summary-kicker) {
+  overflow: hidden;
+  color: var(--taba-muted);
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkout-summary-change {
+  display: inline-flex;
+  /* 45 y no `--tap` (44). El bloque entra con transformaciones que lo promueven
+     a capa de composición, y mientras esa capa vive `getBoundingClientRect`
+     devuelve el alto en float32: un 44 exacto se lee como 43,99997. El botón
+     medía bien y el piso táctil igual dependía del redondeo del compositor.
+     Un píxel de headroom lo vuelve incondicional. Es el mismo defecto —y la
+     misma solución— que el botón "Agregar" de la home; lo encontró la prueba de
+     accesibilidad de `launch-ux-checkout-reorder`, no el ojo. */
+  min-height: 45px;
+  align-items: center;
+  flex: 0 0 auto;
+  padding-inline: 4px;
+  color: var(--taba-red-quiet);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* ============================================================================
+   BANDA DE AVISO DEL PEDIDO
+   ----------------------------------------------------------------------------
+   Reserva su alto SIEMPRE que la vista del carrito esté activa con productos
+   —que es exactamente cuando puede haber un aviso—, así que aparecer y
+   desaparecer no desplaza nada. Vacía no pinta superficie: queda un hueco de
+   aire, no una caja gris esperando.
+   Una sola línea con recorte: un nombre de producto largo la haría crecer y ese
+   crecimiento sería el salto que esto viene a eliminar. El texto completo vive
+   igual en la región viva, que es lo que lee un lector de pantalla, y el
+   producto está nombrado en la línea del carrito que hay justo abajo.
+   ========================================================================== */
+.cart-notice {
+  display: none;
+}
+
+body[data-active-view="cart"] .cart-notice:not([hidden]) {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  margin-bottom: 12px;
+  padding: 0 14px;
+  overflow: hidden;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-action-lg);
+  background: var(--shelf-raised);
+  color: var(--taba-ink);
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body[data-active-view="cart"] .cart-notice:not([hidden]):empty {
+  border-color: transparent;
+  background: transparent;
+}
+
+/* ----------------------------------------------------------------------------
+   MIENTRAS NO SE SABE — geometría reservada, no un spinner
+   ----------------------------------------------------------------------------
+   Comparte `.checkout-summary` con el resumen de verdad, así que hereda su
+   superficie, su radio, sus hairlines y el alto de sus tres filas. Cuando el
+   perfil llega, lo único que cambia es el CONTENIDO de las filas: la caja
+   exterior mide lo mismo antes y después, que es la definición operativa de
+   "sin salto".
+   Sin animación a propósito: una superficie quieta no necesita excepción de
+   movimiento reducido y no deja al compositor trabajando mientras se espera la
+   red. Las barras son un poco más claras que la fila y nada más.
+   -------------------------------------------------------------------------- */
+.checkout-summary .is-ghost {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radius-xs);
+  background: var(--shelf-line-strong);
+  color: transparent;
+  opacity: 0.22;
+}
+
+.checkout-summary .is-ghost-kicker {
+  width: 68px;
+}
+
+.checkout-summary .is-ghost-title {
+  width: 148px;
+}
+
+.checkout-summary .is-ghost-detail {
+  width: 212px;
+}
+
+/* La salida "Cambiar" tambien se reserva. Sin ella la fila del placeholder
+   medía 62px (su `min-height`) y la real 67 (los 45px del botón más el aire),
+   y esos 5px por fila eran un salto al resolver. Reservarla es además lo que
+   corresponde: ahí va a haber algo. */
+.checkout-summary .is-ghost-action {
+  width: 54px;
+}
+
+/* El renglón de estado se anuncia pero no ocupa lugar mientras se espera: la
+   superficie reservada YA dice visualmente que se está cargando, y dejar el
+   texto visible sumaba una línea que desaparecía al resolver —otro salto, de
+   20px—. Sigue siendo una región viva y el lector de pantalla lo lee igual.
+   Es la técnica estándar de "visualmente oculto": nada de `display:none`, que
+   lo sacaría del árbol de accesibilidad. */
+[data-checkout-phase="unresolved"] .saved-address-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Los controles que el resumen reemplaza siguen en el árbol con su valor
+   elegido; sólo dejan de ocupar lugar. Ver `applyCheckoutSummaryMode`. */
+[data-checkout-summary="compact"] .delivery-mode,
+[data-checkout-summary="compact"] .checkout-payment-field {
+  display: none;
+}
+
+.profile-checkout-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 60px;
+  padding: 12px 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: var(--shelf-raised);
+}
+
+.profile-checkout-identity {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.profile-checkout-identity strong {
+  color: var(--taba-ink);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.profile-checkout-identity span {
+  color: var(--taba-muted);
+  font-size: 13.5px;
+}
+
+.profile-checkout-summary .text-button,
+.profile-checkout-addresses-head .text-button,
+.profile-address-toggle {
+  display: inline-flex;
+  min-height: var(--tap);
+  align-items: center;
+  padding-inline: 4px;
+  color: var(--taba-red-quiet);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.profile-checkout-block {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--taba-red-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--taba-red-wash);
+}
+
+.profile-checkout-block strong {
+  color: var(--taba-ink);
+  font-size: 14.5px;
+}
+
+.profile-checkout-block span {
+  color: var(--taba-graphite-soft);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.profile-checkout-block .primary-button {
+  justify-self: start;
+  min-height: var(--tap);
+  margin-top: 4px;
+}
+
+.profile-checkout-pickup {
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: var(--taba-subtle);
+}
+
+.profile-checkout-pickup strong {
+  font-size: 14.5px;
+}
+
+.profile-checkout-pickup span {
+  color: var(--taba-muted);
+  font-size: 13px;
+}
+
+.profile-checkout-addresses-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.profile-address-list {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-address-card {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-height: var(--tap);
+  padding: 12px 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  /* Sub-superficie de la góndola, no blanco: la tarjeta de dirección vive
+     DENTRO del formulario de checkout, así que se eleva sobre él en vez de
+     abrir un tercer material. */
+  background: var(--shelf-raised);
+  cursor: pointer;
+}
+
+.profile-address-card.is-selected {
+  border-color: var(--taba-red-quiet);
+  background: var(--taba-red-wash);
+}
+
+.profile-address-card input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--taba-red-quiet);
+}
+
+.profile-address-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.profile-address-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-address-head strong {
+  font-size: 14.5px;
+  font-weight: 650;
+}
+
+.profile-address-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--taba-subtle);
+  color: var(--taba-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.profile-address-line {
+  color: var(--taba-graphite-soft);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.profile-address-copy small {
+  color: var(--taba-muted-soft);
+  font-size: 12.5px;
+}
+
+.profile-address-toggle {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.profile-checkout :is(.text-button, .primary-button, .profile-address-card):focus-visible {
+  outline: 3px solid rgb(200 16 30 / 28%);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   RETORNO DE MERCADO PAGO
+   ----------------------------------------------------------------------------
+   Es la última pantalla del pedido y hasta acá era la única del cliente sin
+   marca, sin superficie y sin jerarquía: cuatro párrafos sueltos centrados
+   sobre el shell. Además su tinta era la de papel sobre el shell oscuro, así
+   que el título daba 1,3:1 —el estado del pago era literalmente ilegible—.
+
+   Ahora es una tarjeta de góndola con el emblema, el estado y una sola acción.
+   El SELLO no lo pinta el marcado: se deriva del `data-state` que el script ya
+   publica en `.payment-return-status`, de modo que la página no puede afirmar
+   un estado distinto del que se verificó contra el repositorio.
+   ========================================================================== */
+.payment-return-page {
+  width: min(100% - 32px, 540px);
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  margin: 0 auto;
+  padding: max(28px, env(safe-area-inset-top)) 0 max(28px, env(safe-area-inset-bottom));
+}
+
+.payment-return-card {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  padding: 26px 22px 22px;
+  border-radius: 22px;
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf), inset 0 0 0 1px var(--shelf-line);
+  color: var(--shelf-ink);
+}
+
+.payment-return-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0;
+}
+
+.payment-return-brand img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.payment-return-brand span {
+  display: grid;
+}
+
+.payment-return-brand strong {
+  color: var(--shelf-ink);
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+}
+
+.payment-return-brand small {
+  color: var(--shelf-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* Sello de estado. Neutro mientras se verifica; el `:has()` lo resuelve cuando
+   el script publica un estado terminal. Sin soporte de `:has()` queda el sello
+   neutro, que es el estado honesto de "todavía verificando". */
+.payment-return-seal {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  margin-top: 4px;
+  border: 1px solid var(--shelf-line-strong);
+  border-radius: 50%;
+  background: var(--shelf-raised);
+  color: var(--shelf-muted);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.payment-return-seal::before {
+  content: "•••";
+  font-size: 15px;
+  letter-spacing: 0.06em;
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="completed"]) .payment-return-seal {
+  border-color: rgb(201 149 62 / 60%);
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="completed"]) .payment-return-seal::before {
+  content: "✓";
+  font-size: 26px;
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="pending"]) .payment-return-seal::before,
+.payment-return-card:has([data-payment-return-status][data-state="verifying"]) .payment-return-seal::before,
+.payment-return-card:has([data-payment-return-status][data-state="finalizing"]) .payment-return-seal::before {
+  content: "⏱";
+  font-size: 22px;
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="manual_review"]) .payment-return-seal,
+.payment-return-card:has([data-payment-return-status][data-state="rejected"]) .payment-return-seal {
+  border-color: rgb(255 77 85 / 48%);
+  background: var(--shelf-red-wash);
+  color: var(--shelf-red-ink);
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="manual_review"]) .payment-return-seal::before {
+  content: "!";
+  font-size: 26px;
+}
+
+.payment-return-card:has([data-payment-return-status][data-state="rejected"]) .payment-return-seal::before {
+  content: "×";
+  font-size: 30px;
+}
+
+.payment-return-page .eyebrow {
+  margin: 0;
+  color: var(--taba-red-quiet);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.payment-return-page h1 {
+  margin: 0;
+  color: var(--shelf-ink);
+  /* 34px de techo y no 44: a 320px un título de 44 partía "Necesitamos" en dos
+     y la tarjeta arrancaba con una palabra cortada. */
+  font-size: clamp(26px, 6.6vw, 34px);
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.payment-return-detail {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 15.5px;
+  line-height: 1.5;
+}
+
+.payment-return-status:not(:empty) {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.payment-return-status[data-state="completed"] {
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+}
+
+.payment-return-status[data-state="manual_review"],
+.payment-return-status[data-state="rejected"] {
+  background: var(--shelf-red-wash);
+  color: var(--shelf-red-ink);
+}
+
+.payment-return-action {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 4px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+}
+
+.payment-return-foot {
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* Estado de la ubicación en la tarjeta de dirección del checkout.
+   Los colores son claros a propósito: la tarjeta vive sobre la sub-superficie
+   oscura de la góndola, donde un verde o un rojo oscuros rinden ~2,4:1 y el
+   estado se lee por color pero no se lee. Además del color, el texto lo dice. */
+.profile-address-card .profile-address-location {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.profile-address-card .profile-address-location.is-confirmed {
+  color: #7dc563;
+}
+
+.profile-address-card .profile-address-location.is-missing {
+  color: #ff8b82;
+}
+
+/* Una dirección sin punto confirmado no se puede elegir: el control queda
+   deshabilitado y la tarjeta lo muestra apagada, no sólo con el texto. */
+.profile-address-card.needs-location {
+  border-style: dashed;
+  cursor: not-allowed;
+  opacity: 0.72;
+}

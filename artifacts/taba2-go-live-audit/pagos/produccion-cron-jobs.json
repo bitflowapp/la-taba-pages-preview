@@ -1,0 +1,1 @@
+[{"jobname":"taba-checkout-expiry-sweep","schedule":"* * * * *","active":true},{"jobname":"taba-checkout-provider-truth-sweep","schedule":"* * * * *","active":true},{"jobname":"taba-operational-alerts-sweep","schedule":"* * * * *","active":true},{"jobname":"taba-payment-outbox-worker","schedule":"30 seconds","active":true}]

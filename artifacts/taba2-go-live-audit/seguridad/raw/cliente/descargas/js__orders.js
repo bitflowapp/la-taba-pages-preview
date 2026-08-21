@@ -1,0 +1,668 @@
+import { getBusinessConfig } from './core/business-config-store.js';
+import {
+  canTransitionOrderStatus,
+  getNextOrderStatus,
+  isValidOrderStatus,
+} from './core/order-status.js';
+import { normalizePreparationMinutes } from './core/business-ops.js';
+import { calculateTotals, normalizeDeliveryMode } from './core/pricing.js';
+import {
+  getAssignableDeliveryOrder,
+  getRiderQueueOrder as selectRiderQueueOrder,
+  isRiderQueueOrder,
+} from './core/rider.js';
+import { chooseActiveLiveOrderId } from './core/realtime-sync.js';
+import {
+  isPlausibleStreetAddress,
+  isValidArgentinePhone,
+  isValidDeliveryZone,
+  normalizeArgentinePhone,
+  normalizeCustomerName,
+  normalizePaymentMethod,
+  sanitizeNotes,
+  sanitizeText,
+  validateCustomerName,
+} from './core/validators.js';
+import { recordCustomerOrder, updateCustomerOrderSnapshot } from './core/customer-history.js';
+import {
+  rememberCustomerProfileFromOrder,
+  updateCustomerProfileOrderSnapshot,
+} from './core/customer-profile.js';
+import { buildAppliedCoupon, normalizeCouponCode } from './core/promotions.js';
+import { buildOrderReorderMetadata } from './core/reorder.js';
+import { normalizeDeliveryProof } from './core/delivery-proof.js';
+import { requireConfirmedDeliveryLocation } from './core/delivery-location.js';
+import {
+  buildDeliveryCode,
+  createDeliveryCode,
+  normalizeDeliveryCode,
+  verifyDeliveryCodeValue,
+} from './core/delivery-code.js';
+import {
+  formatAddressReference,
+  normalizeAddressDetails,
+  normalizeOrderAddressDetails,
+} from './core/address.js';
+import { distanceKm, getStreetTestDestination } from './map/route_geometry.js';
+import {
+  createOrderId,
+  dateTime,
+  deliveryModeLabel,
+  getState,
+  money,
+  paymentLabel,
+  statusLabel,
+  setState,
+  updateState,
+} from './state.js';
+import {
+  getCartCombos,
+  getCartItems,
+  getCartSummary,
+  validateCartForCheckout,
+} from './cart.js';
+
+let activeOrderFallbackSuppressed = false;
+
+export function createOrderFromCheckout(formValues = {}) {
+  const values = normalizeCheckoutValues(formValues);
+  const validation = validateCartForCheckout(values.deliveryMode, { paymentMethod: values.paymentMethod });
+  if (!validation.ok) return { ok: false, message: validation.message };
+
+  if (!values.customerName) return { ok: false, message: 'Ingresá el nombre del cliente.' };
+  const nameValidation = validateCustomerName(values.customerName);
+  if (!nameValidation.ok) return { ok: false, message: nameValidation.message };
+  if (!values.customerPhone) return { ok: false, message: 'Ingresá un teléfono de contacto.' };
+  if (!isValidArgentinePhone(values.customerPhone)) {
+    return { ok: false, message: 'Ingresá un teléfono argentino válido, con código de área.' };
+  }
+  if (values.deliveryMode === 'delivery' && !isPlausibleStreetAddress(values.addressDetails.streetLine || values.customerAddress)) {
+    return { ok: false, message: 'Ingresá una calle y número válidos para el envío.' };
+  }
+  if (values.deliveryMode === 'delivery' && values.addressDetails.usesStructured && !isValidDeliveryZone(values.addressDetails.neighborhood)) {
+    return { ok: false, message: 'Seleccioná la localidad o zona para coordinar el envío.' };
+  }
+  // Delivery exige un punto que el cliente haya confirmado. El servidor impone
+  // lo mismo; acá se dice antes, para no llevar a nadie hasta el pago para
+  // rebotarlo.
+  const locationCheck = requireConfirmedDeliveryLocation({
+    fulfillmentType: values.deliveryMode,
+    address: values.addressDetails,
+  });
+  if (!locationCheck.ok) return { ok: false, code: locationCheck.code, message: locationCheck.message };
+
+  const now = new Date().toISOString();
+  const cartItems = getCartItems();
+  const comboLines = getCartCombos();
+  // El +18 de un componente alcanza al combo entero: no existe un combo medio
+  // alcohólico, y la confirmación de edad se pide igual que por el producto.
+  const alcoholic = cartItems.some((item) => item.product.alcoholic)
+    || comboLines.some((line) => line.combo.ageRestricted);
+  if (alcoholic && !values.ageConfirmed) {
+    return { ok: false, message: 'Confirmá que sos mayor de edad para pedir bebidas alcohólicas.' };
+  }
+  // El combo se despacha por sus componentes: el mostrador arma latas, no
+  // combos. La línea del combo vive en `combos` para que el pedido pueda
+  // explicar de dónde salió el descuento.
+  const comboItems = comboLines.flatMap((line) => line.combo.components.map((component) => ({
+    productId: component.product.id,
+    name: component.product.name,
+    icon: component.product.icon,
+    quantity: component.quantity * line.quantity,
+    unitPrice: component.unitPrice,
+    unit: component.product.unit,
+    comboId: line.combo.comboId,
+  })));
+  const items = cartItems.map((item) => ({
+    productId: item.product.id,
+    name: item.product.name,
+    icon: item.product.icon,
+    quantity: item.quantity,
+    unitPrice: item.product.price,
+    unit: item.product.unit,
+  })).concat(comboItems);
+  const combos = comboLines.map((line) => ({
+    comboId: line.combo.comboId,
+    name: line.combo.name,
+    quantity: line.quantity,
+    listPrice: line.combo.individualPrice,
+    promotionalPrice: line.combo.promotionalPrice,
+    discountAmount: line.listPrice - line.price,
+  }));
+  const cartSummary = getCartSummary(values.deliveryMode, { couponCode: values.couponCode });
+  const coupon = buildAppliedCoupon(values.couponCode, cartSummary.subtotal);
+  const totals = {
+    subtotal: cartSummary.subtotal,
+    discountTotal: cartSummary.discountTotal,
+    deliveryFee: cartSummary.deliveryFee,
+    total: cartSummary.total,
+  };
+  const pendingReorder = getState().pendingReorder;
+  const reorder = buildOrderReorderMetadata(pendingReorder, getState().cart, now);
+
+  const orderId = createOrderId();
+  const deliveryCode = values.deliveryMode === 'delivery' && !values.previewOnly
+    ? buildDeliveryCode(createDeliveryCode(orderId))
+    : null;
+  const order = {
+    id: orderId,
+    customerName: values.customerName,
+    customerPhone: values.customerPhone,
+    address: values.deliveryMode === 'pickup' ? getBusinessConfig().address : values.customerAddress,
+    addressDetails: values.deliveryMode === 'pickup' ? null : values.addressDetails,
+    deliveryMode: values.deliveryMode,
+    paymentMethod: paymentLabel(values.paymentMethod),
+    paymentMethodCode: values.paymentMethod,
+    notes: values.customerNotes || 'Sin notas',
+    cashChange: values.paymentMethod === 'cash' ? values.cashChange : '',
+    coupon,
+    promotionApplications: cartSummary.promotions,
+    createdAt: now,
+    status: 'received',
+    previewOnly: values.previewOnly,
+    items,
+    combos,
+    subtotal: totals.subtotal,
+    discountTotal: totals.discountTotal,
+    deliveryFee: totals.deliveryFee,
+    total: totals.total,
+    statusHistory: [{ status: 'received', at: now }],
+    delivery: {
+      // Pedido real recién creado: todavía NO hay repartidor asignado.
+      // No inventamos nombre/teléfono de rider (eso confunde al cliente).
+      driverName: 'Sin asignar',
+      driverPhone: '',
+      estimatedMinutes: 0,
+      estimatedPreparationMinutes: 0,
+      currentLocationLabel: values.deliveryMode === 'pickup' ? 'Pedido para retirar en local' : 'Pedido recibido por el local',
+    },
+    ...(deliveryCode ? { deliveryCode } : {}),
+    ...(reorder ? { reorder } : {}),
+  };
+
+  allowActiveOrderFallback();
+  updateState((draft) => {
+    draft.orders.unshift(order);
+    draft.lastOrderId = order.id;
+    draft.lastCheckoutDraft = values;
+    draft.pendingReorder = null;
+
+    if (!values.previewOnly) {
+      for (const item of items) {
+        const product = draft.products.find((candidate) => candidate.id === item.productId);
+        if (product) product.stock = Math.max(0, product.stock - item.quantity);
+      }
+    }
+
+    draft.cart = [];
+    draft.comboSelections = [];
+  });
+  if (values.rememberCustomer && !values.previewOnly) {
+    recordCustomerOrder(order);
+    rememberCustomerProfileFromOrder(order, {
+      rememberCustomer: true,
+      consentAcceptedAt: now,
+    });
+  }
+
+  return {
+    ok: true,
+    order,
+    message: `Pedido ${order.id} confirmado.`,
+  };
+}
+
+function normalizeCheckoutValues(formValues) {
+  const deliveryMode = normalizeDeliveryMode(formValues.deliveryMode);
+  const addressDetails = normalizeAddressDetails(formValues);
+  return {
+    customerName: normalizeCustomerName(formValues.customerName),
+    customerPhone: normalizeArgentinePhone(formValues.customerPhone),
+    customerStreetAddress: addressDetails.streetLine,
+    customerNeighborhood: addressDetails.neighborhood,
+    customerReference: addressDetails.reference,
+    customerAddress: addressDetails.label,
+    addressDetails,
+    deliveryMode,
+    paymentMethod: normalizePaymentMethod(formValues.paymentMethod),
+    customerNotes: sanitizeNotes(formValues.customerNotes, ''),
+    cashChange: sanitizeText(formValues.cashChange, { maxLength: 80 }),
+    couponCode: normalizeCouponCode(formValues.couponCode),
+    rememberCustomer: Boolean(formValues.rememberCustomer),
+    ageConfirmed: Boolean(formValues.ageConfirmed),
+    previewOnly: Boolean(formValues.previewOnly),
+  };
+}
+
+export function getLastOrder() {
+  return getActiveOrder();
+}
+
+export function getActiveOrderId(sourceState = getState()) {
+  const orders = Array.isArray(sourceState.orders) ? sourceState.orders : [];
+  if (activeOrderFallbackSuppressed) return null;
+  if (typeof sourceState.lastOrderId === 'string' && orders.some((order) => order.id === sourceState.lastOrderId)) {
+    return sourceState.lastOrderId;
+  }
+  return chooseActiveLiveOrderId(orders);
+}
+
+export function getActiveOrder() {
+  const state = getState();
+  const activeOrderId = getActiveOrderId(state);
+  return activeOrderId ? state.orders.find((order) => order.id === activeOrderId) || null : null;
+}
+
+export function persistActiveOrderId(orderId) {
+  if (!orderId) return false;
+  let persisted = false;
+  updateState((draft) => {
+    if (draft.orders.some((order) => order.id === orderId)) {
+      draft.lastOrderId = orderId;
+      persisted = true;
+    }
+  });
+  if (persisted) {
+    allowActiveOrderFallback();
+  }
+  return persisted;
+}
+
+export function suppressActiveOrderFallback() {
+  activeOrderFallbackSuppressed = true;
+}
+
+export function allowActiveOrderFallback() {
+  activeOrderFallbackSuppressed = false;
+}
+
+export function clearActiveOrderStateOnReset() {
+  allowActiveOrderFallback();
+  updateState((draft) => {
+    draft.lastOrderId = null;
+    draft.simulation = null;
+  });
+}
+
+export function getActiveDeliveryOrder() {
+  return getAssignableDeliveryOrder(getState().orders);
+}
+
+// Incluye pedidos received/preparing para que el rider los vea en cola.
+export function getRiderQueueOrder() {
+  const state = getState();
+  const activeOrderId = getActiveOrderId(state);
+  const activeOrder = activeOrderId
+    ? state.orders.find((order) => order.id === activeOrderId)
+    : null;
+  if (isRiderQueueOrder(activeOrder)) return activeOrder;
+  return selectRiderQueueOrder(state.orders);
+}
+
+// Atajo del rider: lleva un pedido hasta "listo para reparto"
+// respetando el flujo de estados (received -> preparing -> ready).
+export function advanceOrderToReady(orderId) {
+  for (let step = 0; step < 4; step += 1) {
+    const order = getState().orders.find((candidate) => candidate.id === orderId);
+    if (!order) return { ok: false, message: 'Pedido no encontrado.' };
+    if (['ready', 'on_the_way', 'arriving', 'delivered'].includes(order.status)) {
+      return { ok: true, message: 'Pedido listo para reparto.' };
+    }
+    const result = advanceOrderStatus(orderId);
+    if (!result.ok) return result;
+  }
+  return { ok: true, message: 'Pedido listo para reparto.' };
+}
+
+export function advanceOrderStatus(orderId, options = {}) {
+  const order = getState().orders.find((candidate) => candidate.id === orderId);
+  return updateOrderStatus(orderId, getNextOrderStatus(order), options);
+}
+
+export function cancelOrder(orderId, reason = '') {
+  const result = updateOrderStatus(orderId, 'cancelled');
+  if (result.ok) {
+    const clean = sanitizeText(reason, { maxLength: 120 });
+    if (clean) {
+      updateState((draft) => {
+        const order = draft.orders.find((candidate) => candidate.id === orderId);
+        if (order) order.cancelReason = clean;
+      });
+      updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+      updateCustomerProfileOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+    }
+  }
+  return result;
+}
+
+export function attachDeliveryProof(orderId, proof) {
+  const normalized = normalizeDeliveryProof(proof);
+  if (!orderId || !normalized) {
+    return { ok: false, message: 'No se pudo guardar la foto de entrega.' };
+  }
+
+  const previousState = cloneState(getState());
+  let updated = false;
+  const persisted = updateState((draft) => {
+    const order = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!order) return;
+    order.deliveryProof = normalized;
+    updated = true;
+  });
+
+  if (!updated) return { ok: false, message: 'Pedido no encontrado.' };
+  if (!persisted) {
+    setState(previousState);
+    return { ok: false, message: 'No se pudo guardar la foto de entrega. Probá de nuevo o liberá espacio en el navegador.' };
+  }
+  updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  updateCustomerProfileOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  return { ok: true, message: 'Foto de entrega adjunta.' };
+}
+
+export function removeDeliveryProof(orderId) {
+  if (!orderId) return { ok: false, message: 'Pedido no encontrado.' };
+
+  const previousState = cloneState(getState());
+  let updated = false;
+  const persisted = updateState((draft) => {
+    const order = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!order) return;
+    delete order.deliveryProof;
+    updated = true;
+  });
+
+  if (!updated) return { ok: false, message: 'Pedido no encontrado.' };
+  if (!persisted) {
+    setState(previousState);
+    return { ok: false, message: 'No se pudo quitar la foto de entrega. Probá de nuevo.' };
+  }
+  updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  updateCustomerProfileOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  return { ok: true, message: 'Foto de entrega quitada.' };
+}
+
+export function confirmDeliveryCode(orderId, code, {
+  confirmedAt = new Date().toISOString(),
+  confirmedBy = 'rider',
+} = {}) {
+  const order = getState().orders.find((candidate) => candidate.id === orderId);
+  if (!order) return { ok: false, message: 'Pedido no encontrado.' };
+  if (normalizeDeliveryMode(order.deliveryMode) !== 'delivery') {
+    return { ok: false, message: 'Código de entrega disponible solo para delivery.' };
+  }
+  if (order.status === 'delivered' || order.status === 'cancelled') {
+    return { ok: false, message: 'El pedido ya no admite validación de código.' };
+  }
+
+  const current = normalizeDeliveryCode(order.deliveryCode);
+  if (current?.confirmedAt) {
+    return { ok: false, message: 'El código ya fue validado.' };
+  }
+  const verification = verifyDeliveryCodeValue(current, code);
+  if (!verification.ok) return verification;
+
+  updateState((draft) => {
+    const target = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!target) return;
+    const confirmedDate = new Date(confirmedAt);
+    target.deliveryCode = {
+      ...current,
+      confirmedAt: Number.isNaN(confirmedDate.getTime()) ? new Date().toISOString() : confirmedDate.toISOString(),
+      confirmedBy,
+    };
+  });
+  updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  updateCustomerProfileOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  return { ok: true, message: verification.message };
+}
+
+// Ticket de texto plano para preparación / mostrador (sin dependencias).
+export function buildKitchenTicket(order) {
+  if (!order) return '';
+  const isPickup = normalizeDeliveryMode(order.deliveryMode) === 'pickup';
+  const address = normalizeOrderAddressDetails(order);
+  const reference = formatAddressReference(order);
+  const lines = [
+    `${String(getBusinessConfig().businessName || 'Comercio').toUpperCase()} — TICKET`,
+    `Pedido: ${order.id}`,
+    `Hora: ${dateTime(order.createdAt)}`,
+    `Entrega: ${deliveryModeLabel(order.deliveryMode)}`,
+    isPickup ? 'Retiro en el local' : `Dirección: ${address.label || order.address}`,
+    ...(!isPickup && reference ? [`Referencia: ${reference}`] : []),
+    `Cliente: ${order.customerName}`,
+    `Teléfono: ${order.customerPhone}`,
+    '--------------------------------',
+    ...order.items.map((item) => `${item.quantity} x ${item.name}`),
+    '--------------------------------',
+    ...(Number(order.discountTotal || 0) > 0 ? [`Cupón ${order.coupon?.code || ''}: -${money(order.discountTotal)}`] : []),
+    `Pago: ${order.paymentMethod}`,
+    ...(order.cashChange ? [`Cambio efectivo: ${order.cashChange}`] : []),
+    `TOTAL: ${money(order.total)}`,
+    `Notas: ${order.notes || 'Sin notas'}`,
+    `Estado: ${statusLabel(order.status)}`,
+  ];
+  return lines.join('\n');
+}
+
+export function updateOrderStatus(orderId, status, options = {}) {
+  if (!orderId || !isValidOrderStatus(status)) {
+    return { ok: false, message: 'Estado de pedido inválido.' };
+  }
+
+  const current = getState().orders.find((candidate) => candidate.id === orderId);
+  if (!current) return { ok: false, message: 'Pedido no encontrado.' };
+  if (!canTransitionOrderStatus(current, status)) {
+    return { ok: false, message: 'Transición de estado no permitida.' };
+  }
+
+  const now = new Date().toISOString();
+
+  updateState((draft) => {
+    const order = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!order) return;
+
+    order.status = status;
+    order.statusHistory.push({ status, at: now });
+    order.delivery = order.delivery || {};
+
+    if (status === 'preparing') {
+      const estimatedPreparationMinutes = normalizePreparationMinutes(
+        options.estimatedPreparationMinutes,
+        order.delivery.estimatedPreparationMinutes || 20,
+      );
+      order.delivery.acceptedAt = order.delivery.acceptedAt || now;
+      order.delivery.estimatedPreparationMinutes = estimatedPreparationMinutes;
+      order.delivery.currentLocationLabel = `Pedido aceptado por el negocio. Preparación estimada: ${estimatedPreparationMinutes} min`;
+    }
+    if (status === 'ready') {
+      order.delivery.currentLocationLabel = 'Pedido listo en el local';
+    }
+    if (status === 'on_the_way') {
+      order.delivery.leftStoreAt = now;
+      order.delivery.currentLocationLabel = 'El repartidor salió del local';
+    }
+    if (status === 'arriving') {
+      order.delivery.currentLocationLabel = 'El repartidor está llegando';
+    }
+    if (status === 'delivered') {
+      order.delivery.deliveredAt = now;
+      order.delivery.currentLocationLabel = 'Pedido entregado';
+      order.delivery.estimatedMinutes = 0;
+    }
+    if (status === 'cancelled') {
+      order.delivery.currentLocationLabel = 'Pedido cancelado por el negocio';
+      order.delivery.estimatedMinutes = 0;
+    }
+  });
+
+  updateCustomerOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+  updateCustomerProfileOrderSnapshot(getState().orders.find((candidate) => candidate.id === orderId));
+
+  return { ok: true, message: `Pedido ${orderId} actualizado a ${statusLabel(status)}.` };
+}
+
+function cloneState(value) {
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
+}
+
+export function updateOrderDemoDestination(orderId, destinationId) {
+  if (!orderId) return { ok: false, message: 'Pedido no encontrado.' };
+  const current = getState().orders.find((candidate) => candidate.id === orderId);
+  if (!current || current.deliveryMode !== 'delivery') {
+    return { ok: false, message: 'No hay un pedido de delivery para asignar destino.' };
+  }
+
+  const destination = getStreetTestDestination(destinationId);
+  const now = new Date().toISOString();
+  const estimatedDistance = Number(distanceKm(getBusinessConfig().businessLocation, destination).toFixed(1));
+
+  updateState((draft) => {
+    const order = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!order) return;
+    order.delivery = order.delivery || {};
+    order.delivery.demoDestinationId = destination.id;
+    order.delivery.demoDestinationLabel = destination.label || destination.name;
+    order.delivery.demoDestinationAddressLabel = destination.addressLabel || destination.name || destination.label;
+    order.delivery.demoDestinationCity = destination.city || '';
+    order.delivery.destinationUpdatedAt = now;
+    order.delivery.distanceKm = estimatedDistance;
+  });
+
+  return { ok: true, message: `Referencia visual actualizada: ${destination.label || destination.name}.`, destination };
+}
+
+export function getNextStatus(orderId) {
+  const order = getState().orders.find((candidate) => candidate.id === orderId);
+  return getNextOrderStatus(order);
+}
+
+export function actionLabelForOrder(order) {
+  const next = getNextOrderStatus(order);
+  if (!next) return 'Sin acción';
+  const labels = {
+    preparing: 'Aceptar pedido',
+    ready: 'Listo para entregar',
+    on_the_way: 'Enviar a reparto',
+    delivered: 'Marcar entregado',
+  };
+  return labels[next] || `Pasar a ${statusLabel(next)}`;
+}
+
+export function buildWhatsAppMessage(order) {
+  if (!order) return '';
+  const safeOrder = normalizeOrderForMessage(order);
+  const lines = [
+    `Hola ${getBusinessConfig().businessName}, quiero hacer este pedido:`,
+    '',
+    `Pedido: ${safeOrder.id}`,
+    `Fecha: ${dateTime(safeOrder.createdAt)}`,
+    '',
+    'Cliente:',
+    `Nombre: ${safeOrder.customerName}`,
+    `Teléfono: ${safeOrder.customerPhone}`,
+    `Entrega: ${deliveryModeLabel(safeOrder.deliveryMode)}`,
+    `${safeOrder.deliveryMode === 'pickup' ? 'Retiro en' : 'Dirección'}: ${safeOrder.address}`,
+    ...(safeOrder.deliveryMode === 'delivery' && safeOrder.addressDetails.reference
+      ? [`Referencia: ${safeOrder.addressDetails.reference}`]
+      : []),
+    '',
+    'Productos:',
+    ...safeOrder.items.map((item) => `• ${item.quantity} x ${item.name} — ${money(item.unitPrice * item.quantity)}`),
+    '',
+    `Subtotal: ${money(safeOrder.subtotal)}`,
+    ...(safeOrder.discountTotal > 0 ? [`Cupón ${safeOrder.coupon?.code || ''}: -${money(safeOrder.discountTotal)}`] : []),
+    `Envío: ${money(safeOrder.deliveryFee)}`,
+    `Total: ${money(safeOrder.total)}`,
+    '',
+    `Pago: ${safeOrder.paymentMethod}`,
+    ...(safeOrder.cashChange ? [`Cambio con efectivo: ${safeOrder.cashChange}`] : []),
+    `Notas: ${safeOrder.notes}`,
+  ];
+
+  return lines.join('\n');
+}
+
+function normalizeOrderForMessage(order) {
+  const deliveryMode = normalizeDeliveryMode(order.deliveryMode);
+  const items = Array.isArray(order.items) ? order.items : [];
+  const safeItems = items.map((item) => ({
+    name: sanitizeText(item.name, { fallback: 'Producto', maxLength: 100 }),
+    quantity: Math.max(1, Math.floor(Number(item.quantity) || 1)),
+    unitPrice: Math.max(0, Number(item.unitPrice) || 0),
+  }));
+  const discountTotal = Math.max(0, Number(order.discountTotal || order.coupon?.discountAmount || 0));
+  const totals = calculateTotals(safeItems, deliveryMode, { discountAmount: discountTotal });
+  const coupon = order.coupon && totals.discountTotal > 0
+    ? {
+      code: sanitizeText(order.coupon.code, { fallback: 'Promo', maxLength: 24 }),
+      discountPercent: Math.max(0, Math.floor(Number(order.coupon.discountPercent) || 0)),
+      discountAmount: totals.discountTotal,
+    }
+    : null;
+
+  return {
+    id: sanitizeText(order.id, { fallback: 'Sin ID', maxLength: 40 }),
+    createdAt: order.createdAt,
+    customerName: sanitizeText(order.customerName, { fallback: 'Sin cargar', maxLength: 80 }),
+    customerPhone: sanitizeText(order.customerPhone, { fallback: 'Sin cargar', maxLength: 40 }),
+    deliveryMode,
+    address: deliveryMode === 'pickup'
+      ? getBusinessConfig().address
+      : normalizeOrderAddressDetails(order).label || sanitizeText(order.address, { fallback: 'Sin cargar', maxLength: 180 }),
+    addressDetails: deliveryMode === 'pickup' ? normalizeAddressDetails() : normalizeOrderAddressDetails(order),
+    items: safeItems,
+    subtotal: totals.subtotal,
+    discountTotal: totals.discountTotal,
+    deliveryFee: totals.deliveryFee,
+    total: totals.total,
+    coupon,
+    paymentMethod: sanitizeText(order.paymentMethod, { fallback: 'Pago a coordinar con el local', maxLength: 80 }),
+    cashChange: sanitizeText(order.cashChange, { fallback: '', maxLength: 80 }),
+    notes: sanitizeNotes(order.notes),
+  };
+}
+
+export function buildWhatsAppUrl(order) {
+  return `https://wa.me/${getBusinessConfig().whatsappNumber}?text=${encodeURIComponent(buildWhatsAppMessage(order))}`;
+}
+
+// Copia opcional por WhatsApp del borrador del carrito (no crea pedido interno).
+export function buildWhatsAppUrlFromDraft(formValues = {}) {
+  return `https://wa.me/${getBusinessConfig().whatsappNumber}?text=${encodeURIComponent(buildDraftMessageFromCart(formValues))}`;
+}
+
+export function buildDraftMessageFromCart(formValues = {}) {
+  const values = normalizeCheckoutValues(formValues);
+  const { items, subtotal, discountTotal, deliveryFee, total, coupon } = getCartSummary(values.deliveryMode, {
+    couponCode: values.couponCode,
+  });
+
+  const lines = [
+    `Hola ${getBusinessConfig().businessName}, quiero consultar este pedido:`,
+    '',
+    `Fecha: ${dateTime(new Date().toISOString())}`,
+    '',
+    'Cliente:',
+    `Nombre: ${values.customerName || 'Sin cargar'}`,
+    `Teléfono: ${values.customerPhone || 'Sin cargar'}`,
+    `Entrega: ${deliveryModeLabel(values.deliveryMode)}`,
+    `${values.deliveryMode === 'pickup' ? 'Retiro en' : 'Dirección'}: ${values.deliveryMode === 'pickup' ? getBusinessConfig().address : values.customerAddress || 'Sin cargar'}`,
+    ...(values.deliveryMode === 'delivery' && values.addressDetails.reference ? [`Referencia: ${values.addressDetails.reference}`] : []),
+    '',
+    'Productos:',
+    ...(items.length ? items.map((item) => `• ${item.quantity} x ${item.product.name} — ${money(item.quantity * item.product.price)}`) : ['• Sin productos cargados']),
+    '',
+    `Subtotal: ${money(subtotal)}`,
+    ...(discountTotal > 0 ? [`Cupón ${coupon.code}: -${money(discountTotal)}`] : []),
+    `Envío: ${money(deliveryFee)}`,
+    `Total: ${money(total)}`,
+    '',
+    `Pago: ${paymentLabel(values.paymentMethod)}`,
+    ...(values.paymentMethod === 'cash' && values.cashChange ? [`Cambio con efectivo: ${values.cashChange}`] : []),
+    `Notas: ${values.customerNotes || 'Sin notas'}`,
+  ];
+
+  return lines.join('\n');
+}

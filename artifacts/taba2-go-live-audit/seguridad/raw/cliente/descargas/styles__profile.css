@@ -1,0 +1,997 @@
+/* Los cuatro valores de la superficie crema dejaron de escribirse acá: son los
+   tokens compartidos de `tokens.css`. Perfil fue la primera vista que llegó a
+   la referencia aprobada, así que su paleta se promovió al sistema y ahora la
+   consumen también la home, el catálogo, el carrito y el checkout. Los alias
+   locales se conservan porque los usan ~60 reglas de esta hoja. */
+[data-view="profile"] {
+  --profile-surface: var(--shelf-raised);
+  --profile-soft: var(--shelf);
+  --profile-line: var(--shelf-line);
+  --profile-ink: var(--shelf-ink);
+  --profile-muted: var(--shelf-muted);
+  max-width: 1080px;
+  padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+  background:
+    radial-gradient(circle at 90% 0%, rgb(191 31 46 / 7%), transparent 28%),
+    var(--profile-surface);
+}
+
+/* El encabezado abre con el emblema, que además es la entrada a historias.
+   Su tamaño y la fila viven en `brand-home.css`: `responsive.css` apila todo
+   `.section-head` en móvil y la geometría del logo se define allá, y las dos
+   hojas cargan DESPUÉS de esta. Poner las reglas acá las dejaba perdiendo. */
+.profile-page-head {
+  margin-bottom: 22px;
+}
+
+.profile-page-head > div {
+  min-width: 0;
+}
+
+.profile-page-head .profile-lead {
+  max-width: 610px;
+  margin: 7px 0 0;
+  color: var(--profile-muted);
+  font-size: clamp(15px, 2vw, 17px);
+  line-height: 1.55;
+}
+
+[data-customer-profile] {
+  display: grid;
+  gap: 18px;
+}
+
+.customer-profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  align-items: start;
+  gap: 18px;
+}
+
+/* Superficie crema, no blanco puro. Sobre el shell grafito un #fff levanta un
+   recorte duro; el crema de la referencia se apoya sin cortar la pantalla. */
+.profile-card,
+.profile-privacy-card,
+.profile-empty-state,
+.profile-loading {
+  min-width: 0;
+  border: 1px solid var(--profile-line);
+  /* Mismo radio que la tarjeta de producto de la home: el perfil usaba 22px y
+     se leía como otro sistema al cambiar de pestaña. */
+  border-radius: 20px;
+  background: var(--profile-soft);
+  box-shadow: 0 10px 34px rgb(0 0 0 / 26%);
+}
+
+.profile-card {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.profile-card-heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-card-heading > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Marca del bloque: el icono reemplaza al rótulo en versalitas. Dice lo mismo
+   ocupando una línea menos, que es la diferencia entre ver una dirección o dos
+   sin scrollear. */
+.profile-card-ico {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  margin-top: 1px;
+  color: var(--taba-red-quiet);
+}
+
+.profile-card-heading > div > small {
+  display: block;
+  margin-top: 2px;
+  color: var(--profile-muted);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.profile-card-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--taba-red-quiet);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.profile-card h2,
+.profile-card h3,
+.profile-empty-state h2 {
+  margin: 0;
+  color: var(--profile-ink);
+  letter-spacing: -0.025em;
+}
+
+.profile-card h2 {
+  font-size: clamp(19px, 3vw, 23px);
+}
+
+.profile-card h3 {
+  font-size: 18px;
+}
+
+.personal-data-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.personal-data-list > div {
+  display: grid;
+  gap: 5px;
+  padding: 14px 0;
+  border-top: 1px solid var(--profile-line);
+}
+
+.personal-data-list > div:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.personal-data-list dt {
+  color: var(--profile-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.personal-data-list dd {
+  margin: 0;
+  color: var(--profile-ink);
+  font-size: 17px;
+  font-weight: 780;
+}
+
+.personal-card form,
+.profile-address-editor {
+  display: grid;
+  gap: 14px;
+}
+
+.personal-card form > label,
+.profile-form-grid > label {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: var(--profile-ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.personal-card input,
+.profile-address-editor input,
+.profile-address-editor select,
+.profile-address-editor textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid #d8d2cc;
+  border-radius: 12px;
+  outline: 0;
+  background: var(--shelf-raised);
+  color: var(--profile-ink);
+  font: inherit;
+  /* `font: inherit` toma el tamaño del `<label>` que envuelve el campo (13px):
+     Safari interpreta ese valor y hace zoom automático al enfocar. Se fija el
+     tamaño explícito después del shorthand para conservar familia y estilo
+     heredados sin heredar un tamaño por debajo del umbral de iOS. */
+  font-size: 16px;
+  font-weight: 600;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+
+.profile-address-editor textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.personal-card input:focus,
+.profile-address-editor input:focus,
+.profile-address-editor select:focus,
+.profile-address-editor textarea:focus {
+  border-color: var(--taba-red);
+  box-shadow: 0 0 0 3px var(--taba-red-soft);
+}
+
+.personal-card [aria-invalid="true"],
+.profile-address-editor [aria-invalid="true"] {
+  border-color: #b4232f;
+}
+
+.profile-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-empty-copy,
+.profile-no-addresses p,
+.profile-empty-state p,
+.profile-loading p,
+.profile-duplicate p {
+  margin: 0;
+  color: var(--profile-muted);
+  line-height: 1.5;
+}
+
+/* "Tus direcciones" es la sección principal del perfil: su título vive sobre el
+   shell oscuro y cada dirección flota como su propia superficie clara, en vez
+   de apilarse dentro de una tarjeta que las envuelve a todas. Así la lista se
+   lee como una lista y no como el interior de una ficha. */
+.addresses-card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.addresses-card > .profile-card-heading h2 {
+  color: var(--brand-ink, #f4f6f8);
+}
+
+.addresses-card > .profile-card-heading > div > small {
+  color: var(--brand-ink-muted, #a6adb8);
+}
+
+.profile-address-list {
+  display: grid;
+  gap: 11px;
+}
+
+.profile-address {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--profile-line);
+  border-radius: var(--radius-lg);
+  background: var(--profile-soft);
+}
+
+/* La activa se marca con borde rojo Y con el badge "Predeterminada": el estado
+   no viaja sólo en el color, que es lo que exige el contraste y lo que necesita
+   quien no distingue el rojo.
+
+   Lo que cambia es el PESO. Con 2px de rojo pleno más un halo de 22px, la
+   dirección elegida se leía como un error de formulario: era el único elemento
+   de Perfil con resplandor y el ojo iba ahí antes que al nombre de la persona.
+   Un borde de 1,5px al 72% y un anillo interior sin difuminar dicen lo mismo
+   —"esta es"— con el volumen que corresponde a un estado, no a una alarma. */
+.profile-address.is-default {
+  border-color: rgb(208 0 13 / 72%);
+  border-width: 1.5px;
+  padding: 14.5px;
+  box-shadow: inset 0 0 0 1px rgb(208 0 13 / 22%), var(--shadow-shelf-flat);
+}
+
+.profile-address-main {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 11px;
+}
+
+.profile-address-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--taba-red-soft);
+  color: var(--taba-red-quiet);
+}
+
+.profile-address-title {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.profile-address-title strong {
+  color: var(--profile-ink);
+  font-size: 16px;
+}
+
+.profile-address-title span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--taba-red-soft);
+  color: var(--taba-red-quiet);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.profile-address p,
+.profile-address small {
+  overflow-wrap: anywhere;
+}
+
+.profile-address p {
+  margin: 4px 0 0;
+  color: var(--profile-ink);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.profile-address small {
+  display: block;
+  margin-top: 4px;
+  color: var(--profile-muted);
+  line-height: 1.4;
+}
+
+/* Con píldoras, el aire lo da el propio control: 14px entre bordes ya no es
+   separación sino un hueco. */
+.profile-address-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-left: 51px;
+}
+
+/* Los controles de texto de Perfil eran enlaces subrayados en rojo dentro de
+   tarjetas de góndola: "Editar", "Eliminar", "Cerrar". Tres subrayados rojos
+   apilados junto a los datos de la persona se leen como una página vieja, no
+   como los controles de una tarjeta, y encima competían en color con el único
+   rojo que importa, que es el de comprar.
+
+   Pasan a píldora de hairline —el mismo lenguaje que el botón secundario del
+   resto de la app— y conservan el subrayado en `:hover`/`:focus`, así que el
+   estado nunca depende sólo del color. El objetivo táctil de 44px no se toca.
+   El rojo queda en el ícono, que es donde informa sin gritar. */
+[data-view="profile"] .text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: var(--tap);
+  padding: 0 14px;
+  border: 1px solid var(--shelf-line-strong);
+  border-radius: var(--radius-pill);
+  color: var(--shelf-ink);
+  font-size: 12.5px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+[data-view="profile"] .text-button:hover,
+[data-view="profile"] .text-button:focus-visible {
+  border-color: var(--taba-white);
+  background: var(--shelf-raised);
+  text-decoration: underline;
+}
+
+[data-view="profile"] .text-button svg {
+  color: var(--shelf-red-ink);
+}
+
+.profile-address-actions .text-button {
+  flex: 0 1 auto;
+  min-width: 44px;
+  max-width: 100%;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.profile-address-actions .text-button svg {
+  flex: 0 0 auto;
+}
+
+/* La dirección en uso declara su estado; no repite la acción ya aplicada. Es
+   texto, no un control, así que no entra en el orden de tabulación ni promete
+   un toque que no haría nada. */
+.profile-address-inuse {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--profile-muted);
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+/* Acción principal del perfil: una sola, ancha y al alcance del pulgar. */
+.profile-add-address {
+  display: flex;
+  width: 100%;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 3px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.profile-add-address-plus {
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.profile-no-addresses {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 26px 16px;
+  border: 1px dashed #d8d2cc;
+  border-radius: 16px;
+  background: var(--profile-soft);
+  text-align: center;
+}
+
+.profile-no-addresses > span,
+.profile-empty-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--shelf-raised);
+  color: var(--taba-red-quiet);
+  font-size: 23px;
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-form-grid .is-wide,
+.profile-form-grid .is-full {
+  grid-column: 1 / -1;
+}
+
+.profile-form-grid label span em {
+  color: var(--profile-muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.profile-address-editor {
+  padding: 18px;
+  border: 1px solid var(--profile-line);
+  border-radius: 17px;
+  background: var(--profile-soft);
+}
+
+/* «Abrir en Google Maps» es el único valor de la ficha del local que se toca.
+   Como texto en línea medía 155×23: por debajo del área táctil mínima en un
+   teléfono, y encima rodeado de texto que no es enlace. Se le da alto sin
+   cambiar cómo se lee la lista. */
+.profile-business-details .info-list a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+
+/* Reemplaza a los campos Ciudad y Provincia: informa la localidad que se va a
+   guardar en vez de pedirla. Es texto, no control, así que no toma foco ni
+   entra en el recorrido por teclado. */
+.profile-form-area {
+  margin: 0;
+  color: var(--profile-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.profile-form-area strong {
+  color: var(--profile-ink);
+  font-weight: 800;
+}
+
+.profile-default-check {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 9px;
+  color: var(--profile-ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.profile-default-check input {
+  width: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0;
+  accent-color: var(--taba-red);
+}
+
+.profile-field-error {
+  min-height: 18px;
+  margin: -4px 0 0;
+  /* Era el literal `#a11c2a`, que sobre la góndola grafito da 2,19:1 —muy por
+     debajo del 4,5:1 de AA— justo en el ÚNICO texto que dice por qué no se pudo
+     guardar. El literal se salteaba el remapeo de la paleta; el token existe
+     para esto y este mismo archivo ya lo usa en otras dos reglas (:392 y :739).
+     `--shelf-red-ink` mide 5,19:1 sobre `--shelf` y 4,61:1 sobre
+     `--shelf-raised`: pasa AA en las dos superficies donde vive el campo. */
+  color: var(--shelf-red-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.profile-field-error:empty {
+  display: none;
+}
+
+.profile-duplicate {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid #d6b26a;
+  border-radius: 15px;
+  background: var(--shelf-gold-wash);
+}
+
+/* Paso «Confirmá dónde te entregamos». Ya no es un bloque opcional al costado
+   del formulario: es un requisito de la dirección de entrega, y por eso ocupa
+   ancho completo y declara su estado con color y con texto —nunca sólo con
+   color, que dejaría afuera a quien no lo distingue—. */
+.location-step {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px dashed #d8d2cc;
+  border-radius: 15px;
+  background: var(--shelf-raised);
+}
+
+.location-step.is-pending {
+  border-style: solid;
+  border-color: #d6b26a;
+  background: var(--shelf-gold-wash);
+}
+
+.location-step.is-confirmed {
+  border-style: solid;
+  border-color: #7ba46b;
+}
+
+.location-step-head h3 {
+  margin: 0 0 4px;
+  color: var(--profile-ink);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.location-step p {
+  margin: 0;
+  color: var(--profile-muted);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.location-step-options,
+.location-step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.location-step-hint {
+  font-size: 12px;
+}
+
+.location-step-error {
+  color: #ff8b82;
+  font-weight: 750;
+}
+
+.location-step-notice {
+  color: #e8c268;
+  font-weight: 750;
+}
+
+.location-step-canvas {
+  display: grid;
+  gap: 8px;
+}
+
+/* El mapa necesita alto propio: un contenedor de alto cero monta MapLibre y no
+   muestra nada, que es peor que no tener mapa. */
+.location-step-map {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  border-radius: 13px;
+  overflow: hidden;
+  background: #e9e5e0;
+}
+
+.location-step-nomap {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--shelf-gold-wash);
+  font-size: 12px;
+}
+
+.location-step-coords {
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  color: var(--profile-ink);
+}
+
+.location-step-meta {
+  font-size: 12px;
+}
+
+.location-step-nudge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--profile-muted);
+}
+
+.location-step-nudge .ghost-button {
+  text-transform: capitalize;
+  /* Objetivo táctil mínimo: estos controles se usan con el pulgar sobre un
+     mapa, donde errar significa mover el pin al lugar equivocado. */
+  min-height: 44px;
+  min-width: 56px;
+}
+
+.location-step-badge {
+  color: #7dc563;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.location-pin-marker {
+  display: block;
+  line-height: 0;
+  cursor: grab;
+  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.35));
+}
+
+.location-pin-marker:active {
+  cursor: grabbing;
+}
+
+/* Estado de la ubicación en la tarjeta de cada dirección guardada. */
+.profile-address-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+/* El verde era un literal suelto: la identidad comercial no lo tiene, y el
+   sistema ya decidió que sobre la góndola la confirmación se dice en dorado
+   (ver `--taba-success` en el remapeo del cliente). Pedirle el token en vez de
+   escribir el color hace además que Negocio y Repartidor conserven su verde de
+   papel, que sí está calibrado contra blanco. */
+.profile-address-location.is-confirmed {
+  color: var(--taba-success);
+}
+
+.profile-address-location.is-missing {
+  color: #ff8b82;
+  min-height: 44px;
+}
+
+.profile-address.needs-location {
+  border-color: rgb(224 57 47 / 0.45);
+}
+
+.profile-status {
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  color: var(--profile-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-status:empty {
+  display: none;
+}
+
+.profile-status.is-success,
+.profile-status.is-error,
+.profile-status.is-warning {
+  padding: 11px 13px;
+  border-radius: 12px;
+}
+
+/* Los tres estados en la paleta de la góndola: confirmado en dorado, error en
+   el rojo de TEXTO y advertencia en el mismo dorado con menos peso. El verde
+   pálido y el ámbar de sistema eran dos materiales que la identidad no tiene. */
+.profile-status.is-success {
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+}
+
+.profile-status.is-error {
+  background: var(--shelf-red-wash);
+  color: var(--shelf-red-ink);
+}
+
+.profile-status.is-warning {
+  background: rgb(201 149 62 / 9%);
+  color: var(--shelf-gold-soft);
+}
+
+/* Misma superficie crema que el resto del perfil: el verde apenas distinto se
+   leía como un tercer material en una pantalla que ya tiene dos. */
+.profile-privacy-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 17px 19px;
+  background: var(--profile-soft);
+  box-shadow: none;
+}
+
+/* La marca de verificación entra completa en su círculo: el glifo heredaba
+   16px sobre una caja de 28 y quedaba recortado. */
+.profile-privacy-card > span {
+  display: grid;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.profile-privacy-card strong {
+  color: var(--profile-ink);
+}
+
+.profile-privacy-card p {
+  margin: 3px 0 0;
+  color: var(--profile-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.profile-loading,
+.profile-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 38px 22px;
+  text-align: center;
+}
+
+.profile-loading p,
+.profile-empty-state p {
+  max-width: 520px;
+}
+
+.profile-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--profile-line);
+  border-top-color: var(--taba-red);
+  border-radius: 50%;
+  animation: profile-spin 800ms linear infinite;
+}
+
+/* `.card` global lo pinta blanco puro; en el perfil comparte la crema del
+   resto para que el pie de la pantalla no cambie de material. */
+.profile-business-details {
+  margin-top: 18px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--profile-line);
+  border-radius: 20px;
+  background: var(--profile-soft);
+}
+
+.profile-business-details summary {
+  min-height: 52px;
+  padding: 16px 20px;
+  color: var(--profile-ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.profile-business-details-body {
+  padding: 0 20px 20px;
+}
+
+/* ── Instalar La Taba ──────────────────────────────────────────────────────
+   La puerta de atrás de la instalación, para quien tocó "Ahora no" y cambió de
+   idea. Vive acá y no en `common.css` por la misma razón que la tarjeta de
+   privacidad: comparte material con su vecina "Información del local" —misma
+   superficie, mismo hairline, mismo radio— y ese material lo declara ESTA
+   pantalla en sus propios tokens.
+
+   `.card` global no trae relleno —lo pone cada tarjeta—, y esa es justamente la
+   omisión que se vio en la primera captura: el icono quedaba pegado a la
+   esquina, como si la tarjeta estuviera rota. */
+.profile-install-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px 14px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 17px 19px;
+  border: 1px solid var(--profile-line);
+  border-radius: 20px;
+  background: var(--profile-soft);
+  box-shadow: none;
+}
+
+/* `display: grid` gana sobre el `[hidden]` del navegador, así que la tarjeta
+   tiene que saber esconderse ella misma. Nace oculta. */
+.profile-install-card[hidden] {
+  display: none;
+}
+
+.profile-install-mark img {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+}
+
+.profile-install-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.profile-install-copy strong {
+  color: var(--profile-ink);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.profile-install-copy small {
+  color: var(--profile-muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+/* En el teléfono la acción baja a su propio renglón y ocupa el ancho: al lado
+   del texto se quedaba con 90px y "Ver cómo" partía en dos renglones. */
+.profile-install-action {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: var(--tap);
+  border-radius: var(--radius-pill);
+}
+
+@media (min-width: 520px) {
+  .profile-install-card {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .profile-install-action {
+    grid-column: auto;
+    width: auto;
+    padding-inline: 20px;
+  }
+}
+
+@keyframes profile-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 760px) {
+  [data-view="profile"] {
+    padding: 18px 16px 16px;
+  }
+
+  .customer-profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-page-head {
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 430px) {
+  .profile-card {
+    gap: 16px;
+    padding: 17px;
+    border-radius: 18px;
+  }
+
+  .profile-card-heading {
+    align-items: flex-start;
+  }
+
+  .addresses-card > .profile-card-heading {
+    display: grid;
+  }
+
+  .addresses-card > .profile-card-heading .secondary-button {
+    width: 100%;
+  }
+
+  .profile-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-form-grid .is-wide,
+  .profile-form-grid .is-full {
+    grid-column: auto;
+  }
+
+  .profile-address {
+    padding: 13px;
+  }
+
+  .profile-address-actions {
+    padding-left: 0;
+  }
+
+  .profile-address-editor {
+    margin-inline: -5px;
+    padding: 14px;
+  }
+}
+
+@media (max-width: 340px) {
+  [data-view="profile"] {
+    padding-inline: 10px;
+  }
+
+  .profile-card {
+    padding: 14px;
+  }
+
+  .profile-address-main {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .profile-address-icon {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-spinner {
+    animation-duration: 1600ms;
+  }
+}

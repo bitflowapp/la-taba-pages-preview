@@ -1,0 +1,1188 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#11151b" />
+    <meta name="description" content="TABA2: tienda argentina de bebidas con catálogo y disponibilidad claros." />
+    <title>TABA2 · Tienda de bebidas</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <!--
+      El `apple-touch-icon` TIENE que ser PNG. iOS no rasteriza SVG acá: cuando
+      no encuentra un mapa de bits usable se guarda una CAPTURA de la página
+      como icono, y así estuvo hasta esta versión —apuntaba a `assets/icon.svg`—.
+      El archivo va a sangre, opaco y sin esquinas redondeadas: la máscara la
+      pone iOS, y un alfa vacío en los bordes se pinta de negro.
+    -->
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/brand/taba-app-icon-apple-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!--
+      Es la etiqueta que se lee DEBAJO del icono en la pantalla de inicio de
+      iOS. Dice lo mismo que `short_name` del manifest —lo que Android usa en el
+      mismo lugar— para que la app no se llame distinto según el teléfono.
+    -->
+    <meta name="apple-mobile-web-app-title" content="La Taba" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css"
+      integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK"
+      crossorigin="anonymous"
+    />
+    <!--
+      La fotografía del hero comercial es, desde que la banda subió al primer
+      pantallazo, el elemento más grande de esa pantalla: o sea el LCP. La
+      inyecta `renderHomeHeroPromo` como `background-image`, así que el
+      navegador recién se entera de que existe cuando el JS arrancó y corrió.
+      Medido en el A/B contra la base: eso costaba 1.052 ms de LCP. Y
+      precargar la pieza de 249 KB tal cual arreglaba el LCP pero le robaba el
+      ancho de banda al resto: FCP +352 ms y primer producto comprable +529 ms.
+      Por eso el teléfono recibe la derivada de 35 KB —la MISMA fotografía al
+      tamaño que la banda usa de verdad— y sólo el teléfono, porque en
+      escritorio el hero cae fuera del primer pantallazo.
+      El archivo tiene que ser EL MISMO que declara `HOME_HERO_PROMO.bandImage`;
+      lo verifica tests/home-hero-preload.test.mjs.
+    -->
+    <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
+    <link rel="stylesheet" href="styles.css?v=52" />
+  </head>
+  <!--
+    La vista activa se declara ya en el shell servido. `renderNavigation` la
+    sobrescribe en cada navegación, pero sin este valor inicial la home pintaba
+    un fotograma con la superficie clara antes de que el módulo arrancara: un
+    destello blanco justo en la pantalla más vista del producto.
+  -->
+  <body data-active-view="home">
+    <div class="app-shell">
+      <header class="topbar">
+        <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio del comercio">
+          <span class="brand-text">
+            <strong class="brand-word" data-business-name>La Taba 2</strong>
+            <small data-business-subtitle>Tienda de bebidas</small>
+          </span>
+        </button>
+
+        <div class="topbar-mid">
+          <nav class="desktop-nav" aria-label="Navegación principal">
+            <button type="button" data-nav-view="home">Inicio</button>
+            <button type="button" data-nav-view="catalog">Categorías</button>
+            <button type="button" data-nav-view="cart">Pedidos <span class="mini-badge" data-cart-count>0</span></button>
+            <button type="button" data-nav-view="tracking">Seguir</button>
+            <button type="button" data-nav-view="profile">Cuenta</button>
+          </nav>
+
+          <!--
+            Contexto operativo: reemplaza al control de dirección del cliente
+            en Negocio y Repartidor. El panel del local nunca muestra "Enviar a"
+            ni la dirección de un cliente: muestra qué local se está operando y
+            el estado real de sincronización.
+          -->
+          <div class="topbar-ops" data-topbar-ops hidden>
+            <span class="topbar-ops-copy">
+              <small class="topbar-ops-label">
+                <span class="ops-label-full" data-topbar-ops-label>OPERACIÓN DEL LOCAL</span>
+                <span class="ops-label-short" data-topbar-ops-label-short>OPERACIÓN</span>
+              </small>
+              <strong class="topbar-ops-context">
+                <span class="ops-context-full" data-topbar-ops-context>La Taba 2</span>
+                <span class="ops-context-short" data-topbar-ops-context-short>Cola al día</span>
+                <span class="ops-context-mini" data-topbar-ops-context-mini>Cola al día</span>
+              </strong>
+            </span>
+            <button class="rt-chip topbar-ops-sync" type="button" data-retry-relay data-realtime-sync="business">
+              Sólo este equipo
+            </button>
+            <!--
+              Sonido: la función más crítica del turno vive en la barra de
+              contexto, no en una fila propia de la cola. Un único nodo para
+              todas las secciones del panel.
+            -->
+            <button class="topbar-ops-sound" type="button" data-sound-toggle aria-pressed="false" hidden>
+              <span class="topbar-ops-sound-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                  <path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" fill="currentColor" />
+                  <path d="M16 9.2a4 4 0 0 1 0 5.6M18.6 6.6a7.6 7.6 0 0 1 0 10.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+              </span>
+              <strong class="topbar-ops-sound-count" data-sound-count hidden></strong>
+            </button>
+          </div>
+
+          <!--
+            La dirección del cliente absorbe la tarjeta de 92px del home:
+            control de 44px con etiqueta pequeña, valor truncado y chevron.
+            Sin `aria-label`: el nombre accesible es el texto visible, que es
+            exactamente lo que se lee en pantalla (WCAG 2.5.3).
+          -->
+          <button class="topbar-address" type="button" data-home-address data-nav-view="profile" data-nav-passive>
+            <span class="address-chip-ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                <path d="M12 21.3s-6.6-6.3-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 4.8-6.6 11.1-6.6 11.1Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <circle cx="12" cy="9.9" r="2.3" fill="currentColor"/>
+              </svg>
+            </span>
+            <span class="address-chip-text">
+              <small>ENVIAR A</small>
+              <strong data-home-address-label>Elegí tu dirección</strong>
+            </span>
+            <span class="topbar-address-chevron" aria-hidden="true">›</span>
+          </button>
+        </div>
+
+        <label class="topbar-search" aria-label="Buscar en TABA2">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" aria-hidden="true">
+            <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="1.8" />
+            <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+          <input data-search-input data-search-jump type="search" placeholder="Buscar bebidas, marcas o presentaciones" />
+        </label>
+
+        <div class="topbar-actions">
+          <button class="primary-button compact cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
+            <span class="cart-button-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M3 4h2l2.1 10.15a2 2 0 0 0 1.96 1.6h7.94a2 2 0 0 0 1.93-1.47L20.5 9H7.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M9.5 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm8 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" fill="currentColor" stroke="currentColor" />
+              </svg>
+              <span class="cart-button-count" data-cart-count>0</span>
+            </span>
+            <span class="cart-button-copy">
+              <small>Mi pedido</small>
+              <strong data-cart-total-small>$0</strong>
+            </span>
+            <span class="cart-button-arrow" aria-hidden="true">›</span>
+          </button>
+        </div>
+      </header>
+
+      <!--
+        Los dos avisos finos de instalación —uno para Android y otro para iOS—
+        vivían acá y se fueron a `<dialog data-install-sheet>`, al final del
+        shell. No fue un cambio de estilo: eran una tira de 16 px de alto
+        anclada abajo a la derecha, que en un teléfono se superponía con la
+        barra flotante del carrito y competía con ella por el mismo pulgar. La
+        invitación es UNA sola y ahora es una hoja inferior.
+      -->
+
+      <div class="pwa-banner pwa-banner-offline" data-pwa-offline-banner hidden role="status">
+        <strong>Sin conexión</strong>
+        <small>Revisá internet e intentá nuevamente.</small>
+      </div>
+
+      <div class="pwa-banner pwa-banner-update" data-app-update-banner hidden role="status" aria-live="polite">
+        <span class="pwa-banner-copy">
+          <strong>Hay una actualización disponible</strong>
+          <small>Incluye mejoras para tu pedido y seguimiento.</small>
+        </span>
+        <button class="primary-button compact" type="button" data-app-update-now>Actualizar ahora</button>
+        <button class="pwa-banner-dismiss" type="button" data-app-update-dismiss aria-label="Cerrar aviso de actualización">✕</button>
+      </div>
+
+      <main data-app-main inert aria-busy="true">
+        <!--
+          El panel vive en el shell servido para que un import fallido, un
+          storage bloqueado o un worker viejo tengan salida en vez de dejar el
+          encabezado sobre un main vacío.
+
+          Nace OCULTO. Antes nacía visible y lo escondía el bootstrap: en un
+          teléfono lento eso significaba que la primera pantalla de la tienda
+          era un cartel de error que después desaparecía solo. Ahora lo muestra
+          `startup-recovery.js` cuando el arranque falla de verdad —el módulo no
+          baja, el módulo revienta, o pasan los segundos del plazo sin que la
+          aplicación llegue a pintar—.
+
+          El código técnico no se muestra: viaja en el atributo y en la consola
+          para diagnóstico, y lo que lee el cliente es qué puede hacer ahora.
+        -->
+        <section class="card app-recovery" data-app-recovery data-app-recovery-code="TABA2-BOOT-01" role="alert" aria-live="assertive" hidden>
+          <div class="app-recovery-mark" aria-hidden="true">!</div>
+          <div class="app-recovery-copy">
+            <strong>No pudimos abrir la tienda</strong>
+            <p data-app-recovery-message>Puede ser tu conexión. Probá de nuevo: tu pedido no se perdió.</p>
+          </div>
+          <div class="app-recovery-actions">
+            <button class="primary-button compact" type="button" data-app-recovery-retry>Reintentar</button>
+            <button class="secondary-button compact" type="button" data-app-recovery-reset hidden>Reiniciar prueba</button>
+          </div>
+        </section>
+        <section class="section app-view app-home taba-home is-active" data-view="home" aria-hidden="false">
+          <div class="card empty-state" data-production-catalog-gate hidden role="status">
+            <strong>Pedidos online no disponibles</strong>
+            <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
+          </div>
+          <div class="taba-home-content" data-catalog-dependent hidden>
+            <!--
+              Encabezado de marca de La Taba 2. Todo lo que afirma sale del
+              modelo real: nombre, dirección, horario y estado provienen de
+              `businessConfig`; ninguno se escribe acá. Los que no estén
+              publicados no se muestran (fail-closed), no se inventan.
+            -->
+            <section class="taba-home-hero brand-hero" aria-labelledby="home-title">
+              <!--
+                Fila 1 — IDENTIDAD EN UN RENGLÓN. Antes el encabezado gastaba
+                tres: "¡Bienvenido a", el nombre a 40px y el rubro/dirección.
+                Medido a 320px, el primer precio de la vidriera caía en 658px
+                con el pliegue útil en 656: NINGÚN precio entraba en la primera
+                pantalla. El nombre del comercio ya está en la barra superior,
+                así que acá deja de repetirse en grande y cede su altura al
+                producto. Sigue siendo el h1 de la vista y sigue saliendo de
+                `businessConfig`: se achica la tipografía, no la verdad.
+              -->
+              <div class="brand-hero-id">
+                <h1 id="home-title"><span data-business-name>La Taba 2</span></h1>
+                <p class="brand-hero-place" data-home-business-place>Tu autoservicio de bebidas</p>
+                <p class="brand-hero-state">
+                  <span class="brand-state-chip" data-open-status>Pedidos online</span>
+                  <span class="brand-hero-hours" data-home-business-hours hidden></span>
+                </p>
+              </div>
+              <!--
+                Fila 2 — HISTORIAS. Fila de círculos compactos: el emblema con
+                su aro abre el visor y cada historia publicada tiene el suyo,
+                con miniatura real y el nombre de su destino debajo. Antes el
+                emblema compartía la fila con una tarjeta ancha —"Novedades de
+                hoy"— que ocupaba el 78% del renglón para decir cuántas había
+                sin mostrar NINGUNA.
+                Caja del logo reservada por CSS para que el estado de historias
+                no mueva el layout. El logo es BOTÓN sólo cuando hay historias
+                publicadas; sin ellas es una imagen decorativa que no se anuncia
+                como control, y la fila entera queda vacía (fail-closed).
+              -->
+              <div class="brand-stories-strip" data-stories-strip>
+                <span class="brand-logo-slot" data-stories-slot data-stories-state="empty">
+                  <span class="brand-logo brand-logo-static" data-stories-static>
+                    <span class="brand-logo-ring" aria-hidden="true"></span>
+                    <span class="brand-logo-face" aria-hidden="true">
+                      <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="100" height="100" alt="" decoding="async" />
+                    </span>
+                  </span>
+                  <button class="brand-logo brand-logo-action" type="button" data-stories-open hidden>
+                    <span class="brand-logo-ring" aria-hidden="true"></span>
+                    <span class="brand-logo-face" aria-hidden="true">
+                      <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="100" height="100" alt="" decoding="async" />
+                    </span>
+                  </button>
+                </span>
+                <span class="brand-stories-items" data-stories-items></span>
+              </div>
+            </section>
+
+            <div data-home-active-order hidden></div>
+
+            <!--
+              HERO COMERCIAL. Sube al lugar que le corresponde: es lo primero
+              que tiene que generar ganas después de saber dónde estoy. Antes
+              vivía 1.900px más abajo, o sea después de tres carruseles, y en la
+              práctica no lo veía nadie. Fail-closed como siempre: sin categoría
+              con producto comprable, el hueco no ocupa un píxel.
+            -->
+            <div class="home-hero-promo-slot" data-home-hero-promo></div>
+
+            <label class="search-box home-search taba-home-search">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+                <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+                <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              <input data-search-input data-search-jump type="search" placeholder="Buscar bebidas, marcas y ofertas…" aria-label="Buscar bebidas, marcas y ofertas" />
+            </label>
+
+            <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip aria-label="Categorías de bebidas"></div>
+
+            <!--
+              DESTACADOS abre la vidriera: es el primer tramo COMPRABLE y tiene
+              que caer sobre el pliegue. Antes lo precedía "Ofertas del día",
+              que sin una promoción vigente queda `hidden` pero igual reservaba
+              el lugar de arriba para un bloque que casi nunca existe.
+            -->
+            <!--
+              `data-glow-shelf`: este rail es la PRIMERA gondola que ve un cliente,
+              asi que es uno de los dos estantes que llevan el brillo rojo. La
+              intensidad la calcula js/motion.js con la posicion de ESTE bloque
+              respecto del viewport, no con la vista activa.
+            -->
+            <section class="home-merch-section home-best-section" data-glow-shelf aria-labelledby="home-best-title">
+              <div class="home-section-head">
+                <!--
+                  Copy honesto: "Destacados" es una selección del local, no una
+                  métrica de ventas. Un nombre como "Más pedidos" exigiría
+                  pedidos completados agregados, ventana temporal explícita y
+                  volumen mínimo; no existen, así que no se afirman.
+                -->
+                <div class="home-section-title">
+                  <h2 id="home-best-title">Destacados</h2>
+                  <small>Selección del local</small>
+                </div>
+                <!--
+                  P1-1 (auditoría comercial): la CTA sigue a la FUENTE real del
+                  rail. Sin productos `popular` publicados el rail muestra la
+                  selección comprable, así que "Ver todos" abre el catálogo
+                  completo; `renderHomeBestSellers` la re-apunta a `popular`
+                  sólo cuando esa colección existe. Antes apuntaba fijo a
+                  `popular` (sin datos) y la primera CTA comercial de la home
+                  aterrizaba en "0 productos": una tienda declarándose vacía.
+                -->
+                <button type="button" data-category-id="all">Ver todos</button>
+              </div>
+              <div class="home-best-sellers offers-rail" data-home-best-sellers data-offers-rail></div>
+            </section>
+
+            <!--
+              COMBOS. Armados sobre componentes con precio y stock confirmados;
+              el precio individual, el promocional, el ahorro y el stock los
+              deriva `core/combos.js` del catálogo vivo, así que la tarjeta no
+              puede prometer un ahorro que dejó de existir. Una sección sin
+              combos armables queda oculta: nunca aparece un rail vacío.
+            -->
+            <!--
+              VOLVER A PEDIR va acá y no al final.
+              Estaba como último bloque de la home, a 2411px de una página de
+              2775: quien ya compró tenía que recorrer casi tres pantallas para
+              encontrar el único atajo pensado para él. Y no va más arriba
+              porque "Destacados" es el primer tramo comprable y tiene que caer
+              sobre el pliegue: la recompra no puede desplazar a la vidriera
+              comercial, que es lo que ve quien entra por primera vez.
+              Acá queda inmediatamente después del primer carrusel: a un scroll
+              corto, sin haber corrido nada de lo que estaba arriba.
+              El bloque sólo existe con un pedido anterior real; sin historial
+              el contenedor queda vacío y no ocupa lugar.
+            -->
+            <div class="home-reorder-slot" data-customer-actions></div>
+
+            <section class="home-merch-section home-combos-section" data-home-combos-section aria-labelledby="home-combos-title" hidden>
+              <div class="home-section-head">
+                <div class="home-section-title">
+                  <h2 id="home-combos-title">Combos</h2>
+                  <small data-home-combos-subtitle>Armados por el local</small>
+                </div>
+              </div>
+              <div class="home-combos-rail offers-rail" data-combos-rail></div>
+            </section>
+
+            <section class="home-merch-section home-offers-section" aria-labelledby="home-promotions-title">
+              <div class="home-section-head">
+                <h2 id="home-promotions-title">Ofertas del día</h2>
+                <button type="button" data-category-id="promos">Ver todas</button>
+              </div>
+              <button class="home-live-promotion" type="button" data-category-id="promos" data-promo-banner hidden>
+                <span data-promo-banner-image aria-hidden="true"></span>
+                <span>
+                  <small>Promoción vigente</small>
+                  <strong data-promo-banner-title>Promoción TABA2</strong>
+                  <span data-promo-banner-includes></span>
+                  <span data-promo-banner-price></span>
+                  <em data-promo-banner-save hidden></em>
+                </span>
+              </button>
+              <div class="home-promotions-rail" data-home-promotions></div>
+              <div class="home-paging-dots" data-home-paging-dots aria-hidden="true" hidden></div>
+            </section>
+
+            <!--
+              Banner editorial. No afirma un descuento: es una puerta a una
+              categoría que EXISTE y tiene productos comprables. Si ninguna
+              califica, el contenedor queda vacío y no ocupa espacio.
+              Va DESPUÉS del primer tramo de producto: el presupuesto de altura
+              del primer pantallazo es para bebidas, no para vidriera.
+            -->
+            <div class="home-brand-banners" data-home-banners></div>
+
+            <!--
+              Carruseles por sección de bebidas. El orden y el contenido salen
+              de core/beverage-home-sections.js; una sección sin productos no se
+              renderiza, así que no quedan huecos.
+            -->
+            <div class="home-sections" data-home-sections></div>
+
+            <!--
+              SELECCIÓN DEL LOCAL. Los rubros premium —whisky, fernet, vinos,
+              gin, aperitivos— existen en el catálogo pero todavía no publican
+              precio, así que no pueden ser carrusel comprable ni chip. Acá se
+              muestran con su tarjeta real: marca, nombre, presentación y el
+              precio SI existe; si no, el estado honesto ("Precio a confirmar")
+              y una CTA que abre la ficha en vez de un botón de compra que
+              fallaría. Ninguna afirma oferta, porcentaje ni precio tachado.
+            -->
+            <section class="home-merch-section home-editorial-section" data-home-editorial-section aria-labelledby="home-editorial-title" hidden>
+              <div class="home-section-head">
+                <div class="home-section-title">
+                  <h2 id="home-editorial-title">Selección del local</h2>
+                  <!--
+                    "Bodega y destilados" cubre lo que el tramo muestra de
+                    verdad: vinos y espumantes por un lado, whisky, gin, fernet
+                    y aperitivos por el otro. Decía "Vinos, whisky y
+                    aperitivos" y dejaba afuera tres rubros que sí aparecen.
+                  -->
+                  <small>Bodega y destilados</small>
+                </div>
+                <button type="button" data-category-id="all">Ver todos</button>
+              </div>
+              <div class="home-best-sellers offers-rail" data-home-editorial-rail></div>
+            </section>
+
+            <button class="order-now-cta" type="button" data-nav-view="catalog">
+              <span>Ver catálogo completo</span>
+              <span aria-hidden="true">›</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="section app-view" data-view="catalog" hidden aria-hidden="true">
+          <div class="card empty-state" data-production-catalog-gate hidden role="status">
+            <strong>Pedidos online no disponibles</strong>
+            <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
+          </div>
+          <div data-catalog-dependent hidden>
+          <!--
+            Orden del catálogo: buscador → categorías → título del filtro con
+            el control de orden → contador → grilla. Sin eyebrow ni hero: el
+            título ES el nombre del filtro activo.
+          -->
+          <div class="search-box catalog-search">
+            <span class="catalog-search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="2" />
+                <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </span>
+            <input data-search-input type="search" placeholder="Buscar productos, marcas y más…" aria-label="Buscar productos, marcas y más" />
+            <button class="search-clear" type="button" data-clear-search aria-label="Limpiar búsqueda" hidden>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="category-strip" data-category-strip></div>
+
+          <!--
+            Título y cantidad en el MISMO renglón: son la misma frase ("Todos,
+            80 productos") y ocupaban dos filas separadas por el control de
+            orden. Junto con la fila de controles de abajo, esto le devuelve un
+            renglón entero de producto a la primera pantalla del catálogo.
+          -->
+          <div class="catalog-head catalog-toolbar">
+            <h1 class="view-title" data-catalog-title>Todos</h1>
+            <p class="catalog-count" data-catalog-count>0 productos</p>
+          </div>
+
+          <!--
+            Filtrar y ordenar son la misma tarea —acotar lo que veo— y ahora
+            comparten fila. Antes "Filtros" ocupaba una franja de 60px a lo
+            ancho, sola, encima del título: el control menos usado del catálogo
+            con el mayor gasto de altura.
+            En teléfono el panel sigue siendo un bottom sheet (ver catalog.css):
+            es el mismo <details> con los mismos <select>, no se duplica ningún
+            control ni se toca la lógica de filtrado.
+          -->
+          <div class="catalog-controls">
+          <details class="catalog-filters" data-catalog-filters>
+            <summary><span data-catalog-filter-count>Filtros</span><span aria-hidden="true">⌄</span></summary>
+            <div class="catalog-filters-sheet">
+            <div class="catalog-filter-grid">
+              <label data-catalog-filter-field="brand"><span>Marca</span><select data-catalog-filter="brand" aria-label="Filtrar por marca"></select></label>
+              <label data-catalog-filter-field="capacity"><span>Capacidad</span><select data-catalog-filter="capacity" aria-label="Filtrar por capacidad"></select></label>
+              <label data-catalog-filter-field="presentation"><span>Presentación</span><select data-catalog-filter="presentation" aria-label="Filtrar por presentación"></select></label>
+              <label data-catalog-filter-field="pack"><span>Formato</span><select data-catalog-filter="pack" aria-label="Filtrar por formato"></select></label>
+              <label data-catalog-filter-field="alcohol"><span>Alcohol</span><select data-catalog-filter="alcohol" aria-label="Filtrar por alcohol"></select></label>
+              <label data-catalog-filter-field="availability"><span>Disponibilidad</span><select data-catalog-filter="availability" aria-label="Filtrar por disponibilidad"></select></label>
+              <label data-catalog-filter-field="price"><span>Precio</span><select data-catalog-filter="price" aria-label="Filtrar por estado de precio"></select></label>
+              <label data-catalog-filter-field="promotion"><span>Promoción</span><select data-catalog-filter="promotion" aria-label="Filtrar por promoción"></select></label>
+            </div>
+            <!--
+              Cierre del panel. En teléfono el bloque es un bottom sheet y un
+              sheet sin acciones no dice cómo se sale: el filtro se aplica al
+              instante (los <select> disparan el filtrado), pero el cliente no
+              tiene forma de saber que ya terminó. "Aplicar" no aplica nada
+              nuevo —cierra— y por eso dice exactamente eso: cierra el panel y
+              devuelve el resultado. "Limpiar" existe siempre; sin filtros
+              activos queda deshabilitado en vez de desaparecer, así el par de
+              botones no cambia de forma entre estados.
+            -->
+            <div class="catalog-filters-actions">
+              <button class="ghost-button compact" type="button" data-reset-catalog-filters disabled>Limpiar</button>
+              <button class="primary-button compact" type="button" data-close-catalog-filters>Aplicar</button>
+            </div>
+            </div>
+          </details>
+            <label class="sort-field" data-sort-field>
+              <span class="sort-field-label"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 5h11M7 12h8M7 19h5M4 5h.01M4 12h.01M4 19h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg><span class="sort-label-full">Ordenar por</span><span class="sort-label-short">Ordenar</span><span class="sort-value" data-sort-value></span></span>
+              <span class="sort-select-wrap"><select data-sort-select aria-label="Ordenar productos">
+                <option value="recommended">Recomendados</option>
+                <option value="price_asc">Menor precio</option>
+                <option value="popular">Destacados</option>
+              </select></span>
+            </label>
+          </div>
+
+          <div class="grid-block">
+            <!-- El otro estante con brillo: la grilla principal del catalogo. -->
+            <div class="product-grid" data-product-grid data-glow-shelf></div>
+          </div>
+          </div>
+        </section>
+
+        <section class="section app-view soft" data-view="cart" hidden aria-hidden="true">
+          <div class="card empty-state" data-production-catalog-gate hidden role="status">
+            <strong>Pedidos online no disponibles</strong>
+            <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
+          </div>
+          <div data-catalog-dependent hidden>
+          <div class="section-head">
+            <div>
+              <h1 class="view-title">Tu pedido</h1>
+            </div>
+            <div class="view-actions">
+              <button class="secondary-button compact" type="button" data-nav-view="catalog">Seguir comprando</button>
+              <button class="ghost-button compact" type="button" data-clear-cart>Vaciar carrito</button>
+            </div>
+          </div>
+
+          <!--
+            AVISO DEL PEDIDO — en el layout, no encima de él.
+            El aviso flotante se anclaba a `top: 76px` en esta vista y tapaba el
+            encabezado "Tu pedido" durante los 2,2 s que dura. Medido: cruzaba
+            con el título en 390x844 y en WebKit/iPhone. Anclarlo abajo no
+            arregla nada —ahí tapa las líneas del carrito, también medido—.
+            Acá el aviso es una banda REAL del layout: reserva su alto mientras
+            el carrito tiene productos, así que aparecer y desaparecer no mueve
+            nada, y por definición no puede tapar nada. La banda vive ARRIBA de
+            las líneas, así que tampoco se mueve nada bajo el dedo que acaba de
+            tocar "+".
+            Es la región viva de esta vista: mientras el carrito está activo, el
+            aviso flotante queda fuera del árbol y éste es el único que anuncia.
+          -->
+          <div class="cart-notice" data-cart-notice role="status" aria-live="polite"></div>
+
+          <div class="checkout-layout">
+            <div class="card cart-card">
+              <h3>Productos</h3>
+              <div data-cart-list></div>
+              <div data-cart-minimum-progress></div>
+              <section class="cart-recommendations" data-cart-recommendations hidden aria-labelledby="cart-recommendations-title"></section>
+            </div>
+
+            <form class="card checkout-form" data-checkout-form novalidate>
+              <div class="checkout-heading">
+                <span>Finalizá en pocos pasos</span>
+                <h3 data-checkout-details-title>Datos de entrega</h3>
+              </div>
+              <div class="delivery-mode">
+                <label data-fulfillment-option="delivery">
+                  <input type="radio" name="deliveryMode" value="delivery" checked />
+                  <span>Delivery</span>
+                </label>
+                <label data-fulfillment-option="pickup">
+                  <input type="radio" name="deliveryMode" value="pickup" />
+                  <span>Retiro en local</span>
+                </label>
+              </div>
+
+              <!--
+                El cliente y sus direcciones se administran exclusivamente en
+                Perfil. El checkout sólo lee: no existe un segundo formulario
+                editable que pueda convertirse en otra fuente de verdad. Los
+                campos ocultos siguen alimentando el snapshot del pedido y se
+                sincronizan desde el Perfil y la dirección elegida.
+              -->
+              <input type="hidden" name="customerName" />
+              <input type="hidden" name="customerPhone" />
+
+                <div class="address-fields" data-address-field>
+                  <input type="hidden" name="customerStreetAddress" />
+                  <input type="hidden" name="customerNeighborhood" />
+                  <input type="hidden" name="customerReference" />
+                  <input type="hidden" name="customerAddress" />
+                  <input type="hidden" name="customerAddressId" />
+                  <input type="hidden" name="customerAddressLabel" />
+                  <input type="hidden" name="deliveryStreet" />
+                  <input type="hidden" name="deliveryStreetNumber" />
+                  <input type="hidden" name="deliveryFloor" />
+                  <input type="hidden" name="deliveryApartment" />
+                  <input type="hidden" name="deliveryCity" />
+                  <input type="hidden" name="deliveryNeighborhood" />
+                  <input type="hidden" name="deliveryProvince" />
+                  <input type="hidden" name="deliveryPostalCode" />
+                  <input type="hidden" name="deliveryLatitude" />
+                  <input type="hidden" name="deliveryLongitude" />
+                  <input type="hidden" name="deliveryGeolocationAccuracy" />
+                  <input type="hidden" name="deliveryAddressSource" value="manual" />
+                  <input type="hidden" name="deliveryLocationSource" />
+                  <input type="hidden" name="deliveryLocationConfirmedAt" />
+                  <div data-customer-addresses hidden></div>
+                </div>
+
+              <label class="checkout-payment-field">
+                Forma de pago
+                <select name="paymentMethod" aria-label="Forma de pago">
+                  <!-- Las opciones tienen que estar en el CHECK
+                       `orders_payment_method_valid` de la base
+                       (20260806170000_order_payment_modality_integrity.sql).
+                       «Transferencia al confirmar» estaba acá y NO estaba en el
+                       CHECK: el pedido se rechazaba al insertarse y la persona
+                       veía un error genérico después de completar todo el
+                       checkout. Volver a ofrecer transferencia exige primero el
+                       flujo real (datos bancarios, comprobante, quién
+                       confirma) y su migración; agregar la opción sola
+                       reabre el mismo pozo.
+                       El test `payment-methods-contract` sostiene esta lista. -->
+                  <option value="coordinate">A coordinar con el local</option>
+                  <option value="cash">Efectivo al recibir</option>
+                </select>
+                <small>El medio se confirma antes de preparar el pedido.</small>
+              </label>
+
+              <details class="checkout-instructions">
+                <summary>Agregar indicaciones</summary>
+                <div class="checkout-instructions-fields">
+                  <label>
+                    Observaciones del pedido
+                    <textarea name="customerNotes" rows="3" placeholder="Ej: indicaciones para preparar o entregar el pedido"></textarea>
+                  </label>
+                </div>
+              </details>
+
+              <label class="remember-customer-row age-confirmation" data-age-confirmation hidden>
+                <input type="checkbox" name="ageConfirmed" />
+                <span>
+                  <strong data-age-confirmation-title>Confirmo que soy mayor de 18 años</strong>
+                  <small>Presentaremos esta validación únicamente para productos con alcohol.</small>
+                </span>
+              </label>
+
+              <div class="summary-box" data-order-summary></div>
+              <div
+                class="warning-box hidden"
+                id="checkout-error"
+                data-checkout-warning
+                role="alert"
+                aria-live="assertive"
+                tabindex="-1"
+              ></div>
+
+              <div class="trust-row" aria-hidden="false">
+                <span class="trust-text"><strong data-checkout-trust-title>Revisá tus datos.</strong><small data-checkout-trust-copy>Vas a ver el avance del pedido desde TABA2.</small></span>
+              </div>
+
+              <div class="button-row">
+                <button class="primary-button confirm-button" type="submit" data-checkout-submit>
+                  Continuar
+                </button>
+              </div>
+              <p class="form-hint" data-checkout-mode-note>El medio de pago se coordina con el local.</p>
+            </form>
+          </div>
+          </div>
+        </section>
+
+        <section class="section app-view" data-view="tracking" hidden aria-hidden="true">
+          <div data-tracking-panel></div>
+        </section>
+
+        <section class="section app-view soft" data-view="profile" hidden aria-hidden="true">
+          <div class="section-head profile-page-head">
+            <!--
+              Segunda entrada a las historias, con el MISMO contrato que la de
+              la home: `renderStoryEntry` pinta todos los slots a la vez, así
+              que el aro, el estado y la etiqueta no pueden divergir entre las
+              dos. Sin historias publicadas el logo vuelve a ser una imagen y
+              deja de anunciarse como control.
+            -->
+            <span class="brand-logo-slot profile-stories-slot" data-stories-slot data-stories-state="empty">
+              <span class="brand-logo brand-logo-static" data-stories-static>
+                <span class="brand-logo-ring" aria-hidden="true"></span>
+                <span class="brand-logo-face" aria-hidden="true">
+                  <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="64" height="64" alt="" decoding="async" />
+                </span>
+              </span>
+              <button class="brand-logo brand-logo-action" type="button" data-stories-open hidden>
+                <span class="brand-logo-ring" aria-hidden="true"></span>
+                <span class="brand-logo-face" aria-hidden="true">
+                  <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="64" height="64" alt="" decoding="async" />
+                </span>
+              </button>
+            </span>
+            <div>
+              <p class="eyebrow">Tu cuenta</p>
+              <h1 class="view-title">Mi perfil</h1>
+              <p class="profile-lead">Tus datos se usarán para preparar y entregar tus pedidos.</p>
+            </div>
+          </div>
+          <div data-customer-profile></div>
+
+          <!--
+            La puerta de atrás de la instalación, y por eso está acá y no en un
+            aviso: quien tocó "Ahora no" no vuelve a ver la invitación
+            automática nunca más, así que si esta entrada no existiera la
+            decisión sería irreversible. Nace oculta y la muestra
+            `js/pwa-install-ui.js` sólo cuando hay una instalación REAL que
+            ofrecer: con la app ya instalada, o en un navegador que no puede
+            instalarla, la tarjeta no se dibuja.
+          -->
+          <section class="card profile-install-card" data-install-entry hidden>
+            <span class="profile-install-mark" aria-hidden="true">
+              <img src="assets/brand/taba-app-icon-192.png" width="44" height="44" alt="" decoding="async" />
+            </span>
+            <div class="profile-install-copy">
+              <strong data-install-entry-title>Instalar La Taba</strong>
+              <small data-install-entry-copy>Abrila como una app, sin buscar la página cada vez.</small>
+            </div>
+            <button class="secondary-button profile-install-action" type="button" data-install-entry-action>
+              <span data-install-entry-action-label>Instalar</span>
+            </button>
+          </section>
+
+          <details class="card profile-business-details">
+            <summary>Información del local</summary>
+            <div class="profile-business-details-body">
+              <ul class="info-list">
+                <li><span>Local</span><strong data-business-profile-name>La Taba 2</strong></li>
+                <li><span>Dirección</span><strong data-business-address>A confirmar con el local</strong></li>
+                <li data-business-maps-item hidden><span>Cómo llegar</span><a data-business-maps-link href="#" target="_blank" rel="noopener noreferrer">Abrir en Google Maps</a></li>
+                <li><span>Horarios</span><strong data-business-hours>A confirmar con el local</strong></li>
+                <li><span>Zona de entrega</span><strong data-business-zone>A confirmar con el local</strong></li>
+                <li><span>Pedido mínimo delivery</span><strong data-min-order>$0</strong></li>
+                <li><span>Costo de envío</span><strong data-delivery-fee>$0</strong></li>
+                <li><span>WhatsApp</span><strong data-business-whatsapp>A confirmar</strong></li>
+                <li><span>Medios de pago</span><strong>Pago a coordinar con el local</strong></li>
+                <li><span>Retiro en local</span><strong>A coordinar con el local</strong></li>
+              </ul>
+            </div>
+          </details>
+        </section>
+
+        <section class="section app-view admin-section" data-view="business" data-operational-only hidden aria-hidden="true">
+          <div class="card admin-lock-card" data-admin-locked data-demo-auth-only>
+            <div>
+              <p class="eyebrow">Negocio</p>
+              <h1>Ingresá para administrar pedidos</h1>
+              <p>Panel de ventas, stock y estados del día para el equipo del comercio.</p>
+            </div>
+            <div class="button-row">
+              <button class="primary-button" type="button" data-open-pin data-admin-target="business">Ingresar código</button>
+              <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
+            </div>
+          </div>
+
+          <div class="card admin-lock-card production-auth-card" data-production-only data-production-auth-card="business" hidden>
+            <div data-production-auth-intro>
+              <p class="eyebrow">Negocio</p>
+              <h1>Acceso seguro requerido</h1>
+              <p>Ingresá con una cuenta owner o empleado vinculada a este comercio.</p>
+            </div>
+            <form class="production-auth-form" data-production-auth-form="business">
+              <label>
+                Email
+                <input name="email" type="email" autocomplete="username" required />
+              </label>
+              <label>
+                Contraseña
+                <input name="password" type="password" autocomplete="current-password" required />
+              </label>
+              <p class="form-hint" data-production-auth-message role="status" hidden></p>
+              <div class="button-row">
+                <button class="primary-button" type="submit">Ingresar</button>
+                <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
+              </div>
+            </form>
+            <!-- Alta autogestionada: crear la cuenta, pedir acceso y esperar.
+                 Lo dibuja production-operations.js según lo que contestó el
+                 backend; el HTML sólo reserva el lugar. -->
+            <div class="panel-access-region" data-panel-access-registration hidden></div>
+          </div>
+
+          <div class="production-workspace" data-production-only data-production-workspace="business" hidden aria-hidden="true"></div>
+
+          <div data-admin-unlocked hidden>
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Operación del local</p>
+                <h1>Central de pedidos</h1>
+              </div>
+              <div class="view-actions">
+                <button class="secondary-button compact" type="button" data-open-admin-view="rider">Vista rider</button>
+                <button class="ghost-button compact" type="button" data-lock-admin>Salir</button>
+              </div>
+            </div>
+            <div data-business-dashboard></div>
+          </div>
+        </section>
+
+        <section class="section app-view admin-section" data-view="rider" data-operational-only hidden aria-hidden="true">
+          <div class="card admin-lock-card" data-admin-locked data-demo-auth-only>
+            <div>
+              <p class="eyebrow">Repartidor</p>
+              <h1>Ingresá para ver entregas</h1>
+              <p>Vista operativa para salida del local, llegada al domicilio y entrega final.</p>
+            </div>
+            <div class="button-row">
+              <button class="primary-button" type="button" data-open-pin data-admin-target="rider">Ingresar código</button>
+              <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
+            </div>
+          </div>
+
+          <div class="card admin-lock-card production-auth-card" data-production-only data-production-auth-card="rider" hidden>
+            <div>
+              <p class="eyebrow">Repartidor</p>
+              <h1>Acceso seguro requerido</h1>
+              <p>Ingresá con una cuenta rider activa de este comercio.</p>
+            </div>
+            <form class="production-auth-form" data-production-auth-form="rider">
+              <label>
+                Email
+                <input name="email" type="email" autocomplete="username" required />
+              </label>
+              <label>
+                Contraseña
+                <input name="password" type="password" autocomplete="current-password" required />
+              </label>
+              <p class="form-hint" data-production-auth-message role="status" hidden></p>
+              <div class="button-row">
+                <button class="primary-button" type="submit">Ingresar</button>
+                <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="production-workspace" data-production-only data-production-workspace="rider" hidden aria-hidden="true"></div>
+
+          <div data-admin-unlocked hidden>
+            <div class="section-head rider-section-head">
+              <div>
+                <p class="eyebrow">Repartidor de <span data-rider-business-name>La Taba 2</span></p>
+                <h1 class="rider-title">Mis entregas</h1>
+              </div>
+            </div>
+            <div data-delivery-panel></div>
+          </div>
+        </section>
+      </main>
+
+      <button class="floating-cart hidden" type="button" data-floating-cart data-open-cart aria-live="polite">
+        <span class="floating-cart-copy">
+          <span class="floating-cart-label" data-floating-cart-label>Ver carrito</span>
+          <span class="floating-cart-meta">
+            <small data-floating-cart-count></small>
+            <span class="floating-cart-saving" data-floating-cart-saving hidden></span>
+            <span class="floating-cart-original" data-floating-cart-original hidden></span>
+          </span>
+        </span>
+        <strong data-floating-cart-summary>$0</strong>
+      </button>
+
+      <!--
+        Cinco rutas REALES, una por control y sin repetir destino: el ancla de
+        marca del centro ES el inicio, así que `data-nav-view="home"` sigue
+        siendo único en la barra y `aria-current="page"` apunta a un solo
+        control. El quinto lugar lo ocupa el carrito, que hasta ahora sólo era
+        alcanzable desde la barra flotante o el app bar.
+      -->
+      <nav class="mobile-nav" aria-label="Navegación móvil">
+        <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
+        <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguir</span></button>
+        <button class="mn-brand" type="button" data-nav-view="home">
+          <span class="mn-brand-disc" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" focusable="false">
+              <path d="M4 9.5 5.6 5h12.8L20 9.5" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+              <path d="M5.4 9.5h13.2V19a1 1 0 0 1-1 1H6.4a1 1 0 0 1-1-1V9.5Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+              <path d="M10 20v-4.6h4V20" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="mn-label" data-business-name>La Taba 2</span>
+        </button>
+        <button type="button" data-nav-view="cart"><span class="mn-ico icon-cart" aria-hidden="true"></span><span class="mn-label">Carrito</span><span class="mn-badge" data-cart-count>0</span></button>
+        <button type="button" data-nav-view="profile"><span class="mn-ico icon-profile" aria-hidden="true"></span><span class="mn-label">Perfil</span></button>
+      </nav>
+    </div>
+
+    <dialog class="product-modal" data-product-modal aria-label="Detalle del producto">
+      <div data-modal-content></div>
+    </dialog>
+
+    <!--
+      Detalle del combo. Muestra lo que la tarjeta no puede: la lista completa
+      de componentes con su cantidad y su precio de lista, el ahorro contra la
+      suma de esos precios, qué se puede sustituir sin costo y cuántas unidades
+      sostiene el componente limitante.
+    -->
+    <dialog class="product-modal combo-modal" data-combo-modal aria-label="Detalle del combo">
+      <div data-combo-modal-content></div>
+    </dialog>
+
+    <dialog class="checkout-suggestions-modal" data-checkout-suggestions-modal aria-labelledby="checkout-suggestions-title">
+      <div data-checkout-suggestions-content></div>
+    </dialog>
+
+    <!--
+      Historias comerciales. El diálogo existe siempre en el shell pero sólo se
+      abre cuando `js/core/stories.js` devuelve historias publicadas y vigentes.
+      Sin datos no hay entrada, no hay aro y no hay contenido: fail-closed.
+    -->
+    <dialog class="stories-modal" data-stories-modal aria-label="Historias del comercio">
+      <div data-stories-content></div>
+    </dialog>
+
+    <dialog class="pin-modal" data-pin-modal data-demo-only aria-label="Acceso del equipo">
+      <form method="dialog" class="pin-card" data-pin-form>
+        <h2>Acceso del negocio</h2>
+        <p>Ingresá el código del comercio para ver la administración de pedidos y el reparto.</p>
+        <input name="pin" inputmode="numeric" maxlength="6" placeholder="Código" autocomplete="off" aria-label="Código del modo negocio" />
+        <div class="warning-box hidden" data-pin-error>Código incorrecto. Revisá el acceso del comercio.</div>
+        <div class="button-row">
+          <button class="primary-button" type="submit">Entrar</button>
+          <button class="secondary-button" value="cancel" type="button" data-close-pin>Cancelar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="cancel-modal" data-cancel-modal aria-label="Cancelar pedido">
+      <div data-cancel-content></div>
+    </dialog>
+
+    <dialog class="cancel-modal" data-catalog-reset-modal aria-label="Restaurar catálogo">
+      <div data-catalog-reset-content></div>
+    </dialog>
+
+    <dialog class="cancel-modal" data-business-setup-reset-modal aria-label="Restaurar configuración">
+      <div data-business-setup-reset-content></div>
+    </dialog>
+
+    <dialog class="cancel-modal" data-repeat-modal aria-label="Repetir pedido">
+      <div class="pin-card">
+        <h2>Repetir pedido</h2>
+        <p>Repetir este pedido reemplazará los productos que ya tenés en el carrito.</p>
+        <div class="button-row">
+          <button class="secondary-button" type="button" data-repeat-dismiss>Cancelar</button>
+          <button class="primary-button" type="button" data-repeat-confirm>Reemplazar carrito</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="cancel-modal" data-clear-cart-modal aria-labelledby="clear-cart-title" aria-describedby="clear-cart-description">
+      <div class="pin-card">
+        <h2 id="clear-cart-title">Vaciar carrito</h2>
+        <p id="clear-cart-description">Se quitarán todos los productos de este pedido. Esta acción no afecta pedidos ya confirmados.</p>
+        <div class="button-row">
+          <button class="secondary-button" type="button" data-clear-cart-dismiss>Conservar productos</button>
+          <button class="primary-button" type="button" data-clear-cart-confirm>Vaciar carrito</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!--
+      LA INVITACIÓN A INSTALAR. Una sola hoja, tres caras.
+
+      Las tres viven en el shell servido y se muestran/ocultan con `hidden`: el
+      texto de la invitación es contenido de la tienda, no una plantilla armada
+      en JavaScript, así que se puede leer y auditar sin ejecutar nada.
+
+        · `android`   — la única cara con instalación de verdad: se abre sólo
+                        cuando el navegador ya nos entregó `beforeinstallprompt`.
+        · `ios`       — en iPhone no existe ningún prompt. Se ofrece explicar el
+                        gesto, y nada más: no se dice "instalada" hasta que una
+                        apertura POSTERIOR se detecte en standalone.
+        · `ios-steps` — el gesto, en tres pasos.
+
+      Quién la abre y cuándo lo decide `js/core/pwa-install.js`.
+    -->
+    <dialog class="install-sheet" data-install-sheet aria-label="Instalar La Taba">
+      <!--
+        `autofocus` sobre la tarjeta y no sobre un botón, a propósito.
+
+        Un `<dialog>` enfoca al abrirse el primer elemento focalizable que
+        encuentra: acá era la ✕, y el navegador le dibujaba su anillo de foco.
+        La hoja se abría con el botón de CERRAR resaltado, que es exactamente la
+        jerarquía al revés. Enfocando el contenedor —`tabindex="-1"`, no entra
+        en el orden de tabulación— el lector de pantalla anuncia igual el
+        diálogo por su `aria-label`, la primera tabulación sigue cayendo en la ✕
+        y no se resalta nada que la persona no haya pedido.
+      -->
+      <div class="install-sheet-card" tabindex="-1" autofocus>
+        <button class="install-sheet-close" type="button" data-install-close aria-label="Cerrar">✕</button>
+
+        <div class="install-sheet-view" data-install-view="android" hidden>
+          <span class="install-sheet-mark" aria-hidden="true">
+            <img src="assets/brand/taba-app-icon-192.png" width="60" height="60" alt="" decoding="async" />
+          </span>
+          <h2 class="install-sheet-title">Llevá La Taba con vos</h2>
+          <p class="install-sheet-copy">Agregá La Taba a tu celular para entrar más rápido a tus pedidos.</p>
+          <div class="install-sheet-actions">
+            <button class="primary-button install-sheet-cta" type="button" data-install-accept>Instalar La Taba</button>
+            <button class="ghost-button install-sheet-later" type="button" data-install-decline>Ahora no</button>
+          </div>
+        </div>
+
+        <div class="install-sheet-view" data-install-view="ios" hidden>
+          <span class="install-sheet-mark" aria-hidden="true">
+            <img src="assets/brand/taba-app-icon-192.png" width="60" height="60" alt="" decoding="async" />
+          </span>
+          <h2 class="install-sheet-title">Agregá La Taba a tu inicio</h2>
+          <p class="install-sheet-copy">Tené La Taba como una app en tu iPhone.</p>
+          <div class="install-sheet-actions">
+            <button class="primary-button install-sheet-cta" type="button" data-install-ios-how>Ver cómo</button>
+            <button class="ghost-button install-sheet-later" type="button" data-install-decline>Ahora no</button>
+          </div>
+        </div>
+
+        <div class="install-sheet-view" data-install-view="ios-steps" hidden>
+          <h2 class="install-sheet-title">Agregá La Taba a tu inicio</h2>
+          <!--
+            Sólo se muestra dentro del navegador embebido de otra app
+            (Instagram, WhatsApp, Facebook): ahí el menú Compartir del sistema
+            no ofrece "Agregar a pantalla de inicio", así que el primer paso
+            real es salir a Safari. Decirlo es la diferencia entre una guía y
+            mandar a alguien a buscar un botón que no existe.
+          -->
+          <p class="install-sheet-copy install-steps-lead" data-install-steps-lead hidden>
+            Estás dentro de otra aplicación. Abrí primero La Taba en <strong>Safari</strong> y seguí estos pasos.
+          </p>
+          <!--
+            El número de cada paso lo pone CSS con un contador, así que el orden
+            que ve la persona es el orden del documento y no hay dos fuentes de
+            verdad. El dibujo de al lado no es decoración: es el MISMO glifo que
+            va a tener que buscar en su teléfono.
+          -->
+          <ol class="install-steps">
+            <li>
+              <span class="install-step-body">
+                Tocá el botón <strong>Compartir</strong>
+                <span class="install-step-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                    <path d="M12 3v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <path d="m8.5 6.5 3.5-3.5 3.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M5 13v5a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <small data-install-steps-where>en la barra de abajo de Safari.</small>
+              </span>
+            </li>
+            <li>
+              <span class="install-step-body">
+                Elegí <strong>Agregar a pantalla de inicio</strong>
+                <span class="install-step-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                    <rect x="3.5" y="3.5" width="17" height="17" rx="4.5" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 8.5v7M8.5 12h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <small>Puede estar más abajo en la lista.</small>
+              </span>
+            </li>
+            <li>
+              <span class="install-step-body">
+                Confirmá <strong>Agregar</strong>
+                <span class="install-step-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                    <path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <small>Arriba a la derecha. El icono de La Taba queda en tu inicio.</small>
+              </span>
+            </li>
+          </ol>
+          <div class="install-sheet-actions">
+            <button class="primary-button install-sheet-cta" type="button" data-install-done>Entendido</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="pitch-modal" data-pitch-modal aria-labelledby="pitch-title">
+      <div class="pitch-card">
+        <p class="eyebrow"><span data-product-name>TABA2</span> · canal directo</p>
+        <h2 id="pitch-title">Tu propio canal de pedidos</h2>
+        <p class="pitch-lead" data-product-tagline>Tu sistema de pedidos directo, sin depender de apps con comisión.</p>
+
+        <ul class="pitch-list">
+          <li><strong>Pedidos ordenados</strong><span>Cada pedido llega escrito y completo: productos, total, pago y dirección.</span></li>
+          <li><strong>Catálogo propio</strong><span>Tus productos con fotos y precios, sin tener que pasar listas por chat.</span></li>
+          <li><strong>Seguimiento del pedido</strong><span>El cliente ve el avance que confirma el comercio.</span></li>
+          <li><strong>Vista del repartidor</strong><span>Dirección, cobro y entrega validada con código.</span></li>
+          <li><strong>Clientes que vuelven</strong><span>Recompra en un toque y señales de clientes frecuentes.</span></li>
+        </ul>
+
+        <section class="pitch-section">
+          <h3 class="pitch-section-title">Qué problema resuelve</h3>
+          <ul class="pitch-points">
+            <li>Tus clientes preguntan precios todo el tiempo.</li>
+            <li>Los pedidos por WhatsApp se mezclan y se pierden.</li>
+            <li>Las apps grandes cobran comisión por cada venta.</li>
+            <li>Tu catálogo no se ve profesional.</li>
+            <li>No tenés un canal de ventas propio.</li>
+            <li>No sabés quién vuelve a comprar.</li>
+          </ul>
+        </section>
+
+        <section class="pitch-section">
+          <h3 class="pitch-section-title">Qué recibe tu negocio</h3>
+          <ul class="pitch-list pitch-list-compact">
+            <li><strong>Link propio para vender</strong><span>Una dirección con tu marca para mandar por chat, bio o estados.</span></li>
+            <li><strong>Catálogo ordenado</strong><span>Categorías, fotos y precios siempre al día.</span></li>
+            <li><strong>Carrito simple</strong><span>El cliente arma el pedido solo, sin ida y vuelta.</span></li>
+            <li><strong>Pedido armado por WhatsApp</strong><span>Llega listo para confirmar, sin transcribir audios.</span></li>
+            <li><strong>Panel para gestionar pedidos</strong><span>Aceptás, preparás y despachás desde el celular.</span></li>
+            <li><strong>QR listo para imprimir</strong><span>Pegalo en el mostrador y que pidan desde la mesa o la vereda.</span></li>
+            <li><strong>Experiencia adaptable a tu marca</strong><span>Nombre, colores y catálogo a la medida de tu comercio.</span></li>
+          </ul>
+        </section>
+
+        <section class="pitch-section">
+          <h3 class="pitch-section-title">Pensado para vender más directo</h3>
+          <ul class="pitch-chips">
+            <li>Instalación rápida</li>
+            <li>Adaptado a tu comercio</li>
+            <li>Sin app para descargar</li>
+            <li>Piden desde un link o QR</li>
+            <li>Tus pedidos más ordenados</li>
+            <li>Ideal para vender más directo</li>
+          </ul>
+        </section>
+
+        <section class="pitch-section">
+          <h3 class="pitch-section-title">Planes</h3>
+          <div class="pitch-plans">
+            <article class="plan-card">
+              <span class="plan-name">Básico</span>
+              <p class="plan-desc">Catálogo + pedidos por WhatsApp ordenados.</p>
+              <span class="plan-price">Consultar implementación</span>
+            </article>
+            <article class="plan-card is-featured">
+              <span class="plan-badge">Más elegido</span>
+              <span class="plan-name">Pro</span>
+              <p class="plan-desc">Catálogo + carrito + QR + panel del negocio.</p>
+              <span class="plan-price">Consultar implementación</span>
+            </article>
+            <article class="plan-card">
+              <span class="plan-name">Premium</span>
+              <p class="plan-desc">Sistema completo con seguimiento y fidelización.</p>
+              <span class="plan-price">Consultar implementación</span>
+            </article>
+          </div>
+          <p class="form-hint pitch-plans-note">Sin pagos integrados: la implementación se coordina directo con vos.</p>
+        </section>
+
+        <div class="pitch-cta-grid">
+          <button class="primary-button" type="button" data-close-pitch>Probar la experiencia</button>
+          <button class="secondary-button" type="button" data-pitch-go="catalog">Ver experiencia cliente</button>
+          <button class="ghost-button pitch-cta-whatsapp" type="button" data-pitch-go="whatsapp" data-whatsapp-available hidden>Hablar por WhatsApp</button>
+        </div>
+      </div>
+    </dialog>
+
+    <pre class="print-ticket" data-print-ticket aria-hidden="true"></pre>
+
+    <div class="toast hidden" data-toast role="status" aria-live="polite"></div>
+
+    <script src="runtime-config.js"></script>
+    <script src="js/startup-recovery.js?v=2"></script>
+    <script
+      src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"
+      integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp"
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <script src="js/pwa-update.js?v=4"></script>
+    <script type="module" src="js/app.js?v=46"></script>
+  </body>
+</html>

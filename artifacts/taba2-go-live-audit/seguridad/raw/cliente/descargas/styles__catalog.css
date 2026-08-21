@@ -1,0 +1,1457 @@
+.app-view[data-view="catalog"] {
+  overflow-x: clip;
+}
+
+.catalog-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-bottom: 8px;
+}
+
+/* Filtrar y ordenar comparten fila: son la misma tarea. En teléfono el panel
+   de filtros es un bottom sheet, así que el disparador puede vivir en media
+   columna sin apretar nada. */
+.catalog-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* En escritorio los filtros NO son un sheet: se despliegan en el sitio, y ahí
+   necesitan el ancho entero para sus cuatro columnas. `display: contents`
+   devuelve los dos controles al flujo de la vista sin duplicar marcado. */
+@media (min-width: 821px) {
+  .catalog-controls {
+    display: contents;
+  }
+}
+
+.catalog-head .crumbs {
+  display: none;
+}
+
+/* El título del catálogo es el nombre del filtro activo, a 22px. */
+.catalog-head .view-title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--taba-ink);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Campo del alto único de los controles, con input a 16px (sin zoom en iOS) y
+   borde que porta información. */
+.catalog-search {
+  min-height: var(--control-h);
+  margin-bottom: 10px;
+  padding-inline: 14px;
+  border-color: var(--taba-line-strong);
+  border-radius: var(--radius-control);
+  box-shadow: none;
+}
+
+.catalog-search .catalog-search-icon {
+  display: grid;
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  place-items: center;
+  color: var(--taba-muted);
+}
+
+.catalog-search .catalog-search-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.catalog-search input {
+  min-width: 0;
+  min-height: var(--tap);
+  color: var(--taba-ink);
+  font-size: 16px;
+}
+
+.catalog-search input::placeholder {
+  color: var(--taba-muted);
+  opacity: 1;
+}
+
+.search-clear {
+  display: grid;
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 var(--tap);
+  place-items: center;
+  margin-right: -8px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--taba-muted);
+}
+
+.search-clear:hover {
+  background: var(--taba-subtle);
+  color: var(--taba-ink);
+}
+
+/* Categorías: chips de 44px con máscara de degradado en el borde derecho y
+   `scroll-snap` para que el corte nunca parezca un chip roto. La continuidad
+   se señala; no se descubre por accidente. Home y catálogo comparten
+   componente: no hay dos sistemas de categorías. */
+[data-view="catalog"] .category-strip {
+  gap: 8px;
+  margin: 0;
+  padding: 0 0 10px;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent 100%);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: 0;
+  scroll-snap-type: inline proximity;
+}
+
+[data-view="catalog"] .category-button {
+  scroll-snap-align: start;
+}
+
+/* Sin desbordamiento no hay nada que señalar: la máscara se retira. */
+@media (min-width: 900px) {
+  [data-view="catalog"] .category-strip {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+/* La misma píldora que la home: 46px, icono de 20 y etiqueta de 13. Antes el
+   catálogo usaba 44/18/13 y la home 48/22/12,5, así que cruzar de una pantalla
+   a la otra reacomodaba una fila que dice exactamente lo mismo. */
+[data-view="catalog"] .category-button {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 46px;
+  align-items: center;
+  flex-direction: row;
+  gap: 7px;
+  padding: 0 16px;
+  border-color: var(--taba-border-medium);
+  border-radius: var(--radius-pill);
+  background: var(--shelf-raised);
+  box-shadow: none;
+  color: var(--taba-ink);
+}
+
+[data-view="catalog"] .category-button:hover {
+  border-color: var(--taba-line-strong);
+  background: var(--taba-subtle);
+  box-shadow: none;
+  color: var(--taba-ink);
+}
+
+/* Activo en tinta, no en rojo: el rojo queda para la acción primaria. */
+[data-view="catalog"] .category-button.active {
+  border-color: var(--taba-ink);
+  background: var(--taba-ink);
+  box-shadow: none;
+  color: #fff;
+}
+
+[data-view="catalog"] .category-ico,
+[data-view="catalog"] .category-button.active .category-ico {
+  width: 20px;
+  height: 20px;
+  background: transparent;
+}
+
+[data-view="catalog"] .category-ico svg {
+  width: 20px;
+  height: 20px;
+}
+
+[data-view="catalog"] .category-label {
+  max-width: none;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+}
+
+[data-view="catalog"] .category-more {
+  border-style: dashed;
+}
+
+.catalog-filters {
+  margin: 0 0 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: var(--taba-warm-white);
+}
+
+.catalog-filters summary {
+  display: flex;
+  min-height: var(--control-h);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  color: var(--taba-ink);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  list-style: none;
+}
+
+.catalog-filters summary::-webkit-details-marker {
+  display: none;
+}
+
+/* El chevron de "Filtros" era el glifo "⌄" de la tipografía y el de "Ordenar"
+   un triángulo dibujado con dos bordes: dos flechas distintas en dos controles
+   hermanos de la misma fila. Acá el glifo se apaga y se dibuja la MISMA flecha,
+   con la misma tinta y el mismo tamaño. */
+.catalog-filters summary > span[aria-hidden="true"] {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-right: 2px solid var(--taba-muted);
+  border-bottom: 2px solid var(--taba-muted);
+  font-size: 0;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--ease);
+}
+
+.catalog-filters[open] summary > span[aria-hidden="true"] {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+.catalog-filters[open] summary {
+  border-bottom: 1px solid var(--taba-border-soft);
+}
+
+.catalog-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+}
+
+.catalog-filter-grid label {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  color: var(--taba-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+/* El padding derecho no es simetría: estos select conservan la flecha nativa,
+   que el navegador dibuja dentro de la caja. Con 10px a la derecha, "Todas las
+   presentaciones" corría por debajo del chevron y se leía cortada a mitad de
+   palabra. Se le reserva la pista igual que en `.sort-field select`, y el
+   recorte pasa a ser un ellipsis legible en vez de un tajo. */
+.catalog-filter-grid select {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 0 22px 0 10px;
+  overflow: hidden;
+  border: 1px solid var(--taba-border-medium);
+  border-radius: var(--radius-sm);
+  background: var(--taba-white);
+  color: var(--taba-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+/* Fila de acciones del panel. En escritorio cierra el bloque; en teléfono es el
+   pie del bottom sheet y es lo que hace evidente cómo se sale. */
+.catalog-filters-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
+.catalog-filters-actions button {
+  min-height: var(--tap);
+}
+
+@media (max-width: 820px) {
+  .catalog-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* ── Filtros como bottom sheet ────────────────────────────────────────────
+     En teléfono, ocho selects apilados sobre la grilla se leen como un panel
+     administrativo y empujan el producto fuera de pantalla. Acá el <summary>
+     queda como botón "Filtros" y el contenido se despliega desde abajo, que es
+     donde llega el pulgar.
+
+     Es CSS sobre el mismo <details>: los <select> son los mismos nodos, con los
+     mismos listeners y la misma lógica de filtrado. No hay un segundo control
+     ni estado paralelo, así que no puede desincronizarse del catálogo. */
+  .catalog-filters {
+    margin: 0;
+    border: 0;
+    background: none;
+  }
+
+  /* El <details> ya trae la superficie del control (una sola, la misma que
+     "Ordenar"). El disparador NO dibuja una segunda: antes llevaba borde de
+     `currentcolor` y radio de píldora DENTRO de la caja de 10px del details, y
+     lo que se veía eran dos contornos concéntricos —uno blanco brillante y uno
+     apagado— alrededor de la palabra "Filtros". Al lado, "Ordenar" tenía un
+     solo contorno. Esa es la diferencia que hacía ver la fila improvisada. */
+  .catalog-filters summary {
+    min-height: var(--control-h);
+    border: 0;
+    background: transparent;
+    opacity: 1;
+  }
+
+  /* Con el sheet abierto el disparador tiene que quedar POR ENCIMA del fondo.
+     Si no, el fondo a pantalla completa lo tapa y se come el toque: el panel
+     queda abierto sin forma de cerrarlo, porque un ::before no puede escuchar
+     clics. Elevarlo devuelve el gesto de "toco Filtros y se cierra". */
+  /* Y por ENCIMA del panel, con su propia superficie. Compartiendo `--z-modal`
+     con el sheet, el desempate lo decidía el orden del DOM: el panel se pintaba
+     después y le cortaba el disparador por la mitad, con la palabra "Filtros"
+     partida por el canto del sheet. El toque igual funcionaba —de ahí que nadie
+     lo viera como un defecto— pero el control se veía roto. Un escalón más
+     arriba y `background: inherit` (el mismo color que ya pinta el <details>,
+     en los dos temas) lo dejan flotando entero sobre el panel, que es lo que
+     de verdad hace: es el botón que lo cierra. */
+  .catalog-filters[open] summary {
+    position: relative;
+    z-index: calc(var(--z-modal) + 1);
+    border-bottom: 0;
+    border-radius: var(--radius-control);
+    background: inherit;
+    box-shadow: 0 10px 26px rgb(0 0 0 / 52%);
+  }
+
+  /* Escala de tokens: la nav inferior vive en --z-bottomnav (300) y la barra de
+     carrito en --z-sticky-cta (400). El sheet es modal, así que va en
+     --z-modal (600) y el fondo justo debajo: si no, la nav le tapa el último
+     filtro y el botón de limpiar. */
+  /* Fondo oscuro con un desenfoque mínimo. 3px y no más: el sheet es la única
+     superficie con glass además del encabezado, y en un Moto G15 un blur grande
+     a pantalla completa se paga en frames justo mientras el panel entra. */
+  .catalog-filters[open]::before {
+    position: fixed;
+    z-index: calc(var(--z-modal) - 1);
+    inset: 0;
+    background: rgb(0 0 0 / 58%);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    content: '';
+  }
+
+  /* Superficie CREMA, la misma de las tarjetas y los formularios del cliente:
+     el sheet no puede ser el único blanco puro de la app. */
+  .catalog-filters[open] .catalog-filters-sheet {
+    position: fixed;
+    z-index: var(--z-modal);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-height: 76vh;
+    overflow-y: auto;
+    border-radius: 24px 24px 0 0;
+    background: var(--shelf);
+    box-shadow: 0 -12px 32px rgb(0 0 0 / 38%);
+    /* La barra de gestos de Android/iOS vive debajo del sheet: sin esto el
+       último control queda tapado justo cuando el pulgar llega. */
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Manija: dice que el panel viene desde abajo y se puede cerrar. */
+  .catalog-filters[open] .catalog-filters-sheet::before {
+    display: block;
+    width: 42px;
+    height: 4px;
+    margin: 10px auto 2px;
+    border-radius: 999px;
+    background: var(--shelf-line-strong);
+    content: '';
+  }
+
+  .catalog-filters[open] .catalog-filter-grid {
+    padding: 12px 16px;
+  }
+
+  /* El pie del sheet queda pegado abajo mientras la grilla scrollea: la salida
+     tiene que estar siempre a mano, no al final de ocho selects. */
+  .catalog-filters[open] .catalog-filters-actions {
+    position: sticky;
+    bottom: 0;
+    padding: 12px 16px calc(4px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--shelf-line);
+    background: var(--shelf);
+  }
+}
+
+@media (max-width: 420px) {
+  .catalog-filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--taba-muted);
+  font-size: 13px;
+}
+
+.crumb-link {
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--taba-red-quiet);
+  font-weight: 750;
+}
+
+/* Fila del título: nombre del filtro + control de orden de 44px. La barra de
+   orden dedicada desaparece; el contador queda debajo como caption. */
+/* El control de orden se mudó a la fila de controles: acá quedan el título y
+   la cantidad, que son una sola frase y van juntos, no separados a los
+   extremos de la fila. */
+.catalog-toolbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 2px 10px;
+  min-height: 0;
+  margin: 0 0 8px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.catalog-count {
+  margin: 0;
+  color: var(--taba-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Hermano de "Filtros": mismo alto, mismo radio, misma tipografía y la misma
+   flecha. Los dos hacen la misma tarea sobre la misma grilla. */
+.sort-field {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  min-height: var(--control-h);
+  flex: 1 1 auto;
+  padding: 0 4px 0 14px;
+  border: 1px solid var(--taba-border-medium);
+  border-radius: var(--radius-control);
+  background: var(--shelf-raised);
+  box-shadow: none;
+  color: var(--taba-ink);
+}
+
+.sort-field-label {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  color: var(--taba-ink);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sort-label-short {
+  display: none;
+}
+
+/* El orden aplicado, escrito. En escritorio no hace falta —el propio `select`
+   se ve y muestra su valor—, así que sólo aparece en teléfono, donde el
+   `select` está en `opacity: 0`. Puede encogerse y recortarse antes que
+   desbordar: un recorte se lee igual y un desborde rompe la fila. */
+.sort-value {
+  display: none;
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sort-field-label svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  color: var(--taba-muted);
+}
+
+.sort-select-wrap {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+/* Ningún campo baja de 16px, ni siquiera en escritorio: es un solo
+   componente para todas las superficies (y evita el zoom de iOS). */
+.sort-field select {
+  width: 100%;
+  max-width: 148px;
+  min-height: var(--tap);
+  padding: 0 26px 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--taba-ink);
+  font-size: 16px;
+  font-weight: 700;
+  outline: 0;
+}
+
+.sort-select-wrap::after {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--taba-muted);
+  border-bottom: 2px solid var(--taba-muted);
+  pointer-events: none;
+  content: "";
+  transform: translateY(-65%) rotate(45deg);
+}
+
+/* El número de columnas no se declara: se deriva del ancho mínimo de tarjeta,
+   así ningún breakpoint queda desincronizado con el layout. */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(214px, 1fr));
+  align-items: stretch;
+  gap: 18px;
+}
+
+@media (min-width: 1900px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  }
+}
+
+.product-grid > .empty-state {
+  grid-column: 1 / -1;
+}
+
+/* La tarjeta no declara alturas: la caja del packshot la da `aspect-ratio` y
+   las filas de la grilla se igualan solas. Cero número mágico de layout. */
+.product-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: var(--shelf-raised);
+  box-shadow: var(--shadow-xs);
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+
+/* Sin desplazamiento vertical en hover: en una grilla densa produce ruido. */
+.product-card:hover {
+  border-color: var(--taba-border-medium);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Agotado se dice APAGANDO, no aclarando. El `#fafafa` venía de la época en
+   que la góndola era papel blanco: sobre grafito convertía al producto que NO
+   se puede comprar en la tarjeta más luminosa de la pantalla, o sea justo lo
+   contrario de lo que tiene que comunicar. La pastilla "Agotado" sobre la foto
+   sigue siendo la que lo dice con letras. */
+.product-card.out-of-stock {
+  background: var(--shelf);
+  opacity: 0.66;
+}
+
+/* Marco del packshot: única caja a la que se ancla el favorito. Su alto lo
+   fija `aspect-ratio`, así que el solape con el título es imposible por
+   construcción. */
+.product-media-frame {
+  position: relative;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+/* Caja cuadrada y blanca: los packshots traen fondo blanco horneado, así que
+   cualquier tinte queda tapado por el propio bitmap. El encuadre lo da el
+   hairline inferior. `p-media--shelf` queda para el día que haya alfa. */
+.product-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-bottom: 1px solid var(--taba-border-soft);
+  background: var(--shelf-raised);
+}
+
+.thumb {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  place-items: center;
+  overflow: hidden;
+  background: var(--shelf-raised);
+  color: #4c4c52;
+}
+
+/* Packshot contenido: sin recorte ni deformación, y con la etiqueta completa.
+   Va acotado a `.thumb`, la caja del packshot: la Home reutiliza la clase
+   `thumb-img` sólo para heredar el respaldo de imagen rota, y su caja es
+   otra. Sin acotar, esta regla la posicionaba en absoluto sobre la tarjeta.
+
+   Ocupaba el 78% del alto útil y el envase quedaba como una miniatura dentro de
+   una caja cuadrada casi vacía: en el catálogo el packshot medía 152px sobre una
+   tarjeta de 368 (41%), contra el 62% que tiene la misma bebida en la home. Dos
+   superficies del mismo producto que no se parecían.
+   92% + `scale: 1.06` deja el render en 192px sobre una caja de 197: crece un
+   26% y sigue SIN recortar, porque el escalado ocurre dentro del alto que la
+   caja ya tenía de sobra. */
+.thumb .thumb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 92%;
+  margin: 4% auto;
+  padding: 0;
+  object-fit: contain;
+  background: transparent;
+  scale: 1.06;
+}
+
+/* El respaldo ya viene con su propio aire: no se escala ni se recorta. */
+.thumb .thumb-img.is-placeholder {
+  scale: 1;
+}
+
+.thumb .thumb-img.is-placeholder {
+  height: 100%;
+  margin: 0;
+  padding: 10%;
+  background: #f7f7f8;
+}
+
+.thumb.image-unavailable .thumb-img {
+  display: none;
+}
+
+.product-stock-tag {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 10px;
+}
+
+/* Marca de alcohol. Abajo a la izquierda: arriba a la izquierda vive el estado
+   de stock y arriba a la derecha, favoritos. No recibe eventos —es rótulo, no
+   control— así que no le roba el toque a la foto.
+
+   La pastilla era blanca al 92% SOBRE EL PLATO BLANCO: de la etiqueta sólo
+   quedaba el hilo dorado y el "+18" flotando encima del envase, y donde el
+   plato curva su esquina se veía el grafito de la tarjeta por debajo, como si
+   la marca estuviera medio afuera de la foto. Grafito con tinta dorada: se lee
+   sobre cualquier packshot, es la misma pareja que usa `.combo-chip.is-age`, y
+   la esquina deja de ser un accidente porque la pastilla se apoya en la parte
+   recta del canto. */
+.product-age-tag {
+  position: absolute;
+  z-index: 2;
+  bottom: 9px;
+  left: 9px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 9px;
+  border: 1px solid rgb(201 149 62 / 46%);
+  border-radius: var(--radius-pill);
+  background: rgb(17 20 25 / 92%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 22%);
+  color: var(--shelf-gold-soft);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+
+.stock-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: var(--radius-pill);
+  background: var(--shelf-gold-wash);
+  color: #7c4a00;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.stock-pill.empty {
+  background: #f0f0f1;
+  color: var(--taba-muted);
+}
+
+/* Jerarquía fija: producto → presentación → precio → acción. Sin `min-height`
+   encadenados: el pie se ancla con `margin-top: auto` y los precios de una
+   misma fila comparten línea de base.
+
+   El padding sale del MISMO token que el marco del packshot. Con 12 acá y 9
+   allá, el plato blanco arrancaba tres píxeles a la izquierda del título de su
+   propia tarjeta: en una grilla de dos columnas eso se ve como una foto
+   descentrada, no como un detalle. */
+.product-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px var(--card-pad) var(--card-pad);
+}
+
+.product-brand {
+  overflow: hidden;
+  color: var(--taba-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Dos renglones RESERVADOS, no "hasta dos". La caja del nombre medía lo que
+   midiera el nombre, así que en una fila de dos tarjetas el "473 ml" de la
+   izquierda quedaba un renglón más arriba que el de la derecha y la grilla se
+   leía desalineada aunque los precios sí estuvieran a la misma altura. */
+.product-body h3 {
+  display: -webkit-box;
+  min-height: 2.5em;
+  margin: 0;
+  overflow: hidden;
+  color: var(--taba-ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.product-body p {
+  margin: 1px 0 0;
+  color: var(--taba-muted);
+  font-size: 12px;
+}
+
+/* Pie apilado: a ~171px de ancho un precio de 5 dígitos y un control de 44px
+   no conviven en un renglón. `--inline` sólo en tarjetas anchas. */
+.product-foot {
+  display: grid;
+  align-items: center;
+  gap: 9px;
+  margin-top: auto;
+  padding: 10px 0 0;
+}
+
+.product-action {
+  display: grid;
+}
+
+/* La acción va EN FLUJO: por construcción no puede solaparse con el título.
+   Píldora, no rectángulo: es el mismo botón "Agregar" que la home dibuja
+   redondo en su rail, y tenerlo cuadrado acá era la diferencia más visible
+   entre las dos vitrinas del mismo producto. */
+.product-action .add-button {
+  width: 100%;
+  min-width: 0;
+  height: var(--tap);
+  flex: 1 1 auto;
+  padding-inline: 12px;
+  border: 1px solid var(--taba-red);
+  /* La acción de comprar tiene forma de acción, no de chip. Ver
+     `--radius-action` en tokens.css. */
+  border-radius: var(--radius-action);
+  background: var(--taba-red);
+  box-shadow: none;
+  color: #fff;
+}
+
+.product-action .add-button:hover {
+  border-color: var(--taba-red-hover);
+  background: var(--taba-red-hover);
+  color: #fff;
+}
+
+.product-action .add-button:disabled {
+  border-color: var(--taba-border);
+  background: var(--taba-subtle);
+  color: var(--taba-muted);
+}
+
+.product-action .add-plus {
+  display: none;
+}
+
+.product-action .add-text {
+  display: inline;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* Producto sin precio: la acción es secundaria y no permite comprar. */
+.product-action [data-add-product].is-price-pending {
+  width: 100%;
+  min-width: 0;
+  border-color: var(--taba-border-medium);
+  background: var(--taba-white);
+  color: var(--taba-graphite);
+}
+
+.product-action [data-add-product].is-price-pending .add-text {
+  font-size: 13px;
+}
+
+/* El stepper sustituye a la CTA en su mismo lugar: 44 · 1fr · 44. */
+.product-action .qty-stepper {
+  width: 100%;
+  min-width: 0;
+  height: 46px;
+  border-color: var(--taba-red-border-soft);
+  /* El stepper OCUPA el lugar exacto que dejó "Agregar": mismo alto, mismo
+     ancho y ahora también el mismo radio. Si la forma cambiara en el cambio,
+     el reemplazo se leería como un salto en vez de como una continuación. */
+  border-radius: var(--radius-action);
+  background: var(--taba-red-soft);
+  box-shadow: none;
+}
+
+@media (min-width: 700px) {
+  .product-foot {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .product-action .add-button {
+    width: var(--tap);
+    flex: 0 0 var(--tap);
+    padding-inline: 0;
+  }
+
+  .product-action .add-plus {
+    display: inline;
+    font-size: 24px;
+  }
+
+  .product-action .add-text {
+    display: none;
+  }
+
+  .product-action [data-add-product].is-price-pending {
+    width: auto;
+    min-width: 96px;
+    flex-basis: auto;
+    padding-inline: 12px;
+  }
+
+  .product-action [data-add-product].is-price-pending .add-text {
+    display: inline;
+  }
+
+  .product-action .qty-stepper {
+    width: 124px;
+    min-width: 124px;
+  }
+}
+
+.price,
+.price-amounts {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+/* El precio es tinta, no rojo: el rojo queda para la acción y la marca. Es la
+   cifra que decide la compra, así que se jerarquiza por tamaño y ajuste óptico
+   —19px con el tracking cerrado— y no por color. */
+.price strong,
+.price-amounts strong {
+  color: var(--taba-ink);
+  font-size: 19px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.price s,
+.price-amounts s {
+  color: var(--taba-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-decoration-thickness: 1px;
+}
+
+/* "Precio a confirmar" no usa la tipografía de precio: no es un importe. */
+.product-foot [data-price-pending-message] strong {
+  color: var(--taba-warning);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.product-card:has([data-price-pending-message]) .product-media {
+  filter: saturate(0.55);
+}
+
+/* Contraste sobre blanco: el favorito no compite con la compra porque vive
+   en otra zona de la tarjeta. */
+.product-favorite {
+  color: var(--taba-muted);
+}
+
+/* Aviso de "acá no hay nada comprable todavía", encima de la grilla. Ocupa la
+   fila entera para que no se lea como una tarjeta más.
+
+   Antes era una caja de 12px con una frase apretada contra un botón rojo a
+   sangre, y el rojo terminaba siendo lo más brillante de una pantalla cuya
+   noticia es justamente que NO hay nada que comprar. Acá el bloque toma el
+   lenguaje que la app ya reserva para "pendiente" —hairline dorado, la misma
+   pareja del botón `is-price-pending` que tiene debajo— y la salida queda como
+   una acción de tamaño normal, no como una franja. El filete dorado es
+   decorativo: no dice nada que el texto no diga, así que no entra en el árbol
+   de accesibilidad. */
+.catalog-none-buyable {
+  display: grid;
+  grid-column: 1 / -1;
+  justify-items: start;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgb(201 149 62 / 32%);
+  border-radius: 18px;
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf-flat);
+  color: var(--shelf-ink);
+  font-size: 13px;
+}
+
+.catalog-none-buyable::before {
+  width: 26px;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--shelf-gold);
+  content: "";
+}
+
+.catalog-none-buyable strong {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.catalog-none-buyable .primary-button {
+  min-height: var(--tap);
+  margin-top: 2px;
+  padding-inline: 20px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+}
+
+/* Con ancho, la frase y la salida comparten renglón y el filete los encabeza. */
+@media (min-width: 620px) {
+  .catalog-none-buyable {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px 16px;
+  }
+
+  .catalog-none-buyable::before {
+    grid-column: 1 / -1;
+  }
+
+  .catalog-none-buyable .primary-button {
+    margin-top: 0;
+  }
+}
+
+/* Aviso de la línea del carrito: lo que ya no se puede pedir, con la salida al
+   lado. Rojo de estado, no de acción: la acción es el botón. */
+.cart-item-issue {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 6px 0 0;
+  color: var(--shelf-red-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cart-item-issue button {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.cart-item.has-issue {
+  box-shadow: inset 2px 0 0 var(--shelf-red-ink);
+}
+
+.add-button,
+.qty-stepper {
+  min-height: 46px;
+  border-radius: var(--radius-action);
+}
+
+.add-button {
+  width: 46px;
+  flex: 0 0 46px;
+  padding: 0;
+  border: 1px solid #ececf0;
+  border-radius: 50%;
+  background: var(--shelf-raised);
+  box-shadow: 0 7px 16px rgb(24 28 35 / 15%);
+  color: var(--taba-ink);
+}
+
+.add-button:hover {
+  border-color: #dadade;
+  background: var(--shelf-raised);
+  color: var(--taba-red-quiet);
+}
+
+.add-plus {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.add-text {
+  display: none;
+}
+
+[data-add-product].is-price-pending {
+  width: auto;
+  min-width: 82px;
+  flex-basis: auto;
+  padding-inline: 10px;
+  border-radius: var(--radius-action);
+  box-shadow: none;
+}
+
+[data-add-product].is-price-pending .add-text {
+  display: inline;
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.qty-stepper,
+.quantity-control {
+  display: grid;
+  grid-template-columns: var(--tap) 1fr var(--tap);
+  align-items: center;
+  border: 1px solid var(--taba-border);
+  background: var(--shelf-raised);
+  text-align: center;
+}
+
+.qty-stepper {
+  width: 118px;
+  min-width: 118px;
+  grid-template-columns: 44px 1fr 44px;
+  border-color: #e1e1e6;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 3px 8px rgb(24 28 35 / 5%);
+}
+
+.qty-stepper strong {
+  color: var(--taba-ink);
+  font-size: 15px;
+}
+
+.qty-stepper .icon-button {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  color: var(--taba-red-quiet);
+  font-size: 22px;
+}
+
+.qty-stepper-action svg,
+.quantity-control .qty-stepper-action svg {
+  width: 21px;
+  height: 21px;
+}
+
+.product-favorite {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 3px 9px rgb(24 28 35 / 9%);
+  color: #9799a1;
+}
+
+.product-favorite svg {
+  width: 22px;
+  height: 22px;
+}
+
+.product-favorite.is-favorite {
+  color: var(--taba-red-quiet);
+}
+
+.product-pack-badge {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 12px;
+  display: inline-grid;
+  min-width: 32px;
+  min-height: 28px;
+  place-items: center;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--taba-red);
+  box-shadow: 0 3px 8px rgb(204 0 16 / 18%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.product-stock-tag:not(:empty) + .product-pack-badge {
+  top: 48px;
+}
+
+@media (max-width: 560px) {
+  .product-grid {
+    gap: 10px;
+  }
+
+  .product-card {
+    border-radius: var(--radius-md);
+  }
+
+  .product-body {
+    padding-inline: 12px;
+  }
+
+  .price strong,
+  .price-amounts strong {
+    font-size: 18px;
+  }
+
+  .product-favorite {
+    top: 8px;
+    right: 8px;
+  }
+
+  .product-pack-badge {
+    top: 10px;
+    left: 10px;
+  }
+}
+
+.qty-stepper .icon-button,
+.quantity-control .icon-button {
+  border-radius: var(--radius-sm);
+}
+
+
+.product-modal {
+  width: min(calc(100vw - 24px), 760px);
+}
+
+.modal-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(250px, 0.9fr) minmax(300px, 1.1fr);
+  padding: 0;
+  overflow: hidden;
+  background: var(--shelf-raised);
+}
+
+/* En escritorio el packshot es una columna ENTERA, no la primera celda de la
+   primera fila. La ficha es una grilla de dos columnas y dos filas (copy
+   arriba, barra de acción abajo); sin `grid-row: 1 / -1` el packshot ocupaba
+   sólo la fila del copy y quedaban dos bandas grises —arriba y abajo del
+   plato— con el producto flotando en el medio de una caja vacía. */
+.modal-media {
+  position: relative;
+  display: grid;
+  /* `span 2` y no `1 / -1`: la grilla no declara filas explícitas, así que
+     `-1` resuelve a la última línea EXPLÍCITA —la 2— y el tramo terminaba
+     ocupando sólo la primera fila, que es justo el defecto que se quería
+     corregir. */
+  grid-row: 1 / span 2;
+  min-height: 480px;
+  background: var(--taba-subtle);
+}
+
+/* El plato blanco del packshot. `--taba-white` exacto porque los bitmaps traen
+   el fondo blanco horneado: cualquier otro valor dibuja el borde del archivo
+   dentro del plato. La regla general de §6b sólo alcanza a `.app-view`, y la
+   ficha vive en un <dialog> fuera del shell. */
+.modal-media .thumb {
+  min-height: 480px;
+  height: 100%;
+  background: var(--taba-white);
+}
+
+.offer-badge-wrap {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+}
+
+.offer-badge {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--taba-red);
+  color: white;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.modal-product-copy {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 56px 28px 18px;
+}
+
+.modal-presentation {
+  color: var(--taba-red-quiet);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modal-product-copy h2 {
+  margin: 0;
+  font-size: clamp(26px, 4vw, 38px);
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.modal-product-copy > p {
+  margin: 0;
+  color: var(--taba-muted);
+}
+
+.modal-commerce-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--taba-border);
+}
+
+.modal-price {
+  display: grid;
+}
+
+.modal-price [data-price-pending-message] {
+  display: grid;
+  gap: 4px;
+}
+
+.modal-price [data-price-pending-message] small {
+  color: var(--taba-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.modal-price strong {
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.modal-price s {
+  color: var(--taba-muted);
+  font-size: 13px;
+}
+
+.modal-availability {
+  color: var(--taba-success);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.modal-order-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.modal-quantity-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  color: var(--taba-ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* La compra de la ficha. Era un disco de 46px con un "+" adentro —el mismo
+   control que la tarjeta de la grilla, donde el espacio manda— y en la ficha
+   quedaba como un detalle al lado del rótulo "Cantidad". Acá es lo que ocupa
+   el ancho del pie: en una ficha de producto la acción de comprar no compite
+   con nada. */
+.modal-cart-control.add-button {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  border-color: var(--taba-red);
+  border-radius: var(--radius-action-lg);
+  background: var(--taba-red);
+  color: var(--taba-white);
+  font-size: 15px;
+}
+
+.modal-cart-control.add-button:hover:not(:disabled) {
+  border-color: var(--taba-red-hover);
+  background: var(--taba-red-hover);
+  color: var(--taba-white);
+}
+
+/* `.add-text` está oculto globalmente porque en la grilla la acción es un disco
+   con un "+": ahí el nombre no entra. En la ficha entra y hace falta, así que
+   acá se invierte la regla y el "+" es el que sobra. */
+.modal-cart-control.add-button .add-plus {
+  display: none;
+}
+
+.modal-cart-control.add-button .add-text {
+  display: inline;
+  font-size: 15px;
+}
+
+.modal-cart-control.add-button .add-text::after {
+  content: " al pedido";
+}
+
+/* Ya en el carrito: el stepper reemplaza al botón y ocupa el mismo lugar, así
+   que la barra no cambia de altura al agregar el primero. */
+.qty-stepper.modal-cart-control {
+  width: 100%;
+  min-height: 52px;
+  border-radius: var(--radius-action-lg);
+}
+
+.modal-note-field span {
+  color: var(--taba-muted);
+  font-weight: 500;
+}
+
+.product-alcohol-notice {
+  padding: 10px 12px;
+  border: 1px solid rgb(201 149 62 / 45%);
+  border-radius: var(--radius-xs);
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+  font-size: 13px;
+}
+
+/* Pie de la ficha: barra de acción pegada al borde inferior. `sticky` y no
+   `fixed` porque el pie pertenece a la columna de la ficha, no a la ventana:
+   en escritorio la ficha es de dos columnas y una barra fija se saldría de la
+   tarjeta. El fondo es opaco para que el contenido pase POR DEBAJO y no se lea
+   a través de la barra. */
+.modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin-top: auto;
+  padding: 14px 28px calc(18px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--shelf-line);
+  background: var(--shelf-raised);
+}
+
+/* Orden visual: comprar arriba, guardar abajo. En el marcado el favorito va
+   primero porque sin precio publicado ES la acción principal y tiene que
+   recibir el foco antes que el aviso. */
+.modal-actions .modal-quantity-field {
+  order: -1;
+}
+
+.modal-actions .modal-quantity-field > span {
+  color: var(--taba-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* El rótulo "Cantidad" sólo tiene sentido al lado del stepper. Antes del primer
+   agregado el control es el botón de compra, y ahí el rótulo lo empuja y no
+   describe nada. */
+.modal-actions .modal-quantity-field:has(.add-button) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.modal-actions .modal-quantity-field:has(.add-button) > span {
+  display: none;
+}
+
+.modal-actions .secondary-button {
+  min-height: 46px;
+}
+
+/* Sin precio publicado el pie no ofrece comprar: lo dice. */
+.modal-pending-note {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid rgb(201 149 62 / 45%);
+  border-radius: var(--radius-sm);
+  background: var(--shelf-gold-wash);
+  color: var(--shelf-gold-soft);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.modal-actions.is-price-pending .modal-pending-note {
+  order: -1;
+}

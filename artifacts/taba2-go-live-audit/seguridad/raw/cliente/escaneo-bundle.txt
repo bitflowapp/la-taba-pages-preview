@@ -1,0 +1,5 @@
+descargados: 130/130
+--- archivos con señales ---
+runtime-config.js [200]
+   - sb_publishable_ presente (1 ocurrencia/s, esperable)
+   - ref de producción x1 (informativo)

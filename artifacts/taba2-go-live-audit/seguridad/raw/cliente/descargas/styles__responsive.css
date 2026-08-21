@@ -1,0 +1,1546 @@
+/* Superficies de cliente que no existen en el panel operativo: navegación de
+   tienda, carrito y —desde el cierre visual— el control de dirección
+   "Enviar a", que hablaba de la entrega de un cliente dentro del panel. */
+body[data-active-view="business"] .desktop-nav,
+body[data-active-view="business"] .mobile-nav,
+body[data-active-view="business"] .topbar-actions,
+body[data-active-view="business"] .topbar-address,
+body[data-active-view="business"] .topbar-search,
+body[data-active-view="business"] .floating-cart,
+body[data-active-view="rider"] .desktop-nav,
+body[data-active-view="rider"] .mobile-nav,
+body[data-active-view="rider"] .topbar-actions,
+body[data-active-view="rider"] .topbar-address,
+body[data-active-view="rider"] .topbar-search,
+body[data-active-view="rider"] .floating-cart {
+  display: none !important;
+}
+
+@media (max-width: 1020px) {
+  :root {
+    --topbar: 56px;
+  }
+
+  .topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding-inline: 16px;
+  }
+
+  .desktop-nav {
+    display: none;
+  }
+
+  .topbar-search {
+    display: none;
+  }
+
+  .topbar-mid {
+    justify-content: flex-start;
+  }
+
+  .topbar-actions [data-admin-toggle],
+  .topbar-actions [data-production-only] {
+    display: none !important;
+  }
+
+  .section,
+  .section.soft {
+    padding-inline: 18px;
+  }
+
+  .checkout-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cart-card,
+  .checkout-form {
+    width: min(100%, 720px);
+    margin-inline: auto;
+  }
+
+  .track-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tracking-map-stage {
+    position: relative;
+    top: auto;
+    min-height: 460px;
+  }
+}
+
+@media (max-width: 820px) {
+  html {
+    overscroll-behavior-y: none;
+    scroll-padding-top: calc(var(--topbar) + 12px);
+    scroll-padding-bottom: var(--taba-bottom-nav-clearance);
+  }
+
+  html:has(body[data-cart="filled"]) {
+    scroll-padding-bottom: calc(
+      var(--nav-block) + var(--cta-h) + var(--stack-gap) + var(--stack-gap)
+    );
+  }
+
+  body {
+    padding-bottom: 0;
+  }
+
+  /* Reserva inferior en un único lugar: `--bottom-reserve` se declara en
+     `body`, donde varía `--cta-block`, así que resuelve con el valor real. */
+  main[data-app-main] {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding-bottom: var(--bottom-reserve);
+  }
+
+  /* Respiro propio del contenido para que la última fila no quede pegada
+     al borde de la reserva. */
+  main[data-app-main] > .app-view:is(
+    [data-view="home"],
+    [data-view="catalog"],
+    [data-view="cart"],
+    [data-view="profile"]
+  ) {
+    padding-bottom: 16px;
+  }
+
+  body[data-active-view="business"] main[data-app-main],
+  body[data-active-view="rider"] main[data-app-main],
+  body[data-active-view="tracking"]:has(.tracking-premium) main[data-app-main] {
+    padding-bottom: 0;
+  }
+
+  .brand {
+    gap: 0;
+  }
+
+  .brand-text small {
+    display: none;
+  }
+
+  /* Barra a sangre con hairline, no píldora flotante: no compite con la
+     barra de carrito porque están separadas por `--stack-gap`. */
+  .mobile-nav {
+    position: fixed;
+    z-index: var(--z-bottomnav);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    /* Cinco ranuras: las cuatro rutas de siempre más el ancla de marca al
+       centro. El alto sigue saliendo de `--nav-block`: la barra no crece. */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    box-sizing: border-box;
+    height: var(--nav-block);
+    padding: 3px 8px calc(9px + var(--safe-b));
+    border-top: 1px solid var(--taba-border);
+    background: rgb(255 253 251 / 97%);
+    box-shadow: none;
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+  }
+
+  .toast,
+  .pwa-banner-update {
+    bottom: calc(var(--bottom-reserve) + 8px);
+  }
+
+  /* 4 y no 2. El icono y su etiqueta se tocaban y las cinco ranuras se leían
+     como cinco manchas; el alto de la barra no cambia porque la fila usaba 38
+     de los 44px disponibles. */
+  .mobile-nav button {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: var(--tap);
+    place-items: center;
+    align-content: center;
+    gap: 4px;
+    padding: 2px;
+    border: 0;
+    border-radius: var(--radius-xs);
+    background: transparent;
+    color: var(--taba-muted);
+  }
+
+  /* Activo: rojo + barra de 2,5px arriba. El color nunca es el único
+     portador del estado: la vista activa además lleva `aria-current`. */
+  .mobile-nav button.active {
+    background: transparent;
+    color: var(--taba-red);
+  }
+
+  .mobile-nav button.active::before {
+    position: absolute;
+    top: -3px;
+    right: 22%;
+    left: 22%;
+    height: 2.5px;
+    border-radius: 0 0 3px 3px;
+    background: var(--taba-red);
+    content: "";
+  }
+
+  .mn-ico {
+    position: relative;
+    display: block;
+    width: 21px;
+    height: 21px;
+  }
+
+  .mn-ico::before,
+  .mn-ico::after {
+    position: absolute;
+    inset: 3px;
+    border: 2px solid currentColor;
+    border-radius: 5px;
+    content: "";
+  }
+
+  .icon-home::after {
+    inset: 1px 4px 8px;
+    border-width: 2px 2px 0 0;
+    border-radius: 0;
+    transform: rotate(-45deg);
+  }
+
+  .icon-catalog::before {
+    box-shadow: 8px 0 0 -5px currentColor, 0 8px 0 -5px currentColor, 8px 8px 0 -5px currentColor;
+  }
+
+  .icon-track::before {
+    border-radius: 50%;
+  }
+
+  .icon-track::after {
+    inset: 8px;
+    border: 0;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* Canasta: cuerpo abajo y asa arriba, con el mismo lenguaje de trazo que el
+     resto de los glifos de la barra. */
+  .icon-cart::before {
+    inset: 7px 1px 2px;
+    border-radius: 3px 3px 7px 7px;
+  }
+
+  .icon-cart::after {
+    inset: 1px 5px 12px;
+    border-width: 2px 2px 0;
+    border-radius: 7px 7px 0 0;
+  }
+
+  .icon-store::before {
+    inset: 7px 2px 2px;
+  }
+
+  .icon-store::after {
+    inset: 2px 0 11px;
+    border-radius: 3px;
+  }
+
+  .icon-profile::before {
+    inset: 1px 7px 10px;
+    border-radius: 50%;
+  }
+
+  .icon-profile::after {
+    inset: 12px 3px 0;
+    border-bottom: 0;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .mn-label {
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  /* Barra sticky de resumen: altura fija por token y `bottom` derivado del
+     bloque de navegación. Nunca comparte franja con la nav. */
+  .floating-cart {
+    display: flex;
+    z-index: var(--z-sticky-cta);
+    right: 12px;
+    bottom: calc(var(--nav-block) + var(--stack-gap));
+    left: 12px;
+    width: auto;
+    height: var(--cta-h);
+    min-height: var(--cta-h);
+    padding: 0 14px;
+    gap: 12px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    text-align: left;
+  }
+
+  .floating-cart-label {
+    font-size: 13px;
+  }
+
+  .floating-cart-copy small,
+  .floating-cart-saving,
+  .floating-cart-original {
+    font-size: 10px;
+  }
+
+  .floating-cart > strong {
+    font-size: 15px;
+  }
+
+  .app-home {
+    padding-bottom: 0;
+  }
+
+  .promo-banner {
+    grid-template-columns: 100px minmax(0, 1fr);
+    min-height: 172px;
+    padding: 18px;
+  }
+
+  .promo-neutral-art {
+    height: 110px;
+  }
+
+  .promo-product-art {
+    height: 110px;
+  }
+
+  .promo-product-art .thumb {
+    width: 104px;
+    height: 104px;
+  }
+
+  .promo-cta {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px;
+  }
+}
+
+/* A 320px una grilla de dos columnas estrangula el precio y la acción: la
+   tarjeta pasa a fila con el packshot a la izquierda. Es la única forma de
+   conservar el importe completo y un control de 44px en el mismo ancho. */
+@media (max-width: 359px) {
+  .product-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .product-card {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .product-media-frame {
+    width: 108px;
+    flex: 0 0 108px;
+    align-self: start;
+  }
+
+  .product-media {
+    border-right: 1px solid var(--taba-border-soft);
+    border-bottom: 0;
+  }
+
+  .product-body {
+    min-width: 0;
+    padding: 10px 12px;
+  }
+
+  .product-favorite {
+    top: 6px;
+    right: 6px;
+    width: var(--tap);
+    height: var(--tap);
+  }
+
+  .product-foot {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 820px) {
+
+  /* La ficha en teléfono es una hoja de tres piezas: packshot fijo, cuerpo que
+     scrollea y barra de acción anclada al pie. Antes la tarjeta entera
+     scrolleaba dentro del <dialog>, así que en un producto con descripción y
+     presentaciones el botón de comprar quedaba fuera de pantalla y había que
+     buscarlo scrolleando: la acción principal de la ficha dependía de que el
+     cliente adivinara que seguía más abajo.
+
+     El scroll pasa al cuerpo (`.modal-product-copy`) y el <dialog> deja de
+     scrollear, que es lo que le da altura fija a la hoja. */
+  .product-modal {
+    overflow: hidden;
+  }
+
+  .modal-card {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 24px);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .modal-media,
+  .modal-media .thumb {
+    min-height: min(38vh, 320px);
+  }
+
+  .modal-media {
+    flex: 0 0 auto;
+  }
+
+  .modal-product-copy {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 22px 18px 14px;
+    overscroll-behavior: contain;
+  }
+
+  .modal-actions {
+    flex: 0 0 auto;
+  }
+
+  .modal-actions {
+    grid-column: 1;
+    padding: 12px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* La confirmación va en flujo, al final del formulario: fijada al pie
+     aparecía por encima de los datos del cliente, la dirección y el resumen,
+     invitando a confirmar antes de poder revisarlos. */
+  .checkout-form .button-row {
+    position: static;
+    margin: 4px 0 0;
+    padding: 0;
+    background: none;
+  }
+
+  .checkout-form .button-row .confirm-button {
+    width: 100%;
+    min-height: 52px;
+  }
+
+  .recommendations-rail {
+    grid-auto-columns: minmax(152px, 48%);
+  }
+
+  .track-layout,
+  .track-layout.no-map {
+    overflow: visible;
+    border-radius: var(--radius-md);
+  }
+
+  .tracking-map-stage {
+    min-height: 390px;
+  }
+
+  .tracking-sheet,
+  .track-layout.no-map .tracking-sheet {
+    padding: 20px;
+    border-radius: var(--radius-md);
+  }
+
+  .tracking-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tracking-eta {
+    width: 100%;
+    text-align: left;
+  }
+
+  .tracking-help-card {
+    align-items: start;
+    flex-wrap: wrap;
+  }
+
+  .tracking-help-card .secondary-button {
+    width: 100%;
+  }
+
+  .admin-lock-card,
+  .production-auth-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .business-stat-grid,
+  .status-board,
+  .report-status-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .business-report-grid,
+  .business-overview-grid,
+  .business-setup-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* El panel reserva su propia barra de navegación: `main` conserva su
+     padding en 0 y la barra no puede tapar la última tarjeta de la cola. */
+  body[data-active-view="business"] .section,
+  body[data-active-view="rider"] .section {
+    padding-bottom: calc(var(--nav-h) + var(--safe-b) + var(--stack-gap));
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    min-height: var(--topbar);
+    padding-block: 0;
+    padding-inline: 12px;
+  }
+
+  .crumbs {
+    display: none;
+  }
+
+  .track-steps.operational .track-step small {
+    font-size: 10px;
+    overflow-wrap: anywhere;
+  }
+
+  .brand-word {
+    font-size: 19px;
+  }
+
+  .topbar .cart-button {
+    min-width: 142px;
+    min-height: 44px;
+    gap: 7px;
+  }
+
+  .cart-button-icon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
+
+  .cart-button-icon svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .cart-button-arrow {
+    font-size: 23px;
+  }
+
+  .section,
+  .section.soft {
+    padding: 20px 12px 0;
+  }
+
+  [data-view="profile"].section,
+  [data-view="profile"].section.soft {
+    padding-bottom: 16px;
+  }
+
+  .app-home > [data-catalog-dependent] {
+    gap: 24px;
+  }
+
+  .home-hero {
+    gap: 5px;
+    padding: 4px 2px 0;
+  }
+
+  .home-title {
+    font-size: clamp(31px, 10vw, 39px);
+    line-height: 1;
+  }
+
+  .home-subtitle {
+    font-size: 14px;
+  }
+
+  .home-search {
+    min-height: 52px;
+  }
+
+  .rail-head h2 {
+    font-size: 21px;
+  }
+
+  .app-home .category-button {
+    min-width: 86px;
+    min-height: 86px;
+  }
+
+  .section-head {
+    align-items: start;
+    flex-direction: column;
+    margin-bottom: 18px;
+  }
+
+  .section-head .view-actions {
+    width: 100%;
+  }
+
+  .section-head .view-actions > * {
+    flex: 1 1 auto;
+  }
+
+  .app-recovery {
+    grid-template-columns: auto minmax(0, 1fr);
+    width: calc(100% - 24px);
+    margin-top: 12px;
+    padding: 14px;
+  }
+
+  .app-recovery-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .app-recovery-actions > * {
+    flex: 1 1 0;
+    min-height: var(--tap);
+  }
+
+  .status-bar {
+    align-items: start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .status-sep {
+    display: none;
+  }
+
+  .home-address-chip {
+    align-items: start;
+  }
+
+  .address-chip-text strong {
+    font-size: 14px;
+  }
+
+  .promo-banner {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 13px;
+    min-height: 166px;
+    padding: 18px 16px;
+  }
+
+  .promo-neutral-art {
+    height: 92px;
+  }
+
+  .promo-product-art {
+    height: 92px;
+  }
+
+  .promo-product-art .thumb {
+    width: 82px;
+    height: 82px;
+  }
+
+  .promo-neutral-art i {
+    width: 22px;
+    height: 65px;
+    border-width: 2px;
+  }
+
+  .promo-neutral-art i:nth-child(2) {
+    height: 86px;
+  }
+
+  .promo-neutral-art i:nth-child(3) {
+    height: 58px;
+  }
+
+  .promo-banner-copy > strong {
+    font-size: 23px;
+  }
+
+  .promo-includes {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 1.25;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .promo-cta {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 38px;
+    padding-inline: 13px;
+    font-size: 12px;
+  }
+
+  .app-home .offer-card {
+    width: 168px;
+    min-height: 312px;
+  }
+
+  .app-home .offer-card-media {
+    min-height: 126px;
+  }
+
+  .app-home .offer-card-body {
+    min-height: 110px;
+    padding: 12px;
+  }
+
+  .home-service-note {
+    align-items: start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .reorder-card,
+  .customer-action-panel {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .reorder-card-side {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    width: 100%;
+  }
+
+  /* En móvil el `select` está en `opacity: 0` (más abajo) para conservar el
+     objetivo táctil y el nombre accesible, así que el texto visible es LO ÚNICO
+     que puede decir qué orden está aplicado. Antes decía siempre «Ordenar»:
+     elegir «Menor precio» no cambiaba nada en pantalla y el control quedaba sin
+     declarar su propio estado.
+
+     Ahora muestra la opción elegida. El valor largo se recortaba porque las dos
+     columnas eran 1fr y 1fr: «Filtros» es una palabra corta y no necesita la
+     mitad de la fila, así que el reparto se corre hacia el orden y
+     «Recomendados» entra sin recorte desde 360px. Por debajo se recorta con
+     puntos suspensivos, que se sigue leyendo; lo que no puede pasar es que
+     desborde. El glifo y la flecha siguen diciendo que es un control. */
+  .catalog-controls {
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  }
+
+  .catalog-controls .sort-field {
+    position: relative;
+    justify-content: flex-start;
+    padding: 0 30px 0 12px;
+  }
+
+  .sort-label-full,
+  .sort-label-short {
+    display: none;
+  }
+
+  .sort-value {
+    display: inline;
+  }
+
+  .catalog-controls .sort-select-wrap {
+    position: absolute;
+    inset: 0;
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  /* La misma distancia al borde que la flecha de "Filtros". */
+  .catalog-controls .sort-select-wrap::after {
+    right: 14px;
+  }
+
+  .catalog-controls .sort-field select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    opacity: 0;
+  }
+
+  /* El anillo de foco lo recibe el `<select>`, que acá está en `opacity: 0`,
+     así que quien navega con teclado no veía NADA al llegar al control de
+     orden. Se lo presta al contenedor visible, que es el que sí se dibuja.
+     `:focus-within` y no `:focus` porque el que toma el foco es el hijo, y el
+     mismo anillo que define la regla global de `:focus-visible` en tokens.css
+     para no inventar un segundo estilo de foco. */
+  .catalog-controls .sort-field:has(select:focus-visible) {
+    outline: 3px solid color-mix(in srgb, var(--taba-focus) 70%, white);
+    outline-offset: 2px;
+  }
+
+  /* El aire lateral lo fija `--card-pad`, que es el mismo del plato: acá sólo
+     se ajusta el vertical, que en teléfono se recorta. */
+  .product-body {
+    padding: 9px var(--card-pad) var(--card-pad);
+  }
+
+  .product-body h3 {
+    font-size: 14px;
+  }
+
+  .product-body p {
+    font-size: 11px;
+  }
+
+  /* 18 y no 17. En teléfono la tarjeta es lo único que se ve, y el precio es
+     lo que decide: a 17px quedaba a un punto del nombre del producto y las dos
+     líneas competían. Un punto de diferencia no cambia el alto de la caja —la
+     interlínea del pie ya reservaba más— y sí cambia qué se lee primero. */
+  .price strong,
+  .price-amounts strong {
+    font-size: 18px;
+  }
+
+  .add-text {
+    font-size: 13px;
+  }
+
+  .cart-card,
+  .checkout-form {
+    padding: 16px;
+  }
+
+  .cart-item {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+
+  .cart-item .thumb {
+    width: 58px;
+    height: 58px;
+    min-height: 58px;
+  }
+
+  .cart-item-side {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .quantity-control {
+    width: 132px;
+  }
+
+  .field-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tracking-brand-row {
+    flex-wrap: wrap;
+  }
+
+  .tracking-brand-row .sheet-connection-pill {
+    margin-left: 0;
+  }
+
+  .track-step small {
+    font-size: 10px;
+  }
+
+  .tracking-map-stage {
+    min-height: 330px;
+  }
+
+  .business-stat-grid,
+  .status-board,
+  .report-status-board,
+  .rider-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .catalog-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .production-delivery-code {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 350px) {
+  .section,
+  .section.soft {
+    padding-inline: 10px;
+  }
+
+  .product-grid {
+    gap: 8px;
+  }
+
+  .product-body,
+  .add-button {
+    padding-inline: 8px;
+  }
+
+  .track-step small {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 820px) {
+  .taba-home {
+    padding-top: 20px;
+  }
+
+  .taba-home-content {
+    gap: 24px;
+  }
+
+  .home-catalog-preview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .taba-home-hero {
+    gap: 5px;
+  }
+
+  .taba-home-hero h1 {
+    font-size: clamp(31px, 9.6vw, 40px);
+    line-height: 1;
+  }
+
+  .taba-home-hero > p:last-of-type {
+    font-size: 14px;
+  }
+
+  .taba-home-address {
+    min-height: 54px;
+  }
+
+  .taba-home-search {
+    min-height: 52px;
+  }
+
+  .home-category-strip {
+    gap: 9px;
+  }
+
+  .home-category-card {
+    min-width: 84px;
+    min-height: 84px;
+    gap: 5px;
+    border-radius: 17px;
+    font-size: 10px;
+  }
+
+  .home-category-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .home-category-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .home-section-head h2 {
+    font-size: 22px;
+  }
+
+  .home-promotions-rail,
+  .home-best-sellers {
+    gap: 10px;
+  }
+
+  .home-promo-card {
+    grid-template-rows: 118px minmax(102px, auto);
+    width: 164px;
+    border-radius: 18px;
+  }
+
+  .home-promo-copy {
+    padding: 11px 42px 12px 11px;
+  }
+
+  .home-promo-copy > strong {
+    font-size: 13px;
+  }
+
+  .home-product-price {
+    font-size: 16px;
+  }
+
+  .home-promo-badge {
+    top: 9px;
+    left: 9px;
+    padding: 5px 7px;
+    font-size: 9px;
+  }
+
+  .home-add-button {
+    right: 10px;
+    bottom: 10px;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .home-best-card {
+    grid-template-columns: 80px minmax(105px, 1fr) 36px;
+    width: 256px;
+    min-height: 108px;
+    gap: 9px;
+    padding: 9px;
+    border-radius: 17px;
+  }
+
+  .home-best-media {
+    width: 80px;
+    height: 88px;
+  }
+
+  .home-best-card .home-add-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .home-catalog-preview {
+    gap: 10px;
+  }
+
+  .home-catalog-card {
+    grid-template-rows: 126px minmax(126px, auto);
+    border-radius: 18px;
+  }
+
+  .home-catalog-copy {
+    padding: 11px 40px 12px 11px;
+  }
+
+  .home-catalog-copy > strong {
+    font-size: 13px;
+  }
+
+  .home-favorite-button {
+    top: 8px;
+    right: 8px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 820px) {
+  [data-view="tracking"] {
+    padding-top: 0;
+    padding-inline: 0;
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .tracking-premium.track-layout,
+  .tracking-premium.track-layout.no-map {
+    border-radius: 20px;
+  }
+
+  .tracking-premium .tracking-sheet {
+    padding: 7px 22px max(30px, env(safe-area-inset-bottom, 0px));
+    border-radius: 0;
+  }
+
+  .tracking-premium .tracking-map-stage,
+  .tracking-premium .real-map-shell,
+  .tracking-premium .real-map-canvas {
+    height: 380px;
+    min-height: 380px;
+  }
+
+  .tracking-premium.status-arriving .tracking-sheet {
+    gap: 0;
+    padding: 4px 18px max(0px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .tracking-premium.status-arriving .tracking-map-stage,
+  .tracking-premium.status-arriving .real-map-shell,
+  .tracking-premium.status-arriving .real-map-canvas {
+    height: clamp(260px, 71.8vw, 300px);
+    min-height: clamp(260px, 71.8vw, 300px);
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-sheet,
+  .tracking-premium:is(.status-on_the_way, .status-picked_up).track-layout.no-map .tracking-sheet {
+    gap: 0;
+    padding: 4px 18px max(10px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-map-stage,
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-shell,
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .real-map-canvas {
+    height: clamp(300px, 87vw, 356px);
+    min-height: clamp(300px, 87vw, 356px);
+  }
+}
+
+@media (max-width: 360px) {
+  .tracking-premium .tracking-sheet {
+    gap: 14px;
+    padding: 7px 16px max(28px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .tracking-premium .tracking-hero h1 {
+    font-size: 27px;
+  }
+
+  .tracking-premium .track-step small {
+    font-size: 10px;
+  }
+
+  .tracking-premium .tracking-map-stage,
+  .tracking-premium .real-map-shell,
+  .tracking-premium .real-map-canvas {
+    height: 260px;
+    min-height: 260px;
+  }
+
+  .tracking-rider-card {
+    grid-template-columns: 50px minmax(0, 1fr);
+    align-items: flex-start;
+  }
+
+  .tracking-rider-contact {
+    grid-column: 2;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .tracking-premium:not(.status-arriving) .tracking-rider-contact .secondary-button {
+    width: 100%;
+    white-space: normal;
+  }
+
+  .tracking-premium.status-arriving .tracking-sheet {
+    gap: 0;
+    padding-inline: 16px;
+  }
+
+  .tracking-premium.status-arriving .tracking-rider-card {
+    grid-template-columns: 50px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding-inline: 10px;
+  }
+
+  .tracking-premium.status-arriving .tracking-rider-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .tracking-premium.status-arriving .tracking-rider-copy small {
+    font-size: 11px;
+  }
+
+  .tracking-premium.status-arriving .tracking-rider-copy strong {
+    font-size: 16px;
+  }
+
+  .tracking-premium.status-arriving .tracking-rider-copy > span {
+    font-size: 11.5px;
+  }
+
+  .tracking-premium.status-arriving .tracking-rider-contact {
+    width: auto;
+    margin: 0;
+  }
+
+  .tracking-premium.status-arriving .tracking-rider-contact .secondary-button {
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+
+  .tracking-premium.status-arriving .delivery-code-card {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 10px;
+    padding-inline: 12px;
+  }
+
+  .tracking-premium.status-arriving .delivery-code-copy strong {
+    font-size: 36px;
+  }
+
+  .tracking-premium.status-arriving .delivery-code-copy small {
+    font-size: 11.5px;
+  }
+
+  .tracking-premium.status-arriving .tracking-summary-content {
+    gap: 8px;
+  }
+
+  .tracking-premium.status-arriving .tracking-summary-copy > strong {
+    font-size: 14.5px;
+  }
+
+  .tracking-premium.status-arriving .tracking-summary-copy > small,
+  .tracking-premium.status-arriving .tracking-summary-action {
+    font-size: 11.5px;
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-sheet,
+  .tracking-premium:is(.status-on_the_way, .status-picked_up).track-layout.no-map .tracking-sheet {
+    gap: 0;
+    padding-inline: 16px;
+  }
+
+  /* Igual que en `arriving`: la tarjeta del rider se mantiene en tres columnas
+     para que el contacto no se convierta en una fila propia a 320px. */
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-card {
+    grid-template-columns: 50px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding-inline: 10px;
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-copy small {
+    font-size: 11px;
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-copy strong {
+    font-size: 16px;
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-copy > span {
+    font-size: 11.5px;
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-rider-contact {
+    width: auto;
+    margin: 0;
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up)
+    .tracking-rider-contact
+    .secondary-button {
+    width: auto;
+    padding-inline: 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-content {
+    gap: 8px;
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-copy > strong {
+    font-size: 14.5px;
+  }
+
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-copy > small,
+  .tracking-premium:is(.status-on_the_way, .status-picked_up) .tracking-summary-action {
+    font-size: 11.5px;
+  }
+}
+
+@media (min-width: 341px) and (max-width: 410px) {
+  .tracking-premium .tracking-map-stage,
+  .tracking-premium .real-map-shell,
+  .tracking-premium .real-map-canvas {
+    height: 320px;
+    min-height: 320px;
+  }
+}
+
+@media (min-width: 411px) and (max-width: 560px) {
+  .tracking-premium .tracking-map-stage,
+  .tracking-premium .real-map-shell,
+  .tracking-premium .real-map-canvas {
+    height: 332px;
+    min-height: 332px;
+  }
+}
+
+/*
+ * LA BARRA INFERIOR SE QUEDA EN «SEGUIR».
+ *
+ * Antes se ocultaba en cuanto la vista montaba el seguimiento premium, y eso
+ * tenía sentido mientras «Seguir» era una pantalla de tracking a la que se
+ * entraba con un pedido en curso. Ya no lo es: es una sección permanente del
+ * producto, igual que Catálogo, Carrito o Perfil, y una sección no se lleva la
+ * navegación puesta.
+ *
+ * El costo de ocultarla era concreto y no teórico: la única salida que quedaba
+ * en el teléfono era tocar el nombre del comercio en el topbar —un wordmark que
+ * no se lee como control—, porque el hamburguesa de `.tracking-brand-row` está
+ * colapsado a 0x0 en este layout. Cualquier otro destino exigía pasar por el
+ * inicio. Se mantiene la barra y el usuario no queda nunca sin salida.
+ *
+ * A cambio, la vista tiene que despejar el alto de la barra, que es lo que ya
+ * hacen el resto de las secciones a través de `--nav-block`.
+ */
+@media (max-width: 820px) {
+  body[data-active-view="tracking"]:has(.tracking-premium) [data-view="tracking"] {
+    padding-bottom: calc(var(--taba-bottom-nav-clearance) + 12px);
+  }
+
+  body[data-active-view="tracking"]:has(
+    .tracking-premium:is(.status-arriving, .status-on_the_way, .status-picked_up)
+  ) [data-view="tracking"] {
+    padding-bottom: var(--taba-bottom-nav-clearance);
+  }
+}
+
+@media (max-width: 820px) {
+  body[data-active-view="home"] {
+    background: #fbfaf8;
+  }
+
+  .taba-home {
+    padding: 14px 16px 8px;
+  }
+
+  .taba-home > .taba-home-content {
+    gap: 0;
+  }
+
+  .topbar {
+    min-height: var(--topbar);
+    padding: 0 16px;
+  }
+
+  .brand-word {
+    font-size: 19px;
+  }
+
+  .brand-text::after {
+    width: 34px;
+    height: 2.5px;
+    margin-top: 5px;
+  }
+
+  /* Carrito del app bar: icono de 44px con badge que sólo existe si hay
+     contenido. Antes ocupaba el 55% del ancho mostrando "0". */
+  .topbar .cart-button {
+    width: var(--tap);
+    min-width: var(--tap);
+    min-height: var(--tap);
+    padding: 0;
+  }
+
+  .cart-button-icon {
+    width: var(--tap);
+    height: var(--tap);
+    flex-basis: var(--tap);
+  }
+
+  .topbar .cart-button .cart-button-copy,
+  .topbar .cart-button .cart-button-arrow {
+    display: none;
+  }
+
+  .taba-home-hero h1 {
+    font-size: clamp(27px, 7.3vw, 31px);
+    line-height: 1;
+  }
+
+  .taba-home-hero > p:last-of-type {
+    font-size: 14px;
+  }
+
+  .taba-home-address {
+    margin: 0 0 12px;
+  }
+
+  .taba-home-search {
+    height: 50px;
+    margin: 11px 0 10px;
+  }
+
+  .taba-home-search input {
+    min-height: 46px;
+  }
+
+  .home-category-strip {
+    padding-bottom: 9px;
+  }
+
+  .home-category-card {
+    min-width: 72px;
+    min-height: 40px;
+    flex-basis: 72px;
+    padding-block: 5px;
+  }
+
+  .home-promotions-rail {
+    grid-auto-columns: 142px;
+  }
+
+  .home-promo-card {
+    width: auto;
+    grid-template-rows: 86px minmax(0, 1fr);
+    min-height: 182px;
+  }
+
+  .home-promo-media {
+    height: 86px;
+  }
+
+  .home-promo-image {
+    height: 84px;
+  }
+
+  .home-promo-copy {
+    gap: 2px;
+    padding: 2px 30px 0 0;
+  }
+
+  /* Caja suficiente para el nombre en dos líneas y el importe completo: con
+     44px de packshot y 40px de acción el copy quedaba en 82px y recortaba
+     "Coca-Cola Original" y el precio. */
+  .home-best-card {
+    grid-template-columns: 62px minmax(0, 1fr) var(--tap);
+    width: auto;
+    min-height: 92px;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .home-best-media {
+    width: 62px;
+    height: 74px;
+  }
+
+  .home-catalog-card {
+    grid-template-rows: 116px minmax(0, 1fr);
+    min-height: 230px;
+  }
+
+  .home-catalog-media {
+    height: 116px;
+  }
+
+  .home-catalog-image {
+    height: 112px;
+  }
+
+  /* Fractional viewport/compositor rounding can report 43.9999px; keep
+     every 44px Home action above the strict accessibility floor. */
+  .taba-home .home-section-head button {
+    min-height: 44.1px;
+  }
+
+  .taba-home .home-favorite-button,
+  .taba-home .home-add-button,
+  .taba-home .home-best-card .home-add-button {
+    width: 44.1px;
+    height: 44.1px;
+  }
+
+  /* Mismo motivo, mismos 0,1px de guarda. Estos dos controles viven dentro de
+     elementos con `will-change: transform` (el sistema de motion los revela),
+     así que su alto se mide a través de una capa compuesta y cae en
+     43,99993px según dónde quede la fila. El piso de 44px no puede depender de
+     la posición vertical que le toque a la sección. */
+  .taba-home .home-favorite-button,
+  .taba-home .home-section-head button {
+    min-width: 44.1px;
+    min-height: 44.1px;
+  }
+
+  .taba-home .home-favorite-button {
+    width: 44.1px;
+    height: 44.1px;
+  }
+
+  .mobile-nav .mn-ico {
+    width: 21px;
+    height: 21px;
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar {
+    gap: 6px;
+    padding-inline: 10px;
+  }
+
+  .brand {
+    min-width: 0;
+  }
+
+  /* A 320px la etiqueta "ENVIAR A" cede y queda el valor, que es el dato. */
+  .topbar-address {
+    padding-inline: 4px;
+  }
+
+  .topbar-address .address-chip-text small,
+  .topbar-address-chevron {
+    display: none;
+  }
+
+  .taba-home {
+    padding-inline: 12px;
+  }
+
+  .taba-home-hero h1 {
+    font-size: 27px;
+  }
+
+  .taba-home-hero > p:last-of-type {
+    font-size: 13px;
+  }
+
+  .taba-home-address .address-chip-text strong {
+    max-width: 208px;
+  }
+
+  .home-category-card {
+    min-width: 66px;
+    flex-basis: 66px;
+    font-size: 10px;
+  }
+
+  .home-promotions-rail {
+    grid-auto-columns: 136px;
+  }
+
+  .home-best-sellers {
+    grid-auto-columns: 248px;
+  }
+
+  .home-catalog-card {
+    min-height: 220px;
+    padding-inline: 9px;
+  }
+
+  .home-catalog-media {
+    height: 106px;
+  }
+
+  .home-catalog-image {
+    height: 102px;
+  }
+
+  .home-catalog-copy strong {
+    min-height: 45px;
+    font-size: 12px;
+    -webkit-line-clamp: 3;
+  }
+
+
+  /* «Seguir» entra en la misma lista que el resto de las secciones del
+     cliente: la barra tiene que verse idéntica se venga de donde se venga. */
+  body:is([data-active-view="home"], [data-active-view="catalog"], [data-active-view="cart"], [data-active-view="profile"], [data-active-view="tracking"]) .mobile-nav {
+    right: 10px;
+    left: 10px;
+  }
+
+  .floating-cart {
+    right: 10px;
+    left: 10px;
+    padding-inline: 12px;
+    gap: 10px;
+  }
+
+  .floating-cart-label {
+    font-size: 12px;
+  }
+
+  .floating-cart-meta {
+    gap: 4px;
+  }
+}

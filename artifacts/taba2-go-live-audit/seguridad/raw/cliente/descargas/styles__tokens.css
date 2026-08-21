@@ -1,0 +1,433 @@
+/* ============================================================================
+   TABA — Tokens · dirección visual "Mostrador Patagónico"
+   Neutros grises fríos (basalto), rojo TABA reservado a acción y marca,
+   producto sobre blanco. Ninguna medida de chrome se escribe dos veces.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+  --taba-red: #d0000d;
+  --taba-red-hover: #a80009;
+  --taba-red-soft: #fff0f1;
+  --taba-red-quiet: #b3121b;
+  --taba-red-border-soft: #f0c2c6;
+  --taba-red-wash: #fffafa;
+  --taba-ink: #14161a;
+  --taba-graphite: #2a2e35;
+  --taba-graphite-soft: #414751;
+  --taba-muted: #5b6270;
+  --taba-muted-soft: #656d79;
+  --taba-subtle: #f5f7f9;
+  --taba-border: #e4e7ec;
+  --taba-border-soft: #eef0f3;
+  --taba-border-medium: #d7dbe1;
+  /* Borde que PORTA información (campos): 3,26:1 sobre blanco, WCAG 1.4.11. */
+  --taba-line-strong: #878f9d;
+  --taba-warm-white: #fffdfb;
+  --taba-white: #fff;
+  /* La tinta que va ENCIMA de `--taba-ink` cuando la tinta se usa como
+     superficie (chip activo, botón de acción secundaria fuerte). En la
+     superficie clara la tinta es oscura y el texto va blanco; en el Panel del
+     negocio la tinta es clara y el texto tiene que ser el fondo. Sin este par,
+     `background: var(--taba-ink); color: #fff` queda blanco sobre blanco al
+     retematizar, que es exactamente lo que pasaba. */
+  --ink-contrast: var(--taba-white);
+  --taba-success: #0f7a3d;
+  --taba-warning: #8a5300;
+  --taba-danger: #b3121b;
+  --taba-focus: #1a5fd0;
+
+  /* ==========================================================================
+     MARCA — superficie oscura de la home (La Taba 2)
+     --------------------------------------------------------------------------
+     La app es y sigue siendo clara: catálogo, carrito, checkout, tracking y los
+     paneles operativos NO cambian. Estos tokens describen UNA superficie: la
+     home comercial, donde la marca se presenta sobre grafito y el producto
+     sigue viviendo sobre blanco (ver `--taba-white` en las cards).
+
+     El rojo NO se duplica: la acción usa `--taba-red`, el mismo del sistema.
+     Sobre negro ese rojo da 3,4:1, suficiente para superficie y borde pero no
+     para texto chico; por eso existe `--brand-red-ink`, la única variante
+     pensada para TEXTO sobre oscuro (6,3:1).
+     ====================================================================== */
+  /* --------------------------------------------------------------------------
+     ESCALA DE GRAFITO — seis escalones, una sola familia.
+     --------------------------------------------------------------------------
+     Antes el fondo era #090b0e: a tres puntos del negro absoluto. Sobre esa
+     base la página entera se leía como UNA lámina —barra superior, hueco entre
+     secciones y fondo de la nav eran el mismo tono— y la tarjeta despegaba sólo
+     por su hairline, nunca por un escalón de luz. Eso es lo que se veía como
+     "negro plano".
+     Acá el fondo sube a #101317 y la tarjeta sube CON él, así que el escalón
+     fondo→tarjeta se conserva (1,16:1 antes · 1,16:1 ahora) sobre una base que
+     ya no es un pozo. Subir sólo el fondo habría aplanado más las tarjetas: es
+     el error obvio de esta clase de ajuste.
+     Y recién ahora existe un hueco REAL debajo del fondo (`--shelf-sunken`
+     #0a0d10), que antes era imposible porque el fondo ya estaba en el piso.
+     Los seis escalones, medidos en luminancia relativa:
+       hueco #0a0d10 · fondo #101317 · superficie #161a1f · tarjeta #1d222a
+       · elevada #262c35 · borde: hairline sobre cualquiera de ellos.
+     Toda la tinta se remidió contra la superficie donde se usa (ver cada
+     comentario); ninguna baja de 4,5:1. ----------------------------------- */
+  --brand-bg: #101317;              /* 17,0:1 con --brand-ink */
+  --brand-bg-raised: #161a1f;
+  --brand-surface: #1d222a;
+  --brand-surface-hover: #262c35;
+  /* El hairline sube un punto: sobre un fondo levantado, el 10% anterior se
+     perdía justo donde tenía que dibujar el borde de la tarjeta. */
+  --brand-border: rgb(255 255 255 / 13%);
+  --brand-border-strong: rgb(255 255 255 / 26%);
+  --brand-ink: #f5f5f5;             /* 17,0:1 sobre --brand-bg */
+  --brand-ink-muted: #a8abb2;       /*  8,1:1 sobre --brand-bg */
+  /* #ff5f66 y no #ff4d55. El rojo legible tuvo que subir un escalón cuando lo
+     hizo la superficie: sobre `--shelf-raised` levantado, el anterior daba
+     4,31:1 y dejaba el error de campo del Perfil por debajo de AA. Lo detectó
+     `tests/a11y-recovery-and-contrast.test.mjs`, no el ojo. La diferencia entre
+     los dos rojos es imperceptible; la de contraste, no. */
+  --brand-red-ink: #ff5f66;         /*  6,3:1 sobre --brand-bg (texto/enlace) */
+  --brand-gold: #c9953e;            /*  6,9:1 sobre --brand-bg (acento premium) */
+  --brand-gold-soft: #e4b45f;
+  --brand-focus: #8ab4ff;           /* foco visible sobre oscuro */
+
+  /* ------------------------------------------------------------------------
+     GÓNDOLA — la superficie donde vive el contenido del cliente.
+     Una sola familia para TODA la app del cliente: tarjeta de producto,
+     formulario, carrito, checkout, perfil y bottom sheet. Antes cada hoja
+     elegía la suya (`--taba-white` en las tarjetas, `#f7f4ef` en Perfil), y el
+     resultado era el salto "home premium → formulario blanco genérico".
+
+     El crema resolvió ESE salto pero abrió otro: la identidad comercial de
+     TABA2 es negro/grafito, blanco, rojo intenso y dorado sutil, y el beige no
+     está en esa paleta. Media app se leía premium sobre grafito y la otra
+     media —tarjeta, ficha, carrito, checkout— aterrizaba en papel beige con
+     tinta azulada. Dos idiomas visuales en el mismo pedido.
+
+     Acá la superficie del cliente pasa a grafito. El producto NO cambia: sigue
+     viviendo sobre el plato blanco (`--taba-white`), que ahora además es el
+     acento de más contraste de la pantalla y hace que el packshot sea lo
+     primero que se ve. El blanco de la paleta es el del producto y el de la
+     tinta; el beige no vuelve.
+
+     Los cuatro valores están medidos contra la superficie donde se usan, no
+     contra el fondo de página: una tarjeta sobre `--brand-bg` es más clara que
+     la página, y la tinta se calibra sobre la TARJETA.
+     --------------------------------------------------------------------- */
+  /* Los cuatro escalones de la góndola son los MISMOS que los de la marca: una
+     tarjeta y una superficie elevada no pueden ser dos grises distintos según
+     qué hoja las pinte. `--shelf` == `--brand-surface` y `--shelf-raised` ==
+     `--brand-surface-hover` no es una casualidad: antes eran cuatro nombres
+     para dos grises que diferían en menos de un punto de luminancia, o sea
+     ruido con nombre propio. */
+  --shelf: #1d222a;                 /* superficie base (tarjeta, formulario) */
+  --shelf-raised: #262c35;          /* sub-superficie: campo, fila, chip */
+  --shelf-sunken: #0a0d10;          /* hueco: barra de progreso, separador */
+  --shelf-line: rgb(255 255 255 / 11%);        /* hairline de 1px */
+  /* Borde que PORTA información (campo, radio, selector activo): 3,7:1 sobre
+     `--shelf`, por encima del mínimo de WCAG 1.4.11 para componentes. */
+  --shelf-line-strong: rgb(255 255 255 / 38%);
+  --shelf-ink: #f7f7f8;             /* 14,9:1 sobre --shelf */
+  --shelf-muted: #aab0b9;           /*  7,4:1 sobre --shelf */
+  /* Acento premium sobre la góndola: ahorro, +18, sello de confirmado.
+     6,0:1 sobre --shelf, así que también sirve para texto chico. */
+  --shelf-gold: #c9953e;
+  --shelf-gold-soft: #e4b45f;
+  --shelf-gold-wash: rgb(201 149 62 / 14%);
+  /* Rojo que se puede LEER sobre la góndola. El rojo de acción (--taba-red) es
+     una superficie, no una tinta: sobre grafito da 2,3:1. */
+  --shelf-red-ink: #ff5f66;         /*  5,4:1 sobre --shelf · 4,7:1 sobre --shelf-raised */
+  --shelf-red-wash: rgb(208 0 13 / 16%);
+  /* --------------------------------------------------------------------------
+     BRILLO DE LA GÓNDOLA — multiplicador 0…1, no un color.
+     --------------------------------------------------------------------------
+     Las tarjetas de producto del catálogo llevan, además de su sombra oscura,
+     una capa roja muy tenue que las despega del grafito en la zona alta de la
+     góndola y se apaga al bajar. `js/motion.js` modula ESTE número con el
+     scroll; el color, los desenfoques y el reparto viven en el CSS, que es
+     donde se pueden ajustar sin tocar JS.
+     El valor declarado acá es el que se ve **sin JavaScript**: un brillo fijo y
+     discreto. Así la degradación no es "no hay efecto" sino "el efecto no
+     responde al scroll", que es lo que corresponde a un adorno.
+     ----------------------------------------------------------------------- */
+  --card-glow: 0.55;
+
+  /* UNA sombra por superficie. Sobre grafito la sombra despega poco, así que
+     el hairline interno es el que dibuja el borde de la tarjeta; la sombra
+     sólo aporta la profundidad. */
+  --shadow-shelf: 0 14px 38px rgb(0 0 0 / 52%);
+  --shadow-shelf-flat: 0 6px 18px rgb(0 0 0 / 38%);
+  /* Aro de historias: rojo → naranja → dorado. Es el ÚNICO degradado de la
+     identidad y existe sólo en el aro; no se usa como fondo de sección. */
+  --brand-story-ring: conic-gradient(
+    from 140deg,
+    var(--taba-red) 0deg,
+    #f2622a 110deg,
+    var(--brand-gold-soft) 205deg,
+    var(--taba-red) 360deg
+  );
+
+  /* Tipografía de sistema: no se declara ninguna fuente que no se sirva. */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  /* --------------------------------------------------------------------------
+     GEOMETRÍA DE LA ACCIÓN — el radio de un botón dice qué clase de cosa es.
+     --------------------------------------------------------------------------
+     La píldora (999px) es la forma del CHIP: una categoría, una etiqueta, un
+     estado. Es blanda a propósito porque no compromete a nada. "Agregar",
+     "Ver carrito" y "Confirmar" venían con esa misma forma, y ahí la píldora
+     deja de comunicar: la acción más comprometida de la pantalla tenía la
+     geometría de un filtro.
+     `--radius-action` (12px) es la forma de la ACCIÓN: firme, con esquina
+     reconocible, todavía amable. `--radius-action-lg` (14px) es la misma
+     familia un escalón arriba, para superficies de acción grandes —la barra
+     de carrito— donde 12px sobre 52px de alto se lee apretado.
+     La píldora NO desaparece: sigue siendo la forma de los chips, las
+     insignias, los aros y los avatares. Lo que cambia es que deja de ser
+     también la forma de las acciones primarias.
+     ----------------------------------------------------------------------- */
+  --radius-action: 12px;
+  --radius-action-lg: 14px;
+
+  /* --------------------------------------------------------------------------
+     GEOMETRÍA DE LA VITRINA — tres medidas que antes se escribían sueltas en
+     cada hoja y nunca coincidieron entre sí.
+     --------------------------------------------------------------------------
+     Lo que se veía: el buscador de la home tenía 48px de alto y 16px de radio,
+     el del catálogo 46 y 10; "Filtros" era una píldora y "Ordenar" un
+     rectángulo de 10px; el plato del packshot arrancaba 3px a la izquierda del
+     título de su propia tarjeta. Ninguna de esas diferencias decidía nada: eran
+     el residuo de haber escrito el mismo control en cuatro lugares.
+
+     `--control-h` / `--radius-control`: TODO control de una fila del cliente
+     (buscador, "Filtros", "Ordenar"). 48px porque el buscador de la home ya lo
+     tenía por contrato de prueba, y bajar el resto habría sido igualar hacia
+     abajo el único que estaba medido.
+     `--radius-plate`: el plato blanco del packshot, el mismo en la góndola del
+     catálogo y en los rails de la home.
+     `--card-pad`: el aire interior de la tarjeta de producto. Es UN número
+     porque el plato y la columna de texto tienen que compartir el borde
+     izquierdo; con dos números no lo compartían.
+     ----------------------------------------------------------------------- */
+  --control-h: 48px;
+  --radius-control: 14px;
+  --radius-plate: 13px;
+  --card-pad: 10px;
+  /* El borde hace el trabajo; la sombra es soporte. */
+  --shadow-xs: 0 1px 2px rgb(20 22 26 / 6%);
+  --shadow-sm: 0 4px 12px rgb(20 22 26 / 8%);
+  --shadow-md: 0 12px 32px rgb(20 22 26 / 14%);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --tap: 44px;
+  --content: 1180px;
+  --topbar: 56px;
+
+  /* --- Escala de apilamiento: un único orden, sin números sueltos. --- */
+  --z-base: 0;
+  --z-sticky-section: 100;
+  --z-appbar: 200;
+  --z-bottomnav: 300;
+  --z-sticky-cta: 400;
+  --z-backdrop: 500;
+  --z-sheet: 510;
+  --z-modal: 600;
+  --z-toast: 700;
+
+  /* ==========================================================================
+     STICKY STACK — fórmula única. La altura de la nav se declara UNA vez;
+     todo lo demás se deriva. Reemplaza los cuatro valores contradictorios
+     (104px token / 76px responsive / 70px min-height / 82px fallback).
+     ====================================================================== */
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-b: var(--safe-area-bottom);
+  /* El borde de ARRIBA sólo tiene valor con la app instalada: en una pestaña de
+     Safari la barra del navegador ya ocupa esa franja y `env()` devuelve 0. Lo
+     consume `.topbar` bajo `html[data-taba-display-mode="standalone"]`. */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-t: var(--safe-area-top);
+  --nav-h: 56px;                                   /* contenido de la nav */
+  --cta-h: 52px;                                   /* barra de carrito */
+  --stack-gap: 12px;                               /* separación del stack */
+  --nav-block: calc(var(--nav-h) + var(--safe-b)); /* nav + safe area */
+
+  /* Alias heredados: los consumen medidas antiguas y la suite E2E. Derivan
+     de los tokens nuevos para que sigan existiendo sin duplicar la medida. */
+  --taba-bottom-nav-height: var(--nav-h);
+  --taba-bottom-nav-gap: var(--stack-gap);
+  --taba-floating-cart-height: var(--cta-h);
+  --taba-floating-cart-gap: var(--stack-gap);
+  --taba-bottom-nav-clearance: calc(var(--nav-block) + var(--stack-gap));
+
+  --ease: 160ms cubic-bezier(0.2, 0, 0, 1);
+
+  /* Motion system: short, predictable and limited to compositor-friendly
+     properties. Components should consume these tokens instead of inventing
+     local timings. */
+  --motion-duration-instant: 100ms;
+  --motion-duration-fast: 160ms;
+  --motion-duration-base: 220ms;
+  /* 240 y no 320. Este token gobierna la MICRO-interacción que más se ve: la
+     entrada de cada sección y de cada tarjeta al scrollear la home. A 320ms el
+     contenido llegaba después del pulgar y la vidriera se sentía perezosa; 240
+     es el techo del rango corto y deja la entrada por debajo del gesto.
+     El modal se queda en 360: no es una micro-interacción sino la presentación
+     de una hoja completa, y acortarla la vuelve un salto. */
+  --motion-duration-slow: 240ms;
+  --motion-duration-modal: 360ms;
+  /* El sello "Agregado ✓" sobre el selector de cantidad. 520 y no 1100: es una
+     confirmación, no una espera. La respuesta autoritativa —el número del
+     stepper, la insignia, la barra de carrito— ya cambió en el mismo cuadro; el
+     sello sólo la acompaña, y mientras vive tapa parte del control. Un
+     acompañamiento que dura más que el gesto deja de acompañar.
+     `ADDED_FLASH_MS` en `js/ui.js` es el espejo de este número —es la ventana
+     durante la cual el marcado sigue emitiendo el sello— y una prueba falla si
+     los dos dejan de coincidir. */
+  --motion-duration-added-flash: 520ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
+  --motion-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-distance-reveal: 16px;
+}
+
+/* ⚠️ REGLA CRÍTICA DEL SISTEMA — no mover estas declaraciones a :root.
+   La sustitución de una custom property ocurre en el elemento donde se
+   DECLARA, no donde se usa. Si `--bottom-reserve` se declarara en :root
+   resolvería `var(--cta-block)` con el valor de :root y el override de
+   `body` no tendría efecto: el contenido reservaría de menos y la barra de
+   carrito taparía el último precio. Es exactamente el mecanismo por el que
+   `--taba-floating-cart-reserve` quedó sin efecto real.
+   Invariante: un token derivado se declara en el MISMO scope donde varían
+   sus entradas. */
+body {
+  --cta-block: 0px;
+  --bottom-reserve: calc(var(--nav-block) + var(--cta-block) + var(--stack-gap));
+}
+
+/* El carrito con contenido es lo ÚNICO que activa la reserva extra. */
+body[data-cart="filled"] {
+  --cta-block: calc(var(--cta-h) + var(--stack-gap));
+}
+
+/* Superficies sin navegación inferior (negocio, rider) no reservan nada. */
+body:is([data-active-view="business"], [data-active-view="rider"]) {
+  --nav-block: 0px;
+  --cta-block: 0px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    /* Acortar la duración NO detiene una animación `infinite`: la hace correr
+       mil veces por segundo. Visualmente no se nota —cada vuelta termina al
+       instante— pero el compositor sigue trabajando para siempre, que es
+       justamente lo que la preferencia pide evitar. Lo encontró la auditoría de
+       accesibilidad: con la preferencia puesta, el aro del logo seguía vivo en
+       `document.getAnimations()`. */
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  /* El desplazamiento animado es opt-in en las acciones que lo necesitan.
+     Aplicarlo globalmente puede mantener un control en movimiento entre
+     pointerdown y pointerup (especialmente en WebKit) y entregar el click al
+     elemento que queda debajo. */
+  scroll-behavior: auto;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  /* `dvh` sigue la barra de direcciones de Safari; `vh` es el respaldo para
+     navegadores que no la soportan (ver `.app-shell` en common.css). */
+  min-height: 100dvh;
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--taba-white);
+  color: var(--taba-ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.45;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+}
+
+button,
+select,
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1,
+h2,
+h3,
+strong {
+  overflow-wrap: anywhere;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--taba-focus) 70%, white);
+  outline-offset: 3px;
+}
+
+[data-view] :is(h1, h2)[tabindex="-1"]:focus {
+  outline: none;
+}
+
+::selection {
+  background: var(--taba-red-soft);
+  color: var(--taba-ink);
+}

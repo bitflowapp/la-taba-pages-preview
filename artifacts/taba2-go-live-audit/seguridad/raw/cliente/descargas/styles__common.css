@@ -1,0 +1,1372 @@
+/* `100vh` en Safari iOS es el viewport MÁS GRANDE posible (con la barra de
+   direcciones colapsada), no el visible en cada momento: recién cargada la
+   página, con la barra expandida, `100vh` excede el alto real visible y el
+   documento queda con espacio de scroll de sobra debajo del contenido. La
+   segunda declaración usa `dvh` (viewport dinámico) y sólo la aplican los
+   navegadores que la entienden; el resto conserva `vh` como respaldo. */
+.app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+[hidden],
+.hidden {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* App bar de papel con hairline: el negro queda concentrado en el wordmark,
+   no en tres superficies grandes. */
+.topbar {
+  position: sticky;
+  z-index: var(--z-appbar);
+  top: 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  min-height: var(--topbar);
+  padding: 0 max(18px, calc((100vw - var(--content)) / 2));
+  border-bottom: 1px solid var(--taba-border);
+  background: rgb(255 253 251 / 92%);
+  box-shadow: none;
+  color: var(--taba-ink);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+@media (min-width: 1021px) {
+  .topbar {
+    grid-template-columns: auto auto minmax(260px, 420px) auto;
+    gap: 14px;
+  }
+}
+
+/* ── Abierta desde el icono ────────────────────────────────────────────────
+   Con `viewport-fit=cover` y la barra de estado translúcida de iOS, el
+   documento empieza en el borde FÍSICO de la pantalla. En una pestaña de Safari
+   eso no se ve porque la barra del navegador ocupa esa franja; instalada, el
+   reloj y la batería quedan encima del nombre del comercio.
+
+   El ajuste se aplica SÓLO en este modo —`js/app.js` marca el atributo al
+   arrancar— para que la pestaña conserve exactamente la geometría certificada.
+   La barra crece lo que mide el borde y su contenido baja lo mismo, así que el
+   alto útil (56px) no cambia y todo lo que se deriva de `--topbar` sigue
+   cuadrando. */
+html[data-taba-display-mode="standalone"] {
+  --topbar: calc(56px + var(--safe-t));
+}
+
+html[data-taba-display-mode="standalone"] .topbar {
+  padding-top: var(--safe-t);
+}
+
+.topbar-search {
+  display: inline-flex;
+  min-width: 0;
+  min-height: var(--tap);
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px;
+  border: 1px solid var(--taba-border-medium);
+  border-radius: var(--radius-pill);
+  background: var(--taba-white);
+  color: var(--taba-muted);
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+
+.topbar-search:focus-within {
+  border-color: var(--taba-focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--taba-focus) 16%, transparent);
+}
+
+.topbar-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--taba-ink);
+  font-size: 14px;
+}
+
+.topbar-search input::placeholder {
+  color: var(--taba-muted);
+  opacity: 1;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 4px 8px 4px 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.brand-text {
+  display: grid;
+  gap: 0;
+  position: relative;
+}
+
+.brand-word {
+  font-size: 20px;
+  font-weight: 950;
+  font-style: italic;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--taba-ink);
+}
+
+/* El filete rojo sale del FLUJO. Estando dentro, la caja del wordmark medía
+   27,5px (20 de letra + 5 de aire + 2,5 de filete) y la barra —que centra a sus
+   tres columnas— alineaba esa caja, no la palabra: "La Taba" quedaba unos
+   píxeles más alta que el bloque de dirección que tiene al lado y la fila se
+   veía torcida sin que se pudiera decir por qué. Absoluto, el filete sigue
+   dibujándose exactamente donde estaba y la palabra centra con sus vecinas. */
+.brand-text::after {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 34px;
+  height: 2.5px;
+  margin-top: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--taba-red);
+  content: "";
+}
+
+.brand-text small {
+  margin-top: 3px;
+  display: none;
+  font-size: 11px;
+}
+
+.topbar-mid {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.desktop-nav {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Control de dirección: 44px, flexible, valor truncado con elipsis. */
+.topbar-address {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--tap);
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--taba-ink);
+  text-align: left;
+}
+
+.topbar-address:hover {
+  background: var(--taba-subtle);
+}
+
+.topbar-address .address-chip-ico {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--taba-red-quiet);
+}
+
+.topbar-address .address-chip-text {
+  display: grid;
+  min-width: 0;
+  gap: 0;
+}
+
+.topbar-address .address-chip-text small {
+  color: var(--taba-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.topbar-address .address-chip-text strong {
+  overflow: hidden;
+  color: var(--taba-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-address.is-missing .address-chip-text strong {
+  color: var(--taba-danger);
+}
+
+/* App bar operativo: el contexto del local reemplaza al control de dirección
+   del cliente. Nunca conviven. */
+.topbar-ops {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-ops-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0;
+}
+
+.topbar-ops-copy small {
+  overflow: hidden;
+  color: var(--taba-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-ops-copy strong {
+  overflow: hidden;
+  color: var(--taba-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ops-label-short,
+.ops-context-short,
+.ops-context-mini {
+  display: none;
+}
+
+/* En pantallas angostas el rótulo y el contexto tienen variante corta: el
+   texto se acorta por diseño, nunca se recorta con elipsis.
+   Umbral medido: la columna de texto vale ~(ancho − 258px), y la frase
+   completa "Hoy, 31 de julio · N pedidos nuevos" necesita 202px. */
+@media (max-width: 519px) {
+  .ops-label-full,
+  .ops-context-full {
+    display: none;
+  }
+
+  .ops-label-short,
+  .ops-context-short {
+    display: inline;
+  }
+
+  .topbar-ops {
+    gap: 6px;
+  }
+
+  .topbar-ops-sync {
+    padding-inline: 6px;
+    font-size: 11px;
+  }
+}
+
+/* Por debajo de 341px ni siquiera "1 pedido nuevo" entra junto al estado de
+   sincronización: se usa la frase mínima, también completa. */
+@media (max-width: 340px) {
+  .ops-context-short {
+    display: none;
+  }
+
+  .ops-context-mini {
+    display: inline;
+  }
+
+  .topbar-ops-copy small {
+    letter-spacing: 0;
+  }
+
+  .topbar-ops-sync {
+    padding-inline: 5px;
+    font-size: 10.5px;
+  }
+}
+
+.topbar-ops-sync {
+  flex: 0 0 auto;
+  min-height: 32px;
+  white-space: nowrap;
+}
+
+/* Conmutador de sonido: estado explícito con `aria-pressed` y contador de
+   pedidos nuevos. Es la función más crítica del turno. */
+.topbar-ops-sound {
+  position: relative;
+  display: grid;
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 var(--tap);
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-sm);
+  background: var(--taba-white);
+  color: var(--taba-muted);
+}
+
+.topbar-ops-sound.on {
+  border-color: var(--taba-ink);
+  color: var(--taba-ink);
+}
+
+.topbar-ops-sound-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  border-radius: var(--radius-pill);
+  background: var(--taba-red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.topbar-address-chevron {
+  flex: 0 0 auto;
+  color: var(--taba-muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.desktop-nav button,
+.nav-button {
+  min-height: var(--tap);
+}
+
+.desktop-nav button {
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--taba-graphite);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.desktop-nav button:hover,
+.desktop-nav button.active {
+  background: var(--taba-subtle);
+  color: var(--taba-ink);
+}
+
+.topbar .desktop-nav button {
+  color: var(--taba-muted);
+}
+
+.topbar .desktop-nav button.active {
+  color: var(--taba-red-quiet);
+}
+
+/* Icono con badge: la cifra sólo existe si hay contenido. */
+.topbar .cart-button {
+  display: inline-flex;
+  width: var(--tap);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0;
+  border: 1px solid var(--taba-border);
+  /* El mismo radio que el buscador y los controles del catálogo: es el otro
+     control de la barra y no tiene por qué tener una esquina propia. */
+  border-radius: var(--radius-control);
+  background: var(--taba-white);
+  box-shadow: none;
+  color: var(--taba-ink);
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.topbar .cart-button:hover {
+  border-color: var(--taba-border-medium);
+  background: var(--taba-subtle);
+}
+
+.topbar .cart-button .cart-button-copy,
+.topbar .cart-button .cart-button-arrow {
+  display: none;
+}
+
+.cart-button-icon {
+  position: relative;
+  display: grid;
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 var(--tap);
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  box-shadow: none;
+  color: var(--taba-ink);
+}
+
+.cart-button-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.cart-button-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 19px;
+  height: 19px;
+  place-items: center;
+  padding: 0 4px;
+  z-index: 1;
+  border: 2px solid #fff;
+  border-radius: var(--radius-pill);
+  background: var(--taba-red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 22%);
+}
+
+/* El badge no existe con el carrito vacío: no se muestra un "0". */
+.cart-button-count.is-empty {
+  display: none !important;
+}
+
+.cart-button-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  text-align: left;
+}
+
+.cart-button-copy small {
+  color: rgb(255 255 255 / 76%);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.cart-button-copy strong {
+  overflow: hidden;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+}
+
+.cart-button-arrow {
+  margin-left: auto;
+  color: rgb(255 255 255 / 76%);
+  font-size: 26px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.topbar-actions,
+.button-row,
+.view-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.primary-button,
+.secondary-button,
+.ghost-button,
+.danger-button,
+.add-button,
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  transition: background var(--ease), border-color var(--ease), color var(--ease), transform var(--ease);
+}
+
+.primary-button,
+.add-button {
+  border-color: var(--taba-red);
+  background: var(--taba-red);
+  color: var(--taba-white);
+}
+
+.primary-button:hover,
+.add-button:hover {
+  border-color: var(--taba-red-hover);
+  background: var(--taba-red-hover);
+}
+
+.secondary-button {
+  border-color: var(--taba-border);
+  background: var(--taba-white);
+  color: var(--taba-ink);
+}
+
+.secondary-button:hover {
+  border-color: #c9c9ce;
+  background: var(--taba-subtle);
+}
+
+.ghost-button,
+.icon-button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--taba-graphite);
+}
+
+.ghost-button:hover,
+.icon-button:hover {
+  background: var(--taba-subtle);
+}
+
+.danger-button {
+  border-color: #ffd6d9;
+  background: #fff4f5;
+  color: var(--taba-danger);
+}
+
+.compact {
+  min-height: var(--tap);
+  padding-inline: 14px;
+  font-size: 14px;
+}
+
+.icon-button {
+  width: var(--tap);
+  min-width: var(--tap);
+  padding: 0;
+}
+
+.mini-badge,
+.mn-badge {
+  display: inline-grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--taba-red);
+  color: white;
+  font-size: 11px;
+}
+
+.is-empty {
+  display: none;
+}
+
+main {
+  min-height: calc(100vh - var(--topbar));
+  min-height: calc(100dvh - var(--topbar));
+}
+
+/* Esta tarjeta se pinta cuando la aplicación NO arrancó: no puede depender de
+   ninguna clase que agregue el runtime ni del remapeo de tokens del shell del
+   cliente, que se aplica dentro de `.app-view` y acá no llega. Por eso declara
+   su superficie Y su tinta con valores explícitos.
+
+   Antes traía fondo casi blanco (#fff9f9) con la tinta del shell oscuro
+   heredada: el título quedaba en gris clarísimo sobre blanco y "Reiniciar
+   prueba" directamente no se leía. La única pantalla que puede quedar entre un
+   cliente y la tienda era la menos legible de todas.
+
+   El selector nombra las DOS clases a propósito: `.card` está declarada más
+   abajo en esta misma hoja y con un solo nombre le ganaba el fondo. Ese es el
+   motivo real por el que el panel nunca fue del color que decía su regla. */
+.card.app-recovery {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  width: min(calc(100% - 40px), var(--content));
+  margin: 20px auto 0;
+  padding: 16px 18px;
+  border-color: transparent;
+  border-radius: 20px;
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf-flat), inset 0 0 0 1px var(--shelf-line);
+  color: var(--shelf-ink);
+}
+
+.app-recovery-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--taba-red);
+  color: white;
+  font-weight: 900;
+}
+
+.app-recovery-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.app-recovery-copy strong {
+  color: var(--shelf-ink);
+}
+
+.app-recovery-copy p {
+  margin: 0;
+  color: var(--shelf-muted);
+}
+
+.app-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 8px;
+}
+
+/* El botón secundario de papel es blanco con tinta `--taba-ink`, y en el shell
+   del cliente `--taba-ink` ya es la tinta CLARA: dentro de esta tarjeta salía
+   blanco sobre blanco, o sea invisible. La corrección equivalente ya existe en
+   `brand-home.css`, pero acotada a `.app-view`/`.modal-card`, y este panel no
+   es ninguno de los dos. Se declara acá para que el panel siga siendo legible
+   por sí solo. */
+.app-recovery .secondary-button {
+  border-color: var(--shelf-line-strong);
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+}
+
+.app-recovery .secondary-button:hover {
+  border-color: var(--taba-white);
+  background: var(--shelf-sunken);
+}
+
+.section {
+  width: min(100%, var(--content));
+  margin-inline: auto;
+  padding: var(--space-8) 20px 100px;
+}
+
+.section.soft {
+  width: 100%;
+  max-width: none;
+  padding-inline: max(20px, calc((100vw - var(--content)) / 2 + 20px));
+  background: var(--taba-subtle);
+}
+
+.app-view[aria-hidden="true"] {
+  display: none;
+}
+
+.section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.section-head h1,
+.section-head h2,
+.view-title {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.eyebrow {
+  margin-bottom: 6px;
+  color: var(--taba-red-quiet);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.card {
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  background: var(--taba-white);
+  box-shadow: var(--shadow-xs);
+}
+
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 40px 24px;
+  color: var(--taba-muted);
+  text-align: center;
+}
+
+.empty-state strong {
+  color: var(--taba-ink);
+  font-size: 20px;
+}
+
+.empty-state-copy {
+  max-width: 42ch;
+  margin: 0;
+}
+
+.empty-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: 4px;
+}
+
+/* Aviso y error del formulario. Los tres valores pasan a token porque este
+   bloque lo comparten el checkout del cliente (grafito) y los paneles
+   operativos (papel): con literales sólo podía estar bien en uno de los dos. */
+.warning-box,
+.notice-box {
+  padding: 14px 16px;
+  border: 1px solid var(--taba-red-border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--taba-red-soft);
+  color: var(--taba-red-quiet);
+  font-size: 14px;
+}
+
+.form-hint,
+small,
+.muted {
+  color: var(--taba-muted);
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: var(--taba-graphite);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.field-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+/* El borde del campo PORTA información: usa `--taba-line-strong` (3,26:1
+   sobre blanco) para cumplir WCAG 1.4.11, y nunca baja de 16px de fuente. */
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border: 1px solid var(--taba-line-strong);
+  border-radius: var(--radius-xs);
+  background: var(--taba-white);
+  font-size: 16px;
+}
+
+textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--taba-focus);
+  outline: 2px solid color-mix(in srgb, var(--taba-focus) 16%, white);
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.req {
+  color: var(--taba-red-quiet);
+}
+
+details {
+  border-radius: var(--radius-sm);
+}
+
+summary {
+  min-height: var(--tap);
+  cursor: pointer;
+  color: var(--taba-graphite);
+  font-weight: 800;
+}
+
+.toast {
+  position: fixed;
+  z-index: var(--z-toast);
+  pointer-events: none;
+  left: 50%;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  width: min(calc(100vw - 32px), 460px);
+  padding: 13px 18px;
+  /* Un aviso es una lámina, no un chip: entra en la familia de la acción y
+     deja la píldora para lo que efectivamente es una etiqueta. */
+  border-radius: var(--radius-action-lg);
+  background: var(--taba-ink);
+  box-shadow: var(--shadow-md);
+  color: white;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+/* En el carrito el aviso NO flota: lo reemplaza `.cart-notice`, que vive dentro
+   del layout de esa vista (ver checkout.css). Antes se anclaba a 76px del borde
+   superior y ahí tapaba el encabezado "Tu pedido" durante los 2,2 s del aviso,
+   medido en 390x844 y en WebKit. Anclarlo abajo tampoco servía: ahí cruza las
+   líneas del carrito.
+   `display: none` y no una ocultación visual: así queda fuera del árbol de
+   accesibilidad y la banda del carrito puede ser la única región viva de esta
+   vista, sin anuncios duplicados. */
+body[data-active-view="cart"] .toast {
+  display: none;
+}
+
+body:has(dialog[open]) .toast {
+  top: max(16px, env(safe-area-inset-top));
+  right: 80px;
+  bottom: auto;
+  left: 16px;
+  width: auto;
+  max-width: 460px;
+  transform: none;
+}
+
+dialog {
+  max-width: min(calc(100vw - 24px), 700px);
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  overflow: auto;
+  border: 0;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+dialog::backdrop {
+  background: rgb(17 17 19 / 56%);
+  backdrop-filter: blur(3px);
+}
+
+.pin-card,
+.cancel-card,
+.pitch-card {
+  padding: 24px;
+}
+
+.modal-close {
+  position: absolute;
+  z-index: 2;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: var(--tap);
+  height: var(--tap);
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 94%);
+  font-size: 24px;
+}
+
+.mobile-nav {
+  display: none;
+}
+
+.floating-cart {
+  position: fixed;
+  z-index: var(--z-sticky-cta);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  right: 18px;
+  bottom: 20px;
+  height: var(--cta-h);
+  min-height: var(--cta-h);
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-md);
+  /* Barra oscura frente a la nav de papel: por contraste de superficie no se
+     leen como una sola franja, y el rojo no ocupa el ancho de la pantalla. */
+  background: var(--taba-ink);
+  box-shadow: var(--shadow-sm);
+  color: white;
+  font-weight: 800;
+  text-align: left;
+}
+
+.floating-cart-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.floating-cart-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.floating-cart-saving {
+  color: #fff4a6;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.floating-cart-original {
+  color: rgb(255 255 255 / 72%);
+  font-size: 11px;
+  text-decoration: line-through;
+}
+
+.floating-cart-label {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.floating-cart-copy small {
+  color: rgb(255 255 255 / 82%);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.floating-cart > strong {
+  white-space: nowrap;
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La consulta se retira del campo con un único control: el nativo de
+   `type="search"` se oculta para no duplicar la "✕". */
+.search-box input[type="search"]::-webkit-search-cancel-button,
+.search-box input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ============================================================================
+   AVISOS DEL SHELL — sin conexión · actualización
+   ----------------------------------------------------------------------------
+   Eran cuatro. Los dos de instalación —el de Android y la guía de iPhone— se
+   fueron a `.install-sheet`, más abajo: una tira fina anclada abajo a la
+   derecha se le superponía a la barra flotante del carrito, y una invitación
+   que compite con el botón de comprar no es una invitación.
+
+   Estos dos avisos viven FUERA de `.app-view`, y ahí está el defecto que se
+   cierra acá: el remapeo de la paleta del cliente los alcanza por la TINTA —que
+   se hereda del `body`— pero no por la SUPERFICIE, que estaba escrita como
+   `white` literal. Sobre la app oscura eso daba texto casi blanco sobre un
+   rectángulo blanco: el título "Hay una actualización disponible" no se leía, y
+   la ✕ tampoco. Superficie y tinta se declaran juntas, igual que en la góndola;
+   la variante oscura del cliente vive en `brand-home.css`, junto al resto de su
+   scope.
+
+   La composición también cambia. Con `flex` en una sola fila, el botón y la ✕
+   se quedaban con ~200 de los 358px disponibles y el título caía en tres
+   renglones partidos a mitad de palabra ("actualizació / n disponible"). Acá el
+   aviso es una tarjeta: mensaje arriba, acción ancha abajo, cierre en la
+   esquina. A partir de 520px hay ancho para la fila y vuelve a ella.
+   ========================================================================== */
+.pwa-banner {
+  position: fixed;
+  z-index: var(--z-toast);
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--tap);
+  grid-template-areas:
+    "copy close"
+    "action action";
+  align-items: center;
+  gap: 12px;
+  width: min(calc(100vw - 32px), 420px);
+  padding: 16px;
+  border: 1px solid var(--taba-border);
+  border-radius: 20px;
+  background: var(--taba-white);
+  box-shadow: var(--shadow-md);
+  color: #14161a;
+}
+
+/* "Sin conexión" no tiene controles ni envoltorio: es una sola columna de
+   texto que se apila sola. */
+.pwa-banner-offline {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: none;
+  gap: 3px;
+}
+
+.pwa-banner-copy {
+  display: grid;
+  grid-area: copy;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pwa-banner strong,
+.pwa-banner-copy strong {
+  color: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.pwa-banner small,
+.pwa-banner-copy small {
+  color: var(--taba-muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+/* La acción ocupa el ancho: es la única razón por la que el aviso existe. */
+.pwa-banner .primary-button {
+  width: 100%;
+  grid-area: action;
+  min-height: var(--tap);
+  border-radius: var(--radius-pill);
+}
+
+/* La ✕ era un rectángulo transparente sin ningún borde: se veía como un
+   carácter suelto flotando al lado del botón. Es un control y se dibuja como
+   tal, en la esquina y en segundo plano. */
+.pwa-banner-dismiss {
+  display: grid;
+  grid-area: close;
+  width: var(--tap);
+  height: var(--tap);
+  align-self: start;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--taba-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--taba-muted);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.pwa-banner-dismiss:hover {
+  border-color: var(--taba-border-medium);
+  background: var(--taba-subtle);
+  color: var(--taba-ink);
+}
+
+/* Con ancho para la fila, el aviso vuelve a una sola línea. */
+@media (min-width: 520px) {
+  .pwa-banner {
+    grid-template-columns: minmax(0, 1fr) auto var(--tap);
+    grid-template-areas: "copy action close";
+  }
+
+  .pwa-banner-offline {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
+  }
+
+  .pwa-banner .primary-button {
+    width: auto;
+    padding-inline: 18px;
+  }
+
+  .pwa-banner-dismiss {
+    align-self: center;
+  }
+}
+
+.pwa-banner-update {
+  bottom: calc(66px + 18px + env(safe-area-inset-bottom));
+}
+
+/* ============================================================================
+   INVITACIÓN A INSTALAR — hoja inferior
+   ----------------------------------------------------------------------------
+   Es un `<dialog>` de verdad y no un `div` fijo, y eso resuelve tres cosas de
+   golpe que un cartel no resuelve: el foco queda adentro mientras está abierta,
+   Escape la cierra, y el navegador la pone por encima de todo sin pelear con la
+   pila de z-index de la barra inferior y el carrito flotante.
+
+   Se ancla abajo porque ahí está el pulgar, y se separa del borde con
+   `env(safe-area-inset-bottom)`: en un iPhone con indicador de inicio, 12px
+   pelados dejan la acción principal debajo de la franja del gesto.
+
+   La superficie es la CLARA del sistema. La app del cliente es oscura y el
+   remapeo vive en `brand-home.css`, junto al resto de su alcance: acá se
+   declara la base, igual que con los avisos del shell.
+   ========================================================================== */
+.install-sheet {
+  width: min(calc(100vw - 24px), 460px);
+  max-width: min(calc(100vw - 24px), 460px);
+  max-height: min(720px, calc(100dvh - 32px));
+  margin: auto auto calc(12px + env(safe-area-inset-bottom, 0px));
+  padding: 0;
+  border: 0;
+  border-radius: 26px;
+  background: var(--taba-white);
+  box-shadow: 0 24px 64px rgb(12 14 18 / 38%);
+  color: var(--taba-ink);
+  overflow: hidden;
+}
+
+.install-sheet::backdrop {
+  background: rgb(10 12 15 / 58%);
+}
+
+.install-sheet-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 26px 20px 20px;
+}
+
+/* La ✕ es el primer control del documento a propósito: quien navega con
+   teclado o lector de pantalla recibe la salida antes que la oferta. */
+.install-sheet-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: var(--tap);
+  height: var(--tap);
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--taba-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--taba-muted);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.install-sheet-close:hover {
+  border-color: var(--taba-border-medium);
+  background: var(--taba-subtle);
+  color: var(--taba-ink);
+}
+
+.install-sheet-view {
+  display: grid;
+  gap: 12px;
+}
+
+.install-sheet-view[hidden] {
+  display: none;
+}
+
+.install-sheet-mark img {
+  display: block;
+  width: 60px;
+  height: 60px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgb(208 0 13 / 28%);
+}
+
+.install-sheet-title {
+  margin: 0;
+  /* Deja libre la esquina de la ✕ —12px de borde más el objetivo táctil— sin
+     recurrir a un padding que también recortaría el texto largo de los pasos. */
+  padding-right: calc(12px + var(--tap));
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.install-sheet-copy {
+  margin: -2px 0 0;
+  color: var(--taba-muted);
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.install-sheet-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.install-sheet-cta {
+  width: 100%;
+  min-height: 52px;
+  border-radius: var(--radius-pill);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+/* "Ahora no" es una salida, no una alternativa: se dibuja liviana para que la
+   jerarquía sea evidente, pero conserva el área táctil completa. */
+.install-sheet-later {
+  width: 100%;
+  min-height: var(--tap);
+  border-radius: var(--radius-pill);
+  color: var(--taba-muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.install-steps {
+  display: grid;
+  gap: 14px;
+  margin: 4px 0 2px;
+  padding: 0;
+  counter-reset: install-step;
+  list-style: none;
+}
+
+.install-steps li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.install-steps li::before {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  content: counter(install-step);
+  counter-increment: install-step;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--taba-red);
+  color: var(--taba-white);
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.install-step-body {
+  display: block;
+  padding-top: 3px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.install-step-body strong {
+  font-weight: 800;
+}
+
+.install-step-body small {
+  display: block;
+  margin-top: 3px;
+  color: var(--taba-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+/* El glifo va dentro del renglón, alineado con la línea de base del texto: es
+   el mismo dibujo que la persona tiene que buscar en su teléfono, así que vale
+   más al lado de la palabra que en una columna aparte. */
+.install-step-icon {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  vertical-align: -7px;
+  border-radius: 8px;
+  background: var(--taba-red-soft);
+  color: var(--taba-red-quiet);
+}
+
+.install-steps-lead {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--taba-red-soft);
+  color: var(--taba-red-quiet);
+  font-size: 13.5px;
+}
+
+.install-steps-lead[hidden] {
+  display: none;
+}
+
+
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: var(--space-5);
+}
+
+.profile-grid > .card {
+  padding: 24px;
+}
+
+.info-list {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.info-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--taba-border);
+}
+
+.info-list span {
+  color: var(--taba-muted);
+}
+
+.info-list strong {
+  max-width: 60%;
+  text-align: right;
+}

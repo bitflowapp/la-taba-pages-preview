@@ -31,6 +31,7 @@ test('Supabase migration does not hardcode API secrets', () => {
 
 const hardeningPath = path.join(root, 'supabase/migrations/20260531040000_la_taba_phase1_hardening.sql');
 const operationalPath = path.join(root, 'supabase/migrations/20260601205707_operational_orders_v1.sql');
+const deliveryPinPath = path.join(root, 'supabase/migrations/20260606090000_delivery_pin_v1.sql');
 
 test('hardening migration adds a transactional create_order_with_items RPC', () => {
   const sql = fs.readFileSync(hardeningPath, 'utf8');
@@ -119,4 +120,16 @@ test('Supabase operational v1 docs and seed exist without secrets', () => {
     assert.doesNotMatch(text, /service_role/i, `${file} no debe mencionar llaves privilegiadas por nombre`);
     assert.doesNotMatch(text, /supabaseAnonKey\s*[:=]\s*['"][^'"]+['"]/i, `${file} no debe hardcodear anon keys`);
   }
+});
+
+test('Supabase delivery PIN v1 migration adds proof-of-delivery code support', () => {
+  const sql = fs.readFileSync(deliveryPinPath, 'utf8');
+
+  assert.match(sql, /alter table public\.orders add column if not exists delivery_pin text/);
+  assert.match(sql, /alter table public\.orders add column if not exists delivery_pin_confirmed_at timestamptz/);
+  assert.match(sql, /orders_delivery_pin_format/);
+  assert.match(sql, /\^\[0-9\]\{4\}\$/);
+  assert.match(sql, /create or replace function public\.generate_delivery_pin\(\)/);
+  assert.match(sql, /create or replace function public\.set_order_delivery_pin\(\)/);
+  assert.match(sql, /create trigger orders_set_delivery_pin/);
 });

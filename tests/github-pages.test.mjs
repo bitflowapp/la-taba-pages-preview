@@ -27,6 +27,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./assets/products/cortes-crudos.webp'));
   assert.ok(assets.includes('./js/app.js'));
   assert.ok(assets.includes('./js/core/address.js'));
+  assert.ok(assets.includes('./js/core/delivery-pin.js'));
   assert.ok(assets.includes('./js/core/storage.js'));
   assert.ok(assets.includes('./js/core/order-status.js'));
   assert.ok(assets.includes('./js/core/order-workflow.js'));

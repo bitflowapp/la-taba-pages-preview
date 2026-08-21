@@ -10,7 +10,7 @@ test('carga inicial, home sin lista infinita y catálogo por categorías', async
 
   await page.goto('/');
   await expect(page.locator('[data-cart-count]')).toHaveText('0');
-  await expect(page.locator('[data-cart-total-small]')).toHaveText('Pedido');
+  await expect(page.locator('[data-cart-total-small]')).toHaveText('$ 0');
   await expect(page.locator('[data-view="home"]')).toBeVisible();
   await expect(page.locator('[data-view="cart"]')).toBeHidden();
   await expect(page.locator('[data-view]')).toHaveCount(7);
@@ -19,6 +19,13 @@ test('carga inicial, home sin lista infinita y catálogo por categorías', async
   await expect(page.locator('[data-view="home"] [data-product-grid]')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .category-strip')).toBeVisible();
   await expect(page.locator('[data-home-active-order]')).toBeHidden();
+  await expect(page.locator('[data-view="home"] .home-category-card')).toHaveCount(6);
+  await expect(page.locator('[data-view="home"] .home-category-card.active')).toContainText('Gaseosas');
+  await expect(page.locator('[data-home-promotions] .home-promo-card')).toHaveCount(3);
+  await expect(page.locator('[data-home-best-sellers] .home-best-card')).toHaveCount(3);
+  await expect(page.locator('[data-home-catalog-preview] .home-catalog-card')).toHaveCount(4);
+  await expect(page.locator('.mobile-nav [data-nav-view="home"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-view="home"]')).not.toContainText(/Pack x6|\bx6\b/i);
 
   // Entrar al catálogo desde el CTA del home.
   await page.locator('[data-view="home"] [data-nav-view="catalog"]').first().click();
@@ -45,6 +52,23 @@ test('carga inicial, home sin lista infinita y catálogo por categorías', async
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
   expect(overflow).toBeTruthy();
+
+  await guards.assertClean();
+});
+
+test('home permite marcar favoritos y agregar bebidas unitarias', async ({ page }) => {
+  const guards = installPageGuards(page);
+
+  await page.goto('/');
+  const favorite = page.locator('[data-home-catalog-preview] [data-home-favorite]').first();
+  await expect(favorite).toHaveAttribute('aria-pressed', 'false');
+  await favorite.click();
+  await expect(page.locator('[data-home-catalog-preview] [data-home-favorite]').first()).toHaveAttribute('aria-pressed', 'true');
+
+  await page.locator('[data-home-promotions] [data-add-product]').first().click();
+  await waitForToast(page, /agregado al pedido/);
+  await expect(page.locator('[data-cart-count]')).toHaveText('1');
+  await expect(page.locator('[data-cart-total-small]')).toHaveText('$ 4.400');
 
   await guards.assertClean();
 });
@@ -354,6 +378,8 @@ test('flujo retiro en local', async ({ page }) => {
   await waitForToast(page, 'Pedido creado. Ya podés seguirlo en tiempo real.');
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
+  await expect(page.locator('[data-tracking-panel]')).not.toContainText('Código de entrega');
+  await expect(page.locator('[data-tracking-panel] [data-delivery-pin-card]')).toHaveCount(0);
   const autoOpened = await page.evaluate(() => window.__openedUrls.length);
   expect(autoOpened).toBe(0);
 
@@ -411,6 +437,7 @@ test('modo negocio y delivery', async ({ page }) => {
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Enviar a reparto');
+  const deliveryPin = await page.locator('[data-inbox-order="LT-0002"] [data-business-delivery-pin]').textContent();
 
   const stockInc = page.locator('[data-stock-inc]').first();
   const stockDec = page.locator('[data-stock-dec]').first();
@@ -449,8 +476,9 @@ test('modo negocio y delivery', async ({ page }) => {
     await page.locator('[data-delivery-arrive]').first().click();
     await waitForToast(page, 'Llegada al domicilio registrada.');
     await expect(page.locator('[data-delivery-panel]')).toContainText('Llegando');
+    await page.locator('[data-delivery-pin-form] input[name="deliveryPin"]').fill((deliveryPin || '').replace(/\D/g, ''));
     await page.locator('[data-delivery-done]').first().click();
-    await waitForToast(page, 'Pedido marcado como entregado.');
+    await waitForToast(page, 'Código confirmado. Pedido marcado como entregado.');
     await expect(page.locator('[data-delivery-panel]')).toContainText('No hay pedidos para repartir.');
   }
 
@@ -467,7 +495,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await expect(page.locator('[data-view="home"]')).toBeVisible();
 
   await page.evaluate(() => window.scrollTo(0, 520));
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await page.locator('.topbar [data-open-cart]').click();
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await expect(page.locator('[data-view="home"]')).toBeHidden();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
@@ -522,7 +550,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
 
     await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
     if (viewport.width <= 760) {
-      await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+      await page.locator('.topbar [data-open-cart]').click();
     } else {
       await page.locator('.desktop-nav [data-nav-view="cart"]').click();
     }

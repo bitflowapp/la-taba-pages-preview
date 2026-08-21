@@ -63,6 +63,7 @@ test('delivery actions move an assigned order from ready to on the way and then 
     notes: '',
     createdAt: new Date().toISOString(),
     status: 'ready',
+    deliveryPin: '1357',
     items: [],
     subtotal: 0,
     deliveryFee: 0,
@@ -98,10 +99,48 @@ test('delivery actions move an assigned order from ready to on the way and then 
     '[data-delivery-done]': { deliveryDone: order.id },
   }));
   assert.equal(result.handled, true);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /PIN/);
+  assert.equal(getState().orders[0].status, 'on_the_way');
+  assert.equal(getState().orders[0].deliveryPin.attempts, 0);
+
+  result = handleDeliveryAction(deliveryDoneTarget(order.id, '0000'));
+  assert.equal(result.handled, true);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /incorrecto/);
+  assert.equal(getState().orders[0].status, 'on_the_way');
+  assert.equal(getState().orders[0].deliveryPin.attempts, 1);
+
+  result = handleDeliveryAction(deliveryDoneTarget(order.id, '1357'));
+  assert.equal(result.handled, true);
+  assert.match(result.message, /Código confirmado/);
   assert.match(result.message, /entregado/);
   assert.equal(getState().orders[0].status, 'delivered');
   assert.match(getState().orders[0].delivery.currentLocationLabel, /entregado/);
+  assert.equal(getState().orders[0].deliveryPin.status, 'confirmed');
+  assert.equal(getState().orders[0].deliveryPin.code, '1357');
+  assert.equal(getState().orders[0].deliveryPin.attempts, 1);
+  assert.match(getState().orders[0].deliveryPin.confirmedAt, /^\d{4}-\d{2}-\d{2}T/);
+  assert.match(getState().orders[0].delivery.pinConfirmedAt, /^\d{4}-\d{2}-\d{2}T/);
 });
+
+function deliveryDoneTarget(orderId, pin) {
+  return {
+    closest(selector) {
+      if (selector === '[data-delivery-done]') {
+        return { dataset: { deliveryDone: orderId } };
+      }
+      if (selector === '[data-delivery-pin-form]') {
+        return {
+          querySelector(inputSelector) {
+            return inputSelector === '[name="deliveryPin"]' ? { value: pin } : null;
+          },
+        };
+      }
+      return null;
+    },
+  };
+}
 
 test('delivery selector ignores delivered, cancelled, and pickup-only queues', () => {
   const orders = [

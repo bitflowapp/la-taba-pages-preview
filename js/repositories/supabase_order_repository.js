@@ -5,6 +5,13 @@ import {
   normalizeTrackingLocation,
   toDomainOrder,
 } from '../core/domain.js';
+import {
+  createDeliveryPin,
+  incrementDeliveryPinAttempts,
+  normalizeDeliveryPinState,
+  resolveDeliveryPin,
+  validateDeliveryPinForCompletion,
+} from '../core/delivery-pin.js';
 import { calculateTotals, normalizeMoneyValue } from '../core/pricing.js';
 import { appendReferenceToNotes, normalizeAddressDetails } from '../core/address.js';
 import {
@@ -69,6 +76,15 @@ export function createSupabaseOrderRepository({
     return repositoryResult(true, { rows, orders: mirrorOrders(rows, { replace: true }) });
   }
 
+  async function persistDeliveryPinConfirmation(orderId, confirmedAt) {
+    const result = await request(`/orders?id=eq.${encodeURIComponent(orderId)}&select=*`, {
+      method: 'PATCH',
+      body: { delivery_pin_confirmed_at: confirmedAt },
+      prefer: 'return=representation',
+    });
+    return result.ok ? single(result.data) : null;
+  }
+
   const repository = {
     mode: 'supabase',
     businessId,
@@ -114,6 +130,7 @@ export function createSupabaseOrderRepository({
         code,
         status: 'submitted',
         fulfillment_type: values.deliveryMode,
+        delivery_pin: values.deliveryMode === 'delivery' ? createDeliveryPin() : null,
         customer_name: values.customerName,
         customer_phone: values.customerPhone,
         customer_whatsapp: values.customerPhone,
@@ -169,11 +186,18 @@ export function createSupabaseOrderRepository({
       const result = await fetchOrders();
       return result.ok ? result.orders : [];
     },
-    async updateOrderStatus(orderId, status) {
+    async updateOrderStatus(orderId, status, options = {}) {
       const row = await fetchOrderByPublicId(orderId);
       if (!row) return repositoryResult(false, { message: 'Pedido no encontrado.' });
       const nextStatus = normalizeWorkflowStatus(status);
+      const currentOrder = rowToDemoOrder(row);
+      const pinValidation = validateDeliveryPinForCompletion(currentOrder, status, options.deliveryPin, options);
+      if (!pinValidation.ok) {
+        if (pinValidation.reason === 'mismatch') recordLocalDeliveryPinAttempt(currentOrder.id, row.id);
+        return repositoryResult(false, { message: pinValidation.message });
+      }
       const timestamp = new Date().toISOString();
+      const pinConfirmedAt = nextStatus === 'delivered' && options.requireDeliveryPin ? timestamp : null;
       const patch = {
         status: nextStatus,
         updated_at: timestamp,
@@ -186,7 +210,11 @@ export function createSupabaseOrderRepository({
       });
       if (!result.ok) return result;
       await insertEvent(row.id, `order.${nextStatus}`, { previousStatus: row.status, nextStatus });
-      const fullRow = await fetchOrderByPublicId(row.id) || { ...row, ...patch };
+      const confirmedRow = pinConfirmedAt ? await persistDeliveryPinConfirmation(row.id, pinConfirmedAt) : null;
+      const fullRow = await fetchOrderByPublicId(row.id) || confirmedRow || { ...row, ...patch };
+      if (pinConfirmedAt && !fullRow.delivery_pin_confirmed_at) {
+        fullRow.delivery_pin_confirmed_at = pinConfirmedAt;
+      }
       const order = mirrorOrder(fullRow);
       return repositoryResult(true, {
         order,
@@ -325,6 +353,18 @@ function mirrorOrder(row) {
   return order;
 }
 
+function recordLocalDeliveryPinAttempt(publicId, backendId) {
+  updateState((draft) => {
+    const order = draft.orders.find((candidate) => (
+      candidate.id === publicId
+      || candidate.backendId === backendId
+      || candidate.id === backendId
+    ));
+    if (!order) return;
+    order.deliveryPin = incrementDeliveryPinAttempts(order.deliveryPin);
+  });
+}
+
 function mirrorSimulationLocation(order, location) {
   if (!order || order.deliveryMode !== 'delivery') return;
   if (['delivered', 'cancelled'].includes(order.status)) return;
@@ -364,6 +404,13 @@ function rowToDemoOrder(row = {}) {
     address: row.address_label,
     reference: storedNotes.reference,
   });
+  const pinConfirmedAt = row.delivery_pin_confirmed_at || row.deliveryPinConfirmedAt;
+  const previousOrder = getState().orders.find((candidate) => (
+    candidate.id === row.code
+    || candidate.id === row.id
+    || candidate.backendId === row.id
+  ));
+  const previousAttempts = Number(previousOrder?.deliveryPin?.attempts) || 0;
   return {
     id: sanitizeText(row.code || row.id, { maxLength: 80 }),
     backendId: row.id,
@@ -375,6 +422,20 @@ function rowToDemoOrder(row = {}) {
       : addressDetails.label || sanitizeText(row.address_label, { fallback: 'Sin dirección', maxLength: 180 }),
     addressDetails,
     deliveryMode,
+    deliveryPin: deliveryMode === 'delivery'
+      ? normalizeDeliveryPinState(row.delivery_pin, {
+        fallbackCode: resolveDeliveryPin({
+          id: row.code || row.id,
+          code: row.code,
+          createdAt: row.created_at,
+          customerPhone: row.customer_phone,
+          deliveryMode,
+        }),
+        status: pinConfirmedAt ? 'confirmed' : 'pending',
+        confirmedAt: pinConfirmedAt,
+        attempts: previousAttempts,
+      })
+      : '',
     paymentMethod: paymentLabel(row.payment_method || 'cash'),
     notes: sanitizeNotes(storedNotes.notes),
     createdAt,
@@ -393,6 +454,7 @@ function rowToDemoOrder(row = {}) {
       currentLocationLabel: locationLabel(status, deliveryMode),
       ...(row.picked_up_at ? { leftStoreAt: normalizeIso(row.picked_up_at) } : {}),
       ...(row.delivered_at ? { deliveredAt: normalizeIso(row.delivered_at) } : {}),
+      ...(pinConfirmedAt ? { pinConfirmedAt: normalizeIso(pinConfirmedAt) } : {}),
     },
     tracking: latestLocation ? {
       lastLocation: latestLocation,

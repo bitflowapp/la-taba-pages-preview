@@ -13,6 +13,7 @@ test('domain order projects legacy demo orders into a backend-ready shape', () =
     id: 'LT-9001',
     status: 'arriving',
     deliveryMode: 'delivery',
+    deliveryPin: '9876',
     customerName: 'Cliente QA',
     customerPhone: '2995550000',
     address: 'Roca 321',
@@ -45,6 +46,7 @@ test('domain order projects legacy demo orders into a backend-ready shape', () =
   assert.equal(order.status, 'arrived');
   assert.equal(order.demoStatus, 'arriving');
   assert.equal(order.fulfillmentType, 'delivery');
+  assert.equal(order.deliveryPin, '9876');
   assert.equal(order.customer.name, 'Cliente QA');
   assert.equal(order.items[0].subtotal, 2000);
   assert.equal(order.totals.total, 2500);

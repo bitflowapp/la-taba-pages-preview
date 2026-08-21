@@ -18,7 +18,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await page.locator('[data-pin-form]').press('Enter');
   await expect(page.locator('[data-view="business"]')).toBeVisible();
   await expect(page.locator('[data-business-dashboard]')).toContainText('Central de pedidos');
-  await expect(page.locator('.topbar .brand')).toContainText(/La Taba/i);
+  await expect(page.locator('.topbar .brand')).toContainText(/TABA/i);
   await expect(page.locator('.inbox-tabs')).toContainText('Nuevos');
   await expect(page.locator('.inbox-tabs')).toContainText('Preparando');
   await expect(page.locator('.inbox-tabs')).toContainText('Reparto');
@@ -28,7 +28,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   // 2. El cliente confirma un pedido con dirección real.
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await page.locator('.topbar [data-open-cart]').click();
   await fillCheckout(page, {
     name: 'Walter Cliente',
     phone: '2995551234',

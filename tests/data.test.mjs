@@ -50,10 +50,25 @@ test('catalog includes premium butcher products with real prices', () => {
     'Morcilla',
     'Provoleta',
     'Combo parrillero',
-    'Coca-Cola 2.25L',
+    'Coca-Cola Original 1,5 L',
     'Carbón 3 kg',
   ]) {
     assert.ok(names.has(expected), `missing product: ${expected}`);
   }
   assert.ok(products.every((product) => product.price > 0), 'products should not show zero prices');
+});
+
+test('home beverage products are individual units without pack labels', () => {
+  const homeProductIds = new Set([
+    'p-coca',
+    'p-sprite',
+    'p-fanta-naranja',
+    'p-pepsi',
+    'p-monster-green',
+  ]);
+  const homeProducts = products.filter((product) => homeProductIds.has(product.id));
+
+  assert.equal(homeProducts.length, homeProductIds.size);
+  assert.ok(homeProducts.every((product) => product.unit === 'unidad'));
+  assert.ok(homeProducts.every((product) => !/\bx\s?6\b|pack/i.test(`${product.name} ${product.unitLabel}`)));
 });

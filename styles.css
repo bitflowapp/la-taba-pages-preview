@@ -28,10 +28,109 @@
   --radius-sm: 12px;
   --max: 1120px;
   --mobile-nav-h: 70px;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --bottom-nav-height: var(--mobile-nav-h);
   /* Easings tipo iOS para microinteracciones premium. */
   --ease-ios: cubic-bezier(0.22, 1, 0.36, 1);        /* salida suave, elegante */
   --ease-ios-spring: cubic-bezier(0.34, 1.46, 0.5, 1); /* leve overshoot elástico */
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* ===== Delivery PIN v1 ===== */
+.tracking-delivery-pin-card {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0 0;
+  padding: 13px 14px;
+  border: 1px solid rgba(61,52,44,0.14);
+  border-radius: 14px;
+  background: #fff9e8;
+  color: #2b2118;
+}
+
+.tracking-delivery-pin-card small {
+  color: #756451;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.tracking-delivery-pin-card strong {
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #1f1b17;
+}
+
+.tracking-delivery-pin-card p {
+  margin: 0;
+  color: #514336;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.delivery-pin-form {
+  flex: 1 1 100%;
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid rgba(245,241,233,0.14);
+  border-radius: 14px;
+  background: rgba(245,241,233,0.07);
+}
+
+.delivery-pin-form label {
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.delivery-pin-row {
+  display: grid;
+  grid-template-columns: minmax(82px, 104px) minmax(150px, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.delivery-pin-row input {
+  width: 100%;
+  min-width: 82px;
+  max-width: 104px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 12px;
+  background: rgba(0,0,0,0.18);
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0.12em;
+  outline: none;
+}
+
+.delivery-pin-row input:focus {
+  border-color: rgba(201,122,67,0.72);
+  box-shadow: 0 0 0 3px rgba(201,122,67,0.18);
+}
+
+.delivery-pin-form small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.delivery-pin-detail strong {
+  letter-spacing: 0;
+}
+
+@media (max-width: 520px) {
+  .delivery-pin-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tracking-delivery-pin-card strong {
+    font-size: 25px;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -44,6 +143,7 @@ body {
     linear-gradient(180deg, #fffdf9 0%, #faf7f2 42%, #f4eee7 100%);
   color: var(--text);
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -63,7 +163,7 @@ summary:focus-visible,
   outline-offset: 3px;
 }
 
-.app-shell { min-height: 100vh; }
+.app-shell { min-height: 100vh; min-height: 100dvh; }
 .hidden { display: none !important; }
 [hidden] { display: none !important; }
 .app-view[hidden] { display: none !important; }
@@ -1156,10 +1256,14 @@ body:has(.app-view[data-view="business"].is-active) .toast {
 
 /* ===== Bottom nav (mobile) ===== */
 .mobile-nav {
-  display: none; position: fixed; z-index: 30; inset: auto 10px calc(8px + env(safe-area-inset-bottom)); height: var(--mobile-nav-h);
+  display: none; position: fixed; z-index: 1000; left: 0; right: 0; bottom: 0;
+  padding: 8px 10px calc(10px + var(--safe-area-bottom));
+  pointer-events: none;
+  min-height: var(--bottom-nav-height);
+  touch-action: manipulation;
   border: 1px solid var(--line); border-radius: 18px; background: rgba(21, 18, 16, 0.96); backdrop-filter: blur(18px); box-shadow: var(--shadow); overflow: hidden;
 }
-.mobile-nav button { flex: 1; display: grid; place-items: center; gap: 3px; color: var(--soft); font-size: 11px; font-weight: 700; position: relative; border: 0; background: transparent; }
+.mobile-nav button { flex: 1; display: grid; place-items: center; gap: 3px; color: var(--soft); font-size: 11px; font-weight: 700; position: relative; border: 0; background: transparent; pointer-events: auto; }
 .mobile-nav .mn-ico { width: 20px; height: 20px; position: relative; opacity: 0.76; }
 .mobile-nav button.active { color: var(--copper-soft); background: rgba(255,255,255,0.035); }
 .mobile-nav button.active .mn-ico { opacity: 1; }
@@ -1337,17 +1441,17 @@ body:has(.app-view[data-view="business"].is-active) .toast {
 @media (max-width: 760px) {
   .desktop-nav { display: none; }
   /* Espacio para que el bottom-nav nunca tape el último contenido. */
-  body { padding-bottom: calc(var(--mobile-nav-h) + 40px + env(safe-area-inset-bottom)); }
+  main[data-app-main] { padding-bottom: calc(var(--bottom-nav-height) + var(--safe-area-bottom) + 20px); }
   .topbar { padding: 12px 14px; }
   .topbar::before { height: 66px; }
   .brand small { display: none; }
   .brand-word { font-size: 17px; letter-spacing: 0.18em; }
   .topbar-actions .ghost-button { display: none; }
-  main { padding-inline: 14px; }
-  body:has(.app-view[data-view="cart"].is-active) main,
-  body:has(.app-view[data-view="profile"].is-active) main,
-  body:has(.app-view[data-view="business"].is-active) main {
-    padding-bottom: calc(154px + env(safe-area-inset-bottom));
+  main[data-app-main] { padding-inline: 14px; }
+  body:has(.app-view[data-view="cart"].is-active) main[data-app-main],
+  body:has(.app-view[data-view="profile"].is-active) main[data-app-main],
+  body:has(.app-view[data-view="business"].is-active) main[data-app-main] {
+    padding-bottom: calc(154px + var(--safe-area-bottom));
   }
   .section { padding: 16px 0; }
   .section-head { align-items: stretch; flex-direction: column; gap: 10px; }
@@ -1442,16 +1546,16 @@ body:has(.app-view[data-view="business"].is-active) .toast {
   body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-experience) .mobile-nav {
     display: none;
   }
-  body:has(.app-view[data-view="tracking"].is-active .map-status-pill.way),
-  body:has(.app-view[data-view="tracking"].is-active .map-status-pill.done),
-  body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-experience) {
-    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  body:has(.app-view[data-view="tracking"].is-active .map-status-pill.way) main[data-app-main],
+  body:has(.app-view[data-view="tracking"].is-active .map-status-pill.done) main[data-app-main],
+  body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-experience) main[data-app-main] {
+    padding-bottom: calc(18px + var(--safe-area-bottom));
   }
   body:has(.app-view[data-view="tracking"].is-active .map-status-pill.way) .toast,
   body:has(.app-view[data-view="tracking"].is-active .map-status-pill.done) .toast,
   body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-experience) .toast {
     top: auto;
-    bottom: calc(18px + env(safe-area-inset-bottom));
+    bottom: calc(18px + var(--safe-area-bottom));
   }
   body:has(.app-view[data-view="business"].is-active) .toast {
     top: calc(224px + env(safe-area-inset-top));
@@ -2291,12 +2395,12 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-status-pi
 @media (max-width: 760px) {
   body:has(.app-view[data-view="home"].is-active) .floating-cart:not(.hidden),
   body:has(.app-view[data-view="catalog"].is-active) .floating-cart:not(.hidden) {
-    bottom: calc(var(--mobile-nav-h) + 22px + env(safe-area-inset-bottom));
+    bottom: calc(var(--bottom-nav-height) + 22px + var(--safe-area-bottom));
   }
 
   body:has(.app-view[data-view="home"].is-active):has(.floating-cart:not(.hidden)),
   body:has(.app-view[data-view="catalog"].is-active):has(.floating-cart:not(.hidden)) {
-    padding-bottom: calc(var(--mobile-nav-h) + 92px + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--bottom-nav-height) + 92px + var(--safe-area-bottom));
   }
 
   body:has(.app-view[data-view="tracking"].is-active .tracking-map-experience) .mobile-nav,
@@ -2305,10 +2409,10 @@ body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .map-status-pi
     display: none;
   }
 
-  body:has(.app-view[data-view="tracking"].is-active .tracking-map-experience),
-  body:has(.app-view[data-view="cart"].is-active .cart-item),
-  body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-experience) {
-    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  body:has(.app-view[data-view="tracking"].is-active .tracking-map-experience) main[data-app-main],
+  body:has(.app-view[data-view="cart"].is-active .cart-item) main[data-app-main],
+  body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-experience) main[data-app-main] {
+    padding-bottom: calc(18px + var(--safe-area-bottom));
   }
 
   .business-dashboard-shell {
@@ -4295,6 +4399,1733 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-order-detai
   margin-top: 10px;
 }
 
+/* ===== La Taba · Identidad roja/negra (referencia visual) ===== */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("assets/fonts/inter-latin-var.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Archivo";
+  font-style: italic;
+  font-weight: 400 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url("assets/fonts/archivo-italic-latin-var.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --taba-red: #e60c17;
+  --taba-red-hot: #ff2a1c;
+  --taba-red-deep: #8f060e;
+  --taba-black: #0a0a0c;
+  --taba-black-2: #121215;
+  --taba-black-3: #1a1a1e;
+  --taba-hairline: rgba(255, 255, 255, 0.1);
+  --taba-hairline-2: rgba(255, 255, 255, 0.18);
+  --taba-on-dark: #f6f6f7;
+  --taba-on-dark-soft: #9b9da3;
+  --taba-card: #fff;
+  --taba-card-ink: #16171b;
+  --taba-card-muted: #8b8e95;
+  --taba-topbar-h: 76px;
+
+  /* El acento histórico era cobre; se retinta a rojo de marca para que las
+     vistas que siguen en superficie clara hablen el mismo idioma visual. */
+  --accent: #e60c17;
+  --accent-2: #ff3b2f;
+  --accent-soft: #c00d16;
+  --copper: #e60c17;
+  --copper-2: #ff3b2f;
+  --copper-soft: #c00d16;
+  --red: #d21019;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.taba-display {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 76%;
+  text-transform: uppercase;
+}
+
+/* ===== Header =====
+   El header y la barra inferior son chrome de marca: negros en todas las vistas,
+   incluidas las que siguen con superficie clara (carrito, seguimiento, negocio). */
+body:has(.app-view.is-active) .topbar.taba-topbar,
+.topbar.taba-topbar {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  max-width: var(--max);
+  min-height: var(--taba-topbar-h);
+  padding: 0 18px;
+  color: #fff;
+  backdrop-filter: none;
+}
+
+body:has(.app-view.is-active) .topbar.taba-topbar::before,
+.topbar.taba-topbar::before {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--taba-topbar-h);
+  background: var(--taba-black);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+}
+
+.taba-burger {
+  display: none;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #fff;
+}
+
+.taba-burger span,
+.taba-burger span::before,
+.taba-burger span::after {
+  display: block;
+  width: 21px;
+  height: 2.4px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.taba-burger span {
+  position: relative;
+  margin: 0 auto;
+}
+
+.taba-burger span::before,
+.taba-burger span::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.taba-burger span::before { top: -7px; }
+.taba-burger span::after { top: 7px; }
+
+/* Logo: "La" blanco + "Taba" rojo, itálica pesada condensada y rayo de marca. */
+.brand.taba-brand {
+  position: relative;
+  align-self: center;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  min-width: 0;
+  padding: 0 12px 0 0;
+  color: #fff;
+}
+
+.brand.taba-brand::after {
+  content: none;
+}
+
+body:has(.app-view.is-active) .taba-brand .brand-la {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 800;
+  font-stretch: 92%;
+  font-size: 25px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-transform: none;
+}
+
+body:has(.app-view.is-active) .taba-brand .brand-word {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 70%;
+  font-size: 36px;
+  line-height: 0.9;
+  letter-spacing: -0.005em;
+  color: var(--taba-red);
+  text-transform: uppercase;
+}
+
+.taba-brand .brand-bolt {
+  position: absolute;
+  top: -2px;
+  right: 0;
+  width: 9px;
+  height: 17px;
+  color: #fff;
+}
+
+.taba-brand .brand-word::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 12px;
+  bottom: -5px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--taba-red);
+}
+
+/* ===== Nav de escritorio =====
+   El prefijo body:has(.app-view.is-active) sube la especificidad por encima de
+   los overrides del tema claro anterior, que apuntan a cada vista por separado. */
+body:has(.app-view.is-active) .taba-topbar .desktop-nav {
+  justify-self: start;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body:has(.app-view.is-active) .taba-topbar .desktop-nav button {
+  gap: 5px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+body:has(.app-view.is-active) .taba-topbar .desktop-nav button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body:has(.app-view.is-active) .taba-topbar .desktop-nav button.active {
+  color: var(--taba-red);
+  background: transparent;
+}
+
+.taba-topbar .desktop-nav .nav-caret {
+  width: 9px;
+  height: 6px;
+  opacity: 0.75;
+}
+
+.taba-topbar .desktop-nav .mini-badge {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  background: var(--taba-red);
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+.taba-topbar .desktop-nav .mini-badge.is-empty {
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* ===== Acciones del header ===== */
+.taba-topbar .topbar-actions {
+  flex-wrap: nowrap;
+  gap: 10px;
+  justify-self: end;
+}
+
+body:has(.app-view.is-active) .taba-admin-link.ghost-button.compact {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  background: transparent;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+body:has(.app-view.is-active) .taba-admin-link.ghost-button.compact:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.taba-delivery {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding-right: 4px;
+}
+
+.taba-delivery-ico {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  color: var(--taba-red);
+}
+
+.taba-delivery-ico svg { width: 30px; height: 22px; }
+
+.taba-delivery-copy { display: grid; }
+
+.taba-delivery-copy strong {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.taba-delivery-copy small {
+  color: var(--taba-on-dark-soft);
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.taba-icon-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  background: transparent;
+  transition: color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.taba-icon-btn svg { width: 21px; height: 21px; }
+.taba-icon-btn:hover { color: var(--taba-red); background: rgba(255, 255, 255, 0.06); }
+.taba-icon-btn:active { transform: scale(0.94); }
+
+.taba-cart-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 2px solid var(--taba-black);
+  border-radius: 999px;
+  color: #fff;
+  background: var(--taba-red);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.taba-cart-badge.is-empty {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* ===== Barra roja de envío (mobile) ===== */
+.taba-shipping-strip {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 16px;
+  color: #fff;
+  background: var(--taba-red);
+}
+
+.taba-shipping-ico { display: grid; place-items: center; }
+.taba-shipping-ico svg { width: 22px; height: 16px; }
+.taba-shipping-strip strong { font-size: 11.5px; font-weight: 800; letter-spacing: -0.01em; }
+.taba-shipping-strip small { color: rgba(255, 255, 255, 0.85); font-size: 10.5px; }
+
+/* ===== Menú lateral (mobile) ===== */
+.taba-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
+
+.taba-drawer[hidden] { display: none; }
+
+.taba-drawer-veil {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.taba-drawer-panel {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(300px, 84vw);
+  padding: 14px 14px calc(20px + var(--safe-area-bottom));
+  background: var(--taba-black);
+  border-right: 1px solid var(--taba-hairline);
+  box-shadow: 24px 0 60px rgba(0, 0, 0, 0.5);
+  animation: tabaDrawerIn 0.22s var(--ease-ios);
+  overflow-y: auto;
+}
+
+@keyframes tabaDrawerIn {
+  from { transform: translateX(-16px); opacity: 0.6; }
+  to { transform: none; opacity: 1; }
+}
+
+.taba-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 2px 14px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--taba-hairline);
+}
+
+.taba-drawer-close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--taba-hairline);
+  border-radius: 10px;
+  color: #fff;
+  background: transparent;
+}
+
+.taba-drawer-close svg { width: 17px; height: 17px; }
+
+.taba-drawer-panel > button {
+  min-height: 48px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.82);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.taba-drawer-panel > button.active {
+  color: var(--taba-red);
+  background: rgba(230, 12, 23, 0.1);
+}
+
+.taba-drawer-note {
+  margin: auto 0 0;
+  padding: 14px 12px 0;
+  border-top: 1px solid var(--taba-hairline);
+  color: var(--taba-on-dark-soft);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+body.taba-menu-open { overflow: hidden; }
+
+/* ===== Fondo oscuro de la superficie de compra ===== */
+body:has(.app-view[data-view="home"].is-active),
+body:has(.app-view[data-view="catalog"].is-active) {
+  color-scheme: dark;
+  background: var(--taba-black);
+}
+
+body:has(.app-view[data-view="home"].is-active) main[data-app-main],
+body:has(.app-view[data-view="catalog"].is-active) main[data-app-main] {
+  color: var(--taba-on-dark);
+}
+
+.taba-home {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 14px 0 8px;
+  color: var(--taba-on-dark);
+  overflow: visible;
+}
+
+/* ===== Hero ===== */
+.taba-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  min-height: 424px;
+  margin: 0 0 16px;
+  padding: 38px 44px;
+  overflow: hidden;
+  border-radius: 20px;
+  background:
+    radial-gradient(115% 125% at 74% 26%, #ff3320 0%, #e50d16 30%, #b30810 58%, #620409 88%);
+}
+
+.taba-hero-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 78% at 4% 46%, rgba(0, 0, 0, 0.62), transparent 72%),
+    radial-gradient(46% 58% at 96% 96%, rgba(0, 0, 0, 0.5), transparent 74%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.24), transparent 26%, rgba(0, 0, 0, 0.3));
+}
+
+/* Los packshots vienen sobre blanco: `multiply` los integra al rojo del hero
+   como en la referencia, y el filtro les devuelve cuerpo y contraste. */
+.taba-hero-art {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 1%;
+  bottom: -2%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0;
+  width: min(56%, 620px);
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* El filtro va en la imagen, no en el grupo: si se aplica al contenedor,
+   Chromium aísla el grupo y el multiply deja de fundirse con el rojo. */
+.taba-hero-bottle {
+  flex: 0 0 auto;
+  height: 100%;
+  width: 50%;
+  object-fit: contain;
+  object-position: bottom center;
+  /* brightness > 1 lleva el blanco del packshot a blanco puro para que el
+     multiply no deje el rectángulo de la foto marcado sobre el rojo. */
+  filter: contrast(1.2) saturate(1.14) brightness(1.05);
+  transform-origin: bottom center;
+}
+
+/* El packshot de Fernet es un primer plano sin fondo blanco alrededor: se
+   difumina el borde para que la botella se funda con el rojo del hero. */
+.taba-hero-bottle.is-a {
+  transform: translate(3%, 5%) scale(1.1);
+  -webkit-mask-image: radial-gradient(108% 100% at 54% 94%, #000 34%, transparent 80%);
+  mask-image: radial-gradient(108% 100% at 54% 94%, #000 34%, transparent 80%);
+}
+
+.taba-hero-bottle.is-b { transform: translate(-2%, 4%) scale(1.34); }
+
+.taba-hero-seal {
+  position: absolute;
+  z-index: 3;
+  top: 30px;
+  right: 34px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  width: 104px;
+  height: 104px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(103, 4, 10, 0.72);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.34);
+  font-style: normal;
+  text-align: center;
+}
+
+.taba-hero-seal em {
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.92;
+}
+
+.taba-hero-seal b {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 80%;
+  font-size: 27px;
+  line-height: 1.05;
+}
+
+.taba-hero-seal i {
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.92;
+}
+
+.taba-hero-copy {
+  position: relative;
+  z-index: 2;
+  max-width: min(560px, 54%);
+}
+
+.taba-hero-copy h1 {
+  display: grid;
+  margin: 0;
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 74%;
+  font-size: clamp(38px, 5.2vw, 70px);
+  line-height: 0.95;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+}
+
+.taba-hero-copy h1 .hl-1 {
+  color: #fff;
+  text-shadow: 0 6px 22px rgba(60, 0, 4, 0.42);
+}
+
+.taba-hero-copy h1 .hl-2 {
+  color: #120306;
+  text-shadow: 0 4px 16px rgba(255, 90, 70, 0.18);
+}
+
+.taba-hero-copy > p {
+  max-width: 340px;
+  margin: 18px 0 22px;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.taba-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.taba-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 0 24px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.taba-btn:active { transform: scale(0.97); }
+
+.taba-btn-dark {
+  color: #fff;
+  background: #0d0d10;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.34);
+}
+
+.taba-btn-dark:hover { background: #000; }
+
+.taba-btn-dark .btn-bolt {
+  width: 9px;
+  height: 16px;
+  color: var(--taba-red-hot);
+}
+
+.taba-btn-line {
+  color: #fff;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.85);
+}
+
+.taba-btn-line:hover { color: #b30810; background: #fff; }
+
+.taba-hero-dots {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 24px;
+  display: flex;
+  gap: 9px;
+  transform: translateX(-50%);
+}
+
+.taba-hero-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.taba-hero-dots span.is-active { background: #fff; }
+
+/* ===== Buscador ===== */
+body:has(.app-view.is-active) .search-box.taba-home-search {
+  height: 50px;
+  margin: 0 0 16px;
+  padding: 0 18px;
+  border: 1px solid var(--taba-hairline);
+  border-radius: 12px;
+  color: var(--taba-on-dark-soft);
+  background: var(--taba-black-2);
+  box-shadow: none;
+}
+
+.taba-home-search svg { flex: 0 0 auto; }
+
+body:has(.app-view.is-active) .taba-home-search input {
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  color: #fff;
+  background: transparent;
+  box-shadow: none;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+body:has(.app-view.is-active) .taba-home-search input::placeholder {
+  color: #7c7f86;
+  opacity: 1;
+}
+
+/* ===== Promos destacadas ===== */
+.taba-promos { margin-bottom: 26px; }
+
+.taba-promos-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+}
+
+.taba-promos-tag {
+  flex: 0 0 auto;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  width: 74px;
+  margin: 0;
+  padding: 12px 0;
+  border-radius: 12px;
+  background: #0f0f12;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.taba-promos-tag span {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 74%;
+  font-size: 15px;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: #fff;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-align: center;
+}
+
+.taba-promos-tag svg {
+  width: 11px;
+  height: 20px;
+  color: var(--taba-red);
+}
+
+.home-promotions-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 24px) / 3);
+  gap: 12px;
+  min-width: 0;
+  padding: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline mandatory;
+  scrollbar-width: none;
+}
+
+.home-promotions-rail::-webkit-scrollbar,
+.home-category-strip::-webkit-scrollbar,
+.taba-product-rail::-webkit-scrollbar { display: none; }
+
+.home-promo-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 148px;
+  padding: 16px 18px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(100deg, #6d050b 0%, #b90a13 42%, #e2131d 78%, #f0202a 100%);
+  scroll-snap-align: start;
+}
+
+.home-promo-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(96deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.12) 42%, transparent 66%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.16), transparent 34%, rgba(0, 0, 0, 0.22));
+  pointer-events: none;
+}
+
+.home-promo-media {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 48%;
+  display: grid;
+  place-items: end center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  mix-blend-mode: multiply;
+  overflow: hidden;
+}
+
+.home-promo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: contrast(1.14) saturate(1.1) brightness(1.05);
+  transform: scale(1.34) translateY(6%);
+  transform-origin: bottom center;
+}
+
+.home-promo-copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  width: 60%;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.home-promo-badge {
+  justify-self: start;
+  margin-bottom: 4px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.42);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.home-promo-copy strong {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 76%;
+  font-size: 22px;
+  line-height: 1.02;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 3px 12px rgba(40, 0, 2, 0.4);
+}
+
+.home-promo-prices {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.home-promo-copy .home-product-price {
+  color: #fff;
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.home-promo-copy s {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.home-promo-card > .home-add-button {
+  position: absolute;
+  z-index: 3;
+  right: 12px;
+  bottom: 12px;
+}
+
+.taba-rail-next {
+  flex: 0 0 auto;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--taba-hairline-2);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.taba-rail-next svg { width: 17px; height: 17px; }
+.taba-rail-next:hover { background: rgba(255, 255, 255, 0.14); }
+.taba-rail-next:active { transform: scale(0.93); }
+
+.home-paging-dots {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.home-paging-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.home-paging-dots span.is-active { background: var(--taba-red); }
+
+/* ===== Encabezados de bloque ===== */
+.taba-block { margin-bottom: 26px; }
+
+.taba-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 14px;
+}
+
+.taba-block-head h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.taba-block-head button {
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  color: var(--taba-red);
+  background: transparent;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.taba-block-head button:hover { color: #ff5a53; }
+
+/* ===== Categorías ===== */
+.category-strip.home-category-strip {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+  padding: 0 0 2px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: none;
+}
+
+.home-category-card {
+  flex: 1 1 0;
+  min-width: 132px;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 1px solid var(--taba-hairline);
+  border-radius: 999px;
+  color: #fff;
+  background: var(--taba-black-2);
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  scroll-snap-align: start;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.home-category-card:hover {
+  border-color: var(--taba-hairline-2);
+  background: var(--taba-black-3);
+}
+
+.home-category-card.active {
+  border-color: rgba(230, 12, 23, 0.55);
+  color: #fff;
+  background: linear-gradient(180deg, rgba(230, 12, 23, 0.16), rgba(230, 12, 23, 0.06));
+  box-shadow: none;
+}
+
+.home-category-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  color: var(--taba-red);
+}
+
+.home-category-icon svg { width: 24px; height: 24px; }
+.home-category-card.active .home-category-icon { color: var(--taba-red-hot); }
+
+/* ===== Riel de productos destacados ===== */
+.taba-product-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 56px) / 5);
+  gap: 14px;
+  min-width: 0;
+  padding: 2px 0 6px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: none;
+}
+
+/* Las dos listas del showcase comparten un único riel visual. */
+.taba-product-rail > .home-best-sellers,
+.taba-product-rail > .home-catalog-preview {
+  display: contents;
+}
+
+/* ===== Tarjeta de producto ===== */
+.taba-pcard {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  background: var(--taba-card);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+  scroll-snap-align: start;
+  transition: transform 0.18s var(--ease-ios), box-shadow 0.18s ease;
+}
+
+.taba-pcard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.42);
+}
+
+.taba-pcard.out-of-stock { opacity: 0.62; }
+
+.taba-pcard-badge {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: #fff;
+  background: var(--taba-red);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.taba-pcard-badge.is-soft {
+  background: #16171b;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.taba-fav {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: transparent;
+  background: transparent;
+}
+
+.taba-fav svg { width: 17px; height: 17px; overflow: visible; }
+.taba-fav path { stroke: #c3c6cc; }
+.taba-fav:hover path { stroke: #7d818a; }
+.taba-fav.is-favorite { color: var(--taba-red); }
+.taba-fav.is-favorite path { stroke: var(--taba-red); }
+
+.taba-pcard-media {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+  padding: 16px 12px 4px;
+  border: 0;
+  background: #fff;
+  overflow: hidden;
+}
+
+.taba-pcard-img {
+  width: 100%;
+  height: 100%;
+  max-height: 152px;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.taba-pcard-body {
+  display: grid;
+  gap: 1px;
+  padding: 0 12px 12px;
+  color: var(--taba-card-ink);
+}
+
+.taba-pcard-body > strong {
+  display: -webkit-box;
+  min-height: 17px;
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.taba-pcard-body > small {
+  color: var(--taba-card-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.taba-pcard-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.taba-pcard-prices {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.taba-pcard .home-product-price {
+  color: #101115;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.taba-pcard-prices s {
+  color: #a2a5ac;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.home-add-button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--taba-red);
+  box-shadow: 0 5px 14px rgba(230, 12, 23, 0.34);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+  transition: transform 0.16s ease, background 0.16s ease;
+}
+
+.home-add-button > span { transform: translateY(-1px); }
+.home-add-button:hover { background: #ff2a1c; }
+.home-add-button:active { transform: scale(0.9); }
+.home-add-button:disabled { background: #c9ccd2; box-shadow: none; }
+
+/* ===== Catálogo con el mismo lenguaje visual ===== */
+body:has(.app-view[data-view="catalog"].is-active) .section-head h2,
+body:has(.app-view[data-view="catalog"].is-active) .catalog-count,
+body:has(.app-view[data-view="catalog"].is-active) .rail-head h2 {
+  color: #fff;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .crumbs,
+body:has(.app-view[data-view="catalog"].is-active) .crumb-current,
+body:has(.app-view[data-view="catalog"].is-active) .sort-field span {
+  color: var(--taba-on-dark-soft);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .crumb-link { color: var(--taba-red); }
+
+body:has(.app-view[data-view="catalog"].is-active) .section-head h2 {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .search-box {
+  border-color: var(--taba-hairline);
+  border-radius: 12px;
+  background: var(--taba-black-2);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .search-box input {
+  padding: 0;
+  border: 0;
+  color: #fff;
+  background: transparent;
+  box-shadow: none;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .search-box input::placeholder { color: #7c7f86; }
+body:has(.app-view[data-view="catalog"].is-active) .search-box span { color: #7c7f86; }
+body:has(.app-view[data-view="catalog"].is-active) .catalog-toolbar { color: var(--taba-on-dark-soft); }
+
+body:has(.app-view[data-view="catalog"].is-active) .category-button {
+  min-height: 42px;
+  border-color: var(--taba-hairline);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.86);
+  background: var(--taba-black-2);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .category-button.active {
+  border-color: transparent;
+  color: #fff;
+  background: var(--taba-red);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .sort-field select {
+  border-color: var(--taba-hairline);
+  color: #fff;
+  background: var(--taba-black-2);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .product-card,
+body:has(.app-view[data-view="catalog"].is-active) .offer-card {
+  border-color: rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .product-card .product-body h3,
+body:has(.app-view[data-view="catalog"].is-active) .offer-card-body strong {
+  color: var(--taba-card-ink);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .product-card .product-body p,
+body:has(.app-view[data-view="catalog"].is-active) .offer-card-body small {
+  color: var(--taba-card-muted);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .product-card .price strong,
+body:has(.app-view[data-view="catalog"].is-active) .offer-price span {
+  color: #101115;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .empty-state {
+  color: var(--taba-on-dark-soft);
+  border-color: var(--taba-hairline);
+  background: var(--taba-black-2);
+}
+
+/* Acentos del catálogo en rojo de marca (venían del tema cobre anterior). */
+body:has(.app-view[data-view="catalog"].is-active) .catalog-toolbar,
+body:has(.app-view[data-view="catalog"].is-active) .rail-block,
+body:has(.app-view[data-view="catalog"].is-active) .grid-block {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .catalog-count { color: var(--taba-on-dark-soft); }
+
+body:has(.app-view[data-view="catalog"].is-active) .add-button,
+body:has(.app-view[data-view="catalog"].is-active) .add-round {
+  color: #fff;
+  background: var(--taba-red);
+  box-shadow: 0 6px 16px rgba(230, 12, 23, 0.3);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .add-button:disabled,
+body:has(.app-view[data-view="catalog"].is-active) .add-round:disabled {
+  color: #6d7078;
+  background: #d7dade;
+  box-shadow: none;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .offer-badge.discount,
+body:has(.app-view[data-view="catalog"].is-active) .offer-badge.combo,
+body:has(.app-view[data-view="catalog"].is-active) .offer-badge.day {
+  color: #fff;
+  background: var(--taba-red);
+  border: 0;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .offer-badge.promo {
+  color: #fff;
+  background: #16171b;
+  border: 0;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .price strong { color: #101115; }
+body:has(.app-view[data-view="catalog"].is-active) .price s,
+body:has(.app-view[data-view="catalog"].is-active) .price small,
+body:has(.app-view[data-view="catalog"].is-active) .offer-price s { color: #9a9da4; }
+
+body:has(.app-view[data-view="catalog"].is-active) .stock-pill {
+  color: #55585f;
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .stock-pill.featured {
+  color: #fff;
+  border-color: transparent;
+  background: #16171b;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .product-card:hover,
+body:has(.app-view[data-view="catalog"].is-active) .product-card.is-offer {
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .qty-stepper strong { color: #101115; }
+
+body:has(.app-view[data-view="catalog"].is-active) .qty-stepper .icon-button {
+  color: #16171b;
+  border-color: rgba(0, 0, 0, 0.12);
+  background: #f1f2f4;
+}
+
+/* ===== Carrito flotante ===== */
+body:has(.app-view.is-active) .floating-cart {
+  border-color: rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(100deg, #17171b, #c4101a);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+}
+
+body:has(.app-view.is-active) .floating-cart span { color: rgba(255, 255, 255, 0.86); }
+
+.floating-cart strong {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Botón primario de marca también en las vistas que siguen en superficie clara. */
+body:has(.app-view.is-active) .primary-button {
+  color: #fff;
+  background: linear-gradient(135deg, #e60c17, #ff3b2f);
+  box-shadow: 0 10px 22px rgba(230, 12, 23, 0.22);
+}
+
+/* ===== Barra inferior (mobile) ===== */
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: auto;
+  padding: 6px 4px calc(6px + var(--safe-area-bottom));
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  background: var(--taba-black);
+  backdrop-filter: none;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.42);
+}
+
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar button {
+  gap: 4px;
+  min-width: 0;
+  min-height: 52px;
+  color: rgba(255, 255, 255, 0.62);
+  background: transparent;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar .mn-ico {
+  width: 22px;
+  height: 22px;
+  opacity: 1;
+}
+
+.mobile-nav.taba-tabbar .mn-ico svg { width: 22px; height: 22px; }
+
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar button.active {
+  color: var(--taba-red);
+  background: transparent;
+}
+
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar .mn-badge {
+  top: -4px;
+  left: calc(50% + 5px);
+  min-width: 16px;
+  height: 16px;
+  border: 2px solid var(--taba-black);
+  background: var(--taba-red);
+  color: #fff;
+  font-size: 9px;
+}
+
+/* ===== Interacciones ===== */
+.home-category-card,
+.taba-block-head button,
+.home-add-button,
+.taba-fav,
+.taba-icon-btn,
+.taba-btn {
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.home-category-card:active,
+.taba-fav:active { transform: scale(0.96); }
+
+.home-category-card:focus-visible,
+.taba-block-head button:focus-visible,
+.home-add-button:focus-visible,
+.taba-fav:focus-visible,
+.taba-icon-btn:focus-visible,
+.taba-btn:focus-visible,
+.taba-pcard-media:focus-visible,
+.home-promo-media:focus-visible,
+.taba-rail-next:focus-visible,
+.taba-burger:focus-visible {
+  outline: 2px solid var(--taba-red);
+  outline-offset: 2px;
+}
+
+/* ===== Desktop ancho ===== */
+@media (min-width: 1080px) {
+  .taba-hero { min-height: 448px; }
+}
+
+/* ===== Tablet: header en dos filas para que nada se corte ni desborde ===== */
+@media (max-width: 1024px) {
+  :root { --taba-topbar-h: 108px; }
+
+  .topbar.taba-topbar {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 6px 12px;
+    min-height: 108px;
+    padding: 10px 18px 8px;
+  }
+
+  .topbar.taba-topbar::before { height: 108px; }
+
+  .brand.taba-brand { grid-column: 1; grid-row: 1; }
+
+  .taba-topbar .topbar-actions {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 8px;
+  }
+
+  body:has(.app-view.is-active) .taba-topbar .desktop-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  body:has(.app-view.is-active) .taba-topbar .desktop-nav button {
+    padding: 6px 10px;
+    font-size: 10.5px;
+    letter-spacing: 0.07em;
+  }
+
+  .taba-hero { padding: 32px 30px; min-height: 380px; }
+  .taba-product-rail { grid-auto-columns: calc((100% - 42px) / 4); }
+  .home-category-card { min-width: 118px; }
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 760px) {
+  :root { --taba-topbar-h: 60px; }
+
+  .topbar.taba-topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    gap: 8px;
+    min-height: 60px;
+    padding: 0 14px;
+  }
+
+  .topbar.taba-topbar::before { height: 60px; }
+
+  .taba-burger { display: grid; place-items: center; }
+  .taba-topbar .desktop-nav,
+  body:has(.app-view.is-active) .taba-topbar .desktop-nav { display: none; }
+
+  .brand.taba-brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    padding-right: 11px;
+  }
+
+  .taba-topbar .topbar-actions {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .taba-brand .brand-la { font-size: 19px; }
+  .taba-brand .brand-word { font-size: 27px; }
+  .taba-brand .brand-bolt { width: 7px; height: 13px; top: -1px; }
+  .taba-brand .brand-word::after { right: 11px; bottom: -4px; height: 2.5px; }
+
+  .taba-topbar .topbar-actions { gap: 2px; }
+  .taba-delivery { display: none; }
+  .taba-admin-link.ghost-button.compact { display: none; }
+  .taba-icon-account { display: none; }
+  .taba-icon-btn { width: 34px; height: 34px; }
+  .taba-icon-btn svg { width: 20px; height: 20px; }
+
+  .taba-shipping-strip { display: flex; }
+
+  main[data-app-main] { padding-inline: 14px; }
+
+  body:has(.app-view[data-view="home"].is-active) main[data-app-main],
+  body:has(.app-view[data-view="catalog"].is-active) main[data-app-main] {
+    padding-bottom: calc(86px + var(--safe-area-bottom));
+  }
+
+  .taba-home { padding-top: 12px; }
+
+  .taba-hero {
+    min-height: 236px;
+    margin-bottom: 14px;
+    padding: 20px 18px;
+    border-radius: 14px;
+  }
+
+  .taba-hero-art { width: 46%; right: -1%; }
+  .taba-hero-bottle { width: 100%; height: 100%; }
+  .taba-hero-bottle.is-a { transform: translate(4%, 6%) scale(1.24); }
+  .taba-hero-bottle.is-b { display: none; }
+
+  .taba-hero-seal { display: none; }
+
+  .taba-hero-copy { max-width: 64%; }
+
+  .taba-hero-copy h1 {
+    font-size: clamp(25px, 8.2vw, 34px);
+    line-height: 0.94;
+  }
+
+  .taba-hero-copy > p {
+    margin: 10px 0 14px;
+    font-size: 11.5px;
+    line-height: 1.4;
+  }
+
+  .taba-hero-actions { gap: 8px; }
+
+  .taba-btn {
+    min-height: 38px;
+    padding: 0 16px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .taba-hero-dots { left: 18px; bottom: 14px; transform: none; }
+  .taba-hero-dots span { width: 6px; height: 6px; }
+
+  .search-box.taba-home-search {
+    height: 44px;
+    margin-bottom: 18px;
+    border-radius: 10px;
+  }
+
+  .taba-home-search input { min-height: 42px; font-size: 13px; }
+
+  .taba-promos { margin-bottom: 22px; }
+  .taba-promos-tag { display: none; }
+  .taba-rail-next { display: none; }
+
+  .home-promotions-rail {
+    grid-auto-columns: 93%;
+    gap: 10px;
+  }
+
+  .home-promo-card {
+    min-height: 96px;
+    padding: 12px 14px;
+  }
+
+  .home-promo-media { width: 42%; }
+  .home-promo-image { transform: scale(1.08) translateY(4%); }
+  .home-promo-copy { width: 64%; }
+  .home-promo-copy strong { font-size: 16px; }
+  .home-promo-copy .home-product-price { font-size: 18px; }
+  .home-promo-copy s { font-size: 11px; }
+  .home-promo-card > .home-add-button { right: 10px; bottom: 10px; width: 26px; height: 26px; font-size: 18px; }
+
+  .home-paging-dots { margin-top: 10px; }
+
+  .taba-block { margin-bottom: 22px; }
+  .taba-block-head { margin-bottom: 10px; }
+  .taba-block-head h2 { font-size: 12.5px; letter-spacing: 0.1em; }
+  .taba-block-head button { font-size: 9.5px; }
+
+  /* Categorías en círculo, como la referencia mobile. */
+  .category-strip.home-category-strip { gap: 12px; }
+
+  .home-category-card {
+    flex: 0 0 auto;
+    min-width: 0;
+    width: 62px;
+    flex-direction: column;
+    gap: 6px;
+    min-height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: 8px;
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+
+  .home-category-card.active { background: transparent; }
+
+  .home-category-icon {
+    width: 54px;
+    height: 54px;
+    border: 1px solid var(--taba-hairline);
+    border-radius: 50%;
+    background: var(--taba-black-2);
+  }
+
+  .home-category-card.active .home-category-icon {
+    border-color: rgba(230, 12, 23, 0.6);
+    background: linear-gradient(180deg, rgba(230, 12, 23, 0.2), rgba(230, 12, 23, 0.05));
+  }
+
+  .home-category-icon svg { width: 24px; height: 24px; }
+
+  .taba-product-rail {
+    grid-auto-columns: 38%;
+    gap: 10px;
+  }
+
+  .taba-pcard { border-radius: 12px; }
+  .taba-pcard-media { padding: 12px 10px 2px; }
+  .taba-pcard-img { max-height: 112px; }
+  .taba-pcard-body { padding: 0 10px 10px; }
+  .taba-pcard-body > strong { font-size: 11.5px; }
+  .taba-pcard-body > small { font-size: 10.5px; }
+  .taba-pcard .home-product-price { font-size: 15px; }
+  .taba-pcard-prices s { font-size: 10.5px; }
+  .taba-pcard-foot { margin-top: 6px; }
+  .home-add-button { width: 26px; height: 26px; font-size: 18px; }
+  .taba-fav { width: 26px; height: 26px; top: 4px; right: 4px; }
+  .taba-fav svg { width: 15px; height: 15px; }
+  .taba-pcard-badge { top: 8px; left: 8px; padding: 3px 6px; font-size: 9px; }
+}
+
+@media (max-width: 440px) {
+  /* Igual que la referencia mobile: en el hero queda sólo el CTA principal. */
+  .taba-hero-actions .taba-btn-line { display: none; }
+}
+
+@media (max-width: 360px) {
+  .topbar.taba-topbar { padding-inline: 10px; }
+  main[data-app-main] { padding-inline: 12px; }
+  .taba-brand .brand-la { font-size: 17px; }
+  .taba-brand .brand-word { font-size: 24px; }
+  .taba-hero-copy h1 { font-size: 24px; }
+  .taba-product-rail { grid-auto-columns: 45%; }
+  .home-category-card { width: 58px; }
+  .home-category-icon { width: 50px; height: 50px; }
+}
 @media (max-width: 720px) {
   body:has(.app-view[data-view="rider"].is-active) .topbar {
     position: relative;
@@ -4331,7 +6162,7 @@ body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-order-detai
   body:has(.app-view[data-view="rider"].is-active) .toast {
     top: auto !important;
     right: 14px !important;
-    bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+    bottom: calc(18px + var(--safe-area-bottom)) !important;
     left: auto !important;
     width: min(62vw, 252px);
     padding: 9px 12px;

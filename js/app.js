@@ -23,6 +23,7 @@ import {
   setSortBy,
   showProductModal,
   showToast,
+  toggleHomeFavorite,
   updateAddressFieldVisibility,
   $,
 } from './ui.js';
@@ -170,19 +171,53 @@ function bindEvents() {
   window.addEventListener('hashchange', syncViewFromLocation);
   window.addEventListener('pagehide', () => disableGpsTracking({ silent: true }));
 
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') setMenuOpen(false);
+  });
+
   document.addEventListener('click', async (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
+    const favoriteId = target.closest('[data-home-favorite]')?.dataset.homeFavorite;
+    if (favoriteId) {
+      toggleHomeFavorite(favoriteId);
+      return;
+    }
+
+    if (target.closest('[data-menu-close]')) {
+      setMenuOpen(false);
+      return;
+    }
+
+    if (target.closest('[data-menu-toggle]')) {
+      setMenuOpen(!isMenuOpen());
+      return;
+    }
+
+    if (target.closest('[data-search-focus]')) {
+      setMenuOpen(false);
+      focusSearchField();
+      return;
+    }
+
+    const railSelector = target.closest('[data-rail-next]')?.dataset.railNext;
+    if (railSelector) {
+      scrollRail(railSelector);
+      return;
+    }
+
     const navView = target.closest('[data-nav-view]')?.dataset.navView;
     if (navView) {
       event.preventDefault();
+      setMenuOpen(false);
       setActiveView(navView);
       return;
     }
 
     const categoryId = target.closest('[data-category-id]')?.dataset.categoryId;
     if (categoryId) {
+      setMenuOpen(false);
       setCategory(categoryId);
       if (activeView !== 'catalog') setActiveView('catalog');
       return;
@@ -356,6 +391,13 @@ function bindEvents() {
   });
 
   // Acción secundaria: enviar una copia por WhatsApp (no crea otro pedido).
+  document.addEventListener('submit', (event) => {
+    const form = event.target.closest?.('[data-delivery-pin-form]');
+    if (!form) return;
+    event.preventDefault();
+    form.querySelector('[data-delivery-done]')?.click();
+  });
+
   document.addEventListener('click', (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
@@ -446,6 +488,42 @@ function bindEvents() {
 }
 
 let pendingAdminTarget = null;
+
+// ===== Menú lateral (mobile) y atajos del header del rediseño =====
+function isMenuOpen() {
+  const panel = $('[data-menu-panel]');
+  return Boolean(panel && !panel.hidden);
+}
+
+function setMenuOpen(open) {
+  const panel = $('[data-menu-panel]');
+  if (!panel) return;
+  if (panel.hidden === !open) return;
+  panel.hidden = !open;
+  document.body.classList.toggle('taba-menu-open', open);
+  document.querySelectorAll('[data-menu-toggle]').forEach((button) => {
+    button.setAttribute('aria-expanded', String(open));
+  });
+}
+
+// La lupa del header lleva al buscador de la vista de compra y le da foco.
+function focusSearchField() {
+  if (activeView !== 'home' && activeView !== 'catalog') setActiveView('home');
+  const field = document.querySelector(`[data-view="${activeView}"] [data-search-input]`);
+  if (!field) return;
+  field.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  setTimeout(() => field.focus(), 140);
+}
+
+// Flecha del riel de promos: avanza una tarjeta y vuelve al inicio al llegar al final.
+function scrollRail(selector) {
+  const rail = document.querySelector(selector);
+  if (!rail) return;
+  const first = rail.firstElementChild;
+  const step = (first ? first.getBoundingClientRect().width : rail.clientWidth * 0.8) + 12;
+  const atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 8;
+  rail.scrollBy({ left: atEnd ? -rail.scrollLeft : step, behavior: 'smooth' });
+}
 
 function toggleAdminMode() {
   if (getState().adminUnlocked) {

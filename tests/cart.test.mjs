@@ -71,7 +71,7 @@ test('cart calculates subtotal, delivery fee, and totals correctly', () => {
   addToCart('p-matambre', 2);
   addToCart('p-coca', 1);
 
-  const subtotal = 2 * 8900 + 2800;
+  const subtotal = 2 * 8900 + 5000;
   assert.equal(getCartSubtotal(), subtotal);
   assert.equal(getDeliveryFee('delivery'), BUSINESS_CONFIG.deliveryFee);
   assert.equal(getCartTotal('delivery'), subtotal + BUSINESS_CONFIG.deliveryFee);

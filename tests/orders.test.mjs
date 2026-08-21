@@ -33,6 +33,9 @@ test('creates a valid delivery order and builds a complete WhatsApp message', ()
   assert.equal(result.order.subtotal, 11200);
   assert.equal(result.order.deliveryFee, BUSINESS_CONFIG.deliveryFee);
   assert.equal(result.order.total, 11200 + BUSINESS_CONFIG.deliveryFee);
+  assert.match(result.order.deliveryPin.code, /^\d{4}$/);
+  assert.equal(result.order.deliveryPin.status, 'pending');
+  assert.equal(result.order.deliveryPin.attempts, 0);
 
   const message = buildWhatsAppMessage(result.order);
   assert.match(message, /Pedido: LT-0002/);
@@ -65,6 +68,7 @@ test('pickup orders do not require a delivery address and do not charge shipping
   assert.equal(result.order.address, BUSINESS_CONFIG.address);
   assert.equal(result.order.deliveryFee, 0);
   assert.equal(result.order.total, result.order.subtotal);
+  assert.equal(result.order.deliveryPin, '');
 });
 
 test('delivery orders store structured customer address and rider reference', () => {
@@ -126,7 +130,7 @@ test('delivery orders require a delivery address and a minimum subtotal', () => 
   assert.match(missingNeighborhood.message, /barrio|zona/i);
 
   resetState();
-  addToCart('p-coca', 1);
+  addToCart('p-soda', 1);
 
   const belowMinimum = createOrderFromCheckout({
     customerName: 'Ana',

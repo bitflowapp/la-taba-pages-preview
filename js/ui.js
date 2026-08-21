@@ -17,6 +17,7 @@ import {
 import { buildDraftMessageFromCart, getActiveOrder } from './orders.js';
 import { getRealtimeStatus } from './realtime.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
+import { deliveryPinIsConfirmed, resolveDeliveryPin } from './core/delivery-pin.js';
 import { chooseRiderLocation, hasLiveRiderLocation } from './map/route_geometry.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
@@ -103,6 +104,7 @@ export function renderAdminVisibility() {
 export function renderCatalog() {
   renderOffers();
   renderCombos();
+  renderHomeShowcase();
   renderCategories();
   renderCatalogOffers();
   renderCatalogMeta();
@@ -250,6 +252,168 @@ function railCard(product) {
       <button class="add-round" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${product.stock <= 0 || !product.available ? 'disabled' : ''}>+</button>
     </article>
   `;
+}
+
+const HOME_CATEGORY_IDS = ['fernet', 'cervezas', 'gaseosas', 'aguas', 'energeticas', 'promos'];
+const HOME_PROMOTION_IDS = ['p-pepsi', 'p-coca', 'p-sprite'];
+// La fila "Productos destacados" del rediseño es un solo riel visual: primero los
+// más vendidos y después la vista previa del catálogo, con la misma tarjeta.
+const HOME_BEST_SELLER_IDS = ['p-fernet-branca', 'p-coca', 'p-quilmes-clasica'];
+const HOME_CATALOG_PREVIEW_IDS = ['p-monster-green', 'p-sprite', 'p-fanta-naranja', 'p-villavicencio'];
+const homeFavorites = new Set();
+
+const HOME_CATEGORY_ICONS = Object.freeze({
+  gaseosas: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9.2 2.8h5.6v2.8l1.3 1.5v13.4c0 .8-.7 1.5-1.5 1.5H9.4c-.8 0-1.5-.7-1.5-1.5V7.1l1.3-1.5V2.8Z" fill="currentColor"/>
+      <path d="M8 10.2h8M8 16.6h8" stroke="white" stroke-width="1.15" opacity=".9"/>
+    </svg>`,
+  fernet: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M10 2.5h4v4.1l1.6 2.1v12.2H8.4V8.7L10 6.6V2.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M8.8 11h6.4" stroke="currentColor" stroke-width="1.6"/>
+    </svg>`,
+  cervezas: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9.5 2.5h5v3l1.5 2.2V21H8V7.7l1.5-2.2v-3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M8.4 10.5h7.2M8.4 15.7h7.2" stroke="currentColor" stroke-width="1.5"/>
+    </svg>`,
+  aguas: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2.8S6.4 10 6.4 14.2a5.6 5.6 0 1 0 11.2 0C17.6 10 12 2.8 12 2.8Z" fill="none" stroke="currentColor" stroke-width="1.7"/>
+    </svg>`,
+  energeticas: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m13.6 2.8-7 10.4h5.3l-1.5 8 7-11h-5.1l1.3-7.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    </svg>`,
+  promos: `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m3.5 12 8.6-8.5h7.3l1.1 1.1v7.3L12 20.5 3.5 12Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+      <circle cx="16.4" cy="7.6" r="1.2" fill="currentColor"/>
+    </svg>`,
+});
+
+function homeProducts(ids) {
+  const productsById = new Map(getState().products.map((product) => [product.id, product]));
+  return ids.map((id) => productsById.get(id)).filter(Boolean);
+}
+
+function homeProductImage(product, className) {
+  return `<img class="${className}" src="${escapeHtml(productImage(product))}" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async" />`;
+}
+
+function renderHomeShowcase() {
+  renderHomeCategories();
+  renderHomePromotions();
+  renderHomeBestSellers();
+  renderHomeCatalogPreview();
+}
+
+function renderHomeCategories() {
+  const strip = $('[data-home-category-strip]');
+  if (!strip) return;
+  const categoryById = new Map(categories.map((category) => [category.id, category]));
+  strip.innerHTML = HOME_CATEGORY_IDS.map((categoryId) => {
+    const category = categoryById.get(categoryId);
+    if (!category) return '';
+    const isActive = categoryId === 'gaseosas';
+    return `
+      <button class="home-category-card ${isActive ? 'active' : ''}" type="button" data-category-id="${categoryId}" ${isActive ? 'aria-current="true"' : ''}>
+        <span class="home-category-icon">${HOME_CATEGORY_ICONS[categoryId] || ''}</span>
+        <span>${escapeHtml(category.name)}</span>
+      </button>`;
+  }).join('');
+}
+
+function renderHomePromotions() {
+  const container = $('[data-home-promotions]');
+  if (!container) return;
+  container.innerHTML = homeProducts(HOME_PROMOTION_IDS).map((product) => {
+    const off = discountPercent(product);
+    const oldPrice = product.oldPrice > product.price
+      ? `<s>${money(product.oldPrice)}</s>`
+      : '';
+    const badge = product.homePromoBadge || (off > 0 ? `${off}% OFF` : 'Promo');
+    return `
+      <article class="home-promo-card">
+        <button class="home-promo-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+          ${homeProductImage(product, 'home-promo-image')}
+        </button>
+        <div class="home-promo-copy">
+          <span class="home-promo-badge">${escapeHtml(badge)}</span>
+          <strong>${escapeHtml(product.name)}</strong>
+          <span class="home-promo-prices">
+            <span class="home-product-price">${money(product.price)}</span>
+            ${oldPrice}
+          </span>
+        </div>
+        <button class="home-add-button" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido">
+          <span aria-hidden="true">+</span>
+        </button>
+      </article>`;
+  }).join('');
+}
+
+// Tarjeta blanca de producto del rediseño: badge, packshot, nombre, unidad,
+// precio (con precio anterior tachado) y botón redondo para sumar al pedido.
+function homeProductCard(product, extraClass) {
+  const off = discountPercent(product);
+  const isFavorite = homeFavorites.has(product.id);
+  const soldOut = product.stock <= 0 || !product.available;
+  const badge = off > 0
+    ? `<span class="taba-pcard-badge">-${off}%</span>`
+    : (product.popular ? '<span class="taba-pcard-badge is-soft">Más pedido</span>' : '');
+  const oldPrice = off > 0 ? `<s>${money(product.oldPrice)}</s>` : '';
+  return `
+    <article class="taba-pcard ${extraClass} ${soldOut ? 'out-of-stock' : ''}">
+      ${badge}
+      <button class="taba-fav ${isFavorite ? 'is-favorite' : ''}" type="button" data-home-favorite="${product.id}" aria-pressed="${isFavorite}" aria-label="${isFavorite ? 'Quitar' : 'Agregar'} ${escapeHtml(product.name)} ${isFavorite ? 'de' : 'a'} favoritos">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20.8 4.8a5.3 5.3 0 0 0-7.5 0L12 6.1l-1.3-1.3a5.3 5.3 0 0 0-7.5 7.5L12 21l8.8-8.7a5.3 5.3 0 0 0 0-7.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="taba-pcard-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+        <img class="taba-pcard-img" src="${escapeHtml(productImage(product))}" alt="${escapeHtml(product.name)}" loading="lazy" decoding="async" />
+      </button>
+      <div class="taba-pcard-body">
+        <strong>${escapeHtml(product.name)}</strong>
+        <small>${escapeHtml(unitText(product))}</small>
+        <div class="taba-pcard-foot">
+          <span class="taba-pcard-prices">
+            <span class="home-product-price">${money(product.price)}</span>
+            ${oldPrice}
+          </span>
+          <button class="home-add-button home-add-button-primary" type="button" data-add-product="${product.id}" aria-label="Agregar ${escapeHtml(product.name)} al pedido" ${soldOut ? 'disabled' : ''}>
+            <span aria-hidden="true">+</span>
+          </button>
+        </div>
+      </div>
+    </article>`;
+}
+
+function renderHomeBestSellers() {
+  const container = $('[data-home-best-sellers]');
+  if (!container) return;
+  container.innerHTML = homeProducts(HOME_BEST_SELLER_IDS)
+    .map((product) => homeProductCard(product, 'home-best-card'))
+    .join('');
+}
+
+function renderHomeCatalogPreview() {
+  const container = $('[data-home-catalog-preview]');
+  if (!container) return;
+  container.innerHTML = homeProducts(HOME_CATALOG_PREVIEW_IDS)
+    .map((product) => homeProductCard(product, 'home-catalog-card'))
+    .join('');
+}
+
+export function toggleHomeFavorite(productId) {
+  if (homeFavorites.has(productId)) homeFavorites.delete(productId);
+  else homeFavorites.add(productId);
+  // Las dos filas comparten la misma tarjeta: hay que repintar ambas.
+  renderHomeBestSellers();
+  renderHomeCatalogPreview();
+  return homeFavorites.has(productId);
 }
 
 function renderCategories() {
@@ -446,9 +610,16 @@ export function renderCartTotals() {
   const floatingText = `${summary.count} ${summary.count === 1 ? 'ítem' : 'ítems'} · ${money(subtotalSummary.subtotal)}`;
   setText('[data-cart-count]', String(summary.count));
   setText('[data-cart-count-mobile]', String(summary.count));
-  setText('[data-cart-total-small]', summary.count > 0 ? money(subtotalSummary.subtotal) : 'Pedido');
+  setText('[data-taba-order-count]', String(summary.count));
+  setText('[data-cart-total-small]', money(subtotalSummary.subtotal));
   setText('[data-floating-cart-summary]', floatingText);
-  $$('[data-cart-count], [data-cart-count-mobile]').forEach((node) => {
+  $$('[data-open-cart]').forEach((button) => {
+    const label = summary.count > 0
+      ? `Ver mi pedido, ${summary.count} ${summary.count === 1 ? 'producto' : 'productos'}, ${money(subtotalSummary.subtotal)}`
+      : 'Ver mi pedido, carrito vacío';
+    button.setAttribute('aria-label', label);
+  });
+  $$('[data-cart-count], [data-cart-count-mobile], [data-taba-order-count]').forEach((node) => {
     node.classList.toggle('is-empty', summary.count === 0);
   });
   $$('[data-floating-cart]').forEach((node) => {
@@ -731,6 +902,26 @@ function trackingAddressCard(order) {
     </div>`;
 }
 
+function trackingDeliveryPinCard(order) {
+  if (order.deliveryMode === 'pickup' || order.status === 'cancelled') return '';
+  if (order.status === 'delivered') {
+    const confirmedByPin = deliveryPinIsConfirmed(order);
+    if (!confirmedByPin) return '';
+    return `
+    <div class="tracking-delivery-pin-card is-confirmed" data-delivery-pin-card>
+      <small>Entrega confirmada</small>
+    </div>`;
+  }
+  const pin = resolveDeliveryPin(order);
+  if (!pin) return '';
+  return `
+    <div class="tracking-delivery-pin-card" data-delivery-pin-card>
+      <small>Código de entrega</small>
+      <strong data-delivery-pin-value>${escapeHtml(pin)}</strong>
+      <p>Mostrale este código al repartidor cuando recibas el pedido.</p>
+    </div>`;
+}
+
 export function renderTracking() {
   const container = $('[data-tracking-panel]');
   if (!container) return;
@@ -809,6 +1000,7 @@ export function renderTracking() {
         <div class="track-steps">${steps}</div>
         ${isCancelled ? '<div class="warning-box">Este pedido fue cancelado. Si fue un error, escribinos por WhatsApp y lo resolvemos.</div>' : ''}
         ${isDelivery ? trackingAddressCard(order) : ''}
+        ${isDelivery ? trackingDeliveryPinCard(order) : ''}
         ${isDelivery && !isCancelled ? riderTrackingCard(order, riderLocation) : ''}
         ${isDelivery && !isCancelled && order.status !== 'delivered'
           ? `<p class="form-hint tracking-gps-note">${liveRider ? `Actualizado ${escapeHtml(liveAge)}.` : 'Sin GPS en vivo. Seguís el pedido por estado y dirección.'}</p>`

@@ -14,7 +14,7 @@ test('sin GPS real: el tracking es honesto (sin mapa, ruta ni puntos falsos)', a
   await page.goto('/?reset=1');
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await page.locator('.topbar [data-open-cart]').click();
   await fillCheckout(page, {
     name: 'Cliente Honesto',
     phone: '2995550000',

@@ -39,10 +39,10 @@ export function createHttpOrderRepository({
       if (!result.ok) return [];
       return normalizeOrderList(result.orders || result.data || []);
     },
-    async updateOrderStatus(orderId, status) {
+    async updateOrderStatus(orderId, status, options = {}) {
       return normalizeOrderPayload(await request(`/orders/${encodeURIComponent(orderId)}/status`, {
         method: 'PATCH',
-        body: { status },
+        body: { status, ...(options.deliveryPin ? { deliveryPin: options.deliveryPin } : {}) },
       }));
     },
     async assignRider(orderId, riderId) {

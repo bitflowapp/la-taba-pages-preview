@@ -18,6 +18,7 @@ import {
   statusLabel,
   updateState,
 } from './state.js';
+import { formatDeliveryPin, resolveDeliveryPin } from './core/delivery-pin.js';
 import {
   actionLabelForOrder,
   advanceOrderStatus,
@@ -305,6 +306,7 @@ function inboxOrderCard(order, options = {}) {
   const showTrack = order.deliveryMode === 'delivery' && ['ready', 'on_the_way', 'arriving'].includes(order.status);
   const priorityClass = options.priority ? 'is-priority' : 'is-secondary';
   const freshClass = options.fresh ? 'is-fresh' : '';
+  const deliveryPin = !isPickup ? formatDeliveryPin(resolveDeliveryPin(order)) : '';
 
   return `
     <article class="inbox-order ${priorityClass} ${freshClass} accent-${statusClass(order.status)}" data-inbox-order="${escapeHtml(order.id)}">
@@ -345,6 +347,7 @@ function inboxOrderCard(order, options = {}) {
             <p><span>Teléfono</span><strong>${escapeHtml(order.customerPhone)}</strong></p>
             <p><span>${isPickup ? 'Retiro' : 'Dirección'}</span><strong>${isPickup ? 'Retira en el local' : escapeHtml(address.label || order.address)}</strong></p>
             ${!isPickup && reference ? `<p><span>Referencia</span><strong>${escapeHtml(reference)}</strong></p>` : ''}
+            ${deliveryPin ? `<p class="delivery-pin-detail" data-business-delivery-pin><span>PIN entrega</span><strong>${escapeHtml(deliveryPin)}</strong></p>` : ''}
             <p><span>Pago</span><strong>${escapeHtml(order.paymentMethod)}</strong></p>
           </div>
           <div class="inbox-products-block">

@@ -4,6 +4,14 @@ import {
   getNextOrderStatus,
   isValidOrderStatus,
 } from './core/order-status.js';
+import {
+  confirmDeliveryPin,
+  createDeliveryPin,
+  createDeliveryPinState,
+  incrementDeliveryPinAttempts,
+  resolveDeliveryPin,
+  validateDeliveryPinForCompletion,
+} from './core/delivery-pin.js';
 import { calculateTotals, normalizeDeliveryMode } from './core/pricing.js';
 import {
   getAssignableDeliveryOrder,
@@ -71,6 +79,7 @@ export function createOrderFromCheckout(formValues = {}) {
     notes: values.customerNotes || 'Sin notas',
     createdAt: now,
     status: 'received',
+    deliveryPin: values.deliveryMode === 'delivery' ? createDeliveryPinState(createDeliveryPin()) : '',
     items,
     subtotal: totals.subtotal,
     deliveryFee: totals.deliveryFee,
@@ -218,6 +227,7 @@ export function buildKitchenTicket(order) {
     `Entrega: ${deliveryModeLabel(order.deliveryMode)}`,
     isPickup ? 'Retiro en el local' : `Direccion: ${address.label || order.address}`,
     ...(!isPickup && reference ? [`Referencia: ${reference}`] : []),
+    ...(!isPickup ? [`PIN entrega: ${resolveDeliveryPin(order)}`] : []),
     `Cliente: ${order.customerName}`,
     `Telefono: ${order.customerPhone}`,
     '--------------------------------',
@@ -231,7 +241,7 @@ export function buildKitchenTicket(order) {
   return lines.join('\n');
 }
 
-export function updateOrderStatus(orderId, status) {
+export function updateOrderStatus(orderId, status, options = {}) {
   if (!orderId || !isValidOrderStatus(status)) {
     return { ok: false, message: 'Estado de pedido inválido.' };
   }
@@ -240,6 +250,12 @@ export function updateOrderStatus(orderId, status) {
   if (!current) return { ok: false, message: 'Pedido no encontrado.' };
   if (!canTransitionOrderStatus(current, status)) {
     return { ok: false, message: 'Transición de estado no permitida.' };
+  }
+
+  const pinValidation = validateDeliveryPinForCompletion(current, status, options.deliveryPin, options);
+  if (!pinValidation.ok) {
+    if (pinValidation.reason === 'mismatch') recordDeliveryPinAttempt(orderId);
+    return { ok: false, message: pinValidation.message };
   }
 
   const now = new Date().toISOString();
@@ -268,6 +284,10 @@ export function updateOrderStatus(orderId, status) {
     }
     if (status === 'delivered') {
       order.delivery.deliveredAt = now;
+      if (options.requireDeliveryPin) {
+        order.deliveryPin = confirmDeliveryPin(order.deliveryPin, now);
+        order.delivery.pinConfirmedAt = now;
+      }
       order.delivery.currentLocationLabel = 'Pedido entregado';
       order.delivery.estimatedMinutes = 0;
     }
@@ -278,6 +298,14 @@ export function updateOrderStatus(orderId, status) {
   });
 
   return { ok: true, message: `Pedido ${orderId} actualizado a ${statusLabel(status)}.` };
+}
+
+function recordDeliveryPinAttempt(orderId) {
+  updateState((draft) => {
+    const order = draft.orders.find((candidate) => candidate.id === orderId);
+    if (!order) return;
+    order.deliveryPin = incrementDeliveryPinAttempts(order.deliveryPin);
+  });
 }
 
 export function updateOrderDemoDestination(orderId, destinationId) {

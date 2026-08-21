@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#fffdf9" />
-    <meta name="description" content="La Taba: carnes premium, parrilla y delivery propio en Neuquén." />
-    <title>La Taba · Carnes premium · Pedidos online</title>
+    <meta name="theme-color" content="#0b0b0d" />
+    <meta name="description" content="La Taba: bebidas frías, promos calientes. Te lo llevamos rápido." />
+    <title>La Taba · Bebidas y delivery</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -13,102 +13,154 @@
   </head>
   <body>
     <div class="app-shell">
-      <header class="topbar">
-        <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio de La Taba">
-          <span class="brand-mark">LT</span>
-          <span class="brand-text">
-            <strong class="brand-word" data-business-name>La Taba</strong>
-            <small data-business-subtitle>Carnicería & delivery propio</small>
-          </span>
+      <header class="topbar taba-topbar">
+        <button class="taba-burger" type="button" data-menu-toggle aria-label="Abrir menú" aria-expanded="false" aria-controls="taba-drawer">
+          <span aria-hidden="true"></span>
+        </button>
+
+        <button class="brand taba-brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio de La Taba">
+          <span class="brand-la" aria-hidden="true">La</span><strong class="brand-word">Taba</strong>
+          <svg class="brand-bolt" viewBox="0 0 12 22" aria-hidden="true"><path d="M8.6 0 0 12.4h4.2L2.6 22 12 8.7H6.7L8.6 0Z" fill="currentColor"/></svg>
         </button>
 
         <nav class="desktop-nav" aria-label="Navegación principal">
           <button type="button" data-nav-view="home">Inicio</button>
-          <button type="button" data-nav-view="catalog">Catálogo</button>
-          <button type="button" data-nav-view="cart">Pedido <span class="mini-badge" data-cart-count>0</span></button>
+          <button type="button" data-nav-view="catalog">Productos<svg class="nav-caret" viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1.6 5 4.8 5-4.8" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" data-category-id="promos">Promociones</button>
+          <button type="button" data-nav-view="cart">Mi pedido <span class="mini-badge" data-cart-count>0</span></button>
           <button type="button" data-nav-view="tracking">Seguir</button>
-          <button type="button" data-nav-view="profile">Local</button>
         </nav>
 
         <div class="topbar-actions">
-          <button class="ghost-button compact" type="button" data-admin-toggle>Administrar pedidos</button>
-          <button class="primary-button compact cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
-            <span data-cart-total-small>Pedido</span>
+          <button class="ghost-button compact taba-admin-link" type="button" data-admin-toggle>Administrar pedidos</button>
+
+          <p class="taba-delivery">
+            <span class="taba-delivery-ico" aria-hidden="true">
+              <svg viewBox="0 0 30 22" fill="none">
+                <circle cx="6.4" cy="16.6" r="3.7" stroke="currentColor" stroke-width="1.9"/>
+                <circle cx="23.2" cy="16.6" r="3.7" stroke="currentColor" stroke-width="1.9"/>
+                <path d="M10 16.6h9.6M6.4 16.6 11 6.1h4.6l4.3 10.5M14 2.6h4.4l1.5 3.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="taba-delivery-copy">
+              <strong>Envío en 30–60 min</strong>
+              <small>Envíos a toda la ciudad</small>
+            </span>
+          </p>
+
+          <button class="taba-icon-btn" type="button" data-search-focus aria-label="Buscar productos">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="10.8" cy="10.8" r="6.6" stroke="currentColor" stroke-width="1.9"/>
+              <path d="m15.8 15.8 4 4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button class="taba-icon-btn taba-icon-account" type="button" data-nav-view="profile" aria-label="Nuestro local">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="8.2" r="3.9" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M4.6 20.2c1.2-3.7 4-5.6 7.4-5.6s6.2 1.9 7.4 5.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button class="taba-icon-btn taba-cart-btn" type="button" data-open-cart aria-label="Ver mi pedido, carrito vacío">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M2.6 3.4h2.6l2.2 10.4a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.5l1.9-7H6.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="10.2" cy="19.6" r="1.6" fill="currentColor"/>
+              <circle cx="17.6" cy="19.6" r="1.6" fill="currentColor"/>
+            </svg>
+            <span class="taba-cart-badge" data-taba-order-count>0</span>
+            <span class="visually-hidden" data-cart-total-small>$ 0</span>
           </button>
         </div>
       </header>
 
+      <p class="taba-shipping-strip">
+        <span class="taba-shipping-ico" aria-hidden="true">
+          <svg viewBox="0 0 30 22" fill="none">
+            <circle cx="6.4" cy="16.6" r="3.7" stroke="currentColor" stroke-width="2.1"/>
+            <circle cx="23.2" cy="16.6" r="3.7" stroke="currentColor" stroke-width="2.1"/>
+            <path d="M10 16.6h9.6M6.4 16.6 11 6.1h4.6l4.3 10.5M14 2.6h4.4l1.5 3.5" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <strong>Envío en 30–60 min</strong>
+        <small>Envíos a toda la ciudad</small>
+      </p>
+
       <main data-app-main>
-        <section class="section app-view app-home is-active" data-view="home" aria-hidden="false">
-          <div class="home-title">
-            <div>
-              <p class="eyebrow">Carnicería premium</p>
-              <h1>La Taba</h1>
-              <p class="home-lead">Cortes frescos, parrilla y combos para pedir online en Neuquén.</p>
-            </div>
-            <button class="secondary-button compact" type="button" data-nav-view="profile">Ver local</button>
-          </div>
-
-          <div class="status-bar" role="status">
-            <span class="status-dot" data-open-status>Abierto ahora</span>
-            <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">25-35 min</span>
-            <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Delivery o retiro</span>
-            <span class="status-sep" aria-hidden="true"></span>
-            <span class="status-item">Neuquén · Cipolletti</span>
-          </div>
-
+        <section class="section app-view app-home taba-home is-active" data-view="home" aria-hidden="false">
           <div data-home-active-order hidden></div>
 
-          <div class="search-box">
-            <span aria-hidden="true">⌕</span>
-            <input data-search-input data-search-jump type="search" placeholder="Buscar cortes, combos, bebidas..." aria-label="Buscar productos" />
-          </div>
-
-          <div class="rail-block">
-            <div class="rail-head">
-              <h2>Categorías</h2>
-              <button class="rail-link" type="button" data-nav-view="catalog">Ver catálogo ›</button>
+          <section class="taba-hero" aria-labelledby="taba-hero-title">
+            <span class="taba-hero-glow" aria-hidden="true"></span>
+            <div class="taba-hero-art" aria-hidden="true">
+              <img class="taba-hero-bottle is-a" src="assets/products/bebidas/fernet-branca-750ml.jpg" alt="" decoding="async" />
+              <img class="taba-hero-bottle is-b" src="assets/products/bebidas/coca-cola-original-1-5l.jpg" alt="" decoding="async" />
             </div>
-            <div class="category-strip" data-category-strip></div>
-          </div>
 
-          <button class="promo-banner" type="button" data-category-id="promos" data-promo-banner>
-            <span class="promo-photo" aria-hidden="true">
-              <img src="assets/hero/parrilla-real.webp" alt="" width="700" height="525" loading="eager" decoding="async" fetchpriority="high" />
+            <span class="taba-hero-seal" aria-hidden="true">
+              <em>Envío</em><b>30-60</b><i>min</i>
             </span>
-            <div class="promo-banner-copy">
-              <span class="promo-kicker">Listo para parrilla</span>
-              <strong>Promo parrillera del día</strong>
-              <span class="promo-sub">Cortes, achuras y bebidas para resolver la comida de hoy.</span>
-            </div>
-            <span class="promo-cta">Pedir ahora</span>
-          </button>
 
-          <div class="rail-block">
-            <div class="rail-head">
-              <h2>Ofertas de hoy</h2>
-              <button class="rail-link" type="button" data-category-id="promos">Ver todas ›</button>
+            <div class="taba-hero-copy">
+              <h1 id="taba-hero-title"><span class="hl-1">La previa</span><span class="hl-2">empieza acá</span></h1>
+              <p>Bebidas frías, promos calientes.<br />Te lo llevamos rápido.</p>
+              <div class="taba-hero-actions">
+                <button class="taba-btn taba-btn-dark" type="button" data-category-id="promos">
+                  Ver promociones
+                  <svg class="btn-bolt" viewBox="0 0 12 22" aria-hidden="true"><path d="M8.6 0 0 12.4h4.2L2.6 22 12 8.7H6.7L8.6 0Z" fill="currentColor"/></svg>
+                </button>
+                <button class="taba-btn taba-btn-line" type="button" data-nav-view="catalog">Ver productos</button>
+              </div>
             </div>
-            <div class="offers-rail" data-offers-rail></div>
-          </div>
 
-          <div class="rail-block">
-            <div class="rail-head">
-              <h2>Combos destacados</h2>
-              <button class="rail-link" type="button" data-category-id="combos">Ver todos ›</button>
+            <div class="taba-hero-dots" aria-hidden="true">
+              <span class="is-active"></span><span></span><span></span><span></span>
             </div>
-            <div class="combos-rail" data-combos-rail></div>
-          </div>
+          </section>
 
-          <button class="catalog-cta" type="button" data-nav-view="catalog">
-            <span>
-              <strong>Ver catálogo completo</strong>
-              <small>Elegí por categoría: carnes, pollos, achuras, embutidos y más.</small>
-            </span>
-            <span class="catalog-cta-go" aria-hidden="true">›</span>
-          </button>
+          <label class="search-box taba-home-search">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
+              <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <input data-search-input data-search-jump type="search" placeholder="Buscar productos, marcas y más..." aria-label="Buscar productos, marcas y más" />
+          </label>
+
+          <section class="taba-promos" aria-labelledby="home-promotions-title">
+            <h2 class="visually-hidden" id="home-promotions-title">Promos destacadas</h2>
+            <div class="taba-promos-row">
+              <p class="taba-promos-tag" aria-hidden="true">
+                <span>Promos destacadas</span>
+                <svg viewBox="0 0 12 22"><path d="M8.6 0 0 12.4h4.2L2.6 22 12 8.7H6.7L8.6 0Z" fill="currentColor"/></svg>
+              </p>
+              <div class="home-promotions-rail" data-home-promotions></div>
+              <button class="taba-rail-next" type="button" data-rail-next="[data-home-promotions]" aria-label="Ver más promociones">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9.5 5 7 7-7 7" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+            <div class="home-paging-dots" aria-hidden="true">
+              <span class="is-active"></span><span></span><span></span><span></span>
+            </div>
+          </section>
+
+          <section class="taba-block" aria-labelledby="home-categories-title">
+            <div class="taba-block-head">
+              <h2 id="home-categories-title">Categorías</h2>
+              <button type="button" data-nav-view="catalog">Ver todas</button>
+            </div>
+            <div class="category-strip home-category-strip" data-home-category-strip aria-label="Categorías de bebidas"></div>
+          </section>
+
+          <section class="taba-block" aria-labelledby="home-best-title">
+            <div class="taba-block-head">
+              <h2 id="home-best-title">Productos destacados</h2>
+              <button type="button" data-nav-view="catalog">Ver todos</button>
+            </div>
+            <div class="taba-product-rail">
+              <div class="home-best-sellers" data-home-best-sellers></div>
+              <div class="home-catalog-preview" data-home-catalog-preview></div>
+            </div>
+          </section>
         </section>
 
         <section class="section app-view" data-view="catalog" hidden aria-hidden="true">
@@ -361,12 +413,65 @@
         <strong>Ver pedido</strong>
       </button>
 
-      <nav class="mobile-nav" aria-label="Navegación móvil">
-        <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true"></span><span class="mn-label">Inicio</span></button>
-        <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
-        <button type="button" data-nav-view="cart"><span class="mn-ico icon-order" aria-hidden="true"></span><span class="mn-label">Pedido</span><span class="mn-badge" data-cart-count-mobile>0</span></button>
-        <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguir</span></button>
-        <button type="button" data-nav-view="profile"><span class="mn-ico icon-store" aria-hidden="true"></span><span class="mn-label">Local</span></button>
+      <nav class="mobile-nav taba-tabbar" aria-label="Navegación móvil">
+        <button type="button" data-nav-view="home">
+          <span class="mn-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M3.4 10.4 12 3.3l8.6 7.1v9.1a1.5 1.5 0 0 1-1.5 1.5H4.9a1.5 1.5 0 0 1-1.5-1.5v-9.1Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="mn-label">Inicio</span>
+        </button>
+        <button type="button" data-nav-view="catalog">
+          <span class="mn-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/>
+              <rect x="14" y="3" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/>
+              <rect x="3" y="14" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/>
+              <rect x="14" y="14" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/>
+            </svg>
+          </span>
+          <span class="mn-label">Productos</span>
+        </button>
+        <button type="button" data-nav-view="tracking">
+          <span class="mn-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 21.4c4.3-4.6 6.5-8.1 6.5-10.7a6.5 6.5 0 1 0-13 0c0 2.6 2.2 6.1 6.5 10.7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="10.4" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg>
+          </span>
+          <span class="mn-label">Seguir</span>
+        </button>
+        <button type="button" data-nav-view="profile">
+          <span class="mn-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.2" r="3.7" stroke="currentColor" stroke-width="1.8"/><path d="M4.8 20c1.2-3.6 3.9-5.4 7.2-5.4s6 1.8 7.2 5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </span>
+          <span class="mn-label">Cuenta</span>
+        </button>
+        <button type="button" data-nav-view="cart">
+          <span class="mn-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M2.6 3.4h2.6l2.2 10.4a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.5l1.9-7H6.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10.2" cy="19.6" r="1.5" fill="currentColor"/><circle cx="17.6" cy="19.6" r="1.5" fill="currentColor"/></svg>
+            <span class="mn-badge" data-cart-count-mobile>0</span>
+          </span>
+          <span class="mn-label">Carrito</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="taba-drawer" id="taba-drawer" data-menu-panel hidden>
+      <div class="taba-drawer-veil" data-menu-close></div>
+      <nav class="taba-drawer-panel" aria-label="Menú de La Taba">
+        <div class="taba-drawer-head">
+          <span class="brand taba-brand" aria-hidden="true">
+            <span class="brand-la">La</span><strong class="brand-word">Taba</strong>
+            <svg class="brand-bolt" viewBox="0 0 12 22"><path d="M8.6 0 0 12.4h4.2L2.6 22 12 8.7H6.7L8.6 0Z" fill="currentColor"/></svg>
+          </span>
+          <button class="taba-drawer-close" type="button" data-menu-close aria-label="Cerrar menú">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <button type="button" data-nav-view="home">Inicio</button>
+        <button type="button" data-nav-view="catalog">Productos</button>
+        <button type="button" data-category-id="promos">Promociones</button>
+        <button type="button" data-nav-view="cart">Mi pedido</button>
+        <button type="button" data-nav-view="tracking">Seguir mi pedido</button>
+        <button type="button" data-nav-view="profile">Nosotros</button>
+        <p class="taba-drawer-note">Envío en 30–60 min · Envíos a toda la ciudad</p>
       </nav>
     </div>
 

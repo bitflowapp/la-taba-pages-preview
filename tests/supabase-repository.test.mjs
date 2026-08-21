@@ -54,6 +54,9 @@ test('Supabase repository creates a persistent order and mirrors it locally', as
   assert.equal(getState().orders[0].address, 'Roca 321, Centro');
   assert.equal(getState().orders[0].addressDetails.reference, 'Porton negro');
   assert.equal(getState().orders[0].paymentMethod, 'Efectivo');
+  assert.match(getState().orders[0].deliveryPin.code, /^\d{4}$/);
+  assert.equal(getState().orders[0].deliveryPin.status, 'pending');
+  assert.equal(getState().orders[0].deliveryPin.attempts, 0);
   assert.deepEqual(getState().cart, []);
   assert.equal(mock.calls[0].headers.apikey, 'anon-public-key');
   assert.equal(mock.db.orderItems.length, 1);
@@ -62,6 +65,7 @@ test('Supabase repository creates a persistent order and mirrors it locally', as
   assert.ok(createCall, 'debe usar la RPC create_order_with_items');
   assert.ok(Array.isArray(createCall.body.payload.items) && createCall.body.payload.items.length === 1);
   assert.equal(createCall.body.payload.address_label, 'Roca 321, Centro');
+  assert.match(createCall.body.payload.delivery_pin, /^\d{4}$/);
   assert.match(createCall.body.payload.notes, /Referencia: Porton negro/);
   assert.equal(mock.calls.some((call) => call.url.endsWith('/order_items') && call.method === 'POST'), false);
 });
@@ -161,6 +165,32 @@ test('Supabase repository persists status and rider GPS updates', async () => {
   const { chooseRiderLocation } = await import('../js/map/route_geometry.js');
   const chosen = chooseRiderLocation(null, mirrored.tracking.lastLocation);
   assert.equal(chosen.source, 'gps');
+
+  const missingPin = await repository.updateOrderStatus(created.order.id, 'delivered', {
+    requireDeliveryPin: true,
+  });
+  assert.equal(missingPin.ok, false);
+  assert.match(missingPin.message, /PIN/);
+  assert.equal(getState().orders[0].deliveryPin.attempts, 0);
+
+  const wrongPin = await repository.updateOrderStatus(created.order.id, 'delivered', {
+    requireDeliveryPin: true,
+    deliveryPin: '0000',
+  });
+  assert.equal(wrongPin.ok, false);
+  assert.match(wrongPin.message, /incorrecto/);
+  assert.equal(getState().orders[0].deliveryPin.attempts, 1);
+
+  const delivered = await repository.updateOrderStatus(created.order.id, 'delivered', {
+    requireDeliveryPin: true,
+    deliveryPin: getState().orders[0].deliveryPin.code,
+  });
+  assert.equal(delivered.ok, true);
+  assert.equal(getState().orders[0].status, 'delivered');
+  assert.equal(getState().orders[0].deliveryPin.status, 'confirmed');
+  assert.equal(getState().orders[0].deliveryPin.attempts, 1);
+  assert.match(getState().orders[0].deliveryPin.confirmedAt, /^\d{4}-\d{2}-\d{2}T/);
+  assert.match(getState().orders[0].delivery.pinConfirmedAt, /^\d{4}-\d{2}-\d{2}T/);
 });
 
 test('Supabase repository keeps terminal orders out of the active order slot', async () => {

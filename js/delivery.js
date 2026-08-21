@@ -181,10 +181,22 @@ function renderRiderActions(order, { canLeave, canArrive, canDeliver }) {
   }
   if (canDeliver) {
     const cls = canArrive ? 'secondary-button' : 'primary-button';
-    actions.push(`<button class="${cls}" type="button" data-delivery-done="${order.id}">Pedido entregado</button>`);
+    actions.push(renderDeliveryPinAction(order, cls));
   }
   if (!actions.length) return '';
   return `<div class="button-row rider-actions">${actions.join('')}</div>`;
+}
+
+function renderDeliveryPinAction(order, buttonClass) {
+  return `
+    <form class="delivery-pin-form" data-delivery-pin-form="${escapeHtml(order.id)}" autocomplete="off">
+      <label for="delivery-pin-${escapeHtml(order.id)}">PIN de entrega</label>
+      <div class="delivery-pin-row">
+        <input id="delivery-pin-${escapeHtml(order.id)}" name="deliveryPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" size="4" autocomplete="one-time-code" placeholder="0000" aria-label="PIN de entrega de 4 dígitos" />
+        <button class="${buttonClass}" type="button" data-delivery-done="${escapeHtml(order.id)}">Confirmar código</button>
+      </div>
+      <small>Pedile al cliente el PIN que ve en seguimiento.</small>
+    </form>`;
 }
 
 // Bloque avanzado: esconde relay/sala/equipo para que la vista principal sea operativa.
@@ -470,14 +482,20 @@ export function handleDeliveryAction(target) {
 
   const doneId = target.closest('[data-delivery-done]')?.dataset.deliveryDone;
   if (doneId) {
-    return deliveryActionResponse(updateDeliveryOrderStatus(doneId, 'delivered'), 'Pedido marcado como entregado.', () => {
+    return deliveryActionResponse(updateDeliveryOrderStatus(doneId, 'delivered', {
+      deliveryPin: deliveryPinFromTarget(target),
+      requireDeliveryPin: true,
+    }), 'Código confirmado. Pedido marcado como entregado.', () => {
       syncSimulationOnStatus(doneId, 'delivered');
     });
   }
 
   const streetDoneId = target.closest('[data-street-done]')?.dataset.streetDone;
   if (streetDoneId) {
-    return deliveryActionResponse(updateDeliveryOrderStatus(streetDoneId, 'delivered'), 'Pedido marcado como entregado.', () => {
+    return deliveryActionResponse(updateDeliveryOrderStatus(streetDoneId, 'delivered', {
+      deliveryPin: deliveryPinFromTarget(target),
+      requireDeliveryPin: true,
+    }), 'Código confirmado. Pedido marcado como entregado.', () => {
       syncSimulationOnStatus(streetDoneId, 'delivered');
     });
   }
@@ -523,10 +541,20 @@ function readyOrderForDelivery(orderId) {
     .then((preparing) => (preparing.ok ? repository.updateOrderStatus(orderId, 'ready') : preparing));
 }
 
-function updateDeliveryOrderStatus(orderId, status) {
+function updateDeliveryOrderStatus(orderId, status, options = {}) {
   const repository = getOrderRepository();
-  if (!isPersistentOrderRepository(repository)) return updateOrderStatus(orderId, status);
-  return repository.updateOrderStatus(orderId, status);
+  if (!isPersistentOrderRepository(repository)) return updateOrderStatus(orderId, status, options);
+  return repository.updateOrderStatus(orderId, status, options);
+}
+
+function deliveryPinFromTarget(target) {
+  const form = target.closest?.('[data-delivery-pin-form]');
+  const inputValue = form?.querySelector?.('[name="deliveryPin"]')?.value;
+  if (inputValue != null) return inputValue;
+  return target.closest?.('[data-delivery-done]')?.dataset.deliveryPin
+    || target.closest?.('[data-street-done]')?.dataset.deliveryPin
+    || target.dataset?.deliveryPin
+    || '';
 }
 
 function deliveryActionResponse(result, successMessage, onSuccess = null) {

@@ -22,6 +22,11 @@ import {
 import { normalizePaymentMethod, sanitizeNotes, sanitizeText } from './core/validators.js';
 import { clampProgress } from './core/simulation.js';
 import { normalizeAddressDetails, normalizeOrderAddressDetails } from './core/address.js';
+import {
+  deliveryPinIsConfirmed,
+  normalizeDeliveryPinState,
+  resolveDeliveryPin,
+} from './core/delivery-pin.js';
 
 export const STATE_SCHEMA_VERSION = 1;
 
@@ -225,12 +230,20 @@ function normalizeOrder(order) {
   const addressDetails = deliveryMode === 'pickup'
     ? null
     : normalizeOrderAddressDetails(order);
+  const customerPhone = sanitizeText(order.customerPhone, { maxLength: 40 });
+  const deliveryPin = deliveryMode === 'delivery'
+    ? normalizeDeliveryPinState(order.deliveryPin, {
+      fallbackCode: resolveDeliveryPin({ ...order, id, createdAt, customerPhone, deliveryMode }),
+      status: deliveryPinIsConfirmed(order) || delivery.pinConfirmedAt ? 'confirmed' : 'pending',
+      confirmedAt: order.deliveryPin?.confirmedAt || delivery.pinConfirmedAt,
+    })
+    : '';
 
   return {
     ...order,
     id,
     customerName: sanitizeText(order.customerName, { fallback: 'Cliente', maxLength: 80 }),
-    customerPhone: sanitizeText(order.customerPhone, { maxLength: 40 }),
+    customerPhone,
     address: deliveryMode === 'pickup'
       ? BUSINESS_CONFIG.address
       : addressDetails.label || sanitizeText(order.address, { fallback: 'Sin dirección', maxLength: 180 }),
@@ -240,6 +253,7 @@ function normalizeOrder(order) {
     notes: sanitizeNotes(order.notes),
     createdAt,
     status,
+    deliveryPin,
     items,
     subtotal: totals.subtotal,
     deliveryFee: totals.deliveryFee,
@@ -292,6 +306,7 @@ function normalizeDelivery(delivery, deliveryMode, status) {
   const delivered = status === 'delivered' || status === 'cancelled' || deliveryMode === 'pickup';
   const estimatedMinutes = delivered ? 0 : Math.max(0, Math.floor(Number(source.estimatedMinutes) || 0));
   const demoDestination = normalizeStreetDestinationId(source.demoDestinationId || source.destinationId);
+  const pinConfirmedAt = source.pinConfirmedAt || source.deliveryPinConfirmedAt;
 
   return {
     // Sin rider real: "Sin asignar" y teléfono vacío. Nunca un nombre/teléfono falso.
@@ -318,6 +333,7 @@ function normalizeDelivery(delivery, deliveryMode, status) {
       : {}),
     ...(source.leftStoreAt ? { leftStoreAt: normalizeIsoDate(source.leftStoreAt) } : {}),
     ...(source.deliveredAt ? { deliveredAt: normalizeIsoDate(source.deliveredAt) } : {}),
+    ...(pinConfirmedAt ? { pinConfirmedAt: normalizeIsoDate(pinConfirmedAt) } : {}),
   };
 }
 

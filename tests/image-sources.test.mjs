@@ -10,7 +10,7 @@ const docsPath = path.join(root, 'docs/image-sources.md');
 test('real image assets are local, documented, and lightweight', () => {
   assert.equal(fs.existsSync(docsPath), true, 'docs/image-sources.md should exist');
   const docs = fs.readFileSync(docsPath, 'utf8');
-  const matches = [...docs.matchAll(/`(assets\/(?:hero|products)\/[^`]+\.webp)`/g)];
+  const matches = [...docs.matchAll(/`(assets\/(?:hero|products)\/[^`]+\.(?:webp|jpg))`/g)];
   const relativePaths = [...new Set(matches.map((match) => match[1]))];
 
   assert.ok(relativePaths.length >= 6, 'expected documented hero/product images');

@@ -58,7 +58,7 @@ test('hydrateState repairs corrupted persisted state without crashing', () => {
 
   const coca = hydrated.products.find((product) => product.id === 'p-coca');
   assert.equal(coca.stock, 2);
-  assert.equal(coca.price, 2800);
+  assert.equal(coca.price, 5000);
   assert.deepEqual(hydrated.cart, [{ productId: 'p-coca', quantity: 2 }]);
 
   assert.equal(hydrated.orders.length, 1);

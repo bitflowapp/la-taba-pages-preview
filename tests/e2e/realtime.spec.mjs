@@ -157,7 +157,7 @@ test('cliente y rider en dos equipos: pedido interno, realtime y entrega (sin GP
   // El cliente arma y CONFIRMA el pedido (sin abrir WhatsApp).
   await client.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await client.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await client.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await client.locator('.topbar [data-open-cart]').click();
   await fillCheckout(client, {
     name: 'Cliente Demo',
     phone: '2995550000',
@@ -206,8 +206,12 @@ test('cliente y rider en dos equipos: pedido interno, realtime y entrega (sin GP
   await expect(client.locator('[data-tracking-panel]')).toContainText('Llegando', { timeout: 10_000 });
 
   // Rider: pedido entregado -> el cliente ve entregado.
+  const deliveryPin = await client.locator('[data-delivery-pin-value]').first().textContent();
+  await rider.locator('[data-delivery-pin-form] input[name="deliveryPin"]').fill((deliveryPin || '').replace(/\D/g, ''));
   await rider.locator('[data-delivery-done="LT-0002"]').click();
   await expect(client.locator('[data-tracking-panel]')).toContainText(/entregado|Disfrutalo/i, { timeout: 10_000 });
+  await expect(client.locator('[data-tracking-panel]')).toContainText('Entrega confirmada');
+  await expect(client.locator('[data-tracking-panel] [data-delivery-pin-value]')).toHaveCount(0);
 
   await clientCtx.close();
   await riderCtx.close();
@@ -239,7 +243,7 @@ test('el rider usa el pedido activo de la sala aunque tenga localStorage viejo',
 
   await client.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await client.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await client.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await client.locator('.topbar [data-open-cart]').click();
   await fillCheckout(client, {
     name: 'Cliente GPS',
     phone: '2995550000',
@@ -299,7 +303,7 @@ test('GPS real del rider se propaga al tracking del cliente por relay', async ({
 
   await client.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await client.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await client.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await client.locator('.topbar [data-open-cart]').click();
   await fillCheckout(client, {
     name: 'Cliente GPS',
     phone: '2995550000',

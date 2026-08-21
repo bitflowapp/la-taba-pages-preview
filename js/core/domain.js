@@ -6,6 +6,7 @@ import {
   normalizeWorkflowStatus,
   toDemoOrderStatus,
 } from './order-workflow.js';
+import { resolveDeliveryPin } from './delivery-pin.js';
 
 export const DOMAIN_MODEL_VERSION = 1;
 export const FULFILLMENT_TYPES = Object.freeze(['delivery', 'pickup']);
@@ -79,6 +80,9 @@ export function toDomainOrder(order = {}) {
     addressDetails,
     items,
     totals,
+    deliveryPin: fulfillmentType === 'delivery'
+      ? resolveDeliveryPin({ ...order, deliveryMode: fulfillmentType })
+      : '',
     paymentMethod: sanitizeText(order.paymentMethod, { fallback: 'Efectivo', maxLength: 80 }),
     notes: sanitizeNotes(order.notes),
     createdAt: normalizeTimestamp(order.createdAt),

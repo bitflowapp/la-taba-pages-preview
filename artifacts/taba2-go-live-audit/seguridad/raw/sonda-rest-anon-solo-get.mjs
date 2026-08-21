@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 
 const cfg = fs.readFileSync(
-  'D:/1212/la-taba2-gondola-retail-final/artifacts/taba2-go-live-audit/seguridad/raw/cliente/descargas/runtime-config.js',
+  'artifacts/taba2-go-live-audit/seguridad/raw/cliente/descargas/runtime-config.js',
   'utf8',
 );
 const KEY = (cfg.match(/sb_publishable_[A-Za-z0-9_-]+/) || [])[0];

@@ -28,7 +28,9 @@ test('la regla aplica 15 % una sola vez y redondea a la siguiente terminación 9
 });
 
 test('la propuesta es compacta: 12 altas nuevas llevan 60 a 72 sin colisiones', async () => {
-  const { skus: actuales } = await loadCatalogSkus(ROOT);
+  // La base SOBRE la que se propuso: los 60 anteriores al lote. Aplicado el
+  // 2026-08-21, la autoridad por defecto ya devuelve 72 (se afirma abajo).
+  const { skus: actuales } = await loadCatalogSkus(ROOT, { gondolaFinal: false });
   const actualesSet = new Set(actuales.map((row) => row.sku));
   const propuestasSet = new Set(PRODUCTOS_PROPUESTOS.map((row) => row.sku));
 
@@ -37,6 +39,10 @@ test('la propuesta es compacta: 12 altas nuevas llevan 60 a 72 sin colisiones', 
   assert.equal(propuestasSet.size, 12, 'hay un SKU repetido en el payload');
   assert.equal([...propuestasSet].some((sku) => actualesSet.has(sku)), false, 'un alta colisiona con un SKU actual');
   assert.equal(TOTAL_ESTIMADO, 72);
+
+  const { skus: conAltas } = await loadCatalogSkus(ROOT);
+  assert.equal(conAltas.length, TOTAL_ESTIMADO, 'la autoridad por defecto ya incluye las 12 altas aplicadas');
+  assert.equal(conAltas.filter((row) => row.origen === 'gondola-retail-final').length, 12);
 
   assert.deepEqual(
     Object.fromEntries(['Gaseosas', 'Aguas', 'Jugos', 'Cervezas'].map((category) => [
@@ -68,7 +74,7 @@ test('cada alta nace verificada pero cerrada: stock 0, no disponible y fallback 
 });
 
 test('todos los GTIN propuestos son EAN-13 válidos, únicos y sin choque local conocido', async () => {
-  const { skus: actuales } = await loadCatalogSkus(ROOT);
+  const { skus: actuales } = await loadCatalogSkus(ROOT, { gondolaFinal: false });
   const actualesSet = new Set(actuales.map((row) => row.sku));
   const nuevos = PRODUCTOS_PROPUESTOS.map((row) => row.gtin);
   const enriquecimientos = BARCODES_EXISTENTES_PROPUESTOS.map((row) => row.gtin);

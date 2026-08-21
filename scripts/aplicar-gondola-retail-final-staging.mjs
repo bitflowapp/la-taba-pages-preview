@@ -91,7 +91,8 @@ if (problemasLocal.length) {
   abortar(`${problemasLocal.length} fila(s) no cumplen el contrato local. No se tocó la red.`);
 }
 
-const { skus: actuales } = await loadCatalogSkus(ROOT);
+// Los 60 ANTERIORES al lote: la autoridad por defecto ya incluye las 12 altas.
+const { skus: actuales } = await loadCatalogSkus(ROOT, { gondolaFinal: false });
 const externalIdsActuales = actuales.map((s) => s.sku);
 
 const lit = (v) => `'${String(v).replaceAll("'", "''")}'`;

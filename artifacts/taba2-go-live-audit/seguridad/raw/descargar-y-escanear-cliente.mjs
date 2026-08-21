@@ -2,11 +2,11 @@
 // No imprime valores de secretos: sólo etiquetas, archivos y conteos.
 import fs from 'node:fs';
 import path from 'node:path';
-import { scanText, isServiceRoleJwt } from 'file:///D:/1212/la-taba2-gondola-retail-final/scripts/scan-secrets.mjs';
+import { scanText, isServiceRoleJwt } from 'file:///scripts/scan-secrets.mjs';
 
 const BASE = 'https://la-taba.pages.dev/';
-const OUT = 'D:/1212/la-taba2-gondola-retail-final/artifacts/taba2-go-live-audit/seguridad/raw/cliente/descargas';
-const LISTA = 'D:/1212/la-taba2-gondola-retail-final/artifacts/taba2-go-live-audit/seguridad/raw/cliente/precache-list.txt';
+const OUT = 'artifacts/taba2-go-live-audit/seguridad/raw/cliente/descargas';
+const LISTA = 'artifacts/taba2-go-live-audit/seguridad/raw/cliente/precache-list.txt';
 
 fs.mkdirSync(OUT, { recursive: true });
 const rutas = fs.readFileSync(LISTA, 'utf8').split('\n').map((l) => l.trim()).filter(Boolean);

@@ -1,6 +1,6 @@
 {
   "allowlistActualizadaEl": "2026-08-18",
-  "cosechadoEl": "2026-08-18",
+  "cosechadoEl": "2026-08-21",
   "decisiones": [
     {
       "alcoholic": true,
@@ -39,6 +39,25 @@
         "variant": "rubia"
       },
       "sku": "andes-origen-rubia-lata-473ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Andes Origen",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "andes-origen-rubia-lata-473ml-pack-6",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "andes origen",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "andes origen rubia",
+        "packCount": 6,
+        "sku": "andes-origen-rubia-lata-473ml-pack-6",
+        "variant": "rubia"
+      },
+      "sku": "andes-origen-rubia-lata-473ml-pack-6"
     },
     {
       "alcoholic": false,
@@ -122,6 +141,25 @@
       "candidatos": [],
       "elegido": null,
       "estado": "SIN_FUENTE",
+      "externalId": "brahma-chopp-lata-473ml-pack-6",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "brahma",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "brahma chopp",
+        "packCount": 6,
+        "sku": "brahma-chopp-lata-473ml-pack-6",
+        "variant": "rubia"
+      },
+      "sku": "brahma-chopp-lata-473ml-pack-6"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Brahma",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
       "externalId": "brahma-chopp-lata-710ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -156,6 +194,25 @@
     },
     {
       "alcoholic": true,
+      "brand": "Budweiser",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "budweiser-lata-473ml-pack-6",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "budweiser",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "budweiser",
+        "packCount": 6,
+        "sku": "budweiser-lata-473ml-pack-6",
+        "variant": "lager"
+      },
+      "sku": "budweiser-lata-473ml-pack-6"
+    },
+    {
+      "alcoholic": true,
       "brand": "Cafayate",
       "candidatos": [],
       "elegido": null,
@@ -172,6 +229,44 @@
         "variant": "torrontes"
       },
       "sku": "cafayate-torrontes-750ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Cepita",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "cepita-durazno-pet-1500ml",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "cepita",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "cepita durazno",
+        "packCount": 1,
+        "sku": "cepita-durazno-pet-1500ml",
+        "variant": "durazno"
+      },
+      "sku": "cepita-durazno-pet-1500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Cepita",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "cepita-naranja-pet-1500ml",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "cepita",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "cepita naranja",
+        "packCount": 1,
+        "sku": "cepita-naranja-pet-1500ml",
+        "variant": "naranja"
+      },
+      "sku": "cepita-naranja-pet-1500ml"
     },
     {
       "alcoholic": false,
@@ -258,6 +353,44 @@
       "candidatos": [],
       "elegido": null,
       "estado": "SIN_CANDIDATO",
+      "externalId": "coca-cola-original-pet-1500ml",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "coca-cola",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "coca-cola original",
+        "packCount": 1,
+        "sku": "coca-cola-original-pet-1500ml",
+        "variant": "original"
+      },
+      "sku": "coca-cola-original-pet-1500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Coca-Cola",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "coca-cola-original-pet-500ml",
+      "origen": "retail-unidades",
+      "presentacion": {
+        "brand": "coca-cola",
+        "capacityMl": 500,
+        "envase": "botella-pet",
+        "name": "coca-cola original",
+        "packCount": 1,
+        "sku": "coca-cola-original-pet-500ml",
+        "variant": "500 ml"
+      },
+      "sku": "coca-cola-original-pet-500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Coca-Cola",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
       "externalId": "coca-cola-zero-2250ml",
       "origen": "produccion",
       "presentacion": {
@@ -330,6 +463,44 @@
         "variant": "sin azucar"
       },
       "sku": "coca-cola-zero-lata-354ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Coca-Cola",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "coca-cola-zero-pet-1500ml",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "coca-cola",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "coca-cola zero",
+        "packCount": 1,
+        "sku": "coca-cola-zero-pet-1500ml",
+        "variant": "sin azucar"
+      },
+      "sku": "coca-cola-zero-pet-1500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Coca-Cola",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "coca-cola-zero-pet-500ml",
+      "origen": "retail-unidades",
+      "presentacion": {
+        "brand": "coca-cola",
+        "capacityMl": 500,
+        "envase": "botella-pet",
+        "name": "coca-cola zero",
+        "packCount": 1,
+        "sku": "coca-cola-zero-pet-500ml",
+        "variant": "500 ml"
+      },
+      "sku": "coca-cola-zero-pet-500ml"
     },
     {
       "alcoholic": true,
@@ -636,6 +807,25 @@
         "variant": "botella pet · 1500 ml · pack x6"
       },
       "sku": "fanta-naranja-botella-pet-1500-ml-pack-x6"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Fanta",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "fanta-naranja-pet-1500ml",
+      "origen": "retail-unidades",
+      "presentacion": {
+        "brand": "fanta",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "fanta naranja",
+        "packCount": 1,
+        "sku": "fanta-naranja-pet-1500ml",
+        "variant": "1,5 l"
+      },
+      "sku": "fanta-naranja-pet-1500ml"
     },
     {
       "alcoholic": true,
@@ -1216,6 +1406,44 @@
       "candidatos": [],
       "elegido": null,
       "estado": "SIN_CANDIDATO",
+      "externalId": "sprite-original-pet-1500ml",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "sprite",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "sprite",
+        "packCount": 1,
+        "sku": "sprite-original-pet-1500ml",
+        "variant": "original"
+      },
+      "sku": "sprite-original-pet-1500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Sprite",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "sprite-pet-500ml",
+      "origen": "retail-unidades",
+      "presentacion": {
+        "brand": "sprite",
+        "capacityMl": 500,
+        "envase": "botella-pet",
+        "name": "sprite",
+        "packCount": 1,
+        "sku": "sprite-pet-500ml",
+        "variant": "500 ml"
+      },
+      "sku": "sprite-pet-500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Sprite",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
       "externalId": "sprite-zero-2250ml",
       "origen": "produccion",
       "presentacion": {
@@ -1228,6 +1456,25 @@
         "variant": "sin azucar"
       },
       "sku": "sprite-zero-2250ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Sprite",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_CANDIDATO",
+      "externalId": "sprite-zero-pet-1500ml",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "sprite",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "sprite zero",
+        "packCount": 1,
+        "sku": "sprite-zero-pet-1500ml",
+        "variant": "sin azucar"
+      },
+      "sku": "sprite-zero-pet-1500ml"
     },
     {
       "alcoholic": true,
@@ -1247,6 +1494,25 @@
         "variant": "lager"
       },
       "sku": "stella-artois-lata-473ml"
+    },
+    {
+      "alcoholic": true,
+      "brand": "Stella Artois",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "stella-artois-lata-473ml-pack-6",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "stella artois",
+        "capacityMl": 473,
+        "envase": "lata",
+        "name": "stella artois",
+        "packCount": 6,
+        "sku": "stella-artois-lata-473ml-pack-6",
+        "variant": "lager"
+      },
+      "sku": "stella-artois-lata-473ml-pack-6"
     },
     {
       "alcoholic": true,
@@ -1399,6 +1665,25 @@
     },
     {
       "alcoholic": false,
+      "brand": "Villa del Sur",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "villa-del-sur-sin-gas-pet-2250ml",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "villa del sur",
+        "capacityMl": 2250,
+        "envase": "botella-pet",
+        "name": "villa del sur",
+        "packCount": 1,
+        "sku": "villa-del-sur-sin-gas-pet-2250ml",
+        "variant": "sin gas"
+      },
+      "sku": "villa-del-sur-sin-gas-pet-2250ml"
+    },
+    {
+      "alcoholic": false,
       "brand": "Villavicencio",
       "candidatos": [],
       "elegido": null,
@@ -1415,6 +1700,25 @@
         "variant": "con gas"
       },
       "sku": "villavicencio-con-gas-500ml"
+    },
+    {
+      "alcoholic": false,
+      "brand": "Villavicencio",
+      "candidatos": [],
+      "elegido": null,
+      "estado": "SIN_FUENTE",
+      "externalId": "villavicencio-con-gas-pet-1500ml",
+      "origen": "gondola-retail-final",
+      "presentacion": {
+        "brand": "villavicencio",
+        "capacityMl": 1500,
+        "envase": "botella-pet",
+        "name": "villavicencio",
+        "packCount": 1,
+        "sku": "villavicencio-con-gas-pet-1500ml",
+        "variant": "con gas"
+      },
+      "sku": "villavicencio-con-gas-pet-1500ml"
     },
     {
       "alcoholic": false,
@@ -1456,21 +1760,26 @@
     }
   ],
   "reconciliacion": {
+    "esperadoTotal": 72,
     "esperadoVisible": 33,
     "gondola": 52,
     "gondolaAlcoholica": 23,
+    "gondolaFinal": 12,
+    "gondolaFinalAgregadas": 12,
     "gondolaNoAlcoholica": 29,
     "ocultosAgregados": 23,
     "packsPrevios": 4,
-    "total": 56,
+    "retailUnidades": 4,
+    "retailUnidadesAgregadas": 4,
+    "total": 72,
     "visibles": 33
   },
   "resumen": {
     "HIGH": 5,
     "MANUAL_REVIEW": 3,
-    "SIN_CANDIDATO": 17,
-    "SIN_FUENTE": 31
+    "SIN_CANDIDATO": 27,
+    "SIN_FUENTE": 37
   },
   "schemaVersion": 1,
-  "totalSku": 56
+  "totalSku": 72
 }

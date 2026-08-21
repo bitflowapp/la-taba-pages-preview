@@ -1,6 +1,6 @@
 # Auditoría READ-ONLY · Auth de producción (TABA2)
 
-**Fecha:** 2026-08-21 · **Worktree:** `D:\1212\la-taba2-gondola-retail-final` @ `95ac129`
+**Fecha:** 2026-08-21 · **Worktree:** `<worktree>` @ `95ac129`
 **Proyecto:** `wwcpogltfgzgkrlilbcd` · **Host:** `https://la-taba.pages.dev`
 **Mutaciones:** **CERO.** Todo lo ejecutado fue leído antes y es de sólo lectura.
 

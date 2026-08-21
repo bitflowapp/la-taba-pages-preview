@@ -242,16 +242,31 @@ test('el manifiesto público no lista nada que la auditoría bloquee', () => {
   }
 });
 
-test('el catálogo reconcilia 33 visibles + 23 alcohólicos + 4 unidades minoristas = 60 SKU', async () => {
+test('el catálogo reconcilia 33 visibles + 23 alcohólicos + 4 unidades minoristas + 12 góndola final = 72 SKU', async () => {
   const { skus, reconciliacion } = await loadCatalogSkus(ROOT);
-  assert.equal(skus.length, 60);
+  assert.equal(skus.length, 72);
   assert.equal(reconciliacion.visibles, 33);
   assert.equal(reconciliacion.ocultosAgregados, 23);
   assert.equal(reconciliacion.retailUnidades, 4);
   assert.equal(reconciliacion.retailUnidadesAgregadas, 4);
-  assert.equal(reconciliacion.esperadoTotal, 60);
-  assert.equal(reconciliacion.total, 60);
-  assert.equal(skus.filter((sku) => sku.alcoholic).length, 23);
+  assert.equal(reconciliacion.gondolaFinal, 12);
+  assert.equal(reconciliacion.gondolaFinalAgregadas, 12);
+  assert.equal(reconciliacion.esperadoTotal, 72);
+  assert.equal(reconciliacion.total, 72);
+  // 23 de la góndola Neuquén + 4 cervezas pack x6 de la góndola final.
+  assert.equal(skus.filter((sku) => sku.alcoholic).length, 27);
+
+  const finales = skus.filter((sku) => sku.origen === 'gondola-retail-final');
+  assert.equal(finales.length, 12);
+  for (const alta of finales) {
+    assert.equal(alta.available, false, `${alta.sku}: nace cerrada hasta la Recepción real`);
+    assert.equal(alta.imageUrl, null, `${alta.sku}: sin packshot, fallback TABA`);
+  }
+
+  // La base anterior al lote sigue reconstruible: 60 exactos.
+  const previa = await loadCatalogSkus(ROOT, { gondolaFinal: false });
+  assert.equal(previa.skus.length, 60);
+  assert.equal(previa.reconciliacion.esperadoTotal, 60);
 
   const retail = skus.filter((sku) => sku.origen === 'retail-unidades');
   assert.deepEqual(retail.map((sku) => sku.sku), [

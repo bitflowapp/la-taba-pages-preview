@@ -194,7 +194,37 @@ fixture ajeno, sin tocar) · ORDERS MODIFIED WITHOUT GATE = 0 (LT-0001 intacto) 
 SERVICE ROLE CLIENT = 0 · STAGING ACCIDENTAL WRITES = 0 (staging sólo leído) ·
 FORCE PUSH = 0 (ningún push).
 
-## SECUENCIA POST-GATE (el orden importa)
+## EJECUTADO TRAS EL GATE (2026-08-21, autorización del dueño)
+
+1. **Deploy v81 → LIVE**: merge ff main `95ac129 → 17638ea`; `wrangler pages deploy`
+   proyecto la-taba, rama main, **5 archivos subidos / 209 conocidos por hash**,
+   deployment `061d11fc`; en vivo: sw `la-taba-runtime-v81-gondola-legible`,
+   runtime-config 789 B sha `ddee8a48…` byte a byte, módulo nuevo 200,
+   `production:live` 7/7 OK; sonda v81: **33/33 tarjetas con litraje, 0 slugs,
+   0 POST /auth/v1/signup al abrir el carrito**. Push main + rama a origin.
+2. **Ensayo transaccional en producción**: las 24 filas entraron y el ROLLBACK dejó
+   60/4/1 idénticos. **Apply 60 → 72**: 12 altas + 12 códigos fila por fila contra
+   el plan, los 60 previos sin un campo cambiado, LT-0001 intacto, 16 códigos.
+3. **Curación de sort_order**: 72 valores distintos (10..720), sólo esa columna;
+   Coca-Cola Original = 2,25 L › 1,5 L › pack x12 › 500 ml › lata 354 ml.
+4. **Limpieza**: borradas las 2 identidades anónimas de la auditoría (perfil
+   verificado antes: anónimas, de hoy, 0 pedidos/membresías/sesiones/checkouts).
+   Queda 1 anónima de hoy (05:35Z) dejada por la sesión Codex de la madrugada —
+   fuera de la autorización, reportada, no tocada.
+5. **Post-apply**: autoridad local a 72 (`catalog-skus.mjs`, `gondolaFinal:false`
+   reconstruye los 60), contact sheet final de 72 regenerada
+   (`artifacts/taba2-catalog-images/contact-sheet.{html,webp}`), descubrimiento
+   de imágenes sobre los 72: **HIGH 5 · MANUAL_REVIEW 3 · SIN_CANDIDATO 27 ·
+   SIN_FUENTE 37**. Los 12 nuevos: SIN_IMAGEN todos — Danone/ABI sin fuente
+   programática; Coca-Cola 1,5 L y Cepita 1,5 L existen en la tienda Andina SÓLO
+   como packs x4 (sello de pack sobre una unidad = prohibido). Cepita quedó
+   incorporada a la allowlist del grupo Andina (clasificación honesta). Un HIGH
+   nuevo apareció para `trapiche-origen-malbec-750ml` (vino, LICENSE GATE): se
+   asocia cuando se abra el alcohol, no antes.
+6. Góndola viva re-verificada tras todo: 33 comprables, alcohol cerrado, 6
+   estantes, pack distinguible, 4 packshots + 29 fallback.
+
+## SECUENCIA POST-GATE (el orden importa) — EJECUTADA arriba; queda la física
 
 1. **Deploy v81** (cliente legible + sin identidades fantasma) — beneficia YA al
    catálogo actual de 33.

@@ -1,7 +1,7 @@
 # Auditoría de seguridad READ-ONLY — go-live comercial TABA2
 
 - **Fecha**: 2026-08-21
-- **Worktree**: `D:\1212\la-taba2-gondola-retail-final` @ `95ac129f12fb85d0ede7f0c40757df4d2406a8a9`
+- **Worktree**: `<worktree>` @ `95ac129f12fb85d0ede7f0c40757df4d2406a8a9`
 - **Producción**: https://la-taba.pages.dev (SW `la-taba-runtime-v80-panel-publication`) · Supabase `wwcpogltfgzgkrlilbcd`
 - **Mandato**: cero mutaciones. Toda consulta a la DB fue por `scripts/consulta-solo-lectura.mjs` (guarda: una sola sentencia SELECT/WITH) o por los SELECTs de `audit-production-security.mjs` (leído línea por línea antes de correr). Ningún secreto se imprime en esta evidencia; la clave publicable aparece porque es pública por diseño y está enmascarada igual.
 

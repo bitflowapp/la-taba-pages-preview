@@ -100,7 +100,8 @@ const idxCommit = loteTexto.indexOf('\ncommit;');
 if (idxCommit === -1) abortar('el lote congelado no tiene su commit donde se esperaba.');
 const loteEnsayo = `${loteTexto.slice(0, idxCommit)}\nrollback; -- ENSAYO TRANSACCIONAL: nada queda escrito\n`;
 
-const { skus: actuales } = await loadCatalogSkus(ROOT);
+// Los 60 ANTERIORES al lote: la autoridad por defecto ya incluye las 12 altas.
+const { skus: actuales } = await loadCatalogSkus(ROOT, { gondolaFinal: false });
 const externalIdsActuales = actuales.map((s) => s.sku);
 const lit = (v) => `'${String(v).replaceAll("'", "''")}'`;
 const externalIds = PRODUCTOS_PROPUESTOS.map((p) => p.externalId);

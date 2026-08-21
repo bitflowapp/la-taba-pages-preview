@@ -1,5 +1,5 @@
 /*
- * Los 60 SKU del catálogo productivo, en una sola lista y con su procedencia.
+ * Los 72 SKU del catálogo productivo, en una sola lista y con su procedencia.
  *
  * De dónde sale cada cosa, y por qué:
  *
@@ -13,11 +13,20 @@
  *    4  de `catalog/retail-unidades.mjs` — unidades minoristas no alcohólicas
  *       que están en producción con stock=0 y available=false, por lo que la
  *       clave publicable tampoco las devuelve.
+ *   12  de `catalog/gondola-retail-final-proposal.mjs` — la góndola final,
+ *       aplicada a producción el 2026-08-21 (60 → 72), todas con stock=0 y
+ *       available=false hasta la Recepción real: la clave publicable tampoco
+ *       las devuelve todavía.
  *
  * La reconciliación se comprueba, no se supone: 29 no alcohólicos de la góndola
  * más 4 packs previos tienen que dar los 33 visibles; además tienen que sumarse
- * exactamente 23 alcohólicos ocultos y 4 unidades minoristas. Si no da 60, algo
- * cambió y el pipeline se planta en vez de auditar un catálogo imaginario.
+ * exactamente 23 alcohólicos ocultos, 4 unidades minoristas y 12 altas de la
+ * góndola final. Si no da 72, algo cambió y el pipeline se planta en vez de
+ * auditar un catálogo imaginario.
+ *
+ * `gondolaFinal: false` devuelve la autoridad de 60 anterior al lote: la usan
+ * los tests de la propuesta (que afirman cosas SOBRE esa base) y los
+ * aplicadores del lote, que toman el snapshot de los 60 previos.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -25,6 +34,7 @@ import path from 'node:path';
 const ORIGEN_PRODUCCION = 'produccion';
 const ORIGEN_GONDOLA = 'gondola-neuquen';
 const ORIGEN_RETAIL_UNIDADES = 'retail-unidades';
+const ORIGEN_GONDOLA_FINAL = 'gondola-retail-final';
 
 function desdeFotografia(producto) {
   return {
@@ -96,18 +106,44 @@ function desdeRetailUnidad(fila) {
   };
 }
 
+function desdeGondolaFinal(fila) {
+  return {
+    alcoholic: fila.alcoholic === true,
+    // Nacen cerradas: stock 0 y available=false hasta la Recepción real en el
+    // Panel. La clave publicable no las devuelve.
+    available: false,
+    brand: fila.brand,
+    capacityUnit: fila.capacityUnit,
+    capacityValue: fila.capacityValue,
+    catalogAssetId: null,
+    category: fila.category,
+    externalId: fila.externalId,
+    imageUrl: null,
+    name: fila.name,
+    origen: ORIGEN_GONDOLA_FINAL,
+    packagingType: fila.packagingType,
+    price: fila.price,
+    sku: fila.sku,
+    soldAsPack: fila.soldAsPack === true,
+    unitsPerPack: fila.unitsPerPack || 1,
+    variant: fila.variant,
+  };
+}
+
 /**
- * Devuelve los 60 SKU y el detalle de la reconciliación.
- * `strict` planta el proceso si las cuentas no cierran.
+ * Devuelve los 72 SKU (60 con `gondolaFinal: false`) y el detalle de la
+ * reconciliación. `strict` planta el proceso si las cuentas no cierran.
  */
-export async function loadCatalogSkus(root, { strict = true } = {}) {
+export async function loadCatalogSkus(root, { strict = true, gondolaFinal = true } = {}) {
   const fotografia = JSON.parse(
     fs.readFileSync(path.join(root, 'catalog/production-catalog-snapshot.json'), 'utf8'),
   );
-  const [{ GONDOLA }, { RETAIL_UNIDADES }] = await Promise.all([
+  const [{ GONDOLA }, { RETAIL_UNIDADES }, { PRODUCTOS_PROPUESTOS }] = await Promise.all([
     import(new URL(`file://${path.join(root, 'catalog/gondola-neuquen.mjs').replaceAll('\\', '/')}`).href),
     import(new URL(`file://${path.join(root, 'catalog/retail-unidades.mjs').replaceAll('\\', '/')}`).href),
+    import(new URL(`file://${path.join(root, 'catalog/gondola-retail-final-proposal.mjs').replaceAll('\\', '/')}`).href),
   ]);
+  const GONDOLA_FINAL = gondolaFinal ? PRODUCTOS_PROPUESTOS : [];
 
   const visibles = fotografia.productos.map(desdeFotografia);
   const porSku = new Map(visibles.map((producto) => [producto.sku, producto]));
@@ -121,17 +157,24 @@ export async function loadCatalogSkus(root, { strict = true } = {}) {
     .filter((fila) => !skuConocidos.has(fila.sku))
     .map(desdeRetailUnidad);
 
-  const skus = [...visibles, ...ocultos, ...retailUnidades]
+  for (const producto of retailUnidades) skuConocidos.add(producto.sku);
+  const altasFinales = GONDOLA_FINAL
+    .filter((fila) => !skuConocidos.has(fila.sku))
+    .map(desdeGondolaFinal);
+
+  const skus = [...visibles, ...ocultos, ...retailUnidades, ...altasFinales]
     .sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0));
 
   const gondolaNoAlcoholica = GONDOLA.filter((fila) => !fila.alcoholic).length;
   const packsPrevios = visibles.filter((producto) => !GONDOLA.some((fila) => fila.sku === producto.sku));
   const reconciliacion = {
-    esperadoTotal: visibles.length + GONDOLA.filter((fila) => fila.alcoholic).length + RETAIL_UNIDADES.length,
+    esperadoTotal: visibles.length + GONDOLA.filter((fila) => fila.alcoholic).length + RETAIL_UNIDADES.length + GONDOLA_FINAL.length,
     esperadoVisible: gondolaNoAlcoholica + packsPrevios.length,
     gondola: GONDOLA.length,
     gondolaAlcoholica: GONDOLA.filter((fila) => fila.alcoholic).length,
     gondolaNoAlcoholica,
+    gondolaFinal: GONDOLA_FINAL.length,
+    gondolaFinalAgregadas: altasFinales.length,
     ocultosAgregados: ocultos.length,
     packsPrevios: packsPrevios.length,
     retailUnidades: RETAIL_UNIDADES.length,
@@ -157,6 +200,12 @@ export async function loadCatalogSkus(root, { strict = true } = {}) {
     problemas.push(
       `Las unidades minoristas agregadas (${reconciliacion.retailUnidadesAgregadas}) no son exactamente las `
       + `de la autoridad local (${reconciliacion.retailUnidades}).`,
+    );
+  }
+  if (reconciliacion.gondolaFinalAgregadas !== reconciliacion.gondolaFinal) {
+    problemas.push(
+      `Las altas de la góndola final agregadas (${reconciliacion.gondolaFinalAgregadas}) no son exactamente las `
+      + `de la propuesta aplicada (${reconciliacion.gondolaFinal}).`,
     );
   }
   if (reconciliacion.total !== reconciliacion.esperadoTotal) {

@@ -57,4 +57,4 @@
       rider_order_offers: 1
       businesses: 1
 
-  retrato: D:\1212\la-taba2-gondola-retail-final\artifacts\production-supabase\SECURITY-PORTRAIT-production.json
+  retrato: artifacts\production-supabase\SECURITY-PORTRAIT-production.json

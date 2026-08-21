@@ -1,6 +1,6 @@
 # Auditoría READ-ONLY · Delivery y Horarios · La Taba (TABA2) producción
 
-- **Fecha**: 2026-08-21 · **Worktree**: `D:\1212\la-taba2-gondola-retail-final` (main productivo `95ac129`)
+- **Fecha**: 2026-08-21 · **Worktree**: `<worktree>` (main productivo `95ac129`)
 - **Target**: Supabase `wwcpogltfgzgkrlilbcd` (producción) · business canónico `00000000-0000-4000-8000-000000000001` · https://la-taba.pages.dev
 - **Método**: sólo `node scripts/consulta-solo-lectura.mjs --ref=produccion --sql="select ..."` (guarda que rechaza todo lo que no sea un único SELECT/WITH; verificada leyendo el script antes de usarlo) + lectura de código. **Cero mutaciones.** Las dos sondas de `commerce_availability` son SELECT sobre una función declarada `STABLE` (no puede escribir).
 - Cada JSON de esta carpeta es la salida cruda de la consulta que lo nombra.

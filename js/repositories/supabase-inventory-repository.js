@@ -12,7 +12,7 @@ export function createSupabaseInventoryRepository({ client, businessId }) {
   return Object.freeze({
     async lookupBarcode(gtin) {
       const { data, error, status } = await client.from('product_barcodes')
-        .select('id,business_id,product_id,gtin,barcode_type,package_type,unit_factor,is_primary,is_active,products(id,name,brand,presentation,stock,available,is_active,is_verified)')
+        .select('id,business_id,product_id,gtin,barcode_type,package_type,unit_factor,is_primary,is_active,products(id,sku,name,brand,presentation,stock,available,is_active,is_verified,price,price_status,is_alcoholic,image_url)')
         .eq('business_id', businessId).eq('gtin', gtin).eq('is_active', true).maybeSingle();
       return error ? classifyRpcError(error, status) : { ok: true, data: data || null };
     },
@@ -26,6 +26,11 @@ export function createSupabaseInventoryRepository({ client, businessId }) {
       p_product_id: productId, p_details: details,
     }),
     getScannedProductReadiness: (productId) => rpc('get_scanned_product_readiness', { p_product_id: productId }),
+    setCommercialPublication: ({ sku, publish }) => rpc('set_commercial_product_publication', {
+      p_business_id: businessId,
+      p_sku: sku,
+      p_publish: publish,
+    }),
     applyMovement: (intent) => rpc('apply_inventory_movement', {
       p_business_id: businessId,
       p_product_id: intent.productId,

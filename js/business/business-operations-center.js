@@ -398,6 +398,8 @@ export async function handleBusinessOperationsAction(target) {
   const inventoryButton = target.closest('[data-inventory-confirm]');
   if (inventoryButton) return confirmInventory(inventoryButton);
   if (target.closest('[data-stock-count-confirm]')) return confirmStockCount(target);
+  const publicationButton = target.closest('[data-commercial-publish]');
+  if (publicationButton) return confirmCommercialPublication(publicationButton);
 
   const remove = target.closest('[data-pos-remove]');
   if (remove) {
@@ -662,6 +664,41 @@ async function confirmInventory(button) {
     idempotencyKey: createKey('inventory'),
   });
   feedback = response?.ok ? 'Stock actualizado por el servidor.' : response?.message || 'Stock pendiente de confirmación.';
+  if (response?.ok) await refreshLookup();
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+/**
+ * Vuelve a leer el mismo código después de un movimiento. `lookup.data.products`
+ * quedaba con el stock ANTERIOR al que la Recepción acababa de cargar — la propia
+ * etiqueta "(último conocido)" de renderScanResult lo decía. Sin esto, la
+ * oportunidad de publicar recién aparecería en el próximo escaneo, no apenas se
+ * guarda la recepción.
+ */
+async function refreshLookup() {
+  const gtin = String(lastScan?.normalizedValue || '');
+  if (!gtin) return;
+  const refreshed = await context.lookupBarcode(gtin);
+  if (refreshed?.ok) lookup = refreshed;
+}
+
+async function confirmCommercialPublication(button) {
+  const guard = requireCapability('products.publish');
+  if (!guard.ok) return guard.result;
+  if (!lookup?.data) return result(false, 'Escaneá el producto antes de publicarlo.');
+  const product = normalizedProduct(lookup.data);
+  if (!product.sku) return result(false, 'El producto no tiene un SKU comercial.');
+  const publish = button.dataset.commercialPublish === 'true';
+  busy = true;
+  const response = await context.setCommercialPublication({ sku: product.sku, publish });
+  busy = false;
+  if (response?.ok) {
+    await refreshLookup();
+    feedback = publish ? 'Producto publicado: ya se ve y se puede comprar en la tienda.' : 'Producto oculto de la tienda.';
+  } else {
+    feedback = response?.message || (publish ? 'El servidor rechazó la publicación.' : 'El servidor rechazó ocultarlo.');
+  }
   context.onChange();
   return result(Boolean(response?.ok), feedback);
 }
@@ -684,6 +721,7 @@ async function confirmStockCount(target) {
     idempotencyKey: createKey('stock-count'),
   });
   feedback = response?.ok ? 'Conteo conciliado por el servidor.' : response?.message || 'Conteo pendiente de revisión.';
+  if (response?.ok) await refreshLookup();
   context.onChange();
   return result(Boolean(response?.ok), feedback);
 }
@@ -1287,7 +1325,7 @@ export function businessOperationViewLabel(view) {
 function renderScanner() { return panel('Escáner rápido', 'Lectura HID tipo teclado, Enter o Tab para confirmar.', `${scannerInput()}${renderScanResult()}`); }
 function renderInventory(type) {
   const adjustment = type === 'manual_adjustment';
-  return panel(adjustment ? 'Ajuste de stock' : 'Recepción de mercadería', 'Todo cambio crea un movimiento de ledger auditable.', `${scannerInput()}${renderScanResult()}
+  return panel(adjustment ? 'Ajuste de stock' : 'Recepción de mercadería', 'Todo cambio crea un movimiento de ledger auditable.', `${scannerInput()}${renderScanResult()}${renderCommercialPublicationStatus()}
     <div class="business-ops-form"><label>Cantidad de packs/unidades<input name="packageQuantity" type="number" min="1" step="1" value="1"></label>
     ${adjustment ? '<label>Dirección<select name="direction"><option value="1">Ingreso</option><option value="-1">Egreso</option></select></label><label>Motivo<input name="reason" maxlength="160" required></label>' : '<input name="direction" type="hidden" value="1"><label>Referencia<input name="reason" maxlength="160" placeholder="Factura o remito (opcional)"></label>'}
     <button class="primary-button" type="button" data-inventory-confirm="${type}">Confirmar con servidor</button></div>`);
@@ -1358,7 +1396,58 @@ function renderScanResult() {
   const product = lookup?.data ? normalizedProduct(lookup.data) : null;
   return `<div class="business-scan-result ${lastScan.isValid ? 'is-valid' : 'is-invalid'}"><dl><div><dt>Código</dt><dd>${escapeHtml(lastScan.normalizedValue || lastScan.rawValue || '—')}</dd></div><div><dt>Formato</dt><dd>${escapeHtml(lastScan.format || 'Inválido')}</dd></div><div><dt>Producto</dt><dd>${escapeHtml(product?.name || (busy ? 'Buscando…' : 'Desconocido'))}</dd></div><div><dt>Presentación</dt><dd>${escapeHtml(product?.presentation || '—')}</dd></div><div><dt>Factor</dt><dd>${escapeHtml(lookup?.data?.unit_factor || 1)}</dd></div><div><dt>Stock actual</dt><dd>${product ? `${product.stock} (último conocido)` : '—'}</dd></div></dl></div>`;
 }
-function normalizedProduct(binding) { const product = Array.isArray(binding.products) ? binding.products[0] : binding.products || {}; return { id: String(binding.product_id || product.id || ''), name: String(product.name || 'Producto'), presentation: String(product.presentation || binding.package_type || ''), stock: Number.isInteger(product.stock) ? product.stock : Number(product.stock || 0) }; }
+function normalizedProduct(binding) {
+  const product = Array.isArray(binding.products) ? binding.products[0] : binding.products || {};
+  return {
+    id: String(binding.product_id || product.id || ''),
+    sku: String(product.sku || ''),
+    name: String(product.name || 'Producto'),
+    presentation: String(product.presentation || binding.package_type || ''),
+    stock: Number.isInteger(product.stock) ? product.stock : Number(product.stock || 0),
+    available: product.available === true,
+    isVerified: product.is_verified === true,
+    isActive: product.is_active !== false,
+    priceConfirmed: String(product.price_status || '') === 'confirmed' && Number(product.price) > 0,
+    isAlcoholic: product.is_alcoholic === true,
+    hasImage: Boolean(String(product.image_url || '').trim()),
+  };
+}
+
+/**
+ * Decisión explícita, nunca automática: la recepción de mercadería sube el
+ * stock y nada más. Este bloque es lo único que ofrece "Publicar en tienda",
+ * y sólo cuando el producto ya cumple lo que el servidor va a exigir de
+ * nuevo — el gate real es `set_commercial_product_publication`, esto sólo
+ * evita ofrecer un botón que ya se sabe que va a fallar.
+ */
+function renderCommercialPublicationStatus() {
+  if (!lookup?.data) return '';
+  const product = normalizedProduct(lookup.data);
+  if (!product.sku) return '';
+  const canPublish = can(context.role, 'products.publish');
+
+  if (product.available) {
+    return `<div class="business-commercial-publication is-published">
+      <strong>Publicado</strong><span>Ya se ve y se puede comprar en la tienda.</span>
+      ${canPublish ? `<button class="secondary-button" type="button" data-commercial-publish="false">Ocultar de la tienda</button>` : ''}
+    </div>`;
+  }
+  if (product.stock <= 0) {
+    return `<div class="business-commercial-publication is-out-of-stock">
+      <strong>Sin stock</strong><span>Cargá una recepción para poder publicarlo.</span>
+    </div>`;
+  }
+  if (!product.isVerified || !product.isActive || !product.priceConfirmed) {
+    return `<div class="business-commercial-publication is-not-ready">
+      <strong>Todavía no está listo</strong><span>Le falta verificación de datos maestros o precio confirmado antes de poder publicarse. Usá la importación comercial primero.</span>
+    </div>`;
+  }
+  return `<div class="business-commercial-publication is-ready">
+    <strong>Listo para publicar</strong>
+    <span>${product.hasImage ? 'Con foto propia.' : 'Sin foto: se va a mostrar con la imagen genérica de TABA.'}</span>
+    ${canPublish ? `<button class="primary-button" type="button" data-commercial-publish="true">Publicar en tienda</button>` : ''}
+  </div>`;
+}
 function panel(title, subtitle, body) { return `<section class="business-ops-panel"><header><div><p class="eyebrow">Centro operativo</p><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div></header>${body}</section>`; }
 function result(ok, message) { return { handled: true, ok, message }; }
 // -- Configuracion operativa: horarios, zonas, envio y minimo ----------------
@@ -2222,6 +2311,7 @@ function defaultContext() {
     businessId: '', operatorId: '', getOrders: () => [], lookupBarcode: async () => ({ ok: true, data: null }),
     createProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }), publishProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     applyInventoryMovement: async () => ({ ok: false, message: 'Repositorio no disponible.' }), checkoutPos: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    setCommercialPublication: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     startPacking: async () => ({ ok: false, message: 'Repositorio no disponible.' }), getPackingManifest: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     recordPackingScan: async () => ({ ok: false, message: 'Repositorio no disponible.' }), revertPackingScan: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     cancelPackingScan: async () => false, drainPackingCommands: async () => [], listPackingCommands: () => [],

@@ -1260,6 +1260,7 @@ async function configureBusinessRuntime(result) {
     createProductDraft: (input) => inventoryRepository.createProductDraft(input),
     publishProductDraft: (input) => inventoryRepository.publishProductDraft(input),
     applyInventoryMovement: (input) => inventoryRepository.applyMovement(input),
+    setCommercialPublication: (input) => inventoryRepository.setCommercialPublication(input),
     checkoutPos: (input) => posRepository.checkout(input),
     getFiscalProfile: () => fiscalRepository.getProfile(),
     listFiscalDocuments: () => fiscalRepository.listDocuments(),

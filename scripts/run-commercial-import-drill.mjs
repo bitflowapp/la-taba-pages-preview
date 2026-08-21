@@ -109,6 +109,46 @@ function asOwner(sql, options = {}) {
   );
 }
 
+// Elenco para set_commercial_product_publication (20260819060000): además del
+// owner de arriba hace falta un admin (el otro rol que la RPC autoriza), un
+// staff (tiene inventory.receive pero NO products.publish — es exactamente lo
+// que la migración deja afuera a propósito) y alguien sin ningún business_members
+// para este negocio — el mismo resultado que un Rider o un Customer, que ni
+// siquiera tienen fila ahí.
+const ADMIN_ID = '00000000-0000-4000-8000-0000000000cc';
+const STAFF_ID = '00000000-0000-4000-8000-0000000000dd';
+const OUTSIDER_ID = '00000000-0000-4000-8000-0000000000ee';
+const ADMIN_SESSION = '00000000-0000-4000-8000-0000000000c1';
+const STAFF_SESSION = '00000000-0000-4000-8000-0000000000d1';
+const OUTSIDER_SESSION = '00000000-0000-4000-8000-0000000000e1';
+// Nunca pasa por identity_register_session: es EXACTAMENTE una sesión no
+// registrada con un `sub` real y un rol real — el caso que 20260814030000
+// existe para cerrar.
+const UNREGISTERED_SESSION = '00000000-0000-4000-8000-0000000000f1';
+
+function asUser(userId, sessionId, sql, options = {}) {
+  return psql(
+    `select set_config('request.jwt.claims', '{"sub":"${userId}","session_id":"${sessionId}"}', false);\n${sql}`,
+    options,
+  );
+}
+
+function callPublication(userId, sessionId, sku, publish, options = {}) {
+  return asUser(userId, sessionId,
+    `select applied_sku, applied_available, applied_is_verified, applied_price, applied_stock, applied_price_status\n`
+    + `  from public.set_commercial_product_publication(${lit(BUSINESS_ID)}, ${lit(sku)}, ${publish});`,
+    options);
+}
+
+function productSnapshot(sku) {
+  return psql(
+    `select coalesce(price::text,'∅') || '|' || coalesce(stock::text,'∅') || '|' || available
+       from public.products where business_id=${lit(BUSINESS_ID)} and sku=${lit(sku)};`,
+  ).stdout;
+}
+
+const lit = (v) => `'${String(v).replaceAll("'", "''")}'`;
+
 function applyBatch(rows, options = {}) {
   const payload = JSON.stringify(rows).replace(/'/g, "''");
   return asOwner(
@@ -163,7 +203,20 @@ try {
   // Se apunta el GUC de ESTE clúster —no el de nadie más— y se reinicia.
   docker(['exec', CONTAINER, 'bash', '-lc',
     `mkdir -p /etc/postgresql-custom/conf.d && printf "cron.database_name = '${DB}'\\n" > /etc/postgresql-custom/conf.d/pg_cron.conf`]);
-  docker(['exec', CONTAINER, 'createdb', '-U', 'postgres', DB]);
+  // `pg_isready` puede contestar "accepting connections" para el health check
+  // un instante antes de que el propio servidor pueda ejecutar `createdb` —se
+  // midió acá, con la máquina bajo la carga de otros stacks de Supabase ya
+  // corriendo (7,7 GB de límite del VM, compartido). Es transitorio: reintenta
+  // en vez de abortar el simulacro entero por una carrera de arranque.
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      docker(['exec', CONTAINER, 'createdb', '-U', 'postgres', DB]);
+      break;
+    } catch (error) {
+      if (attempt >= 5) throw error;
+      sleepSync(1500);
+    }
+  }
   docker(['restart', CONTAINER]);
   for (let attempt = 0; attempt < 90; attempt += 1) {
     const probe = spawnSync(DOCKER, ['exec', CONTAINER, 'pg_isready', '-U', 'postgres'], { encoding: 'utf8' });
@@ -237,8 +290,8 @@ try {
     values ('${OWNER_ID}', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
             'owner@drill.local', '', now(), now())
     on conflict (id) do nothing;
-    insert into public.businesses (id, name, slug)
-    values ('${BUSINESS_ID}', 'La Taba 2 (simulacro)', 'la-taba-2-simulacro')
+    insert into public.businesses (id, name, slug, alcohol_sales_enabled)
+    values ('${BUSINESS_ID}', 'La Taba 2 (simulacro)', 'la-taba-2-simulacro', false)
     on conflict (id) do nothing;
     insert into public.business_members (business_id, user_id, role, is_active)
     values ('${BUSINESS_ID}', '${OWNER_ID}', 'owner', true)
@@ -674,6 +727,165 @@ try {
     espejoDespues === '2290.00|24|true|true', `${espejoAntes} → ${espejoDespues}`);
   check('16.3 · y las columnas de imagen no se tocaron: siguen las 6 en null (∅|∅)',
     imagenAntes === '∅|∅' && imagenDespues === '∅|∅', `${imagenAntes} → ${imagenDespues}`);
+
+  // ── 17. set_commercial_product_publication (20260819060000) ───────────────
+  psql(`
+    insert into auth.users (id, instance_id, aud, role, email, encrypted_password, created_at, updated_at)
+    values
+      ('${ADMIN_ID}', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@drill.local', '', now(), now()),
+      ('${STAFF_ID}', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'staff@drill.local', '', now(), now()),
+      ('${OUTSIDER_ID}', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'outsider@drill.local', '', now(), now())
+    on conflict (id) do nothing;
+    insert into public.business_members (business_id, user_id, role, is_active)
+    values
+      ('${BUSINESS_ID}', '${ADMIN_ID}', 'admin', true),
+      ('${BUSINESS_ID}', '${STAFF_ID}', 'staff', true)
+    on conflict do nothing;
+  `);
+  const adminRegistro = asUser(ADMIN_ID, ADMIN_SESSION, `select public.identity_register_session('${BUSINESS_ID}'::uuid, 'panel_web');`);
+  const staffRegistro = asUser(STAFF_ID, STAFF_SESSION, `select public.identity_register_session('${BUSINESS_ID}'::uuid, 'panel_web');`);
+  check('17.0 · sesiones de admin y staff registradas (outsider queda deliberadamente sin business_members; UNREGISTERED_SESSION deliberadamente nunca se registra)',
+    /"ok"\s*:\s*true/.test(adminRegistro.stdout) && /"ok"\s*:\s*true/.test(staffRegistro.stdout),
+    `${adminRegistro.stdout} · ${staffRegistro.stdout}`);
+
+  psql(`
+    insert into public.products
+      (business_id, external_id, sku, name, brand, category, subcategory,
+       variant, presentation, capacity_value, capacity_unit, capacity, packaging_type,
+       units_per_pack, sold_as_pack, price, price_status, stock, chilled, is_alcoholic,
+       minimum_age, sort_order, tags, catalog_origin, is_active,
+       is_verified, verified_at, verified_by, available, updated_at)
+    values
+      (${lit(BUSINESS_ID)}, 'taba-publish-ready', 'taba-publish-ready', 'Publicar Listo', 'Marca', 'Gaseosas', 'cola',
+       '500 ml', '500 ml', 500, 'ml', '500 ml', 'Botella PET', 1, false,
+       2290, 'confirmed', 24, false, false, null, 0, array[]::text[], 'commercial', true,
+       true, now(), ${lit(OWNER_ID)}, false, now()),
+      (${lit(BUSINESS_ID)}, 'taba-publish-nostock', 'taba-publish-nostock', 'Publicar Sin Stock', 'Marca', 'Gaseosas', 'cola',
+       '500 ml', '500 ml', 500, 'ml', '500 ml', 'Botella PET', 1, false,
+       2290, 'confirmed', 0, false, false, null, 0, array[]::text[], 'commercial', true,
+       true, now(), ${lit(OWNER_ID)}, false, now()),
+      (${lit(BUSINESS_ID)}, 'taba-publish-partial-image', 'taba-publish-partial-image', 'Publicar Parcial', 'Marca', 'Gaseosas', 'cola',
+       '500 ml', '500 ml', 500, 'ml', '500 ml', 'Botella PET', 1, false,
+       2290, 'confirmed', 10, false, false, null, 0, array[]::text[], 'commercial', true,
+       true, now(), ${lit(OWNER_ID)}, false, now()),
+      (${lit(BUSINESS_ID)}, 'taba-publish-unverified', 'taba-publish-unverified', 'Publicar Sin Verificar', 'Marca', 'Gaseosas', 'cola',
+       '500 ml', '500 ml', 500, 'ml', '500 ml', 'Botella PET', 1, false,
+       2290, 'confirmed', 10, false, false, null, 0, array[]::text[], 'commercial', true,
+       false, null, null, false, now()),
+      (${lit(BUSINESS_ID)}, 'taba-publish-alcohol', 'taba-publish-alcohol', 'Publicar Alcohol', 'Marca', 'Cervezas', 'lager',
+       'Lata 473 ml', 'Lata 473 ml', 473, 'ml', '473 ml', 'lata', 1, false,
+       2650, 'confirmed', 12, false, true, 18, 0, array[]::text[], 'commercial', true,
+       true, now(), ${lit(OWNER_ID)}, false, now());
+    update public.products set image_url = 'assets/products/huerfano-a1b2c3d4e5f6a1b2.webp'
+     where business_id=${lit(BUSINESS_ID)} and sku='taba-publish-partial-image';
+
+    insert into public.products
+      (business_id, external_id, sku, name, brand, category, subcategory,
+       variant, presentation, capacity_value, capacity_unit, capacity, packaging_type,
+       units_per_pack, sold_as_pack, price, price_status, stock, chilled, is_alcoholic,
+       minimum_age, sort_order, tags, catalog_origin, is_active,
+       is_verified, verified_at, verified_by, available, updated_at,
+       image_url, image_sha256, image_thumbnail_url, image_thumbnail_sha256, source_image_sha256, catalog_asset_id)
+    select ${lit(BUSINESS_ID)}, 'taba-publish-foreign-asset', 'taba-publish-foreign-asset', 'Publicar Foto Prestada', 'Marca', 'Gaseosas', 'cola',
+       '500 ml', '500 ml', 500, 'ml', '500 ml', 'Botella PET', 1, false,
+       2290, 'confirmed', 10, false, false, null, 0, array[]::text[], 'commercial', true,
+       true, now(), ${lit(OWNER_ID)}, false, now(),
+       ca.master_path, ca.master_sha256, ca.thumbnail_path, ca.thumbnail_sha256, ca.source_sha256, ca.id
+      from public.catalog_assets ca where ca.id = ${lit(asset2)};
+  `);
+  check('17.1 · productos de prueba sembrados para la matriz de publicación', true, '6 filas nuevas');
+  // El UPDATE de arriba (sólo image_url, sobre una fila ya is_verified=true) pasa
+  // por `products_fail_close_master_change` (20260725110000): cualquier cambio a
+  // un dato maestro —image_url incluido— de una fila verificada la desverifica en
+  // el mismo movimiento. Por eso NO se puede construir "verificado + imagen a
+  // medias" ni con una fila real: es un estado inalcanzable por cualquier vía de
+  // escritura, no sólo por esta RPC. La prueba de "1 de 6 → false" en la función
+  // pura ya está en 15.3 (con is_verified=false, la única forma de que esa fila
+  // exista); acá lo que queda demostrado es la otra mitad: aunque la imagen esté a
+  // medias, el motivo real de rechazo para publicar es "no verificado" — y con eso
+  // ninguna publicación revive un producto a medio configurar.
+  const diagPartial = psql(`select is_verified, coalesce(image_url,'∅'), coalesce(catalog_asset_id::text,'∅')
+      from public.products where business_id=${lit(BUSINESS_ID)} and sku='taba-publish-partial-image';`).stdout;
+  check('17.1-diag · el trigger fail-close ya desverificó la fila al tocar image_url (prueba que ese estado no sobrevive)',
+    diagPartial.startsWith('f|'), diagPartial);
+
+  // ── 18. matriz de roles ─────────────────────────────────────────────────
+  const ownerPublish = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-ready', true);
+  check('18.1 · owner publica', ownerPublish.status === 0 && ownerPublish.stdout.includes('taba-publish-ready|t|'), ownerPublish.stdout);
+  callPublication(OWNER_ID, SESSION_ID, 'taba-publish-ready', false);
+
+  const adminPublish = callPublication(ADMIN_ID, ADMIN_SESSION, 'taba-publish-ready', true);
+  check('18.2 · admin publica (el contrato lo permite: mismo array [owner,admin] que apply_commercial_catalog_batch)',
+    adminPublish.status === 0 && adminPublish.stdout.includes('taba-publish-ready|t|'), adminPublish.stdout);
+  callPublication(OWNER_ID, SESSION_ID, 'taba-publish-ready', false);
+
+  const staffPublish = callPublication(STAFF_ID, STAFF_SESSION, 'taba-publish-ready', true, { expectFailure: true });
+  check('18.3 · staff sin permiso → FAIL (products.publish no está en STAFF_CAPABILITIES)', staffPublish.status !== 0,
+    staffPublish.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  const outsiderPublish = callPublication(OUTSIDER_ID, OUTSIDER_SESSION, 'taba-publish-ready', true, { expectFailure: true });
+  check('18.4 · rider/customer (sin business_members para este negocio) → FAIL', outsiderPublish.status !== 0,
+    outsiderPublish.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  const unregisteredPublish = callPublication(OWNER_ID, UNREGISTERED_SESSION, 'taba-publish-ready', true, { expectFailure: true });
+  check('18.5 · owner real pero con session_id nunca registrado en identity_sessions → FAIL', unregisteredPublish.status !== 0,
+    unregisteredPublish.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  // ── 19. matriz de estado del producto ──────────────────────────────────
+  const nostock = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-nostock', true, { expectFailure: true });
+  check('19.1 · stock 0 → FAIL', nostock.status !== 0, nostock.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  const withStock = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-ready', true);
+  check('19.2 · stock >0 + sin imagen (6 NULL) + verificado + precio confirmado → PASS',
+    withStock.status === 0 && withStock.stdout.includes('|t|'), withStock.stdout);
+
+  // "Verificado + imagen a medias" no es una fila que pueda existir (ver 17.1-diag):
+  // el trigger fail-close ya la desverificó al escribir sólo image_url. Publicarla
+  // igual rechaza — por la compuerta de verificación, la que corresponde para una
+  // fila que de hecho no está verificada — y la prueba de que la FUNCIÓN de imagen
+  // en sí misma dice `false` ante 1 de 6 columnas está en 15.3, con una fila que si
+  // puede existir en ese estado (is_verified=false).
+  const partialImage = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-partial-image', true, { expectFailure: true });
+  check('19.3 · metadata de imagen parcial (inalcanzable ya verificada; rechaza igual, por no-verificado) → FAIL',
+    partialImage.status !== 0, partialImage.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  const foreignAsset = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-foreign-asset', true, { expectFailure: true });
+  check('19.4 · asset inválido/ajeno (formato perfecto, pero de otro producto) → FAIL', foreignAsset.status !== 0,
+    foreignAsset.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  const unverified = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-unverified', true, { expectFailure: true });
+  check('19.5 · is_verified=false → FAIL, y el mensaje dirige a verificar primero (esta RPC nunca verifica)',
+    unverified.status !== 0 && /not verified yet/.test(unverified.stderr), unverified.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  const alcoholBlocked = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-alcohol', true, { expectFailure: true });
+  check('19.6 · alcohol sin alcohol_sales_enabled → FAIL con el mensaje de la compuerta de licencia',
+    alcoholBlocked.status !== 0 && /license gate/.test(alcoholBlocked.stderr), alcoholBlocked.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  // ── 20. ocultar, y qué NO toca ─────────────────────────────────────────
+  const antesOcultar = productSnapshot('taba-publish-ready');
+  const hide = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-ready', false);
+  check('20.1 · ocultar → PASS', hide.status === 0 && hide.stdout.includes('|f|'), hide.stdout);
+  const despuesOcultar = productSnapshot('taba-publish-ready');
+  check('20.2 · ocultar no toca precio ni stock, sólo available',
+    antesOcultar.split('|').slice(0, 2).join('|') === despuesOcultar.split('|').slice(0, 2).join('|'),
+    `${antesOcultar} → ${despuesOcultar}`);
+
+  const finalReady = productSnapshot('taba-publish-ready');
+  check('20.3 · precio/stock de taba-publish-ready siguen 2290.00|24 tras publicar/ocultar varias veces',
+    finalReady.startsWith('2290.00|24|'), finalReady);
+
+  const alcoholFlagAntes = psql(`select alcohol_sales_enabled from public.businesses where id=${lit(BUSINESS_ID)};`).stdout;
+  callPublication(OWNER_ID, SESSION_ID, 'taba-publish-alcohol', true, { expectFailure: true });
+  const alcoholFlagDespues = psql(`select alcohol_sales_enabled from public.businesses where id=${lit(BUSINESS_ID)};`).stdout;
+  check('20.4 · alcohol_sales_enabled del negocio no se mueve — no se puede habilitar alcohol por esta vía, ni por accidente',
+    alcoholFlagAntes === alcoholFlagDespues, `${alcoholFlagAntes} → ${alcoholFlagDespues}`);
+
+  const otroAntes = productSnapshot('taba-publish-alcohol');
+  callPublication(OWNER_ID, SESSION_ID, 'taba-publish-ready', true);
+  callPublication(OWNER_ID, SESSION_ID, 'taba-publish-ready', false);
+  const otroDespues = productSnapshot('taba-publish-alcohol');
+  check('20.5 · publicar/ocultar taba-publish-ready no toca ningún otro producto',
+    otroAntes === otroDespues, `${otroAntes} → ${otroDespues}`);
 } catch (error) {
   check('el simulacro completó sin excepciones', false, String(error.message || error).split('\n')[0]);
 } finally {

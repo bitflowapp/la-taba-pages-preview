@@ -1,0 +1,172 @@
+{
+  "generado_utc": "2026-08-21T19:25:54.949Z",
+  "migraciones_repo": {
+    "total": 112,
+    "ultima": "20260819060000"
+  },
+  "proyectos": {
+    "staging": {
+      "ref": "ukxqbgswjlibmnjemrzd",
+      "negocio": {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "name": "La Taba",
+        "status": "open",
+        "is_active": true,
+        "alcohol_sales_enabled": true,
+        "hours_enforced": false,
+        "delivery_zone_enforced": false,
+        "alcohol_hours_enforced": false,
+        "operating_timezone": "America/Argentina/Buenos_Aires",
+        "delivery_fee": "150.00",
+        "currency_code": "ARS",
+        "created_at": "2026-07-30 17:01:15.248198+00",
+        "updated_at": "2026-08-13 06:40:14.973652+00"
+      },
+      "negocios_total": 1,
+      "ledger": {
+        "total": 96,
+        "ultima": "20260814040000",
+        "solo_en_remoto": [],
+        "solo_en_repo": [
+          "20260814050000",
+          "20260814060000",
+          "20260815010000",
+          "20260815020000",
+          "20260816120000",
+          "20260816121000",
+          "20260816122000",
+          "20260817010000",
+          "20260817020000",
+          "20260817030000",
+          "20260817040000",
+          "20260818020000",
+          "20260818030000",
+          "20260818040000",
+          "20260819050000",
+          "20260819060000"
+        ]
+      },
+      "catalogo": {
+        "productos": 23,
+        "disponibles": 8,
+        "alcoholicos": 2,
+        "con_stock": 22,
+        "con_imagen": 23
+      },
+      "codigos_barras": 0,
+      "pedidos": {
+        "total": 124,
+        "ultimo": "2026-08-16 01:17:35.698529+00"
+      },
+      "lt0001": {
+        "public_code": "LT-0001",
+        "status": "delivered",
+        "total": "17250.00",
+        "created_at": "2026-08-01 01:25:47.273545+00"
+      },
+      "pedidos_por_estado": [
+        {
+          "status": "cancelled",
+          "n": 75
+        },
+        {
+          "status": "delivered",
+          "n": 35
+        },
+        {
+          "status": "received",
+          "n": 9
+        },
+        {
+          "status": "on_the_way",
+          "n": 2
+        },
+        {
+          "status": "arrived",
+          "n": 1
+        },
+        {
+          "status": "picked_up",
+          "n": 1
+        },
+        {
+          "status": "preparing",
+          "n": 1
+        }
+      ],
+      "colision_sku": [],
+      "colision_gtin": [],
+      "tablas_auditoria": [
+        "business_config_audit",
+        "identity_audit_events",
+        "scanned_product_audit"
+      ],
+      "rastro_alcohol": [],
+      "miembros": {
+        "total": 117,
+        "activos": 9
+      }
+    },
+    "produccion": {
+      "ref": "wwcpogltfgzgkrlilbcd",
+      "negocio": {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "name": "La Taba",
+        "status": "open",
+        "is_active": true,
+        "alcohol_sales_enabled": false,
+        "hours_enforced": false,
+        "delivery_zone_enforced": false,
+        "alcohol_hours_enforced": false,
+        "operating_timezone": "America/Argentina/Buenos_Aires",
+        "delivery_fee": "0.00",
+        "currency_code": "ARS",
+        "created_at": "2026-08-16 06:42:35.33426+00",
+        "updated_at": "2026-08-18 02:09:25.603903+00"
+      },
+      "negocios_total": 1,
+      "ledger": {
+        "total": 112,
+        "ultima": "20260819060000",
+        "solo_en_remoto": [],
+        "solo_en_repo": []
+      },
+      "catalogo": {
+        "productos": 60,
+        "disponibles": 33,
+        "alcoholicos": 23,
+        "con_stock": 56,
+        "con_imagen": 4
+      },
+      "codigos_barras": 4,
+      "pedidos": {
+        "total": 1,
+        "ultimo": "2026-08-18 03:25:15.125791+00"
+      },
+      "lt0001": {
+        "public_code": "LT-0001",
+        "status": "on_the_way",
+        "total": "17100.00",
+        "created_at": "2026-08-18 03:25:15.125791+00"
+      },
+      "pedidos_por_estado": [
+        {
+          "status": "on_the_way",
+          "n": 1
+        }
+      ],
+      "colision_sku": [],
+      "colision_gtin": [],
+      "tablas_auditoria": [
+        "business_config_audit",
+        "identity_audit_events",
+        "scanned_product_audit"
+      ],
+      "rastro_alcohol": [],
+      "miembros": {
+        "total": 2,
+        "activos": 2
+      }
+    }
+  }
+}

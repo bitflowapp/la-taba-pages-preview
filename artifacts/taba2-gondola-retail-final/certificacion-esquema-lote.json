@@ -1,0 +1,424 @@
+{
+  "generado_utc": "2026-08-21T19:28:23.698Z",
+  "checks": [
+    {
+      "check": "columnas_products",
+      "faltantes": [],
+      "columnas_reales": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "business_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "name",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "description",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "category",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "price",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "image_url",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "is_active",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "true"
+        },
+        {
+          "column_name": "sort_order",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "brand",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "subcategory",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "presentation",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "capacity",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "packaging_type",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "stock",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "available",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false"
+        },
+        {
+          "column_name": "is_alcoholic",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "minimum_age",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "tags",
+          "data_type": "ARRAY",
+          "is_nullable": "NO",
+          "column_default": "'{}'::text[]"
+        },
+        {
+          "column_name": "is_verified",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false"
+        },
+        {
+          "column_name": "verified_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "verified_by",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "chilled",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false"
+        },
+        {
+          "column_name": "units_per_pack",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "1"
+        },
+        {
+          "column_name": "external_id",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "sku",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "catalog_asset_id",
+          "data_type": "uuid",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "image_sha256",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "image_thumbnail_url",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "image_thumbnail_sha256",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "source_image_sha256",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "variant",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "capacity_value",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "capacity_unit",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "catalog_origin",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'commercial'::text"
+        },
+        {
+          "column_name": "price_status",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'confirmed'::text"
+        },
+        {
+          "column_name": "unit_cost",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "sold_as_pack",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false"
+        }
+      ]
+    },
+    {
+      "check": "notnull_products",
+      "sin_cubrir": []
+    },
+    {
+      "check": "columnas_product_barcodes",
+      "faltantes": [],
+      "columnas_reales": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": "gen_random_uuid()"
+        },
+        {
+          "column_name": "business_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "product_id",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "gtin",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "barcode_type",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "package_type",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'unit'::text"
+        },
+        {
+          "column_name": "unit_factor",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "1"
+        },
+        {
+          "column_name": "is_primary",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false"
+        },
+        {
+          "column_name": "is_active",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "true"
+        },
+        {
+          "column_name": "source",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": "'manual'::text"
+        },
+        {
+          "column_name": "verified_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "column_name": "created_by",
+          "data_type": "uuid",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()"
+        }
+      ]
+    },
+    {
+      "check": "notnull_product_barcodes",
+      "sin_cubrir": []
+    },
+    {
+      "check": "unicidad",
+      "constraints": [
+        {
+          "tabla": "product_barcodes",
+          "conname": "product_barcodes_business_id_gtin_key",
+          "def": "UNIQUE (business_id, gtin)"
+        },
+        {
+          "tabla": "product_barcodes",
+          "conname": "product_barcodes_pkey",
+          "def": "PRIMARY KEY (id)"
+        },
+        {
+          "tabla": "products",
+          "conname": "products_pkey",
+          "def": "PRIMARY KEY (id)"
+        }
+      ],
+      "indices_unicos": [
+        {
+          "tablename": "product_barcodes",
+          "indexname": "product_barcodes_pkey",
+          "indexdef": "CREATE UNIQUE INDEX product_barcodes_pkey ON public.product_barcodes USING btree (id)"
+        },
+        {
+          "tablename": "product_barcodes",
+          "indexname": "product_barcodes_business_id_gtin_key",
+          "indexdef": "CREATE UNIQUE INDEX product_barcodes_business_id_gtin_key ON public.product_barcodes USING btree (business_id, gtin)"
+        },
+        {
+          "tablename": "product_barcodes",
+          "indexname": "product_barcodes_one_primary_per_product",
+          "indexdef": "CREATE UNIQUE INDEX product_barcodes_one_primary_per_product ON public.product_barcodes USING btree (product_id) WHERE (is_primary AND is_active)"
+        },
+        {
+          "tablename": "products",
+          "indexname": "products_pkey",
+          "indexdef": "CREATE UNIQUE INDEX products_pkey ON public.products USING btree (id)"
+        },
+        {
+          "tablename": "products",
+          "indexname": "products_business_external_id_key",
+          "indexdef": "CREATE UNIQUE INDEX products_business_external_id_key ON public.products USING btree (business_id, external_id)"
+        },
+        {
+          "tablename": "products",
+          "indexname": "products_business_sku_key",
+          "indexdef": "CREATE UNIQUE INDEX products_business_sku_key ON public.products USING btree (business_id, sku)"
+        }
+      ]
+    },
+    {
+      "check": "verificador",
+      "fks": [
+        {
+          "tabla": "product_barcodes",
+          "conname": "product_barcodes_created_by_fkey",
+          "def": "FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE RESTRICT"
+        },
+        {
+          "tabla": "products",
+          "conname": "products_verified_by_fkey",
+          "def": "FOREIGN KEY (verified_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+        }
+      ],
+      "en_auth": 1,
+      "productos_ya_verificados": 60
+    },
+    {
+      "check": "staging_columnas_faltantes",
+      "faltantes": [
+        "sold_as_pack"
+      ]
+    }
+  ]
+}

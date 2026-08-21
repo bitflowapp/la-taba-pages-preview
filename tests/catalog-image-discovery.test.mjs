@@ -242,12 +242,31 @@ test('el manifiesto público no lista nada que la auditoría bloquee', () => {
   }
 });
 
-test('el catálogo reconcilia en 56 SKU y la cuenta se comprueba', async () => {
+test('el catálogo reconcilia 33 visibles + 23 alcohólicos + 4 unidades minoristas = 60 SKU', async () => {
   const { skus, reconciliacion } = await loadCatalogSkus(ROOT);
-  assert.equal(skus.length, 56);
+  assert.equal(skus.length, 60);
   assert.equal(reconciliacion.visibles, 33);
   assert.equal(reconciliacion.ocultosAgregados, 23);
+  assert.equal(reconciliacion.retailUnidades, 4);
+  assert.equal(reconciliacion.retailUnidadesAgregadas, 4);
+  assert.equal(reconciliacion.esperadoTotal, 60);
+  assert.equal(reconciliacion.total, 60);
   assert.equal(skus.filter((sku) => sku.alcoholic).length, 23);
+
+  const retail = skus.filter((sku) => sku.origen === 'retail-unidades');
+  assert.deepEqual(retail.map((sku) => sku.sku), [
+    'coca-cola-original-pet-500ml',
+    'coca-cola-zero-pet-500ml',
+    'fanta-naranja-pet-1500ml',
+    'sprite-pet-500ml',
+  ]);
+  for (const unidad of retail) {
+    assert.equal(unidad.alcoholic, false, unidad.sku);
+    assert.equal(unidad.available, false, unidad.sku);
+    assert.equal(unidad.capacityUnit, 'ml', unidad.sku);
+    assert.equal(unidad.soldAsPack, false, unidad.sku);
+    assert.equal(unidad.unitsPerPack, 1, unidad.sku);
+  }
 });
 
 test('la compuerta del alcohol no se movió: ningún alcohólico quedó disponible', async () => {

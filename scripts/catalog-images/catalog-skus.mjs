@@ -1,5 +1,5 @@
 /*
- * Los 56 SKU del catálogo productivo, en una sola lista y con su procedencia.
+ * Los 60 SKU del catálogo productivo, en una sola lista y con su procedencia.
  *
  * De dónde sale cada cosa, y por qué:
  *
@@ -10,16 +10,21 @@
  *       devuelve porque están cerrados por la compuerta de licencia. Ese
  *       archivo es el que generó el lote SQL que los insertó, así que describe
  *       exactamente lo que hay en la base.
+ *    4  de `catalog/retail-unidades.mjs` — unidades minoristas no alcohólicas
+ *       que están en producción con stock=0 y available=false, por lo que la
+ *       clave publicable tampoco las devuelve.
  *
  * La reconciliación se comprueba, no se supone: 29 no alcohólicos de la góndola
- * más 4 packs previos tienen que dar los 33 visibles. Si no da, algo cambió en
- * producción y el pipeline se planta en vez de auditar un catálogo imaginario.
+ * más 4 packs previos tienen que dar los 33 visibles; además tienen que sumarse
+ * exactamente 23 alcohólicos ocultos y 4 unidades minoristas. Si no da 60, algo
+ * cambió y el pipeline se planta en vez de auditar un catálogo imaginario.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 
 const ORIGEN_PRODUCCION = 'produccion';
 const ORIGEN_GONDOLA = 'gondola-neuquen';
+const ORIGEN_RETAIL_UNIDADES = 'retail-unidades';
 
 function desdeFotografia(producto) {
   return {
@@ -67,17 +72,42 @@ function desdeGondola(fila) {
   };
 }
 
+function desdeRetailUnidad(fila) {
+  return {
+    alcoholic: false,
+    // Son líneas reales de inventario, pero nacieron sin stock verificable y
+    // permanecen fuera de la respuesta publicable hasta una recepción real.
+    available: false,
+    brand: fila.brand,
+    capacityUnit: 'ml',
+    capacityValue: fila.capacityValue,
+    catalogAssetId: null,
+    category: fila.category,
+    externalId: fila.externalId,
+    imageUrl: null,
+    name: fila.name,
+    origen: ORIGEN_RETAIL_UNIDADES,
+    packagingType: fila.packagingType,
+    price: fila.price,
+    sku: fila.sku,
+    soldAsPack: false,
+    unitsPerPack: 1,
+    variant: fila.variant,
+  };
+}
+
 /**
- * Devuelve los 56 SKU y el detalle de la reconciliación.
+ * Devuelve los 60 SKU y el detalle de la reconciliación.
  * `strict` planta el proceso si las cuentas no cierran.
  */
 export async function loadCatalogSkus(root, { strict = true } = {}) {
   const fotografia = JSON.parse(
     fs.readFileSync(path.join(root, 'catalog/production-catalog-snapshot.json'), 'utf8'),
   );
-  const { GONDOLA } = await import(
-    new URL(`file://${path.join(root, 'catalog/gondola-neuquen.mjs').replaceAll('\\', '/')}`).href
-  );
+  const [{ GONDOLA }, { RETAIL_UNIDADES }] = await Promise.all([
+    import(new URL(`file://${path.join(root, 'catalog/gondola-neuquen.mjs').replaceAll('\\', '/')}`).href),
+    import(new URL(`file://${path.join(root, 'catalog/retail-unidades.mjs').replaceAll('\\', '/')}`).href),
+  ]);
 
   const visibles = fotografia.productos.map(desdeFotografia);
   const porSku = new Map(visibles.map((producto) => [producto.sku, producto]));
@@ -86,17 +116,26 @@ export async function loadCatalogSkus(root, { strict = true } = {}) {
     .filter((fila) => !porSku.has(fila.sku))
     .map(desdeGondola);
 
-  const skus = [...visibles, ...ocultos].sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0));
+  const skuConocidos = new Set([...visibles, ...ocultos].map((producto) => producto.sku));
+  const retailUnidades = RETAIL_UNIDADES
+    .filter((fila) => !skuConocidos.has(fila.sku))
+    .map(desdeRetailUnidad);
+
+  const skus = [...visibles, ...ocultos, ...retailUnidades]
+    .sort((a, b) => (a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0));
 
   const gondolaNoAlcoholica = GONDOLA.filter((fila) => !fila.alcoholic).length;
   const packsPrevios = visibles.filter((producto) => !GONDOLA.some((fila) => fila.sku === producto.sku));
   const reconciliacion = {
+    esperadoTotal: visibles.length + GONDOLA.filter((fila) => fila.alcoholic).length + RETAIL_UNIDADES.length,
     esperadoVisible: gondolaNoAlcoholica + packsPrevios.length,
     gondola: GONDOLA.length,
     gondolaAlcoholica: GONDOLA.filter((fila) => fila.alcoholic).length,
     gondolaNoAlcoholica,
     ocultosAgregados: ocultos.length,
     packsPrevios: packsPrevios.length,
+    retailUnidades: RETAIL_UNIDADES.length,
+    retailUnidadesAgregadas: retailUnidades.length,
     total: skus.length,
     visibles: visibles.length,
   };
@@ -112,6 +151,18 @@ export async function loadCatalogSkus(root, { strict = true } = {}) {
     problemas.push(
       `Los SKU que producción no muestra (${reconciliacion.ocultosAgregados}) no son exactamente los `
       + `alcohólicos de la góndola (${reconciliacion.gondolaAlcoholica}).`,
+    );
+  }
+  if (reconciliacion.retailUnidadesAgregadas !== reconciliacion.retailUnidades) {
+    problemas.push(
+      `Las unidades minoristas agregadas (${reconciliacion.retailUnidadesAgregadas}) no son exactamente las `
+      + `de la autoridad local (${reconciliacion.retailUnidades}).`,
+    );
+  }
+  if (reconciliacion.total !== reconciliacion.esperadoTotal) {
+    problemas.push(
+      `El total reconciliado (${reconciliacion.total}) no coincide con visibles + alcohol oculto + `
+      + `unidades minoristas (${reconciliacion.esperadoTotal}).`,
     );
   }
   if (strict && problemas.length) {

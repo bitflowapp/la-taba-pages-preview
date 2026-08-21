@@ -1,5 +1,5 @@
 /*
- * La hoja de contactos: los 56 SKU juntos, para mirarlos de una.
+ * La hoja de contactos: los SKU del catálogo juntos, para mirarlos de una.
  *
  * Existe porque ninguna de las comprobaciones automáticas ve lo que se ve. El
  * matcher compara texto; el guard compara hashes y derechos. Que la botella de
@@ -11,11 +11,18 @@
  * y las que el descubrimiento dejó anotadas con reparos.
  *
  *   node scripts/catalog-images/contact-sheet.mjs
+ *   node scripts/catalog-images/contact-sheet.mjs --propuesta-final
+ *
+ * El segundo modo suma el payload todavía NO aplicado y produce una lámina
+ * comercial rotulada. Una propuesta sólo recibe foto si existe una entrada
+ * exacta y aprobada para su externalId + SKU en el manifiesto final; el hecho
+ * de que una fuente de precio tenga una foto nunca la vuelve publicable.
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import process from 'node:process';
 import { loadCatalogSkus } from './catalog-skus.mjs';
-import { stableJson } from './lib.mjs';
+import { findManifestSource, stableJson, validateFinalImageManifest } from './lib.mjs';
 
 let sharp;
 try {
@@ -27,13 +34,71 @@ try {
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const ARTIFACTS = path.join(ROOT, 'artifacts/taba2-catalog-images');
+const MODO_PROPUESTA_FINAL = process.argv.includes('--propuesta-final');
+const OUTPUT_DIR = process.env.TABA_CONTACT_SHEET_OUTPUT_DIR
+  ? path.resolve(process.env.TABA_CONTACT_SHEET_OUTPUT_DIR)
+  : ARTIFACTS;
+const SUFIJO = MODO_PROPUESTA_FINAL ? '-propuesta-final' : '';
 const MANIFIESTO_FUENTES = path.join(ARTIFACTS, 'SOURCE-MANIFEST.json');
 const MANIFIESTO_IMAGENES = path.join(ROOT, 'docs/catalog/image-manifest.json');
-const HTML = path.join(ARTIFACTS, 'contact-sheet.html');
-const WEBP = path.join(ARTIFACTS, 'contact-sheet.webp');
-const DUPLICADOS = path.join(ARTIFACTS, 'DUPLICATE-ASSETS.md');
-const HUELLAS = path.join(ARTIFACTS, 'perceptual-hashes.json');
+const HTML = path.join(OUTPUT_DIR, `contact-sheet${SUFIJO}.html`);
+const WEBP = path.join(OUTPUT_DIR, `contact-sheet${SUFIJO}.webp`);
+const DUPLICADOS = path.join(OUTPUT_DIR, `DUPLICATE-ASSETS${MODO_PROPUESTA_FINAL ? '-PROPUESTA-FINAL' : ''}.md`);
+const HUELLAS = path.join(OUTPUT_DIR, `perceptual-hashes${SUFIJO}.json`);
 const EXPLICADOS = path.join(ROOT, 'catalog/duplicados-explicados.json');
+
+const GRUPOS_PROPUESTA = Object.freeze([
+  { id: 'gaseosas', titulo: 'GASEOSAS' },
+  { id: 'cervezas', titulo: 'CERVEZAS' },
+  { id: 'energeticas', titulo: 'ENERGÉTICAS' },
+  { id: 'aguas', titulo: 'AGUAS' },
+  { id: 'otros', titulo: 'OTROS' },
+]);
+
+function textoComparable(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function grupoComercial(categoria) {
+  const normalizada = textoComparable(categoria);
+  if (normalizada === 'gaseosas') return 'gaseosas';
+  if (normalizada === 'cervezas') return 'cervezas';
+  if (normalizada.includes('energ')) return 'energeticas';
+  if (normalizada.startsWith('agua')) return 'aguas';
+  return 'otros';
+}
+
+function capacidadLegible(valor, unidad) {
+  const cantidad = Number(valor);
+  const unidadNormalizada = String(unidad || '').toLowerCase();
+  if (Number.isFinite(cantidad) && unidadNormalizada === 'ml' && cantidad >= 1000) {
+    return `${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 3 }).format(cantidad / 1000)} L`;
+  }
+  return `${Number.isFinite(cantidad) ? new Intl.NumberFormat('es-AR').format(cantidad) : valor} ${unidad}`.trim();
+}
+
+function envaseLegible(valor) {
+  const normalizado = String(valor || '').replaceAll('-', ' ').trim();
+  return normalizado.replace(/\bpet\b/gi, 'PET').replace(/^./, (letra) => letra.toUpperCase());
+}
+
+function presentacionDe(producto) {
+  const partes = [
+    capacidadLegible(producto.capacityValue, producto.capacityUnit),
+    envaseLegible(producto.packagingType),
+    producto.soldAsPack ? `Pack x${producto.unitsPerPack}` : 'Unidad',
+  ];
+  return partes.filter(Boolean).join(' · ');
+}
+
+function precioLegible(precio) {
+  const cantidad = Number(precio);
+  if (!Number.isFinite(cantidad)) return 'PRECIO PENDIENTE';
+  return `$${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(cantidad)}`;
+}
 
 /**
  * Firma de color: la imagen reducida a 8x8 en RGB, 192 números.
@@ -81,14 +146,18 @@ for (const sku of skus) {
   celdas.push({
     alcoholic: sku.alcoholic,
     capacidad: `${sku.capacityValue} ${sku.capacityUnit}`,
+    categoria: sku.category,
     confianza: decision?.estado || 'SIN_DATO',
     derechos: imagen?.rightsStatus || null,
+    disponible: sku.available === true,
     envase: sku.packagingType,
     fuente: decision?.elegido?.title || null,
     huella: master ? await firmaDeColor(path.join(ROOT, master)) : null,
     master,
     nombre: sku.name,
     packCount: sku.unitsPerPack,
+    precio: precioLegible(sku.price),
+    presentacion: presentacionDe(sku),
     reparos: decision?.candidatos?.[0]?.reasons || [],
     sku: sku.sku,
     soldAsPack: sku.soldAsPack,
@@ -159,7 +228,10 @@ const filas = celdas.map((celda) => `
       <figcaption>
         <strong>${escapar(celda.nombre)}</strong>
         <code>${escapar(celda.sku)}</code>
-        <span>${escapar(celda.capacidad)} · ${escapar(celda.envase)} · ${celda.soldAsPack ? `pack x${celda.packCount}` : 'unidad'}</span>
+        <span class="categoria">${escapar(celda.categoria)}</span>
+        <span>${escapar(celda.presentacion)}</span>
+        <span class="precio">${escapar(celda.precio)}</span>
+        <span class="disponible disponible-${celda.disponible ? 'si' : 'no'}">${celda.disponible ? 'Disponible' : 'No disponible'}</span>
         <span class="estado estado-${escapar(celda.confianza)}">${escapar(celda.confianza)}</span>
         ${celda.derechos ? `<span class="derechos">${escapar(celda.derechos)}</span>` : ''}
         ${celda.fuente ? `<span class="fuente">${escapar(celda.fuente)}</span>` : ''}
@@ -171,35 +243,161 @@ const filas = celdas.map((celda) => `
 const resumen = {};
 for (const celda of celdas) resumen[celda.confianza] = (resumen[celda.confianza] || 0) + 1;
 
+/*
+ * Modo propuesta: suma el payload de altas todavía NO aplicado y lo rotula
+ * sin ambigüedad. Una propuesta sólo recibe foto si `findManifestSource`
+ * encuentra una entrada YA aprobada para su externalId + SKU exactos en el
+ * manifiesto final; ninguna de las 12 altas la tiene todavía, así que todas
+ * muestran el fallback propio de TABA, tal como exige el payload.
+ */
+let seccionPropuestaFinal = '';
+let propuestaResumen = null;
+if (MODO_PROPUESTA_FINAL) {
+  const { errors: erroresManifiesto } = validateFinalImageManifest(imagenes, { allowEmpty: true });
+  if (erroresManifiesto.length) {
+    console.error('El manifiesto final de imágenes no es válido; la propuesta no puede confiar en él para decidir foto vs. fallback:');
+    for (const error of erroresManifiesto) console.error(`  - ${error}`);
+    process.exitCode = 1;
+  }
+
+  const { CATALOGO_ACTUAL, PRODUCTOS_PROPUESTOS, TOTAL_ESTIMADO } = await import(
+    new URL(`file://${path.join(ROOT, 'catalog/gondola-retail-final-proposal.mjs').replaceAll('\\', '/')}`).href
+  );
+
+  const agrupar = (lista, categoriaDe) => {
+    const porGrupo = new Map(GRUPOS_PROPUESTA.map((g) => [g.id, []]));
+    for (const item of lista) porGrupo.get(grupoComercial(categoriaDe(item))).push(item);
+    return porGrupo;
+  };
+
+  const propuestos = PRODUCTOS_PROPUESTOS.map((producto) => {
+    const fuenteAprobada = findManifestSource(imagenes, producto.externalId, producto.sku);
+    return {
+      categoria: producto.category,
+      disponible: producto.available === true,
+      master: fuenteAprobada?.assets?.master?.path || null,
+      nombre: producto.name,
+      precio: precioLegible(producto.price),
+      presentacion: presentacionDe(producto),
+      sku: producto.sku,
+      thumb: fuenteAprobada?.assets?.thumbnail?.path || null,
+    };
+  });
+
+  const actualesPorGrupo = agrupar(celdas, (celda) => celda.categoria);
+  const propuestosPorGrupo = agrupar(propuestos, (item) => item.categoria);
+
+  const tarjetaActual = (celda) => `
+    <figure class="celda mini ${celda.master ? 'con-foto' : 'sin-foto'}">
+      <div class="marco">${celda.thumb
+    ? `<img src="../../${escapar(celda.thumb)}" alt="" width="140" height="140" loading="lazy">`
+    : '<span class="vacio">sin imagen</span>'}</div>
+      <figcaption>
+        <strong>${escapar(celda.nombre)}</strong>
+        <code>${escapar(celda.sku)}</code>
+        <span>${escapar(celda.presentacion)}</span>
+        <span class="precio">${escapar(celda.precio)}</span>
+        <span class="disponible disponible-${celda.disponible ? 'si' : 'no'}">${celda.disponible ? 'Disponible' : 'No disponible'}</span>
+      </figcaption>
+    </figure>`;
+
+  const tarjetaPropuesta = (item) => `
+    <figure class="celda mini propuesta ${item.master ? 'con-foto' : 'sin-foto'}">
+      <div class="marco">${item.thumb
+    ? `<img src="../../${escapar(item.thumb)}" alt="" width="140" height="140" loading="lazy">`
+    : '<span class="vacio">FALLBACK TABA</span>'}</div>
+      <figcaption>
+        <span class="etiqueta-propuesta">ALTA PROPUESTA</span>
+        <strong>${escapar(item.nombre)}</strong>
+        <code>${escapar(item.sku)}</code>
+        <span>${escapar(item.presentacion)}</span>
+        <span class="precio">${escapar(item.precio)}</span>
+        <span class="disponible disponible-no">No disponible · stock 0</span>
+      </figcaption>
+    </figure>`;
+
+  const seccionGrupos = (porGrupo, tarjeta) => GRUPOS_PROPUESTA
+    .filter((grupo) => porGrupo.get(grupo.id).length)
+    .map((grupo) => `
+    <h3>${escapar(grupo.titulo)} <span class="conteo">(${porGrupo.get(grupo.id).length})</span></h3>
+    <div class="grilla grilla-compacta">${porGrupo.get(grupo.id).map(tarjeta).join('')}
+    </div>`).join('');
+
+  seccionPropuestaFinal = `
+<section class="banner-propuesta">
+  <p class="rotulo-propuesta">PROPUESTA — NO APLICADA</p>
+  <p>Catálogo actual: ${CATALOGO_ACTUAL} SKU · altas propuestas: ${PRODUCTOS_PROPUESTOS.length} ·
+  total estimado si se aplica: ${TOTAL_ESTIMADO} SKU. Ningún producto de esta sección fue insertado,
+  publicado ni modificado en producción.</p>
+</section>
+<section>
+  <h2>ACTUALES POR GRUPO COMERCIAL (${celdas.length})</h2>
+  ${seccionGrupos(actualesPorGrupo, tarjetaActual)}
+</section>
+<section>
+  <h2>PROPUESTOS — NO APLICADO (${propuestos.length})</h2>
+  ${seccionGrupos(propuestosPorGrupo, tarjetaPropuesta)}
+</section>`;
+
+  propuestaResumen = {
+    actual: CATALOGO_ACTUAL,
+    conFotoAprobada: propuestos.filter((item) => item.master).length,
+    propuestas: PRODUCTOS_PROPUESTOS.length,
+    total: TOTAL_ESTIMADO,
+  };
+}
+
+const tituloPagina = MODO_PROPUESTA_FINAL
+  ? 'TABA · góndola comercial final — PROPUESTA NO APLICADA'
+  : 'TABA · hoja de contactos del catálogo';
+
 const html = `<!doctype html>
 <html lang="es">
 <meta charset="utf-8">
-<title>TABA · hoja de contactos del catálogo</title>
+<title>${escapar(tituloPagina)}</title>
 <style>
   :root { color-scheme: light dark; --linea: #d8d3cc; --fondo: #faf8f5; --tinta: #1c1a18; }
   @media (prefers-color-scheme: dark) { :root { --linea: #3a3632; --fondo: #16140f; --tinta: #f2ede4; } }
   body { margin: 0; padding: 24px; background: var(--fondo); color: var(--tinta);
          font: 14px/1.45 ui-sans-serif, system-ui, sans-serif; }
   h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 26px 0 4px; }
+  h3 { font-size: 13px; margin: 16px 0 8px; opacity: .85; }
+  .conteo { opacity: .6; font-weight: 400; }
   .resumen { margin: 0 0 20px; opacity: .8; }
   .grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+  .grilla-compacta { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); margin: 0 0 6px; }
   .celda { margin: 0; border: 1px solid var(--linea); border-radius: 10px; padding: 10px; background: #fff; }
   @media (prefers-color-scheme: dark) { .celda { background: #201d18; } }
+  .celda.mini .marco { height: 140px; }
+  .celda.propuesta { border-style: dashed; border-color: #a4351f; }
   .marco { display: grid; place-items: center; height: 180px; background: #fff; border-radius: 6px; }
   .marco img { max-width: 100%; height: auto; }
   .vacio { color: #9a938a; font-size: 12px; }
   figcaption { display: grid; gap: 3px; margin-top: 8px; font-size: 12px; }
   code { font-size: 11px; opacity: .75; word-break: break-all; }
+  .categoria { opacity: .65; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }
+  .precio { font-weight: 600; }
+  .disponible { font-size: 11px; }
+  .disponible-si { color: #1f7a3d; }
+  .disponible-no { color: #a4351f; }
   .estado { justify-self: start; padding: 1px 7px; border-radius: 999px; font-size: 11px; background: #eceae6; }
   .estado-HIGH { background: #1f7a3d; color: #fff; }
   .estado-MANUAL_REVIEW { background: #b8860b; color: #fff; }
   .derechos { color: #1f7a3d; font-size: 11px; }
   .fuente, .alcohol { opacity: .7; font-size: 11px; }
   .alerta { color: #a4351f; font-size: 11px; }
+  .etiqueta-propuesta { justify-self: start; padding: 1px 7px; border-radius: 999px; font-size: 10px;
+                         font-weight: 700; letter-spacing: .03em; background: #a4351f; color: #fff; }
+  .banner-propuesta { border: 2px solid #a4351f; border-radius: 10px; padding: 14px 18px; margin: 0 0 24px;
+                       background: #fdeceA; }
+  @media (prefers-color-scheme: dark) { .banner-propuesta { background: #2a1712; } }
+  .rotulo-propuesta { margin: 0 0 6px; font-size: 18px; font-weight: 700; letter-spacing: .04em; color: #a4351f; }
 </style>
-<h1>TABA · hoja de contactos del catálogo</h1>
+<h1>${escapar(tituloPagina)}</h1>
 <p class="resumen">${celdas.length} SKU · ${celdas.filter((c) => c.master).length} con fotografía propia del catálogo ·
 ${Object.entries(resumen).map(([k, v]) => `${v} ${k}`).join(' · ')}</p>
+${seccionPropuestaFinal}
 <div class="grilla">${filas}
 </div>
 </html>
@@ -265,6 +463,12 @@ console.log(`Hoja de contactos: ${path.relative(ROOT, HTML).replaceAll('\\', '/'
 console.log(`Imagen: ${path.relative(ROOT, WEBP).replaceAll('\\', '/')} (${COLUMNAS * LADO}x${filasGrilla * LADO})`);
 console.log(`SKU con fotografía: ${conImagen.length} de ${celdas.length}`);
 console.log(`Pares parecidos: ${parejas.length} (${parejas.length - sinExplicar.length} explicados)`);
+if (propuestaResumen) {
+  console.log(`PROPUESTA — NO APLICADA: ${propuestaResumen.actual} actuales + ${propuestaResumen.propuestas} `
+    + `propuestos = ${propuestaResumen.total} estimado.`);
+  console.log(`Altas propuestas con foto oficial ya aprobada: ${propuestaResumen.conFotoAprobada} de ${propuestaResumen.propuestas} `
+    + '(se espera 0 hasta aprobar packshots).');
+}
 for (const par of sinExplicar) {
   console.error(`SIN EXPLICAR ${par.skuA} y ${par.skuB} — ${par.exacta ? 'misma imagen' : `diferencia ${par.distancia}/255`}`);
 }

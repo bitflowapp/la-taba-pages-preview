@@ -8,12 +8,14 @@
  *
  * No stubbea nada: habla con producción tal como la ve un cliente.
  */
+import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 
 /*
  * QUÉ VE EL CLIENTE, Y POR QUÉ NO SON LOS 56.
  *
- * La base tiene 56 productos: 4 previos + 52 nuevos. El cliente descarga 33.
+ * La base tiene 60 productos: 4 previos + 52 de la primera góndola + 4
+ * unidades minoristas con stock cero. El cliente descarga 33.
  * No es un error: `loadCatalog()` consulta con `.eq('available', true)`, así que
  * un producto no disponible NO se descarga. Para el catálogo del cliente,
  * «visible» y «comprable» son la misma bandera.
@@ -24,8 +26,8 @@ import { chromium } from 'playwright';
  * «se ve y no se compra» en esta superficie, y fabricarlo sería otro cambio de
  * producto, con su propio cartel explicando por qué no se puede comprar.
  *
- * El total de 56 se mide del lado del servidor, con
- * `aplicar-gondola-neuquen.mjs --verificar`, no desde el navegador.
+ * El total de 60 se reconstruye de la autoridad local auditada; este script no
+ * usa credenciales y mide sólo la superficie pública de cliente.
  */
 const HOST = process.env.TABA_HOST || 'https://la-taba.pages.dev';
 const ESPERADO_COMPRABLES = 33;
@@ -102,6 +104,10 @@ medir('la home dibuja carruseles con producto', secciones.length > 0 && seccione
 const masPedido = await page.locator('[data-view="home"]').innerText();
 medir('la home nombra productos reales', /Coca-Cola|Red Bull|Speed|Villa del Sur/.test(masPedido));
 
+const destino = 'artifacts/taba2-gondola-retail-final/storefront-actual';
+mkdirSync(destino, { recursive: true });
+await page.screenshot({ path: `${destino}/01-home.png`, fullPage: false });
+
 // ── 5 · combos: no se ofrece lo que no se puede cobrar ───────────────────────
 const combos = await page.evaluate(async () => {
   const { customerCombos } = await import('/js/ui.js');
@@ -120,23 +126,57 @@ const textoCatalogo = await page.locator('[data-view="catalog"]').innerText();
 medir('el pack se distingue de la unidad suelta', textoCatalogo.includes('Pack x6') || textoCatalogo.includes('Pack x12'));
 medir('no aparece «Precio próximamente»', !textoCatalogo.includes('Precio próximamente'));
 
-const primerComprable = comprables.find((p) => !p.alcoholic);
-await page.evaluate(async (sku) => {
-  const { getState } = await import('/js/state.js');
-  const { addToCart } = await import('/js/cart.js');
-  const producto = getState().products.find((p) => p.sku === sku);
-  addToCart(producto.id, 2);
-}, primerComprable.sku);
+const placeholders = await page.locator('[data-product-grid] .product-card .thumb.uses-placeholder').count();
+const conFoto = await page.locator('[data-product-grid] .product-card .thumb.has-photo').count();
+medir('cobertura visual actual exacta: 4 packshots y 29 fallback', conFoto === 4 && placeholders === 29,
+  `packshots ${conFoto} · fallback ${placeholders}`);
+await page.screenshot({ path: `${destino}/02-catalogo-todos.png`, fullPage: false });
+
+// ── 6a · categorías ─────────────────────────────────────────────────────────
+await page.locator('[data-view="catalog"] [data-category-id="gaseosas"]').click();
+await page.waitForTimeout(350);
+const gaseosas = await page.locator('[data-product-grid] .product-card').count();
+medir('la categoría Gaseosas muestra sus 15 SKU comprables', gaseosas === 15, `${gaseosas}`);
+await page.screenshot({ path: `${destino}/03-categoria-gaseosas.png`, fullPage: false });
+
+// ── 6b · búsqueda y detalle ─────────────────────────────────────────────────
+const buscador = page.locator('[data-view="catalog"] [data-search-input]');
+await buscador.fill('coca-cola');
+await page.waitForTimeout(350);
+const resultados = page.locator('[data-product-grid] .product-card');
+const resultadosTexto = await resultados.allInnerTexts();
+medir('la búsqueda encuentra sólo resultados Coca-Cola', resultadosTexto.length >= 4
+  && resultadosTexto.every((texto) => /Coca-Cola/i.test(texto)), `${resultadosTexto.length}`);
+await page.screenshot({ path: `${destino}/04-busqueda-coca-cola.png`, fullPage: false });
+
+await resultados.first().locator('[data-product-detail]').click();
+await page.locator('[data-product-modal]').waitFor({ state: 'visible' });
+const detalle = await page.locator('[data-product-modal]').innerText();
+medir('la ficha abre con nombre, presentación y precio', /Coca-Cola/i.test(detalle)
+  && /\$/.test(detalle) && /(ml|L|litro|Pack)/i.test(detalle));
+await page.screenshot({ path: `${destino}/05-ficha-producto.png`, fullPage: false });
+await page.keyboard.press('Escape');
+
+// Vuelve a todos antes de probar el CTA real del cliente.
+await buscador.fill('');
+await page.locator('[data-view="catalog"] [data-category-id="all"]').click();
+await page.waitForTimeout(350);
+
+const botonAgregar = page.locator('[data-product-grid] [data-add-product]:not([disabled]) >> visible=true').first();
+const skuAgregado = await botonAgregar.getAttribute('data-add-product');
+await botonAgregar.click();
 const carrito = await page.evaluate(async () => {
   const { getState } = await import('/js/state.js');
   return getState().cart.map((i) => `${i.productId}:${i.quantity}`);
 });
-medir('agregar al carrito funciona', carrito.length === 1 && carrito[0].endsWith(':2'), carrito.join(', '));
+medir('el CTA visible agrega una unidad al carrito', carrito.length === 1 && carrito[0].endsWith(':1'),
+  `${skuAgregado} · ${carrito.join(', ')}`);
 
-await page.goto(`${HOST}/#cart`, { waitUntil: 'networkidle' });
+await page.locator('[data-open-cart] >> visible=true').first().click();
 await page.waitForTimeout(800);
 const lineas = await page.locator('[data-cart-list] .cart-item').count();
 medir('el carrito muestra la línea', lineas === 1, `${lineas}`);
+await page.screenshot({ path: `${destino}/06-carrito.png`, fullPage: false });
 
 // ── 7 · el negocio sigue abierto ─────────────────────────────────────────────
 await page.goto(`${HOST}/#home`, { waitUntil: 'networkidle' });
@@ -164,16 +204,15 @@ const despertar = async () => page.evaluate(async () => {
   window.scrollTo(0, 0);
   await new Promise((listo) => setTimeout(listo, 250));
 });
-const destino = 'artifacts/taba2-gondola-neuquen';
 await despertar();
-await page.screenshot({ path: `${destino}/vivo-01-home.png`, fullPage: true });
+await page.screenshot({ path: `${destino}/07-home-completa.png`, fullPage: true });
 await page.goto(`${HOST}/#catalog`, { waitUntil: 'networkidle' });
 await page.locator('[data-product-grid] .product-card').first().waitFor();
 await despertar();
-await page.screenshot({ path: `${destino}/vivo-02-catalogo.png`, fullPage: true });
+await page.screenshot({ path: `${destino}/08-catalogo-completo.png`, fullPage: true });
 
 await browser.close();
 console.log('');
-console.log(`capturas del sitio publicado en ${destino}/vivo-*.png`);
+console.log(`capturas del sitio publicado en ${destino}/*.png`);
 console.log(rojo === 0 ? 'GÓNDOLA PRODUCTIVA: VERDE' : `GÓNDOLA PRODUCTIVA: ${rojo} EN ROJO`);
 process.exit(rojo === 0 ? 0 : 1);

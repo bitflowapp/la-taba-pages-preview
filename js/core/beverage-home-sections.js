@@ -7,6 +7,10 @@ export const BEVERAGE_HOME_CATEGORY_ORDER = Object.freeze([
   'gaseosas',
   'cervezas',
   'aguas',
+  // La góndola final trae jugos (Cepita 1,5 L): la sección existe desde ya y
+  // se dibuja sola el día que haya uno comprable — una categoría sin nada
+  // efectivamente comprable no aparece en la home, como todas.
+  'jugos',
   'energizantes',
   'fernet',
   'aperitivos',
@@ -23,6 +27,7 @@ export const BEVERAGE_HOME_SECTION_DEFINITIONS = Object.freeze([
   Object.freeze({ id: 'gaseosas', title: 'Gaseosas', kind: 'category', categoryIds: ['gaseosas'] }),
   Object.freeze({ id: 'cervezas', title: 'Cervezas', kind: 'category', categoryIds: ['cervezas'] }),
   Object.freeze({ id: 'aguas', title: 'Aguas', kind: 'category', categoryIds: ['aguas', 'aguas-saborizadas'] }),
+  Object.freeze({ id: 'jugos', title: 'Jugos', kind: 'category', categoryIds: ['jugos'] }),
   Object.freeze({ id: 'energizantes', title: 'Energizantes', kind: 'category', categoryIds: ['energizantes'] }),
   Object.freeze({
     id: 'fernet-y-aperitivos',

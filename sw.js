@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v80-panel-publication';
+const CACHE_NAME = 'la-taba-runtime-v81-gondola-legible';
 const ASSETS = [
   './',
   './index.html',
@@ -69,6 +69,7 @@ const ASSETS = [
   './js/core/order-timeline.js',
   './js/core/order-workflow.js',
   './js/core/pricing.js',
+  './js/core/product-presentation.js',
   // `state.js` la importa de forma estática: sin ella acá, un cliente con la
   // PWA instalada y sin red no puede ni arrancar la tienda.
   './js/core/production-cart-storage.js',

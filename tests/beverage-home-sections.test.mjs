@@ -17,6 +17,9 @@ test('la home ordena categorías por foco de bebidas', () => {
     'gaseosas',
     'cervezas',
     'aguas',
+    // La góndola final trae jugos (Cepita 1,5 L); la sección se dibuja sola
+    // el día que haya uno comprable.
+    'jugos',
     'energizantes',
     'fernet',
     'aperitivos',
@@ -34,6 +37,7 @@ test('la home ordena categorías por foco de bebidas', () => {
       'gaseosas',
       'cervezas',
       'aguas',
+      'jugos',
       'energizantes',
       'fernet-y-aperitivos',
       'vinos-y-espumantes',

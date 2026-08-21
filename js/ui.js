@@ -12,6 +12,7 @@ import {
   getRememberedCheckoutValues,
 } from './core/customer-profile.js';
 import { getFavoriteProductIds, isFavoriteProduct } from './core/customer-preferences.js';
+import { cardPresentationLine } from './core/product-presentation.js';
 import {
   PRICE_PENDING_DETAIL,
   PRICE_PENDING_TITLE,
@@ -493,39 +494,9 @@ function brandLine(product, className = 'product-brand') {
   return `<span class="${className}">${escapeHtml(brand)}</span>`;
 }
 
-/**
- * Presentación de la tarjeta: envase y capacidad, sin la coletilla de formato
- * cuando el formato es "una unidad". "Lata · 473 ml · Unidad" decía tres cosas
- * y sólo dos eran información: que viene en lata y cuánto trae. Un pack SÍ se
- * nombra, porque cambia lo que se lleva y lo que se paga.
- *
- * Y ESE NOMBRE HAY QUE PONERLO, no sólo dejarlo pasar.
- *
- * La versión anterior devolvía el texto crudo cuando el producto era un pack,
- * confiando en que dijera «Pack x6» por su cuenta. En el catálogo productivo no
- * lo dice nunca: la base exige `presentation = variant`, así que lo que llega
- * es «Lager», «Original» o «Sin azúcar» —la variedad, no el formato—.
- *
- * Con eso, un pack y su unidad suelta quedaban indistinguibles en la grilla:
- * dos tarjetas «Quilmes Clásica / Lager», una a $2.050 y otra a $11.400, sin
- * nada que explicara la diferencia. La home ya lo resolvía por su lado
- * (`homeUnitText`); el catálogo completo se había quedado atrás.
- */
-function presentationText(value, product) {
-  const raw = String(value || '').trim();
-  const porPack = Number(product?.unitsPerPack);
-  if (Number.isFinite(porPack) && porPack > 1) {
-    const marca = `Pack x${porPack}`;
-    if (normalizeSearchText(raw).includes(normalizeSearchText(marca))) return raw;
-    return raw ? `${marca} · ${raw}` : marca;
-  }
-  if (!raw) return '';
-  return raw
-    .split('·')
-    .map((part) => part.trim())
-    .filter((part) => part && normalizeSearchText(part) !== 'unidad')
-    .join(' · ');
-}
+// La línea de presentación de la tarjeta —litraje primero, pack nombrado,
+// variante sólo si agrega— vive en core/product-presentation.js con sus tests.
+// Acá vivía `presentationText`, que decía el pack pero nunca la capacidad.
 
 function productImage(product) {
   return product?.image || '';
@@ -2407,11 +2378,11 @@ function renderProducts() {
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
     const favorite = isFavoriteProduct(product.id);
-    const rawPresentation = product.presentation || product.variant || product.unitLabel || product.packageType || '';
-    const compactPresentation = normalizeSearchText(rawPresentation).replace(/\bpack\b/g, '').trim();
-    const presentation = compactPresentation && normalizeSearchText(product.name).includes(compactPresentation)
-      ? ''
-      : rawPresentation;
+    // La línea de presentación dice el LITRAJE primero (hallazgo A2 del
+    // go-live: 29 de 33 tarjetas no lo decían y la 2,25 L era indistinguible
+    // de la lata de 354 ml salvo por el precio). La regla vive en
+    // core/product-presentation.js con sus propios tests.
+    const presentation = cardPresentationLine(product);
     const control = quickAddControl(product, inCart);
     // El estado de stock se dice UNA vez en pantalla —la pastilla sobre la
     // foto, que es lo que se ve al escanear la grilla— y una vez en voz alta,
@@ -2436,7 +2407,7 @@ function renderProducts() {
         <div class="product-body">
           ${brandLine(product)}
           <h3>${escapeHtml(product.name)}</h3>
-          <p>${escapeHtml(presentationText(presentation, product))}</p>
+          <p>${escapeHtml(presentation)}</p>
           <div class="product-foot">
             ${priceBlock(product)}
             <div class="product-action">${control}</div>

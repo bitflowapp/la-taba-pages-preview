@@ -912,7 +912,15 @@ export function createSupabaseOrderRepository({
   }
 
   async function getMercadoPagoCheckoutAvailability() {
-    const session = await auth.ensureCustomerSession();
+    // PREGUNTAR no crea identidad. Esta consulta corre al entrar al carrito —
+    // cada visitante, robots incluidos— y con el default (`createIfMissing:
+    // true`) dejaba una fila anónima PERMANENTE en auth.users por visita:
+    // exactamente el defecto que ya se había corregido en el arranque
+    // (ver services/supabase-auth.js). Sin sesión, la RPC —que es sólo de
+    // `authenticated`— falla y la respuesta es «no disponible», que es la
+    // verdad para alguien que todavía no guardó nada. La pregunta se repite en
+    // cada entrada al carrito, así que apenas exista sesión real se repara sola.
+    const session = await auth.ensureCustomerSession({ createIfMissing: false });
     if (!session.ok) return repositoryResult(false, { available: false, message: session.message });
     const { data, error } = await client.rpc('get_mercadopago_checkout_availability', {
       p_business_id: businessId,

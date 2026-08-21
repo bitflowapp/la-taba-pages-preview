@@ -33,13 +33,19 @@ const GTIN = '7790895000782';
 function binding({
   stock = 24, available = false, isVerified = true, priceStatus = 'confirmed',
   price = 2290, isAlcoholic = false, imageUrl = null, sku = 'coca-cola-original-pet-500ml',
+  catalogOrigin = 'commercial', imageMetadata = {}, isActive = true,
 } = {}) {
   return {
     id: 'barcode-1', product_id: 'prod-1', gtin: GTIN, unit_factor: 1, is_active: true,
     products: {
       id: 'prod-1', sku, name: 'Coca-Cola Original', brand: 'Coca-Cola', presentation: '500 ml',
-      stock, available, is_active: true, is_verified: isVerified, price, price_status: priceStatus,
-      is_alcoholic: isAlcoholic, image_url: imageUrl,
+      stock, available, is_active: isActive, is_verified: isVerified, price, price_status: priceStatus,
+      is_alcoholic: isAlcoholic, catalog_origin: catalogOrigin, image_url: imageUrl,
+      image_sha256: imageMetadata.imageSha256 || null,
+      image_thumbnail_url: imageMetadata.thumbnailUrl || null,
+      image_thumbnail_sha256: imageMetadata.thumbnailSha256 || null,
+      source_image_sha256: imageMetadata.sourceSha256 || null,
+      catalog_asset_id: imageMetadata.assetId || null,
     },
   };
 }
@@ -81,7 +87,13 @@ test('listo para publicar: owner ve el botón, staff no', async () => {
 test('con foto propia no ofrece la nota de fallback', async () => {
   configureBusinessOperations({
     role: 'owner',
-    lookupBarcode: async () => ({ ok: true, data: binding({ imageUrl: 'assets/products/coca-cola-original-x.webp' }) }),
+    lookupBarcode: async () => ({ ok: true, data: binding({
+      imageUrl: 'assets/products/coca-cola-original-x.webp',
+      imageMetadata: {
+        imageSha256: 'master-sha', thumbnailUrl: 'assets/products/coca-cola-original-x-thumb.webp',
+        thumbnailSha256: 'thumb-sha', sourceSha256: 'source-sha', assetId: 'asset-1',
+      },
+    }) }),
     onChange() {},
   });
   renderBusinessOperations('inventory-receive');
@@ -141,12 +153,15 @@ test('ocultar: llama al RPC con publish=false', async () => {
   });
   renderBusinessOperations('inventory-receive');
   await scan();
-  await handleBusinessOperationsAction(target('[data-commercial-publish]', { commercialPublish: 'false' }));
+  const request = await handleBusinessOperationsAction(target('[data-commercial-publish]', { commercialPublish: 'false' }));
+  assert.equal(request.ok, true);
+  assert.match(renderBusinessOperations('inventory-receive'), /¿Ocultar Coca-Cola Original de la tienda\?/);
+  await handleBusinessOperationsAction(target('[data-commercial-publish-confirm]', {}));
   assert.deepEqual(calls, [{ sku: 'coca-cola-original-pet-500ml', publish: false }]);
   resetBusinessOperationsForTests();
 });
 
-test('el servidor rechaza (p. ej. compuerta de alcohol): el mensaje real llega tal cual a la pantalla', async () => {
+test('alcohol bloqueado: el Panel no ofrece publicar y traduce el rechazo a copy humano', async () => {
   configureBusinessOperations({
     role: 'owner',
     lookupBarcode: async () => ({ ok: true, data: binding({ isAlcoholic: true }) }),
@@ -155,9 +170,61 @@ test('el servidor rechaza (p. ej. compuerta de alcohol): el mensaje real llega t
   });
   renderBusinessOperations('inventory-receive');
   await scan();
+  assert.match(renderBusinessOperations('inventory-receive'), /No se puede publicar hasta habilitar la venta de alcohol/);
+  assert.doesNotMatch(renderBusinessOperations('inventory-receive'), /data-commercial-publish="true"/);
+  resetBusinessOperationsForTests();
+
+  configureBusinessOperations({
+    role: 'owner',
+    lookupBarcode: async () => ({ ok: true, data: binding() }),
+    setCommercialPublication: async () => ({ ok: false, message: 'Refusing to publish sku x: alcohol sales are not enabled for this business (license gate).' }),
+    onChange() {},
+  });
+  renderBusinessOperations('inventory-receive');
+  await scan();
   const outcome = await handleBusinessOperationsAction(target('[data-commercial-publish]', { commercialPublish: 'true' }));
   assert.equal(outcome.ok, false);
-  assert.match(outcome.message, /license gate/);
+  assert.match(outcome.message, /No se puede publicar hasta habilitar la venta de alcohol/);
+  resetBusinessOperationsForTests();
+});
+
+test('imagen parcial, origen no comercial y stock cero bloquean publicación localmente', async () => {
+  for (const options of [
+    { imageMetadata: { imageSha256: 'only-one-field' } },
+    { catalogOrigin: 'legacy' },
+    { stock: 0 },
+  ]) {
+    configureBusinessOperations({ role: 'owner', lookupBarcode: async () => ({ ok: true, data: binding(options) }), onChange() {} });
+    renderBusinessOperations('inventory-receive');
+    await scan();
+    const markup = renderBusinessOperations('inventory-receive');
+    assert.doesNotMatch(markup, /data-commercial-publish="true"/);
+    resetBusinessOperationsForTests();
+  }
+});
+
+test('recepción exitosa relee stock y deja disponible la decisión humana de publicar', async () => {
+  let stock = 0;
+  let movements = 0;
+  configureBusinessOperations({
+    role: 'owner',
+    lookupBarcode: async () => ({ ok: true, data: binding({ stock, available: false }) }),
+    applyInventoryMovement: async () => { movements += 1; stock = 10; return { ok: true, data: { resulting_stock: 10 } }; },
+    onChange() {},
+  });
+  renderBusinessOperations('inventory-receive');
+  await scan();
+  const root = { querySelector(name) {
+    if (name === '[name="packageQuantity"]') return { value: '10' };
+    if (name === '[name="reason"]') return { value: 'Recepción física' };
+    if (name === '[name="direction"]') return { value: '1' };
+    return null;
+  } };
+  const outcome = await handleBusinessOperationsAction(target('[data-inventory-confirm]', { inventoryConfirm: 'purchase_receipt' }, root));
+  assert.equal(outcome.ok, true);
+  assert.equal(movements, 1);
+  assert.match(renderBusinessOperations('inventory-receive'), /Listo para publicar/);
+  assert.match(renderBusinessOperations('inventory-receive'), /Publicar en tienda/);
   resetBusinessOperationsForTests();
 });
 

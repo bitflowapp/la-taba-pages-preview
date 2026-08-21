@@ -122,6 +122,14 @@ begin
     return;
   end if;
 
+  -- La publicación desde el Panel sólo opera sobre la autoridad comercial.
+  -- Los borradores, fixtures y otros orígenes pueden compartir SKU, precio o
+  -- stock, pero no deben cruzar esta puerta de venta. Ocultar, en cambio, se
+  -- mantiene disponible para retirar una publicación sin exigir revalidación.
+  if coalesce(v_product.catalog_origin, '') <> 'commercial' then
+    raise exception 'Refusing to publish non-commercial sku %.', v_sku;
+  end if;
+
   -- ── publicar: producto YA verificado, nunca se verifica acá por primera vez ─
   if not v_product.is_verified then
     raise exception 'Sku % is not verified yet. Verify its master data first (commercial import), then publish.', v_sku;

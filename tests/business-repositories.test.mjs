@@ -49,6 +49,20 @@ test('inventario busca por negocio y muta s\u00f3lo mediante RPC', async () => {
   assert.equal(client.calls[0].args.p_package_quantity, 2);
 });
 
+test('publicaci\u00f3n minorista usa la sesi\u00f3n normal y s\u00f3lo manda negocio, SKU y decisi\u00f3n', async () => {
+  const client = mockClient();
+  const repository = createSupabaseInventoryRepository({ client, businessId: BUSINESS_ID });
+  await repository.setCommercialPublication({ sku: 'coca-cola-original-pet-500ml', publish: true });
+  assert.equal(client.calls[0].name, 'set_commercial_product_publication');
+  assert.deepEqual(client.calls[0].args, {
+    p_business_id: BUSINESS_ID,
+    p_sku: 'coca-cola-original-pet-500ml',
+    p_publish: true,
+  });
+  const source = fs.readFileSync(new URL('../js/repositories/supabase-inventory-repository.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /service.?role|management|SUPABASE_ACCESS_TOKEN/i);
+});
+
 test('POS env\u00eda IDs/cantidades y nunca totales calculados por cliente', async () => {
   const client = mockClient();
   const repository = createSupabasePosRepository({ client, businessId: BUSINESS_ID });

@@ -14,7 +14,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   const source = read('sw.js');
   const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
   assert.ok(cacheNameMatch);
-  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v80-instalacion-temprana');
+  assert.equal(cacheNameMatch[1], 'la-taba-runtime-v80-panel-publication');
 
   const assetBlock = source.match(/const ASSETS = \[(.*?)\];/s);
   assert.ok(assetBlock);

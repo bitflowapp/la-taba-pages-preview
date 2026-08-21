@@ -301,10 +301,13 @@ body[data-active-view="business"] .topbar-ops-sound-count {
 .business-commercial-publication > strong { color: var(--panel-ink); }
 .business-commercial-publication > span { color: var(--panel-ink-2); }
 .business-commercial-publication > button { justify-self: start; }
+.business-commercial-confirm { display: grid; gap: 6px; padding-top: 4px; }
+.business-commercial-confirm .button-row { margin-top: 4px; }
 .business-commercial-publication.is-published { border-style: solid; border-color: color-mix(in srgb, var(--panel-success) 52%, transparent); background: var(--panel-success-wash); }
 .business-commercial-publication.is-published > strong { color: var(--panel-success); }
 .business-commercial-publication.is-ready { border-style: solid; border-color: color-mix(in srgb, var(--panel-info) 44%, transparent); background: var(--panel-info-wash); }
 .business-commercial-publication.is-out-of-stock, .business-commercial-publication.is-not-ready { border-style: dashed; }
+.business-commercial-publication.is-alcohol-blocked { border-color: color-mix(in srgb, var(--panel-danger) 52%, transparent); background: var(--panel-danger-wash); }
 .business-ops-cart, .business-ops-progress { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .business-ops-cart li, .business-ops-progress li { display: flex; justify-content: space-between; gap: 12px; align-items: center; min-height: 48px; border-bottom: 1px solid var(--panel-line); padding: 8px 0; }
 .business-fiscal-lock { display: flex; flex-wrap: wrap; gap: 8px 18px; border: 1px solid color-mix(in srgb, var(--panel-warning) 44%, transparent); border-radius: 12px; background: var(--panel-warning-wash); padding: 14px; color: var(--panel-warning); }

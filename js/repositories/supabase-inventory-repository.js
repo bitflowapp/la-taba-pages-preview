@@ -12,7 +12,7 @@ export function createSupabaseInventoryRepository({ client, businessId }) {
   return Object.freeze({
     async lookupBarcode(gtin) {
       const { data, error, status } = await client.from('product_barcodes')
-        .select('id,business_id,product_id,gtin,barcode_type,package_type,unit_factor,is_primary,is_active,products(id,sku,name,brand,presentation,stock,available,is_active,is_verified,price,price_status,is_alcoholic,image_url)')
+        .select('id,business_id,product_id,gtin,barcode_type,package_type,unit_factor,is_primary,is_active,products(id,sku,name,brand,presentation,stock,available,is_active,is_verified,price,price_status,is_alcoholic,catalog_origin,image_url,image_sha256,image_thumbnail_url,image_thumbnail_sha256,source_image_sha256,catalog_asset_id)')
         .eq('business_id', businessId).eq('gtin', gtin).eq('is_active', true).maybeSingle();
       return error ? classifyRpcError(error, status) : { ok: true, data: data || null };
     },

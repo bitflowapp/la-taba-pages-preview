@@ -90,6 +90,7 @@ let unsubscribeScanner = null;
 let scannerDraftValue = '';
 let lastScan = null;
 let lookup = null;
+let pendingCommercialHide = false;
 let feedback = '';
 let busy = false;
 let posItems = [];
@@ -143,6 +144,7 @@ let accessRequestsLoadStarted = false;
 export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
   context = { ...defaultContext(), ...next };
+  pendingCommercialHide = false;
   resetOperationsConfigState();
   packingSession = null;
   packingRestoreStarted = false;
@@ -398,6 +400,14 @@ export async function handleBusinessOperationsAction(target) {
   const inventoryButton = target.closest('[data-inventory-confirm]');
   if (inventoryButton) return confirmInventory(inventoryButton);
   if (target.closest('[data-stock-count-confirm]')) return confirmStockCount(target);
+  if (target.closest('[data-commercial-publish-cancel]')) {
+    pendingCommercialHide = false;
+    feedback = 'Ocultamiento cancelado. No se modificó el stock.';
+    context.onChange();
+    return result(true, feedback);
+  }
+  const publicationConfirmation = target.closest('[data-commercial-publish-confirm]');
+  if (publicationConfirmation) return confirmCommercialPublication(publicationConfirmation, { confirmed: true });
   const publicationButton = target.closest('[data-commercial-publish]');
   if (publicationButton) return confirmCommercialPublication(publicationButton);
 
@@ -517,6 +527,7 @@ export function resetBusinessOperationsForTests() {
   currentView = 'scanner';
   lastScan = null;
   lookup = null;
+  pendingCommercialHide = false;
   feedback = '';
   busy = false;
   posItems = [];
@@ -568,6 +579,7 @@ async function processScan(event) {
   scannerDraftValue = '';
   lastScan = event;
   lookup = null;
+  pendingCommercialHide = false;
   if (currentView === 'devices') {
     deviceResults = { ...deviceResults, scanner: classifyScannerCheck(event) };
     feedback = deviceResults.scanner.detail;
@@ -683,13 +695,25 @@ async function refreshLookup() {
   if (refreshed?.ok) lookup = refreshed;
 }
 
-async function confirmCommercialPublication(button) {
+async function confirmCommercialPublication(button, { confirmed = false } = {}) {
   const guard = requireCapability('products.publish');
   if (!guard.ok) return guard.result;
   if (!lookup?.data) return result(false, 'Escaneá el producto antes de publicarlo.');
   const product = normalizedProduct(lookup.data);
   if (!product.sku) return result(false, 'El producto no tiene un SKU comercial.');
   const publish = button.dataset.commercialPublish === 'true';
+  if (busy) return result(false, 'Ya hay una publicación en curso.');
+  if (!publish && !confirmed) {
+    pendingCommercialHide = true;
+    feedback = '';
+    context.onChange();
+    return result(true, 'Confirmá si querés ocultarlo de la tienda.');
+  }
+  if (publish) {
+    const localGate = commercialPublicationGate(product);
+    if (!localGate.ok) return result(false, localGate.message);
+  }
+  pendingCommercialHide = false;
   busy = true;
   const response = await context.setCommercialPublication({ sku: product.sku, publish });
   busy = false;
@@ -697,10 +721,35 @@ async function confirmCommercialPublication(button) {
     await refreshLookup();
     feedback = publish ? 'Producto publicado: ya se ve y se puede comprar en la tienda.' : 'Producto oculto de la tienda.';
   } else {
-    feedback = response?.message || (publish ? 'El servidor rechazó la publicación.' : 'El servidor rechazó ocultarlo.');
+    feedback = humanizeCommercialPublicationFailure(response?.message, { publish });
   }
   context.onChange();
   return result(Boolean(response?.ok), feedback);
+}
+
+function commercialPublicationGate(product) {
+  if (product.stock <= 0) return { ok: false, message: 'No se puede publicar sin stock. Registrá primero la recepción física.' };
+  if (product.catalogOrigin !== 'commercial') return { ok: false, message: 'Este producto todavía no pertenece al catálogo comercial.' };
+  if (!product.isVerified) return { ok: false, message: 'Faltan verificar los datos maestros del producto.' };
+  if (!product.isActive) return { ok: false, message: 'Este producto está inactivo y no se puede publicar.' };
+  if (!product.priceConfirmed) return { ok: false, message: 'Falta confirmar un precio mayor que cero antes de publicar.' };
+  if (product.imageStatus === 'partial') return { ok: false, message: 'La información de la imagen está incompleta. Corregila antes de publicar.' };
+  if (product.isAlcoholic) return { ok: false, message: 'No se puede publicar hasta habilitar la venta de alcohol.' };
+  return { ok: true, message: '' };
+}
+
+function humanizeCommercialPublicationFailure(message, { publish }) {
+  const raw = String(message || '');
+  if (/alcohol|license gate/i.test(raw)) return 'No se puede publicar hasta habilitar la venta de alcohol.';
+  if (/stock|available|sin existencias/i.test(raw) && publish) return 'No se puede publicar sin stock. Registrá primero la recepción física.';
+  if (/not verified|verif|master data/i.test(raw)) return 'Faltan verificar los datos maestros del producto.';
+  if (/inactive|inactivo/i.test(raw)) return 'Este producto está inactivo y no se puede publicar.';
+  if (/price|precio|confirmed/i.test(raw) && publish) return 'Falta confirmar un precio mayor que cero antes de publicar.';
+  if (/image|asset|foto|imagen/i.test(raw) && publish) return 'La información de la imagen no cumple el contrato comercial.';
+  if (/unknown sku|missing sku|producto.*existe/i.test(raw)) return 'No encontramos ese producto en este comercio.';
+  return publish
+    ? 'No se pudo publicar este producto. Revisá sus datos comerciales.'
+    : 'No se pudo ocultar este producto. Intentá de nuevo.';
 }
 
 async function confirmStockCount(target) {
@@ -1398,6 +1447,11 @@ function renderScanResult() {
 }
 function normalizedProduct(binding) {
   const product = Array.isArray(binding.products) ? binding.products[0] : binding.products || {};
+  const imageFields = [
+    product.image_url, product.image_sha256, product.image_thumbnail_url,
+    product.image_thumbnail_sha256, product.source_image_sha256, product.catalog_asset_id,
+  ].map((value) => String(value || '').trim());
+  const imageFieldCount = imageFields.filter(Boolean).length;
   return {
     id: String(binding.product_id || product.id || ''),
     sku: String(product.sku || ''),
@@ -1407,9 +1461,11 @@ function normalizedProduct(binding) {
     available: product.available === true,
     isVerified: product.is_verified === true,
     isActive: product.is_active !== false,
+    catalogOrigin: String(product.catalog_origin || ''),
     priceConfirmed: String(product.price_status || '') === 'confirmed' && Number(product.price) > 0,
     isAlcoholic: product.is_alcoholic === true,
-    hasImage: Boolean(String(product.image_url || '').trim()),
+    imageStatus: imageFieldCount === 0 ? 'none' : imageFieldCount === imageFields.length ? 'complete' : 'partial',
+    hasImage: imageFieldCount > 0,
   };
 }
 
@@ -1429,7 +1485,8 @@ function renderCommercialPublicationStatus() {
   if (product.available) {
     return `<div class="business-commercial-publication is-published">
       <strong>Publicado</strong><span>Ya se ve y se puede comprar en la tienda.</span>
-      ${canPublish ? `<button class="secondary-button" type="button" data-commercial-publish="false">Ocultar de la tienda</button>` : ''}
+      ${canPublish && !pendingCommercialHide ? `<button class="secondary-button" type="button" data-commercial-publish="false">Ocultar de la tienda</button>` : ''}
+      ${canPublish && pendingCommercialHide ? `<div class="business-commercial-confirm" role="alert"><strong>¿Ocultar ${escapeHtml(product.name)} de la tienda?</strong><span>No modifica el stock.</span><div class="button-row"><button class="secondary-button" type="button" data-commercial-publish-confirm="false">Sí, ocultar</button><button class="ghost-button" type="button" data-commercial-publish-cancel>Cancelar</button></div></div>` : ''}
     </div>`;
   }
   if (product.stock <= 0) {
@@ -1437,7 +1494,17 @@ function renderCommercialPublicationStatus() {
       <strong>Sin stock</strong><span>Cargá una recepción para poder publicarlo.</span>
     </div>`;
   }
-  if (!product.isVerified || !product.isActive || !product.priceConfirmed) {
+  if (product.isAlcoholic) {
+    return `<div class="business-commercial-publication is-not-ready is-alcohol-blocked">
+      <strong>No se puede publicar</strong><span>No se puede publicar hasta habilitar la venta de alcohol.</span>
+    </div>`;
+  }
+  if (product.imageStatus === 'partial') {
+    return `<div class="business-commercial-publication is-not-ready">
+      <strong>Imagen incompleta</strong><span>La metadata de la imagen no cumple el contrato comercial.</span>
+    </div>`;
+  }
+  if (product.catalogOrigin !== 'commercial' || !product.isVerified || !product.isActive || !product.priceConfirmed) {
     return `<div class="business-commercial-publication is-not-ready">
       <strong>Todavía no está listo</strong><span>Le falta verificación de datos maestros o precio confirmado antes de poder publicarse. Usá la importación comercial primero.</span>
     </div>`;

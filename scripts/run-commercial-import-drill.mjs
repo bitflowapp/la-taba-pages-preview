@@ -118,9 +118,14 @@ function asOwner(sql, options = {}) {
 const ADMIN_ID = '00000000-0000-4000-8000-0000000000cc';
 const STAFF_ID = '00000000-0000-4000-8000-0000000000dd';
 const OUTSIDER_ID = '00000000-0000-4000-8000-0000000000ee';
+const INACTIVE_ID = '00000000-0000-4000-8000-0000000000f0';
+const OTHER_BUSINESS_ID = '00000000-0000-4000-8000-0000000000f2';
+const OTHER_BUSINESS_OWNER_ID = '00000000-0000-4000-8000-0000000000f3';
 const ADMIN_SESSION = '00000000-0000-4000-8000-0000000000c1';
 const STAFF_SESSION = '00000000-0000-4000-8000-0000000000d1';
 const OUTSIDER_SESSION = '00000000-0000-4000-8000-0000000000e1';
+const INACTIVE_SESSION = '00000000-0000-4000-8000-0000000000f4';
+const OTHER_BUSINESS_SESSION = '00000000-0000-4000-8000-0000000000f5';
 // Nunca pasa por identity_register_session: es EXACTAMENTE una sesión no
 // registrada con un `sub` real y un rol real — el caso que 20260814030000
 // existe para cerrar.
@@ -140,9 +145,31 @@ function callPublication(userId, sessionId, sku, publish, options = {}) {
     options);
 }
 
+function callInventoryReceipt(userId, sessionId, sku, quantity, idempotencyKey, options = {}) {
+  return asUser(userId, sessionId,
+    `select movement.resulting_stock, product.available
+       from public.apply_inventory_movement(
+         ${lit(BUSINESS_ID)},
+         (select id from public.products where business_id = ${lit(BUSINESS_ID)} and sku = ${lit(sku)}),
+         null, 'purchase_receipt', ${quantity}, 1, null, null, null, ${lit(idempotencyKey)}
+       ) movement
+       join public.products product on product.business_id = ${lit(BUSINESS_ID)} and product.sku = ${lit(sku)};`, options);
+}
+
 function productSnapshot(sku) {
   return psql(
     `select coalesce(price::text,'∅') || '|' || coalesce(stock::text,'∅') || '|' || available
+       from public.products where business_id=${lit(BUSINESS_ID)} and sku=${lit(sku)};`,
+  ).stdout;
+}
+
+function publicationMutationSnapshot(sku) {
+  return psql(
+    `select coalesce(price::text,'∅') || '|' || coalesce(stock::text,'∅') || '|' || available || '|' ||
+       coalesce(sold_as_pack::text,'∅') || '|' || coalesce(catalog_origin,'∅') || '|' ||
+       coalesce(image_url,'∅') || '|' || coalesce(image_sha256,'∅') || '|' ||
+       coalesce(image_thumbnail_url,'∅') || '|' || coalesce(image_thumbnail_sha256,'∅') || '|' ||
+       coalesce(source_image_sha256,'∅') || '|' || coalesce(catalog_asset_id::text,'∅')
        from public.products where business_id=${lit(BUSINESS_ID)} and sku=${lit(sku)};`,
   ).stdout;
 }
@@ -734,19 +761,30 @@ try {
     values
       ('${ADMIN_ID}', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@drill.local', '', now(), now()),
       ('${STAFF_ID}', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'staff@drill.local', '', now(), now()),
-      ('${OUTSIDER_ID}', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'outsider@drill.local', '', now(), now())
+      ('${OUTSIDER_ID}', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'outsider@drill.local', '', now(), now()),
+      ('${INACTIVE_ID}', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'inactive@drill.local', '', now(), now()),
+      ('${OTHER_BUSINESS_OWNER_ID}', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'other-owner@drill.local', '', now(), now())
+    on conflict (id) do nothing;
+    insert into public.businesses (id, name, slug, alcohol_sales_enabled)
+    values (${lit(OTHER_BUSINESS_ID)}, 'Otro comercio (simulacro)', 'otro-comercio-simulacro', false)
     on conflict (id) do nothing;
     insert into public.business_members (business_id, user_id, role, is_active)
     values
       ('${BUSINESS_ID}', '${ADMIN_ID}', 'admin', true),
-      ('${BUSINESS_ID}', '${STAFF_ID}', 'staff', true)
+      ('${BUSINESS_ID}', '${STAFF_ID}', 'staff', true),
+      ('${BUSINESS_ID}', '${INACTIVE_ID}', 'owner', true),
+      (${lit(OTHER_BUSINESS_ID)}, '${OTHER_BUSINESS_OWNER_ID}', 'owner', true)
     on conflict do nothing;
   `);
   const adminRegistro = asUser(ADMIN_ID, ADMIN_SESSION, `select public.identity_register_session('${BUSINESS_ID}'::uuid, 'panel_web');`);
   const staffRegistro = asUser(STAFF_ID, STAFF_SESSION, `select public.identity_register_session('${BUSINESS_ID}'::uuid, 'panel_web');`);
+  const inactiveRegistro = asUser(INACTIVE_ID, INACTIVE_SESSION, `select public.identity_register_session('${BUSINESS_ID}'::uuid, 'panel_web');`);
+  const otherBusinessRegistro = asUser(OTHER_BUSINESS_OWNER_ID, OTHER_BUSINESS_SESSION, `select public.identity_register_session('${OTHER_BUSINESS_ID}'::uuid, 'panel_web');`);
+  psql(`update public.business_members set is_active = false where business_id = ${lit(BUSINESS_ID)} and user_id = ${lit(INACTIVE_ID)};`);
   check('17.0 · sesiones de admin y staff registradas (outsider queda deliberadamente sin business_members; UNREGISTERED_SESSION deliberadamente nunca se registra)',
-    /"ok"\s*:\s*true/.test(adminRegistro.stdout) && /"ok"\s*:\s*true/.test(staffRegistro.stdout),
-    `${adminRegistro.stdout} · ${staffRegistro.stdout}`);
+    /"ok"\s*:\s*true/.test(adminRegistro.stdout) && /"ok"\s*:\s*true/.test(staffRegistro.stdout)
+      && /"ok"\s*:\s*true/.test(inactiveRegistro.stdout) && /"ok"\s*:\s*true/.test(otherBusinessRegistro.stdout),
+    `${adminRegistro.stdout} · ${staffRegistro.stdout} · ${inactiveRegistro.stdout} · ${otherBusinessRegistro.stdout}`);
 
   psql(`
     insert into public.products
@@ -759,6 +797,10 @@ try {
       (${lit(BUSINESS_ID)}, 'taba-publish-ready', 'taba-publish-ready', 'Publicar Listo', 'Marca', 'Gaseosas', 'cola',
        '500 ml', '500 ml', 500, 'ml', '500 ml', 'Botella PET', 1, false,
        2290, 'confirmed', 24, false, false, null, 0, array[]::text[], 'commercial', true,
+       true, now(), ${lit(OWNER_ID)}, false, now()),
+      (${lit(BUSINESS_ID)}, 'taba-publish-receive', 'taba-publish-receive', 'Publicar Tras Recepción', 'Marca', 'Gaseosas', 'cola',
+       '500 ml', '500 ml', 500, 'ml', '500 ml', 'Botella PET', 1, false,
+       2290, 'confirmed', 0, false, false, null, 0, array[]::text[], 'commercial', true,
        true, now(), ${lit(OWNER_ID)}, false, now()),
       (${lit(BUSINESS_ID)}, 'taba-publish-nostock', 'taba-publish-nostock', 'Publicar Sin Stock', 'Marca', 'Gaseosas', 'cola',
        '500 ml', '500 ml', 500, 'ml', '500 ml', 'Botella PET', 1, false,
@@ -775,7 +817,11 @@ try {
       (${lit(BUSINESS_ID)}, 'taba-publish-alcohol', 'taba-publish-alcohol', 'Publicar Alcohol', 'Marca', 'Cervezas', 'lager',
        'Lata 473 ml', 'Lata 473 ml', 473, 'ml', '473 ml', 'lata', 1, false,
        2650, 'confirmed', 12, false, true, 18, 0, array[]::text[], 'commercial', true,
-       true, now(), ${lit(OWNER_ID)}, false, now());
+       true, now(), ${lit(OWNER_ID)}, false, now()),
+      (${lit(BUSINESS_ID)}, 'taba-publish-noncommercial', 'taba-publish-noncommercial', 'Publicar Origen No Comercial', 'Marca', 'Gaseosas', 'cola',
+       '500 ml', '500 ml', 500, 'ml', '500 ml', 'Botella PET', 1, false,
+       2290, 'confirmed', 10, false, false, null, 0, array[]::text[], 'test_only', true,
+       false, null, null, false, now());
     update public.products set image_url = 'assets/products/huerfano-a1b2c3d4e5f6a1b2.webp'
      where business_id=${lit(BUSINESS_ID)} and sku='taba-publish-partial-image';
 
@@ -793,7 +839,7 @@ try {
        ca.master_path, ca.master_sha256, ca.thumbnail_path, ca.thumbnail_sha256, ca.source_sha256, ca.id
       from public.catalog_assets ca where ca.id = ${lit(asset2)};
   `);
-  check('17.1 · productos de prueba sembrados para la matriz de publicación', true, '6 filas nuevas');
+  check('17.1 · productos de prueba sembrados para la matriz de publicación', true, '8 filas nuevas');
   // El UPDATE de arriba (sólo image_url, sobre una fila ya is_verified=true) pasa
   // por `products_fail_close_master_change` (20260725110000): cualquier cambio a
   // un dato maestro —image_url incluido— de una fila verificada la desverifica en
@@ -831,9 +877,35 @@ try {
   check('18.5 · owner real pero con session_id nunca registrado en identity_sessions → FAIL', unregisteredPublish.status !== 0,
     unregisteredPublish.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
 
+  const inactivePublish = callPublication(INACTIVE_ID, INACTIVE_SESSION, 'taba-publish-ready', true, { expectFailure: true });
+  check('18.6 · membership inactiva → FAIL', inactivePublish.status !== 0,
+    inactivePublish.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  const otherBusinessPublish = callPublication(OTHER_BUSINESS_OWNER_ID, OTHER_BUSINESS_SESSION, 'taba-publish-ready', true, { expectFailure: true });
+  check('18.7 · owner de otro negocio → FAIL', otherBusinessPublish.status !== 0,
+    otherBusinessPublish.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
   // ── 19. matriz de estado del producto ──────────────────────────────────
   const nostock = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-nostock', true, { expectFailure: true });
   check('19.1 · stock 0 → FAIL', nostock.status !== 0, nostock.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
+  const receiveBefore = publicationMutationSnapshot('taba-publish-receive');
+  const receive = callInventoryReceipt(OWNER_ID, SESSION_ID, 'taba-publish-receive', 10, 'receive-publish-0001');
+  const receiveAfter = publicationMutationSnapshot('taba-publish-receive');
+  check('19.1a · recepción +10 suma stock y no publica automáticamente',
+    receive.status === 0 && receive.stdout.includes('10|f') && receiveAfter.includes('|10|false|'),
+    `${receive.stdout} · ${receiveBefore} → ${receiveAfter}`);
+
+  const receivePublished = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-receive', true);
+  const receivePublishedSnapshot = publicationMutationSnapshot('taba-publish-receive');
+  check('19.1b · owner publica después de recepción y el stock queda en 10',
+    receivePublished.status === 0 && receivePublishedSnapshot.includes('|10|true|')
+      && receiveAfter.replace('|false|', '|true|') === receivePublishedSnapshot,
+    `${receivePublished.stdout} · ${receiveAfter} → ${receivePublishedSnapshot}`);
+  const receiveHidden = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-receive', false);
+  const receiveHiddenSnapshot = publicationMutationSnapshot('taba-publish-receive');
+  check('19.1c · owner oculta después y el stock sigue en 10',
+    receiveHidden.status === 0 && receiveHiddenSnapshot.includes('|10|false|'), receiveHidden.stdout);
 
   const withStock = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-ready', true);
   check('19.2 · stock >0 + sin imagen (6 NULL) + verificado + precio confirmado → PASS',
@@ -861,13 +933,21 @@ try {
   check('19.6 · alcohol sin alcohol_sales_enabled → FAIL con el mensaje de la compuerta de licencia',
     alcoholBlocked.status !== 0 && /license gate/.test(alcoholBlocked.stderr), alcoholBlocked.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
 
+  const alcoholHidden = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-alcohol', false);
+  check('19.7 · ocultar alcohólico → PASS sin tocar la compuerta', alcoholHidden.status === 0,
+    alcoholHidden.stdout);
+
+  const nonCommercial = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-noncommercial', true, { expectFailure: true });
+  check('19.8 · origen distinto de commercial → FAIL', nonCommercial.status !== 0,
+    nonCommercial.stderr.split('\n').find((l) => l.includes('ERROR')) || '');
+
   // ── 20. ocultar, y qué NO toca ─────────────────────────────────────────
-  const antesOcultar = productSnapshot('taba-publish-ready');
+  const antesOcultar = publicationMutationSnapshot('taba-publish-ready');
   const hide = callPublication(OWNER_ID, SESSION_ID, 'taba-publish-ready', false);
   check('20.1 · ocultar → PASS', hide.status === 0 && hide.stdout.includes('|f|'), hide.stdout);
-  const despuesOcultar = productSnapshot('taba-publish-ready');
+  const despuesOcultar = publicationMutationSnapshot('taba-publish-ready');
   check('20.2 · ocultar no toca precio ni stock, sólo available',
-    antesOcultar.split('|').slice(0, 2).join('|') === despuesOcultar.split('|').slice(0, 2).join('|'),
+    antesOcultar.replace('|true|', '|false|') === despuesOcultar,
     `${antesOcultar} → ${despuesOcultar}`);
 
   const finalReady = productSnapshot('taba-publish-ready');

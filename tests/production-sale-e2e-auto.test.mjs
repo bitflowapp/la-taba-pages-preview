@@ -27,6 +27,7 @@ import { estadoAdbDelTelefono } from '../scripts/e2e-production-sale/precheck.mj
 import { evaluarProducto, evaluarProductoBase, evaluarRider } from '../scripts/e2e-production-sale/guards.mjs';
 import { cerrarLock, generarRunId, leerLock, tomarLock } from '../scripts/e2e-production-sale/lock.mjs';
 import { crearEvidencia } from '../scripts/e2e-production-sale/evidencia.mjs';
+import { escribirYConfirmar } from '../scripts/e2e-production-sale/panel-mercaderia.mjs';
 import { isValidArgentinePhone } from '../js/core/validators.js';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -376,6 +377,89 @@ test('de la hoja de biometría sólo se toca «ahora no», nunca «activar»', (
   // inofensivo, aceptarla enrola una credencial biométrica ajena a esta prueba.
   assert.ok(LISTA_NEGRA_RIDER.includes('Activar huella o rostro'));
   assert.equal(INVITACIONES_DECLINABLES.includes('Activar huella o rostro'), false);
+});
+
+/*
+ * ESTAS PRUEBAS EXISTEN POR UNA RECEPCIÓN QUE CARGÓ UNA BOTELLA EN VEZ DE SEIS.
+ *
+ * El centro de operación se redibuja solo y repone los valores por defecto del
+ * formulario, borrando lo tipeado. Escribir, esperar y releer NO alcanzó: el
+ * campo pasó la relectura y llegó en «1» al click igual, porque el redibujado
+ * siguiente cayó en el medio. La única forma de ganar esa carrera es no dejar
+ * ningún hueco: escribir, comprobar y apretar en el mismo turno de JavaScript.
+ *
+ * La página de mentira ejecuta el bloque como lo haría el navegador, con un
+ * `input` que puede fingir que un redibujado le repuso el valor por defecto.
+ */
+const paginaDeMentira = ({ pisaElValor = false, faltaBoton = false } = {}) => {
+  const registro = { clicks: 0, valorAlHacerClick: null };
+  const hacerInput = (valorInicial) => ({
+    _v: valorInicial,
+    get value() { return this._v; },
+    set value(v) { this._v = pisaElValor ? valorInicial : v; },
+    dispatchEvent() { return true; },
+  });
+  const cantidad = hacerInput('1');
+  const referencia = hacerInput('');
+  const boton = { click() { registro.clicks += 1; registro.valorAlHacerClick = cantidad.value; } };
+  const raiz = {
+    querySelector(sel) {
+      if (sel === '[name="packageQuantity"]') return cantidad;
+      if (sel === '[name="reason"]') return referencia;
+      if (sel.startsWith('[data-inventory-confirm')) return faltaBoton ? null : boton;
+      return null;
+    },
+  };
+  return {
+    registro,
+    async evaluate(fn, args) {
+      // Se le presta a la función el `document` y el `HTMLInputElement` que
+      // esperaría en el navegador, y se la ejecuta tal cual.
+      const documentoPrevio = globalThis.document;
+      const ventanaPrevia = globalThis.window;
+      globalThis.document = { querySelector: (sel) => (sel === '[data-business-ops-center]' ? raiz : null) };
+      globalThis.window = {
+        HTMLInputElement: { prototype: { } },
+      };
+      Object.defineProperty(globalThis.window.HTMLInputElement.prototype, 'value', {
+        configurable: true,
+        set(v) { this._v = pisaElValor ? '1' : v; },
+        get() { return this._v; },
+      });
+      globalThis.Event = class { constructor(tipo) { this.type = tipo; } };
+      try {
+        return fn(args);
+      } finally {
+        globalThis.document = documentoPrevio;
+        globalThis.window = ventanaPrevia;
+      }
+    },
+  };
+};
+
+test('la cantidad se escribe y se confirma en el mismo turno: nada se cuela en el medio', async () => {
+  const pagina = paginaDeMentira();
+  const resultado = await escribirYConfirmar(pagina, { cantidad: 6, referencia: 'E2E', accion: 'purchase_receipt' });
+  assert.equal(resultado.ok, true);
+  assert.equal(resultado.cantidadLeida, '6');
+  assert.equal(pagina.registro.clicks, 1);
+  assert.equal(pagina.registro.valorAlHacerClick, '6', 'el botón vio la cantidad atestiguada, no el valor por defecto');
+});
+
+test('si el redibujado repone el valor por defecto, NO se aprieta el botón', async () => {
+  const pagina = paginaDeMentira({ pisaElValor: true });
+  const resultado = await escribirYConfirmar(pagina, { cantidad: 6, referencia: 'E2E', accion: 'purchase_receipt' });
+  assert.equal(resultado.ok, false);
+  assert.match(resultado.motivo, /quedó en «1» y la atestación dice 6/);
+  assert.equal(pagina.registro.clicks, 0, 'una recepción con la cantidad equivocada es inventario mal contado');
+});
+
+test('sin botón de confirmar no se inventa nada: se informa y se sale', async () => {
+  const pagina = paginaDeMentira({ faltaBoton: true });
+  const resultado = await escribirYConfirmar(pagina, { cantidad: 6, referencia: '', accion: 'purchase_receipt' });
+  assert.equal(resultado.ok, false);
+  assert.match(resultado.motivo, /faltan el campo de cantidad o el botón/);
+  assert.equal(pagina.registro.clicks, 0);
 });
 
 // ── El lock ──────────────────────────────────────────────────────────────────

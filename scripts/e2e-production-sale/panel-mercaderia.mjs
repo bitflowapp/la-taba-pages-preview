@@ -116,6 +116,58 @@ export async function escanear(panel, gtin) {
 }
 
 /**
+ * ESCRIBIR LA CANTIDAD Y CONFIRMAR, EN EL MISMO TURNO, SIN VENTANA EN EL MEDIO.
+ *
+ * El 2026-08-22, con seis botellas atestiguadas, esta recepción cargó UNA. El
+ * ledger lo dejó a la vista: la clave del movimiento decía `...-1-in-r0-...`, o
+ * sea que el Panel leyó `1` del campo, y la referencia quedó nula.
+ *
+ * La causa no es que `fill()` falle. Es que el centro de operación se REDIBUJA
+ * solo —cuando se resuelve el escaneo y después, periódicamente— y al
+ * redibujarse vuelve a emitir el formulario con sus valores por defecto,
+ * borrando lo que el operador acababa de tipear. El primer intento de arreglo
+ * fue escribir, esperar y releer; el campo pasó la relectura y IGUAL llegó en
+ * `1` al click, porque el redibujado siguiente cayó en el medio.
+ *
+ * Que un valor tipeado sobreviva o no depende de si un refresco cae justo ahí,
+ * y esa carrera no se gana esperando: se gana no dejando ningún hueco. Acá se
+ * escribe el campo, se comprueba y se aprieta el botón dentro de UNA sola
+ * ejecución sincrónica en la página. JavaScript es de un solo hilo: ningún
+ * redibujado puede colarse entre la comprobación y el click.
+ *
+ * (Esto le pasa igual a una persona: tipear 6, que el Panel refresque y que el
+ * botón cargue 1. Queda anotado como hallazgo del producto, no del harness.)
+ */
+export async function escribirYConfirmar(pagina, { cantidad, referencia, accion }) {
+  return pagina.evaluate(({ qty, ref, acc }) => {
+    const raiz = document.querySelector('[data-business-ops-center]');
+    if (!raiz) return { ok: false, motivo: 'no está el centro de operación en pantalla' };
+    const campo = raiz.querySelector('[name="packageQuantity"]');
+    const boton = raiz.querySelector(`[data-inventory-confirm="${acc}"]`);
+    if (!campo || !boton) return { ok: false, motivo: 'faltan el campo de cantidad o el botón de confirmar' };
+
+    // El `value` nativo, para que los frameworks que escuchan `input` lo vean.
+    const ponerValor = (elemento, valor) => {
+      const descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+      descriptor.set.call(elemento, valor);
+      elemento.dispatchEvent(new Event('input', { bubbles: true }));
+      elemento.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    const referenciaCampo = raiz.querySelector('[name="reason"]');
+    if (referenciaCampo && ref) ponerValor(referenciaCampo, ref);
+    ponerValor(campo, String(qty));
+
+    // La última comprobación, en el mismo turno que el click.
+    if (campo.value !== String(qty)) {
+      return { ok: false, motivo: `el campo quedó en «${campo.value}» y la atestación dice ${qty}` };
+    }
+    boton.click();
+    return { ok: true, cantidadLeida: campo.value, referenciaLeida: referenciaCampo?.value || '' };
+  }, { qty: cantidad, ref: referencia, acc: accion });
+}
+
+/**
  * Carga la recepción física.
  *
  * `cantidad` viene de la atestación humana y de ningún otro lado: este módulo
@@ -134,12 +186,14 @@ export async function recibirMercaderia(panel, { cantidad, referencia, evidencia
   await abrirVista(panel, 'inventory-receive');
   await escanear(panel, PRODUCTO_AUTORIZADO.gtin);
 
-  await panel.locator('[name="packageQuantity"]').first().fill(String(cantidad));
-  const campoReferencia = panel.locator('[name="reason"]').first();
-  if (await campoReferencia.count()) await campoReferencia.fill(String(referencia || '').slice(0, 160));
-
   await evidencia?.capturar?.(panel, 'recepcion-antes-de-confirmar');
-  await panel.locator('[data-inventory-confirm="purchase_receipt"]').first().click();
+
+  const escrito = await escribirYConfirmar(panel, {
+    cantidad,
+    referencia: String(referencia || '').slice(0, 160),
+    accion: 'purchase_receipt',
+  });
+  if (!escrito.ok) fallar('CANTIDAD_NO_QUEDO_ESCRITA', `${escrito.motivo}: no se confirmó nada`);
 
   // El efecto se espera en la BASE, no en la pantalla: la pantalla puede decir
   // «guardado» y el servidor haber rechazado.

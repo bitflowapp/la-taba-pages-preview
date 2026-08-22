@@ -225,6 +225,14 @@ export async function ejecutarVentaReal({
     // ── 9 · el teléfono ──────────────────────────────────────────────────────
     rider.despertarPantalla();
     rider.traerAlFrente();
+    /*
+     * La aplicación abre ofreciendo activar huella o rostro, y hasta que alguien
+     * responde esa hoja tapa la pantalla entera: sin esto el harness se queda
+     * esperando una oferta que no puede ver. Sólo se toca «ahora no»; aceptar
+     * está en la lista negra.
+     */
+    const declinadas = rider.despejarInvitaciones();
+    if (declinadas.length) evidencia.anotar(`teléfono: se declinaron ${declinadas.length} invitación(es) de la aplicación`);
     rider.capturarPantalla(evidencia.ruta('07-rider-oferta.png'));
 
     const aceptado = await esperarHasta('el repartidor toma el pedido', async () => {

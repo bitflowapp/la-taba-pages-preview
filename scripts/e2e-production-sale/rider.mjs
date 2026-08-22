@@ -34,6 +34,29 @@ const LISTA_NEGRA = Object.freeze([
   'Borrar',
 ]);
 
+/*
+ * LO QUE LA APLICACIÓN PREGUNTA ANTES DE DEJARTE TRABAJAR.
+ *
+ * Al abrir, el Rider ofrece activar huella o rostro. Es una invitación, no un
+ * requisito, y hasta que alguien la responde tapa la pantalla entera: el
+ * volcado no muestra ningún pedido y el harness se quedaba esperando una oferta
+ * que nunca iba a ver. Se descubrió abriendo la aplicación de verdad, con el
+ * teléfono en la mano.
+ *
+ * Esta lista es CERRADA y sólo tiene formas de decir «ahora no». La otra mitad
+ * de esa misma hoja —«Activar huella o rostro»— está en la lista negra y sigue
+ * ahí: declinar una invitación es inofensivo, aceptarla enrola una credencial
+ * biométrica en un teléfono que no es de esta prueba.
+ */
+const INVITACIONES_QUE_SE_DECLINAN = Object.freeze([
+  'Ahora no',
+  'Más tarde',
+  'Mas tarde',
+  'Omitir',
+  'Entendido',
+  'Continuar sin biometría',
+]);
+
 export class RiderInseguro extends Error {}
 
 const adb = (args, { timeout = 30_000 } = {}) => execFileSync('adb', ['-s', RIDER.serie, ...args], {
@@ -197,6 +220,34 @@ export function despertarPantalla() {
  * comprobarlo antes de cada toque.
  */
 
+/**
+ * Declina las invitaciones que tapan la pantalla, y nada más.
+ *
+ * Se toca ÚNICAMENTE una etiqueta de la lista cerrada de arriba, y sólo
+ * mientras no haya un pedido en pantalla: si ya hay trabajo cargado, no hay
+ * ninguna invitación que despejar y cualquier toque sería sobre la operación.
+ * Devuelve qué declinó, para que quede en el registro de la corrida.
+ */
+export function despejarInvitaciones({ vueltas = 3 } = {}) {
+  const declinadas = [];
+  for (let vuelta = 0; vuelta < vueltas; vuelta += 1) {
+    const nodos = volcarPantalla();
+    if (pedidoEnPantalla(nodos)) break;
+    const invitacion = nodos.find((nodo) => (
+      nodo.clickable
+      && nodo.bounds
+      && INVITACIONES_QUE_SE_DECLINAN.includes(nodo.descripcion)
+      && !LISTA_NEGRA.includes(nodo.descripcion)
+    ));
+    if (!invitacion) break;
+    const [x1, y1, x2, y2] = invitacion.bounds;
+    adb(['shell', 'input', 'tap', String(Math.round((x1 + x2) / 2)), String(Math.round((y1 + y2) / 2))]);
+    adb(['shell', 'sleep', '2']);
+    declinadas.push(invitacion.descripcion);
+  }
+  return declinadas;
+}
+
 /** ¿Aparece este código en algún lugar de la pantalla, y dónde? */
 export function nodosDelPedido(nodos, codigo) {
   const buscado = String(codigo || '').trim();
@@ -289,3 +340,4 @@ export function reiniciarAplicacion({ esperaMs = 6000 } = {}) {
 }
 
 export const LISTA_NEGRA_RIDER = LISTA_NEGRA;
+export const INVITACIONES_DECLINABLES = INVITACIONES_QUE_SE_DECLINAN;

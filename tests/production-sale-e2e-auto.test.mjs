@@ -21,7 +21,7 @@ import {
   PREFIJO, SecretoNoDisponible, generarContrasena, objetivoCompleto,
 } from '../scripts/e2e-production-sale/secretos-windows.mjs';
 import {
-  LISTA_NEGRA_RIDER, buscarElemento, nodosDelPedido, pedidoEnPantalla,
+  INVITACIONES_DECLINABLES, LISTA_NEGRA_RIDER, buscarElemento, nodosDelPedido, pedidoEnPantalla,
 } from '../scripts/e2e-production-sale/rider.mjs';
 import { estadoAdbDelTelefono } from '../scripts/e2e-production-sale/precheck.mjs';
 import { evaluarProducto, evaluarProductoBase, evaluarRider } from '../scripts/e2e-production-sale/guards.mjs';
@@ -355,6 +355,27 @@ test('la compuerta base del producto mira lo que no depende de la etapa', () => 
   assert.equal(evaluarProductoBase({ ...base, is_verified: false }).codigo, 'NO_VERIFICADO');
   assert.equal(evaluarProductoBase({ ...base, price: '5990.00' }).codigo, 'PRECIO_DISTINTO');
   assert.equal(evaluarProductoBase(null).codigo, 'PRODUCTO_INEXISTENTE');
+});
+
+/*
+ * Esta prueba existe porque al abrir la aplicación de verdad, con el teléfono en
+ * la mano, apareció una hoja ofreciendo activar huella o rostro. Tapaba la
+ * pantalla entera: el volcado no mostraba ningún pedido y el harness se habría
+ * quedado esperando una oferta que no iba a ver nunca.
+ */
+test('de la hoja de biometría sólo se toca «ahora no», nunca «activar»', () => {
+  assert.ok(INVITACIONES_DECLINABLES.includes('Ahora no'));
+  for (const declinable of INVITACIONES_DECLINABLES) {
+    assert.equal(
+      LISTA_NEGRA_RIDER.includes(declinable),
+      false,
+      `«${declinable}» no puede estar en las dos listas`,
+    );
+  }
+  // La otra mitad de esa misma hoja sigue prohibida: declinar una invitación es
+  // inofensivo, aceptarla enrola una credencial biométrica ajena a esta prueba.
+  assert.ok(LISTA_NEGRA_RIDER.includes('Activar huella o rostro'));
+  assert.equal(INVITACIONES_DECLINABLES.includes('Activar huella o rostro'), false);
 });
 
 // ── El lock ──────────────────────────────────────────────────────────────────

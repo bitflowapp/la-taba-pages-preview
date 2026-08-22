@@ -21,7 +21,8 @@ import {
   PREFIJO, SecretoNoDisponible, generarContrasena, objetivoCompleto,
 } from '../scripts/e2e-production-sale/secretos-windows.mjs';
 import {
-  INVITACIONES_DECLINABLES, LISTA_NEGRA_RIDER, buscarElemento, esPeligroso, nodosDelPedido,
+  ETIQUETA_BIOMETRIA, ETIQUETA_PERMISOS, ETIQUETAS_DECLINABLES, LISTA_NEGRA_RIDER,
+  buscarElemento, decidirRespuestaDeHoja, esPeligroso, nodosDelPedido, redSana,
   pedidoEnPantalla, puntoParaAceptar, tarjetaDeLaOferta,
 } from '../scripts/e2e-production-sale/rider.mjs';
 import { estadoAdbDelTelefono } from '../scripts/e2e-production-sale/precheck.mjs';
@@ -408,19 +409,29 @@ test('la compuerta base del producto mira lo que no depende de la etapa', () => 
  * pantalla entera: el volcado no mostraba ningún pedido y el harness se habría
  * quedado esperando una oferta que no iba a ver nunca.
  */
-test('de la hoja de biometría sólo se toca «ahora no», nunca «activar»', () => {
-  assert.ok(INVITACIONES_DECLINABLES.includes('Ahora no'));
-  for (const declinable of INVITACIONES_DECLINABLES) {
-    assert.equal(
-      LISTA_NEGRA_RIDER.includes(declinable),
-      false,
-      `«${declinable}» no puede estar en las dos listas`,
-    );
+/*
+ * LAS DOS HOJAS OFRECEN «AHORA NO», Y UNA DE ELLAS NO SE PUEDE DECLINAR.
+ *
+ * La de biometría es una invitación. La de permisos del recorrido dice, con
+ * todas las letras: «Si los rechazás, la entrega no se inicia». Una rutina que
+ * declinara todo lo declinable habría cancelado la entrega creyendo que
+ * despejaba un estorbo — se vio con LT-0002 ya retirado, en el teléfono.
+ */
+test('la hoja de biometría se declina; la de permisos del recorrido se acepta', () => {
+  // Tal cual salieron del volcado del Moto.
+  assert.equal(decidirRespuestaDeHoja(['Activar huella o rostro', 'Ahora no', 'Scrim']), 'Ahora no');
+  assert.equal(decidirRespuestaDeHoja(['Continuar', 'Ahora no', 'Dismiss']), 'Continuar');
+  // Sin ninguna hoja, no se toca nada.
+  assert.equal(decidirRespuestaDeHoja(['Llegué', 'Reportar un problema']), null);
+  assert.equal(decidirRespuestaDeHoja([]), null);
+
+  // Y la mitad peligrosa de la hoja de biometría sigue prohibida.
+  assert.ok(LISTA_NEGRA_RIDER.includes(ETIQUETA_BIOMETRIA));
+  assert.equal(ETIQUETAS_DECLINABLES.includes(ETIQUETA_BIOMETRIA), false);
+  assert.equal(esPeligroso(ETIQUETA_PERMISOS), false, '«Continuar» tiene que poder tocarse');
+  for (const declinable of ETIQUETAS_DECLINABLES) {
+    assert.equal(esPeligroso(declinable), false, `«${declinable}» no puede estar prohibida`);
   }
-  // La otra mitad de esa misma hoja sigue prohibida: declinar una invitación es
-  // inofensivo, aceptarla enrola una credencial biométrica ajena a esta prueba.
-  assert.ok(LISTA_NEGRA_RIDER.includes('Activar huella o rostro'));
-  assert.equal(INVITACIONES_DECLINABLES.includes('Activar huella o rostro'), false);
 });
 
 /*
@@ -558,6 +569,14 @@ test('la lista negra atrapa la etiqueta aunque venga con el código pegado', () 
   assert.equal(esPeligroso('Cerrar sesión de jariel1970+rider'), true);
   assert.equal(esPeligroso('Cancelar el pedido LT-0002'), true);
   // Lo que sí hay que poder tocar sigue tocándose.
+  /*
+   * «Iniciar y abrir Maps» NO es «Abrir en Google Maps». La segunda sólo abre un
+   * mapa; la primera es la acción que pone el pedido en camino, y con el pedido
+   * retirado es la única disponible en la aplicación. Prohibirla era prohibir la
+   * entrega — se vio con el teléfono en la mano, en LT-0002.
+   */
+  assert.equal(esPeligroso('Abrir en Google Maps'), true);
+  assert.equal(esPeligroso('Iniciar y abrir Maps'), false);
   assert.equal(esPeligroso('Aceptar'), false);
   assert.equal(esPeligroso('Aceptar la solicitud LT-0002'), false);
   assert.equal(esPeligroso('Llegué'), false);
@@ -663,6 +682,23 @@ test('la fila del pedido se reconoce por su descripción, no por la marca de cli
   // La fila del otro pedido no se confunde con la nuestra.
   assert.equal(nodosDelPedido(lista, 'LT-0001').length, 1);
   assert.notEqual(nodosDelPedido(lista, 'LT-0001')[0].bounds[1], delPedido[0].bounds[1]);
+});
+
+/*
+ * ESTA PRUEBA EXISTE PORQUE EL WI-FI DEL MOTO SE APAGÓ EN MEDIO DE UNA ENTREGA.
+ *
+ * La aplicación seguía dibujando sus botones y el harness los tocó tres veces
+ * sin efecto. La pantalla lo decía —«Sin conexión: falta enviar 4 puntos del
+ * recorrido», «No pudimos iniciar la entrega»— pero el informe salió como
+ * `RIDER_NO_AVANZA`, que manda a buscar un botón cuando el problema era la red.
+ */
+test('la red del teléfono se juzga por el ping, y «10% packet loss» no es sana', () => {
+  assert.equal(redSana('2 packets transmitted, 2 received, 0% packet loss, time 1001ms'), true);
+  assert.equal(redSana('2 packets transmitted, 0 received, 100% packet loss, time 1002ms'), false);
+  assert.equal(redSana('10 packets transmitted, 9 received, 10% packet loss'), false, 'el 0 de «10%» no cuenta');
+  assert.equal(redSana('connect: Network is unreachable'), false);
+  assert.equal(redSana(''), false);
+  assert.equal(redSana(null), false);
 });
 
 // ── El lock ──────────────────────────────────────────────────────────────────

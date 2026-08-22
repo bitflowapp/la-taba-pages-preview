@@ -20,7 +20,20 @@
 import { execFileSync } from 'node:child_process';
 import { RIDER } from './contrato.mjs';
 
-/** Nada de esto se toca nunca, aunque lo pida el flujo. */
+/*
+ * Nada de esto se toca nunca, aunque lo pida el flujo.
+ *
+ * «Iniciar y abrir Maps» ESTABA acá y se sacó, con motivo. Se lo había puesto
+ * junto a «Abrir en Google Maps» por parecido de nombre, y no son lo mismo:
+ * «Abrir en Google Maps» sólo abre un mapa —un desvío—, mientras que «Iniciar y
+ * abrir Maps» es LA acción que pone el pedido en camino, y de paso abre el mapa.
+ * Con el teléfono en la mano se vio que, con el pedido retirado, es la única
+ * acción disponible: prohibirla era prohibir la entrega.
+ *
+ * Lo que sí trae es que la aplicación se va al fondo cuando Maps toma la
+ * pantalla. Eso lo resuelve `traerAlFrente()` después de tocar, no la lista
+ * negra.
+ */
 const LISTA_NEGRA = Object.freeze([
   'Cerrar sesión',
   'Rechazar',
@@ -28,34 +41,33 @@ const LISTA_NEGRA = Object.freeze([
   'Reportar un problema',
   'Activar huella o rostro',
   'Abrir en Google Maps',
-  'Iniciar y abrir Maps',
   'Cancelar',
   'Eliminar',
   'Borrar',
 ]);
 
 /*
- * LO QUE LA APLICACIÓN PREGUNTA ANTES DE DEJARTE TRABAJAR.
+ * LAS DOS HOJAS QUE LA APLICACIÓN PONE EN EL CAMINO, Y QUE NO SE RESPONDEN IGUAL.
  *
- * Al abrir, el Rider ofrece activar huella o rostro. Es una invitación, no un
- * requisito, y hasta que alguien la responde tapa la pantalla entera: el
- * volcado no muestra ningún pedido y el harness se quedaba esperando una oferta
- * que nunca iba a ver. Se descubrió abriendo la aplicación de verdad, con el
- * teléfono en la mano.
+ * 1. BIOMETRÍA. Al abrir, el Rider ofrece activar huella o rostro. Es una
+ *    invitación: se declina con «Ahora no» y la operación sigue. Hasta que
+ *    alguien la responde tapa la pantalla entera y el volcado no muestra ningún
+ *    pedido.
  *
- * Esta lista es CERRADA y sólo tiene formas de decir «ahora no». La otra mitad
- * de esa misma hoja —«Activar huella o rostro»— está en la lista negra y sigue
- * ahí: declinar una invitación es inofensivo, aceptarla enrola una credencial
- * biométrica en un teléfono que no es de esta prueba.
+ * 2. PERMISOS PARA EL SEGUIMIENTO. Al iniciar el recorrido, el Rider avisa que
+ *    va a pedir ubicación precisa y notificaciones «para publicar el recorrido
+ *    autorizado», y lo dice sin vueltas: **«Si los rechazás, la entrega no se
+ *    inicia»**. Acá «Ahora no» NO es inofensivo: cancela la entrega.
+ *
+ * Las dos hojas ofrecen «Ahora no», y una rutina que declinara todo lo que se
+ * puede declinar habría frenado la entrega creyendo que despejaba un estorbo.
+ * Se distinguen por su contenido, que es lo único honesto que hay para mirar:
+ * la de biometría trae «Activar huella o rostro»; la de permisos trae
+ * «Continuar».
  */
-const INVITACIONES_QUE_SE_DECLINAN = Object.freeze([
-  'Ahora no',
-  'Más tarde',
-  'Mas tarde',
-  'Omitir',
-  'Entendido',
-  'Continuar sin biometría',
-]);
+const HOJA_DE_BIOMETRIA = 'Activar huella o rostro';
+const DECLINAR = Object.freeze(['Ahora no', 'Más tarde', 'Mas tarde', 'Omitir']);
+const ACEPTAR_PERMISOS = 'Continuar';
 
 /**
  * ¿Esta etiqueta es de las que no se tocan?
@@ -84,9 +96,33 @@ const adb = (args, { timeout = 30_000 } = {}) => execFileSync('adb', ['-s', RIDE
   maxBuffer: 16 * 1024 * 1024,
 }).trim();
 
-/** El árbol de la pantalla, ahora. Nunca se reusa un volcado viejo. */
-export function volcarPantalla() {
-  adb(['shell', 'uiautomator', 'dump', '/sdcard/taba-e2e-ui.xml']);
+/**
+ * El árbol de la pantalla, ahora. Nunca se reusa un volcado viejo.
+ *
+ * `uiautomator dump` exige que la interfaz esté quieta, y la pantalla del
+ * repartidor tiene un mapa que casi nunca lo está: cada tanto devuelve «could
+ * not get idle state» y falla. Antes eso abortaba la corrida entera con una
+ * excepción —pasó con LT-0002 ya retirado— cuando lo único que hacía falta era
+ * volver a pedirlo un segundo después. Se reintenta; si igual no sale, ahí sí
+ * es un problema y se dice.
+ */
+export function volcarPantalla({ intentos = 4 } = {}) {
+  let ultimoError = null;
+  for (let intento = 0; intento < intentos; intento += 1) {
+    try {
+      adb(['shell', 'uiautomator', 'dump', '/sdcard/taba-e2e-ui.xml'], { timeout: 45_000 });
+      ultimoError = null;
+      break;
+    } catch (error) {
+      ultimoError = error;
+      adb(['shell', 'sleep', '1'], { timeout: 20_000 });
+    }
+  }
+  if (ultimoError) {
+    throw new RiderInseguro(
+      `la pantalla del repartidor no se deja volcar después de ${intentos} intentos: ${String(ultimoError.message).slice(0, 120)}`,
+    );
+  }
   const xml = adb(['shell', 'cat', '/sdcard/taba-e2e-ui.xml'], { timeout: 45_000 });
   const nodos = [];
   const patron = /<node\b([^>]*)\/?>/g;
@@ -219,6 +255,55 @@ export function capturarPantalla(destino) {
   return destino;
 }
 
+/*
+ * ¿EL TELÉFONO TIENE INTERNET?
+ *
+ * Parece una pregunta de otra capa y es la primera que hay que hacerse. El
+ * 2026-08-22 el Wi-Fi del Moto se apagó en medio de una entrega real: la
+ * aplicación seguía respondiendo, los botones seguían dibujándose, y el harness
+ * tocó «Iniciar y abrir Maps» tres veces sin que pasara nada. La pantalla lo
+ * decía con todas las letras —«Sin conexión: falta enviar 4 puntos del
+ * recorrido», «No pudimos iniciar la entrega»— pero el informe salió como
+ * `RIDER_NO_AVANZA`, que manda a buscar un botón cuando el problema era la red.
+ *
+ * Un repartidor sin red no puede entregar. Se comprueba antes de tocar nada.
+ */
+export function redSana(salidaDePing) {
+  return /(^|[^0-9])0% packet loss/.test(String(salidaDePing || ''));
+}
+
+export function conectividadDelTelefono() {
+  const red = adb(['shell', 'dumpsys', 'connectivity'], { timeout: 45_000 });
+  const hayRedPorDefecto = !/Active default network:\s*none/i.test(red);
+  let alcanzaInternet = false;
+  try {
+    const eco = adb(['shell', 'ping', '-c', '2', '-W', '3', '8.8.8.8'], { timeout: 30_000 });
+    alcanzaInternet = redSana(eco);
+  } catch { alcanzaInternet = false; }
+  const wifi = adb(['shell', 'dumpsys', 'wifi'], { timeout: 45_000 });
+  return {
+    hayRedPorDefecto,
+    alcanzaInternet,
+    wifiEncendido: /Wi-Fi is enabled/i.test(wifi),
+  };
+}
+
+/**
+ * Si el teléfono se quedó sin red, se le vuelve a encender el Wi-Fi.
+ *
+ * Es lo mismo que haría quien reparte al ver el cartel de «sin conexión», y no
+ * toca ni la sesión ni ningún dato. Si tampoco así hay internet, se informa: sin
+ * red no hay entrega, y no tiene sentido seguir tocando botones.
+ */
+export function asegurarConectividad({ esperaMs = 8000 } = {}) {
+  let estado = conectividadDelTelefono();
+  if (estado.alcanzaInternet) return { ...estado, reconectado: false };
+  adb(['shell', 'svc', 'wifi', 'enable'], { timeout: 30_000 });
+  adb(['shell', 'sleep', String(Math.ceil(esperaMs / 1000))], { timeout: 60_000 });
+  estado = conectividadDelTelefono();
+  return { ...estado, reconectado: estado.alcanzaInternet };
+}
+
 export function despertarPantalla() {
   const estado = adb(['shell', 'dumpsys', 'power']);
   if (/mWakefulness=Asleep|mWakefulness=Dozing/.test(estado)) adb(['shell', 'input', 'keyevent', 'KEYCODE_WAKEUP']);
@@ -247,24 +332,46 @@ export function despertarPantalla() {
  * ninguna invitación que despejar y cualquier toque sería sobre la operación.
  * Devuelve qué declinó, para que quede en el registro de la corrida.
  */
-export function despejarInvitaciones({ vueltas = 3 } = {}) {
-  const declinadas = [];
+export function despejarInvitaciones({ vueltas = 4 } = {}) {
+  const resueltas = [];
   for (let vuelta = 0; vuelta < vueltas; vuelta += 1) {
     const nodos = volcarPantalla();
-    if (pedidoEnPantalla(nodos)) break;
-    const invitacion = nodos.find((nodo) => (
-      nodo.clickable
-      && nodo.bounds
-      && INVITACIONES_QUE_SE_DECLINAN.includes(nodo.descripcion)
-      && !esPeligroso(nodo.descripcion)
-    ));
-    if (!invitacion) break;
-    const [x1, y1, x2, y2] = invitacion.bounds;
+    const clickables = nodos.filter((nodo) => nodo.descripcion && nodo.bounds);
+    const etiquetas = new Set(clickables.map((nodo) => nodo.descripcion));
+
+    let elegida = null;
+    if (etiquetas.has(HOJA_DE_BIOMETRIA)) {
+      // Hoja de biometría: se declina. Aceptarla enrolaría una credencial.
+      elegida = DECLINAR.find((texto) => etiquetas.has(texto)) || null;
+    } else if (etiquetas.has(ACEPTAR_PERMISOS)) {
+      // Hoja de permisos del recorrido: se acepta, o la entrega no arranca.
+      elegida = ACEPTAR_PERMISOS;
+    }
+    if (!elegida) break;
+
+    const nodo = clickables.find((candidato) => candidato.descripcion === elegida);
+    if (!nodo || esPeligroso(nodo.descripcion)) break;
+    const [x1, y1, x2, y2] = nodo.bounds;
     adb(['shell', 'input', 'tap', String(Math.round((x1 + x2) / 2)), String(Math.round((y1 + y2) / 2))]);
     adb(['shell', 'sleep', '2']);
-    declinadas.push(invitacion.descripcion);
+    resueltas.push(elegida);
   }
-  return declinadas;
+  return resueltas;
+}
+
+export const ETIQUETA_BIOMETRIA = HOJA_DE_BIOMETRIA;
+export const ETIQUETAS_DECLINABLES = DECLINAR;
+export const ETIQUETA_PERMISOS = ACEPTAR_PERMISOS;
+
+/**
+ * Qué haría `despejarInvitaciones` con estas etiquetas en pantalla. Separado
+ * para poder probarlo sin teléfono: es la decisión, no el toque.
+ */
+export function decidirRespuestaDeHoja(etiquetas) {
+  const set = new Set(etiquetas || []);
+  if (set.has(HOJA_DE_BIOMETRIA)) return DECLINAR.find((texto) => set.has(texto)) || null;
+  if (set.has(ACEPTAR_PERMISOS)) return ACEPTAR_PERMISOS;
+  return null;
 }
 
 /** ¿Aparece este código en algún lugar de la pantalla, y dónde? */
@@ -441,4 +548,4 @@ export function reiniciarAplicacion({ esperaMs = 6000 } = {}) {
 }
 
 export const LISTA_NEGRA_RIDER = LISTA_NEGRA;
-export const INVITACIONES_DECLINABLES = INVITACIONES_QUE_SE_DECLINAN;
+export const INVITACIONES_DECLINABLES = DECLINAR;

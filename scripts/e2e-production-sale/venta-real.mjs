@@ -26,7 +26,7 @@
  * Nada de esperas ciegas: cada transición se espera con un sondeo acotado que
  * además mide cuánto tardó, y esos tiempos van al reporte.
  */
-import { PRODUCCION } from './contrato.mjs';
+import { PRODUCCION, RIDER } from './contrato.mjs';
 import { registrarSecretoDeLaCorrida } from './evidencia.mjs';
 import { consultar, lit } from './db-solo-lectura.mjs';
 import { evaluarDecremento, evaluarDireccion, evaluarPago } from './guards.mjs';
@@ -41,6 +41,7 @@ const ESPERA = {
   pedidoEnPanel: 120_000, transicion: 90_000, oferta: 120_000, entrega: 120_000, telefono: 180_000,
 };
 const INTERVALO = 2_000;
+const RIDER_PAQUETE = RIDER.paquete;
 
 /*
  * El orden en que avanza un pedido. Sirve para una sola pregunta, y es la que
@@ -329,6 +330,19 @@ export async function ejecutarVentaReal({
 
     // ── 9 · el teléfono ──────────────────────────────────────────────────────
     rider.despertarPantalla();
+    /*
+     * Antes de cualquier toque: que el teléfono tenga internet. Sin red la
+     * aplicación dibuja los botones igual y no pasa nada al apretarlos, y el
+     * informe termina culpando a un botón que estaba bien.
+     */
+    const red = rider.asegurarConectividad();
+    if (!red.alcanzaInternet) {
+      throw new PasoFallido(
+        'TELEFONO_SIN_RED',
+        'el teléfono del repartidor no tiene internet: sin red no puede iniciar ni confirmar una entrega',
+      );
+    }
+    if (red.reconectado) evidencia.anotar('el teléfono estaba sin red: se volvió a encender el Wi-Fi y quedó en línea');
     rider.traerAlFrente();
     /*
      * La aplicación abre ofreciendo activar huella o rostro, y hasta que alguien
@@ -376,7 +390,11 @@ export async function ejecutarVentaReal({
 
     if (retirado.estado === 'picked_up') {
       const enCamino = await avanzarEnElTelefono({
-        codigo, etiquetas: ['Salir en camino', 'En camino', 'Iniciar viaje'], estados: ['on_the_way'],
+        codigo,
+        // «Iniciar y abrir Maps» es la acción real de la aplicación para ponerse
+        // en camino: pone el pedido en marcha y de paso abre el navegador.
+        etiquetas: ['Iniciar y abrir Maps', 'Salir en camino', 'En camino', 'Iniciar viaje'],
+        estados: ['on_the_way'],
       });
       tiempos['retirado → en camino'] = enCamino.ms;
       anotarPaso('On the way', 'PASS', enCamino.estado);
@@ -621,12 +639,37 @@ async function avanzarEnElTelefono({ codigo, etiquetas, estados }) {
   while (Date.now() < limite) {
     const actual = await leerPedido(codigo);
     if (estados.includes(actual?.status)) return { ms: Date.now() - desde, estado: actual.status };
-    rider.seleccionarPedido(codigo, { tolerante: true });
-    const disponibles = rider.estadoRider().acciones;
+    /*
+     * Las hojas de la aplicación se responden ANTES de buscar un botón: la de
+     * permisos del recorrido tapa la pantalla y, si no se contesta, la entrega
+     * no arranca. `despejarInvitaciones` sabe cuál se declina y cuál se acepta.
+     */
+    /*
+     * Todo el trato con el teléfono va dentro del try: un volcado que no sale
+     * —el mapa animándose— no puede tumbar una corrida que tiene un pedido real
+     * a medio entregar. Se anota y se vuelve a intentar en la vuelta siguiente.
+     */
+    let disponibles = [];
+    try {
+      rider.despejarInvitaciones();
+      rider.seleccionarPedido(codigo, { tolerante: true });
+      disponibles = rider.estadoRider().acciones;
+    } catch (error) {
+      ultimoError = String(error.message).slice(0, 160);
+      await new Promise((resolver) => { setTimeout(resolver, INTERVALO); });
+      continue;
+    }
     const etiqueta = etiquetas.find((texto) => disponibles.includes(texto));
     if (etiqueta) {
       try {
         rider.tocar(etiqueta, { codigoEsperado: codigo });
+        /*
+         * Algunas acciones abren otra aplicación —«Iniciar y abrir Maps» lanza
+         * el navegador— y dejan el Rider en el fondo. Se lo trae de vuelta antes
+         * del siguiente sondeo: sin esto, el volcado siguiente es de Maps y el
+         * harness cree que perdió el pedido.
+         */
+        if (rider.appEnPrimerPlano() !== RIDER_PAQUETE) rider.traerAlFrente();
       } catch (error) {
         ultimoError = String(error.message).slice(0, 160);
       }

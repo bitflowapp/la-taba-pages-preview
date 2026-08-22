@@ -8,7 +8,8 @@ import {
   evaluarAtestacion, frase, leerAtestacionFisica,
 } from '../scripts/e2e-production-sale/atestacion-fisica.mjs';
 import {
-  CASOS, ETAPAS, decidirPlan, describirPlan, ofertaSigueVigente, stockEsperadoAntesDeVender,
+  CASOS, ETAPAS, decidirPlan, decidirSobreLaOferta, describirPlan, ofertaSigueVigente,
+  stockEsperadoAntesDeVender,
 } from '../scripts/e2e-production-sale/maquina-de-estado.mjs';
 import {
   DIRECCION_DE_PRUEBA, IDENTIDAD_PANEL, correoDelPanel, evaluarDireccionPorIdentidad,
@@ -24,7 +25,7 @@ import {
   ETIQUETA_BIOMETRIA, ETIQUETA_PERMISOS, ETIQUETAS_DECLINABLES, LISTA_NEGRA_RIDER,
   avisosDeLaPantalla, buscarElemento, calidadDelFijo, decidirRespuestaDeHoja, esPeligroso,
   nodosDelPedido, redSana,
-  pedidoEnPantalla, puntoParaAceptar, tarjetaDeLaOferta,
+  pedidoEnPantalla, puntoParaAceptar, seguimientoActivoDe, tarjetaDeLaOferta,
 } from '../scripts/e2e-production-sale/rider.mjs';
 import { estadoAdbDelTelefono } from '../scripts/e2e-production-sale/precheck.mjs';
 import { evaluarProducto, evaluarProductoBase, evaluarRider } from '../scripts/e2e-production-sale/guards.mjs';
@@ -711,25 +712,33 @@ test('la red del teléfono se juzga por el ping, y «10% packet loss» no es san
  * GPS. El Moto estaba bajo techo: cero satélites y un «último fijo» de hace dos
  * horas con diez kilómetros de altura.
  */
-test('un fijo de GPS viejo, sin satélites y a 10 km de altura no es un fijo', () => {
-  const malo = 'last location=Location[gps -38.851797,-68.043580 hAcc=11.3 et=+2h15m38s505ms '
-    + 'alt=10957.4 vel=0.0 {Bundle[{satellites=0, maxCn0=0, meanCn0=0}]}]';
-  const medido = calidadDelFijo(malo);
-  assert.equal(medido.hayFijo, true);
-  assert.equal(medido.satelites, 0);
-  assert.equal(medido.antiguedadSegundos, 8138);
-  assert.equal(medido.alturaAbsurda, true);
-  assert.equal(medido.usable, false);
+test('un fijo de GPS sin satélites, viejo o a 10 km de altura no es un fijo', () => {
+  /*
+   * `et=` NO es la antigüedad del fijo: es su marca desde que arrancó el
+   * teléfono. Leerla como edad daba «fijo de hace 3 horas» cuando el fijo tenía
+   * tres minutos, y habría bloqueado un teléfono sano. La edad es `uptime − et`.
+   */
+  const conEt = (et, extra) => `last location=Location[gps -38.85,-68.04 hAcc=11.3 et=+${et} ${extra}]`;
 
-  const bueno = 'last location=Location[gps -38.9517,-68.0657 hAcc=8.0 et=+12s alt=270.0 '
-    + '{Bundle[{satellites=11, maxCn0=38, meanCn0=27}]}]';
-  assert.equal(calidadDelFijo(bueno).usable, true);
+  // El caso real del Moto bajo techo: cero satélites y diez kilómetros de altura.
+  const bajoTecho = calidadDelFijo(conEt('2h15m38s505ms', 'alt=10957.4 {Bundle[{satellites=0}]}'), 8200);
+  assert.equal(bajoTecho.satelites, 0);
+  assert.equal(bajoTecho.alturaAbsurda, true);
+  assert.equal(bajoTecho.usable, false);
 
-  // Un fijo con satélites pero de hace media hora tampoco sirve para salir.
-  const viejo = 'last location=Location[gps -38.9,-68.0 hAcc=8.0 et=+31m2s alt=270.0 '
-    + '{Bundle[{satellites=9}]}]';
-  assert.equal(calidadDelFijo(viejo).usable, false);
-  assert.equal(calidadDelFijo('sin nada').hayFijo, false);
+  // El mismo teléfono, ya con cielo: marca 11710 contra un uptime de 11973.
+  const conCielo = calidadDelFijo(conEt('3h15m10s347ms', 'alt=270.0 {Bundle[{satellites=5}]}'), 11973);
+  assert.equal(conCielo.marcaSegundos, 11710);
+  assert.equal(conCielo.edadSegundos, 263, 'la edad es uptime menos la marca, no la marca');
+  assert.equal(conCielo.usable, true);
+
+  // Un fijo con satélites pero de hace media hora no sirve para salir.
+  const viejo = calidadDelFijo(conEt('1h0m0s', 'alt=270.0 {Bundle[{satellites=9}]}'), 3600 + 1900);
+  assert.equal(viejo.usable, false);
+
+  // Sin saber cuánto lleva encendido el teléfono no se afirma nada.
+  assert.equal(calidadDelFijo(conEt('1h0m0s', 'alt=270.0 {Bundle[{satellites=9}]}')).usable, false);
+  assert.equal(calidadDelFijo('sin nada', 100).hayFijo, false);
 });
 
 test('el harness cita lo que la aplicación avisa en pantalla', () => {
@@ -834,4 +843,167 @@ test('el guion de alta de identidad no puede otorgar owner', () => {
   assert.doesNotMatch(alta, /role:\s*'owner'/, 'nunca escribe el rol de dueño');
   assert.match(alta, /IDENTIDAD_PANEL\.rol/, 'el rol sale del contrato, no de un argumento');
   assert.match(alta, /--confirm/, 'por defecto es un ensayo');
+});
+
+/*
+ * ══ EL DEFECTO DE CONCURRENCIA DE LA OFERTA ════════════════════════════════
+ *
+ * Estas comprobaciones son de CONTRATO: leen la migración que corrige el
+ * defecto y verifican que dice lo que tiene que decir. La prueba de COMPORTAMIENTO
+ * —el escenario completo, con dos repartidores y un cliente refrescando— vive en
+ * `supabase/tests/customer_read_keeps_rider_offer_test.sql`, que necesita una
+ * base local para correr.
+ */
+const MIGRACION_OFERTA = path.join(
+  RAIZ, 'supabase', 'migrations', '20260822210000_tracking_recovery_keeps_order_revision.sql',
+);
+
+test('la recuperación de seguimiento sólo escribe el pedido si algo cambia', () => {
+  const sql = fs.readFileSync(MIGRACION_OFERTA, 'utf8');
+
+  // El UPDATE al pedido tiene que estar condicionado. Sin la condición, un
+  // `updated_at` nuevo alcanza para que el trigger suba la revisión.
+  assert.match(
+    sql,
+    /update public\.orders\s+set delivery_code_required = true\s+where id = v_order\.id\s+and delivery_code_required is distinct from true;/,
+    'el UPDATE al pedido tiene que ser condicional',
+  );
+
+  /*
+   * Y no puede quedar ningún otro UPDATE a `orders` sin condicionar dentro de
+   * esta función: sería la misma trampa con otro nombre.
+   *
+   * Se cuentan las sentencias del CÓDIGO, no las menciones: el encabezado de la
+   * migración explica el defecto citando el UPDATE viejo, y contar esa cita como
+   * si fuera código es el mismo error que cometía la guarda de sólo lectura al
+   * confundir una tabla con una función.
+   */
+  const codigo = sql.split(/\r?\n/)
+    .filter((linea) => !linea.trimStart().startsWith('--'))
+    .join(' ');
+  const actualizaciones = codigo.match(/update public\.orders[\s\S]*?;/g) || [];
+  assert.equal(actualizaciones.length, 1, 'esta función toca `orders` una sola vez');
+
+  // Lo que la función SÍ tiene que seguir haciendo: rotar el acceso del cliente.
+  assert.match(sql, /insert into public\.order_public_tokens/, 'sigue emitiendo el token nuevo');
+  assert.match(sql, /order\.tracking_access_recovered/, 'sigue dejando su evento');
+});
+
+test('el arreglo no toca la concurrencia optimista de la asignación', () => {
+  const sql = fs.readFileSync(MIGRACION_OFERTA, 'utf8');
+  // No se relaja el CAS, no se acepta una oferta obsoleta, no se toca el trigger.
+  for (const prohibido of [
+    'accept_rider_order_offer',
+    'bump_order_revision',
+    'expected_order_revision',
+    'drop trigger',
+    'alter table public.orders',
+  ]) {
+    assert.equal(
+      sql.includes(`\n${prohibido}`) || new RegExp(`^\s*${prohibido}`, 'm').test(sql),
+      false,
+      `la migración no puede redefinir «${prohibido}»`,
+    );
+  }
+});
+
+test('el escenario de regresión completo existe como prueba de base', () => {
+  const prueba = fs.readFileSync(
+    path.join(RAIZ, 'supabase', 'tests', 'customer_read_keeps_rider_offer_test.sql'), 'utf8',
+  );
+  // Los ocho pasos que el escenario tiene que cubrir, cada uno con su aserción.
+  for (const exigencia of [
+    'offer_order_to_rider',
+    'recover_order_tracking_access',
+    'la revisión del pedido NO se movió',
+    'accept_rider_order_offer',
+    'la asignación ocurrió una sola vez',
+    'no puede aceptar una oferta ajena',
+    'un cambio real del pedido SÍ sube la revisión',
+    'una oferta obsoleta se sigue rechazando',
+    'el pedido de al lado no se tocó',
+  ]) {
+    assert.ok(prueba.includes(exigencia), `falta cubrir: ${exigencia}`);
+  }
+  assert.match(prueba, /rollback;\s*$/, 'la prueba no deja una fila');
+});
+
+/*
+ * ══ EL CAMINO NORMAL NO PASA POR EL FALLBACK ═══════════════════════════════
+ *
+ * Retirar y volver a ofrecer era el parche que sostenía la corrida mientras una
+ * lectura del cliente invalidaba la oferta viva. Corregido el producto, ese
+ * camino tiene que quedar sin usar: se conserva sólo para cuando algo REAL
+ * cambie el pedido, y el informe lo dice con esas palabras cuando ocurre.
+ */
+test('con la oferta vigente no se retira ni se reofrece nada', () => {
+  assert.equal(
+    decidirSobreLaOferta({ tieneRider: false, hayOferta: true, vigente: true }),
+    'usar-la-que-hay',
+    'el camino normal usa la oferta que ya está',
+  );
+  assert.equal(
+    decidirSobreLaOferta({ tieneRider: true, hayOferta: false, vigente: false }),
+    'ya-tiene-repartidor',
+  );
+  assert.equal(
+    decidirSobreLaOferta({ tieneRider: false, hayOferta: false, vigente: false }),
+    'ofrecer',
+    'sin oferta se ofrece, que no es lo mismo que reofrecer',
+  );
+});
+
+test('el fallback sólo aparece cuando la oferta quedó realmente obsoleta', () => {
+  assert.equal(
+    decidirSobreLaOferta({ tieneRider: false, hayOferta: true, vigente: false }),
+    'reofrecer',
+    'una oferta atada a una revisión vieja sí se retira y se vuelve a ofrecer',
+  );
+  // Y en el recorrido queda marcado como excepción, no como un paso más.
+  const recorrido = fs.readFileSync(path.join(HARNESS, 'venta-real.mjs'), 'utf8');
+  assert.match(recorrido, /FALLBACK EXCEPCIONAL/, 'el fallback está marcado como tal en el código');
+  assert.match(recorrido, /FALLBACK: la oferta esperaba la revisión/, 'y se anuncia en la evidencia cuando corre');
+});
+
+/*
+ * ══ EL SEGUIMIENTO ES UNO SOLO ═════════════════════════════════════════════
+ *
+ * El 2026-08-22 LT-0002 se quedó en «retirado» con el GPS sano, la app
+ * adelante, la pantalla correcta y la red bien. Lo que pasaba estaba escrito al
+ * pie: el teléfono publicaba el recorrido de LT-0001. La aplicación admite UNA
+ * entrega por vez y contesta con un mensaje que no nombra al culpable.
+ */
+test('el cartel del pie dice de quién es el seguimiento', () => {
+  const nodos = [
+    { descripcion: 'Mapa operativo del pedido LT-0002' },
+    { descripcion: 'GPS activo y publicación confirmada. Pedido LT-0001 · Última confirmación hace 1s' },
+  ];
+  assert.equal(seguimientoActivoDe(nodos), 'LT-0001');
+});
+
+test('sin cartel de seguimiento no se inventa un dueño', () => {
+  assert.equal(seguimientoActivoDe([{ descripcion: 'Estado: Pedido retirado' }]), null);
+  assert.equal(seguimientoActivoDe([]), null);
+  assert.equal(seguimientoActivoDe(null), null);
+});
+
+test('cuando el seguimiento es del pedido de la corrida, no hay conflicto', () => {
+  const nodos = [{ descripcion: 'GPS activo y publicación confirmada&#10;Pedido LT-0002 · hace 2s' }];
+  assert.equal(seguimientoActivoDe(nodos), 'LT-0002');
+});
+
+test('la corrida corta con SEGUIMIENTO_OCUPADO en vez de sondear un botón que nunca va a andar', () => {
+  const recorrido = fs.readFileSync(path.join(HARNESS, 'venta-real.mjs'), 'utf8');
+  assert.match(recorrido, /SEGUIMIENTO_OCUPADO/);
+  assert.match(recorrido, /exigeSeguimientoLibre: true/, 'la exigencia se aplica al paso de ponerse en camino');
+  assert.match(recorrido, /delivery_already_active/, 'y el informe nombra el error real de la aplicación');
+});
+
+test('un diagnóstico firme sale del bucle en vez de reintentarse hasta el plazo', () => {
+  const recorrido = fs.readFileSync(path.join(HARNESS, 'venta-real.mjs'), 'utf8');
+  assert.match(
+    recorrido,
+    /if \(error instanceof PasoFallido\) throw error;/,
+    'el catch que tolera volcados fallidos no puede tragarse una conclusión',
+  );
 });

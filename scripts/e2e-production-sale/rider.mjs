@@ -234,6 +234,33 @@ export function avisosDeLaPantalla(nodos) {
   return [...new Set(avisos)];
 }
 
+/*
+ * QUIÉN TIENE EL SEGUIMIENTO, QUE NO SIEMPRE ES EL PEDIDO DE ESTA CORRIDA.
+ *
+ * La aplicación del repartidor publica UNA entrega por vez. Está escrito en su
+ * propio código —`ActiveDeliveryPolicy.requireCanStart` levanta
+ * `delivery_already_active`— y ocurre ANTES de llamar al servidor: por eso
+ * «Iniciar y abrir Maps» contesta sin que haya ni una petición en el puente.
+ *
+ * El cartel del pie dice de quién es el seguimiento:
+ *
+ *   «GPS activo y publicación confirmada · Pedido LT-0001 · Última confirmación hace 1s»
+ *
+ * Si ese pedido no es el de la corrida, la pantalla va a repetir «No pudimos
+ * iniciar la entrega. Intentá nuevamente.» para siempre, sin nombrar al
+ * culpable. Leer el cartel es la diferencia entre un diagnóstico en un segundo y
+ * horas culpando a un botón —o al GPS, que fue lo que pasó el 2026-08-22—.
+ */
+export function seguimientoActivoDe(nodos) {
+  for (const nodo of nodos || []) {
+    const texto = String(nodo.descripcion || '').replace(/&#10;/g, ' ');
+    if (!/(GPS activo|publicación confirmada|Seguimiento activo)/i.test(texto)) continue;
+    const codigo = texto.match(/(?:^|[^A-Za-z])Pedido\s+(LT-\d+)/i);
+    if (codigo) return codigo[1].toUpperCase();
+  }
+  return null;
+}
+
 export function estadoRider() {
   const nodos = volcarPantalla();
   const capsula = buscarPorPrefijo(nodos, 'Estado: ')[0];
@@ -242,6 +269,7 @@ export function estadoRider() {
     estado: capsula ? capsula.descripcion.replace('Estado: ', '') : null,
     ofertas: buscarPorPrefijo(nodos, 'Oferta: ').map((nodo) => nodo.descripcion),
     avisos: avisosDeLaPantalla(nodos),
+    seguimientoDe: seguimientoActivoDe(nodos),
     acciones: nodos.filter((nodo) => nodo.clickable && nodo.descripcion).map((nodo) => nodo.descripcion),
   };
 }
@@ -309,29 +337,44 @@ export function capturarPantalla(destino) {
  *
  * Lo que hay que mirar es el último fijo: cuántos satélites tenía y hace cuánto
  * fue. El 2026-08-22, con el Moto sobre un escritorio bajo techo, decía
- * `satellites=0`, `et=+2h15m` y `alt=10957.4` —diez kilómetros de altura—. No
- * es un fijo: es lo último que quedó guardado.
+ * `satellites=0` y `alt=10957.4` —diez kilómetros de altura—. No es un fijo: es
+ * lo último que quedó guardado.
+ *
+ * OJO CON `et=`, QUE COSTÓ UN DIAGNÓSTICO EQUIVOCADO. No es la antigüedad del
+ * fijo: es su MARCA de tiempo desde que arrancó el teléfono. Leerla como edad
+ * daba «fijo de hace 3 horas» cuando el fijo tenía tres minutos —y habría
+ * bloqueado un teléfono sano—. La edad es `uptime − et`, y por eso hay que
+ * preguntarle además al teléfono cuánto lleva encendido.
  *
  * NO se resuelve inyectando una posición de mentira. El recorrido que publica
  * un repartidor es el de una entrega real; falsificarlo sería escribir un dato
  * inventado en un pedido de verdad.
  */
-export function calidadDelFijo(texto) {
+const EDAD_MAXIMA_DEL_FIJO = 600;
+
+export function calidadDelFijo(texto, segundosDesdeElArranque = null) {
   const linea = String(texto || '').match(/last location=Location\[gps[^\]]*\]/);
-  if (!linea) return { hayFijo: false, satelites: null, antiguedadSegundos: null, usable: false };
+  if (!linea) return { hayFijo: false, satelites: null, marcaSegundos: null, edadSegundos: null, usable: false };
   const satelites = Number((linea[0].match(/satellites=(\d+)/) || [])[1] ?? -1);
   const et = linea[0].match(/et=\+(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
-  const antiguedadSegundos = et
+  const marcaSegundos = et
     ? (Number(et[1] || 0) * 3600) + (Number(et[2] || 0) * 60) + Number(et[3] || 0)
     : null;
   const alturaAbsurda = Number((linea[0].match(/alt=(-?[\d.]+)/) || [])[1] ?? 0) > 5000;
+  const edadSegundos = (segundosDesdeElArranque !== null && marcaSegundos !== null)
+    ? Math.max(0, Math.round(segundosDesdeElArranque - marcaSegundos))
+    : null;
   const usable = satelites > 0 && !alturaAbsurda
-    && antiguedadSegundos !== null && antiguedadSegundos < 600;
-  return { hayFijo: true, satelites, antiguedadSegundos, alturaAbsurda, usable };
+    && edadSegundos !== null && edadSegundos <= EDAD_MAXIMA_DEL_FIJO;
+  return { hayFijo: true, satelites, marcaSegundos, edadSegundos, alturaAbsurda, usable };
 }
 
 export function ubicacionDelTelefono() {
-  return calidadDelFijo(adb(['shell', 'dumpsys', 'location'], { timeout: 45_000 }));
+  const arranque = Number(String(adb(['shell', 'cat', '/proc/uptime'], { timeout: 20_000 })).split(/\s+/)[0]);
+  return calidadDelFijo(
+    adb(['shell', 'dumpsys', 'location'], { timeout: 45_000 }),
+    Number.isFinite(arranque) ? arranque : null,
+  );
 }
 
 export function redSana(salidaDePing) {

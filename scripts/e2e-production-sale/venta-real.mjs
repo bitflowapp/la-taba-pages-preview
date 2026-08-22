@@ -32,6 +32,7 @@ import { consultar, lit } from './db-solo-lectura.mjs';
 import { evaluarDecremento, evaluarDireccion, evaluarPago } from './guards.mjs';
 import { DIRECCION_DE_PRUEBA, NEGOCIO_ID, evaluarDireccionPorIdentidad } from './identidades.mjs';
 import { anotarPedidoEnLock } from './lock.mjs';
+import { decidirSobreLaOferta } from './maquina-de-estado.mjs';
 import * as rider from './rider.mjs';
 import {
   contextoCliente as nuevoContextoCliente, contextoPanel as nuevoContextoPanel, guardarEstado,
@@ -301,17 +302,25 @@ export async function ejecutarVentaReal({
      * mismo viaje.
      */
     const oferta = await estadoDeLaOferta(pedidoId);
-    if (oferta.tieneRider) {
+    const queHacer = decidirSobreLaOferta(oferta);
+    if (queHacer === 'ya-tiene-repartidor') {
       anotarPaso('Rider offered', 'PASS', 'el pedido ya tiene repartidor asignado');
-    } else if (oferta.hayOferta && oferta.vigente) {
+    } else if (queHacer === 'usar-la-que-hay') {
       anotarPaso('Rider offered', 'PASS', 'ya estaba ofrecido y la oferta sigue vigente: no se ofrece de nuevo');
     } else {
-      if (oferta.hayOferta && !oferta.vigente) {
+      if (queHacer === 'reofrecer') {
         /*
-         * La oferta quedó atada a una revisión vieja: el teléfono no la puede
-         * aceptar aunque la muestre. Se retira por el Panel y se ofrece de nuevo.
+         * FALLBACK EXCEPCIONAL. Desde la migración 20260822210000 una lectura
+         * del cliente ya no mueve la revisión, así que el camino normal no pasa
+         * por acá. Que se ejecute significa que algo REAL cambió el pedido
+         * mientras el repartidor miraba su oferta — y eso hay que decirlo, no
+         * taparlo.
          */
-        evidencia.anotar(`la oferta esperaba la revisión ${oferta.revisionEsperada} y el pedido va por la ${oferta.revisionActual}: se retira y se vuelve a ofrecer`);
+        evidencia.anotar(
+          `FALLBACK: la oferta esperaba la revisión ${oferta.revisionEsperada} y el pedido va por la `
+          + `${oferta.revisionActual}. Con el arreglo puesto esto no debería pasar en una corrida normal: `
+          + 'algo movió la revisión. Se retira la oferta y se vuelve a ofrecer.',
+        );
         await retirarOferta(panel, { ofertaId: oferta.ofertaId });
       }
       await ofrecerAlRepartidor(panel, { codigo, riderUserId });
@@ -350,11 +359,11 @@ export async function ejecutarVentaReal({
      * Preguntarlo acá convierte horas de búsqueda en una línea.
      */
     const fijo = rider.ubicacionDelTelefono();
-    evidencia.anotar(`ubicación del teléfono: ${fijo.satelites} satélite(s), último fijo hace ${fijo.antiguedadSegundos}s`);
+    evidencia.anotar(`ubicación del teléfono: ${fijo.satelites} satélite(s), último fijo hace ${fijo.edadSegundos}s`);
     if (!fijo.usable) {
       throw new PasoFallido(
         'TELEFONO_SIN_GPS',
-        `el teléfono no tiene señal GPS utilizable (${fijo.satelites} satélites, último fijo hace ${fijo.antiguedadSegundos}s`
+        `el teléfono no tiene señal GPS utilizable (${fijo.satelites} satélites, último fijo hace ${fijo.edadSegundos}s`
         + `${fijo.alturaAbsurda ? ', con una altura imposible' : ''}). La aplicación no inicia el recorrido sin ubicación`
         + ' precisa, y esto no se resuelve por software: el recorrido de una entrega real no se inventa.',
       );
@@ -411,6 +420,7 @@ export async function ejecutarVentaReal({
         // en camino: pone el pedido en marcha y de paso abre el navegador.
         etiquetas: ['Iniciar y abrir Maps', 'Salir en camino', 'En camino', 'Iniciar viaje'],
         estados: ['on_the_way'],
+        exigeSeguimientoLibre: true,
       });
       tiempos['retirado → en camino'] = enCamino.ms;
       anotarPaso('On the way', 'PASS', enCamino.estado);
@@ -648,7 +658,7 @@ async function ofrecerAlRepartidor(panel, { codigo, riderUserId }) {
  * la versión instalada; lo que NO varía es el estado que tiene que quedar en la
  * base, y eso es lo que se exige.
  */
-async function avanzarEnElTelefono({ codigo, etiquetas, estados }) {
+async function avanzarEnElTelefono({ codigo, etiquetas, estados, exigeSeguimientoLibre = false }) {
   const desde = Date.now();
   const limite = desde + ESPERA.telefono;
   let ultimoError = '';
@@ -677,8 +687,50 @@ async function avanzarEnElTelefono({ codigo, etiquetas, estados }) {
       rider.traerAlFrente();
       rider.despejarInvitaciones();
       rider.seleccionarPedido(codigo, { tolerante: true });
-      disponibles = rider.estadoRider().acciones;
+      const enPantalla = rider.estadoRider();
+      disponibles = enPantalla.acciones;
+      /*
+       * La red de este teléfono se cae sola en medio de una entrega —se apagó
+       * el Wi-Fi dos veces el 2026-08-22— y la aplicación lo dice: «Sin
+       * conexión. Guardamos N puntos del recorrido». Comprobarlo sólo al
+       * empezar no alcanza: se reconecta acá, en la vuelta que lo detecta.
+       */
+      /*
+       * EL SEGUIMIENTO ES UNO SOLO, Y PUEDE ESTAR OCUPADO POR OTRO PEDIDO.
+       *
+       * La aplicación publica una entrega por vez: `ActiveDeliveryPolicy` del
+       * Rider levanta `delivery_already_active` sin llegar al servidor, y la
+       * pantalla contesta «No pudimos iniciar la entrega. Intentá nuevamente.»
+       * —un mensaje que no nombra al culpable—. Sondear el botón durante todo
+       * el plazo no lo va a destrabar nunca, así que se corta acá, con el
+       * número del pedido que tiene el seguimiento tomado.
+       */
+      if (exigeSeguimientoLibre && enPantalla.seguimientoDe && enPantalla.seguimientoDe !== codigo) {
+        throw new PasoFallido(
+          'SEGUIMIENTO_OCUPADO',
+          `el teléfono está publicando el recorrido de ${enPantalla.seguimientoDe} y la aplicación admite `
+          + `UNA entrega por vez, así que ${codigo} no puede iniciar el suyo. No es el botón ni el GPS: es `
+          + `\`delivery_already_active\`, que se resuelve terminando o pausando el seguimiento de `
+          + `${enPantalla.seguimientoDe} — y ese pedido está fuera del alcance de esta corrida.`,
+        );
+      }
+      if ((enPantalla.avisos || []).some((aviso) => /Sin conexión/i.test(aviso))) {
+        const vuelta = rider.asegurarConectividad();
+        ultimoError = vuelta.alcanzaInternet
+          ? 'la aplicación estaba sin conexión; se reconectó el Wi-Fi'
+          : 'la aplicación está sin conexión y no se pudo reconectar';
+        if (vuelta.reconectado) evidencia.anotar('el teléfono se quedó sin red en pleno avance: se reconectó');
+        await new Promise((resolver) => { setTimeout(resolver, INTERVALO); });
+        continue;
+      }
     } catch (error) {
+      /*
+       * Este `catch` existe para que un volcado que no sale no tumbe una
+       * corrida con un pedido a medio entregar. Un diagnóstico firme —el
+       * seguimiento tomado por otro pedido— no es eso: sondear de nuevo no lo
+       * va a destrabar, así que sale derecho.
+       */
+      if (error instanceof PasoFallido) throw error;
       ultimoError = String(error.message).slice(0, 160);
       await new Promise((resolver) => { setTimeout(resolver, INTERVALO); });
       continue;

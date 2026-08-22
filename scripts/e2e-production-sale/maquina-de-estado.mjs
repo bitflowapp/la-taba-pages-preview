@@ -177,6 +177,26 @@ export function ofertaSigueVigente(oferta, revisionDelPedido) {
   return esperada === actual;
 }
 
+/*
+ * QUÉ HACER CON LA OFERTA QUE HAY —O CON LA QUE NO HAY—.
+ *
+ * `reofrecer` es un FALLBACK EXCEPCIONAL, no un paso del camino normal. Existía
+ * porque una lectura del cliente subía la revisión del pedido y dejaba muerta la
+ * oferta viva; eso se corrigió en el producto (migración 20260822210000) y desde
+ * entonces el camino normal NO tiene que pasar por acá. Se conserva por dos
+ * razones honestas: un cambio REAL del pedido sí puede invalidar una oferta
+ * mientras el repartidor la mira, y una corrida que reanuda un pedido viejo
+ * puede encontrarse con una oferta de antes del arreglo.
+ *
+ * Si esto se ejecuta en una corrida normal, es una señal de que algo volvió a
+ * mover la revisión sin motivo, y el informe lo dice con esas palabras.
+ */
+export function decidirSobreLaOferta(estado) {
+  if (estado?.tieneRider) return 'ya-tiene-repartidor';
+  if (!estado?.hayOferta) return 'ofrecer';
+  return estado.vigente ? 'usar-la-que-hay' : 'reofrecer';
+}
+
 export function describirPlan(elPlan) {
   if (!elPlan) return 'sin plan';
   const etapas = elPlan.etapas.join(' → ');

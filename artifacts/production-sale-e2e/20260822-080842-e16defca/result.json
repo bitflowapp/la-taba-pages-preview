@@ -1,0 +1,91 @@
+{
+  "runId": "20260822-080842-e16defca",
+  "modo": "ENSAYO (no crea pedido)",
+  "resumen": "PRODUCTION SALE E2E — DRY RUN BLOCKED · NO_PUBLICADO",
+  "pasos": [
+    {
+      "nombre": "Precheck",
+      "estado": "BLOCKED",
+      "detalle": "NO_PUBLICADO: el producto no está publicado: falta la recepción física y publicarlo desde el Panel"
+    },
+    {
+      "nombre": "Customer cart",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Checkout",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Order created",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Business intake",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Accepted",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Preparing",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Ready",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Rider offered",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Rider accepted",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Picked up",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Tracking",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "PIN",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Delivered",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Stock N-1",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    },
+    {
+      "nombre": "Persistence",
+      "estado": "SKIP",
+      "detalle": "ensayo"
+    }
+  ],
+  "tiempos": {
+    "precheck": 11763
+  },
+  "stockBefore": 0
+}

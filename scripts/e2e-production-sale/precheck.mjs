@@ -12,7 +12,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { PRODUCCION, PRODUCTO_AUTORIZADO, RIDER, RUTAS } from './contrato.mjs';
 import { consultar, lit } from './db-solo-lectura.mjs';
-import { evaluarNegocio, evaluarProducto, evaluarRider, evaluarSesion } from './guards.mjs';
+import { evaluarNegocio, evaluarPedidosAbiertos, evaluarProducto, evaluarRider, evaluarSesion } from './guards.mjs';
 
 const RAIZ = path.resolve(path.dirname(new URL(import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, '$1'), '../..');
 
@@ -115,6 +115,7 @@ export async function correrPrecheck() {
         paquete: rider.paquete,
         dispositivoConectado: rider.dispositivoConectado,
       }),
+      pedidosAbiertos: evaluarPedidosAbiertos(abiertos),
       sesionCustomer: evaluarSesion(sesiones.customer),
       sesionBusiness: evaluarSesion(sesiones.business),
     },

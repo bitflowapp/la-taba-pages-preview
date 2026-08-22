@@ -261,7 +261,7 @@ Dos apuntes más:
 - El `versionCode=145` no permite confirmar el commit exacto (§1.2), así que **la equivalencia
   rama↔APK es una inferencia por coincidencia de textos y fecha, no una prueba criptográfica.**
 
-Rutas relativas a `D:\1212\la-taba-rider-android\`.
+Rutas relativas a la raíz del repositorio del Rider (`la-taba-rider-android`).
 
 ### 4.2 CTA primario del flujo de entrega
 Todos en `lib/features/orders/presentation/order_detail_page.dart`.
@@ -436,7 +436,7 @@ adb -s ZY32LHS6PS shell wm density     # -> 400
 adb -s ZY32LHS6PS shell uiautomator dump /sdcard/ui.xml
 adb -s ZY32LHS6PS pull /sdcard/ui.xml .\ui.xml
 
-# 1-bis) Desde Git Bash SÍ hace falta, si no la ruta /sdcard se traduce a C:\...
+# 1-bis) Desde Git Bash SÍ hace falta, si no la ruta /sdcard se traduce a una ruta de Windows
 MSYS_NO_PATHCONV=1 adb -s ZY32LHS6PS shell uiautomator dump /sdcard/ui.xml
 MSYS_NO_PATHCONV=1 adb -s ZY32LHS6PS pull /sdcard/ui.xml ./ui.xml
 

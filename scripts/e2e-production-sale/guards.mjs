@@ -102,6 +102,24 @@ export function evaluarSesion({ nombre, existe, vencida, verificada }) {
   return permitido;
 }
 
+/**
+ * El repartidor no puede tener otra entrega en curso.
+ *
+ * No es una precaución teórica: el 2026-08-22 el teléfono tenía LT-0001 abierto
+ * en «Yendo al cliente», con el botón «Llegué» en pantalla. Con una entrega
+ * ajena cargada, la app muestra ESE pedido y el harness no tendría forma de
+ * distinguir sus propios toques de los que avanzarían el pedido de otra
+ * persona. Se frena antes, y quien cierre LT-0001 lo hace con su propio gate.
+ */
+export function evaluarPedidosAbiertos(pedidosAbiertos = []) {
+  if (!pedidosAbiertos.length) return permitido;
+  const detalle = pedidosAbiertos.map((p) => `${p.public_code} (${p.status})`).join(', ');
+  return bloqueo(
+    'PEDIDO_ABIERTO_PREVIO',
+    `hay ${pedidosAbiertos.length} pedido(s) sin cerrar: ${detalle}. El repartidor ya tiene una entrega en curso y la app muestra ESA: cerralos antes de la prueba, con su propio gate.`,
+  );
+}
+
 /** No puede haber dos corridas a la vez ni una anterior sin cerrar. */
 export function evaluarConcurrencia({ lockPrevio }) {
   if (!lockPrevio) return permitido;

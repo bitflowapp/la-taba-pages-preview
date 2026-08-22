@@ -3,7 +3,7 @@
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 
-const OUT = 'D:/1212/la-taba2-gondola-retail-final/artifacts/taba2-go-live-audit/reconocimiento-customer';
+const OUT = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const BASE = 'https://la-taba.pages.dev';
 const log = [];
 const say = (...a) => { const s = a.join(' '); log.push(s); console.log(s); };

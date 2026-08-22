@@ -5,7 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   evaluarAutorizacion, evaluarConcurrencia, evaluarDecremento, evaluarDireccion,
-  evaluarNegocio, evaluarPago, evaluarProducto, evaluarRider, evaluarSesion, primerBloqueo,
+  evaluarNegocio, evaluarPago, evaluarPedidosAbiertos, evaluarProducto, evaluarRider,
+  evaluarSesion, primerBloqueo,
 } from '../scripts/e2e-production-sale/guards.mjs';
 // eslint-disable-next-line no-duplicate-imports -- se importa aparte para probar la lectura dinámica del entorno
 import { assertSoloLectura, ConsultaNoPermitida } from '../scripts/e2e-production-sale/db-solo-lectura.mjs';
@@ -169,6 +170,14 @@ test('una sesión vencida frena la compra con AUTH SESSION EXPIRED', () => {
 });
 
 // ── Concurrencia, lock y run_id ──────────────────────────────────────────────
+
+test('un pedido abierto previo frena la prueba: el repartidor ya tiene una entrega', () => {
+  const bloqueo = evaluarPedidosAbiertos([{ public_code: 'LT-0001', status: 'on_the_way' }]);
+  assert.equal(bloqueo.codigo, 'PEDIDO_ABIERTO_PREVIO');
+  assert.match(bloqueo.mensaje, /LT-0001/);
+  assert.match(bloqueo.mensaje, /su propio gate/);
+  assert.equal(evaluarPedidosAbiertos([]).ok, true);
+});
 
 test('una corrida anterior sin cerrar frena la siguiente', () => {
   const bloqueo = evaluarConcurrencia({ lockPrevio: { runId: 'anterior', estado: 'fallido' } });

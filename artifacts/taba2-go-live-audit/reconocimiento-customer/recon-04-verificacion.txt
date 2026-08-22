@@ -1,0 +1,152 @@
+########## JS SERVIDO vs LOCAL ##########
+js/ui.js: HTTP 200 · servido 65832e393fdf2008 (205554b) · local 65832e393fdf2008 (205554b) · IDENTICO
+js/cart.js: HTTP 200 · servido 491993193e09211d (20634b) · local 491993193e09211d (20634b) · IDENTICO
+js/orders.js: HTTP 200 · servido 11cbc1f7a1b4d089 (26858b) · local 11cbc1f7a1b4d089 (26858b) · IDENTICO
+js/app.js: HTTP 200 · servido d7867e09ed470be8 (87362b) · local d7867e09ed470be8 (87362b) · IDENTICO
+js/core/order-timeline.js: HTTP 200 · servido a1dce3abcbad8d1a (3058b) · local a1dce3abcbad8d1a (3058b) · IDENTICO
+js/core/delivery-code.js: HTTP 200 · servido 73bfb3c915f9f7bc (3688b) · local 73bfb3c915f9f7bc (3688b) · IDENTICO
+js/core/order-status.js: HTTP 200 · servido b61940ebf5358592 (2476b) · local b61940ebf5358592 (2476b) · IDENTICO
+  marcador "data-delivery-code-card" en ui.js servido: SI
+  marcador "data-delivery-code="" en ui.js servido: SI
+  marcador "delivery-code-card" en ui.js servido: SI
+  marcador "data-tracking-status" en ui.js servido: SI
+  marcador "data-checkout-submit" en ui.js servido: SI
+  marcador "qty-stepper" en ui.js servido: SI
+  marcador "quantity-control" en ui.js servido: SI
+  marcador "cart-line" en ui.js servido: SI
+  marcador "cart-title" en ui.js servido: SI
+  marcador "cart-meta" en ui.js servido: SI
+
+########## BUSCADOR DENTRO DEL CATALOGO ##########
+view activa: catalog
+inputs de busqueda VISIBLES ahora: [{"ph":"Buscar bebidas, marcas o presentaciones","vis":false,"view":"topbar"},{"ph":"Buscar bebidas, marcas y ofertas…","vis":false,"view":"home"},{"ph":"Buscar productos, marcas y más…","vis":true,"view":"catalog"}]
+conteo: 6 productos
+tarjetas: 6
+
+########## AMBIGUEDAD DE NOMBRES ##########
+{
+ "nombres": [
+  {
+   "h3": "Coca-Cola",
+   "p": "2,25 L · Original",
+   "precio": "$ 5.900",
+   "precioCodigos": [
+    36,
+    160,
+    53,
+    46,
+    57,
+    48,
+    48
+   ],
+   "id": "44210832-ec41-463b-b07a-4622dddf4fd9"
+  },
+  {
+   "h3": "Coca-Cola Zero",
+   "p": "2,25 L · Sin azúcar",
+   "precio": "$ 5.900",
+   "precioCodigos": [
+    36,
+    160,
+    53,
+    46,
+    57,
+    48,
+    48
+   ],
+   "id": "4c186857-4e51-4891-b287-7fc00c21c82c"
+  },
+  {
+   "h3": "Coca-Cola Original",
+   "p": "Pack x12 · 500 ml",
+   "precio": "$ 17.100",
+   "precioCodigos": [
+    36,
+    160,
+    49,
+    55,
+    46,
+    49,
+    48,
+    48
+   ],
+   "id": "e3a974c3-9e4e-42a2-a1c4-a047cd93bf6a"
+  },
+  {
+   "h3": "Coca-Cola Zero",
+   "p": "Pack x12 · 500 ml",
+   "precio": "$ 17.100",
+   "precioCodigos": [
+    36,
+    160,
+    49,
+    55,
+    46,
+    49,
+    48,
+    48
+   ],
+   "id": "5cd082fa-35db-413e-983e-10b12255fdb9"
+  },
+  {
+   "h3": "Coca-Cola",
+   "p": "354 ml · Original",
+   "precio": "$ 1.800",
+   "precioCodigos": [
+    36,
+    160,
+    49,
+    46,
+    56,
+    48,
+    48
+   ],
+   "id": "75e1e29f-62f4-4215-9c3a-80afd2c69704"
+  },
+  {
+   "h3": "Coca-Cola Zero",
+   "p": "354 ml · Sin azúcar",
+   "precio": "$ 1.800",
+   "precioCodigos": [
+    36,
+    160,
+    49,
+    46,
+    56,
+    48,
+    48
+   ],
+   "id": "51e252c0-fd75-4028-b73a-3ba332c8f505"
+  }
+ ],
+ "duplicados": [
+  [
+   "Coca-Cola",
+   2
+  ],
+  [
+   "Coca-Cola Zero",
+   3
+  ]
+ ]
+}
+
+########## MINIMO DE COMPRA ##########
+[data-cart-minimum-progress]:
+<div data-cart-minimum-progress=""></div>
+[data-cart-notice]:
+<div class="cart-notice" data-cart-notice="" role="status" aria-live="polite"></div>
+submit disabled con 1 solo producto?: disabled=false text="Confirmar pedido"
+
+########## CARRITO VACIO ##########
+innerText carrito vacio:
+Tu pedido
+Seguir comprando
+Productos
+Tu pedido está vacío
+
+Sumá un producto del catálogo y seguí desde acá.
+
+Ver el catálogo
+[data-checkout-phase]: full
+existe [data-checkout-submit] con carrito vacio?: si, disabled=false, visible=false

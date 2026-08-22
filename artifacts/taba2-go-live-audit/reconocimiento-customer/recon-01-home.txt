@@ -1,0 +1,673 @@
+=== URL === https://la-taba.pages.dev/
+=== TITLE === TABA2 · Tienda de bebidas
+=== SCRIPTS VERSION === ["js/startup-recovery.js?v=2","js/pwa-update.js?v=4","js/app.js?v=46"]
+=== SECTIONS ===
+[
+ {
+  "tag": "section",
+  "id": null,
+  "cls": "section app-view app-home taba-home is-active",
+  "dataView": "home",
+  "hidden": false
+ },
+ {
+  "tag": "section",
+  "id": null,
+  "cls": "section app-view",
+  "dataView": "catalog",
+  "hidden": true
+ },
+ {
+  "tag": "section",
+  "id": null,
+  "cls": "section app-view soft",
+  "dataView": "cart",
+  "hidden": true
+ },
+ {
+  "tag": "section",
+  "id": null,
+  "cls": "section app-view",
+  "dataView": "tracking",
+  "hidden": true
+ },
+ {
+  "tag": "section",
+  "id": null,
+  "cls": "section app-view soft",
+  "dataView": "profile",
+  "hidden": true
+ },
+ {
+  "tag": "section",
+  "id": null,
+  "cls": "section app-view admin-section",
+  "dataView": "business",
+  "hidden": true
+ },
+ {
+  "tag": "section",
+  "id": null,
+  "cls": "section app-view admin-section",
+  "dataView": "rider",
+  "hidden": true
+ }
+]
+=== INPUTS ===
+[
+ {
+  "tag": "input",
+  "type": "search",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": "Buscar bebidas, marcas o presentaciones",
+  "ariaLabel": null,
+  "data": [
+   "searchInput",
+   "searchJump"
+  ],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "search",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": "Buscar bebidas, marcas y ofertas…",
+  "ariaLabel": "Buscar bebidas, marcas y ofertas",
+  "data": [
+   "searchInput",
+   "searchJump"
+  ],
+  "visible": true
+ },
+ {
+  "tag": "input",
+  "type": "search",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": "Buscar productos, marcas y más…",
+  "ariaLabel": "Buscar productos, marcas y más",
+  "data": [
+   "searchInput"
+  ],
+  "visible": false
+ },
+ {
+  "tag": "select",
+  "type": "select-one",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": "Filtrar por marca",
+  "data": [
+   "catalogFilter"
+  ],
+  "visible": false
+ },
+ {
+  "tag": "select",
+  "type": "select-one",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": "Filtrar por capacidad",
+  "data": [
+   "catalogFilter"
+  ],
+  "visible": false
+ },
+ {
+  "tag": "select",
+  "type": "select-one",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": "Filtrar por presentación",
+  "data": [
+   "catalogFilter"
+  ],
+  "visible": false
+ },
+ {
+  "tag": "select",
+  "type": "select-one",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": "Filtrar por formato",
+  "data": [
+   "catalogFilter"
+  ],
+  "visible": false
+ },
+ {
+  "tag": "select",
+  "type": "select-one",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": "Filtrar por alcohol",
+  "data": [
+   "catalogFilter"
+  ],
+  "visible": false
+ },
+ {
+  "tag": "select",
+  "type": "select-one",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": "Filtrar por disponibilidad",
+  "data": [
+   "catalogFilter"
+  ],
+  "visible": false
+ },
+ {
+  "tag": "select",
+  "type": "select-one",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": "Filtrar por estado de precio",
+  "data": [
+   "catalogFilter"
+  ],
+  "visible": false
+ },
+ {
+  "tag": "select",
+  "type": "select-one",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": "Filtrar por promoción",
+  "data": [
+   "catalogFilter"
+  ],
+  "visible": false
+ },
+ {
+  "tag": "select",
+  "type": "select-one",
+  "id": null,
+  "name": null,
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": "Ordenar productos",
+  "data": [
+   "sortSelect"
+  ],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "radio",
+  "id": null,
+  "name": "deliveryMode",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "radio",
+  "id": null,
+  "name": "deliveryMode",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "customerName",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "customerPhone",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "customerStreetAddress",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "customerNeighborhood",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "customerReference",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "customerAddress",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "customerAddressId",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "customerAddressLabel",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryStreet",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryStreetNumber",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryFloor",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryApartment",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryCity",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryNeighborhood",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryProvince",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryPostalCode",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryLatitude",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryLongitude",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryGeolocationAccuracy",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryAddressSource",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryLocationSource",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "hidden",
+  "id": null,
+  "name": "deliveryLocationConfirmedAt",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "select",
+  "type": "select-one",
+  "id": null,
+  "name": "paymentMethod",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": "Forma de pago",
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "textarea",
+  "type": "textarea",
+  "id": null,
+  "name": "customerNotes",
+  "cls": "",
+  "placeholder": "Ej: indicaciones para preparar o entregar el pedido",
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "checkbox",
+  "id": null,
+  "name": "ageConfirmed",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "email",
+  "id": null,
+  "name": "email",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "password",
+  "id": null,
+  "name": "password",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "email",
+  "id": null,
+  "name": "email",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "password",
+  "id": null,
+  "name": "password",
+  "cls": "",
+  "placeholder": null,
+  "ariaLabel": null,
+  "data": [],
+  "visible": false
+ },
+ {
+  "tag": "input",
+  "type": "text",
+  "id": null,
+  "name": "pin",
+  "cls": "",
+  "placeholder": "Código",
+  "ariaLabel": "Código del modo negocio",
+  "data": [],
+  "visible": false
+ }
+]
+=== NAV ===
+[
+ {
+  "tag": "button",
+  "text": "Inicio",
+  "href": null,
+  "cls": "active",
+  "data": [
+   "navView=home"
+  ],
+  "ariaCurrent": "page"
+ },
+ {
+  "tag": "button",
+  "text": "Categorías",
+  "href": null,
+  "cls": "",
+  "data": [
+   "navView=catalog"
+  ],
+  "ariaCurrent": null
+ },
+ {
+  "tag": "button",
+  "text": "Pedidos 0",
+  "href": null,
+  "cls": "",
+  "data": [
+   "navView=cart"
+  ],
+  "ariaCurrent": null
+ },
+ {
+  "tag": "button",
+  "text": "Seguir",
+  "href": null,
+  "cls": "",
+  "data": [
+   "navView=tracking"
+  ],
+  "ariaCurrent": null
+ },
+ {
+  "tag": "button",
+  "text": "Cuenta",
+  "href": null,
+  "cls": "",
+  "data": [
+   "navView=profile"
+  ],
+  "ariaCurrent": null
+ },
+ {
+  "tag": "button",
+  "text": "Catálogo",
+  "href": null,
+  "cls": "",
+  "data": [
+   "navView=catalog"
+  ],
+  "ariaCurrent": null
+ },
+ {
+  "tag": "button",
+  "text": "Seguir",
+  "href": null,
+  "cls": "",
+  "data": [
+   "navView=tracking"
+  ],
+  "ariaCurrent": null
+ },
+ {
+  "tag": "button",
+  "text": "La Taba",
+  "href": null,
+  "cls": "mn-brand active",
+  "data": [
+   "navView=home"
+  ],
+  "ariaCurrent": "page"
+ },
+ {
+  "tag": "button",
+  "text": "Carrito",
+  "href": null,
+  "cls": "",
+  "data": [
+   "navView=cart"
+  ],
+  "ariaCurrent": null
+ },
+ {
+  "tag": "button",
+  "text": "Perfil",
+  "href": null,
+  "cls": "",
+  "data": [
+   "navView=profile"
+  ],
+  "ariaCurrent": null
+ }
+]
+=== DATA ATTRS (home) ===
+[["productName",68],["favoriteToggle",67],["productDetail",67],["addProduct",67],["motionReveal",32],["categoryId",24],["navView",21],["catalogFilterField",8],["catalogFilter",8],["view",7],["businessName",4],["productionOnly",4],["cartCount",3],["searchInput",3],["productionCatalogGate",3],["productionCatalogMessage",3],["catalogDependent",3],["installView",3],["searchJump",2],["openCart",2],["storiesSlot",2],["storiesState",2],["storiesStatic",2],["storiesOpen",2],["categoryStrip",2],["glowShelf",2],["fulfillmentOption",2],["profileBlock",2],["profileCheckoutAction",2],["profileAction",2],["operationalOnly",2],["adminLocked",2],["demoAuthOnly",2],["openPin",2],["adminTarget",2],["productionAuthCard",2],["productionAuthForm",2],["productionAuthMessage",2],["productionWorkspace",2],["adminUnlocked",2],["installDecline",2],["pitchGo",2],["tabaStartup",1],["appBootstrap",1],["tabaDisplayMode",1],["activeView",1],["motionReduced",1],["motionLite",1],["motionScrolled",1],["appMode",1],["cart",1],["businessSubtitle",1],["topbarOps",1],["topbarOpsLabel",1],["topbarOpsLabelShort",1],["topbarOpsContext",1],["topbarOpsContextShort",1],["topbarOpsContextMini",1],["retryRelay",1],["realtimeSync",1],["soundToggle",1],["soundCount",1],["homeAddress",1],["navPassive",1],["homeAddressLabel",1],["cartTotalSmall",1],["pwaOfflineBanner",1],["appUpdateBanner",1],["appUpdateNow",1],["appUpdateDismiss",1],["appMain",1],["appRecovery",1],["appRecoveryCode",1],["appRecoveryMessage",1],["appRecoveryRetry",1],["appRecoveryReset",1],["homeBusinessPlace",1],["openStatus",1],["homeBusinessHours",1],["storiesStrip",1],["storiesItems",1],["homeActiveOrder",1],["homeHeroPromo",1],["homeCategoryStrip",1],["homeBestSellers",1],["offersRail",1],["customerActions",1],["homeCombosSection",1],["homeCombosSubtitle",1],["combosRail",1],["promoBanner",1],["promoBannerImage",1],["promoBannerTitle",1],["promoBannerIncludes",1],["promoBannerPrice",1],["promoBannerSave",1],["homePromotions",1],["homePagingDots",1],["homeBanners",1],["homeSections",1],["homeEditorialSection",1],["homeEditorialRail",1],["clearSearch",1],["categoryMore",1],["catalogTitle",1],["catalogCount",1],["catalogFilters",1],["catalogFilterCount",1],["resetCatalogFilters",1],["closeCatalogFilters",1],["sortField",1],["sortValue",1],["sortSelect",1],["productGrid",1],["clearCart",1],["cartNotice",1],["cartList",1],["cartMinimumProgress",1],["cartRecommendations",1],["checkoutForm",1],["addressSource",1],["addressFormDirty",1],["profileHydrationVersion",1],["checkoutDetailsTitle",1],["addressField",1],["customerAddresses",1],["profileCheckout",1],["checkoutPhase",1],["ageConfirmation",1],["ageConfirmationTitle",1],["orderSummary",1],["checkoutWarning",1],["checkoutTrustTitle",1],["checkoutTrustCopy",1],["checkoutSubmit",1],["checkoutModeNote",1],["trackingPanel",1],["trackingStatus",1],["bottomSheet",1],["mapShell",1],["trackingMapFreshness",1],["trackingMapIdle",1],["realMap",1],["mapRole",1],["mapFreshness",1],["mapMode",1],["mapCanvas",1],["mapFallback",1],["mapFallbackCopy",1],["mapTileError",1],["mapMeta",1],["mapMetaIndicator",1],["mapLiveDot",1],["mapClockIcon",1],["mapMetaText",1],["trackingIdleCard",1],["customerProfile",1],["customerProfileState",1],["installEntry",1],["installEntryTitle",1],["installEntryCopy",1],["installEntryAction",1],["installEntryActionLabel",1],["businessProfileName",1],["businessAddress",1],["businessMapsItem",1],["businessMapsLink",1],["businessHours",1],["businessZone",1],["minOrder",1],["deliveryFee",1],["businessWhatsapp",1],["productionAuthIntro",1],["panelAccessRegistration",1],["openAdminView",1],["lockAdmin",1],["businessDashboard",1],["riderBusinessName",1],["deliveryPanel",1],["floatingCart",1],["floatingCartLabel",1],["floatingCartCount",1],["floatingCartSaving",1],["floatingCartOriginal",1],["floatingCartSummary",1],["productModal",1],["modalContent",1],["comboModal",1],["comboModalContent",1],["checkoutSuggestionsModal",1],["checkoutSuggestionsContent",1],["storiesModal",1],["storiesContent",1],["pinModal",1],["demoOnly",1],["pinForm",1],["pinError",1],["closePin",1],["cancelModal",1],["cancelContent",1],["catalogResetModal",1],["catalogResetContent",1],["businessSetupResetModal",1],["businessSetupResetContent",1],["repeatModal",1],["repeatDismiss",1],["repeatConfirm",1],["clearCartModal",1],["clearCartDismiss",1],["clearCartConfirm",1],["installSheet",1],["installClose",1],["installAccept",1],["installIosHow",1],["installStepsLead",1],["installStepsWhere",1],["installDone",1],["pitchModal",1],["productTagline",1],["closePitch",1],["whatsappAvailable",1],["printTicket",1],["toast",1]]

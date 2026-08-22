@@ -1,0 +1,408 @@
+tarjetas comprables en "Coca-Cola": 6
+ids: 44210832-ec41-463b-b07a-4622dddf4fd9 4c186857-4e51-4891-b287-7fc00c21c82c
+duplicados de id0 en la pagina: 3
+
+########## PASO 4 — CARRITO ##########
+view activa: cart
+=== [data-cart-list] outerHTML ===
+<div data-cart-list="">
+    <div class="cart-item">
+      
+    <span class="thumb uses-placeholder tone-drink category-gaseosas thumb-cart" role="img" aria-label="Producto sin imagen oficial: Coca-Cola">
+      <img class="thumb-img is-placeholder" src="assets/products/beverage-placeholder.svg" width="400" height="400" alt="" data-product-name="Coca-Cola" loading="lazy" decoding="async">
+    </span>
+      <div class="cart-item-info">
+        <div class="cart-title">Coca-Cola</div>
+        <div class="cart-meta">2,25 L · Original · $&nbsp;5.900 c/u</div>
+        
+      </div>
+      <div class="cart-item-side">
+        
+    <div class="quantity-control" aria-label="Cantidad de Coca-Cola en el pedido">
+      <button class="icon-button compact qty-stepper-action qty-stepper-remove" type="button" data-cart-dec="44210832-ec41-463b-b07a-4622dddf4fd9" aria-label="Restar uno de Coca-Cola"><span aria-hidden="true">−</span></button>
+      <strong aria-live="polite" class="motion-quantity-pop">2</strong>
+      <button class="icon-button compact qty-stepper-action" type="button" data-cart-inc="44210832-ec41-463b-b07a-4622dddf4fd9" aria-label="Sumar uno de Coca-Cola"><span aria-hidden="true">+</span></button>
+    </div>
+        <div class="cart-line">$&nbsp;11.800</div>
+      </div>
+    </div>
+  
+    <div class="cart-item">
+      
+    <span class="thumb uses-placeholder tone-drink category-gaseosas thumb-cart" role="img" aria-label="Producto sin imagen oficial: Coca-Cola Zero">
+      <img class="thumb-img is-placeholder" src="assets/products/beverage-placeholder.svg" width="400" height="400" alt="" data-product-name="Coca-Cola Zero" loading="lazy" decoding="async">
+    </span>
+      <div class="cart-item-info">
+        <div class="cart-title">Coca-Cola Zero</div>
+        <div class="cart-meta">2,25 L · Sin azúcar</div>
+        
+      </div>
+      <div class="cart-item-side">
+        
+    <div class="quantity-control" aria-label="Cantidad de Coca-Cola Zero en el pedido">
+      <button class="icon-button compact qty-stepper-action qty-stepper-remove" type="button" data-cart-dec="4c186857-4e51-4891-b287-7fc00c21c82c" aria-label="Quitar Coca-Cola Zero del pedido"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 7.5h13M9.2 7.5V5.8h5.6v1.7m-7.8 0 .8 11.1h8.4L17 7.5M10 11v4.2m4-4.2v4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+      <strong aria-live="polite" class="motion-quantity-pop">1</strong>
+      <button class="icon-button compact qty-stepper-action" type="button" data-cart-inc="4c186857-4e51-4891-b287-7fc00c21c82c" aria-label="Sumar uno de Coca-Cola Zero"><span aria-hidden="true">+</span></button>
+    </div>
+        <div class="cart-line">$&nbsp;5.900</div>
+      </div>
+    </div>
+  </div>
+
+=== LINEAS PARSEADAS ===
+[
+ {
+  "tag": "DIV",
+  "cls": "cart-item",
+  "data": [],
+  "text": "Coca-Cola 2,25 L · Original · $ 5.900 c/u − 2 + $ 11.800"
+ },
+ {
+  "tag": "DIV",
+  "cls": "cart-item",
+  "data": [],
+  "text": "Coca-Cola Zero 2,25 L · Sin azúcar 1 + $ 5.900"
+ }
+]
+
+=== VISTA CART COMPLETA (innerText) ===
+Tu pedido
+Seguir comprando
+Vaciar carrito
+Productos
+Coca-Cola
+2,25 L · Original · $ 5.900 c/u
+−
+2
++
+$ 11.800
+Coca-Cola Zero
+2,25 L · Sin azúcar
+1
++
+$ 5.900
+PARA ENTREGARTE EL PEDIDO
+Datos de entrega
+Delivery
+Tus datos
+Completá tu perfil para continuar
+Necesitamos tu nombre y teléfono para que el local pueda entregarte el pedido.
+Completar Perfil
+Agregá una dirección para recibir el pedido
+Guardás la dirección una vez en tu Perfil y después la elegís en cada compra.
+Agregar dirección en Perfil
+Forma de pago
+A coordinar con el local
+Efectivo al recibir
+El medio se confirma antes de preparar el pedido.
+Agregar indicaciones
+Subtotal
+$ 17.700
+Envío a domicilio
+$ 0
+Total
+$ 17.700
+Pedido online al local.
+Al confirmar, el pedido se registra en el sistema del comercio.
+Confirmar pedido
+
+El pago se coordina directamente con el local.
+
+=== DATA ATTRS EN VISTA CART ===
+[["motionReveal",3],["productName",2],["cartDec",2],["cartInc",2],["fulfillmentOption",2],["profileBlock",2],["profileCheckoutAction",2],["productionCatalogGate",1],["productionCatalogMessage",1],["catalogDependent",1],["navView",1],["clearCart",1],["cartNotice",1],["cartList",1],["cartMinimumProgress",1],["cartRecommendations",1],["checkoutForm",1],["addressSource",1],["addressFormDirty",1],["profileHydrationVersion",1],["checkoutDetailsTitle",1],["addressField",1],["customerAddresses",1],["profileCheckout",1],["checkoutPhase",1],["mercadopagoAvailable",1],["ageConfirmation",1],["ageConfirmationTitle",1],["orderSummary",1],["checkoutWarning",1],["checkoutTrustTitle",1],["checkoutTrustCopy",1],["checkoutSubmit",1],["checkoutModeNote",1]]
+
+########## PASO 5 — CHECKOUT ##########
+=== [data-checkout-phase] === full
+=== [data-order-summary] ===
+<div class="summary-box" data-order-summary="">
+    <div class="summary-row"><span>Subtotal</span><strong>$&nbsp;17.700</strong></div>
+    
+    
+    
+    
+    
+    <div class="summary-row"><span>Envío a domicilio</span><strong>$&nbsp;0</strong></div>
+    <div class="summary-row total"><span>Total</span><strong>$&nbsp;17.700</strong></div>
+  </div>
+
+=== FORMA DE PAGO ===
+{
+ "outer": "<select name=\"paymentMethod\" aria-label=\"Forma de pago\" data-mercadopago-available=\"false\">\n                  <!-- Las opciones tienen que estar en el CHECK\n                       `orders_payment_method_valid` de la base\n                       (20260806170000_order_payment_modality_integrity.sql).\n                       «Transferencia al confirmar» estaba acá y NO estaba en el\n                       CHECK: el pedido se rechazaba al insertarse y la persona\n                       veía un error genérico después de completar todo el\n                       checkout. Volver a ofrecer transferencia exige primero el\n                       flujo real (datos bancarios, comprobante, quién\n                       confirma) y su migración; agregar la opción sola\n                       reabre el mismo pozo.\n                       El test `payment-methods-contract` sostiene esta lista. -->\n                  <option value=\"coordinate\">A coordinar con el local</option>\n                  <option value=\"cash\">Efectivo al recibir</option>\n                </select>",
+ "visible": true,
+ "value": "coordinate",
+ "options": [
+  {
+   "value": "coordinate",
+   "text": "A coordinar con el local",
+   "disabled": false,
+   "selected": true
+  },
+  {
+   "value": "cash",
+   "text": "Efectivo al recibir",
+   "disabled": false,
+   "selected": false
+  }
+ ],
+ "wrapper": "<label class=\"checkout-payment-field\">\n                Forma de pago\n                <select name=\"paymentMethod\" aria-label=\"Forma de pago\" data-mercadopago-available=\"false\">\n                  <!-- Las opciones tienen que estar en el CHECK\n                       `orders_payment_method_valid` de la base\n                       (20260806170000_order_payment_modality_integrity.sql).\n                       «Transferencia al confirmar» estaba acá y NO estaba en el\n                       CHECK: el pedido se rechazaba al insertarse y la persona\n                       veía un error genérico después d"
+}
+
+=== MODO DE ENTREGA (deliveryMode / fulfillment) ===
+{
+ "radios": [
+  {
+   "value": "delivery",
+   "checked": true,
+   "visible": true,
+   "label": "Delivery"
+  },
+  {
+   "value": "pickup",
+   "checked": false,
+   "visible": false,
+   "label": "Retiro en local"
+  }
+ ],
+ "fulfillment": [
+  {
+   "v": "delivery",
+   "text": "Delivery",
+   "cls": ""
+  },
+  {
+   "v": "pickup",
+   "text": "Retiro en local",
+   "cls": ""
+  }
+ ]
+}
+
+=== BLOQUES PERFIL / DIRECCION ===
+{
+ "profileCheckout": "<section class=\"profile-checkout\" data-profile-checkout=\"\" aria-labelledby=\"profile-checkout-title\" data-checkout-phase=\"full\">\n      <h4 class=\"profile-checkout-title\" id=\"profile-checkout-title\">Tus datos</h4>\n      <div class=\"saved-address-status\" aria-live=\"polite\"></div>\n      <div class=\"profile-checkout-block\" data-profile-block=\"incomplete\" role=\"status\">\n      <strong>Completá tu perfil para continuar</strong>\n      <span>Necesitamos tu nombre y teléfono para que el local pueda entregarte el pedido.</span>\n      <button class=\"primary-button compact\" type=\"button\" data-profile-checkout-action=\"edit-profile\">Completar Perfil</button>\n    </div>\n      <div class=\"profile-checkout-block\" data-profile-block=\"no-address\" role=\"status\">\n      <strong>Agregá una dirección para recibir el pedido</strong>\n      <span>Guardás la dirección una vez en tu Perfil y después la elegís en cada compra.</span>\n      <button class=\"primary-button compact\" type=\"button\" data-profile-checkout-action=\"add-address\">Agregar dirección en Perfil</button>\n    </div>\n    </section>",
+ "profileBlocks": [
+  {
+   "v": "incomplete",
+   "text": "Completá tu perfil para continuar Necesitamos tu nombre y teléfono para que el local pueda entregarte el pedido. Completar Perfil"
+  },
+  {
+   "v": "no-address",
+   "text": "Agregá una dirección para recibir el pedido Guardás la dirección una vez en tu Perfil y después la elegís en cada compra. Agregar dirección en Perfil"
+  }
+ ],
+ "profileCheckoutActions": [
+  {
+   "v": "edit-profile",
+   "text": "Completar Perfil",
+   "outer": "<button class=\"primary-button compact\" type=\"button\" data-profile-checkout-action=\"edit-profile\">Completar Perfil</button>"
+  },
+  {
+   "v": "add-address",
+   "text": "Agregar dirección en Perfil",
+   "outer": "<button class=\"primary-button compact\" type=\"button\" data-profile-checkout-action=\"add-address\">Agregar dirección en Perfil</button>"
+  }
+ ],
+ "customerAddresses": "<div data-customer-addresses=\"\">\n    <section class=\"profile-checkout\" data-profile-checkout=\"\" aria-labelledby=\"profile-checkout-title\" data-checkout-phase=\"full\">\n      <h4 class=\"profile-checkout-title\" id=\"profile-checkout-title\">Tus datos</h4>\n      <div class=\"saved-address-status\" aria-live=\"polite\"></div>\n      <div class=\"profile-checkout-block\" data-profile-block=\"incomplete\" role=\"status\">\n      <strong>Completá tu perfil para continuar</strong>\n      <span>Necesitamos tu nombre y teléfono para que el local pueda entregarte el pedido.</span>\n      <button class=\"primary-button compact\" type=\"button\" data-profile-checkout-action=\"edit-profile\">Completar Perfil</button>\n    </div>\n      <div class=\"profile-checkout-block\" data-profile-block=\"no-address\" role=\"status\">\n      <strong>Agregá una dirección para recibir el pedido</strong>\n      <span>Guardás la dirección una vez en tu Perfil y después la elegís en cada compra.</span>\n      <button class=\"primary-button compact\" type=\"button\" data-profile-checkout-action=\"add-address\">Agregar dirección en Perfil</button>\n    </div>\n    </section></div>",
+ "addressField": [
+  ""
+ ]
+}
+
+########## PASO 6 — EL GATE ##########
+=== [data-checkout-submit] ===
+{
+ "outer": "<button class=\"primary-button confirm-button\" type=\"submit\" data-checkout-submit=\"\">Confirmar pedido</button>",
+ "text": "Confirmar pedido",
+ "disabled": false,
+ "ariaDisabled": null,
+ "visible": true,
+ "type": "submit",
+ "form": ""
+}
+
+=== [data-checkout-warning] ===
+<div class="warning-box hidden" id="checkout-error" data-checkout-warning="" role="alert" aria-live="assertive" tabindex="-1">Pedido listo para confirmar.</div>
+
+=== [data-cart-notice] ===
+<div class="cart-notice" data-cart-notice="" role="status" aria-live="polite"></div>
+
+=== [data-checkout-mode-note] ===
+<p class="form-hint" data-checkout-mode-note="">El pago se coordina directamente con el local.</p>
+
+=== confirmacion de edad ===
+<label class="remember-customer-row age-confirmation" data-age-confirmation="" hidden="" aria-hidden="true">
+                <input type="checkbox" name="ageConfirmed" style="">
+                <span>
+                  <strong data-age-confirmation-title="">Confirmo que soy mayor de 18 años</strong>
+                  <small>Presentaremos esta validación únicamente para productos con alcohol.</small>
+                </span>
+              </label>
+
+=== TODOS LOS BOTONES VISIBLES EN CART ===
+[
+ {
+  "text": "Seguir comprando",
+  "cls": "secondary-button compact",
+  "data": [
+   "navView=catalog"
+  ],
+  "disabled": false
+ },
+ {
+  "text": "Vaciar carrito",
+  "cls": "ghost-button compact",
+  "data": [
+   "clearCart="
+  ],
+  "disabled": false
+ },
+ {
+  "text": "−",
+  "cls": "icon-button compact qty-stepper-action qty-stepper-remove",
+  "data": [
+   "cartDec=44210832-ec41-463b-b07a-4622dddf4fd9"
+  ],
+  "disabled": false
+ },
+ {
+  "text": "+",
+  "cls": "icon-button compact qty-stepper-action",
+  "data": [
+   "cartInc=44210832-ec41-463b-b07a-4622dddf4fd9"
+  ],
+  "disabled": false
+ },
+ {
+  "text": "",
+  "cls": "icon-button compact qty-stepper-action qty-stepper-remove",
+  "data": [
+   "cartDec=4c186857-4e51-4891-b287-7fc00c21c82c"
+  ],
+  "disabled": false
+ },
+ {
+  "text": "+",
+  "cls": "icon-button compact qty-stepper-action",
+  "data": [
+   "cartInc=4c186857-4e51-4891-b287-7fc00c21c82c"
+  ],
+  "disabled": false
+ },
+ {
+  "text": "Completar Perfil",
+  "cls": "primary-button compact",
+  "data": [
+   "profileCheckoutAction=edit-profile"
+  ],
+  "disabled": false
+ },
+ {
+  "text": "Agregar dirección en Perfil",
+  "cls": "primary-button compact",
+  "data": [
+   "profileCheckoutAction=add-address"
+  ],
+  "disabled": false
+ },
+ {
+  "text": "Confirmar pedido",
+  "cls": "primary-button confirm-button",
+  "data": [
+   "checkoutSubmit="
+  ],
+  "disabled": false
+ }
+]
+
+########## PASO 7 — SEGUIR (sin pedido) ##########
+view activa: tracking
+=== innerText tracking ===
+Use Ctrl + scroll to zoom the map
+La Taba · Cobertura no publicada
+Seguí tu pedido
+
+Cuando hagas una compra, vas a poder seguir el recorrido del Rider desde acá.
+
+Ver el catálogo
+
+=== [data-tracking-idle-card] ===
+<div class="tracking-idle-card" data-tracking-idle-card="">
+            <h1 class="tracking-idle-title" tabindex="-1">Seguí tu pedido</h1>
+            <p class="tracking-idle-lead">Cuando hagas una compra, vas a poder seguir el recorrido del Rider desde acá.</p>
+            <button class="primary-button compact tracking-idle-cta" type="button" data-nav-view="catalog">Ver el catálogo</button>
+          </div>
+
+=== [data-tracking-panel] (recorte) ===
+<div data-tracking-panel="">
+      <div class="track-layout tracking-premium tracking-map-experience is-idle" data-tracking-status="idle">
+        <section class="delivery-bottom-sheet tracking-sheet track-progress-card is-idle" data-bottom-sheet="">
+          
+    <header class="tracking-brand-row">
+      <!-- El seguimiento es una superficie del CLIENTE: dice el nombre del
+           local, no el de la plataforma. Antes estaba escrito a mano y quedaba
+           desalineado con el resto de la app cuando el comercio se renombraba. -->
+      <strong data-business-name="">La Taba</strong>
+      <button class="tracking-menu-button" type="button" data-nav-view="profile" aria-label="Abrir menú">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>
+        </svg>
+      </button>
+    </header>
+          
+    <div class="delivery-map-stage tracking-map-stage is-idle" data-map-shell="tracking" data-tracking-map-freshness="none" data-tracking-map-idle="" data-map-camera="follow">
+      
+    <div class="real-map-shell map-theme-light is-location-none is-ready" data-real-map="" data-map-role="tracking" data-map-freshness="none" data-map-mode="idle" data-map-theme="light" data-map-camera="follow" data-map-engine="maplibre" data-map-status="ready" data-map-presentation="idle">
+      <div class="real-map-canvas maplibregl-map" data-map-canvas="" role="region" aria-label="Mapa de la zona de reparto"><div class="maplibregl-canvas-container maplibregl-interactive maplibregl-cooperative-gestures maplibregl-touch-drag-pan maplibregl-touch-zoom-rotate"><canvas class="maplibregl-canvas" tabindex="0" aria-label="Map" role="region" width="344" height="320" style="width: 344px; height: 320px;"></canvas><div class="maplibregl-cooperative-gesture-screen" aria-hidden="true"><div class="maplibregl-desktop-message">Use Ctrl + scroll to zoom the map</div><div class="maplibregl-mobile-message">Use two fingers to move the map</div></div></div><div class="maplibregl-control-container"><div class="maplibregl-ctrl-top-left "></div><div class="maplibregl-ctrl-top-right "><div class="maplibregl-ctrl maplibregl-ctrl-group"><button class="maplibregl-ctrl-zoom-in" type="button" title="Zoom in" aria-label="Zoom in" aria-disabled="false"><span class="maplibregl-ctrl-icon" aria-hidden="true"></span></button><button class="maplibregl-ctrl-zoom-out" typ
+
+=== [data-tracking-status] ===
+<div class="track-layout tracking-premium tracking-map-experience is-idle" data-tracking-status="idle">
+        <section class="delivery-bottom-sheet tracking-sheet track-progress-card is-idle" data-bottom-sheet="">
+          
+    <header class="tracking-brand-row">
+      <!-- El seguimiento es una superficie del CLIENTE: dice el nombre del
+           local, no el de la plataforma. Antes estaba escrito a mano y quedaba
+           desalineado con el resto de la app cuando el comercio se renombraba. -->
+      <strong data-business-name="">La Taba</strong>
+      <button class="tracking-menu-button" type="button" data-nav-view="profile" aria-label="Abrir menú">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>
+        </svg>
+      </button>
+    </header>
+          
+    <div class="delivery-map-stage tracking-map-stage is-idle" data-map-shell="tracking" data-tracking-map-freshness="none" data-tracking-map-idle="" data-map-camera="follow">
+      
+    <div class="real-map-shell map-theme-light is-location-none is-ready" data-real-map="" d
+
+=== DATA ATTRS EN TRACKING ===
+[["navView",2],["mapCamera",2],["trackingPanel",1],["trackingStatus",1],["bottomSheet",1],["businessName",1],["mapShell",1],["trackingMapFreshness",1],["trackingMapIdle",1],["realMap",1],["mapRole",1],["mapFreshness",1],["mapMode",1],["mapTheme",1],["mapEngine",1],["mapStatus",1],["mapPresentation",1],["mapCanvas",1],["mapFallback",1],["mapFallbackCopy",1],["mapTileError",1],["mapMeta",1],["mapMetaIndicator",1],["mapLiveDot",1],["mapClockIcon",1],["mapMetaText",1],["trackingIdleCard",1]]
+
+########## PERFIL (anonimo) ##########
+=== innerText perfil (recorte) ===
+TU CUENTA
+
+Mi perfil
+
+Tus datos se usarán para preparar y entregar tus pedidos.
+
+Datos personales
+Todavía no cargaste tus datos
+
+Guardá solo lo necesario para no escribirlo de nuevo en cada compra.
+
+Completar datos
+Tus direcciones
+Elegí a dónde llevamos tu pedido
+Todavía no tenés direcciones guardadas
+
+Agregá una acá y después la elegís al hacer el pedido.
+
++
+Agregar nueva dirección
+TABA no necesita tu DNI.
+
+Solo guardamos los datos necesarios para identificar al destinatario y entregar tus pedidos. Del punto de entrega guardamos uno por dirección, no un historial de dónde estuviste.
+
+Información del local
+
+=== [data-customer-profile-state] === ready

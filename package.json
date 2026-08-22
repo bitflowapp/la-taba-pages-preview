@@ -100,7 +100,11 @@
     "release:identity": "node scripts/check-release-identity.mjs --write",
     "production:smoke:registration": "node scripts/production-registration-smoke.mjs",
     "production:smoke:customer": "node scripts/production-customer-memory-smoke.mjs",
-    "production:auth:health": "node scripts/production-auth-health.mjs"
+    "production:auth:health": "node scripts/production-auth-health.mjs",
+    "e2e:auth:customer": "node scripts/e2e-production-sale/bootstrap-sesion.mjs --perfil=customer",
+    "e2e:auth:business": "node scripts/e2e-production-sale/bootstrap-sesion.mjs --perfil=business",
+    "e2e:production-sale:dry": "node scripts/e2e-production-sale/index.mjs",
+    "e2e:production-sale": "node scripts/e2e-production-sale/index.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

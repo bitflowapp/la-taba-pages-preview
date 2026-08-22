@@ -1,0 +1,56 @@
+########## NAVEGACION POR HASH ##########
+  #catalog     -> vista "catalog" (url final: #catalog)
+  #cart        -> vista "cart" (url final: #cart)
+  #tracking    -> vista "tracking" (url final: #tracking)
+  #profile     -> vista "profile" (url final: #profile)
+  #carrito     -> vista "cart" (url final: #carrito)
+  #seguir      -> vista "tracking" (url final: #seguir)
+  #business    -> vista "business" (url final: #business)
+
+  cambio de hash EN CALIENTE:
+    #cart -> cart
+    #tracking -> tracking
+    #catalog -> catalog
+
+########## CAPTURA CARRITO CON ITEMS ##########
+lectura del harness:
+[
+ {
+  "nombre": "Coca-Cola",
+  "presentacion": "2,25 L · Original · $ 5.900 c/u",
+  "cantidad": "2",
+  "totalLinea": "$ 11.800",
+  "productId": "44210832-ec41-463b-b07a-4622dddf4fd9"
+ },
+ {
+  "nombre": "Coca-Cola Zero",
+  "presentacion": "2,25 L · Sin azúcar",
+  "cantidad": "1",
+  "totalLinea": "$ 5.900",
+  "productId": "4c186857-4e51-4891-b287-7fc00c21c82c"
+ }
+]
+
+totales del harness:
+{
+ "filas": [
+  [
+   "summary-row",
+   "Subtotal",
+   "$ 17.700"
+  ],
+  [
+   "summary-row",
+   "Envío a domicilio",
+   "$ 0"
+  ],
+  [
+   "summary-row total",
+   "Total",
+   "$ 17.700"
+  ]
+ ],
+ "subtotal": "$ 17.700",
+ "envio": "$ 0",
+ "total": "$ 17.700"
+}

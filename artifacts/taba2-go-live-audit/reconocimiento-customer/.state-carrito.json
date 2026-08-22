@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "https://la-taba.pages.dev",
+      "localStorage": [
+        {
+          "name": "la_taba_production_cart_v1",
+          "value": "{\"schemaVersion\":2,\"cart\":[{\"productId\":\"44210832-ec41-463b-b07a-4622dddf4fd9\",\"quantity\":1}],\"comboSelections\":[],\"savedAt\":\"2026-08-22T07:56:54.415Z\"}"
+        },
+        {
+          "name": "TABA_INSTALL_PROMPT_V1",
+          "value": "{\"dismissedAt\":1787385404773,\"choice\":\"later\"}"
+        }
+      ]
+    }
+  ]
+}

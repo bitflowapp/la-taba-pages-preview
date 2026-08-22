@@ -1,0 +1,183 @@
+
+########## PASO 1 — BUSQUEDA ##########
+[
+ {
+  "index": 0,
+  "placeholder": "Buscar bebidas, marcas o presentaciones",
+  "visible": false,
+  "ownerView": "(fuera de vista)",
+  "hasSearchJump": true,
+  "outer": "<input data-search-input=\"\" data-search-jump=\"\" type=\"search\" placeholder=\"Buscar bebidas, marcas o presentaciones\">"
+ },
+ {
+  "index": 1,
+  "placeholder": "Buscar bebidas, marcas y ofertas…",
+  "visible": true,
+  "ownerView": "home",
+  "hasSearchJump": true,
+  "outer": "<input data-search-input=\"\" data-search-jump=\"\" type=\"search\" placeholder=\"Buscar bebidas, marcas y ofertas…\" aria-label=\"Buscar bebidas, marcas y ofertas\">"
+ },
+ {
+  "index": 2,
+  "placeholder": "Buscar productos, marcas y más…",
+  "visible": false,
+  "ownerView": "catalog",
+  "hasSearchJump": false,
+  "outer": "<input data-search-input=\"\" type=\"search\" placeholder=\"Buscar productos, marcas y más…\" aria-label=\"Buscar productos, marcas y más\">"
+ }
+]
+view activa tras buscar: catalog
+=== CABECERA CATALOGO ===
+{
+ "title": "Resultados",
+ "count": "6 productos",
+ "countOuter": "<p class=\"catalog-count\" data-catalog-count=\"\">6 productos</p>",
+ "clearSearch": "<button class=\"search-clear\" type=\"button\" data-clear-search=\"\" aria-label=\"Limpiar búsqueda\">\n              <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" aria-hidden=\"true\">\n                <path d=\"m7 7 10 10M17 7 7 17\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"></path>\n              </svg>\n            </button>"
+}
+
+########## PASO 2 — TARJETA DE PRODUCTO ##########
+grid: {"sel":"[data-product-grid]","tag":"DIV","cls":"product-grid","cards":6}
+=== 4 TARJETAS ===
+[
+ {
+  "name": "Coca-Cola",
+  "presentation": "2,25 L · Original",
+  "priceStrong": "$ 5.900",
+  "priceAll": "$ 5.900",
+  "addBtn": "<button class=\"add-button\" type=\"button\" data-add-product=\"44210832-ec41-463b-b07a-4622dddf4fd9\" aria-label=\"Agregar Coca-Cola al pedido\">\n    <span class=\"add-plus\" aria-hidden=\"true\">+</span><span class=\"add-text\">Agregar</span>\n  </button>",
+  "productDetail": "44210832-ec41-463b-b07a-4622dddf4fd9",
+  "productNameAttr": "Coca-Cola",
+  "classes": "product-card is-motion-visible"
+ },
+ {
+  "name": "Coca-Cola Zero",
+  "presentation": "2,25 L · Sin azúcar",
+  "priceStrong": "$ 5.900",
+  "priceAll": "$ 5.900",
+  "addBtn": "<button class=\"add-button\" type=\"button\" data-add-product=\"4c186857-4e51-4891-b287-7fc00c21c82c\" aria-label=\"Agregar Coca-Cola Zero al pedido\">\n    <span class=\"add-plus\" aria-hidden=\"true\">+</span><span class=\"add-text\">Agregar</span>\n  </button>",
+  "productDetail": "4c186857-4e51-4891-b287-7fc00c21c82c",
+  "productNameAttr": "Coca-Cola Zero",
+  "classes": "product-card is-motion-visible"
+ },
+ {
+  "name": "Coca-Cola Original",
+  "presentation": "Pack x12 · 500 ml",
+  "priceStrong": "$ 17.100",
+  "priceAll": "$ 17.100",
+  "addBtn": "<button class=\"add-button\" type=\"button\" data-add-product=\"e3a974c3-9e4e-42a2-a1c4-a047cd93bf6a\" aria-label=\"Agregar Coca-Cola Original al pedido\">\n    <span class=\"add-plus\" aria-hidden=\"true\">+</span><span class=\"add-text\">Agregar</span>\n  </button>",
+  "productDetail": "e3a974c3-9e4e-42a2-a1c4-a047cd93bf6a",
+  "productNameAttr": "Coca-Cola Original",
+  "classes": "product-card is-motion-visible"
+ },
+ {
+  "name": "Coca-Cola Zero",
+  "presentation": "Pack x12 · 500 ml",
+  "priceStrong": "$ 17.100",
+  "priceAll": "$ 17.100",
+  "addBtn": "<button class=\"add-button\" type=\"button\" data-add-product=\"5cd082fa-35db-413e-983e-10b12255fdb9\" aria-label=\"Agregar Coca-Cola Zero al pedido\">\n    <span class=\"add-plus\" aria-hidden=\"true\">+</span><span class=\"add-text\">Agregar</span>\n  </button>",
+  "productDetail": "5cd082fa-35db-413e-983e-10b12255fdb9",
+  "productNameAttr": "Coca-Cola Zero",
+  "classes": "product-card is-motion-visible"
+ }
+]
+=== HTML COMPLETO TARJETA 1 ===
+<article class="product-card is-motion-visible" data-motion-reveal="card" style="--motion-index: 0;">
+        <div class="product-media-frame">
+          <button class="product-media" type="button" data-product-detail="44210832-ec41-463b-b07a-4622dddf4fd9" aria-label="Ver Coca-Cola">
+            
+    <span class="thumb uses-placeholder tone-drink category-gaseosas thumb-grid" role="img" aria-label="Producto sin imagen oficial: Coca-Cola">
+      <img class="thumb-img is-placeholder" src="assets/products/beverage-placeholder.svg" width="400" height="400" alt="" data-product-name="Coca-Cola" loading="lazy" decoding="async">
+    </span>
+            <span class="product-stock-tag" aria-hidden="true"></span>
+          </button>
+          
+          <button class="product-favorite " type="button" data-favorite-toggle="44210832-ec41-463b-b07a-4622dddf4fd9" aria-label="Guardar Coca-Cola de favoritos" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"></path></svg>
+          </button>
+        </div>
+        <div class="product-body">
+          
+          <h3>Coca-Cola</h3>
+          <p>2,25 L · Original</p>
+          <div class="product-foot">
+            
+    <div class="price">
+      <div class="price-amounts"><strong>$&nbsp;5.900</strong></div>
+      
+    </div>
+            <div class="product-action"><button class="add-button" type="button" data-add-product="44210832-ec41-463b-b07a-4622dddf4fd9" aria-label="Agregar Coca-Cola al pedido">
+    <span class="add-plus" aria-hidden="true">+</span><span class="add-text">Agregar</span>
+  </button></div>
+          </div>
+        </div>
+      </article>
+=== data-product-name (nodo) ===
+IMG.thumb-img is-placeholder -> "Coca-Cola" (dentro de .product-card)
+
+########## PASO 3 — AGREGAR 1 UNIDAD ##########
+producto elegido: Coca-Cola
+=== TARJETA TRAS AGREGAR ===
+<div class="product-action">
+    <div class="qty-stepper is-just-added" aria-label="Cantidad de Coca-Cola en el pedido" data-added-flash="">
+      <button class="icon-button compact qty-stepper-action qty-stepper-remove" type="button" data-cart-dec="44210832-ec41-463b-b07a-4622dddf4fd9" aria-label="Quitar Coca-Cola del pedido"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 7.5h13M9.2 7.5V5.8h5.6v1.7m-7.8 0 .8 11.1h8.4L17 7.5M10 11v4.2m4-4.2v4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+      <strong aria-live="polite" class="motion-quantity-pop">1</strong>
+      <button class="icon-button compact qty-stepper-action" type="button" data-cart-inc="44210832-ec41-463b-b07a-4622dddf4fd9" aria-label="Sumar uno de Coca-Cola"><span aria-hidden="true">+</span></button>
+    </div></div>
+qty leida: 1
+=== CONTADORES GLOBALES ===
+{
+ "cartCount": [
+  "1",
+  "1",
+  "1"
+ ],
+ "floatingCartCount": "1 producto",
+ "floatingCartLabel": "Ver carrito",
+ "floatingCartSummary": "$ 5.900",
+ "floatingCartOuter": "<button class=\"floating-cart\" type=\"button\" data-floating-cart=\"\" data-open-cart=\"\" aria-live=\"polite\" aria-label=\"Ver carrito · $&nbsp;5.900. Ver pedido.\">\n        <span class=\"floating-cart-copy\">\n          <span class=\"floating-cart-label\" data-floating-cart-label=\"\">Ver carrito</span>\n          <span class=\"floating-cart-meta\">\n            <small data-floating-cart-count=\"\">1 producto</small>\n            <span class=\"floating-cart-saving\" data-floating-cart-saving=\"\" hidden=\"\">Ahorrás $&nbsp;0</span>\n            <span class=\"floating-cart-original\" data-floating-cart-original=\"\" hidden=\"\">$&nbsp;5.900</span>\n          </span>\n        </span>\n        <strong data-floating-cart-summary=\"\">$&nbsp;5.900</strong>\n      </button>",
+ "navCart": "Pedidos 1",
+ "cartTotalSmall": "$ 5.900"
+}
+tras +1: 2
+tras -1: 1
+
+########## PASO 4 — CARRITO ##########
+view activa: cart
+=== CART LIST ===
+<div data-cart-list="">
+    <div class="cart-item">
+      
+    <span class="thumb uses-placeholder tone-drink category-gaseosas thumb-cart" role="img" aria-label="Producto sin imagen oficial: Coca-Cola">
+      <img class="thumb-img is-placeholder" src="assets/products/beverage-placeholder.svg" width="400" height="400" alt="" data-product-name="Coca-Cola" loading="lazy" decoding="async">
+    </span>
+      <div class="cart-item-info">
+        <div class="cart-title">Coca-Cola</div>
+        <div class="cart-meta">2,25 L · Original</div>
+        
+      </div>
+      <div class="cart-item-side">
+        
+    <div class="quantity-control" aria-label="Cantidad de Coca-Cola en el pedido">
+      <button class="icon-button compact qty-stepper-action qty-stepper-remove" type="button" data-cart-dec="44210832-ec41-463b-b07a-4622dddf4fd9" aria-label="Quitar Coca-Cola del pedido"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 7.5h13M9.2 7.5V5.8h5.6v1.7m-7.8 0 .8 11.1h8.4L17 7.5M10 11v4.2m4-4.2v4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+      <strong aria-live="polite" class="motion-quantity-pop">1</strong>
+      <button class="icon-button compact qty-stepper-action" type="button" data-cart-inc="44210832-ec41-463b-b07a-4622dddf4fd9" aria-label="Sumar uno de Coca-Cola"><span aria-hidden="true">+</span></button>
+    </div>
+        <div class="cart-line">$&nbsp;5.900</div>
+      </div>
+    </div>
+  </div>
+
+=== TOTALES / RESUMEN ===
+<div class="summary-box" data-order-summary="">
+    <div class="summary-row"><span>Subtotal</span><strong>$&nbsp;5.900</strong></div>
+    
+    
+    
+    
+    
+    <div class="summary-row"><span>Envío a domicilio</span><strong>$&nbsp;0</strong></div>
+    <div class="summary-row total"><span>Total</span><strong>$&nbsp;5.900</strong></div>
+  </div>
+
+=== DATA ATTRS EN VISTA CART ===
+[["motionReveal",3],["fulfillmentOption",2],["profileBlock",2],["profileCheckoutAction",2],["productionCatalogGate",1],["productionCatalogMessage",1],["catalogDependent",1],["navView",1],["clearCart",1],["cartNotice",1],["cartList",1],["productName",1],["cartDec",1],["cartInc",1],["cartMinimumProgress",1],["cartRecommendations",1],["checkoutForm",1],["addressSource",1],["addressFormDirty",1],["profileHydrationVersion",1],["checkoutDetailsTitle",1],["addressField",1],["customerAddresses",1],["profileCheckout",1],["checkoutPhase",1],["mercadopagoAvailable",1],["ageConfirmation",1],["ageConfirmationTitle",1],["orderSummary",1],["checkoutWarning",1],["checkoutTrustTitle",1],["checkoutTrustCopy",1],["checkoutSubmit",1],["checkoutModeNote",1]]

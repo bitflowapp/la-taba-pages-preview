@@ -2,6 +2,11 @@ node_modules/
 **/node_modules/
 .env
 **/.env
+# Sesiones de navegador de la prueba de venta real y su lock. Son credenciales
+# vivas de producción: se generan a mano con `npm run e2e:auth:*` y NUNCA se
+# versionan. Tampoco viajan al paquete publicado: `create-release-folder.mjs`
+# copia una lista blanca y `.local/` no está en ella.
+.local/
 test-results/
 test-results-certification/
 playwright-report/

@@ -1,0 +1,95 @@
+{
+  "runId": "20260822-074744-060747b4",
+  "modo": "ENSAYO (no crea pedido)",
+  "generadoUtc": "[PIN-REDACTADO]-08-22T07:47:55.374Z",
+  "negocio": {
+    "id": "00000000-[PIN-REDACTADO]-[PIN-REDACTADO]-[PIN-REDACTADO]-000000000001",
+    "name": "La Taba",
+    "status": "open",
+    "is_active": true,
+    "ordering_enabled": true,
+    "ordering_verified": true,
+    "delivery_enabled": true,
+    "alcohol_sales_enabled": false,
+    "delivery_fee": "0.00",
+    "minimo": "0.00"
+  },
+  "producto": {
+    "id": "db17b799-385e-[PIN-REDACTADO]-912e-45ef8bc229a1",
+    "external_id": "coca-cola-original-pet-1500ml",
+    "name": "Coca-Cola Original",
+    "stock": 0,
+    "available": false,
+    "is_verified": true,
+    "is_active": true,
+    "price": "[PIN-REDACTADO].00",
+    "is_alcoholic": false,
+    "capacity": "[PIN-REDACTADO] ml",
+    "variant": "Original"
+  },
+  "conteos": {
+    "pedidos_totales": 1,
+    "pedidos_abiertos": 1,
+    "visibles": 32,
+    "movimientos": 0
+  },
+  "pedidosAbiertos": [
+    {
+      "public_code": "LT-[PIN-REDACTADO]",
+      "status": "on_the_way",
+      "created_at": "[PIN-REDACTADO]-08-18 03:25:15.125791+00",
+      "total": "17100.00"
+    }
+  ],
+  "rider": {
+    "dispositivoConectado": true,
+    "paquete": "com.lataba.rider",
+    "version": "1.0.0",
+    "pantalla": "1080x2400",
+    "bateria": 100
+  },
+  "sesiones": {
+    "customer": {
+      "nombre": "cliente",
+      "existe": false,
+      "vencida": false,
+      "verificada": false,
+      "edadHoras": null
+    },
+    "business": {
+      "nombre": "panel",
+      "existe": false,
+      "vencida": false,
+      "verificada": false,
+      "edadHoras": null
+    }
+  },
+  "stockBefore": 0,
+  "compuertas": {
+    "negocio": {
+      "ok": true,
+      "codigo": null,
+      "mensaje": ""
+    },
+    "producto": {
+      "ok": false,
+      "codigo": "NO_PUBLICADO",
+      "mensaje": "el producto no está publicado: falta la recepción física y publicarlo desde el Panel"
+    },
+    "rider": {
+      "ok": true,
+      "codigo": null,
+      "mensaje": ""
+    },
+    "sesionCustomer": {
+      "ok": false,
+      "codigo": "AUTH_SESSION_MISSING",
+      "mensaje": "falta la sesión de cliente: corré el bootstrap"
+    },
+    "sesionBusiness": {
+      "ok": false,
+      "codigo": "AUTH_SESSION_MISSING",
+      "mensaje": "falta la sesión de panel: corré el bootstrap"
+    }
+  }
+}

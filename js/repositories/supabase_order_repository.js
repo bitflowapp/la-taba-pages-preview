@@ -922,6 +922,13 @@ export function createSupabaseOrderRepository({
     // cada entrada al carrito, así que apenas exista sesión real se repara sola.
     const session = await auth.ensureCustomerSession({ createIfMissing: false });
     if (!session.ok) return repositoryResult(false, { available: false, message: session.message });
+    // Sin sesión se pregunta IGUAL. Se probó cortar acá para ahorrarse el 401
+    // que hoy imprime la consola —la RPC está concedida sólo a `authenticated`—
+    // y el gate del handoff lo rechazó con razón: eso deja sin Mercado Pago a
+    // todo cliente que todavía no tiene sesión, incluso contra un backend que
+    // sí lo permitiera. Un mensaje en la consola del desarrollador no vale un
+    // camino de pago. La solución de fondo es conceder la RPC a `anon`, que es
+    // una migración y tiene su propia compuerta.
     const { data, error } = await client.rpc('get_mercadopago_checkout_availability', {
       p_business_id: businessId,
     });

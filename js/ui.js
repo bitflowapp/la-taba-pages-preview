@@ -786,7 +786,12 @@ function homePromotionalProducts() {
 // rail de tres se lee como una demo a la que le faltan datos, no como la
 // vidriera de un local. Ocho llenan el desplazamiento lateral sin volver la
 // home un catálogo.
-const HOME_BEST_SELLERS_LIMIT = 8;
+// Doce desde la curación de apertura del 2026-08-22: la vidriera que aprobó el
+// comercio tiene doce productos y el rail los tiene que servir enteros, no los
+// primeros ocho. Sigue siendo un carrusel horizontal, así que la home no crece
+// hacia abajo. Cuando la vidriera cae en la selección heredada, el rail se
+// llena con lo que haya y el límite deja de importar.
+const HOME_BEST_SELLERS_LIMIT = 12;
 
 function homePopularSection() {
   return getBeverageHomeSection(

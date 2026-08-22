@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v82-vidriera-curada';
+const CACHE_NAME = 'la-taba-runtime-v83-vidriera-sin-ruido';
 const ASSETS = [
   './',
   './index.html',

@@ -37,6 +37,14 @@ export function crearEvidencia(runId, { raiz = process.cwd() } = {}) {
   mkdirSync(directorio, { recursive: true });
 
   const registro = [];
+  /*
+   * La línea de tiempo es lo que se lee cuando algo salió mal: cada hito con su
+   * marca y con cuánto pasó desde el anterior. Se arma en memoria y se vuelca
+   * al final, para que una corrida interrumpida igual deje lo que alcanzó.
+   */
+  const lineaDeTiempo = [];
+  const arranque = Date.now();
+
   const anotar = (linea) => {
     const seguro = redactar(linea);
     registro.push(`${new Date().toISOString()} ${seguro}`);
@@ -47,6 +55,30 @@ export function crearEvidencia(runId, { raiz = process.cwd() } = {}) {
     directorio,
     anotar,
     ruta: (nombre) => path.join(directorio, nombre),
+    hito(nombre, detalle = '') {
+      const ahora = Date.now();
+      const anterior = lineaDeTiempo.length ? lineaDeTiempo[lineaDeTiempo.length - 1].msDesdeElInicio : 0;
+      lineaDeTiempo.push({
+        nombre: redactar(nombre),
+        detalle: redactar(detalle),
+        utc: new Date(ahora).toISOString(),
+        msDesdeElInicio: ahora - arranque,
+        msDesdeElHitoAnterior: (ahora - arranque) - anterior,
+      });
+    },
+    /**
+     * Una captura de pantalla del navegador. Nunca falla la corrida: una
+     * evidencia que no se pudo sacar es una evidencia menos, no un error de la
+     * tienda.
+     */
+    async capturar(pagina, nombre) {
+      try {
+        await pagina.screenshot({ path: path.join(directorio, `${nombre}.png`), fullPage: true });
+        return true;
+      } catch {
+        return false;
+      }
+    },
     guardarJson(nombre, datos) {
       writeFileSync(path.join(directorio, nombre), `${JSON.stringify(redactarProfundo(datos), null, 2)}\n`);
     },
@@ -55,6 +87,10 @@ export function crearEvidencia(runId, { raiz = process.cwd() } = {}) {
     },
     volcarRegistro() {
       writeFileSync(path.join(directorio, 'run.log'), `${registro.join('\n')}\n`);
+      writeFileSync(
+        path.join(directorio, 'timeline.json'),
+        `${JSON.stringify(redactarProfundo(lineaDeTiempo), null, 2)}\n`,
+      );
     },
   });
 }

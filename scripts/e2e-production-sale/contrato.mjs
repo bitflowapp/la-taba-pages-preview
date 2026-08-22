@@ -63,6 +63,14 @@ export const RIDER = Object.freeze({
   serie: 'ZY32LHS6PS',
   paquete: 'com.lataba.rider',
   paquetesProhibidos: Object.freeze(['com.lataba.rider.staging', 'com.lataba.rider.review']),
+  /*
+   * Cuántas entregas puede llevar a la vez. La AUTORIDAD es el servidor
+   * (`rider_max_active_orders()`, hoy 3) y el Panel, que deshabilita al
+   * repartidor sin lugar. Este número está acá sólo para que el informe previo
+   * pueda decir «lleva 1 de 3» sin invocar una función desde el runner de sólo
+   * lectura, que —con razón— no acepta llamar funciones.
+   */
+  maximoDeEntregasActivas: 3,
 });
 
 export const RUTAS = Object.freeze({

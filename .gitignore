@@ -22,6 +22,10 @@ artifacts/taba2-storefront-motion/
 artifacts/taba2-tracking-visual/
 artifacts/windows-release/
 artifacts/ci/
+# La evidencia de la prueba de venta real: capturas de la pantalla de un cliente
+# y de un pedido de produccion. Se redacta antes de escribirse, pero no viaja al
+# repositorio de todos modos.
+artifacts/production-sale-e2e/
 artifacts/alt-candidates/
 artifacts/alt-candidates-contact.png
 artifacts/local-bebidas-contact.png

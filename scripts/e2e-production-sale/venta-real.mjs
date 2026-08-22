@@ -1,31 +1,45 @@
 /*
- * El recorrido real: comprar, procesar, entregar.
+ * EL RECORRIDO REAL: COMPRAR, PROCESAR, ENTREGAR.
  *
  * Cada paso hace su acción por la MISMA superficie que usaría una persona y
- * después la confirma leyendo la base en sólo lectura. La UI dice lo que
+ * después la confirma leyendo la base en sólo lectura. La pantalla dice lo que
  * muestra; la base dice lo que pasó. Cuando no coinciden, gana la base y el
  * paso falla — no se repara nada.
+ *
+ * TODO SE CORRELACIONA POR IDENTIDAD, NUNCA POR POSICIÓN
+ * -----------------------------------------------------
+ * Ni «el último pedido», ni «el primer botón», ni «la dirección que dice
+ * Mendoza». El pedido de esta corrida tiene un uuid y un código público, y cada
+ * botón del Panel lleva el uuid del pedido al que pertenece
+ * (`data-production-business-next="<uuid>"`). La dirección tiene su propio uuid
+ * y el checkout lo escribe en el DOM. Todo se busca por esos identificadores.
+ *
+ * Esto no es prolijidad: el comercio puede tener otros pedidos vivos —los tenía
+ * el día que se escribió esto— y «avanzar el primero» habría movido el pedido
+ * de otra persona.
  *
  * Nada de esperas ciegas: cada transición se espera con un sondeo acotado que
  * además mide cuánto tardó, y esos tiempos van al reporte.
  */
-import { chromium } from 'playwright';
-import path from 'node:path';
-import { direccionPermitida, PRODUCCION, RUTAS } from './contrato.mjs';
+import { PRODUCCION } from './contrato.mjs';
 import { consultar, lit } from './db-solo-lectura.mjs';
 import { evaluarDecremento, evaluarDireccion, evaluarPago } from './guards.mjs';
+import { DIRECCION_DE_PRUEBA, NEGOCIO_ID, evaluarDireccionPorIdentidad } from './identidades.mjs';
 import { anotarPedidoEnLock } from './lock.mjs';
 import * as rider from './rider.mjs';
+import { contextoCliente as nuevoContextoCliente, contextoPanel as nuevoContextoPanel } from './sesiones.mjs';
 
-const ESPERA = { pedidoEnPanel: 90_000, transicion: 60_000, oferta: 90_000, entrega: 90_000 };
+const ESPERA = {
+  pedidoEnPanel: 120_000, transicion: 90_000, oferta: 120_000, entrega: 120_000, telefono: 180_000,
+};
 const INTERVALO = 2_000;
 
-class PasoFallido extends Error {
+export class PasoFallido extends Error {
   constructor(codigo, mensaje) { super(mensaje); this.codigo = codigo; }
 }
 
 /** Sondeo acotado: pregunta cada dos segundos hasta que se cumpla o venza. */
-async function esperarHasta(descripcion, condicion, limite) {
+export async function esperarHasta(descripcion, condicion, limite) {
   const desde = Date.now();
   let ultimo = null;
   while (Date.now() - desde < limite) {
@@ -38,110 +52,111 @@ async function esperarHasta(descripcion, condicion, limite) {
 
 const leerPedido = async (codigo) => {
   const filas = await consultar(`select public_code, status, total::text as total, id::text as id,
-      assigned_rider_user_id is not null as tiene_rider, payment_method
+      assigned_rider_user_id is not null as tiene_rider, payment_method,
+      delivery_location_confirmed_at is not null as punto_confirmado
     from public.orders where public_code = ${lit(codigo)}`);
   return filas[0] || null;
 };
 
 const leerStock = async (externalId) => {
   const filas = await consultar(`select stock from public.products
-    where business_id = ${lit(PRODUCCION.businessId)} and external_id = ${lit(externalId)}`);
+    where business_id = ${lit(NEGOCIO_ID)} and external_id = ${lit(externalId)}`);
   return filas[0] ? Number(filas[0].stock) : null;
 };
 
-export async function ejecutarVentaReal({ runId, evidencia, precheck, anotarPaso, tiempos, host, producto }) {
-  const navegador = await chromium.launch();
-  const contextoCliente = await navegador.newContext({
-    viewport: { width: 430, height: 932 },
-    storageState: path.join(process.cwd(), RUTAS.sesionCustomer),
-  });
-  const contextoPanel = await navegador.newContext({
-    viewport: { width: 1280, height: 900 },
-    storageState: path.join(process.cwd(), RUTAS.sesionBusiness),
-  });
-  const cliente = await contextoCliente.newPage();
-  const panel = await contextoPanel.newPage();
+/**
+ * El recorrido completo. Recibe las dos sesiones ya abiertas: quién es cada uno
+ * y cómo se autenticó es problema de `sesiones.mjs`, no de acá.
+ */
+export async function ejecutarVentaReal({
+  runId, evidencia, anotarPaso, tiempos, host = PRODUCCION.host, producto,
+  navegador, contextoCliente, contextoPanel, cliente, panel,
+  direccionId, stockAntes, riderUserId, rutaSesionCliente, rutaSesionPanel,
+}) {
   let codigo = null;
+  let pedidoId = null;
   let pinLeido = false;
-
-  const cerrar = async () => {
-    await contextoCliente.close().catch(() => {});
-    await contextoPanel.close().catch(() => {});
-    await navegador.close().catch(() => {});
-  };
 
   try {
     // ── 1 · el cliente arma el carrito ───────────────────────────────────────
-    await cliente.goto(`${host}/#catalog`, { waitUntil: 'networkidle', timeout: 90_000 });
+    await cliente.goto(`${host}/#catalog`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await cliente.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached', timeout: 60_000 });
-    await cliente.waitForSelector('[data-product-grid] .product-card', { timeout: 30_000 });
+    await cliente.waitForSelector('[data-product-grid] .product-card', { timeout: 45_000 });
     const tarjeta = cliente.locator('[data-product-grid] .product-card')
       .filter({ hasText: producto.nombreVisible }).first();
-    if (await tarjeta.count() === 0) throw new PasoFallido('PRODUCTO_NO_VISIBLE', `la góndola no muestra ${producto.nombreVisible}`);
+    if (await tarjeta.count() === 0) {
+      throw new PasoFallido('PRODUCTO_NO_VISIBLE', `la góndola no muestra ${producto.nombreVisible}`);
+    }
     await tarjeta.scrollIntoViewIfNeeded();
     const textoTarjeta = await tarjeta.innerText();
     if (!textoTarjeta.includes(producto.presentacionVisible)) {
       throw new PasoFallido('PRESENTACION_DISTINTA', `la tarjeta no dice ${producto.presentacionVisible}`);
     }
-    await evidencia.guardarTexto('01-product.txt', textoTarjeta);
-    await tarjeta.screenshot({ path: evidencia.ruta('01-product.png') });
+    evidencia.guardarTexto('01-producto.txt', textoTarjeta);
+    await tarjeta.screenshot({ path: evidencia.ruta('01-producto.png') });
     await tarjeta.locator('[data-add-product]').first().click();
-    await cliente.waitForTimeout(1200);
+    await cliente.waitForTimeout(1500);
     anotarPaso('Customer cart', 'PASS', `1 × ${producto.nombreVisible}`);
 
-    // ── 2 · carrito y checkout ───────────────────────────────────────────────
+    // ── 2 · carrito ──────────────────────────────────────────────────────────
     await cliente.evaluate(() => { window.location.hash = '#cart'; });
-    await cliente.waitForTimeout(3000);
-    await cliente.screenshot({ path: evidencia.ruta('02-cart.png'), fullPage: true });
-    const textoCarrito = await cliente.locator('[data-view="cart"]').innerText();
-    const unidades = await cliente.locator('[data-cart-list] .cart-item').count();
-    if (unidades !== 1) throw new PasoFallido('CARRITO_INESPERADO', `el carrito tiene ${unidades} líneas y tenía que tener 1`);
+    await cliente.waitForTimeout(3500);
+    await cliente.screenshot({ path: evidencia.ruta('02-carrito.png'), fullPage: true });
+
+    const lineas = await cliente.locator('[data-cart-list] .cart-item').count();
+    if (lineas !== 1) throw new PasoFallido('CARRITO_INESPERADO', `el carrito tiene ${lineas} líneas y tenía que tener 1`);
     const cantidadEnCarrito = await cliente.locator('[data-cart-list] .cart-item .quantity-control strong').first().innerText();
     if (cantidadEnCarrito.trim() !== String(producto.cantidad)) {
       throw new PasoFallido('CANTIDAD_INESPERADA', `el carrito dice ${cantidadEnCarrito} y tenía que decir ${producto.cantidad}`);
     }
 
-    const direccionMostrada = (textoCarrito.match(/Entregar en\s*\n?([^\n]+)/) || [])[1]
-      || (textoCarrito.match(/Dirección[^\n]*\n([^\n]+)/) || [])[1] || '';
-    const compuertaDireccion = evaluarDireccion(direccionMostrada);
+    // ── 3 · la dirección, elegida POR IDENTIDAD ──────────────────────────────
+    const eleccion = await elegirDireccionAprobada(cliente, direccionId);
+    const compuertaDireccion = evaluarDireccionPorIdentidad({
+      idElegido: eleccion.idElegido, idAprobado: direccionId, ubicacionConfirmada: eleccion.confirmada,
+    });
     if (!compuertaDireccion.ok) throw new PasoFallido(compuertaDireccion.codigo, compuertaDireccion.mensaje);
+    /*
+     * Segunda lectura, por texto. El uuid ya decidió; esto sirve para el caso
+     * raro en que la dirección aprobada se haya editado y ahora apunte a otra
+     * puerta. Si alguien fijó la variable heredada, manda esa.
+     */
+    if (process.env.TABA2_E2E_DIRECCION_TEXTO) {
+      const porTexto = evaluarDireccion(eleccion.texto);
+      if (!porTexto.ok) throw new PasoFallido(porTexto.codigo, porTexto.mensaje);
+    } else if (!eleccion.texto.toLowerCase().includes(DIRECCION_DE_PRUEBA.calle.toLowerCase())) {
+      throw new PasoFallido(
+        'DIRECCION_TEXTO_DISTINTO',
+        `la dirección aprobada ya no dice «${DIRECCION_DE_PRUEBA.calle}»: dice «${eleccion.texto.slice(0, 120)}»`,
+      );
+    }
 
-    // El medio de pago es un <select>, no un grupo de radios.
-    const metodo = await cliente.locator('select[name="paymentMethod"]').first().inputValue().catch(() => '');
+    // ── 4 · el medio de pago ─────────────────────────────────────────────────
+    const metodo = await elegirPago(cliente);
     const compuertaPago = evaluarPago(metodo);
     if (!compuertaPago.ok) throw new PasoFallido(compuertaPago.codigo, compuertaPago.mensaje);
-    await cliente.screenshot({ path: evidencia.ruta('03-checkout-before-create.png'), fullPage: true });
-    anotarPaso('Checkout', 'PASS', `pago ${metodo} · dirección verificada`);
+    await cliente.screenshot({ path: evidencia.ruta('03-checkout.png'), fullPage: true });
+    anotarPaso('Checkout', 'PASS', `pago ${metodo} · dirección ${String(direccionId).slice(0, 8)}…`);
 
-    // ── 3 · el último cartel antes de comprar ────────────────────────────────
     const total = await cliente.locator('[data-order-summary] .summary-row.total strong').first()
       .innerText().catch(() => '(no leído)');
-    console.log('\n  ── REAL PRODUCTION ORDER ──');
-    console.log(`  Producto: ${producto.nombreVisible} ${producto.presentacionVisible}`);
-    console.log(`  Cantidad: ${producto.cantidad}`);
-    console.log(`  Precio:   $${producto.precioEsperado}`);
-    console.log(`  Total:    $${total}`);
-    console.log(`  Dirección: ${direccionPermitida().descripcionEsperada}`);
-    console.log(`  Pago:     ${metodo}`);
-    console.log('  CREATE ORDER? — autorizado por bandera y variable de entorno\n');
+    evidencia.anotar(`pedido a punto de crearse: ${producto.nombreVisible} ${producto.presentacionVisible} × ${producto.cantidad} · total ${total} · pago ${metodo}`);
 
     const pedidosAntes = new Set((await consultar('select public_code from public.orders')).map((f) => f.public_code));
-    const stockAntes = precheck.stockBefore;
 
-    // ── 4 · confirmar ────────────────────────────────────────────────────────
+    // ── 5 · confirmar ────────────────────────────────────────────────────────
     /*
-     * OJO CON ESTE BOTÓN. `[data-checkout-submit]` NUNCA está deshabilitado:
-     * se midió sin perfil, sin dirección y hasta con el carrito vacío, y
-     * siempre responde. Su handler llama derecho a `createOrder()`, que es una
-     * escritura real contra producción — tocarlo «para ver qué pasa» crea un
-     * pedido. Por eso la compuerta NO se pregunta al botón: se pregunta por la
-     * ausencia de `[data-profile-block]`, que es lo que el checkout dibuja
-     * cuando falta el perfil o la dirección.
+     * OJO CON ESTE BOTÓN. `[data-checkout-submit]` NUNCA está deshabilitado: se
+     * midió sin perfil, sin dirección y hasta con el carrito vacío, y siempre
+     * responde. Su handler llama derecho a `createOrder()`, que es una escritura
+     * real contra producción. Por eso la compuerta NO se le pregunta al botón:
+     * se pregunta por la ausencia de `[data-profile-block]`, que es lo que el
+     * checkout dibuja cuando falta el perfil o la dirección.
      */
     const bloques = await cliente.locator('[data-profile-block]').count();
     if (bloques > 0) {
       const motivo = await cliente.locator('[data-profile-block]').first().getAttribute('data-profile-block');
-      throw new PasoFallido('CHECKOUT_BLOQUEADO', `el checkout está bloqueado por «${motivo}»: completá el perfil o la dirección antes de la prueba`);
+      throw new PasoFallido('CHECKOUT_BLOQUEADO', `el checkout está bloqueado por «${motivo}»`);
     }
     const confirmar = cliente.locator('[data-checkout-submit]').first();
     if (await confirmar.count() === 0) throw new PasoFallido('SIN_BOTON_CONFIRMAR', 'no aparece el botón de confirmar');
@@ -155,114 +170,128 @@ export async function ejecutarVentaReal({ runId, evidencia, precheck, anotarPaso
     codigo = aparecio.valor.public_code;
     tiempos['confirmar → pedido creado'] = aparecio.ms;
     anotarPedidoEnLock({ runId, pedido: codigo });
-    await cliente.screenshot({ path: evidencia.ruta('04-order-created.png'), fullPage: true });
-    const pedido = await leerPedido(codigo);
-    evidencia.guardarJson('order.json', { runId, codigo, id: pedido?.id, total: pedido?.total, metodo: pedido?.payment_method, creadoUtc: new Date().toISOString() });
-    anotarPaso('Order created', 'PASS', `${codigo} · $${pedido?.total}`);
 
-    // ── 5 · el Panel lo recibe y lo procesa ──────────────────────────────────
-    await panel.goto(`${host}/#business`, { waitUntil: 'networkidle', timeout: 90_000 });
-    const enPanel = await esperarHasta('el pedido en el Panel', async () => {
-      const texto = await panel.locator('body').innerText().catch(() => '');
-      return texto.includes(codigo) ? texto : null;
-    }, ESPERA.pedidoEnPanel);
+    const pedido = await leerPedido(codigo);
+    pedidoId = pedido?.id || null;
+    if (!pedidoId) throw new PasoFallido('PEDIDO_SIN_ID', `no se pudo leer el uuid de ${codigo}`);
+    if (pedido.punto_confirmado !== true) {
+      throw new PasoFallido('PEDIDO_SIN_PUNTO', `${codigo} se creó sin punto de entrega confirmado`);
+    }
+    await cliente.screenshot({ path: evidencia.ruta('04-pedido-creado.png'), fullPage: true });
+    evidencia.guardarJson('pedido.json', {
+      runId, codigo, id: pedidoId, total: pedido.total, metodo: pedido.payment_method, creadoUtc: new Date().toISOString(),
+    });
+    anotarPaso('Order created', 'PASS', `${codigo} · $${pedido.total}`);
+
+    // ── 6 · el Panel lo recibe ───────────────────────────────────────────────
+    await panel.goto(`${host}/#business`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await panel.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached', timeout: 60_000 });
+    await irAPedidos(panel);
+    const enPanel = await esperarHasta('el pedido en el Panel', async () => (
+      await panel.locator(`[data-production-business-next="${pedidoId}"], [data-production-business-cancel="${pedidoId}"]`).count() > 0
+    ), ESPERA.pedidoEnPanel);
     if (!enPanel.ok) throw new PasoFallido('PEDIDO_NO_LLEGA_AL_PANEL', `el Panel no muestra ${codigo}`);
     tiempos['pedido creado → visible en el Panel'] = enPanel.ms;
-    await panel.screenshot({ path: evidencia.ruta('05-business-new.png'), fullPage: true });
+    await panel.screenshot({ path: evidencia.ruta('05-panel-nuevo.png'), fullPage: true });
     anotarPaso('Business intake', 'PASS', `${codigo} visible en ${enPanel.ms} ms`);
 
-    const avanzar = async (etiqueta, estadoEsperado, nombrePaso) => {
-      const boton = panel.getByRole('button', { name: etiqueta }).first();
-      if (await boton.count() === 0) throw new PasoFallido('SIN_ACCION_PANEL', `el Panel no ofrece «${etiqueta}»`);
+    // ── 7 · aceptar, preparar, listo ─────────────────────────────────────────
+    for (const [estado, nombrePaso] of [['accepted', 'Accepted'], ['preparing', 'Preparing'], ['ready', 'Ready']]) {
       const desde = Date.now();
-      await boton.click();
-      const llego = await esperarHasta(`estado ${estadoEsperado}`, async () => {
-        const actual = await leerPedido(codigo);
-        return actual?.status === estadoEsperado ? actual : null;
-      }, ESPERA.transicion);
-      if (!llego.ok) throw new PasoFallido('TRANSICION_FALLIDA', `${codigo} no llegó a ${estadoEsperado}`);
-      tiempos[`${nombrePaso}`] = Date.now() - desde;
-      anotarPaso(nombrePaso, 'PASS', estadoEsperado);
-    };
-    await avanzar(/Aceptar/i, 'accepted', 'Accepted');
-    await avanzar(/Preparar|En preparación/i, 'preparing', 'Preparing');
-    await avanzar(/Listo/i, 'ready', 'Ready');
-    await panel.screenshot({ path: evidencia.ruta('06-business-ready.png'), fullPage: true });
+      await avanzarEnElPanel(panel, { pedidoId, codigo, hasta: estado });
+      tiempos[nombrePaso] = Date.now() - desde;
+      anotarPaso(nombrePaso, 'PASS', estado);
+    }
+    await panel.screenshot({ path: evidencia.ruta('06-panel-listo.png'), fullPage: true });
 
-    // ── 6 · se le ofrece al repartidor ───────────────────────────────────────
-    const ofrecer = panel.getByRole('button', { name: /Ofrecer|Asignar/i }).first();
-    if (await ofrecer.count() === 0) throw new PasoFallido('SIN_OFERTA', 'el Panel no ofrece asignar repartidor');
+    // ── 8 · se le ofrece al repartidor ───────────────────────────────────────
     const desdeOferta = Date.now();
-    await ofrecer.click();
+    await ofrecerAlRepartidor(panel, { pedidoId, riderUserId });
     const ofrecido = await esperarHasta('oferta registrada', async () => {
-      const eventos = await consultar(`select type from public.order_events e
-        join public.orders o on o.id = e.order_id where o.public_code = ${lit(codigo)} and e.type = 'order.rider_offered' limit 1`);
-      return eventos.length ? eventos[0] : null;
+      const filas = await consultar(`select assigned_rider_user_id::text as rider, status
+        from public.orders where id = ${lit(pedidoId)}`);
+      if (filas[0]?.rider) return filas[0];
+      const ofertas = await consultar(`select status from public.rider_order_offers
+        where order_id = ${lit(pedidoId)} order by offered_at desc limit 1`);
+      return ofertas[0] || null;
     }, ESPERA.oferta);
     if (!ofrecido.ok) throw new PasoFallido('OFERTA_NO_REGISTRADA', 'no se registró la oferta al repartidor');
     tiempos['listo → oferta al repartidor'] = Date.now() - desdeOferta;
     anotarPaso('Rider offered', 'PASS');
 
-    // ── 7 · el teléfono ──────────────────────────────────────────────────────
+    // ── 9 · el teléfono ──────────────────────────────────────────────────────
     rider.despertarPantalla();
     rider.traerAlFrente();
-    rider.capturarPantalla(evidencia.ruta('07-rider-offer.png'));
-    const aceptado = await esperarHasta('el repartidor acepta', async () => {
+    rider.capturarPantalla(evidencia.ruta('07-rider-oferta.png'));
+
+    const aceptado = await esperarHasta('el repartidor toma el pedido', async () => {
+      const fila = await leerPedido(codigo);
+      if (fila?.tiene_rider) return fila;
       const estado = rider.estadoRider();
       if (estado.pedido === codigo) return estado;
-      const oferta = estado.ofertas.find((texto) => texto.includes(codigo));
-      if (oferta) rider.tocar('Aceptar oferta', { permitirSinPedido: true });
+      rider.aceptarOfertaDe(codigo, estado);
+      rider.seleccionarPedido(codigo, { tolerante: true });
       return null;
-    }, ESPERA.oferta);
-    if (!aceptado.ok) throw new PasoFallido('RIDER_NO_ACEPTA', 'el teléfono no tomó el pedido de esta corrida');
+    }, ESPERA.telefono);
+    if (!aceptado.ok) throw new PasoFallido('RIDER_NO_ACEPTA', `el teléfono no tomó ${codigo}`);
     tiempos['oferta → aceptada en el teléfono'] = aceptado.ms;
-    rider.capturarPantalla(evidencia.ruta('08-rider-accepted.png'));
+    rider.capturarPantalla(evidencia.ruta('08-rider-aceptado.png'));
     anotarPaso('Rider accepted', 'PASS');
 
-    rider.tocar('Confirmar retiro', { codigoEsperado: codigo });
-    const retirado = await esperarHasta('retirado', async () => {
-      const actual = await leerPedido(codigo);
-      return ['picked_up', 'on_the_way'].includes(actual?.status) ? actual : null;
-    }, ESPERA.transicion);
-    if (!retirado.ok) throw new PasoFallido('SIN_RETIRO', 'el pedido no pasó a retirado');
+    // ── 10 · retiro y camino ─────────────────────────────────────────────────
+    const retirado = await avanzarEnElTelefono({
+      codigo,
+      etiquetas: ['Confirmar retiro', 'Registrar retiro', 'Retiré el pedido', 'Retirar pedido'],
+      estados: ['picked_up', 'on_the_way'],
+    });
     tiempos['aceptado → retirado'] = retirado.ms;
-    anotarPaso('Picked up', 'PASS', retirado.valor.status);
+    anotarPaso('Picked up', 'PASS', retirado.estado);
 
-    // ── 8 · el cliente ve el seguimiento ─────────────────────────────────────
+    if (retirado.estado === 'picked_up') {
+      const enCamino = await avanzarEnElTelefono({
+        codigo, etiquetas: ['Salir en camino', 'En camino', 'Iniciar viaje'], estados: ['on_the_way'],
+      });
+      tiempos['retirado → en camino'] = enCamino.ms;
+      anotarPaso('On the way', 'PASS', enCamino.estado);
+    } else {
+      anotarPaso('On the way', 'PASS', 'el retiro ya dejó el pedido en camino');
+    }
+
+    // ── 11 · el cliente ve el seguimiento ────────────────────────────────────
     /*
      * Lo que el cliente ve NO es el estado crudo: los mapeadores colapsan
-     * `accepted` en «preparing», y `assigned`/`picked_up` en «on_the_way». Esos
+     * `accepted` en «preparando», y `assigned`/`picked_up` en «en camino». Esos
      * tres estados son indistinguibles desde esta superficie, así que la
      * evidencia fina sale del Panel y de la base; acá se comprueba lo que una
      * persona vería de verdad.
      */
     await cliente.evaluate(() => { window.location.hash = '#tracking'; });
     const seguimiento = await esperarHasta('seguimiento del cliente', async () => {
-      const estado = await cliente.locator('[data-tracking-status]').first().getAttribute('data-tracking-status').catch(() => null);
+      const estado = await cliente.locator('[data-tracking-status]').first()
+        .getAttribute('data-tracking-status').catch(() => null);
       return estado ? { estado } : null;
     }, ESPERA.transicion);
     if (!seguimiento.ok) throw new PasoFallido('SIN_TRACKING', 'el cliente no ve el seguimiento del pedido');
-    await cliente.screenshot({ path: evidencia.ruta('09-customer-tracking.png'), fullPage: true });
+    await cliente.screenshot({ path: evidencia.ruta('09-cliente-seguimiento.png'), fullPage: true });
     anotarPaso('Tracking', 'PASS', `el cliente ve «${seguimiento.valor.estado}»`);
 
-    // ── 9 · el repartidor avisa que llegó ────────────────────────────────────
+    // ── 12 · el repartidor avisa que llegó ───────────────────────────────────
     /*
      * El orden importa y no es el intuitivo: la tarjeta del código de entrega
-     * SÓLO se dibuja cuando el pedido está en `arrived`/`arriving`, y
-     * desaparece al confirmarse la entrega. O sea que el cliente ve el PIN
-     * recién después de que el repartidor marca que llegó. Leerlo antes es
-     * esperar algo que la tienda todavía no muestra.
+     * SÓLO se dibuja cuando el pedido está en llegada, y desaparece al
+     * confirmarse la entrega. O sea que el cliente ve el PIN recién después de
+     * que el repartidor marca que llegó. Leerlo antes es esperar algo que la
+     * tienda todavía no muestra.
      */
-    rider.tocar('Llegué', { codigoEsperado: codigo });
-    const llego = await esperarHasta('llegada registrada', async () => {
-      const actual = await leerPedido(codigo);
-      return ['arrived', 'arriving'].includes(actual?.status) ? actual : null;
-    }, ESPERA.transicion);
-    if (!llego.ok) throw new PasoFallido('SIN_LLEGADA', 'el pedido no pasó a llegada');
-    tiempos['retirado → llegada'] = llego.ms;
+    const llego = await avanzarEnElTelefono({
+      codigo, etiquetas: ['Llegué', 'Marcar llegada', 'Llegué al domicilio'], estados: ['arrived', 'arriving'],
+    });
+    tiempos['en camino → llegada'] = llego.ms;
+    anotarPaso('Arrived', 'PASS', llego.estado);
 
-    // ── 10 · el PIN, leído de la pantalla del cliente ────────────────────────
-    await cliente.reload({ waitUntil: 'networkidle' });
+    // ── 13 · el PIN, leído de la pantalla del cliente ────────────────────────
+    await cliente.reload({ waitUntil: 'domcontentloaded' });
+    await cliente.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached', timeout: 60_000 });
     await cliente.evaluate(() => { window.location.hash = '#tracking'; });
     const conPin = await esperarHasta('código de entrega en pantalla', async () => {
       const nodo = cliente.locator('[data-delivery-code-card] strong[data-delivery-code]').first();
@@ -277,10 +306,11 @@ export async function ejecutarVentaReal({ runId, evidencia, precheck, anotarPaso
     // en disco nunca contuvo el código.
     await cliente.locator('[data-delivery-code-card] strong[data-delivery-code]').first()
       .evaluate((nodo) => { nodo.textContent = '• • • •'; nodo.setAttribute('data-delivery-code', '****'); });
-    await cliente.screenshot({ path: evidencia.ruta('10-pin-visible-redacted.png'), fullPage: true });
-    anotarPaso('PIN', 'PASS', 'leído de la pantalla del cliente');
+    await cliente.screenshot({ path: evidencia.ruta('10-pin-tapado.png'), fullPage: true });
+    anotarPaso('PIN', 'PASS', 'leído de la pantalla del cliente, nunca de la base');
 
-    // ── 11 · entrega ─────────────────────────────────────────────────────────
+    // ── 14 · entrega ─────────────────────────────────────────────────────────
+    rider.seleccionarPedido(codigo, { tolerante: true });
     rider.escribirPin(pin, { codigoEsperado: codigo });
     const desdePin = Date.now();
     rider.tocar('Confirmar entrega', { codigoEsperado: codigo });
@@ -290,13 +320,13 @@ export async function ejecutarVentaReal({ runId, evidencia, precheck, anotarPaso
     }, ESPERA.entrega);
     if (!entregado.ok) throw new PasoFallido('SIN_ENTREGA', 'el pedido no llegó a entregado');
     tiempos['PIN → entregado'] = Date.now() - desdePin;
-    rider.capturarPantalla(evidencia.ruta('11-rider-delivered.png'));
-    await cliente.reload({ waitUntil: 'networkidle' });
-    await cliente.waitForTimeout(3000);
-    await cliente.screenshot({ path: evidencia.ruta('12-customer-delivered.png'), fullPage: true });
+    rider.capturarPantalla(evidencia.ruta('11-rider-entregado.png'));
+    await cliente.reload({ waitUntil: 'domcontentloaded' });
+    await cliente.waitForTimeout(4000);
+    await cliente.screenshot({ path: evidencia.ruta('12-cliente-entregado.png'), fullPage: true });
     anotarPaso('Delivered', 'PASS');
 
-    // ── 12 · el stock, exacto ────────────────────────────────────────────────
+    // ── 15 · el stock, exacto ────────────────────────────────────────────────
     const stockDespues = await leerStock(producto.externalId);
     const decremento = evaluarDecremento({ antes: stockAntes, despues: stockDespues });
     if (!decremento.ok) {
@@ -305,36 +335,214 @@ export async function ejecutarVentaReal({ runId, evidencia, precheck, anotarPaso
     }
     anotarPaso('Stock N-1', 'PASS', `${stockAntes} → ${stockDespues}`);
 
-    // ── 13 · persistencia ────────────────────────────────────────────────────
-    await contextoCliente.close();
-    await contextoPanel.close();
-    const clienteNuevo = await (await navegador.newContext({
-      viewport: { width: 430, height: 932 },
-      storageState: path.join(process.cwd(), RUTAS.sesionCustomer),
-    })).newPage();
-    await clienteNuevo.goto(`${host}/#tracking`, { waitUntil: 'networkidle', timeout: 90_000 });
-    await clienteNuevo.waitForTimeout(4000);
-    const textoCliente = await clienteNuevo.locator('body').innerText();
-    const pedidoFinal = await leerPedido(codigo);
-    const stockFinal = await leerStock(producto.externalId);
-    // El Rider se relanza SIN force-stop: si el teléfono tuviera otra entrega en
-    // curso, matarle el proceso le corta el GPS a un pedido ajeno.
-    rider.traerAlFrente();
-    const estadoRiderFinal = rider.estadoRider();
-    const persistencia = /entregado|delivered/i.test(textoCliente)
-      && pedidoFinal?.status === 'delivered'
-      && stockFinal === stockDespues
-      && estadoRiderFinal.pedido !== codigo;
-    anotarPaso('Persistence', persistencia ? 'PASS' : 'FAIL',
-      `cliente=${/entregado/i.test(textoCliente) ? 'entregado' : '?'} · base=${pedidoFinal?.status} · stock=${stockFinal} · repartidor sin el pedido=${estadoRiderFinal.pedido !== codigo}`);
-    if (!persistencia) throw new PasoFallido('PERSISTENCIA', 'algo no sobrevivió a reabrir las tres superficies');
+    // ── 16 · persistencia: cerrar todo y volver a abrir ──────────────────────
+    const persistencia = await comprobarPersistencia({
+      navegador, contextoCliente, contextoPanel, rutaSesionCliente, rutaSesionPanel,
+      host, codigo, pedidoId, producto, stockDespues, evidencia,
+    });
+    anotarPaso('Persistence', persistencia.ok ? 'PASS' : 'FAIL', persistencia.detalle);
+    if (!persistencia.ok) throw new PasoFallido('PERSISTENCIA', persistencia.detalle);
 
-    await cerrar();
-    return { ok: true, codigo, stockAntes, stockDespues, pinLeido };
+    return { ok: true, codigo, pedidoId, stockAntes, stockDespues, pinLeido };
   } catch (error) {
-    await cerrar();
     const codigoFalla = error instanceof PasoFallido ? error.codigo : 'EXCEPCION';
-    anotarPaso('Resultado', 'FAIL', `${codigoFalla}: ${String(error.message).slice(0, 160)}`);
-    return { ok: false, codigo: codigoFalla, pedido: codigo, mensaje: String(error.message).slice(0, 400), pinLeido };
+    anotarPaso('Resultado', 'FAIL', `${codigoFalla}: ${String(error.message).slice(0, 200)}`);
+    return {
+      ok: false, codigo: codigoFalla, pedido: codigo, pedidoId, mensaje: String(error.message).slice(0, 400), pinLeido,
+    };
   }
+}
+
+// ── Piezas del recorrido ─────────────────────────────────────────────────────
+
+/** Elige la dirección aprobada por su uuid y devuelve lo que quedó elegido. */
+async function elegirDireccionAprobada(cliente, direccionId) {
+  const tarjeta = cliente.locator(`[data-customer-address-id="${direccionId}"]`).first();
+  if (await tarjeta.count() === 0) {
+    throw new PasoFallido('DIRECCION_NO_OFRECIDA', 'el checkout no ofrece la dirección aprobada para la prueba');
+  }
+  const radio = tarjeta.locator('[data-customer-address-action="select"]').first();
+  if (await radio.count() && !(await radio.isChecked().catch(() => false))) {
+    await radio.check({ force: true }).catch(async () => { await tarjeta.click(); });
+    await cliente.waitForTimeout(2000);
+  }
+  const definitiva = cliente.locator(`[data-customer-address-id="${direccionId}"]`).first();
+  const clases = await definitiva.getAttribute('class') || '';
+  const marcada = clases.includes('is-selected')
+    || await definitiva.locator('[data-customer-address-action="select"]').first().isChecked().catch(() => false);
+  return {
+    idElegido: marcada ? direccionId : '',
+    confirmada: (await definitiva.getAttribute('data-address-location')) === 'confirmed',
+    texto: (await definitiva.innerText().catch(() => '')).replace(/\s+/g, ' ').trim(),
+  };
+}
+
+/** Fija el medio de pago y devuelve el que quedó. Mercado Pago queda afuera. */
+async function elegirPago(cliente) {
+  const selector = cliente.locator('select[name="paymentMethod"]').first();
+  if (await selector.count() === 0) return '';
+  const opciones = await selector.locator('option').evaluateAll((nodos) => nodos.map((n) => n.value));
+  const elegida = ['cash', 'coordinate'].find((valor) => opciones.includes(valor));
+  if (elegida) {
+    await selector.selectOption(elegida);
+    await cliente.waitForTimeout(1200);
+  }
+  return String(await selector.inputValue().catch(() => '')).trim().toLowerCase();
+}
+
+async function irAPedidos(panel) {
+  const boton = panel.locator('[data-production-orders-view]').first();
+  if (await boton.count() === 0) {
+    const mas = panel.locator('[data-panel-more-toggle]').first();
+    if (await mas.count()) { await mas.click(); await panel.waitForTimeout(600); }
+  }
+  const definitivo = panel.locator('[data-production-orders-view]').first();
+  if (await definitivo.count()) { await definitivo.click(); await panel.waitForTimeout(1500); }
+}
+
+/**
+ * Avanza el pedido de ESTA corrida hasta el estado pedido.
+ *
+ * El botón se busca por el uuid del pedido, y su `data-next-status` dice a
+ * dónde lleva. Se aprieta y se espera a que la BASE lo confirme; la pantalla no
+ * alcanza como prueba.
+ */
+async function avanzarEnElPanel(panel, { pedidoId, codigo, hasta }) {
+  const limite = Date.now() + ESPERA.transicion * 2;
+  while (Date.now() < limite) {
+    const actual = await leerPedido(codigo);
+    if (actual?.status === hasta) return actual;
+    if (['cancelled', 'canceled', 'rejected'].includes(actual?.status)) {
+      throw new PasoFallido('PEDIDO_CANCELADO', `${codigo} quedó en ${actual.status} camino a ${hasta}`);
+    }
+    await irAPedidos(panel);
+    const boton = panel.locator(`[data-production-business-next="${pedidoId}"]`).first();
+    if (await boton.count() > 0 && await boton.isEnabled().catch(() => false)) {
+      await boton.click();
+      await panel.waitForTimeout(2500);
+    } else {
+      await panel.waitForTimeout(INTERVALO);
+    }
+  }
+  const ultimo = await leerPedido(codigo);
+  throw new PasoFallido('TRANSICION_FALLIDA', `${codigo} no llegó a ${hasta}: quedó en ${ultimo?.status}`);
+}
+
+/** Ofrece el pedido al repartidor de producción, elegido por su user_id. */
+async function ofrecerAlRepartidor(panel, { pedidoId, riderUserId }) {
+  await irAPedidos(panel);
+  const tarjeta = panel.locator('.production-order-card')
+    .filter({ has: panel.locator(`[data-production-business-assign="${pedidoId}"]`) }).first();
+  const limite = Date.now() + ESPERA.oferta;
+  while (Date.now() < limite && await tarjeta.count() === 0) {
+    await panel.waitForTimeout(INTERVALO);
+    await irAPedidos(panel);
+  }
+  if (await tarjeta.count() === 0) {
+    throw new PasoFallido('SIN_OFERTA', 'el Panel no ofrece asignar repartidor para este pedido');
+  }
+  const selector = tarjeta.locator('[data-production-rider-select]').first();
+  if (await selector.count() === 0) {
+    throw new PasoFallido('SIN_RIDER_DISPONIBLE', 'el Panel no lista ningún repartidor activo con cupo');
+  }
+  if (riderUserId) {
+    const opciones = await selector.locator('option')
+      .evaluateAll((nodos) => nodos.map((n) => ({ valor: n.value, deshabilitada: n.disabled })));
+    const elegido = opciones.find((o) => o.valor === riderUserId);
+    if (!elegido) throw new PasoFallido('RIDER_NO_LISTADO', 'el repartidor de producción no aparece entre los asignables');
+    if (elegido.deshabilitada) throw new PasoFallido('RIDER_SIN_CUPO', 'el repartidor de producción está sin cupo');
+    await selector.selectOption(riderUserId);
+  }
+  await tarjeta.locator(`[data-production-business-assign="${pedidoId}"]`).first().click();
+  await panel.waitForTimeout(2500);
+}
+
+/**
+ * Toca en el teléfono la primera etiqueta que exista y espera el estado.
+ *
+ * Se prueban varias etiquetas porque el texto del botón depende del estado y de
+ * la versión instalada; lo que NO varía es el estado que tiene que quedar en la
+ * base, y eso es lo que se exige.
+ */
+async function avanzarEnElTelefono({ codigo, etiquetas, estados }) {
+  const desde = Date.now();
+  const limite = desde + ESPERA.telefono;
+  let ultimoError = '';
+  while (Date.now() < limite) {
+    const actual = await leerPedido(codigo);
+    if (estados.includes(actual?.status)) return { ms: Date.now() - desde, estado: actual.status };
+    rider.seleccionarPedido(codigo, { tolerante: true });
+    const disponibles = rider.estadoRider().acciones;
+    const etiqueta = etiquetas.find((texto) => disponibles.includes(texto));
+    if (etiqueta) {
+      try {
+        rider.tocar(etiqueta, { codigoEsperado: codigo });
+      } catch (error) {
+        ultimoError = String(error.message).slice(0, 160);
+      }
+    }
+    await new Promise((resolver) => { setTimeout(resolver, INTERVALO); });
+  }
+  const ultimo = await leerPedido(codigo);
+  throw new PasoFallido(
+    'RIDER_NO_AVANZA',
+    `${codigo} no llegó a ${estados.join('/')}: quedó en ${ultimo?.status}`
+    + `${ultimoError ? ` · último intento: ${ultimoError}` : ''}`,
+  );
+}
+
+/**
+ * Cierra las tres superficies y las vuelve a abrir.
+ *
+ * Es la única forma de distinguir «la pantalla lo dice» de «quedó guardado». Se
+ * cierran los dos navegadores y se relanza la aplicación del repartidor. Recién
+ * ACÁ se puede cerrar el proceso del teléfono: el pedido ya está entregado, así
+ * que no hay ningún viaje publicando GPS al que cortarle la pierna.
+ */
+async function comprobarPersistencia({
+  navegador, contextoCliente, contextoPanel, rutaSesionCliente, rutaSesionPanel,
+  host, codigo, pedidoId, producto, stockDespues, evidencia,
+}) {
+  await contextoCliente.close().catch(() => {});
+  await contextoPanel.close().catch(() => {});
+
+  const otroCliente = await nuevoContextoCliente(navegador, { estado: rutaSesionCliente });
+  const otroPanel = await nuevoContextoPanel(navegador, { estado: rutaSesionPanel });
+
+  const cliente = await otroCliente.newPage();
+  await cliente.goto(`${host}/#tracking`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+  await cliente.waitForTimeout(6000);
+  const textoCliente = await cliente.locator('body').innerText().catch(() => '');
+  await cliente.screenshot({ path: evidencia.ruta('13-cliente-reabierto.png'), fullPage: true });
+
+  const panel = await otroPanel.newPage();
+  await panel.goto(`${host}/#business`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+  await panel.waitForTimeout(6000);
+  const textoPanel = await panel.locator('body').innerText().catch(() => '');
+  await panel.screenshot({ path: evidencia.ruta('14-panel-reabierto.png'), fullPage: true });
+
+  const pedidoFinal = await leerPedido(codigo);
+  const stockFinal = await leerStock(producto.externalId);
+
+  let riderLibre = false;
+  try {
+    rider.reiniciarAplicacion();
+    riderLibre = rider.estadoRider().pedido !== codigo;
+  } catch (error) {
+    evidencia.anotar(`no se pudo comprobar el teléfono tras reabrir: ${String(error.message).slice(0, 160)}`);
+  }
+
+  await otroCliente.close().catch(() => {});
+  await otroPanel.close().catch(() => {});
+
+  const clienteEntregado = /entregad/i.test(textoCliente);
+  const panelEntregado = /entregad/i.test(textoPanel) || pedidoFinal?.status === 'delivered';
+  const ok = clienteEntregado && panelEntregado && pedidoFinal?.status === 'delivered'
+    && stockFinal === stockDespues && riderLibre;
+  return {
+    ok,
+    detalle: `cliente=${clienteEntregado ? 'entregado' : 'NO'} · panel=${panelEntregado ? 'entregado' : 'NO'}`
+      + ` · base=${pedidoFinal?.status} · stock=${stockFinal} · repartidor sin el pedido=${riderLibre}`
+      + ` · pedido ${String(pedidoId).slice(0, 8)}…`,
+  };
 }

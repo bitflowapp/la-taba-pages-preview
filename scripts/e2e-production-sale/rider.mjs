@@ -184,4 +184,108 @@ export function despertarPantalla() {
   return { bloqueada };
 }
 
+/*
+ * ══ CORRELACIÓN: TRABAJAR SOBRE EL PEDIDO DE ESTA CORRIDA Y SOBRE NINGÚN OTRO ══
+ *
+ * El repartidor de producción puede llevar hasta TRES entregas a la vez
+ * (`rider_max_active_orders()` = 3), y de hecho el día que se escribió esto
+ * tenía una vieja sin cerrar. O sea que «el pedido que está en pantalla» no es
+ * necesariamente el nuestro, y avanzar el equivocado sería mover la entrega de
+ * otra persona.
+ *
+ * Todo lo que sigue busca el pedido por su CÓDIGO PÚBLICO, y `tocar()` vuelve a
+ * comprobarlo antes de cada toque.
+ */
+
+/** ¿Aparece este código en algún lugar de la pantalla, y dónde? */
+export function nodosDelPedido(nodos, codigo) {
+  const buscado = String(codigo || '').trim();
+  if (!buscado) return [];
+  return nodos.filter((nodo) => nodo.descripcion.includes(buscado) && nodo.bounds);
+}
+
+/**
+ * Deja en pantalla el pedido pedido.
+ *
+ * Si ya está, no toca nada. Si no está pero aparece en una lista, toca el
+ * elemento clickable más chico que lo menciona —el más chico es la fila, no el
+ * contenedor de toda la pantalla— y vuelve a mirar.
+ *
+ * `tolerante` existe para los sondeos: durante una espera el pedido puede
+ * todavía no haber llegado al teléfono, y eso no es un error todavía.
+ */
+export function seleccionarPedido(codigo, { tolerante = false, intentos = 2 } = {}) {
+  for (let intento = 0; intento < intentos; intento += 1) {
+    const nodos = volcarPantalla();
+    if (pedidoEnPantalla(nodos) === codigo) return true;
+    const candidatos = nodosDelPedido(nodos, codigo)
+      .filter((nodo) => nodo.clickable && !LISTA_NEGRA.includes(nodo.descripcion))
+      .sort((a, b) => area(a) - area(b));
+    if (!candidatos.length) break;
+    const [x1, y1, x2, y2] = candidatos[0].bounds;
+    adb(['shell', 'input', 'tap', String(Math.round((x1 + x2) / 2)), String(Math.round((y1 + y2) / 2))]);
+    adb(['shell', 'sleep', '2']);
+  }
+  if (pedidoEnPantalla(volcarPantalla()) === codigo) return true;
+  if (tolerante) return false;
+  throw new RiderInseguro(`no se pudo poner ${codigo} en pantalla: no se toca nada`);
+}
+
+const area = (nodo) => {
+  const [x1, y1, x2, y2] = nodo.bounds;
+  return Math.max(1, (x2 - x1) * (y2 - y1));
+};
+
+/**
+ * Acepta la oferta de ESTE pedido, si está ofrecida.
+ *
+ * La compuerta es doble: la etiqueta de la oferta tiene que mencionar el código
+ * de la corrida, y el botón de aceptar tiene que estar dentro de esa misma
+ * tarjeta —se elige el «Aceptar» más cercano por debajo del renglón de la
+ * oferta—. Aceptar el «Aceptar» de otra tarjeta sería tomarle el viaje a otro.
+ */
+export function aceptarOfertaDe(codigo, estado = null) {
+  const nodos = volcarPantalla();
+  const actual = estado || {
+    ofertas: buscarPorPrefijo(nodos, 'Oferta: ').map((nodo) => nodo.descripcion),
+  };
+  const oferta = (actual.ofertas || []).find((texto) => texto.includes(codigo));
+  if (!oferta) return false;
+  const renglon = nodos.find((nodo) => nodo.descripcion === oferta && nodo.bounds);
+  const aceptar = nodos
+    .filter((nodo) => /^Aceptar/.test(nodo.descripcion) && nodo.clickable && nodo.bounds)
+    .filter((nodo) => !renglon || nodo.bounds[1] >= renglon.bounds[1])
+    .sort((a, b) => a.bounds[1] - b.bounds[1])[0];
+  if (!aceptar) return false;
+  const [x1, y1, x2, y2] = aceptar.bounds;
+  adb(['shell', 'input', 'tap', String(Math.round((x1 + x2) / 2)), String(Math.round((y1 + y2) / 2))]);
+  adb(['shell', 'sleep', '2']);
+  return true;
+}
+
+/**
+ * Cierra la aplicación y la vuelve a abrir, para la prueba de persistencia.
+ *
+ * `force-stop` está permitido ACÁ y sólo acá, y con una condición: que no haya
+ * ninguna entrega viva. Matar el proceso mientras un viaje publica su posición
+ * le corta el rastreo a un cliente real, así que primero se pregunta.
+ */
+export function reiniciarAplicacion({ esperaMs = 6000 } = {}) {
+  const estado = estadoRider();
+  if (estado.pedido) {
+    throw new RiderInseguro(
+      `el teléfono todavía muestra ${estado.pedido}: no se cierra la aplicación con una entrega en curso`,
+    );
+  }
+  adb(['shell', 'am', 'force-stop', RIDER.paquete], { timeout: 45_000 });
+  adb(['shell', 'sleep', '2']);
+  adb(['shell', 'monkey', '-p', RIDER.paquete, '-c', 'android.intent.category.LAUNCHER', '1'], { timeout: 45_000 });
+  adb(['shell', 'sleep', String(Math.ceil(esperaMs / 1000))], { timeout: 60_000 });
+  const despues = appEnPrimerPlano();
+  if (despues !== RIDER.paquete) {
+    throw new RiderInseguro(`la aplicación no volvió al frente después de reiniciarla (quedó ${despues})`);
+  }
+  return true;
+}
+
 export const LISTA_NEGRA_RIDER = LISTA_NEGRA;

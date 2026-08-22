@@ -57,6 +57,25 @@ const INVITACIONES_QUE_SE_DECLINAN = Object.freeze([
   'Continuar sin biometría',
 ]);
 
+/**
+ * ¿Esta etiqueta es de las que no se tocan?
+ *
+ * La comparación es por CONTENIDO, no por igualdad. La lista negra se escribió
+ * con etiquetas sueltas —«Rechazar»— y la pantalla real de ofertas puede
+ * describir el mismo botón como «Rechazar la solicitud LT-0002». Con igualdad
+ * exacta eso no se filtraba, y peor: al buscar el nodo más chico que menciona el
+ * código de la corrida, ESE botón era un candidato perfecto. Rechazar el propio
+ * viaje por buscarlo.
+ *
+ * Con `includes` se pierde algún falso positivo —una etiqueta que contenga
+ * «cancelar» sin serlo— y eso está bien: el harness deja de tocar algo que
+ * podría haber tocado, que es el lado correcto donde equivocarse.
+ */
+export function esPeligroso(descripcion) {
+  const texto = String(descripcion || '').toLowerCase();
+  return LISTA_NEGRA.some((prohibida) => texto.includes(prohibida.toLowerCase()));
+}
+
 export class RiderInseguro extends Error {}
 
 const adb = (args, { timeout = 30_000 } = {}) => execFileSync('adb', ['-s', RIDER.serie, ...args], {
@@ -110,7 +129,7 @@ export function buscarPorPrefijo(nodos, prefijo) {
  * pantalla es el de esta corrida.
  */
 export function tocar(descripcion, { codigoEsperado, permitirSinPedido = false } = {}) {
-  if (LISTA_NEGRA.includes(descripcion)) {
+  if (esPeligroso(descripcion)) {
     throw new RiderInseguro(`«${descripcion}» está en la lista negra: este harness no lo toca nunca`);
   }
   const nodos = volcarPantalla();
@@ -237,7 +256,7 @@ export function despejarInvitaciones({ vueltas = 3 } = {}) {
       nodo.clickable
       && nodo.bounds
       && INVITACIONES_QUE_SE_DECLINAN.includes(nodo.descripcion)
-      && !LISTA_NEGRA.includes(nodo.descripcion)
+      && !esPeligroso(nodo.descripcion)
     ));
     if (!invitacion) break;
     const [x1, y1, x2, y2] = invitacion.bounds;
@@ -258,19 +277,33 @@ export function nodosDelPedido(nodos, codigo) {
 /**
  * Deja en pantalla el pedido pedido.
  *
- * Si ya está, no toca nada. Si no está pero aparece en una lista, toca el
- * elemento clickable más chico que lo menciona —el más chico es la fila, no el
+ * Si ya está, no toca nada. Si no está pero aparece en la lista «Tus entregas»,
+ * toca su fila —la más chica de las que lo mencionan, que es la fila y no el
  * contenedor de toda la pantalla— y vuelve a mirar.
+ *
+ * NO SE EXIGE `clickable`, Y ESO COSTÓ UNA CORRIDA. Cuando el repartidor pasa a
+ * llevar dos entregas, la app muestra una lista y hay que abrir la del pedido de
+ * la corrida para llegar a sus botones. Esas filas responden al toque pero el
+ * árbol de accesibilidad NO las marca clickable: son `android.view.View` con una
+ * descripción («Pedido LT-0002. Asignado. Mendoza 851») y nada más. Filtrando
+ * por `clickable` no quedaba ningún candidato y el harness se quedaba esperando
+ * botones de una pantalla que nunca abría.
+ *
+ * A cambio de aflojar esa condición se aprieta otra: sólo se tocan filas que
+ * ANUNCIAN un pedido —empiezan con «Pedido »— además de mencionar el código. Un
+ * cartel cualquiera que nombre el pedido no se toca.
  *
  * `tolerante` existe para los sondeos: durante una espera el pedido puede
  * todavía no haber llegado al teléfono, y eso no es un error todavía.
  */
-export function seleccionarPedido(codigo, { tolerante = false, intentos = 2 } = {}) {
+const esFilaDePedido = (nodo) => nodo.clickable || /^Pedido /.test(nodo.descripcion);
+
+export function seleccionarPedido(codigo, { tolerante = false, intentos = 3 } = {}) {
   for (let intento = 0; intento < intentos; intento += 1) {
     const nodos = volcarPantalla();
     if (pedidoEnPantalla(nodos) === codigo) return true;
     const candidatos = nodosDelPedido(nodos, codigo)
-      .filter((nodo) => nodo.clickable && !LISTA_NEGRA.includes(nodo.descripcion))
+      .filter((nodo) => esFilaDePedido(nodo) && !esPeligroso(nodo.descripcion))
       .sort((a, b) => area(a) - area(b));
     if (!candidatos.length) break;
     const [x1, y1, x2, y2] = candidatos[0].bounds;
@@ -287,29 +320,97 @@ const area = (nodo) => {
   return Math.max(1, (x2 - x1) * (y2 - y1));
 };
 
+/*
+ * LA TARJETA DE LA OFERTA ES UN SOLO NODO, Y ESO CAMBIA LAS REGLAS.
+ *
+ * El árbol de accesibilidad de la pantalla «Nuevas solicitudes» tiene UNA hoja
+ * por oferta:
+ *
+ *   clickable=false  bounds=[40,1025,1040,1435]
+ *   «Nueva solicitud LT-0002. Zona Neuquén Capital. 1 bulto. Cobrás ARS 4.990»
+ *
+ * Los botones «Rechazar» y «Aceptar» que se ven en pantalla NO existen ahí:
+ * Flutter fusionó la tarjeta entera en un nodo y no expone hijos. No hay
+ * `content-desc`, ni `text`, ni `resource-id` que los distinga. La regla de oro
+ * de este módulo —resolver por etiqueta, nunca por coordenada— no se puede
+ * cumplir acá porque no hay etiqueta que resolver.
+ *
+ * Así que se hace lo siguiente, y sólo esto:
+ *
+ *   · el ANCLA sigue siendo semántica: la tarjeta se encuentra porque su
+ *     descripción menciona el código de ESTA corrida, y se exige que sea la
+ *     ÚNICA de la pantalla que lo menciona;
+ *   · el punto se calcula desde los bordes de ESA tarjeta, medidos en el
+ *     volcado de este instante, nunca desde una coordenada recordada;
+ *   · y el toque se prohíbe en la mitad izquierda por construcción, porque ahí
+ *     vive «Rechazar». Si el punto calculado cayera a la izquierda del centro,
+ *     no se toca nada.
+ *
+ * Los desplazamientos salen de medir la pantalla real (1080×2400): el botón de
+ * aceptar ocupa la derecha de la fila inferior, con su centro a unos 260 px del
+ * borde derecho de la tarjeta y a unos 95 px de su borde inferior. Se anclan a
+ * los bordes y no a fracciones porque los botones no cambian de tamaño cuando
+ * la dirección es más larga: la tarjeta crece hacia arriba, la fila de botones
+ * se queda abajo.
+ *
+ * Y lo más importante: aunque todo esto falle, falla RECUPERABLE. Si el toque
+ * cayera en «Rechazar», la oferta queda rechazada y el pedido sigue en «listo»,
+ * intacto, para volver a ofrecerlo. Quien llama comprueba el efecto contra la
+ * base y se planta si salió al revés.
+ */
+const OFERTA = Object.freeze({
+  prefijos: Object.freeze(['Nueva solicitud ', 'Oferta: ']),
+  desdeElBordeDerecho: 260,
+  desdeElBordeInferior: 95,
+});
+
+export function tarjetaDeLaOferta(nodos, codigo) {
+  const buscado = String(codigo || '').trim();
+  if (!buscado) return null;
+  const candidatas = nodos.filter((nodo) => (
+    nodo.bounds
+    && nodo.descripcion.includes(buscado)
+    && OFERTA.prefijos.some((prefijo) => nodo.descripcion.startsWith(prefijo))
+  ));
+  // Dos tarjetas con el mismo código no puede pasar; si pasara, no se adivina.
+  return candidatas.length === 1 ? candidatas[0] : null;
+}
+
+/**
+ * Dónde tocar para ACEPTAR, calculado desde los bordes de esta tarjeta.
+ *
+ * Devuelve `null` si el punto no cae claramente en la mitad derecha: ahí está
+ * el botón de rechazar y no se lo toca ni por error de cálculo.
+ */
+export function puntoParaAceptar(tarjeta) {
+  if (!tarjeta?.bounds) return null;
+  const [x1, y1, x2, y2] = tarjeta.bounds;
+  const x = x2 - OFERTA.desdeElBordeDerecho;
+  const y = y2 - OFERTA.desdeElBordeInferior;
+  const centroHorizontal = (x1 + x2) / 2;
+  if (x <= centroHorizontal) return null;
+  if (x <= x1 || x >= x2 || y <= y1 || y >= y2) return null;
+  return { x: Math.round(x), y: Math.round(y) };
+}
+
 /**
  * Acepta la oferta de ESTE pedido, si está ofrecida.
  *
- * La compuerta es doble: la etiqueta de la oferta tiene que mencionar el código
- * de la corrida, y el botón de aceptar tiene que estar dentro de esa misma
- * tarjeta —se elige el «Aceptar» más cercano por debajo del renglón de la
- * oferta—. Aceptar el «Aceptar» de otra tarjeta sería tomarle el viaje a otro.
+ * Devuelve `false` sin tocar nada cuando no hay una tarjeta inequívoca para el
+ * código de la corrida. Quien llama confirma el efecto en la base: esta función
+ * informa que tocó, no que salió bien.
  */
-export function aceptarOfertaDe(codigo, estado = null) {
+export function aceptarOfertaDe(codigo) {
   const nodos = volcarPantalla();
-  const actual = estado || {
-    ofertas: buscarPorPrefijo(nodos, 'Oferta: ').map((nodo) => nodo.descripcion),
-  };
-  const oferta = (actual.ofertas || []).find((texto) => texto.includes(codigo));
-  if (!oferta) return false;
-  const renglon = nodos.find((nodo) => nodo.descripcion === oferta && nodo.bounds);
-  const aceptar = nodos
-    .filter((nodo) => /^Aceptar/.test(nodo.descripcion) && nodo.clickable && nodo.bounds)
-    .filter((nodo) => !renglon || nodo.bounds[1] >= renglon.bounds[1])
-    .sort((a, b) => a.bounds[1] - b.bounds[1])[0];
-  if (!aceptar) return false;
-  const [x1, y1, x2, y2] = aceptar.bounds;
-  adb(['shell', 'input', 'tap', String(Math.round((x1 + x2) / 2)), String(Math.round((y1 + y2) / 2))]);
+  const tarjeta = tarjetaDeLaOferta(nodos, codigo);
+  if (!tarjeta) return false;
+  const punto = puntoParaAceptar(tarjeta);
+  if (!punto) {
+    throw new RiderInseguro(
+      `la tarjeta de ${codigo} no deja calcular un punto seguro para aceptar: no se toca nada`,
+    );
+  }
+  adb(['shell', 'input', 'tap', String(punto.x), String(punto.y)]);
   adb(['shell', 'sleep', '2']);
   return true;
 }

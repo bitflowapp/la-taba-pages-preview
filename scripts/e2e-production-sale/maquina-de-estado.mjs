@@ -24,7 +24,11 @@ export const CASOS = Object.freeze({
   PUBLICAR_VENDER: 'CASO_2_PUBLICACION_VENTA',
   VENDER: 'CASO_3_VENTA',
   RECUPERAR: 'CASO_4_RECUPERACION',
+  REANUDAR: 'CASO_4_REANUDACION',
 });
+
+/** Estados de los que un pedido ya no vuelve. */
+const TERMINALES = Object.freeze(['delivered', 'cancelled', 'canceled', 'rejected']);
 
 export const ETAPAS = Object.freeze({
   RECEPCION: 'recepcion',
@@ -57,13 +61,45 @@ const planBloqueado = (caso, codigo, mensaje) => Object.freeze({
  * saltear: si quedó abierta puede haber un pedido de producción a medias, y el
  * único movimiento seguro es mirar ese pedido —no crear otro—.
  */
-export function decidirPlan({ producto, lockPrevio = null, atestacion = null } = {}) {
+export function decidirPlan({
+  producto, lockPrevio = null, atestacion = null, pedidoDelLock = null,
+} = {}) {
   if (lockPrevio) {
+    /*
+     * UNA CORRIDA A MEDIAS CON UN PEDIDO VIVO SE REANUDA, NO SE REPITE.
+     *
+     * Es la diferencia entre «recuperar» y «volver a empezar», y es la que
+     * importa: si la corrida anterior alcanzó a crear un pedido real y se cayó
+     * después —le pasó el 2026-08-22, buscando en el Panel por el uuid cuando
+     * el Panel indexa por código público—, crear OTRO pedido para probar lo
+     * mismo dejaría dos ventas reales donde el dueño pidió una. Se retoma el
+     * que ya existe, desde donde quedó.
+     *
+     * Sin pedido anotado no hay nada que retomar y se frena para que alguien
+     * mire: un lock sin pedido puede significar que la corrida murió justo
+     * mientras compraba.
+     */
+    if (lockPrevio.pedido && pedidoDelLock) {
+      if (TERMINALES.includes(pedidoDelLock.status)) {
+        return planBloqueado(
+          CASOS.RECUPERAR,
+          'PEDIDO_ANTERIOR_TERMINADO',
+          `la corrida ${lockPrevio.runId || 'anterior'} dejó ${lockPrevio.pedido} en «${pedidoDelLock.status}»: `
+          + 'ya no hay nada que reanudar. Revisalo y liberá el lock.',
+        );
+      }
+      return plan(
+        CASOS.REANUDAR,
+        [ETAPAS.VENTA],
+        `se retoma ${lockPrevio.pedido}, que quedó en «${pedidoDelLock.status}»: no se crea otro pedido`,
+        { reanudarCodigo: lockPrevio.pedido, estadoAlReanudar: pedidoDelLock.status },
+      );
+    }
     return planBloqueado(
       CASOS.RECUPERAR,
       'CORRIDA_ANTERIOR_ABIERTA',
       `hay una corrida sin cerrar (${lockPrevio.runId || 'sin id'}, estado ${lockPrevio.estado || 'desconocido'}`
-      + `${lockPrevio.pedido ? `, pedido ${lockPrevio.pedido}` : ''}): se diagnostica, no se crea otro pedido`,
+      + `${lockPrevio.pedido ? `, pedido ${lockPrevio.pedido}` : ' y sin pedido anotado'}): se diagnostica, no se crea otro pedido`,
     );
   }
 
@@ -122,6 +158,23 @@ export function stockEsperadoAntesDeVender({ plan: elPlan, stockActual }) {
   const actual = Number(stockActual) || 0;
   if (!elPlan?.etapas?.includes(ETAPAS.RECEPCION)) return actual;
   return actual + Number(elPlan.cantidadARecibir || 0);
+}
+
+/**
+ * ¿Esta oferta todavía se puede aceptar?
+ *
+ * Cada oferta guarda la revisión del pedido que esperaba. Si el pedido cambió
+ * desde entonces, el servidor la rechaza y el teléfono muestra «La solicitud
+ * cambió» sin que el botón de aceptar haga nada nunca más. Lo que la vuelve
+ * obsoleta, medido: que el cliente abra su pantalla de seguimiento, porque eso
+ * rota su token y sube la revisión del pedido.
+ */
+export function ofertaSigueVigente(oferta, revisionDelPedido) {
+  if (!oferta || oferta.status !== 'pending') return false;
+  const esperada = Number(oferta.expected_order_revision);
+  const actual = Number(revisionDelPedido);
+  if (!Number.isFinite(esperada) || !Number.isFinite(actual)) return false;
+  return esperada === actual;
 }
 
 export function describirPlan(elPlan) {

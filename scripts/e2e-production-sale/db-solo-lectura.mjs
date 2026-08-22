@@ -18,8 +18,31 @@ const PALABRAS_DE_ESCRITURA = [
   'copy', 'vacuum', 'refresh', 'reset', 'do', 'call', 'merge', 'lock', 'comment', 'reindex',
   'begin', 'commit', 'rollback', 'savepoint', 'listen', 'notify', 'prepare', 'execute',
 ];
-// Funciones que escriben aunque se las llame desde un select.
-const FUNCIONES_QUE_MUTAN = /\b(apply_inventory_movement|set_commercial_product_publication|transition_order|acknowledge_order|cancel_order|assign_order_rider|offer_order_to_rider|create_|submit_|confirm_|start_|revert_|close_|prepare_daily|identity_register|rider_)/i;
+/*
+ * Funciones que escriben aunque se las llame desde un `select`.
+ *
+ * EL PARÉNTESIS FINAL NO ES DECORATIVO. Sin él, esta guarda comparaba prefijos
+ * contra cualquier identificador de la consulta y rechazaba TABLAS por parecerse
+ * a funciones: `rider_order_offers` —una tabla, leída para saber si ya se ofreció
+ * un pedido— caía por el prefijo `rider_`. Costó una corrida real, con el pedido
+ * ya en «listo» y el repartidor ya notificado, abortada por una lectura
+ * perfectamente inofensiva.
+ *
+ * En SQL una función se invoca SIEMPRE con paréntesis; una tabla nunca los
+ * lleva. Exigirlos deja la guarda igual de estricta para lo que vino a impedir
+ * —`select apply_inventory_movement(...)`— y deja de castigar a quien sólo
+ * quería mirar una tabla con un nombre parecido.
+ */
+const FUNCIONES_QUE_MUTAN = new RegExp(
+  '\\b('
+  + 'apply_inventory_movement|set_commercial_product_publication|transition_order'
+  + '|acknowledge_order|cancel_order|assign_order_rider|offer_order_to_rider'
+  + '|create_[a-z0-9_]*|submit_[a-z0-9_]*|confirm_[a-z0-9_]*|start_[a-z0-9_]*'
+  + '|revert_[a-z0-9_]*|close_[a-z0-9_]*|prepare_daily[a-z0-9_]*'
+  + '|identity_register[a-z0-9_]*|rider_[a-z0-9_]*'
+  + ')\\s*\\(',
+  'i',
+);
 
 export class ConsultaNoPermitida extends Error {}
 

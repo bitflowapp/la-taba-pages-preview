@@ -9,10 +9,15 @@
  * TODO SE CORRELACIONA POR IDENTIDAD, NUNCA POR POSICIÓN
  * -----------------------------------------------------
  * Ni «el último pedido», ni «el primer botón», ni «la dirección que dice
- * Mendoza». El pedido de esta corrida tiene un uuid y un código público, y cada
- * botón del Panel lleva el uuid del pedido al que pertenece
- * (`data-production-business-next="<uuid>"`). La dirección tiene su propio uuid
- * y el checkout lo escribe en el DOM. Todo se busca por esos identificadores.
+ * Mendoza».
+ *
+ * CADA SUPERFICIE USA SU PROPIA LLAVE, Y HAY QUE USAR LA DE CADA UNA. El Panel
+ * identifica sus botones por el CÓDIGO PÚBLICO del pedido
+ * (`data-production-business-next="LT-0002"`), porque su modelo de vista llama
+ * `order.id` al código y guarda el uuid aparte en `order.backendId`. Buscar el
+ * uuid ahí no encuentra nada: pasó el 2026-08-22 y costó un pedido real parado
+ * en «recibido». La dirección del checkout sí va por uuid
+ * (`data-customer-address-id`), y el teléfono por código público.
  *
  * Esto no es prolijidad: el comercio puede tener otros pedidos vivos —los tenía
  * el día que se escribió esto— y «avanzar el primero» habría movido el pedido
@@ -36,6 +41,23 @@ const ESPERA = {
   pedidoEnPanel: 120_000, transicion: 90_000, oferta: 120_000, entrega: 120_000, telefono: 180_000,
 };
 const INTERVALO = 2_000;
+
+/*
+ * El orden en que avanza un pedido. Sirve para una sola pregunta, y es la que
+ * hace falta al reanudar: ¿este paso ya quedó atrás? Sin esto, retomar un
+ * pedido que ya estaba en «listo» se quedaba esperando el botón de «aceptar»,
+ * que el Panel —con razón— ya no dibuja.
+ */
+const ORDEN_DE_ESTADOS = Object.freeze([
+  'received', 'submitted', 'accepted', 'preparing', 'ready',
+  'assigned', 'picked_up', 'on_the_way', 'arriving', 'arrived', 'delivered',
+]);
+
+export function yaPaso(estadoActual, objetivo) {
+  const actual = ORDEN_DE_ESTADOS.indexOf(String(estadoActual || ''));
+  const meta = ORDEN_DE_ESTADOS.indexOf(String(objetivo || ''));
+  return actual !== -1 && meta !== -1 && actual >= meta;
+}
 
 export class PasoFallido extends Error {
   constructor(codigo, mensaje) { super(mensaje); this.codigo = codigo; }
@@ -61,6 +83,43 @@ const leerPedido = async (codigo) => {
   return filas[0] || null;
 };
 
+/*
+ * EN QUÉ ESTADO ESTÁ LA OFERTA, Y SI TODAVÍA SIRVE.
+ *
+ * Que una oferta figure «pendiente» no alcanza para darla por buena. Cada oferta
+ * guarda la revisión del pedido que esperaba (`expected_order_revision`), y el
+ * servidor rechaza aceptarla si el pedido cambió desde entonces. En el teléfono
+ * eso se ve como «La solicitud cambió. Actualizamos la lista.» y el botón de
+ * aceptar no hace nada, para siempre.
+ *
+ * QUÉ LA VUELVE OBSOLETA, MEDIDO EL 2026-08-22: que el CLIENTE abra su pantalla
+ * de seguimiento. Eso rota su token de acceso, deja un `tracking_access_recovered`
+ * y sube la revisión del pedido —de 7 a 8, en LT-0002— tres minutos después de
+ * haberse ofrecido. O sea que un cliente mirando dónde viene su pedido invalida
+ * la oferta que el repartidor tiene en pantalla. Es un hallazgo del producto y
+ * está anotado como tal; acá se lo detecta y se lo resuelve por la vía normal:
+ * retirar la oferta vencida y volver a ofrecer.
+ */
+const estadoDeLaOferta = async (pedidoId) => {
+  const [pedido] = await consultar(`select revision, assigned_rider_user_id is not null as tiene_rider
+    from public.orders where id = ${lit(pedidoId)}`);
+  if (pedido?.tiene_rider) return { tieneRider: true, hayOferta: false, vigente: false };
+  const [oferta] = await consultar(`select id::text as id, status, expected_order_revision
+    from public.rider_order_offers where order_id = ${lit(pedidoId)} order by offered_at desc limit 1`);
+  if (!oferta || oferta.status !== 'pending') {
+    return { tieneRider: false, hayOferta: false, vigente: false, ultimoEstado: oferta?.status || null };
+  }
+  const vigente = Number(oferta.expected_order_revision) === Number(pedido.revision);
+  return {
+    tieneRider: false,
+    hayOferta: true,
+    vigente,
+    ofertaId: oferta.id,
+    revisionEsperada: Number(oferta.expected_order_revision),
+    revisionActual: Number(pedido.revision),
+  };
+};
+
 const leerStock = async (externalId) => {
   const filas = await consultar(`select stock from public.products
     where business_id = ${lit(NEGOCIO_ID)} and external_id = ${lit(externalId)}`);
@@ -75,12 +134,35 @@ export async function ejecutarVentaReal({
   runId, evidencia, anotarPaso, tiempos, host = PRODUCCION.host, producto,
   navegador, contextoCliente, contextoPanel, cliente, panel,
   direccionId, stockAntes, riderUserId, rutaSesionCliente, rutaSesionPanel,
+  reanudarCodigo = null,
 }) {
   let codigo = null;
   let pedidoId = null;
   let pinLeido = false;
 
   try {
+    /*
+     * REANUDAR ES SALTEAR LA COMPRA, NO REPETIRLA.
+     *
+     * Si la corrida anterior ya creó el pedido y se cayó después, volver a
+     * comprar dejaría DOS ventas reales donde el dueño autorizó una. Se toma el
+     * pedido que ya existe y se sigue desde el Panel.
+     */
+    if (reanudarCodigo) {
+      const existente = await leerPedido(reanudarCodigo);
+      if (!existente) throw new PasoFallido('PEDIDO_A_REANUDAR_INEXISTENTE', `${reanudarCodigo} no existe`);
+      codigo = existente.public_code;
+      pedidoId = existente.id;
+      anotarPedidoEnLock({ runId, pedido: codigo });
+      evidencia.guardarJson('pedido.json', {
+        runId, codigo, id: pedidoId, total: existente.total, metodo: existente.payment_method,
+        reanudado: true, estadoAlReanudar: existente.status, reanudadoUtc: new Date().toISOString(),
+      });
+      for (const nombre of ['Customer cart', 'Checkout']) {
+        anotarPaso(nombre, 'SKIP', `reanudación de ${codigo}: la compra ya había ocurrido`);
+      }
+      anotarPaso('Order created', 'PASS', `${codigo} · $${existente.total} · reanudado desde «${existente.status}»`);
+    } else {
     // ── 1 · el cliente arma el carrito ───────────────────────────────────────
     await cliente.goto(`${host}/#catalog`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await cliente.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached', timeout: 60_000 });
@@ -185,13 +267,14 @@ export async function ejecutarVentaReal({
       runId, codigo, id: pedidoId, total: pedido.total, metodo: pedido.payment_method, creadoUtc: new Date().toISOString(),
     });
     anotarPaso('Order created', 'PASS', `${codigo} · $${pedido.total}`);
+    }
 
     // ── 6 · el Panel lo recibe ───────────────────────────────────────────────
     await panel.goto(`${host}/#business`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await panel.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached', timeout: 60_000 });
     await irAPedidos(panel);
     const enPanel = await esperarHasta('el pedido en el Panel', async () => (
-      await panel.locator(`[data-production-business-next="${pedidoId}"], [data-production-business-cancel="${pedidoId}"]`).count() > 0
+      await panel.locator(`[data-production-business-next="${codigo}"], [data-production-business-cancel="${codigo}"]`).count() > 0
     ), ESPERA.pedidoEnPanel);
     if (!enPanel.ok) throw new PasoFallido('PEDIDO_NO_LLEGA_AL_PANEL', `el Panel no muestra ${codigo}`);
     tiempos['pedido creado → visible en el Panel'] = enPanel.ms;
@@ -201,7 +284,7 @@ export async function ejecutarVentaReal({
     // ── 7 · aceptar, preparar, listo ─────────────────────────────────────────
     for (const [estado, nombrePaso] of [['accepted', 'Accepted'], ['preparing', 'Preparing'], ['ready', 'Ready']]) {
       const desde = Date.now();
-      await avanzarEnElPanel(panel, { pedidoId, codigo, hasta: estado });
+      await avanzarEnElPanel(panel, { codigo, hasta: estado });
       tiempos[nombrePaso] = Date.now() - desde;
       anotarPaso(nombrePaso, 'PASS', estado);
     }
@@ -209,7 +292,28 @@ export async function ejecutarVentaReal({
 
     // ── 8 · se le ofrece al repartidor ───────────────────────────────────────
     const desdeOferta = Date.now();
-    await ofrecerAlRepartidor(panel, { pedidoId, riderUserId });
+    /*
+     * Al reanudar, el pedido puede venir YA ofrecido: la corrida anterior llegó
+     * hasta acá. Volver a ofrecerlo no sólo es innecesario —el Panel deja de
+     * dibujar el bloque de asignación mientras hay una oferta viva, así que
+     * fallaría—: sería mandarle una segunda notificación al repartidor por el
+     * mismo viaje.
+     */
+    const oferta = await estadoDeLaOferta(pedidoId);
+    if (oferta.tieneRider) {
+      anotarPaso('Rider offered', 'PASS', 'el pedido ya tiene repartidor asignado');
+    } else if (oferta.hayOferta && oferta.vigente) {
+      anotarPaso('Rider offered', 'PASS', 'ya estaba ofrecido y la oferta sigue vigente: no se ofrece de nuevo');
+    } else {
+      if (oferta.hayOferta && !oferta.vigente) {
+        /*
+         * La oferta quedó atada a una revisión vieja: el teléfono no la puede
+         * aceptar aunque la muestre. Se retira por el Panel y se ofrece de nuevo.
+         */
+        evidencia.anotar(`la oferta esperaba la revisión ${oferta.revisionEsperada} y el pedido va por la ${oferta.revisionActual}: se retira y se vuelve a ofrecer`);
+        await retirarOferta(panel, { ofertaId: oferta.ofertaId });
+      }
+      await ofrecerAlRepartidor(panel, { codigo, riderUserId });
     const ofrecido = await esperarHasta('oferta registrada', async () => {
       const filas = await consultar(`select assigned_rider_user_id::text as rider, status
         from public.orders where id = ${lit(pedidoId)}`);
@@ -218,9 +322,10 @@ export async function ejecutarVentaReal({
         where order_id = ${lit(pedidoId)} order by offered_at desc limit 1`);
       return ofertas[0] || null;
     }, ESPERA.oferta);
-    if (!ofrecido.ok) throw new PasoFallido('OFERTA_NO_REGISTRADA', 'no se registró la oferta al repartidor');
-    tiempos['listo → oferta al repartidor'] = Date.now() - desdeOferta;
-    anotarPaso('Rider offered', 'PASS');
+      if (!ofrecido.ok) throw new PasoFallido('OFERTA_NO_REGISTRADA', 'no se registró la oferta al repartidor');
+      tiempos['listo → oferta al repartidor'] = Date.now() - desdeOferta;
+      anotarPaso('Rider offered', 'PASS');
+    }
 
     // ── 9 · el teléfono ──────────────────────────────────────────────────────
     rider.despertarPantalla();
@@ -240,7 +345,18 @@ export async function ejecutarVentaReal({
       if (fila?.tiene_rider) return fila;
       const estado = rider.estadoRider();
       if (estado.pedido === codigo) return estado;
-      rider.aceptarOfertaDe(codigo, estado);
+      /*
+       * Si la oferta salió RECHAZADA, no se reintenta: el pedido queda en
+       * «listo» —intacto, para volver a ofrecerlo— y esto se reporta como falla.
+       * Reintentar sobre una oferta rechazada sería insistir sobre una decisión
+       * que el sistema ya tomó.
+       */
+      const [oferta] = await consultar(`select ro.status from public.rider_order_offers ro
+        where ro.order_id = ${lit(pedidoId)} order by ro.offered_at desc limit 1`);
+      if (oferta && ['rejected', 'declined', 'withdrawn', 'expired'].includes(oferta.status)) {
+        throw new PasoFallido('OFERTA_RECHAZADA', `la oferta de ${codigo} quedó en «${oferta.status}»: el pedido sigue listo para volver a ofrecerse`);
+      }
+      rider.aceptarOfertaDe(codigo);
       rider.seleccionarPedido(codigo, { tolerante: true });
       return null;
     }, ESPERA.telefono);
@@ -421,20 +537,20 @@ async function irAPedidos(panel) {
 /**
  * Avanza el pedido de ESTA corrida hasta el estado pedido.
  *
- * El botón se busca por el uuid del pedido, y su `data-next-status` dice a
- * dónde lleva. Se aprieta y se espera a que la BASE lo confirme; la pantalla no
+ * El botón se busca por el CÓDIGO PÚBLICO del pedido —que es lo que el Panel
+ * escribe en el atributo—, y su `data-next-status` dice a dónde lleva. Se aprieta y se espera a que la BASE lo confirme; la pantalla no
  * alcanza como prueba.
  */
-async function avanzarEnElPanel(panel, { pedidoId, codigo, hasta }) {
+async function avanzarEnElPanel(panel, { codigo, hasta }) {
   const limite = Date.now() + ESPERA.transicion * 2;
   while (Date.now() < limite) {
     const actual = await leerPedido(codigo);
-    if (actual?.status === hasta) return actual;
+    if (yaPaso(actual?.status, hasta)) return actual;
     if (['cancelled', 'canceled', 'rejected'].includes(actual?.status)) {
       throw new PasoFallido('PEDIDO_CANCELADO', `${codigo} quedó en ${actual.status} camino a ${hasta}`);
     }
     await irAPedidos(panel);
-    const boton = panel.locator(`[data-production-business-next="${pedidoId}"]`).first();
+    const boton = panel.locator(`[data-production-business-next="${codigo}"]`).first();
     if (await boton.count() > 0 && await boton.isEnabled().catch(() => false)) {
       await boton.click();
       await panel.waitForTimeout(2500);
@@ -446,11 +562,27 @@ async function avanzarEnElPanel(panel, { pedidoId, codigo, hasta }) {
   throw new PasoFallido('TRANSICION_FALLIDA', `${codigo} no llegó a ${hasta}: quedó en ${ultimo?.status}`);
 }
 
+/** Retira una oferta vencida, por el mismo botón que usaría el comercio. */
+async function retirarOferta(panel, { ofertaId }) {
+  await irAPedidos(panel);
+  const boton = panel.locator(`[data-production-offer-withdraw="${ofertaId}"]`).first();
+  const limite = Date.now() + ESPERA.transicion;
+  while (Date.now() < limite && await boton.count() === 0) {
+    await panel.waitForTimeout(INTERVALO);
+    await irAPedidos(panel);
+  }
+  if (await boton.count() === 0) {
+    throw new PasoFallido('SIN_RETIRAR_OFERTA', 'el Panel no ofrece retirar la oferta vencida');
+  }
+  await boton.click();
+  await panel.waitForTimeout(3000);
+}
+
 /** Ofrece el pedido al repartidor de producción, elegido por su user_id. */
-async function ofrecerAlRepartidor(panel, { pedidoId, riderUserId }) {
+async function ofrecerAlRepartidor(panel, { codigo, riderUserId }) {
   await irAPedidos(panel);
   const tarjeta = panel.locator('.production-order-card')
-    .filter({ has: panel.locator(`[data-production-business-assign="${pedidoId}"]`) }).first();
+    .filter({ has: panel.locator(`[data-production-business-assign="${codigo}"]`) }).first();
   const limite = Date.now() + ESPERA.oferta;
   while (Date.now() < limite && await tarjeta.count() === 0) {
     await panel.waitForTimeout(INTERVALO);
@@ -471,7 +603,7 @@ async function ofrecerAlRepartidor(panel, { pedidoId, riderUserId }) {
     if (elegido.deshabilitada) throw new PasoFallido('RIDER_SIN_CUPO', 'el repartidor de producción está sin cupo');
     await selector.selectOption(riderUserId);
   }
-  await tarjeta.locator(`[data-production-business-assign="${pedidoId}"]`).first().click();
+  await tarjeta.locator(`[data-production-business-assign="${codigo}"]`).first().click();
   await panel.waitForTimeout(2500);
 }
 

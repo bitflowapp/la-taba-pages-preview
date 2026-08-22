@@ -129,7 +129,15 @@ try {
 
   // ══ 3 · La atestación física y el plan ════════════════════════════════════
   const atestacion = leerAtestacionFisica(process.env);
-  const plan = decidirPlan({ producto, lockPrevio, atestacion });
+  /*
+   * Si una corrida anterior dejó un pedido anotado, se le pregunta a la base en
+   * qué estado quedó: eso es lo que decide entre reanudarlo y frenar para que
+   * alguien lo mire.
+   */
+  const [pedidoDelLock] = lockPrevio?.pedido
+    ? await consultar(`select public_code, status from public.orders where public_code = ${lit(lockPrevio.pedido)}`)
+    : [null];
+  const plan = decidirPlan({ producto, lockPrevio, atestacion, pedidoDelLock });
   planDeLaCorrida = plan;
 
   console.log('── Precheck ──');
@@ -140,11 +148,14 @@ try {
   console.log(`  repartidor ..... ${riderMiembro ? riderMiembro.email : 'sin repartidor activo'} · entregas activas ${cupo.activos ?? '?'}/${RIDER.maximoDeEntregasActivas} · teléfono ${telefono.dispositivoConectado ? `conectado (${telefono.paquete} ${telefono.version || ''}, batería ${telefono.bateria ?? '?'}%)` : `adb dice «${telefono.estadoAdb}»`}`);
   console.log(`  atestación ..... ${atestacion.ok ? `${atestacion.cantidad} unidad(es)` : atestacion.mensaje}`);
   console.log(`  plan ........... ${describirPlan(plan)}`);
+  if (plan.reanudarCodigo) console.log(`  reanuda ........ ${plan.reanudarCodigo} desde «${plan.estadoAlReanudar}» · NO se crea otro pedido`);
   console.log('');
 
   // ══ 4 · Las compuertas ════════════════════════════════════════════════════
   const compuertas = {
-    concurrencia,
+    // Una reanudación existe PORQUE hay un lock abierto: exigir que no lo haya
+    // sería impedir lo único que esa corrida vino a hacer.
+    concurrencia: plan.reanudarCodigo ? { ok: true, codigo: null, mensaje: '' } : concurrencia,
     plan: plan.bloqueo || { ok: true, codigo: null, mensaje: '' },
     negocio: evaluarNegocio(negocio),
     producto: evaluarProductoBase(producto),
@@ -258,7 +269,15 @@ try {
       lockTomado = true;
 
       const stockInicial = Number(producto.stock);
-      const stockEsperado = stockEsperadoAntesDeVender({ plan, stockActual: stockInicial });
+      /*
+       * Al reanudar, el stock YA se reservó cuando el pedido se creó: la base
+       * dice 5 y el «antes» de esta venta fue 6. Se reconstruye para que la
+       * comprobación final siga siendo la misma —bajó exactamente uno— y para
+       * que el informe diga la verdad.
+       */
+      const stockEsperado = plan.reanudarCodigo
+        ? stockInicial + PRODUCTO_AUTORIZADO.cantidad
+        : stockEsperadoAntesDeVender({ plan, stockActual: stockInicial });
 
       if (plan.etapas.includes(ETAPAS.RECEPCION)) {
         evidencia.anotar(`recepción física atestiguada: ${plan.cantidadARecibir} unidad(es)`);
@@ -296,7 +315,7 @@ try {
       if (!listoParaVender.ok) {
         throw Object.assign(new Error(listoParaVender.mensaje), { codigo: listoParaVender.codigo });
       }
-      if (Number(productoAntesDeVender.stock) !== stockEsperado) {
+      if (!plan.reanudarCodigo && Number(productoAntesDeVender.stock) !== stockEsperado) {
         throw Object.assign(
           new Error(`antes de vender el stock tenía que ser ${stockEsperado} y es ${productoAntesDeVender.stock}`),
           { codigo: 'P0_STOCK_ANTES_DE_VENDER' },
@@ -320,6 +339,7 @@ try {
         riderUserId: riderMiembro?.user_id || '',
         rutaSesionCliente: sesionCliente.rutaEstado,
         rutaSesionPanel: sesionPanel.rutaEstado,
+        reanudarCodigo: plan.reanudarCodigo || null,
       });
       evidencia.hito('venta', resultadoFinal.ok ? `PASS ${resultadoFinal.codigo || ''}` : `FAIL ${resultadoFinal.codigo}`);
 

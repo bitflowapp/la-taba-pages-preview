@@ -8,7 +8,7 @@ import {
   evaluarAtestacion, frase, leerAtestacionFisica,
 } from '../scripts/e2e-production-sale/atestacion-fisica.mjs';
 import {
-  CASOS, ETAPAS, decidirPlan, describirPlan, stockEsperadoAntesDeVender,
+  CASOS, ETAPAS, decidirPlan, describirPlan, ofertaSigueVigente, stockEsperadoAntesDeVender,
 } from '../scripts/e2e-production-sale/maquina-de-estado.mjs';
 import {
   DIRECCION_DE_PRUEBA, IDENTIDAD_PANEL, correoDelPanel, evaluarDireccionPorIdentidad,
@@ -21,12 +21,15 @@ import {
   PREFIJO, SecretoNoDisponible, generarContrasena, objetivoCompleto,
 } from '../scripts/e2e-production-sale/secretos-windows.mjs';
 import {
-  INVITACIONES_DECLINABLES, LISTA_NEGRA_RIDER, buscarElemento, nodosDelPedido, pedidoEnPantalla,
+  INVITACIONES_DECLINABLES, LISTA_NEGRA_RIDER, buscarElemento, esPeligroso, nodosDelPedido,
+  pedidoEnPantalla, puntoParaAceptar, tarjetaDeLaOferta,
 } from '../scripts/e2e-production-sale/rider.mjs';
 import { estadoAdbDelTelefono } from '../scripts/e2e-production-sale/precheck.mjs';
 import { evaluarProducto, evaluarProductoBase, evaluarRider } from '../scripts/e2e-production-sale/guards.mjs';
 import { cerrarLock, generarRunId, leerLock, tomarLock } from '../scripts/e2e-production-sale/lock.mjs';
 import { crearEvidencia } from '../scripts/e2e-production-sale/evidencia.mjs';
+import { yaPaso } from '../scripts/e2e-production-sale/venta-real.mjs';
+import { assertSoloLectura, ConsultaNoPermitida } from '../scripts/e2e-production-sale/db-solo-lectura.mjs';
 import { escribirYConfirmar } from '../scripts/e2e-production-sale/panel-mercaderia.mjs';
 import { isValidArgentinePhone } from '../js/core/validators.js';
 
@@ -163,6 +166,47 @@ test('CASO 4 — una corrida anterior sin cerrar no crea otro pedido', () => {
   assert.deepEqual([...plan.etapas], [ETAPAS.DIAGNOSTICO]);
   assert.equal(plan.bloqueo.codigo, 'CORRIDA_ANTERIOR_ABIERTA');
   assert.match(plan.bloqueo.mensaje, /LT-0042/);
+});
+
+/*
+ * ESTAS PRUEBAS EXISTEN POR LT-0002.
+ *
+ * Una corrida real creó el pedido y se cayó en el paso siguiente. Repetir la
+ * compra habría dejado DOS ventas reales donde el dueño autorizó una.
+ */
+test('CASO 4 — si la corrida anterior dejó un pedido vivo, se REANUDA', () => {
+  const plan = decidirPlan({
+    producto: PRODUCTO({ stock: 5, available: true }),
+    lockPrevio: { runId: '20260822-190014', estado: 'fallido', pedido: 'LT-0002' },
+    pedidoDelLock: { public_code: 'LT-0002', status: 'received' },
+  });
+  assert.equal(plan.caso, CASOS.REANUDAR);
+  assert.equal(plan.reanudarCodigo, 'LT-0002');
+  assert.equal(plan.estadoAlReanudar, 'received');
+  assert.deepEqual([...plan.etapas], [ETAPAS.VENTA], 'ni recibe ni publica: sólo termina lo empezado');
+  assert.equal(plan.bloqueo, null);
+  assert.equal(plan.requiereAtestacion, false);
+});
+
+test('un pedido anterior ya terminado no se reanuda: se mira y se libera el lock', () => {
+  for (const estado of ['delivered', 'cancelled', 'rejected']) {
+    const plan = decidirPlan({
+      producto: PRODUCTO({ stock: 5, available: true }),
+      lockPrevio: { runId: 'x', estado: 'fallido', pedido: 'LT-0002' },
+      pedidoDelLock: { public_code: 'LT-0002', status: estado },
+    });
+    assert.equal(plan.bloqueo.codigo, 'PEDIDO_ANTERIOR_TERMINADO', `«${estado}» no se reanuda`);
+  }
+});
+
+test('un lock sin pedido anotado frena: pudo haberse caído mientras compraba', () => {
+  const plan = decidirPlan({
+    producto: PRODUCTO({ stock: 5, available: true }),
+    lockPrevio: { runId: 'x', estado: 'fallido', pedido: null },
+  });
+  assert.equal(plan.caso, CASOS.RECUPERAR);
+  assert.equal(plan.bloqueo.codigo, 'CORRIDA_ANTERIOR_ABIERTA');
+  assert.match(plan.bloqueo.mensaje, /sin pedido anotado/);
 });
 
 test('publicado con stock cero es imposible, y no se toca sin mirarlo', () => {
@@ -460,6 +504,165 @@ test('sin botón de confirmar no se inventa nada: se informa y se sale', async (
   assert.equal(resultado.ok, false);
   assert.match(resultado.motivo, /faltan el campo de cantidad o el botón/);
   assert.equal(pagina.registro.clicks, 0);
+});
+
+/*
+ * ESTAS DOS PRUEBAS EXISTEN POR UNA CORRIDA REAL ABORTADA CON EL PEDIDO YA EN
+ * «LISTO» Y EL REPARTIDOR YA NOTIFICADO.
+ */
+test('la guarda de sólo lectura distingue una TABLA de una función que muta', () => {
+  // Esto la tumbaba: `rider_order_offers` es una tabla, y el prefijo `rider_`
+  // la hacía parecer una función.
+  assert.doesNotThrow(() => assertSoloLectura(
+    "select status from public.rider_order_offers where order_id = 'x' limit 1",
+  ));
+  assert.doesNotThrow(() => assertSoloLectura('select * from public.inventory_movements'));
+  assert.doesNotThrow(() => assertSoloLectura('select created_at from public.orders'));
+
+  // Y lo que vino a impedir sigue impedido: una función se invoca con paréntesis.
+  for (const peligrosa of [
+    "select public.apply_inventory_movement('a','b')",
+    'select transition_order(1)',
+    "select public.cancel_order('x')",
+    'select rider_claim_order(1)',
+    'select create_order_with_items(1)',
+  ]) {
+    assert.throws(() => assertSoloLectura(peligrosa), ConsultaNoPermitida, `«${peligrosa}» tenía que rechazarse`);
+  }
+});
+
+test('al reanudar, un paso que ya quedó atrás no espera un botón que el Panel ya no dibuja', () => {
+  assert.equal(yaPaso('ready', 'accepted'), true, 'listo ya pasó por aceptado');
+  assert.equal(yaPaso('ready', 'ready'), true);
+  assert.equal(yaPaso('received', 'accepted'), false);
+  assert.equal(yaPaso('preparing', 'ready'), false);
+  assert.equal(yaPaso('delivered', 'on_the_way'), true);
+  assert.equal(yaPaso('arrived', 'delivered'), false);
+  assert.equal(yaPaso(null, 'accepted'), false, 'sin estado no se asume nada');
+  assert.equal(yaPaso('cancelled', 'accepted'), false, 'un estado fuera del orden no cuenta como avance');
+});
+
+/*
+ * ESTA PRUEBA EXISTE POR UNA CAPTURA DE LA PANTALLA REAL DE OFERTAS.
+ *
+ * La lista negra se escribió con etiquetas sueltas y se comparaba por igualdad.
+ * La pantalla de «Nuevas solicitudes» pone «Rechazar» y «Aceptar» al lado del
+ * código del pedido, y al buscar el nodo más chico que menciona ese código, el
+ * botón de rechazar era un candidato perfecto: el harness podía rechazar su
+ * propio viaje mientras lo buscaba.
+ */
+test('la lista negra atrapa la etiqueta aunque venga con el código pegado', () => {
+  assert.equal(esPeligroso('Rechazar'), true);
+  assert.equal(esPeligroso('Rechazar la solicitud LT-0002'), true);
+  assert.equal(esPeligroso('RECHAZAR OFERTA'), true);
+  assert.equal(esPeligroso('Cerrar sesión de jariel1970+rider'), true);
+  assert.equal(esPeligroso('Cancelar el pedido LT-0002'), true);
+  // Lo que sí hay que poder tocar sigue tocándose.
+  assert.equal(esPeligroso('Aceptar'), false);
+  assert.equal(esPeligroso('Aceptar la solicitud LT-0002'), false);
+  assert.equal(esPeligroso('Llegué'), false);
+  assert.equal(esPeligroso('Confirmar entrega'), false);
+  assert.equal(esPeligroso(''), false);
+});
+
+/*
+ * ESTAS PRUEBAS EXISTEN PORQUE LA TARJETA DE LA OFERTA ES UN SOLO NODO.
+ *
+ * El árbol real, medido en el Moto con LT-0002 ofrecido:
+ *
+ *   clickable=false  bounds=[40,1025,1040,1435]
+ *   «Nueva solicitud LT-0002. Zona Neuquén Capital. 1 bulto. Cobrás ARS 4.990»
+ *
+ * «Rechazar» y «Aceptar» se ven en pantalla y NO existen en el árbol. No hay
+ * etiqueta que resolver, así que el ancla es la tarjeta —que menciona el código
+ * de la corrida— y el punto sale de SUS bordes, con la mitad izquierda prohibida
+ * por construcción: ahí está el botón de rechazar.
+ */
+const PANTALLA_CON_OFERTA = [
+  { descripcion: 'Mapa operativo de TABA2 Rider', clase: 'android.view.View', clickable: false, bounds: [0, 0, 1080, 2400] },
+  { descripcion: 'Entregas: 1/3', clase: 'android.view.View', clickable: false, bounds: [423, 123, 657, 248] },
+  { descripcion: 'Pedido LT-0001. En camino. Mendoza 851', clase: 'android.view.View', clickable: false, bounds: [40, 682, 1040, 865] },
+  { descripcion: 'Nuevas solicitudes', clase: 'android.view.View', clickable: false, bounds: [40, 905, 1040, 965] },
+  { descripcion: 'Nueva solicitud LT-0002. Zona Neuquén Capital. 1 bulto. Cobrás ARS 4.990', clase: 'android.view.View', clickable: false, bounds: [40, 1025, 1040, 1435] },
+];
+
+test('la oferta se encuentra por el código de la corrida, no por posición en la lista', () => {
+  const tarjeta = tarjetaDeLaOferta(PANTALLA_CON_OFERTA, 'LT-0002');
+  assert.ok(tarjeta, 'tendría que encontrar la tarjeta de LT-0002');
+  assert.deepEqual(tarjeta.bounds, [40, 1025, 1040, 1435]);
+
+  // El pedido que ya está en curso NO es una oferta: no empieza con el prefijo.
+  assert.equal(tarjetaDeLaOferta(PANTALLA_CON_OFERTA, 'LT-0001'), null);
+  assert.equal(tarjetaDeLaOferta(PANTALLA_CON_OFERTA, 'LT-0099'), null);
+});
+
+test('con dos tarjetas del mismo código no se adivina: no se toca nada', () => {
+  const ambiguo = [...PANTALLA_CON_OFERTA, {
+    descripcion: 'Nueva solicitud LT-0002. Otra zona', clase: 'android.view.View', clickable: false, bounds: [40, 1500, 1040, 1900],
+  }];
+  assert.equal(tarjetaDeLaOferta(ambiguo, 'LT-0002'), null);
+});
+
+test('el punto para aceptar cae SIEMPRE en la mitad derecha, nunca sobre «Rechazar»', () => {
+  const tarjeta = tarjetaDeLaOferta(PANTALLA_CON_OFERTA, 'LT-0002');
+  const punto = puntoParaAceptar(tarjeta);
+  assert.ok(punto, 'tendría que haber un punto');
+  const [x1, y1, x2, y2] = tarjeta.bounds;
+  assert.ok(punto.x > (x1 + x2) / 2, 'a la derecha del centro: la izquierda es «Rechazar»');
+  assert.ok(punto.x > x1 && punto.x < x2, 'dentro de la tarjeta');
+  assert.ok(punto.y > y1 && punto.y < y2, 'dentro de la tarjeta');
+  assert.deepEqual(punto, { x: 780, y: 1340 }, 'el centro medido del botón de aceptar');
+});
+
+test('una tarjeta demasiado angosta no deja calcular un punto seguro: devuelve null', () => {
+  // Si la tarjeta fuera tan angosta que el desplazamiento cayera a la izquierda
+  // del centro, calcular igual sería apuntar a «Rechazar».
+  assert.equal(puntoParaAceptar({ bounds: [40, 1025, 400, 1435] }), null);
+  assert.equal(puntoParaAceptar({ bounds: [40, 1025, 1040, 1060] }), null, 'ni tan baja');
+  assert.equal(puntoParaAceptar(null), null);
+});
+
+/*
+ * ESTA PRUEBA EXISTE PORQUE UN CLIENTE MIRANDO SU PEDIDO INVALIDA LA OFERTA DEL
+ * REPARTIDOR.
+ *
+ * Medido en LT-0002: la oferta se hizo esperando la revisión 7; tres minutos
+ * después el cliente abrió su seguimiento, eso rotó su token, dejó un
+ * `tracking_access_recovered` y subió el pedido a la revisión 8. Desde ahí el
+ * botón «Aceptar» del teléfono no hace nada: la app llama al servidor, el
+ * servidor rechaza, y la pantalla dice «La solicitud cambió».
+ */
+test('una oferta atada a una revisión vieja NO se da por buena', () => {
+  const pendiente = (revision) => ({ status: 'pending', expected_order_revision: revision });
+  assert.equal(ofertaSigueVigente(pendiente(8), 8), true);
+  assert.equal(ofertaSigueVigente(pendiente(7), 8), false, 'el cliente movió la revisión: hay que reofrecer');
+  assert.equal(ofertaSigueVigente({ status: 'rejected', expected_order_revision: 8 }, 8), false);
+  assert.equal(ofertaSigueVigente(null, 8), false);
+  assert.equal(ofertaSigueVigente(pendiente(null), 8), false, 'sin revisión no se asume nada');
+});
+
+/*
+ * ESTA PRUEBA EXISTE PORQUE LAS FILAS DE «TUS ENTREGAS» NO SON `clickable`.
+ *
+ * Con dos entregas encima la app muestra una lista, y hay que abrir la del
+ * pedido de la corrida para llegar a sus botones. En el árbol esas filas son
+ * `android.view.View` con una descripción y sin la marca de clickable: filtrando
+ * por `clickable` no quedaba ningún candidato y el harness esperaba botones de
+ * una pantalla que nunca abría.
+ */
+test('la fila del pedido se reconoce por su descripción, no por la marca de clickable', () => {
+  const lista = [
+    { descripcion: 'Mapa operativo de TABA2 Rider', clickable: false, bounds: [0, 0, 1080, 2400] },
+    { descripcion: 'Pedido LT-0001. En camino. Mendoza 851', clickable: false, bounds: [40, 682, 1040, 865] },
+    { descripcion: 'Pedido LT-0002. Asignado. Mendoza 851', clickable: false, bounds: [40, 880, 1040, 1063] },
+    { descripcion: 'Actualizar', clickable: true, bounds: [40, 1160, 1040, 1290] },
+  ];
+  const delPedido = nodosDelPedido(lista, 'LT-0002');
+  assert.equal(delPedido.length, 1);
+  assert.match(delPedido[0].descripcion, /^Pedido LT-0002\./);
+  // La fila del otro pedido no se confunde con la nuestra.
+  assert.equal(nodosDelPedido(lista, 'LT-0001').length, 1);
+  assert.notEqual(nodosDelPedido(lista, 'LT-0001')[0].bounds[1], delPedido[0].bounds[1]);
 });
 
 // ── El lock ──────────────────────────────────────────────────────────────────

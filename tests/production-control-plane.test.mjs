@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { isValidIdempotencyKey } from '../js/core/idempotency-key.js';
 import {
   configureBusinessOperations,
   handleBusinessOperationsAction,
@@ -162,7 +163,10 @@ test('staff puede preparar pero no finalizar un cierre desde el panel', async ()
   const preparedResult = await handleBusinessOperationsAction(prepareTarget);
   assert.equal(preparedResult.ok, true);
   assert.equal(prepared.declaredCash, 1000.5);
-  assert.match(prepared.idempotencyKey, /^daily-prepare:/);
+  // Igual que en preparación de pedidos: hasta el 2026-08-22 este caso fijaba
+  // `daily-prepare:` con dos puntos, la forma que el servidor rechaza.
+  assert.match(prepared.idempotencyKey, /^daily-prepare-/);
+  assert.ok(isValidIdempotencyKey(prepared.idempotencyKey), prepared.idempotencyKey);
 
   const closeTarget = {
     dataset: { dailyReconciliationClose: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', dailyReconciliationRevision: '1' },

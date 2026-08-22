@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v83-vidriera-sin-ruido';
+const CACHE_NAME = 'la-taba-runtime-v84-recepcion-idempotente';
 const ASSETS = [
   './',
   './index.html',
@@ -64,6 +64,9 @@ const ASSETS = [
   './js/core/delivery-proof.js',
   './js/core/domain.js',
   './js/core/geo-point.js',
+  // El contrato de la clave de idempotencia: import estático de
+  // `production-operations.js`, que sí está en esta lista.
+  './js/core/idempotency-key.js',
   './js/core/loyalty.js',
   './js/core/order-status.js',
   './js/core/order-timeline.js',

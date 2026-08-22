@@ -5,6 +5,7 @@ import {
   markPackingScanConfirmed, pendingPackingScanCount, restorePackingCacheSnapshot,
   revertPackingScanLocally, undoLastPackingScan,
 } from './business-packing-verification.js';
+import { compactSegment, operationKey, randomOperationKey } from '../core/idempotency-key.js';
 import { presentFiscalStatus } from '../pos/fiscal-status-presenter.js';
 import { can, isElevated } from './business-capabilities.js';
 import { humanizeFailure } from './business-operation-language.js';
@@ -434,7 +435,7 @@ export async function handleBusinessOperationsAction(target) {
       const cancelled = await context.cancelPackingScan(scan.scanKey);
       server = cancelled ? { ok: true, pendingCancelled: true } : { ok: false, message: 'La lectura pendiente ya cambió; reconciliá antes de deshacer.' };
     } else {
-      const idempotencyKey = `packing-revert:${scan.scanKey}`;
+      const idempotencyKey = operationKey('packing-revert', scan.scanKey);
       server = await context.revertPackingScan({ session: packingSession, scanKey: scan.scanKey, idempotencyKey });
     }
     if (!server?.ok && !server?.pending) return result(false, server?.message || 'El servidor no confirmó el deshacer.');
@@ -657,6 +658,41 @@ function addScannedPosItem(binding) {
   else posItems.push({ productId: product.id, name: product.name, quantity: factor });
 }
 
+/*
+ * LA CLAVE ES DE LA OPERACIÓN, NO DEL TOQUE.
+ *
+ * Antes se generaba una clave nueva en cada click, así que la idempotencia no
+ * protegía de lo único de lo que tiene que proteger: el segundo toque de quien
+ * no vio reacción. Dos toques eran dos claves, dos movimientos y stock cargado
+ * dos veces —y en una recepción física eso es inventario que no existe—.
+ *
+ * Ahora la clave se deriva de la operación completa (tipo, producto, código,
+ * cantidad, dirección y motivo). Mientras esos datos no cambien es la MISMA
+ * clave, así que un segundo toque o un reintento tras un error de red vuelven
+ * con el movimiento ya escrito en vez de escribir otro. Cambiar la cantidad, el
+ * producto o el motivo es otra operación y lleva otra clave.
+ *
+ * El sufijo de sesión evita el otro extremo: recibir seis botellas hoy y otras
+ * seis mañana es legítimo y tiene que poder hacerse. Se renueva en cuanto el
+ * servidor confirma una recepción, de modo que la siguiente nace con identidad
+ * propia. Sin él, la segunda recepción idéntica sería descartada en silencio.
+ */
+/*
+ * Los identificadores entran RECORTADOS a doce caracteres, y el motivo es de
+ * largo: la clave tiene un techo de 128 y dos UUID enteros más el tipo de
+ * movimiento ya lo pasan (146). Al recortarse desde el final se perdía el
+ * sufijo de sesión —justo la parte que distingue una recepción de la
+ * siguiente—, así que la operación de mañana habría reusado la clave de hoy y
+ * el servidor la habría descartado como repetida. Doce hexadecimales son 48
+ * bits: alcanzan de sobra para distinguir productos dentro de un comercio, y
+ * la clave completa queda en unos 67 caracteres.
+ */
+const RECORTE_ID = 12;
+const fragmento = (valor) => compactSegment(valor, RECORTE_ID);
+const nuevaSalDeSesion = () => compactSegment(randomOperationKey('s'), RECORTE_ID);
+
+let inventorySessionSalt = nuevaSalDeSesion();
+
 async function confirmInventory(button) {
   if (!lookup?.data) return result(false, 'Escaneá un producto conocido antes de registrar stock.');
   const root = button.closest('[data-business-ops-center]');
@@ -666,19 +702,43 @@ async function confirmInventory(button) {
   if (!quantity) return result(false, 'Ingresá una cantidad entera mayor que cero.');
   if (movementType === 'manual_adjustment' && !reason) return result(false, 'El motivo es obligatorio para el ajuste.');
   const binding = lookup.data;
+  const direction = Number(root?.querySelector('[name="direction"]')?.value || 1);
+  const idempotencyKey = inventoryOperationKey({
+    movementType, binding, quantity, direction, reason, salt: inventorySessionSalt,
+  });
   const response = await context.applyInventoryMovement({
     productId: binding.product_id,
     barcodeId: binding.id,
     movementType,
     packageQuantity: quantity,
-    direction: Number(root?.querySelector('[name="direction"]')?.value || 1),
+    direction,
     reason,
-    idempotencyKey: createKey('inventory'),
+    idempotencyKey,
   });
   feedback = response?.ok ? 'Stock actualizado por el servidor.' : response?.message || 'Stock pendiente de confirmación.';
-  if (response?.ok) await refreshLookup();
+  if (response?.ok) {
+    // Confirmada ésta, la próxima recepción es otra operación y necesita otra
+    // identidad, aunque el operador repita producto y cantidad.
+    inventorySessionSalt = nuevaSalDeSesion();
+    await refreshLookup();
+  }
   context.onChange();
   return result(Boolean(response?.ok), feedback);
+}
+
+export function inventoryOperationKey({ movementType, binding, quantity, direction, reason, salt }) {
+  return operationKey(
+    'inv',
+    movementType,
+    fragmento(binding?.product_id),
+    fragmento(binding?.id),
+    String(quantity),
+    direction < 0 ? 'out' : 'in',
+    // El motivo se reduce a su presencia y largo: entra en la identidad de la
+    // operación sin que texto libre del operador viaje dentro de la clave.
+    reason ? `r${String(reason).length}` : 'r0',
+    salt,
+  );
 }
 
 /**
@@ -804,7 +864,7 @@ async function startPacking(target) {
     const server = await context.startPacking({
       orderId,
       expectedRevision: Number(order.revision || 0),
-      idempotencyKey: `packing:${orderId}:${order.revision}`,
+      idempotencyKey: operationKey('packing', orderId, order.revision),
     });
     if (!server?.ok) return result(false, server?.message || 'El servidor no inició la preparación.');
     const serverSession = Array.isArray(server.data) ? server.data[0] : server.data;
@@ -835,7 +895,7 @@ async function confirmPacking(target) {
   if (!reconciled?.ok) return result(false, reconciled?.message || 'No se pudo reconciliar la preparación.');
   packingSession = createPackingSessionFromManifest(reconciled.data, { operatorId: context.operatorId });
   await persistPackingSession();
-  const idempotencyKey = `packing-confirm:${packingSession.serverSessionId}`;
+  const idempotencyKey = operationKey('packing-confirm', packingSession.serverSessionId);
   let server = await context.confirmPacking({ session: packingSession, exceptionReason: exceptionReason || null, idempotencyKey });
   if (!server?.ok) {
     const afterAmbiguity = await context.getPackingManifest(packingSession.serverSessionId);
@@ -1208,7 +1268,7 @@ async function prepareDailyReconciliation(target) {
     return result(false, 'Poné la fecha del día y cuánto efectivo contaste.');
   }
   const cents = Math.round(declaredCash * 100);
-  const idempotencyKey = `daily-prepare:${businessDate}:${cents}:${shortTextFingerprint(differenceNote)}`;
+  const idempotencyKey = operationKey('daily-prepare', businessDate, cents, shortTextFingerprint(differenceNote));
   busy = true;
   const response = await context.prepareDailyReconciliation({
     businessDate,
@@ -1251,7 +1311,7 @@ async function closeDailyReconciliation(button) {
   const response = await context.closeDailyReconciliation({
     reconciliationId,
     expectedRevision,
-    idempotencyKey: `daily-close:${reconciliationId}`,
+    idempotencyKey: operationKey('daily-close', reconciliationId),
   });
   busy = false;
   if (response?.ok) dailyRun = readReconciliation(response.data);
@@ -1801,7 +1861,11 @@ async function saveOperationsEnforcement(target) {
   return result(Boolean(response?.ok), feedback);
 }
 function positiveInteger(value, fallback) { const number = Number(value); return Number.isSafeInteger(number) && number > 0 ? number : fallback; }
-function createKey(prefix) { return `${prefix}:${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`; }
+// El contrato del servidor (`^[A-Za-z0-9_-]{8,128}$`) vive en core/idempotency-key.js.
+// Acá se armaba la clave pegando el prefijo y un UUID con dos puntos en medio, y
+// ese separador hacía que el servidor rechazara TODA operación con idempotencia
+// del Centro de operación antes de escribir nada.
+function createKey(prefix) { return randomOperationKey(prefix); }
 function artifactLabel(state) { return ({ artifact_pending: 'PDF pendiente', artifact_generating: 'Generando PDF', artifact_ready: 'PDF disponible', artifact_failed: 'PDF fallido', artifact_superseded: 'PDF reemplazado' })[state] || 'PDF pendiente'; }
 function shortHash(value) { const hash = String(value || ''); return hash.length === 64 ? `${hash.slice(0, 12)}…${hash.slice(-8)}` : 'no disponible'; }
 function fiscalError(document) { return document.artifact_error_message || document.artifact_error_code || 'El PDF requiere revisión técnica.'; }

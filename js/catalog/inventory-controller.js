@@ -1,4 +1,5 @@
 import { buildInventoryMovement, calculateStockCountAdjustment } from '../core/inventory-domain.js';
+import { randomOperationKey } from '../core/idempotency-key.js';
 
 export function createInventoryController({ repository, businessId, operatorId, now = () => new Date() } = {}) {
   if (!repository || !businessId || !operatorId) throw new Error('Inventario requiere repositorio y sesión operativa.');
@@ -44,6 +45,9 @@ export function createInventoryController({ repository, businessId, operatorId, 
   });
 }
 
+// Mismo contrato del servidor que el resto: `^[A-Za-z0-9_-]{8,128}$`. Acá
+// también se pegaba el prefijo con un UUID usando dos puntos, y ese separador
+// no pertenece al alfabeto que el backend acepta.
 function createKey(prefix) {
-  return `${prefix}:${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+  return randomOperationKey(prefix);
 }

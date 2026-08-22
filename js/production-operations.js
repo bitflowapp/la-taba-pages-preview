@@ -1,4 +1,5 @@
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
+import { operationKey } from './core/idempotency-key.js';
 import { createBusinessOrderIntakeCoordinator } from './core/business-order-intake.js';
 import { normalizeWorkflowStatus } from './core/order-workflow.js';
 import { isMercadoPagoOrder } from './core/business-ops.js';
@@ -2526,8 +2527,13 @@ async function refreshRiderOrders() {
 // `^[A-Za-z0-9_-]{8,128}$` y una clave con `:` muere en 22023 antes de tocar
 // el pedido. Guion como separador, determinístico por (comando, pedido,
 // revisión, destino) para que el reintento sea replay y el doble click no-op.
+//
+// Esto se sabía ACÁ y sólo acá: el resto del Panel seguía armando claves con
+// `:`, así que los pedidos funcionaban y ninguna operación de inventario podía
+// escribirse. Por eso el contrato ya no vive en un comentario de un archivo
+// sino en `core/idempotency-key.js`, que es de donde salen todas.
 function orderCommandKey(commandType, backendId, revision, nextStatus) {
-  return `${commandType}-${backendId}-${revision}-${nextStatus}`.replace(/[^A-Za-z0-9_-]/g, '-');
+  return operationKey(commandType, backendId, revision, nextStatus);
 }
 
 async function updateOrderFromAction(orderId, nextStatus, { commandType = 'transition_order', reason = '' } = {}) {
@@ -2724,6 +2730,9 @@ function escapeAttribute(value) {
   return escapeHtml(value);
 }
 
-function createRuntimeKey(prefix) {
-  return `${prefix}:${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
-}
+// Acá vivía `createRuntimeKey`, una TERCERA copia del generador de claves que
+// pegaba el prefijo con dos puntos. No la usaba nadie —era código muerto— pero
+// el próximo que necesitara una clave de idempotencia la habría encontrado
+// primero y habría reintroducido el defecto que dejó sin recepción a todo el
+// Panel. Quien necesite una clave: `operationKey` / `randomOperationKey` de
+// core/idempotency-key.js, que es donde vive el contrato del servidor.

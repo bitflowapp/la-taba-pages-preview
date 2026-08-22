@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
+import { isValidIdempotencyKey } from '../js/core/idempotency-key.js';
 import {
   configureBusinessOperations, handleBusinessOperationsAction,
   renderBusinessOperations, resetBusinessOperationsForTests,
@@ -81,7 +82,12 @@ test('packing offline usa manifiesto cacheado, encola scan y bloquea confirmaci√
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(lookupCalls, 0);
     assert.equal(queued.length, 1);
-    assert.match(queued[0].scanKey, /^packing-scan:/);
+    // La clave del scan viaja como idempotency_key al servidor, as√≠ que lo que
+    // importa no es el prefijo sino que CUMPLA el contrato: hasta el
+    // 2026-08-22 este caso fijaba `packing-scan:` con dos puntos, o sea
+    // afirmaba la forma exacta que el backend rechaza.
+    assert.match(queued[0].scanKey, /^packing-scan-/);
+    assert.ok(isValidIdempotencyKey(queued[0].scanKey), queued[0].scanKey);
     assert.equal(saved.at(-1).scans[0].syncState, 'pending');
     assert.match(renderBusinessOperations('packing'), /1 lectura\(s\) en cola durable/);
     const confirmation = await handleBusinessOperationsAction(actionTarget('[data-packing-confirm]'));

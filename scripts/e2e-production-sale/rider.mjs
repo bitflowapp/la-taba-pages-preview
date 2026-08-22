@@ -204,6 +204,36 @@ export function escribirPin(pin, { codigoEsperado }) {
   return true;
 }
 
+/*
+ * LO QUE LA APLICACIÓN ESTÁ AVISANDO EN PANTALLA.
+ *
+ * Cuando un paso no avanza, la respuesta casi siempre está escrita ahí y el
+ * harness la ignoraba. Con LT-0002 ya retirado, la app decía «La entrega no se
+ * inició» y «Ubicación débil o sin señal GPS · 4 ubicaciones pendientes»
+ * mientras el informe salía como `RIDER_NO_AVANZA`, que manda a buscar un botón
+ * que estaba perfecto. Leer estos carteles convierte un misterio en un
+ * diagnóstico.
+ */
+const CARTELES = [
+  /La entrega no se inició[^»]*/i,
+  /Ubicación débil o sin señal GPS[^»]*/i,
+  /Sin conexión[^»]*/i,
+  /Conexión inestable[^»]*/i,
+  /La solicitud cambió[^»]*/i,
+];
+
+export function avisosDeLaPantalla(nodos) {
+  const textos = (nodos || []).map((nodo) => String(nodo.descripcion || '').replace(/&#10;/g, ' '));
+  const avisos = [];
+  for (const texto of textos) {
+    for (const patron of CARTELES) {
+      const encontrado = texto.match(patron);
+      if (encontrado) avisos.push(encontrado[0].replace(/\s+/g, ' ').trim().slice(0, 160));
+    }
+  }
+  return [...new Set(avisos)];
+}
+
 export function estadoRider() {
   const nodos = volcarPantalla();
   const capsula = buscarPorPrefijo(nodos, 'Estado: ')[0];
@@ -211,6 +241,7 @@ export function estadoRider() {
     pedido: pedidoEnPantalla(nodos),
     estado: capsula ? capsula.descripcion.replace('Estado: ', '') : null,
     ofertas: buscarPorPrefijo(nodos, 'Oferta: ').map((nodo) => nodo.descripcion),
+    avisos: avisosDeLaPantalla(nodos),
     acciones: nodos.filter((nodo) => nodo.clickable && nodo.descripcion).map((nodo) => nodo.descripcion),
   };
 }
@@ -268,6 +299,41 @@ export function capturarPantalla(destino) {
  *
  * Un repartidor sin red no puede entregar. Se comprueba antes de tocar nada.
  */
+/*
+ * ¿EL TELÉFONO SABE DÓNDE ESTÁ?
+ *
+ * La aplicación no inicia un recorrido sin ubicación precisa —lo dice antes de
+ * pedir permisos: «para publicar el recorrido autorizado»— y cuando no la tiene
+ * contesta «No pudimos iniciar la entrega» SIN llegar al servidor. Desde afuera
+ * eso se ve como un botón que no responde, y ahí se van las horas.
+ *
+ * Lo que hay que mirar es el último fijo: cuántos satélites tenía y hace cuánto
+ * fue. El 2026-08-22, con el Moto sobre un escritorio bajo techo, decía
+ * `satellites=0`, `et=+2h15m` y `alt=10957.4` —diez kilómetros de altura—. No
+ * es un fijo: es lo último que quedó guardado.
+ *
+ * NO se resuelve inyectando una posición de mentira. El recorrido que publica
+ * un repartidor es el de una entrega real; falsificarlo sería escribir un dato
+ * inventado en un pedido de verdad.
+ */
+export function calidadDelFijo(texto) {
+  const linea = String(texto || '').match(/last location=Location\[gps[^\]]*\]/);
+  if (!linea) return { hayFijo: false, satelites: null, antiguedadSegundos: null, usable: false };
+  const satelites = Number((linea[0].match(/satellites=(\d+)/) || [])[1] ?? -1);
+  const et = linea[0].match(/et=\+(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
+  const antiguedadSegundos = et
+    ? (Number(et[1] || 0) * 3600) + (Number(et[2] || 0) * 60) + Number(et[3] || 0)
+    : null;
+  const alturaAbsurda = Number((linea[0].match(/alt=(-?[\d.]+)/) || [])[1] ?? 0) > 5000;
+  const usable = satelites > 0 && !alturaAbsurda
+    && antiguedadSegundos !== null && antiguedadSegundos < 600;
+  return { hayFijo: true, satelites, antiguedadSegundos, alturaAbsurda, usable };
+}
+
+export function ubicacionDelTelefono() {
+  return calidadDelFijo(adb(['shell', 'dumpsys', 'location'], { timeout: 45_000 }));
+}
+
 export function redSana(salidaDePing) {
   return /(^|[^0-9])0% packet loss/.test(String(salidaDePing || ''));
 }

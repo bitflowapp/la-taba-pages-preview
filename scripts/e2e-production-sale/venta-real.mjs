@@ -343,6 +343,22 @@ export async function ejecutarVentaReal({
       );
     }
     if (red.reconectado) evidencia.anotar('el teléfono estaba sin red: se volvió a encender el Wi-Fi y quedó en línea');
+    /*
+     * Y que sepa dónde está. La aplicación no inicia un recorrido sin ubicación
+     * precisa, y cuando no la tiene contesta «No pudimos iniciar la entrega» sin
+     * llegar al servidor: desde afuera se ve como un botón que no responde.
+     * Preguntarlo acá convierte horas de búsqueda en una línea.
+     */
+    const fijo = rider.ubicacionDelTelefono();
+    evidencia.anotar(`ubicación del teléfono: ${fijo.satelites} satélite(s), último fijo hace ${fijo.antiguedadSegundos}s`);
+    if (!fijo.usable) {
+      throw new PasoFallido(
+        'TELEFONO_SIN_GPS',
+        `el teléfono no tiene señal GPS utilizable (${fijo.satelites} satélites, último fijo hace ${fijo.antiguedadSegundos}s`
+        + `${fijo.alturaAbsurda ? ', con una altura imposible' : ''}). La aplicación no inicia el recorrido sin ubicación`
+        + ' precisa, y esto no se resuelve por software: el recorrido de una entrega real no se inventa.',
+      );
+    }
     rider.traerAlFrente();
     /*
      * La aplicación abre ofreciendo activar huella o rostro, y hasta que alguien
@@ -651,6 +667,14 @@ async function avanzarEnElTelefono({ codigo, etiquetas, estados }) {
      */
     let disponibles = [];
     try {
+      /*
+       * EL TELÉFONO NO ES EXCLUSIVO DE LA TABA. Este Moto tiene además la
+       * aplicación de otro proyecto, y se pone adelante sola —una notificación
+       * alcanza—. Sin esta comprobación el harness sondea la pantalla ajena, no
+       * encuentra su pedido y culpa a un botón. Se verifica en CADA vuelta, no
+       * sólo al empezar: `traerAlFrente` no hace nada si ya está adelante.
+       */
+      rider.traerAlFrente();
       rider.despejarInvitaciones();
       rider.seleccionarPedido(codigo, { tolerante: true });
       disponibles = rider.estadoRider().acciones;
@@ -677,9 +701,17 @@ async function avanzarEnElTelefono({ codigo, etiquetas, estados }) {
     await new Promise((resolver) => { setTimeout(resolver, INTERVALO); });
   }
   const ultimo = await leerPedido(codigo);
+  /*
+   * Antes de culpar a un botón, se lee lo que la aplicación está avisando. Casi
+   * siempre la respuesta está escrita en la pantalla —«Ubicación débil o sin
+   * señal GPS», «Sin conexión»— y el informe salía sin ella.
+   */
+  let avisos = [];
+  try { avisos = rider.estadoRider().avisos || []; } catch { avisos = []; }
   throw new PasoFallido(
-    'RIDER_NO_AVANZA',
+    avisos.length ? 'RIDER_AVISA' : 'RIDER_NO_AVANZA',
     `${codigo} no llegó a ${estados.join('/')}: quedó en ${ultimo?.status}`
+    + `${avisos.length ? ` · la aplicación avisa: «${avisos.join('» · «')}»` : ''}`
     + `${ultimoError ? ` · último intento: ${ultimoError}` : ''}`,
   );
 }

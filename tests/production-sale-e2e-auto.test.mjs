@@ -22,7 +22,8 @@ import {
 } from '../scripts/e2e-production-sale/secretos-windows.mjs';
 import {
   ETIQUETA_BIOMETRIA, ETIQUETA_PERMISOS, ETIQUETAS_DECLINABLES, LISTA_NEGRA_RIDER,
-  buscarElemento, decidirRespuestaDeHoja, esPeligroso, nodosDelPedido, redSana,
+  avisosDeLaPantalla, buscarElemento, calidadDelFijo, decidirRespuestaDeHoja, esPeligroso,
+  nodosDelPedido, redSana,
   pedidoEnPantalla, puntoParaAceptar, tarjetaDeLaOferta,
 } from '../scripts/e2e-production-sale/rider.mjs';
 import { estadoAdbDelTelefono } from '../scripts/e2e-production-sale/precheck.mjs';
@@ -699,6 +700,52 @@ test('la red del teléfono se juzga por el ping, y «10% packet loss» no es san
   assert.equal(redSana('connect: Network is unreachable'), false);
   assert.equal(redSana(''), false);
   assert.equal(redSana(null), false);
+});
+
+/*
+ * ESTAS DOS PRUEBAS SON LAS QUE HABRÍAN AHORRADO LA TARDE.
+ *
+ * Con LT-0002 retirado, la aplicación no iniciaba el recorrido y desde afuera
+ * parecía un botón que no respondía. La respuesta estaba en dos lugares que el
+ * harness no miraba: el cartel de la propia pantalla y la calidad del fijo de
+ * GPS. El Moto estaba bajo techo: cero satélites y un «último fijo» de hace dos
+ * horas con diez kilómetros de altura.
+ */
+test('un fijo de GPS viejo, sin satélites y a 10 km de altura no es un fijo', () => {
+  const malo = 'last location=Location[gps -38.851797,-68.043580 hAcc=11.3 et=+2h15m38s505ms '
+    + 'alt=10957.4 vel=0.0 {Bundle[{satellites=0, maxCn0=0, meanCn0=0}]}]';
+  const medido = calidadDelFijo(malo);
+  assert.equal(medido.hayFijo, true);
+  assert.equal(medido.satelites, 0);
+  assert.equal(medido.antiguedadSegundos, 8138);
+  assert.equal(medido.alturaAbsurda, true);
+  assert.equal(medido.usable, false);
+
+  const bueno = 'last location=Location[gps -38.9517,-68.0657 hAcc=8.0 et=+12s alt=270.0 '
+    + '{Bundle[{satellites=11, maxCn0=38, meanCn0=27}]}]';
+  assert.equal(calidadDelFijo(bueno).usable, true);
+
+  // Un fijo con satélites pero de hace media hora tampoco sirve para salir.
+  const viejo = 'last location=Location[gps -38.9,-68.0 hAcc=8.0 et=+31m2s alt=270.0 '
+    + '{Bundle[{satellites=9}]}]';
+  assert.equal(calidadDelFijo(viejo).usable, false);
+  assert.equal(calidadDelFijo('sin nada').hayFijo, false);
+});
+
+test('el harness cita lo que la aplicación avisa en pantalla', () => {
+  // Tal cual salieron del volcado del Moto, con sus saltos de línea escapados.
+  const nodos = [
+    { descripcion: 'Estado: Pedido retirado' },
+    { descripcion: 'La entrega no se inició. No pudimos iniciar la entrega. Intentá nuevamente.&#10;La entrega' },
+    { descripcion: 'Ubicación débil o sin señal GPS. Pedido LT-0001 · 4 ubicaciones pendientes' },
+    { descripcion: 'Cobrás ARS 4.990 en efectivo.' },
+  ];
+  const avisos = avisosDeLaPantalla(nodos);
+  assert.equal(avisos.length, 2);
+  assert.match(avisos[0], /La entrega no se inició/);
+  assert.match(avisos[1], /Ubicación débil o sin señal GPS/);
+  assert.deepEqual(avisosDeLaPantalla([{ descripcion: 'Todo bien' }]), []);
+  assert.deepEqual(avisosDeLaPantalla([]), []);
 });
 
 // ── El lock ──────────────────────────────────────────────────────────────────

@@ -1,0 +1,82 @@
+{
+  "host": "https://la-taba.pages.dev",
+  "secciones": [
+    {
+      "titulo": "(sin título)",
+      "visible": true,
+      "alto": 132,
+      "top": 70,
+      "tarjetas": 0,
+      "nombres": []
+    },
+    {
+      "titulo": "Lo más pedido",
+      "visible": true,
+      "alto": 315,
+      "top": 328,
+      "tarjetas": 12,
+      "nombres": []
+    },
+    {
+      "titulo": "Combos",
+      "visible": false,
+      "alto": 0,
+      "top": 0,
+      "tarjetas": 0,
+      "nombres": []
+    },
+    {
+      "titulo": "Ofertas del día",
+      "visible": false,
+      "alto": 0,
+      "top": 0,
+      "tarjetas": 0,
+      "nombres": []
+    },
+    {
+      "titulo": "Gaseosas",
+      "visible": true,
+      "alto": 315,
+      "top": 672,
+      "tarjetas": 16,
+      "nombres": []
+    },
+    {
+      "titulo": "Aguas",
+      "visible": true,
+      "alto": 315,
+      "top": 1017,
+      "tarjetas": 14,
+      "nombres": []
+    },
+    {
+      "titulo": "Energizantes",
+      "visible": true,
+      "alto": 315,
+      "top": 1352,
+      "tarjetas": 10,
+      "nombres": []
+    },
+    {
+      "titulo": "Mixers",
+      "visible": true,
+      "alto": 315,
+      "top": 1686,
+      "tarjetas": 6,
+      "nombres": []
+    },
+    {
+      "titulo": "Selección del local",
+      "visible": false,
+      "alto": 0,
+      "top": 0,
+      "tarjetas": 0,
+      "nombres": []
+    }
+  ],
+  "pliegue": [
+    "(sin título)",
+    "Lo más pedido",
+    "Gaseosas"
+  ]
+}

@@ -1,0 +1,726 @@
+{
+  "host": "https://la-taba.pages.dev",
+  "estado": [
+    {
+      "sku": "coca-cola-original-2250ml",
+      "name": "Coca-Cola",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 5900,
+      "stock": 24,
+      "sortOrder": 10,
+      "popular": true,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "coca-cola-zero-2250ml",
+      "name": "Coca-Cola Zero",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 5900,
+      "stock": 24,
+      "sortOrder": 20,
+      "popular": true,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "fanta-naranja-2250ml",
+      "name": "Fanta Naranja",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 5900,
+      "stock": 24,
+      "sortOrder": 30,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "sprite-original-2250ml",
+      "name": "Sprite",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 5900,
+      "stock": 24,
+      "sortOrder": 40,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "sprite-zero-2250ml",
+      "name": "Sprite Zero",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 5900,
+      "stock": 12,
+      "sortOrder": 50,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "seven-up-original-2000ml",
+      "name": "7UP",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 3800,
+      "stock": 12,
+      "sortOrder": 60,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "pepsi-original-2000ml",
+      "name": "Pepsi",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 3800,
+      "stock": 24,
+      "sortOrder": 70,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "pepsi-black-1500ml",
+      "name": "Pepsi Black",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 2650,
+      "stock": 12,
+      "sortOrder": 110,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "fanta-naranja-botella-pet-1500-ml-pack-x6",
+      "name": "Fanta Naranja",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 19999,
+      "stock": 8,
+      "sortOrder": 140,
+      "popular": false,
+      "featured": false,
+      "image": "assets/products/fanta-naranja-botella-pet-1500-ml-pack-x6-ddcfc29d89d6d01d-e41698f0e9b8788b.webp",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "coca-cola-original-botella-pet-500-ml-pack-x12",
+      "name": "Coca-Cola Original",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 17100,
+      "stock": 7,
+      "sortOrder": 150,
+      "popular": false,
+      "featured": false,
+      "image": "assets/products/coca-cola-original-botella-pet-500-ml-pack-x12-da9d9f1d872c1e49-75b52ee33dad073c.webp",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "coca-cola-zero-botella-pet-500-ml-pack-x12",
+      "name": "Coca-Cola Zero",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 17100,
+      "stock": 8,
+      "sortOrder": 160,
+      "popular": false,
+      "featured": false,
+      "image": "assets/products/coca-cola-zero-botella-pet-500-ml-pack-x12-ab4d9e31abe096e0-7a626dec1b48f442.webp",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "sprite-botella-pet-500-ml-pack-x12",
+      "name": "Sprite",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 17100,
+      "stock": 8,
+      "sortOrder": 170,
+      "popular": false,
+      "featured": false,
+      "image": "assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-09a508b8102bd8a5.webp",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "coca-cola-original-lata-354ml",
+      "name": "Coca-Cola",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 1800,
+      "stock": 24,
+      "sortOrder": 210,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "coca-cola-zero-lata-354ml",
+      "name": "Coca-Cola Zero",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 1800,
+      "stock": 24,
+      "sortOrder": 220,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "sprite-original-lata-354ml",
+      "name": "Sprite",
+      "categoryId": "gaseosas",
+      "categoryName": "Gaseosas",
+      "price": 1800,
+      "stock": 24,
+      "sortOrder": 230,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "soda-manaos-sifon-2000ml",
+      "name": "Soda Manaos",
+      "categoryId": "mixers",
+      "categoryName": "Mixers",
+      "price": 1750,
+      "stock": 24,
+      "sortOrder": 240,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "paso-de-los-toros-pomelo-1500ml",
+      "name": "Paso de los Toros Pomelo",
+      "categoryId": "mixers",
+      "categoryName": "Mixers",
+      "price": 3250,
+      "stock": 12,
+      "sortOrder": 250,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "paso-de-los-toros-tonica-1500ml",
+      "name": "Paso de los Toros Tónica",
+      "categoryId": "mixers",
+      "categoryName": "Mixers",
+      "price": 3250,
+      "stock": 24,
+      "sortOrder": 260,
+      "popular": true,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "benedictino-sin-gas-2250ml",
+      "name": "Benedictino",
+      "categoryId": "aguas",
+      "categoryName": "Aguas",
+      "price": 2250,
+      "stock": 12,
+      "sortOrder": 270,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "villavicencio-sin-gas-1500ml",
+      "name": "Villavicencio Sin gas",
+      "categoryId": "aguas",
+      "categoryName": "Aguas",
+      "price": 2400,
+      "stock": 24,
+      "sortOrder": 290,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "villa-del-sur-sin-gas-600ml",
+      "name": "Villa del Sur",
+      "categoryId": "aguas",
+      "categoryName": "Aguas",
+      "price": 1700,
+      "stock": 24,
+      "sortOrder": 310,
+      "popular": true,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "villavicencio-con-gas-500ml",
+      "name": "Villavicencio Con gas",
+      "categoryId": "aguas",
+      "categoryName": "Aguas",
+      "price": 1900,
+      "stock": 12,
+      "sortOrder": 320,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "aquarius-pomelo-2250ml",
+      "name": "Aquarius Pomelo",
+      "categoryId": "aguas-saborizadas",
+      "categoryName": "Aguas saborizadas",
+      "price": 2650,
+      "stock": 12,
+      "sortOrder": 350,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "aquarius-manzana-1500ml",
+      "name": "Aquarius Manzana",
+      "categoryId": "aguas-saborizadas",
+      "categoryName": "Aguas saborizadas",
+      "price": 1800,
+      "stock": 12,
+      "sortOrder": 360,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "aquarius-pera-1500ml",
+      "name": "Aquarius Pera",
+      "categoryId": "aguas-saborizadas",
+      "categoryName": "Aguas saborizadas",
+      "price": 1800,
+      "stock": 12,
+      "sortOrder": 370,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "monster-green-zero-473ml",
+      "name": "Monster Green Zero",
+      "categoryId": "energizantes",
+      "categoryName": "Energizantes",
+      "price": 3250,
+      "stock": 12,
+      "sortOrder": 380,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "speed-original-473ml",
+      "name": "Speed",
+      "categoryId": "energizantes",
+      "categoryName": "Energizantes",
+      "price": 2850,
+      "stock": 24,
+      "sortOrder": 390,
+      "popular": true,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "speed-zero-473ml",
+      "name": "Speed Zero",
+      "categoryId": "energizantes",
+      "categoryName": "Energizantes",
+      "price": 2850,
+      "stock": 12,
+      "sortOrder": 400,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "red-bull-original-250ml",
+      "name": "Red Bull",
+      "categoryId": "energizantes",
+      "categoryName": "Energizantes",
+      "price": 2800,
+      "stock": 24,
+      "sortOrder": 410,
+      "popular": true,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "red-bull-sin-azucar-250ml",
+      "name": "Red Bull Sugarfree",
+      "categoryId": "energizantes",
+      "categoryName": "Energizantes",
+      "price": 2800,
+      "stock": 12,
+      "sortOrder": 420,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "gatorade-manzana-1250ml",
+      "name": "Gatorade Manzana",
+      "categoryId": "isotonicas",
+      "categoryName": "Isotónicas",
+      "price": 2650,
+      "stock": 12,
+      "sortOrder": 430,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "gatorade-cool-blue-500ml",
+      "name": "Gatorade Cool Blue",
+      "categoryId": "isotonicas",
+      "categoryName": "Isotónicas",
+      "price": 2000,
+      "stock": 12,
+      "sortOrder": 440,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    },
+    {
+      "sku": "powerade-mountain-blast-500ml",
+      "name": "Powerade Mountain Blast",
+      "categoryId": "isotonicas",
+      "categoryName": "Isotónicas",
+      "price": 1450,
+      "stock": 12,
+      "sortOrder": 450,
+      "popular": false,
+      "featured": false,
+      "image": "",
+      "alcoholic": false,
+      "available": true
+    }
+  ],
+  "home": [
+    {
+      "titulo": "Lo más pedido",
+      "productos": [],
+      "cantidad": 0
+    },
+    {
+      "titulo": "Combos",
+      "productos": [],
+      "cantidad": 0
+    },
+    {
+      "titulo": "Ofertas del día",
+      "productos": [],
+      "cantidad": 0
+    },
+    {
+      "titulo": "Gaseosas",
+      "productos": [],
+      "cantidad": 0
+    },
+    {
+      "titulo": "Aguas",
+      "productos": [],
+      "cantidad": 0
+    },
+    {
+      "titulo": "Energizantes",
+      "productos": [],
+      "cantidad": 0
+    },
+    {
+      "titulo": "Mixers",
+      "productos": [],
+      "cantidad": 0
+    },
+    {
+      "titulo": "Selección del local",
+      "productos": [],
+      "cantidad": 0
+    }
+  ],
+  "grilla": [
+    {
+      "posicion": 1,
+      "nombre": "Coca-Cola",
+      "linea": "2,25 L · Original",
+      "precio": "$ 5.900"
+    },
+    {
+      "posicion": 2,
+      "nombre": "Coca-Cola Zero",
+      "linea": "2,25 L · Sin azúcar",
+      "precio": "$ 5.900"
+    },
+    {
+      "posicion": 3,
+      "nombre": "Paso de los Toros Tónica",
+      "linea": "1,5 L",
+      "precio": "$ 3.250"
+    },
+    {
+      "posicion": 4,
+      "nombre": "Villa del Sur",
+      "linea": "600 ml · Sin gas",
+      "precio": "$ 1.700"
+    },
+    {
+      "posicion": 5,
+      "nombre": "Speed",
+      "linea": "473 ml · Original",
+      "precio": "$ 2.850"
+    },
+    {
+      "posicion": 6,
+      "nombre": "Red Bull",
+      "linea": "250 ml · Original",
+      "precio": "$ 2.800"
+    },
+    {
+      "posicion": 7,
+      "nombre": "Fanta Naranja",
+      "linea": "2,25 L",
+      "precio": "$ 5.900"
+    },
+    {
+      "posicion": 8,
+      "nombre": "Sprite",
+      "linea": "2,25 L · Original",
+      "precio": "$ 5.900"
+    },
+    {
+      "posicion": 9,
+      "nombre": "Sprite Zero",
+      "linea": "2,25 L · Sin azúcar",
+      "precio": "$ 5.900"
+    },
+    {
+      "posicion": 10,
+      "nombre": "7UP",
+      "linea": "2 L · Original",
+      "precio": "$ 3.800"
+    },
+    {
+      "posicion": 11,
+      "nombre": "Pepsi",
+      "linea": "2 L · Original",
+      "precio": "$ 3.800"
+    },
+    {
+      "posicion": 12,
+      "nombre": "Pepsi Black",
+      "linea": "1,5 L · Sin azúcar",
+      "precio": "$ 2.650"
+    },
+    {
+      "posicion": 13,
+      "nombre": "Fanta Naranja",
+      "linea": "Pack x6 · 1,5 L",
+      "precio": "$ 19.999"
+    },
+    {
+      "posicion": 14,
+      "nombre": "Coca-Cola Original",
+      "linea": "Pack x12 · 500 ml",
+      "precio": "$ 17.100"
+    },
+    {
+      "posicion": 15,
+      "nombre": "Coca-Cola Zero",
+      "linea": "Pack x12 · 500 ml",
+      "precio": "$ 17.100"
+    },
+    {
+      "posicion": 16,
+      "nombre": "Sprite",
+      "linea": "Pack x12 · 500 ml",
+      "precio": "$ 17.100"
+    },
+    {
+      "posicion": 17,
+      "nombre": "Coca-Cola",
+      "linea": "354 ml · Original",
+      "precio": "$ 1.800"
+    },
+    {
+      "posicion": 18,
+      "nombre": "Coca-Cola Zero",
+      "linea": "354 ml · Sin azúcar",
+      "precio": "$ 1.800"
+    },
+    {
+      "posicion": 19,
+      "nombre": "Sprite",
+      "linea": "354 ml · Original",
+      "precio": "$ 1.800"
+    },
+    {
+      "posicion": 20,
+      "nombre": "Soda Manaos",
+      "linea": "2 L",
+      "precio": "$ 1.750"
+    },
+    {
+      "posicion": 21,
+      "nombre": "Paso de los Toros Pomelo",
+      "linea": "1,5 L",
+      "precio": "$ 3.250"
+    },
+    {
+      "posicion": 22,
+      "nombre": "Benedictino",
+      "linea": "2,25 L · Sin gas",
+      "precio": "$ 2.250"
+    },
+    {
+      "posicion": 23,
+      "nombre": "Villavicencio Sin gas",
+      "linea": "1,5 L",
+      "precio": "$ 2.400"
+    },
+    {
+      "posicion": 24,
+      "nombre": "Villavicencio Con gas",
+      "linea": "500 ml",
+      "precio": "$ 1.900"
+    },
+    {
+      "posicion": 25,
+      "nombre": "Aquarius Pomelo",
+      "linea": "2,25 L",
+      "precio": "$ 2.650"
+    },
+    {
+      "posicion": 26,
+      "nombre": "Aquarius Manzana",
+      "linea": "1,5 L",
+      "precio": "$ 1.800"
+    },
+    {
+      "posicion": 27,
+      "nombre": "Aquarius Pera",
+      "linea": "1,5 L",
+      "precio": "$ 1.800"
+    },
+    {
+      "posicion": 28,
+      "nombre": "Monster Green Zero",
+      "linea": "473 ml · Sin azúcar",
+      "precio": "$ 3.250"
+    },
+    {
+      "posicion": 29,
+      "nombre": "Speed Zero",
+      "linea": "473 ml · Sin azúcar",
+      "precio": "$ 2.850"
+    },
+    {
+      "posicion": 30,
+      "nombre": "Red Bull Sugarfree",
+      "linea": "250 ml · Sin azúcar",
+      "precio": "$ 2.800"
+    },
+    {
+      "posicion": 31,
+      "nombre": "Gatorade Manzana",
+      "linea": "1,25 L",
+      "precio": "$ 2.650"
+    },
+    {
+      "posicion": 32,
+      "nombre": "Gatorade Cool Blue",
+      "linea": "500 ml",
+      "precio": "$ 2.000"
+    },
+    {
+      "posicion": 33,
+      "nombre": "Powerade Mountain Blast",
+      "linea": "500 ml",
+      "precio": "$ 1.450"
+    }
+  ],
+  "fichas": {
+    "primera": {
+      "slugEnvase": true,
+      "extracto": "×\nMás pedido\nORIGINAL · 2250 ML · BOTELLA-PET\nCoca-Cola\nCoca-Cola en botella PET de 2,25 L.\n$ 5.900\nDisponible\nObservación\n(opcional)\nGuardar para después\nAgregar"
+    },
+    "pack": {
+      "indice": 12,
+      "slugEnvase": false,
+      "crudoVariant": true,
+      "extracto": "×\nBOTELLA PET · 500 ML · PACK X12 · 500 ML · BOTELLA PET\nCoca-Cola Original\nBotella PET · 500 ml · Pack x12\n$ 17.100\nDisponible\nObservación\n(opcional)\nGuardar para después\nAgregar"
+    }
+  },
+  "carrito": {
+    "slugEnvase": true,
+    "extracto": "Tu pedido\nSeguir comprando\nVaciar carrito\nProductos\nCoca-Cola\nOriginal · 2250 ml · botella-pet\n1\n+\n$ 5.900\nCoca-Cola Original\nBotella PET · 500 ml · Pack x12 · 500 ml · Botella PET\n1\n+\n$ 17.100\nPARA ENTREGARTE EL PEDIDO\nDatos de entrega\nDelivery\nTus datos\nCompletá tu perfil para continuar\nNecesitamos tu nombre y teléfono para que el local pueda entregarte el pedido.\nCompletar Perfil\nAgregá una dirección para recibir el pedido\nGuardás la dirección una vez en tu Perfil y después la elegís en cada compra.\nAgregar dirección en Perfil\nForma de pago\nA coordinar con el local\nEfectivo al recibir\nEl medio se confirma antes de preparar el pedido.\nAgregar indicaciones\nSubtotal\n$ 23.000\nEnvío a domicili"
+  },
+  "mutacionesObservadas": []
+}

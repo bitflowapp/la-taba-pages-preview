@@ -4,9 +4,21 @@
   "vidriera": {
     "titulo": "Recomendados del local",
     "top": 328,
-    "productos": [],
+    "productos": [
+      "Coca-Cola",
+      "Coca-Cola Zero",
+      "Sprite",
+      "Fanta Naranja",
+      "Pepsi",
+      "Benedictino",
+      "Villavicencio Sin gas",
+      "Coca-Cola Original",
+      "Paso de los Toros Tónica",
+      "Aquarius Pomelo",
+      "Red Bull",
+      "Speed"
+    ],
     "lineas": [
-      "Selección del local",
       "2,25 L",
       "2,25 L",
       "2,25 L",
@@ -14,7 +26,11 @@
       "2 L",
       "2,25 L",
       "1,5 L",
-      "Pack x12 · 500 ml"
+      "Pack x12 · 500 ml",
+      "1,5 L",
+      "2,25 L",
+      "250 ml",
+      "473 ml"
     ]
   },
   "grilla": [
@@ -148,5 +164,11 @@
     }
   ],
   "fichaPack": "×\nPACK X12 · 500 ML\nCoca-Cola Original\n$ 17.100\nDisponible\nObservación\n(opcional)\nGuardar para después\nAgregar",
-  "carrito": "Tu pedido\nSeguir comprando\nVaciar carrito\nProductos\nCoca-Cola\n2,25 L · Original\n1\n+\n$ 5.900\nCoca-Cola Original\nPack x12 · 500 ml\n1\n+\n$ 17.100\nPARA ENTREGARTE EL PEDIDO\nDatos de entrega\nDelivery\nTus datos\nCompletá tu perfil para continuar\nNecesitamos tu nombre y teléfono para que el local pueda entregarte el pedido.\nCompletar Perfil\nAgregá una dirección para recibir el pedido\nGuardás la dirección una vez en tu Perfil y después la elegís en cada compra.\nAgregar dirección en Perfil\nForma de pago\nA coordinar con el local\nEfectivo al recibir\nEl medio se confirma antes de preparar el pedido.\nAgregar indicaciones\nSubtotal\n$ 23.000\nEnvío a domicilio\n$ 0\nTotal\n$ 23.000\nPedido online al local.\nAl confirmar, el pedido se registra en el sistema del comercio.\nConfirmar pedido\n\nEl pago se coordina directamente con el local."
+  "carrito": "Tu pedido\nSeguir comprando\nVaciar carrito\nProductos\nCoca-Cola\n2,25 L · Original\n1\n+\n$ 5.900\nCoca-Cola Original\nPack x12 · 500 ml\n1\n+\n$ 17.100\nPARA ENTREGARTE EL PEDIDO\nDatos de entrega\nDelivery\nTus datos\nCompletá tu perfil para continuar\nNecesitamos tu nombre y teléfono para que el local pueda entregarte el pedido.\nCompletar Perfil\nAgregá una dirección para recibir el pedido\nGuardás la dirección una vez en tu Perfil y después la elegís en cada compra.\nAgregar dirección en Perfil\nForma de pago\nA coordinar con el local\nEfectivo al recibir\nEl medio se confirma antes de preparar el pedido.\nAgregar indicaciones\nSubtotal\n$ 23.000\nEnvío a domicilio\n$ 0\nTotal\n$ 23.000\nPedido online al local.\nAl confirmar, el pedido se registra en el sistema del comercio.\nConfirmar pedido\n\nEl pago se coordina directamente con el local.",
+  "consola": {
+    "erroresReales": [],
+    "ruidoConocido": [
+      "Failed to load resource: the server responded with a status of 401 ()"
+    ]
+  }
 }

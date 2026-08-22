@@ -78,9 +78,12 @@ medir('la primera sección de productos es «Recomendados del local»', seccion?
 medir('no dice «Lo más pedido» en ningún lado', !(await page.content()).includes('Lo más pedido'));
 const visibles = seccion?.productos || [];
 console.log(`       orden servido: ${visibles.join(' > ')}`);
-medir('la vidriera sirve las 8 tarjetas del rail', visibles.length === 8, `${visibles.length} tarjetas`);
-medir('la vidriera abre con los aprobados, en su orden', visibles.length > 0
-  && APROBADOS.slice(0, visibles.length).every((esperado, i) => visibles[i] === esperado),
+medir('la vidriera sirve los 12 recomendados', visibles.length === 12, `${visibles.length} tarjetas`);
+// El nombre servido puede llevar la desambiguación del catálogo («Villavicencio
+// Sin gas», porque hay dos Villavicencio), así que se compara por prefijo: lo
+// que se verifica es la identidad y el ORDEN, no la tipografía del rótulo.
+medir('la vidriera abre con los aprobados, en su orden', visibles.length === APROBADOS.length
+  && APROBADOS.every((esperado, i) => visibles[i]?.startsWith(esperado)),
   visibles.join(' > ') || '(vacía)');
 medir('ninguna línea de la vidriera muestra metadata técnica', !(seccion?.lineas || []).some((l) => TECNICO.test(l)),
   (seccion?.lineas || []).slice(0, 3).join(' | '));

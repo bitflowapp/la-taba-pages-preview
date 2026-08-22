@@ -23,6 +23,8 @@ import {
 import {
   LISTA_NEGRA_RIDER, buscarElemento, nodosDelPedido, pedidoEnPantalla,
 } from '../scripts/e2e-production-sale/rider.mjs';
+import { estadoAdbDelTelefono } from '../scripts/e2e-production-sale/precheck.mjs';
+import { evaluarProducto, evaluarProductoBase, evaluarRider } from '../scripts/e2e-production-sale/guards.mjs';
 import { cerrarLock, generarRunId, leerLock, tomarLock } from '../scripts/e2e-production-sale/lock.mjs';
 import { crearEvidencia } from '../scripts/e2e-production-sale/evidencia.mjs';
 import { isValidArgentinePhone } from '../js/core/validators.js';
@@ -312,6 +314,47 @@ test('el pedido en pantalla y sus nodos se resuelven por el código, no por posi
   assert.equal(nodosDelPedido(nodos, 'LT-0007').length, 2);
   assert.equal(buscarElemento(nodos, 'Llegué').bounds[1], 2100);
   assert.equal(buscarElemento(nodos, 'Cerrar sesión'), null);
+});
+
+test('el estado de adb se lee de la línea del teléfono, no de si la palabra aparece', () => {
+  const salida = ['List of devices attached', 'ZY32LHS6PS\toffline', 'OTRO123\tdevice', ''].join('\n');
+  assert.equal(estadoAdbDelTelefono(salida, 'ZY32LHS6PS'), 'offline');
+  assert.equal(estadoAdbDelTelefono(salida, 'OTRO123'), 'device');
+  assert.equal(estadoAdbDelTelefono(salida, 'NOEXISTE'), 'ausente');
+  assert.equal(estadoAdbDelTelefono(['List of devices attached', ''].join('\n'), 'ZY32LHS6PS'), 'ausente');
+});
+
+test('un teléfono offline no se confunde con uno desenchufado: mandan a hacer cosas distintas', () => {
+  const base = { miembroActivo: true, paquete: 'com.lataba.rider', dispositivoConectado: false };
+  assert.match(evaluarRider({ ...base, estadoAdb: 'ausente' }).mensaje, /cable/);
+  assert.match(evaluarRider({ ...base, estadoAdb: 'offline' }).mensaje, /desbloqueá la pantalla/);
+  assert.match(evaluarRider({ ...base, estadoAdb: 'unauthorized' }).mensaje, /Permitir depuración USB/);
+  assert.equal(evaluarRider({ ...base, dispositivoConectado: true, estadoAdb: 'device' }).ok, true);
+  assert.equal(
+    evaluarRider({ ...base, dispositivoConectado: true, estadoAdb: 'device', paquete: 'com.lataba.rider.staging' }).codigo,
+    'RIDER_PAQUETE',
+    'la app de staging no sirve para una prueba de producción',
+  );
+});
+
+test('la compuerta base del producto mira lo que no depende de la etapa', () => {
+  const base = {
+    external_id: 'coca-cola-original-pet-1500ml',
+    is_alcoholic: false,
+    is_verified: true,
+    is_active: true,
+    price: '4990.00',
+  };
+  // Sin stock y oculto: correcto en el precheck de una corrida que viene a recibir.
+  assert.equal(evaluarProductoBase({ ...base, stock: 0, available: false }).ok, true);
+  // Y la compuerta completa, la de la venta, ahí sí bloquea.
+  assert.equal(evaluarProducto({ ...base, stock: 0, available: false }).codigo, 'NO_PUBLICADO');
+
+  assert.equal(evaluarProductoBase({ ...base, external_id: 'otro-sku' }).codigo, 'SKU_NO_AUTORIZADO');
+  assert.equal(evaluarProductoBase({ ...base, is_alcoholic: true }).codigo, 'ALCOHOL');
+  assert.equal(evaluarProductoBase({ ...base, is_verified: false }).codigo, 'NO_VERIFICADO');
+  assert.equal(evaluarProductoBase({ ...base, price: '5990.00' }).codigo, 'PRECIO_DISTINTO');
+  assert.equal(evaluarProductoBase(null).codigo, 'PRODUCTO_INEXISTENTE');
 });
 
 // ── El lock ──────────────────────────────────────────────────────────────────

@@ -149,6 +149,7 @@ después de comprobar que no hay ninguna entrega viva.
 | `panel-mercaderia.mjs` | recepción y publicación, por el Panel |
 | `venta-real.mjs` | el recorrido de la venta |
 | `rider.mjs` | el teléfono |
+| `precheck.mjs` | en qué estado está el teléfono para adb |
 | `auto.mjs` | el runner |
 | `lock.mjs` | una corrida, un pedido, como máximo |
 | `evidencia.mjs` | qué queda escrito, y qué nunca |
@@ -159,6 +160,17 @@ después de comprobar que no hay ninguna entrega viva.
 `recepcion.json`, `pedido.json`, `inventario.json`, `result.json`, `report.md`,
 `run.log` y las capturas. Todo pasa por la redacción antes de tocar el disco:
 PIN, tokens, claves y teléfonos.
+
+La redacción del PIN tiene dos capas, y la de abajo es la que manda. El patrón
+—cuatro dígitos pegados a una palabra que anuncia un código— es la **red**. La
+**certeza** es que, apenas se lee el código de la pantalla del cliente, ese
+valor exacto queda registrado y desaparece de cualquier texto que vaya a disco,
+aparezca donde aparezca.
+
+El patrón se angostó después de leer la primera línea de tiempo real: era
+`\b\d{4}\b` y salía `[PIN-REDACTADO]-08-22T18:05:30Z` — se comía el año, y se
+habría comido el precio. Una redacción que tapa la evidencia obliga a mirar los
+artefactos sin redactar, que es peor que no tener redacción.
 
 ## Si algo queda a medias
 

@@ -41,7 +41,8 @@ import { evaluarAtestacion, leerAtestacionFisica } from './atestacion-fisica.mjs
 import { consultar, lit } from './db-solo-lectura.mjs';
 import { construirReporte, crearEvidencia } from './evidencia.mjs';
 import {
-  evaluarAutorizacion, evaluarConcurrencia, evaluarNegocio, evaluarRider, primerBloqueo,
+  evaluarAutorizacion, evaluarConcurrencia, evaluarNegocio, evaluarProducto, evaluarProductoBase,
+  evaluarRider, primerBloqueo,
 } from './guards.mjs';
 import {
   IDENTIDAD_PANEL, NEGOCIO_ID, correoDelPanel, evaluarRolDelPanel,
@@ -136,7 +137,7 @@ try {
   console.log(`  producto ....... ${producto?.name} · stock ${producto?.stock} · publicado ${producto?.available} · $${producto?.price}`);
   console.log(`  pedidos vivos .. ${abiertos.length}${abiertos.length ? ` (${abiertos.map((p) => `${p.public_code}:${p.status}`).join(', ')})` : ''}`);
   console.log(`  identidad panel  ${panelMiembro ? `${correoDelPanel()} · rol ${panelMiembro.role} · activa=${panelMiembro.is_active}` : 'NO EXISTE — falta el alta'}`);
-  console.log(`  repartidor ..... ${riderMiembro ? riderMiembro.email : 'sin repartidor activo'} · entregas activas ${cupo.activos ?? '?'}/${RIDER.maximoDeEntregasActivas} · teléfono ${telefono.dispositivoConectado ? `conectado (${telefono.paquete} ${telefono.version || ''}, batería ${telefono.bateria ?? '?'}%)` : 'AUSENTE en adb'}`);
+  console.log(`  repartidor ..... ${riderMiembro ? riderMiembro.email : 'sin repartidor activo'} · entregas activas ${cupo.activos ?? '?'}/${RIDER.maximoDeEntregasActivas} · teléfono ${telefono.dispositivoConectado ? `conectado (${telefono.paquete} ${telefono.version || ''}, batería ${telefono.bateria ?? '?'}%)` : `adb dice «${telefono.estadoAdb}»`}`);
   console.log(`  atestación ..... ${atestacion.ok ? `${atestacion.cantidad} unidad(es)` : atestacion.mensaje}`);
   console.log(`  plan ........... ${describirPlan(plan)}`);
   console.log('');
@@ -146,12 +147,14 @@ try {
     concurrencia,
     plan: plan.bloqueo || { ok: true, codigo: null, mensaje: '' },
     negocio: evaluarNegocio(negocio),
+    producto: evaluarProductoBase(producto),
     atestacion: evaluarAtestacion(atestacion, { hace_falta: plan.requiereAtestacion }),
     identidadPanel: evaluarRolDelPanel(panelMiembro?.is_active ? panelMiembro.role : ''),
     repartidor: evaluarRider({
       miembroActivo: Boolean(riderMiembro),
       paquete: telefono.paquete,
       dispositivoConectado: telefono.dispositivoConectado,
+      estadoAdb: telefono.estadoAdb,
     }),
     cupoDelRepartidor: Number(cupo.activos) < RIDER.maximoDeEntregasActivas
       ? { ok: true, codigo: null, mensaje: '' }
@@ -283,7 +286,16 @@ try {
         anotarPaso('Publication', 'SKIP', `${plan.caso}: ya estaba publicado`);
       }
 
+      /*
+       * La compuerta completa del producto se aplica ACÁ, no en el precheck:
+       * recién ahora tiene que estar publicado y con stock. Antes de la
+       * recepción no lo estaba, y a propósito.
+       */
       const productoAntesDeVender = await leerProducto();
+      const listoParaVender = evaluarProducto(productoAntesDeVender);
+      if (!listoParaVender.ok) {
+        throw Object.assign(new Error(listoParaVender.mensaje), { codigo: listoParaVender.codigo });
+      }
       if (Number(productoAntesDeVender.stock) !== stockEsperado) {
         throw Object.assign(
           new Error(`antes de vender el stock tenía que ser ${stockEsperado} y es ${productoAntesDeVender.stock}`),

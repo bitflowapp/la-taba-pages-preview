@@ -22,12 +22,15 @@
  * además mide cuánto tardó, y esos tiempos van al reporte.
  */
 import { PRODUCCION } from './contrato.mjs';
+import { registrarSecretoDeLaCorrida } from './evidencia.mjs';
 import { consultar, lit } from './db-solo-lectura.mjs';
 import { evaluarDecremento, evaluarDireccion, evaluarPago } from './guards.mjs';
 import { DIRECCION_DE_PRUEBA, NEGOCIO_ID, evaluarDireccionPorIdentidad } from './identidades.mjs';
 import { anotarPedidoEnLock } from './lock.mjs';
 import * as rider from './rider.mjs';
-import { contextoCliente as nuevoContextoCliente, contextoPanel as nuevoContextoPanel } from './sesiones.mjs';
+import {
+  contextoCliente as nuevoContextoCliente, contextoPanel as nuevoContextoPanel, guardarEstado,
+} from './sesiones.mjs';
 
 const ESPERA = {
   pedidoEnPanel: 120_000, transicion: 90_000, oferta: 120_000, entrega: 120_000, telefono: 180_000,
@@ -302,6 +305,13 @@ export async function ejecutarVentaReal({
     if (!conPin.ok) throw new PasoFallido('SIN_PIN', 'el cliente no ve el código de entrega');
     const pin = conPin.valor;
     pinLeido = true;
+    /*
+     * Antes de hacer nada con él: el valor exacto queda registrado como secreto
+     * de la corrida, así que desde este instante desaparece de cualquier texto
+     * que vaya a disco —el registro, el informe, la línea de tiempo— aparezca
+     * donde aparezca. El patrón de cuatro dígitos es la red; esto es la certeza.
+     */
+    registrarSecretoDeLaCorrida(pin);
     // La captura se toma con el número ya tapado en el DOM: la imagen que queda
     // en disco nunca contuvo el código.
     await cliente.locator('[data-delivery-code-card] strong[data-delivery-code]').first()
@@ -503,6 +513,19 @@ async function comprobarPersistencia({
   navegador, contextoCliente, contextoPanel, rutaSesionCliente, rutaSesionPanel,
   host, codigo, pedidoId, producto, stockDespues, evidencia,
 }) {
+  /*
+   * Guardar ANTES de cerrar, y otra vez al final.
+   *
+   * El proyecto tiene rotación de refresh tokens con detección de reuso: cada
+   * vez que un navegador refresca, el token anterior queda quemado. Si esta
+   * comprobación cerrara los contextos sin guardar, los archivos de sesión
+   * quedarían con tokens ya usados y la corrida SIGUIENTE los encontraría
+   * revocados. Para el Panel eso sólo significa volver a entrar; para el
+   * cliente significa perder la identidad anónima —con su perfil y su
+   * dirección— y fabricar otra, dejando una fila más en producción cada vez.
+   */
+  await guardarEstado(contextoCliente, rutaSesionCliente).catch(() => {});
+  await guardarEstado(contextoPanel, rutaSesionPanel).catch(() => {});
   await contextoCliente.close().catch(() => {});
   await contextoPanel.close().catch(() => {});
 
@@ -532,6 +555,9 @@ async function comprobarPersistencia({
     evidencia.anotar(`no se pudo comprobar el teléfono tras reabrir: ${String(error.message).slice(0, 160)}`);
   }
 
+  // El último token es el que tiene que quedar en el archivo, no el primero.
+  await guardarEstado(otroCliente, rutaSesionCliente).catch(() => {});
+  await guardarEstado(otroPanel, rutaSesionPanel).catch(() => {});
   await otroCliente.close().catch(() => {});
   await otroPanel.close().catch(() => {});
 

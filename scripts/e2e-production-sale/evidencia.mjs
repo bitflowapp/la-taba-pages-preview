@@ -10,8 +10,35 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { PATRONES_SENSIBLES, RUTAS } from './contrato.mjs';
 
+/*
+ * LOS SECRETOS QUE ESTA CORRIDA TIENE EN LA MANO.
+ *
+ * Un patrón es una red por si algo se escapa; esto es la certeza. Cuando el
+ * harness lee el código de entrega de la pantalla del cliente lo registra acá,
+ * y desde ese momento ese valor exacto desaparece de cualquier texto que vaya a
+ * disco, aparezca donde aparezca y sin importar qué lo rodea.
+ *
+ * Vive en memoria y muere con el proceso: no se serializa, no se guarda y no se
+ * imprime. `olvidar()` existe para las pruebas.
+ */
+const secretosDeLaCorrida = new Set();
+
+export function registrarSecretoDeLaCorrida(valor) {
+  const texto = String(valor ?? '');
+  // Un valor demasiado corto convertiría media evidencia en tachones.
+  if (texto.length >= 3) secretosDeLaCorrida.add(texto);
+  return secretosDeLaCorrida.size;
+}
+
+export function olvidarSecretosDeLaCorrida() {
+  secretosDeLaCorrida.clear();
+}
+
 export function redactar(texto) {
   let salida = String(texto ?? '');
+  for (const secreto of secretosDeLaCorrida) {
+    salida = salida.split(secreto).join('[SECRETO-DE-LA-CORRIDA-REDACTADO]');
+  }
   for (const { patron, reemplazo } of PATRONES_SENSIBLES) {
     salida = salida.replace(patron, reemplazo);
   }

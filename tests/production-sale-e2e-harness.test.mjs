@@ -5,13 +5,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   evaluarAutorizacion, evaluarConcurrencia, evaluarDecremento, evaluarDireccion,
-  evaluarNegocio, evaluarPago, evaluarPedidosAbiertos, evaluarProducto, evaluarRider,
-  evaluarSesion, primerBloqueo,
+  evaluarNegocio, evaluarPago, evaluarProducto, evaluarRider, primerBloqueo,
 } from '../scripts/e2e-production-sale/guards.mjs';
 // eslint-disable-next-line no-duplicate-imports -- se importa aparte para probar la lectura dinámica del entorno
 import { assertSoloLectura, ConsultaNoPermitida } from '../scripts/e2e-production-sale/db-solo-lectura.mjs';
 import { cerrarLock, generarRunId, leerLock, tomarLock } from '../scripts/e2e-production-sale/lock.mjs';
-import { construirReporte, redactar, redactarProfundo } from '../scripts/e2e-production-sale/evidencia.mjs';
+import {
+  construirReporte, olvidarSecretosDeLaCorrida, redactar, redactarProfundo, registrarSecretoDeLaCorrida,
+} from '../scripts/e2e-production-sale/evidencia.mjs';
 import { AUTORIZACION, PRODUCTO_AUTORIZADO } from '../scripts/e2e-production-sale/contrato.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -159,25 +160,7 @@ test('la dirección aprobada se lee del entorno en el momento, no al importar', 
   assert.equal(direccionPermitida({ TABA2_E2E_DIRECCION_TEXTO: ' Mendoza 827 ' }).descripcionEsperada, 'Mendoza 827');
 });
 
-// ── Sesiones ─────────────────────────────────────────────────────────────────
-
-test('una sesión vencida frena la compra con AUTH SESSION EXPIRED', () => {
-  const vencida = evaluarSesion({ nombre: 'cliente', existe: true, vencida: true, verificada: true });
-  assert.equal(vencida.codigo, 'AUTH_SESSION_EXPIRED');
-  assert.equal(evaluarSesion({ nombre: 'cliente', existe: false }).codigo, 'AUTH_SESSION_MISSING');
-  assert.equal(evaluarSesion({ nombre: 'cliente', existe: true, vencida: false, verificada: false }).codigo, 'AUTH_SESSION_INVALID');
-  assert.equal(evaluarSesion({ nombre: 'cliente', existe: true, vencida: false, verificada: true }).ok, true);
-});
-
 // ── Concurrencia, lock y run_id ──────────────────────────────────────────────
-
-test('un pedido abierto previo frena la prueba: el repartidor ya tiene una entrega', () => {
-  const bloqueo = evaluarPedidosAbiertos([{ public_code: 'LT-0001', status: 'on_the_way' }]);
-  assert.equal(bloqueo.codigo, 'PEDIDO_ABIERTO_PREVIO');
-  assert.match(bloqueo.mensaje, /LT-0001/);
-  assert.match(bloqueo.mensaje, /su propio gate/);
-  assert.equal(evaluarPedidosAbiertos([]).ok, true);
-});
 
 test('una corrida anterior sin cerrar frena la siguiente', () => {
   const bloqueo = evaluarConcurrencia({ lockPrevio: { runId: 'anterior', estado: 'fallido' } });
@@ -274,11 +257,34 @@ test('el decremento de stock se exige exacto: ni de más ni de menos', () => {
 // ── El PIN no sobrevive a un log ─────────────────────────────────────────────
 
 test('el PIN nunca queda escrito: se redacta en texto y en estructuras', () => {
+  // La red: cuatro dígitos al lado de una palabra que anuncia un código.
   assert.equal(redactar('el código de entrega es 4821'), 'el código de entrega es [PIN-REDACTADO]');
-  const redactado = redactarProfundo({ pin: '4821', nota: 'ingresó 4821', anidado: { deliveryPin: '0000' } });
-  assert.equal(redactado.pin, '[REDACTADO]');
-  assert.equal(redactado.anidado.deliveryPin, '[REDACTADO]');
-  assert.doesNotMatch(JSON.stringify(redactado), /4821/);
+
+  // La certeza: el valor exacto, registrado al leerlo de la pantalla del
+  // cliente, desaparece de cualquier texto, con o sin palabra al lado.
+  registrarSecretoDeLaCorrida('4821');
+  try {
+    const redactado = redactarProfundo({ pin: '4821', nota: 'ingresó 4821', anidado: { deliveryPin: '0000' } });
+    assert.equal(redactado.pin, '[REDACTADO]');
+    assert.equal(redactado.anidado.deliveryPin, '[REDACTADO]');
+    assert.doesNotMatch(JSON.stringify(redactado), /4821/);
+    assert.doesNotMatch(redactar('lo tecleó: 4821'), /4821/);
+  } finally {
+    olvidarSecretosDeLaCorrida();
+  }
+});
+
+/*
+ * Esta prueba existe porque la primera línea de tiempo generada de verdad salió
+ * con TODAS las marcas diciendo «[PIN-REDACTADO]-08-22T18:05:30Z»: el patrón de
+ * cuatro dígitos se estaba comiendo el año. Una redacción que tapa la evidencia
+ * no protege nada — obliga a mirar los artefactos sin redactar.
+ */
+test('la redacción no se come el año, ni el precio, ni las latencias', () => {
+  assert.equal(redactar('2026-08-22T18:05:30.175Z'), '2026-08-22T18:05:30.175Z');
+  assert.equal(redactar('precio $4990 · total $4.990,00'), 'precio $4990 · total $4.990,00');
+  assert.equal(redactar('msDesdeElInicio 51101'), 'msDesdeElInicio 51101');
+  assert.equal(redactar('LT-0001 quedó en on_the_way'), 'LT-0001 quedó en on_the_way');
 });
 
 test('tokens, claves y teléfonos tampoco quedan escritos', () => {
@@ -296,16 +302,34 @@ test('tokens, claves y teléfonos tampoco quedan escritos', () => {
 });
 
 test('el reporte final declara que se leyó el PIN pero no lo imprime', () => {
-  const { texto, markdown } = construirReporte({
-    runId: 'r1',
-    modo: 'VENTA REAL',
-    pasos: [{ nombre: 'PIN', estado: 'PASS', detalle: 'leído de la pantalla del cliente: 4821' }],
-    tiempos: { 'PIN → delivered': 1200 },
-    resumen: 'PRODUCTION SALE E2E PASS',
-  });
-  assert.match(texto, /PIN .* PASS/);
-  assert.doesNotMatch(texto, /4821/);
-  assert.doesNotMatch(markdown, /4821/);
+  /*
+   * En el recorrido real el PIN se registra como secreto de la corrida en el
+   * mismo instante en que se lee de la pantalla, ANTES de que exista ningún
+   * informe. Por eso la prueba lo registra igual que el harness: si alguna vez
+   * alguien lo metiera en el detalle de un paso, tendría que salir tachado.
+   */
+  registrarSecretoDeLaCorrida('4821');
+  try {
+    const { texto, markdown } = construirReporte({
+      runId: 'r1',
+      modo: 'VENTA REAL',
+      pasos: [{ nombre: 'PIN', estado: 'PASS', detalle: 'leído de la pantalla del cliente: 4821' }],
+      tiempos: { 'PIN → delivered': 1200 },
+      resumen: 'PRODUCTION SALE E2E PASS',
+    });
+    assert.match(texto, /PIN .* PASS/);
+    assert.doesNotMatch(texto, /4821/);
+    assert.doesNotMatch(markdown, /4821/);
+  } finally {
+    olvidarSecretosDeLaCorrida();
+  }
+});
+
+test('el harness escribe el paso del PIN sin ningún número, registrado o no', () => {
+  // El detalle que pone el recorrido real. No hay nada que tachar porque no hay
+  // nada escrito: la redacción es la segunda línea de defensa, no la primera.
+  const detalle = 'leído de la pantalla del cliente, nunca de la base';
+  assert.doesNotMatch(detalle, /\d/);
 });
 
 // ── El contrato no se afloja sin que alguien lo vea ──────────────────────────

@@ -80,9 +80,29 @@ export const RUTAS = Object.freeze({
   evidencia: 'artifacts/production-sale-e2e',
 });
 
-/** Lo que jamás puede aparecer en un artefacto o en un log. */
+/**
+ * Lo que jamás puede aparecer en un artefacto o en un log.
+ *
+ * EL PATRÓN DEL PIN SE TUVO QUE ANGOSTAR, y la lección vale escribirla. Era
+ * `\b\d{4}\b`: cualquier grupo de cuatro dígitos. Al leer la primera línea de
+ * tiempo generada de verdad, todas las marcas decían
+ * `[PIN-REDACTADO]-08-22T18:05:30Z` — se estaba comiendo el AÑO. Y también se
+ * habría comido el precio (`$4990`), que es justo lo que hay que poder auditar
+ * en un pedido.
+ *
+ * Una redacción que tapa la evidencia no protege nada: obliga a mirar los
+ * artefactos sin redactar, que es peor que no tener redacción. Ahora el patrón
+ * sólo tacha cuatro dígitos cuando están al lado de una palabra que anuncia un
+ * código de entrega, y la garantía fuerte la da el valor exacto: cuando el
+ * harness lee el PIN lo registra en `evidencia.mjs` y ese texto desaparece de
+ * todo lo que va a disco.
+ */
 export const PATRONES_SENSIBLES = Object.freeze([
-  { nombre: 'pin', patron: /\b\d{4}\b/g, reemplazo: '[PIN-REDACTADO]' },
+  {
+    nombre: 'pin',
+    patron: /((?:c[oó]digo(?:\s+de\s+entrega)?|delivery[_\s-]?code|pin)\b[^\d\n]{0,24})\d{4}\b/gi,
+    reemplazo: '$1[PIN-REDACTADO]',
+  },
   { nombre: 'jwt', patron: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, reemplazo: '[TOKEN-REDACTADO]' },
   { nombre: 'clave-publicable', patron: /sb_publishable_[A-Za-z0-9_-]+/g, reemplazo: '[CLAVE-REDACTADA]' },
   { nombre: 'clave-secreta', patron: /sb_secret_[A-Za-z0-9_-]+/g, reemplazo: '[SECRETO-REDACTADO]' },

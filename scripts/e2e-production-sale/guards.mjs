@@ -51,6 +51,32 @@ export function evaluarProducto(fila, { cantidad = PRODUCTO_AUTORIZADO.cantidad,
   return permitido;
 }
 
+/**
+ * Lo del producto que tiene que ser cierto SIEMPRE, en cualquier etapa.
+ *
+ * `evaluarProducto` es la compuerta de la venta: exige stock y publicación,
+ * que es correcto justo antes de comprar y es INCORRECTO en el precheck de una
+ * corrida que viene a recibir —ahí el producto está en cero y oculto a
+ * propósito—. Sin esta versión, el precheck automático se quedaba sin mirar la
+ * identidad del SKU, el alcohol, la verificación y el precio, que no dependen de
+ * la etapa y que son justamente lo que no puede cambiar en silencio.
+ */
+export function evaluarProductoBase(fila, { aceptaPrecioDistinto = false } = {}) {
+  if (!fila) return bloqueo('PRODUCTO_INEXISTENTE', 'el producto autorizado no existe en producción');
+  if (fila.external_id !== PRODUCTO_AUTORIZADO.externalId) {
+    return bloqueo('SKU_NO_AUTORIZADO', `esta automatización sólo compra ${PRODUCTO_AUTORIZADO.externalId}`);
+  }
+  if (fila.is_alcoholic === true) return bloqueo('ALCOHOL', 'un producto con alcohol nunca entra a esta prueba');
+  if (fila.is_verified !== true || fila.is_active !== true) {
+    return bloqueo('NO_VERIFICADO', 'el producto no está verificado/activo');
+  }
+  const precio = Number(fila.price);
+  if (precio !== PRODUCTO_AUTORIZADO.precioEsperado && !aceptaPrecioDistinto) {
+    return bloqueo('PRECIO_DISTINTO', `el precio es ${precio} y el contrato dice ${PRODUCTO_AUTORIZADO.precioEsperado}: hace falta aceptación explícita`);
+  }
+  return permitido;
+}
+
 /** El comercio tiene que estar realmente abierto y sin alcohol habilitado. */
 export function evaluarNegocio(negocio) {
   if (!negocio) return bloqueo('NEGOCIO_INEXISTENTE', 'no se pudo leer el comercio');
@@ -61,9 +87,27 @@ export function evaluarNegocio(negocio) {
   return permitido;
 }
 
-/** El repartidor tiene que existir, estar activo y ser el de producción. */
-export function evaluarRider({ miembroActivo, paquete, dispositivoConectado } = {}) {
-  if (!dispositivoConectado) return bloqueo('RIDER_SIN_DISPOSITIVO', 'el Moto G15 no aparece en adb');
+/**
+ * El repartidor tiene que existir, estar activo y ser el de producción.
+ *
+ * El mensaje distingue entre «no aparece» y «aparece pero no habla», porque
+ * mandan a hacer cosas distintas: la primera es un cable, la segunda es una
+ * pantalla bloqueada o un permiso de depuración esperando que alguien lo
+ * acepte. Decir siempre «no aparece en adb» manda a buscar un cable que ya
+ * estaba puesto.
+ */
+const COMO_DESTRABAR = Object.freeze({
+  ausente: 'no aparece en adb: revisá el cable y que el teléfono esté con la depuración USB encendida',
+  offline: 'aparece OFFLINE: desbloqueá la pantalla y aceptá el permiso de depuración USB (después, `adb reconnect device`)',
+  unauthorized: 'aparece SIN AUTORIZAR: aceptá «Permitir depuración USB» en la pantalla del teléfono',
+  error: 'adb devolvió un error al consultarlo',
+});
+
+export function evaluarRider({ miembroActivo, paquete, dispositivoConectado, estadoAdb } = {}) {
+  if (!dispositivoConectado) {
+    const detalle = COMO_DESTRABAR[estadoAdb] || COMO_DESTRABAR.ausente;
+    return bloqueo('RIDER_SIN_DISPOSITIVO', `el teléfono del repartidor ${detalle}`);
+  }
   if (!miembroActivo) return bloqueo('RIDER_INACTIVO', 'no hay un repartidor activo en el comercio');
   if (paquete !== 'com.lataba.rider') return bloqueo('RIDER_PAQUETE', `el paquete tiene que ser com.lataba.rider y es ${paquete}`);
   return permitido;
@@ -94,31 +138,27 @@ export function evaluarPago(metodo) {
   return permitido;
 }
 
-/** Las sesiones guardadas tienen que existir y estar vivas. */
-export function evaluarSesion({ nombre, existe, vencida, verificada }) {
-  if (!existe) return bloqueo('AUTH_SESSION_MISSING', `falta la sesión de ${nombre}: corré el bootstrap`);
-  if (vencida) return bloqueo('AUTH_SESSION_EXPIRED', `la sesión de ${nombre} venció: volvé a correr el bootstrap`);
-  if (!verificada) return bloqueo('AUTH_SESSION_INVALID', `la sesión de ${nombre} no quedó verificada contra producción`);
-  return permitido;
-}
-
-/**
- * El repartidor no puede tener otra entrega en curso.
- *
- * No es una precaución teórica: el 2026-08-22 el teléfono tenía LT-0001 abierto
- * en «Yendo al cliente», con el botón «Llegué» en pantalla. Con una entrega
- * ajena cargada, la app muestra ESE pedido y el harness no tendría forma de
- * distinguir sus propios toques de los que avanzarían el pedido de otra
- * persona. Se frena antes, y quien cierre LT-0001 lo hace con su propio gate.
+/*
+ * ACÁ VIVÍA `evaluarSesion`, que miraba el archivo de la sesión guardada —si
+ * existía, si sus cookies habían vencido— y bloqueaba la corrida. Se fue con el
+ * modo autónomo, y por una razón: una sesión ya no se juzga por su archivo sino
+ * por lo que la aplicación contesta con ella puesta, y si no sirve no se
+ * bloquea nada, se renueva. Eso lo deciden `evaluarPanelAprovisionado` y
+ * `evaluarClienteAprovisionado`, en `sesiones.mjs`, con la página abierta
+ * delante. Dejar acá la versión vieja habría dado dos autoridades para la misma
+ * pregunta.
  */
-export function evaluarPedidosAbiertos(pedidosAbiertos = []) {
-  if (!pedidosAbiertos.length) return permitido;
-  const detalle = pedidosAbiertos.map((p) => `${p.public_code} (${p.status})`).join(', ');
-  return bloqueo(
-    'PEDIDO_ABIERTO_PREVIO',
-    `hay ${pedidosAbiertos.length} pedido(s) sin cerrar: ${detalle}. El repartidor ya tiene una entrega en curso y la app muestra ESA: cerralos antes de la prueba, con su propio gate.`,
-  );
-}
+
+/*
+ * Y ACÁ VIVÍA `evaluarPedidosAbiertos`, que frenaba la prueba entera si el
+ * comercio tenía cualquier pedido sin cerrar. Era la respuesta correcta cuando
+ * el harness no sabía distinguir un pedido de otro en el teléfono. Ahora sí
+ * sabe —todo se busca por código y por uuid, y cada toque revalida qué pedido
+ * está en pantalla— y el repartidor puede llevar hasta tres entregas a la vez,
+ * así que un viaje ajeno abierto ya no le quita el suyo. Lo que sí se mide es
+ * el CUPO, y la decisión final la toma el Panel, que deshabilita al repartidor
+ * sin lugar.
+ */
 
 /** No puede haber dos corridas a la vez ni una anterior sin cerrar. */
 export function evaluarConcurrencia({ lockPrevio }) {

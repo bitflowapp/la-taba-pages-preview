@@ -69,6 +69,28 @@ function normalizar(texto) {
 }
 
 /**
+ * ¿La «variante» es en realidad la capacidad otra vez?
+ *
+ * Las cuatro unidades minoristas cargadas el 2026-08-19 llevan
+ * `variant='500 ml'` y `variant='1,5 L'`: son datos maestros válidos —la
+ * variante de ese SKU ES su tamaño— pero imprimirla al lado de la capacidad
+ * daba «500 ml · 500 ml». Se dice una sola vez, y se dice en presentación:
+ * la identidad del SKU no se toca para arreglar algo que se ve.
+ *
+ * Se compara contra las dos formas: la que se muestra («1,5 L») y la cruda de
+ * la base («1500 ml»), porque un dato viejo puede traer cualquiera de las dos.
+ */
+function varianteEsLaCapacidad(variante, capacidadFormateada, product) {
+  const v = normalizar(variante);
+  if (!v) return false;
+  if (v === normalizar(capacidadFormateada)) return true;
+  const valor = product.capacityValue ?? product.capacity_value;
+  const unidad = product.capacityUnit ?? product.capacity_unit ?? 'ml';
+  if (valor == null) return false;
+  return v === normalizar(`${valor} ${unidad}`);
+}
+
+/**
  * La línea de la tarjeta.
  *
  *   unidad:  «1,5 L» · «2,25 L · Sin azúcar» (la variante entra sólo si el
@@ -91,7 +113,8 @@ export function cardPresentationLine(product = {}) {
   const nombre = normalizar(product.name);
   const varianteAporta = variante
     && !nombre.includes(normalizar(variante))
-    && normalizar(variante) !== 'unidad';
+    && normalizar(variante) !== 'unidad'
+    && !varianteEsLaCapacidad(variante, capacidad, product);
 
   const partes = [];
   if (esPack) partes.push(`Pack x${porPack}`);

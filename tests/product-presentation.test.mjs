@@ -83,6 +83,39 @@ test('sin capacidad conocida cae a la variante sola: nunca peor que antes', () =
   assert.equal(cardPresentationLine({}), '');
 });
 
+test('la capacidad no se dice dos veces cuando la variante ES la capacidad', () => {
+  // Las 4 unidades minoristas del 2026-08-19 llevan variant='500 ml' / '1,5 L'.
+  assert.equal(
+    cardPresentationLine({ name: 'Coca-Cola Original', presentation: '500 ml', capacityValue: 500, capacityUnit: 'ml', unitsPerPack: 1 }),
+    '500 ml',
+  );
+  assert.equal(
+    cardPresentationLine({ name: 'Fanta Naranja', presentation: '1,5 L', capacityValue: 1500, capacityUnit: 'ml', unitsPerPack: 1 }),
+    '1,5 L',
+  );
+  // También cuando la variante trae la forma cruda de la base.
+  assert.equal(
+    cardPresentationLine({ name: 'Sprite', presentation: '1500 ml', capacityValue: 1500, capacityUnit: 'ml', unitsPerPack: 1 }),
+    '1,5 L',
+  );
+  // Y sin capacidad conocida se dice una vez, no ninguna.
+  assert.equal(cardPresentationLine({ name: 'Sprite', presentation: '500 ml' }), '500 ml');
+});
+
+test('el pack no arrastra la ficha técnica cruda de la base', () => {
+  // Los 4 packs previos traen variant/presentation con todo pegado.
+  assert.equal(
+    cardPresentationLine({
+      name: 'Coca-Cola Original',
+      presentation: 'Botella PET · 500 ml · Pack x12',
+      capacityValue: 500,
+      capacityUnit: 'ml',
+      unitsPerPack: 12,
+    }),
+    'Pack x12 · 500 ml',
+  );
+});
+
 test('catálogos sin campos estructurados caen a la etiqueta de unidad de siempre', () => {
   assert.equal(cardPresentationLine({ name: 'Demo pack', unitLabel: 'Pack x12' }), 'Pack x12');
   assert.equal(cardPresentationLine({ name: 'Demo suelto', unitLabel: 'Unidad' }), '');

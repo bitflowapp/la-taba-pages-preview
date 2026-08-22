@@ -1,4 +1,5 @@
 import { getActivePromotions } from './promotions.js';
+import { recommendedRank } from './storefront-filters.js';
 
 // Orden de negocio para la home. Las categorías del catálogo siguen siendo la
 // fuente de verdad de cada SKU; este orden sólo decide qué se prioriza en la
@@ -23,7 +24,9 @@ export const BEVERAGE_HOME_CATEGORY_ORDER = Object.freeze([
 
 export const BEVERAGE_HOME_SECTION_DEFINITIONS = Object.freeze([
   Object.freeze({ id: 'offers', title: 'Ofertas del día', kind: 'offers' }),
-  Object.freeze({ id: 'popular', title: 'Lo más pedido', kind: 'popular' }),
+  // «Recomendados del local», no «Lo más pedido»: es una selección del
+  // comercio, y el comercio no tiene métrica de ventas que respalde un ranking.
+  Object.freeze({ id: 'popular', title: 'Recomendados del local', kind: 'popular' }),
   Object.freeze({ id: 'gaseosas', title: 'Gaseosas', kind: 'category', categoryIds: ['gaseosas'] }),
   Object.freeze({ id: 'cervezas', title: 'Cervezas', kind: 'category', categoryIds: ['cervezas'] }),
   Object.freeze({ id: 'aguas', title: 'Aguas', kind: 'category', categoryIds: ['aguas', 'aguas-saborizadas'] }),
@@ -160,6 +163,19 @@ function compareBeverageProducts(left, right) {
     || String(left?.sku || left?.id || '').localeCompare(String(right?.sku || right?.id || ''), 'es');
 }
 
+/**
+ * El orden de «Recomendados del local»: el número del tag posicional manda, y
+ * lo que no esté curado cae detrás con el orden comercial de siempre.
+ */
+function compareRecommended(left, right) {
+  const leftRank = recommendedRank(left);
+  const rightRank = recommendedRank(right);
+  if (leftRank !== null && rightRank !== null) return leftRank - rightRank;
+  if (leftRank !== null) return -1;
+  if (rightRank !== null) return 1;
+  return compareBeverageProducts(left, right);
+}
+
 function promotionProductKeys(promotions) {
   return new Set(promotions.flatMap((promotion) => promotion.includedSkus || []));
 }
@@ -172,6 +188,17 @@ function productsForSection(definition, products, promotionKeys) {
     ) && isPurchasableBeverageProduct(product));
   }
   if (definition.kind === 'popular') {
+    // Si el comercio curó su vidriera, manda su selección y su orden. Se exige
+    // que sea COMPRABLE: recomendar en la primera pantalla algo agotado u
+    // oculto es mandar al cliente a una pared. Si el comercio ocultó un
+    // recomendado o se le acabó, la vidriera se acorta sola y sigue siendo
+    // verdadera.
+    const curados = products.filter((product) => (
+      recommendedRank(product) !== null && isPurchasableBeverageProduct(product)
+    ));
+    if (curados.length) return curados;
+    // Sin ninguno curado sigue en pie la selección heredada: no hay ventana en
+    // la que la home quede sin su primer carrusel.
     return products.filter((product) => product.popular === true && isVisibleBeverageProduct(product));
   }
   if (definition.kind === 'combos') {
@@ -202,8 +229,11 @@ export function buildBeverageHomeSections(
     : Number.MAX_SAFE_INTEGER;
 
   return BEVERAGE_HOME_SECTION_DEFINITIONS.map((definition) => {
+    // La vidriera curada respeta el orden que eligió el comercio; todo lo demás
+    // sigue ordenándose por prioridad comercial.
+    const comparador = definition.kind === 'popular' ? compareRecommended : compareBeverageProducts;
     const sectionProducts = productsForSection(definition, catalog, promotionKeys)
-      .sort(compareBeverageProducts)
+      .sort(comparador)
       .slice(0, safeLimit);
     return {
       id: definition.id,

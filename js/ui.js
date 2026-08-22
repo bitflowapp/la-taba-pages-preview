@@ -12,7 +12,7 @@ import {
   getRememberedCheckoutValues,
 } from './core/customer-profile.js';
 import { getFavoriteProductIds, isFavoriteProduct } from './core/customer-preferences.js';
-import { cardPresentationLine } from './core/product-presentation.js';
+import { cardPresentationLine, formatCapacity } from './core/product-presentation.js';
 import {
   PRICE_PENDING_DETAIL,
   PRICE_PENDING_TITLE,
@@ -470,8 +470,48 @@ export function productPriceLabel(product) {
   return pricingLabel(productPricePresentation(product));
 }
 
+/**
+ * La presentación de un producto, EN TODAS LAS SUPERFICIES QUE NO SON LA GRILLA:
+ * carrito, ficha, variantes de la ficha, combos y recomendaciones.
+ *
+ * Antes devolvía `unitLabel`, que el repositorio arma pegando
+ * `presentation · capacity · packagingType` tal como vienen de la base. Medido
+ * en producción el 2026-08-22, eso ponía en pantalla:
+ *
+ *   carrito .... «Original · 2250 ml · botella-pet»
+ *   ficha ...... «Botella PET · 500 ml · Pack x12 · 500 ml · Botella PET»
+ *
+ * O sea el slug de la base y la misma información repetida, justo en las dos
+ * pantallas donde el cliente decide pagar. La grilla ya decía «2,25 L ·
+ * Original» y «Pack x12 · 500 ml» desde v81: la regla estaba escrita y sólo
+ * faltaba que estas superficies la usaran.
+ *
+ * `unitLabel` queda como respaldo para catálogos sin campos estructurados
+ * (la demostración), donde el helper no tiene con qué construir la línea.
+ */
 function unitText(product) {
-  return product.unitLabel || product.unit || '';
+  return cardPresentationLine(product) || product.unitLabel || product.unit || '';
+}
+
+/**
+ * La descripción, sólo cuando dice algo que la presentación no dijo.
+ *
+ * Los cuatro packs previos traen `description = 'Botella PET · 500 ml · Pack
+ * x12'`: no es una descripción, es la ficha técnica escrita de nuevo. En la
+ * ficha quedaba debajo del nombre repitiendo el renglón de arriba. Las 29
+ * descripciones reales del catálogo («Coca-Cola en botella PET de 2,25 L.») no
+ * se tocan: sólo se calla la que repite.
+ */
+function descriptionText(product) {
+  const description = String(product?.description || '').trim();
+  if (!description) return '';
+  const comparable = (value) => normalizeSearchText(String(value || '')).replace(/[^a-z0-9]/g, '');
+  const descripcion = comparable(description);
+  if (!descripcion) return '';
+  for (const candidato of [unitText(product), product?.variant, product?.presentation, product?.unitLabel]) {
+    if (candidato && comparable(candidato) === descripcion) return '';
+  }
+  return description;
 }
 
 /**
@@ -794,12 +834,9 @@ function homeProductImage(product, className) {
 }
 
 function homeCapacityText(product) {
-  const value = Number(product.capacityValue);
-  const unit = String(product.capacityUnit || '').toLowerCase();
-  if (Number.isFinite(value) && value > 0 && unit) {
-    const formatted = Number.isInteger(value) ? String(value) : String(value).replace('.', ',');
-    return `${formatted} ${unit === 'l' ? 'L' : unit}`;
-  }
+  // Mismo formateo que la góndola: 1500 ml se dice «1,5 L», no «1500 ml».
+  const capacidad = formatCapacity(product.capacityValue, product.capacityUnit);
+  if (capacidad) return capacidad;
   return unitText(product).replace(/^(?:botella|lata)\s+/i, '');
 }
 
@@ -4013,7 +4050,7 @@ export function showProductModal(productId, restoreTrigger = null) {
       <div class="modal-product-copy">
         <span class="modal-presentation">${escapeHtml(unitText(product))}</span>
         <h2>${escapeHtml(product.name)}</h2>
-        ${product.description ? `<p>${escapeHtml(product.description)}</p>` : ''}
+        ${descriptionText(product) ? `<p>${escapeHtml(descriptionText(product))}</p>` : ''}
         <div class="modal-commerce-row">
           <div class="modal-price">
             ${isPricePending(product)

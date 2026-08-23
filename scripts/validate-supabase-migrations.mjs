@@ -24,7 +24,32 @@ export function reviewMigrations(directory = DIR) {
     if (!match) issues.push(issue('error', file, 'Nombre inválido; usar YYYYMMDDHHMMSS_descripcion.sql.'));
     if (match && timestamps.has(match[1])) issues.push(issue('error', file, 'Timestamp de migración duplicado.'));
     if (match) timestamps.add(match[1]);
-    return `\n-- FILE ${file}\n${fs.readFileSync(path.join(directory, file), 'utf8')}`;
+
+    /*
+     * El BOM de UTF-8 al principio del archivo. Un editor de Windows lo pone
+     * solo y no se ve en ningún diff, pero Postgres no lo perdona: el primer
+     * statement empieza con un carácter que no es SQL y la migración muere con
+     *
+     *     ERROR: syntax error at or near "﻿" (SQLSTATE 42601)
+     *     At statement: 0
+     *
+     * Pasó el 2026-08-23 con `20260807155000_rider_map_location_contract_
+     * reconciliation.sql`: se aplicaron 112 migraciones y se cayó en ésa, sin
+     * llegar a las 162 aserciones pgTAP ni al simulacro de restauración. Leer
+     * el archivo con `utf8` lo esconde —JavaScript lo deja pasar como un
+     * carácter invisible más—, así que se mira el byte crudo.
+     */
+    const crudo = fs.readFileSync(path.join(directory, file));
+    if (crudo[0] === 0xEF && crudo[1] === 0xBB && crudo[2] === 0xBF) {
+      issues.push(issue(
+        'error',
+        file,
+        'Empieza con BOM de UTF-8: Postgres lo lee como un carácter fuera de lugar y aborta '
+        + 'la migración con «syntax error at or near». Guardar el archivo como UTF-8 sin BOM.',
+      ));
+    }
+
+    return `\n-- FILE ${file}\n${crudo.toString('utf8')}`;
   }).join('\n');
 
   const normalized = stripSqlComments(combined).toLowerCase();

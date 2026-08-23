@@ -104,6 +104,42 @@ paso de CI se ponga verde.
 La compuerta estricta no se tocó: `npm run verify` y `npm run release:folder`
 la siguen corriendo con sus dientes puestos.
 
+## 4 · Una migración empezaba con BOM de UTF-8
+
+Este no estaba en el encargo: **apareció al reparar el 1**. Mientras el config no
+parseaba, el stack no arrancaba y las migraciones no se aplicaban nunca, así que
+el defecto llevaba días tapado.
+
+**Después de reparar el 1**, el job llegó a aplicar 112 migraciones y murió en la
+113:
+
+```
+Applying migration 20260807155000_rider_map_location_contract_reconciliation.sql...
+ERROR: syntax error at or near "﻿" (SQLSTATE 42601)
+At statement: 0
+﻿-- ============================================================================
+^
+```
+
+Ese `﻿` es el BOM de UTF-8 (`EF BB BF`). Un editor de Windows lo pone solo, no se
+ve en ningún diff, y Postgres lo lee como un carácter fuera de lugar antes del
+primer statement. Costó igual que el anterior: ni las 162 aserciones pgTAP ni el
+simulacro de restauración llegaron a correr.
+
+**Archivos afectados** (los dos únicos del repositorio):
+
+| archivo | rol |
+|---|---|
+| `supabase/migrations/20260807155000_rider_map_location_contract_reconciliation.sql` | el que mató la corrida |
+| `supabase/tests/order_intake_dispatch_audit.local.sql` | prueba pgTAP; habría muerto igual al correrla |
+
+**Fix** · Quitar los tres bytes. El contenido queda intacto (19.713 → 19.710 y
+17.960 → 17.957 bytes).
+
+**Guardia** · `npm run migrations:validate` mira el byte crudo de cada `.sql`
+—leerlo como `utf8` esconde el BOM como un carácter invisible— y rechaza con un
+error que dice cómo arreglarlo. Corre en CI antes del job caro, y tarda segundos.
+
 ## 3 · `panel-timestamp-unambiguous` dependía del huso del runner
 
 **Antes**, con el contenedor en UTC:
@@ -135,7 +171,7 @@ calendario y no por la ambigüedad de 12 horas que se estaba demostrando.
 | comprobación | resultado |
 |---|---|
 | `npm run check` | verde |
-| `npm test` | 2079/2079, contenedor en UTC |
+| `npm test` | 2082/2082, contenedor en UTC |
 | `npm run migrations:validate` | verde |
 | `npm run catalog:images:verify` | verde |
 | `npm run catalog:release:ci` | verde, declarando que la compuerta no corrió |
@@ -143,6 +179,7 @@ calendario y no por la ambigüedad de 12 horas que se estaba demostrando.
 | `npm audit --omit=dev` (raíz y fiscal) | 0 vulnerabilidades |
 | `fiscal:build` + `fiscal:test` | 22/22 |
 | `npm run test:webhook` | 12/12 |
+| `npm run migrations:validate` con BOM inyectado | rechaza, como debe |
 | `supabase start` con el CLI 2.101.0 | pasa el parseo |
 
 `npm run test:e2e` no se pudo correr en el contenedor de trabajo: necesita

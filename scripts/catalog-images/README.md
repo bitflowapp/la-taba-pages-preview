@@ -6,14 +6,15 @@ producto, sin publicar nunca una que no corresponda o que no se pueda publicar.
 ## El flujo
 
 ```
-snapshot -> discover -> stage -> [MIRAR] -> approve
-         -> fetch -> normalize -> verify
-         -> manifest -> sheet -> package-scan -> sql
+snapshot -> audit -> discover -> stage -> [MIRAR] -> approve
+                  -> fetch -> normalize -> verify
+                  -> manifest -> sheet -> package-scan -> sql
 ```
 
 | paso | comando | qué hace |
 |---|---|---|
 | 1 | `npm run catalog:images:snapshot` | fotografía el catálogo productivo, sólo lectura |
+| 1b | `npm run catalog:images:audit` | mapa SKU → imagen de la góndola comprable: REAL / FALLBACK / INCORRECTA / AUSENTE |
 | 2 | `npm run catalog:images:discover` | cosecha las fuentes permitidas y puntúa cada candidato |
 | 3 | `npm run catalog:images:stage` | baja los ALTA, calcula su SHA-256 y los anota EN REVISIÓN |
 | 4 | — | **una persona abre las imágenes y las mira** |
@@ -31,6 +32,15 @@ snapshot -> discover -> stage -> [MIRAR] -> approve
 **1. La cantidad del pack nunca se aproxima.** Un packshot de doce no ilustra una
 unidad suelta. Es el único eje que rechaza siempre, sin degradar a revisión:
 le miente al cliente sobre lo que va a recibir.
+
+Y no es sólo el título: la tienda del embotellador estampa la cantidad ENCIMA de
+la foto, con un sello «x6» o «x12». Para el pack que sí trae esa cantidad el
+sello dice la verdad —los cuatro packs publicados vienen de ahí—; para una
+unidad suelta, no. Medido el 2026-08-23 sobre los 15 candidatos oficiales que
+corresponden a SKU visibles sin foto: los 15 traen sello y en los 15 el sello
+pisa el envase, así que tampoco se puede borrar sin repintar producto. La
+medición vive en `catalog/sello-de-pack-medicion.json`; se rehace con
+`npm run catalog:images:sello` y la mide `medir-sello-de-pack.mjs`.
 
 **2. La procedencia es parte de la identidad del activo.** Un host que no esté en
 `catalog/image-source-allowlist.json` no se descarga, y la lista se vuelve a
@@ -53,6 +63,8 @@ realmente quedó adentro.
 | `catalog/image-source-allowlist.json` | qué dominios pueden aportar una foto, y con qué tipo de fuente entra cada marca |
 | `catalog/autorizaciones-comerciales.json` | bajo qué autoridad se publica, y qué cubre |
 | `catalog/duplicados-explicados.json` | parecidos entre imágenes ya mirados y justificados |
+| `catalog/sello-de-pack-medicion.json` | el sello de cantidad de cada packshot oficial, medido |
+| `docs/catalog/gondola-publica-imagenes.csv` | qué muestra hoy cada SKU comprable, y por qué |
 | `catalog/PUBLIC-PRODUCT-ASSETS.json` | las únicas fotos de producto que el paquete puede copiar |
 | `catalog/production-catalog-snapshot.json` | el catálogo productivo, congelado para poder reproducir una revisión |
 | `docs/catalog/image-source-audit.csv` | la auditoría de fuentes, con su estado de revisión |

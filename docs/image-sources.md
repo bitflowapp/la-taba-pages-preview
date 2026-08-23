@@ -1,8 +1,30 @@
 # Fuentes y trazabilidad de imágenes
 
-TABA no tiene fotografías comerciales de productos aprobadas en este
-repositorio. No se publican imágenes de bebidas parecidas, reconstruidas con IA
-ni descargadas sin comprobar producto y derechos.
+No se publican imágenes de bebidas parecidas, reconstruidas con IA ni
+descargadas sin comprobar producto y derechos.
+
+## Estado al 2026-08-23
+
+De los 33 SKU que hoy se pueden comprar en la tienda pública, **3 muestran
+fotografía real** —los tres packs x12 con packshot oficial del embotellador— y
+**30 muestran el recurso propio de TABA**. Ninguno muestra un producto que no
+sea el suyo, y ninguno declara una ruta que no exista: 0 incorrectas, 0
+ausentes. El mapa completo, SKU por SKU, está en
+`docs/catalog/gondola-publica-imagenes.csv` y se regenera con
+`npm run catalog:images:audit`.
+
+Las 30 siguen en fallback por un motivo medido, no por falta de trabajo: la
+única fuente oficial alcanzable —la tienda del embotellador Coca-Cola Andina—
+es mayorista y publica 184 listados, **ninguno de una unidad suelta**. Su
+packshot es la foto de una sola botella, correcta y con fondo blanco, pero con
+un sello de cantidad («x6») estampado encima. Medidos los 15 candidatos que
+corresponderían a los SKU visibles sin foto, los 15 traen sello y en los 15 el
+sello **pisa el envase**, así que tampoco se puede quitar sin repintar
+producto. La medición está en `catalog/sello-de-pack-medicion.json`.
+
+Lo que lo destraba es una de dos cosas, y las dos son del comercio: un paquete
+de packshots sin sello provisto por la marca, o fotografía propia —la lista de
+tomas ya está en `catalog/photo-capture/PHOTO_CAPTURE_SHOT_LIST.csv`—.
 
 ## Placeholder de preview
 

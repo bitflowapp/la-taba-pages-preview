@@ -50,7 +50,18 @@
         "Benedictino",
         "Bonaqua",
         "Monster", "Cepita"],
-      "justificacion": "Coca-Cola Andina embotella y comercializa estas marcas en Argentina, y distribuye Monster. Es la tienda oficial del embotellador, no un retailer."
+      "justificacion": "Coca-Cola Andina embotella y comercializa estas marcas en Argentina, y distribuye Monster. Es la tienda oficial del embotellador, no un retailer.",
+      "soloPacks": {
+        "doc": "Esta tienda es mayorista: no publica NINGUNA unidad suelta, y su packshot es la foto de una sola botella con un sello de cantidad («x6», «x12») estampado encima. Para un SKU que se vende de a doce el sello dice la verdad y la foto sirve: los cuatro packs publicados salen justamente de ahí. Para una unidad suelta el mismo archivo promete seis botellas por el precio de una, así que no entra. Y no se puede limpiar: el sello PISA el envase.",
+        "medidoEl": "2026-08-23",
+        "listadosCosechados": 184,
+        "listadosDeUnidadSuelta": 0,
+        "packshotsMedidos": 15,
+        "packshotsConSelloQuePisaElEnvase": 15,
+        "evidencia": "catalog/sello-de-pack-medicion.json",
+        "comoSeMide": "scripts/catalog-images/medir-sello-de-pack.mjs · relevar con scripts/catalog-images/relevar-sello-de-pack.mjs",
+        "consecuencia": "Las unidades sueltas de estas marcas se quedan con el recurso propio de TABA hasta que haya fotografía propia o un paquete de packshots sin sello provisto por la marca."
+      }
     },
     {
       "id": "penaflor-por-andina",

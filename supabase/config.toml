@@ -102,7 +102,14 @@ openai_api_key = "env(OPENAI_API_KEY)"
 
 # Email testing server. Emails sent with the local dev setup are not actually sent - rather, they
 # are monitored, and you can view the emails that would have been sent from the web interface.
-[local_smtp]
+#
+# La sección se llama `inbucket`, y no `local_smtp`, porque ése es el nombre que
+# entiende el CLI que este repositorio fija (`SUPABASE_CLI_VERSION` en
+# .github/workflows/ci.yml). Con el otro nombre el CLI no llega a arrancar: falla
+# al parsear el archivo —«'config.config' has invalid keys: local_smtp»— y con él
+# se cae el job entero de migraciones y pgTAP, sin haber corrido una sola prueba.
+# Lo comprueba `scripts/check-supabase-config.mjs`, que corre en `npm run check`.
+[inbucket]
 enabled = true
 # Port to use for the email testing server web interface.
 port = 54324

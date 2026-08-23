@@ -1,4 +1,4 @@
-﻿-- MEDICION del circuito de intake y despacho tal como esta hoy.
+-- MEDICION del circuito de intake y despacho tal como esta hoy.
 -- No corrige nada: observa y reporta. Corre sobre base efimera con todas las
 -- migraciones. Cada bloque imprime evidencia con RAISE NOTICE.
 --

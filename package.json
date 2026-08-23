@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/check-syntax.mjs && node scripts/check-static-assets.mjs && node scripts/check-precache-graph.mjs && node scripts/check-release-hygiene.mjs && node scripts/check-release-identity.mjs && node scripts/check-location-contract.mjs && node scripts/scan-secrets.mjs",
+    "check": "node scripts/check-syntax.mjs && node scripts/check-supabase-config.mjs && node scripts/check-static-assets.mjs && node scripts/check-precache-graph.mjs && node scripts/check-release-hygiene.mjs && node scripts/check-release-identity.mjs && node scripts/check-location-contract.mjs && node scripts/scan-secrets.mjs",
     "location:check": "node scripts/check-location-contract.mjs",
+    "supabase:config:check": "node scripts/check-supabase-config.mjs",
     "location:delivery:db": "node scripts/verify-delivery-location-db.mjs",
     "vendor:build": "node scripts/build-supabase-vendor.mjs",
     "test": "node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/*.test.mjs",
@@ -89,6 +90,7 @@
     "catalog:images:preflight": "node scripts/catalog-images/preflight-association.mjs",
     "catalog:images:live": "node scripts/catalog-images/verify-live-packshots.mjs",
     "catalog:release:validate": "node scripts/validate-release-catalog.mjs",
+    "catalog:release:ci": "node scripts/ci-catalog-release-gate.mjs",
     "staging:validate": "node scripts/validate-staging-readiness.mjs",
     "realtime:demo": "node scripts/realtime-relay.mjs",
     "desktop:assets": "node scripts/build-desktop-assets.mjs",
@@ -107,10 +109,11 @@
     "e2e:production-sale:dry": "node scripts/e2e-production-sale/index.mjs",
     "e2e:production-sale": "node scripts/e2e-production-sale/index.mjs",
     "e2e:production-sale:auto": "node scripts/e2e-production-sale/auto.mjs",
-    "e2e:provision:panel": "node scripts/e2e-production-sale/provisionar-identidad-panel.mjs"
+    "e2e:provision:panel": "node scripts/e2e-production-sale/provisionar-identidad-panel.mjs",
+    "deps:pinned:check": "node scripts/check-node-modules-pinned.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0",
+    "@playwright/test": "1.60.0",
     "@tauri-apps/cli": "2.11.4",
     "esbuild": "0.28.1",
     "sharp": "0.35.3"

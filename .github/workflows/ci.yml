@@ -68,8 +68,17 @@ jobs:
           npm run migrations:validate
           npm run catalog:images:verify
 
-      - name: Commercial catalog gate
-        run: npm run catalog:release:validate
+      # La compuerta estricta (`catalog:release:validate`) falla cerrado cuando no
+      # le indican un catálogo comercial aprobado, y ese archivo no vive en el
+      # repositorio: se indica en el momento del release. Corrida a secas acá no
+      # podía pasar nunca, y como este workflow gobierna `main`, no podía pasar
+      # ninguna rama. El envoltorio corre la compuerta cuando hay catálogo, falla
+      # si la variable está mal escrita, y cuando no hay dice en voz alta que no
+      # corrió en vez de fingir que sí.
+      - name: Commercial catalog gate (cuando hay catálogo de release)
+        env:
+          TABA_CATALOG_FILE: ${{ vars.TABA_CATALOG_FILE }}
+        run: npm run catalog:release:ci
 
       - name: Secret scan
         run: npm run secrets:scan
@@ -89,6 +98,17 @@ jobs:
 
       - name: Mercado Pago webhook signature tests
         run: npm run test:webhook
+
+      # Entre el paso de arriba y el E2E, porque justamente ahí se rompía: Deno
+      # corría con `--node-modules-dir=auto`, resolvía los RANGOS de package.json
+      # contra el registro —el lockfile no lo lee— y pisaba @playwright/test
+      # 1.60.0 con 1.62.1, sin que npm se enterara. El paso de instalación había
+      # bajado los navegadores del 1.60.0 (chromium-headless-shell v1223, webkit
+      # v2287) y el que corría pedía otros (1234, 2336): 460 de 462 pruebas
+      # muertas con «Executable doesn't exist», ocho minutos después y en un paso
+      # que no tiene nada que ver. La causa está reparada; esto es la guardia.
+      - name: Locked dependencies still match the lockfile
+        run: npm run deps:pinned:check
 
       - name: Full browser E2E
         id: e2e

@@ -1,9 +1,20 @@
 # Reparación del baseline de CI · 2026-08-23
 
 Tres defectos preexistentes en `main` dejaban CI rojo en **todas** las ramas.
-Ninguno era de producto. Este documento guarda la evidencia de que existían y de
-que dejaron de existir, para que la reparación se pueda auditar sin creerle a
-nadie.
+Al repararlos aparecieron otros dos que estaban tapados detrás: mientras el job
+moría en el paso 6 o en el 9, los pasos de más abajo no llegaban a correr, y lo
+que estaba roto ahí no se veía. **Cinco en total.** Ninguno era de producto.
+
+Este documento guarda la evidencia de que existían y de que dejaron de existir,
+para que la reparación se pueda auditar sin creerle a nadie.
+
+| # | defecto | job | lo tapaba |
+|---|---|---|---|
+| 1 | `supabase start` no parseaba `config.toml` | migraciones | — (del encargo) |
+| 2 | el Commercial catalog gate no podía pasar nunca | web | — (del encargo) |
+| 3 | `panel-timestamp-unambiguous` leía el huso del runner | web | — (del encargo) |
+| 4 | una migración empezaba con BOM de UTF-8 | migraciones | el 1 |
+| 5 | Deno reinstalaba `node_modules` y rompía el E2E | web | el 2 |
 
 ## Cómo se reprodujo
 
@@ -104,6 +115,32 @@ paso de CI se ponga verde.
 La compuerta estricta no se tocó: `npm run verify` y `npm run release:folder`
 la siguen corriendo con sus dientes puestos.
 
+## 3 · `panel-timestamp-unambiguous` dependía del huso del runner
+
+**Antes**, con el contenedor en UTC:
+
+```
+not ok 1 - el defecto de es-AR realmente confundía las dos horas
+  + actual - expected
+  + '13/8/2026, 12:30:00'
+  - '12/8/2026, 12:30:00'
+```
+
+**Raíz** · El control formateaba sin declarar zona, así que leía la del aparato.
+Los dos instantes de la prueba —21:30 y 09:30 de Argentina— caen el mismo día en
+Argentina y en días distintos en UTC, de modo que los textos diferían por el
+calendario y no por la ambigüedad de 12 horas que se estaba demostrando.
+
+**Después** · Corrida bajo cinco husos:
+
+| TZ | resultado |
+|---|---|
+| `UTC` | 5/5 |
+| `America/Argentina/Buenos_Aires` | 5/5 |
+| `Pacific/Auckland` | 5/5 |
+| `America/Los_Angeles` | 5/5 |
+| `Asia/Kolkata` | 5/5 |
+
 ## 4 · Una migración empezaba con BOM de UTF-8
 
 Este no estaba en el encargo: **apareció al reparar el 1**. Mientras el config no
@@ -140,31 +177,105 @@ simulacro de restauración llegaron a correr.
 —leerlo como `utf8` esconde el BOM como un carácter invisible— y rechaza con un
 error que dice cómo arreglarlo. Corre en CI antes del job caro, y tarda segundos.
 
-## 3 · `panel-timestamp-unambiguous` dependía del huso del runner
+## 5 · Deno reinstalaba `node_modules` y el E2E se quedaba sin navegadores
 
-**Antes**, con el contenedor en UTC:
+Este tampoco estaba en el encargo: **apareció al reparar el 2**. Mientras el
+Commercial catalog gate fallaba en el paso 9, el job no llegaba nunca al 15, así
+que el E2E llevaba días sin ejecutarse y nadie sabía cómo estaba.
+
+Con el gate destrabado corrió por primera vez y perdió **460 de 462** pruebas,
+todas con el mismo mensaje (corrida 32653485259, y otra vez en la 32653901067):
 
 ```
-not ok 1 - el defecto de es-AR realmente confundía las dos horas
-  + actual - expected
-  + '13/8/2026, 12:30:00'
-  - '12/8/2026, 12:30:00'
+Error: browserType.launch: Executable doesn't exist at
+  <cache de Playwright del runner>/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell
+Executable doesn't exist at
+  <cache de Playwright del runner>/webkit-2336/pw_run.sh
 ```
 
-**Raíz** · El control formateaba sin declarar zona, así que leía la del aparato.
-Los dos instantes de la prueba —21:30 y 09:30 de Argentina— caen el mismo día en
-Argentina y en días distintos en UTC, de modo que los textos diferían por el
-calendario y no por la ambigüedad de 12 horas que se estaba demostrando.
+358 fallas de Chromium y 102 de WebKit. Pero el paso que descarga navegadores
+había terminado **en verde**, seis pasos antes:
 
-**Después** · Corrida bajo cinco husos:
+```
+Chrome Headless Shell 148.0.7778.96 (playwright chromium-headless-shell v1223) downloaded to .../chromium_headless_shell-1223
+WebKit 26.4 (playwright webkit v2287) downloaded to .../webkit-2287
+```
 
-| TZ | resultado |
-|---|---|
-| `UTC` | 5/5 |
-| `America/Argentina/Buenos_Aires` | 5/5 |
-| `Pacific/Auckland` | 5/5 |
-| `America/Los_Angeles` | 5/5 |
-| `Asia/Kolkata` | 5/5 |
+1223 contra 1234. 2287 contra 2336. No faltaban navegadores: eran los de **otra
+versión de Playwright**. Entre un paso y el otro `node_modules` cambió.
+
+**Causa raíz** · El paso 14, `npm run test:webhook`, corría Deno con
+`--node-modules-dir=auto`. Con esa bandera Deno ve el `package.json` de la raíz,
+lo trata como proyecto Node y materializa `node_modules` resolviendo los
+**rangos** de ese archivo contra el registro; el `package-lock.json` no lo lee.
+`@playwright/test: ^1.60.0` resolvía a 1.62.1 y pisaba el 1.60.0 que `npm ci`
+había instalado en el paso 4. En el log del paso 14:
+
+```
+Initialize playwright@1.62.1
+Initialize @playwright/test@1.62.1
+Initialize playwright-core@1.62.1
+```
+
+**Por qué nadie lo vio** · npm no se entera. Reproducido en este contenedor:
+
+```
+$ npm ci && node -p "require('./node_modules/@playwright/test/package.json').version"
+1.60.0
+$ npm run test:webhook            # sale 0: 22 pruebas Deno + 12 Node, todas verdes
+$ node -p "require('./node_modules/@playwright/test/package.json').version"
+1.62.1
+$ diff <(...node_modules/.package-lock.json antes) <(... después)
+cambiados=0 agregados=0 quitados=0
+```
+
+La contabilidad de npm sigue diciendo 1.60.0 con 1.62.1 en el disco. El paso que
+rompe termina en verde, y el síntoma aparece ocho minutos después en un paso que
+no habla de webhooks, disfrazado de «falta un navegador».
+
+**Fix** · `--node-modules-dir=none`. Esas pruebas no necesitan nada del árbol de
+npm: su única dependencia npm es `npm:mercadopago@3.2.1`, con la versión clavada
+en el propio especificador, y Deno la resuelve de su caché global. Con `none`
+corren las 22 igual y no tocan un archivo:
+
+```
+$ npm ci && npm run test:webhook
+ok | 22 passed | 0 failed (652ms)
+# pass 12  # fail 0
+$ node -p "require('./node_modules/@playwright/test/package.json').version"
+1.60.0
+$ node scripts/check-node-modules-pinned.mjs
+node_modules coincide con package-lock.json: 27 paquetes comprobados.
+```
+
+**Fix 2, por si vuelve por otro lado** · `@playwright/test` era la única
+dependencia declarada con rango. Pasa a `1.60.0` exacto: la versión instalada no
+cambia —el lockfile ya la fijaba— pero deja de haber margen para que alguna
+herramienta que re-resuelva se lleve otra, y con Playwright otra versión son
+otros navegadores.
+
+**Guardia** · `scripts/check-node-modules-pinned.mjs` compara la versión **en
+disco** de cada paquete instalado contra la que fija el lockfile. Corre en CI
+entre el paso 14 y el 15 —después de lo que pisaba, antes de lo que se rompía—.
+Sobre el árbol pisado dice:
+
+```
+node_modules NO coincide con package-lock.json.
+
+  node_modules/@playwright/test
+    lockfile: 1.60.0
+    en disco: 1.62.1
+```
+
+Los opcionales de otras plataformas (`@img/sharp-darwin-arm64` y compañía) no
+cuentan como falta: no se instalan acá a propósito.
+
+**Regresiones** · `tests/node-modules-fijado-para-el-e2e.test.mjs`, 7 pruebas:
+que el paso de Deno no lleve `auto`, que su única dependencia npm siga clavada en
+el import, que ninguna dependencia declare rango, que el Playwright en disco sea
+el del lockfile, que CI corra la guardia **entre** los dos pasos —el orden es el
+defecto—, y que la guardia acepte un árbol sano y rechace uno pisado diciendo
+`npm ci`.
 
 ## Verificación local de la rama reparada
 
@@ -182,7 +293,25 @@ calendario y no por la ambigüedad de 12 horas que se estaba demostrando.
 | `npm run migrations:validate` con BOM inyectado | rechaza, como debe |
 | `supabase start` con el CLI 2.101.0 | pasa el parseo |
 
+| `npm run deps:pinned:check` | verde, 27 paquetes comprobados |
+| `npm run deps:pinned:check` con el árbol pisado | rechaza, nombrando el paquete y las dos versiones |
+
 `npm run test:e2e` no se pudo correr en el contenedor de trabajo: necesita
 webkit, y sólo hay un Chromium de build distinto al que fija Playwright. Ese
 paso lo verifica CI, que además ahora lo corre de verdad: con el gate destrabado
 dejó de quedar *skipped*.
+
+Lo que sí se pudo comprobar acá sobre el defecto 5 es su causa entera —el
+pisotón, que npm no lo registre, que `none` lo evite y que la guardia lo
+atrape—, que es lo que decide si el E2E encuentra sus navegadores.
+
+## Estado de los jobs
+
+Corrida 32653901067, sobre `1789533` (los defectos 1 a 4 reparados, el 5 todavía
+no):
+
+| job | resultado |
+|---|---|
+| Migrations, pgTAP and isolated restore | **verde** — 1 y 4 reparados: aplicó todas las migraciones, corrió las 162 aserciones y el simulacro de restauración |
+| Windows Rust and unsigned verification bundles | **verde** |
+| Web, backend, fiscal and security gates | pasos 1–14 verdes (2 y 3 reparados), rojo en el 15 por el defecto 5 |

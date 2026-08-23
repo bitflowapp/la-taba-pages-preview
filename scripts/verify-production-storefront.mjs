@@ -46,10 +46,17 @@ for (const nombre of ['Coca-Cola Original', 'Coca-Cola Zero', 'Sprite', 'Fanta N
 medir('se ven los cuatro precios autorizados', texto.includes('17.100') && texto.includes('19.999'), texto.includes('Precio pendiente') ? 'dice Precio pendiente' : '');
 
 // 3 · las tarjetas sin foto se ven dignas
+// Cuantas tarjetas llevan foto y cuantas el recurso propio de TABA es un dato
+// del catalogo, no una constante: el dia que se publique un packshot mas, este
+// numero cambia sin que nada este mal. Lo que si tiene que valer siempre es que
+// cada tarjeta caiga de un lado o del otro, y ninguna quede sin ninguno de los
+// dos. Que muestre la foto de SU producto lo mide
+// scripts/verificar-imagenes-en-vivo.mjs, contra la auditoria versionada.
 const placeholders = await page.locator('.thumb.uses-placeholder').count();
 const conFoto = await page.locator('.thumb.has-photo').count();
-medir('todas las tarjetas usan el recurso propio de TABA', placeholders > 0 && conFoto === 0,
-  `placeholder ${placeholders} · con foto ${conFoto}`);
+medir('cada tarjeta declara si lleva foto o el recurso propio de TABA',
+  placeholders + conFoto === tarjetas,
+  `placeholder ${placeholders} · con foto ${conFoto} · tarjetas ${tarjetas}`);
 
 const rotas = await page.evaluate(() => [...document.querySelectorAll('img')]
   .filter((i) => i.complete && i.naturalWidth === 0)

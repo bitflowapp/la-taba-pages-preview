@@ -1,9 +1,10 @@
 # Reparación del baseline de CI · 2026-08-23
 
 Tres defectos preexistentes en `main` dejaban CI rojo en **todas** las ramas.
-Al repararlos aparecieron otros dos que estaban tapados detrás: mientras el job
-moría en el paso 6 o en el 9, los pasos de más abajo no llegaban a correr, y lo
-que estaba roto ahí no se veía. **Cinco en total.** Ninguno era de producto.
+Al repararlos aparecieron otros cuatro que estaban tapados detrás: mientras el
+job moría en el paso 6 o en el 9, los pasos de más abajo no llegaban a correr, y
+lo que estaba roto ahí no se veía. **Siete en total**, en cascada: cada
+reparación destapaba la siguiente.
 
 Este documento guarda la evidencia de que existían y de que dejaron de existir,
 para que la reparación se pueda auditar sin creerle a nadie.
@@ -15,6 +16,11 @@ para que la reparación se pueda auditar sin creerle a nadie.
 | 3 | `panel-timestamp-unambiguous` leía el huso del runner | web | — (del encargo) |
 | 4 | una migración empezaba con BOM de UTF-8 | migraciones | el 1 |
 | 5 | Deno reinstalaba `node_modules` y rompía el E2E | web | el 2 |
+| 6 | el arnés del aviso de PWA no declaraba `meta viewport` | web (E2E) | el 2 y el 5 |
+| 7 | «Volver al Rider» pisaba el recentrado a 320 px | web (E2E) | el 2 y el 5 |
+
+Los defectos 6 y 7 sólo se pudieron ver cuando el E2E llegó a **correr**: con el
+5 sin reparar, las 462 pruebas morían antes de abrir un navegador.
 
 ## Cómo se reprodujo
 
@@ -277,6 +283,117 @@ el del lockfile, que CI corra la guardia **entre** los dos pasos —el orden es 
 defecto—, y que la guardia acepte un árbol sano y rechace uno pisado diciendo
 `npm ci`.
 
+## 6 · El arnés del aviso de PWA maquetaba 980 px, no 390
+
+Con el 5 reparado, el E2E corrió entero por primera vez: **460 de 462**. Las dos
+que quedaron son estas.
+
+```
+Error: el aviso se superpone al control: por eso tiene que poder cerrarse
+Expected: "aviso"
+Received: "control"
+  tests/e2e/pwa-update-lifecycle.spec.mjs:232
+```
+
+La prueba afirma que el aviso de actualización TAPA el botón «Agregar» —esa es
+la premisa de por qué el aviso tiene que poder cerrarse: le pasó a una persona
+de verdad—. En el runner no lo tapaba.
+
+**Causa raíz** · El arnés arma su propia página y le pide a Playwright un
+contexto con `viewport: 390×664` e `isMobile: true`. Pero esa página **no
+declara `meta viewport`**, y sin él Chromium en emulación móvil no maqueta a
+390: cae a su ancho por defecto de 980 px y escala. El «viewport de iPhone 13»
+que la prueba dice usar no existía dentro de la página.
+
+Medido en este contenedor, con la misma página y las dos variantes:
+
+| | ancho de maquetado | alto del aviso | y del aviso | centro del control | veredicto |
+|---|---|---|---|---|---|
+| sin `meta viewport` (como estaba) | **980×1668** | 47 px | 1538 | **1537** | `control` |
+| con `meta viewport` | **390×664** | 80 px | 500 | 532 | `aviso` |
+
+Un píxel, y del lado equivocado. A 980 px de maquetado el texto del aviso entra
+en UNA línea, así que el aviso mide 47 px en vez de 80 y su borde superior cae
+justo por debajo del centro del botón. Lo decidían las métricas de la tipografía
+del aparato: donde el texto envolvía a dos líneas el aviso tapaba y la prueba
+pasaba; en el runner no envolvía.
+
+**Fix** · Declarar en el arnés el MISMO `meta viewport` que sirve `index.html`.
+Con él la página maqueta 390×664 de verdad y la prueba mide lo que dice medir.
+
+**Comprobado** · Con el arnés sin el meta, la prueba falla acá con el mismo
+mensaje que en CI. Con el meta, las 5 del archivo pasan.
+
+## 7 · «Volver al Rider» pisaba el botón de recentrado a 320 px
+
+```
+Error: 320px: el CTA no pisa el recentrado
+Expected: <= 243
+Received:    244
+  tests/e2e/tracking-follow-mode.spec.mjs:167
+```
+
+Un píxel otra vez, y otra vez la tipografía. La píldora «Volver al Rider» mide
+**170 px en este contenedor y 186 en el runner**: `system-ui` resuelve a fuentes
+distintas y el mismo texto ocupa 16 px más. El diseño tenía 6 px de margen.
+
+**Debajo del margen había un error de aritmética.** La píldora va CENTRADA sobre
+el escenario, así que cada píxel que ocupa el control de la esquina hay que
+reservarlo **dos veces**, uno de cada lado. El recentrado mide hasta 48 px y
+vive a 15 del borde —63—, y `max-width` reservaba `100% - 118px`: menos que 63,
+y menos aún que 126.
+
+Medido con el marcado y el CSS reales, antes:
+
+| caso | ancho de la píldora | holgura contra el recentrado | derrame |
+|---|---|---|---|
+| etiqueta real, tipografía de acá | 170 px | +14 px | — |
+| etiqueta real, tipografía del runner | ~186 px | **−2 px** | — |
+| etiqueta larga (clamp actuando) | 200 px | **+1 px de invasión** | **419 px de contenido en una caja de 200** |
+
+La última fila es la peor: cuando el clamp SÍ actuaba, `white-space: nowrap` sin
+`overflow` hacía que las letras cruzaran por encima del recentrado mientras la
+caja —lo que mide una prueba— juraba que no lo tocaba. Una prueba que mide la
+caja habría dado verde sobre eso.
+
+**Fix**, en tres capas:
+
+1. `max-width: calc(100% - 126px)` — el doble de la huella real del recentrado
+   (15 + 48), que es lo que exige estar centrado. Hace que la invariante valga
+   por construcción, sin depender de la tipografía.
+2. El texto se recorta DENTRO de la píldora (`overflow: hidden`,
+   `text-overflow: ellipsis`, `min-width: 0` para que el ítem flex pueda
+   encogerse). El modo de falla deja de ser «tapar el control».
+3. A ≤ 400 px la píldora se ajusta el cinturón —padding, gap, ícono y cuerpo—
+   para que la etiqueta entera entre sin recortarse en los anchos que el gate
+   recorre. Lo de arriba es la garantía; esto es para que no haga falta usarla.
+
+Medido después, con el marcado y el CSS reales, en las cuatro anchuras del gate:
+
+| anchura | etiqueta real | tipografía más ancha | etiqueta imposible |
+|---|---|---|---|
+| 320 px | +20,8 px | +12,6 px | +3 px |
+| 360 px | +40,8 px | +32,6 px | +3 px |
+| 390 px | +55,8 px | +47,6 px | +3 px |
+| 432 px | +70,0 px | +62,8 px | +3 px |
+
+Holgura positiva en los doce casos y derrame cero en todos. Antes, el peor caso
+real era −2.
+
+**Guardia** · `tests/mapa-pildora-no-pisa-el-recentrado.test.mjs` comprueba la
+ARITMÉTICA, no el píxel: que la reserva cubra dos veces la mayor huella
+declarada del recentrado —la hoja lo redefine cuatro veces y cuál gana depende
+del estado del pedido, así que se toma el peor—, que la píldora siga centrada
+(que es lo que obliga al doble), y que el recorte y el bloque angosto sigan
+puestos. Corre en segundos; el píxel lo sigue midiendo el E2E.
+
+**Identidad de release** · Cambiar `styles/tracking.css` obliga a rotar
+`CACHE_NAME` y el `?v=` de los archivos que lo llevan, y a volver a firmar. Es
+la disciplina del repositorio para que la corrección llegue a las instalaciones
+existentes sin que nadie borre nada:
+`la-taba-runtime-v84-recepcion-idempotente` → `la-taba-runtime-v85-pildora-del-mapa`,
+`?v=52` → `?v=53`.
+
 ## Verificación local de la rama reparada
 
 | comprobación | resultado |
@@ -295,23 +412,38 @@ defecto—, y que la guardia acepte un árbol sano y rechace uno pisado diciendo
 
 | `npm run deps:pinned:check` | verde, 27 paquetes comprobados |
 | `npm run deps:pinned:check` con el árbol pisado | rechaza, nombrando el paquete y las dos versiones |
+| `npm run check` (identidad de release) | verde tras rotar `CACHE_NAME` y `?v=` |
+| `pwa-update-lifecycle.spec.mjs` en Chromium local | 5/5 con el fix; sin él falla con el mensaje de CI |
+| geometría de la píldora del mapa, 4 anchuras × 3 tipografías | holgura positiva en 12/12, derrame 0 |
 
-`npm run test:e2e` no se pudo correr en el contenedor de trabajo: necesita
-webkit, y sólo hay un Chromium de build distinto al que fija Playwright. Ese
-paso lo verifica CI, que además ahora lo corre de verdad: con el gate destrabado
-dejó de quedar *skipped*.
+El E2E completo no se pudo correr en el contenedor de trabajo: necesita webkit,
+y sólo hay un Chromium de build distinto al que fija Playwright. Sí se corrieron
+specs sueltos apuntando ese Chromium, y el mapa del defecto 7 no dibuja acá —sin
+red para los tiles, el botón de recentrado ni siquiera existe—, así que esa
+geometría se midió con el marcado y el CSS reales en vez de a través del test.
 
-Lo que sí se pudo comprobar acá sobre el defecto 5 es su causa entera —el
-pisotón, que npm no lo registre, que `none` lo evite y que la guardia lo
-atrape—, que es lo que decide si el E2E encuentra sus navegadores.
+Lo que sí se comprobó acá, entero: la causa del 5 —el pisotón, que npm no lo
+registre, que `none` lo evite y que la guardia lo atrape—, el 6 reproducido y
+cerrado sobre el test real, y la invariante del 7 en las cuatro anchuras del
+gate bajo tres tipografías.
 
 ## Estado de los jobs
 
-Corrida 32653901067, sobre `1789533` (los defectos 1 a 4 reparados, el 5 todavía
-no):
+Corrida **32653901067**, sobre `1789533` (defectos 1 a 4 reparados):
 
 | job | resultado |
 |---|---|
 | Migrations, pgTAP and isolated restore | **verde** — 1 y 4 reparados: aplicó todas las migraciones, corrió las 162 aserciones y el simulacro de restauración |
 | Windows Rust and unsigned verification bundles | **verde** |
-| Web, backend, fiscal and security gates | pasos 1–14 verdes (2 y 3 reparados), rojo en el 15 por el defecto 5 |
+| Web, backend, fiscal and security gates | pasos 1–14 verdes (2 y 3 reparados), rojo en el E2E por el defecto 5 |
+
+Corrida **32654796604**, sobre `38ca699` (defecto 5 reparado):
+
+| job | resultado |
+|---|---|
+| Migrations, pgTAP and isolated restore | **verde** |
+| Windows Rust and unsigned verification bundles | **verde** |
+| Web, backend, fiscal and security gates | paso 15 —la guardia de `node_modules`— **verde**; el E2E corrió **26,8 minutos** en vez de morir a los 4, y pasó **460 de 462**. Las 2 restantes son los defectos 6 y 7 |
+
+El salto del E2E es la medida del defecto 5: 2 pruebas pasadas antes, 460
+después, con los mismos navegadores instalados por el mismo paso.

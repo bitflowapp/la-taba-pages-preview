@@ -41,6 +41,16 @@ const PAGE_HTML = `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<!-- El MISMO que sirve index.html, y no un detalle de copiado: sin él, un
+     contexto con \`isMobile: true\` no maqueta a 390 px. Chromium cae al ancho
+     por defecto de 980 px y escala, así que el «viewport de iPhone 13» que
+     declara la prueba de abajo no existía en la página: maquetaba 980×1668.
+     Medido: el aviso quedaba de una sola línea —47 px en vez de 80— y su borde
+     superior caía en y=1538 con el centro del control en y=1537. Un píxel, y
+     del lado equivocado. Lo decidían las métricas de la tipografía del aparato:
+     donde el texto envolvía a dos líneas, tapaba y la prueba pasaba; en el
+     runner no envolvía y fallaba. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Arnés del aviso de actualización</title>
 <style>
   [hidden], .hidden { display: none !important; }
@@ -208,9 +218,11 @@ test.describe('el aviso de actualización sigue el ciclo de vida real del worker
   });
 
   test('en un iPhone el aviso se puede cerrar y devuelve el toque a «Agregar»', async ({ browser }) => {
-    // 390×664 es el viewport útil de un iPhone 13 con la barra de Safari. El
-    // aviso mide 115 px y va fijo a 84 px del borde: cae justo sobre la banda
-    // donde vive el control de compra.
+    // 390×664 es el viewport útil de un iPhone 13 con la barra de Safari. Con
+    // el `meta viewport` del arnés eso es de verdad lo que la página maqueta:
+    // el aviso mide 80 px y va fijo a 84 px del borde, así que cae sobre la
+    // banda donde vive el control de compra. Sin ese meta maquetaba 980×1668 y
+    // no lo tapaba —por un píxel—, que es como este gate se rompía.
     const context = await browser.newContext({
       viewport: { width: 390, height: 664 },
       serviceWorkers: 'allow',

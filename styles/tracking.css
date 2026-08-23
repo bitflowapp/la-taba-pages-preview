@@ -1218,7 +1218,18 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row > strong
   left: 50%;
   display: inline-flex;
   min-height: 40px;
-  max-width: calc(100% - 118px);
+  /* La píldora va CENTRADA sobre el escenario, así que cada píxel que ocupa el
+     control de la esquina hay que reservarlo DOS veces —uno de cada lado— o el
+     centro se corre y la píldora se le monta encima. El recentrado mide 46 px y
+     vive a 15 del borde: 61 × 2, más 4 de aire.
+
+     Decía `- 118px`, que reservaba el control UNA vez y ni siquiera entero.
+     Medido: con la píldora clavada en su máximo, su borde derecho caía 1 px
+     ADENTRO del recentrado. Y el defecto no se veía porque el clamp casi nunca
+     llegaba a actuar: la etiqueta real entra —con la tipografía de quien la
+     mire—. En el runner del gate `system-ui` resuelve a otra fuente y la misma
+     píldora mide 16 px más; ahí sí pisaba, y el gate lo dijo. */
+  max-width: calc(100% - 126px);
   align-items: center;
   padding: 0 15px 0 12px;
   border-radius: 999px;
@@ -1238,6 +1249,20 @@ body[data-active-view="tracking"] .tracking-premium .tracking-brand-row > strong
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
+}
+
+/* Y si aun así no entra —una tipografía más ancha, un idioma más largo—, el
+   texto se recorta DENTRO de la píldora. Antes se derramaba: con `nowrap` y sin
+   `overflow`, medido, el contenido ocupaba 419 px dentro de una caja de 200 y
+   las letras cruzaban por encima del recentrado mientras la caja juraba que no
+   lo tocaba. Una prueba que mide la caja habría dado verde sobre eso.
+   `min-width: 0` es lo que deja que un ítem flex se encoja por debajo de su
+   contenido; sin eso, `text-overflow` no llega a aplicarse nunca. */
+.tracking-map-follow-cta > span {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tracking-map-eta {
@@ -3372,6 +3397,25 @@ body[data-active-view="tracking"]:has(
 }
 
 /* En pantallas angostas la tarjeta pierde el solape para no comerse el mapa. */
+@media (max-width: 400px) {
+  /* A 320 px el hueco entre el recentrado y el borde deja 126 px menos de los
+     que hay, y la etiqueta entera queda al filo. Acá la píldora se ajusta el
+     cinturón —menos aire propio, ícono más chico— para entrar sin recortarse en
+     los anchos que el gate recorre (320, 360, 390, 432). Lo de arriba sigue
+     siendo la garantía: esto es para que no haga falta usarla. */
+  .tracking-map-follow-cta {
+    padding: 0 12px 0 10px;
+    font-size: 0.84rem;
+    gap: 5px;
+    letter-spacing: 0;
+  }
+
+  .tracking-map-follow-cta svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
 @media (max-width: 360px) {
   .tracking-idle-card {
     margin-top: -18px;

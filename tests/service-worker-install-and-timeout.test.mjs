@@ -188,7 +188,7 @@ function redSana(transformar = null) {
   };
 }
 
-const ESTILOS = './styles.css?v=52';
+const ESTILOS = './styles.css?v=53';
 
 test('un manifiesto nuevo rota la caché y nunca instala un precache mezclado', async () => {
   const cacheAnterior = 'la-taba-runtime-v63-rc-final';
@@ -267,7 +267,7 @@ test('un asset que contesta mal aborta el worker nuevo sin dejar caché parcial'
 
   assert.equal(worker.entradas().length, 0);
   assert.equal(worker.guardada(ESTILOS), undefined);
-  assert.equal(worker.guardada('./styles/tracking.css?v=52'), undefined);
+  assert.equal(worker.guardada('./styles/tracking.css?v=53'), undefined);
 });
 
 test('la instalación falla limpia cuando la red rechaza entera', async () => {

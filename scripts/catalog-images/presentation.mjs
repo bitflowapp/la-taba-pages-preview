@@ -49,7 +49,8 @@ const ENVASE_CANONICO = new Map([
  * «zero» contra «original» no es un matiz: es otra bebida y otro precio.
  */
 const EXCLUYENTES = new Set([
-  'zero', 'sin azucar', 'light', 'diet',
+  // «sin azúcar» no está: se canoniza a «zero» antes de comparar.
+  'zero', 'light', 'diet',
   'naranja', 'pomelo', 'limon', 'lima', 'manzana', 'pera', 'uva', 'anana',
   'tonica', 'citrus', 'ginger',
   'malbec', 'cabernet', 'torrontes', 'chardonnay', 'syrah', 'merlot', 'tannat',
@@ -77,7 +78,8 @@ const PALABRAS_SIN_VALOR = new Set([
 
 /** Palabras de variante que se comparan entre SKU y fuente. */
 export const VARIANT_MARKERS = Object.freeze([
-  'zero', 'sin azucar', 'light', 'diet',
+  // «sin azúcar» no está: se canoniza a «zero» antes de comparar.
+  'zero', 'light', 'diet',
   'naranja', 'pomelo', 'limon', 'lima', 'manzana', 'pera', 'uva', 'anana',
   'tonica', 'citrus', 'ginger', 'cola', 'soda',
   'malbec', 'cabernet', 'torrontes', 'chardonnay', 'syrah', 'merlot', 'tannat', 'blend',
@@ -184,12 +186,41 @@ export function skuPresentation(sku) {
 }
 
 /*
+ * Dos maneras de escribir el MISMO eje. No es una lista de «parecidos»: es una
+ * lista de sinónimos exactos, y por eso es cortísima y se amplía de a uno.
+ *
+ * «Zero» y «sin azúcar» son la misma bebida escrita distinto —la etiqueta
+ * argentina de Coca-Cola Zero dice literalmente «sin azúcares»—, y nuestro
+ * catálogo usa una forma mientras la tienda del embotellador usa la otra. Sin
+ * esto, el matcher rechazaba la foto oficial de Coca-Cola Zero por contradecir
+ * a Coca-Cola Zero.
+ *
+ * «Light» y «diet» quedan AFUERA a propósito: Coca-Cola Light y Coca-Cola Zero
+ * son dos productos distintos, con dos fórmulas y dos precios. Meterlas acá
+ * sería exactamente el error que este archivo existe para no cometer.
+ */
+const SINONIMOS_DE_VARIANTE = [
+  { canonico: 'zero', patron: /(?<![a-z0-9])sin\s+azucar(es)?(?![a-z0-9])/g },
+];
+
+/**
+ * Reescribe las formas sinónimas a una sola antes de comparar. Se aplica a los
+ * DOS lados —al SKU y a la fuente—, así que no afloja nada: sólo hace que la
+ * misma cosa se escriba igual de los dos lados.
+ */
+export function canonicalizeVariant(text) {
+  let salida = normalizeText(text);
+  for (const { canonico, patron } of SINONIMOS_DE_VARIANTE) salida = salida.replace(patron, canonico);
+  return salida;
+}
+
+/*
  * Los marcadores se buscan como PALABRA, no como pedazo de palabra. Con
  * `includes` a secas, «chocolate» contiene «cola» y el matcher declaraba una
  * contradicción de sabor que no existía.
  */
 function markersIn(text) {
-  const normal = normalizeText(text);
+  const normal = canonicalizeVariant(text);
   return new Set(VARIANT_MARKERS.filter((marker) => (
     new RegExp(`(?<![a-z0-9])${marker.replace(/\s+/g, '\\s+')}(?![a-z0-9])`).test(normal)
   )));
@@ -209,7 +240,9 @@ function markersIn(text) {
 export function distinctiveTokens(text, { brand = '' } = {}) {
   const marca = new Set(normalizeText(brand).split(/[^a-z0-9']+/).filter(Boolean));
   return new Set(
-    normalizeText(text)
+    // Canonizado igual que los marcadores: si «sin azúcar» y «zero» son la
+    // misma variante, tampoco pueden diferir como línea de producto.
+    canonicalizeVariant(text)
       .split(/[^a-z0-9']+/)
       .filter(Boolean)
       // Un token que es puro número, o número pegado a una unidad, es una medida.

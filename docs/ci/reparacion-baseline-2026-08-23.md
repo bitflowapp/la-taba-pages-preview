@@ -445,5 +445,26 @@ Corrida **32654796604**, sobre `38ca699` (defecto 5 reparado):
 | Windows Rust and unsigned verification bundles | **verde** |
 | Web, backend, fiscal and security gates | paso 15 —la guardia de `node_modules`— **verde**; el E2E corrió **26,8 minutos** en vez de morir a los 4, y pasó **460 de 462**. Las 2 restantes son los defectos 6 y 7 |
 
-El salto del E2E es la medida del defecto 5: 2 pruebas pasadas antes, 460
-después, con los mismos navegadores instalados por el mismo paso.
+Corrida **32658459787**, sobre `9fdb8c4` (los siete reparados):
+
+| job | resultado |
+|---|---|
+| Migrations, pgTAP and isolated restore | **verde** — 13 pasos, 0 no exitosos |
+| Windows Rust and unsigned verification bundles | **verde** — 14 pasos, 0 no exitosos |
+| Web, backend, fiscal and security gates | **verde** — 22 pasos, 0 no exitosos |
+
+Corrida entera en **success**. Dentro del job web:
+
+| paso | resultado |
+|---|---|
+| Commercial catalog gate | verde, declarando en el log que la compuerta NO corrió y qué quedó sin validar |
+| Unit and contract tests | **2093/2093** |
+| Locked dependencies still match the lockfile | verde, 27 paquetes comprobados |
+| Full browser E2E | **462 passed (33,3 min)** |
+
+Y en el de base de datos: el stack levantó con el CLI 2.101.0, se aplicaron
+todas las migraciones, corrieron las 180 aserciones pgTAP y el simulacro de
+restauración verificó el ciclo completo (1.443.103 bytes en 1.724 ms).
+
+El salto del E2E es la medida de la cascada: **2** pruebas pasadas cuando el
+gate se destrabó, **460** con el defecto 5 reparado, **462** con el 6 y el 7.

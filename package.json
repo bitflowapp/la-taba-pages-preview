@@ -87,6 +87,7 @@
     "catalog:images:preflight": "node scripts/catalog-images/preflight-association.mjs",
     "catalog:images:live": "node scripts/catalog-images/verify-live-packshots.mjs",
     "catalog:release:validate": "node scripts/validate-release-catalog.mjs",
+    "catalog:release:ci": "node scripts/ci-catalog-release-gate.mjs",
     "staging:validate": "node scripts/validate-staging-readiness.mjs",
     "realtime:demo": "node scripts/realtime-relay.mjs",
     "desktop:assets": "node scripts/build-desktop-assets.mjs",

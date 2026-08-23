@@ -68,8 +68,17 @@ jobs:
           npm run migrations:validate
           npm run catalog:images:verify
 
-      - name: Commercial catalog gate
-        run: npm run catalog:release:validate
+      # La compuerta estricta (`catalog:release:validate`) falla cerrado cuando no
+      # le indican un catálogo comercial aprobado, y ese archivo no vive en el
+      # repositorio: se indica en el momento del release. Corrida a secas acá no
+      # podía pasar nunca, y como este workflow gobierna `main`, no podía pasar
+      # ninguna rama. El envoltorio corre la compuerta cuando hay catálogo, falla
+      # si la variable está mal escrita, y cuando no hay dice en voz alta que no
+      # corrió en vez de fingir que sí.
+      - name: Commercial catalog gate (cuando hay catálogo de release)
+        env:
+          TABA_CATALOG_FILE: ${{ vars.TABA_CATALOG_FILE }}
+        run: npm run catalog:release:ci
 
       - name: Secret scan
         run: npm run secrets:scan

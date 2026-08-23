@@ -25,12 +25,73 @@
  * cada uno. `unitsPerPack` no es decorativo: es la cantidad que el packshot
  * anuncia con su sello, y si el producto dejara de traer esa cantidad la foto
  * pasaría a mentir.
+ *
+ * LA PRESENTACIÓN VIVE ACÁ, Y NO SÓLO EN LA FOTOGRAFÍA DE PRODUCCIÓN
+ * ------------------------------------------------------------------
+ * Estos cuatro son los únicos SKU del catálogo que no los declara ningún
+ * archivo de góndola: nacieron con el lote de packshots y, hasta ahora, la
+ * reconciliación los reconocía por descarte —«los visibles que la góndola no
+ * nombra»—. Eso los ataba a `available`: el día que un pack se quedó sin stock,
+ * RLS dejó de devolverlo, el descarte dio tres en vez de cuatro y el pipeline de
+ * imágenes entero se plantó por un movimiento de inventario que no tiene nada
+ * que ver con las fotos. Un SKU no deja de existir porque hoy no haya stock.
+ *
+ * NO hay precio acá, a propósito. Esto describe QUÉ es cada producto, no cuánto
+ * sale: el precio es de producción y de nadie más.
  */
 export const OBJETIVOS = new Map([
-  ['coca-cola-original-botella-pet-500-ml-pack-x12', { nombre: 'Coca-Cola Original Pack x12', unitsPerPack: 12 }],
-  ['coca-cola-zero-botella-pet-500-ml-pack-x12', { nombre: 'Coca-Cola Zero Pack x12', unitsPerPack: 12 }],
-  ['fanta-naranja-botella-pet-1500-ml-pack-x6', { nombre: 'Fanta Naranja Pack x6', unitsPerPack: 6 }],
-  ['sprite-botella-pet-500-ml-pack-x12', { nombre: 'Sprite Pack x12', unitsPerPack: 12 }],
+  ['coca-cola-original-botella-pet-500-ml-pack-x12', {
+    nombre: 'Coca-Cola Original Pack x12',
+    unitsPerPack: 12,
+    presentacion: {
+      brand: 'Coca-Cola',
+      capacityUnit: 'ml',
+      capacityValue: 500,
+      category: 'Gaseosas',
+      name: 'Coca-Cola Original',
+      packagingType: 'Botella PET',
+      variant: 'Botella PET · 500 ml · Pack x12',
+    },
+  }],
+  ['coca-cola-zero-botella-pet-500-ml-pack-x12', {
+    nombre: 'Coca-Cola Zero Pack x12',
+    unitsPerPack: 12,
+    presentacion: {
+      brand: 'Coca-Cola',
+      capacityUnit: 'ml',
+      capacityValue: 500,
+      category: 'Gaseosas',
+      name: 'Coca-Cola Zero',
+      packagingType: 'Botella PET',
+      variant: 'Botella PET · 500 ml · Pack x12',
+    },
+  }],
+  ['fanta-naranja-botella-pet-1500-ml-pack-x6', {
+    nombre: 'Fanta Naranja Pack x6',
+    unitsPerPack: 6,
+    presentacion: {
+      brand: 'Fanta',
+      capacityUnit: 'ml',
+      capacityValue: 1500,
+      category: 'Gaseosas',
+      name: 'Fanta Naranja',
+      packagingType: 'Botella PET',
+      variant: 'Botella PET · 1500 ml · Pack x6',
+    },
+  }],
+  ['sprite-botella-pet-500-ml-pack-x12', {
+    nombre: 'Sprite Pack x12',
+    unitsPerPack: 12,
+    presentacion: {
+      brand: 'Sprite',
+      capacityUnit: 'ml',
+      capacityValue: 500,
+      category: 'Gaseosas',
+      name: 'Sprite',
+      packagingType: 'Botella PET',
+      variant: 'Botella PET · 500 ml · Pack x12',
+    },
+  }],
 ]);
 
 export const SKUS_OBJETIVO = Object.freeze([...OBJETIVOS.keys()]);

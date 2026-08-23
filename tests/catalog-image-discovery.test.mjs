@@ -242,25 +242,38 @@ test('el manifiesto público no lista nada que la auditoría bloquee', () => {
   }
 });
 
-test('el catálogo reconcilia 33 visibles + 23 alcohólicos + 4 unidades minoristas + 12 góndola final = 72 SKU', async () => {
+test('el catálogo reconcilia por identidad: 52 góndola + 4 packs + 4 unidades + 12 altas = 72 SKU', async () => {
   const { skus, reconciliacion } = await loadCatalogSkus(ROOT);
   assert.equal(skus.length, 72);
-  assert.equal(reconciliacion.visibles, 33);
-  assert.equal(reconciliacion.ocultosAgregados, 23);
-  assert.equal(reconciliacion.retailUnidades, 4);
-  assert.equal(reconciliacion.retailUnidadesAgregadas, 4);
-  assert.equal(reconciliacion.gondolaFinal, 12);
-  assert.equal(reconciliacion.gondolaFinalAgregadas, 12);
   assert.equal(reconciliacion.esperadoTotal, 72);
   assert.equal(reconciliacion.total, 72);
+  assert.equal(reconciliacion.colisiones, 0, 'dos autoridades declaran el mismo SKU');
+  assert.equal(reconciliacion.sinDeclarar, 0, 'producción muestra un SKU que ninguna autoridad declara');
+  assert.deepEqual(reconciliacion.porAutoridad, {
+    'gondola-neuquen': 52,
+    'pack-lanzamiento': 4,
+    'retail-unidades': 4,
+    'gondola-retail-final': 12,
+  });
   // 23 de la góndola Neuquén + 4 cervezas pack x6 de la góndola final.
   assert.equal(skus.filter((sku) => sku.alcoholic).length, 27);
 
-  const finales = skus.filter((sku) => sku.origen === 'gondola-retail-final');
-  assert.equal(finales.length, 12);
-  for (const alta of finales) {
-    assert.equal(alta.available, false, `${alta.sku}: nace cerrada hasta la Recepción real`);
-    assert.equal(alta.imageUrl, null, `${alta.sku}: sin packshot, fallback TABA`);
+  /*
+   * Las 12 altas siguen siendo 12 SKU aunque el inventario las vaya abriendo:
+   * la que producción ya recibió pasa a `origen: produccion` con su precio real,
+   * y las que siguen cerradas conservan el origen del lote. Lo que no cambia
+   * para ninguna es que todavía no tienen packshot.
+   */
+  const { PRODUCTOS_PROPUESTOS } = await import('../catalog/gondola-retail-final-proposal.mjs');
+  const porSku = new Map(skus.map((row) => [row.sku, row]));
+  assert.equal(PRODUCTOS_PROPUESTOS.length, 12);
+  for (const propuesta of PRODUCTOS_PROPUESTOS) {
+    const alta = porSku.get(propuesta.sku);
+    assert.ok(alta, `${propuesta.sku}: el alta desapareció de la reconciliación`);
+    assert.equal(alta.imageUrl, null, `${propuesta.sku}: sin packshot, fallback TABA`);
+    if (alta.origen === 'gondola-retail-final') {
+      assert.equal(alta.available, false, `${propuesta.sku}: sin recibir, tiene que seguir cerrada`);
+    }
   }
 
   // La base anterior al lote sigue reconstruible: 60 exactos.

@@ -10,6 +10,8 @@ import {
   GONDOLA_RETAIL_FINAL_CLASSIFICATION_LABELS,
   GONDOLA_RETAIL_FINAL_CLASSIFICATIONS,
 } from '../catalog/gondola-retail-final-classifications.mjs';
+import { loadCatalogSkus } from '../scripts/catalog-images/catalog-skus.mjs';
+import { OBJETIVOS } from '../scripts/catalog-images/lote-objetivo.mjs';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const snapshot = JSON.parse(
@@ -23,93 +25,93 @@ function uniqueSkus(rows, source) {
 }
 
 /**
- * Reconstruye la autoridad actual sin consultar producción:
- * - snapshot: 29 no alcohólicos de GONDOLA + los 4 packs históricos;
- * - GONDOLA: agrega los 23 alcohólicos ocultos por RLS;
- * - RETAIL_UNIDADES: agrega las 4 unidades nuevas, stock 0/no disponibles.
+ * Reconstruye la base de 60 SKU sobre la que se tomó esta clasificación:
+ * 52 de `gondola-neuquen.mjs`, los 4 packs de lanzamiento y las 4 unidades
+ * minoristas.
+ *
+ * POR QUÉ NO SE ARMA MIRANDO QUÉ MUESTRA PRODUCCIÓN
+ * -------------------------------------------------
+ * Antes se armaba por descarte sobre la fotografía: «los visibles que GONDOLA
+ * no nombra son los 4 packs». Eso ataba la identidad del catálogo a
+ * `available`, que se mueve con el inventario y con nada más. El 2026-08-23 un
+ * pack se quedó sin stock y una de las 12 altas se recibió: el descarte metió
+ * el alta entre los packs históricos y sacó al pack de la lista, y esta prueba
+ * se puso roja sin que ningún SKU naciera ni muriera.
+ *
+ * `loadCatalogSkus(..., { gondolaFinal: false })` devuelve esa misma base por
+ * IDENTIDAD, que es lo que la clasificación describe.
  */
-function compositeCatalog() {
-  const bySku = new Map(snapshot.map((row) => [row.sku, Object.freeze({
+async function compositeCatalog() {
+  const { skus } = await loadCatalogSkus(root, { gondolaFinal: false });
+  const ORIGEN = {
+    'gondola-neuquen': 'gondola-neuquen-alcohol-hidden-by-rls',
+    'pack-lanzamiento': 'pack-lanzamiento',
+    produccion: 'production-snapshot',
+    'retail-unidades': 'retail-unidades',
+  };
+  return skus.map((row) => Object.freeze({
     sku: row.sku,
     brand: row.brand,
     name: row.name,
     category: row.category,
-    alcoholic: row.isAlcoholic === true,
-    available: row.available === true,
-    soldAsPack: row.soldAsPack === true,
+    alcoholic: row.alcoholic,
+    available: row.available,
+    soldAsPack: row.soldAsPack,
     unitsPerPack: row.unitsPerPack,
-    origin: 'production-snapshot',
-  })]));
-
-  for (const row of GONDOLA) {
-    const visible = bySku.get(row.sku);
-    if (visible) {
-      assert.equal(visible.brand, row.brand, `${row.sku}: marca difiere entre snapshot y GONDOLA`);
-      assert.equal(visible.name, row.name, `${row.sku}: nombre difiere entre snapshot y GONDOLA`);
-      assert.equal(visible.category, row.category, `${row.sku}: categoría difiere entre snapshot y GONDOLA`);
-      assert.equal(visible.alcoholic, row.alcoholic, `${row.sku}: alcohol difiere entre snapshot y GONDOLA`);
-      assert.equal(visible.soldAsPack, row.soldAsPack, `${row.sku}: pack difiere entre snapshot y GONDOLA`);
-      assert.equal(visible.unitsPerPack, row.unitsPerPack, `${row.sku}: cantidad de pack difiere entre snapshot y GONDOLA`);
-      continue;
-    }
-    bySku.set(row.sku, Object.freeze({
-      sku: row.sku,
-      brand: row.brand,
-      name: row.name,
-      category: row.category,
-      alcoholic: row.alcoholic,
-      available: false,
-      soldAsPack: row.soldAsPack,
-      unitsPerPack: row.unitsPerPack,
-      origin: 'gondola-neuquen-alcohol-hidden-by-rls',
-    }));
-  }
-
-  for (const row of RETAIL_UNIDADES) {
-    assert.equal(bySku.has(row.sku), false, `${row.sku}: la unidad retail colisiona con el catálogo previo`);
-    bySku.set(row.sku, Object.freeze({
-      sku: row.sku,
-      brand: row.brand,
-      name: row.name,
-      category: row.category,
-      alcoholic: false,
-      available: false,
-      soldAsPack: false,
-      unitsPerPack: 1,
-      origin: 'retail-unidades',
-    }));
-  }
-
-  return [...bySku.values()];
+    origin: ORIGEN[row.origen] || row.origen,
+  }));
 }
 
-test('la autoridad compuesta reconstruye exactamente los 60 SKU actuales', () => {
-  const snapshotSkus = uniqueSkus(snapshot, 'production-catalog-snapshot');
-  const gondolaSkus = uniqueSkus(GONDOLA, 'GONDOLA');
-  const retailSkus = uniqueSkus(RETAIL_UNIDADES, 'RETAIL_UNIDADES');
-
-  assert.equal(snapshot.length, 33);
-  assert.equal(GONDOLA.length, 52);
-  assert.equal(RETAIL_UNIDADES.length, 4);
-
-  const overlapSnapshotGondola = [...snapshotSkus].filter((sku) => gondolaSkus.has(sku));
-  const packsHistoricos = [...snapshotSkus].filter((sku) => !gondolaSkus.has(sku));
-  const alcoholOculto = [...gondolaSkus].filter((sku) => !snapshotSkus.has(sku));
-
-  assert.equal(overlapSnapshotGondola.length, 29, 'el snapshot debe releer los 29 no alcohólicos de GONDOLA');
-  assert.equal(packsHistoricos.length, 4, 'el snapshot debe aportar los 4 packs históricos');
-  assert.equal(alcoholOculto.length, 23, 'GONDOLA debe aportar los 23 alcohólicos ocultos por RLS');
-  assert.equal([...retailSkus].some((sku) => snapshotSkus.has(sku) || gondolaSkus.has(sku)), false);
-
-  const catalog = compositeCatalog();
-  assert.equal(catalog.length, 60);
-  assert.equal(new Set(catalog.map((row) => row.sku)).size, 60, 'el compuesto final contiene SKU repetidos');
-  assert.equal(catalog.filter((row) => row.available).length, 33);
-  assert.equal(catalog.filter((row) => !row.available).length, 27);
+test('lo que producción muestra no contradice a la góndola que lo declaró', () => {
+  // La fotografía y `gondola-neuquen.mjs` describen los mismos productos. Si
+  // difieren en marca, nombre, categoría, alcohol o cantidad de pack, alguien
+  // cambió el producto y no el archivo —o al revés—, y la clasificación de
+  // abajo estaría hablando de otra cosa.
+  const porSku = new Map(snapshot.map((row) => [row.sku, row]));
+  for (const row of GONDOLA) {
+    const visible = porSku.get(row.sku);
+    if (!visible) continue;
+    assert.equal(visible.brand, row.brand, `${row.sku}: marca difiere entre snapshot y GONDOLA`);
+    assert.equal(visible.name, row.name, `${row.sku}: nombre difiere entre snapshot y GONDOLA`);
+    assert.equal(visible.category, row.category, `${row.sku}: categoría difiere entre snapshot y GONDOLA`);
+    assert.equal(visible.isAlcoholic === true, row.alcoholic, `${row.sku}: alcohol difiere entre snapshot y GONDOLA`);
+    assert.equal(visible.soldAsPack === true, row.soldAsPack, `${row.sku}: pack difiere entre snapshot y GONDOLA`);
+    assert.equal(visible.unitsPerPack, row.unitsPerPack, `${row.sku}: cantidad de pack difiere entre snapshot y GONDOLA`);
+  }
 });
 
-test('cada SKU actual tiene exactamente una clasificación permitida', () => {
-  const catalog = compositeCatalog();
+test('la autoridad compuesta reconstruye exactamente los 60 SKU actuales', async () => {
+  const gondolaSkus = uniqueSkus(GONDOLA, 'GONDOLA');
+  const retailSkus = uniqueSkus(RETAIL_UNIDADES, 'RETAIL_UNIDADES');
+  const packSkus = new Set(OBJETIVOS.keys());
+  uniqueSkus(snapshot, 'production-catalog-snapshot');
+
+  assert.equal(GONDOLA.length, 52);
+  assert.equal(packSkus.size, 4, 'los 4 packs de lanzamiento');
+  assert.equal(RETAIL_UNIDADES.length, 4);
+  assert.equal(GONDOLA.filter((row) => row.alcoholic).length, 23);
+
+  // Las tres autoridades son disjuntas: ningún SKU lo declara más de una.
+  for (const sku of packSkus) assert.equal(gondolaSkus.has(sku), false, `${sku}: pack declarado también por GONDOLA`);
+  assert.equal([...retailSkus].some((sku) => gondolaSkus.has(sku) || packSkus.has(sku)), false);
+
+  const catalog = await compositeCatalog();
+  assert.equal(catalog.length, 60);
+  assert.equal(new Set(catalog.map((row) => row.sku)).size, 60, 'el compuesto final contiene SKU repetidos');
+
+  /*
+   * Cuántos de los 60 se pueden comprar HOY es inventario, y se mueve solo. Lo
+   * que esta prueba fija es la identidad: los 23 alcohólicos y las 4 unidades
+   * minoristas están cerrados por decisión, no por falta de stock, y ésos sí no
+   * pueden abrirse sin que alguien lo decida.
+   */
+  const cerradosPorDecision = catalog.filter((row) => row.alcoholic || row.origin === 'retail-unidades');
+  assert.equal(cerradosPorDecision.length, 27);
+  assert.equal(cerradosPorDecision.every((row) => row.available === false), true);
+});
+
+test('cada SKU actual tiene exactamente una clasificación permitida', async () => {
+  const catalog = await compositeCatalog();
   const catalogSkus = catalog.map((row) => row.sku).sort();
   const classifiedSkus = GONDOLA_RETAIL_FINAL_CLASSIFICATIONS.map((row) => row.sku).sort();
   const allowed = new Set(GONDOLA_RETAIL_FINAL_CLASSIFICATION_LABELS);
@@ -140,8 +142,8 @@ test('cada SKU actual tiene exactamente una clasificación permitida', () => {
   });
 });
 
-test('PACK_OK coincide con los cinco packs reales y ningún alcohol queda disponible', () => {
-  const catalog = compositeCatalog();
+test('PACK_OK coincide con los cinco packs reales y ningún alcohol queda disponible', async () => {
+  const catalog = await compositeCatalog();
   const packs = catalog.filter((row) => row.soldAsPack).map((row) => row.sku).sort();
   const packOk = GONDOLA_RETAIL_FINAL_CLASSIFICATIONS
     .filter((row) => row.classification === 'PACK_OK')

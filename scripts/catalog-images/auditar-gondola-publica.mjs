@@ -26,6 +26,33 @@
  *               publicable. La tarjeta cae a fallback sola, pero el catálogo
  *               está mintiendo sobre lo que tiene.
  *
+ * Y POR QUÉ ADEMÁS HAY UNA `clasificacion`
+ * ----------------------------------------
+ * Las cuatro etiquetas de arriba dicen QUÉ ve el cliente. No dicen POR QUÉ, y
+ * para el trabajo comercial esa es la pregunta cara: «FALLBACK: 30» junta en un
+ * solo número dos situaciones que no se parecen en nada —quince SKU cuya foto
+ * exacta existe y está identificada pero no se puede publicar, y quince para
+ * los que no hay ninguna fuente en el mundo alcanzable—. La primera se destraba
+ * con un correo a la marca; la segunda, sólo con fotografía propia.
+ *
+ *   OFFICIAL_EXACT    foto del fabricante, embotellador o importador de la
+ *                     marca, con identidad exacta y derechos.
+ *   AUTHORIZED_EXACT  ídem pero la publica un distribuidor oficial: un escalón
+ *                     por debajo, y por eso se cuenta aparte.
+ *   BLOCKED_IDENTITY  la fuente oficial publica este producto, pero su imagen
+ *                     no se puede usar sin mentir sobre lo que se entrega —el
+ *                     caso vivo son los packshots con sello de pack sobre el
+ *                     envase, medidos en catalog/sello-de-pack-medicion.json—.
+ *   BLOCKED_RIGHTS    existe la imagen exacta, pero la autorización vigente no
+ *                     cubre a quien la publica.
+ *   FALLBACK          no hay fuente. El recurso propio de TABA es la respuesta
+ *                     correcta y definitiva hasta que haya fotografía propia.
+ *
+ * Las tres últimas muestran lo mismo en la tarjeta —el recurso propio—: la
+ * clasificación no cambia lo que ve nadie, explica por qué no hay foto. No
+ * existe una etiqueta «SIMILAR», y no debe existir: una imagen parecida es una
+ * imagen incorrecta.
+ *
  *   node scripts/catalog-images/auditar-gondola-publica.mjs
  *   node scripts/catalog-images/auditar-gondola-publica.mjs --check
  */
@@ -42,6 +69,32 @@ const ROOT = path.resolve(import.meta.dirname, '../..');
 const SALIDA_CSV = path.join(ROOT, 'docs/catalog/gondola-publica-imagenes.csv');
 const SALIDA_JSON = path.join(ROOT, 'docs/catalog/gondola-publica-imagenes.json');
 const MANIFIESTO = path.join(ROOT, 'docs/catalog/image-manifest.json');
+const MEDICION_SELLO = path.join(ROOT, 'catalog/sello-de-pack-medicion.json');
+const AUTORIZACIONES = path.join(ROOT, 'catalog/autorizaciones-comerciales.json');
+
+/*
+ * Los SKU cuya foto exacta EXISTE en la fuente oficial y aun así no se puede
+ * publicar. Se leen de la evidencia versionada, no de una lista a mano: el día
+ * que la fuente publique un packshot limpio, el relevamiento deja de medirlo y
+ * este SKU sale solo de la categoría.
+ */
+const bloqueadosPorIdentidad = new Set(
+  JSON.parse(fs.readFileSync(MEDICION_SELLO, 'utf8')).mediciones.map((fila) => fila.sku),
+);
+const bloqueadosPorDerechos = new Set(
+  JSON.parse(fs.readFileSync(AUTORIZACIONES, 'utf8')).autorizaciones
+    .flatMap((autorizacion) => autorizacion.fuera_de_alcance_detectado || [])
+    .map((fila) => fila.sku),
+);
+
+/** Un distribuidor oficial vale para descubrir, pero se cuenta aparte del fabricante. */
+const clasificar = (tipo, sku, sourceType) => {
+  if (tipo === 'REAL') return sourceType === 'fabricante' ? 'OFFICIAL_EXACT' : 'AUTHORIZED_EXACT';
+  if (tipo !== 'FALLBACK') return tipo;
+  if (bloqueadosPorDerechos.has(sku)) return 'BLOCKED_RIGHTS';
+  if (bloqueadosPorIdentidad.has(sku)) return 'BLOCKED_IDENTITY';
+  return 'FALLBACK';
+};
 
 const soloVerificar = process.argv.includes('--check');
 
@@ -134,6 +187,7 @@ for (const sku of skus.filter((fila) => fila.available)) {
     autoridadGtin: gtines.get(sku.sku)?.autoridad || '',
     capacidad: capacidadLegible(sku),
     categoria: sku.category,
+    clasificacion: clasificar(tipo, sku.sku, fuente?.sourceType),
     derechos: derechos?.rights || (ruta ? 'sin declarar' : ''),
     gtin: gtines.get(sku.sku)?.gtin || '',
     imageUrl: ruta,
@@ -157,10 +211,15 @@ const resumen = filas.reduce((acumulado, fila) => {
   return acumulado;
 }, {});
 
+const porClasificacion = filas.reduce((acumulado, fila) => {
+  acumulado[fila.clasificacion] = (acumulado[fila.clasificacion] || 0) + 1;
+  return acumulado;
+}, {});
+
 const COLUMNAS = [
   'sku', 'gtin', 'autoridad_gtin', 'nombre', 'presentacion', 'capacidad', 'categoria',
   'units_per_pack', 'image_url', 'origen_imagen', 'derechos',
-  'referencia_derechos', 'tipo', 'motivo',
+  'referencia_derechos', 'tipo', 'clasificacion', 'motivo',
 ];
 const escapar = (valor) => {
   const texto = String(valor ?? '');
@@ -171,16 +230,17 @@ const csv = `${[
   ...filas.map((fila) => [
     fila.sku, fila.gtin, fila.autoridadGtin, fila.nombre, fila.presentacion, fila.capacidad, fila.categoria,
     fila.unitsPerPack, fila.imageUrl, fila.origenImagen, fila.derechos,
-    fila.referenciaDerechos, fila.tipo, fila.motivo,
+    fila.referenciaDerechos, fila.tipo, fila.clasificacion, fila.motivo,
   ].map(escapar).join(',')),
 ].join('\n')}\n`;
 
 const json = stableJson({
   doc: 'Mapa SKU → imagen de la góndola pública. Sólo lectura; generado por scripts/catalog-images/auditar-gondola-publica.mjs.',
   filas,
+  porClasificacion,
   reconciliacion,
   resumen,
-  schemaVersion: 1,
+  schemaVersion: 2,
   totalVisibles: filas.length,
 });
 
@@ -202,5 +262,7 @@ await fsp.writeFile(SALIDA_JSON, json, 'utf8');
 
 console.log(`SKU visibles y comprables: ${filas.length}`);
 for (const [tipo, cuantos] of Object.entries(resumen).sort()) console.log(`  ${tipo}: ${cuantos}`);
+console.log('Por qué, no sólo qué:');
+for (const [clase, cuantos] of Object.entries(porClasificacion).sort()) console.log(`  ${clase}: ${cuantos}`);
 console.log(`CSV:  ${path.relative(ROOT, SALIDA_CSV).replaceAll('\\', '/')}`);
 console.log(`JSON: ${path.relative(ROOT, SALIDA_JSON).replaceAll('\\', '/')}`);

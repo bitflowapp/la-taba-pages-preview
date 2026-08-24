@@ -13,6 +13,22 @@ ausentes. El mapa completo, SKU por SKU, está en
 `docs/catalog/gondola-publica-imagenes.csv` y se regenera con
 `npm run catalog:images:audit`.
 
+Pero «30 en respaldo» junta dos situaciones que no se parecen, y la auditoría
+las separa en su columna `clasificacion`:
+
+| Clasificación | SKU | Qué significa |
+| --- | ---: | --- |
+| `OFFICIAL_EXACT` | 3 | packshot del embotellador, identidad exacta y derechos |
+| `AUTHORIZED_EXACT` | 0 | ídem, pero publicado por un distribuidor oficial |
+| `BLOCKED_IDENTITY` | 15 | la fuente oficial **sí publica** este producto exacto, pero su imagen anuncia un pack y no se puede limpiar |
+| `BLOCKED_RIGHTS` | 0 | la imagen exacta existe pero la autorización no cubre a quien la publica |
+| `FALLBACK` | 15 | no hay fuente oficial alcanzable en el mundo |
+
+La diferencia es operativa, no cosmética: los 15 `BLOCKED_IDENTITY` se destraban
+con un correo a la marca pidiendo el packshot sin sello; los 15 `FALLBACK`, sólo
+con fotografía propia. No existe una clasificación `SIMILAR`, y no debe existir:
+una imagen parecida es una imagen incorrecta.
+
 Las 30 siguen en fallback por un motivo medido, no por falta de trabajo: la
 única fuente oficial alcanzable —la tienda del embotellador Coca-Cola Andina—
 es mayorista y publica 184 listados, **ninguno de una unidad suelta**. Su

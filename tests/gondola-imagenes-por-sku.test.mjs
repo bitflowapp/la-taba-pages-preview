@@ -233,6 +233,54 @@ test('la medición del sello de pack respalda que las unidades sigan en respaldo
   }
 });
 
+test('cada SKU visible dice POR QUÉ tiene o no tiene foto, con vocabulario cerrado', () => {
+  /*
+   * «FALLBACK: 30» junta dos situaciones que no se parecen: quince SKU cuya
+   * foto exacta existe y está identificada pero no se puede publicar, y quince
+   * para los que no hay ninguna fuente alcanzable. La primera se destraba con
+   * un correo a la marca; la segunda sólo con fotografía propia. Si esa
+   * distinción no está en el dato, el informe comercial la tiene que inventar.
+   *
+   * El vocabulario es cerrado a propósito, y «SIMILAR» no está en él: una
+   * imagen parecida es una imagen incorrecta, no una categoría intermedia.
+   */
+  const PERMITIDAS = new Set([
+    'OFFICIAL_EXACT', 'AUTHORIZED_EXACT', 'FALLBACK',
+    'BLOCKED_RIGHTS', 'BLOCKED_IDENTITY', 'INCORRECTA', 'AUSENTE',
+  ]);
+  for (const fila of auditoria.filas) {
+    assert.ok(
+      PERMITIDAS.has(fila.clasificacion),
+      `${fila.sku}: clasificación «${fila.clasificacion}» fuera del vocabulario`,
+    );
+    assert.notEqual(fila.clasificacion, 'SIMILAR', `${fila.sku}: «SIMILAR» no es apto para producción`);
+  }
+
+  const suma = Object.values(auditoria.porClasificacion).reduce((a, b) => a + b, 0);
+  assert.equal(suma, auditoria.filas.length, 'el resumen por clasificación no cuenta todas las filas');
+  assert.equal(auditoria.totalVisibles, auditoria.filas.length);
+
+  // Una foto REAL siempre cae de un lado exacto, nunca en un bloqueo.
+  for (const fila of auditoria.filas.filter((f) => f.tipo === 'REAL')) {
+    assert.ok(
+      ['OFFICIAL_EXACT', 'AUTHORIZED_EXACT'].includes(fila.clasificacion),
+      `${fila.sku}: tiene foto publicada y quedó clasificado «${fila.clasificacion}»`,
+    );
+    assert.ok(fila.referenciaDerechos, `${fila.sku}: foto publicada sin referencia de derechos`);
+  }
+
+  // Y un bloqueo por identidad tiene que estar respaldado por una medición: no
+  // se declara «la fuente la publica pero no sirve» sin haberlo medido.
+  const medidos = new Set(medicionDelSello.mediciones.map((m) => m.sku));
+  for (const fila of auditoria.filas.filter((f) => f.clasificacion === 'BLOCKED_IDENTITY')) {
+    assert.ok(
+      medidos.has(fila.sku),
+      `${fila.sku}: bloqueado por identidad sin medición que lo respalde`,
+    );
+    assert.equal(fila.imageUrl, '', `${fila.sku}: está bloqueado y aun así declara una imagen`);
+  }
+});
+
 test('la medición cubre TODAS las imágenes del candidato, no sólo la portada', () => {
   /*
    * La conclusión del relevamiento es una negación universal —«ningún packshot

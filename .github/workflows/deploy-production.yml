@@ -1,0 +1,195 @@
+# main → Cloudflare Pages, por una sola ruta reproducible.
+#
+# EL PROBLEMA QUE CIERRA
+# ----------------------
+# El 2026-08-24 `main` tenía el runtime v85 y la web pública servía el v84. El
+# despliegue histórico era Direct Upload desde una máquina —`wrangler pages
+# deploy` a mano, documentado en GONDOLA-NEUQUEN.md §6— así que main y
+# producción se desacoplaban con sólo no ejecutar ese comando, y nada avisaba.
+#
+# LA RUTA, ENTERA
+# ---------------
+#   merge a main → CI obligatorio → (verde) → build → deploy → smoke en vivo
+#
+# NUNCA se despliega un SHA sin certificar: este flujo se dispara por
+# `workflow_run` del gate obligatorio y despliega EXACTAMENTE el SHA que ese
+# gate aprobó. No vuelve a correr los 30 minutos de E2E: los mismos bytes ya
+# fueron certificados y repetirlos no agrega información.
+#
+# QUÉ PERMISOS PIDE EL TOKEN DE CLOUDFLARE
+# ----------------------------------------
+# Uno solo, y del proyecto:  **Account · Cloudflare Pages · Edit**
+# Nada de DNS, ni Workers, ni facturación, ni administración de cuenta. Tampoco
+# un Global API Key: ese abre la cuenta entera y no se puede acotar.
+#
+#   CLOUDFLARE_API_TOKEN   secreto de repositorio
+#   CLOUDFLARE_ACCOUNT_ID  secreto de repositorio (no es sensible, pero
+#                          Cloudflare lo trata como identificador de cuenta y
+#                          no aporta nada tenerlo a la vista)
+#
+# Ver docs/operacion/deploy.md para crear el token y docs/operacion/rollback.md
+# para volver atrás.
+
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows: ['Validate release candidate']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'SHA a desplegar. Tiene que tener CI verde.'
+        required: true
+
+permissions:
+  contents: read
+
+# Producción tiene que terminar en el SHA más nuevo autorizado. Si entran dos
+# merges seguidos, el despliegue viejo se cancela y gana el nuevo; y por si el
+# corte llegara tarde, el paso «no retroceder» comprueba además que el SHA que
+# está por publicarse siga siendo la punta de `main`.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  PAGES_PROJECT: la-taba
+  PAGES_BRANCH: main
+  PRODUCTION_HOST: https://la-taba.pages.dev
+
+jobs:
+  deploy:
+    name: Publicar en Cloudflare Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Un gate rojo no despliega. `workflow_dispatch` entra igual y comprueba el
+    # verde por su cuenta, más abajo.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Resolver qué SHA se despliega
+        id: destino
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "sha=${{ inputs.commit }}" >> "$GITHUB_OUTPUT"
+            echo "origen=workflow_dispatch" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            echo "origen=CI verde (${{ github.event.workflow_run.id }})" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out exactamente ese SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ steps.destino.outputs.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      # La defensa contra que producción retroceda. Si entre el disparo y este
+      # momento entró otro merge, el SHA de esta corrida ya no es la punta:
+      # publicarlo dejaría producción vieja. Se sale sin desplegar y gana la
+      # corrida del SHA nuevo.
+      - name: No retroceder
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          punta="$(git rev-parse origin/main)"
+          mio="${{ steps.destino.outputs.sha }}"
+          echo "punta de main : ${punta}"
+          echo "este despliegue: ${mio}"
+          if [ "${punta}" != "${mio}" ]; then
+            if git merge-base --is-ancestor "${mio}" "${punta}"; then
+              echo "::warning::main avanzó: ${mio} ya no es la punta. No se despliega; la corrida del SHA nuevo lo hará."
+              exit 1
+            fi
+            echo "::error::${mio} no es un ancestro de main. No se despliega un SHA que no está en la línea de producción."
+            exit 1
+          fi
+
+      - name: Comprobar que ese SHA tiene CI verde
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          estado="$(curl --silent --show-error --fail \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H 'Accept: application/vnd.github+json' \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${{ steps.destino.outputs.sha }}&status=success" \
+            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const j=JSON.parse(d);process.stdout.write(String((j.workflow_runs||[]).some(r=>r.name==="Validate release candidate")))})')"
+          if [ "${estado}" != "true" ]; then
+            echo "::error::Ese SHA no tiene una corrida verde de «Validate release candidate». No se despliega un SHA sin certificar." >&2
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Construir el artefacto de producción
+        env:
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          TABA_PUBLIC_ORIGIN: ${{ env.PRODUCTION_HOST }}
+        run: node scripts/deploy/preparar-artefacto.mjs --commit "${{ steps.destino.outputs.sha }}"
+
+      - name: Publicar en Cloudflare Pages
+        id: publicar
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          faltan=""
+          [ -z "${CLOUDFLARE_API_TOKEN}" ] && faltan="${faltan} CLOUDFLARE_API_TOKEN"
+          [ -z "${CLOUDFLARE_ACCOUNT_ID}" ] && faltan="${faltan} CLOUDFLARE_ACCOUNT_ID"
+          if [ -n "${faltan}" ]; then
+            for nombre in ${faltan}; do
+              echo "::error::DEPLOY CONFIGURATION MISSING: ${nombre}"
+            done
+            echo "  Se cargan en Settings → Secrets and variables → Actions → Secrets." >&2
+            echo "  El token necesita UN permiso: Account · Cloudflare Pages · Edit." >&2
+            echo "  No hace falta DNS, ni Workers, ni facturación, ni un Global API Key." >&2
+            echo "  Ver docs/operacion/deploy.md." >&2
+            exit 1
+          fi
+
+          npx --yes wrangler@4 pages deploy dist_release \
+            --project-name "${PAGES_PROJECT}" \
+            --branch "${PAGES_BRANCH}" \
+            --commit-hash "${{ steps.destino.outputs.sha }}" \
+            | tee /tmp/deploy.log
+
+          url="$(grep -oE 'https://[a-z0-9-]+\.la-taba\.pages\.dev' /tmp/deploy.log | tail -1 || true)"
+          echo "deployment_url=${url}" >> "$GITHUB_OUTPUT"
+
+      # El sitio recién publicado, mirado de afuera: HTTP, shell, el commit que
+      # esperábamos, el Supabase de producción, el catálogo, y que no se haya
+      # colado staging ni el runtime-config vacío.
+      - name: Smoke en vivo
+        run: |
+          node scripts/deploy/verificar-publicado.mjs \
+            --host "${PRODUCTION_HOST}" \
+            --esperar-commit "${{ steps.destino.outputs.sha }}"
+
+      - name: Resumen
+        if: always()
+        run: |
+          {
+            echo "### Despliegue de producción"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| commit | \`${{ steps.destino.outputs.sha }}\` |"
+            echo "| autorizado por | ${{ steps.destino.outputs.origen }} |"
+            echo "| proyecto | \`${PAGES_PROJECT}\` rama \`${PAGES_BRANCH}\` |"
+            echo "| deployment | ${{ steps.publicar.outputs.deployment_url || '—' }} |"
+            echo "| producción | ${PRODUCTION_HOST} |"
+          } >> "$GITHUB_STEP_SUMMARY"
